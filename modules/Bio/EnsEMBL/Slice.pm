@@ -532,29 +532,19 @@ sub is_toplevel {
   Description: Returns 1 if slice is a circular slice else 0
   Returntype : int
   Caller     : general
-  Status     : At Risk
+  Status     : Stable
 
 =cut
 
 sub is_circular {
   my ($self) = @_;
-
-  if ( !defined( $self->adaptor() ) ) { return 0 }
-
-  if ( !defined( $self->{'circular'} ) ) {
-    $self->{'circular'} = 0;  
-
-    if ( !defined($self->adaptor()->{'is_circular'}) ){   
-        $self->adaptor()->_build_circular_slice_cache();
-    } 
-
-    if ($self->adaptor()->{'is_circular'}) {
-	if ( exists($self->adaptor()->{'circular_sr_id_cache'}->{ $self->adaptor()->get_seq_region_id($self) } ) ) {
-		$self->{'circular'} = 1;
-	}
-    }
+  my $adaptor = $self->adaptor();
+  return 0 if ! defined $adaptor;
+  if (! exists $self->{'circular'}) {
+    my $id = $adaptor->get_seq_region_id($self);
+    $self->{circular} = $adaptor->is_circular($id);
   }
-  return $self->{'circular'};
+  return $self->{circular};
 }
 
 =head2 invert

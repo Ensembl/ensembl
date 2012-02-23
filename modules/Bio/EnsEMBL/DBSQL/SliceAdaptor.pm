@@ -398,18 +398,24 @@ sub fetch_by_region {
 
   if ( !defined($end) ) { $end = $length }
 
+  #If this was given then check if we've got a circular seq region otherwise
+  #let it fall through to the normal Slice method
   if ( $end + 1 < $start ) {
-    my $new_sl =
-      Bio::EnsEMBL::CircularSlice->new(
-                                   -COORD_SYSTEM    => $cs,
-                                   -SEQ_REGION_NAME => $seq_region_name,
-                                   -SEQ_REGION_LENGTH => $length,
-                                   -START             => $start,
-                                   -END               => $end,
-                                   -STRAND            => 1,
-                                   -ADAPTOR           => $self );
-
-    return $new_sl;
+    my $cs_id = $cs->dbID();
+    my $seq_region_id = $self->{'sr_name_cache'}->{"$seq_region_name:$cs_id"} = $arr->[0];
+    if($self->is_circular($seq_region_id)) {
+      my $new_sl =
+        Bio::EnsEMBL::CircularSlice->new(
+                                     -COORD_SYSTEM    => $cs,
+                                     -SEQ_REGION_NAME => $seq_region_name,
+                                     -SEQ_REGION_LENGTH => $length,
+                                     -START             => $start,
+                                     -END               => $end,
+                                     -STRAND            => 1,
+                                     -ADAPTOR           => $self );
+  
+      return $new_sl;
+    }
   }
 
   if ( defined( $self->{'lrg_region_test'} )
@@ -1046,6 +1052,26 @@ sub is_reference {
 
   $sth->finish;
   return 1;
+}
+
+=head2 is_circular
+
+  Arg[1]      : int seq_region_id
+  Example     : my $circular = $slice_adptor->is_circular($seq_region_id);
+  Description : Indicates if the sequence region was circular or not
+  Returntype  : Boolean
+  
+=cut
+
+sub is_circular {
+  my ($self, $id) = @_;
+  
+  if (! defined $self->{is_circular}) {
+    $self->_build_circular_slice_cache();
+  }
+  
+  return 0 if $self->{is_circular} == 0;
+  return (exists $self->{circular_sr_id_cache}->{$id}) ? 1 : 0;
 }
 
 =head2 fetch_by_band
