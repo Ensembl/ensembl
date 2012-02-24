@@ -118,8 +118,37 @@ my %feature_so_mapping = (
 	'Bio::EnsEMBL::Funcgen::RegulatoryFeature' => 'SO:0001679', # transcription_regulatory_region
 );
 
+my %grouping_of_biotypes = (
+    # Genebuilder/Havana categorisation
+    'protein_coding' => [qw( protein_coding polymorphic_pseudogene   )],
+    'pseudogene'     => [qw( pseudogene retrotransposed )],
+    'long_noncoding' => [qw( 3prime_overlapping_ncrna antisense lincRNA ncrna_host non_coding 
+                            processed_transcript sense_intronic sense_overlapping
+                        )],
+    'short_noncoding'=> [qw( miRNA miRNA_pseudogene misc_RNA misc_RNA_pseudogene Mt_tRNA 
+                            Mt_tRNA_pseudogene rRNA rRNA_pseudogene scRNA_pseudogene snoRNA
+                            snoRNA_pseudogene snRNA snRNA_pseudogene tRNA_pseudogene
+                        )],
+    # practical Ensembl core categories for fasta dumping
+    'cDNA'              => [qw( protein_coding polymorphic_pseudogene IG_V_gene TR_V_gene 
+                                IG_J_gene TR_J_gene IG_D_gene IG_C_gene TR_C_gene pseudogene
+                                retrotransposed IG_V_pseudogene TR_V_pseudogene 
+                                IG_J_pseudogene IG_C_pseudogene
+                                
+                           )],
+    'peptide_producing' => [qw( protein_coding polymorphic_pseudogene IG_V_gene TR_V_gene 
+                                IG_J_gene TR_J_gene IG_D_gene IG_C_gene TR_C_gene  
+                           )],
+    'ncRNA'             => [qw( ncRNA miRNA miRNA_pseudogene misc_RNA misc_RNA_pseudogene Mt_tRNA 
+                            Mt_tRNA_pseudogene Mt_rRNA rRNA rRNA_pseudogene scRNA_pseudogene 
+                            snoRNA snoRNA_pseudogene snRNA snRNA_pseudogene tRNA_pseudogene
+                            3prime_overlapping_ncrna antisense lincRNA ncrna_host non_coding 
+                            processed_transcript sense_intronic sense_overlapping tRNA
+                            )],
+);
+
 my %biotype_grouping = (
-    'protein-coding' => 'protein_coding',
+    'protein_coding' => 'protein_coding',
     'polymorphic_pseudogene' => 'protein_coding',
     'pseudogene' => 'pseudogene',
     'retrotransposed' => 'pseudogene',
