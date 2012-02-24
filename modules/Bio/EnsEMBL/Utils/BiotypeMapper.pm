@@ -27,12 +27,16 @@ my $biotype_mapper = new BiotypeMapper($ontology_adaptor);
 
 print $biotype_mapper->translate_feature_to_SO_term($feature);
 
+my $list_of_biotypes = $biotype_mapper->biotypes_belonging_to_group('protein-coding');
+
 =head1 DESCRIPTION
 
 BiotypeMapper provides a series of nearest matches between EnsEMBL biotypes and
-the Sequence Ontology (http://www.sequenceontology.org)
+the Sequence Ontology (http://www.sequenceontology.org). In addition, biotypes
+are members of groupings, such as "short non-coding". This allows one to
+conveniently select all the biotypes of a certain kind. 
 
-Mappings are imperfect due to the inexact correspondance of biotypes to 
+SO Mappings are imperfect due to the inexact correspondance of biotypes to 
 several SO terms. The a best guess has been chosen in each case.
 
 Reverse mappings from SO to biotype are vague, due to many-to-one relationships.
@@ -44,7 +48,8 @@ package Bio::EnsEMBL::Utils::BiotypeMapper;
 
 use strict;
 use warnings;
-use Carp;
+
+use Bio::EnsEMBL::Utils::Exception;
 
 my %gene_so_mapping = (
 	'protein_coding' 		=> 'SO:0001217', # protein_coding_gene
@@ -133,7 +138,7 @@ my %grouping_of_biotypes = (
     'cDNA'              => [qw( protein_coding polymorphic_pseudogene IG_V_gene TR_V_gene 
                                 IG_J_gene TR_J_gene IG_D_gene IG_C_gene TR_C_gene pseudogene
                                 retrotransposed IG_V_pseudogene TR_V_pseudogene 
-                                IG_J_pseudogene IG_C_pseudogene
+                                IG_J_pseudogene IG_C_pseudogene processed_transcript
                                 
                            )],
     'peptide_producing' => [qw( protein_coding polymorphic_pseudogene IG_V_gene TR_V_gene 
@@ -143,37 +148,8 @@ my %grouping_of_biotypes = (
                             Mt_tRNA_pseudogene Mt_rRNA rRNA rRNA_pseudogene scRNA_pseudogene 
                             snoRNA snoRNA_pseudogene snRNA snRNA_pseudogene tRNA_pseudogene
                             3prime_overlapping_ncrna antisense lincRNA ncrna_host non_coding 
-                            processed_transcript sense_intronic sense_overlapping tRNA
+                             sense_intronic sense_overlapping tRNA
                             )],
-);
-
-my %biotype_grouping = (
-    'protein_coding' => 'protein_coding',
-    'polymorphic_pseudogene' => 'protein_coding',
-    'pseudogene' => 'pseudogene',
-    'retrotransposed' => 'pseudogene',
-    '3prime_overlapping_ncrna' => 'long noncoding',
-    'antisense' => 'long noncoding',
-    'lincRNA' => 'long noncoding',
-    'ncrna_host' => 'long noncoding',
-    'non_coding' => 'long noncoding',
-    'processed_transcript' => 'long noncoding',
-    'sense_intronic' => 'long noncoding',
-    'sense_overlapping' => 'long noncoding',
-    'miRNA' => 'short noncoding',
-    'miRNA_pseudogene' => 'short noncoding',
-    'misc_RNA_pseudogene' => 'short noncoding',
-    'misc_RNA' => 'short noncoding',
-    'Mt_tRNA' => 'short noncoding',
-    'Mt_tRNA_pseudogene' => 'short noncoding',
-    'rRNA' => 'short noncoding',
-    'rRNA_pseudogene' => 'short noncoding',
-    'scRNA_pseudogene' => 'short noncoding',
-    'snoRNA' => 'short noncoding',
-    'snoRNA_pseudogene' => 'short noncoding',
-    'snRNA' => 'short noncoding',
-    'snRNA_pseudogene' => 'short noncoding',
-    'tRNA_pseudogene' => 'short noncoding',
 );
 
 =head2 new
@@ -222,7 +198,7 @@ sub translate_feature_to_SO_term {
 		$so_term = $self->{'ontology_adaptor'}->fetch_by_accession($so_accession);
 	}
 	else {
-		carp "Ontology mapping not found for ".ref($feature)."\n";
+		throw ("Ontology mapping not found for ".ref($feature));
 		return "????????";
 	}
 
@@ -276,35 +252,42 @@ sub translate_SO_to_biotype {
 	return \@biotypes;
 }
 
-=head2 biotype_to_group_member
+=head2 belongs_to_groups
 
     Arg [0]    : Biotype (string)
-    Description: Returns the group name that includes the given biotype
-    Returntype : String
+    Description: Returns the group names that include the given biotype
+    Returntype : Listref of strings
 =cut
 
-sub biotype_to_group_member {
+sub belongs_to_groups {
     my $self = shift;
     my $member = shift;
-    my $group = $biotype_grouping{$member};
-    return $group;
+    my @belongs_to;
+    foreach my $group (keys %grouping_of_biotypes) {
+        foreach my $biotype ( @{ $grouping_of_biotypes{$group} }) {
+            if ($biotype eq $member) {push @belongs_to,$group;}
+        }
+    }
+    return \@belongs_to;
 }
 
-=head2 biotype_to_group_member
+=head2 group_members
 
     Arg [0]    : Biotype group name (string)
     Description: Returns a list of biotypes that belong in the group.
     Returntype : Listref of strings
 =cut
 
-sub biotypes_belonging_to_group {
+sub group_members {
     my $self = shift;
     my $group = shift;
-    my @biotypes;
-    foreach my $biotype (keys %biotype_grouping) {
-        if ($biotype_grouping{$biotype} eq $group) { push @biotypes,$biotype;}
+    if (exists($grouping_of_biotypes{$group})) {
+        my @biotypes = @{ $grouping_of_biotypes{$group} };
+        return \@biotypes;
     }
-    return \@biotypes
+    else {
+        throw ("Not a valid group name for biotypes");
+    }
 }
 
 1;
