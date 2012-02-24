@@ -161,10 +161,10 @@ sub DataFile_to_adaptor {
       require Bio::EnsEMBL::ExternalData::BAM::BamAdaptor;
       return Bio::EnsEMBL::ExternalData::BAM::BamAdaptor->new($df->path($base));
     },
-#    BIGBED  => sub {
-#      require Bio::EnsEMBL::ExternalData::BigFile::BigBedAdaptor;
-#      return Bio::EnsEMBL::ExternalData::BigFile::BigBedAdaptor->new($df->path($base));
-#    },
+    BIGBED  => sub {
+      require Bio::EnsEMBL::ExternalData::BigFile::BigBedAdaptor;
+      return Bio::EnsEMBL::ExternalData::BigFile::BigBedAdaptor->new($df->path($base));
+    },
     BIGWIG  => sub {
       require Bio::EnsEMBL::ExternalData::BigFile::BigWigAdaptor;
       return Bio::EnsEMBL::ExternalData::BigFile::BigWigAdaptor->new($df->path($base));
