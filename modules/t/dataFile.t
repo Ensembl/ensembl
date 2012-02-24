@@ -37,6 +37,7 @@ my %base_args = (
     %base_args
   ], 'data file');
   is($df->path($base), $expected_base.'/core/wibble.bam', 'Checking non-absolute path');
+  is_deeply($df->get_all_paths($base), [ $expected_base.'/core/wibble.bam', $expected_base.'/core/wibble.bam.bai' ], 'Checking all non-abs paths');
 }
 
 {
@@ -69,9 +70,9 @@ my %base_args = (
 }
 
 {
-  my %exts = (BAM => 'bam', BIGWIG => 'bw', VCF => 'vcf');
+  my %exts = (BAM => ['bam', 'bam.bai'], BIGWIG => ['bw'], VCF => ['vcf.gz', 'vcf.gz.tbi']);
   while( my ($type, $ext) = each %exts ) {
-    is($dfa->DataFile_to_extension(new_ok('Bio::EnsEMBL::DataFile'=>[%base_args, -FILE_TYPE => $type])), $ext, 'Checking '.$type.' extension');
+    is_deeply($dfa->DataFile_to_extensions(new_ok('Bio::EnsEMBL::DataFile'=>[%base_args, -FILE_TYPE => $type])), $ext, 'Checking '.$type.' extension');
   }
 }
 
