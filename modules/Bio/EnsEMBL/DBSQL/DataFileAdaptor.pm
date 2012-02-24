@@ -117,9 +117,14 @@ sub DataFile_to_extension {
   return $extensions->[0];
 }
 
-=head2
+=head2 DataFile_to_extensions
 
-
+  Arg[1]      : Bio::EnsEMBL::DataFile
+  Example     : my $exts = $dfa->DataFile_to_extensions($bam_df);
+  Description : Returns all expected extensions for the given DataFile type. The
+                first returned is the default extension
+  Returntype  : ArrayRef
+  Exceptions  : Raised if the given file type is not understood
 
 =cut
 
