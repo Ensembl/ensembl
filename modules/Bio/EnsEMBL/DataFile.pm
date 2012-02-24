@@ -108,8 +108,16 @@ sub get_ExternalAdaptor {
 
 sub path {
   my ($self, $base) = @_;
+  my $all_paths = $self->get_all_paths($base);
+  return $all_paths->[0];
+}
+
+sub get_all_paths {
+  my ($self, $base) = @_;
+    
+  return [$self->url()] if $self->absolute();
   
-  return $self->url() if $self->absolute();
+  my @all_paths;
   
   $base = $self->adaptor()->get_base_path($base) if ! $base;
 
@@ -130,26 +138,33 @@ sub path {
   push(@portions, software_version()) if $self->version_lock();
   push(@portions, $self->adaptor()->db()->group());
   
+  #Targets are the files to generate
+  my @targets;
   #If URL is populated we assume we need to add this onto the end but removing the /
   if($self->url()) {
     my @split = split(/\//, $self->url());
-    push(@portions, @split);
+    push(@targets, [@split]);
   }
   else {
-    my $ext = $self->adaptor()->DataFile_to_extension($self);
-    my $filename = sprintf(q{%s.%s}, $self->name(), $ext);
-    push(@portions, $filename);
+    my $extensions = $self->adaptor()->DataFile_to_extensions($self);
+    foreach my $ext (@{$extensions}) {
+      my $filename = sprintf(q{%s.%s}, $self->name(), $ext);
+      push(@targets, [$filename]);
+    }
   }
   
   my $is_uri = is_uri($base);
-  my $path;
-  if($is_uri) {
-    $path = join(q{/}, $base, @portions);
+  foreach my $t (@targets) {
+    my $path;
+    if($is_uri) {
+      $path = join(q{/}, $base, @portions, @{$t});
+    }
+    else {
+      $path = File::Spec->catfile($base, @portions, @{$t});
+    }
+    push(@all_paths, $path);
   }
-  else {
-    $path = File::Spec->catfile($base, @portions);
-  }
-  return $path;
+  return \@all_paths;
 }
 
 =head2 coord_system
@@ -272,5 +287,23 @@ sub file_type {
   $self->{'file_type'} = $file_type if defined $file_type;
   return $self->{'file_type'};
 }
+
+#=head2 files
+#
+#  Args       	: 
+#  Example			: my $files = @{$df->files()};
+#  Description	: Returns all the file names we expect to cover for a flat file
+#  Returntype 	: type return_description
+#  Exceptions 	: 
+#  Caller     	: caller
+#  Status     	: status
+#
+#=cut
+#
+#
+#sub files {
+#  my ($self) = @_;
+#  
+#}
 
 1;

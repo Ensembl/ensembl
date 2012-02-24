@@ -54,7 +54,7 @@ use base qw/Bio::EnsEMBL::DBSQL::BaseAdaptor/;
 
 use Bio::EnsEMBL::DataFile;
 use Bio::EnsEMBL::DBSQL::BaseAdaptor;
-use Bio::EnsEMBL::Utils::Exception qw/throw warning/;
+use Bio::EnsEMBL::Utils::Exception qw/throw warning deprecate/;
 use Bio::EnsEMBL::Utils::Scalar qw/:assert/;
 
 my $GLOBAL_BASE_PATH;
@@ -106,21 +106,36 @@ sub get_base_path {
   Description : Returns an expected extension for the given DataFile type
   Returntype  : Scalar of the expected file extension
   Exceptions  : Raised if the given file type is not understood
+  Status      : Deprecated
 
 =cut
 
 sub DataFile_to_extension {
   my ($self, $df) = @_;
-  my $type = $df->file_type();
-  my $ext = {
-    BAM     => 'bam',
-#    BIGBED  => 'bb',
-    BIGWIG  => 'bw',
-    VCF     => 'vcf',
-  }->{$type}; 
-  throw sprintf(q{No extension found for the type '%s'}, $type ) if ! $ext;
-  return $ext;
+  deprecate("Use DataFile_to_extensions() instead");
+  my $extensions = $self->DataFile_to_extensions($df);
+  return $extensions->[0];
 }
+
+=head2
+
+
+
+=cut
+
+sub DataFile_to_extensions {
+  my ($self, $df) = @_;
+  my $type = $df->file_type();
+  my $extensions = {
+    BAM     => ['bam', 'bam.bai'],
+#    BIGBED  => 'bb',
+    BIGWIG  => ['bw'],
+    VCF     => ['vcf.gz', 'vcf.gz.tbi'],
+  }->{$type}; 
+  throw sprintf(q{No extensions found for the type '%s'}, $type ) if ! $extensions;
+  return $extensions;
+}
+
 
 =head2 DataFile_to_adaptor
 
