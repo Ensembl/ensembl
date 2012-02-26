@@ -336,7 +336,8 @@ sub checksum {
     my $path = File::Spec->catfile($dir, $file);
     my $sum = `sum $path`;
     $sum =~ s/\s* $path//xms;
-    print $fh "${sum}\t${file}";
+    chomp($sum);
+    print $fh "${sum}\t${file}\n";
   }
   $fh->close();
   $self->permissions($checksum);
