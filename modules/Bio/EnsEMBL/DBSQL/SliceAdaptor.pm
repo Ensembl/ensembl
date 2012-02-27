@@ -468,7 +468,7 @@ sub fetch_by_toplevel_location {
   throw 'You must specify a location' if ! $location;
   
   my $regex = qr/^(\w+) :? (\d+)? (?:-|[.]{2})? (\d+)?$/xms;
-  $location =~ s/\s+|,|_//g; #cleanup any nomenclature like 1_000 or 1 000 or 1,000
+  my $number_seps_regex = qr/\s+|,|_/;
   
   if(my ($seq_region_name, $start, $end) = $location =~ $regex) {
     if(defined $start && $start < 1) {
@@ -480,6 +480,11 @@ sub fetch_by_toplevel_location {
     }
     
     my $coord_system_name = 'toplevel';
+    
+    #cleanup any nomenclature like 1_000 or 1 000 or 1,000
+    $start =~ s/$number_seps_regex//g;
+    $end =~ s/$number_seps_regex//g;
+    
     my $slice = $self->fetch_by_region($coord_system_name, $seq_region_name, $start, $end, undef, undef, 0);
     return unless $slice;
     
