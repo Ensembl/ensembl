@@ -139,7 +139,8 @@ my %grouping_of_biotypes = (
                                 IG_J_gene TR_J_gene IG_D_gene IG_C_gene TR_C_gene pseudogene
                                 retrotransposed IG_V_pseudogene TR_V_pseudogene 
                                 IG_J_pseudogene IG_C_pseudogene processed_transcript
-                                
+                                antisense ambiguous_orf transcribed_processed_pseudogene
+                                disrupted_domain 
                            )],
     'peptide_producing' => [qw( protein_coding polymorphic_pseudogene IG_V_gene TR_V_gene 
                                 IG_J_gene TR_J_gene IG_D_gene IG_C_gene TR_C_gene  
@@ -147,7 +148,7 @@ my %grouping_of_biotypes = (
     'ncRNA'             => [qw( ncRNA miRNA miRNA_pseudogene misc_RNA misc_RNA_pseudogene Mt_tRNA 
                             Mt_tRNA_pseudogene Mt_rRNA rRNA rRNA_pseudogene scRNA_pseudogene 
                             snoRNA snoRNA_pseudogene snRNA snRNA_pseudogene tRNA_pseudogene
-                            3prime_overlapping_ncrna antisense lincRNA ncrna_host non_coding 
+                            3prime_overlapping_ncrna lincRNA ncrna_host non_coding 
                              sense_intronic sense_overlapping tRNA
                             )],
 );
@@ -163,7 +164,7 @@ my %grouping_of_biotypes = (
 sub new {
 	my $class = shift;
 	my $self = { 	
-			ontology_adaptor => shift,
+		ontology_adaptor => shift,
 	};
 
 	bless $self, $class;
