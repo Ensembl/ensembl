@@ -22,11 +22,16 @@ use strict;
 use warnings;
 
 use Config::IniFiles;
-
-my $config =
-  Config::IniFiles->new( -file =>
-      ( defined $ARGV[0] && -f $ARGV[0] ? $ARGV[0] : 'xref_config.ini' )
-  );
+my $file = ( defined $ARGV[0] && -f $ARGV[0]) ? $ARGV[0] : 'xref_config.ini';
+warn $file;
+my $config =Config::IniFiles->new(-file =>$file);
+if(! defined $config) {
+  foreach my $e (@Config::IniFiles::errors) {
+    warn "errors found";
+    warn $e;
+  }
+  die "No Xref config made from $file. Check STDERR";
+}
 
 my %source_ids;
 
