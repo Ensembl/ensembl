@@ -440,18 +440,14 @@ CREATE TABLE IF NOT EXISTS meta (
 # Add schema type and schema version to the meta table.
 INSERT INTO meta (species_id, meta_key, meta_value) VALUES
   (NULL, 'schema_type',     'core'),
-  (NULL, 'schema_version',  '66');
+  (NULL, 'schema_version',  '67');
 
 # Patches included in this schema file:
 # NOTE: At start of release cycle, remove patch entries from last release.
 # NOTE: Avoid line-breaks in values.
 INSERT INTO meta (species_id, meta_key, meta_value) VALUES
-  (NULL, 'patch', 'patch_65_66_a.sql|schema_version'),
-  (NULL, 'patch', 'patch_65_66_b.sql|fix_external_db_id'),
-  (NULL, 'patch', 'patch_65_66_c.sql|reorder_unmapped_obj_index'),
-  (NULL, 'patch', 'patch_65_66_d.sql|add_index_to_ontology_xref_table'),
-  (NULL, 'patch', 'patch_65_66_e.sql|fix_external_db_id_in_xref'),
-  (NULL, 'patch', 'patch_65_66_f.sql|drop_default_values')
+  (NULL, 'patch', 'patch_66_67_a.sql|schema_version'),
+  (NULL, 'patch', 'patch_66_67_b.sql|drop_stable_id_views')
  ;
 
 /**
@@ -2520,14 +2516,4 @@ CREATE TABLE data_file (
   INDEX df_analysis_idx(analysis_id)
 ) ENGINE=MyISAM;
 
-CREATE DEFINER = CURRENT_USER SQL SECURITY INVOKER VIEW exon_stable_id (exon_id, stable_id, version, created_date, modified_date) AS (SELECT exon_id, stable_id, version, created_date, modified_date FROM exon);
 
-CREATE DEFINER = CURRENT_USER SQL SECURITY INVOKER VIEW gene_stable_id (gene_id, stable_id, version, created_date, modified_date) AS (SELECT gene_id, stable_id, version, created_date, modified_date FROM gene);
-
-CREATE DEFINER = CURRENT_USER SQL SECURITY INVOKER VIEW operon_stable_id (operon_id, stable_id, version, created_date, modified_date) AS (SELECT operon_id, stable_id, version, created_date, modified_date FROM operon);
-
-CREATE DEFINER = CURRENT_USER SQL SECURITY INVOKER VIEW operon_transcript_stable_id (operon_transcript_id, stable_id, version, created_date, modified_date) AS (SELECT operon_transcript_id, stable_id, version, created_date, modified_date FROM operon_transcript);
-
-CREATE DEFINER = CURRENT_USER SQL SECURITY INVOKER VIEW translation_stable_id (translation_id, stable_id, version, created_date, modified_date) AS (SELECT translation_id, stable_id, version, created_date, modified_date FROM translation);
-
-CREATE DEFINER = CURRENT_USER SQL SECURITY INVOKER VIEW transcript_stable_id (transcript_id, stable_id, version, created_date, modified_date) AS (SELECT transcript_id, stable_id, version, created_date, modified_date FROM transcript);
