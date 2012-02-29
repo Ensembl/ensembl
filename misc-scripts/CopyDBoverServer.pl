@@ -4,14 +4,15 @@ use strict;
 use warnings;
 
 use DBI;
+use English qw( -no_match_vars );
 use File::Copy;
 use File::Spec::Functions
   qw( rel2abs curdir canonpath updir catdir catfile );
+use File::Temp;
 use Getopt::Long;
 use IO::File;
 use Sys::Hostname;
 use Tie::File;
-use English qw( -no_match_vars ) ;
 
 $OUTPUT_AUTOFLUSH = 1;
 
@@ -24,9 +25,13 @@ sub short_usage {
 Usage:
   $0 --pass=XXX \\
   $indent [--noflush] [--nocheck] \\
-  $indent [--noopt] [--noinndob] [--skip_views] [--force] \\
-  $indent [--only_tables=XXX,YYY | --skip_tables=XXX,YYY] \\
-  $indent [--help] input_file\
+  $indent [--noopt] [--noinnodb] [--skip_views] [--force] \\
+  $indent [ --only_tables=XXX,YYY | --skip_tables=XXX,YYY ] \\
+  $indent [ input_file |
+  $indent   --source=db\@host[:port] \\
+  $indent   --target=db\@host[:port] ]
+
+  $0 --help
 
   Use --help to get a much longer help text.
 
@@ -36,14 +41,9 @@ SHORT_USAGE_END
 sub long_usage {
   my $indent = ' ' x length($0);
 
-  print <<LONG_USAGE_END;
-Usage:
-  $0 --pass=XXX \\
-  $indent [--noflush] [--nocheck] \\
-  $indent [--noopt] [--noinndob] [--skipviews] [--force] \\
-  $indent [--only_tables=XXX,YYY | --skip_tables=XXX,YYY] \\
-  $indent [--help] input_file\
+  short_usage();
 
+  print <<LONG_USAGE_END;
 Description:
 
   Safetly copy MySQL databases between different servers and run
@@ -81,12 +81,12 @@ Command line switches:
                     disables the optimization.
 
   --noinnodb        (Optional)
-                    Skip the copy of any InnoDB table encountered. Default
-                    is to include and fail when InnoDB seen.
+                    Skip the copy of any InnoDB table encountered.
+                    Default is to include and fail when InnoDB seen.
 
   --skip_views      (Optional)
-                    Exclude 'view' tables in any copy. Default is to process 
-                    them.
+                    Exclude 'view' tables in any copy.  Default is to
+                    process them.
 
   --force           (Optional)
                     Ordinarily, the script refuses to overwrite an
@@ -109,15 +109,27 @@ Command line switches:
                     (Optional)
                     Copy all tables except the ones specified in the
                     comma-delimited list.
-  
+
   --tmpdir=TMP      (Optional)
-                    Allows for a non-standard tmp location to be used during
-                    the copy process. Normally it will create a directory
-                    called tmp in the directory above the target data dir.
+                    Allows for a non-standard staging location to be
+                    used during the copy process.  Normally it will
+                    create a directory called 'tmp' in the directory
+                    above the target data directory.
 
   --help            (Optional)
                     Displays this text.
 
+The script takes either an input file of a certain format (see below),
+or two additional switches:
+
+  --source          (Optional, but required if there is no input file)
+                    The source database to copy on the form
+                    "db\@host:port" where the ":port" part is optional.
+
+  --target          (Optional, but required if --source is used)
+                    The target database to copy to on the same form as
+                    with the --source switch.  The target database must
+                    not already exist.
 
 Input file format:
 
@@ -139,13 +151,23 @@ Input file format:
 
   (with each field being separated by a tab or space).
 
+  This corresponds to the following command line options:
+
+      --source=at6_gor2_wga\@genebuild1 \\
+      --target=gorilla_gorilla_core_57_1\@ens-staging1
+
+  (note that the port 3306 is the default port, and thus does not need
+  to be mentioned)
+
   Blank lines, lines containing only whitespaces, and lines starting
   with '#', are silently ignored.
   
-  Column 7 is used only when you need to copy the database to a location which
-  is not the MySQL server's data directory. The same rules apply though that
-  the mysqlens user must have write access to this directory & to the one above
-  to create any temporary directory structures.
+  Column 7 is used only when you need to copy the database to a location
+  which is not the MySQL server's data directory.  The same rules
+  applies; the mysqlens user must have write access to this directory
+  and to the one above to create any temporary staging directory
+  structures.  There is currently no way to specify this on the
+  command-line.
 
 
 Script restrictions:
@@ -170,11 +192,13 @@ my $opt_flush    = 1;    # Flush by default.
 my $opt_check    = 1;    # Check tables by default.
 my $opt_optimize = 1;    # Optimize the tables by default.
 my $opt_force = 0; # Do not reuse existing staging directory by default.
-my $opt_skip_views = 0; # Process views by default
-my $opt_innodb = 1;    # Don't skip InnoDB by default
+my $opt_skip_views = 0;    # Process views by default
+my $opt_innodb     = 1;    # Don't skip InnoDB by default
 my $opt_tmpdir;
+my ( $opt_source, $opt_target );
 
-if ( !GetOptions( 'pass=s'        => \$opt_password,
+if (
+     !GetOptions( 'pass=s'        => \$opt_password,
                   'flush!'        => \$opt_flush,
                   'check!'        => \$opt_check,
                   'opt!'          => \$opt_optimize,
@@ -184,8 +208,11 @@ if ( !GetOptions( 'pass=s'        => \$opt_password,
                   'innodb!'       => \$opt_innodb,
                   'skip_views!'   => \$opt_skip_views,
                   'tmpdir=s'      => \$opt_tmpdir,
-                  'help'          => \$opt_help )
-     || ( !defined($opt_password) && !defined($opt_help) ) )
+                  'help!'         => \$opt_help,
+                  'source=s'      => \$opt_source,
+                  'target=s'      => \$opt_target
+     ) ||
+     ( !defined($opt_password) && !defined($opt_help) ) )
 {
   short_usage();
   exit 1;
@@ -194,6 +221,12 @@ if ( !GetOptions( 'pass=s'        => \$opt_password,
 if ( defined($opt_help) ) {
   long_usage();
   exit 0;
+}
+
+if ( ( defined($opt_source) && !defined($opt_target) ) ||
+     ( !defined($opt_source) && defined($opt_target) ) )
+{
+  die("You must use --source and --target together.\n");
 }
 
 if ( defined($opt_skip_tables) && defined($opt_only_tables) ) {
@@ -218,19 +251,22 @@ if ( scalar( getpwuid($<) ) ne 'mysqlens' ) {
   die("You need to run this script as the 'mysqlens' user.\n");
 }
 
-my $input_file = shift(@ARGV);
+my $input_file;
 
-if ( !defined($input_file) ) {
-  short_usage();
-  exit 1;
+if ( !defined($opt_source) ) {
+  $input_file = shift(@ARGV);
+
+  if ( !defined($input_file) ) {
+    short_usage();
+    exit 1;
+  }
 }
 
 my %executables = ( 'myisamchk' => '/usr/local/ensembl/mysql/bin/myisamchk',
                     'rsync'     => '/usr/bin/rsync' );
 
 # Make sure we can find all executables.
-print( '-' x 35, ' EXECUTABLE CHECKS ', '-' x 35, "\n" );
-foreach my $key ( keys %executables ) {
+foreach my $key ( keys(%executables) ) {
   my $exe    = $executables{$key};
   my $output = `which $exe`;
   my $rc     = $? >> 8;
@@ -248,7 +284,7 @@ foreach my $key ( keys %executables ) {
 
     else {
 
-      if ( $key eq 'myisamchk' && !$opt_check ) {
+      if ( !$opt_check && $key eq 'myisamchk' ) {
         print( "Can not find 'myisamchk' " .
                "but --nocheck was specified so skipping\n" ),;
       }
@@ -256,14 +292,14 @@ foreach my $key ( keys %executables ) {
         die(
            sprintf(
              "Can not find '%s' and neither 'which %s' nor 'locate %s' "
-               . "yields anything useful. Check your path",
+               . "yields anything useful. Check your \$PATH",
              $exe, $key, $key
            ) );
       }
 
     }
   } ## end if ( $rc != 0 )
-} ## end foreach my $key ( keys %executables)
+} ## end foreach my $key ( keys(%executables...))
 
 my $run_hostname = ( gethostbyname( hostname() ) )[0];
 my $working_dir  = rel2abs( curdir() );
@@ -275,6 +311,34 @@ $run_hostname =~ s/\..+//;    # Cut off everything but the first part.
 ##  parts of each line.  Store the validated information in the @todo ##
 ##  list (a list of hashes) for later processing.                     ##
 ##====================================================================##
+
+my $do_unlink_tmp_file = 0;
+
+if ( !defined($input_file) ) {
+  # The user uses --source and --target rather than an input file.
+  # Create our own temporary input file with the info from these options
+  # and then parse that.  #FIXME: this is a hack.
+  my $out = File::Temp->new( UNLINK => 0 ) or
+    die("Can not create temporary file.\n");
+
+  my ( $source_db, $source_server, $source_port ) =
+    ( $opt_source =~ /^([^@]+)@([^:]+):?(\d+)?$/ );
+  my ( $target_db, $target_server, $target_port ) =
+    ( $opt_target =~ /^([^@]+)@([^:]+):?(\d+)?$/ );
+
+  $out->printf( "%s %d %s %s %d %s\n",
+                $source_server,
+                defined($source_port) ? $source_port : 3306,
+                $source_db,
+                $target_server,
+                defined($target_port) ? $target_port : 3306,
+                $target_db );
+
+  $input_file = $out->filename();
+
+  # This temporary file will be unlinked further down.
+  $do_unlink_tmp_file = 1;
+}
 
 my $in = IO::File->new( '<' . $input_file )
   or die( sprintf( "Can not open '%s' for reading", $input_file ) );
@@ -294,7 +358,8 @@ while ( my $line = $in->getline() ) {
   my $failed = 0;                     # Haven't failed so far...
 
   my ( $source_server, $source_port, $source_db,
-       $target_server, $target_port, $target_db, $target_location
+       $target_server, $target_port, $target_db,
+       $target_location
   ) = split( /\s+/, $line );
 
   my $source_hostname = ( gethostbyname($source_server) )[0];
@@ -356,6 +421,11 @@ while ( my $line = $in->getline() ) {
 
 $in->close();
 
+if ($do_unlink_tmp_file) {
+  # Unlink the temporary input file.
+  unlink($input_file);
+}
+
 ##====================================================================##
 ##  Take the copy specifications from the @todo list and for each     ##
 ##  specification copy the database to a staging area using rsync,    ##
@@ -391,13 +461,15 @@ foreach my $spec (@todo) {
                                    'AutoCommit' => 0 } );
 
   if ( !defined($source_dbh) ) {
-    warn( sprintf(
-               "Failed to connect to the source database '%s:%d/%s'.\n",
-               $source_server, $source_port, $source_db ) );
+    warn(
+          sprintf(
+               "Failed to connect to the source database '%s@%s:%d'.\n",
+               $source_db, $source_server, $source_port
+          ) );
 
     $spec->{'status'} =
-      sprintf( "FAILED: can not connect to source database '%s:%d/%s'.",
-               $source_server, $source_port, $source_db );
+      sprintf( "FAILED: can not connect to source database '%s@%s:%d'.",
+               $source_db, $source_server, $source_port );
     next;
   }
 
@@ -446,9 +518,7 @@ foreach my $spec (@todo) {
     next;
   }
 
-  if($target_location) {
-    $target_dir = $target_location;
-  }
+  if ( defined($target_location) ) { $target_dir = $target_location }
 
   if ( !defined($target_dir) ) {
     warn(
@@ -465,16 +535,14 @@ foreach my $spec (@todo) {
   }
   
   my $tmp_dir;
-  if($opt_tmpdir) {
-    $tmp_dir = $opt_tmpdir;
-  }
+  if ( defined($opt_tmpdir) ) { $tmp_dir = $opt_tmpdir }
   else {
     $tmp_dir = canonpath( catdir( $target_dir, updir(), 'tmp' ) );
   }
 
   printf( "SOURCE 'datadir' = '%s'\n", $source_dir );
   printf( "TARGET 'datadir' = '%s'\n", $target_dir );
-  printf( "TMPDIR = %s\n", $tmp_dir);
+  printf( "TMPDIR = %s\n",             $tmp_dir );
   
   my $staging_dir = catdir( $tmp_dir, sprintf( "tmp.%s", $target_db ) );
   my $destination_dir = catdir( $target_dir, $target_db );
@@ -547,8 +615,7 @@ foreach my $spec (@todo) {
     {
       next;
     } elsif ( defined($opt_skip_tables)
-              && exists( $skip_tables{$table} ) )
-    {
+              && exists( $skip_tables{$table} ) ) {
       next;
     }
 
@@ -699,39 +766,48 @@ foreach my $spec (@todo) {
   ##------------------------------------------------------------------##
   print( '-' x 36, ' VIEW REPAIR ', '-' x 37, "\n" );
   
-  if($opt_skip_views) {
+  if ($opt_skip_views) {
     print 'SKIPPING VIEWS...', "\n";
   }
   else {
     print 'PROCESSING VIEWS...', "\n";
-    if($source_db eq $target_db) {
-      print("Source and target names (${source_db}) are the same; views do not need repairing\n");
+
+    if ( $source_db eq $target_db ) {
+      print( "Source and target names (${source_db}) are the same; " .
+             "views do not need repairing\n" );
     }
     else {
       my $ok = 1;
+
       foreach my $current_view (@views) {
         print "Processing $current_view\n";
-        my $view_frm_loc = catfile($staging_dir, "${current_view}.frm");
-        if(tie my @view_frm, 'Tie::File', $view_frm_loc) {
+
+        my $view_frm_loc =
+          catfile( $staging_dir, "${current_view}.frm" );
+
+        if ( tie my @view_frm, 'Tie::File', $view_frm_loc ) {
           for (@view_frm) {
             s/`$source_db`/`$target_db`/g;
           }
           untie @view_frm;
         }
         else {
-          warn(sprintf(q{Cannot tie file '%s' for VIEW repair. Error}, $view_frm_loc));
+          warn(
+                sprintf( q{Cannot tie file '%s' for VIEW repair. Error},
+                         $view_frm_loc ) );
           $ok = 0;
           next;
         }
       }
-      
-      if(!$ok) {
-        $spec->{status} = 
-          sprintf(q{FAILED: view cleanup failed (cleanup of view frm files in '%s' may be needed}, 
-                  $staging_dir);
+
+      if ( !$ok ) {
+        $spec->{status} = sprintf(
+                   "FAILED: view cleanup failed " .
+                     "(cleanup of view frm files in '%s' may be needed",
+                   $staging_dir );
       }
-    }
-  }
+    } ## end else [ if ( $source_db eq $target_db)]
+  } ## end else [ if ($opt_skip_views) ]
 
   ##------------------------------------------------------------------##
   ## CHECK                                                            ##
