@@ -228,32 +228,42 @@ if ( !defined($input_file) ) {
 my %executables = ( 'myisamchk' => '/usr/local/ensembl/mysql/bin/myisamchk',
                     'rsync'     => '/usr/bin/rsync' );
 
-#Check executables
-
+# Make sure we can find all executables.
 print( '-' x 35, ' EXECUTABLE CHECKS ', '-' x 35, "\n" );
-foreach my $key (keys %executables) {
-  my $exe = $executables{$key};
+foreach my $key ( keys %executables ) {
+  my $exe    = $executables{$key};
   my $output = `which $exe`;
-  my $rc = $? >> 8;
-  if($rc != 0) {
-    my $possible_location = `which $key 2>&1`;
-    my $loc_rc = $? >> 8;
-    if($loc_rc == 0) {
+  my $rc     = $? >> 8;
+
+  if ( $rc != 0 ) {
+    my $possible_location = `locate -l 1 $key 2>&1`;  # Ugly but simple.
+    my $loc_rc            = $? >> 8;
+
+    if ( $loc_rc == 0 ) {
       chomp $possible_location;
       $executables{$key} = $possible_location;
-      printf("Can not find '%s'; using '%s'\n", $exe, $executables{$key});
+      printf( "Can not find '%s'; using '%s'\n",
+              $exe, $executables{$key} );
     }
+
     else {
-      if($key eq 'myisamchk' && ! $opt_check) {
-        printf("Can not find '%s' but --nocheck was specified so skipping\n", $exe);
+
+      if ( $key eq 'myisamchk' && !$opt_check ) {
+        print( "Can not find 'myisamchk' " .
+               "but --nocheck was specified so skipping\n" ),;
       }
       else {
-        die(sprintf("Can not find '%s' and using 'locate %s' yields nothing Check your path", $exe, $key));
+        die(
+           sprintf(
+             "Can not find '%s' and neither 'which %s' nor 'locate %s' "
+               . "yields anything useful. Check your path",
+             $exe, $key, $key
+           ) );
       }
+
     }
-    $executables{$key} = $key;
-  }
-}
+  } ## end if ( $rc != 0 )
+} ## end foreach my $key ( keys %executables)
 
 my $run_hostname = ( gethostbyname( hostname() ) )[0];
 my $working_dir  = rel2abs( curdir() );
