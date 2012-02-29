@@ -141,12 +141,14 @@ my $sql = qq(
 my $sth = $dbh->prepare($sql);
 
 my $fmt1 = "%10s %10s %10s %10s %3s\n";
-my @rows = ();
 
-foreach my $chr ($support->sort_chromosomes) {
+
+foreach my $chr ($support->param('chromosomes')) {
   $support->log_stamped("\nToplevel seq_region $chr...\n");
 
   $sth->execute($chr);
+
+  my @rows = ();
 
   # do an initial fetch
   my $last = $sth->fetchrow_hashref;
@@ -253,17 +255,13 @@ foreach my $chr ($support->sort_chromosomes) {
   $support->log("Fixed $i mappings.\n", 1);
   $support->log("Merged $j mappings.\n", 1);
   $support->log("Bridged $k gaps.\n", 1);
-}
 
-$sth->finish;
 
-# fix the assembly table
-if ($support->param('dry_run')) {
-  $support->log("\nNothing else to do for a dry run.\n");
-} else {
-  
-  # delete all current mappings from the db and insert the corrected ones
-  my $c = $dbh->do(qq(
+
+  if (!$support->param('dry_run') && ($i > 0 || $j > 0 || $k > 0 )) {
+
+      # delete all current mappings from the db and insert the corrected ones
+      my $c = $dbh->do(qq(
     DELETE a
     FROM assembly a, seq_region sr1, seq_region sr2,
          coord_system cs1, coord_system cs2
@@ -273,21 +271,26 @@ if ($support->param('dry_run')) {
     AND sr2.coord_system_id = cs2.coord_system_id
     AND cs1.version = '$assembly'
     AND cs2.version = '$altassembly'
+    AND sr1.name = '$chr'
   ));
-  $support->log("\nDeleted $c entries from the assembly table.\n");
 
-  # now insert the fixed entries
-  $sql = qq(INSERT INTO assembly VALUES (?, ?, ?, ?, ?, ?, ?));
-  my $sth1 = $dbh->prepare($sql);
+      $support->log("\nDeleted $c entries from the assembly table.\n");
+
+      # now insert the fixed entries
+      $sql = qq(INSERT INTO assembly VALUES (?, ?, ?, ?, ?, ?, ?));
+      my $sth1 = $dbh->prepare($sql);
   
-  foreach my $r (@rows) {
-    $sth1->execute(map { $r->{$_} } qw(asm_seq_region_id cmp_seq_region_id
-      asm_start asm_end cmp_start cmp_end ori));
+      foreach my $r (@rows) {
+	  $sth1->execute(map { $r->{$_} } qw(asm_seq_region_id cmp_seq_region_id asm_start asm_end cmp_start cmp_end ori));
+      }
+
+      $support->log("Added ".scalar(@rows)." fixed entries to the assembly table.\n");
+
   }
 
-  $support->log("Added ".scalar(@rows)." fixed entries to the assembly table.\n");
 }
 
+$sth->finish;
 
 # finish logfile
 $support->finish_log;

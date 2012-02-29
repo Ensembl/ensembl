@@ -143,7 +143,7 @@ my $sth = $dbh->prepare($sql);
 my $fmt1 = "%10s %10s %10s %10s %3s\n";
 
 
-foreach my $chr ($support->sort_chromosomes) {
+foreach my $chr ($support->param('chromosomes')) {
   
 
   $support->log_stamped("\nToplevel seq_region $chr...\n");
@@ -245,7 +245,7 @@ foreach my $chr ($support->sort_chromosomes) {
       $support->log("\nDeleted $c entries from the assembly table.\n");
 
       # now insert the fixed entries
-      $sql = qq(INSERT INTO assembly VALUES (?, ?, ?, ?, ?, ?, ?));
+      $sql = qq(INSERT IGNORE INTO assembly VALUES (?, ?, ?, ?, ?, ?, ?));
       my $sth1 = $dbh->prepare($sql);
   
       foreach my $r (@rows) {

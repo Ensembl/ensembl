@@ -124,7 +124,7 @@ my $sth = $dbh->prepare($sql);
 my $fmt1 = "%10s %10s %10s %10s %3s\n";
 
 
-foreach my $chr ($support->sort_chromosomes) {
+foreach my $chr ($support->param('chromosomes')) {
   $support->log_stamped("\nToplevel seq_region $chr...\n");
 
   $sth->execute($chr);
