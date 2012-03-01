@@ -1,8 +1,8 @@
-#!/usr/local/ensembl/bin/perl
+#!/usr/bin/env perl
 
 =head1 NAME
 
-find_overlaps.pl - find assembly entries with overlapping component regions
+find_overlaps.pl - find assembly entries with overlapping regions
 
 =head1 SYNOPSIS
 
@@ -32,7 +32,7 @@ Optional arguments:
 
 =head1 DESCRIPTION
 
-This script looks for overlapping component seq_regions in the assembly table of
+This script looks for overlapping assembly and component seq_regions in the assembly table of
 an Ensembl core-style database. It prints the number of overlapping entries per
 coordinate system and optionally (when run with the --verbose option) a list of
 the overlapping assembly entries.
@@ -156,6 +156,7 @@ while (my ($asm_name, $asm_version, $cmp_name, $cmp_version) =
 #  print "\n";  
   my $i = 0;
   
+  $support->log_verbose($type . ' overlaps:\n');
   while ($last and (my $r = $sth1->fetchrow_hashref)) {
 
 #    foreach my $key (qw(asm_seq_region_id asm_sr_name cmp_seq_region_id cmp_sr_name asm_start asm_end cmp_start cmp_end ori)){
