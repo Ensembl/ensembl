@@ -367,10 +367,14 @@ while ( my $line = $in->getline() ) {
 
   # Verify source server and port.
   if ( !defined($source_hostname) || $source_hostname eq '' ) {
-    warn( sprintf( "line %d: Source server '%s' is not valid.\n",
-                   $lineno, $source_server ) );
+    warn(
+          sprintf( "line %d: Source server '%s' is not valid.\n",
+                   $lineno, $source_server
+          ) );
     $failed = 1;
-  } else {
+  }
+  elsif ( $source_hostname !~ /^\d+\./ ) {
+    # Don't do this on hosts specified by IP address.
     $source_hostname =~ s/\..+//;
   }
 
@@ -382,10 +386,14 @@ while ( my $line = $in->getline() ) {
 
   # Verify target server and port.
   if ( !defined($target_hostname) || $target_hostname eq '' ) {
-    warn( sprintf( "line %d: Target server '%s' is not valid.\n",
-                   $lineno, $target_server ) );
+    warn(
+          sprintf( "line %d: Target server '%s' is not valid.\n",
+                   $lineno, $target_server
+          ) );
     $failed = 1;
-  } else {
+  }
+  elsif ( $target_hostname !~ /^\d+\./ ) {
+    # Don't do this on hosts specified by IP address.
     $target_hostname =~ s/\..+//;
   }
 
