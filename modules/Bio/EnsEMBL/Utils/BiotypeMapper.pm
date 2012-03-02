@@ -291,4 +291,25 @@ sub group_members {
     }
 }
 
+=head2 member_of_group
+
+    Arg [0]    : Biotype (string)
+    Arg [1]    : Group to check (string) 
+    Description: Returns true if a biotype is present in a group
+    Returntype : Boolean
+=cut
+
+sub member_of_group {
+    my $self = shift;
+    my $biotype = shift;
+    my $query_group = shift;
+    my @groups = @{ $self->belongs_to_groups($biotype) };
+    while (my $group = shift @groups) {
+        if ($group eq $query_group) {
+            return 1;   
+        }
+    }
+    return 0;
+}
+
 1;
