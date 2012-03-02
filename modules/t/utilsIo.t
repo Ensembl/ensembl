@@ -5,6 +5,7 @@ use Test::More;
 use Test::Exception;
 use File::Temp qw/tempfile/;
 use Bio::EnsEMBL::Utils::IO qw/:all/;
+use IO::String;
 
 my ($tmp_fh, $file) = tempfile();
 close($tmp_fh);
@@ -60,6 +61,24 @@ my $expected_array = [qw/>X AAAAGGGTTCCC TTGGCCAAAAAA ATTC/];
   
   dies_ok { slurp($file) } 'File no longer exists so die';
 
+}
+
+{
+  my $content = 'ABCDE1198473' x 33012;
+  my $src = IO::String->new($content);
+  
+  {
+    my $trg = IO::String->new();
+    move_data($src, $trg);
+    is(${$trg->string_ref()}, $content, 'Checking copied data is as expected');
+  }
+  
+  {
+    $src->setpos(0);
+    my $trg = IO::String->new();
+    move_data($src, $trg, (8*1024*1024)); #8MB
+    is(${$trg->string_ref()}, $content, 'Checking large buffer copied data is as expected');
+  }
 }
 
 {

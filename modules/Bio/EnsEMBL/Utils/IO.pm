@@ -88,7 +88,10 @@ Bio::EnsEMBL::Utils::IO
     print $line; #Send the line in the file back out
     return;
   });
-	
+  
+  #Move all data from one file handle to another. Bit like a copy
+  move_data($src_fh, $trg_fh);
+  	
 =head1 DESCRIPTION
 
 A collection of subroutines aimed to helping IO based operations
@@ -113,7 +116,7 @@ use warnings;
 use base qw(Exporter);
 
 our $GZIP_OK = 0;
-our @EXPORT_OK = qw/slurp slurp_to_array fh_to_array process_to_array work_with_file gz_slurp gz_slurp_to_array gz_work_with_file iterate_file iterate_lines/;
+our @EXPORT_OK = qw/slurp slurp_to_array fh_to_array process_to_array work_with_file gz_slurp gz_slurp_to_array gz_work_with_file iterate_file iterate_lines move_data/;
 our %EXPORT_TAGS = (
   all     => [@EXPORT_OK],
   slurp   => [qw/slurp slurp_to_array gz_slurp gz_slurp_to_array/],
@@ -425,6 +428,42 @@ sub gz_work_with_file {
   $callback->($fh);
   close($fh) or throw "Cannot close FH from ${file}: $!";
   return;
+  return;
+}
+
+=head2 move_data
+
+  Arg [1]     : FileHandle $src_fh
+  Arg [2]     : FileHandle $trg_fh
+  Arg [3]     : int $buffer. Defaults to 8KB
+  Description : Moves data from the given source filehandle to the target one
+                using a 8KB buffer or user specified buffer
+  Returntype  : None
+  Example     : move_data($src_fh, $trg_fh, 16*1024); # copy in 16KB chunks
+  Exceptions  : If inputs were not as expected
+
+=cut
+
+sub move_data {
+  my ($src_fh, $trg_fh, $buffer_size) = @_;
+  assert_file_handle($src_fh, 'SourceFileHandle');
+  assert_file_handle($trg_fh, 'TargetFileHandle');
+  
+  $buffer_size ||= 8192; #Default 8KB
+  my $buffer;
+  while(1) {
+    my $read = sysread($src_fh, $buffer, $buffer_size);
+    if(! defined $read) {
+      throw "Error whilst reading from filehandle: $!";
+    }
+    if($read == 0) {
+      last;
+    }
+    my $written = syswrite($trg_fh, $buffer);
+    if(!defined $written) {
+      throw "Error whilst writing to filehandle: $!";
+    }
+  }
   return;
 }
 
