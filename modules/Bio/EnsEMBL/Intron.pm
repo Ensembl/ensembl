@@ -154,6 +154,20 @@ sub next_Exon {
   return $self->{'next'};
 }
 
+=head2 get_IntronSupportingEvidence
+
+  Example			: my $evidence = $intron->get_IntronSupportingEvidence(); 
+  Description	: Returns the evidence used to support this Intron
+  Returntype 	: Bio::EnsEMBL::IntronSupportingEvidence
+  Exceptions 	: None
+
+=cut
+
+sub get_IntronSupportingEvidence {
+  my ($self) = @_;
+  my $sea = $self->adaptor()->db()->get_IntronSupportingEvidenceAdaptor();
+  return $sea->fetch_by_Intron($self);
+}
 
 1;
 
