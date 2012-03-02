@@ -259,6 +259,32 @@ CREATE TABLE exon (
 ) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
 
 
+/**
+@table intron_supporting_evidence
+@desc Provides the evidence which we have used to declare an intronic region
+
+@column intron_supporting_evidence_id Surrogate primary key
+@column previous_exon_id              Indicates the exon flanking upstream of the intron. Foreign key references to the @link exon table.
+@column next_exon_id                  Indicates the exon flanking downstream of the intron. Foreign key references to the @link exon table.
+@column score                         Score supporting the intron 
+@column score_type                    The type of score e.g. NONE
+
+@see exon
+
+*/
+
+CREATE TABLE intron_supporting_evidence (
+  intron_supporting_evidence_id INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
+  previous_exon_id INT(10) UNSIGNED NOT NULL,
+  next_exon_id INT(10) UNSIGNED NOT NULL,
+  hit_name VARCHAR(100) NOT NULL,
+  score DECIMAL(10,3),
+  score_type ENUM('NONE', 'DEPTH') DEFAULT 'NONE',
+  
+  PRIMARY KEY (intron_supporting_evidence_id),
+  
+  UNIQUE KEY (previous_exon_id, next_exon_id)
+) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
 
 /**
 @table exon_transcript
@@ -270,7 +296,6 @@ CREATE TABLE exon (
 
 @see exon
 @see transcript
-
 
 */
 
@@ -327,7 +352,7 @@ CREATE TABLE gene (
   seq_region_strand           TINYINT(2) NOT NULL,
   display_xref_id             INT(10) UNSIGNED,
   source                      VARCHAR(20) NOT NULL,
-  status                      ENUM('KNOWN', 'NOVEL', 'PUTATIVE', 'PREDICTED', 'KNOWN_BY_PROJECTION', 'UNKNOWN'),
+  status                      ENUM('KNOWN', 'NOVEL', 'PUTATIVE', 'PREDICTED', 'KNOWN_BY_PROJECTION', 'UNKNOWN', 'ANNOTATED'),
   description                 TEXT,
   is_current                  BOOLEAN NOT NULL DEFAULT 1,
   canonical_transcript_id     INT(10) UNSIGNED NOT NULL,
@@ -341,7 +366,8 @@ CREATE TABLE gene (
   KEY seq_region_idx (seq_region_id, seq_region_start),
   KEY xref_id_index (display_xref_id),
   KEY analysis_idx (analysis_id),
-  KEY stable_id_idx (stable_id, version)
+  KEY stable_id_idx (stable_id, version),
+  KEY canonical_transcript_id_idx (canonical_transcript_id)
 
 ) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
 
@@ -447,7 +473,10 @@ INSERT INTO meta (species_id, meta_key, meta_value) VALUES
 # NOTE: Avoid line-breaks in values.
 INSERT INTO meta (species_id, meta_key, meta_value) VALUES
   (NULL, 'patch', 'patch_66_67_a.sql|schema_version'),
-  (NULL, 'patch', 'patch_66_67_b.sql|drop_stable_id_views')
+  (NULL, 'patch', 'patch_66_67_b.sql|drop_stable_id_views'),
+  (NULL, 'patch', 'patch_66_67_c.sql|adding_intron_supporting_evidence'),
+  (NULL, 'patch', 'patch_66_67_d.sql|adding_gene_transcript_annotated'),
+  (NULL, 'patch', 'patch_66_67_e.sql|index_canonical_transcript_id'),
  ;
 
 /**
@@ -672,7 +701,7 @@ CREATE TABLE transcript (
   seq_region_strand           TINYINT(2) NOT NULL,
   display_xref_id             INT(10) UNSIGNED,
   biotype                     VARCHAR(40) NOT NULL,
-  status                      ENUM('KNOWN', 'NOVEL', 'PUTATIVE', 'PREDICTED', 'KNOWN_BY_PROJECTION', 'UNKNOWN'),
+  status                      ENUM('KNOWN', 'NOVEL', 'PUTATIVE', 'PREDICTED', 'KNOWN_BY_PROJECTION', 'UNKNOWN', 'ANNOTATED'),
   description                 TEXT,
   is_current                  BOOLEAN NOT NULL DEFAULT 1,
   canonical_translation_id    INT(10) UNSIGNED,
@@ -2515,5 +2544,4 @@ CREATE TABLE data_file (
   INDEX df_name_idx(name),
   INDEX df_analysis_idx(analysis_id)
 ) ENGINE=MyISAM;
-
 
