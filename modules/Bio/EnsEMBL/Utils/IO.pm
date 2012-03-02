@@ -70,6 +70,24 @@ Bio::EnsEMBL::Utils::IO
     print $fh $$file_contents_ref;
     return;
   });
+  
+  #Working with a set of lines manually
+  work_with_file('/my/file', 'r', sub {
+    my ($fh) = @_;
+    iterate_lines($fh, sub {
+      my ($line) = @_;
+      print $line; #Send the line in the file back out
+      return;
+    });
+    return;
+  });
+  
+  #Doing the same in one go
+  iterate_file('/my/file', sub {
+    my ($line) = @_;
+    print $line; #Send the line in the file back out
+    return;
+  });
 	
 =head1 DESCRIPTION
 
@@ -95,12 +113,13 @@ use warnings;
 use base qw(Exporter);
 
 our $GZIP_OK = 0;
-our @EXPORT_OK = qw/slurp slurp_to_array fh_to_array process_to_array work_with_file gz_slurp gz_slurp_to_array gz_work_with_file/;
+our @EXPORT_OK = qw/slurp slurp_to_array fh_to_array process_to_array work_with_file gz_slurp gz_slurp_to_array gz_work_with_file iterate_file iterate_lines/;
 our %EXPORT_TAGS = (
-  all => [@EXPORT_OK],
-  slurp => [qw/slurp slurp_to_array gz_slurp gz_slurp_to_array/],
-  array => [qw/fh_to_array process_to_array slurp_to_array gz_slurp_to_array/],
-  gz    => [qw/gz_slurp gz_slurp_to_array gz_work_with_file/]
+  all     => [@EXPORT_OK],
+  slurp   => [qw/slurp slurp_to_array gz_slurp gz_slurp_to_array/],
+  array   => [qw/fh_to_array process_to_array slurp_to_array gz_slurp_to_array/],
+  gz      => [qw/gz_slurp gz_slurp_to_array gz_work_with_file/],
+  iterate => [qw/iterate_file iterate_lines/],
 );
 use Bio::EnsEMBL::Utils::Exception qw(throw);
 use Bio::EnsEMBL::Utils::Scalar qw(:assert);
@@ -254,7 +273,7 @@ sub fh_to_array {
   return \@contents;
 }
 
-=head process_to_array
+=head2 process_to_array
 
   Arg [1]     : Glob/IO::Handle $fh
   Arg [2]     : CodeRef $callback
@@ -272,11 +291,66 @@ sub process_to_array {
   assert_file_handle($fh, 'FileHandle');
   assert_ref($callback, 'CODE', 'callback');
   my @contents;
-  while( my $line = <$fh> ) {
+  iterate_lines($fh, sub {
+    my ($line) = @_;
     push(@contents, $callback->($line));
-  }
+    return;
+  });
   return \@contents;
 }
+
+=head2 iterate_lines
+
+  Arg [1]     : Glob/IO::Handle $fh
+  Arg [2]     : CodeRef $callback
+  Description : Iterates through each line from the given file handle and
+                hands them to the callback one by one
+  Returntype  : None
+  Example     : iterate_lines($fh, sub { print "INPUT: $_"; });
+  Exceptions  : If the fh did not exist or if a callback was not given.
+  Status      : Stable
+
+=cut
+
+sub iterate_lines {
+  my ($fh, $callback) = @_;
+  assert_file_handle($fh, 'FileHandle');
+  assert_ref($callback, 'CODE', 'callback');
+  while( my $line = <$fh> ) {
+    $callback->($line);
+  }
+  return;
+}
+
+=head2 iterate_file
+
+  Arg [1]     : string $file
+  Arg [2]     : string; $mode 
+                Supports all modes specified by the C<open()> function as well as those 
+                supported by IO::File
+  Arg [3]     : CodeRef the callback which is used to iterate the lines in
+                the file
+  Description : Iterates through each line from the given file and
+                hands them to the callback one by one
+  Returntype  : None
+  Example     : iterate_file('/my/file', sub { print "INPUT: $_"; });
+  Exceptions  : If the file did not exist or if a callback was not given.
+  Status      : Stable
+
+=cut
+
+
+sub iterate_file {
+  my ($file, $callback) = @_;
+  work_with_file($file, 'r', sub {
+    my ($fh) = @_;
+    iterate_lines($fh, $callback);
+    return;
+  });
+  return;
+}
+
+
 
 =head2 work_with_file()
 

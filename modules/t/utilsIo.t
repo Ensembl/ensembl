@@ -47,10 +47,19 @@ my $expected_array = [qw/>X AAAAGGGTTCCC TTGGCCAAAAAA ATTC/];
   is_deeply(slurp_to_array($file, $chomp), $expected_array, 'Checking slurp to array with chomp');
   $chomp = 0;
   is_deeply(slurp_to_array($file, $chomp), [ map { $_."\n" } @{$expected_array}], 'Checking slurp to array with chomp');
+
+  my $iterator_counter = 0;  
+  iterate_file($file, sub {
+    my ($line) = @_;
+    chomp($line);
+    is($line, $expected_array->[$iterator_counter++], sprintf('Checking line %d is ok', $iterator_counter+1));
+    return;
+  });
   
   unlink $file;
   
   dies_ok { slurp($file) } 'File no longer exists so die';
+
 }
 
 {
