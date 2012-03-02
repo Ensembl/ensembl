@@ -305,7 +305,7 @@ if ( scalar( keys(%existing_databases) ) !=
       my $yesno = <STDIN>;
       chomp($yesno);
       if ( lc($yesno) =~ /^y(?:es)?$/ ) {
-        my @dbid = $dbh->selectrow_array('select db_id from db_list where full_name =?', {}, $db_name);
+        my @dbid = $dbh->selectrow_array('select db_id from db_list where full_db_name =?', {}, $db_name);
         my $sth = $dbh->prepare('delete from db where db_id =?');
         $sth->execute($dbid[0]);
         $sth->finish();
