@@ -325,9 +325,6 @@ sub iterate_lines {
 =head2 iterate_file
 
   Arg [1]     : string $file
-  Arg [2]     : string; $mode 
-                Supports all modes specified by the C<open()> function as well as those 
-                supported by IO::File
   Arg [3]     : CodeRef the callback which is used to iterate the lines in
                 the file
   Description : Iterates through each line from the given file and
