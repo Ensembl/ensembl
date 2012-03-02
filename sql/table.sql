@@ -476,7 +476,7 @@ INSERT INTO meta (species_id, meta_key, meta_value) VALUES
   (NULL, 'patch', 'patch_66_67_b.sql|drop_stable_id_views'),
   (NULL, 'patch', 'patch_66_67_c.sql|adding_intron_supporting_evidence'),
   (NULL, 'patch', 'patch_66_67_d.sql|adding_gene_transcript_annotated'),
-  (NULL, 'patch', 'patch_66_67_e.sql|index_canonical_transcript_id'),
+  (NULL, 'patch', 'patch_66_67_e.sql|index_canonical_transcript_id')
  ;
 
 /**
