@@ -112,7 +112,7 @@ sub new {
             else {
                 # must be a Bio::Seq , or we're doomed
                 
-                return ">".$slice->name;
+                return ">".$slice->display_id;
             }
         };
         
