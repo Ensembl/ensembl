@@ -243,23 +243,32 @@
 
     3.  Run script 'get_OBO_files.ksh' to download all the currently
 	handled ontologies.
+	perl get_OBO_files.ksh 
 
     4.  As a prerequisite to the next step, you'll need to install
 	ONTO-PERL modules from: 
         http://search.cpan.org/CPAN/authors/id/E/EA/EASR/ONTO-PERL/ONTO-PERL-1.31.tar.gz  
+	or use the version installed in: /software/perl-5.8.8/lib/site_perl/5.8.8
+	and add the path where the module is installed to your perl path
 
-    5.  Load the data from each downloaded ontology file into the database
-	using the script 'load_OBO_file.pl' (run the script without arguments
+    5.  Load the data from each downloaded ontology (curently we download GO, SO and EFO)
+    	file into the database using the script 'load_OBO_file.pl' (run the script without arguments
         for help on usage, it is simple).  The script lives in
         ensembl/misc-scripts/ontology/scripts/
+
+	e.g.: perl load_OBO_file.pl -h ens-staging1 -u ensadmin -p ensembl -d ensembl_ontology_67 -f GO.obo -o GO 
 
     6.  Compute the transitive closure (the 'closure' table in the
         database) by running the 'compute_closure.pl' in almost the same
         way as in step 4.  This step may take some time.
 
+	e.g.: perl compute_closure.pl -h ens-staging1 -u ensadmin -p ensembl -d ensembl_ontology_67	
+
     7.  Add the auxiliary map tables by running 'add_subset_maps.pl'
         with the same arguments that you used for the script in the
         previous step.
+	
+	e.g.: perl add_subset_maps.pl  -h ens-staging1 -u ensadmin -p ensembl -d ensembl_ontology_67
 
     8.  Done.
 
