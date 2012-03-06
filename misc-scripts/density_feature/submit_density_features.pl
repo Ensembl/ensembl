@@ -380,8 +380,8 @@ $prod_dbh->disconnect;
         foreach my $cmd (@cmd) {	
 	   print $print_message[$cmd_count];
 	   #for testing
-	   print "\n\n". $cmd . "\n\n";
-	   #system($cmd);
+	   #print "\n\n". $cmd . "\n\n";
+	   system($cmd);
 	   $cmd_count++;
         }
     }
