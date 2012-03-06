@@ -229,14 +229,11 @@
     CREATING THE ONTOLOGY DATABASE
     --------------------------------------------------------------------
 
-    Create the database on ens-staging1 and copy to ens-staging2 using
-    ensembl/misc-srcipts/CopyDBOverServer.pl script.
-
     To create the ensembl_ontology_NN database for a release, the
     following steps needs to be followed:
 
     1.  Create the empty database by doing "CREATE DATABASE
-        ensembl_ontology_NN" (where 'NN' is the current release).
+        ensembl_ontology_NN" (where 'NN' is the current release) on ens-staging1.
 
     2.  Load the schema from 'tables.sql' located in
         ensembl/misc-scripts/ontology/sql/
@@ -270,7 +267,7 @@
 	
 	e.g.: perl add_subset_maps.pl  -h ens-staging1 -u ensadmin -p ensembl -d ensembl_ontology_67
 
-    8.  Done.
+    8.  Copy the newly created database to ens-staging2 using ensembl/misc-srcipts/CopyDBOverServer.pl script.
 
 
 $Id$
