@@ -441,6 +441,7 @@ if ($do_unlink_tmp_file) {
 ##  directory.                                                        ##
 ##====================================================================##
 
+TODO:
 foreach my $spec (@todo) {
   my $source_server   = $spec->{'source_server'};
   my $source_hostname = $spec->{'source_hostname'};
@@ -478,7 +479,7 @@ foreach my $spec (@todo) {
     $spec->{'status'} =
       sprintf( "FAILED: can not connect to source database '%s@%s:%d'.",
                $source_db, $source_server, $source_port );
-    next;
+    next TODO;
   }
 
   my $target_dsn = sprintf( "DBI:mysql:host=%s;port=%d",
@@ -499,7 +500,7 @@ foreach my $spec (@todo) {
                $target_server, $target_port );
 
     $source_dbh->disconnect();
-    next;
+    next TODO;
   }
 
   # Get source and target server data directories.
@@ -523,7 +524,7 @@ foreach my $spec (@todo) {
         $source_server, $source_port );
 
     $source_dbh->disconnect();
-    next;
+    next TODO;
   }
 
   if ( defined($target_location) ) { $target_dir = $target_location }
@@ -539,7 +540,7 @@ foreach my $spec (@todo) {
         $target_server, $target_port );
 
     $source_dbh->disconnect();
-    next;
+    next TODO;
   }
   
   my $tmp_dir;
@@ -576,7 +577,7 @@ foreach my $spec (@todo) {
                $destination_dir );
 
     $source_dbh->disconnect();
-    next;
+    next TODO;
   }
 
   if ( !$opt_force && -d $staging_dir ) {
@@ -587,7 +588,7 @@ foreach my $spec (@todo) {
       sprintf( "FAILED: staging directory '%s' exists.", $staging_dir );
 
     $source_dbh->disconnect();
-    next;
+    next TODO;
   }
 
   if ( !mkdir($staging_dir) ) {
@@ -600,7 +601,7 @@ foreach my $spec (@todo) {
                  $staging_dir );
 
       $source_dbh->disconnect();
-      next;
+      next TODO;
     }
   }
 
@@ -615,38 +616,47 @@ foreach my $spec (@todo) {
   # Fancy magic from DBI manual.
   $table_sth->bind_columns( \( @row{ @{ $table_sth->{'NAME_lc'} } } ) );
 
+  TABLE:
   while ( $table_sth->fetch() ) {
     my $table  = $row{'name'};
     my $engine = $row{'engine'};
 
     if ( defined($opt_only_tables) && !exists( $only_tables{$table} ) )
     {
-      next;
-    } elsif ( defined($opt_skip_tables)
-              && exists( $skip_tables{$table} ) ) {
-      next;
+      next TABLE;
+    }
+    elsif ( defined($opt_skip_tables) &&
+            exists( $skip_tables{$table} ) )
+    {
+      next TABLE;
     }
 
     if ( defined($engine) ) {
       if ( $engine eq 'InnoDB' ) {
         if ( !$opt_innodb ) {
-          warn( sprintf( "SKIPPING InnoDB table '%s.%s'\n",
-                         $source_db, $table ) );
-          next;
-        } else {
-          die(sprintf(
-                "Found InnoDB table '%s.%s'\n"
-                  . "Please convert table engine or specify --noinnodb",
-                $source_db, $table ) );
+          warn(
+                sprintf( "SKIPPING InnoDB table '%s.%s'\n",
+                         $source_db, $table
+                ) );
+          next TABLE;
+        }
+        else {
+          $spec->{'status'} =
+            sprintf( "FAILED: can not copy InnoDB tables.  " .
+                       "Please convert '%s.%s' to MyISAM " .
+                       "or run with --noinnodb.",
+                     $source_db, $table );
+          next TODO;
         }
       }
-    } else {
-      if ( $opt_skip_views ) {
+    }
+    else {
+      if ($opt_skip_views) {
         warn( sprintf( "SKIPPING view '%s'\n", $table ) );
-        next;
+        next TABLE;
       }
       else {
-        push(@views, $table);
+        push( @views, $table );
       }
     }
 
@@ -766,7 +776,7 @@ foreach my $spec (@todo) {
     $spec->{'status'} =
       sprintf( "FAILED: copy failed (cleanup of '%s' may be needed).",
                $staging_dir );
-    next;
+    next TODO;
   }
   
   ##------------------------------------------------------------------##
@@ -787,6 +797,7 @@ foreach my $spec (@todo) {
     else {
       my $ok = 1;
 
+      VIEW:
       foreach my $current_view (@views) {
         print "Processing $current_view\n";
 
@@ -804,7 +815,7 @@ foreach my $spec (@todo) {
                 sprintf( q{Cannot tie file '%s' for VIEW repair. Error},
                          $view_frm_loc ) );
           $ok = 0;
-          next;
+          next VIEW;
         }
       }
 
@@ -862,7 +873,7 @@ foreach my $spec (@todo) {
       } ## end foreach my $index ( glob( catfile...))
     } ## end foreach my $table (@tables)
 
-    if ($check_failed) { next }
+    if ($check_failed) { next TODO }
 
   } ## end else [ if ( !$opt_check ) ]
 
@@ -887,7 +898,7 @@ foreach my $spec (@todo) {
       sprintf( "FAILED: can not create destination directory '%s' "
                  . "(cleanup of '%s' may be needed)",
                $destination_dir, $staging_dir );
-    next;
+    next TODO;
   }
 
   move( catfile( $staging_dir, 'db.opt' ), $destination_dir );
@@ -898,6 +909,7 @@ foreach my $spec (@todo) {
 
     printf( "Moving %s...\n", $table );
 
+    FILE:
     foreach my $file (@files) {
       if ( !move( $file, $destination_dir ) ) {
         warn( sprintf( "Failed to move database.\n"
@@ -905,10 +917,10 @@ foreach my $spec (@todo) {
                        $staging_dir, $destination_dir ) );
 
         $spec->{'status'} =
-          sprintf( "FAILED: move from staging directory failed "
-                     . "(cleanup of '%s' and '%s' may be needed)",
-                   $staging_dir, $destination_dir );
-        next;
+          sprintf( "FAILED: can not move '%s' from staging directory " .
+                     "(cleanup of '%s' and '%s' may be needed)",
+                   $file, $staging_dir, $destination_dir );
+        next FILE;
       }
     }
   }
