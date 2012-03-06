@@ -7,6 +7,15 @@ use Getopt::Long;
 use DBI qw( :sql_types );
 use Switch;
 
+use FindBin qw($Bin);
+use vars qw($SERVERROOT);
+
+BEGIN {
+    $SERVERROOT = "$Bin";
+}
+
+my $gene_gc_path = "$SERVERROOT/..";
+
 my $getdbs;
 my $submit_script;
 my $outdir;
@@ -151,16 +160,16 @@ select distinct concat(full_db_name,'|',db_host) from db_list dl join db d using
     print "gene_gc.pl - run on all core databases (use the commands below or script submit_density_features.pl -submit gene_gc):\n";
 
     for (my $i=0; $i<$host_count;$i++) {
-	print "\nbsub -q normal -J genegc_stats -oo ".$outdir."/core_dbs_".$current_release."_".$host[$i]."_genegc.out -eo ".$outdir. "/core_dbs_".$current_release."_".$host[$i]."_genegc.err perl ../gene_gc.pl -h ".$host[$i]." -port ".$port[$i]." -u ".$user[$i]." -p ".$pass[$i]." -pattern 'core_".$current_release."'\n";
+	print "\nbsub -q normal -J genegc_stats -oo ".$outdir."/core_dbs_".$current_release."_".$host[$i]."_genegc.out -eo ".$outdir. "/core_dbs_".$current_release."_".$host[$i]."_genegc.err perl $gene_gc_path/gene_gc.pl -h ".$host[$i]." -port ".$port[$i]." -u ".$user[$i]." -p ".$pass[$i]." -pattern 'core_".$current_release."'\n";
     }
 
-    print "\npercent_gc_calc.pl – run on core databases for new species, or where sequence or assembly have changed (db names will be stored in file ./percent_gc_data.txt, to submit run submit_density_features.pl -submit percent_gc): \n";
+    print "\npercent_gc_calc.pl – run on core databases for new species, or where sequence or assembly have changed (db names will be stored in file $outdir/percent_gc_data.txt, to submit run submit_density_features.pl -submit percent_gc): \n";
  
     my %array_union = ();
     foreach my $element (@new_sp_assem, @chg_seq) { $array_union{$element}++ }
     my @dbnames_hosts = sort(keys %array_union); 
 
-    my $file_path = "./percent_gc_data.txt";
+    my $file_path = "$outdir/percent_gc_data.txt";
  
     open(DATAFILE, ">$file_path") or die("Failed to open file $file_path for writing\n"); 
     foreach my $dbname_host (@dbnames_hosts) {
@@ -172,12 +181,12 @@ select distinct concat(full_db_name,'|',db_host) from db_list dl join db d using
     }
     close DATAFILE;
 
-    print "\n\nrepeat_coverage_calc.pl – run on core databases for new species, or where sequence, assembly or repeats have changed (db names will be stored in file ./repeat_coverage_data.txt, to submit run submit_density_features.pl -submit repeat_coverage): \n";   
+    print "\n\nrepeat_coverage_calc.pl – run on core databases for new species, or where sequence, assembly or repeats have changed (db names will be stored in file $outdir/repeat_coverage_data.txt, to submit run submit_density_features.pl -submit repeat_coverage): \n";   
 
     foreach my $element (@chg_repeats) { $array_union{$element}++ }
     @dbnames_hosts = sort(keys %array_union); 
 
-    my $file_path = "./repeat_coverage_data.txt";
+    my $file_path = "$outdir/repeat_coverage_data.txt";
     open(DATAFILE, ">$file_path") or die("Failed to open file $file_path for writing\n"); 
     foreach my $dbname_host (@dbnames_hosts) {
 	my ($db_name, $host) = split(/\|/,$dbname_host);
@@ -196,12 +205,12 @@ if ($response >= 2) {
     print "gene_density_calc.pl - run on all core dbs (use the commands below or script submit_density_features.pl -submit gene_density)\n";
     
     for (my $i=0; $i<$host_count;$i++) {
-	print "\nbsub -q normal -J gene_density -oo ".$outdir."/core_dbs_".$current_release."_".$host[$i]."_gene.out -eo ".$outdir. "/core_dbs_".$current_release."_".$host[$i]."_gene.err perl ./gene_density_calc.pl -h ".$host[$i]." -port ".$port[$i]." -u ".$user[$i]." -p ".$pass[$i]." -pattern 'core_".$current_release."'\n";
+	print "\nbsub -q normal -J gene_density -oo ".$outdir."/core_dbs_".$current_release."_".$host[$i]."_gene.out -eo ".$outdir. "/core_dbs_".$current_release."_".$host[$i]."_gene.err perl $SERVERROOT/gene_density_calc.pl -h ".$host[$i]." -port ".$port[$i]." -u ".$user[$i]." -p ".$pass[$i]." -pattern 'core_".$current_release."'\n";
     }
 
     print "\n\nseq_region_stats.pl (gene stats option only) - run on all core databases (use the commands below or script submit_density_features.pl -submit seq_region_stats_gene)\n";
     for (my $i=0; $i<$host_count;$i++) {
-	print "\nbsub -q normal -J seqreg_stats_gene -oo ".$outdir."/core_dbs_".$current_release."_".$host[$i]."_seqreg_gene.out -eo ".$outdir. "/core_dbs_".$current_release."_".$host[$i]."_seqreg_gene.err perl ./seq_region_stats.pl -h ".$host[$i]." -port ".$port[$i]." -u ".$user[$i]." -p ".$pass[$i]." -pattern 'core_".$current_release."' -s gene\n";
+	print "\nbsub -q normal -J seqreg_stats_gene -oo ".$outdir."/core_dbs_".$current_release."_".$host[$i]."_seqreg_gene.out -eo ".$outdir. "/core_dbs_".$current_release."_".$host[$i]."_seqreg_gene.err perl $SERVERROOT/seq_region_stats.pl -h ".$host[$i]." -port ".$port[$i]." -u ".$user[$i]." -p ".$pass[$i]." -pattern 'core_".$current_release."' -s gene\n";
     }
 }
 
@@ -210,7 +219,7 @@ if ($response == 3) {
 
     print "\n\n3. Density features scripts which can be run when Variation dbs are handed over:\n";
 
-    print "\nvariation_density.pl - run for new species or where the core assembly has changed, or if there are any changes to variation positions in the variation database (species will be stored in file ./variation_density_data.txt, to submit run submit_density_features.pl -submit variation_density):\n";
+    print "\nvariation_density.pl - run for new species or where the core assembly has changed, or if there are any changes to variation positions in the variation database (species will be stored in file $outdir/variation_density_data.txt, to submit run submit_density_features.pl -submit variation_density):\n";
 
     #get species for new dbs or changed assembly or where variation positions have changed
     @core_with_variation =  map { $_->[0] }  @{ $prod_dbh->selectall_arrayref("select distinct concat(full_db_name,'|',db_host) from db_list dl join db d using (db_id) where db_release = $current_release and db_type = 'core' and species_id in (select distinct species_id from db where db_release = $current_release and db_type = 'variation');") };
@@ -233,7 +242,7 @@ if ($response == 3) {
     foreach my $element (@new_sp_assem_var, @chg_variation) { $array_union{$element}++ }
     my @dbnames_hosts = sort(keys %array_union); 
  
-    my $file_path = "./variation_density_data.txt";
+    my $file_path = "$outdir/variation_density_data.txt";
  
     open(DATAFILE, ">$file_path") or die("Failed to open file $file_path for writing\n"); 
     foreach my $dbname_host (@dbnames_hosts) {
@@ -246,9 +255,9 @@ if ($response == 3) {
     }
     close DATAFILE;
  
-    print "\n\nseq_region_stats.pl (snp stats option only) - run on core databases for new species or if the assembly changed, or if the variation positions have changed in the corresponding variation db (db names will be stored in file ./seq_region_stats_snp_data.txt, to submit run submit_density_features.pl -submit seq_region_stats_snp):\n";
+    print "\n\nseq_region_stats.pl (snp stats option only) - run on core databases for new species or if the assembly changed, or if the variation positions have changed in the corresponding variation db (db names will be stored in file $outdir/seq_region_stats_snp_data.txt, to submit run submit_density_features.pl -submit seq_region_stats_snp):\n";
 
-    my $file_path = "./seq_region_stats_snp_data.txt";
+    my $file_path = "$outdir/seq_region_stats_snp_data.txt";
 
     open(DATAFILE, ">$file_path") or die("Failed to open file $file_path for writing\n"); 
     foreach my $dbname_host (@dbnames_hosts) {
@@ -283,56 +292,56 @@ $prod_dbh->disconnect;
     switch ($submit_script) {
 	case 'gene_gc' {
 	    for (my $i=0; $i<$host_count;$i++) {
-		push(@cmd, "bsub -q normal -J genegc_stats -oo ".$outdir."/core_dbs_".$current_release."_".$host[$i]."_genegc.out -eo ".$outdir. "/core_dbs_".$current_release."_".$host[$i]."_genegc.err perl ../gene_gc.pl -h ".$host[$i]." -port ".$port[$i]." -u ".$user[$i]." -p ".$pass[$i]." -pattern 'core_".$current_release."'");
+		push(@cmd, "bsub -q normal -J genegc_stats -oo ".$outdir."/core_dbs_".$current_release."_".$host[$i]."_genegc.out -eo ".$outdir. "/core_dbs_".$current_release."_".$host[$i]."_genegc.err perl $gene_gc_path/gene_gc.pl -h ".$host[$i]." -port ".$port[$i]." -u ".$user[$i]." -p ".$pass[$i]." -pattern 'core_".$current_release."'");
 		push(@print_message,"Submitting gene GC calculation for host ".$host[$i]." to queue 'normal'. The output from this job goes to the file ".$outdir."/core_dbs_".$current_release."_".$host[$i]."_genegc.out\n");
 	    }
 
 	}
 	case 'percent_gc' {
-	    $data_file = "percent_gc_data.txt";
+	    $data_file = "$outdir/percent_gc_data.txt";
 	    $queue = "normal";
 	    $job_name = "gc_calc";
 	    $file_name_end = "_gc";
-	    $script = "percent_gc_calc.pl";
+	    $script = "$SERVERROOT/percent_gc_calc.pl";
 	    $script_title = "percent GC calculation";
 	    $option = " -d ";
 	}
 	case 'repeat_coverage' {
-	    $data_file = "repeat_coverage_data.txt";
+	    $data_file = "$outdir/repeat_coverage_data.txt";
 	    $queue = "long";
 	    $job_name = "repeat_cov";
 	    $file_name_end = "_repeat";
-	    $script = "repeat_coverage_calc.pl";
+	    $script = "$SERVERROOT/repeat_coverage_calc.pl";
 	    $script_title = "repeat coverage calculation";
 	    $option = " -d ";
 	}
 	case 'gene_density' {
 	    for (my $i=0; $i<$host_count;$i++) {
-		push(@cmd, "bsub -q normal -J gene_density -oo ".$outdir."/core_dbs_".$current_release."_".$host[$i]."_gene.out -eo ".$outdir. "/core_dbs_".$current_release."_".$host[$i]."_gene.err perl ./gene_density_calc.pl -h ".$host[$i]." -port ".$port[$i]." -u ".$user[$i]." -p ".$pass[$i]." -pattern 'core_".$current_release."'");
+		push(@cmd, "bsub -q normal -J gene_density -oo ".$outdir."/core_dbs_".$current_release."_".$host[$i]."_gene.out -eo ".$outdir. "/core_dbs_".$current_release."_".$host[$i]."_gene.err perl $SERVERROOT/gene_density_calc.pl -h ".$host[$i]." -port ".$port[$i]." -u ".$user[$i]." -p ".$pass[$i]." -pattern 'core_".$current_release."'");
 		push(@print_message,"Submitting gene density calculation for host ".$host[$i]." to queue 'normal'. The output from this job goes to the file ".$outdir."/core_dbs_".$current_release."_".$host[$i]."_gene.out\n");
 	    }
 	}
 	case 'seq_region_stats_gene' {
 	    for (my $i=0; $i<$host_count;$i++) {
-		push(@cmd, "bsub -q normal -J seqreg_stats -oo ".$outdir."/core_dbs_".$current_release."_".$host[$i]."_seqreg_gene.out -eo ".$outdir. "/core_dbs_".$current_release."_".$host[$i]."_seqreg_gene.err perl ./seq_region_stats.pl -h ".$host[$i]." -port ".$port[$i]." -u ".$user[$i]." -p ".$pass[$i]." -pattern 'core_".$current_release."' -s gene");
+		push(@cmd, "bsub -q normal -J seqreg_stats -oo ".$outdir."/core_dbs_".$current_release."_".$host[$i]."_seqreg_gene.out -eo ".$outdir. "/core_dbs_".$current_release."_".$host[$i]."_seqreg_gene.err perl $SERVERROOT/seq_region_stats.pl -h ".$host[$i]." -port ".$port[$i]." -u ".$user[$i]." -p ".$pass[$i]." -pattern 'core_".$current_release."' -s gene");
 		push(@print_message,"Submitting seq region gene stats for host ".$host[$i]." to queue 'normal'. The output from this job goes to the file ".$outdir."/core_dbs_".$current_release."_".$host[$i]."_seqreg_gene.out\n");
 	    }
 	}
 	case 'variation_density' {
-	    $data_file = "variation_density_data.txt";
+	    $data_file = "$outdir/variation_density_data.txt";
 	    $queue = "normal";
 	    $job_name = "var_density";
 	    $file_name_end = "_var";
-	    $script = "variation_density.pl";
+	    $script = "$SERVERROOT/variation_density.pl";
 	    $script_title = "variation density calculation";
 	    $option = " -s ";
 	}
 	case 'seq_region_stats_snp' {
-	    $data_file = "seq_region_stats_snp_data.txt";
+	    $data_file = "$outdir/seq_region_stats_snp_data.txt";
 	    $queue = "normal";
 	    $job_name = "seqreg_stats_snp";
 	    $file_name_end = "_seqreg_snp";
-	    $script = "seq_region_stats.pl";
+	    $script = "$SERVERROOT/seq_region_stats.pl";
 	    $script_title = "seq region snp stats";
 	    $option = " -s snp -d ";
 	}
@@ -347,7 +356,7 @@ $prod_dbh->disconnect;
 		if ( $host_string =~ /$host_name/) {
 		    #get user and password for host
 		    my ( $index )= grep { $host[$_] =~ /$host_name/ } 0..$#host;
-		    push(@cmd,  "bsub -q ".$queue." -J ".$job_name." -oo ".$outdir."/".$db_name.$file_name_end.".out -eo ".$outdir."/".$db_name.$file_name_end.".err perl ./".$script." -h ".$host_name." -port ".$port[$index]." -u ".$user[$index]." -p ".$pass[$index].$option. $db_name);
+		    push(@cmd,  "bsub -q ".$queue." -J ".$job_name." -oo ".$outdir."/".$db_name.$file_name_end.".out -eo ".$outdir."/".$db_name.$file_name_end.".err perl ".$script." -h ".$host_name." -port ".$port[$index]." -u ".$user[$index]." -p ".$pass[$index].$option. $db_name);
 		    push(@print_message,"Submitting ".$script_title." for ".$db_name ." on host ".$host_name." to queue '".$queue."'. The output from this job goes to the file ".$outdir."/".$db_name.$file_name_end.".out\n");
 		}
 		else {
@@ -371,8 +380,8 @@ $prod_dbh->disconnect;
         foreach my $cmd (@cmd) {	
 	   print $print_message[$cmd_count];
 	   #for testing
-	   #print "\n\n". $cmd . "\n\n";
-	   system($cmd);
+	   print "\n\n". $cmd . "\n\n";
+	   #system($cmd);
 	   $cmd_count++;
         }
     }
@@ -407,19 +416,20 @@ Usage:
 
                        gene_gc - the script will run on all core databases
 		       
-		       percent_gc - the script will run on dbs listed in ./percent_gc_data.txt
+		       percent_gc - the script will run on dbs listed in [outdir]/percent_gc_data.txt
 		       
-                       repeat_coverage - the script will run on dbs listed in ./repeat_coverage_data.txt
+                       repeat_coverage - the script will run on dbs listed in [outdir]/repeat_coverage_data.txt
 
 		       gene_density - the script will run on all core databases
 
                        seq_region_stats_gene - the script will run on all core databases 
 
-		       variation_density - the script will run for species listed in ./variation_density_data.txt
+		       variation_density - the script will run for species listed in [outdir]/variation_density_data.txt
 
-                       seq_region_stats_snp - the script will run on dbs listed in ./seq_region_stats_snp_data.txt
+                       seq_region_stats_snp - the script will run on dbs listed in [outdir]/seq_region_stats_snp_data.txt
 
-  -o|outdir            Output path for farm job commands (current path if not specified)
+  -o|outdir            Path for farm job output and error files as well as data files generated by the script using                       
+                       option -g(-getdbs) (current path if not specified)
 
   -help                This message
 
