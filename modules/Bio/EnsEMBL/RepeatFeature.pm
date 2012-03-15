@@ -66,37 +66,11 @@ This a feature representing a repeat region on a sequence
 package Bio::EnsEMBL::RepeatFeature;
 
 use strict;
-use Bio::EnsEMBL::Feature;
 
 use Bio::EnsEMBL::Utils::Exception qw(throw);
 use Bio::EnsEMBL::Utils::Argument qw(rearrange);
 
-use vars '@ISA';
-
-@ISA = qw{ Bio::EnsEMBL::Feature };
-
-
-=head2 new_fast
-
-  Arg [1]    : hash reference $hashref
-  Example    : none
-  Description: This is an ultra fast constructor which requires knowledge of
-               the objects internals to be used.  It is only used by
-               RepeatFeatureAdaptors (when thousands of repeats need to be
-               quickly created).  The constructor 'new' should be used in
-               most instances.
-  Returntype : Bio::EnsEMBL::RepeatFeature
-  Exceptions : none
-  Caller     : RepeatFeatureAdaptors
-
-=cut
-
-sub new_fast {
-  my ($class, $hashref) = @_;
-
-  return bless $hashref, $class;
-}
-
+use base qw/Bio::EnsEMBL::Feature/;
 
 =head2 new
 
