@@ -71,7 +71,7 @@ eval {
 
 #Print all the errors which could have occured 
 if($error) {
-  print "ERROR: Error detcted when connecting to Ensembl!\n";
+  print "ERROR: Error detected when connecting to Ensembl!\n";
   if($error =~ /Can't locate Bio\/E/) {
     print "\tLooks like you need to setup your PERL5LIB with the Ensembl API. Please consult http://www.ensembl.org/info/docs/api/api_installation.html\n";
   }
