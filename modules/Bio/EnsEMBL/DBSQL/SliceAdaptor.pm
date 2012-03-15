@@ -466,23 +466,29 @@ sub fetch_by_region {
 sub fetch_by_toplevel_location {
   my ($self, $location, $no_warnings) = @_;
   throw 'You must specify a location' if ! $location;
-  
-  my $regex = qr/^(\w+) :? (\d+)? (?:-|[.]{2})? (\d+)?$/xms;
+
+  #cleanup any nomenclature like 1_000 or 1 000 or 1,000
   my $number_seps_regex = qr/\s+|,|_/;
+  my $number = qr/[0-9,_ E]+/xms;
   
+  my $regex = qr/^(\w+) \s* :? \s* ($number)? (?:-|[.]{2})? ($number)?$/xms;
   if(my ($seq_region_name, $start, $end) = $location =~ $regex) {
     if(defined $start) {
+      $start =~ s/$number_seps_regex//g; 
       if($start < 1) {
         warning "Start was less than 1 (${start}) which is not allowed. Resetting to 1"  if ! $no_warnings;
         $start = 1;
       }
-      $start =~ s/$number_seps_regex//g; #cleanup any nomenclature like 1_000 or 1 000 or 1,000
     }
     if(defined $end) {
+      $end =~ s/$number_seps_regex//g;
       if($end < 1) {
         throw "Cannot request negative or 0 end indexes through this interface. Given $end but expected something greater than 0";
       }
-      $end =~ s/$number_seps_regex//g; #cleanup any nomenclature like 1_000 or 1 000 or 1,000
+    }
+    
+    if(defined $start && defined $end && $start > $end) {
+      throw "Cannot request a slice whose start is greater than its end. Start: $start. End: $end";
     }
     
     my $coord_system_name = 'toplevel';

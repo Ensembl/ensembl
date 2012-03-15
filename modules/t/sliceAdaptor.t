@@ -466,6 +466,7 @@ test_toplevel_location('1: 1', 'chromosome', '1', 1, 246874334);
 test_toplevel_location('1: -10', 'chromosome', '1', 1, 10);
 test_toplevel_location('1: 100', 'chromosome', '1', 100, 246874334);
 test_toplevel_location('1:100..2_000_000_000', 'chromosome', '1', 100, 246874334);
+test_toplevel_location('1:100..2E9', 'chromosome', '1', 100, 246874334);
 
 dies_ok { $slice_adaptor->fetch_by_toplevel_location(); } 'Checking calling without a location fails';
 dies_ok { $slice_adaptor->fetch_by_toplevel_location('', 1); } 'Checking calling with a blank location fails';
@@ -476,7 +477,7 @@ ok(!defined $slice_adaptor->fetch_by_toplevel_location('1:-100--50', 1), 'Checki
 sub test_toplevel_location {
   my ($location, $cs_name, $seq_region_name, $start, $end) = @_;
   my $incoming_slice = $slice_adaptor->fetch_by_toplevel_location($location, 1);
-  my $def = ok(defined $incoming_slice, "Slice is defined for $location");
+  my $def = ok(defined $incoming_slice, "We expect a defined Slice for location: $location");
   SKIP : {
     skip 'Incoming slice is undefined', 5 if ! $def;
     is($incoming_slice->coord_system_name(), $cs_name, "Checking coord system name for $location");
