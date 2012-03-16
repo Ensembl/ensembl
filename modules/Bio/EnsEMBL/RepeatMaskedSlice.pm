@@ -217,10 +217,10 @@ sub seq {
   my $soft_mask   = $self->soft_mask();
   my $not_default_masking_cases = $self->not_default_masking_cases;
 
-  my $repeats = [];
+  my @repeats;
 
   foreach my $l (@$logic_names) {
-    push @{$repeats}, @{$self->get_all_RepeatFeatures($l)};
+    push @repeats, @{$self->get_all_RepeatFeatures($l)};
   }
 
   #
@@ -231,11 +231,9 @@ sub seq {
   #
   # mask the dna
   #
-  $self->_mask_features(\$dna,$repeats,$soft_mask,$not_default_masking_cases);
+  $self->_mask_features(\$dna,\@repeats,$soft_mask,$not_default_masking_cases);
   return $dna;
 }
-
-
 
 =head2 subseq
 
@@ -251,58 +249,58 @@ sub seq {
 
 =cut
 
-
 sub subseq {
   my $self   = shift;
   my $start  = shift;
   my $end    = shift;
   my $strand = shift;
 
+  my $subsequence_slice = $self->sub_Slice($start, $end, $strand);
+
+  # If frequent subseqs happen on repeatMasked sequence this results in
+  # a lot of feature retrieval from the database. To avoid this, features
+  # are only retrieved from subslices with fixed space boundaries. 
+  # The access happens in block to make cache hits more likely
+  # ONLY DO IF WE ARE CACHING
+  
+  my $subslice;
+  if(! $self->adaptor()->db()->no_cache()) {
+    
+    my $seq_region_slice = $self->seq_region_Slice();
+    # The blocksize can be defined on the top of this module.
+    my $block_min = ($self->start()-1) >> $BLOCK_PWR;
+    my $block_max = ($self->end()-1) >> $BLOCK_PWR;
+    
+    my $sub_start = ($block_min << $BLOCK_PWR)+1;
+    my $sub_end = ($block_max+1)<<$BLOCK_PWR;
+    if ($sub_end > $seq_region_slice->length) {
+      $sub_end =  $seq_region_slice->length ;
+    }
+    $subslice = $seq_region_slice->sub_Slice($sub_start, $sub_end);
+  }
+  else {
+    $subslice = $subsequence_slice;
+  }
+  
   #
   # get all the features
   #
   my $logic_names = $self->repeat_mask_logic_names();
   my $soft_mask   = $self->soft_mask();
   my $not_default_masking_cases = $self->not_default_masking_cases;
-
-
-  # If frequent subseqs happen on repeatMasked sequence this results in
-  # a lot of feature retrieval from the database. To avoid this, features
-  # are only retrieved from subslices with fixed space boundaries. 
-  # The access happens in block to make cache hits more likely
-
-  # The blocksize can be defined on the top of this module.
-
-  my $seq_region_slice = $self->seq_region_Slice();
-  my $block_min = ($self->start()-1) >> $BLOCK_PWR;
-  my $block_max = ($self->end()-1) >> $BLOCK_PWR;
-
-  my $repeats = [];
-
-  my $sub_start = ($block_min << $BLOCK_PWR)+1;
-  my $sub_end = ($block_max+1)<<$BLOCK_PWR;
-  if ($sub_end > $seq_region_slice->length) {
-    $sub_end =  $seq_region_slice->length ;
-  }
-
-  my $subslice = $seq_region_slice->sub_Slice( $sub_start, $sub_end);
+  
+  my @repeats;
 
   foreach my $l (@$logic_names) {
-    push @{$repeats}, @{$subslice->get_all_RepeatFeatures($l)};
+    push @repeats, @{$subslice->get_all_RepeatFeatures($l)};
   }
-
-  #
-  # get the dna
-  #
-  my $subsequence_slice = $self->sub_Slice( $start, $end, $strand );
-  my $dna = $subsequence_slice->seq();
+  
   #
   # mask the dna
   #
-  $subsequence_slice->_mask_features(\$dna,$repeats,$soft_mask,$not_default_masking_cases);
-
+  my $dna = $subsequence_slice->seq();
+  $subsequence_slice->_mask_features(\$dna,\@repeats,$soft_mask,$not_default_masking_cases);
   return $dna;
 }
-
 
 1;
