@@ -682,6 +682,7 @@ sub transfer {
   my $feature;
   %{$feature} = %{$self};
   bless $feature, ref($self);
+  weaken $feature->{adaptor};
 
   my $current_slice = $self->{'slice'};
 
