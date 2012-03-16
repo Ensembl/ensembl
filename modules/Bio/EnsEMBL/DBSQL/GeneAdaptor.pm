@@ -182,8 +182,9 @@ sub list_seq_region_ids {
   Arg [1]    : String $label - display label of gene to fetch
   Example    : my $gene = $geneAdaptor->fetch_by_display_label("BRCA2");
   Description: Returns the gene which has the given display label or undef if
-               there is none. If there are more than 1, only the first is
-               reported.
+               there is none. If there are more than 1, the gene on the 
+               reference slice is reported or if none are on the reference,
+               the first one is reported.
   Returntype : Bio::EnsEMBL::Gene
   Exceptions : none
   Caller     : general
@@ -197,12 +198,49 @@ sub fetch_by_display_label {
 
   my $constraint = "x.display_label = ? AND g.is_current = 1";
   $self->bind_param_generic_fetch($label,SQL_VARCHAR);
-  my ($gene) = @{ $self->generic_fetch($constraint) };
+  my @genes = @{ $self->generic_fetch($constraint) };
+  my $gene;
+  if (scalar(@genes) > 1) {
+      foreach my $gene_tmp (@genes) {
+	  if ($gene_tmp->slice->is_reference) {
+	      $gene = $gene_tmp;
+	  }
+	  last if ($gene);
+      }
+      if (!$gene) {
+	  $gene = @genes[0];
+      }
+
+  } elsif (scalar(@genes) == 1) {
+      $gene = @genes[0];
+  } 
 
   return $gene;
 }
 
+=head2 fetch_all_by_display_label
 
+  Arg [1]    : String $label - display label of genes to fetch
+  Example    : my @genes = @{$geneAdaptor->fetch_by_display_label("PPP1R2P1")};
+  Description: Returns all genes which have the given display label or undef if
+               there are none. 
+  Returntype : listref of Bio::EnsEMBL::Gene objects
+  Exceptions : none
+  Caller     : general
+  Status     : Stable
+
+=cut
+
+sub fetch_all_by_display_label {
+  my $self = shift;
+  my $label = shift;
+
+  my $constraint = "x.display_label = ? AND g.is_current = 1";
+  $self->bind_param_generic_fetch($label,SQL_VARCHAR);
+  my $genes = $self->generic_fetch($constraint) ;
+
+  return $genes;
+}
 
 =head2 fetch_by_stable_id
 
