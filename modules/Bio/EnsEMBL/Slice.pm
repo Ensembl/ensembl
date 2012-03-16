@@ -1153,15 +1153,16 @@ sub sub_Slice {
   }
 
   #fastest way to copy a slice is to do a shallow hash copy
-  my %new_slice = %$self;
-  $new_slice{'start'} = int($new_start);
-  $new_slice{'end'}   = int($new_end);
-  $new_slice{'strand'} = $new_strand;
+  my $new_slice = {%{$self}};
+  $new_slice->{'start'} = int($new_start);
+  $new_slice->{'end'}   = int($new_end);
+  $new_slice->{'strand'} = $new_strand;
   if( $new_seq ) {
-    $new_slice{'seq'} = $new_seq;
+    $new_slice->{'seq'} = $new_seq;
   }
+  weaken($new_slice->{adaptor});
 
-  return bless \%new_slice, ref($self);
+  return bless $new_slice, ref($self);
 }
 
 
@@ -1196,6 +1197,7 @@ sub seq_region_Slice {
   my $slice;
   %{$slice} = %{$self};
   bless $slice, ref($self);
+  weaken($slice->{adaptor});
 
   $slice->{'start'}  = 1;
   $slice->{'end'}    = $slice->{'seq_region_length'};
