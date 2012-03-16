@@ -1017,7 +1017,7 @@ sub is_ref{
                haplotypes which are similar. The genes must already be stored
                in this database. At least 2 genes must be in the list reference
                provided.
-  Returntype : none
+  Returntype : int alt_allele_id or undef if no alt_alleles were stored
   Exceptions : throw on incorrect arguments
                throw on sql error (e.g. duplicate unique id)
   Caller     : general
@@ -1036,65 +1036,75 @@ sub store_alt_alleles {
   my $num_genes = scalar(@$genes);
 
   if($num_genes < 2) {
-    throw("At least 2 genes must be provided to construct alternate alleles.");
+    throw("At least 2 genes must be provided to construct alternative alleles.");
   }
 
-  return if(!@$genes);
-  
+  my @is_ref;
+  my @ref_genes = ();
+  my @non_ref_genes = ();
+  my @gene_ids = ();
+
+  foreach my $gene (@{$genes}) {
+
+      if(!ref($gene) || !$gene->isa('Bio::EnsEMBL::Gene')) {
+	  throw('List reference of Bio::EnsEMBL::Gene argument expected.');
+      }
+
+      my $gene_id = $gene->dbID();
+
+      if (!$gene_id) {
+	  throw('Genes must have dbIDs in order to construct alternative alleles.');
+      } else {
+	  push @gene_ids, $gene_id;
+      }
+
+      my $is_ref = $gene->slice->is_reference();
+
+      push @is_ref, $is_ref;
+
+      if ($is_ref) {
+	  push @ref_genes, $gene->dbID();
+      } else {
+	  push @non_ref_genes, $gene->dbID();
+      }
+  }
+  if (scalar(@ref_genes) > 1) {
+      warning("More than one alternative allele on the reference sequence (gene ids: " . join(',',@ref_genes) . "). Ignoring.");
+      return;
+  }
+  if (scalar(@ref_genes) == 0) {
+      warning("None of the alternative alleles is on the reference sequence (gene ids: " . join(',',@non_ref_genes) . "). Storing alt_alleles anyway.");
+  }
   #
   #insert the first gene seperately in order to get a unique identifier for
   #the set of alleles
   #
-  my $gene = $genes->[0];
 
-  if(!ref($gene) || !$gene->isa('Bio::EnsEMBL::Gene')) {
-    throw('List reference of Bio::EnsEMBL::Gene argument expected.');
+  my $sth = $self->prepare("INSERT INTO alt_allele (gene_id, is_ref) VALUES (?,?)");
+  $sth->bind_param(1, $gene_ids[0], SQL_INTEGER);
+  $sth->bind_param(2, $is_ref[0], SQL_INTEGER);
+  eval {
+      $sth->execute();
+  };
+  my $alt_allele_id = $sth->{'mysql_insertid'};  
+
+  if (!$alt_allele_id || $@) {
+      throw("An SQL error occured inserting alternative alleles:\n$@");
   }
-
-  my $gene_id = $gene->dbID();
-
-  if (!$gene_id) {
-    throw("Genes must have dbIDs in order to construct alternate alleles.");
-  }
-
-  my $sth = $self->prepare("INSERT INTO alt_allele (gene_id) VALUES (?)");
-  $sth->bind_param(1, $gene->dbID, SQL_INTEGER);
-  $sth->execute();
-  
-  my $alt_allele_id = $sth->{'mysql_insertid'};
   $sth->finish();
-
   #
   # Insert all subsequent alt alleles using the alt_allele identifier
   # from the first insert
   #
 
-  $sth = $self->prepare("INSERT INTO alt_allele (alt_allele_id, gene_id) " .
-                        "VALUES (?,?)");
+  $sth = $self->prepare("INSERT INTO alt_allele (alt_allele_id, gene_id, is_ref) " .
+                        "VALUES (?,?,?)");
   
   for (my $i = 1; $i < $num_genes; $i++) {
-    my $gene = $genes->[$i];
-
-    if (!ref($gene) || !$gene->isa('Bio::EnsEMBL::Gene')) {
-      throw("List reference of Bio::EnsEMBL::Gene argument expected"); 
-    }
-    
-    $gene_id = $gene->dbID();
-    
-    if (!$gene_id) {
-      # This is an error but we have already inserted into the database
-      # delete the already inserted entries to restore the state of the
-      # database
-      $sth->finish();
-      $sth->prepare("DELETE FROM alt_allele WHERE alt_allele_id = ?");
-      $sth->bind_param(1, $alt_allele_id, SQL_INTEGER);
-      $sth->execute();
-      $sth->finish();
-      throw('Genes must have dbIDs in order to construct alternate alleles.');
-    }
-
+  
     $sth->bind_param(1, $alt_allele_id, SQL_INTEGER);
-    $sth->bind_param(2, $gene_id, SQL_INTEGER);
+    $sth->bind_param(2, $gene_ids[$i], SQL_INTEGER);
+    $sth->bind_param(3, $is_ref[$i], SQL_INTEGER);
     eval {
 	$sth->execute();
     };
@@ -1105,13 +1115,13 @@ sub store_alt_alleles {
       $sth->bind_param(1, $alt_allele_id, SQL_INTEGER);
       $sth->execute();
       $sth->finish();
-      throw("An SQL error occured inserting alternate alleles:\n$@");
+      throw("An SQL error occured inserting alternative alleles:\n$@");
     }
   }
   
   $sth->finish();
 
-  return;
+  return $alt_allele_id;
 }
 
 
