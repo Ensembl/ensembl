@@ -1015,8 +1015,7 @@ sub is_ref{
   Description: This method creates a group of alternative alleles (i.e. locus)
                from a set of genes. The genes should be genes from alternate
                haplotypes which are similar. The genes must already be stored
-               in this database. At least 2 genes must be in the list reference
-               provided.
+               in this database. 
   Returntype : int alt_allele_id or undef if no alt_alleles were stored
   Exceptions : throw on incorrect arguments
                throw on sql error (e.g. duplicate unique id)
@@ -1033,10 +1032,12 @@ sub store_alt_alleles {
     throw('List reference of Bio::EnsEMBL::Gene argument expected.');
   }
 
-  my $num_genes = scalar(@$genes);
+  my @genes = @$genes;
+  my $num_genes = scalar(@genes);
 
   if($num_genes < 2) {
-    throw("At least 2 genes must be provided to construct alternative alleles.");
+      warning('At least 2 genes must be provided to construct alternative alleles (gene id: '. $genes[0]->dbID() .'). Ignoring.');
+      return;
   }
 
   my @is_ref;
@@ -1044,7 +1045,7 @@ sub store_alt_alleles {
   my @non_ref_genes = ();
   my @gene_ids = ();
 
-  foreach my $gene (@{$genes}) {
+  foreach my $gene (@genes) {
 
       if(!ref($gene) || !$gene->isa('Bio::EnsEMBL::Gene')) {
 	  throw('List reference of Bio::EnsEMBL::Gene argument expected.');
@@ -1069,11 +1070,11 @@ sub store_alt_alleles {
       }
   }
   if (scalar(@ref_genes) > 1) {
-      warning("More than one alternative allele on the reference sequence (gene ids: " . join(',',@ref_genes) . "). Ignoring.");
+      warning('More than one alternative allele on the reference sequence (gene ids: ' . join(',',@ref_genes) . '). Ignoring.');
       return;
   }
   if (scalar(@ref_genes) == 0) {
-      warning("None of the alternative alleles is on the reference sequence (gene ids: " . join(',',@non_ref_genes) . "). Storing alt_alleles anyway.");
+      warning('None of the alternative alleles is on the reference sequence (gene ids: ' . join(',',@non_ref_genes) . '). Storing alt_alleles anyway.');
   }
   #
   #insert the first gene seperately in order to get a unique identifier for
