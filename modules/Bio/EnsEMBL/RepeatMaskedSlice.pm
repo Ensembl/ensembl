@@ -296,10 +296,9 @@ sub subseq {
   }
   
   #
-  # mask the dna
+  # No need to mask sequence, seq() already does it for the new subsequence_slice
   #
-  my $dna = $subsequence_slice->seq();
-  return $dna;
+  return $subsequence_slice->seq();
 }
 
 1;
