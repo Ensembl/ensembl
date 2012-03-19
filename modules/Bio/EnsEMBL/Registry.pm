@@ -26,32 +26,44 @@ Bio::EnsEMBL::Registry
 
   use Bio::EnsEMBL::Registry;
 
+  ## This 'string' is used as a coderef to save some typing
   my $registry = 'Bio::EnsEMBL::Registry';
 
   $registry->load_all("configuration_file");
 
-  $gene_adaptor = $registry->get_adaptor( 'Human', 'Core', 'Gene' );
+  my $gene_adaptor = $registry->
+    get_adaptor( 'human', 'core', 'gene' );
+
+  or...
+
+  $registry->load_registry_from_db(
+      ## Example database
+      -host    => 'ensembldb.ensembl.org',
+      -user    => 'anonymous',
+      # ... Other connection parameters
+    );
+
+  my $exon_adaptor = $registry->
+    get_adaptor( 'human', 'core', 'exon' );
+
 
 =head1 DESCRIPTION
 
-All Adaptors are stored/registered using this module. This module should
-then be used to get the adaptors needed.
+All Adaptors are stored/registered using this module. This module
+should then be used to get the adaptors needed.
 
-The registry can be loaded from a configuration file using the load_all
+The registry can be loaded from a configuration file using the
+load_all method, or from a database using the load_registry_from_db
 method.
 
 If a filename is passed to load_all then this is used.  Else if the
 enviroment variable ENSEMBL_REGISTRY is set to the name on an existing
 configuration file, then this is used.  Else if the file .ensembl_init
-in your home directory exist, it is used.
-
-For the Web server ENSEMBL_REGISTRY should be set in SiteDefs.pm.  This
-will then be passed on to load_all.
-
+in your home directory exist, it is used (IN THAT ORDER?).
 
 The registry can also be loaded via the method load_registry_from_db
-which given a database host will load the latest versions of the Ensembl
-databases from it.
+which given a database host will load the latest versions of the
+Ensembl databases from it.
 
 The four types of registries are for db adaptors, dba adaptors, dna
 adaptors and the standard type.
@@ -133,24 +145,29 @@ use DBI qw(:sql_types);
 
 use vars qw(%registry_register);
 
+
+## Why not also read conection options from the CLI by default?
+use Getopt::Long;
+
+
 # This is a map from group names to Ensembl DB adaptors.  Used by
 # load_all() and reset_DBAdaptor().
 my %group2adaptor = (
-      'blast'      => 'Bio::EnsEMBL::External::BlastAdaptor',
-      'compara'    => 'Bio::EnsEMBL::Compara::DBSQL::DBAdaptor',
-      'core'       => 'Bio::EnsEMBL::DBSQL::DBAdaptor',
-      'estgene'    => 'Bio::EnsEMBL::DBSQL::DBAdaptor',
-      'funcgen'    => 'Bio::EnsEMBL::Funcgen::DBSQL::DBAdaptor',
-      'regulation' => 'Bio::EnsEMBL::Funcgen::DBSQL::DBAdaptor',
-      'haplotype' => 'Bio::EnsEMBL::ExternalData::Haplotype::DBAdaptor',
-      'hive'      => 'Bio::EnsEMBL::Hive::DBSQL::DBAdaptor',
-      'ontology'  => 'Bio::EnsEMBL::DBSQL::OntologyDBAdaptor',
+      'blast'         => 'Bio::EnsEMBL::External::BlastAdaptor',
+      'compara'       => 'Bio::EnsEMBL::Compara::DBSQL::DBAdaptor',
+      'core'          => 'Bio::EnsEMBL::DBSQL::DBAdaptor',
+      'estgene'       => 'Bio::EnsEMBL::DBSQL::DBAdaptor',
+      'funcgen'       => 'Bio::EnsEMBL::Funcgen::DBSQL::DBAdaptor',
+      'regulation'    => 'Bio::EnsEMBL::Funcgen::DBSQL::DBAdaptor',
+      'haplotype'     => 'Bio::EnsEMBL::ExternalData::Haplotype::DBAdaptor',
+      'hive'          => 'Bio::EnsEMBL::Hive::DBSQL::DBAdaptor',
+      'ontology'      => 'Bio::EnsEMBL::DBSQL::OntologyDBAdaptor',
       'otherfeatures' => 'Bio::EnsEMBL::DBSQL::DBAdaptor',
       'pipeline'      => 'Bio::EnsEMBL::Pipeline::DBSQL::DBAdaptor',
-      'snp'       => 'Bio::EnsEMBL::ExternalData::SNPSQL::DBAdaptor',
-      'variation' => 'Bio::EnsEMBL::Variation::DBSQL::DBAdaptor',
-      'vega'      => 'Bio::EnsEMBL::DBSQL::DBAdaptor',
-      'vega_update' => 'Bio::EnsEMBL::DBSQL::DBAdaptor',
+      'snp'           => 'Bio::EnsEMBL::ExternalData::SNPSQL::DBAdaptor',
+      'variation'     => 'Bio::EnsEMBL::Variation::DBSQL::DBAdaptor',
+      'vega'          => 'Bio::EnsEMBL::DBSQL::DBAdaptor'
+      'vega_update'   => 'Bio::EnsEMBL::DBSQL::DBAdaptor',
 );
 
 
