@@ -299,7 +299,6 @@ sub subseq {
   # mask the dna
   #
   my $dna = $subsequence_slice->seq();
-  $subsequence_slice->_mask_features(\$dna,\@repeats,$soft_mask,$not_default_masking_cases);
   return $dna;
 }
 
