@@ -261,7 +261,9 @@ sub build_cache_from_genes {
     unless ( ref($genes) eq 'ARRAY' );
 
   # biotype filter
-  if ( $self->conf->param('biotypes') ) {
+  if ( $self->conf->param('biotypes') ||
+       $self->conf->param('not_biotypes') )
+  {
     $genes = $self->filter_biotypes($genes);
   }
   my $num_genes = scalar(@$genes);
