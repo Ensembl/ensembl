@@ -16,6 +16,9 @@ sub run {
   my $release_file = $ref_arg->{rel_file};
   my $verbose      = $ref_arg->{verbose};
 
+  my $gene_source_id = $self->get_source_id_for_source_name('GO_to_gene');
+
+
   if((!defined $source_id) or (!defined $species_id) or (!defined $files) ){
     croak "Needs to pass source_id, species_id and  files as pairs";
   }
@@ -166,36 +169,23 @@ sub run {
 	#WB      CE20707 ZYG-9           GO:0008017      WB:WBPaper00003099|PMID:9606208 ISS             F                       protein  taxon:6239      20030829        WB
 	if(!defined($wormset)){
 	  $wormset = 1;
-	  $worm_separator = qw{::};
-	  %worm = %{$self->get_valid_xrefs_for_direct_xrefs('worm', $worm_separator)};
+          %worm = %{$self->get_valid_codes("wormbase_gene",$species_id)};
 	}
-	my $worm_acc=$array[1];
-	if(!defined($worm{$worm_acc})){ 
-	  if(defined($worm{$array[10]})){
-	    $worm_acc = $array[10];
-	  }
-	  elsif(defined($worm{$array[2]})){
-	    $worm_acc = $array[2];
-	  }
-	}
-	
+
+        my $worm_acc = $array[1];
+
 	if(defined($worm{$worm_acc})){
-	  my ($xref_id, $stable_id, $type, $link) = split(/$worm_separator/x,$worm{$worm_acc});
+          foreach my $xref_id (@{$worm{$worm_acc}}) {
+            $self->add_dependent_xref({ master_xref_id => $xref_id,
+                                        acc            => $array[4],
+                                        label          => $array[4],
+                                        desc           => $go_to_desc{$array[4]} || '',
+                                        linkage        => $array[6],
+                                        source_id      => $gene_source_id,
+                                        species_id     => $species_id} );
+            $count++;
+          }
 
-	  my $new_xref_id = $self->get_xref($array[4],$source_id, $species_id);
-
-	  if(!defined($new_xref_id)){
-	    $new_xref_id = 
-	      $self->add_xref({ acc        => $array[4],
-				label      => $array[4],
-				source_id  => $source_id,
-				species_id => $species_id,
-				info_type  => "DIRECT"} );
-	    $count++;
-	  }
-	  if(!defined($self->get_direct_xref($stable_id,$type, $array[6]))){
-	    $self->add_direct_xref($new_xref_id, $stable_id, $type, $array[6]);
-	  }
 	}
 	else{
 	  $miss++;
