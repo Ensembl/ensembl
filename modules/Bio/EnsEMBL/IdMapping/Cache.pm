@@ -404,8 +404,21 @@ sub build_cache_from_genes {
 
   Arg[1]      : Listref of Bio::EnsEMBL::Genes $genes - the genes to filter
   Example     : my @filtered = @{ $cache->filter_biotypes(\@genes) };
-  Description : Filters a list of genes by biotype. Biotypes are taken from the
-                IdMapping configuration parameter 'biotypes'.
+
+  Description : Filters a list of genes by biotype.  Biotypes are
+                taken from the IdMapping configuration parameter
+                'biotypes' or 'not_biotypes'.
+
+                If the configuration parameter 'not_biotypes' is
+                defined, then rather than returning the genes whose
+                biotype is listed in the configuration parameter
+                'biotypes' the method will return the genes whose
+                biotype is *not* listed in the 'not_biotypes'
+                configuration parameter.
+
+                It is an error to define both these configuration
+                parameters.
+
   Return type : Listref of Bio::EnsEMBL::Genes (or empty list)
   Exceptions  : none
   Caller      : internal
@@ -415,17 +428,50 @@ sub build_cache_from_genes {
 =cut
 
 sub filter_biotypes {
-  my $self = shift;
-  my $genes = shift;
+  my ( $self, $genes ) = @_;
 
-  my $filtered = [];
+  my @filtered;
+  my @biotypes;
+  my $opt_reverse;
 
-  foreach my $biotype ($self->conf->param('biotypes')) {
-    push @$filtered, grep { $_->biotype eq $biotype } @$genes;
+  if ( defined( $self->conf()->param('biotypes') ) ) {
+    if ( defined( $self->conf()->param('not_biotypes') ) ) {
+      $self->logger()
+        ->error( "You may not use both 'biotypes' and 'not_biotypes' " .
+                 "in the configuration" );
+    }
+
+    @biotypes    = $self->conf()->param('biotypes');
+    $opt_reverse = 0;
+  }
+  else {
+    @biotypes    = $self->conf()->param('not_biotypes');
+    $opt_reverse = 1;
   }
 
-  return $filtered;
-}
+  foreach my $gene ( @{$genes} ) {
+    my $keep_gene;
+
+    foreach my $biotype (@biotypes) {
+      if ( $gene->biotype() eq $biotype ) {
+        if   ($opt_reverse) { $keep_gene = 0 }
+        else                { $keep_gene = 1 }
+        last;
+      }
+    }
+
+    if ( defined($keep_gene) ) {
+      if ($keep_gene) {
+        push( @filtered, $gene );
+      }
+    }
+    elsif ($opt_reverse) {
+      push( @filtered, $gene );
+    }
+  }
+
+  return \@filtered;
+} ## end sub filter_biotypes
 
 
 =head2 add
