@@ -210,19 +210,14 @@ sub not_default_masking_cases {
 
 sub seq {
   my $self = shift;
+  
   #
   # get all the features
   #
-  my $logic_names = $self->repeat_mask_logic_names();
+  my $repeats = $self->_get_repeat_features($self);
   my $soft_mask   = $self->soft_mask();
-  my $not_default_masking_cases = $self->not_default_masking_cases;
-
-  my @repeats;
-
-  foreach my $l (@$logic_names) {
-    push @repeats, @{$self->get_all_RepeatFeatures($l)};
-  }
-
+  my $not_default_masking_cases = $self->not_default_masking_cases();
+  
   #
   # get the dna
   #
@@ -231,7 +226,7 @@ sub seq {
   #
   # mask the dna
   #
-  $self->_mask_features(\$dna,\@repeats,$soft_mask,$not_default_masking_cases);
+  $self->_mask_features(\$dna,$repeats,$soft_mask,$not_default_masking_cases);
   return $dna;
 }
 
@@ -282,23 +277,32 @@ sub subseq {
     $subslice = $subsequence_slice;
   }
   
-  #
-  # get all the features
-  #
-  my $logic_names = $self->repeat_mask_logic_names();
+  my $repeats = $self->_get_repeat_features($subslice);
   my $soft_mask   = $self->soft_mask();
-  my $not_default_masking_cases = $self->not_default_masking_cases;
-  
-  my @repeats;
+  my $not_default_masking_cases = $self->not_default_masking_cases();
+  my $dna = $subsequence_slice->SUPER::seq();
+  $subsequence_slice->_mask_features(\$dna,$repeats,$soft_mask,$not_default_masking_cases);
+  return $dna;
+}
 
+=head2 _get_repeat_features
+
+  Args [1]   	: Bio::EnsEMBL::Slice to fetch features for 
+  Description	: Gets repeat features for the given slice
+  Returntype 	: ArrayRef[Bio::EnsEMBL::RepeatFeature] array of repeats
+
+=cut
+
+
+
+sub _get_repeat_features {
+  my ($self, $slice) = @_;
+  my $logic_names = $self->repeat_mask_logic_names();
+  my @repeats;
   foreach my $l (@$logic_names) {
-    push @repeats, @{$subslice->get_all_RepeatFeatures($l)};
+    push @repeats, @{$slice->get_all_RepeatFeatures($l)};
   }
-  
-  #
-  # No need to mask sequence, seq() already does it for the new subsequence_slice
-  #
-  return $subsequence_slice->seq();
+  return \@repeats;
 }
 
 1;
