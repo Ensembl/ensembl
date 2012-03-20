@@ -4,6 +4,7 @@ use strict;
 use warnings;
 
 use DBI;
+use Socket;
 use English qw( -no_match_vars );
 use File::Copy;
 use File::Spec::Functions
@@ -197,8 +198,7 @@ my $opt_innodb     = 1;    # Don't skip InnoDB by default
 my $opt_tmpdir;
 my ( $opt_source, $opt_target );
 
-if (
-     !GetOptions( 'pass=s'        => \$opt_password,
+if ( !GetOptions( 'pass=s'        => \$opt_password,
                   'flush!'        => \$opt_flush,
                   'check!'        => \$opt_check,
                   'opt!'          => \$opt_optimize,
@@ -262,8 +262,9 @@ if ( !defined($opt_source) ) {
   }
 }
 
-my %executables = ( 'myisamchk' => '/usr/local/ensembl/mysql/bin/myisamchk',
-                    'rsync'     => '/usr/bin/rsync' );
+my %executables = (
+                'myisamchk' => '/usr/local/ensembl/mysql/bin/myisamchk',
+                'rsync'     => '/usr/bin/rsync' );
 
 # Make sure we can find all executables.
 foreach my $key ( keys(%executables) ) {
@@ -301,10 +302,8 @@ foreach my $key ( keys(%executables) ) {
   } ## end if ( $rc != 0 )
 } ## end foreach my $key ( keys(%executables...))
 
-my $run_hostname = ( gethostbyname( hostname() ) )[0];
-my $working_dir  = rel2abs( curdir() );
-
-$run_hostname =~ s/\..+//;    # Cut off everything but the first part.
+my $run_hostaddr = inet_ntoa( ( gethostbyname( hostname() ) )[4] );
+my $working_dir = rel2abs( curdir() );
 
 ##====================================================================##
 ##  Read the configuration file line by line and try to validate all  ##
@@ -338,19 +337,19 @@ if ( !defined($input_file) ) {
 
   # This temporary file will be unlinked further down.
   $do_unlink_tmp_file = 1;
-}
+} ## end if ( !defined($input_file...))
 
-my $in = IO::File->new( '<' . $input_file )
-  or die( sprintf( "Can not open '%s' for reading", $input_file ) );
+my $in = IO::File->new( '<' . $input_file ) or
+  die( sprintf( "Can not open '%s' for reading", $input_file ) );
 
-my @todo;                     # List of verified databases etc. to copy.
+my @todo;    # List of verified databases etc. to copy.
 
 my $lineno = 0;
 while ( my $line = $in->getline() ) {
   ++$lineno;
 
-  $line =~ s/^\s+//;          # Strip leading whitespace.
-  $line =~ s/\s+$//;          # Strip trailing whitespace.
+  $line =~ s/^\s+//;    # Strip leading whitespace.
+  $line =~ s/\s+$//;    # Strip trailing whitespace.
 
   if ( $line =~ /^\#/ )   { next }    # Comment line.
   if ( $line =~ /^\s*$/ ) { next }    # Empty line.
@@ -362,68 +361,64 @@ while ( my $line = $in->getline() ) {
        $target_location
   ) = split( /\s+/, $line );
 
-  my $source_hostname = ( gethostbyname($source_server) )[0];
-  my $target_hostname = ( gethostbyname($target_server) )[0];
+  my $source_hostaddr =
+    inet_ntoa( ( gethostbyname($source_server) )[4] );
+  my $target_hostaddr =
+    inet_ntoa( ( gethostbyname($target_server) )[4] );
 
   # Verify source server and port.
-  if ( !defined($source_hostname) || $source_hostname eq '' ) {
-    warn(
-          sprintf( "line %d: Source server '%s' is not valid.\n",
+  if ( !defined($source_hostaddr) || $source_hostaddr eq '' ) {
+    warn( sprintf( "line %d: Source server '%s' is not valid.\n",
                    $lineno, $source_server
           ) );
     $failed = 1;
   }
-  elsif ( $source_hostname !~ /^\d+\./ ) {
-    # Don't do this on hosts specified by IP address.
-    $source_hostname =~ s/\..+//;
-  }
 
   if ( !defined($source_port) || $source_port =~ /\D/ ) {
     warn( sprintf( "line %d: Source port '%s' is not a number.\n",
-                   $lineno, $source_port || '' ) );
+                   $lineno, $source_port || ''
+          ) );
     $failed = 1;
   }
 
   # Verify target server and port.
-  if ( !defined($target_hostname) || $target_hostname eq '' ) {
-    warn(
-          sprintf( "line %d: Target server '%s' is not valid.\n",
+  if ( !defined($target_hostaddr) || $target_hostaddr eq '' ) {
+    warn( sprintf( "line %d: Target server '%s' is not valid.\n",
                    $lineno, $target_server
           ) );
     $failed = 1;
   }
-  elsif ( $target_hostname !~ /^\d+\./ ) {
-    # Don't do this on hosts specified by IP address.
-    $target_hostname =~ s/\..+//;
-  }
 
   if ( !defined($target_port) || $target_port =~ /\D/ ) {
     warn( sprintf( "line %d: Target port '%s' is not a number.\n",
-                   $lineno, $target_port || '' ) );
+                   $lineno, $target_port || ''
+          ) );
     $failed = 1;
   }
 
   # Make sure we running on the target server.
-  if ( !$failed && $run_hostname ne $target_hostname ) {
+  if ( !$failed && $run_hostaddr ne $target_hostaddr ) {
     warn( sprintf(
-            "line %d: "
-              . "This script needs to be run on the destination server "
-              . "'%s' ('%s').\n",
-            $lineno, $target_server, $target_hostname ) );
+            "line %d: " .
+              "This script needs to be run on the destination server " .
+              "'%s' ('%s').\n",
+            $lineno, $target_server, $target_hostaddr
+          ) );
     $failed = 1;
   }
 
   if ( !$failed ) {
     push( @todo, {
             'source_server'   => $source_server,
-            'source_hostname' => $source_hostname,
+            'source_hostaddr' => $source_hostaddr,
             'source_port'     => $source_port,
             'source_db'       => $source_db,
             'target_server'   => $target_server,
-            'target_hostname' => $target_hostname,
+            'target_hostaddr' => $target_hostaddr,
             'target_port'     => $target_port,
             'target_db'       => $target_db,
-            'target_location' => $target_location, } );
+            'target_location' => $target_location,
+          } );
   }
 } ## end while ( my $line = $in->getline...)
 
@@ -444,11 +439,11 @@ if ($do_unlink_tmp_file) {
 TODO:
 foreach my $spec (@todo) {
   my $source_server   = $spec->{'source_server'};
-  my $source_hostname = $spec->{'source_hostname'};
+  my $source_hostaddr = $spec->{'source_hostaddr'};
   my $source_port     = $spec->{'source_port'};
   my $source_db       = $spec->{'source_db'};
   my $target_server   = $spec->{'target_server'};
-  my $target_hostname = $spec->{'target_hostname'};
+  my $target_hostaddr = $spec->{'target_hostaddr'};
   my $target_port     = $spec->{'target_port'};
   my $target_db       = $spec->{'target_db'};
   my $target_location = $spec->{'target_location'};
@@ -456,22 +451,22 @@ foreach my $spec (@todo) {
   my $label = sprintf( "{ %s -> %s }==", $source_db, $target_db );
   print( '=' x ( 80 - length($label) ), $label, "\n" );
 
-  print(   "CONNECTING TO SOURCE AND TARGET DATABASES "
-         . "TO GET 'datadir'\n" );
+  print( "CONNECTING TO SOURCE AND TARGET DATABASES " .
+         "TO GET 'datadir'\n" );
 
   my $source_dsn = sprintf( "DBI:mysql:database=%s;host=%s;port=%d",
-                            $source_db, $source_hostname,
+                            $source_db, $source_hostaddr,
                             $source_port );
 
   my $source_dbh = DBI->connect( $source_dsn,
                                  'ensadmin',
                                  $opt_password, {
                                    'PrintError' => 1,
-                                   'AutoCommit' => 0 } );
+                                   'AutoCommit' => 0
+                                 } );
 
   if ( !defined($source_dbh) ) {
-    warn(
-          sprintf(
+    warn( sprintf(
                "Failed to connect to the source database '%s@%s:%d'.\n",
                $source_db, $source_server, $source_port
           ) );
@@ -483,17 +478,19 @@ foreach my $spec (@todo) {
   }
 
   my $target_dsn = sprintf( "DBI:mysql:host=%s;port=%d",
-                            $target_hostname, $target_port );
+                            $target_hostaddr, $target_port );
 
   my $target_dbh = DBI->connect( $target_dsn,
                                  'ensadmin',
                                  $opt_password, {
                                    'PrintError' => 1,
-                                   'AutoCommit' => 0 } );
+                                   'AutoCommit' => 0
+                                 } );
 
   if ( !defined($target_dbh) ) {
     warn( sprintf( "Failed to connect to the target server '%s:%d'.\n",
-                   $target_server, $target_port ) );
+                   $target_server, $target_port
+          ) );
 
     $spec->{'status'} =
       sprintf( "FAILED: can not connect to target server '%s:%d'.",
@@ -517,7 +514,8 @@ foreach my $spec (@todo) {
     warn(
       sprintf(
         "Failed to find data directory for source server at '%s:%d'.\n",
-        $source_server, $source_port ) );
+        $source_server, $source_port
+      ) );
 
     $spec->{'status'} = sprintf(
         "FAILED: can not find data directory on source server '%s:%d'.",
@@ -533,7 +531,8 @@ foreach my $spec (@todo) {
     warn(
       sprintf(
         "Failed to find data directory for target server at '%s:%d'.\n",
-        $target_server, $target_port ) );
+        $target_server, $target_port
+      ) );
 
     $spec->{'status'} = sprintf(
         "FAILED: can not find data directory on target server '%s:%d'.",
@@ -542,7 +541,7 @@ foreach my $spec (@todo) {
     $source_dbh->disconnect();
     next TODO;
   }
-  
+
   my $tmp_dir;
   if ( defined($opt_tmpdir) ) { $tmp_dir = $opt_tmpdir }
   else {
@@ -552,7 +551,7 @@ foreach my $spec (@todo) {
   printf( "SOURCE 'datadir' = '%s'\n", $source_dir );
   printf( "TARGET 'datadir' = '%s'\n", $target_dir );
   printf( "TMPDIR = %s\n",             $tmp_dir );
-  
+
   my $staging_dir = catdir( $tmp_dir, sprintf( "tmp.%s", $target_db ) );
   my $destination_dir = catdir( $target_dir, $target_db );
 
@@ -616,7 +615,7 @@ foreach my $spec (@todo) {
   # Fancy magic from DBI manual.
   $table_sth->bind_columns( \( @row{ @{ $table_sth->{'NAME_lc'} } } ) );
 
-  TABLE:
+TABLE:
   while ( $table_sth->fetch() ) {
     my $table  = $row{'name'};
     my $engine = $row{'engine'};
@@ -634,8 +633,7 @@ foreach my $spec (@todo) {
     if ( defined($engine) ) {
       if ( $engine eq 'InnoDB' ) {
         if ( !$opt_innodb ) {
-          warn(
-                sprintf( "SKIPPING InnoDB table '%s.%s'\n",
+          warn( sprintf( "SKIPPING InnoDB table '%s.%s'\n",
                          $source_db, $table
                 ) );
           next TABLE;
@@ -712,8 +710,7 @@ foreach my $spec (@todo) {
     push( @copy_cmd, '--include=db.opt' );
 
     push( @copy_cmd,
-          map { sprintf( '--include=%s.*', $_ ) }
-            keys(%only_tables) );
+          map { sprintf( '--include=%s.*', $_ ) } keys(%only_tables) );
 
     # Partitioned tables:
     push( @copy_cmd,
@@ -721,12 +718,12 @@ foreach my $spec (@todo) {
             keys(%only_tables) );
 
     push( @copy_cmd, "--exclude=*" );
-  } elsif ( defined($opt_skip_tables) ) {
+  }
+  elsif ( defined($opt_skip_tables) ) {
     push( @copy_cmd, '--include=db.opt' );
 
     push( @copy_cmd,
-          map { sprintf( '--exclude=%s.*', $_ ) }
-            keys(%skip_tables) );
+          map { sprintf( '--exclude=%s.*', $_ ) } keys(%skip_tables) );
 
     # Partitioned tables:
     push( @copy_cmd,
@@ -736,15 +733,16 @@ foreach my $spec (@todo) {
     push( @copy_cmd, "--include=*" );
   }
 
-  if ( $source_hostname eq $target_hostname ) {
+  if ( $source_hostaddr eq $target_hostaddr ) {
     # Local copy.
     push( @copy_cmd,
           sprintf( "%s/", catdir( $source_dir, $source_db ) ) );
-  } else {
+  }
+  else {
     # Copy from remote server.
     push( @copy_cmd,
           sprintf( "%s:%s/",
-                   $source_hostname, catdir( $source_dir, $source_db ) )
+                   $source_hostaddr, catdir( $source_dir, $source_db ) )
     );
   }
 
@@ -760,9 +758,10 @@ foreach my $spec (@todo) {
 
   my $copy_failed = 0;
   if ( system(@copy_cmd) != 0 ) {
-    warn( sprintf( "Failed to copy database.\n"
-                     . "Please clean up '%s' (if needed).",
-                   $staging_dir ) );
+    warn( sprintf( "Failed to copy database.\n" .
+                     "Please clean up '%s' (if needed).",
+                   $staging_dir
+          ) );
     $copy_failed = 1;
   }
 
@@ -778,12 +777,12 @@ foreach my $spec (@todo) {
                $staging_dir );
     next TODO;
   }
-  
+
   ##------------------------------------------------------------------##
   ## VIEW REPAIR                                                      ##
   ##------------------------------------------------------------------##
   print( '-' x 36, ' VIEW REPAIR ', '-' x 37, "\n" );
-  
+
   if ($opt_skip_views) {
     print 'SKIPPING VIEWS...', "\n";
   }
@@ -797,7 +796,7 @@ foreach my $spec (@todo) {
     else {
       my $ok = 1;
 
-      VIEW:
+    VIEW:
       foreach my $current_view (@views) {
         print "Processing $current_view\n";
 
@@ -811,8 +810,7 @@ foreach my $spec (@todo) {
           untie @view_frm;
         }
         else {
-          warn(
-                sprintf( q{Cannot tie file '%s' for VIEW repair. Error},
+          warn( sprintf( q{Cannot tie file '%s' for VIEW repair. Error},
                          $view_frm_loc ) );
           $ok = 0;
           next VIEW;
@@ -839,7 +837,8 @@ foreach my $spec (@todo) {
 
   if ( !$opt_check ) {
     print("NOT CHECKING...\n");
-  } else {
+  }
+  else {
     print("CHECKING TABLES...\n");
 
     my $check_failed = 0;
@@ -848,29 +847,27 @@ foreach my $spec (@todo) {
       foreach my $index (
          glob( catfile( $staging_dir, sprintf( '%s*.MYI', $table ) ) ) )
       {
-        my @check_cmd = ( $executables{'myisamchk'},
-                          '--check',
-                          '--check-only-changed',
-                          '--update-state',
-                          '--silent',
-                          '--silent',                  # Yes, twice.
-                          $index );
+        my @check_cmd = (
+          $executables{'myisamchk'}, '--check', '--check-only-changed',
+          '--update-state', '--silent', '--silent',    # Yes, twice.
+          $index );
 
         if ( system(@check_cmd) != 0 ) {
           $check_failed = 1;
 
-          warn( sprintf( "Failed to check some tables. "
-                           . "Please clean up '%s'.\n",
-                         $staging_dir ) );
+          warn( sprintf( "Failed to check some tables. " .
+                           "Please clean up '%s'.\n",
+                         $staging_dir
+                ) );
 
           $spec->{'status'} =
-            sprintf( "FAILED: MYISAM table check failed "
-                       . "(cleanup of '%s' may be needed).",
+            sprintf( "FAILED: MYISAM table check failed " .
+                       "(cleanup of '%s' may be needed).",
                      $staging_dir );
 
           last;
         }
-      } ## end foreach my $index ( glob( catfile...))
+      }
     } ## end foreach my $table (@tables)
 
     if ($check_failed) { next TODO }
@@ -890,13 +887,14 @@ foreach my $spec (@todo) {
   printf( "MOVING '%s' TO '%s'...\n", $staging_dir, $destination_dir );
 
   if ( !mkdir($destination_dir) ) {
-    warn( sprintf( "Failed to create destination directory '%s'.\n"
-                     . "Please clean up '%s'.\n",
-                   $destination_dir, $staging_dir ) );
+    warn( sprintf( "Failed to create destination directory '%s'.\n" .
+                     "Please clean up '%s'.\n",
+                   $destination_dir, $staging_dir
+          ) );
 
     $spec->{'status'} =
-      sprintf( "FAILED: can not create destination directory '%s' "
-                 . "(cleanup of '%s' may be needed)",
+      sprintf( "FAILED: can not create destination directory '%s' " .
+                   "(cleanup of '%s' may be needed)",
                $destination_dir, $staging_dir );
     next TODO;
   }
@@ -909,12 +907,13 @@ foreach my $spec (@todo) {
 
     printf( "Moving %s...\n", $table );
 
-    FILE:
+  FILE:
     foreach my $file (@files) {
       if ( !move( $file, $destination_dir ) ) {
-        warn( sprintf( "Failed to move database.\n"
-                         . "Please clean up '%s' and '%s'.\n",
-                       $staging_dir, $destination_dir ) );
+        warn( sprintf( "Failed to move database.\n" .
+                         "Please clean up '%s' and '%s'.\n",
+                       $staging_dir, $destination_dir
+              ) );
 
         $spec->{'status'} =
           sprintf( "FAILED: can not move '%s' from staging directory " .
@@ -927,9 +926,10 @@ foreach my $spec (@todo) {
 
   # Remove the now empty staging directory.
   if ( !rmdir($staging_dir) ) {
-    warn( sprintf( "Failed to unlink the staging directory '%s'.\n"
-                     . "Clean this up manually.\n",
-                   $staging_dir ) );
+    warn( sprintf( "Failed to unlink the staging directory '%s'.\n" .
+                     "Clean this up manually.\n",
+                   $staging_dir
+          ) );
 
     $spec->{'status'} =
       sprintf( "SUCCESS: cleanup of '%s' may be needed", $staging_dir );
