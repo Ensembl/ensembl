@@ -267,6 +267,7 @@ sub fetch_all_by_hit_name_unversioned {
   if ( !defined($hit_name) ) {
     throw("hit_name argument is required");
   }
+  $hit_name =~ s/_/\\_/;
 
   #construct a constraint like 't1.hit_name = "123"'
   my @tabs = $self->_tables;
