@@ -468,6 +468,14 @@ test_toplevel_location('1: 100', 'chromosome', '1', 100, 246874334);
 test_toplevel_location('1:100..2_000_000_000', 'chromosome', '1', 100, 246874334);
 test_toplevel_location('1:100..2E9', 'chromosome', '1', 100, 246874334);
 
+#Try strands
+test_toplevel_location('1:1-1000:1', 'chromosome', '1', 1, 1000, 1);
+test_toplevel_location('1:1-1000:-1', 'chromosome', '1', 1, 1000, -1);
+test_toplevel_location('1:1-1000:+', 'chromosome', '1', 1, 1000, 1);
+test_toplevel_location('1:1-1000:-', 'chromosome', '1', 1, 1000, -1);
+test_toplevel_location('1:1-1000..1', 'chromosome', '1', 1, 1000, 1);
+test_toplevel_location('1:1-1000--1', 'chromosome', '1', 1, 1000, -1);
+
 dies_ok { $slice_adaptor->fetch_by_toplevel_location(); } 'Checking calling without a location fails';
 dies_ok { $slice_adaptor->fetch_by_toplevel_location('', 1); } 'Checking calling with a blank location fails';
 dies_ok { $slice_adaptor->fetch_by_toplevel_location('1:1_000_000_000..100', 1); } 'Checking calling with an excessive start throws an error';
@@ -475,7 +483,8 @@ ok(!defined $slice_adaptor->fetch_by_toplevel_location('wibble', 1), 'Checking w
 ok(!defined $slice_adaptor->fetch_by_toplevel_location('1:-100--50', 1), 'Checking with a bogus region with negative coords returns undef');
 
 sub test_toplevel_location {
-  my ($location, $cs_name, $seq_region_name, $start, $end) = @_;
+  my ($location, $cs_name, $seq_region_name, $start, $end, $strand) = @_;
+  $strand ||= 1;
   my $incoming_slice = $slice_adaptor->fetch_by_toplevel_location($location, 1);
   my $def = ok(defined $incoming_slice, "We expect a defined Slice for location: $location");
   SKIP : {
@@ -484,6 +493,7 @@ sub test_toplevel_location {
     is($incoming_slice->seq_region_name(), $seq_region_name, 'Checking seq region name for $location');
     is($incoming_slice->start(), $start, "Checking start for $location");
     is($incoming_slice->end(), $end, "Checking end for $location");
+    is($incoming_slice->strand(), $strand, "Checking strand for $location");
   }
   return;
 }
