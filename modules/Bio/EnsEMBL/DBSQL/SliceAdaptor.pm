@@ -470,17 +470,68 @@ sub fetch_by_region {
 
 sub fetch_by_toplevel_location {
   my ($self, $location, $no_warnings) = @_;
-  throw 'You must specify a location' if ! $location;
 
+  my ($seq_region_name, $start, $end, $strand) = $self->parse_location_to_values($location, $no_warnings);
+
+  if(! $seq_region_name) {
+    return;
+  }
+    
+  if(defined $start && defined $end && $start > $end) {
+    throw "Cannot request a slice whose start is greater than its end. Start: $start. End: $end";
+  }
+  
+  my $coord_system_name = 'toplevel';
+  my $slice = $self->fetch_by_region($coord_system_name, $seq_region_name, $start, $end, $strand, undef, 0);
+  return unless $slice;
+  
+  my $srl = $slice->seq_region_length();
+  my $name = $slice->seq_region_name();
+  if(defined $start && $start > $srl) {
+    throw "Cannot request a slice whose start ($start) is greater than $srl for $name.";
+  }
+  if(defined $end && $end > $srl) {
+    warning "Requested end ($end) is greater than $srl for $name. Resetting to $srl" if ! $no_warnings;
+    $slice->{end} = $srl;
+  }
+  
+  return $slice;
+}
+
+=head2 parse_location_to_values
+
+  Arg [1]     : string $location
+                Ensembl formatted location. Can be a format like 
+                C<name:start-end>, C<name:start..end>, C<name:start:end>, 
+                C<name:start>, C<name>. We can also support strand 
+                specification as a +/- or 1/-1. 
+                
+                Location names must be separated by a C<:>. All others can be
+                separated by C<..>, C<:> or C<->.
+  Arg[2]      : boolean $no_warnings
+                Suppress warnings from this method
+  Example			: my ($name, $start, $end, $strand) = $sa->parse_location_to_values('X:1..100:1);
+  Description	: Takes in an Ensembl location String and returns the parsed
+                values
+  Returntype 	: List. Contains name, start, end and strand 
+
+=cut
+
+
+sub parse_location_to_values {
+  my ($self, $location, $no_warnings) = @_;
+  
+  throw 'You must specify a location' if ! $location;
+  
   #cleanup any nomenclature like 1_000 or 1 000 or 1,000
   my $number_seps_regex = qr/\s+|,|_/;
-  my $separator = qr/(?:-|[.]{2}|\:)?/;
-  my $number = qr/[0-9,_ E]+/xms;
-  my $strand = qr/[+-1]|-1/xms;
+  my $separator_regex = qr/(?:-|[.]{2}|\:)?/;
+  my $number_regex = qr/[0-9,_ E]+/xms;
+  my $strand_regex = qr/[+-1]|-1/xms;
   
-  my $regex = qr/^(\w+) \s* :? \s* ($number)? $separator ($number)? $separator ($strand)? $/xms;
-
-  if(my ($seq_region_name, $start, $end, $strand) = $location =~ $regex) {
+  my $regex = qr/^(\w+) \s* :? \s* ($number_regex)? $separator_regex ($number_regex)? $separator_regex ($strand_regex)? $/xms;
+  my ($seq_region_name, $start, $end, $strand);
+  if(($seq_region_name, $start, $end, $strand) = $location =~ $regex) {
     
     if(defined $strand) {
       if(!looks_like_number($strand)) {
@@ -505,24 +556,9 @@ sub fetch_by_toplevel_location {
     if(defined $start && defined $end && $start > $end) {
       throw "Cannot request a slice whose start is greater than its end. Start: $start. End: $end";
     }
-    
-    my $coord_system_name = 'toplevel';
-    my $slice = $self->fetch_by_region($coord_system_name, $seq_region_name, $start, $end, $strand, undef, 0);
-    return unless $slice;
-    
-    my $srl = $slice->seq_region_length();
-    my $name = $slice->seq_region_name();
-    if(defined $start && $start > $srl) {
-      throw "Cannot request a slice whose start ($start) is greater than $srl for $name.";
-    }
-    if(defined $end && $end > $srl) {
-      warning "Requested end ($end) is greater than $srl for $name. Resetting to $srl" if ! $no_warnings;
-      $slice->{end} = $srl;
-    }
-    
-    return $slice;
   }
-  return;
+  
+  return ($seq_region_name, $start, $end, $strand);
 }
 
 =head2 fetch_by_region_unique
