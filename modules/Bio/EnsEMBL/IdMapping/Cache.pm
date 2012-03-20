@@ -261,8 +261,9 @@ sub build_cache_from_genes {
     unless ( ref($genes) eq 'ARRAY' );
 
   # biotype filter
-  if ( $self->conf->param('biotypes') ||
-       $self->conf->param('not_biotypes') )
+  if ( $self->conf()->param('biotypes') ||
+       $self->conf()->param('biotypes_include') ||
+       $self->conf()->param('biotypes_exclude') )
   {
     $genes = $self->filter_biotypes($genes);
   }
@@ -409,17 +410,20 @@ sub build_cache_from_genes {
 
   Description : Filters a list of genes by biotype.  Biotypes are
                 taken from the IdMapping configuration parameter
-                'biotypes' or 'not_biotypes'.
+                'biotypes_include' or 'biotypes_exclude'.
 
-                If the configuration parameter 'not_biotypes' is
+                If the configuration parameter 'biotypes_exclude' is
                 defined, then rather than returning the genes whose
                 biotype is listed in the configuration parameter
-                'biotypes' the method will return the genes whose
-                biotype is *not* listed in the 'not_biotypes'
+                'biotypes_include' the method will return the genes
+                whose biotype is *not* listed in the 'biotypes_exclude'
                 configuration parameter.
 
                 It is an error to define both these configuration
                 parameters.
+
+                The old parameter 'biotypes' is equivalent to
+                'biotypes_include'.
 
   Return type : Listref of Bio::EnsEMBL::Genes (or empty list)
   Exceptions  : none
@@ -436,18 +440,26 @@ sub filter_biotypes {
   my @biotypes;
   my $opt_reverse;
 
-  if ( defined( $self->conf()->param('biotypes') ) ) {
-    if ( defined( $self->conf()->param('not_biotypes') ) ) {
+  if ( defined( $self->conf()->param('biotypes_include') ) ||
+       defined( $self->conf()->param('biotypes') ) )
+  {
+    if ( defined( $self->conf()->param('biotypes_exclude') ) ) {
       $self->logger()
-        ->error( "You may not use both 'biotypes' and 'not_biotypes' " .
+        ->error( "You may not use both " .
+                 "'biotypes_include' and 'biotypes_exclude' " .
                  "in the configuration" );
     }
 
-    @biotypes    = $self->conf()->param('biotypes');
+    if ( defined( $self->conf()->param('biotypes_include') ) ) {
+      @biotypes = $self->conf()->param('biotypes_include');
+    }
+    else {
+      @biotypes = $self->conf()->param('biotypes');
+    }
     $opt_reverse = 0;
   }
   else {
-    @biotypes    = $self->conf()->param('not_biotypes');
+    @biotypes    = $self->conf()->param('biotypes_exclude');
     $opt_reverse = 1;
   }
 
