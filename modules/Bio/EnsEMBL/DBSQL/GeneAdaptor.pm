@@ -208,11 +208,11 @@ sub fetch_by_display_label {
 	  last if ($gene);
       }
       if (!$gene) {
-	  $gene = @genes[0];
+	  $gene = $genes[0];
       }
 
   } elsif (scalar(@genes) == 1) {
-      $gene = @genes[0];
+      $gene = $genes[0];
   } 
 
   return $gene;
