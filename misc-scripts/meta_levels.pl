@@ -10,87 +10,71 @@ use DBI;
 use Getopt::Long;
 
 use Bio::EnsEMBL::DBSQL::DBAdaptor;
+use Bio::EnsEMBL::Utils::CliHelper;
 
-my ( $host, $user, $pass, $port, $dbpattern, $print, $sing_db_name );
+my $cli_helper = Bio::EnsEMBL::Utils::CliHelper->new();
 
-$port = 3306;
+our @feature_types =
+  qw[gene transcript exon repeat_feature dna_align_feature protein_align_feature simple_feature prediction_transcript prediction_exon];
 
-GetOptions( "dbhost|host=s",       \$host,
-            "dbuser|user=s",       \$user,
-            "dbpass|pass=s",       \$pass,
-            "dbport|port=i",       \$port,
-            "dbpattern|pattern=s", \$dbpattern,
-            "dbname=s",            \$sing_db_name,
-            "print",               \$print,
-            "help",                \&usage );
+# get the basic options for connecting to a database server
+my $optsd = $cli_helper->get_dba_opts();
+# add the print option
+push(@{$optsd},"print|p");
+# process the command line with the supplied options plus a help subroutine
+my $opts = $cli_helper->process_args($optsd,\&usage);
 
-if ( !$host || ( !$dbpattern && !$sing_db_name ) ) {
-  usage();
+# use the command line options to get an array of database details
+for my $db_args (@{$cli_helper->get_dba_args_for_opts($opts)}) {
+    # use the args to create a DBA
+    my $dba = Bio::EnsEMBL::DBSQL::DBAdaptor->new(%{$db_args});
+    if($dba) {
+    	process_dba($dba,$opts->{print});
+    }
 }
 
-$dbpattern = $sing_db_name unless $dbpattern;
+sub process_dba {
 
-my @feature_types = qw[gene transcript exon repeat_feature dna_align_feature protein_align_feature simple_feature prediction_transcript prediction_exon];
+	my ($dba,$print) = @_;
+	my $ma = $dba->get_MetaContainer();
 
-# loop over databases
+	my @inserted;
+	my @not_inserted;
 
-my $dsn = "DBI:mysql:host=$host";
-$dsn .= ";port=$port" if ($port);
+	foreach my $type (@feature_types) {
 
-my $db = DBI->connect( $dsn, $user, $pass );
+		delete_existing( $ma, $type ) if ( !$print );
 
-my @dbnames =
-  map { $_->[0] } @{ $db->selectall_arrayref("show databases") };
+		if ( can_use_key( $dba, $type ) ) {
 
-for my $dbname (@dbnames) {
+			insert_key( $ma, $type ) if ( !$print );
+			push @inserted, $type;
 
-  next if ( $dbname !~ /$dbpattern/ );
+		} else {
 
-  my $dba =
-    new Bio::EnsEMBL::DBSQL::DBAdaptor( '-host'    => $host,
-                                        '-port'    => $port,
-                                        '-user'    => $user,
-                                        '-pass'    => $pass,
-                                        '-dbname'  => $dbname,
-                                        '-species' => $dbname );
+			push @not_inserted, $type;
 
-  my $ma = $dba->get_MetaContainer();
+		}
 
-  my @inserted;
-  my @not_inserted;
+	}
 
-  foreach my $type (@feature_types) {
-
-    delete_existing( $ma, $type ) if ( !$print );
-
-    if ( can_use_key( $dba, $type ) ) {
-
-      insert_key( $ma, $type ) if ( !$print );
-      push @inserted, $type;
-
-    } else {
-
-      push @not_inserted, $type;
-
-    }
-
-  }
-
-  print "$dbname inserted keys for " . join( ", ", @inserted ) . ".\n"
-    if (@inserted);
-  print "$dbname did not insert keys for "
-    . join( ", ", @not_inserted ) . ".\n"
-    if (@not_inserted);
-
-} ## end for my $dbname (@dbnames)
+	print $dba->dbc()->dbname()
+	  . " (species_id "
+	  . $dba->species_id()
+	  . ") inserted keys for "
+	  . join( ", ", @inserted ) . ".\n"
+	  if (@inserted);
+	print "Did not insert keys for " . join( ", ", @not_inserted ) . ".\n"
+	  if (@not_inserted);
+} ## end sub process_dba
 
 #------------------------------------------------------------------------------
 
 sub delete_existing {
 
-  my ( $ma, $type ) = @_;
+	my ( $ma, $type ) = @_;
 
-  $ma->delete_key( $type . "build.level" );
+	$ma->delete_key( $type . "build.level" );
 
 }
 
@@ -98,41 +82,41 @@ sub delete_existing {
 
 sub can_use_key {
 
-  my ( $dba, $type ) = @_;
+	my ( $dba, $type ) = @_;
 
-# compare total count of typewith number of toplevel type, if they're the same,
-# then we can use the key
+ # compare total count of typewith number of toplevel type, if they're the same,
+ # then we can use the key
 
-  my $sth = $dba->dbc()->prepare("SELECT COUNT(*) FROM $type");
-  $sth->execute();
-  my $total = ( $sth->fetchrow_array() )[0];
+	my $sth = $dba->dbc()->prepare("SELECT COUNT(*) FROM $type");
+	$sth->execute();
+	my $total = ( $sth->fetchrow_array() )[0];
 
-  $sth =
-    $dba->dbc()
-    ->prepare(   "SELECT COUNT(*) "
-               . "FROM $type t, seq_region_attrib sra, attrib_type at "
-               . "WHERE t.seq_region_id=sra.seq_region_id "
-               . "AND sra.attrib_type_id=at.attrib_type_id "
-               . "AND at.code='toplevel'" );
-  $sth->execute();
-  my $toplevel = ( $sth->fetchrow_array() )[0];
+	$sth =
+	  $dba->dbc()
+	  ->prepare(   "SELECT COUNT(*) "
+				 . "FROM $type t, seq_region_attrib sra, attrib_type at "
+				 . "WHERE t.seq_region_id=sra.seq_region_id "
+				 . "AND sra.attrib_type_id=at.attrib_type_id "
+				 . "AND at.code='toplevel'" );
+	$sth->execute();
+	my $toplevel = ( $sth->fetchrow_array() )[0];
 
-  if ( $toplevel > 0 ) {
-    return $total == $toplevel;
-  }
-}
+	if ( $toplevel > 0 ) {
+		return $total == $toplevel;
+	}
+} ## end sub can_use_key
 
 #------------------------------------------------------------------------------
 
 sub insert_key {
-  my ( $ma, $type ) = @_;
-  $ma->store_key_value( $type . "build.level", "toplevel" );
+	my ( $ma, $type ) = @_;
+	$ma->store_key_value( $type . "build.level", "toplevel" );
 }
 
 #------------------------------------------------------------------------------
 
 sub usage {
-  print <<EOF; exit(0);
+	print <<EOF; exit(0);
 
 Populate meta table with (e.g.) genebuild.level = toplevel if all genes
 are top level. Using v41 API code this can speed fetching and dumping

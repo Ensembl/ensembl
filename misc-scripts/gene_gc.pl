@@ -1,104 +1,89 @@
+#!/usr/bin/env perl
 # Calculate per-gene GC content and store as gene attributes
 
+use warnings;
 use strict;
-use DBI;
-
-use Getopt::Long;
-
 use Bio::EnsEMBL::DBSQL::DBAdaptor;
+use Bio::EnsEMBL::Utils::CliHelper;
 
-my ( $host, $user, $pass, $port, $dbpattern, $print);
+my $cli_helper = Bio::EnsEMBL::Utils::CliHelper->new();
 
-$port = 3306;
+# get the basic options for connecting to a database server
+my $optsd = $cli_helper->get_dba_opts();
+# add the print option
+push( @{$optsd}, "print|p" );
+# process the command line with the supplied options plus a help subroutine
+my $opts = $cli_helper->process_args( $optsd, \&usage );
 
-GetOptions( "host|h=s",       \$host,
-	    "user|u=s",       \$user,
-	    "pass|p=s",       \$pass,
-	    "port=i",         \$port,
-	    "pattern=s",      \$dbpattern,
-	    "print",          \$print,
-	    "help" ,          \&usage
-	  );
+# use the command line options to get an array of database details
+for my $db_args ( @{ $cli_helper->get_dba_args_for_opts($opts) } ) {
 
+	# use the args to create a DBA
+	my $dba = Bio::EnsEMBL::DBSQL::DBAdaptor->new( %{$db_args} );
 
-usage() if (!$host || !$dbpattern || !$user || !$pass);
+	print STDOUT "Processing species "
+	  . $dba->species_id()
+	  . " from database "
+	  . $dba->dbc()->dbname()
+	  . " on server "
+	  . $dba->dbc()->host() . "\n";
+	delete_existing($dba) unless ( $opts->{print} );
 
-# loop over databases
-my $dsn = "DBI:mysql:host=$host";
-$dsn .= ";port=$port" if ($port);
+	print STDOUT "Calculating Gene GC attributes\n";
+	my $attribute_adaptor = $dba->get_AttributeAdaptor();
+	my $total_count       = 0;
+	for my $gene ( @{ $dba->get_GeneAdaptor()->fetch_all() } ) {
+		my $gc = $gene->feature_Slice()->get_base_count->{'%gc'};
+		if ( !$opts->{print} ) {
+	 # attribute types need to be propagated from production database to all dbs
+	 # if the type exists it won't be overwritten
+			my $attribute =
+			  Bio::EnsEMBL::Attribute->new(
+						  -CODE        => 'GeneGC',
+						  -NAME        => 'Gene GC',
+						  -DESCRIPTION => 'Percentage GC content for this gene',
+						  -VALUE       => $gc );
+			my @attributes = ($attribute);
+			$attribute_adaptor->store_on_Gene( $gene->dbID, \@attributes );
+			$total_count++;
+		} else {
+			print $gene->stable_id() . " " . $gc . "\n";
+		}
+	}
 
-my $db = DBI->connect($dsn, $user, $pass);
+	if ( !$opts->{print} ) {
+		print STDOUT "Written $total_count 'GeneGC' gene attributes to species "
+		  . $dba->species_id()
+		  . " from database "
+		  . $dba->dbc()->dbname()
+		  . " on server "
+		  . $dba->dbc()->host() . "\n";
+	}
 
-my @dbnames = map {$_->[0] } @{$db->selectall_arrayref("show databases")};
-
-for my $dbname (@dbnames) {
-
-  next if ($dbname !~ /$dbpattern/);
-
-  my $dba = new Bio::EnsEMBL::DBSQL::DBAdaptor('-host' => $host,
-					       '-port' => $port,
-					       '-user' => $user,
-					       '-pass' => $pass,
-					       '-dbname' => $dbname,
-					       '-species' => $dbname);
-
-  print STDOUT "$dbname\n";
-
-  delete_existing($dba) if !($print);
-
-  print STDOUT "Calculating Gene GC attributes\n";
-
-  my $attribute_adaptor = $dba->get_AttributeAdaptor();
-
-  my $genes = $dba->get_GeneAdaptor()->fetch_all();
-
-  my $total_count = 0;
-
-  while (my $gene = shift(@$genes)) {
-
-    my $gc = $gene->feature_Slice()->get_base_count->{'%gc'};
-
-    if (!$print) {
-      # attribute types need to be propagated from production database to all dbs
-      # if the type exists it won't be overwritten
-      my $attribute = Bio::EnsEMBL::Attribute->new(-CODE        => 'GeneGC',
-						   -NAME        => 'Gene GC',
-						   -DESCRIPTION => 'Percentage GC content for this gene',
-						   -VALUE       => $gc);
-      my @attributes = ($attribute);
-      $attribute_adaptor->store_on_Gene($gene->dbID, \@attributes);
- 
-      $total_count++; 
-
-    } else {
-
-      print $gene->stable_id() . " " . $gc . "\n";
-
-    }
-
-  }
-  if (!$print) {
-      print STDOUT "Written $total_count 'GeneGC' gene attributes to database $dbname on server $host.\n";
-  }
-
-}
+} ## end for my $db_args ( @{ $cli_helper...})
 
 # ----------------------------------------------------------------------
 
 sub delete_existing {
 
-  my $dba = shift;
+	my $dba = shift;
 
-  print STDOUT "Deleting existing 'GeneGC' gene attributes\n";
-  my $dsth = $dba->dbc()->prepare("DELETE ga FROM gene_attrib ga, attrib_type at WHERE at.attrib_type_id=ga.attrib_type_id AND at.code='GeneGC'");
-  $dsth->execute();
+	print STDOUT "Deleting existing 'GeneGC' gene attributes\n";
+	$dba->dbc()->sql_helper()->execute_update(
+		-SQL =>
+q/DELETE ga FROM gene_attrib ga, attrib_type at, gene g, seq_region s, coord_system c 
+WHERE at.attrib_type_id=ga.attrib_type_id AND at.code='GeneGC'
+AND ga.gene_id=g.gene_id AND g.seq_region_id=s.seq_region_id 
+AND c.coord_system_id=s.coord_system_id AND c.species_id=?
+/,
+		PARAMS => [ $dba->species_id() ] );
 
+	return;
 }
 
-
 sub usage {
-  my $indent = ' ' x length($0);
-  print <<EOF; exit(0);
+	my $indent = ' ' x length($0);
+	print <<EOF; exit(0);
 
 What does it do?
 
@@ -149,4 +134,4 @@ Usage:
 
 EOF
 
-}
+} ## end sub usage

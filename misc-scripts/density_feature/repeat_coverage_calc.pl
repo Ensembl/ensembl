@@ -1,4 +1,4 @@
-#!/usr/local/ensembl/bin/perl -w
+#!/usr/bin/env perl
 #
 # Calculate the repeat coverage for given database.
 # condition: 1k blocks to show contigview displays
@@ -21,283 +21,296 @@ use Bio::EnsEMBL::Utils::ConversionSupport;
 use POSIX;
 
 use strict;
+use warnings;
 use Getopt::Long;
+use Bio::EnsEMBL::Utils::CliHelper;
 
-my ( $host, $user, $pass, $port, $dbname  );
-   # Master database location:
-   my ( $mhost, $mport ) = ( 'mysql-eg-pan-1.ebi.ac.uk', '4276' );
-  my ( $muser, $mpass ) = ( 'ensro',        undef );
-   my $mdbname = 'ensembl_production';
+my $cli_helper = Bio::EnsEMBL::Utils::CliHelper->new();
+my $optsd =
+  [ @{ $cli_helper->get_dba_opts() }, @{ $cli_helper->get_dba_opts('m') } ];
+# add the print option
+my $opts = $cli_helper->process_args( $optsd, \&usage );
 
-
-GetOptions( "host|h=s", \$host,
-	    "user|u=s", \$user,
-	    "pass|p=s", \$pass,
-	    "port=i",   \$port,
-	    "dbname|d=s", \$dbname,
-            "mhost=s", \$mhost,
-            "mport=i", \$mport,
-            "muser=s", \$muser,
-	    "help" ,               \&usage
-	  );
-
-usage() if (!$host || !$user || !$pass || !$dbname);
-
-my $chunksize = 1_000_000;
-my $small_blocksize = 1_000;
-my $bin_count = 150;
-my $max_top_slice = 100;
-
-my $db = new Bio::EnsEMBL::DBSQL::DBAdaptor(-host => $host,
-					    -user => $user,
-					    -port => $port,
-					    -pass => $pass,
-					    -dbname => $dbname);
-
-
-
-my $sth = $db->dbc()->prepare( "select count(*) from repeat_feature" );
-$sth->execute();
-
-my ( $repeat_count )  = $sth->fetchrow_array();
-
-if( ! $repeat_count ) {
-  print STDERR "No repeat density for $dbname.\n";
-  exit();
+if (! defined $opts->{mhost} ) {
+	( $opts->{mhost}, $opts->{mport}, $opts->{mdbname}, $opts->{muser} ) =
+	  ( 'ens-staging1', '3306', 'ensembl_production', 'ensro' );
 }
 
-#
-# Get the adaptors needed;
-#
+my ($prod_dba) = @{ $cli_helper->get_dbas_for_opts( $opts, 1, 'm' ) };
+
+if ( !defined $prod_dba ) {
+	usage();
+}
+
+my $chunksize       = 1_000_000;
+my $small_blocksize = 1_000;
+my $bin_count       = 150;
+my $max_top_slice   = 100;
+
+for my $db_args ( @{ $cli_helper->get_dba_args_for_opts($opts) } ) {
+	print STDOUT "Connecting to " . $db_args->{-DBNAME} . "\n";
+
+	my $db     = new Bio::EnsEMBL::DBSQL::DBAdaptor(%$db_args);
+	my $dbname = $db->dbc()->dbname();
+
+	my $helper = $db->dbc()->sql_helper();
+
+	my $repeat_count = $helper->execute_simple(
+		-SQL=>q/select count(*) from repeat_feature join seq_region 
+using (seq_region_id) join coord_system using (coord_system_id) where species_id=?/,
+		-PARAMS=>[$db->species_id()] );
+
+	if ( !$repeat_count ) {
+		print STDERR "No repeat density for $dbname.\n";
+		exit();
+	}
+
+	#
+	# Get the adaptors needed;
+	#
 
 #
 # Clean up old features first. Also remove analysis and density type entry as these are recreated.
 #
 
-print STDOUT "Deleting old PercentageRepeat features\n";
-$sth = $db->dbc->prepare("DELETE df, dt FROM density_feature df, density_type dt, analysis a WHERE a.analysis_id=dt.analysis_id AND dt.density_type_id=df.density_type_id AND a.logic_name='percentagerepeat'");
-$sth->execute();
+	print STDOUT "Deleting old PercentageRepeat features\n";
+	$helper->execute_update(
+-SQL=>q/DELETE df, dt FROM density_feature df, density_type dt, analysis a, seq_region sr, coord_system c 
+WHERE 
+sr.seq_region_id=df.seq_region_id AND c.coord_system_id=sr.coord_system_id AND c.species_id=? 
+AND a.analysis_id=dt.analysis_id AND dt.density_type_id=df.density_type_id AND a.logic_name='percentagerepeat'/,
+		-PARAMS=>[$db->species_id()] );
 
+	my $slice_adaptor = $db->get_SliceAdaptor();
+	my $dfa           = $db->get_DensityFeatureAdaptor();
+	my $dta           = $db->get_DensityTypeAdaptor();
+	my $aa            = $db->get_AnalysisAdaptor();
 
-my $slice_adaptor = $db->get_SliceAdaptor();
-my $dfa = $db->get_DensityFeatureAdaptor();
-my $dta = $db->get_DensityTypeAdaptor();
-my $aa  = $db->get_AnalysisAdaptor();
+	my $analysis = $aa->fetch_by_logic_name('percentagerepeat');
 
+	if ( !defined($analysis) ) {
 
-my $analysis = $aa->fetch_by_logic_name('percentagerepeat');
+		my ( $display_label, $description ) =
+		  @{$prod_dba->dbc()->sql_helper()->execute(
+-SQL=>"select distinct display_label, description from analysis_description where is_current = 1 and logic_name = 'percentagerepeat'"
+			) };
 
+		$analysis =
+		  new Bio::EnsEMBL::Analysis( -program     => "repeat_coverage_calc.pl",
+									  -database    => "ensembl",
+									  -gff_source  => "repeat_coverage_calc.pl",
+									  -gff_feature => "density",
+									  -logic_name  => "percentagerepeat",
+									  -description => $description,
+									  -display_label => $display_label,
+									  -displayable   => 1 );
 
-if ( !defined($analysis) ) {
+		$aa->store($analysis);
+	} else {
 
+		my $support = 'Bio::EnsEMBL::Utils::ConversionSupport';
+		$analysis->created( $support->date() );
+		$aa->update($analysis);
 
-   my $prod_dsn = sprintf( 'DBI:mysql:host=%s;port=%d;database=%s',
-                     $mhost, $mport, $mdbname );
-   my $prod_dbh = DBI->connect( $prod_dsn, $muser, $mpass,
-                          { 'PrintError' => 1, 'RaiseError' => 1 } );
+	}
 
-   my ($display_label,$description) = $prod_dbh->selectrow_array("select distinct display_label, description from analysis_description where is_current = 1 and logic_name = 'percentagerepeat'");
+	my $slices = $slice_adaptor->fetch_all("toplevel");
+	my @sorted_slices =
+	  sort { $b->seq_region_length() <=> $a->seq_region_length() } @$slices;
 
-   $prod_dbh->disconnect;
+	my $small_density_type = Bio::EnsEMBL::DensityType->new(
+								-analysis   => $analysis,
+								-block_size => $small_blocksize,
+								-value_type => 'ratio' );
 
-   $analysis = new Bio::EnsEMBL::Analysis(
-              -program     => "repeat_coverage_calc.pl",
-              -database    => "ensembl",
-              -gff_source  => "repeat_coverage_calc.pl",
-              -gff_feature => "density",
-              -logic_name  => "percentagerepeat", 
-              -description => $description,
-              -display_label => $display_label,
-              -displayable   => 1 );
+	my $variable_density_type =
+	  Bio::EnsEMBL::DensityType->new( -analysis        => $analysis,
+									  -region_features => $bin_count,
+									  -value_type      => 'ratio' );
 
-    $aa->store($analysis);
-} else {
+	$dta->store($small_density_type);
+	$dta->store($variable_density_type);
 
-    my $support = 'Bio::EnsEMBL::Utils::ConversionSupport';
-    $analysis->created($support->date());
-    $aa->update($analysis);
+	my $slice_count = 0;
 
-}
+	while ( my $slice = shift @sorted_slices ) {
 
-my $slices = $slice_adaptor->fetch_all( "toplevel" );
-my @sorted_slices = sort { $b->seq_region_length() <=> $a->seq_region_length() } @$slices;
+		#
+		# do it for small and large blocks
+		#
+		print STDOUT (   "Working on seq_region "
+					   . $slice->seq_region_name()
+					   . " length "
+					   . $slice->seq_region_length() );
 
-my $small_density_type = Bio::EnsEMBL::DensityType->new
-  (-analysis   => $analysis,
-   -block_size => $small_blocksize,
-   -value_type => 'ratio');
+		my $rr           = Bio::EnsEMBL::Mapper::RangeRegistry->new();
+		my $chunk_end    = 0;
+		my $variable_end = 0;
+		my $small_end    = 0;
+		my ($small_start);
+		my $repeat_size;
+		my $variable_start = 0;
+		my $variable_blocksize =
+		  POSIX::ceil( $slice->seq_region_length()/
+					   $variable_density_type->region_features() );
+		$slice_count++;
 
-my $variable_density_type = Bio::EnsEMBL::DensityType->new
-  (-analysis   => $analysis,
-   -region_features => $bin_count,
-   -value_type => 'ratio');
+		while ( $chunk_end < $slice->length() ) {
+			my $chunk_start = $chunk_end + 1;
+			$chunk_end += $chunksize;
+			$chunk_end = $slice->length() if $chunk_end > $slice->length();
 
-$dta->store($small_density_type);
-$dta->store($variable_density_type);
+			register( $rr, $slice, $chunk_start, $chunk_end );
 
+			my @dfs = ();
 
-my $slice_count = 0;
+			if ( $slice_count < $max_top_slice ) {
+				while ( $variable_end + $variable_blocksize <= $chunk_end ) {
+					# here we can do the variable sized repeat densities
+					$variable_start = $variable_end + 1;
+					$variable_end += $variable_blocksize;
 
+					$repeat_size =
+					  $rr->overlap_size( "1", $variable_start, $variable_end );
+					my $percentage_repeat =
+					  $repeat_size/$variable_blocksize*100;
 
-while ( my $slice = shift @sorted_slices ) {
-  
-  #
-  # do it for small and large blocks
-  #
-  print STDOUT ("Working on seq_region ".$slice->seq_region_name()." length ".$slice->seq_region_length());
+					push( @dfs,
+						  Bio::EnsEMBL::DensityFeature->new(
+										-seq_region   => $slice,
+										-start        => $variable_start,
+										-end          => $variable_end,
+										-density_type => $variable_density_type,
+										-density_value => $percentage_repeat )
+					);
 
-  my $rr = Bio::EnsEMBL::Mapper::RangeRegistry->new();
-  my $chunk_end = 0;
-  my $variable_end = 0;
-  my $small_end = 0;
-  my ( $small_start );
-  my $repeat_size;
-  my $variable_start = 0;
-  my $variable_blocksize = POSIX::ceil( $slice->seq_region_length() / 
-					$variable_density_type->region_features());
-  $slice_count++;
+				}
+			}
 
-  while( $chunk_end < $slice->length() ) {
-    my $chunk_start = $chunk_end+1;
-    $chunk_end += $chunksize;
-    $chunk_end = $slice->length() if $chunk_end > $slice->length();
+			while ( $small_end + $small_blocksize <= $chunk_end ) {
+				# here we can do the small sized density features
+				$small_start = $small_end + 1;
+				$small_end += $small_blocksize;
 
-    register( $rr, $slice, $chunk_start, $chunk_end );
+				$repeat_size =
+				  $rr->overlap_size( "1", $small_start, $small_end );
+				my $percentage_repeat = $repeat_size/$small_blocksize*100;
 
-    my @dfs = ();
+				push( @dfs,
+					  Bio::EnsEMBL::DensityFeature->new(
+										   -seq_region   => $slice,
+										   -start        => $small_start,
+										   -end          => $small_end,
+										   -density_type => $small_density_type,
+										   -density_value => $percentage_repeat
+					  ) );
+			}
 
-    if( $slice_count < $max_top_slice ) {
-      while ( $variable_end+$variable_blocksize <= $chunk_end ) {
-	# here we can do the variable sized repeat densities
-	$variable_start = $variable_end+1;
-	$variable_end += $variable_blocksize;
+			if (@dfs) {
+				$dfa->store(@dfs);
+			} else {
+				warning( "No repeat density calculated for "
+					   . $slice->name
+					   . " (chunk start $chunk_start, chunk end $chunk_end)." );
+			}
 
-	$repeat_size = $rr->overlap_size( "1", $variable_start, $variable_end );
-	my $percentage_repeat = $repeat_size / $variable_blocksize * 100;
+			my $used_lower_limit =
+			  $small_start < $variable_start ? $small_start : $variable_start;
 
-	push( @dfs, Bio::EnsEMBL::DensityFeature->new
-	      (-seq_region    => $slice,
-	       -start         => $variable_start,
-	       -end           => $variable_end,
-	       -density_type  => $variable_density_type,
-	       -density_value => $percentage_repeat));
+			# here some rr cleanup
+			$rr->check_and_register( "1", 0, $used_lower_limit );
+		} ## end while ( $chunk_end < $slice...)
 
-      }
-    }
+		# missing the last bits
+		if ( $small_end < $slice->length() ) {
+			$small_start = $small_end + 1;
+			$small_end   = $slice->length();
 
-    while ( $small_end + $small_blocksize <= $chunk_end ) {
-      # here we can do the small sized density features
-      $small_start = $small_end+1;
-      $small_end += $small_blocksize;
+			$repeat_size = $rr->overlap_size( "1", $small_start, $small_end );
+			my $percentage_repeat =
+			  $repeat_size/( $small_end - $small_start + 1 )*100;
 
-      $repeat_size = $rr->overlap_size( "1", $small_start, $small_end );
-      my $percentage_repeat = $repeat_size / $small_blocksize * 100;
+			$dfa->store( Bio::EnsEMBL::DensityFeature->new(
+										   -seq_region   => $slice,
+										   -start        => $small_start,
+										   -end          => $small_end,
+										   -density_type => $small_density_type,
+										   -density_value => $percentage_repeat
+						 ) );
+		}
 
-      push( @dfs, Bio::EnsEMBL::DensityFeature->new
-        (-seq_region    => $slice,
-         -start         => $small_start,
-         -end           => $small_end,
-         -density_type  => $small_density_type,
-         -density_value => $percentage_repeat));
-    }
+		if ( $variable_end < $slice->length() && $slice_count < $max_top_slice )
+		{
+			$variable_start = $variable_end + 1;
+			$variable_end   = $slice->length();
 
-    if (@dfs) {
-      $dfa->store(@dfs);
-    } else {
-      warning("No repeat density calculated for ".$slice->name." (chunk start $chunk_start, chunk end $chunk_end).");
-    }
+			$repeat_size =
+			  $rr->overlap_size( "1", $variable_start, $variable_end );
+			my $percentage_repeat =
+			  $repeat_size/( $variable_end - $variable_start + 1 )*100;
 
-    my $used_lower_limit = $small_start<$variable_start?$small_start:$variable_start;
+			$dfa->store( Bio::EnsEMBL::DensityFeature->new(
+										-seq_region   => $slice,
+										-start        => $variable_start,
+										-end          => $variable_end,
+										-density_type => $variable_density_type,
+										-density_value => $percentage_repeat )
+			);
+		}
 
-    # here some rr cleanup
-    $rr->check_and_register( "1", 0, $used_lower_limit );
-  }
-
-  # missing the last bits
-  if( $small_end < $slice->length() ) {
-    $small_start = $small_end+1;
-    $small_end = $slice->length();
-
-    $repeat_size = $rr->overlap_size( "1", $small_start, $small_end );
-    my $percentage_repeat = $repeat_size / ($small_end - $small_start + 1 ) * 100;
-
-    $dfa->store( Bio::EnsEMBL::DensityFeature->new
-		 (-seq_region    => $slice,
-		  -start         => $small_start,
-		  -end           => $small_end,
-		  -density_type  => $small_density_type,
-		  -density_value => $percentage_repeat));
-  }
-
-  if( $variable_end < $slice->length() && $slice_count < $max_top_slice ) {
-    $variable_start = $variable_end+1;
-    $variable_end = $slice->length();
-
-    $repeat_size = $rr->overlap_size( "1", $variable_start, $variable_end );
-    my $percentage_repeat = $repeat_size / ($variable_end - $variable_start+1) * 100;
-
-    $dfa->store( Bio::EnsEMBL::DensityFeature->new
-		 (-seq_region    => $slice,
-		  -start         => $variable_start,
-		  -end           => $variable_end,
-		  -density_type  => $variable_density_type,
-		  -density_value => $percentage_repeat));
-  }
-
-  print STDOUT " DONE.\n";
-}
-
+		print STDOUT " DONE.\n";
+	} ## end while ( my $slice = shift...)
+} ## end for my $db_args ( @{ $cli_helper...})
 
 sub register {
-  my ($rr, $slice, $start, $end ) = @_;
+	my ( $rr, $slice, $start, $end ) = @_;
 
-  my $subSlice = $slice->sub_Slice( $start, $end );
-  my $repeats = $subSlice->get_all_RepeatFeatures();
-  for my $repeat ( @$repeats ) {
-    $rr->check_and_register( "1", $repeat->seq_region_start(), $repeat->seq_region_end() );
-  }
+	my $subSlice = $slice->sub_Slice( $start, $end );
+	my $repeats = $subSlice->get_all_RepeatFeatures();
+	for my $repeat (@$repeats) {
+		$rr->check_and_register( "1",
+								 $repeat->seq_region_start(),
+								 $repeat->seq_region_end() );
+	}
 }
-
-
 
 #
 # helper to draw an ascii representation of the density features
 #
 sub print_features {
-  my $features = shift;
+	my $features = shift;
 
-  return if(!@$features);
+	return if ( !@$features );
 
-  my $sum = 0;
-  my $length = 0;
-#  my $type = $features->[0]->{'density_type'}->value_type();
+	my $sum    = 0;
+	my $length = 0;
+	#  my $type = $features->[0]->{'density_type'}->value_type();
 
-  print("\n");
-  my $max=0;
-  foreach my $f (@$features) {
-    if($f->density_value() > $max){
-      $max=$f->density_value();
-    }
-  }
-  foreach my $f (@$features) {
-    my $i=1;
-    for(; $i< ($f->density_value()/$max)*40; $i++){
-      print "*";
-    }
-    for(my $j=$i;$j<40;$j++){
-      print " ";
-    }
-    print "  ".$f->density_value()."\t".$f->start()."\n";
-  }
-#  my $avg = undef;
-#  $avg = $sum/$length if($length < 0);
-#  print("Sum=$sum, Length=$length, Avg/Base=$sum");
-}
-
+	print("\n");
+	my $max = 0;
+	foreach my $f (@$features) {
+		if ( $f->density_value() > $max ) {
+			$max = $f->density_value();
+		}
+	}
+	foreach my $f (@$features) {
+		my $i = 1;
+		for ( ; $i < ( $f->density_value()/$max )*40; $i++ ) {
+			print "*";
+		}
+		for ( my $j = $i; $j < 40; $j++ ) {
+			print " ";
+		}
+		print "  " . $f->density_value() . "\t" . $f->start() . "\n";
+	}
+	#  my $avg = undef;
+	#  $avg = $sum/$length if($length < 0);
+	#  print("Sum=$sum, Length=$length, Avg/Base=$sum");
+} ## end sub print_features
 
 sub usage {
-  my $indent = ' ' x length($0);
-  print <<EOF; exit(0);
+	my $indent = ' ' x length($0);
+	print <<EOF; exit(0);
 
 What does it do?
 
@@ -373,9 +386,5 @@ Usage:
 
 EOF
 
-}
-
-
-  
-
+} ## end sub usage
 

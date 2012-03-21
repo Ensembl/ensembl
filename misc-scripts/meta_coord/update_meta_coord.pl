@@ -1,13 +1,34 @@
-#!/usr/local/ensembl/bin/perl -w
+#!/usr/bin/env perl
 
+use warnings;
 use strict;
 use Bio::EnsEMBL::DBSQL::DBConnection;
 use Getopt::Long;
+use Bio::EnsEMBL::Utils::CliHelper;
 
-my $help = 0;
-my ( $host, $port, $user, $pass, $dbpattern );
+my @table_names = qw(
+  assembly_exception
+  gene
+  exon
+  density_feature
+  ditag_feature
+  dna_align_feature
+  karyotype
+  marker_feature
+  misc_feature
+  qtl_feature
+  prediction_exon
+  prediction_transcript
+  protein_align_feature
+  repeat_feature
+  simple_feature
+  splicing_event
+  transcript
+);
 
-my $usage = qq(
+sub usage {
+	my ($fail) = @_;
+	my $usage = qq(
   $0 --host ens-staging --port 3306 --user ensadmin \\
     --pass XXX --dbpattern core
 
@@ -36,97 +57,54 @@ table for all the following table names one by one
   splicing_event
   transcript
   );
+	exit $fail;
+} ## end sub usage
 
-if (scalar @ARGV == 0 ) {
-  print $usage, "\n";
-  exit 0;
-}
+use Bio::EnsEMBL::Utils::CliHelper;
 
-GetOptions( 'help'        => \$help,
-            'host=s'      => \$host,
-            'port=i'      => \$port,
-            'user=s'      => \$user,
-            'pass=s'      => \$pass,
-            'dbpattern=s' => \$dbpattern );
+my $cli_helper = Bio::EnsEMBL::Utils::CliHelper->new();
 
-if ($help) {
-  print $usage, "\n";
-  exit 0;
-}
+# get the basic options for connecting to a database server
+my $optsd = $cli_helper->get_dba_opts();
+# process the command line with the supplied options plus a help subroutine
+my $opts = $cli_helper->process_args( $optsd, \&usage );
 
-#print "help: $help argv:"
-  #. scalar(@ARGV)
-  #. "$host $port $user $pass $dbname\n";
+# use the command line options to get an array of database details
+# only process each database name once (to avoid duplication for multispecies dbs)
+for my $db_args ( @{ $cli_helper->get_dba_args_for_opts( $opts, 1 ) } ) {
 
-my $dsn = "DBI:mysql:host=$host";
-$dsn .= ";port=$port" if ($port);
+	my $dba = new Bio::EnsEMBL::DBSQL::DBAdaptor(%$db_args);
+	my $file =
+	  $dba->dbc()->dbname() . "_" . $dba->species_id() . ".meta_coord.backup";
+	my $sys_call = sprintf( "mysql -h%s -P%d -u%s -p'%s' %s > $file",
+							$dba->dbc->host(), $dba->dbc->port(),
+							$dba->dbc->user(), $dba->dbc->pass(),
+							$dba->dbc->dbname() );
 
-my $db = DBI->connect( $dsn, $user, $pass );
+	unless ( system($sys_call) == 0 ) {
+		print STDERR "Can't dump the original meta_coord for back up\n";
+		exit 1;
+	} else {
+		print STDERR "Original meta_coord table backed up in $file\n";
+	}
 
-my @dbnames =
-  map { $_->[0] } @{ $db->selectall_arrayref("show databases") };
+	foreach my $table_name (@table_names) {
 
-for my $dbname (@dbnames) {
+		print STDERR "Updating $table_name table entries...";
+		$dba->dbc()->helper()->execute_update(
+			-SQL =>
+"DELETE mc.* FROM meta_coord mc, coord_system cs WHERE cs.coord_system_id=mc.coord_system_id AND table_name = ? AND cs.species_id=?"
+			,
+			-PARAMS => [ $table_name, $dba->species_id() ] );
 
-  next if ( $dbname !~ /$dbpattern/ );
-
-  my $dbc =
-    new Bio::EnsEMBL::DBSQL::DBConnection( -host   => $host,
-                                           -port   => $port,
-                                           -user   => $user,
-                                           -pass   => $pass,
-                                           -dbname => $dbname );
-
-  my @table_names = qw(
-    assembly_exception
-    gene
-    exon
-    density_feature
-    ditag_feature
-    dna_align_feature
-    karyotype
-    marker_feature
-    misc_feature
-    qtl_feature
-    prediction_exon
-    prediction_transcript
-    protein_align_feature
-    repeat_feature
-    simple_feature
-    splicing_event
-    transcript
-  );
-
-  unless (
-           system(     "mysql -h$host -P$port -u$user -p'$pass' -N "
-                     . "-e 'SELECT * FROM meta_coord' $dbname "
-                     . "> $dbname.meta_coord.backup"
-           ) == 0 )
-  {
-    print STDERR "Can't dump the original meta_coord for back up\n";
-    exit 1;
-  } else {
-    print STDERR "Original meta_coord table backed up in "
-      . "$dbname.meta_coord.backup\n";
-  }
-
-  foreach my $table_name (@table_names) {
-    print STDERR "Updating $table_name table entries...";
-    my $sql = "DELETE FROM meta_coord WHERE table_name = ?";
-    my $sth = $dbc->prepare($sql);
-    $sth->execute($table_name);
-    $sth->finish;
-
-    $sql =
-        "INSERT INTO meta_coord "
-      . "SELECT '$table_name', s.coord_system_id, "
-      . "MAX( t.seq_region_end - t.seq_region_start + 1 ) "
-      . "FROM $table_name t, seq_region s "
-      . "WHERE t.seq_region_id = s.seq_region_id "
-      . "GROUP BY s.coord_system_id";
-    $sth = $dbc->prepare($sql);
-    $sth->execute;
-    $sth->finish;
-    print STDERR "Done\n";
-  }
-} ## end for my $dbname (@dbnames)
+		$dba->dbc()->helper()->execute_update(
+			-SQL => "INSERT INTO meta_coord "
+			  . "SELECT '$table_name', s.coord_system_id, "
+			  . "MAX( t.seq_region_end - t.seq_region_start + 1 ) "
+			  . "FROM $table_name t, seq_region s, coord_system c "
+			  . "WHERE t.seq_region_id = s.seq_region_id AND c.coord_system_id=s.coord_system_id AND c.species_id=?"
+			  . "GROUP BY s.coord_system_id",
+			-PARAMS => [ $dba->species_id() ] );
+		print STDERR "Done\n";
+	}
+} ## end for my $db_args ( @{ $cli_helper...})
