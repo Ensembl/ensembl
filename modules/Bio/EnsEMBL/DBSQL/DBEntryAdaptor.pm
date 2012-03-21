@@ -994,9 +994,9 @@ sub exists {
 
   Arg [1]    : Bio::EnsEMBL::Gene $gene
                (The gene to retrieve DBEntries for)
-  Arg [2]    : optional external database name
-  Arg [3]    : optional external_db type
-  Example    : @db_entries = @{$db_entry_adaptor->fetch_by_Gene($gene)};
+  Arg [2]    : optional external database name. SQL wildcards are accepted
+  Arg [3]    : optional external_db type. SQL wildcards are accepted
+  Example    : @db_entries = @{$db_entry_adaptor->fetch_all_by_Gene($gene)};
   Description: This returns a list of DBEntries associated with this gene.
                Note that this method was changed in release 15.  Previously
                it set the DBLinks attribute of the gene passed in to contain
@@ -1020,6 +1020,21 @@ sub fetch_all_by_Gene {
   return $self->_fetch_by_object_type($gene->dbID(), 'Gene', $ex_db_reg, $exdb_type);
 }
 
+=head2 fetch_all_by_Operon
+
+  Arg [1]    : Bio::EnsEMBL::Operon $operon
+               (The operon to retrieve DBEntries for)
+  Arg [2]    : optional external database name. SQL wildcards are accepted
+  Arg [3]    : optional external_db type. SQL wildcards are accepted
+  Example    : @db_entries = @{$db_entry_adaptor->fetch_all_by_Operon($operon)};
+  Description: This returns a list of DBEntries associated with this operon.
+  Returntype : listref of Bio::EnsEMBL::DBEntries; may be of type IdentityXref if
+               there is mapping data, or OntologyXref if there is linkage data.
+  Exceptions : thows if operon object not passed
+  Caller     : general
+
+=cut
+
 sub fetch_all_by_Operon {
   my ( $self, $gene, $ex_db_reg, $exdb_type ) = @_;
 
@@ -1034,9 +1049,9 @@ sub fetch_all_by_Operon {
 =head2 fetch_all_by_Transcript
 
   Arg [1]    : Bio::EnsEMBL::Transcript
-  Arg [2]    : optional external database name
-  Arg [3]    : optional external_db type
-  Example    : @db_entries = @{$db_entry_adaptor->fetch_by_Gene($trans)};
+  Arg [2]    : optional external database name. SQL wildcards are accepted
+  Arg [3]    : optional external_db type. SQL wildcards are accepted
+  Example    : @db_entries = @{$db_entry_adaptor->fetch_all_by_Transcript($trans)};
   Description: This returns a list of DBEntries associated with this
                transcript. Note that this method was changed in release 15.
                Previously it set the DBLinks attribute of the gene passed in
@@ -1045,7 +1060,7 @@ sub fetch_all_by_Operon {
   Returntype : listref of Bio::EnsEMBL::DBEntries; may be of type IdentityXref if
                there is mapping data, or OntologyXref if there is linkage data.
   Exceptions : throes if transcript argument not passed
-  Caller     : Bio::EnsEMBL::Gene
+  Caller     : Bio::EnsEMBL::Transcript
   Status     : Stable
 
 =cut
@@ -1065,8 +1080,8 @@ sub fetch_all_by_Transcript {
 
   Arg [1]    : Bio::EnsEMBL::Translation $trans
                (The translation to fetch database entries for)
-  Arg [2]    : optional external database name
-  Arg [3]    : optional externaldb type
+  Arg [2]    : optional external database name. SQL wildcards are accepted
+  Arg [3]    : optional externaldb type. SQL wildcards are accepted
   Example    : @db_entries = @{$db_entry_adptr->fetch_all_by_Translation($trans)};
   Description: Retrieves external database entries for an EnsEMBL translation
   Returntype : listref of Bio::EnsEMBL::DBEntries; may be of type IdentityXref if
@@ -1583,33 +1598,47 @@ sub _type_by_external_id {
         . 't.is_current = 1 AND ';
     }
   }
+  
+  my $multispecies = $self->db()->is_multispecies();
 
   if ( lc($ensType) eq 'gene' ) {
-    $from_sql = 'gene g, seq_region s, coord_system cs, ';
-    $where_sql =
-        'g.gene_id = oxr.ensembl_id AND '
-      . 'g.is_current = 1 AND '
-      . 'g.seq_region_id = s.seq_region_id AND '
-      . 's.coord_system_id = cs.coord_system_id AND '
-      . 'cs.species_id = ? AND ';
-  } elsif ( lc($ensType) eq 'transcript' ) {
-    $from_sql = 'transcript t, seq_region s, coord_system cs, ';
-    $where_sql =
-        't.transcript_id = oxr.ensembl_id AND '
-      . 't.is_current = 1 AND '
-      . 't.seq_region_id = s.seq_region_id AND '
-      . 's.coord_system_id = cs.coord_system_id AND '
-      . 'cs.species_id = ? AND ';
-  } elsif ( lc($ensType) eq 'translation' ) {
-    $from_sql = 'transcript t, translation tl, '
-      . 'seq_region s, coord_system cs, ';
-    $where_sql =
-        't.transcript_id = tl.transcript_id AND '
-      . 'tl.translation_id = oxr.ensembl_id AND '
-      . 't.is_current = 1 AND '
-      . 't.seq_region_id = s.seq_region_id AND '
-      . 's.coord_system_id = cs.coord_system_id AND '
-      . 'cs.species_id = ? AND ';
+    $from_sql = 'gene g, ';
+    $from_sql .= 'seq_region s, coord_system cs, ' if $multispecies;
+    
+    $where_sql = 'g.gene_id = oxr.ensembl_id AND g.is_current = 1 AND ';
+    if($multispecies) {
+      $where_sql .= <<'SQL';
+g.seq_region_id = s.seq_region_id AND
+s.coord_system_id = cs.coord_system_id AND
+cs.species_id = ? AND 
+SQL
+    }
+  } 
+  elsif ( lc($ensType) eq 'transcript' ) {
+    $from_sql = 'transcript t, ';
+    $from_sql .= 'seq_region s, coord_system cs, ' if $multispecies;
+    
+    $where_sql = 't.transcript_id = oxr.ensembl_id AND t.is_current = 1 AND ';
+    if($multispecies) {
+      $where_sql .= <<'SQL';
+t.seq_region_id = s.seq_region_id AND
+s.coord_system_id = cs.coord_system_id AND
+cs.species_id = ? AND 
+SQL
+    }
+  } 
+  elsif ( lc($ensType) eq 'translation' ) {
+    $from_sql = 'translation tl, transcript t, ';
+    $from_sql .= 'seq_region s, coord_system cs, ' if $multispecies;
+
+    $where_sql = 't.transcript_id = tl.transcript_id AND tl.translation_id = oxr.ensembl_id AND t.is_current = 1 AND ';
+    if($multispecies) {
+      $where_sql .= <<'SQL';
+t.seq_region_id = s.seq_region_id AND
+s.coord_system_id = cs.coord_system_id AND
+cs.species_id = ? AND 
+SQL
+    }
   }
 
   if ( defined($external_db_name) ) {
@@ -1672,19 +1701,21 @@ sub _type_by_external_id {
 
   my $sth = $self->prepare($query1);
 
-  $sth->bind_param( 1, $self->species_id(), SQL_INTEGER );
-  $sth->bind_param( 2, $name,               SQL_VARCHAR );
-  $sth->bind_param( 3, $name,               SQL_VARCHAR );
-  $sth->bind_param( 4, $ensType,            SQL_VARCHAR );
+  my $queryBind = 1;
+  $sth->bind_param( $queryBind++, $self->species_id(), SQL_INTEGER ) if $multispecies;
+  $sth->bind_param( $queryBind++, $name,               SQL_VARCHAR );
+  $sth->bind_param( $queryBind++, $name,               SQL_VARCHAR );
+  $sth->bind_param( $queryBind++, $ensType,            SQL_VARCHAR );
   $sth->execute();
   my $r;
   while ( $r = $sth->fetchrow_array() ) { $result{$r} = 1 }
 
   $sth = $self->prepare($query2);
 
-  $sth->bind_param( 1, $self->species_id(), SQL_INTEGER );
-  $sth->bind_param( 2, $name,               SQL_VARCHAR );
-  $sth->bind_param( 3, $ensType,            SQL_VARCHAR );
+  $queryBind = 1;
+  $sth->bind_param( $queryBind++, $self->species_id(), SQL_INTEGER ) if $multispecies;
+  $sth->bind_param( $queryBind++, $name,               SQL_VARCHAR );
+  $sth->bind_param( $queryBind++, $ensType,            SQL_VARCHAR );
   $sth->execute();
 
   while ( $r = $sth->fetchrow_array() ) { $result{$r} = 1 }
