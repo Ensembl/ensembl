@@ -16,6 +16,23 @@ sub get_set_lists{
 
 }
 
+
+sub gene_description_sources {
+
+  return ("RFAM",
+          "RNAMMER",
+          "TRNASCAN_SE",
+	  "miRBase",
+          "HGNC",
+          "IMGT/GENE_DB",
+	  "Uniprot/SWISSPROT",
+	  "RefSeq_peptide",
+	  "RefSeq_dna",
+	  "Uniprot/Varsplic",
+	  "Uniprot/SPTREMBL");
+
+}
+
 sub gene_description_filter_regexps {
 
   return ('^UNKNOWN\s+.*',
