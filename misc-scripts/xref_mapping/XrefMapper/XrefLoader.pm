@@ -189,7 +189,7 @@ sub update{
   ####################
 
   my %analysis_ids = $self->get_analysis();
-  my $checksum_analysis_id = $self->get_single_analysis('xrefchecksum');
+  my $checksum_analysis_id; #do not populate until we know we need this
 
 
   print "xref offset is $xref_offset, object_xref offset is $object_xref_offset\n" if ($verbose);
@@ -324,6 +324,10 @@ GSQL
     ### IF CHECKSUM,        xref, object_xref
     # 1:m mapping between object & xref
     elsif($type eq 'CHECKSUM') {
+      #If we had a checksum then get the analysis. Avoids unecessary analysis entries
+      if(! defined $checksum_analysis_id) {
+        $checksum_analysis_id = $self->get_single_analysis('xrefchecksum');
+      }
       my $count = 0;
       $direct_sth->execute($source_id, $type);
       my $last_xref = 0;
