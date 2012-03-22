@@ -27,7 +27,7 @@ sub _xref_helper {
 
 sub logic_name {
   my ($self) = @_;
-  return 'XrefChecksum';
+  return 'xrefchecksum';
 }
 
 sub external_db_name {
