@@ -151,9 +151,8 @@ for my $db_args ( @{ $cli_helper->get_dba_args_for_opts($opts) } ) {
 #for all the translations in the database, run pepstats and update the translation_attrib table
 	my @translation_ids = @{
 		$dba->dbc()->sql_helper()->execute_simple(
--SQL=>"SELECT tl.translation_id FROM translation tl, transcript tr, seq_region s, coord_system c WHERE tl.transcript_id = tr.transcript_id AND tr.seq_region_id = s.seq_region_id AND s.coord_system_id = c.coord_system_id AND c.species_id = ?",
+-SQL=>"SELECT tl.translation_id FROM translation tl, transcript tr, seq_region s, coord_system c WHERE tl.transcript_id = tr.transcript_id AND tr.seq_region_id = s.seq_region_id AND s.coord_system_id = c.coord_system_id AND c.species_id = ? order by tl.translation_id",
 			-PARAMS=>[$dba->species_id()] ) };
-
 	my $translations = {};
 	my $tmpfile      = $opts->{tmpdir} . "/$$.pep";
 	open( TMP, "> $tmpfile" ) || warn "PEPSTAT: $!";
@@ -163,7 +162,7 @@ for my $db_args ( @{ $cli_helper->get_dba_args_for_opts($opts) } ) {
 		#foreach translation, retrieve object
 		my $translation = $translationAdaptor->fetch_by_dbID($dbID);
 		if ( $opts->{verbose} ) {
-			print "processing translation dbID, $dbID...\n";
+			print "Dumping translation dbID, $dbID...\n";
 		}
 		$translations->{$dbID} = $translation;
 		my $peptide_seq = $translation->seq();
@@ -171,6 +170,8 @@ for my $db_args ( @{ $cli_helper->get_dba_args_for_opts($opts) } ) {
 			if ( $peptide_seq !~ /\n$/ ) { $peptide_seq .= "\n" }
 			$peptide_seq =~ s/\*$//;
 			print TMP ">$dbID\n$peptide_seq";
+		} else {
+			print "Skipping translation dbID $dbID due to ambiguity codes...\n";
 		}
 	}
 	close(TMP);
@@ -211,7 +212,7 @@ for my $db_args ( @{ $cli_helper->get_dba_args_for_opts($opts) } ) {
 		my $translation = $translations->{$id};
 		my $aas         = $attribs->{$id};
 		if ( $opts->{verbose} ) {
-			print "Storing attribs for translation dbID, $dbID...\n";
+			print "Storing attribs for translation dbID, $id...\n";
 		}
 		store_translation_attrib( $attributeAdaptor, $translation, $aas );
 	}
@@ -226,7 +227,8 @@ sub remove_old_attributes {
 		print "removing all translation attributes for db, "
 		  . $dba->{_dbc}->{_dbname} . "\n";
 		foreach my $value ( values %{$attributes} ) {
-			$dba->dbc()->sql_helper()->execute_update(-SQL=>"delete ta FROM translation_attrib ta, attrib_type at, translation tl, transcript tr, seq_region s, coord_system c  WHERE at.attrib_type_id = ta.attrib_type_id AND at.code = ? AND ta.translation_id=tl.translation_id and  tl.transcript_id = tr.transcript_id AND tr.seq_region_id = s.seq_region_id AND s.coord_system_id = c.coord_system_id AND c.species_id = ? and at.code=?",-PARAMS=>[$dba->species_id(),$value]);
+		    my $sql = "delete ta FROM translation_attrib ta, attrib_type at, translation tl, transcript tr, seq_region s, coord_system c  WHERE at.attrib_type_id = ta.attrib_type_id AND ta.translation_id=tl.translation_id and  tl.transcript_id = tr.transcript_id AND tr.seq_region_id = s.seq_region_id AND s.coord_system_id = c.coord_system_id AND c.species_id = ? and at.code=?";
+			$dba->dbc()->sql_helper()->execute_update(-SQL=>$sql,-PARAMS=>[$dba->species_id(),$value]);
 		}
 		return;
 
