@@ -8,11 +8,11 @@ use vars '@ISA';
 
 sub get_set_lists{
 
-  return [["ExonerateGappedBest5", ["xenopus_tropicalis","RefSeq_mRNA"]],
-	  ["ExonerateGappedBest5", ["xenopus_tropicalis","RefSeq_mRNA_predicted"]],
-	  ["ExonerateGappedBest5", ["xenopus_tropicalis","RefSeq_ncRNA"]],
-	  ["ExonerateGappedBest5", ["xenopus_tropicalis","RefSeq_ncRNA_predicted"]],
-          ["ExonerateGappedBest1", ["xenopus_tropicalis","*"]]];
+  return [["ExonerateGappedBest5", ["sus_scrofa","RefSeq_mRNA"]],
+	  ["ExonerateGappedBest5", ["sus_scrofa","RefSeq_mRNA_predicted"]],
+	  ["ExonerateGappedBest5", ["sus_scrofa","RefSeq_ncRNA"]],
+	  ["ExonerateGappedBest5", ["sus_scrofa","RefSeq_ncRNA_predicted"]],
+          ["ExonerateGappedBest1", ["sus_scrofa","*"]]];
 
 }
 
@@ -22,22 +22,24 @@ sub gene_description_filter_regexps {
           '^undefined.*');
 
 }
-
-
+        
 
 sub transcript_display_xref_sources {
   my $self     = shift;
 
   my @list = qw(HGNC
                 MGI
+                ZFIN_ID
                 Clone_based_vega_gene
                 Clone_based_ensembl_gene
                 HGNC_transcript_name
                 MGI_transcript_name
+                ZFIN_ID_transcript_name
                 Clone_based_vega_transcript
                 Clone_based_ensembl_transcript
                 miRBase
                 RFAM
+                RNAMMER
                 IMGT/GENE_DB
                 SGD
                 flybase_symbol
@@ -45,13 +47,11 @@ sub transcript_display_xref_sources {
                 Genoscope_annotated_gene
                 Uniprot_genename
                 Uniprot/SWISSPROT
-                Uniprot/Varsplic
-                Uniprot/SPTREMBL
                 EntrezGene
+                TRNASCAN_SE
+                RefSeq_peptide
                 RefSeq_mRNA
-                RefSeq_ncRNA
-                RefSeq_dna
-                RefSeq_peptide);
+                RefSeq_ncRNA);
 
   my %ignore;
 
