@@ -81,7 +81,7 @@ BIGN
 SELECT object_xref_id
     FROM object_xref JOIN xref USING(xref_id) JOIN source USING(source_id)
      WHERE ox_status = 'DUMP_OUT' AND name = 'EntrezGene' 
-      AND accession = '%LOC%'
+      AND label = '%LOC%'
 BIGN
 
 
