@@ -659,12 +659,12 @@ sub fetch_by_dbID {
   if ( defined($transcript) ) {
     my $translation = $self->fetch_by_Transcript($transcript);
 
-    if ( defined($translation) ) {
+    if ( defined($translation) && $translation->dbID()==$dbID ) {
       return $translation;
     }
 
     my @alt_translations =
-      @{ $self->fetch_all_by_Transcript($transcript) };
+      @{ $self->fetch_all_alternative_by_Transcript($transcript) };
 
     foreach my $alt_translation (@alt_translations) {
       if ( $alt_translation->dbID() == $dbID ) {
