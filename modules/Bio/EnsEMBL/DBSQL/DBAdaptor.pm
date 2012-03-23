@@ -916,26 +916,18 @@ sub AUTOLOAD {
   } else {
     throw( sprintf( "Could not work out type for %s\n", $AUTOLOAD ) );
   }
-  my $ret =
-    $reg->get_adaptor( $self->species(), $self->group(), $type );
+  
+  my $ret = $reg->get_adaptor( $self->species(), $self->group(), $type );
 
-  if ($ret) {
+  return $ret if $ret;
+  
+  warning( sprintf(
+    "Could not find %s adaptor in the registry for %s %s\n",
+    $type, $self->species(), $self->group() ) );
 
-    return $ret;
-
-  } else {
-    warning(
-         sprintf(
-                "Could not find %s adaptor in the registry for %s %s\n",
-                $type, $self->species(), $self->group() ) );
-
-    throw( sprintf( "Could not get adaptor %s for %s %s\n",
-                    $type, $self->species(), $self->group() ) );
-
-    return $ret;
-  }
-
-  die( sprintf( "No such method: %s\n", $AUTOLOAD ) );
+  throw( sprintf( 
+    "Could not get adaptor %s for %s %s\n",
+    $type, $self->species(), $self->group() ) );
 
 } ## end sub AUTOLOAD
 
