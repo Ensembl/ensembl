@@ -1222,8 +1222,10 @@ sub fetch_by_chr_band {
   Example    : $slc = $sa->fetch_by_exon_stable_id('ENSE00000302930',10);
   Description: Creates a slice around the region of the specified exon. 
                If a context size is given, the slice is extended by that 
-               number of basepairs on either side of the
-               transcript.
+               number of basepairs on either side of the exon.
+               
+               The slice will be created in the exon's native coordinate system
+               and in the forward orientation.
   Returntype : Bio::EnsEMBL::Slice
   Exceptions : Thrown if the exon is not in the database.
   Caller     : general
@@ -1257,6 +1259,9 @@ sub fetch_by_exon_stable_id{
                If a context size is given, the slice is extended by that 
                number of basepairs on either side of the
                transcript.
+               
+               The slice will be created in the transcript's native coordinate
+               system and in the forward orientation.
   Returntype : Bio::EnsEMBL::Slice
   Exceptions : Thrown if the transcript is not in the database.
   Caller     : general
@@ -1292,6 +1297,9 @@ sub fetch_by_transcript_stable_id{
                If a context size is given, the slice is extended by that
                number of basepairs on either side of the
                transcript.
+               
+               The slice will be created in the transcript's native coordinate
+               system and in the forward orientation.
   Returntype : Bio::EnsEMBL::Slice
   Exceptions : throw on incorrect args
                throw if transcript is not in database
@@ -1327,7 +1335,9 @@ sub fetch_by_transcript_id {
   Description: Creates a slice around the region of the specified gene.
                If a context size is given, the slice is extended by that
                number of basepairs on either side of the gene.
-               The slice will be created in the genes native coordinate system.
+               
+               The slice will be created in the gene's native coordinate system
+               and in the forward orientation.
   Returntype : Bio::EnsEMBL::Slice
   Exceptions : throw on incorrect args
                throw if transcript does not exist
