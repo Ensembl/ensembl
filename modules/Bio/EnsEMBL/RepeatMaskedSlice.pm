@@ -263,8 +263,8 @@ sub subseq {
     
     my $seq_region_slice = $self->seq_region_Slice();
     # The blocksize can be defined on the top of this module.
-    my $block_min = ($self->start()-1) >> $BLOCK_PWR;
-    my $block_max = ($self->end()-1) >> $BLOCK_PWR;
+    my $block_min = ($subsequence_slice->start()-1) >> $BLOCK_PWR;
+    my $block_max = ($subsequence_slice->end()-1) >> $BLOCK_PWR;
     
     my $sub_start = ($block_min << $BLOCK_PWR)+1;
     my $sub_end = ($block_max+1)<<$BLOCK_PWR;
