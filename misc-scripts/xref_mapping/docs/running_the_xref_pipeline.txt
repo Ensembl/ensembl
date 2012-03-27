@@ -1,4 +1,4 @@
-What is the purpose of this document
+oWhat is the purpose of this document
 ------------------------------------
 
 This document shows the steps and best practices for running external 
@@ -16,11 +16,10 @@ Overview of steps
 -----------------
 
 1) configure the system.
-2) update ccds database ( if human or mouse)
-3) update alt_alleles   ( if human)
-4) update LRGs          ( if human)
-5) run the parsing
-6) run the mapping
+2) update ccds database ( if human or mouse) 
+3) update LRGs          ( if human)
+4) run the parsing
+5) run the mapping
 
 Please note the stable_id mapping has to be done and the Vega databases 
 available (for human, mouse and zebrafish) before the xref pipeline can be run.
@@ -39,34 +38,6 @@ i.e. ensembl_ontology_xx where xx is the version. So for ensembl release 65
 this would be database ensembl_ontology_65. Where the 65 is obtained from the 
 API.
 
-Update alt_allele table
------------------------
-
-At present this is just for human. The following script examines the vega 
-database and based on the names creates the alt_alleles for the core database.
-The vega database should already have links to the core database so that is
-how we go from the vega stable_id to ensembl stable_id.
-
-
-In the ensembl/misc-scripts/alt_alleles directory you need to run the script
-alt_alleles.pl 
-
-This can be run using the API to automatically pick up the correct 
-databases (make sure api version is correct to pick this up)
-
-perl alt_alleles.pl -cpass XXXX > & human_release_65_alt_alleles
-
-
-or specify all the arguments i.e.
-
-perl alt_alleles.pl -vhost ens-staging1 -vport 3306 
-                    -vdbname homo_sapiens_vega_65_37 
-                    -cdbname homo_sapiens_core_65_37 
-                    -chost ens-staging1 -cpass XXXX 
-                    >& human_release_65_alt_alleles
-
-
-
 
 Update ccds database
 --------------------
@@ -76,11 +47,9 @@ these in the ccds databases. At present only human and mouse have these.
 The script to run is  store_ccds_xrefs.pl and is in the directory
 ensembl-personal/genebuilders/ccds/scripts.
 
-perl store_ccds_xrefs.pl -ccds_dbname ccds_human_65 -ccds_host
-ens-livemirror -ccds_user rw -ccds_pass passwrod -dbname
-homo_sapiens_core_65_37 -host ens-staging1 -port 3306 -user ro
--verbose -species human -path GRCh37 -write -delete_old
+Submit the job to the farm with 500Mb memory requirement: 
 
+bsub -q normal -M 500000 -R'select[mem>500] rusage[mem=500]' -o /lustre/scratch103/ensembl/mk8/xrefs_67/human/ccds.out -e /lustre/scratch103/ensembl/mk8/xrefs_67/human/ccds.err perl ~/ensembl-personal/genebuilders/ccds/scripts/store_ccds_xrefs.pl -ccds_dbname ccds_human_67 -ccds_host ens-livemirror -ccds_user ensadmin -ccds_pass ensembl -dbname homo_sapiens_core_67_37 -host ens-staging1 -port 3306 -user ensro -verbose -species human -path GRCh37 -write -delete_old
 
 
 update LRGs
@@ -121,14 +90,16 @@ homo_sapiens_rnaseq_65_37 -verify  >& verify.OUT
 
 c shell script to generate the commands:
 
-set db_args = '-host ens-staging -port 3306 -user ensadmin -pass ensembl'
+set db_args = '-host ens-staging -port 3306 -user xxx -pass xxx'
 #delete cdna if it's not ready yet, LRGs will be imported into cdna from core
 set db_types =(core otherfeatures vega rnaseq cdna)
 set species = 'homo_sapiens'
 set dbs = ''
 
 set options = (clean import overlap verify)
-set version = '66_37'
+set version = '67_37'
+set spath = '/nfs/users/nfs_m/mk8/code'
+set outpath = '/lustre/scratch103/ensembl/mk8/xrefs_67/human'
 
 
 foreach type ($db_types)
@@ -136,16 +107,21 @@ foreach type ($db_types)
 end
 
 foreach option ($options)
+	set memory_line = ''
 	if ($option == 'import') then
 	   set command_line_args = "$db_args $dbs -$option -xrefs"
+	   set memory_line = "-q normal -M 1500000 -R'select[mem>1500] rusage[mem=1500]'"
 	else 
 	   set command_line_args = "$db_args $dbs -$option "
 	endif
-	echo "perl scripts/import.lrg.pl  -verbose -do_all $command_line_args >& $option.OUT"
+
+	echo "bsub $memory_line -o $outpath/lrg_$option.out -e $outpath/lrg_$option.err perl $spath/scripts/import.lrg.pl  -verbose -do_all $command_line_args"
 
 end
 
 exit;
+
+
 
 
 If the cdna databases are not yet ready then remove the "-cdna
