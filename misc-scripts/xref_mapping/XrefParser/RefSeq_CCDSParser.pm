@@ -138,6 +138,7 @@ SELECT x.dbprimary_acc, ox.ensembl_id
   FROM xref x, object_xref ox, external_db e
     WHERE x.xref_id = ox.xref_id AND
           x.external_db_id = e.external_db_id AND
+	  ensembl_object_type = 'Transcript' AND
           e.db_name like ?
       ORDER BY x.version
 CCDS
