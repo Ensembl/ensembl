@@ -557,7 +557,7 @@ sub create_xrefs {
 
   $uniprot_io->close();
 
-  print "Read $num_sp SwissProt xrefs, $num_sptr SPTrEMBL xrefs with protein evidence codes 1-3, and $num_sptr_non_display SPTrEMBL xrefs with protein evidence codes > 3 from $file\n" if($verbose);
+  print "Read $num_sp SwissProt xrefs, $num_sptr SPTrEMBL xrefs with protein evidence codes 1-2, and $num_sptr_non_display SPTrEMBL xrefs with protein evidence codes > 2 from $file\n" if($verbose);
   print "Found $num_sp_pred predicted SwissProt xrefs and $num_sptr_pred predicted SPTrEMBL xrefs\n" if (($num_sp_pred > 0 || $num_sptr_pred > 0) and $verbose);
 
 
