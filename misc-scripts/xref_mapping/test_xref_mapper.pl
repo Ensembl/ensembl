@@ -338,8 +338,7 @@ $mapper->xref($xref); # attach xref object to mapper object
 
 #### test bit
 
-#$mapper->build_transcript_display_xrefs();
-$mapper->new_build_gene_descriptions();
+
 exit();
 
 #### end test bit
