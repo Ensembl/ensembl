@@ -557,19 +557,12 @@ sub set_transcript_and_gene_display_xref_via_clone_name{
   my $g_source_id;
   my $desc;
   my $name;
-  if(defined($vega_clone_name) && !defined($ens_clone_names->{$gene_id})){
+  if(defined($vega_clone_name)){
     $name = $vega_clone_name;
     $t_source_id = $dbname_to_source_id->{"Clone_based_vega_transcript"};
     $g_source_id = $dbname_to_source_id->{"Clone_based_vega_gene"};
     $name = $vega_clone_name;
     $desc = "via havana clone name";
-    my $num = 1;
-    my $unique_name = $name.".".$num;
-    while(defined($xref_added->{$unique_name.":".$g_source_id}) ){
-	 $num++;
-	 $unique_name = $name.".".$num;
-    }
-    $name = $unique_name;
   }
   if (!defined($vega_clone_name) ) {
       if (defined($ens_clone_names->{$gene_id})) {
