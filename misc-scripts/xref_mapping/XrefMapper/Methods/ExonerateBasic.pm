@@ -265,7 +265,7 @@ EON
   my $queue = $self->mapper->farm_queue || 'long';
 
 
-  my $usage = "-q $queue ".'-R "select[linux] -rusage[tmp='.$disk_space_needed.']" '.'-J "'.$unique_name.'[1-'.$num_jobs.']%200" -o '.$prefix.'.%J-%I.out -e  '.$prefix.'.%J-%I.err';
+  my $usage = "-q $queue ".'-R "-rusage[tmp='.$disk_space_needed.']" '.'-J "'.$unique_name.'[1-'.$num_jobs.']%200" -o '.$prefix.'.%J-%I.out -e  '.$prefix.'.%J-%I.err';
 
 
   my $command = $exe." ".$query." ".$target.' --querychunkid $LSB_JOBINDEX --querychunktotal '.$num_jobs.' --showvulgar false --showalignment FALSE --ryo "xref:%qi:%ti:%ei:%ql:%tl:%qab:%qae:%tab:%tae:%C:%s\n" '.$options_str;
