@@ -66,7 +66,7 @@ SELECT t.stable_id, x.dbprimary_acc
           ox.ensembl_object_type = "Transcript" AND
           ox.ensembl_id = t.transcript_id AND
           e.external_db_id = x.external_db_id AND
-          e.db_name like "Ens_%_transcript"
+          e.db_name like "Ens\_%\_transcript"
 SCD
 
   my %seen;
