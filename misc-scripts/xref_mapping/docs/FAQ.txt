@@ -322,7 +322,7 @@ data_uri        = ftp://fantom.gsc.riken.jp/DDBJ_fantom3_HTC_accession.txt.gz
     display_xrefs (names)?
 
    The external databases to be used for the display_xrefs are taken from either 
-   the BasicMapper.pm subroutine transcript_display_sources  i.e.
+   the DisplayXrefs.pm subroutine transcript_display_sources  i.e.
 
    sub transcript_display_xref_sources {
      my @list = qw(miRBase
