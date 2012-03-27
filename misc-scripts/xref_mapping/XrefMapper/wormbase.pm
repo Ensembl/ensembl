@@ -7,18 +7,6 @@ use vars qw(@ISA);
 @ISA = qw(XrefMapper::BasicMapper);
 
 
-sub get_set_lists {
-
-  return [["ExonerateGappedBest5", ["caenorhabditis_elegans","RefSeq_mRNA"]],
-	  ["ExonerateGappedBest5", ["caenorhabditis_elegans","RefSeq_mRNA_predicted"]],
-	  ["ExonerateGappedBest5", ["caenorhabditis_elegans","RefSeq_ncRNA"]],
-	  ["ExonerateGappedBest5", ["caenorhabditis_elegans","RefSeq_ncRNA_predicted"]],
-          ["ExonerateGappedBest1", ["caenorhabditis_elegans","*"]]];
-
-}
-
-
-
 # Abstact superclass, not intended to be created directly. Contains
 # common methods for the "tierII" nematodes in WormBase
 
