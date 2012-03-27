@@ -20,17 +20,15 @@ $OUTPUT_AUTOFLUSH = 1;
 my $start_time = time();
 
 sub short_usage {
-  my $indent = ' ' x length($0);
-
   print <<SHORT_USAGE_END;
 Usage:
   $0 --pass=XXX \\
-  $indent [--noflush] [--nocheck] \\
-  $indent [--noopt] [--noinnodb] [--skip_views] [--force] \\
-  $indent [ --only_tables=XXX,YYY | --skip_tables=XXX,YYY ] \\
-  $indent [ input_file |
-  $indent   --source=db\@host[:port] \\
-  $indent   --target=db\@host[:port] ]
+  \t[--noflush] [--nocheck] \\
+  \t[--noopt] [--noinnodb] [--skip_views] [--force] \\
+  \t[ --only_tables=XXX,YYY | --skip_tables=XXX,YYY ] \\
+  \t[ input_file |
+  \t  --source=db\@host[:port] \\
+  \t  --target=db\@host[:port] ]
 
   $0 --help
 
@@ -40,8 +38,6 @@ SHORT_USAGE_END
 }
 
 sub long_usage {
-  my $indent = ' ' x length($0);
-
   short_usage();
 
   print <<LONG_USAGE_END;
