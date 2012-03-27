@@ -37,6 +37,9 @@ use strict;
 use warnings;
 use base qw/Bio::EnsEMBL::Storable/;
 
+use Bio::EnsEMBL::Utils::Argument qw/rearrange/;
+use Bio::EnsEMBL::Utils::Scalar qw/assert_ref/;
+
 =head2 new
 
   Arg [-ADAPTOR]      : Bio::EnsEMBL::DBSQL::IntronSupportingEvidenceAdaptor
