@@ -26,6 +26,8 @@ my $core    = 0;
 my $verbose = 0;
 my $dumppath;
 
+my $do_drop_backup_table = 0;
+
 # Do command line parsing.
 if ( !GetOptions( 'mhost|mh=s'     => \$mhost,
                   'mport|mP=i'     => \$mport,
@@ -42,7 +44,8 @@ if ( !GetOptions( 'mhost|mh=s'     => \$mhost,
                   'type|t=s'       => \$dbtype,
                   'verbose|v!'     => \$verbose,
                   'core=i'         => \$core,
-                  'dumppath|dp=s'  => \$dumppath )
+                  'dumppath|dp=s'  => \$dumppath,
+                  'dropbak|dB!'   => \$do_drop_backup_table, )
      ||
      !( defined($host) &&
         defined($user) &&
@@ -65,7 +68,7 @@ Usage:
   $0 -h host [-P port] \\
   $indent -u user [-p password]
   $indent -d database | --pattern pattern \\
-  $indent -dp dumppath \\
+  $indent -dp dumppath [-dB] \\
   $indent [-s species -t type] \\
   $indent [-mh host] [-mP port] \\
   $indent [-mu user] [-mp password] [-md database] \\
@@ -83,6 +86,9 @@ Usage:
 
   -dp / --dumppath    Dump path.
                       Back-up table into the specified directory path.
+
+  -dB / --dropbak     Drop the backup table before exiting.  This reuires
+                      the use of the -dp option.
 
   --pattern           User database by Perl regular expressionm
                       e.g. --pattern="^homo.*(rnaseq|vega)_62".
@@ -136,6 +142,10 @@ if ($core) {
 
 if ( defined($dbname) && defined($dbpattern) ) {
   die("-d/--database and --pattern/--core are mutually exclusive\n");
+}
+
+if ( $do_drop_backup_table && !defined($dumppath) ) {
+  die("The --dropbak (-dB) option required --dumppath (-dp)\n");
 }
 
 # Fetch all data from the master database.
@@ -367,6 +377,11 @@ my %data;
         print("\n");
       }
 
+      if ($do_drop_backup_table) {
+        printf( "Dropping the backup table '%s'\n",
+                $full_table_name_bak );
+        $dbh->do( sprintf( "DROP TABLE %s", $full_table_name_bak ) );
+      }
     }
 
   } ## end while ( $sth->fetch() )
