@@ -377,7 +377,7 @@ CREATE TABLE gene (
 @desc Enables storage of attributes that relate to genes.
 
 @column gene_id             Foreign key references to the @link gene table.
-@column attrib_type_id      Foreign key references to the @link attribute_type table.
+@column attrib_type_id      Foreign key references to the @link attrib_type table.
 @column value               Attribute value.
 
 
@@ -640,7 +640,7 @@ CREATE TABLE seq_region (
 @desc Allows "attributes" to be defined for certain seq_regions. Provides a way of storing extra information about particular seq_regions without adding extra columns to the seq_region table. e.g.
 
 @column seq_region_id       Foreign key references to the @link seq_region table.
-@column attrib_type_id      Foreign key references to the @link attribute_type table.
+@column attrib_type_id      Foreign key references to the @link attrib_type table.
 @column value               Attribute value.
 
 @see seq_region
@@ -727,7 +727,7 @@ CREATE TABLE transcript (
 @desc Enables storage of attributes that relate to transcripts.
 
 @column transcript_id       Foreign key references to the @link transcript table.
-@column attrib_type_id      Foreign key references to the @link attribute_type table.
+@column attrib_type_id      Foreign key references to the @link attrib_type table.
 @column value               Attribute value.
 
 
@@ -791,7 +791,7 @@ CREATE TABLE translation (
 @desc Enables storage of attributes that relate to translations.
 
 @column translation_id      Foreign key references to the @link transcript table.
-@column attrib_type_id      Foreign key references to the @link attribute_type table.
+@column attrib_type_id      Foreign key references to the @link attrib_type table.
 @column value               Attribute value.
 
 @see translation
@@ -1305,7 +1305,7 @@ CREATE TABLE marker_synonym (
 @desc Stores arbitrary attributes about the features in the misc_feature table.
 
 @column misc_feature_id     Foreign key references to the @link misc_feature table.
-@column attrib_type_id      Foreign key references to the @link attribute_type table.
+@column attrib_type_id      Foreign key references to the @link attrib_type table.
 @column value               Attribute value.
 
 @see misc_feature
