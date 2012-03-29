@@ -257,7 +257,7 @@ SQL
       {}, $db_hash->{species_id}, $db_hash->{db_type}, $release);
       
     if($already_recorded[0]) {
-      my @name = $dbh->selectrow_array('select name from species where species_id =?', {}, $db_hash->{species_id});
+      my @name = $dbh->selectrow_array('select common_name from species where species_id =?', {}, $db_hash->{species_id});
       printf("Species '%s' has a database '%s' recorded for this release. Updating\n", $name[0], $database);
       
       $update_sth->bind_param( 1, 1,                          SQL_INTEGER );
