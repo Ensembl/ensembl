@@ -247,7 +247,7 @@ else {
   my $sth = $dbh->prepare($statement);
   my $update_sth = $dbh->prepare(<<'SQL');
 update db set is_current =?, db_assembly=?, db_suffix =?, db_host =? 
-where species_id =? and db_type =? and db_release =?'
+where species_id =? and db_type =? and db_release =?
 SQL
 
   foreach my $database ( sort keys(%databases) ) {
