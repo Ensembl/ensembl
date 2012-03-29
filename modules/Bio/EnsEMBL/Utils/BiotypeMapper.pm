@@ -126,13 +126,15 @@ my %feature_so_mapping = (
 my %grouping_of_biotypes = (
     # Genebuilder/Havana categorisation
     'protein_coding' => [qw( protein_coding polymorphic_pseudogene   )],
-    'pseudogene'     => [qw( pseudogene retrotransposed )],
+    'pseudogene'     => [qw( pseudogene retrotransposed snRNA_pseudogene tRNA_pseudogene
+                            miRNA_pseudogene Mt_tRNA_pseudogene rRNA_pseudogene
+                            scRNA_pseudogene misc_RNA_pseudogene snoRNA_pseudogene
+                        )],
     'long_noncoding' => [qw( 3prime_overlapping_ncrna antisense lincRNA ncrna_host non_coding 
                             processed_transcript sense_intronic sense_overlapping
                         )],
-    'short_noncoding'=> [qw( miRNA miRNA_pseudogene misc_RNA misc_RNA_pseudogene Mt_tRNA 
-                            Mt_tRNA_pseudogene rRNA rRNA_pseudogene scRNA_pseudogene snoRNA
-                            snoRNA_pseudogene snRNA snRNA_pseudogene tRNA_pseudogene
+    'short_noncoding'=> [qw( miRNA misc_RNA  Mt_tRNA 
+                             rRNA snoRNA  snRNA 
                         )],
     # practical Ensembl core categories for fasta dumping
     'cDNA'              => [qw( protein_coding polymorphic_pseudogene IG_V_gene TR_V_gene 
