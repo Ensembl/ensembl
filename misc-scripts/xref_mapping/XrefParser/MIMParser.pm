@@ -63,8 +63,8 @@ sub run {
     my $type =undef;
     if(/\*FIELD\*\s+NO\n(\d+)/){
       $number = $1;
-      $source_id = $gene_source_id;
-      if(/\*FIELD\*\sTI\n([\^\#\%\+\*]*\d+)(.*)\n/){
+      $source_id = $gene_source_id;      
+      if(/\*FIELD\*\sTI\n([\^\#\%\+\*]*)\d+(.*)\n/){
 	$label =$2; # taken from description as acc is meaning less
 	$long_desc = $2;
 	$type = $1;
