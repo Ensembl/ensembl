@@ -111,7 +111,7 @@ foreach my $dbname (@dbnames) {
             ++$update_0;
           }
         }
-        $gene_adaptor->dbc()->sql_helper()->excute_update(
+        $gene_adaptor->dbc()->sql_helper()->execute_update(
           -SQL => 'update exon set is_constitutive = ? where exon_id =?',
           -PARAMS => [$is_constitutive, $exon->dbID()]
         );
