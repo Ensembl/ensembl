@@ -119,7 +119,7 @@ my $sql = qq(
   AND cs1.version = '$assembly'
   AND cs2.version = '$altassembly'
   AND sr2.name = ?
-  ORDER BY a.cmp_start
+  ORDER BY a.ori, a.cmp_start
 );
 
 my $sth = $dbh->prepare($sql);
