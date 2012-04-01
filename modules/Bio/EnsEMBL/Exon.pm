@@ -398,33 +398,32 @@ sub strand {
 =cut
 
 sub cdna_start {
-  my $self = shift;
-  my ($transcript) = @_;
+  my ($self, $transcript) = @_;
+  assert_ref($transcript, 'Bio::EnsEMBL::Transcript', 'transcript');
 
-  if (    !defined($transcript)
-       || !ref($transcript)
-       || !$transcript->isa('Bio::EnsEMBL::Transcript') )
-  {
-    throw("Argument is not a transcript");
+  my $id = $transcript->dbID();
+  
+  if(defined $id && exists $self->{cdna_start}->{$id}) {
+    return $self->{cdna_start}->{$id};
+  }
+  
+  my $cdna_start;
+  my @coords = $transcript->genomic2cdna($self->start(), $self->end(), $self->strand());
+  if(@coords && !$coords[0]->isa('Bio::EnsEMBL::Mapper::Gap')) {
+    $cdna_start = $coords[0]->start();
+  }
+  elsif(@coords) {
+    throw "Last part of exon maps into gap";
+  }
+  else {
+    throw "Can not map exon";
+  }
+  
+  if(defined $id) {
+    $self->{cdna_start}->{$id} = $cdna_start;
   }
 
-  my $transcript_id = $transcript->dbID();
-
-  if ( !exists( $self->{'cdna_start'}->{$transcript_id} ) ) {
-    my @coords =
-      $transcript->genomic2cdna( $self->start(), $self->end(),
-                                 $self->strand() );
-
-    if ( @coords && !$coords[0]->isa('Bio::EnsEMBL::Mapper::Gap') ) {
-      $self->{'cdna_start'}->{$transcript_id} = $coords[0]->start();
-    } elsif (@coords) {
-      throw("First part of exon maps into a gap");
-    } else {
-      throw("Can not map exon");
-    }
-  }
-
-  return $self->{'cdna_start'}->{$transcript_id};
+  return $cdna_start;
 } ## end sub cdna_start
 
 =head2 cdna_end
@@ -448,33 +447,32 @@ sub cdna_start {
 =cut
 
 sub cdna_end {
-  my $self = shift;
-  my ($transcript) = @_;
+  my ($self, $transcript) = @_;
+  assert_ref($transcript, 'Bio::EnsEMBL::Transcript', 'transcript');
 
-  if (    !defined($transcript)
-       || !ref($transcript)
-       || !$transcript->isa('Bio::EnsEMBL::Transcript') )
-  {
-    throw("Argument is not a transcript");
+  my $id = $transcript->dbID();
+  
+  if(defined $id && exists $self->{cdna_end}->{$id}) {
+    return $self->{cdna_end}->{$id};
+  }
+  
+  my $cdna_end;
+  my @coords = $transcript->genomic2cdna($self->start(), $self->end(), $self->strand());
+  if(@coords && !$coords[-1]->isa('Bio::EnsEMBL::Mapper::Gap')) {
+    $cdna_end = $coords[-1]->end();
+  }
+  elsif(@coords) {
+    throw "Last part of exon maps into gap";
+  }
+  else {
+    throw "Can not map exon";
+  }
+  
+  if(defined $id) {
+    $self->{cdna_end}->{$id} = $cdna_end;
   }
 
-  my $transcript_id = $transcript->dbID();
-
-  if ( !exists( $self->{'cdna_end'}->{$transcript_id} ) ) {
-    my @coords =
-      $transcript->genomic2cdna( $self->start(), $self->end(),
-                                 $self->strand() );
-
-    if ( @coords && !$coords[-1]->isa('Bio::EnsEMBL::Mapper::Gap') ) {
-      $self->{'cdna_end'}->{$transcript_id} = $coords[-1]->end();
-    } elsif (@coords) {
-      throw("Last part of exon maps into gap");
-    } else {
-      throw("Can not map exon");
-    }
-  }
-
-  return $self->{'cdna_end'}->{$transcript_id};
+  return $cdna_end;
 } ## end sub cdna_end
 
 =head2 cdna_coding_start
@@ -497,56 +495,55 @@ sub cdna_end {
 =cut
 
 sub cdna_coding_start {
-  my $self = shift;
-  my ($transcript) = @_;
+  my ($self, $transcript) = @_;
+  assert_ref($transcript, 'Bio::EnsEMBL::Transcript', 'transcript');
 
-  if (    !defined($transcript)
-       || !ref($transcript)
-       || !$transcript->isa('Bio::EnsEMBL::Transcript') )
-  {
-    throw("Argument is not a transcript");
+  my $id = $transcript->dbID();
+  
+  if(defined $id && exists $self->{cdna_coding_start}->{$id}) {
+    return $self->{cdna_coding_start}->{$id};
   }
+  
+  my $cdna_coding_start;
+  my $transcript_coding_start = $transcript->cdna_coding_start();
+  if(defined $transcript_coding_start) {
+    my $cdna_start = $self->cdna_start($transcript);
+    
+    if ( $transcript_coding_start < $cdna_start ) {
+      # Coding region starts upstream of this exon...
 
-  my $transcript_id = $transcript->dbID();
-
-  if ( !exists( $self->{'cdna_coding_start'}->{$transcript_id} ) ) {
-    my $transcript_coding_start = $transcript->cdna_coding_start();
-
-    if ( !defined($transcript_coding_start) ) {
-      # This is a non-coding transcript.
-      $self->{'cdna_coding_start'}->{$transcript_id} = undef;
-      $self->{'cdna_coding_end'}->{$transcript_id}   = undef;
-    } else {
-      my $cdna_start = $self->cdna_start($transcript);
-
-      if ( $transcript_coding_start < $cdna_start ) {
-        # Coding region starts upstream of this exon...
-
-        if ( $transcript->cdna_coding_end() < $cdna_start ) {
-          # ... and also ends upstream of this exon.
-          $self->{'cdna_coding_start'}->{$transcript_id} = undef;
-        } else {
-          # ... and does not end upstream of this exon.
-          $self->{'cdna_coding_start'}->{$transcript_id} = $cdna_start;
-        }
-      } else {
-        # Coding region starts either within or downstream of this
-        # exon.
-
-        if ( $transcript_coding_start <= $self->cdna_end($transcript) )
-        {
-          # Coding region starts within this exon.
-          $self->{'cdna_coding_start'}->{$transcript_id} =
-            $transcript_coding_start;
-        } else {
-          # Coding region starts downstream of this exon.
-          $self->{'cdna_coding_start'}->{$transcript_id} = undef;
-        }
+      if ( $transcript->cdna_coding_end() < $cdna_start ) {
+        # ... and also ends upstream of this exon.
+        $cdna_coding_start = undef;
       }
-    } ## end else [ if ( !defined($transcript_coding_start...
-  } ## end if ( !exists( $self->{...
+      else {
+        # ... and does not end upstream of this exon.
+        $cdna_coding_start = $cdna_start;
+      }
+    } else {
+      # Coding region starts either within or downstream of this
+      # exon.
 
-  return $self->{'cdna_coding_start'}->{$transcript_id};
+      if ( $transcript_coding_start <= $self->cdna_end($transcript) ) {
+        # Coding region starts within this exon.
+        $cdna_coding_start = $transcript_coding_start;
+      }
+      else {
+        # Coding region starts downstream of this exon.
+        $cdna_coding_start = undef;
+      }
+    }
+  }
+  else {
+    $cdna_coding_start = undef;
+  }
+  
+  if(defined $id) {
+    $self->{cdna_coding_start}->{$id} = $cdna_coding_start;
+    $self->{cdna_coding_end}->{$id} = undef if ! defined $cdna_coding_start;
+  }
+  
+  return $cdna_coding_start;
 } ## end sub cdna_coding_start
 
 =head2 cdna_coding_end
@@ -569,56 +566,56 @@ sub cdna_coding_start {
 =cut
 
 sub cdna_coding_end {
-  my $self = shift;
-  my ($transcript) = @_;
+  my ($self, $transcript) = @_;
+  assert_ref($transcript, 'Bio::EnsEMBL::Transcript', 'transcript');
 
-  if (    !defined($transcript)
-       || !ref($transcript)
-       || !$transcript->isa('Bio::EnsEMBL::Transcript') )
-  {
-    throw("Argument is not a transcript");
+  my $id = $transcript->dbID();
+  
+  if(defined $id && exists $self->{cdna_coding_end}->{$id}) {
+    return $self->{cdna_coding_end}->{$id};
   }
-
-  my $transcript_id = $transcript->dbID();
-
-  if ( !exists( $self->{'cdna_coding_end'}->{$transcript_id} ) ) {
-    my $transcript_coding_end = $transcript->cdna_coding_end();
-
-    if ( !defined($transcript_coding_end) ) {
-      # This is a non-coding transcript.
-      $self->{'cdna_coding_start'}->{$transcript_id} = undef;
-      $self->{'cdna_coding_end'}->{$transcript_id}   = undef;
-    } else {
-      my $cdna_end = $self->cdna_end($transcript);
-
-      if ( $transcript_coding_end > $cdna_end ) {
-        # Coding region ends downstream of this exon...
-
-        if ( $transcript->cdna_coding_start() > $cdna_end ) {
-          # ... and also starts downstream of this exon.
-          $self->{'cdna_coding_end'}->{$transcript_id} = undef;
-        } else {
-          # ... and does not start downstream of this exon.
-          $self->{'cdna_coding_end'}->{$transcript_id} = $cdna_end;
-        }
-      } else {
-        # Coding region ends either within or upstream of this
-        # exon.
-
-        if ( $transcript_coding_end >= $self->cdna_start($transcript) )
-        {
-          # Coding region ends within this exon.
-          $self->{'cdna_coding_end'}->{$transcript_id} =
-            $transcript_coding_end;
-        } else {
-          # Coding region ends upstream of this exon.
-          $self->{'cdna_coding_end'}->{$transcript_id} = undef;
-        }
+  
+  my $cdna_coding_end;
+  my $transcript_coding_end = $transcript->cdna_coding_end();
+  if(defined $transcript_coding_end) {
+    my $cdna_end = $self->cdna_end($transcript);
+    
+    if ( $transcript_coding_end > $cdna_end ) {
+      
+      # Coding region ends downstream of this exon...
+      if ( $transcript->cdna_coding_start() > $cdna_end ) {
+        # ... and also starts downstream of this exon.
+        $cdna_coding_end = undef;
+      } 
+      else {
+        # ... and does not start downstream of this exon.
+        $cdna_coding_end = $cdna_end;
       }
-    } ## end else [ if ( !defined($transcript_coding_end...
-  } ## end if ( !exists( $self->{...
+    }  
+    else {
+      # Coding region ends either within or upstream of this
+      # exon.
 
-  return $self->{'cdna_coding_end'}->{$transcript_id};
+      if ( $transcript_coding_end >= $self->cdna_start($transcript) ) {
+        # Coding region ends within this exon.
+        $cdna_coding_end = $transcript_coding_end;
+      } 
+      else {
+        # Coding region ends upstream of this exon.
+        $cdna_coding_end = undef;
+      }
+    }
+  }
+  else {
+    $cdna_coding_end = undef;
+  }
+  
+  if(defined $id) {
+    $self->{cdna_coding_end}->{$id} = $cdna_coding_end;
+    $self->{cdna_coding_start}->{$id} = undef if ! defined $cdna_coding_end;
+  }
+  
+  return $cdna_coding_end;
 } ## end sub cdna_coding_end
 
 =head2 coding_region_start
@@ -644,57 +641,56 @@ sub cdna_coding_end {
 # of cdna_coding_start().
 
 sub coding_region_start {
-  my $self = shift;
-  my ($transcript) = @_;
+  my ($self, $transcript) = @_;
+  assert_ref($transcript, 'Bio::EnsEMBL::Transcript', 'transcript');
 
-  if (    !defined($transcript)
-       || !ref($transcript)
-       || !$transcript->isa('Bio::EnsEMBL::Transcript') )
-  {
-    throw("Argument is not a transcript");
+  my $id = $transcript->dbID();
+  
+  if(defined $id && exists $self->{coding_region_start}->{$id}) {
+    return $self->{coding_region_start}->{$id};
   }
+  
+  my $coding_region_start;
+  my $transcript_coding_start = $transcript->cdna_coding_start();
+  if(defined $transcript_coding_start) {
+    my $start = $self->start();
+    
+    if ( $transcript_coding_start < $start ) {
+      # Coding region starts upstream of this exon...
 
-  my $transcript_id = $transcript->dbID();
-
-  if ( !exists( $self->{'coding_region_start'}->{$transcript_id} ) ) {
-    my $transcript_coding_start = $transcript->coding_region_start();
-
-    if ( !defined($transcript_coding_start) ) {
-      # This is a non-coding transcript.
-      $self->{'coding_region_start'}->{$transcript_id} = undef;
-      $self->{'coding_region_end'}->{$transcript_id}   = undef;
-    } else {
-      my $start = $self->start();
-
-      if ( $transcript_coding_start < $start ) {
-        # Coding region starts upstream of this exon...
-
-        if ( $transcript->coding_region_end() < $start ) {
-          # ... and also ends upstream of this exon.
-          $self->{'coding_region_start'}->{$transcript_id} = undef;
-          $self->{'coding_region_end'}->{$transcript_id}   = undef;
-        } else {
-          # ... and does not end upstream of this exon.
-          $self->{'coding_region_start'}->{$transcript_id} = $start;
-        }
-      } else {
-        # Coding region starts either within or downstream of this
-        # exon.
-
-        if ( $transcript_coding_start <= $self->end() ) {
-          # Coding region starts within this exon.
-          $self->{'coding_region_start'}->{$transcript_id} =
-            $transcript_coding_start;
-        } else {
-          # Coding region starts downstream of this exon.
-          $self->{'coding_region_start'}->{$transcript_id} = undef;
-          $self->{'coding_region_end'}->{$transcript_id}   = undef;
-        }
+      if ( $transcript->coding_region_end() < $start ) {
+        # ... and also ends upstream of this exon.
+        $coding_region_start = undef;
+      } 
+      else {
+        # ... and does not end upstream of this exon.
+        $coding_region_start = $start;
       }
-    } ## end else [ if ( !defined($transcript_coding_start...
-  } ## end if ( !exists( $self->{...
+    } 
+    else {
+      # Coding region starts either within or downstream of this
+      # exon.
 
-  return $self->{'coding_region_start'}->{$transcript_id};
+      if ( $transcript_coding_start <= $self->end() ) {
+        # Coding region starts within this exon.
+        $coding_region_start = $transcript_coding_start;
+      } 
+      else {
+        # Coding region starts downstream of this exon.
+        $coding_region_start = undef;
+      }
+    }
+  }
+  else {
+    $coding_region_start = undef;
+  }
+  
+  if(defined $id) {
+    $self->{coding_region_start}->{$id} = $coding_region_start;
+    $self->{coding_region_end}->{$id} = undef if ! defined $coding_region_start;
+  }
+  
+  return $coding_region_start;
 } ## end sub coding_region_start
 
 =head2 coding_region_end
@@ -720,57 +716,54 @@ sub coding_region_start {
 # of cdna_coding_end().
 
 sub coding_region_end {
-  my $self = shift;
-  my ($transcript) = @_;
+  my ($self, $transcript) = @_;
+  assert_ref($transcript, 'Bio::EnsEMBL::Transcript', 'transcript');
 
-  if (    !defined($transcript)
-       || !ref($transcript)
-       || !$transcript->isa('Bio::EnsEMBL::Transcript') )
-  {
-    throw("Argument is not a transcript");
+  my $id = $transcript->dbID();
+  
+  if(defined $id && exists $self->{coding_region_end}->{$id}) {
+    return $self->{coding_region_end}->{$id};
   }
+  
+  my $coding_region_end;
+  my $transcript_coding_end = $transcript->coding_region_end();
+  if(defined $transcript_coding_end) {
+    
+    my $end = $self->end();
+    if($transcript_coding_end > $end) {
+      # Coding region ends downstream of this exon...
 
-  my $transcript_id = $transcript->dbID();
-
-  if ( !exists( $self->{'coding_region_end'}->{$transcript_id} ) ) {
-    my $transcript_coding_end = $transcript->coding_region_end();
-
-    if ( !defined($transcript_coding_end) ) {
-      # This is a non-coding transcript.
-      $self->{'coding_region_start'}->{$transcript_id} = undef;
-      $self->{'coding_region_end'}->{$transcript_id}   = undef;
-    } else {
-      my $end = $self->end();
-
-      if ( $transcript_coding_end > $end ) {
-        # Coding region ends downstream of this exon...
-
-        if ( $transcript->coding_region_start() > $end ) {
-          # ... and also starts downstream of this exon.
-          $self->{'coding_region_start'}->{$transcript_id} = undef;
-          $self->{'coding_region_end'}->{$transcript_id}   = undef;
-        } else {
-          # ... and does not start downstream of this exon.
-          $self->{'coding_region_end'}->{$transcript_id} = $end;
-        }
-      } else {
-        # Coding region ends either within or upstream of this
-        # exon.
-
-        if ( $transcript_coding_end >= $self->start() ) {
-          # Coding region ends within this exon.
-          $self->{'coding_region_end'}->{$transcript_id} =
-            $transcript_coding_end;
-        } else {
-          # Coding region ends upstream of this exon.
-          $self->{'coding_region_start'}->{$transcript_id} = undef;
-          $self->{'coding_region_end'}->{$transcript_id}   = undef;
-        }
+      if ( $transcript->coding_region_start() > $end ) {
+        # ... and also starts downstream of this exon.
+        $coding_region_end = undef;
+      } 
+      else {
+        # ... and does not start downstream of this exon.
+        $coding_region_end = $end;
       }
-    } ## end else [ if ( !defined($transcript_coding_end...
-  } ## end if ( !exists( $self->{...
-
-  return $self->{'coding_region_end'}->{$transcript_id};
+    }
+    else {
+      # Coding region ends either within or upstream of this
+      # exon.
+      if ( $transcript_coding_end >= $self->start() ) {
+        $coding_region_end = $transcript_coding_end;
+      }
+      else {
+        $coding_region_end = undef;
+      }
+    }
+  }
+  else {
+    # This is a non-coding transcript.
+    $coding_region_end = undef;
+  }
+  
+  if(defined $id) {
+    $self->{coding_region_end}->{$id} = $coding_region_end;
+    $self->{coding_region_start}->{$id} = undef if ! defined $coding_region_end;
+  }
+  
+  return $coding_region_end;
 } ## end sub coding_region_end
 
 =head2 slice
@@ -926,8 +919,8 @@ sub transform {
 
   # catch for old style transform calls
   if( !@_  || ( ref $_[0] && 
-	       ($_[0]->isa( "Bio::EnsEMBL::Slice" ) or $_[0]->isa( "Bio::EnsEMBL::LRGSlice" ))
-	      )) {
+         ($_[0]->isa( "Bio::EnsEMBL::Slice" ) or $_[0]->isa( "Bio::EnsEMBL::LRGSlice" ))
+        )) {
     deprecate('Calling transform without a coord system name is deprecated.');
     return $self->_deprecated_transform(@_);
   }
@@ -1025,7 +1018,7 @@ sub add_supporting_features {
     } 
     
     if ((defined $self->slice() && defined $feature->slice())&&
-	    ( $self->slice()->name() ne $feature->slice()->name())){
+      ( $self->slice()->name() ne $feature->slice()->name())){
       throw("Supporting feat not in same coord system as exon\n" .
             "exon is attached to [".$self->slice()->name()."]\n" .
             "feat is attached to [".$feature->slice()->name()."]");
@@ -1034,8 +1027,8 @@ sub add_supporting_features {
     foreach my $added_feature ( @{ $self->{_supporting_evidence} } ){
       # compare objects
       if ( $feature == $added_feature ){
-	# this feature has already been added
-	next FEATURE;
+  # this feature has already been added
+  next FEATURE;
       }
     }
     
@@ -1128,9 +1121,9 @@ sub find_supporting_evidence {
     } 
     else {
       if ($f->entire_seq()->name eq $self->slice()->name) {
-	if ($f->end >= $self->start && $f->start <= $self->end && $f->strand == $self->strand) {
-	  $self->add_supporting_features($f);
-	}
+  if ($f->end >= $self->start && $f->start <= $self->end && $f->strand == $self->strand) {
+    $self->add_supporting_features($f);
+  }
       }
     }
   }
@@ -1344,8 +1337,8 @@ sub peptide {
     else {
       my ($e_id, $tr_id) = ($self->stable_id(), $tr->stable_id());
       throw("Error. Exon maps to multiple locations in peptide and those". 
-	    " locations are not continuous." .
-	    " Is this exon [$e_id] a member of this transcript [$tr_id]?");
+      " locations are not continuous." .
+      " Is this exon [$e_id] a member of this transcript [$tr_id]?");
     }
   } 
   elsif(scalar(@coords) == 1) {
@@ -1401,7 +1394,7 @@ sub _merge_ajoining_coords {
   }
   
   my $new_coord = Bio::EnsEMBL::Mapper::Coordinate->new(
-	$coord->id(), $start, $last_end, $coord->strand(), $coord->rank());
+  $coord->id(), $start, $last_end, $coord->strand(), $coord->rank());
   return $new_coord;
 }
 
@@ -1446,29 +1439,29 @@ sub seq {
     }
 
     if ($self->slice->is_circular() ) {
-	if (    $self->slice->start > $self->slice->end) {
+  if (    $self->slice->start > $self->slice->end) {
 # Normally exons overlapping chromosome origin will have negative feature start, but slice will be from 1 .. length 
 # But in case you got an exon attached to  a sub slice try this
-	    my $mid_point = $self->slice()->seq_region_length() - $self->slice()->start() + 1;
-	    my $seq1 =	$self->slice()->subseq( $self->start(), $mid_point, $self->strand() );
+      my $mid_point = $self->slice()->seq_region_length() - $self->slice()->start() + 1;
+      my $seq1 =  $self->slice()->subseq( $self->start(), $mid_point, $self->strand() );
 
-	    my $seq2 = $self->slice()->subseq( $mid_point + 1, $self->end(), $self->strand() );
+      my $seq2 = $self->slice()->subseq( $mid_point + 1, $self->end(), $self->strand() );
 
-	    $seq = $self->strand() > 0 ? "$seq1$seq2" : "$seq2$seq1";
-	} elsif ( $self->start < 0 ||  $self->start > $self->end) {
+      $seq = $self->strand() > 0 ? "$seq1$seq2" : "$seq2$seq1";
+  } elsif ( $self->start < 0 ||  $self->start > $self->end) {
 # Normally exons overlapping chromosome origin will be 0 based, and can have negative start
 # But if you go via sub_Slice it gives you chromosome based coordinates, i.e it will have start greater then end
-	    my $start_point = $self->slice->seq_region_length + $self->slice->start;
-	    my $mid_point = $self->slice->seq_region_length;
-	    my $seq1 =	$self->slice->subseq( $self->start, $mid_point, $self->strand);
-	    my $seq2 = $self->slice->subseq(1, $self->end, $self->strand );
-	    $seq = $self->strand > 0 ? "$seq1$seq2" : "$seq2$seq1";
-	} else {
+      my $start_point = $self->slice->seq_region_length + $self->slice->start;
+      my $mid_point = $self->slice->seq_region_length;
+      my $seq1 =  $self->slice->subseq( $self->start, $mid_point, $self->strand);
+      my $seq2 = $self->slice->subseq(1, $self->end, $self->strand );
+      $seq = $self->strand > 0 ? "$seq1$seq2" : "$seq2$seq1";
+  } else {
 # End this is the case for genes not overlapping the origin
-	    $seq = $self->slice()->subseq( $self->start(), $self->end(), $self->strand() );
-	}
+      $seq = $self->slice()->subseq( $self->start(), $self->end(), $self->strand() );
+  }
     } else {
-	$seq = $self->slice()->subseq( $self->start(), $self->end(), $self->strand() );
+  $seq = $self->slice()->subseq( $self->start(), $self->end(), $self->strand() );
     }
 
     $self->{'_seq_cache'} = $seq;
@@ -1666,4 +1659,3 @@ sub type {
 
 
 1;
-
