@@ -209,7 +209,7 @@ if($status eq "biomart_test_finished"){
 
 $status = $mapper->xref_latest_status();
 if($status eq "source_level_move_finished"){ 
-  $mapper->process_alt_alleles()
+    $mapper->process_alt_alleles();
 }
 
 
