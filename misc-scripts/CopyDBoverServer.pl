@@ -23,7 +23,7 @@ sub short_usage {
   print <<SHORT_USAGE_END;
 Usage:
   $0 --pass=XXX \\
-  \t[--noflush] [--nocheck] \\
+  \t[--noflush] [--nocheck] [--notargetflush]\\
   \t[--noopt] [--noinnodb] [--skip_views] [--force] \\
   \t[ --only_tables=XXX,YYY | --skip_tables=XXX,YYY ] \\
   \t[ input_file |
@@ -76,6 +76,9 @@ Command line switches:
                     index data onto disk.  This may be a time consuming
                     operation for very large tables.  The --noopt flag
                     disables the optimization.
+  
+  --notargetflush   (Optional)
+                    Skips table flushing on the target machine.
 
   --noinnodb        (Optional)
                     Skip the copy of any InnoDB table encountered.
@@ -191,11 +194,13 @@ my $opt_optimize = 1;    # Optimize the tables by default.
 my $opt_force = 0; # Do not reuse existing staging directory by default.
 my $opt_skip_views = 0;    # Process views by default
 my $opt_innodb     = 1;    # Don't skip InnoDB by default
+my $opt_flushtarget = 1;
 my $opt_tmpdir;
 my ( $opt_source, $opt_target );
 
 if ( !GetOptions( 'pass=s'        => \$opt_password,
                   'flush!'        => \$opt_flush,
+                  'flushtarget!'  => \$opt_flushtarget,
                   'check!'        => \$opt_check,
                   'opt!'          => \$opt_optimize,
                   'force!'        => \$opt_force,
@@ -929,6 +934,13 @@ TABLE:
 
     $spec->{'status'} =
       sprintf( "SUCCESS: cleanup of '%s' may be needed", $staging_dir );
+  }
+  
+  # Flush tables on target.
+  if ($opt_flushtarget) {
+    print("FLUSHING TABLES ON TARGET...\n");
+    my $ddl = sprintf('FLUSH TABLES %s', join(q{, }, @tables)); 
+    $target_dbh->do($ddl);
   }
 
 } ## end foreach my $spec (@todo)
