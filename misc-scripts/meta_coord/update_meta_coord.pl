@@ -106,8 +106,8 @@ for my $dbname (@dbnames) {
     next;
   }
   else {
-    print STDERR "Original meta_coord table backed up in " .
-      "$dbname.meta_coord.backup\n";
+    print( "Original meta_coord table backed up in \n" .
+           "\t$dbname.meta_coord.backup\n" );
   }
 
   foreach my $table_name (@table_names) {
