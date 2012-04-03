@@ -337,7 +337,7 @@ from    (   source s
   left join gene_transcript_translation gtt_translation
     on (gtt_translation.translation_id = ox.ensembl_id)
 where   ox.ox_status = 'DUMP_OUT'
-        AND s.status like "KNOWN%"
+        AND s.status like 'KNOWN%'
         AND ox.linkage_type <> 'DEPENDENT'
         ORDER BY gene_id DESC, transcript_id DESC
 DXS
@@ -663,8 +663,6 @@ from    (   display_xref_prioritys p
   left join gene_transcript_translation gtt_translation
     on (gtt_translation.translation_id = ox.ensembl_id)
 where   ox.ox_status = 'DUMP_OUT'
-        AND s.status like "KNOWN%"
-        AND ox.linkage_type <> 'DEPENDENT'
 order by    gene_id DESC, p.priority DESC, (ix.target_identity+ix.query_identity) DESC, ox.unused_priority DESC
 
 DXS
@@ -911,8 +909,6 @@ from    (   gene_desc_prioritys p
   left join gene_transcript_translation gtt_translation
     on (gtt_translation.translation_id = ox.ensembl_id)
 where   ox.ox_status = 'DUMP_OUT'
-        AND s.status like "KNOWN%"
-        AND ox.linkage_type <> 'DEPENDENT'
 order by    gene_id desc,
             p.priority desc,
             (ix.target_identity+ix.query_identity) desc
