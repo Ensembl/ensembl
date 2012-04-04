@@ -100,7 +100,7 @@ q{Command line options -d/--database and --pattern are mututally exclusive};
 
 sub databases {
   my ($self) = @_;
-  my $dbc    = $self->_source_dbc();
+  my $dbc    = $self->_core_dbc();
   my $o      = $self->{opts};
   my ( $sql, $params ) = ( 'show databases', [] );
   my $database = $o->{database};
