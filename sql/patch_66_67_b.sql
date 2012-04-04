@@ -6,12 +6,23 @@
 # The stable ID views, introduced for release 65 as a way of providing a
 # degree of backward compatibility, are dropped with this release.
 
-DROP VIEW exon_stable_id;
-DROP VIEW gene_stable_id;
-DROP VIEW operon_stable_id;
-DROP VIEW operon_transcript_stable_id;
-DROP VIEW translation_stable_id;
-DROP VIEW transcript_stable_id;
+-- Heavens!
+
+DROP VIEW IF EXISTS exon_stable_id;
+DROP VIEW IF EXISTS gene_stable_id;
+DROP VIEW IF EXISTS operon_stable_id;
+DROP VIEW IF EXISTS operon_transcript_stable_id;
+DROP VIEW IF EXISTS translation_stable_id;
+DROP VIEW IF EXISTS transcript_stable_id;
+
+DROP TABLE IF EXISTS exon_stable_id;
+DROP TABLE IF EXISTS gene_stable_id;
+DROP TABLE IF EXISTS operon_stable_id;
+DROP TABLE IF EXISTS operon_transcript_stable_id;
+DROP TABLE IF EXISTS translation_stable_id;
+DROP TABLE IF EXISTS transcript_stable_id;
+
+
 
 # Patch identifier:
 INSERT INTO meta (species_id, meta_key, meta_value)
