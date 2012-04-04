@@ -210,11 +210,12 @@ sub _backup {
     $table = sprintf( "meta_bak_%d", $increment );
     my $res =
       $core->dbc()->sql_helper()
-      ->execute_simple( -SQL => 'show databases like ?', -PARAMS => [$table] );
+      ->execute_simple( -SQL => 'show tables like ?', -PARAMS => [$table] );
     if ( scalar( @{$res} ) ) {
       next;
     }
     last;    #if no results then name is free
+    $increment++;
   }
 
   $self->v( 'Backing up to %s', $table );
