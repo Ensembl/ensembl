@@ -94,14 +94,19 @@ SELECT object_xref_id
       AND priority_description = 'protein_evidence_gt_2'
 BIGN
 
-  $ignore{"EntrezGene/LOC"} =(<<CIGN);
+  $ignore{"LOC"} =(<<CIGN);
 SELECT object_xref_id
     FROM object_xref JOIN xref USING(xref_id) JOIN source USING(source_id)
-     WHERE ox_status = 'DUMP_OUT' AND name = 'EntrezGene' 
-      AND label = '%LOC%'
+     WHERE ox_status = 'DUMP_OUT' AND name in ('Uniprot_genename','EntrezGene') 
+      AND label like 'LOC%'
 CIGN
 
-
+  $ignore{"SSC"} =(<<DIGN);
+SELECT object_xref_id
+    FROM object_xref JOIN xref USING(xref_id) JOIN source USING(source_id)
+     WHERE ox_status = 'DUMP_OUT' AND name in ('Uniprot_genename','miRBase') 
+      AND label like 'SSC%'
+DIGN
   return [\@list,\%ignore];
 }
 
