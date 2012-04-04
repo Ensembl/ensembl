@@ -165,7 +165,7 @@ join ncbi_taxa_node t2 on (t2.left_index <= t.left_index and t2.right_index >= t
 join ncbi_taxa_name n on (t2.taxon_id = n.taxon_id)
 where t.taxon_id =?
 and n.name_class =? 
-and t2.tank not in (?,?,?)
+and t2.rank not in (?,?,?)
 order by t2.left_index desc
 SQL
   my $dbc = $self->_taxon_dbc();
