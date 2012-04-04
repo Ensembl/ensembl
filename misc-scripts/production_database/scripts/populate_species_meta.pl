@@ -156,7 +156,7 @@ sub _taxonomy {
   my ( $self, $db ) = @_;
   $self->v('Querying taxonomy for classification');
   my $taxon          = $self->_db_to_taxon($db);
-  my $excluded_ranks = [qw/species root genus/];
+  my @excluded_ranks = qw/species root genus/;
   my $sql            = <<'SQL';
 select n.name
 from ncbi_taxa_node t 
@@ -169,7 +169,7 @@ order by t2.left_index desc
 SQL
   my $res = $self->_taxon_dbc()->sql_helper()->execute_simple(
     -SQL    => $sql,
-    -PARAMS => [ $taxon, 'scientific name', $excluded_ranks ]
+    -PARAMS => [ $taxon, 'scientific name', @excluded_ranks ]
   );
   $self->v( 'Classification is [%s]', join( q{, }, @{$res} ) );
   return $res;
