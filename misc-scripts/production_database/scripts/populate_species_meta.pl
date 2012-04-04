@@ -208,6 +208,7 @@ sub _backup {
   my $table;
   while (1) {
     $table = sprintf( "meta_bak_%d", $increment );
+    $self->v('Testing if "%s" is free', $table );
     my $res =
       $core->sql_helper()
       ->execute_simple( -SQL => 'show tables like ?', -PARAMS => [$table] );
