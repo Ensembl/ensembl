@@ -652,11 +652,11 @@ TABLE:
     else {
       if ($opt_skip_views) {
         warn( sprintf( "SKIPPING view '%s'\n", $table ) );
-        next TABLE;
       }
       else {
         push( @views, $table );
       }
+      next TABLE;
     }
 
     push( @tables, $table );
