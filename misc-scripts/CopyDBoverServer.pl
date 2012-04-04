@@ -945,7 +945,7 @@ TABLE:
                                  'PrintError' => 1,
                                  'AutoCommit' => 0
                                } );
-    
+    $tdbh->do("use $target_db");
     my $ddl = sprintf('FLUSH TABLES %s', join(q{, }, @tables)); 
     $tdbh->do($ddl);
     $tdbh->disconnect();
