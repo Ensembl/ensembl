@@ -184,21 +184,11 @@ sub _db_to_taxon {
   
   #Try DB first
   $taxon = $self->_core_dba($db)->get_MetaContainer()->single_value_by_key('species.taxonomy_id');
-  if($taxon) {
-    $self->{_db_to_taxon}->{$db} = $taxon;
-    return $taxon;
+  if(!$taxon) {
+    die "Cannot discover the taxonomy id for the database $db. Populate meta with 'species.taxonomy_id'";
   }
-    
-  #Try production
-  my $prod = $self->_production_dbc();
-  my $sql = 'select taxon from species s join db d using (species_id) join db_list db using (db_id) where db.full_db_name =?';
-  $taxon = $prod->sql_helper()->execute_single_result(-SQL => $sql, -PARAMS => [$db]);
-  if($taxon) {
-    $self->{_db_to_taxon}->{$db} = $taxon;
-    return $taxon;
-  }
-  
-  die "Cannot discover the taxonomy id for the database $db. Either populate meta with 'species.taxonomy_id' or update the production database";
+  $self->{_db_to_taxon}->{$db} = $taxon;
+  return $taxon;
 }
 
 sub _core_dba {
