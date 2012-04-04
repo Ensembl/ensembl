@@ -157,11 +157,10 @@ sub _get_meta {
 sub _get_production {
   my ($self, $source_hash) = @_;
   my $target_dbc = $self->_target_dbc();
-  my $db_name = $source_hash->{db_name};
   my $hash;
   $target_dbc->sql_helper()->execute_no_return(
-    -SQL => 'select species_id, common_name, web_name, scientific_name, production_name, url_name, taxon from species where db_name =?',
-    -PARAMS => [$db_name],
+    -SQL => 'select species_id, common_name, web_name, scientific_name, production_name, url_name, taxon from species where taxon =?',
+    -PARAMS => [$source_hash->{taxon}],
     -CALLBACK => sub {
       my ($r) = @_;
       my $i = 0;
