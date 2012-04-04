@@ -7,13 +7,16 @@
 -- The 'species' table.
 -- Lists the species for which there is a Core database.
 CREATE TABLE species (
-  species_id     INTEGER UNSIGNED NOT NULL AUTO_INCREMENT,
-  db_name        VARCHAR(255) NOT NULL, -- Name used in database names.
-  common_name    VARCHAR(255) NOT NULL, -- What we often refer to it as.
-  web_name       VARCHAR(255) NOT NULL, -- Name that the web site is using.
-  taxon          VARCHAR(20),
-  species_prefix VARCHAR(20),
-  is_current     BOOLEAN NOT NULL DEFAULT true,
+  species_id      INTEGER UNSIGNED NOT NULL AUTO_INCREMENT,
+  db_name         VARCHAR(255) NOT NULL, -- Name used in database names.
+  common_name     VARCHAR(255) NOT NULL, -- What we often refer to it as.
+  web_name        VARCHAR(255) NOT NULL, -- Name that the web site is using.
+  scientific_name VARCHAR(255) NOT NULL, -- Full name of the species
+  production_name VARCHAR(255) NOT NULL, -- Name that production processes use
+  url_name        VARCHAR(255) NOT NULL, -- Name that is used in URLs
+  taxon           VARCHAR(20),
+  species_prefix  VARCHAR(20),
+  is_current      BOOLEAN NOT NULL DEFAULT true,
 
   -- Columns for the web interface:
   created_by    INTEGER,
