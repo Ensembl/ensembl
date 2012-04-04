@@ -902,7 +902,7 @@ TABLE:
 
   move( catfile( $staging_dir, 'db.opt' ), $destination_dir );
 
-  foreach my $table (@tables) {
+  foreach my $table (@tables, @views) {
     my @files =
       glob( catfile( $staging_dir, sprintf( "%s*", $table ) ) );
 
