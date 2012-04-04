@@ -220,10 +220,9 @@ sub _backup {
   }
 
   $self->v( 'Backing up to %s', $table );
-  $core->dbc()->do( sprintf( 'create table %s like meta', $table ) );
+  $core->do( sprintf( 'create table %s like meta', $table ) );
   $self->v( 'Copying data from meta to %s', $table );
-  $core->dbc()
-    ->do( sprintf( 'insert into %s select * from meta', $table ) );
+  $core->do( sprintf( 'insert into %s select * from meta', $table ) );
   $self->v('Done backup');
 
   return;
