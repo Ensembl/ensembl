@@ -124,7 +124,8 @@ sub databases {
 sub _production {
   my ( $self, $db ) = @_;
   $self->v('Querying production');
-  my $h     = $self->_production_dbc()->sql_helper();
+  my $dbc   = $self->_production_dbc();
+  my $h     = $dbc->sql_helper();
   my $taxon = $self->_db_to_taxon($db);
   my $hash  = { 'species.taxonomy_id' => $taxon };
   my $sql =
@@ -167,7 +168,8 @@ and n.name_class =?
 and t2.tank not in (?,?,?)
 order by t2.left_index desc
 SQL
-  my $res = $self->_taxon_dbc()->sql_helper()->execute_simple(
+  my $dbc = $self->_taxon_dbc();
+  my $res = $dbc->sql_helper()->execute_simple(
     -SQL    => $sql,
     -PARAMS => [ $taxon, 'scientific name', @excluded_ranks ]
   );
