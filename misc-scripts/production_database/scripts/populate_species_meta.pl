@@ -158,6 +158,7 @@ sub _taxonomy {
   $self->v('Querying taxonomy for classification');
   my $taxon          = $self->_db_to_taxon($db);
   my @excluded_ranks = qw/species root genus/;
+  my @excluded_names = ('cellular organisms', 'root');
   my $sql            = <<'SQL';
 select n.name
 from ncbi_taxa_node t 
@@ -166,12 +167,13 @@ join ncbi_taxa_name n on (t2.taxon_id = n.taxon_id)
 where t.taxon_id =?
 and n.name_class =? 
 and t2.rank not in (?,?,?)
+and n.name not in (?,?)
 order by t2.left_index desc
 SQL
   my $dbc = $self->_taxon_dbc();
   my $res = $dbc->sql_helper()->execute_simple(
     -SQL    => $sql,
-    -PARAMS => [ $taxon, 'scientific name', @excluded_ranks ]
+    -PARAMS => [ $taxon, 'scientific name', @excluded_ranks, @excluded_names ]
   );
   $self->v( 'Classification is [%s]', join( q{, }, @{$res} ) );
   return $res;
@@ -181,7 +183,7 @@ sub _meta {
   my ( $self, $db ) = @_;
   my $production = $self->_production($db);
   my $taxonomy   = $self->_taxonomy($db);
-  $production->{'species.taxonomy_id'} = $taxonomy;
+  $production->{'species.classification'} = $taxonomy;
 
   $self->v('Updating meta');
   my $dba = $self->_core_dba($db);
