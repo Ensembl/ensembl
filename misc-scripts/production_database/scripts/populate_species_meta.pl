@@ -11,14 +11,14 @@ use Bio::EnsEMBL::Utils::Scalar qw/wrap_array/;
 
 sub run {
   my ($class) = @_;
-  my $self = bless({}, $class);
+  my $self = bless( {}, $class );
   $self->args();
   $self->check_opts();
   my $databases = $self->databases();
-  foreach my $db (@{$databases}) {
-    $self->v('Processing %s', $db);
+  foreach my $db ( @{$databases} ) {
+    $self->v( 'Processing %s', $db );
     $self->_backup($db);
-    $self->_meta($db);  
+    $self->_meta($db);
     $self->v('Done');
   }
   return;
@@ -26,26 +26,26 @@ sub run {
 
 sub args {
   my ($self) = @_;
-  
+
   my $opts = {
-    
+
     # Master database location:
-    mhost => 'ens-staging1',
-    mport => 3306,
-    muser => 'ensro',
+    mhost     => 'ens-staging1',
+    mport     => 3306,
+    muser     => 'ensro',
     mdatabase => 'ensembl_production',
-    
+
     # Taxonomy database location:
     thost => 'ens-staging1',
     tuser => 3306,
     tport => 3306,
-    
+
     # User database location (default values):
     port => 3306,
-    
-    backup => 1 #default backups on 
+
+    backup => 1    #default backups on
   };
-  
+
   my @cmd_opts = qw/
     mhost|mh=s
     mport|mP=i
@@ -67,10 +67,10 @@ sub args {
     backup
     help
     man
-  /;
-  GetOptions($opts, @cmd_opts) or pod2usage(-verbose => 1, -exitval => 1);
-  pod2usage(-verbose => 1, -exitval => 0) if $opts->{help};
-  pod2usage(-verbose => 2, -exitval => 0) if $opts->{man};
+    /;
+  GetOptions( $opts, @cmd_opts ) or pod2usage( -verbose => 1, -exitval => 1 );
+  pod2usage( -verbose => 1, -exitval => 0 ) if $opts->{help};
+  pod2usage( -verbose => 2, -exitval => 0 ) if $opts->{man};
   $self->{opts} = $opts;
   return;
 }
@@ -78,77 +78,86 @@ sub args {
 sub check_opts {
   my ($self) = @_;
   my $o = $self->{opts};
-  
+
   foreach my $required (qw/host user tdatabase/) {
     my $msg = "Required parameter --${required} was not given";
-    pod2usage(-msg => $msg, -verbose => 1, -exitval => 1) if ! $o->{$required};
+    pod2usage( -msg => $msg, -verbose => 1, -exitval => 1 ) if !$o->{$required};
   }
-  
-  if($o->{database} && $o->{pattern}) {
-    my $msg = q{Command line options -d/--database and --pattern are mututally exclusive};
-    pod2usage(-msg => $msg, -verbose => 1, -exitval => 1);
+
+  if ( $o->{database} && $o->{pattern} ) {
+    my $msg =
+q{Command line options -d/--database and --pattern are mututally exclusive};
+    pod2usage( -msg => $msg, -verbose => 1, -exitval => 1 );
   }
-  
-  if($o->{pattern}) {
+
+  if ( $o->{pattern} ) {
     my $pattern = $o->{pattern};
     $o->{pattern} = qr/$pattern/;
   }
-  
+
   return;
 }
 
 sub databases {
   my ($self) = @_;
-  my $dbc = $self->_source_dbc();
-  my $o = $self->{opts};
-  my ($sql, $params) = ('show databases', []);
+  my $dbc    = $self->_source_dbc();
+  my $o      = $self->{opts};
+  my ( $sql, $params ) = ( 'show databases', [] );
   my $database = $o->{database};
-  if($database) {
-    $self->v('Filtering databases with the SQL like expression %s', $database);
+  if ($database) {
+    $self->v( 'Filtering databases with the SQL like expression %s',
+      $database );
     $sql .= ' like ?';
     $params = [$database];
   }
-  my $dbs = $dbc->sql_helper()->execute_simple(-SQL => $sql, -PARAMS => $params);
+  my $dbs =
+    $dbc->sql_helper()->execute_simple( -SQL => $sql, -PARAMS => $params );
   my $pattern = $o->{pattern};
-  if($pattern) {
-    $self->v('Filtering databases with the pattern %s', $pattern);
+  if ($pattern) {
+    $self->v( 'Filtering databases with the pattern %s', $pattern );
     $dbs = [ grep { $_ =~ $pattern } @{$dbs} ];
   }
-  $self->v('Found %d database(s)', scalar(@{$dbs}));
+  $self->v( 'Found %d database(s)', scalar( @{$dbs} ) );
   return $dbs;
 }
 
 sub _production {
-  my ($self, $db) = @_;
+  my ( $self, $db ) = @_;
   $self->v('Querying production');
-  my $h = $self->_production_dbc()->sql_helper();
+  my $h     = $self->_production_dbc()->sql_helper();
   my $taxon = $self->_db_to_taxon($db);
-  my $hash = { 'species.taxonomy_id' => $taxon };
-  my $sql = 'select common_name, web_name, scientific_name, production_name, url_name, species_prefix from species where taxon =?';
-  $h->execute_no_return(-SQL => $sql, -PARAMS => [$taxon], -CALLBACK => sub {
-    my ($row) = @_;
-    my $i = 0;
-    $hash->{'species.common_name'} = $row->[$i++];
-    $hash->{'species.display_name'} = $row->[$i++];
-    $hash->{'species.scientific_name'} = $row->[$i++];
-    $hash->{'species.production_name'} = $row->[$i++];
-    $hash->{'species.url'} = $row->[$i++];
-    $hash->{'species.stable_id_prefix'} = $row->[$i++];
-    return;
-  });
+  my $hash  = { 'species.taxonomy_id' => $taxon };
+  my $sql =
+'select common_name, web_name, scientific_name, production_name, url_name, species_prefix from species where taxon =?';
+  $h->execute_no_return(
+    -SQL      => $sql,
+    -PARAMS   => [$taxon],
+    -CALLBACK => sub {
+      my ($row) = @_;
+      my $i = 0;
+      $hash->{'species.common_name'}      = $row->[ $i++ ];
+      $hash->{'species.display_name'}     = $row->[ $i++ ];
+      $hash->{'species.scientific_name'}  = $row->[ $i++ ];
+      $hash->{'species.production_name'}  = $row->[ $i++ ];
+      $hash->{'species.url'}              = $row->[ $i++ ];
+      $hash->{'species.stable_id_prefix'} = $row->[ $i++ ];
+      return;
+    }
+  );
   $hash->{'species.alias'} = $h->execute_simple(
-    -SQL => 'select sa.alias from species_alias sa join species s using (species_id) where s.taxon =?',
+    -SQL =>
+'select sa.alias from species_alias sa join species s using (species_id) where s.taxon =?',
     -PARAMS => [$taxon]
   );
   return $hash;
 }
 
 sub _taxonomy {
-  my ($self, $db) = @_;
+  my ( $self, $db ) = @_;
   $self->v('Querying taxonomy for classification');
-  my $taxon = $self->_db_to_taxon($db);
+  my $taxon          = $self->_db_to_taxon($db);
   my $excluded_ranks = [qw/species root genus/];
-  my $sql = <<'SQL';
+  my $sql            = <<'SQL';
 select n.name
 from ncbi_taxa_node t 
 join ncbi_taxa_node t2 on (t2.left_index <= t.left_index and t2.right_index >= t.right_index)
@@ -158,126 +167,146 @@ and n.name_class =?
 and t2.tank not in (?,?,?)
 order by t2.left_index desc
 SQL
-  my $res = $self->_taxon_dbc()->sql_helper()->execute_simple(-SQL => $sql, -PARAMS => [$taxon, 'scientific name', $excluded_ranks]);
-  $self->v('Classification is [%s]', join(q{, }, @{$res}));
+  my $res = $self->_taxon_dbc()->sql_helper()->execute_simple(
+    -SQL    => $sql,
+    -PARAMS => [ $taxon, 'scientific name', $excluded_ranks ]
+  );
+  $self->v( 'Classification is [%s]', join( q{, }, @{$res} ) );
   return $res;
 }
 
 sub _meta {
-  my ($self, $db) = @_;
+  my ( $self, $db ) = @_;
   my $production = $self->_production($db);
-  my $taxonomy = $self->_taxonomy($db);
+  my $taxonomy   = $self->_taxonomy($db);
   $production->{'species.taxonomy_id'} = $taxonomy;
-  
+
   $self->v('Updating meta');
   my $dba = $self->_core_dba($db);
-  my $mc = $dba->get_MetaContainer();
-  foreach my $key (keys %{$production}) {
-    my $array = wrap_array($production->{$key});
+  my $mc  = $dba->get_MetaContainer();
+  foreach my $key ( keys %{$production} ) {
+    my $array = wrap_array( $production->{$key} );
     $mc->delete_key($key);
-    foreach my $value (@{$array}) {
-      $mc->store_key_value($key, $value);
+    foreach my $value ( @{$array} ) {
+      $mc->store_key_value( $key, $value );
     }
   }
   return;
 }
 
 sub _backup {
-  my ($self, $db) = @_;
+  my ( $self, $db ) = @_;
   my $o = $self->{opts};
-  
-  if(! $o->{backup}) {
+
+  if ( !$o->{backup} ) {
     $self->v('Skipping backup');
     return;
   }
-  
+
   my $increment = 0;
-  my $core = $self->_core_dba($db);
+  my $core      = $self->_core_dba($db);
   my $table;
-  while(1) {
-    $table = sprintf("meta_bak_%d", $increment);
-    my $res = $core->dbc()->sql_helper()->execute_simple(
-      -SQL => 'show databases like ?', -PARAMS => [$table]);
-    if(scalar(@{$res})) {
+  while (1) {
+    $table = sprintf( "meta_bak_%d", $increment );
+    my $res =
+      $core->dbc()->sql_helper()
+      ->execute_simple( -SQL => 'show databases like ?', -PARAMS => [$table] );
+    if ( scalar( @{$res} ) ) {
       next;
     }
-    last; #if no results then name is free    
+    last;    #if no results then name is free
   }
-  
-  $self->v('Backing up to %s', $table);
-  $core->dbc()->do(sprintf('create table %s like meta', $table));
-  $self->v('Copying data from meta to %s', $table);
-  $core->dbc()->do(sprintf('insert into table %s select * from meta', $table));
+
+  $self->v( 'Backing up to %s', $table );
+  $core->dbc()->do( sprintf( 'create table %s like meta', $table ) );
+  $self->v( 'Copying data from meta to %s', $table );
+  $core->dbc()
+    ->do( sprintf( 'insert into table %s select * from meta', $table ) );
   $self->v('Done backup');
-  
+
   return;
 }
 
-
-
 sub _db_to_taxon {
-  my ($self, $db) = @_;
-  
+  my ( $self, $db ) = @_;
+
   #Look at cache
   my $taxon = $self->{_db_to_taxon}->{$db};
   return $taxon if $taxon;
-  
+
   #Try DB first
-  $taxon = $self->_core_dba($db)->get_MetaContainer()->single_value_by_key('species.taxonomy_id');
-  if(!$taxon) {
-    die "Cannot discover the taxonomy id for the database $db. Populate meta with 'species.taxonomy_id'";
+  $taxon =
+    $self->_core_dba($db)->get_MetaContainer()
+    ->single_value_by_key('species.taxonomy_id');
+  if ( !$taxon ) {
+    die
+"Cannot discover the taxonomy id for the database $db. Populate meta with 'species.taxonomy_id'";
   }
   $self->{_db_to_taxon}->{$db} = $taxon;
   return $taxon;
 }
 
 sub _core_dba {
-  my ($self, $dbname) = @_;
-  my $o = $self->{opts};
+  my ( $self, $dbname ) = @_;
+  my $o   = $self->{opts};
   my $dbc = $self->_core_dbc($dbname);
-  return Bio::EnsEMBL::DBSQL::DBAdaptor->new(-DBCONN => $dbc, -SPECIES => $dbname);
+  return Bio::EnsEMBL::DBSQL::DBAdaptor->new( -DBCONN => $dbc,
+    -SPECIES => $dbname );
 }
 
 sub _core_dbc {
-  my ($self, $dbname) = @_;
+  my ( $self, $dbname ) = @_;
   my $o = $self->{opts};
   my %args = ( -HOST => $o->{host}, -PORT => $o->{port}, -USER => $o->{user} );
-  $args{-PASS} = $o->{pass} if $o->{pass};
-  $args{-DBNAME} = $dbname if $dbname;
+  $args{-PASS}   = $o->{pass} if $o->{pass};
+  $args{-DBNAME} = $dbname    if $dbname;
   return Bio::EnsEMBL::DBSQL::DBConnection->new(%args);
 }
 
 sub _production_dbc {
   my ($self) = @_;
-  my $o = $self->{opts};
-  my %args = ( -HOST => $o->{mhost}, -PORT => $o->{mport}, -DBNAME => $o->{mdatabase}, -USER => $o->{muser} );
+  my $o      = $self->{opts};
+  my %args   = (
+    -HOST   => $o->{mhost},
+    -PORT   => $o->{mport},
+    -DBNAME => $o->{mdatabase},
+    -USER   => $o->{muser}
+  );
   $args{-PASS} = $o->{mpass} if $o->{mpass};
   return Bio::EnsEMBL::DBSQL::DBConnection->new(%args);
 }
 
 sub _taxon_dbc {
   my ($self) = @_;
-  my $o = $self->{opts};
-  my %args = ( -HOST => $o->{thost}, -PORT => $o->{tport}, -DBNAME => $o->{tdatabase}, -USER => $o->{tuser} );
+  my $o      = $self->{opts};
+  my %args   = (
+    -HOST   => $o->{thost},
+    -PORT   => $o->{tport},
+    -DBNAME => $o->{tdatabase},
+    -USER   => $o->{tuser}
+  );
   $args{-PASS} = $o->{tpass} if $o->{tpass};
   return Bio::EnsEMBL::DBSQL::DBConnection->new(%args);
 }
 
 sub v {
-  my ($self, $msg, @args) = @_;
+  my ( $self, $msg, @args ) = @_;
   return unless $self->{opts}->{verbose};
-  my $s_msg = sprintf($msg, @args);
-  my ($sec, $min, $hour, $mday, $mon, $year, $wday, $yday, $isdst) =
-    localtime(time());
-  print sprintf("[%02d-%02d-%04d %02d:%02d:%02d] %s\n",
-                $mday, $mon, $year + 1900,
-                $hour, $min, $sec, $s_msg);
+  my $s_msg = sprintf( $msg, @args );
+  my ( $sec, $min, $hour, $mday, $mon, $year, $wday, $yday, $isdst ) =
+    localtime( time() );
+  print sprintf(
+    "[%02d-%02d-%04d %02d:%02d:%02d] %s\n",
+    $mday, $mon, $year + 1900,
+    $hour, $min, $sec, $s_msg
+  );
   return;
 }
 
 __PACKAGE__->run();
 
 __END__
+
 =pod 
 
 =head1 NAME
