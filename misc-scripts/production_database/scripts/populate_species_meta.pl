@@ -204,14 +204,14 @@ sub _backup {
   }
 
   my $increment = 0;
-  my $core      = $self->_core_dba($db);
+  my $core      = $self->_core_dbc($db);
   my $table;
   while (1) {
     $table = sprintf( "meta_bak_%d", $increment );
     my $res =
-      $core->dbc()->sql_helper()
+      $core->sql_helper()
       ->execute_simple( -SQL => 'show tables like ?', -PARAMS => [$table] );
-    if ( scalar( @{$res} ) ) {
+    if (@{$res}) {
       next;
     }
     last;    #if no results then name is free
