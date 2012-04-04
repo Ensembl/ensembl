@@ -221,7 +221,7 @@ sub _backup {
   $core->dbc()->do( sprintf( 'create table %s like meta', $table ) );
   $self->v( 'Copying data from meta to %s', $table );
   $core->dbc()
-    ->do( sprintf( 'insert into table %s select * from meta', $table ) );
+    ->do( sprintf( 'insert into %s select * from meta', $table ) );
   $self->v('Done backup');
 
   return;
