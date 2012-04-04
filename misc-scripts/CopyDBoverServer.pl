@@ -939,8 +939,16 @@ TABLE:
   # Flush tables on target.
   if ($opt_flushtarget) {
     print("FLUSHING TABLES ON TARGET...\n");
+    my $tdbh = DBI->connect( $target_dsn,
+                               'ensadmin',
+                               $opt_password, {
+                                 'PrintError' => 1,
+                                 'AutoCommit' => 0
+                               } );
+    
     my $ddl = sprintf('FLUSH TABLES %s', join(q{, }, @tables)); 
-    $target_dbh->do($ddl);
+    $tdbh->do($ddl);
+    $tdbh->disconnect();
   }
 
 } ## end foreach my $spec (@todo)
