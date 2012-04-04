@@ -37,7 +37,7 @@ sub args {
 
     # Taxonomy database location:
     thost => 'ens-staging1',
-    tuser => 3306,
+    tuser => 'ensro',
     tport => 3306,
 
     # User database location (default values):
