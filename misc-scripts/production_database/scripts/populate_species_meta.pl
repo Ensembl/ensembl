@@ -13,7 +13,7 @@ sub run {
   my ($class) = @_;
   my $self = bless({}, $class);
   $self->args();
-  $self->defaults();
+  $self->check_opts();
   my $databases = $self->databases();
   foreach my $db (@{$databases}) {
     $self->v('Processing %s', $db);
@@ -25,7 +25,26 @@ sub run {
 
 sub args {
   my ($self) = @_;
-  my $opts = {};
+  
+  my $opts = {
+    
+    # Master database location:
+    mhost => 'ens-staging1',
+    mport => 3306,
+    muser => 'ensro',
+    mdatabase => 'ensembl_production',
+    
+    # Taxonomy database location:
+    thost => 'ens-staging1',
+    tuser => 3306,
+    tport => 3306,
+    
+    # User database location (default values):
+    port => 3306,
+    
+    backup => 1 #default backups on 
+  };
+  
   my @cmd_opts = qw/
     mhost|mh=s
     mport|mP=i
@@ -44,6 +63,7 @@ sub args {
     database|d=s
     pattern=s
     verbose|v!
+    backup
     help
     man
   /;
@@ -54,23 +74,9 @@ sub args {
   return;
 }
 
-sub defaults {
+sub check_opts {
   my ($self) = @_;
   my $o = $self->{opts};
-
-  # Master database location:
-  $o->{mhost} = 'ens-staging1' unless $o->{mhost};
-  $o->{mport} = 3306 unless $o->{mport};
-  $o->{muser} = 'ensro' unless $o->{muser};
-  $o->{mdatabase} = 'ensembl_production' unless $o->{mdatabase};
-  
-  # Taxonomy database location:
-  $o->{thost} = 'ens-staging1' unless $o->{thost};
-  $o->{tuser} = 'ensro' unless $o->{tuser};
-  $o->{tport} = 3306 unless $o->{tport};
-  
-  # User database location (default values):
-  $o->{port} = 3306 unless $o->{port};
   
   foreach my $required (qw/host user tdatabase/) {
     my $msg = "Required parameter --${required} was not given";
@@ -253,6 +259,7 @@ populate_species_meta.pl
     [-mu user] [-mp password] [-md database] \\
     [-th host] [-tP port] \\
     [-tu user] [-tp password] [-td database] \\
+    [-nobackup]
     [-v]
 
 =head1 DESCRIPTION
@@ -335,6 +342,11 @@ Database name to search for. Can be a SQL like statement
 
   --database="homo_sapiens_core_65_37"
   --database="%core_65%"
+
+=item B<--nobackup>
+
+If specified we will avoid performing backup of the meta table before
+a run of the script.
 
 =item B<--verbose>
 
