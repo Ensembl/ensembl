@@ -162,7 +162,7 @@ sub run_script {
 
 
   my %ott_to_vega_name;
-  my %ott_to_enst;
+  my %enst_to_ott;
 
 
   my $sth = $core_dbc->prepare($sql) || die "Could not prepare for core $sql\n";
@@ -170,11 +170,11 @@ sub run_script {
   foreach my $external_db (qw(Vega_transcript shares_CDS_with_OTTT shares_CDS_and_UTR_with_OTTT OTTT)){
     $sth->execute($external_db) or croak( $core_dbc->errstr());
     while ( my @row = $sth->fetchrow_array() ) {
-      $ott_to_enst{$row[1]} = $row[0];
+      $enst_to_ott{$row[0]} = $row[1];
     }
   }
 
-  print "We have ".scalar(%ott_to_enst)." ott to enst entries\n " if($verbose);
+  print "We have ".scalar(keys %enst_to_ott)." ott to enst entries\n " if($verbose);
 
 
   my $dbi = $self->dbi();
@@ -193,7 +193,8 @@ sub run_script {
 
   my $xref_count = 0;
 
-  foreach my $ott (keys %ott_to_enst){
+  foreach my $enst (keys %enst_to_ott){
+    my $ott = $enst_to_ott{$enst};
     if(defined($ott_to_vega_name{$ott})){
       my $id = $curated_source_id;
       my $name  = $ott_to_vega_name{$ott};
@@ -210,10 +211,10 @@ sub run_script {
 				      info_type  => "DIRECT"} );
       $xref_count++;
       
-      $self->add_direct_xref($xref_id, $ott_to_enst{$ott}, "transcript", "");
+      $self->add_direct_xref($xref_id, $enst, "transcript", "");
     }
     if(defined($ott_to_status{$ott})){
-      $status_insert_sth->execute($ott_to_enst{$ott}, $ott_to_status{$ott});
+      $status_insert_sth->execute($enst, $ott_to_status{$ott});
     }
     
   }
