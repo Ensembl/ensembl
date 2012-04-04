@@ -213,10 +213,10 @@ sub _backup {
       $core->sql_helper()
       ->execute_simple( -SQL => 'show tables like ?', -PARAMS => [$table] );
     if (@{$res}) {
+      $increment++;
       next;
     }
     last;    #if no results then name is free
-    $increment++;
   }
 
   $self->v( 'Backing up to %s', $table );
