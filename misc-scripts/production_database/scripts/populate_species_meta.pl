@@ -17,6 +17,7 @@ sub run {
   my $databases = $self->databases();
   foreach my $db (@{$databases}) {
     $self->v('Processing %s', $db);
+    $self->_backup($db);
     $self->_meta($db);  
     $self->v('Done');
   }
@@ -180,6 +181,39 @@ sub _meta {
   }
   return;
 }
+
+sub _backup {
+  my ($self, $db) = @_;
+  my $o = $self->{opts};
+  
+  if(! $o->{backup}) {
+    $self->v('Skipping backup');
+    return;
+  }
+  
+  my $increment = 0;
+  my $core = $self->_core_dba($db);
+  my $table;
+  while(1) {
+    $table = sprintf("meta_bak_%d", $increment);
+    my $res = $core->dbc()->sql_helper()->execute_simple(
+      -SQL => 'show databases like ?', -PARAMS => [$table]);
+    if(scalar(@{$res})) {
+      next;
+    }
+    last; #if no results then name is free    
+  }
+  
+  $self->v('Backing up to %s', $table);
+  $core->dbc()->do(sprintf('create table %s like meta', $table));
+  $self->v('Copying data from meta to %s', $table);
+  $core->dbc()->do(sprintf('insert into table %s select * from meta', $table));
+  $self->v('Done backup');
+  
+  return;
+}
+
+
 
 sub _db_to_taxon {
   my ($self, $db) = @_;
