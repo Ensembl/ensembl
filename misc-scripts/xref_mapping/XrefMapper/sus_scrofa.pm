@@ -101,11 +101,11 @@ SELECT object_xref_id
       AND label like 'LOC%'
 CIGN
 
-  $ignore{"SSC"} =(<<DIGN);
+  $ignore{"SSC."} =(<<DIGN);
 SELECT object_xref_id
     FROM object_xref JOIN xref USING(xref_id) JOIN source USING(source_id)
-     WHERE ox_status = 'DUMP_OUT' AND name in ('Uniprot_genename','miRBase') 
-      AND label like 'SSC%'
+     WHERE ox_status = 'DUMP_OUT' AND name = 'Uniprot_genename' 
+      AND label like 'SSC\.%'
 DIGN
   return [\@list,\%ignore];
 }
