@@ -19,6 +19,7 @@ sub run {
     $self->v( 'Processing %s', $db );
     $self->_backup($db);
     $self->_meta($db);
+    $self->_remove_deprecated($db);
     $self->v('Done');
   }
   return;
@@ -43,7 +44,9 @@ sub args {
     # User database location (default values):
     port => 3306,
 
-    backup => 1    #default backups on
+    backup => 1,    #default backups on
+    
+    removedeprecated => 0, 
   };
 
   my @cmd_opts = qw/
@@ -65,6 +68,7 @@ sub args {
     pattern=s
     verbose|v!
     backup
+    removedeprecated!
     help
     man
     /;
@@ -229,6 +233,28 @@ sub _backup {
   $core->do( sprintf( 'insert into %s select * from meta', $table ) );
   $self->v('Done backup');
 
+  return;
+}
+
+sub _remove_deprecated {
+  my ($self, $db) = @_;
+  
+  if(!$self->{opts}->{removedeprecated}) {
+    $self->v('Not removing deprecated meta keys');
+    return;
+  }
+  
+  my $dba = $self->_core_dba($db);
+  my $mc  = $dba->get_MetaContainer();
+  
+  $self->v('Removing deprecated meta keys');
+  my @deprecated_keys = qw/species.ensembl_common_name species.ensembl_alias_name/;
+  foreach my $key (@deprecated_keys) {
+    $self->v('Deleting key "%s"', $key);
+    $mc->delete_key($key);
+  }
+  $self->v('Finished removing deprecated meta keys');
+  
   return;
 }
 
@@ -415,6 +441,11 @@ Database name to search for. Can be a SQL like statement
 
 If specified we will avoid performing backup of the meta table before
 a run of the script.
+
+=item B<--removedeprecated>
+
+Deletes any key from the DB which is deemed to be deprecated. A temporary
+option until we finish working with the latest set of meta key changes.
 
 =item B<--verbose>
 
