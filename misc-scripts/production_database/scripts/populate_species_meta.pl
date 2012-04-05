@@ -249,7 +249,10 @@ sub _remove_deprecated {
   my $mc  = $dba->get_MetaContainer();
   
   $self->v('Removing deprecated meta keys');
-  my @deprecated_keys = qw/species.ensembl_common_name species.ensembl_alias_name/;
+  my @deprecated_keys = qw/
+    species.ensembl_common_name species.ensembl_alias_name
+    species.short_name
+  /;
   foreach my $key (@deprecated_keys) {
     $self->v('Deleting key "%s"', $key);
     $mc->delete_key($key);
