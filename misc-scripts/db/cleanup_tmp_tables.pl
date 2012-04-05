@@ -133,13 +133,13 @@ else {
   push(@databases, $support->param('dbname'));
 }
 
-# find all temporary and backup tables
+# find all backup tables
 my @tables;
 
-my @patterns = map { '%'.$_.'%' } qw/tmp temp bak backup/;
+my @patterns = map { '%\\_'.$_.'%' } qw/bak backup/;
 if($support->param('mart')) {
   if($support->user_proceed('--mart was specified on the command line. Do not run this during a mart build. Do you wish to continue?')) {
-    push(@patterns, 'MTMP\_%');
+    push(@patterns, 'MTMP\\_%');
   }
 }
 
