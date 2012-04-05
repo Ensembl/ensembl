@@ -144,6 +144,7 @@ elsif(defined ($pattern)){
   my $dbs = $sth->fetchall_arrayref();
   foreach my $db_name (@{$dbs}){
     #this is a core database
+    #TODO Fix this; we DO NOT want to do this and it will break for trinomials
     my ($species) = ( $db_name->[0] =~ /(^[a-z]+_[a-z]+)_(core|vega|otherfeatures)_\d+/ );
     next unless $species;
     my $dba = Bio::EnsEMBL::DBSQL::DBAdaptor->new(-host => $host,
