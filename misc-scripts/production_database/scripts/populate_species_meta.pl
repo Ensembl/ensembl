@@ -37,9 +37,10 @@ sub args {
     mdatabase => 'ensembl_production',
 
     # Taxonomy database location:
-    thost => 'ens-staging1',
+    thost => 'ens-livemirror',
     tuser => 'ensro',
     tport => 3306,
+    tdatabase => 'ncbi_taxonomy',
 
     # User database location (default values):
     port => 3306,
@@ -396,10 +397,6 @@ User for the production database
 
 Pass for the production database
 
-=item B<-td|--tdatabase>
-
-Database name for the production database
-
 =item B<-th|--thost>
 
 Host for the taxonomy database
@@ -411,10 +408,6 @@ Port for the taxonomy database
 =item B<-tu|--tuser>
 
 User for the taxonomy database
-
-=item B<-tp|--tpass>
-
-Pass for the taxonomy database
 
 =item B<-tp|--tpass>
 
