@@ -107,12 +107,12 @@ sub new {
                 my $idtype   = $slice->coord_system->name;
                 my $location = $slice->name;
                 
-                return ">$id $seqtype:$idtype $location";
+                return "$id $seqtype:$idtype $location";
             }
             else {
                 # must be a Bio::Seq , or we're doomed
                 
-                return ">".$slice->display_id;
+                return $slice->display_id;
             }
         };
         
@@ -135,8 +135,8 @@ sub print_metadata {
     my $slice = shift;
     my $fh = $self->{'filehandle'};
     my $function = $self->{'header_function'};
-    my $metadata = &$function($slice);
-    print $fh $metadata."\n";
+    my $metadata = $function->($slice);
+    print $fh '>'.$metadata."\n";
 }
 
 =head2 print_Seq
