@@ -157,15 +157,16 @@ sub print_Seq {
     my $fh = $self->{'filehandle'};
     
     $self->print_metadata($slice);
+    my $width = $self->{line_width};
     
     # set buffer size
-    my $chunk_size = $self->{'chunk_factor'} * $self->{'line_width'};
+    my $chunk_size = $self->{'chunk_factor'} * $width;
         
     my $start = 1;
     my $end = $slice->length();
     
-    my $FORMAT = sprintf ("^%s
-", ('<'x($self->{'line_width'}-1))  );
+#    my $FORMAT = sprintf ("^%s
+#", ('<'x($width-1))  );
 
   #chunk the sequence to conserve memory, and print
   
@@ -175,8 +176,9 @@ sub print_Seq {
     my $there = $here + $chunk_size - 1;
     $there = $end if($there > $end); 
     my $seq = $slice->subseq($here, $there);
-    
-    $self->formatted_write($FORMAT, $seq);
+    $seq =~ s/(.{1,$width})/$1\n/g;
+    print $fh $seq;
+#    $self->formatted_write($FORMAT, $seq);
     
     $here = $there + 1;
   }
