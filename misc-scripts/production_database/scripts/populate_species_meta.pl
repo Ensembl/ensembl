@@ -162,7 +162,7 @@ sub _taxonomy {
   my ( $self, $db ) = @_;
   $self->v('Querying taxonomy for classification');
   my $taxon          = $self->_db_to_taxon($db);
-  my @excluded_ranks = qw/root genus/;
+  my @excluded_ranks = ('root', 'genus', 'species subgroup', 'species group');
   my @excluded_names = ('cellular organisms', 'root');
   my $sql            = <<'SQL';
 select n.name
@@ -171,7 +171,7 @@ join ncbi_taxa_node t2 on (t2.left_index <= t.left_index and t2.right_index >= t
 join ncbi_taxa_name n on (t2.taxon_id = n.taxon_id)
 where t.taxon_id =?
 and n.name_class =? 
-and t2.rank not in (?,?)
+and t2.rank not in (?,?,?,?)
 and n.name not in (?,?)
 order by t2.left_index desc
 SQL
