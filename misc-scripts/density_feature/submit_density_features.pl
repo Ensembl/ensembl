@@ -187,14 +187,18 @@ select distinct concat(full_db_name,'|',db_host) from db_list dl join db d using
 
     print "1. Density features scripts which can be run when qenebuild and genebuild xrefs (excluding projected xrefs) are complete and all gene healthchecks are cleared: \n\n";
 
-    print "gene_gc.pl - run on all core databases (use the commands below or script submit_density_features.pl -submit gene_gc):\n";
+    print "gene_gc.pl - run on all core databases (use the commands below or script submit_density_features.pl -submit gene_gc):\n\n";
+
+    print "(It takes a total of about 10 hours to run for all core databases in normal queue)\n\n";
 
     for (my $i=0; $i<$host_count;$i++) {
 	print "\nbsub -q normal -J genegc_stats -M2000000 -R'select[mem>2000] rusage[mem=2000]' -oo $outdir/core_dbs_$current_release"."_".$host[$i]."_genegc.out -eo $outdir/core_dbs_$current_release" ."_".$host[$i]."_genegc.err perl $gene_gc_path/gene_gc.pl -h ".$host[$i]." -port ".$port[$i]." -u ".$user[$i]." -p ".$pass[$i]." -pattern 'core_$current_release'\n";
     }
 
-    print "\npercent_gc_calc.pl – run on core databases for new species, or where sequence or assembly have changed (db names will be stored in file $outdir/percent_gc_data.txt, to submit run submit_density_features.pl -submit percent_gc -h ens-staging1 -h ens-staging2 -u ensadmin -p xxxx): \n";
+    print "\npercent_gc_calc.pl – run on core databases for new species, or where sequence or assembly have changed (db names will be stored in file $outdir/percent_gc_data.txt, to submit run submit_density_features.pl -submit percent_gc -h ens-staging1 -h ens-staging2 -u ensadmin -p xxxx): \n\n";
  
+    print "(It takes about 15 mins to run for a database in normal queue)\n\n";
+
     my %array_union = ();
     foreach my $element (@new_sp_assem, @chg_seq) { $array_union{$element}++ }
     my @dbnames_hosts = sort(keys %array_union); 
@@ -211,7 +215,10 @@ select distinct concat(full_db_name,'|',db_host) from db_list dl join db d using
     }
     close DATAFILE;
 
-    print "\n\nrepeat_coverage_calc.pl – run on core databases for new species, or where sequence, assembly or repeats have changed (db names will be stored in file $outdir/repeat_coverage_data.txt, to submit run submit_density_features.pl -submit repeat_coverage  -h ens-staging1 -h ens-staging2 -u ensadmin -p xxxx): \n";   
+    print "\n\nrepeat_coverage_calc.pl – run on core databases for new species, or where sequence, assembly or repeats have changed (db names will be stored in file $outdir/repeat_coverage_data.txt, to submit run submit_density_features.pl -submit repeat_coverage  -h ens-staging1 -h ens-staging2 -u ensadmin -p xxxx): \n\n";   
+
+
+    print "(It takes about 1 hour to run for a database in the long queue. The script is slowed down considerably for very fragmented genomes with thousands of toplevel seqs)\n\n";
 
     foreach my $element (@chg_repeats) { $array_union{$element}++ }
     @dbnames_hosts = sort(keys %array_union); 
@@ -232,13 +239,18 @@ select distinct concat(full_db_name,'|',db_host) from db_list dl join db d using
 
 if ($response >= 2) {
     print "\n\n2. Density features scripts which can be run when Compara homologies are handed over and core xref projections are complete:\n\n";
-    print "gene_density_calc.pl - run on all core dbs (use the commands below or script submit_density_features.pl -submit gene_density  -h ens-staging1 -h ens-staging2 -u ensadmin -p xxxx)\n";
-    
+    print "gene_density_calc.pl - run on all core dbs (use the commands below or script submit_density_features.pl -submit gene_density  -h ens-staging1 -h ens-staging2 -u ensadmin -p xxxx)\n\n";
+
+    print "(It takes about 10 mins to run for a database in normal queue)\n\n";
+   
     for (my $i=0; $i<$host_count;$i++) {
 	print "\nbsub -q normal -J gene_density -M2000000 -R'select[mem>2000] rusage[mem=2000]' -oo $outdir/core_dbs_$current_release"."_".$host[$i]."_gene.out -eo $outdir/core_dbs_$current_release"."_".$host[$i]."_gene.err perl $SERVERROOT/gene_density_calc.pl -h ".$host[$i]." -port ".$port[$i]." -u ".$user[$i]." -p ".$pass[$i]." -pattern 'core_$current_release'\n";
     }
 
-    print "\n\nseq_region_stats.pl (gene stats option only) - run on all core databases (use the commands below or script submit_density_features.pl -submit seq_region_stats_gene  -h ens-staging1 -h ens-staging2 -u ensadmin -p xxxx)\n";
+    print "\n\nseq_region_stats.pl (gene stats option only) - run on all core databases (use the commands below or script submit_density_features.pl -submit seq_region_stats_gene  -h ens-staging1 -h ens-staging2 -u ensadmin -p xxxx)\n\n";
+
+    print "(It takes about 20 mins to run for a database in normal queue)\n\n";
+
     for (my $i=0; $i<$host_count;$i++) {
 	print "\nbsub -q normal -J seqreg_stats_gene -M2000000 -R'select[mem>2000] rusage[mem=2000]' -oo $outdir/core_dbs_$current_release"."_".$host[$i]."_seqreg_gene.out -eo $outdir/core_dbs_$current_release"."_".$host[$i]."_seqreg_gene.err perl $SERVERROOT/seq_region_stats.pl -h ".$host[$i]." -port ".$port[$i]." -u ".$user[$i]." -p ".$pass[$i]." -pattern 'core_$current_release' -s gene\n";
     }
@@ -249,7 +261,9 @@ if ($response == 3) {
 
     print "\n\n3. Density features scripts which can be run when Variation dbs are handed over:\n";
 
-    print "\nvariation_density.pl - run for new species or where the core assembly has changed, or if there are any changes to variation positions in the variation database (species will be stored in file $outdir/variation_density_data.txt, to submit run submit_density_features.pl -submit variation_density  -h ens-staging1 -h ens-staging2 -u ensadmin -p xxxx):\n";
+    print "\nvariation_density.pl - run for new species or where the core assembly has changed, or if there are any changes to variation positions in the variation database (species will be stored in file $outdir/variation_density_data.txt, to submit run submit_density_features.pl -submit variation_density  -h ens-staging1 -h ens-staging2 -u ensadmin -p xxxx):\n\n";
+
+    print "(It takes about 25 mins to run for a database in normal queue)\n\n";
 
     #get species for new dbs or changed assembly or where variation positions have changed
     @core_with_variation =  map { $_->[0] }  @{ $prod_dbh->selectall_arrayref("select distinct concat(full_db_name,'|',db_host) from db_list dl join db d using (db_id) where db_release = $current_release and db_type = 'core' and species_id in (select distinct species_id from db where db_release = $current_release and db_type = 'variation');") };
@@ -285,7 +299,9 @@ if ($response == 3) {
     }
     close DATAFILE;
  
-    print "\n\nseq_region_stats.pl (snp stats option only) - run on core databases for new species or if the assembly changed, or if the variation positions have changed in the corresponding variation db (db names will be stored in file $outdir/seq_region_stats_snp_data.txt, to submit run submit_density_features.pl -submit seq_region_stats_snp  -h ens-staging1 -h ens-staging2 -u ensadmin -p xxxx):\n";
+    print "\n\nseq_region_stats.pl (snp stats option only) - run on core databases for new species or if the assembly changed, or if the variation positions have changed in the corresponding variation db (db names will be stored in file $outdir/seq_region_stats_snp_data.txt, to submit run submit_density_features.pl -submit seq_region_stats_snp  -h ens-staging1 -h ens-staging2 -u ensadmin -p xxxx):\n\n";
+
+    print "(It takes about 20 mins to run for a database in normal queue)\n\n";
 
     my $file_path = "$outdir/seq_region_stats_snp_data.txt";
 
