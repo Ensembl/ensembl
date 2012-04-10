@@ -692,6 +692,46 @@ sub assembly_exception_type {
   return $type;
 }
 
+=head2 is_chromosome
+
+  Example			: print ($slice->is_chromosome()) ? 'I am a chromosome' : 'Not one'; 
+  Description	: Uses a number of rules known to indicate a chromosome region 
+                other and takes into account those regions which can be 
+                placed on a Chromsome coordinate system but in fact are not
+                assembled into one.
+  Returntype 	: Boolean indicates if the current object is a chromosome
+  Exceptions 	: None
+
+=cut
+
+sub is_chromosome {
+  my ($self) = @_;
+  my $coord_system = $self->coord_system->name;
+  my $seq_name     = $self->seq_region_name;
+
+  if (($seq_name =~ /random
+                    |^Un\d{4}$
+                    |^Un\.\d{3}\.\d*$
+                    |E\d\d\w*$
+                    |_NT_
+                    |scaffold_
+                    |cutchr
+                    |unplaced 
+                    |chunk
+                    |clone
+                    |contig
+                    |genescaffold
+                    |group
+                    |reftig
+                    |supercontig
+                    |ultracontig        
+                    /x) or ( $coord_system !~ /^chromosome$/i )) {
+    return 0;
+  }
+  
+  return 1;
+}
+
 
 =head2 get_base_count
 
