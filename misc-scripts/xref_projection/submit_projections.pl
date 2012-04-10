@@ -59,7 +59,7 @@ if (! -e $dir) {
 my $script_opts = "-conf '$conf' -registryconf '$registryconf' -version '$release' -release '$release' -quiet";
 
 my $bsub_opts = "";
-$bsub_opts .= "-R'select[myens_staging<$limit]'";
+$bsub_opts .= "-M2000000 -R'select[mem>2000] rusage[mem=2000]'";
 
 
 my @names_1_1 = (["human", "chimp"            ],
@@ -112,6 +112,7 @@ my @names_1_many = (["human", "zebrafish"  ],
 		    ["human", "fugu"       ],
 		    ["human", "lamprey"    ],
 		    ["human", "cod"        ],
+                    ["human", "tilapia"    ],
 		    ["human", "stickleback"]);
 
 my @go_terms = (["human",      "mouse"          ],
@@ -204,8 +205,9 @@ my @go_terms = (["human",      "mouse"          ],
 		["zebrafish",      "tetraodon"  ],
 		["zebrafish",      "stickleback"],
 		["zebrafish",      "lamprey"    ],
-	  ["zebrafish",      "cod"        ],
-	  ["zebrafish",      "coelacanth" ],
+	        ["zebrafish",      "cod"        ],
+	        ["zebrafish",      "coelacanth" ],
+                ["zebrafish",      "tilapia"    ],
 		["human",      "stickleback"    ],
 		["mouse",      "stickleback"    ],
 		["mouse",      "turkey"         ],
