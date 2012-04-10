@@ -2,27 +2,18 @@ use strict;
 use warnings;
 
 use Test::More;
-use Test::Exception;
 use File::Temp qw/tempfile/;
 
-use Bio::EnsEMBL::Test::MultiTestDB;
-
 use Bio::EnsEMBL::Utils::IO::FASTASerializer;
-use Bio::EnsEMBL::Utils::SeqDumper;
 use Bio::EnsEMBL::Slice;
-use Bio::EnsEMBL::Utils::IO qw/work_with_file/;
-
-# Get some basic underpinnings for testing
-
-my $multi_db = Bio::EnsEMBL::Test::MultiTestDB->new;
-my $db = $multi_db->get_DBAdaptor('core');
+use Bio::EnsEMBL::CoordSystem;
 
 #
 # TEST - Slice creation from adaptor
 #
-my $slice_adaptor = $db->get_SliceAdaptor;
-my $coord_adaptor = $db->get_CoordSystemAdaptor();
-my $coord_system = $coord_adaptor->fetch_by_name('chromosome');
+my $coord_system = Bio::EnsEMBL::CoordSystem->new(
+  -NAME => 'chromosome', -RANK => 1
+);
 
 # instantiate slice
 #SEQ COORD_SYSTEM SEQ_REGION_NAME SEQ_REGION_LENGTH
@@ -66,7 +57,7 @@ is ($SeqDumper_output,$Serializer_output,"Outputs should match from both seriali
 
 my $custom_header = sub {
     my $slice = shift; 
-    return ">It's a FASTA header";
+    return "It's a FASTA header";
 };
 
 $fh_Serializer = tempfile();
@@ -75,7 +66,7 @@ $serializer->print_Seq($slice);
 $fh_Serializer->seek(0,0);
 $Serializer_output = <$fh_Serializer>;
 
-print $Serializer_output."\n";
+diag $Serializer_output;
 
 is ($Serializer_output,">It's a FASTA header\nAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAATGAAAAAAAAAAAAAAAAAAAAAAAAAA\nAAAAAAAAAAAAAAAAACGCGCGCGCGGGA\n", "Serializer custom header should override correctly.");
 $fh_Serializer->close;
