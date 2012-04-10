@@ -2478,18 +2478,20 @@ sub no_version_check {
 
 =head2 no_cache_warnings
 
-  Turns off any warnings about not using caching in all available 
-  adaptors.
-  
-  Returntype : None
-  Exceptions : None
+  Arg[0]      : boolean for turning the flag on and off
+  Description : Turns off any warnings about not using caching in all available 
+                adaptors. 
+  Returntype  : boolean Current status
+  Exceptions  : None
 
 =cut
 
 sub no_cache_warnings {
-  my ($self) = @_;
-  $Bio::EnsEMBL::DBSQL::BaseFeatureAdaptor::SILENCE_CACHE_WARNINGS = 1;
-  return;
+  my ($self, $arg) = @_;
+  if(defined $arg) {
+    $Bio::EnsEMBL::DBSQL::BaseFeatureAdaptor::SILENCE_CACHE_WARNINGS = $arg;
+  }
+  return $Bio::EnsEMBL::DBSQL::BaseFeatureAdaptor::SILENCE_CACHE_WARNINGS;
 }
 
   
