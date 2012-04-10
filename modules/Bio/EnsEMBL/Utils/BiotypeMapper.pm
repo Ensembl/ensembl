@@ -137,7 +137,7 @@ my %grouping_of_biotypes = (
                              rRNA snoRNA  snRNA 
                         )],
     # practical Ensembl core categories for fasta dumping
-    'cDNA'              => [qw( protein_coding polymorphic_pseudogene IG_V_gene TR_V_gene 
+    'cdna'              => [qw( protein_coding polymorphic_pseudogene IG_V_gene TR_V_gene 
                                 IG_J_gene TR_J_gene IG_D_gene IG_C_gene TR_C_gene pseudogene
                                 retrotransposed IG_V_pseudogene TR_V_pseudogene 
                                 IG_J_pseudogene IG_C_pseudogene processed_transcript
@@ -145,9 +145,10 @@ my %grouping_of_biotypes = (
                                 disrupted_domain 
                            )],
     'peptide_producing' => [qw( protein_coding polymorphic_pseudogene IG_V_gene TR_V_gene 
-                                IG_J_gene TR_J_gene IG_D_gene IG_C_gene TR_C_gene  
+                                IG_J_gene TR_J_gene IG_D_gene IG_C_gene TR_C_gene 
+                                nonsense_mediated_decay
                            )],
-    'ncRNA'             => [qw( ncRNA miRNA miRNA_pseudogene misc_RNA misc_RNA_pseudogene Mt_tRNA 
+    'ncrna'             => [qw( ncRNA miRNA miRNA_pseudogene misc_RNA misc_RNA_pseudogene Mt_tRNA 
                             Mt_tRNA_pseudogene Mt_rRNA rRNA rRNA_pseudogene scRNA_pseudogene 
                             snoRNA snoRNA_pseudogene snRNA snRNA_pseudogene tRNA_pseudogene
                             3prime_overlapping_ncrna lincRNA ncrna_host non_coding 
@@ -267,6 +268,7 @@ sub belongs_to_groups {
     my $member = shift;
     my @belongs_to;
     foreach my $group (keys %grouping_of_biotypes) {
+        $group = lc($group);
         foreach my $biotype ( @{ $grouping_of_biotypes{$group} }) {
             if ($biotype eq $member) {push @belongs_to,$group;}
         }
@@ -283,13 +285,13 @@ sub belongs_to_groups {
 
 sub group_members {
     my $self = shift;
-    my $group = shift;
+    my $group = lc(shift);
     if (exists($grouping_of_biotypes{$group})) {
         my @biotypes = @{ $grouping_of_biotypes{$group} };
         return \@biotypes;
     }
     else {
-        throw ("Not a valid group name for biotypes");
+        throw ("$group is not a valid group name for biotypes");
     }
 }
 
@@ -304,9 +306,9 @@ sub group_members {
 sub member_of_group {
     my $self = shift;
     my $biotype = shift;
-    my $query_group = shift;
+    my $query_group = lc(shift);
     my @groups = @{ $self->belongs_to_groups($biotype) };
-    while (my $group = shift @groups) {
+    while (my $group = lc(shift @groups)) {
         if ($group eq $query_group) {
             return 1;   
         }
