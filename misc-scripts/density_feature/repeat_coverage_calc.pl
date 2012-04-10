@@ -24,10 +24,11 @@ use strict;
 use Getopt::Long;
 
 my ( $host, $user, $pass, $port, $dbname  );
-   # Master database location:
-   my ( $mhost, $mport ) = ( 'mysql-eg-pan-1.ebi.ac.uk', '4276' );
-  my ( $muser, $mpass ) = ( 'ensro',        undef );
-   my $mdbname = 'ensembl_production';
+
+# Master database location:
+my ( $mhost, $mport ) = ( 'ens-staging1', '3306' );
+my ( $muser, $mpass ) = ( 'ensro',        undef );
+my $mdbname = 'ensembl_production';
 
 
 GetOptions( "host|h=s", \$host,
