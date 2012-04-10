@@ -123,6 +123,7 @@ use strict;
 use warnings;
 
 use Bio::EnsEMBL::DBSQL::DBAdaptor;
+use Bio::EnsEMBL::DBSQL::BaseFeatureAdaptor;
 use Bio::EnsEMBL::Utils::Exception qw( deprecate throw warning );
 use Bio::EnsEMBL::Utils::Argument qw(rearrange);
 use Bio::EnsEMBL::Utils::ConfigRegistry;
@@ -944,7 +945,8 @@ sub add_adaptor {
   Example    : $adap = Bio::EnsEMBL::Registry->get_adaptor("Human", "core", "Gene");
   Returntype : adaptor
   Exceptions : Thrown if a valid internal name cannot be found for the given 
-               name. If thrown check your API and DB version.
+               name. If thrown check your API and DB version. Also thrown if
+               no type or group was given
   Status     : Stable
 
 =cut
@@ -958,6 +960,15 @@ sub get_adaptor {
     throw("Can not find internal name for species '$species'");
   }
   else { $species = $ispecies }
+  
+  throw 'No adaptor group given' if ! defined $group;
+  throw 'No adaptor type given' if ! defined $type;
+  
+  
+  if($type =~ /Adaptor$/i) {
+    warning("Detected additional Adaptor string in given the type '$type'. Removing it to avoid possible issues. Alter your type to stop this message");
+    $type =~ s/Adaptor$//i;
+  }
 
   my %dnadb_adaptors = (
     'sequence'                 => 1,
@@ -2463,6 +2474,22 @@ sub no_version_check {
     && ( $registry_register{'_no_version_check'} = $arg );
 
   return $registry_register{'_no_version_check'};
+}
+
+=head2 no_cache_warnings
+
+  Turns off any warnings about not using caching in all available 
+  adaptors.
+  
+  Returntype : None
+  Exceptions : None
+
+=cut
+
+sub no_cache_warnings {
+  my ($self) = @_;
+  $Bio::EnsEMBL::DBSQL::BaseFeatureAdaptor::SILENCE_CACHE_WARNINGS = 1;
+  return;
 }
 
   
