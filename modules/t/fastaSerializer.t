@@ -4,6 +4,7 @@ use warnings;
 use Test::More;
 use File::Temp qw/tempfile/;
 
+use IO::String;
 use Bio::EnsEMBL::Utils::IO::FASTASerializer;
 use Bio::EnsEMBL::Slice;
 use Bio::EnsEMBL::CoordSystem;
@@ -70,5 +71,24 @@ diag $Serializer_output;
 
 is ($Serializer_output,">It's a FASTA header\nAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAATGAAAAAAAAAAAAAAAAAAAAAAAAAA\nAAAAAAAAAAAAAAAAACGCGCGCGCGGGA\n", "Serializer custom header should override correctly.");
 $fh_Serializer->close;
+
+{
+  my $seq = 'A'x120;
+  my $s = Bio::EnsEMBL::Slice->new(-SEQ_REGION_NAME => 'a', -COORD_SYSTEM => $coord_system, -SEQ => $seq, -SEQ_REGION_LENGTH => 120, -START => 1, -END => 120);
+  my $header = sub { return 'a'; };
+  my $io = IO::String->new();
+  my $ser = Bio::EnsEMBL::Utils::IO::FASTASerializer->new($io, $header, 60, 20);
+  my $expected = <<'FASTA';
+>a
+AAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAA
+FASTA
+  $ser->print_Seq($s);
+  is(${$io->string_ref()}, $expected, 'Testing round number serialisation');
+}
 
 done_testing();
