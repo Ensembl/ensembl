@@ -17,7 +17,7 @@ sub run {
   my $release_file = $ref_arg->{rel_file};
   my $verbose      = $ref_arg->{verbose};
 
-  if((!defined $source_id) or (!defined $species_id) or (!defined $files) or (!defined $release_file)){
+  if((!defined $source_id) or (!defined $species_id) or (!defined $files)){
     croak "Need to pass source_id, species_id, files and rel_file as pairs";
   }
   $verbose |=0;

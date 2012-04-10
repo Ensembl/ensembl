@@ -14,7 +14,7 @@ sub run {
   my $release_file = $ref_arg->{rel_file};
   my $verbose      = $ref_arg->{verbose};
 
-  if((!defined $source_id) or (!defined $species_id) or (!defined $files) or (!defined $release_file)){
+  if((!defined $source_id) or (!defined $species_id) or (!defined $files)){
     croak "Need to pass source_id, species_id, files and rel_file as pairs";
   }
   $verbose |=0;
@@ -36,13 +36,13 @@ sub run {
   while ( my $line = $file_io->getline() ) {
     chomp $line;
 
-    my ($SPECIES,$gene_id, $acc, $family, $subfamily, $description) = split(",",$line);
+    my ($SPECIES, $gene_id, $acc, $family, $subfamily, $description) = split(",",$line);
 
     my $full_description = $description."($family)" ;
     if ($subfamily ne $family) { $full_description .= ", subfamily $subfamily" ;}
     #$subfamily ~= /1-3-beta-D/1,3-beta-D/ ;
 
-    my $xref_id = $self->get_xref($acc,$source_id, $species_id);
+    my $xref_id = $self->get_xref($acc, $source_id, $species_id);
 
     if(!defined($xref_id)){
       $xref_id = $self->add_xref({ acc        => $acc,
