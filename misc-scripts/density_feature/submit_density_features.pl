@@ -38,17 +38,36 @@ my $host_count = @host;
 my $user_count = @user;
 my $pass_count = @pass;
 
-usage() if (!defined @host || !defined @user || !defined @pass || $user_count != $host_count || $pass_count != $host_count);  
+usage() if (!defined @host || !defined @user || !defined @pass );  
 
 
 my $port_count = @port;
 my $host_string = join("\|",@host);
 
+# if we have fewer user names specified than hosts copy user name from the first -u parameter
+if ($user_count < $host_count) {
+    for (my $i = $user_count; $i < $host_count; $i++) {
+	push(@user,$user[0]);
+    }
+}
+
+# if we have fewer passwords specified than hosts copy password from the first -p parameter
+if ($pass_count < $host_count) {
+    for (my $i = $pass_count; $i < $host_count; $i++) {
+	push(@pass,$pass[0]);
+    }
+}
 
 if ( (!defined @port) || ($port_count < $host_count) ) { 
-    for (my $i=0; $i<$host_count;$i++) {
+
+    if (!defined $port[0]) {
+	$port[0] = 3306;
+    }
+
+    for (my $i=1; $i<$host_count;$i++) {
+
 	if (!defined $port[$i]) {
-	    push(@port,3306);
+	    push(@port,$port[0]);
 	}
     } 
 }
@@ -91,6 +110,17 @@ if ( !defined $submit_script ) {
 if ( defined $getdbs ) { 
 # ask the user which stage of the release cycle we're in
   print <<CYCLE; 
+
+The output will list density features scripts which can be run at a specified point in the release.
+Select option 3 if variation dbs are handed over. The script will assume that no density features scripts
+have been run yet and list all of them.
+In case you would like to run some scripts earlier in the release, for instance when genebuild and genebuild
+xrefs are complete, select option 1 and the output will only contain density features scripts which can be
+run at this early point in the release. Later, when variation dbs are handed over, run this script again with
+option 3 and bare in mind that it will list all density feature scripts which can be run, inluding
+those that you may have already run before. Make sure that you keep the output from the density feature 
+script runs so you don\'t submit those jobs again.  
+
 
 Where in the release cycle are we (0,1,2,3)?
 
@@ -160,10 +190,10 @@ select distinct concat(full_db_name,'|',db_host) from db_list dl join db d using
     print "gene_gc.pl - run on all core databases (use the commands below or script submit_density_features.pl -submit gene_gc):\n";
 
     for (my $i=0; $i<$host_count;$i++) {
-	print "\nbsub -q normal -J genegc_stats -oo ".$outdir."/core_dbs_".$current_release."_".$host[$i]."_genegc.out -eo ".$outdir. "/core_dbs_".$current_release."_".$host[$i]."_genegc.err perl $gene_gc_path/gene_gc.pl -h ".$host[$i]." -port ".$port[$i]." -u ".$user[$i]." -p ".$pass[$i]." -pattern 'core_".$current_release."'\n";
+	print "\nbsub -q normal -J genegc_stats -M2000000 -R'select[mem>2000] rusage[mem=2000]' -oo $outdir/core_dbs_$current_release"."_".$host[$i]."_genegc.out -eo $outdir/core_dbs_$current_release" ."_".$host[$i]."_genegc.err perl $gene_gc_path/gene_gc.pl -h ".$host[$i]." -port ".$port[$i]." -u ".$user[$i]." -p ".$pass[$i]." -pattern 'core_$current_release'\n";
     }
 
-    print "\npercent_gc_calc.pl – run on core databases for new species, or where sequence or assembly have changed (db names will be stored in file $outdir/percent_gc_data.txt, to submit run submit_density_features.pl -submit percent_gc): \n";
+    print "\npercent_gc_calc.pl – run on core databases for new species, or where sequence or assembly have changed (db names will be stored in file $outdir/percent_gc_data.txt, to submit run submit_density_features.pl -submit percent_gc -h ens-staging1 -h ens-staging2 -u ensadmin -p xxxx): \n";
  
     my %array_union = ();
     foreach my $element (@new_sp_assem, @chg_seq) { $array_union{$element}++ }
@@ -181,7 +211,7 @@ select distinct concat(full_db_name,'|',db_host) from db_list dl join db d using
     }
     close DATAFILE;
 
-    print "\n\nrepeat_coverage_calc.pl – run on core databases for new species, or where sequence, assembly or repeats have changed (db names will be stored in file $outdir/repeat_coverage_data.txt, to submit run submit_density_features.pl -submit repeat_coverage): \n";   
+    print "\n\nrepeat_coverage_calc.pl – run on core databases for new species, or where sequence, assembly or repeats have changed (db names will be stored in file $outdir/repeat_coverage_data.txt, to submit run submit_density_features.pl -submit repeat_coverage  -h ens-staging1 -h ens-staging2 -u ensadmin -p xxxx): \n";   
 
     foreach my $element (@chg_repeats) { $array_union{$element}++ }
     @dbnames_hosts = sort(keys %array_union); 
@@ -202,15 +232,15 @@ select distinct concat(full_db_name,'|',db_host) from db_list dl join db d using
 
 if ($response >= 2) {
     print "\n\n2. Density features scripts which can be run when Compara homologies are handed over and core xref projections are complete:\n\n";
-    print "gene_density_calc.pl - run on all core dbs (use the commands below or script submit_density_features.pl -submit gene_density)\n";
+    print "gene_density_calc.pl - run on all core dbs (use the commands below or script submit_density_features.pl -submit gene_density  -h ens-staging1 -h ens-staging2 -u ensadmin -p xxxx)\n";
     
     for (my $i=0; $i<$host_count;$i++) {
-	print "\nbsub -q normal -J gene_density -oo ".$outdir."/core_dbs_".$current_release."_".$host[$i]."_gene.out -eo ".$outdir. "/core_dbs_".$current_release."_".$host[$i]."_gene.err perl $SERVERROOT/gene_density_calc.pl -h ".$host[$i]." -port ".$port[$i]." -u ".$user[$i]." -p ".$pass[$i]." -pattern 'core_".$current_release."'\n";
+	print "\nbsub -q normal -J gene_density -M2000000 -R'select[mem>2000] rusage[mem=2000]' -oo $outdir/core_dbs_$current_release"."_".$host[$i]."_gene.out -eo $outdir/core_dbs_$current_release"."_".$host[$i]."_gene.err perl $SERVERROOT/gene_density_calc.pl -h ".$host[$i]." -port ".$port[$i]." -u ".$user[$i]." -p ".$pass[$i]." -pattern 'core_$current_release'\n";
     }
 
-    print "\n\nseq_region_stats.pl (gene stats option only) - run on all core databases (use the commands below or script submit_density_features.pl -submit seq_region_stats_gene)\n";
+    print "\n\nseq_region_stats.pl (gene stats option only) - run on all core databases (use the commands below or script submit_density_features.pl -submit seq_region_stats_gene  -h ens-staging1 -h ens-staging2 -u ensadmin -p xxxx)\n";
     for (my $i=0; $i<$host_count;$i++) {
-	print "\nbsub -q normal -J seqreg_stats_gene -oo ".$outdir."/core_dbs_".$current_release."_".$host[$i]."_seqreg_gene.out -eo ".$outdir. "/core_dbs_".$current_release."_".$host[$i]."_seqreg_gene.err perl $SERVERROOT/seq_region_stats.pl -h ".$host[$i]." -port ".$port[$i]." -u ".$user[$i]." -p ".$pass[$i]." -pattern 'core_".$current_release."' -s gene\n";
+	print "\nbsub -q normal -J seqreg_stats_gene -M2000000 -R'select[mem>2000] rusage[mem=2000]' -oo $outdir/core_dbs_$current_release"."_".$host[$i]."_seqreg_gene.out -eo $outdir/core_dbs_$current_release"."_".$host[$i]."_seqreg_gene.err perl $SERVERROOT/seq_region_stats.pl -h ".$host[$i]." -port ".$port[$i]." -u ".$user[$i]." -p ".$pass[$i]." -pattern 'core_$current_release' -s gene\n";
     }
 }
 
@@ -219,7 +249,7 @@ if ($response == 3) {
 
     print "\n\n3. Density features scripts which can be run when Variation dbs are handed over:\n";
 
-    print "\nvariation_density.pl - run for new species or where the core assembly has changed, or if there are any changes to variation positions in the variation database (species will be stored in file $outdir/variation_density_data.txt, to submit run submit_density_features.pl -submit variation_density):\n";
+    print "\nvariation_density.pl - run for new species or where the core assembly has changed, or if there are any changes to variation positions in the variation database (species will be stored in file $outdir/variation_density_data.txt, to submit run submit_density_features.pl -submit variation_density  -h ens-staging1 -h ens-staging2 -u ensadmin -p xxxx):\n";
 
     #get species for new dbs or changed assembly or where variation positions have changed
     @core_with_variation =  map { $_->[0] }  @{ $prod_dbh->selectall_arrayref("select distinct concat(full_db_name,'|',db_host) from db_list dl join db d using (db_id) where db_release = $current_release and db_type = 'core' and species_id in (select distinct species_id from db where db_release = $current_release and db_type = 'variation');") };
@@ -255,7 +285,7 @@ if ($response == 3) {
     }
     close DATAFILE;
  
-    print "\n\nseq_region_stats.pl (snp stats option only) - run on core databases for new species or if the assembly changed, or if the variation positions have changed in the corresponding variation db (db names will be stored in file $outdir/seq_region_stats_snp_data.txt, to submit run submit_density_features.pl -submit seq_region_stats_snp):\n";
+    print "\n\nseq_region_stats.pl (snp stats option only) - run on core databases for new species or if the assembly changed, or if the variation positions have changed in the corresponding variation db (db names will be stored in file $outdir/seq_region_stats_snp_data.txt, to submit run submit_density_features.pl -submit seq_region_stats_snp  -h ens-staging1 -h ens-staging2 -u ensadmin -p xxxx):\n";
 
     my $file_path = "$outdir/seq_region_stats_snp_data.txt";
 
@@ -292,8 +322,8 @@ $prod_dbh->disconnect;
     switch ($submit_script) {
 	case 'gene_gc' {
 	    for (my $i=0; $i<$host_count;$i++) {
-		push(@cmd, "bsub -q normal -J genegc_stats -oo ".$outdir."/core_dbs_".$current_release."_".$host[$i]."_genegc.out -eo ".$outdir. "/core_dbs_".$current_release."_".$host[$i]."_genegc.err perl $gene_gc_path/gene_gc.pl -h ".$host[$i]." -port ".$port[$i]." -u ".$user[$i]." -p ".$pass[$i]." -pattern 'core_".$current_release."'");
-		push(@print_message,"Submitting gene GC calculation for host ".$host[$i]." to queue 'normal'. The output from this job goes to the file ".$outdir."/core_dbs_".$current_release."_".$host[$i]."_genegc.out\n");
+		push(@cmd, "bsub -q normal -J genegc_stats -M2000000 -R'select[mem>2000] rusage[mem=2000]' -oo $outdir/core_dbs_$current_release"."_". $host[$i] ."_genegc.out -eo $outdir/core_dbs_$current_release"."_" .$host[$i]. "_genegc.err perl $gene_gc_path/gene_gc.pl -h ".$host[$i]." -port ".$port[$i]." -u ".$user[$i]." -p ".$pass[$i]." -pattern 'core_$current_release'");
+		push(@print_message,"Submitting gene GC calculation for host ".$host[$i]." to queue 'normal'. The output from this job goes to the file $outdir/core_dbs_$current_release"."_".$host[$i]."_genegc.out\n");
 	    }
 
 	}
@@ -317,13 +347,13 @@ $prod_dbh->disconnect;
 	}
 	case 'gene_density' {
 	    for (my $i=0; $i<$host_count;$i++) {
-		push(@cmd, "bsub -q normal -J gene_density -oo ".$outdir."/core_dbs_".$current_release."_".$host[$i]."_gene.out -eo ".$outdir. "/core_dbs_".$current_release."_".$host[$i]."_gene.err perl $SERVERROOT/gene_density_calc.pl -h ".$host[$i]." -port ".$port[$i]." -u ".$user[$i]." -p ".$pass[$i]." -pattern 'core_".$current_release."'");
+		push(@cmd, "bsub -q normal -J gene_density -M2000000 -R'select[mem>2000] rusage[mem=2000]' -oo $outdir/core_dbs_$current_release"."_".$host[$i]."_gene.out -eo $outdir/core_dbs_$current_release"."_".$host[$i]."_gene.err perl $SERVERROOT/gene_density_calc.pl -h ".$host[$i]." -port ".$port[$i]." -u ".$user[$i]." -p ".$pass[$i]." -pattern 'core_$current_release'");
 		push(@print_message,"Submitting gene density calculation for host ".$host[$i]." to queue 'normal'. The output from this job goes to the file ".$outdir."/core_dbs_".$current_release."_".$host[$i]."_gene.out\n");
 	    }
 	}
 	case 'seq_region_stats_gene' {
 	    for (my $i=0; $i<$host_count;$i++) {
-		push(@cmd, "bsub -q normal -J seqreg_stats -oo ".$outdir."/core_dbs_".$current_release."_".$host[$i]."_seqreg_gene.out -eo ".$outdir. "/core_dbs_".$current_release."_".$host[$i]."_seqreg_gene.err perl $SERVERROOT/seq_region_stats.pl -h ".$host[$i]." -port ".$port[$i]." -u ".$user[$i]." -p ".$pass[$i]." -pattern 'core_".$current_release."' -s gene");
+		push(@cmd, "bsub -q normal -J seqreg_stats -M2000000 -R'select[mem>2000] rusage[mem=2000]' -oo $outdir/core_dbs_$current_release"."_".$host[$i]."_seqreg_gene.out -eo $outdir/core_dbs_$current_release"."_".$host[$i]."_seqreg_gene.err perl $SERVERROOT/seq_region_stats.pl -h ".$host[$i]." -port ".$port[$i]." -u ".$user[$i]." -p ".$pass[$i]." -pattern 'core_$current_release' -s gene");
 		push(@print_message,"Submitting seq region gene stats for host ".$host[$i]." to queue 'normal'. The output from this job goes to the file ".$outdir."/core_dbs_".$current_release."_".$host[$i]."_seqreg_gene.out\n");
 	    }
 	}
@@ -356,8 +386,8 @@ $prod_dbh->disconnect;
 		if ( $host_string =~ /$host_name/) {
 		    #get user and password for host
 		    my ( $index )= grep { $host[$_] =~ /$host_name/ } 0..$#host;
-		    push(@cmd,  "bsub -q ".$queue." -J ".$job_name." -oo ".$outdir."/".$db_name.$file_name_end.".out -eo ".$outdir."/".$db_name.$file_name_end.".err perl ".$script." -h ".$host_name." -port ".$port[$index]." -u ".$user[$index]." -p ".$pass[$index].$option. $db_name);
-		    push(@print_message,"Submitting ".$script_title." for ".$db_name ." on host ".$host_name." to queue '".$queue."'. The output from this job goes to the file ".$outdir."/".$db_name.$file_name_end.".out\n");
+		    push(@cmd,  "bsub -q $queue -J $job_name -M2000000 -R'select[mem>2000] rusage[mem=2000]' -oo $outdir/$db_name$file_name_end.out -eo $outdir/$db_name$file_name_end.err perl $script -h $host_name -port ".$port[$index]." -u ".$user[$index]." -p ".$pass[$index].$option. $db_name);
+		    push(@print_message,"Submitting ".$script_title." for ".$db_name ." on host ".$host_name." to queue '".$queue."'. The output from this job goes to the file $outdir/$db_name$file_name_end.out\n");
 		}
 		else {
 		    $error = 1;
@@ -391,22 +421,38 @@ sub usage {
   my $indent = ' ' x length($0);
   print <<EOF; exit(0);
 
-The script lists databases/species which should have density features updated at the specified stage in the release cycle. There's an option for submitting a selected script.
+
+Options -h -u -p are mandatory and need to be specified for at least one host. When using more than 
+one host it\'s possible to leave out the user name and password for the second host and they will
+be copied from the first host: e.g. -h ens-staging1 -h ens-staging2 -u ensadmin -p xxxx (user ensadmin
+and password xxxx will be used for both ens-staging1 and ens-staging2).
+The script lists databases/species which should have density features updated at the specified stage in the release cycle when using option -g, e.g. 
+
+submit_density_features.pl -g -h ens-staging1 -h ens-staging2 -u ensadmin -p xxxx
+
+There\'s an option for submitting a selected script, e.g.
+
+submit_density_features.pl -s gene_gc -h ens-staging1 -h ens-staging2 -u ensadmin -p xxxx
+
 
 Usage:
 
   $0 -h host [-h host] -u user [-u user] -p password [-p password] 
-  $indent -port port [-port port]
-  $indent [-g] [-s script name]
-  $indent [-o output directory path]
+  $indent -port port_number [-port port_number]
+  $indent [-g] [-s script_name]
+  $indent [-o output_directory_path]
   $indent [-help]  
 
 
   -h|host              Database host (multiple hosts can be specified) 
 
-  -u|user              Database user (each host needs a user specified)
+  -u|user              Database user (each host needs a user specified, if multiple -h|host options
+                       are given and fewer -u|user options are specified, the first user name will be used
+                       for the hosts where no user name was given)
 
-  -p|pass              User password (each host needs a password specified)
+  -p|pass              User password (each host needs a password specified, if multiple -h|host options
+                       are given and fewer -p|pass options are specified, the first password will be used
+                       for the hosts where no password was given))
 
   -port                Database port (default 3306)  
 
