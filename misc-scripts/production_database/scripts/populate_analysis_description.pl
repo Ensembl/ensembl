@@ -205,7 +205,7 @@ my %data;
           printf( "ERROR: Found more than one possible data entry " .
                     "for species '%s', database type '%s':\n",
                   $species, $dbtype );
-          printd( "ERROR: %s\n", join( ', ', @keys ) );
+          printf( "ERROR: %s\n", join( ', ', @keys ) );
           next;
         }
         $dbdata = $data{ $keys[0] };
