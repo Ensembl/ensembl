@@ -151,7 +151,7 @@ while ( my $slice = shift @sorted_slices ) {
   my $chunk_end = 0;
   my $variable_end = 0;
   my $small_end = 0;
-  my ( $small_start );
+  my $small_start = 0;
   my $repeat_size;
   my $variable_start = 0;
   my $variable_blocksize = POSIX::ceil( $slice->seq_region_length() / 
@@ -208,7 +208,7 @@ while ( my $slice = shift @sorted_slices ) {
       warning("No repeat density calculated for ".$slice->name." (chunk start $chunk_start, chunk end $chunk_end).");
     }
 
-    my $used_lower_limit = $small_start<$variable_start?$small_start:$variable_start;
+    my $used_lower_limit = $small_start < $variable_start ? $small_start : $variable_start;
 
     # here some rr cleanup
     $rr->check_and_register( "1", 0, $used_lower_limit );
