@@ -572,19 +572,12 @@ g.seq_region_id=ae.seq_region_id and ae.exc_type='HAP'", [qw(gene_id)]
                 $old{'exons'} = $exons{$gene_id};
                 
                 # display name
-                if ($xref_display_label) {
-                  $old{'display_name'} = $xref_display_label;
-                  if ($extdb_db_display_name and $gene_stable_id) {
-                    $old{'display_name'} .= " [$extdb_db_display_name: $gene_stable_id]";
-                  } else {
-                    $old{'display_name'} .= " [$extdb_db_display_name]" if $extdb_db_display_name;
-                    $old{'display_name'} .= " [$gene_stable_id]" if $gene_stable_id;
-                  }
-                } else {
+                if (!$xref_display_label or $xref_display_label eq $gene_stable_id) {
                   $old{'display_name'} = $gene_stable_id;
-                  $old{'display_name'} .= " [$extdb_db_display_name]" if $extdb_db_display_name;
+                } else {
+                  $old{'display_name'} = "$xref_display_label [$gene_stable_id]";
                 }
-                
+                                
                 foreach my $K ( keys %{ $exons{$gene_id} } ) {
                     $old{'i'}{$K} = 1;
                 }
