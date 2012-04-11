@@ -136,6 +136,8 @@ my ( $current_start, $current_end, $current );
 my $slice_count = 0;
 my $block_size;
 
+my $total_count;
+
 while ( my $slice = shift @sorted_slices ){
 
   $block_size = $slice->length() / $bin_count;
@@ -172,14 +174,20 @@ while ( my $slice = shift @sorted_slices ){
        -end           => $current_end,
        -density_type  => $density_type,
        -density_value => $gc);
-    #print join ("\t", $slice, $current_start, $current_end, $density_type, $gc, "\n");
-    $dfa->store($df);
+    push(@density_features, $df);
+    if ($gc > 0) {
+       #density features with value = 0 are not stored
+       $total_count++;
+    }
 
   }
+
+  $dfa->store(@density_features);
 
   last if ( $slice_count++ > $max_slices );
 }
 
+print STDOUT "Created $total_count percent gc density features\n";
 
 
 #
