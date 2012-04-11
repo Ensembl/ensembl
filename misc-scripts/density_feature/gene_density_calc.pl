@@ -279,8 +279,10 @@ foreach my $dbname (@dbnames) {
 	   -end           => $current_end,
 	   -density_type  => $dt,
 	   -density_value => $count);
-
-	$total_count++;
+	if ($count > 0) {
+	    #density features with value = 0 are not stored
+	    $total_count++;
+	}
       }
       
       $dfa->store(@density_features);
@@ -289,7 +291,7 @@ foreach my $dbname (@dbnames) {
     }
 
   }
-  print STDOUT "Created $total_count gene density features.\n";
+  print STDOUT "Created $total_count gene density features\n";
   print STDOUT "Finished with $dbname";
 }
 
