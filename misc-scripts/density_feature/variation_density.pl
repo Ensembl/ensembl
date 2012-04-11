@@ -7,6 +7,7 @@ use Bio::EnsEMBL::Registry;
 use Getopt::Long;
 use Data::Dumper;
 use Bio::EnsEMBL::Utils::ConversionSupport;
+
 $Data::Dumper::Maxdepth = 2;
 
 my $max_slices = 100;
@@ -39,6 +40,7 @@ my $density_feature_adaptor   = $reg->get_adaptor($species, "core", "DensityFeat
 my $density_type_adaptor      = $reg->get_adaptor($species, "core", "DensityType")           || die "Can't create density type adaptor";
 my $analysis_adaptor          = $reg->get_adaptor($species, "core", "analysis")              || die "Can't create analysis adaptor";
 my $slice_adaptor             = $reg->get_adaptor($species, "core", "slice")                 || die "Can't create slice adaptor";
+
 
 my $variation_feature_adaptor = $reg->get_adaptor($species, "variation", "VariationFeature") || die "Can't create variation feature adaptor";
 
@@ -142,8 +144,10 @@ while ( my $slice = shift @sorted_slices){
         				       -density_type  => $dt,
         				       -density_value => $count);
     $density_feature_adaptor->store($df);
-
-    $total_count ++;
+    if ($df->dbID()) {	
+	$total_count ++;
+    }
+   
   }
 
   last if ( $slice_count++ > $max_slices );
