@@ -115,6 +115,8 @@ while ( my $slice = shift @sorted_slices){
 
   $block_size = $slice->length() / $bin_count;
 
+  my @density_features;
+
   print STDOUT "Calculating SNP densities for ". $slice->seq_region_name() . " with block size $block_size\n";
 
   $current_end = 0;
@@ -138,17 +140,19 @@ while ( my $slice = shift @sorted_slices){
     $sth->execute($slice->get_seq_region_id(), $current_end, $current_start);
     my $count = ($sth->fetchrow_array())[0];
 
-    my $df = Bio::EnsEMBL::DensityFeature->new(-seq_region    => $slice,
+    push @density_features, Bio::EnsEMBL::DensityFeature->new(-seq_region    => $slice,
 					       -start         => $current_start,
         				       -end           => $current_end,
         				       -density_type  => $dt,
         				       -density_value => $count);
-    $density_feature_adaptor->store($df);
-    if ($df->dbID()) {	
-	$total_count ++;
+    if ($count > 0) {
+       #density features with value = 0 are not stored
+       $total_count++;
     }
    
   }
+
+  $density_feature_adaptor->store(@density_features);
 
   last if ( $slice_count++ > $max_slices );
 
