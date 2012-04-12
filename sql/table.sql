@@ -9,7 +9,9 @@
 
 /**
 @header Fundamental Tables
-@desc A PDF document of the schema is available <a href="fundamental_tables_core.pdf">here</a>.
+@desc A PDF document of the schema is available <a href="fundamental_tables_core.pdf" target="_blank">here</a>.<br />
+<a href="fundamental_tables_core.pdf" target="_blank">
+<img border="0" src="fundamental_tables_thumb.png" alt="Fundamental Tables Schema Diagram" style="margin-left:20px; margin-top:20px;" /></a>
 
 */
 
@@ -222,8 +224,8 @@ Note seq_region_start is always less that seq_region_end, i.e. when the exon is 
 @column seq_region_strand           Sequence region strand: 1 - forward; -1 - reverse.
 @column phase                       The place where the intron lands inside the codon - 0 between codons, 1 between the 1st and second base, 2 between the second and 3rd base. Exons therefore have a start phase anda end phase, but introns have just one phase.
 @column end_phase                   Usually, end_phase = (phase + exon_length)%3 but end_phase could be -1 if the exon is half-coding and its 3 prime end is UTR.
-@column is_current
-@column is_constitutive
+@column is_current		    1 - exon is current.
+@column is_constitutive		    1 - exon is constitutive.
 @column stable_id		    Release-independent stable identifier.
 @column version              	    Stable identifier version number.
 @column created_date         	    Date created.
@@ -266,6 +268,7 @@ CREATE TABLE exon (
 @column intron_supporting_evidence_id Surrogate primary key
 @column previous_exon_id              Indicates the exon flanking upstream of the intron. Foreign key references to the @link exon table.
 @column next_exon_id                  Indicates the exon flanking downstream of the intron. Foreign key references to the @link exon table.
+@column hit_name		      External entity name/identifier.
 @column score                         Score supporting the intron 
 @column score_type                    The type of score e.g. NONE
 
@@ -328,7 +331,7 @@ CREATE TABLE exon_transcript (
 @column source                      e.g ensembl, havana etc.
 @column status                      Status, e.g.'KNOWN', 'NOVEL', 'PUTATIVE', 'PREDICTED', 'KNOWN_BY_PROJECTION', 'UNKNOWN'.
 @column description                 Gene description
-@column is_current
+@column is_current		    1 - gene is current.
 @column canonical_transcript_id     Foreign key references to the @link transcript table.
 @column canonical_annotation        Canonical annotation.
 @column stable_id		    Release-independent stable identifier.
@@ -837,7 +840,9 @@ CREATE TABLE unconventional_transcript_association (
 
 /**
 @header Features and Analyses
-@desc A PDF document of the schema is available <a href="features_analyses_core.pdf">here</a>.
+@desc A PDF document of the schema is available <a href="features_analyses_core.pdf" target="_blank">here</a>.<br />
+<a href="features_analyses_core.pdf" target="_blank">
+<img border="0" src="features_analyses_thumb.png" alt="Features and Analyses Schema Diagram" style="margin-left:20px; margin-top:20px;" /></a>
 */
 
 
@@ -1502,7 +1507,7 @@ CREATE TABLE prediction_transcript (
 @column perc_ident                  Alignment percentage identity.
 @column cigar_line                  Used to encode gapped alignments.
 @column external_db_id              Foreign key references to the @link external_db table.
-@column hcoverage
+@column hcoverage		    Alignment hit coverage.
 
 @see cigar_line
 
@@ -1627,7 +1632,7 @@ CREATE TABLE qtl (
 @column seq_region_id               Foreign key references to the @link seq_region table.
 @column seq_region_start            Sequence start position.
 @column seq_region_end              Sequence end position.
-@column qtl_id
+@column qtl_id			    Foreign key references to the @link qtl table.
 @column analysis_id                 Foreign key references to the @link analysis table.
 
 
@@ -1942,7 +1947,9 @@ CREATE TABLE transcript_supporting_feature (
 
 /**
 @header ID Mapping
-@desc A PDF document of the schema is available <a href="id_mapping_core.pdf">here</a>.
+@desc A PDF document of the schema is available <a href="id_mapping_core.pdf" target="_blank">here</a>.<br />
+<a href="id_mapping_core.pdf" target="_blank">
+<img border="0" src="id_mapping_thumb.png" alt="ID Mapping Schema Diagram" style="margin-left:20px; margin-top:20px;" /></a>
 */
 
 /**
@@ -2125,7 +2132,9 @@ CREATE TABLE seq_region_mapping (
 
 /**
 @header External References
-@desc A PDF document of the schema is available <a href="xrefs_core.pdf">here</a>.
+@desc A PDF document of the schema is available <a href="xrefs_core.pdf" target="_blank">here</a>.<br />
+<a href="xrefs_core.pdf" target="_blank">
+<img border="0" src="xrefs_thumb.png" alt="External References Schema Diagram" style="margin-left:20px; margin-top:20px;" /></a>
 */
 
 
