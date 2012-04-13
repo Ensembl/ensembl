@@ -85,24 +85,17 @@ use Getopt::Long qw(:config auto_version no_ignore_case);
 use Bio::EnsEMBL::DBSQL::DBConnection;
 use Bio::EnsEMBL::DBSQL::DBAdaptor;
 
-my $dba_opts = [ {  args => [ 'host', 'dbhost', 'h' ],
-					type => '=s' }, {
-					args => [ 'port', 'dbport', 'P' ],
-					type => ':i' }, {
-					args => [ 'user', 'dbuser', 'u' ],
-					type => '=s' }, {
-					args => [ 'pass', 'dbpass', 'p' ],
-					type => ':s' }, {
-					args => ['dbname'],
-					type => ':s' }, {
-					args => [ 'pattern', 'dbpattern' ],
-					type => ':s' }, {
-					args => ['driver'],
-					type => ':s' }, {
-					args => ['species_id'],
-					type => ':i' }, {
-					args => ['species'],
-					type => ':i' } ];
+my $dba_opts =
+  [ { args => [ 'host', 'dbhost', 'h'  ], type => '=s' },
+    { args => [ 'port', 'dbport', 'P'  ], type => ':i' },
+    { args => [ 'user', 'dbuser', 'u'  ], type => '=s' },
+    { args => [ 'pass', 'dbpass', 'p'  ], type => ':s' },
+    { args => [         'dbname', 'D'  ], type => ':s' },
+    { args => [ 'pattern', 'dbpattern' ], type => ':s' },
+    { args => [ 'driver'               ], type => ':s' },
+    { args => [ 'species_id'           ], type => ':i' },
+    { args => [ 'species'              ], type => ':i' },
+  ];
 
 =head2 new()
 
@@ -179,10 +172,10 @@ sub get_dba_args_for_opts {
 	if ( defined $opts->{$host} ) {
 		my $dbc =
 		  Bio::EnsEMBL::DBSQL::DBConnection->new( -USER   => $opts->{$user},
-												  -PASS   => $opts->{$pass},
-												  -HOST   => $opts->{$host},
-												  -PORT   => $opts->{$port},
-												  -DRIVER => $opts->{$driver} );
+                                                          -PASS   => $opts->{$pass},
+                                                          -HOST   => $opts->{$host},
+                                                          -PORT   => $opts->{$port},
+                                                          -DRIVER => $opts->{$driver} );
 		my @dbnames;
 		if ( defined $opts->{$pattern} ) {
 		   # get a basic DBConnection and use to find out which dbs are involved
@@ -228,6 +221,9 @@ sub get_dba_args_for_opts {
 			}
 		}
 	} ## end if ( defined $opts->{$host...})
+        else {
+            croak '(db)host arguments required';
+        }
 	return \@db_args;
 } ## end sub get_dba_args_for_opts
 
