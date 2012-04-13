@@ -50,7 +50,7 @@ sub run {
   while ( $_ = $eg_io->getline() ) {
     $count++;
     chomp;
-    my ($omim_id, $entrez_id, $type) = split;
+    my ($omim_id, $type, $entrez_id, $other) = split;
 
     if(!defined($entrez{$entrez_id})){
       $missed_entrez++;
@@ -62,7 +62,7 @@ sub run {
       next;
     }
 
-    if($type eq "gene"){
+    if($type eq "gene" || $type eq 'gene/phenotype'){
       if(defined($mim_gene{$omim_id})){
 	foreach my $ent_id (@{$entrez{$entrez_id}}){
 	  foreach my $mim_id (@{$mim_gene{$omim_id}}){
