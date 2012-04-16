@@ -34,7 +34,7 @@ Typically Perl code example of the main function of the module. Avoid too much p
 
 =head1 DESCRIPTION
 
-Textual description of the package.
+Textual description of the package. Subsections can be created using further =head2/3 descriptions and these will be turned into bold header lines.
 
 =cut
 
@@ -85,7 +85,7 @@ Method arguments denoted in <brackets> are a bad idea, since these are treated a
 
 Combined POD sections that describe multiple methods. Good for lazy coders, bad for automated documentation extractors.
 
-=head2 blocks which do no relate to a method. Too many head2 blocks makes it hard to decide which block relates to a method.
+=head2 blocks which do not relate to a method or description section. Too many head2 blocks makes it hard to decide which block relates to a method.
 
 @ISA declarations in arcane forms. Inheritance can be done in several ways, try to stick to the obvious ones: use base qw( Namespace::Package ); or our @ISA = ( package );
 
