@@ -84,7 +84,6 @@ sub run {
           )
         {
             my ( $db_type, $id ) = ( $1, $2 );
-            if( $db_type eq 'SSF' ){ $id =~ s/^SSF// } # Strip SSF prefix
 
 #            if ( !$self->get_xref( $interpro, $id, $species_id ) ) {#no idea why if was checking for something with source of the name it would never work
 	    $add_interpro_sth->execute( $interpro, $id, $db_type );
