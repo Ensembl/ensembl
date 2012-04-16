@@ -1445,10 +1445,10 @@ sub summary_as_hash {
 
 =head2 species
 
-  Example			: $feature->species();
-  Description	: Shortcut to the feature's DBAdaptor and returns its species name 
-  Returntype 	: String the species name
-  Exceptions 	: Thrown if there is no attached adaptor
+  Example     : $feature->species();
+  Description : Shortcut to the feature's DBAdaptor and returns its species name 
+  Returntype  : String the species name
+  Exceptions  : Thrown if there is no attached adaptor
   Caller      : Webcode
 
 =cut
