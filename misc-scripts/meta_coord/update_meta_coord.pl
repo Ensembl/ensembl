@@ -14,7 +14,6 @@ $port = '3306';
 my @table_names = qw(
   assembly_exception
   density_feature
-  ditag
   ditag_feature
   dna_align_feature
   exon
