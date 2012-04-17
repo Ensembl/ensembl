@@ -32,7 +32,7 @@ Bio::EnsEMBL::Utils::IO::FASTASerializer
   $serializer = Bio::EnsEMBL::Utils::IO::FASTASerializer->new($filehandle,
     sub {
         my $slice = shift;
-        return ">Custom header";
+        return "Custom header";
     }
   );
   
@@ -243,9 +243,9 @@ sub header_function {
   my ($self, $header_function) = @_;
   if($header_function) {
     assert_ref($header_function, 'CODE', 'header_function');
-    $self->{custom_header} = $header_function;
+    $self->{header_function} = $header_function;
   }
-  return $self->{custom_header};
+  return $self->{header_function};
 }
 
 1;
