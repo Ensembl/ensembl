@@ -134,7 +134,7 @@ sub print_metadata {
     my $self = shift;
     my $slice = shift;
     my $fh = $self->{'filehandle'};
-    my $function = $self->{'header_function'};
+    my $function = $self->header_function();
     my $metadata = $function->($slice);
     print $fh '>'.$metadata."\n";
 }
@@ -225,14 +225,27 @@ sub chunk_factor {
 =cut
 
 sub set_custom_header {
-    my $self = shift;
-    my $new_header_function = shift;
-    if ($new_header_function and ref($new_header_function) eq "CODE" ) {
-        $self->{'custom_header'} = $new_header_function;
-    }
-    else {
-        throw ("Custom header function required by reference.\n See documentation for FASTASerializer for correct usage.")
-    }
+  my ($self, $new_header_function) = @_;
+  $self->header_function($new_header_function);
+  return;
+}
+
+=head2 header_function
+
+    Arg [1]    : CODE reference (optional)
+    Description: Getter/setter for the custom header code
+    Example    : $serializer->header_function( sub { return 'New header'});
+    Returntype : CODE
+    
+=cut
+
+sub header_function {
+  my ($self, $header_function) = @_;
+  if($header_function) {
+    assert_ref($header_function, 'CODE', 'header_function');
+    $self->{custom_header} = $header_function;
+  }
+  return $self->{custom_header};
 }
 
 1;
