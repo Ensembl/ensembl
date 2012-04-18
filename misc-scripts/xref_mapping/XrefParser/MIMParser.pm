@@ -69,7 +69,7 @@ sub run {
 	$long_desc = $2;
 	$type = $1;
 	$label =~ s/\;\s[A-Z0-9]+$//; # strip gene name at end
-	$label = substr($label,0,35)." [".$type."]";
+	$label = substr($label,0,35)." [".$type.$number."]";
 	if($type eq "*"){ # gene only
 	  $gene++;
 	  $self->add_xref({ acc        => $number,
