@@ -349,8 +349,7 @@ FTP compatible directory format.
 
 =item B<--username | --user | -u>
 
-REQUIRED. Username of the connecting account. Must be able to perform 
-C<SELECT INTO OUTFILE> calls.
+REQUIRED. Username of the connecting account
 
 =item B<--password | -pass | -p>
 
