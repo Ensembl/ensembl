@@ -117,54 +117,61 @@ use Bio::EnsEMBL::Utils::Exception qw(throw warning);
 =cut
 
 sub initial_stable_id {
-  my $self = shift;
-  my $type = shift;
+  my ( $self, $type ) = @_;
 
   my $init_stable_id;
 
-  # use stable ID from configuration if set
-  if ($init_stable_id = $self->conf->param("starting_${type}_stable_id")) {
-    $self->logger->debug("Using pre-configured $init_stable_id as base for new $type stable IDs.\n");
+  # Use stable ID from configuration if set.
+  $init_stable_id = $self->conf->param("starting_${type}_stable_id");
+  if ( defined($init_stable_id) ) {
+    $self->logger->debug( "Using pre-configured $init_stable_id " .
+                          "as base for new $type stable IDs.\n" );
     return $init_stable_id;
   }
 
   my $s_dba = $self->cache->get_DBAdaptor('source');
   my $s_dbh = $s_dba->dbc->db_handle;
 
-  # look in the ${type}_stable_id table first
+  # look in the ${type} table first
   my $sql = qq(
     SELECT MAX(stable_id)
-    FROM ${type}_stable_id
+    FROM ${type}
     WHERE stable_id LIKE "ENS%"
       OR stable_id LIKE "ASMPATCH%"
     );
 
-  $init_stable_id = $self->fetch_value_from_db($s_dbh, $sql);
+  $init_stable_id = $self->fetch_value_from_db( $s_dbh, $sql );
 
-  # also look in gene_archive to make sure there are no larger Ids there
-  unless ($type eq 'exon') {
+  # Also look in gene_archive to make sure there are no larger IDs
+  # there.
+  if ( $type ne 'exon' ) {
     $sql = qq(SELECT MAX(${type}_stable_id) FROM gene_archive);
-    my $archived_stable_id = $self->fetch_value_from_db($s_dbh, $sql);
-    if ($archived_stable_id and $self->is_valid($archived_stable_id) and
-        ($archived_stable_id gt $init_stable_id)) {
+    my $archived_stable_id = $self->fetch_value_from_db( $s_dbh, $sql );
+    if ( $archived_stable_id &&
+         $self->is_valid($archived_stable_id) &&
+         ( $archived_stable_id gt $init_stable_id ) )
+    {
       $init_stable_id = $archived_stable_id;
     }
   }
 
-  if ($init_stable_id) {
-    # since $init_stable_id now is the highest existing stable Id for this
-    # object type, we need to increment it to find the first one we want to use
-    # for new assignments
+  if ( defined($init_stable_id) ) {
+    # Since $init_stable_id now is the highest existing stable ID for
+    # this object type, we need to increment it to find the first one we
+    # want to use for new assignments.
     $init_stable_id = $self->increment_stable_id($init_stable_id);
-    
-    $self->logger->debug("Using $init_stable_id as base for new $type stable IDs.\n");
 
-  } else {
-    $self->logger->warning("Can't find highest ${type}_stable_id in source db.\n");
+    $self->logger->debug(
+           "Using $init_stable_id as base for new $type stable IDs.\n");
+
+  }
+  else {
+    $self->logger->warning(
+          "Can't find highest ${type}_stable_id in source db.\n" );
   }
 
   return $init_stable_id;
-}
+} ## end sub initial_stable_id
 
 
 =head2 increment_stable_id
