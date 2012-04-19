@@ -41,7 +41,7 @@ The registry can be loaded from a configuration file using the load_all
 method.
 
 If a filename is passed to load_all then this is used.  Else if the
-enviroment variable ENSEMBL_REGISTRY is set to the name on an existing
+environment variable ENSEMBL_REGISTRY is set to the name on an existing
 configuration file, then this is used.  Else if the file .ensembl_init
 in your home directory exist, it is used.
 
@@ -163,7 +163,7 @@ my %group2adaptor = (
   1) If an argument is passed to this method, this is used as the
      name of the configuration file to read.
 
-  2) If the enviroment variable ENSEMBL_REGISTRY is set, this is
+  2) If the environment variable ENSEMBL_REGISTRY is set, this is
      used as the name of the configuration file to read.
 
   3) If the file .ensembl_init exist in the home directory, it is
