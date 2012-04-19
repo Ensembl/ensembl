@@ -229,28 +229,28 @@ sub inheritance_action {
     # simple inheritance suited only to Ensembl code. Multiple inheritance from one line possible
     # There are a few ignored cases of Bio::PrimarySeqI and other things from BioPerl(?)
     if ($line =~ /\@ISA/) {
-		my @parents = $line =~ /Bio::EnsEMBL::[\w:]+/g;
-		push @inheritance,@parents;
+	   my @parents = $line =~ /Bio::EnsEMBL::[\w:]+/g;
+	   push @inheritance,@parents;
     }
     #elsif ($line =~ /use base\s+(qw[\(\/])?(\(\s*')?\s*([\w:]+)'?\s*(\))?/) { Old way is overly fussy.
     elsif ($line =~ /use base/) {
-		#$inherit = $2;
-		#push @inheritance,$inherit;
-		my @parents = $line =~ /Bio::EnsEMBL::[\w:]+/g;
-		push @inheritance,@parents;
+        #$inherit = $2;
+        #push @inheritance,$inherit;
+        my @parents = $line =~ /Bio::EnsEMBL::[\w:]+/g;
+        push @inheritance,@parents;
     }
     else {
-		$line =~ /use\s+([\w:]+)/;
-		$include = $1;
-		if (defined($include)) {
-		    unless ($include eq "strict" || $include eq "warnings" || $include eq "vars" || $include eq "Exporter" || $include eq "base") {
-			$include =~ s/::/\//g; # allows doxygen to know where to look for other packages
-			$self->print("#include \"".$include.".pm\"\n");
-		    }
-		}
-		else {
-		    warn "Inheritance issue with: $line";   
-		}
+        $line =~ /use\s+([\w:]+)/;
+        $include = $1;
+        if (defined($include)) {
+            unless ($include eq "strict" || $include eq "warnings" || $include eq "vars" || $include eq "Exporter" || $include eq "base") {
+                $include =~ s/::/\//g; # allows doxygen to know where to look for other packages
+                $self->print("#include \"".$include.".pm\"\n");
+            }
+        }
+        else {
+            warn "Inheritance issue with: $line";   
+        }
     }
     
     $state = NORMAL;
@@ -275,33 +275,35 @@ sub pod_section_parser {
     my $self = $args->[0];
     my $line = $args->[1];
     if ($line =~ /^=head1\s+(.+)|^(=cut)/) {
-		my $header = $1;	
-		#end of section. Flush out, otherwise keep on slurping through pod_section_action
-		if ($buffer[0] =~ /DESCRIPTION/) {
-		    push @leading_text,"/**  \@section Description\n<pre>";
-		    shift @buffer; #discard the description pod header
-		    foreach (@buffer) {$_ =~ s/\@/\\@/g;} # escape @array references but only in descriptions.
-		    
-		    push @leading_text,@buffer; 
-		    push @leading_text,"</pre>*/ \n";
-		    @buffer = ();
-		}
-		elsif ($buffer[0] =~ /SYNOPSIS/) { 
-		    push @leading_text,"/**  \@section Synopsis\n\@code\n";
-		    shift @buffer;
-		    push @leading_text,@buffer; 
-		    push @leading_text,"\@endcode */ \n";
-		    @buffer = ();
-		}
-		if (defined($header) && ( $header eq "DESCRIPTION" || $header eq "SYNOPSIS") ) {
-		    $state = PODSECTION;
-		}
-		elsif (not defined($header)) {
-		    $state = NORMAL; # this fires when the =cut pattern matches.
-		}
-		else {
-		    $state = PODTOP;
-		}
+        my $header = $1;	
+        #end of section. Flush out, otherwise keep on slurping through pod_section_action
+        if ($buffer[0] =~ /DESCRIPTION/) {
+            push @leading_text,"/**  \@section Description\n<pre>";
+            shift @buffer; #discard the description pod header
+		    foreach (@buffer) {
+                $_ =~ s/\@/\\@/g; # escape @array references but only in descriptions.
+                $_ =~ s/=head(\d)\s*(.*)/<\/pre>\n<h$1>$2<\/h$1>\n<pre>/;   # replace in-block head commands with formatting
+            }
+            push @leading_text,@buffer; 
+            push @leading_text,"</pre>*/ \n";
+            @buffer = ();
+        }
+        elsif ($buffer[0] =~ /SYNOPSIS/) { 
+            push @leading_text,"/**  \@section Synopsis\n\@code\n";
+            shift @buffer;
+            push @leading_text,@buffer; 
+            push @leading_text,"\@endcode */ \n";
+            @buffer = ();
+        }
+        if (defined($header) && ( $header eq "DESCRIPTION" || $header eq "SYNOPSIS") ) {
+            $state = PODSECTION;
+        }
+        elsif (not defined($header)) {
+            $state = NORMAL; # this fires when the =cut pattern matches.
+        }
+        else {
+            $state = PODTOP;
+        }
     }
 }
 sub pod_section_action {
@@ -309,7 +311,7 @@ sub pod_section_action {
     my $self = $args->[0];
     my $line = $args->[1];
     $line =~ s/[BICLFS]<(.+?)>/$1/; # remove POD formatting commands
-    $line =~ s/(<|>)/\\$1/g; #protect HTML-like stuff that isn't HTML
+    #$line =~ s/(<|>)/\\$1/g; #protect HTML-like stuff that isn't HTML
     push @buffer,$line;
 }
 
