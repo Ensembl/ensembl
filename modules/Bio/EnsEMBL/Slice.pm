@@ -1903,7 +1903,8 @@ sub _get_StructuralVariationFeatureAdaptor {
 =head2 get_all_StructuralVariationFeatures
 
     Arg[1]      : string $source [optional]
-		Arg[2]      : int $include_evidence [optional]
+		Arg[2]      : int $include_evidence [optional]	
+		Arg[3]      : string $sv_class (SO term) [optional]	
     Description : returns all structural variation features on this slice. This function will only work
                   correctly if the variation database has been attached to the core database.
                   If $source is set, only structural variation features with that source name will be 
@@ -1911,8 +1912,7 @@ sub _get_StructuralVariationFeatureAdaptor {
 									as "CNV_PROBE".
 									If $include_evidence is set (i.e. $include_evidence=1), structural variation features from 
 							    both structural variation (SV) and their supporting structural variations (SSV) will be 
-							    returned. By default, it only returns features from structural variations (SV). 
-							    from structural variations.
+							    returned. By default, it only returns features from structural variations (SV).
     ReturnType  : listref of Bio::EnsEMBL::Variation::StructuralVariationFeature
     Exceptions  : none
     Caller      : contigview, snpview, structural_variation_features
@@ -1924,6 +1924,7 @@ sub get_all_StructuralVariationFeatures {
   my $self             = shift;
   my $source           = shift;
 	my $include_evidence = shift;
+	my $somatic          = shift;
 	my $sv_class         = shift;
 	
 	my $operator = '';
@@ -1932,6 +1933,8 @@ sub get_all_StructuralVariationFeatures {
 		$sv_class = 'SO:0000051'; # CNV_PROBE
 		$operator = '!'; # All but CNV_PROBE
 	}
+	
+	$somatic = (!defined($somatic) || !$somatic) ? 0 : 1;
 	
 	my $svf_adaptor = $self->_get_StructuralVariationFeatureAdaptor;
 	
@@ -1950,7 +1953,7 @@ sub get_all_StructuralVariationFeatures {
 	# Get the structural variations features
   if( $svf_adaptor ) {
 	
-		my $constraint = qq{ svf.class_attrib_id $operator=$attrib_id };
+		my $constraint  = qq{ svf.somatic=$somatic AND svf.class_attrib_id $operator=$attrib_id };
 		   $constraint .= qq{ AND svf.is_evidence=0 } if (!$include_evidence);
 
 		if($source) {
@@ -1994,6 +1997,36 @@ sub get_all_StructuralVariationFeatures_by_VariationSet {
 }
 
 
+=head2 get_all_somatic_StructuralVariationFeatures
+
+		Arg[1]      : string $source [optional]
+		Arg[2]      : int $include_evidence [optional]
+		Arg[3]      : string $sv_class (SO term) [optional]		
+    Description : returns all somatic structural variation features on this slice. This function will only work
+                  correctly if the variation database has been attached to the core database.
+                  If $source is set, only somatic structural variation features with that source name will be 
+									returned. By default, it only returns somatic structural variant features which are not labelled 
+									as "CNV_PROBE".
+									If $include_evidence is set (i.e. $include_evidence=1), structural variation features from 
+							    both structural variation (SV) and their supporting structural variations (SSV) will be 
+							    returned. By default, it only returns features from structural variations (SV).
+    ReturnType  : listref of Bio::EnsEMBL::Variation::StructuralVariationFeature
+    Exceptions  : none
+    Caller      : contigview, snpview, structural_variation_features
+    Status      : At Risk
+
+=cut
+
+sub get_all_somatic_StructuralVariationFeatures {
+	my $self   = shift;
+	my $source = shift;
+  my $include_evidence = shift;
+	my $sv_class = shift;
+	
+	return $self->get_all_StructuralVariationFeatures($source,$include_evidence,1,$sv_class);
+}
+
+
 =head2 get_all_CopyNumberVariantProbeFeatures
 
     Arg[1]      : string $source [optional]
@@ -2012,7 +2045,7 @@ sub get_all_CopyNumberVariantProbeFeatures {
 	my $self   = shift;
   my $source = shift;
 	
-	return $self->get_all_StructuralVariationFeatures($source,0,'SO:0000051');
+	return $self->get_all_StructuralVariationFeatures($source,0,0,'SO:0000051');
 }
 
 
