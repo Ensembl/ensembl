@@ -534,7 +534,7 @@ sub get_all_db_adaptors {
 
   Arg [1]    : name of the species to add the adaptor to in the registry.
   Arg [2]    : name of the group to add the adaptor to in the registry.
-  Arg [3]    : The DBAaptor to be added to the registry.
+  Arg [3]    : DBAdaptor to be added to the registry.
   Example    : Bio::EnsEMBL::Registry->add_DBAdaptor("Human", "core", $dba);
   Returntype : none
   Exceptions : none
@@ -879,8 +879,8 @@ sub get_DNAAdaptor {
   Arg [1]    : name of the species to add the adaptor to in the registry.
   Arg [2]    : name of the group to add the adaptor to in the registry.
   Arg [3]    : name of the type to add the adaptor to in the registry.
-  Arg [4]    : The DBAaptor to be added to the registry.
-  Arg [5]    : (optional) if set okay to overwrite.
+  Arg [4]    : The DBAdaptor to be added to the registry.
+  Arg [5]    : (optional) Set to allow overwrites of existing adaptors.
   Example    : Bio::EnsEMBL::Registry->add_adaptor("Human", "core", "Gene", $adap);
   Returntype : none
   Exceptions : none
@@ -901,7 +901,7 @@ sub add_adaptor {
   # database which should be a warning for now
 
   if ( defined($reset) )
-  {    # JUST REST THE HASH VALUE NO MORE PROCESSING NEEDED
+  {    # JUST RESET THE HASH VALUE NO MORE PROCESSING NEEDED
     $registry_register{_SPECIES}{$species}{ lc($group) }{ lc($type) } =
       $adap;
     return;
