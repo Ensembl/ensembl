@@ -421,6 +421,11 @@ WHERE   relation.child_term_id = ?);
                   term(s).  If this argument is true, and the
                   previous argument is left undefined, this method
                   will return the parent(s) of the given term.
+  
+  Arg [4]       : (optional) Boolean
+                  If true we will allow the retrieval of terms whose distance
+                  to the current term is 0. If false then we will only return
+                  those which are above the current term in the ontology
 
   Description   : Given a child ontology term, returns a list of
                   all its ancestor terms, up to and including any
@@ -440,7 +445,7 @@ WHERE   relation.child_term_id = ?);
 =cut
 
 sub fetch_all_by_descendant_term {
-  my ( $this, $term, $subset, $closest_only ) = @_;
+  my ( $this, $term, $subset, $closest_only, $allow_zero_distance ) = @_;
 
   assert_ref( $term, 'Bio::EnsEMBL::OntologyTerm' );
 
@@ -457,7 +462,7 @@ SELECT DISTINCT
 FROM    term parent_term
   JOIN  closure ON (closure.parent_term_id = parent_term.term_id)
 WHERE   closure.child_term_id = ?
-  AND   closure.distance > 0);
+  AND   closure.distance > ?);
 
   if ( defined($subset) ) {
     if ( index( $subset, '%' ) != -1 ) {
@@ -474,9 +479,11 @@ ORDER BY closure.distance, parent_term.accession);
 
   my $sth = $this->prepare($statement);
   $sth->bind_param( 1, $term->dbID(), SQL_INTEGER );
+  my $query_distance = ($allow_zero_distance) ? -1 : 0;
+  $sth->bind_param( 2, $query_distance, SQL_INTEGER );
 
   if ( defined($subset) ) {
-    $sth->bind_param( 2, $subset, SQL_VARCHAR );
+    $sth->bind_param( 3, $subset, SQL_VARCHAR );
   }
 
   $sth->execute();
