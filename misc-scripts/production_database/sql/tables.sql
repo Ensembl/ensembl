@@ -183,6 +183,9 @@ CREATE TABLE analysis_web_data (
 CREATE TABLE web_data (
   web_data_id               INTEGER UNSIGNED NOT NULL AUTO_INCREMENT,
   data                      TEXT,
+  
+  -- Columns for internal documentation
+  comment TEXT,
 
   -- Columns for the web interface:
   created_by    INTEGER,
