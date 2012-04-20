@@ -184,7 +184,7 @@ sub new_fast {
 =head2 cigar_string
 
   Arg [1]    : string $cigar_string
-  Example    : ( "12MI3M" )
+  Example    : $feature->cigar_string( "12MI3M" );
   Description: get/set for attribute cigar_string
                cigar_string describes the alignment. "xM" stands for 
                x matches (mismatches), "xI" for inserts into query sequence 
@@ -207,7 +207,6 @@ sub cigar_string {
 =head2 alignment_length
 
   Arg [1]    : None
-  Example    : 
   Description: return the alignment length (including indels) based on the cigar_string
   Returntype : int
   Exceptions : 
@@ -264,7 +263,6 @@ sub ungapped_features {
 =head2 strands_reversed
  
   Arg [1]    : int $strands_reversed
-  Example    : none
   Description: get/set for attribute strands_reversed
                0 means that strand and hstrand are the original strands obtained
                  from the alignment program used
@@ -294,7 +292,6 @@ sub strands_reversed {
 =head2 reverse_complement
 
   Args       : none
-  Example    : none
   Description: reverse complement the FeaturePair,
                modifing strand, hstrand and cigar_string in consequence
   Returntype : none
@@ -399,7 +396,6 @@ sub transform {
 =head2 _parse_cigar
 
   Args       : none
-  Example    : none
   Description: PRIVATE (internal) method - creates ungapped features from 
                internally stored cigar line
   Returntype : list of Bio::EnsEMBL::FeaturePair
@@ -548,8 +544,7 @@ sub _parse_cigar {
 
 =head2 _parse_features
 
-  Arg  1     : listref Bio::EnsEMBL::FeaturePair $ungapped_features
-  Example    : none
+  Arg  [1]   : listref Bio::EnsEMBL::FeaturePair $ungapped_features
   Description: creates internal cigarstring and start,end hstart,hend
                entries.
   Returntype : none, fills in values of self
@@ -863,7 +858,6 @@ sub _parse_features {
 =head2 _hit_unit
 
   Args       : none
-  Example    : none
   Description: abstract method, overwrite with something that returns
                one or three
   Returntype : int 1,3
@@ -883,7 +877,6 @@ sub _hit_unit {
 =head2 _query_unit
 
   Args       : none
-  Example    : none
   Description: abstract method, overwrite with something that returns
                one or three
   Returntype : int 1,3

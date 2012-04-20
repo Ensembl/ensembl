@@ -22,8 +22,6 @@
 
 Bio::EnsEMBL::ArchiveStableId
 
-=head1 SYNOPSIS
-
 =head1 DESCRIPTION
 
 ArchiveStableId objects are the main workunit for retrieving stable id
@@ -41,32 +39,7 @@ Attributes:
 
 Status: At Risk. This module is in development.
  
-=head1 METHODS
-
-    new
-    new_fast
-    get_history_tree
-    get_all_predecessors
-    get_all_successors
-    get_peptide
-    get_all_associated_archived
-    get_all_gene_archive_ids
-    get_all_transcript_archive_ids
-    get_all_translation_archive_ids
-    current_version
-    is_current
-    get_latest_incarnation
-    is_latest
-    stable_id
-    version
-    db_name
-    release
-    assembly
-    type
-    adaptor
-    successors
-
-=head1 RELATED MODULES
+=head1 SEE ALSO
 
 Bio::EnsEMBL::DBSQL::ArchiveStableIdAdaptor
 Bio::EnsEMBL::StableIdEvent
@@ -88,22 +61,21 @@ use Scalar::Util qw(weaken isweak);
 
 =head2 new
 
-  Arg [STABLE_ID] : String $stable_id 
-  Arg [VERSION]   : Int $version 
-  Arg [CURRENT_VERSION] : Int $current_version 
-  Arg [DB_NAME]   : String $db_name 
-  Arg [RELEASE]   : String $release
-  Arg [ASSEMBLY_NAME] : String $assembly
-  Arg [TYPE]      : String $type - "Gene", "Transcript", "Translation", "Exon"
-  Arg [ADAPTOR]   : Bio::EnsEMBL::DBSQL::ArchiveStableIdAdaptor $adaptor 
-  Example         : none
-  Description     : standard constructor with named arguments to create
-                    ArchiveStableId
-  Returntype      : Bio::EnsEMBL::ArchiveStableId
-  Exceptions      : none
-  Caller          : general, Bio::EnsEMBL::DBSQL::ArchiveStableIdAdaptor
-  Status          : At Risk
-                  : under development
+  Arg [STABLE_ID]      : String $stable_id 
+  Arg [VERSION]        : Int $version 
+  Arg [CURRENT_VERSION]: Int $current_version 
+  Arg [DB_NAME]        : String $db_name 
+  Arg [RELEASE]        : String $release
+  Arg [ASSEMBLY_NAME]  : String $assembly
+  Arg [TYPE]           : String $type - "Gene", "Transcript", "Translation", "Exon"
+  Arg [ADAPTOR]        : Bio::EnsEMBL::DBSQL::ArchiveStableIdAdaptor $adaptor 
+  Description          : standard constructor with named arguments to create
+                         ArchiveStableId
+  Returntype           : Bio::EnsEMBL::ArchiveStableId
+  Exceptions           : none
+  Caller               : general, Bio::EnsEMBL::DBSQL::ArchiveStableIdAdaptor
+  Status               : At Risk
+                       : under development
 
 =cut
 
@@ -140,7 +112,6 @@ sub new {
   Arg [6]     : String $type - "Gene", "Transcript", "Translation", "Exon"
   Arg [7]     : Bio::EnsEMBL::DBSQL::ArchiveStableIdAdaptor $adaptor 
   Arg [8]     : Int $current_version 
-  Example     : none
   Description : faster version of above constructor
   Returntype  : Bio::EnsEMBL::ArchiveStableId
   Exceptions  : none
@@ -204,7 +175,6 @@ sub get_history_tree {
 =head2 get_all_predecessors
 
   Args        : none
-  Example     : none
   Description : Retrieve a list of ArchiveStableIds that were mapped to this
                 one.
   Returntype  : listref of Bio::EnsEMBL::ArchiveStableId
@@ -231,7 +201,6 @@ sub get_all_predecessors {
 =head2 get_all_successors
 
   Args        : none
-  Example     : none
   Description : Retrieve a list of ArchiveStableIds that this one was mapped to.
   Returntype  : listref Bio::EnsEMBL::ArchiveStableId
   Exceptions  : none
@@ -255,7 +224,6 @@ sub get_all_successors {
 
 =head2 get_peptide
 
-  Example     : none
   Description : Retrieves the peptide string for this ArchiveStableId.
   Returntype  : String, or undef if this is not a Translation or cant be found
                 in the database.
@@ -326,7 +294,6 @@ sub get_all_gene_archive_ids {
 
 =head2 get_all_transcript_archive_ids
 
-  Example     : none
   Example     : my @archived_transcripts =
                   @{ $arch_id->get_all_transcript_archive_ids };
   Description : Returns transcript ArchiveStableIds associated with this
@@ -378,7 +345,7 @@ sub get_all_translation_archive_ids {
 =head2 current_version
 
   Example     : if (my $v = $arch_id->current_version) {
-                  print "Current version of this stable ID: ", $v, "\n";
+                  print "Current version of this stable ID ", $v, "\n";
                 } else {
                   print "This stable ID is not in the current db.\n";
                 }

@@ -18,15 +18,16 @@
 
 =cut
 
-# POD documentation - main docs before the code
-
 =head1 NAME
 
 PairAlign - Dna pairwise alignment module
 
 =head1 SYNOPSIS
 
-Give standard usage here
+#To convert between coordinates:
+
+  my $cdna_coord = $pair->genomic2cDNA($gen_coord);
+  my $gen_coord  = $pair->cDNA2genomic($cdna_coord);
 
 =head1 DESCRIPTION
 
@@ -47,16 +48,6 @@ Creation:
   $pairaln->addFeaturePair($pair);
 
 Any number of pair alignments can be added to the PairAlign object
-
-
-Manipulation:
-
-To convert between coordinates:
-
-  my $cdna_coord = $pair->genomic2cDNA($gen_coord);
-  my $gen_coord  = $pair->cDNA2genomic($cdna_coord);
-
-=head1 METHODS
 
 =cut
 
@@ -90,14 +81,10 @@ sub addFeaturePair {
 
 =head2 eachFeaturePair
 
- Title   : eachFeaturePait
- Usage   : my @pairs = $pair->eachFeaturePair
- Function: 
- Example : 
+ Title   : eachFeaturePair 
+ Example : my @pairs = $pair->eachFeaturePair
  Returns : Array of Bio::SeqFeature::FeaturePair
  Args    : none
-
-
 =cut
 
 sub eachFeaturePair {
@@ -121,11 +108,8 @@ sub get_hstrand {
  Title   : genomic2cDNA
  Usage   : my $cdna_coord = $pair->genomic2cDNA($gen_coord)
  Function: Converts a genomic coordinate to a cdna coordinate
- Example : 
  Returns : int
  Args    : int
-
-
 =cut
 
 sub genomic2cDNA {
@@ -226,8 +210,7 @@ sub find_Pair {
  Usage   : my @newfeatures = $self->convert_cDNA_feature($f);
  Function: Converts a feature on the cDNA into an array of 
            features on the genomic (for features that span across introns);
- Example : 
- Returns : @Bio::EnsEMBL::FeaturePair
+ Returns : Array of Bio::EnsEMBL::FeaturePair
  Args    : Bio::EnsEMBL::FeaturePair
 
 =cut

@@ -858,7 +858,6 @@ sub expand {
   Arg   1    : int $start
   Arg   2    : int $end
   Arge [3]   : int $strand
-  Example    : none
   Description: Makes another Slice that covers only part of this slice
                If a slice is requested which lies outside of the boundaries
                of this function will return undef.  This means that
@@ -1525,9 +1524,9 @@ sub get_all_LD_values {
 =head2 get_all_VariationFeatures
 
     Args       : $filter [optional]
-    Description :returns all variation features on this slice. This function will only work 
+    Description:returns all variation features on this slice. This function will only work 
                 correctly if the variation database has been attached to the core database.
-		 If $filter is "genotyped" return genotyped Snps only... (nice likkle hack);
+		        If $filter is "genotyped" return genotyped Snps only... (nice likkle hack);
     ReturnType : listref of Bio::EnsEMBL::Variation::VariationFeature
     Exceptions : none
     Caller     : contigview, snpview
@@ -1860,8 +1859,9 @@ sub calculate_pi {
 =head2 get_all_genotyped_VariationFeatures
 
     Args       : none
-    Function   : returns all variation features on this slice that have been genotyped. This function will only work
-                correctly if the variation database has been attached to the core database.
+    Description: returns all variation features on this slice that have been genotyped.
+                 This function will only work correctly if the variation database has 
+                 been attached to the core database.
     ReturnType : listref of Bio::EnsEMBL::Variation::VariationFeature
     Exceptions : none
     Caller     : contigview, snpview, ldview
@@ -1894,7 +1894,7 @@ sub get_all_genotyped_VariationFeatures {
 
 =head2 get_all_SNPs
 
- Description: DEPRECATED. Use get_all_VariationFeatures insted
+ Description: DEPRECATED. Use get_all_VariationFeatures instead
 
 =cut
 
@@ -1918,7 +1918,7 @@ sub get_all_SNPs {
 
 =head2 get_all_genotyped_SNPs
 
-  Description   : DEPRECATED. Use get_all_genotyped_VariationFeatures insted
+  Description   : DEPRECATED. Use get_all_genotyped_VariationFeatures instead
 
 =cut
 
@@ -2247,7 +2247,6 @@ sub get_all_Exons {
 =head2 get_all_QtlFeatures
 
   Args       : none
-  Example    : none
   Description: returns overlapping QtlFeatures
   Returntype : listref Bio::EnsEMBL::Map::QtlFeature
   Exceptions : none
@@ -2433,7 +2432,6 @@ sub get_repeatmasked_seq {
                but repeat_name AluSp (which are also from repeat_class SINE/MIR).
                Your hash will be something like {"repeat_class_SINE/MIR" => 1,
                                                  "repeat_name_AluSp" => 0}
-  Example    : none
   Description: replaces string positions described in the RepeatFeatures
                with Ns (default setting), or with the lower case equivalent 
                (soft masking).  The reference to a dna string which is passed

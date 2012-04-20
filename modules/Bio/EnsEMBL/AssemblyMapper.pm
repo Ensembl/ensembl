@@ -765,7 +765,6 @@ sub component_CoordSystem {
 =head2 adaptor
 
   Arg [1]    : Bio::EnsEMBL::DBSQL::AssemblyMapperAdaptor $adaptor
-  Example    : None
   Description: Getter/set terfor this object's database adaptor.
   Returntype : Bio::EnsEMBL::DBSQL::AssemblyMapperAdaptor
   Exceptions : None

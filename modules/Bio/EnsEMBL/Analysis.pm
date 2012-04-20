@@ -169,7 +169,6 @@ sub new_fast {
 =head2 db
 
   Arg [1]    : string $db
-  Example    : none
   Description: get/set for the attribute db
   Returntype : string
   Exceptions : none
@@ -192,7 +191,6 @@ sub db {
 =head2 db_version
 
   Arg [1]    : string $db_version
-  Example    : none
   Description: get/set for attribute db_version
   Returntype : string
   Exceptions : none
@@ -215,7 +213,6 @@ sub db_version {
 =head2 db_file
 
   Arg [1]    : string $db_file
-  Example    : none
   Description: get/set for attribute db_file
   Returntype : string
   Exceptions : none
@@ -239,7 +236,6 @@ sub db_file {
 =head2 program
 
   Arg [1]    : string $program
-  Example    : none
   Description: get/set for attribute program
   Returntype : string
   Exceptions : none
@@ -262,7 +258,6 @@ sub program {
 =head2 program_version
 
   Arg [1]    : string $program_version
-  Example    : none
   Description: get/set for attribute program_version
   Returntype : string
   Exceptions : none
@@ -285,7 +280,6 @@ sub program_version {
 =head2 program_file
 
   Arg [1]    : string $program_file
-  Example    : none
   Description: get/set for attribute program_file
   Returntype : string
   Exceptions : none
@@ -308,7 +302,6 @@ sub program_file {
 =head2 module
 
   Arg [1]    : string $module
-  Example    : none
   Description: get/set for attribute module. Usually a RunnableDB perl 
                module that executes this analysis job. 
   Returntype : string
@@ -332,7 +325,6 @@ sub module {
 =head2 module_version
 
   Arg [1]    : string $module_version
-  Example    : none
   Description: get/set for attribute module_version
   Returntype : string
   Exceptions : none
@@ -355,7 +347,6 @@ sub module_version {
 =head2 gff_source
 
   Arg [1]    : string $gff_source
-  Example    : none
   Description: get/set for attribute gff_source
   Returntype : string
   Exceptions : none
@@ -378,7 +369,6 @@ sub gff_source {
 =head2 gff_feature
 
   Arg [1]    : string $gff_feature
-  Example    : none
   Description: get/set for attribute gff_feature
   Returntype : string
   Exceptions : none
@@ -401,7 +391,6 @@ sub gff_feature {
 =head2 parameters
 
   Arg [1]    : string $parameters
-  Example    : none
   Description: get/set for attribute parameters. This should be evaluated
                by the module if given or the program that is specified.
   Returntype : string
@@ -425,7 +414,6 @@ sub parameters {
 =head2 created
 
   Arg [1]    : string $created
-  Example    : none
   Description: get/set for attribute created time.
   Returntype : string
   Exceptions : none
@@ -448,7 +436,6 @@ sub created {
 =head2 logic_name
 
   Arg [1]    : string $logic_name
-  Example    : none
   Description: Get/set method for the logic_name, the name under 
                which this typical analysis is known.
   Returntype : string
@@ -469,7 +456,6 @@ sub logic_name {
 =head2 has_database
 
   Args       : none
-  Example    : none
   Description: tests if the db attribute is set, returns 1 if so,
                0 if not.
   Returntype : int 0,1
@@ -513,7 +499,6 @@ sub description {
 =head2 display_label
 
   Arg [1]    : string $display_label
-  Example    : none
   Description: get/set for attribute display_label
   Returntype : string
   Exceptions : none
@@ -535,7 +520,6 @@ sub display_label {
 =head2 displayable
 
   Arg [1]    : string $displayable
-  Example    : none
   Description: get/set for attribute displayable
   Returntype : string
   Exceptions : none
@@ -558,7 +542,6 @@ sub displayable {
 =head2 web_data
 
   Arg [1]    : string $web_data
-  Example    : none
   Description: get/set for attribute web_data
   Returntype : string
   Exceptions : none
@@ -581,10 +564,9 @@ sub web_data {
 
   Arg  1     : Bio::EnsEMBL::Analysis $ana
                The analysis to compare to
-  Example    : none
   Description: returns 1 if this analysis is special case of given analysis
                returns 0 if they are equal
-	       returns -1 if they are completely different
+	           returns -1 if they are completely different
   Returntype : int -1,0,1
   Exceptions : none
   Caller     : unknown
