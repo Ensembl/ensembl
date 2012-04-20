@@ -146,7 +146,7 @@ sub subseq {
   my ( $self, $start, $end, $strand ) = @_;
 
   if ( $end+1 < $start ) {
-    throw("End coord + 1 is less then start coord");
+    throw("End coord + 1 is less than start coord");
   }
   
   return '' if( $start == $end + 1);
