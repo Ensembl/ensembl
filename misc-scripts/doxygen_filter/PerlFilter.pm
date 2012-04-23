@@ -225,17 +225,13 @@ sub inheritance_action {
     my $line = $args->[1];
     chomp($line);
     $line =~ s/;//;
-    #warn "Inheritance line: $line";
     # simple inheritance suited only to Ensembl code. Multiple inheritance from one line possible
     # There are a few ignored cases of Bio::PrimarySeqI and other things from BioPerl(?)
     if ($line =~ /\@ISA/) {
 	   my @parents = $line =~ /Bio::EnsEMBL::[\w:]+/g;
 	   push @inheritance,@parents;
     }
-    #elsif ($line =~ /use base\s+(qw[\(\/])?(\(\s*')?\s*([\w:]+)'?\s*(\))?/) { Old way is overly fussy.
     elsif ($line =~ /use base/) {
-        #$inherit = $2;
-        #push @inheritance,$inherit;
         my @parents = $line =~ /Bio::EnsEMBL::[\w:]+/g;
         push @inheritance,@parents;
     }
@@ -260,7 +256,9 @@ sub pod_top_parser {
     my $args = $_[0];
     my $self = $args->[0];
     my $line = $args->[1];
-    if ($line =~ /DESCRIPTION|SYNOPSIS/) {$state = PODSECTION;}
+    #secondary switching logic found elsewhere in pod_section_parser, due to unterminated pod sections. 
+    if ($line =~ /DESCRIPTION|SYNOPSIS/) {$state = PODSECTION;} 
+    elsif ($line =~ /SEE ALSO|OPTIONS/) {$state = SEEALSO;} 
     elsif ($line =~ /^=cut/) {$state = NORMAL;}
 }
 sub pod_top_action {
@@ -275,17 +273,17 @@ sub pod_section_parser {
     my $self = $args->[0];
     my $line = $args->[1];
     if ($line =~ /^=head1\s+(.+)|^(=cut)/) {
-        my $header = $1;	
         #end of section. Flush out, otherwise keep on slurping through pod_section_action
+        my $header = $1;	
         if ($buffer[0] =~ /DESCRIPTION/) {
-            push @leading_text,"/**  \@section Description\n<pre>";
+            push @leading_text,"/**  \@section Description\n\@htmlonly<pre>";
             shift @buffer; #discard the description pod header
 		    foreach (@buffer) {
                 $_ =~ s/\@/\\@/g; # escape @array references but only in descriptions.
                 $_ =~ s/=head(\d)\s*(.*)/<\/pre>\n<h$1>$2<\/h$1>\n<pre>/;   # replace in-block head commands with formatting
             }
             push @leading_text,@buffer; 
-            push @leading_text,"</pre>*/ \n";
+            push @leading_text,"</pre>\@endhtmlonly*/ \n";
             @buffer = ();
         }
         elsif ($buffer[0] =~ /SYNOPSIS/) { 
@@ -297,6 +295,9 @@ sub pod_section_parser {
         }
         if (defined($header) && ( $header eq "DESCRIPTION" || $header eq "SYNOPSIS") ) {
             $state = PODSECTION;
+        }
+        elsif (defined($header) && $header eq "SEE ALSO") {
+            $state = SEEALSO;
         }
         elsif (not defined($header)) {
             $state = NORMAL; # this fires when the =cut pattern matches.
@@ -310,7 +311,7 @@ sub pod_section_action {
     my $args = $_[0];
     my $self = $args->[0];
     my $line = $args->[1];
-    $line =~ s/[BICLFS]<(.+?)>/$1/; # remove POD formatting commands
+    $line =~ s/[BICLFS]<(.+?)>/$1/g; # remove POD formatting commands
     #$line =~ s/(<|>)/\\$1/g; #protect HTML-like stuff that isn't HTML
     push @buffer,$line;
 }
@@ -328,7 +329,20 @@ sub pod_method_parser {
 		$method_description =~ s/retval//; # remove any still unassigned return types
 		# trim trailing brackety stuff off method header. It is upsetting Doxygen
 		$method_description =~ s/\s*\(.+\).*$//;
-		push @big_buffer,"\n /** \@fn ".$method_description."\n <pre>";
+		# Protect the code examples with a @code block
+	    my $code;
+		foreach (@buffer) {
+		    if ($code and /\w+\s*:(?!:)/) { #closes code section at end of Example: 
+                $_ = '@endcode <pre>'.$_;
+                $code = undef;
+            }
+		    if (/Example\s+:(.*)/) { #starts code section at Example : in POD
+		        $_ =~ s#(Example\s+:)(.*)#$1</pre>\@code$2#;
+		        $code = 1;
+		    }
+		}
+		if ($code) {push @buffer,'\@endcode'};
+		push @big_buffer,"\n /** \@fn ".$method_description."\n<pre>";
 		push @big_buffer,@buffer;
 		push @big_buffer," </pre>\n "; # this comment block is still open. To be finished in code_parser
 		@buffer = ();
@@ -365,7 +379,7 @@ sub pod_method_action {
     }
     else {
         $line =~ s/[BICLFS]<(.+?)>/$1/g; # remove POD formatting commands
-        $line =~ s/(\@|&|<|>|\\|\%|#)/\\$1/g; #sanitising the oddities that will bewilder Doxygen 
+        #$line =~ s/(\@|&|<|>|\\|\%|#)/\\$1/g; #sanitising the oddities that will bewilder Doxygen 
 		$line =~ s/(?<!isn't\s)DEPRECATED/\@deprecated/i; #make use of Doxygen's deprecated list features
         push @buffer,$line;
     }
@@ -375,20 +389,28 @@ sub see_also_parser {
     my $args = $_[0];
     my $self = $args->[0];
     my $line = $args->[1];
-
+    
+    if ($line =~ /^=cut/ || $line =~ /^=head1/) {
+        $buffer[0] =~ s/=head1/\/**\@section/;
+        $buffer[0] =~ s/SEE\sALSO/See-also/; #join up SEE ALSO so that doxygen doesn't chop off the SEE
+        push @buffer,'*/';
+        push @leading_text,@buffer;
+        @buffer = ();
+        $state = NORMAL;
+    }
 }
 sub see_also_action {
     my $args = $_[0];
     my $self = $args->[0];
     my $line = $args->[1];
-
+    push @buffer,$line;
+    
 }
 
 sub finish {
     my $args = $_[0];
     my $self = $args->[0];
     my $line = $args->[1];
-   
 }
 
 
@@ -396,6 +418,8 @@ sub code_parser {
     my $args = $_[0];
     my $self = $args->[0];
     my $line = $args->[1];
+    
+    #count the brackets in the code to know when we've run out of subroutine
     $line =~ s/\s#.*?$//; #rips comments off the end of a line prior to counting
     $line =~ s#/.*/##g; #remove any conventional regexp from the line, as they can contain brackets
     my $open_brackets = () = $line =~ /{/g;
@@ -418,6 +442,7 @@ sub code_action {
     }
 }
 
+# Methods sometimes have well-specified return values, these must be dressed up for Doxygen.
 sub sanitize_return_values {
     my ( $self, $line ) = @_;
     my $return_value;
