@@ -73,6 +73,8 @@ change to version here must be reflected in the configuration file.
 
 	1;
 
+You give the registry to the **init_pipeline.pl** script via the **-registry** option
+
 ## Overriding Defaults Using a New Config File 
 
 We recommend if you have a number of parameters which do not change
@@ -94,6 +96,8 @@ root config file e.g.
 
 	1;
 
+If you do override the config then you should use the package name for your overridden config in the upcoming example commands.
+
 ## Environment
 
 ### PERL5LIB
@@ -113,38 +117,37 @@ root config file e.g.
 ### To load use normally:
 
 	init_pipeline.pl Bio::EnsEMBL::Pipeline::PipeConfig:FASTA_conf \
-	-pipeline_db -host=my-db-host -base_path /path/to/dumps
+	-pipeline_db -host=my-db-host -base_path /path/to/dumps -registry reg.pm
 
 ### Run a subset of species (no forcing & supports registry aliases):
 
 	init_pipeline.pl Bio::EnsEMBL::Pipeline::PipeConfig:FASTA_conf \
 	-pipeline_db -host=my-db-host -species anolis -species celegans -species human \
-	-base_path /path/to/dumps
+	-base_path /path/to/dumps -registry reg.pm
 
 ### Specifying species to force (supports all registry aliases):
 
 	init_pipeline.pl Bio::EnsEMBL::Pipeline::PipeConfig:FASTA_conf \
 	-pipeline_db -host=my-db-host -force_species anolis -force_species celegans -force_species human \
-	-base_path /path/to/dumps
+	-base_path /path/to/dumps -registry reg.pm
 
 ### Running & forcing a species:
 
 	init_pipeline.pl Bio::EnsEMBL::Pipeline::PipeConfig:FASTA_conf \
 	-pipeline_db -host=my-db-host -species celegans -force_species celegans \
-	-base_path /path/to/dumps
+	-base_path /path/to/dumps -registry reg.pm
 
-### Dumping just gene data:
+### Dumping just gene data (no DNA or ncRNA):
 
 	init_pipeline.pl Bio::EnsEMBL::Pipeline::PipeConfig:FASTA_conf \
 	-pipeline_db -host=my-db-host -dump_type cdna \
-	-base_path /path/to/dumps
+	-base_path /path/to/dumps -registry reg.pm
 
 ### Using a different SCP user & identity:
 
 	init_pipeline.pl Bio::EnsEMBL::Pipeline::PipeConfig:FASTA_conf \
 	-pipeline_db -host=my-db-host -scp_user anotherusr -scp_identity /users/anotherusr/.pri/identity \
-	-base_path /path/to/dumps
-
+	-base_path /path/to/dumps -registry reg.pm
 
 ## Running the Pipeline
 

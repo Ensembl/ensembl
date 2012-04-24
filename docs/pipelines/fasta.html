@@ -80,6 +80,8 @@ Bio::EnsEMBL::Registry-&gt;no_cache_warnings(1);
 1;
 </code></pre>
 
+<p>You give the registry to the <strong>init_pipeline.pl</strong> script via the <strong>-registry</strong> option</p>
+
 <h2 id="overriding_defaults_using_a_new_config_file">Overriding Defaults Using a New Config File</h2>
 
 <p>We recommend if you have a number of parameters which do not change
@@ -101,6 +103,8 @@ sub default_options {
 
 1;
 </code></pre>
+
+<p>If you do override the config then you should use the package name for your overridden config in the upcoming example commands.</p>
 
 <h2 id="environment">Environment</h2>
 
@@ -125,42 +129,42 @@ sub default_options {
 <h3 id="to_load_use_normally">To load use normally:</h3>
 
 <pre><code>init_pipeline.pl Bio::EnsEMBL::Pipeline::PipeConfig:FASTA_conf \
--pipeline_db -host=my-db-host -base_path /path/to/dumps
+-pipeline_db -host=my-db-host -base_path /path/to/dumps -registry reg.pm
 </code></pre>
 
 <h3 id="run_a_subset_of_species_no_forcing_supports_registry_aliases">Run a subset of species (no forcing &amp; supports registry aliases):</h3>
 
 <pre><code>init_pipeline.pl Bio::EnsEMBL::Pipeline::PipeConfig:FASTA_conf \
 -pipeline_db -host=my-db-host -species anolis -species celegans -species human \
--base_path /path/to/dumps
+-base_path /path/to/dumps -registry reg.pm
 </code></pre>
 
 <h3 id="specifying_species_to_force_supports_all_registry_aliases">Specifying species to force (supports all registry aliases):</h3>
 
 <pre><code>init_pipeline.pl Bio::EnsEMBL::Pipeline::PipeConfig:FASTA_conf \
 -pipeline_db -host=my-db-host -force_species anolis -force_species celegans -force_species human \
--base_path /path/to/dumps
+-base_path /path/to/dumps -registry reg.pm
 </code></pre>
 
 <h3 id="running_forcing_a_species">Running &amp; forcing a species:</h3>
 
 <pre><code>init_pipeline.pl Bio::EnsEMBL::Pipeline::PipeConfig:FASTA_conf \
 -pipeline_db -host=my-db-host -species celegans -force_species celegans \
--base_path /path/to/dumps
+-base_path /path/to/dumps -registry reg.pm
 </code></pre>
 
-<h3 id="dumping_just_gene_data">Dumping just gene data:</h3>
+<h3 id="dumping_just_gene_data_no_dna_or_ncrna">Dumping just gene data (no DNA or ncRNA):</h3>
 
 <pre><code>init_pipeline.pl Bio::EnsEMBL::Pipeline::PipeConfig:FASTA_conf \
 -pipeline_db -host=my-db-host -dump_type cdna \
--base_path /path/to/dumps
+-base_path /path/to/dumps -registry reg.pm
 </code></pre>
 
 <h3 id="using_a_different_scp_user_identity">Using a different SCP user &amp; identity:</h3>
 
 <pre><code>init_pipeline.pl Bio::EnsEMBL::Pipeline::PipeConfig:FASTA_conf \
 -pipeline_db -host=my-db-host -scp_user anotherusr -scp_identity /users/anotherusr/.pri/identity \
--base_path /path/to/dumps
+-base_path /path/to/dumps -registry reg.pm
 </code></pre>
 
 <h2 id="running_the_pipeline">Running the Pipeline</h2>
