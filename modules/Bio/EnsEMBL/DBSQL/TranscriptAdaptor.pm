@@ -684,6 +684,53 @@ sub fetch_all_by_exon_stable_id {
   return \@trans;
 }
 
+=head2 fetch_all_by_biotype 
+
+  Arg [1]    : String $biotype 
+               listref of $biotypes
+               The biotype of the gene to retrieve. You can also have a reference
+               to a list of biotypes in the event of needing several.
+  Example    : $transcript = $transcript_adaptor->fetch_all_by_biotype('pseudogene'); 
+               $transcript = $transcript_adaptor->fetch_all_by_biotype(['protein_coding','ambiguous_orf']);
+  Description: Retrieves an array reference of transcript objects from the 
+               database via its biotype or biotypes.
+               The transcript will be retrieved in its native coordinate system
+               (i.e. in the coordinate system it is stored in the database). 
+               It may be converted to a different coordinate system through a 
+               call to transform() or transfer(). If the transcript is not found
+               undef is returned instead.
+  Returntype : listref of Bio::EnsEMBL::Transcript
+  Exceptions : if we cant get the transcript in given coord system
+  Caller     : general
+  Status     : Stable
+
+=cut
+
+sub fetch_all_by_biotype {
+  my ($self, $biotype) = @_;
+
+  if (!defined $biotype){
+      throw("Biotype or listref of biotypes expected");
+  }
+  my $constraint;
+  if (ref($biotype) eq 'ARRAY'){
+      $constraint = "t.biotype IN (";
+      foreach my $b (@{$biotype}){
+        $constraint .= "?,";    
+        $self->bind_param_generic_fetch($b,SQL_VARCHAR);
+      }
+      chop($constraint); #remove last , from expression
+      $constraint .= ") and t.is_current = 1";
+      
+  }
+  else{
+      $constraint = "t.biotype = ? and t.is_current = 1";
+      $self->bind_param_generic_fetch($biotype,SQL_VARCHAR);
+  }
+  my @transcripts  = @{ $self->generic_fetch($constraint) };
+  return \@transcripts ;
+}
+
 
 =head2 store
 

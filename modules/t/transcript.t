@@ -259,6 +259,17 @@ ok($tr && $tr->stable_id eq 'ENST00000201961');
 ok($tr->display_id() eq $tr->stable_id());
 
 #
+# test TranscriptAdaptor::fetch_all_by_biotype
+#
+debug("Test fetch_all_by_biotype");
+my @transcripts = @{$ta->fetch_all_by_biotype('protein_coding')};
+ok(@transcripts == 25);
+@transcripts = @{$ta->fetch_all_by_biotype(['protein_coding','pseudogene'])};
+warn "Got ".scalar(@transcripts)." transcripts\n";
+ok(@transcripts == 25);
+
+
+#
 # Test get_all_Introns by joining Exons and introns
 # and comparing it to the original
 #
@@ -506,7 +517,7 @@ $tr = $ta->fetch_by_stable_id('ENST00000355555');
 debug("fetch_by_stable_id");
 ok( $tr->dbID == 21740 );
 
-my @transcripts = @{ $ta->fetch_all_versions_by_stable_id('ENST00000355555') };
+@transcripts = @{ $ta->fetch_all_versions_by_stable_id('ENST00000355555') };
 debug("fetch_all_versions_by_stable_id");
 ok( scalar(@transcripts) == 1 );
 
