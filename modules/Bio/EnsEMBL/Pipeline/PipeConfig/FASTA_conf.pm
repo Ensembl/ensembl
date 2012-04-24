@@ -23,9 +23,9 @@ sub default_options {
 
         species => [],
         
-        dump_types => ['dna', 'cdna', 'ncrna'],
+        dump_types => [],
         
-        db_types => [qw/core/],
+        db_types => [],
         
         force_species => [],
         
