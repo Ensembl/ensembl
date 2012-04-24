@@ -62,7 +62,7 @@ my $GLOBAL_BASE_PATH;
 =head2 global_base_path
 
   Arg[1]     	: String; base path 
-  Example			: Bio::EnsEMBL::DBSQL::DataFileAdaptor->global_base_path('/base/path');
+  Example       : Bio::EnsEMBL::DBSQL::DataFileAdaptor->global_base_path('/base/path');
   Description	: Stores a global value to be used when building data file paths
   Returntype 	: String
   Exceptions 	: None
@@ -101,12 +101,12 @@ sub get_base_path {
 
 =head2 DataFile_to_extension
 
+  Deprecated
   Arg[1]      : Bio::EnsEMBL::DataFile
   Example     : my $ext = $dfa->DataFile_to_extension($bam_df);
   Description : Returns an expected extension for the given DataFile type
   Returntype  : Scalar of the expected file extension
   Exceptions  : Raised if the given file type is not understood
-  Status      : Deprecated
 
 =cut
 
@@ -144,12 +144,12 @@ sub DataFile_to_extensions {
 
 =head2 DataFile_to_adaptor
 
-  Arg[1]     	: Bio::EnsEMBL::DataFile
-  Arg[2]      : (optional) base path
-  Example			: my $bam = $dfa->DataFile_to_adaptor($bam_df);
-  Description	: Returns an adaptor instance which will access the given DataFile
-  Returntype 	: Scalar actual return depends upon the given file type
-  Exceptions 	: Raised if the given file type is not understood
+  Arg[1]        : Bio::EnsEMBL::DataFile
+  Arg[2]        : (optional) base path
+  Example       : my $bam = $dfa->DataFile_to_adaptor($bam_df);
+  Description   : Returns an adaptor instance which will access the given DataFile
+  Returntype    : Scalar actual return depends upon the given file type
+  Exceptions    : Raised if the given file type is not understood
 
 =cut
 
@@ -181,7 +181,7 @@ sub DataFile_to_adaptor {
 =head2 fetch_all_by_logic_name
 
   Args [1]   	: String $logic_name for the linked analysis 
-  Example			: my $dfs = $dfa->fetch_all_by_logic_name('bam_alignments');
+  Example       : my $dfs = $dfa->fetch_all_by_logic_name('bam_alignments');
   Description	: Returns all DataFile entries linked to the given analysis 
                 logic name
   Returntype 	: ArrayRef contains Bio::EnsEMBL::DataFile instances

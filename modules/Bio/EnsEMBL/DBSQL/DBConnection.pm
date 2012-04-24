@@ -905,7 +905,7 @@ sub quote_identifier {
                disconect_when_inactive flag is set.
                Users may call it whenever they want to disconnect. Connection will
                reestablish on next access to db_handle()
-  Returntype : 0,1
+  Returntype : 1 or 0
                1=problem trying to disconnect while a statement handle was still active
   Exceptions : none
   Caller     : Bio::EnsEMBL::DBSQL::SQL::StatementHandle::DESTROY

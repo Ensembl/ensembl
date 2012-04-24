@@ -22,10 +22,6 @@
 
 Bio::EnsEMBL::DBFile::FileAdaptor - Base Adaptor for direct file access
 
-=head1 SYNOPSIS
-
-
-
 =head1 DESCRIPTION
 
 Basic wrapper class to provide access to file based data.
@@ -37,9 +33,6 @@ the required amount of data covering the slice.
 
 Currently only works as hybrid DBAdaptor e.g. ResultFeatureAdaptor which inherits both from 
 here and BaseFeatureAdaptor.
-
-=head1 SEE ALSO
-
 
 =cut
 
@@ -102,9 +95,9 @@ sub get_filehandle{
 
   Arg[1]     : string     - filepath
   Arg[2]     : HASHREF    - Optional params:
-                                 -binmode       => 0|1,   # Boolean i.e. treat file as binary
-                                 -file_operator => '>'    # Default is '<'
-                                #-perms_octal   =>  # Requires FileHandle
+                          -binmode       => 0|1,   # Boolean i.e. treat file as binary
+                          -file_operator => '>'    # Default is '<'
+                         #-perms_octal   =>  # Requires FileHandle
   Example    : my $fh     = $self->open_file($filepath, {-binmode = > 1, -file_operator => '>'});
   Description: Opens a file for reading or writing.
   Returntype : GLOB/undef - filehandle

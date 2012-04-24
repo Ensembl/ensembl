@@ -554,7 +554,7 @@ sub fetch_by_dbID {
   Arg [1]    : none
   Example    : $cs = $csa->fetch_top_level();
   Description: Retrieves the toplevel pseudo coordinate system.
-  Returntype : a Bio::EnsEMBL::CoordSystem object
+  Returntype : Bio::EnsEMBL::CoordSystem object
   Exceptions : none
   Caller     : general
   Status     : Stable
@@ -758,7 +758,7 @@ sub get_mapping_path {
 
   Arg [1]    : Bio::EnsEMBL::CoordSystem $cs1
   Arg [2]    : Bio::EnsEMBL::CoordSystem $cs2
-  Arg [3..n] : Bio::EnsEMBL::CoordSystems $cs3..$csN
+  Arg [3..n] : Bio::EnsEMBL::CoordSystem $cs3..$csN
   Example    : my $pathref = $csa->store_mapping_path($cs1,$cs2);
   Description: Given two or more coordinate systems this will store 
                mapping paths between them in the database. 

@@ -1731,7 +1731,7 @@ SQL
   Arg [3]    : (optional) string $extraType
   	       other object type to be returned
   Example    : $self->_type_by_external_db_id(1030, 'Translation');
-  Description: Gets
+  Description: Gets.
                NOTE:  In a multi-species database, this method will
                return all the entries matching the search criteria, not
                just the ones associated with the current species.
@@ -1739,7 +1739,7 @@ SQL
   Exceptions : none
   Caller     : list_translation_ids_by_extids
                translationids_by_extids
-  	       geneids_by_extids
+  	           geneids_by_extids
   Status     : Stable
 
 =cut
@@ -2065,7 +2065,7 @@ sub geneids_by_extids{
 
 =head2 translationids_by_extids
 
-  Description:  DEPRECATED use list_translation_ids_by_extids instead
+  DEPRECATED use list_translation_ids_by_extids instead
 
 =cut
 
@@ -2078,7 +2078,7 @@ sub translationids_by_extids{
 
 =head2 transcriptids_by_extids
 
-  Description: DEPRECATED use transcriptids_by_extids instead
+  DEPRECATED use transcriptids_by_extids instead
 
 =cut
 

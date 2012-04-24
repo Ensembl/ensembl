@@ -92,7 +92,7 @@ my $reg = "Bio::EnsEMBL::Registry";
                 -driver => 'mysql'
               );
 
-  Example2   : $db = new Bio::EnsEMBL::DBSQL::DBAdaptor(
+              $db = new Bio::EnsEMBL::DBSQL::DBAdaptor(
                 -species => 'Homo_sapiens',
                 -group   => 'core',
                 -user    => 'root',
@@ -101,7 +101,7 @@ my $reg = "Bio::EnsEMBL::Registry";
                 -driver  => 'mysql'
               );
 
-  Example3   : $db = new Bio::EnsEMBL::DBSQL::DBAdaptor(
+              $db = new Bio::EnsEMBL::DBSQL::DBAdaptor(
                 -species         => 'staphylococcus_aureus',
                 -group           => 'core',
                 -user            => 'root',
@@ -563,7 +563,7 @@ sub get_adaptor {
 =head2 set_adaptor
 
   Arg [1]    : Canonical data type for new adaptor.
-	Arg [2]    : Object defining the adaptor for arg1.
+  Arg [2]    : Object defining the adaptor for arg1.
   Example    : $aa = Bio::EnsEMBL::DBSQL::GeneAdaptor->new($db_adaptor);
              : $db_adaptor->set_adaptor("Gene", $ga)
   Description: Stores the object which represents the adaptor for the

@@ -935,7 +935,7 @@ sub fetch_all_by_GOTerm_accession {
                The gene to fetch alternative alleles for
   Example    : my @alt_genes = @{ $gene_adaptor->fetch_all_alt_alleles($gene) };
                foreach my $alt_gene (@alt_genes) {
-                 print "Alternate allele: " . $alt_gene->stable_id() . "\n";
+                 print "Alternate allele: " . $alt_gene->stable_id() . "\n" ;
                }
   Description: Retrieves genes which are alternate alleles to a provided gene.
                Alternate alleles in Ensembl are genes which are similar and are
@@ -2193,7 +2193,7 @@ sub fetch_nearest_Gene_by_Feature{
 
 =head2 fetch_by_maximum_DBLink
 
- Description: DEPRECATED - use fetch_all_by_external_name instead
+ DEPRECATED - use fetch_all_by_external_name instead
 
 =cut
 
@@ -2223,7 +2223,7 @@ sub fetch_by_maximum_DBLink {
 
 =head2 get_display_xref
 
-  Description: DEPRECATED use $gene->display_xref
+  DEPRECATED use $gene->display_xref
 
 =cut
 
@@ -2269,7 +2269,7 @@ sub get_display_xref {
 
 =head2 get_description
 
-  Description: DEPRECATED, use gene->get_description
+  DEPRECATED, use gene->get_description
 
 =cut
 
@@ -2296,7 +2296,7 @@ sub get_description {
 
 =head2 fetch_by_Peptide_id
 
-  Description: DEPRECATED, use fetch_by_translation_stable_id()
+  DEPRECATED, use fetch_by_translation_stable_id()
 
 =cut
 
@@ -2312,7 +2312,7 @@ sub fetch_by_Peptide_id {
 
 =head2 get_stable_entry_info
 
-  Description: DEPRECATED use $gene->stable_id instead
+  DEPRECATED use $gene->stable_id instead
 
 =cut
 
@@ -2349,7 +2349,7 @@ sub get_stable_entry_info {
 
 =head2 fetch_all_by_DBEntry
 
-  Description: DEPRECATED - Use fetch_all_by_external_name instead
+  DEPRECATED - Use fetch_all_by_external_name instead
 
 =cut
 
