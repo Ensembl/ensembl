@@ -71,7 +71,7 @@ sub pipeline_analyses {
     
       {
         -logic_name => 'ScheduleSpecies',
-        -module     => 'FASTADumper::ReuseSpeciesFactory',
+        -module     => 'Bio::EnsEMBL::Pipeline::FASTA::ReuseSpeciesFactory',
         -parameters => {
           species => $self->o('species'),
           sequence_type_list => $self->o('dump_types'),
@@ -93,7 +93,7 @@ sub pipeline_analyses {
       
       {
         -logic_name => 'DumpDNA',
-        -module     => 'FASTADumper::DumpFile',
+        -module     => 'Bio::EnsEMBL::Pipeline::FASTA::DumpFile',
         -can_be_empty => 1,
         -flow_into  => {
           1 => 'ConcatFiles'
@@ -106,7 +106,7 @@ sub pipeline_analyses {
       
       {
         -logic_name => 'DumpGenes',
-        -module     => 'FASTADumper::DumpFile',
+        -module     => 'Bio::EnsEMBL::Pipeline::FASTA::DumpFile',
         -flow_into  => {
           2 => ['BlastPepIndex'],
           3 => ['BlastGeneIndex']
@@ -120,7 +120,7 @@ sub pipeline_analyses {
       
       {
         -logic_name => 'ConcatFiles',
-        -module     => 'FASTADumper::ConcatFiles',
+        -module     => 'Bio::EnsEMBL::Pipeline::FASTA::ConcatFiles',
         -rc_id      => 1,
         -can_be_empty => 1,
         -flow_into  => {
@@ -132,7 +132,7 @@ sub pipeline_analyses {
       
       {
         -logic_name => 'CopyDNA',
-        -module     => 'FASTADumper::CopyDNA',
+        -module     => 'Bio::EnsEMBL::Pipeline::FASTA::CopyDNA',
         -rc_id      => 1,
         -can_be_empty => 1,
         -hive_capacity => 5,
@@ -146,7 +146,7 @@ sub pipeline_analyses {
       
       {
         -logic_name => 'BlastDNAIndex',
-        -module     => 'FASTADumper::WuBlastIndexer',
+        -module     => 'Bio::EnsEMBL::Pipeline::FASTA::WuBlastIndexer',
         -parameters => {
           molecule => 'dna', type => 'genomic', program => $self->o('wublast_exe')
         },
@@ -157,7 +157,7 @@ sub pipeline_analyses {
       
       {
         -logic_name => 'BlastPepIndex',
-        -module     => 'FASTADumper::WuBlastIndexer',
+        -module     => 'Bio::EnsEMBL::Pipeline::FASTA::WuBlastIndexer',
         -parameters => {
           molecule => 'pep', type => 'genes', program => $self->o('wublast_exe')
         },
@@ -171,7 +171,7 @@ sub pipeline_analyses {
       
       {
         -logic_name => 'BlastGeneIndex',
-        -module     => 'FASTADumper::BlastIndexer',
+        -module     => 'Bio::EnsEMBL::Pipeline::FASTA::BlastIndexer',
         -parameters => {
           molecule => 'dna', type => 'genes', program => $self->o('wublast_exe')
         },
@@ -185,7 +185,7 @@ sub pipeline_analyses {
       
       {
         -logic_name => 'BlatDNAIndex',
-        -module     => 'FASTADumper::BlatIndexer',
+        -module     => 'Bio::EnsEMBL::Pipeline::FASTA::BlatIndexer',
         -parameters => {
           port_offset => $self->o('port_offset'), 
           program => $self->o('blat_exe'),
@@ -199,7 +199,7 @@ sub pipeline_analyses {
       ######## COPYING
       {
         -logic_name => 'SCPBlast',
-        -module     => 'FASTADumper::SCPBlast',
+        -module     => 'Bio::EnsEMBL::Pipeline::FASTA::SCPBlast',
         -parameters => {
           target_servers => $self->o('blast_servers'),
           genomic_dir => $self->o('blast_genomic_dir'),
@@ -219,7 +219,7 @@ sub pipeline_analyses {
       
       {
         -logic_name => 'ChecksumGeneratorFactory',
-        -module     => 'FASTADumper::FindDirs',
+        -module     => 'Bio::EnsEMBL::Pipeline::FASTA::FindDirs',
         -parameters => {
           column_names => [qw/dir/],
           input_id => { 'dir' => '#dir#' },
@@ -232,7 +232,7 @@ sub pipeline_analyses {
       
       {
         -logic_name => 'ChecksumGenerator',
-        -module     => 'FASTADumper::ChecksumGenerator',
+        -module     => 'Bio::EnsEMBL::Pipeline::FASTA::ChecksumGenerator',
         -hive_capacity => 10,
         -rc_id      => 1,
       },
