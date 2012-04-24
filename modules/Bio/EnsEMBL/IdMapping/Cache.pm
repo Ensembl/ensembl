@@ -23,8 +23,6 @@
 Bio::EnsEMBL::IdMapping::Cache - a cache to hold data objects used by the 
 IdMapping application
 
-=head1 SYNOPSIS
-
 =head1 DESCRIPTION
 
 =head1 METHODS
@@ -1298,36 +1296,11 @@ sub slice_names {
 } ## end sub slice_names
 
 
-=head2 logger
-
-  Arg[1]      : 
-  Example     : 
-  Description : 
-  Return type : 
-  Exceptions  : 
-  Caller      : 
-  Status      :
-
-=cut
-
 sub logger {
   my $self = shift;
   $self->{'logger'} = shift if (@_);
   return $self->{'logger'};
 }
-
-
-=head2 conf
-
-  Arg[1]      : 
-  Example     : 
-  Description : 
-  Return type : 
-  Exceptions  : 
-  Caller      : 
-  Status      :
-
-=cut
 
 sub conf {
   my $self = shift;

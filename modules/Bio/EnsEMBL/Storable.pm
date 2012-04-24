@@ -35,8 +35,6 @@ in the database should inherit from this class.  It provides two
 getter/setters: dbID() adaptor().  And a is_stored() method that can be
 used to determine if an object is already stored in a database.
 
-=head1 METHODS
-
 =cut
 
 use strict;
@@ -54,7 +52,6 @@ use Scalar::Util qw(weaken);
 
   Arg [-ADAPTOR] : Bio::EnsEMBL::DBSQL::BaseAdaptor
   Arg [-dbID]    : database internal id
-  Example        : none 
   Caller         : internal calls
   Description    : create a new Storable object 
   Returntype     : Bio::EnsEMBL::Storable
@@ -84,7 +81,6 @@ sub new {
 =head2 dbID
 
   Arg [1]    : int $dbID
-  Example    : none
   Description: getter/setter for the database internal id
   Returntype : int
   Exceptions : none
@@ -104,7 +100,6 @@ sub dbID {
 =head2 adaptor
 
   Arg [1]    : Bio::EnsEMBL::DBSQL::BaseAdaptor $adaptor
-  Example    : none
   Description: get/set for this objects Adaptor
   Returntype : Bio::EnsEMBL::DBSQL::BaseAdaptor
   Exceptions : none
