@@ -171,7 +171,7 @@ sub pipeline_analyses {
       
       {
         -logic_name => 'BlastGeneIndex',
-        -module     => 'Bio::EnsEMBL::Pipeline::FASTA::BlastIndexer',
+        -module     => 'Bio::EnsEMBL::Pipeline::FASTA::WuBlastIndexer',
         -parameters => {
           molecule => 'dna', type => 'genes', program => $self->o('wublast_exe')
         },
