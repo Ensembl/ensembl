@@ -60,6 +60,7 @@ use warnings;
 
 use base qw/Bio::EnsEMBL::Pipeline::FASTA::Base/;
 
+use Bio::EnsEMBL::Utils::Scalar qw/check_ref/;
 use File::Spec;
 
 sub param_defaults {
@@ -81,7 +82,7 @@ sub fetch_input {
   my ($self) = @_;
   my $servers = $self->param('target_servers');
   
-  if(!@{$servers}) {
+  if(!check_ref($servers, 'ARRAY') || ! @{$servers}) {
     my $msg = 'Will not perform copy as we have no servers';
     my $is_error = 0;
     $self->db()->get_JobMessageAdaptor()->register_message(
