@@ -17,7 +17,8 @@ sub default_options {
         ### OVERRIDE
         
         #'registry' => 'Reg.pm', # default option to refer to Reg.pm, should be full path
-
+        #'base_path' => '', #where do you want your files
+        
         ### Optional overrides        
         ftp_dir => '',
 
