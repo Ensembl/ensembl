@@ -4,7 +4,7 @@ use vars qw( $verbose );
 
 BEGIN { $| = 1;
 	use Test;
-	plan tests => 151;
+	plan tests => 153;
 }
 
 use Bio::EnsEMBL::Test::MultiTestDB;
