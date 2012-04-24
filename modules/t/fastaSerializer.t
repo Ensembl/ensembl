@@ -67,7 +67,7 @@ $serializer->print_Seq($slice);
 $fh_Serializer->seek(0,0);
 $Serializer_output = <$fh_Serializer>;
 
-diag $Serializer_output;
+note $Serializer_output;
 
 is ($Serializer_output,">It's a FASTA header\nAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAATGAAAAAAAAAAAAAAAAAAAAAAAAAA\nAAAAAAAAAAAAAAAAACGCGCGCGCGGGA\n", "Serializer custom header should override correctly.");
 $fh_Serializer->close;
