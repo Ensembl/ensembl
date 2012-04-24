@@ -1,4 +1,4 @@
-package Bio::EnsEMBL::Pipeline::FASTA::FASTA_conf;
+package Bio::EnsEMBL::Pipeline::PipeConfig::FASTA_conf;
 
 use strict;
 use warnings;
