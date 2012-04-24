@@ -124,6 +124,20 @@ sub default_options {
 <li>xdformat (if not using a custom location)</li>
 </ul>
 
+<h3 id="ensembl_cvs_root_dir">ENSEMBL_CVS_ROOT_DIR</h3>
+
+<p>Set to the base checkout of Ensembl. We should be able to add <em>ensembl-hive/sql</em> onto this path to find the SQL directory for hive e.g.</p>
+
+<pre><code>export ENSEMBL_CVS_ROOT_DIR=$HOME/work/ensembl-checkouts
+</code></pre>
+
+<h3 id="ensadmin_psw">ENSADMIN_PSW</h3>
+
+<p>Give the password to use to log into a database server e.g.</p>
+
+<pre><code>export ENSADMIN_PSW=wibble
+</code></pre>
+
 <h2 id="example_commands">Example Commands</h2>
 
 <h3 id="to_load_use_normally">To load use normally:</h3>

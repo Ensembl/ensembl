@@ -112,6 +112,18 @@ If you do override the config then you should use the package name for your over
 * faToTwoBit (if not using a custom location)
 * xdformat (if not using a custom location)
 
+### ENSEMBL\_CVS\_ROOT\_DIR
+
+Set to the base checkout of Ensembl. We should be able to add *ensembl-hive/sql* onto this path to find the SQL directory for hive e.g.
+
+	export ENSEMBL_CVS_ROOT_DIR=$HOME/work/ensembl-checkouts
+
+### ENSADMIN\_PSW
+
+Give the password to use to log into a database server e.g.
+
+	export ENSADMIN_PSW=wibble
+
 ## Example Commands
 
 ### To load use normally:
