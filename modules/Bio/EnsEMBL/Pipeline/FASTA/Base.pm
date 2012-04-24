@@ -5,10 +5,27 @@ use warnings;
 use base qw/Bio::EnsEMBL::Hive::Process/;
 
 use Bio::EnsEMBL::Utils::Exception qw/throw/;
+use Bio::EnsEMBL::Utils::Scalar qw/check_ref/;
 use File::Find;
 use File::Spec;
 use File::Path qw/mkpath/;
 use POSIX qw/strftime/;
+
+# Takes in a key, checks if the current $self->param() was an empty array
+# and replaces it with the value from $self->param_defaults()
+sub reset_empty_array_param {
+  my ($self, $key) = @_;
+  my $param_defaults = $self->param_defaults();
+  my $current = $self->param($key); 
+  my $replacement = $self->param_defaults()->{$key};
+  if(check_ref($current, 'ARRAY') && check_ref($replacement, 'ARRAY')) {
+    if(! @{$current}) {
+      $self->fine('Restting param %s because the given array was empty', $key);
+      $self->param($key, $replacement);
+    }
+  }
+  return;
+}
 
 sub get_Slices {
   my ($self, $type) = @_;

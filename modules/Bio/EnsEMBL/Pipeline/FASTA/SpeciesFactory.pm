@@ -70,7 +70,6 @@ use warnings;
 use base qw/Bio::EnsEMBL::Pipeline::FASTA::Base/;
 
 use Bio::EnsEMBL::Registry;
-use Bio::EnsEMBL::Utils::Scalar qw/wrap_array/;
 
 sub param_defaults {
   my ($self) = @_;
@@ -83,6 +82,9 @@ sub param_defaults {
 
 sub fetch_input {
   my ($self) = @_;
+  
+  $self->reset_empty_array_param('sequence_type_list');
+  $self->reset_empty_array_param('db_types');
   
   my $core_dbas = $self->get_DBAdaptors();
   $self->info('Found %d core DBAdaptor(s) to process', scalar(@{$core_dbas}));
