@@ -158,7 +158,7 @@ sub initialise_filehandle{
   Arg[2]     : int    - seq_region_id
   Arg[3]     : int    - seq_region offset. The byte offset required to
                         locate the required start position
-  Argp4[     : int    - byte length to read
+  Arg[4]     : int    - byte length to read
   Example    : my $blob_substr = $self->read_collection_blob($filepath,
                                                              $sr_key,
                                                              $sr_offset,

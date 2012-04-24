@@ -3708,7 +3708,7 @@ sub is_circular {
 
 =head2 get_all_supercontig_Slices
 
-  Description: DEPRECATED use get_tiling_path("NTcontig") instead
+  DEPRECATED use get_tiling_path("NTcontig") instead
 
 =cut
 
@@ -3739,9 +3739,8 @@ sub get_all_supercontig_Slices {
 
 =head2 get_Chromosome
 
-  Description: DEPRECATED use this instead:
-               $slice_adp->fetch_by_region('chromosome',
-                                           $slice->seq_region_name)
+  DEPRECATED use this instead:
+  $slice_adp->fetch_by_region('chromosome',$slice->seq_region_name)
 
 =cut
 
@@ -3762,7 +3761,7 @@ sub get_Chromosome {
 
 =head2 chr_name
 
-  Description: DEPRECATED use seq_region_name() instead
+  DEPRECATED use seq_region_name() instead
 
 =cut
 
@@ -3773,7 +3772,7 @@ sub chr_name {
 
 =head2 chr_start
 
-  Description: DEPRECATED use start() instead
+  DEPRECATED use start() instead
 
 =cut
 
@@ -3784,7 +3783,8 @@ sub chr_start {
 
 =head2 chr_end
 
-  Description: DEPRECATED use end() instead
+  DEPRECATED use end() instead
+
   Returntype : int
   Exceptions : none
   Caller     : SliceAdaptor, general
@@ -3798,7 +3798,7 @@ sub chr_end {
 
 =head2 assembly_type
 
-  Description: DEPRECATED use version instead
+  DEPRECATED use version instead
 
 =cut
 
@@ -3810,7 +3810,7 @@ sub assembly_type {
 
 =head2 get_tiling_path
 
-  Description: DEPRECATED use project instead
+  DEPRECATED use project instead
 
 =cut
 
@@ -3838,7 +3838,7 @@ sub dbID {
 
 =head2 get_all_MapFrags
 
-  Description: DEPRECATED use get_all_MiscFeatures instead
+  DEPRECATED use get_all_MiscFeatures instead
 
 =cut
 
@@ -3850,7 +3850,7 @@ sub get_all_MapFrags {
 
 =head2 has_MapSet
 
-  Description: DEPRECATED use get_all_MiscFeatures instead
+  DEPRECATED use get_all_MiscFeatures instead
 
 =cut
 

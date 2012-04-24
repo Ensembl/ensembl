@@ -288,7 +288,7 @@ sub equals {
                which is stored in the database, but it is a placeholder that
                can be used to request transformations or retrievals to/from
                the highest defined coordinate system in a given region.
-  Returntype : 0 or 1
+  Returntype : 1 or 0
   Exceptions : none
   Caller     : general
   Status     : Stable
@@ -306,7 +306,7 @@ sub is_top_level {
   Arg [1]    : none
   Example    : if($coord_sys->is_sequence_level()) { ... }
   Description: Returns true if this is a sequence level coordinate system
-  Returntype : 0 or 1
+  Returntype : 1 or 0
   Exceptions : none
   Caller     : general
   Status     : Stable
@@ -325,7 +325,7 @@ sub is_sequence_level {
   Example    : if($coord_sys->is_default()) { ... }
   Description: Returns true if this coordinate system is the default
                version of the coordinate system of this name.
-  Returntype : 0 or 1
+  Returntype : 1 or 0
   Exceptions : none
   Caller     : general
   Status     : Stable

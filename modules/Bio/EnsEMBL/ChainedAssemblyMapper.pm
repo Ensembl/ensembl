@@ -709,7 +709,6 @@ sub component_CoordSystem {
 =head2 adaptor
 
   Arg [1]    : Bio::EnsEMBL::DBSQL::AssemblyMapperAdaptor $adaptor
-  Example    : none
   Description: get/set for this objects database adaptor
   Returntype : Bio::EnsEMBL::DBSQL::AssemblyMapperAdaptor
   Exceptions : none
@@ -727,7 +726,7 @@ sub adaptor {
 
 =head2 in_assembly
 
-  Description: Deprecated. Use map() or list_ids() instead
+  Deprecated. Use map() or list_ids() instead
 
 =cut
 
@@ -752,7 +751,7 @@ sub in_assembly {
 
 =head2 map_coordinates_to_assembly
 
-  Description: DEPRECATED use map() instead
+  DEPRECATED use map() instead
 
 =cut
 
@@ -770,7 +769,7 @@ sub map_coordinates_to_assembly {
 
 =head2 fast_to_assembly
 
-  Description: DEPRECATED use map() instead
+  DEPRECATED use map() instead
 
 =cut
 
@@ -787,7 +786,7 @@ sub fast_to_assembly {
 
 =head2 map_coordinates_to_rawcontig
 
-  Description: DEPRECATED use map() instead
+  DEPRECATED use map() instead
 
 =cut
 
@@ -802,7 +801,7 @@ sub map_coordinates_to_rawcontig {
 }
 
 =head2 list_contig_ids
-  Description: DEPRECATED Use list_ids instead
+  DEPRECATED Use list_ids instead
 
 =cut
 

@@ -70,11 +70,11 @@ sub new_fast {
 =head2 get_ExternalAdaptor
 
   Arg[1]     	: Scalar; optional base path. Uses defaults if not given 
-  Example			: my $ea = $df->get_ExternalAdaptor('/base/path');
+  Example       : my $ea = $df->get_ExternalAdaptor('/base/path');
   Description	: Delegates to the parent adaptor to retrieve the external 
-                adaptor for this data type
-  Returntype 	: Any; will be an adaptor that can read the given data file
-  Exceptions 	: Thrown if there is no attached adaptor. Otherwise 
+                  adaptor for this data type
+  Returntype 	: Adaptor; will be an adaptor that can read the given data file
+  Exceptions 	: Thrown if there is no attached adaptor. 
 
 =cut
 
@@ -89,19 +89,19 @@ sub get_ExternalAdaptor {
 
   Arg[1]      : Scalar base of the path to use. Can be ignored if the instance
                 already represents a canonical path 
-  Example			: my $f = $df->path();
-  Description	: Used to generate the path to the file resource. Can return a
+  Example     : my $f = $df->path();
+  Description : Used to generate the path to the file resource. Can return a
                 path to the file or a URL but it is up to the using code to
                 know how to interprate the different returned forms.
                 
                 If the data file url is canonical then this is just returned. 
                 If not then a path is generated of the form 
-                B</base/path/production_name/coord_system_version/[software_version/]db_group/name.ext> 
+                B</base/path/production_name/coord_system_version/[software_version]/db_group/name.ext> 
                 
-  Returntype 	: Scalar the absolute path/url to the given resource
-  Exceptions 	: Thrown if the linked Coordinate System lacks a version and the
+  Returntype  : Scalar the absolute path/url to the given resource
+  Exceptions  : Thrown if the linked Coordinate System lacks a version and the
                 current database also lacks a default version
-  Caller     	: public
+  Caller      : public
 
 =cut
 
@@ -170,9 +170,9 @@ sub get_all_paths {
 =head2 coord_system
 
   Arg[1]      : Bio::EnsEMBL::CoordSystem Optional setter  
-  Description	: Mutator for the coord system field. All files are linked to one
-  Returntype 	: Bio::EnsEMBL::CoordSystem
-  Exceptions 	: Thrown if not of the expected type
+  Description : Mutator for the coord system field. All files are linked to one
+  Returntype  : Bio::EnsEMBL::CoordSystem
+  Exceptions  : Thrown if not of the expected type
 
 =cut
 

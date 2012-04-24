@@ -23,8 +23,6 @@
 Bio::EnsEMBL::DBEntry -
 Object representing an external reference (xref)
 
-=head1 SYNOPSIS
-
 =head1 DESCRIPTION
 
 This object holds information about external references (xrefs) to
@@ -493,9 +491,8 @@ sub type {
 =head2 secondary_db_name
 
   Arg [1]    : String $secondary_db_name
-  Example    : none
   Description: Getter/setter for attribute 'secondary_db_name'.
-  Returnsecondary_db_name : String
+  Returntype : String
   Exceptions : none
   Caller     : general
 
@@ -513,9 +510,8 @@ sub secondary_db_name {
 =head2 secondary_db_table
 
   Arg [1]    : String $secondary_db_table
-  Example    : none
   Description: Getter/setter for attribute 'secondary_db_table'.
-  Returnsecondary_db_table : String
+  Returns    : String
   Exceptions : none
   Caller     : general
 
@@ -533,7 +529,6 @@ sub secondary_db_table {
 =head2 add_synonym
 
   Arg [1]    : String $arg - synonym to add
-  Example    : none
   Description: Add a synonym for the external object.
   Returntype : none
   Exceptions : none
@@ -623,7 +618,6 @@ sub get_all_masters {
 =head2 flush_synonyms
 
   Args       : none
-  Example    : none
   Description: Remove all synonyms from this object.
   Returntype : none
   Exceptions : none
@@ -641,7 +635,6 @@ sub flush_synonyms {
 =head2 status
 
   Arg [1]    : (optional) String $arg - value to set
-  Example    : none
   Description: Getter/setter for attribute 'status'.
   Returntype : String
   Exceptions : none
@@ -662,7 +655,6 @@ sub status{
 =head2 ensembl_object_type
 
   Arg [1]    : (optional) String $arg - value to set
-  Example    : none
   Description: Getter/setter for attribute ensembl_object_type.
   Returntype : String
   Exceptions : none
@@ -683,7 +675,6 @@ sub ensembl_object_type{
 =head2 ensembl_id
 
   Arg [1]    : (optional) String $arg - value to set
-  Example    : none
   Description: Getter/setter for attribute ensembl_id.
   Returntype : String
   Exceptions : none
@@ -709,7 +700,7 @@ sub ensembl_id{
 
 =head2 get_synonyms
 
-  Description: DEPRECATED use get_all_synonyms instead
+  DEPRECATED use get_all_synonyms instead
 
 =cut
 
