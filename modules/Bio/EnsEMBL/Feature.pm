@@ -759,7 +759,7 @@ sub transfer {
         $clone->strand, "\n";
     }
   Description: Returns the results of 'projecting' this feature onto another
-               slcie . This is useful to see where a feature
+               slice . This is useful to see where a feature
                would lie in a coordinate system in which it
                crosses a boundary.
 
@@ -779,7 +779,7 @@ sub transfer {
                If the feature projects entirely into a gap then a reference to
                an empty list is returned.
 
-  Returntype : list reference of Bio::EnsEMBL::ProjectionSegments
+  Returntype : listref of Bio::EnsEMBL::ProjectionSegments
                which can also be used as [$start,$end,$slice] triplets
   Exceptions : slice does not have an adaptor
   Caller     : general
@@ -853,7 +853,7 @@ sub project_to_slice {
                If the feature projects entirely into a gap then a reference to
                an empty list is returned.
 
-  Returntype : list reference of Bio::EnsEMBL::ProjectionSegments
+  Returntype : listref of Bio::EnsEMBL::ProjectionSegments
                which can also be used as [$start,$end,$slice] triplets
   Exceptions : slice does not have an adaptor
   Caller     : general
@@ -1024,7 +1024,7 @@ sub seq_region_name {
   Example    : print $feature->seq_region_length();
   Description: Returns the length of the seq_region which this feature is on 
                Returns undef if this Feature is not on a slice.
-  Returntype : unsigned int or undef
+  Returntype : int (unsigned) or undef
   Exceptions : none
   Caller     : general
   Status     : Stable
@@ -1242,7 +1242,7 @@ sub seq {
                haplotypes will give you back the reference location, but not
                locations on the other alternate haplotypes).
 
-  Returntype : reference to list of features of the same type of this feature.
+  Returntype : listref of features of the same type of this feature.
   Exceptions : none
   Caller     : general
   Status     : Stable
@@ -1465,11 +1465,11 @@ sub species {
 ##############################################
 
 
-# contig
-#
-# This method is included for backwards compatibility.
-# Use slice() instead
-#
+=head2 contig
+
+ This method is deprecated and included for backwards compatibility only.
+ Use slice() instead
+=cut
 sub contig {
   deprecate('Use slice() instead');
   slice(@_);
@@ -1477,21 +1477,21 @@ sub contig {
 
 
 
-# sub_SeqFeature
-#
-# This method is only for genebuild backwards compatibility.
-# Avoid using it if possible
-#
+=head2 sub_SeqFeature
+
+ This method is deprecated and only for genebuild backwards compatibility.
+ Avoid using it if possible
+=cut
 sub sub_SeqFeature{
   my ($self) = @_;
   return @{$self->{'_gsf_sub_array'}} if($self->{'_gsf_sub_array'});
 }
 
-# add_sub_SeqFeature
-#
-# This method is only for genebuild backwards compatibility.
-# Avoid using it if possible
-#
+=head2 add_sub_SeqFeature
+
+ This method is deprecated and only for genebuild backwards compatibility.
+ Avoid using it if possible
+=cut
 sub add_sub_SeqFeature{
   my ($self,$feat,$expand) = @_;
   my ($p, $f, $l) = caller;
@@ -1521,11 +1521,11 @@ sub add_sub_SeqFeature{
    push(@{$self->{'_gsf_sub_array'}},$feat);
 }
 
-# flush_sub_SeqFeature
-#
-# This method is only for genebuild backwards compatibility.
-# Avoid using it isf possible
-#
+=head2 flush_sub_SeqFeature
+
+ This method is deprecated and only for genebuild backwards compatibility.
+ Avoid using it isf possible
+=cut
 sub flush_sub_SeqFeature {
   my ($self) = @_;
   $self->{'_gsf_sub_array'} = [];
@@ -1562,11 +1562,14 @@ sub _deprecated_transform {
   return $self;
 }
 
-# id
-#
-# This method is included for backwards compatibility only.
-# Use hseqname or dbID or stable_id instead
-#
+
+=head2 id
+
+This method is deprecated and only included for backwards compatibility.
+Use display_id, hseqname, dbID or stable_id instead
+
+=cut
+
 sub id {
   my $self = shift;
   deprecate("id method is not used - use display_id instead");

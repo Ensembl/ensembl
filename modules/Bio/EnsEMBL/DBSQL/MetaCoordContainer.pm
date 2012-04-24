@@ -124,8 +124,7 @@ sub fetch_all_CoordSystems_by_feature_type {
 
   Arg [1]    : Bio::EnsEMBL::CoordSystem $cs
   Arg [2]    : string $table
-  Example    : $max_len = 
-                $mcc->fetch_max_length_by_CoordSystem_feature_type($cs,'gene');
+  Example    : $max_len = $mcc->fetch_max_length_by_CoordSystem_feature_type($cs,'gene');
   Description: Returns the maximum length of features of a given type in
                a given coordinate system.
   Returntype : int or undef

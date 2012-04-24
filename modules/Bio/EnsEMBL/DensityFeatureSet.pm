@@ -150,7 +150,7 @@ sub colour{
  Title   : label
  Usage   : $obj->label($newval)
  Function: 
- Returns : value of label
+ Returns : String containing label
  Args    : newvalue (optional)
  Status  : Stable
 
@@ -170,7 +170,7 @@ sub label{
  Title   : label2
  Usage   : $obj->label2($newval)
  Function: 
- Returns : value of label2
+ Returns : String containing label2
  Args    : newvalue (optional)
  Status  : Stable
 

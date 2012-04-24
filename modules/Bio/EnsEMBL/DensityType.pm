@@ -116,8 +116,7 @@ sub new {
 
 =head2 analysis
 
-  Arg [1]    : Bio::EnsEMBL::Analysi
-  Example    : none
+  Arg [1]    : Bio::EnsEMBL::Analysis
   Description: get/set for attribute analysis
   Returntype : Bio::EnsEMBL::Analysis
   Exceptions : none
@@ -142,8 +141,7 @@ sub analysis{
 =head2 value_type
 
   Arg [1]    : string $value_type
-  Example    : none
-  Description: gettter/setter for the 
+  Description: gettter/setter for the type 
   Returntype : float
   Exceptions : none
   Caller     : general
@@ -161,7 +159,6 @@ sub value_type{
 =head2 block_size
 
   Arg [1]    : int
-  Example    : none
   Description: getter/setter for attribute block_size
   Returntype : int
   Exceptions : none

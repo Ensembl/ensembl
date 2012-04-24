@@ -72,7 +72,6 @@ sub new_fast {
 =head2 _hit_unit
 
   Arg [1]    : none
-  Example    : none
   Description: PRIVATE implementation of abstract superclass method.  Returns
                1 as the 'unit' used for the hit sequence. 
   Returntype : int
@@ -91,7 +90,6 @@ sub _hit_unit {
 =head2 _query_unit
 
   Arg [1]    : none
-  Example    : none
   Description: PRIVATE implementation of abstract superclass method.  Returns
                3 as the 'unit' used for the query sequence. 
   Returntype : int

@@ -53,13 +53,13 @@ my $reg = "Bio::EnsEMBL::Registry";
 
 =head2 new
 
-  Example      : $MergedAdaptor = new 
-               : Bio::EnsEMBL::DBSQL::MergedAdaptor(-species=> 'human', -type =>'Population', -groups => ['Sanger','Ensembl']);
   Arg [SPECIES]: (optional) string 
                   species name to get adaptors for
   Arg [TYPE]   : (optional) string 
                   type to get adaptors for
   Arg [GROUPS] : (optional) ref to list
+  Example      : $MergedAdaptor = new 
+               : Bio::EnsEMBL::DBSQL::MergedAdaptor(-species=> 'human', -type =>'Population', -groups => ['Sanger','Ensembl']);
 
   Description: Creates a new MergedAdaptor
   Returntype : Bio::EnsEMBL::DBSQL::MergedAdaptor

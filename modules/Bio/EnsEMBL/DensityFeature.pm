@@ -255,7 +255,7 @@ sub density_type{
  Title   : scaledvalue
  Usage   : $obj->scaledvalue($newval)
  Function:
- Returns : this objects scaled value
+ Returns : scalar - object's scaled value
  Args    : newvalue (optional)
  Status  : Stable
 
@@ -277,7 +277,7 @@ sub scaledvalue{
  Title   : url
  Usage   : $obj->url($newval)
  Function:
- Returns : this object's url
+ Returns : String containing this object's url
  Args    : newvalue (optional)
  Status  : Stable
 
