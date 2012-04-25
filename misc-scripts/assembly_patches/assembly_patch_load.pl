@@ -244,13 +244,9 @@ SCAF: while(<TXT>){
     elsif($arr[$key_to_index{'ori'}] eq "-"){
       $seq_id_to_strand{$max_seq_region_id} = -1;
     }
-    elsif($arr[$key_to_index{'ori'}] eq "b" && $alt_name ne "HG1211_PATCH"){
+    elsif($arr[$key_to_index{'ori'}] eq "b" ){
       $seq_id_to_strand{$max_seq_region_id} = 1;
-      print "WARNING: Encountered ori = b for $alt_name - defaulting to ori = 1\n";
-    }
-    elsif($arr[$key_to_index{'ori'}] eq "b" && $alt_name eq "HG1211_PATCH"){
-      $seq_id_to_strand{$max_seq_region_id} = -1;
-      print "WARNING: Encountered ori = b for $alt_name - defaulting to ori = -1 (Hard-coded exception for this patch)_\n";
+      print "WARNING: Encountered ori = b for $alt_name - defaulting to ori = 1 (although this may be totally incorrect!)\n";
     }
     else{
       print "Problem with strand.\n";
@@ -329,7 +325,7 @@ SCAF: while(<TXT>){
 
 
 
-#      Create haplotype seq_region (calculate length from mapping data)
+# Create haplotype seq_region (calculate length from mapping data)
 MAP: while(<MAPPER>){
   next if(/^#/); #ignore comemnts
   chomp;
@@ -341,7 +337,7 @@ MAP: while(<MAPPER>){
   else{
     print "About to process an agp line for ".$acc_to_name{$acc}."\n";
   }
-  if($type eq "F" or $type eq "O"){
+  if($type eq "F" or $type eq "O" or $type eq "A"){ 
     if($strand eq "+"){
       $strand = 1;
     }
@@ -349,7 +345,7 @@ MAP: while(<MAPPER>){
       $strand = -1;
     }
     else{
-      die "Strand is niether + or - ??\n";
+      die "Strand is neither + or - ??\n";
     }
     my $cmp_seq_id = undef;
 
@@ -363,6 +359,10 @@ MAP: while(<MAPPER>){
       if(!defined($cmp_seq_id)){
         print "Could not get seq_region_id for $contig trying pfetch\n";
         my $out = system("pfetch $contig  > ./$contig.fa");
+        # awful hack for GRC patch 8 assembly problem:
+        if ($contig eq "FP700111.21") {
+          $out = system("wget 'http://www.ebi.ac.uk/cgi-bin/sva/sva.pl?query=FP700111.21&snapshot=&save_id=Save&format=FASTA&entry_id=1415709343' -O - -o wget.log | tr '[:lower:]' '[:upper:]' > ./$contig.fa");
+        }
         my $contig_seq ="";
         open(FA,"<./$contig.fa") || die "Could not open file ./$contig.fa\n";
         while (<FA>){
