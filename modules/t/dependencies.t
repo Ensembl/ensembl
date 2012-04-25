@@ -4,7 +4,6 @@ use warnings;
 
 use Test::More;
 use File::Spec;
-#use Bio::EnsEMBL::Test::TestUtils;
 
 my ($volume, $directory, $file) = File::Spec->splitpath(__FILE__);
 $directory = File::Spec->rel2abs($directory);
