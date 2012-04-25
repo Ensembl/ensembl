@@ -327,17 +327,18 @@ SCAF: while(<TXT>){
 
 # Create haplotype seq_region (calculate length from mapping data)
 MAP: while(<MAPPER>){
-  next if(/^#/); #ignore comemnts
+  next if /^#/; # ignore comments
   chomp;
   my ($acc, $p_start, $p_end, $part, $type, $contig, $c_start, $c_end, $strand) = split;
-  #check if this is one of the new patches
+
+  # check if this is one of the new patches
   if(!$name_to_seq_id{$acc}){
     next MAP;
   }
   else{
     print "About to process an agp line for ".$acc_to_name{$acc}."\n";
   }
-  if($type =~ /[ADFGOPW]/){ 
+  if($type =~ /^[ADFGOPW]$/){ 
     if($strand eq "+"){
       $strand = 1;
     }
