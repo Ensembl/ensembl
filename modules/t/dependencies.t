@@ -2,18 +2,16 @@
 use strict;
 use warnings;
 
+use Test::More;
+use File::Spec;
+#use Bio::EnsEMBL::Test::TestUtils;
 
-use Bio::EnsEMBL::Test::TestUtils;
-
-
-BEGIN { $| = 1;
-	use Test;
-	plan tests => 1;
-}
+my ($volume, $directory, $file) = File::Spec->splitpath(__FILE__);
+$directory = File::Spec->rel2abs($directory);
+my $modules_dir = File::Spec->catdir($directory, File::Spec->updir(), qw/Bio EnsEMBL/);
 
 #test for dependencies on Variation, Compara and Funcgen APIs
-
-my @result = `egrep -r "use Bio::EnsEMBL::(Variation|Compara|Funcgen){1}" ../Bio/EnsEMBL/`;
+my @result = `egrep -r "use Bio::EnsEMBL::(Variation|Compara|Funcgen){1}" $modules_dir`;
 
 my %result = map{$_ => 1} @result;
 
@@ -36,3 +34,5 @@ if (%result) {
    warn "Dependencies found in the following files:\n";
    warn keys %result;
 }
+
+done_testing();
