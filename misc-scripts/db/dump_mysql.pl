@@ -57,6 +57,7 @@ sub args {
       pattern=s
       sql
       perlgzip
+      testcompatible
       verbose|v
       log=s
       help
@@ -223,6 +224,12 @@ sub dry {
 
 sub process {
   my ($self) = @_;
+  
+  
+  my $test_case = $self->opts()->{testcompatible}; 
+  
+  $self->v('Producing test case compatible dumps') if $test_case;
+  
   my $databases = $self->opts()->{databases};
   foreach my $db (@{$databases}) {
     $self->v('Working with database %s', $db);
@@ -254,9 +261,19 @@ sub process {
     }
 
     #Do SQL
-    my $sql_file = $self->file($db . '.sql.gz');
-    unlink $sql_file if -f $sql_file;
-    my $fh = IO::Compress::Gzip->new($sql_file) or croak "Cannot create gzip stream to $sql_file: $GzipError";
+    my $sql_file;
+    my $fh;
+    if($test_case) {
+      $sql_file = $self->file('table.sql');
+      unlink $sql_file if -f $sql_file;
+      open $fh, '>', $sql_file or croak "Cannot open filehandle to $sql_file: $!"; 
+    }
+    else {
+      $sql_file = $self->file($db . '.sql.gz');
+      unlink $sql_file if -f $sql_file;
+      $fh = IO::Compress::Gzip->new($sql_file) or croak "Cannot create gzip stream to $sql_file: $GzipError";
+    }
+    
     my $writer = sub {
       my (@tabs) = @_;
       foreach my $table (sort { $a cmp $b } @tabs) {
@@ -270,7 +287,7 @@ sub process {
     $self->permissions($sql_file);
     
     #Checksum the DB's files
-    $self->checksum();
+    $self->checksum() if ! $test_case;
 
     #Reset everything
     $self->clear_dbh();
@@ -312,7 +329,7 @@ sub data {
                     $q_table, $file, $force_escape);
   unlink $file if -f $file;
   $self->dbh()->do($sql);
-  $self->compress($file);
+  $self->compress($file) if ! $self->opts()->{testcompatible};
   return;
 }
 
@@ -467,7 +484,20 @@ sub v {
 
 sub _setup_dir {
   my ($self, $db) = @_;
-  my $dir = File::Spec->catdir($self->opts()->{directory}, $db);
+  my @path = ($self->opts()->{directory});
+  if($self->opts()->{testcompatible}) {
+    if( $db =~ /^([a-zA-Z0-9_]+)_([a-z]+)_\d+/) {
+      push(@path, $1, $2);
+    }
+    else {
+      $self->v("Cannot decipher name and group from $db. Using the database name");
+      push(@path, $db);
+    }
+  }
+  else {
+    push(@path, $db);
+  }
+  my $dir = File::Spec->catdir(@path);
   $self->current_dir($dir);
   if (!-d $dir) {
     mkpath($dir) or die "Cannot create directory $dir: $!";
@@ -607,6 +637,9 @@ dump_mysql.pl
   #Basic
   ./dump_mysql.pl (-version VER | -release VER) [-defaults] | [ -username USER -password PASS -host HOST [-port PORT] [-pattern 'REGEX' | -databases DB] [-tables TABLE] -directory DIR] [-verbose] [-help | -man]
   
+  #Test Case compatbile dumps
+  ./dump_mysql.pl -username root -password pass -host 127.0.0.1 -testcompatible -verbose -directory /tmp/test-genome-DBs -database homo_sapiens_core_testdb
+  
   #Using defaults ini file
   ./dump_mysql.pl --defaults my.ini --username root --password p --version 64
   
@@ -619,7 +652,7 @@ dump_mysql.pl
   ./dump_mysql.pl --defaults my.ini --username root --password p --version 64 --tables meta,meta_coord --tables analysis --groups core,otherfeatures --groups vega --sql
   
   #Using host
-  ./dump_mysql.pl --host srv --username root --password p --pattern '%_64%' --directory $PWD/dumps
+  ./dump_mysql.pl --host srv --username root --password p --pattern '.+_64.+' --directory $PWD/dumps
   
   ./dump_mysql.pl --host srv --username root --password p --databases my_db --databases other_db --directory $PWD/dumps
   
@@ -705,6 +738,13 @@ one per database dump. Cannot be used with <--defaults>.
 =item B<--sql>
 
 Force a dump of the SQL for the database and nothing else.
+
+=item B<--testcompatible>
+
+If specified will create MySQL dumps compatible with the Ensembl test
+framework. This creates 2 levels of directory based on the database
+species and the group it belongs to e.g. homo_sapiens and otherfeatures. We
+also avoid gzipping any file and produce a single table.sql file.
 
 =item B<--verbose>
 
