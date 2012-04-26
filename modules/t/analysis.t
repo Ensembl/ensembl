@@ -1,8 +1,7 @@
 
-BEGIN { $| = 1;
-	use Test;
-	plan tests => 17;
-}
+use strict;
+use warnings;
+use Test::More;
 
 my $loaded = 0;
 END {print "not ok 1\n" unless $loaded;}
@@ -112,3 +111,4 @@ sub check_methods {
   return $all_implemented;
 }
 
+done_testing();
