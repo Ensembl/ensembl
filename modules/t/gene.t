@@ -3,6 +3,7 @@ use warnings;
 
 use Test::More;
 
+use IO::String;
 use Bio::EnsEMBL::Registry;
 use Bio::EnsEMBL::Test::MultiTestDB;
 use Bio::EnsEMBL::Test::TestUtils;
@@ -528,7 +529,16 @@ my @alt_genes;
 push( @alt_genes, $ga->fetch_by_dbID(18270) );
 push( @alt_genes, $ga->fetch_by_dbID(18271) );
 push( @alt_genes, $ga->fetch_by_dbID(18272) );
-$ga->store_alt_alleles( \@alt_genes ); 
+
+{
+  my $warnings = q{};
+  my $new_stderr = IO::String->new(\$warnings);
+  my $oldfh = select(STDERR);
+  local *STDERR = $new_stderr;
+  $ga->store_alt_alleles( \@alt_genes );
+  my $check = qr/.+ alternative .+ reference sequence .+ Ignoring/;
+  like($warnings, $check, 'Checking we are still warning about multiple alt_alleles on refs');
+}
 
 $gene = $ga->fetch_by_dbID( 18270 );
 $alt_genes = $gene->get_all_alt_alleles();
