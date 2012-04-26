@@ -507,6 +507,15 @@ ok( $ok );
 
 $multi->hide( 'core', 'alt_allele' );
 
+#TODO Fix. Code current raises this warning. Don't use alt genes on a ref slice or change the code
+#
+#-------------------- WARNING ----------------------
+#MSG: More than one alternative allele on the reference sequence (gene ids: 18270,18271,18272). Ignoring.
+#FILE: EnsEMBL/DBSQL/GeneAdaptor.pm LINE: 1073
+#CALLED BY: modules/t/gene.t  LINE: 514
+#Ensembl API version = 67
+#---------------------------------------------------
+
 my @alt_genes;
 push( @alt_genes, $ga->fetch_by_dbID(18270) );
 push( @alt_genes, $ga->fetch_by_dbID(18271) );
