@@ -2,10 +2,7 @@ use strict;
 use warnings;
 use vars qw( $verbose );
 
-BEGIN { $| = 1;
-	use Test;
-	plan tests => 153;
-}
+use Test::More;
 
 use Bio::EnsEMBL::Test::MultiTestDB;
 use Bio::EnsEMBL::Test::TestUtils;
@@ -265,7 +262,7 @@ debug("Test fetch_all_by_biotype");
 my @transcripts = @{$ta->fetch_all_by_biotype('protein_coding')};
 ok(@transcripts == 25);
 @transcripts = @{$ta->fetch_all_by_biotype(['protein_coding','pseudogene'])};
-warn "Got ".scalar(@transcripts)." transcripts\n";
+note "Got ".scalar(@transcripts)." transcripts\n";
 ok(@transcripts == 25);
 
 
@@ -728,3 +725,5 @@ sub print_coords {
 my $registry = 'Bio::EnsEMBL::Registry';
 my ( $species, $object_type, $db_type ) = $registry->get_species_and_object_type('ENST00000355555');
 ok( $species eq 'homo_sapiens' && $object_type eq 'Transcript');
+
+done_testing();
