@@ -173,6 +173,7 @@ while (<TYPE>) {
 #PATCHES	Primary Assembly	HG987_PATCH	GL383561.1	CHROMOSOME	17	CM000679.1	REGION27	+	1	314281	21250948	21566608	0	92682
 #PATCHES	Primary Assembly	HSCHR12_1_CTG2	GL383549.1	CHROMOSOME	12	CM000674.1	REGION21	-	1	120804	28148967	28263711	0	0
 
+# See http://www.ncbi.nlm.nih.gov/projects/genome/assembly/agp/AGP_Specification.shtml
 
 SCAF: while(<TXT>){
   if(/^#/){
