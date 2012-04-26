@@ -868,25 +868,24 @@ sub batch {
 
 #------- Internal methods
 
+my $default_mappers = {
+  first_element => sub {
+    my ($row) = @_;
+    return $row->[0];
+  },
+  second_element => sub {
+    my ($row) = @_;
+    return $row->[1];
+  },
+  array_ref => sub {
+    my $row = shift @_;
+   return [@{$row}];
+  }
+}; 
+
 sub _mappers {
   my ($self) = @_;
-  if(! exists $self->{_mappers}) {
-    $self->{_mappers} = {
-      first_element => sub {
-        my ($row) = @_;
-        return $row->[0];
-      },
-      second_element => sub {
-        my ($row) = @_;
-        return $row->[1];
-      },
-      array_ref => sub {
-        my $row = shift @_;
-	     return [@{$row}];
-      }
-    };
-  }
-  return $self->{_mappers};
+  return $default_mappers;
 }
 
 sub _perform_transaction_code {
