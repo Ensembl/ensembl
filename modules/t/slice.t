@@ -1,10 +1,10 @@
 use strict;
 use warnings;
 
-use Test::More tests => 63;
+use Test::More tests => 64;
 
 use Bio::EnsEMBL::Test::TestUtils;
-
+use IO::String;
 use Bio::EnsEMBL::Test::MultiTestDB;
 use Bio::EnsEMBL::Slice;
 use Bio::EnsEMBL::ProjectionSegment;
@@ -102,9 +102,17 @@ ok($sub_slice->invert()->seq() eq 'ATGCA');
 
 
 # test that slice can be created without db, seq or coord system
-$test_slice = Bio::EnsEMBL::Slice->new('-seq_region_name' => 'test',
-                                       '-start'           => 1,
-                                       '-end'             => 3);
+{
+  my $warnings = q{};
+  my $new_stderr = IO::String->new(\$warnings);
+  my $oldfh = select(STDERR);
+  local *STDERR = $new_stderr;
+  $test_slice = Bio::EnsEMBL::Slice->new('-seq_region_name' => 'test',
+                                         '-start'           => 1,
+                                         '-end'             => 3);
+  my $check = qr/MSG: Slice without coordinate system/;
+  like($warnings, $check, 'Checking we are still warning about lack of coordinate system');
+}
 
 ok($test_slice);
 ok($test_slice->seq() eq 'NNN');
