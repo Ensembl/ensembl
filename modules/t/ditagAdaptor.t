@@ -32,12 +32,11 @@ ok($ditag_adaptor && ref $ditag_adaptor);
 
 #test store
 my $new_ditag = Bio::EnsEMBL::Map::Ditag->new (
-                                               -name     => $name, 
-                                               -type     => $type,
-					       -count    => $tag_count,
-                                               -sequence => $sequence, 
-                                               -adaptor  => $ditag_adaptor,
-                                              );
+  -name     => $name, 
+  -type     => $type,
+	-count    => $tag_count,
+  -sequence => $sequence,
+);
 my @ditags = ( $new_ditag );
 
 #hide the contents of ditag table
