@@ -108,6 +108,17 @@ is($meta_count_hash->{$meta_key}, 1, 'Checking hash comes back correctly');
   is_deeply($explicit_hash, $expected_hash, 'Checking HASH building allows for callbacks with same data structure with undef returns');
 }
 
+my $zero_count_hash = $helper->execute_into_hash(
+  -SQL => 'select 1,0'
+);
+
+is($zero_count_hash->{1}, 0, 'Checking hash contains key for zero value');
+
+my $null_count_hash = $helper->execute_into_hash(
+  -SQL => 'select 1,NULL'
+);
+
+ok(!exists $null_count_hash->{1}, 'Checking hash doesnt contain key for NULL value');
 
 #TRANSACTION() CHECKS
 my $meta_table_count = $helper->execute_single_result(-SQL => 'select count(*) from meta');

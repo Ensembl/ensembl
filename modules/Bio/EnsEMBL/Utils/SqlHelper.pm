@@ -446,7 +446,7 @@ sub execute_into_hash {
 		my $key = $row->[0];
 		my $value = $hash->{$key};
 		my $new_value = $callback->($row, $value);
-		if($new_value) {
+		if(defined $new_value) {
 		 $hash->{ $key } = $new_value;
 		}
 		return;
