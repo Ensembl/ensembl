@@ -3588,8 +3588,6 @@ sub add_synonym{
                                                      -external_db_id => $external_db_id, 
                                                      -seq_region_id => $self->get_seq_region_id($self));
 
-  print "ADDED new syn $syn to ".$new_syn->seq_region_id."\n";
-
   push (@{$self->{'synonym'}}, $new_syn);
 
   return;
