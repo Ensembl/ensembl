@@ -1,11 +1,9 @@
 use strict;
 use warnings;
 
-BEGIN { $| = 1;
-	use Test;
-	plan tests => 94;
-}
+use Test::More;
 
+use Bio::EnsEMBL::Registry;
 use Bio::EnsEMBL::Test::MultiTestDB;
 use Bio::EnsEMBL::Test::TestUtils;
 use Bio::EnsEMBL::Exon;
@@ -84,12 +82,15 @@ debug( "Links: ".scalar( @$links ));
 
 ok( scalar @$links == 6 );
 
-my $homologies = $gene->get_all_homologous_Genes();
-debug( "Homologies: ".scalar( @$homologies ));
+SKIP: {
+  my $compara_dba = Bio::EnsEMBL::Registry->get_DBAdaptor('multi', 'compara', 1);
+  skip 'No comapra database adaptor found', 1 if ! $compara_dba;
+  my $homologies = $gene->get_all_homologous_Genes();
+  debug( "Homologies: ".scalar( @$homologies ));
 
-ok( scalar @$homologies ? 
-           ($homologies->[0][0]->isa("Bio::EnsEMBL::Gene")) : 1 );
-
+  ok( scalar @$homologies ? 
+             ($homologies->[0][0]->isa("Bio::EnsEMBL::Gene")) : 1 );
+};
 # now create a new gene ...
 
 
@@ -459,8 +460,15 @@ ok(scalar @genes == 2);
 
 # Test performance protection (very vague queries return no hits)
 debug("Testing vague query protection");
-ok(scalar (@{$ga->fetch_all_by_external_name('M%')}) == 0);
-ok(scalar (@{$ga->fetch_all_by_external_name('%')}) == 0);
+{
+  my $warnings = q{};
+  local $SIG{'__WARN__'} = sub {
+    $warnings .= $_[0];
+  };
+  ok(scalar (@{$ga->fetch_all_by_external_name('M%')}) == 0);
+  ok(scalar (@{$ga->fetch_all_by_external_name('%')}) == 0);
+  like($warnings, qr/is too vague and will monopolise database/, 'Checking for warnings being emitted by the above methods');
+}
 
 #
 # test GeneAdaptor::get_Interpro_by_geneid
@@ -801,3 +809,5 @@ ok($new_gene->canonical_annotation eq 'longest transcript in gene'); #test 86
 my $registry = 'Bio::EnsEMBL::Registry';
 my ( $species, $object_type, $db_type ) = $registry->get_species_and_object_type('ENSG00000355555');
 ok( $species eq 'homo_sapiens' && $object_type eq 'Gene');
+
+done_testing();
