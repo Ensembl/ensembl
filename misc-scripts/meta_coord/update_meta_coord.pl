@@ -78,7 +78,7 @@ for my $db_args ( @{ $cli_helper->get_dba_args_for_opts( $opts, 1 ) } ) {
 	  $dba->dbc()->dbname() . "_" . $dba->species_id() . ".meta_coord.backup";
 	my $sys_call = sprintf( "mysql -h%s -P%d -u%s -p'%s' %s > $file",
 							$dba->dbc->host(), $dba->dbc->port(),
-							$dba->dbc->username(), $dba->dbc->pass(),
+							$dba->dbc->username(), $dba->dbc->password(),
 							$dba->dbc->dbname() );
 
 	unless ( system($sys_call) == 0 ) {
