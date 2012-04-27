@@ -1117,9 +1117,8 @@ sub add_synonym{
   if(!(defined $add_synonym_sth)){
     $add_synonym_sth =  $dbi->prepare('INSERT INTO synonym VALUES(?,?)');
   }
-
-    $add_synonym_sth->execute( $xref_id, $dbi->quote($syn) )
-      or croak( $dbi->errstr() . "\n $xref_id\n " . $dbi->quote($syn) . "\n" );
+  $add_synonym_sth->execute( $xref_id, $syn ) 
+    or croak( $dbi->errstr()."\n $xref_id\n $syn\n\n" );
 
   return;
 }
