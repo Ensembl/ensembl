@@ -29,7 +29,11 @@ my $cli_helper = Bio::EnsEMBL::Utils::CliHelper->new();
 my $optsd =
   [ @{ $cli_helper->get_dba_opts() }, @{ $cli_helper->get_dba_opts('m') } ];
 # add the print option
+push(@{$optsd},"print");
 my $opts = $cli_helper->process_args( $optsd, \&usage );
+if(!defined $opts->{mdbname} && !defined $opts->{mdbpattern}) {
+	$opts->{mdbname} = 'ensembl_production';
+}
 
 if (! defined $opts->{mhost} ) {
 	( $opts->{mhost}, $opts->{mport}, $opts->{mdbname}, $opts->{muser} ) =
