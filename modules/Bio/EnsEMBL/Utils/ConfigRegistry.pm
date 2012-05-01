@@ -278,7 +278,9 @@ sub load_pipeline  { load_adaptors(@_) }
   Exceptions : none
 =cut
 sub load_SNP       { load_adaptors(@_) }
+
 sub load_haplotype { load_adaptors(@_) }
+
 sub load_ontology  { load_adaptors(@_) }
 
 
@@ -287,7 +289,9 @@ sub load_ontology  { load_adaptors(@_) }
 sub load_estgene       { load_and_attach_dnadb_to_core(@_) }
 
 sub load_variation { load_and_attach_dnadb_to_core(@_) }
+
 sub load_funcgen   { load_and_attach_dnadb_to_core(@_) }
+
 =head2 load_otherfeatures
   Arg [1]    : DBAdaptor with DBConnection alredy attached
   Returntype : DBAdaptor
@@ -295,6 +299,7 @@ sub load_funcgen   { load_and_attach_dnadb_to_core(@_) }
 
 =cut
 sub load_otherfeatures { load_and_attach_dnadb_to_core(@_) }
+
 =head2 load_vega
   Arg [1]    : DBAdaptor with DBConnection already attached
   Returntype : DBAdaptor
