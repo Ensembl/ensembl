@@ -66,6 +66,10 @@ Usage:
   --fix             also go through all old patches to find any missing
                     patch (patching starts at release equal to the
                     oldest patch in the database) >>USE WITH CAUTION<<
+                    
+                    Can be used in conjunction with --from to limit the oldest
+                    release to search for patches. Useful for going from last
+                    release to current without missing anything out.  
   
   --mysql           specify the location of the mysql binary if it is not on
                     \$PATH. Otherwise we default this to mysql
@@ -472,14 +476,18 @@ while ( $sth->fetch() ) {
   my $start_version;
 
   if ($opt_fix) {
-    $start_version = ( sort { $a <=> $b } keys %dbpatches )[0];
+    if ($opt_from) {
+        $start_version = $opt_from;
+        printf "Finding patches only as far back as user-selected version %s\n",$opt_from;
+    }
+    else {$start_version = ( sort { $a <=> $b } keys %dbpatches )[0];}
     if ( !defined($start_version) ) {
       warn( sprintf( "No patches in database, " .
                        "beginning fix from release %d\n",
                      $schema_version ) );
       $start_version = $schema_version;
     }
-    else {
+    elsif (!$opt_fix) {
       printf( "Earliest patch in database '%s' is from release %d\n",
               $database, $start_version );
     }
