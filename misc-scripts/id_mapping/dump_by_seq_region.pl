@@ -79,6 +79,8 @@ $conf->parse_options(
   'targetdbname|target_dbname=s' => 1,
   'basedir|basedir=s' => 1,
   'biotypes=s@' => 0,
+  'biotypes_include=s@' => 0,
+  'biotypes_exclude=s@' => 0,
   'dbtype=s' => 1,
   'cache_impl=s' => 1,
   'index|i=n' => 1,

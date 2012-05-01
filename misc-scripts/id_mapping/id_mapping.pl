@@ -83,6 +83,8 @@ $conf->parse_options(
   'chromosomes|chr=s@' => 0,
   'region=s' => 0,
   'biotypes=s@' => 0,
+  'biotypes_include=s@' => 0,
+  'biotypes_exclude=s@' => 0,
   'min_exon_length|minexonlength=i' => 0,
   'exonerate_path|exoneratepath=s' => 1,
   'exonerate_threshold|exoneratethreshold=f' => 0,

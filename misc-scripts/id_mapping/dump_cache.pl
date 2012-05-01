@@ -91,6 +91,8 @@ $conf->parse_options(
   'chromosomes|chr=s@' => 0,
   'region=s' => 0,
   'biotypes=s@' => 0,
+  'biotypes_include=s@' => 0,
+  'biotypes_exclude=s@' => 0,
   'lsf_opt_dump_cache|lsfoptdumpcache=s' => 0,
   'cache_method=s' => 0,
   'build_cache_auto_threshold=n' => 0,
