@@ -260,18 +260,21 @@ sub load_core      { load_adaptors(@_) }
   Exceptions : none
 =cut
 sub load_compara   { load_adaptors(@_) }
+
 =head2 load_hive
   Arg [1]    : DBAdaptor with DBConnection already attached
   Returntype : DBAdaptor
   Exceptions : none
 =cut
 sub load_hive      { load_adaptors(@_) }
+
 =head2 load_pipeline
   Arg [1]    : DBAdaptor with DBConnection already attached
   Returntype : DBAdaptor
   Exceptions : none
 =cut
 sub load_pipeline  { load_adaptors(@_) }
+
 =head2 load_SNP
   Arg [1]    : DBAdaptor with DBConnection already attached
   Returntype : DBAdaptor
@@ -305,7 +308,7 @@ sub load_otherfeatures { load_and_attach_dnadb_to_core(@_) }
   Returntype : DBAdaptor
   Exceptions : none
 =cut
-sub load_vega          { load_and_attach_dnadb_to_core(@_) }
+sub load_vega { load_and_attach_dnadb_to_core(@_) }
 
 
 sub add_alias {
