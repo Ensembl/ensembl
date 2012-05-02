@@ -25,19 +25,19 @@ Bio::EnsEMBL::Pipeline::FASTA::CopyDNA
 =head1 DESCRIPTION
 
 Performs a find in the DNA dumps directory, for the given species, in the
-previous version FTP dump directory. Any files matching the normal gzipped
+previous release FTP dump directory. Any files matching the normal gzipped
 fasta extension will be copied over to this release's directory.
 
-Previous version is defined as V<version-1>; override this class if your
-definition of the previous version is different. 
+Previous release is defined as V<release-1>; override this class if your
+definition of the previous release is different. 
 
 Allowed parameters are:
 
 =over 8
 
-=item version - Needed to build the target path
+=item release - Needed to build the target path
 
-=item previous_version - Needed to build the source path
+=item previous_release - Needed to build the source path
 
 =item ftp_dir - Current location of the FTP directory for the previous 
                 release. Should be the root i.e. the level I<release-XX> is in
@@ -63,7 +63,7 @@ use File::Spec;
 
 sub fetch_input {
   my ($self) = @_;
-  my @required = qw/version ftp_dir species/;
+  my @required = qw/release ftp_dir species/;
   foreach my $key (@required) {
     $self->throw("Need to define a $key parameter") unless $self->param($key);
   }
@@ -86,10 +86,10 @@ sub run {
 sub new_filename {
   my ($self, $old_filename) = @_;
   my ($old_volume, $old_dir, $old_file) = File::Spec->splitpath($old_filename);
-  my $old_version = $self->param('previous_version');
-  my $version = $self->param('version');
+  my $old_release = $self->param('previous_release');
+  my $release = $self->param('release');
   my $new_file = $old_file;
-  $new_file =~ s/\.$old_version\./.$version./;
+  $new_file =~ s/\.$old_release\./.$release./;
   my $new_path = $self->new_path();
   return File::Spec->catfile($new_path, $new_file);
 }

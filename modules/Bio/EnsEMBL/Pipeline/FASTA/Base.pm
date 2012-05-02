@@ -95,8 +95,8 @@ sub old_path {
   my ($self, $species) = @_;
   my $base = $self->param('ftp_dir');
   my $prod = $self->production_name($species);
-  my $version = $self->param('previous_version');
-  my $dir = File::Spec->catdir($base, "release-$version", 'fasta', $prod, 'dna');
+  my $release = $self->param('previous_release');
+  my $dir = File::Spec->catdir($base, "release-$release", 'fasta', $prod, 'dna');
 }
 
 # Closes file handle, and deletes the file stub if it contains no data

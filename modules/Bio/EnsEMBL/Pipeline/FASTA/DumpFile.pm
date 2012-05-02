@@ -421,7 +421,7 @@ sub _generate_file_name {
   my @name_bits;
   push @name_bits, $self->web_name();
   push @name_bits, $self->assembly();
-  push @name_bits, $self->param('version');
+  push @name_bits, $self->param('release');
   push @name_bits, lc($data_type);
   push @name_bits, $level if $level;
   push @name_bits, $section if $section;

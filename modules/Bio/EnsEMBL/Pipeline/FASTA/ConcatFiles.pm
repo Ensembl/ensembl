@@ -34,7 +34,7 @@ Allowed parameters are:
 
 =over 8
 
-=item version - Needed to build the target path
+=item release - Needed to build the target path
 
 =item species - Required to indicate which species we are working with
 
@@ -69,7 +69,7 @@ sub param_defaults {
 
 sub fetch_input {
   my ($self) = @_;
-  foreach my $key (qw/data_type species version base_path/) {
+  foreach my $key (qw/data_type species release base_path/) {
     $self->throw("Cannot find the required parameter $key") unless $self->param($key);
   }
   return;
@@ -135,7 +135,7 @@ sub target_file {
   my @name_bits;
   push @name_bits, $self->web_name();
   push @name_bits, $self->assembly();
-  push @name_bits, $self->param('version');
+  push @name_bits, $self->param('release');
   push @name_bits, $self->param('data_type');
   push @name_bits, 'toplevel';
   push @name_bits, 'fa', 'gz';

@@ -30,9 +30,9 @@ sub default_options {
         
         force_species => [],
         
-        version => software_version(),
+        release => software_version(),
         
-        previous_version => (software_version() - 1),
+        previous_release => (software_version() - 1),
         
         ### SCP code
         
@@ -45,7 +45,7 @@ sub default_options {
         
         ### Defaults 
         
-        pipeline_name => 'fasta_dump_'.$self->o('version'),
+        pipeline_name => 'fasta_dump_'.$self->o('release'),
         
         wublast_exe => 'xdformat',
         blat_exe => 'faToTwoBit',
@@ -261,8 +261,8 @@ sub pipeline_wide_parameters {
         %{ $self->SUPER::pipeline_wide_parameters() },  # inherit other stuff from the base class
         base_path => $self->o('base_path'), 
         db_types => $self->o('db_types'),
-        version => $self->o('version'),
-        previous_version => $self->o('previous_version'),
+        release => $self->o('release'),
+        previous_release => $self->o('previous_release'),
     };
 }
 

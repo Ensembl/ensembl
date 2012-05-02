@@ -32,7 +32,7 @@ Allowed parameters are:
 
 =over 8
 
-=item version - Needed to query production with
+=item release - Needed to query production with
 
 =item ftp_dir - If not specified then we cannot reuse
 
@@ -77,7 +77,7 @@ sub param_defaults {
 sub fetch_input {
   my ($self) = @_;
   $self->SUPER::fetch_input();
-  $self->throw("Need to define a version parameter") unless $self->param('version');
+  $self->throw("Need to define a release parameter") unless $self->param('release');
   
   #Calculate quick lookup
   my %force_species_lookup;
@@ -129,8 +129,8 @@ and production_name = ?
 SQL
   my $production_name  = $dba->get_MetaContainer()->get_production_name();
   $dba->dbc()->disconnect_if_idle();
-  my $version = $self->param('version');
-  my $params = [ $version, 'Y', 'Y', 'Genebuild', 'handed_over', $production_name ];
+  my $release = $self->param('release');
+  my $params = [ $release, 'Y', 'Y', 'Genebuild', 'handed_over', $production_name ];
   my $prod_dba = $self->get_production_DBAdaptor();
   my $result = $prod_dba->dbc()->sql_helper()->execute_single_result(-SQL => $sql, -PARAMS => $params);
   $prod_dba->dbc()->disconnect_if_idle();

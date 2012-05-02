@@ -27,7 +27,7 @@ Bio::EnsEMBL::Pipeline::FASTA::WuBlastIndexer
 Creates WUBlast indexes of the given GZipped file. The resulting index
 is created under the parameter location I<base_path> in blast and then in a
 directory defined by the type of dump. The type of dump also changes the file
-name generated. Genomic dumps have their release version replaced with the
+name generated. Genomic dumps have their release number replaced with the
 last repeat masked date. 
 
 Allowed parameters are:
