@@ -19,6 +19,18 @@ sub gene_description_filter_regexps {
 
 }
 
+sub set_methods{
+ 
+  my $default_method = 'ExonerateGappedBest1';
+  my %override_method_for_source = (  
+	   ExonerateGappedBest5 => ['RefSeq_mRNA','RefSeq_mRNA_predicted', 'RefSeq_ncRNA', 'RefSeq_ncRNA_predicted' ],
+         );
+
+  return $default_method, \%override_method_for_source;
+}
+
+
+
 # Special logic for drosophila display_xrefs:
 #
 # gene: flybase_name if present, else gadfly_gene_cgid

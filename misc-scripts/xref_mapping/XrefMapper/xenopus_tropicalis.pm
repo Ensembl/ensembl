@@ -6,15 +6,7 @@ use vars '@ISA';
 
 @ISA = qw{ XrefMapper::BasicMapper };
 
-sub get_set_lists{
 
-  return [["ExonerateGappedBest5", ["xenopus_tropicalis","RefSeq_mRNA"]],
-	  ["ExonerateGappedBest5", ["xenopus_tropicalis","RefSeq_mRNA_predicted"]],
-	  ["ExonerateGappedBest5", ["xenopus_tropicalis","RefSeq_ncRNA"]],
-	  ["ExonerateGappedBest5", ["xenopus_tropicalis","RefSeq_ncRNA_predicted"]],
-          ["ExonerateGappedBest1", ["xenopus_tropicalis","*"]]];
-
-}
 
 sub gene_description_filter_regexps {
 

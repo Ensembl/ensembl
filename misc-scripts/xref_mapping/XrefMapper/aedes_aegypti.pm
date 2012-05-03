@@ -6,9 +6,19 @@ use vars '@ISA';
 
 @ISA = qw{ XrefMapper::BasicMapper };
 
-sub get_set_lists {
-  return [["ExonerateGappedBest1", ["aedes_aegypti","*"]]];
+
+
+sub set_methods{
+ 
+  my $default_method = 'ExonerateGappedBest1';
+  my %override_method_for_source = (  
+	   ExonerateGappedBest5 => ['RefSeq_mRNA','RefSeq_mRNA_predicted', 'RefSeq_ncRNA', 'RefSeq_ncRNA_predicted' ],
+         );
+
+  return $default_method, \%override_method_for_source;
 }
+
+
 
 #Reverse order: last one has higher priority!
 sub gene_description_sources {
@@ -31,7 +41,5 @@ sub transcript_display_xref_sources {
 
 }
 
-# regexps to match any descriptons we want to filter out
-sub gene_description_filter_regexps {
-  return ();
-}1;
+
+1;

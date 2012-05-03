@@ -8,17 +8,6 @@ use vars '@ISA';
 @ISA = qw{ XrefMapper::BasicMapper };
 
 
-# now uses the default settings.
-#sub get_set_lists {
-#
-#  return [["ExonerateGappedBest1", ["homo_sapiens","*"]]];
-#
-#  return [["ExonerateGappedBest_100_perc_id", ["homo_sapiens","Uniprot/SWISSPROT"]],
-#	  ["ExonerateGappedBest_100_perc_id", ["homo_sapiens","Uniprot/SPTREMBL"]],
-#          ["ExonerateGappedBest1", ["homo_sapiens","*"                ]] ];
-#
-#}
-
 sub gene_description_filter_regexps {
 
   return ('^BA\S+\s+\(NOVEL PROTEIN\)\.?',

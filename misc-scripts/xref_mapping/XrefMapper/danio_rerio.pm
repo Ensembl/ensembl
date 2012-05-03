@@ -58,16 +58,6 @@ JSQL
 
 }
 
-sub get_set_lists {
-
-  return [["ExonerateGappedBest5", ["danio_rerio","RefSeq_mRNA"]],
-	  ["ExonerateGappedBest5", ["danio_rerio","RefSeq_mRNA_predicted"]],
-	  ["ExonerateGappedBest5", ["danio_rerio","RefSeq_ncRNA"]],
-	  ["ExonerateGappedBest5", ["danio_rerio","RefSeq_ncRNA_predicted"]],
-          ["ExonerateGappedBest1", ["danio_rerio","*"]]];
-
-}
-
 sub gene_description_sources {
 
   return ("RFAM",

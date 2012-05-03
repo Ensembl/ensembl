@@ -6,8 +6,13 @@ use vars '@ISA';
 
 @ISA = qw{ XrefMapper::BasicMapper };
 
-sub get_set_lists {
-  return [["ExonerateGappedBest1_agam", ["ixodes_scapularis","*"]]];  #use same parameters as Anoph. and Culex
+
+sub set_methods{
+ 
+  my $default_method = 'ExonerateGappedBest1_55_perc_id';
+  my %override_method_for_source = ( );
+
+  return $default_method, \%override_method_for_source;
 }
 
 #Reverse order: second one has higher priority!

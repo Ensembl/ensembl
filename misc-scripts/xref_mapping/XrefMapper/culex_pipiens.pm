@@ -1,4 +1,3 @@
-
 package XrefMapper::culex_pipiens;
 
 use  XrefMapper::BasicMapper;
@@ -8,10 +7,14 @@ use vars '@ISA';
 
 @ISA = qw{ XrefMapper::BasicMapper };
 
-sub get_set_lists {
+sub set_methods{
+ 
+  my $default_method = 'ExonerateGappedBest1_55_perc_id';
+  my %override_method_for_source = (  
+	   ExonerateGappedBest5_55_perc_id => ['RefSeq_mRNA','RefSeq_mRNA_predicted', 'RefSeq_ncRNA', 'RefSeq_ncRNA_predicted' ],
+         );
 
-  return [["ExonerateGappedBest1_culex", ["culex_pipiens","*"]]];
-
+  return $default_method, \%override_method_for_source;
 }
 
 # transcript, gene display_xrefs can use defaults

@@ -6,16 +6,16 @@ use vars qw(@ISA);
 
 @ISA = qw(XrefMapper::BasicMapper);
 
-sub get_set_lists {
 
-  return [["ExonerateGappedBest5", ["schizosaccharomyces_pombe","RefSeq_mRNA"]],
-	  ["ExonerateGappedBest5", ["schizosaccharomyces_pombe","RefSeq_mRNA_predicted"]],
-	  ["ExonerateGappedBest5", ["schizosaccharomyces_pombe","RefSeq_ncRNA"]],
-	  ["ExonerateGappedBest5", ["schizosaccharomyces_pombe","RefSeq_ncRNA_predicted"]],
-          ["ExonerateGappedBest1", ["schizosaccharomyces_pombe","*"]]];
+sub set_methods{
+ 
+  my $default_method = 'ExonerateGappedBest1';
+  my %override_method_for_source = (  
+	   ExonerateGappedBest5 => ['RefSeq_mRNA','RefSeq_mRNA_predicted', 'RefSeq_ncRNA', 'RefSeq_ncRNA_predicted' ],
+         );
 
+  return $default_method, \%override_method_for_source;
 }
-
 
 
 # Pombe is imported from PomBase. The gene and transcript stable IDs

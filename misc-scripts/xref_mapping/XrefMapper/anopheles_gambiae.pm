@@ -1,6 +1,3 @@
-
-
-
 package XrefMapper::anopheles_gambiae;
 
 use  XrefMapper::BasicMapper;
@@ -10,15 +7,19 @@ use vars '@ISA';
 
 @ISA = qw{ XrefMapper::BasicMapper };
 
-sub get_set_lists {
 
-  return [["ExonerateGappedBest5_agam", ["anopheles_gambiae","RefSeq_mRNA"]],
-	  ["ExonerateGappedBest5_agam", ["anopheles_gambiae","RefSeq_mRNA_predicted"]],
-	  ["ExonerateGappedBest5_agam", ["anopheles_gambiae","RefSeq_ncRNA"]],
-	  ["ExonerateGappedBest5_agam", ["anopheles_gambiae","RefSeq_ncRNA_predicted"]],
-	  ["ExonerateGappedBest1_agam", ["anopheles_gambiae","*"]]];
 
+sub set_methods{
+ 
+  my $default_method = 'ExonerateGappedBest1_55_perc_id';
+  my %override_method_for_source = (  
+	   ExonerateGappedBest5_55_perc_id => ['RefSeq_mRNA','RefSeq_mRNA_predicted', 'RefSeq_ncRNA', 'RefSeq_ncRNA_predicted' ],
+         );
+
+  return $default_method, \%override_method_for_source;
 }
+
+
 
 # transcript, gene display_xrefs can use defaults
 # since anopheles_symbol is "before" Uniprot

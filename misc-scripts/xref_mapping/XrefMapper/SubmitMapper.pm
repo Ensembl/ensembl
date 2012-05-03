@@ -110,14 +110,7 @@ sub dump_seqs{
 sub no_dump_xref {
   my ($self) = @_;
 
-  my @method=();
-  my @lists =@{$self->get_set_lists()};
-
-  my $i=0;
-  my $k = 0;
-  foreach my $list (@lists){
-    $method[$k++] = shift @$list;
-  }
+  my @method= @{$self->get_stored_methods()};
   $self->method(\@method);
 
   $self->core->dna_file($self->core->dir."/".$self->core->species."_dna.fasta");
@@ -135,6 +128,26 @@ sub no_dump_xref {
 
 =cut
 
+
+
+=head2 get_stored_methods
+
+  Description: Retrieves exonerate methods stored in the source_mapping_method table in the xref database
+  Returntype : arrayref
+  Exceptions : none
+  Caller     : no_dump_xref
+
+=cut
+
+
+sub get_stored_methods {
+    my ($self) = @_;
+
+    my $methods = $self->xref()->dbc()->selectcol_arrayref("select distinct method from source_mapping_method order by method");
+    return $methods;
+
+}
+
 sub dump_xref{
   my ($self) = @_;
 
@@ -149,110 +162,122 @@ sub dump_xref{
     }
   }
 
-  my @method=();
-  my @species=();
-  my @sources=();
+  #we will populate @method with all exonerate methods which will be used to perform sequence mapping
+  my @method;
 
+  my ($default_method, $override_method_for_source);
 
-  my @lists;
-
-  if($self->mapper->can('get_set_lists')){
-   @lists =@{$self->mapper->get_set_lists()};  }
+  if($self->mapper->can('set_methods')){
+      ($default_method, $override_method_for_source) = $self->mapper->set_methods();  
+  }
   else {
-    @lists =@{$self->get_set_lists()};
+      ($default_method, $override_method_for_source) = $self->set_methods();
   }
 
-  my $k = -1;
-  my $all = -1;
-  my $exception = 0;
-  foreach my $list (@lists){
-    $k++;
-    $method[$k] = shift @$list;
-    my $rest = shift @$list;
-    if($$rest[0] eq "*"){
-      $species[$k] = $self->mapper->core->species;
-    }
-    else{
-      $species[$k] = $$rest[0];
-    }
-    $sources[$k] = $$rest[1];
-    if($sources[$k] eq "*"){
-      $all = $k;
-    }	
-    else{
-      $exception  = 1;
-    }	
+  push(@method, $default_method);
+  print "Default exonerate method is $default_method\n" if($self->verbose);
+
+  # %override_method_for_source is keyed on exonerate methods; values are arrays of xref sources
+  my %override_method_for_source= %{$override_method_for_source};
+
+  #array which holds all source ids, for which the default exonerate method was overriden
+  my @all_source_ids;
+
+  #similar hash to %override_method_for_source but instead of array of source names as values, it contains array of
+  #corresponding source ids as values
+  my %methods_and_source_ids;
+
+  my %source_mapping_method;
+
+  #only sources which have xrefs in the primary_xref table (which stores sequences) are relevant here
+  #multiple sources can have the same name but different priority_descriptions so
+  #one name can map to multiple ids
+
+  #%source_ids is keyed on source name, values are arrays of source ids - populate it with all
+  #sources which have xrefs in primary_xref table
+    
+  my %source_ids;
+
+  my $source_sth = $xref->dbc->prepare("select distinct name, source_id from primary_xref join xref using(xref_id) join source using(source_id) order by name;");
+    $source_sth->execute();
+  while ( my ($name, $source_id) = $source_sth->fetchrow_array() ){
+	push (@{$source_ids{$name}}, $source_id);
   }
+  $source_sth->finish();
 
 
+  if (%override_method_for_source) {
+   
+    print "Default exonerate method overridden for some sources\n" if($self->verbose);
 
-  my $number_of_sets = $k;
+    foreach my $method (keys %override_method_for_source) {
 
-  my @exception_sql = ();
-  if($exception){
-    my $source_sth = $xref->dbc->prepare("select s.source_id from source s, species sp, source_url u where  u.source_id = s.source_id and u.species_id = sp.species_id and sp.name like ? and s.name like ?");
-    my $dep_source_sth = $xref->dbc->prepare("select distinct s2.source_id from source_url u, source s1, species sp, dependent_source d, source s2 where u.source_id = s1.source_id and u.species_id = sp.species_id and s1.name = d.dependent_name and s2.source_id = d.master_source_id and sp.name like ? and s2.name like ?");
-    $k = 0;
-    my @exception_list =();
-    while($k <= $number_of_sets){
-      my @tmp=();
-      if($k != $all){
-	$source_sth->execute($species[$k], $sources[$k]);
-	my $source_found = 0;
-	while(my @row = $source_sth->fetchrow_array()){
-#	  print $row[0]."\t".$species[$k]."\t".$sources[$k]."\n";
-	  push @tmp, $row[0];
-	  push @exception_list, $row[0];
-	  $source_found = 1;
-	}	
-	if (!$source_found) {
-	    #if we haven't found the source in the source_url table try the dependent_source table
-	    $dep_source_sth->execute($species[$k], $sources[$k]);
-	    while(my @row = $dep_source_sth->fetchrow_array()){
-		push @tmp, $row[0];
-		push @exception_list, $row[0];
-		$source_found = 1;
-	    }		    	    
-	}
-	if (!$source_found) {
-	    die "SubmitMapper:dump_xref unable to find source_id for source name ". $sources[$k] .".\nMake sure that the get_set_lists method is correct for species (SubmitMapper method which can be overriden in species.pm module)\n";
-	}
-	$exception_sql[$k] .= " AND x.source_id in (".join(', ',@tmp).") ";
+	#convert source names to source_ids
+
+	my @source_names = @{$override_method_for_source{$method}};
 	
-      }
-      $k++;
-    }
-    if($all != -1){
-      $exception_sql[$all] = " AND x.source_id not in (".join(', ', @exception_list).")";
-    }
+	my $a_source_exists = 0;
 
-    $source_sth->finish();
-    $dep_source_sth->finish();
+	foreach my $source_name (@source_names) {
+	    #a source name should be defined only once against one exonerate method only
+	    if (exists($source_mapping_method{$source_name})) {
+		die "$source_name source name defined more than once in set_methods method (SubmitMapper method which can be overriden in species.pm module)\n";
+	    }
+	    $source_mapping_method{$source_name} = $method;
+	   
+	    my @source_ids = @{$source_ids{$source_name}};
+
+	    if (@source_ids) {
+		$a_source_exists = 1;
+		foreach my $source_id (@source_ids) {
+		    push @{$methods_and_source_ids{$method}}, $source_id;
+		    push @all_source_ids, $source_id;
+		}
+
+	    } else {
+		print "WARNING: source id for $source_name not found. Xrefs for this source will not be sequence mapped. There are no xrefs from this source in the primary_xref table.\n" if($self->verbose);
+	    }
+	}
+
+	#if we found at least one source id with xrefs to be mapped using $method, add $method to @method
+	if ($a_source_exists) {
+	    push(@method, $method);
+	}
+    }
+   
   }
-  else{
-    $exception_sql[0] = "";
+
+  #store source_ids and mapping methods in source_mapping_method table
+  my $insert_src_method_sth = $xref->dbc->prepare("insert into source_mapping_method values(?,?)");
+
+  
+  foreach my $source_name (keys %source_ids){
+      my $method;
+      if (exists($source_mapping_method{$source_name})){
+	    $method = $source_mapping_method{$source_name};
+      } else {
+	    $method = $default_method;
+      }
+      foreach my $source_id (@{$source_ids{$source_name}}){
+
+	    $insert_src_method_sth->execute($source_id,$method);	     
+	    print "Will use $method method for source id $source_id, $source_name\n" if($self->verbose);
+	    
+      }
   }
+  $insert_src_method_sth->finish();
 
   $self->method(\@method);
 
-#  $k = 0;
-#  while($k <= $number_of_sets){
-#    print $method[$k]."\t".$species[$k]."\t".$sources[$k]."\n";
-#    print $exception_sql[$k]."\n";
-#    $k++;
-#  }
-
-  my $i=0;
   if(defined($self->mapper->dumpcheck())){
     my $skip = 1;
-    foreach my $list (@lists){
-      if(!-e $xref->dir()."/xref_".$i."_dna.fasta"){
+    foreach my $method (@method){
+      if(!-e $xref->dir()."/xref_".$method."_dna.fasta"){
         $skip = 0;
       }
-      if(!-e $xref->dir()."/xref_".$i."_peptide.fasta"){
+      if(!-e $xref->dir()."/xref_".$method."_peptide.fasta"){
         $skip = 0;
       }
-      $i++;
     }
     if($skip){
       print "Xref fasta files found and will be used (No new dumping)\n" if($self->verbose);
@@ -261,19 +286,29 @@ sub dump_xref{
   }
 
   print "Dumping Xref fasta files\n" if($self->verbose());
-  $i = 0;
-  while($i <= $number_of_sets){
+  
+  foreach my $method (@method){
     for my $sequence_type ('dna', 'peptide') {
 
-      my $filename = $xref->dir() . "/xref_".$i."_" . $sequence_type . ".fasta";
+	
+      my $filename = $xref->dir() . "/xref_".$method."_" . $sequence_type . ".fasta";
       open( my $DH,">", $filename) || die "Could not open $filename";
 
       my $sql = "SELECT p.xref_id, p.sequence, x.species_id , x.source_id ";
       $sql   .= "  FROM primary_xref p, xref x ";
       $sql   .= "  WHERE p.xref_id = x.xref_id AND ";
       $sql   .= "        p.sequence_type ='" . $sequence_type ."' ";
-      $sql   .= $exception_sql[$i];
 
+      #for the dafault method don't select sources for which the method was overriden
+      if ($method eq $default_method && scalar(@all_source_ids) > 0 ) {
+	  $sql   .= "AND x.source_id not in (" . join(',',@all_source_ids).")";
+      } 
+
+      #for a non dafault method only select sources which should have their xrefs mapped using this method
+      if ($method ne $default_method) {
+	  $sql   .= "AND x.source_id in (" . join(',',@{$methods_and_source_ids{$method}}).")";
+      }
+       
       my $sth = $xref->dbc->prepare($sql);
       $sth->execute();
       while(my @row = $sth->fetchrow_array()){
@@ -287,7 +322,6 @@ sub dump_xref{
       $sth->finish();
 
      }
-    $i++;
   }
   my $sth = $xref->dbc->prepare("insert into process_status (status, date) values('xref_fasta_dumped',now())");
   $sth->execute();
@@ -622,38 +656,34 @@ sub fetch_and_dump_seq_via_genes{
 
 }
 
-=head2 get_set_lists
+=head2 set_methods
 
-  Description: specifies the list of databases and source to be used in the
-             : generation of one or more data sets.
-  Returntype : list of lists
-  Example    : my @lists =@{$self->get_set_lists()};
+  Description: Specifies the default exonerate method and non default methods which should be used for 
+               one or more sources.
+               Returns a string containing the default method and a hash refrence.
+               The hash key is an exonerate method, the corresponding value is an array of source names
+               whose xrefs are to be mapped using the exonerate method in the hash key.
+               Multiple sources can be matched but only those with xrefs in the primary_xref table
+               which holds sequence data are considered. If a particular source is not found, a warning 
+               will be written out by the caller.
+               This method can be overriden in species.pm
+  Returntype : string, hash of arrays
+  Example    : my ($default_method, $override_method_for_source) = $self->set_methods();
   Exceptions : none
   Caller     : dump_xref
 
 =cut
 
-sub get_set_lists{
-  my ($self) = @_;
+sub set_methods{
+ 
+  my $default_method = 'ExonerateGappedBest1';
+  my %override_method_for_source = ( ExonerateGappedBest_100_perc_id => ['Uniprot/SWISSPROT', 'Uniprot/SPTREMBL'] ,
+	   ExonerateGappedBest5 => ['RefSeq_mRNA','RefSeq_mRNA_predicted', 'RefSeq_ncRNA', 'RefSeq_ncRNA_predicted' ],
+         );
 
-  # format:  [ method, [species (* - all species),source]] 
-  return [["ExonerateGappedBest_100_perc_id", ["*","Uniprot/SWISSPROT"]],
-	  ["ExonerateGappedBest_100_perc_id", ["*","Uniprot/SPTREMBL"]],
-	  ["ExonerateGappedBest5", ["*","RefSeq_mRNA"]],
-	  ["ExonerateGappedBest5", ["*","RefSeq_mRNA_predicted"]],
-	  ["ExonerateGappedBest5", ["*","RefSeq_ncRNA"]],
-	  ["ExonerateGappedBest5", ["*","RefSeq_ncRNA_predicted"]],
-          ["ExonerateGappedBest1", ["*","*"]] ];
-
-#  return [["ExonerateGappedBest1", ["*","*"]]];
-
+  return $default_method, \%override_method_for_source;
 }
 
-# some external references are downloaded under one source and then split up into several 
-# different sources, 
-sub map_sources{
-
-}
 
 
 ###################################################################################################
@@ -703,11 +733,9 @@ sub build_list_and_map {
 
   my @list=();
 
-  my $i = 0;
-
   foreach my $method (@{$self->method()}){
     my @dna=();
-    my $q_dna_file = $self->xref->dir."/xref_".$i."_dna.fasta";
+    my $q_dna_file = $self->xref->dir."/xref_".$method."_dna.fasta";
     if (-e $q_dna_file and -s $q_dna_file) {
       push @dna, $method;
       push @dna, $q_dna_file;
@@ -716,14 +744,13 @@ sub build_list_and_map {
     }
 
     my @pep=();
-    my $q_pep_file =  $self->xref->dir."/xref_".$i."_peptide.fasta";
+    my $q_pep_file =  $self->xref->dir."/xref_".$method."_peptide.fasta";
     if (-e $q_pep_file and -s $q_pep_file) {
       push @pep, $method;
-      push @pep, $self->xref->dir."/xref_".$i."_peptide.fasta";
+      push @pep, $self->xref->dir."/xref_".$method."_peptide.fasta";
       push @pep, $self->core->protein_file();
       push @list, \@pep;
     }
-    $i++;
   }
   $self->run_mapping(\@list);
 

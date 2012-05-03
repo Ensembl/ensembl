@@ -8,10 +8,14 @@ use vars qw(@ISA);
 @ISA = qw(XrefMapper::BasicMapper);
 
 
-sub get_set_lists {
+sub set_methods{
+ 
+  my $default_method = 'ExonerateGappedBest1';
+  my %override_method_for_source = (  
+	   ExonerateGappedBest5 => ['RefSeq_mRNA','RefSeq_mRNA_predicted', 'RefSeq_ncRNA', 'RefSeq_ncRNA_predicted' ],
+         );
 
-  return [["ExonerateGappedBest1", ["eukaryota","*"]]];
-
+  return $default_method, \%override_method_for_source;
 }
 
 sub transcript_display_xref_sources {

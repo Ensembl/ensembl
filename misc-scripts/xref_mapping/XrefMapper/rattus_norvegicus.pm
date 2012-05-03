@@ -6,13 +6,6 @@ use vars '@ISA';
 
 @ISA = qw{ XrefMapper::BasicMapper };
 
-#sub get_set_lists {
-#
-#  return [["ExonerateGappedBest1", ["rattus_norvegicus","*"]]];
-#
-#}
-
-
 
 sub transcript_display_xref_sources {
   my $self     = shift;

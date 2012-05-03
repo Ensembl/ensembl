@@ -7,11 +7,6 @@ use vars '@ISA';
 @ISA = qw{ XrefMapper::BasicMapper };
 use strict;
 
-#sub get_set_lists {
-#
-#  return [["ExonerateGappedBest1", ["mus_musculus","*"]]];
-#
-#}
 
 sub set_display_xrefs{
   my $self = shift;

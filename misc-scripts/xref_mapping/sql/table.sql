@@ -91,7 +91,7 @@ CREATE TABLE source (
   name                        varchar(255) not null,
   status                      enum('KNOWN','XREF','PRED','ORTH','PSEUDO','LOWEVIDENCE','NOIDEA') not null default 'NOIDEA',
   source_release              varchar(255),
-  download                    enum('Y', 'N') default 'Y',
+  download                    enum('Y','N') default 'Y',
   ordered                     int unsigned not null, 
   priority                    int unsigned default 1,
   priority_description        varchar(40) default "",
@@ -121,6 +121,17 @@ CREATE TABLE source_url (
 ) COLLATE=latin1_swedish_ci ENGINE=InnoDB;
 
 ################################################################################
+
+
+CREATE TABLE source_mapping_method (
+       
+       source_id                   int unsigned not null,
+       method         VARCHAR(255),   
+
+       UNIQUE KEY (source_id, method)
+
+) COLLATE=latin1_swedish_ci ENGINE=InnoDB;
+
 
 CREATE TABLE gene_direct_xref (
 
