@@ -67,9 +67,10 @@ Usage:
                     patch (patching starts at release equal to the
                     oldest patch in the database) >>USE WITH CAUTION<<
                     
-                    Can be used in conjunction with --from to limit the oldest
-                    release to search for patches. Useful for going from last
-                    release to current without missing anything out.  
+  --oldest          used in conjunction with --fix, this option allows control
+                    over how many releases are included in the fix. This option
+                    exists for users who have incomplete meta entries and
+                    wish to bring their database automatically up to date.
   
   --mysql           specify the location of the mysql binary if it is not on
                     \$PATH. Otherwise we default this to mysql
@@ -173,6 +174,14 @@ sub about {
 
         $0 -h host -u user -p password \\
           -r 66 -d my_database --fix --dryrun
+          
+      The genebuilder above has an evil twin who has mislayed their meta tables. 
+      --fix threatens to apply ancient patches but they know their database 
+      is correct until halfway through release 64. They wish to apply any
+      missing patches between release 64 and 66.
+      
+        $0 -h host -u user -p password -r 66 \\
+        -d my_database --fix --oldest 64
 
 ABOUT_END
 } ## end sub about
@@ -187,6 +196,7 @@ my $opt_cvsdir;
 my $opt_dryrun;
 my $opt_from;
 my $opt_fix;
+my $opt_oldest;
 my $opt_mysql = 'mysql';
 my $opt_interactive = 1;
 
@@ -204,6 +214,7 @@ if ( !GetOptions( 'host|h=s'     => \$opt_host,
                   'cvsdir=s'     => \$opt_cvsdir,
                   'dryrun|n!'    => \$opt_dryrun,
                   'fix!'         => \$opt_fix,
+                  'oldest=i'     => \$opt_oldest,
                   'mysql=s'      => \$opt_mysql,
                   'interactive|i!' => \$opt_interactive,
                   'verbose|v!'   => \$opt_verbose,
@@ -231,7 +242,7 @@ my %patches;
 
 # Get available patches.
 
-foreach my $thing ( [ 'ensembl',               'core', 'table.sql' ],
+foreach my $thing ( [ 'ensembl-core',               'core', 'table.sql' ],
                     [ 'ensembl-functgenomics', 'funcgen', 'efg.sql' ],
                     [ 'ensembl-variation',     'variation', 'table.sql' ] )
 {
@@ -476,18 +487,14 @@ while ( $sth->fetch() ) {
   my $start_version;
 
   if ($opt_fix) {
-    if ($opt_from) {
-        $start_version = $opt_from;
-        printf "Finding patches only as far back as user-selected version %s\n",$opt_from;
-    }
-    else {$start_version = ( sort { $a <=> $b } keys %dbpatches )[0];}
+    $start_version = $opt_oldest || ( sort { $a <=> $b } keys %dbpatches )[0];
     if ( !defined($start_version) ) {
       warn( sprintf( "No patches in database, " .
                        "beginning fix from release %d\n",
                      $schema_version ) );
       $start_version = $schema_version;
     }
-    elsif (!$opt_fix) {
+    else {
       printf( "Earliest patch in database '%s' is from release %d\n",
               $database, $start_version );
     }
