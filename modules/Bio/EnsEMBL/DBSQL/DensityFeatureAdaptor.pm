@@ -404,8 +404,16 @@ sub _objs_from_sth {
 
       my $len = $seq_region_end - $seq_region_start + 1;
 
-      my @coords =
-        $mapper->map($sr_name, $seq_region_start, $seq_region_end,1, $sr_cs);
+      my @coords;
+
+      if (defined $dest_slice && $mapper->isa('Bio::EnsEMBL::ChainedAssemblyMapper')  ) {
+	    
+	  @coords = $mapper->map( $sr_name, $seq_region_start, $seq_region_end,
+                          1, $sr_cs, 0, $dest_slice);
+
+      } else {
+	  @coords = $mapper->map($sr_name, $seq_region_start, $seq_region_end,1, $sr_cs);
+      }
 
       #filter out gaps
       @coords = grep {!$_->isa('Bio::EnsEMBL::Mapper::Gap')} @coords;

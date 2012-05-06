@@ -1539,9 +1539,21 @@ sub _objs_from_sth {
     #
     if($dest_mapper) {
 
-      ($seq_region_id,$seq_region_start,$seq_region_end,$seq_region_strand) =
-        $dest_mapper->fastmap($sr_name, $seq_region_start, $seq_region_end,
-                              $seq_region_strand, $sr_cs);
+      if (defined $dest_slice && $dest_mapper->isa('Bio::EnsEMBL::ChainedAssemblyMapper')  ) {
+	    ( $seq_region_id,  $seq_region_start,
+	      $seq_region_end, $seq_region_strand )
+		=
+		$dest_mapper->map( $sr_name, $seq_region_start, $seq_region_end,
+                          $seq_region_strand, $sr_cs, 1, $dest_slice);
+
+      } else {
+
+	    ( $seq_region_id,  $seq_region_start,
+	      $seq_region_end, $seq_region_strand )
+		= $dest_mapper->fastmap( $sr_name, $seq_region_start,
+                                 $seq_region_end, $seq_region_strand,
+                                 $sr_cs );
+      }
 
       #skip features that map to gaps or coord system boundaries
       next FEATURE if(!defined($seq_region_id));
