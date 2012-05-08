@@ -72,8 +72,6 @@ if ( (!defined @port) || ($port_count < $host_count) ) {
     } 
 }
 
-my @hosts = qw(ens-staging1, ens-staging2);
-
 if (!$outdir) { 
     $outdir = $ENV{'PWD'}; 
 } else {
