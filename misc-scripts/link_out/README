@@ -1,5 +1,6 @@
-For each release regenerate resource files by running script generate_LinkOut.pl  
+For each release regenerate resource files by running script generate_LinkOut.pl : 
 
+    perl generate_LinkOut.pl -dbpattern 'core_67' -config_file linkOut_config.txt
 
 Upload new resource files to NCBI:
 
