@@ -1,10 +1,11 @@
 use strict;
 use warnings;
+use Data::Dumper;
 
 
 BEGIN { $| = 1;
 	use Test;
-	plan tests => 8;
+	plan tests => 10;
 }
 
 use Bio::EnsEMBL::Test::TestUtils;
@@ -59,6 +60,14 @@ ok($bin eq 'Homo sapiens');
 #
 my $taxid = $mc->get_taxonomy_id();
 ok($taxid == 9606);
+
+my $div = $mc->get_division();
+ok(!defined $div);
+
+my $divname = 'EnsemblVertebrate';
+$mc->store_key_value('species.division',$divname);
+$div = $mc->get_division();
+ok($div eq $divname);
 
 $mdb->restore('core', 'meta');
 

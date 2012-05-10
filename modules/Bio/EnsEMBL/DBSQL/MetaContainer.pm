@@ -119,6 +119,21 @@ sub get_scientific_name {
   return $self->single_value_by_key('species.scientific_name');
 }
 
+=head2 get_division
+
+  Args          : none
+  Example       : $div = $meta_container->get_division();
+  Description   : Obtains the Ensembl Genomes division to which the species belongs.
+  Returntype    : string
+  Exceptions    : none
+  Status        : Stable
+
+=cut
+sub get_division {
+  my ($self) = @_;
+  return $self->single_value_by_key('species.division');
+}
+
 =head2 get_Species
 
   Arg [1]    : none
