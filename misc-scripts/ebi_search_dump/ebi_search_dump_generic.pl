@@ -560,13 +560,14 @@ g.seq_region_id=ae.seq_region_id and ae.exc_type='HAP'", [qw(gene_id)]
                                                            
                     'gene_name' => $xref_display_label ? $xref_display_label
                     : $gene_stable_id,
-                    'ana_desc_label' => $analysis_description_display_label,
-                    'ad'             => $analysis_description,
-                    'source'         => ucfirst($gene_source),
-                    'st'             => $gene_status,
-                    'biotype'        => $gene_biotype,
-                    'genomic_unit'   => $genomic_unit,
-                    'location'       => sprintf( '%s:%s-%s', $seq_region_name, $seq_region_start, $seq_region_end ),
+                    'seq_region_name' => $seq_region_name,
+                    'ana_desc_label'  => $analysis_description_display_label,
+                    'ad'              => $analysis_description,
+                    'source'          => ucfirst($gene_source),
+                    'st'              => $gene_status,
+                    'biotype'         => $gene_biotype,
+                    'genomic_unit'    => $genomic_unit,
+                    'location'        => sprintf( '%s:%s-%s', $seq_region_name, $seq_region_start, $seq_region_end ),
                 );
                 $old{'source'} =~ s/base/Base/;
                 $old{'exons'} = $exons{$gene_id};
@@ -679,6 +680,7 @@ sub geneLineXML {
       or die "external_identifiers not set";
     my $description = $xml_data->{'description'};
     my $gene_name   = $xml_data->{'gene_name'};
+    my $seq_region_name = $xml_data->{'seq_region_name'};
     my $type        = $xml_data->{'source'} . ' ' . $xml_data->{'biotype'}
       or die "problem setting type";
     my $haplotype        = $xml_data->{'haplotype'};
@@ -822,6 +824,7 @@ sub geneLineXML {
       <field name="genomic_unit">$genomic_unit</field>} : '') . qq{
       <field name="transcript_count">$transcript_count</field>
       <field name="gene_name">$gene_name</field>
+      <field name="seq_region_name">$seq_region_name</field>
       <field name="haplotype">$haplotype</field>}
       . (
         join "",
