@@ -5,6 +5,7 @@ use warnings;
 
 use Bio::EnsEMBL::DBSQL::DBConnection;
 use Getopt::Long;
+use Bio::EnsEMBL::Utils::CliHelper;
 
 my $help = 0;
 my ( $host, $port, $user, $pass, $dbpattern );
@@ -32,7 +33,7 @@ my @table_names = qw(
 );
 
 sub usage {
-  print <<USAGE_END;
+	print <<USAGE_END;
 USAGE:
 
   $0 --dbhost=ens-staging1 [--dbport=3306] \\
@@ -52,81 +53,74 @@ data in the following tables:
 
 USAGE_END
 
-  print( "\t", join( "\n\t", @table_names ), "\n" );
+	print( "\t", join( "\n\t", @table_names ), "\n" );
 
 }
 
 if ( scalar(@ARGV) == 0 ) {
-  usage();
-  exit 0;
+	usage();
+	exit 0;
 }
 
-if ( !GetOptions( 'help!'                  => \$help,
-                  'dbhost|host=s'          => \$host,
-                  'dbport|port=i'          => \$port,
-                  'dbuser|user=s'          => \$user,
-                  'dbpass|password|pass=s' => \$pass,
-                  'dbpattern=s'            => \$dbpattern
-     ) ||
-     $help )
-{
-  usage();
-  exit;
-}
+my $cli_helper = Bio::EnsEMBL::Utils::CliHelper->new();
 
-my $dsn = "DBI:mysql:host=$host;port=$port";
+# get the basic options for connecting to a database server
+my $optsd = $cli_helper->get_dba_opts();
+# process the command line with the supplied options plus a help subroutine
+my $opts = $cli_helper->process_args( $optsd, \&usage );
 
-my $db = DBI->connect( $dsn, $user, $pass );
+# use the command line options to get an array of database details
+# only process each database name once (to avoid duplication for multispecies dbs)
+for my $db_args ( @{ $cli_helper->get_dba_args_for_opts( $opts, 1 ) } ) {
 
-my @dbnames =
-  map { $_->[0] } @{ $db->selectall_arrayref("SHOW DATABASES") };
+	my $dba = new Bio::EnsEMBL::DBSQL::DBAdaptor(%$db_args);
 
-for my $dbname (@dbnames) {
+	my $file =
+	  $dba->dbc()->dbname() . "_" . $dba->species_id() . ".meta_coord.backup";
+	my $sys_call = sprintf( "mysql "
+							  . "--host=%s "
+							  . "--port=%d "
+							  . "--user=%s "
+							  . "--pass='%s' "
+							  . "--database=%s "
+							  . "--skip-column-names "
+							  . " --execute='SELECT * FROM meta_coord'"
+							  . " > $file",
+							$dba->dbc->host(),     $dba->dbc->port(),
+							$dba->dbc->username(), $dba->dbc->password(),
+							$dba->dbc->dbname() );
+	unless ( system($sys_call) == 0 ) {
+		warn "Can't dump the original meta_coord for back up "
+		  . "(skipping this species)\n";
+		next;
+	} else {
+		print "Original meta_coord table backed up in $file\n";
+	}
 
-  if ( $dbname !~ /$dbpattern/ ) { next }
+	foreach my $table_name (@table_names) {
+		print("Updating $table_name table entries... ");
 
-  print("==> Looking at $dbname...\n");
+		$dba->dbc()->helper()->execute_update(
+			-SQL =>
+"DELETE mc.* FROM meta_coord mc, coord_system cs WHERE cs.coord_system_id=mc.coord_system_id AND table_name = ? AND cs.species_id=?",
+			-PARAMS => [ $table_name, $dba->species_id() ] );
 
-  my $dbc =
-    new Bio::EnsEMBL::DBSQL::DBConnection( -host   => $host,
-                                           -port   => $port,
-                                           -user   => $user,
-                                           -pass   => $pass,
-                                           -dbname => $dbname );
+		$dba->dbc()->helper()->execute_update(
+			-SQL => "INSERT INTO meta_coord "
+			  . "SELECT '$table_name', s.coord_system_id, "
+			  . "MAX( t.seq_region_end - t.seq_region_start + 1 ) "
+			  . "FROM $table_name t, seq_region s, coord_system c "
+			  . "WHERE t.seq_region_id = s.seq_region_id AND c.coord_system_id=s.coord_system_id AND c.species_id=?"
+			  . "GROUP BY s.coord_system_id",
+			-PARAMS => [ $dba->species_id() ] );
 
-  if ( system( "mysql --host=$host --port=$port " .
-                 "--user=$user --password='$pass' " .
-                 "--database=$dbname --skip-column-names " .
-                 "--execute='SELECT * FROM meta_coord'" .
-                 ">$dbname.meta_coord.backup" ) )
-  {
-    warn( "Can't dump the original meta_coord for back up " .
-          "(skipping this database)\n" );
-    next;
-  }
-  else {
-    print( "Original meta_coord table backed up in \n" .
-           "\t$dbname.meta_coord.backup\n" );
-  }
+		print("done\n");
+	}
 
-  foreach my $table_name (@table_names) {
-    print("Updating $table_name table entries... ");
-
-    my $sql = "DELETE FROM meta_coord WHERE table_name = '$table_name'";
-    $dbc->do($sql);
-
-    $sql =
-      "INSERT INTO meta_coord " .
-      "SELECT '$table_name', s.coord_system_id, " .
-      "MAX( t.seq_region_end - t.seq_region_start + 1 ) " .
-      "FROM $table_name t JOIN seq_region s USING (seq_region_id) " .
-      "GROUP BY s.coord_system_id";
-    $dbc->do($sql);
-
-    print("done\n");
-  }
-
-  print("==> Done with $dbname\n");
-} ## end for my $dbname (@dbnames)
+	print(   "==> Done with "
+		   . $dba->dbc->dbname() . "/"
+		   . $dba->species_id()
+		   . "\n" );
+} ## end for my $db_args ( @{ $cli_helper...})
 
 print("==> All done.\n");
