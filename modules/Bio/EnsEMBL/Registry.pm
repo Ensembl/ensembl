@@ -1656,6 +1656,7 @@ sub load_registry_from_db {
   }
 
   # Register Core like databases
+  my $core_like_dbs_found = 0;
   foreach my $type (qw(core cdna vega vega_update otherfeatures rnaseq)) {
 
     my @dbs = grep { /^[a-z]+_[a-z0-9]+(?:_[a-z0-9]+)?  # species name
@@ -1666,6 +1667,10 @@ sub load_registry_from_db {
                        \d+               # database release
                        _
                        /x } @dbnames;
+
+    if(@dbs) {
+      $core_like_dbs_found = 1;
+    }
 
     foreach my $database (@dbs) {
       if ( index( $database, 'collection' ) != -1 ) {
@@ -1685,7 +1690,7 @@ sub load_registry_from_db {
                       /x );
 
       if(!defined($species)){
-        warn "for $database cannot get species??\n";
+        warn "Cannot extract species name from database '$database'";
       }
 
       my $dba =
@@ -1745,6 +1750,9 @@ sub load_registry_from_db {
     }
   } ## end foreach my $multidb (@multi_dbs)
 
+  if(!$core_like_dbs_found && $verbose) {
+    print("No core-like databases found. Check your DB_VERSION (used '$software_version')\n");
+  }  
 
   # User upload DBs
 
@@ -1825,6 +1833,10 @@ sub load_registry_from_db {
     my @variation_dbs =
       grep { /^[a-z]+_[a-z0-9]+(?:_[a-z0-9]+)?_variation_(?:\d+_)?\d+_/ } @dbnames;
 
+    if(! @variation_dbs && $verbose) {
+      print("No variation databases found\n");
+    }
+
     for my $variation_db (@variation_dbs) {
 	
       if ( index( $variation_db, 'collection' ) != -1 ) {
@@ -1901,6 +1913,10 @@ sub load_registry_from_db {
   } else {
     my @funcgen_dbs =
       grep { /^[a-z]+_[a-z0-9]+(?:_[a-z0-9]+)?_funcgen_(?:\d+_)?\d+_/ } @dbnames;
+      
+    if(! @funcgen_dbs && $verbose) {
+      print("No funcgen databases found\n");
+    }
 
     for my $funcgen_db (@funcgen_dbs) {
       if ( index( $funcgen_db, 'collection' ) != -1 ) {
