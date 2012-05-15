@@ -780,7 +780,12 @@ working with very large numbers of rows.
 sub execute_with_sth {
   my ($self, @args) = @_;
   my ($sql, $callback, $params, $prepare_params) = rearrange([qw(sql callback params prepare_params)], @args);
-  return $self->_base_execute( $sql, 1, $params, $callback, $prepare_params );
+  my $sth = $self->_base_execute( $sql, $params, $prepare_params, $callback );
+  my $result = eval {$callback->($sth)};
+  my $error = $@;
+  $self->_finish_sth($sth);
+  die $error if $error;
+  return $result;
 }
 
 =pod
@@ -939,9 +944,32 @@ sub _execute {
 	my ( $self, $sql, $callback, $has_return, $use_hashrefs, $params, $prepare_params, $iterator ) = @_;
 
 	throw('Not given a mapper. _execute() must always been given a CodeRef') unless check_ref($callback, 'CODE');
-	  
-  my $iter = $self->_base_execute($sql, $has_return, $params, $callback, $prepare_params, $use_hashrefs);
+	
+  my $sth = $self->_base_execute($sql, $params, $prepare_params);
   
+  my $sth_processor;
+  if($use_hashrefs) {
+    $sth_processor = sub {
+      while( my $row = $sth->fetchrow_hashref() ) {
+        my $v = $callback->($row, $sth);
+        return $v if $has_return;
+      }
+      $self->_finish_sth($sth);
+      return undef;
+    };
+  }
+  else {
+    $sth_processor = sub {
+      while( my $row = $sth->fetchrow_arrayref() ) {
+        my $v = $callback->($row, $sth);
+        return $v if $has_return;
+      }
+      $self->_finish_sth($sth);
+      return undef;
+    };
+  }
+	
+  my $iter = Bio::EnsEMBL::Utils::Iterator->new($sth_processor);
   if($has_return) {
     return $iter if $iterator;
     return $iter->to_arrayref();
@@ -954,19 +982,13 @@ sub _execute {
 }
 
 sub _base_execute {
-  my ( $self, $sql, $has_return, $params, $callback, $prepare_params, $use_hashrefs ) = @_;
-  
-  throw('Not given a callback. _base_execute() must always been given a CodeRef') unless check_ref($callback, 'CODE');
+  my ( $self, $sql, $params, $prepare_params) = @_;
 	
 	$params = [] unless $params;
 	
 	my $conn = $self->db_connection;
-
-	my $error;
-	my $sth_close_error;
+	
 	my $sth;
-	my $iterator;
-
 	eval {
 	  my @prepare_params;
 	  @prepare_params = @{$prepare_params} if check_ref($prepare_params, 'ARRAY');
@@ -975,35 +997,14 @@ sub _base_execute {
 		  unless $sth;
 		$self->_bind_params( $sth, $params );
 		$sth->execute();
-    my $sth_processor;
-    if($use_hashrefs) {
-      $sth_processor = sub {
-        while( my $row = $sth->fetchrow_hashref() ) {
-  		    my $v = $callback->($row, $sth);
-  		    return $v if $has_return;
-  		  }
-  		  $self->_finish_sth($sth);
-        return undef;
-      };
-    }
-    else {
-      $sth_processor = sub {
-        while( my $row = $sth->fetchrow_arrayref() ) {
-    			my $v = $callback->($row, $sth);
-  		    return $v if $has_return;
-    		}
-    		$self->_finish_sth($sth);
-        return undef;
-      };
-    }
-		$iterator = Bio::EnsEMBL::Utils::Iterator->new($sth_processor);
 	};
 	
-	$error = $@;
+	my $error = $@;
 	if($error) {
   	throw("Cannot run '${sql}' with params '@{$params}' due to error: $error") if $error;
 	}
-	return $iterator;
+	
+	return $sth;
 }
 
 sub _finish_sth {

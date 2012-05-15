@@ -120,6 +120,18 @@ my $null_count_hash = $helper->execute_into_hash(
 
 ok(!exists $null_count_hash->{1}, 'Checking hash doesnt contain key for NULL value');
 
+##### CHECKING WORKING WITH A STH DIRECTLY
+{
+  my $v = $helper->execute_with_sth(-SQL => 'select count(*) from meta', -CALLBACK => sub {
+    my ($sth) = @_;
+    my $count;
+    $sth->bind_col(1, \$count);
+    $sth->fetch();
+    return $count;
+  });
+  cmp_ok($v, '>', 0, 'Asserting we found data from meta using execute_with_sth()');
+}
+
 #TRANSACTION() CHECKS
 my $meta_table_count = $helper->execute_single_result(-SQL => 'select count(*) from meta');
 my $meta_memoize = $helper->execute(-SQL => 'select * from meta');

@@ -91,6 +91,7 @@ use vars qw(@ISA @EXPORT);
 use strict;
 
 use Bio::EnsEMBL::Utils::Exception qw(throw);
+use Bio::EnsEMBL::Utils::Scalar qw(assert_ref);
 use DBI qw(:sql_types);
 use Data::Dumper;
 
@@ -385,11 +386,11 @@ sub bind_param_generic_fetch{
                as they are retrieved from the database
   Arg [3]    : (optional) Bio::EnsEMBL::Slice $slice
                A slice that features should be remapped to
-  Example    : $fts = $a->generic_fetch('contig_id in (1234, 1235)', 'Swall');
+  Example    : $fts = $a->generic_fetch('contig_id in (1234, 1235)');
   Description: Performs a database fetch and returns feature objects in
                contig coordinates.
   Returntype : listref of Bio::EnsEMBL::SeqFeature in contig coordinates
-  Exceptions : none
+  Exceptions : Thrown if there is an issue with querying the data
   Caller     : BaseFeatureAdaptor, ProxyDnaAlignFeatureAdaptor::generic_fetch
   Status     : Stable
 
@@ -397,7 +398,52 @@ sub bind_param_generic_fetch{
 
 sub generic_fetch {
   my ($self, $constraint, $mapper, $slice) = @_;
+  my $sql = $self->_generate_sql($constraint);
+  my $params = $self->bind_param_generic_fetch();
+  $params ||= [];
+  $self->{_bind_param_generic_fetch} = undef;
+  my $sth = $self->db()->dbc()->prepare($sql);
+  my $i = 1;
+  foreach my $param (@{$params}){
+    $sth->bind_param($i,$param->[0],$param->[1]);
+    $i++;
+  }
+  eval { $sth->execute() };
+  if ($@) {
+    throw("Detected an error whilst executing SQL '${sql}': $@");
+  }
 
+  my $res = $self->_objs_from_sth($sth, $mapper, $slice);
+  $sth->finish();
+  return $res;
+}
+
+=head2 generic_count
+
+  Arg [1]    : (optional) string $constraint
+               An SQL query constraint (i.e. part of the WHERE clause)
+  Example    : $number_feats = $a->generic_count('contig_id in (1234, 1235)');
+  Description: Performs a database fetch and returns a count of those features
+               found. This is analagous to C<generic_fetch()>
+  Returntype : Integer count of the elements.
+  Exceptions : Thrown if there is an issue with querying the data
+
+=cut
+
+sub generic_count {
+  my ($self, $constraint) = @_;
+  my $sql = $self->_generate_sql($constraint, 'count(*)');
+  my $params = $self->bind_param_generic_fetch();
+  $params ||= [];
+  $self->{_bind_param_generic_fetch} = undef;
+  my $h = $self->db()->dbc()->sql_helper();
+  my $count = $h->execute_single_result(-SQL => $sql, -PARAMS => $params);
+  return $count;
+}
+
+sub _generate_sql {
+  my ($self, $constraint, @input_columns) = @_;
+  
   my @tabs = $self->_tables();
 
   my $extra_default_where;
@@ -436,9 +482,8 @@ sub generic_fetch {
     $self->bind_param_generic_fetch( $self->species_id(), SQL_INTEGER );
   } ## end if ( $self->is_multispecies...)
 
-  my $columns = join(', ', $self->_columns());
-
-  my $db = $self->db();
+  @input_columns = $self->_columns() if ! @input_columns;
+  my $columns = join(', ', @input_columns);
 
   #
   # Construct a left join statement if one was defined, and remove the
@@ -503,32 +548,11 @@ sub generic_fetch {
 
   #append additional clauses which may have been defined
   $sql .= "\n$final_clause";
-
-
+  
   # FOR DEBUG:
   #printf(STDERR "SQL:\n%s\n", $sql);
   
-  
-  my $sth = $db->dbc->prepare($sql);
-  my $bind_parameters = $self->bind_param_generic_fetch();
-  if (defined $bind_parameters){
-      #if we have bind the parameters, call the DBI to bind them
-      my $i = 1;
-      foreach my $param (@{$bind_parameters}){
-		$sth->bind_param($i,$param->[0],$param->[1]);
-		$i++;
-      }
-      #after binding parameters, undef for future queries
-      $self->{'_bind_param_generic_fetch'} = ();
-  }
-  eval { $sth->execute() };
-  if ($@) {
-    throw("Detected an error whilst executing SQL '${sql}': $@");
-  }
-
-  my $res = $self->_objs_from_sth($sth, $mapper, $slice);
-  $sth->finish();
-  return $res;
+  return $sql;
 }
 
 
