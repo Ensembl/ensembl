@@ -100,12 +100,12 @@ for my $db_args ( @{ $cli_helper->get_dba_args_for_opts( $opts, 1 ) } ) {
 	foreach my $table_name (@table_names) {
 		print("Updating $table_name table entries... ");
 
-		$dba->dbc()->helper()->execute_update(
+		$dba->dbc()->sql_helper()->execute_update(
 			-SQL =>
 "DELETE mc.* FROM meta_coord mc, coord_system cs WHERE cs.coord_system_id=mc.coord_system_id AND table_name = ? AND cs.species_id=?",
 			-PARAMS => [ $table_name, $dba->species_id() ] );
 
-		$dba->dbc()->helper()->execute_update(
+		$dba->dbc()->sql_helper()->execute_update(
 			-SQL => "INSERT INTO meta_coord "
 			  . "SELECT '$table_name', s.coord_system_id, "
 			  . "MAX( t.seq_region_end - t.seq_region_start + 1 ) "
