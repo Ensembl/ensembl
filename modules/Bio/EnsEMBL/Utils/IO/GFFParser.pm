@@ -1,3 +1,4 @@
+
 =pod
 
 =head1 LICENSE
@@ -23,6 +24,7 @@ Monika Komorowska, 2012 - monika@ebi.ac.uk
 
 use strict;
 use Bio::EnsEMBL::Utils::IO::GFFParser;
+use Bio::EnsEMBL::Utils::Scalar qw/wrap_array/;
 use FileHandle;
 
 my $file_name = "features.gff";
@@ -51,8 +53,8 @@ while (defined($feature) ) {
 	    print $key . "\n";
 	    my %attribs =  %{$feature{$key}};
 	    foreach my $attrib_key (keys %attribs) {
-		print "\t" . $attrib_key . " " .$attribs{$attrib_key}."\n";
-
+	      my $values = $attribs{$attrib_key};
+		    printf("\t%s %s\n", $attrib_key, join(q{, }, wrap_array($values)));
 	    }
 	}
     }
@@ -84,7 +86,7 @@ use Bio::EnsEMBL::Utils::Exception;
 use IO::File;
 use URI::Escape;
 
-my %strand_conversion = ( '+' => '1', '?' => '0', '-' => '-1');
+my %strand_conversion = ( '+' => '1', '?' => '0', '-' => '-1' );
 
 =head2 new
 
@@ -96,15 +98,13 @@ my %strand_conversion = ( '+' => '1', '?' => '0', '-' => '-1');
 =cut
 
 sub new {
-    my $class = shift;
-    my $self = {
-        filehandle => shift,
-    };
-    bless $self, $class;
-    if (!defined($self->{'filehandle'})) {
-        throw("GFFParser requires a valid filehandle to a GFF3 formatted file"); 
-    }
-    return $self;
+  my $class = shift;
+  my $self = { filehandle => shift, };
+  bless $self, $class;
+  if ( !defined( $self->{'filehandle'} ) ) {
+    throw("GFFParser requires a valid filehandle to a GFF3 formatted file");
+  }
+  return $self;
 
 }
 
@@ -118,27 +118,31 @@ sub new {
 
 sub parse_header {
 
-    my $self = shift;
+  my $self = shift;
 
-    my $next_line;
-    my @header_lines;
-    
-    while (($next_line = $self->_read_line()) && ($next_line =~ /^[\#|\s]/) )  {
-	#header lines start with ##
-	if ($next_line =~ /^[\#]{2}/) {
-	    push @header_lines, $next_line;
-	    if ($next_line =~ /gff-version\s+(\d+)/) {
-		if ($1 != 3) {
-		    warning("File has been formatted in GFF version $1. GFFParser may return unexpected results as it is designed to parse GFF3 formatted files.");  
-		}
-	    }
-	}
-    }
+  my $next_line;
+  my @header_lines;
 
-    if (defined($next_line) && ($next_line !~ /^[\#|\s]/)) {
-	$self->{'first_feature_line'} = $next_line;
+  while ( ( $next_line = $self->_read_line() ) && ( $next_line =~ /^[\#|\s]/ ) )
+  {
+
+    #header lines start with ##
+    if ( $next_line =~ /^[\#]{2}/ ) {
+      push @header_lines, $next_line;
+      if ( $next_line =~ /gff-version\s+(\d+)/ ) {
+        if ( $1 != 3 ) {
+          warning(
+"File has been formatted in GFF version $1. GFFParser may return unexpected results as it is designed to parse GFF3 formatted files."
+          );
+        }
+      }
     }
-    return \@header_lines;
+  }
+
+  if ( defined($next_line) && ( $next_line !~ /^[\#|\s]/ ) ) {
+    $self->{'first_feature_line'} = $next_line;
+  }
+  return \@header_lines;
 
 }
 
@@ -158,83 +162,93 @@ sub parse_header {
                    attribute => hashref, 
                    
 		 }
+		If the attribute value held more than one value then we hold an arrayref
+		not a scalar
     Returntype : Hashref of a GFF3 feature line
 
 =cut
 
 sub parse_next_feature {
 
-    my $self = shift;
+  my $self = shift;
 
-    my $next_line;
-    my $feature_line;
-    
-    while (($next_line = $self->_read_line() ) && defined($next_line) ) {
-	next if ($next_line =~ /^\#/ || $next_line =~ /^\s*$/ ||
-		$next_line =~ /^\/\//);
-	$feature_line = $next_line;
-	last;
+  #    my $next_line;
+  my $feature_line;
+
+  while ( my ($next_line) = $self->_read_line() ) {
+    next
+      if ( $next_line =~ /^\#/
+      || $next_line =~ /^\s*$/
+      || $next_line =~ /^\/\// );
+    $feature_line = $next_line;
+    last;
+  }
+
+  return undef unless $feature_line;
+
+  my %feature;
+  my %attribute;
+
+  #strip off trailing comments
+  $feature_line =~ s/\#.*//;
+
+  my @chunks = split( /\t/, $feature_line );
+
+  %feature = (
+    'seqid'  => uri_unescape( $chunks[0] ),
+    'source' => uri_unescape( $chunks[1] ),
+    'type'   => uri_unescape( $chunks[2] ),
+    'start'  => $chunks[3],
+    'end'    => $chunks[4],
+    'score'  => $chunks[5],
+    'strand' => $strand_conversion{ $chunks[6] },
+    'phase'  => $chunks[7]
+  );
+
+  if ( $chunks[8] ) {
+    my @attributes = split( /;/, $chunks[8] );
+    my %attributes;
+    foreach my $attribute (@attributes) {
+      my ( $name, $value ) = split( /=/, $attribute );
+      $name = uri_unescape($name);
+      my @split_values = map { uri_unescape($_) } split(/,/, $value);
+      if(scalar(@split_values) > 1) {
+        $attributes{$name} = \@split_values;
+      }
+      else {
+        $attributes{$name} = $split_values[0];
+      }
     }
+    $feature{'attribute'} = \%attributes;
+  }
 
-    return undef unless $feature_line;
-
-    my %feature;
-    my %attribute;
-
-
-    #strip off trailing comments
-    $feature_line =~ s/\#.*//;
-	
-    my @chunks = split(/\t/, $feature_line);
-
-    %feature = (
-	    'seqid' => uri_unescape($chunks[0]),
-            'source' => uri_unescape($chunks[1]),
-            'type' => uri_unescape($chunks[2]),
-            'start' => $chunks[3],
-            'end' => $chunks[4],
-            'score' => $chunks[5],
-            'strand' => $strand_conversion{$chunks[6]},
-            'phase' => $chunks[7] );
-	
-     if ($chunks[8]) {
-	    my @attributes = split(/;/,$chunks[8]);
-	    my %attributes;
-	    foreach my $attribute (@attributes) {
-		my ($name, $value) = split(/=/,$attribute);
-		$attributes{uri_unescape($name)} = uri_unescape($value);
-	    }
-	    $feature{'attribute'} = \%attributes;
-     }
-
-    return \%feature;    
+  return \%feature;
 }
 
 sub _read_line {
 
-    my $self = shift;
-    my $fh = $self->{'filehandle'};
+  my $self = shift;
+  my $fh   = $self->{'filehandle'};
 
-    my $line;
-    
-    if (defined($self->{'first_feature_line'})) {
-	$line = $self->{'first_feature_line'};
-	$self->{'first_feature_line'} = undef;
-    } else {
-	$line = <$fh>;
-	if (defined($line)) {
-	    chomp $line;
-	}
+  my $line;
+
+  if ( defined( $self->{'first_feature_line'} ) ) {
+    $line = $self->{'first_feature_line'};
+    $self->{'first_feature_line'} = undef;
+  }
+  else {
+    $line = <$fh>;
+    if ( defined($line) ) {
+      chomp $line;
     }
+  }
 
-    return $line;
+  return $line;
 }
 
 sub close {
-
-    my $self = shift;
-    $self->{"filehandle"} = undef;
-
+  my $self = shift;
+  $self->{"filehandle"} = undef;
 }
 
 1;
