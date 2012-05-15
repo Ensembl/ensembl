@@ -40,6 +40,7 @@ use Carp;
 use POSIX qw(strftime);
 use File::Basename;
 use Bio::EnsEMBL::Utils::Exception;
+use URI::Escape;
 
 use base qw( XrefParser::BaseParser );
 
@@ -587,24 +588,13 @@ sub make_name_xref{
 }
 
 sub get_fields {
-  my ($item,$target) =@_;
-
-  my @entrys;
-  if ($item =~m/$target/){
-    $item =~s/$target//g;
-
-    # check if there is more than one synonym / dbxref ...
-    if ($item =~/,/){
-      @entrys = split (/\,/,$item);
-    } else{
-      push @entrys, $item;
-    }
-    return \@entrys;
-
-    # if the item does not hold information of specific field
-  }else{
-    return;
+  my ($item, $target) =@_;
+  if ($item =~ m/$target/){
+    $item =~ s/$target//g;
+    my @entries = map { uri_escape($_) } split(/,/, $item);
+    return \@entries;
   }
+  return;
 }
 
 sub source_name_name{
