@@ -8,6 +8,7 @@ use IO::String;
 use Bio::EnsEMBL::Utils::IO::FASTASerializer;
 use Bio::EnsEMBL::Slice;
 use Bio::EnsEMBL::CoordSystem;
+use Bio::Seq;
 
 #
 # TEST - Slice creation from adaptor
@@ -77,7 +78,7 @@ $fh_Serializer->close;
   my $s = Bio::EnsEMBL::Slice->new(-SEQ_REGION_NAME => 'a', -COORD_SYSTEM => $coord_system, -SEQ => $seq, -SEQ_REGION_LENGTH => 120, -START => 1, -END => 120);
   my $header = sub { return 'a'; };
   my $io = IO::String->new();
-  my $ser = Bio::EnsEMBL::Utils::IO::FASTASerializer->new($io, $header, 60, 20);
+  my $ser = Bio::EnsEMBL::Utils::IO::FASTASerializer->new($io, $header, 6, 20);
   my $expected = <<'FASTA';
 >a
 AAAAAAAAAAAAAAAAAAAA
@@ -89,6 +90,33 @@ AAAAAAAAAAAAAAAAAAAA
 FASTA
   $ser->print_Seq($s);
   is(${$io->string_ref()}, $expected, 'Testing round number serialisation');
+}
+
+{
+  my $seq = 'A'x21;
+  my $s = Bio::EnsEMBL::Slice->new(-SEQ_REGION_NAME => 'a', -COORD_SYSTEM => $coord_system, -SEQ => $seq, -SEQ_REGION_LENGTH => 21, -START => 1, -END => 21);
+  my $header = sub { return 'a'; };
+  my $io = IO::String->new();
+  my $ser = Bio::EnsEMBL::Utils::IO::FASTASerializer->new($io, $header, 1, 20);
+  my $expected = <<'FASTA';
+>a
+AAAAAAAAAAAAAAAAAAAA
+A
+FASTA
+  $ser->print_Seq($s);
+  is(${$io->string_ref()}, $expected, 'Testing odd (as in strange) number line length serialisation');
+}
+
+{
+  my $seq = Bio::Seq->new(-SEQ => 'M', -DISPLAY_ID => 'A');
+  my $io = IO::String->new();
+  my $ser = Bio::EnsEMBL::Utils::IO::FASTASerializer->new($io);
+  my $expected = <<'FASTA';
+>A
+M
+FASTA
+  $ser->print_Seq($seq);
+  is(${$io->string_ref()}, $expected, 'Testing single base serialisation');
 }
 
 done_testing();

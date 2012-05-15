@@ -164,22 +164,17 @@ sub print_Seq {
         
     my $start = 1;
     my $end = $slice->length();
-    
-#    my $FORMAT = sprintf ("^%s
-#", ('<'x($width-1))  );
 
   #chunk the sequence to conserve memory, and print
   
   my $here = $start;
   
-  while($here < $end) {
+  while($here <= $end) {
     my $there = $here + $chunk_size - 1;
     $there = $end if($there > $end); 
     my $seq = $slice->subseq($here, $there);
     $seq =~ s/(.{1,$width})/$1\n/g;
     print $fh $seq;
-#    $self->formatted_write($FORMAT, $seq);
-    
     $here = $there + 1;
   }
   
