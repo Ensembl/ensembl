@@ -724,7 +724,8 @@ sub _dump_feature_table {
   }
 
   foreach my $gene_slice (@gene_slices) {
-    foreach my $gene (@{$gene_slice->get_all_Genes(undef,undef, 1)}) {
+    my @genes = @{$gene_slice->get_all_Genes(undef,undef, 1)};
+    while(my $gene = shift @genes) {
       $value = $self->features2location( [$gene] );
       $self->write( @ff, 'gene', $value );
       $self->write( @ff, "", '/gene='.$gene->stable_id() );
@@ -800,7 +801,8 @@ sub _dump_feature_table {
   #
   if($self->is_enabled('genscan')) {
     my @genscan_exons;
-    foreach my $transcript(@{$slice->get_all_PredictionTranscripts(undef,1)}) {
+    my @transcripts = @{$slice->get_all_PredictionTranscripts(undef,1)};
+    while(my $transcript = shift @transcripts) {
       my $exons = $transcript->get_all_Exons();
       push @genscan_exons, @$exons;
       $self->write(@ff, 'mRNA', $self->features2location($exons));
@@ -818,7 +820,8 @@ sub _dump_feature_table {
   if($self->is_enabled('variation') && $slice->can('get_all_VariationFeatures')) {
 #    $slice->adaptor->db->add_db_adaptor('lite', $lite) if $lite;
 
-    foreach my $snp (@{$slice->get_all_VariationFeatures}) {
+    my @variations = @{$slice->get_all_VariationFeatures()};
+    while(my $snp = shift @variations) {
       my $ss = $snp->start;
       my $se = $snp->end;
       #skip snps that hang off edge of slice
@@ -854,9 +857,9 @@ sub _dump_feature_table {
   # repeats
   #
   if($self->is_enabled('repeat')) {
-    my $rfs = $slice->get_all_RepeatFeatures();
+    my @rfs = @{$slice->get_all_RepeatFeatures()};
 
-    foreach my $repeat (@$rfs) {
+    while(my $repeat = shift @rfs) {
       $self->write(@ff, 'repeat_region', $self->features2location([$repeat]));
       $self->write(@ff, ''    , '/note="' . $repeat->repeat_consensus->name.
 		   ' repeat: matches ' . $repeat->hstart.'..'.$repeat->hend .
@@ -869,7 +872,8 @@ sub _dump_feature_table {
   # markers
   #
   if($self->is_enabled('marker') && $slice->can('get_all_MarkerFeatures')) {
-    foreach my $mf (@{$slice->get_all_MarkerFeatures}) {
+    my @markers = @{$slice->get_all_MarkerFeatures()};
+    while(my $mf = shift @markers) {
       $self->write(@ff, 'STS', $self->features2location([$mf]));
       if($mf->marker->display_MarkerSynonym) {
         $self->write(@ff, ''   , '/standard_name="' .
