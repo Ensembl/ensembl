@@ -131,6 +131,8 @@ sub run {
     }, $args);
   }
   
+  $self->_create_README();
+  
   return;
 }
 
