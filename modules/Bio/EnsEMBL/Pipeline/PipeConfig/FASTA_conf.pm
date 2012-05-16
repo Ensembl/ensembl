@@ -232,7 +232,7 @@ sub pipeline_analyses {
       
       {
         -logic_name => 'ChecksumGenerator',
-        -module     => 'Bio::EnsEMBL::Pipeline::FASTA::ChecksumGenerator',
+        -module     => 'Bio::EnsEMBL::Pipeline::ChecksumGenerator',
         -hive_capacity => 10,
         -rc_id      => 1,
       },

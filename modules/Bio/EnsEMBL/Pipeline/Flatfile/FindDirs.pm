@@ -20,14 +20,12 @@
 
 =head1 NAME
 
-Bio::EnsEMBL::Pipeline::FASTA::FindDirs
+Bio::EnsEMBL::Pipeline::Flatfile::FindDirs
 
 =head1 DESCRIPTION
 
 Finds all directories under the given species directory. This is used to
-flow any further processing only dependent on the directory and so
-inherits from JobFactory and Bio::EnsEMBL::Pipeline::FASTA::Base to bring in methods which
-know about the FTP structure.
+flow any further processing only dependent on the directory
 
 Allowed parameters are:
 
@@ -44,14 +42,14 @@ package Bio::EnsEMBL::Pipeline::FASTA::FindDirs;
 use strict;
 use warnings;
 
-use base qw/Bio::EnsEMBL::Pipeline::FindDirs Bio::EnsEMBL::Pipeline::FASTA::Base/;
+use base qw/Bio::EnsEMBL::Pipeline::FindDirs Bio::EnsEMBL::Pipeline::Flatfile::Base/;
 
 use File::Spec;
 
 sub fetch_input {
   my ($self) = @_;
   $self->throw("No 'species' parameter specified") unless $self->param('species');
-  $self->param('path', $self->fasta_path());
+  $self->param('path', $self->data_path());
   $self->SUPER::fetch_input();
   return;
 }

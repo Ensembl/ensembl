@@ -67,35 +67,22 @@ package Bio::EnsEMBL::Pipeline::FASTA::SpeciesFactory;
 use strict;
 use warnings;
 
-use base qw/Bio::EnsEMBL::Pipeline::FASTA::Base/;
+use base qw/Bio::EnsEMBL::Pipeline::SpeciesFactory/;
 
 use Bio::EnsEMBL::Registry;
 
 sub param_defaults {
   my ($self) = @_;
   return {
+    %{$self->SUPER::param_defaults()},
     sequence_type_list => [qw/dna cdna ncrna/],
-    db_types => [qw/core/],
-    species => []
   };
 }
 
 sub fetch_input {
   my ($self) = @_;
-  
+  $self->SUPER::fetch_input();
   $self->reset_empty_array_param('sequence_type_list');
-  $self->reset_empty_array_param('db_types');
-  
-  my $core_dbas = $self->get_DBAdaptors();
-  $self->info('Found %d core DBAdaptor(s) to process', scalar(@{$core_dbas}));
-  $self->param('dbas', $core_dbas);
-  
-  my %species_lookup = 
-    map { $_ => 1 } 
-    map { Bio::EnsEMBL::Registry->get_alias($_)  } 
-    @{$self->param('species')};
-  $self->param('species_lookup', \%species_lookup);
-  
   my %sequence_types = map { $_ => 1 } @{ $self->param('sequence_type_list') };
   $self->param('sequence_types', \%sequence_types);
   
@@ -139,48 +126,6 @@ sub write_output {
   return;
 }
 
-sub get_DBAdaptors {
-  my ($self) = @_;
-  return Bio::EnsEMBL::Registry->get_all_DBAdaptors(-GROUP => 'core');
-}
-
-sub do_flow {
-  my ($self, $key) = @_;
-  my $targets = $self->param($key);
-  foreach my $entry (@{$targets}) {
-    my ($input_id, $flow) = @{$entry};
-    $self->fine('Flowing %s to %d for %s', $input_id->{species}, $flow, $key);
-    $self->dataflow_output_id($input_id, $flow);
-  }
-  return;
-}
-
-sub process_dba {
-  my ($self, $dba) = @_;
-  
-  #Reject if DB was ancestral sequences
-  return 0 if $dba->species() =~ /ancestral/i;
-  
-  #If species is defined then make sure we only allow those species through
-  if(@{$self->param('species')}) {
-    my $lookup = $self->param('species_lookup');
-    my $name = $dba->species();
-    my $aliases = Bio::EnsEMBL::Registry->get_all_aliases($name);
-    push(@{$aliases}, $name);
-    my $found = 0;
-    foreach my $alias (@{$aliases}) {
-      if($lookup->{$alias}) {
-        $found = 1;
-        last;
-      }
-    }
-    return $found;
-  }
-  
-  #Otherwise just accept
-  return 1;
-}
-
 # return 0 if we do not want to do any flowing otherwise return 2
 
 sub dna_flow {
@@ -216,11 +161,6 @@ sub input_id {
     $input_id->{sequence_type_list} = \@types;
   }
   return $input_id;
-}
-
-sub db_types {
-  my ($self, $dba) = @_;
-  return $self->param('db_types');
 }
 
 1;

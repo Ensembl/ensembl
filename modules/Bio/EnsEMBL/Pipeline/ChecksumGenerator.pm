@@ -20,7 +20,7 @@
 
 =head1 NAME
 
-Bio::EnsEMBL::Pipeline::FASTA::ChecksumGenerator
+Bio::EnsEMBL::Pipeline::ChecksumGenerator
 
 =head1 DESCRIPTION
 
@@ -40,12 +40,12 @@ Allowed parameters are:
 
 =cut
 
-package Bio::EnsEMBL::Pipeline::FASTA::ChecksumGenerator;
+package Bio::EnsEMBL::Pipeline::ChecksumGenerator;
 
 use strict;
 use warnings;
 
-use base qw/Bio::EnsEMBL::Pipeline::FASTA::Base/;
+use base qw/Bio::EnsEMBL::Pipeline::Base/;
 
 use File::Spec;
 use Bio::EnsEMBL::Utils::IO qw/work_with_file gz_work_with_file/;
