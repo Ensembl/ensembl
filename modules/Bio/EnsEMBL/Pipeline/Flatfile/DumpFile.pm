@@ -55,7 +55,7 @@ use base qw(Bio::EnsEMBL::Pipeline::Flatfile::Base);
 
 use Bio::EnsEMBL::Utils::Exception qw/throw/;
 use Bio::EnsEMBL::Utils::SeqDumper;
-use Bio::EnsEMBL::Utils::IO qw/gz_work_with_file/;
+use Bio::EnsEMBL::Utils::IO qw/gz_work_with_file work_with_file/;
 use File::Path qw/rmtree/;
 
 sub param_defaults {
