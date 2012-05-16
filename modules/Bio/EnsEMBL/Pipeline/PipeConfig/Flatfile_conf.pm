@@ -113,8 +113,7 @@ sub pipeline_wide_parameters {
     
     return {
         %{ $self->SUPER::pipeline_wide_parameters() },  # inherit other stuff from the base class
-        base_path => $self->o('base_path'), 
-        db_types => $self->o('db_types'),
+        base_path => $self->o('base_path'),
         release => $self->o('release'),
     };
 }
