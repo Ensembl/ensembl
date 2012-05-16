@@ -81,6 +81,7 @@ sub pipeline_analyses {
         -module     => 'Bio::EnsEMBL::Pipeline::Flatfile::DumpFile',
         -max_retry_count  => 1,
         -hive_capacity    => 10,
+        -rc_id => 1,
       },
       
       ####### CHECKSUMMING
@@ -127,7 +128,8 @@ sub beekeeper_extra_cmdline_options {
 sub resource_classes {
     my $self = shift;
     return {
-      0 => { -desc => 'default', 'LSF' => '-q normal -M4000000 -R"select[mem>4000] rusage[mem=4000]"'},
+      0 => { -desc => 'default', 'LSF' => ''},
+      1 => { -desc => 'dump', 'LSF' => '-q normal -M4000000 -R"select[mem>4000] rusage[mem=4000]"'},
     }
 }
 
