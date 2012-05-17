@@ -225,7 +225,7 @@ sub dump_xref{
 	    }
 	    $source_mapping_method{$source_name} = $method;
 	   
-	    my @source_ids = @{$source_ids{$source_name}};
+	    my @source_ids = @{$source_ids{$source_name}} if (exists($source_ids{$source_name}));
 
 	    if (@source_ids) {
 		$a_source_exists = 1;
