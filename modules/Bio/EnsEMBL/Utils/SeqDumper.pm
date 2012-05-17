@@ -967,7 +967,7 @@ sub dump_fasta {
 
   #chunk the sequence in 60kb chunks to use less memory
   my $cur = $start;
-  while($cur < $end) {
+  while($cur <= $end) {
     my $to = $cur + 59_999;
     $to = $end if($to > $end); 
     my $seq = $slice->subseq($cur, $to);
