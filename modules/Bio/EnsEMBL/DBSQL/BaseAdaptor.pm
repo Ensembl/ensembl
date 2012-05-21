@@ -687,6 +687,8 @@ sub fetch_all {
                 into
   Arg [2]     : (optional) HashRef used to pass extra attributes through to the 
                 DBD driver
+  Arg [3]     : (optional) $table the name of the table to use if the adaptor
+                does not implement C<_tables()>
   Description : Delegating method which uses DBI to extract the last inserted 
                 identifier. If using MySQL we just call the DBI method 
                 L<DBI::last_insert_id()> since MySQL ignores any extra
@@ -698,11 +700,16 @@ sub fetch_all {
 =cut
 
 sub last_insert_id {
-  my ($self, $field, $attributes) = @_;
+  my ($self, $field, $attributes, $table) = @_;
   my $dbc = $self->dbc();
   my $dbh = $dbc->db_handle();
+  if($dbc->driver() eq 'mysql') {
+    return $dbh->last_insert_id();
+  }
   $attributes ||= {};
-  my ($table) = $self->_tables();
+  if(!$table) {
+    ($table) = $self->_tables();
+  }
   return $dbh->last_insert_id(undef, $dbc->dbname(), $table->[0], $field, $attributes);
 }
 
