@@ -703,14 +703,18 @@ sub last_insert_id {
   my ($self, $field, $attributes, $table) = @_;
   my $dbc = $self->dbc();
   my $dbh = $dbc->db_handle();
+  my @args;
   if($dbc->driver() eq 'mysql') {
-    return $dbh->last_insert_id();
+    @args = (undef,undef,undef,undef);
+  }
+  else {
+    if(!$table) {
+      ($table) = $self->_tables();
+    }
+    @args = (undef, $dbc->dbname(), $table->[0], $field);
   }
   $attributes ||= {};
-  if(!$table) {
-    ($table) = $self->_tables();
-  }
-  return $dbh->last_insert_id(undef, $dbc->dbname(), $table->[0], $field, $attributes);
+  return $dbh->last_insert_id(@args, $attributes);
 }
 
 
