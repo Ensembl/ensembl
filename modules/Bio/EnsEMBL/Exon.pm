@@ -651,7 +651,7 @@ sub coding_region_start {
   }
   
   my $coding_region_start;
-  my $transcript_coding_start = $transcript->cdna_coding_start();
+  my $transcript_coding_start = $transcript->coding_region_start();
   if(defined $transcript_coding_start) {
     my $start = $self->start();
     
