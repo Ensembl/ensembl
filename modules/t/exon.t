@@ -297,6 +297,7 @@ ok( $species eq 'homo_sapiens' && $object_type eq 'Exon');
 
 
 # UTR and coding region tests. Only testing simple +ve orientation transcript ATMO but it is a start
+# tests are based on offsetted coordinates from ENST00000000233 in release 67
 {
   my $base_cs = Bio::EnsEMBL::CoordSystem->new(-NAME => 'chromosome', -RANK => 1);
   my $base_slice = Bio::EnsEMBL::Slice->new(-COORD_SYSTEM => $base_cs, -SEQ_REGION_NAME => 'a', -STRAND => 1, -START => 1, -END => 2000, -SEQ => 'A'x2000, -SEQ_REGION_LENGTH => 2000);
