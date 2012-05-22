@@ -2717,7 +2717,7 @@ sub get_species_and_object_type {
   my ($self, $stable_id, $known_type, $known_species, $known_db_type) = @_;
 
   #get the stable_id lookup database adaptor
-  my $stable_ids_dba = $self->get_DBAdaptor("multi", "stable_ids");
+  my $stable_ids_dba = $self->get_DBAdaptor("multi", "stable_ids", 1);
 
   if ($stable_ids_dba) {
 
