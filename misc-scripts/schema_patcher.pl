@@ -71,6 +71,11 @@ Usage:
                     over how many releases are included in the fix. This option
                     exists for users who have incomplete meta entries and
                     wish to bring their database automatically up to date.
+                    
+  --fixlatest       an extension of B<--oldest> and B<--fix>. This combines
+                    to patch the current and last release only giving an easy
+                    way to patch a database post-handover without worrying 
+                    about ancient patches.
   
   --mysql           specify the location of the mysql binary if it is not on
                     \$PATH. Otherwise we default this to mysql
@@ -182,6 +187,14 @@ sub about {
       
         $0 -h host -u user -p password -r 66 \\
         -d my_database --fix --oldest 64
+      
+      The genebuilder above also has a doppleganger who decided they
+      wanted to patch for the last and current release of Ensembl alone. This
+      is useful for applying late patches. In this situation we will apply  
+      patches for the current release (67) and the previous release (66).
+
+        $0 -h host -u user -p password -r 67 \\
+        -d my_database --fixlast 
 
 ABOUT_END
 } ## end sub about
@@ -197,6 +210,7 @@ my $opt_dryrun;
 my $opt_from;
 my $opt_fix;
 my $opt_oldest;
+my $opt_fixlast;
 my $opt_mysql = 'mysql';
 my $opt_interactive = 1;
 
@@ -214,6 +228,7 @@ if ( !GetOptions( 'host|h=s'     => \$opt_host,
                   'cvsdir=s'     => \$opt_cvsdir,
                   'dryrun|n!'    => \$opt_dryrun,
                   'fix!'         => \$opt_fix,
+                  'fixlast!'     => \$opt_fixlast,
                   'oldest=i'     => \$opt_oldest,
                   'mysql=s'      => \$opt_mysql,
                   'interactive|i!' => \$opt_interactive,
@@ -242,7 +257,7 @@ my %patches;
 
 # Get available patches.
 
-foreach my $thing ( [ 'ensembl-core',               'core', 'table.sql' ],
+foreach my $thing ( [ 'ensembl',               'core', 'table.sql' ],
                     [ 'ensembl-functgenomics', 'funcgen', 'efg.sql' ],
                     [ 'ensembl-variation',     'variation', 'table.sql' ] )
 {
@@ -383,6 +398,10 @@ while ( $sth->fetch() ) {
       $species = $value;
     }
     elsif ( $key eq 'patch' ) {
+      if(index($value, "\n") > -1) {
+        warn "The patch value '$value' in database '$database' has line-breaks. Remove them to silence this message";
+        $value =~ s/\n/ /g;
+      } 
       if($value =~ /^(patch_\d+_(\d+)_?[a-z]?\.sql)\|(.*)$/) {
         my $patch_ident   = $1;
         my $patch_release = $2;
@@ -449,6 +468,13 @@ while ( $sth->fetch() ) {
     }
   }
   
+  #Quick check if fix-last is active. If so we will hard-code some values
+  if($opt_fixlast) {
+    $opt_fix = 1;
+    $opt_oldest = $schema_version - 1;
+    printf("--fixlast is active. Will apply patches for versions %d and %d\n", $opt_oldest, $schema_version);
+  }
+  
   if ( $schema_version_ok &&
        $schema_type_ok &&
        ( !defined($opt_species) ||
@@ -485,7 +511,7 @@ while ( $sth->fetch() ) {
   # Now figure out what patches we need to apply to this database.
 
   my $start_version;
-
+  
   if ($opt_fix) {
     $start_version = $opt_oldest || ( sort { $a <=> $b } keys %dbpatches )[0];
     if ( !defined($start_version) ) {
