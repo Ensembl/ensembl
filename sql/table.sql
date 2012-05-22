@@ -469,17 +469,13 @@ CREATE TABLE IF NOT EXISTS meta (
 # Add schema type and schema version to the meta table.
 INSERT INTO meta (species_id, meta_key, meta_value) VALUES
   (NULL, 'schema_type',     'core'),
-  (NULL, 'schema_version',  '67');
+  (NULL, 'schema_version',  '68');
 
 # Patches included in this schema file:
 # NOTE: At start of release cycle, remove patch entries from last release.
 # NOTE: Avoid line-breaks in values.
 INSERT INTO meta (species_id, meta_key, meta_value) VALUES
-  (NULL, 'patch', 'patch_66_67_a.sql|schema_version'),
-  (NULL, 'patch', 'patch_66_67_b.sql|drop_stable_id_views'),
-  (NULL, 'patch', 'patch_66_67_c.sql|adding_intron_supporting_evidence'),
-  (NULL, 'patch', 'patch_66_67_d.sql|adding_gene_transcript_annotated'),
-  (NULL, 'patch', 'patch_66_67_e.sql|index_canonical_transcript_id')
+  (NULL, 'patch', 'patch_67_68_a.sql|schema_version')
  ;
 
 /**
