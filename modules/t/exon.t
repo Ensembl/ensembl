@@ -330,4 +330,44 @@ ok( $species eq 'homo_sapiens' && $object_type eq 'Exon');
   is($end_exon->coding_region_end($base_transcript), (1267+87)-1, 'Seq region location end is offsetted by exon coding length');
 }
 
+# Checking the reverse strand. Taken from ENST00000321407 in E! 66 with 66
+# API to check for regressions
+{
+  my $base_cs = Bio::EnsEMBL::CoordSystem->new(-NAME => 'chromosome', -RANK => 1);
+  my $base_slice = Bio::EnsEMBL::Slice->new(
+    -COORD_SYSTEM => $base_cs, -SEQ_REGION_NAME => 'a', 
+    -STRAND => 1, -START => 1, -END => 6000, -SEQ => 'A'x6000, 
+    -SEQ_REGION_LENGTH => 6000
+  );
+  my $base_transcript = Bio::EnsEMBL::Transcript->new(
+    -START => 672,
+    -END => 5661,
+    -SLICE => $base_slice,
+    -STRAND => -1
+  );
+  
+  
+  my $start_exon = Bio::EnsEMBL::Exon->new(-START => 4205, -END => 5661, -STRAND => -1);
+  $base_transcript->add_Exon($start_exon);
+  my $end_exon = Bio::EnsEMBL::Exon->new(-START => 672, -END => 3363, -STRAND => -1);
+  $base_transcript->add_Exon($end_exon);
+  
+  $base_transcript->translation(Bio::EnsEMBL::Translation->new(
+    -START_EXON => $start_exon,
+    -SEQ_START => 426,
+    -END_EXON => $end_exon,
+    -SEQ_END => 1296
+  ));
+  
+  is($start_exon->cdna_coding_start($base_transcript), 426, 'CDNA start equals SEQ_START');
+  is($start_exon->cdna_coding_end($base_transcript), 1457, 'CDNA end equals SEQ_START plus exon length');
+  is($start_exon->coding_region_start($base_transcript), 4205, 'Coding region start is start of first exon');
+  is($start_exon->coding_region_end($base_transcript), 5236, 'Coding region end is start of first exon plus its length');
+  
+  is($end_exon->cdna_coding_start($base_transcript), 1458, 'CDNA coding start equals END of first Exon + 1');
+  is($end_exon->cdna_coding_end($base_transcript), 2753, 'CDNA coding end equals start plus its length into the last exon');
+  is($end_exon->coding_region_start($base_transcript), 2068, 'Start is the end of the last exon minus the coding length');
+  is($end_exon->coding_region_end($base_transcript), 3363, 'End is the same as the end exon end');
+}
+
 done_testing();
