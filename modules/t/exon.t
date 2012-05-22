@@ -1,23 +1,23 @@
 use strict;
+use warnings;
 
-BEGIN {
-    $| = 1;
-    use Test;
-    plan tests => 47;
-}
-
-my $loaded = 0;
-END {print "not ok 1\n" unless $loaded;}
+use Test::More;
 
 use Bio::EnsEMBL::Test::MultiTestDB;
 use Bio::EnsEMBL::Test::TestUtils;
+use Bio::EnsEMBL::Slice;
+use Bio::EnsEMBL::CoordSystem;
+use Bio::EnsEMBL::Transcript;
+use Bio::EnsEMBL::Translation;
+use Bio::EnsEMBL::Exon;
 
 our $verbose = 0; #set to 1 to turn on debug printouts
 
-$loaded = 1;
 my $multi = Bio::EnsEMBL::Test::MultiTestDB->new();
 
 ok(1);
+
+
 
 my $db = $multi->get_DBAdaptor( 'core' );
 
@@ -294,3 +294,39 @@ ok( $exon->coding_region_end($transcript) == 30578038 );
 my $registry = 'Bio::EnsEMBL::Registry';
 my ( $species, $object_type, $db_type ) = $registry->get_species_and_object_type('ENSE00000859937');
 ok( $species eq 'homo_sapiens' && $object_type eq 'Exon');
+
+
+# UTR and coding region tests. Only testing simple +ve orientation transcript ATMO but it is a start
+{
+  my $base_cs = Bio::EnsEMBL::CoordSystem->new(-NAME => 'chromosome', -RANK => 1);
+  my $base_slice = Bio::EnsEMBL::Slice->new(-COORD_SYSTEM => $base_cs, -SEQ_REGION_NAME => 'a', -STRAND => 1, -START => 1, -END => 2000, -SEQ => 'A'x2000, -SEQ_REGION_LENGTH => 2000);
+  my $base_transcript = Bio::EnsEMBL::Transcript->new(
+    -START => 99,
+    -END => 1759,
+    -SLICE => $base_slice
+  );
+  
+  my $start_exon = Bio::EnsEMBL::Exon->new(-START => 99, -END => 319, -STRAND => 1);
+  $base_transcript->add_Exon($start_exon);
+  my $end_exon = Bio::EnsEMBL::Exon->new(-START => 1267, -END => 1759, -STRAND => 1);
+  $base_transcript->add_Exon($end_exon);
+  
+  $base_transcript->translation(Bio::EnsEMBL::Translation->new(
+    -START_EXON => $start_exon,
+    -SEQ_START => 155,
+    -END_EXON => $end_exon,
+    -SEQ_END => 87
+  ));
+  
+  is($start_exon->cdna_coding_start($base_transcript), 155, 'Coding starts at 155bp into the first exon');
+  is($start_exon->cdna_coding_end($base_transcript), 221, 'Coding ends at 221bp in the first exon (at the exon end)');
+  is($start_exon->coding_region_start($base_transcript), (99+155)-1, 'Coding starts at an offset of 99bp plus coding start');
+  is($start_exon->coding_region_end($base_transcript), (99+221)-1, 'Coding region end is the offset of 99bp with the exon length');
+  
+  is($end_exon->cdna_coding_start($base_transcript), 222, 'CDNA coding start in last exon should be first exon + 1bp');
+  is($end_exon->cdna_coding_end($base_transcript), (222+87)-1, 'CDNA coding end should be 86 plus first exon length');
+  is($end_exon->coding_region_start($base_transcript), 1267, 'Seq region location start is same as exon start');
+  is($end_exon->coding_region_end($base_transcript), (1267+87)-1, 'Seq region location end is offsetted by exon coding length');
+}
+
+done_testing();
