@@ -43,7 +43,7 @@ and store them as a translation_attrib values
 
 =head1 EXAMPLES
 
-Calculate translation_attributes for all databases in ens-staging 
+Calculate translation_attributes for all core databases in ens-staging 
 
   $ ./translation_attribs.pl --user ensadmin --pass password
 
@@ -97,6 +97,7 @@ $opts->{tmpdir}  ||= '/tmp';
 $opts->{port}    ||= '3306';
 $opts->{host}    ||= 'ens-staging';
 $opts->{user}    ||= 'ensro';
+$opts->{pattern} ||= qr/.+_core_.+/;
 
 my %PEPSTATS_CODES = ( 'Number of residues' => 'NumResidues',
 		       'Molecular weight'   => 'MolecularWeight',
