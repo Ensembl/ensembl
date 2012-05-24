@@ -413,7 +413,7 @@ sub cdna_start {
     $cdna_start = $coords[0]->start();
   }
   elsif(@coords) {
-    throw "Last part of exon maps into gap";
+    throw "First part of exon maps into gap";
   }
   else {
     throw "Can not map exon";
