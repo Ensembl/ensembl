@@ -471,8 +471,9 @@ while ( $sth->fetch() ) {
   #Quick check if fix-last is active. If so we will hard-code some values
   if($opt_fixlast) {
     $opt_fix = 1;
-    $opt_oldest = $schema_version - 1;
-    printf("--fixlast is active. Will apply patches for versions %d and %d\n", $opt_oldest, $schema_version);
+    $opt_oldest = ($schema_version == $latest_release) ? $latest_release : $latest_release - 1;
+    die "Cannot use --fixlast with a schema release too far from the latest release; oldest allowed is $opt_oldest" if $schema_version < ($opt_oldest);
+    printf("--fixlast is active. Will apply patches for version %d and up (if available)\n", $opt_oldest);
   }
   
   if ( $schema_version_ok &&
