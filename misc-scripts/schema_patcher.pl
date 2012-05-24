@@ -72,8 +72,8 @@ Usage:
                     exists for users who have incomplete meta entries and
                     wish to bring their database automatically up to date.
                     
-  --fixlatest       an extension of B<--oldest> and B<--fix>. This combines
-                    to patch the current and last release only giving an easy
+  --fixlast         an extension of B<--oldest> and B<--fix>. This combines
+                    to patch the current and last release only, giving an easy
                     way to patch a database post-handover without worrying 
                     about ancient patches.
   
@@ -180,7 +180,7 @@ sub about {
         $0 -h host -u user -p password \\
           -r 66 -d my_database --fix --dryrun
           
-      The genebuilder above has an evil twin who has mislayed their meta tables. 
+      The genebuilder above has an evil twin who has mislaid their meta tables. 
       --fix threatens to apply ancient patches but they know their database 
       is correct until halfway through release 64. They wish to apply any
       missing patches between release 64 and 66.
