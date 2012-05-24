@@ -27,7 +27,8 @@ Usage:
   $indent [ --interactive 0|1 ]\\
   $indent [ --verbose ] [ --quiet ] \\
   $indent [ --mysql=optional_path ]  \\
-  $indent [ --fix ]
+  $indent [ --fix ] \\
+  $indent [ --fixlast ]
 
   $0 --help | --about
 
