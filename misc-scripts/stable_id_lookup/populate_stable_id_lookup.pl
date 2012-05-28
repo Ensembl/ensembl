@@ -98,7 +98,7 @@ my $stable_id_insert_sth;
 
 
 if (@dbas) {
-    #if any db adaptors exist connect to the stable id lookup database and delete old data first
+    #if any db adaptors exist (create and) connect to the stable id lookup database
     my $dsn = "DBI:mysql:host=$lhost;";
     if ($lport) {
 	$dsn .= "port=$lport;";
