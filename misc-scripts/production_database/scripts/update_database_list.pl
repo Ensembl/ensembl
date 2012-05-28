@@ -155,18 +155,19 @@ my %found_databases;
 
   {
     my $statement =
-        'SELECT full_db_name '
+        'SELECT full_db_name, db_release '
       . 'FROM db_list JOIN db USING (db_id) '
       . 'WHERE db.is_current = 1';
 
     my $sth = $dbh->prepare($statement);
     $sth->execute();
 
-    my $database;
+    my ($database, $db_release);
     $sth->bind_col( 1, \$database );
+    $sth->bind_col( 2, \$db_release );
 
     while ( $sth->fetch() ) {
-      $existing_databases{$database} = 1;
+      $existing_databases{$database} = $db_release;
     }
   }
 
@@ -300,7 +301,11 @@ if ( scalar( keys(%existing_databases) ) !=
 
   print("The following databases seem to have disappeared:\n");
   foreach my $db_name ( sort keys(%existing_databases) ) {
+    my $db_release = $existing_databases{$db_name};
     if ( !exists( $found_databases{$db_name} ) ) {
+      if($db_release != $release) {
+        next; #if db release not same as the current one then skip
+      }
       printf( "\t%s. Remove this database? (y/N): ", $db_name );
       my $yesno = <STDIN>;
       chomp($yesno);
