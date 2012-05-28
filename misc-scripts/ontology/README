@@ -240,7 +240,7 @@
 
     3.  Update the url for SO.obo file in script 'get_OBO_files.ksh' to the latest
         released version, if the version is not already up to date.
-        Check directory: http://downloads.sourceforge.net/project/song/Sequence%20Ontology/
+        Check directory: http://sourceforge.net/projects/song/files/Sequence%20Ontology/
 	for available releases of the SO.obo file.
 
     3.  Run script 'get_OBO_files.ksh' to download all the currently
