@@ -7,7 +7,6 @@ CREATE TABLE `xref` (
   `description` text collate latin1_bin,
   `info_type` enum('NONE','PROJECTION','MISC','DEPENDENT','DIRECT','SEQUENCE_MATCH','INFERRED_PAIR','PROBE','UNMAPPED','CHECKSUM') collate latin1_bin NOT NULL default 'NONE',
   `info_text` varchar(255) collate latin1_bin NOT NULL default '',
-  `priority` int(11) default NULL,
   PRIMARY KEY  (`xref_id`),
   UNIQUE KEY `id_index` (`dbprimary_acc`,`external_db_id`,`info_type`,`info_text`),
   KEY `display_index` (`display_label`)

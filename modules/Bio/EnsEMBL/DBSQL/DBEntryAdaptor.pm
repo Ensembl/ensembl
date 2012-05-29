@@ -132,7 +132,7 @@ sub fetch_by_dbID {
                            -type                => $type,
                            -secondary_db_name   => $secondary_db_name,
                            -secondary_db_table  => $secondary_db_table,
-			   -description         => $description
+			               -description         => $description
           );
 
 
@@ -623,7 +623,7 @@ sub fetch_by_db_accession {
 
 =head2 store
 
-  Arg [1]    : Bio::EnsEMBL::DBEntry $exObj
+  Arg [1]    : Bio::EnsEMBL::DBEntry $dbEntry
                The DBEntry (xref) to be stored
   Arg [2]    : Int $ensID
                The dbID of an EnsEMBL object to associate with this external
@@ -648,7 +648,7 @@ sub fetch_by_db_accession {
 =cut
 
 sub store {
-  my ( $self, $exObj, $ensID, $ensType, $ignore_release ) = @_;
+  my ( $self, $dbEntry, $ensID, $ensType, $ignore_release ) = @_;
 
   my $dbJustInserted;
 
@@ -657,7 +657,6 @@ sub store {
   # check if $ensID is an object; if so, use $obj->dbID
   #
   my $ensembl_id;
-
 
   if ( defined($ensID) ) {
     if ( $ensID =~ /^\d+$/ ) {
@@ -683,222 +682,59 @@ sub store {
       throw("Invalid dbID passed to DBEntryAdaptor->store()");
     }
   }
+  
+  
+  
+    # Ensure external_db contains a record of the intended xref source
+    my $dbRef;
+    $dbRef = $self->_check_external_db($dbEntry,$ignore_release);
 
-  #
-  # Check for the existance of the external_db, throw if it does not exist
-  #
-
-  my ($dbRef, $release_clause);
-
-  if ( !$ignore_release ) {
-
-	if(defined $exObj->release()){
-	  $release_clause = " AND db_release = ?";
-	}
-	else{
-	  $release_clause = " AND db_release is NULL";
-	}
-
-
-    my $sth = $self->prepare( "
-     SELECT external_db_id
-       FROM external_db
-      WHERE db_name    = ?
-        $release_clause" );
-
-    $sth->bind_param( 1, $exObj->dbname(),  SQL_VARCHAR );
-    $sth->bind_param( 2, $exObj->release(), SQL_VARCHAR ) if defined $exObj->release();
-    $sth->execute();
-
-    ($dbRef) = $sth->fetchrow_array();
-	$sth->finish();
-
-    if ( !$dbRef ) {
-      throw(
-             sprintf( "external_db [%s] release [%s] does not exist",
-                      $exObj->dbname(), $exObj->release() ) );
+    # Attempt to insert DBEntry
+    my $xref_id = $self->_store_or_fetch_xref($dbEntry,$dbRef);
+    $dbEntry->dbID($xref_id); #keeps DBEntry in sync with database
+    ### Attempt to create an object->xref mapping
+    if ($ensembl_id) {$self->_store_object_xref_mapping($ensembl_id,$dbEntry,$ensType)};
+    
+    return $xref_id;
+}
+    
+sub _store_object_xref_mapping {
+    my $self = shift;
+    my $ensembl_id = shift;
+    my $dbEntry = shift;
+    my $ensembl_type = shift;
+    
+    if (not defined ($ensembl_type)) { warning("No Ensembl data type provided for new xref");}
+    
+    my $analysis_id;
+    if ( $dbEntry->analysis() ) {
+        $analysis_id = $self->db()->get_AnalysisAdaptor->store( $dbEntry->analysis() );
+    } else {
+        $analysis_id = 0; ## This used to be undef, but uniqueness in mysql requires a value
     }
-  } else {
-
-    my $sth = $self->prepare( "
-     SELECT external_db_id
-       FROM external_db
-      WHERE db_name = ? " );
-
-    $sth->bind_param( 1, $exObj->dbname(), SQL_VARCHAR );
-
+    
+    my $sth = $self->prepare(qq(
+        INSERT IGNORE INTO object_xref
+          SET   xref_id = ?,
+                ensembl_object_type = ?,
+                ensembl_id = ?,
+                linkage_annotation = ?,
+                analysis_id = ? ) 
+        );
+    $sth->bind_param( 1, $dbEntry->dbID(),              SQL_INTEGER );
+    $sth->bind_param( 2, $ensembl_type,                 SQL_VARCHAR );
+    $sth->bind_param( 3, $ensembl_id,                   SQL_INTEGER );
+    $sth->bind_param( 4, $dbEntry->linkage_annotation(),SQL_VARCHAR );
+    $sth->bind_param( 5, $analysis_id,                  SQL_INTEGER );
     $sth->execute();
-
-    ($dbRef) = $sth->fetchrow_array();
-
-    if ( !$dbRef ) {
-      throw(
-          sprintf( "external_db [%s] does not exist", $exObj->dbname() )
-      );
-    }
-  }
-
-  #
-  # Check for the existance of the external reference, add it if not present
-  #
-
-  my $sql =  "SELECT xref_id FROM xref
-                WHERE external_db_id = ?
-                  AND dbprimary_acc  = ?
-                  AND version        = ?";
-
-  if(defined $exObj->info_type){
-    $sql .= " AND  info_type      = ?";
-  }
-  else{
-    $sql .= " AND info_type is null";
-  }
-
-  if(defined $exObj->info_text){
-    $sql .= " AND  info_text      = ?";
-  }
-  else{
-    $sql .= " AND info_text is null";
-  }
-
-  my $sth = $self->prepare($sql);
-
-  $sth->bind_param(1,$dbRef,SQL_INTEGER);
-  $sth->bind_param(2,$exObj->primary_id,SQL_VARCHAR);
-  $sth->bind_param(3,$exObj->version,SQL_VARCHAR);
-
-  my $i = 4;
-  if(defined $exObj->info_type){
-    $sth->bind_param($i++,$exObj->info_type,SQL_VARCHAR);
-  }
-  if(defined $exObj->info_text){
-    $sth->bind_param($i++,$exObj->info_text,SQL_VARCHAR);
-  }
-  $sth->execute();
-
-  my ($dbX) = $sth->fetchrow_array();
-
-  $sth->finish();
-  if(!$dbX) {
-    if(!$exObj->primary_id()) {
-      throw("DBEntry cannot be stored without a primary_id attribute.");
-    }
-
-    #
-    # store the new xref
-    #
-    $sth = $self->prepare( "
-       INSERT ignore INTO xref
-       SET dbprimary_acc = ?,
-           display_label = ?,
-           version = ?,
-           description = ?,
-           external_db_id = ?,
-           info_type = ?,
-           info_text = ?");
-    $sth->bind_param(1, $exObj->primary_id,SQL_VARCHAR);
-    $sth->bind_param(2, $exObj->display_id,SQL_VARCHAR);
-    $sth->bind_param(3, $exObj->version,SQL_VARCHAR);
-    $sth->bind_param(4, $exObj->description,SQL_VARCHAR);
-    $sth->bind_param(5, $dbRef,SQL_INTEGER);
-    $sth->bind_param(6, $exObj->info_type, SQL_VARCHAR);
-    $sth->bind_param(7, $exObj->info_text, SQL_VARCHAR);
-
-    $sth->execute();
-
-    $dbX = $sth->{'mysql_insertid'};
-    $exObj->dbID($dbX);
     $sth->finish();
-    #
-    # store the synonyms for the new xref
-    #
-    my $synonym_check_sth = $self->prepare(
-              "SELECT xref_id, synonym
-               FROM external_synonym
-               WHERE xref_id = ?
-               AND synonym = ?");
-
-    my $synonym_store_sth = $self->prepare(
-        "INSERT ignore INTO external_synonym
-         SET xref_id = ?, synonym = ?");
-
-    my $synonyms = $exObj->get_all_synonyms();
-    foreach my $syn ( @$synonyms ) {
-	$synonym_check_sth->bind_param(1,$dbX,SQL_INTEGER);
-	$synonym_check_sth->bind_param(2,$syn,SQL_VARCHAR);
-	$synonym_check_sth->execute();
-      my ($dbSyn) = $synonym_check_sth->fetchrow_array();
-	$synonym_store_sth->bind_param(1,$dbX,SQL_INTEGER);
-	$synonym_store_sth->bind_param(2,$syn,SQL_VARCHAR);
-	$synonym_store_sth->execute() if(!$dbSyn);
-    }
-    $synonym_check_sth->finish();
-    $synonym_store_sth->finish();
-  } elsif (! defined( $exObj->dbID() ) ) {
-    $exObj->dbID($dbX);
-  }
-
-  if ( defined($ensembl_id) ) {
-    #
-    # check if the object mapping was already stored
-    #
-    $sth = $self->prepare(
-      qq(
-SELECT  xref_id
-FROM    object_xref
-WHERE   xref_id = ?
-  AND   ensembl_object_type = ?
-  AND   ensembl_id = ?
-  AND   (   linkage_annotation = ?
-  OR        linkage_annotation IS NULL  )) );
-
-    $sth->bind_param( 1, $dbX,                         SQL_INTEGER );
-    $sth->bind_param( 2, $ensType,                     SQL_VARCHAR );
-    $sth->bind_param( 3, $ensembl_id,                  SQL_INTEGER );
-    $sth->bind_param( 4, $exObj->linkage_annotation(), SQL_VARCHAR );
-
-    $sth->execute();
-
-    my ($tst) = $sth->fetchrow_array();
-
-    $sth->finish();
-
-    if ( !$tst ) {
-      #
-      # Store the reference to the internal ensembl object
-      #
-      my $analysis_id;
-      if ( $exObj->analysis() ) {
-        $analysis_id =
-          $self->db()->get_AnalysisAdaptor->store( $exObj->analysis() );
-      } else {
-        $analysis_id = undef;
-      }
-
-      $sth = $self->prepare(
-        qq(
-INSERT INTO object_xref
-  SET   xref_id = ?,
-        ensembl_object_type = ?,
-        ensembl_id = ?,
-        linkage_annotation = ?,
-        analysis_id = ? ) );
-
-      $sth->bind_param( 1, $dbX,                         SQL_INTEGER );
-      $sth->bind_param( 2, $ensType,                     SQL_VARCHAR );
-      $sth->bind_param( 3, $ensembl_id,                  SQL_INTEGER );
-      $sth->bind_param( 4, $exObj->linkage_annotation(), SQL_VARCHAR );
-      $sth->bind_param( 5, $analysis_id,                 SQL_INTEGER );
-
-      $sth->execute();
-      $exObj->adaptor($self);
-      my $Xidt = $sth->{'mysql_insertid'};
-
-      #
-      # If this is an IdentityXref need to store in that table too
-      # If its OntologyXref add the linkage type to ontology_xref table
-      #
-      if ( $exObj->isa('Bio::EnsEMBL::IdentityXref') ) {
+    my $object_xref_id = $self->last_insert_id();
+    
+    $dbEntry->adaptor($self); # hand Adaptor to dbEntry for future use with OntologyXrefs
+    
+    if ($object_xref_id) {
+        #no existing object_xref, therefore 
+        if ( $dbEntry->isa('Bio::EnsEMBL::IdentityXref') ) {
         $sth = $self->prepare( "
              INSERT ignore INTO identity_xref
              SET object_xref_id = ?,
@@ -911,43 +747,170 @@ INSERT INTO object_xref
              cigar_line = ?,
              score = ?,
              evalue = ?" );
-        $sth->bind_param( 1, $Xidt,                    SQL_INTEGER );
-        $sth->bind_param( 2, $exObj->xref_identity,    SQL_INTEGER );
-        $sth->bind_param( 3, $exObj->ensembl_identity, SQL_INTEGER );
-        $sth->bind_param( 4, $exObj->xref_start,       SQL_INTEGER );
-        $sth->bind_param( 5, $exObj->xref_end,         SQL_INTEGER );
-        $sth->bind_param( 6, $exObj->ensembl_start,    SQL_INTEGER );
-        $sth->bind_param( 7, $exObj->ensembl_end,      SQL_INTEGER );
-        $sth->bind_param( 8,  $exObj->cigar_line, SQL_LONGVARCHAR );
-        $sth->bind_param( 9,  $exObj->score,      SQL_DOUBLE );
-        $sth->bind_param( 10, $exObj->evalue,     SQL_DOUBLE );
+        $sth->bind_param( 1, $object_xref_id,            SQL_INTEGER );
+        $sth->bind_param( 2, $dbEntry->xref_identity,    SQL_INTEGER );
+        $sth->bind_param( 3, $dbEntry->ensembl_identity, SQL_INTEGER );
+        $sth->bind_param( 4, $dbEntry->xref_start,       SQL_INTEGER );
+        $sth->bind_param( 5, $dbEntry->xref_end,         SQL_INTEGER );
+        $sth->bind_param( 6, $dbEntry->ensembl_start,    SQL_INTEGER );
+        $sth->bind_param( 7, $dbEntry->ensembl_end,      SQL_INTEGER );
+        $sth->bind_param( 8,  $dbEntry->cigar_line,  SQL_LONGVARCHAR );
+        $sth->bind_param( 9,  $dbEntry->score,            SQL_DOUBLE );
+        $sth->bind_param( 10, $dbEntry->evalue,           SQL_DOUBLE );
         $sth->execute();
-      } elsif ( $exObj->isa('Bio::EnsEMBL::OntologyXref') ) {
+      } elsif ( $dbEntry->isa('Bio::EnsEMBL::OntologyXref') ) {
         $sth = $self->prepare( "
              INSERT ignore INTO ontology_xref
                 SET object_xref_id = ?,
                     source_xref_id = ?,
                     linkage_type = ? " );
-        foreach my $info ( @{ $exObj->get_all_linkage_info() } ) {
-          my ( $lt, $sourceXref ) = @{$info};
-          my $sourceXid = undef;
-          if ($sourceXref) {
-            $sourceXref->is_stored( $self->dbc )
-              || $self->store($sourceXref);
-            $sourceXid = $sourceXref->dbID;
-          }
-          $sth->bind_param( 1, $Xidt,      SQL_INTEGER );
-          $sth->bind_param( 2, $sourceXid, SQL_INTEGER );
-          $sth->bind_param( 3, $lt,        SQL_VARCHAR );
-          $sth->execute();
-        }
-      }
-    } ## end if ( !$tst )
-  } ## end if ( defined($ensembl_id...))
-
-  return $dbX;
+        foreach my $info ( @{ $dbEntry->get_all_linkage_info() } ) {
+            my ( $linkage_type, $sourceXref ) = @{$info};
+            my $sourceXid = undef;
+            if ($sourceXref) {
+              $sourceXref->is_stored( $self->dbc ) || $self->store($sourceXref);
+              $sourceXid = $sourceXref->dbID;
+            }
+            $sth->bind_param( 1, $object_xref_id, SQL_INTEGER );
+            $sth->bind_param( 2, $sourceXid, SQL_INTEGER );
+            $sth->bind_param( 3, $linkage_type,  SQL_VARCHAR );
+            $sth->execute();
+        } #end foreach
+      } #end elsif
+    } # end if ($object_xref_id)
+    return $object_xref_id;
 }
 
+=head2 _check_external_db 
+
+  Arg [1]    : DBEntry object
+  Arg [2]    : Ignore version flag
+  Description: Looks for a record of the given external database
+  Exceptions : Throws on missing external database entry
+  Returntype : Int 
+
+=cut
+
+sub _check_external_db {
+    my ($self,$db_entry,$ignore) = @_;
+    my ($sql,@bound_params,$sql_helper,$db_name,$db_release);
+    
+    $db_name = $db_entry->dbname();
+    $db_release = $db_entry->release();
+    $sql_helper = $self->dbc->sql_helper;
+    
+    $sql = 'SELECT external_db_id FROM external_db WHERE db_name = ?';
+    push @bound_params,$db_name;
+    unless ($ignore) {
+        if ($db_release) {
+            $sql .= ' AND db_release = ?';
+            push @bound_params,$db_release;
+        } else {
+            $sql .= ' AND db_release is NULL';
+        }
+    }
+    
+    my ($db_id) = @{ $sql_helper->execute_simple(-SQL => $sql, -PARAMS => \@bound_params) };
+    
+    if ($db_id) {
+      return $db_id;
+    }
+    else {
+      throw( sprintf( "external_db [%s] release [%s] does not exist",
+                     $db_name, $db_release)
+      );
+    }
+}
+
+=head2 _store_or_fetch_xref 
+
+    Arg [1]    : DBEntry object
+    Arg [2]    : Database accession for external database
+    Description: Thread-safe method for adding xrefs, or otherwise returning
+                 an xref ID for the inserted or retrieved xref. Also inserts
+                 synonyms for that xref when entire new 
+    Returns    : Int - the DB ID of the xref after insertion 
+=cut
+sub _store_or_fetch_xref {
+    my $self = shift;
+    my $dbEntry = shift;
+    my $dbRef = shift;
+    my $xref_id;
+    
+    my $sth = $self->prepare( "
+       INSERT IGNORE INTO xref
+       SET dbprimary_acc = ?,
+           display_label = ?,
+           version = ?,
+           description = ?,
+           external_db_id = ?,
+           info_type = ?,
+           info_text = ?");
+    $sth->bind_param(1, $dbEntry->primary_id,SQL_VARCHAR);
+    $sth->bind_param(2, $dbEntry->display_id,SQL_VARCHAR);
+    $sth->bind_param(3, $dbEntry->version,SQL_VARCHAR);
+    $sth->bind_param(4, $dbEntry->description,SQL_VARCHAR);
+    $sth->bind_param(5, $dbRef,SQL_INTEGER);
+    $sth->bind_param(6, ($dbEntry->info_type || 'NONE'), SQL_VARCHAR);
+    $sth->bind_param(7, ($dbEntry->info_text || ''), SQL_VARCHAR);
+
+    $sth->execute();
+    $xref_id = $self->last_insert_id('xref_id',undef,'xref');
+    $sth->finish();
+    
+    if ($xref_id) { #insert was successful, store supplementary synonyms
+        # thread safety no longer an issue.
+        my $synonym_check_sth = $self->prepare(
+                  "SELECT xref_id, synonym
+                   FROM external_synonym
+                   WHERE xref_id = ?
+                   AND synonym = ?");
+    
+        my $synonym_store_sth = $self->prepare(
+            "INSERT ignore INTO external_synonym
+             SET xref_id = ?, synonym = ?");
+    
+        my $synonyms = $dbEntry->get_all_synonyms();
+        foreach my $syn ( @$synonyms ) {
+            $synonym_check_sth->bind_param(1,$xref_id,SQL_INTEGER);
+            $synonym_check_sth->bind_param(2,$syn,SQL_VARCHAR);
+            $synonym_check_sth->execute();
+            my ($dbSyn) = $synonym_check_sth->fetchrow_array();
+            $synonym_store_sth->bind_param(1,$xref_id,SQL_INTEGER);
+            $synonym_store_sth->bind_param(2,$syn,SQL_VARCHAR);
+            $synonym_store_sth->execute() if(!$dbSyn);
+        }
+        $synonym_check_sth->finish();
+        $synonym_store_sth->finish();
+        
+    } else { # xref_id already exists, retrieve it
+        my $sql = 'SELECT xref_id FROM xref 
+            WHERE 
+                dbprimary_acc = ?
+            AND display_label = ?
+            AND version = ?
+            AND external_db_id = ?
+            AND info_type = ?
+            AND info_text = ?
+            AND description';
+        if ($dbEntry->description) {$sql .= ' = ?'}
+        else {$sql .= ' is NULL'}
+        
+        $sth = $self->prepare( $sql );
+        $sth->bind_param(1, $dbEntry->primary_id,SQL_VARCHAR);
+        $sth->bind_param(2, $dbEntry->display_id,SQL_VARCHAR);
+        $sth->bind_param(3, $dbEntry->version,SQL_VARCHAR);
+        $sth->bind_param(4, $dbRef,SQL_INTEGER);
+        $sth->bind_param(5, ($dbEntry->info_type || 'NONE'), SQL_VARCHAR);
+        $sth->bind_param(6, ($dbEntry->info_text || ''), SQL_VARCHAR);
+        if ($dbEntry->description) {$sth->bind_param(7, $dbEntry->description,SQL_VARCHAR);}
+        $sth->execute();
+        ($xref_id) = $sth->fetchrow_array();
+        $sth->finish;
+    }
+    
+    return $xref_id;
+}
 
 =head2 exists
 
