@@ -1,19 +1,16 @@
 use strict;
 use warnings;
 
-BEGIN { $| = 1;
-	use Test;
-	plan tests => 61;
-}
+use Test::More;
 
 use Bio::EnsEMBL::Test::MultiTestDB;
 use Bio::EnsEMBL::Test::TestUtils;
-
+use Bio::EnsEMBL::DBSQL::DBEntryAdaptor;
 use Bio::EnsEMBL::DBEntry;
 
 # switch on the debug prints
 
-our $verbose = 0;
+our $verbose = 1;
 
 debug( "Startup test" );
 #
@@ -136,6 +133,13 @@ my $oxr_count = count_rows($db, 'object_xref');
 $dbEntryAdaptor->store( $xref, $tr->dbID, "Transcript" );
 $oxr_count = count_rows($db, 'object_xref');
 $dbEntryAdaptor->store( $ident_xref, $tl->dbID, "Translation" );
+#intentional duplicates should be filtered out and not increase row count
+$dbEntryAdaptor->store( $ident_xref, $tl->dbID, "Translation" ); 
+$dbEntryAdaptor->store( $ident_xref, $tl->dbID, "Translation" );
+$dbEntryAdaptor->store( $ident_xref, $tl->dbID, "Translation" );
+$dbEntryAdaptor->store( $ident_xref, $tl->dbID, "Translation" );
+
+
 $oxr_count = count_rows($db, 'object_xref');
 $dbEntryAdaptor->store( $goref, $tl->dbID, "Translation" );
 $oxr_count = count_rows($db, 'object_xref');
@@ -148,6 +152,7 @@ $oxr_count = count_rows($db, 'object_xref');
 #
 debug( "object_xref_count = $oxr_count" );
 ok( $oxr_count == 4 );
+
 
 $xref_count = count_rows($db, 'xref');
 $sth->finish();
@@ -179,9 +184,69 @@ ok($xref->type() eq 'ARRAY');
 
 $multi->restore();
 
+# test parallel insertions of identical xrefs
+
+$xref = Bio::EnsEMBL::DBEntry->new
+  (
+   -primary_id => "1",
+   -dbname => "Vega_gene",
+   -release => "1",
+   -display_id => "Ens fake thing",
+   -primary_id_linkable => "0",
+   -display_id_linkable => "1",
+   -priority => "5",
+   -db_display_name => "Nice unfriendly name",
+   -info_type => "MISC",
+   -info_text => "Concurrent insert",
+   -type => "ARRAY",
+    -analysis => $analysis
+   );
+# db connection must be severed for threads to access DB    
+$dbEntryAdaptor->dbc->disconnect_if_idle();
+use threads;
+
+sub parallel_store {
+    my $xref_id = $dbEntryAdaptor->store( $xref, $tr->dbID, "Transcript" );
+    return $xref_id
+}
+   
+my $thread1 = threads->create(\&parallel_store);
+my $thread2 = threads->create(\&parallel_store);
+my $thread3 = threads->create(\&parallel_store);
+
+    
+my @xref_ids;
+@xref_ids = ($thread1->join,$thread2->join,$thread3->join);
+
+debug("Threaded xrefs: ".$xref_ids[0]." ".$xref_ids[1]." ".$xref_ids[2]);
+
+# Test 10 - Verify that only one xref has been inserted under parallel inserts
+ok($xref_ids[0] == 1000009 && $xref_ids[1] == $xref_ids[0] && $xref_ids[2] == $xref_ids[0]);
+
+# Test 11 - Exception testing on ->store()
+
+$xref = Bio::EnsEMBL::DBEntry->new
+  (
+   -primary_id => "1",
+   -dbname => "Vega_gene",
+   -release => "1",
+   -display_id => "Ens fakiest thing",
+   -primary_id_linkable => "0",
+   -display_id_linkable => "1",
+   -priority => "5",
+   -db_display_name => "Nice unfriendly name",
+   -info_type => "MISC",
+   -info_text => "Full exception checking",
+   -type => "ARRAY",
+   -analysis => undef,
+   );
+   
+my $xref_id = $dbEntryAdaptor->store($xref, undef, "Transcript");
+debug("Xref_id from insert: ".$xref_id);
+ok($xref_id == 1000010);
 
 #
-# 10-12 Test that external synonyms and go evidence tags are retrieved
+# 12-14 Test that external synonyms and go evidence tags are retrieved
 #
 my $ta = $db->get_TranscriptAdaptor();
 my $translation = $ta->fetch_by_dbID(21737)->translation;
@@ -420,6 +485,7 @@ ok(@{$xrefs} == 23);  #test 60
 my $db_name = $dbEntryAdaptor->get_db_name_from_external_db_id(4100);
 ok($db_name eq 'UniGene');
 
+
 sub print_dbEntries {
   my $dbes = shift;
 
@@ -440,3 +506,5 @@ sub print_dbEntries {
   debug(scalar(@$dbes). " total");
 
 }
+
+done_testing();
