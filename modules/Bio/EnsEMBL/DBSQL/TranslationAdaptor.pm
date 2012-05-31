@@ -278,6 +278,8 @@ sub fetch_by_Transcript {
   Arg [2]    : (optional) string $external_db_name
                The name of the external database from which the
                identifier originates.
+  Arg [3]    : Boolean override. Force SQL regex matching for users
+               who really do want to find all 'NM%'
   Example    : my @translations =
                   @{ $trl_adaptor->fetch_all_by_external_name('BRCA2') };
                my @many_translations = 
@@ -289,6 +291,9 @@ sub fetch_by_Transcript {
                their transcript.  It may be better to use the
                TranscriptAdaptor::fetch_all_by_external_name instead.
                SQL wildcards % and _ are supported in the $external_name
+               but their use is somewhat restricted for performance reasons.
+               Users that really do want % and _ in the first three characters
+               should use argument 3 to prevent optimisations
   Returntype : reference to a list of Translations
   Exceptions : none
   Caller     : general
@@ -299,13 +304,12 @@ sub fetch_by_Transcript {
 =cut
 
 sub fetch_all_by_external_name {
-  my ( $self, $external_name, $external_db_name ) = @_;
+  my ( $self, $external_name, $external_db_name, $override ) = @_;
 
   my $entry_adaptor = $self->db->get_DBEntryAdaptor();
 
-  my @ids =
-    $entry_adaptor->list_translation_ids_by_extids( $external_name,
-                                                    $external_db_name );
+  my @ids = $entry_adaptor->list_translation_ids_by_extids( 
+            $external_name, $external_db_name, $override );
 
   my $transcript_adaptor = $self->db()->get_TranscriptAdaptor();
 

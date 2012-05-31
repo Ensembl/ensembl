@@ -800,6 +800,8 @@ sub fetch_by_translation_stable_id {
   Arg [2]    : (optional) String $external_db_name
                The name of the external database from which the
                identifier originates.
+  Arg [3]    : Boolean override. Force SQL regex matching for users
+               who really do want to find all 'NM%'
   Example    : @genes = @{$gene_adaptor->fetch_all_by_external_name('BRCA2')}
                @many_genes = @{$gene_adaptor->fetch_all_by_external_name('BRCA%')}
   Description: Retrieves a list of genes with an external database
@@ -808,7 +810,10 @@ sub fetch_by_translation_stable_id {
                system they are stored in the database in.  If another
                coordinate system is required then the Gene::transfer or
                Gene::transform method can be used.
-               SQL wildcards % and _ are supported in the $external_name
+               SQL wildcards % and _ are supported in the $external_name,
+               but their use is somewhat restricted for performance reasons.
+               Users that really do want % and _ in the first three characters
+               should use argument 3 to prevent optimisations
   Returntype : listref of Bio::EnsEMBL::Gene
   Exceptions : none
   Caller     : goview, general
@@ -817,13 +822,13 @@ sub fetch_by_translation_stable_id {
 =cut
 
 sub fetch_all_by_external_name {
-  my ( $self, $external_name, $external_db_name ) = @_;
+  my ( $self, $external_name, $external_db_name, $override ) = @_;
 
   my $entryAdaptor = $self->db->get_DBEntryAdaptor();
 
   my @ids =
     $entryAdaptor->list_gene_ids_by_extids( $external_name,
-                                            $external_db_name );
+                                            $external_db_name, $override );
 
   my %genes_by_dbIDs =
     map { $_->dbID(), $_ } @{ $self->fetch_all_by_dbID_list( \@ids ) };

@@ -482,6 +482,8 @@ sub fetch_all_by_Slice {
   Arg [2]    : (optional) String $external_db_name
                The name of the external database from which the
                identifier originates.
+  Arg [3]    : Boolean override. Force SQL regex matching for users
+               who really do want to find all 'NM%'
   Example    : my @transcripts =
                   @{ $tr_adaptor->fetch_all_by_external_name( 'NP_065811.1') };
                my @more_transcripts = 
@@ -498,6 +500,9 @@ sub fetch_all_by_Slice {
                If no transcripts with the external identifier are found,
                a reference to an empty list is returned.
                SQL wildcards % and _ are supported in the $external_name
+               but their use is somewhat restricted for performance reasons.
+               Users that really do want % and _ in the first three characters
+               should use argument 3 to prevent optimisations
   Returntype : listref of Bio::EnsEMBL::Transcript
   Exceptions : none
   Caller     : general
@@ -506,13 +511,13 @@ sub fetch_all_by_Slice {
 =cut
 
 sub fetch_all_by_external_name {
-  my ( $self, $external_name, $external_db_name ) = @_;
+  my ( $self, $external_name, $external_db_name, $override) = @_;
 
   my $entryAdaptor = $self->db->get_DBEntryAdaptor();
 
   my @ids =
     $entryAdaptor->list_transcript_ids_by_extids( $external_name,
-                                                  $external_db_name );
+                                                  $external_db_name, $override );
 
   return $self->fetch_all_by_dbID_list( \@ids );
 }

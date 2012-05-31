@@ -1418,6 +1418,7 @@ sub list_gene_ids_by_external_db_id{
 
   Arg [1]    : string $external_name
   Arg [2]    : (optional) string $external_db_name
+  Arg [3]    : Boolean override, see _type_by_external_id
   Example    : @gene_ids = $dbea->list_gene_ids_by_extids('CDPX');
   Description: Retrieve a list of geneid by an external identifier that is
                linked to  any of the genes transcripts, translations or the
@@ -1430,15 +1431,15 @@ sub list_gene_ids_by_external_db_id{
 =cut
 
 sub list_gene_ids_by_extids {
-  my ( $self, $external_name, $external_db_name ) = @_;
+  my ( $self, $external_name, $external_db_name, $override ) = @_;
 
   my %T = map { ( $_, 1 ) }
     $self->_type_by_external_id( $external_name, 'Translation', 'gene',
-                                 $external_db_name ),
+                                 $external_db_name, $override ),
     $self->_type_by_external_id( $external_name, 'Transcript', 'gene',
-                                 $external_db_name ),
+                                 $external_db_name, $override ),
     $self->_type_by_external_id( $external_name, 'Gene', undef,
-                                 $external_db_name );
+                                 $external_db_name, $override );
 
   return keys %T;
 }
@@ -1448,6 +1449,7 @@ sub list_gene_ids_by_extids {
 
   Arg [1]    : string $external_name
   Arg [2]    : (optional) string $external_db_name
+  Arg [3]    : Boolean override, see _type_by_external_id
   Example    : @tr_ids = $dbea->list_transcript_ids_by_extids('BCRA2');
   Description: Retrieve a list transcript ids by an external identifier that
                is linked to any of the genes transcripts, translations or the
@@ -1460,14 +1462,14 @@ sub list_gene_ids_by_extids {
 =cut
 
 sub list_transcript_ids_by_extids {
-  my ( $self, $external_name, $external_db_name ) = @_;
+  my ( $self, $external_name, $external_db_name, $override ) = @_;
 
   my %T = map { ( $_, 1 ) }
     $self->_type_by_external_id( $external_name, 'Translation',
-                                 'transcript',   $external_db_name
+                                 'transcript',   $external_db_name, $override
     ),
     $self->_type_by_external_id( $external_name, 'Transcript', undef,
-                                 $external_db_name );
+                                 $external_db_name, $override );
 
   return keys %T;
 }
@@ -1477,6 +1479,7 @@ sub list_transcript_ids_by_extids {
 
   Arg [1]    : string $external_name
   Arg [2]    : (optional) string $external_db_name
+  Arg [3]    : Boolean override, see _type_by_external_id
   Example    : @tr_ids = $dbea->list_translation_ids_by_extids('GO:0004835');
   Description: Gets a list of translation IDs by external display IDs
   Returntype : list of Ints
@@ -1487,11 +1490,11 @@ sub list_transcript_ids_by_extids {
 =cut
 
 sub list_translation_ids_by_extids {
-  my ( $self, $external_name, $external_db_name ) = @_;
+  my ( $self, $external_name, $external_db_name, $override ) = @_;
 
   return
     $self->_type_by_external_id( $external_name, 'Translation', undef,
-                                 $external_db_name );
+                                 $external_db_name, $override );
 }
 
 =head2 _type_by_external_id
@@ -1500,7 +1503,10 @@ sub list_translation_ids_by_extids {
   Arg [2]    : string $ensType - ensembl_object_type
   Arg [3]    : (optional) string $extraType
   Arg [4]    : (optional) string $external_db_name
-  	       other object type to be returned
+  	           other object type to be returned
+  Arg [5]    : Boolean override to force _ to be treated as an SQL 'any'
+               This is usually optimised out for query speed due to 
+               large numbers of names like NM_00...
   Example    : $self->_type_by_external_id($name, 'Translation');
                NOTE:  In a multi-species database, this method will
                return all the entries matching the search criteria, not
@@ -1512,22 +1518,27 @@ sub list_translation_ids_by_extids {
   Exceptions : none
   Caller     : list_translation_ids_by_extids
                translationids_by_extids
-  	       geneids_by_extids
+  	           geneids_by_extids
   Status     : Stable
 
 =cut
 
 sub _type_by_external_id {
-  my ( $self, $name, $ensType, $extraType, $external_db_name ) = @_;
+  my ( $self, $name, $ensType, $extraType, $external_db_name, $override ) = @_;
 
   # $name has SQL wildcard support
   # = or LIKE put into SQL statement, and open queries like % or A% are rejected.
   my $comparison_operator;
-  if ($name =~ /[_%\[]/) {
+  if ($name =~ /[_%\[]/ ) {
     $comparison_operator = "LIKE";
-    if ($name =~ /^.?%/) {
+    if ($name =~ /^.?%/ && !$override) {
       warn "External $ensType name $name is too vague and will monopolise database resources. Please use a more specific $ensType name.\n";
       return;
+    }
+    elsif ($name =~ /^\w\w_/ && !$override) {
+        # For entries such as NM_00000065, escape the _ so that SQL LIKE does not have to scan entire table
+        # Escape only the _ in the third character position
+        $name =~ s/(?<=\w\w)(?=_)/\\/;
     }
   }
   else {

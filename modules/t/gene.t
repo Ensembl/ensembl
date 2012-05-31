@@ -448,6 +448,21 @@ debug($gene->stable_id);
 ok($gene->stable_id() eq 'ENSG00000101367');
 
 # 
+# test fetch_all_by_external_name with wildcard restrictions
+#
+(@genes) = @{ $ga->fetch_all_by_external_name('AF_%')};
+# Should = 0 because _ is auto-escaped.
+debug('Genes found under external_name AF_%: '.scalar(@genes));
+ok(scalar(@genes) == 0);
+(@genes) = @{ $ga->fetch_all_by_external_name('AF_%',undef,'override')};
+debug('Genes found under external_name AF_% with override on: '.scalar(@genes));
+debug($genes[0]->stable_id());
+debug($genes[1]->stable_id());
+debug($genes[2]->stable_id());
+debug($genes[3]->stable_id());
+# Note that 9 AF_% xrefs correspond to 4 unique ensembl IDs.
+ok(scalar(@genes) == 4);
+# 
 # test fetch_all_by_external_name with wildcard matching
 #
 @genes = @{$ga->fetch_all_by_external_name('MAE__HUMAN')};
