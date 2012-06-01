@@ -24,7 +24,6 @@ sub run {
   $verbose |=0;
 
   my $file = @{$files}[0];
-  my $syn_file = @{$files}[1];
 
   my $mgi_io = $self->get_filehandle($file);
 
@@ -36,63 +35,51 @@ sub run {
   my $xref_count =0;
 
   my %acc_to_xref;
-#MGI Marker associations to Sequence (GenBank or RefSeq) information (tab-delimited)
-#MGI Marker Accession ID	Marker Symbol	Status	Marker Type	Marker Name	cM Position	Chromosome 	GenBank Accession IDs
-#(space-delimited)	Unigene ID
-#(if any)	RefSeq ID
-#(if any)  
-  while ( $_ = $mgi_io->getline() ) {
-    chomp;
-    if($_ =~ /^ MGI:/){
-      my ($junk, $acc, $chr, $pos, $label, $status, @part_desc) = split(/\s+/,$_);
+
+
+    my $header = $mgi_io->getline(); #discard header line
+    chomp($header);
+    # crude emergency check for potentially altered file format.
+    my $header_template = qq(MGI Accession ID\tChr\tcM Position\tgenome coordinate start\tgenome coordinate end\tstrand\tMarker Symbol\tStatus\tMarker Name\tMarker Type\tFeature Type\tIMarker Synonyms (pipe-separated));
+    if ($header ne $header_template) {die "File header has altered from format parser expects. Check MGI "};
+      
+    while ( my $line = $mgi_io->getline() ) {
+        chomp($line);
+        my ($accession, $chromosome, $position, $start, $end, $strand,$label, 
+            $status, $marker, $marker_type, $feature_type, $synonym_field) = split(/\t+/,$line);
+            
+        $position =~ s/^\s+//;
+        my @synonyms = split(/|/,$synonym_field);
+        
+        my $desc = join(" ",$marker,$marker_type);
+        
+        $acc_to_xref{$accession} = $self->add_xref({ acc        => $accession,
+    	                           		             label      => $label,
+    					                             desc       => $desc,
+    					                             source_id  => $source_id,
+    					                             species_id => $species_id,
+    					                             info_type  => "MISC"} );
+        if($verbose and $desc eq ""){
+    	   print "$accession has no description\n";
+        }
+        $xref_count++;
+            
+        if(defined($acc_to_xref{$accession})){
+            my $syn_count = 0;
+            foreach my $syn (@synonyms) {
+                $self->add_synonym($acc_to_xref{$accession}, $syn);
+                $syn_count++;
+            }
+            print $syn_count." synonyms added\n" if($verbose);
+        }
+        
+    }
+      
+    $mgi_io->close();
+      
+    print $xref_count." MGI Description Xrefs added\n" if($verbose);
     
-      my $type = pop @part_desc; # last array element is the type.
-      my $desc= join(" ",@part_desc);
-      $acc_to_xref{$acc} = $self->add_xref({ acc        => $acc,
-					     label      => $label,
-					     desc       => $desc,
-					     source_id  => $source_id,
-					     species_id => $species_id,
-					     info_type  => "MISC"} );
-      if($verbose and $desc eq ""){
-	print "$acc has no description\n";
-      }
-      $xref_count++;
-    }
-  }
-  
-  $mgi_io->close();
-  
-  print $xref_count." MGI Description Xrefs added\n" if($verbose);
-
-  #
-  # Now process the synonyms
-  #
-  my $mgi_syn_io = $self->get_filehandle($syn_file);
-
-  if ( !defined $mgi_syn_io ) {
-    print STDERR "ERROR: Could not open $file\n";
-    return 1;    # 1 is an error
-  }
-
-
-  my $syn_count = 0;
-  while ( $_ = $mgi_syn_io->getline() ) {
-    chomp;
-    if($_ =~ /^ MGI:/){
-      my ($junk, $acc, $chr, $pos, $symbol, @part_synonym) = split(/\s+/,$_);
-      my $syn = join(" ",@part_synonym);
-
-      if(defined($acc_to_xref{$acc})){
-        $self->add_synonym($acc_to_xref{$acc}, $syn);
-        $syn_count++;
-      }
-    }
-  }
-  $mgi_syn_io->close();
-  print $syn_count." synonyms added\n" if($verbose);
-
-  return 0; #successful
+    return 0; #successful
 }
 	
 
