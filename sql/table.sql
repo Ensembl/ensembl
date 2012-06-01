@@ -266,28 +266,58 @@ CREATE TABLE exon (
 @desc Provides the evidence which we have used to declare an intronic region
 
 @column intron_supporting_evidence_id Surrogate primary key
-@column previous_exon_id              Indicates the exon flanking upstream of the intron. Foreign key references to the @link exon table.
-@column next_exon_id                  Indicates the exon flanking downstream of the intron. Foreign key references to the @link exon table.
-@column hit_name		      External entity name/identifier.
+@column analysis_id                   Foreign key references to the @link analysis table.
+@column seq_region_id                 Foreign key references to the @link seq_region table.
+@column seq_region_start              Sequence start position.
+@column seq_region_end                Sequence end position.
+@column seq_region_strand             Sequence region strand: 1 - forward; -1 - reverse.
+@column hit_name		                  External entity name/identifier.
 @column score                         Score supporting the intron 
 @column score_type                    The type of score e.g. NONE
 
-@see exon
+@see transcript_intron_supporting_evidence
 
 */
 
 CREATE TABLE intron_supporting_evidence (
-  intron_supporting_evidence_id INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
-  previous_exon_id INT(10) UNSIGNED NOT NULL,
-  next_exon_id INT(10) UNSIGNED NOT NULL,
-  hit_name VARCHAR(100) NOT NULL,
-  score DECIMAL(10,3),
-  score_type ENUM('NONE', 'DEPTH') DEFAULT 'NONE',
-  
-  PRIMARY KEY (intron_supporting_evidence_id),
-  
-  UNIQUE KEY (previous_exon_id, next_exon_id)
+intron_supporting_evidence_id INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
+analysis_id                   SMALLINT UNSIGNED NOT NULL,
+seq_region_id                 INT(10) UNSIGNED NOT NULL,
+seq_region_start              INT(10) UNSIGNED NOT NULL,
+seq_region_end                INT(10) UNSIGNED NOT NULL,
+seq_region_strand             TINYINT(2) NOT NULL,
+hit_name                      VARCHAR(100) NOT NULL,
+score                         DECIMAL(10,3),
+score_type                    ENUM('NONE', 'DEPTH') DEFAULT 'NONE',
+
+PRIMARY KEY (intron_supporting_evidence_id),
+
+UNIQUE KEY (analysis_id, seq_region_id, seq_region_start, seq_reigon_end, seq_region_strand, hit_name)
 ) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
+
+/**
+@table transcript_intron_supporting_evidence
+@desc Links intronic evidence to a pair of exons used within a transcript and to resolve the m:m relationship between introns and transcripts
+
+@column intron_supporting_evidence_id Foreign key references to the @link intron_supporting_evidence table
+@column transcript_id                 Foreign key references to the @link transcript table.
+@column previous_exon_id              Foreign key to @link exon indicating the left hand flanking exon of the intron (assume forward strand)
+@column next_exon_id                  Foreign key to @link exon indicating the right hand flanking exon of the intron (assume forward strand)
+
+@see intron_supporting_evidence
+@see transcript
+@see exon
+
+*/
+
+CREATE TABLE transcript_intron_supporting_evidence (
+transcript_id                 INT(10) UNSIGNED NOT NULL,
+intron_supporting_evidence_id INT(10) UNSIGNED NOT NULL,
+previous_exon_id              INT(10) UNSIGNED NOT NULL,
+next_exon_id                  INT(10) UNSIGNED NOT NULL,
+PRIMARY KEY (intron_supporting_evidence_id, transcript_id)
+) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
+
 
 /**
 @table exon_transcript
@@ -475,7 +505,9 @@ INSERT INTO meta (species_id, meta_key, meta_value) VALUES
 # NOTE: At start of release cycle, remove patch entries from last release.
 # NOTE: Avoid line-breaks in values.
 INSERT INTO meta (species_id, meta_key, meta_value) VALUES
-  (NULL, 'patch', 'patch_67_68_a.sql|schema_version')
+  (NULL, 'patch', 'patch_67_68_a.sql|schema_version'),
+  (NULL, 'patch', 'patch_66_67_b.sql|xref_uniqueness'),
+  (NULL, 'patch', 'patch_66_67_c.sql|altering_intron_supporting_evidence')
  ;
 
 /**
@@ -2305,7 +2337,7 @@ CREATE TABLE object_xref (
                               NOT NULL,
   xref_id                     INT UNSIGNED NOT NULL,
   linkage_annotation          VARCHAR(255) DEFAULT NULL,
-  analysis_id                 SMALLINT UNSIGNED DEFAULT NULL,
+  analysis_id                 SMALLINT UNSIGNED DEFAULT 0 NOT NULL,
 
   PRIMARY KEY (object_xref_id),
 
@@ -2479,12 +2511,12 @@ CREATE TABLE xref (
    display_label              VARCHAR(128) NOT NULL,
    version                    VARCHAR(10) DEFAULT '0' NOT NULL,
    description                TEXT,
-   info_type                  ENUM( 'PROJECTION', 'MISC', 'DEPENDENT',
+   info_type                  ENUM( 'NONE', 'PROJECTION', 'MISC', 'DEPENDENT',
                                     'DIRECT', 'SEQUENCE_MATCH',
                                     'INFERRED_PAIR', 'PROBE',
                                     'UNMAPPED', 'COORDINATE_OVERLAP', 
-                                    'CHECKSUM' ),
-   info_text                  VARCHAR(255),
+                                    'CHECKSUM' ) DEFAULT 'NONE' NOT NULL,
+   info_text                  VARCHAR(255) DEFAULT '' NOT NULL;
 
    PRIMARY KEY (xref_id),
    UNIQUE KEY id_index (dbprimary_acc, external_db_id, info_type, info_text),
