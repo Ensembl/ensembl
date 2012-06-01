@@ -61,14 +61,12 @@ ALTER table gene_attrib ADD FOREIGN KEY (gene_id) REFERENCES gene(gene_id);
 ALTER table gene_archive ADD FOREIGN KEY (mapping_session_id) REFERENCES mapping_session(mapping_session_id);
 ALTER table gene_archive ADD FOREIGN KEY (peptide_archive_id) REFERENCES peptide_archive(peptide_archive_id);
 
-ALTER table ontology_xref ADD FOREIGN KEY (object_xref_id) REFERENCES object_xref(object_xref_id);
-ALTER table ontology_xref ADD FOREIGN KEY (source_xref_id) REFERENCES xref(xref_id);
+ALTER table intron_supporting_evidence ADD FOREIGN KEY (analysis_id) REFERENCES analysis(analysis_id);
+ALTER table intron_supporting_evidence ADD FOREIGN KEY (seq_region_id) REFERENCES seq_region(seq_region_id);
 
 ALTER table identity_xref ADD FOREIGN KEY (object_xref_id) REFERENCES object_xref(object_xref_id);
 
 ALTER table karyotype ADD FOREIGN KEY (seq_region_id) REFERENCES seq_region(seq_region_id);
-
-ALTER table stable_id_event ADD FOREIGN KEY (mapping_session_id) REFERENCES mapping_session(mapping_session_id);
 
 ALTER table marker ADD FOREIGN KEY (display_marker_synonym_id) REFERENCES marker_synonym (marker_synonym_id);
 
@@ -94,6 +92,9 @@ ALTER table misc_feature_misc_set ADD FOREIGN KEY (misc_set_id) REFERENCES misc_
 
 ALTER table object_xref ADD FOREIGN KEY (xref_id) REFERENCES xref(xref_id);
 ALTER table object_xref ADD FOREIGN KEY (analysis_id) REFERENCES analysis(analysis_id);
+
+ALTER table ontology_xref ADD FOREIGN KEY (object_xref_id) REFERENCES object_xref(object_xref_id);
+ALTER table ontology_xref ADD FOREIGN KEY (source_xref_id) REFERENCES xref(xref_id);
 
 ALTER TABLE operon ADD FOREIGN KEY (analysis_id) REFERENCES analysis(analysis_id);
 ALTER TABLE operon ADD FOREIGN KEY (seq_region_id) REFERENCES seq_region(seq_region_id);
@@ -153,6 +154,8 @@ ALTER table splicing_event_feature ADD FOREIGN KEY (transcript_id) REFERENCES tr
 ALTER table splicing_transcript_pair ADD FOREIGN KEY (splicing_event_id) REFERENCES splicing_event(splicing_event_id);
 ALTER table splicing_transcript_pair ADD FOREIGN KEY (transcript_id_1) REFERENCES transcript(transcript_id);
 ALTER table splicing_transcript_pair ADD FOREIGN KEY (transcript_id_2) REFERENCES transcript(transcript_id);
+
+ALTER table stable_id_event ADD FOREIGN KEY (mapping_session_id) REFERENCES mapping_session(mapping_session_id);
 
 ALTER table supporting_feature ADD FOREIGN KEY (exon_id) REFERENCES exon(exon_id);
 
