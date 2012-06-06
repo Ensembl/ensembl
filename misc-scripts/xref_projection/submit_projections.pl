@@ -61,195 +61,217 @@ my $script_opts = "-conf '$conf' -registryconf '$registryconf' -version '$releas
 my $bsub_opts = "";
 $bsub_opts .= "-M2000000 -R'select[mem>2000] rusage[mem=2000]'";
 
+my %names_1_1;
 
-my @names_1_1 = (["human", "chimp"            ],
-		 ["human", "opossum"          ],
-		 ["human", "dog"              ],
-		 ["human", "cow"              ],
-		 ["human", "macaque"          ],
-		 ["human", "chicken"          ],
-		 ["human", "xenopus"          ],
-		 ["human", "guinea_pig"       ],
-		 ["human", "pig"              ],
-		 ["human", "marmoset"         ],
-		 ["human", "armadillo"        ],
-		 ["human", "tenrec"           ],
-		 ["human", "western_european_hedgehog"],
-		 ["human", "cat"              ],
-		 ["human", "elephant"         ],
-		 ["human", "microbat"         ],
-		 ["human", "platypus"         ],
-		 ["human", "rabbit"           ],
-		 ["human", "bushbaby"         ],
-		 ["human", "ground_shrew"     ],
-		 ["human", "squirrel"         ],
-		 ["human", "tree_shrew"       ],
-		 ["human", "pika"             ],
-		 ["human", "mouse_lemur"      ],
-		 ["human", "wallaby"          ],
-		 ["human", "horse"            ],
-		 ["human", "orang_utan"       ],
-		 ["human", "gibbon"           ],
-		 ["human", "dolphin"          ],
-		 ["human", "hyrax"            ],
-		 ["human", "megabat"          ],
-		 ["human", "tarsier"          ],
-		 ["human", "alpaca"           ],
-		 ["human", "gorilla"          ],
-		 ["human", "anolis"           ],
-		 ["human", "sloth"            ],
-		 ["human", "zebrafinch"       ],
-                 ["human", "panda"            ],
-                 ["human", "turkey"           ],
-                 ["human", "tasmanian_devil"  ],
-                 ["human", "coelacanth"       ],
-		 ["mouse", "kangaroo_rat"     ],
-		 ["mouse", "rat"              ]);
+$names_1_1{'human'} =  [qw(
+    alpaca
+    anolis
+    armadillo
+    bushbaby
+    cat
+    chicken
+    chimp
+    coelacanth
+    cow
+    dolphin
+    elephant
+    gibbon
+    gorilla
+    ground_shrew
+    guinea_pig
+    horse
+    hyrax
+    macaque
+    marmoset
+    megabat
+    microbat
+    mouse_lemur
+    opossum
+    orang_utan
+    panda
+    pig
+    pika
+    platypus
+    sloth
+    squirrel
+    rabbit
+    tarsier
+    tasmanian_devil
+    tenrec
+    tree_shrew
+    turkey
+    wallaby
+    western_european_hedgehog
+    xenopus
+    zebrafinch
+    )];
 
-my @names_1_many = (["human", "zebrafish"  ],
-		    ["human", "medaka"     ],
-		    ["human", "tetraodon"  ],
-		    ["human", "fugu"       ],
-		    ["human", "lamprey"    ],
-		    ["human", "cod"        ],
-                    ["human", "tilapia"    ],
-		    ["human", "stickleback"]);
+$names_1_1{'mouse'} = [qw(
+    kangaroo_rat
+    rat    
+)];
 
-my @go_terms = (["human",      "mouse"          ],
-		["human",      "rat"            ],
-		["human",      "dog"            ],
-		["human",      "chicken"        ],
-		["human",      "cow"            ],
-		["human",      "chimp"          ],
-		["human",      "macaque"        ],
-		["human",      "guinea_pig"     ],
-		["human",      "pig"            ],
-		["human",      "marmoset"       ],
-		["human",      "bushbaby"       ],
-		["human",      "rabbit"         ],
-		["human",      "cat"            ],
-		["human",      "ground_shrew"   ],
-		["human",      "western_european_hedgehog"],
-		["human",      "microbat"       ],
-		["human",      "armadillo"      ],
-		["human",      "elephant"       ],
-		["human",      "tenrec"         ],
-		["human",      "opossum"        ],
-		["human",      "platypus"       ],
-		["human",      "squirrel"       ],
-		["human",      "tree_shrew"     ],
-		["human",      "pika"           ],
-		["human",      "mouse_lemur"    ],
-		["human",      "wallaby"        ],
-		["human",      "horse"          ],
-		["human",      "orang_utan"     ],
-		["human",      "gibbon"         ],
-		["human",      "dolphin"        ],
-		["human",      "hyrax"          ],
-		["human",      "megabat"        ],
-		["human",      "tarsier"        ],
-		["human",      "alpaca"         ],
-		["human",      "kangaroo_rat"   ],
-		["human",      "gorilla"        ],
-		["human",      "sloth"          ],
-		["human",      "zebrafinch"     ],
-		["human",      "anolis"         ],
-		["human",      "panda"          ],
-		["human",      "turkey"         ],
-		["human",      "tasmanian_devil"],
-		["human",      "coelacanth"     ],
-                ["mouse",      "human"          ],
-		["mouse",      "rat"            ],
-		["mouse",      "dog"            ],
-		["mouse",      "chicken"        ],
-		["mouse",      "cow"            ],
-		["mouse",      "chimp"          ],
-		["mouse",      "macaque"        ],
-		["mouse",      "guinea_pig"     ],
-		["mouse",      "pig"            ],
-		["mouse",      "marmoset"       ],
-		["mouse",      "bushbaby"       ],
-		["mouse",      "rabbit"         ],
-		["mouse",      "cat"            ],
-		["mouse",      "ground_shrew"   ],
-		["mouse",      "western_european_hedgehog"],
-		["mouse",      "microbat"       ],
-		["mouse",      "armadillo"      ],
-		["mouse",      "elephant"       ],
-		["mouse",      "tenrec"         ],
-		["mouse",      "opossum"        ],
-		["mouse",      "platypus"       ],
-		["mouse",      "squirrel"       ],
-		["mouse",      "tree_shrew"     ],
-		["mouse",      "pika"           ],
-        	["mouse",      "horse"          ],
-		["mouse",      "orang_utan"     ],
-		["mouse",      "mouse_lemur"    ],
-		["mouse",      "wallaby"        ],
-		["mouse",      "dolphin"        ],
-		["mouse",      "hyrax"          ],
-		["mouse",      "megabat"        ],
-		["mouse",      "tarsier"        ],
-		["mouse",      "alpaca"         ],
-		["mouse",      "kangaroo_rat"   ],
-		["mouse",      "gorilla"        ],
-		["mouse",      "sloth"          ],
-		["mouse",      "zebrafinch"     ],
-		["mouse",      "anolis"         ],
-		["mouse",      "panda"          ],
-		["mouse",      "tasmanian_devil"], 
-                ["rat",        "human"          ],
-		["rat",        "mouse"          ],
-		["zebrafish",      "xenopus"    ],
-		["zebrafish",      "fugu"       ],
-		["zebrafish",      "tetraodon"  ],
-		["zebrafish",      "stickleback"],
-		["zebrafish",      "lamprey"    ],
-	        ["zebrafish",      "cod"        ],
-	        ["zebrafish",      "coelacanth" ],
-                ["zebrafish",      "tilapia"    ],
-		["human",      "stickleback"    ],
-		["mouse",      "stickleback"    ],
-		["mouse",      "turkey"         ],
-		["xenopus",    "danio"          ]);
+my %names_1_many;
+$names_1_many{'human'} = [qw(
+    cod
+    fugu
+    lamprey
+    medaka
+    stickleback
+    tetraodon
+    tilapia
+    zebrafish
+)];
 
-my ($from, $to, $o, $e, $n);
+my %go_terms;
+$go_terms{'human'} = [qw(
+    alpaca
+    anolis
+    armadillo
+    bushbaby
+    cat
+    chicken
+    chimp
+    coelacanth
+    cow
+    dog
+    dolphin
+    elephant
+    gibbon
+    gorilla
+    ground_shrew
+    guinea_pig
+    horse
+    hyrax
+    kangaroo_rat
+    macaque
+    marmoset
+    megabat
+    microbat
+    mouse
+    mouse_lemur
+    opossum
+    orang_utan
+    panda
+    pig
+    platypus
+    sloth
+    squirrel
+    stickleback
+    pika
+    rabbit
+    rat
+    tarsier
+    tasmanian_devil
+    tenrec
+    tree_shrew
+    turkey
+    wallaby
+    western_european_hedgehog
+    zebrafinch
+)];
+$go_terms{'mouse'} = [qw(
+    alpaca
+    anolis
+    armadillo
+    bushbaby
+    cat
+    chicken
+    chimp
+    cow
+    dog
+    dolphin
+    elephant
+    gorilla
+    ground_shrew
+    guinea_pig
+    horse
+    hyrax
+    human
+    kangaroo_rat
+    macaque
+    marmoset
+    megabat
+    microbat
+    mouse_lemur
+    opossum
+    orang_utan
+    panda
+    pig
+    pika
+    platypus
+    rabbit
+    rat
+    sloth
+    squirrel
+    stickleback
+    tarsier
+    tasmanian_devil
+    tenrec
+    tree_shrew
+    turkey
+    wallaby
+    western_european_hedgehog
+    zebrafinch
+)];
+$go_terms{'rat'} = [qw(
+    human
+    mouse
+)];
+$go_terms{'zebrafish'} = [qw(
+    cod
+    coelacanth
+    fugu
+    lamprey
+    stickleback
+    tetraodon
+    tilapia
+    xenopus
+)];
+$go_terms{'xenopus'} = [qw(zebrafish)];
+
+my @execution_order = ( 'human', 'mouse', 'rat', 'zebrafish');
 
 # ----------------------------------------
 # Display names
 
 print "Deleting projected names (one to one)\n";
-foreach my $pair (@names_1_1) {
-  ($from, $to) = @$pair;
-  system "perl project_display_xrefs.pl $script_opts -to $to -delete_names -delete_only";
+foreach my $species (keys %names_1_1) {
+    foreach my $to (@{$species}) {
+        system "perl project_display_xrefs.pl $script_opts -to $to -delete_names -delete_only";
+    };
 }
 
 # 1:1
-foreach my $pair (@names_1_1) {
-  ($from, $to) = @$pair;
-  $o = "$dir/names_${from}_$to.out";
-  $e = "$dir/names_${from}_$to.err";
-  $n = substr("n_${from}_$to", 0, 10); # job name display limited to 10 chars
-  my $all = ($from eq "human") ? "" : "--all_sources"; # non-human from species -> use all sources
-  print "Submitting name projection from $from to $to\n";
-  system "bsub $bsub_opts -o $o -e $e -J $n perl project_display_xrefs.pl $script_opts -from $from -to $to -names -no_database $all";
+foreach my $from (@execution_order) {
+    if (not exists($names_1_1{$from})) {next;}
+    foreach my $to (@{$names_1_1{$from}}) {
+        my $o = "$dir/names_${from}_$to.out";
+        my $e = "$dir/names_${from}_$to.err";
+        my $n = substr("n_${from}_$to", 0, 10); # job name display limited to 10 chars
+        my $all = ($from eq "human") ? "" : "--all_sources"; # non-human from species -> use all sources
+        print "Submitting name projection from $from to $to\n";
+        system "bsub $bsub_opts -o $o -e $e -J $n perl project_display_xrefs.pl $script_opts -from $from -to $to -names -no_database $all";
+    }
 }
 
 print "Deleting projected names (one to many)\n";
-foreach my $pair (@names_1_many) {
-  ($from, $to) = @$pair;
-  system "perl project_display_xrefs.pl $script_opts -to $to -delete_names -delete_only";
+foreach my $from (keys %names_1_many) {
+    foreach my $to (@{$names_1_many{$from}}) {
+        system "perl project_display_xrefs.pl $script_opts -to $to -delete_names -delete_only";
+    }
 }
 
-
 # 1:many
-foreach my $pair (@names_1_many) {
-  ($from, $to) = @$pair;
-  $o = "$dir/names_${from}_$to.out";
-  $e = "$dir/names_${from}_$to.err";
-  $n = substr("n_${from}_$to", 0, 10);
-  print "Submitting name projection from $from to $to (1:many)\n";
-  system "bsub $bsub_opts -o $o -e $e -J $n perl project_display_xrefs.pl $script_opts -from $from -to $to -names -no_database -one_to_many";
+foreach my $from (@execution_order) {
+    if (not exists($names_1_many{$from})) {next;}
+    foreach my $to (@{$names_1_many{$from}}) {
+        my $o = "$dir/names_${from}_$to.out";        
+        my $e = "$dir/names_${from}_$to.err";
+        my $n = substr("n_${from}_$to", 0, 10);
+        print "Submitting name projection from $from to $to (1:many)\n";
+        system "bsub $bsub_opts -o $o -e $e -J $n perl project_display_xrefs.pl $script_opts -from $from -to $to -names -no_database -one_to_many";
+    }
 }
 
 # ----------------------------------------
@@ -258,21 +280,25 @@ foreach my $pair (@names_1_many) {
 $script_opts .= " -nobackup";
 
 print "Deleting projected GO terms\n";
-foreach my $pair (@go_terms) {
-  ($from, $to) = @$pair;
-  system "perl project_display_xrefs.pl $script_opts -to $to -delete_go_terms -delete_only";
+foreach my $from (keys %go_terms) {
+    foreach my $to (@{$go_terms{$from}}) {
+        system "perl project_display_xrefs.pl $script_opts -to $to -delete_go_terms -delete_only";
+    }
 }
 
 
 
-foreach my $pair (@go_terms) {
-  ($from, $to) = @$pair;
-  $o = "$dir/go_${from}_$to.out";
-  $e = "$dir/go_${from}_$to.err";
-  $n = substr("g_${from}_$to", 0, 10);
-  print "Submitting GO term projection from $from to $to\n";
-  system "bsub $bsub_opts -q long -o $o -e $e -J $n perl project_display_xrefs.pl $script_opts -from $from -to $to -go_terms";
+foreach my $from (@execution_order) {
+    if (not exists($go_terms{$from})) {next;}
+    foreach my $to (@{$go_terms{$from}}) {
+        my $o = "$dir/go_${from}_$to.out";
+        my $e = "$dir/go_${from}_$to.err";
+        my $n = substr("g_${from}_$to", 0, 10);
+        print "Submitting GO term projection from $from to $to\n";
+        system "bsub $bsub_opts -q long -o $o -e $e -J $n perl project_display_xrefs.pl $script_opts -from $from -to $to -go_terms";
+    }
 }
+
 
 # ----------------------------------------
 
