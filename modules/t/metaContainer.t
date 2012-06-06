@@ -1,15 +1,9 @@
 use strict;
 use warnings;
-use Data::Dumper;
 
-
-BEGIN { $| = 1;
-	use Test;
-	plan tests => 10;
-}
+use Test::More;
 
 use Bio::EnsEMBL::Test::TestUtils;
-
 use Bio::EnsEMBL::Test::MultiTestDB;
 
 
@@ -69,5 +63,17 @@ $mc->store_key_value('species.division',$divname);
 $div = $mc->get_division();
 ok($div eq $divname);
 
+#
+# Testing get_Species()
+#
+
+capture_std_streams(sub {
+  my ($stdout_ref, $stderr_ref) = @_;
+  my $s = $mc->get_Species();
+  is($s->binomial(), 'Homo sapiens', 'Checking binomial from Bio::Species continues to work');
+  like(${$stderr_ref}, qr/.+ deprecated .+ get_scientific_name\(\)/xms, 'Make sure we warn about deprecation');
+});
+
 $mdb->restore('core', 'meta');
 
+done_testing();

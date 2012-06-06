@@ -158,9 +158,17 @@ sub get_Species {
   if ( !@$classification ) {
     return undef;
   }
-
+  
+  #Re-create the old classification data structure by adding the scientific
+  #name back onto the classification but with species before genus e.g.
+  # sapiens -> Homo -> Hominade
+  my $scientific_name = $self->get_scientific_name();
+  my ($genus, @sp) = split(/ /, $scientific_name);
+  unshift(@{$classification}, join(q{ }, @sp), $genus);
+  
   my $species = Bio::Species->new();
   $species->common_name($common_name);
+  
   $species->classification($classification, 1); #always force it
 
   return $species;
