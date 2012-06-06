@@ -141,7 +141,7 @@ sub fetch_info {
 =head2 fetch_stats
 
   Arg [1]    : string $seq_region_name (optional)
-               The name of a toplevel seq_region for which statistics should be fetched
+               The name of the toplevel seq_region for which statistics should be fetched
 
   Description: Returns a hash
   Returntype : hash with assembly statistics name and value pairs
@@ -174,13 +174,17 @@ sub fetch_stats {
       @slices = @{$sa->fetch_all('toplevel')};
   }
 
-  my @density_types  = qw(genedensity knowngenedensity snpdensity);
+  my @density_types  = qw(genedensity knowngenedensity snpdensity percentgc);
 
   my @attrib_types = qw(GeneNo% SNPCount);
 
   my $aa = $self->db()->get_adaptor('Attribute');
 
   my $dfa = $self->db()->get_adaptor('DensityFeature');
+
+  #used to calculate the average density value for density types represented as ratios
+ 
+  my %density_ft_count = ();
 
   foreach my $slice (@slices) {
 
@@ -189,8 +193,12 @@ sub fetch_stats {
      foreach my $density_type (@density_types) {
 	      
 	  my $density_features = $dfa->fetch_all_by_Slice($slice,$density_type);
-
+	  
 	  foreach my $density_feature (@$density_features) {
+
+	      if ($density_feature->density_type()->value_type() eq 'ratio') {
+		  $density_ft_count{$density_feature->density_type()->analysis()->display_label()} += 1;
+	      }
 
 	       $assembly_stats{$density_feature->density_type()->analysis()->display_label()} += $density_feature->density_value(); 
 	  }
@@ -204,6 +212,15 @@ sub fetch_stats {
 		 $assembly_stats{$attrib->description()} += $attrib->value(); 
 	  }
      }
+  }
+
+  foreach my $density_analysis (keys %density_ft_count) {
+
+      if ($density_ft_count{$density_analysis} > 1) {
+	  $assembly_stats{$density_analysis} /= $density_ft_count{$density_analysis};
+	  $assembly_stats{$density_analysis} = sprintf "%.2f", $assembly_stats{$density_analysis}; 
+	  $assembly_stats{$density_analysis} .= '%';
+      }
   }
 
   return \%assembly_stats;
