@@ -486,7 +486,7 @@ sub _setup_dir {
   my ($self, $db) = @_;
   my @path = ($self->opts()->{directory});
   if($self->opts()->{testcompatible}) {
-    if( $db =~ /^([a-zA-Z0-9_]+)_([a-z]+)_\d+/) {
+    if( $db =~ /^(?:\w+_test_db_)?([a-zA-Z0-9_]+)_([a-z]+)_\d+/) {
       push(@path, $1, $2);
     }
     else {
