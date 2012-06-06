@@ -14,7 +14,7 @@ $Data::Dumper::Indent = 0;
 my $release = software_version();
 
 
-my $base_dir = "mypath";
+my $base_dir = "/home/ktaylor/projection_test";
 
 my $conf = "release_${release}.ini"; # registry config file, specifies Compara location
 
@@ -237,8 +237,8 @@ my @execution_order = ( 'human', 'mouse', 'rat', 'zebrafish');
 
 print "Deleting projected names (one to one)\n";
 foreach my $species (keys %names_1_1) {
-    foreach my $to (@{$species}) {
-        system "perl project_display_xrefs.pl $script_opts -to $to -delete_names -delete_only";
+    foreach my $to (@{$names_1_1{$species}}) {
+        system "perl project_display_xrefs.pl $script_opts -to $to -delete_names -delete_only\n";
     };
 }
 
@@ -251,14 +251,14 @@ foreach my $from (@execution_order) {
         my $n = substr("n_${from}_$to", 0, 10); # job name display limited to 10 chars
         my $all = ($from eq "human") ? "" : "--all_sources"; # non-human from species -> use all sources
         print "Submitting name projection from $from to $to\n";
-        system "bsub $bsub_opts -o $o -e $e -J $n perl project_display_xrefs.pl $script_opts -from $from -to $to -names -no_database $all";
+        system "bsub $bsub_opts -o $o -e $e -J $n perl project_display_xrefs.pl $script_opts -from $from -to $to -names -no_database $all\n";
     }
 }
 
 print "Deleting projected names (one to many)\n";
 foreach my $from (keys %names_1_many) {
     foreach my $to (@{$names_1_many{$from}}) {
-        system "perl project_display_xrefs.pl $script_opts -to $to -delete_names -delete_only";
+        system "perl project_display_xrefs.pl $script_opts -to $to -delete_names -delete_only\n";
     }
 }
 
@@ -270,7 +270,7 @@ foreach my $from (@execution_order) {
         my $e = "$dir/names_${from}_$to.err";
         my $n = substr("n_${from}_$to", 0, 10);
         print "Submitting name projection from $from to $to (1:many)\n";
-        system "bsub $bsub_opts -o $o -e $e -J $n perl project_display_xrefs.pl $script_opts -from $from -to $to -names -no_database -one_to_many";
+        system "bsub $bsub_opts -o $o -e $e -J $n perl project_display_xrefs.pl $script_opts -from $from -to $to -names -no_database -one_to_many\n";
     }
 }
 
@@ -282,7 +282,7 @@ $script_opts .= " -nobackup";
 print "Deleting projected GO terms\n";
 foreach my $from (keys %go_terms) {
     foreach my $to (@{$go_terms{$from}}) {
-        system "perl project_display_xrefs.pl $script_opts -to $to -delete_go_terms -delete_only";
+        system "perl project_display_xrefs.pl $script_opts -to $to -delete_go_terms -delete_only\n";
     }
 }
 
@@ -295,7 +295,7 @@ foreach my $from (@execution_order) {
         my $e = "$dir/go_${from}_$to.err";
         my $n = substr("g_${from}_$to", 0, 10);
         print "Submitting GO term projection from $from to $to\n";
-        system "bsub $bsub_opts -q long -o $o -e $e -J $n perl project_display_xrefs.pl $script_opts -from $from -to $to -go_terms";
+        system "bsub $bsub_opts -q long -o $o -e $e -J $n perl project_display_xrefs.pl $script_opts -from $from -to $to -go_terms\n";
     }
 }
 
