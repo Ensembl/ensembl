@@ -315,6 +315,11 @@ sub modify_sql {
     $sql =~ s/DEFINER=.+ \s+ SQL/DEFINER=CURRENT_USER() SQL/xms;
     $sql =~ s/SQL \s+ SECURITY \s+ DEFINER/SQL SECURITY INVOKER/xms;
   }
+  if($self->opts()->{testcompatible}) {
+    $sql =~ s/DEFAULT\s+CHARSET=latin1//xms;
+    $sql =~ s/COLLATE=latin1_bin//xms;
+    $sql =~ s/AUTO_INCREMENT=\d+//xms;
+  }
   return $sql;
 }
 
