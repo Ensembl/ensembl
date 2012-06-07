@@ -1,22 +1,20 @@
 use strict;
 use warnings;
-BEGIN { $| = 1;
-	use Test;
-	plan tests => 17;
-}
+
+use Test::More;
 
 use Bio::EnsEMBL::Test::MultiTestDB;
 use Bio::EnsEMBL::Test::TestUtils;
 use Bio::EnsEMBL::DBSQL::OperonAdaptor;
 use Bio::EnsEMBL::DBSQL::OperonTranscriptAdaptor;
-debug( "Startup test" );
+note( "Startup test" );
 ok(1);
 
 my $multi = Bio::EnsEMBL::Test::MultiTestDB->new();
 
 my $dba = $multi->get_DBAdaptor( "core" );
 
-debug( "Test database instatiated" );
+note( "Test database instatiated" );
 ok( $dba );
 									  
 my $operon_adaptor =  Bio::EnsEMBL::DBSQL::OperonAdaptor->new($dba);
@@ -24,7 +22,7 @@ my $operon_adaptor =  Bio::EnsEMBL::DBSQL::OperonAdaptor->new($dba);
 # get a named operon
 my $operon = $operon_adaptor->fetch_by_name("16152-16153-4840");
 ok(defined $operon);
-	debug("O ".$operon->dbID());
+	note("O ".$operon->dbID());
 		ok(defined $operon->analysis());
 # iterate over its transcripts
 my $transcripts = $operon->get_all_OperonTranscripts();
@@ -32,9 +30,9 @@ ok(defined $transcripts);
 ok(scalar(@$transcripts)>0);
 for my $ot (@$transcripts) {
 	ok(defined $ot->analysis());
-	debug("OT ".$ot->dbID());
+	note("OT ".$ot->dbID());
 	for my $gene (@{$ot->get_all_Genes()}) {
-	debug("G ".$gene->dbID());
+	note("G ".$gene->dbID());
 	}
 }
 
@@ -46,11 +44,11 @@ ok(defined $operons);
 ok(scalar(@$operons)>0);
 for my $o (@$operons) {
 		ok(defined $o->analysis());
-	debug("O ".$o->dbID());
+	note("O ".$o->dbID());
 	for my $ot (@{$o->get_all_OperonTranscripts()}) {
-	debug("OT ".$ot->dbID());
+	note("OT ".$ot->dbID());
 	for my $gene (@{$ot->get_all_Genes()}) {
-	debug("G ".$gene->dbID());
+	note("G ".$gene->dbID());
 	}
 }
 }
@@ -59,10 +57,10 @@ my $operon_transcript_adaptor =  Bio::EnsEMBL::DBSQL::OperonTranscriptAdaptor->n
 # get a named operon
 my $ot = $operon_transcript_adaptor->fetch_by_name("T16152-16153-4840");
 ok(defined $ot);
-	debug("OT ".$ot->dbID());
-	debug("OTP ".$ot->operon()->dbID());
+	note("OT ".$ot->dbID());
+	note("OTP ".$ot->operon()->dbID());
 	for my $gene (@{$ot->get_all_Genes()}) {
-	debug("G ".$gene->dbID());
+	note("G ".$gene->dbID());
 	}
 	
 my $ots = $operon_transcript_adaptor->fetch_all_by_Slice($slice);
@@ -73,13 +71,14 @@ ok(scalar(@$ots)>0);
 my $gene_adaptor = Bio::EnsEMBL::DBSQL::GeneAdaptor->new($dba);
 my ($gene) = @{$gene_adaptor->fetch_all_by_external_name('16152')};
 ok(defined $gene);
-	debug("GQ ".$gene->dbID());
+	note("GQ ".$gene->dbID());
 $ots = $operon_transcript_adaptor->fetch_all_by_gene($gene);
 ok(defined $ots && scalar(@$ots)>0);	
 for my $ot (@$ots) {
-		debug("OT ".$ot->dbID());
+		note("OT ".$ot->dbID());
 		for my $gene (@{$ot->get_all_Genes()}) {
-	debug("G ".$gene->dbID());
+	note("G ".$gene->dbID());
 	}
 }
 
+done_testing();
