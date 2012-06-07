@@ -10,9 +10,9 @@
 # Need to find the duplicates first and select the lowest xref_id as our "canonical" xref_id
 
 create temporary table xref_dups
-select `dbprimary_acc`,`external_db_id`,`info_type`,`info_text`, min(xref_id) as xref_id, count(*) as c
+select `dbprimary_acc`,`external_db_id`,IFNULL(`info_type`, 'NONE') as info_type, IFNULL(`info_text`, '') as info_text, min(xref_id) as xref_id, count(*) as c
 from xref
-group by `dbprimary_acc`,`external_db_id`,`info_type`,`info_text`
+group by `dbprimary_acc`,`external_db_id`,IFNULL(`info_type`, 'NONE'),IFNULL(`info_text`, '')
 having c > 1;
 
 # Mark all other duplicate xrefs and flag their new canonical ID
@@ -22,8 +22,8 @@ select x.xref_id, xd.xref_id AS canonical_xref_id
 from xref x join `xref_dups` xd on ( 
   x.`dbprimary_acc` = xd.`dbprimary_acc` 
   and x.`external_db_id` = xd.`external_db_id` 
-  and (x.`info_type` = xd.`info_type` || (x.`info_type` IS NULL and xd.`info_type` IS NULL))
-  and (x.`info_text` = xd.`info_text` || (x.`info_text` IS NULL and xd.`info_text` IS NULL))
+  and IFNULL(x.`info_type`, 'NONE') = xd.`info_type`
+  and IFNULL(x.`info_text`, '') = xd.info_text
   and xd.`xref_id` <> x.`xref_id`
 );
 
@@ -51,20 +51,19 @@ ALTER TABLE xref MODIFY info_type enum('NONE','PROJECTION','MISC','DEPENDENT','D
 # Remove duplicate nulls in object_xref table
 
 create temporary table object_xref_dups
-select `ensembl_id`, `ensembl_object_type`, `xref_id`, `linkage_annotation`, `analysis_id`, min(object_xref_id) as object_xref_id, count(*) as c
+select `ensembl_id`, `ensembl_object_type`, `xref_id`, IFNULL(`analysis_id`, 0) as analysis_id, min(object_xref_id) as object_xref_id, count(*) as c
 from object_xref
-group by `ensembl_id`, `ensembl_object_type`, `xref_id`, `linkage_annotation`, `analysis_id`
+group by `ensembl_id`, `ensembl_object_type`, `xref_id`, IFNULL(`analysis_id`, 0)
 having c > 1;
 
 create temporary table object_xref_MFD
 select ox.object_xref_id
 from object_xref ox join `object_xref_dups` oxd on ( 
-	ox.`ensembl_id` = oxd.`ensembl_id` 
-	and ox.ensembl_object_type = oxd.ensembl_object_type 
-	and ox.xref_id = oxd.xref_id
-	and (ox.linkage_annotation = oxd.linkage_annotation || (ox.`linkage_annotation` IS NULL and oxd.`linkage_annotation` IS NULL))
-	and (ox.analysis_id = oxd.analysis_id || (ox.`analysis_id` IS NULL and oxd.`analysis_id` IS NULL))
-	and oxd.`object_xref_id` <> ox.`object_xref_id`
+  ox.`ensembl_id` = oxd.`ensembl_id` 
+  and ox.ensembl_object_type = oxd.ensembl_object_type 
+  and ox.xref_id = oxd.xref_id
+  and IFNULL(ox.analysis_id, 0) = oxd.analysis_id
+  and oxd.`object_xref_id` <> ox.`object_xref_id`
 );
 ALTER TABLE object_xref_MFD ADD INDEX dribbling_simpleton(object_xref_id);
 
