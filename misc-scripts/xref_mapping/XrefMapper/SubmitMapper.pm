@@ -142,9 +142,18 @@ sub no_dump_xref {
 
 sub get_stored_methods {
     my ($self) = @_;
-
-    my $methods = $self->xref()->dbc()->selectcol_arrayref("select distinct method from source_mapping_method order by method");
-    return $methods;
+    
+    my $sth = $self->xref()->dbc->prepare("select distinct method from source_mapping_method order by method");
+    $sth->execute();
+    
+    my $method;
+    my @methods;
+    $sth->bind_columns(\$method);
+    while($sth->fetch()){
+	push(@methods,$method);
+    }
+    $sth->finish;
+    return \@methods;
 
 }
 
