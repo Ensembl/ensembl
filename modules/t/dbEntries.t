@@ -8,11 +8,7 @@ use Bio::EnsEMBL::Test::TestUtils;
 use Bio::EnsEMBL::DBSQL::DBEntryAdaptor;
 use Bio::EnsEMBL::DBEntry;
 
-# switch on the debug prints
-
-our $verbose = 1;
-
-debug( "Startup test" );
+note( "Startup test" );
 #
 # 1 Test started
 #
@@ -22,7 +18,7 @@ my $multi = Bio::EnsEMBL::Test::MultiTestDB->new();
 
 my $db = $multi->get_DBAdaptor( "core" );
 
-debug( "Test database instantiated" );
+note( "Test database instantiated" );
 
 #
 # 2 Database instatiated
@@ -58,19 +54,19 @@ for my $gene_id ( @$all_gene_ids ) {
   }
 }
 
-debug( "Found $xref_count xrefs and $db_entry_count dblinks." );
-debug( " $goxref_count GoXrefs, $ident_count identityXrefs." );
+note( "Found $xref_count xrefs and $db_entry_count dblinks." );
+note( " $goxref_count GoXrefs, $ident_count identityXrefs." );
 
 #
 # 3 as many dblinks as entries in object_xref
 #
-print $db_entry_count."\t".$xref_count."\n";
+note $db_entry_count."\t".$xref_count."\n";
 ok( $db_entry_count == $xref_count );
 
 #
 # 4,5 correct number of GoXrefs and IdentityXrefs
 #
-debug( "GoXrefs and IdentityXrefs: ".$goxref_count . " " . $ident_count);
+note( "GoXrefs and IdentityXrefs: ".$goxref_count . " " . $ident_count);
 ok( $goxref_count == 48 );
 ok( $ident_count == 32 );
 
@@ -150,7 +146,7 @@ $oxr_count = count_rows($db, 'object_xref');
 #
 # 6 right number of object xrefs in db
 #
-debug( "object_xref_count = $oxr_count" );
+note( "object_xref_count = $oxr_count" );
 ok( $oxr_count == 4 );
 
 
@@ -160,14 +156,14 @@ $sth->finish();
 #
 # 7 number of xrefs right
 #
-debug( "Number of xrefs = $xref_count" );
+note( "Number of xrefs = $xref_count" );
 ok( $xref_count == 3 );
 
 #
 # 8 number of go entries right
 #
 $go_count = count_rows($db, 'ontology_xref');
-debug( "Number of go_xrefs = $go_count" );
+note( "Number of go_xrefs = $go_count" );
 ok( $go_count == 2 );
 
 #
@@ -176,7 +172,7 @@ ok( $go_count == 2 );
 
 $ident_count = count_rows($db, 'identity_xref');
 # the identity (query/target)values are not normalized ...
-debug( "Number of identity_xrefs = $ident_count" );
+note( "Number of identity_xrefs = $ident_count" );
 ok( $ident_count == 2 );
 
 # Check type storing and retrieval
@@ -218,7 +214,7 @@ my $thread3 = threads->create(\&parallel_store);
 my @xref_ids;
 @xref_ids = ($thread1->join,$thread2->join,$thread3->join);
 
-debug("Threaded xrefs: ".$xref_ids[0]." ".$xref_ids[1]." ".$xref_ids[2]);
+note("Threaded xrefs: ".$xref_ids[0]." ".$xref_ids[1]." ".$xref_ids[2]);
 
 # Test 10 - Verify that only one xref has been inserted under parallel inserts
 ok($xref_ids[0] == 1000009 && $xref_ids[1] == $xref_ids[0] && $xref_ids[2] == $xref_ids[0]);
@@ -242,7 +238,7 @@ $xref = Bio::EnsEMBL::DBEntry->new
    );
    
 my $xref_id = $dbEntryAdaptor->store($xref, undef, "Transcript");
-debug("Xref_id from insert: ".$xref_id);
+note("Xref_id from insert: ".$xref_id);
 ok($xref_id == 1000010);
 
 #
@@ -491,19 +487,19 @@ sub print_dbEntries {
 
   foreach my $dbe (@$dbes) {
     if($dbe->isa('Bio::EnsEMBL::IdentityXref')) {
-      debug("IDXref");
+      note("IDXref");
     } elsif($dbe->isa('Bio::EnsEMBL::OntologyXref')) {
-      debug("GOXref");
+      note("GOXref");
     } elsif($dbe->isa('Bio::EnsEMBL::DBEntry')) {
-      debug("DBEntry");
+      note("DBEntry");
     } else {
-      debug("UNKNOWN dbentry type");
+      note("UNKNOWN dbentry type");
     }
 
-    debug(" ".$dbe->dbname()."-".$dbe->display_id()."\n");
+    note(" ".$dbe->dbname()."-".$dbe->display_id()."\n");
   }
 
-  debug(scalar(@$dbes). " total");
+  note(scalar(@$dbes). " total");
 
 }
 
