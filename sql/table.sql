@@ -2516,7 +2516,7 @@ CREATE TABLE xref (
                                     'INFERRED_PAIR', 'PROBE',
                                     'UNMAPPED', 'COORDINATE_OVERLAP', 
                                     'CHECKSUM' ) DEFAULT 'NONE' NOT NULL,
-   info_text                  VARCHAR(255) DEFAULT '' NOT NULL;
+   info_text                  VARCHAR(255) DEFAULT '' NOT NULL,
 
    PRIMARY KEY (xref_id),
    UNIQUE KEY id_index (dbprimary_acc, external_db_id, info_type, info_text),
