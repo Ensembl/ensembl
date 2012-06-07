@@ -58,6 +58,7 @@ package Bio::EnsEMBL::PredictionTranscript;
 use vars qw(@ISA);
 use strict;
 
+use Bio::Seq;
 use Bio::EnsEMBL::Feature;
 use Bio::EnsEMBL::Transcript;
 use Bio::EnsEMBL::Translation;
