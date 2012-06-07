@@ -143,9 +143,11 @@ sub fetch_info {
   Arg [1]    : string $seq_region_name (optional)
                The name of the toplevel seq_region for which statistics should be fetched
 
-  Description: Returns a hash
-  Returntype : hash with assembly statistics name and value pairs
-  Exceptions : none
+  Description: Returns a reference to a hash containing density features/ density related 
+               seq_region attributes for a toplevel seq_region provided or if none
+               provided - all top level seq regions
+  Returntype : hashref
+  Exceptions : throw if the toplevel slice with seq_region_name provided does not exist
   Caller     : general
   Status     : Stable
 
