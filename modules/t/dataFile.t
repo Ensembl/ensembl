@@ -10,6 +10,8 @@ use Bio::EnsEMBL::DataFile;
 my $multi = Bio::EnsEMBL::Test::MultiTestDB->new();
 my $db = $multi->get_DBAdaptor( 'core' );
 
+$multi->hide('core', 'data_file');
+
 my $dfa = $db->get_DataFileAdaptor();
 isa_ok($dfa, 'Bio::EnsEMBL::DBSQL::DataFileAdaptor', 'Checking DataFileAdaptor instance');
 
@@ -77,12 +79,11 @@ my %base_args = (
 }
 
 {
-  $multi->save(qw/core data_file/);
   my %local_args = %base_args;
   delete $local_args{-ADAPTOR};
   my $df = new_ok('Bio::EnsEMBL::DataFile' => [ %local_args ], 'data file');
   $dfa->store($df);
-  is($df->dbID(), 1, 'Checking it was assigned ID 1');
+  cmp_ok($df->dbID(), '>=', 1, 'Checking it was assigned an ID higher than 1');
   is_deeply($dfa->fetch_by_dbID($df->dbID()), $df, 'Checking retrieved data is the same as what we currently hold');
   
   $df->absolute(1);
@@ -91,9 +92,9 @@ my %base_args = (
   
   is_deeply($dfa->fetch_all_by_Analysis($a), [$df], 'Checking retrieved data is the same as what we currently hold');
   is_deeply($dfa->fetch_all_by_CoordSystem($cs), [$df], 'Checking retrieved data is the same as what we currently hold');
-  is_deeply($dfa->fetch_by_name_and_type('wibble', 'BAM'), $df, 'Checking retrieved data is the same as what we currently hold');
-    
-  $multi->restore(qw/core data_file/);
+  is_deeply($dfa->fetch_by_name_and_type('wibble', 'BAM'), $df, 'Checking retrieved data is the same as what we currently hold');    
 }
+
+$multi->restore();
 
 done_testing();
