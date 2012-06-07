@@ -123,7 +123,7 @@ sub new {
 
   if( defined $primary_id ) { $self->primary_id( $primary_id ) }
   if( defined $version ) { $self->version( $version ) } else
-    { $self->version( "" ); }
+    { $self->version( 0 ); }
   if( defined $dbname ) { $self->dbname( $dbname ) }
   if( defined $release) { $self->release( $release ) }
   if( defined $display_id) { $self->display_id( $display_id ) }
