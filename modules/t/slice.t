@@ -249,7 +249,7 @@ $count += scalar @$dafs;
 # Test Slice::get_all_ProteinAlignFeatures
 #
 my $pafs = $slice->get_all_ProteinAlignFeatures;
-ok(@$pafs == 7205);
+is(scalar(@$pafs),7205, 'Checking count of returned ProteinAlignFeatures');
 $count += scalar @$pafs;
 
 #
