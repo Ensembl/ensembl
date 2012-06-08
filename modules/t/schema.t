@@ -16,10 +16,9 @@ my $sql_file = catfile($sql_dir, 'table.sql');
 
 my $result = ok(-f $sql_file, 'Checking SQL schema file exists');
 
-if(! $result) {
-  skip 'Skipping DB creation tests as schema file cannot be found at '.$sql_file, 1;
-}
-else {
+SKIP: {
+  skip 'Skipping DB creation tests as schema file cannot be found at '.$sql_file, 1 unless $result;
+  
   #Create DB & load schema
   my $new_db_name = $db->create_db_name('temp');
   note 'Creating database '.$new_db_name;
@@ -40,4 +39,5 @@ else {
   note 'Dropping database '.$new_db_name;
   $dba->dbc()->do("drop database $new_db_name");
 }
+
 done_testing();
