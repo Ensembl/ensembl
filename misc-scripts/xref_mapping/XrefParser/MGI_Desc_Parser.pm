@@ -33,25 +33,32 @@ sub run {
   }
 
   my $xref_count =0;
-
+  my $syn_count = 0;
   my %acc_to_xref;
 
 
     my $header = $mgi_io->getline(); #discard header line
+
     chomp($header);
     # crude emergency check for potentially altered file format.
-    my $header_template = qq(MGI Accession ID\tChr\tcM Position\tgenome coordinate start\tgenome coordinate end\tstrand\tMarker Symbol\tStatus\tMarker Name\tMarker Type\tFeature Type\tIMarker Synonyms (pipe-separated));
+    my $header_template = qq(MGI Accession ID\tChr\tcM Position\tgenome coordinate start\tgenome coordinate end\tstrand\tMarker Symbol\tStatus\tMarker Name\tMarker Type\tFeature Type\tMarker Synonyms (pipe-separated));
     if ($header ne $header_template) {die "File header has altered from format parser expects. Check MGI "};
       
     while ( my $line = $mgi_io->getline() ) {
+
         chomp($line);
         my ($accession, $chromosome, $position, $start, $end, $strand,$label, 
-            $status, $marker, $marker_type, $feature_type, $synonym_field) = split(/\t+/,$line);
+            $status, $marker, $marker_type, $feature_type, $synonym_field) = split(/\t/,$line);
             
-        $position =~ s/^\s+//;
-        my @synonyms = split(/|/,$synonym_field);
+        $position =~ s/^\s+// if ($position);
+
+        my @synonyms = split(/|/,$synonym_field) if ($synonym_field);
         
-        my $desc = join(" ",$marker,$marker_type);
+	
+        my $desc;
+	if ($marker) {
+	    $desc = $marker;
+	}
         
         $acc_to_xref{$accession} = $self->add_xref({ acc        => $accession,
     	                           		             label      => $label,
@@ -59,18 +66,18 @@ sub run {
     					                             source_id  => $source_id,
     					                             species_id => $species_id,
     					                             info_type  => "MISC"} );
-        if($verbose and $desc eq ""){
+        if($verbose and !$desc){
     	   print "$accession has no description\n";
         }
         $xref_count++;
             
         if(defined($acc_to_xref{$accession})){
-            my $syn_count = 0;
+           
             foreach my $syn (@synonyms) {
                 $self->add_synonym($acc_to_xref{$accession}, $syn);
                 $syn_count++;
             }
-            print $syn_count." synonyms added\n" if($verbose);
+            
         }
         
     }
@@ -78,7 +85,8 @@ sub run {
     $mgi_io->close();
       
     print $xref_count." MGI Description Xrefs added\n" if($verbose);
-    
+    print $syn_count." synonyms added\n" if($verbose);
+
     return 0; #successful
 }
 	
