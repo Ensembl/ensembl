@@ -19,6 +19,7 @@ my @table_names = qw(
   dna_align_feature
   exon
   gene
+  intron_supporting_evidence
   karyotype
   marker_feature
   misc_feature
