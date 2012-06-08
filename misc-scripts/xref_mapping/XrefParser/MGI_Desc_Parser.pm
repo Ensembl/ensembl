@@ -52,7 +52,7 @@ sub run {
             
         $position =~ s/^\s+// if ($position);
 
-        my @synonyms = split(/|/,$synonym_field) if ($synonym_field);
+        my @synonyms = split(/\|/,$synonym_field) if ($synonym_field);
         
 	
         my $desc;
