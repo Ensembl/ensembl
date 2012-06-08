@@ -45,3 +45,4 @@ foreach my $intron (@introns){
 
 $multi->restore();
 
+done_testing();
