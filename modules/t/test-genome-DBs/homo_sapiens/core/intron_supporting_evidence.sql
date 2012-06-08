@@ -12,5 +12,7 @@ is_splice_canonical           BOOLEAN NOT NULL DEFAULT 0,
 
 PRIMARY KEY (intron_supporting_evidence_id),
 
-UNIQUE KEY (analysis_id, seq_region_id, seq_region_start, seq_region_end, seq_region_strand, hit_name)
+UNIQUE KEY (analysis_id, seq_region_id, seq_region_start, seq_region_end, seq_region_strand, hit_name),
+KEY seq_region_idx (seq_region_id, seq_region_start)
+
 ) COLLATE=latin1_swedish_ci ENGINE=MyISAM;

@@ -112,6 +112,7 @@ sub set_values_from_Intron {
   $self->end($intron->end());
   $self->strand($intron->strand());
   $self->slice($intron->slice());
+  $self->is_splice_canonical($intron->is_splice_canonical());
   return;
 }
 

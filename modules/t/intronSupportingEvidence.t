@@ -52,6 +52,7 @@ my $assert_ise_vs_intron = sub {
     Bio::EnsEMBL::Intron->new($e1, $exon_adaptor->fetch_by_dbID(162033));
     like($$stderr_ref, qr/Exons have different slice references/, 'Intron must warn if a different reference slice is used');
   });
+  ok($intron_from_exons->is_splice_canonical(), 'Checking Intron is canonical in its splicing');
   
   note 'Starting IntronSupportingEvidence tests';
   
@@ -66,6 +67,7 @@ my $assert_ise_vs_intron = sub {
     -INTRON => $intron_from_exons, @basic_ise_args,
   );
   
+  ok($ise_from_intron->is_splice_canonical(), 'Checking IntronSupportingEvidence is canonical in its splicing');
   is($feature_id->($intron_from_exons), $feature_id->($ise_from_intron), 'IntronSupportingEvidence returns the equivalent Intron object');
   
   throws_ok { $ise->score_type('RUBBISH') } qr/not allowed/, 'IntronSupportingEvidence refuses unsupported ENUMs';

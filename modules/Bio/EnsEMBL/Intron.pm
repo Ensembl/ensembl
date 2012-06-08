@@ -153,6 +153,47 @@ sub next_Exon {
   return $self->{'next'};
 }
 
+=head2 is_splice_canonical
+
+  Example     : my $canonical = $intron->is_splice_canonical(); 
+  Description : Indicates if the splice site is considered normal. This means
+                splice site variants equal to (D == donor, A == acceptor)
+                  GT (D) => AG (A) 
+                  AT (D) => AC (A)
+                  GC (D) => AG (A)
+  Returntype  : Boolean indicating if the splice was as expected
+  Exceptions  : See splice_seq
+
+=cut
+
+sub is_splice_canonical {
+  my ($self) = @_;
+  my $splice = join q{}, @{$self->splice_seq()}; 
+  my $canonical = {
+    'GTAG' => 1, 'ATAC' => 1, 'GCAG' => 1
+  }->{$splice};
+  return $canonical || 0;
+}
+
+=head2 splice_seq
+
+  Example     : my ($donor, $acceptor) = @{$intron->splice_seq}; 
+  Description : Get the donor and acceptor splice sites for this intron
+  Returntype  : ArrayRef[String] The donor and acceptor sequences as Strings
+  Exceptions  : Thrown if a feature Slice cannot be found
+
+=cut
+
+sub splice_seq {
+  my ($self) = @_;
+  my $slice = $self->feature_Slice();
+  throw "Cannot retrieve feature_Slice() for this Intron" unless $slice;
+  my $length = $self->length();
+  my $donor_seq    = uc($slice->subseq(1,2));
+  my $acceptor_seq = uc($slice->subseq($length - 1, $length));
+  return [$donor_seq, $acceptor_seq];
+}
+
 1;
 
 
