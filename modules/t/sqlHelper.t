@@ -70,7 +70,7 @@ is($meta_count_hash->{$meta_key}, 1, 'Checking hash comes back correctly');
   );
   my $expected_hash = {
     'species.classification' => [
-      qw(sapiens Homo Hominidae Catarrhini Primates Eutheria Mammalia Vertebrata Chordata Metazoa Eukaryota)
+      qw(Hominidae Catarrhini Primates Eutheria Mammalia Vertebrata Chordata Metazoa Eukaryota)
     ]
   };
   
