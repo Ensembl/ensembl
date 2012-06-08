@@ -481,6 +481,22 @@ ok(@{$xrefs} == 23);  #test 60
 my $db_name = $dbEntryAdaptor->get_db_name_from_external_db_id(4100);
 ok($db_name eq 'UniGene');
 
+# Test multiple inserts for empty descriptions
+{
+  $multi->hide('core', 'xref', 'object_xref');
+  my @basic_args = (-PRIMARY_ID => 'AAAA', -DBNAME => 'Uniprot/SWISSPROT', -RELEASE => 1);
+  my $entry_no_desc = Bio::EnsEMBL::DBEntry->new(@basic_args, -DESCRIPTION => q{});
+  my $no_desc_id = $dbEntryAdaptor->store($entry_no_desc, $gene->dbID(), 'Gene');
+  is_rows(1, $db, 'xref', 'where description = ?', [q{}]);
+  is_rows(1, $db, 'object_xref');
+  my $no_desc_id_again = $dbEntryAdaptor->store($entry_no_desc, $gene->dbID(), 'Gene');
+  is($no_desc_id_again, $no_desc_id, 'Checking the ID is consistent between store() invocations');
+  is_rows(1, $db, 'xref', 'where description = ?', [q{}]);
+  is_rows(1, $db, 'object_xref');
+  is_rows(0, $db, 'object_xref', 'where xref_id =?', [0]);
+  
+  $multi->restore('core', 'xref', 'object_xref');
+}
 
 sub print_dbEntries {
   my $dbes = shift;

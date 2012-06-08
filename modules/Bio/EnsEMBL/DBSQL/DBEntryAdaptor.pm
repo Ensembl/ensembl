@@ -893,17 +893,17 @@ sub _store_or_fetch_xref {
             AND info_type = ?
             AND info_text = ?
             AND description';
-        if ($dbEntry->description) {$sql .= ' = ?'}
+        if (defined $dbEntry->description) {$sql .= ' = ?'}
         else {$sql .= ' is NULL'}
-        
+
         $sth = $self->prepare( $sql );
         $sth->bind_param(1, $dbEntry->primary_id,SQL_VARCHAR);
-        $sth->bind_param(2, $dbEntry->display_id,SQL_VARCHAR);
-        $sth->bind_param(3, $dbEntry->version,SQL_VARCHAR);
+        $sth->bind_param(2, ($dbEntry->display_id || ''),SQL_VARCHAR);
+        $sth->bind_param(3, $dbEntry->version ,SQL_VARCHAR);
         $sth->bind_param(4, $dbRef,SQL_INTEGER);
         $sth->bind_param(5, ($dbEntry->info_type || 'NONE'), SQL_VARCHAR);
         $sth->bind_param(6, ($dbEntry->info_text || ''), SQL_VARCHAR);
-        if ($dbEntry->description) {$sth->bind_param(7, $dbEntry->description,SQL_VARCHAR);}
+        if (defined $dbEntry->description) {$sth->bind_param(7, $dbEntry->description,SQL_VARCHAR);}
         $sth->execute();
         ($xref_id) = $sth->fetchrow_array();
         $sth->finish;
