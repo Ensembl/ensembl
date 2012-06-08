@@ -140,7 +140,7 @@ sub new {
   if(defined($start) && defined($end)) {
       if (($start =~ /\d+/) && ($end =~ /\d+/)) {
 	  if($end+1 < $start) {
-	      throw('Start must be less than or equal to end+1');
+	      throw(sprintf('Start (%d) must be less than or equal to end+1 (%d)', $start, ($end+1)));
 	  }
       } else {
 	      throw('Start and end must be integers');
