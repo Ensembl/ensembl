@@ -438,7 +438,7 @@ sub add_supporting_features {
     } 
     
     if ((defined $self->slice() && defined $feature->slice())&&
-	    ( $self->slice()->name() ne $feature->slice()->name())){
+      ( $self->slice()->name() ne $feature->slice()->name())){
       throw("Supporting feat not in same coord system as exon\n" .
             "exon is attached to [".$self->slice()->name()."]\n" .
             "feat is attached to [".$feature->slice()->name()."]");
@@ -447,8 +447,8 @@ sub add_supporting_features {
     foreach my $added_feature ( @{ $self->{_supporting_evidence} } ){
       # compare objects
       if ( $feature == $added_feature ){
-	#this feature has already been added
-	next FEATURE;
+  #this feature has already been added
+  next FEATURE;
       }
     }
     
@@ -1060,7 +1060,7 @@ sub coding_region_start {
   if( defined $value ) {
     $self->{'coding_region_start'} = $value;
   } elsif(!defined $self->{'coding_region_start'} &&
-	  defined $self->translation) {
+    defined $self->translation) {
     #calculate the coding start from the translation
     my $start;
     my $strand = $self->translation()->start_Exon->strand();
@@ -1108,7 +1108,7 @@ sub coding_region_end {
   if( defined $value ) {
     $self->{'coding_region_end'} = $value;
   } elsif( ! defined $self->{'coding_region_end'}
-	   && defined $self->translation() ) {
+     && defined $self->translation() ) {
     $strand = $self->translation()->start_Exon->strand();
     if( $strand == 1 ) {
       $end = $self->translation()->end_Exon->start();
@@ -1470,6 +1470,55 @@ sub get_all_constitutive_Exons {
   return $self->get_all_Exons( '-constitutive' => 1 );
 }
 
+=head2 get_all_IntronSupportingEvidence
+
+  Example     : $ise->get_all_IntronSupportingEvidence();
+  Description : Fetches all ISE instances linked to this Transript
+  Returntype  : ArrayRef[Bio::EnsEMBL::IntronSupportEvidence] retrieved from 
+                the DB or from those added via C<add_IntronSupportingEvidence>
+  Exceptions  : None
+
+=cut
+
+sub get_all_IntronSupportingEvidence {
+  my ($self) = @_;
+  if(! defined $self->{_ise_array} && defined $self->adaptor()) {
+    my $isea = $self->adaptor()->db()->get_IntronSupportingEvidenceAdaptor();
+    $self->{_ise_array} = $isea->fetch_all_by_Transcript($self);
+  }
+  return $self->{_ise_array};
+}
+
+
+=head2 add_IntronSupportingEvidence
+
+  Arg [1]     : Bio::EnsEMBL::IntronSupportEvidence Object to add
+  Example     : $ise->add_IntronSupportingEvidence($ise);
+  Description : Adds the IntronSupportEvidence instance to this Transcript. The
+                code checks to see if it is a unique ISE instance
+  Returntype  : Boolean; true means it was added. False means it was not 
+                as this ISE was already attached
+  Exceptions  : None
+
+=cut
+
+sub add_IntronSupportingEvidence {
+  my ($self, $ise) = @_;
+  assert_ref($ise, 'Bio::EnsEMBL::IntronSupportingEvidence', 'IntronSupportingEvidence');
+  my $unique = 1;
+  foreach my $other_ise (@{$self->{_ise_array}}) {
+    if($ise->equals($other_ise)) {
+      $unique = 0;
+      last;
+    }
+  }
+  if($unique) {
+    push(@{$self->{_ise_array}}, $ise);
+    return 1;
+  }
+  return 0;
+}
+
 =head2 get_all_Introns
 
   Arg [1]    : none
@@ -1560,6 +1609,22 @@ sub flush_Exons {
   $self->{'_trans_exon_array'} = [];
 }
 
+=head2 flush_IntronSupportingEvidence
+
+  Example    : $transcript->flush_IntronSupportingEvidence();
+  Description: Removes all IntronSupportingEvidence from this transcript
+  Returntype : none
+  Exceptions : none
+  Caller     : general
+  Status     : Stable
+
+=cut
+
+sub flush_IntronSupportingEvidence {
+  my ($self) = @_;
+  $self->{_ise_array} = [];
+  return;
+}
 
 =head2 five_prime_utr
 
@@ -1679,7 +1744,7 @@ sub get_all_translateable_Exons {
     if ($ex == $start_exon ) {
       if ($t_start < 1 or $t_start > $length) {
         warning("WARN: Translation start '$t_start' is outside exon $ex length=$length");
-	return [];
+  return [];
       }
       $adjust_start = $t_start - 1;
     }
@@ -2204,8 +2269,8 @@ sub transform {
     # ordering. This assumes 5->3 order. No complaints on transsplicing.
 
     my ( $last_new_start, $last_old_strand, 
-	 $last_new_strand, $start_exon, $end_exon,
-	$last_seq_region_name );
+   $last_new_strand, $start_exon, $end_exon,
+  $last_seq_region_name );
     my $first = 1;
     my $ignore_order = 0;
     my $order_broken = 0;
@@ -2214,48 +2279,48 @@ sub transform {
       my $new_exon = $old_exon->transform( @_ );
       return undef if( !defined $new_exon );
       if( ! defined $new_transcript ) {
-	if( !$first ) {
-	  if( $old_exon->strand() != $last_old_strand ) {
-	    # transsplicing, ignore ordering
-	    $ignore_order = 1;  
-	  }
+  if( !$first ) {
+    if( $old_exon->strand() != $last_old_strand ) {
+      # transsplicing, ignore ordering
+      $ignore_order = 1;  
+    }
 
-	  if( $new_exon->slice()->seq_region_name() ne 
-	      $last_seq_region_name ) {
-	    return undef;
-	  }
+    if( $new_exon->slice()->seq_region_name() ne 
+        $last_seq_region_name ) {
+      return undef;
+    }
 
-	  if( $last_new_strand == 1 and 
-	      $new_exon->start() < $last_new_start ) {
-	    $order_broken = 1;
-	  }
+    if( $last_new_strand == 1 and 
+        $new_exon->start() < $last_new_start ) {
+      $order_broken = 1;
+    }
 
-	  if( $last_new_strand == -1 and
-	      $new_exon->start() > $last_new_start ) {
-	    $order_broken = 1;
-	  }
+    if( $last_new_strand == -1 and
+        $new_exon->start() > $last_new_start ) {
+      $order_broken = 1;
+    }
 
     #additional check that if exons were on same strand previously, they should be again
     if(($last_old_strand == $old_exon->strand()) and !($last_new_strand == $new_exon->strand())){
       return undef;
     }
 
-	  if( $new_exon->start() < $low_start ) {
-	    $low_start = $new_exon->start();
-	  }
-	  if( $new_exon->end() > $hi_end ) {
-	    $hi_end = $new_exon->end();
-	  }
-	} else {
-	  $first = 0;
-	  $low_start = $new_exon->start();
-	  $hi_end = $new_exon->end();
-	}
+    if( $new_exon->start() < $low_start ) {
+      $low_start = $new_exon->start();
+    }
+    if( $new_exon->end() > $hi_end ) {
+      $hi_end = $new_exon->end();
+    }
+  } else {
+    $first = 0;
+    $low_start = $new_exon->start();
+    $hi_end = $new_exon->end();
+  }
 
-	$last_seq_region_name = $new_exon->slice()->seq_region_name();
-	$last_old_strand = $old_exon->strand();
-	$last_new_start = $new_exon->start();
-	$last_new_strand = $new_exon->strand();
+  $last_seq_region_name = $new_exon->slice()->seq_region_name();
+  $last_old_strand = $old_exon->strand();
+  $last_new_start = $new_exon->start();
+  $last_new_strand = $new_exon->strand();
       }
 
       if( defined $self->{'translation'} ) {
@@ -2307,6 +2372,15 @@ sub transform {
       }
     }
     $new_transcript->{'_supporting_evidence'} = \@new_features;
+  }
+  
+  if(exists $self->{_ise_array}) {
+    my @new_features;
+    foreach my $old_feature ( @{$self->{_ise_array}} ) {
+      my $new_feature = $old_feature->transform(@_);
+      push( @new_features, $new_feature );
+    }
+    $new_transcript->{_ise_array} = \@new_features;
   }
 
 
@@ -2373,6 +2447,15 @@ sub transfer {
       push( @new_features, $new_feature );
     }
     $new_transcript->{'_supporting_evidence'} = \@new_features;
+  }
+  
+  if(exists $self->{_ise_array}) {
+    my @new_features;
+    foreach my $old_feature ( @{$self->{_ise_array}} ) {
+      my $new_feature = $old_feature->transfer(@_);
+      push( @new_features, $new_feature );
+    }
+    $new_transcript->{_ise_array} = \@new_features;
   }
 
 
@@ -2583,7 +2666,7 @@ sub get_all_DAS_Features {
 
   my $db = $self->adaptor->db;
   my $GeneAdaptor = $db->get_GeneAdaptor;
-  my $Gene = $GeneAdaptor->fetch_by_transcript_stable_id($self->stable_id);	
+  my $Gene = $GeneAdaptor->fetch_by_transcript_stable_id($self->stable_id); 
   my $slice = $Gene->feature_Slice;
   return $self->SUPER::get_all_DAS_Features($slice);
 }

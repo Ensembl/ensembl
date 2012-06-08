@@ -8,6 +8,7 @@ seq_region_strand             TINYINT(2) NOT NULL,
 hit_name                      VARCHAR(100) NOT NULL,
 score                         DECIMAL(10,3),
 score_type                    ENUM('NONE', 'DEPTH') DEFAULT 'NONE',
+is_splice_canonical           BOOLEAN NOT NULL DEFAULT 0,
 
 PRIMARY KEY (intron_supporting_evidence_id),
 

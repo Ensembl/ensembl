@@ -342,7 +342,7 @@ sub get_available_adaptors {
         SplicingEvent            SplicingEventFeature SplicingTranscriptPair
         Operon 			 OperonTranscript
         DataFile                 AssemblyInfo
-        
+        IntronSupportingEvidence
         ) ),
     # Those whose adaptors are in Map::DBSQL
     map( { $_ => "Bio::EnsEMBL::Map::DBSQL::${_}Adaptor" } qw(

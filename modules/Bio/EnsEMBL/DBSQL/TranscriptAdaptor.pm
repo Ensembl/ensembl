@@ -1069,6 +1069,14 @@ sub store {
   $attr_adaptor->store_on_Transcript( $transc_dbID,
                                     $transcript->get_all_Attributes() );
 
+  # store the IntronSupportingEvidence features
+  my $ise_adaptor = $db->get_IntronSupportingEvidenceAdaptor();
+  my $intron_supporting_evidence = $transcript->get_all_IntronSupportingEvidence();
+  foreach my $ise (@{$intron_supporting_evidence}) {
+    $ise_adaptor->store($ise);
+    $ise_adaptor->store_transcript_linkage($ise, $transcript, $transc_dbID);
+  }
+
   # Update the original transcript object - not the transfered copy that
   # we might have created.
   $original->dbID($transc_dbID);
@@ -1251,6 +1259,16 @@ sub remove {
   $sfsth->bind_param(1, $transcript->dbID, SQL_INTEGER);
   $sfsth->execute();
   $sfsth->finish();
+  
+  # delete the associated IntronSupportingEvidence and if the ISE had no more
+  # linked transcripts remove it
+  my $ise_adaptor = $self->db->get_IntronSupportingEvidenceAdaptor();
+  foreach my $ise (@{$transcript->get_all_IntronSupportingEvidence()}) {
+    $ise_adaptor->remove_transcript_linkage($ise, $transcript);
+    if(! $ise->has_linked_transcripts()) {
+      $ise_adaptor->remove($ise);
+    }
+  }
 
   # remove all xref linkages to this transcript
 

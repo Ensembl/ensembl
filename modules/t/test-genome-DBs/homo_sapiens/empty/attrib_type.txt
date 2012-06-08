@@ -1,0 +1,18 @@
+1	synonym	Alternate names for clone	Synonyms
+2	FISHmap	FISH information	FISH map
+3	organisation	Organisation sequencing clone	
+4	state	Current state of clone	
+5	BACend_flag	BAC end flags	
+6	embl_acc	EMBL accession number	
+7	superctg	Super contig id.	
+8	seq_len	Accession length	
+9	fp_size	FP size	
+10	note	Note	
+11	positioned_by	Positioned by	
+12	bac_acc	BAC end accession	
+13	htg_phase	HTG Phase	High Throughput Genome Phase
+14	toplevel	Top Level	Top Level Non-Redundant Sequence Region
+15	_rna_edit	RNA editing	\N
+16	_selenocysteine	Selenocysteine	\N
+17	codon_table	Codon Table	Alternate codon table
+18	non_ref	Non Reference	Non Reference Sequence Region

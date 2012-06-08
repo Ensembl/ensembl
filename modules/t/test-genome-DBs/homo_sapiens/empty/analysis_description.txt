@@ -1,0 +1,3 @@
+1282	Genes were annotated by the Ensembl automatic analysis pipeline using either a GeneWise model from a human/vertebrate protein, a set of aligned human cDNAs followed by GenomeWise for ORF prediction or from Genscan exons supported by protein, cDNA and EST evidence. GeneWise models are further combined with available aligned cDNAs to annotate UTRs.	ensembl transcript 1 web data 1	0	\N
+1503	new description	new label   0	0	\N
+1504	updated description	N  0	0	\N

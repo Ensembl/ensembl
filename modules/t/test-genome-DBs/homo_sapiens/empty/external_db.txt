@@ -1,0 +1,110 @@
+210	Anopheles_symbol	1	KNOWN	50	Anopheles symbol	MISC	\N	\N	\N
+300	BRIGGSAE_HYBRID	1	KNOWNXREF	5	Briggsae Hybrid	MISC	\N	\N	\N
+400	Celera_Gene	1	PRED	5	Celera gene	MISC	\N	\N	\N
+410	Celera_Pep	1	PRED	5	Celera pep	MISC	\N	\N	\N
+420	Celera_Trans	1	PRED	5	Celera trans	MISC	\N	\N	\N
+600	DROS_ORTH	1	ORTH	5	DROS ORTH	MISC	\N	\N	\N
+2	EMBL	1	KNOWNXREF	5	EMBL	MISC	\N	\N	\N
+800	flybase_gene_id	1	KNOWNXREF	5	Flybase Gene	MISC	\N	\N	\N
+801	flybase_translation_id	1	KNOWNXREF	5	Flybase translation ID	MISC	\N	\N	\N
+802	flybase_gff	1	KNOWNXREF	5	Flybase GFF	MISC	\N	\N	\N
+803	flybase_polypeptide_id	1	KNOWNXREF	5	Flybase Polypeptide ID	MISC	\N	\N	\N
+804	flybase_annotation_id	1	KNOWNXREF	5	Flybase Annotation ID	MISC	\N	\N	\N
+805	flybase_symbol	1	KNOWNXREF	50	Flybase Symbol	MISC	\N	\N	\N
+806	flybase_synonym	1	KNOWNXREF	5	Flybase Synonym	MISC	\N	\N	\N
+807	flybase_name	1	KNOWNXREF	5	Flybase Name	MISC	\N	\N	\N
+808	flybase_transcript_id	1	KNOWNXREF	5	Flybase transcript ID	MISC	\N	\N	\N
+810	gadfly_gene_cgid	1	KNOWNXREF	10	Gadfly gene CGID	MISC	\N	\N	\N
+811	gadfly_transcript_cgid	1	KNOWNXREF	10	Gadfly transcript CGID	MISC	\N	\N	\N
+812	gadfly_translation_cgid	1	KNOWNXREF	10	Gadfly translation CGID	MISC	\N	\N	\N
+821	FlyBaseName_gene	1	KNOWNXREF	5	FlyBaseName gene	MISC	\N	\N	\N
+824	FlyBaseName_translations	1	XREF	5	FlyBaseName translations	MISC	\N	\N	\N
+825	FlyBaseName_transcript	1	XREF	50	FlyBaseName transcript	MISC	\N	\N	\N
+900	GKB	1	XREF	5	GKB	MISC	\N	\N	\N
+6	GO	1	KNOWNXREF	5	GO	MISC	\N	\N	\N
+5	HUGO	1	KNOWNXREF	100	HUGO	MISC	\N	\N	\N
+11	Interpro	1	XREF	5	Interpro	MISC	\N	\N	Test interpro desc2
+10	EntrezGene	1	KNOWNXREF	10	EntrezGene	ARRAY	\N	\N	\N
+1400	MarkerSymbol	1	KNOWNXREF	50	MarkerSymbol	MISC	\N	\N	\N
+4	MIM	1	KNOWNXREF	5	MIM	MISC	\N	\N	\N
+8	PDB	1	KNOWNXREF	5	PDB	MISC	\N	\N	\N
+3	protein_id	1	KNOWNXREF	5	Protein ID	ALT_TRANS	\N	\N	\N
+9	RefSeq_dna	1	KNOWN	25	RefSeq DNA	MISC	\N	\N	\N
+1805	RefSeq_dna_predicted	1	PRED	15	RefSeq DNA predicted	MISC	\N	\N	\N
+1810	RefSeq_peptide	1	KNOWN	26	RefSeq peptide	MISC	\N	\N	\N
+1815	RefSeq_peptide_predicted	1	PRED	16	RefSeq peptide predicted	MISC	\N	\N	\N
+1900	Sanger_Hver1_2_1	1	XREF	5	Sanger Hver 121	MISC	\N	\N	\N
+1901	Sanger_Hver1_3_1	1	XREF	5	Sanger Hver 131	MISC	\N	\N	\N
+1902	SNGR_Hver	1	XREF	5	Sanger Hver	MISC	\N	\N	\N
+1910	Sanger_Mver1_1_1	1	XREF	5	Sanger Hver 111	MISC	\N	\N	\N
+7	Uniprot/SPTREMBL	1	KNOWN	20	UniProt/TrEMBL	MISC	\N	\N	\N
+2010	prediction_SPTREMBL	1	XREF	10	Prediction SpTREMBL	MISC	\N	\N	\N
+2100	Superfamily	1	KNOWNXREF	5	Superfamily	MISC	\N	\N	\N
+1	Uniprot/SWISSPROT	1	KNOWN	30	UniProt/Swiss-Prot	MISC	\N	\N	\N
+2300	Vega_gene	1	XREF	5	Vega gene	MISC	\N	\N	\N
+2310	Vega_transcript	1	XREF	5	Vega transcript	MISC	\N	\N	\N
+2320	Vega_translation	1	XREF	5	Vega translation	MISC	\N	\N	\N
+2400	wormbase_gene	1	KNOWN	5	Wormbase Gene	MISC	\N	\N	\N
+2410	wormbase_transcript	1	KNOWN	5	Wormbase Transcript	MISC	\N	\N	\N
+2420	wormpep_id	1	KNOWN	5	Wormpep ID	MISC	\N	\N	\N
+2430	wormbase_pseudogene	1	PSEUDO	5	Wormbase Pseudogene	MISC	\N	\N	\N
+2510	ZFIN_ID	1	KNOWNXREF	5	ZFIN ID	MISC	\N	\N	\N
+2600	GeneDB	1	KNOWN	5	GeneDB	MISC	\N	\N	\N
+2601	ciona_int_jgi_proteins_v1	1	KNOWN	5	Ciona V1	MISC	\N	\N	\N
+2700	Ens_Hs_gene	1	XREF	5	Ensembl Human Gene	MISC	\N	\N	\N
+2710	Ens_Hs_transcript	1	XREF	5	Ensembl Human Transcript	MISC	\N	\N	\N
+2720	Ens_Hs_translation	1	XREF	5	Ensembl Human Translation	MISC	\N	\N	\N
+2800	RGD	1	XREF	50	RGD	MISC	\N	\N	\N
+2900	Genoscope_pred_gene	1	XREF	38	Genoscope pred gene	MISC	\N	\N	\N
+2910	Genoscope_pred_transcript	1	XREF	39	Genoscope pred transcript	MISC	\N	\N	\N
+2920	Genoscope_annotated_gene	1	KNOWN	40	Genoscope annotated gene	MISC	\N	\N	\N
+3001	AFFY_MG_U74_all	1	XREF	1	Affymx Microarray U74	ARRAY	\N	\N	\N
+3002	AFFY_MG_U74A	1	XREF	1	Affymx Microarray U74	ARRAY	\N	\N	\N
+3003	AFFY_MG_U74Av2	1	XREF	1	Affymx Microarray U74	ARRAY	\N	\N	\N
+3004	AFFY_MG_U74B	1	XREF	1	Affymx Microarray U74	ARRAY	\N	\N	\N
+3005	AFFY_MG_U74Bv2	1	XREF	1	Affymx Microarray U74	ARRAY	\N	\N	\N
+3006	AFFY_MG_U74C	1	XREF	1	Affymx Microarray U74	ARRAY	\N	\N	\N
+3007	AFFY_MG_U74Cv2	1	XREF	1	Affymx Microarray U74	ARRAY	\N	\N	\N
+3008	AFFY_MOE430_all	1	XREF	1	Affymx Microarray OE430	ARRAY	\N	\N	\N
+3009	AFFY_MOE430A	1	XREF	1	Affymx Microarray MOE430	ARRAY	\N	\N	\N
+3010	AFFY_MOE430B	1	XREF	1	Affymx Microarray MOE430	ARRAY	\N	\N	\N
+3011	AFFY_Mu11Ksub_all	1	XREF	1	Affymx Microarray Mu11	ARRAY	\N	\N	\N
+3012	AFFY_Mu11KsubA	1	XREF	1	Affymx Microarray Mu11	ARRAY	\N	\N	\N
+3013	AFFY_Mu11KsubB	1	XREF	1	Affymx Microarray Mu11	ARRAY	\N	\N	\N
+3014	AFFY_Mouse430_2	1	XREF	1	Affymx Microarray Mouse430	ARRAY	\N	\N	\N
+3015	AFFY_Mouse430A_2	1	XREF	1	Affymx Microarray Mouse430	ARRAY	\N	\N	\N
+3051	AFFY_RAE230_all	1	XREF	1	Affymx Microarray RAE230	ARRAY	\N	\N	\N
+3052	AFFY_RAE230A	1	XREF	1	Affymx Microarray RAE230	ARRAY	\N	\N	\N
+3053	AFFY_RAE230B	1	XREF	1	Affymx Microarray RAE230	ARRAY	\N	\N	\N
+3054	AFFY_RG_U34_all	1	XREF	1	Affymx Microarray U34	ARRAY	\N	\N	\N
+3055	AFFY_RG_U34A	1	XREF	1	Affymx Microarray U34	ARRAY	\N	\N	\N
+3056	AFFY_RG_U34B	1	XREF	1	Affymx Microarray U34	ARRAY	\N	\N	\N
+3057	AFFY_RG_U34C	1	XREF	1	Affymx Microarray U34	ARRAY	\N	\N	\N
+3058	AFFY_RN_U34	1	XREF	1	Affymx Microarray U34	ARRAY	\N	\N	\N
+3059	AFFY_RT_U34	1	XREF	1	Affymx Microarray U34	ARRAY	\N	\N	\N
+3101	AFFY_HG_U133_all	1	XREF	1	Affymx Microarray U133	ARRAY	\N	\N	\N
+3102	AFFY_HG_U133A	1	XREF	1	Affymx Microarray U133	ARRAY	\N	\N	\N
+3103	AFFY_HG_U133B	1	XREF	1	Affymx Microarray U133	ARRAY	\N	\N	\N
+3104	AFFY_HG_U95_all	1	XREF	1	Affymx Microarray U95	ARRAY	\N	\N	\N
+3105	AFFY_HG_U95A	1	XREF	1	Affymx Microarray U95	ARRAY	\N	\N	\N
+3106	AFFY_HG_U95Av2	1	XREF	1	Affymx Microarray U95	ARRAY	\N	\N	\N
+3107	AFFY_HG_U95B	1	XREF	1	Affymx Microarray U95	ARRAY	\N	\N	\N
+3108	AFFY_HG_U95C	1	XREF	1	Affymx Microarray U95	ARRAY	\N	\N	\N
+3109	AFFY_HG_U95D	1	XREF	1	Affymx Microarray U95	ARRAY	\N	\N	\N
+3110	AFFY_HG_U95E	1	XREF	1	Affymx Microarray U95	ARRAY	\N	\N	\N
+3111	AFFY_HG_U133_PLUS_2	1	XREF	1	Affymx Microarray U133	ARRAY	\N	\N	\N
+3112	AFFY_HG_U133A_2	1	XREF	1	Affymx Microarray U133	ARRAY	\N	\N	\N
+3113	AFFY_HG_Focus	1	XREF	1	Affymx Microarray Focus	ARRAY	\N	\N	\N
+3114	AFFY_Rat230_2	1	XREF	1	Affymx Microarray U133	ARRAY	\N	\N	\N
+3115	AFFY_Zebrafish	1	XREF	1	Affymx Microarray Zebrafish	ARRAY	\N	\N	\N
+3116	AFFY_U133_X3P	1	XREF	1	Affymx Microarray U133	ARRAY	\N	\N	\N
+3117	AFFY_Canine	1	XREF	1	Affymx Microarray Canine	ARRAY	\N	\N	\N
+3118	AFFY_Chicken	1	XREF	1	Affymx Microarray Chicken	ARRAY	\N	\N	\N
+3300	miRNA_Registry	1	XREF	1	miRNA Registry	MISC	\N	\N	\N
+3400	SGD	1	KNOWN	50	SGD	MISC	\N	\N	\N
+3500	IPI	1	KNOWN	5	IPI	MISC	\N	\N	\N
+3800	CCDS	1	KNOWN	50	CCDS	MISC	\N	\N	\N
+3900	PUBMED	1	KNOWN	5	Sequence Publications	LIT	\N	\N	\N
+4000	MEDLINE	1	KNOWN	5	MEDLINE	LIT	\N	\N	\N
+4100	UniGene	1	KNOWN	5	UniGene	MISC	\N	\N	\N
+4200	RFAM	1	XREF	5	RFAM	MISC	\N	\N	\N

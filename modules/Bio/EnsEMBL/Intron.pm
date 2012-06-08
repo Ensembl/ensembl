@@ -22,30 +22,26 @@
 
 =head1 SYNOPSIS
 
-  $ex = new Bio::EnsEMBL::Intron( exon1, exon2 );
+  $intron = Bio::EnsEMBL::Intron->new( exon1, exon2, $analysis );
 
 =cut
 
 
 package Bio::EnsEMBL::Intron;
-use vars qw(@ISA);
 use strict;
+use warnings;
 
+use Bio::EnsEMBL::Utils::Exception qw( warning throw );
 
-use Bio::EnsEMBL::Feature;
-use Bio::Seq; # introns have to have sequences...
-
-use Bio::EnsEMBL::Utils::Exception qw( warning throw deprecate );
-use Bio::EnsEMBL::Utils::Argument qw( rearrange );
-
-
-@ISA = qw(Bio::EnsEMBL::Feature);
+use base qw(Bio::EnsEMBL::Feature);
 
 =head2 new
 
-  Args       : exon1, exon2. The two exons to build the Intron from.
+  Arg [1]    : Bio::EnsEMBL::Exon The 5' exon for the intron; required
+  Arg [2]    : Bio::EnsEMBL::Exon The 3' exon for the intron; required
+  Arg [3]    : Bio::EnsEMBL::Analysis Analysis to link to this Intron
   Example    : $intron = new Bio::EnsEMBL::Intron($exon1, $exon2)
-  Description: create an Intron object from two exons.
+  Description: Create an Intron object from two exons and an optional analysis
   Returntype : Bio::EnsEMBL::Intron
   Exceptions : exons not on the same strand or slice.
   Caller     : general
@@ -54,7 +50,7 @@ use Bio::EnsEMBL::Utils::Argument qw( rearrange );
 =cut
 
 sub new {
-  my ( $proto, $e1, $e2 ) = @_;
+  my ( $proto, $e1, $e2, $analysis ) = @_;
 
   my $class = ref $proto || $proto;
 
@@ -82,11 +78,14 @@ sub new {
     {
       throw("Exons on different slices. Not allowed");
     } else {
-      warn(   "Exons have different slice references "
-            . "to the same seq_region\n" );
+      warning("Exons have different slice references to the same seq_region");
     }
   } else {
     $self->{'slice'} = $e1->slice();
+  }
+  
+  if($analysis) {
+    $self->analysis($analysis);
   }
 
   $self->{'prev'} = $e1;
@@ -152,21 +151,6 @@ sub next_Exon {
   my ($self) = shift;
 
   return $self->{'next'};
-}
-
-=head2 get_IntronSupportingEvidence
-
-  Example			: my $evidence = $intron->get_IntronSupportingEvidence(); 
-  Description	: Returns the evidence used to support this Intron
-  Returntype 	: Bio::EnsEMBL::IntronSupportingEvidence
-  Exceptions 	: None
-
-=cut
-
-sub get_IntronSupportingEvidence {
-  my ($self) = @_;
-  my $sea = $self->adaptor()->db()->get_IntronSupportingEvidenceAdaptor();
-  return $sea->fetch_by_Intron($self);
 }
 
 1;
