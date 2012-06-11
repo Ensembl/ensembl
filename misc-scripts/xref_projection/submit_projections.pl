@@ -63,6 +63,10 @@ $bsub_opts .= "-M2000000 -R'select[mem>2000] rusage[mem=2000]'";
 
 my %names_1_1;
 
+######
+# When editing xref projection lists below, remember to check the species is in 
+# the execution order array that follows.
+######
 $names_1_1{'human'} =  [qw(
     alpaca
     anolis
@@ -132,7 +136,6 @@ $go_terms{'human'} = [qw(
     cat
     chicken
     chimp
-    coelacanth
     cow
     dog
     dolphin
@@ -157,7 +160,6 @@ $go_terms{'human'} = [qw(
     platypus
     sloth
     squirrel
-    stickleback
     pika
     rabbit
     rat
@@ -204,7 +206,6 @@ $go_terms{'mouse'} = [qw(
     rat
     sloth
     squirrel
-    stickleback
     tarsier
     tasmanian_devil
     tenrec
@@ -230,6 +231,7 @@ $go_terms{'zebrafish'} = [qw(
 )];
 $go_terms{'xenopus'} = [qw(zebrafish)];
 
+# order to run projections in, just in case they are order-sensitive.
 my @execution_order = ( 'human', 'mouse', 'rat', 'zebrafish');
 
 # ----------------------------------------
