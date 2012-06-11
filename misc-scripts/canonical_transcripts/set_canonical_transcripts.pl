@@ -33,11 +33,11 @@
 
   -dnadbuser    DNA Database user
 
-  -ccds_dbname  CCDS database name
+  -ccdsdbname  CCDS database name
 
-  -ccds_host    CCDS database host
+  -ccdshost    CCDS database host
 
-  -ccds_user    CCDS database user
+  -ccdsuser    CCDS database user
 
 
 =head2 Other optional arguments
@@ -46,7 +46,7 @@
 
   -include_non_ref      Specify if the non_reference regions should be _excluded_. (default: include) 
 
-  -include_duplicates    Specify if the duplicate regions should be _included_. eg. Human PAR on Y (default: exclude) 
+  -include_duplicates   Specify if the duplicate regions should be _included_. eg. Human PAR on Y (default: exclude) 
 
   -seq_region_name      Chromosome name if running a single seq_region
 
