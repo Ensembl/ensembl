@@ -29,7 +29,7 @@ functions
 
 =over 8 
 
-=item 1 - Dumping Genomic DNA sequences in a memory efficient manner
+=item 1 - Dumping Genomic DNA sequences in a memory efficient manner in unmasked, softmasked & hardmasked formats
 
 =item 2 - Dumping Genes as cDNA, proteins and ncRNA transcripts (abinitio included)
 
@@ -41,6 +41,11 @@ headers. It is also responsible for the creation of README files pertaining
 to the type of dumps produced. The final files are all Gzipped at normal
 levels of compression.
 
+B<N.B.> This code will remove any files already found in the target directory
+on its first run as it assumes all data will be dumped in the one process. It
+is selective of its directory meaning a rerun of DNA dumps will not cause
+the protein/cdna files to be removed.
+
 Allowed parameters are:
 
 =over 8
@@ -50,6 +55,11 @@ Allowed parameters are:
 =item sequence_type_list - The data to dump. I<dna>, I<cdna> and I<ncrna> are allowed
 
 =item db_types - Array reference of the database groups to use. Defaults to core
+
+=item process_logic_names - Array reference of transcript logic names to only process (only produce dumps for these). Applied before skip_logic_names
+
+=item skip_logic_names - Array reference of transcript logic names to skip over (we do not produce dumps for these)
+
 
 =item base_path - The base of the dumps
 
@@ -97,9 +107,13 @@ sub param_defaults {
     
     dna_chunk_size => 17000,
     
-    #DON"T MESS
+    skip_logic_names => [],
+    process_logic_names => [],
+    
+    #DON'T MESS
     #used to track if we need to reopen a file in append mode or not
     generated_files => {}, 
+    remove_files_from_dir => {},
     dataflows => []
   };
 }
@@ -117,6 +131,13 @@ sub fetch_input {
   my $types = $self->param('db_types');
   $types = ['core'] unless $types;
   $self->param('db_types', $types);
+  
+  my %skip_logic_names = map { $_ => 1 } @{$self->param('skip_logic_names')};
+  $self->param('skip_logic', \%skip_logic_names);
+  $self->param('skip_logic_active', 1) if @{$self->param('skip_logic_names')};
+  my %process_logic_names = map { $_ => 1 } @{$self->param('process_logic_names')};
+  $self->param('process_logic', \%process_logic_names);
+  $self->param('process_logic_active', 1) if @{$self->param('process_logic_names')};
   
   return;
 }
@@ -186,7 +207,8 @@ sub _dump_dna {
   
   my @chromosomes;
   my @non_chromosomes;
-  foreach my $s (@{$self->get_Slices($type)}) {
+  my $filter_human = 1;
+  foreach my $s (@{$self->get_Slices($type, $filter_human)}) {
     my $chr = $s->is_chromosome();
     push(@chromosomes, $s) if $chr;
     push(@non_chromosomes, $s) if ! $chr;
@@ -197,12 +219,14 @@ sub _dump_dna {
   my ( $non_specific_file, $non_specific_fh, $other_serializer ) =
     $self->_generate_fasta_serializer( 'dna', 'nonchromosomal' );
   my ( $rm_non_specific_file, $rm_non_specific_fh, $other_rm_serializer ) =
-    $self->_generate_fasta_serializer( 'dna_rm', 'nonchromosomal' );
+    $self->_generate_fasta_serializer( 'dna_sm', 'nonchromosomal' );
   foreach my $s (@non_chromosomes) {
     $self->_dump_slice($s, $other_serializer, $other_rm_serializer);
   }
+  my ($hard_mask_fh, $hard_mask_file) = $self->_convert_softmask_to_hardmask($rm_non_specific_fh) if @non_chromosomes;
   $self->tidy_file_handle( $non_specific_fh, $non_specific_file );
   $self->tidy_file_handle( $rm_non_specific_fh, $rm_non_specific_file );
+  $self->tidy_file_handle( $hard_mask_fh, $hard_mask_file);
   $self->info('Dumped non-chromosomes');
 
   ############ CHROMOSOME WORK 
@@ -213,19 +237,22 @@ sub _dump_dna {
       $s->seq_region_name(), undef);
     # repeat masked data too
     my ( $rm_chromo_file_name, $rm_chromo_fh, $rm_chromo_serializer ) =
-      $self->_generate_fasta_serializer( 'dna_rm', 'chromosome',
+      $self->_generate_fasta_serializer( 'dna_sm', 'chromosome',
       $s->seq_region_name(), undef);
     
     $self->_dump_slice($s, $chromo_serializer, $rm_chromo_serializer);
     
+    my ($chromo_hard_mask_fh, $chromo_hard_mask_file) = $self->_convert_softmask_to_hardmask($rm_chromo_fh);
+    
     $self->tidy_file_handle($chromo_fh, $chromo_file_name);
     $self->tidy_file_handle($rm_chromo_fh, $rm_chromo_file_name);
+    $self->tidy_file_handle($chromo_hard_mask_fh, $chromo_hard_mask_file);
   }
   $self->info("Dumped chromosomes");
   
   #input_id
   push(@{$self->param('dataflows')}, [{ data_type => 'dna', species => $self->param('species') }, $DNA_INDEXING_FLOW]);
-  push(@{$self->param('dataflows')}, [{ data_type => 'dna_rm', species => $self->param('species') }, $DNA_INDEXING_FLOW]);
+  push(@{$self->param('dataflows')}, [{ data_type => 'dna_sm', species => $self->param('species') }, $DNA_INDEXING_FLOW]);
   
   return;
 }
@@ -245,11 +272,35 @@ sub _dump_slice {
   my $padded_slice = Bio::EnsEMBL::PaddedSlice->new(-SLICE => $s);
   $serialiser->print_Seq($padded_slice);
   
-  my $masked_slice = $s->get_repeatmasked_seq($analyses);
+  my $soft_mask = 1;
+  my $masked_slice = $s->get_repeatmasked_seq($analyses, $soft_mask);
   my $padded_masked_slice = Bio::EnsEMBL::PaddedSlice->new(-SLICE => $masked_slice);
   $rm_serialiser->print_Seq($padded_masked_slice);  
   
   return;
+}
+
+#Assumes we are working with un-compressed files
+sub _convert_softmask_to_hardmask {
+  my ($self, $soft_mask_file) = @_;
+  my $hard_mask_file = $soft_mask_file;
+  $hard_mask_file =~ s/\.dna_sm\./.dna_rm./;
+  my $hm_fh = IO::File->new($hard_mask_file, 'w');
+  $self->info('Converting soft-masked file %s into hard-masked file %s', $soft_mask_file, $hard_mask_file);
+  work_with_file($soft_mask_file, 'r', sub {
+    my ($sm_fh) = @_;
+    while(my $line = <$sm_fh>) {
+      if(index($line, '>') == 0) {
+        $line =~ s/dna_sm/dna_rm/;
+      }
+      else {
+        $line =~ tr/a-z/N/;
+      }
+      print $hm_fh;
+    };
+    return;
+  });
+  return ($hm_fh, $hard_mask_file);
 }
 
 sub _dump_transcripts {
@@ -285,8 +336,8 @@ sub _dump_transcripts {
       $self->fine( 'Gene %s', $gene->display_id );
       my $transcript_list = $gene->get_all_Transcripts();
       foreach my $transcript ( @{$transcript_list} ) {
-        $has_transcript_data = 1;
         $self->fine( 'Transcript %s', $transcript->display_id );
+        next unless $self->ok_to_process_logic_name($transcript);
 
         # foreach transcripts of all genes with biotypes classed as cdna
         my $transcript_seq = $transcript->seq();
@@ -295,12 +346,15 @@ sub _dump_transcripts {
         if ($biotype_mapper->member_of_group( $biotype, 'peptide_producing')) {
           my $translation = $transcript->translation();
           if ($translation) {
-            $has_protein_data = 1;
             my $translation_seq = $transcript->translate();
             $self->_create_display_id($translation, $translation_seq, $transcript_type);
             $peptide_serializer->print_Seq($translation_seq);
+            
+            $has_protein_data = 1;
           }
         }
+        
+        $has_transcript_data = 1;
       }
     }
   }
@@ -339,6 +393,8 @@ sub _dump_prediction_transcripts {
       $self->_generate_fasta_serializer( 'pep', 'abinitio' );
     
     while ( my $transcript = shift @{$transcript_list} ) {
+      next unless $self->ok_to_process_logic_name($transcript);
+      
       $has_transcript_data = 1;
       my $transcript_seq = $transcript->seq();
       $self->_create_display_id( $transcript, $transcript_seq, 'cdna' );
@@ -394,6 +450,26 @@ sub tidy_file_handle {
   return 0;
 }
 
+#We assume a transcript is ok to process unless proven otherwise
+sub ok_to_process_logic_name {
+  my ($self, $transcript) = @_;
+  my $ok = 1;
+  my $logic_name = $transcript->get_Analysis()->logic_name();
+  if($self->param('process_logic_active')) {
+    if(! $self->param('process_logic')->{$logic_name}) {
+      $self->fine('Transcript %s has been filtered because logic_name %s is not in the active logic name list', $transcript->stable_id(), $logic_name);
+      $ok = 0;
+    }
+  }
+  if($self->param('skip_logic_active')) {
+    if($self->param('skip_logic')->{$logic_name}) {
+      $self->fine('Transcript %s has been filtered because logic_name %s is in the skip logic name list', $transcript->stable_id(), $logic_name);
+      $ok = 0;
+    }
+  }
+  return $ok;
+}
+
 #Generates a FASTA serializer but returns the (filename, handle & instance)
 sub _generate_fasta_serializer {
   my ( $self, $datatype, $level, $section, $header_formatter ) = @_;
@@ -431,7 +507,19 @@ sub _generate_file_name {
 
   $data_type =~ s/_rm$//;    # remove repeatmask designation from path component
   my $data_type_dir = $self->fasta_path($data_type);
+  $self->_remove_files_from_dir($data_type_dir);
   return File::Spec->catfile( $data_type_dir, $file_name );
+}
+
+# Attempts to remove any generated files previously present for the instance
+# of the Process
+sub _remove_files_from_dir {
+  my ($self, $dir) = @_;
+  if(! $self->param('remove_files_from_dir')->{$dir}) {
+    $self->unlink_all_files($dir);
+    $self->param('remove_files_from_dir')->{$dir} = 1;
+  }
+  return;
 }
 
 ##Logic used to generate the expected format for a FASTA header
@@ -521,12 +609,12 @@ sub _custom_header {
     if ( !$slice->isa('Bio::EnsEMBL::Slice') ) {
       return $slice->display_id();
     }
-    
-    #If we had a PaddedSlice (proxy) then request the backing object otherwise
-    #hand back the Slice
-    my $backing_slice = ($slice->isa('Bio::EnsEMBL::PaddedSlice')) ? $slice->__proxy() : $slice;
-    #RMS means masked data
-    my $dna_type = ($slice->isa('Bio::EnsEMBL::RepeatMaskedSlice')) ? 'dna_rm' : 'dna';
+
+    #RMS means masked data. soft_mask() true means it was softmasked
+    my $dna_type = 'dna';
+    if($slice->isa('Bio::EnsEMBL::RepeatMaskedSlice')) {
+      $dna_type .= ($slice->soft_mask()) ? '_sm' : '_rm';
+    }
 
     my $id        = $slice->seq_region_name;
     my $idtype    = $slice->coord_system->name;
@@ -581,6 +669,8 @@ The files are consistently named following this pattern:
   * 'dna_rm' - masked genomic DNA.  Interspersed repeats and low
      complexity regions are detected with the RepeatMasker tool and masked
      by replacing repeats with 'N's.
+  * 'dna_sm' - soft-masked genomic DNA. All repeats and low complexity regions
+    have been replaced with lowercased versions of their nucleic base
 <id type> One of the following:
   * 'chromosome'a    - The top-level coordinate system in most species in Ensembl
   * 'nonchromosomal' - Contains DNA that has not been assigned a chromosome
@@ -614,13 +704,15 @@ EXAMPLES
      Homo_sapiens.GRCh37.57.dna.chromosome.1.fa.gz
 
    The masked version of the genome sequence on human chromosome 1
-   (contains '_rm' in the name):
+   (contains '_rm' or '_sm' in the name):
      Homo_sapiens.GRCh37.57.dna_rm.chromosome.1.fa.gz
+     Homo_sapiens.GRCh37.57.dna_sm.chromosome.1.fa.gz
 
    Non-chromosomal assembly sequences:
    e.g. mitochondrial genome, sequence contigs not yet mapped on chromosomes
      Homo_sapiens.GRCh37.57.dna.nonchromosomal.fa.gz
      Homo_sapiens.GRCh37.57.dna_rm.nonchromosomal.fa.gz
+     Homo_sapiens.GRCh37.57.dna_sm.nonchromosomal.fa.gz
 
 
 --------------

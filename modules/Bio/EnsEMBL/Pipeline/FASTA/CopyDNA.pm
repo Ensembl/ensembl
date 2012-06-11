@@ -73,6 +73,10 @@ sub fetch_input {
 sub run {
   my ($self) = @_;
   
+  my $new_path = $self->new_path();
+  #Remove all files from the new path
+  $self->unlink_all_files($new_path);
+  
   my $files = $self->get_dna_files();
   foreach my $old_file (@{$files}) {
     my $new_file = $self->new_filename($old_file);

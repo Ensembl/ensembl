@@ -169,19 +169,9 @@ sub decompress {
 
 sub allowed_regions {
   my ($self) = @_;
-  my $prod_name = $self->production_name();
-  my @slices = grep { $_->is_reference() } @{$self->get_Slices()};
-  my %hash;
-  foreach my $slice (@slices) {
-    if($prod_name eq 'homo_sapiens') {
-      #Skip the extra unused human region
-      if($slice->seq_region_name() eq 'Y' && $slice->end() < 2649521 ) {
-        next;
-      }
-    }
-    $hash{$slice->name()} = 1;
-  }
-  
+  my $filter_human = 1;
+  my @slices = grep { $_->is_reference() } @{$self->get_Slices('core', $filter_human)};
+  my %hash = map { $_->name() => 1 } @slices;
   return \%hash;
 }
 

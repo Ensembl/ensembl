@@ -241,11 +241,10 @@ sub pipeline_analyses {
       
       {
         -logic_name => 'Notify',
-        -module     => 'Bio::EnsEMBL::Hive::RunnableDB::NotifyByEmail',
+        -module     => 'Bio::EnsEMBL::Pipeline::FASTA::EmailSummary',
         -parameters => {
           email   => $self->o('email'),
           subject => $self->o('pipeline_name').' has finished',
-          text    => 'Your pipeline has finished. Please consult the hive output'
         },
         -rc_id      => 1,
         -wait_for   => ['SCPBlast', 'ChecksumGenerator'],

@@ -27,12 +27,43 @@ sub reset_empty_array_param {
   return;
 }
 
+=head2 get_Slices
+
+	Arg[1]      : String type of DB to use (defaults to core)
+	Arg[2]      : Boolean should we filter the slices if it is human
+  Example     : my $slices = $self->get_Slices('core', 1);
+  Description : Basic get_Slices() method to return all distinct slices
+                for a species but also optionally filters for the 
+                first portion of Human Y which is a non-informative region
+                (composed solely of N's). The code will only filter for 
+                GRCh37 forcing the developer to update the test for other 
+                regions. 
+  Returntype  : ArrayRef[Bio::EnsEMBL::Slice] 
+  Exceptions  : Thrown if you are filtering Human but also are not on GRCh37
+
+=cut
+
 sub get_Slices {
-  my ($self, $type) = @_;
+  my ($self, $type, $filter_human) = @_;
   my $dba = $self->get_DBAdaptor($type);
   throw "Cannot get a DB adaptor" unless $dba;
+  
   my $sa = $dba->get_SliceAdaptor();
-  return [ sort { $a->length() <=> $b->length() }  @{$sa->fetch_all('toplevel', undef, 1, undef, undef)} ];
+  my @slices = @{$sa->fetch_all('toplevel', undef, 1, undef, undef)};
+  
+  if(!$filter_human) {
+    my $production_name = $self->production_name();
+    if($production_name eq 'homo_sapiens') {
+      my ($cs) = @{$dba->get_CoordSystem()->fetch_all()};
+      my $expected = 'GRCh37';
+      if($cs->version() ne $expected) {
+        throw sprintf(q{Cannot continue as %s's coordinate system %s is not the expected %s }, $production_name, $cs->version(), $expected);
+      }
+      @slices = grep { $_->seq_region_name() eq 'Y' && $_->end() < 2649521 } @slices;
+    }
+  }
+  
+  return [ sort { $a->length() <=> $b->length() }  @slices ];
 }
 
 # Registry is loaded by Hive (see beekeeper_extra_cmdline_options() in conf)
@@ -152,6 +183,22 @@ sub find_files {
     }
   }, $dir);
   return \@files;
+}
+
+sub unlink_all_files {
+  my ($self, $dir) = @_;
+  $self->info('Removing files from the directory %s', $dir);
+  #Delete anything which is a file & not the current or higher directory
+  my $boolean_callback = sub {
+    return ( $_[0] =~ /^\.\.?$/) ? 0 : 1;
+  };
+  my $files = $self->find_files($dir, $boolean_callback);
+  foreach my $file (@{$files}) {
+    $self->fine('Unlinking %s', $file);
+    unlink $file;
+  }
+  $self->info('Removed %d file(s)', scalar(@{$files}));
+  return;
 }
 
 1;
