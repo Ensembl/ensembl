@@ -156,25 +156,27 @@ sub run_script {
  
  print "source id is $source_id, curated_source_id is $curated_source_id\n";
 
-  my $sql = 'select t.stable_id, x.display_label, t.status from analysis a, xref x, object_xref ox , external_db e, transcript t where t.analysis_id = a.analysis_id and a.logic_name like "%havana%" and e.external_db_id = x.external_db_id and x.xref_id = ox.xref_id and t.transcript_id = ox.ensembl_id and e.db_name like ?';
+  my $sql = 'select distinct t.stable_id, x.display_label, t.status from analysis a, xref x, object_xref ox , external_db e, transcript t where t.analysis_id = a.analysis_id and a.logic_name like "%havana%" and e.external_db_id = x.external_db_id and x.xref_id = ox.xref_id and t.transcript_id = ox.ensembl_id and e.db_name like ?';
 
   my $sql_vega = 'select t.stable_id, x.display_label, t.status from xref x, object_xref ox , external_db e, transcript t where e.external_db_id = x.external_db_id and x.xref_id = ox.xref_id and t.transcript_id = ox.ensembl_id and t.stable_id <> x.display_label and e.db_name like ?';
 
 
   my %ott_to_vega_name;
-  my %enst_to_ott;
+  my %ott_to_enst;
 
 
   my $sth = $core_dbc->prepare($sql) || die "Could not prepare for core $sql\n";
 
+  my $count_ott_to_enst;
   foreach my $external_db (qw(Vega_transcript shares_CDS_with_OTTT shares_CDS_and_UTR_with_OTTT OTTT)){
     $sth->execute($external_db) or croak( $core_dbc->errstr());
     while ( my @row = $sth->fetchrow_array() ) {
-      $enst_to_ott{$row[0]} = $row[1];
+      push (@{$ott_to_enst{$row[1]}},$row[0]);
+      $count_ott_to_enst++;
     }
   }
 
-  print "We have ".scalar(keys %enst_to_ott)." ott to enst entries\n " if($verbose);
+  print "We have $count_ott_to_enst ott to enst entries\n " if($verbose);
 
 
   my $dbi = $self->dbi();
@@ -193,8 +195,7 @@ sub run_script {
 
   my $xref_count = 0;
 
-  foreach my $enst (keys %enst_to_ott){
-    my $ott = $enst_to_ott{$enst};
+  foreach my $ott (keys %ott_to_enst){
     if(defined($ott_to_vega_name{$ott})){
       my $id = $curated_source_id;
       my $name  = $ott_to_vega_name{$ott};
@@ -211,10 +212,12 @@ sub run_script {
 				      info_type  => "DIRECT"} );
       $xref_count++;
       
-      $self->add_direct_xref($xref_id, $enst, "transcript", "");
+      foreach my $ensembl_stable_id (@{$ott_to_enst{$ott}}) {
+	  $self->add_direct_xref($xref_id, $ensembl_stable_id, "transcript", "");
+      }
     }
     if(defined($ott_to_status{$ott})){
-      $status_insert_sth->execute($enst, $ott_to_status{$ott});
+      $status_insert_sth->execute($ott_to_enst{$ott}, $ott_to_status{$ott});
     }
     
   }
@@ -247,4 +250,3 @@ sub run_script {
 
 
 1;
-
