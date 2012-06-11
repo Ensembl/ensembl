@@ -22,6 +22,7 @@ my $dba = $multi->get_DBAdaptor( 'core' );
 ok( $dba, 'Test database instatiated' );
 
 #Now start testing the Helper
+dies_ok { Bio::EnsEMBL::Utils::SqlHelper->new() } 'Expect to die when no DBConnection was given'; 
 dies_ok { Bio::EnsEMBL::Utils::SqlHelper->new(-DB_CONNECTION => $dba) } 
   'Expect to die when we do not give SqlHelper a DBConncetion'; #was given a DBAdaptor
 ok ( 
@@ -31,7 +32,6 @@ ok (
 
 my $helper = Bio::EnsEMBL::Utils::SqlHelper->new(-DB_CONNECTION => $dba->dbc());
 ok ( $helper, 'SqlHelper instance was created' );
-
 
 my $meta_key = 'species.common_name';
 note("Meta key queries working with ${meta_key}. If the tests fail then check for it in the DB dumps");
@@ -47,6 +47,9 @@ is(
   1,
   'Checking count of meta key is right with params'
 );
+
+throws_ok { $helper->execute_single_result(-SQL => 'select * from meta') } qr/Too many results/, 'More than 1 row causes an error';
+throws_ok { $helper->execute_single_result(-SQL => 'select * from meta where species_id =?', -PARAMS => [-1]) } qr/No results/, 'Less than 1 row causes an error';
 
 is_deeply( 
   $helper->execute(-SQL => 'select count(*), 3 from meta where meta_key =?', -PARAMS => [$meta_key])->[0],
@@ -70,7 +73,7 @@ is($meta_count_hash->{$meta_key}, 1, 'Checking hash comes back correctly');
   );
   my $expected_hash = {
     'species.classification' => [
-      qw(Hominidae Catarrhini Primates Eutheria Mammalia Vertebrata Chordata Metazoa Eukaryota)
+      'Homo sapiens', qw(Hominidae Catarrhini Primates Eutheria Mammalia Vertebrata Chordata Metazoa Eukaryota)
     ]
   };
   
