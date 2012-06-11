@@ -17,9 +17,10 @@ sub run {
   my $databases = $self->databases();
   foreach my $db ( @{$databases} ) {
     $self->v( 'Processing %s', $db );
-    $self->_backup($db);
+    my $backup_table = $self->_backup($db);
     $self->_meta($db);
     $self->_remove_deprecated($db);
+    $self->_remove_backup($backup_table, $db);
     $self->v('Done');
   }
   return;
@@ -44,8 +45,6 @@ sub args {
 
     # User database location (default values):
     port => 3306,
-
-    backup => 1,    #default backups on
     
     removedeprecated => 0, 
   };
@@ -68,7 +67,8 @@ sub args {
     database|d=s
     pattern=s
     verbose|v!
-    backup
+    dropbaks|dB!
+    dumppath|dp=s
     removedeprecated!
     help
     man
@@ -98,6 +98,13 @@ q{Command line options -d/--database and --pattern are mututally exclusive};
   if ( $o->{pattern} ) {
     my $pattern = $o->{pattern};
     $o->{pattern} = qr/$pattern/;
+  }
+  
+  if($o->{dropbaks} && ! defined $o->{dumppath} ) {
+    die "If you are specifying --dropbaks you must specify a --dumppath";
+  }
+  if(defined $o->{dumppath} && ! -d $o->{dumppath}) {
+    die sprintf('--dumppath %s does not exist or is not a directory', $o->{dumppath});
   }
 
   return;
@@ -204,37 +211,50 @@ sub _meta {
 }
 
 sub _backup {
-  my ( $self, $db ) = @_;
+  my ( $self, $dbname ) = @_;
   my $o = $self->{opts};
 
-  if ( !$o->{backup} ) {
-    $self->v('Skipping backup');
-    return;
-  }
-
-  my $increment = 0;
-  my $core      = $self->_core_dbc($db);
-  my $table;
-  while (1) {
-    $table = sprintf( "meta_bak_%d", $increment );
-    $self->v('Testing if "%s" is free', $table );
-    my $res =
-      $core->sql_helper()
-      ->execute_simple( -SQL => 'show tables like ?', -PARAMS => [$table] );
-    if (@{$res}) {
-      $increment++;
-      next;
-    }
-    last;    #if no results then name is free
-  }
-
+  my $core = $self->_core_dbc($dbname);
+  my $table = 'meta_bak';
+  $core->do('drop table if exists '.$table);
+  
   $self->v( 'Backing up to %s', $table );
   $core->do( sprintf( 'create table %s like meta', $table ) );
   $self->v( 'Copying data from meta to %s', $table );
   $core->do( sprintf( 'insert into %s select * from meta', $table ) );
   $self->v('Done backup');
 
-  return;
+  if ( defined($o->{dumppath}) ) {
+    my $timestamp = strftime( "%Y%m%d-%H%M%S", localtime() );
+    
+    # Backup the table on file.
+    my $filename = sprintf( "%s/%s.%s.%s.sql",
+                            $o->{dumppath}, $dbname,
+                            $table,    $timestamp );
+
+    if ( -e $filename ) {
+      die( sprintf( "File '%s' already exists.", $filename ) );
+    }
+
+    $self->v( "Backing up table %s on file", $table );
+    $self->v( "--> %s",                       $filename );
+
+    if (system( join(q{ }, "mysqldump",
+                "--host=".$o->{host},
+                "--port=".$o->{port},
+                "--user=".$o->{user},
+                (
+                  defined($o->{pass}) ? "--password=".$o->{pass} : ""
+                ),
+                "--result-file=$filename",
+                $dbname,
+                $table)))
+    {
+      die("mysqldump failed: $?");
+    }
+  }
+
+  return $table;
 }
 
 sub _remove_deprecated {
@@ -259,6 +279,19 @@ sub _remove_deprecated {
   }
   $self->v('Finished removing deprecated meta keys');
   
+  return;
+}
+
+sub _remove_backup {
+  my ($self, $table, $dbname) = @_;
+  if($self->{opts}->{dropbaks}) {
+    $self->v('Dropping backup table %s', $table);
+    my $dbc = $self->_core_dbc($dbname);
+    $dbc->do('drop table if exists '.$table);
+  }
+  else {
+    $self->v('Leaving backup table %s', $table);
+  }
   return;
 }
 
@@ -357,7 +390,8 @@ populate_species_meta.pl
     [-mu user] [-mp password] [-md database] \\
     [-th host] [-tP port] \\
     [-tu user] [-tp password] [-td database] \\
-    [-nobackup]
+    [-dropbaks]
+    [-dumppath]
     [-v]
 
 =head1 DESCRIPTION
@@ -433,10 +467,13 @@ Database name to search for. Can be a SQL like statement
   --database="homo_sapiens_core_65_37"
   --database="%core_65%"
 
-=item B<--nobackup>
+=item B<--dropbaks>
 
-If specified we will avoid performing backup of the meta table before
-a run of the script.
+
+
+=item B<--dumppath>
+
+
 
 =item B<--removedeprecated>
 
