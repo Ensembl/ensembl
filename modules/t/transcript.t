@@ -1,21 +1,19 @@
 use strict;
 use warnings;
-use vars qw( $verbose );
 
 use Test::More;
 
 use Bio::EnsEMBL::Test::MultiTestDB;
 use Bio::EnsEMBL::Test::TestUtils;
 use Bio::EnsEMBL::Transcript;
+use Bio::EnsEMBL::Exon;
+use Bio::EnsEMBL::Translation;
 use Bio::EnsEMBL::Slice;
 use Bio::EnsEMBL::Intron;
 
 my $multi = Bio::EnsEMBL::Test::MultiTestDB->new();
 
-$verbose = 0; #set to true to turn on debug print outs
-
 ok( $multi );
-
 
 my $db = $multi->get_DBAdaptor('core' );
 
@@ -28,13 +26,13 @@ my $genes = $slice->get_all_Genes();
 my $translates = 1;
 my $utr_trans;
 
-debug( "Checking if all Transcripts translate and transform" );
+note( "Checking if all Transcripts translate and transform" );
 
 for my $gene ( @$genes ) {
   for my $trans ( @{$gene->get_all_Transcripts()} ) {
     if( $trans->translate()->seq() =~ /\*./ ) {
       $translates = 0;
-      debug( $trans->stable_id()." does not translate." );
+      note( $trans->stable_id()." does not translate." );
       last;
     }
     if( $trans->coding_region_start() != $trans->start() &&
@@ -48,13 +46,13 @@ for my $gene ( @$genes ) {
   for my $trans ( @{$gene->get_all_Transcripts()} ) {
     if( $trans->translate()->seq() =~ /\*./ ) {
       $translates = 0;
-      debug( $trans->stable_id()." does not translate." );
+      note( $trans->stable_id()." does not translate." );
       last;
     }
   }
 }
 
-debug( "utr Transcript is $utr_trans" );
+note( "utr Transcript is $utr_trans" );
 
 ok( $translates );
 
@@ -68,16 +66,16 @@ my $supercontig = $sa->fetch_by_region('supercontig', "NT_028392");
 
 my $transcripts = $supercontig->get_all_Transcripts();
 
-debug( "Checking if all transcripts on NTContig NT_028392 translate and transform" );
+note( "Checking if all transcripts on NTContig NT_028392 translate and transform" );
 
 $translates = 1;
 for my $trans ( @$transcripts ) {
   if( $trans->translate()->seq() =~ /\*./ ) {
     $translates = 0;
-    debug( $trans->stable_id()." does not translate." );
+    note( $trans->stable_id()." does not translate." );
     last;
   }
-  debug($trans->stable_id() .  ":" . $trans->translate()->seq() . "\n");
+  note($trans->stable_id() .  ":" . $trans->translate()->seq() . "\n");
 }
 
 ok($translates);
@@ -85,11 +83,11 @@ ok($translates);
 
 my $ta = $db->get_TranscriptAdaptor();
 
-debug ("Transcript->list_dbIDs");
+note ("Transcript->list_dbIDs");
 my $ids = $ta->list_dbIDs();
 ok (@{$ids});
 
-debug ("Transcript->list_stable_ids");
+note ("Transcript->list_stable_ids");
 my $stable_ids = $ta->list_stable_ids();
 ok (@{$stable_ids});
 
@@ -103,13 +101,13 @@ $tr = $tr->transform('contig');
 
 ok( $tr );
 
-debug ( "External transcript name: " . $tr->external_name );
+note ( "External transcript name: " . $tr->external_name );
 ok ( $tr->external_name eq "MAPRE1");
 
-debug ( "External transcript dbname: " . $tr->external_db );
+note ( "External transcript dbname: " . $tr->external_db );
 ok ( $tr->external_db eq 'HUGO' );
 
-debug ( "Display_xref_id: " . $tr->display_xref->dbID() );
+note ( "Display_xref_id: " . $tr->display_xref->dbID() );
 ok ( $tr->display_xref->dbID() == 97759 );
 ok( test_getter_setter( $tr, "display_xref", 42 ));
 
@@ -128,25 +126,25 @@ ok( $date_time[3] == 6 && $date_time[4] == 11 && $date_time[5] == 104 );
 
 ok( $tr->translation->isa( "Bio::EnsEMBL::Translation" ));
 
-debug( "start() == ".$tr->start() );
+note( "start() == ".$tr->start() );
 ok( $tr->start() == 79874 );
 
-debug( "end() == ".$tr->end() );
+note( "end() == ".$tr->end() );
 ok( $tr->end() == 110306 );
 
-debug( "spliced_seq->substr == \"".substr( $tr->spliced_seq(),0, 10 )."\"" );
+note( "spliced_seq->substr == \"".substr( $tr->spliced_seq(),0, 10 )."\"" );
 ok( substr( $tr->spliced_seq(), 0, 10 ) eq "ACGAGACGAA" ); 
 
-debug( "translateable_seq->substr == \"".substr( $tr->translateable_seq(),0,10 )."\"" );
+note( "translateable_seq->substr == \"".substr( $tr->translateable_seq(),0,10 )."\"" );
 ok( substr( $tr->translateable_seq(),0,10 ) eq "ATGGCAGTGA" );
 
-debug( "coding_region_start() == ".$tr->coding_region_start() );
+note( "coding_region_start() == ".$tr->coding_region_start() );
 ok( $tr->coding_region_start() == 85834 );
 
-debug( "coding_region_end() == ".$tr->coding_region_end() );
+note( "coding_region_end() == ".$tr->coding_region_end() );
 ok( $tr->coding_region_end() == 108631 );
 
-debug( "pep2genomic: ".($tr->pep2genomic( 10,20 ))[0]->start());
+note( "pep2genomic: ".($tr->pep2genomic( 10,20 ))[0]->start());
 my @pepcoords = $tr->pep2genomic( 10, 20 );
 ok( $pepcoords[0]->start() == 85861 );
 
@@ -176,33 +174,33 @@ foreach my $c ($tr->genomic2pep($t_start, $t_end, $t_strand)) {
   }
 }
 
-debug("expecting $coord_num coords (in pep coords), got " . scalar(@coords));
+note("expecting $coord_num coords (in pep coords), got " . scalar(@coords));
 ok(scalar(@coords) == $coord_num);
 my ($last_coord) = reverse(@coords); 
-debug("expecting peptide length: $pep_len, got".$last_coord->end);
+note("expecting peptide length: $pep_len, got".$last_coord->end);
 ok($pep_len == $last_coord->end);
 
-debug( "start Exon: ".$tr->start_Exon->stable_id() );
-debug( "end Exon: ".$tr->end_Exon->stable_id() );
+note( "start Exon: ".$tr->start_Exon->stable_id() );
+note( "end Exon: ".$tr->end_Exon->stable_id() );
 
-debug( "cdna_coding_start: ". $tr->cdna_coding_start );
+note( "cdna_coding_start: ". $tr->cdna_coding_start );
 ok($tr->cdna_coding_start == 65);
 ok(test_getter_setter($tr, 'cdna_coding_start', 99));
 
-debug( "five_prime_utr: ".substr( $tr->five_prime_utr()->seq(), -5 , 5 ));
+note( "five_prime_utr: ".substr( $tr->five_prime_utr()->seq(), -5 , 5 ));
 ok( substr( $tr->five_prime_utr()->seq(), -5, 5) eq "CGAAG" ); 
 
-debug( "cdna_coding_end: ". $tr->cdna_coding_end );
+note( "cdna_coding_end: ". $tr->cdna_coding_end );
 ok($tr->cdna_coding_end == 868);
 ok(test_getter_setter($tr, 'cdna_coding_end', 102));
 
-debug( "three_prime_utr: ".substr( $tr->three_prime_utr()->seq(), -5, 5  ));
+note( "three_prime_utr: ".substr( $tr->three_prime_utr()->seq(), -5, 5  ));
 ok( substr( $tr->three_prime_utr()->seq(), -5, 5  ) eq "TTCAA");
 
-debug( "Transcript has: ". scalar( @{$tr->get_all_Exons()} ). " Exons" );
+note( "Transcript has: ". scalar( @{$tr->get_all_Exons()} ). " Exons" );
 ok( scalar( @{$tr->get_all_Exons()} ) == 7 );
 
-debug( "Flushing Exons" );
+note( "Flushing Exons" );
 $tr->flush_Exons();
 
 ok( scalar( @{$tr->get_all_Exons()} ) == 0 );
@@ -233,7 +231,7 @@ $multi->restore('core', 'transcript');
 
 my $interpro = $ta->get_Interpro_by_transid("ENST00000252021");
 foreach my $i (@$interpro) {
-  debug($i);
+  note($i);
 }
 ###currently no interpro info in the test db
 ok(@$interpro == 1);
@@ -258,7 +256,7 @@ ok($tr->display_id() eq $tr->stable_id());
 #
 # test TranscriptAdaptor::fetch_all_by_biotype
 #
-debug("Test fetch_all_by_biotype");
+note("Test fetch_all_by_biotype");
 my @transcripts = @{$ta->fetch_all_by_biotype('protein_coding')};
 ok(@transcripts == 25);
 @transcripts = @{$ta->fetch_all_by_biotype(['protein_coding','pseudogene'])};
@@ -450,7 +448,7 @@ test_trans_mapper_edits($tr);
 
 $tr = $ta->fetch_by_stable_id('ENST00000355555');
 
-debug($tr->translate->seq());
+note($tr->translate->seq());
 
 ok($tr->translate->seq() eq 'MNFALILMINTLLALLLMIITFWLPQLNGYMEKSTPYECGFDPMSPARVPFSMKFFLVAITFLLFDLEIALLLPLPWALQTTNLPLMVMSSLLLIIILALSLAYEWLQKGLDWAE');
 
@@ -511,24 +509,24 @@ $multi->restore('core');
 #
 
 $tr = $ta->fetch_by_stable_id('ENST00000355555');
-debug("fetch_by_stable_id");
+note("fetch_by_stable_id");
 ok( $tr->dbID == 21740 );
 
 @transcripts = @{ $ta->fetch_all_versions_by_stable_id('ENST00000355555') };
-debug("fetch_all_versions_by_stable_id");
+note("fetch_all_versions_by_stable_id");
 ok( scalar(@transcripts) == 1 );
 
 $tr = $ta->fetch_by_translation_stable_id('ENSP00000355555');
-debug("fetch_by_translation_stable_id");
+note("fetch_by_translation_stable_id");
 ok( $tr->dbID == 21740 );
 
 @transcripts = @{ $ta->fetch_all_by_exon_stable_id('ENSE00001109603') };
-debug("fetch_all_by_exon_stable_id");
+note("fetch_all_by_exon_stable_id");
 ok( scalar(@transcripts) == 1 && $transcripts[0]->dbID == 21740 );
 
 $g = $db->get_GeneAdaptor->fetch_by_stable_id('ENSG00000355555');
 @transcripts = @{ $ta->fetch_all_by_Gene($g) };
-debug("fetch_all_by_Gene");
+note("fetch_all_by_Gene");
 ok( scalar(@transcripts) == 1 && $transcripts[0]->dbID == 21740 );
 
 my $sl = $sa->fetch_by_region('chromosome', 'MT_NC_001807');
@@ -536,11 +534,11 @@ my $sl = $sa->fetch_by_region('chromosome', 'MT_NC_001807');
 ok( scalar(@transcripts) == 1 );
 
 @transcripts = @{ $ta->fetch_all_by_external_name('MAE1_HUMAN') };
-debug( "fetch_all_by_external_name" );
+note( "fetch_all_by_external_name" );
 ok( scalar(@transcripts) == 1 && $transcripts[0]->dbID == 21738 );
 
 $tr = $ta->fetch_by_display_label('MAPRE1');
-debug("fetch_by_display_label");
+note("fetch_by_display_label");
 ok( $tr->dbID == 21738 );
 
 # store/update
@@ -583,11 +581,94 @@ ok($tr->is_current == 1);   # 151
 
 $multi->restore;
 
+# UTR Tests
+{
+  my $utr_testing = sub {
+    my ($tid, $five_start, $five_end, $three_start, $three_end) = @_;
+    my $t;
+    if(ref($tid)) {
+      $t = $tid;
+    }
+    else {
+      $t = $db->get_TranscriptAdaptor()->fetch_by_dbID($tid);
+    }
+    my $five_utr = $t->five_prime_utr_Feature();
+    my $three_utr = $t->three_prime_utr_Feature();
+    is($five_utr->start(), $five_start, 'Checking five prime UTR start');
+    is($five_utr->end(), $five_end, 'Checking five prime UTR end');
+    is($three_utr->start(), $three_start, 'Checking three prime UTR start');
+    is($three_utr->end(), $three_end, 'Checking three prime UTR end');
+  };
+  my $three_prime_seq_test = sub {
+    my ($tid) = @_;
+    my $t = $db->get_TranscriptAdaptor()->fetch_by_dbID($tid);
+    my $true_seq = $t->three_prime_utr()->seq();
+    my $seq = $t->three_prime_utr_Feature()->feature_Slice()->seq();
+    is($seq, $true_seq, 'Asserting 3 prime seq as expected; we have a transcript ending in the last Exon');
+  };
+  note 'Testing +ve strand 5 prime Exon UTR readthrough';
+  $utr_testing->(21729, 30653524, 30685637, 30707177, 30709209);
+  
+  note 'Testing -ve strand 5 prime Exon UTR readthrough';
+  $utr_testing->(21726, 30578039, 30583588, 30568364, 30572314);
+  $three_prime_seq_test->(21726);
+  
+  # we have to build some of our own as it's easier to see the coordinates & do the maths
+  my $transcript_builder = sub {
+    my ($local_slice, $exon_array, $seq_start, $seq_end, $exon_start_idx, $exon_end_idx) = @_;
+    my @exons = map {
+      Bio::EnsEMBL::Exon->new(-START => $_->[0], -END => $_->[1], -SLICE => $local_slice, -STRAND => $_->[2]);
+    } @{$exon_array};
+    my $t = Bio::EnsEMBL::Transcript->new(-SLICE => $local_slice, -EXONS => \@exons);
+    $t->translation(Bio::EnsEMBL::Translation->new(
+      -SEQ_START => $seq_start,
+      -SEQ_END => $seq_end,
+      -START_EXON => $exons[$exon_start_idx],
+      -END_EXON => $exons[$exon_end_idx],
+    ));
+    return $t;
+  };
+  
+  #Local slice of the whole of Chr20
+  my $local_slice = $sa->fetch_by_region('chromosome', "20");
+  
+  note 'Testing +ve strand 3 prime Exon UTR readthrough';
+  my $read_through_pos_three_prime = $transcript_builder->($local_slice, [[1,9,1],[30,39,1],[90,99,1]], 2, 3, 0, 1);
+  $utr_testing->($read_through_pos_three_prime, 1, 1, 33, 99);
+
+  note 'Testing -ve strand prime Exon UTR readthrough';
+  my $read_through_neg_three_prime = $transcript_builder->($local_slice, [[90,99,-1], [30,39,-1], [1,9,-1]], 2, 3, 0, 1);
+  $utr_testing->($read_through_neg_three_prime, 99, 99, 1, 36);
+
+  note 'Testing no UTRs; we expect no features or sequence to be returned';
+  my $no_pos_utrs = $transcript_builder->($local_slice, [[1,9,1]], 1, 9, 0, 0);
+  ok(! defined $no_pos_utrs->five_prime_utr_Feature(), 'No 5 prime UTR means no feature');
+  ok(! $no_pos_utrs->five_prime_utr(), 'No 5 prime UTR means no seq');
+  ok(! defined $no_pos_utrs->three_prime_utr_Feature(), 'No 3 prime UTR means no feature');
+  ok(! defined $no_pos_utrs->three_prime_utr(), 'No 3 prime UTR means no seq');
+  
+  note 'Testing no UTRs; we expect no features or sequence to be returned';
+  my $no_pos_neg_utrs = $transcript_builder->($local_slice, [[1,9,-1]], 1, 9, 0, 0);
+  ok(! defined $no_pos_neg_utrs->five_prime_utr_Feature(), 'No 5 prime UTR means no feature');
+  ok(! $no_pos_neg_utrs->five_prime_utr(), 'No 5 prime UTR means no seq');
+  ok(! defined $no_pos_neg_utrs->three_prime_utr_Feature(), 'No 3 prime UTR means no feature');
+  ok(! defined $no_pos_neg_utrs->three_prime_utr(), 'No 3 prime UTR means no seq');
+  
+  
+}
+
+{
+  #test the get_species_and_object_type method from the Registry
+  my $registry = 'Bio::EnsEMBL::Registry';
+  my ( $species, $object_type, $db_type ) = $registry->get_species_and_object_type('ENST00000355555');
+  ok( $species eq 'homo_sapiens' && $object_type eq 'Transcript');
+}
+
+done_testing();
 
 #
 # end main
 #
-
 
 sub test_trans_mapper_edits {
   $tr->edits_enabled(1);
@@ -613,7 +694,7 @@ sub test_trans_mapper_edits {
 
   @coords = $tr->genomic2cdna($start, $end, $tr->strand());
 
-  debug("Expect coord, gap, coord");
+  note("Expect coord, gap, coord");
   print_coords(\@coords);
 
   ok(@coords == 3);
@@ -635,7 +716,7 @@ sub test_trans_mapper_edits {
 
   @coords = $tr->genomic2cdna($start, $end, $tr->strand());
 
-  debug("Expect coord, gap, coord");
+  note("Expect coord, gap, coord");
   print_coords(\@coords);
 
   ok(@coords == 3);
@@ -657,7 +738,7 @@ sub test_trans_mapper_edits {
 
   @coords = $tr->genomic2cdna($start, $end, $tr->strand());
 
-  debug("Expect coord, gap, coord, coord");
+  note("Expect coord, gap, coord, coord");
 
   ok(@coords == 4);
 
@@ -684,7 +765,7 @@ sub test_trans_mapper_edits {
 
   @coords = $tr->genomic2cdna($start, $end, $tr->strand());
 
-  debug("Expect coords, gap, coord, coord");
+  note("Expect coords, gap, coord, coord");
 
   ok(@coords == 4);
 
@@ -714,16 +795,11 @@ sub print_coords {
 
   foreach my $c (@$coords) {
     if($c->isa('Bio::EnsEMBL::Mapper::Coordinate')) {
-      debug("COORD ",$c->start .'-'.$c->end);
+      note("COORD ",$c->start .'-'.$c->end);
     } else {
-      debug("GAP (". $c->length().")");
+      note("GAP (". $c->length().")");
     }
   }
 }
 
-#test the get_species_and_object_type method from the Registry
-my $registry = 'Bio::EnsEMBL::Registry';
-my ( $species, $object_type, $db_type ) = $registry->get_species_and_object_type('ENST00000355555');
-ok( $species eq 'homo_sapiens' && $object_type eq 'Transcript');
 
-done_testing();

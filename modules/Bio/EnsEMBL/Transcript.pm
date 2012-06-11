@@ -1665,7 +1665,7 @@ sub five_prime_utr {
 
   Arg [1]    : none
   Example    : my $three_prime  = $transcrpt->three_prime_utr
-                 or warn "No five prime UTR";
+                 or warn "No three prime UTR";
   Description: Obtains a Bio::Seq object of the three prime UTR of this
                transcript.  If this transcript is a pseudogene
                (i.e. non-translating) or has no three prime UTR,
@@ -1693,6 +1693,89 @@ sub three_prime_utr {
                    -moltype  => 'dna',
                    -alphabet => 'dna',
                    -seq      => $seq );
+}
+
+=head2 five_prime_utr_Feature
+
+  Example    : my $five_prime  = $transcrpt->five_prime_utr_Feature
+                 or warn "No five prime UTR";
+  Description: Returns the genomic coordinates of the start and end of the
+               5' UTR of this transcript. Note that if you want the sequence
+               of the 5' UTR use C<five_prime_utr> as this will return the
+               sequence from the spliced transcript. 
+  Returntype : Bio::EnsEMBL::Feature or undef if there is no UTR
+  Exceptions : none
+
+=cut
+
+sub five_prime_utr_Feature {
+  my ($self) = @_;
+  my ($start, $end);
+  my $cdna_coding = $self->cdna_coding_start();
+  my ($genomic_pos) = $self->cdna2genomic($cdna_coding, $cdna_coding);
+  if($self->strand() == 1) {
+    $start = $self->seq_region_start();
+    if($start == $genomic_pos->start()) {
+      return; # just return as we have no UTR
+    }
+    $end = $genomic_pos->start() - 1;
+  }
+  else {
+    $end = $self->seq_region_end();
+    if($end == $genomic_pos->start()) {
+      return; # just return as we have no UTR
+    }
+    $start = $genomic_pos->start() + 1;
+  }
+    
+  my $feature = Bio::EnsEMBL::Feature->new(
+    -START => $start,
+    -END => $end,
+    -STRAND => $self->strand(),
+    -SLICE => $self->slice(),
+  );
+  return $feature;
+}
+
+=head2 three_prime_utr_Feature
+
+  Example    : my $five_prime  = $transcrpt->three_prime_utr_Feature
+                 or warn "No three prime UTR";
+  Description: Returns the genomic coordinates of the start and end of the
+               3' UTR of this transcript. Note that if you want the sequence
+               of the 3' UTR use C<three_prime_utr> as this will return the
+               sequence from the spliced transcript. 
+  Returntype : Bio::EnsEMBL::Feature or undef if there is no UTR
+  Exceptions : none
+
+=cut
+
+sub three_prime_utr_Feature {
+  my ($self) = @_;
+  my ($start, $end);
+  my $cdna_coding = $self->cdna_coding_end();
+  my ($genomic_pos) = $self->cdna2genomic($cdna_coding, $cdna_coding);
+  if($self->strand() == 1) {
+    $end = $self->seq_region_end();
+    if($end == $genomic_pos->start()) {
+      return; # just return as we have no UTR
+    }
+    $start = $genomic_pos->start() + 1;
+  }
+  else {
+    $start = $self->seq_region_start();
+    if($start == $genomic_pos->start()) {
+      return; # just return as we have no UTR
+    }
+    $end = $genomic_pos->start() - 1;
+  }
+  my $feature = Bio::EnsEMBL::Feature->new(
+    -START => $start,
+    -END => $end,
+    -STRAND => $self->strand(),
+    -SLICE => $self->slice(),
+  );
+  return $feature;
 }
 
 
