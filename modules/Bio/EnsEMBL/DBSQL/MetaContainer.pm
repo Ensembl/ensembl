@@ -262,8 +262,9 @@ sub get_genebuild {
 sub get_classification {
   my ($self) = @_;
   my $classification = $self->list_value_by_key('species.classification');
-  splice(@{$classification}, 0, 2); # remove the sapiens, Homo from the backing array
-  return $classification;
+  my $copy = [@{$classification}];
+  splice(@{$copy}, 0, 1); # remove the Homo sapiens
+  return $copy;
 }
 
 

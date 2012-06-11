@@ -64,6 +64,12 @@ $div = $mc->get_division();
 ok($div eq $divname);
 
 #
+# classification 
+#
+my $classification = [ qw/Hominidae Catarrhini Primates Eutheria Mammalia Vertebrata Chordata Metazoa Eukaryota/ ];
+is_deeply($mc->get_classification(), $classification, 'Checking classification as expected');
+
+#
 # Testing get_Species()
 #
 
