@@ -5,6 +5,7 @@ use warnings;
 
 use Getopt::Long qw( :config no_ignore_case );
 use Pod::Usage;
+use POSIX;
 use Bio::EnsEMBL::DBSQL::DBAdaptor;
 use Bio::EnsEMBL::DBSQL::DBConnection;
 use Bio::EnsEMBL::Utils::Scalar qw/wrap_array/;
@@ -469,11 +470,16 @@ Database name to search for. Can be a SQL like statement
 
 =item B<--dropbaks>
 
-
+Forces the dropping of the _bak tables created as part
+of this script's run. Normally we would suggest you keep
+this option off unless you know you do not want these. You
+must run this option with --dumppath to avoid unintentional
+data loss.
 
 =item B<--dumppath>
 
-
+Back-up tables into the specified directory path. If you are
+using --dropbaks you must specify this option
 
 =item B<--removedeprecated>
 
