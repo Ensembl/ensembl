@@ -224,9 +224,10 @@ sub _dump_dna {
     foreach my $s (@non_chromosomes) {
       $self->_dump_slice($s, $other_serializer, $other_rm_serializer);
     }
-    my ($hard_mask_fh, $hard_mask_file) = $self->_convert_softmask_to_hardmask($rm_non_specific_file);
     $self->tidy_file_handle( $non_specific_fh, $non_specific_file );
     $self->tidy_file_handle( $rm_non_specific_fh, $rm_non_specific_file );
+    
+    my ($hard_mask_fh, $hard_mask_file) = $self->_convert_softmask_to_hardmask($rm_non_specific_file);
     $self->tidy_file_handle( $hard_mask_fh, $hard_mask_file);
     $self->info('Dumped non-chromosomes');
   }
@@ -244,10 +245,10 @@ sub _dump_dna {
     
     $self->_dump_slice($s, $chromo_serializer, $rm_chromo_serializer);
     
-    my ($chromo_hard_mask_fh, $chromo_hard_mask_file) = $self->_convert_softmask_to_hardmask($rm_chromo_file_name);
-    
     $self->tidy_file_handle($chromo_fh, $chromo_file_name);
     $self->tidy_file_handle($rm_chromo_fh, $rm_chromo_file_name);
+    
+    my ($chromo_hard_mask_fh, $chromo_hard_mask_file) = $self->_convert_softmask_to_hardmask($rm_chromo_file_name);
     $self->tidy_file_handle($chromo_hard_mask_fh, $chromo_hard_mask_file);
   }
   $self->info("Dumped chromosomes");
