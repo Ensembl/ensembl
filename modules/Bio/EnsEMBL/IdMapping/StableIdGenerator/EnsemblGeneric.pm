@@ -279,7 +279,7 @@ sub calculate_version {
     if ( $s_obj->seq_md5_sum() ne $t_obj->seq_md5_sum() ) { ++$version }
   }
   elsif ( $s_obj->isa('Bio::EnsEMBL::IdMapping::TinyTranslation') ) {
-    # increment version if transcript changed
+    # increment version if transcript or translation sequences changed
 
     my $s_tr =
       $self->cache->get_by_key( 'transcripts_by_id', 'source',
@@ -288,7 +288,11 @@ sub calculate_version {
       $self->cache->get_by_key( 'transcripts_by_id', 'target',
                                 $t_obj->transcript_id() );
 
-    if ( $s_tr->seq_md5_sum() ne $t_tr->seq_md5_sum() ) { ++$version }
+    if ( $s_tr->seq_md5_sum() ne $t_tr->seq_md5_sum() ||
+         $s_obj->seq() ne $t_obj->seq() )
+    {
+      ++$version;
+    }
   }
   elsif ( $s_obj->isa('Bio::EnsEMBL::IdMapping::TinyGene') ) {
     # increment version if any transcript changed
