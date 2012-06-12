@@ -92,7 +92,7 @@ use Bio::EnsEMBL::Utils::BiotypeMapper;
 use Bio::EnsEMBL::Utils::Exception qw/throw/;
 use Bio::EnsEMBL::Utils::Scalar qw/check_ref/;
 use Bio::EnsEMBL::Utils::IO::FASTASerializer;
-use Bio::EnsEMBL::Utils::IO qw/work_with_file/;
+use Bio::EnsEMBL::Utils::IO qw/work_with_file gz_work_with_file/;
 
 my $DNA_INDEXING_FLOW = 1;
 my $PEPTIDE_INDEXING_FLOW = 2;
@@ -287,11 +287,12 @@ sub _dump_slice {
 #Assumes we are working with un-compressed files
 sub _convert_softmask_to_hardmask {
   my ($self, $soft_mask_file) = @_;
+  $soft_mask_file =~ s/\.fa$/.fa.gz/;
   my $hard_mask_file = $soft_mask_file;
   $hard_mask_file =~ s/\.dna_sm\./.dna_rm./;
   my $hm_fh = IO::File->new($hard_mask_file, 'w');
   $self->info('Converting soft-masked file %s into hard-masked file %s', $soft_mask_file, $hard_mask_file);
-  work_with_file($soft_mask_file, 'r', sub {
+  gz_work_with_file($soft_mask_file, 'r', sub {
     my ($sm_fh) = @_;
     while(my $line = <$sm_fh>) {
       if(index($line, '>') == 0) {
