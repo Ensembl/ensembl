@@ -64,6 +64,9 @@ sub param_defaults {
     dna_rm => {
       regex => qr/.+\.dna_rm\..+\.fa\.gz$/,
     },
+    dna_sm => {
+      regex => qr/.+\.dna_sm\..+\.fa\.gz$/,
+    },
   };
 }
 
