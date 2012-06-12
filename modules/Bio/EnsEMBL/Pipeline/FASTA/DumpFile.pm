@@ -505,7 +505,7 @@ sub _generate_file_name {
 
   my $file_name = join( '.', @name_bits );
 
-  $data_type =~ s/_rm$//;    # remove repeatmask designation from path component
+  $data_type =~ s/_[rs]m$//;    # remove repeatmask or softmask designation from path component
   my $data_type_dir = $self->fasta_path($data_type);
   $self->_remove_files_from_dir($data_type_dir);
   return File::Spec->catfile( $data_type_dir, $file_name );
