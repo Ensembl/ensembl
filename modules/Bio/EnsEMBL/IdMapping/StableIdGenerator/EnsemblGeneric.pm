@@ -266,50 +266,52 @@ sub is_valid {
 =cut
 
 sub calculate_version {
-  my $self = shift;
-  my $s_obj = shift;
-  my $t_obj = shift;
+  my ( $self, $s_obj, $t_obj ) = @_;
 
-  my $version = $s_obj->version;
+  my $version = $s_obj->version();
 
-  if ($s_obj->isa('Bio::EnsEMBL::IdMapping::TinyExon')) {
-    
+  if ( $s_obj->isa('Bio::EnsEMBL::IdMapping::TinyExon') ) {
     # increment version if sequence changed
-    $version++ unless ($s_obj->seq eq $t_obj->seq);
-  
-  } elsif ($s_obj->isa('Bio::EnsEMBL::IdMapping::TinyTranscript')) {
-  
+    if ( $s_obj->seq() ne $t_obj->seq() ) { ++$version }
+  }
+  elsif ( $s_obj->isa('Bio::EnsEMBL::IdMapping::TinyTranscript') ) {
     # increment version if spliced exon sequence changed
-    $version++ unless ($s_obj->seq_md5_sum eq $t_obj->seq_md5_sum);
-
-  } elsif ($s_obj->isa('Bio::EnsEMBL::IdMapping::TinyTranslation')) {
-
+    if ( $s_obj->seq_md5_sum() ne $t_obj->seq_md5_sum() ) { ++$version }
+  }
+  elsif ( $s_obj->isa('Bio::EnsEMBL::IdMapping::TinyTranslation') ) {
     # increment version if transcript changed
-    my $s_tr = $self->cache->get_by_key('transcripts_by_id', 'source',
-      $s_obj->transcript_id);
-    my $t_tr = $self->cache->get_by_key('transcripts_by_id', 'target',
-      $t_obj->transcript_id);
 
-    $version++ unless ($s_tr->seq_md5_sum eq $t_tr->seq_md5_sum);
-    
-  } elsif ($s_obj->isa('Bio::EnsEMBL::IdMapping::TinyGene')) {
-    
+    my $s_tr =
+      $self->cache->get_by_key( 'transcripts_by_id', 'source',
+                                $s_obj->transcript_id() );
+    my $t_tr =
+      $self->cache->get_by_key( 'transcripts_by_id', 'target',
+                                $t_obj->transcript_id() );
+
+    if ( $s_tr->seq_md5_sum() ne $t_tr->seq_md5_sum() ) { ++$version }
+  }
+  elsif ( $s_obj->isa('Bio::EnsEMBL::IdMapping::TinyGene') ) {
     # increment version if any transcript changed
-    my $s_tr_ident = join(":", map { $_->stable_id.'.'.$_->version }
-      sort { $a->stable_id cmp $b->stable_id }
-        @{ $s_obj->get_all_Transcripts });
-    my $t_tr_ident = join(":", map { $_->stable_id.'.'.$_->version }
-      sort { $a->stable_id cmp $b->stable_id }
-        @{ $t_obj->get_all_Transcripts });
 
-    $version++ unless ($s_tr_ident eq $t_tr_ident);
-    
-  } else {
-    throw("Unknown object type: ".ref($s_obj));
+    my $s_tr_ident = join(
+      ":",
+      map { $_->stable_id() . '.' . $_->version() } sort {
+        $a->stable_id() cmp $b->stable_id()
+        } @{ $s_obj->get_all_Transcripts() } );
+    my $t_tr_ident = join(
+      ":",
+      map { $_->stable_id() . '.' . $_->version() } sort {
+        $a->stable_id() cmp $b->stable_id()
+        } @{ $t_obj->get_all_Transcripts() } );
+
+    if ( $s_tr_ident ne $t_tr_ident ) { ++$version }
+  }
+  else {
+    throw( "Unknown object type: " . ref($s_obj) );
   }
 
   return $version;
-}
+} ## end sub calculate_version
 
 
 1;
