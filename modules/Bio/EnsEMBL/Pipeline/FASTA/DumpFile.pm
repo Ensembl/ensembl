@@ -297,7 +297,7 @@ sub _convert_softmask_to_hardmask {
         $line =~ s/dna_sm/dna_rm/;
       }
       else {
-        $line =~ tr/a-z/N/;
+        $line =~ tr/[acgtn]/N/;
       }
       print $hm_fh $line;
     };
