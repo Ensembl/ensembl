@@ -15,11 +15,13 @@ sub decompress {
   my $target_dir = $self->target_dir();
   my ($vol, $dir, $file) = File::Spec->splitpath($source);
   my $target = File::Spec->catdir($target_dir, $file);
-  $self->info('Decompressing %s to %s', $source, $target);
+  my $gunzipped_target = $target;
+  $gunzipped_target =~ s/.gz$//;
+  $self->info('Copying from %s to %s', $source, $gunzipped_target);
   copy($source, $target) or throw "Cannot copy $source to $target: $!";
+  $self->info('Decompressing %s to %s', $source, $gunzipped_target);
   system("gunzip -f $target") and throw sprintf('Could not gunzip. Exited with code %d', ($? >>8));
-  $target =~ s/.gz$//;
-  return $target;
+  return $gunzipped_target;
 }
 
 sub repeat_mask_date {
