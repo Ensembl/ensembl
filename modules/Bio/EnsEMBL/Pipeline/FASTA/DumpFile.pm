@@ -435,6 +435,12 @@ sub _dump_prediction_transcripts {
   return ($has_transcript_data, $has_protein_data);
 }
 
+# We can optionally skip the Gzip process & just delegate to the super class
+# for it's cleanup routines which only work with an open file handle. Therefore 
+# only pass it onto the super implementation *if* the handle was open. 
+# Also only Gzip if the source file exists (it could have been unlinked from
+# an earlier call)
+
 sub tidy_file_handle {
   my ($self, $fh, $path, $no_gzip) = @_;
   if($fh->opened()) {
