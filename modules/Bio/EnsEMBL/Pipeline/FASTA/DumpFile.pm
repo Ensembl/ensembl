@@ -224,10 +224,12 @@ sub _dump_dna {
     foreach my $s (@non_chromosomes) {
       $self->_dump_slice($s, $other_serializer, $other_rm_serializer);
     }
+    #Quick close of the SM FH to flush all data out to disk; skip gzipping & leave that to the next call
+    $self->tidy_file_handle($rm_non_specific_fh, $rm_non_specific_file, 1);
+    my ($hard_mask_fh, $hard_mask_file) = $self->_convert_softmask_to_hardmask($rm_non_specific_file, $rm_non_specific_fh);
+    
     $self->tidy_file_handle( $non_specific_fh, $non_specific_file );
     $self->tidy_file_handle( $rm_non_specific_fh, $rm_non_specific_file );
-    
-    my ($hard_mask_fh, $hard_mask_file) = $self->_convert_softmask_to_hardmask($rm_non_specific_file);
     $self->tidy_file_handle( $hard_mask_fh, $hard_mask_file);
     $self->info('Dumped non-chromosomes');
   }
@@ -245,10 +247,12 @@ sub _dump_dna {
     
     $self->_dump_slice($s, $chromo_serializer, $rm_chromo_serializer);
     
+    #Quick close of the SM FH to flush all data out to disk; skip gzipping & leave that to the next call
+    $self->tidy_file_handle($rm_chromo_fh, $rm_chromo_file_name, 1);
+    my ($chromo_hard_mask_fh, $chromo_hard_mask_file) = $self->_convert_softmask_to_hardmask($rm_chromo_file_name, $rm_chromo_fh);
+    
     $self->tidy_file_handle($chromo_fh, $chromo_file_name);
     $self->tidy_file_handle($rm_chromo_fh, $rm_chromo_file_name);
-    
-    my ($chromo_hard_mask_fh, $chromo_hard_mask_file) = $self->_convert_softmask_to_hardmask($rm_chromo_file_name);
     $self->tidy_file_handle($chromo_hard_mask_fh, $chromo_hard_mask_file);
   }
   $self->info("Dumped chromosomes");
@@ -286,13 +290,16 @@ sub _dump_slice {
 
 #Assumes we are working with un-compressed files
 sub _convert_softmask_to_hardmask {
-  my ($self, $soft_mask_file) = @_;
-  $soft_mask_file =~ s/\.fa$/.fa.gz/;
+  my ($self, $soft_mask_file, $soft_mask_fh) = @_;
+  if(! -f $soft_mask_file) {
+    $self->info('Skipping as the target file %s does not exist. Must have been deleted', $soft_mask_file);
+    return;
+  }
   my $hard_mask_file = $soft_mask_file;
   $hard_mask_file =~ s/\.dna_sm\./.dna_rm./;
   my $hm_fh = IO::File->new($hard_mask_file, 'w');
   $self->info('Converting soft-masked file %s into hard-masked file %s', $soft_mask_file, $hard_mask_file);
-  gz_work_with_file($soft_mask_file, 'r', sub {
+  work_with_file($soft_mask_file, 'r', sub {
     my ($sm_fh) = @_;
     while(my $line = <$sm_fh>) {
       if(index($line, '>') == 0) {
@@ -429,9 +436,15 @@ sub _dump_prediction_transcripts {
 }
 
 sub tidy_file_handle {
-  my ($self, $fh, $path) = @_;
-  my $tidy = $self->SUPER::tidy_file_handle($fh, $path);
-  return 1 if $tidy;
+  my ($self, $fh, $path, $no_gzip) = @_;
+  if($fh->opened()) {
+    my $tidy = $self->SUPER::tidy_file_handle($fh, $path);
+    return 1 if $tidy;
+  }
+  
+  return if $no_gzip; #don't gzip if we were told to skip
+  return if ! -f $path; #don't gzip if we had no file
+  
   my $target = $path.".gz";
   $self->info('Gzipping "%s"', $path);
   my %args;
