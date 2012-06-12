@@ -42,6 +42,7 @@ sub default_options {
         
         scp_user => $self->o('ENV', 'USER'),
         scp_identity => '',
+        no_scp => 0,
         
         ### Defaults 
         

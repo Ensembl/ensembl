@@ -31,6 +31,8 @@ Allowed parameters are:
 
 =over 8
 
+=item no_scp - If true then we will not run SCP but still finish cleanly without error
+
 =item type - The type of dump to copy. Required parameter
 
 =item genomic_dir - Needed if you are copying DNA genomic files
@@ -66,6 +68,7 @@ use File::Spec;
 sub param_defaults {
   my ($self) = @_;
   return {
+    no_scp => 0,
 #    genomic_dir => '',
 #    genes_dir => '',
 #    target_servers => ['srv1', 'srv2'],
@@ -80,6 +83,11 @@ sub param_defaults {
 
 sub fetch_input {
   my ($self) = @_;
+  if($self->param('no_scp')) {
+    $self->info('Skipping as no_scp has been specified');
+    return;
+  }
+  
   my $servers = $self->param('target_servers');
   
   if(!check_ref($servers, 'ARRAY') || ! @{$servers}) {
@@ -105,6 +113,10 @@ sub fetch_input {
 
 sub run {
   my ($self) = @_;
+  if($self->param('no_scp')) {
+    $self->info('Skipping as no_scp has been specified');
+    return;
+  }
   my $servers = $self->param('target_servers');
   return unless @{$servers};
   my $files = $self->get_files();
