@@ -154,41 +154,41 @@ h2. Example Commands
 h3. To load use normally:
 
 bc. 
-	init_pipeline.pl Bio::EnsEMBL::Pipeline::PipeConfig:FASTA_conf \
+	init_pipeline.pl Bio::EnsEMBL::Pipeline::PipeConfig::FASTA_conf \
 	-pipeline_db -host=my-db-host -base_path /path/to/dumps -registry reg.pm
 
 h3. Run a subset of species (no forcing & supports registry aliases):
 
 bc. 
-	init_pipeline.pl Bio::EnsEMBL::Pipeline::PipeConfig:FASTA_conf \
+	init_pipeline.pl Bio::EnsEMBL::Pipeline::PipeConfig::FASTA_conf \
 	-pipeline_db -host=my-db-host -species anolis -species celegans -species human \
 	-base_path /path/to/dumps -registry reg.pm
 
 h3. Specifying species to force (supports all registry aliases):
 
 bc. 
-	init_pipeline.pl Bio::EnsEMBL::Pipeline::PipeConfig:FASTA_conf \
+	init_pipeline.pl Bio::EnsEMBL::Pipeline::PipeConfig::FASTA_conf \
 	-pipeline_db -host=my-db-host -force_species anolis -force_species celegans -force_species human \
 	-base_path /path/to/dumps -registry reg.pm
 
 h3. Running & forcing a species:
 
 bc. 
-	init_pipeline.pl Bio::EnsEMBL::Pipeline::PipeConfig:FASTA_conf \
+	init_pipeline.pl Bio::EnsEMBL::Pipeline::PipeConfig::FASTA_conf \
 	-pipeline_db -host=my-db-host -species celegans -force_species celegans \
 	-base_path /path/to/dumps -registry reg.pm
 
 h3. Dumping just gene data (no DNA or ncRNA):
 
 bc. 
-	init_pipeline.pl Bio::EnsEMBL::Pipeline::PipeConfig:FASTA_conf \
+	init_pipeline.pl Bio::EnsEMBL::Pipeline::PipeConfig::FASTA_conf \
 	-pipeline_db -host=my-db-host -dump_type cdna \
 	-base_path /path/to/dumps -registry reg.pm
 
 h3. Using a different SCP user & identity:
 
 bc. 
-	init_pipeline.pl Bio::EnsEMBL::Pipeline::PipeConfig:FASTA_conf \
+	init_pipeline.pl Bio::EnsEMBL::Pipeline::PipeConfig::FASTA_conf \
 	-pipeline_db -host=my-db-host -scp_user anotherusr -scp_identity /users/anotherusr/.pri/identity \
 	-base_path /path/to/dumps -registry reg.pm
 
