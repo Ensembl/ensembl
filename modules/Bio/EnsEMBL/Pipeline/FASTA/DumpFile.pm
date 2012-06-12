@@ -216,18 +216,20 @@ sub _dump_dna {
   
   ############ NON CHROMOSOME WORK
   $self->info('Processing %d non-chromosome(s)', scalar(@non_chromosomes));
-  my ( $non_specific_file, $non_specific_fh, $other_serializer ) =
-    $self->_generate_fasta_serializer( 'dna', 'nonchromosomal' );
-  my ( $rm_non_specific_file, $rm_non_specific_fh, $other_rm_serializer ) =
-    $self->_generate_fasta_serializer( 'dna_sm', 'nonchromosomal' );
-  foreach my $s (@non_chromosomes) {
-    $self->_dump_slice($s, $other_serializer, $other_rm_serializer);
+  if(@non_chromosomes) {
+    my ( $non_specific_file, $non_specific_fh, $other_serializer ) =
+      $self->_generate_fasta_serializer( 'dna', 'nonchromosomal' );
+    my ( $rm_non_specific_file, $rm_non_specific_fh, $other_rm_serializer ) =
+      $self->_generate_fasta_serializer( 'dna_sm', 'nonchromosomal' );
+    foreach my $s (@non_chromosomes) {
+      $self->_dump_slice($s, $other_serializer, $other_rm_serializer);
+    }
+    my ($hard_mask_fh, $hard_mask_file) = $self->_convert_softmask_to_hardmask($rm_non_specific_fh);
+    $self->tidy_file_handle( $non_specific_fh, $non_specific_file );
+    $self->tidy_file_handle( $rm_non_specific_fh, $rm_non_specific_file );
+    $self->tidy_file_handle( $hard_mask_fh, $hard_mask_file);
+    $self->info('Dumped non-chromosomes');
   }
-  my ($hard_mask_fh, $hard_mask_file) = $self->_convert_softmask_to_hardmask($rm_non_specific_fh) if @non_chromosomes;
-  $self->tidy_file_handle( $non_specific_fh, $non_specific_file );
-  $self->tidy_file_handle( $rm_non_specific_fh, $rm_non_specific_file );
-  $self->tidy_file_handle( $hard_mask_fh, $hard_mask_file);
-  $self->info('Dumped non-chromosomes');
 
   ############ CHROMOSOME WORK 
   $self->info('Processing %d chromosome(s)', scalar(@chromosomes));
