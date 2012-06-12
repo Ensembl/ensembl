@@ -209,6 +209,7 @@ sub pipeline_analyses {
           scp_user => $self->o('scp_user'),
           scp_identity => $self->o('scp_identity'),
           
+          no_scp => $self->o('no_scp'),
         },
         -hive_capacity => 3,
         -can_be_empty => 1,
