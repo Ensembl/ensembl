@@ -120,7 +120,12 @@ sub write_output {
 sub get_dna_files {
   my ($self) = @_;
   my $path = $self->fasta_path('dna');
-  my $regex = $self->param($self->param('data_type'))->{regex};
+  my $data_type = $self->param('data_type'); 
+  my $regex_hash = $self->param($data_type); 
+  if(! $regex_hash ) {
+    throw "We do not have an entry for the data_type $data_type in our regex lookup hash. Edit this module";
+  }
+  my $regex = $regex_hash->{regex};
   my $filter = sub {
     my ($filename) = @_;
     return ($filename =~ $regex && $filename !~ /\.toplevel\./) ? 1 : 0;
