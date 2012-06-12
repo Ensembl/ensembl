@@ -239,7 +239,7 @@ sub map_stable_ids {
         # Only add events when something changed.
         if ( !( $s_obj->stable_id eq $t_obj->stable_id &&
                 $s_obj->version == $t_obj->version &&
-                $scores_by_target{$tid} == 1 ) )
+                $scores_by_target{$tid} > 0.9999 ) )
         {
           my $key = join( "\t",
                           $s_obj->stable_id,         $s_obj->version,
