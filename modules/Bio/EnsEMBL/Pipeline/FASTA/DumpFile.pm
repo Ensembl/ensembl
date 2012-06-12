@@ -622,9 +622,7 @@ sub _custom_header {
     my $idtype    = $slice->coord_system->name;
     my $location  = $slice->name;
     my $ref       = $slice->assembly_exception_type();
-    my $header    = sprintf('%s %s:%s %s', $id, $dna_type, $idtype, $location);
-    #TODO uncomment to bring in types. Not sure what this means for other species' headers
-#    my $header    = sprintf('%s %s:%s %s %s', $id, $dna_type, $idtype, $location, $ref);  
+    my $header    = sprintf('%s %s:%s %s %s', $id, $dna_type, $idtype, $location, $ref);  
     return $header;
   };
 }
