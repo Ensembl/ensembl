@@ -17,7 +17,7 @@ sub decompress {
   my $target = File::Spec->catdir($target_dir, $file);
   my $gunzipped_target = $target;
   $gunzipped_target =~ s/.gz$//;
-  $self->info('Copying from %s to %s', $source, $gunzipped_target);
+  $self->info('Copying from %s to %s', $source, $target);
   copy($source, $target) or throw "Cannot copy $source to $target: $!";
   $self->info('Decompressing %s to %s', $source, $gunzipped_target);
   system("gunzip -f $target") and throw sprintf('Could not gunzip. Exited with code %d', ($? >>8));
