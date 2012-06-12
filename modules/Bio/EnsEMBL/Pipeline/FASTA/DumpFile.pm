@@ -255,6 +255,7 @@ sub _dump_dna {
   #input_id
   push(@{$self->param('dataflows')}, [{ data_type => 'dna', species => $self->param('species') }, $DNA_INDEXING_FLOW]);
   push(@{$self->param('dataflows')}, [{ data_type => 'dna_sm', species => $self->param('species') }, $DNA_INDEXING_FLOW]);
+  push(@{$self->param('dataflows')}, [{ data_type => 'dna_rm', species => $self->param('species') }, $DNA_INDEXING_FLOW]);
   
   return;
 }
