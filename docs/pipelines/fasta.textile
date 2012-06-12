@@ -1,13 +1,10 @@
 h1. FASTA Pipeline
 
-This is a re-implementation of an existing pipeline developed originally by
-core and the webteam. The new version uses eHive, so familiarity with this
-system is essential, and has been written to use as little memory as possible.
+This is a re-implementation of an existing pipeline developed originally by core and the webteam. The new version uses eHive, so familiarity with this system is essential, and has been written to use as little memory as possible.
 
 h2. The Registry File
 
-This is the way we retrieve the database connections to work with. The
-registry file should specify:
+This is the way we retrieve the database connections to work with. The registry file should specify:
 
 * The core (and any other) databases to dump from
 * A production database
@@ -19,11 +16,7 @@ registry file should specify:
 ** *group = web*
 ** Used to name BLAT index files
 
-Here is an example of a file for v67 of Ensembl. Note the use of the
-Registry object within a registry file and the scoping of the package. If
-you omit the *-db_version* parameter and only use HEAD checkouts of Ensembl
-then this will automatically select the latest version of the API. Any
-change to version here must be reflected in the configuration file.
+Here is an example of a file for v67 of Ensembl. Note the use of the Registry object within a registry file and the scoping of the package. If you omit the *-db_version* parameter and only use HEAD checkouts of Ensembl then this will automatically select the latest version of the API. Any change to version here must be reflected in the configuration file.
 
 bc. 
 	package Reg;
@@ -72,9 +65,7 @@ You give the registry to the *init_pipeline.pl* script via the *-registry* optio
 
 h2. Overriding Defaults Using a New Config File 
 
-We recommend if you have a number of parameters which do not change
-between releases to create a configuration file which inherits from the
-root config file e.g.
+We recommend if you have a number of parameters which do not change between releases to create a configuration file which inherits from the root config file e.g.
 
 bc. 
 	package MyCnf;
