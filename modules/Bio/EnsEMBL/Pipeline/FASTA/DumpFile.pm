@@ -298,7 +298,7 @@ sub _convert_softmask_to_hardmask {
       else {
         $line =~ tr/a-z/N/;
       }
-      print $hm_fh;
+      print $hm_fh $line;
     };
     return;
   });
