@@ -456,7 +456,7 @@ sub tidy_file_handle {
 sub ok_to_process_logic_name {
   my ($self, $transcript) = @_;
   my $ok = 1;
-  my $logic_name = $transcript->get_Analysis()->logic_name();
+  my $logic_name = $transcript->analysis()->logic_name();
   if($self->param('process_logic_active')) {
     if(! $self->param('process_logic')->{$logic_name}) {
       $self->fine('Transcript %s has been filtered because logic_name %s is not in the active logic name list', $transcript->stable_id(), $logic_name);
