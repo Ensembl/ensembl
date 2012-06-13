@@ -100,7 +100,9 @@ sub index_file {
     $self->param('program'), $molecule_arg, $silence, $target_file, $file);
   
   $self->info('About to run "%s"', $cmd);
-  system($cmd) and throw sprintf("Cannot run program '%s' with exit code %d", $cmd, ($? >> 8));
+  my $output = `$cmd 2>&1`;
+  my $rc = $? >> 8;
+  throw "Cannot run program '$cmd'. Return code was ${rc}. Program output was $output" if $rc;
   unlink $file or throw "Cannot remove the file '$file' from the filesystem: $!";
   $self->param('index_base', $target_file);
   return;
