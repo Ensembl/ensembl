@@ -255,7 +255,7 @@ sub is_valid {
                 genes, the rules for incrementing the version number are:
                     - exons: if exon sequence changed
                     - transcript: if spliced exon sequence changed
-                    - translation: if transcript changed
+                    - translation: if transcript or translation changed
                     - gene: if any of its transcript changed
   Return type : String - the version to be used
   Exceptions  : thrown on wrong argument
