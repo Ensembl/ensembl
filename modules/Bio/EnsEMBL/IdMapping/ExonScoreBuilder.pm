@@ -402,11 +402,17 @@ sub calc_overlap_score {
 
   my $score = ( $overlap/$source_length + $overlap/$target_length )/2;
 
-  # PENALTY:
-  # penalise by 10% if phase if different
-  if ( $source_exon->phase != $target_exon->phase ) {
-    $score *= 0.9;
-  }
+  # The following penalty was removed because it meant that an exon
+  # whose sequence and position had not changed would become a
+  # candidate for similarity mapping when its phase changed.  This
+  # caused lots of criss-crossing stable ID history entries between
+  # genes/transcripts/translations in some gene families.
+  #
+  ## PENALTY:
+  ## penalise by 10% if phase if different
+  #if ( $source_exon->phase != $target_exon->phase ) {
+  #$score *= 0.9;
+  #}
 
   # add score to scoring matrix if it's at least 0.5
   if ( $score >= 0.5 ) {
