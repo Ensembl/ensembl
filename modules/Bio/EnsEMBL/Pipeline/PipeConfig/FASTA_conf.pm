@@ -30,6 +30,10 @@ sub default_options {
         
         force_species => [],
         
+        process_logic_names => [],
+        
+        skip_logic_names => [],
+        
         release => software_version(),
         
         previous_release => (software_version() - 1),
@@ -95,6 +99,10 @@ sub pipeline_analyses {
       {
         -logic_name => 'DumpDNA',
         -module     => 'Bio::EnsEMBL::Pipeline::FASTA::DumpFile',
+        -parameters => {
+          process_logic_names => $self->o('process_logic_names'),
+          skip_logic_names => $self->o('skip_logic_names'),
+        },
         -can_be_empty => 1,
         -flow_into  => {
           1 => 'ConcatFiles'

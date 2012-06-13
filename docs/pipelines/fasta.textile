@@ -125,6 +125,8 @@ bc. -species human -species cele -species yeast
 |@-force_species@|String|Yes|Specify one or more species to force through the pipeline. This is useful to force a dump when you know reuse will not do the _"right thing"_|-|*NO*|
 |@-dump_types@|String|Yes|Specify each type of dump you want to produce. Supported values are *dna*, *cdna* and *ncrna*|All|*NO*|
 |@-db_types@|String|Yes|The database types to use. Supports the normal db adaptor groups e.g. *core*, *otherfeatures* etc.|core|*NO*|
+|@-process_logic_names@|String|Yes|Provide a set of logic names whose models should be dumped|-|*NO*|
+|@-skip_logic_names@|String|Yes|Provide a set of logic names to skip when creating dumps. These are evaluated *after* @-process_logic_names@|core|*NO*|
 |@-release@|Integer|No|The release to dump|Software version|*NO*|
 |@-previous_release@|Integer|No|The previous release to use. Used to calculate reuse|Software version minus 1|*NO*|
 |@-blast_servers@|String|Yes|The servers to copy blast indexes to|-|*NO*|
