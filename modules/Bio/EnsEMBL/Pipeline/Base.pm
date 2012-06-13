@@ -134,11 +134,11 @@ sub production_name {
 sub tidy_file_handle {
   my ($self, $fh, $path) = @_;
   if ($fh->tell() == 0) {
-    $fh->close() unless $fh->opened();
-    unlink($path);
+    $fh->close() if $fh->opened();
+    unlink($path) if -f $path;
     return 1;
   }
-  $fh->close() unless $fh->opened();
+  $fh->close() if $fh->opened();
   return 0;
 }
 
