@@ -47,16 +47,16 @@ while (defined($feature) ) {
 
     #do something with the feature, e.g. print hash keys and values 
     foreach my $key (keys %feature) {
-	if ($key ne 'attribute') {
-	    print $key . " " . $feature{$key} ."\n";
-	} else {
-	    print $key . "\n";
-	    my %attribs =  %{$feature{$key}};
-	    foreach my $attrib_key (keys %attribs) {
-	      my $values = $attribs{$attrib_key};
-		    printf("\t%s %s\n", $attrib_key, join(q{, }, wrap_array($values)));
-	    }
-	}
+        if ($key ne 'attribute') {
+            print $key . " " . $feature{$key} ."\n";
+        } else {
+        print $key . "\n";
+        my %attribs =  %{$feature{$key}};
+        foreach my $attrib_key (keys %attribs) {
+            my $values = $attribs{$attrib_key};
+            printf("\t%s %s\n", $attrib_key, join(q{, }, @{wrap_array($values)}));
+        }
+      }
     }
     print "\n\n";
     $feature = $parser->parse_next_feature();
