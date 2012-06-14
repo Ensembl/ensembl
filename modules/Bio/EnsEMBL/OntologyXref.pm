@@ -176,4 +176,183 @@ sub flush_linkage_types {
   $self->{'linkage_types'} = [];
 }
 
+
+=head2 add_associated_xref
+
+  Arg [1]    : Bio::EnsEMBL::DBEntry $associated_xref
+               or an Array of Bio::EnsEMBL::DBEntry for compound annotations
+  Arg [2]    : Bio::EnsEMBL::DBEntry $source_dbentry
+  Arg [3]    : string $condition_type or an Array of string $condition_types
+               matching the order of Arg[1] for compound queries.
+  Example    : $ontology_xref->add_associated_xref(
+                                  $associated_xref,
+                                  $source_dbentry,
+                                  'with');
+  Description: Associates a linkage type and source DBEntry with
+               this ontology_xref
+  Returntype : integer; number of linkages
+  Exceptions : thrown if $linkage_type argument not supplied or
+               the optional DBEntry is not a DBEntry object.
+  Caller     : DBEntryAdaptor
+  Status     : Experimantal
+
+=cut
+
+sub add_associated_xref {
+  my ( $self, $associated_xref, $source_dbentry, $condition_type ) = @_;
+  if ( ref($associated_xref) eq 'ARRAY' )
+  {
+    foreach my $e ( @{ $associated_xref } ) {
+      if ( !$e->isa('Bio::EnsEMBL::DBEntry') ) {
+        $self->throw("associated_xref must be a Bio::EnsEMBL::DBEntry or an 
+                  Array of Bio::EnsEMBL::DBEntry objects.");
+      }
+    }
+  } elsif ( defined($associated_xref)
+       && !$associated_xref->isa('Bio::EnsEMBL::DBEntry') )
+  {
+    $self->throw("associated_xref must be a Bio::EnsEMBL::DBEntry or an Array
+                  of Bio::EnsEMBL::DBEntry objects.");
+  }
+  
+  if ( defined($source_dbentry)
+       && !$source_dbentry->isa('Bio::EnsEMBL::DBEntry') )
+  {
+    $self->throw("source_dbentry must be a Bio::EnsEMBL::DBEntry");
+  }
+  
+  if ( !defined $condition_type ) {
+      $self->throw("condition must be a string");
+  }
+
+  $self->{'associated_xref'} ||= [];
+
+  push @{ $self->{'associated_xref'} },
+    [ $associated_xref, $source_dbentry, $condition_type ];
+}
+
+
+=head2 add_linked_associated_xref
+
+  Arg [1]    : Bio::EnsEMBL::DBEntry $associated_xref
+               or an Array of Bio::EnsEMBL::DBEntry for compound annotations
+  Arg [2]    : Bio::EnsEMBL::DBEntry $source_dbentry
+  Arg [3]    : string $condition_type or an Array of string $condition_types
+               matching the order of Arg[1] for compound queries.
+  Arg [2]    : Bio::EnsEMBL::DBEntry $linked_associated_dbentry
+  Example    : $ontology_xref->add_associated_xref(
+                                  $associated_xref,
+                                  $source_dbentry,
+                                  'with');
+  Description: Associates a linkage type and source DBEntry with this
+               ontology_xref that have come from the same annotation source
+  Returntype : integer; number of linkages
+  Exceptions : thrown if $linkage_type argument not supplied or
+               the optional DBEntry is not a DBEntry object.
+  Caller     : DBEntryAdaptor
+  Status     : Experimantal
+
+=cut
+
+sub add_linked_associated_xref {
+  my ( $self, $associated_xref, $source_dbentry, $condition_type, $linked_associated_xref ) = @_;
+  
+  if ( defined($associated_xref)
+       && !$associated_xref->isa('Bio::EnsEMBL::DBEntry') )
+  {
+    $self->throw("associated_xref must be a Bio::EnsEMBL::DBEntry or an Array
+                  of Bio::EnsEMBL::DBEntry objects.");
+  }
+  
+  if ( defined($source_dbentry)
+       && !$source_dbentry->isa('Bio::EnsEMBL::DBEntry') )
+  {
+    $self->throw("source_dbentry must be a Bio::EnsEMBL::DBEntry");
+  }
+  
+  if ( !defined $condition_type ) {
+      $self->throw("condition must be a string");
+  }
+  
+  if ( defined($linked_associated_xref)
+       && !$linked_associated_xref->isa('Bio::EnsEMBL::DBEntry') )
+  {
+    $self->throw("linked_associated_xref must be a Bio::EnsEMBL::DBEntry");
+  }
+  
+  my @associated_xref_array = ();
+  my $matching_link = 0;
+  foreach my $associated_xref_element (@{ $self->{'associated_xref'} }) {
+    my @elements = @{ $associated_xref_element };
+    my $ax = $elements[0];
+    my $sd = $elements[1];
+    my $ct = $elements[2];
+    
+    if ( ref($ax) eq 'ARRAY'
+         && $sd->primary_id eq $source_dbentry->primary_id ) {
+      my @associated_xref_set = @{ $ax };
+      my $matching = 0;
+      foreach my $ax_set_elements ( @{ $ax } ) {
+        my @ax_set_element = @{ $ax_set_elements };
+        if ( $ax_set_element[0]->primary_id eq $linked_associated_xref->primary_id ) {
+          $matching = 1;
+          $matching_link = 1;
+        }
+      }
+      if ($matching) {
+        my @ax_set = @{ $associated_xref_set[0] };
+        my @ct_set = @{ $associated_xref_set[2] };
+        
+        push @ax_set, $associated_xref;
+        push @ct_set, $condition_type;
+        @associated_xref_set = [ @ax_set,
+                                 $sd,
+                                 @ct_set ];
+      }
+      push @associated_xref_array, @associated_xref_set;
+    } else {
+      if ( $ax->primary_id eq $linked_associated_xref->primary_id
+           && $sd->primary_id eq $source_dbentry->primary_id) {
+        push @associated_xref_array, [ [$ax, $associated_xref],
+                                       $sd,
+                                       [$ct, $condition_type] ];
+        $matching_link = 1;
+      } else {
+        push @associated_xref_array, @elements;
+      }
+    }
+  }
+  
+  if ( !$matching_link ){
+    $self->throw("must have a matching associated_xref to be linked with");
+  } else {
+    $self->{'associated_xref'} = \@associated_xref_array;
+  }
+}
+
+
+=head2 get_all_associated_xrefs
+
+  Arg [1]    : none
+  Example    :
+
+    foreach ( @{ $ontology_xref->get_all_associated_xref() } ) {
+      print "evidence: $_->[0] via $_->[1]->display_id";
+    }
+
+  Description: Retrieves a list of associated-DBEntry/source-DBEntry/condition
+               sets associated with this ontology_xref
+  Returntype : listref of listrefs
+  Exceptions : none
+  Caller     : geneview? general.
+  Status     : Experimental
+
+=cut
+
+sub get_all_associated_xrefs {
+  my ($self) = @_;
+
+  return $self->{'associated_xref'} || [];
+}
+
 1;

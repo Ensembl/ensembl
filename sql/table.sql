@@ -2358,6 +2358,38 @@ CREATE TABLE ontology_xref (
 
 
 /**
+@table associated_xref
+@desc This table associates extra associated annotations with a given ontology xref evidence and source under a specific condition.   For GO this allows qualifiers (with/from) or annotation extensions to be added to a given ontology annotation.
+
+This table can also be used to associate other annotations to an ontology annotation.
+
+@column object_xref_id
+@column associated_xref_id Associated external reference
+@column source_xref_id     
+@column condition          Free text condition description eg with, from,
+                           localises
+
+@see object_xref
+*/
+
+CREATE TABLE associated_xref (
+
+  object_xref_id                 INT(10) UNSIGNED DEFAULT '0' NOT NULL,
+  associated_xref_id             INT(10) UNSIGNED DEFAULT NULL,
+  source_xref_id                 INT(10) UNSIGNED DEFAULT NULL,
+  condition_type                 VARCHAR(128) DEFAULT NULL,
+  linked_associated_xref_id      INT(10) UNSIGNED DEFAULT '0' NOT NULL,
+
+  KEY source_idx (source_xref_id),
+  KEY object_idx (object_xref_id),
+  KEY associated_idx (associated_xref_id),
+  KEY linked_associated_idx (linked_associated_xref_id),
+  UNIQUE KEY object_associated_source_type_idx (object_xref_id, associated_xref_id, source_xref_id, condition_type, linked_associated_xref_id)
+
+) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
+
+
+/**
 @table seq_region_synonym
 @desc Allows for storing multiple names for sequence regions.
 
