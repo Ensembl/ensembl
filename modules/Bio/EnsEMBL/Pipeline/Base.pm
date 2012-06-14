@@ -128,17 +128,19 @@ sub production_name {
   return $prod;
 }
 
-# Closes file handle, and deletes the file stub if it contains no data
-# Returns success type
+# Closes file handle, and deletes the file stub if no data was written to
+# the file handle (using tell). We can also only close a file handle and unlink
+# the data if it was open otherwise we just ignore it 
+# Returns success if we managed to close/delete the file
 
 sub tidy_file_handle {
   my ($self, $fh, $path) = @_;
-  if ($fh->tell() == 0) {
-    $fh->close() if $fh->opened();
-    unlink($path) if -f $path;
+  if($fh->opened()) {
+    my $unlink = ($fh->tell() == 0) ? 1 : 0;
+    $fh->close();
+    unlink($path) if -f $path && $unlink;
     return 1;
-  }
-  $fh->close() if $fh->opened();
+  } 
   return 0;
 }
 
