@@ -101,20 +101,6 @@ sub print_main_header {
 	warning("No writer for headers in this format. Nothing done" );
 }
 
-=head2 print_sequence 
-	Arg [1]    : Bio::EnsEMBL::Slice
-	Description: By default, prints a block of FASTA format sequence from the given slice
-    DEPRECATED - This feature is becoming FASTASerializer
-=cut
-#TODO : Remove in release 66
-sub print_sequence {
-	my $self = shift;
-	my $slice = shift;
-	my $fh = $self->{'filehandle'};
-	Bio::EnsEMBL::Utils::SeqDumper->dump_fasta( $slice, $fh);
-	$self->{'achieved_something'} = 1;
-}
-
 =head2 printed_something
     Description: Check if serializer has printed any useful data. Not accurate with FASTA
                  due to non-reporting dumper.

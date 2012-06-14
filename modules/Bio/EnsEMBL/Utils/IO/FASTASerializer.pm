@@ -174,9 +174,11 @@ sub print_Seq {
     $there = $end if($there > $end); 
     my $seq = $slice->subseq($here, $there);
     $seq =~ s/(.{1,$width})/$1\n/g;
-    print $fh $seq;
+    print $fh $seq or die "Error writing to file handle";
     $here = $there + 1;
   }
+  
+  if ($slice->length > 0) {$self->{'achieved_something'} = 1;}
   
 }
 
