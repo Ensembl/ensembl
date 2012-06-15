@@ -20,7 +20,7 @@ SKIP: {
   skip 'Skipping DB creation tests as schema file cannot be found at '.$sql_file, 1 unless $result;
   
   #Create DB & load schema
-  my $new_db_name = $db->create_db_name('temp');
+  my $new_db_name = $db->create_db_name('schematemp');
   note 'Creating database '.$new_db_name;
   $dba->dbc()->do("create database $new_db_name");
   my %args = ( host => $dbc->host(), port => $dbc->port(), user => $dbc->username(), password => $dbc->password());
