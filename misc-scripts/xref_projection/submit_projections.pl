@@ -233,6 +233,9 @@ $go_terms{'xenopus'} = [qw(zebrafish)];
 
 # order to run projections in, just in case they are order-sensitive.
 my @execution_order = ( 'human', 'mouse', 'rat', 'zebrafish');
+# except of course order is irrelevant to the job queue. Consider provisional for when
+# someone desires jobs that wait for others to finish.
+
 
 # ----------------------------------------
 # Display names

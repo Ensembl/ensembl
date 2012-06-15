@@ -173,30 +173,15 @@ if ($compara) {
 }
 
 
-# Determine if source and target species are both mammals or not: class Mammalia in meta
-# table, meaning full GO projection is allowable
-# Platypus is not treated as a mammal here, but "is_therian" doesn't mean anything.
-
-my $from_mammal = is_mammal($from_species);
-my $to_mammal = is_mammal($to_species);
-my %forbidden_terms;
-
-if ($from_mammal && !$to_mammal) {
-    # Determine GO terms that are not applicable for the present non-mammalian species.
-    # Consult ontology for list of descendent terms.
-    # Using a temporary list of general forbidden terms. Presently consists of four GO terms
-    # recommended by GOA. e.g. "walks on legs" should not be projected to fish
-    %forbidden_terms = get_ontology_terms('GO:0032501','GO:0007610','GO:0048856','GO:0051704');
-    
-    # The forbidden_terms list is used in unwanted_go_term();
-}
-
-#######
 
 my $from_ga = Bio::EnsEMBL::Registry->get_adaptor($from_species, 'core', 'Gene');
 
 my %projections_by_evidence_type;
 my %projections_by_source;
+my %forbidden_terms;
+
+my $from_mammal;
+my $to_mammal;
 
 foreach my $local_to_species (@to_multi) {
 
@@ -204,6 +189,26 @@ foreach my $local_to_species (@to_multi) {
   my $to_ga   = Bio::EnsEMBL::Registry->get_adaptor($to_species, 'core', 'Gene');
   die("Can't get gene adaptor for $to_species - check database connection details; make sure meta table contains the correct species alias\n") if (!$to_ga);
   my $to_dbea = Bio::EnsEMBL::Registry->get_adaptor($to_species, 'core', 'DBEntry');
+
+
+    # Determine if source and target species are both mammals or not: class Mammalia in meta
+    # table, meaning full GO projection is allowable
+    # Platypus is not treated as a mammal here, but "is_therian" doesn't mean anything.
+    
+    $from_mammal = is_mammal($from_species);
+    $to_mammal = is_mammal($to_species);
+    
+    if ($from_mammal && !$to_mammal) {
+        # Determine GO terms that are not applicable for the present non-mammalian species.
+        # Consult ontology for list of descendent terms.
+        # Using a temporary list of general forbidden terms. Presently consists of four GO terms
+        # recommended by GOA. e.g. "walks on legs" should not be projected to fish
+        %forbidden_terms = get_ontology_terms('GO:0032501','GO:0007610','GO:0048856','GO:0051704');
+        
+        # The forbidden_terms list is used in unwanted_go_term();
+    }
+    
+    #######
 
   write_to_projection_db($to_ga->dbc(), $release, $from_species, $from_ga->dbc(), $to_species) unless ($no_database);
 
