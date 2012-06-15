@@ -9,6 +9,7 @@ use Getopt::Long;
 use Bio::EnsEMBL::Registry;
 use Bio::EnsEMBL::DBSQL::DBAdaptor;
 use Bio::EnsEMBL::DBSQL::GeneAdaptor;
+use Bio::EnsEMBL::DBSQL::OntologyTermAdaptor;
 use Bio::EnsEMBL::Utils::Eprof qw(eprof_start eprof_end eprof_dump);
 
 my $method_link_type = "ENSEMBL_ORTHOLOGUES";
@@ -31,7 +32,7 @@ GetOptions('conf=s'          => \$conf,
 	   'delete_go_terms' => \$delete_go_terms,
 	   'nobackup'        => \$no_backup,
 	   'full_stats'      => \$full_stats,
-           'descriptions'    => \$descriptions,
+       'descriptions'    => \$descriptions,
 	   'release=i'       => \$release,
 	   'no_database'     => \$no_database,
 	   'quiet'           => \$quiet,
@@ -134,10 +135,10 @@ if ($delete_only) {
     print "Just deleting, no projection\n";
     foreach my $to_species (@to_multi) {
 
-	my $to_ga  = Bio::EnsEMBL::Registry->get_adaptor($to_species, 'core', 'Gene');
-	die("Can't get gene adaptor for $to_species - check database connection details; make sure meta table contains the correct species alias\n") if (!$to_ga);
-	delete_names($to_ga) if ($delete_names);
-	delete_go_terms($to_ga) if ($delete_go_terms);
+    	my $to_ga  = Bio::EnsEMBL::Registry->get_adaptor($to_species, 'core', 'Gene');
+    	die("Can't get gene adaptor for $to_species - check database connection details; make sure meta table contains the correct species alias\n") if (!$to_ga);
+    	delete_names($to_ga) if ($delete_names);
+    	delete_go_terms($to_ga) if ($delete_go_terms);
     }
 
     exit(0);
@@ -171,6 +172,26 @@ if ($compara) {
 
 }
 
+
+# Determine if source and target species are both mammals or not: class Mammalia in meta
+# table, meaning full GO projection is allowable
+# Platypus is not treated as a mammal here, but "is_therian" doesn't mean anything.
+
+my $from_mammal = is_mammal($from_species);
+my $to_mammal = is_mammal($to_species);
+my %forbidden_terms;
+
+if ($from_mammal && !$to_mammal) {
+    # Determine GO terms that are not applicable for the present non-mammalian species.
+    # Consult ontology for list of descendent terms.
+    # Using a temporary list of general forbidden terms. Presently consists of four GO terms
+    # recommended by GOA. e.g. "walks on legs" should not be projected to fish
+    %forbidden_terms = get_ontology_terms('GO:0032501','GO:0007610','GO:0048856','GO:0051704');
+    
+    # The forbidden_terms list is used in unwanted_go_term();
+}
+
+#######
 
 my $from_ga = Bio::EnsEMBL::Registry->get_adaptor($from_species, 'core', 'Gene');
 
@@ -234,7 +255,10 @@ foreach my $local_to_species (@to_multi) {
 
     $from_gene = $from_ga->fetch_by_stable_id($from_stable_id);
 
+
     next if (!$from_gene);
+    # check for uniprot IDs in canonical transcript
+    #TODO: This feature is waiting to be implemented!
 
     my @to_genes = @{$homologies->{$from_stable_id}};
     my $i = 1;
@@ -266,6 +290,31 @@ foreach my $local_to_species (@to_multi) {
 
 }
 
+# mammal here is a pseudonym for normal mammals and marsupials but not platypus.
+sub is_mammal {
+    my $species = shift;
+    my $meta_container = Bio::EnsEMBL::Registry->get_adaptor($species,'core','MetaContainer');
+    my @classifications = @{ $meta_container->list_value_by_key('species.classification') };
+
+    foreach my $rank (@classifications) {
+        if ($rank eq "Theria") {return 1;} 
+    }
+    return;
+}
+
+sub get_ontology_terms {
+    my @starter_terms = @_;
+    my $ontology_adaptor = Bio::EnsEMBL::Registry->get_adaptor('Multi','Ontology','OntologyTerm');
+    my %terms;
+    foreach my $text_term (@starter_terms) {
+        my $ont_term = $ontology_adaptor->fetch_by_accession($text_term);
+        my $term_list = $ontology_adaptor->fetch_all_by_ancestor_term($ont_term);
+        foreach my $term (@{$term_list}) {
+            $terms{$term->accession} = 1;
+        }
+    }
+    return %terms;
+}
 
 # --------------------------------------------------------------------------------
 
@@ -297,11 +346,11 @@ sub project_display_names {
       # modify the display_id to have " (1 of 3)" etc if this is a one-to-many ortholog
       my $tuple_txt = "";
       if ($total_gene_number > 1) {
-	$tuple_txt = " ($gene_number of $total_gene_number)";
-	my $existing = $dbEntry->display_id();
-	$existing =~ s/ \(\d+ of \d+\)//;
-	$dbEntry->display_id($existing . $tuple_txt);
-	$info_txt .= $tuple_txt;
+          $tuple_txt = " ($gene_number of $total_gene_number)";
+          my $existing = $dbEntry->display_id();
+          $existing =~ s/ \(\d+ of \d+\)//;
+          $dbEntry->display_id($existing . $tuple_txt);
+          $info_txt .= $tuple_txt;
       }
 
       # Add description to the gene if required
@@ -379,6 +428,7 @@ sub project_display_names {
 sub project_go_terms {
 
   my ($to_ga, $to_dbea, $ma, $from_gene, $to_gene) = @_;
+# TODO: compara member adaptor $ma doesn't appear to be used in this method
 
   # GO xrefs are linked to translations, not genes
   # Project GO terms between the translations of the canonical transcripts of each gene
@@ -399,6 +449,7 @@ sub project_go_terms {
     foreach my $et (@{$dbEntry->get_all_linkage_types}){
       next DBENTRY if (!grep(/$et/, @evidence_codes));
     }
+    next if (unwanted_go_term($dbEntry));
 
     # check that each from GO term isn't already projected
     next if ($go_check && go_xref_exists($dbEntry, $to_go_xrefs));
@@ -427,6 +478,17 @@ sub project_go_terms {
 
   }
 
+}
+
+sub unwanted_go_term {
+    my $dbEntry = shift;
+    
+    if ($from_mammal && !$to_mammal) {
+        if (exists $forbidden_terms{$dbEntry->primary_id}) {
+            return 1;
+        }
+    }
+    return 0;
 }
 
 # --------------------------------------------------------------------------------
@@ -641,11 +703,11 @@ sub check_overwrite_display_xref {
   if ($to_dbname eq "RefSeq_mRNA_predicted" || $to_dbname eq "RefSeq_ncRNA_predicted" || $to_dbname eq "RefSeq_peptide_predicted") {
 
     if (($from_species eq "human" && $from_dbname =~ /HGNC/) ||
-	($from_species eq "mouse" && $from_dbname =~ /MarkerSymbol/)) {
+    ($from_species eq "mouse" && $from_dbname =~ /MarkerSymbol/)) {
 
-	if ($to_species eq "zebrafish" and is_in_blacklist($from_gene->display_xref)){
-	    return 0;
-	}
+    if ($to_species eq "zebrafish" and is_in_blacklist($from_gene->display_xref)){
+        return 0;
+    }
       return 1;
 
     }
@@ -664,21 +726,21 @@ sub check_overwrite_display_xref {
     $name = $1;
 
     if(defined($seen{$name})){
-	$name = $seen{$name};
+        $name = $seen{$name};
     }
     if ( $name =~ /C(\w+)orf(\w+)/){
-      my $new_name = "C".$to_seq_region_name."H".$1."orf".$2;
-      $seen{$new_name} = $name;
-      $ref_dbEntry->display_id($new_name);
-      return 1;
+        my $new_name = "C".$to_seq_region_name."H".$1."orf".$2;
+        $seen{$new_name} = $name;
+        $ref_dbEntry->display_id($new_name);
+        return 1;
     }
 
     if (!defined ($to_dbEntry) || (($to_dbEntry->display_id =~ /:/) and $to_dbname eq "ZFIN_ID") ){
       if (is_in_blacklist($from_dbEntry)){
-	return 0;
+	      return 0;
       }
       else{
-	return 1;
+	      return 1;
       }
     }
   }
@@ -688,20 +750,21 @@ sub check_overwrite_display_xref {
 
 
 sub is_in_blacklist{
+    #catches clones and analyses when projecting display xrefs.
     my ($dbentry) = shift;
 
     if (($dbentry->display_id =~ /KIAA/) || ( $dbentry->display_id =~ /LOC/)){
-	return 1; # return yes that have found gene names that match the regular expression
+       return 1; # return yes that have found gene names that match the regular expression
     }
     elsif ($dbentry->display_id =~ /\-/){
-	return 1;
+       return 1;
     }
     elsif ($dbentry->display_id =~ /\D{2}\d{6}\.\d+/){
-	#print "black listed item found ".$dbentry->display_id."\n";
-	return 1;
+       #print "black listed item found ".$dbentry->display_id."\n";
+        return 1;
     }
     else{
-	return 0;
+        return 0;
     }
     
 }
@@ -719,7 +782,7 @@ sub backup {
   my $dbname = $dbc->dbname();
 
   foreach my $table ("gene", "xref", "object_xref") {
-    unless (system("mysql -h$host -P$port -u$user -p$pass -N -e 'select * from $table' $dbname > $dbname.$table.backup; gzip -9 -f $dbname.$table.backup") == 0) {
+    unless (system("mysql -h$host -P$port -u$user -p$pass -N -e 'select * from $table' $dbname > $dbname.$table.backup; gzip -6 -f $dbname.$table.backup") == 0) {
       print STDERR "Can't dump the original $table table from $dbname for backup\n";
       exit 1;
     } else {
@@ -794,10 +857,9 @@ sub fetch_homologies {
       my ($member, $attribute) = @{$ma};
 
       if (lc($member->genome_db()->name()) eq $from_species_alias) {
-	$from_stable_id = $member->stable_id();
+          $from_stable_id = $member->stable_id();
       } else {
-	  
-	push @to_stable_ids, $member->stable_id();
+          push @to_stable_ids, $member->stable_id();
       }
     }
 
@@ -812,7 +874,6 @@ sub fetch_homologies {
   print "Fetched " . $count . " homologies\n";
 
   return \%homology_cache;
-
 }
 
 # ----------------------------------------------------------------------
