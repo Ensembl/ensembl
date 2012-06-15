@@ -79,4 +79,38 @@ GFF
   }
 }
 
+{
+  my $string = <<GFF;
+##gff-version 3
+##sequence-region   ctg123 1 1497228
+##taken-from example parsing file with FASTA directive
+ctg123\t.\tgene\t1000\t9000\t.\t+\t.\tID=gene00001;Name=EDEN
+###
+##FASTA
+>ctg123
+AACCTTTGGGCCGGGCCTTAAAA
+AACC
+GFF
+  my $io = IO::String->new(\$string);
+  
+  my $gff = Bio::EnsEMBL::Utils::IO::GFFParser->new($io);
+  my $header = $gff->parse_header();
+  is_deeply(
+    $header,
+    [ '##gff-version 3', '##sequence-region   ctg123 1 1497228', '##taken-from example parsing file with FASTA directive'],
+    'Checking headers all parse'
+  );
+  my $actual_gene = $gff->parse_next_feature();
+  my $expected_gene = {
+    seqid => 'ctg123', start => 1000, end => 9000, strand => 1,
+    source => '.', type => 'gene', score => '.', phase => '.',
+    attribute => { ID => 'gene00001', Name => 'EDEN' }
+  };
+  is_deeply($actual_gene, $expected_gene, 'Checking TF record parses');
+  my $id = $gff->parse_next_feature();
+  ok(! defined $id, 'No more features');
+  my $seq = $gff->parse_next_sequence();
+  is_deeply($seq, {header => '>ctg123', sequence => "AACCTTTGGGCCGGGCCTTAAAAAACC"}, "Checking Sequence parses correctly")
+}
+
 done_testing();
