@@ -885,28 +885,26 @@ sub _store_or_fetch_xref {
         
     } else { # xref_id already exists, retrieve it
         my $sql = 'SELECT xref_id FROM xref 
-            WHERE 
-                dbprimary_acc = ?
-            AND display_label = ?
+            WHERE dbprimary_acc = ?
             AND version = ?
             AND external_db_id = ?
             AND info_type = ?
-            AND info_text = ?
-            AND description';
-        if (defined $dbEntry->description) {$sql .= ' = ?'}
-        else {$sql .= ' is NULL'}
+            AND info_text = ?';
 
         $sth = $self->prepare( $sql );
         $sth->bind_param(1, $dbEntry->primary_id,SQL_VARCHAR);
-        $sth->bind_param(2, ($dbEntry->display_id || ''),SQL_VARCHAR);
-        $sth->bind_param(3, $dbEntry->version ,SQL_VARCHAR);
-        $sth->bind_param(4, $dbRef,SQL_INTEGER);
-        $sth->bind_param(5, ($dbEntry->info_type || 'NONE'), SQL_VARCHAR);
-        $sth->bind_param(6, ($dbEntry->info_text || ''), SQL_VARCHAR);
-        if (defined $dbEntry->description) {$sth->bind_param(7, $dbEntry->description,SQL_VARCHAR);}
+        $sth->bind_param(2, $dbEntry->version ,SQL_VARCHAR);
+        $sth->bind_param(3, $dbRef, SQL_INTEGER);
+        $sth->bind_param(4, ($dbEntry->info_type || 'NONE'), SQL_VARCHAR);
+        $sth->bind_param(5, ($dbEntry->info_text || ''), SQL_VARCHAR);
         $sth->execute();
         ($xref_id) = $sth->fetchrow_array();
         $sth->finish;
+        
+        if(!$xref_id) {
+          my $msg = 'Cannot find an xref id for %s (%d) with external db id %d';
+          throw(sprintf($msg, $dbEntry->primary_id(), $dbEntry->version(), $dbRef))
+        }
     }
     
     return $xref_id;
