@@ -720,7 +720,7 @@ sub get_database {
     evega   => 'Bio::EnsEMBL::DBSQL::DBAdaptor',
     otter   => 'Bio::Otter::DBSQL::DBAdaptor',
     vega    => 'Bio::Otter::DBSQL::DBAdaptor',
-    compara => 'Bio::EnsEMBL::DBSQL::DBAdaptor',
+    compara => 'Bio::EnsEMBL::Compara::DBSQL::DBAdaptor',
     loutre  => 'Bio::Vega::DBSQL::DBAdaptor',
   );
   throw("Unknown database: $database") unless $adaptors{$database};
@@ -1895,5 +1895,30 @@ sub update_attribute {
   );
   return ['Updated',$r];
 }
+
+
+=head2 remove_duplicate_attribs
+
+  Arg[1]      : db handle
+  Arg[2]      : table
+  Example     : $support->remove_duplicate_attribs($dbh,'gene');
+  Description : uses MySQL to remove duplicate entries from an attribute table
+  Return type : none
+  Caller      : general
+  Status      : stable
+
+=cut
+
+sub remove_duplicate_attribs {
+  my $self  = shift;
+  my $dbh   = shift;
+  my $table = shift;
+  $dbh->do(qq(create table nondup_${table}_attrib like ${table}_attrib));
+  $dbh->do(qq(insert into nondup_${table}_attrib (select ${table}_id, attrib_type_id, value from ${table}_attrib group by ${table}_id, attrib_type_id, value)));
+  $dbh->do(qq(delete from ${table}_attrib));
+  $dbh->do(qq(insert into ${table}_attrib (select ${table}_id, attrib_type_id, value from nondup_${table}_attrib)));
+  $dbh->do(qq(drop table nondup_${table}_attrib));
+}
+
 
 1;
