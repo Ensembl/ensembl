@@ -197,27 +197,33 @@ $xref = Bio::EnsEMBL::DBEntry->new
    -type => "ARRAY",
     -analysis => $analysis
    );
-# db connection must be severed for threads to access DB    
-$dbEntryAdaptor->dbc->disconnect_if_idle();
-use threads;
 
-sub parallel_store {
-    my $xref_id = $dbEntryAdaptor->store( $xref, $tr->dbID, "Transcript" );
-    return $xref_id
+{
+  local $ENV{RUNTESTS_HARNESS} = 1;
+  
+  # db connection must be severed for threads to access DB    
+  $dbEntryAdaptor->dbc->disconnect_if_idle();
+  use threads;
+  
+  sub parallel_store {
+      my $xref_id = $dbEntryAdaptor->store( $xref, $tr->dbID, "Transcript" );
+      return $xref_id
+  }
+     
+  my $thread1 = threads->create(\&parallel_store);
+  my $thread2 = threads->create(\&parallel_store);
+  my $thread3 = threads->create(\&parallel_store);
+  
+      
+  my @xref_ids;
+  @xref_ids = ($thread1->join,$thread2->join,$thread3->join);
+  
+  note("Threaded xrefs: ".$xref_ids[0]." ".$xref_ids[1]." ".$xref_ids[2]);
+  
+  # Test 10 - Verify that only one xref has been inserted under parallel inserts
+  ok($xref_ids[0] == 1000009 && $xref_ids[1] == $xref_ids[0] && $xref_ids[2] == $xref_ids[0]);
+
 }
-   
-my $thread1 = threads->create(\&parallel_store);
-my $thread2 = threads->create(\&parallel_store);
-my $thread3 = threads->create(\&parallel_store);
-
-    
-my @xref_ids;
-@xref_ids = ($thread1->join,$thread2->join,$thread3->join);
-
-note("Threaded xrefs: ".$xref_ids[0]." ".$xref_ids[1]." ".$xref_ids[2]);
-
-# Test 10 - Verify that only one xref has been inserted under parallel inserts
-ok($xref_ids[0] == 1000009 && $xref_ids[1] == $xref_ids[0] && $xref_ids[2] == $xref_ids[0]);
 
 # Test 11 - Exception testing on ->store()
 
