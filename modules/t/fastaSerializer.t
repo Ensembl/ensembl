@@ -2,7 +2,6 @@ use strict;
 use warnings;
 
 use Test::More;
-use File::Temp qw/tempfile/;
 
 use IO::String;
 use Bio::EnsEMBL::Utils::IO::FASTASerializer;
@@ -32,21 +31,16 @@ my $slice = Bio::EnsEMBL::Slice->new(
 );
 
 # ensure Serializer produces output identical to the well-used SeqDumper. 
-my $fh_SeqDumper = tempfile();
+my $fh_SeqDumper = IO::String->new();
 
 Bio::EnsEMBL::Utils::SeqDumper->dump_fasta( $slice, $fh_SeqDumper);
 
-my $fh_Serializer = tempfile();
+my $fh_Serializer = IO::String->new();
 my $serializer = Bio::EnsEMBL::Utils::IO::FASTASerializer->new($fh_Serializer);
 $serializer->print_Seq($slice);
 
-$fh_SeqDumper->seek(0,0);
-$fh_Serializer->seek(0,0);
-
-local $/ = undef;
-
-my $SeqDumper_output = <$fh_SeqDumper>;
-my $Serializer_output = <$fh_Serializer>;
+my $SeqDumper_output = ${$fh_SeqDumper->string_ref()};
+my $Serializer_output = ${$fh_Serializer->string_ref()};
 
 $fh_SeqDumper->close;
 $fh_Serializer->close;
@@ -62,11 +56,10 @@ my $custom_header = sub {
     return "It's a FASTA header";
 };
 
-$fh_Serializer = tempfile();
+$fh_Serializer = IO::String->new();
 $serializer = Bio::EnsEMBL::Utils::IO::FASTASerializer->new($fh_Serializer, $custom_header);
 $serializer->print_Seq($slice);
-$fh_Serializer->seek(0,0);
-$Serializer_output = <$fh_Serializer>;
+$Serializer_output = ${$fh_Serializer->string_ref()};
 
 note $Serializer_output;
 
