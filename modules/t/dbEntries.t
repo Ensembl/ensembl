@@ -205,14 +205,14 @@ $xref = Bio::EnsEMBL::DBEntry->new
   $dbEntryAdaptor->dbc->disconnect_if_idle();
   use threads;
   
-  sub parallel_store {
+  my $parallel_store = sub{
       my $xref_id = $dbEntryAdaptor->store( $xref, $tr->dbID, "Transcript" );
       return $xref_id
-  }
+  };
      
-  my $thread1 = threads->create(\&parallel_store);
-  my $thread2 = threads->create(\&parallel_store);
-  my $thread3 = threads->create(\&parallel_store);
+  my $thread1 = threads->create($parallel_store);
+  my $thread2 = threads->create($parallel_store);
+  my $thread3 = threads->create($parallel_store);
   
       
   my @xref_ids;
