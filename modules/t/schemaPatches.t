@@ -9,13 +9,43 @@ use File::Find;
 use File::Spec::Functions qw/updir catfile catdir/;
 use File::Temp qw/tempfile/;
 use FindBin qw/$Bin/;
-use LWP::Simple qw($ua get);
 
-#Supporting the use of proxies for firewalled peeps
-my $proxy;
-$proxy = $ENV{http_proxy} if $ENV{http_proxy};
-$proxy = $ENV{HTTP_PROXY} if $ENV{HTTP_PROXY};
-$ua->proxy('http',$proxy);
+#Using the best available HTTP client
+my $tiny = 0;
+my $lwp = 0;
+eval {
+  require HTTP::Tiny;
+  note 'Using HTTP::Tiny';
+  $tiny = 1;
+};
+eval {
+  if(!$tiny) {
+    require LWP::UserAgent;
+    note 'Using LWP';
+    $lwp = 1;
+  }
+};
+
+sub get_url {
+  my ($url) = @_;
+  my $contents;
+  if($tiny) {
+    my $response = HTTP::Tiny->new->get($url);
+    return unless $response->{success};
+    return $response->{content} if length $response->{content};
+    return;
+  }
+  elsif($lwp) {
+    my $ua = LWP::UserAgent->new;
+    $ua->agent("EnsemblTest/1.0.0 ");
+    $ua->env_proxy;
+    my $response = $ua->get($url);
+    return $response->decoded_content if $response->is_success;
+    return;
+  }
+  fail("We do not have access to HTTP::Tiny or LWP. Cannot continue");
+  return;
+}
 
 my $db = Bio::EnsEMBL::Test::MultiTestDB->new();
 my $dba = $db->get_DBAdaptor('core');
@@ -25,7 +55,7 @@ my $dbc = $dba->dbc();
 my $current_release = software_version();
 my $last_release = $current_release - 1;
 my $cvs_url = "http://cvs.sanger.ac.uk/cgi-bin/viewvc.cgi/ensembl/sql/table.sql?root=ensembl&view=co&pathrev=branch-ensembl-${last_release}";
-my $table_sql = get($cvs_url);
+my $table_sql = get_url($cvs_url);
 
 # Get patch location
 my $sql_dir = catdir($Bin, updir(), updir(), 'sql');
