@@ -217,15 +217,9 @@ foreach my $local_to_species (@to_multi) {
   delete_names($to_ga) if ($delete_names);
   delete_go_terms($to_ga) if ($delete_go_terms);
 
-  # get taxonomy ids from core databases
-  my $meta_container =  Bio::EnsEMBL::Registry->get_adaptor($from_species, 'Core', 'MetaContainer');
-  my $from_taxon_id = $meta_container->get_taxonomy_id();
-  $meta_container =  Bio::EnsEMBL::Registry->get_adaptor($to_species, 'Core', 'MetaContainer');
-  my $to_taxon_id = $meta_container->get_taxonomy_id();
-
   # build Compara GenomeDB objects
-  my $from_GenomeDB = $gdba->fetch_by_taxon_id($from_taxon_id);
-  my $to_GenomeDB = $gdba->fetch_by_taxon_id($to_taxon_id);
+  my $from_GenomeDB = $gdba->fetch_by_registry_name($from_species);
+  my $to_GenomeDB = $gdba->fetch_by_registry_name($to_species);
 
   my $mlss = $mlssa->fetch_by_method_link_type_GenomeDBs($method_link_type, [$from_GenomeDB, $to_GenomeDB]);
 
@@ -838,8 +832,7 @@ sub fetch_homologies {
   my ($ha, $mlss, $from_species) = @_;
 
   print "Fetching Compara homologies\n";
-
-  my $from_species_alias = lc(Bio::EnsEMBL::Registry->get_alias($from_species));
+  my $from_species_alias = $gdba->fetch_by_registry_name($from_species)->name();
 
   my %homology_cache;
 
