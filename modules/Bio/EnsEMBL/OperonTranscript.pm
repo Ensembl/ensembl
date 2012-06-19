@@ -224,14 +224,17 @@ sub operon {
 =cut
 sub get_all_Genes {
 	my $self = shift;
-	if ( !defined @{$self->{'_gene_array'}} && defined $self->dbID) {
-		if ( defined $self->adaptor() ) {
-			my $ta = $self->adaptor()->db()->get_OperonTranscriptAdaptor();
-			my $transcripts = $ta->fetch_genes_by_operon_transcript($self);
-			$self->{'_gene_array'} = $transcripts;
-		}
+	if(! defined $self->{_gene_array}) {
+	  if(defined $self->dbID() && defined $self->adaptor()) {
+	    my $ta = $self->adaptor()->db()->get_OperonTranscriptAdaptor();
+      my $transcripts = $ta->fetch_genes_by_operon_transcript($self);
+      $self->{_gene_array} = $transcripts;
+	  }
+	  else {
+	    $self->{_gene_array} = [];
+	  }
 	}
-	return $self->{'_gene_array'};
+	return $self->{_gene_array};
 }
 =head2 add_gene
 
@@ -249,6 +252,7 @@ sub add_gene {
 	push @{$self->get_all_Genes()},$gene;
 	return;
 }
+
 =head2 add_DBEntry
 
   Arg [1]    : Bio::EnsEMBL::DBEntry $dbe
