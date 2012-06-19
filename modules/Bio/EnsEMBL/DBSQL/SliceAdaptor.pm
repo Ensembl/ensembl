@@ -402,7 +402,7 @@ sub fetch_by_region {
   #let it fall through to the normal Slice method
   if ( $end + 1 < $start ) {
     my $cs_id = $cs->dbID();
-    my $seq_region_id = $self->{'sr_name_cache'}->{"$seq_region_name:$cs_id"} = $arr->[0];
+    my $seq_region_id = $self->{'sr_name_cache'}->{"$seq_region_name:$cs_id"}->[0];
     if($self->is_circular($seq_region_id)) {
       my $new_sl =
         Bio::EnsEMBL::CircularSlice->new(
