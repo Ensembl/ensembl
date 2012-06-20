@@ -178,18 +178,17 @@ sub get_dba_args_for_opts {
                                                           -PORT   => $opts->{$port},
                                                           -DRIVER => $opts->{$driver} );
 		my @dbnames;
-		if ( defined $opts->{$pattern} ) {
+		if ( defined $opts->{$dbname} ) {
+			push @dbnames, $opts->{$dbname};
+		} elsif ( defined $opts->{$pattern} ) {
 		   # get a basic DBConnection and use to find out which dbs are involved
 			@dbnames =
 			  grep { m/$opts->{pattern}/smx }
 			  @{ $dbc->sql_helper()->execute_simple(q/SHOW DATABASES/) };
-		} elsif ( defined $opts->{$dbname} ) {
-			push @dbnames, $opts->{$dbname};
 		} else {
 			print Dumper($opts);
 			croak 'dbname or dbpattern arguments required';
 		}
-
 		for my $dbname (@dbnames) {
 
 			my $multi = 0;
