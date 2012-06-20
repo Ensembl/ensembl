@@ -189,7 +189,7 @@ sub submit_exonerate {
   my $prefix = $root_dir . "/" . basename($query);
   $prefix =~ s/\.\w+$//;
 
-  my ($jid, $ensembl_type) = $prefix =~ /.*(\d+)_(dna|peptide)$/; # dna or prot
+  my ($ensembl_type) = $prefix =~ /.*_(dna|peptide)$/; # dna or prot
   my $options_str = join(" ", @options);
 
   my $unique_name = $self->get_class_name() . "_" . time();
@@ -207,7 +207,7 @@ sub submit_exonerate {
 
 
   if(defined($mapper->nofarm)){
-    my $output = $self->get_class_name() . "_" . $ensembl_type ."_".$jid.  "_1.map";
+    my $output = $self->get_class_name() . "_" . $ensembl_type.  "_1.map";
     my $cmd = <<EON;
 $exe $query $target --showvulgar false --showalignment FALSE --ryo "xref:%qi:%ti:%ei:%ql:%tl:%qab:%qae:%tab:%tae:%C:%s\n" $options_str | grep '^xref' > $root_dir/$output
 EON
@@ -237,7 +237,7 @@ EON
       
       $sth = $mapper->xref->dbc->prepare("insert into mapping_jobs (root_dir, map_file, status, out_file, err_file, array_number, job_id) values (?,?,?,?,?,?,?)");
       
-      my $map_file = $self->get_class_name()."_".$ensembl_type."_".$jid."_".$i.".map";
+      my $map_file = $self->get_class_name()."_".$ensembl_type."_".$i.".map";
       my $out_file = "xref_0_".$ensembl_type.".".$jobid."-".$i.".out";
       my $err_file = "xref_0_".$ensembl_type.".".$jobid."-".$i.".err";
       $sth->execute($root_dir, $map_file, 'SUBMITTED', $out_file, $err_file, $i, $jobid);
@@ -260,7 +260,7 @@ EON
 
 
 
-  my $output = $self->get_class_name() . "_" . $ensembl_type . "_".$jid."_" . "\$LSB_JOBINDEX.map";
+  my $output = $self->get_class_name() . "_" . $ensembl_type . "_" . "\$LSB_JOBINDEX.map";
 
   my $queue = $self->mapper->farm_queue || 'long';
 
@@ -319,7 +319,7 @@ EON
     $sth = $mapper->xref->dbc->prepare("insert into mapping_jobs (root_dir, map_file, status, out_file, err_file, array_number, job_id) values (?,?,?,?,?,?,?)");
     
     for( my $i=1; $i<=$num_jobs; $i++){
-      my $map_file = $self->get_class_name()."_".$ensembl_type."_".$jid."_".$i.".map";
+      my $map_file = $self->get_class_name()."_".$ensembl_type."_".$i.".map";
       my $out_file = "xref_0_".$ensembl_type.".".$jobid."-".$i.".out";
       my $err_file = "xref_0_".$ensembl_type.".".$jobid."-".$i.".err";
       $sth->execute($root_dir, $map_file, 'SUBMITTED', $out_file, $err_file, $i, $jobid);
