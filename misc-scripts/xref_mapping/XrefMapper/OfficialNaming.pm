@@ -1319,7 +1319,7 @@ sub get_clone_name{
   my $gene= $ga->fetch_by_dbID($gene_id);
   my $slice = $gene->slice->sub_Slice($gene->start,$gene->end,$gene->strand);
   my $len = 0;
-  if($dbname ne "ZFIN_ID"){
+  if($dbname ne "ZFIN_ID" && $dbname ne 'MGI'){
     my $clone_projection = $slice->project('clone'); 
     foreach my $seg (@$clone_projection) {
       my $clone = $seg->to_Slice();
@@ -1342,7 +1342,7 @@ sub get_clone_name{
       }
     }
     $len = 0;
-    if($dbname ne "ZFIN_ID"){
+    if($dbname ne "ZFIN_ID" && $dbname ne 'MGI'){
       my $clone_projection = $super->project('clone');
       foreach my $seg (@$clone_projection) {
 	my $clone = $seg->to_Slice();
