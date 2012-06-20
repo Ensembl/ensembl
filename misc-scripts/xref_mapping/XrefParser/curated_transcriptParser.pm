@@ -101,7 +101,7 @@ sub run_script {
   my $vega_dbc;
   my $core_dbc;
   if(defined($vdbname)){
-    print "Using $host $vdbname for Vega and cdbname for Core\n";
+    print "Using $host $vdbname for Vega and $cdbname for Core\n";
 
     my $vega_db =  XrefParser::Database->new({ host   => $vhost,
 					       port   => $vport,
@@ -111,7 +111,7 @@ sub run_script {
 
     $vega_dbc = $vega_db->dbi;
     if(!defined($vega_dbc)){
-      print "Problem could not open connectipn to $vhost, $vport, $vuser, $vdbname, $vpass\n";
+      print "Problem could not open connection to $vhost, $vport, $vuser, $vdbname, $vpass\n";
       return 1;
     }
 
