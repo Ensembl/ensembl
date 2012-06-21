@@ -843,21 +843,16 @@ sub fetch_homologies {
   foreach my $homology (@{$homologies}) {
 
     next if (!homology_type_allowed($homology->description));
-
-    my @mas = @{$homology->get_all_Member_Attribute};
-
-    # order of member-attributes is arbitrary, so need to find which one corresponds to the "from" species
+    
+    my $members = $homology->get_all_GeneMembers();
     my @to_stable_ids;
     my $from_stable_id;
-
-    foreach my $ma (@mas) {
-
-      my ($member, $attribute) = @{$ma};
-
-      if (lc($member->genome_db()->name()) eq $from_species_alias) {
-          $from_stable_id = $member->stable_id();
-      } else {
-          push @to_stable_ids, $member->stable_id();
+    foreach my $member (@{$members}) {
+      if ($member->genome_db()->name() eq $from_species_alias) {
+        $from_stable_id = $member->stable_id();
+      }
+      else {
+        push(@to_stable_ids, $member->stable_id());
       }
     }
 
