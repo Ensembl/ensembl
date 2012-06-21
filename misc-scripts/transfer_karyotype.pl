@@ -58,6 +58,9 @@ while ($old_sth->fetch()) {
     $scale_factor = ($new_sr_length/$old_sr_length);
     my $new_k_start = int($old_k_start * $scale_factor) || 1;
     my $new_k_end = int($old_k_end * $scale_factor);
+    if ($old_k_end == $old_sr_length) {
+      $new_k_end = $new_sr_length;
+    }
 
     # Add new entry to new karyotype table
     $insert_sth->execute($new_sr_id, $new_k_start, $new_k_end, $band, $stain) || die "Error inserting into new karyotype table";
