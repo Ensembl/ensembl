@@ -1,4 +1,4 @@
-package XrefParser::RFAMParser;
+package XrefParser::RFAMParser_EG;
 
 use strict;
 use warnings;
