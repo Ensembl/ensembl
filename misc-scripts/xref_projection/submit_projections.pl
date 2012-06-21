@@ -14,7 +14,7 @@ $Data::Dumper::Indent = 0;
 my $release = software_version();
 
 
-my $base_dir = "/home/ktaylor/projection_test";
+my $base_dir = "mydir";
 
 my $conf = "release_${release}.ini"; # registry config file, specifies Compara location
 
