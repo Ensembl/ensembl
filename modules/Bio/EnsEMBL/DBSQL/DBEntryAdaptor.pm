@@ -831,6 +831,7 @@ sub _check_external_db {
                  synonyms for that xref when entire new 
     Returns    : Int - the DB ID of the xref after insertion 
 =cut
+
 sub _store_or_fetch_xref {
     my $self = shift;
     my $dbEntry = shift;
