@@ -6,7 +6,6 @@ use Carp;
 use DBI;
 
 use base qw( XrefParser::BaseParser );
-use XrefParser::Database;
 use Bio::EnsEMBL::Registry;
 
 sub run {
