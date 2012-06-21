@@ -52,7 +52,6 @@ use strict;
 use warnings;
 use base qw/Bio::EnsEMBL::Pipeline::FASTA::Base/;
 
-use Bio::EnsEMBL::Utils::Exception qw/throw/;
 use File::Spec;
 
 sub param_defaults {
@@ -91,14 +90,14 @@ sub run {
     
     if(-f $target_file) {
       $self->info("Target already exists. Removing");
-      unlink $target_file or throw "Could not remove $target_file: $!";
+      unlink $target_file or $self->throw("Could not remove $target_file: $!");
     }
     
     $self->info('Running concat');
     foreach my $file (@file_list) {
       $self->fine('Processing %s', $file);
       system("cat $file >> $target_file") 
-        and throw sprintf('Cannot concat %s into %s. RC %d', $file, $target_file, ($?>>8));
+        and $self->throw( sprintf('Cannot concat %s into %s. RC %d', $file, $target_file, ($?>>8)));
     }
 
     $self->info("Catted files together");
@@ -106,14 +105,17 @@ sub run {
     $self->param('target_file', $target_file);
   }
   else {
-    $self->info("No files found so nothing to concat");
+    $self->throw("Cannot continue as we found no files to concat");
   }
   return;
 }
 
 sub write_output {
   my ($self) = @_;
-  $self->dataflow_output_id({ file => $self->param('target_file'), species => $self->param('species') }, 1);
+  my $file = $self->param('target_file');
+  if($file) {
+    $self->dataflow_output_id({ file => $file, species => $self->param('species') }, 1);
+  }
   return;
 }
 
@@ -123,7 +125,7 @@ sub get_dna_files {
   my $data_type = $self->param('data_type'); 
   my $regex_hash = $self->param($data_type); 
   if(! $regex_hash ) {
-    throw "We do not have an entry for the data_type $data_type in our regex lookup hash. Edit this module";
+    $self->throw("We do not have an entry for the data_type $data_type in our regex lookup hash. Edit this module");
   }
   my $regex = $regex_hash->{regex};
   my $filter = sub {
