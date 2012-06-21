@@ -96,6 +96,7 @@ $names_1_1{'human'} =  [qw(
     pig
     pika
     platypus
+    psinensis
     sloth
     squirrel
     rabbit
@@ -158,6 +159,7 @@ $go_terms{'human'} = [qw(
     panda
     pig
     platypus
+    psinensis
     sloth
     squirrel
     pika
@@ -202,6 +204,7 @@ $go_terms{'mouse'} = [qw(
     pig
     pika
     platypus
+    psinensis
     rabbit
     rat
     sloth
