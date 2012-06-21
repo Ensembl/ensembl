@@ -11,7 +11,7 @@ my $cli_helper = Bio::EnsEMBL::Utils::CliHelper->new();
 # get the basic options for connecting to a database server
 my $optsd = $cli_helper->get_dba_opts();
 # add the print option
-push( @{$optsd}, "print|p" );
+push( @{$optsd}, "print" );
 # process the command line with the supplied options plus a help subroutine
 my $opts = $cli_helper->process_args( $optsd, \&usage );
 
