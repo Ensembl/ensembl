@@ -887,23 +887,23 @@ sub _store_or_fetch_xref {
     } else { # xref_id already exists, retrieve it
         my $sql = 'SELECT xref_id FROM xref 
             WHERE dbprimary_acc = ?
-            AND version = ?
             AND external_db_id = ?
             AND info_type = ?
             AND info_text = ?';
-
+        
+        my $info_type = $dbEntry->info_type() || 'NONE';
+        my $info_text = $dbEntry->info_text() || q{};
         $sth = $self->prepare( $sql );
         $sth->bind_param(1, $dbEntry->primary_id,SQL_VARCHAR);
-        $sth->bind_param(2, $dbEntry->version ,SQL_VARCHAR);
-        $sth->bind_param(3, $dbRef, SQL_INTEGER);
-        $sth->bind_param(4, ($dbEntry->info_type || 'NONE'), SQL_VARCHAR);
-        $sth->bind_param(5, ($dbEntry->info_text || ''), SQL_VARCHAR);
+        $sth->bind_param(2, $dbRef, SQL_INTEGER);
+        $sth->bind_param(3, $info_type, SQL_VARCHAR);
+        $sth->bind_param(4, $info_text, SQL_VARCHAR);
         $sth->execute();
         ($xref_id) = $sth->fetchrow_array();
         $sth->finish;
         
         if(!$xref_id) {
-          my $msg = 'Cannot find an xref id for %s (%d) with external db id %d';
+          my $msg = 'Cannot find an xref id for %s (version=%d) with external db id %d.';
           throw(sprintf($msg, $dbEntry->primary_id(), $dbEntry->version(), $dbRef))
         }
     }
