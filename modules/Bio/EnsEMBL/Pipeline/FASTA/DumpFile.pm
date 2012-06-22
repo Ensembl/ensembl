@@ -54,6 +54,8 @@ Allowed parameters are:
 
 =item sequence_type_list - The data to dump. I<dna>, I<cdna> and I<ncrna> are allowed
 
+=item release - A required parameter for the version of Ensembl we are dumping for
+
 =item db_types - Array reference of the database groups to use. Defaults to core
 
 =item process_logic_names - Array reference of transcript logic names to only process (only produce dumps for these). Applied before skip_logic_names
