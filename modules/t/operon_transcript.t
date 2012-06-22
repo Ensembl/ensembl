@@ -1,11 +1,7 @@
 use strict;
 use warnings;
 
-BEGIN {
-	$| = 1;
-	use Test;
-	plan tests => 50;
-}
+use Test::More;
 use Bio::EnsEMBL::Test::MultiTestDB;
 use Bio::EnsEMBL::Test::TestUtils;
 use Bio::EnsEMBL::Operon;
@@ -20,6 +16,8 @@ debug("Startup test");
 ok(1);
 
 my $multi = Bio::EnsEMBL::Test::MultiTestDB->new();
+
+$multi->save('core', 'operon', 'operon_transcript', 'gene', 'transcript');
 
 my $dba = $multi->get_DBAdaptor("core");
 
@@ -40,7 +38,7 @@ my $operon = Bio::EnsEMBL::Operon->new( -START         => $start,
 										-STRAND        => $strand,
 										-SLICE         => $slice,
 										-DISPLAY_LABEL => $display_label, -STABLE_ID=>"op1", -ANALYSIS=>$analysis );
-	ok( $analysis,        $operon->analysis(), "Analysis" );
+	is( $analysis,        $operon->analysis());
 
 my $gene_name    = "accB";
 my $gene_start   = 31225346;
@@ -91,6 +89,7 @@ for my $feature ( $gene2, $transcript2, $exon2 ) {
 	$feature->slice($slice);
 	$feature->strand($gene_strand);
 }
+
 $gene2->analysis($analysis);
 $transcript2->analysis($analysis);
 $exon2->phase(0);
@@ -122,7 +121,7 @@ my $operon_transcript =
 $operon_transcript->add_gene($gene);
 $operon_transcript->add_gene($gene2);
 $operon->add_OperonTranscript($operon_transcript);
-	ok( $analysis,        $operon_transcript->analysis(), "Analysis" );
+is( $analysis,        $operon_transcript->analysis(), "Analysis" );
 
 my $operon_transcript2 =
   Bio::EnsEMBL::OperonTranscript->new( -START  => $start,
@@ -131,7 +130,7 @@ my $operon_transcript2 =
 									   -SLICE  => $slice, -STABLE_ID=>"opt2", -ANALYSIS=>$analysis  );
 $operon_transcript2->add_gene($gene);
 $operon->add_OperonTranscript($operon_transcript2);
-	ok( $analysis,        $operon_transcript->analysis(), "Analysis" );
+	is( $analysis,        $operon_transcript->analysis(), "Analysis" );
 
 # store the lot
 # store operon
@@ -140,69 +139,69 @@ ok( defined $operon->dbID() );
 
 # retrieve operon
 my $operon2 = $operon_adaptor->fetch_by_dbID( $operon->dbID() );
-ok( $operon2->dbID(),             $operon->dbID(),             "Operon ID" );
-ok( $operon2->display_label(),    $operon->display_label(),    "Operon name" );
-ok( $operon2->seq_region_start(), $operon->seq_region_start(), "Operon start" );
-ok( $operon2->seq_region_end(),   $operon->seq_region_end(),   "Operon end" );
-ok( $operon2->seq_region_strand(),
+is( $operon2->dbID(),             $operon->dbID(),             "Operon ID" );
+is( $operon2->display_label(),    $operon->display_label(),    "Operon name" );
+is( $operon2->seq_region_start(), $operon->seq_region_start(), "Operon start" );
+is( $operon2->seq_region_end(),   $operon->seq_region_end(),   "Operon end" );
+is( $operon2->seq_region_strand(),
 	$operon->seq_region_strand(),
 	"Operon strand" );
-	ok( $operon2->analysis(),             $operon->analysis(),             "Analysis" );
+is( $operon2->analysis(),             $operon->analysis(),             "Analysis" );
 my @operon_transcripts = @{ $operon2->get_all_OperonTranscripts() };
 # check operon transcript
-ok( scalar @operon_transcripts, 2, "Expected number of transcripts" );
+is( scalar @operon_transcripts, 2, "Expected number of transcripts" );
 
 my $operon_transcript_r = $operon_transcripts[0];
-ok( $operon_transcript_r->dbID(), $operon_transcript->dbID(),
+is( $operon_transcript_r->dbID(), $operon_transcript->dbID(),
 	"Operon transcript ID" );
-ok( $operon_transcript_r->seq_region_start(),
+is( $operon_transcript_r->seq_region_start(),
 	$operon_transcript->seq_region_start(),
 	"Operon transcript start" );
-ok( $operon_transcript_r->seq_region_end(),
+is( $operon_transcript_r->seq_region_end(),
 	$operon_transcript->seq_region_end(),
 	"Operon transcript end" );
-ok( $operon_transcript_r->seq_region_strand(),
+is( $operon_transcript_r->seq_region_strand(),
 	$operon_transcript->seq_region_strand(),
 	"Operon transcript strand" );
-	ok( $operon_transcript->analysis(),             $operon_transcript_r->analysis(),             "Analysis" );
+	is( $operon_transcript->analysis(),             $operon_transcript_r->analysis(),             "Analysis" );
 
 # check genes
 my @ogenes = @{ $operon_transcript_r->get_all_Genes() };
-ok( scalar @ogenes, 2, "Expected number of genes" );
+is( scalar @ogenes, 2, "Expected number of genes" );
 my $gene_r = $ogenes[0];
-ok( $gene_r->dbID(),              $gene->dbID(),              "Gene ID" );
-ok( $gene_r->seq_region_start(),  $gene->seq_region_start(),  "Gene start" );
-ok( $gene_r->seq_region_end(),    $gene->seq_region_end(),    "Gene end" );
-ok( $gene_r->seq_region_strand(), $gene->seq_region_strand(), "Gene strand" );
+is( $gene_r->dbID(),              $gene->dbID(),              "Gene ID" );
+is( $gene_r->seq_region_start(),  $gene->seq_region_start(),  "Gene start" );
+is( $gene_r->seq_region_end(),    $gene->seq_region_end(),    "Gene end" );
+is( $gene_r->seq_region_strand(), $gene->seq_region_strand(), "Gene strand" );
 $gene_r = $ogenes[1];
-ok( $gene_r->dbID(),		  $gene2->dbID(),	       "Gene ID" );
-ok( $gene_r->seq_region_start(),  $gene2->seq_region_start(),  "Gene start" );
-ok( $gene_r->seq_region_end(),    $gene2->seq_region_end(),    "Gene end" );
-ok( $gene_r->seq_region_strand(), $gene2->seq_region_strand(), "Gene strand" );
+is( $gene_r->dbID(),		  $gene2->dbID(),	       "Gene ID" );
+is( $gene_r->seq_region_start(),  $gene2->seq_region_start(),  "Gene start" );
+is( $gene_r->seq_region_end(),    $gene2->seq_region_end(),    "Gene end" );
+is( $gene_r->seq_region_strand(), $gene2->seq_region_strand(), "Gene strand" );
 
 my $operon_transcript_r2 = $operon_transcripts[1];
-ok( $operon_transcript_r2->dbID(),
+is( $operon_transcript_r2->dbID(),
 	$operon_transcript2->dbID(),
 	"Operon transcript ID" );
-ok( $operon_transcript_r2->seq_region_start(),
+is( $operon_transcript_r2->seq_region_start(),
 	$operon_transcript2->seq_region_start(),
 	"Operon transcript start" );
-ok( $operon_transcript_r2->seq_region_end(),
+is( $operon_transcript_r2->seq_region_end(),
 	$operon_transcript2->seq_region_end(),
 	"Operon transcript end" );
-ok( $operon_transcript_r2->seq_region_strand(),
+is( $operon_transcript_r2->seq_region_strand(),
 	$operon_transcript2->seq_region_strand(),
 	"Operon transcript strand" );
-	ok( $operon_transcript2->analysis(),             $operon_transcript_r2->analysis(),             "Analysis" );
+is( $operon_transcript2->analysis(),             $operon_transcript_r2->analysis(),             "Analysis" );
 
 # check genes
 @ogenes = @{ $operon_transcript_r2->get_all_Genes() };
-ok( scalar @ogenes, 1, "Expected number of genes" );
+is( scalar @ogenes, 1, "Expected number of genes" );
 $gene_r = $ogenes[0];
-ok( $gene_r->dbID(),              $gene->dbID(),              "Gene ID" );
-ok( $gene_r->seq_region_start(),  $gene->seq_region_start(),  "Gene start" );
-ok( $gene_r->seq_region_end(),    $gene->seq_region_end(),    "Gene end" );
-ok( $gene_r->seq_region_strand(), $gene->seq_region_strand(), "Gene strand" );
+is( $gene_r->dbID(),              $gene->dbID(),              "Gene ID" );
+is( $gene_r->seq_region_start(),  $gene->seq_region_start(),  "Gene start" );
+is( $gene_r->seq_region_end(),    $gene->seq_region_end(),    "Gene end" );
+is( $gene_r->seq_region_strand(), $gene->seq_region_strand(), "Gene strand" );
 
 $dba->get_OperonAdaptor()->remove($operon);
 $dba->get_GeneAdaptor()->remove($gene);
@@ -228,3 +227,7 @@ ok( scalar(@operon_transcripts) == 1 );
 debug ("OperonTranscript->list_stable_ids");
 my $stable_ids = $ota->list_stable_ids();
 ok (@{$stable_ids});
+
+$multi->restore('core');
+
+done_testing();
