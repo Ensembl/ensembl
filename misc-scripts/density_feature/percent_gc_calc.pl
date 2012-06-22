@@ -176,14 +176,12 @@ AND a.logic_name='percentgc'),
 												 -density_value => $gc );
 #print join ("\t", $slice, $current_start, $current_end, $density_type, $gc, "\n");
 			push( @density_features, $df );
-			$dfa->store($df);
 			if ( $gc > 0 ) {
+                                $dfa->store($df);
 				#density features with value = 0 are not stored
 				$total_count++;
 			}
 		} ## end while ( $current_end < $slice...)
-
-		$dfa->store(@density_features);
 
 		last if ( $slice_count++ > $max_slices );
 	} ## end while ( my $slice = shift...)
