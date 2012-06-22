@@ -77,6 +77,7 @@ $names_1_1{'human'} =  [qw(
     chimp
     coelacanth
     cow
+    dog
     dolphin
     elephant
     gibbon
@@ -97,9 +98,9 @@ $names_1_1{'human'} =  [qw(
     pika
     platypus
     psinensis
+    rabbit
     sloth
     squirrel
-    rabbit
     tarsier
     tasmanian_devil
     tenrec
@@ -158,13 +159,13 @@ $go_terms{'human'} = [qw(
     orang_utan
     panda
     pig
+    pika
     platypus
     psinensis
-    sloth
-    squirrel
-    pika
     rabbit
     rat
+    sloth
+    squirrel
     tarsier
     tasmanian_devil
     tenrec
@@ -190,8 +191,8 @@ $go_terms{'mouse'} = [qw(
     ground_shrew
     guinea_pig
     horse
-    hyrax
     human
+    hyrax
     kangaroo_rat
     macaque
     marmoset
