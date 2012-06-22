@@ -27,7 +27,16 @@ sub run {
   #get direct RFAM xrefs from core
   my $registry = "Bio::EnsEMBL::Registry";
 
-  $self->load_registry($registry);
+  $registry->load_registry_from_multiple_dbs( 
+      {
+        '-host'    => 'ens-staging1',
+        '-user'    => 'ensro',
+      },
+      {
+        '-host'     => 'ens-staging2',
+        '-user'     => 'ensro',
+      },
+  );
 
   #get the species name
   my %id2name = $self->species_id2name;
