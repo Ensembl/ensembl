@@ -61,6 +61,7 @@ sub get_Slices {
       }
       @slices = grep {
         if($_->seq_region_name() eq 'Y' && $_->end() < 2649521) {
+          $self->info('Filtering small Y slice');
           0;
         }
         else {
