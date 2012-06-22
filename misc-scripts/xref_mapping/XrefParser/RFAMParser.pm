@@ -8,6 +8,7 @@ use DBI;
 use base qw( XrefParser::BaseParser );
 use Bio::EnsEMBL::Registry;
 
+
 sub run {
 
   my ($self, $ref_arg) = @_;
@@ -24,19 +25,9 @@ sub run {
   my $file = @{$files}[0];
 
   #get direct RFAM xrefs from core
-
   my $registry = "Bio::EnsEMBL::Registry";
 
-  $registry->load_registry_from_multiple_dbs( 
-      {
-        '-host'    => 'ens-staging1',
-        '-user'    => 'ensro',
-      },
-      {
-        '-host'     => 'ens-staging2',
-        '-user'     => 'ensro',
-      },
-  );
+  $self->load_registry($registry);
 
   #get the species name
   my %id2name = $self->species_id2name;
