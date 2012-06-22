@@ -366,7 +366,7 @@ $prod_dbh->disconnect;
 	    $file_name_end = "_repeat";
 	    $script = "$SERVERROOT/repeat_coverage_calc.pl";
 	    $script_title = "repeat coverage calculation";
-	    $option = " -d ";
+	    $option = " -pattern ";
 	}
 	case 'gene_density' {
 	    for (my $i=0; $i<$host_count;$i++) {
