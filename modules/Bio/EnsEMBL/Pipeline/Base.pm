@@ -51,7 +51,7 @@ sub get_Slices {
   my $sa = $dba->get_SliceAdaptor();
   my @slices = @{$sa->fetch_all('toplevel', undef, 1, undef, undef)};
   
-  if(!$filter_human) {
+  if($filter_human) {
     my $production_name = $self->production_name();
     if($production_name eq 'homo_sapiens') {
       my ($cs) = @{$dba->get_CoordSystem()->fetch_all()};
@@ -59,7 +59,14 @@ sub get_Slices {
       if($cs->version() ne $expected) {
         throw sprintf(q{Cannot continue as %s's coordinate system %s is not the expected %s }, $production_name, $cs->version(), $expected);
       }
-      @slices = grep { $_->seq_region_name() eq 'Y' && $_->end() < 2649521 } @slices;
+      @slices = grep {
+        if($_->seq_region_name() eq 'Y' && $_->end() < 2649521) {
+          0;
+        }
+        else {
+          1;
+        }
+      } @slices;
     }
   }
   
