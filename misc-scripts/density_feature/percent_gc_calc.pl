@@ -277,7 +277,7 @@ Usage:
 
   -p|pass              Password for user
 
-  -d|dbname            Database name
+  -pattern             Database name regexp
 
   -mhost              ensembl_production database host to connect to
 

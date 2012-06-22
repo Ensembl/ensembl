@@ -383,7 +383,7 @@ Usage:
 
   -muser              ensembl_production database username
 
-  -d|dbname          Database name
+  -pattern             Database name regexp
 
   -help              This message
 
