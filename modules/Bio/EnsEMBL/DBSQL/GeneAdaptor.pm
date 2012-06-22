@@ -1078,9 +1078,7 @@ sub store_alt_alleles {
       warning('More than one alternative allele on the reference sequence (gene ids: ' . join(',',@ref_genes) . '). Ignoring.');
       return;
   }
-  if (scalar(@ref_genes) == 0) {
-      warning('None of the alternative alleles is on the reference sequence (gene ids: ' . join(',',@non_ref_genes) . '). Storing alt_alleles anyway.');
-  }
+ 
   #
   #insert the first gene seperately in order to get a unique identifier for
   #the set of alleles
