@@ -4,6 +4,7 @@ use strict;
 # on their orthologs in the "from" database. Can also project GO xrefs.
 # Orthology relationships are read from a Compara database.
 
+use Cwd qw/cwd/;
 use Data::Dumper;
 use Getopt::Long;
 use Bio::EnsEMBL::Registry;
@@ -16,7 +17,7 @@ my $method_link_type = "ENSEMBL_ORTHOLOGUES";
 
 my %seen;
 
-my ($conf, $registryconf, $version, $compara, $from_species, @to_multi, $print, $names, $go_terms, $delete_names, $delete_go_terms, $no_backup, $full_stats, $descriptions, $release, $no_database, $quiet, $max_genes, $one_to_many, $go_check, $all_sources, $delete_only,  $to_species, $from_gene);
+my ($conf, $registryconf, $version, $compara, $from_species, @to_multi, $print, $names, $go_terms, $delete_names, $delete_go_terms, $no_backup, $backup_dir, $full_stats, $descriptions, $release, $no_database, $quiet, $max_genes, $one_to_many, $go_check, $all_sources, $delete_only,  $to_species, $from_gene);
 
 GetOptions('conf=s'          => \$conf,
 	   'registryconf=s'  => \$registryconf,
@@ -31,8 +32,9 @@ GetOptions('conf=s'          => \$conf,
 	   'delete_names'    => \$delete_names,
 	   'delete_go_terms' => \$delete_go_terms,
 	   'nobackup'        => \$no_backup,
+	   'backup_dir=s'    => \$backup_dir,
 	   'full_stats'      => \$full_stats,
-       'descriptions'    => \$descriptions,
+     'descriptions'    => \$descriptions,
 	   'release=i'       => \$release,
 	   'no_database'     => \$no_database,
 	   'quiet'           => \$quiet,
@@ -108,6 +110,14 @@ my @evidence_codes = ( "IDA", "IEP", "IGI", "IMP", "IPI", "EXP" );
 # load from database and conf file
 Bio::EnsEMBL::Registry->no_version_check(1);
 
+# Default the directory to the current working directory if one was not given
+# and try to create it if the directory does not exist
+if(! $backup_dir) {
+  $backup_dir = cwd();
+}
+if(! -d $backup_dir) {
+  mkdir $backup_dir;
+}
 
 # Registryconf is either the registry configuration passed from the submit_projections.pl 
 # script or a file name containing the same information that is passed on the command line.
@@ -781,7 +791,7 @@ sub backup {
   my $dbname = $dbc->dbname();
 
   foreach my $table ("gene", "xref", "object_xref") {
-    unless (system("mysql -h$host -P$port -u$user -p$pass -N -e 'select * from $table' $dbname > $dbname.$table.backup; gzip -6 -f $dbname.$table.backup") == 0) {
+    unless (system("mysql -h$host -P$port -u$user -p$pass -N -e 'select * from $table' $dbname | gzip -c -6 > $backup_dir/$dbname.$table.backup.gz") == 0) {
       print STDERR "Can't dump the original $table table from $dbname for backup\n";
       exit 1;
     } else {

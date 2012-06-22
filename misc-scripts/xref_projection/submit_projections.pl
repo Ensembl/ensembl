@@ -52,11 +52,11 @@ if (! -e $dir) {
   print "Created $dir\n";
 } else {
   print "Cleaning and re-using $dir\n";
-  unlink <$dir/*.out>, <$dir/*.err>;
+  unlink <$dir/*.out>, <$dir/*.err>, <$dir/*.sql.gz>;
 }
 
 # common options
-my $script_opts = "-conf '$conf' -registryconf '$registryconf' -version '$release' -release '$release' -quiet";
+my $script_opts = "-conf '$conf' -registryconf '$registryconf' -version '$release' -release '$release' -quiet -backup_dir '$dir'";
 
 my $bsub_opts = "";
 $bsub_opts .= "-M2000000 -R'select[mem>2000] rusage[mem=2000]'";
