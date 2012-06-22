@@ -357,7 +357,7 @@ $prod_dbh->disconnect;
 	    $file_name_end = "_gc";
 	    $script = "$SERVERROOT/percent_gc_calc.pl";
 	    $script_title = "percent GC calculation";
-	    $option = " -d ";
+	    $option = " -pattern ";
 	}
 	case 'repeat_coverage' {
 	    $data_file = "$outdir/repeat_coverage_data.txt";
