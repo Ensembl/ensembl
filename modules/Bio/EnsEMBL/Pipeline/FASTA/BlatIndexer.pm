@@ -25,7 +25,7 @@ Bio::EnsEMBL::Pipeline::FASTA::BlastIndexer
 =head1 DESCRIPTION
 
 Creates 2bit file of the given GZipped file. The resulting index
-is created under the parameter location I<base_path> in blat. The filename
+is created under the parameter location I<base_path> in blat/index. The filename
 is prefixed with the port number of the blat server this file should be
 run on.
 
@@ -196,7 +196,7 @@ sub target_file {
 
 sub target_dir {
   my ($self) = @_;
-  return $self->get_dir('blat');
+  return $self->get_dir('blat', $self->param('index'));
 }
 
 sub blat_port {
