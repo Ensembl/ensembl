@@ -205,6 +205,19 @@ sub pipeline_analyses {
         -rc_id => 5,
       },
       
+      {
+        -logic_name => 'BlatSmDNAIndex',
+        -module     => 'Bio::EnsEMBL::Pipeline::FASTA::BlatIndexer',
+        -parameters => {
+          port_offset => $self->o('port_offset'), 
+          program => $self->o('blat_exe'),
+          'index' => 'dna_sm' 
+        },
+        -can_be_empty => 1,
+        -hive_capacity => 5,
+        -rc_id => 5,
+      },
+      
       ######## COPYING
       {
         -logic_name => 'SCPBlast',
