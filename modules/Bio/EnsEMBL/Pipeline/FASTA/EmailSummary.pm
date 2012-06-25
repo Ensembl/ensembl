@@ -79,7 +79,7 @@ sub jobs {
   my $aja = $self->db->get_AnalysisJobAdaptor();
   my $analysis = $aa->fetch_by_logic_name($logic_name);
   my $id = $analysis->dbID();
-  my @jobs = @{$aja->generic_fetch('j.analysis_id =$id')};
+  my @jobs = @{$aja->generic_fetch("j.analysis_id =$id")};
   $_->{input} = destringify($_->input_id()) for @jobs;
   @jobs = 
     sort { $a->{input}->{species} cmp $b->{input}->{species} }
