@@ -54,7 +54,7 @@ Your FASTA Pipeline has finished. We have:
   * %d species with BLAST GENE indexes generated (%d failed)
   * %d species with BLAST PEPTIDE indexes generated (%d failed)
   * %d species with BLAT DNA generated (%d failed)
-  * d species with BLAT SM DNA generated (%d failed)
+  * d species with BLAT SM DNA generated (d failed)
 
 %s
 
