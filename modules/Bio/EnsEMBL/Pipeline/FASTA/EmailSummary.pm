@@ -7,6 +7,9 @@ use Bio::EnsEMBL::Hive::Utils qw/destringify/;
 
 sub fetch_input {
   my ($self) = @_;
+  
+  $self->assert_executable('sendmail');
+  
   my $dump_dna = $self->jobs('DumpDNA');
   my $copy_dna = $self->jobs('CopyDNA');
   my $dump_genes = $self->jobs('DumpGenes');

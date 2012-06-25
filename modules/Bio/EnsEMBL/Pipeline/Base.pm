@@ -213,4 +213,22 @@ sub unlink_all_files {
   return;
 }
 
+sub assert_executable {
+  my ($self, $exe) = @_;
+  if(! -x $exe) {
+    my $output = `which $exe 2>&1`;
+    chomp $output;
+    my $rc = $? >> 8;
+    if($rc != 0) {
+      my $possible_location = `locate -l 1 $exe 2>&1`;
+      my $loc_rc = $? >> 8;
+      if($loc_rc != 0) {
+        my $msg = 'Cannot find the executable "%s" after trying "which" and "locate -l 1". Please ensure it is on your PATH or use an absolute location and try again';
+        $self->throw(sprintf($msg, $exe));
+      }
+    }
+  }
+  return 1;
+}
+
 1;

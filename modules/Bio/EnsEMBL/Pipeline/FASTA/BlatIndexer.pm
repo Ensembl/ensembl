@@ -80,6 +80,14 @@ sub param_defaults {
   };
 }
 
+sub fetch_input {
+  my ($self) = @_;
+  $self->assert_executable($self->param('program'));
+  $self->assert_executable('zcat');
+  $self->assert_executable('gunzip');
+  return;
+}
+
 sub run {
   my ($self) = @_;
   if($self->run_indexing()) {

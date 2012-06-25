@@ -77,6 +77,8 @@ sub fetch_input {
   if($type ne 'genomic' && $type ne 'genes') {
     throw "param 'type' must be set to 'genomic' or 'genes'";
   }
+  $self->assert_executable($self->param('program'));
+  $self->assert_executable('gunzip');
 }
 
 sub write_output {
