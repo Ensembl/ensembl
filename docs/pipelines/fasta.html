@@ -73,4 +73,12 @@
   -reg_conf reg.pm -debug 2 \
   -release 67 -species homo_sapiens -sequence_type_list '["dna"]' \
   -base_path /path/to/dumps
+</code></pre><h3 id="RunningGeneDumping">Running Gene Dumping</h3><pre><code>  standaloneJob.pl Bio::EnsEMBL::Pipeline::FASTA::DumpFile \
+  -reg_conf reg.pm -debug 2 \
+  -release 67 -species homo_sapiens -sequence_type_list '["cdna"]' \
+  -base_path /path/to/dumps
+</code></pre><h3 id="RunningGeneDumping2">Running Gene Dumping</h3><pre><code>  standaloneJob.pl Bio::EnsEMBL::Pipeline::FASTA::DumpFile \
+  -reg_conf reg.pm -debug 2 \
+  -release 67 -species homo_sapiens -sequence_type_list '["ncrna"]' \
+  -base_path /path/to/dumps
 </code></pre></body></html>
