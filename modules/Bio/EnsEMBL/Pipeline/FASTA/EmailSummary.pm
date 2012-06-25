@@ -14,7 +14,7 @@ sub fetch_input {
   my $blast_gene = $self->jobs('BlastGeneIndex');
   my $blast_pep = $self->jobs('BlastPepIndex');
   my $blat = $self->jobs('BlatDNAIndex', 100);
-  my $blat_sm = $self->jobs('BlatSmDNAIndex', 100);
+#  my $blat_sm = $self->jobs('BlatSmDNAIndex', 100);
     
   my @args = (
     $dump_dna->{count},
@@ -24,7 +24,7 @@ sub fetch_input {
     $blast_gene->{count},
     $blast_pep->{count},
     $blat->{count},
-    $blat_sm->{count},
+#    $blat_sm->{count},
     $self->failed(),
     $self->summary($dump_dna),
     $self->summary($copy_dna),
@@ -33,7 +33,7 @@ sub fetch_input {
     $self->summary($blast_gene),
     $self->summary($blast_pep),
     $self->summary($blat),
-    $self->summary($blat_sm),
+#    $self->summary($blat_sm),
   );
   
   my $msg = sprintf(<<'MSG', @args);
@@ -46,7 +46,7 @@ Your FASTA Pipeline has finished. We have:
   * %d species with BLAST GENE indexes generated
   * %d species with BLAST PEPTIDE indexes generated
   * %d species with BLAT DNA generated
-  * %d species with BLAT SM DNA generated
+  * d species with BLAT SM DNA generated
 
 %s
 
@@ -68,7 +68,7 @@ Full breakdown follows ...
 
 %s
 
-%s
+s
 
 MSG
 }
@@ -97,11 +97,12 @@ sub jobs {
       }
     }
     @jobs;
+  my %unique_species = map { $_->{input}->{species} } @jobs;
   return {
     analysis => $analysis,
     name => $logic_name,
     jobs => \@jobs,
-    count => scalar(@jobs)
+    count => scalar(keys %unique_species)
   };
 }
 
@@ -125,6 +126,16 @@ MSG
   return $output;
 }
 
+my $sorter = sub {
+  my $status_to_int = sub {
+    my ($v) = @_;
+    return ($v->status() eq 'FAILED') ? 0 : 1;
+  };
+  my $status_sort = $status_to_int->($a) <=> $status_to_int->($b);
+  return $status_sort if $status_sort != 0;
+  return $a->{input}->{species} cmp $b->{input}->{species};
+};
+
 sub summary {
   my ($self, $data) = @_;
   my $name = $data->{name};
@@ -132,7 +143,7 @@ sub summary {
   my $output = "$name\n$underline\n\n";
   my @jobs = @{$data->{jobs}};
   if(@jobs) {
-    foreach my $job (@{$data->{jobs}}) {
+    foreach my $job (sort $sorter @{$data->{jobs}}) {
       my $species = $job->{input}->{species};
       $output .= sprintf("  * %s - job_id=%d %s\n", $species, $job->dbID(), $job->status());
     }
