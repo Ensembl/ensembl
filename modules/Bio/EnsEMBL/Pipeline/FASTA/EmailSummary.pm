@@ -83,7 +83,19 @@ sub jobs {
   $_->{input} = destringify($_->input_id()) for @jobs;
   @jobs = 
     sort { $a->{input}->{species} cmp $b->{input}->{species} }
-    grep { 1 if ! $minimum_runtime; $minimum_runtime > $_->runtime_msec() }  
+    grep { 
+      if($minimum_runtime) {
+        if($minimum_runtime > $_->runtime_msec()) {
+          1;
+        }
+        else {
+          0;
+        }
+      }
+      else {
+        1;
+      }
+    }
     @jobs;
   return {
     analysis => $analysis,
