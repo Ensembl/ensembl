@@ -38,7 +38,7 @@ Allowed parameters are:
 
 =item species - Required to indicate which species we are working with
 
-=item data_type - The type of data to work with. Can be I<dna> or T<dna_rm>
+=item data_type - The type of data to work with. Can be I<dna>, I<dn_sm> or I<dna_rm>
 
 =item base_path - The base of the dumps
 
@@ -53,6 +53,7 @@ use warnings;
 use base qw/Bio::EnsEMBL::Pipeline::FASTA::Base/;
 
 use File::Spec;
+use File::stat;
 
 sub param_defaults {
   my ($self) = @_;
@@ -83,6 +84,7 @@ sub run {
   
   my @file_list = @{$self->get_dna_files()};
   my $count = scalar(@file_list);
+  my $running_total_size = 0;
   
   if($count) {
     my $target_file = $self->target_file();
@@ -96,11 +98,18 @@ sub run {
     $self->info('Running concat');
     foreach my $file (@file_list) {
       $self->fine('Processing %s', $file);
+      $running_total_size += ((stat($file))[7]);
       system("cat $file >> $target_file") 
         and $self->throw( sprintf('Cannot concat %s into %s. RC %d', $file, $target_file, ($?>>8)));
     }
 
     $self->info("Catted files together");
+    
+    my $catted_size = (stat($target_file))[7];
+    
+    if($running_total_size == $catted_size) {
+      $self->throw('The total size of the files catted together should be %d but was in fact %d. Failing as we expect the catted size to be the same', $running_total_size, $catted_size);
+    }
     
     $self->param('target_file', $target_file);
   }
