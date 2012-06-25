@@ -13,7 +13,8 @@ sub fetch_input {
   my $blast_dna = $self->jobs('BlastDNAIndex');
   my $blast_gene = $self->jobs('BlastGeneIndex');
   my $blast_pep = $self->jobs('BlastPepIndex');
-  my $blat = $self->jobs('BlatDNAIndex');
+  my $blat = $self->jobs('BlatDNAIndex', 100);
+  my $blat_sm = $self->jobs('BlatSmDNAIndex', 100);
     
   my @args = (
     $dump_dna->{count},
@@ -23,6 +24,7 @@ sub fetch_input {
     $blast_gene->{count},
     $blast_pep->{count},
     $blat->{count},
+    $blat_sm->{count},
     $self->failed(),
     $self->summary($dump_dna),
     $self->summary($copy_dna),
@@ -31,6 +33,7 @@ sub fetch_input {
     $self->summary($blast_gene),
     $self->summary($blast_pep),
     $self->summary($blat),
+    $self->summary($blat_sm),
   );
   
   my $msg = sprintf(<<'MSG', @args);
@@ -43,6 +46,7 @@ Your FASTA Pipeline has finished. We have:
   * %d species with BLAST GENE indexes generated
   * %d species with BLAST PEPTIDE indexes generated
   * %d species with BLAT DNA generated
+  * %d species with BLAT SM DNA generated
 
 %s
 
@@ -63,24 +67,29 @@ Full breakdown follows ...
 %s
 
 %s
- 
+
+%s
+
 MSG
 }
 
 sub jobs {
-  my ($self, $logic_name) = @_;
+  my ($self, $logic_name, $minimum_runtime) = @_;
   my $aa = $self->db->get_AnalysisAdaptor();
   my $aja = $self->db->get_AnalysisJobAdaptor();
   my $analysis = $aa->fetch_by_logic_name($logic_name);
   my $id = $analysis->dbID();
   my @jobs = @{$aja->generic_fetch('j.analysis_id =$id')};
   $_->{input} = destringify($_->input_id()) for @jobs;
-  @jobs = sort { $a->{input}->{species} cmp $b->{input}->{species} } @jobs;
+  @jobs = 
+    sort { $a->{input}->{species} cmp $b->{input}->{species} }
+    grep { 1 if ! $minimum_runtime; $minimum_runtime > $_->runtime_msec() }  
+    @jobs;
   return {
     analysis => $analysis,
     name => $logic_name,
     jobs => \@jobs,
-    count => scalar(@jobs),
+    count => scalar(@jobs)
   };
 }
 
