@@ -2,7 +2,7 @@ package Bio::EnsEMBL::Pipeline::FASTA::EmailSummary;
 
 use strict;
 use warnings;
-use base qw/Bio::EnsEMBL::Hive::RunnableDB::NotifyByEmail Bio:EnsEMBL::Pipeline::Base/;
+use base qw/Bio::EnsEMBL::Hive::RunnableDB::NotifyByEmail Bio::EnsEMBL::Pipeline::Base/;
 use Bio::EnsEMBL::Hive::Utils qw/destringify/;
 
 sub fetch_input {
