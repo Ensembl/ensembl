@@ -24,6 +24,7 @@ sub run_script {
   my $biotype;
   my $object_type;
   my $project;
+  my $copy_description_from_object;
 
   if($file =~ /biotype[=][>](\S+?)[,]/){
     $biotype = $1;
@@ -33,6 +34,9 @@ sub run_script {
   }
   if($file =~ /project[=][>](\S+?)[,]/){
     $project = $1;
+  }
+  if($file =~ /copy_description_from_object[=][>](\S+?)[,]/){
+    $copy_description_from_object = $1;
   }
 
   my $external_db_name = $self->get_source_name_for_source_id($source_id);
@@ -122,10 +126,22 @@ sub run_script {
 
 	  if (!exists($added_xref{$xref->primary_id()})) {
 
+	      my $description = $xref->description();
+
+	      if ($copy_description_from_object && !$description) {
+
+		  if ($object->description()) {
+                      #populate xref description with object description stripping the [Source: .. part
+		      ($description) = $object->description() =~ /([^\[]+)/;
+		      #trim trailing spaces
+		      $description =~ s/\s+$//; 
+		  }
+	      }
+	      
 	      $xref_id = $self->add_xref({ acc        => $xref->primary_id(),
 				      version    => $xref->version(),
 				      label      => $xref->display_id(),
-				      desc       => $xref->description(),
+				      desc       => $description,
 				      source_id  => $source_id,
 				      species_id => $species_id,
 				      info_type  => "DIRECT"} );
