@@ -71,6 +71,8 @@ Full breakdown follows ...
 s
 
 MSG
+  $self->param('text', $msg);
+  return;
 }
 
 sub jobs {
