@@ -132,6 +132,7 @@ sub pipeline_analyses {
         -module     => 'Bio::EnsEMBL::Pipeline::FASTA::ConcatFiles',
         -rc_id      => 1,
         -can_be_empty => 1,
+        -max_retry_count => 5,
         -flow_into  => {
           1 => [qw/BlastDNAIndex BlatDNAIndex/]
         },
