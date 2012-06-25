@@ -204,16 +204,7 @@ sub target_file {
 
 sub target_dir {
   my ($self) = @_;
-  my $index = $self->param('index');
-  my $base_dir  = ($index eq 'dna')     ? 'blat' 
-                : ($index eq 'dna_rm')  ? 'blat_rm' 
-                : ($index eq 'dna_sm')  ? 'blat_sm' 
-                :                         q{}
-                ;
-  if(! $base_dir) {
-    $self->throw(sprintf('Cannot decode a directory from index type "%s"', $index));
-  }
-  return $self->get_dir($base_dir, $self->param('index'));
+  return $self->get_dir('blat', $self->param('index'));
 }
 
 sub blat_port {
