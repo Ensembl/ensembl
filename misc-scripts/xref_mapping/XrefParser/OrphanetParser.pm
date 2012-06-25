@@ -105,12 +105,15 @@ sub run {
 	foreach my $master_xref_id (@{$hgnc{$hgnc_acc}}){
 	  
 	  foreach my $orpha_number (keys %{$gene_disorders{$hgnc_acc}}) {
-	   
+
+	    my $description = $gene_disorders{$hgnc_acc}{$orpha_number};    
+
 	    $self->add_dependent_xref({ master_xref_id => $master_xref_id,
 					acc            => $orpha_number,
+					label          => $description || $orpha_number,
 					source_id      => $source_id,
 					species_id     => $species_id,
-				        desc           => $gene_disorders{$hgnc_acc}{$orpha_number} });
+				        desc           => $description });
 	    $Orphanet_xrefs{$orpha_number}++;
 	    $added++;
 	  }
