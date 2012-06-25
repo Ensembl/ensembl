@@ -108,7 +108,7 @@ sub run {
     my $catted_size = stat($target_file)->size;
     
     if($running_total_size == $catted_size) {
-      $self->throw('The total size of the files catted together should be %d but was in fact %d. Failing as we expect the catted size to be the same', $running_total_size, $catted_size);
+      $self->throw(sprintf('The total size of the files catted together should be %d but was in fact %d. Failing as we expect the catted size to be the same', $running_total_size, $catted_size));
     }
     
     $self->param('target_file', $target_file);
