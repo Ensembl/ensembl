@@ -210,7 +210,9 @@ sub target_dir {
                 : ($index eq 'dna_sm')  ? 'blat_sm' 
                 :                         q{}
                 ;
-  $self->throw(sprintf('Cannot decode a directory from index type "%s"', $index));
+  if(! $base_dir) {
+    $self->throw(sprintf('Cannot decode a directory from index type "%s"', $index));
+  }
   return $self->get_dir($base_dir, $self->param('index'));
 }
 
