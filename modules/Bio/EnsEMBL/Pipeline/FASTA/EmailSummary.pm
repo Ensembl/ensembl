@@ -17,14 +17,22 @@ sub fetch_input {
 #  my $blat_sm = $self->jobs('BlatSmDNAIndex', 100);
     
   my @args = (
-    $dump_dna->{count},
-    $copy_dna->{count},
-    $dump_genes->{count},
-    $blast_dna->{count},
-    $blast_gene->{count},
-    $blast_pep->{count},
-    $blat->{count},
-#    $blat_sm->{count},
+    $dump_dna->{successful_jobs},
+    $dump_dna->{failed_jobs},
+    $copy_dna->{successful_jobs},
+    $copy_dna->{failed_jobs},
+    $dump_genes->{successful_jobs},
+    $dump_genes->{failed_jobs},
+    $blast_dna->{successful_jobs},
+    $blast_dna->{failed_jobs},
+    $blast_gene->{successful_jobs},
+    $blast_gene->{failed_jobs},
+    $blast_pep->{successful_jobs},
+    $blast_pep->{failed_jobs},
+    $blat->{successful_jobs},
+    $blat->{failed_jobs},
+#    $blat_sm->{successful_jobs},
+#    $blat_sm->{failed_jobs},
     $self->failed(),
     $self->summary($dump_dna),
     $self->summary($copy_dna),
@@ -39,14 +47,14 @@ sub fetch_input {
   my $msg = sprintf(<<'MSG', @args);
 Your FASTA Pipeline has finished. We have:
 
-  * %d species with new DNA Dumped
-  * %d species with copied DNA
-  * %d species with genes dumped
-  * %d species with BLAST DNA indexes generated
-  * %d species with BLAST GENE indexes generated
-  * %d species with BLAST PEPTIDE indexes generated
-  * %d species with BLAT DNA generated
-  * d species with BLAT SM DNA generated
+  * %d species with new DNA Dumped (%d failed)
+  * %d species with copied DNA (%d failed)
+  * %d species with genes dumped (%d failed)
+  * %d species with BLAST DNA indexes generated (%d failed)
+  * %d species with BLAST GENE indexes generated (%d failed)
+  * %d species with BLAST PEPTIDE indexes generated (%d failed)
+  * %d species with BLAT DNA generated (%d failed)
+  * d species with BLAT SM DNA generated (%d failed)
 
 %s
 
@@ -99,12 +107,14 @@ sub jobs {
       }
     }
     @jobs;
-  my %unique_species = map { $_->{input}->{species}, 1 } @jobs;
+  my %passed_species = map { $_->{input}->{species}, 1 } grep { $_->status() eq 'DONE' } @jobs;
+  my %failed_species = map { $_->{input}->{species}, 1 } grep { $_->status() eq 'FAILED' } @jobs;
   return {
     analysis => $analysis,
     name => $logic_name,
     jobs => \@jobs,
-    count => scalar(keys %unique_species)
+    successful_jobs => scalar(keys %passed_species),
+    failed_jobs => scalar(keys %failed_species),
   };
 }
 
