@@ -99,7 +99,7 @@ sub jobs {
       }
     }
     @jobs;
-  my %unique_species = map { $_->{input}->{species} } @jobs;
+  my %unique_species = map { $_->{input}->{species}, 1 } @jobs;
   return {
     analysis => $analysis,
     name => $logic_name,
