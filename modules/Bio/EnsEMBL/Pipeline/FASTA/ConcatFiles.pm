@@ -98,14 +98,14 @@ sub run {
     $self->info('Running concat');
     foreach my $file (@file_list) {
       $self->fine('Processing %s', $file);
-      $running_total_size += ((stat($file))[7]);
+      $running_total_size += stat($file)->size;
       system("cat $file >> $target_file") 
         and $self->throw( sprintf('Cannot concat %s into %s. RC %d', $file, $target_file, ($?>>8)));
     }
 
     $self->info("Catted files together");
     
-    my $catted_size = (stat($target_file))[7];
+    my $catted_size = stat($target_file)->size;
     
     if($running_total_size == $catted_size) {
       $self->throw('The total size of the files catted together should be %d but was in fact %d. Failing as we expect the catted size to be the same', $running_total_size, $catted_size);
