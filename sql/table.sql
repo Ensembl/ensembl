@@ -512,7 +512,8 @@ INSERT INTO meta (species_id, meta_key, meta_value) VALUES
   (NULL, 'patch', 'patch_67_68_a.sql|schema_version'),
   (NULL, 'patch', 'patch_67_68_b.sql|xref_uniqueness'),
   (NULL, 'patch', 'patch_67_68_c.sql|altering_intron_supporting_evidence'),
-  (NULL, 'patch', 'patch_67_68_d.sql|add_is_splice_canonical_and_seq_index')
+  (NULL, 'patch', 'patch_67_68_d.sql|add_is_splice_canonical_and_seq_index'),
+  (NULL, 'patch', 'patch_67_68_e.sql|fix_67_68_e_xref_index')
  ;
 
 /**
@@ -2524,7 +2525,7 @@ CREATE TABLE xref (
    info_text                  VARCHAR(255) DEFAULT '' NOT NULL,
 
    PRIMARY KEY (xref_id),
-   UNIQUE KEY id_index (dbprimary_acc, external_db_id, info_type, info_text),
+   UNIQUE KEY id_index (dbprimary_acc, external_db_id, info_type, info_text, version),
    KEY display_index (display_label),
    KEY info_type_idx (info_type)
 
