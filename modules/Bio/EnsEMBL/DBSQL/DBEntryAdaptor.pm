@@ -884,17 +884,20 @@ sub _store_or_fetch_xref {
         $synonym_check_sth->finish();
         $synonym_store_sth->finish();
         
-    } else { # xref_id already exists, retrieve it
+    } else { # xref_id already exists, retrieve it according to fields in the unique key
         my $sql = 'SELECT xref_id FROM xref 
             WHERE dbprimary_acc = ?
+            AND version =?
             AND external_db_id = ?
             AND info_type = ?
             AND info_text = ?';
         
         my $info_type = $dbEntry->info_type() || 'NONE';
         my $info_text = $dbEntry->info_text() || q{};
+        my $version = $dbEntry->version() || q{0};
         $sth = $self->prepare( $sql );
         $sth->bind_param(1, $dbEntry->primary_id,SQL_VARCHAR);
+        $sth->bind_param(2, $version, SQL_VARCHAR);
         $sth->bind_param(2, $dbRef, SQL_INTEGER);
         $sth->bind_param(3, $info_type, SQL_VARCHAR);
         $sth->bind_param(4, $info_text, SQL_VARCHAR);
@@ -904,7 +907,7 @@ sub _store_or_fetch_xref {
         
         if(!$xref_id) {
           my $msg = 'Cannot find an xref id for %s (version=%d) with external db id %d.';
-          throw(sprintf($msg, $dbEntry->primary_id(), $dbEntry->version(), $dbRef))
+          throw(sprintf($msg, $dbEntry->primary_id(), $version, $dbRef))
         }
     }
     

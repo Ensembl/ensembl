@@ -8,7 +8,7 @@ CREATE TABLE `xref` (
   `info_type` enum('NONE','PROJECTION','MISC','DEPENDENT','DIRECT','SEQUENCE_MATCH','INFERRED_PAIR','PROBE','UNMAPPED','CHECKSUM') collate latin1_bin NOT NULL default 'NONE',
   `info_text` varchar(255) collate latin1_bin NOT NULL default '',
   PRIMARY KEY  (`xref_id`),
-  UNIQUE KEY `id_index` (`dbprimary_acc`,`external_db_id`,`info_type`,`info_text`),
+  UNIQUE KEY `id_index` (`dbprimary_acc`,`external_db_id`,`info_type`,`info_text`,`version`),
   KEY `display_index` (`display_label`),
   KEY info_type_idx (info_type)
 ) ENGINE=MyISAM AUTO_INCREMENT=1000006 DEFAULT CHARSET=latin1 COLLATE=latin1_bin;
