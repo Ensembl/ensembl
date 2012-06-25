@@ -862,6 +862,7 @@ sub dynamic_use {
   Arg[2]      : (optional) String $version - coord_system version
   Arg[3]      : (optional) String $type - type of region eg chromsome (defaults to 'toplevel')
   Arg[4]      : (optional) Boolean - return non reference slies as well (required for haplotypes eq 6-COX)
+  Arg[5]      : (optional) Override chromosome parameter filtering with this array reference. Empty denotes all.
   Example     : my $chr_length = $support->get_chrlength($dba);
   Description : Get all chromosomes and their length from the database. Return
                 chr_name/length for the chromosomes the user requested (or all
@@ -873,7 +874,7 @@ sub dynamic_use {
 =cut
 
 sub get_chrlength {
-  my ($self, $dba, $version,$type,$include_non_reference) = @_;
+  my ($self, $dba, $version,$type,$include_non_reference,$chroms) = @_;
   $dba  ||= $self->dba;
   $type ||= 'toplevel';
   throw("get_chrlength should be passed a Bio::EnsEMBL::DBSQL::DBAdaptor\n")
@@ -886,6 +887,8 @@ sub get_chrlength {
   my %chr = map { $_ => $sa->fetch_by_region($type, $_, undef, undef, undef, $version)->length } @chromosomes;
 
   my @wanted = $self->param('chromosomes');
+  @wanted = @$chroms if defined $chroms and ref($chroms) eq 'ARRAY';
+
   if (@wanted) {
     # check if user supplied invalid chromosome names
     foreach my $chr (@wanted) {
@@ -1607,8 +1610,8 @@ sub get_wanted_chromosomes {
   my $export_mode = $self->param('release_type');
   my $release = $self->param('vega_release');
   my $names;
-  my $chroms  = $self->fetch_non_hidden_slices($aa,$sa,$cs,$cv);
- CHROM:
+  my $chroms  = $self->fetch_non_hidden_slices($aa,$sa,$cs,$cv); 
+  CHROM:
   foreach my $chrom (@$chroms) {
     my $attribs = $aa->fetch_all_by_Slice($chrom);
     my $vals = $self->get_attrib_values($attribs,'vega_export_mod');
@@ -1630,6 +1633,29 @@ sub get_wanted_chromosomes {
     push @{$names}, $name;
   }
   return $names;
+}
+
+=head2 is_haplotype
+
+  Arg[1]      : B::E::Slice
+  Arg[2]:     : B::E::DBAdaptor (optional, if you don't supply one then the *first* one you generated is returned, which may or may not be what you want!)
+  Description : Is the slice a Vega haplotype? At the moment this is 
+    implemented by testing for presence of vega_ref_chrom but non_ref
+    which is correct in practice, but really misses the prupose of
+    vega_ref_chrom, so this might bite us if that changes.
+  Return type : boolean
+
+=cut
+
+sub is_haplotype {
+  my ($self,$slice,$dba) = @_;
+
+  $dba ||= $self->dba;
+  my $aa = $dba->get_adaptor('Attribute');
+
+  my $attribs = $aa->fetch_all_by_Slice($slice);
+  return (@{$self->get_attrib_values($attribs,'vega_ref_chrom')} and
+          @{$self->get_attrib_values($attribs,'non_ref',1)});
 }
 
 =head2 get_unique_genes
@@ -1655,7 +1681,7 @@ sub get_unique_genes {
   my $ga    = $dba->get_adaptor('Gene');
   my $patch = 0;
   my $genes = [];
-  if ( ! $slice->is_reference() ) {
+  if ( ! $slice->is_reference() and ! $self->is_haplotype($slice,$dba) ) {
 #  if ( 0 ) {
     $patch = 1;
     my $slices = $sa->fetch_by_region_unique( $slice->coord_system_name(),$slice->seq_region_name() );
