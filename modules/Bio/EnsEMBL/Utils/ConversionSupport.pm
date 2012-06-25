@@ -884,7 +884,6 @@ sub get_chrlength {
 
   my @chromosomes = map { $_->seq_region_name } 
     @{ $sa->fetch_all($type,$version,$include_non_reference) };
-  print "886: ".join(" ",@chromosomes);
   my %chr = map { $_ => $sa->fetch_by_region($type, $_, undef, undef, undef, $version)->length } @chromosomes;
 
   my @wanted = $self->param('chromosomes');
