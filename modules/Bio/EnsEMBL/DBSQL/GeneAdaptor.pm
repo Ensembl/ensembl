@@ -221,7 +221,7 @@ sub fetch_by_display_label {
 =head2 fetch_all_by_display_label
 
   Arg [1]    : String $label - display label of genes to fetch
-  Example    : my @genes = @{$geneAdaptor->fetch_by_display_label("PPP1R2P1")};
+  Example    : my @genes = @{$geneAdaptor->fetch_all_by_display_label("PPP1R2P1")};
   Description: Returns all genes which have the given display label or undef if
                there are none. 
   Returntype : listref of Bio::EnsEMBL::Gene objects
