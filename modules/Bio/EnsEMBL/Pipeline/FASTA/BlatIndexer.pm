@@ -47,7 +47,7 @@ Allowed parameters are:
 =item base_path - The base of the dumps
 
 =item index     - The type of file to index; supported values are empty, 
-                  I<dna> or I<dna_rm>. If specified we will look for this
+                  I<dna>, I<dna_sm> or I<dna_rm>. If specified we will look for this
                   string in the filename surrounded by '.' e.g. .dna.
 
 =back
@@ -76,7 +76,7 @@ sub param_defaults {
   return {
     program => 'faToTwoBit',
     port_offset => 30000,
-    'index' => 'dna', #or dna_rm/''
+    'index' => 'dna', #or dna_rm and dna_sm
   };
 }
 
@@ -196,7 +196,14 @@ sub target_file {
 
 sub target_dir {
   my ($self) = @_;
-  return $self->get_dir('blat', $self->param('index'));
+  my $index = $self->param('index');
+  my $base_dir  = ($index eq 'dna')     ? 'blat' 
+                : ($index eq 'dna_rm')  ? 'blat_rm' 
+                : ($index eq 'dna_sm')  ? 'blat_sm' 
+                :                         q{}
+                ;
+  $self->throw(sprintf('Cannot decode a directory from index type "%s"', $index));
+  return $self->get_dir($base_dir, $self->param('index'));
 }
 
 sub blat_port {
