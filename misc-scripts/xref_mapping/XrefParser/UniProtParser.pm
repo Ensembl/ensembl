@@ -449,6 +449,10 @@ sub create_xrefs {
 	if($source =~ "HGNC"){
 	  next;
 	}
+	if($source =~ "Orphanet"){
+	  #we don't want to parse Orphanet xrefs via Uniprot, we get them from Orphanet with descriptions
+	  next;
+	}
 	if (exists $dependent_sources{$source} ) {
 	  # create dependent xref structure & store it
 	  my %dep;
