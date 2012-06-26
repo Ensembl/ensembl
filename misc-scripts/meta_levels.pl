@@ -146,6 +146,6 @@ Usage: perl $0 <options>
    If you like to patch just a single database you can also use this
    command line :
 
-   perl meta_levels.pl --host ... --user ... --pass ... --port ... --name ...
+   perl meta_levels.pl --host ... --user ... --pass ... --port ... --dbname ...
 EOF
 } ## end sub usage
