@@ -2000,10 +2000,6 @@ sub get_all_Genes {
     $ga = $self->adaptor->db->get_GeneAdaptor();
   }
 
-  return
-    $ga->fetch_all_by_Slice( $self, $logic_name, $load_transcripts,
-                             $source, $biotype );
-
 ## circular BOF
   my $sl1 =
     Bio::EnsEMBL::CircularSlice->new(
