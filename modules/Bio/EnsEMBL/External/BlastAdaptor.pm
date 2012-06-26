@@ -955,7 +955,7 @@ sub clean_blast_database{
     $c++;
     my $q_del = sprintf( $q_del_tmpl, $ticket_id );
     my $sth = $self->dbc->db_handle->prepare($q_del);
-#    my $rv = $sth->execute() || $self->throw( $sth->errstr );
+    my $rv = $sth->execute() || $self->throw( $sth->errstr );
   }
   warn "Purging $days days: Deleted $c rows\n";
 
