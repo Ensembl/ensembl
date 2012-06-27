@@ -157,7 +157,7 @@ sub slurp {
 	work_with_file($file, 'r', sub {
 	  my ($fh) = @_;
 	  binmode($fh) if $binary;
-    my $size_left = -s $fh;
+    my $size_left = -s $file;
     while( $size_left > 0 ) {
       my $read_cnt = sysread($fh, $contents, $size_left, length($contents));
       unless( $read_cnt ) {
