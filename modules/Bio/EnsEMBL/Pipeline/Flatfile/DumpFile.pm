@@ -106,7 +106,7 @@ sub run {
     gz_work_with_file($path, 'w', sub {
       my ($fh) = @_;
       foreach my $slice (@non_chromosomes) {
-        $self->fine('Dumping non-nhromosomal %s', $slice->name());
+        $self->fine('Dumping non-chromosomal %s', $slice->name());
         $seq_dumper->$target($slice, $fh);
       }
       return;
