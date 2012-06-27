@@ -191,6 +191,9 @@ sub get_dba_args_for_opts {
 		}
 		for my $dbname (@dbnames) {
 
+      #Decipher group of DBAdaptor by capturing the name_name(_name?)_core_ code. Otherwise we don't know 
+      my ($group) = $dbname =~ /^[a-z]+_[a-z0-9]+(?:_[a-z0-9]+)?_([a-z]+)(?:_\d+)?_\d+/;
+            
 			my $multi = 0;
 			my $species_ids = [ [ 1, undef ] ];
 			if ( !$single_species ) {
@@ -208,7 +211,7 @@ sub get_dba_args_for_opts {
 				}
 			}
 			for my $species_id ( @{$species_ids} ) {
-				push @db_args, {
+				my $args = {
 					-HOST            => $opts->{$host},
 					-USER            => $opts->{$user},
 					-PORT            => $opts->{$port},
@@ -218,6 +221,8 @@ sub get_dba_args_for_opts {
 					-SPECIES_ID      => $species_id->[0],
 					-SPECIES         => $species_id->[1],
 					-MULTISPECIES_DB => $multi };
+				$args->{-GROUP} = $group if $group;
+				push(@db_args, $args);
 			}
 		}
 	} ## end if ( defined $opts->{$host...})

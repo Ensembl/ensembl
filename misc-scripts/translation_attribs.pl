@@ -135,8 +135,8 @@ for my $db_args ( @{ $cli_helper->get_dba_args_for_opts($opts) } ) {
 		$other_dbname =~ s/$1/core/;
 
 		$opts->{dbname} = $other_dbname;
-		#for vega databases, add the core as the dna database
-		my $core_db = Bio::EnsEMBL::DBSQL::DBAdaptor->new( %{$db_args} );
+		#for vega and otherfeatures databases, add the core as the dna database
+		my $core_db = Bio::EnsEMBL::DBSQL::DBAdaptor->new( %{$db_args}, -DBNAME => $other_dbname, -GROUP => 'core' );
 		$dba->dnadb($core_db);
 	}
 
