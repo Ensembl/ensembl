@@ -91,7 +91,6 @@ sub pipeline_analyses {
           4 => 'CopyDNA',
           5 => 'ChecksumGeneratorFactory'
         },
-        -rc_id => 1,
       },
       
       ######### DUMPING DATA
@@ -110,7 +109,7 @@ sub pipeline_analyses {
         -can_be_empty     => 1,
         -max_retry_count  => 1,
         -hive_capacity    => 10,
-        -rc_id => 3,
+        -rc_name          => 'dump',
       },
       
       {
@@ -123,14 +122,13 @@ sub pipeline_analyses {
         -max_retry_count  => 1,
         -hive_capacity    => 10,
         -can_be_empty     => 1,
-        -rc_id => 4,
+        -rc_name          => 'dump',
         -wait_for         => 'DumpDNA' #block until DNA is done
       },
       
       {
         -logic_name => 'ConcatFiles',
         -module     => 'Bio::EnsEMBL::Pipeline::FASTA::ConcatFiles',
-        -rc_id      => 1,
         -can_be_empty => 1,
         -max_retry_count => 5,
         -flow_into  => {
@@ -143,13 +141,11 @@ sub pipeline_analyses {
       {
         -logic_name => 'CopyDNA',
         -module     => 'Bio::EnsEMBL::Pipeline::FASTA::CopyDNA',
-        -rc_id      => 1,
         -can_be_empty => 1,
         -hive_capacity => 5,
         -parameters => {
           ftp_dir => $self->o('ftp_dir')
         },
-        -rc_id => 1,
       },
       
       ######## INDEXING
@@ -162,7 +158,7 @@ sub pipeline_analyses {
         },
         -hive_capacity => 10,
         -can_be_empty => 1,
-        -rc_id => 5,
+        -rc_name => 'indexing',
       },
       
       {
@@ -176,7 +172,6 @@ sub pipeline_analyses {
         -flow_into => {
           1 => [qw/SCPBlast/],
         },
-        -rc_id => 1,
       },
       
       {
@@ -190,7 +185,6 @@ sub pipeline_analyses {
         -flow_into => {
           1 => [qw/SCPBlast/],
         },
-        -rc_id => 1,
       },
       
       {
@@ -203,7 +197,7 @@ sub pipeline_analyses {
         },
         -can_be_empty => 1,
         -hive_capacity => 5,
-        -rc_id => 5,
+        -rc_name => 'indexing',
       },
       
       {
@@ -216,7 +210,7 @@ sub pipeline_analyses {
         },
         -can_be_empty => 1,
         -hive_capacity => 5,
-        -rc_id => 5,
+        -rc_name => 'indexing',
       },
       
       ######## COPYING
@@ -235,7 +229,6 @@ sub pipeline_analyses {
         },
         -hive_capacity => 3,
         -can_be_empty => 1,
-        -rc_id => 1,
         -wait_for => [qw/DumpDNA DumpGenes BlastDNAIndex BlastGeneIndex BlastPepIndex/]
       },
       
@@ -249,7 +242,6 @@ sub pipeline_analyses {
           input_id => { 'dir' => '#dir#' },
           fan_branch_code => 2,
         },
-        -rc_id => 1,
         -wait_for   => [qw/DumpDNA DumpGenes BlastDNAIndex BlastGeneIndex BlastPepIndex/],
         -flow_into  => { 2 => ['ChecksumGenerator'] } 
       },
@@ -258,7 +250,6 @@ sub pipeline_analyses {
         -logic_name => 'ChecksumGenerator',
         -module     => 'Bio::EnsEMBL::Pipeline::ChecksumGenerator',
         -hive_capacity => 10,
-        -rc_id      => 1,
       },
       
       ####### NOTIFICATION
@@ -270,7 +261,6 @@ sub pipeline_analyses {
           email   => $self->o('email'),
           subject => $self->o('pipeline_name').' has finished',
         },
-        -rc_id      => 1,
         -wait_for   => ['SCPBlast', 'ChecksumGenerator'],
       }
     
@@ -298,11 +288,8 @@ sub beekeeper_extra_cmdline_options {
 sub resource_classes {
     my $self = shift;
     return {
-      0 => { -desc => 'default',      'LSF' => '-q normal -M1000000 -R"select[mem>1000] rusage[mem=1000]"'},
-      1 => { -desc => 'small',        'LSF' => '-q normal -M300000 -R"select[mem>300] rusage[mem=300]"'},
-      3 => { -desc => 'long_lowmem',  'LSF' => '-q long -M1000000 -R"select[mem>1000] rusage[mem=1000]"'},
-      4 => { -desc => 'long_himem',   'LSF' => '-q long -M3000000 -R"select[mem>3000] rusage[mem=3000]"'},
-      5 => { -desc => 'himem',        'LSF' => '-q normal -M3000000 -R"select[mem>3000] rusage[mem=3000]"'},
+      'dump'      => { LSF => '-q long -M1000000 -R"select[mem>1000] rusage[mem=1000]"' },
+      'indexing'  => { LSF => '-q normal -M2000000 -R"select[mem>2000] rusage[mem=2000]"' },
     }
 }
 
