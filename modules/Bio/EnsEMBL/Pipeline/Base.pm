@@ -187,18 +187,11 @@ sub fine {
 
 sub _memory_consumption {
   my ($self) = @_;
-  my $file = "/proc/$$/statm";
-  if(-f $file) {
-    my $memory;
-    work_with_file($file ,'r', sub {
-      my ($fh) = @_;
-      local $/ = undef;
-      my $content = <$fh>;
-      ($memory) = split / /, $content;
-    });
-    return sprintf('%dMB', ($memory / 1024 / 1024));
-  }
-  return q{?MB};
+  my $content = `ps -o rss $$ | grep -v RSS`;
+  return q{?MB} if $? >> 8 != 0;
+  $content =~ s/\s+//g;
+  my $mem = $content/1024;
+  return sprintf('%.2fMB', $mem);
 }
 
 sub find_files {
