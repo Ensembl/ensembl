@@ -5,6 +5,7 @@ use warnings;
 use base qw/Bio::EnsEMBL::Hive::Process/;
 
 use Bio::EnsEMBL::Utils::Exception qw/throw/;
+use Bio::EnsEMBL::Utils::IO qw/slurp/;
 use Bio::EnsEMBL::Utils::Scalar qw/check_ref/;
 use File::Find;
 use File::Spec;
@@ -164,7 +165,7 @@ sub info {
     else {
       $formatted_msg = $msg;
     }
-    printf STDERR "INFO: %s %s\n", strftime('%c',localtime()), $formatted_msg;
+    printf STDERR "INFO [%s]: %s %s\n", $self->_memory_consumption(), strftime('%c',localtime()), $formatted_msg;
   }
   return
 }
@@ -179,9 +180,19 @@ sub fine {
     else {
       $formatted_msg = $msg;
     }
-    printf STDERR "FINE: %s %s\n", strftime('%c',localtime()), $formatted_msg;
+    printf STDERR "FINE [%s]: %s %s\n", $self->_memory_consumption(), strftime('%c',localtime()), $formatted_msg;
   }
   return
+}
+
+sub _memory_consumption {
+  my ($self) = @_;
+  my $file = "/proc/$$/statm";
+  if(-f $file) {
+    my ($memory) = split / /, slurp($file);
+    return sprintf('%dMB', ($memory / 1024 / 1024));
+  }
+  return q{?MB};
 }
 
 sub find_files {
