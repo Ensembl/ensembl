@@ -396,7 +396,7 @@ $prod_dbh->disconnect;
 	    $file_name_end = "_seqreg_snp";
 	    $script = "$SERVERROOT/seq_region_stats.pl";
 	    $script_title = "seq region snp stats";
-	    $option = " -s snp -d ";
+	    $option = " -s snp -pattern ";
 	}
 	else { usage(); }
     }
