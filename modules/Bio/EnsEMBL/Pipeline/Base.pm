@@ -5,7 +5,7 @@ use warnings;
 use base qw/Bio::EnsEMBL::Hive::Process/;
 
 use Bio::EnsEMBL::Utils::Exception qw/throw/;
-use Bio::EnsEMBL::Utils::IO qw/slurp/;
+use Bio::EnsEMBL::Utils::IO qw/work_with_file/;
 use Bio::EnsEMBL::Utils::Scalar qw/check_ref/;
 use File::Find;
 use File::Spec;
@@ -189,7 +189,13 @@ sub _memory_consumption {
   my ($self) = @_;
   my $file = "/proc/$$/statm";
   if(-f $file) {
-    my ($memory) = split / /, slurp($file);
+    my $memory;
+    work_with_file($file ,'r', sub {
+      my ($fh) = @_;
+      local $/ = undef;
+      my $content = <$fh>;
+      ($memory) = split / /, $content;
+    });
     return sprintf('%dMB', ($memory / 1024 / 1024));
   }
   return q{?MB};
