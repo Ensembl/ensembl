@@ -153,7 +153,6 @@ for my $db_args ( @{ $cli_helper->get_dba_args_for_opts($opts) } ) {
 		$dba->dbc()->sql_helper()->execute_simple(
 -SQL=>"SELECT tl.translation_id FROM translation tl, transcript tr, seq_region s, coord_system c WHERE tl.transcript_id = tr.transcript_id AND tr.seq_region_id = s.seq_region_id AND s.coord_system_id = c.coord_system_id AND c.species_id = ? order by tl.translation_id",
 			-PARAMS=>[$dba->species_id()] ) };
-	my $translations = {};
 	my $tmpfile      = $opts->{tmpdir} . "/$$.pep";
 	open( TMP, "> $tmpfile" ) || warn "PEPSTAT: $!";
 	print "Retrieving translations\n";
@@ -164,7 +163,6 @@ for my $db_args ( @{ $cli_helper->get_dba_args_for_opts($opts) } ) {
 		if ( $opts->{verbose} ) {
 			print "Dumping translation dbID, $dbID...\n";
 		}
-		$translations->{$dbID} = $translation;
 		my $peptide_seq = $translation->seq();
 		if ( !( $peptide_seq =~ m/[BZX]/ig ) ) {
 			if ( $peptide_seq !~ /\n$/ ) { $peptide_seq .= "\n" }
@@ -209,12 +207,11 @@ for my $db_args ( @{ $cli_helper->get_dba_args_for_opts($opts) } ) {
 		}
 	}
 	for my $id ( keys %$attribs ) {
-		my $translation = $translations->{$id};
 		my $aas         = $attribs->{$id};
 		if ( $opts->{verbose} ) {
 			print "Storing attribs for translation dbID, $id...\n";
 		}
-		store_translation_attrib( $attributeAdaptor, $translation, $aas );
+		store_translation_attrib( $attributeAdaptor, $id, $aas );
 	}
 } ## end for my $db_args ( @{ $cli_helper...})
 
