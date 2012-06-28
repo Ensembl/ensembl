@@ -129,33 +129,34 @@ my $DEFAULT_EXCEPTION = 1000;
 sub throw {
   my $string = shift;
 
-  #for backwards compatibility with Bio::EnsEMBL::Root::throw
-  #allow to be called as an object method as well as class method
-  #Root function now deprecated so call will have the string instead.
+  # For backwards compatibility with Bio::EnsEMBL::Root::throw:  Allow
+  # to be called as an object method as well as class method.  Root
+  # function now deprecated so call will have the string instead.
 
-  $string = shift if(ref($string)); #skip object if one provided
-  $string = shift if($string eq "Bio::EnsEMBL::Utils::Exception");
+  $string = shift if ( ref($string) );    # Skip object if one provided.
+  $string = shift if ( $string eq "Bio::EnsEMBL::Utils::Exception" );
 
-  my $level  = shift;
+  my $level = shift;
+  $level = $DEFAULT_EXCEPTION if ( !defined($level) );
 
-  $level = $DEFAULT_EXCEPTION if(!defined($level));
-
-  if($VERBOSITY < $level) {
-    die("\n"); #still die, but silently
+  if ( $VERBOSITY < $level ) {
+    die("\n");    # still die, but silently
   }
 
   my $std = stack_trace_dump(3);
 
-  my $out =
-    sprintf( "\n"
-              . "-------------------- EXCEPTION --------------------\n"
-              . "MSG: %s\n" . "%s"
-              . "Ensembl API version = %s\n"
-              . "---------------------------------------------------\n",
-            $string, $std, software_version() );
+  my $out = sprintf(
+             "\n" .
+             "-------------------- EXCEPTION --------------------\n" .
+             "MSG: %s\n" .
+             "%s" .
+             "Date (localtime)    = %s\n" .
+             "Ensembl API version = %s\n" .
+             "---------------------------------------------------\n",
+             $string, $std, scalar( localtime() ), software_version() );
 
-  die $out;
-}
+  die($out);
+} ## end sub throw
 
 
 
@@ -179,53 +180,63 @@ sub throw {
 
 sub warning {
   my $string = shift;
-  $string = shift if($string eq "Bio::EnsEMBL::Utils::Exception"); #skip object if one provided
-  my $level  = shift;
 
-   $level = $DEFAULT_WARNING if(!defined($level));
+  # See throw() for this:
+  $string = shift if ( ref($string) );    # Skip object if one provided.
+  $string = shift if ( $string eq "Bio::EnsEMBL::Utils::Exception" );
 
-  return if ($VERBOSITY < $level);
+  my $level = shift;
+  $level = $DEFAULT_WARNING if ( !defined($level) );
+
+  return if ( $VERBOSITY < $level );
 
   my @caller = caller;
   my $line = $caller[2] || '';
 
-  #use only 2 subdirs for brevity when reporting the filename
+  # Use only two sub-dirs for brevity when reporting the file name.
   my $file;
-  my @path = split(/\//, $caller[1]);
+  my @path = split( /\//, $caller[1] );
   $file = pop(@path);
   my $i = 0;
-  while(@path && $i < 2) {
+  while ( @path && $i < 2 ) {
     $i++;
-    $file = pop(@path) ."/$file";
+    $file = pop(@path) . "/$file";
   }
 
   @caller = caller(1);
   my $caller_line;
   my $caller_file;
-  $i=0;
-  if(@caller) {
-     @path = split(/\//, $caller[1]);
-     $caller_line = $caller[2];
-     $caller_file = pop(@path);
-     while(@path && $i < 2) {
-       $i++;
-       $caller_file = pop(@path) ."/$caller_file";
-     }
+  $i = 0;
+  if (@caller) {
+    @path        = split( /\//, $caller[1] );
+    $caller_line = $caller[2];
+    $caller_file = pop(@path);
+    while ( @path && $i < 2 ) {
+      $i++;
+      $caller_file = pop(@path) . "/$caller_file";
+    }
   }
 
   my $out =
-      "\n-------------------- WARNING ----------------------\n"
-    . "MSG: $string\n"
-    . "FILE: $file LINE: $line\n";
-  if ($caller_file) {
-    $out .= "CALLED BY: $caller_file  LINE: $caller_line\n";
+    sprintf( "\n" .
+             "-------------------- WARNING ----------------------\n" .
+             "MSG: %s\n" .
+             "FILE: %s LINE: %d\n",
+             $string, $file, $line );
+
+  if ( defined($caller_file) ) {
+    $out .= sprintf( "CALLED BY: %s  LINE: %d\n", $caller_file,
+                     $caller_line );
   }
-  $out .= "Ensembl API version = " . software_version() . "\n";
-  $out .= "---------------------------------------------------\n";
+  $out .= sprintf(
+           "Date (localtime)    = %s\n" .
+           "Ensembl API version = %s\n" .
+           "---------------------------------------------------\n",
+           scalar( localtime() ), software_version() );
 
-  print STDERR $out;
+  warn($out);
 
-}
+} ## end sub warning
 
 
 
