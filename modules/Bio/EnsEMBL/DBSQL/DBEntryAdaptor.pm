@@ -849,7 +849,7 @@ sub _store_or_fetch_xref {
            info_text = ?");
     $sth->bind_param(1, $dbEntry->primary_id,SQL_VARCHAR);
     $sth->bind_param(2, $dbEntry->display_id,SQL_VARCHAR);
-    $sth->bind_param(3, $dbEntry->version,SQL_VARCHAR);
+    $sth->bind_param(3, ($dbEntry->version || q{0}),SQL_VARCHAR);
     $sth->bind_param(4, $dbEntry->description,SQL_VARCHAR);
     $sth->bind_param(5, $dbRef,SQL_INTEGER);
     $sth->bind_param(6, ($dbEntry->info_type || 'NONE'), SQL_VARCHAR);
@@ -891,20 +891,18 @@ sub _store_or_fetch_xref {
             AND external_db_id = ?
             AND info_type = ?
             AND info_text = ?';
-        
         my $info_type = $dbEntry->info_type() || 'NONE';
         my $info_text = $dbEntry->info_text() || q{};
         my $version = $dbEntry->version() || q{0};
         $sth = $self->prepare( $sql );
         $sth->bind_param(1, $dbEntry->primary_id,SQL_VARCHAR);
         $sth->bind_param(2, $version, SQL_VARCHAR);
-        $sth->bind_param(2, $dbRef, SQL_INTEGER);
-        $sth->bind_param(3, $info_type, SQL_VARCHAR);
-        $sth->bind_param(4, $info_text, SQL_VARCHAR);
+        $sth->bind_param(3, $dbRef, SQL_INTEGER);
+        $sth->bind_param(4, $info_type, SQL_VARCHAR);
+        $sth->bind_param(5, $info_text, SQL_VARCHAR);
         $sth->execute();
         ($xref_id) = $sth->fetchrow_array();
         $sth->finish;
-        
         if(!$xref_id) {
           my $msg = 'Cannot find an xref id for %s (version=%d) with external db id %d.';
           throw(sprintf($msg, $dbEntry->primary_id(), $version, $dbRef))
