@@ -128,7 +128,8 @@ sub beekeeper_extra_cmdline_options {
 sub resource_classes {
     my $self = shift;
     return {
-      1 => { -desc => 'dump', 'LSF' => '-q normal -M2000000 -R"select[mem>2000] rusage[mem=2000]"'},
+      #Max memory consumed in a previous run was 1354MB. This gives us some breathing room
+      1 => { -desc => 'dump', 'LSF' => '-q normal -M1600000 -R"select[mem>1600] rusage[mem=1600]"'},
     }
 }
 
