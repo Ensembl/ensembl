@@ -52,6 +52,7 @@ use Bio::EnsEMBL::Analysis;
 use Bio::EnsEMBL::DBSQL::BaseAdaptor;
 use Bio::EnsEMBL::Utils::Exception;
 
+
 use vars qw(@ISA);
 use strict;
 
@@ -145,6 +146,7 @@ sub fetch_all {
 
 sub fetch_all_by_feature_class {
   my $self = shift;
+  deprecate("Deprecated. Hard-coded logic is not supported");
   my $feat_class = shift || throw( "Need a feature type, e.g. SimpleFeature" );
  
   my @feature_classes = $self->feature_classes; # List of all feature classes
@@ -191,6 +193,7 @@ SELECT DISTINCT analysis_id FROM %s |;
 =cut
 
 sub feature_classes{
+  deprecate("Deprecated. Hard-coded logic is not supported");
   # Can't think of a way to do this programatically, so hard-coded
   return qw(
             DensityFeature
