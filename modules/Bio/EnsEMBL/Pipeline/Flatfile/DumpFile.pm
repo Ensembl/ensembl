@@ -107,7 +107,17 @@ sub run {
       my ($fh) = @_;
       foreach my $slice (@non_chromosomes) {
         $self->fine('Dumping non-chromosomal %s', $slice->name());
-        $seq_dumper->$target($slice, $fh);
+        eval {
+          $seq_dumper->$target($slice, $fh);
+        };
+        if($@) {
+          my $prod = $self->production_name();
+          if($prod eq 'petromyzon_marinus' && $@ =~ /linkage/) {
+            $self->info('Encountered an error for "%s" but we know of this xref error: %s', $prod, $@);
+            next;
+          }
+          die "Error found and we do not know how to deal with it: $@";
+        }
       }
       return;
     });
