@@ -37,9 +37,7 @@ my %attrib_codes = %{
 	$prod_dba->dbc()->sql_helper()->execute_into_hash(
 		-SQL =>
 "select distinct b.name, code from biotype b join attrib_type using(attrib_type_id) where is_current = 1 and db_type like '%core%' and object_type = 'gene' order by b.name"
-	),
-	,
-	{ Columns => [ 1, 2 ] } };
+	) };
 
 #add known and novel protein coding attrib types
 $attrib_codes{'known protein_coding'} = 'GeneNo_knwCod';
