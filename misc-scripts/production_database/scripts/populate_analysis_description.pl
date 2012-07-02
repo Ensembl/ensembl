@@ -172,6 +172,29 @@ my %data;
     $data{$full_db_name}{$logic_name} = { %{ \%hash } };
   }
 
+  if ($dbtype eq 'pre') {
+    my $sth =
+      $dbh->prepare( 'SELECT db_name, logic_name, '
+                  . 'description, display_label, displayable, data '
+                  . 'FROM analysis_description ad, species s, analysis_web_data aw '
+                  . 'LEFT JOIN web_data wd '
+                  . 'ON wd.web_data_id = aw.web_data_id '
+                  . 'WHERE ad.analysis_description_id = aw.analysis_description_id AND '
+                  . 'aw.species_id = s.species_id AND '
+                  . 'aw.db_type = "' . $dbtype . '" AND '
+                  . 'db_name =?' );
+    $sth->execute($species) ;
+    my ( $db_name, $logic_name, %hash) ;
+    $sth->bind_columns( \( $db_name,        $logic_name,
+                         $hash{'description'}, $hash{'display_label'},
+                         $hash{'displayable'}, $hash{'web_data'} ) );
+    while ( $sth->fetch() ) {
+      $data{$db_name}{$logic_name} = { %{ \%hash } };
+    }
+
+  }
+
+
   $dbh->disconnect();
 }
 
@@ -198,24 +221,14 @@ my %data;
     if ( defined($dbpattern) && $dbname !~ /$dbpattern/ ) { next }
 
     my $dbdata = $data{$dbname};
+    if (defined $species) {
+      $dbdata = $data{$species};
+    }
     if ( !defined($dbdata) ) {
-      if ( defined($species) && defined($dbtype) ) {
-        my @keys = grep( /^${species}_${dbtype}_/, keys(%data) );
-        if ( @keys > 1 ) {
-          printf( "ERROR: Found more than one possible data entry " .
-                    "for species '%s', database type '%s':\n",
-                  $species, $dbtype );
-          printf( "ERROR: %s\n", join( ', ', @keys ) );
-          next;
-        }
-        $dbdata = $data{ $keys[0] };
-      }
-      else {
-        printf( "ERROR: Can not find data for database '%s' " .
-                  "(skipping it)!\n",
-                $dbname );
-        next;
-      }
+      printf( "ERROR: Can not find data for database '%s' " .
+                "(skipping it)!\n",
+              $dbname );
+      next;
     }
 
     print( '=' x 80, "\n" );
