@@ -1605,8 +1605,7 @@ sub get_all_RepeatFeatures {
     ReturnType  : Bio::EnsEMBL::Variation::LDFeatureContainer
     Exceptions  : none
     Caller      : contigview, snpview
-     Status     : At Risk
-                : Variation database is under development.
+     Status     : Stable
 
 =cut
 
@@ -1694,32 +1693,30 @@ sub _get_VariationFeatureAdaptor {
 }
 
 =head2 get_all_VariationFeatures
-
-    Args        : $filter [optional] (deprecated)
+    Args        : $so_terms [optional] - list of so_terms to limit the fetch to
     Description : Returns all germline variation features on this slice. This function will 
                   only work correctly if the variation database has been attached to the core 
                   database.
-                  If (the deprecated parameter) $filter is "genotyped" return genotyped SNPs only, 
-                  otherwise return all germline variations.
+                  If $so_terms is specified, only variation features with a consequence type
+                  that matches or is an ontological child of any of the supplied terms will
+                  be returned
     ReturnType  : listref of Bio::EnsEMBL::Variation::VariationFeature
     Exceptions  : none
     Caller      : contigview, snpview
-    Status      : At Risk
-                : Variation database is under development.
+    Status      : Stable
 
 =cut
 
 sub get_all_VariationFeatures{
-  my $self = shift;
-  my $filter = shift;
+  my $self     = shift;
+  my $so_terms = shift;
 
-  if ($filter && $filter eq 'genotyped') {
-    deprecate("Don't pass 'genotyped' parameter, call get_all_genotyped_VariationFeatures instead");
-    return $self->get_all_genotyped_VariationFeatures;
-  }
-    
   if (my $vf_adaptor = $self->_get_VariationFeatureAdaptor) {
-    return $vf_adaptor->fetch_all_by_Slice($self);
+    if (!$so_terms) {
+      return $vf_adaptor->fetch_all_by_Slice($self);
+    } else {
+      return $vf_adaptor->fetch_all_by_Slice_SO_terms($self, $so_terms);
+    }
   }
   else {
     return [];
@@ -1733,8 +1730,7 @@ sub get_all_VariationFeatures{
                   work correctly if the variation database has been attached to the core database.
     ReturnType  : listref of Bio::EnsEMBL::Variation::VariationFeature
     Exceptions  : none
-    Status      : At Risk
-                : Variation database is under development.
+    Status      : Stable
 
 =cut
 
@@ -1766,8 +1762,7 @@ sub get_all_somatic_VariationFeatures {
     ReturnType  : listref of Bio::EnsEMBL::Variation::VariationFeature
     Exceptions  : none
     Caller      : contigview, snpview
-    Status      : At Risk
-                : Variation database is under development.
+    Status      : Stable
 
 =cut
 
@@ -1794,8 +1789,7 @@ sub get_all_VariationFeatures_with_annotation{
                   (see get_all_VariationFeatures_with_annotation for further documentation)
     ReturnType  : listref of Bio::EnsEMBL::Variation::VariationFeature
     Exceptions  : none
-    Status      : At Risk
-                : Variation database is under development.
+    Status      : Stable
 
 =cut
 
@@ -1822,8 +1816,7 @@ sub get_all_somatic_VariationFeatures_with_annotation{
     ReturnType : listref of Bio::EnsEMBL::Variation::VariationFeature
     Exceptions : none
     Caller     : contigview, snpview
-    Status     : At Risk
-               : Variation database is under development.
+    Status     : Stable
 
 =cut
 
@@ -1916,7 +1909,7 @@ sub _get_StructuralVariationFeatureAdaptor {
     ReturnType  : listref of Bio::EnsEMBL::Variation::StructuralVariationFeature
     Exceptions  : none
     Caller      : contigview, snpview, structural_variation_features
-    Status      : At Risk
+    Status      : Stable
 
 =cut
 
@@ -1980,7 +1973,7 @@ sub get_all_StructuralVariationFeatures {
     ReturnType : listref of Bio::EnsEMBL::Variation::StructuralVariationFeature
     Exceptions : none
     Caller     : contigview, snpview
-    Status     : At Risk
+    Status     : Stable
 
 =cut
 
@@ -2013,7 +2006,7 @@ sub get_all_StructuralVariationFeatures_by_VariationSet {
     ReturnType  : listref of Bio::EnsEMBL::Variation::StructuralVariationFeature
     Exceptions  : none
     Caller      : contigview, snpview, structural_variation_features
-    Status      : At Risk
+    Status      : Stable
 
 =cut
 
