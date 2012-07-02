@@ -135,3 +135,16 @@ h2. Running the Pipeline
 #	@beekeeper.pl -url mysql://usr:pass@server:port/db -reg_conf reg.pm -loop -sleep 5 2>&1 > my_run.log &@
 # Wait
 
+h2. Running without a Pipeline
+
+Hive gives us the ability to run any Process outside of a database pipeline 
+run using @standaloneJob.pl@. We will list some useful commands to run
+
+h3. Dumping a Single Species
+
+bc. 
+  standaloneJob.pl Bio::EnsEMBL::Pipeline::FASTA::DumpFile \
+  -reg_conf reg.pm -debug 2 \
+  -release 67 -species homo_sapiens \
+  -base_path /path/to/dumps
+  
