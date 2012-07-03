@@ -933,40 +933,31 @@ sub clean_blast_database{
   my $dbh = $self->dbc->db_handle;
 
   # Get list of tickets > $days days old
-  my $q = qq/
-SELECT ticket 
-FROM   blast_ticket
-WHERE  update_time < SUBDATE( NOW(), INTERVAL $days DAY ) /;
+  my $q = qq(
+    SELECT ticket_id
+      FROM blast_ticket
+     WHERE update_time < SUBDATE( NOW(), INTERVAL $days DAY ) );
 
+  my $sth = $self->dbc->db_handle->prepare($q);
+  my $rv = $sth->execute() || $self->throw( $sth->errstr );
+  my $res = $sth->fetchall_arrayref;
+  $sth->finish;
 
-#need to dort this bit - use and a loop and "Delete ... limit 1000" to prevent tying up the database
-
-#  my $sth = $self->dbc->db_handle->prepare($q);
-#  my $rv = $sth->execute() || $self->throw( $sth->errstr );
-#  my $res = $sth->fetchall_arrayref;
-#  $sth->finish;
-  
   # Delete result and ticket rows associated with old tickets
-#  my $q_del_tmpl = qq/
-#DELETE
-#FROM   blast_%s
-#WHERE  ticket like "%s" /;
-#
-#  my @types = ( 'result','ticket' );
-#  my %num_deleted = map{ $_=>0 } @types;
-#
-#  foreach my $row( @$res ){
-#    my $ticket = $row->[0];
-#
-#    foreach my $type( @types ){
-#      my $q_del = sprintf( $q_del_tmpl, $type, $ticket );
-#      my $sth = $self->db->db_handle->prepare($q_del);
-#      my $rv = $sth->execute() || $self->throw( $sth->errstr );
-#      $num_deleted{$type} += $rv;
-#    }
-#  }
-#  map{ warn("Purging $days days: Deleted $num_deleted{$_} rows of type $_\n") }
-#  keys %num_deleted;
+  my $q_del_tmpl = qq(
+     DELETE
+       FROM blast_ticket
+      WHERE ticket_id = %s);
+
+  my $c = 0;
+  foreach my $row( @$res ){
+    my $ticket_id = $row->[0];
+    $c++;
+    my $q_del = sprintf( $q_del_tmpl, $ticket_id );
+    my $sth = $self->dbc->db_handle->prepare($q_del);
+    my $rv = $sth->execute() || $self->throw( $sth->errstr );
+  }
+  warn "Purging $days days: Deleted $c rows\n";
 
   # Drop daily Result, Hit and HSP tables not updated within $days days
   my $q_find = 'show table status like ?';
@@ -983,7 +974,7 @@ WHERE  update_time < SUBDATE( NOW(), INTERVAL $days DAY ) /;
     my $table_name  = $row->[0];  ## table name
     my $num_rows    = $row->[4];  ## # Rows...
     my $update_time = $row->[12]; ## update time ---  Should be a string like 2003-08-15 10:36:56
-		next unless $update_time; #cope with an occasional innodb table that has no update time
+    next unless $update_time; #cope with an occasional innodb table that has no update time
     my @time = split( /[-:\s]/, $update_time );
    
     my $epoch_then = timelocal( $time[5], $time[4],   $time[3], 
@@ -1003,7 +994,6 @@ WHERE  update_time < SUBDATE( NOW(), INTERVAL $days DAY ) /;
 	  $self->throw( $sth_log->errstr );
     }
   }
-
 
   return 1;
 }
