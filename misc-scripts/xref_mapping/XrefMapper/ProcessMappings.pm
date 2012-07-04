@@ -145,9 +145,14 @@ sub process_map_file{
   my $ret = 1;
 
 
+ 
   my $ensembl_type = "Translation";
   if($map_file =~ /_dna_/){
     $ensembl_type = "Transcript";
+  }
+  my $check_biotype;
+  if ($map_file =~ /ExonerateGappedBest5_/) {
+      $check_biotype = 1;
   }
 
   my $mh;
@@ -195,11 +200,6 @@ sub process_map_file{
   my $best_identity = 0;
   my $best_score = 0;
   
-  my %refseq_sources = ('RefSeq_mRNA' => 1, 
-			'RefSeq_mRNA_predicted' => 1, 
-			'RefSeq_ncRNA' => 1, 
-			'RefSeq_ncRNA_predicted' => 1);
-
   my %mRNA_biotypes = ( 'protein_coding' => 1,
 			'TR_C_gene' => 1,
 			'IG_V_gene' => 1,
@@ -231,24 +231,28 @@ sub process_map_file{
 	
     } else {
 
-	#check if source name is RefSeq_ncRNA or RefSeq_mRNA
-	#if yes check biotype, if ok store object xref
-	$source_name_sth->execute($query_id);
-	my ($source_name)  = $source_name_sth->fetchrow_array;
-	if (exists($refseq_sources{$source_name})) {
+	if ($check_biotype) {
 
-	    #make sure mRNA xrefs are matched to protein_coding biotype only
-	    $biotype_sth->execute($target_id);
-	    my ($biotype) = $biotype_sth->fetchrow_array; 
+	    #check if source name is RefSeq_ncRNA or RefSeq_mRNA
+	    #if yes check biotype, if ok store object xref
+	    $source_name_sth->execute($query_id);
+	    my ($source_name)  = $source_name_sth->fetchrow_array;
+
+	    if ($source_name && $source_name =~ /^RefSeq_[m|nc]RNA/) { 
+
+		#make sure mRNA xrefs are matched to protein_coding biotype only
+		$biotype_sth->execute($target_id);
+		my ($biotype) = $biotype_sth->fetchrow_array; 
 	   
-	    if ($source_name =~ /^RefSeq_mRNA/ && exists($mRNA_biotypes{$biotype})) {
-	       $load_object_xref = 1;
+		if ($source_name =~ /^RefSeq_mRNA/ && exists($mRNA_biotypes{$biotype})) {
+		    $load_object_xref = 1;
+		}
+		if ($source_name =~ /^RefSeq_ncRNA/ && !exists($mRNA_biotypes{$biotype}) ) {
+		    $load_object_xref = 1;	
+		}	
+	    } else {
+		$load_object_xref = 1;
 	    }
-	    if ($source_name =~ /^RefSeq_ncRNA/ && !exists($mRNA_biotypes{$biotype}) ) {
-	       $load_object_xref = 1;	
-	    }	
-	} else {
-	    $load_object_xref = 1;
 	}
 
     }
