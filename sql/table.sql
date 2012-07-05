@@ -224,7 +224,7 @@ Note seq_region_start is always less that seq_region_end, i.e. when the exon is 
 @column seq_region_strand           Sequence region strand: 1 - forward; -1 - reverse.
 @column phase                       The place where the intron lands inside the codon - 0 between codons, 1 between the 1st and second base, 2 between the second and 3rd base. Exons therefore have a start phase anda end phase, but introns have just one phase.
 @column end_phase                   Usually, end_phase = (phase + exon_length)%3 but end_phase could be -1 if the exon is half-coding and its 3 prime end is UTR.
-@column is_current		    1 - exon is current.
+@column is_current		    1 - exon is current. Always set to 1 in ensembl dbs, but needed for otterlace dbs
 @column is_constitutive		    1 - exon is constitutive.
 @column stable_id		    Release-independent stable identifier.
 @column version              	    Stable identifier version number.
@@ -365,7 +365,7 @@ CREATE TABLE exon_transcript (
 @column source                      e.g ensembl, havana etc.
 @column status                      Status, e.g.'KNOWN', 'NOVEL', 'PUTATIVE', 'PREDICTED', 'KNOWN_BY_PROJECTION', 'UNKNOWN'.
 @column description                 Gene description
-@column is_current		    1 - gene is current.
+@column is_current		    1 - gene is current. Always set to 1 in ensembl dbs, but needed for otterlace dbs
 @column canonical_transcript_id     Foreign key references to the @link transcript table.
 @column canonical_annotation        Canonical annotation.
 @column stable_id		    Release-independent stable identifier.
@@ -717,7 +717,7 @@ Note that a transcript is usually associated with a translation, but may not be,
 @column biotype                     Biotype, e.g. protein_coding.
 @column status                      Status, e.g.'KNOWN', 'NOVEL', 'PUTATIVE', 'PREDICTED', 'KNOWN_BY_PROJECTION', 'UNKNOWN'.
 @column description                 Transcript description.
-@column is_current		    Indicates a current transcript.
+@column is_current		    Indicates a current transcript. Always set to 1 in ensembl dbs, but needed for otterlace dbs
 @column canonical_translation_id    Foreign key references to the @link translation table.
 @column stable_id		    Release-independent stable identifier.
 @column version              	    Stable identifier version number.
