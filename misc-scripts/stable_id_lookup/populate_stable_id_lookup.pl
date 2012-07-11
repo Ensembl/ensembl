@@ -35,7 +35,7 @@ GetOptions( "lhost|lh=s" => \$lhost,
 	    "db_version=i" => \$db_version,
 	    "host|h=s",\@host,
 	    "user|u=s",\@user,
-	    "port=s",\@port,
+	    "port=i",\@port,
 	    "help" ,     \&usage,
 	    
 );
