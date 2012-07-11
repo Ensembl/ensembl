@@ -826,7 +826,7 @@ sub work_with_db_handle {
   return;
 }
 
-=head2
+=head2 prevent_disconnect
 
   Arg[1]      : CodeRef $callback
   Example     : $dbc->prevent_disconnect(sub { $dbc->do('do something'); $dbc->do('something else')});
