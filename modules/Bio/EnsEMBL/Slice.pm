@@ -1709,14 +1709,9 @@ sub _get_VariationFeatureAdaptor {
 
 sub get_all_VariationFeatures{
   my $self     = shift;
-  my $so_terms = shift;
 
   if (my $vf_adaptor = $self->_get_VariationFeatureAdaptor) {
-    if (!$so_terms) {
-      return $vf_adaptor->fetch_all_by_Slice($self);
-    } else {
-      return $vf_adaptor->fetch_all_by_Slice_SO_terms($self, $so_terms);
-    }
+    return $vf_adaptor->fetch_all_by_Slice_SO_terms($self, @_);
   }
   else {
     return [];
