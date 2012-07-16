@@ -150,10 +150,6 @@ sub process_map_file{
   if($map_file =~ /_dna_/){
     $ensembl_type = "Transcript";
   }
-  my $check_biotype;
-  if ($map_file =~ /ExonerateGappedBest5_/) {
-      $check_biotype = 1;
-  }
 
   my $mh;
   if(!(open $mh ,"<",$map_file) ){
@@ -231,14 +227,12 @@ sub process_map_file{
 	
     } else {
 
-	if ($check_biotype) {
-
 	    #check if source name is RefSeq_ncRNA or RefSeq_mRNA
 	    #if yes check biotype, if ok store object xref
 	    $source_name_sth->execute($query_id);
 	    my ($source_name)  = $source_name_sth->fetchrow_array;
 
-	    if ($source_name && $source_name =~ /^RefSeq_[m|nc]RNA/) { 
+	    if ($source_name && $source_name =~ /^RefSeq_(m|nc)RNA/) { 
 
 		#make sure mRNA xrefs are matched to protein_coding biotype only
 		$biotype_sth->execute($target_id);
@@ -253,8 +247,7 @@ sub process_map_file{
 	    } else {
 		$load_object_xref = 1;
 	    }
-	}
-
+	
     }
 
     $last_query_id = $query_id;
