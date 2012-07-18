@@ -99,12 +99,13 @@ sub index_file {
   my ($self, $file) = @_;
   my $molecule_arg = ($self->param('molecule') eq 'dna') ? '-n' : '-p' ;
   my $silence = ($self->debug()) ? 0 : 1;
+  my $target_dir = $self->target_dir();
   my $target_file = $self->target_file($file);
   my $db_title = $self->db_title($file);
   my $date = $self->db_date();
   
-  my $cmd = sprintf(q{%s %s -q%d -I -t %s -d %s -o %s %s }, 
-    $self->param('program'), $molecule_arg, $silence, $db_title, $date, $target_file, $file);
+  my $cmd = sprintf(q{cd %s && %s %s -q%d -I -t %s -d %s -o %s %s }, 
+    $target_dir, $self->param('program'), $molecule_arg, $silence, $db_title, $date, $target_file, $file);
   
   $self->info('About to run "%s"', $cmd);
   my $output = `$cmd 2>&1`;
