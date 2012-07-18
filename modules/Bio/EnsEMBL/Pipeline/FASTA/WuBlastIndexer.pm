@@ -44,6 +44,8 @@ Allowed parameters are:
 
 =item base_path - The base of the dumps
 
+=item release - Required for correct DB naming
+
 =back
 
 =cut
@@ -57,6 +59,7 @@ use base qw/Bio::EnsEMBL::Pipeline::FASTA::Indexer/;
 use Bio::EnsEMBL::Utils::Exception qw/throw/;
 use File::Copy qw/copy/;
 use File::Spec;
+use POSIX qw/strftime/;
 
 sub param_defaults {
   my ($self) = @_;
@@ -97,9 +100,11 @@ sub index_file {
   my $molecule_arg = ($self->param('molecule') eq 'dna') ? '-n' : '-p' ;
   my $silence = ($self->debug()) ? 0 : 1;
   my $target_file = $self->target_file($file);
+  my $db_title = $self->db_title($file);
+  my $date = $self->db_date();
   
-  my $cmd = sprintf(q{%s %s -q%d -I -o %s %s }, 
-    $self->param('program'), $molecule_arg, $silence, $target_file, $file);
+  my $cmd = sprintf(q{%s %s -q%d -I -t %s -d %s --o %s %s }, 
+    $self->param('program'), $molecule_arg, $silence, $db_title, $date, $target_file, $file);
   
   $self->info('About to run "%s"', $cmd);
   my $output = `$cmd 2>&1`;
@@ -123,6 +128,20 @@ sub target_dir {
   return $self->get_dir('blast', $self->param('type'));
 }
 
+sub db_title {
+  my ($self, $source_file) = @_;
+  my $release = $self->param('release');
+  my $title = $source_file;
+  $title =~ s/$release\.//;
+  return $title;
+}
+
+sub db_date {
+  my ($self) = @_;
+  return strftime('%d-%m-%Y', gmtime());
+}
+
+#Source like Homo_sapiens.GRCh37.68.dna.toplevel.fa
 #Filename like Homo_sapiens.GRCh37.20090401.dna.toplevel.fa
 sub target_filename {
   my ($self, $source_file) = @_;
