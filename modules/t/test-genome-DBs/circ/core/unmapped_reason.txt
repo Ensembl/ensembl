@@ -1,0 +1,2 @@
+1	exonerate failed to match in xref system	exonerate match was below the thresholds of 90%
+2	failed to map	 failed to map the cDNA viw exonerate using the cutoff of 95%

@@ -1,0 +1,4 @@
+1	ntctgs	NT contigs		70000000
+2	tilepath	Tilepath		15000000
+4	cloneset	1Mb cloneset		6000000
+8	gap	Gaps		50000000
