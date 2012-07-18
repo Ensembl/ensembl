@@ -1,7 +1,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 64;
+use Test::More;
 
 use Bio::EnsEMBL::Test::TestUtils;
 use IO::String;
@@ -450,4 +450,40 @@ my $hap_slice = $slice_adaptor->fetch_by_region(undef, '20_HAP1');
 is($hap_slice->assembly_exception_type(), 'HAP', 'Ensuring haplotype regions are HAP');
 my $chr_one_slice = $slice_adaptor->fetch_by_region('chromosome', '1', 1, 10);
 is($chr_one_slice->assembly_exception_type(), 'REF', 'Ensuring reference regions are REF');
+
+#Test slice iterator
+{
+  my $large_slice = $slice_adaptor->fetch_by_region('chromosome', 1, 1, 21);
+  my $map = sub { $_->length() };
+  my $si = sub {
+    my ($chunk) = @_;
+    return $large_slice->sub_Slice_Iterator($chunk)->map($map)->to_arrayref();
+  };
+  is_deeply($si->(100), [21], 'Subslice larger than actual slice gives just 1 slice back');
+  is_deeply($si->(10), [10,10,1], 'Subslice smaller than actual slice gives 3 slices back');
+  is_deeply($si->(20), [20,1], 'Subslice just smaller than actual slice gives 2 slices back');
+  is_deeply($si->(21), [21], 'Subslice equal to slice size gives 1 slice back');
+  my $slice_count = $large_slice->sub_Slice_Iterator(1)->reduce(sub { $_[0]+1 }, 0);
+  is($slice_count, 21, 'Giving a subslice size of 1 means 21 slices');
+  
+  {
+    my $fake_slice = Bio::EnsEMBL::Slice->new(-SEQ => 'AAACCCTTTGGGA', 
+      -START => 1, -END => 13, -SEQ_REGION_NAME => 'fake', 
+      -COORD_SYSTEM => $coord_system);
+    my $subseqs = $fake_slice->sub_Slice_Iterator(3)->map(sub { $_->seq() })->to_arrayref();
+    my $expected = ['AAA','CCC','TTT','GGG','A'];
+    is_deeply($subseqs, $expected, 'Calling seq on subslices returns only the sequence for the bounds');
+  }
+  
+  {
+    my $one_bp_slice = Bio::EnsEMBL::Slice->new(-SEQ => 'A', 
+      -START => 1, -END => 1, -SEQ_REGION_NAME => 'fake', 
+      -COORD_SYSTEM => $coord_system);
+    my $subseqs = $one_bp_slice->sub_Slice_Iterator(1)->map(sub { $_->seq() })->to_arrayref();
+    my $expected = ['A'];
+    is_deeply($subseqs, $expected, 'Calling seq on subslices for 1bp slice returns only an A');
+  }
+}
+
+done_testing();
 

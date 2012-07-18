@@ -68,6 +68,7 @@ use Bio::EnsEMBL::RepeatMaskedSlice;
 use Bio::EnsEMBL::Utils::Sequence qw(reverse_comp);
 use Bio::EnsEMBL::ProjectionSegment;
 use Bio::EnsEMBL::Registry;
+use Bio::EnsEMBL::Utils::Iterator;
 use Bio::EnsEMBL::DBSQL::MergedAdaptor;
 
 use Bio::EnsEMBL::StrainSlice;
@@ -661,6 +662,37 @@ sub subseq {
     reverse_comp(\$subseq) if($strand == -1);
   }
   return $subseq;
+}
+
+=head2 sub_Slice_Iterator
+
+  Arg[1]      : int The chunk size to request
+  Example     : my $i = $slice->sub_Slice_Iterator(60000); 
+                while($i->has_next()) { warn $i->next()->name(); }
+  Description : Returns an iterator which batches subslices of this Slice 
+                in the requested chunk size
+  Returntype  : Bio::EnsEMBL::Utils::Iterator next() will return the next
+                 chunk of Slice
+  Exceptions  : None
+
+=cut
+
+sub sub_Slice_Iterator {
+  my ($self, $chunk_size) = @_;
+  throw "Need a chunk size to divide the slice by" if ! $chunk_size;
+  my $here = 1;
+  my $end = $self->length();
+  my $iterator_sub = sub {
+    while($here <= $end) {
+      my $there = $here + $chunk_size - 1;
+      $there = $end if($there > $end); 
+      my $slice = $self->sub_Slice($here, $there);
+      $here = $there + 1;
+      return $slice;
+    }
+    return;
+  };
+  return Bio::EnsEMBL::Utils::Iterator->new($iterator_sub);
 }
 
 =head2 assembly_exception_type
