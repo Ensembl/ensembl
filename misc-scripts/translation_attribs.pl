@@ -25,7 +25,7 @@ Optional arguments:
   --binpath=PATH                      directory where the binary script to calculate 
                                       pepstats is stored (default: /software/pubseq/bin/emboss)
 
-  --tmpfile=file                      file to store tmp results of pepstats (default=/tmp)
+  --tmpdir=dir                        directory to store tmp results of pepstats (default=/tmp)
 
   --host=host                         server where the core databases are stored (default: ens-staging)
 
