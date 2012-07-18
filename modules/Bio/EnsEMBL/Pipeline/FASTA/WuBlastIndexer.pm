@@ -103,7 +103,7 @@ sub index_file {
   my $db_title = $self->db_title($file);
   my $date = $self->db_date();
   
-  my $cmd = sprintf(q{%s %s -q%d -I -t %s -d %s --o %s %s }, 
+  my $cmd = sprintf(q{%s %s -q%d -I -t %s -d %s -o %s %s }, 
     $self->param('program'), $molecule_arg, $silence, $db_title, $date, $target_file, $file);
   
   $self->info('About to run "%s"', $cmd);
@@ -130,8 +130,9 @@ sub target_dir {
 
 sub db_title {
   my ($self, $source_file) = @_;
+  my ($vol, $dir, $file) = File::Spec->splitpath($source_file);
   my $release = $self->param('release');
-  my $title = $source_file;
+  my $title = $file;
   $title =~ s/$release\.//;
   return $title;
 }
