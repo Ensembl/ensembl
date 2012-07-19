@@ -340,20 +340,6 @@ Usage:
   $indent [-port port_number [-port port_number2]]
   $indent [-create] [-db_version]
   $indent [-help]  
-
-GetOptions( "host|h=s" => \$host,
-            "port=i" => \$port,
-            "user|u=s"=> \$user,
-	    "lhost|lh=s" => \$lhost,
-            "lport=i" => \$lport,
-            "luser|lu=s" => \$luser,
-	    "lpass|lp=s" => \$lpass,
-	    "ldbname|ld=s" =>\$ldbname,
-	    "create!" => \$create,
-	    "db_version=i" => \$db_version,
-	    "help" ,     \&usage,
-);
-
   
 
   -h|host              Database host where stable_ids are to be copied from (multiple hosts can be specified)
