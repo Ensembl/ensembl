@@ -20,7 +20,7 @@
 
 =head1 NAME
 
-Bio::EnsEMBL::DBSQL::AssemblyInfoAdaptor - Retrieves meta information
+Bio::EnsEMBL::DBSQL::AssemblyAdaptor - Retrieves meta information
 related to the assembly, density features/counts per chromosome or if none
 provided, all top level seq regions
 
@@ -34,7 +34,7 @@ provided, all top level seq regions
 
 =cut
 
-package Bio::EnsEMBL::DBSQL::AssemblyInfoAdaptor;
+package Bio::EnsEMBL::DBSQL::AssemblyAdaptor;
 
 use strict;
 use warnings;
@@ -55,9 +55,9 @@ use vars qw(@ISA);
 
   Arg [1]    : Bio::EnsEMBL::DBAdaptor $dbadaptor the adaptor for
                the database this assembly info adaptor is using.
-  Example    : my $aia = new Bio::EnsEMBL::AssemblyInfoAdaptor($dbadaptor);
-  Description: Creates a new AssemblyInfoAdaptor object
-  Returntype : Bio::EnsEMBL::DBSQL::AssemblyInfoAdaptor
+  Example    : my $aia = new Bio::EnsEMBL::AssemblyAdaptor($dbadaptor);
+  Description: Creates a new AssemblyAdaptor object
+  Returntype : Bio::EnsEMBL::DBSQL::AssemblyAdaptor
   Exceptions : none
   Caller     : Bio::EnsEMBL::DBSQL::DBAdaptor
   Status     : Stable

@@ -341,7 +341,7 @@ sub get_available_adaptors {
         UnconventionalTranscriptAssociation           AssemblySlice
         SplicingEvent            SplicingEventFeature SplicingTranscriptPair
         Operon 			 OperonTranscript
-        DataFile                 AssemblyInfo
+        DataFile                 Assembly
         IntronSupportingEvidence
         ) ),
     # Those whose adaptors are in Map::DBSQL
