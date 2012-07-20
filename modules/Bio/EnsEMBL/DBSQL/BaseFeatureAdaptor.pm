@@ -131,6 +131,15 @@ sub start_equals_end {
 
 sub clear_cache {
   my ($self) = @_;
+  $self->_clear_slice_feature_cache();
+  if(!$self->_no_id_cache()) {
+    $self->_id_cache()->clear_cache();
+  }
+  return;
+}
+
+sub _clear_slice_feature_cache {
+  my ($self) = @_;
   %{$self->{_slice_feature_cache}} = ();
   return;
 }

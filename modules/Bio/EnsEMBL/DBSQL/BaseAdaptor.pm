@@ -1,3 +1,4 @@
+
 =head1 LICENSE
 
   Copyright (c) 1999-2012 The European Bioinformatics Institute and
@@ -577,7 +578,18 @@ sub _generate_sql {
 
 =cut
 
-sub fetch_by_dbID{
+sub fetch_by_dbID {
+  my ($self, $id) = @_;
+  if ($self->_no_id_cache()) {
+    return $self->_uncached_fetch_by_dbID($id);
+  }
+  return $self->_id_cache()->get($id);
+}
+
+# The actual implmenetation moved sideways to allow for uncached access
+# otherwise we'd constantly loop
+
+sub _uncached_fetch_by_dbID{
   my ($self,$id) = @_;
 
   throw("id argument is required") if(!defined $id);
@@ -623,6 +635,16 @@ sub fetch_by_dbID{
 =cut
 
 sub fetch_all_by_dbID_list {
+  my ($self, $id_list_ref, $slice) = @_;
+  if ($self->_no_id_cache()) {
+    return $self->_uncached_fetch_all_by_dbID_list($id_list_ref, $slice);
+  }
+  return $self->_id_cache()->get_by_list($id_list_ref, $slice);
+}
+
+# The actual implmenetation moved sideways to allow for uncached access
+# otherwise we'd constantly loop
+sub _uncached_fetch_all_by_dbID_list {
   my ( $self, $id_list_ref, $slice ) = @_;
 
   if ( !defined($id_list_ref) || ref($id_list_ref) ne 'ARRAY' ) {
@@ -715,6 +737,41 @@ sub last_insert_id {
   }
   $attributes ||= {};
   return $dbh->last_insert_id(@args, $attributes);
+}
+
+=head2 _id_cache
+
+  Description : Used to return an instance of a support BaseCache module
+                which can be used to speed up object access. The method
+                also respects the DBAdaptor's no_cache() flag and will
+                return undef in those situations
+  Example     : my $cache = $self->_id_cache();
+  Returntype  : Bio:EnsEMBL::DBSQL::Support::BaseCache
+  
+=cut
+
+sub _id_cache {
+  my ($self) = @_;
+  return if $self->db()->no_cache();
+  if(! exists $self->{_id_cache}) {
+    $self->{_id_cache} = $self->_build_id_cache();
+  }
+  return $self->{_id_cache};
+}
+
+=head2 _no_id_cache
+
+  Description : Flags if the ID based caching is active or not. This could be
+                due to the adaptor not wanting to cache or because of
+                a global no_cache() flag on the DBAdaptor instance
+  Returntype  : Boolean
+  
+=cut
+
+sub _no_id_cache {
+  my ($self) = @_;
+  return 1 if ! $self->_id_cache();
+  return 0;
 }
 
 
@@ -825,6 +882,20 @@ sub _final_clause { return '' }
 sub _objs_from_sth {
   throw(   "abstract method _objs_from_sth not defined "
          . "by implementing subclass of BaseAdaptor" );
+}
+
+#_build_id_cache
+
+#  Example    : my $id_cache = $self->_build_id_cache
+#  Description: ABSTRACT PROTECTED
+#               The subclass is responsible for returning an instance
+#               of the Bio::EnsEMBL::DBSQL::Support::BaseCache
+#               which can be used to speed up ID based fetch operations
+#  Returntype : Instance of Bio::EnsEMBL::DBSQL::Support::BaseCache
+#  Exceptions : Could be thrown by the implementing sub-class 
+#  Caller     : BaseAdaptor::_id_cache
+sub _build_id_cache {
+  return;
 }
 
 sub dump_data {
