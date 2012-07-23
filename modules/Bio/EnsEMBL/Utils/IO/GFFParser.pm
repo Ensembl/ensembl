@@ -23,11 +23,10 @@ Monika Komorowska, 2012 - monika@ebi.ac.uk
 
 use strict;
 use Bio::EnsEMBL::Utils::IO::GFFParser;
-use FileHandle;
+use IO::File;
 
 my $file_name = "features.gff";
-my $fh = FileHandle->new;
-$fh->open("< $file_name");
+my $fh = IO::File->new($file_name, 'r');
 my $parser = Bio::EnsEMBL::Utils::IO::GFFParser->new($fh);
 
 my @header_lines = @{$parser->parse_header()};
