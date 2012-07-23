@@ -1,0 +1,40 @@
+Use script generate_xref_mindmap.pl to generate a FreePlane mind map file (extension .mm) of xrefs for a given species,e.g.:
+bsub -o ./gorilla.out -e ./gorilla.err perl generate_xref_mindmap.pl -h ens-staging1 -u ensro -xh ens-research -xu ensadmin -xp xxxx -s gorilla_gorilla
+
+To view the generated file, download free mind mapping software Freeplane from http://freeplane.sourceforge.net
+
+The mind map shows external references by ensembl object type (gene, transcript and protein) and groups xref databases into categories. Click on each object to see the categories. Expand each category to view the database names, for which xrefs exist for a given species.
+
+Expand a database name to view information about how xrefs from this database are mapped to ensembl objects. 
+
+These are the different ways in which xrefs are mapped to ensembl objects using the xref mapping pipeline:
+
+
+DIRECT - Mapping between external database ID and Ensembl ID.
+
+INFERRED PAIR - RefSeq xref pairs: mRNA and protein. 
+
+DEPENDENT ON - Mapping between external database ID and another (master) external db ID, 
+	       on which the mapping is dependent. To see the databases on which those xrefs are dependent, 
+	       right click on the dotted line and select '->Go to [database name]' to expand the connected node.
+
+SEQUENCE MATCH - Mapping between xref and ensembl sequences using Exonerate.   
+
+COORDINATE OVERLAP - Mapping based on xref and ensembl coordinates.
+
+
+
+Additional xrefs are created for the purpose of naming genes and transcripts:
+
+GENERATED FROM - An xref which will be used as a display_xref for a gene or transcript is generated from another xref e.g. miRBase gene name xref - from miRBase xref.
+
+
+
+
+Xrefs created outside of the xref mapping pipeline:
+
+PROJECTION - Xrefs can be projected from other species based on compara homologies. 
+
+VIA PROTEIN FEATURES -  A link between an external entity and ensembl protein is produced by an analysis, rather than xref mapping pipeline and stored as a protein feature, e.g. Interpro  
+
+
