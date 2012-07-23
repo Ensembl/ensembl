@@ -258,21 +258,31 @@
         for help on usage, it is simple).  The script lives in
         ensembl/misc-scripts/ontology/scripts/
 
-	e.g.: perl load_OBO_file.pl -h ens-staging1 -u ensadmin -p ensembl -d ensembl_ontology_67 -f GO.obo -o GO 
+	e.g.: perl load_OBO_file.pl -h ens-staging1 -u ensadmin -p xxx -d ensembl_ontology_67 -f GO.obo -o GO 
 
-    6.  Compute the transitive closure (the 'closure' table in the
+
+    6.  Delete the 'UNKNOWN' ontology row from the ontology table. 
+        Once you're finished loading all the ontology files run the load_OBO_file.pl script 
+	with option -delete_unknown:
+	e.g.: perl load_OBO_file.pl -h ens-staging1 -u ensadmin -p xxx -d ensembl_ontology_67 -delete_unknown
+
+	The script will delete the dummy ontology if none of the loaded terms are still linked to it.
+	It will report a problem in case it finds any terms linked to the UNKNOWN ontology.
+	This may indicate that you haven't loaded all the files as definitions for some terms are missing.
+
+    7.  Compute the transitive closure (the 'closure' table in the
         database) by running the 'compute_closure.pl' in almost the same
         way as in step 4.  This step may take some time.
 
-	e.g.: perl compute_closure.pl -h ens-staging1 -u ensadmin -p ensembl -d ensembl_ontology_67	
+	e.g.: perl compute_closure.pl -h ens-staging1 -u ensadmin -p xxx -d ensembl_ontology_67	
 
-    7.  Add the auxiliary map tables by running 'add_subset_maps.pl'
+    8.  Add the auxiliary map tables by running 'add_subset_maps.pl'
         with the same arguments that you used for the script in the
         previous step.
 	
-	e.g.: perl add_subset_maps.pl  -h ens-staging1 -u ensadmin -p ensembl -d ensembl_ontology_67
+	e.g.: perl add_subset_maps.pl  -h ens-staging1 -u ensadmin -p xxx -d ensembl_ontology_67
 
-    8.  Copy the newly created database to ens-staging2 using ensembl/misc-srcipts/CopyDBOverServer.pl script.
+    9.  Copy the newly created database to ens-staging2 using ensembl/misc-srcipts/CopyDBOverServer.pl script.
 
 
 $Id$
