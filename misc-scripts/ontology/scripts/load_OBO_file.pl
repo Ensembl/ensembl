@@ -444,26 +444,65 @@ my ( $dbhost, $dbport );
 my ( $dbuser, $dbpass );
 my ( $dbname, $obo_file_name );
 my $ontology_name;
+my $delete_unknown;
 
 $dbport   = '3306';
 
-if ( !GetOptions( 'dbhost|host|h=s' => \$dbhost,
+GetOptions( 'dbhost|host|h=s' => \$dbhost,
                   'dbport|port|P=i' => \$dbport,
                   'dbuser|user|u=s' => \$dbuser,
                   'dbpass|pass|p=s' => \$dbpass,
                   'dbname|name|d=s' => \$dbname,
                   'file|f=s'        => \$obo_file_name,
                   'ontology|o=s'      => \$ontology_name,
-		  'help|?'          => sub { usage(); exit } )
-     || !defined($dbhost)
-     || !defined($dbuser)
-     || !defined($dbname)
-     || !defined($obo_file_name)
-     || !defined($ontology_name) )
-{
-  usage();
-  exit;
+		  'delete_unknown'  => \$delete_unknown,
+		  'help|?'          => sub { usage(); exit } 
+);
+
+if (!defined($dbhost) || !defined($dbuser) || !defined($dbname) ) {
+    usage();
+    exit;
 }
+
+if (!$delete_unknown && (!defined($obo_file_name) || !defined($ontology_name)) ) {
+    usage();
+    exit;
+}
+
+my $dsn = sprintf( 'dbi:mysql:database=%s;host=%s;port=%s',
+                   $dbname, $dbhost, $dbport );
+
+my $dbh = DBI->connect( $dsn, $dbuser, $dbpass,
+                        { 'RaiseError' => 1, 'PrintError' => 2 } );
+
+
+#delete the 'UNKNOWN' ontology and exit
+if ($delete_unknown) {
+
+    my ($unknown_onto_id) = $dbh->selectrow_array("SELECT ontology_id from ontology WHERE name = 'UNKNOWN'");
+  
+    if (!defined($unknown_onto_id)) {
+	print "'UNKNOWN' ontology doesn\'t exist - nothing to delete.\n";
+    } else {
+	my ($unknown_term_count) = $dbh->selectrow_array("select count(1) from term t join ontology o using(ontology_id) where o.name = 'UNKNOWN'");
+
+	if ($unknown_term_count > 0) {
+	    print ("Cannot delete ontology 'UNKNOWN' as $unknown_term_count terms are linked to this ontology.\n");
+
+	} else {
+	
+	    my $delete_unknown_sth = $dbh->prepare("delete from ontology where ontology_id = $unknown_onto_id");
+	    $delete_unknown_sth->execute();
+	    $delete_unknown_sth->finish();
+	    print ("0 terms linked to 'UNKNOWN' ontology - ontology deleted.\n");
+	}
+
+    }
+
+    $dbh->disconnect();     
+    exit;
+}
+
 
 #if parsing an EFO obo file delete xref lines - not compatible with OBO:Parser
 
@@ -499,12 +538,6 @@ my $my_parser = OBO::Parser::OBOParser->new;
 printf( "Reading OBO file '%s'...\n", $obo_file_name );
 
 my $ontology = $my_parser->work($obo_file_name) or die;
-
-my $dsn = sprintf( 'dbi:mysql:database=%s;host=%s;port=%s',
-                   $dbname, $dbhost, $dbport );
-
-my $dbh = DBI->connect( $dsn, $dbuser, $dbpass,
-                        { 'RaiseError' => 1, 'PrintError' => 2 } );
 
 my $statement = "SELECT name from ontology where name = ? group by name";
 
