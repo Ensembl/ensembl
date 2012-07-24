@@ -7,7 +7,7 @@ use Bio::EnsEMBL::Utils::Exception qw(throw);
 
 use base qw(XrefMapper::BasicMapper);
 
-my $DEFAULT_METHOD = 'XrefMapper::Methods::OracleUniParc';
+my $DEFAULT_METHOD = 'XrefMapper::Methods::MySQLUniParc';
 
 sub new {
   my($class, $mapper) = @_;

@@ -227,6 +227,22 @@ CREATE TABLE coordinate_xref (
 ) COLLATE=latin1_swedish_ci ENGINE=InnoDB;
 
 ################################################################################
+
+-- Table for checksum-based Xrefs, based
+-- on the input format from UniProt/UniParc
+
+CREATE TABLE checksum_xref (
+  checksum_xref_id  INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  source_id         INT UNSIGNED NOT NULL,
+  accession         CHAR(14) NOT NULL,
+  checksum          CHAR(32) NOT NULL
+
+  PRIMARY KEY checksum_xref(checksum_xref_id),
+  INDEX checksum_idx(checksum(10))
+) COLLATE=latin1_swedish_ci ENGINE=InnoDB;
+
+################################################################################
+
 ################################################################################
 
 -- new tables for new mapper code
