@@ -53,7 +53,8 @@ your PATH and edit your Doxygen configuration file and specify
 
 INPUT_FILTER=ensembldoxygenfilter.pl
 
-The code has been flagged as executable in the 
+The code has been flagged as executable in CVS and so should be self
+executing once you check it out.
 
 =head1 OPTIONS
  
