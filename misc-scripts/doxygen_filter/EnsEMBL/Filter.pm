@@ -29,6 +29,9 @@
 # Revision History:
 # 
 # $Log$
+# Revision 1.1  2011-10-18 13:46:34  kt7
+# Transferring Doxygen filter into EnsEMBL CVS.
+#
 # Revision 1.1  2011-05-16 15:31:44  kt7
 # Preservative backup of all code required to run Doxygen to
 # generate API reference.
@@ -40,17 +43,22 @@
 # =======================================================================
 
 ## @file
-# implementation of DoxyGen::Filter.
+# implementation of Filter as derrived from Doxygen::Filter.
 
 
 ## @class
 # Filter from non-C++ syntax API docs to Doxygen-compatible syntax.
 # This class is meant to be used as a filter for the
 # <a href="http://www.doxygen.org/">Doxygen</a> documentation tool.
-package DoxyGen::Filter;
+package EnsEMBL::Filter;
 
 use warnings;
 use strict;
+
+my $debug_home_location = '';
+if($ENV{PERL_DOXYGEN_DEBUG_LOCATION}) {
+  $debug_home_location = $ENV{PERL_DOXYGEN_DEBUG_LOCATION};
+}
 
 ## @cmethod object new($outfh)
 # create a filter object.
@@ -60,9 +68,20 @@ sub new {
     my $class = shift;
     my $outfh = shift || \*STDOUT;
     
-    open(DEBUG,">/home/ktaylor/debug.doxygen");
+    my $self = bless {outfh => $outfh}, $class;
     
-    return bless {outfh => $outfh}, $class;
+    if($debug_home_location) {
+      open(my $debug, '>', $debug_home_location);
+      $self->{debug_fh} = $debug;
+    }
+    
+    return $self;
+}
+
+sub DESTROY {
+  my ($self) = @_;
+  close $self->{debug_fh} if $self->{debug_fh};
+  return;
 }
 
 ## @method virtual void filter($infh)=0
@@ -141,7 +160,8 @@ sub print {
     } else {
         my $outfh = $self->{outfh};
         print $outfh @_;
-        print DEBUG @_;
+        my $debug_fh = $self->{debug_fh};
+        print $debug_fh @_ if $debug_fh;
     }
     return $self;
 }
@@ -199,7 +219,7 @@ __END__
 
 =head1 NAME
 
-Doxygen::Filter - use DoxyGen with Perl and other languages.
+EnsEMBL::Filter - use DoxyGen with Perl and other languages.
 
 =head1 DESCRIPTION
 

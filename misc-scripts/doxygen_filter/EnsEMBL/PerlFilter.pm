@@ -21,7 +21,7 @@
   1735 Giffers
  
   ------------------------------------------------
-  This completely rewritten version of PerlFilter 
+  This completely rewritten version of Doxygen::PerlFilter 
   Copyright (c) 1999-2012 The European Bioinformatics Institute and
   Genome Research Limited.  All rights reserved.
   
@@ -42,11 +42,11 @@
 
 =head1 NAME
 
-  Doxygen::PerlFilter
+  EnsEMBL::PerlFilter
 
 =head1 DESCRIPTION
 
-  Implementation of DoxyGen::PerlFilter.
+  Implementation of EnsEMBL::PerlFilter.
   Derived from http://www.bigsister.ch/doxygenfilter by Bart Schuller and Thomas Aeby
   Original distributed under Perl artistic license, see: http://www.bigsister.ch/doxygenfilter/license.html
 
@@ -58,17 +58,15 @@
   This is a 80/20 EnsEMBL specific POD->Doxygen converter, however it should work somewhat with other code.
  
   This code is still highly volatile.
-  Presently this code is installed in conjunction with Doxygen::Filter such that Doxygen can find them both.
-  e.g. /usr/share/perl5/Doxygen/
 
 =cut 
 
-package DoxyGen::PerlFilter;
+package EnsEMBL::PerlFilter;
 
 use warnings;
 use strict;
 
-use base qw(DoxyGen::Filter);
+use base qw(EnsEMBL::Filter);
 
 # Possible states
 use constant {
