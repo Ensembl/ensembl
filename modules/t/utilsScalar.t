@@ -132,4 +132,31 @@ lives_ok { assert_file_handle($other_scalar_fh) } 'Passing in a blessed scalar F
 lives_ok { assert_file_handle($io_handle) } 'Passing in an IO::Handle means lives';
 close($_) for ($scalar_fh, $other_scalar_fh);
 
+#Scope Guard
+
+#First normal circumstances
+{
+  my $v = 'wibble';
+  is($v, 'wibble', 'Value is normal');
+  {
+    my $guard = scope_guard(sub { $v = 'wibble'});
+    $v = 'wobble';
+    is($v, 'wobble', 'Value has been changed');
+  }
+  is($v, 'wibble', 'Value has been reset');
+}
+
+#With a die; Perl respects DESTROY even if we are in the middle of SIG{__DIE__}
+{
+  my $v = 'wibble';
+  is($v, 'wibble', 'Value is normal');
+  $v = 'wobble';
+  is($v, 'wobble', 'Value has been changed');
+  eval {
+    my $guard = scope_guard(sub { $v = 'wibble'});
+    die 'we have died';
+  };
+  is($v, 'wibble', 'Value has been reset even after a die');
+}
+
 done_testing();
