@@ -696,10 +696,10 @@ The files are consistently named following this pattern:
   * 'dna_sm' - soft-masked genomic DNA. All repeats and low complexity regions
     have been replaced with lowercased versions of their nucleic base
 <id type> One of the following:
-  * 'chromosome'a    - The top-level coordinate system in most species in Ensembl
+  * 'chromosome'     - The top-level coordinate system in most species in Ensembl
   * 'nonchromosomal' - Contains DNA that has not been assigned a chromosome
   * 'seqlevel'       - This is usually sequence scaffolds, chunks or clones.
-     -- 'scaffold'  - Larger sequence contigs from the assembly of shorter
+     -- 'scaffold'   - Larger sequence contigs from the assembly of shorter
         sequencing reads (often from whole genome shotgun, WGS) which could
         not yet be assembled into chromosomes. Often more genome sequencing
         is needed to narrow gaps and establish a tiling path.
@@ -717,11 +717,6 @@ The files are consistently named following this pattern:
 fa: All files in these directories represent FASTA database files
 gz: All files are compacted with GNU Zip for storage efficiency.
 
------------
-TOPLEVEL
-----------
-These files contain the full sequence of the assembly in fasta format.
-They contain one chromosome per file.
 
 EXAMPLES
    The genomic sequence of human chromosome 1:
@@ -738,6 +733,38 @@ EXAMPLES
      Homo_sapiens.GRCh37.57.dna_rm.nonchromosomal.fa.gz
      Homo_sapiens.GRCh37.57.dna_sm.nonchromosomal.fa.gz
 
+---------
+TOPLEVEL
+---------
+These files contains all sequence regions flagged as toplevel in an Ensembl
+schema. This includes chromsomes, regions not assembled into chromosomes and
+N padded haplotype/patch regions.
+
+EXAMPLES
+
+  Toplevel sequences unmasked:
+    Homo_sapiens.GRCh37.57.dna.toplevel.fa.gz
+  
+  Toplevel soft/hard masked sequences:
+    Homo_sapiens.GRCh37.57.dna_sm.toplevel.fa.gz
+    Homo_sapiens.GRCh37.57.dna_rm.toplevel.fa.gz
+
+-----------------
+PRIMARY ASSEMBLY
+-----------------
+This is a subset of sequences found in the toplevel file. The subset is
+defined as anything which is not a reference sequence region i.e. haplotypes
+and patches. If you wish to perform alignments to an assembly and want to
+ignore alternative assemblies then use this file.
+
+EXAMPLES
+
+  Primary assembly sequences unmasked:
+    Homo_sapiens.GRCh37.57.dna.primary_assembly.fa.gz
+  
+  Primary assembly soft/hard masked sequences:
+    Homo_sapiens.GRCh37.57.dna_sm.primary_assembly.fa.gz
+    Homo_sapiens.GRCh37.57.dna_rm.primary_assembly.fa.gz
 
 --------------
 SPECIAL CASES
@@ -746,16 +773,19 @@ Some chromosomes have alternate haplotypes which are presented in files with
 the haplotype sequence only:
    Homo_sapiens.GRCh37.56.dna_rm.chromosome.HSCHR6_MHC_QBL.fa.gz
    Homo_sapiens.GRCh37.56.dna_rm.chromosome.HSCHR17_1.fa.gz
-   
+
+All alternative assembly and patch regions have their sequence padded 
+with N's to ensure alignment programs can report the correct index
+regions
+
+e.g. A patch region with a start position of 1,000,001 will have 1e6 N's added
+its start so an alignment program will report coordinates with respect to the
+whole chromosome.
 
 Some species have sequenced Y chromosomes and the pseudoautosomal region (PAR)
 on the Y is annotated.  By definition the PAR region is identical on the 
-X and Y chromosome.  We provide this sequence in the following way.
--- The Y chromosome file contains the complete sequence of the PAR:
-    Homo_sapiens.GRCh37.56.dna.chromosome.Y.fa.gz
--- The top level file includes only the unique portion of Y (i.e. the PAR 
-   (region is N-masked):
-      Homo_sapiens.GRCh37.56.dna.toplevel.fa.gz
+X and Y chromosome.  The Y chromosome file contains the Y chromsome 
+minus the PAR regions.
 
 README
 
