@@ -503,7 +503,7 @@ sub display_tables_list {
     $html .= qq{    </ul>\n</td></tr></table>};
   }
   $html .= qq{
-    <input type="button" onclick="show_hide_all()" style="background-color:#933;color:#FFF;cursor:pointer" value="Show/hide all" />
+    <input type="button" onclick="show_hide_all()" class="fbutton" value="Show/hide all" />
     <input type="hidden" id="expand" value="0" />
   };
   return $html;
