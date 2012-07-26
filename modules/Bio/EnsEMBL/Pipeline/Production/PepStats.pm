@@ -122,8 +122,7 @@ sub dump_translation {
     WHERE tr.transcript_id = tl.transcript_id
     AND tr.seq_region_id = s.seq_region_id
     AND s.coord_system_id = cs.coord_system_id
-    AND cs.species_id = ?
-    ORDER by tl.translation_id };
+    AND cs.species_id = ? };
   my @translation_ids = @{ $helper->execute_simple(-SQL => $sql, -PARAMS => [$dba->species_id()]) };
   for my $dbid (@translation_ids) {
     my $translation = $ta->fetch_by_dbID($dbid);

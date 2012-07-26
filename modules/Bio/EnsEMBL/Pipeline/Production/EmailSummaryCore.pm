@@ -14,6 +14,10 @@ sub fetch_input {
   my $gene_gc = $self->jobs('GeneGC');
   my $percent_gc = $self->jobs('PercentGC');
   my $percent_repeat = $self->jobs('PercentRepeat');
+  my $coding_density = $self->jobs('CodingDensity');
+  my $pseudogene_density = $self->jobs('PseudogeneDensity');
+  my $non_coding_density = $self->jobs('NonCodingDensity');
+
     
   my @args = (
     $pep_stats->{successful_jobs},
@@ -24,11 +28,20 @@ sub fetch_input {
     $percent_gc->{failed_jobs},
     $percent_repeat->{successful_jobs},
     $percent_repeat->{failed_jobs},
+    $coding_density->{successful_jobs},
+    $coding_density->{failed_jobs},
+    $pseudogene_density->{successful_jobs},
+    $pseudogene_density->{failed_jobs},
+    $non_coding_density->{successful_jobs},
+    $non_coding_density->{failed_jobs},
     $self->failed(),
     $self->summary($pep_stats),
     $self->summary($gene_gc),
     $self->summary($percent_gc),
     $self->summary($percent_repeat),
+    $self->summary($coding_density),
+    $self->summary($pseudogene_density),
+    $self->summary($non_coding_density),
   );
   
   my $msg = sprintf(<<'MSG', @args);
@@ -38,6 +51,9 @@ Your FASTA Pipeline has finished. We have:
   * %d species with gene gc (%d failed)
   * %d species with percent gc (%d failed)
   * %d species with percent repeat (%d failed)
+  * %d species with coding density (%d failed)
+  * %d species with pseudogene density (%d failed)
+  * %d species with non coding density (%d failed)
 
 %s
 
