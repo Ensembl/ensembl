@@ -55,8 +55,47 @@ sub pipeline_analyses {
         -flow_into  => {
           1 => 'Notify',
           2 => ['GeneGC', 'PepStats'],
-          3 => ['PercentGC', 'PercentRepeat'],
+          3 => ['PercentGC', 'PercentRepeat', 'CodingDensity', 'PseudogeneDensity', 'NonCodingDensity'],
         },
+      },
+
+      {
+        -logic_name => 'CodingDensity',
+        -module     => 'Bio::EnsEMBL::Pipeline::Production::CodingDensity',
+        -parameters => {
+          logic_name => 'codingdensity', value_type => 'sum',
+          bin_count => $self->o('bin_count'),
+        },
+        -max_retry_count  => 1,
+        -hive_capacity    => 10,
+        -rc_name          => 'default',
+        -can_be_empty     => 1,
+      },
+
+      {
+        -logic_name => 'PseudogeneDensity',
+        -module     => 'Bio::EnsEMBL::Pipeline::Production::PseudogeneDensity',
+        -parameters => {
+          logic_name => 'pseudogenedensity', value_type => 'sum',
+          bin_count => $self->o('bin_count'),
+        },
+        -max_retry_count  => 1,
+        -hive_capacity    => 10,
+        -rc_name          => 'default',
+        -can_be_empty     => 1,
+      },
+
+      {
+        -logic_name => 'NonCodingDensity',
+        -module     => 'Bio::EnsEMBL::Pipeline::Production::NonCodingDensity',
+        -parameters => {
+          logic_name => 'noncodingdensity', value_type => 'sum',
+          bin_count => $self->o('bin_count'),
+        },
+        -max_retry_count  => 1,
+        -hive_capacity    => 10,
+        -rc_name          => 'default',
+        -can_be_empty     => 1,
       },
 
       {
@@ -116,7 +155,7 @@ sub pipeline_analyses {
           email   => $self->o('email'),
           subject => $self->o('pipeline_name').' has finished',
         },
-        -wait_for   => ['PepStats', 'GeneGC', 'PercentGC', 'PercentRepeat'],
+        -wait_for   => ['PepStats', 'GeneGC', 'PercentGC', 'PercentRepeat', 'CodingDensity', 'PseudogeneDensity', 'NonCodingDensity'],
       }
     
     ];
