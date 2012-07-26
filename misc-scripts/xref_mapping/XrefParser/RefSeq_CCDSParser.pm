@@ -170,6 +170,13 @@ CCDS
     my $internal_id = $row[1];
 
     if(defined($internal_to_stable_id{$internal_id})){
+
+	#If CCDS points to multiple ensembl transcripts, we don't want to store the direct RefSeq xrefs for it.
+	#This would produce a many to many relationship between RefSeqs and ensembl transcripts.
+	#They will be sequence mapped.
+	if ( scalar(@{$internal_to_stable_id{$internal_id}}) > 1) {
+	    next;
+	}
     }
     else{
       print "Problem no internal_to_stable_id for $internal_id\n"; 
