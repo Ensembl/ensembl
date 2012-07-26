@@ -100,84 +100,85 @@ sub fetch_files {
       }
 
       my $ftp = $self->get_ftp($uri, 0);
-      if(!defined($ftp) or ! $ftp->can('ls')){
+      if(!defined($ftp) or ! $ftp->can('ls') or !$ftp->ls()){
 	$ftp =  $self->get_ftp($uri, 1);
       }
       foreach my $remote_file ( ( @{ $ftp->ls() } ) ) {
-        if ( !match_glob( basename( $uri->path() ), $remote_file ) ) {
-          next;
-        }
+	      if ( !match_glob( basename( $uri->path() ), $remote_file ) ) {
+		  next;
+	      }
 
-        $file_path = catfile( $dest_dir, basename($remote_file) );
+	      $file_path = catfile( $dest_dir, basename($remote_file) );
 
-        if ( $deletedownloaded && -e $file_path ) {
-          if ($verbose) {
-            printf( "Deleting '%s'\n", $file_path );
-          }
-          unlink($file_path);
-        }
+	      if ( $deletedownloaded && -e $file_path ) {
+		  if ($verbose) {
+		      printf( "Deleting '%s'\n", $file_path );
+		  }
+		  unlink($file_path);
+	      }
 
-        if ( $checkdownload && -s $file_path ) {
-          if ($verbose) {
-            printf( "File '%s' already exists\n", $file_path );
-          }
-        } else {
+	      if ( $checkdownload && -s $file_path ) {
+		  if ($verbose) {
+		      printf( "File '%s' already exists\n", $file_path );
+		  }
+	      } else {
 
-          if ( -e $file_path ) { unlink($file_path) }
+		  if ( -e $file_path ) { unlink($file_path) }
 
-          if ( !-d dirname($file_path) ) {
-            if ($verbose) {
-              printf( "Creating directory '%s'\n",
-                      dirname($file_path) );
-            }
-            if ( !mkdir( dirname($file_path) ) ) {
-              printf( "==> Can not create directory '%s': %s",
-                      dirname($file_path), $! );
-              return ();
-            }
-          }
+		  if ( !-d dirname($file_path) ) {
+		      if ($verbose) {
+			  printf( "Creating directory '%s'\n",
+				  dirname($file_path) );
+		      }
+		      if ( !mkdir( dirname($file_path) ) ) {
+			  printf( "==> Can not create directory '%s': %s",
+				  dirname($file_path), $! );
+			  return ();
+		      }
+		  }
 
-          if ($verbose) {
-            printf( "Fetching '%s' (size = %s)\n",
-                    $remote_file,
-                    $ftp->size($remote_file) || '(unknown)' );
-            printf( "Local file is '%s'\n", $file_path );
-          }
+		  if ($verbose) {
+		      printf( "Fetching '%s' (size = %s)\n",
+			      $remote_file,
+			      $ftp->size($remote_file) || '(unknown)' );
+		      printf( "Local file is '%s'\n", $file_path );
+		  }
 
-          if ( !$ftp->get( $remote_file, $file_path ) ) {
-            printf( "==> Could not get '%s': %s\n",
-                    basename( $uri->path() ), $ftp->message() );
-            return ();
-          }
-        } ## end else [ if ( $checkdownload &&...)]
+		  if ( !$ftp->get( $remote_file, $file_path ) ) {
+		      printf( "==> Could not get '%s': %s\n",
+			      basename( $uri->path() ), $ftp->message() );
+		      return ();
+		  }
+	      } ## end else [ if ( $checkdownload &&...)]
 
-        if ( $file_path =~ /\.(gz|Z)$/x ) {
-          # Read from zcat pipe
-          #
-          my $cmd = "gzip -t $file_path";
-          if ( system($cmd) != 0 ) {
-            printf( "system command '%s' failed: %s - "
-                      . "Checking of gzip file failed - "
-                      . "FILE CORRUPTED ?\n\n",
-                    $cmd, $? );
+	      if ( $file_path =~ /\.(gz|Z)$/x ) {
+		  # Read from zcat pipe
+		  #
+		  my $cmd = "gzip -t $file_path";
+		  if ( system($cmd) != 0 ) {
+		      printf( "system command '%s' failed: %s - "
+			      . "Checking of gzip file failed - "
+			      . "FILE CORRUPTED ?\n\n",
+			      $cmd, $? );
 
-            if ( -e $file_path ) {
-              if ($verbose) {
-                printf( "Deleting '%s'\n", $file_path );
-              }
-              unlink($file_path);
-            }
-            return ();
-          } else {
-            if ($verbose) {
-              printf( "'%s' passed (gzip -t) corruption test.\n",
-                      $file_path );
-            }
-          }
-        }
-        push( @processed_files, $file_path );
+		      if ( -e $file_path ) {
+			  if ($verbose) {
+			      printf( "Deleting '%s'\n", $file_path );
+			  }
+			  unlink($file_path);
+		      }
+		      return ();
+		  } else {
+		      if ($verbose) {
+			  printf( "'%s' passed (gzip -t) corruption test.\n",
+				  $file_path );
+		      }
+		  }
+	      }
+	      push( @processed_files, $file_path );
 
       } ## end foreach my $remote_file ( (...))
+
 
     } elsif ( $uri->scheme() eq 'http' ) {
       # Deal with HTTP files.
