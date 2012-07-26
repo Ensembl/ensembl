@@ -26,194 +26,145 @@ sub new {
 sub process{
   my ($self) = @_;
 
+  #get all 'DUMP_OUT' transcript RefSeq object xrefs (ccds priority or refseq sequence matched)
+  #foreach transcript refseq find its protein pair, check if it's matched to the corresponding translation 
+  #if it's not add 'INFERRED_PAIR' object xref
 
+  #set ox_status to 'MULTI_DELETE' for all translation RefSeq object xrefs if a better object_xref exists (better object_xref is one whose corresponding transcript is linked to the paired RefSeq_mRNA)
+  
 
   print "Process Pairs\n" if($self->verbose);
-  my $object_xref_id;
 
   my $sth =  $self->xref->dbc->prepare("select MAX(object_xref_id) from object_xref");
   $sth->execute;
-  $sth->bind_columns(\$object_xref_id);
-  $sth->fetch;
+  my ($object_xref_id) = $sth->fetchrow_array();
   $object_xref_id++;
   $sth->finish;
 
   print "Starting at object_xref of $object_xref_id\n" if($self->verbose);
 
-  my $psth = $self->xref->dbc->prepare("select p.accession1, p.accession2 from pairs p");
-  my $ox_count_sth =  $self->xref->dbc->prepare('select count(1) from object_xref ox, xref x where ox.xref_id = x.xref_id and ox.ox_status = "DUMP_OUT" and x.accession = ?');
- 
-  my $ox_transcript_sth =   $self->xref->dbc->prepare('select gtt.transcript_id, ix.query_identity, ix.target_identity  from identity_xref ix, object_xref ox, xref x, gene_transcript_translation gtt where ox.object_xref_id = ix.object_xref_id and ox.ox_status = "DUMP_OUT" and ox.xref_id = x.xref_id and gtt.translation_id = ox.ensembl_id and x.accession = ?');
 
-  my $ox_translation_sth =  $self->xref->dbc->prepare('select gtt.translation_id, ix.query_identity, ix.target_identity from identity_xref ix, object_xref ox, xref x, gene_transcript_translation gtt where ox.object_xref_id = ix.object_xref_id and ox.ox_status = "DUMP_OUT" and ox.xref_id = x.xref_id and gtt.transcript_id  = ox.ensembl_id and x.accession = ?');
+  #this query gives us transcript RefSeq_mRNA% object xrefs, and the paired RefSeq_peptide% accession as well as the translation id for the transcript 
+  my $transcr_obj_xrefs_sth = $self->xref->dbc->prepare("select gtt.translation_id, p.source_id1, p.accession1, ix.query_identity, ix.target_identity from object_xref ox join xref x on (ox.xref_id = x.xref_id and ox.ox_status = 'DUMP_OUT') join source s on (x.source_id = s.source_id and s.name like 'RefSeq\_mRNA%') join pairs p on (x.accession = p.accession2) join gene_transcript_translation gtt on (gtt.transcript_id = ox.ensembl_id and ox.ensembl_object_type = 'Transcript') left join identity_xref ix using(object_xref_id)");
+
+  #this query is used to check if and object_xref exists for the related translation and paired RefSeq_peptide% with a status of 'DUMP_OUT'
+  my $ox_translation_sth =  $self->xref->dbc->prepare("select ox.object_xref_id, ox.xref_id from object_xref ox join xref x using(xref_id) where ox.ox_status = 'DUMP_OUT' and ox.ensembl_object_type = 'Translation' and ox.ensembl_id = ? and x.source_id = ? and x.accession = ?");
  
-  my $xref_sth =  $self->xref->dbc->prepare("select xref_id from xref where accession = ?");
+  #this query is used to check if and object_xref exists for the related translation and paired RefSeq_peptide% with any status
+  my $ox_translation_other_status_sth = $self->xref->dbc->prepare("select ox.object_xref_id, ox.xref_id from object_xref ox join xref x using(xref_id) where ox.ensembl_object_type = 'Translation' and ox.ensembl_id = ? and x.source_id = ? and x.accession = ?");
+ 
  
   my $ox_insert_sth = $self->xref->dbc->prepare("insert into object_xref (object_xref_id, xref_id, ensembl_id, ensembl_object_type, linkage_type, ox_status) values(?, ?, ?, ?, 'INFERRED_PAIR', 'DUMP_OUT')");
-  local $ox_insert_sth->{RaiseError}; #catch duplicates
-  local $ox_insert_sth->{PrintError}; # cut down on error messages
 
+  my $ox_update_sth =  $self->xref->dbc->prepare("update object_xref set ox_status = 'DUMP_OUT', linkage_type = 'INFERRED_PAIR' where object_xref_id = ?");
 
+  my $xref_sth =  $self->xref->dbc->prepare("select xref_id from xref where accession = ? and source_id = ?");
 
-  my $ox_get_id_sth = $self->xref->dbc->prepare("select object_xref_id,ox_status from object_xref where xref_id = ? and ensembl_id = ? and ensembl_object_type = ?");
+  my $xref_update_sth =  $self->xref->dbc->prepare("update xref set info_type = 'INFERRED_PAIR' where xref_id = ?");
+  my $identity_update_sth = $self->xref->dbc->prepare("insert into identity_xref (object_xref_id, query_identity, target_identity) values(?, ?, ?)");
 
-  my $ox_update_sth =  $self->xref->dbc->prepare('update object_xref set ox_status = "DUMP_OUT", linkage_type = "INFERRED_PAIR" where object_xref_id = ?');
-  my $xref_update_sth =  $self->xref->dbc->prepare('update xref set info_type = "INFERRED_PAIR" where xref_id = ?');
-  my $ins_dep_ix_sth = $self->xref->dbc->prepare("insert into identity_xref (object_xref_id, query_identity, target_identity) values(?, ?, ?)");
+  my $transl_object_xrefs_sth = $self->xref->dbc->prepare("select ox.object_xref_id, ox.ensembl_id, x.accession from  object_xref ox join xref x on (ox.xref_id = x.xref_id and ox.ox_status = 'DUMP_OUT' and ox.ensembl_object_type = 'Translation') join source s on (x.source_id = s.source_id and s.name like 'RefSeq\_peptide%')");
 
-  $psth->execute() || die "execute failed";
-  my ($acc1, $acc2);
-  $psth->execute();
+  my $ox_mark_delete_sth = $self->xref->dbc->prepare("update object_xref set ox_status  = 'MULTI_DELETE' where object_xref_id = ?");
+ 
+
+  $transcr_obj_xrefs_sth->execute();
   
-  my $refseq_count = 0;
-
   my %change;
 
-  $psth->bind_columns(\$acc1, \$acc2);
-  while($psth->fetch()){
-    my $count1;
-    my $count2;
-    $ox_count_sth->execute($acc1);  # translation alignment
-    $ox_count_sth->bind_columns(\$count1);
-    $ox_count_sth->fetch;
+  #this hash stores all the translations linked to RefSeq_peptide% xrefs whose transcript is also linked to the paired RefSeq_mRNA - this will be needed to get rid of RefSeq_peptide object xrefs which don't have the additional support of transcripts linked to paired RefSeq_mRNAs; keyed on RefSeq_peptide% accession
+  my %RefSeq_pep_translation;
 
-    $ox_count_sth->execute($acc2);  # transcript alignment
-    $ox_count_sth->bind_columns(\$count2);
-    $ox_count_sth->fetch;
+  while(my ($translation_id, $pep_source_id, $pep_accession, $query_identity, $target_identity) = $transcr_obj_xrefs_sth->fetchrow_array() ){
+  
+      #check if translation is linked to the paired RefSeq peptide
 
-    if(( $count1 and $count2) || (!($count1) and !($count2)) ){
-      next; # eithr both matched or neither is.
-    }	
-    if($count1){ 
-      #need xref_id for acc2
-      my $xref_id;
-      $xref_sth->execute($acc2);
-      $xref_sth->bind_columns(\$xref_id);
-      if(!$xref_sth->fetch){
-#	 print "Could not find xref_id for accession $acc2\n";
-	 next;
-       }
-      next if(!defined($xref_id));
-#      print "$acc2\t$xref_id (search using $acc1)\n";
-     # insert new object_xref
-      # trap error code. if duplicate then just set linkage_type = "INFERRED_PAIR" and ox_status = "DUMP"
-      # "maybe" the original failed the cutoff!!! so will have an entry alread but no good.
-      $ox_transcript_sth->execute($acc1);
-      my $transcript_id=undef;
-      my ($q_id,$t_id);
-      
-      $ox_transcript_sth->bind_columns(\$transcript_id,\$q_id, \$t_id);
-      while($ox_transcript_sth->fetch){
-	if(defined($transcript_id)){ # remember not all transcripts have translations.
+      if ($translation_id) {
 
-	  $object_xref_id++;
-	  $ox_insert_sth->execute($object_xref_id, $xref_id, $transcript_id, "Transcript") ;
-	  if($ox_insert_sth->err){
-	    my $err = $ox_insert_sth->errstr;
-	    if($err =~ /Duplicate/){
-	      $change{"UPDATE"}++;
-	      # duplicate this can happen as it might have failed the cutoff
-	      # find the old object_xref_id and the update the status's
-	      my $old_object_xref_id=undef;
-	      my $status;
-	      $ox_get_id_sth->execute($xref_id, $transcript_id, "Transcript");	      
-	      $ox_get_id_sth->bind_columns(\$old_object_xref_id, \$status);
-	      $ox_get_id_sth->fetch();
-	      if($status eq "DUMP_OUT"){
-		print STDERR "Problem status for object_xref_id is DUMP_OUT but this should never happen as it was not found earlier??? (transcript_id = $transcript_id, $xref_id\n";
+	  $ox_translation_sth->execute($translation_id, $pep_source_id, $pep_accession);
+	  my ($transl_object_xref_id, $xref_id) = $ox_translation_sth->fetchrow_array();
+
+	  #if it's already linked we don't have to do anything
+
+	  if (!$transl_object_xref_id) {
+
+	      #check if an object xref exists with status other than 'DUMP_OUT'
+	      $ox_translation_other_status_sth->execute($translation_id, $pep_source_id, $pep_accession);
+	      ($transl_object_xref_id, $xref_id) = $ox_translation_other_status_sth->fetchrow_array();
+
+	      if ($transl_object_xref_id) {
+		  #update the object xref
+		  $ox_update_sth->execute($transl_object_xref_id)|| die "Could not update object_xref $transl_object_xref_id";
+		  $xref_update_sth->execute($xref_id)|| die "Could not update xref $xref_id";
+		  $change{'translation object_xrefs updated'}++;
+	      } else {
+		  #add a new object xref 
+		  $xref_sth->execute($pep_accession, $pep_source_id);
+		  ($xref_id) = $xref_sth->fetchrow_array();
+		  if (!$xref_id) {
+		      die("Xref not found for accession $pep_accession source_id $pep_source_id");
+		  }
+		  $ox_insert_sth->execute($object_xref_id, $xref_id, $translation_id, "Translation") || die "Could not insert object xref $object_xref_id: xref_id $xref_id, translation_id $translation_id" ;
+		  $xref_update_sth->execute($xref_id)|| die "Could not update xref_id $xref_id";
+
+		  if ($query_identity && $target_identity) {
+		      $identity_update_sth->execute($object_xref_id, $query_identity, $target_identity);
+		  }
+		  	  
+		  $change{'translation object xrefs added'}++;
+		  $object_xref_id++;
+		  $transl_object_xref_id = $object_xref_id;
 	      }
-	      if(!defined($old_object_xref_id)){
-		die "Duplicate but can't find the original?? xref_id = $xref_id, ensembl_id = $transcript_id, type = Transcript\n";
-	      }
-	      $ox_update_sth->execute($old_object_xref_id)|| die "Could not set update for object_xref_id = $old_object_xref_id";
-	      $xref_update_sth->execute($xref_id)|| die "Could not set update for xref_id = $xref_id";
-	    }
-	    else{
-	      die "Problem loading error is $err\n";
-	    } 
+	      
 	  }
-	  else{
-	    $ins_dep_ix_sth->execute($object_xref_id, $q_id, $t_id);
-	    $xref_update_sth->execute($xref_id)|| die "Could not set update for xref_id = $xref_id";
-	    $change{"NEW"}++;
+
+	  if ($transl_object_xref_id) {
+	      push @{$RefSeq_pep_translation{$pep_accession}}, $translation_id;
 	  }
-#  	  print "insert $xref_id transcript $transcript_id ........\n";
-	  $refseq_count++;
-	}
 
       }
-    }
-    elsif($count2){
-      my $xref_id;
-      $xref_sth->execute($acc1);
-      $xref_sth->bind_columns(\$xref_id);
-      if(!$xref_sth->fetch){
-#	print "Could not find xref_id for accession $acc1\n";
-	next;
-      }
-      next if(!defined($xref_id));
-#      print "$acc1\t$xref_id (search using $acc2)\n";
-      # insert new object_xref
-      # trap error code. if duplicate then just set linkage_type = "INFERRED_PAIR" and ox_status = "DUMP"
-      # "maybe" the original failed the cutoff!!! so will have an entry alread but no good.
-      $ox_translation_sth->execute($acc2);
-      my $translation_id = undef;
-      my ($q_id, $t_id);
-      $ox_translation_sth->bind_columns(\$translation_id, \$q_id, \$t_id);
-      while($ox_translation_sth->fetch){
-	if(defined($translation_id)){ # remember not all transcripts ahve translations.
-	  $object_xref_id++;
-	  $ox_insert_sth->execute($object_xref_id, $xref_id, $translation_id, "Translation") ;
-	  if($ox_insert_sth->err){
-	    $change{"UPDATE"}++;
-	    my $err = $ox_insert_sth->errstr;
-	    if($err =~ /Duplicate/){
-	      # duplicate this can happen as it might have failed the cutoff
-	      # find the old object_xref_id and the update the status's
-	      my $old_object_xref_id=undef;
-	      my $status;
-	      $ox_get_id_sth->execute($xref_id, $translation_id, "Translation");	      
-	      $ox_get_id_sth->bind_columns(\$old_object_xref_id,\$status);
-	      $ox_get_id_sth->fetch();
-	      if($status eq "DUMP_OUT"){
-		print STDERR "Problem status for object_xref_id is DUMP_OUT but this should never happen as it was not found earlier??? (trasnlation_id = $translation_id, $xref_id\n";
-	      }
-	      if(!defined($old_object_xref_id)){
-		die "Duplicate but can't find the original?? xref_id = $xref_id, ensembl_id = $translation_id, type = Translation\n";
-	      }
-	      $ox_update_sth->execute($old_object_xref_id)|| die "Could not set update for object_xref_id = $old_object_xref_id";
-	      $xref_update_sth->execute($xref_id)|| die "Could not set update for xref_id = $xref_id";
-	    }
-	    else{
-	      die "Problem loading error is $err\n";
-	    } 
-	  }
-	  else{
-	    $ins_dep_ix_sth->execute($object_xref_id, $q_id, $t_id);
-	    $xref_update_sth->execute($xref_id)|| die "Could not set update for xref_id = $xref_id";
-	    $change{"NEW"}++;
-	  }
-#	  print "insert $xref_id translation $translation_id ........\n";
-	  $refseq_count++;
-	}
-      }
-    }
-    else{
-      print STDERR "HMMM how did i get here. This should be impossible. [logic error]\n";
-   }
+
   }
-  $psth->finish;
-  $ox_count_sth->finish;
-  $ox_transcript_sth->finish;
-  $ox_translation_sth->finish;
-  $ox_update_sth->finish;
-  $xref_update_sth->finish;
-  $xref_sth->finish;
-  $ins_dep_ix_sth->finish;
+
+  $transcr_obj_xrefs_sth->finish();
+  $ox_translation_sth->finish();
+  $ox_translation_other_status_sth->finish();
+  $ox_insert_sth->finish();
+  $ox_update_sth->finish();
+  $xref_update_sth->finish();
+  $identity_update_sth->finish();
+
+  #go through RefSeq_peptide% object_xrefs 
+  $transl_object_xrefs_sth->execute();
+  while (my ($translation_object_xref_id, $translation_id, $pep_accession) =  $transl_object_xrefs_sth->fetchrow_array() ) {
+
+      if (exists($RefSeq_pep_translation{$pep_accession}) ) {
+
+	  my $found = 0;
+	  foreach my $tr_id (@{$RefSeq_pep_translation{$pep_accession}}) {
+	      if ($tr_id == $translation_id) {
+		  $found = 1;
+	      }
+	  }
+	  if (!$found) {
+	      #this translations's transcript is not matched with the paired RefSeq_mRNA%,
+	      #change the status to 'MULTI_DELETE'
+	      $ox_mark_delete_sth->execute($translation_object_xref_id) || die("Failed to update status to 'MULTI_DELETE for object_xref_id $translation_object_xref_id");
+
+	      $change{'translation object xrefs removed'}++;
+	  }
+	  
+      }
+  }
+ 
+  $transl_object_xrefs_sth->finish();
+  $ox_mark_delete_sth->finish();
+  
   foreach my $key (keys %change){
-    print "\t$key\t".$change{$key}."\n" if($self->verbose);
+      print "$key:\t".$change{$key}."\n" if($self->verbose);
   }
-  print "$refseq_count new relationships added\n" if($self->verbose);
+
+  #update process status
   my $sth_stat = $self->xref->dbc->prepare("insert into process_status (status, date) values('processed_pairs',now())");
   $sth_stat->execute();
   $sth_stat->finish;
