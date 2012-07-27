@@ -200,13 +200,17 @@ $xref = Bio::EnsEMBL::DBEntry->new
 
 {
   local $ENV{RUNTESTS_HARNESS} = 1;
+  local $ENV{RUNTESTS_HARNESS_NORESTORE} = 1;
   
   # db connection must be severed for threads to access DB    
   $dbEntryAdaptor->dbc->disconnect_if_idle();
+  $multi->get('empty'); # seem to have to do this to stop thread whinging under some perls
   use threads;
   
   my $parallel_store = sub{
       my $xref_id = $dbEntryAdaptor->store( $xref, $tr->dbID, "Transcript" );
+      note $dbEntryAdaptor->dbc();
+      note explain $multi->{conf};
       return $xref_id
   };
      
