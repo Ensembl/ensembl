@@ -55,8 +55,17 @@ sub pipeline_analyses {
         -flow_into  => {
           1 => 'Notify',
           2 => ['GeneGC', 'PepStats'],
-          3 => ['PercentGC', 'PercentRepeat', 'CodingDensity', 'PseudogeneDensity', 'NonCodingDensity'],
+          3 => ['PercentGC', 'PercentRepeat', 'CodingDensity', 'PseudogeneDensity', 'NonCodingDensity', 'GeneCount'],
         },
+      },
+
+      {
+        -logic_name => 'GeneCount',
+        -module     => 'Bio::EnsEMBL::Pipeline::Production::GeneCount',
+        -max_retry_count  => 1,
+        -hive_capacity    => 10,
+        -rc_name          => 'default',
+        -can_be_empty     => 1,
       },
 
       {
@@ -155,7 +164,7 @@ sub pipeline_analyses {
           email   => $self->o('email'),
           subject => $self->o('pipeline_name').' has finished',
         },
-        -wait_for   => ['PepStats', 'GeneGC', 'PercentGC', 'PercentRepeat', 'CodingDensity', 'PseudogeneDensity', 'NonCodingDensity'],
+        -wait_for   => ['PepStats', 'GeneGC', 'PercentGC', 'PercentRepeat', 'CodingDensity', 'PseudogeneDensity', 'NonCodingDensity', 'GeneCount'],
       }
     
     ];
