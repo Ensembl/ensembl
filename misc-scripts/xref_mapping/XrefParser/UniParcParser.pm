@@ -52,8 +52,8 @@ sub _transfer_contents {
     chomp $line;
     my ($upi, $checksum) = split(/\s+/, $line);
     my @output = ($counter++, $source_id, $upi, $checksum);
-    print join("\t", @output);
-    print "\n";
+    print $output_fh join("\t", @output);
+    print $output_fh "\n";
   }
   return;
 }
