@@ -30,7 +30,7 @@ sub run {
   my $target_file = $files->[0].'.mysqlinput';
   my $input_fh = $self->get_filehandle($files->[0]);
   if(-f $target_file) {
-    print "Target file '${target_file}' already exists; removing" if $verbose;
+    print "Target file '${target_file}' already exists; removing\n" if $verbose;
     unlink $target_file;
   }
   my $output_fh = IO::File->new($target_file, 'w');
@@ -67,7 +67,7 @@ sub _load_table {
     $dbh->do('truncate table '.$TABLE_NAME);
   }
   print "Loading data into '$TABLE_NAME' from '$file'\n" if $verbose;
-  my $load = sprintf(q{LOAD DATA LOCAL INFILE '%s'INTO %s}, $file, $TABLE_NAME);
+  my $load = sprintf(q{LOAD DATA LOCAL INFILE '%s'INTO TABLE %s}, $file, $TABLE_NAME);
   $dbh->do($load);
   print "Finished loading data into '$TABLE_NAME'\n" if $verbose;
   return;
