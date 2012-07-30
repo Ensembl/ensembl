@@ -32,12 +32,14 @@ sub run {
   }
   $verbose ||=0;
 
-  my $species_id_to_names = $self->species_id2name();
+  my %species_id_to_names = $self->species_id2name();
+  my $species_id_to_names = \%species_id_to_names;
   my $names = $species_id_to_names->{$species_id};
   my $contents_lookup = $self->_get_contents($files, $verbose);
   my $active = $self->_is_active($contents_lookup, $names, $verbose);
-  $self->_insert_meta($active);
-  
+  $self->add_meta_pair($self->meta_key(),$active);
+  $self->add_meta_pair('species_id',$species_id);
+
   return;
 }
 
@@ -47,7 +49,7 @@ sub _get_contents {
   my $fh = $self->get_filehandle($files->[0]);
   while(my $line = <$fh>) {
     chomp $line;
-    my ($species, $remainder) = $line =~ /^(\w+)_(.+)$/;
+    my ($species, $remainder) = $line =~ /^([a-z|A-Z]+)_(.+)$/;
     croak "The line '$line' is not linked to a gene set. This is unexpected." if $remainder !~ /gene/;
     $lookup{$species} = 1;
   }
@@ -84,12 +86,53 @@ sub _is_active {
   return $active;
 }
 
-sub _insert_meta {
-  my ($self, $active) = @_;
-  my $sth = $self->dbi->prepare('INSERT INTO meta (meta_key, meta_value) values (?,?)');
-  $sth->execute($self->meta_key(), $active);
-  $sth->finish();
-  return;
+#this method is called from XrefMapper/DirectXrefs.pm
+
+sub create_xrefs {
+    my $self = shift;
+    my $verbose = shift;
+
+    my $array_xrefs_meta_key = $self->meta_key();
+  
+    if ($array_xrefs_meta_key) {
+      my $active = $self->get_meta_value($array_xrefs_meta_key);
+      if ($active) {
+	   #create ArrayExpress direct xrefs
+	   my $source_name = 'ArrayExpress';
+	   my $source_id = $self->get_source_id_for_source_name($source_name);
+	   
+	   my $species_id = $self->get_meta_value('species_id');
+	   #get gene stable_ids
+	   my $gene_id_sth = $self->dbi()->prepare("select stable_id from gene_stable_id order by stable_id");
+	   $gene_id_sth->execute();
+	   my $gene_stable_id;
+	   $gene_id_sth->bind_columns(\$gene_stable_id);
+	   my $xref_count = 0;
+	   while ($gene_id_sth->fetch()) {
+	       
+	       my $xref_id = $self->add_xref({ acc        => $gene_stable_id,
+					 label      => $gene_stable_id,
+					 source_id  => $source_id,
+					 species_id => $species_id,
+					 info_type => "DIRECT"} );
+	
+	       $self->add_direct_xref( $xref_id, $gene_stable_id, 'gene', '');
+	       if ($xref_id) {
+		   $xref_count++;
+	       }
+	   }
+	   $gene_id_sth->finish();
+	   
+	   if ($xref_count > 0) {
+	       print "Loaded $xref_count $source_name DIRECT xrefs\n" if $verbose;	       
+	   } else {
+
+	       print "Warning: 0 $source_name DIRECT xrefs loaded even though $source_name is active for the species.\n";
+	   }
+      }
+
+    }
 }
+
 
 1;
