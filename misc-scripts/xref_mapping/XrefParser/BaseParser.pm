@@ -1355,5 +1355,21 @@ sub parsing_finished_store_data {
 } ## end sub parsing_finished_store_data
 
 
+sub get_meta_value {
+  my ($self, $key) = @_;
+
+  my $sth = $self->dbi->prepare('select meta_value from meta where meta_key like "'.$key.'" order by meta_id');
+  $sth->execute();
+  my $value;
+  $sth->bind_columns(\$value);
+  while($sth->fetch){   # get the last one
+  }
+  $sth->finish;
+
+  return $value;
+}
+
+
+
 1;
 
