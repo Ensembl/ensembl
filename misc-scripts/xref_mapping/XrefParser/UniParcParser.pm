@@ -35,7 +35,7 @@ sub run {
   }
   my $output_fh = IO::File->new($target_file, 'w');
   
-  $self->_transfer_contents($input_fh, $output_fh);
+  $self->_transfer_contents($input_fh, $output_fh, $source_id);
   
   close($input_fh);
   close($output_fh);
