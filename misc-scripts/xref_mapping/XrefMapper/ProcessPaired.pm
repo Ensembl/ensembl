@@ -45,7 +45,7 @@ sub process{
 
 
   #this query gives us transcript RefSeq_mRNA% object xrefs, and the paired RefSeq_peptide% accession as well as the translation id for the transcript 
-  my $transcr_obj_xrefs_sth = $self->xref->dbc->prepare("select gtt.translation_id, p.source_id1, p.accession1, ix.query_identity, ix.target_identity from object_xref ox join xref x on (ox.xref_id = x.xref_id and ox.ox_status = 'DUMP_OUT') join source s on (x.source_id = s.source_id and s.name like 'RefSeq\_mRNA%') join pairs p on (x.accession = p.accession2) join gene_transcript_translation gtt on (gtt.transcript_id = ox.ensembl_id and ox.ensembl_object_type = 'Transcript') left join identity_xref ix using(object_xref_id)");
+  my $transcr_obj_xrefs_sth = $self->xref->dbc->prepare("select gtt.translation_id, p.source_id, p.accession1, ix.query_identity, ix.target_identity from object_xref ox join xref x on (ox.xref_id = x.xref_id and ox.ox_status = 'DUMP_OUT') join source s on (x.source_id = s.source_id and s.name like 'RefSeq\_mRNA%') join pairs p on (x.accession = p.accession2) join gene_transcript_translation gtt on (gtt.transcript_id = ox.ensembl_id and ox.ensembl_object_type = 'Transcript') left join identity_xref ix using(object_xref_id)");
 
   #this query is used to check if and object_xref exists for the related translation and paired RefSeq_peptide% with a status of 'DUMP_OUT'
   my $ox_translation_sth =  $self->xref->dbc->prepare("select ox.object_xref_id, ox.xref_id from object_xref ox join xref x using(xref_id) where ox.ox_status = 'DUMP_OUT' and ox.ensembl_object_type = 'Translation' and ox.ensembl_id = ? and x.source_id = ? and x.accession = ?");
