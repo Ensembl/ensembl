@@ -241,4 +241,13 @@ sub assert_executable {
   return 1;
 }
 
+
+## Production database adaptor
+sub get_production_DBAdaptor {
+  my ($self) = @_;
+  return Bio::EnsEMBL::Registry->get_DBAdaptor('multi', 'production');
+}
+
+
+
 1;
