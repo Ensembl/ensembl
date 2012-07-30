@@ -49,6 +49,26 @@ sub xref{
   return $self->{_xref};
 }
 
+# getter/setter for xref db user
+sub user{
+  my ($self, $arg) = @_;
+
+  (defined $arg) &&
+    ($self->{_user} = $arg );
+  return $self->{_user};   
+
+}
+
+#getter/setter for xref db password
+sub pass{
+ my ($self, $arg) = @_;
+
+  (defined $arg) &&
+    ($self->{_pass} = $arg );
+  return $self->{_pass};
+
+}
+
 =head2 uniparc
 
   Arg [1]    : (optional)
@@ -344,6 +364,9 @@ sub process_file {
 			       -pass => $pass,
 			       -group   => 'core',
 			       -dbname => $dbname);
+
+    $mapper->user($user);
+    $mapper->pass($pass);
 
     $mapper->xref($xref);
     $mapper->add_meta_pair("xref", $host.":".$dbname);
