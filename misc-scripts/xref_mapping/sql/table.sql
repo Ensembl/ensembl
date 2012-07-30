@@ -229,7 +229,9 @@ CREATE TABLE coordinate_xref (
 ################################################################################
 
 -- Table for checksum-based Xrefs, based
--- on the input format from UniProt/UniParc
+-- on the input format from UniProt/UniParc. This is MyISAM because
+-- we do a LOAD DATA INFILE & the InnoDB engine does not handle this too
+-- well (especially since there is no need for transactions for this table)
 
 CREATE TABLE checksum_xref (
   checksum_xref_id  INT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -239,7 +241,7 @@ CREATE TABLE checksum_xref (
 
   PRIMARY KEY (checksum_xref_id),
   INDEX checksum_idx(checksum(10))
-) COLLATE=latin1_swedish_ci ENGINE=InnoDB;
+) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
 
 ################################################################################
 
