@@ -13,15 +13,15 @@ sub run {
   my $species    = $self->param('species');
   my $dba        = Bio::EnsEMBL::Registry->get_DBAdaptor($species, 'core');
 
-  my %attrib_codes = $self->get_attrib_codes();
-  $self->delete_old_attrib($dba, %attrib_codes);
+  my @attrib_codes = $self->get_attrib_codes();
+  $self->delete_old_attrib($dba, @attrib_codes);
 
   my $slices = Bio::EnsEMBL::Registry->get_adaptor($species, 'core', 'slice')->fetch_all('toplevel');
   while (my $slice = shift @$slices) {
-    foreach my $key (keys %attrib_codes) {
-      my $count = $self->get_feature_count($slice, $key);
+    foreach my $code (@attrib_codes) {
+      my $count = $self->get_feature_count($slice, $code);
       if ($count > 0) {
-        $self->store_attrib($slice, $count, $attrib_codes{$key});
+        $self->store_attrib($slice, $count, $code);
       }
     }
   }
@@ -29,7 +29,7 @@ sub run {
 
 
 sub delete_old_attrib {
-  my ($self, $dba, %attrib_codes) = @_;
+  my ($self, $dba, @attrib_codes) = @_;
   my $helper = $dba->dbc()->sql_helper();
   my $sql = q{
     DELETE sa
@@ -39,8 +39,8 @@ sub delete_old_attrib {
     AND at.attrib_type_id = sa.attrib_type_id
     AND cs.species_id = ?
     AND at.code = ? };
-  foreach my $key (keys %attrib_codes) {
-    $helper->execute_update(-SQL => $sql, -PARAMS => [$dba->species_id(), $attrib_codes{$key}]);
+  foreach my $code (@attrib_codes) {
+    $helper->execute_update(-SQL => $sql, -PARAMS => [$dba->species_id(), $code]);
   }
 }
 
@@ -50,11 +50,23 @@ sub store_attrib {
   my $aa          = Bio::EnsEMBL::Registry->get_adaptor($self->param('species'), 'core', 'Attribute');
   my $prod_dba    = $self->get_production_DBAdaptor();
   my $prod_helper = $prod_dba->dbc()->sql_helper();
+  my ($name, $description);
   my $sql = q{
-    SELECT name, description
+    SELECT name
     FROM attrib_type
     WHERE code = ? };
-  my ($name, $description) = $prod_helper->execute(-SQL => $sql, -PARAMS => [$code]);
+  my @names = @{ $prod_helper->execute_simple(-SQL => $sql, -PARAMS => [$code]) };
+  foreach my $bit (@names) {
+    $name .= $bit . " ";
+  }
+  $sql = q{
+    SELECT description
+    FROM attrib_type
+    WHERE code = ? };
+  my @descriptions = @{ $prod_helper->execute_simple(-SQL => $sql, -PARAMS => [$code]) };
+  foreach my $bit (@descriptions) {
+    $description .= $bit . " ";
+  }
   my $attrib = Bio::EnsEMBL::Attribute->new(
     -NAME        => $name,
     -CODE        => $code,
@@ -63,12 +75,6 @@ sub store_attrib {
   );
   my @attribs = ($attrib);
   $aa->store_on_Slice($slice, \@attribs);
-}
-
-
-sub get_production_DBAdaptor {
-  my ($self) = @_;
-  return Bio::EnsEMBL::Registry->get_DBAdaptor('multi', 'production');
 }
 
 

@@ -73,20 +73,17 @@ sub run {
 
     my $variation = $self->production_flow($dba, 'variation');
     if ($variation) {
-      push(@dbs, [$self->input_id($dba, 'variation'), $variation]);
-    }
-
-    my $changed = $self->production_flow($dba, 'changed');
-    if($changed) {
-      push(@dbs, [$self->input_id($dba, 'changed'), $changed]);
+      push(@dbs, [$self->input_id($dba), $variation]);
     }
 
     my $all = $self->production_flow($dba, 'all');
     if($all) {
-      push(@dbs, [$self->input_id($dba, 'all'), $all]);
+      push(@dbs, [$self->input_id($dba), $all]);
+      my $karyotype = $self->production_flow($dba, 'karyotype');
+      if ($karyotype) {
+        push(@dbs, [$self->input_id($dba), $karyotype]);
+      }
     }
-
-
   }
   $self->param('dbs', \@dbs);
   return;
@@ -94,12 +91,28 @@ sub run {
 
 
 sub input_id {
-  my ($self, $dba, $type) = @_;
+  my ($self, $dba) = @_;
   my $mc = $dba->get_MetaContainer();
   my $input_id = {
     species => $mc->get_production_name(),
   };
   return $input_id;
+}
+
+
+sub has_karyotype {
+  my ($self, $dba) = @_;
+  my $helper = $dba->dbc()->sql_helper();
+  my $sql = q{
+    SELECT count(*)
+    FROM seq_region_attrib sa, attrib_type at, seq_region s, coord_system cs
+    WHERE s.seq_region_id = sa.seq_region_id
+    AND cs.coord_system_id = s.coord_system_id
+    AND at.attrib_type_id = sa.attrib_type_id
+    AND cs.species_id = ?
+    AND at.code = 'karyotype_rank' };
+  my $count = $helper->execute_single_result(-SQL => $sql, -PARAMS => [$dba->species_id()]);
+  return $count;
 }
 
 sub production_flow {
@@ -108,7 +121,7 @@ sub production_flow {
     if ($class =~ 'variation') {
       return 4;
     }
-    if ($class =~ 'changed') {
+    if ($class =~ 'karyotype') {
       return 3;
     }
     if ($class =~ 'all') {
@@ -120,44 +133,36 @@ sub production_flow {
 
 sub is_run {
   my ($self, $dba, $class) = @_;
-  my @params;
   my $production_name  = $dba->get_MetaContainer()->get_production_name();
+
+  if ($class =~ 'karyotype') {
+    return $self->has_karyotype($dba);
+  }
   
   my $sql = <<'SQL';
      SELECT count(*)
      FROM   db_list dl, db d
      WHERE  dl.db_id = d.db_id and db_type = 'core' and is_current = 1 
      AND full_db_name like ?
+     AND    species_id IN (
+     SELECT species_id 
+     FROM   changelog c, changelog_species cs 
+     WHERE  c.changelog_id = cs.changelog_id 
+     AND    release_id = ?
+     AND    status not in ('cancelled', 'postponed') 
+     AND    (gene_set = 'Y' OR assembly = 'Y' OR repeat_masking = 'Y' OR variation_pos_changed = 'Y'))
 SQL
 
-  push (@params, "$production_name%");
+  my @params = ("$production_name%", $self->param('release'));
 
-  if ($class !~ 'all') {
+  if ($class =~ 'variation') {
     $sql .= <<'SQL';
-       AND    species_id IN (
-       SELECT species_id 
-       FROM   changelog c, changelog_species cs 
-       WHERE  c.changelog_id = cs.changelog_id 
-       AND    release_id = ?
-       AND    status not in ('cancelled', 'postponed') 
-       AND    (gene_set = 'Y' OR assembly = 'Y' OR repeat_masking = 'Y' OR variation_pos_changed = 'Y'))
+     AND    species_id IN (
+     SELECT distinct species_id 
+     FROM   db 
+     WHERE  db_release = ? AND db_type = 'variation')
 SQL
-
-    push(@params, $self->param('release'));
-
-    if ($class !~ 'changed') {
-      $sql .= <<'SQL';
-       AND    species_id IN (
-       SELECT distinct species_id 
-       FROM   db 
-       WHERE  db_release = ? AND db_type = 'variation')
-SQL
-      push (@params, $self->param('release'));
-
-      if ($class !~ 'variation') {
-        $self->throw("Class $self->param('class') is not known");
-      }
-    }
+    push (@params, $self->param('release'));
   }
 
   $dba->dbc()->disconnect_if_idle();
@@ -175,9 +180,5 @@ sub write_output {
 }
 
 
-sub get_production_DBAdaptor {
-  my ($self) = @_;
-  return Bio::EnsEMBL::Registry->get_DBAdaptor('multi', 'production');
-}
 
 1;
