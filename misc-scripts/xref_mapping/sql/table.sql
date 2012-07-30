@@ -238,7 +238,7 @@ CREATE TABLE checksum_xref (
   checksum          CHAR(32) NOT NULL
 
   PRIMARY KEY checksum_xref(checksum_xref_id),
-  INDEX checksum_idx(checksum(10))
+  INDEX checksum_idx(checksum(10)
 ) COLLATE=latin1_swedish_ci ENGINE=InnoDB;
 
 ################################################################################
