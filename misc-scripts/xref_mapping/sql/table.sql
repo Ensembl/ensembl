@@ -235,10 +235,10 @@ CREATE TABLE checksum_xref (
   checksum_xref_id  INT UNSIGNED NOT NULL AUTO_INCREMENT,
   source_id         INT UNSIGNED NOT NULL,
   accession         CHAR(14) NOT NULL,
-  checksum          CHAR(32) NOT NULL
+  checksum          CHAR(32) NOT NULL,
 
   PRIMARY KEY (checksum_xref_id),
-  INDEX checksum_idx(checksum(10)
+  INDEX checksum_idx(checksum(10))
 ) COLLATE=latin1_swedish_ci ENGINE=InnoDB;
 
 ################################################################################
