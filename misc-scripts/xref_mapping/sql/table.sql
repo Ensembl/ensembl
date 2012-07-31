@@ -243,6 +243,7 @@ CREATE TABLE checksum_xref (
   INDEX checksum_idx(checksum(10))
 ) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
 
+
 ################################################################################
 
 ################################################################################
@@ -305,10 +306,10 @@ CREATE TABLE havana_status (
 
 ) COLLATE=latin1_swedish_ci ENGINE=InnoDB;
 
-#
-# Try to keep the status in the correct order
-#   it will make it easier to see what is happening
-#
+
+-- Try to keep the status in the correct order
+--   it will make it easier to see what is happening
+
 
 CREATE TABLE process_status (
   id            INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -328,6 +329,29 @@ CREATE TABLE process_status (
 ) COLLATE=latin1_swedish_ci ENGINE=InnoDB;
 
 
+--This table is populated in DisplayXrefs.pm and is used to set the best xrefs as 
+--display xrefs for genes and transcripts
+
+
+
+CREATE TABLE display_xref_priority(
+    ensembl_object_type	VARCHAR(100),
+    source_id INT UNSIGNED NOT NULL,
+    priority  SMALLINT UNSIGNED NOT NULL,
+
+    PRIMARY KEY (ensembl_object_type, source_id)
+) COLLATE=latin1_swedish_ci ENGINE=InnoDB;
+
+
+--This table is populated in DisplayXrefs.pm and is used to set
+--gene descriptions
+
+CREATE TABLE gene_desc_priority(
+    source_id	   INT UNSIGNED NOT NULL,
+    priority       SMALLINT UNSIGNED NOT NULL,
+
+    PRIMARY KEY (source_id)
+) COLLATE=latin1_swedish_ci ENGINE=InnoDB;
                      
 
 ################################################################################
