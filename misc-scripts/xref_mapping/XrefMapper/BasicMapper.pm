@@ -935,6 +935,15 @@ sub clean_up{
   $sth = $self->xref->dbc->prepare($sql);
   $sth->execute(); 
 
+  $sql = "DELETE from display_xref_priority";
+  $sth = $self->xref->dbc->prepare($sql);
+  $sth->execute();
+      
+
+  $sql = "DELETE from gene_desc_priority";
+  $sth = $self->xref->dbc->prepare($sql);
+  $sth->execute();
+
 
   if (!$keep_core_data) {
       # remove all from core_info tables
