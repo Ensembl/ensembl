@@ -77,6 +77,9 @@ sub run {
     }
 
     my $all = $self->production_flow($dba, 'all');
+    if ($self->param('run_all')) {
+      $all = 2;
+    }
     if($all) {
       push(@dbs, [$self->input_id($dba), $all]);
       my $karyotype = $self->production_flow($dba, 'karyotype');
