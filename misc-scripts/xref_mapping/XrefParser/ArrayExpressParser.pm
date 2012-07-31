@@ -37,6 +37,10 @@ sub run {
   my $names = $species_id_to_names->{$species_id};
   my $contents_lookup = $self->_get_contents($files, $verbose);
   my $active = $self->_is_active($contents_lookup, $names, $verbose);
+
+  if ($active && $verbose) {
+      print "ArrayExpress xrefs will be created when running xref_mapper.pl/DirectXrefs.pm as gene stable ids are required to create the xrefs\n";
+  }
   $self->add_meta_pair($self->meta_key(),$active);
   $self->add_meta_pair('species_id',$species_id);
 
