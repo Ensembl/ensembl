@@ -1,4 +1,4 @@
-#!/usr/local/ensembl/bin/perl -w
+#!/usr/bin/env perl
 
 use strict;
 use warnings;
@@ -99,8 +99,10 @@ my $select_stmt = qq(
 SELECT DISTINCT LCASE(meta_value)
 FROM    meta
 WHERE meta_key IN (
-  'species.taxonomy_id', 'species.common_name',
-  'species.ensembl_common_name', 'species.ensembl_alias_name'
+  'species.taxonomy_id',
+  'species.common_name',
+  'species.ensembl_common_name',
+  'species.ensembl_alias_name'
 )
   AND species_id = 1
 );
