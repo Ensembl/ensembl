@@ -48,32 +48,33 @@ sub gene_description_filter_regexps {
 sub transcript_display_xref_sources {
   my $self     = shift;
 
-  my @list = qw(HGNC
-                MGI
-                Clone_based_vega_gene
-                Clone_based_ensembl_gene
-                HGNC_transcript_name
-                MGI_transcript_name
-                Clone_based_vega_transcript
-                Clone_based_ensembl_transcript
+  my @list = qw(RFAM
                 miRBase
-                RFAM
-                IMGT/GENE_DB
-                SGD
-                flybase_symbol
-                Anopheles_symbol
-                Genoscope_annotated_gene
                 Uniprot/SWISSPROT
                 Uniprot/Varsplic
-                Uniprot/SPTREMBL
+               
+  );
+
+  my %ignore;
+
+  return [\@list,\%ignore];
+
+}
+
+
+sub gene_display_xref_sources {
+  my $self     = shift;
+	
+  my @list = qw(RFAM
+                miRBase
+                Uniprot_genename
                 EntrezGene);
 
   my %ignore;
-  
 
-  # Both methods
+  #don't use EntrezGene labels dependent on predicted RefSeqs
 
-  $ignore{"EntrezGene"} =(<<'IEG');
+$ignore{'EntrezGene'} =<<IEG;
 SELECT DISTINCT ox.object_xref_id
   FROM object_xref ox, dependent_xref dx, 
        xref xmas, xref xdep, 
@@ -85,20 +86,21 @@ SELECT DISTINCT ox.object_xref_id
           xdep.source_id = sdep.source_id AND
           smas.name like "Refseq%predicted" AND
           sdep.name like "EntrezGene" AND
-          ox.ox_status = "DUMP_OUT"
+          ox.ox_status = "DUMP_OUT" 	 
 IEG
 
-    $ignore{"Uniprot/SPTREMBL"} =(<<BIGN);
-SELECT object_xref_id
-    FROM object_xref JOIN xref USING(xref_id) JOIN source USING(source_id)
-     WHERE ox_status = 'DUMP_OUT' AND name = 'Uniprot/SPTREMBL' 
-      AND priority_description = 'protein_evidence_gt_2'
-BIGN
+  #don't use labels starting with LOC
 
+$ignore{'LOC_prefix'} =<<LOCP;
+SELECT object_xref_id
+  FROM object_xref JOIN xref USING(xref_id) JOIN source USING(source_id)
+   WHERE ox_status = 'DUMP_OUT' AND label REGEXP '^LOC[[:digit:]]+'
+LOCP
 
   return [\@list,\%ignore];
 
 }
+
 
 
 sub new {
@@ -548,105 +550,99 @@ sub set_display_xrefs{
   my $update_gene_sth = $self->core->dbc->prepare("UPDATE gene g SET g.display_xref_id= ? WHERE g.gene_id=?");
   my $update_tran_sth = $self->core->dbc->prepare("UPDATE transcript t SET t.display_xref_id= ? WHERE t.transcript_id=?");
 
- #get hash for sources in hash
-  #get priority description
-
-my $sql =(<<SQL); 
-  CREATE TABLE display_xref_prioritys(
-    source_id INT NOT NULL,
-    priority       INT NOT NULL,
-    PRIMARY KEY (source_id)
-  ) COLLATE=latin1_swedish_ci ENGINE=InnoDB
-SQL
-
-  my $sth = $self->xref->dbc->prepare($sql);
-  $sth->execute;
-  $sth->finish;
-
-  my $presedence;
-  my $ignore; 
-  if( $self->mapper->can("transcript_display_xref_sources") ){
-    ($presedence, $ignore) = @{$self->mapper->transcript_display_xref_sources(1)}; # FULL update mode pass 1
-  }
-  else{
-    ($presedence, $ignore) = @{$self->transcript_display_xref_sources(1)}; # FULL update mode pass 1
-  }
-
-  my $i=0;
-  
-  my $ins_p_sth = $self->xref->dbc->prepare("INSERT into display_xref_prioritys (source_id, priority) values(?, ?)");
-  my $get_source_id_sth = $self->xref->dbc->prepare("select source_id from source where name like ? order by priority desc");
-
-#
-# So the higher the number the better then 
-#
 
 
-  my $last_name = "";
-  print "Presedence for the display xrefs\n" if($self->verbose);
-  foreach my $name (reverse (@$presedence)){
-    $i++;
-    $get_source_id_sth->execute($name);
-    my $source_id;
-    $get_source_id_sth->bind_columns(\$source_id);
-    while($get_source_id_sth->fetch){
-      $ins_p_sth->execute($source_id, $i);
-      if($name ne $last_name){
-	print "\t$name\t$i\n" if ($self->verbose);
-      }	
-      $last_name = $name;
-    }
-  }
-  $ins_p_sth->finish;
-  $get_source_id_sth->finish;
+  # Set status to 'NO_DISPLAY' for object_xrefs with a display_label that is just numeric;
 
-
-#
-# Set status to 'NO_DISPLAY' for those that match the ignore REGEXP in object_xref
-# Xrefs have already been dump to core etc so no damage done.
-#
-
-  my $update_ignore_sth = $self->xref->dbc->prepare('UPDATE object_xref SET ox_status = "NO_DISPLAY" where object_xref_id = ?');
-
-  foreach my $ignore_sql (values %$ignore){
-    print "IGNORE SQL: $ignore_sql\n" if($self->verbose);
-    my $ignore_sth = $self->xref->dbc->prepare($ignore_sql);
-
-    my $gene_count = 0;
-    $ignore_sth->execute();
-    my ($object_xref_id); 
-    $ignore_sth->bind_columns(\$object_xref_id);
-    while($ignore_sth->fetch()){    
-      $update_ignore_sth->execute($object_xref_id);
-    }
-    $ignore_sth->finish;
-  }
-  $update_ignore_sth->finish;
-
-#
-# Do a similar thing for those with a display_label that is just numeric;
-#
-
-  $update_ignore_sth = $self->xref->dbc->prepare('UPDATE object_xref ox, source s, xref x SET ox_status = "NO_DISPLAY" where ox_status like "DUMP_OUT" and s.source_id = x.source_id and x.label REGEXP "^[0-9]+$" and ox.xref_id = x.xref_id');
+  my $update_ignore_sth = $self->xref->dbc->prepare('UPDATE object_xref ox, source s, xref x SET ox_status = "NO_DISPLAY" where ox_status like "DUMP_OUT" and s.source_id = x.source_id and x.label REGEXP "^[0-9]+$" and ox.xref_id = x.xref_id');
 
   $update_ignore_sth->execute();
   $update_ignore_sth->finish;
 
 
-#######################################################################
+  my $ins_p_sth = $self->xref->dbc->prepare("INSERT into display_xref_priority (ensembl_object_type,source_id, priority) values(?, ?, ?)");
+  my $get_source_id_sth = $self->xref->dbc->prepare("select source_id from source where name like ? order by priority");
+  my $list_sources_sth = $self->xref->dbc->prepare("select distinct name from display_xref_priority d join source using(source_id) where ensembl_object_type = ? order by d.priority");
 
+  $update_ignore_sth = $self->xref->dbc->prepare('UPDATE object_xref SET ox_status = "NO_DISPLAY" where object_xref_id = ?');
+
+
+  my %object_types = ('gene' => 'Gene', 'transcript' => 'Transcript'); 
+  
+  foreach my $object_type (keys %object_types) {
+
+      my $precedence;
+      my $ignore; 
+      my $method = $object_type . '_display_xref_sources';
+      if( $self->mapper->can($method) ){
+	  ($precedence, $ignore) = @{$self->mapper->method()};
+      }
+      else{
+	  ($precedence, $ignore) = @{$self->$method()};
+      }
+
+      # The lower the priority number the better then 
+      my $i=0;
+      foreach my $name (@$precedence){
+	  $i++;
+	  $get_source_id_sth->execute($name);
+	  my $source_id;
+	  $get_source_id_sth->bind_columns(\$source_id);
+	  while($get_source_id_sth->fetch){
+	      $ins_p_sth->execute($object_types{$object_type},$source_id, $i);
+	  }
+      }
+      $ins_p_sth->finish;
+      $get_source_id_sth->finish;
+
+      $i = 0;
+      if ($self->verbose) {
+	  print "Precedence for $object_type display xrefs (1- best name)\n";
+	  $list_sources_sth->execute($object_types{$object_type});
+	  my $source_name;
+	  $list_sources_sth->bind_columns(\$source_name);
+	  while ($list_sources_sth->fetch() ) {
+	      $i++;
+	      print "\t$i\t$source_name\n";
+	  }
+ 
+      }
+
+      # Set status to 'NO_DISPLAY' for those that match the ignore REGEXP in object_xref
+      # Xrefs have already been dump to core etc so no damage done.
+
+      foreach my $ignore_sql (values %$ignore){
+	  print "IGNORE SQL: $ignore_sql\n" if($self->verbose);
+	  my $ignore_sth = $self->xref->dbc->prepare($ignore_sql);
+	  $ignore_sth->execute();
+	  my ($object_xref_id); 
+	  $ignore_sth->bind_columns(\$object_xref_id);
+	  while($ignore_sth->fetch()){    
+	      $update_ignore_sth->execute($object_xref_id);
+	  }
+	  $ignore_sth->finish;
+      }
+      $update_ignore_sth->finish;
+
+
+#look at sources of display xrefs which are relevant for this object type
+#(listed in gene_display_xref_sources() or transcript_display_xref_sources() )
+#but get xrefs for all levels Gene, its Transcripts and Translations 
+#######################################################################
 my $display_xref_sql =(<<DXS);
-select  IF (ox.ensembl_object_type = 'Gene',        gtt_gene.gene_id,
-        IF (ox.ensembl_object_type = 'Transcript',  gtt_transcript.gene_id,
-          gtt_translation.gene_id)) AS gene_id,
-        IF (ox.ensembl_object_type = 'Gene',        gtt_gene.transcript_id,
-        IF (ox.ensembl_object_type = 'Transcript',  gtt_transcript.transcript_id,
-          gtt_translation.transcript_id)) AS transcript_id,
+select  CASE ox.ensembl_object_type
+           WHEN 'Gene' THEN gtt_gene.gene_id
+	   WHEN 'Transcript' THEN gtt_transcript.gene_id
+	   WHEN 'Translation' THEN gtt_translation.gene_id
+	END AS d_gene_id,
+        CASE ox.ensembl_object_type
+           WHEN 'Gene' THEN gtt_gene.transcript_id
+	   WHEN 'Transcript' THEN gtt_transcript.transcript_id
+	   WHEN 'Translation' THEN gtt_translation.transcript_id
+        END AS d_transcript_id,
         p.priority as priority,
-        x.xref_id, 
-        ox.ensembl_object_type as object_type,
-        x.label  as label
-from    (   display_xref_prioritys p
+        x.xref_id
+from    (   display_xref_priority p
     join  (   source s
       join    (   xref x
         join      (   object_xref ox
@@ -663,61 +659,59 @@ from    (   display_xref_prioritys p
   left join gene_transcript_translation gtt_translation
     on (gtt_translation.translation_id = ox.ensembl_id)
 where   ox.ox_status = 'DUMP_OUT'
-order by    gene_id DESC, p.priority DESC, (ix.target_identity+ix.query_identity) DESC, ox.unused_priority DESC
+        and p.ensembl_object_type = ?
+order by d_gene_id, ox.ensembl_object_type, 
+	p.priority, (ix.target_identity + ix.query_identity) DESC, unused_priority DESC;
 
 DXS
 
 
 ########################################################################
 
-  my %seen_transcript; # first time we see it is the best due to ordering :-)
-                         # so either write data to database or store
+      my %object_seen;
+ 
+      my $display_xref_sth = $self->xref->dbc->prepare($display_xref_sql);
 
+      my $display_xref_count = 0;
+      $display_xref_sth->execute($object_type);
+      my ($gene_id, $transcript_id, $priority, $xref_id);  
+      $display_xref_sth->bind_columns(\$gene_id, \$transcript_id, \$priority, \$xref_id);
+      while($display_xref_sth->fetch()){
+	  my $object_id;
+	  if ($object_type eq 'gene') {
+	      $object_id = $gene_id;
+	  } elsif ($object_type eq 'transcript') {
+	      $object_id = $transcript_id;
+	  }
+
+	  if (!exists($object_seen{$object_id}) ) {
+	      if ($object_type eq 'gene') {
+		  $update_gene_sth->execute($xref_id+$xref_offset, $object_id);
+	      } elsif ($object_type eq 'transcript') {
+		  $update_tran_sth->execute($xref_id+$xref_offset, $object_id);
+	      }    
+	      $display_xref_count++;
+	      $object_seen{$object_id} = 1;
+	  }
+      } 
   
-#  my $gene_sth = $self->core->dbc->prepare("select x.display_label from gene g, xref x where g.display_xref_id = x.xref_id and g.gene_id = ?"); 
-#  my $tran_sth = $self->core->dbc->prepare("select x.display_label from transcript t, xref x where t.display_xref_id = x.xref_id and t.transcript_id = ?"); 
+      $display_xref_sth->finish;
+      $update_gene_sth->finish;
+      $update_tran_sth->finish;
 
+      print "Updated $display_xref_count $object_type display_xrefs\n" if($self->verbose);
 
-  my $last_gene = 0;
-
-  my $display_xref_sth = $self->xref->dbc->prepare($display_xref_sql);
-
-  my $gene_count = 0;
-  $display_xref_sth->execute();
-  my ($gene_id, $transcript_id, $p, $xref_id, $type, $label);  # remove labvel after testig it is not needed
-  $display_xref_sth->bind_columns(\$gene_id, \$transcript_id, \$p, \$xref_id, \$type, \$label);
-  while($display_xref_sth->fetch()){
-    if($gene_id != $last_gene){
-      $update_gene_sth->execute($xref_id+$xref_offset, $gene_id);
-      $last_gene = $gene_id;
-      $gene_count++;
-    } 
-    if($type ne "Gene"){
-      if(!defined($seen_transcript{$transcript_id})){ # not seen yet so its the best
-	$update_tran_sth->execute($xref_id+$xref_offset, $transcript_id);
-      }
-      $seen_transcript{$transcript_id} = $xref_id+$xref_offset;
-      
-    }
   }
-  $display_xref_sth->finish;
-  $update_gene_sth->finish;
-  $update_tran_sth->finish;
 
   #
-  # reset the status to DUMP_OUT fro thise that where ignored for the display_xref;
+  # reset the status to DUMP_OUT fro object_xrefs that where ignored for the display_xref;
   #
 
   my $reset_status_sth = $self->xref->dbc->prepare('UPDATE object_xref SET ox_status = "DUMP_OUT" where ox_status = "NO_DISPLAY"');
   $reset_status_sth->execute();
   $reset_status_sth->finish;
 
-  $sth = $self->xref->dbc->prepare("drop table display_xref_prioritys");
-  $sth->execute || die "Could not drop temp table display_xref_prioritys\n";
-  $sth->finish;  
 
-
-  print "Updated $gene_count display_xrefs for genes\n" if($self->verbose);
 }
 
 
@@ -826,25 +820,14 @@ sub set_gene_descriptions{
   my %source_id_to_external_name = %$source_id_to_external_name_href;
   my %name_to_source_id = %$name_to_source_id_href;
   
-  $sql =(<<SQL); 
-  CREATE TABLE gene_desc_prioritys(
-    source_id INT NOT NULL,
-    priority       INT NOT NULL,
-    PRIMARY KEY (source_id)
-  ) COLLATE=latin1_swedish_ci ENGINE=InnoDB
-SQL
 
-  $sth = $self->xref->dbc->prepare($sql);
-  $sth->execute;
-  $sth->finish;
-
-  my @presedence;
+  my @precedence;
   my @regexps;
   if( $self->mapper->can("gene_description_sources") ){
-    @presedence = $self->mapper->gene_description_sources();
+    @precedence = $self->mapper->gene_description_sources();
   }
   else{
-    @presedence = $self->gene_description_sources();
+    @precedence = $self->gene_description_sources();
   }
 
   if( $self->mapper->can("gene_description_filter_regexps") ){
@@ -853,46 +836,52 @@ SQL
   else{
     @regexps = $self->gene_description_filter_regexps();
   }
-
-
-  my $i=0;
   
-  my $ins_p_sth = $self->xref->dbc->prepare("INSERT into gene_desc_prioritys (source_id, priority) values(?, ?)");
+  my $ins_p_sth = $self->xref->dbc->prepare("INSERT into gene_desc_priority (source_id, priority) values(?, ?)");
   my $get_source_id_sth = $self->xref->dbc->prepare("select source_id from source where name like ?");
+  my $list_sources_sth = $self->xref->dbc->prepare("select distinct name from gene_desc_priority d join source using(source_id) order by d.priority");
 
-#
-# So the higher the number the better then 
-#
-
-
-  print "Presedence for Gene Descriptions\n" if($self->verbose);
-  my $last_name = "";
-  foreach my $name (reverse (@presedence)){
-    $i++;
-    $get_source_id_sth->execute($name);
-    my $source_id;
-    $get_source_id_sth->bind_columns(\$source_id);
-    while($get_source_id_sth->fetch){
-      $ins_p_sth->execute($source_id, $i);
-      if($last_name ne $name){
-	print "\t$name\t$i\n" if ($self->verbose);
-      }
-      $last_name = $name;
-    }
+  # The lower the priority number the better then 
+  my $i=0;
+  foreach my $name (@precedence){
+     $i++;
+     $get_source_id_sth->execute($name);
+     my $source_id;
+     $get_source_id_sth->bind_columns(\$source_id);
+     while($get_source_id_sth->fetch){
+	  $ins_p_sth->execute($source_id, $i);
+     }
   }
   $ins_p_sth->finish;
   $get_source_id_sth->finish;
 
 
+  $i = 0;
+  if ($self->verbose) {
+      print "Precedence for gene descriptions (1- best description)\n";
+      $list_sources_sth->execute();
+      my $source_name;
+      $list_sources_sth->bind_columns(\$source_name);
+      while ($list_sources_sth->fetch() ) {
+	  $i++;
+	  print "\t$i\t$source_name\n";
+      }
+ 
+  }
+
+
+
 #######################################################################
 my $gene_desc_sql =(<<DXS);
-select  IF (ox.ensembl_object_type = 'Gene',        gtt_gene.gene_id,
-        IF (ox.ensembl_object_type = 'Transcript',  gtt_transcript.gene_id,
-          gtt_translation.gene_id)) AS gene_id,
+select  CASE ox.ensembl_object_type
+           WHEN 'Gene' THEN gtt_gene.gene_id
+	   WHEN 'Transcript' THEN gtt_transcript.gene_id
+	   WHEN 'Translation' THEN gtt_translation.gene_id
+	END AS d_gene_id,
         x.description AS description,
         s.source_id AS source_id,
         x.accession AS accession
-from    (   gene_desc_prioritys p
+from    (   gene_desc_priority p
     join  (   source s
       join    (   xref x
         join      (   object_xref ox
@@ -909,8 +898,9 @@ from    (   gene_desc_prioritys p
   left join gene_transcript_translation gtt_translation
     on (gtt_translation.translation_id = ox.ensembl_id)
 where   ox.ox_status = 'DUMP_OUT'
-order by    gene_id desc,
-            p.priority desc,
+order by    d_gene_id,
+            ox.ensembl_object_type,
+            p.priority,
             (ix.target_identity+ix.query_identity) desc
 
 DXS
@@ -918,9 +908,6 @@ DXS
 ######################################################################## 
   
   my $gene_sth = $self->core->dbc->prepare("select g.description from gene g where g.gene_id = ?"); 
-
-
-  my $last_gene = 0;
 
   my %no_source_name_in_desc;
   if( $self->mapper->can("no_source_label_list") ){
@@ -934,36 +921,31 @@ DXS
   my $gene_desc_sth = $self->xref->dbc->prepare($gene_desc_sql);
 
   $gene_desc_sth->execute();
-  my ($gene_id, $desc,$source_id,$label);  # remove labvel after testig it is not needed
-  $gene_desc_sth->bind_columns(\$gene_id, \$desc, \$source_id, \$label);
+  my ($gene_id, $desc,$source_id,$label);  
+  $gene_desc_sth->bind_columns(\$gene_id, \$desc, \$source_id,\$label);
   
-  my $gene_count = 0;
+  my %gene_desc_updated;
+
   while($gene_desc_sth->fetch()){
-    #    print "$gene_id, $transcript_id, $p, $xref_id, $type, $label\n";
+     
+    next if(exists($ignore{$gene_id}) || exists($gene_desc_updated{$gene_id}));
     
-    next if(defined($ignore{$gene_id}));
-    
-    if($gene_id != $last_gene and defined($desc) ){
+    if(defined($desc) ){
       my $filtered_description = $self->filter_by_regexp($desc, \@regexps);
       if ($filtered_description ne "") {
 	if(!defined($no_source_name_in_desc{$source_id})){
 	  $desc .= " [Source:".$source_id_to_external_name{$source_id}.";Acc:".$label."]";
 	}
 	$update_gene_desc_sth->execute($desc,$gene_id);
-        $gene_count++;
-	$last_gene = $gene_id;
+	$gene_desc_updated{$gene_id} = 1;
       }
     }
   }
   $update_gene_desc_sth->finish;
   $gene_desc_sth->finish;
-  print "$gene_count gene descriptions added\n";# if($self->verbose);
+  print scalar(keys %gene_desc_updated) ." gene descriptions added\n";
   
 
-
-  $sth = $self->xref->dbc->prepare("drop table gene_desc_prioritys");
-  $sth->execute || die "Could not drop temp table gene_desc_prioritys\n";
-  $sth->finish;  
 }
 
 sub filter_by_regexp {
