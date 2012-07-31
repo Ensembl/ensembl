@@ -21,6 +21,8 @@ sub default_options {
         
         release => software_version(),
 
+        run_all => 0,
+
         bin_count => '150',
         
         ### Defaults 
@@ -50,12 +52,13 @@ sub pipeline_analyses {
         -module     => 'Bio::EnsEMBL::Pipeline::Production::ClassSpeciesFactory',
         -parameters => {
           species => $self->o('species'),
+          run_all => $self->o('run_all')
         },
         -input_ids  => [ {} ],
         -flow_into  => {
           1 => 'Notify',
-          2 => ['GeneGC', 'PepStats'],
-          3 => ['PercentGC', 'PercentRepeat', 'CodingDensity', 'PseudogeneDensity', 'NonCodingDensity', 'GeneCount'],
+          2 => ['GeneGC', 'PepStats', 'GeneCount'],
+          3 => ['PercentGC', 'PercentRepeat', 'CodingDensity', 'PseudogeneDensity', 'NonCodingDensity'],
         },
       },
 
