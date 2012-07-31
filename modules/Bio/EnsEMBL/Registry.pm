@@ -2141,12 +2141,30 @@ sub load_registry_from_db {
 
   $self->find_and_add_aliases( '-handle'         => $dbh,
                                '-species_suffix' => $species_suffix );
+                               
+  $self->_additional_aliases($species_suffix);
 
   $dbh->disconnect();
   
   return $self->get_DBAdaptor_count() - $original_count;
 
 } ## end sub load_registry_from_db
+
+
+# Used as a place to push "hack" aliases
+sub _additional_aliases {
+  my ($self, $species_suffix) = @_;
+  
+  #Adding branch-68 thirteen-lined ground squirrel "old" aliases
+  Bio::EnsEMBL::Utils::ConfigRegistry->add_alias(
+    -species => 'ictidomys_tridecemlineatus'.$species_suffix,
+    -alias   => ['spermophilus_tridecemlineatus'.$species_suffix] );
+  Bio::EnsEMBL::Utils::ConfigRegistry->add_alias(
+    -species => 'ictidomys_tridecemlineatus'.$species_suffix,
+    -alias   => ['spermophilus tridecemlineatus'.$species_suffix] );
+  
+  return;
+} # end sub _additional_aliases
 
 =head2 _group_to_adaptor_class
 
