@@ -132,16 +132,10 @@ sub genes_and_transcripts_attributes_set{
   # build_meta_timestamp, and, if "-upload" is set, uses the SQL files
   # produced to update the core database.
 
-  my ($self, $noxref_database) = @_;
+  my ($self) = @_;
 
-  my $status;
-  if(defined($noxref_database)){
-    $status = "none";
-  }
-  else{
-    $status = $self->mapper->xref_latest_status();
-  }
-     
+  my $status = $self->mapper->xref_latest_status();
+    
   if($self->mapper->can("set_display_xrefs")){
     $self->mapper->set_display_xrefs();
   }
@@ -176,11 +170,10 @@ sub genes_and_transcripts_attributes_set{
   $sth_lrg->execute;
 
 
-  if(!defined($noxref_database)){
-    my $sth_stat = $self->xref->dbc->prepare("insert into process_status (status, date) values('gene_description_done',now())");
-    $sth_stat->execute();
-    $sth_stat->finish;
-  }
+  $sth_stat = $self->xref->dbc->prepare("insert into process_status (status, date) values('gene_description_done',now())");
+  $sth_stat->execute();
+  $sth_stat->finish;
+  
 
   return 1;
 }
@@ -575,7 +568,7 @@ sub set_display_xrefs{
       my $ignore; 
       my $method = $object_type . '_display_xref_sources';
       if( $self->mapper->can($method) ){
-	  ($precedence, $ignore) = @{$self->mapper->method()};
+	  ($precedence, $ignore) = @{$self->mapper->$method()};
       }
       else{
 	  ($precedence, $ignore) = @{$self->$method()};
