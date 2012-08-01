@@ -453,6 +453,10 @@ sub create_xrefs {
 	  #we don't want to parse Orphanet xrefs via Uniprot, we get them from Orphanet with descriptions
 	  next;
 	}
+	if($source =~ "ArrayExpress"){
+	    next;
+	}
+
 	if (exists $dependent_sources{$source} ) {
 	  # create dependent xref structure & store it
 	  my %dep;
