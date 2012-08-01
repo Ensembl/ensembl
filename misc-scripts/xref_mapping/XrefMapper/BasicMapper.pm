@@ -343,9 +343,6 @@ sub process_file {
 			       -group   => 'core',
 			       -dbname => $dbname);
 
-    $mapper->user($user);
-    $mapper->pass($pass);
-
     $mapper->xref($xref);
     $mapper->add_meta_pair("xref", $host.":".$dbname);
     if(defined($xref_hash{'dir'})){
