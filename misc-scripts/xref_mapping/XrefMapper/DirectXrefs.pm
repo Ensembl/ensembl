@@ -21,8 +21,6 @@ sub new {
   $self->core($mapper->core);
   $self->xref($mapper->xref);
   $self->verbose($mapper->verbose);
-  $self->user($mapper->user);
-  $self->pass($mapper->pass);
   return $self;
 }
 
