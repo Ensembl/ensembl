@@ -4,11 +4,11 @@ For each release regenerate resource files by running script generate_LinkOut.pl
 
 Upload new resource files to NCBI:
 
-It's best to do it one day before the release, in the afternoon. NCBI links are regenerated every day based on the resource files in each provider’s directory. 
+It's best to do it on the first day of the release. NCBI links are regenerated every day based on the resource files in each provider’s directory. 
 
 Host:  ftp-private.ncbi.nlm.nih.gov
 Username: ensem
-Password: fQsX9mcY
+Password: xxxx - check confluence page for full instructions and password: http://www.ebi.ac.uk/seqdb/confluence/display/ENS/NCBI+LinkOut+files
 
 Instructions:
 http://www.ncbi.nlm.nih.gov/books/NBK3807/#files.Transferring_Files_via_FTP
