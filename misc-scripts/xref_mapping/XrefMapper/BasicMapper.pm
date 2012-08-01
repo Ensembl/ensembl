@@ -49,26 +49,6 @@ sub xref{
   return $self->{_xref};
 }
 
-# getter/setter for xref db user
-sub user{
-  my ($self, $arg) = @_;
-
-  (defined $arg) &&
-    ($self->{_user} = $arg );
-  return $self->{_user};   
-
-}
-
-#getter/setter for xref db password
-sub pass{
- my ($self, $arg) = @_;
-
-  (defined $arg) &&
-    ($self->{_pass} = $arg );
-  return $self->{_pass};
-
-}
-
 =head2 uniparc
 
   Arg [1]    : (optional)
@@ -225,8 +205,6 @@ sub process_file {
   my $self = shift;
   my $file = shift;
   my $verbose = shift;
-  my $no_xref = shift;
-
   
 
   my $xref=undef;
@@ -340,7 +318,7 @@ sub process_file {
   }
 
 
-  if(defined($xref_hash{host}) and (!defined($no_xref))){
+  if(defined($xref_hash{host}) ){
     my ($host, $user, $dbname, $pass, $port);
     $host = $xref_hash{'host'};
     $user = $xref_hash{'user'};
@@ -381,12 +359,10 @@ sub process_file {
     }
 
   }
-  elsif(!defined($no_xref)){
+  else {
     croak "No host name given for xref database\n";
   }
-  else{
-    print "No xref database is too be used\n" if ($verbose)
-  }
+ 
   
   #If we had UniParc information then create the settings
   if($uniparc_hash{dbname}) {
@@ -429,19 +405,19 @@ sub process_file {
 				  -dbname => $dbname);
     
     $mapper->core($core);
-    if(!defined($no_xref)){
-      $mapper->add_meta_pair("species", $host.":".$dbname);
+    
+    $mapper->add_meta_pair("species", $host.":".$dbname);
 
-      if(defined($species_hash{'dir'})){
-	$core->dir($species_hash{'dir'});
-	if(!-d $species_hash{'dir'}){
+    if(defined($species_hash{'dir'})){
+       $core->dir($species_hash{'dir'});
+       if(!-d $species_hash{'dir'}){
 	  croak "directory ".$species_hash{'dir'}." does not exist please create this\n";
-	}
-      }    
-      else{
-	croak "No directory specified for the ensembl fasta files\n";
-      }
+       }
+    }    
+    else{
+       croak "No directory specified for the ensembl fasta files\n";
     }
+    
     $core->species($value);
 
     #connect to previous release of core db if connection details specified in xref_input (pr_host, pr_port, pr_dbname, pr_user) 
