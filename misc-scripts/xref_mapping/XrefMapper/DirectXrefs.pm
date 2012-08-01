@@ -6,8 +6,6 @@ use vars '@ISA';
 @ISA = qw{ XrefMapper::BasicMapper };
 
 use XrefMapper::BasicMapper;
-use XrefParser::ArrayExpressParser;
-use XrefParser::Database;
 
 use Cwd;
 use DBI;
@@ -44,21 +42,6 @@ IIX
 
 sub process {
   my $self = shift;
-
-  #check if ArrayExpress xrefs are available for this species
-  my $xref_parser_db =  XrefParser::Database->new( {host   => $self->xref()->dbc()->host,
-					     port   => $self->xref()->dbc()->port,
-					     user   => $self->user,
-					     dbname => $self->xref()->dbc()->dbname,
-					     pass   => $self->pass });
-
-
-  my $array_xrefs_parser = XrefParser::ArrayExpressParser->new($xref_parser_db,$self->verbose());
-  
-  $array_xrefs_parser->create_xrefs($self->verbose());
-
-  $array_xrefs_parser = undef;
-  $xref_parser_db = undef;
 
   # Now process the direct xrefs and add data to the object xrefs remember dependent xrefs.
 
