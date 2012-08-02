@@ -55,21 +55,8 @@ sub pipeline_analyses {
         -input_ids  => [ {} ],
         -flow_into  => {
           1 => 'Notify',
-          2 => ['PepStatsOtherf', 'PepStatsVega', 'ConstitutiveExons'],
+          2 => ['PepStatsVega', 'ConstitutiveExons'],
         },
-      },
-
-      {
-        -logic_name => 'PepStatsOtherf',
-        -module     => 'Bio::EnsEMBL::Pipeline::Production::PepStats',
-        -parameters => {
-          tmpdir => '/tmp', binpath => '/software/pubseq/bin/emboss',
-          dbtype => 'otherfeatures',
-        },
-        -max_retry_count  => 5,
-        -hive_capacity    => 10,
-        -rc_name          => 'mem',
-        -can_be_empty     => 1,
       },
 
       {
@@ -106,7 +93,7 @@ sub pipeline_analyses {
           email   => $self->o('email'),
           subject => $self->o('pipeline_name').' has finished',
         },
-        -wait_for   => ['PepStatsOtherf', 'PepStatsVega', 'ConstitutiveExons'],
+        -wait_for   => ['PepStatsVega', 'ConstitutiveExons'],
       }
     
     ];
