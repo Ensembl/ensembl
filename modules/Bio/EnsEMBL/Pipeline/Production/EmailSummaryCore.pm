@@ -18,6 +18,7 @@ sub fetch_input {
   my $pseudogene_density = $self->jobs('PseudogeneDensity');
   my $non_coding_density = $self->jobs('NonCodingDensity');
   my $gene_count = $self->jobs('GeneCount');
+  my $ct_exons = $self->jobs('ConstitutiveExons');
 
     
   my @args = (
@@ -37,6 +38,8 @@ sub fetch_input {
     $non_coding_density->{failed_jobs},
     $gene_count->{successful_jobs},
     $gene_count->{failed_jobs},
+    $ct_exons->{successful_jobs},
+    $ct_exons->{failed_jobs},
     $self->failed(),
     $self->summary($pep_stats),
     $self->summary($gene_gc),
@@ -46,6 +49,7 @@ sub fetch_input {
     $self->summary($pseudogene_density),
     $self->summary($non_coding_density),
     $self->summary($gene_count),
+    $self->summary($ct_exons),
   );
   
   my $msg = sprintf(<<'MSG', @args);
@@ -59,12 +63,15 @@ Your FASTA Pipeline has finished. We have:
   * %d species with pseudogene density (%d failed)
   * %d species with non coding density (%d failed)
   * %d species with gene count (%d failed)
+  * %d species with constitutive exons (%d failed)
 
 %s
 
 ===============================================================================
 
 Full breakdown follows ...
+
+%s
 
 %s
 
