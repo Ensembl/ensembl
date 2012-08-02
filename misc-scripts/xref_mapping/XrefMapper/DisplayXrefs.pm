@@ -101,6 +101,19 @@ LOCP
 
 }
 
+sub remove_source_priorities {
+    my $self = shift;
+
+    my $sql = "DELETE from display_xref_priority";
+    my $sth = $self->xref->dbc->prepare($sql);
+    $sth->execute(); 
+
+    $sql = "DELETE from gene_desc_priority";
+    $sth = $self->xref->dbc->prepare($sql);
+    $sth->execute(); 
+
+    return;
+}
 
 
 sub new {
@@ -526,7 +539,7 @@ sub set_display_xrefs{
   my $self = shift;
 
 
-  print "Building Transcript and Gene display_xrefs using xref database\n" if ($self->verbose);
+  print "Building Transcript and Gene display_xrefs\n" if ($self->verbose);
 
   my $xref_offset = $self->get_meta_value("xref_offset");
 
