@@ -13,6 +13,10 @@ sub run {
   my $species = $self->param('species');
   my $dbtype  = $self->param('dbtype');
   my $dba     = Bio::EnsEMBL::Registry->get_DBAdaptor($species, $dbtype);
+  if ( $dbtype =~ 'vega' || $dbtype =~ 'otherf' ) {
+    my $core_dba = Bio::EnsEMBL::Registry->get_DBAdaptor($species, 'core');
+    $dba->dnadb($core_dba);
+  }
   my $helper  = $dba->dbc()->sql_helper();
 
   my %attrib_codes = $self->get_attrib_codes();
@@ -116,7 +120,8 @@ sub get_attrib_codes {
 sub dump_translation {
   my ($self, $dba, $tmpfile) = @_;
   my $helper = $dba->dbc()->sql_helper();
-  my $ta     = Bio::EnsEMBL::Registry->get_adaptor($self->param('species'), 'core', 'translation');
+  my $dbtype = $self->param('dbtype');
+  my $ta     = Bio::EnsEMBL::Registry->get_adaptor($self->param('species'), $dbtype, 'translation');
   open(TMP, "> $tmpfile");
   my $sql = q{
     SELECT tl.translation_id
