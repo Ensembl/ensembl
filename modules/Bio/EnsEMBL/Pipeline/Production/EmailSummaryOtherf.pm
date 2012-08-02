@@ -1,4 +1,4 @@
-package Bio::EnsEMBL::Pipeline::Production::EmailSummaryCore;
+package Bio::EnsEMBL::Pipeline::Production::EmailSummaryOtherf;
 
 use strict;
 use warnings;
@@ -10,21 +10,17 @@ sub fetch_input {
   
   $self->assert_executable('sendmail');
   
-  my $pep_stats_v = $self->jobs('PepStatsVega');
-  my $pep_stats_o = $self->jobs('PepStatsOtherf');
+  my $pep_stats = $self->jobs('PepStatsVega');
   my $ct_exons = $self->jobs('ConstitutiveExons');
 
     
   my @args = (
-    $pep_stats_v->{successful_jobs},
-    $pep_stats_v->{failed_jobs},
-    $pep_stats_o->{successful_jobs},
-    $pep_stats_o->{failed_jobs},
+    $pep_stats->{successful_jobs},
+    $pep_stats->{failed_jobs},
     $ct_exons->{successful_jobs},
     $ct_exons->{failed_jobs},
     $self->failed(),
-    $self->summary($pep_stats_v),
-    $self->summary($pep_stats_o),
+    $self->summary($pep_stats),
     $self->summary($ct_exons),
   );
   
@@ -32,7 +28,6 @@ sub fetch_input {
 Your FASTA Pipeline has finished. We have:
 
   * %d vega databases with pep stats (%d failed)
-  * %d otherfeatures databases with pep stats (%d failed)
   * %d vega databases with constitutive exons (%d failed)
 
 %s
@@ -40,8 +35,6 @@ Your FASTA Pipeline has finished. We have:
 ===============================================================================
 
 Full breakdown follows ...
-
-%s
 
 %s
 
