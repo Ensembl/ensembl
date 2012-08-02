@@ -48,7 +48,7 @@ my $ret = Getopt::Long::GetOptions ('file=s'          => \$file,
             'reset_to_mapping_finished' => \$reset_to_mapping_finished,
             'reset_to_parsing_finished' => \$reset_to_parsing_finished,
             'resubmit_failed_jobs'      => \$resubmit_failed_jobs,
-            'recalc_display_xrefs=s'    => \$recalc_display_xrefs,
+            'recalc_display_xrefs'    => \$recalc_display_xrefs,
             'no_coord_mapping'          => \$no_coord_mapping,
             'help'                      => sub { usage(); exit(0); } );
 
@@ -69,31 +69,7 @@ if(!defined($file)){
   exit;
 }
 
-my $no_xref;
-my $fullmode_recalc = 0;
-if(defined($recalc_display_xrefs)){
-  if($recalc_display_xrefs eq "xref"){
-    $fullmode_recalc = 1;
-  }
-  elsif($recalc_display_xrefs eq "core"){
-    $no_xref = 1;
-  }
-  else{
-    die "The only options that are valid for -recalc_display_xrefs are:-\n\txref - to use xref database to recalc xrefs\n\tcore - to use the core database to recalc xrefs\n";
-  }
-}
-
-my $mapper = XrefMapper::BasicMapper->process_file($file, !$notverbose, $no_xref);
-
-
-if(defined($recalc_display_xrefs)){
-  my $official_naming = XrefMapper::OfficialNaming->new($mapper);
-  $official_naming->run();
-  my $display = XrefMapper::DisplayXrefs->new($mapper);
-#  $display->set_display_xrefs_from_stable_table();
-  $display->genes_and_transcripts_attributes_set($no_xref);
-  exit();
-}
+my $mapper = XrefMapper::BasicMapper->process_file($file, !$notverbose);
 
 $mapper->add_meta_pair("mapper options",$options);
 
@@ -117,6 +93,15 @@ else{
 my $status = $mapper->xref_latest_status(0);
 print "current status is $status\n" if ($mapper->verbose);
 
+
+if($recalc_display_xrefs){
+  my $official_naming = XrefMapper::OfficialNaming->new($mapper);
+  $official_naming->run();
+  my $display = XrefMapper::DisplayXrefs->new($mapper);
+  $display->remove_source_priorities(); 
+  $display->genes_and_transcripts_attributes_set();
+  exit();
+}
 
 
 if(defined($reset_to_mapping_finished)){
@@ -328,10 +313,7 @@ sub usage {
 
   -recalc_display_xrefs
                     Only recalculate the display xrefs and genes descriptions. 
-                    You must specify either xref or core as the argument here. xref 
-                    will use the fast method of getting the data from the xref database 
-                    whereas if you use core it will do the long method but does not need 
-                    an xref database.
+                    
 
                   
 Below is an example of the configuration file
