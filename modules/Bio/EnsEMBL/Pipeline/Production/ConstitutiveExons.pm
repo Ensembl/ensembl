@@ -11,16 +11,17 @@ use Bio::EnsEMBL::DensityType;
 use Bio::EnsEMBL::DensityFeature;
 
 
-## Default run method
-## For a given species, generates the required density features in the core database
+# default run method
+# For a given databases of dbtype, flags exons which are constitutive
 sub run {
   my ($self) = @_;
   my $species  = $self->param('species');
-  my $dba      = Bio::EnsEMBL::Registry->get_DBAdaptor($species, 'core');
+  my $dbtype   = $self->param('dbtype');
+  my $dba      = Bio::EnsEMBL::Registry->get_DBAdaptor($species, $dbtype);
   my $helper   = $dba->dbc()->sql_helper();
-  my $ga       = Bio::EnsEMBL::Registry->get_adaptor($species, 'core', 'Gene');
+  my $ga       = Bio::EnsEMBL::Registry->get_adaptor($species, $dbtype, 'Gene');
 
-  my $slices = Bio::EnsEMBL::Registry->get_adaptor($species, 'core', 'slice')->fetch_all('toplevel');
+  my $slices = Bio::EnsEMBL::Registry->get_adaptor($species, $dbtype, 'slice')->fetch_all('toplevel');
 
   my @gene_dbIDs = sort { $a <=> $b } @{ $ga->list_dbIDs() };
   my $bin = scalar(@gene_dbIDs)/1000;
