@@ -55,7 +55,7 @@ sub pipeline_analyses {
         -input_ids  => [ {} ],
         -flow_into  => {
           1 => 'Notify',
-          2 => ['PepStatsOtherf', 'PepStatsVega'],
+          2 => ['PepStatsOtherf', 'PepStatsVega', 'ConstitutiveExons'],
         },
       },
 
@@ -69,6 +69,18 @@ sub pipeline_analyses {
         -max_retry_count  => 5,
         -hive_capacity    => 10,
         -rc_name          => 'mem',
+        -can_be_empty     => 1,
+      },
+
+      {
+        -logic_name => 'ConstitutiveExons',
+        -module     => 'Bio::EnsEMBL::Pipeline::Production::ConstitutiveExons',
+        -parameters => {
+          dbtype => 'vega',
+        },
+        -max_retry_count  => 5,
+        -hive_capacity    => 10,
+        -rc_name          => 'normal',
         -can_be_empty     => 1,
       },
 
@@ -89,12 +101,12 @@ sub pipeline_analyses {
       
       {
         -logic_name => 'Notify',
-        -module     => 'Bio::EnsEMBL::Pipeline::Production::EmailSummaryCore',
+        -module     => 'Bio::EnsEMBL::Pipeline::Production::EmailSummaryOtherf',
         -parameters => {
           email   => $self->o('email'),
           subject => $self->o('pipeline_name').' has finished',
         },
-        -wait_for   => ['PepStatsOtherf', 'PepStatsVega'],
+        -wait_for   => ['PepStatsOtherf', 'PepStatsVega', 'ConstitutiveExons'],
       }
     
     ];
@@ -118,9 +130,9 @@ sub beekeeper_extra_cmdline_options {
 sub resource_classes {
     my $self = shift;
     return {
-      'default' => { 'LSF' => ''},
-      'normal'  => { 'LSF' => '-q normal -M 500000 -R"select[mem>500] rusage[mem=500]"'},
-      'mem'     => { 'LSF' => '-q normal -M 1000000 -R"select[mem>1000] rusage[mem=1000]"'},
+      'default' => { 'LSF' => '-R"select[myens_stag1tok>800 && myens_stag2tok>800] rusage[myens_stag1tok=10:myens_stag2tok=10:duration=10]"'},
+      'normal'  => { 'LSF' => '-q normal -M 500000 -R"select[mem>500 && myens_stag1tok>800 && myens_stag2tok>800] rusage[mem=500:myens_stag1tok=10:myens_stag2tok=10:duration=10]"'},
+      'mem'     => { 'LSF' => '-q normal -M 1000000 -R"select[mem>1000 && myens_stag1tok>800 && myens_stag2tok>800] rusage[mem=1000:myens_stag1tok=10:myens_stag2tok=10:duration=10]"'},
     }
 }
 
