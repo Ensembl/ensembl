@@ -27,7 +27,7 @@ sub default_options {
         
         ### Defaults 
         
-        pipeline_name => 'core_handover_update_'.$self->o('release'),
+        pipeline_name => 'core_test_'.$self->o('release'),
         
         email => $self->o('ENV', 'USER').'@sanger.ac.uk',
     };
@@ -57,9 +57,31 @@ sub pipeline_analyses {
         -input_ids  => [ {} ],
         -flow_into  => {
           1 => 'Notify',
-          2 => ['GeneGC', 'PepStats', 'GeneCount'],
+          2 => ['GeneGC', 'PepStats', 'GeneCount', 'ConstitutiveExons'],
           3 => ['PercentGC', 'PercentRepeat', 'CodingDensity', 'PseudogeneDensity', 'NonCodingDensity'],
         },
+      },
+
+      {
+        -logic_name => 'ConstitutiveExons',
+        -module     => 'Bio::EnsEMBL::Pipeline::Production::ConstitutiveExons',
+        -max_retry_count  => 5,
+        -hive_capacity    => 10,
+        -rc_name          => 'normal',
+        -can_be_empty     => 1,
+      },
+
+      {
+        -logic_name => 'PepStats',
+        -module     => 'Bio::EnsEMBL::Pipeline::Production::PepStats',
+        -parameters => {
+          tmpdir => '/tmp', binpath => '/software/pubseq/bin/emboss',
+          dbtype => 'core',
+        },
+        -max_retry_count  => 5,
+        -hive_capacity    => 10,
+        -rc_name          => 'mem',
+        -can_be_empty     => 1,
       },
 
       {
@@ -119,22 +141,9 @@ sub pipeline_analyses {
         },
         -max_retry_count  => 1,
         -hive_capacity    => 10,
-        -rc_name          => 'normal',
-        -can_be_empty     => 1,
-      },
-
-      {
-        -logic_name => 'PepStats',
-        -module     => 'Bio::EnsEMBL::Pipeline::Production::PepStats',
-        -parameters => {
-          tmpdir => '/tmp', binpath => '/software/pubseq/bin/emboss',
-        },
-        -max_retry_count  => 5,
-        -hive_capacity    => 10,
         -rc_name          => 'mem',
         -can_be_empty     => 1,
       },
-
 
       {
         -logic_name => 'GeneGC',
@@ -154,7 +163,7 @@ sub pipeline_analyses {
         },
         -max_retry_count  => 1,
         -hive_capacity    => 10,
-        -rc_name          => 'default',
+        -rc_name          => 'normal',
         -can_be_empty     => 1,
       },
 
@@ -167,7 +176,7 @@ sub pipeline_analyses {
           email   => $self->o('email'),
           subject => $self->o('pipeline_name').' has finished',
         },
-        -wait_for   => ['PepStats', 'GeneGC', 'PercentGC', 'PercentRepeat', 'CodingDensity', 'PseudogeneDensity', 'NonCodingDensity', 'GeneCount'],
+        -wait_for   => ['PepStats', 'GeneGC', 'PercentGC', 'PercentRepeat', 'CodingDensity', 'PseudogeneDensity', 'NonCodingDensity', 'GeneCount', 'ConstitutiveExons'],
       }
     
     ];
@@ -192,8 +201,8 @@ sub resource_classes {
     my $self = shift;
     return {
       'default' => { 'LSF' => ''},
-      'normal'  => { 'LSF' => '-q normal -M 400000 -R"select[mem>400] rusage[mem=400]"'},
-      'mem'     => { 'LSF' => '-q normal -M 2500000 -R"select[mem>2500] rusage[mem=2500]"'},
+      'normal'  => { 'LSF' => '-q normal -M 500000 -R"select[mem>500] rusage[mem=500]"'},
+      'mem'     => { 'LSF' => '-q normal -M 1000000 -R"select[mem>1000] rusage[mem=1000]"'},
     }
 }
 
