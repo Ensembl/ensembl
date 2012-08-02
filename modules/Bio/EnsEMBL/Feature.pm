@@ -1221,7 +1221,9 @@ sub seq {
 
 =head2 get_all_alt_locations
 
-  Arg [1]    : none
+  Arg [1]    : Boolean override flag to force the method to return all 
+               Features on the reference sequence as well.
+               
   Example    : @features = @{$feature->get_all_alt_locations()};
                foreach $f (@features) {
                  print $f->slice->seq_region_name,' ',$f->start, $f->end,"\n";
@@ -1230,7 +1232,7 @@ sub seq {
   Description: Retrieves shallow copies of this feature in its alternate
                locations.  A feature can be considered to have multiple
                locations when it sits on a alternative structural haplotype
-               or when it is on a pseudo autosomal region.  Most features will
+               or when it is on a Pseudo Autosomal Region.  Most features will
                just return a reference to an empty list though.
                The features returned by this method will be on a slice which
                covers the entire alternate region.
@@ -1339,8 +1341,13 @@ sub get_all_alt_locations {
     my $aslice = $axf->alternate_slice();
 
     # position feature on entire slice of other region
-    $f->{'start'}  = $f->seq_region_start() - $axf->start() + $aslice->start();
-    $f->{'end'}    = $f->seq_region_end()   - $axf->start() + $aslice->start();
+    
+    # Cache seq_region_* to prevent contamination when changing feature coordinates.
+    my $seq_region_start = $f->seq_region_start();
+    my $seq_region_end = $f->seq_region_end();
+    
+    $f->{'start'}  = $seq_region_start - $axf->start() + $aslice->start();
+    $f->{'end'}    = $seq_region_end   - $axf->start() + $aslice->start();
     $f->{'strand'} *= $aslice->strand();
 
     $f->{'slice'} = $sa->fetch_by_seq_region_id($aslice->get_seq_region_id());
