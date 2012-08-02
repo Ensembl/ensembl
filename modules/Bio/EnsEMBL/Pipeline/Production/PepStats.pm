@@ -10,9 +10,10 @@ use Bio::EnsEMBL::Attribute;
 
 sub run {
   my ($self) = @_;
-  my $species    = $self->param('species');
-  my $dba        = Bio::EnsEMBL::Registry->get_DBAdaptor($species, 'core');
-  my $helper = $dba->dbc()->sql_helper();
+  my $species = $self->param('species');
+  my $dbtype  = $self->param('dbtype');
+  my $dba     = Bio::EnsEMBL::Registry->get_DBAdaptor($species, $dbtype);
+  my $helper  = $dba->dbc()->sql_helper();
 
   my %attrib_codes = $self->get_attrib_codes();
   $self->delete_old_attrib($dba, %attrib_codes);
@@ -29,7 +30,8 @@ sub run {
 
 sub store_attrib {
   my ($self, $translation, $results) = @_;
-  my $aa          = Bio::EnsEMBL::Registry->get_adaptor($self->param('species'), 'core', 'Attribute');
+  my $dbtype      = $self->param('dbtype');
+  my $aa          = Bio::EnsEMBL::Registry->get_adaptor($self->param('species'), $dbtype, 'Attribute');
   my $prod_dba    = $self->get_production_DBAdaptor();
   my $prod_helper = $prod_dba->dbc()->sql_helper();
   my @attribs;
