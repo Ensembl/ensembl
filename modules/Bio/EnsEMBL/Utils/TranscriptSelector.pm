@@ -66,6 +66,7 @@ sub new {
                 'verbose' => shift,
     };
     bless $self, $class;
+    if ($self->{'ccds_dba'} == undef) { warning ("Running without CCDS DB");}
     return $self;
 }
 
@@ -223,7 +224,7 @@ sub check_Ens_trans_against_CCDS {
     my ( $self ,$transcript ) = @_;
    
     my @translateable_exons = @{ $transcript->get_all_translateable_Exons };
-
+    if (! $self->{'ccds_dba'}) {return;}
     my $ext_slice = $self->{'ccds_dba'}->get_SliceAdaptor->fetch_by_region(
                                        'toplevel',
                                        $transcript->slice->seq_region_name,
