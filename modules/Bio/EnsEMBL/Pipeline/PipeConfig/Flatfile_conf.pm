@@ -24,7 +24,7 @@ sub default_options {
       
       release => software_version(),
 
-      types => [qw/embl genbank/],
+      types => [],
       
       ### Defaults 
       
@@ -67,10 +67,9 @@ sub pipeline_analyses {
       
       {
         -logic_name => 'DumpTypeFactory',
-        -module     => 'Bio::EnsEMBL::Hive::RunnableDB::JobFactory',
+        -module     => 'Bio::EnsEMBL::Pipeline::Flatfile::DumpTypeFactory',
         -parameters => {
-          column_names => ['type'],
-          inputlist => $self->o('types'),
+          types => $self->o('types'),
           input_id => { species => '#species#', type => '#type#' },
           fan_branch_code => 2
         },
