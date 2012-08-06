@@ -527,6 +527,28 @@ sub is_toplevel {
   return $self->{'toplevel'};
 }
 
+=head2 has_karyotype
+  Arg        : none
+  Example    : my $top = $slice->has_karyotype()
+  Description: Returns 1 if slice is part of the karyotype else 0
+  Returntype : int
+  Caller     : general
+  Status     : At Risk
+
+=cut
+
+sub has_karyotype {
+  my ($self) = @_;
+
+  if ( !defined( $self->{'karyotype'} ) ) {
+    $self->{'karyotype'} =
+      $self->adaptor()->has_karyotype( $self->get_seq_region_id() );
+  }
+
+  return $self->{'karyotype'};
+}
+
+
 =head2 is_circular
   Arg        : none
   Example    : my $circ = $slice->is_circular()

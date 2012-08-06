@@ -1082,6 +1082,76 @@ sub is_toplevel {
   return 0;
 }
 
+
+=head2 has_karyotype
+  Arg        : int seq_region_id 
+  Example    : my $karyotype = $slice_adptor->has_karyotype($seq_region_id)
+  Description: Returns 1 if slice is a part of a karyotype else 0
+  Returntype : int
+  Caller     : Slice method has_karyotype
+  Status     : At Risk
+
+=cut
+
+sub has_karyotype {
+  my $self = shift;
+  my $id   = shift;
+
+  my $sth = $self->prepare(
+            "SELECT at.code from seq_region_attrib sra, attrib_type at "
+              . "WHERE sra.seq_region_id = ? "
+              . "AND at.attrib_type_id = sra.attrib_type_id "
+              . "AND at.code = 'karyotype_rank'" );
+
+  $sth->bind_param( 1, $id, SQL_INTEGER );
+  $sth->execute();
+
+  my $code;
+  $sth->bind_columns( \$code );
+
+  while ( $sth->fetch ) {
+    $sth->finish;
+    return 1;
+  }
+
+  $sth->finish;
+  return 0;
+}
+
+=head2 get_karyotype_rank
+  Arg        : int seq_region_id 
+  Example    : my $rank = $slice_adptor->get_karyotype_rank($seq_region_id)
+  Description: Returns the rank of a slice if it is part of the karyotype else 0
+  Returntype : int
+  Caller     : Slice method get_karyotype_rank
+  Status     : At Risk
+
+=cut
+
+sub get_karyotype_rank {
+  my $self = shift;
+  my $id   = shift;
+
+  my $sth = $self->prepare(
+            "SELECT sra.value from seq_region_attrib sra, attrib_type at "
+              . "WHERE sra.seq_region_id = ? "
+              . "AND at.attrib_type_id = sra.attrib_type_id "
+              . "AND at.code = 'karyotype_rank'" );
+
+  $sth->bind_param( 1, $id, SQL_INTEGER );
+  $sth->execute();
+
+  my $code;
+  $sth->bind_columns( \$code );
+
+  my $rank = $sth->fetchrow_array();
+  $sth->finish();
+
+  return $rank;
+}
+
+
+
 =head2 is_reference
   Arg        : int seq_region_id 
   Example    : my $reference = $slice_adptor->is_reference($seq_region_id)
