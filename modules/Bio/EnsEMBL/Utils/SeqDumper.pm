@@ -494,7 +494,7 @@ sub dump_embl {
 
   my $value = "Sequence $length BP; $a_count A; $c_count C; " .
     "$g_count G; $t_count T; $other_count other;";
-  $self->write($FH, $EMBL_HEADER, 'SQ', $value);
+  $self->print($FH, 'SQ   '.$value."\n");
 
   $self->write_embl_seq($FH, \$SEQ);
 
@@ -649,7 +649,7 @@ sub dump_genbank {
   $tag   = 'BASE COUNT';
   $value = "$a_count a $c_count c $g_count g $t_count t";
   $value .= " $other_count n" if($other_count);
-  $self->write($FH, $GENBANK_HEADER, $tag, $value);
+  $self->print($FH, qq{$tag  $value\n});
   $self->print( $FH, "ORIGIN\n" );
 
   $self->write_genbank_seq($FH, \$SEQ);
