@@ -15,20 +15,33 @@ sub set_methods{
   return $default_method, \%override_method_for_source;
 }
 
-#Reverse order: second one has higher priority!
+
 sub gene_description_sources {
-  return ("Uniprot/SWISSPROT",
-	  "Ixodes_ManualAnnotation",
+  return ("Ixodes_ManualAnnotation",
+	  "Uniprot/SWISSPROT",	  
   ) ;
 }
 
-#Reverse order: second one has higher priority!
+sub gene_display_xref_sources {
+  my $self     = shift;
+  my $fullmode = shift;
+
+  my @list = qw(Ixodes_ManualAnnotation
+                Uniprot/SWISSPROT		
+                );
+
+  my %ignore;
+
+  return [\@list,\%ignore];
+
+}
+
 sub transcript_display_xref_sources {
   my $self     = shift;
   my $fullmode = shift;
 
-  my @list = qw(Uniprot/SWISSPROT
-		Ixodes_ManualAnnotation
+  my @list = qw(Ixodes_ManualAnnotation
+                Uniprot/SWISSPROT		
                 );
 
   my %ignore;

@@ -37,6 +37,20 @@ sub gene_description_sources {
           );
 }
 
+sub gene_display_xref_sources {
+
+  my @list = qw(RFAM
+		miRBase
+		VB_Community_Annotation
+		Uniprot/SWISSPROT
+		VB_RNA_Description
+	       );
+
+  my %ignore;
+  return [\@list,\%ignore];
+
+}
+
 sub transcript_display_xref_sources {
 
   my @list = qw(RFAM

@@ -41,11 +41,23 @@ sub build_display_xrefs {
 }
 
 
-sub transcript_display_xref_sources {
+sub gene_display_xref_sources {
     my $self     = shift;
 
     my @list = qw(
                 PomBase_GENE
+               );
+    
+    my %ignore;
+    
+    return [\@list,\%ignore];
+}
+
+
+sub transcript_display_xref_sources {
+    my $self     = shift;
+
+    my @list = qw(
                 PomBase_TRANSCRIPT
                );
     

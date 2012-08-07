@@ -28,6 +28,18 @@ sub gene_description_sources {
 	  );
 }
 
+sub gene_display_xref_sources {
+  my @list = qw(
+		Uniprot/SWISSPROT
+		VB_Community_Annotation
+                );
+
+  my %ignore;
+
+  return [\@list,\%ignore];
+
+}
+
 sub transcript_display_xref_sources {
   my @list = qw(
 		Uniprot/SWISSPROT
@@ -35,7 +47,6 @@ sub transcript_display_xref_sources {
                 );
 
   my %ignore;
-  #$ignore{"EntrezGene"}= 'FROM:RefSeq_[pd][en][pa].*_predicted';
 
   return [\@list,\%ignore];
 
