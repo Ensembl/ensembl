@@ -13,23 +13,27 @@ sub run {
   my $species    = $self->param('species');
   my $dba        = Bio::EnsEMBL::Registry->get_DBAdaptor($species, 'core');
 
-  my @attrib_codes = $self->get_attrib_codes();
-  $self->delete_old_attrib($dba, @attrib_codes);
+  my %attrib_codes = $self->get_attrib_codes();
+  $self->delete_old_attrib($dba, %attrib_codes);
+  my $total = $self->get_total();
+  my $sum = 0;
 
   my $slices = Bio::EnsEMBL::Registry->get_adaptor($species, 'core', 'slice')->fetch_all('toplevel');
   while (my $slice = shift @$slices) {
-    foreach my $code (@attrib_codes) {
-      my $count = $self->get_feature_count($slice, $code);
-      if ($count > 0) {
-        $self->store_attrib($slice, $count, $code);
-      }
+    foreach my $code (keys %attrib_codes) {
+      my $count = $self->get_feature_count($slice, $code, $attrib_codes{$code});
+      $self->store_attrib($slice, $count, $code);
+      $sum += $count;
+    }
+    if ($sum >= $total) {
+      last;
     }
   }
 }
 
 
 sub delete_old_attrib {
-  my ($self, $dba, @attrib_codes) = @_;
+  my ($self, $dba, %attrib_codes) = @_;
   my $helper = $dba->dbc()->sql_helper();
   my $sql = q{
     DELETE sa
@@ -39,7 +43,7 @@ sub delete_old_attrib {
     AND at.attrib_type_id = sa.attrib_type_id
     AND cs.species_id = ?
     AND at.code = ? };
-  foreach my $code (@attrib_codes) {
+  foreach my $code (keys %attrib_codes) {
     $helper->execute_update(-SQL => $sql, -PARAMS => [$dba->species_id(), $code]);
   }
 }
@@ -76,6 +80,22 @@ sub store_attrib {
   my @attribs = ($attrib);
   $aa->store_on_Slice($slice, \@attribs);
 }
+
+sub get_biotype_group {
+  my ($self, $biotype) = @_;
+  my $prod_dba = $self->get_production_DBAdaptor();
+  my $helper = $prod_dba->dbc()->sql_helper();
+  my $sql = q{
+     SELECT name
+     FROM biotype
+     WHERE object_type = 'gene'
+     AND is_current = 1
+     AND biotype_group = ?
+     AND db_type like '%core%' };
+  my @biotypes = @{ $helper->execute_simple(-SQL => $sql, -PARAMS => [$biotype]) };
+  return \@biotypes;
+}
+
 
 
 1;
