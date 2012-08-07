@@ -21,6 +21,7 @@ sub run {
   my $helper     = $dba->dbc()->sql_helper();
   my $dfa        = Bio::EnsEMBL::Registry->get_adaptor($species, 'core', 'DensityFeature');
   my $analysis   = $self->get_analysis($logic_name);
+  my $max_run    = $self->param('max_run');
 
   $self->delete_old_features($dba, $logic_name);
   $self->check_analysis($dba);
@@ -28,24 +29,44 @@ sub run {
   my $density_type = $self->get_density_type($analysis);
   Bio::EnsEMBL::Registry->get_adaptor($species, 'core', 'DensityType')->store($density_type);
   my $slices = Bio::EnsEMBL::Registry->get_adaptor($species, 'core', 'slice')->fetch_all('toplevel');
+  my $option = $self->get_option();
+  my $total = $self->get_total($option);
+  my $count = 0;
+  my @features;
+  my $iteration = 0;
 
   my @sorted_slices = 
      sort( { $a->coord_system()->rank() <=> $b->coord_system()->rank()
              || $b->seq_region_length() <=> $a->seq_region_length() } @$slices) ;
   while (my $slice = shift @sorted_slices) {
-    my @blocks = $self->generate_blocks($slice);
-    foreach my $block (@blocks) {
-      my $feature = $self->get_density($block, $slice);
+    $iteration++;
+    if ($slice->has_karyotype) {
+      my @blocks = $self->generate_blocks($slice);
+      for my $block (@blocks) {
+        my $feature = $self->get_density($block, $option);
+        $count += $feature;
+        my $df = Bio::EnsEMBL::DensityFeature->new( -seq_region    => $slice,
+                                                    -start         => $block->start,
+                                                    -end           => $block->end,
+                                                    -density_type  => $density_type,
+                                                    -density_value => $feature);
+        push(@features, $df);
+      }
+    } else {
+      my $feature = $self->get_density($slice, $option);
+      $count += $feature;
       my $df = Bio::EnsEMBL::DensityFeature->new( -seq_region    => $slice,
-                                                  -start         => $block->start,
-                                                  -end           => $block->end,
+                                                  -start         => $slice->start,
+                                                  -end           => $slice->end,
                                                   -density_type  => $density_type,
                                                   -density_value => $feature);
-      if ($feature > 0) {
-        $dfa->store($df);
-      }
+      push(@features, $df);
+    }
+    if ($count >= $total || $iteration > $max_run) {
+      last;
     }
   }
+  $dfa->store(@features);
 }
 
 
@@ -163,7 +184,7 @@ sub get_analysis {
 }
 
 sub get_biotype_group {
-  my ($self, $biotype) = @_;
+  my ($self, $group) = @_;
   my $prod_dba = $self->get_production_DBAdaptor();
   my $helper = $prod_dba->dbc()->sql_helper();
   my $sql = q{
@@ -173,8 +194,12 @@ sub get_biotype_group {
      AND is_current = 1
      AND biotype_group = ?
      AND db_type like '%core%' };
-  my @biotypes = @{ $helper->execute_simple(-SQL => $sql, -PARAMS => [$biotype]) };
+  my @biotypes = @{ $helper->execute_simple(-SQL => $sql, -PARAMS => [$group]) };
   return @biotypes;
+}
+
+sub get_option {
+  my $self = @_;
 }
 
 
