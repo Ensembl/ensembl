@@ -10,7 +10,7 @@ use warnings;
 
 
 sub get_density {
-  my ($self, $block, $slice) = @_;
+  my ($self, $block) = @_;
   my $repeat_count = 0;
   my @repeats = @{ $block->get_all_RepeatFeatures() };
   @repeats = map { $_->[1] } sort { $a->[0] <=> $b->[0] } map { [$_->start, $_] } @repeats;
@@ -40,6 +40,13 @@ sub get_density {
     $repeat_count += $repeat_block->length();
   }
   return 100*$repeat_count/$block->length();
+}
+
+sub get_total {
+  my ($self) = @_;
+  my $species = $self->param('species');
+  my $slices = scalar(@{  Bio::EnsEMBL::Registry->get_adaptor($species, 'core', 'slice')->fetch_all('toplevel') });
+  return $slices*$self->param('bin_count')*100;
 }
 
 return 1;

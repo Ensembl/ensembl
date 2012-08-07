@@ -14,5 +14,12 @@ sub get_density {
   return $gc;
 }
 
+sub get_total {
+  my ($self) = @_;
+  my $species = $self->param('species');
+  my $slices = scalar(@{  Bio::EnsEMBL::Registry->get_adaptor($species, 'core', 'slice')->fetch_all('toplevel') });
+  return $slices*$self->param('bin_count')*100;
+}
+
 return 1;
 
