@@ -19,7 +19,11 @@ sub run {
   my $sum = 0;
 
   my $slices = Bio::EnsEMBL::Registry->get_adaptor($species, 'core', 'slice')->fetch_all('toplevel');
-  while (my $slice = shift @$slices) {
+  my @sorted_slices = 
+     sort( { $a->coord_system()->rank() <=> $b->coord_system()->rank()
+             || $b->seq_region_length() <=> $a->seq_region_length() } @$slices) ;
+
+  while (my $slice = shift @sorted_slices) {
     foreach my $code (keys %attrib_codes) {
       my $count = $self->get_feature_count($slice, $code, $attrib_codes{$code});
       $self->store_attrib($slice, $count, $code);
