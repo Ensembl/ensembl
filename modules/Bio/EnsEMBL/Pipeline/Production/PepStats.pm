@@ -19,8 +19,8 @@ sub run {
   }
   my $helper  = $dba->dbc()->sql_helper();
 
-  my %attrib_codes = $self->get_attrib_codes();
-  $self->delete_old_attrib($dba, %attrib_codes);
+  my @attrib_codes = $self->get_attrib_codes();
+  $self->delete_old_attrib($dba, @attrib_codes);
 
   my $tmpfile = $self->param('tmpdir') . "/$$.pep";
   $self->dump_translation($dba, $tmpfile);
@@ -39,12 +39,24 @@ sub store_attrib {
   my $prod_dba    = $self->get_production_DBAdaptor();
   my $prod_helper = $prod_dba->dbc()->sql_helper();
   my @attribs;
-  my $sql = q{
-    SELECT name, description
+  my $sqlName = q{
+    SELECT name
+    FROM attrib_type
+    WHERE code = ? };
+  my $sqlDesc = q{
+    SELECT description
     FROM attrib_type
     WHERE code = ? };
   foreach my $key (keys %$results) {
-    my ($name, $description) = $prod_helper->execute(-SQL => $sql, -PARAMS => [$key]);
+    my ($name, $description);
+    my @names = @{ $prod_helper->execute_simple(-SQL => $sqlName, -PARAMS => [$key]) };
+    foreach my $bit (@names) {
+      $name .= $bit . " ";
+    }
+    my @descriptions = @{ $prod_helper->execute_simple(-SQL => $sqlDesc, -PARAMS => [$key]) };
+    foreach my $bit (@descriptions) {
+      $description .= $bit . " ";
+    }
     my $value = $results->{$key};
     my $attrib = Bio::EnsEMBL::Attribute->new(
     -NAME        => $name,
@@ -86,7 +98,7 @@ sub run_pepstats {
 
 
 sub delete_old_attrib {
-  my ($self, $dba, %attrib_codes) = @_;
+  my ($self, $dba, @attrib_codes) = @_;
   my $helper = $dba->dbc()->sql_helper();
   my $sql = q{
      DELETE ta
@@ -98,8 +110,8 @@ sub delete_old_attrib {
      AND s.coord_system_id = c.coord_system_id
      AND c.species_id = ?
      AND at.code = ? };
-  foreach my $key (keys %attrib_codes) {
-    $helper->execute_update(-SQL => $sql, -PARAMS => [$dba->species_id(), $key]) ;
+  foreach my $code (@attrib_codes) {
+    $helper->execute_update(-SQL => $sql, -PARAMS => [$dba->species_id(), $code]) ;
   }
 }
 
@@ -109,11 +121,11 @@ sub get_attrib_codes {
   my $prod_dba   = $self->get_production_DBAdaptor();
   my $prod_helper     = $prod_dba->dbc()->sql_helper();
   my $sql = q{
-    SELECT code, name
+    SELECT code
     FROM attrib_type
     WHERE description = 'Pepstats attributes' };
-  my %attrib_codes = %{ $prod_helper->execute_into_hash(-SQL => $sql) };
-  return %attrib_codes;
+  my @attrib_codes = @{ $prod_helper->execute_simple(-SQL => $sql) };
+  return @attrib_codes;
 }
 
 
