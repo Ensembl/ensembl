@@ -22,6 +22,16 @@ sub get_feature_count {
   return $count;
 }
 
+sub get_total {
+  my ($self) = @_;
+  my $variation_adaptor = Bio::EnsEMBL::Registry->get_DBAdaptor($self->param('species'), 'variation');
+  my $helper = $variation_adaptor->dbc()->sql_helper();
+  my $sql = q{
+     SELECT count(*) FROM variation_feature };
+  my $count = $helper->execute_single_result(-SQL => $sql);
+  return $count;
+}
+
 
 sub get_attrib_codes {
   my ($self) = @_;
