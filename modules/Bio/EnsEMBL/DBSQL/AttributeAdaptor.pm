@@ -164,6 +164,9 @@ sub store_on_ {
       throw("Reference to list of Bio::EnsEMBL::Attribute objects " .
             "argument expected.");
     }
+
+    next if ($attrib->value == 0);
+
     my $atid = $self->_store_type( $attrib );
     if ((defined $attrib->code) and ($attrib->code eq 'circular_seq')) {
 	$undef_circular_cache = 1;
