@@ -29,7 +29,7 @@ my $opts = $cli_helper->process_args( $opt_definitions, \&usage );
 
 $opts->{'write'}           ||= 0;
 $opts->{'include_non_ref'} ||= 1;
-$opts->{'verbose'}         ||= 0;
+$opts->{'verbose'}         ||= undef;
 
 unless ( $opts->{'write'} ) {
   print "You have not used the -write option "
@@ -69,7 +69,7 @@ while (my $db_args = shift (@db_args)) {
         $ccds_dba = undef;
     }
     
-    my $transcript_selector = Bio::EnsEMBL::Utils::TranscriptSelector->new($ccds_dba,'VERBOSE');
+    my $transcript_selector = Bio::EnsEMBL::Utils::TranscriptSelector->new($ccds_dba);
     
     my $slice_adaptor = $dba->get_SliceAdaptor;
     my $slices;
@@ -101,6 +101,13 @@ while (my $db_args = shift (@db_args)) {
                 printf "%s changed transcript from %s to %s\n",
                     $gene->stable_id,$canonical->stable_id,$old_canonical->stable_id;
                 $canonical_changes++;
+                
+                if ($opts->{'verbose'}) {
+                    printf "Old transcript: [%s,%s,%s,%s,%s,%s]\n",
+                        @{ $transcript_selector->encode_transcript($old_canonical) };
+                    printf "New transcript: [%s,%s,%s,%s,%s,%s]\n",
+                        @{ $transcript_selector->encode_transcript($canonical) };
+                }
             }
         }
     }
