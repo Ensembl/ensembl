@@ -66,7 +66,7 @@ sub new {
                 'verbose' => shift,
     };
     bless $self, $class;
-    if ($self->{'ccds_dba'} == undef) { warning ("Running without CCDS DB");}
+    if (not defined ($self->{'ccds_dba'}) ) { warning ("Running without CCDS DB");}
     return $self;
 }
 
@@ -126,7 +126,7 @@ sub select_canonical_transcript_for_Gene {
 
 # Constants for doing numerical sorting of transcripts based upon which ones we prefer. Lowest is best. 
 my %source_priority = ('ccds' => 1,
-                       'merge' => 2,
+                       'merged' => 2,
                        'other' => 3);
 my %biotype_priority = ('protein_coding' => 1,
                         'nonsense_mediated_decay' => 2,
