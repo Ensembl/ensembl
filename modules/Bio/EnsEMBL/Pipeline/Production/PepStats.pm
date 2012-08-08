@@ -146,13 +146,10 @@ sub dump_translation {
   for my $dbid (@translation_ids) {
     my $translation = $ta->fetch_by_dbID($dbid);
     my $peptide_seq = $translation->seq();
-    if ( !($peptide_seq =~ m/[BZX]/ig ) ) {
-      if ( $peptide_seq !~ /\n$/ ) {
-        $peptide_seq .= "\n";
-      }
-      $peptide_seq =~ s/\*$//;
-      print TMP ">$dbid\n$peptide_seq";
+    if ( $peptide_seq !~ /\n$/ ) {
+      $peptide_seq .= "\n";
     }
+    print TMP ">$dbid\n$peptide_seq";
   }
   close(TMP);
 }
