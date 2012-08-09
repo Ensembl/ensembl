@@ -53,8 +53,8 @@ sub pipeline_analyses {
         },
         -input_ids  => [ {} ],
         -flow_into  => {
-          1 => 'Notify',
-          4 => ['SnpDensity', 'SnpCount'],
+          'A->1' => ['Notify'],
+          '4->A' => ['SnpDensity', 'SnpCount'],
         },
       },
 
@@ -89,7 +89,6 @@ sub pipeline_analyses {
           email   => $self->o('email'),
           subject => $self->o('pipeline_name').' has finished',
         },
-        -wait_for   => ['SnpDensity', 'SnpCount'],
       }
     
     ];

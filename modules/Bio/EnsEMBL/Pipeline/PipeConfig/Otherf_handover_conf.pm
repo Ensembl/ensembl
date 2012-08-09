@@ -54,8 +54,8 @@ sub pipeline_analyses {
         },
         -input_ids  => [ {} ],
         -flow_into  => {
-          1 => 'Notify',
-          2 => ['PepStatsVega', 'ConstitutiveExons'],
+          'A->1' => 'Notify',
+          '2->A' => ['PepStatsVega', 'ConstitutiveExons'],
         },
       },
 
@@ -93,7 +93,6 @@ sub pipeline_analyses {
           email   => $self->o('email'),
           subject => $self->o('pipeline_name').' has finished',
         },
-        -wait_for   => ['PepStatsVega', 'ConstitutiveExons'],
       }
     
     ];
