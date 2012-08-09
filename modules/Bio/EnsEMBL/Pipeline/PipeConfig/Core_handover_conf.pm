@@ -59,10 +59,15 @@ sub pipeline_analyses {
 
         },
         -input_ids  => [ {} ],
+        -max_retry_count  => 10,
         -flow_into  => {
-          1 => 'Notify',
-          2 => ['GeneGC', 'PepStats', 'GeneCount', 'ConstitutiveExons'],
-          3 => ['PercentGC', 'PercentRepeat', 'CodingDensity', 'NonCodingDensity', 'PseudogeneDensity'],
+         '3->B'  => ['PercentRepeat'],
+         'B->3'  => ['PercentGC'], 
+         '3->C'  => ['CodingDensity'],
+         'C->3'  => ['NonCodingDensity'],
+         '3->A'  => ['PercentRepeat', 'CodingDensity', 'NonCodingDensity', 'PercentGC'],
+         '2->A'  => ['GeneGC', 'PepStats', 'GeneCount', 'ConstitutiveExons'],
+         'A->1'  => ['Notify'], 
         },
       },
 
@@ -72,7 +77,7 @@ sub pipeline_analyses {
         -parameters => {
           dbtype => 'core',
         },
-        -max_retry_count  => 5,
+        -max_retry_count  => 3,
         -hive_capacity    => 100,
         -rc_name          => 'normal',
       },
@@ -84,15 +89,15 @@ sub pipeline_analyses {
           tmpdir => '/tmp', binpath => '/software/pubseq/bin/emboss',
           dbtype => 'core',
         },
-        -max_retry_count  => 5,
+        -max_retry_count  => 3,
         -hive_capacity    => 100,
-        -rc_name          => 'mem',
+        -rc_name          => 'normal',
       },
 
       {
         -logic_name => 'GeneCount',
         -module     => 'Bio::EnsEMBL::Pipeline::Production::GeneCount',
-        -max_retry_count  => 1,
+        -max_retry_count  => 3,
         -hive_capacity    => 100,
         -rc_name          => 'normal',
       },
@@ -104,11 +109,11 @@ sub pipeline_analyses {
           logic_name => 'noncodingdensity', value_type => 'sum',
           bin_count => $self->o('bin_count'), max_run => $self->o('max_run'),
         },
-        -max_retry_count  => 1,
+        -max_retry_count  => 3,
         -hive_capacity    => 100,
         -rc_name          => 'normal',
         -can_be_empty     => 1,
-        -wait_for         => ['GeneGC', 'CodingDensity'],
+        -flow_into => ['PseudogeneDensity'],
       },
 
       {
@@ -118,11 +123,10 @@ sub pipeline_analyses {
           logic_name => 'pseudogenedensity', value_type => 'sum',
           bin_count => $self->o('bin_count'), max_run => $self->o('max_run'),
         },
-        -max_retry_count  => 1,
+        -max_retry_count  => 3,
         -hive_capacity    => 100,
         -rc_name          => 'normal',
         -can_be_empty     => 1,
-        -wait_for         => ['ConstitutiveExons', 'NonCodingDensity', 'CodingDensity'],
       },
 
       {
@@ -132,7 +136,7 @@ sub pipeline_analyses {
           logic_name => 'codingdensity', value_type => 'sum',
           bin_count => $self->o('bin_count'), max_run => $self->o('max_run'),
         },
-        -max_retry_count  => 1,
+        -max_retry_count  => 3,
         -hive_capacity    => 100,
         -rc_name          => 'normal',
         -can_be_empty     => 1,
@@ -141,7 +145,7 @@ sub pipeline_analyses {
       {
         -logic_name => 'GeneGC',
         -module     => 'Bio::EnsEMBL::Pipeline::Production::GeneGC',
-        -max_retry_count  => 1,
+        -max_retry_count  => 3,
         -hive_capacity    => 100,
         -rc_name => 'normal',
       },
@@ -153,11 +157,10 @@ sub pipeline_analyses {
           table => 'repeat', logic_name => 'percentgc', value_type => 'ratio',
           bin_count => $self->o('bin_count'), max_run => $self->o('max_run'),
         },
-        -max_retry_count  => 1,
+        -max_retry_count  => 3,
         -hive_capacity    => 100,
         -rc_name          => 'normal',
         -can_be_empty     => 1,
-        -wait_for         => ['PercentRepeat'],
       },
 
       {
@@ -167,11 +170,10 @@ sub pipeline_analyses {
           logic_name => 'percentagerepeat', value_type => 'ratio',
           bin_count => $self->o('bin_count'), max_run => $self->o('max_run'),
         },
-        -max_retry_count  => 1,
+        -max_retry_count  => 3,
         -hive_capacity    => 100,
         -rc_name          => 'mem',
         -can_be_empty     => 1,
-        -wait_for         => ['CodingDensity', 'NonCodingDensity', 'PseudogeneDensity'],
       },
 
       ####### NOTIFICATION
@@ -183,7 +185,6 @@ sub pipeline_analyses {
           email   => $self->o('email'),
           subject => $self->o('pipeline_name').' has finished',
         },
-        -wait_for   => ['PepStats', 'GeneGC', 'PercentGC', 'PercentRepeat', 'CodingDensity', 'PseudogeneDensity', 'NonCodingDensity', 'GeneCount', 'ConstitutiveExons'],
       }
     
     ];
@@ -207,9 +208,9 @@ sub beekeeper_extra_cmdline_options {
 sub resource_classes {
     my $self = shift;
     return {
-      'default' => { 'LSF' => '-q normal -M 500000 -R"select[mem>500 && myens_stag1tok>800 && myens_stag2tok>800] rusage[mem=500:myens_stag1tok=10:myens_stag2tok=10:duration=10]"'},
+      'default' => { 'LSF' => ''},
       'normal'  => { 'LSF' => '-q normal -M 1000000 -R"select[mem>1000 && myens_stag1tok>800 && myens_stag2tok>800] rusage[mem=1000:myens_stag1tok=10:myens_stag2tok=10:duration=10]"'},
-      'mem'     => { 'LSF' => '-q normal -M 1500000 -R"select[mem>1500 && myens_stag1tok>800 && myens_stag2tok>800] rusage[mem=1500:myens_stag1tok=10:myens_stag2tok=10:duration=10]"'},
+      'mem'     => { 'LSF' => '-q normal -M 2500000 -R"select[mem>2500 && myens_stag1tok>800 && myens_stag2tok>800] rusage[mem=2500:myens_stag1tok=10:myens_stag2tok=10:duration=10]"'},
     }
 }
 
