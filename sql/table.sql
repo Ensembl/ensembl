@@ -509,7 +509,7 @@ INSERT INTO meta (species_id, meta_key, meta_value) VALUES
 # NOTE: At start of release cycle, remove patch entries from last release.
 # NOTE: Avoid line-breaks in values.
 INSERT INTO meta (species_id, meta_key, meta_value) VALUES
-  (NULL, 'patch', 'patch_68_69_a.sql|schema_version'),
+  (NULL, 'patch', 'patch_68_69_a.sql|schema_version')
  ;
 
 /**
