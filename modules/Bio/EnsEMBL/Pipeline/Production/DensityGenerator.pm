@@ -62,7 +62,7 @@ sub run {
                                                   -density_value => $feature);
       push(@features, $df);
     }
-    if ($count >= $total || $iteration > $max_run) {
+    if ($count >= $total || $iteration == $max_run) {
       last;
     }
   }
