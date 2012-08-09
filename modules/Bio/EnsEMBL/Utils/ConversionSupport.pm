@@ -64,6 +64,7 @@ use POSIX qw(strftime);
 use Cwd qw(abs_path);
 use DBI;
 use Data::Dumper;
+use Fcntl qw(:flock SEEK_END);
 
 my $species_c = 1; #counter to be used for each database connection made
 
@@ -1189,6 +1190,30 @@ sub log {
   throw("Unable to obtain log filehandle") unless $fh;
   print $fh "$txt";
   return(1);
+}
+
+=head2 lock_log
+
+  Description : Use flock-style locks to lock log and fastforward to end.
+                Useful if log is being written to by multiple processes.
+=cut
+
+sub lock_log {
+  my ($self) = @_;
+  flock($self->{'_log_filehandle'},LOCK_EX) || die "Cannot lock log";
+  seek($self->{'_log_filehandle'},0,SEEK_END) || die "Cannot seek log";
+}
+
+=head2 unlock_log
+
+  Description : Unlock log previously locked by lock_log.
+
+=cut    
+
+sub unlock_log {
+  my ($self) = @_;
+  # flush is implicit in flock
+  flock($self->{'_log_filehandle'},LOCK_UN) || die "Cannot unlock log";
 }
 
 =head2 log_warning
