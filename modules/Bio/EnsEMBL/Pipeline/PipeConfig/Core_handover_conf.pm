@@ -66,7 +66,7 @@ sub pipeline_analyses {
          '3->C'  => ['CodingDensity'],
          'C->3'  => ['NonCodingDensity'],
          '3->A'  => ['PercentRepeat', 'CodingDensity', 'NonCodingDensity', 'PercentGC'],
-         '2->A'  => ['GeneGC', 'PepStats', 'GeneCount', 'ConstitutiveExons'],
+         '2->A'  => ['GeneGC', 'PepStats', 'GeneCount', 'ConstitutiveExons', 'ConstitutiveExonsVega', 'PepStatsVega'],
          'A->1'  => ['Notify'], 
         },
       },
@@ -92,6 +92,31 @@ sub pipeline_analyses {
         -max_retry_count  => 3,
         -hive_capacity    => 100,
         -rc_name          => 'normal',
+      },
+
+      {
+        -logic_name => 'ConstitutiveExonsVega',
+        -module     => 'Bio::EnsEMBL::Pipeline::Production::ConstitutiveExons',
+        -parameters => {
+          dbtype => 'vega',
+        },
+        -max_retry_count  => 5,
+        -hive_capacity    => 10,
+        -rc_name          => 'normal',
+        -can_be_empty     => 1,
+      },
+
+      {
+        -logic_name => 'PepStatsVega',
+        -module     => 'Bio::EnsEMBL::Pipeline::Production::PepStats',
+        -parameters => {
+          tmpdir => '/tmp', binpath => '/software/pubseq/bin/emboss',
+          dbtype => 'vega',
+        },
+        -max_retry_count  => 5,
+        -hive_capacity    => 10,
+        -rc_name          => 'mem',
+        -can_be_empty     => 1,
       },
 
       {
