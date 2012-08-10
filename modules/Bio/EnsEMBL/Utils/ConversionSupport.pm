@@ -1203,8 +1203,9 @@ sub lock_log {
   
   my $fh = $self->{'_log_filehandle'};
   return if -t $fh or -p $fh; # Shouldn't lock such things   
-  flock($self->{'_log_filehandle'},LOCK_EX) || die "Cannot lock log: $!";
+  flock($self->{'_log_filehandle'},LOCK_EX) || return 0;
   seek($self->{'_log_filehandle'},0,SEEK_END); # fail ok, prob not reg file
+  return 1;
 }
 
 =head2 unlock_log
@@ -1219,7 +1220,8 @@ sub unlock_log {
   my $fh = $self->{'_log_filehandle'};
   return if -t $fh or -p $fh; # We don't lock such things
   # flush is implicit in flock
-  flock($self->{'_log_filehandle'},LOCK_UN) || die "Cannot unlock log";
+  flock($self->{'_log_filehandle'},LOCK_UN) || return 0;
+  return 1;
 }
 
 =head2 log_warning
