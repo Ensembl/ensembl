@@ -204,13 +204,11 @@ $xref = Bio::EnsEMBL::DBEntry->new
   
   # db connection must be severed for threads to access DB    
   $dbEntryAdaptor->dbc->disconnect_if_idle();
-  $multi->get('empty'); # seem to have to do this to stop thread whinging under some perls
+  $multi->get_DBAdaptor('empty'); # seem to have to do this to stop thread whinging under some perls
   use threads;
   
   my $parallel_store = sub{
       my $xref_id = $dbEntryAdaptor->store( $xref, $tr->dbID, "Transcript" );
-      note $dbEntryAdaptor->dbc();
-      note explain $multi->{conf};
       return $xref_id
   };
      
@@ -225,8 +223,9 @@ $xref = Bio::EnsEMBL::DBEntry->new
   note("Threaded xrefs: ".$xref_ids[0]." ".$xref_ids[1]." ".$xref_ids[2]);
   
   # Test 10 - Verify that only one xref has been inserted under parallel inserts
-  ok($xref_ids[0] == 1000009 && $xref_ids[1] == $xref_ids[0] && $xref_ids[2] == $xref_ids[0]);
-
+  is($xref_ids[0], 1000009, 'Thread 1 ID assertion');
+  is($xref_ids[1], $xref_ids[0], 'Thread 2 ID is the same as thread 1');
+  is($xref_ids[2], $xref_ids[0], 'Thread 3 ID is the same as thread 1');
 }
 
 # Test 11 - Exception testing on ->store()
