@@ -2737,6 +2737,7 @@ sub get_species_and_object_type {
      $sth->bind_param(1, $stable_id, SQL_VARCHAR);
      my $param_count = 1;
      if ($known_species) {
+       $known_species = $self->get_alias($known_species);
 	 $param_count++;
 	 $sth->bind_param($param_count, $known_species, SQL_VARCHAR);
      }
