@@ -2,10 +2,7 @@ use strict;
 
 use Bio::EnsEMBL::Test::TestUtils;
 
-BEGIN { $| = 1;
-	use Test;
-	plan tests => 26;
-}
+use Test::More;
 
 use Bio::EnsEMBL::Test::MultiTestDB;
 use Bio::EnsEMBL::Attribute;
@@ -213,7 +210,7 @@ $count = $db->dbc->db_handle->selectall_arrayref
 ok($count == 1);
 
 @attribs = @{$aa->fetch_all_by_Slice($slice)};
-print "attribs: " . scalar(@attribs) . "\n";
+note "attribs: " . scalar(@attribs);
 ok(@attribs == 1);
 
 
@@ -227,5 +224,20 @@ $count = $db->dbc->db_handle->selectall_arrayref
 
 ok($count == 0);
 
+#
+# test the skipping of empty attrib values
+#
+{
+  my %args = (-NAME => 'test_name2', -CODE => 'test_code2', -DESCRIPTION => 'test_desc2');
+  my $current_rows = count_rows($db, 'seq_region_attrib');
+  my $atrib = Bio::EnsEMBL::Attribute->new(%args,);
+  $aa->store_on_Slice($slice, [Bio::EnsEMBL::Attribute->new(%args, -VALUE => q{})]);
+  $aa->store_on_Slice($slice, [Bio::EnsEMBL::Attribute->new(%args, -VALUE => 0)]);
+#  $aa->store_on_Slice($slice, [Bio::EnsEMBL::Attribute->new(%args, -VALUE => undef)]);
+  my $new_rows = count_rows($db, 'seq_region_attrib');
+  is($new_rows, $current_rows, 'Asserting the storage of undefined attributes will result in no values stored');
+}
 
 $multi->restore('core', 'misc_attrib', 'seq_region_attrib', 'attrib_type');
+
+done_testing();
