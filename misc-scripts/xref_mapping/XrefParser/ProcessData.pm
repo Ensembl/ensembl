@@ -674,7 +674,7 @@ sub validate_species {
       push @species_ids, $species_id;
     } else {
       print STDERR "Species $sp is not valid; valid species are:\n";
-      show_valid_species();
+      $self->show_valid_species();
       exit(1);
     }
   }
