@@ -67,8 +67,8 @@ ok( $db_entry_count == $xref_count );
 # 4,5 correct number of GoXrefs and IdentityXrefs
 #
 note( "GoXrefs and IdentityXrefs: ".$goxref_count . " " . $ident_count);
-ok( $goxref_count == 48 );
-ok( $ident_count == 32 );
+is( $goxref_count, 48, 'Checking number of GOs' );
+is( $ident_count, 32, 'Checking number of IdentityXrefs' );
 
 my $analysis_adap = $db->get_AnalysisAdaptor();
 my $analysis = $analysis_adap->fetch_by_logic_name("RepeatMask");
@@ -489,6 +489,8 @@ ok(@{$xrefs} == 23);  #test 60
 
 my $db_name = $dbEntryAdaptor->get_db_name_from_external_db_id(4100);
 ok($db_name eq 'UniGene');
+
+$multi->restore();
 
 # Test multiple inserts for empty descriptions
 {
