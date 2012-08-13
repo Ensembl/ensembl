@@ -7,116 +7,148 @@
 use strict;
 use warnings;
 
-use Bio::EnsEMBL::Utils::CliHelper;
+use Getopt::Long;
+
 use Bio::EnsEMBL::Utils::Exception qw(throw);
 use Bio::EnsEMBL::Utils::TranscriptSelector;
+use IO::File;
+use Bio::EnsEMBL::DBSQL::DBAdaptor;
 
-my $cli_helper = Bio::EnsEMBL::Utils::CliHelper->new();
+my ($host, $port, $dbname, $user,$pass);
+my ($dnahost, $dnadbname, $dnauser);
+my ($ccds_host, $ccds_dbname, $ccds_user, $ccds_port);
+my $log_path;
 
-# get the basic options for connecting to a database server
-my $opt_definitions = [ @{ $cli_helper->get_dba_opts() },
-              @{ $cli_helper->get_dba_opts('dna') },
-              @{ $cli_helper->get_dba_opts('ccds') } ];
-push( @{$opt_definitions}, "coord_system_name:s" );
-push( @{$opt_definitions}, "logic_name:s" );
-push( @{$opt_definitions}, "write!" );
-push( @{$opt_definitions}, "include_non_ref!" );
-push( @{$opt_definitions}, "include_duplicates" );
-push( @{$opt_definitions}, "verbose!" );
-push( @{$opt_definitions}, "seq_region_name:s");
-# process the command line with the supplied options plus a help subroutine
-my $opts = $cli_helper->process_args( $opt_definitions, \&usage );
+my $coord_system_name;
+my $seq_region_name;
+my $logic_name; # keep as undefined unless you only want to run on a specific analysis
+my $write = 0;
+my $include_non_ref = 1;
+my $include_duplicates;
+my $verbose = 0;
 
-$opts->{'write'}           ||= 0;
-$opts->{'include_non_ref'} ||= 1;
-$opts->{'verbose'}         ||= undef;
+GetOptions( 'dbhost:s'            => \$host,
+            'dbport:n'            => \$port,
+            'dbname:s'            => \$dbname,
+            'dbuser:s'            => \$user,
+            'dbpass:s'            => \$pass,
+            'dnahost:s'           => \$dnahost,
+            'dnadbname:s'         => \$dnadbname,
+            'dnauser:s'           => \$dnauser,
+            'ccdshost:s'         => \$ccds_host,
+            'ccdsdbname:s'       => \$ccds_dbname,
+            'ccdsuser:s'         => \$ccds_user,
+            'ccdsport:s'          => \$ccds_port,
+            'coord_system_name:s' => \$coord_system_name,
+            'seq_region_name:s'   => \$seq_region_name,
+            'logic_name:s'        => \$logic_name,
+            'write!'              => \$write,
+            'include_non_ref!'    => \$include_non_ref,
+            'include_duplicates'  => \$include_duplicates,
+            'verbose!'            => \$verbose, 
+            'log:s'               => \$log_path,); # log file used for analysing choices in bulk
 
-unless ( $opts->{'write'} ) {
+unless ($write) {
   print "You have not used the -write option "
-    . "so results will not be written into the database\n";
+      . "so results will not be written into the database\n";
 }
 
-my @db_args = @{ $cli_helper->get_dba_args_for_opts($opts) };
-my @dnadb_args = @{ $cli_helper->get_dba_args_for_opts( $opts, 'dna' ) };
-my @ccdsdb_args = @{ $cli_helper->get_dba_args_for_opts( $opts, 'ccds' ) };
+my $dba =
+  new Bio::EnsEMBL::DBSQL::DBAdaptor( -host   => $host,
+                                      -user   => $user,
+                                      -port   => $port,
+                                      -dbname => $dbname,
+                                      -pass   => $pass,
+                                      );
+my $ccds_dba;
 
-if ( defined $dnadb_args[0] && scalar(@dnadb_args) != scalar(@db_args) ) {
-  throw "Different number of DBAs found for DB and DNADB";
-}
-if ( defined $ccdsdb_args[0] && scalar(@ccdsdb_args) != scalar(@db_args) ) {
-  throw "Different number of DBAs found for DB and CCDSDB";
+if ($ccds_dbname) {
+  if (!$ccds_user || !$ccds_host) {
+    throw ("You must provide user, host and dbname details to connect to CCDS DB!");
+  }
+  $ccds_dba = 
+  new Bio::EnsEMBL::DBSQL::DBAdaptor( -host   => $ccds_host,
+                                      -user   => $ccds_user,
+                                      -port   => $ccds_port,
+                                      -dbname => $ccds_dbname,
+                                      -species => 'human' );
 }
 
-while (my $db_args = shift (@db_args)) {
-    # synchronise removal of dnadb info from array
-    my $dna_args = shift (@dnadb_args);
-    my $ccds_args = $ccdsdb_args[0]; # Always only have one CCDS source
-    
-    my $dba = Bio::EnsEMBL::DBSQL::DBAdaptor->new(%$db_args);
-    
-    if (!check_if_DB_contains_DNA($dba)) {
-        if ($dna_args) {
-            my $dna_dba = Bio::EnsEMBL::DBSQL::DBAdaptor->new( %{ $dna_args } );
-            $dba->dnadb($dna_dba);
-        } else {
-            throw("Your gene DB contains no DNA. You must provide a DNA_DB to connect to");
-        }
-    }
-    my $ccds_dba;
-    if ($ccds_args) {
-        $ccds_dba =  Bio::EnsEMBL::DBSQL::DBAdaptor->new( %{$ccds_args} );
-    } else {
-        $ccds_dba = undef;
-    }
-    
-    my $transcript_selector = Bio::EnsEMBL::Utils::TranscriptSelector->new($ccds_dba);
-    
-    my $slice_adaptor = $dba->get_SliceAdaptor;
-    my $slices;
-    if ($opts->{'seq_region_name'}) {
-        $slices = [$slice_adaptor->fetch_by_region($opts->{'coord_system_name'},
-                                  $opts->{'seq_region_name'},
-                                  $opts->{'include_non_ref'},
-                                  $opts->{'include_duplicates'}) ];
-    } else {
-        if (!$opts->{'coord_system_name'}) {throw 'Requires a coordinate system name to function in this mode';}
-        $slices = $slice_adaptor->fetch_all($opts->{'coord_system_name'},
-                                            '',
-                                            $opts->{'include_non_ref'},
-                                            $opts->{'include_duplicates'});
-    }
-    my $canonical_changes = 0;
-    my $total_genes = 0;
-    
-    foreach my $slice (@$slices) {
-        my $genes = $slice->get_all_Genes($opts->{logic_name}, undef, 1);
+my $log_fh;
+if ($log_path) {
+    $log_fh = IO::File->new($log_path,"w") or throw ("Could not open logging file.");
+}    
+
+my $transcript_selector = Bio::EnsEMBL::Utils::TranscriptSelector->new($ccds_dba);
+
+my $slice_adaptor = $dba->get_SliceAdaptor;
+my $slices;
+if ($seq_region_name) {
+    $slices = [$slice_adaptor->fetch_by_region($coord_system_name,
+                              $seq_region_name,
+                              $include_non_ref,
+                              $include_duplicates) ];
+} else {
+    if (!$coord_system_name) {throw 'Requires a coordinate system name to function in this mode';}
+    $slices = $slice_adaptor->fetch_all($coord_system_name,
+                                        '',
+                                        $include_non_ref,
+                                        $include_duplicates);
+}
+my $canonical_changes = 0;
+my $total_genes = 0;
+
+my @change_list;
+
+foreach my $slice (@$slices) {
+    my $genes = $slice->get_all_Genes($logic_name, undef, 1);
+    while (my $gene = shift @$genes) {
+        $total_genes++;
+        my $new_canonical = $transcript_selector->select_canonical_transcript_for_Gene($gene);
         
-        foreach my $gene (@$genes) {
-            $total_genes++;
-            my $canonical = $transcript_selector->select_canonical_transcript_for_Gene($gene);
+        my $old_canonical = $gene->canonical_transcript;
+        
+        if ($new_canonical->stable_id ne $old_canonical->stable_id) {
+            printf "%s changed transcript from %s to %s\n",
+                $gene->stable_id,$old_canonical->stable_id,$new_canonical->stable_id;
+            $canonical_changes++;
             
-            my $old_canonical = $gene->canonical_transcript;
+            push @change_list,[$gene->dbID,$new_canonical->dbID];
             
-            if ($canonical->stable_id ne $old_canonical->stable_id) {
-                printf "%s changed transcript from %s to %s\n",
-                    $gene->stable_id,$canonical->stable_id,$old_canonical->stable_id;
-                $canonical_changes++;
-                
-                if ($opts->{'verbose'}) {
-                    printf "Old transcript: [%s,%s,%s,%s,%s,%s]\n",
-                        @{ $transcript_selector->encode_transcript($old_canonical) };
-                    printf "New transcript: [%s,%s,%s,%s,%s,%s]\n",
-                        @{ $transcript_selector->encode_transcript($canonical) };
-                }
+            if ($verbose) {
+                printf "Old transcript: [%s,%s,%s,%s,%s,%s,%s]\n",
+                    @{ $transcript_selector->encode_transcript($old_canonical) };
+                printf "New transcript: [%s,%s,%s,%s,%s,%s,%s]\n",
+                    @{ $transcript_selector->encode_transcript($new_canonical) };
+            }
+            
+            if ($log_fh) {
+                print $log_fh "//\n" or die "Unable to log choices. Cannot write to file";
+                printf $log_fh "Old=[%s,%s,%s,%s,%s,%s,'%s']\n", @{ $transcript_selector->encode_transcript($old_canonical) };
+                printf $log_fh "New=[%s,%s,%s,%s,%s,%s,'%s']\n", @{ $transcript_selector->encode_transcript($new_canonical) };
             }
         }
     }
-
-    print "Canonical transcript alterations: ".$canonical_changes." from ".$total_genes." genes\n";
-    
-    
-    
 }
+
+print "Canonical transcript alterations: ".$canonical_changes." from ".$total_genes." genes\n";
+if ($log_fh) {$log_fh->close;}
+
+
+## Change database entries.
+
+if ($write) {
+    my $gene_update_sql = "UPDATE gene SET canonical_transcript_id = ? where gene_id = ?";
+    my $gene_sth = $dba->dbc->prepare($gene_update_sql);
+    
+    print "Updating database with new canonical transcripts...\n";
+    foreach my $change (@change_list) {
+        print "Changin' ".$change->[1]." on ".$change->[0]."\n" if $verbose;
+        $gene_sth->execute( $change->[1], $change->[0]);
+    }
+    print "Done\n";
+}
+
 
 sub check_if_DB_contains_DNA {
   my ($dba)        = @_;
@@ -129,14 +161,17 @@ sub check_if_DB_contains_DNA {
       . $dba->dbc->dbname
       . " contains DNA sequences. No need to attach a "
       . "DNA_DB to it.\n"
-      if ( $opts->{verbose} );
+      if ( $verbose );
     return 1;
   } else {
     print "Your DB " . $dba->dbc->dbname . " does not contain DNA sequences.\n"
-      if ( $opts->{verbose} );
+      if ( $verbose );
     return 0;
   }
 }
+
+
+
 
 sub usage {
 print "
@@ -168,6 +203,8 @@ Optional DB connection arguments:
     -ccdshost    CCDS database host
 
     -ccdsuser    CCDS database user
+    
+    -ccdsport    CCDS database port
 
 Other optional arguments:
 
@@ -185,11 +222,15 @@ Other optional arguments:
 
     -verbose              Increase verbosity of output messages
 
+    -log                  Dump decision matrices into a log file for analysis
 
 To check the script has run correctly you can run the
 CoreForeignKeys healthcheck:
 
 ./run-healthcheck.sh -d dbname -output problem CoreForeignKeys
+
+A warning about not using CCDS is perfectly acceptible when not running on
+Human, Mouse and Zebrafish.
 ";
     
 }
