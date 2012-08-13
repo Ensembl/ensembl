@@ -628,8 +628,6 @@ sub fetch_by_region_unique {
     $self->_build_exception_cache();
   }
 
-  if (!exists( $self->{'asm_exc_cache'}->{ $self->get_seq_region_id($slice) } ))  { return $slice; }
-
   if ( exists(
           $self->{'asm_exc_cache'}->{ $self->get_seq_region_id($slice) }
        ) )
@@ -646,6 +644,8 @@ sub fetch_by_region_unique {
         push( @out, $segment->[2] );
       }
     }
+  } else {
+    @out = ($slice);
   }
 
   return \@out;
