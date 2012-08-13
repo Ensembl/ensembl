@@ -41,7 +41,9 @@ Bio::EnsEMBL::Utils::TranscriptSelector - Finds canonical transcripts
     longest non-coding transcript
     first stable ID in alphabetical order
     
-  The last condition is to give consistent behaviour when everything is else is equal
+  The last condition is to give consistent behaviour when everything is else is equal.
+  It selects the "older" stable ID, thus preventing new IDs supplanting old ones that
+  remain correct.
 =cut
 
 package Bio::EnsEMBL::Utils::TranscriptSelector;
@@ -101,7 +103,7 @@ sub select_canonical_transcript_for_Gene {
         my $encoded_transcript = $self->encode_transcript($transcript); 
         push(@encoded, $encoded_transcript );
         if ($self->{'verbose'}) { 
-            printf "%s encoded to: [%s,%s,%s,%s,%s,%s]\n",$transcript->stable_id, @$encoded_transcript;
+            printf "%s encoded to: [%s,%s,%s,%s,%s,%s,%s]\n",$transcript->stable_id, @$encoded_transcript;
         }
     }
 
@@ -130,6 +132,7 @@ my %source_priority = ('ccds' => 1,
                        'other' => 3);
 my %biotype_priority = ('protein_coding' => 1,
                         'nonsense_mediated_decay' => 2,
+                        'non_stop_decay' => 2,
                         'other' => 3,
 );
 
@@ -164,16 +167,20 @@ sub encode_transcript {
         if ($translation->seq =~ /\*/) {$translation_length = 0;}
     }
     # Zero-length/non-existent translations are ok. We sort by coding and non-coding first
+    my $translates = 0;
+    if ($translation_length != 0) {$translates = 1;}
     
     my $transcript_length = $transcript->length;
     
     my $biotype;
     if (   $transcript->biotype() ne 'protein_coding' 
-        && $transcript->biotype() ne 'nonsense_mediated_decay') {
+        && $transcript->biotype() ne 'nonsense_mediated_decay'
+        && $transcript->biotype() ne 'non_stop_decay') {
         $biotype = 'other';
     } else { $biotype = $transcript->biotype(); }
 
     return [$transcript->dbID,
+            $translates,
             $source_priority{$type}, 
             $biotype_priority{$biotype}, 
             $translation_length, 
@@ -185,7 +192,8 @@ sub encode_transcript {
 =head2 sort_into_canonical_order
 
   Arg 1      : 2D array reference of numerically encoded values
-              ( [transcript dbID, source , biotype, translation length, transcript length, stable ID],
+                        0              1        2         3             4                  5               6
+              ( [transcript dbID, translates, source , biotype, translation length, transcript length, stable ID],
                 ...
               ) 
   Description: see Schwartzian transform for method in the following madness:
@@ -201,11 +209,13 @@ sub sort_into_canonical_order {
     
     my @sorted_ids = map { $_->[0] }    
         sort {
-          $a->[1] <=> $b->[1] ||    # source
-          $a->[2] <=> $b->[2] ||    # biotype
-          $b->[3] <=> $a->[3] ||    # translation length (largest is best, $a and $b reversed)
-          $b->[4] <=> $a->[4] ||    # transcript length               "
-          $a->[5] cmp $b->[5]       # stable id. All other things being equal, 'lowest' transcript ID wins
+            # [0] contains ID
+          $b->[1] <=> $a->[1] ||    # translates
+          $a->[2] <=> $b->[2] ||    # source
+          $a->[3] <=> $b->[3] ||    # biotype
+          $b->[4] <=> $a->[4] ||    # translation length (largest is best, $a and $b reversed)
+          $b->[5] <=> $a->[5] ||    # transcript length               "
+          $a->[6] cmp $b->[6]       # stable id. All other things being equal, 'lowest' transcript ID wins
         } @{$encoded_list_ref};
     
     return \@sorted_ids;
@@ -224,12 +234,17 @@ sub check_Ens_trans_against_CCDS {
     my ( $self ,$transcript ) = @_;
    
     my @translateable_exons = @{ $transcript->get_all_translateable_Exons };
-    if (! $self->{'ccds_dba'}) {return;}
-    my $ext_slice = $self->{'ccds_dba'}->get_SliceAdaptor->fetch_by_region(
+    
+    my $seq_region_name = $transcript->slice->seq_region_name;
+    my $seq_region_start = $transcript->seq_region_start;
+    my $seq_region_end = $transcript->seq_region_end;
+    my $ccds_dba = $self->{'ccds_dba'};
+    
+    my $ext_slice = $ccds_dba->get_SliceAdaptor->fetch_by_region(
                                        'toplevel',
-                                       $transcript->slice->seq_region_name,
-                                       $transcript->seq_region_start,
-                                       $transcript->seq_region_end );
+                                       $seq_region_name,
+                                       $seq_region_start,
+                                       $seq_region_end );
 
     EXT_GENE: foreach my $ext_gene ( @{ $ext_slice->get_all_Genes } ) {
         EXT_TRANS: foreach my $ext_trans ( @{ $ext_gene->get_all_Transcripts } ) {
@@ -252,6 +267,9 @@ sub check_Ens_trans_against_CCDS {
                     . " found match "
                     . $ext_gene->display_id
                     . " in CCDS DB.\n" if $self->{'verbose'};
+                if ($ext_gene->display_id !~ /^CCDS/) {
+                    throw ("Database does not appear to contain CCDS IDs. Possible configuration problem with CCDS source.");
+                }
                 return 1;
             }
         }    # end foreach EXT_TRANS
