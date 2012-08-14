@@ -18,7 +18,7 @@ use Bio::EnsEMBL::DBSQL::DBAdaptor;
 my ($host, $port, $dbname, $user,$pass);
 my ($dnahost, $dnaport, $dnadbname, $dnauser, $dnapass);
 my ($ccds_host, $ccds_dbname, $ccds_user, $ccds_port, $ccds_pass);
-my $log_path;
+my ($log_path,$help);
 
 my $coord_system_name;
 my $seq_region_name;
@@ -50,8 +50,11 @@ GetOptions( 'dbhost:s'            => \$host,
             'include_non_ref!'    => \$include_non_ref,
             'include_duplicates'  => \$include_duplicates,
             'verbose!'            => \$verbose, 
-            'log:s'               => \$log_path,); # log file used for analysing choices in bulk
+            'log:s'               => \$log_path, # log file used for analysing choices in bulk
+            'help!'               => \$help,
+            'h!'                  => \$help);
 
+if ($help) { &usage; exit;}
 unless ($write) {
   print "You have not used the -write option "
       . "so results will not be written into the database\n";
