@@ -210,10 +210,9 @@ if($status eq "alt_alleles_processed"){
 
 
 #UniParc checksum mapping
-#Allow for reruns if required but needs a uniparc object available in the mapper
-#as that means we can do it
+#Allow for reruns if required and let the mapper decide if it can run or not
 $status = $mapper->xref_latest_status();
-if($status eq 'official_naming_done' && defined $mapper->uniparc()) {
+if($status eq 'official_naming_done') {
   my $checksum_mapper = XrefMapper::UniParcMapper->new($mapper);
   $checksum_mapper->process($upload);
 }

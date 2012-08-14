@@ -6,11 +6,6 @@ user=ensadmin
 password=
 dir=/nfs/acari/gp1/work/ensembl/misc-scripts/xref_mapping/xref
 
-#uniparc
-#dbname=
-#user=
-#password=
-
 species=mus_musculus
 host=ecs4
 port=3306

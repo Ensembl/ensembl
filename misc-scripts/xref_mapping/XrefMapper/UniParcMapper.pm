@@ -14,9 +14,7 @@ sub new {
   my $self = bless {}, $class;
   $self->core($mapper->core);
   $self->xref($mapper->xref);
-  $self->uniparc($mapper->uniparc());
   $self->mapper($mapper);
-  $self->method($self->uniparc()->method() || $DEFAULT_METHOD);
   return $self;
 }
 
@@ -57,12 +55,14 @@ sub process {
   
   $self->_update_status('checksum_xrefs_started');
   
-  my $method = $self->get_method();
-  my $results = $method->run();
-
-  if($do_upload) {
-    $self->log_progress('Starting upload');
-    $self->upload($results);
+  if($self->_map_checksums()) {
+    my $method = $self->get_method();
+    my $results = $method->run();
+  
+    if($do_upload) {
+      $self->log_progress('Starting upload');
+      $self->upload($results);
+    }
   }
   
   $self->_update_status('checksum_xrefs_finished');
@@ -145,7 +145,7 @@ sub species_id {
 
 sub get_method {
   my ($self) = @_;
-  my $method_class = $self->method();
+  my $method_class = $DEFAULT_METHOD;
   eval "require ${method_class};";
   if($@) {
     throw "Cannot require the class ${method_class}. Make sure your PERL5LIB is correct: $@";
@@ -167,6 +167,12 @@ sub _update_status {
     $self->log_progress(q{Status Update '%s' @ %s}."\n", $status, $time);
   }
   return;
+}
+
+sub _map_checksums {
+  my ($self) = @_;
+  my $count = $self->_xref_helper()->execute_single_result(-SQL => 'select count(*) from checksum_xref');
+  return $count;
 }
 
 sub log_progress {

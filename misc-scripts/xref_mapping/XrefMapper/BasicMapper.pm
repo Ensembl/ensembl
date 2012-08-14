@@ -8,7 +8,6 @@ use File::Basename;
 use IPC::Open3;
 
 use XrefMapper::db;
-use XrefMapper::uniparc;
 
 
 =head2 new
@@ -47,23 +46,6 @@ sub xref{
   (defined $arg) &&
     ($self->{_xref} = $arg );
   return $self->{_xref};
-}
-
-=head2 uniparc
-
-  Arg [1]    : (optional)
-  Example    : $mapper->uniparc($new_uniparc);
-  Description: Getter / Setter for the uniparc.
-               info for the uniparc database.
-  Returntype : XrefMapper::uniparc
-  Exceptions : none
-
-=cut
-
-sub uniparc {
-  my ($self, $uniparc) = @_;
-  $self->{uniparc} = $uniparc if defined $uniparc;
-  return $self->{uniparc};
 }
 
 =head2 farm_queue
@@ -209,13 +191,11 @@ sub process_file {
 
   my $xref=undef;
   my $ensembl=undef;
-  my $uniparc;
   my $type;
   
   my %xref_hash=();
   my %species_hash=();
   my %farm_hash=();
-  my %uniparc_hash;
   
   open my $fh, "<", $file or croak ("\nCannot open input file '$file':\n $!\n");
   while( my $line = <$fh> ) {
@@ -235,9 +215,6 @@ sub process_file {
     elsif($key eq "farm"){
       $type = "farm";
     }
-    elsif($key eq 'uniparc'){
-      $type = 'uniparc';
-    }
     elsif($type eq "species"){ # processing species data
       $species_hash{lc($key)} = $value;
     }
@@ -246,9 +223,6 @@ sub process_file {
     }
     elsif($type eq "farm"){
       $farm_hash{lc($key)} = $value;
-    }
-    elsif($type eq 'uniparc') { # Processing uniparc settings
-      $uniparc_hash{lc($key)} = $value;
     }
   }
   close $fh or croak "Can't close file";
@@ -360,21 +334,6 @@ sub process_file {
     croak "No host name given for xref database\n";
   }
  
-  
-  #If we had UniParc information then create the settings
-  if($uniparc_hash{dbname}) {
-    my %args = (
-      -DBNAME => $uniparc_hash{dbname},
-      -USER   => $uniparc_hash{user}
-    );
-    $args{-PASS} = $uniparc_hash{password} if $uniparc_hash{password};
-      
-    $uniparc = XrefMapper::uniparc->new(%args);
-    $uniparc->method($uniparc_hash{method});
-    $mapper->uniparc($uniparc);
-  }
-  
-  
   if(defined($species_hash{'species'})){
 
     my ($host, $port, $user, $dbname, $pass);
