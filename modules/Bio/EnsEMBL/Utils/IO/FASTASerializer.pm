@@ -136,7 +136,7 @@ sub print_metadata {
   my $fh = $self->{'filehandle'};
   my $function = $self->header_function();
   my $metadata = $function->($slice);
-  print $fh '>'.$metadata."\n";
+  print $fh '>'.$metadata."\n" or throw "Error writing to file handle: $!";
 }
 
 =head2 print_Seq
@@ -174,7 +174,7 @@ sub print_Seq {
     $there = $end if($there > $end);
     my $seq = $slice->subseq($here, $there);
     $seq =~ s/(.{1,$width})/$1\n/g;
-    print $fh $seq or die "Error writing to file handle";
+    print $fh $seq or throw "Error writing to file handle: $!";
     $here = $there + 1;
   }
 
