@@ -32,6 +32,7 @@ my %reason_count = (
   transcript_length => 0,
   id_ordering => 0,
   translation_length => 0,
+  havana_merge_nmd_over_e_coding => 0,
   other => 0
 );
 
@@ -66,9 +67,20 @@ sub compare {
     }
   }
   else {
+    #If all other keys are equal then we used translation length
     if( join(q{=!=},@{$old}[1..3]) eq join(q{=!=},@{$new}[1..3]) ) {
       $reason_key = 'translation_length';
     } 
+    #If we have translatable genes and we prefered Havana merged NMD over E/H PC
+    elsif(
+      $old->[1] && $new->[1] && #We had translatable genes 
+      $old->[2] == 3 &&         #Old was an Ensembl/Havana transcript
+      $new->[2] == 2 &&         #New was E! Havana merged 
+      $old->[3] == 1 &&         #Old was a Protein Coding
+      $new->[3] == 2            #New was a "NMD"
+      ) {
+      $reason_key = 'havana_merge_nmd_over_e_coding';
+    }
     else {
       $reason_key = 'other';
     }
