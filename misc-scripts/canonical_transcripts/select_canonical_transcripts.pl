@@ -1,8 +1,9 @@
+#!/usr/bin/env perl
+
 # Script that selects the best candidate for canonical transcripts on each
 # gene.
 # For usage instructions, run ./select_canonical_transcripts.pl -help
 
-#!/usr/bin/env perl
 
 use strict;
 use warnings;
@@ -15,8 +16,8 @@ use IO::File;
 use Bio::EnsEMBL::DBSQL::DBAdaptor;
 
 my ($host, $port, $dbname, $user,$pass);
-my ($dnahost, $dnadbname, $dnauser);
-my ($ccds_host, $ccds_dbname, $ccds_user, $ccds_port);
+my ($dnahost, $dnaport, $dnadbname, $dnauser, $dnapass);
+my ($ccds_host, $ccds_dbname, $ccds_user, $ccds_port, $ccds_pass);
 my $log_path;
 
 my $coord_system_name;
@@ -35,10 +36,13 @@ GetOptions( 'dbhost:s'            => \$host,
             'dnahost:s'           => \$dnahost,
             'dnadbname:s'         => \$dnadbname,
             'dnauser:s'           => \$dnauser,
-            'ccdshost:s'         => \$ccds_host,
-            'ccdsdbname:s'       => \$ccds_dbname,
-            'ccdsuser:s'         => \$ccds_user,
+            'dnapass:s'           => \$dnapass,
+            'dnaport:s'           => \$dnaport,
+            'ccdshost:s'          => \$ccds_host,
+            'ccdsdbname:s'        => \$ccds_dbname,
+            'ccdsuser:s'          => \$ccds_user,
             'ccdsport:s'          => \$ccds_port,
+            'ccdspass:s'          => \$ccds_pass,
             'coord_system_name:s' => \$coord_system_name,
             'seq_region_name:s'   => \$seq_region_name,
             'logic_name:s'        => \$logic_name,
@@ -59,7 +63,29 @@ my $dba =
                                       -port   => $port,
                                       -dbname => $dbname,
                                       -pass   => $pass,
+                                      -species => 'default',
                                       );
+                                      
+if($dnadbname) {
+  if(!$dnauser || !$dnahost) {
+    throw ("You must provide user, host and dbname details to connect to DNA DB!");
+  }
+  my $dna_db =   new Bio::EnsEMBL::DBSQL::DBAdaptor( -host   => $dnahost,
+                                      -user       => $dnauser,
+                                      -port       => $dnaport,
+                                      -dbname     => $dnadbname,
+                                      -pass       => $dnapass,
+                                      -species    => 'dna_'.$dba->species()
+                                      );
+  $dba->dnadb($dna_db);
+}
+else {
+  my $dna = check_if_DB_contains_DNA($dba);
+  if(!$dna) {
+    throw ("Your gene DB contains no DNA. You must provide a DNA_DB to connect to");
+  }
+}
+
 my $ccds_dba;
 
 if ($ccds_dbname) {
@@ -70,8 +96,9 @@ if ($ccds_dbname) {
   new Bio::EnsEMBL::DBSQL::DBAdaptor( -host   => $ccds_host,
                                       -user   => $ccds_user,
                                       -port   => $ccds_port,
+                                      -pass   => $ccds_pass,
                                       -dbname => $ccds_dbname,
-                                      -species => 'human' );
+                                      -species => 'ccds_'.$dba->species() );
 }
 
 my $log_fh;
@@ -197,12 +224,18 @@ Optional DB connection arguments:
     -dnadbhost    DNA Database host
 
     -dnadbuser    DNA Database user
+    
+    -dnadbport    DNA Database port
+    
+    -dnadbpass    DNA Database pass
 
     -ccdsdbname  CCDS database name
 
     -ccdshost    CCDS database host
 
     -ccdsuser    CCDS database user
+    
+    -ccdspass    CCDS database pass
     
     -ccdsport    CCDS database port
 
