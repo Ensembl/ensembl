@@ -2,6 +2,7 @@ use strict;
 use warnings;
 
 use Test::More;
+use Test::Builder;
 use Test::Exception;
 use Test::MockObject;
 use Test::MockObject::Extends;
@@ -13,27 +14,33 @@ use Bio::EnsEMBL::Transcript;
 use Bio::EnsEMBL::Translation;
 use Bio::EnsEMBL::CoordSystem;
 use Bio::EnsEMBL::Analysis;
+use Bio::EnsEMBL::Test::TestUtils;
 
-my $transcript_selector = Bio::EnsEMBL::Utils::TranscriptSelector->new(undef, 'VERBOSE');
+my $verbose = Test::Builder->new()->no_diag() ? 0 : 1;
+
+my $transcript_selector;
+
+warns_like 
+  { $transcript_selector = Bio::EnsEMBL::Utils::TranscriptSelector->new(undef, $verbose) } 
+  qr/Running without CCDS DB/, 'Checking we warn about the lack of a CCDS DB';
 
 # Test the sorting algorithm 
 # encoded arrays as follows:
 #[transcript dbID, source , biotype, translation length, transcript length, stable ID]
 my $sortables = [
-    [qw( a 1 1 500 250 ENST7 )],
-    [qw( b 2 1 500 250 ENST6 )],
-    [qw( c 3 1 500 250 ENST5 )],
-    [qw( d 1 1 450 250 ENST4 )],
-    [qw( e 1 1 500 250 ENST3 )],
-    [qw( f 3 3 0   700 ENST2 )],
-    [qw( g 3 3 0   700 ENST1 )],
+    [qw( a 1 1 1 500 250 ENST7 )],
+    [qw( b 1 2 1 500 250 ENST6 )],
+    [qw( c 1 3 1 500 250 ENST5 )],
+    [qw( d 1 1 1 450 250 ENST4 )],
+    [qw( e 1 1 1 500 250 ENST3 )],
+    [qw( f 0 3 3 0   700 ENST2 )],
+    [qw( g 0 3 3 0   700 ENST1 )],
 ]; 
 
 my $sorted = $transcript_selector->sort_into_canonical_order($sortables);
 
-print "Sorted order:\n";
-print join(',',@$sorted);
-print "\n";
+note "Sorted order";
+note  join(',',@$sorted);
 
 my $correct_order = [qw(e a d b c g f)];
 is_deeply($sorted,$correct_order,'Canonical sort order');
@@ -155,6 +162,7 @@ my $gene = Bio::EnsEMBL::Gene->new(
     -BIOTYPE => 'protein_coding',
     -TRANSCRIPTS => $transcripts,
     -SLICE => $slice,
+    -STABLE_ID => 'CCDS01'
 );
     
 my $mock_slice = Test::MockObject->new();
@@ -184,9 +192,7 @@ $mock_dba->mock('get_SliceAdaptor', sub {
     return $mock_sa;
 });
 
-
-$transcript_selector = Bio::EnsEMBL::Utils::TranscriptSelector->new($mock_dba, 'VERBOSE');
-
+$transcript_selector = Bio::EnsEMBL::Utils::TranscriptSelector->new($mock_dba, $verbose);
 ok($transcript_selector->check_Ens_trans_against_CCDS($transcript2),'CCDS transcript lookup with good data');
 ok($transcript_selector->check_Ens_trans_against_CCDS($transcript3) != 1,'CCDS transcript lookup with non-coding');
 
@@ -235,7 +241,7 @@ $gene = Bio::EnsEMBL::Gene->new(
     -BIOTYPE => 'protein_coding',
     -SLICE => $slice,
 );
-$canonical_transcript = $transcript_selector->select_canonical_transcript_for_Gene($gene);
+warns_like { $canonical_transcript = $transcript_selector->select_canonical_transcript_for_Gene($gene)} qr/No transcripts attached/, 'Checking we warn about lack of transcripts against a gene';
 note ($canonical_transcript);
 is($canonical_transcript, undef, "Gene with no transcripts, fault tolerance");
 

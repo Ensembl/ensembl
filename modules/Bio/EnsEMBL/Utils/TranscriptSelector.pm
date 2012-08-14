@@ -267,8 +267,8 @@ sub check_Ens_trans_against_CCDS {
                     . " found match "
                     . $ext_gene->display_id
                     . " in CCDS DB.\n" if $self->{'verbose'};
-                if ($ext_gene->display_id !~ /^CCDS/) {
-                    throw ("Database does not appear to contain CCDS IDs. Possible configuration problem with CCDS source.");
+                if ($ext_gene->stable_id !~ /^CCDS/) {
+                    throw (sprintf("Database does not appear to contain CCDS IDs. Possible configuration problem with CCDS source. Found ID %s", $ext_gene->stable_id()));
                 }
                 return 1;
             }
