@@ -47,7 +47,7 @@ is_deeply($sorted,$correct_order,'Canonical sort order');
 
 $sortables = [];
 $sorted = $transcript_selector->sort_into_canonical_order($sortables);
-print join(',',@$sorted);
+note join(',',@$sorted);
 is(scalar(@$sorted), 0,'Null data into sort.');
 
 # create a mock CCDS dba to test db-dependent code
