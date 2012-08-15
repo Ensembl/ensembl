@@ -165,7 +165,7 @@ sub store_on_ {
             "argument expected.");
     }
 
-    next if ! $attrib->value;
+#    next if ! $attrib->value;
 
     my $atid = $self->_store_type( $attrib );
     if ((defined $attrib->code) and ($attrib->code eq 'circular_seq')) {
