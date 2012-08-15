@@ -1130,6 +1130,7 @@ sub split_chromosomes_by_size {
   my $cutoff = shift || 5000000;
   my $dup    = shift || 0;
   my $cs_version = shift;
+  my $include_non_reference = 1;
   my $slice_adaptor = $self->dba->get_SliceAdaptor;
   my $top_slices;
   if ($self->param('chromosomes')) {
@@ -1137,7 +1138,7 @@ sub split_chromosomes_by_size {
       push @{ $top_slices }, $slice_adaptor->fetch_by_region('chromosome', $chr);
     }
   } else {
-    $top_slices = $slice_adaptor->fetch_all('chromosome',$cs_version,0,$dup);
+    $top_slices = $slice_adaptor->fetch_all('chromosome',$cs_version,$include_non_reference,$dup);
   }
 
   my ($big_chr, $small_chr, $min_big_chr, $min_small_chr);
