@@ -51,18 +51,15 @@ sub verbose {
 }
 
 sub process {
-  my ($self, $do_upload) = @_;
+  my ($self) = @_;
   
   $self->_update_status('checksum_xrefs_started');
   
   if($self->_map_checksums()) {
     my $method = $self->get_method();
     my $results = $method->run();
-  
-    if($do_upload) {
-      $self->log_progress('Starting upload');
-      $self->upload($results);
-    }
+    $self->log_progress('Starting upload');
+    $self->upload($results);
   }
   
   $self->_update_status('checksum_xrefs_finished');

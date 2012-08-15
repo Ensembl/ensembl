@@ -8,7 +8,7 @@ use Bio::EnsEMBL::Utils::Argument qw(rearrange);
 use Bio::EnsEMBL::Utils::Exception qw(throw);
 use Digest::MD5;
 
-my $DEFAULT_BATCH_SIZE = 10;
+my $DEFAULT_BATCH_SIZE = 1000;
 
 sub new {
   my ($class, @args) = @_;
