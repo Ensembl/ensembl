@@ -174,7 +174,7 @@ sub _map_checksums {
 sub log_progress {
   my ( $self, $fmt, @params ) = @_;
   return if (!$self->verbose);
-  printf( STDERR "CHKSM==> %s", sprintf( $fmt, @params ) );
+  printf( STDERR "CHKSM==> %s\n", sprintf( $fmt, @params ) );
 }
 
 1;
