@@ -66,7 +66,10 @@ sub new {
   throw "No database name -DBNAME given" unless $dbname;
   my $self = $class->SUPER::new($dbc);
   $self->dbname($dbname);
-  $self->reconnect_interval($reconnect_interval) if $reconnect_interval;
+  if($reconnect_interval) {
+    $self->reconnect_interval($reconnect_interval);
+    $self->_last_used();
+  }
   return $self;  
 }
 
