@@ -68,7 +68,6 @@ sub process {
 
 sub upload {
   my ($self, $results) = @_;
-  
   #The elements come in as an array looking like
   #  [ { id => 1, upi => 'UPI00000A', object_type => 'Translation' } ]
   
