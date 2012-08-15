@@ -125,7 +125,6 @@ GetOptions('host=s'    => \$host,
 
 pod2usage(1) if($help);
 throw("--user argument required") if (!defined($user));
-throw("--pass argument required") if (!defined($pass));
 throw("--release argument required") if(!defined($release));
 
 my $database = 'information_schema';
@@ -152,6 +151,10 @@ foreach my $h ($host,$host2) {
   my $schema_build;
   foreach my $db_name (@{$dbs}){
     print STDERR "Going to update mapping for $db_name->[0]....\n";
+    my $current_assembly = get_assembly($dbh, $db_name->[0]) ;
+    my $previous_dbname = &get_previous_dbname($old_dbh,$db_name->[0],$release);
+    my $old_assembly = get_assembly($old_dbh, $previous_dbname); 
+    if ($old_assembly ne $current_assembly) { next; }
     my $mapping_set_id;
     my $current_seq_region = (); # hash containing the relation seq_region_name->seq_region_id for the current database
     my $old_seq_region = (); #hash containing the previous database relation seq_region_name->seq_region_id
@@ -177,7 +180,6 @@ foreach my $h ($host,$host2) {
     elsif ($status == NEW_MAPPING){
       $sth_mapping_set->execute($mapping_set_id,$schema_build) unless $dry_run;
       #there has been a seq_region change between releases, add a new mapping_set and the relation old_seq_region_id->new_seq_region_id
-      my $previous_dbname = &get_previous_dbname($old_dbh,$db_name->[0],$release);
       $current_seq_region =  &read_seq_region($dbh,$db_name->[0]);
       $old_seq_region = &read_seq_region($old_dbh,$previous_dbname);
       #update the seq_region_mapping table with the old->new seq_region_id relation
@@ -316,4 +318,12 @@ sub get_schema_and_build{
   my ($dbname) = @_;
   my @dbname = split/_/, $dbname;
   return join "_",$dbname[($#dbname -1)], $dbname[($#dbname)];
+}
+
+
+sub get_assembly{
+  my ($dbh, $dbname) = @_;
+  my $sth = $dbh->prepare("select meta_value from $dbname.meta where meta_key = 'assembly.default'");
+  $sth->execute();
+  return $sth->fetchrow();
 }
