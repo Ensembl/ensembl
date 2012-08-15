@@ -26,7 +26,9 @@ sub run {
   while (my $slice = shift @sorted_slices) {
     foreach my $code (keys %attrib_codes) {
       my $count = $self->get_feature_count($slice, $code, $attrib_codes{$code});
-      $self->store_attrib($slice, $count, $code);
+      if ($count > 0) {
+        $self->store_attrib($slice, $count, $code);
+      }
       $sum += $count;
     }
     if ($sum >= $total) {

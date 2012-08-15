@@ -50,7 +50,9 @@ sub run {
                                                     -end           => $block->end,
                                                     -density_type  => $density_type,
                                                     -density_value => $feature);
-        push(@features, $df);
+        if ($feature > 0) {
+          push(@features, $df);
+        }
       }
     } else {
       my $feature = $self->get_density($slice, $option);
@@ -60,7 +62,9 @@ sub run {
                                                   -end           => $slice->end,
                                                   -density_type  => $density_type,
                                                   -density_value => $feature);
-      push(@features, $df);
+      if ($feature > 0) {
+        push(@features, $df);
+      }
     }
     if ($count >= $total || $iteration == $max_run) {
       last;
