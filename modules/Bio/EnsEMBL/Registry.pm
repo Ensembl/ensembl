@@ -193,7 +193,7 @@ my %group2adaptor = (
 
   Example    : Bio::EnsEMBL::Registry->load_all();
   Returntype : Int count of the DBAdaptor instances which can be found in the 
-               registry
+               registry due to this method being called. Will never be negative
   Exceptions : none
   Status     : Stable
 
@@ -372,7 +372,8 @@ sub load_all {
         }
     } ## end else [ if ( !defined($config_file...
     
-    return $class->get_DBAdaptor_count() - $original_count;
+    my $count = $class->get_DBAdaptor_count() - $original_count;
+    return $count >= 0 ? $count : 0; 
 } ## end sub load_all
 
 =head2 clear
@@ -1526,7 +1527,7 @@ sub load_registry_from_url {
                of standard aliases.
 
   Returntype : Int count of the DBAdaptor instances which can be found in the 
-               registry
+               registry due to this method call.
 
   Exceptions : Thrown if the given MySQL database cannot be connected to
                or there is any error whilst querying the database.
@@ -2144,7 +2145,8 @@ sub load_registry_from_db {
 
   $dbh->disconnect();
   
-  return $self->get_DBAdaptor_count() - $original_count;
+  my $count = $self->get_DBAdaptor_count() - $original_count;
+  return $count >= 0 ? $count : 0; 
 
 } ## end sub load_registry_from_db
 
@@ -2390,7 +2392,8 @@ sub load_registry_from_multiple_dbs {
 
   %registry_register = %merged_register;
   
-  return $self->get_DBAdaptor_count() - $original_count;
+  my $count = $self->get_DBAdaptor_count() - $original_count;
+  return $count >= 0 ? $count : 0; 
 } ## end sub load_registry_from_multiple_dbs
 
 #
@@ -2751,6 +2754,7 @@ sub get_species_and_object_type {
      }
      $sth->execute();
      my ($species, $type, $db_type) = $sth->fetchrow_array();
+     $sth->finish();
      return ($species ,$type, $db_type);
 
   } else {
