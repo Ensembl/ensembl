@@ -225,7 +225,7 @@ $count = $db->dbc->db_handle->selectall_arrayref
 ok($count == 0);
 
 #
-# test the skipping of empty attrib values
+# test the storage of empty attrib values
 #
 {
   my %args = (-NAME => 'test_name2', -CODE => 'test_code2', -DESCRIPTION => 'test_desc2');
@@ -233,9 +233,8 @@ ok($count == 0);
   my $atrib = Bio::EnsEMBL::Attribute->new(%args,);
   $aa->store_on_Slice($slice, [Bio::EnsEMBL::Attribute->new(%args, -VALUE => q{})]);
   $aa->store_on_Slice($slice, [Bio::EnsEMBL::Attribute->new(%args, -VALUE => 0)]);
-#  $aa->store_on_Slice($slice, [Bio::EnsEMBL::Attribute->new(%args, -VALUE => undef)]);
   my $new_rows = count_rows($db, 'seq_region_attrib');
-  is($new_rows, $current_rows, 'Asserting the storage of undefined attributes will result in no values stored');
+  cmp_ok($new_rows, '>', $current_rows, 'Asserting the storage of undefined attributes will always store them');
 }
 
 $multi->restore('core', 'misc_attrib', 'seq_region_attrib', 'attrib_type');
