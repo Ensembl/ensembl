@@ -245,21 +245,21 @@ sub build_overlap_scores {
 
   $self->logger->info( "Scoring...\n", 1, 'stamped' );
 
-  while ( $source_ec or $target_ec ) {
+  while ( defined($source_ec) || defined($target_ec) ) {
     my $add_source = 0;
     my $add_target = 0;
 
     # compare exon containers
-    if ( $source_ec && $target_ec ) {
+    if ( defined($source_ec) && defined($target_ec) ) {
       my $cmp =
         $self->compare_exon_containers( $source_ec, $target_ec );
       if ( $cmp <= 0 ) { $add_source = 1 }
       if ( $cmp >= 0 ) { $add_target = 1 }
     }
-    elsif ($source_ec) {
+    elsif ( defined($source_ec) ) {
       $add_source = 1;
     }
-    elsif ($target_ec) {
+    elsif ( defined($target_ec) ) {
       $add_target = 1;
     }
     else {
@@ -267,7 +267,7 @@ sub build_overlap_scores {
     }
 
     if ($add_source) {
-      if ( $source_overlap{ $source_ec->[0] } ) {
+      if ( exists( $source_overlap{ $source_ec->[0] } ) ) {
         # remove exon from list of overlapping source exons to score
         # target against
         delete $source_overlap{ $source_ec->[0] };
@@ -290,14 +290,14 @@ sub build_overlap_scores {
           $self->calc_overlap_score( $source_ec->[0], $target_exon,
                                      $matrix );
         }
-      } ## end else [ if ( $source_overlap{ ...})]
+      }
 
       # get next source exon container
       $source_ec = shift(@source_exons);
     } ## end if ($add_source)
 
     if ($add_target) {
-      if ( $target_overlap{ $target_ec->[0] } ) {
+      if ( exists( $target_overlap{ $target_ec->[0] } ) ) {
         # remove exon from list of overlapping target exons to score
         # source against
         delete $target_overlap{ $target_ec->[0] };
@@ -325,7 +325,7 @@ sub build_overlap_scores {
       # get next target exon container
       $target_ec = shift(@target_exons);
     } ## end if ($add_target)
-  } ## end while ( $source_ec or $target_ec)
+  } ## end while ( defined($source_ec...))
 
   $self->logger->info( "Done.\n", 1, 'stamped' );
 
