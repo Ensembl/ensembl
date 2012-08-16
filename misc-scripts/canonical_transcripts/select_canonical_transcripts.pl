@@ -138,9 +138,11 @@ foreach my $slice (@$slices) {
         
         my $old_canonical = $gene->canonical_transcript;
         
-        if ($new_canonical->stable_id ne $old_canonical->stable_id) {
-            printf "%s changed transcript from %s to %s\n",
-                $gene->stable_id,$old_canonical->stable_id,$new_canonical->stable_id;
+        if ($new_canonical->dbID != $old_canonical->dbID) {
+            no warnings 'uninitialized';
+            printf "%s (%s) changed transcript from %s (%s) to %s (%s)\n",
+                $gene->stable_id,$gene->dbID,$old_canonical->stable_id,$old_canonical->dbID,
+                $new_canonical->stable_id,$new_canonical->dbID;
             $canonical_changes++;
             
             push @change_list,[$gene->dbID,$new_canonical->dbID];
