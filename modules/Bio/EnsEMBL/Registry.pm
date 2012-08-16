@@ -122,6 +122,8 @@ package Bio::EnsEMBL::Registry;
 use strict;
 use warnings;
 
+our $NEW_EVAL = 0;
+
 use Bio::EnsEMBL::DBSQL::DBAdaptor;
 use Bio::EnsEMBL::DBSQL::BaseFeatureAdaptor;
 use Bio::EnsEMBL::Utils::Exception qw( deprecate throw warning );
@@ -364,11 +366,22 @@ sub load_all {
             # of configuration written in Perl.  We need to try to
             # require() it.
 
-            my $test_eval = eval { require($config_file) };
+            my $test_eval;
+            if($NEW_EVAL) {
+              require Bio::EnsEMBL::Utils::IO;
+              my $contents = Bio::EnsEMBL::Utils::IO::slurp($config_file);
+              $test_eval = eval $contents;
+            }
+            else {
+              $test_eval = eval { require($config_file) };
+              # To make the web code avoid doing this again we delete first
+              delete $INC{$config_file};
+            }
+            
+            #Now raise the exception just in case something above is 
+            #catching this
             if ($@ or (!$test_eval)) { die($@) }
 
-            # To make the web code avoid doing this again:
-            delete $INC{$config_file};
         }
     } ## end else [ if ( !defined($config_file...
     
