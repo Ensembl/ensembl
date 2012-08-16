@@ -510,6 +510,8 @@ sub fetch_by_toplevel_location {
                 separated by C<..>, C<:> or C<->.
   Arg[2]      : boolean $no_warnings
                 Suppress warnings from this method
+  Arg[3]      : boolean $no_errors
+                Supress errors being thrown from this method
   Example			: my ($name, $start, $end, $strand) = $sa->parse_location_to_values('X:1..100:1);
   Description	: Takes in an Ensembl location String and returns the parsed
                 values
@@ -519,7 +521,7 @@ sub fetch_by_toplevel_location {
 
 
 sub parse_location_to_values {
-  my ($self, $location, $no_warnings) = @_;
+  my ($self, $location, $no_warnings, $no_errors) = @_;
   
   throw 'You must specify a location' if ! $location;
   
@@ -549,12 +551,12 @@ sub parse_location_to_values {
     if(defined $end) {
       $end =~ s/$number_seps_regex//g;
       if($end < 1) {
-        throw "Cannot request negative or 0 end indexes through this interface. Given $end but expected something greater than 0";
+        throw "Cannot request negative or 0 end indexes through this interface. Given $end but expected something greater than 0" unless $no_errors;
       }
     }
     
     if(defined $start && defined $end && $start > $end) {
-      throw "Cannot request a slice whose start is greater than its end. Start: $start. End: $end";
+      throw "Cannot request a slice whose start is greater than its end. Start: $start. End: $end" unless $no_errors;
     }
   }
   
