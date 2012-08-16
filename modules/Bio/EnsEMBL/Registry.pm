@@ -2767,10 +2767,6 @@ sub get_species_and_object_type {
         $known_db_type = 'core';
       }
       
-      warn $known_db_type;
-      warn $known_species;
-      warn $known_type;
-      
       my %get_adaptors_args;
       $get_adaptors_args{'-group'} = $known_db_type;
       if ($known_species) {
