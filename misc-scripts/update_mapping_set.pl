@@ -151,17 +151,30 @@ foreach my $h ($host,$host2) {
   my $schema_build;
   foreach my $db_name (@{$dbs}){
     print STDERR "Going to update mapping for $db_name->[0]....\n";
-    my $current_assembly = get_assembly($dbh, $db_name->[0]) ;
-    my $previous_dbname = &get_previous_dbname($old_dbh,$db_name->[0],$release);
-    my $old_assembly = get_assembly($old_dbh, $previous_dbname); 
-    if ($old_assembly ne $current_assembly) { next; }
-    my $mapping_set_id;
-    my $current_seq_region = (); # hash containing the relation seq_region_name->seq_region_id for the current database
-    my $old_seq_region = (); #hash containing the previous database relation seq_region_name->seq_region_id
+    my $mapping_set_id = 1;
     my $sth_seq_mapping = $dbh->prepare("INSERT INTO $db_name->[0].seq_region_mapping VALUES(?,?,?)");
     my $sth_mapping_set = $dbh->prepare("INSERT INTO $db_name->[0].mapping_set VALUES(?,?)");
-    $status = &mapping_status($dbh,$old_dbh, $db_name->[0],\$mapping_set_id,$release);
     $schema_build = get_schema_and_build($db_name->[0]);
+
+    my $current_assembly = get_assembly($dbh, $db_name->[0]) ;
+    my $previous_dbname = &get_previous_dbname($old_dbh,$db_name->[0],$release);
+
+# If there is no previous database, no mapping needed
+    if (!defined($previous_dbname)) {
+      $sth_mapping_set->execute($mapping_set_id, $schema_build) unless $dry_run;
+      next;
+    }
+    my $old_assembly = get_assembly($old_dbh, $previous_dbname); 
+
+# If it is a new assembly, no mapping needed
+    if ($old_assembly ne $current_assembly) { 
+      $sth_mapping_set->execute($mapping_set_id, $schema_build) unless $dry_run;
+      next; 
+    }
+
+    my $current_seq_region = (); # hash containing the relation seq_region_name->seq_region_id for the current database
+    my $old_seq_region = (); #hash containing the previous database relation seq_region_name->seq_region_id
+    $status = &mapping_status($dbh,$old_dbh, $db_name->[0],\$mapping_set_id,$release);
 
 ## prune newly added mapping_set entries
 #    $dbh->do(qq(delete from $db_name->[0].mapping_set where schema_build = '$schema_build'));
