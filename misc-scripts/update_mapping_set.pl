@@ -254,14 +254,14 @@ sub mapping_status{
       $old_sth_max_mapping->execute();
       ( $$mapping_set_id_ref ) = $old_sth_max_mapping->fetchrow_array();
       if ($$mapping_set_id_ref) {
-	print (" There are mappings in the previous version of the database, need to do something with them ?\n");
+	print (" There are mappings in the previous version of the database $dbname, need to do something with them ?\n");
       }
       else {
-	print " Previous version of the database has no entries, this is wrong\n";
+	print " Previous version of the $dbname has no entries, this is wrong\n";
       }
     }
     else {
-      print " This is the first version of a this species, so just creating a new entry\n";
+      print " This is the first version of a this database $dbname, so just creating a new entry\n";
       $$mapping_set_id_ref = 1;
     }
     return INITIAL_MAPPING;
