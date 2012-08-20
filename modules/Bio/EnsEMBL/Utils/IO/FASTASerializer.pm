@@ -30,10 +30,10 @@ Bio::EnsEMBL::Utils::IO::FASTASerializer
   $serializer->print_Seq($slice);
 
   $serializer = Bio::EnsEMBL::Utils::IO::FASTASerializer->new($filehandle,
-  sub {
-    my $slice = shift;
-    return "Custom header";
-  }
+      sub {
+        my $slice = shift;
+        return "Custom header";
+      }
   );
 
 =head1 DESCRIPTION
@@ -63,17 +63,17 @@ use base qw(Bio::EnsEMBL::Utils::IO::Serializer);
 
 =head2 new
 
-  Arg [1]  : Filehandle (optional)
-  Arg [2]  : CODEREF subroutine for writing custom headers
-  Arg [3]  : [optional] Chunking size (integer)
-  Arg [4]  : [optional] Line width (integer)
-  Example  : $dumper = Bio::EnsEMBL::Utils::IO::FASTASerializer->new($filehandle,$header_function,1000,60);
+  Arg [1]    : Filehandle (optional)
+  Arg [2]    : CODEREF subroutine for writing custom headers
+  Arg [3]    : [optional] Chunking size (integer)
+  Arg [4]    : [optional] Line width (integer)
+  Example    : $dumper = Bio::EnsEMBL::Utils::IO::FASTASerializer->new($filehandle,$header_function,1000,60);
   Description: Constructor
-         Allows the specification of a custom function for rendering
-         header lines.
+               Allows the specification of a custom function for rendering
+               header lines.
   Returntype : Bio::EnsEMBL::Utils::IO::FASTASerializer;
   Exceptions : none
-  Caller   : general
+  Caller     : general
 
 =cut
 
@@ -92,7 +92,6 @@ sub new {
   $self->{'chunk_factor'} = ($chunk_factor)? $chunk_factor : 1000;
   # gives a 60kb buffer by default, increase for higher database and disk efficiency.
 
-  # TODO: Check this error trap works as intended
   if ( defined($self->{'header_function'}) ) {
     if (ref($self->{'header_function'}) ne "CODE") {
       throw("Custom header function must be an anonymous subroutine when instantiating FASTASerializer");}
@@ -123,11 +122,11 @@ sub new {
 
 =head2 print_metadata
 
-  Arg [1]  : Bio::EnsEMBL::Slice
+  Arg [1]    : Bio::EnsEMBL::Slice
   Description: Printing header lines into FASTA files. Usually handled
-         internally to the serializer.
+               internally to the serializer.
   Returntype : None
-  Caller   : print_Seq
+  Caller     : print_Seq
 =cut
 
 sub print_metadata {
@@ -141,11 +140,11 @@ sub print_metadata {
 
 =head2 print_Seq
 
-  Arg [1]  : Bio::EnsEMBL::Slice or other Bio::PrimarySeqI compliant object
+  Arg [1]    : Bio::EnsEMBL::Slice or other Bio::PrimarySeqI compliant object
 
   Description: Serializes the slice into FASTA format. Buffering is used
-         While other Bioperl PrimarySeqI implementations can be used,
-         a custom header function will be required to accommodate it.
+               While other Bioperl PrimarySeqI implementations can be used,
+               a custom header function will be required to accommodate it.
 
   Returntype : None
 
@@ -184,7 +183,7 @@ sub print_Seq {
 
 =head2 line_width
 
-  Arg [1]  : Integer e.g. 60 or 80
+  Arg [1]    : Integer e.g. 60 or 80
   Description: Set and get FASTA format line width. Default is 60
   Returntype : Integer
 
@@ -198,10 +197,12 @@ sub line_width {
 }
 
 =head2 chunk_factor
-  Arg [1]  : Integer e.g. 1000
+  
+  Arg [1]    : Integer e.g. 1000
   Description: Set and get the multiplier used to dictate buffer size
-         Chunk factor x line width = buffer size in bases.
+               Chunk factor x line width = buffer size in bases.
   Returntype : Integer
+
 =cut
 
 sub chunk_factor {
@@ -213,10 +214,10 @@ sub chunk_factor {
 
 =head2 set_custom_header
 
-  Arg [1]  : CODE reference
+  Arg [1]    : CODE reference
   Description: Set the custom header function. Normally this is done at
-         construction time, but can be overridden here.
-  Example  : $serializer->set_custom_header( sub { return 'New header'});
+               construction time, but can be overridden here.
+  Example    : $serializer->set_custom_header( sub { return 'New header'});
   Returntype :
 
 =cut
@@ -229,10 +230,10 @@ sub set_custom_header {
 
 =head2 header_function
 
-  Arg [1]  : CODE reference (optional)
-  Description: Getter/setter for the custom header code
-  Example  : $serializer->header_function( sub { return 'New header'});
-  Returntype : CODE
+  Arg [1]     : CODE reference (optional)
+  Description : Getter/setter for the custom header code
+  Example     : $serializer->header_function( sub { return 'New header'});
+  Returntype  : CODE
 
 =cut
 
