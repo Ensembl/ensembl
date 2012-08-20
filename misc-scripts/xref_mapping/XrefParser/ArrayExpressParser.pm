@@ -23,22 +23,18 @@ sub run_script {
   my $species_id   = $ref_arg->{species_id};
   my $file         = $ref_arg->{file};
   my $verbose      = $ref_arg->{verbose};
+  my $mapper       = $ref_arg->{mapper};
 
   if((!defined $source_id) or (!defined $species_id) or (!defined $file) ){
     croak "Need to pass source_id, species_id and file as pairs";
   }
+  if(!defined $mapper) {
+    croak "Need to connect to a core database; please use a mapper based configuration";
+  }
   $verbose |=0;
-
-  my $project;
-  my $wget = "";
-
-  if($file =~ /project[=][>](\S+?)[,]/){
-    $project = $1;
-  }
-  if($file =~ /wget[=][>](\S+?)[,]/){
-    $wget = $1;
-  }
-
+  
+  my $opts = $self->parse_opts_from_file($file);
+  my $wget = $opts->{wget};
 
   my $ua = LWP::UserAgent->new();
   $ua->timeout(10);
@@ -62,45 +58,9 @@ sub run_script {
       return;
   }
 
-  #get stable_ids from core and create xrefs 
-
-  my $registry = "Bio::EnsEMBL::Registry";
-
-  if ($project eq 'ensembl') {
-      $registry->load_registry_from_multiple_dbs( 
-	  {
-	      '-host'    => 'ens-staging1',
-	      '-user'    => 'ensro',
-	  },
-	  {
-	      '-host'     => 'ens-staging2',
-	      '-user'     => 'ensro',
-	  },
-       );
-  } elsif ($project eq 'ensemblgenomes') {
-
-      $registry->load_registry_from_multiple_dbs( 
-	  {
-	      '-host'     => 'mysql-eg-staging-1.ebi.ac.uk',
-	      '-port'     => 4160,
-	      '-user'     => 'ensro',
-	  },
-	  {
-	      '-host'     => 'mysql-eg-staging-2.ebi.ac.uk',
-	      '-port'     => 4275,
-	      '-user'     => 'ensro',
-	  },
- 
-      );
-
-  } else {
-      die("Missing or unsupported project value. Supported values: ensembl, ensemblgenomes");
-  }
-
   #get the species name
- 
-  my $species_name = $species_id_to_names{$species_id}[0];
-  my $gene_adaptor = $registry->get_adaptor($species_name, 'core', 'Gene');
+  my $dba = $mapper->core()->dba();
+  my $gene_adaptor = Bio::EnsEMBL::Registry->get_adaptor($dba->species(), 'core', 'gene');
 
   my @stable_ids = map { $_->stable_id } @{$gene_adaptor->fetch_all()};
 

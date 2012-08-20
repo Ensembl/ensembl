@@ -297,32 +297,24 @@ sub process_file {
     $host = $xref_hash{'host'};
     $user = $xref_hash{'user'};
     $dbname = $xref_hash{'dbname'};
-    if(defined($xref_hash{'password'})){
-      $pass = $xref_hash{'password'};
-    }
-    else{
-      $pass = '';
-    }
-    if(defined($xref_hash{'port'})){
-      $port = $xref_hash{'port'};
-    }
-    else{
-      $port = 3306;
-    }
+    $pass = $xref_hash{'password'} || q{};
+    $port = $xref_hash{port} || 3306;
 
-    $xref = new XrefMapper::db(-host => $host,
+    $xref = new XrefMapper::db(
+             -host => $host,
 			       -port => $port,
 			       -user => $user,
 			       -pass => $pass,
 			       -group   => 'core',
-			       -dbname => $dbname);
+			       -dbname => $dbname,
+			       -SPECIES => 'xrefdb');
 
     $mapper->xref($xref);
     $mapper->add_meta_pair("xref", $host.":".$dbname);
     if(defined($xref_hash{'dir'})){
       $xref->dir($xref_hash{'dir'});
       if(!-d $xref_hash{'dir'}){
-	croak "directory ".$xref_hash{'dir'}." does not exist please create this\n";
+        croak "directory ".$xref_hash{'dir'}." does not exist please create this\n";
       }
     }
     else{
@@ -340,25 +332,17 @@ sub process_file {
     $host = $species_hash{'host'};
     $user = $species_hash{'user'};
     $dbname = $species_hash{'dbname'};
-    if(defined($species_hash{'password'})){
-      $pass = $species_hash{'password'};
-    }
-    else{
-      $pass = '';
-    }
-    if(defined($species_hash{'port'})){
-      $port = $species_hash{'port'};
-    }
-    else{
-      $port = '';
-    }
+    $pass = $species_hash{'password'} || q{};
+    $port = $species_hash{port} || 3306;
 
-    my $core = new XrefMapper::db(-host => $host,
+    my $core = new XrefMapper::db(
+          -host => $host,
 				  -port => $port,
 				  -user => $user,
 				  -pass => $pass,
 				  -group   => 'core',
-				  -dbname => $dbname);
+				  -dbname => $dbname,
+				  -SPECIES => $species_hash{'species'});
     
     $mapper->core($core);
     
@@ -367,38 +351,36 @@ sub process_file {
     if(defined($species_hash{'dir'})){
        $core->dir($species_hash{'dir'});
        if(!-d $species_hash{'dir'}){
-	  croak "directory ".$species_hash{'dir'}." does not exist please create this\n";
+         croak "directory ".$species_hash{'dir'}." does not exist please create this\n";
        }
     }    
-    else{
-       croak "No directory specified for the ensembl fasta files\n";
+    else {
+      croak "No directory specified for the ensembl fasta files\n";
     }
     
     $core->species($value);
 
     #connect to previous release of core db if connection details specified in xref_input (pr_host, pr_port, pr_dbname, pr_user) 
     if (defined( $species_hash{'pr_host'}) && defined( $species_hash{'pr_user'}) && defined( $species_hash{'pr_dbname'}) ) {
-	my ($pr_host, $pr_port, $pr_user, $pr_dbname);
-	$pr_host = $species_hash{'pr_host'};
-	$pr_user = $species_hash{'pr_user'};
-	$pr_dbname = $species_hash{'pr_dbname'};
-	if(defined($species_hash{'pr_port'})){
-	    $pr_port = $species_hash{'port'};
-	}
-	else{
-	    $pr_port = '';
-	}
-
-	my $previous_core = new XrefMapper::db(-host => $pr_host,
-				  -port => $pr_port,
-				  -user => $pr_user,
-				  -pass => '',
-				  -group   => 'core',
-				  -dbname => $pr_dbname);
+    	my ($pr_host, $pr_port, $pr_user, $pr_pass, $pr_dbname);
+    	$pr_host = $species_hash{pr_host};
+    	$pr_user = $species_hash{pr_user};
+    	$pr_dbname = $species_hash{pr_dbname};
+    	$pr_port = $species_hash{pr_port} || 3306;
+    	$pr_pass = $species_hash{pr_pass} || q{};
     
-	$mapper->previous_core($previous_core);
-
-	$mapper->add_meta_pair("species", $pr_host.":".$pr_dbname);    
+    	my $previous_core = new XrefMapper::db(
+    	        -host => $pr_host,
+    				  -port => $pr_port,
+    				  -user => $pr_user,
+    				  -pass => $pr_pass,
+    				  -group   => 'core',
+    				  -dbname => $pr_dbname,
+    				  -SPECIES => 'pr_'.$species_hash{'species'});
+        
+    	$mapper->previous_core($previous_core);
+    
+    	$mapper->add_meta_pair("species", $pr_host.":".$pr_dbname);    
 
     }
   }

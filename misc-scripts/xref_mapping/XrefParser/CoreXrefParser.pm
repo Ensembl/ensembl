@@ -15,95 +15,38 @@ sub run_script {
   my $species_id   = $ref_arg->{species_id};
   my $file         = $ref_arg->{file};
   my $verbose      = $ref_arg->{verbose};
+  my $mapper       = $ref_arg->{mapper};
 
   if((!defined $source_id) or (!defined $species_id) or (!defined $file) ){
     croak "Need to pass source_id, species_id and file as pairs";
   }
+  if(!defined $mapper) {
+    croak "Need to connect to a core database; please use a mapper based configuration";
+  }
   $verbose |=0;
 
-  my $biotype;
-  my $object_type;
-  my $project;
-  my $copy_description_from_object;
-
-  if($file =~ /biotype[=][>](\S+?)[,]/){
-    $biotype = $1;
-  }
-  if($file =~ /object_type[=][>](\S+?)[,]/){
-    $object_type = $1;
-  }
-  if($file =~ /project[=][>](\S+?)[,]/){
-    $project = $1;
-  }
-  if($file =~ /copy_description_from_object[=][>](\S+?)[,]/){
-    $copy_description_from_object = $1;
-  }
+  my $opts = $self->parse_opts_from_file($file);
+  my $biotype = $opts->{biotype};
+  my $object_type = lc($opts->{object_type}) || 'gene';
+  my $copy_description_from_object = $opts->{copy_description_from_object};
 
   my $external_db_name = $self->get_source_name_for_source_id($source_id);
 
   #copy object xrefs from core
-
-  my $registry = "Bio::EnsEMBL::Registry";
-
-  if ($project eq 'ensembl') {
-      $registry->load_registry_from_multiple_dbs( 
-	  {
-	      '-host'    => 'ens-staging1',
-	      '-user'    => 'ensro',
-	  },
-	  {
-	      '-host'     => 'ens-staging2',
-	      '-user'     => 'ensro',
-	  },
-       );
-  } elsif ($project eq 'ensemblgenomes') {
-
-      $registry->load_registry_from_multiple_dbs( 
-	  {
-	      '-host'     => 'mysql-eg-staging-1.ebi.ac.uk',
-	      '-port'     => 4160,
-	      '-user'     => 'ensro',
-	  },
-	  {
-	      '-host'     => 'mysql-eg-staging-2.ebi.ac.uk',
-	      '-port'     => 4275,
-	      '-user'     => 'ensro',
-	  },
- 
-      );
-
-  } else {
-      die("Missing or unsupported project value. Supported values: ensembl, ensemblgenomes");
-  }
-
-  #get the species name
-  my %id2name = $self->species_id2name;
-  my $species_name = $id2name{$species_id}[0];
-
-  if (!$object_type) {
-      $object_type = 'gene';
-  }
-
   my %valid_object_types = (
-
-      gene => 'Gene',
-      transcript => 'Transcript',
-      translation => 'Translation',
-      Gene => 'Gene',
-      Transcript => 'Transcript',
-      Translation => 'Translation',
+    gene => 'Gene', transcript => 'Transcript', translation => 'Translation',
   );
 
   if (!exists($valid_object_types{$object_type}) ) {
-
       die("Unsupported object type value. Supported values: ", join(',', keys %valid_object_types) );
   }
 
-  if ($biotype &&  $object_type ne 'gene' && $object_type ne 'transcript') {
+  if ($biotype && $object_type ne 'gene' && $object_type ne 'transcript') {
       die("Incorrect parser argument values: expecting gene or transcript object type when biotype provided.\n");
   }
 
-  my $object_adaptor = $registry->get_adaptor($species_name, 'core', $object_type);
+  my $dba = $mapper->core()->dba();
+  my $object_adaptor = Bio::EnsEMBL::Registry->get_adaptor($dba->species(), 'core', $object_type);
 
   my @objects;
 

@@ -3,13 +3,18 @@ use strict;
 use Getopt::Long qw(:config pass_through);
 use XrefParser::BaseParser;
 use XrefParser::ProcessData;
+use XrefParser::Database;
+use XrefMapper::BasicMapper;
+
+$| = 1;
 
 my ( $host,             $port,          $dbname,
      $user,             $pass,          $species,
      $sources,          $checkdownload, $create,
      $release,          $cleanup,       $drop_existing_db,
      $deletedownloaded, $dl_path,       $notsource,
-     $unzip, $stats, $notverbose, $force );
+     $unzip,            $stats,         $notverbose,        $force, 
+     $file,             $forceold );
 
 my $options = join(" ",@ARGV);
 
@@ -18,8 +23,10 @@ print "Options: ".join(" ",@ARGV)."\n";
 $unzip = 0;    # Do not decompress gzipped files by default
 
 $notverbose = 0;
+$port = 3306;
 
 GetOptions(
+    'file=s'         => \$file,
     'dbuser|user=s'  => \$user,
     'dbpass|pass=s'  => \$pass,
     'dbhost|host=s'  => \$host,
@@ -40,6 +47,7 @@ GetOptions(
     'download_path=s' => \$dl_path,
     'unzip'           => \$unzip,                   # Force decompression of files
     'force'           => \$force,
+    'forceold'        => \$forceold,
     'help'  => sub { usage(); exit(0); } );
 
 if($ARGV[0]){
@@ -52,27 +60,54 @@ if($ARGV[0]){
   exit(1);
 }
 
-my @species = split(/,/,join(',',$species));
+my @species;
 my @sources  = split(/,/,join(',',$sources));
 my @notsource  = split(/,/,join(',',$notsource));
+my $dbc;
+my $mapper;
 
-$| = 1;
-
-if ( !$user || !$host || !$dbname ) {
+if($file) {
+  print "Using mapper configuration file\n";
+  $mapper = XrefMapper::BasicMapper->process_file($file, !$notverbose);
+  $dbc = $mapper->xref();
+  #We do not support this in the new system
+  if($species =~ /,/) {
+    print STDERR "We do not support multiple species (-species human,mouse) and configuration files (-file) due to ambiguity in the target species required. Please do not use this option (it probably is not doing what you expect anyway)\n";
+    exit 1;
+  }
+  elsif($species) {
+    print STDERR "We do not pay any attention to -species when using the -file configuration files\n";
+    exit 1;
+  }
+  @species = ($mapper->core()->species());
+}
+else {
+  if(! $forceold) {
+    print STDERR "Attempting to use non-config interface (some sources need a core DB so be warned). Please use a xref_mapper.input file or rerun with -forceold\n";
+    exit 1;
+  }
+  print STDERR "Forced using old configuration; some sources e.g. RFAM need a core DB. Be warned\n";
+  @species = split(/,/,join(',',$species));
+  if ( !$user || !$host || !$dbname ) {
     usage();
     exit(1);
+  }
+  print "Host is $host\n";
+  my $dbc = XrefParser::Database->new({
+    host    => $host,
+    dbname  => $dbname,
+    port    => $port,
+    user    => $user,
+    pass    => $pass,
+    verbose => (!$notverbose) 
+  });
 }
-
-
-print "host os $host\n";
 
 my $process  = XrefParser::ProcessData->new();
 
-$process->run({ host             => $host,
-		port             =>  ( defined $port ? $port : '3306' ),
-		dbname           => $dbname,
-		user             => $user,
-		pass             => $pass,
+$process->run({ 
+    dbc              => $dbc,
+    mapper           => $mapper, # can go in undefined as we allow parsers to fail if they do not have access to the mapper
 		speciesr         => \@species,
 		sourcesr         => \@sources,
 		checkdownload    => $checkdownload,
@@ -114,21 +149,30 @@ sub usage {
 
   print << "EOF";
 
-  xref_parser.pl -user {user} -pass {password} -host {host} \\
+  xref_parser.pl -file {file} -user {user} -pass {password} -host {host} \\
     -port {port} -dbname {database} -species {species1,species2} \\
     -source {source1,source2} -notsource {source1,source2} \\
     -create -setrelease -deletedownloaded -checkdownload -stats -verbose \\
-    -cleanup -drop_db -download_path -unzip
+    -cleanup -drop_db -download_path -unzip \\
+    -forceold
+
+  -file             Use a xref_mapper.input configuration file to configure
+                    this application. 
 
   -user             User name to access database. Must allow writing.
+                    Ignored if using -file
 
   -pass             Password for user.
+                    Ignored if using -file
 
   -host             Database host.
+                    Ignored if using -file
 
   -port             Database port.
+                    Ignored if using -file
 
   -dbname           Name of xref database to use/create.
+                    Ignored if using -file
 
   -species          Which species to import. Multiple -species arguments
                     and/or comma, separated lists of species are
@@ -138,6 +182,8 @@ sub usage {
                     of valid species to be printed.  Not specifying a
                     -species argument will result in all species being
                     used.
+                    
+                    Ignored if using -file
 
   -source           Which sources to import. Multiple -source arguments
                     and/or comma, separated lists of sources are
@@ -178,6 +224,10 @@ sub usage {
   -stats            Generate the stats for the number of types of xrefs added.
 
   -force            No confirmation of actions just do it.
+  
+  -forceold			Force a run of the old syntax if required. This is fine so 
+                long as you do not use a resource which expects to find a core
+                database
 
 EOF
 

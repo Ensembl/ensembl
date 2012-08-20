@@ -70,6 +70,7 @@ if(!defined($file)){
 }
 
 my $mapper = XrefMapper::BasicMapper->process_file($file, !$notverbose);
+create_directories();
 
 $mapper->add_meta_pair("mapper options",$options);
 
@@ -278,6 +279,20 @@ if(($status eq "core_loaded" or $status eq "display_xref_done") and $upload){
 
 if(!defined($notverbose)){
   print "xref_mapper.pl FINISHED NORMALLY\n";
+}
+
+sub create_directories {
+  my $xref_dir = $mapper->xref()->dir();
+  if(! -d $xref_dir) {
+    print "Creating $xref_dir as it does not exist\n";
+    mkpath($xref_dir);
+  }
+  my $core_dir = $mapper->core()->dir();
+  if(! -d $core_dir) {
+    print "Creating $core_dir as it does not exist\n";
+    mkpath($core_dir);
+  }
+  return;
 }
 
 sub usage {

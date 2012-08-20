@@ -39,15 +39,10 @@ sub run {
   my $rspecies   = $ref_arg->{speciesr};
   my $sources    = $ref_arg->{sourcesr};
   my $notsources = $ref_arg->{notsourcesr};
+  my $mapper     = $ref_arg->{mapper};
+  my $dbc        = $ref_arg->{dbc};
 
   my $sql_dir = dirname($0);
-
-  my $dbc = XrefParser::Database->new({ host    => $ref_arg->{host},
-					dbname  => $ref_arg->{dbname},
-					port    => $ref_arg->{port},
-					user    => $ref_arg->{user},
-					pass    => $ref_arg->{pass},
-					verbose => $ref_arg->{verbose} });
 
   $self->database($dbc);
 
@@ -236,7 +231,8 @@ DSS
 			 source_id  => $source_id,
 			 species_id => $species_id,
 			 name       => $name,
-			 verbose    => $verbose }) )
+			 verbose    => $verbose,
+			 mapper     => $mapper }) )
 	  {
 	    ++$summary{$name}->{$parser};
 	  }
@@ -257,7 +253,8 @@ DSS
 	      $new->run_script( {file       => $file,
 				 source_id  => $source_id, 
 				 species_id => $species_id, 
-				 verbose    => $verbose }) )
+				 verbose    => $verbose,
+				 mapper     => $mapper }) )
 	    {
 	      ++$summary{$name}->{$parser};
 	    }
@@ -340,7 +337,8 @@ DSS
 			 species_id => $species_id,
 			 files      => \@files_to_parse,
 			 rel_file   => $release_url,
-			 verbose    => $verbose } ) )
+			 verbose    => $verbose,
+			 mapper     => $mapper } ) )
 	  {
 	    ++$summary{$name}->{$parser};
 	  }
@@ -350,7 +348,8 @@ DSS
 	    $new->run(  { source_id  => $source_id,
 			  species_id => $species_id,
 			  files      => \@files_to_parse,
-			  verbose    => $verbose } ))
+			  verbose    => $verbose,
+			  mapper     => $mapper } ))
 	  {
 	    ++$summary{$name}->{$parser};
 	  }

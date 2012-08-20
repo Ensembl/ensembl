@@ -2,6 +2,8 @@ package XrefMapper::db;
 
 use vars '@ISA';
 use Bio::EnsEMBL::DBSQL::DBConnection;
+use Bio::EnsEMBL::DBSQL::DBAdaptor;
+use XrefParser::Database qw//;
 use Cwd;
 
 sub new{
@@ -37,6 +39,23 @@ sub dbc{
     $self->{_dbc} = $arg;
   }
   return $self->{_dbc};
+}
+
+=head2 dba
+
+Produce a DBAdaptor from this db object. Useful for when you need to work
+with a DB. Group is optional but defaults to core.
+
+=cut
+
+sub dba {
+  my ($self, $group) = @_;
+  my $dbc = $self->dbc();
+  my $species = $self->species();
+  $group ||= 'core';
+  my $dba = Bio::EnsEMBL::DBSQL::DBAdaptor->new(
+    -DBCONN => $dbc, -SPECIES => $species, -GROUP => $group
+  );
 }
 
 =head2 dir
@@ -121,6 +140,50 @@ sub process_dir {
   }
   return $dir;
 }
+
+########## START OF XrefParser::Database compatiblity mode ##########
+sub host {
+  my ($self) = @_;
+  return $self->dbc()->host();
+}
+
+sub port {
+  my ($self) = @_;
+  return $self->dbc()->port();
+}
+
+sub user {
+  my ($self) = @_;
+  return $self->dbc()->username();
+}
+
+sub pass {
+  my ($self) = @_;
+  return $self->dbc()->password();
+}
+
+sub dbname {
+  my ($self) = @_;
+  return $self->dbc()->dbname();
+}
+
+sub verbose {
+  my ($self, $verbose) = @_;
+  $self->{'verbose'} = $verbose if defined $verbose;
+  return $self->{'verbose'};
+}
+
+sub dbi {
+  my ($self) = @_;
+  return XrefParser::Database::dbi($self);
+}
+
+sub create {
+  my ($self, $sql_dir, $force, $drop_db) = @_;
+  return XrefParser::Database::create($self, $sql_dir, $force, $drop_db);
+}
+
+########## END OF XrefParser::Database compatiblity mode ##########
 
 
 1;
