@@ -306,9 +306,11 @@ sub backup_tables {
     }
     $logger->info( sprintf( $fmt1, $thetable ), 1 );
     my $c = 0;
-    unless ( $conf->param('dry_run') ) {
+    if ( !$conf->param('dry_run') &&
+         $dbh->do(qq(CREATE TABLE ${thetable}${sfx} LIKE ${thetable})) )
+    {
       $c = $dbh->do(
-            qq(CREATE TABLE ${thetable}${sfx} SELECT * FROM $thetable));
+           qq(INSERT INTO ${thetable}${sfx} SELECT * FROM ${thetable}));
     }
     $logger->info( sprintf( $fmt2, $c ) );
   }
