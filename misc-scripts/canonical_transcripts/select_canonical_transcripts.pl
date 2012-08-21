@@ -14,11 +14,14 @@ use Bio::EnsEMBL::Utils::Exception qw(throw);
 use Bio::EnsEMBL::Utils::TranscriptSelector;
 use IO::File;
 use Bio::EnsEMBL::DBSQL::DBAdaptor;
+use Bio::EnsEMBL::Registry;
 
 my ($host, $port, $dbname, $user,$pass);
 my ($dnahost, $dnaport, $dnadbname, $dnauser, $dnapass);
 my ($ccds_host, $ccds_dbname, $ccds_user, $ccds_port, $ccds_pass);
 my ($log_path,$help);
+
+Bio::EnsEMBL::Registry->no_cache_warnings(1);
 
 my $coord_system_name;
 my $seq_region_name;
@@ -67,6 +70,7 @@ my $dba =
                                       -dbname => $dbname,
                                       -pass   => $pass,
                                       -species => 'default',
+                                      -no_cache => 1,
                                       );
                                       
 if($dnadbname) {
@@ -78,7 +82,7 @@ if($dnadbname) {
                                       -port       => $dnaport,
                                       -dbname     => $dnadbname,
                                       -pass       => $dnapass,
-                                      -species    => 'dna_'.$dba->species()
+                                      -species    => 'dna_'.$dba->species(),
                                       );
   $dba->dnadb($dna_db);
 }
@@ -101,7 +105,9 @@ if ($ccds_dbname) {
                                       -port   => $ccds_port,
                                       -pass   => $ccds_pass,
                                       -dbname => $ccds_dbname,
-                                      -species => 'ccds_'.$dba->species() );
+                                      -species => 'ccds_'.$dba->species(),
+                                      -no_cache => 1,
+                                      );
 }
 
 my $log_fh;
