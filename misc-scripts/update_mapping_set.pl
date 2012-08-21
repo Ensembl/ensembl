@@ -188,22 +188,30 @@ foreach my $h ($host,$host2) {
       if (!defined $current_name_hash) {
         next;
       }
-      foreach my $coord_system_id (keys %{$old_name_hash}){
-        my $current_cs_hash = $current_name_hash->{$coord_system_id};
-        my $old_cs_hash = $old_name_hash->{$coord_system_id};
-# The coord_system might have been removed in the current database
-        if (!defined $current_cs_hash) {
+      foreach my $length (keys %{$old_name_hash}){
+        my $current_length_hash = $current_name_hash->{$length};
+        my $old_length_hash = $old_name_hash->{$length};
+# The seq_region might have a different length
+        if (!defined $current_length_hash) {
           next;
         }
-        foreach my $length (keys %{$old_cs_hash}) {
-          my $current_id = $current_cs_hash->{$length};
-          my $old_id = $old_cs_hash->{$length};
-# If no change, no need to write out
-          if (!defined $current_id || $old_id == $current_id) {
+        foreach my $cs (keys %{$old_length_hash}) {
+          my $current_cs_hash = $current_length_hash->{$cs};
+          my $old_cs_hash = $old_length_hash->{$cs};
+# The coord system might have changed
+          if (!defined $current_cs_hash) {
             next;
           }
-          $sth_seq_mapping->execute($old_id, $current_id, $mapping_set_id) unless $dry_run;
-          $count++;
+          foreach my $id (keys %{$old_cs_hash}) {
+            my $current_id = $current_cs_hash->{$id};
+            my $old_id = $old_cs_hash->{$id};
+# If no change, no need to write out
+            if (!defined $current_id || $old_id == $current_id) {
+              next;
+            }
+            $sth_seq_mapping->execute($old_id, $current_id, $mapping_set_id) unless $dry_run;
+            $count++;
+          }
         }
       }
     }
@@ -216,15 +224,16 @@ sub read_seq_region{
   my $dbh = shift;
   my $dbname = shift;
   my %seq_region_hash;
-  my ($seq_region_id, $seq_region_name, $coord_system_id, $length, $cs_name);
-  my $sth = $dbh->prepare("SELECT seq_region_id, name, length, coord_system_id FROM $dbname.seq_region");
+  my ($seq_region_id, $seq_region_name, $coord_system_id, $length, $cs_name, $cs_rank);
+  my $sth = $dbh->prepare("SELECT seq_region_id, s.name, length, cs.name, cs.rank FROM $dbname.seq_region s, $dbname.coord_system cs WHERE cs.coord_system_id = s.coord_system_id");
   $sth->execute();
   $sth->bind_col(1,\$seq_region_id);
   $sth->bind_col(2,\$seq_region_name);
   $sth->bind_col(3,\$length);
-  $sth->bind_col(4,\$coord_system_id);
+  $sth->bind_col(4,\$cs_name);
+  $sth->bind_col(5,\$cs_rank);
   while ($sth->fetch){
-    $seq_region_hash{$seq_region_name}{$coord_system_id}{$length} = $seq_region_id;
+    $seq_region_hash{$seq_region_name}{$length}{$cs_name}{$cs_rank} = $seq_region_id;
   }
   return \%seq_region_hash;
 }
