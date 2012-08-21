@@ -25,7 +25,7 @@ and TABLE_SCHEMA = table_schema_vc
 and COLUMN_NAME = 'version'
 );
 
-IF @Index_version_count <> 0 THEN
+IF @Index_version_count != 0 THEN
   PREPARE idx_remove from 'alter table xref drop index id_index;';
   EXECUTE idx_remove;
   DEALLOCATE PREPARE idx_remove;
