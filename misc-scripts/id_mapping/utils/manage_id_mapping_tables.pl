@@ -40,14 +40,18 @@ intended to be run interactively (your configuration will be overridden).
 
 The tables that will be emptied are:
 
-  gene_stable_id
-  transcript_stable_id
-  translation_stable_id
-  exon_stable_id
   mapping_session
   stable_id_event
   gene_archive
   peptide_archive
+
+We also set the stable ID column in the following tables to NULL:
+
+  gene
+  transcript
+  translation
+  exon
+
 
 Optionally (by interactive selection), the current tables can be backed up.
 Backkup tables will get suffices of _bak_0, _bak_1, etc. (where the correct

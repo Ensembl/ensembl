@@ -166,28 +166,28 @@ $logger->finish_log;
 
 sub compare_genes {
   $logger->info("Comparing genes...\n\n", 0, 'stamped');
-  &compare_features('gene');
+  compare_features('gene');
   $logger->info("Done\n\n");
 }
 
 
 sub compare_transcripts {
   $logger->info("Comparing transcripts...\n\n", 0, 'stamped');
-  &compare_features('transcript');
+  compare_features('transcript');
   $logger->info("Done\n\n");
 }
 
 
 sub compare_translations {
   $logger->info("Comparing translations...\n\n", 0, 'stamped');
-  &compare_features('translation');
+  compare_features('translation');
   $logger->info("Done\n\n");
 }
 
 
 sub compare_exons {
   $logger->info("Comparing exons...\n\n", 0, 'stamped');
-  &compare_features('exon');
+  compare_features('exon');
   $logger->info("Done\n\n");
 }
 
@@ -229,7 +229,7 @@ sub compare_features {
   $logger->info("Fetching ${ftype} data from dbs...\n", 0, 'stamped');
 
   # db 2
-  my $sql1 = qq(SELECT ${ftype}_id, stable_id FROM ${ftype}_stable_id);
+  my $sql1 = qq(SELECT ${ftype}_id, stable_id FROM ${ftype});
   my $sth1 = $dbh1->prepare($sql1);
   $sth1->execute;
   
@@ -246,7 +246,7 @@ sub compare_features {
 
   # db 2
   my $suffix = $conf->param('suffix');
-  my $sql2 = qq(SELECT ${ftype}_id, stable_id FROM ${ftype}_stable_id${suffix});
+  my $sql2 = qq(SELECT ${ftype}_id, stable_id FROM ${ftype}${suffix});
   my $sth2 = $dbh2->prepare($sql2);
   $sth2->execute;
   
@@ -264,10 +264,10 @@ sub compare_features {
   $logger->info("Done.\n\n", 0, 'stamped');
 
   #
-  # get max(gene_stable_id) from source db
+  # get max(stable_id) from source db
   #
   my $dbh = $dba_s->dbc->db_handle;
-  my $sql = qq(SELECT max(stable_id) FROM ${ftype}_stable_id);
+  my $sql = qq(SELECT max(stable_id) FROM ${ftype});
   my $sth = $dbh->prepare($sql);
   $sth->execute;
   my ($max_stable_id) = $sth->fetchrow_array;

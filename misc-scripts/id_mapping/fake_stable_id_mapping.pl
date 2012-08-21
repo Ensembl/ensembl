@@ -51,7 +51,7 @@ Options:
 This script fakes a stable ID archive run for a database where some genes were
 deleted.
 
-It assumes that the new database already has its *_stable_id tables populated.
+It assumes that the new database already has its * stable_id tables populated.
 A new mapping session is created and all stable IDs other than the deleted ones
 are mapped to themselves. For the deleted genes, appropriate entries in
 gene_archive and peptide_archive are created. All this is done to the new
@@ -518,7 +518,7 @@ sub create_stable_id_events {
 
       next if ($skip_biotypes{$tr->biotype});
     
-      unless ($support->param('dry_run')) {
+      unless ($support->param(q{dry_run})) {
         $sth->execute(
           $tr->stable_id,
           $tr->version,
@@ -565,7 +565,7 @@ sub create_stable_id_events {
 
   Example     : &increment_gene_versions;
   Description : Increment version of all genes where transcripts were deleted.
-                Also checks that gene_stable_id.stable_id is correct (and adjusts
+                Also checks that gene.stable_id is correct (and adjusts
                 if necessary).
   Return type : none
   Exceptions  : none
@@ -590,9 +590,9 @@ sub increment_gene_versions {
   $c = $dbh_new->do($sql) unless ($support->param('dry_run'));
   $support->log("stable_id_event [$c]\n", 1);
 
-  # update gene_stable_id
+  # update gene.stable_id
   $sql = qq(
-    UPDATE gene_stable_id
+    UPDATE gene
     SET version = ?
     WHERE stable_id = ?
     AND version < ?
@@ -607,7 +607,7 @@ sub increment_gene_versions {
       unless ($support->param('dry_run'));
   }
   
-  $support->log("gene_stable_id [$c]\n", 1);
+  $support->log("gene [$c]\n", 1);
 
   $support->log_stamped("Done.\n\n");
 }
