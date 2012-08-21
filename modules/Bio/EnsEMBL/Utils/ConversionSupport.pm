@@ -1685,7 +1685,7 @@ sub get_unique_genes {
   if ( ! $slice->is_reference() and ! $self->is_haplotype($slice,$dba) ) {
 #  if ( 0 ) {
     $patch = 1;
-    my $slices = $sa->fetch_by_region_unique( $slice->coord_system_name(),$slice->seq_region_name() );
+    my $slices = $sa->fetch_by_region_unique( $slice->coord_system_name(),$slice->seq_region_name(),undef,undef,undef,$slice->coord_system()->version() );
     foreach my $slice ( @{$slices} ) {
       push @$genes,@{$ga->fetch_all_by_Slice($slice)};
       #      my $start = $slice->start;
