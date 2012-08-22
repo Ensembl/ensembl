@@ -40,11 +40,11 @@ sub run {
              || $b->seq_region_length() <=> $a->seq_region_length() } @$slices) ;
   while (my $slice = shift @sorted_slices) {
     $iteration++;
+    $count += $self->get_density($slice, $option);
     if ($slice->has_karyotype) {
       my @blocks = $self->generate_blocks($slice);
       for my $block (@blocks) {
         my $feature = $self->get_density($block, $option);
-        $count += $feature;
         my $df = Bio::EnsEMBL::DensityFeature->new( -seq_region    => $slice,
                                                     -start         => $block->start,
                                                     -end           => $block->end,
@@ -56,7 +56,6 @@ sub run {
       }
     } else {
       my $feature = $self->get_density($slice, $option);
-      $count += $feature;
       my $df = Bio::EnsEMBL::DensityFeature->new( -seq_region    => $slice,
                                                   -start         => $slice->start,
                                                   -end           => $slice->end,
