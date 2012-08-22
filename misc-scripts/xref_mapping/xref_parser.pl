@@ -68,7 +68,8 @@ my $mapper;
 
 if($file) {
   print "Using mapper configuration file\n";
-  $mapper = XrefMapper::BasicMapper->process_file($file, !$notverbose);
+  my $skip_meta_pair = 1;
+  $mapper = XrefMapper::BasicMapper->process_file($file, !$notverbose, $skip_meta_pair);
   $dbc = $mapper->xref();
   #We do not support this in the new system
   if($species =~ /,/) {

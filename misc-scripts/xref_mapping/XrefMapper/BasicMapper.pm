@@ -187,6 +187,7 @@ sub process_file {
   my $self = shift;
   my $file = shift;
   my $verbose = shift;
+  my $skip_meta_pair = shift;
   
 
   my $xref=undef;
@@ -310,7 +311,7 @@ sub process_file {
 			       -SPECIES => 'xrefdb');
 
     $mapper->xref($xref);
-    $mapper->add_meta_pair("xref", $host.":".$dbname);
+    $mapper->add_meta_pair("xref", $host.":".$dbname) unless $skip_meta_pair;
     if(defined($xref_hash{'dir'})){
       $xref->dir($xref_hash{'dir'});
       if(!-d $xref_hash{'dir'}){
@@ -346,7 +347,7 @@ sub process_file {
     
     $mapper->core($core);
     
-    $mapper->add_meta_pair("species", $host.":".$dbname);
+    $mapper->add_meta_pair("species", $host.":".$dbname) unless $skip_meta_pair;
 
     if(defined($species_hash{'dir'})){
        $core->dir($species_hash{'dir'});
