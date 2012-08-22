@@ -90,6 +90,7 @@ elsif($transcript) {
 }
 
 $transcript_selector->select_canonical_transcript_for_Gene($gene_object);
+print "Original: ".$gene_object->canonical_transcript->stable_id."\n";
 
 sub usage {
 print "
