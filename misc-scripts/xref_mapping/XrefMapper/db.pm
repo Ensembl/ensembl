@@ -50,12 +50,15 @@ with a DB. Group is optional but defaults to core.
 
 sub dba {
   my ($self, $group) = @_;
+  return $self->{dba} if $self->{dba};
   my $dbc = $self->dbc();
   my $species = $self->species();
   $group ||= 'core';
   my $dba = Bio::EnsEMBL::DBSQL::DBAdaptor->new(
     -DBCONN => $dbc, -SPECIES => $species, -GROUP => $group
   );
+  $self->{dba} = $dba;
+  return $dba;
 }
 
 =head2 dir
