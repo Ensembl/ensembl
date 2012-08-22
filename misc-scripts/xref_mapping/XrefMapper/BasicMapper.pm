@@ -381,7 +381,7 @@ sub process_file {
         
     	$mapper->previous_core($previous_core);
     
-    	$mapper->add_meta_pair("species", $pr_host.":".$pr_dbname);    
+    	$mapper->add_meta_pair("species", $pr_host.":".$pr_dbname) unless $skip_meta_pair;    
 
     }
   }
