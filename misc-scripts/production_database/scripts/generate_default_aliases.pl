@@ -78,13 +78,13 @@ sub _write_aliases {
   my ($self, $aliases, $species) = @_;
   my $dbc = $self->_production_dbc();
   $dbc->sql_helper()->transaction(sub {
-    my $sql = 'insert into species_alias (species_id, alias, is_current, created_at) values (?,?,?, NOW())';
+    my $sql = 'insert into species_alias (species_id, alias, is_current, created_at) values (?,?,1, NOW())';
     my $id = $species->{id};
     $dbc->sql_helper()->batch(-SQL => $sql, -CALLBACK => sub {
       my ($sth) = @_;
       foreach my $a (@{$aliases}) {
         if($self->{opts}->{write}) {
-          $sth->execute($a, $id);
+          $sth->execute($id, $a);
         }
         else {
           $self->v('Would have inserted the alias %s for species_id %d', $a, $id);
