@@ -21,7 +21,11 @@ sub default_options {
         
         release => software_version(),
 
+        run_all => 0,
+
         bin_count => '150',
+
+        max_run => '100',
         
         ### Defaults 
         
@@ -50,6 +54,8 @@ sub pipeline_analyses {
         -module     => 'Bio::EnsEMBL::Pipeline::Production::ClassSpeciesFactory',
         -parameters => {
           species => $self->o('species'),
+          run_all => $self->o('run_all'),
+          max_run => $self->o('max_run')
         },
         -input_ids  => [ {} ],
         -flow_into  => {
@@ -72,7 +78,7 @@ sub pipeline_analyses {
         -module     => 'Bio::EnsEMBL::Pipeline::Production::SnpDensity',
         -parameters => {
           table => 'gene', logic_name => 'snpdensity', value_type => 'sum',
-          bin_count => $self->o('bin_count'),
+          bin_count => $self->o('bin_count'), max_run => $self->o('max_run'),
         },
         -max_retry_count  => 1,
         -hive_capacity    => 10,
