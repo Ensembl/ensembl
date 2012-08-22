@@ -78,7 +78,7 @@ sub _write_aliases {
   my ($self, $aliases, $species) = @_;
   my $dbc = $self->_production_dbc();
   $dbc->sql_helper()->transaction(sub {
-    my $sql = 'insert into species_alias (species_id, alias, is_current, created_at) values (?,?,1, NOW())';
+    my $sql = 'insert ignore into species_alias (species_id, alias, is_current, created_at) values (?,?,1, NOW())';
     my $id = $species->{id};
     $dbc->sql_helper()->batch(-SQL => $sql, -CALLBACK => sub {
       my ($sth) = @_;
