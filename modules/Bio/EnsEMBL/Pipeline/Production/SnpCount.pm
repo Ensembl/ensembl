@@ -38,7 +38,7 @@ sub get_attrib_codes {
   my $prod_dba   = $self->get_production_DBAdaptor();
   my $prod_helper     = $prod_dba->dbc()->sql_helper();
   my $sql = q{
-    SELECT name, code
+    SELECT code, name
     FROM attrib_type
     WHERE name = 'SNP count' };
   my %attrib_codes = %{ $prod_helper->execute_into_hash(-SQL => $sql) };
