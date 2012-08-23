@@ -86,8 +86,12 @@ SQL
    
   $h->transaction(-CALLBACK => sub {
     
+    $self->log_progress('Deleting records from previous possible upload runs');
+    $self->_delete_entries('object_xref');
+    $self->_delete_entries('xref');
+    
     $self->log_progress('Starting xref insertion');
-    #Record UPIs to make sure we do not insert a UPI in more than once
+    #Record UPIs to make sure we do not attempt to insert duplicate UPIs
     my %upi_xref_id;
     $h->batch(-SQL => $insert_xref, -CALLBACK => sub {
       my ($sth) = @_;
@@ -118,6 +122,33 @@ SQL
   
   $self->log_progress('Finished insertions');
   
+  return;
+}
+
+sub _delete_entries {
+  my ($self, $table) = @_;
+  $self->log_progress('Deleting entries from %s', $table);
+  my $lookup = {
+    xref => <<'SQL',
+DELETE  x
+FROM    xref x
+WHERE   x.source_id    = ?
+SQL
+    object_xref => <<'SQL',
+DELETE  ox
+FROM    xref x,
+        object_xref ox
+WHERE   x.source_id    = ?
+AND     ox.xref_id          = x.xref_id
+SQL
+  };
+  
+  my $sql = $lookup->{$table};
+  throw "Cannot find delete SQL for the table $table" unless $sql;
+  my $source_id = $self->source_id();
+  my $count = $self->_xref_helper()->execute_update(-SQL => $sql, -PARAMS => [$source_id]);
+  my $type = ($count == 1) ? 'entry' : 'entries';
+  $self->log_progress('Deleted %s %s from %s', $count, $type, $table);
   return;
 }
 
