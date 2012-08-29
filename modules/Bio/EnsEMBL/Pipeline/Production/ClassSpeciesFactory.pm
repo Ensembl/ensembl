@@ -100,6 +100,7 @@ sub run {
 sub input_id {
   my ($self, $dba) = @_;
   my $mc = $dba->get_MetaContainer();
+  $dba->dbc()->disconnect_if_idle();
   my $input_id = {
     species => $mc->get_production_name(),
   };
@@ -119,6 +120,7 @@ sub has_karyotype {
     AND cs.species_id = ?
     AND at.code = 'karyotype_rank' };
   my $count = $helper->execute_single_result(-SQL => $sql, -PARAMS => [$dba->species_id()]);
+  $dba->dbc()->disconnect_if_idle();
   return $count;
 }
 
@@ -137,6 +139,7 @@ sub has_vega {
   my $prod_dba = $self->get_production_DBAdaptor();
   my @params = ($production_name, $self->param('release'));
   my $result = $prod_dba->dbc()->sql_helper()->execute_single_result(-SQL => $sql, -PARAMS => [@params]);
+  $prod_dba->dbc()->disconnect_if_idle();
   return $result;
 }
 
