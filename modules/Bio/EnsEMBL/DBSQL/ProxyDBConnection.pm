@@ -175,14 +175,25 @@ sub _last_used {
 
 # Uses the _last_used() time and the current reconnect_interval() to decide
 # if the connection has been unused for long enough that we should attempt
-# a reconnect
+# a reconnect. We also do not reconnect if the InactiveDestroy is set on
+# the DBHandle 
+
 sub _require_reconnect {
   my ($self) = @_;
   my $interval = $self->reconnect_interval();
-  return unless $interval;
+  return if ! $interval;
+  
   my $last_used = $self->{_last_used};
   my $time_elapsed = int(time()*1000) - $last_used;
-  return $time_elapsed > $interval ? 1 : 0;
+  my $over_period = $time_elapsed > $interval ? 1 : 0;
+  return if ! $over_period;
+  
+  my $proxy = $self->__proxy();
+  my $db_handle = $self->db_handle();
+  return 0 if $db_handle->{InactiveDestroy};
+  return 0 if $db_handle->{ActiveKids} != 0;
+  
+  return 1;
 }
 
 =head2 reconnect_interval
