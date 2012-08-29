@@ -91,7 +91,7 @@ the genome assembly had be rearranged.
 See ftp://ftp.1000genomes.ebi.ac.uk/vol1/ftp/technical/working/20110106_recombination_hotspots/",
         -display_label => 'HapMap Phase II genetic recombination map',
         -displayable => 1,
-        -logic_name => 'INSERT SHORT NAME HERE',
+        -logic_name => 'human_1kg_hapmap_phase_2',
     );
 
     my $previous_chromosome;
