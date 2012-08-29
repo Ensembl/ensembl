@@ -217,7 +217,9 @@ sub run_script {
       }
     }
     if(defined($ott_to_status{$ott})){
-      $status_insert_sth->execute($ott_to_enst{$ott}, $ott_to_status{$ott});
+      foreach my $ensembl_stable_id (@{$ott_to_enst{$ott}}) {
+        $status_insert_sth->execute($ensembl_stable_id, $ott_to_status{$ott});
+      }
     }
     
   }
