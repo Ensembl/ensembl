@@ -343,9 +343,9 @@ sub confirm_params {
   print "Running script with these parameters:\n\n";
   print $self->list_all_params;
 
-  if ($self->param('host') eq 'ensdb-1-10') {
+  if ($self->param('host') eq 'ensdb-web-10') {
     # ask user if he wants to proceed
-    exit unless $self->user_proceed("**************\n\n You're working on ensdb-1-10! Is that correct and you want to continue ?\n\n**************");
+    exit unless $self->user_proceed("**************\n\n You're working on ensdb-web-10! Is that correct and you want to continue ?\n\n**************");
   }
   else {
     # ask user if he wants to proceed
