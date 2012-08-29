@@ -11,6 +11,7 @@ use warnings;
 
 sub get_density {
   my ($self, $block) = @_;
+  if ($block->length > 5000000) { return 0; }
   my $repeat_count = 0;
   my @repeats = @{ $block->get_all_RepeatFeatures() };
   @repeats = map { $_->[1] } sort { $a->[0] <=> $b->[0] } map { [$_->start, $_] } @repeats;
