@@ -366,9 +366,9 @@ sub confirm_params {
 
 sub list_all_params {
   my $self = shift;
-  my $txt = sprintf "    %-21s%-40s\n", qw(PARAMETER VALUE);
-  $txt .= "    " . "-"x71 . "\n";
-  $Text::Wrap::colums = 72;
+  my $txt = sprintf "   %-21s%-90s\n", qw(PARAMETER VALUE);
+  $txt .= "    " . "-"x121 . "\n";
+  $Text::Wrap::columns = 122;
   my @params = $self->allowed_params;
   foreach my $key (@params) {
     my @vals = $self->param($key);
