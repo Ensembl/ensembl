@@ -150,6 +150,7 @@ foreach my $h ($host,$host2) {
     my $sth_mapping_set = $dbh->prepare("INSERT INTO $current_dbname.mapping_set VALUES(?,?)");
     my $schema_build = get_schema_and_build($current_dbname);
     my $current_assembly = get_assembly($dbh, $current_dbname) ;
+    my $count = 0;
 
     $sth_mapping_set->execute($mapping_set_id,$schema_build) unless $dry_run;
 
@@ -168,7 +169,7 @@ foreach my $h ($host,$host2) {
     }
 
 # If there has been no change in seq_region, no mapping needed
-    my $cur_seq_region_checksum = &get_seq_region_checksum($dbh,$dbname);
+    my $cur_seq_region_checksum = &get_seq_region_checksum($dbh,$current_dbname);
     my $previous_seq_region_checksum = &get_seq_region_checksum($old_dbh,$previous_dbname);
     if ($cur_seq_region_checksum == $previous_seq_region_checksum) { 
       print STDERR "No change in seq_region for $current_dbname, no mapping needed\n";
@@ -180,7 +181,6 @@ foreach my $h ($host,$host2) {
     my $old_seq_region = &read_seq_region($old_dbh,$previous_dbname);
 
 # Update the seq_region_mapping table with the old->new seq_region_id relation
-    my $count = 0;
     foreach my $seq_region_name (keys %{$old_seq_region}){
       my $current_name_hash = $current_seq_region->{$seq_region_name};
       my $old_name_hash = $old_seq_region->{$seq_region_name};
@@ -215,7 +215,7 @@ foreach my $h ($host,$host2) {
         }
       }
     }
-    print STDERR "Added $count seq_region_mapping entry for $dbname\n\n";
+    print STDERR "Added $count seq_region_mapping entry for $current_dbname\n\n";
   }
 }
 
@@ -267,7 +267,7 @@ sub get_previous_dbname{
     my $release = shift;
     my $previous_dbname;
 
-    $dbname =~ /(^[a-z]+_[a-z]+_core_)/;
+    $dbname =~ /(^([a-z]+_){2,3}core_)/;
     if (!$1) { throw("Database name $dbname is not in the right format"); }
     my $previous_release_name = $1 . (--$release);
     my $previous_sth = $dbh->prepare("show databases like \'%$previous_release_name%\'");
