@@ -189,7 +189,7 @@ sub _require_reconnect {
   return if ! $over_period;
   
   my $proxy = $self->__proxy();
-  my $db_handle = $self->db_handle();
+  my $db_handle = $proxy->db_handle();
   return 0 if $db_handle->{InactiveDestroy};
   return 0 if $db_handle->{ActiveKids} != 0;
   
