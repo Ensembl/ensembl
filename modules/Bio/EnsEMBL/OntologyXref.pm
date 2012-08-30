@@ -190,7 +190,7 @@ sub flush_linkage_types {
                                   'with');
   Description: Associates a linkage type and source DBEntry with
                this ontology_xref
-  Returntype : integer; number of linkages
+  Returntype : none
   Exceptions : thrown if $linkage_type argument not supplied or
                the optional DBEntry is not a DBEntry object.
   Caller     : DBEntryAdaptor
@@ -225,10 +225,17 @@ sub add_associated_xref {
       $self->throw("condition must be a string");
   }
 
-  $self->{'associated_xref'} ||= [];
+  $self->{'associated_xref'} ||= {};
 
-  push @{ $self->{'associated_xref'} },
-    [ $associated_xref, $source_dbentry, $condition_type ];
+  if ( ref($associated_xref) eq 'ARRAY' ) {
+    my $pseudogroupid = 1 + scalar keys %{ $self->{'associated_xref'} };
+    $self->{'associated_xref'}->{ $pseudogroupid } = 
+      [ $associated_xref, $source_dbentry, $condition_type ];
+  } else {
+    my $pseudogroupid = 1 + scalar keys %{ $self->{'associated_xref'} };
+    $self->{'associated_xref'}->{ $pseudogroupid } =
+      [ [$associated_xref], $source_dbentry, [$condition_type] ];
+  }
 }
 
 
@@ -246,7 +253,7 @@ sub add_associated_xref {
                                   'with');
   Description: Associates a linkage type and source DBEntry with this
                ontology_xref that have come from the same annotation source
-  Returntype : integer; number of linkages
+  Returntype : none
   Exceptions : thrown if $linkage_type argument not supplied or
                the optional DBEntry is not a DBEntry object.
   Caller     : DBEntryAdaptor
@@ -255,7 +262,7 @@ sub add_associated_xref {
 =cut
 
 sub add_linked_associated_xref {
-  my ( $self, $associated_xref, $source_dbentry, $condition_type, $linked_associated_xref ) = @_;
+  my ( $self, $associated_xref, $source_dbentry, $condition_type, $associate_group_id, $associate_group_rank ) = @_;
   
   if ( defined($associated_xref)
        && !$associated_xref->isa('Bio::EnsEMBL::DBEntry') )
@@ -274,60 +281,38 @@ sub add_linked_associated_xref {
       $self->throw("condition must be a string");
   }
   
-  if ( defined($linked_associated_xref)
-       && !$linked_associated_xref->isa('Bio::EnsEMBL::DBEntry') )
+  if ( !defined $associate_group_id )
   {
-    $self->throw("linked_associated_xref must be a Bio::EnsEMBL::DBEntry");
+    $self->throw("$associate_group_id must be an integer");
   }
   
-  my @associated_xref_array = ();
+  if ( !defined $associate_group_rank )
+  {
+    $self->throw("$associate_group_rank must be an integer");
+  }
+  
+  my $associated_xref_array = {};
   my $matching_link = 0;
-  foreach my $associated_xref_element (@{ $self->{'associated_xref'} }) {
-    my @elements = @{ $associated_xref_element };
-    my $ax = $elements[0];
-    my $sd = $elements[1];
-    my $ct = $elements[2];
+  
+  if ( !defined $self->{'associated_xref'} ) {
+    $associated_xref_array->{$associate_group_id}->{$associate_group_rank} = [
+      $associated_xref,
+      $source_dbentry,
+      $condition_type
+    ];
     
-    if ( ref($ax) eq 'ARRAY'
-         && $sd->primary_id eq $source_dbentry->primary_id ) {
-      my @associated_xref_set = @{ $ax };
-      my $matching = 0;
-      foreach my $ax_set_elements ( @{ $ax } ) {
-        my @ax_set_element = @{ $ax_set_elements };
-        if ( $ax_set_element[0]->primary_id eq $linked_associated_xref->primary_id ) {
-          $matching = 1;
-          $matching_link = 1;
-        }
-      }
-      if ($matching) {
-        my @ax_set = @{ $associated_xref_set[0] };
-        my @ct_set = @{ $associated_xref_set[2] };
-        
-        push @ax_set, $associated_xref;
-        push @ct_set, $condition_type;
-        @associated_xref_set = [ @ax_set,
-                                 $sd,
-                                 @ct_set ];
-      }
-      push @associated_xref_array, @associated_xref_set;
-    } else {
-      if ( $ax->primary_id eq $linked_associated_xref->primary_id
-           && $sd->primary_id eq $source_dbentry->primary_id) {
-        push @associated_xref_array, [ [$ax, $associated_xref],
-                                       $sd,
-                                       [$ct, $condition_type] ];
-        $matching_link = 1;
-      } else {
-        push @associated_xref_array, @elements;
-      }
+  } else {
+    $associated_xref_array = $self->{'associated_xref'};
+    
+    if (!defined $associated_xref_array->{$associate_group_id}->{$associate_group_rank} ) {
+      $associated_xref_array->{$associate_group_id}->{$associate_group_rank} = [
+        $associated_xref,
+        $source_dbentry,
+        $condition_type
+      ];
     }
   }
-  
-  if ( !$matching_link ){
-    $self->throw("must have a matching associated_xref to be linked with");
-  } else {
-    $self->{'associated_xref'} = \@associated_xref_array;
-  }
+  $self->{'associated_xref'} = $associated_xref_array;
 }
 
 
@@ -352,7 +337,7 @@ sub add_linked_associated_xref {
 sub get_all_associated_xrefs {
   my ($self) = @_;
 
-  return $self->{'associated_xref'} || [];
+  return $self->{'associated_xref'} || {};
 }
 
 1;

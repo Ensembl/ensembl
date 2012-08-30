@@ -683,8 +683,6 @@ sub store {
     }
   }
   
-  
-  
     # Ensure external_db contains a record of the intended xref source
     my $dbRef;
     $dbRef = $self->_check_external_db($dbEntry,$ignore_release);
@@ -780,26 +778,32 @@ sub _store_object_xref_mapping {
         $sth = $self->prepare( "
              INSERT ignore INTO associated_xref
                 SET object_xref_id = ?,
-                    associated_xref_id = ?,
+                    xref_id = ?,
                     source_xref_id = ?,
                     condition_type = ?,
-                    linked_associated_xref_id = ? " );
-        my $prev_associatedXid = 0;
-        foreach my $annotext ( @{ $dbEntry->get_all_associated_xrefs() } ) {
+                    associated_group_id = ?,
+                    rank = ? " );
+        foreach my $annotext ( values %{ $dbEntry->get_all_associated_xrefs() } ) {
           my ( $associated_xref, $source_dbentry, $condition_type ) = @{$annotext};
           
           if ( ref $associated_xref eq 'ARRAY' ) {
             my @associated_xrefs = @{ $associated_xref };
             my @condition_types = @{ $condition_type };
-            for (my $i; $i < @associated_xrefs; $i++ ) {
+            
+            my $gsth = $self->prepare( " 
+                    INSERT INTO associated_group 
+                      SET description = '';" );
+            $gsth->execute();
+            my $associatedGid = $self->last_insert_id();
+            
+            for (my $i=0; $i < @associated_xrefs; $i++ ) {
               my $ax = $associated_xrefs[$i];
               my $axc = $condition_types[$i];
               my $associatedXid = undef;
               my $sourceXid = undef;
               
               if ($associated_xref) {
-                $ax->is_stored( $self->dbc )
-                  || $self->store($ax);
+                $ax->is_stored( $self->dbc ) || $self->store($ax);
                 $associatedXid = $ax->dbID;
               }
               if ($source_dbentry) {
@@ -811,10 +815,9 @@ sub _store_object_xref_mapping {
               $sth->bind_param( 2, $associatedXid,      SQL_INTEGER );
               $sth->bind_param( 3, $sourceXid,          SQL_INTEGER );
               $sth->bind_param( 4, $axc,                SQL_VARCHAR );
-              $sth->bind_param( 5, $prev_associatedXid, SQL_VARCHAR );
+              $sth->bind_param( 5, $associatedGid,      SQL_VARCHAR );
+              $sth->bind_param( 6, $i,                  SQL_INTEGER );
               $sth->execute();
-              
-              $prev_associatedXid = $associatedXid;
             }
           } else {
             my $associatedXid = undef;
@@ -832,10 +835,10 @@ sub _store_object_xref_mapping {
             $sth->bind_param( 2, $associatedXid,      SQL_INTEGER );
             $sth->bind_param( 3, $sourceXid,          SQL_INTEGER );
             $sth->bind_param( 4, $condition_type,     SQL_VARCHAR );
-            $sth->bind_param( 5, $prev_associatedXid, SQL_VARCHAR );
+            $sth->bind_param( 5, q{}, SQL_VARCHAR );
+            $sth->bind_param( 6, 0, SQL_VARCHAR );
             $sth->execute();
           }
-          $prev_associatedXid = 0;
         } #end foreach
       } #end elsif
     } # end if ($object_xref_id)
@@ -877,6 +880,7 @@ sub _check_external_db {
       return $db_id;
     }
     else {
+      print Data::Dumper->Dump([$db_entry]);
       throw( sprintf( "external_db [%s] release [%s] does not exist",
                      $db_name, $db_release)
       );
@@ -945,15 +949,16 @@ sub _store_or_fetch_xref {
         $synonym_store_sth->finish();
         
     } else { # xref_id already exists, retrieve it
+        #print "|" . $dbEntry->primary_id . " already exists |";
         my $sql = 'SELECT xref_id FROM xref 
             WHERE 
-                dbprimary_acc = ?
-            AND display_label = ?
-            AND version = ?
-            AND external_db_id = ?
-            AND info_type = ?
-            AND info_text = ?
-            AND description';
+                dbprimary_acc = ?'
+            .' AND display_label = ?'
+            .' AND version = ?'
+            .' AND external_db_id = ?'
+            .' AND info_type = ?'
+            .' AND info_text = ?'
+            .' AND description';
         if (defined $dbEntry->description) {$sql .= ' = ?'}
         else {$sql .= ' is NULL'}
         $sth = $self->prepare( $sql );
@@ -1217,7 +1222,7 @@ sub remove_from_object {
   $sth->execute();
   $sth->finish();
   
-  $sth = $self->prepare("DELETE FROM associted_xref WHERE object_xref_id = ?");
+  $sth = $self->prepare("DELETE FROM associated_xref WHERE object_xref_id = ?");
   $sth->bind_param(1,$ox_id,SQL_INTEGER);
   $sth->execute();
   $sth->finish();
@@ -1291,14 +1296,15 @@ sub _fetch_by_object_type {
            gx.linkage_type,
            xref.info_type, xref.info_text, exDB.type, gx.source_xref_id,
            oxr.linkage_annotation, xref.description,
-           ax.associated_xref_id, ax.source_xref_id, ax.condition_type
-           ax.linked_associated_xref_id
+           ax.xref_id, ax.source_xref_id, ax.condition_type, 
+           ax.associated_group_id, ax.rank
     FROM   (xref xref, external_db exDB, object_xref oxr)
     LEFT JOIN external_synonym es on es.xref_id = xref.xref_id
     LEFT JOIN identity_xref idt on idt.object_xref_id = oxr.object_xref_id
     LEFT JOIN ontology_xref gx on gx.object_xref_id = oxr.object_xref_id
-    LEFT JOIN associated_xref ax on ax.object_xref_id = oxr.object_xref_id AND
+    LEFT JOIN associated_xref ax ON ax.object_xref_id = oxr.object_xref_id AND
                                     ax.source_xref_id = gx.source_xref_id
+    LEFT JOIN associated_group ag ON ax.associated_group_id = ag.associated_group_id
     WHERE  xref.xref_id = oxr.xref_id
       AND  xref.external_db_id = exDB.external_db_id
       AND  oxr.ensembl_id = ?
@@ -1354,7 +1360,7 @@ SSQL
            $source_xref_id,            $link_annotation,
 	         $description,               $associated_xref_id,
            $source_associated_xref_id, $condition_type,
-           $linked_associated_xref_id
+           $associate_group_id,        $associate_group_rank
       ) = @$arrRef;
 
       my $linkage_key =
@@ -1430,15 +1436,7 @@ SSQL
             $source_associated_xref = ( defined($source_associated_xref_id)
                                 ? $self->fetch_by_dbID($source_associated_xref_id)
                                 : undef );
-            if ( defined $linked_associated_xref_id && $linked_associated_xref_id ne "" ) {
-              my $linked_associated_xref = ( defined($linked_associated_xref_id)
-                                  ? $self->fetch_by_dbID($linked_associated_xref_id)
-                                  : undef );
-              $exDB->add_linked_associated_xref( $associated_xref, $source_associated_xref, $condition_type || (), $linked_associated_xref );
-            } else {
-              $exDB->add_associated_xref( $associated_xref, $source_associated_xref, $condition_type || () );
-            }
-            $associated_xrefs{$refID}->{$associated_key} = 1;
+            $exDB->add_linked_associated_xref( $associated_xref, $source_associated_xref, $condition_type || '', $associate_group_id, $associate_group_rank );
           }
 
         } else {
@@ -1482,13 +1480,13 @@ SSQL
            && !$associated_xrefs{$refID}->{$associated_key} )
       {
         $associated_xref = ( defined($source_xref_id)
-                            ? $self->fetch_by_dbID($$associated_xref_id)
+                            ? $self->fetch_by_dbID($associated_xref_id)
                             : undef );
         $source_associated_xref = ( defined($source_associated_xref_id)
                                 ? $self->fetch_by_dbID($source_associated_xref_id)
                                 : undef );
-        $seen{$refID}
-          ->add_associated_xref( $associated_xref, $source_associated_xref, $condition_type || () );
+        $seen{$refID}->add_linked_associated_xref( $associated_xref, $source_associated_xref, $condition_type || '', $associate_group_id, $associate_group_rank );
+        
         $linkage_types{$refID}->{$linkage_key} = 1;
       }
       
