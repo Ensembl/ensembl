@@ -981,12 +981,13 @@ sub store {
                  . "to be one of the exon in"
                  . "its associated Transcript" );
         }
-      } elsif ( !defined( $end_exon->dbID() ) ) {
+      }
+      if ( !defined( $end_exon->dbID() ) ) {
         my $key = $end_exon->hashkey();
         ($end_exon) = grep { $_->hashkey() eq $key } @$exons;
 
         if ( defined($end_exon) ) {
-          $translation->end_Exon($end_exon);
+          $alt_translation->end_Exon($end_exon);
         } else {
           throw(   "Translation's end_Exon does not appear "
                  . "to be one of the exons in "
