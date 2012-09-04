@@ -822,7 +822,7 @@ sub _check_external_db {
     }
 }
 
-=head2 _store_or_fetch_xref 
+=head2 _store_or_fetch_xref
 
     Arg [1]    : DBEntry object
     Arg [2]    : Database accession for external database
@@ -895,12 +895,16 @@ sub _store_or_fetch_xref {
         my $info_text = $dbEntry->info_text() || q{};
         my $version = $dbEntry->version() || q{0};
         $sth = $self->prepare( $sql );
+
         $sth->bind_param(1, $dbEntry->primary_id,SQL_VARCHAR);
         $sth->bind_param(2, $version, SQL_VARCHAR);
         $sth->bind_param(3, $dbRef, SQL_INTEGER);
         $sth->bind_param(4, $info_type, SQL_VARCHAR);
         $sth->bind_param(5, $info_text, SQL_VARCHAR);
         $sth->execute();
+
+
+
         ($xref_id) = $sth->fetchrow_array();
         $sth->finish;
         if(!$xref_id) {
