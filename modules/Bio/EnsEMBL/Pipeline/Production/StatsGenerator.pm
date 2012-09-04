@@ -18,7 +18,7 @@ sub run {
   my $total = $self->get_total();
   my $sum = 0;
 
-  my $slices = Bio::EnsEMBL::Registry->get_adaptor($species, 'core', 'slice')->fetch_all('toplevel');
+  my $slices = $self->get_slices($species);
   my @sorted_slices = 
      sort( { $a->coord_system()->rank() <=> $b->coord_system()->rank()
              || $b->seq_region_length() <=> $a->seq_region_length() } @$slices) ;
@@ -35,6 +35,12 @@ sub run {
       last;
     }
   }
+}
+
+sub get_slices {
+  my ($self, $species) = @_;
+  my @slices = Bio::EnsEMBL::Registry->get_adaptor($species, 'core', 'slice')->fetch_all('toplevel');
+  return \@slices;
 }
 
 
