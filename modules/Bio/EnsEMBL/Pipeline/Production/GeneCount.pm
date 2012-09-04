@@ -25,6 +25,21 @@ sub get_total {
   return $total;
 }
 
+sub get_slices {
+  my ($self, $species) = @_;
+  my @slices;
+  my $dba = Bio::EnsEMBL::Registry->get_DBAdaptor($species, 'core');
+  my $sa = Bio::EnsEMBL::Registry->get_adaptor($species, 'core', 'slice');
+  my $helper = $dba->dbc()->sql_helper();
+  my $sql = q{
+    SELECT DISTINCT seq_region_id FROM gene };
+  my @ids = @{ $helper->execute_simple(-SQL => $sql) };
+  foreach my $id(@ids) {
+    push @slices, $sa->fetch_by_seq_region_id($id);
+  }
+  return \@slices;
+}
+
 
 sub get_feature_count {
   my ($self, $slice, $key, $biotypes) = @_;
