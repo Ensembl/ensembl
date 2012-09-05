@@ -178,7 +178,7 @@ sub clear_caches {
   my ($self) = @_;
   my $adaptors = Bio::EnsEMBL::Registry->get_all_adaptors(
     $self->species(), $self->group());
-  while (my $adaptor = shift @{$adaptors}) {
+  foreach my $adaptor (@{$adaptors}) {
     if($adaptor->can('clear_cache')) {
       $adaptor->clear_cache();
     }
