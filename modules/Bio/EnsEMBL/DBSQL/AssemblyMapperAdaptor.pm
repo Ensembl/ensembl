@@ -1771,13 +1771,14 @@ sub seq_ids_to_regions {
 sub delete_cache{
   my ($self) = @_;
 
-  $self->{'sr_name_cache'}     = {};
-  $self->{'sr_id_cache'}       = {};
+  %{$self->{'sr_name_cache'}}     = ();
+  %{$self->{'sr_id_cache'}}       = ();
 
   foreach my $key (keys %{$self->{'_asm_mapper_cache'}}){
     $self->{'_asm_mapper_cache'}->{$key}->flush();
   }
-  $self->{'_asm_mapper_cache'} = {};
+  %{$self->{'_asm_mapper_cache'}} = ();
+  return;
 }
 
 
