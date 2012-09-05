@@ -310,7 +310,10 @@ sub set_status{
 
 # set all genes to NOVEL
 
-  
+#TODO if we have a merge species we shouldn't blank all status. Just those which 
+#     are not set (NULL or UNKNOWN are both acceptable states to reset with)
+# genebuild.havana.datafreeze_date meta key points to merge DBs
+#
   my $reset_sth = $self->core->dbc->prepare('UPDATE gene SET status = "NOVEL"');
   $reset_sth->execute();
   $reset_sth->finish;
