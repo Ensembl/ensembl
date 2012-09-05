@@ -30,7 +30,7 @@ Bio::EnsEMBL::Utils::Scalar
 
 =head1 SYNOPSIS
 
-	use Bio::EnsEMBL::Utils::Scalar qw(check_ref assert_ref wrap_array check_ref_can assert_ref_can assert_numeric assert_integer);
+	use Bio::EnsEMBL::Utils::Scalar qw(check_ref assert_ref wrap_array check_ref_can assert_ref_can assert_numeric assert_integer scope_guard);
 
 	check_ref([], 'ARRAY'); # Will return true
 	check_ref({}, 'ARRAY'); # Will return false
@@ -57,6 +57,17 @@ Bio::EnsEMBL::Utils::Scalar
 	asssert_integer(1.1, 'dbID'); #Fails
 	asssert_numeric(1E-11, 'dbID'); #Passes
 	asssert_numeric({}, 'dbID'); #Fails
+	
+	#Scope guards
+	my $v = 'wibble'; 
+  {
+    #Build a guard to reset $v to wibble
+    my $guard = scope_guard(sub { $v = 'wibble'});
+    $v = 'wobble';
+    warn $v; # prints wobble
+  }
+  # $guard is out of scope; sub is triggered and $v is reset
+  warn $v; # prints wibble
 
 	#Tags are also available for exporting
 	use Bio::EnsEMBL::Utils::Scalar qw(:assert); # brings in all assert methods
@@ -94,6 +105,7 @@ our @EXPORT_OK;
   check_ref check_ref_can
   assert_ref assert_ref_can assert_numeric assert_integer assert_boolean assert_strand assert_file_handle
   wrap_array
+  scope_guard
 );
 %EXPORT_TAGS = (
   assert  => [qw(assert_ref assert_ref_can assert_integer assert_numeric assert_boolean assert_strand assert_file_handle)],
@@ -402,6 +414,45 @@ sub assert_file_handle {
     }
   }
   return 1;
+}
+
+=head2 scope_guard
+
+  Arg [1]     : CodeRef The block of code to exit once it escapes out of scope
+  Description : Simple subroutine which blesses your given code reference into
+                a L<Bio::EnsEMBL::Utils::Scalar::ScopeGuard> object. This has
+                a DESTROY implemented which will cause the code reference
+                to execute once the object goes out of scope and its reference
+                count hits 0.
+  Returntype  : Bio::EnsEMBL::Utils::Scalar::ScopeGuard
+  Example     : my $v = 'wibble'; 
+                {
+                  #Build a guard to reset $v to wibble
+                  my $guard = scope_guard(sub { $v = 'wibble'});
+                  $v = 'wobble';
+                  warn $v;
+                }
+                # $guard is out of scope; sub is triggered and $v is reset
+                warn $v;
+  Exceptions  : Raised if argument was not a CodeRef   
+  Status      : Stable
+
+=cut
+
+sub scope_guard {
+  my ($callback) = @_;
+  assert_ref($callback, 'CODE', 'callback');
+  return bless($callback, 'Bio::EnsEMBL::Utils::Scalar::ScopeGuard');
+}
+
+1;
+
+#### SUPER SECRET PACKAGE. IGNORE ME
+package Bio::EnsEMBL::Utils::Scalar::ScopeGuard;
+sub DESTROY {
+  my ($self) = @_;
+  $self->();
+  return;
 }
 
 1;

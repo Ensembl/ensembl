@@ -122,6 +122,8 @@ package Bio::EnsEMBL::Registry;
 use strict;
 use warnings;
 
+our $NEW_EVAL = 0;
+
 use Bio::EnsEMBL::DBSQL::DBAdaptor;
 use Bio::EnsEMBL::DBSQL::BaseFeatureAdaptor;
 use Bio::EnsEMBL::Utils::Exception qw( deprecate throw warning );
@@ -193,7 +195,7 @@ my %group2adaptor = (
 
   Example    : Bio::EnsEMBL::Registry->load_all();
   Returntype : Int count of the DBAdaptor instances which can be found in the 
-               registry
+               registry due to this method being called. Will never be negative
   Exceptions : none
   Status     : Stable
 
@@ -364,15 +366,27 @@ sub load_all {
             # of configuration written in Perl.  We need to try to
             # require() it.
 
-            my $test_eval = eval { require($config_file) };
+            my $test_eval;
+            if($NEW_EVAL) {
+              require Bio::EnsEMBL::Utils::IO;
+              my $contents = Bio::EnsEMBL::Utils::IO::slurp($config_file);
+              $test_eval = eval $contents;
+            }
+            else {
+              $test_eval = eval { require($config_file) };
+              # To make the web code avoid doing this again we delete first
+              delete $INC{$config_file};
+            }
+            
+            #Now raise the exception just in case something above is 
+            #catching this
             if ($@ or (!$test_eval)) { die($@) }
 
-            # To make the web code avoid doing this again:
-            delete $INC{$config_file};
         }
     } ## end else [ if ( !defined($config_file...
     
-    return $class->get_DBAdaptor_count() - $original_count;
+    my $count = $class->get_DBAdaptor_count() - $original_count;
+    return $count >= 0 ? $count : 0; 
 } ## end sub load_all
 
 =head2 clear
@@ -1526,7 +1540,7 @@ sub load_registry_from_url {
                of standard aliases.
 
   Returntype : Int count of the DBAdaptor instances which can be found in the 
-               registry
+               registry due to this method call.
 
   Exceptions : Thrown if the given MySQL database cannot be connected to
                or there is any error whilst querying the database.
@@ -2146,7 +2160,8 @@ sub load_registry_from_db {
 
   $dbh->disconnect();
   
-  return $self->get_DBAdaptor_count() - $original_count;
+  my $count = $self->get_DBAdaptor_count() - $original_count;
+  return $count >= 0 ? $count : 0; 
 
 } ## end sub load_registry_from_db
 
@@ -2408,7 +2423,8 @@ sub load_registry_from_multiple_dbs {
 
   %registry_register = %merged_register;
   
-  return $self->get_DBAdaptor_count() - $original_count;
+  my $count = $self->get_DBAdaptor_count() - $original_count;
+  return $count >= 0 ? $count : 0; 
 } ## end sub load_registry_from_multiple_dbs
 
 #
@@ -2732,13 +2748,12 @@ my %stable_id_stmts = (
 
 
 sub get_species_and_object_type {
-  my ($self, $stable_id, $known_type, $known_species, $known_db_type) = @_;
+  my ($self, $stable_id, $known_type, $known_species, $known_db_type, $force_long_lookup) = @_;
 
   #get the stable_id lookup database adaptor
   my $stable_ids_dba = $self->get_DBAdaptor("multi", "stable_ids", 1);
 
-  if ($stable_ids_dba) {
-
+  if ($stable_ids_dba && ! $force_long_lookup) {
      my $statement = 'SELECT name, object_type, db_type FROM stable_id_lookup join species using(species_id) WHERE stable_id = ?';
 
      if ($known_species) {
@@ -2755,6 +2770,7 @@ sub get_species_and_object_type {
      $sth->bind_param(1, $stable_id, SQL_VARCHAR);
      my $param_count = 1;
      if ($known_species) {
+       $known_species = $self->get_alias($known_species);
 	 $param_count++;
 	 $sth->bind_param($param_count, $known_species, SQL_VARCHAR);
      }
@@ -2768,22 +2784,22 @@ sub get_species_and_object_type {
      }
      $sth->execute();
      my ($species, $type, $db_type) = $sth->fetchrow_array();
+     $sth->finish();
      return ($species ,$type, $db_type);
 
   } else {
-
       if (defined $known_type && !exists $stable_id_stmts{lc $known_type}) {
 	  return;
       }
 
       my @types = defined $known_type ? ($known_type) : ('Gene', 'Transcript', 'Translation', 'Exon', 'Operon', 'OperonTranscript');
   
-      if ($known_db_type && $known_db_type ne 'core' && $known_db_type ne 'Core' ) {
-	  return;
+      if(! $known_db_type) {
+        $known_db_type = 'core';
       }
       
       my %get_adaptors_args;
-      $get_adaptors_args{'-group'} = 'Core';
+      $get_adaptors_args{'-group'} = $known_db_type;
       if ($known_species) {
 	  $get_adaptors_args{'-species'} = $known_species; 
       }
@@ -2803,7 +2819,7 @@ sub get_species_and_object_type {
 
 	      $sth->finish;
 
-	      return ($species, $type, 'Core') if defined $species;
+	      return ($species, $type, $known_db_type) if defined $species;
 	  }
 
       } ## end foreach my $dba ( sort { $a...})

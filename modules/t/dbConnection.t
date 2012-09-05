@@ -1,16 +1,15 @@
-use lib 't';
 use strict;
 use warnings;
 
-use Test::More tests => 38;
+use Test::More;
+use Test::MockObject::Extends;
+use Time::HiRes qw/usleep/;
 
 use Bio::EnsEMBL::Test::MultiTestDB;
 use Bio::EnsEMBL::DBSQL::SliceAdaptor;
 use Bio::EnsEMBL::Test::TestUtils;
 use Bio::EnsEMBL::DBSQL::DBConnection;
-
-
-our $verbose = 0;
+use Bio::EnsEMBL::DBSQL::ProxyDBConnection;
 
 #
 # 1 DBConnection compiles
@@ -220,3 +219,35 @@ $dbc->disconnect_when_inactive();
 my $quote_result = $dbc->quote_identifier(qw/a b c/, [undef, qw/db table/], [1]);
 is_deeply($quote_result, [qw/`a` `b` `c`/, '`db`.`table`', '`1`'], 'Checking quote identifier will quote everything') or diag explain $quote_result;
 
+#Testing reconnection via proxy
+$db->dbc()->disconnect_if_idle();
+#my $dbc_copy = bless({%{$db->dbc()}}, ref($db->dbc()));
+#$dbc_copy = Test::MockObject::Extends->new($dbc_copy);
+my $dbc_copy = mock_object($dbc);
+{
+  my $pdbc = Bio::EnsEMBL::DBSQL::ProxyDBConnection->new(-DBC => $dbc_copy, -DBNAME => $dbc->dbname(), -RECONNECT_INTERVAL => 0);
+  is($pdbc->sql_helper()->execute_single_result(-SQL => 'select 1'), 1, 'Checking we get a 1 back from the DB');
+  usleep(1000); #sleep 1ms
+  is($pdbc->sql_helper()->execute_single_result(-SQL => 'select 1'), 1, 'Checking we get a 1 back from the DB');
+  $dbc_copy->__is_called('reconnect', 0, "No need to reconnect as we have no interval set");
+  
+  #Disconnect, set the interval to 1ms and sleep for 10ms. Skips reconnection as the connection is not active
+  $dbc_copy->disconnect_if_idle();
+  $pdbc->reconnect_interval(1);
+  usleep((10*1000));
+  $pdbc->check_reconnection();
+  $dbc_copy->__is_called('connected', 1, "connected() was called since we had to check if the DBConnection was active");
+  $dbc_copy->__is_called('reconnect', 0, "No need to reconnect as we have no interval set");
+  
+  #Connect, set the interval to 1ms and sleep for 10ms. Reconnect
+  $dbc_copy->connect();
+  $dbc_copy->__clear();
+  usleep((10*1000));
+  $pdbc->check_reconnection();
+  $dbc_copy->__is_called('connected', 1, "connected() was called since we had to check if the DBConnection was active");
+  $dbc_copy->__is_called('reconnect', 1, "reconnect() as we had gone beyond our normal timeout interval");
+}
+
+done_testing();
+
+1;

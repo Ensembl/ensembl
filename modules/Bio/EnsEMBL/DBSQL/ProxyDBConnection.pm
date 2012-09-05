@@ -28,6 +28,9 @@ for one backing connection to be used for multiple DBs
   my $dbc = Bio::EnsEMBL::DBSQL::DBConnection->new(-HOST => 'host', -PORT => 3306, -USER => 'user');
   my $p_h_dbc = Bio::EnsEMBL::DBSQL::ProxyDBConnection->new(-DBC => $dbc, -DBNAME => 'human');
   my $p_m_dbc = Bio::EnsEMBL::DBSQL::ProxyDBConnection->new(-DBC => $dbc, -DBNAME => 'mouse');
+  
+  # With a 10 minute timeout reconnection in milliseconds
+  my $p_h_rc_dbc = Bio::EnsEMBL::DBSQL::ProxyDBConnection->new(-DBC => $dbc, -DBNAME => 'human', -RECONNECT_INTERVAL => (10*60*1000));
 
 =head1 DESCRIPTION
 
@@ -48,16 +51,25 @@ package Bio::EnsEMBL::DBSQL::ProxyDBConnection;
 use strict;
 use warnings;
 
-use Bio::EnsEMBL::Utils::Exception qw/warning/;
-use Bio::EnsEMBL::Utils::Argument qw/rearrange/;
-
 use base qw/Bio::EnsEMBL::Utils::Proxy/;
+
+use Bio::EnsEMBL::Utils::Argument qw/rearrange/;
+use Bio::EnsEMBL::Utils::Exception qw/warning throw/;
+use Bio::EnsEMBL::Utils::SqlHelper;
+
+use Time::HiRes qw/time/;
 
 sub new {
   my ($class, @args) = @_;
-  my ($dbc, $dbname) = rearrange([qw/DBC DBNAME/], @args);
+  my ($dbc, $dbname, $reconnect_interval) = rearrange([qw/DBC DBNAME RECONNECT_INTERVAL/], @args);
+  throw "No DBConnection -DBC given" unless $dbc;
+  throw "No database name -DBNAME given" unless $dbname;
   my $self = $class->SUPER::new($dbc);
   $self->dbname($dbname);
+  if($reconnect_interval) {
+    $self->reconnect_interval($reconnect_interval);
+    $self->_last_used();
+  }
   return $self;  
 }
 
@@ -121,6 +133,82 @@ sub switch_database {
   return $switch;
 }
 
+=head2 check_reconnection
+
+  Description : Looks to see if the last time we used the backing DBI
+                connection was greater than the reconnect_interval()
+                provided at construction or runtime. If enought time has 
+                elapsed then a reconnection is attempted. We do not
+                attempt a reconnection if:
+                
+                  - No reconnect_interval was set
+                  - The connection was not active
+                
+  Exceptions  : None apart from those raised from the reconnect() method
+                from DBConnection
+=cut
+
+sub check_reconnection {
+  my ($self) = @_;
+  #Return early if we had no reconnection interval
+  return unless $self->{reconnect_interval};
+  
+  my $proxy = $self->__proxy();
+  
+  #Only attempt it if we were connected; otherwise we can just skip
+  if($proxy->connected()) {
+    if($self->_require_reconnect()) {   
+      $proxy->reconnect();
+    }
+    $self->_last_used();
+  }
+  return;
+}
+
+# Each time this is called we record the current time in seconds
+# to be used by the _require_reconnect() method
+sub _last_used {
+  my ($self) = @_;
+  $self->{_last_used} = int(time()*1000);
+  return;
+}
+
+# Uses the _last_used() time and the current reconnect_interval() to decide
+# if the connection has been unused for long enough that we should attempt
+# a reconnect
+sub _require_reconnect {
+  my ($self) = @_;
+  my $interval = $self->reconnect_interval();
+  return unless $interval;
+  my $last_used = $self->{_last_used};
+  my $time_elapsed = int(time()*1000) - $last_used;
+  return $time_elapsed > $interval ? 1 : 0;
+}
+
+=head2 reconnect_interval
+
+	Arg[1]      : Integer reconnection interval in milliseconds
+  Description : Accessor for the reconnection interval expressed in milliseconds
+  Returntype  : Int miliseconds for a reconnection interval
+
+=cut
+
+sub reconnect_interval {
+  my ($self, $reconnect_interval) = @_;
+  $self->{'reconnect_interval'} = $reconnect_interval if defined $reconnect_interval;
+  return $self->{'reconnect_interval'};
+}
+
+=head2 dbname
+
+	Arg[1]      : String DB name
+  Description : Accessor for the name of the database we should use whenever
+                a DBConnection request is made via this class
+  Returntype  : String the name of the database which we should use
+  Exceptions  : None
+
+=cut
+
 sub dbname {
   my ($self, $dbname) = @_;
   $self->{'dbname'} = $dbname if defined $dbname;
@@ -136,13 +224,26 @@ my %SWITCH_METHODS = map { $_ => 1 } qw/
   work_with_db_handle
 /;
 
+
+# Manual override of the SqlHelper accessor to ensure it always gets the Proxy
+sub sql_helper {
+  my ($self) = @_;
+  if(! exists $self->{_sql_helper}) {
+    my $helper = Bio::EnsEMBL::Utils::SqlHelper->new(-DB_CONNECTION => $self);
+    $self->{_sql_helper} = $helper;
+  }
+  return $self->{_sql_helper};
+}
+
 sub __resolver {
   my ($self, $package, $method) = @_;
   if($self->__proxy()->can($method)) {
     if($SWITCH_METHODS{$method}) {
       return sub {
         my ($local_self, @args) = @_;
+        $local_self->check_reconnection();
         $local_self->switch_database();
+        $local_self->_last_used();
         return $local_self->__proxy()->$method(@args);
       };
     }
