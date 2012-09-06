@@ -46,8 +46,8 @@ sub run {
       for my $block (@blocks) {
         my $feature = $self->get_density($block, $option);
         my $df = Bio::EnsEMBL::DensityFeature->new( -seq_region    => $slice,
-                                                    -start         => $block->start,
-                                                    -end           => $block->end,
+                                                    -start         => $block->start - $slice->start + 1,
+                                                    -end           => $block->end - $slice->start + 1,
                                                     -density_type  => $density_type,
                                                     -density_value => $feature);
         if ($feature > 0) {
@@ -201,6 +201,7 @@ sub get_biotype_group {
   return @biotypes;
 }
 
+# Empty method if no specific option is needed
 sub get_option {
   my $self = @_;
 }
