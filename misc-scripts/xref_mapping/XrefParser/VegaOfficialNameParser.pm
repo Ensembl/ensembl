@@ -101,13 +101,6 @@ sub run_script {
     $cpass = $1;
   }
 
-#populate species hash - source name is the hash key
-  my %species_names = (
-      HGNC => "human",
-      ZFIN_ID => "zebrafish",
-      MGI => "mouse"
-  );
-
   my $vega_dbc;
   my $core_dbc;
 
@@ -142,15 +135,15 @@ sub run_script {
                                 -host => $host,
                                 -user => $user);
 
-    $vega_dbc = $reg->get_adaptor($species_names{$source_name},"vega","slice");
+    $vega_dbc = $reg->get_adaptor($species_name,"vega","slice");
     if(!defined($vega_dbc)){
-      print "Could not connect to $species_names{$source_name} vega database using load_registry_from_db $host $user\n";
+      print "Could not connect to $species_name vega database using load_registry_from_db $host $user\n";
       return 1;
     }
     $vega_dbc = $vega_dbc->dbc;
-    $core_dbc = $reg->get_adaptor($species_names{$source_name},"core","slice");
+    $core_dbc = $reg->get_adaptor($species_name,"core","slice");
     if(!defined($core_dbc)){
-      print "Could not connect to $species_names{$source_name} core database using load_registry_from_db $host $user\n";
+      print "Could not connect to $species_name core database using load_registry_from_db $host $user\n";
       return 1;
     }
     $core_dbc= $core_dbc->dbc;
