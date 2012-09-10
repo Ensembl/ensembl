@@ -173,8 +173,7 @@ my %data;
   }
 
   if (defined $dbtype) {
-    if ($dbtype eq 'pre') {
-      my $sth =
+    my $sth =
         $dbh->prepare( 'SELECT db_name, logic_name, '
                     . 'description, display_label, displayable, data '
                     . 'FROM analysis_description ad, species s, analysis_web_data aw '
@@ -184,18 +183,15 @@ my %data;
                     . 'aw.species_id = s.species_id AND '
                     . 'aw.db_type = "' . $dbtype . '" AND '
                     . 'db_name =?' );
-      $sth->execute($species) ;
-      my ( $db_name, $logic_name, %hash) ;
-      $sth->bind_columns( \( $db_name,        $logic_name,
-                           $hash{'description'}, $hash{'display_label'},
-                           $hash{'displayable'}, $hash{'web_data'} ) );
-      while ( $sth->fetch() ) {
-        $data{$db_name}{$logic_name} = { %{ \%hash } };
-      }
+    $sth->execute($species) ;
+    my ( $db_name, $logic_name, %hash) ;
+    $sth->bind_columns( \( $db_name,        $logic_name,
+                         $hash{'description'}, $hash{'display_label'},
+                         $hash{'displayable'}, $hash{'web_data'} ) );
+    while ( $sth->fetch() ) {
+      $data{$db_name}{$logic_name} = { %{ \%hash } };
     }
   }
-
-
   $dbh->disconnect();
 }
 
