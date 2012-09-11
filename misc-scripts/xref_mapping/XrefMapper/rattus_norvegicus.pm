@@ -43,6 +43,22 @@ SELECT object_xref_id
    WHERE ox_status = 'DUMP_OUT' AND label REGEXP '^LOC[[:digit:]]+'
 LOCP
 
+$ignore{'Uniprot_genename'} =<<IEG;
+SELECT DISTINCT ox.object_xref_id
+  FROM object_xref ox, dependent_xref dx, 
+       xref xmas, xref xdep, 
+       source smas, source sdep
+    WHERE ox.xref_id = dx.dependent_xref_id AND
+          dx.dependent_xref_id = xdep.xref_id AND
+          dx.master_xref_id = xmas.xref_id AND
+          xmas.source_id = smas.source_id AND
+          xdep.source_id = sdep.source_id AND
+          smas.name like "Uniprot/SPTREMBL" AND
+          smas.status = "LOWEVIDENCE" AND
+          sdep.name like "Uniprot_genename" AND
+          ox.ox_status = "DUMP_OUT"      
+IEG
+
   return [\@list,\%ignore];
 
 }
