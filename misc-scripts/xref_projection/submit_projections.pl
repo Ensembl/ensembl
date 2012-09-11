@@ -91,6 +91,7 @@ $names_1_1{'human'} =  [qw(
     megabat
     microbat
     mouse_lemur
+    mustela_putorius_furo
     opossum
     orang_utan
     panda
@@ -114,6 +115,7 @@ $names_1_1{'human'} =  [qw(
 
 $names_1_1{'mouse'} = [qw(
     kangaroo_rat
+    mustela_putorius_furo
     rat    
 )];
 
@@ -126,6 +128,7 @@ $names_1_many{'human'} = [qw(
     stickleback
     tetraodon
     tilapia
+    xiphophorus_maculatus
     zebrafish
 )];
 
@@ -155,6 +158,7 @@ $go_terms{'human'} = [qw(
     microbat
     mouse
     mouse_lemur
+    mustela_putorius_furo
     opossum
     orang_utan
     panda
@@ -199,6 +203,7 @@ $go_terms{'mouse'} = [qw(
     megabat
     microbat
     mouse_lemur
+    mustela_putorius_furo
     opossum
     orang_utan
     panda
@@ -232,6 +237,7 @@ $go_terms{'zebrafish'} = [qw(
     tetraodon
     tilapia
     xenopus
+    xiphophorus_maculatus
 )];
 $go_terms{'xenopus'} = [qw(zebrafish)];
 
