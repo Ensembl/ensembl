@@ -95,8 +95,6 @@ print "current status is $status\n" if ($mapper->verbose);
 
 
 if($recalc_display_xrefs){
-  my $official_naming = XrefMapper::OfficialNaming->new($mapper);
-  $official_naming->run();
   my $display = XrefMapper::DisplayXrefs->new($mapper);
   $display->remove_source_priorities(); 
   $display->genes_and_transcripts_attributes_set();
