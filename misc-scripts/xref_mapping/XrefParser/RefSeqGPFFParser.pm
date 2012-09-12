@@ -223,7 +223,7 @@ sub create_xrefs {
       $description =~ s/\s+/ /g;
       $description = substr($description, 0, 255) if (length($description) > 255);
 
-      my ($seq) = $_ =~ /ORIGIN\s+(.+)/s; # /s allows . to match newline
+      my ($seq) = $_ =~ /^\s*ORIGIN\s+(.+)/ms; # /s allows . to match newline
       my @seq_lines = split /\n/, $seq;
       my $parsed_seq = "";
       foreach my $x (@seq_lines) {
