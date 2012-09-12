@@ -1140,6 +1140,9 @@ sub split_chromosomes_by_size {
   } else {
     $top_slices = $slice_adaptor->fetch_all('chromosome',$cs_version,$include_non_reference,$dup);
   }
+  
+  # filter out patches, if present
+  $top_slices = [ grep { $_->is_reference or $self->is_haplotype($_,$self->dba)  } @$top_slices ];
 
   my ($big_chr, $small_chr, $min_big_chr, $min_small_chr);
   foreach my $slice (@{ $top_slices }) {
