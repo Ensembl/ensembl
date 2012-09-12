@@ -450,8 +450,8 @@ sub dump_embl {
   $self->write($FH, $EMBL_HEADER, 'OS', $species_name);
 
   #Classification
-  my $cls = $meta_container->get_classification();
-  $self->write($FH, $EMBL_HEADER, 'OC', join('; ', reverse(@{$cls})) . '.');
+  my @cls = @{$meta_container->get_classification()};
+  $self->write($FH, $EMBL_HEADER, 'OC', join('; ', reverse(@cls)) . '.');
   $self->print( $FH, "XX\n" );
   
   #References (we are not dumping refereneces)
@@ -613,7 +613,7 @@ sub dump_genbank {
   $self->write($FH, $GENBANK_HEADER, 'SOURCE', $common_name);
 
   #organism
-  my @cls = $meta_container->get_classification();
+  my @cls = @{$meta_container->get_classification()};
   shift @cls;
   $self->write($FH, $GENBANK_SUBHEADER, 'ORGANISM', $meta_container->get_scientific_name());
   $self->write($FH, $GENBANK_SUBHEADER, '', join('; ', reverse @cls) . ".");
@@ -691,7 +691,7 @@ sub _dump_feature_table {
   my $value;
 
   #source
-  my $classification = join(', ', $meta->get_classification());
+  my $classification = join(', ', @{$meta->get_classification()});
   $self->write(@ff,'source', "1.." . $slice->length());
   $self->write(@ff,''      , '/organism="'.$meta->get_scientific_name(). '"');
   $self->write(@ff,''      , '/db_xref="taxon:'.$meta->get_taxonomy_id().'"');
