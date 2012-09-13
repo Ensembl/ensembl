@@ -736,7 +736,7 @@ COORD_SYSTEM: foreach my $feat_cs (@feat_css) {
       # use regional constraints if there are less than a
       # specific number of regions covered.
 
-      if ( @coords > $MAX_SPLIT_QUERY_SEQ_REGIONS ) {
+      if ( @coords > $MAX_SPLIT_QUERY_SEQ_REGIONS && ! $slice->isa('Bio::EnsEMBL::LRGSlice') && $slice_cs->name() ne 'lrg') {
         my $constraint = $orig_constraint;
         my $id_str = join( ',', @ids );
         $constraint .= " AND " if ($constraint);
@@ -779,7 +779,7 @@ COORD_SYSTEM: foreach my $feat_cs (@feat_css) {
 
           push @features, @$fs;
         }
-      } ## end else [ if ( @coords > $MAX_SPLIT_QUERY_SEQ_REGIONS)]
+      } ## end else [ if ( @coords > $MAX_SPLIT_QUERY_SEQ_REGIONS && ! $slice->isa('Bio::EnsEMBL::LRGSlice') && $slice_cs->name() ne 'lrg')]
     } ## end else [ if ( $feat_cs->equals(...))]
   } ## end foreach my $feat_cs (@feat_css)
 
