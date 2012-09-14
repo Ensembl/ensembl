@@ -25,6 +25,7 @@ sub run {
 
   while (my $slice = shift @sorted_slices) {
     foreach my $code (keys %attrib_codes) {
+print $slice . " got a slice with " . $code . " code and value " . $attrib_codes{$code}. "\n" ;
       my $count = $self->get_feature_count($slice, $code, $attrib_codes{$code});
       if ($count > 0) {
         $self->store_attrib($slice, $count, $code);
@@ -39,8 +40,8 @@ sub run {
 
 sub get_slices {
   my ($self, $species) = @_;
-  my @slices = Bio::EnsEMBL::Registry->get_adaptor($species, 'core', 'slice')->fetch_all('toplevel');
-  return \@slices;
+  my $slices = Bio::EnsEMBL::Registry->get_adaptor($species, 'core', 'slice')->fetch_all('toplevel');
+  return $slices;
 }
 
 
