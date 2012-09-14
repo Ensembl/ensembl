@@ -884,8 +884,8 @@ sub backup {
   my $pass = $dbc->password();
   my $dbname = $dbc->dbname();
   
-#  my $mysql_binary = 'mysql';
-  my $mysql_binary = '/usr/local/mysql/bin/mysql';
+  my $mysql_binary = 'mysql';
+#  my $mysql_binary = '/usr/local/mysql/bin/mysql';
 
   my @tables = qw/gene xref object_xref/;
   push(@tables, 'transcript') if $to_species eq 'pig';
