@@ -146,8 +146,9 @@ if ($delete_only) {
     foreach my $to_species (@to_multi) {
 
     	my $to_ga  = Bio::EnsEMBL::Registry->get_adaptor($to_species, 'core', 'Gene');
+    	my $to_ta  = Bio::EnsEMBL::Registry->get_adaptor($to_species, 'core', 'Transcript');
     	die("Can't get gene adaptor for $to_species - check database connection details; make sure meta table contains the correct species alias\n") if (!$to_ga);
-    	delete_names($to_ga) if ($delete_names);
+    	delete_names($to_ga, $to_ta) if ($delete_names);
     	delete_go_terms($to_ga) if ($delete_go_terms);
     }
 
@@ -197,6 +198,7 @@ foreach my $local_to_species (@to_multi) {
 
   $to_species = $local_to_species;
   my $to_ga   = Bio::EnsEMBL::Registry->get_adaptor($to_species, 'core', 'Gene');
+  my $to_ta   = Bio::EnsEMBL::Registry->get_adaptor($to_species, 'core', 'Transcript');
   die("Can't get gene adaptor for $to_species - check database connection details; make sure meta table contains the correct species alias\n") if (!$to_ga);
   my $to_dbea = Bio::EnsEMBL::Registry->get_adaptor($to_species, 'core', 'DBEntry');
 
@@ -222,7 +224,7 @@ foreach my $local_to_species (@to_multi) {
 
   write_to_projection_db($to_ga->dbc(), $release, $from_species, $from_ga->dbc(), $to_species) unless ($no_database);
 
-  backup($to_ga) if (!$no_backup);
+  backup($to_ga, $to_species) if (!$no_backup);
 
   delete_names($to_ga) if ($delete_names);
   delete_go_terms($to_ga) if ($delete_go_terms);
@@ -277,7 +279,7 @@ foreach my $local_to_species (@to_multi) {
 
       next if (!$to_gene);
 
-      project_display_names($to_ga, $to_dbea, $from_gene, $to_gene, $i, scalar(@to_genes), %db_to_type) if ($names);
+      project_display_names($to_ga, $to_ta, $to_dbea, $from_gene, $to_gene, $i, scalar(@to_genes), %db_to_type) if ($names);
 
       project_go_terms($to_ga, $to_dbea, $ma, $from_gene, $to_gene) if ($go_terms);
 
@@ -329,7 +331,7 @@ sub get_ontology_terms {
 
 sub project_display_names {
 
-  my ($to_ga, $to_dbea, $from_gene, $to_gene,  $gene_number, $total_gene_number, %db_to_type) = @_;
+  my ($to_ga, $to_ta, $to_dbea, $from_gene, $to_gene,  $gene_number, $total_gene_number, %db_to_type) = @_;
 
   my $dbEntry = $from_gene->display_xref();
   my $to_source = $to_gene->display_xref()->dbname() if ($to_gene->display_xref());
@@ -387,42 +389,59 @@ sub project_display_names {
       my $type = $db_to_type{$dbname};
 
       if ($type eq "Gene" || $dbname eq 'HGNC' || !$type) {
-
-	$to_gene->add_DBEntry($dbEntry);
-	$to_dbea->store($dbEntry, $to_gene->dbID(), 'Gene', 1) if (!$print);
-
-      } elsif ($type eq "Transcript" || $dbname eq 'HGNC_transcript_name') {
-	
-	$to_transcript->add_DBEntry($dbEntry);
-	$to_dbea->store($dbEntry, $to_transcript->dbID(), 'Transcript', 1) if (!$print);
-
-      } elsif ($type eq "Translation") {
-
-	my $to_translation = $to_transcript->translation();
-	return if (!$to_translation);
-	$to_translation->add_DBEntry($dbEntry);
-	$to_dbea->store($dbEntry, $to_translation->dbID(), 'Translation',1) if (!$print);
-
-      } else {
-
-	warn("Can't deal with xrefs assigned to $type (dbname=" . $dbEntry->dbname . ")\n");
-	return;
-
+        $to_gene->add_DBEntry($dbEntry);
+        $to_dbea->store($dbEntry, $to_gene->dbID(), 'Gene', 1) if (!$print);
+      } 
+      elsif ($type eq "Transcript" || $dbname eq 'HGNC_transcript_name') {
+        $to_transcript->add_DBEntry($dbEntry);
+        $to_dbea->store($dbEntry, $to_transcript->dbID(), 'Transcript', 1) if (!$print);
+      } 
+      elsif ($type eq "Translation") {
+        my $to_translation = $to_transcript->translation();
+        return if (!$to_translation);
+        $to_translation->add_DBEntry($dbEntry);
+        $to_dbea->store($dbEntry, $to_translation->dbID(), 'Translation',1) if (!$print);
+      } 
+      else {
+        warn("Can't deal with xrefs assigned to $type (dbname=" . $dbEntry->dbname . ")\n");
+        return;
       }
 
       # Set gene status to "KNOWN_BY_PROJECTION" and update display_xref
       # also set the status of the gene's transcripts
       $to_gene->status("KNOWN_BY_PROJECTION");
       $to_gene->display_xref($dbEntry);
-      foreach my $transcript (@{$to_gene->get_all_Transcripts()}) {
-	$transcript->status("KNOWN_BY_PROJECTION");
+      foreach my $transcript (@to_transcripts) {
+        $transcript->status("KNOWN_BY_PROJECTION");
       }
 	
       print $to_gene->stable_id() . " --> " . $dbEntry->display_id() . "\n" if ($print);
+      
+      #Now assign names to the transcripts; currently only works when species is pig
+      if($to_species eq 'pig') {
+        overwrite_transcript_display_xrefs($to_gene, $dbEntry, $info_txt);
+        foreach my $transcript (@to_transcripts) {
+          my $display = $transcript->display_xref();
+          next unless $display;
+          if($print) {
+            print $transcript->stable_id() . " --> " . $display->display_id() . "\n";
+          }
+          else {
+            $transcript->add_DBEntry($display);
+            $to_dbea->store($display, $transcript->dbID(), 'Transcript', 1);
+          }
+        }
+      }
 
-      # update the gene so that the display_xref_id is set
-      $to_ga->update($to_gene) if (!$print);
-
+      # update the gene so that the display_xref_id is set and the 
+      # transcript to set the status & display xref if applicable 
+      if(! $print) {
+        $to_ga->update($to_gene);
+        foreach my $transcript (@to_transcripts) {
+          $to_ta->update($transcript);
+        }
+      }
+      
       # keep track of where each projection came from
       $projections_by_source{$dbEntry->dbname()}++;
 
@@ -543,21 +562,22 @@ sub print_stats {
   if ($names) {
 
     $count = count_rows($to_ga, "SELECT COUNT(*) FROM gene g, xref x WHERE g.display_xref_id=x.xref_id AND g.display_xref_id IS NOT NULL AND  (x.info_type != 'PROJECTION' || x.info_type IS NULL)");
-    printf("Gene names: unprojected %d (%3.1f\%)" , $count, (100 * $count / $total_genes));
+    printf('Gene names: unprojected %d (%3.1f%%)', $count, (100 * $count / $total_genes));
 
     my $projected = count_rows($to_ga, "SELECT COUNT(*) FROM gene g, xref x WHERE g.display_xref_id=x.xref_id AND x.info_type='PROJECTION'");
-    printf(" projected %d (%3.1f\%)" , $projected, (100 * $projected / $total_genes));
+    printf(' projected %d (%3.1f%%)' , $projected, (100 * $projected / $total_genes));
 
     $count = count_rows($to_ga, "SELECT COUNT(*) FROM gene g, xref x, external_db e WHERE g.display_xref_id=x.xref_id AND x.external_db_id=e.external_db_id AND e.db_name IN ('RefSeq_mRNA_predicted', 'RefSeq_ncRNA_predicted', 'RefSeq_peptide_predicted')");
-    printf(" predicted %d (%3.1f\%)" , $count, (100 * $count / $total_genes));
+    printf(' predicted %d (%3.1f%%)', $count, (100 * $count / $total_genes));
 
     $count = count_rows($to_ga, "SELECT COUNT(*) FROM gene g WHERE display_xref_id IS NOT NULL");
-    printf(" total genes with names %d (%3.1f\%)\n" , $count, (100 * $count / $total_genes));
+    printf(' total genes with names %d (%3.1f%%)', $count, (100 * $count / $total_genes));
+    print "\n";
 
     if ($projected > 0) {
       my $one2many = count_rows($to_ga, "SELECT COUNT(*) FROM gene g, xref x WHERE g.display_xref_id=x.xref_id AND x.info_type='PROJECTION' AND x.display_label LIKE '%(% of %)%'");
       my $one2one = $projected - $one2many;
-      printf("Of the %d projected genes, %d (%3.1f\%) are from one-one mappings, %d (%3.1f\%) from one-many mappings\n", $projected, $one2one, (100 * $one2one/$projected), $one2many, (100 * $one2many / $projected));
+      printf('Of the %d projected genes, %d (%3.1f%%) are from one-one mappings, %d (%3.1f%%) from one-many mappings'."\n", $projected, $one2one, (100 * $one2one/$projected), $one2many, (100 * $one2many / $projected));
     }
   }
 
@@ -662,20 +682,35 @@ sub build_db_to_type {
 # ----------------------------------------------------------------------
 
 sub delete_names {
+  my ($to_ga, $to_ta) = @_;
 
-  my ($to_ga) = @_;
-
-  print "Setting gene display_xrefs and descriptions that were projected to NULL, and status to NOVEL\n";
-  my $sth = $to_ga->dbc()->prepare("UPDATE gene g, xref x SET g.display_xref_id = NULL, g.description=NULL, g.STATUS='NOVEL' WHERE g.display_xref_id=x.xref_id AND x.info_type='PROJECTION'");
+  print "Setting projected transcript statuses to NOVEL\n";
+  my $sth = $to_ga->dbc()->prepare("UPDATE gene g, xref x, transcript SET t.status='NOVEL' WHERE g.display_xref_id=x.xref_id AND x.info_type='PROJECTION' AND g.gene_id = t.gene_id");
   $sth->execute();
-
+  $sth->finish();
+  
+  print "Setting gene display_xrefs and descriptions that were projected to NULL and status to NOVEL\n";
+  $sth = $to_ga->dbc()->prepare("UPDATE gene g, xref x SET g.display_xref_id = NULL, g.description=NULL, g.status='NOVEL' WHERE g.display_xref_id=x.xref_id AND x.info_type='PROJECTION'");
+  $sth->execute();
+  $sth->finish();
+  
+  if($to_species eq 'pig') {
+    print "PIG MODE: Setting transcript display_xrefs and descriptions that were projected to NULL and status to NOVEL\n";
+    $sth = $to_ga->dbc()->prepare("UPDATE transcript g, xref x, transcript t SET t.display_xref_id = NULL, t.description=NULL, t.status='NOVEL' WHERE t.display_xref_id=x.xref_id AND x.info_type='PROJECTION'");
+    $sth->execute();
+    $sth->finish();
+  }
+  
   print "Deleting projected xrefs, object_xrefs and synonyms\n";
   $sth = $to_ga->dbc()->prepare("DELETE es FROM xref x, external_synonym es WHERE x.xref_id=es.xref_id AND x.info_type='PROJECTION'");
   $sth->execute();
+  $sth->finish();
   # avoid deleting projected GO terms - only want to delete the names here
   $sth = $to_ga->dbc()->prepare("DELETE x, ox FROM xref x, object_xref ox, external_db e WHERE x.xref_id=ox.xref_id AND x.external_db_id=e.external_db_id AND x.info_type='PROJECTION' AND e.db_name!='GO'");
   $sth->execute();
-
+  $sth->finish();
+  
+  return;
 }
 
 # ----------------------------------------------------------------------
@@ -704,24 +739,24 @@ sub delete_go_terms {
 #      e.g. HGNC in human, MGI in mouse
 
 sub check_overwrite_display_xref {
-
+  #To means target & from means the projection source e.g. to == pig & from  == human
   my ($to_gene, $from_dbname, $to_dbname, $ref_dbEntry, $gene_number) = @_;
+  $to_dbname ||= q{}; #can be empty; this stops warning messages
 
-  return 1 if (!$to_gene->external_name() && $to_species ne "zebrafish");
+  #Exit early if we had an external name & the species was not zebrafish or pig
+  return 1 if (!$to_gene->external_name() && $to_species ne "zebrafish" && $to_species ne 'pig');
 
+  #Exit early if it was a RefSeq predicted name & source was a vetted good symbol
   if ($to_dbname eq "RefSeq_mRNA_predicted" || $to_dbname eq "RefSeq_ncRNA_predicted" || $to_dbname eq "RefSeq_peptide_predicted") {
-
-    if (($from_species eq "human" && $from_dbname =~ /HGNC/) ||
-    ($from_species eq "mouse" && $from_dbname =~ /MarkerSymbol/)) {
-
-    if ($to_species eq "zebrafish" and is_in_blacklist($from_gene->display_xref)){
+    if (  ($from_species eq "human" && $from_dbname =~ /HGNC/) ||
+          ($from_species eq "mouse" && $from_dbname =~ /MarkerSymbol/)) {
+      if ($to_species eq "zebrafish" and is_in_blacklist($from_gene->display_xref)){
         return 0;
-    }
+      }
       return 1;
-
     }
-
   }
+  #Zebrafish specific logic; do not re-write!
   elsif ($to_species eq "zebrafish"){
 
     my $to_dbEntry = $to_gene->display_xref();
@@ -753,10 +788,69 @@ sub check_overwrite_display_xref {
       }
     }
   }
+  #Pig specific logic; 
+  # Replace any UPKB & Entrez names
+  # Look for Vega/Ensembl specific clone names (CU9???.1)
+  elsif($to_species eq 'pig') {
+    my %active_overwrites = map { $_ => 1 } qw/UniProtKB_genename EntrezGene/;
+    my %clone_overwrites  = map { $_ => 1 } qw/Clone_based_vega_gene Clone_based_ensembl_gene/;
+    return 1 if $active_overwrites{$to_dbname};
+    return 0 unless $clone_overwrites{$to_dbname};
+    my $to_dbEntry = $to_gene->display_xref();
+    my $name = $to_dbEntry->display_id;
+    #Want to over-write clone ids like CU914217.1, CT914217.1, FP565183.2
+    #Bad prefixes are: AP, BX, CR, CT, CU, FP, FQ
+    if($name =~ /^(?: C[RTU] | AP | BX | F[PQ])\d+\.\d+$/xms) {
+      return 1;
+    }
+    if($name =~ /^AEMK/) {
+      return 1;
+    }
+    #Get rid of names like DUROC-C7H6orf31 and CXorf36
+    if($name =~ /orf/) {
+      return 1;
+    }
+  }
   return 0;
 
 }
 
+#Only apply this to pig
+sub overwrite_transcript_display_xrefs {
+  my ($to_gene, $ref_dbEntry, $info_txt) = @_;
+  return unless $to_species eq 'pig';
+  my $transcripts = $to_gene->get_all_Transcripts();
+  my @havana = grep { 
+    $_->analysis->logic_name eq 'ensembl_havana_transcript' ||
+    $_->analysis->logic_name eq 'havana'
+  } @{$transcripts};
+  my @ensembl = grep { 
+    $_->analysis->logic_name eq 'ensembl'
+  } @{$transcripts};
+  _process_transcripts($ref_dbEntry, $info_txt, 1, \@havana);
+  _process_transcripts($ref_dbEntry, $info_txt, 201, \@ensembl);
+  return;
+}
+
+# Loop through the transcripts, set the expected SYMBOL-001 for havana & SYMBOL-201 for the rest
+# Attach the DBEntry and leave until later which will store the entry on the transcript
+sub _process_transcripts {
+  my ($ref_dbEntry, $info_txt, $offset, $transcripts) = @_;
+  my $from_dbname = $ref_dbEntry->dbname();
+  my $base_name  = $ref_dbEntry->display_id();
+  foreach my $t (@{$transcripts}) {
+    my $name = sprintf('%s-%03d', $base_name, $offset);
+    my $dbname = "${from_dbname}_transcript_name";
+    my $xref = Bio::EnsEMBL::DBEntry->new(
+      -PRIMARY_ID => $name, -DISPLAY_ID => $name, -DBNAME => $dbname,
+      -INFO_TYPE => 'PROJECTION', -INFO_TEXT => $info_txt,
+      -DESCRIPTION => $ref_dbEntry->description(),
+    );
+    $t->display_xref($xref);
+    $offset++;
+  }
+  return;
+}
 
 sub is_in_blacklist{
     #catches clones and analyses when projecting display xrefs.
@@ -781,7 +875,7 @@ sub is_in_blacklist{
 
 sub backup {
 
-  my ($to_ga) = @_;
+  my ($to_ga, $to_species) = @_;
 
   my $dbc = $to_ga->dbc();
   my $host = $dbc->host();
@@ -789,9 +883,15 @@ sub backup {
   my $user = $dbc->username();
   my $pass = $dbc->password();
   my $dbname = $dbc->dbname();
+  
+#  my $mysql_binary = 'mysql';
+  my $mysql_binary = '/usr/local/mysql/bin/mysql';
 
-  foreach my $table ("gene", "xref", "object_xref") {
-    unless (system("mysql -h$host -P$port -u$user -p$pass -N -e 'select * from $table' $dbname | gzip -c -6 > $backup_dir/$dbname.$table.backup.gz") == 0) {
+  my @tables = qw/gene xref object_xref/;
+  push(@tables, 'transcript') if $to_species eq 'pig';
+  
+  foreach my $table (@tables) {
+    unless (system("$mysql_binary -h$host -P$port -u$user -p$pass -N -e 'select * from $table' $dbname | gzip -c -6 > $backup_dir/$dbname.$table.backup.gz") == 0) {
       print STDERR "Can't dump the original $table table from $dbname for backup\n";
       exit 1;
     } else {
