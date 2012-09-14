@@ -993,18 +993,19 @@ sub get_taxonomy_id {
 sub get_species_scientific_name {
   my ($self, $dba) = @_;
   $dba ||= $self->dba;
-  my $sql_tmp = "SELECT meta_value FROM meta WHERE meta_key = \'species.classification\' ORDER BY meta_id";
-  my $sql = $dba->dbc->add_limit_clause($sql_tmp,2);
+  my $sql = "SELECT meta_value FROM meta WHERE meta_key = \'species.scientific_name\'";
   my $sth = $dba->dbc->db_handle->prepare($sql);
   $sth->execute;
   my @sp;
   while (my @row = $sth->fetchrow_array) {
     push @sp, $row[0];
   }
+  if (! @sp || @sp > 1) {
+    $self->throw("Could not retrieve a single species scientific name from database.");
+  }
   $sth->finish;
-  my $species = join(" ", reverse @sp);
-  $self->throw("Could not determine species scientific name from database.")
-    unless $species;
+  my $species = $sp[0];
+  $species =~ s/ /_/g;
   return $species;
 }
 
@@ -1026,8 +1027,7 @@ sub species {
   $self->{'_species'} = shift if (@_);
   # get species name from database if not set
   unless ($self->{'_species'}) {
-    $self->{'_species'} = join('_',
-			       split(/ /, $self->get_species_scientific_name));
+    $self->{'_species'} = $self->get_species_scientific_name;
   }
   return $self->{'_species'};
 }
