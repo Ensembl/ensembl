@@ -22,6 +22,7 @@ sub get_feature_count {
   return $count;
 }
 
+
 sub get_total {
   my ($self) = @_;
   my $variation_adaptor = Bio::EnsEMBL::Registry->get_DBAdaptor($self->param('species'), 'variation');
@@ -30,6 +31,22 @@ sub get_total {
      SELECT count(*) FROM variation_feature };
   my $count = $helper->execute_single_result(-SQL => $sql);
   return $count;
+}
+
+
+sub get_slices {
+  my ($self, $species) = @_;
+  my @slices;
+  my $dba = Bio::EnsEMBL::Registry->get_DBAdaptor($species, 'variation');
+  my $sa = Bio::EnsEMBL::Registry->get_adaptor($species, 'core', 'slice');
+  my $helper = $dba->dbc()->sql_helper();
+  my $sql = q{
+    SELECT DISTINCT seq_region_id FROM variation_feature };
+  my @ids = @{ $helper->execute_simple(-SQL => $sql) };
+  foreach my $id(@ids) {
+    push @slices, $sa->fetch_by_seq_region_id($id);
+  }
+  return \@slices;
 }
 
 
