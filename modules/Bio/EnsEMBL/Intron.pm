@@ -70,7 +70,7 @@ sub new {
     $self->{'strand'} = $e1->strand();
   }
 
-  if ( $e1->slice() ne $e2->slice() ) {
+  if ( $e1->slice() != $e2->slice() ) {
     if ( ( $e1->slice()->seq_region_name() ne
            $e2->slice()->seq_region_name() )
          && ( $e1->slice()->coord_system_name() ne
