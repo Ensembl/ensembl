@@ -54,6 +54,7 @@ use Bio::EnsEMBL::Utils::Exception qw(warning throw  deprecate stack_trace_dump)
 
 sub gen_load {
   my ($dba) = @_;
+  my $pre_hook;
   my $config_sub;
 
   # At some point we hope to set the group in the DBadaptor, hence this
@@ -106,6 +107,7 @@ sub gen_load {
     if ( !defined( $dba->group() ) ) {
       $dba->group('funcgen');
     }
+    $pre_hook = \&Bio::EnsEMBL::Utils::ConfigRegistry::pre_funcgen_hook;
     $config_sub = \&Bio::EnsEMBL::Utils::ConfigRegistry::load_funcgen;
   } elsif ( $dba->isa('Bio::Ensembl::DBSQL::OntologyTermAdaptor') ) {
     if ( !defined( $dba->group() ) ) {
@@ -138,6 +140,9 @@ sub gen_load {
       \&Bio::EnsEMBL::Utils::ConfigRegistry::load_and_attach_dnadb_to_core;
     #    throw("Unknown DBAdaptor type $dba\n");
   }
+  
+  #Run the pre-hook if one was defined
+  $pre_hook->($dba) if $pre_hook;
 
   # return if the connection and species, group are the same
 
@@ -324,6 +329,22 @@ sub add_alias {
       Bio::EnsEMBL::Registry->add_alias( $species, $ali );
     }
   }
+}
+
+# WARNING:  "CONVENIENCE METHOD" for retriving the species name when one was 
+#           not set. Regulation DB requirement
+sub pre_funcgen_hook {
+  my ($dba) = @_;
+  if(! $dba->species() ) {
+    warn "Setting name";
+    my $name = $dba->dbc()->sql_helper()->execute_single_result(
+      -SQL => 'select meta_value from meta where meta_key =?',
+      -PARAMS => ['species.production_name'],
+    );
+    $dba->dbc()->disconnect_if_idle();
+    $dba->species($name);
+  }
+  return;
 }
 
 #

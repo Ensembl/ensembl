@@ -943,7 +943,7 @@ sub add_adaptor {
   }
 
   if ( !defined( $registry_register{_TYPE}{ lc($type) }{$species} ) ) {
-    $registry_register{_TYPE}{ lc($type) }{$species} = [$type];
+    $registry_register{_TYPE}{ lc($type) }{$species} = [$adap];
   } else {
     push( @{ $registry_register{_TYPE}{ lc($type) }{$species} },
       $adap );
@@ -990,7 +990,7 @@ sub get_adaptor {
     'assemblymapper'           => 1,
     'karyotypeband'            => 1,
     'repeatfeature'            => 1,
-    'coordsystem'              => 1,
+    'coordsystem'              => ((lc($group) ne 'funcgen') ? 1 : undef),
     'assemblyexceptionfeature' => 1
   );
 
