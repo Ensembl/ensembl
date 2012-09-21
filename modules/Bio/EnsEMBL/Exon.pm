@@ -1575,6 +1575,25 @@ sub load {
   $self->get_all_supporting_features();
 }
 
+=head2 summary_as_hash
+
+  Example       : $exon_summary = $exon->summary_as_hash();
+  Description   : Extends Feature::summary_as_hash
+                  Retrieves a summary of this Exon.
+  Returns       : hashref of descriptive strings
+  Status        : Intended for internal use
+=cut
+
+sub summary_as_hash {
+  my $self = shift;
+  my $summary_ref = $self->SUPER::summary_as_hash;
+  $summary_ref->{'constitutive'} = $self->is_constitutive;
+  $summary_ref->{'ensembl_phase'} = $self->phase;
+  $summary_ref->{'ensembl_end_phase'} = $self->end_phase;
+  $summary_ref->{'phase'} = 0;
+  return $summary_ref;
+}
+
 =head1 DEPRECATED METHODS
 
 =cut

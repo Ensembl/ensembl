@@ -50,6 +50,7 @@ use strict;
 use warnings;
 
 use Bio::EnsEMBL::Utils::Exception;
+use Bio::EnsEMBL::Utils::Cache;
 
 my %gene_so_mapping = (
 	'protein_coding' 		=> 'SO:0001217', # protein_coding_gene
@@ -116,11 +117,12 @@ my %transcript_so_mapping = (
 my %feature_so_mapping = (
 	'Bio::EnsEMBL::Gene' => 'SO:0000704', # gene
 	'Bio::EnsEMBL::Transcript' => 'SO:0000673', # transcript
+	'Bio::EnsEMBL::Exon' => 'SO:0000147',
 	'Bio::EnsEMBL::Slice' => 'SO:0000001', # region
 	'Bio::EnsEMBL::Variation::VariationFeature' => 'SO:0001060', # sequence variant
 	'Bio::EnsEMBL::Variation::StructuralVariationFeature' => 'SO:0001537', # structural variant
-    'Bio::EnsEMBL::Compara::ConstrainedElement' => 'SO:0001009', #DNA_constraint_sequence ????
-	'Bio::EnsEMBL::Funcgen::RegulatoryFeature' => 'SO:0001679', # transcription_regulatory_region
+  'Bio::EnsEMBL::Compara::ConstrainedElement' => 'SO:0001009', #DNA_constraint_sequence ????
+	'Bio::EnsEMBL::Funcgen::RegulatoryFeature' => 'SO:0005836', # regulatory_region
 );
 
 my %grouping_of_biotypes = (
@@ -169,6 +171,9 @@ sub new {
 	my $self = { 	
 		ontology_adaptor => shift,
 	};
+	
+	tie my %cache, 'Bio::EnsEMBL::Utils::Cache', 100;
+  $self->{cache} = \%cache;
 
 	bless $self, $class;
     return $self;
@@ -188,25 +193,54 @@ sub translate_feature_to_SO_term {
 	my $self = shift;
 	my $feature = shift;
 	my $so_accession;
-	my $so_term;
-	if (ref($feature) eq "Bio::EnsEMBL::Gene" and exists $gene_so_mapping{$feature->biotype}) {
+	my $so_name;
+	my $ref = ref($feature);
+	if ($feature->isa('Bio::EnsEMBL::Gene') && exists $gene_so_mapping{$feature->biotype}) {
 		$so_accession = $gene_so_mapping{$feature->biotype};
 	}
-	elsif (ref($feature) eq "Bio::EnsEMBL::Transcription" and exists $transcript_so_mapping{$feature->biotype}) {
+	elsif ($feature->isa('Bio::EnsEMBL::Transcript') && exists $transcript_so_mapping{$feature->biotype}) {
 		$so_accession = $transcript_so_mapping{$feature->biotype};
 	}
+	elsif ($feature->isa('Bio::EnsEMBL::Variation::BaseVariationFeature')) {
+	  $so_name = $feature->class_SO_term();
+	}
+	
+	if (! $so_accession && ! $so_name && exists $feature_so_mapping{$ref}) {
+	  $so_accession = $feature_so_mapping{$ref};
+	}
 	else {
-		$so_accession = $feature_so_mapping{ref($feature)};
+		if($feature->can('SO_term')) {
+		  $so_accession = $feature->SO_term();
+		}
 	}
-	if (defined($so_accession)) {
-		$so_term = $self->{'ontology_adaptor'}->fetch_by_accession($so_accession);
+	
+	if ($so_accession) {
+		$so_name = $self->fetch_SO_name_by_accession($so_accession);
 	}
-	else {
-		throw ("Ontology mapping not found for ".ref($feature));
-		return "????????";
-	}
+	
+	throw ("Ontology mapping not found for ".ref($feature)) unless $so_name;
+	
+	return $so_name;
+}
 
-	return $so_term->name;
+=head2 fetch_SO_name_by_accession
+
+  Arg [0]    : Sequence Ontology accession
+  Description: Returns the name linked to the given accession. These are
+               internally cached for speed.
+  Returntype : The name of the given accession.
+
+=cut
+
+sub fetch_SO_name_by_accession {
+  my ($self, $so_accession) = @_;
+  my $so_name = $self->{cache}->{$so_accession};
+  if(!$so_name) {
+    my $so_term = $self->{'ontology_adaptor'}->fetch_by_accession($so_accession);
+    $so_name = $so_term->name();
+    $self->{cache}->{$so_accession} = $so_name;
+  }
+  return $so_name;
 }
 
 

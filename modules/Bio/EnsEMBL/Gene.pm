@@ -1486,6 +1486,7 @@ sub summary_as_hash {
   $summary_ref->{'description'} = $self->description;
   $summary_ref->{'biotype'} = $self->biotype;
   $summary_ref->{'external_name'} = $self->external_name;
+  $summary_ref->{'logic_name'} = $self->analysis->logic_name();
   return $summary_ref;
 }
 

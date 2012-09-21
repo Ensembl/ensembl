@@ -2843,8 +2843,9 @@ sub summary_as_hash {
   my $summary_ref = $self->SUPER::summary_as_hash;
   $summary_ref->{'description'} = $self->description;
   $summary_ref->{'biotype'} = $self->biotype;
+  $summary_ref->{'logic_name'} = $self->analysis->logic_name();
   my $parent_gene = $self->get_Gene();
-  $summary_ref->{'Parent'} = $parent_gene->display_id;
+  $summary_ref->{'Parent'} = $parent_gene->stable_id;
   return $summary_ref;
 }
 

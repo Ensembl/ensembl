@@ -24,8 +24,7 @@ use Bio::EnsEMBL::Utils::IO::GFFSerializer;
 use Bio::EnsEMBL::Utils::BiotypeMapper;
 
 my $ontology_adaptor = $registry->get_adaptor( 'Multi', 'Ontology', 'OntologyTerm' );
-my $biotype_mapper = new BiotypeMapper($ontology_adaptor);
-my $serializer = new GFFSerializer($biotype_mapper,$output_fh);
+my $serializer = Bio::EnsEMBL::Utils::IO::GFFSerializer->new($ontology_adaptor,$output_fh);
 
 my $variation_feature_adaptor = $registry->get_adaptor( $config{'species'}, 'variation', 'variationfeature' );
 $serializer->print_metadata("Variation Features:");
@@ -145,8 +144,13 @@ sub print_feature {
             $row .= ".\t";
         }
 
-#   Column 8 - reading frame, necessary only for Exons
-        $row .= ".\t";
+#   Column 8 - reading phase, necessary only for Exons
+        if (exists($summary{'phase'})) {
+          $row .= $summary{'phase'}."\t";
+        }
+        else {
+          $row .= ".\t";
+        }
 
 #    Column 9 - the 'other' section for all GFF and GVF compliant attributes
 #    We include Stable ID and biotype where possible to supplement the information in the other columns
