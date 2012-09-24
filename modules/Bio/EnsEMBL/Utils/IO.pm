@@ -398,7 +398,7 @@ sub work_with_file {
   Description : Performs the nitty gritty of checking if a file handle is open
                 and closing the resulting filehandle down.
   Returntype  : None
-  Example     : work_with_file('/tmp/out.txt.gz', 'w', sub { 
+  Example     : gz_work_with_file('/tmp/out.txt.gz', 'w', sub { 
                   my ($fh) = @_; 
                   print $fh 'hello'; 
                   return;
