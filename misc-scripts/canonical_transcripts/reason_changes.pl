@@ -9,6 +9,11 @@
 #   - Transcript length (longest)
 #   - Translation length (longest)
 #
+# A not so normal scenario is the choice of an NMD over an Ensembl protein
+# coder. To emit these in all their glory, add NMD to the command line. e.g.
+#
+# perl reason_changes.pl logfile NMD
+#
 # If it was not one of these we will complain bitterly and you should
 # investigate. If it is a known reason after investigation, that is an
 # allowed scenario, then code it into this script.
@@ -20,6 +25,7 @@ use warnings;
 use JSON;
 
 my $file = $ARGV[0];
+my $blurt = $ARGV[1] ;
 
 if(! $file) {
   die "Was not given a file. Command is $0 PATH_TO_FILE";
@@ -77,7 +83,8 @@ sub compare {
       $old->[2] == 3 &&         #Old was an Ensembl/Havana transcript
       $new->[2] == 2 &&         #New was E! Havana merged 
       $old->[3] == 1 &&         #Old was a Protein Coding
-      $new->[3] == 2            #New was a "NMD"
+      $new->[3] == 2 &&         #New was a "NMD"
+      $blurt !~ /nmd/i          #User suppressing this test     
       ) {
       $reason_key = 'havana_merge_nmd_over_e_coding';
     }
