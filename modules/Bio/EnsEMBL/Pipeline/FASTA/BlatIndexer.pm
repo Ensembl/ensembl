@@ -147,42 +147,14 @@ sub decompress {
   my ($vol, $dir, $file) = File::Spec->splitpath($source);
   $file =~ s/.gz$//;
   my $target = File::Spec->catdir($target_dir, $file);
-  
-  my $allowed_regions = $self->allowed_regions();
-  
-  $self->info('Decompressing %s to %s', $source, $target);
-  
-  open my $src_fh, '-|', "zcat $source" or throw "Cannot decompress $source to $target";
+  $self->info('Writing to %s', $target);
   work_with_file($target, 'w', sub {
     my ($trg_fh) = @_;
-    my $transfer = 0;
-    while(my $line = <$src_fh>) {
-      #HEADER
-      if(index($line, '>') == 0) {
-        #regex is looking for NNN:NNN:NNN:1:80:1 i.e. the name
-        my ($name) = $line =~ />.+\s(.+:.+:.+:\d+:\d+:\d+)/; 
-        $transfer = ($allowed_regions->{$name}) ? 1 : 0;
-        if($transfer) {
-          $self->info('%s was an allowed Slice', $name);
-        }
-        else {
-          $self->info('%s will be skipped; not a reference Slice', $name);
-        }
-      }
-      print $trg_fh $line if $transfer;
-    }
+    $self->filter_fasta_for_nonref($source, $trg_fh);
+    return;
   });
-  close($src_fh);
 
   return $target;
-}
-
-sub allowed_regions {
-  my ($self) = @_;
-  my $filter_human = 1;
-  my @slices = grep { $_->is_reference() } @{$self->get_Slices('core', $filter_human)};
-  my %hash = map { $_->name() => 1 } @slices;
-  return \%hash;
 }
 
 #Filename like 30061.Homo_sapiens.GRCh37.2bit
@@ -215,22 +187,6 @@ sub blat_port {
     -PARAMS => [$self->web_name()]
   );
   return $id + $self->param('port_offset');
-}
-
-sub has_non_refs {
-  my ($self) = @_;
-  my $sql = <<'SQL';
-select count(*)
-from attrib_type at
-join seq_region_attrib sra using (attrib_type_id)
-join seq_region sr using (seq_region_id)
-join coord_system cs using (coord_system_id)
-where cs.species_id =?
-and at.code =?
-SQL
-  my $dba = $self->get_DBAdaptor();
-  return $dba->dbc()->sql_helper()->execute_single_result(
-    -SQL => $sql, -PARAMS => [$dba->species_id(), 'non_ref']);
 }
 
 1;

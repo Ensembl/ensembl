@@ -752,10 +752,9 @@ EXAMPLES
 -----------------
 PRIMARY ASSEMBLY
 -----------------
-This is a subset of sequences found in the toplevel file. The subset is
-defined as anything which is not a reference sequence region i.e. haplotypes
-and patches. If you wish to perform alignments to an assembly and want to
-ignore alternative assemblies then use this file.
+Primary assembly contains all toplevel sequence regions excluding haplotypes
+and patches. This file is best used for performing sequence similarity searches
+where patch and haplotype sequences would confuse analysis.   
 
 EXAMPLES
 

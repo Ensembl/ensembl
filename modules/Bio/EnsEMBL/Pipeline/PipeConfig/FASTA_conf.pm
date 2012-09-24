@@ -132,8 +132,15 @@ sub pipeline_analyses {
         -can_be_empty => 1,
         -max_retry_count => 5,
         -flow_into  => {
-          1 => [qw/BlastDNAIndex BlatDNAIndex BlatSmDNAIndex/]
+          1 => [qw/BlastDNAIndex BlatDNAIndex BlatSmDNAIndex PrimaryAssembly/]
         },
+      },
+      
+      {
+        -logic_name       => 'PrimaryAssembly',
+        -module           => 'Bio::EnsEMBL::Pipeline::FASTA::CreatePrimaryAssembly',
+        -can_be_empty     => 1,
+        -max_retry_count  => 5,
       },
       
       ######## COPY DATA
@@ -229,7 +236,7 @@ sub pipeline_analyses {
         },
         -hive_capacity => 3,
         -can_be_empty => 1,
-        -wait_for => [qw/DumpDNA DumpGenes BlastDNAIndex BlastGeneIndex BlastPepIndex/]
+        -wait_for => [qw/DumpDNA DumpGenes PrimaryAssembly BlastDNAIndex BlastGeneIndex BlastPepIndex/]
       },
       
       ####### CHECKSUMMING
@@ -242,7 +249,7 @@ sub pipeline_analyses {
           input_id => { 'dir' => '#dir#' },
           fan_branch_code => 2,
         },
-        -wait_for   => [qw/DumpDNA DumpGenes BlastDNAIndex BlastGeneIndex BlastPepIndex/],
+        -wait_for   => [qw/DumpDNA DumpGenes PrimaryAssembly BlastDNAIndex BlastGeneIndex BlastPepIndex/],
         -flow_into  => { 2 => ['ChecksumGenerator'] } 
       },
       
