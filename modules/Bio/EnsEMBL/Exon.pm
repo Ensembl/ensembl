@@ -1590,7 +1590,6 @@ sub summary_as_hash {
   $summary_ref->{'constitutive'} = $self->is_constitutive;
   $summary_ref->{'ensembl_phase'} = $self->phase;
   $summary_ref->{'ensembl_end_phase'} = $self->end_phase;
-  $summary_ref->{'phase'} = 0;
   return $summary_ref;
 }
 
