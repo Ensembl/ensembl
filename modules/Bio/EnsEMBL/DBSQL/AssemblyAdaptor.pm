@@ -125,14 +125,10 @@ sub fetch_info {
   my $sa = $self->db()->get_adaptor('Slice');
 
   my $slices = $sa->fetch_all('toplevel');
-
-  my @top_level_seq_region_names;
-
-  if ($slices) {
-      @top_level_seq_region_names = sort(map { $_->seq_region_name() } @$slices);
-  }
-
-  $assembly_info{'top_level_seq_region_names'} = \@top_level_seq_region_names;
+  
+  my %unique = map { $_->seq_region_name(), 0 } @{$slices};
+  my $names = [sort { $a cmp $b } keys %unique];
+  $assembly_info{'top_level_seq_region_names'} = $names;
 
   return \%assembly_info;
 }
