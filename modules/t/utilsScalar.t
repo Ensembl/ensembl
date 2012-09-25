@@ -159,4 +159,14 @@ close($_) for ($scalar_fh, $other_scalar_fh);
   is($v, 'wibble', 'Value has been reset even after a die');
 }
 
+#Array split
+{
+  my $original_array = [1..7];
+  my $split_two = split_array(2, $original_array);
+  is_deeply($split_two, [[1,2],[3,4],[5,6],[7]], 'Checking split of 7 element array into arrays of max size 2') or diag explain $split_two;
+  my $split_ten = split_array(10, $original_array);
+  is_deeply($split_ten, [$original_array], 'Checking split of 7 element array into arrays of max size 10') or diag explain $split_ten;
+  dies_ok { split_array(1, {}) } 'Passing in a non-array ref means death';
+}
+
 done_testing();

@@ -106,11 +106,12 @@ our @EXPORT_OK;
   assert_ref assert_ref_can assert_numeric assert_integer assert_boolean assert_strand assert_file_handle
   wrap_array
   scope_guard
+  split_array
 );
 %EXPORT_TAGS = (
   assert  => [qw(assert_ref assert_ref_can assert_integer assert_numeric assert_boolean assert_strand assert_file_handle)],
   check   => [qw(check_ref check_ref_can)],
-  array   => [qw/wrap_array/],
+  array   => [qw/wrap_array split_array/],
   all     => [@EXPORT_OK]
 );
 
@@ -414,6 +415,33 @@ sub assert_file_handle {
     }
   }
   return 1;
+}
+
+=head2 split_array
+
+  Arg [1]     : Integer Maximum size of an array produced
+  Arg [2]     : ArrayRef The array to split
+  Description : Takes an array of values and splits the array into multiple 
+                arrays where the maximum size of each array is as specified
+  Example     : 
+  Returntype  : ArrayRef of ArrayRefs where each element is a split list
+=cut
+
+sub split_array {
+  my ($amount, $array) = @_;
+  assert_ref($array, 'ARRAY', 'array');
+  my @split;
+  my $counter = 0;
+  my $index = 0;
+  foreach my $e (@$array) {
+    if($counter == $amount) {
+      $index++;
+      $counter = 0;
+    }
+    push(@{$split[$index]}, $e);
+    $counter++;
+  }
+  return \@split;
 }
 
 =head2 scope_guard
