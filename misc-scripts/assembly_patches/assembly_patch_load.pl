@@ -65,14 +65,19 @@ $sth->finish;
 $sth = $dba->dbc->prepare("select max(assembly_exception_id) from assembly_exception")
   || die "Could not get max assembly_exception_id";
 
-$sth->execute || die "problem executing get max sassembly_exception_id";
+$sth->execute || die "problem executing get max assembly_exception_id";
 my $max_assembly_exception_id;
 $sth->bind_columns(\$max_assembly_exception_id) || die "problem binding";
 $sth->fetch() || die "problem fetching";
 $sth->finish;
 
 print "starting new seq_region at seq_region_id of $max_seq_region_id\n";
-print "\nTo reset\ndelete from dna where seq_region_id > $max_seq_region_id\ndelete from seq_region where seq_region_id > $max_seq_region_id\ndelete from assembly_exception where assembly_exception_id > $max_assembly_exception_id\n\n";
+
+if (defined( $max_assembly_exception_id ) ) {
+  print "\nTo reset\ndelete from dna where seq_region_id > $max_seq_region_id\ndelete from seq_region where seq_region_id > $max_seq_region_id\ndelete from assembly_exception where assembly_exception_id > $max_assembly_exception_id\n\n";
+} else {
+  print "\nNOTE! assembly_exception table is not populated, probably the first patch release.\n\n";
+}
 
 $max_seq_region_id++;
 $max_assembly_exception_id++;
@@ -178,8 +183,8 @@ while (<TYPE>) {
 SCAF: while(<TXT>){
   if(/^#/){
     chomp;
-    my @arr = split;
-    my $i = 1;#work around primary and assembly being two words - first three cols never used
+    my @arr = split(/\t/,$_);
+    my $i = 0;
     foreach my $name (@arr){
       $key_to_index{$name} = $i;
       $i++;
@@ -194,7 +199,8 @@ SCAF: while(<TXT>){
     }
   }
   else{
-    my @arr = split;
+    my @arr = split(/\t/,$_);
+
     my $alt_acc = $arr[$key_to_index{'alt_scaf_acc'}];
     my $alt_name = $arr[$key_to_index{'alt_scaf_name'}];
 
