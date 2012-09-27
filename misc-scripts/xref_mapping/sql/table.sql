@@ -329,8 +329,8 @@ CREATE TABLE process_status (
 ) COLLATE=latin1_swedish_ci ENGINE=InnoDB;
 
 
---This table is populated in DisplayXrefs.pm and is used to set the best xrefs as 
---display xrefs for genes and transcripts
+-- This table is populated in DisplayXrefs.pm and is used to set the best xrefs as 
+-- display xrefs for genes and transcripts
 
 
 
@@ -343,8 +343,8 @@ CREATE TABLE display_xref_priority(
 ) COLLATE=latin1_swedish_ci ENGINE=InnoDB;
 
 
---This table is populated in DisplayXrefs.pm and is used to set
---gene descriptions
+-- This table is populated in DisplayXrefs.pm and is used to set
+-- gene descriptions
 
 CREATE TABLE gene_desc_priority(
     source_id	   INT UNSIGNED NOT NULL,
