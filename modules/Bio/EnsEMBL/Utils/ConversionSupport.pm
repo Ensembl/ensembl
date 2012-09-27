@@ -344,7 +344,7 @@ sub confirm_params {
   print "Running script with these parameters:\n\n";
   print $self->list_all_params;
 
-  if ($self->param('host') eq 'ensdb-1-10') {
+  if ($self->param('host') eq 'ensdb-web-10') {
     # ask user if he wants to proceed
     exit unless $self->user_proceed("**************\n\n You're working on ensdb-1-10! Is that correct and you want to continue ?\n\n**************");
   }
@@ -367,9 +367,9 @@ sub confirm_params {
 
 sub list_all_params {
   my $self = shift;
-  my $txt = sprintf "    %-21s%-40s\n", qw(PARAMETER VALUE);
-  $txt .= "    " . "-"x71 . "\n";
-  $Text::Wrap::colums = 72;
+  my $txt = sprintf "    %-21s%-90s\n", qw(PARAMETER VALUE);
+  $txt .= "    " . "-"x121 . "\n";
+  $Text::Wrap::colums = 130;
   my @params = $self->allowed_params;
   foreach my $key (@params) {
     my @vals = $self->param($key);
@@ -994,18 +994,19 @@ sub get_taxonomy_id {
 sub get_species_scientific_name {
   my ($self, $dba) = @_;
   $dba ||= $self->dba;
-  my $sql_tmp = "SELECT meta_value FROM meta WHERE meta_key = \'species.classification\' ORDER BY meta_id";
-  my $sql = $dba->dbc->add_limit_clause($sql_tmp,2);
+  my $sql = "SELECT meta_value FROM meta WHERE meta_key = \'species.scientific_name\'";
   my $sth = $dba->dbc->db_handle->prepare($sql);
   $sth->execute;
   my @sp;
   while (my @row = $sth->fetchrow_array) {
     push @sp, $row[0];
   }
+  if (! @sp || @sp > 1) {
+    $self->throw("Could not retrieve a single species scientific name from database.");
+  }
   $sth->finish;
-  my $species = join(" ", reverse @sp);
-  $self->throw("Could not determine species scientific name from database.")
-    unless $species;
+  my $species = $sp[0];
+  $species =~ s/ /_/g;
   return $species;
 }
 
@@ -1141,6 +1142,9 @@ sub split_chromosomes_by_size {
   } else {
     $top_slices = $slice_adaptor->fetch_all('chromosome',$cs_version,$include_non_reference,$dup);
   }
+
+  # filter out patches, if present
+  $top_slices = [ grep { $_->is_reference or $self->is_haplotype($_,$self->dba)  } @$top_slices ];
 
   my ($big_chr, $small_chr, $min_big_chr, $min_small_chr);
   foreach my $slice (@{ $top_slices }) {
@@ -1718,7 +1722,7 @@ sub get_unique_genes {
   if ( ! $slice->is_reference() and ! $self->is_haplotype($slice,$dba) ) {
 #  if ( 0 ) {
     $patch = 1;
-    my $slices = $sa->fetch_by_region_unique( $slice->coord_system_name(),$slice->seq_region_name() );
+    my $slices = $sa->fetch_by_region_unique( $slice->coord_system_name(),$slice->seq_region_name(),undef,undef,undef,$slice->coord_system()->version() );
     foreach my $slice ( @{$slices} ) {
       push @$genes,@{$ga->fetch_all_by_Slice($slice)};
       #      my $start = $slice->start;
