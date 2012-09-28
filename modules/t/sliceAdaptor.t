@@ -482,6 +482,15 @@ dies_ok { $slice_adaptor->fetch_by_toplevel_location('1:1_000_000_000..100', 1);
 ok(!defined $slice_adaptor->fetch_by_toplevel_location('wibble', 1), 'Checking with a bogus region returns undef');
 ok(!defined $slice_adaptor->fetch_by_toplevel_location('1:-100--50', 1), 'Checking with a bogus region with negative coords returns undef');
 
+{
+  #Non standard name check
+  my ($name, $start, $end, $strand) = $slice_adaptor->parse_location_to_values('GL21446.1');
+  is($name, 'GL21446.1', 'Name parses out');
+  ok(!defined $start, 'Start is undefined');
+  ok(!defined $end, 'End is undefined');
+  ok(!defined $strand, 'Strand is undefined');
+}
+
 sub test_toplevel_location {
   my ($location, $cs_name, $seq_region_name, $start, $end, $strand) = @_;
   $strand ||= 1;

@@ -531,7 +531,7 @@ sub parse_location_to_values {
   my $number_regex = qr/[0-9,_ E]+/xms;
   my $strand_regex = qr/[+-1]|-1/xms;
   
-  my $regex = qr/^(\w+) \s* :? \s* ($number_regex)? $separator_regex ($number_regex)? $separator_regex ($strand_regex)? $/xms;
+  my $regex = qr/^((?:\w|\.|_|-)+) \s* :? \s* ($number_regex)? $separator_regex ($number_regex)? $separator_regex ($strand_regex)? $/xms;
   my ($seq_region_name, $start, $end, $strand);
   if(($seq_region_name, $start, $end, $strand) = $location =~ $regex) {
     
