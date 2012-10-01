@@ -291,14 +291,15 @@ sub fetch_by_region {
 
 
       # try synonyms
-      my $syn_sql_sth = $self->prepare("select s.name from seq_region s, seq_region_synonym ss where s.seq_region_id = ss.seq_region_id and ss.synonym = ?");
+      my $syn_sql_sth = $self->prepare("select s.name, s.coord_system_id from seq_region s, seq_region_synonym ss where s.seq_region_id = ss.seq_region_id and ss.synonym = ?");
       $syn_sql_sth->bind_param(1, $seq_region_name, SQL_VARCHAR);
       $syn_sql_sth->execute();
       my $new_name;
-      $syn_sql_sth->bind_columns( \$new_name);
+      my $new_coord_system;
+      $syn_sql_sth->bind_columns( \$new_name, \$new_coord_system);
       if($syn_sql_sth->fetch){
-	$syn_sql_sth->finish;
-	return $self->fetch_by_region($coord_system_name, $new_name, $start, $end, $strand, $version, $no_fuzz);
+        $syn_sql_sth->finish;
+        return $self->fetch_by_region($new_coord_system, $new_name, $start, $end, $strand, $version, $no_fuzz);
       }
       $syn_sql_sth->finish;
 
