@@ -297,9 +297,17 @@ sub fetch_by_region {
       my $new_name;
       my $new_coord_system;
       $syn_sql_sth->bind_columns( \$new_name, \$new_coord_system);
+            
       if($syn_sql_sth->fetch){
         $syn_sql_sth->finish;
-        return $self->fetch_by_region($new_coord_system, $new_name, $start, $end, $strand, $version, $no_fuzz);
+        if (not defined($cs)) {
+            return $self->fetch_by_region($new_coord_system, $new_name, $start, $end, $strand, $version, $no_fuzz);
+        } elsif ($cs->dbID != $new_coord_system) {
+            warning("Searched for a known feature on coordinate system: ".$cs->dbID." but found it on: ".$new_coord_system.
+            "\n No result returned, consider searching without coordinate system or use toplevel.");
+            return;
+        }
+        
       }
       $syn_sql_sth->finish;
 
