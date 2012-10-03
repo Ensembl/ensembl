@@ -41,7 +41,7 @@ sub transcript_display_xref_sources {
                  PGD_GENE
                  Mycgr3_jgi_v2.0_gene
                  BROAD_Magnaporthe_DB
-                 PGSC
+                 PGSC_GENE
                  PHYTOZOME_GMAX_GENE
                );
     
@@ -93,7 +93,7 @@ sub gene_description_sources {
 	  "phatr_jgi_v2_bd",
           "PGD_GENE",
           "BROAD_Magnaporthe_DB",
-          "PGSC",
+          "PGSC_GENE",
           "PHYTOZOME_GMAX_GENE",
           "RFAM",
           "TRNASCAN_SE",
