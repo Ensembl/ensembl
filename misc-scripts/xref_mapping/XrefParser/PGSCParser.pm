@@ -26,6 +26,20 @@ sub run {
 
   my $file = @{$files}[0];
 
+  # need to uncompress the zip file, whihc is not supported by the xrefs framework
+
+  # print STDERR "uncompressing the zip file\n";
+ 
+  $file =~ /(.+)\/.+\.zip$/;
+  my $dir = $1;
+
+  #print STDERR "dir, $dir\n";
+
+  system ("unzip -o $file -d $dir");
+  $file =~ s/\.zip$//;
+ 
+  # print STDERR "file after decompression, $file\n"; 
+
   my $gene_source_id = $self->get_source_id_for_source_name("PGSC_GENE");
 
   my $pgsc_io = $self->get_filehandle($file);
