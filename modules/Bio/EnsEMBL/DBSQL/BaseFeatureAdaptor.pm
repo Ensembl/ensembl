@@ -590,200 +590,200 @@ sub _create_feature_fast {
   return $feature_type->new_fast($args);
 }
 
+=head2 count_by_Slice
+
+    Arg [0]     : Bio::EnsEMBL::Slice
+    Arg [1]     : Custom SQL constraint
+    Description : Finds all features with at least partial overlap to the given
+                  slice and sums them up
+    Returntype  : Integer
+=cut
+
+sub count_by_Slice {
+	my $self = shift;
+	my ($slice, $constraint) = @_;
+	my $count = 0;
+	
+	my $count_array = $self->_get_by_Slice($slice,$constraint,'count');
+	foreach (@$count_array) { print "$_,";}
+	$count += $_ for @$count_array;
+	return $count;
+}
+
+=head2 _get_by_Slice
+    Arg [0]    : Bio::EnsEMBL::Slice to find all the features within
+    Arg [1]    : SQL constraint string
+    Arg [2]    : Type of query to run. Default behaviour is to select, but 
+                 'count' is also valid
+    Description: Abstracted logic from _slice_fetch
+    Returntype : Listref of Bio::EnsEMBL::Feature, or integers for counting mode
+=cut
+
+sub _get_by_Slice {
+    my $self = shift;
+    my ($slice, $orig_constraint, $query_type) = @_;
+    
+    # features can be scattered across multiple coordinate systems
+    my @tables = $self->_tables;
+    my ($table_name, $table_synonym) = @{ $tables[0] };
+    my $mapper;
+    my @feature_coord_systems;
+    
+    my $meta_values = $self->db->get_MetaContainer->list_value_by_key( $table_name."build.level");
+    if ( @$meta_values and $slice->is_toplevel() ) {
+        push @feature_coord_systems, $slice->coord_system();
+    } else {
+        @feature_coord_systems = @{ $self->db->get_MetaCoordContainer->fetch_all_CoordSystems_by_feature_type($table_name)};
+    }
+	
+    my $assembly_mapper_adaptor = $self->db->get_AssemblyMapperAdaptor();
+    my @pan_coord_features;
+    
+    
+COORD_SYSTEM: foreach my $coord_system (@feature_coord_systems) {
+        my @query_accumulator;
+        # Build up a combination of query constraints that will quickly establish the result set
+        my $constraint = $orig_constraint;
+        if ( $coord_system->equals( $slice->coord_system ) ) {
+            my $max_len = $self->_max_feature_length
+                || $self->db->get_MetaCoordContainer
+                    ->fetch_max_length_by_CoordSystem_feature_type( $coord_system,$table_name );
+                       
+            my $seq_region_id;
+            if ( $slice->adaptor ) {
+                $seq_region_id = $slice->adaptor->get_seq_region_id($slice);
+            } else {
+                $seq_region_id = $self->db->get_SliceAdaptor->get_seq_region_id($slice);
+            }
+            
+            my @seq_region_ids = ($seq_region_id);
+            while (1) {
+                my $ext_seq_region_id = $self->get_seq_region_id_external($seq_region_id);
+        
+                if ( $ext_seq_region_id == $seq_region_id ) { last }
+        
+                push( @seq_region_ids, $ext_seq_region_id );
+                $seq_region_id = $ext_seq_region_id;
+            }
+            
+            $constraint .= " AND " if ($constraint);
+
+            $constraint .= ${table_synonym}.".seq_region_id IN (". join( ',', @seq_region_ids ) . ") AND ";
+            
+            #faster query for 1bp slices where SNP data is not compressed
+            if ( $self->start_equals_end && $slice->start == $slice->end ) {
+                $constraint .= " AND ".$table_synonym.".seq_region_start = ".$slice->end .
+                  " AND ".$table_synonym.".seq_region_end = ".$slice->start;
+            
+            } else {
+                if ( !$slice->is_circular() ) {
+                    # Deal with the default case of a non-circular chromosome.
+                    $constraint .= $table_synonym.".seq_region_start <= ".$slice->end." AND "
+                                   .$table_synonym.".seq_region_end >= ".$slice->start;
+            
+                    if ( $max_len ) {
+                        my $min_start = $slice->start - $max_len;
+                        $constraint .= " AND ".$table_synonym.".seq_region_start >= ".$min_start;
+                    }
+            
+                } else {
+                    # Deal with the case of a circular chromosome.
+                    if ( $slice->start > $slice->end ) {
+                        $constraint .= " ( ".$table_synonym.".seq_region_start >= ".$slice->start
+                            . " OR ".$table_synonym.".seq_region_start <= ".$slice->end
+                            . " OR ".$table_synonym.".seq_region_end >= ".$slice->start
+                            . " OR ".$table_synonym.".seq_region_end <= ".$slice->end
+                            . " OR ".$table_synonym.".seq_region_start > ".$table_synonym.".seq_region_end";
+                    } else {
+                        $constraint .= " ((".$table_synonym.".seq_region_start <= ".$slice->end
+                            . " AND ".$table_synonym.".seq_region_end >= ".$slice->start.") "
+                            . "OR (".$table_synonym.".seq_region_start > ".$table_synonym.".seq_region_end"
+                            . " AND (".$table_synonym.".seq_region_start <= ".$slice->end
+                            . " OR ".$table_synonym.".seq_region_end >= ".$slice->start.")))";
+                  }
+              }
+           }
+           
+           push @query_accumulator, [$constraint,undef,$slice]; # $mapper intentionally absent here.
+           
+        } else { #Êcoordinate systems do not match
+            $mapper = $assembly_mapper_adaptor->fetch_by_CoordSystems( $slice->coord_system(), $coord_system );
+            next unless defined $mapper;
+
+            # Get list of coordinates and corresponding internal ids for
+            # regions the slice spans
+            my @coords = $mapper->map( $slice->seq_region_name, $slice->start, $slice->end,
+                                    $slice->strand, $slice->coord_system );
+
+            @coords = grep { !$_->isa('Bio::EnsEMBL::Mapper::Gap') } @coords;
+
+            next COORD_SYSTEM if ( !@coords );
+
+            my @ids = map { $_->id() } @coords;
+            #coords are now id rather than name
+            
+            if ( @coords > $MAX_SPLIT_QUERY_SEQ_REGIONS && ! $slice->isa('Bio::EnsEMBL::LRGSlice') 
+                    && $slice->coord_system->name() ne 'lrg') {
+                $constraint = $orig_constraint;
+                my $id_str = join( ',', @ids );
+                $constraint .= " AND " if ($constraint);
+                $constraint .= $table_synonym.".seq_region_id IN ($id_str)";
+                
+                push @query_accumulator, [$constraint,$mapper,$slice];
+            } else {
+                my $max_len = (
+                    $self->_max_feature_length()
+                    || $self->db->get_MetaCoordContainer
+                       ->fetch_max_length_by_CoordSystem_feature_type($coord_system, $table_name) 
+                );
+
+                my $length = @coords;
+                for ( my $i = 0; $i < $length; $i++ ) {
+                    $constraint = $orig_constraint;
+                    $constraint .= " AND " if ($constraint);
+                    $constraint .= $table_synonym.".seq_region_id = "
+                        . $ids[$i] . " AND "
+                        . $table_synonym.".seq_region_start <= "
+                        . $coords[$i]->end() . " AND "
+                        . $table_synonym.".seq_region_end >= "
+                        . $coords[$i]->start();
+
+                    if ($max_len) {
+                        my $min_start = $coords[$i]->start() - $max_len;
+                        $constraint .= " AND ".$table_synonym.".seq_region_start >= ".$min_start;
+                    }
+                    
+                    push @query_accumulator, [$constraint,$mapper,$slice];
+                } # end multi-query cycle
+		    } # end else
+            
+	   } # end else (coord sytems not matching)
+	   
+	   foreach my $query (@query_accumulator) {
+	       my ($local_constraint,$local_mapper,$local_slice) = @$query;
+    	   if ($query_type and $query_type eq 'count') {
+    	       push @pan_coord_features, $self->generic_count($local_constraint);
+    	   } else {
+    	       
+               my $features = $self->generic_fetch( $local_constraint, $local_mapper, $local_slice );
+               $features = $self->_remap( $features, $local_mapper, $local_slice );
+               push @pan_coord_features, @$features;
+    	   }
+	   }
+	   
+	   $mapper = undef;
+    } # End foreach
+    return \@pan_coord_features;
+}
 #
 # helper function used by fetch_all_by_Slice_constraint method
 #
 sub _slice_fetch {
   my ( $self, $slice, $orig_constraint ) = @_;
 
-  my $slice_start         = $slice->start();
-  my $slice_end           = $slice->end();
-  my $slice_strand        = $slice->strand();
-  my $slice_cs            = $slice->coord_system();
-  my $slice_seq_region    = $slice->seq_region_name();
-  my $slice_seq_region_id = $slice->get_seq_region_id();
+  my $features = $self->_get_by_Slice($slice,$orig_constraint);
 
-  #get the synonym and name of the primary_table
-  my @tabs = $self->_tables;
-  my ( $tab_name, $tab_syn ) = @{ $tabs[0] };
-
-  #find out what coordinate systems the features are in
-  my $mcc      = $self->db->get_MetaCoordContainer();
-  my @feat_css = ();
-
-  my $mca        = $self->db->get_MetaContainer();
-  my $value_list = $mca->list_value_by_key( $tab_name . "build.level" );
-  if ( @$value_list and $slice->is_toplevel() ) {
-    push @feat_css, $slice_cs;
-  } else {
-    @feat_css =
-      @{ $mcc->fetch_all_CoordSystems_by_feature_type($tab_name) };
-  }
-
-  my $asma = $self->db->get_AssemblyMapperAdaptor();
-  my @features;
-
-  # fetch the features from each coordinate system they are stored in
-COORD_SYSTEM: foreach my $feat_cs (@feat_css) {
-    my $mapper;
-    my @coords;
-    my @ids;
-
-    if ( $feat_cs->equals($slice_cs) ) {
-      # no mapping is required if this is the same coord system
-
-      my $max_len = $self->_max_feature_length()
-        || $mcc->fetch_max_length_by_CoordSystem_feature_type( $feat_cs,
-                                                            $tab_name );
-
-      my $constraint = $orig_constraint;
-
-      my $sr_id;
-      if ( $slice->adaptor() ) {
-        $sr_id = $slice->adaptor()->get_seq_region_id($slice);
-      } else {
-        $sr_id =
-          $self->db()->get_SliceAdaptor()->get_seq_region_id($slice);
-      }
-
-      # If there is mapping information, use the external_seq_region_id
-      # to get features.
-
-      my @sr_ids = ($sr_id);
-
-      while (1) {
-        my $ext_sr_id = $self->get_seq_region_id_external($sr_id);
-
-        if ( $ext_sr_id == $sr_id ) { last }
-
-        push( @sr_ids, $ext_sr_id );
-        $sr_id = $ext_sr_id;
-      }
-
-      $constraint .= " AND " if ($constraint);
-
-      
-      $constraint .= "${tab_syn}.seq_region_id IN ("
-          . join( ',', @sr_ids ) . ") AND";
-
-      #faster query for 1bp slices where SNP data is not compressed
-      if ( $self->start_equals_end && $slice_start == $slice_end ) {
-	  $constraint .=
-	      " AND ${tab_syn}.seq_region_start = $slice_end" .
-	      " AND ${tab_syn}.seq_region_end = $slice_start";
-
-      } else {
-
-	  if ( !$slice->is_circular() ) {
-	      # Deal with the default case of a non-circular chromosome.
-	      $constraint .= " ${tab_syn}.seq_region_start <= $slice_end AND "
-		  . "${tab_syn}.seq_region_end >= $slice_start";
-
-	      if ( $max_len ) {
-		  my $min_start = $slice_start - $max_len;
-		  $constraint .= " AND ${tab_syn}.seq_region_start >= $min_start";
-	      }
-
-	  } else {
-	      # Deal with the case of a circular chromosome.
-	      if ( $slice_start > $slice_end ) {
-		  $constraint .= " ( ${tab_syn}.seq_region_start >= $slice_start "
-		      . "OR ${tab_syn}.seq_region_start <= $slice_end "
-		      . "OR ${tab_syn}.seq_region_end >= $slice_start "
-		      . "OR ${tab_syn}.seq_region_end <= $slice_end "
-		      . "OR ${tab_syn}.seq_region_start > ${tab_syn}.seq_region_end)";
-
-	      } else {
-		  $constraint .= " ((${tab_syn}.seq_region_start <= $slice_end "
-		      . "AND ${tab_syn}.seq_region_end >= $slice_start) "
-		      . "OR (${tab_syn}.seq_region_start > ${tab_syn}.seq_region_end "
-		      . "AND (${tab_syn}.seq_region_start <= $slice_end "
-		      . "OR ${tab_syn}.seq_region_end >= $slice_start)))";
-	      }
-	  }
-
-      }
-
-      my $fs = $self->generic_fetch( $constraint, undef, $slice );
-
-    # features may still have to have coordinates made relative to slice
-    # start
-      $fs = $self->_remap( $fs, $mapper, $slice );
-
-      push @features, @$fs;
-    } else {
-      $mapper = $asma->fetch_by_CoordSystems( $slice_cs, $feat_cs );
-
-      next unless defined $mapper;
-
-      # Get list of coordinates and corresponding internal ids for
-      # regions the slice spans
-      @coords =
-        $mapper->map( $slice_seq_region, $slice_start, $slice_end,
-                      $slice_strand, $slice_cs );
-
-      @coords = grep { !$_->isa('Bio::EnsEMBL::Mapper::Gap') } @coords;
-
-      next COORD_SYSTEM if ( !@coords );
-
-      @ids = map { $_->id() } @coords;
-      #coords are now id rather than name
-      #      @ids = @{$asma->seq_regions_to_ids($feat_cs, \@ids)};
-
-      # When regions are large and only partially spanned
-      # by slice it is faster to to limit the query with
-      # start and end constraints.  Take simple approach:
-      # use regional constraints if there are less than a
-      # specific number of regions covered.
-
-      if ( @coords > $MAX_SPLIT_QUERY_SEQ_REGIONS && ! $slice->isa('Bio::EnsEMBL::LRGSlice') && $slice_cs->name() ne 'lrg') {
-        my $constraint = $orig_constraint;
-        my $id_str = join( ',', @ids );
-        $constraint .= " AND " if ($constraint);
-        $constraint .= "${tab_syn}.seq_region_id IN ($id_str)";
-        my $fs = $self->generic_fetch( $constraint, $mapper, $slice );
-
-        $fs = $self->_remap( $fs, $mapper, $slice );
-
-        push @features, @$fs;
-
-      } else {
-        # do multiple split queries using start / end constraints
-
-        my $max_len = (
-                $self->_max_feature_length()
-                  || $mcc->fetch_max_length_by_CoordSystem_feature_type(
-                                                     $feat_cs, $tab_name
-                  ) );
-
-        my $len = @coords;
-        for ( my $i = 0; $i < $len; $i++ ) {
-          my $constraint = $orig_constraint;
-          $constraint .= " AND " if ($constraint);
-          $constraint .=
-              "${tab_syn}.seq_region_id = "
-            . $ids[$i] . " AND "
-            . "${tab_syn}.seq_region_start <= "
-            . $coords[$i]->end() . " AND "
-            . "${tab_syn}.seq_region_end >= "
-            . $coords[$i]->start();
-
-          if ($max_len) {
-            my $min_start = $coords[$i]->start() - $max_len;
-            $constraint .=
-              " AND ${tab_syn}.seq_region_start >= $min_start";
-          }
-          my $fs = $self->generic_fetch( $constraint, $mapper, $slice );
-
-          $fs = $self->_remap( $fs, $mapper, $slice );
-
-          push @features, @$fs;
-        }
-      } ## end else [ if ( @coords > $MAX_SPLIT_QUERY_SEQ_REGIONS && ! $slice->isa('Bio::EnsEMBL::LRGSlice') && $slice_cs->name() ne 'lrg')]
-    } ## end else [ if ( $feat_cs->equals(...))]
-  } ## end foreach my $feat_cs (@feat_css)
-
-  return \@features;
+  return $features;
 } ## end sub _slice_fetch
 
 
