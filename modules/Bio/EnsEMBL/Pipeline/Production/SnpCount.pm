@@ -6,9 +6,6 @@ use warnings;
 use base qw/Bio::EnsEMBL::Pipeline::Production::StatsGenerator/;
 
 
-use Bio::EnsEMBL::Attribute;
-
-
 
 sub get_feature_count {
   my ($self, $slice, $key) = @_;
