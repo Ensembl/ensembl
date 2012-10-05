@@ -176,7 +176,7 @@ sub get_analysis {
      SELECT distinct display_label, description
      FROM analysis_description 
      WHERE is_current = 1 and logic_name = ? };
-  my ($display_label, $description) = $helper->execute(-SQL => $sql, -PARAMS => [$logic_name]) ;
+  my ($display_label, $description) = @{ $helper->execute(-SQL => $sql, -PARAMS => [$logic_name])->[0] } ;
   my $analysis = new Bio::EnsEMBL::Analysis(
       -logic_name    => $logic_name,
       -display_label => $display_label,
