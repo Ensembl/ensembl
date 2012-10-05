@@ -21,11 +21,15 @@ sub run_script {
   }
   $verbose |=0;
 
+  my $logic_name;
   my $biotype;
   my $object_type;
   my $project;
   my $copy_description_from_object;
 
+  if($file =~ /logic_name[=][>](\S+?)[,]/){
+    $logic_name = $1;
+  }
   if($file =~ /biotype[=][>](\S+?)[,]/){
     $biotype = $1;
   }
@@ -69,7 +73,6 @@ sub run_script {
 	      '-port'     => 4275,
 	      '-user'     => 'ensro',
 	  },
- 
       );
 
   } else {
@@ -105,31 +108,64 @@ sub run_script {
 
   my $object_adaptor = $registry->get_adaptor($species_name, 'core', $object_type);
 
-  my @objects;
+  my @genes;
 
+  if ($verbose) {
+      print STDERR "fetching genes...\n";
+  }
+  
   if ($biotype) {
-      @objects = @{$object_adaptor->fetch_all_by_biotype($biotype)};
+      @genes = @{$object_adaptor->fetch_all_by_biotype($biotype)};
       if ($biotype eq "tRNA") {
 	  # Fetch also all tRNA_pseudogene genes
 	  push (@genes, @{$object_adaptor->fetch_all_by_biotype('tRNA_pseudogene')});
       }
-  } else {
-      @objects = @{$object_adaptor->fetch_all()};
+  } elsif ($logic_name) {
+
+      if ($verbose) {
+	  print STDERR "Fetching by logic_name, $logic_name\n";
+      }
+
+      # This way we get all ncRNA genes (rRNAs, tRNAs, and all ncRNAs which can be under multiple biotypes)
+
+      @genes = @{$object_adaptor->fetch_all_by_logic_name($logic_name)};
   }
-
+  
   my %added_xref;
-  my $direct_count;
+  my $direct_count = 0;
 
-  foreach my $object (@objects) {
+  print STDERR "Fetched " . @genes . " genes\n";
 
-      my @xrefs = @{$object->get_all_DBEntries($external_db_name)};
+  foreach my $object (@genes) {
+
+      #my @xrefs = @{$object->get_all_DBEntries($external_db_name)};
+      # as we use a generic ncRNA source, which maps to multiple external_db_id
+      my @xrefs = @{$object->get_all_DBEntries()};
+
+      # print STDERR "processing " . @xrefs . " xrefs\n";
+
+      if (@xrefs == 0) {
+	  print sTDERR "No xrefs for gene, " . $object->stable() . "!\n";
+      }
 
       foreach my $xref (@xrefs) {
 
 	  my $xref_id;
+	  my $db_name = $xref->dbname();
 
+	  # $source_id maps to nCRNA_EG
+	  # but we need to attach them specifcally
+	  # to RNAmmer, tRNAScan or RFAM
+	  # so get the source based on the db_name from the core db
+	  my $external_source_id = $self->get_source_id_for_source_name($db_name);
+	  
+	  if (! defined $external_source_id) {
+	      warn ("can't get a source_id for external_db, $db_name!\n");
+	      return 1;
+	  }
+	  
 	  if (!exists($added_xref{$xref->primary_id()})) {
-
+	      
 	      my $description = $xref->description();
 
 	      if ($copy_description_from_object && !$description) {
@@ -138,7 +174,7 @@ sub run_script {
                       #populate xref description with object description stripping the [Source: .. part
 		      ($description) = $object->description() =~ /([^\[]+)/;
 		      #trim trailing spaces
-		      $description =~ s/\s+$//; 
+		      $description =~ s/\s+$//;
 		  }
 	      }
 	      
@@ -146,7 +182,7 @@ sub run_script {
 				      version    => $xref->version(),
 				      label      => $xref->display_id(),
 				      desc       => $description,
-				      source_id  => $source_id,
+				      source_id  => $external_source_id,
 				      species_id => $species_id,
 				      info_type  => "DIRECT"} );
 
