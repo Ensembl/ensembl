@@ -71,11 +71,6 @@ sub run {
       next;
     }
 
-    my $variation = $self->production_flow($dba, 'variation');
-    if ($variation) {
-      push(@dbs, [$self->input_id($dba), $variation]);
-    }
-
     my $all = $self->production_flow($dba, 'all');
     if ($self->param('run_all')) {
       $all = 2;
@@ -85,6 +80,10 @@ sub run {
       my $vega = $self->production_flow($dba, 'vega');
       if ($vega) {
         push(@dbs, [$self->input_id($dba), $vega]);
+      }
+      my $variation = $self->production_flow($dba, 'variation');
+      if ($variation) {
+        push(@dbs, [$self->input_id($dba), $variation]);
       }
       my $karyotype = $self->production_flow($dba, 'karyotype');
       if ($karyotype) {
