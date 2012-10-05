@@ -66,23 +66,11 @@ sub store_attrib {
   my $aa          = Bio::EnsEMBL::Registry->get_adaptor($self->param('species'), 'core', 'Attribute');
   my $prod_dba    = $self->get_production_DBAdaptor();
   my $prod_helper = $prod_dba->dbc()->sql_helper();
-  my ($name, $description);
   my $sql = q{
-    SELECT name
+    SELECT name, description
     FROM attrib_type
     WHERE code = ? };
-  my @names = @{ $prod_helper->execute_simple(-SQL => $sql, -PARAMS => [$code]) };
-  foreach my $bit (@names) {
-    $name .= $bit . " ";
-  }
-  $sql = q{
-    SELECT description
-    FROM attrib_type
-    WHERE code = ? };
-  my @descriptions = @{ $prod_helper->execute_simple(-SQL => $sql, -PARAMS => [$code]) };
-  foreach my $bit (@descriptions) {
-    $description .= $bit . " ";
-  }
+  my ($name, $description) = @{$prod_helper->execute(-SQL => $sql, -PARAMS => [$code])->[0]};
   my $attrib = Bio::EnsEMBL::Attribute->new(
     -NAME        => $name,
     -CODE        => $code,
