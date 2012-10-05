@@ -1,7 +1,7 @@
 #!/usr/local/ensembl/bin/perl -w
 
 use Bio::EnsEMBL::Registry;
-use Bio::EnsEMBL::Utils::Exception qw(throw);
+use Bio::EnsEMBL::Utils::Exception qw(throw warning);
 use Getopt::Long;
 
 use strict;
@@ -62,21 +62,31 @@ $sth->bind_columns(\$max_seq_region_id) || die "problem binding";
 $sth->fetch() || die "problem fetching";
 $sth->finish;
 
-$sth = $dba->dbc->prepare("select max(assembly_exception_id) from assembly_exception")
-  || die "Could not get max assembly_exception_id";
-
-$sth->execute || die "problem executing get max assembly_exception_id";
-my $max_assembly_exception_id;
-$sth->bind_columns(\$max_assembly_exception_id) || die "problem binding";
+$sth = $dba->dbc->prepare("select count(assembly_exception_id) from assembly_exception")
+  || die "Could not get number of rows in assembly_exception";
+my $count_assembly_exception_id;
+$sth->execute || die "problem executing";
 $sth->fetch() || die "problem fetching";
 $sth->finish;
 
-print "starting new seq_region at seq_region_id of $max_seq_region_id\n";
+my $max_assembly_exception_id;
+if (defined $count_assembly_exception_id && $count_assembly_exception_id > 0) {
+  $sth = $dba->dbc->prepare("select max(assembly_exception_id) from assembly_exception")
+    || die "Could not get max assembly_exception_id";
 
-if (defined( $max_assembly_exception_id ) ) {
-  print "\nTo reset\ndelete from dna where seq_region_id > $max_seq_region_id\ndelete from seq_region where seq_region_id > $max_seq_region_id\ndelete from assembly_exception where assembly_exception_id > $max_assembly_exception_id\n\n";
+  $sth->execute || die "problem executing get max assembly_exception_id";
+  $sth->bind_columns(\$max_assembly_exception_id) || die "problem binding";
+  $sth->fetch() || die "problem fetching";
+  $sth->finish;
 } else {
-  print "\nNOTE! assembly_exception table is not populated, probably the first patch release.\n\n";
+  warning("The assembly_exception table is empty. This is OK if it's the first ever patch release for a species, otherwise there is a problem.");
+  $max_assembly_exception_id = 0;
+}
+
+print "starting new seq_region at seq_region_id of $max_seq_region_id\n";
+print "\nTo reset\ndelete from dna where seq_region_id > $max_seq_region_id\ndelete from seq_region where seq_region_id > $max_seq_region_id\n";
+if (defined $count_assembly_exception_id && $count_assembly_exception_id > 0) {
+  print "delete from assembly_exception where assembly_exception_id > $max_assembly_exception_id\n\n";
 }
 
 $max_seq_region_id++;
@@ -184,7 +194,10 @@ SCAF: while(<TXT>){
   if(/^#/){
     chomp;
     my @arr = split(/\t/,$_);
-    my $i = 0;
+    # please note: this split was originally on whitespace and not tabs for human. 
+    # the $i was then set to 1 instead of zero as a workaround because the human assembly name was 2 words
+    # however this workaround broke for mouse where the assembly name is one word without whitespace
+    my $i = 0; 
     foreach my $name (@arr){
       $key_to_index{$name} = $i;
       $i++;
@@ -200,7 +213,6 @@ SCAF: while(<TXT>){
   }
   else{
     my @arr = split(/\t/,$_);
-
     my $alt_acc = $arr[$key_to_index{'alt_scaf_acc'}];
     my $alt_name = $arr[$key_to_index{'alt_scaf_name'}];
 
@@ -336,7 +348,7 @@ SCAF: while(<TXT>){
 MAP: while(<MAPPER>){
   next if /^#/; # ignore comments
   chomp;
-  my ($acc, $p_start, $p_end, $part, $type, $contig, $c_start, $c_end, $strand) = split;
+  my ($acc, $p_start, $p_end, $part, $type, $contig, $c_start, $c_end, $strand) = split(/\t/,$_);
 
   # check if this is one of the new patches
   if(!$name_to_seq_id{$acc}){
