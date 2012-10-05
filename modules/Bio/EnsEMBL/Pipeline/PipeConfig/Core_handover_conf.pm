@@ -54,9 +54,7 @@ sub pipeline_analyses {
         -module     => 'Bio::EnsEMBL::Pipeline::Production::ClassSpeciesFactory',
         -parameters => {
           species => $self->o('species'),
-          run_all => $self->o('run_all'),
-          max_run => $self->o('max_run')
-
+          run_all => $self->o('run_all')
         },
         -input_ids  => [ {} ],
         -max_retry_count  => 10,
@@ -133,7 +131,6 @@ sub pipeline_analyses {
         -module     => 'Bio::EnsEMBL::Pipeline::Production::NonCodingDensity',
         -parameters => {
           logic_name => 'noncodingdensity', value_type => 'sum',
-          bin_count => $self->o('bin_count'), max_run => $self->o('max_run'),
         },
         -max_retry_count  => 3,
         -hive_capacity    => 100,
@@ -147,7 +144,6 @@ sub pipeline_analyses {
         -module     => 'Bio::EnsEMBL::Pipeline::Production::PseudogeneDensity',
         -parameters => {
           logic_name => 'pseudogenedensity', value_type => 'sum',
-          bin_count => $self->o('bin_count'), max_run => $self->o('max_run'),
         },
         -max_retry_count  => 3,
         -hive_capacity    => 100,
@@ -160,7 +156,6 @@ sub pipeline_analyses {
         -module     => 'Bio::EnsEMBL::Pipeline::Production::CodingDensity',
         -parameters => {
           logic_name => 'codingdensity', value_type => 'sum',
-          bin_count => $self->o('bin_count'), max_run => $self->o('max_run'),
         },
         -max_retry_count  => 3,
         -hive_capacity    => 100,
@@ -181,7 +176,6 @@ sub pipeline_analyses {
         -module     => 'Bio::EnsEMBL::Pipeline::Production::PercentGC',
         -parameters => {
           table => 'repeat', logic_name => 'percentgc', value_type => 'ratio',
-          bin_count => $self->o('bin_count'), max_run => $self->o('max_run'),
         },
         -max_retry_count  => 3,
         -hive_capacity    => 100,
@@ -194,7 +188,6 @@ sub pipeline_analyses {
         -module     => 'Bio::EnsEMBL::Pipeline::Production::PercentRepeat',
         -parameters => {
           logic_name => 'percentagerepeat', value_type => 'ratio',
-          bin_count => $self->o('bin_count'), max_run => $self->o('max_run'),
         },
         -max_retry_count  => 3,
         -hive_capacity    => 100,
