@@ -109,6 +109,10 @@ sub run_script {
 
   if ($biotype) {
       @objects = @{$object_adaptor->fetch_all_by_biotype($biotype)};
+      if ($biotype eq "tRNA") {
+	  # Fetch also all tRNA_pseudogene genes
+	  push (@genes, @{$object_adaptor->fetch_all_by_biotype('tRNA_pseudogene')});
+      }
   } else {
       @objects = @{$object_adaptor->fetch_all()};
   }
