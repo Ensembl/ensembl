@@ -1028,8 +1028,7 @@ sub species {
   $self->{'_species'} = shift if (@_);
   # get species name from database if not set
   unless ($self->{'_species'}) {
-    $self->{'_species'} = join('_',
-			       split(/ /, $self->get_species_scientific_name));
+    $self->{'_species'} = $self->get_species_scientific_name;
   }
   return $self->{'_species'};
 }
