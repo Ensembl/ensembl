@@ -74,6 +74,15 @@ sub BEGIN {
   isnt($adaptor->fetch_all_by_dbID_list([$gene_ids->[0]])->[0], $cached_obj, 'Checking two objects are no longer the same as the cache is off');
   $adaptor->db()->no_cache(0);
   
+  # Negating no_cache
+  $cached_obj = $adaptor->fetch_by_dbID($gene_ids->[0]);
+  $adaptor->db()->no_cache(1);
+  $adaptor->ignore_cache_override(1);
+  is($adaptor->fetch_by_dbID($gene_ids->[0]), $cached_obj, 'Checking no_cache can be ignored.');
+  $adaptor->db()->no_cache(0);
+  $adaptor->ignore_cache_override(0);
+  
+  
   #hit seq region cache & check we clear that one out as well
   $adaptor->fetch_all_by_Slice($genes->[0]->slice());
   $adaptor->clear_cache();
