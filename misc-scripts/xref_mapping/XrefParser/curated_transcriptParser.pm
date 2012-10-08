@@ -156,9 +156,9 @@ sub run_script {
  
  print "source id is $source_id, curated_source_id is $curated_source_id\n";
 
-  my $sql = 'select distinct t.stable_id, x.display_label, t.status from analysis a, xref x, object_xref ox , external_db e, transcript t where t.analysis_id = a.analysis_id and a.logic_name like "%havana%" and e.external_db_id = x.external_db_id and x.xref_id = ox.xref_id and t.transcript_id = ox.ensembl_id and e.db_name like ?';
+  my $sql = 'select distinct t.stable_id, x.display_label, t.status from analysis a, xref x, object_xref ox , external_db e, transcript t where t.analysis_id = a.analysis_id and a.logic_name like "%havana%" and e.external_db_id = x.external_db_id and x.xref_id = ox.xref_id and t.transcript_id = ox.ensembl_id and ox.ensembl_object_type = "Transcript" and e.db_name like ?';
 
-  my $sql_vega = 'select t.stable_id, x.display_label, t.status from xref x, object_xref ox , external_db e, transcript t where e.external_db_id = x.external_db_id and x.xref_id = ox.xref_id and t.transcript_id = ox.ensembl_id and t.stable_id <> x.display_label and e.db_name like ?';
+  my $sql_vega = 'select t.stable_id, x.display_label, t.status from xref x, object_xref ox , external_db e, transcript t where e.external_db_id = x.external_db_id and x.xref_id = ox.xref_id and t.transcript_id = ox.ensembl_id and t.stable_id <> x.display_label and ox.ensembl_object_type = "Transcript" and e.db_name like ?';
 
 
   my %ott_to_vega_name;
@@ -226,7 +226,7 @@ sub run_script {
  
 
   # need to add gene info to havana_status table
-  $sql = 'select g.stable_id, x.display_label from xref x, object_xref ox , external_db e, gene g where e.external_db_id = x.external_db_id and x.xref_id = ox.xref_id and g.gene_id = ox.ensembl_id and e.db_name like "OTTG"';
+  $sql = 'select g.stable_id, x.display_label from xref x, object_xref ox , external_db e, gene g where e.external_db_id = x.external_db_id and x.xref_id = ox.xref_id and g.gene_id = ox.ensembl_id and e.db_name like "OTTG" and ox.ensembl_object_type = "Gene" ';
 
   $sth = $core_dbc->prepare($sql) || die "Could not prepare for core $sql\n";
   $sth->execute() or croak( $core_dbc->errstr());
