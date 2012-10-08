@@ -98,7 +98,7 @@ sub new {
   Description : This method reads options from a configuration file and parses
                 some commandline options that are common to all scripts (like
                 db connection settings, help, dry-run). Commandline options
-                will override config file settings. 
+                will override config file settings.
 
                 All options will be accessible via $self->param('name').
   Return type : true on success 
@@ -164,7 +164,6 @@ sub parse_common_options {
 # override configured parameter with commandline options
   map { $self->param($_, $h{$_}) } keys %h;
 
-
   return (1) if $self->param('nolog');
 
   # if logpath & logfile are not set, set them here to /ensemblweb/vega_dev/shared/logs/conversion/DBNAME/SCRIPNAME_NN.log
@@ -173,7 +172,7 @@ sub parse_common_options {
   }
   my $dbname = $self->param('dbname');
   $dbname =~ s/^vega_//;
-  if (not (defined($self->param('logpath')))){
+  if (not (defined($self->param('logpath')) )){
     $self->param('logpath', $self->param('log_base_path')."/".$dbname."/" );
   }
   if ( not defined $self->param('logfile') ){
@@ -181,7 +180,7 @@ sub parse_common_options {
     $log =~ s/.pl$//g;
     my $counter;
     for ($counter=1 ; (-e $self->param('logpath')."/".$log."_".sprintf("%03d", $counter).".log"); $counter++){
-#        warn  $self->param('logpath')."/".$log."_".$counter.".log";
+      #      warn  $self->param('logpath')."/".$log."_".$counter.".log";
     }
     $self->param('logfile', $log."_".sprintf("%03d", $counter).".log");
   }
@@ -1028,8 +1027,7 @@ sub species {
   $self->{'_species'} = shift if (@_);
   # get species name from database if not set
   unless ($self->{'_species'}) {
-    $self->{'_species'} = join('_',
-			       split(/ /, $self->get_species_scientific_name));
+    $self->{'_species'} = $self->get_species_scientific_name;
   }
   return $self->{'_species'};
 }
@@ -1217,7 +1215,7 @@ sub lock_log {
 
   Description : Unlock log previously locked by lock_log.
 
-=cut    
+=cut
 
 sub unlock_log {
   my ($self) = @_;
@@ -1337,11 +1335,12 @@ sub log_stamped {
 =cut
 
 sub log_filehandle {
-  my ($self, $mode) = @_;
+  my ($self, $mode, $date) = @_;
   $mode ||= '>';
   $mode = '>>' if ($self->param('logappend'));
   my $fh = \*STDERR;
   if (my $logfile = $self->param('logfile')) {
+    $logfile .= "_$date" if $date;
     if (my $logpath = $self->param('logpath')) {
       unless (-e $logpath) {
 	system("mkdir $logpath") == 0 or
@@ -1386,6 +1385,22 @@ sub filehandle {
   return $fh;
 }
 
+=head2 init_log_date
+
+  Example     : $support->init_log_date;
+  Description : Opens a filehandle to a logfile with the date in the file name
+  Return type : Filehandle - the log filehandle
+  Exceptions  : none
+  Caller      : general
+
+=cut
+
+sub init_log_date {
+  my $self = shift;
+  my $date = $self->date;
+  return $self->init_log($date);
+}
+
 =head2 init_log
 
   Example     : $support->init_log;
@@ -1401,9 +1416,10 @@ sub filehandle {
 
 sub init_log {
   my $self = shift;
+  my $date = shift;
 
   # get a log filehandle
-  my $log = $self->log_filehandle;
+  my $log = $self->log_filehandle(undef,$date);
 
   # print script name, date, user who is running it
   my $hostname = `hostname`;
@@ -1411,7 +1427,7 @@ sub init_log {
   my $script = "$hostname:$Bin/$Script";
   my $user = `whoami`;
   chomp $user;
-  $self->log("Script: $script\nDate: ".$self->date."\nUser: $user\n");
+  $self->log("Script: $script\nDate: ".$self->date_and_time."\nUser: $user\n");
 
   # print parameters the script is running with
   $self->log("Parameters:\n\n");
@@ -1470,7 +1486,7 @@ sub date_and_mem {
 =head2 date
 
   Example     : print "Date: " . $support->date . "\n";
-  Description : Prints a nicely formatted timestamp (YYYY-DD-MM hh:mm:ss)
+  Description : Prints a nicely formatted datetamp (YYYY-DD-MM)
   Return type : String - the timestamp
   Exceptions  : none
   Caller      : general
@@ -1478,6 +1494,20 @@ sub date_and_mem {
 =cut
 
 sub date {
+  return strftime "%Y-%m-%d", localtime;
+}
+
+=head2 date_and_time
+
+  Example     : print "Date: " . $support->date . "\n";
+  Description : Prints a nicely formatted timestamp (YYYY-DD-MM hh:mm:ss)
+  Return type : String - the timestamp
+  Exceptions  : none
+  Caller      : general
+
+=cut
+
+sub date_and_time {
   return strftime "%Y-%m-%d %T", localtime;
 }
 
