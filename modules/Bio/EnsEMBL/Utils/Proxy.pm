@@ -135,6 +135,7 @@ sub isa {
 
 sub can {
   my ($self, $method) = @_;
+  
   my $super_can = $self->SUPER::can($method);
   return $super_can if $super_can;
   my $proxy_can = $self->__proxy()->can($method);
