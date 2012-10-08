@@ -135,9 +135,11 @@ sub isa {
 
 sub can {
   my ($self, $method) = @_;
-  return 1 if $self->SUPER::can($method);
-  return 1 if $self->__proxy()->can($method);
-  return 0;
+  my $super_can = $self->SUPER::can($method);
+  return $super_can if $super_can;
+  my $proxy_can = $self->__proxy()->can($method);
+  return $proxy_can if $proxy_can;
+  return;
 }
 
 =head2 DESTROY
