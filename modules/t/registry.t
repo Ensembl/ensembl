@@ -55,6 +55,7 @@ TMPL
   };
   
   if($threads) {
+    $ENV{RUNTESTS_HARNESS_NORESTORE} = 1;
     my @thrds;
     foreach my $thr (0..9) {
       push(@thrds, threads->create($call));
