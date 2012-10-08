@@ -48,8 +48,12 @@ sub run_script {
     $source_prefix = "ZFIN_ID";
     $host = "ens-staging1";
   }
+  if($species_name eq "sus_scrofa" ){
+    $source_prefix = "PIGGY";
+    $host = "ens-staging2";
+  }
   else{
-    die "Species is $species_name and is not homo_sapines, mus_musculus or danio_rerio the only three valid species\n";
+    die "Species is $species_name and is not homo_sapiens, mus_musculus, danio_rerio or sus_scrofa, the only four valid species\n";
   }
 
   if($my_args =~ /host[=][>](\S+?)[,]/){
