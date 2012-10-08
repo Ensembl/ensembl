@@ -866,7 +866,6 @@ sub find_max_ids{
   $sth->execute();
   $sth->bind_columns(\$max_xref_id);
   $sth->fetch;
- 
 
   print "MAX xref_id = $max_xref_id MAX object_xref_id = $max_object_xref_id, max_object_xref from identity_xref = $max_object_xref_id2\n";
   return $max_object_xref_id, $max_xref_id;
@@ -1319,7 +1318,7 @@ sub get_clone_name{
   my $gene= $ga->fetch_by_dbID($gene_id);
   my $slice = $gene->slice->sub_Slice($gene->start,$gene->end,$gene->strand);
   my $len = 0;
-  if($dbname ne "ZFIN_ID" && $dbname ne 'MGI'){
+  if($dbname ne "ZFIN_ID" && $dbname ne 'MGI' && $dbname ne "PIGGY"){
     my $clone_projection = $slice->project('clone'); 
     foreach my $seg (@$clone_projection) {
       my $clone = $seg->to_Slice();
@@ -1342,7 +1341,7 @@ sub get_clone_name{
       }
     }
     $len = 0;
-    if($dbname ne "ZFIN_ID" && $dbname ne 'MGI'){
+    if($dbname ne "ZFIN_ID" && $dbname ne 'MGI' && $dbname ne "PIGGY"){
       my $clone_projection = $super->project('clone');
       foreach my $seg (@$clone_projection) {
 	my $clone = $seg->to_Slice();
