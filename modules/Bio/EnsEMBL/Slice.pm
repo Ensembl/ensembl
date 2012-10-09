@@ -1794,6 +1794,31 @@ sub get_all_somatic_VariationFeatures {
   }
 }
 
+=head2 get_all_somatic_VariationFeatures_by_source
+
+    Args        : $source [optional]
+    Description : Returns all somatic variation features, from a defined source name (e.g.'COSMIC'), 
+                  on this slice. This function will only work correctly if the variation database
+                  has been attached to the core database.
+    ReturnType  : listref of Bio::EnsEMBL::Variation::VariationFeature
+    Exceptions  : none
+    Status      : Stable
+
+=cut
+
+sub get_all_somatic_VariationFeatures_by_source {
+  my $self     = shift;
+  my $source   = shift;
+  my $constraint = (defined($source)) ? " s.name='$source' " : undef;
+  
+  if (my $vf_adaptor = $self->_get_VariationFeatureAdaptor) {
+    return $vf_adaptor->fetch_all_somatic_by_Slice_constraint($self, $constraint);
+  }
+  else {
+    return [];
+  }
+}
+
 =head2 get_all_VariationFeatures_with_annotation
 
     Arg [1]     : $variation_feature_source [optional]
