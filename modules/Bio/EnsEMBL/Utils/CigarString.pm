@@ -41,10 +41,10 @@ Therefore, in the new branch sequence alignments are now stored as
 ungapped alignments in the cigar line format (where CIGAR stands for
 Concise Idiosyncratic Gapped Alignment Report).
 
-In the cigar line format alignments are sotred as follows:
+In the cigar line format alignments are stored as follows:
 
   M: Match
-  D: Deletino
+  D: Deletion
   I: Insertion
 
 An example of an alignment for a hypthetical protein match is shown
@@ -55,9 +55,10 @@ below:
               PG    P    G     GP   R      PLGP
   Sbjct: 1672 PGTP*TPLVPLGPWVPLGPSSPR--LPSGPLGPTD...
 
-protein_align_feature table as the following cigar line:
+This would be stored in the protein_align_feature table as the following
+cigar line:
 
-  7M4D12M2I2MD7M 
+  7M4D12M2I2MD7M
 
 =cut
 

@@ -37,33 +37,40 @@ implmentation for alignment features
     -cigar_string => '10M3D5M2I'
   );
 
-  Alternatively if you have an array of ungapped features
+  where $analysis is a Bio::EnsEMBL::Analysis object.
 
-  my $feat =
-    new Bio::EnsEMBL::DnaPepAlignFeature( -features => \@features );
+  Alternatively if you have an array of ungapped features:
 
-  Where @features is an array of Bio::EnsEMBL::FeaturePair
+    my $feat =
+      new Bio::EnsEMBL::DnaPepAlignFeature( -features => \@features );
 
-  There is a method to manipulate the cigar_string into ungapped features
+  where @features is an array of Bio::EnsEMBL::FeaturePair objects.
 
-  my @ungapped_features = $feat->ungapped_features();
+  There is a method to (re)create ungapped features from the cigar_string:
 
-  This converts the cigar string into an array of Bio::EnsEMBL::FeaturePair
+    my @ungapped_features = $feat->ungapped_features();
 
-  $analysis is a Bio::EnsEMBL::Analysis object
+  where @ungapped_features is an array of Bio::EnsEMBL::FeaturePair's.
 
-  Bio::EnsEMBL::Feature methods can be used
-  Bio::EnsEMBL::FeaturePair methods can be used
-
-  The cigar_string contains the ungapped pieces that make up the gapped 
-  alignment
-
-  It looks like: n Matches [ x Deletes or Inserts m Matches ]*
-  but a bit more condensed like "23M4I12M2D1M"
-  and evenmore condensed as you can ommit 1s "23M4I12M2DM"
+  Bio::EnsEMBL::BaseAlignFeature inherits from:
+    Bio::EnsEMBL::FeaturePair, which in turn inherits from:
+      Bio::EnsEMBL::Feature,
+  thus methods from both parent classes are available.
 
 
-  To make things clearer this is how a blast HSP would be parsed
+  The cigar_string is a condensed representation of the matches and gaps
+  which make up the gapped alignment (where CIGAR stands for
+  Concise Idiosyncratic Gapped Alignment Report).
+
+  CIGAR format is: n <matches> [ x <deletes or inserts> m <matches> ]*
+  where M = match, D = delete, I = insert; n, m are match lengths;
+  x is delete or insert length.
+
+  Spaces are omitted, thus: "23M4I12M2D1M"
+  as are counts for any lengths of 1, thus 1M becomes M: "23M4I12M2DM"
+
+
+  To make things clearer this is how a blast HSP would be parsed:
 
   >AK014066
          Length = 146
@@ -81,18 +88,44 @@ implmentation for alignment features
                   H P+P P+
   Sbjct:    65 PLTHTPTPTPT 75
 
-  The alignment goes from 267 to 479 in sequence 1 and 7 to 75 in sequence 2 
-  and the strand is -1.
+  The alignment goes from 479 down to 267 in the query sequence on the reverse
+  strand, and from 7 to 75 in the subject sequence.
 
-  The alignment is made up of the following ungapped pieces :
+  The alignment is made up of the following ungapped pieces:
 
-  sequence 1 start 447 , sequence 2 start 7  , match length 33 , strand -1
-  sequence 1 start 417 , sequence 2 start 18 , match length 27 , strand -1
-  sequence 1 start 267 , sequence 2 start 27 , match length 137 , strand -1
+  query_seq start 447 , sbjct_seq hstart  7 , match length  33 , strand -1
+  query_seq start 417 , sbjct_seq hstart 18 , match length  27 , strand -1
+  query_seq start 267 , sbjct_seq hstart 27 , match length 147 , strand -1
 
-  These ungapped pieces are made up into the following string (called a cigar 
-  string) "33M3I27M3I137M" with start 267 end 479 strand -1 hstart 7 hend 75 
-  hstrand 1 and feature type would be DnaPepAlignFeature
+  When assembled into a DnaPepAlignFeature where:
+    (seqname, start, end, strand) refer to the query sequence,
+    (hseqname, hstart, hend, hstrand) refer to the subject sequence,
+  these ungapped pieces are represented by the cigar string:
+    33M3I27M3I147M
+  with start 267, end 479, strand -1, and hstart 7, hend 75, hstrand 1.
+
+=head1 CAVEATS
+
+  AlignFeature cigar strings have the opposite 'sense'
+  ('D' and 'I' swapped) compared with Exonerate cigar strings.
+
+  Exonerate modules in Bio::EnsEMBL::Analysis use this convention:
+
+   The longer genomic sequence specified by:
+      exonerate:    target
+      AlignFeature: (sequence, start, end, strand)
+
+   A shorter sequence (such as EST or protein) specified by:
+      exonerate:    query
+      AlignFeature: (hsequence, hstart, hend, hstrand)
+
+  The resulting AlignFeature cigar strings have 'D' and 'I'
+  swapped compared with the Exonerate output, i.e.:
+
+    exonerate:    M 123 D 1 M 11 I 1 M 39
+    AlignFeature: 123MI11MD39M
+
+=head1 METHODS
 
 =cut
 
@@ -117,7 +150,7 @@ use strict;
                SeqFeature superclasses.  Either cigar_string or a list
                of ungapped features should be provided - not both.
   Example    : $baf = new BaseAlignFeatureSubclass(-cigar_string => '3M3I12M');
-  Description: Creates a new BaseAlignFeature using either a cigarstring or
+  Description: Creates a new BaseAlignFeature using either a cigar string or
                a list of ungapped features.  BaseAlignFeature is an abstract
                baseclass and should not actually be instantiated - rather its
                subclasses should be.
@@ -185,11 +218,15 @@ sub new_fast {
 
   Arg [1]    : string $cigar_string
   Example    : $feature->cigar_string( "12MI3M" );
-  Description: get/set for attribute cigar_string
-               cigar_string describes the alignment. "xM" stands for 
-               x matches (mismatches), "xI" for inserts into query sequence 
-               (thats the ensembl sequence), "xD" for deletions 
-               (inserts in the subject). an "x" that is 1 can be omitted.
+  Description: get/set for attribute cigar_string.
+               cigar_string describes the alignment:
+                 "xM" stands for x matches (or mismatches),
+                 "xI" for x inserts into the query sequence,
+                 "xD" for x deletions from the query sequence
+                 where the query sequence is specified by (seqname, start, ...)
+                 and the subject sequence by (hseqname, hstart, ...).
+               An "x" that is 1 can be omitted.
+               See the SYNOPSIS for an example.
   Returntype : string
   Exceptions : none
   Caller     : general
@@ -545,7 +582,7 @@ sub _parse_cigar {
 =head2 _parse_features
 
   Arg  [1]   : listref Bio::EnsEMBL::FeaturePair $ungapped_features
-  Description: creates internal cigarstring and start,end hstart,hend
+  Description: creates internal cigar_string and start,end hstart,hend
                entries.
   Returntype : none, fills in values of self
   Exceptions : argument list undergoes many sanity checks - throws under many
