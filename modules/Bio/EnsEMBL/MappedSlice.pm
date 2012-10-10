@@ -565,15 +565,21 @@ sub seq {
       
       # indel / gap
       else {
-      
-        # if there's a gap here aswell, add corresponding sequence
-        if($ref_coord->gap_length > 0) {
-          $ms_seq .= substr($seq, $start, $ref_coord->gap_length);
-          $start += $ref_coord->gap_length;
+        
+        if($ref_coord->isa('Bio::EnsEMBL::Mapper::Gap')) {
+          $ms_seq .= '-' x $ref_coord->length();
         }
         
-        # add "-" to the sequence
-        $ms_seq .= '-' x ($ref_coord->length() - $ref_coord->gap_length());
+        else {
+          # if there's a gap here aswell, add corresponding sequence
+          if($ref_coord->gap_length > 0) {
+            $ms_seq .= substr($seq, $start, $ref_coord->gap_length);
+            $start += $ref_coord->gap_length;
+          }
+          
+          # add "-" to the sequence
+          $ms_seq .= '-' x ($ref_coord->length() - $ref_coord->gap_length());
+        }
       }
     }
   }
