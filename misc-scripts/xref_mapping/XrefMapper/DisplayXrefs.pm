@@ -97,22 +97,6 @@ SELECT object_xref_id
    WHERE ox_status = 'DUMP_OUT' AND label REGEXP '^LOC[[:digit:]]+'
 LOCP
 
-$ignore{'Uniprot_genename'} =<<IEG;
-SELECT DISTINCT ox.object_xref_id
-  FROM object_xref ox, dependent_xref dx, 
-       xref xmas, xref xdep, 
-       source smas, source sdep
-    WHERE ox.xref_id = dx.dependent_xref_id AND
-          dx.dependent_xref_id = xdep.xref_id AND
-          dx.master_xref_id = xmas.xref_id AND
-          xmas.source_id = smas.source_id AND
-          xdep.source_id = sdep.source_id AND
-          smas.name like "Uniprot/SPTREMBL" AND
-          smas.status = "LOWEVIDENCE" AND
-          sdep.name like "Uniprot_genename" AND
-          ox.ox_status = "DUMP_OUT"      
-IEG
-
   return [\@list,\%ignore];
 
 }
@@ -171,6 +155,11 @@ sub genes_and_transcripts_attributes_set{
   else{
     $self->set_display_xrefs();
   }	
+  if ($self->mapper->can("transcript_names_from_gene")) {
+    $self->mapper->transcript_names_from_gene();
+  } else {
+    $self->transcript_names_from_gene();
+  }
   my $sth_stat = $self->xref->dbc->prepare("insert into process_status (status, date) values('display_xref_done',now())");
   $sth_stat->execute();
   $sth_stat->finish;
@@ -737,6 +726,72 @@ DXS
 }
 
 
+sub transcript_names_from_gene {
+  my $self = shift;
+
+  print "Assigning transcript names from gene names\n" if ($self->verbose);
+
+  my $reset_sth = $self->core->dbc->prepare("UPDATE transcript SET display_xref_id = null");
+  $reset_sth->execute();
+  $reset_sth->finish;
+
+  my $xref_id_sth = $self->core->dbc->prepare("SELECT max(xref_id) FROM xref");
+  my $ox_id_sth = $self->core->dbc->prepare("SELECT max(object_xref_id) FROM object_xref");
+  my $del_xref_sth = $self->core->dbc->prepare("DELETE FROM xref WHERE display_label REGEXP '-2[0-9]{2}\$'");
+  my $reuse_xref_sth = $self->core->dbc->prepare("SELECT xref_id FROM xref x WHERE external_db_id = ? AND display_label = ? AND version = 0 AND description = ? AND info_type = 'MISC' AND info_text = 'via gene name'");
+  my $del_ox_sth = $self->core->dbc->prepare("DELETE ox FROM object_xref ox LEFT JOIN xref x ON x.xref_id = ox.xref_id WHERE isnull(x.xref_id)");
+  my $ins_xref_sth = $self->core->dbc->prepare("INSERT into xref (xref_id, external_db_id, dbprimary_acc, display_label, version, description, info_type, info_text) values(?, ?, ?, ?, 0, ?, 'MISC', 'via gene name')");
+  my $ins_ox_sth = $self->core->dbc->prepare("INSERT into object_xref (object_xref_id, ensembl_id, ensembl_object_type, xref_id) values(?, ?, 'Transcript', ?)");
+  my $update_tran_sth = $self->core->dbc->prepare("UPDATE transcript t SET t.display_xref_id= ? WHERE t.transcript_id=?");
+
+  my $get_genes = $self->core->dbc->prepare("SELECT g.gene_id, x.external_db_id, x.dbprimary_acc, x.display_label, x.description FROM gene g, xref x where g.display_xref_id = x.xref_id");
+  my $get_transcripts = $self->core->dbc->prepare("SELECT transcript_id FROM transcript WHERE gene_id = ? ORDER BY seq_region_start, seq_region_end");
+
+  $get_genes->execute();
+  my ($gene_id, $external_db_id, $acc, $label, $description, $transcript_id, $xref_id, $ox_id, $ext, $reuse_xref_id);
+  $get_genes->bind_columns(\$gene_id, \$external_db_id, \$acc, \$label, \$description);
+  $xref_id_sth->execute();
+  $xref_id_sth->bind_columns(\$xref_id);
+  $xref_id_sth->fetch();
+  $ox_id_sth->execute();
+  $ox_id_sth->bind_columns(\$ox_id);
+  $ox_id_sth->fetch();
+  $del_xref_sth->execute();
+  while ($get_genes->fetch()) {
+    $ext = '201';
+    $get_transcripts->execute($gene_id);
+    $get_transcripts->bind_columns(\$transcript_id);
+    while ($get_transcripts->fetch) {
+      $xref_id++;
+      $ox_id++;
+      $reuse_xref_sth->execute($external_db_id, $label . '-' . $ext, $description);
+      $reuse_xref_sth->bind_columns(\$reuse_xref_id);
+      if ($reuse_xref_sth->fetch()) {
+        $ins_ox_sth->execute($ox_id, $transcript_id, $reuse_xref_id);
+        $update_tran_sth->execute($reuse_xref_id, $transcript_id);
+      } else {
+        $ins_xref_sth->execute($xref_id, $external_db_id, $acc. "-" . $ext, $label . "-" . $ext, $description);
+        $ins_ox_sth->execute($ox_id, $transcript_id, $xref_id); 
+        $update_tran_sth->execute($xref_id, $transcript_id);
+      }
+      $ext++;
+    }
+  }
+
+  $del_xref_sth->finish();
+  $del_ox_sth->execute();
+  $del_ox_sth->finish();
+  $reuse_xref_sth->finish();
+  $xref_id_sth->finish();
+  $ox_id_sth->finish();
+  $get_genes->finish();
+  $get_transcripts->finish();
+  $ins_xref_sth->finish();
+  $ins_ox_sth->finish();
+  $update_tran_sth->finish();
+}
+
+
 # Remove after sure everything is cool
 sub check_label{
   my $self  = shift;
@@ -793,6 +848,7 @@ sub set_source_id_to_external_name {
 sub set_gene_descriptions{
   my $self = shift;
   my $only_those_not_set = shift || 0;
+  my $sql;
 
   my $update_gene_desc_sth =  $self->core->dbc->prepare("UPDATE gene SET description = ? where gene_id = ?");
 
@@ -805,7 +861,7 @@ sub set_gene_descriptions{
   my %ignore;
   if($only_those_not_set){
     print "Only setting those not already set\n";
-    my $sql = "select internal_id from gene_stable_id where desc_set = 1";
+    $sql = "select internal_id from gene_stable_id where desc_set = 1";
     my $sql_sth = $self->xref->dbc->prepare($sql);
     $sql_sth->execute;
     my $id;
@@ -821,7 +877,7 @@ sub set_gene_descriptions{
   ##########################################
 
   my %name_to_external_name;
-  my $sql = "select external_db_id, db_name, db_display_name from external_db";
+  $sql = "select external_db_id, db_name, db_display_name from external_db";
   my $sth = $self->core->dbc->prepare($sql);
   $sth->execute();
   my ($id, $name, $display_name);
