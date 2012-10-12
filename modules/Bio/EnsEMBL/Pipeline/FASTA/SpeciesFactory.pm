@@ -67,7 +67,7 @@ package Bio::EnsEMBL::Pipeline::FASTA::SpeciesFactory;
 use strict;
 use warnings;
 
-use base qw/Bio::EnsEMBL::Pipeline::SpeciesFactory/;
+use base qw/Bio::EnsEMBL::Pipeline::SpeciesFactory Bio::EnsEMBL::Pipeline::FASTA::Base/;
 
 use Bio::EnsEMBL::Registry;
 
