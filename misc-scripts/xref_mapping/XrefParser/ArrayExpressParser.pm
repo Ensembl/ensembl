@@ -31,6 +31,11 @@ sub run_script {
 
   my $project;
   my $wget = "";
+  my $user  ="ensro";
+  my $host;
+  my $port = 3306;
+  my $dbname;
+  my $pass;
 
   if($file =~ /project[=][>](\S+?)[,]/){
     $project = $1;
@@ -38,6 +43,22 @@ sub run_script {
   if($file =~ /wget[=][>](\S+?)[,]/){
     $wget = $1;
   }
+  if($file =~ /host[=][>](\S+?)[,]/){
+    $host = $1;
+  }
+  if($file =~ /port[=][>](\S+?)[,]/){
+    $port =  $1;
+  }
+  if($file =~ /dbname[=][>](\S+?)[,]/){
+    $dbname = $1;
+  }
+  if($file =~ /pass[=][>](\S+?)[,]/){
+    $pass = $1;
+  }
+  if($file =~ /user[=][>](\S+?)[,]/){
+    $user = $1;
+  }
+
 
 
   my $ua = LWP::UserAgent->new();
@@ -62,21 +83,37 @@ sub run_script {
       return;
   }
 
+  my $species_name = $species_id_to_names{$species_id}[0];
+
   #get stable_ids from core and create xrefs 
 
   my $registry = "Bio::EnsEMBL::Registry";
+  my $gene_adaptor;
 
   if ($project eq 'ensembl') {
+      if ($host) {
+          my $db = Bio::EnsEMBL::DBSQL::DBAdaptor->new(
+              '-host'     => $host,
+              '-user'     => $user,
+              '-pass'     => $pass,
+              '-dbname'   => $dbname,
+              '-species'  => $species_name,
+              '-group'    => 'core',
+       );
+      $gene_adaptor = $db->get_GeneAdaptor();
+      } else {
       $registry->load_registry_from_multiple_dbs( 
 	  {
 	      '-host'    => 'ens-staging1',
 	      '-user'    => 'ensro',
 	  },
-	  {
-	      '-host'     => 'ens-staging2',
-	      '-user'     => 'ensro',
-	  },
+          {
+              '-host'     => 'ens-staging2',
+              '-user'     => 'ensro',
+          }
        );
+       $gene_adaptor = $registry->get_adaptor($species_name, 'core', 'Gene');
+     }
   } elsif ($project eq 'ensemblgenomes') {
 
       $registry->load_registry_from_multiple_dbs( 
@@ -92,15 +129,10 @@ sub run_script {
 	  },
  
       );
-
+      $gene_adaptor = $registry->get_adaptor($species_name, 'core', 'Gene');
   } else {
       die("Missing or unsupported project value. Supported values: ensembl, ensemblgenomes");
   }
-
-  #get the species name
- 
-  my $species_name = $species_id_to_names{$species_id}[0];
-  my $gene_adaptor = $registry->get_adaptor($species_name, 'core', 'Gene');
 
   my @stable_ids = map { $_->stable_id } @{$gene_adaptor->fetch_all()};
 
