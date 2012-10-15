@@ -91,7 +91,7 @@ sub run_script {
   my $vega_dbc;
   my $core_dbc;
   if(defined($vdbname)){
-    print "Using $host $vdbname for Vega and $cdbname for Core\n";
+    print "Using $vhost $vdbname for Vega\n";
 
     my $vega_db =  XrefParser::Database->new({ host   => $vhost,
 					       port   => $vport,
@@ -104,7 +104,21 @@ sub run_script {
       print "Problem could not open connection to $vhost, $vport, $vuser, $vdbname, $vpass\n";
       return 1;
     }
+  } else {
+    $reg->load_registry_from_db(
+                                -host => $host,
+                                -user => $user,
+                                -species => $species_name);
 
+    $vega_dbc = $reg->get_adaptor($species_name,"vega","slice");
+    if(!defined($vega_dbc)){
+      print "Could not connect to $species_name vega database using load_registry_from_db $host $user\n";
+      return 1;
+    }
+    $vega_dbc = $vega_dbc->dbc;
+  }
+
+   if (defined($cdbname)){
     my $core_db =  XrefParser::Database->new({ host   => $chost,
 					       port   => $cport,
 					       user   => $cuser,
@@ -115,21 +129,12 @@ sub run_script {
       print "Problem could not open connectipn to $chost, $cport, $cuser, $cdbname, $cpass\n";
       return 1;
     }
-
-  }
-  else{
-
+  } else{
     $reg->load_registry_from_db(
                                 -host => $host,
                                 -user => $user,
 			        -species => $species_name);
 
-    $vega_dbc = $reg->get_adaptor($species_name,"vega","slice");
-    if(!defined($vega_dbc)){
-      print "Could not connect to $species_name vega database using load_registry_from_db $host $user\n";
-      return 1;
-    }
-    $vega_dbc = $vega_dbc->dbc;
     $core_dbc = $reg->get_adaptor($species_name,"core","slice");
     if(!defined($core_dbc)){
       print "Could not connect to $species_name core database using load_registry_from_db $host $user\n";
