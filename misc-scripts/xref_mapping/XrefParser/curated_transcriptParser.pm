@@ -27,47 +27,33 @@ sub run_script {
 
   my ($type, $my_args) = split(/:/,$file);
   
-  my $host;
+  my ($host, $source_prefix);
   my $user = "ensro";
 
   if($my_args =~ /user[=][>](\S+?)[,]/){
     $user = $1;
   }
-  my %id2name = $self->species_id2name;
-  my $species_name = $id2name{$species_id}[0];
-  my $source_prefix;
-  if($species_name eq "homo_sapiens" ){
-    $source_prefix = "HGNC";
-    $host = "ens-staging1";
-  }
-  elsif($species_name eq "mus_musculus" ){
-    $source_prefix = "MGI";
-    $host = "ens-staging2";
-  }
-  elsif($species_name eq "danio_rerio" ){
-    $source_prefix = "ZFIN_ID";
-    $host = "ens-staging1";
-  }
-  if($species_name eq "sus_scrofa" ){
-    $source_prefix = "PIGGY";
-    $host = "ens-staging2";
-  }
-  else{
-    die "Species is $species_name and is not homo_sapiens, mus_musculus, danio_rerio or sus_scrofa, the only four valid species\n";
-  }
-
   if($my_args =~ /host[=][>](\S+?)[,]/){
     $host = $1;
   }
-  my $vuser  ="ensro";
+  if ($my_args =~ /source[=][>](\S+?)[,]/){
+    $source_prefix = $1;
+  }
+  my %id2name = $self->species_id2name;
+  my $species_name = $id2name{$species_id}[0];
+  if (!$source_prefix){
+    die "Species is $species_name and is not homo_sapiens, mus_musculus, danio_rerio or sus_scrofa, the only four valid species\n";
+  }
+
+  my $vuser = "ensro";
   my $vhost;
-  my $vport;
+  my $vport = 3306;
   my $vdbname;
   my $vpass;
  
   my $cuser  ="ensro";
   my $chost;
-  my $cport;
+  my $cport = 3306;
   my $cdbname;
   my $cpass;
 
