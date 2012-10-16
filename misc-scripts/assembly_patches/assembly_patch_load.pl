@@ -9,17 +9,17 @@ use strict;
 my $assembly_acc;
 my $assembly_name;
 my $pass;
-my $mapping_file = "./data/alt.scaf.agp";
-my $txt_file     = "./data/alt_scaffold_placement.txt";
+my $mapping_file   = "./data/alt.scaf.agp";
+my $txt_file       = "./data/alt_scaffold_placement.txt";
 my $patchtype_file = "./data/patch_type";
 my $dbname;
 my $host;
 my $user;
-my $port = 3306;
+my $port            = 3306;
 my $scaf_syn_ext_id = 700;
-my $central_coord_system = 'supercontig';
+my $central_coord_system;
 
-&GetOptions(
+GetOptions(
             'pass=s'            => \$pass,
             'mapping_file=s'    => \$mapping_file,
             'txt_file=s'        => \$txt_file,
@@ -31,6 +31,7 @@ my $central_coord_system = 'supercontig';
             'scaf_syn_ext_id=n' => \$scaf_syn_ext_id,
             'assembly_name=s'   => \$assembly_name,
             'assembly_acc=s'    => \$assembly_acc,
+            'coord_system=s'    => \$central_coord_system
            );
 
 #needed to update the meta table
@@ -376,12 +377,18 @@ MAP: while(<MAPPER>){
       $get_seq_id_sth->execute($contig);
       $get_seq_id_sth->bind_columns(\$cmp_seq_id);
       $get_seq_id_sth->fetch;
+
       if(!defined($cmp_seq_id)){
         print "Could not get seq_region_id for $contig trying pfetch\n";
-        my $out = system("pfetch $contig  > ./$contig.fa");
-        # awful hack for GRC patch 8 assembly problem:
-        if ($contig eq "FP700111.21") {
-          $out = system("wget 'http://www.ebi.ac.uk/cgi-bin/sva/sva.pl?query=FP700111.21&snapshot=&save_id=Save&format=FASTA&entry_id=1415709343' -O - -o wget.log | tr '[:lower:]' '[:upper:]' > ./$contig.fa");
+        my $out = `pfetch $contig`;
+
+        if ($out =~ /no match/) {
+          print "Could not get seq_region_id for $contig trying eutils\n";
+          $out = system("wget -o $contig.wget.log -O $contig.fa 'http://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=nuccore&id=$contig&rettype=fasta&retmode=text' > ./$contig.fa");
+        } else {
+          open (CONTIGFILE, ">$contig.fa");
+          print CONTIGFILE $out;
+          close (CONTIGFILE); 
         }
         my $contig_seq ="";
         open(FA,"<./$contig.fa") || die "Could not open file ./$contig.fa\n";
