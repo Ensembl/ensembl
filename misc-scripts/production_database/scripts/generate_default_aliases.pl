@@ -7,6 +7,7 @@ use Getopt::Long qw( :config no_ignore_case );
 use Pod::Usage;
 use POSIX;
 use Bio::EnsEMBL::DBSQL::DBConnection;
+use Bio::EnsEMBL::Utils::Exception qw(throw);
 
 sub run {
   my ($class) = @_;
@@ -112,6 +113,9 @@ SQL
     $dbc->sql_helper()->execute_no_return(-SQL => $sql, -PARAMS => [$species], -CALLBACK => sub {
       my ($row) = @_;
       my ($id, $common_name, $web_name, $scientific_name, $production_name, $url_name) = @{$row};
+      if (!$common_name) {
+        throw("no common name specified, exiting");
+      }
       if(!exists $species{$id}) {
         $species{$id} = {
           id => $id,
@@ -156,8 +160,13 @@ sub _aliases {
 sub _automatic_aliases {
   my ($self, $species) = @_;
   my $production_name = $species->{production};
+  my $common_name = lc($species->{common});
+  my $web_name = lc($species->{web});
     
   my $automatic_aliases = {};
+  $automatic_aliases->{$common_name} = 1;
+  $automatic_aliases->{$web_name} = 1;
+
   # *** Assume homo_sapiens ***
   my $alias = $production_name;
   
