@@ -195,24 +195,6 @@ sub new {
   return $seq1;
 } ## end sub new
 
-=head2 new_fast
-
-  Arg [1]    : hashref to be blessed
-  Description: Construct a new Bio::EnsEMBL::Slice using the hashref.
-  Exceptions : none
-  Returntype : Bio::EnsEMBL::CircularSlice
-  Caller     : general
-  Status     : Stable
-
-=cut
-
-sub new_fast {
-  my $class = shift;
-  my $hashref = shift;
-  my $self = bless $hashref, $class;
-  weaken($self->{adaptor})  if ( ! isweak($self->{adaptor}) );
-  return $self;
-}
 
 =head2 centrepoint
 

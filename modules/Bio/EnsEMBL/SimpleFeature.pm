@@ -99,27 +99,6 @@ sub new {
 }
 
 
-=head2 new_fast
-
-  Arg [1]    : hashref to be blessed
-  Description: Construct a new Bio::EnsEMBL::Feature using the hashref.
-  Exceptions : none
-  Returntype : Bio::EnsEMBL::Feature
-  Caller     : general, subclass constructors
-  Status     : Stable
-
-=cut
-
-
-sub new_fast {
-  my $class = shift;
-  my $hashref = shift;
-  my $self = bless $hashref, $class;
-  weaken($self->{adaptor})  if ( ! isweak($self->{adaptor}) );
-  return $self;
-}
-
-
 =head2 display_label
 
   Arg [1]    : (optional) string $value
