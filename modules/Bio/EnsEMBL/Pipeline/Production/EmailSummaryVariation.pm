@@ -12,15 +12,19 @@ sub fetch_input {
   
   my $snp_density = $self->jobs('SnpDensity');
   my $snp_count = $self->jobs('SnpCount');
+  my $nonsense = $self->jobs('NonSense');
     
   my @args = (
     $snp_density->{successful_jobs},
     $snp_density->{failed_jobs},
     $snp_count->{successful_jobs},
     $snp_count->{failed_jobs},
+    $nonsense->{successful_jobs},
+    $nonsense->{failed_jobs},
     $self->failed(),
     $self->summary($snp_density),
     $self->summary($snp_count),
+    $self->summary($nonsense),
   );
   
   my $msg = sprintf(<<'MSG', @args);
@@ -28,12 +32,15 @@ Your FASTA Pipeline has finished. We have:
 
   * %d species with snp density (%d failed)
   * %d species with snp count (%d failed)
+  * %d species with nonsense attributes (%d failed)
 
 %s
 
 ===============================================================================
 
 Full breakdown follows ...
+
+%s
 
 %s
 
