@@ -23,7 +23,7 @@ sub run_script {
   $verbose |=0;
 
   my $user = "ensro";
-  my $host = "ens-staging1";
+  my $host;
   my $port = "3306";
   my $dbname;
   my $pass;
