@@ -27,6 +27,13 @@ sub get_canonical_name{
    return "ZFIN_ID";
 }
 
+# Not running transcript_names_from_gene for merged species
+# as this is already been done in the OfficialNaming mapper
+sub transcript_names_from_gene {
+  return;
+}
+
+
 sub species_specific_pre_attributes_set{
   my $self  = shift;
   $self->official_naming();

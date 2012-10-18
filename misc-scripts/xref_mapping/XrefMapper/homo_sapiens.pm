@@ -60,6 +60,13 @@ sub get_canonical_name{
    return "HGNC";
 }
 
+# Not running transcript_names_from_gene for merged species
+# as this is already been done in the OfficialNaming mapper
+sub transcript_names_from_gene {
+  return;
+}
+
+
 sub species_specific_cleanup{
   my $self = shift;
   my $dbname = $self->get_canonical_name;
@@ -86,15 +93,6 @@ JSQL
 
 }
 
-#
-#for human display_xrefs and  gene descriptions have already been set in official_naming
-#so we only beed to do the status's
-#
-#sub genes_and_transcripts_attributes_set{
-#  my $self = shift;
-#  print "NEED TO SET STATUS ONLY  FOR HUMAN!!!\n";
-#  $self->build_gene_transcript_status(); 
-#}
 
 sub set_display_xrefs{
   my $self = shift;
@@ -108,15 +106,6 @@ sub set_gene_descriptions(){
   my $display = XrefMapper::DisplayXrefs->new($self);
   $display->set_gene_descriptions_from_display_xref()
 }
-
-# For human we want to make a copy of the HGNC references on the genes and put them on 
-# the "canonical" transcripts
-
-#sub species_specific_pre_attributes_set{
-#  my $self  = shift;
-#  $self->official_naming();
-#}
-
 
 
 1;
