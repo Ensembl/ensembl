@@ -35,13 +35,8 @@ sub run_script {
   my $species_name = $id2name{$species_id}[0];
 
   my $prepend = 1;
-
-
   if($species_name eq "mus_musculus" ){
     $prepend = 0;
-  }
-  if (!$host) {
-    die "Species is $species_name and is not homo_sapiens, mus_musculus, danio_rerio or sus_scrofa, the only four valid species\n";
   }
 
   my $user = 'ensro';
@@ -93,6 +88,10 @@ sub run_script {
     $cpass = $1;
   }
 
+  if (!$host || !$chost) {
+    die "Species is $species_name and is not homo_sapiens, mus_musculus, danio_rerio or sus_scrofa, the only four valid species\n";
+  }
+
   my $vega_dbc;
   my $core_dbc;
 
@@ -109,20 +108,7 @@ sub run_script {
       print "Problem could not open connectipn to $vhost, $vport, $vuser, $vdbname, $vpass\n";
       return 1;
     }
-    my $core_db =  XrefParser::Database->new({ host   => $chost,
-					       port   => $cport,
-					       user   => $cuser,
-					       dbname => $cdbname,
-					       pass   => $cpass});
-
-    $core_dbc = $core_db->dbi();
-    if(!defined($core_dbc)){
-      print "Problem could not open connectipn to $chost, $cport, $cuser, $cdbname, $cpass\n";
-      return 1;
-    }
-
-  }
-  else{
+  } else{
     $reg->load_registry_from_db(
                                 -host => $host,
                                 -user => $user);
@@ -133,6 +119,25 @@ sub run_script {
       return 1;
     }
     $vega_dbc = $vega_dbc->dbc;
+ }
+ if (defined $cdbname) {
+    my $core_db =  XrefParser::Database->new({ host   => $chost,
+                                               port   => $cport,
+                                               user   => $cuser,
+                                               dbname => $cdbname,
+                                               pass   => $cpass});
+
+    $core_dbc = $core_db->dbi();
+    if(!defined($core_dbc)){
+      print "Problem could not open connectipn to $chost, $cport, $cuser, $cdbname, $cpass\n";
+      return 1;
+    }
+
+  } else {
+    $reg->load_registry_from_db(
+                                -host => $host,
+                                -user => $user);
+
     $core_dbc = $reg->get_adaptor($species_name,"core","slice");
     if(!defined($core_dbc)){
       print "Could not connect to $species_name core database using load_registry_from_db $host $user\n";
