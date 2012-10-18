@@ -114,7 +114,7 @@ SQL
       my ($row) = @_;
       my ($id, $common_name, $web_name, $scientific_name, $production_name, $url_name) = @{$row};
       if (!$common_name) {
-        throw("no common name specified, exiting");
+        throw("no common name specified for $production_name, exiting");
       }
       if(!exists $species{$id}) {
         $species{$id} = {
