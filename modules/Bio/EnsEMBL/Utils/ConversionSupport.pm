@@ -724,8 +724,6 @@ sub get_database {
   );
   throw("Unknown database: $database") unless $adaptors{$database};
 
-  warn "pass ".$self->param("${prefix}pass")."\n";
-
   $self->dynamic_use($adaptors{$database});
   my $species = 'species' . $species_c;
   my $dba = $adaptors{$database}->new(
