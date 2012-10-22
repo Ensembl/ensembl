@@ -1,6 +1,6 @@
 =head1 LICENSE
 
-  Copyright (c) 1999-2011 The European Bioinformatics Institute and
+  Copyright (c) 1999-2012 The European Bioinformatics Institute and
   Genome Research Limited.  All rights reserved.
 
   This software is distributed under a modified Apache license.
@@ -163,7 +163,6 @@ sub parse_common_options {
 # override configured parameter with commandline options
   map { $self->param($_, $h{$_}) } keys %h;
 
-
   return (1) if $self->param('nolog');
 
   # if logpath & logfile are not set, set them here to /ensemblweb/vega_dev/shared/logs/conversion/DBNAME/SCRIPNAME_NN.log
@@ -291,7 +290,7 @@ sub get_loutre_params {
 	      loutrehost=s
 	      loutreport=s
 	      loutreuser=s
-	      loutrepass=s
+	      loutrepass:s
 	      loutredbname=s
 	    );
   }
@@ -343,9 +342,9 @@ sub confirm_params {
   print "Running script with these parameters:\n\n";
   print $self->list_all_params;
 
-  if ($self->param('host') eq 'ensdb-1-10') {
+  if ($self->param('host') eq 'ensdb-web-10') {
     # ask user if he wants to proceed
-    exit unless $self->user_proceed("**************\n\n You're working on ensdb-1-10! Is that correct and you want to continue ?\n\n**************");
+    exit unless $self->user_proceed("**************\n\n You're working on ensdb-web-10! Is that correct and you want to continue ?\n\n**************");
   }
   else {
     # ask user if he wants to proceed
@@ -366,9 +365,9 @@ sub confirm_params {
 
 sub list_all_params {
   my $self = shift;
-  my $txt = sprintf "    %-21s%-40s\n", qw(PARAMETER VALUE);
-  $txt .= "    " . "-"x71 . "\n";
-  $Text::Wrap::colums = 72;
+  my $txt = sprintf "   %-21s%-90s\n", qw(PARAMETER VALUE);
+  $txt .= "    " . "-"x121 . "\n";
+  $Text::Wrap::columns = 122;
   my @params = $self->allowed_params;
   foreach my $key (@params) {
     my @vals = $self->param($key);
@@ -454,7 +453,7 @@ sub check_required_params {
   my ($self, @params) = @_;
   my @missing = ();
   foreach my $param (@params) {
-    push @missing, $param unless $self->param($param);
+    push @missing, $param unless defined $self->param($param);
   }
   if (@missing) {
     throw("Missing parameters: @missing.\nYou must specify them on the commandline or in your conffile.\n");
@@ -720,10 +719,12 @@ sub get_database {
     evega   => 'Bio::EnsEMBL::DBSQL::DBAdaptor',
     otter   => 'Bio::Otter::DBSQL::DBAdaptor',
     vega    => 'Bio::Otter::DBSQL::DBAdaptor',
-    compara => 'Bio::EnsEMBL::DBSQL::DBAdaptor',
+    compara => 'Bio::EnsEMBL::Compara::DBSQL::DBAdaptor',
     loutre  => 'Bio::Vega::DBSQL::DBAdaptor',
   );
   throw("Unknown database: $database") unless $adaptors{$database};
+
+  warn "pass ".$self->param("${prefix}pass")."\n";
 
   $self->dynamic_use($adaptors{$database});
   my $species = 'species' . $species_c;
@@ -862,6 +863,7 @@ sub dynamic_use {
   Arg[2]      : (optional) String $version - coord_system version
   Arg[3]      : (optional) String $type - type of region eg chromsome (defaults to 'toplevel')
   Arg[4]      : (optional) Boolean - return non reference slies as well (required for haplotypes eq 6-COX)
+  Arg[5]      : (optional) Override chromosome parameter filtering with this array reference. Empty denotes all.
   Example     : my $chr_length = $support->get_chrlength($dba);
   Description : Get all chromosomes and their length from the database. Return
                 chr_name/length for the chromosomes the user requested (or all
@@ -873,7 +875,7 @@ sub dynamic_use {
 =cut
 
 sub get_chrlength {
-  my ($self, $dba, $version,$type,$include_non_reference) = @_;
+  my ($self, $dba, $version,$type,$include_non_reference,$chroms) = @_;
   $dba  ||= $self->dba;
   $type ||= 'toplevel';
   throw("get_chrlength should be passed a Bio::EnsEMBL::DBSQL::DBAdaptor\n")
@@ -886,6 +888,8 @@ sub get_chrlength {
   my %chr = map { $_ => $sa->fetch_by_region($type, $_, undef, undef, undef, $version)->length } @chromosomes;
 
   my @wanted = $self->param('chromosomes');
+  @wanted = @$chroms if defined $chroms and ref($chroms) eq 'ARRAY';
+
   if (@wanted) {
     # check if user supplied invalid chromosome names
     foreach my $chr (@wanted) {
@@ -990,18 +994,19 @@ sub get_taxonomy_id {
 sub get_species_scientific_name {
   my ($self, $dba) = @_;
   $dba ||= $self->dba;
-  my $sql_tmp = "SELECT meta_value FROM meta WHERE meta_key = \'species.classification\' ORDER BY meta_id";
-  my $sql = $dba->dbc->add_limit_clause($sql_tmp,2);
+  my $sql = "SELECT meta_value FROM meta WHERE meta_key = \'species.scientific_name\'";
   my $sth = $dba->dbc->db_handle->prepare($sql);
   $sth->execute;
   my @sp;
   while (my @row = $sth->fetchrow_array) {
     push @sp, $row[0];
   }
+  if (! @sp || @sp > 1) {
+    $self->throw("Could not retrieve a single species scientific name from database.");
+  }
   $sth->finish;
-  my $species = join(" ", reverse @sp);
-  $self->throw("Could not determine species scientific name from database.")
-    unless $species;
+  my $species = $sp[0];
+  $species =~ s/ /_/g;
   return $species;
 }
 
@@ -1023,8 +1028,7 @@ sub species {
   $self->{'_species'} = shift if (@_);
   # get species name from database if not set
   unless ($self->{'_species'}) {
-    $self->{'_species'} = join('_',
-			       split(/ /, $self->get_species_scientific_name));
+    $self->{'_species'} = $self->get_species_scientific_name;
   }
   return $self->{'_species'};
 }
@@ -1127,6 +1131,7 @@ sub split_chromosomes_by_size {
   my $cutoff = shift || 5000000;
   my $dup    = shift || 0;
   my $cs_version = shift;
+  my $include_non_reference = 1;
   my $slice_adaptor = $self->dba->get_SliceAdaptor;
   my $top_slices;
   if ($self->param('chromosomes')) {
@@ -1134,8 +1139,11 @@ sub split_chromosomes_by_size {
       push @{ $top_slices }, $slice_adaptor->fetch_by_region('chromosome', $chr);
     }
   } else {
-    $top_slices = $slice_adaptor->fetch_all('chromosome',$cs_version,0,$dup);
+    $top_slices = $slice_adaptor->fetch_all('chromosome',$cs_version,$include_non_reference,$dup);
   }
+  
+  # filter out patches, if present
+  $top_slices = [ grep { $_->is_reference or $self->is_haplotype($_,$self->dba)  } @$top_slices ];
 
   my ($big_chr, $small_chr, $min_big_chr, $min_small_chr);
   foreach my $slice (@{ $top_slices }) {
@@ -1607,8 +1615,8 @@ sub get_wanted_chromosomes {
   my $export_mode = $self->param('release_type');
   my $release = $self->param('vega_release');
   my $names;
-  my $chroms  = $self->fetch_non_hidden_slices($aa,$sa,$cs,$cv);
- CHROM:
+  my $chroms  = $self->fetch_non_hidden_slices($aa,$sa,$cs,$cv); 
+  CHROM:
   foreach my $chrom (@$chroms) {
     my $attribs = $aa->fetch_all_by_Slice($chrom);
     my $vals = $self->get_attrib_values($attribs,'vega_export_mod');
@@ -1632,11 +1640,33 @@ sub get_wanted_chromosomes {
   return $names;
 }
 
+=head2 is_haplotype
+
+  Arg[1]      : B::E::Slice
+  Arg[2]:     : B::E::DBAdaptor (optional, if you don't supply one then the *first* one you generated is returned, which may or may not be what you want!)
+  Description : Is the slice a Vega haplotype? At the moment this is 
+    implemented by testing for presence of vega_ref_chrom but non_ref
+    which is correct in practice, but really misses the prupose of
+    vega_ref_chrom, so this might bite us if that changes.
+  Return type : boolean
+
+=cut
+
+sub is_haplotype {
+  my ($self,$slice,$dba) = @_;
+
+  $dba ||= $self->dba;
+  my $aa = $dba->get_adaptor('Attribute');
+
+  my $attribs = $aa->fetch_all_by_Slice($slice);
+  return (@{$self->get_attrib_values($attribs,'vega_ref_chrom')} and
+          @{$self->get_attrib_values($attribs,'non_ref',1)});
+}
+
 =head2 get_unique_genes
 
   Arg[1]      : B::E::Slice
   Arg[2]      : B::E::DBAdaptor (optional, if you don't supply one then the *first* one you generated is returned, which may or may not be what you want!)
-  Arg[3]      : Boolean - if set then all transcripts are loaded in one go rather than beng lazy loaded
   Example     : $genes = $support->get_unique_genes($slice,$dba);
   Description : Retrieve genes that are only on the slice itself - used for human where assembly patches
                 are in the assembly_exception table. Needs the PATCHes to have 'non_ref' seq_region_attributes.
@@ -1648,7 +1678,7 @@ sub get_wanted_chromosomes {
 
 sub get_unique_genes {
   my $self  = shift;
-  my ($slice,$dba,$not_lazy) = @_;
+  my ($slice,$dba) = @_;
   $slice or throw("You must supply a slice");
   $dba ||= $self->dba;
 
@@ -1656,15 +1686,17 @@ sub get_unique_genes {
   my $ga    = $dba->get_adaptor('Gene');
   my $patch = 0;
   my $genes = [];
-  if ( ! $slice->is_reference() ) {
+  if ( ! $slice->is_reference() and ! $self->is_haplotype($slice,$dba) ) {
+#  if ( 0 ) {
     $patch = 1;
-    my $slices = $sa->fetch_by_region_unique( $slice->coord_system_name(),$slice->seq_region_name() );
+    my $slices = $sa->fetch_by_region_unique( $slice->coord_system_name(),$slice->seq_region_name(),undef,undef,undef,$slice->coord_system()->version() );
     foreach my $slice ( @{$slices} ) {
-      push @$genes,@{$ga->fetch_all_by_Slice($slice,'',$not_lazy)};
+      push @$genes,@{$ga->fetch_all_by_Slice($slice)};
+      #      my $start = $slice->start;
     }
   }
   else {
-    $genes = $ga->fetch_all_by_Slice($slice,'',$not_lazy);
+    $genes = $ga->fetch_all_by_Slice($slice);
   }
   return ($genes, $patch);
 }
@@ -1894,5 +1926,30 @@ sub update_attribute {
   );
   return ['Updated',$r];
 }
+
+
+=head2 remove_duplicate_attribs
+
+  Arg[1]      : db handle
+  Arg[2]      : table
+  Example     : $support->remove_duplicate_attribs($dbh,'gene');
+  Description : uses MySQL to remove duplicate entries from an attribute table
+  Return type : none
+  Caller      : general
+  Status      : stable
+
+=cut
+
+sub remove_duplicate_attribs {
+  my $self  = shift;
+  my $dbh   = shift;
+  my $table = shift;
+  $dbh->do(qq(create table nondup_${table}_attrib like ${table}_attrib));
+  $dbh->do(qq(insert into nondup_${table}_attrib (select ${table}_id, attrib_type_id, value from ${table}_attrib group by ${table}_id, attrib_type_id, value)));
+  $dbh->do(qq(delete from ${table}_attrib));
+  $dbh->do(qq(insert into ${table}_attrib (select ${table}_id, attrib_type_id, value from nondup_${table}_attrib)));
+  $dbh->do(qq(drop table nondup_${table}_attrib));
+}
+
 
 1;
