@@ -291,7 +291,7 @@ sub get_loutre_params {
 	      loutrehost=s
 	      loutreport=s
 	      loutreuser=s
-	      loutrepass=s
+	      loutrepass:s
 	      loutredbname=s
 	    );
   }
@@ -343,7 +343,7 @@ sub confirm_params {
   print "Running script with these parameters:\n\n";
   print $self->list_all_params;
 
-  if ($self->param('host') eq 'ensdb-web-10') {
+  if ($self->param('host') eq 'ensweb-1-10') {
     # ask user if he wants to proceed
     exit unless $self->user_proceed("**************\n\n You're working on ensdb-1-10! Is that correct and you want to continue ?\n\n**************");
   }
@@ -454,7 +454,7 @@ sub check_required_params {
   my ($self, @params) = @_;
   my @missing = ();
   foreach my $param (@params) {
-    push @missing, $param unless $self->param($param);
+    push @missing, $param unless defined $self->param($param);
   }
   if (@missing) {
     throw("Missing parameters: @missing.\nYou must specify them on the commandline or in your conffile.\n");
