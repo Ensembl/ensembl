@@ -64,6 +64,7 @@ use POSIX qw(strftime);
 use Cwd qw(abs_path);
 use DBI;
 use Data::Dumper;
+use Fcntl qw(:flock SEEK_END);
 
 my $species_c = 1; #counter to be used for each database connection made
 
@@ -97,7 +98,7 @@ sub new {
   Description : This method reads options from a configuration file and parses
                 some commandline options that are common to all scripts (like
                 db connection settings, help, dry-run). Commandline options
-                will override config file settings. 
+                will override config file settings.
 
                 All options will be accessible via $self->param('name').
   Return type : true on success 
@@ -171,7 +172,7 @@ sub parse_common_options {
   }
   my $dbname = $self->param('dbname');
   $dbname =~ s/^vega_//;
-  if (not (defined($self->param('logpath')))){
+  if (not (defined($self->param('logpath')) )){
     $self->param('logpath', $self->param('log_base_path')."/".$dbname."/" );
   }
   if ( not defined $self->param('logfile') ){
@@ -179,7 +180,7 @@ sub parse_common_options {
     $log =~ s/.pl$//g;
     my $counter;
     for ($counter=1 ; (-e $self->param('logpath')."/".$log."_".sprintf("%03d", $counter).".log"); $counter++){
-#        warn  $self->param('logpath')."/".$log."_".$counter.".log";
+      #      warn  $self->param('logpath')."/".$log."_".$counter.".log";
     }
     $self->param('logfile', $log."_".sprintf("%03d", $counter).".log");
   }
@@ -342,9 +343,9 @@ sub confirm_params {
   print "Running script with these parameters:\n\n";
   print $self->list_all_params;
 
-  if ($self->param('host') eq 'ensdb-web-10') {
+  if ($self->param('host') eq 'ensweb-1-10') {
     # ask user if he wants to proceed
-    exit unless $self->user_proceed("**************\n\n You're working on ensdb-web-10! Is that correct and you want to continue ?\n\n**************");
+    exit unless $self->user_proceed("**************\n\n You're working on ensdb-1-10! Is that correct and you want to continue ?\n\n**************");
   }
   else {
     # ask user if he wants to proceed
@@ -365,9 +366,9 @@ sub confirm_params {
 
 sub list_all_params {
   my $self = shift;
-  my $txt = sprintf "   %-21s%-90s\n", qw(PARAMETER VALUE);
+  my $txt = sprintf "    %-21s%-90s\n", qw(PARAMETER VALUE);
   $txt .= "    " . "-"x121 . "\n";
-  $Text::Wrap::columns = 122;
+  $Text::Wrap::colums = 130;
   my @params = $self->allowed_params;
   foreach my $key (@params) {
     my @vals = $self->param($key);
@@ -1129,7 +1130,7 @@ sub split_chromosomes_by_size {
   my $cutoff = shift || 5000000;
   my $dup    = shift || 0;
   my $cs_version = shift;
-  my $include_non_reference = 1;
+  my $include_non_reference = 1; #get non reference slices
   my $slice_adaptor = $self->dba->get_SliceAdaptor;
   my $top_slices;
   if ($self->param('chromosomes')) {
@@ -1139,7 +1140,7 @@ sub split_chromosomes_by_size {
   } else {
     $top_slices = $slice_adaptor->fetch_all('chromosome',$cs_version,$include_non_reference,$dup);
   }
-  
+
   # filter out patches, if present
   $top_slices = [ grep { $_->is_reference or $self->is_haplotype($_,$self->dba)  } @$top_slices ];
 
@@ -1192,6 +1193,38 @@ sub log {
   throw("Unable to obtain log filehandle") unless $fh;
   print $fh "$txt";
   return(1);
+}
+
+=head2 lock_log
+
+  Description : Use flock-style locks to lock log and fastforward to end.
+                Useful if log is being written to by multiple processes.
+=cut
+
+sub lock_log {
+  my ($self) = @_;
+  
+  my $fh = $self->{'_log_filehandle'};
+  return if -t $fh or -p $fh; # Shouldn't lock such things   
+  flock($self->{'_log_filehandle'},LOCK_EX) || return 0;
+  seek($self->{'_log_filehandle'},0,SEEK_END); # fail ok, prob not reg file
+  return 1;
+}
+
+=head2 unlock_log
+
+  Description : Unlock log previously locked by lock_log.
+
+=cut
+
+sub unlock_log {
+  my ($self) = @_;
+
+  my $fh = $self->{'_log_filehandle'};
+  return if -t $fh or -p $fh; # We don't lock such things
+  # flush is implicit in flock
+  flock($self->{'_log_filehandle'},LOCK_UN) || return 0;
+  return 1;
 }
 
 =head2 log_warning
@@ -1302,11 +1335,12 @@ sub log_stamped {
 =cut
 
 sub log_filehandle {
-  my ($self, $mode) = @_;
+  my ($self, $mode, $date) = @_;
   $mode ||= '>';
   $mode = '>>' if ($self->param('logappend'));
   my $fh = \*STDERR;
   if (my $logfile = $self->param('logfile')) {
+    $logfile .= "_$date" if $date;
     if (my $logpath = $self->param('logpath')) {
       unless (-e $logpath) {
 	system("mkdir $logpath") == 0 or
@@ -1351,6 +1385,22 @@ sub filehandle {
   return $fh;
 }
 
+=head2 init_log_date
+
+  Example     : $support->init_log_date;
+  Description : Opens a filehandle to a logfile with the date in the file name
+  Return type : Filehandle - the log filehandle
+  Exceptions  : none
+  Caller      : general
+
+=cut
+
+sub init_log_date {
+  my $self = shift;
+  my $date = $self->date;
+  return $self->init_log($date);
+}
+
 =head2 init_log
 
   Example     : $support->init_log;
@@ -1366,9 +1416,10 @@ sub filehandle {
 
 sub init_log {
   my $self = shift;
+  my $date = shift;
 
   # get a log filehandle
-  my $log = $self->log_filehandle;
+  my $log = $self->log_filehandle(undef,$date);
 
   # print script name, date, user who is running it
   my $hostname = `hostname`;
@@ -1376,7 +1427,7 @@ sub init_log {
   my $script = "$hostname:$Bin/$Script";
   my $user = `whoami`;
   chomp $user;
-  $self->log("Script: $script\nDate: ".$self->date."\nUser: $user\n");
+  $self->log("Script: $script\nDate: ".$self->date_and_time."\nUser: $user\n");
 
   # print parameters the script is running with
   $self->log("Parameters:\n\n");
@@ -1435,7 +1486,7 @@ sub date_and_mem {
 =head2 date
 
   Example     : print "Date: " . $support->date . "\n";
-  Description : Prints a nicely formatted timestamp (YYYY-DD-MM hh:mm:ss)
+  Description : Prints a nicely formatted datetamp (YYYY-DD-MM)
   Return type : String - the timestamp
   Exceptions  : none
   Caller      : general
@@ -1443,6 +1494,20 @@ sub date_and_mem {
 =cut
 
 sub date {
+  return strftime "%Y-%m-%d", localtime;
+}
+
+=head2 date_and_time
+
+  Example     : print "Date: " . $support->date . "\n";
+  Description : Prints a nicely formatted timestamp (YYYY-DD-MM hh:mm:ss)
+  Return type : String - the timestamp
+  Exceptions  : none
+  Caller      : general
+
+=cut
+
+sub date_and_time {
   return strftime "%Y-%m-%d %T", localtime;
 }
 
