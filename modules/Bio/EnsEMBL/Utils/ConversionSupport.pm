@@ -163,7 +163,6 @@ sub parse_common_options {
 # override configured parameter with commandline options
   map { $self->param($_, $h{$_}) } keys %h;
 
-
   return (1) if $self->param('nolog');
 
   # if logpath & logfile are not set, set them here to /ensemblweb/vega_dev/shared/logs/conversion/DBNAME/SCRIPNAME_NN.log
@@ -291,7 +290,7 @@ sub get_loutre_params {
 	      loutrehost=s
 	      loutreport=s
 	      loutreuser=s
-	      loutrepass=s
+	      loutrepass:s
 	      loutredbname=s
 	    );
   }
@@ -454,7 +453,7 @@ sub check_required_params {
   my ($self, @params) = @_;
   my @missing = ();
   foreach my $param (@params) {
-    push @missing, $param unless $self->param($param);
+    push @missing, $param unless defined $self->param($param);
   }
   if (@missing) {
     throw("Missing parameters: @missing.\nYou must specify them on the commandline or in your conffile.\n");
