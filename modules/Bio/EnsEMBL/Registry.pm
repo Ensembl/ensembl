@@ -2728,87 +2728,119 @@ my %stable_id_stmts = (
  
 );
 
+my %compara_stable_id_stmts = (
+  genetree => 'SELECT 1 FROM %1$s.gene_tree_root WHERE stable_id =?',
+);
 
 sub get_species_and_object_type {
   my ($self, $stable_id, $known_type, $known_species, $known_db_type, $force_long_lookup) = @_;
 
   #get the stable_id lookup database adaptor
   my $stable_ids_dba = $self->get_DBAdaptor("multi", "stable_ids", 1);
-
-  if ($stable_ids_dba && ! $force_long_lookup) {
-     my $statement = 'SELECT name, object_type, db_type FROM stable_id_lookup join species using(species_id) WHERE stable_id = ?';
-
-     if ($known_species) {
-	 $statement .= ' AND name = ?';
-     }
-     if ($known_db_type) {
-	 $statement .= ' AND db_type = ?';
-     }
-     if ($known_type) {
-	 $statement .= ' AND object_type = ?';
-     }
-
-     my $sth = $stable_ids_dba->dbc()->prepare($statement);
-     $sth->bind_param(1, $stable_id, SQL_VARCHAR);
-     my $param_count = 1;
-     if ($known_species) {
-       $known_species = $self->get_alias($known_species);
-	 $param_count++;
-	 $sth->bind_param($param_count, $known_species, SQL_VARCHAR);
-     }
-     if ($known_db_type) {
-	 $param_count++;
-	 $sth->bind_param($param_count, $known_db_type, SQL_VARCHAR);
-     }
-     if ($known_type) {
-	 $param_count++;
-	 $sth->bind_param($param_count, $known_type, SQL_VARCHAR);
-     }
-     $sth->execute();
-     my ($species, $type, $db_type) = $sth->fetchrow_array();
-     $sth->finish();
-     return ($species ,$type, $db_type);
-
-  } else {
-      if (defined $known_type && !exists $stable_id_stmts{lc $known_type}) {
-	  return;
-      }
-
-      my @types = defined $known_type ? ($known_type) : ('Gene', 'Transcript', 'Translation', 'Exon', 'Operon', 'OperonTranscript');
   
-      if(! $known_db_type) {
-        $known_db_type = 'core';
+  if ($stable_ids_dba && ! $force_long_lookup) {
+    return $self->_lookup_db_get_species_and_object_type($stable_id, $known_type, $known_species, $known_db_type);
+  } 
+  else {
+    if(defined $known_type) {
+      my $lc_known_type = lc $known_type;
+      if(!exists $stable_id_stmts{$lc_known_type} && ! exists $compara_stable_id_stmts{$lc_known_type}) {
+        return;
       }
+    }
+        
+    $known_db_type = 'core' if ! $known_db_type;
       
-      my %get_adaptors_args;
-      $get_adaptors_args{'-group'} = $known_db_type;
-      if ($known_species) {
-	  $get_adaptors_args{'-species'} = $known_species; 
+    my %get_adaptors_args = ('-GROUP' => $known_db_type);
+	  $get_adaptors_args{'-species'} = $known_species if $known_species; 
+
+    my @dbas = 
+      sort { $a->dbc->host cmp $b->dbc->host || $a->dbc->port <=> $b->dbc->port } 
+      @{$self->get_all_DBAdaptors(%get_adaptors_args)};    
+    
+    foreach my $dba (@dbas) {
+      my @results;
+      my $dba_adaptor_type = $group2adaptor{$dba->group()};
+      if($dba_adaptor_type eq 'Bio::EnsEMBL::DBSQL::DBAdaptor') {
+        @results = $self->_core_get_species_and_object_type($stable_id, $known_type, $known_species, $known_db_type, $dba);
       }
-
-      my @dbas = sort { $a->dbc->host cmp $b->dbc->host || $a->dbc->port <=> $b->dbc->port } 
-	  @{$self->get_all_DBAdaptors(%get_adaptors_args)};    
-      foreach my $dba (@dbas) {
-	  
-	  foreach my $type (@types) {
-	      my $statement = sprintf $stable_id_stmts{lc $type}, $dba->dbc->dbname;
-
-	      my $sth = $dba->dbc()->prepare($statement);
-	      $sth->bind_param(1, $stable_id, SQL_VARCHAR);
-	      $sth->execute;
-
-	      my $species = $sth->fetchall_arrayref->[0][0];
-
-	      $sth->finish;
-
-	      return ($species, $type, $known_db_type) if defined $species;
-	  }
-
-      } ## end foreach my $dba ( sort { $a...})
-
+      elsif($dba_adaptor_type eq 'Bio::EnsEMBL::Compara::DBSQL::DBAdaptor') {
+        @results = $self->_compara_get_species_and_object_type($stable_id, $known_type, $known_species, $known_db_type, $dba);
+      }
+      return @results if scalar(@results) > 0;
+    } ## end foreach my $dba ( sort { $a...})
   }
-
+  
   return;
 } ## end sub get_species_and_object_type
+
+sub _lookup_db_get_species_and_object_type {
+  my ($self, $stable_id, $known_type, $known_species, $known_db_type) = @_;
+  my $stable_ids_dba = $self->get_DBAdaptor("multi", "stable_ids", 1);
+  my $statement = 'SELECT name, object_type, db_type FROM stable_id_lookup join species using(species_id) WHERE stable_id = ?';
+  if ($known_species) {
+    $statement .= ' AND name = ?';
+  }
+  if ($known_db_type) {
+    $statement .= ' AND db_type = ?';
+  }
+  if ($known_type) {
+    $statement .= ' AND object_type = ?';
+  }
+  
+  my $sth = $stable_ids_dba->dbc()->prepare($statement);
+  $sth->bind_param(1, $stable_id, SQL_VARCHAR);
+  my $param_count = 1;
+  if ($known_species) {
+    $known_species = $self->get_alias($known_species);
+    $param_count++;
+    $sth->bind_param($param_count, $known_species, SQL_VARCHAR);
+  }
+  if ($known_db_type) {
+    $param_count++;
+    $sth->bind_param($param_count, $known_db_type, SQL_VARCHAR);
+  }
+  if ($known_type) {
+    $param_count++;
+    $sth->bind_param($param_count, $known_type, SQL_VARCHAR);
+  }
+  $sth->execute();
+  my ($species, $type, $db_type) = $sth->fetchrow_array();
+  $sth->finish();
+  return ($species ,$type, $db_type);
+} ## end sub _lookup_db_get_species_and_object_type
+
+
+# Loop over a known set of object types for a core DB until we find a hit 
+sub _core_get_species_and_object_type {
+  my ($self, $stable_id, $known_type, $known_species, $known_db_type, $dba) = @_;
+  my @types = defined $known_type ? ($known_type) : ('Gene', 'Transcript', 'Translation', 'Exon', 'Operon', 'OperonTranscript');
+  foreach my $type (@types) {
+    my $statement = sprintf $stable_id_stmts{lc $type}, $dba->dbc->dbname;
+    my $sth = $dba->dbc()->prepare($statement);
+    $sth->bind_param(1, $stable_id, SQL_VARCHAR);
+    $sth->execute;
+    my $species = $sth->fetchall_arrayref->[0][0];
+    $sth->finish;
+    return ($species, $type, $known_db_type) if defined $species;
+  }
+  return;
+}
+
+# Loop over a known set of object types for a compara DB until we find a hit
+sub _compara_get_species_and_object_type {
+  my ($self, $stable_id, $known_type, $known_species, $known_db_type, $dba) = @_;
+  my @types = defined $known_type ? ($known_type) : ('GeneTree');
+  foreach my $type (@types) {
+    my $statement = sprintf $compara_stable_id_stmts{lc $type}, $dba->dbc->dbname;
+    my $sth = $dba->dbc()->prepare($statement);
+    $sth->bind_param(1, $stable_id, SQL_VARCHAR);
+    $sth->execute;
+    my $found = $sth->fetchall_arrayref->[0][0];
+    $sth->finish;
+    return ($known_species, $type, $known_db_type) if defined $found;
+  }
+  return;
+}
 
 1;
