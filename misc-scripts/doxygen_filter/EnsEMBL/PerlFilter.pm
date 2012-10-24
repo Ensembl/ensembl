@@ -57,7 +57,6 @@
   hence own simplified state machine. Intentionally not using PPI package to parse Perl, too complex.
   This is a 80/20 EnsEMBL specific POD->Doxygen converter, however it should work somewhat with other code.
  
-  This code is still highly volatile.
 
 =cut 
 
@@ -105,13 +104,17 @@ sub filter {
     $state = NORMAL;
     my $line;
     # Read file, using lookup table to run correct parser on each line.
+    # Parsing is done in two stages:
+    #   1) Parsing based on the previous mode. The methods are called "_parse"
+    #   2) Parsing after any mode switch in stage 1. The methods are called "_action"
+    # Strictly speaking actions are also performed in "parse" code, but that's what was needed in the end.
     while( defined($line = <$infh>) && $state != TERMINAL) {
 		my $sub_ref = $parse[$state];
 		$parse[$state]->([$self,$line]);
 		$act[$state]->([$self,$line]);
     }
     # Create the filtered file:
-    # beware, #include declarations are coming from elsewhere (&inheritance_action).
+    # beware, #include declarations are coming from elsewhere ( inheritance_action() ).
     
     my @namespaces;
     my $class_name;
@@ -210,10 +213,15 @@ sub normal_action {
 }
 
 sub inheritance_parser {
+    # We only get here if dealing with multiple inheritance over comma-terminated multiple lines
     my $args = $_[0];
     my $self = $args->[0];
     my $line = $args->[1];
-
+    
+    chomp($line);
+    $line =~ s/;//;
+    my @parents = $line =~ /Bio::EnsEMBL::[\w:]+/g;
+    push @inheritance,@parents;
 }
 sub inheritance_action {
     my ($include, $inherit);
@@ -233,7 +241,7 @@ sub inheritance_action {
         my @parents = $line =~ /Bio::EnsEMBL::[\w:]+/g;
         push @inheritance,@parents;
     }
-    else {
+    elsif ($line =~ /use/) {
         $line =~ /use\s+([\w:]+)/;
         $include = $1;
         if (defined($include)) {
@@ -247,7 +255,12 @@ sub inheritance_action {
         }
     }
     
-    $state = NORMAL;
+    $line =~ s/\s*#.*$//; # strip trailing comments
+    if ($line =~ /,$/) { 
+        $state = INHERIT; # technically redundant, but easier to follow state 
+    } else {
+        $state = NORMAL;
+    }
 }
 
 sub pod_top_parser {
