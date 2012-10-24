@@ -88,10 +88,6 @@ sub run_script {
     $cpass = $1;
   }
 
-  if (!$host || !$chost) {
-    die "Species is $species_name and is not homo_sapiens, mus_musculus, danio_rerio or sus_scrofa, the only four valid species\n";
-  }
-
   my $vega_dbc;
   my $core_dbc;
 
