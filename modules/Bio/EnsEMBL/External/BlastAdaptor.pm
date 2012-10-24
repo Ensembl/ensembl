@@ -52,7 +52,7 @@ CREATE TABLE blast_ticket (
   UNIQUE KEY ticket (ticket),
   KEY create_time (create_time),
   KEY update_time (update_time)
-) ENGINE=MyISAM";
+) ENGINE=InnoDB";
 
 our $SQL_CREATE_TABLE_LOG = "
 CREATE TABLE blast_table_log (
@@ -69,7 +69,7 @@ CREATE TABLE blast_table_log (
   KEY table_type (table_type),
   KEY use_date (use_date),
   KEY table_status (table_status)
-) ENGINE=MyISAM";
+) ENGINE=InnoDB";
 
 
 our $SQL_CREATE_DAILY_RESULT = "
@@ -79,7 +79,7 @@ CREATE TABLE %s (
   object longblob,
   PRIMARY KEY  (result_id),
   KEY ticket (ticket)
-) ENGINE=MyISAM";
+) ENGINE=InnoDB";
 
 our $SQL_CREATE_DAILY_HIT = "
 CREATE TABLE %s (
@@ -88,7 +88,7 @@ CREATE TABLE %s (
   object longblob,
   PRIMARY KEY  (hit_id),
   KEY ticket (ticket)
-) ENGINE=MyISAM";
+) ENGINE=InnoDB";
 
 our $SQL_CREATE_DAILY_HSP = "
 CREATE TABLE %s (
@@ -100,7 +100,7 @@ CREATE TABLE %s (
   chr_end int(10) unsigned default NULL,
   PRIMARY KEY  (hsp_id),
   KEY ticket (ticket)
-) ENGINE=MyISAM MAX_ROWS=705032704 AVG_ROW_LENGTH=4000";
+) ENGINE=InnoDB MAX_ROWS=705032704 AVG_ROW_LENGTH=4000";
 
 #--- TABLE LOG ---
 our $SQL_SELECT_TABLE_LOG_CURRENT = "
@@ -974,9 +974,14 @@ sub clean_blast_database{
     my $table_name  = $row->[0];  ## table name
     my $num_rows    = $row->[4];  ## # Rows...
     my $update_time = $row->[12]; ## update time ---  Should be a string like 2003-08-15 10:36:56
-    next unless $update_time; #cope with an occasional innodb table that has no update time
+
+    #cope with an innodb tables that have no update time (keep them for five days longer)
+    unless ($update_time) {
+      $update_time = $row->[11];
+      $days +=5;
+      next unless $update_time;
+    }
     my @time = split( /[-:\s]/, $update_time );
-   
     my $epoch_then = timelocal( $time[5], $time[4],   $time[3], 
 				$time[2], $time[1]-1, $time[0] - 1900 );
     my $secs_old = time() - $epoch_then;
@@ -1087,7 +1092,7 @@ sub rotate_daily_tables {
     # Create new table
     my $q = sprintf($SQL_CREATE_DAILY_RESULT, $res_table);
     my $sth1 = $self->prepare( $q );
-    my $rv = $sth1->execute() || $self->throw( $sth1->errstr );         
+    my $rv = $sth1->execute() || $self->throw( $sth1->errstr );
 
     # Flip current table in blast_table_tog
     my $last_date = $self->use_date( "RESULT" ) || '';
