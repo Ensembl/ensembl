@@ -168,7 +168,7 @@ CREATE TABLE coord_system (
 
 /**
 @table dna
-@desc Contains DNA sequence. This table has a 1:1 relationship with the contig table.
+@desc Contains DNA sequence. This table has a 1:1 relationship with the seq_region table.
 
 @column seq_region_id           Primary key, internal identifier. Foreign key references to the @link seq_region table.
 @column sequence                DNA sequence.
