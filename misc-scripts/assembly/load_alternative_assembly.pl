@@ -82,22 +82,17 @@ use strict;
 use warnings;
 no warnings 'uninitialized';
 
-use FindBin qw($Bin);
-use vars qw($SERVERROOT);
-
-BEGIN {
-    $SERVERROOT = "$Bin/../../..";
-    unshift(@INC, "$SERVERROOT/ensembl/modules");
-    unshift(@INC, "$SERVERROOT/bioperl-live");
-}
-
 use Getopt::Long;
 use Pod::Usage;
 use Bio::EnsEMBL::Utils::ConversionSupport;
+use Cwd;
+
 
 $| = 1;
 
-my $support = new Bio::EnsEMBL::Utils::ConversionSupport($SERVERROOT);
+my $path = getcwd;
+
+my $support = new Bio::EnsEMBL::Utils::ConversionSupport($path);
 
 # parse options
 $support->parse_common_options(@_);
