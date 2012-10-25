@@ -1272,7 +1272,7 @@ sub add_Attributes {
 =head2 add_Exon
 
  Title   : add_Exon
- Usage   : $trans->add_Exon($exon)
+ Example : $trans->add_Exon($exon)
  Returns : None
  Args [1]: Bio::EnsEMBL::Exon object to add
  Args [2]: rank
@@ -1397,13 +1397,11 @@ sub add_Exon {
 
 =head2 get_all_Exons
 
-  Arg [CONSTITUTIVE]    : Boolean
-                          Only return constitutive exons if true (non-zero)
+  Arg [1]    : Boolean
+               Only return constitutive exons if true (non-zero)
 
-  Examples  :   my @exons = @{ $transcript->get_all_Exons() };
-
-                my @exons =
-                  @{ $transcript->get_all_Exons( -constitutive => 1 ) };
+  Example    : my @exons = @{ $transcript->get_all_Exons() };
+               my @exons = @{ $transcript->get_all_Exons( -constitutive => 1 ) };
 
   Description: Returns an listref of the exons in this transcript
                in order, i.e. the first exon in the listref is the
