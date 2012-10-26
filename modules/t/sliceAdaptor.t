@@ -482,6 +482,19 @@ dies_ok { $slice_adaptor->fetch_by_toplevel_location('1:1_000_000_000..100', 1);
 ok(!defined $slice_adaptor->fetch_by_toplevel_location('wibble', 1), 'Checking with a bogus region returns undef');
 ok(!defined $slice_adaptor->fetch_by_toplevel_location('1:-100--50', 1), 'Checking with a bogus region with negative coords returns undef');
 
+# Try without toplevel_location
+{
+  my $location = 'AL359765.6.1.13780:2-100';
+  
+  note "Testing $location by asking for seqlevel";
+  my $seqlevel_slice = $slice_adaptor->fetch_by_location($location, 'seqlevel');
+  test_slice($location, $seqlevel_slice, 'contig', 'AL359765.6.1.13780', 2, 100, 1);
+  
+  note "Testing $location by asking for contig";
+  my $contig_slice = $slice_adaptor->fetch_by_location($location, 'contig');
+  test_slice($location, $contig_slice, 'contig', 'AL359765.6.1.13780', 2, 100, 1);
+}
+
 {
   #Non standard name check
   my ($name, $start, $end, $strand) = $slice_adaptor->parse_location_to_values('GL21446.1');
@@ -493,13 +506,19 @@ ok(!defined $slice_adaptor->fetch_by_toplevel_location('1:-100--50', 1), 'Checki
 
 sub test_toplevel_location {
   my ($location, $cs_name, $seq_region_name, $start, $end, $strand) = @_;
-  $strand ||= 1;
   my $incoming_slice = $slice_adaptor->fetch_by_toplevel_location($location, 1);
-  my $def = ok(defined $incoming_slice, "We expect a defined Slice for location: $location");
+  test_slice($location, $incoming_slice, $cs_name, $seq_region_name, $start, $end, $strand);
+  return;
+}
+
+sub test_slice {
+  my ($location, $incoming_slice, $cs_name, $seq_region_name, $start, $end, $strand) = @_;
+  $strand ||= 1;
+  my $def = ok(defined $incoming_slice, "We expect a defined Slice for $location");
   SKIP : {
     skip 'Incoming slice is undefined', 5 if ! $def;
     is($incoming_slice->coord_system_name(), $cs_name, "Checking coord system name for $location");
-    is($incoming_slice->seq_region_name(), $seq_region_name, 'Checking seq region name for $location');
+    is($incoming_slice->seq_region_name(), $seq_region_name, "Checking seq region name for $location");
     is($incoming_slice->start(), $start, "Checking start for $location");
     is($incoming_slice->end(), $end, "Checking end for $location");
     is($incoming_slice->strand(), $strand, "Checking strand for $location");

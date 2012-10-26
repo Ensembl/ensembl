@@ -463,6 +463,8 @@ sub fetch_by_region {
                 separated by C<..>, C<:> or C<->.
   Arg[2]      : boolean $no_warnings
                 Suppress warnings from this method
+  Arg[3]      : boolean $no_fuzz
+                Stop fuzzy matching of sequence regions from occuring
   Example     : my $slice = $sa->fetch_by_toplevel_location('X:1-10000')
                 my $slice = $sa->fetch_by_toplevel_location('X:1-10000:-1')
   Description : Converts an Ensembl location/region into the sequence region
@@ -471,15 +473,56 @@ sub fetch_by_region {
                 coordinate system. The code assumes that location formatting
                 is not perfect and will perform basic cleanup before parsing.
   Returntype  : Bio::EnsEMBL::Slice
-  Exceptions  : If $location is false otherwise see C<fetch_by_region()>
+  Exceptions  : If $location is false otherwise see C<fetch_by_location()>
+                or C<fetch_by_region()>
   Caller      : General
   Status      : Beta
 
 =cut
 
 sub fetch_by_toplevel_location {
-  my ($self, $location, $no_warnings) = @_;
+  my ($self, $location, $no_warnings, $no_fuzz) = @_;
+  return $self->fetch_by_location($location, 'toplevel', undef, $no_warnings, $no_fuzz);
+}
 
+=head2 fetch_by_location
+
+  Arg [1]     : string $location
+                Ensembl formatted location. Can be a format like 
+                C<name:start-end>, C<name:start..end>, C<name:start:end>, 
+                C<name:start>, C<name>. We can also support strand 
+                specification as a +/- or 1/-1. 
+                
+                Location names must be separated by a C<:>. All others can be
+                separated by C<..>, C<:> or C<->.
+  Arg[2]      : String $coord_system_name
+                The coordinate system to retrieve
+  Arg[3]      : String $coord_system_version
+                Optional parameter. Version of the coordinate system to fetch
+  Arg[4]      : boolean $no_warnings
+                Suppress warnings from this method
+  Arg[5]      : boolean $no_fuzz
+                Stop fuzzy matching of sequence regions from occuring
+  Example     : my $slice = $sa->fetch_by_toplevel_location('X:1-10000')
+                my $slice = $sa->fetch_by_toplevel_location('X:1-10000:-1')
+  Description : Converts an Ensembl location/region into the sequence region
+                name, start and end and passes them onto C<fetch_by_region()>. 
+                The code assumes that the required slice is on the top level
+                coordinate system. The code assumes that location formatting
+                is not perfect and will perform basic cleanup before parsing.
+  Returntype  : Bio::EnsEMBL::Slice
+  Exceptions  : If $location or coordinate system is false otherwise 
+                see C<fetch_by_region()>
+  Caller      : General
+  Status      : Beta
+
+=cut
+
+sub fetch_by_location {
+  my ($self, $location, $coord_system_name, $coord_system_version, $no_warnings, $no_fuzz) = @_;
+  
+  throw "No coordinate system name specified" unless $coord_system_name;
+  
   my ($seq_region_name, $start, $end, $strand) = $self->parse_location_to_values($location, $no_warnings);
 
   if(! $seq_region_name) {
@@ -490,8 +533,7 @@ sub fetch_by_toplevel_location {
     throw "Cannot request a slice whose start is greater than its end. Start: $start. End: $end";
   }
   
-  my $coord_system_name = 'toplevel';
-  my $slice = $self->fetch_by_region($coord_system_name, $seq_region_name, $start, $end, $strand, undef, 0);
+  my $slice = $self->fetch_by_region($coord_system_name, $seq_region_name, $start, $end, $strand, $coord_system_version, $no_fuzz);
   return unless $slice;
   
   my $srl = $slice->seq_region_length();
