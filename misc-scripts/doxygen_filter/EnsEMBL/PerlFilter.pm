@@ -445,7 +445,7 @@ sub code_action {
     
     push @big_buffer,$line; 
     # When we run out of open brackets, or we hit weird unpaired brackets in strings or comments
-    if ($brackets <=0 || $line =~ /^=/ || $line =~ /^\s*sub/ || $line =~ /^\s*1;/) {
+    if ($brackets <=0 || $line =~ /^=/ || $line =~ /^\s*sub[\s{]/ || $line =~ /^\s*1;/) {
         $state = NORMAL;
         push @big_buffer,"\@endcode\n </div>*/\n";
     	#Add fake function for doxygen to find after the comment.
