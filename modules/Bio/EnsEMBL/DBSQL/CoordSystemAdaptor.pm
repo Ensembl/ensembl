@@ -238,7 +238,7 @@ sub _cache_seq_region_mapping {
             seq_region sr,
             coord_system cs
   WHERE     ms.mapping_set_id = s.mapping_set_id
-    AND     ms.schema_build = ?
+    AND     ms.internal_schema_build = ?
     AND     s.internal_seq_region_id = sr.seq_region_id
     AND     sr.coord_system_id = cs.coord_system_id
     AND     cs.species_id = ?);
