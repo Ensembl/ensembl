@@ -590,7 +590,7 @@ sub _create_feature_fast {
   return $feature_type->new_fast($args);
 }
 
-=head2 count_by_Slice
+=head2 count_by_Slice_constraint
 
     Arg [0]     : Bio::EnsEMBL::Slice
     Arg [1]     : Custom SQL constraint
@@ -599,7 +599,7 @@ sub _create_feature_fast {
     Returntype  : Integer
 =cut
 
-sub count_by_Slice {
+sub count_by_Slice_constraint {
 	my $self = shift;
 	my ($slice, $constraint) = @_;
 	my $count = 0;
