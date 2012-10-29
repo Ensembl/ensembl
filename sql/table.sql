@@ -503,13 +503,16 @@ CREATE TABLE IF NOT EXISTS meta (
 # Add schema type and schema version to the meta table.
 INSERT INTO meta (species_id, meta_key, meta_value) VALUES
   (NULL, 'schema_type',     'core'),
-  (NULL, 'schema_version',  '69');
+  (NULL, 'schema_version',  '70');
 
 # Patches included in this schema file:
 # NOTE: At start of release cycle, remove patch entries from last release.
 # NOTE: Avoid line-breaks in values.
 INSERT INTO meta (species_id, meta_key, meta_value) VALUES
-  (NULL, 'patch', 'patch_68_69_a.sql|schema_version')
+  (NULL, 'patch', 'patch_69_70_a.sql|schema_version')
+ ;
+INSERT INTO meta (species_id, meta_key, meta_value) VALUES
+  (NULL, 'patch', 'patch_69_70_b.sql|add_mapping_set_history')
  ;
 
 /**
@@ -2067,9 +2070,11 @@ CREATE TABLE mapping_session (
 CREATE TABLE mapping_set (
 
         mapping_set_id  INT(10) UNSIGNED NOT NULL,
-        schema_build    VARCHAR(20) NOT NULL,
+        internal_schema_build    VARCHAR(20) NOT NULL,
+        external_schema_build    VARCHAR(20) NOT NULL,
 
-        PRIMARY KEY(schema_build)
+        PRIMARY KEY(mapping_set_id),
+        UNIQUE KEY mapping_idx (internal_schema_build, external_schema_build)
 
 ) ENGINE=MyISAM DEFAULT CHARSET=latin1;
 
