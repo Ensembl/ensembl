@@ -50,9 +50,6 @@ If it has, the table seq_region_mapping will contain the
 relation between old (external_seq_region_id) and the current
 (internal_seq_region_id).
 
-If it hasn't, a single entry in the mapping_set table with the same
-mapping_set_id as the previous release will be stored.
-
 =head1 EXAMPLES
 
 Update mapping_set information for all databases in ens-staging in
@@ -101,6 +98,7 @@ my $port = 3306;
 my $oldport = 3306;
 my $olduser = "ensro";
 my $oldpass = undef;
+my $previous_dbname = undef;
 my $help = undef;
 my $release = undef;
 my $dry_run = undef;
@@ -115,6 +113,7 @@ GetOptions('host=s'    => \$host,
 	   'oldport=s' => \$oldport,
 	   'olduser=s' => \$olduser,
 	   'oldpass=s' => \$oldpass,
+           'previous_dbname=s'  => \$previous_dbname,
 	   'help'      => \$help,
 	   'dry_run'   => \$dry_run,
 	   );
@@ -145,27 +144,42 @@ foreach my $h ($host,$host2) {
   foreach my $db_name (@{$dbs}){
     my $current_dbname = $db_name->[0];
     print STDERR "Going to update mapping for $current_dbname....\n";
-    my $mapping_set_id = get_max_mapping_set_id($dbh, $current_dbname) + 1;
+    my $mapping_set_id = get_max_mapping_set_id($dbh,$current_dbname) + 1;
     my $sth_seq_mapping = $dbh->prepare("INSERT INTO $current_dbname.seq_region_mapping VALUES(?,?,?)");
-    my $sth_mapping_set = $dbh->prepare("INSERT INTO $current_dbname.mapping_set VALUES(?,?)");
+    my $sth_mapping_set = $dbh->prepare("INSERT INTO $current_dbname.mapping_set VALUES(?,?,?)");
+    my $sth_update_build = $dbh->prepare("UPDATE $current_dbname.mapping_set SET internal_schema_build = ?");
+    my $sth_update_old = $dbh->prepare("UPDATE $current_dbname.seq_region_mapping SET internal_seq_region_id = ? WHERE internal_seq_region_id = ?");
+    my $sth_remove_deprecated = $dbh->prepare("DELETE FROM $current_dbname.seq_region_mapping WHERE internal_seq_region_id = ?");
     my $schema_build = get_schema_and_build($current_dbname);
-    my $current_assembly = get_assembly($dbh, $current_dbname) ;
-    my $count = 0;
+    my $current_assembly = get_assembly($dbh,$current_dbname) ;
+    my $count_removed = 0;
+    my $count_updated = 0;
+    my $count_added = 0;
 
-    $sth_mapping_set->execute($mapping_set_id,$schema_build) unless $dry_run;
+    $sth_update_build->execute($schema_build) unless $dry_run;
+    if (!$previous_dbname) {
+       $previous_dbname = &get_previous_dbname($old_dbh,$current_dbname,$release);
+    }
 
 # If there is no previous database, no mapping needed
-    my $previous_dbname = &get_previous_dbname($old_dbh,$current_dbname,$release);
     if (!defined($previous_dbname)) {
        print STDERR "First instance known for $current_dbname, no mapping needed\n";
        next;
     }
 
 # If it is a new assembly, no mapping needed
-    my $old_assembly = get_assembly($old_dbh, $previous_dbname); 
+    my $old_assembly = get_assembly($old_dbh,$previous_dbname); 
     if ($old_assembly ne $current_assembly) { 
-      print STDERR "New assembly for $current_dbname, no mapping needed\n" ;
+      print STDERR "New assembly $current_assembly for $current_dbname, no mapping needed\n" ;
       next; 
+    }
+
+    my $previous_schema_build = get_schema_and_build($previous_dbname);
+    my $new_mapping = $sth_mapping_set->execute($mapping_set_id,$schema_build,$previous_schema_build) unless $dry_run;
+
+    if (!$new_mapping) {
+      print STDERR "Mapping already run for this schema_build, please remove entry before proceeding\n" ;
+      exit;
     }
 
 # If there has been no change in seq_region, no mapping needed
@@ -184,13 +198,17 @@ foreach my $h ($host,$host2) {
     foreach my $seq_region_name (keys %{$old_seq_region}){
       my $current_name_hash = $current_seq_region->{$seq_region_name};
       my $old_name_hash = $old_seq_region->{$seq_region_name};
-# The seq_region might have disappeared
+
+# If the seq_region has disappeared, remove previous entries for that id
       if (!defined $current_name_hash) {
+        my $id = get_seq_region_id($old_dbh,$previous_dbname, $seq_region_name);
+        $count_removed += $sth_remove_deprecated->execute($id) unless $dry_run;
         next;
       }
       foreach my $length (keys %{$old_name_hash}){
         my $current_length_hash = $current_name_hash->{$length};
         my $old_length_hash = $old_name_hash->{$length};
+
 # The seq_region might have a different length
         if (!defined $current_length_hash) {
           next;
@@ -198,6 +216,7 @@ foreach my $h ($host,$host2) {
         foreach my $cs (keys %{$old_length_hash}) {
           my $current_cs_hash = $current_length_hash->{$cs};
           my $old_cs_hash = $old_length_hash->{$cs};
+
 # The coord system might have changed
           if (!defined $current_cs_hash) {
             next;
@@ -205,26 +224,29 @@ foreach my $h ($host,$host2) {
           foreach my $id (keys %{$old_cs_hash}) {
             my $current_id = $current_cs_hash->{$id};
             my $old_id = $old_cs_hash->{$id};
+
 # If no change, no need to write out
             if (!defined $current_id || $old_id == $current_id) {
               next;
             }
-            $sth_seq_mapping->execute($old_id, $current_id, $mapping_set_id) unless $dry_run;
-            $count++;
+
+# If there is a change, update any existing entries for this seq_region to the new id
+# Then, add a new entry to map said id to the old release
+            $count_updated += $sth_update_old->execute($current_id,$old_id) unless $dry_run;
+            $count_added += $sth_seq_mapping->execute($old_id,$current_id, $mapping_set_id) unless $dry_run;
           }
         }
       }
     }
-    print STDERR "Added $count seq_region_mapping entry for $current_dbname\n\n";
+    print STDERR "For $current_dbname, removed $count_removed, added $count_added, updated $count_updated seq_region_mapping entries\n\n" ;
   }
 }
 
+
 # For a given database, will return the seq_region_name->seq_region_id relation
-sub read_seq_region{
-  my $dbh = shift;
-  my $dbname = shift;
-  my %seq_region_hash;
-  my ($seq_region_id, $seq_region_name, $coord_system_id, $length, $cs_name, $cs_rank);
+sub read_seq_region {
+  my ($dbh, $dbname) = @_;
+  my (%seq_region_hash, $seq_region_id, $seq_region_name, $coord_system_id, $length, $cs_name, $cs_rank);
   my $sth = $dbh->prepare("SELECT seq_region_id, s.name, length, cs.name, cs.rank FROM $dbname.seq_region s, $dbname.coord_system cs WHERE cs.coord_system_id = s.coord_system_id");
   $sth->execute();
   $sth->bind_col(1,\$seq_region_id);
@@ -239,20 +261,25 @@ sub read_seq_region{
 }
 
 # For a given database, returns the size of the seq_region_table
-sub get_seq_region_checksum{
-    my $dbh = shift;
-    my $dbname = shift;
+sub get_seq_region_checksum {
+    my ($dbh, $dbname) = @_;
     my $sth_status = $dbh->prepare("checksum table $dbname.seq_region") ;
     $sth_status->execute();
     my $table_status = $sth_status->fetchrow_array();
     return $table_status; #return the size of the table
 }
 
-# Will return the max mapping_set_id being used in the mapping_set table
-sub get_max_mapping_set_id{
-    my $dbh = shift;
-    my $dbname = shift;
+sub get_seq_region_id {
+    my ($dbh, $dbname, $seq_region_name) = @_;
+    my $sth_region = $dbh->prepare("SELECT seq_region_id FROM $dbname.seq_region WHERE name = ?");
+    $sth_region->execute($seq_region_name);
+    my $seq_region_id = $sth_region->fetchrow_array();
+    return $seq_region_id;
+}
 
+# Will return the max mapping_set_id being used in the mapping_set table
+sub get_max_mapping_set_id {
+    my ($dbh, $dbname) = @_;
     my $sth_mapping = $dbh->prepare("select max(mapping_set_id) from $dbname.mapping_set");
     $sth_mapping->execute();
     my ($max_mapping_set_id) = $sth_mapping->fetchrow_array();
@@ -261,12 +288,9 @@ sub get_max_mapping_set_id{
 }
 
 # This method will return the name of the previous database to release for same species (assuming is present)
-sub get_previous_dbname{
-    my $dbh = shift;
-    my $dbname = shift;
-    my $release = shift;
+sub get_previous_dbname {
+    my ($dbh, $dbname, $release) = @_;
     my $previous_dbname;
-
     $dbname =~ /(^([a-z]+_){2,3}core_)/;
     if (!$1) { throw("Database name $dbname is not in the right format"); }
     my $previous_release_name = $1 . (--$release);
@@ -277,14 +301,14 @@ sub get_previous_dbname{
 }
 
 # For a standard ensembl database name, returns the release number and assembly
-sub get_schema_and_build{
+sub get_schema_and_build {
   my ($dbname) = @_;
   my @dbname = split/_/, $dbname;
-  return join "_",$dbname[($#dbname -1)], $dbname[($#dbname)];
+  return join "_", $dbname[($#dbname -1)], $dbname[($#dbname)];
 }
 
-# Returna the assembly name for a given database
-sub get_assembly{
+# Returns the assembly name for a given database
+sub get_assembly {
   my ($dbh, $dbname) = @_;
   my $sth = $dbh->prepare("select meta_value from $dbname.meta where meta_key = 'assembly.default'");
   $sth->execute();
