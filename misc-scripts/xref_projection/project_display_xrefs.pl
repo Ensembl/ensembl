@@ -12,7 +12,14 @@ use Bio::EnsEMBL::DBSQL::DBAdaptor;
 use Bio::EnsEMBL::DBSQL::GeneAdaptor;
 use Bio::EnsEMBL::DBSQL::OntologyTermAdaptor;
 use Bio::EnsEMBL::Utils::Eprof qw(eprof_start eprof_end eprof_dump);
+use Bio::EnsEMBL::Utils::Exception;
 
+use LWP::Simple;
+use JSON;
+
+# Update if the GOA webservice goes away
+my $goa_webservice = "http://www.ebi.ac.uk/QuickGO/";
+my $goa_params = "GValidate?service=taxon&action=getBlacklist&taxon=";
 my $method_link_type = "ENSEMBL_ORTHOLOGUES";
 
 my %seen;
@@ -203,25 +210,14 @@ foreach my $local_to_species (@to_multi) {
   my $to_dbea = Bio::EnsEMBL::Registry->get_adaptor($to_species, 'core', 'DBEntry');
 
 
-    # Determine if source and target species are both mammals or not: class Mammalia in meta
-    # table, meaning full GO projection is allowable
-    # Platypus is not treated as a mammal here, but "is_therian" doesn't mean anything.
+    # Interrogate GOA web service for forbidden GO terms for the given species.
+    # This requires both a lookup, and then finding all child-terms on the forbidden list.
+   
+  %forbidden_terms = get_GOA_forbidden_terms($to_species);
+   
+  # The forbidden_terms list is used in unwanted_go_term();
     
-    $from_mammal = is_mammal($from_species);
-    $to_mammal = is_mammal($to_species);
     
-    if ($from_mammal && !$to_mammal) {
-        # Determine GO terms that are not applicable for the present non-mammalian species.
-        # Consult ontology for list of descendent terms.
-        # Using a temporary list of general forbidden terms. Presently consists of four GO terms
-        # recommended by GOA. e.g. "walks on legs" should not be projected to fish
-        %forbidden_terms = get_ontology_terms('GO:0032501','GO:0007610','GO:0048856','GO:0051704');
-        
-        # The forbidden_terms list is used in unwanted_go_term();
-    }
-    
-    #######
-
   write_to_projection_db($to_ga->dbc(), $release, $from_species, $from_ga->dbc(), $to_species) unless ($no_database);
 
   backup($to_ga, $to_species) if (!$no_backup);
@@ -301,18 +297,6 @@ foreach my $local_to_species (@to_multi) {
 
 }
 
-# mammal here is a pseudonym for normal mammals and marsupials but not platypus.
-sub is_mammal {
-    my $species = shift;
-    my $meta_container = Bio::EnsEMBL::Registry->get_adaptor($species,'core','MetaContainer');
-    my @classifications = @{ $meta_container->list_value_by_key('species.classification') };
-
-    foreach my $rank (@classifications) {
-        if ($rank eq "Theria") {return 1;} 
-    }
-    return;
-}
-
 sub get_ontology_terms {
     my @starter_terms = @_;
     my $ontology_adaptor = Bio::EnsEMBL::Registry->get_adaptor('Multi','Ontology','OntologyTerm');
@@ -326,6 +310,63 @@ sub get_ontology_terms {
     }
     return %terms;
 }
+
+sub get_GOA_forbidden_terms {
+    my $species = shift;
+    my %terms;
+    
+    # Translate species into taxonID
+    my $meta_container = Bio::EnsEMBL::Registry->get_adaptor($species,'core','MetaContainer');
+    my ($taxon_id) = @{ $meta_container->list_value_by_key('species.taxonomy_id')};
+        
+    # hit the web service with a request, build up a hash of all forbidden terms for this species
+    my $user_agent = LWP::UserAgent->new();
+    my $response;
+    $response = $user_agent->get($goa_webservice.$goa_params.$taxon_id);
+    # Retry until web service comes back?
+    my $retries = 0;
+    while (! $response->is_success ) {
+        if ($retries > 5) {
+            throw( "Failed to contact GOA webservice 6 times in a row. Dying ungracefully.");
+        }
+        
+        warning( "Failed to contact GOA webservice, retrying on ".$goa_webservice.$goa_params.$taxon_id.
+            "\n LWP error was: ".$response->code
+        );
+        $retries++;
+        $response = $user_agent->get($goa_webservice.$goa_params.$taxon_id);
+    }
+    
+    
+    
+    my $blacklist = from_json($response->content);
+    my @blacklist_pairs = @{ $blacklist->{'blacklist'} };
+    
+    my $translation_adaptor = Bio::EnsEMBL::Registry->get_adaptor($species,'core','translation');
+    
+    
+    foreach my $go_t (@blacklist_pairs) {
+        # look up protein accession in xrefs to get real EnsEMBL associations
+        my %bad_thing = %{$go_t};
+        # %bad_thing is (proteinAc => AAAA, goId => GO:111111)
+
+        # Get all child terms for the GO term
+        my %many_bad_things = get_ontology_terms($bad_thing{'goId'});        
+        # %many_bad_things consists of ('GO:32141' => 1)
+        my @translations = @{ $translation_adaptor->fetch_all_by_external_name($bad_thing{'proteinAc'}) };
+        foreach my $translation ( @translations) {
+            if (exists($terms{$translation->stable_id})) {
+                @many_bad_things{keys $terms{$translation->stable_id}} = values %{$terms{$translation->stable_id}}; # merge existing hash with new one
+            }
+            $terms{$translation->stable_id} = \%many_bad_things;
+        }
+        
+        # and return the list
+    }
+    
+    return %terms;
+}
+
 
 # --------------------------------------------------------------------------------
 
@@ -477,7 +518,10 @@ sub project_go_terms {
     foreach my $et (@{$dbEntry->get_all_linkage_types}){
       next DBENTRY if (!grep(/$et/, @evidence_codes));
     }
-    next if (unwanted_go_term($dbEntry));
+    # Check GO term against GOA blacklist
+    next DBENTRY if (unwanted_go_term($to_translation->stable_id,$dbEntry->primary_id));
+
+
 
     # check that each from GO term isn't already projected
     next if ($go_check && go_xref_exists($dbEntry, $to_go_xrefs));
@@ -508,11 +552,12 @@ sub project_go_terms {
 
 }
 
+# Perform a hash lookup in %forbidden_terms, defined higher up ()
 sub unwanted_go_term {
-    my $dbEntry = shift;
+    my ($stable_id,$go_term);
     
-    if ($from_mammal && !$to_mammal) {
-        if (exists $forbidden_terms{$dbEntry->primary_id}) {
+    if (exists ($forbidden_terms{$stable_id}) ) {
+        if (exists ( $forbidden_terms{$stable_id}->{$go_term} )) {
             return 1;
         }
     }
