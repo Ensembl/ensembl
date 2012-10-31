@@ -976,17 +976,20 @@ sub clean_blast_database{
     my $update_time = $row->[12]; ## update time ---  Should be a string like 2003-08-15 10:36:56
 
     #cope with an innodb tables that have no update time (keep them for five days longer)
+    my $days_to_keep = $days;
     unless ($update_time) {
       $update_time = $row->[11];
-      $days +=5;
+      $days_to_keep = $days + 5;
       next unless $update_time;
     }
+
+
     my @time = split( /[-:\s]/, $update_time );
     my $epoch_then = timelocal( $time[5], $time[4],   $time[3], 
 				$time[2], $time[1]-1, $time[0] - 1900 );
     my $secs_old = time() - $epoch_then;
     my $days_old = $secs_old / ( 60 * 60 * 24 );
-    if( $days_old > $days ){
+    if( $days_old > $days_to_keep ){
       warn( "Dropping table $table_name: $num_rows rows\n" );
       my $sth_drop = $self->prepare( "DROP table $table_name" );
       my $sth_log  = $self->prepare( $SQL_TABLE_LOG_UPDATE );
