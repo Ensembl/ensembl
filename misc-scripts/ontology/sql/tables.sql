@@ -50,11 +50,11 @@ CREATE TABLE term (
 CREATE TABLE synonym (
   synonym_id    INT UNSIGNED NOT NULL AUTO_INCREMENT,
   term_id       INT UNSIGNED NOT NULL,
-  name          VARCHAR(255) NOT NULL,
+  name          TEXT NOT NULL,
 
   PRIMARY KEY (synonym_id),
   UNIQUE INDEX term_synonym_idx (term_id, synonym_id),
-  INDEX name_idx (name)
+  INDEX name_idx (name(50))
 );
 
 CREATE TABLE relation_type (
