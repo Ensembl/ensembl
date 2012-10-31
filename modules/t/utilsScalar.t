@@ -169,4 +169,17 @@ close($_) for ($scalar_fh, $other_scalar_fh);
   dies_ok { split_array(1, {}) } 'Passing in a non-array ref means death';
 }
 
+# Testing global assertion turn-off
+{
+  local $Bio::EnsEMBL::Utils::Scalar::ASSERTIONS = 0;
+  lives_ok {assert_ref([], 'HASH')      } 'Assertions off; [] returns true for HASH';
+  lives_ok {assert_file_handle([])      } 'Assertions off; [] returns true for assert_file_handle()';
+  lives_ok {assert_strand([])           } 'Assertions off; [] returns true for assert_strand()';
+  lives_ok {assert_boolean([])          } 'Assertions off; [] returns true for assert_boolean()';
+  lives_ok {assert_integer([])          } 'Assertions off; [] returns true for assert_integer()';
+  lives_ok {assert_numeric([])          } 'Assertions off; [] returns true for assert_numeric()';
+  lives_ok {assert_ref_can([], 'wibble')} 'Assertions off; [] returns true for assert_ref_can()';
+}
+dies_ok { assert_ref([], 'HASH') } 'Assertions back on; [] is not a HASH';
+
 done_testing();

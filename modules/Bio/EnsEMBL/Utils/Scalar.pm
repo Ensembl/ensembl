@@ -118,6 +118,8 @@ our @EXPORT_OK;
 use Bio::EnsEMBL::Utils::Exception qw(throw);
 use Scalar::Util qw(blessed looks_like_number openhandle);
 
+our $ASSERTIONS = 1;
+
 =head2 check_ref()
 
   Arg [1]     : The reference to check
@@ -165,6 +167,9 @@ sub check_ref {
                 indicating the situation.
 
                 Undefs cause exception circumstances.
+                
+                You can turn assertions off by using the global variable
+                $Bio::EnsEMBL::Utils::Scalar::ASSERTIONS = 0
   Returntype  : Boolean; true if we managed to get to the return
   Example     : assert_ref([], 'ARRAY');
   Exceptions  : If the expected type was not set and if the given reference
@@ -175,6 +180,7 @@ sub check_ref {
 
 sub assert_ref {
   my ($ref, $expected, $attribute_name) = @_;
+  return 1 unless $ASSERTIONS;
   $attribute_name ||= '-Unknown-';
   throw('No expected type given') if ! defined $expected;
   my $class = ref($ref);
@@ -248,6 +254,9 @@ sub check_ref_can {
                 C<-Unknown->.
   Description : A subroutine which checks to see if the given object/ref is
                 implements the given method. Will throw exceptions.
+                
+                You can turn assertions off by using the global variable
+                $Bio::EnsEMBL::Utils::Scalar::ASSERTIONS = 0
   Returntype  : Boolean; true if we managed to get to the return
   Example     : assert_ref_can($gene, 'dbID');
   Exceptions  : If the reference is not defined, if the object does not
@@ -258,6 +267,7 @@ sub check_ref_can {
 
 sub assert_ref_can {
   my ($ref, $method, $attribute_name) = @_;
+  return 1 unless $ASSERTIONS;
   $attribute_name ||= '-Unknown-';
   throw('No method given') if ! defined $method;
   throw "The given reference $attribute_name is not defined" unless defined $ref;
@@ -277,6 +287,9 @@ sub assert_ref_can {
                 C<-Unknown->.
   Description : A subroutine which checks to see if the given scalar is
                 number or not. If not then we raise exceptions detailing why
+                
+                You can turn assertions off by using the global variable
+                $Bio::EnsEMBL::Utils::Scalar::ASSERTIONS = 0
   Returntype  : Boolean; true if we had a numeric otherwise we signal failure
                 via exceptions
   Example     : assert_numeric(1, 'dbID');
@@ -288,6 +301,7 @@ sub assert_ref_can {
 
 sub assert_numeric {
   my ($integer, $attribute_name) = @_;
+  return 1 unless $ASSERTIONS;
   $attribute_name ||= '-Unknown-';
   throw "$attribute_name attribute is undefined" if ! defined $integer;
   throw "The given attribute $attribute_name is blessed; cannot work with blessed values" if blessed($integer);
@@ -306,6 +320,9 @@ sub assert_numeric {
   Description : A subroutine which checks to see if the given scalar is
                 a whole integer; we delegate to L<assert_numeric> for number
                 checking.
+                
+                You can turn assertions off by using the global variable
+                $Bio::EnsEMBL::Utils::Scalar::ASSERTIONS = 0
   Returntype  : Boolean; true if we had a numeric otherwise we signal failure
                 via exceptions
   Example     : assert_integer(1, 'dbID');
@@ -317,6 +334,7 @@ sub assert_numeric {
 
 sub assert_integer {
   my ($integer, $attribute_name) = @_;
+  return 1 unless $ASSERTIONS;
   $attribute_name ||= '-Unknown-';
   assert_numeric($integer, $attribute_name);
   if($integer != int($integer)) {
@@ -333,6 +351,9 @@ sub assert_integer {
                 C<-Unknown->.
   Description : A subroutine which checks to see if the given scalar is
                 a boolean i.e. value is set to C<1> or C<0>
+                
+                You can turn assertions off by using the global variable
+                $Bio::EnsEMBL::Utils::Scalar::ASSERTIONS = 0
   Returntype  : Boolean; true if we were given a boolean otherwise we signal
                 failure via exceptions
   Example     : assert_boolean(1, 'is_circular');
@@ -344,6 +365,7 @@ sub assert_integer {
 
 sub assert_boolean {
   my ($boolean, $attribute_name) = @_;
+  return 1 unless $ASSERTIONS;
   $attribute_name ||= '-Unknown-';
   assert_numeric($boolean, $attribute_name);
   if($boolean != 0 && $boolean != 1) {
@@ -360,6 +382,9 @@ sub assert_boolean {
                 C<-Unknown->.
   Description : A subroutine which checks to see if the given scalar is
                 a whole integer and if the value is set to C<1>, C<0> or C<-1>
+                
+                You can turn assertions off by using the global variable
+                $Bio::EnsEMBL::Utils::Scalar::ASSERTIONS = 0
   Returntype  : Boolean; true if we had a strand integer otherwise we signal
                 failure via exceptions
   Example     : assert_strand(1, 'strand');
@@ -371,6 +396,7 @@ sub assert_boolean {
 
 sub assert_strand {
   my ($strand, $attribute_name) = @_;
+  return 1 unless $ASSERTIONS;
   $attribute_name ||= '-Unknown-';
   assert_numeric($strand, $attribute_name);
   if($strand != -1 && $strand != 0 && $strand ne 1) {
@@ -390,6 +416,9 @@ sub assert_strand {
                 actually a file handle. This will handle those which are Glob
                 references and those which inherit from C<IO::Handle>. It will
                 also cope with a blessed Glob reference.
+                
+                You can turn assertions off by using the global variable
+                $Bio::EnsEMBL::Utils::Scalar::ASSERTIONS = 0
   Returntype  : Boolean;
   Example     : assert_file_handle($fh, '-FILE_HANDLE');
   Exceptions  : Raised if not defined, not a reference and was not a
@@ -400,6 +429,7 @@ sub assert_strand {
 
 sub assert_file_handle {
   my ($file_handle, $attribute_name) = @_;
+  return 1 unless $ASSERTIONS;
   $attribute_name ||= '-Unknown-';
   throw "Attribute $attribute_name was undefined" if ! defined $file_handle;
   my $ref = ref($file_handle);
