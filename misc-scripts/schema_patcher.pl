@@ -294,7 +294,7 @@ foreach my $thing ( [ 'ensembl',               'core', 'table.sql' ],
 
       if ($opt_verbose) {
         printf( "Found %s patch file '%s' for release %d\n",
-                $schema_type, $file_name, $patch_release );
+                $schema_type, $file_name, $patch_release ) if ! $opt_quiet;
       }
 
       my $full_file_name = catfile( $sql_dir, $file_name );
@@ -659,6 +659,6 @@ sub _sql_dir {
     }
     return;
   }
-  printf("Using '%s' as our SQL directory\n", $sql_dir);
+  printf("Using '%s' as our SQL directory\n", $sql_dir) if ! $opt_quiet;
   return $sql_dir;
 }
