@@ -459,7 +459,6 @@ sub project_display_names {
       print $to_gene->stable_id() . " --> " . $dbEntry->display_id() . "\n" if ($print);
       
       #Now assign names to the transcripts; currently only works when species is pig
-      if($to_species eq 'pig') {
         overwrite_transcript_display_xrefs($to_gene, $dbEntry, $info_txt);
         foreach my $transcript (@to_transcripts) {
           my $display = $transcript->display_xref();
@@ -472,7 +471,6 @@ sub project_display_names {
             $to_dbea->store($display, $transcript->dbID(), 'Transcript', 1);
           }
         }
-      }
 
       # update the gene so that the display_xref_id is set and the 
       # transcript to set the status & display xref if applicable 
@@ -863,7 +861,6 @@ sub check_overwrite_display_xref {
 #Only apply this to pig
 sub overwrite_transcript_display_xrefs {
   my ($to_gene, $ref_dbEntry, $info_txt) = @_;
-  return unless $to_species eq 'pig';
   my $transcripts = $to_gene->get_all_Transcripts();
   my @havana = grep { 
     $_->analysis->logic_name eq 'ensembl_havana_transcript' ||
