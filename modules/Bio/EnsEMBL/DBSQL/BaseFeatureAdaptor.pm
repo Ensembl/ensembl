@@ -603,7 +603,6 @@ sub count_by_Slice_constraint {
 	my $self = shift;
 	my ($slice, $constraint) = @_;
 	my $count = 0;
-	
 	my $count_array = $self->_get_by_Slice($slice,$constraint,'count');
 	$count += $_ for @$count_array;
 	return $count;
@@ -637,8 +636,7 @@ sub _get_by_Slice {
 	
     my $assembly_mapper_adaptor = $self->db->get_AssemblyMapperAdaptor();
     my @pan_coord_features;
-    
-    
+        
 COORD_SYSTEM: foreach my $coord_system (@feature_coord_systems) {
         my @query_accumulator;
         # Build up a combination of query constraints that will quickly establish the result set
@@ -702,10 +700,10 @@ COORD_SYSTEM: foreach my $coord_system (@feature_coord_systems) {
                   }
               }
            }
-           
            push @query_accumulator, [$constraint,undef,$slice]; # $mapper intentionally absent here.
            
-        } else { #Êcoordinate systems do not match
+        } else { 
+        	#coordinate systems do not match
             $mapper = $assembly_mapper_adaptor->fetch_by_CoordSystems( $slice->coord_system(), $coord_system );
             next unless defined $mapper;
 
@@ -769,7 +767,6 @@ COORD_SYSTEM: foreach my $coord_system (@feature_coord_systems) {
                push @pan_coord_features, @$features;
     	   }
 	   }
-	   
 	   $mapper = undef;
     } # End foreach
     return \@pan_coord_features;
