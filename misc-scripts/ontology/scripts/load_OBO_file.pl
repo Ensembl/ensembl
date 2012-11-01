@@ -19,25 +19,27 @@ use OBO::Util::TermSet;
 #-----------------------------------------------------------------------
 
 sub usage {
-  print("Usage:\n");
-  printf( "\t%s\t-h dbhost [-P dbport] \\\n"
-            . "\t%s\t-u dbuser [-p dbpass] \\\n"
-            . "\t%2\$s\t-d dbname [-t] \\\n"
-            . "\t%2\$s\t-f file\\\n"
-            . "\t%2\$s\t-o ontology\n",
-           $0, ' ' x length($0) );
-  print("\n");
-  printf( "\t%s\t-?\n", $0 );
-  print("\n");
-  print("Arguments:\n");
-  print("\t-h/--host dbhost\tDatabase server host name\n");
-  print("\t-P/--port dbport\tDatabase server port (optional)\n");
-  print("\t-u/--user dbuser\tDatabase user name\n");
-  print("\t-p/--pass dbpass\tUser password (optional)\n");
-  print("\t-d/--name dbname\tDatabase name\n");
-  print("\t-f/--file file\t\tThe OBO file to parse\n");
-  print("\t-o/--ontology \t\tOntology name\n");
-  print("\t-?/--help\t\tDisplays this information\n");
+  my $pro = $0;
+  my $off = q{ } x length($pro);
+  print <<USAGE;
+Usage:
+  $pro  -h dbhost [-P dbport]
+  $off  -u dbuser [-p dbpass]
+  $off  -d dbname
+  $off  -f file
+  $off  -o ontology
+  $off  [-?]
+
+Arguments:
+  -h/--host dbhost  Database server host name
+  -P/--port dbport  Database server port (optional)
+  -u/--user dbuser  Database user name
+  -p/--pass dbpass  User password (optional)
+  -d/--name dbname  Database name
+  -f/--file file    The OBO file to parse
+  -o/--ontology     Ontology name
+  -?/--help         Displays this information
+USAGE
 }
 
 #-----------------------------------------------------------------------
