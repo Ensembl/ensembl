@@ -44,9 +44,9 @@ sub run_script {
     $user = $1;
   }
 
-  my $vuser;
+  my $vuser = 'ensro';
   my $vhost;
-  my $vport;
+  my $vport = 3306;
   my $vdbname;
   my $vpass;
 
@@ -66,9 +66,9 @@ sub run_script {
     $vpass = $1;
   }
 
-  my $cuser;
+  my $cuser = 'ensro';
   my $chost;
-  my $cport;
+  my $cport = 3306;
   my $cdbname;
   my $cpass;
 
