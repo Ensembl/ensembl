@@ -1,4 +1,4 @@
-#!/usr/local/ensembl/bin/perl -w
+#!/usr/bin/env perl
 
 # Modified from "Relational Modeling of
 # Biological Data: Trees and Graphs", page 2:
