@@ -13,14 +13,14 @@ my $verbose;
 # The object types we'd like to parse.
 our %object_types = ( gene       => 1,
                       mRNA       => 1,
-											pre_miRNA  => 1,
-                      miRNA      => 1,
-                      ncRNA      => 1,
                       protein    => 1,
                       pseudogene => 1,
+                      miRNA      => 1,
+                      ncRNA      => 1,
+                      pre_miRNA  => 1,
                       rRNA       => 1,
-                      snRNA      => 1,
                       snoRNA     => 1,
+                      snRNA      => 1,
                       tRNA       => 1 );
 
 # This is some statistics from the 5.4 file 'dmel-all-r5.4.gff.gz',
@@ -67,37 +67,36 @@ our %object_types = ( gene       => 1,
 
 # This hash will translate the Dbxref names in the data file into source
 # names known by the Xref system.
-our %source_name_map = ( 'FlyBase'    => 'flybase_annotation_id',
-                         'GB'         => 'EMBL',
-                         'GB_protein' => 'protein_id',
-                         'INTERPRO'   => 'Interpro',
-#                         'UniProt/Swiss-Prot' => 'Uniprot/SWISSPROT',
-#                         'UniProt/TrEMBL'     => 'Uniprot/SPTREMBL',
-                         'bdgpinsituexpr'     => 'BDGP_insitu_expr',
-                         'dedb'               => 'DEDb',
-                         'flygrid'            => 'FlyGrid',
-												 'TF'                 => 'TransFac',
+# It's important to _not_ import the FlyBase UniProt annotations; they're
+# done at the gene level, which means that when we do our UniProt analysis
+# at the translation# level results are shifted to the gene level, which
+# messes up the web display.
+our %source_name_map = ( 'FlyBase'            => 'flybase_annotation_id',
+                         'BIOGRID'            => 'BioGRID',
                          'EPD'                => 'EPD',
-												 'MIR'                => 'miRBase',
-												 'MEROPS'             => 'MEROPS',
-												 'BIOGRID'            => 'BioGRID',
-												 'FlyReactome'        => 'FlyReactome',
-												 'GenomeRNAi_gene'    => 'GenomeRNAi',
-												 'INTERACTIVEFLY'     => 'InteractiveFly',
-												 'MITODROME'          => 'MitoDrome',
-												 'flyexpress'         => 'FlyExpress',
-												 'Rfam'               => 'RFAM',
-			 #'FlyAtlas'           => 'FlyAtlas',
-			 #'GCR'                => 'GPCR',
-			 #'GLEANR'             => 'GLEAN-R',
+                         'flyexpress'         => 'FlyExpress',
+                         'FlyReactome'        => 'FlyReactome',
+                         'GB'                 => 'EMBL',
+                         'GB_protein'         => 'protein_id',
+                         'GenomeRNAi'         => 'GenomeRNAi',
+                         'INTERACTIVEFLY'     => 'InteractiveFly',
+                         'MEROPS'             => 'MEROPS',
+                         'MIR'                => 'miRBase',
+                         'MITODROME'          => 'MitoDrome',
+                         'Rfam'               => 'Rfam',
+                         'TF'                 => 'TransFac',
+                         'INTERPRO'           => 'Interpro',
+                         #'FlyAtlas'           => 'FlyAtlas',
+                         #'UniProt/Swiss-Prot' => 'Uniprot/SWISSPROT',
+                         #'UniProt/TrEMBL'     => 'Uniprot/SPTREMBL',
 		       );
 
 # This is for source_ids that depend on the type of 'ID' of the line.
 our %special_source_name_map = (
                                 'gene' => {
-                                         'Dbxref' => 'FlyBaseCGID_gene',
-                                         'Name'   => 'FlyBaseName_gene',
-                                         'ID'     => 'flybase_gene_id'
+                                   'Dbxref' => 'FlyBaseCGID_gene',
+                                   'Name'   => 'FlyBaseName_gene',
+                                   'ID'     => 'flybase_gene_id'
                                 },
                                 'transcript' => {
                                    'Dbxref' => 'FlyBaseCGID_transcript',
@@ -404,6 +403,9 @@ sub run {
 			# because FlyBase use %2C to distinguish from the , separator in the GFF dump
 			# we have to put it back
 			$description =~ s/%2C/,/g; 
+
+			# Embedded newlines wreak havoc further down the line
+			$description =~ s/[\n\r]//gm;
 
       my $xref_id;
 
