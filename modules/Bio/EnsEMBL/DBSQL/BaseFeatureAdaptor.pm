@@ -605,7 +605,6 @@ sub count_by_Slice_constraint {
 	my $count = 0;
 	
 	my $count_array = $self->_get_by_Slice($slice,$constraint,'count');
-	foreach (@$count_array) { print "$_,";}
 	$count += $_ for @$count_array;
 	return $count;
 }
