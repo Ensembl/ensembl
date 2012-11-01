@@ -1068,6 +1068,9 @@ sub find_from_other_sources{
     $dbentrie_sth->execute($ext_db_name, $gene_id, "Gene");
     $dbentrie_sth->bind_columns(\$display, \$xref_id, \$object_xref_id, \$level, \$desc);
     while($dbentrie_sth->fetch){
+      if ($display =~ /^LOC/ || $display =~ /^SSC/) {
+        next;
+      }
       $gene_symbol = $display;
       $gene_symbol_xref_id = $xref_id;
       $$tran_source = $ext_db_name;
