@@ -19,14 +19,18 @@ use base qw( XrefMapper::BasicMapper);
 #      ZebraFish (ZFIN_ID),
 #      Human (HGNC)
 #      Mouse (MGI)
+#      Pig (PIGGY)
+#         There is currently no official domain source for pig, but it has manual annotation
+#         We use PIGGY as a fake official naming source
 #
 #  1) So we find the best official name for each gene
 #     order for this is:-
 #               i)   official domain name source (HGNC, MGI, ZFIN_ID)
 #               ii)  RFAM
 #               iii) miRBase
-#               iv)  Vega clone name
-#               v)   Clone name
+#               iv)  Uniprot_genename
+#               v)   Vega clone name
+#               vi)  Clone name
 #
 #      NOTE: for "i)" above, if more than one exists we find the "best" one if possible
 #            and remove the other ones. If there is more than one "best" we keep all and
@@ -37,6 +41,9 @@ use base qw( XrefMapper::BasicMapper);
 #            i.e. if we have 7 transcripts for Vega and these are 
 #                 AAA-001, AAA-002, BBB-001, BBB-001, AAA-003. AAA-007
 #                 Then we choose AAA as the offical name as this occurs more times (4 vs 2)
+#            Priorities should be set correctly in the xref_config.ini file to use
+#            first any names coming from the official naming source
+#            then, names parsed from the vega database
 #
 #      Set this as the display_xref for the gene.
 #
@@ -70,7 +77,7 @@ sub new {
 
 ##################################################
 # This will be the offical database name
-# HGNC, MGI or ZFIN_ID, comes from BasicMapper
+# HGNC, MGI, ZFIN_ID or PIGGY, comes from BasicMapper
 #################################################
 sub get_official_name {
  my ($self, $arg) = @_;
@@ -242,7 +249,7 @@ SQ0
 
     ####################################################
     # If not found look for other valid database sources
-    # At present RFAm and miRBase are the only ones.
+    # These are RFAM and miRBase, as well as Uniprot_genename
     ####################################################
     if(!defined($gene_symbol)){ 
       ($gene_symbol, $gene_symbol_xref_id) = 
@@ -267,11 +274,14 @@ SQ0
 
     ##############################################
     # Finally if all else fails use the clone name
+    # but only for human, mouse and zebrafish
+    # as pig is special with no official naming source, we'd rather leave ensembl stable ids
+    # than use ensembl clone names
     ##############################################
     if((!defined($gene_symbol)) and (!defined($vega_clone_name))){
       $clone_name = $self->get_clone_name($gene_id, $ga, $dbname);
       if(defined($clone_name)){
-	$clone_name =~ s/[.]\d+//;    #remove .number
+        $clone_name =~ s/[.]\d+//;    #remove .number
       }
     }
 
@@ -1054,7 +1064,7 @@ sub find_from_other_sources{
   my $other_name_num = $self->get_other_name_hash();
 
   my ($display, $xref_id, $object_xref_id, $level, $desc);
-  foreach my $ext_db_name (qw(miRBase RFAM)){
+  foreach my $ext_db_name (qw(miRBase RFAM Uniprot_genename)){
     $dbentrie_sth->execute($ext_db_name, $gene_id, "Gene");
     $dbentrie_sth->bind_columns(\$display, \$xref_id, \$object_xref_id, \$level, \$desc);
     while($dbentrie_sth->fetch){
@@ -1375,10 +1385,12 @@ Clone_based_vega_gene
 Clone_based_ensembl_gene
 RFAM_gene_name
 miRBase_gene_name
+Uniprot_genename_gene_name
 Clone_based_ensembl_transcript
 Clone_based_vega_transcript
 RFAM_transcript_name
-miRBase_transcript_name);
+miRBase_transcript_name
+Uniprot_genename_transcript_name);
 
   push @list, $dbname."_transcript_name";
   push @list, $dbname;
