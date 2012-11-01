@@ -110,11 +110,12 @@ sub write_subset {
 
   $dbh->do("LOCK TABLE subset WRITE");
 
-  my $statement = "INSERT INTO subset " . "(name, definition) " . "VALUES (?,?)";
+  my $statement = q{INSERT IGNORE INTO subset (name, definition) VALUES (?,?)};
+  my $lookup_sql = 'select subset_id from subset where name =?';
 
   my $sth = $dbh->prepare($statement);
+  my $lookup_sth = $dbh->prepare($lookup_sql);
 
-  my $id;
   my $count = 0;
 
   local $SIG{ALRM} = sub {
@@ -135,18 +136,23 @@ sub write_subset {
     $sth->bind_param(2, $subset->{'definition'}, SQL_VARCHAR);
 
     $sth->execute();
-
-    if (!defined($id)) {
-      $id = $dbh->last_insert_id(undef, undef, 'subset', 'subset_id');
-    }
-    else {
-      ++$id;
-    }
+    
+    my $id = $dbh->last_insert_id(undef, undef, 'subset', 'subset_id');
+    if(! $id) {
+      $lookup_sth->bind_param(1, $subset->{name}, SQL_VARCHAR);
+      $lookup_sth->execute();
+      ($id) = $lookup_sth->fetchrow_array();
+      printf(STDERR "CLASH: SUBSET '%s' already exists in this database. Reusing ID %d\n", $subset->{name}, $id);
+    } 
+    
     $subset->{'id'} = $id;
 
     ++$count;
   }
   alarm(0);
+  
+  $lookup_sth->finish();
+  $sth->finish();
 
   $dbh->do("OPTIMIZE TABLE term");
   $dbh->do("UNLOCK TABLES");
@@ -163,7 +169,7 @@ sub write_term {
 
   $dbh->do("LOCK TABLES term WRITE, synonym WRITE");
 
-  my $statement = "INSERT INTO term " . "(ontology_id, subsets, accession, name, definition) " . "VALUES (?,?,?,?,?)";
+  my $statement = "INSERT IGNORE INTO term (ontology_id, subsets, accession, name, definition) VALUES (?,?,?,?,?)";
 
   my $syn_stmt = "INSERT INTO synonym (term_id, name) VALUES (?,?)";
 
@@ -176,7 +182,6 @@ sub write_term {
   my $syn_sth           = $dbh->prepare($syn_stmt);
   my $existing_term_sth = $dbh->prepare($existing_term_st);
 
-  my $id;
   my $count         = 0;
   my $updated_count = 0;
   my $syn_count     = 0;
@@ -191,6 +196,7 @@ sub write_term {
     my $term = $terms->{$accession};
 
     my $term_subsets;
+    my $reuse = 0;
 
     if (exists($term->{'subsets'})) {
       $term_subsets = join(',', map { $subsets->{$_}{'name'} } @{$term->{'subsets'}});
@@ -205,23 +211,14 @@ sub write_term {
         $term->{'id'} = $existing_term_id;
       }
       else {
-
         #if not link it to Unknown ontology
-
         $sth->bind_param(1, $unknown_onto_id,     SQL_INTEGER);
         $sth->bind_param(2, $term_subsets,        SQL_VARCHAR);
         $sth->bind_param(3, $term->{'accession'}, SQL_VARCHAR);
         $sth->bind_param(4, 'UNKNOWN NAME',       SQL_VARCHAR);
         $sth->bind_param(5, 'UNKNOWN DEFINITION', SQL_VARCHAR);
-
         $sth->execute();
-
-        if (!defined($id)) {
-          $id = $dbh->last_insert_id(undef, undef, 'term', 'term_id');
-        }
-        else {
-          ++$id;
-        }
+        my $id = $dbh->last_insert_id(undef, undef, 'term', 'term_id');
         $term->{'id'} = $id;
         ++$count;
       }
@@ -255,25 +252,33 @@ sub write_term {
         $sth->bind_param(5, $term->{'definition'},                     SQL_VARCHAR);
 
         $sth->execute();
-
-        if (!defined($id)) {
-          $id = $dbh->last_insert_id(undef, undef, 'term', 'term_id');
-        }
-        else {
-          ++$id;
+        my $id = $dbh->last_insert_id(undef, undef, 'term', 'term_id');
+        if(! $id) {
+          $existing_term_sth->execute($term->{'accession'});
+          my ($existing_term_id, $ontology_id) = $existing_term_sth->fetchrow_array;
+          $id = $existing_term_id;
+          printf(STDERR "CLASH: TERM '%s' already exists in this database. Reusing ID %d\n", $term->{accession}, $existing_term_id);
+          $reuse = 1;
         }
         $term->{'id'} = $id;
 
         ++$count;
       }
-
-      foreach my $syn (@{$term->{'synonyms'}}) {
-        $syn_sth->bind_param(1, $id,  SQL_INTEGER);
-        $syn_sth->bind_param(2, $syn, SQL_VARCHAR);
-
-        $syn_sth->execute();
-
-        ++$syn_count;
+      
+      if(@{$term->{synonyms}}) {
+        if($reuse) {
+          print STDERR "REUSE: Skipping synonym writing as term already exists in this database\n";
+        }
+        else {
+          foreach my $syn (@{$term->{'synonyms'}}) {
+            $syn_sth->bind_param(1, $term->{id},  SQL_INTEGER);
+            $syn_sth->bind_param(2, $syn, SQL_VARCHAR);
+    
+            $syn_sth->execute();
+    
+            ++$syn_count;
+          }
+        }
       }
     }
   } ## end foreach my $accession ( sort...)
