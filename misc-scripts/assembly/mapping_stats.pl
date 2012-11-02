@@ -78,6 +78,7 @@ $support->parse_extra_options(
     'altassembly=s',
     'althost=s',
     'altport=n',
+    'altpass=s',
     'chromosomes|chr=s@',
 );
 $support->allowed_params(
@@ -88,6 +89,7 @@ $support->allowed_params(
     'althost',
     'altport',
     'chromosomes',
+    'altpass',
 );
 
 if ($support->param('help') or $support->error) {
