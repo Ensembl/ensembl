@@ -12,9 +12,9 @@
 ALTER TABLE mapping_set DROP COLUMN schema_build;
 ALTER TABLE mapping_set ADD COLUMN (internal_schema_build VARCHAR(20) NOT NULL);
 ALTER TABLE mapping_set ADD COLUMN (external_schema_build VARCHAR(20) NOT NULL);
+TRUNCATE TABLE mapping_set;
 ALTER TABLE mapping_set ADD UNIQUE KEY mapping_idx (internal_schema_build, external_schema_build);
 TRUNCATE TABLE seq_region_mapping;
-TRUNCATE TABLE mapping_set;
 
 
 # Patch identifier
