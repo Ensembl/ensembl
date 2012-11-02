@@ -624,6 +624,39 @@ sub list_stable_ids {
    return $self->_list_dbIDs("translation", "stable_id");
 }
 
+=head2 _list_dbIDs
+
+  Arg[1]      : String $table
+  Arg[2]      : String $column
+  Example     : $transl_adaptor->_list_dbIDs('translation','translation_id');
+  Description : Local reimplementation to ensure multi-species translations
+                are limited to their species alone
+  Returntype  : ArrayRef of specified IDs
+  Caller      : Internal
+  Status      : Unstable
+=cut
+
+sub _list_dbIDs {
+  my ($self, $table, $column) = @_;
+  my $ids;
+  if($self->is_multispecies()) {
+    $column ||= "${table}_id";
+    my $sql = <<SQL;
+select `tr`.`${column}` 
+from translation tr
+join transcript t using (transcript_id)
+join seq_region sr using (seq_region_id)
+join coord_system cs using (coord_system_id)
+where cs.species_id =?
+SQL
+    return $self->dbc()->sql_helper()->execute_simple(-SQL => $sql, -PARAMS => [$self->species_id()]);
+  }
+  else {
+    $ids = $self->SUPER::_list_dbIDs($table, $column);
+  }
+  return $ids;
+}
+
 
 
 =head2 fetch_by_dbID
