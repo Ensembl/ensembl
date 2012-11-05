@@ -67,7 +67,10 @@ sub run {
 	  last;
 	}
   } ## end while (my $slice = shift ...)
-  $dfa->store(@features);
+  if (scalar(@features) > 0) {
+	$dfa->store(@features);
+  }
+  return;
 } ## end sub run
 
 ## Creating density type for fixed number of blocks
@@ -133,7 +136,8 @@ sub delete_old_features {
      AND    cs.species_id = ? AND a.analysis_id = dt.analysis_id
      AND    dt.density_type_id = df.density_type_id
      AND    a.logic_name = ? };
-  $helper->execute_update(-SQL => $sql, -PARAMS => [$dba->species_id(), $logic_name]);
+  $helper->execute_update(-SQL    => $sql,
+						  -PARAMS => [$dba->species_id(), $logic_name]);
 }
 
 ## Checks if the analysis already exists in the database
@@ -163,7 +167,9 @@ sub get_analysis {
      SELECT distinct display_label, description
      FROM analysis_description 
      WHERE is_current = 1 and logic_name = ? };
-  my ($display_label, $description) = @{$helper->execute(-SQL => $sql, -PARAMS => [$logic_name])->[0]};
+  my $anals = $helper->execute(-SQL => $sql, -PARAMS => [$logic_name])->[0];
+  throw "Could not find analysis $logic_name" unless (defined $anals);
+  my ($display_label, $description) = @{$anals};
   my $analysis = new Bio::EnsEMBL::Analysis(-logic_name    => $logic_name,
 											-display_label => $display_label,
 											-description   => $description,
@@ -193,18 +199,16 @@ sub get_option {
 
 sub get_density {
   my ($self, $block, $biotypes) = @_;
-  my $count = 0;
-  foreach my $biotype (@$biotypes) {
-	$count += scalar(@{$block->get_all_Genes_by_type($biotype)});
-  }
-  return $count;
+  my $species = $self->param('species');
+  my $ga = Bio::EnsEMBL::Registry->get_adaptor($species, 'core', 'gene');
+  return $ga->count_all_by_Slice($block, $biotypes);
 }
 
 sub get_total {
   my ($self, $option) = @_;
   my $species = $self->param('species');
   my $ga = Bio::EnsEMBL::Registry->get_adaptor($species, 'core', 'gene');
-  return scalar(@{$ga->fetch_all_by_biotype($option)});
+  return $ga->count_all_by_biotype($option);
 }
 
 1;
