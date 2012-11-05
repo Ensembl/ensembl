@@ -21,6 +21,10 @@ Required arguments:
   --altdbname=NAME                    alternative database NAME
   --altassembly=ASSEMBLY              alternative assembly version ASSEMBLY
 
+  --nolog                             outside of a webserver environment, 
+                                      logging needs to be handled manually.
+                                      Use in conjunction with shell redirects.
+
 Optional arguments:
 
   --althost=HOST                      alternative databases host HOST
@@ -63,10 +67,6 @@ for the details.
 This code is distributed under an Apache style licence:
 Please see http://www.ensembl.org/code_licence.html for details
 
-=head1 AUTHOR
-
-Patrick Meidl <meidl@ebi.ac.uk>, Ensembl core API team
-
 =head1 CONTACT
 
 Please post comments/questions to the Ensembl development list
@@ -90,6 +90,8 @@ BEGIN {
 use Getopt::Long;
 use Pod::Usage;
 use Bio::EnsEMBL::Utils::ConversionSupport;
+
+use Algorithm::Diff qw(diff);
 
 $| = 1;
 
@@ -150,6 +152,8 @@ my $A_sa = $A_dba->get_SliceAdaptor;
 
 $support->log("Looping over toplevel seq_regions...\n\n");
 
+my @global_diff_bins;
+
 foreach my $chr ($support->sort_chromosomes) {
   $support->log_stamped("Toplevel seq_region $chr...\n", 1);
 
@@ -207,6 +211,11 @@ foreach my $chr ($support->sort_chromosomes) {
       $support->log("Alt: $A_sub_seq\n\n", 3);
 
       $i++;
+      
+      my @Ref = split(//,$R_seq);
+      my @Alt = split(//,$A_seq);
+      my @diffs = diff( \@Ref, \@Alt );
+      $global_diff_bins[scalar(@diffs)]++;
     }
 
     $k++;
@@ -219,6 +228,14 @@ foreach my $chr ($support->sort_chromosomes) {
   }
 
   $support->log_stamped("Done.\n\n", 1);
+}
+
+$support->log("Summary of changes across all chromosomes\n\n",1);
+$support->log("|Bin  |Frequency\n",2);
+for (my $bin = 0; $bin < scalar(@global_diff_bins); $bin++) {
+    if (defined ($global_diff_bins[$bin])) {
+        $support->log("|$bin  |$global_diff_bins[$bin]\n");
+    }
 }
 
 # finish logfile
