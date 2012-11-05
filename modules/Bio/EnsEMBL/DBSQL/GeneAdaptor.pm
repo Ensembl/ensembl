@@ -265,7 +265,26 @@ sub fetch_by_stable_id {
 
 sub fetch_all_by_biotype {
   my ($self, $biotype) = @_;
+  my @genes = @{$self->generic_fetch($self->biotype_constraint($biotype))};
+  return \@genes;
+}
 
+=head2 biotype_constraint 
+
+  Arg [1]    : String $biotype 
+               listref of $biotypes
+               The biotype of the gene to retrieve. You can have as an argument a reference
+               to a list of biotypes
+  Description: Used internally to generate a SQL constraint to restrict a gene query by biotype
+  Returntype  : String
+  Exceptions : If biotype is not supplied
+  Caller     : general
+  Status     : Stable
+
+=cut
+
+sub biotype_constraint {
+  my ($self, $biotype) = @_;
   if (!defined $biotype) {
 	throw("Biotype or listref of biotypes expected");
   }
@@ -283,13 +302,31 @@ sub fetch_all_by_biotype {
 	$constraint = "g.biotype = ? and g.is_current = 1";
 	$self->bind_param_generic_fetch($biotype, SQL_VARCHAR);
   }
-  my @genes = @{$self->generic_fetch($constraint)};
-  return \@genes;
+  return $constraint;
+}
+
+=head2 count_all_by_biotype 
+
+  Arg [1]     : String $biotype 
+                listref of $biotypes
+                The biotype of the gene to retrieve. You can have as an argument a reference
+                to a list of biotypes
+  Example     : $cnt = $gene_adaptor->count_all_by_biotype('protein_coding'); 
+                $cnt = $gene_adaptor->count_all_by_biotypes(['protein_coding', 'sRNA', 'miRNA']);
+  Description : Retrieves count of gene objects from the database via its biotype or biotypes.
+  Returntype  : integer
+  Caller      : general
+  Status      : Stable
+
+=cut
+
+sub count_all_by_biotype {
+  my ($self, $biotype) = @_;
+  return $self->generic_count($self->biotype_constraint($biotype));
 }
 
 sub fetch_all {
-  my ($self) = @_;
-
+  my ($self)     = @_;
   my $constraint = 'g.biotype != "LRG_gene" and g.is_current = 1';
   my @genes      = @{$self->generic_fetch($constraint)};
   return \@genes;
@@ -615,6 +652,36 @@ sub fetch_all_by_Slice {
 
   return $genes;
 } ## end sub fetch_all_by_Slice
+
+=head2 count_all_by_Slice
+
+  Arg [1]    : Bio::EnsEMBL::Slice $slice
+               The slice to count genes on.
+  Arg [2]    : (optional) biotype(s) string or arrayref of strings 
+                the biotype of the features to count.
+  Arg [1]    : (optional) string $source
+               the source name of the features to count.
+  Example    : $cnt = $gene_adaptor->count_all_by_Slice();
+  Description: Method to count genes on a given slice, filtering by biotype and source
+  Returntype : integer
+  Exceptions : thrown if exon cannot be placed on transcript slice
+  Status     : Stable
+  Caller     : general
+=cut
+
+sub count_all_by_Slice {
+  my ($self, $slice, $biotype, $source) = @_;
+
+  my $constraint = 'g.is_current = 1';
+  if (defined($source)) {
+	$constraint .= " and g.source = '$source'";
+  }
+  if (defined($biotype)) {
+	$constraint .= " and " . $self->biotype_constraint($biotype);
+  }
+
+  return $self->count_by_Slice_constraint($slice, $constraint);
+}
 
 =head2 fetch_by_transcript_id
 
@@ -1562,7 +1629,9 @@ FEATURE: while ($sth->fetch()) {
 	#
 	if ($mapper) {
 
-	  if (defined $dest_slice && $mapper->isa('Bio::EnsEMBL::ChainedAssemblyMapper')) {
+	  if (defined $dest_slice
+		  && $mapper->isa('Bio::EnsEMBL::ChainedAssemblyMapper'))
+	  {
 		($seq_region_id, $seq_region_start, $seq_region_end, $seq_region_strand) = $mapper->map($sr_name, $seq_region_start, $seq_region_end, $seq_region_strand, $sr_cs, 1, $dest_slice);
 
 	  } else {
@@ -1790,7 +1859,8 @@ sub fetch_all_by_exon_supporting_evidence {
   }
 
   my $anal_from = ", analysis a " if ($analysis);
-  my $anal_where = "AND a.analysis_id = f.analysis_id AND a.analysis_id=? " if ($analysis);
+  my $anal_where = "AND a.analysis_id = f.analysis_id AND a.analysis_id=? "
+	if ($analysis);
 
   my $sql = qq(
       SELECT DISTINCT(g.gene_id)
@@ -1854,7 +1924,8 @@ sub fetch_all_by_transcript_supporting_evidence {
   }
 
   my $anal_from = ", analysis a " if ($analysis);
-  my $anal_where = "AND a.analysis_id = f.analysis_id AND a.analysis_id=? " if ($analysis);
+  my $anal_where = "AND a.analysis_id = f.analysis_id AND a.analysis_id=? "
+	if ($analysis);
 
   my $sql = qq(
       SELECT DISTINCT(g.gene_id)
@@ -1938,8 +2009,10 @@ sub fetch_nearest_Gene_by_Feature {
 	# MAYBE set the result of prepare to be static in case lots of calls.
 	#
 	my $sql1_sth = $self->prepare($sql1) || die "Could not prepare $sql1";
-	$sql1_sth->execute($start, $seq_region_id, $start) || die "Could not execute sql";
-	$sql1_sth->bind_columns(\$gene_id, \$min_dist) || die "Could mot bin columns";
+	$sql1_sth->execute($start, $seq_region_id, $start)
+	  || die "Could not execute sql";
+	$sql1_sth->bind_columns(\$gene_id, \$min_dist)
+	  || die "Could mot bin columns";
 
 	my $last_dist = 99999999999999999;
 	while ($sql1_sth->fetch()) {
@@ -1959,8 +2032,10 @@ sub fetch_nearest_Gene_by_Feature {
 	my $sql2_sth = $self->prepare($sql2) || die "could not prepare $sql2";
 
 	my ($tmp_min_dist, $tmp_gene_id);
-	$sql2_sth->execute($end, $seq_region_id, $end) || die "Could not execute sql";
-	$sql2_sth->bind_columns(\$tmp_gene_id, \$tmp_min_dist) || die "Could mot bin columns";
+	$sql2_sth->execute($end, $seq_region_id, $end)
+	  || die "Could not execute sql";
+	$sql2_sth->bind_columns(\$tmp_gene_id, \$tmp_min_dist)
+	  || die "Could mot bin columns";
 	my $first = 1;
 	while ($sql2_sth->fetch()) {
 	  if ($tmp_min_dist <= $last_dist) {
@@ -1987,8 +2062,10 @@ sub fetch_nearest_Gene_by_Feature {
 	# MAYBE set the result of prepare to be static in case lots of calls.
 	#
 	my $sql1_sth = $self->prepare($sql1) || die "Could not prepare $sql1";
-	$sql1_sth->execute($start, $seq_region_id, $start) || die "Could not execute sql";
-	$sql1_sth->bind_columns(\$gene_id, \$min_dist) || die "Could mot bin columns";
+	$sql1_sth->execute($start, $seq_region_id, $start)
+	  || die "Could not execute sql";
+	$sql1_sth->bind_columns(\$gene_id, \$min_dist)
+	  || die "Could mot bin columns";
 
 	my $last_dist;
 	my $first = 1;
@@ -2013,8 +2090,10 @@ sub fetch_nearest_Gene_by_Feature {
 	my $sql2_sth = $self->prepare($sql2) || die "could not prepare $sql2";
 
 	my ($tmp_min_dist, $tmp_gene_id);
-	$sql2_sth->execute($end, $seq_region_id, $end) || die "Could not execute sql";
-	$sql2_sth->bind_columns(\$tmp_gene_id, \$tmp_min_dist) || die "Could mot bin columns";
+	$sql2_sth->execute($end, $seq_region_id, $end)
+	  || die "Could not execute sql";
+	$sql2_sth->bind_columns(\$tmp_gene_id, \$tmp_min_dist)
+	  || die "Could mot bin columns";
 	my $first = 1;
 	my $last_dist;
 	while ($sql2_sth->fetch()) {

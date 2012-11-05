@@ -369,6 +369,16 @@ for my $gene (@$genes) {
   }
 }
 
+# try and count the genes on the slice
+my $geneCount = $ga->count_all_by_Slice($slice);
+ok(scalar(@$genes) == $geneCount);
+$geneCount = $ga->count_all_by_Slice($slice, 'protein_coding');
+ok(scalar(@$genes) == $geneCount);
+$geneCount = $ga->count_all_by_Slice($slice, 'banana');
+ok($geneCount == 0);
+$geneCount = $ga->count_all_by_Slice($slice, ['banana', 'protein_coding']);
+ok($geneCount == scalar(@$genes));
+
 debug("known: $known Unknown: $unknown\n");
 
 ok($known == 17);
@@ -478,6 +488,10 @@ debug("Test fetch_all_by_biotype");
 ok(@genes == 20);
 @genes = @{$ga->fetch_all_by_biotype(['protein_coding', 'sRNA'])};
 ok(@genes == 20);
+$geneCount = $ga->count_all_by_biotype('protein_coding');
+ok($geneCount == 20);
+$geneCount = $ga->count_all_by_biotype(['protein_coding', 'sRNA']);
+ok($geneCount == 20);
 
 #
 # test Gene: get_all_alt_alleles
