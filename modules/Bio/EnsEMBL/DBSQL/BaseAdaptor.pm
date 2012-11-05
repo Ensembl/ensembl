@@ -272,7 +272,7 @@ sub _list_dbIDs {
 
   if ( !defined($pk) ) { $pk = $table . "_id" }
 
-  my $sql = sprintf( "SELECT %s FROM %s", $pk, $table );
+  my $sql = sprintf( "SELECT `%s` FROM `%s`", $pk, $table );
 
   my $join_with_cs = 0;
   if (    $self->is_multispecies()
