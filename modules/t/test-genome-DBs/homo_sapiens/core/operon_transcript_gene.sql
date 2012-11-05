@@ -1,8 +1,8 @@
--- MySQL dump 10.13  Distrib 5.5.13, for Linux (x86_64)
+-- MySQL dump 10.13  Distrib 5.1.61, for redhat-linux-gnu (x86_64)
 --
--- Host: localhost    Database: dstaines_test_db_homo_sapiens_core_20110630_160153
+-- Host: mysql-eg-devel-1.ebi.ac.uk    Database: homo_sapiens_core_test_db
 -- ------------------------------------------------------
--- Server version	5.5.13
+-- Server version	5.1.49-log
 
 /*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
 /*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
@@ -35,4 +35,4 @@ CREATE TABLE `operon_transcript_gene` (
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2011-06-30 16:03:42
+-- Dump completed on 2012-11-05 10:52:11

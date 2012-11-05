@@ -14,22 +14,20 @@
 /*!40111 SET @OLD_SQL_NOTES=@@SQL_NOTES, SQL_NOTES=0 */;
 
 --
--- Table structure for table `marker_map_location`
+-- Table structure for table `dependent_xref`
 --
 
-DROP TABLE IF EXISTS `marker_map_location`;
+DROP TABLE IF EXISTS `dependent_xref`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `marker_map_location` (
-  `marker_id` int(10) unsigned NOT NULL DEFAULT '0',
-  `map_id` int(10) unsigned NOT NULL DEFAULT '0',
-  `chromosome_name` varchar(15) COLLATE latin1_bin NOT NULL DEFAULT '',
-  `marker_synonym_id` int(10) unsigned NOT NULL DEFAULT '0',
-  `position` varchar(15) COLLATE latin1_bin NOT NULL DEFAULT '',
-  `lod_score` double DEFAULT NULL,
-  PRIMARY KEY (`marker_id`,`map_id`),
-  KEY `map_idx` (`map_id`,`chromosome_name`,`position`)
-) ENGINE=MyISAM DEFAULT CHARSET=latin1 COLLATE=latin1_bin;
+CREATE TABLE `dependent_xref` (
+  `object_xref_id` int(10) unsigned NOT NULL,
+  `master_xref_id` int(10) unsigned NOT NULL,
+  `dependent_xref_id` int(10) unsigned NOT NULL,
+  PRIMARY KEY (`object_xref_id`),
+  KEY `dependent` (`dependent_xref_id`),
+  KEY `master_idx` (`master_xref_id`)
+) ENGINE=MyISAM DEFAULT CHARSET=latin1;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
@@ -40,4 +38,4 @@ CREATE TABLE `marker_map_location` (
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2012-11-05 10:52:11
+-- Dump completed on 2012-11-05 10:52:10
