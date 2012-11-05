@@ -1,3 +1,4 @@
+
 =head1 LICENSE
 
   Copyright (c) 1999-2012 The European Bioinformatics Institute and
@@ -15,7 +16,6 @@
 
   Questions may also be sent to the Ensembl help desk at
   <helpdesk@ensembl.org>.
-
 =cut
 
 =head1 NAME
@@ -51,8 +51,6 @@ use Bio::EnsEMBL::Utils::Argument qw(rearrange);
 use vars qw(@ISA);
 @ISA = qw(Bio::EnsEMBL::FeaturePair);
 
-
-
 =head2 new
 
   Arg [IDESC]           : (optional) string An interpro description
@@ -79,8 +77,7 @@ sub new {
 
   my $class = ref($proto) || $proto;
 
-  my ( $idesc, $interpro_ac, $translation_id ) =
-    rearrange( [ 'IDESC', 'INTERPRO_AC', 'TRANSLATION_ID' ], @_ );
+  my ($idesc, $interpro_ac, $translation_id) = rearrange(['IDESC', 'INTERPRO_AC', 'TRANSLATION_ID'], @_);
 
   my $self = $class->SUPER::new(@_);
 
@@ -92,7 +89,6 @@ sub new {
 
   return $self;
 }
-
 
 =head2 strand
 
@@ -110,8 +106,6 @@ sub strand {
   return $self->{'strand'};
 }
 
-
-
 =head2 idesc
 
   Arg [1]    : (optional) string The interpro description
@@ -125,13 +119,11 @@ sub strand {
 
 =cut
 
-sub idesc{
+sub idesc {
   my $self = shift;
-  $self->{'idesc'} = shift if(@_);
+  $self->{'idesc'} = shift if (@_);
   return $self->{'idesc'};
 }
-
-
 
 =head2 interpro_ac
 
@@ -146,12 +138,11 @@ sub idesc{
 
 =cut
 
-sub interpro_ac{
+sub interpro_ac {
   my $self = shift;
-  $self->{'interpro_ac'} = shift if(@_);
+  $self->{'interpro_ac'} = shift if (@_);
   return $self->{'interpro_ac'};
 }
-
 
 =head2 translation_id
 

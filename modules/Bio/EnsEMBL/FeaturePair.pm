@@ -1,3 +1,4 @@
+
 =head1 LICENSE
 
   Copyright (c) 1999-2012 The European Bioinformatics Institute and
@@ -9,7 +10,6 @@
     http://www.ensembl.org/info/about/code_licence.html
 
 =head1 CONTACT
-
   Please email comments or questions to the public Ensembl
   developers list at <dev@ensembl.org>.
 
@@ -85,8 +85,6 @@ use Bio::EnsEMBL::Utils::Exception qw(throw deprecate warning);
 
 @ISA = qw(Bio::EnsEMBL::Feature);
 
-
-
 =head2 new
 
   Arg [HSTART]    : int - The start of the hit region (optional)
@@ -128,73 +126,65 @@ sub new {
 
   my $self = $class->SUPER::new(@_);
 
-  my ($hstart,$hend,$hstrand,$percent_id,$score, $species, $hspecies,
-      $p_value, $hseqname, $f1,$f2, $coverage, $hcoverage, $group_id,$level_id, $external_db_id, $extra_data, $external_db_name, $external_display_db_name) =
-    rearrange(['HSTART','HEND','HSTRAND','PERCENT_ID','SCORE','SPECIES',
-               'HSPECIES', 'P_VALUE', 'HSEQNAME', 'FEATURE1','FEATURE2',
-               'COVERAGE', 'HCOVERAGE', 'GROUP_ID','LEVEL_ID', 'EXTERNAL_DB_ID', 'EXTRA_DATA', 'DBNAME', 'DB_DISPLAY_NAME'], @_);
+  my ($hstart, $hend, $hstrand, $percent_id, $score, $species, $hspecies, $p_value, $hseqname, $f1, $f2, $coverage, $hcoverage, $group_id, $level_id, $external_db_id, $extra_data, $external_db_name, $external_display_db_name) = rearrange(['HSTART', 'HEND', 'HSTRAND', 'PERCENT_ID', 'SCORE', 'SPECIES', 'HSPECIES', 'P_VALUE', 'HSEQNAME', 'FEATURE1', 'FEATURE2', 'COVERAGE', 'HCOVERAGE', 'GROUP_ID', 'LEVEL_ID', 'EXTERNAL_DB_ID', 'EXTRA_DATA', 'DBNAME', 'DB_DISPLAY_NAME'], @_);
 
-  if(defined($hstart) && defined($hend) && ($hend < $hstart)) {
-    throw('HSTART must be less than or equal to HEND');
+  if (defined($hstart) && defined($hend) && ($hend < $hstart)) {
+	throw('HSTART must be less than or equal to HEND');
   }
 
-  if(defined($hstrand) && $hstrand != 1 && $hstrand != -1 && $hstrand != 0) {
-    throw('HSTRAND must be one of (0,1,-1)');
+  if (defined($hstrand) && $hstrand != 1 && $hstrand != -1 && $hstrand != 0) {
+	throw('HSTRAND must be one of (0,1,-1)');
   }
 
-  $self->{'hstart'}     = $hstart;
-  $self->{'hend'}       = $hend;
-  $self->{'hstrand'}    = $hstrand;
-  $self->{'score'}      = $score;
-  $self->{'percent_id'} = $percent_id;
-  $self->{'species'}    = $species;
-  $self->{'hspecies'}   = $hspecies;
-  $self->{'hseqname'}   = $hseqname;
-  $self->{'coverage'}   = $coverage;
-  $self->{'hcoverage'}  = $hcoverage;
-  $self->{'p_value'}    = $p_value;
-  $self->{'group_id'}   = $group_id;
-  $self->{'level_id'}   = $level_id;
-  $self->{'external_db_id'} = $external_db_id;
-  $self->{'extra_data'} = $extra_data;
-  $self->{'dbname'} = $external_db_name;
+  $self->{'hstart'}          = $hstart;
+  $self->{'hend'}            = $hend;
+  $self->{'hstrand'}         = $hstrand;
+  $self->{'score'}           = $score;
+  $self->{'percent_id'}      = $percent_id;
+  $self->{'species'}         = $species;
+  $self->{'hspecies'}        = $hspecies;
+  $self->{'hseqname'}        = $hseqname;
+  $self->{'coverage'}        = $coverage;
+  $self->{'hcoverage'}       = $hcoverage;
+  $self->{'p_value'}         = $p_value;
+  $self->{'group_id'}        = $group_id;
+  $self->{'level_id'}        = $level_id;
+  $self->{'external_db_id'}  = $external_db_id;
+  $self->{'extra_data'}      = $extra_data;
+  $self->{'dbname'}          = $external_db_name;
   $self->{'db_display_name'} = $external_display_db_name;
 
   #
   # Feature1 and Feature2 arg handling for backwards compatibility
   #
-  if($f1) {
-    deprecate("Using FEATURE1 arg to construct FeaturePairs" .
-              " is deprecated.\nUse the args START,END,STRAND,SLICE instead");
+  if ($f1) {
+	deprecate("Using FEATURE1 arg to construct FeaturePairs" . " is deprecated.\nUse the args START,END,STRAND,SLICE instead");
 
-    #eval because we are not exactly sure what f1 arg will look like
-    eval {
-      $self->{'start'} = $f1->start();
-      $self->{'end'}   = $f1->end();
-      $self->{'strand'} = $f1->strand();
-      $self->{'slice'}  = $f1->contig();
-      $self->{'analysis'} = $f1->analysis() if($f1->analysis());
-    };
+	#eval because we are not exactly sure what f1 arg will look like
+	eval {
+	  $self->{'start'}    = $f1->start();
+	  $self->{'end'}      = $f1->end();
+	  $self->{'strand'}   = $f1->strand();
+	  $self->{'slice'}    = $f1->contig();
+	  $self->{'analysis'} = $f1->analysis() if ($f1->analysis());
+	};
   }
 
-  if($f2) {
-    deprecate("Using FEATURE2 arg to construct FeaturePairs is deprecated" .
-              "\nUse the args HSTART,HEND,HSTRAND,HSEQNAME instead");
+  if ($f2) {
+	deprecate("Using FEATURE2 arg to construct FeaturePairs is deprecated" . "\nUse the args HSTART,HEND,HSTRAND,HSEQNAME instead");
 
-    #eval because we are not exactly sure what f2 arg will look like
-    eval {
-      $self->{'hseqname'} = $f2->seqname();
-      $self->{'hstart'}   = $f2->start();
-      $self->{'hend'}     = $f2->end();
-      $self->{'hstrand'}  = $f2->strand();
-      $self->{'analysis'} = $f2->analysis() if($f2->analysis());
-    };
+	#eval because we are not exactly sure what f2 arg will look like
+	eval {
+	  $self->{'hseqname'} = $f2->seqname();
+	  $self->{'hstart'}   = $f2->start();
+	  $self->{'hend'}     = $f2->end();
+	  $self->{'hstrand'}  = $f2->strand();
+	  $self->{'analysis'} = $f2->analysis() if ($f2->analysis());
+	};
   }
 
   return $self;
-}
-
-
+} ## end sub new
 
 =head2 hseqname
 
@@ -210,11 +200,9 @@ sub new {
 
 sub hseqname {
   my $self = shift;
-  $self->{'hseqname'} = shift if(@_);
+  $self->{'hseqname'} = shift if (@_);
   return $self->{hseqname};
 }
-
-
 
 =head2 hstart
 
@@ -228,12 +216,11 @@ sub hseqname {
 
 =cut
 
-sub hstart{
+sub hstart {
   my $self = shift;
-  $self->{'hstart'} = shift if(@_);
+  $self->{'hstart'} = shift if (@_);
   return $self->{'hstart'};
 }
-
 
 =head2 hend
 
@@ -247,13 +234,11 @@ sub hstart{
 
 =cut
 
-sub hend{
+sub hend {
   my $self = shift;
-  $self->{'hend'} = shift if(@_);
+  $self->{'hend'} = shift if (@_);
   return $self->{'hend'};
 }
-
-
 
 =head2 hstrand
 
@@ -267,15 +252,15 @@ sub hend{
 
 =cut
 
-sub hstrand{
+sub hstrand {
   my $self = shift;
 
-  if(@_) {
-    my $hstrand = shift;
-    if(defined($hstrand) && $hstrand != 1 && $hstrand != 0 && $hstrand != -1) {
-      throw('hstrand must be one of (-1,0,1)');
-    }
-    $self->{'hstrand'} = $hstrand;
+  if (@_) {
+	my $hstrand = shift;
+	if (defined($hstrand) && $hstrand != 1 && $hstrand != 0 && $hstrand != -1) {
+	  throw('hstrand must be one of (-1,0,1)');
+	}
+	$self->{'hstrand'} = $hstrand;
   }
 
   return $self->{'hstrand'};
@@ -300,13 +285,13 @@ sub hstrand{
 sub hslice {
   my $self = shift;
 
-  if(@_) {
-    my $sl = shift;
-    if(defined($sl) && (!ref($sl) || !($sl->isa('Bio::EnsEMBL::Slice') ) )) {
-      throw('slice argument must be a Bio::EnsEMBL::Slice');
-    }
+  if (@_) {
+	my $sl = shift;
+	if (defined($sl) && (!ref($sl) || !($sl->isa('Bio::EnsEMBL::Slice')))) {
+	  throw('slice argument must be a Bio::EnsEMBL::Slice');
+	}
 
-    $self->{'hslice'} = $sl;
+	$self->{'hslice'} = $sl;
   }
 
   return $self->{'hslice'};
@@ -326,12 +311,11 @@ sub hslice {
 =cut
 
 sub hseq_region_name {
-  my $self = shift;
+  my $self  = shift;
   my $slice = $self->{'hslice'};
 
   return ($slice) ? $slice->seq_region_name() : undef;
 }
-
 
 =head2 hseq_region_strand
 
@@ -347,12 +331,11 @@ sub hseq_region_name {
 
 =cut
 
-
 sub hseq_region_strand {
-  my $self = shift;
+  my $self  = shift;
   my $slice = $self->{'hslice'};
 
-  return ($slice) ? $slice->strand() * $self->{'hstrand'} : undef;
+  return ($slice) ? $slice->strand()*$self->{'hstrand'} : undef;
 }
 
 =head2 hseq_region_start
@@ -372,20 +355,19 @@ sub hseq_region_strand {
 =cut
 
 sub hseq_region_start {
-  my $self = shift;
+  my $self  = shift;
   my $slice = $self->{'hslice'};
 
-  return undef if(!$slice);
+  return undef if (!$slice);
 
-  if($slice->strand == 1) {
-    return undef if(!defined($self->{'hstart'}));
-    return $slice->start() + $self->{'hstart'} - 1;
+  if ($slice->strand == 1) {
+	return undef if (!defined($self->{'hstart'}));
+	return $slice->start() + $self->{'hstart'} - 1;
   } else {
-    return undef if(!defined($self->{'hend'}));
-    return $slice->end() - $self->{'hend'} + 1;
+	return undef if (!defined($self->{'hend'}));
+	return $slice->end() - $self->{'hend'} + 1;
   }
 }
-
 
 =head2 hseq_region_end
 
@@ -404,17 +386,17 @@ sub hseq_region_start {
 =cut
 
 sub hseq_region_end {
-  my $self = shift;
+  my $self  = shift;
   my $slice = $self->{'hslice'};
 
-  return undef if(!$slice);
+  return undef if (!$slice);
 
-  if($slice->strand == 1) {
-    return undef if(!defined($self->{'hend'}));
-    return $slice->start() + $self->{'hend'} - 1;
+  if ($slice->strand == 1) {
+	return undef if (!defined($self->{'hend'}));
+	return $slice->start() + $self->{'hend'} - 1;
   } else {
-    return undef if(!defined($self->{'hstart'}));
-    return $slice->end() - $self->{'hstart'} + 1;
+	return undef if (!defined($self->{'hstart'}));
+	return $slice->end() - $self->{'hstart'} + 1;
   }
 }
 
@@ -430,13 +412,11 @@ sub hseq_region_end {
 
 =cut
 
-sub score{
+sub score {
   my $self = shift;
-  $self->{'score'} = shift if(@_);
+  $self->{'score'} = shift if (@_);
   return $self->{'score'};
 }
-
-
 
 =head2 percent_id
 
@@ -452,11 +432,9 @@ sub score{
 
 sub percent_id {
   my $self = shift;
-  $self->{'percent_id'} = shift if(@_);
+  $self->{'percent_id'} = shift if (@_);
   return $self->{'percent_id'};
 }
-
-
 
 =head2 species
 
@@ -471,12 +449,11 @@ sub percent_id {
 
 =cut
 
-sub species{
+sub species {
   my $self = shift;
-  $self->{'species'} = shift if(@_);
+  $self->{'species'} = shift if (@_);
   return $self->{'species'};
 }
-
 
 =head2 hspecies
 
@@ -491,12 +468,11 @@ sub species{
 
 =cut
 
-sub hspecies{
+sub hspecies {
   my $self = shift;
-  $self->{'hspecies'} = shift if(@_);
+  $self->{'hspecies'} = shift if (@_);
   return $self->{'hspecies'};
 }
-
 
 =head2 coverage
 
@@ -512,10 +488,9 @@ sub hspecies{
 
 sub coverage {
   my $self = shift;
-  $self->{'coverage'} = shift if(@_);
+  $self->{'coverage'} = shift if (@_);
   return $self->{'coverage'};
 }
-
 
 =head2 hcoverage
 
@@ -531,7 +506,7 @@ sub coverage {
 
 sub hcoverage {
   my $self = shift;
-  $self->{'hcoverage'} = shift if(@_);
+  $self->{'hcoverage'} = shift if (@_);
   return $self->{'hcoverage'};
 }
 
@@ -549,10 +524,9 @@ sub hcoverage {
 
 sub external_db_id {
   my $self = shift;
-  $self->{'external_db_id'} = shift if(@_);
+  $self->{'external_db_id'} = shift if (@_);
   return $self->{'external_db_id'};
 }
-
 
 =head2 db_name
 
@@ -568,7 +542,7 @@ sub external_db_id {
 
 sub db_name {
   my $self = shift;
-  $self->{'dbname'} = shift if(@_);
+  $self->{'dbname'} = shift if (@_);
   return $self->{'dbname'};
 }
 
@@ -587,11 +561,9 @@ sub db_name {
 
 sub db_display_name {
   my $self = shift;
-  $self->{'db_display_name'} = shift if(@_);
+  $self->{'db_display_name'} = shift if (@_);
   return $self->{'db_display_name'};
 }
-
-
 
 =head2 p_value
 
@@ -605,13 +577,11 @@ sub db_display_name {
 
 =cut
 
-sub p_value{
+sub p_value {
   my $self = shift;
-  $self->{'p_value'} = shift if(@_);
+  $self->{'p_value'} = shift if (@_);
   return $self->{'p_value'};
 }
-
-
 
 =head2 display_id
 
@@ -632,7 +602,6 @@ sub display_id {
   return $self->{'hseqname'} || '';
 }
 
-
 =head2 identical_matches
 
  Arg [1]    : int $identical_matches (optional)
@@ -645,13 +614,13 @@ sub display_id {
 
 =cut
 
-sub identical_matches{
-    my ($self,$arg) = @_;
+sub identical_matches {
+  my ($self, $arg) = @_;
 
-    if (defined($arg)) {
-        return $self->{'_identical_matches'} = $arg;
-    } 
-    return $self->{'_identical_matches'};
+  if (defined($arg)) {
+	return $self->{'_identical_matches'} = $arg;
+  }
+  return $self->{'_identical_matches'};
 }
 
 =head2 positive_matches
@@ -666,13 +635,13 @@ sub identical_matches{
 
 =cut
 
-sub positive_matches{
-    my ($self,$arg) = @_;
+sub positive_matches {
+  my ($self, $arg) = @_;
 
-    if (defined($arg)) {
-        return $self->{'_positive_matches'} = $arg;
-    } 
-    return $self->{'_positive_matches'};
+  if (defined($arg)) {
+	return $self->{'_positive_matches'} = $arg;
+  }
+  return $self->{'_positive_matches'};
 }
 
 =head2 group_id
@@ -688,12 +657,12 @@ sub positive_matches{
 =cut
 
 sub group_id {
-   my ($self, $arg) = @_;
- 
-   if ( defined $arg ) {
-      $self->{'group_id'} = $arg ;
-   }
-   return $self->{'group_id'};
+  my ($self, $arg) = @_;
+
+  if (defined $arg) {
+	$self->{'group_id'} = $arg;
+  }
+  return $self->{'group_id'};
 }
 
 =head2 level_id
@@ -709,23 +678,17 @@ sub group_id {
 =cut
 
 sub level_id {
-   my ($self, $arg) = @_;
- 
-   if ( defined $arg ) {
-      $self->{'level_id'} = $arg ;
-   }
-   return $self->{'level_id'};
+  my ($self, $arg) = @_;
+
+  if (defined $arg) {
+	$self->{'level_id'} = $arg;
+  }
+  return $self->{'level_id'};
 }
-
-
-
-
-
 
 =head1 DEPRECATED METHODS
 
 =cut
-
 
 =head2 feature1
 
@@ -735,20 +698,20 @@ sub level_id {
 =cut
 
 sub feature1 {
-  my ($self,$arg) = @_;
+  my ($self, $arg) = @_;
 
   deprecate('Use start(), end(), strand(), slice(), etc. methods instead.');
 
-  if($arg) {
-    $self->start($arg->start());
-    $self->end($arg->end());
-    $self->strand($arg->strand());
-    $self->score($arg->score());
-    $self->percent_id($arg->percent_id());
-    $self->analysis($arg->analysis);
-    if($arg->contig){
-      $self->slice($arg->contig);
-    }
+  if ($arg) {
+	$self->start($arg->start());
+	$self->end($arg->end());
+	$self->strand($arg->strand());
+	$self->score($arg->score());
+	$self->percent_id($arg->percent_id());
+	$self->analysis($arg->analysis);
+	if ($arg->contig) {
+	  $self->slice($arg->contig);
+	}
   }
 
   return $self;
@@ -762,30 +725,27 @@ sub feature1 {
 =cut
 
 sub feature2 {
-  my ($self,$arg) = @_;
+  my ($self, $arg) = @_;
 
   deprecate('Use hstart(),hend(),hstrand(),hseqname() methods instead.');
 
   if (defined($arg)) {
-    $self->hstart($arg->start());
-    $self->hend($arg->end());
-    $self->hstrand($arg->strand());
-    $self->hseqname($arg->seqname());
-    return $arg;
+	$self->hstart($arg->start());
+	$self->hend($arg->end());
+	$self->hstrand($arg->strand());
+	$self->hseqname($arg->seqname());
+	return $arg;
   }
 
-  return new Bio::EnsEMBL::Feature(
-		    -START      => $self->hstart(),
-		    -END        => $self->hend(),
-        -STRAND     => $self->hstrand(),
-		    -SCORE      => $self->score(),
-		    -PERCENT_ID => $self->percent_id(),
-		    -ANALYSIS   => $self->analysis,
-        -SEQNAME    => $self->hseqname());
+  return
+	new Bio::EnsEMBL::Feature(-START      => $self->hstart(),
+							  -END        => $self->hend(),
+							  -STRAND     => $self->hstrand(),
+							  -SCORE      => $self->score(),
+							  -PERCENT_ID => $self->percent_id(),
+							  -ANALYSIS   => $self->analysis,
+							  -SEQNAME    => $self->hseqname());
 }
-
-
-
 
 =head2 invert
 
@@ -802,41 +762,39 @@ sub feature2 {
 =cut
 
 sub invert {
-    my ($self,$slice) = @_;
+  my ($self, $slice) = @_;
 
-    if (! defined $slice && defined $self->hslice) {
-      $slice = $self->hslice;
-    }
+  if (!defined $slice && defined $self->hslice) {
+	$slice = $self->hslice;
+  }
 
-    my $hstart   = $self->{'hstart'};
-    my $hend     = $self->{'hend'};
-    my $hstrand  = $self->{'hstrand'};
-    my $hspecies = $self->{'hspecies'};
-    my $hseqname = $self->{'hseqname'};
+  my $hstart   = $self->{'hstart'};
+  my $hend     = $self->{'hend'};
+  my $hstrand  = $self->{'hstrand'};
+  my $hspecies = $self->{'hspecies'};
+  my $hseqname = $self->{'hseqname'};
 
-    my $start   = $self->{'start'};
-    my $end     = $self->{'end'};
-    my $strand  = $self->{'strand'};
-    my $species = $self->{'species'};
-    my $seqname = $self->seqname();
+  my $start   = $self->{'start'};
+  my $end     = $self->{'end'};
+  my $strand  = $self->{'strand'};
+  my $species = $self->{'species'};
+  my $seqname = $self->seqname();
 
-    $self->{'start'} = $hstart;
-    $self->{'end'}   = $hend;
-    $self->{'strand'} = $hstrand;
-    $self->{'species'} = $hspecies;
-    $self->{'seqname'} = $hseqname if(defined($hseqname));
+  $self->{'start'}   = $hstart;
+  $self->{'end'}     = $hend;
+  $self->{'strand'}  = $hstrand;
+  $self->{'species'} = $hspecies;
+  $self->{'seqname'} = $hseqname if (defined($hseqname));
 
-    $self->{'hstart'}   = $start;
-    $self->{'hend'}     = $end;
-    $self->{'hstrand'}  = $strand;
-    $self->{'hseqname'} = $seqname;
-    $self->{'hspecies'} = $species;
+  $self->{'hstart'}   = $start;
+  $self->{'hend'}     = $end;
+  $self->{'hstrand'}  = $strand;
+  $self->{'hseqname'} = $seqname;
+  $self->{'hspecies'} = $species;
 
-    $self->{'hslice'} = $self->slice;
-    $self->{'slice'} = $slice;
-}
-
-
+  $self->{'hslice'} = $self->slice;
+  $self->{'slice'}  = $slice;
+} ## end sub invert
 
 =head2 validate
 
@@ -856,12 +814,11 @@ sub validate {
 
 =cut
 
-sub validate_prot_feature{
+sub validate_prot_feature {
   my ($self) = @_;
 
   deprecate('This method does nothing and should not be used.');
 }
-
 
 =head2 set_featurepair_fields
 
@@ -870,31 +827,27 @@ sub validate_prot_feature{
 =cut
 
 sub set_featurepair_fields {
-   my ($self, $start, $end, $strand, $score, $seqname, $hstart, $hend,
-        $hstrand, $hseqname, $analysis, $e_value, $perc_id, 
-        $phase, $end_phase) = @_;
+  my ($self, $start, $end, $strand, $score, $seqname, $hstart, $hend, $hstrand, $hseqname, $analysis, $e_value, $perc_id, $phase, $end_phase) = @_;
 
-   deprecate("Use individual Getter/Setters or Constructor arguments " .
-             " instead.\nThere is no advantage to using this method.");
+  deprecate("Use individual Getter/Setters or Constructor arguments " . " instead.\nThere is no advantage to using this method.");
 
-   throw('interface fault') if (@_ < 12 or @_ > 15);
+  throw('interface fault') if (@_ < 12 or @_ > 15);
 
-   $self->start($start);
-   $self->end($end);
-   $self->strand($strand);
-   $self->score($score);
-   $self->seqname($seqname);
-   $self->hstart($hstart);
-   $self->hend($hend);
-   $self->hstrand($hstrand);
-   $self->hseqname($hseqname);
-   $self->analysis($analysis);
-   $self->p_value    ($e_value)   if (defined $e_value);
-   $self->percent_id ($perc_id)   if (defined $perc_id);
-   $self->phase      ($phase)     if (defined $phase);
-   $self->end_phase  ($end_phase) if (defined $end_phase);
+  $self->start($start);
+  $self->end($end);
+  $self->strand($strand);
+  $self->score($score);
+  $self->seqname($seqname);
+  $self->hstart($hstart);
+  $self->hend($hend);
+  $self->hstrand($hstrand);
+  $self->hseqname($hseqname);
+  $self->analysis($analysis);
+  $self->p_value($e_value)     if (defined $e_value);
+  $self->percent_id($perc_id)  if (defined $perc_id);
+  $self->phase($phase)         if (defined $phase);
+  $self->end_phase($end_phase) if (defined $end_phase);
 }
-
 
 =head2 gffstring
 
@@ -903,38 +856,35 @@ sub set_featurepair_fields {
 =cut
 
 sub gffstring {
-    my ($self) = @_;
+  my ($self) = @_;
 
-    deprecate('Do not use');
+  deprecate('Do not use');
 
-    my $str .= (defined $self->slice) ?  $self->slice->name()."\t":  "\t";
-    $str .=  "\t"; #source tag
-    $str .=  "\t"; #primary tag
-    $str .= (defined $self->start)    ?  $self->start."\t"        :  "\t";
-    $str .= (defined $self->end)      ?  $self->end."\t"          :  "\t";
-    $str .= (defined $self->score)    ?  $self->score."\t"        :  "\t";
-    $str .= (defined $self->strand)   ?  $self->strand."\t"       :  ".\t";
-    $str .=  ".\t"; #phase
-    $str .=  ".\t"; #end phase
+  my $str .= (defined $self->slice) ? $self->slice->name() . "\t" : "\t";
+  $str .= "\t";                                                     #source tag
+  $str .= "\t";                                                     #primary tag
+  $str .= (defined $self->start) ? $self->start . "\t" : "\t";
+  $str .= (defined $self->end) ? $self->end . "\t" : "\t";
+  $str .= (defined $self->score) ? $self->score . "\t" : "\t";
+  $str .= (defined $self->strand) ? $self->strand . "\t" : ".\t";
+  $str .= ".\t";                                                    #phase
+  $str .= ".\t";                                                    #end phase
 
-    my $hstrand = "+";
+  my $hstrand = "+";
 
-    if (($self->hstrand)&&($self->hstrand == -1)) {
-      $hstrand = "-";
-    }
+  if (($self->hstrand) && ($self->hstrand == -1)) {
+	$hstrand = "-";
+  }
 
-    #Append a few FeaturePair specific things
-    $str .= (defined $self->hseqname)   ?   $self->hseqname."\t"    :  "\t";
-    $str .= (defined $self->hstart)     ?   $self->hstart."\t"      :  "\t";
-    $str .= (defined $self->hend)       ?   $self->hend."\t"        :  "\t";
-    $str .= (defined $self->hstrand)    ?   $hstrand."\t"           :  "\t";
-    $str .= (defined $self->hphase)     ?   $self->hphase."\t"      :  ".\t";
+  #Append a few FeaturePair specific things
+  $str .= (defined $self->hseqname) ? $self->hseqname . "\t" : "\t";
+  $str .= (defined $self->hstart)   ? $self->hstart . "\t"   : "\t";
+  $str .= (defined $self->hend)     ? $self->hend . "\t"     : "\t";
+  $str .= (defined $self->hstrand)  ? $hstrand . "\t"        : "\t";
+  $str .= (defined $self->hphase)   ? $self->hphase . "\t"   : ".\t";
 
-    return $str;
-}
-
-
-
+  return $str;
+} ## end sub gffstring
 
 =head2 hphase
 
@@ -948,12 +898,11 @@ sub hphase {
   deprecate('This method does nothing useful.');
 
   if (defined($value)) {
-    $self->{_hphase} = $value;
+	$self->{_hphase} = $value;
   }
 
   return $self->{_hphase};
 }
-
 
 =head2 hend_phase
 
@@ -967,22 +916,22 @@ sub hend_phase {
   deprecate('This method does nothing useful.');
 
   if (defined($value)) {
-    $self->{_hend_phase} = $value;
+	$self->{_hend_phase} = $value;
   }
   return $self->{_hend_phase};
 }
 
 sub extra_data {
   my $self = shift;
-  $self->{'extra_data'} = shift if(@_);
+  $self->{'extra_data'} = shift if (@_);
   return $self->{'extra_data'};
 }
 
 sub type {
   my $self = shift;
-  $self->{'extra_data'}->{'type'} = shift if(@_);
+  $self->{'extra_data'}->{'type'} = shift if (@_);
   if (exists $self->{'extra_data'}) {
-      return $self->{'extra_data'}->{'type'};
+	return $self->{'extra_data'}->{'type'};
   }
   return;
 }

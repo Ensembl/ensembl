@@ -1,3 +1,4 @@
+
 =head1 LICENSE
 
   Copyright (c) 1999-2012 The European Bioinformatics Institute and
@@ -42,7 +43,6 @@ Bio::EnsEMBL::DBSQL::ProteinFeatureAdaptor
 
 =cut
 
-
 package Bio::EnsEMBL::DBSQL::ProteinFeatureAdaptor;
 
 use strict;
@@ -53,7 +53,6 @@ use Bio::EnsEMBL::Utils::Exception qw(throw deprecate warning);
 
 use vars qw(@ISA);
 @ISA = qw(Bio::EnsEMBL::DBSQL::BaseAdaptor);
-
 
 =head2 fetch_all_by_translation_id
 
@@ -75,62 +74,51 @@ use vars qw(@ISA);
 =cut
 
 sub fetch_all_by_translation_id {
-  my($self,$translation_id) = @_;
+  my ($self, $translation_id) = @_;
 
-  if(!$translation_id) {
-    throw("translation_id argument is required\n");
+  if (!$translation_id) {
+	throw("translation_id argument is required\n");
   }
 
   my @features;
   my $analysis_adaptor = $self->db()->get_AnalysisAdaptor();
-    
-  my $sth = $self->prepare
-    ("SELECT protein_feature_id, p.seq_start, p.seq_end, p.analysis_id, " .
-     "       p.score, p.perc_ident, p.evalue, p.hit_start, p.hit_end, " .
-     "       p.hit_name, x.display_label, i.interpro_ac " .
-     "FROM   protein_feature p " .
-     "LEFT JOIN interpro AS i ON p.hit_name = i.id " .
-     "LEFT JOIN xref AS x ON x.dbprimary_acc = i.interpro_ac " .
-     "WHERE p.translation_id = ?");
 
-  $sth->bind_param(1,$translation_id,SQL_INTEGER);
+  my $sth = $self->prepare("SELECT protein_feature_id, p.seq_start, p.seq_end, p.analysis_id, " . "       p.score, p.perc_ident, p.evalue, p.hit_start, p.hit_end, " . "       p.hit_name, x.display_label, i.interpro_ac " . "FROM   protein_feature p " . "LEFT JOIN interpro AS i ON p.hit_name = i.id " . "LEFT JOIN xref AS x ON x.dbprimary_acc = i.interpro_ac " . "WHERE p.translation_id = ?");
+
+  $sth->bind_param(1, $translation_id, SQL_INTEGER);
   $sth->execute();
 
-  while( my $row = $sth->fetchrow_arrayref) {
-    my ($dbID, $start, $end, $analysisid, $score, $perc_id, $evalue, $hstart,
-        $hend,$hid,$desc, $interpro_ac) = @$row;
+  while (my $row = $sth->fetchrow_arrayref) {
+	my ($dbID, $start, $end, $analysisid, $score, $perc_id, $evalue, $hstart, $hend, $hid, $desc, $interpro_ac) = @$row;
 
-    my $analysis = $analysis_adaptor->fetch_by_dbID($analysisid);
+	my $analysis = $analysis_adaptor->fetch_by_dbID($analysisid);
 
-    if(!$analysis) {
-      warning("Analysis with dbID=$analysisid does not exist\n" .
-	      "but is referenced by ProteinFeature $dbID");
-    }
+	if (!$analysis) {
+	  warning("Analysis with dbID=$analysisid does not exist\n" . "but is referenced by ProteinFeature $dbID");
+	}
 
-    my $feat = Bio::EnsEMBL::ProteinFeature->new
-      (-DBID        => $dbID,
-       -ADAPTOR     => $self,
-       -SEQNAME     => $translation_id,
-       -START       => $start,
-       -END         => $end,
-       -ANALYSIS    => $analysis,
-       -PERCENT_ID  => $perc_id,
-       -P_VALUE     => $evalue,
-       -SCORE       => $score, 
-       -HSTART      => $hstart,
-       -HEND        => $hend,
-       -HSEQNAME    => $hid,
-       -IDESC       => $desc,
-       -INTERPRO_AC => $interpro_ac);
+	my $feat = Bio::EnsEMBL::ProteinFeature->new(-DBID        => $dbID,
+												 -ADAPTOR     => $self,
+												 -SEQNAME     => $translation_id,
+												 -START       => $start,
+												 -END         => $end,
+												 -ANALYSIS    => $analysis,
+												 -PERCENT_ID  => $perc_id,
+												 -P_VALUE     => $evalue,
+												 -SCORE       => $score,
+												 -HSTART      => $hstart,
+												 -HEND        => $hend,
+												 -HSEQNAME    => $hid,
+												 -IDESC       => $desc,
+												 -INTERPRO_AC => $interpro_ac);
 
-    push(@features,$feat);
-  }
+	push(@features, $feat);
+  } ## end while (my $row = $sth->fetchrow_arrayref)
 
   $sth->finish();
 
-  return \@features;    
-}
-
+  return \@features;
+} ## end sub fetch_all_by_translation_id
 
 =head2 fetch_by_dbID
 
@@ -145,52 +133,40 @@ sub fetch_all_by_translation_id {
 
 =cut
 
-sub fetch_by_dbID{
-  my ($self,$protfeat_id) = @_;
-    
-  my $sth = $self->prepare(
-	      "SELECT p.seq_start, p.seq_end, p.analysis_id, " .
-        "       p.score, p.perc_ident, p.evalue, " .
-        "       p.hit_start, p.hit_end, p.hit_name, " .
-        "       x.display_label, i.interpro_ac " .
-        "FROM   protein_feature p " .
-        "LEFT JOIN interpro AS i ON p.hit_name = i.id " .
-        "LEFT JOIN xref AS x ON x.dbprimary_acc = i.interpro_ac " .
-        "WHERE  p.protein_feature_id = ?");
-  
-  $sth->bind_param(1,$protfeat_id,SQL_INTEGER);
+sub fetch_by_dbID {
+  my ($self, $protfeat_id) = @_;
+
+  my $sth = $self->prepare("SELECT p.seq_start, p.seq_end, p.analysis_id, " . "       p.score, p.perc_ident, p.evalue, " . "       p.hit_start, p.hit_end, p.hit_name, " . "       x.display_label, i.interpro_ac " . "FROM   protein_feature p " . "LEFT JOIN interpro AS i ON p.hit_name = i.id " . "LEFT JOIN xref AS x ON x.dbprimary_acc = i.interpro_ac " . "WHERE  p.protein_feature_id = ?");
+
+  $sth->bind_param(1, $protfeat_id, SQL_INTEGER);
   my $res = $sth->execute();
-   
-  if($sth->rows == 0) {
-    $sth->finish();
-    return undef;
+
+  if ($sth->rows == 0) {
+	$sth->finish();
+	return undef;
   }
 
-  my ($start, $end, $analysis_id, $score, $perc_ident, $pvalue, $hstart, 
-      $hend, $hseqname, $idesc, $interpro_ac) = $sth->fetchrow_array();
+  my ($start, $end, $analysis_id, $score, $perc_ident, $pvalue, $hstart, $hend, $hseqname, $idesc, $interpro_ac) = $sth->fetchrow_array();
 
   $sth->finish();
 
   my $analysis = $self->db->get_AnalysisAdaptor->fetch_by_dbID($analysis_id);
 
-  return Bio::EnsEMBL::ProteinFeature->new
-    (-ADAPTOR    => $self,
-     -DBID        => $protfeat_id,
-     -START       => $start,
-     -END         => $end,
-     -HSTART      => $hstart,
-     -HEND        => $hend,
-     -HSEQNAME    => $hseqname,
-     -ANALYSIS    => $analysis,
-     -SCORE       => $score,
-     -P_VALUE     => $pvalue,
-     -PERCENT_ID  => $perc_ident,
-     -IDESC       => $idesc,
-     -INTERPRO_AC => $interpro_ac);
-}
-
-
-
+  return
+	Bio::EnsEMBL::ProteinFeature->new(-ADAPTOR     => $self,
+									  -DBID        => $protfeat_id,
+									  -START       => $start,
+									  -END         => $end,
+									  -HSTART      => $hstart,
+									  -HEND        => $hend,
+									  -HSEQNAME    => $hseqname,
+									  -ANALYSIS    => $analysis,
+									  -SCORE       => $score,
+									  -P_VALUE     => $pvalue,
+									  -PERCENT_ID  => $perc_ident,
+									  -IDESC       => $idesc,
+									  -INTERPRO_AC => $interpro_ac);
+} ## end sub fetch_by_dbID
 
 =head2 store
 
@@ -208,73 +184,56 @@ sub fetch_by_dbID{
 =cut
 
 sub store {
-  my ($self,$feature, $translation_id) = @_;
+  my ($self, $feature, $translation_id) = @_;
 
-  if(!ref($feature) || !$feature->isa('Bio::EnsEMBL::ProteinFeature')) {
-    throw("ProteinFeature argument is required");
+  if (!ref($feature) || !$feature->isa('Bio::EnsEMBL::ProteinFeature')) {
+	throw("ProteinFeature argument is required");
   }
 
-  if(!$translation_id) {
-    deprecate("Calling ProteinFeatureAdaptor without a translation_id is " .
-              "deprecated.  Pass a translation_id argument rather than " .
-              "setting the ProteinFeature seqname to be the translation " .
-              "id");
-    $translation_id = $feature->seqname();
+  if (!$translation_id) {
+	deprecate("Calling ProteinFeatureAdaptor without a translation_id is " . "deprecated.  Pass a translation_id argument rather than " . "setting the ProteinFeature seqname to be the translation " . "id");
+	$translation_id = $feature->seqname();
   }
 
   my $db = $self->db();
 
-  if($feature->is_stored($db)) {
-    warning("ProteinFeature " . $feature->dbID() . " is already stored in " .
-            "this database - not storing again");
+  if ($feature->is_stored($db)) {
+	warning("ProteinFeature " . $feature->dbID() . " is already stored in " . "this database - not storing again");
   }
 
   my $analysis = $feature->analysis();
   if (!defined($analysis)) {
-    throw("Feature doesn't have analysis. Can't write to database");
+	throw("Feature doesn't have analysis. Can't write to database");
   }
 
-  if(!$analysis->is_stored($db)) {
-    $db->get_AnalysisAdaptor->store($analysis);
+  if (!$analysis->is_stored($db)) {
+	$db->get_AnalysisAdaptor->store($analysis);
   }
 
-  my $sth = 
-    $self->prepare("INSERT INTO protein_feature " .
-                   "        SET translation_id = ?, " .
-                   "            seq_start      = ?, ".
-                   "            seq_end        = ?, ".
-                   "            analysis_id    = ?, ".
-                   "            hit_start      = ?, ".
-                   "            hit_end        = ?, ".
-                   "            hit_name       = ?, ".
-                   "            score          = ?, ".
-                   "            perc_ident     = ?, ".
-                   "            evalue         = ?");
+  my $sth = $self->prepare("INSERT INTO protein_feature " . "        SET translation_id = ?, " . "            seq_start      = ?, " . "            seq_end        = ?, " . "            analysis_id    = ?, " . "            hit_start      = ?, " . "            hit_end        = ?, " . "            hit_name       = ?, " . "            score          = ?, " . "            perc_ident     = ?, " . "            evalue         = ?");
 
-  $sth->bind_param(1,$translation_id,SQL_INTEGER);
-  $sth->bind_param(2,$feature->start,SQL_INTEGER);
-  $sth->bind_param(3,$feature->end,SQL_INTEGER);
-  $sth->bind_param(4,$analysis->dbID,SQL_INTEGER);
-  $sth->bind_param(5,$feature->hstart,SQL_INTEGER);
-  $sth->bind_param(6,$feature->hend,SQL_INTEGER);
-  $sth->bind_param(7,$feature->hseqname,SQL_VARCHAR);
-  $sth->bind_param(8,$feature->score,SQL_DOUBLE);
-  $sth->bind_param(9,$feature->percent_id,SQL_FLOAT);
-  $sth->bind_param(10,$feature->p_value,SQL_DOUBLE);
+  $sth->bind_param(1,  $translation_id,      SQL_INTEGER);
+  $sth->bind_param(2,  $feature->start,      SQL_INTEGER);
+  $sth->bind_param(3,  $feature->end,        SQL_INTEGER);
+  $sth->bind_param(4,  $analysis->dbID,      SQL_INTEGER);
+  $sth->bind_param(5,  $feature->hstart,     SQL_INTEGER);
+  $sth->bind_param(6,  $feature->hend,       SQL_INTEGER);
+  $sth->bind_param(7,  $feature->hseqname,   SQL_VARCHAR);
+  $sth->bind_param(8,  $feature->score,      SQL_DOUBLE);
+  $sth->bind_param(9,  $feature->percent_id, SQL_FLOAT);
+  $sth->bind_param(10, $feature->p_value,    SQL_DOUBLE);
 
   $sth->execute();
-  
+
   my $dbID = $sth->{'mysql_insertid'};
 
   $feature->adaptor($self);
   $feature->dbID($dbID);
-  
+
   $sth->finish();
 
-  return $dbID;          
-}
-
-
+  return $dbID;
+} ## end sub store
 
 sub fetch_by_translation_id {
   deprecate("Use fetch_all_by_translation_id instead.");
@@ -282,8 +241,8 @@ sub fetch_by_translation_id {
 }
 
 sub fetch_all_by_feature_and_dbID {
-  my $self = shift;
-  my $feature = shift;
+  my $self           = shift;
+  my $feature        = shift;
   my $translation_id = shift;
   deprecate("Use fetch_all_by_translation_id instead.");
 
@@ -293,79 +252,76 @@ sub fetch_all_by_feature_and_dbID {
 
   my @out;
   foreach my $f (@$features) {
-    my $logic_name = lc($f->analysis->logic_name());
-    print STDERR "LOGIC_NAME = $logic_name | FEATURE = $feature\n";
-    push(@out, $f) if($logic_name eq lc($feature));
+	my $logic_name = lc($f->analysis->logic_name());
+	print STDERR "LOGIC_NAME = $logic_name | FEATURE = $feature\n";
+	push(@out, $f) if ($logic_name eq lc($feature));
   }
 
   return \@out;
 }
 
-
 sub save {
-    
+
   my ($self, $features) = @_;
 
   my @feats = @$features;
-  throw("Must call save with features") if( scalar(@feats) == 0 );
+  throw("Must call save with features") if (scalar(@feats) == 0);
 
-#  my @tabs = $self->_tables;
-#  my ($tablename) = @{$tabs[0]};
+  #  my @tabs = $self->_tables;
+  #  my ($tablename) = @{$tabs[0]};
   my $tablename = 'protein_feature';
 
-  my $db = $self->db();
+  my $db               = $self->db();
   my $analysis_adaptor = $db->get_AnalysisAdaptor();
 
   my $sql = qq{INSERT INTO $tablename (translation_id, seq_start, seq_end, hit_start, hit_end, hit_name, analysis_id, score, evalue, perc_ident, external_data) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)};
 
   my $sth = $self->prepare($sql);
-     
-  foreach my $feat ( @feats ) {
-     if( !ref $feat || !$feat->isa("Bio::EnsEMBL::ProteinFeature") ) {
-	 throw("feature must be a Bio::EnsEMBL::ProteinFeature,". " not a [".ref($feat)."].");
-     }
 
-     if($feat->is_stored($db)) {
-	 warning("ProteinFeature [".$feat->dbID."] is already stored" .
-		 " in this database.");
-	 next;
-     }
+  foreach my $feat (@feats) {
+	if (!ref $feat || !$feat->isa("Bio::EnsEMBL::ProteinFeature")) {
+	  throw("feature must be a Bio::EnsEMBL::ProteinFeature," . " not a [" . ref($feat) . "].");
+	}
 
-     my $hstart = defined $feat->hstart ? $feat->hstart : $feat->start ;
-     my $hend   = defined $feat->hend ? $feat->hend : $feat->end;
+	if ($feat->is_stored($db)) {
+	  warning("ProteinFeature [" . $feat->dbID . "] is already stored" . " in this database.");
+	  next;
+	}
 
-     if(!defined($feat->analysis)) {
-	 throw("An analysis must be attached to the features to be stored.");
-     }
+	my $hstart = defined $feat->hstart ? $feat->hstart : $feat->start;
+	my $hend   = defined $feat->hend   ? $feat->hend   : $feat->end;
 
-     #store the analysis if it has not been stored yet
-     if(!$feat->analysis->is_stored($db)) {
-	 $analysis_adaptor->store($feat->analysis());
-     }
+	if (!defined($feat->analysis)) {
+	  throw("An analysis must be attached to the features to be stored.");
+	}
 
-     my $original = $feat;
-     my $extra_data = $feat->extra_data ? $self->dump_data($feat->extra_data) : '';
+	#store the analysis if it has not been stored yet
+	if (!$feat->analysis->is_stored($db)) {
+	  $analysis_adaptor->store($feat->analysis());
+	}
 
-     $sth->bind_param(1,$feat->translation_id,SQL_INTEGER);
-     $sth->bind_param(2,$feat->start,SQL_INTEGER);
-     $sth->bind_param(3,$feat->end,SQL_INTEGER);
-     $sth->bind_param(4,$hstart,SQL_INTEGER);
-     $sth->bind_param(5,$hend,SQL_INTEGER);
-     $sth->bind_param(6,$feat->hseqname,SQL_VARCHAR);
-     $sth->bind_param(7,$feat->analysis->dbID,SQL_INTEGER);
-     $sth->bind_param(8,$feat->score,SQL_DOUBLE);
-     $sth->bind_param(9,$feat->p_value,SQL_DOUBLE);
-     $sth->bind_param(10,$feat->percent_id,SQL_FLOAT);
-     $sth->bind_param(11,$extra_data,SQL_LONGVARCHAR);
-     
-     $sth->execute();
-     $original->dbID($sth->{'mysql_insertid'});
-     $original->adaptor($self);
- }
+	my $original = $feat;
+	my $extra_data = $feat->extra_data ? $self->dump_data($feat->extra_data) : '';
+
+	$sth->bind_param(1,  $feat->translation_id, SQL_INTEGER);
+	$sth->bind_param(2,  $feat->start,          SQL_INTEGER);
+	$sth->bind_param(3,  $feat->end,            SQL_INTEGER);
+	$sth->bind_param(4,  $hstart,               SQL_INTEGER);
+	$sth->bind_param(5,  $hend,                 SQL_INTEGER);
+	$sth->bind_param(6,  $feat->hseqname,       SQL_VARCHAR);
+	$sth->bind_param(7,  $feat->analysis->dbID, SQL_INTEGER);
+	$sth->bind_param(8,  $feat->score,          SQL_DOUBLE);
+	$sth->bind_param(9,  $feat->p_value,        SQL_DOUBLE);
+	$sth->bind_param(10, $feat->percent_id,     SQL_FLOAT);
+	$sth->bind_param(11, $extra_data,           SQL_LONGVARCHAR);
+
+	$sth->execute();
+	$original->dbID($sth->{'mysql_insertid'});
+	$original->adaptor($self);
+  } ## end foreach my $feat (@feats)
 
   $sth->finish();
-}
-
+} ## end sub save
 
 1;
 
