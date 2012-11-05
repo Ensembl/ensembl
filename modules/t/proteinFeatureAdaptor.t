@@ -2,11 +2,7 @@ use strict;
 
 use Bio::EnsEMBL::Test::TestUtils;
 
-BEGIN {
-  $| = 1;
-  use Test;
-  plan tests => 2;
-}
+use Test::More;
 
 use Bio::EnsEMBL::Test::MultiTestDB;
 
@@ -84,3 +80,5 @@ ok(@$pfs == 16);
 my @pfs = grep{$_->hdescription() eq $hdes} @$pfs;
 
 ok(scalar @pfs > 0);
+
+done_testing();
