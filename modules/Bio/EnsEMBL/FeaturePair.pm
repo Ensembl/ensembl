@@ -10,6 +10,7 @@
     http://www.ensembl.org/info/about/code_licence.html
 
 =head1 CONTACT
+
   Please email comments or questions to the public Ensembl
   developers list at <dev@ensembl.org>.
 
@@ -126,7 +127,7 @@ sub new {
 
   my $self = $class->SUPER::new(@_);
 
-  my ($hstart, $hend, $hstrand, $percent_id, $score, $species, $hspecies, $p_value, $hseqname, $f1, $f2, $coverage, $hcoverage, $group_id, $level_id, $external_db_id, $extra_data, $external_db_name, $external_display_db_name) = rearrange(['HSTART', 'HEND', 'HSTRAND', 'PERCENT_ID', 'SCORE', 'SPECIES', 'HSPECIES', 'P_VALUE', 'HSEQNAME', 'FEATURE1', 'FEATURE2', 'COVERAGE', 'HCOVERAGE', 'GROUP_ID', 'LEVEL_ID', 'EXTERNAL_DB_ID', 'EXTRA_DATA', 'DBNAME', 'DB_DISPLAY_NAME'], @_);
+  my ($hstart, $hend, $hstrand, $percent_id, $score, $species, $hspecies, $p_value, $hseqname, $f1, $f2, $coverage, $hcoverage, $group_id, $level_id, $external_db_id, $extra_data, $external_db_name, $external_display_db_name, $hdescription) = rearrange(['HSTART', 'HEND', 'HSTRAND', 'PERCENT_ID', 'SCORE', 'SPECIES', 'HSPECIES', 'P_VALUE', 'HSEQNAME', 'FEATURE1', 'FEATURE2', 'COVERAGE', 'HCOVERAGE', 'GROUP_ID', 'LEVEL_ID', 'EXTERNAL_DB_ID', 'EXTRA_DATA', 'DBNAME', 'DB_DISPLAY_NAME', 'HDESCRIPTION'], @_);
 
   if (defined($hstart) && defined($hend) && ($hend < $hstart)) {
 	throw('HSTART must be less than or equal to HEND');
@@ -153,7 +154,7 @@ sub new {
   $self->{'extra_data'}      = $extra_data;
   $self->{'dbname'}          = $external_db_name;
   $self->{'db_display_name'} = $external_display_db_name;
-
+  $self->{'hdescription'}    = $hdescription;
   #
   # Feature1 and Feature2 arg handling for backwards compatibility
   #
@@ -583,6 +584,24 @@ sub p_value {
   return $self->{'p_value'};
 }
 
+=head2 hdescription
+
+  Arg [1]    : String (optional)
+  Example    : $des = $fp->hdescription()
+  Description: Getter Setter for optional description of this feature
+  Returntype : String
+  Exceptions : none
+  Caller     : general
+  Status     : Stable
+
+=cut
+
+sub hdescription {
+  my $self = shift;
+  $self->{'hdescription'} = shift if (@_);
+  return $self->{'hdescription'};
+}
+
 =head2 display_id
 
   Arg [1]    : none
@@ -768,11 +787,12 @@ sub invert {
 	$slice = $self->hslice;
   }
 
-  my $hstart   = $self->{'hstart'};
-  my $hend     = $self->{'hend'};
-  my $hstrand  = $self->{'hstrand'};
-  my $hspecies = $self->{'hspecies'};
-  my $hseqname = $self->{'hseqname'};
+  my $hstart       = $self->{'hstart'};
+  my $hend         = $self->{'hend'};
+  my $hstrand      = $self->{'hstrand'};
+  my $hspecies     = $self->{'hspecies'};
+  my $hseqname     = $self->{'hseqname'};
+  my $hdescription = $self->{'hdescription'};
 
   my $start   = $self->{'start'};
   my $end     = $self->{'end'};
@@ -791,6 +811,8 @@ sub invert {
   $self->{'hstrand'}  = $strand;
   $self->{'hseqname'} = $seqname;
   $self->{'hspecies'} = $species;
+
+  $self->{'hdescription'} = $hdescription;
 
   $self->{'hslice'} = $self->slice;
   $self->{'slice'}  = $slice;

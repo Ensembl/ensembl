@@ -83,13 +83,13 @@ sub fetch_all_by_translation_id {
   my @features;
   my $analysis_adaptor = $self->db()->get_AnalysisAdaptor();
 
-  my $sth = $self->prepare("SELECT protein_feature_id, p.seq_start, p.seq_end, p.analysis_id, " . "       p.score, p.perc_ident, p.evalue, p.hit_start, p.hit_end, " . "       p.hit_name, x.display_label, i.interpro_ac " . "FROM   protein_feature p " . "LEFT JOIN interpro AS i ON p.hit_name = i.id " . "LEFT JOIN xref AS x ON x.dbprimary_acc = i.interpro_ac " . "WHERE p.translation_id = ?");
+  my $sth = $self->prepare("SELECT protein_feature_id, p.seq_start, p.seq_end, p.analysis_id, " . "       p.score, p.perc_ident, p.evalue, p.hit_start, p.hit_end, " . "       p.hit_name, p.hit_description, x.display_label, i.interpro_ac " . "FROM   protein_feature p " . "LEFT JOIN interpro AS i ON p.hit_name = i.id " . "LEFT JOIN xref AS x ON x.dbprimary_acc = i.interpro_ac " . "WHERE p.translation_id = ?");
 
   $sth->bind_param(1, $translation_id, SQL_INTEGER);
   $sth->execute();
 
   while (my $row = $sth->fetchrow_arrayref) {
-	my ($dbID, $start, $end, $analysisid, $score, $perc_id, $evalue, $hstart, $hend, $hid, $desc, $interpro_ac) = @$row;
+	my ($dbID, $start, $end, $analysisid, $score, $perc_id, $evalue, $hstart, $hend, $hid, $hdesc, $desc, $interpro_ac) = @$row;
 
 	my $analysis = $analysis_adaptor->fetch_by_dbID($analysisid);
 
@@ -97,20 +97,21 @@ sub fetch_all_by_translation_id {
 	  warning("Analysis with dbID=$analysisid does not exist\n" . "but is referenced by ProteinFeature $dbID");
 	}
 
-	my $feat = Bio::EnsEMBL::ProteinFeature->new(-DBID        => $dbID,
-												 -ADAPTOR     => $self,
-												 -SEQNAME     => $translation_id,
-												 -START       => $start,
-												 -END         => $end,
-												 -ANALYSIS    => $analysis,
-												 -PERCENT_ID  => $perc_id,
-												 -P_VALUE     => $evalue,
-												 -SCORE       => $score,
-												 -HSTART      => $hstart,
-												 -HEND        => $hend,
-												 -HSEQNAME    => $hid,
-												 -IDESC       => $desc,
-												 -INTERPRO_AC => $interpro_ac);
+	my $feat = Bio::EnsEMBL::ProteinFeature->new(-DBID         => $dbID,
+												 -ADAPTOR      => $self,
+												 -SEQNAME      => $translation_id,
+												 -START        => $start,
+												 -END          => $end,
+												 -ANALYSIS     => $analysis,
+												 -PERCENT_ID   => $perc_id,
+												 -P_VALUE      => $evalue,
+												 -SCORE        => $score,
+												 -HSTART       => $hstart,
+												 -HEND         => $hend,
+												 -HSEQNAME     => $hid,
+												 -HDESCRIPTION => $hdesc,
+												 -IDESC        => $desc,
+												 -INTERPRO_AC  => $interpro_ac);
 
 	push(@features, $feat);
   } ## end while (my $row = $sth->fetchrow_arrayref)
@@ -205,23 +206,23 @@ sub store {
   if (!defined($analysis)) {
 	throw("Feature doesn't have analysis. Can't write to database");
   }
-
   if (!$analysis->is_stored($db)) {
 	$db->get_AnalysisAdaptor->store($analysis);
   }
 
-  my $sth = $self->prepare("INSERT INTO protein_feature " . "        SET translation_id = ?, " . "            seq_start      = ?, " . "            seq_end        = ?, " . "            analysis_id    = ?, " . "            hit_start      = ?, " . "            hit_end        = ?, " . "            hit_name       = ?, " . "            score          = ?, " . "            perc_ident     = ?, " . "            evalue         = ?");
+  my $sth = $self->prepare("INSERT INTO protein_feature " . "        SET translation_id  = ?, " . "            seq_start       = ?, " . "            seq_end         = ?, " . "            analysis_id     = ?, " . "            hit_start       = ?, " . "            hit_end         = ?, " . "            hit_name        = ?, " . "            hit_description = ?, " . "            score           = ?, " . "            perc_ident      = ?, " . "            evalue          = ?");
 
-  $sth->bind_param(1,  $translation_id,      SQL_INTEGER);
-  $sth->bind_param(2,  $feature->start,      SQL_INTEGER);
-  $sth->bind_param(3,  $feature->end,        SQL_INTEGER);
-  $sth->bind_param(4,  $analysis->dbID,      SQL_INTEGER);
-  $sth->bind_param(5,  $feature->hstart,     SQL_INTEGER);
-  $sth->bind_param(6,  $feature->hend,       SQL_INTEGER);
-  $sth->bind_param(7,  $feature->hseqname,   SQL_VARCHAR);
-  $sth->bind_param(8,  $feature->score,      SQL_DOUBLE);
-  $sth->bind_param(9,  $feature->percent_id, SQL_FLOAT);
-  $sth->bind_param(10, $feature->p_value,    SQL_DOUBLE);
+  $sth->bind_param(1,  $translation_id,        SQL_INTEGER);
+  $sth->bind_param(2,  $feature->start,        SQL_INTEGER);
+  $sth->bind_param(3,  $feature->end,          SQL_INTEGER);
+  $sth->bind_param(4,  $analysis->dbID,        SQL_INTEGER);
+  $sth->bind_param(5,  $feature->hstart,       SQL_INTEGER);
+  $sth->bind_param(6,  $feature->hend,         SQL_INTEGER);
+  $sth->bind_param(7,  $feature->hseqname,     SQL_VARCHAR);
+  $sth->bind_param(8,  $feature->hdescription, SQL_LONGVARCHAR);
+  $sth->bind_param(9,  $feature->score,        SQL_DOUBLE);
+  $sth->bind_param(10, $feature->percent_id,   SQL_FLOAT);
+  $sth->bind_param(11, $feature->p_value,      SQL_DOUBLE);
 
   $sth->execute();
 
@@ -274,7 +275,7 @@ sub save {
   my $db               = $self->db();
   my $analysis_adaptor = $db->get_AnalysisAdaptor();
 
-  my $sql = qq{INSERT INTO $tablename (translation_id, seq_start, seq_end, hit_start, hit_end, hit_name, analysis_id, score, evalue, perc_ident, external_data) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)};
+  my $sql = qq{INSERT INTO $tablename (translation_id, seq_start, seq_end, hit_start, hit_end, hit_name, hdescription, analysis_id, score, evalue, perc_ident, external_data) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)};
 
   my $sth = $self->prepare($sql);
 
@@ -309,11 +310,12 @@ sub save {
 	$sth->bind_param(4,  $hstart,               SQL_INTEGER);
 	$sth->bind_param(5,  $hend,                 SQL_INTEGER);
 	$sth->bind_param(6,  $feat->hseqname,       SQL_VARCHAR);
-	$sth->bind_param(7,  $feat->analysis->dbID, SQL_INTEGER);
-	$sth->bind_param(8,  $feat->score,          SQL_DOUBLE);
-	$sth->bind_param(9,  $feat->p_value,        SQL_DOUBLE);
-	$sth->bind_param(10, $feat->percent_id,     SQL_FLOAT);
-	$sth->bind_param(11, $extra_data,           SQL_LONGVARCHAR);
+	$sth->bind_param(7,  $feat->hdescription,   SQL_LONGVARCHAR);
+	$sth->bind_param(8,  $feat->analysis->dbID, SQL_INTEGER);
+	$sth->bind_param(9,  $feat->score,          SQL_DOUBLE);
+	$sth->bind_param(10, $feat->p_value,        SQL_DOUBLE);
+	$sth->bind_param(11, $feat->percent_id,     SQL_FLOAT);
+	$sth->bind_param(12, $extra_data,           SQL_LONGVARCHAR);
 
 	$sth->execute();
 	$original->dbID($sth->{'mysql_insertid'});

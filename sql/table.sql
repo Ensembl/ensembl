@@ -1594,6 +1594,7 @@ CREATE TABLE protein_align_feature (
 @column hit_start                   Alignment hit start position.
 @column hit_end                     Alignment hit end position.
 @column hit_name                    Alignment hit name.
+@column hit_description             Optional description of the hit.
 @column analysis_id                 Foreign key references to the @link analysis table.
 @column score                       Alignment score.
 @column evalue                      Alignment E-value.
@@ -1614,6 +1615,7 @@ CREATE TABLE protein_feature (
   hit_start                   INT(10) NOT NULL,
   hit_end                     INT(10) NOT NULL,
   hit_name                    VARCHAR(40) NOT NULL,
+  hit_description             TEXT,
   analysis_id                 SMALLINT UNSIGNED NOT NULL,
   score                       DOUBLE,
   evalue                      DOUBLE,
