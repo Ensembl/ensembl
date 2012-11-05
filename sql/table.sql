@@ -520,6 +520,9 @@ INSERT INTO meta (species_id, meta_key, meta_value) VALUES
 INSERT INTO meta (species_id, meta_key, meta_value) VALUES
   (NULL, 'patch', 'patch_69_70_d.sql|data_file_id_auto_increment')
  ;
+INSERT INTO meta (species_id, meta_key, meta_value) VALUES
+  (NULL, 'patch', 'patch_69_70_e.sql|protein_feature_hit_description')
+ ;
 
 /**
 @table meta_coord
@@ -1594,12 +1597,12 @@ CREATE TABLE protein_align_feature (
 @column hit_start                   Alignment hit start position.
 @column hit_end                     Alignment hit end position.
 @column hit_name                    Alignment hit name.
-@column hit_description             Optional description of the hit.
 @column analysis_id                 Foreign key references to the @link analysis table.
 @column score                       Alignment score.
 @column evalue                      Alignment E-value.
 @column perc_ident                  Alignment percentage identity.
 @column external_data               External data for protein feature.
+@column hit_description             Optional description of the hit. This can be a human readable name
 
 @see analysis
 
@@ -1615,12 +1618,12 @@ CREATE TABLE protein_feature (
   hit_start                   INT(10) NOT NULL,
   hit_end                     INT(10) NOT NULL,
   hit_name                    VARCHAR(40) NOT NULL,
-  hit_description             TEXT,
   analysis_id                 SMALLINT UNSIGNED NOT NULL,
   score                       DOUBLE,
   evalue                      DOUBLE,
   perc_ident                  FLOAT,
   external_data               TEXT,
+  hit_description             TEXT,
 
   PRIMARY KEY (protein_feature_id),
   KEY translation_idx (translation_id),
