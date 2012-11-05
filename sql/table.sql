@@ -517,6 +517,9 @@ INSERT INTO meta (species_id, meta_key, meta_value) VALUES
 INSERT INTO meta (species_id, meta_key, meta_value) VALUES
   (NULL, 'patch', 'patch_69_70_c.sql|column_datatype_consistency')
  ;
+INSERT INTO meta (species_id, meta_key, meta_value) VALUES
+  (NULL, 'patch', 'patch_69_70_d.sql|data_file_id_auto_increment')
+ ;
 
 /**
 @table meta_coord
