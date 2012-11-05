@@ -32,6 +32,7 @@ CREATE TABLE `protein_feature` (
   `score` double NOT NULL DEFAULT '0',
   `evalue` double DEFAULT NULL,
   `perc_ident` float DEFAULT NULL,
+  `external_data` text COLLATE latin1_bin,
   `hit_description` text COLLATE latin1_bin,
   PRIMARY KEY (`protein_feature_id`),
   KEY `translation_id` (`translation_id`),

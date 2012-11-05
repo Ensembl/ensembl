@@ -29,3 +29,4 @@
 74	\N	patch	patch_69_70_c.sql|column_datatype_consistency
 75	\N	patch	patch_69_70_d.sql|data_file_id_auto_increment
 76	\N	patch	patch_69_70_e.sql|protein_feature_hit_description
+77	\N	schema_type	core

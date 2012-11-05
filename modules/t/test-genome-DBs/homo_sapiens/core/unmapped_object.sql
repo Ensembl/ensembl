@@ -31,6 +31,7 @@ CREATE TABLE `unmapped_object` (
   `target_score` double DEFAULT NULL,
   `ensembl_id` int(10) unsigned DEFAULT '0',
   `ensembl_object_type` enum('RawContig','Transcript','Gene','Translation') COLLATE latin1_bin DEFAULT 'RawContig',
+  `parent` VARCHAR(255) COLLATE latin1_bin DEFAULT NULL,
   PRIMARY KEY (`unmapped_object_id`),
   KEY `id_idx` (`identifier`),
   KEY `anal_idx` (`analysis_id`),
