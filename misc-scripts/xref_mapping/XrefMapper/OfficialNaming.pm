@@ -240,6 +240,13 @@ SQ0
 	$official_name_used{$gene_symbol_xref_id} = 1;
     }
 
+    ############################################
+    # If not found see if there is an LRG entry
+    ############################################
+    if(!defined($gene_symbol)){ # look for LRG
+      ($gene_symbol, $gene_symbol_xref_id) = $self->find_lrg_hgnc($gene_id);
+    }
+
     ####################################################
     # If not found look for other valid database sources
     # These are RFAM and miRBase, as well as Uniprot_genename
@@ -1164,6 +1171,89 @@ sub get_xref_id_for_gene_symbol{
   }
   return $xref_id;
 }
+########################## START LRG BIT ######################################################
+
+sub get_lrg_find_sth{
+  my $self = shift;
+  
+  if(!defined($self->{'_lrg_find_sth'})){
+    my $sql=(<<'SQ2');
+SELECT x.label, x.xref_id, ox.object_xref_id, s.priority 
+  FROM xref x, object_xref ox, source s 
+    WHERE x.xref_id = ox.xref_id AND
+          x.source_id = s.source_id AND 
+          s.name = ? AND
+          ox.ensembl_id = ? AND
+          ox.ensembl_object_type = ?
+SQ2
+   $self->{'_lrg_find_sth'} =$self->xref->dbc->prepare($sql);
+  }
+  return $self->{'_lrg_find_sth'};
+}
+
+
+sub get_lrg_set_status_sth{
+  my $self = shift;
+  
+  if(!defined($self->{'_lrg_set_status_sth'})){
+     $self->{'_lrg_set_status_sth'} =
+       $self->xref->dbc->prepare("update object_xref set ox_status = 'NO_DISPLAY' where object_xref_id = ?");
+  }
+  return $self->{'_lrg_set_status_sth'};
+}
+
+sub get_lrg_to_hgnc_sth{
+  my $self = shift;
+  
+  if(!defined($self->{'_lrg_to_hgnc_sth'})){
+    my $sql=(<<'SQ4');
+SELECT x.xref_id, s.priority 
+  FROM xref x,source s, object_xref ox
+    WHERE x.xref_id = ox.xref_id AND
+          x.source_id = s.source_id AND
+          x.label = ? AND
+          s.name = ? AND
+          ox.ox_status = 'DUMP_OUT'
+    ORDER BY s.priority
+SQ4
+   $self->{'_lrg_to_hgnc_sth'} = $self->xref->dbc->prepare($sql);
+  }
+  return $self->{'_lrg_to_hgnc_sth'};
+}
+
+
+sub find_lrg_hgnc{
+  my ($self, $gene_id) =@_;
+  my $gene_symbol;
+  my $gene_symbol_xref_id;
+
+  my $lrg_find_sth = $self->get_lrg_find_sth();
+  my $lrg_set_status_sth = $self->get_lrg_set_status_sth();
+  my $lrg_to_hgnc_sth = $self->get_lrg_to_hgnc_sth();
+
+  # look for LRG_HGNC_notransfer, if found then find HGNC equiv and set to this
+  #      print "LRG FOUND with no HGNC, should have gotten this via the alt allele table?? gene_id = $gene_id\n";
+  $lrg_find_sth->execute("LRG_HGNC_notransfer", $gene_id, "Gene");
+  my ($display, $xref_id, $object_xref_id, $level);
+  $lrg_find_sth->bind_columns(\$display, \$xref_id, \$object_xref_id, \$level);
+  while($lrg_find_sth->fetch){
+    $lrg_set_status_sth->execute($object_xref_id); # set oc_status to no _display as we do not want this transferred, 
+                                                   # just the equivalent hgnc
+    my $new_xref_id  = undef;
+    my $pp;
+    $lrg_to_hgnc_sth->execute($display,"HGNC");
+	$lrg_to_hgnc_sth->bind_columns(\$new_xref_id,\$pp);
+    $lrg_to_hgnc_sth->fetch;
+    if(defined($new_xref_id)){
+      $gene_symbol = $display;
+	  $gene_symbol_xref_id = $new_xref_id;
+    }
+  }
+  return ($gene_symbol, $gene_symbol_xref_id);
+}
+
+#############################END LRG BIT ################################################
+
 
 
 #
