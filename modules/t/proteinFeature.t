@@ -1,12 +1,7 @@
 use strict;
 use warnings;
 
-
-BEGIN { $| = 1;
-	use Test;
-	plan tests => 17;
-}
-
+use Test::More;
 use Bio::EnsEMBL::Test::TestUtils;
 
 use Bio::EnsEMBL::ProteinFeature;
@@ -84,5 +79,5 @@ ok(test_getter_setter($f, 'idesc', 'interpro desc1'));
 ok(test_getter_setter($f, 'interpro_ac',   'interpro ac1'));
 
 
-
+done_testing();
 
