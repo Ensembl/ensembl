@@ -60,7 +60,7 @@ sub run {
     my $type = 'Locus Specific Databases';
     my $id = $array[$name_to_array_index->{$type}];
     my $source_id = $name_to_source_id->{$type};
-    if($id and $id =~ m/http:\/\/www.lrg-sequence.org\/LRG\/(LRG_\d+)\'/x){
+    if($id and $id =~ m/http:\/\/www.lrg-sequence.org\/LRG\/(LRG_\d+)/x){
       my $lrg_stable_id = $1;
       $self->add_to_direct_xrefs({ stable_id   => $lrg_stable_id,
 				   type        => 'gene',
