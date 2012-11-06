@@ -1476,7 +1476,8 @@ sub load_registry_from_url {
                 The port to use when connecting to the database.
 
   Arg [VERBOSE]: (optional) boolean
-                Whether to print database messages.
+                Whether to print database messages. This includes a listing
+                of all available species & databases.
 
   Arg [SPECIES]: (optional) string
                 By default, all databases that are found on the
