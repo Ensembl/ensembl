@@ -1,9 +1,6 @@
 use strict;
 
-BEGIN { $| = 1;  
-	use Test ;
-	plan tests => 11;
-}
+use Test::More;
 
 use Bio::EnsEMBL::Test::MultiTestDB;
 use Bio::EnsEMBL::Test::TestUtils;
@@ -103,4 +100,4 @@ ok((scalar(@$ditags) == 5) && $ditags->[0]->isa('Bio::EnsEMBL::Map::Ditag'));
 my $dbIDs = $ditag_adaptor->list_dbIDs();
 ok(scalar @$dbIDs);
 
-1;
+done_testing();

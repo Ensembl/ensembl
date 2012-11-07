@@ -13,13 +13,7 @@ use Bio::EnsEMBL::DensityFeature;
 use Bio::EnsEMBL::Test::TestUtils;
 use Bio::EnsEMBL::Test::MultiTestDB;
 
-BEGIN { $| = 1;
-	use Test;
-	plan tests => 16;
-}
-
-
-
+use Test::More;
 our $verbose = 0;
 verbose('WARNING');
 
@@ -194,3 +188,4 @@ $multi->restore('core', 'analysis');
 $multi->restore('core', 'density_type');
 $multi->restore('core', 'density_feature');
 
+done_testing();

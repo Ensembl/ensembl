@@ -1,12 +1,7 @@
 use strict;
 use warnings;
 
-
-BEGIN { $| = 1;
-	use Test;
-	plan tests => 35;
-}
-
+use Test::More;
 
 use Bio::EnsEMBL::Test::TestUtils;
 use Bio::EnsEMBL::Test::MultiTestDB;
@@ -125,3 +120,5 @@ ok($slice);
 
 my %features = %{$slice->get_generic_features()};
 ok(!%features);
+
+done_testing();

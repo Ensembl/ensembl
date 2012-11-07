@@ -19,13 +19,13 @@
 ## etc. etc. etc. (continue on for each tested function in the .t file)
 #-----------------------------------------------------------------------
 
+use Test::More;
 
 # This test script heavily edited by ihh@fruitfly.org
 
 ## We start with some black magic to print on failure.
 BEGIN { $| = 1;
-	use Test;
-	plan tests => 14;   # 5 tests total
+
 	use vars qw($loaded); }
 END { print "not ok 1\n" unless $loaded; }
 
@@ -358,4 +358,4 @@ chr1	625359	1214016	1216330	1	2315	1
 #
 sub isgap { my ($obj) = @_; return !$obj->can ('strand') }
 
-
+done_testing();

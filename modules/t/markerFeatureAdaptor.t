@@ -1,9 +1,6 @@
 use strict;
 
-BEGIN { $| = 1;  
-	use Test ;
-	plan tests => 7
-}
+use Test::More;
 
 use Bio::EnsEMBL::Test::MultiTestDB;
 use Bio::EnsEMBL::Test::TestUtils;
@@ -120,3 +117,4 @@ ok($count == 1);
 #restore the marker feature table to its original state
 $multi->restore('core', 'marker_feature');
 
+done_testing();

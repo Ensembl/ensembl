@@ -1,11 +1,7 @@
 use strict;
 use warnings;
 
-
-BEGIN { $| = 1;
-	use Test;
-	plan tests => 102;
-}
+use Test::More;
 
 use Bio::EnsEMBL::Test::TestUtils;
 
@@ -606,3 +602,5 @@ sub print_locations {
         $af->seq_region_start. "-". $af->seq_region_end(). "\n");
   }
 }
+
+done_testing();

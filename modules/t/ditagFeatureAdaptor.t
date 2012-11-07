@@ -1,9 +1,5 @@
 use strict;
-
-BEGIN { $| = 1;  
-	use Test ;
-	plan tests => 12;
-}
+use Test::More;
 
 use Bio::EnsEMBL::Test::MultiTestDB;
 use Bio::EnsEMBL::Test::TestUtils;
@@ -151,4 +147,4 @@ ok(scalar(@$dfs) && $dfs->[0]->isa('Bio::EnsEMBL::Map::DitagFeature'));
 my $dbIDs = $dfa->list_dbIDs();
 ok(scalar @$dbIDs);
 
-1;
+done_testing();

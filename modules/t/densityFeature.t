@@ -11,14 +11,7 @@ use Bio::EnsEMBL::Test::TestUtils;
 
 
 our $verbose = 0; #set to 1 to turn on debug printouts
-
-
-
-BEGIN { $| = 1;
-	use Test;
-	plan tests => 4;
-}
-
+use Test::More;
 use Bio::EnsEMBL::Test::TestUtils;
 
 my $multi = Bio::EnsEMBL::Test::MultiTestDB->new;
@@ -59,4 +52,4 @@ ok(&test_getter_setter($feat, 'start', 100));
 ok(&test_getter_setter($feat, 'end', 500));
 ok(&test_getter_setter($feat, 'density_value', 456));
 
-
+done_testing();

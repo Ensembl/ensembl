@@ -1,10 +1,6 @@
 use strict;
 
-BEGIN { $| = 1;  
-	use Test ;
-	plan tests => 12
-}
-
+use Test::More;
 use Bio::EnsEMBL::Test::MultiTestDB;
 use Bio::EnsEMBL::Map::MarkerFeature;
 use Bio::EnsEMBL::Map::MarkerSynonym;
@@ -94,3 +90,5 @@ my $ms = Bio::EnsEMBL::Map::MarkerSynonym->new(1234, 'unists', 'a marker');
 
 $mf->marker()->display_MarkerSynonym($ms);
 ok($mf->display_id() eq $mf->marker()->display_MarkerSynonym()->name());
+
+done_testing();

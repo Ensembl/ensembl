@@ -3,12 +3,7 @@ use Bio::EnsEMBL::Test::TestUtils;
 
 use Bio::EnsEMBL::RepeatConsensus;
 
-
-BEGIN { $| = 1;
-	use Test;
-	plan tests => 12;
-}
-
+use Test::More;
 my $verbose = 0;
 
 my $consensus = 'actg';
@@ -42,3 +37,5 @@ ok(test_getter_setter($repeat_consensus,'repeat_class','dummy'));
 ok(test_getter_setter($repeat_consensus,'name','dummy'));
 ok(test_getter_setter($repeat_consensus,'repeat_consensus','ATGCATGCAT'));
 ok(test_getter_setter($repeat_consensus,'dbID',42));
+
+done_testing();

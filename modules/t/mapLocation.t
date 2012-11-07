@@ -1,9 +1,5 @@
 use strict;
-
-BEGIN { $| = 1;  
-	use Test ;
-	plan tests => 11
-}
+use Test::More;
 
 use Bio::EnsEMBL::Map::MapLocation;
 use Bio::EnsEMBL::Test::MultiTestDB;
@@ -77,4 +73,4 @@ ok(&test_getter_setter($mloc, 'position', 'q13.1'));
 ok($lod == $mloc->lod_score);
 ok(&test_getter_setter($mloc, 'lod_score', 0.03 ));
 
-
+done_testing();

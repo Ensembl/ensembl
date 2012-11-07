@@ -2,11 +2,7 @@ use strict;
 use warnings;
 use vars qw( $verbose );
 
-BEGIN { $| = 1;  
-	use Test;
-	plan tests => 4;
-}
-
+use Test::More;
 
 use Bio::EnsEMBL::Test::MultiTestDB;
 use Bio::EnsEMBL::Test::TestUtils;
@@ -32,3 +28,4 @@ $gene = $db->get_GeneAdaptor()->fetch_by_stable_id( "ENSG00000101321" );
 ok( $gene );
 
 
+done_testing();

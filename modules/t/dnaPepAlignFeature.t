@@ -1,12 +1,5 @@
-
-
-BEGIN { $| = 1;
-	use Test;
-	plan tests => 14;
-}
-
 use strict;
-
+use Test::More;
 use Bio::EnsEMBL::Test::MultiTestDB;
 use Bio::EnsEMBL::DnaPepAlignFeature;
 
@@ -377,5 +370,5 @@ ok($f);
 #ok($dnafs[0]->validate || 1); 
 #ok($dnafs[1]->validate || 1);
 
-
+done_testing();
 

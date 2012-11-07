@@ -7,13 +7,7 @@ use Bio::EnsEMBL::RepeatConsensus;
 use Bio::EnsEMBL::CoordSystem;
 use Bio::EnsEMBL::RepeatFeature;
 
-
-BEGIN { $| = 1;
-	use Test;
-	plan tests => 16;
-}
-
-
+use Test::More;
 use Bio::EnsEMBL::Test::TestUtils;
 
 our $verbose = 0;
@@ -96,3 +90,5 @@ ok(test_getter_setter($rf, 'score', '45.5'));
 ok($rf->display_id eq 'ACTG(n)');
 
 ok($rf->hstrand == 1);
+
+done_testing();

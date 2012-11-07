@@ -1,12 +1,7 @@
 use strict;
 use warnings;
 
-
-
-BEGIN { $| = 1;
-	use Test;
-	plan tests => 6;
-}
+use Test::More;
 
 use Bio::EnsEMBL::Test::TestUtils;
 
@@ -87,3 +82,5 @@ debug("(-ve) rm_slice->seq           = $seq");
 $subseq = $rm_slice->subseq(2,100);
 debug("(-ve) rm_slice->subseq(2,100) =  $subseq");
 ok($subseq eq substr($seq, 1));
+
+done_testing();

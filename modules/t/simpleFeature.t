@@ -2,10 +2,7 @@ use strict;
 
 use Bio::EnsEMBL::Test::TestUtils;
 
-BEGIN { $| = 1;  
-	use Test;
-	plan tests => 34;
-}
+use Test::More;
 
 use Bio::EnsEMBL::Test::MultiTestDB;
 use Bio::EnsEMBL::SimpleFeature;
@@ -156,3 +153,5 @@ sub print_features {
     }
   }
 }
+
+done_testing();

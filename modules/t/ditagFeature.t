@@ -1,10 +1,6 @@
 use strict;
 
-BEGIN { $| = 1;  
-	use Test;
-	plan tests => 18;
-}
-
+use Test::More;
 use Bio::EnsEMBL::Test::MultiTestDB;
 use Bio::EnsEMBL::Test::TestUtils;
 
@@ -101,4 +97,4 @@ ok($ditag->dbID == $ditag_id);
 my ($rstart, $rend, $rstrand) = $ditagFeature->get_ditag_location();
 ok(defined($rstart) && defined($rend) && defined($rstrand));
 
-1;
+done_testing();

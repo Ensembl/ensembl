@@ -1,11 +1,7 @@
 
 use strict;
 
-BEGIN { $| = 1;
-        use Test;
-        plan tests => 30;
-}
-
+use Test::More;
 use Bio::EnsEMBL::Test::MultiTestDB;
 use Bio::EnsEMBL::Test::TestUtils;
 use Bio::EnsEMBL::UnmappedObject;
@@ -127,3 +123,5 @@ ok($uo->dbID());
 $multi->restore('core', 'unmapped_object');
 $multi->restore('core', 'unmapped_reason');
 
+
+done_testing();

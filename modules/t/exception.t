@@ -1,12 +1,7 @@
 use strict;
 use warnings;
 
-
-BEGIN { $| = 1;  
-	use Test;
-	plan tests => 9;
-}
-
+use Test::More;
 use Bio::EnsEMBL::Test::TestUtils;
 
 use Bio::EnsEMBL::Utils::Exception qw(warning verbose throw info
@@ -83,3 +78,4 @@ sub test_deprecate {
 
 verbose('DEPRECATE');
 
+done_testing();

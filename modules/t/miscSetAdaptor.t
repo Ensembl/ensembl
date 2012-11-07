@@ -1,9 +1,6 @@
 use strict;
 
-BEGIN { $| = 1;
-	use Test ;
-	plan tests => 21
-}
+use Test::More;
 
 use Bio::EnsEMBL::Test::MultiTestDB;
 use Bio::EnsEMBL::MiscSet;
@@ -104,3 +101,5 @@ $count = $db->dbc->db_handle->selectall_arrayref
 ok($count == 1);
 
 $multi_db->restore('core', 'misc_set');
+
+done_testing();

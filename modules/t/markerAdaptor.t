@@ -1,9 +1,6 @@
 use strict;
 
-BEGIN { $| = 1;  
-	use Test ;
-	plan tests => 7;
-}
+use Test::More;
 
 use Bio::EnsEMBL::Test::MultiTestDB;
 
@@ -72,3 +69,5 @@ $markers = $marker_adaptor->fetch_all;
 
 debug('expecting 100 markers, got ' . scalar(@$markers));
 ok(scalar(@$markers) == 100);
+
+done_testing();

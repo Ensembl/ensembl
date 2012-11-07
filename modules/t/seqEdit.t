@@ -1,8 +1,5 @@
 
-BEGIN { $| = 1;
-	use Test;
-	plan tests => 27;
-}
+use Test::More;
 
 use Bio::EnsEMBL::SeqEdit;
 use Bio::EnsEMBL::Attribute;
@@ -88,3 +85,5 @@ ok($a->name() eq $se->name());
 ok($a->description() eq $se->description());
 ok($a->code() eq $se->code());
 ok($a->value eq '2 3 TC');
+
+done_testing();

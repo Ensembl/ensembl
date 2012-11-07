@@ -1,11 +1,7 @@
 use strict;
 use warnings;
 
-
-BEGIN { $| = 1;
-	use Test;
-	plan tests => 8;
-}
+use Test::More;
 
 use Bio::EnsEMBL::Test::TestUtils;
 use Bio::EnsEMBL::Test::MultiTestDB;
@@ -58,3 +54,4 @@ ok($coord_systems[1]->name eq 'contig');
 
 $multi->restore('core', 'meta_coord');
 
+done_testing();

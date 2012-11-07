@@ -79,10 +79,7 @@ package Test;
 
 use Bio::EnsEMBL::Test::TestUtils;
 
-BEGIN { $| = 1;  
-	use Test;
-	plan tests => 5;
-}
+use Test::More;
 
 
 my $xff = ExternalFF1->new();
@@ -143,3 +140,5 @@ foreach my $f (@$feats) {
 ok(@$feats == 12);
 
 $multi=undef;
+
+done_testing();

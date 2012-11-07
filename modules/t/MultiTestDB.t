@@ -1,7 +1,6 @@
-use Test;
 use strict;
 
-BEGIN { $| = 1; plan tests => 9 }
+use Test::More;
 
 use Bio::EnsEMBL::Test::MultiTestDB;
 
@@ -59,4 +58,4 @@ ok(scalar($sth->rows) == 20);
 
 $sth->finish;
 
-
+done_testing();

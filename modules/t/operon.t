@@ -1,11 +1,7 @@
 use strict;
 use warnings;
 
-BEGIN {
-	$| = 1;
-	use Test;
-	plan tests => 24;
-}
+use Test::More;
 use Bio::EnsEMBL::DBEntry;
 use Bio::EnsEMBL::Operon;
 use Bio::EnsEMBL::Test::MultiTestDB;
@@ -46,11 +42,11 @@ $operon->add_DBEntry( Bio::EnsEMBL::DBEntry->new( -DBNAME     => 'EMBL',
 												  -ANALYSIS   => $analysis ) );
 
 # check it has the correct properties
-ok( $display_label, $operon->display_label(),     "Operon name" );
-ok( $start,         $operon->seq_region_start(),  "Operon start" );
-ok( $end,           $operon->seq_region_end(),    "Operon end" );
-ok( $strand,        $operon->seq_region_strand(), "Operon strand" );
-ok( $analysis,        $operon->analysis(), "Analysis" );
+is( $display_label, $operon->display_label(),     "Operon name" );
+is( $start,         $operon->seq_region_start(),  "Operon start" );
+is( $end,           $operon->seq_region_end(),    "Operon end" );
+is( $strand,        $operon->seq_region_strand(), "Operon strand" );
+is( $analysis,        $operon->analysis(), "Analysis" );
 
 my $operon_adaptor = Bio::EnsEMBL::DBSQL::OperonAdaptor->new($dba);
 
@@ -59,14 +55,14 @@ $operon_adaptor->store($operon);
 ok( defined $operon->dbID() );
 # retrieve operon
 my $operon2 = $operon_adaptor->fetch_by_dbID( $operon->dbID() );
-ok( $operon2->dbID(),             $operon->dbID(),             "Operon ID" );
-ok( $operon2->display_label(),    $operon->display_label(),    "Operon name" );
-ok( $operon2->seq_region_start(), $operon->seq_region_start(), "Operon start" );
-ok( $operon2->seq_region_end(),   $operon->seq_region_end(),   "Operon end" );
-ok( $operon2->seq_region_strand(),
+is( $operon2->dbID(),             $operon->dbID(),             "Operon ID" );
+is( $operon2->display_label(),    $operon->display_label(),    "Operon name" );
+is( $operon2->seq_region_start(), $operon->seq_region_start(), "Operon start" );
+is( $operon2->seq_region_end(),   $operon->seq_region_end(),   "Operon end" );
+is( $operon2->seq_region_strand(),
 	$operon->seq_region_strand(),
 	"Operon strand" );
-ok( $operon2->analysis(),
+is( $operon2->analysis(),
 	$operon->analysis(),
 	"Analysis" );
 
@@ -127,3 +123,5 @@ ok(!defined($operon->dbID()));
 ok(!defined($operon->adaptor()));
 
 $multi->restore('core');
+
+done_testing();

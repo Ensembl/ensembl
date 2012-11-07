@@ -1,11 +1,7 @@
 use strict;
 use warnings;
 
-
-BEGIN { $| = 1;
-	use Test;
-	plan tests => 3;
-}
+use Test::More;
 
 use Bio::EnsEMBL::Test::TestUtils;
 
@@ -70,3 +66,5 @@ ok(('N' x $flanking) . $seq . ('N' x $flanking) eq $new_seq);
 debug("Retrieved sequence (with $flanking flanking): $new_seq");
 
 $multi_db->restore('core', 'dnac', 'seq_region');
+
+done_testing();

@@ -3,11 +3,7 @@ use Bio::EnsEMBL::Test::TestUtils;
 
 use Bio::EnsEMBL::Test::MultiTestDB;
 
-
-BEGIN { $| = 1;
-	use Test;
-	plan tests => 6;
-}
+use Test::More;
 
 my $multi_db = Bio::EnsEMBL::Test::MultiTestDB->new;
 my $db = $multi_db->get_DBAdaptor('core');
@@ -47,3 +43,5 @@ $utaa->store($uta);
 # TODO - check contents
 
 $multi_db->restore('core');
+
+done_testing();

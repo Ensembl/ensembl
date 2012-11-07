@@ -1,10 +1,6 @@
 use strict;
 
-BEGIN { $| = 1;  
-	use Test ;
-	plan tests => 23;
-}
-
+use Test::More;
 use Bio::EnsEMBL::Test::MultiTestDB;
 use Bio::EnsEMBL::Map::Marker;
 use Bio::EnsEMBL::Map::MarkerSynonym;
@@ -166,3 +162,5 @@ my @mfs = @{$marker->get_all_MarkerFeatures};
 ok(scalar(@mfs) == 1);
 my $mf = shift @mfs;
 ok($mf->start == 5769 && $mf->end == 5959);
+
+done_testing();

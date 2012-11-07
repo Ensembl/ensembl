@@ -1,10 +1,6 @@
 use strict;
 use warnings;
-
-BEGIN { $| = 1;  
-	use Test ;
-	plan tests => 6;
-}
+use Test::More;
 
 use Bio::EnsEMBL::Test::MultiTestDB;
 use Bio::EnsEMBL::Map::Marker;
@@ -55,4 +51,4 @@ my $synonyms = $qtl->get_synonyms;
 
 ok($synonyms->{'rat genome database'} eq 'rqtl2');
 
-
+done_testing();

@@ -1,9 +1,6 @@
 use strict;
 
-BEGIN { $| = 1;
-	use Test ;
-	plan tests => 10
-}
+use Test::More;
 
 use Bio::EnsEMBL::MiscSet;
 use Bio::EnsEMBL::Test::TestUtils;
@@ -41,3 +38,4 @@ ok(test_getter_setter($ms, 'longest_feature', 1e8));
 ok(test_getter_setter($ms, 'name', $name));
 
 
+done_testing();

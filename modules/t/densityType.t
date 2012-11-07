@@ -9,14 +9,7 @@ use Bio::EnsEMBL::Test::MultiTestDB;
 use Bio::EnsEMBL::Test::TestUtils;
 
 our $verbose = 0; #set to 1 to turn on debug printouts
-
-
-
-BEGIN { $| = 1;
-	use Test;
-	plan tests => 9;
-}
-
+use Test::More;
 use Bio::EnsEMBL::Test::TestUtils;
 
 
@@ -53,3 +46,4 @@ ok(&test_getter_setter($dt, 'analysis', undef));
 ok(&test_getter_setter($dt, 'block_size', 300));
 ok(&test_getter_setter($dt, 'value_type', 'ratio'));
 
+done_testing();

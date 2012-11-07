@@ -2,10 +2,7 @@ use strict;
 
 use Bio::EnsEMBL::Test::TestUtils;
 
-BEGIN { $| = 1;
-	use Test;
-	plan tests => 4;
-}
+use Test::More;
 
 use Bio::EnsEMBL::Test::MultiTestDB;
 use Bio::EnsEMBL::UnconventionalTranscriptAssociation;
@@ -43,3 +40,4 @@ ok(test_getter_setter($uta, 'transcript', $transcript));
 ok(test_getter_setter($uta, 'interaction_type', 'antisense'));
 
 
+done_testing();

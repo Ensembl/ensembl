@@ -1,10 +1,5 @@
 use strict;
-
-BEGIN { $| = 1;  
-	use Test;
-	plan tests => 9;
-}
-
+use Test::More;
 use Bio::EnsEMBL::Test::MultiTestDB;
 use Bio::EnsEMBL::Test::TestUtils;
 
@@ -68,4 +63,4 @@ my $ditagFeatures = $adaptor->fetch_by_dbID($ditag_id)->get_ditagFeatures();
 ok(scalar @$ditagFeatures);
 ok($ditagFeatures->[0]->isa('Bio::EnsEMBL::Map::DitagFeature'));
 
-1;
+done_testing();

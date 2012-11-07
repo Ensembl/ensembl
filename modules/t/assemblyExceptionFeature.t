@@ -2,10 +2,7 @@ use strict;
 
 use Bio::EnsEMBL::Test::TestUtils;
 
-BEGIN { $| = 1;  
-	use Test;
-	plan tests => 10;
-}
+use Test::More;
 
 use Bio::EnsEMBL::Test::MultiTestDB;
 use Bio::EnsEMBL::AssemblyExceptionFeature;
@@ -91,3 +88,4 @@ ok($aef_new->dbID == $asx_id);
 
 $aefa->remove($aef_store);
 
+done_testing();

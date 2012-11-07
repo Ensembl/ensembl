@@ -1,11 +1,7 @@
 use strict;
 use warnings;
 
-
-BEGIN { $| = 1;
-	use Test;
-	plan tests => 41;
-}
+use Test::More;
 
 use Bio::EnsEMBL::Test::MultiTestDB;
 use Bio::EnsEMBL::Test::TestUtils;
@@ -311,3 +307,5 @@ ok($exons[0]->score == 50);
 ok($exons[1]->score == 75);
 
 $multi->restore();
+
+done_testing();

@@ -1,12 +1,7 @@
 use strict;
 use warnings;
 
-
-BEGIN { $| = 1;  
-	use Test;
-	plan tests => 4;
-}
-
+use Test::More;
 use Bio::EnsEMBL::Test::TestUtils;
 
 use Bio::EnsEMBL::Utils::Argument qw(rearrange);
@@ -30,3 +25,5 @@ ok($three == 3);
 my $zero;
 ($one, $zero) = rearrange(['ONE', 'ZERO'], @args);
 ok(defined($zero) && $zero == 0 && $one == 1);
+
+done_testing();

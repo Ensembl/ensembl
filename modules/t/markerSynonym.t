@@ -1,10 +1,6 @@
 use strict;
 
-BEGIN { $| = 1;  
-	use Test ;
-	plan tests => 7
-}
-
+use Test::More;
 use Bio::EnsEMBL::Map::MarkerSynonym;
 
 use Bio::EnsEMBL::Test::TestUtils;
@@ -52,3 +48,4 @@ ok(&test_getter_setter($ms, 'name', 'new_name'));
 ok($dbID == $ms->dbID);
 ok(&test_getter_setter($ms, 'dbID', 123)); 
 
+done_testing();

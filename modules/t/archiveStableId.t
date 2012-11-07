@@ -2,10 +2,7 @@ use strict;
 use warnings;
 no warnings qw(uninitialized);
 
-BEGIN { $| = 1;  
-	use Test;
-	plan tests => 20;
-}
+use Test::More;
 
 use Bio::EnsEMBL::Test::MultiTestDB;
 use Bio::EnsEMBL::DBSQL::ArchiveStableIdAdaptor;
@@ -188,4 +185,5 @@ sub _print_asi {
 	 "\n\tTranslations: ".(join(", ", map { $_->stable_id } @{ $asi->get_all_translation_archive_ids })).
 	 "\n\tPeptide: ".$asi->get_peptide."\n" );
 }
-  
+ 
+done_testing();

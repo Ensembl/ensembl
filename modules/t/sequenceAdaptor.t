@@ -1,11 +1,7 @@
 use strict;
 use warnings;
 
-
-BEGIN { $| = 1;
-	use Test;
-	plan tests => 8;
-}
+use Test::More;
 
 use Bio::EnsEMBL::Test::TestUtils;
 
@@ -67,3 +63,4 @@ sub compare_compliments {
   ok($seq eq $invert_seq); #revcom same as seq on inverted slice
 }
 
+done_testing();

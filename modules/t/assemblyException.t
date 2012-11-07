@@ -1,10 +1,6 @@
 use strict;
 
-BEGIN { $| = 1;
-	use Test;
-	plan tests => 7;
-}
-
+use Test::More;
 
 use Bio::EnsEMBL::Test::MultiTestDB;
 
@@ -133,3 +129,5 @@ sub print_projection {
     debug("[$start-$end] $seq_reg");
   }
 }
+
+done_testing();

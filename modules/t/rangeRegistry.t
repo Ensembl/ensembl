@@ -1,11 +1,7 @@
 use strict;
 use warnings;
 
-
-BEGIN { $| = 1;
-	use Test;
-	plan tests => 25;
-}
+use Test::More;
 
 use Bio::EnsEMBL::Test::TestUtils;
 
@@ -132,3 +128,5 @@ sub print_ranges {
     debug('['.$range->[0].'-'.$range->[1].']');
   }
 }
+
+done_testing();

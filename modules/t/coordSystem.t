@@ -7,11 +7,7 @@ use Bio::EnsEMBL::Test::TestUtils;
 
 our $verbose = 0;
 
-BEGIN { $| = 1;
-	use Test;
-	plan tests => 12;
-}
-
+use Test::More;
 
 my $name    = 'chromosome';
 my $version = 'NCBI33';
@@ -105,3 +101,5 @@ $coord_system = Bio::EnsEMBL::CoordSystem->new
 ok($coord_system->name() eq $name);
 ok($coord_system->is_top_level());
 ok($coord_system->rank() == 0);
+
+done_testing();

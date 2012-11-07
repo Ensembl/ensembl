@@ -1,12 +1,6 @@
 use strict;
 use warnings;
-
-
-BEGIN { $| = 1;
-	use Test;
-	plan tests => 10;
-}
-
+use Test::More;
 
 use Bio::EnsEMBL::Test::TestUtils;
 use Bio::EnsEMBL::KaryotypeBand;
@@ -56,3 +50,4 @@ ok(test_getter_setter($kb, 'start', 12_200_000));
 ok(test_getter_setter($kb, 'end',   13_000_000));
 ok(test_getter_setter($kb, 'stain', 'gpos60'));
 
+done_testing();

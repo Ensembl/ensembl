@@ -1,9 +1,6 @@
 use strict;
 
-BEGIN { $| = 1;
-	use Test ;
-	plan tests => 27;
-}
+use Test::More;
 
 use Bio::EnsEMBL::Test::MultiTestDB;
 use Bio::EnsEMBL::Test::TestUtils;
@@ -145,3 +142,4 @@ sub print_coords {
   }
 }
 
+done_testing();

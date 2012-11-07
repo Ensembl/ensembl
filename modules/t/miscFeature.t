@@ -1,10 +1,6 @@
 use strict;
 
-BEGIN { $| = 1;
-	use Test ;
-	plan tests => 8
-}
-
+use Test::More;
 use Bio::EnsEMBL::Test::MultiTestDB;
 use Bio::EnsEMBL::Attribute;
 use Bio::EnsEMBL::MiscFeature;
@@ -90,3 +86,5 @@ ok(@attribs == 1 && $attribs[0]->value() eq '4');
 
 @attribs = @{$mf->get_all_Attributes()};
 ok( @attribs == 3 );
+
+done_testing();

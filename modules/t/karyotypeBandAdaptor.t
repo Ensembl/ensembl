@@ -1,12 +1,7 @@
 use strict;
 use warnings;
 
-
-BEGIN { $| = 1;
-	use Test;
-	plan tests => 18;
-}
-
+use Test::More;
 
 use Bio::EnsEMBL::Test::MultiTestDB;
 use Bio::EnsEMBL::Test::TestUtils;
@@ -84,3 +79,5 @@ sub print_features {
     }
   }
 }
+
+done_testing();

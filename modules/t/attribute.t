@@ -8,10 +8,7 @@ use Bio::EnsEMBL::Test::TestUtils;
 
 our $verbose = 0; #set to 1 to turn on debug printouts
 
-BEGIN { $| = 1;
-	use Test;
-	plan tests => 8;
-}
+use Test::More;
 
 use Bio::EnsEMBL::Test::TestUtils;
 
@@ -43,3 +40,4 @@ ok(test_getter_setter($attrib, 'code', 'newcode'));
 ok(test_getter_setter($attrib, 'description', 'newdesc'));
 ok(test_getter_setter($attrib, 'value', 'newvalue'));
 
+done_testing();

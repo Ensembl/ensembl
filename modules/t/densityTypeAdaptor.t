@@ -1,11 +1,7 @@
 
 use strict;
 
-BEGIN { $| = 1;
-	use Test;
-	plan tests => 20;
-}
-
+use Test::More;
 use Bio::EnsEMBL::Test::MultiTestDB;
 
 use Bio::EnsEMBL::Analysis;
@@ -107,4 +103,4 @@ ok(count_rows($db, 'density_type') == $rows);
 
 $multi->restore('core', 'density_type', 'analysis');
 
-
+done_testing();

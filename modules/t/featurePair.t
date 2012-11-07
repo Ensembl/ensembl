@@ -1,11 +1,7 @@
 use strict;
 use warnings;
 
-
-BEGIN { $| = 1;
-	use Test;
-	plan tests => 34;
-}
+use Test::More;
 
 use Bio::EnsEMBL::Test::TestUtils;
 
@@ -115,3 +111,5 @@ ok(!defined($fp->slice()));
 
 ok($fp->species eq $hspecies);
 ok($fp->hspecies eq $species);
+
+done_testing();
