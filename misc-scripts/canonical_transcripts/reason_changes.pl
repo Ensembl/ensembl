@@ -87,8 +87,10 @@ sub compare {
       $blurt !~ /nmd/i          #User suppressing this test     
       ) {
       $reason_key = 'havana_merge_nmd_over_e_coding';
-    }
-    else {
+    } elsif (! $old->[1] ) {
+        # The old canonical transcript was not found.
+        $reason_key = 'new';
+    } else {
       $reason_key = 'other';
     }
   }
