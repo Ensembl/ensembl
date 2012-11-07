@@ -49,12 +49,12 @@ sub compare {
   my (@new_contents) = @{$new}[1..4];
   my ($new_id, $new_length) = ($new->[-1], $new->[-2]); 
   
-  my $old_key = join(q{'=!='}, @old_contents);
+  my $old_key = join(q{'=!='}, @old_contents) if defined($old_contents[0]);
   my $new_key = join(q{'=!='}, @new_contents);
   
   my $reason_key;
   my $possible_reason;
-  if($old_key eq $new_key) {
+  if($old_key && $old_key eq $new_key) {
     if($new_length > $old_length) {
       $reason_key = 'transcript_length';
     }
@@ -74,7 +74,7 @@ sub compare {
   }
   else {
     #If all other keys are equal then we used translation length
-    if( join(q{=!=},@{$old}[1..3]) eq join(q{=!=},@{$new}[1..3]) ) {
+    if( defined($old->[1]) && join(q{=!=},@{$old}[1..3]) eq join(q{=!=},@{$new}[1..3]) ) {
       $reason_key = 'translation_length';
     } 
     #If we have translatable genes and we prefered Havana merged NMD over E/H PC
