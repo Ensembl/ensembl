@@ -265,7 +265,7 @@ sub write_term {
         ++$count;
       }
       
-      if(@{$term->{synonyms}}) {
+      if($term->{synonyms} && @{$term->{synonyms}}) {
         if($reuse) {
           print STDERR "REUSE: Skipping synonym writing as term already exists in this database\n";
         }
