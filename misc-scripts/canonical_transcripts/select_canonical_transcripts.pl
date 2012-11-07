@@ -147,6 +147,7 @@ foreach my $slice (@$slices) {
         if (! defined($old_canonical)) {
             # Original canonical transcript is now absent, or never set.
             if ($log_fh) {
+                print $log_fh "//\n";
                 print $log_fh "Old=[undef,undef,undef,undef,undef,undef,undef]\n";
                 printf $log_fh "New=[%s,%s,%s,%s,%s,%s,'%s']\n", @{ $transcript_selector->encode_transcript($new_canonical) };
             }
