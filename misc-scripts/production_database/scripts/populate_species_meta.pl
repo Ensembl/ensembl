@@ -9,6 +9,7 @@ use POSIX;
 use Bio::EnsEMBL::DBSQL::DBAdaptor;
 use Bio::EnsEMBL::DBSQL::DBConnection;
 use Bio::EnsEMBL::Utils::Scalar qw/wrap_array/;
+use Bio::EnsEMBL::Utils::Exception;
 
 sub run {
   my ($class) = @_;
@@ -134,33 +135,58 @@ sub databases {
   return $dbs;
 }
 
+sub _query_production {
+    my ( $self, $sql ) = @_;
+    my $dbc   = $self->_production_dbc();
+    my $h     = $dbc->sql_helper();
+    
+    my $hash;
+    
+    $h->execute_no_return(
+      -SQL      => $sql,
+      -PARAMS   => [$taxon],
+      -CALLBACK => sub {
+        my ($row) = @_;
+        my $i = 0;
+        $hash->{'species.common_name'}      = $row->[ $i++ ];
+        $hash->{'species.display_name'}     = $row->[ $i++ ];
+        $hash->{'species.scientific_name'}  = $row->[ $i++ ];
+        $hash->{'species.production_name'}  = $row->[ $i++ ];
+        $hash->{'species.url'}              = $row->[ $i++ ];
+        $hash->{'species.taxonomy_id'}      = $row->[ $i++ ];
+        $hash->{'species.stable_id_prefix'} = $row->[ $i++ ];
+        return;
+      }
+    );
+    return $hash;
+}
+
 sub _production {
   my ( $self, $db ) = @_;
   $self->v('Querying production');
   my $dbc   = $self->_production_dbc();
   my $h     = $dbc->sql_helper();
+    
   my $taxon = $self->_db_to_taxon($db);
-  my $hash  = { 'species.taxonomy_id' => $taxon };
-  my $sql =
-'select common_name, web_name, scientific_name, production_name, url_name, species_prefix from species where taxon =?';
-  $h->execute_no_return(
-    -SQL      => $sql,
-    -PARAMS   => [$taxon],
-    -CALLBACK => sub {
-      my ($row) = @_;
-      my $i = 0;
-      $hash->{'species.common_name'}      = $row->[ $i++ ];
-      $hash->{'species.display_name'}     = $row->[ $i++ ];
-      $hash->{'species.scientific_name'}  = $row->[ $i++ ];
-      $hash->{'species.production_name'}  = $row->[ $i++ ];
-      $hash->{'species.url'}              = $row->[ $i++ ];
-      $hash->{'species.stable_id_prefix'} = $row->[ $i++ ];
-      return;
-    }
-  );
+  
+  my $sql = 'select common_name, web_name, scientific_name, production_name, url_name, taxon, species_prefix from species where taxon =?';
+  my $hash = $self->_query_production($sql);
+  
+  if (!exists $hash->{'species.common_name'}) {
+      # taxon id was *probably* not obtained, try again using database name
+      warning("Failed to find original taxon id for $db. Attempting to obtain by DB name instead");
+      my $db_name = $db;
+      $db_name =~ s/_\w+_\d+_.+$//;
+      $sql = 'select common_name, web_name, scientific_name, production_name, url_name, taxon, species_prefix from species where db_name = ?';
+      $self->_query_production($sql);
+      
+      # Update $taxon to reflect new guessed id
+      $taxon = $hash->{'species.taxonomy_id'};
+  }
+  
+  
   $hash->{'species.alias'} = $h->execute_simple(
-    -SQL =>
-'select sa.alias from species_alias sa join species s using (species_id) where s.taxon =?',
+    -SQL => 'select sa.alias from species_alias sa join species s using (species_id) where s.taxon =?',
     -PARAMS => [$taxon]
   );
   return $hash;
