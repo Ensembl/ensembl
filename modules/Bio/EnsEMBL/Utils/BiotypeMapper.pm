@@ -131,6 +131,7 @@ my %grouping_of_biotypes = (
     'pseudogene'     => [qw( pseudogene retrotransposed snRNA_pseudogene tRNA_pseudogene
                             miRNA_pseudogene Mt_tRNA_pseudogene rRNA_pseudogene
                             scRNA_pseudogene misc_RNA_pseudogene snoRNA_pseudogene
+                            processed_pseudogene
                         )],
     'long_noncoding' => [qw( 3prime_overlapping_ncrna antisense lincRNA ncrna_host non_coding 
                             processed_transcript sense_intronic sense_overlapping
@@ -144,7 +145,7 @@ my %grouping_of_biotypes = (
                                 retrotransposed IG_V_pseudogene TR_V_pseudogene 
                                 IG_J_pseudogene IG_C_pseudogene processed_transcript
                                 antisense ambiguous_orf transcribed_processed_pseudogene
-                                disrupted_domain 
+                                disrupted_domain processed_pseudogene
                            )],
     'peptide_producing' => [qw( protein_coding polymorphic_pseudogene IG_V_gene TR_V_gene 
                                 IG_J_gene TR_J_gene IG_D_gene IG_C_gene TR_C_gene 
