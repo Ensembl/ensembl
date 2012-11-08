@@ -43,11 +43,9 @@ sub get_slices {
 
 sub get_feature_count {
   my ($self, $slice, $key, $biotypes) = @_;
-  my $count = 0;
-  foreach my $biotype (@$biotypes) {
-    $count += scalar(@{ $slice->get_all_Genes_by_type($biotype) });
-  }
-  return $count;
+  my $species = $self->param('species');
+  my $ga = Bio::EnsEMBL::Registry->get_adaptor($species, 'core', 'gene');
+  return $ga->count_all_by_Slice($slice, $biotypes);
 }
 
 
