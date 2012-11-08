@@ -2,12 +2,12 @@
 
 use strict;
 use warnings;
+#TODO Do we need this?
 use FindBin;
 use lib "$FindBin::Bin/../../../../ONTO-PERL-1.31/lib";
 
 use DBI qw( :sql_types );
 use Getopt::Long qw( :config no_ignore_case );
-use IO::File;
 use OBO::Core::Ontology;
 use OBO::Core::Term;
 use OBO::Core::Relationship;
@@ -15,6 +15,7 @@ use OBO::Core::RelationshipType;
 use OBO::Core::SynonymTypeDef;
 use OBO::Parser::OBOParser;
 use OBO::Util::TermSet;
+use POSIX qw/strftime/;
 
 #-----------------------------------------------------------------------
 
@@ -257,7 +258,7 @@ sub write_term {
           $existing_term_sth->execute($term->{'accession'});
           my ($existing_term_id, $ontology_id) = $existing_term_sth->fetchrow_array;
           $id = $existing_term_id;
-          printf(STDERR "CLASH: TERM '%s' already exists in this database. Reusing ID %d\n", $term->{accession}, $existing_term_id);
+          printf(STDERR "DUPLICATION: TERM '%s' already exists in this database. Reusing ID %d\n", $term->{accession}, $existing_term_id);
           $reuse = 1;
         }
         $term->{'id'} = $id;
@@ -267,7 +268,7 @@ sub write_term {
       
       if($term->{synonyms} && @{$term->{synonyms}}) {
         if($reuse) {
-          print STDERR "REUSE: Skipping synonym writing as term already exists in this database\n";
+          print STDERR "REUSE: SKIPPING SYNONYM writing as term already exists in this database\n";
         }
         else {
           foreach my $syn (@{$term->{'synonyms'}}) {
@@ -349,7 +350,7 @@ sub write_relation {
 
   $dbh->do("LOCK TABLE relation WRITE");
 
-  my $statement = "INSERT INTO relation " . "(child_term_id, parent_term_id, relation_type_id, intersection_of) " . "VALUES (?,?,?,?)";
+  my $statement = "INSERT IGNORE INTO relation " . "(child_term_id, parent_term_id, relation_type_id, intersection_of) " . "VALUES (?,?,?,?)";
 
   my $sth = $dbh->prepare($statement);
 
@@ -379,6 +380,10 @@ sub write_relation {
           $sth->bind_param(3, $relation_types->{$relation_type}{'id'}, SQL_INTEGER);
           $sth->bind_param(4, 0,                                       SQL_INTEGER);
           $sth->execute();
+          
+          if(! $dbh->last_insert_id(undef, undef, 'relation', 'relation_id')) {
+            printf "DUPLICATION: RELATION %s (child) %s %s (parent) has been repeated. Ignoring this insert\n", $child_term->{accession}, $relation_type, $parent_acc;
+          }
         }
       }
     }
@@ -399,6 +404,9 @@ sub write_relation {
           $sth->bind_param(3, $relation_types->{$relation_type}{'id'}, SQL_INTEGER);
           $sth->bind_param(4, 1,                                       SQL_INTEGER);
           $sth->execute();
+          if(! $dbh->last_insert_id(undef, undef, 'relation', 'relation_id')) {
+            printf "DUPLICATION: RELATION %s (child) %s %s (parent) has been repeated. Ignoring this insert\n", $child_term->{accession}, $relation_type, $parent_acc;
+          }
         }
       }
     }
@@ -478,31 +486,58 @@ if ($delete_unknown) {
 }
 
 #if parsing an EFO obo file delete xref lines - not compatible with OBO:Parser
-
+#requires correct default-namespace defined
+my $efo_default_namespace;
 my @returncode = `grep "default-namespace: efo" $obo_file_name`;
+@returncode = `grep 'property_value: "hasDefaultNamespace" "EFO"' $obo_file_name` if scalar(@returncode) == 0;
 my $returncode = @returncode;
 if ($returncode > 0) {
-  open(OBO_FILE, "$obo_file_name") or die;
-  my $terminator = $/;
-  undef $/;
-  my $buf = <OBO_FILE>;
-  $buf =~ s/\cM\cJ/\n/g;
-  $/ = $terminator;
-  my @file_lines        = split(/\n/, $buf);
-  my $no_of_lines       = @file_lines;
-  my $new_obo_file_name = "new" . $obo_file_name;
-  open(NEW_OBO_FILE, ">$new_obo_file_name");
-
-  for (my $i = 0 ; $i < $no_of_lines ; $i++) {
-    my $line = shift(@file_lines);
-    if ($line !~ /^xref/) {
-      print NEW_OBO_FILE $line, "\n";
+  printf STDERR "Detected an EFO file; performing post-processing\n";
+  my $new_obo_file_name = "${obo_file_name}.new";
+  open my $obo_fh, '<', $obo_file_name or die "Cannot open the file ${obo_file_name}: $!";
+  open my $new_obo_fh, '>', $new_obo_file_name or die "Cannot open target file ${new_obo_file_name}: $!";
+  my $current_state = q{};
+  while(my $line = <$obo_fh>) {
+    chomp($line);
+    my $skip = 0;
+    
+    if($line =~/^\[( (?:Term|Typedef|Instance) )\]$/xms) {
+      $current_state = $1;
     }
+    
+    if($current_state eq q{} && $line =~ /^property_value/) {
+      $skip = 1;
+      if($line =~/"hasDefaultNamespace" "(EFO)"/) {
+        $efo_default_namespace = $1;
+      }
+    }
+    
+    #Original skip by mk8
+    if($line =~ /^xref/) {
+      $skip = 1;
+    }
+    
+    #1.4 term type
+    if($current_state eq 'Term' && $line =~ /^equivalent_to/) {
+      $skip = 1;
+    }
+    
+    if($current_state eq 'Typedef' && $line =~ /^is_ (?:inverse_)? functional/xms) {
+      $skip = 1;
+    }
+    
+    #1.2 does not allow this in a typedef field
+    if($current_state eq 'Typedef' && $line =~ /^property_value/) {
+      $skip = 1;
+    }
+    
+    print $new_obo_fh $line, "\n" if ! $skip;
   }
-  close OBO_FILE;
-  close NEW_OBO_FILE;
+  close($obo_fh);
+  close($new_obo_fh);
+  
+  printf STDERR "Switching to loading the file %s which is a post-processed file\n", $new_obo_file_name;
   $obo_file_name = $new_obo_file_name;
-
 }
 
 my $my_parser = OBO::Parser::OBOParser->new;
@@ -510,6 +545,16 @@ my $my_parser = OBO::Parser::OBOParser->new;
 printf("Reading OBO file '%s'...\n", $obo_file_name);
 
 my $ontology = $my_parser->work($obo_file_name) or die;
+
+#Reset default namespace if it was EFO and they encoded it as a property
+$ontology->default_namespace($efo_default_namespace) if $efo_default_namespace && ! $ontology->default_namespace();
+
+#Set date to today if one was not present
+if(! $ontology->date()) {
+  print STDERR "No date found; generating one\n";
+  my $date = strftime('%d:%m:%Y %H:%M', localtime());
+  $ontology->date($date);
+}
 
 my $statement = "SELECT name from ontology where name = ? group by name";
 
