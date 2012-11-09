@@ -136,29 +136,29 @@ sub databases {
 }
 
 sub _query_production {
-    my ( $self, $sql ) = @_;
+    my ( $self, $sql, @arguments ) = @_;
     my $dbc   = $self->_production_dbc();
     my $h     = $dbc->sql_helper();
     
-    my $hash;
+    my %hash;
     
     $h->execute_no_return(
       -SQL      => $sql,
-      -PARAMS   => [$taxon],
+      -PARAMS   => [join(',',@arguments)],
       -CALLBACK => sub {
         my ($row) = @_;
         my $i = 0;
-        $hash->{'species.common_name'}      = $row->[ $i++ ];
-        $hash->{'species.display_name'}     = $row->[ $i++ ];
-        $hash->{'species.scientific_name'}  = $row->[ $i++ ];
-        $hash->{'species.production_name'}  = $row->[ $i++ ];
-        $hash->{'species.url'}              = $row->[ $i++ ];
-        $hash->{'species.taxonomy_id'}      = $row->[ $i++ ];
-        $hash->{'species.stable_id_prefix'} = $row->[ $i++ ];
+        $hash{'species.common_name'}      = $row->[ $i++ ];
+        $hash{'species.display_name'}     = $row->[ $i++ ];
+        $hash{'species.scientific_name'}  = $row->[ $i++ ];
+        $hash{'species.production_name'}  = $row->[ $i++ ];
+        $hash{'species.url'}              = $row->[ $i++ ];
+        $hash{'species.taxonomy_id'}      = $row->[ $i++ ];
+        $hash{'species.stable_id_prefix'} = $row->[ $i++ ];
         return;
       }
     );
-    return $hash;
+    return \%hash;
 }
 
 sub _production {
@@ -170,26 +170,29 @@ sub _production {
   my $taxon = $self->_db_to_taxon($db);
   
   my $sql = 'select common_name, web_name, scientific_name, production_name, url_name, taxon, species_prefix from species where taxon =?';
-  my $hash = $self->_query_production($sql);
+  my $hash_ref = $self->_query_production($sql,$taxon);
   
-  if (!exists $hash->{'species.common_name'}) {
-      # taxon id was *probably* not obtained, try again using database name
+  if (!exists $hash_ref->{'species.common_name'}) {
       warning("Failed to find original taxon id for $db. Attempting to obtain by DB name instead");
       my $db_name = $db;
-      $db_name =~ s/_\w+_\d+_.+$//;
+      # regex chops tail end off core-like databases. This must be extended if new naming schemes are used.                               
+      $db_name =~ s/_(core|otherfeatures|vega|rnaseq|cdna)_.+?_.+?$//;
+      warning ("Guessed db_name: ".$db_name);
       $sql = 'select common_name, web_name, scientific_name, production_name, url_name, taxon, species_prefix from species where db_name = ?';
-      $self->_query_production($sql);
-      
+      $hash_ref = $self->_query_production($sql,$db_name);
       # Update $taxon to reflect new guessed id
-      $taxon = $hash->{'species.taxonomy_id'};
+      $taxon = $hash_ref->{'species.taxonomy_id'};
+      warning("Chosen taxon id: ".$taxon);
+      # hack this puppy. Update cached taxon to reflect better guess. Later call of _db_to_taxon was ignoring this.
+      $self->{'db_to_taxon'}->{$db} = $taxon;
   }
   
   
-  $hash->{'species.alias'} = $h->execute_simple(
+  $hash_ref->{'species.alias'} = $h->execute_simple(
     -SQL => 'select sa.alias from species_alias sa join species s using (species_id) where s.taxon =?',
-    -PARAMS => [$taxon]
+    -PARAMS => [$taxon],
   );
-  return $hash;
+  return $hash_ref;
 }
 
 sub _taxonomy {
