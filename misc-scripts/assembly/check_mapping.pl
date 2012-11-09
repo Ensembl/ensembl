@@ -212,10 +212,46 @@ foreach my $chr ($support->sort_chromosomes) {
 
       $i++;
       
-      my @Ref = split(//,$R_seq);
-      my @Alt = split(//,$A_seq);
-      my @diffs = diff( \@Ref, \@Alt );
-      $global_diff_bins[scalar(@diffs)]++;
+      
+      if (length($R_seq) == length($A_seq)){
+          #my $diffs = ($R_seq ^ $A_seq) =~ tr/\0//c;  # A concatenation of differences
+          # this approach is x10 faster than relying on Algorithm::Diff, as long as there
+          # are no InDels, and the lengths are comparable.
+          my $mask = ($R_seq ^ $A_seq);
+          my @diffs = split (//,$mask);
+          my ($in_change,$change_start,$change_end);
+          for (my $x=0; $x<scalar(@diffs); $x++) {
+              if ($in_change) {
+                  if ($diffs[$x] eq "\0") {
+                      $in_change = 0;
+                      $change_end = $x;
+                      
+                      my $length = $change_end - $change_start + 1;
+                      $global_diff_bins[$length]++;
+                  }
+                  else {
+                      next;
+                  }                  
+              } elsif ($diffs[$x] ne "\0") {
+                  $in_change = 1;
+                  $change_start = $x;
+              }
+              
+          }
+      } else {
+          my @Ref = split(//,$R_seq);
+          my @Alt = split(//,$A_seq);
+          my @diffs = diff( \@Ref, \@Alt );
+          foreach (@diffs) {
+              my $length = 0;
+              foreach my $desc (@{$_}) {
+                  if ($desc->[0] eq '+') {$length++;}
+                  if ($desc->[0] eq '-') {$length--;}
+              };
+              $global_diff_bins[$length]++;
+          }
+      }
+      
     }
 
     $k++;
