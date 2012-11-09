@@ -184,7 +184,7 @@ sub _production {
       $taxon = $hash_ref->{'species.taxonomy_id'};
       warning("Chosen taxon id: ".$taxon);
       # hack this puppy. Update cached taxon to reflect better guess. Later call of _db_to_taxon was ignoring this.
-      $self->{'db_to_taxon'}->{$db} = $taxon;
+      $self->{_db_to_taxon}->{$db} = $taxon;
   }
   
   
