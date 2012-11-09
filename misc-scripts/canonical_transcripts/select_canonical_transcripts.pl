@@ -152,6 +152,7 @@ foreach my $slice (@$slices) {
                 printf $log_fh "New=[%s,%s,%s,%s,%s,%s,'%s']\n", @{ $transcript_selector->encode_transcript($new_canonical) };
             }
             push @change_list,[$gene->dbID,$new_canonical->dbID];
+            $canonical_changes++;
         } elsif ($new_canonical->dbID != $old_canonical->dbID) {
             no warnings 'uninitialized';
             printf "%s (%s) changed transcript from %s (%s) to %s (%s)\n",
