@@ -66,10 +66,13 @@ $sth->execute;
 $sth->bind_columns(\$gene_id, \$vega_stable_id);
 
 while ($sth->fetch){
-  $vega_to_ens_id{$vega_stable_id} = $gene_id;
+    # sometimes we will see more than one gene associated with an OTTG
+    # this happens when an OTTG on the primary assemby has been projected to a patch
+  $vega_to_ens_id{$vega_stable_id}{$gene_id} = $gene_id;
 }
 $sth->finish;
 
+print "\nFetched ".(scalar(keys %vega_to_ens_id))." vega_stable_ids\n";
 
 my $vega_dba = Bio::EnsEMBL::DBSQL::DBAdaptor->new(-host => $vhost||'ens-staging1',
                                           -user => $vuser||'ensro',
@@ -101,23 +104,26 @@ $sth->bind_columns(\$alt_id, \$vega_stable_id);
 
 my %no_gene_id;
 
+my $cnt_vega_rows = 0;
 while($sth->fetch()){
-    my $gene_id = $vega_to_ens_id{$vega_stable_id};
-  if ( defined($gene_id) ) {
+  $cnt_vega_rows++;
+  if (exists $vega_to_ens_id{$vega_stable_id} ) {
+    foreach my $gene_id ( keys %{$vega_to_ens_id{$vega_stable_id}} ) {
       push @{$alt_alleles{$alt_id}}, $gene_id ;
+    }
   } else {
-      push @{$no_gene_id{$alt_id}}, $vega_stable_id;
-      print STDERR "no ensembl gene_id found for vega stable id $vega_stable_id in core\n";
+    push @{$no_gene_id{$alt_id}}, $vega_stable_id;
+    print STDERR "no ensembl gene_id found for vega stable id $vega_stable_id in core\n";
   }
-
 }
 $sth->finish;
-
+print STDERR "Fetched $cnt_vega_rows rows from the vega db alt_allele table\n";
 
 #
 # Delete the old data
 #
 
+print STDERR "\n\nDeleting all alt_alleles...\n\n";
 my $sth = $core_dba->dbc->prepare("delete from alt_allele");
 $sth->execute;
 
@@ -126,6 +132,7 @@ $sth->execute;
 # Store alt_alleles.
 #
 
+print STDERR "Storing new alt alleles...\n\n";
 my $alt_allele_count=0;
 my $gene_count = 0;
 
@@ -143,4 +150,4 @@ foreach my $key (keys %alt_alleles){
   $gene_count += scalar(@genes) if ($alt_allele_id);
 }
 
-print "Added $alt_allele_count alt_allele ids for $gene_count genes\n";
+print "Added $alt_allele_count alt_allele ids for $gene_count genes\nDONE\n";
