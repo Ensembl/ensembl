@@ -491,6 +491,9 @@ sub equals {
                The coord system to transform this feature to.
   Arg [2]    : string $version (optional)
                The version of the coord system to transform this feature to.
+  Arg [3]    : Bio::EnsEMBL::Slice (optional)
+               Specified when a projection may land on many overlapping slices
+               and disambiguation is required.
   Example    : $feature = $feature->transform('contig');
                next if(!defined($feature));
   Description: Returns a copy of this feature, but converted to a different
@@ -607,7 +610,7 @@ sub transform {
 	    my $slice = $proj->[2];
 	    warn "available slice ".$slice->seq_regon_name."\n";
 	  }
-	  warn "MORE than one projection and none to slice specified (".$to_slice->seq_region_name.")\n";
+	  warn "MORE than one projection and no to slice specified (".$to_slice->seq_region_name.")\n";
 	}
       }	
       else {
