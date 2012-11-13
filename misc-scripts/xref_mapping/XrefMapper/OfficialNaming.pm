@@ -279,9 +279,11 @@ SQ0
     # than use ensembl clone names
     ##############################################
     if((!defined($gene_symbol)) and (!defined($vega_clone_name))){
-      $clone_name = $self->get_clone_name($gene_id, $ga, $dbname);
-      if(defined($clone_name)){
-        $clone_name =~ s/[.]\d+//;    #remove .number
+      if ($dbname eq 'HGNC' || $dbname eq 'MGI' || $dbname eq 'ZFIN_ID') {
+        $clone_name = $self->get_clone_name($gene_id, $ga, $dbname);
+        if(defined($clone_name)){
+          $clone_name =~ s/[.]\d+//;    #remove .number
+        }
       }
     }
 
