@@ -488,7 +488,7 @@ if ($delete_unknown) {
 #if parsing an EFO obo file delete xref lines - not compatible with OBO:Parser
 #requires correct default-namespace defined
 my $efo_default_namespace;
-my @returncode = `grep "default-namespace: efo" $obo_file_name`;
+my @returncode = `grep -i "default-namespace: efo" $obo_file_name`;
 @returncode = `grep 'property_value: "hasDefaultNamespace" "EFO"' $obo_file_name` if scalar(@returncode) == 0;
 my $returncode = @returncode;
 if ($returncode > 0) {
