@@ -1166,6 +1166,32 @@ sub split_chromosomes_by_size {
   return $chr_slices;
 }
 
+=head2 is_patch
+
+  Arg[1]      : B::E::Slice
+  Example     : if ($support->is_patch($slice)) { ...
+  Description : Looks at seq_region attributes to decide if a slice is a patch or not
+                If PATCH seq_region_attrib is not there check to see if name suggests it is a PATCH
+  Return type : true/false
+
+=cut
+
+sub is_patch {
+  my ($self,$slice) = @_;
+  my @patch_attrib_types = qw(patch_fix patch_novel); #seq_region_attribs used to define a patch
+  foreach my $attrib_type (@patch_attrib_types) {
+    if (@{$slice->get_all_Attributes($attrib_type)}) {
+      return 1;
+    }
+  }
+  if ($slice->seq_region_name =~ /PATCH/) {
+    $self->log_warning($slice->seq_region_name . " has a PATCH name does not have a patch seq_region_attrib, please check if it was present in loutre\n");
+    return 1;
+  }
+  return 0;
+}
+
+
 =head2 log
 
   Arg[1]      : String $txt - the text to log
@@ -1205,7 +1231,7 @@ sub lock_log {
   my ($self) = @_;
   
   my $fh = $self->{'_log_filehandle'};
-  return if -t $fh or -p $fh; # Shouldn't lock such things   
+  return if -t $fh or -p $fh; # Shouldn't lock such things
   flock($self->{'_log_filehandle'},LOCK_EX) || return 0;
   seek($self->{'_log_filehandle'},0,SEEK_END); # fail ok, prob not reg file
   return 1;
