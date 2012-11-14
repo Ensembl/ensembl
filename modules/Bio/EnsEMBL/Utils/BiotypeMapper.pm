@@ -119,6 +119,7 @@ my %feature_so_mapping = (
 	'Bio::EnsEMBL::Transcript' => 'SO:0000673', # transcript
 	'Bio::EnsEMBL::Exon' => 'SO:0000147',
 	'Bio::EnsEMBL::Slice' => 'SO:0000001', # region
+	'Bio::EnsEMBL::RepeatFeature' => 'SO:0000657', # repeat region
 	'Bio::EnsEMBL::Variation::VariationFeature' => 'SO:0001060', # sequence variant
 	'Bio::EnsEMBL::Variation::StructuralVariationFeature' => 'SO:0001537', # structural variant
   'Bio::EnsEMBL::Compara::ConstrainedElement' => 'SO:0001009', #DNA_constraint_sequence ????
