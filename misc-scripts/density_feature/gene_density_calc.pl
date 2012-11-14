@@ -124,7 +124,7 @@ for my $db_args ( @{ $cli_helper->get_dba_args_for_opts($opts) } ) {
 
 		my ( $display_label, $description ) =
 		  @{$prod_dba->dbc()->sql_helper()->execute(
--SQL=>"select distinct display_label, description from analysis_description ad join analysis a using (analysis_id) where a.logic_name = 'knowngenedensity'"
+-SQL=>"select distinct display_label, description from analysis_description where is_current = 1 and logic_name = 'knowngenedensity'"
 			) };
 
 		$analysis1 =
@@ -148,7 +148,7 @@ for my $db_args ( @{ $cli_helper->get_dba_args_for_opts($opts) } ) {
 
 		my ( $display_label, $description ) =
 		  @{$prod_dba->dbc()->sql_helper()->execute(
--SQL=>"select distinct display_label, description from analysis_description ad join analysis a using (analysis_id) where a.logic_name = 'genedensity'"
+-SQL=>"select distinct display_label, description from analysis_description where is_current = 1 and logic_name = 'genedensity'"
 			) };
 			
 		$analysis2 =
