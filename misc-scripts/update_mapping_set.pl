@@ -102,6 +102,7 @@ my $previous_dbname = undef;
 my $help = undef;
 my $release = undef;
 my $dry_run = undef;
+my $dbtype = "core";
 
 GetOptions('host=s'    => \$host,
 	   'dbname=s'  => \$dbname,
@@ -116,6 +117,7 @@ GetOptions('host=s'    => \$host,
            'previous_dbname=s'  => \$previous_dbname,
 	   'help'      => \$help,
 	   'dry_run'   => \$dry_run,
+           'dbtype=s'    => \$dbtype,
 	   );
 
 pod2usage(1) if($help);
@@ -131,7 +133,7 @@ foreach my $h ($host,$host2) {
   #since there is no database defined, will run it agains all core databases
   my $pattern;
   if (!defined ($dbname)){
-    $pattern = "_core_".$release."_";
+    $pattern = "_".$dbtype."_".$release."_";
   }
   else{
     $pattern = $dbname;
@@ -291,7 +293,7 @@ sub get_max_mapping_set_id {
 sub get_previous_dbname {
     my ($dbh, $dbname, $release) = @_;
     my $previous_dbname;
-    $dbname =~ /(^([a-z]+_){2,3}core_)/;
+    $dbname =~ /(^([a-z]+_){2,3}[a-z]+_)/;
     if (!$1) { throw("Database name $dbname is not in the right format"); }
     my $previous_release_name = $1 . (--$release);
     my $previous_sth = $dbh->prepare("show databases like \'%$previous_release_name%\'");
