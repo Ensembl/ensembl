@@ -98,11 +98,12 @@ my $port = 3306;
 my $oldport = 3306;
 my $olduser = "ensro";
 my $oldpass = undef;
-my $previous_dbname = undef;
+my $compare_dbname = undef;
 my $help = undef;
 my $release = undef;
 my $dry_run = undef;
 my $dbtype = "core";
+my $previous_dbname;
 
 GetOptions('host=s'    => \$host,
 	   'dbname=s'  => \$dbname,
@@ -114,7 +115,7 @@ GetOptions('host=s'    => \$host,
 	   'oldport=s' => \$oldport,
 	   'olduser=s' => \$olduser,
 	   'oldpass=s' => \$oldpass,
-           'previous_dbname=s'  => \$previous_dbname,
+           'previous_dbname=s'  => \$compare_dbname,
 	   'help'      => \$help,
 	   'dry_run'   => \$dry_run,
            'dbtype=s'    => \$dbtype,
@@ -159,8 +160,10 @@ foreach my $h ($host,$host2) {
     my $count_added = 0;
 
     $sth_update_build->execute($schema_build) unless $dry_run;
-    if (!$previous_dbname) {
+    if (!$compare_dbname) {
        $previous_dbname = &get_previous_dbname($old_dbh,$current_dbname,$release);
+    } else {
+       $previous_dbname = $compare_dbname;
     }
 
 # If there is no previous database, no mapping needed
