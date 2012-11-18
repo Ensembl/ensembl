@@ -18,21 +18,22 @@ use File::Fetch;
 
 my ($url,$db_name,$db_host,$db_user,$db_pass,$db_port,$db_version,$help,$species,$group);
 my ($logic_name, $description, $display_label);
+my ($directory);
 $species = "human";
 $group = 'core';
 
 GetOptions ("url|file=s" => \$url,
-            "db_name|name|database=s" => \$db_name,
-            "db_host|host=s" => \$db_host,
-            "db_user|user|username=s" => \$db_user,
-            "db_pass|pass|password=s" => \$db_pass,
-            "db_port|port=s" => \$db_port,
-            "db_version|version=s" => \$db_version,
+            "db_name|dbname|database=s" => \$db_name,
+            "db_host|dbhost|host=s" => \$db_host,
+            "db_user|dbuser|user|username=s" => \$db_user,
+            "db_pass|dbpass|pass|password=s" => \$db_pass,
+            "db_port|dbport|port=s" => \$db_port,
             "species=s" => \$species,
             'group=s'   => \$group,
             'logic_name=s' => \$logic_name,
             'description=s' => \$description,
             'display_label=s' => \$display_label,
+            'directory=s' => \$directory,
             "h!"        => \$help,
             "help!"     => \$help,
 );
@@ -48,8 +49,7 @@ my $dba = Bio::EnsEMBL::DBSQL::DBAdaptor->new(
   -host => $db_host,
   -user => $db_user,
   -pass => $db_pass,
-  -port => $db_port,
-  -db_version => $db_version,
+  -port => $db_port
 );
 
 run();
@@ -67,7 +67,8 @@ sub get_file {
   }
   else {
     my $file_fetch = File::Fetch->new(uri=>$url);
-    $file = $file_fetch->fetch() or die "Unable to get data from given URL. ".$file_fetch->error;
+    my @args = ($directory) ? ('to', $directory) : ();
+    $file = $file_fetch->fetch(@args) or die "Unable to get data from given URL. ".$file_fetch->error;
   }
   return $file;
 }
@@ -151,21 +152,42 @@ Description:
 Import data from a BED file into the simple_feature table. Only supports
 6 column BED files (location, name and score).
 
+Synopsis:
+
+  perl import_bed_simple_feature.pl -url [PATH} -db_name NAME
+
 Options:
     
     -url            Supply the URL to download from or file path
+    -directory      Location to download to; defaults to current directory
     -logic_name     Analysis logic name import data against
+    
     -db_name        The DB to add these features to
+    -database
+    -dbname
+    
     -db_host        Hostname for the DB
-    -db_user
-    -db_pass
-    -db_port
-    -db_version
+    -host
+    -dbhost
+    
+    -db_user        Username for the DB
+    -user
+    -username
+    -dbuser
+    
+    -db_pass        Password for the DB
+    -pass
+    -password
+    -dbpass
+    
+    -db_port        Port for the DB
+    -dbport
+    -port
+    
     -species        Name of the species; defaults to human
     -group          Name of the DB group; defaults to core
     -description    Analysis description; only needed if analysis is not already in the DB
     -display_label  Analysis display label for the website; only needed if analysis is not already in the DB
-    
     -help
 ";    
 }
