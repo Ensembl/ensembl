@@ -783,60 +783,37 @@ sub _store_object_xref_mapping {
                     condition_type = ?,
                     associated_group_id = ?,
                     rank = ? " );
-        foreach my $annotext ( values %{ $dbEntry->get_all_associated_xrefs() } ) {
-          my ( $associated_xref, $source_dbentry, $condition_type ) = @{$annotext};
+        
+        my $annotext = $dbEntry->get_all_associated_xrefs();
+        foreach my $ax_group (sort keys %{ $annotext }) {
+          my $group = $annotext->{$ax_group};
+          my $gsth = $self->prepare( " 
+                  INSERT INTO associated_group 
+                    SET description = ?;" );
+          $sth->bind_param( 1, $ax_group,     SQL_INTEGER );
+          $gsth->execute();
+          my $associatedGid = $self->last_insert_id();
           
-          if ( ref $associated_xref eq 'ARRAY' ) {
-            my @associated_xrefs = @{ $associated_xref };
-            my @condition_types = @{ $condition_type };
+          foreach my $ax_rank (sort keys %{ $group }) {
+            my @ax = @{ $group->{$ax_rank} };
             
-            my $gsth = $self->prepare( " 
-                    INSERT INTO associated_group 
-                      SET description = '';" );
-            $gsth->execute();
-            my $associatedGid = $self->last_insert_id();
-            
-            for (my $i=0; $i < @associated_xrefs; $i++ ) {
-              my $ax = $associated_xrefs[$i];
-              my $axc = $condition_types[$i];
-              my $associatedXid = undef;
-              my $sourceXid = undef;
-              
-              if ($associated_xref) {
-                $ax->is_stored( $self->dbc ) || $self->store($ax);
-                $associatedXid = $ax->dbID;
-              }
-              if ($source_dbentry) {
-                $source_dbentry->is_stored( $self->dbc ) || $self->store($source_dbentry);
-                $sourceXid = $source_dbentry->dbID;
-              }
-              
-              $sth->bind_param( 1, $object_xref_id,     SQL_INTEGER );
-              $sth->bind_param( 2, $associatedXid,      SQL_INTEGER );
-              $sth->bind_param( 3, $sourceXid,          SQL_INTEGER );
-              $sth->bind_param( 4, $axc,                SQL_VARCHAR );
-              $sth->bind_param( 5, $associatedGid,      SQL_VARCHAR );
-              $sth->bind_param( 6, $i,                  SQL_INTEGER );
-              $sth->execute();
-            }
-          } else {
             my $associatedXid = undef;
             my $sourceXid = undef;
-            if ($associated_xref) {
-              $associated_xref->is_stored( $self->dbc )
-                || $self->store($associated_xref);
-              $associatedXid = $associated_xref->dbID;
-            }
-            if ($source_dbentry) {
-              $source_dbentry->is_stored( $self->dbc ) || $self->store($source_dbentry);
-              $sourceXid = $source_dbentry->dbID;
+            
+            $ax[0]->is_stored( $self->dbc ) || $self->store($ax[0]);
+            $associatedXid = $ax[0]->dbID;
+            $ax[1]->is_stored( $self->dbc ) || $self->store($ax[1]);
+            $sourceXid = $ax[1]->dbID;
+            
+            if (!defined $associatedXid || !defined $sourceXid) {
+              next;
             }
             $sth->bind_param( 1, $object_xref_id,     SQL_INTEGER );
             $sth->bind_param( 2, $associatedXid,      SQL_INTEGER );
             $sth->bind_param( 3, $sourceXid,          SQL_INTEGER );
-            $sth->bind_param( 4, $condition_type,     SQL_VARCHAR );
-            $sth->bind_param( 5, q{}, SQL_VARCHAR );
-            $sth->bind_param( 6, 0, SQL_VARCHAR );
+            $sth->bind_param( 4, $ax[2],              SQL_VARCHAR );
+            $sth->bind_param( 5, $associatedGid,      SQL_VARCHAR );
+            $sth->bind_param( 6, $ax_rank,            SQL_INTEGER );
             $sth->execute();
           }
         } #end foreach
@@ -1302,8 +1279,7 @@ sub _fetch_by_object_type {
     LEFT JOIN external_synonym es on es.xref_id = xref.xref_id
     LEFT JOIN identity_xref idt on idt.object_xref_id = oxr.object_xref_id
     LEFT JOIN ontology_xref gx on gx.object_xref_id = oxr.object_xref_id
-    LEFT JOIN associated_xref ax ON ax.object_xref_id = oxr.object_xref_id AND
-                                    ax.source_xref_id = gx.source_xref_id
+    LEFT JOIN associated_xref ax ON ax.object_xref_id = oxr.object_xref_id
     LEFT JOIN associated_group ag ON ax.associated_group_id = ag.associated_group_id
     WHERE  xref.xref_id = oxr.xref_id
       AND  xref.external_db_id = exDB.external_db_id
@@ -1436,7 +1412,9 @@ SSQL
             $source_associated_xref = ( defined($source_associated_xref_id)
                                 ? $self->fetch_by_dbID($source_associated_xref_id)
                                 : undef );
-            $exDB->add_linked_associated_xref( $associated_xref, $source_associated_xref, $condition_type || '', $associate_group_id, $associate_group_rank );
+            if ( defined($associated_xref) ) {
+              $exDB->add_linked_associated_xref( $associated_xref, $source_associated_xref, $condition_type || '', $associate_group_id, $associate_group_rank );
+            }
           }
 
         } else {
@@ -1479,13 +1457,15 @@ SSQL
            && $associated_xref_id ne ""
            && !$associated_xrefs{$refID}->{$associated_key} )
       {
-        $associated_xref = ( defined($source_xref_id)
+        $associated_xref = ( defined($associated_xref_id)
                             ? $self->fetch_by_dbID($associated_xref_id)
                             : undef );
         $source_associated_xref = ( defined($source_associated_xref_id)
                                 ? $self->fetch_by_dbID($source_associated_xref_id)
                                 : undef );
-        $seen{$refID}->add_linked_associated_xref( $associated_xref, $source_associated_xref, $condition_type || '', $associate_group_id, $associate_group_rank );
+        if ( defined($associated_xref) ) {
+          $seen{$refID}->add_linked_associated_xref( $associated_xref, $source_associated_xref, $condition_type || '', $associate_group_id, $associate_group_rank );
+        }
         
         $linkage_types{$refID}->{$linkage_key} = 1;
       }
