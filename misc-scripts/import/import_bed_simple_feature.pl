@@ -15,9 +15,9 @@ use Bio::EnsEMBL::Utils::IO qw/iterate_file/;
 
 use Getopt::Long;
 
-my ($file,$db_name,$db_host,$db_user,$db_pass,$db_port,$db_version,$help,$species,$group);
+my ($file,$db_name,$db_host,$db_user,$db_pass,$db_port,$help,$species,$group);
+my ($dna_db_name,$dna_db_host,$dna_db_user,$dna_db_pass,$dna_db_port, $dna_group);
 my ($logic_name, $description, $display_label);
-my ($directory);
 $species = "human";
 $group = 'core';
 
@@ -27,12 +27,17 @@ GetOptions ("file=s" => \$file,
             "db_user|dbuser|user|username=s" => \$db_user,
             "db_pass|dbpass|pass|password=s" => \$db_pass,
             "db_port|dbport|port=s" => \$db_port,
+            "dna_db_name|dna_dbname|dna_database=s" => \$dna_db_name,
+            "dna_db_host|dna_dbhost|dna_host=s" => \$dna_db_host,
+            "dna_db_user|dna_dbuser|dna_user|dna_username=s" => \$dna_db_user,
+            "dna_db_pass|dna_dbpass|dna_pass|dna_password=s" => \$dna_db_pass,
+            "dna_db_port|dna_dbport|dna_port=s" => \$dna_db_port,
+            "dna_group=s" => \$dna_group,
             "species=s" => \$species,
             'group=s'   => \$group,
             'logic_name=s' => \$logic_name,
             'description=s' => \$description,
             'display_label=s' => \$display_label,
-            'directory=s' => \$directory,
             "h!"        => \$help,
             "help!"     => \$help,
 );
@@ -50,6 +55,24 @@ my $dba = Bio::EnsEMBL::DBSQL::DBAdaptor->new(
   -pass => $db_pass,
   -port => $db_port
 );
+
+if($dna_db_name) {
+  $dna_group ||= 'dna';
+  $dna_db_host ||= $db_host;
+  $dna_db_port ||= $db_port;
+  $dna_db_user ||= $db_user;
+  $dna_db_pass ||= $db_pass;
+  my $dna_dba = Bio::EnsEMBL::DBSQL::DBAdaptor->new(
+    -species => $species,
+    -group => $dna_group,
+    -dbname => $dna_db_name,
+    -host => $dna_db_host,
+    -user => $dna_db_user,
+    -pass => $dna_db_pass,
+    -port => $dna_db_port
+  );
+  $dba->dnadb($dna_dba);
+}
 
 run();
 
@@ -146,31 +169,54 @@ Synopsis:
 
 Options:
     
-    -file           Supply the file path
-    -directory      Location to download to; defaults to current directory
-    -logic_name     Analysis logic name import data against
+    -file               Supply the file path
+    -logic_name         Analysis logic name import data against
     
-    -db_name        The DB to add these features to
+    -db_name            The DB to add these features to
     -database
     -dbname
     
-    -db_host        Hostname for the DB
+    -db_host            Hostname for the DB
     -host
     -dbhost
     
-    -db_user        Username for the DB
+    -db_user            Username for the DB
     -user
     -username
     -dbuser
     
-    -db_pass        Password for the DB
+    -db_pass            Password for the DB
     -pass
     -password
     -dbpass
     
-    -db_port        Port for the DB
+    -db_port            Port for the DB
     -dbport
     -port
+    
+    -dna_db_name        The DNA DB to use if DB does not contain coordinate systems and DNA
+    -dna_database
+    -dna_dbname
+    
+    -dna_db_host        Hostname for the DNA DB. Defaults to -host
+    -dna_host
+    -dna_dbhost
+    
+    -dna_db_user        Username for the DNA DB. Defaults to -user
+    -dna_user
+    -dna_username
+    -dna_dbuser
+    
+    -dna_db_pass        Password for the DNA DB. Defaults to -pass
+    -dna_pass
+    -dna_password
+    -dna_dbpass
+    
+    -dna_db_port        Port for the DNA DB. Defaults to -port
+    -dna_dbport
+    -dna_port
+    
+    -dna_group          
     
     -species        Name of the species; defaults to human
     -group          Name of the DB group; defaults to core
