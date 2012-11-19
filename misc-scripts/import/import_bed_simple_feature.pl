@@ -14,15 +14,14 @@ use Bio::EnsEMBL::DBSQL::SimpleFeatureAdaptor;
 use Bio::EnsEMBL::Utils::IO qw/iterate_file/;
 
 use Getopt::Long;
-use File::Fetch;
 
-my ($url,$db_name,$db_host,$db_user,$db_pass,$db_port,$db_version,$help,$species,$group);
+my ($file,$db_name,$db_host,$db_user,$db_pass,$db_port,$db_version,$help,$species,$group);
 my ($logic_name, $description, $display_label);
 my ($directory);
 $species = "human";
 $group = 'core';
 
-GetOptions ("url|file=s" => \$url,
+GetOptions ("file=s" => \$file,
             "db_name|dbname|database=s" => \$db_name,
             "db_host|dbhost|host=s" => \$db_host,
             "db_user|dbuser|user|username=s" => \$db_user,
@@ -39,7 +38,7 @@ GetOptions ("url|file=s" => \$url,
 );
 
 if ($help) {&usage; exit 0;}
-unless ($url and $db_name and $db_host) {print "Insufficient arguments\n"; &usage; exit 1;}
+unless ($file and $db_name and $db_host) {print "Insufficient arguments\n"; &usage; exit 1;}
 unless ($logic_name) { print "No logic name given\n"; usage(); exit 1; } 
 
 my $dba = Bio::EnsEMBL::DBSQL::DBAdaptor->new(
@@ -55,30 +54,19 @@ my $dba = Bio::EnsEMBL::DBSQL::DBAdaptor->new(
 run();
 
 sub run {
-  my $file = get_file();
+  if(! -f $file) {
+    die "No file found at $file";
+  }
   process_file($file);
   return;
 }
 
-sub get_file {
-  my $file;
-  if(-f $url) {
-    $file = $url;
-  }
-  else {
-    my $file_fetch = File::Fetch->new(uri=>$url);
-    my @args = ($directory) ? ('to', $directory) : ();
-    $file = $file_fetch->fetch(@args) or die "Unable to get data from given URL. ".$file_fetch->error;
-  }
-  return $file;
-}
-
 sub process_file {
-  my ($file) = @_;
+  my ($f) = @_;
   my $analysis = get_Analysis();
   my @features;
   my $count = 0;
-  iterate_file($file, sub {
+  iterate_file($f, sub {
     my ($line) = @_;
     if($count != 0 && $count % 500 == 0) {
       printf STDERR "Processed %s records\n", $count;
@@ -154,11 +142,11 @@ Import data from a BED file into the simple_feature table. Only supports
 
 Synopsis:
 
-  perl import_bed_simple_feature.pl -url [PATH} -db_name NAME
+  perl import_bed_simple_feature.pl -file [PATH} -db_name NAME
 
 Options:
     
-    -url            Supply the URL to download from or file path
+    -file           Supply the file path
     -directory      Location to download to; defaults to current directory
     -logic_name     Analysis logic name import data against
     
