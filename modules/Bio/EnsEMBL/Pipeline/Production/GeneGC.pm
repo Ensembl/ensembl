@@ -49,7 +49,7 @@ sub store_attrib {
     SELECT name, description
     FROM attrib_type
     WHERE code = ? };
-  my ($name, $description) = $prod_helper->execute(-SQL => $sql, -PARAMS => [$code]);
+  my ($name, $description) = @{$prod_helper->execute(-SQL => $sql, -PARAMS => [$code])->[0]};
   my $attrib = Bio::EnsEMBL::Attribute->new(
     -NAME        => $name,
     -CODE        => $code,
