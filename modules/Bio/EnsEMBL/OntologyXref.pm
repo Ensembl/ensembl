@@ -400,7 +400,7 @@ sub get_all_associated_xrefs {
   return $self->{'associated_xref'} || {};
 }
 
-=head2 get_extensions
+=head2 get_extensions_for_web
   Arg [1]    : none
   Example    :
 
