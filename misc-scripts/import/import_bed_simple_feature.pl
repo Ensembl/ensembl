@@ -57,7 +57,7 @@ my $dba = Bio::EnsEMBL::DBSQL::DBAdaptor->new(
 );
 
 if($dna_db_name) {
-  $dna_group ||= 'dna';
+  $dna_group ||= 'core';
   $dna_db_host ||= $db_host;
   $dna_db_port ||= $db_port;
   $dna_db_user ||= $db_user;
