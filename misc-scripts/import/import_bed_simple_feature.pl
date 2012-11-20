@@ -74,6 +74,7 @@ if($dna_db_name) {
 }
 
 run();
+exit;
 
 sub run {
   if(! -f $file) {
