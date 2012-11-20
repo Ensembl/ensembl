@@ -61,7 +61,6 @@ if($dna_db_name) {
   $dna_db_host ||= $db_host;
   $dna_db_port ||= $db_port;
   $dna_db_user ||= $db_user;
-  $dna_db_pass = $db_pass if ! $dna_db_pass && $db_pass;
   my $dna_dba = Bio::EnsEMBL::DBSQL::DBAdaptor->new(
     -species => $species,
     -group => $dna_group,
