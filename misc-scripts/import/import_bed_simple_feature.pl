@@ -18,6 +18,7 @@ use Getopt::Long;
 my ($file,$db_name,$db_host,$db_user,$db_pass,$db_port,$help,$species,$group);
 my ($dna_db_name,$dna_db_host,$dna_db_user,$dna_db_pass,$dna_db_port, $dna_group);
 my ($logic_name, $description, $display_label);
+my $write_every = -1;
 $species = "human";
 $group = 'core';
 
@@ -38,6 +39,7 @@ GetOptions ("file=s" => \$file,
             'logic_name=s' => \$logic_name,
             'description=s' => \$description,
             'display_label=s' => \$display_label,
+            'write_every=i' => \$write_every,
             "h!"        => \$help,
             "help!"     => \$help,
 );
@@ -89,6 +91,7 @@ sub process_file {
   my $analysis = get_Analysis();
   my @features;
   my $count = 0;
+  my $commit_count = 0;
   iterate_file($f, sub {
     my ($line) = @_;
     if($count != 0 && $count % 2000 == 0) {
@@ -98,11 +101,26 @@ sub process_file {
     my $sf = line_to_SimpleFeature($line, $analysis);
     push(@features, $sf);
     $count++;
+    $commit_count++;
+    
+    if($commit_count == $write_every) {
+      _store(\@features);
+      @features = ();
+    }
   });
+  _store(\@features);
+  return;
+}
+
+sub _store {
+  my ($features) = @_;
   my $sfa = $dba->get_SimpleFeatureAdaptor();
-  print STDERR "Storing\n";
-  $sfa->store(@features);
-  print STDERR "Done\n";
+  my $count = scalar(@{$features});
+  if($count > 0) {
+    printf STDERR "Writing %d feature(s)\n", $count;
+    $sfa->store(@{$features});
+    print STDERR "Done\n";
+  }
   return;
 }
 
@@ -222,6 +240,8 @@ Options:
     -group          Name of the DB group; defaults to core
     -description    Analysis description; only needed if analysis is not already in the DB
     -display_label  Analysis display label for the website; only needed if analysis is not already in the DB
+    
+    -write_every    Write features once every N lines. Defaults to -1 (write once all records are parsed)
     -help
 ";    
 }
