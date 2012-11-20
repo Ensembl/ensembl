@@ -106,6 +106,7 @@ my $dbtype = "core";
 my $previous_dbname;
 
 GetOptions('host=s'    => \$host,
+     'host2=s' => \$host2,
 	   'dbname=s'  => \$dbname,
 	   'user=s'    => \$user,
 	   'pass=s'    => \$pass,
@@ -129,6 +130,8 @@ my $database = 'information_schema';
 my $old_dbh =  DBI->connect("DBI:mysql:database=$database;host=$oldhost;port=$oldport",$olduser,$oldpass);
 
 foreach my $h ($host,$host2) {
+  my $error;
+  
   my $dbh = DBI->connect("DBI:mysql:database=$database;host=$h;port=$port",$user,$pass);
 
   #since there is no database defined, will run it agains all core databases
@@ -182,7 +185,7 @@ foreach my $h ($host,$host2) {
     my $previous_schema_build = get_schema_and_build($previous_dbname);
     my $new_mapping = $sth_mapping_set->execute($mapping_set_id,$schema_build,$previous_schema_build) unless $dry_run;
 
-    if (!$new_mapping) {
+    if (!$new_mapping && !$dry_run) {
       print STDERR "Mapping already run for this schema_build, please remove entry before proceeding\n" ;
       exit;
     }
@@ -198,6 +201,10 @@ foreach my $h ($host,$host2) {
 # There has been a seq_region change between releases, add the relation old_seq_region_id->new_seq_region_id
     my $current_seq_region =  &read_seq_region($dbh,$current_dbname);
     my $old_seq_region = &read_seq_region($old_dbh,$previous_dbname);
+    
+# Build a hash of currently used seq region ids to ensure we do not map to overlapping IDs
+# i.e. a database has reused seq region IDs between releases
+    my $current_seq_region_ids = get_seq_region_ids($dbh, $current_dbname);
 
 # Update the seq_region_mapping table with the old->new seq_region_id relation
     foreach my $seq_region_name (keys %{$old_seq_region}){
@@ -234,16 +241,30 @@ foreach my $h ($host,$host2) {
             if (!defined $current_id || $old_id == $current_id) {
               next;
             }
+            
+            if(exists $current_seq_region_ids->{$old_id}) {
+              printf STDERR "Skipping the mapping for old id %d to current id %d as the old ID is in use in the DB. This means IDs have been reused. Do not reused seq_region_id primary keys\n", $old_id, $current_id;
+              $error = 1;
+              next;
+            }
 
 # If there is a change, update any existing entries for this seq_region to the new id
 # Then, add a new entry to map said id to the old release
             $count_updated += $sth_update_old->execute($current_id,$old_id) unless $dry_run;
             $count_added += $sth_seq_mapping->execute($old_id,$current_id, $mapping_set_id) unless $dry_run;
+            if($dry_run) {
+              $count_updated++;
+              $count_added++;
+            }
           }
         }
       }
     }
     print STDERR "For $current_dbname, removed $count_removed, added $count_added, updated $count_updated seq_region_mapping entries\n\n" ;
+  }
+  
+  if($error) {
+    die "Error detected when loading the mapping sets. Check STDERR for more information";
   }
 }
 
@@ -263,6 +284,13 @@ sub read_seq_region {
     $seq_region_hash{$seq_region_name}{$length}{$cs_name}{$cs_rank} = $seq_region_id;
   }
   return \%seq_region_hash;
+}
+
+sub get_seq_region_ids {
+  my ($dbh, $dbname) = @_;
+  my $sql = qq{select seq_region_id from ${dbname}.seq_region};
+  my %hash = map { $_, 1 } @{$dbh->selectcol_arrayref($sql)};
+  return \%hash;
 }
 
 # For a given database, returns the size of the seq_region_table
