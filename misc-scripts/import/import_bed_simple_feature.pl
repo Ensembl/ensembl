@@ -91,7 +91,7 @@ sub process_file {
   my $count = 0;
   iterate_file($f, sub {
     my ($line) = @_;
-    if($count != 0 && $count % 500 == 0) {
+    if($count != 0 && $count % 2000 == 0) {
       printf STDERR "Processed %s records\n", $count;
     }
     chomp $line;
