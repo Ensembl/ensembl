@@ -54,14 +54,14 @@ my $dba = Bio::EnsEMBL::DBSQL::DBAdaptor->new(
   -user => $db_user,
   -port => $db_port
 );
-$dba->password($db_pass) if $db_pass;
+$dba->dbc->password($db_pass) if $db_pass;
 
 if($dna_db_name) {
   $dna_group ||= 'core';
   $dna_db_host ||= $db_host;
   $dna_db_port ||= $db_port;
   $dna_db_user ||= $db_user;
-  $dna_db_pass ||= $db_pass if $db_pass;
+  $dna_db_pass = $db_pass if ! $dna_db_pass && $db_pass;
   my $dna_dba = Bio::EnsEMBL::DBSQL::DBAdaptor->new(
     -species => $species,
     -group => $dna_group,
@@ -70,7 +70,7 @@ if($dna_db_name) {
     -user => $dna_db_user,
     -port => $dna_db_port
   );
-  $dna_dba->password($dna_db_pass) if $dna_db_pass;
+  $dna_dba->dbc->password($dna_db_pass) if $dna_db_pass;
   $dba->dnadb($dna_dba);
 }
 
