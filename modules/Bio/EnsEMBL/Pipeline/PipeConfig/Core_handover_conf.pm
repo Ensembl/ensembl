@@ -215,6 +215,8 @@ sub pipeline_wide_parameters {
     return {
         %{ $self->SUPER::pipeline_wide_parameters() },  # inherit other stuff from the base class
         release => $self->o('release'),
+        bin_count => $self->o('bin_count'),
+        max_run => $self->o('max_run'),
     };
 }
 
