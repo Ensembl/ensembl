@@ -12,7 +12,7 @@ use Bio::EnsEMBL::SimpleFeature;
 use Bio::EnsEMBL::DBSQL::DBAdaptor;
 use Bio::EnsEMBL::DBSQL::SimpleFeatureAdaptor;
 use Bio::EnsEMBL::Utils::IO qw/iterate_file/;
-
+use POSIX qw/strftime/;
 use Getopt::Long;
 
 my ($file,$db_name,$db_host,$db_user,$db_pass,$db_port,$help,$species,$group);

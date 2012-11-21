@@ -7,6 +7,7 @@ use warnings;
 
 use Bio::EnsEMBL::DBSQL::DBAdaptor;
 use Getopt::Long;
+use POSIX qw/strftime/;
 
 my ($db_name,$db_host,$db_user,$db_pass,$db_port,$help);
 my @tables;
