@@ -44,7 +44,7 @@ sub get_adaptor {
 sub run {
   my $dba = get_adaptor();
   foreach my $table (@tables) {
-    print STDERR "Processing $table\n";
+    info('Processing %s', $table);
     sort_table($table, $dba);
     optimise_table($table, $dba) if $optimise;
   }
@@ -109,7 +109,7 @@ sub info {
   my ($msg, @args) = @_;
   my $m = sprintf $msg, @args;
   my $time = strftime('%c',localtime());
-  printf STDERR '[%s] %s', $m, $time;
+  printf STDERR '[%s] %s', $time, $m;
   print "\n";
   return;
 }
