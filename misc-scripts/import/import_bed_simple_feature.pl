@@ -97,7 +97,7 @@ sub process_file {
   iterate_file($f, sub {
     my ($line) = @_;
     if($count != 0 && $count % 2000 == 0) {
-      printf STDERR "Processed %s records\n", $count;
+      info("Processed %s records", $count);
     }
     chomp $line;
     my $sf = line_to_SimpleFeature($line, $analysis, $dba);
@@ -120,7 +120,7 @@ sub _store {
   my $sfa = $dba->get_SimpleFeatureAdaptor();
   my $count = scalar(@{$features});
   if($count > 0) {
-    printf STDERR "Writing %d feature(s)\n", $count;
+    info("Writing %d feature(s)", $count);
     $sfa->store(@{$features});
     print STDERR "Done\n";
   }
@@ -174,6 +174,15 @@ sub get_Analysis {
     $aa->store($analysis);
   }
   return $analysis;
+}
+
+sub info {
+  my ($msg, @args) = @_;
+  my $m = sprintf $msg, @args;
+  my $time = strftime('%c',localtime());
+  printf STDERR '[%s] %s', $m, $time;
+  print "\n";
+  return;
 }
 
 sub usage {

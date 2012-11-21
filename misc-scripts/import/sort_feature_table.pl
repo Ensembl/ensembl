@@ -52,28 +52,28 @@ sub run {
 
 sub sort_table {
   my ($table, $dba) = @_;
-  print STDERR "Starting sort\n";
+  info("Starting sort");
   my $s_table = $table.'_sorted';
   
-  print STDERR "Creating alternative table and disabling keys\n";
+  info("Creating alternative table and disabling keys");
   $dba->dbc()->do("create table ${s_table} like ${table}");
   $dba->dbc()->do("alter table ${s_table} disable keys");
   
-  print STDERR "Sort/insert\n";
+  info("Sort/insert");
   $dba->dbc()->do("insert into ${s_table} select * from ${table} order by seq_region_id, seq_region_start");
   
-  print STDERR "Re-enabling keys\n";
+  info("Re-enabling keys");
   $dba->dbc()->do("alter table ${s_table} enable keys");
   
   my $bak_name = _next_name($table, $dba);
-  print STDERR "Moving $table to $bak_name\n";
+  info("Moving %s to %s", $table, $bak_name);
   $dba->dbc()->do("alter table ${table} rename as $bak_name");
   
-  print STDERR "Moving $s_table to $table\n";
+  info("Moving %s to %s", $s_table, $table);
   $dba->dbc()->do("alter table ${s_table} rename as $table");
   
   if($drop) {
-    print STDERR "Dropping table $bak_name\n";
+    info("Dropping table %s", $bak_name);
     $dba->dbc()->do("drop table $bak_name");
   }
   
@@ -83,9 +83,9 @@ sub sort_table {
 
 sub optimise_table {
   my ($table, $dba) = @_;
-  print STDERR "Optimising table\n";
+  info("Optimising table");
   $dba->dbc()->do("OPTIMIZE TABLE ${table}");
-  print STDERR "Done\n";
+  info("Done");
   return;
 }
 
@@ -102,6 +102,15 @@ sub _next_name {
     $count++;
   }
   return $new_name;
+}
+
+sub info {
+  my ($msg, @args) = @_;
+  my $m = sprintf $msg, @args;
+  my $time = strftime('%c',localtime());
+  printf STDERR '[%s] %s', $m, $time;
+  print "\n";
+  return;
 }
 
 sub usage {
