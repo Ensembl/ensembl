@@ -94,10 +94,10 @@ sub new {
 	  $value_type."*");
   }
 
-  $block_size |= 0;
-  $region_features |= 0;
+  $block_size ||= 0;
+  $region_features ||= 0;
 
-  if(! ($block_size xor $region_features )){
+  if($block_size && $region_features){
     throw('Set either -BLOCK_SIZE or -REGION_FEATURES, not both'); 
   }
 
