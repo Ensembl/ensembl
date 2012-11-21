@@ -48,47 +48,49 @@ if ($help) {&usage; exit 0;}
 unless ($file and $db_name and $db_host) {print "Insufficient arguments\n"; &usage; exit 1;}
 unless ($logic_name) { print "No logic name given\n"; usage(); exit 1; } 
 
-my $dba = Bio::EnsEMBL::DBSQL::DBAdaptor->new(
-  -species => $species,
-  -group => $group,
-  -dbname => $db_name,
-  -host => $db_host,
-  -user => $db_user,
-  -port => $db_port
-);
-$dba->dbc->password($db_pass) if $db_pass;
-
-if($dna_db_name) {
-  $dna_group ||= 'core';
-  $dna_db_host ||= $db_host;
-  $dna_db_port ||= $db_port;
-  $dna_db_user ||= $db_user;
-  my $dna_dba = Bio::EnsEMBL::DBSQL::DBAdaptor->new(
+sub get_adaptor {
+  my $dba = Bio::EnsEMBL::DBSQL::DBAdaptor->new(
     -species => $species,
-    -group => $dna_group,
-    -dbname => $dna_db_name,
-    -host => $dna_db_host,
-    -user => $dna_db_user,
-    -port => $dna_db_port
+    -group => $group,
+    -dbname => $db_name,
+    -host => $db_host,
+    -user => $db_user,
+    -port => $db_port
   );
-  $dna_dba->dbc->password($dna_db_pass) if $dna_db_pass;
-  $dba->dnadb($dna_dba);
+  $dba->dbc->password($db_pass) if $db_pass;
+  
+  if($dna_db_name) {
+    $dna_group ||= 'core';
+    $dna_db_host ||= $db_host;
+    $dna_db_port ||= $db_port;
+    $dna_db_user ||= $db_user;
+    my $dna_dba = Bio::EnsEMBL::DBSQL::DBAdaptor->new(
+      -species => $species,
+      -group => $dna_group,
+      -dbname => $dna_db_name,
+      -host => $dna_db_host,
+      -user => $dna_db_user,
+      -port => $dna_db_port
+    );
+    $dna_dba->dbc->password($dna_db_pass) if $dna_db_pass;
+    $dba->dnadb($dna_dba);
+  }
+  return $dba;
 }
 
-run();
-exit;
-
+# see bottom of file for this method call
 sub run {
+  my $dba = get_adaptor();
   if(! -f $file) {
     die "No file found at $file";
   }
-  process_file($file);
+  process_file($file, $dba);
   return;
 }
 
 sub process_file {
-  my ($f) = @_;
-  my $analysis = get_Analysis();
+  my ($f, $dba) = @_;
+  my $analysis = get_Analysis($dba);
   my @features;
   my $count = 0;
   my $commit_count = 0;
@@ -98,22 +100,23 @@ sub process_file {
       printf STDERR "Processed %s records\n", $count;
     }
     chomp $line;
-    my $sf = line_to_SimpleFeature($line, $analysis);
+    my $sf = line_to_SimpleFeature($line, $analysis, $dba);
     push(@features, $sf);
     $count++;
     $commit_count++;
     
     if($commit_count == $write_every) {
-      _store(\@features);
+      _store(\@features, $dba);
       @features = ();
+      $commit_count = 0;
     }
   });
-  _store(\@features);
+  _store(\@features, $dba);
   return;
 }
 
 sub _store {
-  my ($features) = @_;
+  my ($features, $dba) = @_;
   my $sfa = $dba->get_SimpleFeatureAdaptor();
   my $count = scalar(@{$features});
   if($count > 0) {
@@ -125,12 +128,12 @@ sub _store {
 }
 
 sub line_to_SimpleFeature {
-  my ($line, $analysis) = @_;
+  my ($line, $analysis, $dba) = @_;
   my ($chr, $start, $end, $label, $score, $strand) = split(/\t/, $line);
   $start++; # UCSC is 0 idx start
   $score ||= 0;
   $strand ||= 1;
-  my $slice = get_Slice($chr);
+  my $slice = get_Slice($chr, $dba);
   my $sf = Bio::EnsEMBL::SimpleFeature->new(
       -start => $start,
       -end => $end,
@@ -145,7 +148,7 @@ sub line_to_SimpleFeature {
 
 my %slices;
 sub get_Slice {
-  my ($original) = @_;
+  my ($original, $dba) = @_;
   my $name = $original;
   $name =~ s/^chr//;
   return $slices{$name} if exists $slices{name};
@@ -158,6 +161,7 @@ sub get_Slice {
 }
 
 sub get_Analysis {
+  my ($dba) = @_;
   my $aa = $dba->get_AnalysisAdaptor();
   my $analysis = $aa->fetch_by_logic_name($logic_name);
   if(!$analysis) {
@@ -243,5 +247,7 @@ Options:
     
     -write_every    Write features once every N lines. Defaults to -1 (write once all records are parsed)
     -help
-";    
+";
 }
+
+run();
