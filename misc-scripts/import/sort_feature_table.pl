@@ -78,7 +78,7 @@ sub sort_table {
     $dba->dbc()->do("drop table $bak_name");
   }
   
-  print STDERR "Done\n";
+  info("Done");
   return;
 }
 

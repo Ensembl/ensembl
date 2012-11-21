@@ -122,7 +122,7 @@ sub _store {
   if($count > 0) {
     info("Writing %d feature(s)", $count);
     $sfa->store(@{$features});
-    print STDERR "Done\n";
+    info("Done");
   }
   return;
 }
