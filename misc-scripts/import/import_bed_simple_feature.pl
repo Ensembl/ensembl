@@ -181,7 +181,7 @@ sub info {
   my $m = sprintf $msg, @args;
   my $time = strftime('%c',localtime());
   printf STDERR '[%s] %s', $time, $m;
-  print "\n";
+  print STDERR "\n";
   return;
 }
 
