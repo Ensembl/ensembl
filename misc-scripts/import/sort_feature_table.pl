@@ -61,7 +61,7 @@ sub sort_table {
   $dba->dbc()->do("alter table ${s_table} disable keys");
   
   info("Sort/insert");
-  $dba->dbc()->do("insert into ${s_table} select * from ${table} order by seq_region_id, seq_region_start");
+  $dba->dbc()->do("insert into ${s_table} select * from ${table} order by seq_region_id, seq_region_start, seq_region_end");
   
   info("Re-enabling keys");
   $dba->dbc()->do("alter table ${s_table} enable keys");
