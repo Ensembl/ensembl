@@ -1,35 +1,5 @@
 #!/usr/bin/env perl
 
-=head1 SUMMARY
-
-This script is intended to highlight issues with an assembly mapping, by inspecting
-the equivalent sequence for each exon. The resulting log is grep-suitable and keyed
-for severity.
-
-=head1 SYNOPSIS
-
-perl exon_conservation_check.pl <many arguments>
-
-    --dbname, db_name=NAME              database name NAME
-    --host, --dbhost, --db_host=HOST    database host HOST
-    --port, --dbport, --db_port=PORT    database port PORT
-    --user, --dbuser, --db_user=USER    database username USER
-    --pass, --dbpass, --db_pass=PASS    database passwort PASS
-    --assembly=ASSEMBLY                 assembly version ASSEMBLY
-    --altdbname=NAME                    alternative database NAME
-    --altassembly=ASSEMBLY              alternative assembly version ASSEMBLY
-
-Optional options
-    --logfile, --log=FILE               log to FILE (default: *STDOUT)
-    --logpath=PATH                      write logfile to PATH (default: .)
-    
-    --check_exons                       Test exons for their robustness 
-                                        between assembly mappings
-                                        
-    --check_transcripts                 Expand the test to check if we still 
-                                        get full length transcript encoding
-=cut
-
 use strict;
 use warnings;
 
@@ -265,4 +235,39 @@ sub diff {
   $total += ($+[1] - $-[1]) while $diff =~ m{ ([^\x00]+) }xmsg;
   return $total;
 }
+__END__
+=pod 
 
+=head1 NAME
+
+exon_conservation_check.pl
+
+=head1 SUMMARY
+
+This script is intended to highlight issues with an assembly mapping, by inspecting
+the equivalent sequence for each exon. The resulting log is grep-suitable and keyed
+for severity.
+
+=head1 SYNOPSIS
+
+perl exon_conservation_check.pl <many arguments>
+
+    --dbname, db_name=NAME              database name NAME
+    --host, --dbhost, --db_host=HOST    database host HOST
+    --port, --dbport, --db_port=PORT    database port PORT
+    --user, --dbuser, --db_user=USER    database username USER
+    --pass, --dbpass, --db_pass=PASS    database passwort PASS
+    --assembly=ASSEMBLY                 assembly version ASSEMBLY
+    --altdbname=NAME                    alternative database NAME
+    --altassembly=ASSEMBLY              alternative assembly version ASSEMBLY
+
+Optional options
+    --logfile, --log=FILE               log to FILE (default: *STDOUT)
+    --logpath=PATH                      write logfile to PATH (default: .)
+    
+    --check_exons                       Test exons for their robustness 
+                                        between assembly mappings
+                                        
+    --check_transcripts                 Expand the test to check if we still 
+                                        get full length transcript encoding
+=cut
