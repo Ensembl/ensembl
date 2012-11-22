@@ -464,9 +464,10 @@ close(HTML);
 ###############
 
 sub display_tables_list {
-  my $html = qq{<h3 id="top">List of the tables:</h3>};
+  my $html = qq{\n<h3 id="top">List of the tables:</h3>\n};
   
-  
+  my $has_header = 0;
+	
   foreach my $header_name (@header_names) {
     
     my $tables = $tables_names->{$header_name};
@@ -488,23 +489,28 @@ sub display_tables_list {
     # Header
     if ($header_flag == 1 and $header_name ne 'default') {
       $html .= display_header($header_name);
+			$has_header = 1;
     }
-    $html .= qq{<table><tr><td>\n <ul>\n};
+    $html .= qq{<table><tr><td>\n  <ul>\n};
 
     # Table
     foreach my $t_name (@{$tables}) {
       if ($table_count == $nb_by_col and $col_count<$nb_col and $nb_col>1){
-        $html .= qq{  </ul></td><td><ul>\n};
+        $html .= qq{  </ul>\n</td><td>\n  <ul>\n};
         $table_count = 0;
       }
-      $html .= add_table_name_to_list($t_name);
+			my $t_colour;
+			if ($has_header == 0 && $show_colour) {
+			  $t_colour = $documentation->{$header_name}{'tables'}{$t_name}{'colour'};
+			}
+      $html .= add_table_name_to_list($t_name,$t_colour);
       $table_count ++;
     }
-    $html .= qq{    </ul>\n</td></tr></table>};
+    $html .= qq{  </ul>\n</td></tr></table>\n};
   }
   $html .= qq{
-    <input type="button" onclick="show_hide_all()" class="fbutton" value="Show/hide all" />
-    <input type="hidden" id="expand" value="0" />
+  <input type="button" onclick="show_hide_all()" class="fbutton" value="Show/hide all" />
+  <input type="hidden" id="expand" value="0" />
   };
   return $html;
 }
@@ -608,8 +614,13 @@ sub fill_documentation {
 
 sub add_table_name_to_list {
   my $t_name = shift;
-  
-  my $html = qq{    <li><a href="#$t_name"><b>$t_name</b></a></li>\n};
+	my $t_colour = shift;
+	my $c = $t_colour;
+	if (defined($t_colour)) {
+	  $t_colour = ($t_colour ne '') ? qq{;background-color:$t_colour} : '';
+		$t_colour = qq{<div style="padding:0px;margin-left:0px$t_colour;display:inline">&nbsp;</div> };
+	}
+  my $html = qq{    <li>$t_colour<a href="#$t_name"><b>$t_name</b></a></li>\n};
   return $html;
 }
 
@@ -639,7 +650,7 @@ sub add_table_name {
 
 sub add_description {
   my $desc = shift;
-  return qq{<p>$desc</p>\n};
+  return qq{  <p style="padding:5px 0px;margin-bottom:0px">$desc</p>\n};
 }
 
 sub add_info {
@@ -664,9 +675,9 @@ sub add_columns {
   my $cols  = $data->{column};
   my $display_style = $display_col{$display};
   
-  my $html = qq{\n  <div id="div_$table" style="display:$display_style">\n
-  <table style="border:1px outset #222222">
-    <tr class="bg3 center"><th style="width:180px">Column</th><th style="width:150px">Type</th><th style="width:100px">Default value</th><th style="width:400px">Description</th><th style="width:150px">Index</th></tr>\n};
+  my $html = qq{\n  <div id="div_$table" style="display:$display_style">
+    <table style="border:1px outset #222222">
+      <tr class="bg3 center"><th style="width:180px">Column</th><th style="width:150px">Type</th><th style="width:100px">Default value</th><th style="width:400px">Description</th><th style="width:150px">Index</th></tr>\n};
   my $bg = 1;
   foreach my $col (@$cols) {
     my $name    = $col->{name};
@@ -685,11 +696,11 @@ sub add_columns {
       $desc =~ s/\@link\s?\w+/$table_to_link/;
     }
     
-    $html .= qq{    <tr class="bg$bg"><td><b>$name</b></td><td>$type</td><td>$default</td><td>$desc</td><td>$index</td></tr>\n};
+    $html .= qq{      <tr class="bg$bg"><td><b>$name</b></td><td>$type</td><td>$default</td><td>$desc</td><td>$index</td></tr>\n};
     if ($bg==1) { $bg=2; }
     else { $bg=1; }
   }
-  $html .= qq {</table>\n</div>\n};
+  $html .= qq {    </table>\n  </div>\n};
   
   return $html;
 }
@@ -699,11 +710,11 @@ sub add_see {
   my $html = '';
   
   if (scalar @$sees) {
-    $html .= qq{<p><b>See also:</b></p>\n<ul>\n};
+    $html .= qq{  <p style="padding-top:5px"><b>See also:</b></p>\n  <ul>\n};
     foreach my $see (@$sees) {
-      $html .= qq{  <li><a href="#$see">$see</a></li>\n};
+      $html .= qq{    <li><a href="#$see">$see</a></li>\n};
     }
-    $html .= qq{</ul>\n};
+    $html .= qq{  </ul>\n\n};
   }
   
   return $html;
@@ -788,9 +799,9 @@ sub add_legend {
     else {
       $desc = $legend{$c};
     }
-    $html .= qq{<tr><td style="width:25px;height:15px;background-color:$c"></td><td>$desc</td></tr>\n};
+    $html .= qq{  <tr><td style="width:25px;height:15px;background-color:$c"></td><td>$desc</td></tr>\n};
   }
-  $html .= '</table>';
+  $html .= qq{</table>};
   
   return $html;
 }
