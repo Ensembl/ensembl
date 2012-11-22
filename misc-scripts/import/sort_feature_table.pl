@@ -11,7 +11,7 @@ use POSIX qw/strftime/;
 
 my ($db_name,$db_host,$db_user,$db_pass,$db_port,$help);
 my @tables;
-my ($optimise, $drop);
+my ($optimise, $drop, $nolock);
 
 GetOptions ("db_name|dbname|database=s" => \$db_name,
             "db_host|dbhost|host=s" => \$db_host,
@@ -20,6 +20,7 @@ GetOptions ("db_name|dbname|database=s" => \$db_name,
             "db_port|dbport|port=s" => \$db_port,
             'table|tables=s@' => \@tables,
             'optimise!' => \$optimise,
+            'nolock!' => \$nolock,
             'drop!' => \$drop,
             "h|help!"        => \$help,
 );
@@ -56,6 +57,11 @@ sub sort_table {
   info("Starting sort");
   my $s_table = $table.'_sorted';
   
+  if(!$nolock) {
+    info("Locking table %s", $table);
+    $dba->dbc()->do("lock tables ${table} write");
+  }
+  
   info("Creating alternative table and disabling keys");
   $dba->dbc()->do("create table ${s_table} like ${table}");
   $dba->dbc()->do("alter table ${s_table} disable keys");
@@ -76,6 +82,11 @@ sub sort_table {
   if($drop) {
     info("Dropping table %s", $bak_name);
     $dba->dbc()->do("drop table $bak_name");
+  }
+  
+  if(!$nolock) {
+    info("Unlocking table %s", $table);
+    $dba->dbc()->do("unlock tables");
   }
   
   info("Done");
