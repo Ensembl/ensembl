@@ -79,6 +79,9 @@ sub compare_exons {
   my $new_slice_adaptor = $R_slice->adaptor();
 
   my $old_exons = $A_slice->get_all_Exons;
+  
+  $support->log(sprintf("Total exons %d\n", scalar(@{$old_exons})));
+  
   while (my $old_exon = shift @$old_exons) {
 
     # Establish equivalent locations on old and new DBs
@@ -154,6 +157,7 @@ sub compare_transcripts {
   my $new_slice_adaptor = $R_slice->adaptor();
 
   my $old_transcripts = $A_slice->get_all_Transcripts();
+  $support->log(sprintf("Total transcripts %d\n", scalar(@{$old_transcripts})));
   while (my $old_transcript = shift @$old_transcripts) {
     my $new_A_slice = new_Slice($old_transcript, $new_slice_adaptor);
     my $shadow_transcript = clone_Transcript($old_transcript);
