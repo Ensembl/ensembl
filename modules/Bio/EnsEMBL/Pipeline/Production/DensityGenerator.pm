@@ -26,8 +26,6 @@ sub run {
   $self->check_analysis($dba);
 
   my $density_type = $self->get_density_type($analysis);
-  #Have to delete the density types linked to the analysis
-  $self->_delete_density_type_by_Analysis($analysis);
   Bio::EnsEMBL::Registry->get_adaptor($species, 'core', 'DensityType')->store($density_type);
   my $slices = Bio::EnsEMBL::Registry->get_adaptor($species, 'core', 'slice')->fetch_all('toplevel');
   my $option = $self->get_option();
@@ -203,16 +201,6 @@ sub get_biotype_group {
      AND db_type like '%core%' };
   my @biotypes = @{$helper->execute_simple(-SQL => $sql, -PARAMS => [$group])};
   return @biotypes;
-}
-
-#Delete a density type by the analysis object if there were no density features linked
-sub _delete_density_type_by_Analysis {
-  my ($self, $analysis) = @_;
-  my $dba = $self->get_DBAdaptor();
-  return $dba->dbc()->sql_helper()->execute_update(
-    -SQL => 'delete density_type where analysis_id =?',
-    -PARAMS => [$analysis->dbID()]
-  );
 }
 
 # Empty method if no specific option is needed
