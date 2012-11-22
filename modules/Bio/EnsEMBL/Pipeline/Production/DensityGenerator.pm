@@ -26,6 +26,8 @@ sub run {
   $self->check_analysis($dba);
 
   my $density_type = $self->get_density_type($analysis);
+  #Have to delete the density types linked to the analysis
+  $self->_delete_density_type_by_Analysis($analysis);
   Bio::EnsEMBL::Registry->get_adaptor($species, 'core', 'DensityType')->store($density_type);
   my $slices = Bio::EnsEMBL::Registry->get_adaptor($species, 'core', 'slice')->fetch_all('toplevel');
   my $option = $self->get_option();
@@ -138,6 +140,17 @@ sub delete_old_features {
      AND    a.logic_name = ? };
   $helper->execute_update(-SQL    => $sql,
 						  -PARAMS => [$dba->species_id(), $logic_name]);
+  
+  #Cleanup anything which didn't have a feature linked. Happened during production
+  my $left_join_sql = <<'SQL';
+DELETE    dt 
+FROM      density_type dt 
+LEFT JOIN density_feature df using (density_type_id) 
+JOIN      analysis a using (analysis_id)
+WHERE     df.density_type_id IS NULL
+AND       a.logic_name =?
+SQL
+  $helper->execute_update(-SQL => $sql, -PARAMS => [$logic_name]);
 }
 
 ## Checks if the analysis already exists in the database
@@ -190,6 +203,16 @@ sub get_biotype_group {
      AND db_type like '%core%' };
   my @biotypes = @{$helper->execute_simple(-SQL => $sql, -PARAMS => [$group])};
   return @biotypes;
+}
+
+#Delete a density type by the analysis object if there were no density features linked
+sub _delete_density_type_by_Analysis {
+  my ($self, $analysis) = @_;
+  my $dba = $self->get_DBAdaptor();
+  return $dba->dbc()->sql_helper()->execute_update(
+    -SQL => 'delete density_type where analysis_id =?',
+    -PARAMS => [$analysis->dbID()]
+  );
 }
 
 # Empty method if no specific option is needed
