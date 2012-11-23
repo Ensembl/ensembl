@@ -148,7 +148,7 @@ JOIN      analysis a using (analysis_id)
 WHERE     df.density_type_id IS NULL
 AND       a.logic_name =?
 SQL
-  $helper->execute_update(-SQL => $sql, -PARAMS => [$logic_name]);
+  $helper->execute_update(-SQL => $left_join_sql, -PARAMS => [$logic_name]);
 }
 
 ## Checks if the analysis already exists in the database
