@@ -173,7 +173,7 @@ sub print_feature {
 #   Catch the remaining keys, containing whatever else the Feature provided
         foreach my $attribute ( keys(%summary)) {
             if (ref $summary{$attribute} eq "ARRAY") {
-                $row .= $attribute."=".join (',',@{$summary{$attribute}}) . ";"
+                $row .= $attribute."=".join (',',map { uri_escape($_,'\t\n\r;=%&,') } @{$summary{$attribute}}) . ";"
             }
             else {
                 if ($summary{$attribute}) { $row .= $attribute."=".uri_escape($summary{$attribute},'\t\n\r;=%&,') . ";"; }
