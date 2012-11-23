@@ -400,7 +400,7 @@ sub get_all_associated_xrefs {
   return $self->{'associated_xref'} || {};
 }
 
-=head2 get_extensions_for_web
+=head2 get_extensions
   Arg [1]    : none
   Example    :
 
@@ -427,7 +427,7 @@ sub get_all_associated_xrefs {
   Caller     : 
   Status     : Experimental
 =cut
-sub get_extensions_for_web {
+sub get_extensions {
   my ($self) = @_;
   
   if ( !defined $self->{'associated_xref'} ) {
