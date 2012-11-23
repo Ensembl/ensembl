@@ -47,11 +47,17 @@ $support->log_stamped("Beginning analysis.\n");
 $support->log("EXON KEY       : !! = Very bad (pc mismatch), %% = Somewhat bad (mismatch), ?? = No mapping, might be bad, ¤¤ = eval error\n");
 $support->log("TRANSCRIPT KEY : @@ = Very bad (pc translation mismatch), ££ = Very bad (pc transcript mismatch), ** = Somewhat bad (mismatch), XX = No mapping, might be bad, ±± = eval error\n");
 
+my $total_exons = 0;
+my $total_transcripts = 0;
+
 $support->iterate_chromosomes(
   prev_stage => '40-fix_overlaps',
   this_stage => '41-conservation',
   worker     => \&compare,
 );
+
+$support->log(sprintf("Total exons : %d\n", $total_exons));
+$support->log(sprintf("Total transcripts : %d\n", $total_transcripts));
 
 $support->log_stamped("Finished.\n");
 
@@ -82,6 +88,7 @@ sub compare_exons {
   $support->log(sprintf("Total exons %d\n", scalar(@{$old_exons})));
 
   while (my $old_exon = shift @$old_exons) {
+    $total_exons++;
     eval {exon($old_exon, $R_slice, $new_slice_adaptor)};
     if($@) {
       $support->log(sprintf("¤¤ | ID : %s | EVAL ERROR (%s)\n", $old_exon->stable_id(), $@));
@@ -168,6 +175,7 @@ sub compare_transcripts {
   my $old_transcripts = $A_slice->get_all_Transcripts();
   $support->log(sprintf("Total transcripts %d\n", scalar(@{$old_transcripts})));
   while (my $old_transcript = shift @$old_transcripts) {
+    $total_transcripts++;
     eval {transcript($old_transcript, $R_slice, $new_slice_adaptor)};
     if($@) {
       $support->log(sprintf("±± | ID : %s | EVAL ERROR (%s)\n", $old_transcript->stable_id(), $@));
