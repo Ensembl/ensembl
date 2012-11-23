@@ -63,7 +63,7 @@ sub compare {
   if ($support->param('check_transcripts')) {
     compare_transcripts($asp);
   }
-  return;
+  return 1;
 }
 
 sub compare_exons {
@@ -87,6 +87,7 @@ sub compare_exons {
       $support->log(sprintf("¤¤ | ID : %s | EVAL ERROR (%s)\n", $old_exon->stable_id(), $@));
     }
   }
+  return;
 }
 
 sub exon {
