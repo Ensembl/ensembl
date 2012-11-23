@@ -376,7 +376,32 @@ sub display_id {
   }
 }
 
+=head2 summary_as_hash
 
+  Example    : my $hash = $misc_feature->summary_as_hash();
+  Description: Generates a HashRef compatible with GFFSerializer. Adds
+               all attribute key value pairs plus MiscSet codes and names
+  Returntype : Hash
+  Exceptions : none
+  Caller     : general
+  Status     : Stable
+
+=cut
+
+sub summary_as_hash {
+  my ($self) = @_;
+  my $hash = $self->SUPER::summary_as_hash();
+  my $attributes = $self->get_all_Attributes();
+  foreach my $attr (@{$attributes}) {
+    $hash->{$attr->name()} = $attr->value();
+  }
+  my $misc_sets = $self->get_all_MiscSets();
+  foreach my $set (@{$misc_sets}) {
+    push(@{$hash->{misc_set_code}},$set->code());
+    push(@{$hash->{misc_set_name}},$set->name());
+  }
+  return $hash;
+}
 
 
 1;

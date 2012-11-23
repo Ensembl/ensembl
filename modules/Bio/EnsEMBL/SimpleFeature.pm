@@ -162,5 +162,27 @@ sub score {
   return $self->{'score'};
 }
 
+=head2 summary_as_hash
+
+  Example    : my $hash = $simple_feature->summary_as_hash();
+  Description: Generates a HashRef compatible with GFFSerializer. Adds
+               score, external_name and logic_name to the basic Feature
+               hash
+  Returntype : Hash
+  Exceptions : none
+  Caller     : general
+  Status     : Stable
+
+=cut
+
+sub summary_as_hash {
+  my ($self) = @_;
+  my $hash = $self->SUPER::summary_as_hash();
+  $hash->{score} = $self->score() if $self->score();
+  $hash->{'external_name'} = $self->display_label() if $self->display_label();
+  $hash->{'logic_name'} = $self->analysis->logic_name();
+  return $hash;
+}
+
 
 1;
