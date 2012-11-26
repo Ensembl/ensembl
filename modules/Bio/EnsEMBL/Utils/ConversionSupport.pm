@@ -65,6 +65,7 @@ use Cwd qw(abs_path);
 use DBI;
 use Data::Dumper;
 use Fcntl qw(:flock SEEK_END);
+use File::Temp qw(tempfile);
 
 my $species_c = 1; #counter to be used for each database connection made
 
@@ -2014,5 +2015,82 @@ sub remove_duplicate_attribs {
   $dbh->do(qq(drop table nondup_${table}_attrib));
 }
 
+=head2 get_alignment
+
+  Arg[1]      : first sequence
+  Arg[2]      : second sequence
+  Arg[3]      : "DNA" or "PEP"
+  Example     : $support->get_alignment($seq_a,$seq_b,"DNA");
+  Description : uses matcher/psw from EMBOSS and WISE2 respectively to
+                produce an alignment. EMBOSS/WISE2 need to be in the
+                environment variables $EMBOSS_PATH and $WISE2_PATH if
+                they are not in their customary places in /localsw.
+  Return type : string containing alignment in "human" readable format.
+  Caller      : general
+  Status      : at risk.
+
+=cut
+
+sub get_alignment {
+  my ($self,$a,$b,$type) = @_;
+
+  # XXX don't hardwire. Is there a better way to discover the EMBOSS path?
+  my @paths = ($ENV{'EMBOSS_PATH'},$ENV{'WISE2_PATH'},
+               "/localsw/bin/emboss","/localsw/bin/wise2");
+  my $exe;
+  $exe = "matcher" if $type eq 'DNA';
+  $exe = "psw"     if $type eq 'PEP';
+  $self->error("Bad type '$type': should be 'DNA' or 'PEP'\n") unless $exe;
+  my $path;
+  foreach my $p (@paths) {
+    if(-e "$p/bin/$exe") {
+      $path = $p;
+      last;
+    }
+  }
+  unless($path) {
+    $self->error("No '$exe' in \$WISE_PATH, \$EMBOSS_PATH or /localsw");
+  }
+  my @tmps;
+  foreach my $t (($a,$b,undef,undef)) {
+    my ($h,$f) = tempfile(UNLINK => 1);
+    print $h $t if(defined $t);
+    close $h;
+    push @tmps,$f;
+  }
+  my $cmd;
+  if($type eq 'DNA') {
+    $cmd = sprintf(qq(%s/bin/%s -asequence %s -bsequence %s -outfile %s),
+                      $path,$exe,@tmps[0..2]);
+  } else { # PEP
+    $cmd = sprintf(qq(%s/bin/%s -dymem explicit -m %s/wisecfg/blosum62.bla
+                      %s %s -n %s -w %s > %s),
+                      $path,$exe,$path,@tmps[0..1],22,61,$tmps[2]);
+  }
+  $cmd =~ s/\s+/ /g;
+  $cmd .= " 2>$tmps[3]";
+  #warn "Executing $cmd\n";
+  system $cmd;
+  my $exit = $?;
+  my $out;
+  open(RESULT,"<",$tmps[2]) || $self->error("Cannot read result");
+  while(<RESULT>) {
+    next if /^#/ or m!//!;
+    $out .= $_;
+  }
+  close RESULT;
+  my $spew;
+  if(open(ERROR,"<",$tmps[3])) {
+    while(<ERROR>) { $spew .= $_; }
+    close ERROR;
+  }
+  if($exit) {
+    die "Command '$cmd' exited abnormally: exit code $exit\n".
+        "On STDERR:\n$spew\n";
+  }
+  unlink $_ for(@tmps);
+  return $out; 
+}
 
 1;
+
