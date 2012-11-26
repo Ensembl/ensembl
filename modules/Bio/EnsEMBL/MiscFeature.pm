@@ -393,7 +393,7 @@ sub summary_as_hash {
   my $hash = $self->SUPER::summary_as_hash();
   my $attributes = $self->get_all_Attributes();
   foreach my $attr (@{$attributes}) {
-    $hash->{$attr->name()} = $attr->value();
+    $hash->{$attr->code()} = $attr->value();
   }
   my $misc_sets = $self->get_all_MiscSets();
   foreach my $set (@{$misc_sets}) {
