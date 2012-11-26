@@ -239,7 +239,7 @@ sub transcript {
     $location = sprintf('%d : %d', $projected_transcript->start(), $projected_transcript->end());
   }
   else {
-    $state        = '**';
+    $state        = 'XX';
     $location     = 'None';
     $total_length = 0;
     $difference   = 0;
