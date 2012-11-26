@@ -37,7 +37,7 @@ sub delete_existing {
   $sth->execute($t);
 
   # Delete search regions; they have a different analysis_id
-  if ($type = "cisred") {
+  if ($type eq "cisred") {
     my $sr_type = $type . "_search";
     die "Can't find analysis for $sr_type " unless validate_type($db_adaptor, $sr_type);
     my $anal_sth = $db_adaptor->dbc->prepare("SELECT analysis_id FROM analysis WHERE LOWER(logic_name)=?");
