@@ -491,6 +491,9 @@ sub equals {
                The coord system to transform this feature to.
   Arg [2]    : string $version (optional)
                The version of the coord system to transform this feature to.
+  Arg [3]    : Bio::EnsEMBL::Slice (optional)
+               Restrict transformation to this Slice. Useful if your source
+               feature has multiple mappings in the target coordinate system
   Example    : $feature = $feature->transform('contig');
                next if(!defined($feature));
   Description: Returns a copy of this feature, but converted to a different
