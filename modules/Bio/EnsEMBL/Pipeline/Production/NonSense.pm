@@ -94,6 +94,11 @@ sub get_features {
   my ($self, $dbva) = @_;
   my $helper = $dbva->dbc->sql_helper();
   my $source_id = $self->get_source_id($dbva, 'dbSNP');
+  
+  if(!$source_id) {
+    return [];
+  }
+  
   my $frequency = $self->param('frequency');
   my $observation = $self->param('observation');
   my $sql = q{
@@ -134,8 +139,9 @@ sub get_source_id {
      SELECT source_id
      FROM source
      WHERE name = ? };
-  my $source_id = $helper->execute_single_result(-SQL => $sql, -PARAMS => [$source]);
-  return $source_id;
+  my ($source_id) = @{$helper->execute_simple(-SQL => $sql, -PARAMS => [$source])};
+  return $source_id if $source_id;
+  return;
 }
 
 
