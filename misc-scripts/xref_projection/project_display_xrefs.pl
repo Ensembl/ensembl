@@ -321,6 +321,7 @@ sub get_GOA_forbidden_terms {
         
     # hit the web service with a request, build up a hash of all forbidden terms for this species
     my $user_agent = LWP::UserAgent->new();
+    $user_agent->env_proxy;
     my $response;
     $response = $user_agent->get($goa_webservice.$goa_params.$taxon_id);
     # Retry until web service comes back?
