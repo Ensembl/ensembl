@@ -728,7 +728,7 @@ sub delete_names {
   my ($to_ga, $to_ta) = @_;
 
   print "Setting projected transcript statuses to NOVEL\n";
-  my $sth = $to_ga->dbc()->prepare("UPDATE gene g, xref x, transcript SET t.status='NOVEL' WHERE g.display_xref_id=x.xref_id AND x.info_type='PROJECTION' AND g.gene_id = t.gene_id");
+  my $sth = $to_ga->dbc()->prepare("UPDATE gene g, xref x, transcript t SET t.status='NOVEL' WHERE g.display_xref_id=x.xref_id AND x.info_type='PROJECTION' AND g.gene_id = t.gene_id");
   $sth->execute();
   $sth->finish();
   
