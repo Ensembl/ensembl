@@ -335,6 +335,7 @@ sub get_GOA_forbidden_terms {
         );
         $retries++;
         $response = $user_agent->get($goa_webservice.$goa_params.$taxon_id);
+        sleep(10);
     }
     
     
