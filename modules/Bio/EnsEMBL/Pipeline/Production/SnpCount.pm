@@ -59,6 +59,12 @@ sub get_attrib_codes {
   return %attrib_codes;
 }
 
+# Blank as I don't think there are any alt attrib codes for this ATMO
+sub get_alt_attrib_codes {
+  my ($self) = @_;
+  return;
+}
+
 
 1;
 
