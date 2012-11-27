@@ -356,7 +356,7 @@ sub get_GOA_forbidden_terms {
         my @translations = @{ $translation_adaptor->fetch_all_by_external_name($bad_thing{'proteinAc'}) };
         foreach my $translation ( @translations) {
             if (exists($terms{$translation->stable_id})) {
-                @many_bad_things{keys $terms{$translation->stable_id}} = values %{$terms{$translation->stable_id}}; # merge existing hash with new one
+                @many_bad_things{keys %{$terms{$translation->stable_id}} } = values %{$terms{$translation->stable_id}}; # merge existing hash with new one
             }
             $terms{$translation->stable_id} = \%many_bad_things;
         }
