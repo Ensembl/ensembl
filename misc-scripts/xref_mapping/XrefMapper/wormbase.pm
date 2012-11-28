@@ -114,6 +114,14 @@ sub set_display_xrefs {
 }
 
 
+# over-ride the following, to ensure that our carefully constructed transcript
+# display ids are not stamped over by the default behaviour (propagation from
+# gene)
+sub transcript_names_from_gene {
+  return;
+}
+
+
 sub gene_description_filter_regexps {
 
   return ('[0-9A-Z]+\.\d*[A-Z]* PROTEIN[ \.]',
