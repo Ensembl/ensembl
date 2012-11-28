@@ -20,9 +20,9 @@ sub gene_description_filter_regexps {
 }
 
 sub set_methods{
- 
+
   my $default_method = 'ExonerateGappedBest1';
-  my %override_method_for_source = (  
+  my %override_method_for_source = (
 	   ExonerateGappedBest5 => ['RefSeq_mRNA','RefSeq_mRNA_predicted', 'RefSeq_ncRNA', 'RefSeq_ncRNA_predicted' ],
          );
 
@@ -54,8 +54,8 @@ sub gene_description_sources {
 
 sub transcript_display_xref_sources {
   my $self     = shift;
-	
-  my @list = qw(FlyBaseName_transcript 
+
+  my @list = qw(FlyBaseName_transcript
                         FlyBaseCGID_transcript);
 
   my %ignore;
@@ -72,7 +72,7 @@ sub gene_display_xref_sources {
                 flybase_gene_id);
 
   my %ignore;
- 
+
 
   return [\@list,\%ignore];
 
@@ -103,14 +103,19 @@ sub load_translation_to_transcript{
 
   my $sth = $self->core->dbc->prepare("SELECT translation_id, transcript_id FROM translation");
   $sth->execute();
-  
+
   my ($translation_id, $transcript_id);
   $sth->bind_columns(\$translation_id, \$transcript_id);
-  
+
   while ($sth->fetch()) {
     $translation_to_transcript{$translation_id} = $transcript_id;
     $transcript_to_translation{$transcript_id} = $translation_id if ($translation_id);
   }
+}
+
+# Want to use FlyBase transcript names, rather than deriving them from genes.
+sub transcript_names_from_gene {
+  return;
 }
 
 1;
