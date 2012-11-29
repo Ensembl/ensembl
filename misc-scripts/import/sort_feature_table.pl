@@ -11,6 +11,7 @@ use POSIX qw/strftime/;
 
 my ($db_name,$db_host,$db_user,$db_pass,$db_port,$help);
 my @tables;
+my @columns;
 my ($optimise, $nobackup, $nolock);
 
 GetOptions ("db_name|dbname|database=s" => \$db_name,
@@ -22,11 +23,16 @@ GetOptions ("db_name|dbname|database=s" => \$db_name,
             'optimise!' => \$optimise,
             'nolock!' => \$nolock,
             'nobackup!' => \$nobackup,
+            'columns=s@' => \@columns,
             "h|help!"        => \$help,
 );
 
 if ($help) {&usage; exit 0;}
 unless ($db_name and $db_host) {print "Insufficient arguments\n"; &usage; exit 1;}
+
+if(!@columns) {
+  @columns = qw/seq_region_id seq_region_start seq_region_end/;
+}
 
 sub get_adaptor {
   my $dba = Bio::EnsEMBL::DBSQL::DBAdaptor->new(
@@ -67,7 +73,8 @@ sub sort_table {
   }
   
   info("Re-ordering table");
-  $dba->dbc()->do("ALTER TABLE ${table} ORDER BY seq_region_id, seq_region_start, seq_region_end");
+  my $cols = join(',', @columns);
+  $dba->dbc()->do("ALTER TABLE ${table} ORDER BY $cols");
 
   if(!$nolock) {
     info("Unlocking table %s", $table);
@@ -165,6 +172,10 @@ Options:
     -nobackup           Do not backup the original table
     
     -nolock             Stop the code from applying for table locks
+    
+    -columns            Specify the columns to sort on. Defaults to
+                        seq_region_id, seq_region_start and seq_region_end.
+                        Multiple parameters allowed
     
     -help
 ";
