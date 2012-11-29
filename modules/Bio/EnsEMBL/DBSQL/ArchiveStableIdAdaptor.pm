@@ -350,7 +350,7 @@ sub _fetch_archive_id {
     WHERE sie.mapping_session_id = ms.mapping_session_id
     AND sie.new_stable_id = ?
     $extra_sql2)
-    ORDER BY created DESC
+    ORDER BY created DESC, score DESC
     LIMIT 1
   );
 

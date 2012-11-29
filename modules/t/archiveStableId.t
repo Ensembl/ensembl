@@ -150,7 +150,7 @@ ok( ! $asi->is_latest, 'Not on the latest version so is_latest is false');
 
 $asi = $asi->get_latest_incarnation;
 ok($asi->is_latest(), 'Latest incarnation must be the latest version');
-is($asi->version, 3, 'Latest version is 3');
+is($asi->version, 4, 'Latest version is 4');
 
 #
 # 19 associated IDs in archive
