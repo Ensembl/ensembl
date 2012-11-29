@@ -1,6 +1,6 @@
 #!/usr/bin/env perl
 
-# Designed to sort a feature table by seq_region_id and then start
+# Designed to sort a feature table by seq_region_id, start and end
 
 use strict;
 use warnings;
@@ -11,7 +11,7 @@ use POSIX qw/strftime/;
 
 my ($db_name,$db_host,$db_user,$db_pass,$db_port,$help);
 my @tables;
-my ($optimise, $drop, $nolock);
+my ($optimise, $nobackup, $nolock);
 
 GetOptions ("db_name|dbname|database=s" => \$db_name,
             "db_host|dbhost|host=s" => \$db_host,
@@ -21,7 +21,7 @@ GetOptions ("db_name|dbname|database=s" => \$db_name,
             'table|tables=s@' => \@tables,
             'optimise!' => \$optimise,
             'nolock!' => \$nolock,
-            'drop!' => \$drop,
+            'nobackup!' => \$nobackup,
             "h|help!"        => \$help,
 );
 
@@ -62,28 +62,13 @@ sub sort_table {
     $dba->dbc()->do("lock tables ${table} write");
   }
   
-  info("Creating alternative table and disabling keys");
-  $dba->dbc()->do("create table ${s_table} like ${table}");
-  $dba->dbc()->do("alter table ${s_table} disable keys");
-  
-  info("Sort/insert");
-  $dba->dbc()->do("insert into ${s_table} select * from ${table} order by seq_region_id, seq_region_start, seq_region_end");
-  
-  info("Re-enabling keys");
-  $dba->dbc()->do("alter table ${s_table} enable keys");
-  
-  my $bak_name = _next_name($table, $dba);
-  info("Moving %s to %s", $table, $bak_name);
-  $dba->dbc()->do("alter table ${table} rename as $bak_name");
-  
-  info("Moving %s to %s", $s_table, $table);
-  $dba->dbc()->do("alter table ${s_table} rename as $table");
-  
-  if($drop) {
-    info("Dropping table %s", $bak_name);
-    $dba->dbc()->do("drop table $bak_name");
+  if(!$nobackup) {
+    backup_table($table); 
   }
   
+  info("Re-ordering table");
+  $dba->dbc()->do("ALTER TABLE ${table} ORDER BY seq_region_id, seq_region_start, seq_region_end");
+
   if(!$nolock) {
     info("Unlocking table %s", $table);
     $dba->dbc()->do("unlock tables");
@@ -99,6 +84,18 @@ sub optimise_table {
   $dba->dbc()->do("OPTIMIZE TABLE ${table}");
   info("Done");
   return;
+}
+
+sub backup_table {
+  my ($table, $dba) = @_;
+  my $bak_name = _next_name($table, $dba);
+  info("Backing up table to $bak_name");
+  $dba->dbc()->do("create table ${bak_name} like ${table}");
+  $dba->dbc()->do("alter table ${bak_name} disable keys");
+  $dba->dbc()->do("insert into ${bak_name} select * from ${table}");
+  $dba->dbc()->do("alter table ${bak_name} enable keys");
+  info("Finished backing up");
+  return $bak_name;
 }
 
 sub _next_name {
@@ -165,7 +162,9 @@ Options:
     
     -optimise           Optimise the table post sort
     
-    -drop               Drop the original table post sort
+    -nobackup           Do not backup the original table
+    
+    -nolock             Stop the code from applying for table locks
     
     -help
 ";
