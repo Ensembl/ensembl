@@ -9,8 +9,7 @@ use warnings;
 
 sub get_option {
   my ($self) = @_;
-  my @biotypes = $self->get_biotype_group("coding");
-  return \@biotypes;
+  return $self->get_biotype_group("coding");
 }
 
 1;

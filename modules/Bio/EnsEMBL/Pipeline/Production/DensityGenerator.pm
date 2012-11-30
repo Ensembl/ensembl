@@ -190,8 +190,7 @@ sub get_analysis {
 
 sub get_biotype_group {
   my ($self, $group) = @_;
-  my $prod_dba = $self->get_production_DBAdaptor();
-  my $helper   = $prod_dba->dbc()->sql_helper();
+  my $helper   = $self->get_production_DBAdaptor()->dbc()->sql_helper();
   my $sql      = q{
      SELECT name
      FROM biotype
@@ -199,8 +198,7 @@ sub get_biotype_group {
      AND is_current = 1
      AND biotype_group = ?
      AND db_type like '%core%' };
-  my @biotypes = @{$helper->execute_simple(-SQL => $sql, -PARAMS => [$group])};
-  return @biotypes;
+  return $helper->execute_simple(-SQL => $sql, -PARAMS => [$group]) || [];
 }
 
 # Empty method if no specific option is needed
