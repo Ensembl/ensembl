@@ -45,12 +45,14 @@ sub get_slices {
   my $helper = $dba->dbc()->sql_helper();
   my $sql = q{
     SELECT DISTINCT seq_region_id FROM gene 
-    WHERE seq_region_id NOT IN 
+join seq_region using (seq_region_id)
+join coord_system cs using (coord_system_id)
+    WHERE cs.species_id=? AND seq_region_id NOT IN 
     (SELECT seq_region_id 
     FROM seq_region_attrib sa, attrib_type at
     WHERE at.attrib_type_id = sa.attrib_type_id
     AND at.code= "non_ref") };
-  my @ids = @{ $helper->execute_simple(-SQL => $sql) };
+  my @ids = @{ $helper->execute_simple(-SQL => $sql, -PARAMS=>[$dba->species_id()]) };
   foreach my $id(@ids) {
     push @slices, $sa->fetch_by_seq_region_id($id);
   }
@@ -64,8 +66,8 @@ sub get_all_slices {
   my $sa = Bio::EnsEMBL::Registry->get_adaptor($species, 'core', 'slice');
   my $helper = $dba->dbc()->sql_helper();
   my $sql = q{
-    SELECT DISTINCT seq_region_id FROM gene };
-  my @ids = @{ $helper->execute_simple(-SQL => $sql) };
+    SELECT DISTINCT seq_region_id FROM gene join seq_region using (seq_region_id) join coord_system using (coord_system_id) where species_id=? };
+  my @ids = @{ $helper->execute_simple(-SQL => $sql, -PARAMS=>[$dba->species_id()]) };
   foreach my $id(@ids) {
     push @slices, $sa->fetch_by_seq_region_id($id);
   }
