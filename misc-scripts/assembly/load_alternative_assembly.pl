@@ -160,7 +160,9 @@ $support->log_stamped("Creating table backups...\n");
 $support->log_stamped("seq_region...\n", 1);
 $dbh->{'ref'}->do('CREATE TABLE seq_region_bak LIKE seq_region');
 $dbh->{'ref'}->do('INSERT INTO seq_region_bak SELECT * FROM seq_region');
-
+$support->log_stamped("seq_region_attrib...\n", 1);
+$dbh->{'ref'}->do('CREATE TABLE seq_region_attrib_bak LIKE seq_region_attrib');
+$dbh->{'ref'}->do('INSERT INTO seq_region_attrib_bak SELECT * FROM seq_region_attrib');
 $support->log_stamped("assembly...\n", 1);
 $dbh->{'ref'}->do('CREATE TABLE assembly_bak LIKE assembly');
 $dbh->{'ref'}->do('INSERT INTO assembly_bak SELECT * FROM assembly');
