@@ -260,6 +260,28 @@ $sql = qq(
 my $c = $dbh->{'alt'}->do($sql);
 $support->log_stamped("Done loading $c seq_regions.\n\n");
 
+## Add in any codon table attributes as HCs complain otherwise
+$sql = qq(
+    INSERT IGNORE INTO $ref_db.seq_region_attrib
+    SELECT
+        sr.seq_region_id+$sri_adjust,
+        codon_at.attrib_type_id,
+        codon_sra.value
+    FROM seq_region sr, coord_system cs, seq_region_attrib sra, attrib_type at, seq_region_attrib codon_sra, attrib_type codon_at
+    WHERE sr.coord_system_id = cs.coord_system_id
+    AND sr.seq_region_id = sra.seq_region_id
+    AND sra.attrib_type_id = at.attrib_type_id
+    AND sr.seq_region_id = codon_sra.seq_region_id
+    AND codon_sra.attrib_type_id = codon_at.attrib_type_id
+    AND at.code = 'toplevel'
+    AND cs.name IN ($cs_string)
+    AND cs.version = '$alt_assembly'
+    AND codon_at.code = 'codon_table';
+);
+$c = 0;
+$c = $dbh->{'alt'}->do($sql);
+$support->log_stamped("Done loading $c seq_region codon_table attributes.\n\n");
+
 #####
 # add appropriate entries to coord_system
 #
