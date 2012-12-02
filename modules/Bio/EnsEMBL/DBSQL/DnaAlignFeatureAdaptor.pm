@@ -523,6 +523,9 @@ FEATURE:
       $slice = $dest_slice;
     }
 
+    # Inlining the following in the hash causes major issues with 5.16 and messes up the hash 
+    my $evalled_extra_data = $extra_data ? $self->get_dumped_data($extra_data) : '';
+
     # Finally, create the new DnaAlignFeature.
     push( @features,
           $self->_create_feature_fast(
@@ -544,10 +547,7 @@ FEATURE:
                'dbID'           => $dna_align_feature_id,
                'external_db_id' => $external_db_id,
                'hcoverage'      => $hcoverage,
-               'extra_data'     => (
-                                   $extra_data
-                                 ? $self->get_dumped_data($extra_data)
-                                 : '' ),
+               'extra_data'     => $evalled_extra_data,
                'dbname'                    => $external_db_name,
                'db_display_name'           => $external_display_db_name,
                'pair_dna_align_feature_id' => $pair_dna_align_feature_id
