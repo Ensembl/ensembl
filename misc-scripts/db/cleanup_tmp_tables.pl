@@ -49,10 +49,6 @@ table. This means any table which contains
 
 =over 8
 
-=item tmp
-
-=item temp
-
 =item bak
 
 =item backup
@@ -70,7 +66,7 @@ Please see http://www.ensembl.org/code_licence.html for details
 
 =head1 AUTHOR
 
-Patrick Meidl <meidl@ebi.ac.uk>, Ensembl core API team
+Ensembl core API team
 
 =head1 CONTACT
 
