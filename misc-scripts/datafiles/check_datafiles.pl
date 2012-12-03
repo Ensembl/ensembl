@@ -43,7 +43,6 @@ sub args {
       datafile_dir|dir=s
       group=s
       species=s
-      verbose 
       help
       man
       /
@@ -262,10 +261,10 @@ check_datafiles.pl
 =head1 SYNOPSIS
 
   #BASIC
-  ./check_datafiles.pl -release VER -user USER -pass PASS -host HOST [-port PORT] -datafile_dir DIR -ftp_dir DIR [-dry] [-verbose] [-help | -man]
+  ./check_datafiles.pl -release VER -user USER -pass PASS -host HOST [-port PORT] -datafile_dir DIR [-species SPECIES] [-help | -man]
   
   #EXAMPLE
-  ./check_datafiles.pl -release 69 -host ensembdb.ensembl.org -port 5306 -user anonymous -verbose -datafile_dir /my/datafile
+  ./check_datafiles.pl -release 69 -host ensembdb.ensembl.org -port 5306 -user anonymous -datafile_dir /my/datafile
   
 =head1 DESCRIPTION
 
