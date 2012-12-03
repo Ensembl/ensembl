@@ -141,7 +141,9 @@ sub test_path {
   ok($user_r && $user_w, "$prefix is RW by user");
   ok($group_r, "$prefix is R by group");
   ok($other_r, "$prefix is R by other");
-  ok(!$user_rwx && !$group_rwx && !$other_rwx, "$prefix is not RWX by user, group and owner");
+  ok(!$user_rwx, "$prefix is not RWX by user");
+  ok(!$group_rwx, "$prefix is not RWX by group");
+  ok(!$other_rwx, "$prefix is not RWX by owner");
   
   if($self->opts->{group}) {
     my $group = $self->opts->{group};
