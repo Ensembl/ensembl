@@ -85,6 +85,8 @@ sub check {
     }
   }
   
+  $o->{group} = 'ensembl' unless $o->{group};
+  
   return;
 }
 
@@ -296,7 +298,7 @@ Optional integer of the database port. Defaults to 3306.
 
 =item B<--group>
 
-Specify the UNIX group these files should be readable by
+Specify the UNIX group these files should be readable by. Defaults to ensembl
 
 =item B<--datafile_dir | --dir>
 
