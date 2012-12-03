@@ -166,8 +166,9 @@ sub test_dirs {
   foreach my $dir (keys %{$self->{dirs}}) {
     my $files = $self->{dirs}->{$dir};
     my %lookup = map { $_ => 1 } @{$files};
-    my @all_files = grep { $_ ne '.' && $_ ne '..' }glob "*.*";
-    foreach my $file (@all_files) {
+    my @all_file_paths = grep { $_ =~ /\/\.$/ && $_ =~ /\/\.{2}$/ } glob catfile($dir, "*.*");
+    foreach my $path (@all_file_paths) {
+      my ($vol, $dir, $file) = splitpath($path);
       ok($lookup{$file}, "$dir | $file was an expected file");
     }
   }
