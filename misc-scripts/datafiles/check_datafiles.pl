@@ -138,12 +138,9 @@ sub test_path {
   
   #Now do the tests
   ok(-s $path, "$prefix has data");
-  ok($user_r && $user_w, "$prefix is RW by user");
-  ok($group_r, "$prefix is R by group");
-  ok($other_r, "$prefix is R by other");
-  ok(!$user_rwx, "$prefix is not RWX by user");
-  ok(!$group_rwx, "$prefix is not RWX by group");
-  ok(!$other_rwx, "$prefix is not RWX by owner");
+  is($user_rwx, 6, "$prefix is ReadWrite (mode 6) by user");
+  is($group_rwx, 4, "$prefix is not Read (mode 4) by group");
+  is($other_rwx, 4, "$prefix is not Read (mode 4) by owner");
   
   if($self->opts->{group}) {
     my $group = $self->opts->{group};
