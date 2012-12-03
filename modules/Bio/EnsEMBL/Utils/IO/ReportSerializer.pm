@@ -14,10 +14,6 @@
 
 Report Serializer - generating textual summary reports
 
-=head1 AUTHOR
-
-Kieron Taylor, 2011 - ktaylor@ebi.ac.uk
-
 =head1 SYNOPSIS
 
     use Bio::EnsEMBL::Registry;

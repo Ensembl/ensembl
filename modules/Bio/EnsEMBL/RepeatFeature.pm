@@ -264,7 +264,3 @@ __END__
 
 =head1 NAME - Bio::EnsEMBL::RepeatFeature
 
-=head1 AUTHOR
-
-James Gilbert B<email> jgrg@sanger.ac.uk
-

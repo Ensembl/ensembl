@@ -15,10 +15,6 @@
 GFFParser - simple gff3 parser.
 
 
-=head1 AUTHOR
-
-Monika Komorowska, 2012 - monika@ebi.ac.uk
-
 =head1 SYNOPSIS
 
 use strict;

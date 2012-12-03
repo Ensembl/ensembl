@@ -14,10 +14,6 @@
 
 GFFSerializer - Feature to GFF converter
 
-=head1 AUTHOR
-
-Kieron Taylor, 2011 - ktaylor@ebi.ac.uk
-
 =head1 SYNOPSIS
 
 use Bio::EnsEMBL::Utils::IO::GFFSerializer;

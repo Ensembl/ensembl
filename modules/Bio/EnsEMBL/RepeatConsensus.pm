@@ -250,7 +250,3 @@ It can contain the consensus sequence for a
 repeat such as a particular Alu, or "cag" for a
 simple triplet repeat.
 
-=head1 AUTHOR
-
-James Gilbert B<email> jgrg@sanger.ac.uk
-

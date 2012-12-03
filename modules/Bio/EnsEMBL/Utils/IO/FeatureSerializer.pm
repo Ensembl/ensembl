@@ -14,10 +14,6 @@
 
 FeatureSerializer - An abstract serializer for turning EnsEMBL Features into other formats
 
-=head1 AUTHOR
-
-Kieron Taylor, 2012 - ktaylor@ebi.ac.uk
-
 =head1 SYNOPSIS
 
 my $serializer = new Bio::EnsEMBL::Utils::IO::FeatureSerializer( $filehandle );
