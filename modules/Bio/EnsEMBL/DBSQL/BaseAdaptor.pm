@@ -376,6 +376,13 @@ sub bind_param_generic_fetch{
 	
 }
 
+# Used to reset the params without circumventing scope
+sub _bind_param_generic_fetch {
+  my ($self, $_bind_param_generic_fetch) = @_;
+  $self->{'_bind_param_generic_fetch'} = $_bind_param_generic_fetch if $_bind_param_generic_fetch;
+  return $self->{_bind_param_generic_fetch};
+}
+
 
 
 =head2 generic_fetch

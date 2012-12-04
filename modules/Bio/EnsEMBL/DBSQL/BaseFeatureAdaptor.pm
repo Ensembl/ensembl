@@ -396,8 +396,10 @@ sub fetch_all_by_Slice_and_score {
 sub fetch_all_by_Slice_constraint {
   my ( $self, $slice, $constraint, $logic_name ) = @_;
 
+  my @result;
 
-  my @result = ();
+  #Pull out here as we need to remember them & reset accordingly
+  my $bind_params = $self->bind_param_generic_fetch();
 
   if ( !ref($slice)
        || !(    $slice->isa('Bio::EnsEMBL::Slice')
@@ -438,8 +440,6 @@ sub fetch_all_by_Slice_constraint {
     # name, the constraint, and the bound parameters (if there are any).
     $key = uc( join( ':', $slice->name(), $constraint ) );
 
-    my $bind_params = $self->bind_param_generic_fetch();
-
     if ( defined($bind_params) ) {
       $key .= ':'
         . join( ':', map { $_->[0] . '/' . $_->[1] } @{$bind_params} );
@@ -458,8 +458,6 @@ sub fetch_all_by_Slice_constraint {
   # Hap/PAR support: retrieve normalized 'non-symlinked' slices.
   my @proj = @{ $sa->fetch_normalized_slice_projection($slice) };
 
-
- 
   if ( !@proj ) {
     throw( 'Could not retrieve normalized Slices. '
          . 'Database contains incorrect assembly_exception information.'
@@ -497,8 +495,8 @@ sub fetch_all_by_Slice_constraint {
 
   # fetch features for the primary slice AND all symlinked slices
   foreach my $seg (@proj) {
-
-
+    # re-bind the params
+    $self->_bind_param_generic_fetch($bind_params); 
     my $offset    = $seg->from_start();
     my $seg_slice = $seg->to_Slice();
     my $features =
@@ -618,8 +616,7 @@ sub count_by_Slice_constraint {
 =cut
 
 sub _get_by_Slice {
-    my $self = shift;
-    my ($slice, $orig_constraint, $query_type) = @_;
+    my ($self, $slice, $orig_constraint, $query_type) = @_;
     
     # features can be scattered across multiple coordinate systems
     my @tables = $self->_tables;
@@ -756,15 +753,19 @@ COORD_SYSTEM: foreach my $coord_system (@feature_coord_systems) {
             
 	   } # end else (coord sytems not matching)
 	   
+	   #Record the bind params if we have to do multiple queries
+	   my $bind_params = $self->bind_param_generic_fetch();
+	   
 	   foreach my $query (@query_accumulator) {
 	       my ($local_constraint,$local_mapper,$local_slice) = @$query;
+	       $self->_bind_param_generic_fetch($bind_params);
     	   if ($query_type and $query_type eq 'count') {
-    	       push @pan_coord_features, $self->generic_count($local_constraint);
-    	   } else {
-    	       
-               my $features = $self->generic_fetch( $local_constraint, $local_mapper, $local_slice );
-               $features = $self->_remap( $features, $local_mapper, $local_slice );
-               push @pan_coord_features, @$features;
+  	       push @pan_coord_features, $self->generic_count($local_constraint);
+    	   } 
+    	   else {
+           my $features = $self->generic_fetch( $local_constraint, $local_mapper, $local_slice );
+           $features = $self->_remap( $features, $local_mapper, $local_slice );
+           push @pan_coord_features, @$features;
     	   }
 	   }
 	   $mapper = undef;
