@@ -8,6 +8,7 @@ use IO::String;
 use Bio::EnsEMBL::Test::MultiTestDB;
 use Bio::EnsEMBL::Slice;
 use Bio::EnsEMBL::ProjectionSegment;
+use Test::Exception;
 
 our $verbose = 0;
 
@@ -443,6 +444,17 @@ $slice = $slice_adaptor->fetch_by_region('chromosome', 1, 1, 10);
 ok(@alt_names == 1);
 
 $multi->restore();
+
+# Testing synonym searching
+{
+  my $chr_20 = $slice_adaptor->fetch_by_region('chromosome', 20);
+  my ($syn) = @{$chr_20->get_all_synonyms('RFAM')};
+  is($syn->name(), 'anoth_20', 'We have the right synonym');
+  dies_ok { $chr_20->get_all_synonyms('RFAM', 'wibble') } 'Bad external DB version means dying code';
+  dies_ok { $chr_20->get_all_synonyms('RFAMing', 'wibble') } 'Bad external DB name means dying code';
+  ($syn) = @{$chr_20->get_all_synonyms('RFAM', 1)};
+  is($syn->name(), 'anoth_20', 'We have the right synonym');
+}
 
 
 #Test assembly exception type on HAP

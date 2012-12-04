@@ -3607,8 +3607,12 @@ sub project_to_slice {
 
 =head2 get_all_synonyms
 
-  Args       : none.
+  Args [1]   : String external_db_name The name of the database to retrieve 
+               the synonym for
+  Args [2]   : Integer external_db_version The version of the database to retrieve 
+               the synonym for. If not specified then we will ignore any versions
   Example    : my @alternative_names = @{$slice->get_all_synonyms()};
+               @alternative_names = @{$slice->get_all_synonyms('EMBL')};
   Description: get a list of alternative names for this slice
   Returntype : reference to list of SeqRegionSynonym objects.
   Exception  : none
@@ -3618,16 +3622,27 @@ sub project_to_slice {
 =cut
 
 sub get_all_synonyms{
-  my $self = shift;
-  my $external_db_id =shift;
+  my ($self, $external_db_name, $external_db_version) = @_;
 
   if ( !defined( $self->{'synonym'} ) ) {
     my $adap = $self->adaptor->db->get_SeqRegionSynonymAdaptor();
     $self->{'synonym'} =
       $adap->get_synonyms( $self->get_seq_region_id($self) );
   }
+  
+  if(! $external_db_name) {
+    return $self->{'synonym'};
+  }
+  my @args =  ($external_db_version) ? 
+              ($external_db_name, $external_db_version) : 
+              ($external_db_name, undef, 1);
+  my $external_db_id = $self->adaptor->db()->get_DBEntryAdaptor()->get_external_db_id(@args);
+  if(!$external_db_id) {
+    my $extra = ($external_db_version) ? "and version $external_db_version " : q{};
+    throw "The external database $external_db_name ${extra}did not result in a valid identifier";
+  }
 
-  return $self->{'synonym'};
+  return [ grep { $_->external_db_id() == $external_db_id } @{$self->{synonym}} ];
 }
 
 =head2 add_synonym

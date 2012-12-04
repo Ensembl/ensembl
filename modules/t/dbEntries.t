@@ -509,6 +509,13 @@ $multi->restore();
   $multi->restore('core', 'xref', 'object_xref');
 }
 
+# Test for external DB ids
+{
+  is($dbEntryAdaptor->get_external_db_id('RFAM', 1), 4200, 'RFAM ID as expected');
+  ok(! defined $dbEntryAdaptor->get_external_db_id('RFAM', 'wibble'), 'RFAM with a version of wibble means nothing');
+  is($dbEntryAdaptor->get_external_db_id('RFAM', 'wibble', 1), 4200, 'RFAM ID with a version of wibble but ignoring versions as expected');
+}
+
 sub print_dbEntries {
   my $dbes = shift;
 

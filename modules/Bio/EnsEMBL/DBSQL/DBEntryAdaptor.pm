@@ -781,6 +781,38 @@ sub _store_object_xref_mapping {
     return $object_xref_id;
 }
 
+=head2 get_external_db_id
+
+  Arg [1]    : External DB name
+  Arg [2]    : External DB release
+  Arg [3]    : Ignore version flag
+  Description: Looks for the internal identifier of an external DB
+  Exceptions : None
+  Returntype : Int 
+
+=cut
+
+sub get_external_db_id {
+  my ($self, $db_name, $db_release, $ignore_release) = @_;
+
+  my $sql_helper = $self->dbc->sql_helper;  
+  my $sql = 'SELECT external_db_id FROM external_db WHERE db_name = ?';
+  my @bound_params;
+  push @bound_params,$db_name;
+  unless ($ignore_release) {
+    if ($db_release) {
+      $sql .= ' AND db_release = ?';
+      push @bound_params,$db_release;
+    } 
+    else {
+      $sql .= ' AND db_release is NULL';
+    }
+  }
+  
+  my ($db_id) = @{ $sql_helper->execute_simple(-SQL => $sql, -PARAMS => \@bound_params) };
+  return $db_id;
+}
+
 =head2 _check_external_db 
 
   Arg [1]    : DBEntry object
@@ -792,34 +824,20 @@ sub _store_object_xref_mapping {
 =cut
 
 sub _check_external_db {
-    my ($self,$db_entry,$ignore) = @_;
-    my ($sql,@bound_params,$sql_helper,$db_name,$db_release);
-    
-    $db_name = $db_entry->dbname();
-    $db_release = $db_entry->release();
-    $sql_helper = $self->dbc->sql_helper;
-    
-    $sql = 'SELECT external_db_id FROM external_db WHERE db_name = ?';
-    push @bound_params,$db_name;
-    unless ($ignore) {
-        if ($db_release) {
-            $sql .= ' AND db_release = ?';
-            push @bound_params,$db_release;
-        } else {
-            $sql .= ' AND db_release is NULL';
-        }
-    }
-    
-    my ($db_id) = @{ $sql_helper->execute_simple(-SQL => $sql, -PARAMS => \@bound_params) };
-    
-    if ($db_id) {
-      return $db_id;
-    }
-    else {
-      throw( sprintf( "external_db [%s] release [%s] does not exist",
-                     $db_name, $db_release)
-      );
-    }
+  my ($self,$db_entry,$ignore) = @_;
+  my ($db_name,$db_release);
+  $db_name = $db_entry->dbname();
+  $db_release = $db_entry->release();
+  my $db_id = $self->get_external_db_id($db_name, $db_release, $ignore);
+  
+  if ($db_id) {
+    return $db_id;
+  }
+  else {
+    throw( sprintf( "external_db [%s] release [%s] does not exist",
+                   $db_name, $db_release)
+    );
+  }
 }
 
 =head2 _store_or_fetch_xref
