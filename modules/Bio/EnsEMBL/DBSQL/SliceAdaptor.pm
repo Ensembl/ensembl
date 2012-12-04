@@ -291,17 +291,17 @@ sub fetch_by_region {
 
 
       # try synonyms
-      my $syn_sql_sth = $self->prepare("select s.name, s.coord_system_id from seq_region s, seq_region_synonym ss where s.seq_region_id = ss.seq_region_id and ss.synonym = ?");
+      my $syn_sql_sth = $self->prepare("select s.name, cs.name, cs.version from seq_region s join seq_region_synonym ss using (seq_region_id) join coord_system cs using (coord_system_id) where ss.synonym = ? and cs.species_id =?");
       $syn_sql_sth->bind_param(1, $seq_region_name, SQL_VARCHAR);
+      $syn_sql_sth->bind_param(2, $self->species_id(), SQL_INTEGER);
       $syn_sql_sth->execute();
-      my $new_name;
-      my $new_coord_system;
-      $syn_sql_sth->bind_columns( \$new_name, \$new_coord_system);
+      my ($new_name, $new_coord_system, $new_version);
+      $syn_sql_sth->bind_columns( \$new_name, \$new_coord_system, \$new_version);
             
       if($syn_sql_sth->fetch){
         $syn_sql_sth->finish;
         if (not defined($cs)) {
-            return $self->fetch_by_region($new_coord_system, $new_name, $start, $end, $strand, $version, $no_fuzz);
+            return $self->fetch_by_region($new_coord_system, $new_name, $start, $end, $strand, $new_version, $no_fuzz);
         } elsif ($cs->dbID != $new_coord_system) {
             warning("Searched for a known feature on coordinate system: ".$cs->dbID." but found it on: ".$new_coord_system.
             "\n No result returned, consider searching without coordinate system or use toplevel.");
@@ -1406,8 +1406,6 @@ sub fetch_by_transcript_stable_id{
 
   return $self->fetch_by_Feature($transcript, $size);
 }
-
-
 
 =head2 fetch_by_transcript_id
 

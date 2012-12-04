@@ -422,6 +422,20 @@ $clone_name = 'AL031658';
 $slice = $slice_adaptor->fetch_by_region(undef, $clone_name);
 ok($slice->seq_region_name =~ /$clone_name\.\d+/);
 
+# Testing synonym fetching
+{
+  my $syn_slice = $slice_adaptor->fetch_by_region(undef, 'anoth_20');
+  is($syn_slice->seq_region_name(), '20', 'Ensuring slice is Chr20 as expected');
+}
+
+#{
+#  my @slices = @{$slice_adaptor->fetch_all_by_synonym('anoth_20', 'UniGene')};
+#  is(scalar(@slices), 0, 'Checking querying with a bad external name means no Slices');
+#  
+#  @slices = @{$slice_adaptor->fetch_all_by_synonym('anoth_20', 'RFAM')}; #Yeah ... RFAM
+#  is(scalar(@slices), 1, 'Checking querying with a good external name means Slices');
+#  is($slices[0]->seq_region_name(), '20', 'Ensuring slice is Chr20 as expected');
+#}
 
 # test that with multiple sequence regions with the same name, the
 # highest (lowest-numbered) ranked comes out first
@@ -503,6 +517,8 @@ ok(!defined $slice_adaptor->fetch_by_toplevel_location('1:-100--50', 1), 'Checki
   ok(!defined $end, 'End is undefined');
   ok(!defined $strand, 'Strand is undefined');
 }
+
+############# METHODS BELOW HERE 
 
 sub test_toplevel_location {
   my ($location, $cs_name, $seq_region_name, $start, $end, $strand) = @_;
