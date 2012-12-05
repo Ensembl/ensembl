@@ -1132,20 +1132,35 @@ sub split_chromosomes_by_size {
   my $cs_version = shift;
   my $include_non_reference = 1; #get non reference slices
   my $slice_adaptor = $self->dba->get_SliceAdaptor;
-  my $top_slices;
+  my ($top_slices, $wanted_slices, $missed_slices);
   if ($self->param('chromosomes')) {
     foreach my $chr ($self->param('chromosomes')) {
       push @{ $top_slices }, $slice_adaptor->fetch_by_region('chromosome', $chr);
     }
-  } else {
+  }
+  else {
     $top_slices = $slice_adaptor->fetch_all('chromosome',$cs_version,$include_non_reference,$dup);
   }
 
   # filter out patches, if present
-  $top_slices = [ grep { $_->is_reference or $self->is_haplotype($_,$self->dba)  } @$top_slices ];
+  $wanted_slices = [ grep { $_->is_reference or $self->is_haplotype($_,$self->dba) } @$top_slices ];
+
+  # make a note of which ones are excluded
+  $missed_slices = [ grep { ! $_->is_reference and ! $self->is_haplotype($_,$self->dba) } @$top_slices ];
+
+  #warn non PATCH toplevels slice that are excluded (could be haplotypes if an earlier stage has failed)
+  foreach (@{$missed_slices || []}) {
+    my $sr_name = $_->seq_region_name;
+    if ($self->is_patch($_)) {
+      $self->log("Excluding $sr_name\n");
+    }
+    else {
+      $self->log_warning("Excluding $sr_name, are you sure ?\n");
+    }
+  }
 
   my ($big_chr, $small_chr, $min_big_chr, $min_small_chr);
-  foreach my $slice (@{ $top_slices }) {
+  foreach my $slice (@{ $wanted_slices }) {
     next if ($slice->length eq 10000); #hack for chrY pseudoslice
     if ($slice->length < $cutoff) {
       if (! $min_small_chr or ($min_small_chr > $slice->length)) {
