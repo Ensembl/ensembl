@@ -370,14 +370,24 @@ for my $gene (@$genes) {
 }
 
 # try and count the genes on the slice
+note 'Processing counts';
 my $geneCount = $ga->count_all_by_Slice($slice);
-ok(scalar(@$genes) == $geneCount);
+is(scalar(@$genes), $geneCount, 'Gene count of array on Chr 20 subset');
 $geneCount = $ga->count_all_by_Slice($slice, 'protein_coding');
-ok(scalar(@$genes) == $geneCount);
+is(scalar(@$genes), $geneCount, 'Protein Coding gene count of array on Chr 20 subset');
 $geneCount = $ga->count_all_by_Slice($slice, 'banana');
-ok($geneCount == 0);
+is($geneCount, 0, 'Gene count on Chr 20 subset with bogus biotype');
 $geneCount = $ga->count_all_by_Slice($slice, ['banana', 'protein_coding']);
-ok($geneCount == scalar(@$genes));
+is($geneCount, scalar(@$genes), 'Protein coding gene count matches array size on Chr20 subset');
+
+# Time to do more complex counts involving slice projections
+{
+  my $hap_slice = $db->get_SliceAdaptor()->fetch_by_region('chromosome', '20_HAP1', 4_000_000);
+  my $hap_gene_array = $hap_slice->get_all_Genes();
+  is(scalar(@{$hap_gene_array}), 14, 'Expected amount of genes when fetching all from a HAP region');
+  my $gene_count = $ga->count_all_by_Slice($hap_slice);
+  is($gene_count, 14, 'Counts should span slices when given patches/haps/pars');
+}
 
 debug("known: $known Unknown: $unknown\n");
 

@@ -47,6 +47,7 @@ use Bio::EnsEMBL::Utils::Cache;
 use Bio::EnsEMBL::Utils::Exception qw(warning throw deprecate stack_trace_dump);
 use Bio::EnsEMBL::Utils::Argument qw(rearrange);
 use Bio::EnsEMBL::Utils::Iterator;
+use Bio::EnsEMBL::Utils::Scalar qw/assert_ref/;
 
 @ISA = qw(Bio::EnsEMBL::DBSQL::BaseAdaptor);
 
@@ -453,48 +454,12 @@ sub fetch_all_by_Slice_constraint {
     }
   } ## end if ( !( defined( $self...)))
 
-  my $sa = $slice->adaptor();
 
-  # Hap/PAR support: retrieve normalized 'non-symlinked' slices.
-  my @proj = @{ $sa->fetch_normalized_slice_projection($slice) };
-
-  if ( !@proj ) {
-    throw( 'Could not retrieve normalized Slices. '
-         . 'Database contains incorrect assembly_exception information.'
-    );
-  }
-
-  # Want to get features on the FULL original slice as well as any
-  # symlinked slices.
-
-  # Filter out partial slices from projection that are on same
-  # seq_region as original slice.
-
-  my $sr_id = $slice->get_seq_region_id();
-
-  @proj = grep { $_->to_Slice->get_seq_region_id() != $sr_id } @proj;
-
-  my $segment = bless( [ 1, $slice->length(), $slice ],
-                       'Bio::EnsEMBL::ProjectionSegment' );
-  push( @proj, $segment );
-
-  # construct list of Hap/PAR boundaries for entire seq region
-  my @bounds;
-
-  my $ent_slice = $sa->fetch_by_seq_region_id($sr_id);
-  if ( $slice->strand() == -1 ) {
-    $ent_slice = $ent_slice->invert();
-  }
-
-  my @ent_proj =
-    @{ $sa->fetch_normalized_slice_projection($ent_slice) };
-  shift(@ent_proj);    # skip first
-
-  @bounds = map { $_->from_start() - $slice->start() + 1 } @ent_proj;
-
+  my $proj_ref = $self->_get_and_filter_Slice_projections($slice);
+  my $bounds = $self->_generate_feature_bounds($slice); 
 
   # fetch features for the primary slice AND all symlinked slices
-  foreach my $seg (@proj) {
+  foreach my $seg (@{$proj_ref}) {
     # re-bind the params
     $self->_bind_param_generic_fetch($bind_params); 
     my $offset    = $seg->from_start();
@@ -514,7 +479,7 @@ sub fetch_all_by_Slice_constraint {
         }
 
         # discard boundary crossing features from symlinked regions
-        foreach my $bound (@bounds) {
+        foreach my $bound (@{$bounds}) {
           if ( $f->{'start'} < $bound && $f->{'end'} >= $bound ) {
             next FEATURE;
           }
@@ -590,20 +555,152 @@ sub _create_feature_fast {
 
 =head2 count_by_Slice_constraint
 
-    Arg [0]     : Bio::EnsEMBL::Slice
-    Arg [1]     : Custom SQL constraint
+    Arg [1]     : Bio::EnsEMBL::Slice
+    Arg [2]     : String Custom SQL constraint
+    Arg [3]     : String Logic name to search by
     Description : Finds all features with at least partial overlap to the given
                   slice and sums them up
     Returntype  : Integer
 =cut
 
 sub count_by_Slice_constraint {
-	my $self = shift;
-	my ($slice, $constraint) = @_;
+	my ($self, $slice, $constraint, $logic_name) = @_;
+	
+	assert_ref($slice, 'Bio::EnsEMBL::Slice', 'slice');
+	
 	my $count = 0;
-	my $count_array = $self->_get_by_Slice($slice,$constraint,'count');
-	$count += $_ for @$count_array;
+	
+	#Remember the bind params
+	my $bind_params = $self->bind_param_generic_fetch();
+	
+	#Table synonym
+	my @tables = $self->_tables;
+  my ($table_name, $table_synonym) = @{ $tables[0] };
+	
+	#Constraints
+	$constraint ||= '';
+  $constraint = $self->_logic_name_to_constraint( $constraint, $logic_name );
+  # If the logic name was invalid, undef was returned
+  return $count if ! defined $constraint;
+  
+  #Query logic
+  my $sa = $slice->adaptor();
+  my $proj_ref = $self->_get_and_filter_Slice_projections($slice);
+
+  my $proj_ref_length = @{$proj_ref};
+  #Manual loop to support look-ahead/behind
+  for (my $i = 0; $i < $proj_ref_length; $i++) {
+    my $seg = $proj_ref->[$i];
+    my $seg_slice = $seg->to_Slice();
+    $self->_bind_param_generic_fetch($bind_params);
+    
+    # Because we cannot filter boundary crossing features in code we need to
+    # do it in SQL. So we detect when we are not on the original query Slice
+    # we do manual filtering by the seg_Slice's start and end. If we are on
+    # the *1st* section we only limit by the *end* and when we are on the *last*
+    # we filter by the *start*
+    #
+    # This is the same as fetch_all_by_Slice_constraint()'s in-memory filtering
+    # except we need to alter projected features in that code with an offset
+    my $local_constraint = $constraint;
+    if ( $seg_slice->name() ne $slice->name() ) {
+      my ($limit_start, $limit_end) = (1,1); #limit both by default
+      if($i == 0) {
+        $limit_start = 1; #don't check start as we are on the final projection
+      }
+      elsif($i == ($proj_ref_length - 1)) {
+        $limit_end = 1; #don't check end as we are on the final projection
+      }
+      $local_constraint .= ' AND ' if $local_constraint;
+      my @conditionals;
+      
+      #Do not cross the start boundary so our feature must be less than slice end on all counts
+      if($limit_start) {
+        push(@conditionals, sprintf('%1$s.seq_region_start <= %2$d AND %1$s.seq_region_end <= %2$d', $table_synonym, $seg_slice->end));
+      }
+      #Do not cross the start boundary so our feature must be larger than slice start on all counts
+      if($limit_end) {
+        push(@conditionals, sprintf('%1$s.seq_region_start >= %2$d AND %1$s.seq_region_end >= %2$d', $table_synonym, $seg_slice->start));
+      }
+      
+      $local_constraint .= join(q{ AND }, @conditionals);
+    }
+    
+  	my $count_array = $self->_get_by_Slice($seg_slice, $local_constraint, 'count');
+  	#Data comes out as an array
+  	$count += $_ for @$count_array;
+  }
+	
 	return $count;
+}
+
+=head2 _get_and_filter_Slice_projections
+
+    Arg [1]     : Bio::EnsEMBL::Slice
+    Description : Finds all features with at least partial overlap to the given
+                  slice and sums them up
+    Example     : my $proj= $self->_get_and_filter_Slice_projections($slice);
+    Returntype  : ArrayRef Bio::EnsEMBL::ProjectionSegment; Returns an array
+                  of projected segments
+=cut
+
+sub _get_and_filter_Slice_projections {
+  my ($self, $slice) = @_;
+  my $sa = $slice->adaptor();
+  my @proj = @{ $sa->fetch_normalized_slice_projection($slice) };
+  if ( !@proj ) {
+    throw( 'Could not retrieve normalized Slices. '
+         . 'Database contains incorrect assembly_exception information.'
+    );
+  }
+  
+  # Want to get features on the FULL original slice as well as any
+  # symlinked slices.
+  
+  # Filter out partial slices from projection that are on same
+  # seq_region as original slice.
+
+  my $sr_id = $slice->get_seq_region_id();
+
+  @proj = grep { $_->to_Slice->get_seq_region_id() != $sr_id } @proj;
+
+  my $segment = bless( [ 1, $slice->length(), $slice ],
+                       'Bio::EnsEMBL::ProjectionSegment' );
+  push( @proj, $segment );
+  return \@proj;
+}
+
+=head2 _generate_feature_bounds
+
+    Arg [1]     : Bio::EnsEMBL::Slice
+    Description : Performs a projection of Slice and records the bounds
+                  of that projection. This can be used later on to restrict
+                  Features which overlap into unwanted areas such as
+                  regions which exist on another HAP/PAR region.
+                  
+                  Bounds are defined as projection_start - slice_start + 1.
+    Example     : my $bounds = $self->_generate_feature_bounds($slice);
+    Returntype  : ArrayRef Integer; Returns the location of the bounds.
+=cut
+
+sub _generate_feature_bounds {
+  my ($self, $slice) = @_;
+  my $sa = $slice->adaptor();
+  # construct list of Hap/PAR boundaries for entire seq region
+  my @bounds;
+
+  my $sr_id = $slice->get_seq_region_id();
+  my $ent_slice = $sa->fetch_by_seq_region_id($sr_id);
+  if ( $slice->strand() == -1 ) {
+    $ent_slice = $ent_slice->invert();
+  }
+
+  my @ent_proj = @{ $sa->fetch_normalized_slice_projection($ent_slice) };
+  shift(@ent_proj);    # skip first; 1st does not have bounds normally; may change if we ever have a patch a pos 1 
+
+  @bounds = map { $_->from_start() - $slice->start() + 1 } @ent_proj;
+  
+  return \@bounds;
 }
 
 =head2 _get_by_Slice
