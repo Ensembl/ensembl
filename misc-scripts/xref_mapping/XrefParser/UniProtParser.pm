@@ -71,15 +71,6 @@ sub run {
 
 
     if ( defined $release_file ) {
-        # These two lines are duplicated from the create_xrefs() method
-        # below...
-        my $sp_pred_source_id =
-          $self->get_source_id_for_source_name(
-            'Uniprot/SWISSPROT_predicted');
-        my $sptr_pred_source_id =
-          $self->get_source_id_for_source_name(
-            'Uniprot/SPTREMBL_predicted');
-
         # Parse Swiss-Prot and SpTrEMBL release info from
         # $release_file.
         my $release_io = $self->get_filehandle($release_file);
@@ -97,8 +88,6 @@ sub run {
         # Set releases
         $self->set_release( $sp_source_id,        $sp_release );
         $self->set_release( $sptr_source_id,      $sptr_release );
-        $self->set_release( $sp_pred_source_id,   $sp_release );
-        $self->set_release( $sptr_pred_source_id, $sptr_release );
 	$self->set_release( $sptr_non_display_source_id, $sptr_release );
     }
 
@@ -124,25 +113,6 @@ sub create_xrefs {
   if(defined($dependent_sources{'MGI'})){
     $dependent_sources{'MGI'} = $self->get_source_id_for_source_name("MGI","uniprot");
   }
-
-
-  # Get predicted equivalents of various sources used here
-    my $sp_pred_source_id =
-      $self->get_source_id_for_source_name(
-        'Uniprot/SWISSPROT_predicted');
-
-    my $sptr_pred_source_id =
-      $self->get_source_id_for_source_name(
-        'Uniprot/SPTREMBL_predicted');
-
-#  my $go_source_id = $self->get_source_id_for_source_name('GO');
-  my $embl_pred_source_id = $dependent_sources{'EMBL_predicted'};
-  my $protein_id_pred_source_id = $dependent_sources{'protein_id_predicted'};
-  print "Predicted SwissProt source id for $file: $sp_pred_source_id\n" if($verbose);
-  print "Predicted SpTREMBL source id for $file: $sptr_pred_source_id\n" if($verbose);
-  print "Predicted EMBL source id for $file: $embl_pred_source_id\n" if($verbose);
-  print "Predicted protein_id source id for $file: $protein_id_pred_source_id\n" if($verbose);
-#  print "GO source id for $file: $go_source_id\n";
 
     my (%genemap) =
       %{ $self->get_valid_codes( "mim_gene", $species_id ) };
@@ -259,7 +229,6 @@ sub create_xrefs {
 
     # Check for CC (caution) lines containing certain text
     # if this appears then set the source of this and and dependent xrefs to the predicted equivalents
-    my $is_predicted = /CC.*EMBL\/GenBank\/DDBJ whole genome shotgun \(WGS\) entry/;
 
     my ($label, $sp_type) = $_ =~ /ID\s+(\w+)\s+(\w+)/;
     my ($protein_evidence_code) = $_ =~ /PE\s+(\d+)/; 
@@ -268,29 +237,16 @@ sub create_xrefs {
     if ($sp_type =~ /^Reviewed/i) {
 
       $xref->{SOURCE_ID} = $sp_source_id;
-      if ($is_predicted) {
-	$xref->{SOURCE_ID} = $sp_pred_source_id;
-	$num_sp_pred++;
-      } else {
-	$xref->{SOURCE_ID} = $sp_source_id;
-	$num_sp++;
-      }
+      $num_sp++;
     } elsif ($sp_type =~ /Unreviewed/i) {
 
-      if ($is_predicted) {
-	$xref->{SOURCE_ID} = $sptr_pred_source_id;
-	$num_sptr_pred++;
-      }
-      else { 
-
     #Use normal source only if it is PE levels 1 & 2
-	  if (defined($protein_evidence_code) && $protein_evidence_code < 3) {
-	      $xref->{SOURCE_ID} = $sptr_source_id;
-	      $num_sptr++;
-	  } else {
-	      $xref->{SOURCE_ID} = $sptr_non_display_source_id;
-	      $num_sptr_non_display++;	  
-	  }
+      if (defined($protein_evidence_code) && $protein_evidence_code < 3) {
+          $xref->{SOURCE_ID} = $sptr_source_id;
+          $num_sptr++;
+      } else {
+          $xref->{SOURCE_ID} = $sptr_non_display_source_id;
+          $num_sptr_non_display++;	  
       }
 
     } else {
@@ -525,9 +481,6 @@ sub create_xrefs {
 	      next;
 	    }
 	  }
-	  if ($source eq "EMBL" && $is_predicted) {
-	    $dep{SOURCE_ID} = $embl_pred_source_id
-	  };
 
 #	  $dep{ACCESSION} = $acc;
 	  $dependent_xrefs{ $dep{SOURCE_NAME} }++; # get count of depenent xrefs.
@@ -541,9 +494,6 @@ sub create_xrefs {
 	      my %dep2;
 	      $dep2{SOURCE_NAME} = $source;
 	      $dep2{SOURCE_ID} = $dependent_sources{"protein_id"};
-	      if ($is_predicted) {
-		$dep2{SOURCE_ID} = $protein_id_pred_source_id
-	      };
 	      $dep2{LINKAGE_SOURCE_ID} = $xref->{SOURCE_ID};
 	      # store accession unversioned
 	      $dep2{LABEL} = $protein_id;
