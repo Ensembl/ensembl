@@ -794,9 +794,10 @@ sub get_dbconnection {
 #  warn $dsn;
 
   my $dbh;
+  my $user = $self->param("${prefix}user");
+  my $pass = $self->param("${prefix}pass");
   eval{
-    $dbh = DBI->connect($dsn, $self->param("${prefix}user"),
-      $self->param("${prefix}pass"), {'RaiseError' => 1, 'PrintError' => 0});
+    $dbh = DBI->connect($dsn, $user, $pass, {'RaiseError' => 1, 'PrintError' => 0});
   };
 
   if (!$dbh || $@ || !$dbh->ping) {
