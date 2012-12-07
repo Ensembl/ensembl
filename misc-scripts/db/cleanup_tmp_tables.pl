@@ -119,15 +119,20 @@ $support->check_required_params;
 my @databases;
 
 # connect to database
-my $dbh = $support->get_dbconnection('');
-
-if($support->param('dbname') =~ /%/) {
+my $dbh;
+my $original_dbname = $support->param('dbname'); 
+if($original_dbname =~ /%/) {
+  $support->param('dbname', q{});
+  $dbh = $support->get_dbconnection('');
   my $ref = $dbh->selectall_arrayref('show databases like ?', {}, $support->param('dbname'));
   push(@databases, map {$_->[0]} @{$ref})
 }
 else {
-  push(@databases, $support->param('dbname'));
+  $dbh = $support->get_dbconnection('');
+  push(@databases, $original_dbname);
 }
+
+
 
 # find all backup tables
 my @tables;
