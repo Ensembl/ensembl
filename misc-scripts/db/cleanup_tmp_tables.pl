@@ -124,7 +124,7 @@ my $original_dbname = $support->param('dbname');
 if($original_dbname =~ /%/) {
   $support->param('dbname', q{});
   $dbh = $support->get_dbconnection('');
-  my $ref = $dbh->selectall_arrayref('show databases like ?', {}, $support->param('dbname'));
+  my $ref = $dbh->selectall_arrayref('show databases like ?', {}, $original_dbname);
   push(@databases, map {$_->[0]} @{$ref})
 }
 else {
