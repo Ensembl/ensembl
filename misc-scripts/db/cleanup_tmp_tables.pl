@@ -145,7 +145,7 @@ if($support->param('mart')) {
 }
 
 foreach my $db (@databases) {
-  $support->log('Switching to '.$db);
+  $support->log('Switching to '.$db."\n");
   $dbh->do('use '.$db);
   foreach my $pattern (@patterns) {
     my $ref = $dbh->selectall_arrayref('show tables like ?', {}, $pattern);
