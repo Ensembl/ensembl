@@ -152,9 +152,11 @@ foreach my $db (@databases) {
   
   if ($support->param('dry_run')) {
     # for a dry run, only show which databases would be deleted
-    $support->log("Temporary and backup tables found:\n");
-    foreach my $table (@tables) {
-      $support->log("$table\n", 1);
+    if(scalar(@tables) > 0) {
+      $support->log("Temporary and backup tables found:\n");
+      foreach my $table (@tables) {
+        $support->log("$table\n", 1);
+      }
     }
   
   } else {
