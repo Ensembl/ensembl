@@ -132,11 +132,6 @@ else {
   push(@databases, $original_dbname);
 }
 
-
-
-# find all backup tables
-my @tables;
-
 my @patterns = map { '%\\_'.$_.'%' } qw/bak backup/;
 if($support->param('mart')) {
   if($support->user_proceed('--mart was specified on the command line. Do not run this during a mart build. Do you wish to continue?')) {
@@ -145,14 +140,15 @@ if($support->param('mart')) {
 }
 
 foreach my $db (@databases) {
+  my %tables;
   $support->log('Switching to '.$db."\n");
   $dbh->do('use '.$db);
   foreach my $pattern (@patterns) {
     my $ref = $dbh->selectall_arrayref('show tables like ?', {}, $pattern);
-    push(@tables, map {$_->[0]} @{$ref});
+    $tables{$_->[0]} = 1 for @{$ref};
   }
   
-  @tables = sort @tables;
+  my @tables = sort keys %tables;
   
   if ($support->param('dry_run')) {
     # for a dry run, only show which databases would be deleted
