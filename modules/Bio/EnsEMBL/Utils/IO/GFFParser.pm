@@ -40,16 +40,16 @@ while (defined($feature) ) {
 
     #do something with the feature, e.g. print hash keys and values 
     foreach my $key (keys %feature) {
-	if ($key ne 'attribute') {
-	    print $key . " " . $feature{$key} ."\n";
-	} else {
-	    print $key . "\n";
-	    my %attribs =  %{$feature{$key}};
-	    foreach my $attrib_key (keys %attribs) {
-		printf("\t%s %s\n", $attrib_key, join(q{, }, @{wrap_array($values)}));
+    if ($key ne 'attribute') {
+        print $key . " " . $feature{$key} ."\n";
+    } else {
+        print $key . "\n";
+        my %attribs =  %{$feature{$key}};
+        foreach my $attrib_key (keys %attribs) {
+        printf("\t%s %s\n", $attrib_key, join(q{, }, @{wrap_array($values)}));
 
-	    }
-	}
+        }
+    }
     }
     print "\n\n";
     $feature = $parser->parse_next_feature();
@@ -134,23 +134,23 @@ sub parse_header {
     my @header_lines;
     
     while (($next_line = $self->_read_line()) && ($next_line =~ /^[\#|\s]/) )  {
-
-	#stop parsing features if ##FASTA directive encountered
-	last if ($next_line =~ /\#\#FASTA/ );
-
-	#header lines start with ## (except for the ##FASTA directive indicating sequence section)
-	if ($next_line =~ /^[\#]{2}/ ) {
-	    push @header_lines, $next_line;
-	    if ($next_line =~ /gff-version\s+(\d+)/) {
-		if ($1 != 3) {
-		    warning("File has been formatted in GFF version $1. GFFParser may return unexpected results as it is designed to parse GFF3 formatted files.");  
-		}
-	    }
-	}
+    
+        #stop parsing features if ##FASTA directive encountered
+        last if ($next_line =~ /\#\#FASTA/ );
+    
+        #header lines start with ## (except for the ##FASTA directive indicating sequence section)
+        if ($next_line =~ /^[\#]{2}/ ) {
+            push @header_lines, $next_line;
+            if ($next_line =~ /gff-version\s+(\d+)/) {
+                if ($1 != 3) {
+                    warning("File has been formatted in GFF version $1. GFFParser may return unexpected results as it is designed to parse GFF3 formatted files.");  
+                }
+            }
+        }
     }
 
     if (defined($next_line)) {
-	$self->{'first_non_header_line'} = $next_line;
+        $self->{'first_non_header_line'} = $next_line;
     }
     return \@header_lines;
 
@@ -171,7 +171,7 @@ sub parse_header {
                    phase => scalar,
                    attribute => hashref, 
                    
-		 }
+         }
     Returntype : Hashref of a GFF3 feature line
 
 =cut
@@ -185,15 +185,15 @@ sub parse_next_feature {
     
     while (($next_line = $self->_read_line() ) && defined($next_line) ) {
 
-	#stop parsing features if ##FASTA directive
-	last if ($next_line =~ /\#\#FASTA/);
-
-
-	next if ($next_line =~ /^\#/ || $next_line =~ /^\s*$/ ||
-		$next_line =~ /^\/\//);
-
-	$feature_line = $next_line;
-	last;
+        #stop parsing features if ##FASTA directive
+        last if ($next_line =~ /\#\#FASTA/);
+    
+    
+        next if ($next_line =~ /^\#/ || $next_line =~ /^\s*$/ ||
+            $next_line =~ /^\/\//);
+    
+        $feature_line = $next_line;
+        last;
     }
 
     return undef unless $feature_line;
@@ -204,20 +204,20 @@ sub parse_next_feature {
 
     #strip off trailing comments
     $feature_line =~ s/\#.*//;
-	
+    
     my @chunks = split(/\t/, $feature_line);
 
     %feature = (
-	    'seqid' => uri_unescape($chunks[0]),
-            'source' => uri_unescape($chunks[1]),
-            'type' => uri_unescape($chunks[2]),
-            'start' => $chunks[3],
-            'end' => $chunks[4],
-            'score' => $chunks[5],
-            'strand' => $strand_conversion{$chunks[6]},
-            'phase' => $chunks[7] 
+        'seqid' => uri_unescape($chunks[0]),
+        'source' => uri_unescape($chunks[1]),
+        'type' => uri_unescape($chunks[2]),
+        'start' => $chunks[3],
+        'end' => $chunks[4],
+        'score' => $chunks[5],
+        'strand' => $strand_conversion{$chunks[6]},
+        'phase' => $chunks[7] 
     );
-	
+    
     if ($chunks[8]) {
     my @attributes = split( /;/, $chunks[8] );
       my %attributes;
@@ -246,7 +246,7 @@ sub parse_next_feature {
                    header => scalar,
                    sequence => scalar,
                    
-		 }
+         }
     Returntype : Hashref of a GFF3 sequence line
 
 =cut
@@ -261,21 +261,21 @@ sub parse_next_sequence {
     
     while (($next_line = $self->_read_line() ) && defined($next_line) ) {
 
-	next if ($next_line =~ /^\#/ || $next_line =~ /^\s*$/ ||
-		$next_line =~ /^\/\//);
-
-	if ($next_line =~ /^>/) {
-	    if ($header) {
-		#next fasta header encountered
-		$self->{'next_fasta_header'} = $next_line; 
-		last;
-		
-	    } else {
-		$header = $next_line;
-	    }
-	} else {
-	    $sequence .= $next_line;
-	}
+        next if ($next_line =~ /^\#/ || $next_line =~ /^\s*$/ ||
+            $next_line =~ /^\/\//);
+    
+        if ($next_line =~ /^>/) {
+            if ($header) {
+                #next fasta header encountered
+                $self->{'next_fasta_header'} = $next_line; 
+                last;
+            
+            } else {
+                $header = $next_line;
+            }
+        } else {
+            $sequence .= $next_line;
+        }
     }
 
     return undef unless ($sequence || $header);
@@ -294,21 +294,21 @@ sub _read_line {
     my $line;
     
     if (defined($self->{'first_non_header_line'})) {
-	$line = $self->{'first_non_header_line'};
-	$self->{'first_non_header_line'} = undef;
+        $line = $self->{'first_non_header_line'};
+        $self->{'first_non_header_line'} = undef;
     } elsif ( defined($self->{'next_fasta_header'} )) {
-	$line = $self->{'next_fasta_header'};
-	$self->{'next_fasta_header'} = undef;
+        $line = $self->{'next_fasta_header'};
+        $self->{'next_fasta_header'} = undef;
     }
     else {
-	$line = <$fh>;
-	if (defined($line)) {
-	    chomp $line;
-	    if (!$line) {
-		#parse next line if current line is empty
-		$line = $self->_read_line();
-	    }
-	}
+        $line = <$fh>;
+        if (defined($line)) {
+            chomp $line;
+            if (!$line) {
+            #parse next line if current line is empty
+            $line = $self->_read_line();
+            }
+        }
     }
 
     return $line;
