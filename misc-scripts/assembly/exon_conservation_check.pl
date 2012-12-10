@@ -44,8 +44,8 @@ my $onto_db_adaptor = Bio::EnsEMBL::DBSQL::OntologyDBAdaptor->new(
 my $biotype_mapper = new Bio::EnsEMBL::Utils::BiotypeMapper($onto_db_adaptor);
 
 $support->log_stamped("Beginning analysis.\n");
-$support->log("EXON KEY       : !! = Very bad (pc mismatch), %% = Somewhat bad (mismatch), ?? = No mapping, might be bad, ¤¤ = eval error\n");
-$support->log("TRANSCRIPT KEY : @@ = Very bad (pc translation mismatch), ££ = Very bad (pc transcript mismatch), ** = Somewhat bad (mismatch), XX = No mapping, might be bad, ±± = eval error\n");
+$support->log("EXON KEY       : !! = Very bad (pc mismatch), %% = Somewhat bad (mismatch), ?? = No mapping, might be bad, && = eval error\n");
+$support->log("TRANSCRIPT KEY : @@ = Very bad (pc translation mismatch), ££ = Very bad (pc transcript mismatch), ** = Somewhat bad (mismatch), XX = No mapping, might be bad, ^^ = eval error\n");
 
 my $total_exons = 0;
 my $total_transcripts = 0;
@@ -91,7 +91,7 @@ sub compare_exons {
     $total_exons++;
     eval {exon($old_exon, $R_slice, $new_slice_adaptor)};
     if($@) {
-      $support->log(sprintf("¤¤ | ID : %s | EVAL ERROR (%s)\n", $old_exon->stable_id(), $@));
+      $support->log(sprintf("&& | ID : %s | EVAL ERROR (%s)\n", $old_exon->stable_id(), $@));
     }
   }
   return;
@@ -178,7 +178,7 @@ sub compare_transcripts {
     $total_transcripts++;
     eval {transcript($old_transcript, $R_slice, $new_slice_adaptor)};
     if($@) {
-      $support->log(sprintf("±± | ID : %s | EVAL ERROR (%s)\n", $old_transcript->stable_id(), $@));
+      $support->log(sprintf("^^ | ID : %s | EVAL ERROR (%s)\n", $old_transcript->stable_id(), $@));
     }
   }
 
