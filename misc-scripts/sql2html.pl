@@ -68,7 +68,7 @@ use Getopt::Long;
 ###############
 ### Options ###
 ###############
-my ($sql_file,$html_file,$db_team,$show_colour,$header_flag,$sort_headers,$sort_tables,$help);
+my ($sql_file,$html_file,$db_team,$show_colour,$header_flag,$format_headers,$sort_headers,$sort_tables,$help);
 
 usage() if (!scalar(@ARGV));
  
@@ -77,9 +77,11 @@ GetOptions(
     'o=s' => \$html_file,
     'd=s' => \$db_team,
     'c=i' => \$show_colour,
-    'show_header=i' => \$header_flag,
-    'sort_headers=i' => \$sort_headers,
-    'sort_tables=i' => \$sort_tables,
+    'show_header=i'    => \$header_flag,
+    'format_headers=i' => \$format_headers,
+    'sort_headers=i'   => \$sort_headers,
+    'sort_tables=i'    => \$sort_tables,
+    
     'help!' => \$help
 );
 
@@ -94,10 +96,11 @@ if (!$html_file) {
   usage();
 }
 
-$show_colour  = 1 if (!defined($show_colour));
-$header_flag  = 1 if (!defined($header_flag));
-$sort_headers = 1 if (!defined($sort_headers));
-$sort_tables  = 1 if (!defined($sort_tables));
+$show_colour    = 1 if (!defined($show_colour));
+$header_flag    = 1 if (!defined($header_flag));
+$format_headers = 1 if (!defined($format_headers));
+$sort_headers   = 1 if (!defined($sort_headers));
+$sort_tables    = 1 if (!defined($sort_tables));
 
 
 ##############
@@ -178,10 +181,13 @@ my $html_footer = qq{
 
 
 
+
 ################
 ### Settings  ##
 ################
+
 my $default_colour = '#000000'; # Black
+my $list_bg = "background-color:#F2F2F2";
 
 my %display_col = ('Show' => 'none', 'Hide' => 'inline');
 my $documentation = {};
@@ -202,6 +208,8 @@ my $tag = '';
 my $display = 'Show';
 my $parenth_count = 0;
 my $header_colour;
+
+
 
 
 #############
@@ -380,6 +388,8 @@ while (<SQLFILE>) {
 close(SQLFILE);
 
 
+
+
 ############
 ### Core  ##
 ############
@@ -399,7 +409,7 @@ if ($sort_tables == 1) {
 
 # Legend link
 if ($show_colour and scalar @colours > 1) {
-  $html_content .= qq{A colour legend is available at the <a href="#legend">bottom of the page</a>.};
+  $html_content .= qq{A colour legend is available at the <a href="#legend">bottom of the page</a>.\n<br /><br />};
 }
 
 # List of tables by header
@@ -414,12 +424,12 @@ foreach my $header_name (@header_names) {
     
   # Header display  
   if ($header_flag == 1 and $header_name ne 'default') {
-    $html_content .= qq{<br />\n<hr />\n<h2>$header_name</h2>\n};
+    $html_content .= qq{\n<br /><br />
+<div style="$list_bg;padding:5px;margin:5px 0px;border-top:2px solid $hcolour">
+  <h2 style="display:inline;color:#000">$header_name</h2>
+</div>\n};
     my $header_desc = $documentation->{$header_name}{'desc'};    
-    $html_content .= qq{<p>$header_desc</p>} if (defined($header_desc));
-  }
-  elsif ($header_flag == 0 or scalar @header_names == 1) {
-    $html_content .= qq{<hr />\n};
+    $html_content .= qq{<p style="width:800px">$header_desc</p>} if (defined($header_desc));
   }
   
   # Additional information
@@ -431,13 +441,7 @@ foreach my $header_name (@header_names) {
   # Tables display
   foreach my $t_name (@{$tables}) {
     my $data = $documentation->{$header_name}{'tables'}{$t_name};
-    my $colour;
-    
-    if ($header_flag && $hcolour) {
-      $colour = $hcolour;
-    } else {
-      $colour = $data->{colour};
-    }
+    my $colour = ($header_flag && $hcolour) ? $hcolour : $data->{colour};
     
     $html_content .= add_table_name($t_name,$colour);
     $html_content .= add_description($data->{desc});
@@ -464,10 +468,34 @@ close(HTML);
 ###############
 
 sub display_tables_list {
-  my $html = qq{\n<h3 id="top">List of the tables:</h3>\n};
+
+  my $html; 
+  
+  $header_flag = 0 if (scalar @header_names == 1);
+  
+  if ($header_flag == 1) {
+    $html .= qq{\n<h3 id="top">List of the tables:</h3>\n};
+    $html .= qq{<div>\n} if ($format_headers == 1);
+  } 
+  else {
+    my $list_width;
+    if (scalar @header_names == 1) {
+      my $list_count = scalar @{$tables_names->{'default'}};
+      my $list_nb_col = ceil($list_count/$nb_by_col);
+      $list_width = length_names($tables_names->{'default'},$list_nb_col);
+    }
+    $html .= qq{
+<div>      
+  <div id="top" style="$list_bg;border-radius:5px;margin-bottom:20px;float:left;$list_width">
+    <div style="padding:5px;background-color:#336;border-top-left-radius:5px;border-top-right-radius:5px">
+      <img src="/i/16/rev/info.png" style="vertical-align:top" />
+      <h3 style="display:inline;color:#FFF">List of the tables:</h3>
+    </div>};
+  }
   
   my $has_header = 0;
-	
+  my $nb_col_line = 0;
+  
   foreach my $header_name (@header_names) {
     
     my $tables = $tables_names->{$header_name};
@@ -475,6 +503,7 @@ sub display_tables_list {
     next if ($count == 0);
     
     my $nb_col = ceil($count/$nb_by_col);
+    my $nbc = $nb_col;
     my $table_count = 0;
     my $col_count = 1;
   
@@ -486,52 +515,90 @@ sub display_tables_list {
       $nb_col = 3;
     }
     
+    
     # Header
     if ($header_flag == 1 and $header_name ne 'default') {
-      $html .= display_header($header_name);
-			$has_header = 1;
+      if ($nb_col_line+$nbc > 4 and $format_headers == 1) {
+        $html .= qq{  <div style="clear:both" />\n</div>\n\n<div>};
+        $nb_col_line = 0;
+      }
+      
+      $html .= display_header($header_name,$nbc);
+      $nb_col_line += $nbc;
+      $has_header = 1;
     }
-    $html .= qq{<table><tr><td>\n  <ul>\n};
+    $html .= qq{\n    <table style="padding-right:10px"><tr><td>\n      <ul style="padding-left:20px">\n};
 
-    # Table
+    # List of tables
     foreach my $t_name (@{$tables}) {
       if ($table_count == $nb_by_col and $col_count<$nb_col and $nb_col>1){
-        $html .= qq{  </ul>\n</td><td>\n  <ul>\n};
+        $html .= qq{      </ul>\n    </td><td>\n      <ul style="padding-left:20px">\n};
         $table_count = 0;
       }
-			my $t_colour;
-			if ($has_header == 0 && $show_colour) {
-			  $t_colour = $documentation->{$header_name}{'tables'}{$t_name}{'colour'};
-			}
+      my $t_colour;
+      if ($has_header == 0 && $show_colour) {
+        $t_colour = $documentation->{$header_name}{'tables'}{$t_name}{'colour'};
+      }
       $html .= add_table_name_to_list($t_name,$t_colour);
       $table_count ++;
     }
-    $html .= qq{  </ul>\n</td></tr></table>\n};
+    $html .= qq{      </ul>\n    </td></tr></table>\n};
+    
+    if ($header_flag == 1 and $format_headers == 1) {
+      $html .= qq{  </div>\n};
+      if ($nbc > 1) {
+        $html .= qq{  <div style="clear:both" />\n</div>\n\n<div>};
+        $nb_col_line = 0;
+      }
+    }
+  }
+  
+  my $input_margin;
+  if ($header_flag == 1 and $format_headers == 1){
+    $html .= qq{\n  <div style="clear:both" />\n</div>};
+  } else {
+    $input_margin = qq{ style="margin-left:10px;margin-bottom:5px"};
   }
   $html .= qq{
-  <input type="button" onclick="show_hide_all()" class="fbutton" value="Show/hide all" />
+  <input type="button" onclick="show_hide_all()" class="fbutton" value="Show/hide all"$input_margin/>
   <input type="hidden" id="expand" value="0" />
   };
+  
+  $html .= qq{\n  </div>\n  <div style="clear:both" />\n</div>} if ($header_flag!=1 and $format_headers == 1);
+  
   return $html;
 }
 
 
 sub display_header {
   my $header_name = shift;
+  my $nb_col = shift;
+  
   my $html;
   
-  if ($show_colour && $header_colour) {
-    my $hcolour = $documentation->{$header_name}{colour};
-    $hcolour = $default_colour if (!defined($hcolour));
-    $html .= qq{
-      <table style="border: 1px solid #CCCCCC;padding:0px;margin:0px;background-color:#FAFAFF"><tr>
-        <td style="background-color:$hcolour;width:10px"></td>
-        <td><h2 style="margin:5px;">$header_name</h2></td>
-      </tr></table>\n
-    };
-  }
+  if ($format_headers == 1) {
+    my $width = length_names($tables_names->{$header_name},$nb_col);
+    
+    $html .= qq{\n  <div style="$list_bg;border-radius:5px;margin-bottom:15px;float:left;margin-right:20px$width">
+    <div style="padding:2px 5px;background-color:#336;border-top-left-radius:5px;border-top-right-radius:5px">};
+    
+    my $text_colour = '#FFF';
+    
+    if ($show_colour && $header_colour) {
+      my $hcolour = $documentation->{$header_name}{colour};
+         $hcolour = $default_colour if (!defined($hcolour));
+      
+      $html .= qq{
+      <div style="background-color:$hcolour;border:1px solid #FFF;padding:0px 8px;display:inline;vertical-align:middle"></div>
+      <h2 style="margin-left:8px;display:inline;color:$text_colour;vertical-align:middle">$header_name</h2>\n};
+    }
+    else {
+      $html .= qq{<h2 style="display:inline;color:$text_colour">$header_name</h2>\n};
+    }
+    $html .= qq{    </div>};
+  } 
   else {
-    $html .= qq{<h2>$header_name</h2>\n};
+    $html .= qq{    <h2 >$header_name</h2>};
   }
   return $html;
 }
@@ -614,13 +681,13 @@ sub fill_documentation {
 
 sub add_table_name_to_list {
   my $t_name = shift;
-	my $t_colour = shift;
-	my $c = $t_colour;
-	if (defined($t_colour)) {
-	  $t_colour = ($t_colour ne '') ? qq{;background-color:$t_colour} : '';
-		$t_colour = qq{<div style="padding:0px;margin-left:0px$t_colour;display:inline">&nbsp;</div> };
-	}
-  my $html = qq{    <li>$t_colour<a href="#$t_name"><b>$t_name</b></a></li>\n};
+  my $t_colour = shift;
+  my $c = $t_colour;
+  if (defined($t_colour)) {
+    $t_colour = ($t_colour ne '') ? qq{;background-color:$t_colour} : '';
+    $t_colour = qq{<div style="padding:0px;margin-left:0px$t_colour;display:inline">&nbsp;</div> };
+  }
+  my $html = qq{        <li>$t_colour<a href="#$t_name"><b>$t_name</b></a></li>\n};
   return $html;
 }
 
@@ -650,7 +717,7 @@ sub add_table_name {
 
 sub add_description {
   my $desc = shift;
-  return qq{  <p style="padding:5px 0px;margin-bottom:0px">$desc</p>\n};
+  return qq{  <p style="padding:5px 0px;margin-bottom:0px;width:800px">$desc</p>\n};
 }
 
 sub add_info {
@@ -815,6 +882,22 @@ sub remove_char {
 }
 
 
+# Count largest length in the table names
+sub length_names {
+  my $list = shift;
+  my $nb_col = shift;
+  
+  my $max = 0;
+  foreach my $name (@$list) {
+    my $length = length($name);
+    $max = $length if ($length>$max);
+  }
+  return '' if ($nb_col>1 || $max>25);
+  return ";width:200px" if ($max<=25);
+}
+
+
+
 sub usage {
   
   print qq{
@@ -830,17 +913,19 @@ sub usage {
     For more information, please visit the following page: 
     http://www.ebi.ac.uk/seqdb/confluence/display/EV/SQL+documentation
 
-    -i              A SQL file name (Required)
-    -o              An HTML output file name (Required)
-    -d              The name of the database (e.g Core, Variation, Functional Genomics, ...)
-    -c              A flag to display the colours associated with the tables (1) or not (0).
-                    By default, the value is set to 1.
-    -show_header    A flag to display headers for a group of tables (1) or not (0). 
-                    By default, the value is set to 1.
-    -sort_headers   A flag to sort (1) or not (0) the headers by alphabetic order.
-                    By default, the value is set to 1.
-    -sort_tables    A flag to sort (1) or not (0) the tables by alphabetic order.
-                    By default, the value is set to 1.               
+    -i               A SQL file name (Required)
+    -o               An HTML output file name (Required)
+    -d               The name of the database (e.g Core, Variation, Functional Genomics, ...)
+    -c               A flag to display the colours associated with the tables (1) or not (0).
+                     By default, the value is set to 1.
+    -show_header     A flag to display headers for a group of tables (1) or not (0). 
+                     By default, the value is set to 1.
+    -format_headers  A flag to display formatted headers for a group of tables (1) or not (0) 
+                     in the top menu list. By default, the value is set to 1.                
+    -sort_headers    A flag to sort (1) or not (0) the headers by alphabetic order.
+                     By default, the value is set to 1.
+    -sort_tables     A flag to sort (1) or not (0) the tables by alphabetic order.
+                     By default, the value is set to 1.               
   } . "\n";
   exit(0);
 }
