@@ -80,7 +80,7 @@ sub pipeline_analyses {
         -logic_name => 'DumpFlatfile',
         -module     => 'Bio::EnsEMBL::Pipeline::Flatfile::DumpFile',
         -max_retry_count  => 1,
-        -hive_capacity    => 10,
+        -analysis_capacity    => 10,
         -rc_name => 'dump',
       },
       
@@ -90,7 +90,7 @@ sub pipeline_analyses {
         -logic_name => 'ChecksumGenerator',
         -module     => 'Bio::EnsEMBL::Pipeline::Flatfile::ChecksumGenerator',
         -wait_for   => [qw/DumpFlatfile/],
-        -hive_capacity => 10, 
+        -analysis_capacity => 10, 
       },
       
       ####### NOTIFICATION
