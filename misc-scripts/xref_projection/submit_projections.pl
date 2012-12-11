@@ -258,22 +258,26 @@ foreach my $species (keys %names_1_1) {
 }
 
 # 1:1
+
+my $last_name; # for waiting in queue
+
 foreach my $from (@execution_order) {
-    if (not exists($names_1_1{$from})) {next;}
     my $last_name; # for waiting in queue
+    if (not exists($names_1_1{$from})) {next;}
     foreach my $to (@{$names_1_1{$from}}) {
         my $o = "$dir/names_${from}_$to.out";
         my $e = "$dir/names_${from}_$to.err";
         my $n = substr("n_${from}_$to", 0, 10); # job name display limited to 10 chars
         my $all = ($from eq "human") ? "" : "--all_sources"; # non-human from species -> use all sources
         my $wait;
-        if ($last_name) { $wait = "-w 'done($last_name)'";}
+        if ($last_name) { $wait = "-w 'ended(${last_name}*)'";}
         
         print "Submitting name projection from $from to $to\n";
         system "bsub $bsub_opts -o $o -e $e -J $n $wait perl project_display_xrefs.pl $script_opts -from $from -to $to -names -no_database $all\n";
-        $last_name = $n;
     }
+    $last_name = "n_".$from;
 }
+$last_name = "";
 
 print "Deleting projected names (one to many)\n";
 foreach my $from (keys %names_1_many) {
@@ -289,10 +293,17 @@ foreach my $from (@execution_order) {
         my $o = "$dir/names_${from}_$to.out";        
         my $e = "$dir/names_${from}_$to.err";
         my $n = substr("n_${from}_$to", 0, 10);
+        
+        my $wait;
+        if ($last_name) { $wait = "-w 'ended(${last_name}*)'";}
+        
         print "Submitting name projection from $from to $to (1:many)\n";
-        system "bsub $bsub_opts -o $o -e $e -J $n perl project_display_xrefs.pl $script_opts -from $from -to $to -names -no_database -one_to_many\n";
+        system "bsub $bsub_opts -o $o -e $e -J $n $wait perl project_display_xrefs.pl $script_opts -from $from -to $to -names -no_database -one_to_many\n";
     }
+    $last_name = "n_".$from;    
 }
+
+$last_name = "";
 
 # ----------------------------------------
 # GO terms
@@ -314,9 +325,14 @@ foreach my $from (@execution_order) {
         my $o = "$dir/go_${from}_$to.out";
         my $e = "$dir/go_${from}_$to.err";
         my $n = substr("g_${from}_$to", 0, 10);
+        
+        my $wait;
+        if ($last_name) { $wait = "-w 'ended(${last_name}*)'";}
+        
         print "Submitting GO term projection from $from to $to\n";
-        system "bsub $bsub_opts -q long -o $o -e $e -J $n perl project_display_xrefs.pl $script_opts -from $from -to $to -go_terms\n";
+        system "bsub $bsub_opts -q long -o $o -e $e -J $n $wait perl project_display_xrefs.pl $script_opts -from $from -to $to -go_terms\n";
     }
+    $last_name = "n_".$from;   
 }
 
 
