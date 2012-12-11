@@ -51,7 +51,6 @@ use Bio::EnsEMBL::ApiVersion;
 
 use Bio::EnsEMBL::Registry;
 my $registry = "Bio::EnsEMBL::Registry";
-my $pregistry = "Bio::EnsEMBL::Registry";
 
 
 my $dbhost = 'ens-staging';
