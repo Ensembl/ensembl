@@ -243,8 +243,8 @@ $go_terms{'xenopus'} = [qw(zebrafish)];
 
 # order to run projections in, just in case they are order-sensitive.
 my @execution_order = qw/human mouse rat zebrafish xenopus/;
-# except of course order is irrelevant to the job queue. Consider provisional for when
-# someone desires jobs that wait for others to finish.
+# except of course order is irrelevant to the job queue. See the -w command below
+# in the bsub command to cause serial execution.
 
 
 # ----------------------------------------
@@ -260,13 +260,18 @@ foreach my $species (keys %names_1_1) {
 # 1:1
 foreach my $from (@execution_order) {
     if (not exists($names_1_1{$from})) {next;}
+    my $last_name; # for waiting in queue
     foreach my $to (@{$names_1_1{$from}}) {
         my $o = "$dir/names_${from}_$to.out";
         my $e = "$dir/names_${from}_$to.err";
         my $n = substr("n_${from}_$to", 0, 10); # job name display limited to 10 chars
         my $all = ($from eq "human") ? "" : "--all_sources"; # non-human from species -> use all sources
+        my $wait;
+        if ($last_name) { $wait = "-w 'done($last_name)'";}
+        
         print "Submitting name projection from $from to $to\n";
-        system "bsub $bsub_opts -o $o -e $e -J $n perl project_display_xrefs.pl $script_opts -from $from -to $to -names -no_database $all\n";
+        system "bsub $bsub_opts -o $o -e $e -J $n $wait perl project_display_xrefs.pl $script_opts -from $from -to $to -names -no_database $all\n";
+        $last_name = $n;
     }
 }
 
