@@ -33,7 +33,7 @@ Allowed parameters are:
 
 =item file - The file to parse
 
-=item format - Passed into SeqIO; the format to parse
+=item type - Passed into SeqIO; the format to parse
 
 =back
 
@@ -51,15 +51,15 @@ use base qw/Bio::EnsEMBL::Pipeline::Flatfile::Base/;
 sub fetch_input {
   my ($self) = @_;
   $self->throw("No 'file' parameter specified") unless $self->param('file');
-  $self->throw("No 'format' parameter specified") unless $self->param('format');
+  $self->throw("No 'type' parameter specified") unless $self->param('type');
   return;
 }
 
 sub run {
   my ($self) = @_;
   my $fh = $self->get_fh();
-  my $format = $self->param('format');
-  my $stream = Bio::SeqIO->new(-FH => $fh, -FORMAT => $format);
+  my $type = $self->param('type');
+  my $stream = Bio::SeqIO->new(-FH => $fh, -FORMAT => $type);
   my $count = 0;
   while ( (my $seq = $stream->next_seq()) ) {
     $self->fine("Found the record %s", $seq->accession());

@@ -13,11 +13,15 @@ sub default_options {
       %{ $self->SUPER::default_options() }, 
       
       # 'base_path' => '', #where do you want your files
-      # 'format' => '',
+      # 'type' => '',
       
       ### Defaults 
       
       pipeline_name => 'flatfile_dump_check_'.$self->o('format'),
+      
+      pipeline_db => {
+        -driver => 'sqlite',
+      }
     };
 }
 
@@ -61,7 +65,7 @@ sub pipeline_wide_parameters {
   my ($self) = @_;
   return {
     %{ $self->SUPER::pipeline_wide_parameters() },
-    format => $self->o('format'),
+    format => $self->o('type'),
   };
 }
 
