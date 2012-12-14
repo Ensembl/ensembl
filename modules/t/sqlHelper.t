@@ -48,8 +48,21 @@ is(
   'Checking count of meta key is right with params'
 );
 
+
 throws_ok { $helper->execute_single_result(-SQL => 'select * from meta') } qr/Too many results/, 'More than 1 row causes an error';
 throws_ok { $helper->execute_single_result(-SQL => 'select * from meta where species_id =?', -PARAMS => [-1]) } qr/No results/, 'Less than 1 row causes an error';
+
+is(
+  $helper->execute_single_result(-SQL => 'select meta_id from meta order by meta_id', -NO_ERROR => 1),
+  1,
+  'Checking if we have more than row we will not error if we ask to ignore it'
+);
+
+is(
+  $helper->execute_single_result(-SQL => 'select meta_id from meta where species_id =?', -PARAMS => [-1], -NO_ERROR => 1),
+  undef,
+  'Checking if we less than row we will not error if we ask to ignore it'
+);
 
 is_deeply( 
   $helper->execute(-SQL => 'select count(*), 3 from meta where meta_key =?', -PARAMS => [$meta_key])->[0],
