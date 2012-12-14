@@ -306,6 +306,41 @@ sub get_loutre_params {
   }
 }
 
+=head2 get_annotrack_params
+
+  Arg         : (optional) return a list to parse or not
+  Example     : $support->parse_extra_options($support->get_annotrack_params('parse'))
+  Description : Returns a list of parameters used to connect to annotrack
+  Return type : Array - list of common parameters
+  Exceptions  : none
+  Caller      : general
+
+=cut
+
+sub get_annotrack_params {
+  my ($self,$p) = @_;
+  if ($p) {
+    return qw(
+              annotrackhost=s
+        annotrackport=s
+        annotrackuser=s
+        annotrackpass=s
+        annotrackdbname=s
+              ignoreannotrack
+      );
+  }
+  else {
+    return qw(
+        annotrackhost
+        annotrackport
+        annotrackuser
+        annotrackpass
+        annotrackdbname
+              ignoreannotrack
+      );
+  }
+}
+
 =head2 remove_vega_params
 
   Example     : $support->remove_vega_params;
