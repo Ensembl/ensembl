@@ -291,7 +291,7 @@ sub get_loutre_params {
 	      loutrehost=s
 	      loutreport=s
 	      loutreuser=s
-	      loutrepass=s
+	      loutrepass:s
 	      loutredbname=s
 	    );
   }
