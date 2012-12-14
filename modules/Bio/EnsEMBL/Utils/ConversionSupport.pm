@@ -489,7 +489,7 @@ sub check_required_params {
   my ($self, @params) = @_;
   my @missing = ();
   foreach my $param (@params) {
-    push @missing, $param unless $self->param($param);
+    push @missing, $param unless defined $self->param($param);
   }
   if (@missing) {
     throw("Missing parameters: @missing.\nYou must specify them on the commandline or in your conffile.\n");
