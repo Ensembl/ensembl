@@ -167,13 +167,17 @@ sub print_feature {
             delete $summary{$key};
         }
 #   Catch the remaining keys, containing whatever else the Feature provided
-        foreach my $attribute ( keys(%summary)) {
+        my @keys = keys %summary;
+        while(my $attribute = shift @keys) {
             if (ref $summary{$attribute} eq "ARRAY") {
-                $row .= $attribute."=".join (',',map { uri_escape($_,'\t\n\r;=%&,') } @{$summary{$attribute}}) . ";"
+                $row .= $attribute."=".join (',',map { uri_escape($_,'\t\n\r;=%&,') } grep { defined $_ } @{$summary{$attribute}});
             }
             else {
-                if ($summary{$attribute}) { $row .= $attribute."=".uri_escape($summary{$attribute},'\t\n\r;=%&,') . ";"; }
+                if ($summary{$attribute}) { 
+                  $row .= $attribute."=".uri_escape($summary{$attribute},'\t\n\r;=%&,'); 
+                }
             }
+            $row .= ';' if scalar(@keys) > 0;
         }
 # trim off any trailing commas left by the ordered keys stage above:
         $text_buffer .= $row."\n";
