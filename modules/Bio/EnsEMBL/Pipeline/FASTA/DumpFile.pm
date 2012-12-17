@@ -781,10 +781,10 @@ e.g. A patch region with a start position of 1,000,001 will have 1e6 N's added
 its start so an alignment program will report coordinates with respect to the
 whole chromosome.
 
-Some species have sequenced Y chromosomes and the pseudoautosomal region (PAR)
+Human has sequenced Y chromosomes and the pseudoautosomal region (PAR)
 on the Y is annotated.  By definition the PAR region is identical on the 
 X and Y chromosome.  The Y chromosome file contains the Y chromsome 
-minus the PAR regions.
+minus these repeated PAR regions i.e. the unique portion of Y.
 
 README
 
@@ -860,7 +860,8 @@ README
 Fasta cDNA dumps
 #################
 
-These files hold the cDNA sequences corresponding to Ensembl gene predictions.
+These files hold the cDNA sequences corresponding to Ensembl gene 
+predictions. This includes long non-coding RNA transcripts.
 
 ------------
 FILE NAMES
@@ -927,7 +928,9 @@ README
 Fasta RNA dumps
 #################
 
-These files hold the transcript sequences corresponding to non-coding RNA genes (ncRNA).
+These files hold the transcript sequences corresponding to non-coding RNA genes 
+(ncRNA); specifically short non-coding RNA transcript. For long ncRNA 
+transcripts please see our cDNA FASTA dumps.
 
 ------------
 FILE NAMES
