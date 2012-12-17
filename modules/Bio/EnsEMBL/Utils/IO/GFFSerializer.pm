@@ -41,6 +41,7 @@ use Bio::EnsEMBL::Utils::Exception;
 use Bio::EnsEMBL::Utils::BiotypeMapper;
 use URI::Escape;
 use Bio::EnsEMBL::Utils::IO::FeatureSerializer;
+use Bio::EnsEMBL::Utils::Scalar qw/check_ref/;
 
 use base qw(Bio::EnsEMBL::Utils::IO::FeatureSerializer);
 
@@ -63,7 +64,7 @@ sub new {
         filehandle => shift,
     };
     bless $self, $class;
-    if ( ref($self->{'ontology_adaptor'}) ne "Bio::EnsEMBL::DBSQL::OntologyTermAdaptor" ) {
+    if ( ! check_ref($self->{'ontology_adaptor'}, "Bio::EnsEMBL::DBSQL::OntologyTermAdaptor" )) {
         throw("GFF format requires an instance of Bio::EnsEMBL::DBSQL::OntologyTermAdaptor to function. See also Bio::EnsEMBL::Utils::BiotypeMapper");        
     }
     $self->{'mapper'} = new Bio::EnsEMBL::Utils::BiotypeMapper($self->{'ontology_adaptor'});
