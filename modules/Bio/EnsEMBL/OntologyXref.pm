@@ -455,7 +455,8 @@ sub get_extensions {
       if ( $self->{'associated_xref'}->{$groupId}->{$rank}->[2]
            eq 'evidence' ) {
         if ( exists $external_urls{$self->{'associated_xref'}->{$groupId}->{$rank}->[0]->dbname} ) {
-          $evidence = '<a href="' . $external_urls{$self->{'associated_xref'}->{$groupId}->{$rank}->[0]->dbname} . '">'
+          $evidence = '<a href="' . $external_urls{$self->{'associated_xref'}->{$groupId}->{$rank}->[0]->dbname}
+                    . $self->{'associated_xref'}->{$groupId}->{$rank}->[0]->primary_id . '">'
                     . $self->{'associated_xref'}->{$groupId}->{$rank}->[0]->display_id
                     . '</a>';
         } else {
@@ -468,7 +469,8 @@ sub get_extensions {
         $description .= '<strong>' . $self->{'associated_xref'}->{$groupId}->{$rank}->[2] . '</strong> ';
         
         if (exists $external_urls{$self->{'associated_xref'}->{$groupId}->{$rank}->[0]->dbname} ) {
-          $description .= '<a href="' . $external_urls{$self->{'associated_xref'}->{$groupId}->{$rank}->[0]->dbname} . '">'
+          $description .= '<a href="' . $external_urls{$self->{'associated_xref'}->{$groupId}->{$rank}->[0]->dbname}
+                        . $self->{'associated_xref'}->{$groupId}->{$rank}->[0]->primary_id . '">'
                         . $self->{'associated_xref'}->{$groupId}->{$rank}->[0]->display_id
                         . '</a>';
         } else {
@@ -480,7 +482,8 @@ sub get_extensions {
       
       if ( !undef $external_urls{$self->{'associated_xref'}->{$groupId}->{$rank}->[1]} ) {
         if ( exists $external_urls{$self->{'associated_xref'}->{$groupId}->{$rank}->[1]->dbname} ) {
-          $source = '<a href="' . $external_urls{$self->{'associated_xref'}->{$groupId}->{$rank}->[1]->dbname} . '">'
+          $source = '<a href="' . $external_urls{$self->{'associated_xref'}->{$groupId}->{$rank}->[1]->dbname}
+                  . $self->{'associated_xref'}->{$groupId}->{$rank}->[1]->primary_id . '">'
                   . $self->{'associated_xref'}->{$groupId}->{$rank}->[1]->display_id
                   . '</a>';
         } else {
