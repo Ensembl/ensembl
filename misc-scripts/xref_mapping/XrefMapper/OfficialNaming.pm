@@ -1083,7 +1083,9 @@ sub find_from_other_sources{
       else{
 	$other_name_num->{$gene_symbol} = 1;
       }
-      $gene_symbol .= ".".$other_name_num->{$gene_symbol};
+      if ($ext_db_name ne 'Uniprot_genename') {
+        $gene_symbol .= ".".$other_name_num->{$gene_symbol};
+      }
       next;
     }
   }  
