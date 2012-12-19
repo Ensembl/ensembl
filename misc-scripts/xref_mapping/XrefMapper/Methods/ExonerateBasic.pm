@@ -301,7 +301,7 @@ EON
   } 
   else{
     # write details of job to database
-    my $command = "$exonerate_path $query $target --querychunkid \$LSB_JOBINDEX --querychunktotal $num_jobs --showvulgar false --showalignment FALSE --ryo ".
+    my $command = "$exe $query $target --querychunkid \$LSB_JOBINDEX --querychunktotal $num_jobs --showvulgar false --showalignment FALSE --ryo ".
       '"xref:%qi:%ti:%ei:%ql:%tl:%qab:%qae:%tab:%tae:%C:%s\\\n"'." $options_str | grep ".'"'."^xref".'"'." > $root_dir/$output";
 
     my $sth = $mapper->xref->dbc->prepare("insert into process_status (status, date) values('mapping_submitted',now())");
