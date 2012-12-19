@@ -268,7 +268,9 @@ foreach my $from (@execution_order) {
         my $o = "$dir/names_${from}_$to.out";
         my $e = "$dir/names_${from}_$to.err";
         my $n = substr("n_${from}_$to", 0, 10); # job name display limited to 10 chars
-        my $all = ($from eq "human") ? "" : "--all_sources"; # non-human from species -> use all sources
+        my $all;
+        if ($from eq "human" || $from eq "mouse") { $all = "" ; }
+        else { $all = "--all_sources"; }
         my $wait;
         if ($last_name) { $wait = "-w 'ended(${last_name}*)'";}
         
