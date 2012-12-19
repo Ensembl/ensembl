@@ -172,7 +172,7 @@ sub _production {
   my $sql = 'select common_name, web_name, scientific_name, production_name, url_name, taxon, species_prefix from species where taxon =?';
   my $hash_ref = $self->_query_production($sql,$taxon);
   
-  if (!exists $hash_ref->{'species.common_name'}) {
+  if (!exists $hash_ref->{'species.production_name'}) {
       warning("Failed to find original taxon id for $db. Attempting to obtain by DB name instead");
       my $db_name = $db;
       # regex chops tail end off core-like databases. This must be extended if new naming schemes are used.                               
