@@ -443,7 +443,7 @@ sub get_extensions {
     #'MOD'    => 'href=mod',
     'PomBase' => 'http://www.pombase.org/spombe/result/',
     'PomBase_Systematic_ID' => 'http://www.pombase.org/spombe/result/',
-    'PUBMED' => 'http://www.ebi.ac.uk/citexplore/citationDetails.do?dataSource=MED&externalId='
+    'PUBMED' => 'http://europepmc.org/abstract/MED/'
   );
   
   foreach my $groupId (keys %{ $self->{'associated_xref'} } ) {
@@ -484,19 +484,22 @@ sub get_extensions {
         if ( exists $external_urls{$self->{'associated_xref'}->{$groupId}->{$rank}->[1]->dbname} ) {
           $source = '<a href="' . $external_urls{$self->{'associated_xref'}->{$groupId}->{$rank}->[1]->dbname}
                   . $self->{'associated_xref'}->{$groupId}->{$rank}->[1]->primary_id . '">'
-                  . $self->{'associated_xref'}->{$groupId}->{$rank}->[1]->display_id
+                  . 'PMC:' . $self->{'associated_xref'}->{$groupId}->{$rank}->[1]->display_id
                   . '</a>';
+        } elsif ($self->{'associated_xref'}->{$groupId}->{$rank}->[1]->display_id eq 'PMPB:0') {
+          $source = '';
         } else {
           $source = $self->{'associated_xref'}->{$groupId}->{$rank}->[1]->display_id;
         }
       }
     }
     
-    my %row =  ('description' => $description,
-                'evidence'    => $evidence,
-                'source'      => $source);
-    
-    push @annotExtRows, (\%row);
+    if ($evidence ne '' and $description ne '') {
+      my %row =  ('description' => $description,
+                  'evidence'    => $evidence,
+                  'source'      => $source);
+      push @annotExtRows, (\%row);
+    }
   }
   
   return \@annotExtRows;
