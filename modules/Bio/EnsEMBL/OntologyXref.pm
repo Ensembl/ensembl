@@ -483,9 +483,11 @@ sub get_extensions {
       if ( !undef $external_urls{$self->{'associated_xref'}->{$groupId}->{$rank}->[1]} ) {
         if ( exists $external_urls{$self->{'associated_xref'}->{$groupId}->{$rank}->[1]->dbname} ) {
           $source = '<a href="' . $external_urls{$self->{'associated_xref'}->{$groupId}->{$rank}->[1]->dbname}
-                  . $self->{'associated_xref'}->{$groupId}->{$rank}->[1]->primary_id . '">'
-                  . 'PMC:' . $self->{'associated_xref'}->{$groupId}->{$rank}->[1]->display_id
-                  . '</a>';
+                  . $self->{'associated_xref'}->{$groupId}->{$rank}->[1]->primary_id . '">';
+          if ( $self->{'associated_xref'}->{$groupId}->{$rank}->[1]->dbname ne 'GO_REF' ) {
+            $source .= 'PMC:';
+          }
+          $source = $self->{'associated_xref'}->{$groupId}->{$rank}->[1]->display_id . '</a>';
         } elsif ($self->{'associated_xref'}->{$groupId}->{$rank}->[1]->display_id eq 'PMPB:0') {
           $source = '';
         } else {
