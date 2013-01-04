@@ -9,40 +9,33 @@ use vars '@ISA';
 
 sub set_methods{
  
-  my $default_method = 'ExonerateGappedBest1_55_perc_id';
-  my %override_method_for_source = ( );
+  my $default_method = 'ExonerateGappedBest1';
+  my %override_method_for_source = ( 
+  	  ExonerateGappedBest5 => ['RefSeq_mRNA','RefSeq_mRNA_predicted', 'RefSeq_ncRNA', 'RefSeq_ncRNA_predicted' ],
+  	  );
 
   return $default_method, \%override_method_for_source;
 }
 
-
+#Reverse order: second one has higher priority!
 sub gene_description_sources {
-  return ("Ixodes_ManualAnnotation",
-	  "Uniprot/SWISSPROT",	  
-  ) ;
+  return qw(
+  	     VB_Community_Annotation
+  	     Uniprot/SWISSPROT
+  	     VB_External_Description
+	     );
 }
 
-sub gene_display_xref_sources {
-  my $self     = shift;
-  my $fullmode = shift;
-
-  my @list = qw(Ixodes_ManualAnnotation
-                Uniprot/SWISSPROT		
-                );
-
-  my %ignore;
-
-  return [\@list,\%ignore];
-
-}
-
+#Reverse order: second one has higher priority!
 sub transcript_display_xref_sources {
   my $self     = shift;
   my $fullmode = shift;
 
-  my @list = qw(Ixodes_ManualAnnotation
-                Uniprot/SWISSPROT		
-                );
+  my @list = qw(
+  	  	VB_Community_Annotation
+  	  	Uniprot/SWISSPROT
+  	  	VB_External_Description
+		);
 
   my %ignore;
 

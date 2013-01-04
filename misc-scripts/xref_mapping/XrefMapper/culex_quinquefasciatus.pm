@@ -25,34 +25,22 @@ sub set_methods{
 
 sub gene_description_sources {
 
-  return (
-	  "VB_External_Description",
-	  "VB_RNA_Description",
-	  "Uniprot/SWISSPROT",
-	  "VB_Community_Annotation"
-          );
-}
-
-sub gene_display_xref_sources {
-
-  my @list = qw(RFAM
-		miRBase
-		Uniprot/SWISSPROT
-		VB_Community_Annotation
-             );
-
-  my %ignore;
-  return [\@list,\%ignore];
-
+  return qw(
+	    VB_Community_Annotation
+	    Uniprot/SWISSPROT
+	    VB_RNA_Description
+  	    VB_External_Description
+            );
 }
 
 sub transcript_display_xref_sources {
 
-  my @list = qw(RFAM
-		miRBase
-		Uniprot/SWISSPROT
-		VB_Community_Annotation
-             );
+  my @list = qw(	    
+  	  	VB_Community_Annotation
+  	  	Uniprot/SWISSPROT
+  	  	VB_RNA_Description
+  	  	VB_External_Description
+		);
 
   my %ignore;
   return [\@list,\%ignore];

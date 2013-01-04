@@ -20,33 +20,26 @@ sub set_methods{
 
 
 
-#Reverse order: last one has higher priority!
+#Reverse order: last one has higher priority! <- This comment is wrong (mikkel 12/10/2012)
+# index [0] has higher priority! 
 sub gene_description_sources {
-  return ("VB_External_Description",
-	  "Uniprot/SWISSPROT",
-          "VB_Community_Annotation"
-	  );
+  return qw(
+  	     VB_Community_Annotation
+  	     Uniprot/SWISSPROT
+  	     VB_External_Description
+	     );
 }
-
-sub gene_display_xref_sources {
-  my @list = qw(
-		Uniprot/SWISSPROT
-		VB_Community_Annotation
-                );
-
-  my %ignore;
-
-  return [\@list,\%ignore];
-
-}
-
+#Old order VB_External_Description Uniprot/SWISSPROT VB_Community_Annotation
+# only sources in this list are used when setting  display_xref_id
 sub transcript_display_xref_sources {
   my @list = qw(
-		Uniprot/SWISSPROT
-		VB_Community_Annotation
-                );
-
+  	  	VB_Community_Annotation
+  	  	Uniprot/SWISSPROT
+  	  	VB_External_Description
+		);
+#old VB_External_Description Uniprot/SWISSPROT VB_Community_Annotation
   my %ignore;
+  #$ignore{"EntrezGene"}= 'FROM:RefSeq_[pd][en][pa].*_predicted';
 
   return [\@list,\%ignore];
 
