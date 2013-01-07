@@ -4,46 +4,19 @@ use warnings;
 use Test::More;
 
 use Bio::EnsEMBL::ApiVersion qw/software_version/;
+use Bio::EnsEMBL::Utils::Net qw/do_GET/;
 use Bio::EnsEMBL::Test::MultiTestDB;
 use File::Find;
 use File::Spec::Functions qw/updir catfile catdir/;
 use File::Temp qw/tempfile/;
 use FindBin qw/$Bin/;
 
-#Using the best available HTTP client
-my $tiny = 0;
-my $lwp = 0;
-eval {
-  require HTTP::Tiny;
-  note 'Using HTTP::Tiny';
-  $tiny = 1;
-};
-eval {
-  if(!$tiny) {
-    require LWP::UserAgent;
-    note 'Using LWP';
-    $lwp = 1;
-  }
-};
-
 sub get_url {
   my ($url) = @_;
-  my $contents;
-  if($tiny) {
-    my $response = HTTP::Tiny->new->get($url);
-    return unless $response->{success};
-    return $response->{content} if length $response->{content};
-    return;
-  }
-  elsif($lwp) {
-    my $ua = LWP::UserAgent->new;
-    $ua->agent("EnsemblTest/1.0.0 ");
-    $ua->env_proxy;
-    my $response = $ua->get($url);
-    return $response->decoded_content if $response->is_success;
-    return;
-  }
-  fail("We do not have access to HTTP::Tiny or LWP. Cannot continue");
+  my $content = eval { do_GET($url, 5, 0.5); };
+  return $content if defined $content;
+  diag $@;
+  fail("We do not have access to HTTP::Tiny or LWP. Cannot continue") if $@;
   return;
 }
 
@@ -99,7 +72,7 @@ SKIP: {
   #Load last release's schema
   my $loaded_schema = $load_sql->($sql_schema_file);
   
-  skip 'Skipping DB patch tests as we cannot find the SQL at URL '.$cvs_url, scalar(@patches) unless $loaded_schema;
+  skip 'Skipping DB patch tests as we cannot load the last release schema into a database', scalar(@patches) unless $loaded_schema;
   
   #Now apply all current patches
   foreach my $patch (@patches) {
