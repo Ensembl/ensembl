@@ -26,8 +26,8 @@ my ( $user, $pass );
 my $dbname;
 my $dbpattern;
 
-my $core    = 0;
-my $verbose = 0;
+my $core     = 0;
+my $verbose  = 0;
 my $dropbaks = 0;
 my $dumppath;
 
@@ -46,7 +46,7 @@ if ( !GetOptions( 'mhost|mh=s'     => \$mhost,
                   'table|t=s'      => \@tables,
                   'verbose|v!'     => \$verbose,
                   'core=i'         => \$core,
-                  'dropbaks|dB!'  => \$dropbaks,
+                  'dropbaks|dB!'   => \$dropbaks,
                   'dumppath|dp=s'  => \$dumppath )
      ||
      !( defined($host) &&
@@ -54,8 +54,8 @@ if ( !GetOptions( 'mhost|mh=s'     => \$mhost,
         defined($pass) &&
         ( defined($dbname) || defined($dbpattern) || defined($core) ) &&
         defined($mhost) &&
-        defined($muser) &&
-        defined($dumppath) ) )
+        defined($muser) ) ||
+     ( $dropbaks && !defined($dumppath) ) )
 {
   my $indent = ' ' x length($0);
   print <<USAGE_END;
@@ -68,7 +68,7 @@ Usage:
   $0 -h host [-P port] \\
   $indent -u user [-p password]
   $indent -d database | --pattern pattern \\
-  $indent -dp dumppath & -dB \\
+  $indent [-dp dumppath] [-dB] \\
   $indent [-mh host] [-mP port] \\
   $indent [-mu user] [-mp password] [-md database] \\
   $indent [-t table] [-t table] [-t ...] \\
@@ -113,12 +113,13 @@ Usage:
   -t / --table      A specific table to update, may occur several times,
                     must be one of the tables attrib_type, external_db,
                     misc_set, or unmapped_reason.
-  
-  -dB / --dropbaks  Forces the dropping of the _bak tables created as part
-                    of this script's run. Normally we would suggest you keep
-                    this option off unless you know you do not want these. You
-                    must run this option with --dumppath to avoid unintentional
-                    data loss.
+
+  -dB / --dropbaks  Drop backups.
+                    Forces the dropping of the _bak tables created as
+                    part of this script's run.  Normally we would suggest
+                    you keep this option off unless you know you do not
+                    want these.  You must run this option with --dumppath
+                    to avoid unintentional data loss.
 
   -v / --verbose    Be verbose, display every SQL statement as they
                     are executed (on standard error).
@@ -127,15 +128,12 @@ Usage:
 USAGE_END
 
   die( "Need the following options: " .
-       "-h -u -p -d (or --pattern) and -dp\n" );
+       "-h -u -p and -d (or --pattern, or --core)\n" );
 
 } ## end if ( !GetOptions( 'mhost|mh=s'...))
 
-if($dropbaks && ! defined $dumppath ) {
-  die "If you are specifying --dropbaks you must specify a --dumppath";
-}
-if(defined $dumppath && ! -d $dumppath) {
-  die "--dumppath $dumppath does not exist or is not a directory";
+if ( defined($dumppath) && !-d $dumppath ) {
+  die("Dump path '$dumppath' does not exist or is not a directory");
 }
 
 if (@tables) {
@@ -207,7 +205,7 @@ my %data;
     print( '=' x 80, "\n" );
     printf( "\t%s\n", $dbname );
     print( '=' x 80, "\n" );
-    
+
     my @backup_tables;
 
     foreach my $table ( keys(%data) ) {
@@ -280,7 +278,7 @@ my %data;
             map {
               $dbh->quote( $row->[ $_ - 1 ],
                            $colinfo->{$_}{'DATA_TYPE'} )
-              } ( 1 .. $numcols ) ) );
+            } ( 1 .. $numcols ) ) );
 
         if ($verbose) {
           printf( STDERR "EXECUTING: %s\n", $insert_statement );
@@ -363,17 +361,17 @@ my %data;
           print("\n");
         }
       }
-      
-      push(@backup_tables, $full_table_name_bak);
+
+      push( @backup_tables, $full_table_name_bak );
     } ## end foreach my $table ( keys(%data...))
     continue {
       print("\n");
     }
-    
-    if($dropbaks) {
+
+    if ($dropbaks) {
       foreach my $backup_table (@backup_tables) {
-        printf("Dropping the backup table %s\n", $backup_table);
-        $dbh->do("drop table $backup_table");
+        printf( "Dropping the backup table %s\n", $backup_table );
+        $dbh->do("DROP TABLE $backup_table");
       }
     }
 
@@ -384,7 +382,14 @@ my %data;
   $dbh->disconnect();
 }
 
-print <<FINAL_END
-To restore a table from dump login to the database and use command:
-"source {dumpfile}" or "\. {dumpfile}".
-FINAL_END
+if ( defined($dumppath) ) {
+  print <<MSG1_END
+To restore a table from a table dump, use either "source {dumpfile}" or
+"\. {dumpfile}" from the MySQL command shell.
+MSG1_END
+}
+if ( !$dropbaks ) {
+  print <<MSG2_END
+Each table has also been backed up to a table with "_bak" appended to its name.
+MSG2_END
+}
