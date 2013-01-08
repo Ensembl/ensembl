@@ -92,20 +92,34 @@ sub feature_Slice {
   my $self = shift;
   return $self->{_chrom_slice} if defined($self->{_chrom_slice});
 
-  my $max=-99999999999;
-  my $min=9999999999;
+  my $max;
+  my $min;
   my $chrom;
   my $strand;
+  my %segments;
 
-#  print STDERR "working out feature slcie\n";
   foreach my $segment (@{$self->project('chromosome')}) {
     my $from_start = $segment->from_start();
-    my $from_end    = $segment->from_end();
-    my $to_name    = $segment->to_Slice->seq_region_name();
-    $chrom = $to_name;
+    my $from_end   = $segment->from_end();
+    my $slice      = $segment->to_Slice;
+    
+    my $seq_region_id = $slice->adaptor->get_seq_region_id($slice);
+    my $to_name    = $slice->seq_region_name();
+    
+    next if (!$seq_region_id);
+    
+    if (!$segments{$seq_region_id}) {
+      $segments{$seq_region_id}{'chr_name'} = $to_name;
+      $segments{$seq_region_id}{'strand'}   = $slice->strand;
+      $max=-99999999999;
+      $min=9999999999;
+    } else {
+      $max = $segments{$seq_region_id}{'max'};
+      $min = $segments{$seq_region_id}{'min'};
+    }
 
-    my $to_start    = $segment->to_Slice->start();
-    my $to_end    = $segment->to_Slice->end();
+    my $to_start = $slice->start();
+    my $to_end   = $slice->end();
     if($to_start > $max){
       $max = $to_start;
     }
@@ -118,11 +132,24 @@ sub feature_Slice {
     if($to_end <  $min){
       $min = $to_end;
     }
-    my $ori        = $segment->to_Slice->strand();
-    $strand = $ori;
+    
+    $segments{$seq_region_id}{'max'} = $max;
+    $segments{$seq_region_id}{'min'} = $min;  
   }
+  
+  my @seq_region_ids = sort {$a <=> $b} keys (%segments);
+  
+  # Keep the chromosome mapping instead of the patch, if possible
+  if (scalar @seq_region_ids) {
+    my $seq_id = $seq_region_ids[0];
+    $chrom  = $segments{$seq_id}{'chr_name'};
+    $max    = $segments{$seq_id}{'max'};
+    $min    = $segments{$seq_id}{'min'};
+    $strand = $segments{$seq_id}{'strand'};
+  }
+
   if(!defined($chrom)){
-    warn "Could not project to chromosome for ".$self->name."??\n";
+    warn "Could not project to chromosome for ".$self->name." ??\n";
     return undef;
   }
   my $chrom_slice = $self->adaptor->fetch_by_region("chromosome",$chrom, $min, $max, $strand);
