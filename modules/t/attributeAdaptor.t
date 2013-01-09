@@ -17,6 +17,7 @@ my $db = $multi->get_DBAdaptor("core");
 
 my $slice_adaptor = $db->get_SliceAdaptor();
 my $mfa           = $db->get_MiscFeatureAdaptor();
+my $ga            = $db->get_GeneAdaptor();
 
 
 #
@@ -29,7 +30,7 @@ ok($aa && ref($aa) && $aa->isa('Bio::EnsEMBL::DBSQL::AttributeAdaptor'));
 
 # hide the contents of the attrib_type, misc_attrib, seq_region_attrib tables
 # so we can test storing etc. with a clean slate
-$multi->hide('core', 'misc_attrib', 'seq_region_attrib', 'attrib_type');
+$multi->hide('core', 'misc_attrib', 'seq_region_attrib', 'attrib_type', 'gene_attrib');
 
 
 ##############
@@ -253,6 +254,152 @@ ok($count == 0);
   my $new_rows = count_rows($db, 'seq_region_attrib');
   cmp_ok($new_rows, '>', $current_rows, 'Asserting the storage of undefined attributes will always store them');
 }
+
+
+#################
+# Gene functionality tests
+#
+
+
+$attrib = Bio::EnsEMBL::Attribute->new(-NAME => 'test_name2',
+                                       -CODE => 'test_code2',
+                                       -DESCRIPTION => 'test_desc2',
+                                       -VALUE => 'test_value2');
+
+
+my $gene = $ga->fetch_by_stable_id('ENSG00000171456');
+
+$aa->store_on_Gene($gene, [$attrib]);
+
+#
+# make sure the seq_region_attrib table was updated
+#
+$count = $db->dbc->db_handle->selectall_arrayref
+  ("SELECT count(*) FROM gene_attrib " .
+   "WHERE gene_id = ".$gene->dbID())->[0]->[0];
+
+ok($count == 1);
+
+#
+# make sure the attrib_type table was updated
+#
+$count = $db->dbc->db_handle->selectall_arrayref
+  ("SELECT count(*) FROM attrib_type " .
+   "WHERE code = 'test_code2'")->[0]->[0];
+ok($count == 1);
+
+#
+# test that we can now retrieve this attribute
+#
+@attribs = @{$aa->fetch_all_by_Gene($gene)};
+ok(@attribs == 1);
+
+@attribs = @{$aa->fetch_all_by_Gene($gene,"rubbish")};
+ok(@attribs == 0);
+
+@attribs = @{$aa->fetch_all_by_Gene($gene,"test_code2")};
+ok(@attribs == 1);
+
+@attribs = @{$aa->fetch_all_by_Gene(undef,"test_code2")};
+ok(@attribs == 1);
+
+
+$attrib = $attribs[0];
+
+ok($attrib->name eq 'test_name2');
+ok($attrib->code eq 'test_code2');
+ok($attrib->description eq 'test_desc2');
+ok($attrib->value eq 'test_value2');
+
+
+#
+# test the removal of this attribute with atrrib code
+#
+$aa->remove_from_Gene($gene,"junk");
+$count = $db->dbc->db_handle->selectall_arrayref
+  ("SELECT count(*) FROM gene_attrib " .
+   "WHERE gene_id = " . $gene->dbID())->[0]->[0];
+
+ok($count == 1);
+
+
+
+
+#
+# test the removal of this attribute
+#
+
+$aa->remove_from_Gene($gene,"test_code2");
+$count = $db->dbc->db_handle->selectall_arrayref
+  ("SELECT count(*) FROM gene_attrib " .
+   "WHERE gene_id = " . $gene->dbID())->[0]->[0];
+
+ok($count == 0);
+
+
+
+#
+# make sure the attribute is no longer retrievable
+#
+@attribs = @{$aa->fetch_all_by_Gene($gene)};
+ok(@attribs == 0);
+
+
+
+#
+# try to add an attribute with an already existing code
+#
+$aa->store_on_Gene($gene, [$attrib]);
+#
+# make sure the seq_region_attrib table was updated
+#
+$count = $db->dbc->db_handle->selectall_arrayref
+  ("SELECT count(*) FROM gene_attrib " .
+   "WHERE gene_id = ".$gene->dbID())->[0]->[0];
+
+ok($count == 1);
+
+#
+# make sure the attrib_type table was updated
+#
+$count = $db->dbc->db_handle->selectall_arrayref
+  ("SELECT count(*) FROM attrib_type " .
+   "WHERE code = 'test_code2'")->[0]->[0];
+ok($count == 1);
+
+@attribs = @{$aa->fetch_all_by_Gene($gene)};
+note "attribs: " . scalar(@attribs);
+ok(@attribs == 1);
+
+@attribs = @{$aa->fetch_all_by_Gene(undef)};
+ok(@attribs == 1);
+
+
+
+#
+# test the removal of this attribute
+#
+$aa->remove_from_Gene($gene);
+$count = $db->dbc->db_handle->selectall_arrayref
+  ("SELECT count(*) FROM gene_attrib " .
+   "WHERE gene_id = " . $gene->dbID())->[0]->[0];
+
+ok($count == 0);
+
+#
+# test the storage of empty attrib values
+#
+{
+  my %args = (-NAME => 'test_name2', -CODE => 'test_code2', -DESCRIPTION => 'test_desc2');
+  my $current_rows = count_rows($db, 'gene_attrib');
+  my $atrib = Bio::EnsEMBL::Attribute->new(%args,);
+  $aa->store_on_Gene($gene, [Bio::EnsEMBL::Attribute->new(%args, -VALUE => q{})]);
+  $aa->store_on_Gene($gene, [Bio::EnsEMBL::Attribute->new(%args, -VALUE => 0)]);
+  my $new_rows = count_rows($db, 'gene_attrib');
+  cmp_ok($new_rows, '>', $current_rows, 'Asserting the storage of undefined attributes will always store them');
+}
+
+
 
 $multi->restore('core', 'misc_attrib', 'seq_region_attrib', 'attrib_type');
 
