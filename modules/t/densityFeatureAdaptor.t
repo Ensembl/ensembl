@@ -180,6 +180,15 @@ ok( $stored_features[0]->length() > 10000 );
 print $stored_features[0]->length() . "\n";
 ok( $stored_features[0]->length() == 1000 );
 
+# Check for fetching all features
+@stored_features = @{$dfa->fetch_all()};
+is( @stored_features, 318, 'Number of stored features');
+@stored_features = @{$dfa->fetch_all('GeneDensityTest')};
+ok( $stored_features[0]->length() > 1000 );
+is( @stored_features, 306, "Number of stored gene densities"); 
+@stored_features = @{$dfa->fetch_all('rubbish')};
+ok( @stored_features == 0);
+
 
 
 
