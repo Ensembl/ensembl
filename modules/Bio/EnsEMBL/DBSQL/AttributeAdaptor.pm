@@ -272,13 +272,15 @@ sub fetch_all_by_{
   my $code     = shift;
   my $table =undef;
 
-  if(!ref($object) || !$object->isa('Bio::EnsEMBL::'.$type)) {
-    throw("$type argument is required. but you passed $object");
+  if (defined($object)){
+    if(!ref($object) || !$object->isa('Bio::EnsEMBL::'.$type)) {
+      throw("$type argument is required. but you passed $object");
+    }
   }
 
   my $object_id;
   if($type eq "Slice"){
-    $object_id = $object->get_seq_region_id();
+    $object_id = $object->get_seq_region_id() if defined $object;
     $table = "seq_region"; 
     $type = "seq_region";
   }
@@ -291,26 +293,22 @@ sub fetch_all_by_{
       $table = lc($type);
     }
 
-    $object_id = $object->dbID();
+    $object_id = $object->dbID() if defined $object;
   }
-
-  if(!defined($object_id)) {
-    throw("$type must have dbID.");
-  }
-
 
   my $sql = "SELECT at.code, at.name, at.description, t.value " .
               "FROM ".($table||$type)."_attrib t, attrib_type at ".
-                 "WHERE t.".$type."_id = ? " .
-	         "AND   at.attrib_type_id = t.attrib_type_id ";
+                 "WHERE at.attrib_type_id = t.attrib_type_id ";
 
   if(defined($code)){
     $sql .= 'AND at.code like "'.$code.'" ';
   }
+
+  if(defined($object_id)){
+    $sql .= "AND t.".$type."_id = ".$object_id;
+  }
 		   
   my $sth = $self->prepare($sql);
-
-  $sth->bind_param(1,$object_id,SQL_INTEGER);
   $sth->execute();
 
   my $results = $self->_obj_from_sth($sth);
