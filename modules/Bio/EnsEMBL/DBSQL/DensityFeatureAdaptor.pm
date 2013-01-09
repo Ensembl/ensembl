@@ -60,6 +60,7 @@ use Bio::EnsEMBL::Utils::Exception qw(throw warning);
 
 our $DENSITY_FEATURE_CACHE_SIZE = 20;
 
+
 =head2 new
 
   Arg [1]    : list of args @args
@@ -303,6 +304,49 @@ sub fetch_all_by_Slice {
 
   return \@out;
 }
+
+
+sub fetch_all {
+  my $self = shift;
+  my $logic_name = shift;
+
+  my ($sth, $seq_region_id, $start, $end, $density_value, $density_type_id);
+  my ($slice, $density_type, @out);
+  my $sa = $self->db()->get_SliceAdaptor();
+  my $dta = $self->db()->get_DensityTypeAdaptor();
+
+  if ($logic_name) {
+    $sth = $self->prepare("SELECT df.seq_region_id, df.seq_region_start, df.seq_region_end, df.density_value, df.density_type_id "
+                         . "FROM density_feature df, density_type dt, analysis a "
+                         . "WHERE df.density_type_id = dt.density_type_id "
+                         . "AND dt.analysis_id = a.analysis_id "
+                         . "AND logic_name = ?" );
+    $sth->bind_param(1, $logic_name, SQL_VARCHAR);
+    $sth->execute();
+  } else {
+    $sth = $self->prepare("SELECT df.seq_region_id, df.seq_region_start, df.seq_region_end, df.density_value, df.density_type_id "
+                         . "FROM density_feature df, density_type dt "
+                         . "WHERE df.density_type_id = dt.density_type_id" );
+    $sth->execute();
+  }
+
+
+  $sth->bind_columns(\($seq_region_id, $start, $end, $density_value, $density_type_id));
+
+
+  while ($sth->fetch()) {
+    $slice = $sa->fetch_by_seq_region_id($seq_region_id);
+    $density_type = $dta->fetch_by_dbID($density_type_id);
+    push (@out, Bio::EnsEMBL::DensityFeature->new
+      (-seq_region    => $slice,
+       -start         => $start,
+       -end           => $end,
+       -density_type  => $density_type,
+       -density_value => $density_value));
+  }
+  return \@out;
+}
+
 
 
 sub _tables {
