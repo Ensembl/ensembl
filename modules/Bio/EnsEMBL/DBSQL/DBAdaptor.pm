@@ -340,9 +340,9 @@ sub get_available_adaptors {
         TranscriptSupportingFeature Translation       UnmappedObject
         UnconventionalTranscriptAssociation           AssemblySlice
         SplicingEvent            SplicingEventFeature SplicingTranscriptPair
-        Operon 			 OperonTranscript
+        Operon 	                 OperonTranscript
         DataFile                 Assembly
-        IntronSupportingEvidence
+        IntronSupportingEvidence AltAlleleGroup
         ) ),
     # Those whose adaptors are in Map::DBSQL
     map( { $_ => "Bio::EnsEMBL::Map::DBSQL::${_}Adaptor" } qw(
