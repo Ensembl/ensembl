@@ -7,7 +7,8 @@ use Test::More;
 use Bio::EnsEMBL::Test::MultiTestDB;
 use Bio::EnsEMBL::Attribute;
 
-our $verbose = 0;
+our $verbose = 1;
+our $clean = 0;
 
 my $multi = Bio::EnsEMBL::Test::MultiTestDB->new;
 
@@ -75,6 +76,17 @@ ok($attrib->code eq 'test_code');
 ok($attrib->description eq 'test_desc');
 ok($attrib->value eq 'test_value');
 
+@attribs = @{ $aa->fetch_all_by_MiscFeature() };
+
+ok(@attribs == 1);
+
+$attrib = $attribs[0];
+
+ok($attrib->name eq 'test_name');
+ok($attrib->code eq 'test_code');
+ok($attrib->description eq 'test_desc');
+ok($attrib->value eq 'test_value');
+
 
 #
 # test the removal of this attribute
@@ -95,6 +107,7 @@ ok($count == 0);
 #
 @attribs = @{$aa->fetch_all_by_MiscFeature($mf)};
 ok(@attribs == 0);
+
 
 
 
@@ -134,9 +147,7 @@ ok($count == 1);
 # test that we can now retrieve this attribute
 #
 @attribs = @{$aa->fetch_all_by_Slice($slice)};
-
 ok(@attribs == 1);
-
 
 @attribs = @{$aa->fetch_all_by_Slice($slice,"rubbish")};
 ok(@attribs == 0);
@@ -144,6 +155,8 @@ ok(@attribs == 0);
 @attribs = @{$aa->fetch_all_by_Slice($slice,"test_code2")};
 ok(@attribs == 1);
 
+@attribs = @{$aa->fetch_all_by_Slice(undef,"test_code2")};
+ok(@attribs == 1);
 
 
 $attrib = $attribs[0];
@@ -212,6 +225,10 @@ ok($count == 1);
 @attribs = @{$aa->fetch_all_by_Slice($slice)};
 note "attribs: " . scalar(@attribs);
 ok(@attribs == 1);
+
+@attribs = @{$aa->fetch_all_by_Slice(undef)};
+ok(@attribs == 1);
+
 
 
 #
