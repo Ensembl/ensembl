@@ -1,30 +1,34 @@
 #!/bin/bash
 
-function confirm()
-{
-    echo -n "$@ "
-    read -e answer
-    for response in y Y yes YES Yes Sure sure SURE OK ok Ok
-    do
-        if [ "_$answer" == "_$response" ]
-        then
-            return 0
-        fi
-    done
-	
-    return 1
-}
+if [ -z "$@" ]; then
+  dirs=$(pwd)
+else
+  dirs=$@
+fi
 
-year=$(date "+%Y")
-last_year=$(($year - 1))
+original_wd=$(pwd)
 
-search="Copyright (c) 1999-${last_year}"
-replacement="Copyright (c) 1999-${year}"
+for var in "$dirs"; do
 
-confirm "About to scan $(pwd) for files to replace '$search' with '$replacement'. Ok?"
+  if [ ! -d $var ] ; then
+    echo "$var is not a directory. Skipping"
+    continue
+  fi
 
-for file in $(grep -R --files-with-matches "$search" .); do
-	echo "Replacing date in $file"
-	sed -i "s/$search/$replacement/g" $file
+  cd $var
+
+  year=$(date "+%Y")
+  last_year=$(($year - 1))
+
+  search="Copyright (c) 1999-${last_year}"
+  replacement="Copyright (c) 1999-${year}"
+
+  echo "About to scan $(pwd) for files to replace '$search' with '$replacement'"
+
+  for file in $(grep -R --files-with-matches "$search" .); do
+    echo "Replacing date in $file"
+    sed -i '' -e "s/$search/$replacement/g" $file
+  done
+
+  cd $original_wd
 done
-
