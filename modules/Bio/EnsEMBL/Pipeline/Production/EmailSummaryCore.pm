@@ -126,7 +126,7 @@ sub jobs {
 
 sub failed {
   my ($self) = @_;
-  my $failed = $self->db()->get_AnalysisJobAdaptor()->fetch_all_failed_jobs();
+  my $failed = $self->db()->get_AnalysisJobAdaptor()->fetch_all_by_analysis_id_status(undef, 'FAILED');
   if(! @{$failed}) {
     return 'No jobs failed. Congratulations!';
   }
