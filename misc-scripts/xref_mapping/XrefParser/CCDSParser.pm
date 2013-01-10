@@ -2,7 +2,6 @@ package XrefParser::CCDSParser;
 
 use strict;
 use Carp;
-use DBI;
 
 use base qw( XrefParser::BaseParser );
 use XrefParser::Database;
@@ -54,11 +53,7 @@ sub run_script {
   if(!defined($dbi2)){
     return 1;
   }
-
-
-  my $line_count = 0;
-  my $xref_count = 0;
-
+  
   my $sql =(<<'SCD');
 SELECT t.stable_id, x.dbprimary_acc 
   FROM xref x, object_xref ox, transcript t, external_db e
@@ -71,8 +66,8 @@ SCD
 
   my %seen;
 
-  my $sth = $dbi2->prepare($sql) or "Could not prepare sql $sql\n";;
-  $sth->execute() or die "Could not execute $sql\n";;
+  my $sth = $dbi2->prepare($sql) or die "Could not prepare sql $sql\n";
+  $sth->execute() or die "Could not execute $sql\n";
   my $xref_count = 0;
   my $direct_count=0;
   my ($stable_id, $display_label);
