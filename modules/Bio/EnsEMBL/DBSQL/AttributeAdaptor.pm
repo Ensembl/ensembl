@@ -263,6 +263,10 @@ sub remove_from_{
   return;
 }
 
+sub fetch_all {
+  throw("Use of method fetch_all not supported for attributes");
+}
+
 
 
 sub fetch_all_by_{
