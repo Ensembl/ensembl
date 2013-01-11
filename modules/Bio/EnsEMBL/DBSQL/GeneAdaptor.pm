@@ -68,6 +68,7 @@ use Bio::EnsEMBL::DBSQL::SliceAdaptor;
 use Bio::EnsEMBL::DBSQL::BaseFeatureAdaptor;
 use Bio::EnsEMBL::DBSQL::DBAdaptor;
 use Bio::EnsEMBL::Gene;
+use Bio::EnsEMBL::AltAlleleGroup;
 
 use vars '@ISA';
 @ISA = qw(Bio::EnsEMBL::DBSQL::BaseFeatureAdaptor);
@@ -969,7 +970,10 @@ sub fetch_all_alt_alleles {
 	return [];
   }
 
-  my $sth = $self->prepare("SELECT aa1.gene_id " . "FROM   alt_allele aa1, alt_allele aa2 " . "WHERE  aa1.alt_allele_id = aa2.alt_allele_id " . "AND    aa2.gene_id = ? " . "AND    aa1.gene_id <> ?");
+  my $sth = $self->prepare("SELECT aa1.gene_id " 
+  . "FROM   alt_allele aa1, alt_allele aa2 " 
+  . "WHERE  aa1.alt_allele_id = aa2.alt_allele_id " 
+  . "AND    aa2.gene_id = ? " . "AND    aa1.gene_id <> ?");
 
   $sth->bind_param(1, $gene_id, SQL_INTEGER);
   $sth->bind_param(2, $gene_id, SQL_INTEGER);
@@ -1010,6 +1014,7 @@ sub is_ref {
 
 
   Arg [1]    : reference to list of Bio::EnsEMBL::Genes $genes
+  Arg [2]    : annotation type (string) for this set of alternative alleles 
   Example    : $gene_adaptor->store_alt_alleles([$gene1, $gene2, $gene3]);
   Description: This method creates a group of alternative alleles (i.e. locus)
                from a set of genes. The genes should be genes from alternate
@@ -1026,24 +1031,21 @@ sub is_ref {
 sub store_alt_alleles {
   my $self  = shift;
   my $genes = shift;
+  my $type  = shift;
 
   if (!ref($genes) eq 'ARRAY') {
 	throw('List reference of Bio::EnsEMBL::Gene argument expected.');
   }
-
+  my $allele_adaptor = $self->db->get_adaptor('AltAlleleGroup');
+  
   my @genes     = @$genes;
   my $num_genes = scalar(@genes);
 
   if ($num_genes < 2) {
-	warning('At least 2 genes must be provided to construct alternative alleles (gene id: ' . $genes[0]->dbID() . '). Ignoring.');
-	return;
+	warning('alternative allele group only has one member (gene id: ' . $genes[0]->dbID() . ').');
   }
-
-  my @is_ref;
-  my @ref_genes     = ();
-  my @non_ref_genes = ();
-  my @gene_ids      = ();
-
+  my @alleles;
+  
   foreach my $gene (@genes) {
 
 	if (!ref($gene) || !$gene->isa('Bio::EnsEMBL::Gene')) {
@@ -1054,65 +1056,19 @@ sub store_alt_alleles {
 
 	if (!$gene_id) {
 	  throw('Genes must have dbIDs in order to construct alternative alleles.');
-	} else {
-	  push @gene_ids, $gene_id;
-	}
+	} 
 
 	my $is_ref = $gene->slice->is_reference();
 
-	push @is_ref, $is_ref;
-
-	if ($is_ref) {
-	  push @ref_genes, $gene->dbID();
-	} else {
-	  push @non_ref_genes, $gene->dbID();
-	}
+	push @alleles, [$gene_id,$is_ref,$type];
   }
-  if (scalar(@ref_genes) > 1) {
-	warning('More than one alternative allele on the reference sequence (gene ids: ' . join(',', @ref_genes) . '). Ignoring.');
-	return;
-  }
+  
+  my $allele_group = Bio::EnsEMBL::AltAlleleGroup->new(
+    -MEMBERS => \@alleles,
+    -adaptor => $self->adaptor,
+  );
 
-  #
-  #insert the first gene seperately in order to get a unique identifier for
-  #the set of alleles
-  #
-
-  my $sth = $self->prepare("INSERT INTO alt_allele (gene_id, is_ref) VALUES (?,?)");
-  $sth->bind_param(1, $gene_ids[0], SQL_INTEGER);
-  $sth->bind_param(2, $is_ref[0],   SQL_INTEGER);
-  eval { $sth->execute(); };
-  my $alt_allele_id = $sth->{'mysql_insertid'};
-
-  if (!$alt_allele_id || $@) {
-	throw("An SQL error occured inserting alternative alleles:\n$@");
-  }
-  $sth->finish();
-  #
-  # Insert all subsequent alt alleles using the alt_allele identifier
-  # from the first insert
-  #
-
-  $sth = $self->prepare("INSERT INTO alt_allele (alt_allele_id, gene_id, is_ref) " . "VALUES (?,?,?)");
-
-  for (my $i = 1; $i < $num_genes; $i++) {
-
-	$sth->bind_param(1, $alt_allele_id, SQL_INTEGER);
-	$sth->bind_param(2, $gene_ids[$i],  SQL_INTEGER);
-	$sth->bind_param(3, $is_ref[$i],    SQL_INTEGER);
-	eval { $sth->execute(); };
-
-	if ($@) {
-	  # an error occured, revert the db to the previous state
-	  $sth = $self->prepare("DELETE FROM alt_allele WHERE alt_allele_id = ?");
-	  $sth->bind_param(1, $alt_allele_id, SQL_INTEGER);
-	  $sth->execute();
-	  $sth->finish();
-	  throw("An SQL error occured inserting alternative alleles:\n$@");
-	}
-  }
-
-  $sth->finish();
+  my $alt_allele_id = $allele_adaptor->store($allele_group);
 
   return $alt_allele_id;
 } ## end sub store_alt_alleles
