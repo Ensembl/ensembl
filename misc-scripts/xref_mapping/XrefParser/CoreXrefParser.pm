@@ -145,7 +145,7 @@ sub run_script {
       # print STDERR "processing " . @xrefs . " xrefs\n";
 
       if (@xrefs == 0) {
-	  print sTDERR "No xrefs for gene, " . $object->stable() . "!\n";
+	  print STDERR "No xrefs for gene, " . $object->stable() . "!\n";
       }
 
       foreach my $xref (@xrefs) {
