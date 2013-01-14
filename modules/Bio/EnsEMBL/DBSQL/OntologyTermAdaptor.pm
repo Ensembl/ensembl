@@ -576,9 +576,11 @@ WHERE   synonym.term_id = ?);
 =cut
 
 sub _fetch_ancestor_chart {
-  my ( $this, $term ) = @_;
+  my ( $this, $child_term, $allow_cross_ontology_terms ) = @_;
 
-  assert_ref( $term, 'Bio::EnsEMBL::OntologyTerm' );
+  assert_ref( $child_term, 'Bio::EnsEMBL::OntologyTerm' );
+  
+  my $child_ontology = $child_term->ontology();
 
   my $statement = q(
 SELECT  subparent_term.term_id,
@@ -596,7 +598,7 @@ WHERE   closure.child_term_id = ?
 ORDER BY closure.distance);
 
   my $sth = $this->prepare($statement);
-  $sth->bind_param( 1, $term->dbID(), SQL_INTEGER );
+  $sth->bind_param( 1, $child_term->dbID(), SQL_INTEGER );
 
   $sth->execute();
 
@@ -616,6 +618,16 @@ ORDER BY closure.distance);
   my @terms = @{ $this->fetch_all_by_dbID_list( [ keys(%id_chart) ] ) };
 
   foreach my $term (@terms) {
+    #Allow for the fetching of terms and remove if they span more than one
+    #ontology. We will mark these in the DB in 71 meaning this code will go
+    if(!$allow_cross_ontology_terms) {
+      my $ontology = $term->ontology();
+      if($ontology ne $child_ontology){
+        delete $id_chart{$term->dbID()};
+        delete $acc_chart{$term->accession()};
+        next; 
+      }
+    }
     $id_chart{ $term->dbID() }{'term'}       = $term;
     $acc_chart{ $term->accession() }{'term'} = $term;
   }
