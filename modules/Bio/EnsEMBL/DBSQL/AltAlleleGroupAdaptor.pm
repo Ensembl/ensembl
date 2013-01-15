@@ -46,7 +46,9 @@ use DBI qw( :sql_types );
 
   Arg[1]      : (optional) String - type of group
   Description : Fetches all the alt-allele groups, creates objects to represent
-                them and returns them in a list          
+                them and returns them in a list
+                Multispecies support is triggered by the is_multispecies flag
+                and species_id of the DBAdaptor.         
   Returntype  : Listref of Bio::EnsEMBL::AltAlleleGroup
 =cut
 
@@ -59,16 +61,39 @@ sub fetch_all_Groups {
     my @group_list;
     my @members;
     
-    my $get_all_sql = q(SELECT DISTINCT alt_allele_id FROM alt_allele);
-    
-    if ($type) {$get_all_sql .= q( WHERE type = ?);}
+    my $species_id;
+    my $get_all_sql;
+    if ($self->db->is_multispecies()) {
+        # multispecies databases must be restricted in their treatment
+        $species_id = $self->db->species_id;
+        $get_all_sql = q(
+            SELECT DISTINCT alt_allele_id FROM alt_allele a
+            JOIN (gene g, seq_region s, coord_system c)
+            ON (
+                c.coord_system_id = s.coord_system_id 
+            AND s.seq_region_id = g.seq_region_id
+            AND g.gene_id = a.gene_id
+            )
+            WHERE c.species_id = ? 
+        );
+        if ($type) {$get_all_sql .= q( AND a.type = ? )}
+    } else {
+        $get_all_sql = q(SELECT DISTINCT alt_allele_id FROM alt_allele);
+        if ($type) {$get_all_sql .= q( WHERE type = ?);}
+    }
     
     my $sth = $self->prepare($get_all_sql);
-    $sth->bind_param(1,$type, SQL_VARCHAR) if ($type);
+    
+    my $x = 1;
+    if ($self->db->is_multispecies()) {
+        $sth->bind_param($x,$species_id, SQL_INTEGER);
+        $x++;
+    }
+    $sth->bind_param($x,$type, SQL_VARCHAR) if ($type);
     
     eval { $sth->execute() };
     if ($@) {
-        throw("Query errror in AltAlleleGroupAdaptor: $@");
+        throw("Query error in AltAlleleGroupAdaptor: $@");
     }
     
     
