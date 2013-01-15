@@ -24,6 +24,7 @@ CREATE TABLE `alt_allele` (
   `alt_allele_id` int(11) NOT NULL AUTO_INCREMENT,
   `gene_id` int(11) NOT NULL DEFAULT '0',
   `is_ref` tinyint(1) NOT NULL DEFAULT '0',
+  `type` varchar(40),
   UNIQUE KEY `gene_idx` (`gene_id`),
   UNIQUE KEY `allele_idx` (`alt_allele_id`,`gene_id`)
 ) ENGINE=MyISAM AUTO_INCREMENT=2 DEFAULT CHARSET=latin1 COLLATE=latin1_bin;

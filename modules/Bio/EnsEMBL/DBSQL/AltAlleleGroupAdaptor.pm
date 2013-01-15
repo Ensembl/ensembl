@@ -39,6 +39,7 @@ use warnings;
 use base qw/Bio::EnsEMBL::DBSQL::BaseAdaptor/;
 
 use Bio::EnsEMBL::AltAlleleGroup;
+use Bio::EnsEMBL::Utils::Exception;
 use DBI qw( :sql_types );
 
 =head2 fetch_all_Groups
@@ -53,20 +54,23 @@ sub fetch_all_Groups {
     my $self = shift;
     my $type = shift;
 
-    $type = uc($type);
+    $type = uc($type) if ($type);
     
     my @group_list;
     my @members;
     
-    my $get_all_sql = q(
-        SELECT DISTINCT alt_allele_id FROM alt_alelle
-    );
+    my $get_all_sql = q(SELECT DISTINCT alt_allele_id FROM alt_allele);
     
-    if ($type) {$get_all_sql .= qq(WHERE type = ?);}
+    if ($type) {$get_all_sql .= q( WHERE type = ?);}
     
     my $sth = $self->prepare($get_all_sql);
-    $sth->bind_param(1,$type, SQL_INTEGER) if ($type);
-    $sth->execute();
+    $sth->bind_param(1,$type, SQL_VARCHAR) if ($type);
+    
+    eval { $sth->execute() };
+    if ($@) {
+        throw("Query errror in AltAlleleGroupAdaptor: $@");
+    }
+    
     
     my ($allele_id, @alt_alleles);    
     $sth->bind_columns( \$allele_id );
@@ -122,12 +126,129 @@ sub fetch_Group_by_id {
     my ($gene_id, $is_ref, $type);
     $sth->bind_columns( \($gene_id,$is_ref,$type) );
     while ($sth->fetch()) {
-        push @members,\[$gene_id,$is_ref,$type];
+        push @members,[$gene_id,$is_ref,$type];
     }
-    my $aag = Bio::EnsEMBL::AltAlleleGroup->new(
-        -MEMBERS => @members,
-    );
-    return $aag;
+    if ($allele_id && scalar(@members) > 0) {
+        my $aag = Bio::EnsEMBL::AltAlleleGroup->new(
+            -dbID => $allele_id,
+            -MEMBERS => \@members,
+            -ADAPTOR => $self,
+        );
+        return $aag;
+    }
+    return;
 }
+
+sub fetch_Group_by_Gene_dbID {
+    my $self = shift;
+    my $gene_id = shift;
+    
+    my $gene_id_sql = q(
+        SELECT alt_allele_id FROM alt_allele
+        WHERE gene_id = ?
+    );
+    my $sth = $self->prepare($gene_id_sql);
+    $sth->bind_param(1,$gene_id, SQL_INTEGER);
+    
+    my $group_id;
+    $sth->execute();
+    $sth->bind_columns(\$group_id);
+    $sth->fetch;
+    
+    if (!$@ && $group_id) {
+        return $self->fetch_Group_by_id($group_id);
+    }
+}
+
+=head2 store
+
+  Arg[0]     : Bio::EnsEMBL::AltAlleleGroup
+  Description: Used for persisting new groups to the database.
+               It updates the dbID of the object handed to it to match the
+               database.
+  Returntype : Alt Allele Group id
+
+=cut
+
+sub store {
+    my $self = shift;
+    my $allele_group = shift;
+    
+    if (ref($allele_group) ne "Bio::EnsEMBL::AltAlleleGroup") {
+        throw ("Can only store Bio::EnsEMBL::AltAlleleGroup objects.");   
+    } else {
+        if ($allele_group->size < 2) {
+            warning('At least 2 genes must be provided to construct alternative alleles. Ignoring.');
+            return;
+        }
+        
+        # first dbID goes in as undef for new records. Mysql swallows this and autoincrements
+        my $dbID = $allele_group->dbID;
+        
+        my $sth = $self->prepare("INSERT INTO alt_allele (alt_allele_id, gene_id, is_ref, type) VALUES (?,?,?,?)");
+        
+        foreach my $allele (@{ $allele_group->get_all_members() }) {
+            $sth->bind_param(1, $dbID, SQL_INTEGER);
+            $sth->bind_param(2, $allele->[0], SQL_INTEGER);
+            $sth->bind_param(3, $allele->[1], SQL_BOOLEAN);
+            $sth->bind_param(4, $allele->[2], SQL_VARCHAR);
+            $sth->execute();
+            $dbID = $sth->{'mysql_insertid'}; # all alleles get added to the same alt_allele_id group
+        }
+        if ($@) {throw ("Problem inserting new AltAlleleGroup into database: $@");}
+        $sth->finish;
+        
+        $allele_group->dbID($dbID);
+        return $dbID;
+    }
+}
+
+=head2 update
+
+  Arg [1]    : AltAlleleGroup 
+  Description: Removes the existing DB record of an AltAlleleGroup and stores 
+               the altered version.
+  Returntype : Integer - the return value of the store method, viz. whether the
+               insert was successful.
+=cut
+
+sub update {
+    my $self = shift;
+    my $allele_group = shift;
+    
+    if (ref($allele_group) ne "Bio::EnsEMBL::AltAlleleGroup") {
+        throw ("Can only update Bio::EnsEMBL::AltAlleleGroup objects.");   
+    } elsif (!$allele_group->dbID) {
+        throw ("Cannot update AltAlleleGroup with missing dbID. AltAlleleGroups should be fetched from the DB prior to updating them");
+    }    
+    $self->remove($allele_group);
+    return $self->store($allele_group);
+}
+
+=head2 remove
+
+  Arg [1]    : The AltAlleleGroup to delete or dbID thereof 
+  Example    : $aaga->remove($alt_allele_group);
+  Description: This removes an AltAlleleGroup from the database. 
+  Exceptions : None
+  
+=cut
+
+sub remove {
+    my $self = shift;
+    my $allele_group = shift;
+    
+    my $sth = $self->prepare(
+        "DELETE FROM alt_allele WHERE alt_allele_id = ?"
+    );
+    if (ref($allele_group) eq "Bio::EnsEMBL::AltAlleleGroup") {
+        $sth->bind_param(1,$allele_group->dbID,SQL_INTEGER);
+    } else {
+        $sth->bind_param(1,$allele_group,SQL_INTEGER);
+    }
+    $sth->execute;
+    $sth->finish;
+}
+
 
 1;
