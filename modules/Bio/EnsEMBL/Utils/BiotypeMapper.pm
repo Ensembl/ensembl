@@ -14,10 +14,6 @@
 
 BiotypeMapper - Translates EnsEMBL biotypes into Sequence Ontology terms and back
 
-=head1 AUTHOR
-
-Kieron Taylor, 2011 - ktaylor@ebi.ac.uk
-
 =head1 SYNOPSIS
 
 use Bio::EnsEMBL::Utils::BiotypeMapper
