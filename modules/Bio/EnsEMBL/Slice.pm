@@ -1925,6 +1925,8 @@ sub get_all_StructuralVariations{
 }
 
 
+
+
 =head2 get_all_CopyNumberVariantProbes
 
 	Description: DEPRECATED. Use get_all_CopyNumberVariantProbeFeatures instead
@@ -1994,6 +1996,7 @@ sub get_all_StructuralVariationFeatures {
 	my $include_evidence = shift;
 	my $somatic          = shift;
 	my $sv_class         = shift;
+	my $constraint       = shift;
 	
 	my $operator = '';
 	
@@ -2020,9 +2023,9 @@ sub get_all_StructuralVariationFeatures {
 	
 	# Get the structural variations features
   if( $svf_adaptor ) {
-	
-		my $constraint  = qq{ svf.somatic=$somatic AND svf.class_attrib_id $operator=$attrib_id };
-		   $constraint .= qq{ AND svf.is_evidence=0 } if (!$include_evidence);
+    $constraint .= qq{ AND } if ($constraint);
+    $constraint .= qq{ svf.somatic=$somatic AND svf.class_attrib_id $operator=$attrib_id };
+    $constraint .= qq{ AND svf.is_evidence=0 } if (!$include_evidence);
 
 		if($source) {
       return $svf_adaptor->fetch_all_by_Slice_constraint($self, qq{$constraint AND s.name = '$source'});
@@ -2037,6 +2040,43 @@ sub get_all_StructuralVariationFeatures {
   }
 }
 
+=head2 get_all_StructuralVariationFeatures_by_size_range
+    Arg[1]      : int $size_min (minimum size of the structural variant)
+    Arg[2]      : int $size_max (maximum size of the structural variant) [optional]
+    Arg[1]      : int minimum size of the structural variant
+    Arg[3]      : string $source [optional]
+		Arg[4]      : int $include_evidence [optional]	
+		Arg[5]      : string $sv_class (SO term) [optional]	
+    Description : returns all structural variation features overlapping this slice with a size greater than the minimum size 
+		              defined in the first argument, and (optional) lesser than the maximun size defined in the second argument. 
+                  This function will only work correctly if the variation database has been attached to the core database.
+                  If $source is set, only structural variation features with that source name will be 
+									returned. By default, it only returns structural variant features which are not labelled 
+									as "CNV_PROBE".
+									If $include_evidence is set (i.e. $include_evidence=1), structural variation features from 
+							    both structural variation (SV) and their supporting structural variations (SSV) will be 
+							    returned. By default, it only returns features from structural variations (SV).
+    ReturnType  : listref of Bio::EnsEMBL::Variation::StructuralVariationFeature
+    Exceptions  : none
+    Caller      : contigview, snpview, structural_variation_features
+    Status      : Stable
+
+=cut
+
+sub get_all_StructuralVariationFeatures_by_size_range {
+	my $self             = shift;
+	my $size_min         = shift;
+	my $size_max         = shift;
+	my $source           = shift;
+	my $include_evidence = shift;
+	my $somatic          = shift;
+	my $sv_class         = shift;
+	
+	my $constraint = qq{svf.seq_region_end-svf.seq_region_start>=$size_min};
+	   $constraint .= qq{ AND svf.seq_region_end-svf.seq_region_start<$size_max } if (defined $size_max);
+	
+	return $self->get_all_StructuralVariationFeatures($source,$include_evidence,$somatic,$sv_class,$constraint);
+}
 
 =head2 get_all_StructuralVariationFeatures_by_VariationSet
 

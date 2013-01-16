@@ -7,7 +7,7 @@ use Bio::EnsEMBL::Test::MultiTestDB;
 use Bio::EnsEMBL::DnaDnaAlignFeature;
 use Bio::EnsEMBL::Test::TestUtils;
 
-our $verbose = 0;
+our $verbose = 1;
 
 my $multi = Bio::EnsEMBL::Test::MultiTestDB->new();
 ok(1);
@@ -34,6 +34,10 @@ my $org_slice = $slice_adaptor->fetch_by_region('chromosome', '20',
 
 $feats = $sfa->fetch_all_by_Slice($slice);
 
+foreach (@$feats) {
+    debug($_->seq_region_name."...".$_->seq_region_start."  ".$_->display_id);
+}
+
 debug("Got " . scalar(@$feats));
 ok( @$feats == 9 );
 
@@ -58,9 +62,9 @@ for my $f ( @$feats ) {
 $slice = $slice_adaptor->fetch_by_region('chromosome', '20_HAP1',
 					 30_400_000,30_600_000);
 $feats = $sfa->fetch_all_by_Slice( $slice );
-
 debug( "After storing retrieval" );
 print_features($feats);
+debug( scalar @$feats);
 ok(@$feats == 14);
 
 

@@ -2820,6 +2820,7 @@ sub load {
   $self->analysis();
   $self->get_all_Attributes();
   $self->get_all_supporting_features();
+  $self->get_all_IntronSupportingEvidence();
 
   if ($load_xrefs) {
     $self->get_all_DBEntries();

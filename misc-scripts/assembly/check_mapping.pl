@@ -267,7 +267,7 @@ foreach my $chr ($support->sort_chromosomes) {
 }
 
 $support->log("Summary of changes across all chromosomes\n\n",1);
-$support->log("|Bin  |Frequency\n",2);
+$support->log("|Bin  |Frequency\n");
 for (my $bin = 0; $bin < scalar(@global_diff_bins); $bin++) {
     if (defined ($global_diff_bins[$bin])) {
         $support->log("|$bin  |$global_diff_bins[$bin]\n");

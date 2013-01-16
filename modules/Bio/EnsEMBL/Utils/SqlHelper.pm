@@ -471,6 +471,8 @@ sub execute_into_hash {
   Arg [USE_HASHREFS]  : boolean If set to true will cause HashRefs to be returned 
                         to the callback & not ArrayRefs
   Arg [PARAMS]        : ArrayRef The binding parameters to the SQL statement
+  Arg [NO_ERROR]      : Boolean Flag to indicate that the code should not 
+                        throw an error when row counts are not equal to 1
   Returntype : Scalar
   Exceptions : If errors occur in the execution of the SQL, if the query 
                returned more than 1 row and if we found no rows.
@@ -488,8 +490,8 @@ or less than one row returned
 
 sub execute_single_result {
 	my ( $self, @args ) = @_;
-	my ($sql, $callback, $use_hashrefs, $params) = rearrange(
-	 [qw(sql callback use_hashrefs params)], @args);
+	my ($sql, $callback, $use_hashrefs, $params, $no_error) = rearrange(
+	 [qw(sql callback use_hashrefs params no_error)], @args);
 	
 	my $results = $self->execute_simple( 
 	  -SQL => $sql, 
@@ -499,7 +501,7 @@ sub execute_single_result {
 	);
 	
 	my $result_count = scalar(@{$results});
-	if($result_count != 1) {
+	if(! $no_error && $result_count != 1) {
 	  $params = [] if ! $params;
 	  my $type = ($result_count == 0) ? 'No' : 'Too many';
 		my $msg = "${type} results returned. Expected 1 but got $result_count for query '${sql}' with params [";
@@ -507,7 +509,8 @@ sub execute_single_result {
 		$msg .= ']';
 		throw($msg);
 	}
-	return $results->[0];
+	return $results->[0] if defined $results->[0];
+	return;
 }
 
 =pod
