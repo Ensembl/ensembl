@@ -110,4 +110,14 @@ note($new_dbID);
 $aag2 = $aaga->fetch_Group_by_id($dbID);
 is_deeply($aag2->get_all_Gene_ids,[1,2,3], "Update and re-retrieve the same AltAlleleGroup");
 
+# Vaguely verify the AltAlleleGroupAdaptor's fetch_all_Groups with a multispecies database
+# Proper test data is hard to fabricate and no samples exist.
+
+$aaga->db->is_multispecies(1);
+$group_list = $aaga->fetch_all_Groups;
+$aag = $group_list->[0];
+
+ok(scalar(@$group_list) == 1, "Pretend multi-species fetch returns same groups as normal.");
+
+
 done_testing();
