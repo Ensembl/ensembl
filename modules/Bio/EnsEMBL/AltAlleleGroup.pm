@@ -1,6 +1,6 @@
 =head1 LICENSE
 
-  Copyright (c) 1999-2012 The European Bioinformatics Institute and
+  Copyright (c) 1999-2013 The European Bioinformatics Institute and
   Genome Research Limited.  All rights reserved.
 
   This software is distributed under a modified Apache license.
@@ -29,7 +29,29 @@
   
   my $aag_adaptor = Bio::EnsEMBL::Registry->get_DBAdaptor("Human","core","AltAlleleGroup");
   
-  $aag_adaptor->fetch_all_Groups_by_type('MANUAL');
+  # For a known Gene, find the reference alternative allele
+  my $aag = $aag_adaptor->fetch_Group_by_dbID($gene->dbID);
+  my $reference_gene = $aag->get_ref_Gene;
+  
+  # Get a list of AltAlleleGroups
+  my $list = $aag_adaptor->fetch_all_Groups_by_type('MANUAL');
+  $list = $aag_adaptor->fetch_all_Groups();
+  
+  while ($aag = shift @$list) {
+      $aag->get_all_Genes;
+      # Do you important things ...
+  }
+  
+  # Creating and editing an AltAlleleGroup
+  
+  $aag = Bio::EnsEMBL::AltAlleleGroup->new(
+     -MEMBERS => [ [$gene_id,$is_ref,$type ] ],
+  );
+  $aag->remove_all_members;
+  $aag->add_member([$gene_id,$is_ref,$type]);
+  
+  my $dbID = $aag_adaptor->store($aag);
+  
 
 =head1 DESCRIPTION
 
@@ -53,7 +75,9 @@ use base qw/Bio::EnsEMBL::Storable/;
                 : gene_id is a dbID for Gene (consistent only within one release)
                 : is_ref is a boolean flag denoting the reference allele
                 : type is a string for descriptive purposes
-  Example    : $aag = Bio::EnsEMBL::AltAlleleGroup->new(...);
+  Example    : $aag = Bio::EnsEMBL::AltAlleleGroup->new(
+                   -MEMBERS => [ [1,0,"TYPE"], [2,1,"TYPE"],[3,0,"TYPE"] ],
+               );
   Description: Creates a new alt-allele group object
   Returntype : Bio::EnsEMBL::AltAlleleGroup
   Exceptions : none
@@ -73,6 +97,20 @@ sub new {
     return $self;
 }
 
+=head2 add_member
+
+  Arg [1]     : Gene dbID
+  Arg [2]     : Is reference gene (Boolean)
+  Arg [3]     : Type (String), used for assigning additional annotation types
+  Description : Adds a record of one new member to the AltAlleleGroup. Once a
+                change is made, this must be persisted to the database with
+                AltAlleleGroupAdaptor->store or ->update
+  Example     : $aag->add_member(1040032,0,"AUTOMATIC");
+                # denotes a non-reference gene identified by autonomous means
+                $aaga->update($aag);
+
+=cut
+
 sub add_member {
     my $self = shift;
     my ($gene_id,$is_ref,$type) = @_;
@@ -80,13 +118,21 @@ sub add_member {
     my $members = $self->{'MEMBERS'};
     push @$members,[$gene_id,$is_ref,$type];
     $self->{'MEMBERS'} = $members;
-    return 1;
+    return;
 }
+
+
+=head2 remove_all_members
+
+  Description: Remove members from this object, but NOT the database. See
+               AltAlleleGroupAdaptor->remove()
+               Use in conjunction with add_member if members need to be altered
+=cut
 
 sub remove_all_members {
     my $self = shift;
     $self->{'MEMBERS'} = [];
-    return 1;
+    return;
 }
 
 =head2 ref_Gene_id
@@ -131,6 +177,15 @@ sub ref_Gene_id {
     }
 }
 
+=head2 unset_ref_Gene_id
+
+  Description: Removes the reference Gene flag from this AltAlleleGroup.
+               This action is not possible through ref_Gene_id due to
+               validation of inputs.
+  Returntype : 
+
+=cut
+
 sub unset_ref_Gene_id {
     my $self = shift;
     my $list = $self->{'MEMBERS'};
@@ -139,7 +194,7 @@ sub unset_ref_Gene_id {
         $allele->[1] = 0;
     }
     $self->{'MEMBERS'} = $list;
-    return 1;
+    return;
 }
 
 =head2 get_all_Gene_ids

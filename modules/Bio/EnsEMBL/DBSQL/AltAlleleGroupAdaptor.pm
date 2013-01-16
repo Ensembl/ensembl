@@ -1,7 +1,7 @@
 
 =head1 LICENSE
 
-  Copyright (c) 1999-2012 The European Bioinformatics Institute and
+  Copyright (c) 1999-2013 The European Bioinformatics Institute and
   Genome Research Limited.  All rights reserved.
 
   This software is distributed under a modified Apache license.
@@ -26,8 +26,28 @@ Alternative allele groupings
 
 =head1 SYNOPSIS
 
+  use Bio::EnsEMBL::AltAlleleGroup;
+  use Bio::EnsEMBL::DBSQL::AltAlleleGroupAdaptor;
+  
+  my $aag_adaptor = Bio::EnsEMBL::Registry->get_DBAdaptor("Human","core","AltAlleleGroup");
+  
+  # For a known Gene, find the reference alternative allele
+  my $aag = $aag_adaptor->fetch_Group_by_dbID($gene->dbID);
+  my $reference_gene = $aag->get_ref_Gene;
+  
+  # Get a list of AltAlleleGroups
+  my $list = $aag_adaptor->fetch_all_Groups_by_type('MANUAL');
+  $list = $aag_adaptor->fetch_all_Groups();
+  
+  my $dbID = $aag_adaptor->store($aag);
+  
+  $aag = $aag_adaptor->fetch_Group_by_id($dbID);
+  $aag_adaptor->remove($aag);
 
 =head1 DESCRIPTION
+
+  The AltAlleleGroupAdaptor provides CRUD for AltAlleleGroup objects. It allows
+  groups of alleles to be retrieved by group and gene ids.
 
 =cut
 
@@ -58,7 +78,7 @@ sub fetch_all_Groups {
 
     $type = uc($type) if ($type);
     
-    my @group_list;
+    my @group_list = ();
     my @members;
     
     my $species_id;
