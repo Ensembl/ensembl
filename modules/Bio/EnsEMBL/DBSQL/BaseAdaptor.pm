@@ -359,21 +359,20 @@ sub bind_param_generic_fetch{
     my $sql_type = shift;
 
     if (defined $param && !defined $sql_type){
-	throw("Need to specify sql_type for parameter $param\n");
+        throw("Need to specify sql_type for parameter $param\n");
     }
     elsif (defined $param && defined $sql_type){
-	#check when there is a SQL_INTEGER type that the parameter is really a number
-	if ($sql_type eq SQL_INTEGER){
-	    throw "Trying to assign a non numerical parameter to an integer value in the database" if ($param !~ /^\d+$/);
-	}
+    #check when there is a SQL_INTEGER type that the parameter is really a number
+    if ($sql_type eq SQL_INTEGER){
+        throw "Trying to assign a non numerical parameter to an integer value in the database" if ($param !~ /^\d+$/);
+    }
 	#both paramters have been entered, push it to the bind_param array
-	push @{$self->{'_bind_param_generic_fetch'}},[$param,$sql_type];
+        push @{$self->{'_bind_param_generic_fetch'}},[$param,$sql_type];
     }
     elsif (!defined $param && !defined $sql_type){
-	#when there are no arguments, return the array
-	return $self->{'_bind_param_generic_fetch'};
+        #when there are no arguments, return the array
+        return $self->{'_bind_param_generic_fetch'};
     }
-	
 }
 
 # Used to reset the params without circumventing scope
@@ -397,7 +396,7 @@ sub _bind_param_generic_fetch {
   Example    : $fts = $a->generic_fetch('contig_id in (1234, 1235)');
   Description: Performs a database fetch and returns feature objects in
                contig coordinates.
-  Returntype : listref of Bio::EnsEMBL::SeqFeature in contig coordinates
+  Returntype : listref of Bio::EnsEMBL::Feature in contig coordinates
   Exceptions : Thrown if there is an issue with querying the data
   Caller     : BaseFeatureAdaptor, ProxyDnaAlignFeatureAdaptor::generic_fetch
   Status     : Stable
