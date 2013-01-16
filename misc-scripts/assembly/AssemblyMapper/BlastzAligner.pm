@@ -53,10 +53,6 @@ See documention in the respective script for more information.
 This code is distributed under an Apache style licence:
 Please see http://www.ensembl.org/code_licence.html for details
 
-=head1 AUTHOR
-
-Patrick Meidl <meidl@ebi.ac.uk>, Ensembl core API team
-
 =head1 CONTACT
 
 Please post comments/questions to the Ensembl development list
