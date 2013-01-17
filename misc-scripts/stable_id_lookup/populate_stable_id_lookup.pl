@@ -264,7 +264,7 @@ sub insert_stable_ids {
     };
 
     if ($tuples) {
-	 print STDOUT "Successfully inserted $tuples stable_ids for species_id: $species_id[0],db_type: ". $dba->group(). ", object_type: $object\n";
+      printf STDOUT "Successfully inserted %d stable ids for %s (%d), db type : %s, object type : %s\n", $dba->species(), $species_id[0], $dba->group(), $object;
     }
     else {
 	 for my $tuple (0..@stable_ids-1) {
