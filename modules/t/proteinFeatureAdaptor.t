@@ -53,6 +53,7 @@ my $idesc = 'interpro description';
 my $interpro_ac = 'interpro accession';
 
 my $analysis = Bio::EnsEMBL::Analysis->new(-LOGIC_NAME => 'test');
+$multi->save('core', 'protein_feature');
 
 
 my $f = Bio::EnsEMBL::ProteinFeature->new
@@ -80,5 +81,7 @@ ok(@$pfs == 16);
 my @pfs = grep{$_->hdescription() eq $hdes} @$pfs;
 
 ok(scalar @pfs > 0);
+
+$multi->restore('core', 'protein_feature');
 
 done_testing();
