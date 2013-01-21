@@ -8,7 +8,7 @@ use Bio::EnsEMBL::Registry;
 use Bio::EnsEMBL::Test::MultiTestDB;
 
 my $threads;
-if($Config{useithreads}) {
+if($Config{useithreads} && ! $ENV{ENS_FORCE_NOTHREADS}) {
   note 'Using threaded tests';
   require threads;
   $threads = 1;
@@ -54,6 +54,8 @@ TMPL
     return \@results;
   };
   
+  my @results;
+  my @expected;
   if($threads) {
     $ENV{RUNTESTS_HARNESS_NORESTORE} = 1;
     my @thrds;
@@ -67,8 +69,10 @@ TMPL
     }
   }
   else {
-    foreach my $itr (0..9) {
-      $call->();
+    foreach my $itr (1..10) {
+      my $res = $call->();
+      is_deeply($res, [1, (0)x9], "Testing iteration 1 where we can load an adaptor") if $itr == 1;
+      is_deeply($res, [(0)x10], "Testing iteration $itr where we can no longer load adaptors") if $itr > 1;
     }
     ok("Calling of single-threaded load went off without any problems");
   }
