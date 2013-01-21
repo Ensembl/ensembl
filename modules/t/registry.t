@@ -70,6 +70,7 @@ TMPL
     foreach my $itr (0..9) {
       $call->();
     }
+    ok();
   }
 }
 
