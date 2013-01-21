@@ -2259,32 +2259,41 @@ sub find_and_add_aliases {
   } else {
     @dbas = @{ $class->get_all_DBAdaptors( '-GROUP' => $group ) };
   }
+  
+  my $aliases_for_dbc = {};
 
   foreach my $dba (@dbas) {
     my @aliases;
     my $species = $dba->species();
 
     if ( defined($dbh) ) {
-      my $dbname = $dba->dbc()->dbname();
-      my $sth = $dbh->prepare( sprintf(
-                                 "SELECT meta_value FROM %s.meta "
-                                   . "WHERE meta_key = 'species.alias' "
-                                   . "AND species_id = ?",
-                                 $dbh->quote_identifier($dbname) ) );
+    	
+    	my $dbname = $dba->dbc()->dbname();
 
-      # Execute, and don't care about errors (there will be errors for
-      # databases without a 'meta' table.
-      $sth->{'PrintError'} = 0;
-      $sth->{'RaiseError'} = 0;
-      if ( !$sth->execute( $dba->species_id() ) ) { next }
-      $sth->{'PrintError'} = $dbh->{'PrintError'};
-      $sth->{'RaiseError'} = $dbh->{'RaiseError'};
+          if (!defined $aliases_for_dbc->{$dbname}) {
 
-      my $alias;
-      $sth->bind_columns( \$alias );
-      while ( $sth->fetch() ) {
-        push( @aliases, $alias );
-      }
+                my $sth = $dbh->prepare(sprintf("SELECT species_id,meta_value FROM %s.meta " 
+                    . "WHERE meta_key = 'species.alias' ", $dbh->quote_identifier($dbname))
+                );
+
+                # Execute, and don't care about errors (there will be errors for
+                # databases without a 'meta' table.
+                $sth->{'PrintError'} = 0;
+                $sth->{'RaiseError'} = 0;
+                if (!$sth->execute()) { next }
+                $sth->{'PrintError'} = $dbh->{'PrintError'};
+                $sth->{'RaiseError'} = $dbh->{'RaiseError'};
+
+                my $alias;
+                my $species_id;
+                $sth->bind_columns(\$species_id, \$alias);
+                while ($sth->fetch()) {
+                  push(@{$aliases_for_dbc->{$dbname}{$species_id}}, $alias);
+                }
+          }
+
+          @aliases = @{$aliases_for_dbc->{$dbname}{$dba->species_id()}||[]}
+
     } else {
       my $meta_container = eval { $dba->get_MetaContainer() };
 
