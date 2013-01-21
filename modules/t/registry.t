@@ -70,7 +70,7 @@ TMPL
     foreach my $itr (0..9) {
       $call->();
     }
-    ok();
+    ok("Calling of single-threaded load went off without any problems");
   }
 }
 
