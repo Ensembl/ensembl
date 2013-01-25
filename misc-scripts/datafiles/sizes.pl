@@ -11,9 +11,6 @@ use File::Basename qw/dirname/;
 use File::Spec::Functions qw/:ALL/;
 use Getopt::Long qw/:config no_ignore_case auto_version bundling_override/;
 use Pod::Usage;
-use Test::More;
-
-my $Test = Test::Builder->new();
 
 my $rcsid = '$Revision$';
 our ($VERSION) = $rcsid =~ /(\d+\.\d+)/;
@@ -112,7 +109,7 @@ sub process {
   my $total_size = 0;
   while (my $dba = shift @{$dbas}) {
     my $size = $self->_process_dba($dba);
-    $total_size += 0;
+    $total_size += $size;
     my $size_in_gb = $size / 1024 / 1024 /1024;
     $self->v('Species size is %dGB', $size_in_gb);
   }
@@ -169,25 +166,12 @@ sub _get_core_like_dbs {
 
 sub v {
   my ($self, $msg, @params) = @_;
-  note sprintf($msg, @params);
+  print STDOUT sprintf($msg, @params);
+  print STDOUT "\n";
   return;
 }
 
-sub _get_gid {
-  my ($self, $group) = @_;
-  my $group_uid;
-  if ($group =~ /^\d+/) {
-    $group_uid = $group;
-    $group = ( getgrgid $group )[0];
-  }
-  else {
-    $group_uid = (getgrnam($group))[2];
-  }
-  return $group_uid;
-}
-
 Script->run();
-done_testing();
 
 1;
 __END__
@@ -204,7 +188,7 @@ sizes.pl
   ./sizes.pl -release VER -user USER -pass PASS -host HOST [-port PORT] -datafile_dir DIR [-species SPECIES] [-help | -man]
   
   #EXAMPLE
-  ./sizes.pl -release 69 -host ensembdb.ensembl.org -port 5306 -user anonymous -datafile_dir /my/datafile
+  ./sizes.pl -release 69 -host ensembldb.ensembl.org -port 5306 -user anonymous -datafile_dir /my/datafile
   
 =head1 DESCRIPTION
 
