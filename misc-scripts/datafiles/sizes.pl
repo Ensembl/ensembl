@@ -120,7 +120,7 @@ sub process {
 
 sub _process_dba {
   my ($self, $dba) = @_;
-  $self->v('Working with species %s', $dba->species());
+  $self->v('Working with species %s (group : %s)', $dba->species(), $dba->group());
   my $size = 0;
   my $datafiles = $dba->get_DataFileAdaptor()->fetch_all();
   if(! @{$datafiles}) {
