@@ -1449,6 +1449,22 @@ sub load {
   }
 }
 
+=head2 flush_Transcripts
+
+  Description : Empties out caches and unsets fields of this Gene.
+                Beware of further actions without adding some new transcripts.
+  Example     : $gene->flush_Transcripts();
+
+=cut
+
+sub flush_Transcripts {
+    my $self = shift;
+    $self->{'_transcript_array'} = [];
+    $self->{'canonical_transcript_id'} = undef;
+    $self->{'canonical_transcript'} = undef;
+    return;
+}
+
 =head2 is_ref
 
   Description: getter setter for the gene attribute is_ref
