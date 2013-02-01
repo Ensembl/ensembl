@@ -68,7 +68,9 @@ use DBI qw( :sql_types );
   Description : Fetches all the alt-allele groups, creates objects to represent
                 them and returns them in a list
                 Multispecies support is triggered by the is_multispecies flag
-                and species_id of the DBAdaptor.         
+                and species_id of the DBAdaptor.
+                Specifying a group type identifies all groups containing a
+                member of this type. It does not filter out the other members
   Returntype  : Listref of Bio::EnsEMBL::AltAlleleGroup
 =cut
 

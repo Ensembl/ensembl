@@ -23,9 +23,9 @@ my $group = Bio::EnsEMBL::AltAlleleGroup->new(
 
 my $other_group = Bio::EnsEMBL::AltAlleleGroup->new(
     -MEMBERS => [
-        [qw( 4 0 AUTOMATIC )],
-        [qw( 5 0 AUTOMATIC )],
-        [qw( 6 0 AUTOMATIC )],
+        [qw( 4 0 PROJECTED )],
+        [qw( 5 0 PROJECTED )],
+        [qw( 6 0 PROJECTED )],
     ]
 );
 
@@ -76,7 +76,7 @@ ok ($gene->dbID == 18256,"Ensure Gene objects acquire correct information");
 # test fetch_all_Groups_by_type
 $group_list = $aaga->fetch_all_Groups_by_type('UNLIKELY STRING');
 ok(scalar(@{$group_list}) == 0,"Try outlandish typed group lookup");
-$group_list = $aaga->fetch_all_Groups_by_type('AUTOMATIC');
+$group_list = $aaga->fetch_all_Groups_by_type('PROJECTED');
 ok(scalar(@$group_list) == 1,"Try known group type lookup");
 
 # fetch_Group_by_id

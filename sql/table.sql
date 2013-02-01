@@ -895,7 +895,7 @@ CREATE TABLE unconventional_transcript_association (
 @column alt_allele_id          Primary key, internal identifier.
 @column gene_id                Foreign key references to the @link gene table.
 @column is_ref		       Indicates a reference allele if set to 1.
-@column type               Type of alt_allele, e.g. manually annotated
+@column type               ENUM of alt_allele types, e.g. CODING_POTENTIAL
 
 */
 
@@ -903,7 +903,7 @@ CREATE TABLE alt_allele (
   alt_allele_id         INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
   gene_id               INT(10) UNSIGNED NOT NULL,
   is_ref                BOOLEAN NOT NULL DEFAULT 0,
-  type                  VARCHAR(40),
+  type                  ENUM(PROJECTED,MANUAL,CODING_POTENTIAL,NONE) NOT NULL DEFAULT 'NONE',
 
   UNIQUE KEY gene_idx (gene_id),
   UNIQUE KEY allele_idx (alt_allele_id, gene_id),

@@ -34,7 +34,7 @@
   my $reference_gene = $aag->get_ref_Gene;
   
   # Get a list of AltAlleleGroups
-  my $list = $aag_adaptor->fetch_all_Groups_by_type('MANUAL');
+  my $list = $aag_adaptor->fetch_all_Groups_by_type('PROJECTED');
   $list = $aag_adaptor->fetch_all_Groups();
   
   while ($aag = shift @$list) {
@@ -56,7 +56,18 @@
 =head1 DESCRIPTION
 
     Alt allele groups keep track of which alleles are tied to a particular Gene
-    They allow related genes to be located.
+    They allow related genes to be located. This class allows fetching of both
+    IDs and fully fledged Gene objects.
+    
+    AltAlleleGroup members are assigned types to differentiate them by their
+    origin. Valid types are:
+        PROJECTED
+        MANUAL
+        CODING_POTENTIAL
+        NONE
+        
+    None denotes a situation of no information. It can imply that the value is
+    not set, is not known, or is not covered by the other types.
 =cut
 
 package Bio::EnsEMBL::AltAlleleGroup;
@@ -76,7 +87,7 @@ use base qw/Bio::EnsEMBL::Storable/;
                 : is_ref is a boolean flag denoting the reference allele
                 : type is a string for descriptive purposes
   Example    : $aag = Bio::EnsEMBL::AltAlleleGroup->new(
-                   -MEMBERS => [ [1,0,"TYPE"], [2,1,"TYPE"],[3,0,"TYPE"] ],
+                   -MEMBERS => [ [1,0,TYPE], [2,1,TYPE],[3,0,TYPE] ],
                );
   Description: Creates a new alt-allele group object
   Returntype : Bio::EnsEMBL::AltAlleleGroup
@@ -105,7 +116,7 @@ sub new {
   Description : Adds a record of one new member to the AltAlleleGroup. Once a
                 change is made, this must be persisted to the database with
                 AltAlleleGroupAdaptor->store or ->update
-  Example     : $aag->add_member(1040032,0,"AUTOMATIC");
+  Example     : $aag->add_member(1040032,0,"PROJECTED");
                 # denotes a non-reference gene identified by autonomous means
                 $aaga->update($aag);
 
@@ -121,6 +132,19 @@ sub add_member {
     return;
 }
 
+sub get_all_members_with_type {
+    my $self = shift;
+    my $type = shift;
+    
+    my @filtered_members;
+    my $members = $self->{'MEMBERS'};
+    foreach my $member (@$members) {
+        if ($member->[2] eq $type) {
+            push @filtered_members,$member;
+        }
+    }
+    return \@filtered_members;
+}
 
 =head2 remove_all_members
 
