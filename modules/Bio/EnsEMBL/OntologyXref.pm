@@ -487,7 +487,7 @@ sub get_extensions {
           if ( $self->{'associated_xref'}->{$groupId}->{$rank}->[1]->dbname ne 'GO_REF' ) {
             $source .= 'PMC:';
           }
-          $source = $self->{'associated_xref'}->{$groupId}->{$rank}->[1]->display_id . '</a>';
+          $source .= $self->{'associated_xref'}->{$groupId}->{$rank}->[1]->display_id . '</a>';
         } elsif ($self->{'associated_xref'}->{$groupId}->{$rank}->[1]->display_id eq 'PMPB:0') {
           $source = '';
         } else {
