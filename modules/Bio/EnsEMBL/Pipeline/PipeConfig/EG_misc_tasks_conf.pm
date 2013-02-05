@@ -66,7 +66,7 @@ sub pipeline_analyses {
          'B->3'  => ['PercentGC'],
          '3->C'  => ['CodingDensity'],
          'C->3'  => ['NonCodingDensity'],
-         '5->A'  => ['SnpDensity', 'SnpCount'],
+         '5->A'  => ['SnpDensity', 'SnpCount', 'NonSense'],
          '3->A'  => ['PercentRepeat', 'CodingDensity', 'NonCodingDensity', 'PercentGC'],
          '2->A'  => ['GeneGC', 'PepStats', 'GeneCount', 'ConstitutiveExons'],
          'A->1'  => ['Notify'],
@@ -176,9 +176,9 @@ sub pipeline_analyses {
       {
         -logic_name => 'SnpCount',
         -module     => 'Bio::EnsEMBL::Pipeline::Production::SnpCount',
-        -max_retry_count  => 1,
+        -max_retry_count  => 2,
         -hive_capacity    => 10,
-        -rc_name          => 'normal',
+        -rc_name          => 'default',
         -can_be_empty     => 1,
       },
 
@@ -189,9 +189,21 @@ sub pipeline_analyses {
           table => 'gene', logic_name => 'snpdensity', value_type => 'sum',
           bin_count => $self->o('bin_count'), max_run => $self->o('max_run'),
         },
-        -max_retry_count  => 1,
+        -max_retry_count  => 2,
         -hive_capacity    => 10,
-        -rc_name          => 'normal',
+        -rc_name          => 'default',
+        -can_be_empty     => 1,
+      },
+
+      {
+        -logic_name => 'NonSense',
+        -module     => 'Bio::EnsEMBL::Pipeline::Production::NonSense',
+        -parameters => {
+          frequency => 0.1, observation => 20,
+        },
+        -max_retry_count  => 2,
+        -hive_capacity    => 10,
+        -rc_name          => 'default',
         -can_be_empty     => 1,
       },
 
