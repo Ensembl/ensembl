@@ -172,6 +172,10 @@ WHERE   term.accession = ?);
       \( $dbid, $name, $definition, $subsets, $ontology, $namespace ) );
 
   $sth->fetch();
+  
+  # early exit in the event of bad $accession
+  unless ($dbid) {return;}
+  
   $subsets ||= '';
 
   my $term =
@@ -667,6 +671,9 @@ WHERE   term.term_id = ?);
       ) );
 
   $sth->fetch();
+  
+  unless ($accession) {return;}
+  
   $subsets ||= '';
 
   my $term =
