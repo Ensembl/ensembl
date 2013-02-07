@@ -26,9 +26,8 @@
 # 
 # @(#) $Id$
 # 
-# Revision History:
+# Revision History prior to import into EnsEMBL:
 # 
-# $Log$
 # Revision 1.1  2011-10-18 13:46:34  kt7
 # Transferring Doxygen filter into EnsEMBL CVS.
 #

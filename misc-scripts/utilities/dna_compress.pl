@@ -7,8 +7,6 @@
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
 # as published by the Free Software Foundation
-#
-# $Header$
 
 # This is a driver script to populate and test the experimental dnac
 # (compressed dna) table of ensembl.  Use -T for pod based tutorial
