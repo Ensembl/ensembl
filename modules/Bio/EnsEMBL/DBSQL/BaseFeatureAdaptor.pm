@@ -504,7 +504,7 @@ sub fetch_all_by_Slice_constraint {
 
 =head2 fetch_all_by_logic_name
 
-  Arg [3]    : string $logic_name
+  Arg [1]    : string $logic_name
                the logic name of the type of features to obtain
   Example    : $fs = $a->fetch_all_by_logic_name('foobar');
   Description: Returns a listref of features created from the database.
@@ -534,6 +534,31 @@ sub fetch_all_by_logic_name {
   }
 
   return $self->generic_fetch($constraint);
+}
+
+=head2 fetch_all_by_stable_id_list
+
+  Arg [1]    : string $logic_name
+               the logic name of the type of features to obtain
+  Arg [2]    : Bio::EnsEMBL::Slice $slice
+               the slice from which to obtain features
+  Example    : $fs = $a->fetch_all_by_stable_id_list(["ENSG00001","ENSG00002", ...]);
+  Description: Returns a listref of features identified by their stable IDs.
+               This method only fetches features of the same type as the calling
+               adaptor. 
+               Results are constrained to a slice if the slice is provided.
+  Returntype : listref of Bio::EnsEMBL::Feature
+  Exceptions : thrown if no stable ID list is provided.
+  Caller     : General
+  Status     : Stable
+
+=cut
+
+# Adapted from BaseAdaptor->uncached_fetch_all_by_dbID_list
+sub fetch_all_by_stable_id_list {
+  my ( $self, $id_list_ref, $slice ) = @_;
+
+  return $self->_uncached_fetch_all_by_id_list($id_list_ref,$slice,"stable_id");
 }
 
 # Method that creates an object.  Called by the _objs_from_sth() method

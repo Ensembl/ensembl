@@ -92,7 +92,7 @@ use vars qw(@ISA @EXPORT);
 use strict;
 
 use Bio::EnsEMBL::Utils::Exception qw(throw);
-use Bio::EnsEMBL::Utils::Scalar qw(assert_ref);
+use Bio::EnsEMBL::Utils::Scalar qw(assert_ref assert_integer);
 use DBI qw(:sql_types);
 use Data::Dumper;
 
@@ -654,6 +654,34 @@ sub fetch_all_by_dbID_list {
 sub _uncached_fetch_all_by_dbID_list {
   my ( $self, $id_list_ref, $slice ) = @_;
 
+  return $self->_uncached_fetch_all_by_id_list($id_list_ref, $slice, "dbID");
+} ## end sub fetch_all_by_dbID_list
+
+=head2 _uncached_fetch_all_by_id_list
+
+  Arg [1]    : listref of IDs
+  Arg [2]    : (optional) Bio::EnsEMBL::Slice $slice
+               A slice that features should be remapped to
+  Arg [3]    : String describing the ID type.
+               Valid values include dbID and stable_id. dbID is an alias for
+               the primary key, while other names map directly to table columns
+               of the Feature this adaptor manages.
+  Example    : $list_of_features = $adaptor->_uncached_fetch_all_by_id_list(
+                   [qw(ENSG00000101321 ENSG00000101346 ENSG00000101367)],
+                   undef,
+                   "stable_id");
+  Description: This is a generic method used to fetch lists of features by IDs.
+               It avoids caches, meaning it is best suited for block fetching.
+               See fetch_all_by_dbID_list() for more info.
+  Returntype : ListRef of Bio::EnsEMBL::Feature
+  Exceptions : Thrown if a list of IDs is not supplied.
+  Caller     : BaseFeatureAdaptor, BaseAdaptor and derived classes.
+
+=cut
+
+sub _uncached_fetch_all_by_id_list {
+    my ( $self, $id_list_ref, $slice, $id_type ) = @_;
+
   if ( !defined($id_list_ref) || ref($id_list_ref) ne 'ARRAY' ) {
     throw("id_list list reference argument is required");
   }
@@ -670,9 +698,22 @@ sub _uncached_fetch_all_by_dbID_list {
   # length of 16, this means 2048 dbIDs in each query.
   my $max_size = 2048;
 
-
+  # prepare column name for query
+  my $field_name;
+  if ($id_type eq "dbID") {
+      $field_name = $name."_id";
+  } else {
+      $field_name = $id_type;
+  }
+  
+  # build up unique id list, also validate on the way by
   my %id_list;
-  $id_list{$_}++ for @{$id_list_ref};
+  for (@{$id_list_ref}) {
+      $id_list{$_}++;
+      if ($id_type ne "stable_id") { 
+          assert_integer($_,"$field_name");
+      }
+  }
   my @id_list = keys %id_list;
 
   my @out;
@@ -687,20 +728,26 @@ sub _uncached_fetch_all_by_dbID_list {
       @ids     = @id_list;
       @id_list = ();
     }
-
+    
     if ( scalar(@ids) > 1 ) {
-      $id_str = " IN (" . join( ',', @ids ) . ")";
+        # stable_ids are the only feature attribute which is expressed as a
+        # varchar. These need to be quoted or the SQL will bounce
+        if ($id_type eq "stable_id") {
+            $id_str = " IN (" . join( ',', map qq("$_"), @ids ) . ")";
+        } else {
+            $id_str = " IN (" . join( ',', @ids). ")";
+        }
     } else {
       $id_str = " = " . $ids[0];
     }
-
-    my $constraint = "${syn}.${name}_id $id_str";
+    
+    my $constraint = "${syn}.${field_name} $id_str";
 
     push @out, @{ $self->generic_fetch($constraint, undef, $slice) };
   }
 
   return \@out;
-} ## end sub fetch_all_by_dbID_list
+}
 
 # might not be a good idea, but for convenience
 # shouldnt be called on the BIG tables though
