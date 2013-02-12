@@ -354,7 +354,7 @@ WHERE
         my $dsn = "DBI:mysql:host=$host";
         $dsn .= ";port=$port" if ($port);
 
-        warn "Dumping $DBNAME to $file ... ", format_datetime($start_time),
+        print "Dumping $DBNAME to $file ... ", format_datetime($start_time),
           "\n";
         my $extra = $DB ne 'core' ? ";db=$DB" : '';
 
@@ -625,7 +625,7 @@ g.seq_region_id=ae.seq_region_id and ae.exc_type='HAP'", [qw(gene_id)]
         p geneLineXML( $dbspecies, \%old, $counter );
 
         footer( $counter->() );
-        warn "FINISHED...... genes $DB ...";
+        print "FINISHED...... genes $DB ...\n";
 
     }
 
