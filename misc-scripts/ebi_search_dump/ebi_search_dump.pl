@@ -250,11 +250,11 @@ sub dumpGene {
     my ( $dbspecies, $conf ) = @_;
 
     my $orth_species = {
-        # 'homo_sapiens'             => 'ensembl_ortholog',
-        # 'mus_musculus'             => 'ensembl_ortholog',
-        # 'drosophila_melanogaster'  => 'ensemblgenomes_ortholog',
-        # 'caenorhabditis_elegans'   => 'ensemblgenomes_ortholog',
-        # 'saccharomyces_cerevisiae' => 'ensemblgenomes_ortholog'
+        'homo_sapiens'             => 'ensembl_ortholog',
+        'mus_musculus'             => 'ensembl_ortholog',
+        'drosophila_melanogaster'  => 'ensemblgenomes_ortholog',
+        'caenorhabditis_elegans'   => 'ensemblgenomes_ortholog',
+        'saccharomyces_cerevisiae' => 'ensemblgenomes_ortholog'
     };
     my $compara_sth;
     my $want_species_orthologs;
@@ -370,7 +370,7 @@ $dbh->ping;
         my %exons = ();
         my $get_genes_sth    = $dbh->prepare(
             "select distinct t.gene_id, e.stable_id
-         from transcript as t, exon_transcript as et, exon as e
+         from ${DBNAME}.transcript as t, ${DBNAME}.exon_transcript as et, ${DBNAME}.exon as e
         where t.transcript_id = et.transcript_id and et.exon_id = e.exon_id"
         );
 
@@ -408,14 +408,14 @@ $dbh->ping;
         };
 
         my $haplotypes = $dbh->selectall_hashref(
-            "select gene_id from gene g, assembly_exception ae where
-g.seq_region_id=ae.seq_region_id and ae.exc_type='HAP'", [qw(gene_id)]
+            "select gene_id, exc_type from ${DBNAME}.gene g, ${DBNAME}.assembly_exception ae where
+g.seq_region_id=ae.seq_region_id and ae.exc_type IN (?,?,?)", 'gene_id', {}, 'HAP', 'PATCH_NOVEL', 'PATCH_FIX'
         ) or die $dbh->errstr;
         
         my $alt_alleles = $dbh->selectall_hashref(qq{select gene_id, is_ref from ${DBNAME}.alt_allele}, 'gene_id');
 
         my $taxon_id = $dbh->selectrow_arrayref(
-            "select meta_value from meta where meta_key='species.taxonomy_id'");
+            "select meta_value from ${DBNAME}.meta where meta_key='species.taxonomy_id'");
 
         my %xrefs      = ();
         my %xrefs_desc = ();
@@ -474,6 +474,8 @@ g.seq_region_id=ae.seq_region_id and ae.exc_type='HAP'", [qw(gene_id)]
         my $ecount = scalar(keys(%hash)). "\n\n";
 
         my %old;
+        
+        my %exception_type_to_description = ('REF' => 'reference', 'HAP' => 'haplotype', 'PATCH_FIX' => 'fix_patch', 'PATCH_NOVEL' => 'novel_patch');
 
         foreach my $row (@$gene_info) {
 
@@ -520,10 +522,12 @@ g.seq_region_id=ae.seq_region_id and ae.exc_type='HAP'", [qw(gene_id)]
                 if(exists $alt_alleles->{$gene_id}) { #meaning reverses as alt_allele defines the ref alone
                   $alt_allele = $alt_alleles->{$gene_id} == 1 ? 0 : 1; 
                 }
+                my $hap_type = $haplotypes->{$gene_id} || q{REF};
+                
                 
                 %old = (
                     'gene_id'                 => $gene_id,
-                    'haplotype'               => $haplotypes->{$gene_id} ? 'haplotype' : 'reference',
+                    'haplotype'               => $exception_type_to_description{$hap_type},
                     'alt_allele'              => $alt_allele,
                     'gene_stable_id'          => $gene_stable_id,
                     'description'             => $gene_description,

@@ -403,8 +403,8 @@ WHERE
         };
 
         my $haplotypes = $dbh->selectall_hashref(
-            "select gene_id from gene g, assembly_exception ae where
-g.seq_region_id=ae.seq_region_id and ae.exc_type='HAP'", [qw(gene_id)]
+            "select gene_id, exc_type from ${DBNAME}.gene g, ${DBNAME}.assembly_exception ae where
+g.seq_region_id=ae.seq_region_id and ae.exc_type IN (?,?,?)", 'gene_id', {}, 'HAP', 'PATCH_NOVEL', 'PATCH_FIX'
         ) or die $dbh->errstr;
         
         my $alt_alleles = $dbh->selectall_hashref(qq{select gene_id, is_ref from ${DBNAME}.alt_allele}, 'gene_id');
@@ -491,6 +491,8 @@ g.seq_region_id=ae.seq_region_id and ae.exc_type='HAP'", [qw(gene_id)]
         my $ecount = scalar(keys(%hash)). "\n\n";
 
         my %old;
+        
+        my %exception_type_to_description = ('REF' => 'reference', 'HAP' => 'haplotype', 'PATCH_FIX' => 'fix_patch', 'PATCH_NOVEL' => 'novel_patch');
 
         foreach my $row (@$gene_info) {
 
@@ -540,11 +542,11 @@ g.seq_region_id=ae.seq_region_id and ae.exc_type='HAP'", [qw(gene_id)]
                 if(exists $alt_alleles->{$gene_id}) { #meaning reverses as alt_allele defines the ref alone
                   $alt_allele = $alt_alleles->{$gene_id} == 1 ? 0 : 1; 
                 }
+                my $hap_type = $haplotypes->{$gene_id} || q{REF};
                 
                 %old = (
                     'gene_id'   => $gene_id,
-                    'haplotype' => $haplotypes->{$gene_id} ? 'haplotype'
-                    : 'reference',
+                    'haplotype'               => $exception_type_to_description{$hap_type},
                     'alt_allele'             => $alt_allele,
                     'gene_stable_id'         => $gene_stable_id,
                     'description'            => $gene_description,
