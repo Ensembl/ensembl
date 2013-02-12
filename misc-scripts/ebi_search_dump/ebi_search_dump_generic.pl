@@ -406,6 +406,8 @@ WHERE
             "select gene_id from gene g, assembly_exception ae where
 g.seq_region_id=ae.seq_region_id and ae.exc_type='HAP'", [qw(gene_id)]
         ) or die $dbh->errstr;
+        
+        my $alt_alleles = $dbh->selectall_hashref(qq{select gene_id, is_ref from ${DBNAME}.alt_allele}, 'gene_id');
 
         my $taxon_id = $dbh->selectrow_arrayref(
             "select meta_value from meta where meta_key='species.taxonomy_id'");
@@ -533,10 +535,17 @@ g.seq_region_id=ae.seq_region_id and ae.exc_type='HAP'", [qw(gene_id)]
                     p geneLineXML( $dbspecies, \%old, $counter );
 
                 }
+                
+                my $alt_allele = 0;
+                if(exists $alt_alleles->{$gene_id}) { #meaning reverses as alt_allele defines the ref alone
+                  $alt_allele = $alt_alleles->{$gene_id} == 1 ? 0 : 1; 
+                }
+                
                 %old = (
                     'gene_id'   => $gene_id,
                     'haplotype' => $haplotypes->{$gene_id} ? 'haplotype'
                     : 'reference',
+                    'alt_allele'             => $alt_allele,
                     'gene_stable_id'         => $gene_stable_id,
                     'description'            => $gene_description,
                     'taxon_id'               => $taxon_id->[0],
@@ -684,6 +693,7 @@ sub geneLineXML {
     my $type        = $xml_data->{'source'} . ' ' . $xml_data->{'biotype'}
       or die "problem setting type";
     my $haplotype        = $xml_data->{'haplotype'};
+    my $alt_allele       = $xml_data->{'alt_allele'};
     my $taxon_id         = $xml_data->{'taxon_id'};
     my $exon_count       = scalar keys %$exons;
     my $domain_count     = scalar keys %$domains;
@@ -825,7 +835,8 @@ sub geneLineXML {
       <field name="transcript_count">$transcript_count</field>
       <field name="gene_name">$gene_name</field>
       <field name="seq_region_name">$seq_region_name</field>
-      <field name="haplotype">$haplotype</field>}
+      <field name="haplotype">$haplotype</field>
+      <field name="alt_allele">$alt_allele</field>}
       . (
         join "",
         (
@@ -1585,7 +1596,7 @@ sub dumpSNP {
             #	    $vfi2gene_sth->execute($row->[3]);
             #	      my $gsi = $vfi2gene_sth->fetchall_arrayref;
             my $name       = $row->[0];
-            my @synonyms   = split /,/, @$row->[2];
+            my @synonyms   = split /,/, $row->[2];
             my $snp_source = $source_hash->{ $row->[1] }->{name};
 
 #	    my $description =

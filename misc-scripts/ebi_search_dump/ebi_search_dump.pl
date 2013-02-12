@@ -250,11 +250,11 @@ sub dumpGene {
     my ( $dbspecies, $conf ) = @_;
 
     my $orth_species = {
-        'homo_sapiens'             => 'ensembl_ortholog',
-        'mus_musculus'             => 'ensembl_ortholog',
-        'drosophila_melanogaster'  => 'ensemblgenomes_ortholog',
-        'caenorhabditis_elegans'   => 'ensemblgenomes_ortholog',
-        'saccharomyces_cerevisiae' => 'ensemblgenomes_ortholog'
+        # 'homo_sapiens'             => 'ensembl_ortholog',
+        # 'mus_musculus'             => 'ensembl_ortholog',
+        # 'drosophila_melanogaster'  => 'ensemblgenomes_ortholog',
+        # 'caenorhabditis_elegans'   => 'ensemblgenomes_ortholog',
+        # 'saccharomyces_cerevisiae' => 'ensemblgenomes_ortholog'
     };
     my $compara_sth;
     my $want_species_orthologs;
@@ -337,7 +337,7 @@ WHERE
         my $DBNAME  = $conf->{$DB}->{$release}
           or warn "$dbspecies $DB $release: no database not found";
         next unless $DBNAME;
-        print "START... $DB";
+        print "START... $DB\n";
         my $file = "$dir/Gene_$DBNAME.xml";
         $file .= ".gz" unless $nogzip;
         my $start_time = time;
@@ -369,9 +369,9 @@ WHERE
 $dbh->ping;
         my %exons = ();
         my $get_genes_sth    = $dbh->prepare(
-            "select distinct t.gene_id, esi.stable_id
-         from transcript as t, exon_transcript as et, exon_stable_id as esi
-        where t.transcript_id = et.transcript_id and et.exon_id = esi.exon_id"
+            "select distinct t.gene_id, e.stable_id
+         from transcript as t, exon_transcript as et, exon as e
+        where t.transcript_id = et.transcript_id and et.exon_id = e.exon_id"
         );
 
 
@@ -411,6 +411,8 @@ $dbh->ping;
             "select gene_id from gene g, assembly_exception ae where
 g.seq_region_id=ae.seq_region_id and ae.exc_type='HAP'", [qw(gene_id)]
         ) or die $dbh->errstr;
+        
+        my $alt_alleles = $dbh->selectall_hashref(qq{select gene_id, is_ref from ${DBNAME}.alt_allele}, 'gene_id');
 
         my $taxon_id = $dbh->selectrow_arrayref(
             "select meta_value from meta where meta_key='species.taxonomy_id'");
@@ -452,8 +454,8 @@ g.seq_region_id=ae.seq_region_id and ae.exc_type='HAP'", [qw(gene_id)]
         my $dbh2 = DBI->connect( "$dsn:$DBNAME", $user, $pass )
           or die "DBI::error";
         my $gene_info = $dbh2->selectall_arrayref( "
-        select gsi.gene_id, tsi.transcript_id, trsi.translation_id,
-             gsi.stable_id as gsid, tsi.stable_id as tsid, trsi.stable_id as trsid,
+        select g.gene_id, t.transcript_id, tr.translation_id,
+             g.stable_id as gsid, t.stable_id as tsid, tr.stable_id as trsid,
              g.description, ed.db_name, x.dbprimary_acc,x.display_label, ad.display_label, ad.description, g.source, g.status, g.biotype
         from ((( $DBNAME.gene as g, 
              $DBNAME.analysis_description as ad,
@@ -514,14 +516,19 @@ g.seq_region_id=ae.seq_region_id and ae.exc_type='HAP'", [qw(gene_id)]
                     p geneLineXML( $dbspecies, \%old, $counter );
 
                 }
+                my $alt_allele = 0;
+                if(exists $alt_alleles->{$gene_id}) { #meaning reverses as alt_allele defines the ref alone
+                  $alt_allele = $alt_alleles->{$gene_id} == 1 ? 0 : 1; 
+                }
+                
                 %old = (
-                    'gene_id'   => $gene_id,
-                    'haplotype' => $haplotypes->{$gene_id} ? 'haplotype'
-                    : 'reference',
-                    'gene_stable_id'         => $gene_stable_id,
-                    'description'            => $gene_description,
-                    'taxon_id'               => $taxon_id->[0],
-                    'translation_stable_ids' => {
+                    'gene_id'                 => $gene_id,
+                    'haplotype'               => $haplotypes->{$gene_id} ? 'haplotype' : 'reference',
+                    'alt_allele'              => $alt_allele,
+                    'gene_stable_id'          => $gene_stable_id,
+                    'description'             => $gene_description,
+                    'taxon_id'                => $taxon_id->[0],
+                    'translation_stable_ids'  => {
                         $translation_stable_id ? ( $translation_stable_id => 1 )
                         : ()
                     },
@@ -647,6 +654,7 @@ sub geneLineXML {
     my $type        = $xml_data->{'source'} . ' ' . $xml_data->{'biotype'}
       or die "problem setting type";
     my $haplotype        = $xml_data->{'haplotype'};
+    my $alt_allele       = $xml_data->{'alt_allele'};
     my $taxon_id         = $xml_data->{'taxon_id'};
     my $exon_count       = scalar keys %$exons;
     my $transcript_count = scalar keys %$transcripts;
@@ -775,7 +783,8 @@ sub geneLineXML {
       <field name="source">$type</field>
       <field name="transcript_count">$transcript_count</field>
       <field name="gene_name">$gene_name</field>
-      <field name="haplotype">$haplotype</field>}
+      <field name="haplotype">$haplotype</field>
+      <field name="alt_allele">$alt_allele</field>}
       . (
         join "",
         (
@@ -1527,7 +1536,7 @@ sub dumpSNP {
             #	    $vfi2gene_sth->execute($row->[3]);
             #	      my $gsi = $vfi2gene_sth->fetchall_arrayref;
             my $name       = $row->[0];
-            my @synonyms   = split /,/, @$row->[2];
+            my @synonyms   = split /,/, $row->[2];
             my $snp_source = $source_hash->{ $row->[1] }->{name};
 
 #	    my $description =
