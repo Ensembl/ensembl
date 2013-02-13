@@ -463,8 +463,7 @@ g.seq_region_id=ae.seq_region_id and ae.exc_type IN (?,?,?)", 'gene_id', {}, 'HA
              $DBNAME.translation as tr on t.transcript_id = tr.transcript_id) left join
              $DBNAME.xref as x on g.display_xref_id = x.xref_id) left join
              $DBNAME.external_db as ed on ed.external_db_id = x.external_db_id
-       where t.transcript_id = tr.transcript_id and t.gene_id = g.gene_id
-             and g.analysis_id = ad.analysis_id
+       where t.gene_id = g.gene_id and g.analysis_id = ad.analysis_id
        order by g.stable_id, t.stable_id;
     " );
 
