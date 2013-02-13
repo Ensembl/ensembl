@@ -661,21 +661,10 @@ sub geneLineXML {
     my $taxon_id         = $xml_data->{'taxon_id'};
     my $exon_count       = scalar keys %$exons;
     my $transcript_count = scalar keys %$transcripts;
-    $description =~ s/</&lt;/g;
-    $description =~ s/>/&gt;/g;
-    $description =~ s/'/&apos;/g;
-    $description =~ s/&/&amp;/g;
-
-    $gene_name =~ s/</&lt;/g;
-    $gene_name =~ s/>/&gt;/g;
-    $gene_name =~ s/'/&apos;/g;
-    $gene_name =~ s/&/&amp;/g;
-
-    $gene_id =~ s/</&lt;/g;
-    $gene_id =~ s/>/&gt;/g;
-
-    $altid =~ s/</&lt;/g;
-    $altid =~ s/>/&gt;/g;
+    $description = escapeXML($description);
+    $gene_name = escapeXML($gene_name);
+    $gene_id = escapeXML($gene_id);
+    $altid = escapeXML($altid);
 
     my $xml = qq{
  <entry id="$gene_id">
@@ -708,17 +697,18 @@ sub geneLineXML {
                 {
 
                     #		$unique_synonyms->{$ed_key} = 1;
+                    $ed_key = escapeXML($ed_key);
                     $synonyms .= qq{ 
              <field name="${matched_db_name}_synonym">$ed_key</field>};
                 }
 
             }
             else {    # non-synonyms
-
+              
                 map {
                     $cross_references .= qq{
          <ref dbname="$matched_db_name" dbkey="$_"/>};
-                  } keys %{ $external_identifiers->{$ext_db_name} }
+                  } map { $_ = escapeXML($_) } keys %{ $external_identifiers->{$ext_db_name} }
 
             }
 
@@ -727,10 +717,7 @@ sub geneLineXML {
 
             foreach my $key ( keys %{ $external_identifiers->{$ext_db_name} } )
             {
-
-                $key         =~ s/</&lt;/g;
-                $key         =~ s/>/&gt;/g;
-                $key         =~ s/&/&amp;/g;
+                $key = escapeXML($key);
                 $ext_db_name =~ s/^Ens.*/ENSEMBL/;
 
                 if ( $ext_db_name =~ /_synonym/ ) {
@@ -1025,19 +1012,16 @@ sub markerXML {
       . ( scalar @keys > 1 ? 's ' : ' ' ) . '('
       . join( " ", @keys ) . ')';
 
-    $desc =~ s/</&lt;/g;
-    $desc =~ s/>/&gt;/g;
+    $desc = escapeXML($desc);
 
     $xml = qq{
 <entry id="$marker">
    <additional_fields>};
 
-    foreach (@keys) {
-        s/</&lt;/g;
-        s/>/&gt;/g;
-
+    foreach my $key (@keys) {
+      $key = escapeXML($key);
         $xml .= qq{
-      <field name="synonym">$_</field>}
+      <field name="synonym">${key}</field>}
 
     }
     $xml .= qq{
@@ -1807,4 +1791,13 @@ sub make_counter {
 sub FamilyDumped {
     my $is_dumped;
     return sub { $is_dumped }
+}
+
+sub escapeXML {
+  my ($data) = @_;
+  $data =~ s/</&lt;/g;
+  $data =~ s/>/&gt;/g;
+  $data =~ s/'/&apos;/g;
+  $data =~ s/&/&amp;/g;
+  return $data;
 }
