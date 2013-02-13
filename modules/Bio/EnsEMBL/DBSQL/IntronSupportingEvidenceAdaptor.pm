@@ -331,8 +331,10 @@ SQL
   ];
     
   $self->dbc()->sql_helper()->execute_update(-SQL => $sql, -PARAMS => $params, -CALLBACK => sub {
-    my ( $sth, $dbh ) = @_;
-    $sf->dbID($self->last_insert_id('intron_supporting_evidence_id', undef, 'intron_supporting_evidence'));
+    my ( $sth, $dbh, $rv ) = @_;
+    if ($rv > 0) {
+      $sf->dbID($self->last_insert_id('intron_supporting_evidence_id', undef, 'intron_supporting_evidence'));
+    }
     return;
   });
   $sf->adaptor($self);
@@ -424,7 +426,7 @@ sub update {
     [$sf->hit_name(), SQL_VARCHAR],
     [$sf->score(), SQL_FLOAT],
     [$sf->score_type(), SQL_VARCHAR],
-    [$sf->is_splice_canonical(), SQL_INTEGER],
+    [$sf->is_splice_canonical() || 0, SQL_INTEGER],
     [$sf->dbID(), SQL_INTEGER],
   ];
   

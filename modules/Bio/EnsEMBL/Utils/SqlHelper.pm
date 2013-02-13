@@ -708,13 +708,14 @@ issued i.e.
   $helper->execute_update(
     -SQL      => 'insert into tab (name) values(?)',
     -CALLBACK => sub {
-      my ( $sth, $dbh ) = @_;
+      my ( $sth, $dbh, $rv ) = @_;
       $obj->{id} = $dbh->{mysql_insertid};
     },
     -PARAMS => [ $obj->name() ] );
 
-This lets us access the statement handle & database handle to access other
-properties such as the last identifier inserted.
+This lets us access the statement handle, the database handle and
+the return value from $sth->execute, to access other properties such as
+the last identifier inserted.
 
 =cut
 
@@ -729,7 +730,7 @@ sub execute_update {
     $sth = $self->db_connection()->prepare($sql, @prepare_params);
     $self->_bind_params($sth, $params);
     $rv = $sth->execute();
-    $callback->($sth, $self->db_connection()->db_handle()) if $callback;
+    $callback->($sth, $self->db_connection()->db_handle(), $rv) if $callback;
   };
   my $error = $@;
   $self->_finish_sth($sth);
