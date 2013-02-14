@@ -91,6 +91,8 @@ FROM    ontology
     ON  (child_term.term_id = closure.child_term_id)
 WHERE   ontology.name = %s
   AND   FIND_IN_SET(%s, parent_term.subsets) > 0
+  AND   parent_term.ontology_id = closure.ontology_id
+  AND   child_term.ontology_id = closure.ontology_id
 GROUP BY child_term.term_id, parent_term.term_id
 );
 

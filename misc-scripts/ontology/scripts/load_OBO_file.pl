@@ -143,7 +143,7 @@ sub write_subset {
       $lookup_sth->bind_param(1, $subset->{name}, SQL_VARCHAR);
       $lookup_sth->execute();
       ($id) = $lookup_sth->fetchrow_array();
-      printf(STDERR "CLASH: SUBSET '%s' already exists in this database. Reusing ID %d\n", $subset->{name}, $id);
+      printf("CLASH: SUBSET '%s' already exists in this database. Reusing ID %d\n", $subset->{name}, $id);
     } 
     
     $subset->{'id'} = $id;
@@ -170,13 +170,13 @@ sub write_term {
 
   $dbh->do("LOCK TABLES term WRITE, synonym WRITE");
 
-  my $statement = "INSERT IGNORE INTO term (ontology_id, subsets, accession, name, definition) VALUES (?,?,?,?,?)";
+  my $statement = "INSERT IGNORE INTO term (ontology_id, subsets, accession, name, definition, is_root) VALUES (?,?,?,?,?,?)";
 
   my $syn_stmt = "INSERT INTO synonym (term_id, name) VALUES (?,?)";
 
   my $existing_term_st = "SELECT term_id, ontology_id FROM term WHERE accession = ?";
 
-  my $update_stmt = "UPDATE term SET ontology_id = ?, subsets = ?, name = ?, definition = ? WHERE term_id = ?";
+  my $update_stmt = "UPDATE term SET ontology_id = ?, subsets = ?, name = ?, definition = ?, is_root = ? WHERE term_id = ?";
 
   my $sth               = $dbh->prepare($statement);
   my $update_sth        = $dbh->prepare($update_stmt);
@@ -218,6 +218,7 @@ sub write_term {
         $sth->bind_param(3, $term->{'accession'}, SQL_VARCHAR);
         $sth->bind_param(4, 'UNKNOWN NAME',       SQL_VARCHAR);
         $sth->bind_param(5, 'UNKNOWN DEFINITION', SQL_VARCHAR);
+        $sth->bind_param(6, $term->{'is_root'},   SQL_INTEGER);
         $sth->execute();
         my $id = $dbh->last_insert_id(undef, undef, 'term', 'term_id');
         $term->{'id'} = $id;
@@ -238,6 +239,7 @@ sub write_term {
         $update_sth->bind_param(3, $term->{'name'},                           SQL_VARCHAR);
         $update_sth->bind_param(4, $term->{'definition'},                     SQL_VARCHAR);
         $update_sth->bind_param(5, $existing_term_id,                         SQL_INTEGER);
+        $update_sth->bind_param(6, $term->{'is_root'},                        SQL_INTEGER);
 
         $update_sth->execute();
 
@@ -251,6 +253,7 @@ sub write_term {
         $sth->bind_param(3, $term->{'accession'},                      SQL_VARCHAR);
         $sth->bind_param(4, $term->{'name'},                           SQL_VARCHAR);
         $sth->bind_param(5, $term->{'definition'},                     SQL_VARCHAR);
+        $sth->bind_param(6, $term->{'is_root'},                        SQL_INTEGER);
 
         $sth->execute();
         my $id = $dbh->last_insert_id(undef, undef, 'term', 'term_id');
@@ -258,7 +261,7 @@ sub write_term {
           $existing_term_sth->execute($term->{'accession'});
           my ($existing_term_id, $ontology_id) = $existing_term_sth->fetchrow_array;
           $id = $existing_term_id;
-          printf(STDERR "DUPLICATION: TERM '%s' already exists in this database. Reusing ID %d\n", $term->{accession}, $existing_term_id);
+          printf("DUPLICATION: TERM '%s' already exists in this database. Reusing ID %d\n", $term->{accession}, $existing_term_id);
           $reuse = 1;
         }
         $term->{'id'} = $id;
@@ -268,7 +271,7 @@ sub write_term {
       
       if($term->{synonyms} && @{$term->{synonyms}}) {
         if($reuse) {
-          print STDERR "REUSE: SKIPPING SYNONYM writing as term already exists in this database\n";
+          print "REUSE: SKIPPING SYNONYM writing as term already exists in this database\n";
         }
         else {
           foreach my $syn (@{$term->{'synonyms'}}) {
@@ -344,17 +347,18 @@ sub write_relation_type {
 #-----------------------------------------------------------------------
 
 sub write_relation {
-  my ($dbh, $terms, $relation_types) = @_;
+  my ($dbh, $terms, $relation_types, $ontology, $namespaces) = @_;
 
   print("Writing to 'relation' table...\n");
 
   $dbh->do("LOCK TABLE relation WRITE");
 
-  my $statement = "INSERT IGNORE INTO relation " . "(child_term_id, parent_term_id, relation_type_id, intersection_of) " . "VALUES (?,?,?,?)";
+  my $statement = "INSERT IGNORE INTO relation " . "(child_term_id, parent_term_id, relation_type_id, intersection_of, ontology_id) " . "VALUES (?,?,?,?,?)";
 
   my $sth = $dbh->prepare($statement);
 
   my $count = 0;
+  my $ontology_id;
 
   local $SIG{ALRM} = sub {
     printf("\t%d entries, %d to go...\n", $count, scalar(keys(%{$terms})) - $count);
@@ -365,6 +369,12 @@ sub write_relation {
   foreach my $child_term (sort { $a->{'id'} <=> $b->{'id'} } values(%{$terms})) {
     foreach my $relation_type (sort(keys(%{$child_term->{'parents'}}))) {
       foreach my $parent_acc (sort(@{$child_term->{'parents'}{$relation_type}})) {
+        if ($namespaces->{$child_term->{'namespace'}}{'name'} eq $ontology) {
+          $ontology_id = $namespaces->{$child_term->{'namespace'}}{'id'};
+        } else {
+          $ontology_id = $namespaces->{$ontology}{'id'}
+        }
+
         if (!defined($terms->{$parent_acc})) {
           printf("WARNING: Parent accession '%s' does not exist!\n", $parent_acc);
         }
@@ -375,20 +385,27 @@ sub write_relation {
             exit;
           }
 
-          $sth->bind_param(1, $child_term->{'id'},                     SQL_INTEGER);
-          $sth->bind_param(2, $terms->{$parent_acc}{'id'},             SQL_INTEGER);
-          $sth->bind_param(3, $relation_types->{$relation_type}{'id'}, SQL_INTEGER);
-          $sth->bind_param(4, 0,                                       SQL_INTEGER);
+          $sth->bind_param(1, $child_term->{'id'},                             SQL_INTEGER);
+          $sth->bind_param(2, $terms->{$parent_acc}{'id'},                     SQL_INTEGER);
+          $sth->bind_param(3, $relation_types->{$relation_type}{'id'},         SQL_INTEGER);
+          $sth->bind_param(4, 0,                                               SQL_INTEGER);
+          $sth->bind_param(5, $ontology_id,                                    SQL_INTEGER);
           $sth->execute();
           
           if(! $dbh->last_insert_id(undef, undef, 'relation', 'relation_id')) {
-            printf "DUPLICATION: RELATION %s (child) %s %s (parent) has been repeated. Ignoring this insert\n", $child_term->{accession}, $relation_type, $parent_acc;
+            printf "DUPLICATION: RELATION %s (child) %s %s (parent) has been repeated. Ignoring this insert for ontology %s\n", $child_term->{accession}, $relation_type, $parent_acc, $ontology_id;
           }
         }
       }
     }
     foreach my $relation_type (sort(keys(%{$child_term->{'intersection_of_parents'}}))) {
       foreach my $parent_acc (sort(@{$child_term->{'intersection_of_parents'}{$relation_type}})) {
+        if ($namespaces->{$child_term->{'namespace'}}{'name'} eq $ontology) {
+          $ontology_id = $namespaces->{$child_term->{'namespace'}}{'id'};
+        } else {
+          $ontology_id = $namespaces->{$ontology}{'id'}
+        }
+
         if (!defined($terms->{$parent_acc})) {
           printf("WARNING: Parent accession '%s' does not exist!\n", $parent_acc);
         }
@@ -399,19 +416,21 @@ sub write_relation {
             exit;
           }
 
-          $sth->bind_param(1, $child_term->{'id'},                     SQL_INTEGER);
-          $sth->bind_param(2, $terms->{$parent_acc}{'id'},             SQL_INTEGER);
-          $sth->bind_param(3, $relation_types->{$relation_type}{'id'}, SQL_INTEGER);
-          $sth->bind_param(4, 1,                                       SQL_INTEGER);
+          $sth->bind_param(1, $child_term->{'id'},                             SQL_INTEGER);
+          $sth->bind_param(2, $terms->{$parent_acc}{'id'},                     SQL_INTEGER);
+          $sth->bind_param(3, $relation_types->{$relation_type}{'id'},         SQL_INTEGER);
+          $sth->bind_param(4, 1,                                               SQL_INTEGER);
+          $sth->bind_param(5, $ontology_id,                                    SQL_INTEGER);
           $sth->execute();
           if(! $dbh->last_insert_id(undef, undef, 'relation', 'relation_id')) {
-            printf "DUPLICATION: RELATION %s (child) %s %s (parent) has been repeated. Ignoring this insert\n", $child_term->{accession}, $relation_type, $parent_acc;
+            printf "DUPLICATION: RELATION %s (child) %s %s (parent) has been repeated for ontology %s. Ignoring this insert\n", $child_term->{accession}, $relation_type, $parent_acc, $ontology_id;
           }
         }
       }
     }
     ++$count;
   } ## end foreach my $child_term ( sort...)
+
   alarm(0);
 
   $dbh->do("OPTIMIZE TABLE relation");
@@ -492,7 +511,7 @@ my @returncode = `grep -i "default-namespace: efo" $obo_file_name`;
 @returncode = `grep 'property_value: "hasDefaultNamespace" "EFO"' $obo_file_name` if scalar(@returncode) == 0;
 my $returncode = @returncode;
 if ($returncode > 0) {
-  printf STDERR "Detected an EFO file; performing post-processing\n";
+  printf "Detected an EFO file; performing post-processing\n";
   my $new_obo_file_name = "${obo_file_name}.new";
   open my $obo_fh, '<', $obo_file_name or die "Cannot open the file ${obo_file_name}: $!";
   open my $new_obo_fh, '>', $new_obo_file_name or die "Cannot open target file ${new_obo_file_name}: $!";
@@ -536,7 +555,7 @@ if ($returncode > 0) {
   close($obo_fh);
   close($new_obo_fh);
   
-  printf STDERR "Switching to loading the file %s which is a post-processed file\n", $new_obo_file_name;
+  printf "Switching to loading the file %s which is a post-processed file\n", $new_obo_file_name;
   $obo_file_name = $new_obo_file_name;
 }
 
@@ -551,7 +570,7 @@ $ontology->default_namespace($efo_default_namespace) if $efo_default_namespace &
 
 #Set date to today if one was not present
 if(! $ontology->date()) {
-  print STDERR "No date found; generating one\n";
+  print "No date found; generating one\n";
   my $date = strftime('%d:%m:%Y %H:%M', localtime());
   $ontology->date($date);
 }
@@ -617,6 +636,7 @@ foreach my $t (@{$ontology->get_terms()}) {
   if (!($t->is_obsolete())) {
 
     my %term;
+    my $is_root = 1;
 
     my @t_namespace     = $t->namespace();
     my $t_namespace_elm = @t_namespace;
@@ -631,6 +651,15 @@ foreach my $t (@{$ontology->get_terms()}) {
     $term{'accession'}  = $t->id();
     $term{'name'}       = $t->name();
     $term{'definition'} = $t->def_as_string();
+
+    if ($t->idspace() ne $ontology_name) {
+      $is_root = 0;
+    } else {
+      if (scalar(@{ $ontology->get_parent_terms($t) }) > 0) {
+        $is_root = 0;
+      }
+    }
+    $term{'is_root'} = $is_root;
 
     my $rels = $ontology->get_relationships_by_source_term($t);
     foreach my $r (@{$rels}) {
@@ -689,7 +718,7 @@ my $unknown_onto_id = write_ontology($dbh, \%namespaces);
 write_subset($dbh, \%subsets);
 write_term($dbh, \%terms, \%subsets, \%namespaces, $unknown_onto_id);
 write_relation_type($dbh, \%relation_types);
-write_relation($dbh, \%terms, \%relation_types);
+write_relation($dbh, \%terms, \%relation_types, $ontology_name, \%namespaces);
 
 print("Updating meta table...\n");
 
