@@ -213,7 +213,7 @@ WHERE   term.accession = ?);
 =cut
 
 sub fetch_all_by_parent_term {
-  my ( $this, $term ) = @_;
+  my ( $this, $term, $ontology ) = @_;
 
   assert_ref( $term, 'Bio::EnsEMBL::OntologyTerm' );
 
@@ -230,10 +230,18 @@ SELECT  child_term.term_id,
 FROM    term child_term
   JOIN  relation ON (relation.child_term_id = child_term.term_id)
   JOIN  relation_type rt USING (relation_type_id)
-WHERE   relation.parent_term_id = ?);
+  JOIN  ontology ON (ontology.ontology_id = relation.ontology_id)
+WHERE   relation.parent_term_id = ?
+   AND  ontology.name = ?);
 
     my $sth = $this->prepare($statement);
     $sth->bind_param( 1, $term->dbID(), SQL_INTEGER );
+
+    if (!defined $ontology) {
+      $ontology = $term->{'ontology'};
+    }
+    $sth->bind_param( 2, $ontology, SQL_VARCHAR );
+
 
     $sth->execute();
 
@@ -289,7 +297,7 @@ WHERE   relation.parent_term_id = ?);
 =cut
 
 sub fetch_all_by_ancestor_term {
-  my ( $this, $term ) = @_;
+  my ( $this, $term, $ontology ) = @_;
 
   assert_ref( $term, 'Bio::EnsEMBL::OntologyTerm' );
 
@@ -302,13 +310,19 @@ SELECT DISTINCT
         child_term.subsets
 FROM    term child_term
   JOIN  closure ON (closure.child_term_id = child_term.term_id)
+  JOIN  ontology ON (closure.ontology_id = ontology.ontology_id)
 WHERE   closure.parent_term_id = ?
   AND   closure.distance > 0
+  AND   closure.ontology_id = child_term.ontology_id
+  AND   ontology.name = ?
 ORDER BY closure.distance, child_term.accession);
 
   my $sth = $this->prepare($statement);
   $sth->bind_param( 1, $term->dbID(), SQL_INTEGER );
-
+  if (!defined $ontology) {
+    $ontology = $term->{'ontology'};
+  }
+  $sth->bind_param( 2, $ontology, SQL_VARCHAR );
   $sth->execute();
 
   my ( $dbid, $accession, $name, $definition, $subsets );
@@ -352,7 +366,7 @@ ORDER BY closure.distance, child_term.accession);
 =cut
 
 sub fetch_all_by_child_term {
-  my ( $this, $term ) = @_;
+  my ( $this, $term, $ontology ) = @_;
 
   assert_ref( $term, 'Bio::EnsEMBL::OntologyTerm' );
 
@@ -369,10 +383,17 @@ SELECT  parent_term.term_id,
 FROM    term parent_term
   JOIN  relation ON (relation.parent_term_id = parent_term.term_id)
   JOIN  relation_type rt USING (relation_type_id)
-WHERE   relation.child_term_id = ?);
+  JOIN  ontology ON (ontology.ontology_id = relation.ontology_id)
+WHERE   relation.child_term_id = ?
+   AND  ontology.name = ?);
 
     my $sth = $this->prepare($statement);
     $sth->bind_param( 1, $term->dbID(), SQL_INTEGER );
+
+    if (!defined $ontology) {
+      $ontology = $term->{'ontology'};
+    }
+    $sth->bind_param( 2, $ontology, SQL_VARCHAR );
 
     $sth->execute();
 
@@ -449,7 +470,7 @@ WHERE   relation.child_term_id = ?);
 =cut
 
 sub fetch_all_by_descendant_term {
-  my ( $this, $term, $subset, $closest_only, $allow_zero_distance ) = @_;
+  my ( $this, $term, $subset, $closest_only, $allow_zero_distance, $ontology ) = @_;
 
   assert_ref( $term, 'Bio::EnsEMBL::OntologyTerm' );
 
@@ -465,8 +486,11 @@ SELECT DISTINCT
         closure.distance
 FROM    term parent_term
   JOIN  closure ON (closure.parent_term_id = parent_term.term_id)
+  JOIN  ontology ON (closure.ontology_id = ontology.ontology_id)
 WHERE   closure.child_term_id = ?
-  AND   closure.distance > ?);
+  AND   closure.distance > ?
+  AND   closure.ontology_id = parent_term.ontology_id
+  AND   ontology.name = ?);
 
   if ( defined($subset) ) {
     if ( index( $subset, '%' ) != -1 ) {
@@ -485,9 +509,13 @@ ORDER BY closure.distance, parent_term.accession);
   $sth->bind_param( 1, $term->dbID(), SQL_INTEGER );
   my $query_distance = ($allow_zero_distance) ? -1 : 0;
   $sth->bind_param( 2, $query_distance, SQL_INTEGER );
+  if (!defined $ontology) {
+    $ontology = $term->{'ontology'};
+  }
+  $sth->bind_param( 3, $ontology, SQL_VARCHAR );
 
   if ( defined($subset) ) {
-    $sth->bind_param( 3, $subset, SQL_VARCHAR );
+    $sth->bind_param( 4, $subset, SQL_VARCHAR );
   }
 
   $sth->execute();
@@ -580,7 +608,7 @@ WHERE   synonym.term_id = ?);
 =cut
 
 sub _fetch_ancestor_chart {
-  my ( $this, $term ) = @_;
+  my ( $this, $term, $ontology ) = @_;
 
   assert_ref( $term, 'Bio::EnsEMBL::OntologyTerm' );
 
@@ -591,16 +619,23 @@ SELECT  subparent_term.term_id,
 FROM    closure
   JOIN  relation
     ON (relation.parent_term_id = closure.parent_term_id
-      AND relation.child_term_id = closure.subparent_term_id)
+      AND relation.child_term_id = closure.subparent_term_id
+      AND closure.ontology_id = relation.ontology_id)
   JOIN  relation_type USING (relation_type_id)
   JOIN  term subparent_term
     ON (subparent_term.term_id = closure.subparent_term_id)
   JOIN  term parent_term ON (parent_term.term_id = closure.parent_term_id)
+  JOIN  ontology ON (ontology.ontology_id = closure.ontology_id)
 WHERE   closure.child_term_id = ?
+   AND  ontology.name = ?
 ORDER BY closure.distance);
 
   my $sth = $this->prepare($statement);
   $sth->bind_param( 1, $term->dbID(), SQL_INTEGER );
+  if (!defined $ontology) {
+    $ontology = $term->{'ontology'};
+  }
+  $sth->bind_param( 2, $ontology, SQL_VARCHAR );
 
   $sth->execute();
 
@@ -746,6 +781,77 @@ WHERE   term.term_id IN (%s));
 
   return \@terms;
 } ## end sub fetch_all_by_dbID_list
+
+
+=head2 fetch_all_roots
+
+  Arg [1]       : (optional) String, name of ontology
+
+  Description   : Fetches all roots for all ontologies
+                  Optionally, can be restricted to a given ontology
+
+  Example       :
+
+    my ($terms) =
+      @{ $ot_adaptor->fetch_all_roots( 'SO' ) };
+
+    # Will find terms in EFO, SO and GO:
+    my @terms = @{ $ot_adaptor->fetch_all_roots() };
+
+  Return type   : listref of Bio::EnsEMBL::OntologyTerm
+
+=cut
+
+sub fetch_all_roots {
+  my ($this, $ontology_name) = @_;
+
+  my $statement = q(
+SELECT  term.term_id,
+        term.accession,
+        term.name,
+        term.definition,
+        term.subsets,
+        ontology.name,
+        ontology.namespace
+FROM    ontology
+  JOIN  term USING (ontology_id)
+ WHERE  is_root = 1);
+
+  if (defined $ontology_name) {
+    $statement .= " AND ontology.name = ?";
+  }
+
+  my $sth = $this->prepare($statement);
+  if (defined $ontology_name) {
+    $sth->bind_param( 1, $ontology_name, SQL_VARCHAR );
+  }
+  $sth->execute();
+
+  my ( $dbid, $accession, $name, $definition, $subsets, $ontology,
+       $namespace );
+  $sth->bind_columns( \( $dbid,    $accession, $name, $definition,
+                         $subsets, $ontology,  $namespace ) );
+
+  my @terms;
+
+  while ( $sth->fetch() ) {
+    $subsets ||= '';
+
+    push( @terms,
+          Bio::EnsEMBL::OntologyTerm->new(
+                               '-dbid'      => $dbid,
+                               '-adaptor'   => $this,
+                               '-accession' => $accession,
+                               '-ontology'  => $ontology,
+                               '-namespace' => $namespace,
+                               '-subsets' => [ split( /,/, $subsets ) ],
+                               '-name'    => $name,
+                               '-definition' => $definition ) );
+  }
+
+  return \@terms;
+}
+
 
 sub fetch_all {
   my ($this) = @_;
