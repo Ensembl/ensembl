@@ -31,7 +31,7 @@ debug( join( "\n", map { "$_" } %{$qtl_features->[1]})."\n" );
 ok( scalar( @$qtl_features ) == 2 );
 
 my $qtladptor = $db->get_QtlAdaptor();
-my $traits = $qtladptor->list_traits();
+my $traits = [ sort { $a cmp $b } @{$qtladptor->list_traits()} ];
 
 
 debug( join( "\n", map {"Trait: $_"} @$traits ));
