@@ -41,4 +41,8 @@ sub from_seconds_to_date {
     return "from_unixtime($seconds)";
 }
 
+sub last_insert_id_args {
+    return (undef, undef, undef, undef);
+}
+
 1;
