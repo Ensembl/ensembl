@@ -1008,6 +1008,9 @@ sub from_date_to_seconds{
     elsif ($self->driver eq 'odbc'){
         $string = "DATEDIFF(second,'JAN 1 1970',$column)";
     }
+    elsif ($self->driver eq 'SQLite'){
+        $string = "STRFTIME('%s', $column)";
+    }
     else{
         warning("Not possible to convert $column due to an unknown database driver: ", $self->driver);
         return '';
@@ -1045,6 +1048,14 @@ sub from_seconds_to_date{
     elsif ($self->driver eq 'odbc'){
         if ($seconds){
             $string = "DATEDIFF(date,'JAN 1 1970',$seconds)";
+        }
+        else{
+            $string = "\"0000-00-00 00:00:00\"";
+        }
+    }
+    elsif ($self->driver eq 'SQLite'){
+        if ($seconds){
+            $string = "DATETIME($seconds)";
         }
         else{
             $string = "\"0000-00-00 00:00:00\"";
