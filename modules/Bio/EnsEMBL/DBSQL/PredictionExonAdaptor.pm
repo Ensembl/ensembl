@@ -217,7 +217,7 @@ sub store {
 
   $sth->execute();
 
-  my $dbID = $sth->{'mysql_insertid'};
+  my $dbID = $self->last_insert_id('prediction_transcript_id', undef, 'prediction_transcript');
 
   #set the adaptor and dbID of the object they passed in
   $original->dbID($dbID);

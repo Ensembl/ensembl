@@ -585,7 +585,7 @@ sub store {
 	$sth->execute();
 	$sth->finish();
 
-	my $operon_transcript_dbID = $sth->{'mysql_insertid'};
+	my $operon_transcript_dbID = $self->last_insert_id('operon_transcript_id', undef, 'operon_transcript');
 
 	# store the dbentries associated with this gene
 	my $dbEntryAdaptor = $db->get_DBEntryAdaptor();
