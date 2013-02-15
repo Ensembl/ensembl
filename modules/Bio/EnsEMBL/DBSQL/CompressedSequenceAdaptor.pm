@@ -62,7 +62,7 @@ sub _fetch_seq {
   my ($bvector, $nline);
 
   my $sth = $self->prepare(
-               "SELECT SUBSTRING( d.sequence, ?, ?), n_line
+               "SELECT SUBSTR( d.sequence, ?, ?), n_line
                 FROM dnac d
                 WHERE d.seq_region_id = ?");
   $sth->bind_param(1,$comp_start,SQL_INTEGER);
