@@ -33,7 +33,7 @@ my $registry_template = <<'TMPL';
     -USER => '%s',
     -PASSWORD => '%s',
     -DBNAME => '%s',
-    -DRIVER => 'mysql',
+    -DRIVER => '%s',
     -SPECIES => 'new'
   );
 }
@@ -42,7 +42,14 @@ TMPL
 
 {
   my ($fh, $filename) = tempfile();
-  my $final = sprintf($registry_template, $dbc->host(), $dbc->port(), $dbc->username(), $dbc->password(), $dbc->dbname());
+  my $final = sprintf($registry_template,
+                      $dbc->host() || '',
+                      $dbc->port() || 0,
+                      $dbc->username() || '',
+                      $dbc->password() || '',
+                      $dbc->dbname(),
+                      $dbc->driver(),
+      );
   print $fh $final;
   close $fh;
   
