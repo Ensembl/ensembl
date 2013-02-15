@@ -1032,11 +1032,8 @@ sub store {
 
   my $sth =
     $db->dbc->prepare(   'INSERT INTO coord_system '
-                       . 'SET name = ?, '
-                       . 'version = ?, '
-                       . 'attrib = ?,'
-                       . 'rank = ?,'
-                       . 'species_id = ?' );
+                       . '( name, version, attrib, rank, species_id ) '
+                         . 'VALUES ( ?, ?, ?, ?, ? )' );
 
   $sth->bind_param( 1, $name,               SQL_VARCHAR );
   $sth->bind_param( 2, $version,            SQL_VARCHAR );
