@@ -368,9 +368,9 @@ sub _store_type {
   my $self = shift;
   my $attrib = shift;
 
+  my $insert_ignore = $self->insert_ignore_clause();
   my $sth1 = $self->prepare
-    ("INSERT IGNORE INTO attrib_type set code = ?, name = ?, ".
-     "description = ?" );
+    ("${insert_ignore} INTO attrib_type (code, name, description) values (?, ?, ?)" );
 
 
   $sth1->bind_param(1,$attrib->code,SQL_VARCHAR);

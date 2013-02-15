@@ -207,11 +207,11 @@ sub add_feature_type {
   #store the new tablename -> coord system relationship in the db
   #ignore failures b/c during the pipeline multiple processes may try
   #to update this table and only the first will be successful
-  my $sth = $self->prepare('INSERT IGNORE INTO meta_coord ' .
-                              'SET coord_system_id = ?, ' .
-                                  'table_name = ?, ' .
-			   'max_length = ? ' 
-			  );
+  my $insert_ignore = $self->insert_ignore_clause();
+  my $sth = $self->prepare(qq{ ${insert_ignore} INTO meta_coord
+                                      (coord_system_id, table_name, max_length)
+                               VALUES (?, ?, ?)
+                             } );
 
   $sth->execute($cs->dbID, $table, $length );
 
