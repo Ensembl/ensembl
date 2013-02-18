@@ -67,6 +67,7 @@ $sth = $dba->dbc->prepare("select count(assembly_exception_id) from assembly_exc
   || die "Could not get number of rows in assembly_exception";
 my $count_assembly_exception_id;
 $sth->execute || die "problem executing";
+$sth->bind_columns(\$count_assembly_exception_id) || die "problem binding";
 $sth->fetch() || die "problem fetching";
 $sth->finish;
 
