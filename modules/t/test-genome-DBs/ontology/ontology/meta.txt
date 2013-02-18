@@ -1,0 +1,7 @@
+1	schema_type	ontology
+2	OBO_file_date	GO.obo/05:02:2013 16:56
+3	OBO_load_date	GO.obo/Thu Feb 14 14:33:07 2013
+4	OBO_file_date	SO.obo/14:11:2012 16:46
+5	OBO_load_date	SO.obo/Thu Feb 14 14:33:14 2013
+6	OBO_file_date	EFO.obo.new/04:01:2013 13:28
+7	OBO_load_date	EFO.obo.new/Thu Feb 14 14:33:33 2013
