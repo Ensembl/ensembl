@@ -43,6 +43,11 @@ if (!defined $assembly_acc)  {
     throw("Please enter -assembly_acc eg. GCA_000001405.4");
 }
 
+if (!defined $coord_system)  {
+    throw("Please enter -coord_system to specify the central coord system eg. supercontig");
+}
+
+
 #connect to the database
 
 my $dba = new Bio::EnsEMBL::DBSQL::DBAdaptor(
