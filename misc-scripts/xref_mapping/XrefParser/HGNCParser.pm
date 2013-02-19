@@ -41,8 +41,10 @@ sub run {
     return 1;
   }
 
-  my ($name_to_source_id, $name_to_array_index)
-    = $self->process_header($hugo_io->getline());
+  my $name_to_source_id = $self->get_hgnc_sources();
+
+  # Skip header
+  $hugo_io->getline();
 
   while ( $_ = $hugo_io->getline() ) {
     chomp;
@@ -50,15 +52,15 @@ sub run {
 
     my $seen = 0;
 
-    my $acc    = $array[$name_to_array_index->{'desc_only'}];
-    my $symbol = $array[$name_to_array_index->{'Approved Symbol'}];
-    my $name   = $array[$name_to_array_index->{'Approved Name'}];
-    my $previous_symbols = $array[$name_to_array_index->{'Previous Symbols'}];
-    my $synonyms = $array[$name_to_array_index->{'Synonyms'}];
+    my $acc              = $array[0];
+    my $symbol           = $array[1];
+    my $name             = $array[2];
+    my $previous_symbols = $array[3];
+    my $synonyms         = $array[4];
 
 
-    my $type = 'Locus Specific Databases';
-    my $id = $array[$name_to_array_index->{$type}];
+    my $type = 'lrg';
+    my $id = $array[11];
     my $source_id = $name_to_source_id->{$type};
     if($id and $id =~ m/http:\/\/www.lrg-sequence.org\/LRG\/(LRG_\d+)/x){
       my $lrg_stable_id = $1;
@@ -83,7 +85,7 @@ sub run {
     # Direct Ensembl mappings
     #
     $type = 'ensembl_manual';
-    $id = $array[$name_to_array_index->{$type}];
+    $id = $array[9];
     $source_id = $name_to_source_id->{$type};
     if ($id){              # Ensembl direct xref
       $seen = 1;
@@ -107,27 +109,49 @@ sub run {
     #
     # RefSeq
     #
-    foreach my $type (qw(refseq_mapped refseq_manual)){
-      $id = $array[$name_to_array_index->{$type}];
-      $source_id = $name_to_source_id->{$type};
-      if ($id) {
-	if(defined $refseq{$id} ){
-	  $seen = 1;
-	  foreach my $xref_id (@{$refseq{$id}}){
-	    $name_count{$type}++;
-	    $self->add_dependent_xref({ master_xref_id => $xref_id,
-					acc            => $acc,
-					label          => $symbol,
-					desc           => $name || '',
-					source_id      => $source_id,
-					species_id     => $species_id} );
-	  }
-	  $self->add_synonyms_for_hgnc( {source_id  => $source_id,
-					 name       => $acc,
-					 species_id => $species_id,
-					 dead       => $previous_symbols,
-					 alias      => $synonyms});
+    $type = 'refseq_mapped';
+    $id = $array[8];
+    $source_id = $name_to_source_id->{$type};
+    if ($id) {
+      if(defined $refseq{$id} ){
+        $seen = 1;
+	foreach my $xref_id (@{$refseq{$id}}){
+	  $name_count{$type}++;
+	  $self->add_dependent_xref({ master_xref_id => $xref_id,
+				      acc            => $acc,
+				      label          => $symbol,
+				      desc           => $name || '',
+				      source_id      => $source_id,
+				      species_id     => $species_id} );
 	}
+	$self->add_synonyms_for_hgnc( {source_id  => $source_id,
+				       name       => $acc,
+				       species_id => $species_id,
+				       dead       => $previous_symbols,
+				       alias      => $synonyms});
+      }
+    }
+
+    $type = 'refseq_manual';
+    $id = $array[6];
+    $source_id = $name_to_source_id->{$type};
+    if ($id) {
+      if(defined $refseq{$id} ){
+        $seen = 1;
+        foreach my $xref_id (@{$refseq{$id}}){
+          $name_count{$type}++;
+          $self->add_dependent_xref({ master_xref_id => $xref_id,
+                                      acc            => $acc,
+                                      label          => $symbol,
+                                      desc           => $name || '',
+                                      source_id      => $source_id,
+                                      species_id     => $species_id} );
+        }
+        $self->add_synonyms_for_hgnc( {source_id  => $source_id,
+                                       name       => $acc,
+                                       species_id => $species_id,
+                                       dead       => $previous_symbols,
+                                       alias      => $synonyms});
       }
     }
 
@@ -135,7 +159,7 @@ sub run {
     # Swissprot
     #
     $type = 'swissprot_manual';
-    $id = $array[$name_to_array_index->{$type}];
+    $id = $array[10];
     $source_id = $name_to_source_id->{$type};
     if ($id) {             # Swissprot
       if(defined $swissprot{$id} ){
@@ -161,27 +185,47 @@ sub run {
     #
     # EntrezGene
     #
-    foreach my $type (qw(entrezgene_manual entrezgene_mapped)){
-      $id = $array[$name_to_array_index->{$type}];
-      $source_id = $name_to_source_id->{$type};
-      if(defined $id ){
-	if(defined $entrezgene{$id} ){
-	  $seen = 1;
-	  $self->add_dependent_xref({ master_xref_id => $entrezgene{$id},
-				      acc            => $acc,
-				      label          => $symbol,
-				      desc           => $name || '',
-				      source_id      => $source_id,
-				      species_id     => $species_id} );
-	  $name_count{$type}++;
-	  $self->add_synonyms_for_hgnc( {source_id  => $source_id,
-					 name       => $acc,
-					 species_id => $species_id,
-					 dead       => $previous_symbols,
-					 alias      => $synonyms});
-	}
+    $type = 'entrezgene_manual';
+    $id = $array[5];
+    $source_id = $name_to_source_id->{$type};
+    if(defined $id ){
+      if(defined $entrezgene{$id} ){
+        $seen = 1;
+        $self->add_dependent_xref({ master_xref_id => $entrezgene{$id},
+           			    acc            => $acc,
+				    label          => $symbol,
+				    desc           => $name || '',
+				    source_id      => $source_id,
+				    species_id     => $species_id} );
+        $name_count{$type}++;
+        $self->add_synonyms_for_hgnc( {source_id  => $source_id,
+				       name       => $acc,
+				       species_id => $species_id,
+				       dead       => $previous_symbols,
+				       alias      => $synonyms});
       }
     }
+
+    $type = 'entrezgene_mapped';
+    $id = $array[7];
+    if(defined $id ){
+      if(defined $entrezgene{$id} ){
+        $seen = 1;
+        $self->add_dependent_xref({ master_xref_id => $entrezgene{$id},
+                                    acc            => $acc,
+                                    label          => $symbol,
+                                    desc           => $name || '',
+                                    source_id      => $source_id,
+                                    species_id     => $species_id} );
+        $name_count{$type}++;
+        $self->add_synonyms_for_hgnc( {source_id  => $source_id,
+                                       name       => $acc,
+                                       species_id => $species_id,
+                                       dead       => $previous_symbols,
+                                       alias      => $synonyms});
+      }
+    }
+
 
 
     if(!$seen){ # Store to keep descriptions etc
@@ -218,60 +262,28 @@ sub run {
 
 
 
-sub process_header{
+sub get_hgnc_sources {
   my $self = shift;
-  my $header = shift;
   my %name_to_source_id;
-  my %name_to_array_index;
 
-  my %header_to_name = ( 'HGNC ID' => 'desc_only',
-			 'Approved Symbol' => 0,
-			 'Approved Name'   => 0,
-			 'Previous Symbols' => 0,
-			 'Synonyms' => 0,
-			 'Entrez Gene ID' => 'entrezgene_manual',
-			 'RefSeq IDs' => 'refseq_manual',
-			 'Entrez Gene ID ' => 'entrezgene_mapped', #note space needed
-			 'RefSeq ' => 'refseq_mapped',
-			 'Ensembl Gene ID' => 'ensembl_manual',
-			 'UniProt ID ' => 'swissprot_manual',
-			 'Locus Specific Databases' => 0);
+  my @sources = ('entrezgene_manual', 'refseq_manual', 'entrezgene_mapped', 'refseq_mapped', 'ensembl_manual', 'swissprot_manual', 'desc_only');
 
 
-  foreach my $key (keys %header_to_name){
-    if($header_to_name{$key}){
-      my $source_id =
-	$self->get_source_id_for_source_name('HGNC',$header_to_name{$key});
-      if(!(defined $source_id)){
-	die 'Could not get source id for '.$header_to_name{$key}."\n";
-      }
-      $name_to_source_id{ $header_to_name{$key} } = $source_id;
+  foreach my $key (@sources) {
+  my $source_id = $self->get_source_id_for_source_name('HGNC', $key);
+    if(!(defined $source_id)){
+      die 'Could not get source id for HGNC and '. $key ."\n";
     }
+    $name_to_source_id{ $key } = $source_id;
   }
 
   my $source_id = $self->get_source_id_for_source_name('LRG_HGNC_notransfer');
   if(!(defined $source_id) ){
     die 'Could not get source id for LRG_HGNC_notransfer\n';
   }
-  $name_to_source_id{'Locus Specific Databases'} = $source_id;
+  $name_to_source_id{'lrg'} = $source_id;
 
-  chomp $header;
-  my @items = split /\t/x, $header;
-  my $i=0;
-  foreach my $h (@items){
-    $h =~ s/\(.*\)//x;
-    if((defined $header_to_name{$h}) and $header_to_name{$h}){
-      $name_to_array_index{$header_to_name{$h}} = $i++;
-    }
-    elsif(defined $header_to_name{$h}){
-      $name_to_array_index{$h} = $i++;
-    }
-    else{
-      die "Problem with $h not listed\n";
-    }
-  }
-
-  return \%name_to_source_id, \%name_to_array_index;
+  return \%name_to_source_id;
 }
 
 sub add_synonyms_for_hgnc{
