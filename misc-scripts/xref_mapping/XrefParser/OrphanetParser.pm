@@ -50,7 +50,7 @@ sub run {
     my ($name_node) = $disorder->findnodes('./Name');
     my $name = $name_node->to_literal;
 
-    my @genes = $disorder->findnodes('./GeneList/Gene');
+    my @genes = $disorder->findnodes('./DisorderGeneAssociationList/DisorderGeneAssociation/Gene');
 
     if ( scalar(@genes) > 0) {
 
