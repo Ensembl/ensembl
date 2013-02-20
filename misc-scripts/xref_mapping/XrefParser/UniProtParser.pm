@@ -412,6 +412,9 @@ sub create_xrefs {
 	if($source =~ "ArrayExpress"){
 	    next;
 	}
+        if($source =~ "GenomeRNAi"){
+            next;
+        }
 
 	if (exists $dependent_sources{$source} ) {
 	  # create dependent xref structure & store it
