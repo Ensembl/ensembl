@@ -1102,6 +1102,56 @@ sub fetch_all {
   return \@out;
 }
 
+
+=head2 fetch_all_karyotype
+  Example    : my $top = $slice_adptor->fetch_all_karyotype()
+  Description: returns the list of all slices which are part of the karyotype
+  Returntype : listref of Bio::EnsEMBL::Slices
+  Caller     : general
+  Status     : At Risk
+
+=cut
+
+sub fetch_all_karyotype {
+  my $self = shift;
+
+  my $csa       = $self->db->get_CoordSystemAdaptor();
+
+  my $sth = 
+    $self->prepare( 'SELECT sr.seq_region_id, sr.name, '
+                      . 'sr.length, sr.coord_system_id '
+                      . 'FROM seq_region sr, seq_region_attrib sra, '
+                      . 'attrib_type at, coord_system cs '
+                      . 'WHERE at.code = "karyotype_rank" '
+                      . 'AND at.attrib_type_id = sra.attrib_type_id '
+                      . 'AND sra.seq_region_id = sr.seq_region_id '
+                      . 'AND sr.coord_system_id = cs.coord_system_id '
+                      . 'AND cs.species_id = ?' );
+  $sth->bind_param( 1, $self->species_id(), SQL_INTEGER );
+  $sth->execute();
+  my ( $seq_region_id, $name, $length, $cs_id );
+  $sth->bind_columns( \( $seq_region_id, $name, $length, $cs_id ) );
+
+  my @out;
+  while($sth->fetch()) {
+    my $cs = $csa->fetch_by_dbID($cs_id);
+
+    my $slice = Bio::EnsEMBL::Slice->new_fast({
+          'start'           => 1,
+          'end'             => $length,
+          'strand'          => 1,
+         'seq_region_name'  => $name,
+         'seq_region_length'=> $length,
+         'coord_system'     => $cs,
+         'adaptor'          => $self});
+
+    push @out, $slice;
+
+  }
+
+  return \@out;
+}
+
 =head2 is_toplevel
   Arg        : int seq_region_id 
   Example    : my $top = $slice_adptor->is_toplevel($seq_region_id)
