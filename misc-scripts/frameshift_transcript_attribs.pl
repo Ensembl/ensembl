@@ -1,3 +1,6 @@
+#!/usr/bin/env perl
+# $Id$
+
 use strict;
 use warnings;
 
@@ -17,9 +20,9 @@ GetOptions('host|dbhost=s'      => \$host,
            'port|dbport=i'      => \$port,
            'pass|dbpass=s'      => \$pass,
            'dbpattern|dbname=s' => \$dbpattern,
-	   'nostore'     => \$nostore,
-	   'nodelete'    => \$nodelete,
-	   'print'       => \$print,
+       'nostore'     => \$nostore,
+       'nodelete'    => \$nodelete,
+       'print'       => \$print,
            'help'        => sub { usage(); exit(0); });
 
 $port ||= 3306;
@@ -40,10 +43,10 @@ for my $dbname ( @dbnames ) {
   print $dbname . "\n";
 
   my $db_adaptor = Bio::EnsEMBL::DBSQL::DBAdaptor->new(-host   => $host,
-						       -user   => $user,
-						       -pass   => $pass,
-						       -dbname => $dbname,
-						       -port   => $port);
+                               -user   => $user,
+                               -pass   => $pass,
+                               -dbname => $dbname,
+                               -port   => $port);
 
   my $attribute_adaptor = $db_adaptor->get_AttributeAdaptor();
   my $transcript_adaptor = $db_adaptor->get_TranscriptAdaptor();
@@ -74,25 +77,25 @@ for my $dbname ( @dbnames ) {
 
     foreach my $intron (@{$transcript->get_all_Introns()}) {
 
-	# only interested in the short ones
-	if ($intron->length() < 6 && $intron->length() != 3) {
+    # only interested in the short ones
+    if ($intron->length() < 6 && $intron->length() != 3) {
 
-	  print "Transcript " . $transcript->stable_id() . " intron $intron_number length " . $intron->length() . "\n"  if ($print);
+      print "Transcript " . $transcript->stable_id() . " intron $intron_number length " . $intron->length() . "\n"  if ($print);
 
-	  my $attribute = Bio::EnsEMBL::Attribute->new(-CODE => 'Frameshift',
-						       -NAME => 'Frameshift',
-						       -DESCRIPTION => 'Frameshift modelled as intron',
-						       -VALUE => $intron_number);
-	
-	  my @attribs = ($attribute);
+      my $attribute = Bio::EnsEMBL::Attribute->new(-CODE => 'Frameshift',
+                               -NAME => 'Frameshift',
+                               -DESCRIPTION => 'Frameshift modelled as intron',
+                               -VALUE => $intron_number);
+    
+      my @attribs = ($attribute);
 
-	  $attribute_adaptor->store_on_Transcript($transcript->dbID, \@attribs) if (!$nostore);
+      $attribute_adaptor->store_on_Transcript($transcript->dbID, \@attribs) if (!$nostore);
 
-	  $count++;
+      $count++;
 
-	}
+    }
 
-	$intron_number++;
+    $intron_number++;
 
       } # foreach intron
 
