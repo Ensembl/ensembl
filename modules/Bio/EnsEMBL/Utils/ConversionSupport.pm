@@ -913,6 +913,7 @@ sub get_chrlength {
   my ($self, $dba, $version,$type,$include_non_reference,$chroms) = @_;
   $dba  ||= $self->dba;
   $type ||= 'toplevel';
+
   throw("get_chrlength should be passed a Bio::EnsEMBL::DBSQL::DBAdaptor\n")
     unless ($dba->isa('Bio::EnsEMBL::DBSQL::DBAdaptor'));
 
@@ -936,6 +937,7 @@ sub get_chrlength {
 	}
       }
       unless ($found) {
+        #if you get this when using ensembl-vega then the dbname will be misleading.
 	warning("Didn't find chromosome $chr in database " .
 		  $self->param('dbname'));
       }
@@ -1235,7 +1237,7 @@ sub is_patch {
       return 1;
     }
   }
-  if ($slice->seq_region_name =~ /PATCH/) {
+  if ($slice->seq_region_name =~ /^[HG|HS|PATCH]/) {
     $self->log_warning($slice->seq_region_name . " has a PATCH name does not have a patch seq_region_attrib, please check if it was present in loutre\n");
     return 1;
   }
@@ -2091,5 +2093,126 @@ sub remove_duplicate_attribs {
   $dbh->do(qq(drop table nondup_${table}_attrib));
 }
 
+
+sub allowed_duplicate_regions {
+  my $self = shift;
+
+  # set up lists of vega names of wanted haplotype / strains
+  my $regions = {
+    'human' => [
+      {
+        '6'      => '28000000:34000000',
+        '6-COX'  => 'all',
+        '6-QBL'  => 'all',
+        '6-APD'  => 'all',
+        '6-MANN' => 'all',
+        '6-MCF'  => 'all',
+        '6-DBB'  => 'all',
+        '6-SSTO' => 'all',
+      },
+      {
+        '19'       => '54600000:55600000',
+        '19-PGF_1' => 'all',
+        '19-PGF_2' => 'all',
+        '19-COX_1' => 'all',
+        '19-COX_2' => 'all',
+        '19-DM1A'  => 'all',
+        '19-DM1B'  => 'all',
+        '19-MC1A'  => 'all',
+        '19-MC1B'  => 'all',
+      },
+    ],
+    'mouse' => [
+      {
+        '1'               => '60564732:63711641',
+        '1-Idd5.1_DIL'    => 'all',
+        '1-Idd5.1_CHO'    => 'all',
+      },
+      {
+        '1'               => '65533102:69307244',
+        '1-Idd5.3_DIL'    => 'all',
+      },
+      {
+        '1'               => '130232728:130661594',
+        '1-Idd5.4_DIL'    => 'all',
+      },
+      {
+        '3'               => '36492618:37600833',
+        '3-Idd3_DIL'      => 'all',
+        '3-Idd3_129'      => 'all',
+      },
+      {
+        '3'               => '99848826:101467080',
+        '3-Idd10_DIL'     => 'all',
+      },
+      {
+        '3'               => '109144756:109930492',
+        '3-Idd18.1_DIL'   => 'all',
+      },
+      {
+        '3'               => '103489414:104054885',
+        '3-Idd18.2_DIL'   => 'all',
+      },
+      {
+        '4'               => '128371876:131853368',
+        '4-Idd9.1_DIL'    => 'all',
+      },
+      {
+        '4'               => '134841437:135252443',
+        '4-Idd9.1M_DIL'   => 'all',
+      },
+      {
+        '4'               => '146049976:149895141',
+        '4-Idd9.2_DIL'    => 'all',
+      },
+      {
+        '4'               => '149556939:151385803',
+        '4-Idd9.3_DIL'    => 'all',
+      },
+      {
+        '6'               => '143550839:149565172',
+        '6-Idd6.1_2_CHO'  => 'all',
+      },
+      {
+        '6'               => '129593784:131241919',
+        '6-Idd6.AM_CHO'   => 'all',
+      },
+      {
+        '11'              => '69890356:71340035',
+        '11-Idd4.1_DIL'   => 'all'
+      },
+      {
+        '11'              => '72734492:74404570',
+        '11-Idd4.2_DIL'   => 'all',
+      },	
+      {
+        '11'              => '86785996:90007691',
+        '11-Idd4.2Q_CHO'  => 'all',
+      },
+      {
+        '17'              => '27302611:29220265',
+        '17-Idd16.1_CHO'  => 'all',
+      },
+      {
+        '17'              => '33567721:38721962',
+        '17-Idd1_CHO'     => 'all',
+        '17-Idd1_DIL'     => 'all',
+      },
+    ],
+    'pig' => [
+      {
+        '7'               => '24728583:29807435',
+        '7-LW'            => 'all',
+      },
+    ],
+    'zebrafish' => [],
+    'gorilla' => [],
+    'wallaby' => [],
+    'chimp' => [],
+  };
+
+return $regions;
+
+}
 
 1;
