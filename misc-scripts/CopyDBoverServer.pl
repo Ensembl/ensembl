@@ -25,6 +25,7 @@ Usage:
   $0 --pass=XXX \\
   \t[--noflush] [--nocheck] [--notargetflush]\\
   \t[--noopt] [--noinnodb] [--skip_views] [--force] \\
+  \t[--udr] \\
   \t[ --only_tables=XXX,YYY | --skip_tables=XXX,YYY ] \\
   \t[ input_file |
   \t  --source=db\@host[:port] \\
@@ -116,6 +117,15 @@ Command line switches:
                     create a directory called 'tmp' in the directory
                     above the target data directory.
 
+  --udr             (Optional)
+                    Switches to using UDR (https://github.com/LabAdvComp/UDR)
+		    as the transport binary rather than rsync. UDR is an rsync
+		    compatible replacement over UDP whose speed on local
+		    networks is approx. twice that of plain rsync.
+
+		    udr must be on your PATH on the target source and target 
+                    machine.
+
   --help            (Optional)
                     Displays this text.
 
@@ -195,6 +205,7 @@ my $opt_force = 0; # Do not reuse existing staging directory by default.
 my $opt_skip_views = 0;    # Process views by default
 my $opt_innodb     = 1;    # Don't skip InnoDB by default
 my $opt_flushtarget = 1;
+my $opt_udr = 0; #Do not use udr for file transfer
 my $opt_tmpdir;
 my ( $opt_source, $opt_target );
 
@@ -211,7 +222,8 @@ if ( !GetOptions( 'pass=s'        => \$opt_password,
                   'tmpdir=s'      => \$opt_tmpdir,
                   'help!'         => \$opt_help,
                   'source=s'      => \$opt_source,
-                  'target=s'      => \$opt_target
+                  'target=s'      => \$opt_target,
+		  'udr'           => \$opt_udr,
      ) ||
      ( !defined($opt_password) && !defined($opt_help) ) )
 {
@@ -266,6 +278,7 @@ if ( !defined($opt_source) ) {
 my %executables = (
                 'myisamchk' => '/usr/local/ensembl/mysql/bin/myisamchk',
                 'rsync'     => '/usr/bin/rsync' );
+$executables{udr} = '/usr/bin/udr' if $opt_udr;
 
 # Make sure we can find all executables.
 foreach my $key ( keys(%executables) ) {
@@ -286,6 +299,16 @@ foreach my $key ( keys(%executables) ) {
 
     else {
 
+      my $final_which_output = `which $key`;
+      my $final_rc = $? >> 8;
+
+      if($final_rc == 0) {
+	chomp $final_which_output;
+	$executables{$key} = $final_which_output;
+        printf( "Can not find '%s'; using '%s'\n", $exe, $executables{$key} );
+      }
+      else {
+
       if ( !$opt_check && $key eq 'myisamchk' ) {
         print( "Can not find 'myisamchk' " .
                "but --nocheck was specified so skipping\n" ),;
@@ -297,6 +320,7 @@ foreach my $key ( keys(%executables) ) {
                . "yields anything useful. Check your \$PATH",
              $exe, $key, $key
            ) );
+      }
       }
 
     }
@@ -700,8 +724,14 @@ TABLE:
   # copy too, and because it has good inclusion/exclusion filter
   # options.
 
-  my @copy_cmd = ( $executables{'rsync'}, '--whole-file', '--archive',
-                   '--progress' );
+  my @copy_cmd;
+  if($opt_udr) {
+    @copy_cmd = ($executables{'udr'}, 'rsync');
+  }
+  else {
+    @copy_cmd = ($executables{'rsync'});
+  }
+  push(@copy_cmd, '--whole-file', '--archive', '--progress' );
 
   if ($opt_force) {
     push( @copy_cmd, '--delete', '--delete-excluded' );
