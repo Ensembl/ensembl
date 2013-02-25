@@ -267,6 +267,8 @@ sub check_for_stops {
     # (translate method trims stops from sequence end)
 
     next TRANS unless ($pseq =~ /\*/);
+    next TRANS if ($trans->biotype eq 'polymorphic_pseudogene' or
+                   $trans->biotype =~ /processed_pseudogene$/);
     # warn sprintf("Stop codon is '%s'\n",substr($trans->translateable_seq,-3));
     #$support->log_verbose("Stops found in $tsi ($tname)\n",1);
     $log_object->_save_log('log_verbose', '', $gsi, '', $tsi, '', "Stops found in $tsi ($tname)");
