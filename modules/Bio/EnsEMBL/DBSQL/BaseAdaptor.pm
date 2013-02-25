@@ -34,12 +34,12 @@ Bio::EnsEMBL::DBSQL::BaseAdaptor - Base Adaptor for DBSQL adaptors
   $adaptor->db();
 
   # constructor, ok for inheritence
-  $adaptor = Bio::EnsEMBL::DBSQL::SubClassOfBaseAdaptor->new($dbobj)
+  $adaptor = Bio::EnsEMBL::DBSQL::SubClassOfBaseAdaptor->new($dbobj);
 
 =head1 DESCRIPTION
 
 This is a true base class for Adaptors in the Ensembl DBSQL
-system. Original idea from Arne
+system.
 
 Adaptors are expected to have the following functions
 
@@ -800,7 +800,7 @@ sub last_insert_id {
                 also respects the DBAdaptor's no_cache() flag and will
                 return undef in those situations
   Example     : my $cache = $self->_id_cache();
-  Returntype  : Bio:EnsEMBL::DBSQL::Support::BaseCache
+  Returntype  : Bio::EnsEMBL::DBSQL::Support::BaseCache
   
 =cut
 
