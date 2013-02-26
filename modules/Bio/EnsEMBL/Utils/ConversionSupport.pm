@@ -401,15 +401,15 @@ sub confirm_params {
 
 sub list_all_params {
   my $self = shift;
-  my $txt = sprintf "    %-21s%-90s\n", qw(PARAMETER VALUE);
-  $txt .= "    " . "-"x121 . "\n";
-  $Text::Wrap::colums = 130;
+  my $txt = sprintf "    %-25s%-110s\n", qw(PARAMETER VALUE);
+  $txt .= "    " . "-"x136 . "\n";
+  $Text::Wrap::columns = 130;
   my @params = $self->allowed_params;
   foreach my $key (@params) {
     my @vals = $self->param($key);
     if (@vals) {
-      $txt .= Text::Wrap::wrap( sprintf('   %-21s', $key),
-				' 'x24,
+      $txt .= Text::Wrap::wrap( sprintf('   %-25s', $key),
+				' 'x28,
 				join(", ", @vals)
 			      ) . "\n";
     }
@@ -1236,10 +1236,6 @@ sub is_patch {
     if (@{$slice->get_all_Attributes($attrib_type)}) {
       return 1;
     }
-  }
-  if ($slice->seq_region_name =~ /^[HG|HS|PATCH]/) {
-    $self->log_warning($slice->seq_region_name . " has a PATCH name does not have a patch seq_region_attrib, please check if it was present in loutre\n");
-    return 1;
   }
   return 0;
 }
