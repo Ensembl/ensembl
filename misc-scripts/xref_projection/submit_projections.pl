@@ -37,9 +37,6 @@ my @config = ( {
 
 my $registryconf = Dumper(\@config);
 
-# load limit for ens-staging MySQL instance above which jobs won't be started
-my $limit = 200;
-
 # -------------------------- end of config ----------------------------
 
 # check that base directory exists
