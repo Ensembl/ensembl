@@ -13,6 +13,21 @@ use Getopt::Long qw/:config no_ignore_case auto_version bundling_override/;
 use Pod::Usage;
 use Test::More;
 
+#Optionally bring in Bio::DB::Sam for BAM querying
+my $NO_SAM_PERL;
+eval 'require Bio::DB::Sam';
+$NO_SAM_PERL = $@ if $@;
+
+#Optionally look for samtools
+my $NO_SAMTOOLS;
+if($NO_SAM_PERL) {
+  my $output = `which samtools`;
+  $output = `locate samtools` unless $output;
+  if(!$output) {
+    $NO_SAMTOOLS = 'Unavailable after searching using `which` and `locate`. Add to your PATH';
+  }
+}
+
 my $Test = Test::Builder->new();
 
 my $rcsid = '$Revision$';
@@ -41,8 +56,10 @@ sub args {
       username|user|u=s
       password|pass|p=s
       datafile_dir|dir=s
-      group=s
+      unix_group=s
       species=s
+      group=s
+      no_bamchecks!
       help
       man
       /
@@ -85,7 +102,7 @@ sub check {
     }
   }
   
-  $o->{group} = 'ensembl' unless $o->{group};
+  $o->{unix_group} = 'ensembl' unless $o->{unix_group};
   
   return;
 }
@@ -141,21 +158,21 @@ sub test_path {
   #Now do the tests
   ok(-s $path, "$prefix has data");
   is($user_rwx, 6, "$prefix is ReadWrite (mode 6) by user");
-  is($group_rwx, 4, "$prefix is not Read (mode 4) by group");
-  is($other_rwx, 4, "$prefix is not Read (mode 4) by owner");
+  is($group_rwx, 4, "$prefix is Read (mode 4) by group");
+  is($other_rwx, 4, "$prefix is Read (mode 4) by owner");
   
-  if($self->opts->{group}) {
-    my $group = $self->opts->{group};
-    my $group_gid = $self->_get_gid($group);
+  if($self->opts->{unix_group}) {
+    my $unix_group = $self->opts->{unix_group};
+    my $group_gid = $self->_get_gid($unix_group);
     if($group_gid) {
-      my $group_ok = ok($group_gid == $file_gid, "$prefix is owned by group $group");
+      my $group_ok = ok($group_gid == $file_gid, "$prefix is owned by group $unix_group");
       if(!$group_ok) {
         my $real_group = ( getgrgid $file_gid )[0];
-        diag("$prefix belongs to $real_group ($file_gid) not $group ($group_gid)");
+        diag("$prefix belongs to $real_group ($file_gid) not $unix_group ($group_gid)");
       }
     }
     else {
-      fail("The group $group is not known on this system");
+      fail("The UNIX group $unix_group is not known on this system");
     }
   }
   
@@ -188,7 +205,7 @@ sub process {
 
 sub _process_dba {
   my ($self, $dba) = @_;
-  $self->v('Working with species %s', $dba->species());
+  $self->v('Working with species %s and group %s', $dba->species(), $dba->group());
   my $datafiles = $dba->get_DataFileAdaptor()->fetch_all();
   if(! @{$datafiles}) {
     $self->v("No datafiles found");
@@ -199,17 +216,47 @@ sub _process_dba {
       foreach my $path (@{$paths}) {
         $self->test_path($path, $data_file);
       }
+      if(!$self->opts->{no_bamchecks} && $data_file->file_type() eq 'BAM') {
+        $self->_process_bam($dba, $data_file);
+      }
     }
   }
   $dba->dbc()->disconnect_if_idle();
   return;
 }
 
+sub _process_bam {
+  my ($self, $dba, $data_file) = @_;
+  my $bam_names = $self->_get_bam_region_names($data_file);
+  return unless $bam_names;
+  my $toplevel_names = $self->_get_toplevel_slice_names($dba);
+  my @missing_names;
+  foreach my $bam_seq_name (@{$bam_names}) {
+    if(! exists $toplevel_names->{$bam_seq_name}) {
+      push(@missing_names, $bam_seq_name);
+    }
+  }
+  
+  my $missing_count = scalar(@missing_names);
+  if($missing_count > 0) {
+    fail("We have names in the BAM file which are not part of this assembly. Please see note output for more details");
+    note(sprintf('Missing names: [%s]', join(q{,}, @missing_names)));
+  }
+  else {
+    pass("All names in the BAM file are toplevel sequence region names");
+  }
+  
+  return;
+}
+
 sub _get_core_like_dbs {
   my ($self) = @_;
   my $dbas;
-  if($self->opts->{species}) {
-    $dbas = Bio::EnsEMBL::Registry->get_all_DBAdaptors(-SPECIES => $self->opts->{species});
+  my %args;
+  $args{-SPECIES} = $self->opts->{species};
+  $args{-GROUP} = $self->opts->{group};
+  if(%args) {
+    $dbas = Bio::EnsEMBL::Registry->get_all_DBAdaptors(%args);
   }
   else {
      $dbas = Bio::EnsEMBL::Registry->get_all_DBAdaptors();
@@ -226,7 +273,7 @@ sub _get_core_like_dbs {
     push(@final_dbas, $dba) if $type eq 'core';
   }
   $self->v('Found %d core like database(s)', scalar(@final_dbas));
-  return \@final_dbas;
+  return [sort { $a->species() cmp $b->species() } @final_dbas];
 }
 
 sub v {
@@ -248,6 +295,68 @@ sub _get_gid {
   return $group_uid;
 }
 
+sub _get_bam_region_names {
+  my ($self, $data_file) = @_;
+  my $path = $data_file->path($self->opts->{datafile_dir});
+  my $names;
+  
+  if(!$NO_SAM_PERL) {
+    $names = $self->_get_bam_region_names_from_perl($path);
+  }
+  else {
+    diag "Cannot use Bio::DB::Bam as it is not installed. Falling back to samtools compiled binary";
+    if($NO_SAMTOOLS) {
+      diag $NO_SAMTOOLS;
+    }
+    else {
+      $names = $self->_get_bam_region_names_from_samtools($path);
+    }
+  }
+  
+  return $names;
+}
+
+sub _get_bam_region_names_from_perl {
+  my ($self, $path) = @_;
+  my @names;
+  my $bam = Bio::DB::Bam->open($path);
+  my $header = $bam->header();
+  my $target_names = $header->target_name;
+  my $length_arrayref = $header->target_len;
+  for(my $i = 0; $i < $length_arrayref; $i++) {
+    my $seq_id = $target_names->[$i];
+    push(@names, $seq_id);
+  }
+  return \@names;
+}
+
+sub _get_bam_region_names_from_samtools {
+  my ($self, $path) = @_;
+  return if $NO_SAMTOOLS;
+  my @names;  
+  my $output = `samtools idxstats $path`;
+  my @lines = split(/\n/, $output);
+  foreach my $line (@lines) {
+    my ($name) = split(/\s/, $line);
+    next if $name eq '*';
+    push(@names, $name);
+  }
+  return \@names;
+}
+
+sub _get_toplevel_slice_names {
+  my ($self, $dba) = @_;
+  my $species = $dba->species();
+  if(! exists $self->{toplevel_names}->{$species}) {
+    delete $self->{toplevel_names};
+    my $core = Bio::EnsEMBL::Registry->get_DBAdaptor($species, 'core');
+    my $slices = $core->get_SliceAdaptor()->fetch_all('toplevel');
+    my %lookup = map { $_->seq_region_name() => 1 } @{$slices};
+    $self->{toplevel_names}->{$species} = \%lookup;
+  }
+  return $self->{toplevel_names}->{$species};
+}
+
 Script->run();
 done_testing();
 
@@ -263,14 +372,25 @@ check_datafiles.pl
 =head1 SYNOPSIS
 
   #BASIC
-  ./check_datafiles.pl -release VER -user USER -pass PASS -host HOST [-port PORT] -datafile_dir DIR [-species SPECIES] [-help | -man]
+  ./check_datafiles.pl -release VER -user USER -pass PASS -host HOST [-port PORT] -datafile_dir DIR [-unix_group UNIX_GROUP] \
+                      [-species SPECIES] [-group GROUP] [-no_bamchecks] \
+                      [-help | -man]
   
   #EXAMPLE
   ./check_datafiles.pl -release 69 -host ensembdb.ensembl.org -port 5306 -user anonymous -datafile_dir /my/datafile
   
+  #Skipping BAM checks
+  ./check_datafiles.pl -release 71 -host ensembdb.ensembl.org -port 5306 -user anonymous -datafile_dir /my/datafile -no_bamchecks
+  
 =head1 DESCRIPTION
 
-A script which ensures a data files directory works for a single release
+A script which ensures a data files directory works for a single release.
+
+The code outputs the results in Perl's TAP output making the format compatible with any TAP compatible binary such as prove. You should look
+for all tests to pass. Scan for 'not ok' if there is an issue.
+
+This code will also check the integrity of a BAM file e.g. that all BAM regions are toplevel sequences in the given Ensembl species. If
+you want to disable this check then do so using the C<-no_bamchecks> flag.
 
 =head1 OPTIONS
 
@@ -296,7 +416,7 @@ REQUIRED. Host name of the database to connect to
 
 Optional integer of the database port. Defaults to 3306.
 
-=item B<--group>
+=item B<--unix_group>
 
 Specify the UNIX group these files should be readable by. Defaults to ensembl
 
@@ -309,6 +429,15 @@ REQUIRED. Source directory which is the intended root of the datafiles.
 =item B<--species>
 
 Specify the tests to run over a single species' set of core databases
+
+=item B<--group>
+
+Only run tests on a single type of database registry group
+
+=item B<--no_bamchecks>
+
+Specify to stop any BAM file checks from occuring. This is normally sanity checks such
+as are all BAM regions toplevel core regions
 
 =item B<--help>
 
@@ -329,6 +458,8 @@ Man page
 =item Bio::EnsEMBL
 
 =item Post 66 databases
+
+=item Bio::DB::Bam or samtools binary on ENV $PATH
 
 =back
 
