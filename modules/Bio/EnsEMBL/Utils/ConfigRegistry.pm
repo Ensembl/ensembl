@@ -125,6 +125,9 @@ sub gen_load {
     } elsif ( $dba->group eq "otherfeatures" ) {
       $config_sub =
         \&Bio::EnsEMBL::Utils::ConfigRegistry::load_otherfeatures;
+    } elsif ( $dba->group eq "rnaseq" ) {
+      $config_sub =
+        \&Bio::EnsEMBL::Utils::ConfigRegistry::load_rnaseq;
     } elsif ( $dba->group eq 'vega' || $dba->group eq 'vega_update' ) {
       $config_sub = \&Bio::EnsEMBL::Utils::ConfigRegistry::load_vega;
     } else {
@@ -307,6 +310,8 @@ sub load_funcgen   { load_and_attach_dnadb_to_core(@_) }
 
 =cut
 sub load_otherfeatures { load_and_attach_dnadb_to_core(@_) }
+
+sub load_rnaseq { load_and_attach_dnadb_to_core(@_) }
 
 =head2 load_vega
   Arg [1]    : DBAdaptor with DBConnection already attached
