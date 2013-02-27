@@ -334,7 +334,7 @@ foreach my $from (@execution_order) {
         print "Submitting GO term projection from $from to $to\n";
         system "bsub $bsub_opts -q long -o $o -e $e -J $n $wait perl project_display_xrefs.pl $script_opts -from $from -to $to -go_terms\n";
     }
-    $last_name = "n_".$from;   
+    $last_name = "g_".$from;   
 }
 
 
