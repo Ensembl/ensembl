@@ -426,7 +426,6 @@ GSQL
 	  push @xref_list, $xref_id;
 	  $count++;
 	  $add_xref_sth->execute(($xref_id+$xref_offset), $ex_id, $acc, $label, $version, $desc, $type, $info || $where_from);
-print "Adding xref $xref_id with label $label\n";
 	  $last_xref = $xref_id;
         }
         $add_object_xref_sth->execute(   ($object_xref_id+$object_xref_offset), $ensembl_id, $ensembl_type, ($xref_id+$xref_offset), $analysis_ids{$ensembl_type});
@@ -565,7 +564,6 @@ print "Adding xref $xref_id with label $label\n";
   while($get_xref_interpro_sth->fetch){
     $version||='0';
     $add_xref_sth->execute(($xref_id+$xref_offset), $ex_id, $acc, $label, $version, $desc, 'UNMAPPED', $info);
-print "Adding xref $xref_id with label $label\n";
     $set_unmapped_sth->execute($analysis_id, $ex_id, $acc, $reason_id{"NO_MAPPING"} );
     push @xref_list, $xref_id;
   }
