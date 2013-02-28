@@ -1,8 +1,5 @@
--- Schema of tables *not* added by the bootstrap_master.pl script.
+-- Table schema for the production database
 
--- NB: Additional tables are added by the web team to support storing
--- declarations of intentions etc.  Those tables are not even mentioned
--- here.
 
 -- The 'species' table.
 -- Lists the species for which there is a Core database.
@@ -17,6 +14,7 @@ CREATE TABLE species (
   taxon           VARCHAR(20),
   species_prefix  VARCHAR(20),
   is_current      BOOLEAN NOT NULL DEFAULT true,
+  attrib_type_id  SMALLINT(5) UNSIGNED DEFAULT NULL,
 
   -- Columns for the web interface:
   created_by    INTEGER,
@@ -139,7 +137,9 @@ CREATE TABLE analysis_description (
   logic_name                VARCHAR(128) NOT NULL,
   description               TEXT,
   display_label             VARCHAR(256) NOT NULL,
+  db_version                TINYINT(1) NOT NULL DEFAULT '1',
   is_current                BOOLEAN NOT NULL DEFAULT true,
+  default_web_data_id       INT(10) UNSIGNED DEFAULT NULL,
 
   -- Columns for the web interface:
   created_by    INTEGER,
@@ -162,8 +162,9 @@ CREATE TABLE analysis_web_data (
   web_data_id               INTEGER UNSIGNED DEFAULT NULL,
   species_id                INTEGER UNSIGNED NOT NULL,
 
-  db_type                   SET('cdna', 'core', 'funcgen',
-                                'otherfeatures', 'rnaseq', 'vega')
+  db_type                   ENUM('cdna', 'core', 'funcgen',
+                                'otherfeatures', 'rnaseq', 'vega',
+                                'presite', 'sangervega')
                             NOT NULL DEFAULT 'core',
 
   displayable               BOOLEAN NOT NULL DEFAULT true,
@@ -175,7 +176,9 @@ CREATE TABLE analysis_web_data (
   modified_at   DATETIME,
 
   PRIMARY KEY (analysis_web_data_id),
-  UNIQUE INDEX uniq_idx (species_id, db_type, analysis_description_id)
+  UNIQUE INDEX uniq_idx (species_id, db_type, analysis_description_id),
+  INDEX ad_idx (analysis_description_id),
+  INDEX wd_idx (web_data_id)
 );
 
 -- The 'web_data' table.
@@ -194,6 +197,128 @@ CREATE TABLE web_data (
   modified_at   DATETIME,
 
   PRIMARY KEY (web_data_id)
+);
+
+-- The 'master_attrib_type' table.
+-- Lists the existing attrib_types
+CREATE TABLE master_attrib_type (
+  attrib_type_id            SMALLINT(5) unsigned NOT NULL AUTO_INCREMENT,
+  code                      VARCHAR(15) NOT NULL DEFAULT '',
+  name                      VARCHAR(255) NOT NULL DEFAULT '',
+  description               TEXT,
+  is_current                TINYINT(1) NOT NULL DEFAULT '1',
+
+  -- Columns for the web interface:
+  created_by    INTEGER,
+  created_at    DATETIME,
+  modified_by   INTEGER,
+  modified_at   DATETIME,
+
+  PRIMARY KEY (attrib_type_id),
+  UNIQUE INDEX code_idx (code)
+);
+
+-- The 'master_external_db' table.
+-- Lists the existing external_dbs
+CREATE TABLE master_external_db (
+  external_db_id            INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
+  db_name                   VARCHAR(100) NOT NULL,
+  db_release                VARCHAR(255) DEFAULT NULL,
+  status                    ENUM('KNOWNXREF','KNOWN','XREF','PRED','ORTH','PSEUDO') NOT NULL,
+  priority                  INT(11) NOT NULL,
+  db_display_name           VARCHAR(255) DEFAULT NULL,
+  type                      ENUM('ARRAY','ALT_TRANS','ALT_GENE','MISC','LIT','PRIMARY_DB_SYNONYM','ENSEMBL') DEFAULT NULL,
+  secondary_db_name         VARCHAR(255) DEFAULT NULL,
+  secondary_db_table        VARCHAR(255) DEFAULT NULL,
+  description               TEXT,
+  is_current                TINYINT(1) NOT NULL DEFAULT '1',
+
+  -- Columns for the web interface:
+  created_by    INTEGER,
+  created_at    DATETIME,
+  modified_by   INTEGER,
+  modified_at   DATETIME,
+
+  PRIMARY KEY (external_db_id),
+  UNIQUE INDEX db_name_idx (db_name,db_release,is_current)
+);
+
+-- The 'master_misc_set' table
+-- Lists the existing misc_sets
+CREATE TABLE master_misc_set (
+  misc_set_id               SMALLINT(5) UNSIGNED NOT NULL AUTO_INCREMENT,
+  code                      VARCHAR(25) NOT NULL DEFAULT '',
+  name                      VARCHAR(255) NOT NULL DEFAULT '',
+  description               TEXT NOT NULL,
+  max_length                INT(10) UNSIGNED NOT NULL,
+  is_current                TINYINT(1) NOT NULL DEFAULT '1',
+
+  -- Columns for the web interface:
+  created_by    INTEGER,
+  created_at    DATETIME,
+  modified_by   INTEGER,
+  modified_at   DATETIME,
+
+  PRIMARY KEY (misc_set_id),
+  UNIQUE INDEX code_idx (code)
+);
+
+
+-- The 'master_unmapped_reason' table
+-- Lists the existing unmapped_reasons
+CREATE TABLE master_unmapped_reason (
+  unmapped_reason_id        SMALLINT(5) UNSIGNED NOT NULL AUTO_INCREMENT,
+  summary_description       VARCHAR(255) DEFAULT NULL,
+  full_description          VARCHAR(255) DEFAULT NULL,
+  is_current                TINYINT(1) NOT NULL DEFAULT '1',
+
+  -- Columns for the web interface:
+  created_by    INTEGER,
+  created_at    DATETIME,
+  modified_by   INTEGER,
+  modified_at   DATETIME,
+
+  PRIMARY KEY (unmapped_reason_id)
+);
+
+
+-- The 'changelog' and 'changelog_species' tables
+-- Used for web purposes to store release related information
+CREATE TABLE changelog (
+  changelog_id              INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
+  release_id                INT(11) DEFAULT NULL,
+  title                     VARCHAR(128) DEFAULT NULL,
+  content                   TEXT,
+  notes                     TEXT,
+  status                    ENUM('declared','handed_over','postponed','cancelled') NOT NULL DEFAULT 'declared',
+  team                      ENUM('Compara','Core','Funcgen','Genebuild','Outreach','Variation','Web','EnsemblGenomes','Wormbase','Production') DEFAULT NULL,
+  assembly                  ENUM('N','Y') NOT NULL DEFAULT 'N',
+  gene_set                  ENUM('N','Y') NOT NULL DEFAULT 'N',
+  repeat_masking            ENUM('N','Y') NOT NULL DEFAULT 'N',
+  stable_id_mapping         ENUM('N','Y') NOT NULL DEFAULT 'N',
+  affy_mapping              ENUM('N','Y') NOT NULL DEFAULT 'N',
+  biomart_affected          ENUM('N','Y') NOT NULL DEFAULT 'N',
+  variation_pos_changed     ENUM('N','Y') NOT NULL DEFAULT 'N',
+  db_status                 ENUM('N/A','unchanged','patched','new') NOT NULL DEFAULT 'N/A',
+  db_type_affected          SET('cdna','core','funcgen','otherfeatures','rnaseq','variation','vega') DEFAULT NULL,
+  priority                  TINYINT(1) NOT NULL DEFAULT '2',
+  is_current                TINYINT(1) NOT NULL DEFAULT '1',
+
+  -- Columns for the web interface:
+  created_by    INTEGER,
+  created_at    DATETIME,
+  modified_by   INTEGER,
+  modified_at   DATETIME,
+
+  PRIMARY KEY (changelog_id)
+);
+
+-- Connects the 'changelog' and the 'species' tables.
+CREATE TABLE changelog_species (
+  changelog_id              INT(11) NOT NULL DEFAULT '0',
+  species_id                INT(11) NOT NULL DEFAULT '0',
+
+  PRIMARY KEY (changelog_id,species_id)
 );
 
 -- VIEWS
