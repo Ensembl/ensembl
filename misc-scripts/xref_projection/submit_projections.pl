@@ -274,7 +274,7 @@ foreach my $from (@execution_order) {
         print "Submitting name projection from $from to $to\n";
         system "bsub $bsub_opts -o $o -e $e -J $n $wait perl project_display_xrefs.pl $script_opts -from $from -to $to -names -no_database $all\n";
     }
-    $last_name = "n_".$from;
+    $last_name = substr("n_".$from, 0 ,10);
 }
 $last_name = "";
 
@@ -299,7 +299,7 @@ foreach my $from (@execution_order) {
         print "Submitting name projection from $from to $to (1:many)\n";
         system "bsub $bsub_opts -o $o -e $e -J $n $wait perl project_display_xrefs.pl $script_opts -from $from -to $to -names -no_database -one_to_many\n";
     }
-    $last_name = "n_".$from;    
+    $last_name = substr("n_".$from, 0 ,10);
 }
 
 $last_name = "";
@@ -331,7 +331,8 @@ foreach my $from (@execution_order) {
         print "Submitting GO term projection from $from to $to\n";
         system "bsub $bsub_opts -q long -o $o -e $e -J $n $wait perl project_display_xrefs.pl $script_opts -from $from -to $to -go_terms\n";
     }
-    $last_name = "g_".$from;   
+    $last_name = substr("g_".$from, 0 ,10);
+     
 }
 
 
