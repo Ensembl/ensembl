@@ -921,8 +921,7 @@ sub backup {
   my $mysql_binary = 'mysql';
 #  my $mysql_binary = '/usr/local/mysql/bin/mysql';
 
-  my @tables = qw/gene xref object_xref/;
-  push(@tables, 'transcript');
+  my @tables = qw/gene transcript xref object_xref external_synonym/;
   
   foreach my $table (@tables) {
     unless (system("$mysql_binary -h$host -P$port -u$user -p$pass -N -e 'select * from $table' $dbname | gzip -c -6 > $backup_dir/$dbname.$table.backup.gz") == 0) {
