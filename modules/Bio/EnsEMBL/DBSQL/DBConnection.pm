@@ -1008,6 +1008,9 @@ sub from_date_to_seconds{
     elsif ($self->driver eq 'odbc'){
         $string = "DATEDIFF(second,'JAN 1 1970',$column)";
     }
+    elsif ($self->driver eq 'SQLite'){
+        $string = "STRFTIME('%s', $column)";
+    }
     else{
         warning("Not possible to convert $column due to an unknown database driver: ", $self->driver);
         return '';
@@ -1050,6 +1053,14 @@ sub from_seconds_to_date{
             $string = "\"0000-00-00 00:00:00\"";
         }
     }
+    elsif ($self->driver eq 'SQLite'){
+        if ($seconds){
+            $string = "DATETIME($seconds)";
+        }
+        else{
+            $string = "\"0000-00-00 00:00:00\"";
+        }
+    }
     else{
         warning("Not possible to convert $seconds due to an unknown database driver: ", $self->driver);
         return '';
@@ -1078,6 +1089,33 @@ sub sql_helper {
     $self->{_sql_helper} = $helper;
   }
   return $self->{_sql_helper};
+}
+
+=head2 to_hash
+
+  Example    : my $hash = $dbc->to_hash();
+               my $new_dbc = $dbc->new(%{$hash});
+  Description: Provides a hash which is compatible with the 
+               parameters for DBConnection's new() method. This can be
+               useful during serialisation
+  Returntype : Hash
+  Exceptions : none
+  Caller     : general
+  Status     : New  
+
+=cut
+
+sub to_hash {
+  my ($self) = @_;
+  my $hash = {
+    -HOST => $self->host(),
+    -PORT => $self->port(),
+    -USER => $self->username(),
+    -DRIVER => $self->driver(),
+  };
+  $hash->{-DBNAME} => $self->dbname() if defined $self->dbname();
+  $hash->{-PASS} => $self->password() if defined $self->password();
+  return $hash;
 }
 
 ####
