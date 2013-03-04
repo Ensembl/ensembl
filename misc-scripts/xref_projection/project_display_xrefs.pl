@@ -828,11 +828,12 @@ sub check_overwrite_display_xref {
   # Replace any UP & Entrez names
   # Look for Vega/Ensembl specific clone names (CU9???.1)
   elsif($to_species eq 'pig') {
-    my %active_overwrites = map { $_ => 1 } qw/Uniprot_genename EntrezGene/;
     my %clone_overwrites  = map { $_ => 1 } qw/Clone_based_vega_gene Clone_based_ensembl_gene/;
-    return 1 if $active_overwrites{$to_dbname};
-    return 0 unless $clone_overwrites{$to_dbname};
+    return 1 if $clone_overwrites{$to_dbname};
     my $to_dbEntry = $to_gene->display_xref();
+    if (!defined $to_dbEntry) {
+      return 1;
+    }
     my $name = $to_dbEntry->display_id;
     #Want to over-write clone ids like CU914217.1, CT914217.1, FP565183.2
     #Bad prefixes are: AP, BX, CR, CT, CU, FP, FQ
@@ -856,10 +857,12 @@ sub overwrite_transcript_display_xrefs {
   my $transcripts = $to_gene->get_all_Transcripts();
   my @havana = grep { 
     $_->analysis->logic_name eq 'ensembl_havana_transcript' ||
-    $_->analysis->logic_name eq 'havana'
+    $_->analysis->logic_name eq 'havana' ||
+    $_->analysis->logic_name eq 'havana_ig_gene'
   } @{$transcripts};
   my @ensembl = grep { 
-    $_->analysis->logic_name eq 'ensembl'
+    $_->analysis->logic_name eq 'ensembl' ||
+    $_->analysis->logic_name eq 'ensembl_ig_gene'
   } @{$transcripts};
   _process_transcripts($ref_dbEntry, $info_txt, 1, \@havana);
   _process_transcripts($ref_dbEntry, $info_txt, 201, \@ensembl);
