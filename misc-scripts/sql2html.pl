@@ -320,7 +320,7 @@ while (<SQLFILE>) {
     else {
 
       ## INDEXES ##
-      if ($doc =~ /^\s*(primary\s+key)\s*\((.+)\)/i or $doc =~ /^\s*(unique)\s*\((.+)\)/i){ # Primary or unique;
+      if ($doc =~ /^\s*(primary\s+key)\s*\w*\s*\((.+)\)/i or $doc =~ /^\s*(unique)\s*\((.+)\)/i){ # Primary or unique;
         add_column_index($1,$2);
         next;
       }
