@@ -1138,7 +1138,9 @@ sub expand {
   my $new_start = $self->{'start'} - $sshift;
   my $new_end   = $self->{'end'} + $eshift;
 
-  if (( $new_start <= 0 || $new_start > $self->seq_region_length() || $new_end <= 0 || $new_end > $self->seq_region_length() ) && ( $self->is_circular() ) ) {
+  # Wrap around on circular slices
+  if (( $new_start <= 0 || $new_start > $self->seq_region_length() || $new_end <= 0 
+        || $new_end > $self->seq_region_length() ) && ( $self->is_circular() ) ) {
       
       if ( $new_start <= 0 ) {
         $new_start = $self->seq_region_length() + $new_start;
