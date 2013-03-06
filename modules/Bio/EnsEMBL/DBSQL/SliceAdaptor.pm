@@ -101,6 +101,7 @@ use Bio::EnsEMBL::CircularSlice;
 use Bio::EnsEMBL::Mapper;
 use Bio::EnsEMBL::LRGSlice;
 use Bio::EnsEMBL::Utils::Exception qw(throw deprecate warning stack_trace_dump);
+use Bio::EnsEMBL::ProjectionSegment;
 use Scalar::Util qw/looks_like_number/;
 
 @ISA = ('Bio::EnsEMBL::DBSQL::BaseAdaptor');
@@ -1668,6 +1669,9 @@ sub fetch_by_misc_feature_attribute {
 =head2 fetch_normalized_slice_projection
 
   Arg [1]    : Bio::EnsEMBL::Slice $slice
+  Arg [2]    : boolean $filter_projections 
+               Optionally filter the projections to remove anything 
+               which is the same sequence region as the given slice
   Example    :  ( optional )
   Description: gives back a project style result. The returned slices 
                represent the areas to which there are symlinks for the 
@@ -1684,6 +1688,7 @@ sub fetch_by_misc_feature_attribute {
 sub fetch_normalized_slice_projection {
   my $self = shift;
   my $slice = shift;
+  my $filter_projections = shift;
 
   my $slice_seq_region_id = $self->get_seq_region_id( $slice );
 
@@ -1824,11 +1829,45 @@ sub fetch_normalized_slice_projection {
     }
     $rel_start += $coord->length();
   }
-
+  
+  if($filter_projections) {
+    return $self->_filter_Slice_projections($slice, \@out);
+  }
   return \@out;
 }
 
+=head2 _filter_Slice_projections
 
+    Arg [1]     : Bio::EnsEMBL::Slice The slice the projections were made from
+    Arg [2]     : Array The projections which were fetched from the previous slice
+    Description : Removes any projections which occur within the same sequence 
+                  region as the given Slice object
+    Returntype  : ArrayRef Bio::EnsEMBL::ProjectionSegment; Returns an array
+                  of projected segments
+=cut
+
+sub _filter_Slice_projections {
+  my ($self, $slice, $projections) = @_;
+  my @proj = @{ $projections };
+  if ( !@proj ) {
+    throw('Was not given any projections to filter. Database may have incorrect assembly_exception information loaded');
+  }
+  
+  # Want to get features on the FULL original slice as well as any
+  # symlinked slices.
+  
+  # Filter out partial slices from projection that are on same
+  # seq_region as original slice.
+
+  my $sr_id = $slice->get_seq_region_id();
+
+  @proj = grep { $_->to_Slice->get_seq_region_id() != $sr_id } @proj;
+
+  my $segment = bless( [ 1, $slice->length(), $slice ],
+                       'Bio::EnsEMBL::ProjectionSegment' );
+  push( @proj, $segment );
+  return \@proj;
+}
 
 
 =head2 store
