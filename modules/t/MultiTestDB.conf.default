@@ -11,6 +11,9 @@
     },
     'circ' => {
       'core' => 'Bio::EnsEMBL::DBSQL::DBAdaptor',
+    },
+    'ontology' => {
+      'ontology' => 'Bio::EnsEMBL::DBSQL::OntologyDBAdaptor',
     }
   },
 }
