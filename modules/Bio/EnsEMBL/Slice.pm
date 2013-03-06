@@ -1194,6 +1194,33 @@ sub expand {
   return bless \%new_slice, ref($self);
 } ## end sub expand
 
+=head2 constrain_to_seq_region
+  Example    : $new_slice = $slice->expand(1000,10000);
+               $new_slice = $new_slice->constrain_to_seq_region();
+  Description: Used to prevent overly zealous expand calls going off the end of
+               the sequence region. It contracts the start and end where needed
+               and produces a slice copy with the tweaked coordinates.
+  Returntype : Bio::EnsEMBL::Slice
+=cut
+
+sub constrain_to_seq_region {
+    my ($self) = @_;
+    # circular calculations should already be taken care of
+    if ($self->is_circular) {return $self} 
+    my $new_start = $self->start;
+    my $new_end   = $self->end;
+    
+    my $seq_region = $self->seq_region_Slice;
+    
+    if ($new_start < $seq_region->start) {$new_start = $seq_region->start}
+    if ($new_end > $seq_region->end) {$new_end = $seq_region->end}
+    
+    my %new_slice = %$self;
+    $new_slice{'start'} = $new_start;
+    $new_slice{'end'}   = $new_end;
+
+    return bless \%new_slice, ref($self);
+}
 
 
 =head2 sub_Slice
@@ -1202,8 +1229,8 @@ sub expand {
   Arg   2    : int $end
   Arge [3]   : int $strand
   Example    : none
-  Description: Makes another Slice that covers only part of this slice
-               If a slice is requested which lies outside of the boundaries
+  Description: Makes another Slice that covers only part of this Slice
+               If a Slice is requested which lies outside of the boundaries
                of this function will return undef.  This means that
                behaviour will be consistant whether or not the slice is
                attached to the database (i.e. if there is attached sequence

@@ -188,6 +188,17 @@ ok(($clone->start == 1) && ($clone->end() == $len + 1000));
 $clone = $clone->expand(-1000, 0);
 ok(($clone->start == 1001) && ($clone->end() == $len + 1000));
 
+#
+# Test constrain_to_seq_region
+#
+my $tidy_clone = $clone->expand(1000000,10000000);
+$tidy_clone = $tidy_clone->constrain_to_seq_region;
+ok($tidy_clone->start == 1 && $tidy_clone->end == 84710, 'Huge expand call truncates nicely');
+
+$tidy_clone = $clone->expand(0,-1000);
+$tidy_clone = $tidy_clone->constrain_to_seq_region;
+note($tidy_clone->start."-".$tidy_clone->end());
+ok(($tidy_clone->start == 1001) && ($tidy_clone->end() == 84710), 'constrain_to_seq_region does no harm');
 
 #
 # Test Slice::invert
