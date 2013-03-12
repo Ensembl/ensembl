@@ -301,9 +301,9 @@ sub fetch_by_region {
             
       if($syn_sql_sth->fetch){
         $syn_sql_sth->finish;
-        if (not defined($cs)) {
+        if ((not defined($cs)) || ($cs->name eq $new_coord_system)) {
             return $self->fetch_by_region($new_coord_system, $new_name, $start, $end, $strand, $new_version, $no_fuzz);
-        } elsif ($cs->dbID != $new_coord_system) {
+        } elsif ($cs->name ne $new_coord_system) {
             warning("Searched for a known feature on coordinate system: ".$cs->dbID." but found it on: ".$new_coord_system.
             "\n No result returned, consider searching without coordinate system or use toplevel.");
             return;
