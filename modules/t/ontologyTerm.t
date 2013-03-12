@@ -34,6 +34,8 @@ ok($db);
 my $accession = "GO:0003677";
 my $go_adaptor = $odb->get_OntologyTermAdaptor();
 my $term = $go_adaptor->fetch_by_accession($accession);
+ok(!$term->is_root, "Term is not a root");
+
 my $gene;
 my $ga = $db->get_GeneAdaptor();
 
