@@ -42,6 +42,11 @@ between a number of coordinate systems relating to transcripts
 This is a utility class which can be used to perform coordinate conversions
 between a number of coordinate systems relating to transcripts.
 
+Any transcript object given to TranscriptMapper should have a proper Slice
+object attached. The Slice provides vital information for the mapping process.
+After TranscriptMapper has been instantiated, changes to the supplied 
+Transcript will not affect the Mapper's results.
+
 =head1 METHODS
 
 =cut
@@ -268,6 +273,8 @@ sub cdna2genomic {
                represent intronic or upstream/downstream regions which do
                not comprise this transcripts cdna.  Coordinate objects
                represent genomic regions which map to exons (utrs included).
+               Note: A poorly formed Transcript will cause this method to
+               malfunction.
   Returntype : list of Bio::EnsEMBL::Mapper::Coordinate and
                Bio::EnsEMBL::Mapper::Gap objects
   Exceptions : throws if start, end or strand not defined
