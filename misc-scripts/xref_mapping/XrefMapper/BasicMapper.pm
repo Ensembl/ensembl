@@ -205,6 +205,7 @@ sub process_file {
     next if !$line;
 
     my ($key, $value) = split("=",$line);
+    $value =~ s/\s+$// if defined $value;
     if($key eq "species"){
       $type = "species";
       $species_hash{'species'} = $value;
