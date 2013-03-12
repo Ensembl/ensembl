@@ -90,6 +90,7 @@ SELECT DISTINCT
         term.name,
         term.definition,
         term.subsets,
+        ontology.name,
         ontology.namespace
 FROM    ontology
   JOIN  term USING (ontology_id)
@@ -112,7 +113,7 @@ WHERE   ( term.name LIKE ? OR synonym.name LIKE ? ));
 
   my ( $dbid, $accession, $name, $definition, $subsets, $namespace );
   $sth->bind_columns(
-     \( $dbid, $accession, $name, $definition, $subsets, $namespace ) );
+     \( $dbid, $accession, $name, $definition, $subsets, $ontology, $namespace ) );
 
   my @terms;
 
@@ -121,13 +122,17 @@ WHERE   ( term.name LIKE ? OR synonym.name LIKE ? ));
 
     push @terms,
       Bio::EnsEMBL::OntologyTerm->new(
-                               '-dbid'      => $dbid,
-                               '-adaptor'   => $this,
-                               '-accession' => $accession,
-                               '-namespace' => $namespace,
-                               '-subsets' => [ split( /,/, $subsets ) ],
-                               '-name'    => $name,
-                               '-definition' => $definition, );
+                               '-dbid'        => $dbid,
+                               '-adaptor'     => $this,
+                               '-accession'   => $accession,
+                               '-ontology'    => $ontology,
+                               '-namespace'   => $namespace,
+                               '-subsets'     => [ split( /,/, $subsets ) ],
+                               '-name'        => $name,
+                               '-definition'  => $definition,
+                               '-synonyms' => $this->_fetch_synonyms_by_dbID($dbid)
+    );
+
   }
 
   return \@terms;
@@ -153,6 +158,7 @@ sub fetch_by_accession {
 
   my $statement = q(
 SELECT  term.term_id,
+        term.accession,
         term.name,
         term.definition,
         term.subsets,
@@ -169,7 +175,7 @@ WHERE   term.accession = ?);
 
   my ( $dbid, $name, $definition, $subsets, $ontology, $namespace );
   $sth->bind_columns(
-      \( $dbid, $name, $definition, $subsets, $ontology, $namespace ) );
+      \( $dbid, $accession, $name, $definition, $subsets, $ontology, $namespace ) );
 
   $sth->fetch();
   
@@ -261,7 +267,9 @@ WHERE   relation.parent_term_id = ?
                                '-namespace' => $term->{'namespace'},
                                '-subsets' => [ split( /,/, $subsets ) ],
                                '-name'    => $name,
-                               '-definition' => $definition, );
+                               '-definition' => $definition, 
+                               '-synonyms' => $this->_fetch_synonyms_by_dbID($dbid)
+      );
 
       push( @terms,                              $child_term );
       push( @{ $term->{'children'}{$relation} }, $child_term );
@@ -343,7 +351,9 @@ ORDER BY closure.distance, child_term.accession);
                                '-namespace' => $term->{'namespace'},
                                '-subsets' => [ split( /,/, $subsets ) ],
                                '-name'    => $name,
-                               '-definition' => $definition, ) );
+                               '-definition' => $definition,
+                               '-synonyms' => $this->_fetch_synonyms_by_dbID($dbid)
+    ) );
   }
 
   return \@terms;
@@ -413,7 +423,9 @@ WHERE   relation.child_term_id = ?
                                '-namespace' => $term->{'namespace'},
                                '-subsets' => [ split( /,/, $subsets ) ],
                                '-name'    => $name,
-                               '-definition' => $definition, );
+                               '-definition' => $definition,
+                               '-synonyms' => $this->_fetch_synonyms_by_dbID($dbid)
+      );
 
       push( @terms,                             $parent_term );
       push( @{ $term->{'parents'}{$relation} }, $parent_term );
@@ -541,7 +553,9 @@ ORDER BY closure.distance, parent_term.accession);
                                '-namespace' => $term->{'namespace'},
                                '-subsets' => [ split( /,/, $subsets ) ],
                                '-name'    => $name,
-                               '-definition' => $definition, ) );
+                               '-definition' => $definition,
+                               '-synonyms' => $this->_fetch_synonyms_by_dbID($dbid)
+    ) );
     } else {
       $sth->finish();
       last;
@@ -684,7 +698,8 @@ sub fetch_by_dbID {
   my ( $this, $dbid ) = @_;
 
   my $statement = q(
-SELECT  term.accession,
+SELECT  term.term_id,
+        term.accession,
         term.name,
         term.definition,
         term.subsets,
@@ -702,7 +717,7 @@ WHERE   term.term_id = ?);
   my ( $accession, $name, $definition, $subsets, $ontology,
        $namespace );
   $sth->bind_columns(
-      \( $accession, $name, $definition, $subsets, $ontology, $namespace
+      \( $dbid, $accession, $name, $definition, $subsets, $ontology, $namespace
       ) );
 
   $sth->fetch();
@@ -776,7 +791,9 @@ WHERE   term.term_id IN (%s));
                                '-namespace' => $namespace,
                                '-subsets' => [ split( /,/, $subsets ) ],
                                '-name'    => $name,
-                               '-definition' => $definition, ) );
+                               '-definition' => $definition,
+                               '-synonyms' => $this->_fetch_synonyms_by_dbID($dbid)
+    ) );
   }
 
   return \@terms;
@@ -846,7 +863,10 @@ FROM    ontology
                                '-namespace' => $namespace,
                                '-subsets' => [ split( /,/, $subsets ) ],
                                '-name'    => $name,
-                               '-definition' => $definition ) );
+                               '-definition' => $definition,
+                               '-synonyms' => $this->_fetch_synonyms_by_dbID($dbid)
+
+    ));
   }
 
   return \@terms;
@@ -889,7 +909,9 @@ FROM    ontology
                                '-namespace' => $namespace,
                                '-subsets' => [ split( /,/, $subsets ) ],
                                '-name'    => $name,
-                               '-definition' => $definition ) );
+                               '-definition' => $definition,
+                               '-synonyms' => $this->_fetch_synonyms_by_dbID($dbid)
+    ) );
   }
 
   return \@terms;
