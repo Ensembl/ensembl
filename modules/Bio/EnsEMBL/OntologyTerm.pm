@@ -99,9 +99,9 @@ sub new {
 
   my $this = $proto->SUPER::new(@_);
 
-  my ( $accession, $ontology, $namespace, $name, $definition, $subsets )
+  my ( $accession, $ontology, $namespace, $name, $definition, $is_root, $subsets )
     = rearrange( [ 'ACCESSION',  'ONTOLOGY', 'NAMESPACE', 'NAME',
-                   'DEFINITION', 'SUBSETS' ],
+                   'DEFINITION', 'IS_ROOT', 'SUBSETS' ],
                  @_ );
 
   $this->{'accession'}  = $accession;
@@ -109,6 +109,7 @@ sub new {
   $this->{'namespace'}  = $namespace;
   $this->{'name'}       = $name;
   $this->{'definition'} = $definition;
+  $this->{'is_root'}    = $is_root;
   $this->{'subsets'}    = [ @{$subsets} ];
 
   $this->{'child_terms_fetched'}  = 0;
@@ -201,6 +202,24 @@ sub definition {
   my ($this) = @_;
   return $this->{'definition'};
 }
+
+=head2 is_root
+
+  Arg           : None
+
+  Description   : Returns true if the term is root of its ontology 
+
+  Example       : my $is_root = $term->is_root();
+
+  Return type   : Boolean (TRUE if it is a root, else FALSE)
+
+=cut
+
+sub is_root {
+  my ($this) = @_;
+  return $this->{'is_root'};
+}
+
 
 =head2 synonyms
 

@@ -90,6 +90,7 @@ SELECT DISTINCT
         term.name,
         term.definition,
         term.subsets,
+        term.is_root,
         ontology.name,
         ontology.namespace
 FROM    ontology
@@ -111,9 +112,9 @@ WHERE   ( term.name LIKE ? OR synonym.name LIKE ? ));
 
   $sth->execute();
 
-  my ( $dbid, $accession, $name, $definition, $subsets, $namespace );
+  my ( $dbid, $accession, $name, $definition, $subsets, $is_root, $namespace );
   $sth->bind_columns(
-     \( $dbid, $accession, $name, $definition, $subsets, $ontology, $namespace ) );
+     \( $dbid, $accession, $name, $definition, $subsets, $is_root, $ontology, $namespace ) );
 
   my @terms;
 
@@ -125,12 +126,13 @@ WHERE   ( term.name LIKE ? OR synonym.name LIKE ? ));
                                '-dbid'        => $dbid,
                                '-adaptor'     => $this,
                                '-accession'   => $accession,
+                               '-is_root'     => $is_root,
                                '-ontology'    => $ontology,
                                '-namespace'   => $namespace,
                                '-subsets'     => [ split( /,/, $subsets ) ],
                                '-name'        => $name,
                                '-definition'  => $definition,
-                               '-synonyms' => $this->_fetch_synonyms_by_dbID($dbid)
+                               '-synonyms'    => $this->_fetch_synonyms_by_dbID($dbid)
     );
 
   }
@@ -162,6 +164,7 @@ SELECT  term.term_id,
         term.name,
         term.definition,
         term.subsets,
+        term.is_root,
         ontology.name,
         ontology.namespace
 FROM    ontology
@@ -173,9 +176,9 @@ WHERE   term.accession = ?);
 
   $sth->execute();
 
-  my ( $dbid, $name, $definition, $subsets, $ontology, $namespace );
+  my ( $dbid, $name, $definition, $subsets, $is_root, $ontology, $namespace );
   $sth->bind_columns(
-      \( $dbid, $accession, $name, $definition, $subsets, $ontology, $namespace ) );
+      \( $dbid, $accession, $name, $definition, $subsets, $is_root, $ontology, $namespace ) );
 
   $sth->fetch();
   
@@ -189,6 +192,7 @@ WHERE   term.accession = ?);
                     '-dbid'       => $dbid,
                     '-adaptor'    => $this,
                     '-accession'  => $accession,
+                    '-is_root'    => $is_root,
                     '-ontology'   => $ontology,
                     '-namespace'  => $namespace,
                     '-subsets'    => [ split( /,/, $subsets ) ],
@@ -232,6 +236,7 @@ SELECT  child_term.term_id,
         child_term.name,
         child_term.definition,
         child_term.subsets,
+        child_term.is_root,
         rt.name
 FROM    term child_term
   JOIN  relation ON (relation.child_term_id = child_term.term_id)
@@ -251,9 +256,9 @@ WHERE   relation.parent_term_id = ?
 
     $sth->execute();
 
-    my ( $dbid, $accession, $name, $definition, $subsets, $relation );
+    my ( $dbid, $accession, $name, $definition, $subsets, $is_root, $relation );
     $sth->bind_columns(
-      \( $dbid, $accession, $name, $definition, $subsets, $relation ) );
+      \( $dbid, $accession, $name, $definition, $subsets, $is_root, $relation ) );
 
     while ( $sth->fetch() ) {
       $subsets ||= '';
@@ -263,6 +268,7 @@ WHERE   relation.parent_term_id = ?
                                '-dbid'      => $dbid,
                                '-adaptor'   => $this,
                                '-accession' => $accession,
+                               '-is_root'     => $is_root,
                                '-ontology'  => $term->{'ontology'},
                                '-namespace' => $term->{'namespace'},
                                '-subsets' => [ split( /,/, $subsets ) ],
@@ -315,7 +321,8 @@ SELECT DISTINCT
         child_term.accession,
         child_term.name,
         child_term.definition,
-        child_term.subsets
+        child_term.subsets,
+        child_term.is_root
 FROM    term child_term
   JOIN  closure ON (closure.child_term_id = child_term.term_id)
   JOIN  ontology ON (closure.ontology_id = ontology.ontology_id)
@@ -333,9 +340,9 @@ ORDER BY closure.distance, child_term.accession);
   $sth->bind_param( 2, $ontology, SQL_VARCHAR );
   $sth->execute();
 
-  my ( $dbid, $accession, $name, $definition, $subsets );
+  my ( $dbid, $accession, $name, $definition, $subsets, $is_root );
   $sth->bind_columns(
-                 \( $dbid, $accession, $name, $definition, $subsets ) );
+                 \( $dbid, $accession, $name, $definition, $subsets, $is_root ) );
 
   my @terms;
 
@@ -347,6 +354,7 @@ ORDER BY closure.distance, child_term.accession);
                                '-dbid'      => $dbid,
                                '-adaptor'   => $this,
                                '-accession' => $accession,
+                               '-is_root'     => $is_root,
                                '-ontology'  => $term->{'ontology'},
                                '-namespace' => $term->{'namespace'},
                                '-subsets' => [ split( /,/, $subsets ) ],
@@ -389,6 +397,7 @@ SELECT  parent_term.term_id,
         parent_term.name,
         parent_term.definition,
         parent_term.subsets,
+        parent_term.is_root,
         rt.name
 FROM    term parent_term
   JOIN  relation ON (relation.parent_term_id = parent_term.term_id)
@@ -407,9 +416,9 @@ WHERE   relation.child_term_id = ?
 
     $sth->execute();
 
-    my ( $dbid, $accession, $name, $definition, $subsets, $relation );
+    my ( $dbid, $accession, $name, $definition, $subsets, $is_root, $relation );
     $sth->bind_columns(
-      \( $dbid, $accession, $name, $definition, $subsets, $relation ) );
+      \( $dbid, $accession, $name, $definition, $subsets, $is_root, $relation ) );
 
     while ( $sth->fetch() ) {
       $subsets ||= '';
@@ -419,6 +428,7 @@ WHERE   relation.child_term_id = ?
                                '-dbid'      => $dbid,
                                '-adaptor'   => $this,
                                '-accession' => $accession,
+                               '-is_root'     => $is_root,
                                '-ontology'  => $term->{'ontology'},
                                '-namespace' => $term->{'namespace'},
                                '-subsets' => [ split( /,/, $subsets ) ],
@@ -495,6 +505,7 @@ SELECT DISTINCT
         parent_term.name,
         parent_term.definition,
         parent_term.subsets,
+        parent_term.is_root,
         closure.distance
 FROM    term parent_term
   JOIN  closure ON (closure.parent_term_id = parent_term.term_id)
@@ -532,9 +543,9 @@ ORDER BY closure.distance, parent_term.accession);
 
   $sth->execute();
 
-  my ( $dbid, $accession, $name, $definition, $subsets, $distance );
+  my ( $dbid, $accession, $name, $definition, $subsets, $is_root, $distance );
   $sth->bind_columns(
-      \( $dbid, $accession, $name, $definition, $subsets, $distance ) );
+      \( $dbid, $accession, $name, $definition, $subsets, $is_root, $distance ) );
 
   my @terms;
   my $min_distance;
@@ -549,6 +560,7 @@ ORDER BY closure.distance, parent_term.accession);
                                '-dbid'      => $dbid,
                                '-adaptor'   => $this,
                                '-accession' => $accession,
+                               '-is_root'     => $is_root,
                                '-ontology'  => $term->{'ontology'},
                                '-namespace' => $term->{'namespace'},
                                '-subsets' => [ split( /,/, $subsets ) ],
@@ -703,6 +715,7 @@ SELECT  term.term_id,
         term.name,
         term.definition,
         term.subsets,
+        term.is_root,
         ontology.name,
         ontology.namespace
 FROM    ontology
@@ -714,10 +727,10 @@ WHERE   term.term_id = ?);
 
   $sth->execute();
 
-  my ( $accession, $name, $definition, $subsets, $ontology,
+  my ( $accession, $name, $definition, $subsets, $is_root, $ontology,
        $namespace );
   $sth->bind_columns(
-      \( $dbid, $accession, $name, $definition, $subsets, $ontology, $namespace
+      \( $dbid, $accession, $name, $definition, $subsets, $is_root, $ontology, $namespace
       ) );
 
   $sth->fetch();
@@ -731,6 +744,7 @@ WHERE   term.term_id = ?);
                     '-dbid'       => $dbid,
                     '-adaptor'    => $this,
                     '-accession'  => $accession,
+                    '-is_root'     => $is_root,
                     '-ontology'   => $ontology,
                     '-namespace'  => $namespace,
                     '-subsets'    => [ split( /,/, $subsets ) ],
@@ -754,6 +768,7 @@ SELECT  term.term_id,
         term.name,
         term.definition,
         term.subsets,
+        term.is_root,
         ontology.name,
         ontology.namespace
 FROM    ontology
@@ -772,10 +787,10 @@ WHERE   term.term_id IN (%s));
 
   $sth->execute();
 
-  my ( $dbid, $accession, $name, $definition, $subsets, $ontology,
+  my ( $dbid, $accession, $name, $definition, $subsets, $is_root, $ontology,
        $namespace );
   $sth->bind_columns( \( $dbid,    $accession, $name, $definition,
-                         $subsets, $ontology,  $namespace ) );
+                         $subsets, $is_root, $ontology,  $namespace ) );
 
   my @terms;
 
@@ -787,6 +802,7 @@ WHERE   term.term_id IN (%s));
                                '-dbid'      => $dbid,
                                '-adaptor'   => $this,
                                '-accession' => $accession,
+                               '-is_root'     => $is_root,
                                '-ontology'  => $ontology,
                                '-namespace' => $namespace,
                                '-subsets' => [ split( /,/, $subsets ) ],
@@ -828,6 +844,7 @@ SELECT  term.term_id,
         term.name,
         term.definition,
         term.subsets,
+        term.is_root,
         ontology.name,
         ontology.namespace
 FROM    ontology
@@ -844,10 +861,10 @@ FROM    ontology
   }
   $sth->execute();
 
-  my ( $dbid, $accession, $name, $definition, $subsets, $ontology,
+  my ( $dbid, $accession, $name, $definition, $subsets, $is_root, $ontology,
        $namespace );
   $sth->bind_columns( \( $dbid,    $accession, $name, $definition,
-                         $subsets, $ontology,  $namespace ) );
+                         $subsets, $is_root, $ontology,  $namespace ) );
 
   my @terms;
 
@@ -859,6 +876,7 @@ FROM    ontology
                                '-dbid'      => $dbid,
                                '-adaptor'   => $this,
                                '-accession' => $accession,
+                               '-is_root'   => $is_root,
                                '-ontology'  => $ontology,
                                '-namespace' => $namespace,
                                '-subsets' => [ split( /,/, $subsets ) ],
@@ -882,6 +900,7 @@ SELECT  term.term_id,
         term.name,
         term.definition,
         term.subsets,
+        term.is_root,
         ontology.name,
         ontology.namespace
 FROM    ontology
@@ -890,10 +909,10 @@ FROM    ontology
   my $sth = $this->prepare($statement);
   $sth->execute();
 
-  my ( $dbid, $accession, $name, $definition, $subsets, $ontology,
+  my ( $dbid, $accession, $name, $definition, $subsets, $is_root, $ontology,
        $namespace );
   $sth->bind_columns( \( $dbid,    $accession, $name, $definition,
-                         $subsets, $ontology,  $namespace ) );
+                         $subsets, $is_root, $ontology,  $namespace ) );
 
   my @terms;
 
@@ -905,6 +924,7 @@ FROM    ontology
                                '-dbid'      => $dbid,
                                '-adaptor'   => $this,
                                '-accession' => $accession,
+                               '-is_root'   => $is_root,
                                '-ontology'  => $ontology,
                                '-namespace' => $namespace,
                                '-subsets' => [ split( /,/, $subsets ) ],
