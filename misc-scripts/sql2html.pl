@@ -517,40 +517,74 @@ sub display_tables_list {
     
     
     # Header
-    if ($header_flag == 1 and $header_name ne 'default') {
-      if ($nb_col_line+$nbc > 4 and $format_headers == 1) {
-        $html .= qq{  <div style="clear:both" />\n</div>\n\n<div>};
-        $nb_col_line = 0;
-      }
+#    if ($header_flag == 1 and $header_name ne 'default') {
+#      if ($nb_col_line+$nbc > 4 and $format_headers == 1) {
+#        $html .= qq{  <div style="clear:both" />\n</div>\n\n<div>};
+#        $nb_col_line = 0;
+#      }
+#      
+#      $html .= display_header($header_name,$nbc);
+#      $nb_col_line += $nbc;
+#      $has_header = 1;
+#    }
+		
+		if ($header_flag == 1) {
+			if ($header_name ne 'default') {
+				if ($nb_col_line+$nbc > 4 and $format_headers == 1) {
+      	  $html .= qq{  <div style="clear:both" />\n</div>\n\n<div>};
+      	  $nb_col_line = 0;
+     	 	}
       
-      $html .= display_header($header_name,$nbc);
-      $nb_col_line += $nbc;
-      $has_header = 1;
-    }
-    $html .= qq{\n    <table style="padding-right:10px"><tr><td>\n      <ul style="padding-left:20px">\n};
+      	$html .= display_header($header_name,$nbc);
+      	$nb_col_line += $nbc;
+      	$has_header = 1;
+    	}
+			
+			# List of tables
+			$html .= qq{\n      <ul style="padding:0px 4px 0px 22px;margin-bottom:2px">\n};
+			foreach my $t_name (@{$tables}) {
+				my $t_colour;
+      	if ($has_header == 0 && $show_colour) {
+        	$t_colour = $documentation->{$header_name}{'tables'}{$t_name}{'colour'};
+      	}
+				$html .= add_table_name_to_list($t_name,$t_colour);
+			}
+			$html .= qq{      </ul>};
+			
+			if ($format_headers == 1) {
+      	$html .= qq{  </div>\n};
+      	if ($nbc > 1) {
+        	$html .= qq{  <div style="clear:both" />\n</div>\n\n<div>};
+        	$nb_col_line = 0;
+      	}
+    	}		
+		}
+		else {
+    	$html .= qq{\n    <table style="padding:0px 2px"><tr><td>\n      <ul style="padding-left:20px">\n};
 
-    # List of tables
-    foreach my $t_name (@{$tables}) {
-      if ($table_count == $nb_by_col and $col_count<$nb_col and $nb_col>1){
-        $html .= qq{      </ul>\n    </td><td>\n      <ul style="padding-left:20px">\n};
-        $table_count = 0;
-      }
-      my $t_colour;
-      if ($has_header == 0 && $show_colour) {
-        $t_colour = $documentation->{$header_name}{'tables'}{$t_name}{'colour'};
-      }
-      $html .= add_table_name_to_list($t_name,$t_colour);
-      $table_count ++;
+    	# List of tables
+    	foreach my $t_name (@{$tables}) {
+      	if ($table_count == $nb_by_col and $col_count<$nb_col and $nb_col>1){
+        	$html .= qq{      </ul>\n    </td><td>\n      <ul style="padding-left:20px">\n};
+        	$table_count = 0;
+      	}
+      	my $t_colour;
+      	if ($has_header == 0 && $show_colour) {
+      	  $t_colour = $documentation->{$header_name}{'tables'}{$t_name}{'colour'};
+      	}
+      	$html .= add_table_name_to_list($t_name,$t_colour);
+      	$table_count ++;
+    	}
+    	$html .= qq{      </ul>\n    </td></tr></table>\n};
     }
-    $html .= qq{      </ul>\n    </td></tr></table>\n};
-    
-    if ($header_flag == 1 and $format_headers == 1) {
-      $html .= qq{  </div>\n};
-      if ($nbc > 1) {
-        $html .= qq{  <div style="clear:both" />\n</div>\n\n<div>};
-        $nb_col_line = 0;
-      }
-    }
+		
+  #  if ($header_flag == 1 and $format_headers == 1) {
+#      $html .= qq{  </div>\n};
+#      if ($nbc > 1) {
+#        $html .= qq{  <div style="clear:both" />\n</div>\n\n<div>};
+#        $nb_col_line = 0;
+#      }
+#    }
   }
   
   my $input_margin;
