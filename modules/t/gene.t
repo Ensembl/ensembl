@@ -442,6 +442,14 @@ debug($gene->stable_id);
 ok($gene->stable_id() eq 'ENSG00000101367');
 
 #
+# test fetch_all_by_description
+#
+
+my $gene_list = $ga->fetch_all_by_description('%APC-BINDING PROTEIN EB1%');
+ok(scalar(@$gene_list) == 1, "Get by description");
+ok($gene_list->[0]->stable_id eq "ENSG00000101367", "check we got the right one by description");
+
+#
 # test fetch_all_by_external_name with wildcard restrictions
 #
 (@genes) = @{$ga->fetch_all_by_external_name('AF_%')};
