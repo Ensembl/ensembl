@@ -348,7 +348,7 @@ sub pod_method_parser {
                 $code = undef;
             }
 		    if (/Example\s+:(.*)/) { #starts code section at Example : in POD
-		        $_ =~ s#(Example\s+:)(.*)#$1</pre>\@code$2#;
+		        $_ =~ s#(Examples?\s+:)(.*)#$1</pre>\@code$2#;
 		        $code = 1;
 		    }
 		}
