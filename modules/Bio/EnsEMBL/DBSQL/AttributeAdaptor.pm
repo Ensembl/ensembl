@@ -1,3 +1,4 @@
+
 =head1 LICENSE
 
   Copyright (c) 1999-2012 The European Bioinformatics Institute and
@@ -58,7 +59,6 @@ use vars qw(@ISA);
 
 @ISA = qw(Bio::EnsEMBL::DBSQL::BaseAdaptor);
 
-
 =head2 new
 
   Arg [...]  : Superclass args.  See Bio::EnsEMBL::DBSQL::BaseAdaptor
@@ -70,12 +70,10 @@ use vars qw(@ISA);
 
 =cut
 
-
 sub new {
   my $class = shift;
 
   my $self = $class->SUPER::new(@_);
-
 
   # cache creation could go here
   return $self;
@@ -84,234 +82,207 @@ sub new {
 use vars '$AUTOLOAD';
 
 sub AUTOLOAD {
-  my ($self,@args) = @_;
-  my @array_return=();
-  my $ref_return = undef;
-  $AUTOLOAD =~ /^.*::(\w+_)+(\w+)$/ ;
+  my ($self, @args) = @_;
+  my @array_return = ();
+  my $ref_return   = undef;
+  $AUTOLOAD =~ /^.*::(\w+_)+(\w+)$/;
 
-  my $sub = $1;
+  my $sub  = $1;
   my $type = $2;
 
+  #  print STDERR "AUTO".$AUTOLOAD."\n";
 
-
-#  print STDERR "AUTO".$AUTOLOAD."\n";
-
-#  print STDERR "AUTOLOAD reached with call to $sub of type $type\n";
-  if($self->can($sub)){
-    return $self->$sub($type,@args);
-  }
-  else{
-    warn("In AttribAdaptor cannot call sub $sub$type\n");
+  #  print STDERR "AUTOLOAD reached with call to $sub of type $type\n";
+  if ($self->can($sub)) {
+	return $self->$sub($type, @args);
+  } else {
+	warn("In AttribAdaptor cannot call sub $sub$type\n");
   }
   return undef;
 }
 
-
-
 sub store_on_ {
-  my $self = shift;
-  my $type = shift;
-  my $object = shift;
+  my $self       = shift;
+  my $type       = shift;
+  my $object     = shift;
   my $attributes = shift;
   my $table;
 
-
   my $object_id;
-  if($type =~ /[GT][er][na][en]/){
-    if (!ref($object)){
-      $object_id = $object;
-    }
-    else {
-      $object_id = $object->dbID;
-    }
-    $table = lc($type);
-#    $type = lc($type);
-  }
-  else{
-    if(!ref($object) || !$object->isa('Bio::EnsEMBL::'.$type)) {
-      throw("$type argument is required. but you passed $object");
-    }
-    if($type eq "Slice"){
-      $object_id = $object->get_seq_region_id();
-      $table = "seq_region"; 
-      $type = "seq_region";
-    }
-    else{
-      if($type eq "MiscFeature"){
-	$type = "misc_feature";
-	$table = "misc"; 
-      }
-      else{
+  if ($type =~ /[GT][er][na][en]/) {
+	if (!ref($object)) {
+	  $object_id = $object;
+	} else {
+	  $object_id = $object->dbID;
+	}
 	$table = lc($type);
-      }
-      
-      $object_id = $object->dbID();
-      my $db = $self->db();
-      
-      if(!$object->is_stored($db)) {
-	throw("$type is not stored in this database.");
-      }
-      
-    }
-  }
-  my $sth = $self->prepare( "INSERT into ".$table."_attrib ".
-			    "SET ".$type."_id = ?, attrib_type_id = ?, ".
-			    "value = ? " );
+	#    $type = lc($type);
+  } else {
+	if (!ref($object) || !$object->isa('Bio::EnsEMBL::' . $type)) {
+	  throw("$type argument is required. but you passed $object");
+	}
+	if ($type eq "Slice") {
+	  $object_id = $object->get_seq_region_id();
+	  $table     = "seq_region";
+	  $type      = "seq_region";
+	} else {
+	  if ($type eq "MiscFeature") {
+		$type  = "misc_feature";
+		$table = "misc";
+	  } else {
+		$table = lc($type);
+	  }
+
+	  $object_id = $object->dbID();
+	  my $db = $self->db();
+
+	  if (!$object->is_stored($db)) {
+		throw("$type is not stored in this database.");
+	  }
+
+	}
+  } ## end else [ if ($type =~ /[GT][er][na][en]/)]
+  my $sth = $self->prepare("INSERT into " . $table . "_attrib " . "SET " . $type . "_id = ?, attrib_type_id = ?, " . "value = ? ");
 
   my $undef_circular_cache = 0;
-  for my $attrib ( @$attributes ) {
-    if(!ref($attrib) && $attrib->isa('Bio::EnsEMBL::Attribute')) {
-      throw("Reference to list of Bio::EnsEMBL::Attribute objects " .
-            "argument expected.");
-    }
+  for my $attrib (@$attributes) {
+	if (!ref($attrib) && $attrib->isa('Bio::EnsEMBL::Attribute')) {
+	  throw("Reference to list of Bio::EnsEMBL::Attribute objects " . "argument expected.");
+	}
 
-#    next if ! $attrib->value;
+	#    next if ! $attrib->value;
 
-    my $atid = $self->_store_type( $attrib );
-    if ((defined $attrib->code) and ($attrib->code eq 'circular_seq')) {
-	$undef_circular_cache = 1;
-    }
-    $sth->bind_param(1,$object_id,SQL_INTEGER);
-    $sth->bind_param(2,$atid,SQL_INTEGER);
-    $sth->bind_param(3,$attrib->value,SQL_VARCHAR);
-    $sth->execute();
+	my $atid = $self->_store_type($attrib);
+	if ((defined $attrib->code) and ($attrib->code eq 'circular_seq')) {
+	  $undef_circular_cache = 1;
+	}
+	$sth->bind_param(1, $object_id,     SQL_INTEGER);
+	$sth->bind_param(2, $atid,          SQL_INTEGER);
+	$sth->bind_param(3, $attrib->value, SQL_VARCHAR);
+	$sth->execute();
   }
 
-  if($table eq "seq_region") {        
-    if ($undef_circular_cache) {
-	#the slice is circular
-	$object->{'circular'} = 1;
-	my $slice_adaptor = $object->adaptor();
-        #undefine slice adaptor->is_circular and the circular slice cache
-	if (defined $slice_adaptor) {
-	    $slice_adaptor->{'is_circular'} = undef;
-	    $slice_adaptor->{'circular_sr_id_cache'} = {};
+  if ($table eq "seq_region") {
+	if ($undef_circular_cache) {
+	  #the slice is circular
+	  $object->{'circular'} = 1;
+	  my $slice_adaptor = $object->adaptor();
+	  #undefine slice adaptor->is_circular and the circular slice cache
+	  if (defined $slice_adaptor) {
+		$slice_adaptor->{'is_circular'}          = undef;
+		$slice_adaptor->{'circular_sr_id_cache'} = {};
+	  }
 	}
-    }
   }
 
   return;
-}
+} ## end sub store_on_
 
-
-sub remove_from_{
+sub remove_from_ {
   my $self   = shift;
   my $type   = shift;
   my $object = shift;
   my $code   = shift;
   my $table;
 
-  if(!ref($object) || !$object->isa('Bio::EnsEMBL::'.$type)) {
-    throw("$type argument is required or a attrib code. but you passed $object");
+  if (!ref($object) || !$object->isa('Bio::EnsEMBL::' . $type)) {
+	throw("$type argument is required or a attrib code. but you passed $object");
   }
 
   my $object_id;
-  if($type eq "Slice"){
-    $object_id = $object->get_seq_region_id();
-    $table = "seq_region"; 
-    $type = "seq_region";
-    if ((defined $code) and ($code eq 'circular_seq')) {
-	#undefine slice->is_circular, slice adaptor->is_circular and the circular slice cache
-	$object->{'circular'} = undef;
-	my $slice_adaptor = $object->adaptor();
-	if (defined $slice_adaptor) {
-	    $slice_adaptor->{'is_circular'} = undef;
-	    $slice_adaptor->{'circular_sr_id_cache'} = {};
+  if ($type eq "Slice") {
+	$object_id = $object->get_seq_region_id();
+	$table     = "seq_region";
+	$type      = "seq_region";
+	if ((defined $code) and ($code eq 'circular_seq')) {
+	  #undefine slice->is_circular, slice adaptor->is_circular and the circular slice cache
+	  $object->{'circular'} = undef;
+	  my $slice_adaptor = $object->adaptor();
+	  if (defined $slice_adaptor) {
+		$slice_adaptor->{'is_circular'}          = undef;
+		$slice_adaptor->{'circular_sr_id_cache'} = {};
+	  }
 	}
-    }
-  }
-  else{
-    if($type eq "MiscFeature"){
-      $type = "misc_feature";
-      $table = "misc"; 
-    }
-    else{
-      $table = lc($type);
-    }
+  } else {
+	if ($type eq "MiscFeature") {
+	  $type  = "misc_feature";
+	  $table = "misc";
+	} else {
+	  $table = lc($type);
+	}
 
-    $object_id = $object->dbID();
-    my $db = $self->db();
-    
-    if(!$object->is_stored($db)) {
-      throw("$type is not stored in this database.");
-    }
+	$object_id = $object->dbID();
+	my $db = $self->db();
+
+	if (!$object->is_stored($db)) {
+	  throw("$type is not stored in this database.");
+	}
 
   }
 
-  if(!defined($object_id)) {
-    throw("$type must have dbID.");
+  if (!defined($object_id)) {
+	throw("$type must have dbID.");
   }
 
   my $sth;
-  if(defined($code)){
-    $sth = $self->prepare("DELETE a FROM ".$table."_attrib a ,attrib_type at " .
-                         "WHERE a.attrib_type_id = at.attrib_type_id AND ".
-                         "a.".$type."_id = ? AND ".
-			 "at.code like ?");
-    $sth->bind_param(1,$object_id,SQL_INTEGER);
-    $sth->bind_param(2,$code,SQL_VARCHAR);
-  }
-  else{
-    $sth = $self->prepare("DELETE FROM ".$table."_attrib " .
-                         "WHERE ".$type."_id = ?");
-    $sth->bind_param(1,$object_id,SQL_INTEGER);
+  if (defined($code)) {
+	$sth = $self->prepare("DELETE a FROM " . $table . "_attrib a ,attrib_type at " . "WHERE a.attrib_type_id = at.attrib_type_id AND " . "a." . $type . "_id = ? AND " . "at.code like ?");
+	$sth->bind_param(1, $object_id, SQL_INTEGER);
+	$sth->bind_param(2, $code,      SQL_VARCHAR);
+  } else {
+	$sth = $self->prepare("DELETE FROM " . $table . "_attrib " . "WHERE " . $type . "_id = ?");
+	$sth->bind_param(1, $object_id, SQL_INTEGER);
   }
   $sth->execute();
 
   $sth->finish();
 
   return;
-}
+} ## end sub remove_from_
 
 sub fetch_all {
   throw("Use of method fetch_all not supported for attributes");
 }
 
+sub fetch_all_by_ {
+  my $self   = shift;
+  my $type   = shift;
+  my $object = shift;
+  my $code   = shift;
+  my $table  = undef;
 
-
-sub fetch_all_by_{
-  my $self     = shift;
-  my $type     = shift;
-  my $object   = shift;
-  my $code     = shift;
-  my $table =undef;
-
-  if (defined($object)){
-    if(!ref($object) || !$object->isa('Bio::EnsEMBL::'.$type)) {
-      throw("$type argument is required. but you passed $object");
-    }
+  if (defined($object)) {
+	if (!ref($object) || !$object->isa('Bio::EnsEMBL::' . $type)) {
+	  throw("$type argument is required. but you passed $object");
+	}
   }
 
   my $object_id;
-  if($type eq "Slice"){
-    $object_id = $object->get_seq_region_id() if defined $object;
-    $table = "seq_region"; 
-    $type = "seq_region";
-  }
-  else{
-    if($type eq "MiscFeature"){
-      $type = "misc_feature";
-      $table = "misc"; 
-    }
-    else{
-      $table = lc($type);
-    }
+  if ($type eq "Slice") {
+	$object_id = $object->get_seq_region_id() if defined $object;
+	$table     = "seq_region";
+	$type      = "seq_region";
+  } else {
+	if ($type eq "MiscFeature") {
+	  $type  = "misc_feature";
+	  $table = "misc";
+	} else {
+	  $table = lc($type);
+	}
 
-    $object_id = $object->dbID() if defined $object;
+	$object_id = $object->dbID() if defined $object;
   }
 
-  my $sql = "SELECT at.code, at.name, at.description, t.value " .
-              "FROM ".($table||$type)."_attrib t, attrib_type at ".
-                 "WHERE at.attrib_type_id = t.attrib_type_id ";
+  my $sql = "SELECT at.code, at.name, at.description, t.value " . "FROM " . ($table || $type) . "_attrib t, attrib_type at " . "WHERE at.attrib_type_id = t.attrib_type_id ";
 
-  if(defined($code)){
-    $sql .= 'AND at.code like "'.$code.'" ';
+  if (defined($code)) {
+	$sql .= 'AND at.code like "' . $code . '" ';
   }
 
-  if(defined($object_id)){
-    $sql .= "AND t.".$type."_id = ".$object_id;
+  if (defined($object_id)) {
+	$sql .= "AND t." . $type . "_id = " . $object_id;
   }
-		   
+
   my $sth = $self->prepare($sql);
   $sth->execute();
 
@@ -320,13 +291,11 @@ sub fetch_all_by_{
   $sth->finish();
 
   return $results;
-  
+
+} ## end sub fetch_all_by_
+
+sub DESTROY {
 }
-
-
-sub DESTROY{
-}
-
 
 #
 # _id_check
@@ -336,94 +305,84 @@ sub DESTROY{
 #
 
 sub _id_check {
-  my $self = shift;
+  my $self  = shift;
   my $ensID = shift;
 
   if ($ensID =~ /^\d+$/) {
-    return $ensID;
-  
-  } elsif (ref($ensID) eq 'Bio::EnsEMBL::Gene' or
-      ref($ensID) eq 'Bio::EnsEMBL::Transcript' or
-      ref($ensID) eq 'Bio::EnsEMBL::Translation') {
+	return $ensID;
 
-    warning("You should pass a dbID rather than an ensembl object to store the attribute on");
+  } elsif (   ref($ensID) eq 'Bio::EnsEMBL::Gene'
+		   or ref($ensID) eq 'Bio::EnsEMBL::Transcript'
+		   or ref($ensID) eq 'Bio::EnsEMBL::Translation')
+  {
 
-    if ($ensID->dbID) {
-      return $ensID->dbID;
-    } else {
-      throw("Ensembl object ".$ensID->display_id." doesn't have a dbID, can't store attribute");
-    }
+	warning("You should pass a dbID rather than an ensembl object to store the attribute on");
+
+	if ($ensID->dbID) {
+	  return $ensID->dbID;
+	} else {
+	  throw("Ensembl object " . $ensID->display_id . " doesn't have a dbID, can't store attribute");
+	}
 
   } else {
-    throw("Invalid dbID");
+	throw("Invalid dbID");
   }
 
-}
-
+} ## end sub _id_check
 
 # _store_type
 
 sub _store_type {
-  my $self = shift;
+  my $self   = shift;
   my $attrib = shift;
 
-  my $sth1 = $self->prepare
-    ("INSERT IGNORE INTO attrib_type set code = ?, name = ?, ".
-     "description = ?" );
+  my $sth1 = $self->prepare("INSERT IGNORE INTO attrib_type set code = ?, name = ?, " . "description = ?");
 
+  $sth1->bind_param(1, $attrib->code,        SQL_VARCHAR);
+  $sth1->bind_param(2, $attrib->name,        SQL_VARCHAR);
+  $sth1->bind_param(3, $attrib->description, SQL_LONGVARCHAR);
 
-  $sth1->bind_param(1,$attrib->code,SQL_VARCHAR);
-  $sth1->bind_param(2,$attrib->name,SQL_VARCHAR);
-  $sth1->bind_param(3,$attrib->description,SQL_LONGVARCHAR);
-
-  my $rows_inserted =  $sth1->execute();
+  my $rows_inserted = $sth1->execute();
 
   my $atid = $sth1->{'mysql_insertid'};
 
-  if($rows_inserted == 0) {
-    # the insert failed because the code is already stored
-    my $sth2 = $self->prepare
-      ("SELECT attrib_type_id FROM attrib_type " .
-       "WHERE code = ?");
-    $sth2->bind_param(1,$attrib->code,SQL_VARCHAR);
-    $sth2->execute();
-    ($atid) = $sth2->fetchrow_array();
+  if ($rows_inserted == 0) {
+	# the insert failed because the code is already stored
+	my $sth2 = $self->prepare("SELECT attrib_type_id FROM attrib_type " . "WHERE code = ?");
+	$sth2->bind_param(1, $attrib->code, SQL_VARCHAR);
+	$sth2->execute();
+	($atid) = $sth2->fetchrow_array();
 
-    $sth2->finish();
+	$sth2->finish();
 
-    if(!$atid) {
-      throw("Could not store or fetch attrib_type code [".$attrib->code."]\n" .
-	    "Wrong database user/permissions?");
-    }
+	if (!$atid) {
+	  throw("Could not store or fetch attrib_type code [" . $attrib->code . "]\n" . "Wrong database user/permissions?");
+	}
   }
 
   $sth1->finish();
 
   return $atid;
-}
-
+} ## end sub _store_type
 
 sub _obj_from_sth {
   my $self = shift;
-  my $sth = shift;
+  my $sth  = shift;
 
   my ($code, $name, $desc, $value);
   $sth->bind_columns(\$code, \$name, \$desc, \$value);
 
   my @results;
-  while($sth->fetch()) {
-    push @results, Bio::EnsEMBL::Attribute->new_fast
-                                             ( {'code' => $code,
-                                                'name' => $name,
-                                                'description' => $desc,
-                                                'value' => $value} );
+  while ($sth->fetch()) {
+	push @results,
+	  Bio::EnsEMBL::Attribute->new_fast({'code'        => $code,
+										 'name'        => $name,
+										 'description' => $desc,
+										 'value'       => $value});
   }
 
   return \@results;
 }
-
-
-
 
 1;
 
