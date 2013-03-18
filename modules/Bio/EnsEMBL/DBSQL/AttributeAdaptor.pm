@@ -101,6 +101,42 @@ sub AUTOLOAD {
   return undef;
 }
 
+sub store_batch_on_ {
+  my ($self, $type, $attributes, $batch_size) = @_;
+  # $attributes is a hashref where the key is the object ID
+  # and the value is an array ref of Attribute objects
+
+  # maintain a hash of attrib type IDs by code so we don't have to keep looking them up...
+  my $attrib_type_ids = {};
+  # create an arrayref of the values to store
+  my $rows = [];
+  $batch_size ||= scalar(values(%$attributes));
+  while (my ($obj_id, $attribs) = each %{$attributes}) {
+	for my $attrib (@{$attribs}) {
+	  my $attrib_type_id = $attrib_type_ids->{$attrib->code()};
+	  if (!defined $attrib_type_id) {
+		$attrib_type_id = $self->_store_type($attrib);
+		$attrib_type_ids->{$attrib->code()} = $attrib_type_id;
+	  }
+	  push @$rows, sprintf('(%d, %d, %s)', $obj_id, $attrib_type_id, $self->dbc()->db_handle()->quote($attrib->value()));
+	  if (scalar(@$rows) == $batch_size) {
+		$rows = $self->_store_batch_rows($type, $rows);
+	  }
+	}
+  }
+  $rows = $self->_store_batch_rows($type, $rows);
+  return;
+} ## end sub store_batch_on_
+
+sub _store_batch_rows {
+  my ($self, $type, $rows) = @_;
+  my $table = lc($type);
+  if (scalar(@$rows) > 0) {
+	$self->dbc()->sql_helper()->execute_update(-SQL => 'INSERT INTO ' . $table . '_attrib() VALUES' . join(',', @$rows));
+  }
+  return [];
+}
+
 sub store_on_ {
   my $self       = shift;
   my $type       = shift;
