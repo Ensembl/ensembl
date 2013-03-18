@@ -43,19 +43,17 @@ sub pipeline_analyses {
       -parameters => {
         inputcmd => 'find '.$self->o('base_path').q{ -type f -name '*.dat.gz'},
         column_names => ['file'],
-        randomize => 1,
-        input_id_template => '{ file => "#file#" }'
+        randomize => 1
       },
       -input_ids  => [ {} ],
       -flow_into  => {
-        # 1 => 'Notify',
-        2 => ['CheckFlatfile'],
+        2 =>  { CheckFlatfile => { file => '#file#'} }
       },
     },
     {
       -logic_name => 'CheckFlatfile',
       -module     => 'Bio::EnsEMBL::Pipeline::Flatfile::CheckFlatfile',
-      -hive_capacity => 15,
+      -analysis_capacity => 15,
       -rc_name => 'dump',
     },
   ];
