@@ -50,6 +50,7 @@ use Bio::EnsEMBL::Utils::Scalar qw/wrap_array/;
 sub param_defaults {
   my ($self) = @_;
   return {
+    %{$self->SUPER::param_defaults()},
     column_names => ['type','species'],
     default_types => [qw/embl genbank/],
   };
