@@ -16,6 +16,10 @@ eval {
 my $http_test_count = 5;
 my $retry_count = 0;
 
+#All tests are done locally. DO NOT INVOLVE PROXY SERVERS
+delete $ENV{HTTP_PROXY} if $ENV{HTTP_PROXY};
+delete $ENV{http_proxy} if $ENV{http_proxy};
+
 note 'Performing HTTP::Tiny tests';
 if($Bio::EnsEMBL::Utils::Net::HTTP_TINY) {
   local $Bio::EnsEMBL::Utils::Net::LWP = 0;
@@ -51,7 +55,7 @@ sub run_http_test {
 sub get_server {
   my ($self) = @_;
   my $httpd = Test::Fake::HTTPD->new(
-    timeout => 5,
+    timeout => 30,
   );
   
   $httpd->run(sub {
