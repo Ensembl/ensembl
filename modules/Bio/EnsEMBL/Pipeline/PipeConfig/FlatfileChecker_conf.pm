@@ -44,7 +44,7 @@ sub pipeline_analyses {
         inputcmd => 'find '.$self->o('base_path').q{ -type f -name '*.dat.gz'},
         column_names => ['file'],
         randomize => 1,
-        input_id => '{ file => "#file#" }'
+        input_id_template => '{ file => "#file#" }'
       },
       -input_ids  => [ {} ],
       -flow_into  => {

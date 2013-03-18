@@ -70,7 +70,7 @@ sub pipeline_analyses {
         -module     => 'Bio::EnsEMBL::Pipeline::Flatfile::DumpTypeFactory',
         -parameters => {
           types => $self->o('types'),
-          input_id => { species => '#species#', type => '#type#' },
+          input_id_template => '{ species => "#species#", type => "#type#" }',
           fan_branch_code => 2
         },
         -flow_into  => { 2 => ['DumpFlatfile', 'ChecksumGenerator'] },
