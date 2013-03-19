@@ -12,6 +12,7 @@ sub default_options {
       # inherit other stuff from the base class
       %{ $self->SUPER::default_options() }, 
       
+      # 'registry'  => '',  # registry file still needed for all species
       # 'fa_dir'    => '',  # locate where the current fa files to look for are
       # 'base_path' => '',  # where do you want your files
       
@@ -75,6 +76,12 @@ sub pipeline_wide_parameters {
     %{ $self->SUPER::pipeline_wide_parameters() },
     base_path => $self->o('base_path'),
   };
+}
+
+# override the default method, to force an automatic loading of the registry in all workers
+sub beekeeper_extra_cmdline_options {
+    my $self = shift;
+    return "-reg_conf ".$self->o("registry");
 }
 
 sub resource_classes {
