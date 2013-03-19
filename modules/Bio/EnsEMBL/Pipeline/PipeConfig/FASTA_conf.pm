@@ -48,7 +48,7 @@ sub default_options {
         # The previous release; override if running on something different
         previous_release => (software_version() - 1),
         
-        force_all_species => 0, #always run every species
+        run_all => 0, #always run every species
         
         ### SCP code
         
