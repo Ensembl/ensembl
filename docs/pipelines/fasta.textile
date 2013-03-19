@@ -122,6 +122,7 @@ bc. -species human -species cele -species yeast
 |@-pipeline_db -host=@|String|No|Specify a host for the hive database e.g. @-pipeline_db -host=myserver.mysql@|See hive generic config|*YES*|
 |@-pipeline_db -dbname=@|String|No|Specify a different database to use as the hive DB e.g. @-pipeline_db -dbname=my_dumps_test@|Uses pipeline name by default|*NO*|
 |@-ftp_dir@|String|No|Location of the current FTP directory with the previous release's files. We will use this to copy DNA files from one release to another. If not given we do not do any reuse|-|*NO*|
+|@-run_all_@|Boolean|No|Ignores any kind of reuse an forces the dump of all DNAs|-|*NO*|
 |@-species@|String|Yes|Specify one or more species to process. Pipeline will only _consider_ these species. Use *-force_species* if you want to force a species run|-|*NO*|
 |@-force_species@|String|Yes|Specify one or more species to force through the pipeline. This is useful to force a dump when you know reuse will not do the _"right thing"_|-|*NO*|
 |@-dump_types@|String|Yes|Specify each type of dump you want to produce. Supported values are *dna*, *cdna* and *ncrna*|All|*NO*|
@@ -171,6 +172,14 @@ bc.
 	init_pipeline.pl Bio::EnsEMBL::Pipeline::PipeConfig::FASTA_conf \
 	-pipeline_db -host=my-db-host -species celegans -force_species celegans \
 	-base_path /path/to/dumps -registry reg.pm
+
+h3. Running everything:
+
+bc.
+	 init_pipeline.pl Bio::EnsEMBL::Pipeline::PipeConfig::FASTA_conf \
+	 -pipeline_db -host=my-db-host -run_all 1 \
+	 -base_path /path/to/dumps -registry reg.pm
+
 
 h3. Dumping just gene data (no DNA or ncRNA):
 

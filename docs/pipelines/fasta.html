@@ -1,84 +1,253 @@
-<?xml version='1.0' encoding='utf-8' ?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=utf-8"/></head><body><h1 id="FASTAPipeline">FASTA Pipeline</h1><p>This is a re-implementation of an existing pipeline developed originally by core and the webteam. The new version uses eHive, so familiarity with this system is essential, and has been written to use as little memory as possible.</p><h2 id="TheRegistryFile">The Registry File</h2><p>This is the way we retrieve the database connections to work with. The registry file should specify:</p><ul><li>The core (and any other) databases to dump from</li><li>A production database<ul><li><strong>species = multi</strong></li><li><strong>group = production</strong></li><li>Used to find which species require new DNA</li></ul></li><li>A web database<ul><li><strong>species = multi</strong></li><li><strong>group = web</strong></li><li>Used to name BLAT index files</li></ul></li></ul><p>Here is an example of a file for v67 of Ensembl. Note the use of the Registry object within a registry file and the scoping of the package. If you omit the <strong>-db_version</strong> parameter and only use HEAD checkouts of Ensembl then this will automatically select the latest version of the API. Any change to version here must be reflected in the configuration file.</p><pre><code>	package Reg;
-	use Bio::EnsEMBL::Registry;
-	use Bio::EnsEMBL::DBSQL::DBAdaptor;
-	Bio::EnsEMBL::Registry-&gt;no_version_check(1);
-	Bio::EnsEMBL::Registry-&gt;no_cache_warnings(1);
-	{
-	  my $version = 67;
-	  Bio::EnsEMBL::Registry-&gt;load_registry_from_multiple_dbs(
-	    {
-	      -host =&gt; "mydb-1",
-	      -port =&gt; 3306,
-	      -db_version =&gt; $version,
-	      -user =&gt; "user",
-	      -NO_CACHE =&gt; 1,
-	    },
-	    {    
-	      -host =&gt; "mydb-2",
-	      -port =&gt; 3306,
-	      -db_version =&gt; $version,
-	      -user =&gt; "user",
-	      -NO_CACHE =&gt; 1,
-	    },
-	  );
-	  Bio::EnsEMBL::DBSQL::DBAdaptor-&gt;new(
-	    -HOST =&gt; 'mydb-2',
-	    -PORT =&gt; 3306,
-	    -USER =&gt; 'user',
-	    -DBNAME =&gt; 'ensembl_website',
-	    -SPECIES =&gt; 'multi',
-	    -GROUP =&gt; 'web'
-	  );
-	  Bio::EnsEMBL::DBSQL::DBAdaptor-&gt;new(
-	    -HOST =&gt; 'mydb-2',
-	    -PORT =&gt; 3306,
-	    -USER =&gt; 'user',
-	    -DBNAME =&gt; 'ensembl_production',
-	    -SPECIES =&gt; 'multi',
-	    -GROUP =&gt; 'production'
-	  );
-	}
-	1;
-</code></pre><p>You give the registry to the <strong>init_pipeline.pl</strong> script via the <strong>-registry</strong> option</p><h2 id="OverridingDefaultsUsingaNewConfigFile">Overriding Defaults Using a New Config File </h2><p>We recommend if you have a number of parameters which do not change between releases to create a configuration file which inherits from the root config file e.g.</p><pre><code>	package MyCnf;
-	use base qw/Bio::EnsEMBL::Pipeline::FASTA::FASTA_conf/;
-	sub default_options {
-	  my ($self) = @_;
-	  return {
-	    %{ $self-&gt;SUPER::default_options() },
-	    #Override of options
-	  };
-	}
-	1;
-</code></pre><p>If you do override the config then you should use the package name for your overridden config in the upcoming example commands.</p><h2 id="Environment">Environment</h2><h3 id="PERL5LIB">PERL5LIB</h3><ul><li>ensembl</li><li>ensembl-hive</li><li>bioperl</li></ul><h3 id="PATH">PATH</h3><ul><li>ensembl-hive/scripts</li><li>faToTwoBit (if not using a custom location)</li><li>xdformat (if not using a custom location)</li><li>sendmail (for emailing reports)</li></ul><h3 id="ENSEMBLCVSROOTDIR">ENSEMBL_CVS_ROOT_DIR</h3><p>Set to the base checkout of Ensembl. We should be able to add <strong>ensembl-hive/sql</strong> onto this path to find the SQL directory for hive e.g.</p><pre><code>	export ENSEMBL_CVS_ROOT_DIR=$HOME/work/ensembl-checkouts
-</code></pre><h3 id="ENSADMINPSW">ENSADMIN_PSW</h3><p>Give the password to use to log into a database server e.g.</p><pre><code>	export ENSADMIN_PSW=wibble
-</code></pre><h2 id="CommandLineArguments">Command Line Arguments</h2><p>Where <strong>Multiple Supported</strong> is supported we allow the user to specify the parameter more than once on the command line. For example species is one of these options e.g. </p><pre><code>-species human -species cele -species yeast
-</code></pre><table><tr><th>Name </th><th> Type</th><th>Multiple Supported</th><th> Description</th><th>Default</th><th> Required</th></tr><tr><td><code>-registry</code></td><td>String</td><td>No</td><td>Location of the Ensembl registry to use with this pipeline</td><td>-</td><td><strong>YES</strong></td></tr><tr><td><code>-base_path</code></td><td>String</td><td>No</td><td>Location of the dumps</td><td>-</td><td><strong>YES</strong></td></tr><tr><td><code>-pipeline_db -host=</code></td><td>String</td><td>No</td><td>Specify a host for the hive database e.g. <code>-pipeline_db -host=myserver.mysql</code></td><td>See hive generic config</td><td><strong>YES</strong></td></tr><tr><td><code>-pipeline_db -dbname=</code></td><td>String</td><td>No</td><td>Specify a different database to use as the hive DB e.g. <code>-pipeline_db -dbname=my_dumps_test</code></td><td>Uses pipeline name by default</td><td><strong>NO</strong></td></tr><tr><td><code>-ftp_dir</code></td><td>String</td><td>No</td><td>Location of the current FTP directory with the previous release&#8217;s files. We will use this to copy DNA files from one release to another. If not given we do not do any reuse</td><td>-</td><td><strong>NO</strong></td></tr><tr><td><code>-species</code></td><td>String</td><td>Yes</td><td>Specify one or more species to process. Pipeline will only <em>consider</em> these species. Use <strong>-force_species</strong> if you want to force a species run</td><td>-</td><td><strong>NO</strong></td></tr><tr><td><code>-force_species</code></td><td>String</td><td>Yes</td><td>Specify one or more species to force through the pipeline. This is useful to force a dump when you know reuse will not do the <em>"right thing"</em></td><td>-</td><td><strong>NO</strong></td></tr><tr><td><code>-dump_types</code></td><td>String</td><td>Yes</td><td>Specify each type of dump you want to produce. Supported values are <strong>dna</strong>, <strong>cdna</strong> and <strong>ncrna</strong></td><td>All</td><td><strong>NO</strong></td></tr><tr><td><code>-db_types</code></td><td>String</td><td>Yes</td><td>The database types to use. Supports the normal db adaptor groups e.g. <strong>core</strong>, <strong>otherfeatures</strong> etc.</td><td>core</td><td><strong>NO</strong></td></tr><tr><td><code>-process_logic_names</code></td><td>String</td><td>Yes</td><td>Provide a set of logic names whose models should be dumped</td><td>-</td><td><strong>NO</strong></td></tr><tr><td><code>-skip_logic_names</code></td><td>String</td><td>Yes</td><td>Provide a set of logic names to skip when creating dumps. These are evaluated <strong>after</strong> <code>-process_logic_names</code></td><td>core</td><td><strong>NO</strong></td></tr><tr><td><code>-release</code></td><td>Integer</td><td>No</td><td>The release to dump</td><td>Software version</td><td><strong>NO</strong></td></tr><tr><td><code>-previous_release</code></td><td>Integer</td><td>No</td><td>The previous release to use. Used to calculate reuse</td><td>Software version minus 1</td><td><strong>NO</strong></td></tr><tr><td><code>-blast_servers</code></td><td>String</td><td>Yes</td><td>The servers to copy blast indexes to</td><td>-</td><td><strong>NO</strong></td></tr><tr><td><code>-blast_genomic_dir</code></td><td>String</td><td>No</td><td>Location to copy the DNA blast indexes to</td><td>-</td><td><strong>NO</strong></td></tr><tr><td><code>-blast_genes_dir</code></td><td>String</td><td>No</td><td>Location to copy the DNA gene (cdna, ncrna and protein) indexes to</td><td>-</td><td><strong>NO</strong></td></tr><tr><td><code>-scp_user</code></td><td>String</td><td>No</td><td>User to perform the SCP as. Defaults to the current user</td><td>Current user</td><td><strong>NO</strong></td></tr><tr><td><code>-scp_identity</code></td><td>String</td><td>No</td><td>The SSH identity file to use when performing SCPs. Normally used in conjunction with <strong>-scp_user</strong></td><td>-</td><td><strong>NO</strong></td></tr><tr><td><code>-no_scp</code></td><td>Boolean</td><td>No</td><td>Skip SCP altogether</td><td>0</td><td><strong>NO</strong></td></tr><tr><td><code>-pipeline_name</code></td><td>String</td><td>No</td><td>Name to use for the pipeline</td><td>fasta_dump_$release</td><td><strong>NO</strong></td></tr><tr><td><code>-wublast_exe</code></td><td>String</td><td>No</td><td>Location of the WUBlast indexing binary</td><td>xdformat</td><td><strong>NO</strong></td></tr><tr><td><code>-blat_exe</code></td><td>String</td><td>No</td><td>Location of the Blat indexing binary</td><td>faToTwoBit</td><td><strong>NO</strong></td></tr><tr><td><code>-port_offset</code></td><td>Integer</td><td>No</td><td>The offset of the ports to use when generating blat indexes. This figure is added onto the web database species ID</td><td>30000</td><td><strong>NO</strong></td></tr><tr><td><code>-email</code></td><td>String</td><td>No</td><td>Email to send pipeline summaries to upon its successful completion</td><td>$USER@sanger.ac.uk</td><td><strong>NO</strong></td></tr></table><h2 id="ExampleCommands">Example Commands</h2><h3 id="Toloadusenormally">To load use normally:</h3><pre><code>	init_pipeline.pl Bio::EnsEMBL::Pipeline::PipeConfig::FASTA_conf \
-	-pipeline_db -host=my-db-host -base_path /path/to/dumps -registry reg.pm
-</code></pre><h3 id="Runasubsetofspeciesnoforcingsupportsregistryaliases">Run a subset of species (no forcing &amp; supports registry aliases):</h3><pre><code>	init_pipeline.pl Bio::EnsEMBL::Pipeline::PipeConfig::FASTA_conf \
-	-pipeline_db -host=my-db-host -species anolis -species celegans -species human \
-	-base_path /path/to/dumps -registry reg.pm
-</code></pre><h3 id="Specifyingspeciestoforcesupportsallregistryaliases">Specifying species to force (supports all registry aliases):</h3><pre><code>	init_pipeline.pl Bio::EnsEMBL::Pipeline::PipeConfig::FASTA_conf \
-	-pipeline_db -host=my-db-host -force_species anolis -force_species celegans -force_species human \
-	-base_path /path/to/dumps -registry reg.pm
-</code></pre><h3 id="Runningforcingaspecies">Running &amp; forcing a species:</h3><pre><code>	init_pipeline.pl Bio::EnsEMBL::Pipeline::PipeConfig::FASTA_conf \
-	-pipeline_db -host=my-db-host -species celegans -force_species celegans \
-	-base_path /path/to/dumps -registry reg.pm
-</code></pre><h3 id="DumpingjustgenedatanoDNAorncRNA">Dumping just gene data (no DNA or ncRNA):</h3><pre><code>	init_pipeline.pl Bio::EnsEMBL::Pipeline::PipeConfig::FASTA_conf \
-	-pipeline_db -host=my-db-host -dump_type cdna \
-	-base_path /path/to/dumps -registry reg.pm
-</code></pre><h3 id="UsingadifferentSCPuseridentity">Using a different SCP user &amp; identity:</h3><pre><code>	init_pipeline.pl Bio::EnsEMBL::Pipeline::PipeConfig::FASTA_conf \
-	-pipeline_db -host=my-db-host -scp_user anotherusr -scp_identity /users/anotherusr/.pri/identity \
-	-base_path /path/to/dumps -registry reg.pm
-</code></pre><h2 id="RunningthePipeline">Running the Pipeline</h2><ol><li>Start a screen session or get ready to run the beekeeper with a <code>nohup</code></li><li>Choose a dump location<ul><li>A fasta, blast and blat directory will be created 1 level below</li></ul></li><li>Use an <code>init_pipeline.pl</code> configuration from above<ul><li>Make sure to give it the <code>-base_path</code> parameter</li></ul></li><li>Sync the database using one of the displayed from <code>init_pipeline.pl</code></li><li>Run the pipeline in a loop with a good sleep between submissions and redirect log output (the following assumes you are using <strong>bash</strong>)<ul><li><code>2&gt;&amp;1</code> is important as this clobbers STDERR into STDOUT</li><li><code>&gt; my_run.log</code> then sends the output to this file. Use <code>tail -f</code> to track the pipeline</li></ul></li><li><code>beekeeper.pl -url mysql://usr:pass@server:port/db -reg_conf reg.pm -loop -sleep 5 2&gt;&amp;1 &gt; my_run.log &amp;</code></li><li>Wait</li></ol><h2 id="ButIDontWantaPipeline">But I Don&#8217;t Want a Pipeline</h2><p>Hive gives us the ability to run any Process outside of a database pipeline <br/>run using <code>standaloneJob.pl</code>. We will list some useful commands to run</p><h3 id="RunningDNADumping">Running DNA Dumping</h3><pre><code>  standaloneJob.pl Bio::EnsEMBL::Pipeline::FASTA::DumpFile \
+<p>h1. FASTA Pipeline</p>
+
+<p>This is a re-implementation of an existing pipeline developed originally by core and the webteam. The new version uses eHive, so familiarity with this system is essential, and has been written to use as little memory as possible.</p>
+
+<p>h2. The Registry File</p>
+
+<p>This is the way we retrieve the database connections to work with. The registry file should specify:</p>
+
+<ul>
+<li>The core (and any other) databases to dump from</li>
+<li>A production database
+<em>* <em>species = multi</em>
+<em></em> <em>group = production</em>
+*</em> Used to find which species require new DNA</li>
+<li>A web database
+<em>* <em>species = multi</em>
+<em></em> <em>group = web</em>
+*</em> Used to name BLAT index files</li>
+</ul>
+
+<p>Here is an example of a file for v67 of Ensembl. Note the use of the Registry object within a registry file and the scoping of the package. If you omit the <em>-db_version</em> parameter and only use HEAD checkouts of Ensembl then this will automatically select the latest version of the API. Any change to version here must be reflected in the configuration file.</p>
+
+<p>bc. 
+    package Reg;
+    use Bio::EnsEMBL::Registry;
+    use Bio::EnsEMBL::DBSQL::DBAdaptor;
+    Bio::EnsEMBL::Registry->no_version_check(1);
+    Bio::EnsEMBL::Registry->no_cache_warnings(1);
+    {
+      my $version = 67;
+      Bio::EnsEMBL::Registry->load_registry_from_multiple_dbs(
+        {
+          -host => &#8220;mydb-1&#8221;,
+          -port => 3306,
+          -db_version => $version,
+          -user => &#8220;user&#8221;,
+          -NO_CACHE => 1,
+        },
+        { <br />
+          -host => &#8220;mydb-2&#8221;,
+          -port => 3306,
+          -db_version => $version,
+          -user => &#8220;user&#8221;,
+          -NO_CACHE => 1,
+        },
+      );
+      Bio::EnsEMBL::DBSQL::DBAdaptor->new(
+        -HOST => &#8216;mydb-2&#8217;,
+        -PORT => 3306,
+        -USER => &#8216;user&#8217;,
+        -DBNAME => &#8216;ensembl_website&#8217;,
+        -SPECIES => &#8216;multi&#8217;,
+        -GROUP => &#8216;web&#8217;
+      );
+      Bio::EnsEMBL::DBSQL::DBAdaptor->new(
+        -HOST => &#8216;mydb-2&#8217;,
+        -PORT => 3306,
+        -USER => &#8216;user&#8217;,
+        -DBNAME => &#8216;ensembl_production&#8217;,
+        -SPECIES => &#8216;multi&#8217;,
+        -GROUP => &#8216;production&#8217;
+      );
+    }
+    1;</p>
+
+<p>You give the registry to the <em>init_pipeline.pl</em> script via the <em>-registry</em> option</p>
+
+<p>h2. Overriding Defaults Using a New Config File </p>
+
+<p>We recommend if you have a number of parameters which do not change between releases to create a configuration file which inherits from the root config file e.g.</p>
+
+<p>bc. 
+    package MyCnf;
+    use base qw/Bio::EnsEMBL::Pipeline::FASTA::FASTA_conf/;
+    sub default_options {
+      my ($self) = @<em>;
+      return {
+        %{ $self->SUPER::default</em>options() },
+        #Override of options
+      };
+    }
+    1;</p>
+
+<p>If you do override the config then you should use the package name for your overridden config in the upcoming example commands.</p>
+
+<p>h2. Environment</p>
+
+<p>h3. PERL5LIB</p>
+
+<ul>
+<li>ensembl</li>
+<li>ensembl-hive</li>
+<li>bioperl</li>
+</ul>
+
+<p>h3. PATH</p>
+
+<ul>
+<li>ensembl-hive/scripts</li>
+<li>faToTwoBit (if not using a custom location)</li>
+<li>xdformat (if not using a custom location)</li>
+<li>sendmail (for emailing reports)</li>
+</ul>
+
+<p>h3. ENSEMBL_CVS_ROOT_DIR</p>
+
+<p>Set to the base checkout of Ensembl. We should be able to add <em>ensembl-hive/sql</em> onto this path to find the SQL directory for hive e.g.</p>
+
+<p>bc. 
+    export ENSEMBL_CVS_ROOT_DIR=$HOME/work/ensembl-checkouts</p>
+
+<p>h3. ENSADMIN_PSW</p>
+
+<p>Give the password to use to log into a database server e.g.</p>
+
+<p>bc. 
+    export ENSADMIN_PSW=wibble</p>
+
+<p>h2. Command Line Arguments</p>
+
+<p>Where <em>Multiple Supported</em> is supported we allow the user to specify the parameter more than once on the command line. For example species is one of these options e.g. </p>
+
+<p>bc. -species human -species cele -species yeast</p>
+
+<p>|<em>. Name |</em>.  Type|<em>. Multiple Supported|</em>.  Description|<em>. Default|</em>.  Required|
+|@-registry@|String|No|Location of the Ensembl registry to use with this pipeline|-|<em>YES</em>|
+|@-base_path@|String|No|Location of the dumps|-|<em>YES</em>|
+|@-pipeline_db -host=@|String|No|Specify a host for the hive database e.g. @-pipeline_db -host=myserver.mysql@|See hive generic config|<em>YES</em>|
+|@-pipeline_db -dbname=@|String|No|Specify a different database to use as the hive DB e.g. @-pipeline_db -dbname=my_dumps_test@|Uses pipeline name by default|<em>NO</em>|
+|@-ftp_dir@|String|No|Location of the current FTP directory with the previous release&#8217;s files. We will use this to copy DNA files from one release to another. If not given we do not do any reuse|-|<em>NO</em>|
+|@-run_all_@|Boolean|No|Ignores any kind of reuse an forces the dump of all DNAs|-|<em>NO</em>|
+|@-species@|String|Yes|Specify one or more species to process. Pipeline will only <em>consider</em> these species. Use <em>-force_species</em> if you want to force a species run|-|<em>NO</em>|
+|@-force_species@|String|Yes|Specify one or more species to force through the pipeline. This is useful to force a dump when you know reuse will not do the <em>&#8220;right thing&#8221;</em>|-|<em>NO</em>|
+|@-dump_types@|String|Yes|Specify each type of dump you want to produce. Supported values are <em>dna</em>, <em>cdna</em> and <em>ncrna</em>|All|<em>NO</em>|
+|@-db_types@|String|Yes|The database types to use. Supports the normal db adaptor groups e.g. <em>core</em>, <em>otherfeatures</em> etc.|core|<em>NO</em>|
+|@-process_logic_names@|String|Yes|Provide a set of logic names whose models should be dumped|-|<em>NO</em>|
+|@-skip_logic_names@|String|Yes|Provide a set of logic names to skip when creating dumps. These are evaluated <em>after</em> @-process_logic_names@|core|<em>NO</em>|
+|@-release@|Integer|No|The release to dump|Software version|<em>NO</em>|
+|@-previous_release@|Integer|No|The previous release to use. Used to calculate reuse|Software version minus 1|<em>NO</em>|
+|@-blast_servers@|String|Yes|The servers to copy blast indexes to|-|<em>NO</em>|
+|@-blast_genomic_dir@|String|No|Location to copy the DNA blast indexes to|-|<em>NO</em>|
+|@-blast_genes_dir@|String|No|Location to copy the DNA gene (cdna, ncrna and protein) indexes to|-|<em>NO</em>|
+|@-scp_user@|String|No|User to perform the SCP as. Defaults to the current user|Current user|<em>NO</em>|
+|@-scp_identity@|String|No|The SSH identity file to use when performing SCPs. Normally used in conjunction with <em>-scp_user</em>|-|<em>NO</em>|
+|@-no_scp@|Boolean|No|Skip SCP altogether|0|<em>NO</em>|
+|@-pipeline_name@|String|No|Name to use for the pipeline|fasta_dump_$release|<em>NO</em>|
+|@-wublast_exe@|String|No|Location of the WUBlast indexing binary|xdformat|<em>NO</em>|
+|@-blat_exe@|String|No|Location of the Blat indexing binary|faToTwoBit|<em>NO</em>|
+|@-port_offset@|Integer|No|The offset of the ports to use when generating blat indexes. This figure is added onto the web database species ID|30000|<em>NO</em>|
+|@-email@|String|No|Email to send pipeline summaries to upon its successful completion|$USER@sanger.ac.uk|<em>NO</em>|</p>
+
+<p>h2. Example Commands</p>
+
+<p>h3. To load use normally:</p>
+
+<p>bc. 
+    init_pipeline.pl Bio::EnsEMBL::Pipeline::PipeConfig::FASTA_conf \
+    -pipeline_db -host=my-db-host -base_path /path/to/dumps -registry reg.pm</p>
+
+<p>h3. Run a subset of species (no forcing &amp; supports registry aliases):</p>
+
+<p>bc. 
+    init_pipeline.pl Bio::EnsEMBL::Pipeline::PipeConfig::FASTA_conf \
+    -pipeline_db -host=my-db-host -species anolis -species celegans -species human \
+    -base_path /path/to/dumps -registry reg.pm</p>
+
+<p>h3. Specifying species to force (supports all registry aliases):</p>
+
+<p>bc. 
+    init_pipeline.pl Bio::EnsEMBL::Pipeline::PipeConfig::FASTA_conf \
+    -pipeline_db -host=my-db-host -force_species anolis -force_species celegans -force_species human \
+    -base_path /path/to/dumps -registry reg.pm</p>
+
+<p>h3. Running &amp; forcing a species:</p>
+
+<p>bc. 
+    init_pipeline.pl Bio::EnsEMBL::Pipeline::PipeConfig::FASTA_conf \
+    -pipeline_db -host=my-db-host -species celegans -force_species celegans \
+    -base_path /path/to/dumps -registry reg.pm</p>
+
+<p>h3. Running everything:</p>
+
+<p>bc.
+     init_pipeline.pl Bio::EnsEMBL::Pipeline::PipeConfig::FASTA_conf \
+     -pipeline_db -host=my-db-host -run_all 1 \
+     -base_path /path/to/dumps -registry reg.pm</p>
+
+<p>h3. Dumping just gene data (no DNA or ncRNA):</p>
+
+<p>bc. 
+    init_pipeline.pl Bio::EnsEMBL::Pipeline::PipeConfig::FASTA_conf \
+    -pipeline_db -host=my-db-host -dump_type cdna \
+    -base_path /path/to/dumps -registry reg.pm</p>
+
+<p>h3. Using a different SCP user &amp; identity:</p>
+
+<p>bc. 
+    init_pipeline.pl Bio::EnsEMBL::Pipeline::PipeConfig::FASTA_conf \
+    -pipeline_db -host=my-db-host -scp_user anotherusr -scp_identity /users/anotherusr/.pri/identity \
+    -base_path /path/to/dumps -registry reg.pm</p>
+
+<p>h2. Running the Pipeline</p>
+
+<h1 id="start_a_screen_session_or_get_ready_to_run_the_beekeeper_with_a_nohup">Start a screen session or get ready to run the beekeeper with a @nohup@</h1>
+
+<h1 id="choose_a_dump_location">Choose a dump location</h1>
+
+<h1 id="_a_fasta_blast_and_blat_directory_will_be_created_1_level_below">* A fasta, blast and blat directory will be created 1 level below</h1>
+
+<h1 id="use_an_init_pipelinepl_configuration_from_above">Use an @init_pipeline.pl@ configuration from above</h1>
+
+<h1 id="_make_sure_to_give_it_the_base_path_parameter">* Make sure to give it the @-base_path@ parameter</h1>
+
+<h1 id="sync_the_database_using_one_of_the_displayed_from_init_pipelinepl">Sync the database using one of the displayed from @init_pipeline.pl@</h1>
+
+<h1 id="run_the_pipeline_in_a_loop_with_a_good_sleep_between_submissions_and_redirect_log_output_the_following_assumes_you_are_using_bash">Run the pipeline in a loop with a good sleep between submissions and redirect log output (the following assumes you are using <em>bash</em>)</h1>
+
+<h1 id="_21_is_important_as_this_clobbers_stderr_into_stdout">* @2>&amp;1@ is important as this clobbers STDERR into STDOUT</h1>
+
+<h1 id="_my_runlog_then_sends_the_output_to_this_file_use_tail_f_to_track_the_pipeline">* @> my_run.log@ then sends the output to this file. Use @tail -f@ to track the pipeline</h1>
+
+<h1 id="beekeeperpl_url_mysql_usrpassserverport_db_reg_conf_regpm_loop_sleep_5_21_my_runlog_">@beekeeper.pl -url mysql://usr:pass@server:port/db -reg_conf reg.pm -loop -sleep 5 2>&amp;1 > my_run.log &amp;@</h1>
+
+<h1 id="wait">Wait</h1>
+
+<p>h2. But I Don&#8217;t Want a Pipeline</p>
+
+<p>Hive gives us the ability to run any Process outside of a database pipeline 
+run using @standaloneJob.pl@. We will list some useful commands to run</p>
+
+<p>h3. Running DNA Dumping</p>
+
+<p>bc. 
+  standaloneJob.pl Bio::EnsEMBL::Pipeline::FASTA::DumpFile \
   -reg_conf reg.pm -debug 2 \
-  -release 67 -species homo_sapiens -sequence_type_list '["dna"]' \
-  -base_path /path/to/dumps
-</code></pre><h3 id="RunningGeneDumping">Running Gene Dumping</h3><pre><code>  standaloneJob.pl Bio::EnsEMBL::Pipeline::FASTA::DumpFile \
+  -release 67 -species homo_sapiens -sequence_type_list &#8216;[&#8220;dna&#8221;]&#8217; \
+  -base_path /path/to/dumps</p>
+
+<p>h3. Running Gene Dumping</p>
+
+<p>bc. 
+  standaloneJob.pl Bio::EnsEMBL::Pipeline::FASTA::DumpFile \
   -reg_conf reg.pm -debug 2 \
-  -release 67 -species homo_sapiens -sequence_type_list '["cdna"]' \
-  -base_path /path/to/dumps
-</code></pre><h3 id="RunningGeneDumping2">Running Gene Dumping</h3><pre><code>  standaloneJob.pl Bio::EnsEMBL::Pipeline::FASTA::DumpFile \
+  -release 67 -species homo_sapiens -sequence_type_list &#8216;[&#8220;cdna&#8221;]&#8217; \
+  -base_path /path/to/dumps</p>
+
+<p>h3. Running Gene Dumping</p>
+
+<p>bc. 
+  standaloneJob.pl Bio::EnsEMBL::Pipeline::FASTA::DumpFile \
   -reg_conf reg.pm -debug 2 \
-  -release 67 -species homo_sapiens -sequence_type_list '["ncrna"]' \
-  -base_path /path/to/dumps
-</code></pre></body></html>
+  -release 67 -species homo_sapiens -sequence_type_list &#8216;[&#8220;ncrna&#8221;]&#8217; \
+  -base_path /path/to/dumps</p>

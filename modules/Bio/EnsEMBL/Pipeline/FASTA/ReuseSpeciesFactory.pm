@@ -39,6 +39,8 @@ Allowed parameters are:
 =item force_species - Specify species we want to redump even though 
                       our queries of production could say otherwise
 
+=item run_all - Do not check a thing. Override and run every dump
+
 =back
 
 The registry should also have a DBAdaptor for the production schema 
@@ -70,6 +72,7 @@ sub param_defaults {
     %{$self->SUPER::param_defaults()},
     
     force_species => [],
+    force_all_species => 1,
   };
   return $p;
 }
@@ -150,6 +153,7 @@ SQL
 
 sub force_run {
   my ($self, $dba) = @_;
+  return 1 if $self->param('run_all');
   my $new = Bio::EnsEMBL::Registry->get_alias($dba->species());
   return ($self->param('force_species_lookup')->{$new}) ? 1 : 0;
 }

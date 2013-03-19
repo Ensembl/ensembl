@@ -22,21 +22,33 @@ sub default_options {
         ### Optional overrides        
         ftp_dir => '',
 
+        # Species to run; use this to restrict to subset of species but be aware you
+        # are still open to the reuse checks. If you do not want this then use
+        # force_species
         species => [],
         
+        # The types to emit
         dump_types => [],
         
+        # The databases to emit (defaults to core)
         db_types => [],
         
+        # Specify species you really need to get running
         force_species => [],
         
+        # Only process these logic names
         process_logic_names => [],
         
+        # As above but switched around. Do not process these names
         skip_logic_names => [],
         
+        # The release of the data
         release => software_version(),
         
+        # The previous release; override if running on something different
         previous_release => (software_version() - 1),
+        
+        force_all_species => 0, #always run every species
         
         ### SCP code
         
@@ -53,6 +65,7 @@ sub default_options {
         pipeline_name => 'fasta_dump_'.$self->o('release'),
         
         wublast_exe => 'xdformat',
+        ncbiblast_exe => 'makeblastdb',
         blat_exe => 'faToTwoBit',
         port_offset => 30000,
         
@@ -82,6 +95,7 @@ sub pipeline_analyses {
           sequence_type_list => $self->o('dump_types'),
           ftp_dir => $self->o('ftp_dir'),
           force_species => $self->o('force_species'),
+          run_all => $self->o('run_all'),
         },
         -input_ids  => [ {} ],
         -flow_into  => {
