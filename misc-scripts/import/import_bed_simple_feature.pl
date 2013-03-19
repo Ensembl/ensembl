@@ -129,20 +129,21 @@ sub _store {
 
 sub line_to_SimpleFeature {
   my ($line, $analysis, $dba) = @_;
-  my ($chr, $start, $end, $label, $score, $strand) = split(/\t/, $line);
+  my ($chr, $start, $end, $label, $score, $ucsc_strand) = split(/\t/, $line);
   $start++; # UCSC is 0 idx start
-  $score ||= 0;
-  $strand ||= 1;
+  #if was defined & -ve then set as so. +ve is default
+  my $strand = (defined $ucsc_strand && $strand eq '-') ? -1 : 1;
   my $slice = get_Slice($chr, $dba);
-  my $sf = Bio::EnsEMBL::SimpleFeature->new(
-      -start => $start,
-      -end => $end,
-      -score => $score,
-      -analysis => $analysis,
-      -slice => $slice,
-      -strand => $strand,
-      -display_label => $label,
+  my %args = (
+    -start => $start,
+    -end => $end,
+    -analysis => $analysis,
+    -slice => $slice,
+    -strand => $strand,
+    -display_label => $label,
   );
+  $args{-SCORE} = $score if defined $score; # only add score if it was there
+  my $sf = Bio::EnsEMBL::SimpleFeature->new(%args);
   return $sf;
 }
 
