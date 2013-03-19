@@ -68,7 +68,7 @@ sub fetch_input {
   $assembly = join(q{.}, @split_name);
   
   my $molecule = ( $type =~ /na/ ) ? 'dna' : 'pep'; # if it has an na in there then it's DNA
-  my $blast_type = ($type =~ /dna/ ) ? 'genomic' : 'genes'; # if it was DNA then it's genomic
+  my $blast_type = ($type =~ /dna/ && $type ne 'cdna' ) ? 'genomic' : 'genes'; # if it was DNA then it's genomic
   
   $self->param('species', lc($species));
   $self->param('molecule', $molecule);
