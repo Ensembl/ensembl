@@ -241,6 +241,15 @@ sub assert_executable {
   return 1;
 }
 
+# Runs the given command and returns a list of exit code and output
+sub run_cmd {
+  my ($self, $cmd) = @_;
+  $self->info('About to run "%s"', $cmd);
+  my $output = `$cmd 2>&1`;
+  my $rc = $? >> 8;
+  $self->throw("Cannot run program '$cmd'. Return code was ${rc}. Program output was $output") if $rc;
+  return ($rc, $output);
+}
 
 ## Production database adaptor
 sub get_production_DBAdaptor {

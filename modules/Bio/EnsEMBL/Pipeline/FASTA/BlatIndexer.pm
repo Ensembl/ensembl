@@ -113,10 +113,7 @@ sub index_file {
   my $cmd = sprintf(q{%s %s %s}, 
     $self->param('program'), $file, $target_file);
   
-  $self->info('About to run "%s"', $cmd);
-  my $output = `$cmd 2>&1`;
-  my $rc = $? >> 8;
-  throw "Cannot run program '$cmd'. Return code was ${rc}. Program output was $output" if $rc;
+  $self->run_cmd($cmd);
   unlink $file or throw "Cannot remove the file '$file' from the filesystem: $!";
   
   #Check the file size. If it's 16 bytes then reject as that is an empty file for 2bit

@@ -20,21 +20,37 @@
 
 =head1 NAME
 
-Bio::EnsEMBL::Pipeline::FASTA::WuBlastIndexer
+Bio::EnsEMBL::Pipeline::FASTA::NcbiBlastIndexer
 
 =head1 DESCRIPTION
 
-Creates WUBlast indexes of the given GZipped file. The resulting index
-is created under the parameter location I<base_path> in blast and then in a
+Creates NCBI Blast indexes of the given GZipped file. The resulting index
+is created under the parameter location I<base_path> in ncbi_blast and then in a
 directory defined by the type of dump. The type of dump also changes the file
 name generated. Genomic dumps have their release number replaced with the
 last repeat masked date. 
 
-See Bio::EnsEMBL::Pipeline::FASTA::BlastIndexer for the allowed parameters.
+Allowed parameters are:
+
+=over 8
+
+=item file - The file to index
+
+=item program - The location of the xdformat program
+
+=item molecule - The type of molecule to index. I<dna> and I<pep> are allowed
+
+=item type - Type of index we are creating. I<genomic> and I<genes> are allowed
+
+=item base_path - The base of the dumps
+
+=item release - Required for correct DB naming
+
+=back
 
 =cut
 
-package Bio::EnsEMBL::Pipeline::FASTA::WuBlastIndexer;
+package Bio::EnsEMBL::Pipeline::FASTA::NcbiBlastIndexer;
 
 use strict;
 use warnings;
@@ -43,24 +59,21 @@ use base qw/Bio::EnsEMBL::Pipeline::FASTA::BlastIndexer/;
 sub param_defaults {
   my ($self) = @_;
   return {
-    program => 'xdformat',
-    blast_dir => 'blast',
+    program => 'makeblastdb',
+    blast_dir => 'ncbi_blast',
   };
 }
 
 sub index_file {
   my ($self, $file) = @_;
-  my $molecule_arg = ($self->param('molecule') eq 'dna') ? '-n' : '-p' ;
-  my $silence = ($self->debug()) ? 0 : 1;
+  my $molecule_arg = ($self->param('molecule') eq 'dna') ? 'nucl' : 'prot' ;
   my $target_dir = $self->target_dir();
   my $target_file = $self->target_file($file);
   my $db_title = $self->db_title($file);
-  my $date = $self->db_date();
   
-  my $cmd = sprintf(q{cd %s && %s %s -q%d -I -t %s -d %s -o %s %s }, 
-    $target_dir, $self->param('program'), $molecule_arg, $silence, $db_title, $date, $target_file, $file);
-  
-  $self->run_cmd($cmd);
+  my $cmd = sprintf(q{cd %s && %s -in %s -out %s -dbtype %s -title %s -input_type fasta}, 
+    $target_dir, $self->param('program'), $file, $target_file, $molecule_arg, $db_title);
+  $self->run_cmd($cmd);  
   unlink $file or $self->throw("Cannot remove the file '$file' from the filesystem: $!");
   $self->param('index_base', $target_file);
   return;
