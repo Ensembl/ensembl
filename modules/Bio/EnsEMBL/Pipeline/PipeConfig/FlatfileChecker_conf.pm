@@ -62,7 +62,7 @@ sub pipeline_wide_parameters {
   my ($self) = @_;
   return {
     %{ $self->SUPER::pipeline_wide_parameters() },
-    format => $self->o('type'),
+    type => $self->o('type'),
   };
 }
 
