@@ -8,7 +8,7 @@ use base ('Bio::EnsEMBL::Hive::PipeConfig::HiveGeneric_conf');
 sub default_options {
     my ($self) = @_;
     
-    return {
+    my $h = {
       # inherit other stuff from the base class
       %{ $self->SUPER::default_options() }, 
       
@@ -17,12 +17,11 @@ sub default_options {
       
       ### Defaults 
       
-      pipeline_name => 'flatfile_dump_check_'.$self->o('format'),
+      pipeline_name => 'flatfile_dump_check_'.$self->o('type'),
       
-      pipeline_db => {
-        -driver => 'sqlite',
-      }
     };
+    $h->{pipeline_db}->{-driver} = 'sqlite';
+    return $h;
 }
 
 sub pipeline_create_commands {
