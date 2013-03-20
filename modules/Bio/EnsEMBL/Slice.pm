@@ -1849,20 +1849,20 @@ sub get_all_somatic_VariationFeatures_by_source {
 }
 
 
-=head2 get_all_VariationFeatures_with_annotation
+=head2 get_all_VariationFeatures_with_phenotype
 
     Arg [1]     : $variation_feature_source [optional]
-    Arg [2]     : $annotation_source [optional]
-    Arg [3]     : $annotation_name [optional]
+    Arg [2]     : $phenotype_source [optional]
+    Arg [3]     : $phenotype_name [optional]
     Description : returns all germline variation features on this slice associated with a phenotype.
                   This function will only work correctly if the variation database has been
                   attached to the core database.
                   If $variation_feature_source is set only variations from that source
                   are retrieved.
-                  If $annotation_source is set only variations whose annotations come from
+                  If $phenotype_source is set only variations whose annotations come from
                   $annotation_source will be retrieved.
-                  If $annotation_name is set only variations with that annotation will be retrieved.
-                  $annotation_name can be a phenotype's internal dbID.
+                  If $phenotype_name is set only variations with that annotation will be retrieved.
+                  $phenotype_name can be a phenotype's internal dbID.
     ReturnType  : listref of Bio::EnsEMBL::Variation::VariationFeature
     Exceptions  : none
     Caller      : contigview, snpview
@@ -1870,41 +1870,41 @@ sub get_all_somatic_VariationFeatures_by_source {
 
 =cut
 
-sub get_all_VariationFeatures_with_annotation{
+sub get_all_VariationFeatures_with_phenotype {
   my $self = shift;
   my $source = shift;
   my $p_source = shift;
-  my $annotation = shift;
+  my $phenotype = shift;
 
   if (my $vf_adaptor = $self->_get_VariationFeatureAdaptor) {
-    return $vf_adaptor->fetch_all_with_annotation_by_Slice($self, $source, $p_source, $annotation);
+    return $vf_adaptor->fetch_all_with_phenotype_by_Slice($self, $source, $p_source, $phenotype);
   }
   else {
     return [];
   }
 }
 
-=head2 get_all_somatic_VariationFeatures_with_annotation
+=head2 get_all_somatic_VariationFeatures_with_phenotype
 
     Arg [1]     : $variation_feature_source [optional]
-    Arg [2]     : $annotation_source [optional]
-    Arg [3]     : $annotation_name [optional]
+    Arg [2]     : $phenotype_source [optional]
+    Arg [3]     : $phenotype_name [optional]
     Description : returns all somatic variation features on this slice associated with a phenotype.
-                  (see get_all_VariationFeatures_with_annotation for further documentation)
+                  (see get_all_VariationFeatures_with_phenotype for further documentation)
     ReturnType  : listref of Bio::EnsEMBL::Variation::VariationFeature
     Exceptions  : none
     Status      : Stable
 
 =cut
 
-sub get_all_somatic_VariationFeatures_with_annotation{
+sub get_all_somatic_VariationFeatures_with_phenotype{
   my $self = shift;
   my $source = shift;
   my $p_source = shift;
-  my $annotation = shift;
+  my $phenotype = shift;
 
   if (my $vf_adaptor = $self->_get_VariationFeatureAdaptor) {
-    return $vf_adaptor->fetch_all_somatic_with_annotation_by_Slice($self, $source, $p_source, $annotation);
+    return $vf_adaptor->fetch_all_somatic_with_phenotype_by_Slice($self, $source, $p_source, $phenotype);
   }
   else {
     return [] unless $vf_adaptor;
@@ -2215,6 +2215,42 @@ sub get_all_VariationFeatures_by_Population {
   }
 }
 
+
+=head2 get_all_PhenotypeFeatures
+    Args        : string $type [optional]
+    Description : Returns all phenotype features on this slice. This function will 
+                  only work correctly if the variation database has been attached to the core 
+                  database.
+                  If $type is specified, only phenotypes annotated on the given
+                  object type will be returned
+    ReturnType  : listref of Bio::EnsEMBL::Variation::PhenotypeFeature
+    Exceptions  : none
+    Caller      : web
+    Status      : Stable
+
+=cut
+
+sub get_all_PhenotypeFeatures {
+  my $self = shift;
+  my $type = shift;
+  
+  if(!$self->adaptor()) {
+    warning('Cannot get phenotype features without attached adaptor');
+    return undef;
+  }
+  
+  my $pf_adaptor = Bio::EnsEMBL::DBSQL::MergedAdaptor->new(
+    -species  => $self->adaptor()->db()->species, 
+    -type     => "PhenotypeFeature"
+  );
+  
+  if(defined($type)) {
+    return $pf_adaptor->fetch_all_by_Slice_type($self, $type);
+  }
+  else {
+    return $pf_adaptor->fetch_all_by_Slice($self);
+  }
+}
 
 
 
