@@ -137,14 +137,13 @@ join changelog_species cs using (changelog_id)
 join species s using (species_id)
 where c.release_id = ?
 and (c.assembly = ? or c.repeat_masking = ?)
-and c.team IN (?,?)
 and c.status = ?
 and s.production_name = ?
 SQL
   my $production_name  = $dba->get_MetaContainer()->get_production_name();
   $dba->dbc()->disconnect_if_idle();
   my $release = $self->param('release');
-  my $params = [ $release, 'Y', 'Y', 'Genebuild', 'EnsemblGenomes', 'handed_over', $production_name ];
+  my $params = [ $release, 'Y', 'Y', 'handed_over', $production_name ];
   my $prod_dba = $self->get_production_DBAdaptor();
   my $result = $prod_dba->dbc()->sql_helper()->execute_single_result(-SQL => $sql, -PARAMS => $params);
   $prod_dba->dbc()->disconnect_if_idle();
