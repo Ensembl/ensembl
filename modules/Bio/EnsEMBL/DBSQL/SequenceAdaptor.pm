@@ -39,7 +39,7 @@ An adaptor for the retrieval of DNA sequence from the EnsEMBL database
 
 package Bio::EnsEMBL::DBSQL::SequenceAdaptor;
 
-# use vars qw(@ISA @EXPORT);
+use vars qw(@ISA @EXPORT);
 use strict;
 use warnings;
 
@@ -49,14 +49,13 @@ use Bio::EnsEMBL::Utils::Sequence  qw(reverse_comp);
 use Bio::EnsEMBL::Utils::Cache;
 use Bio::EnsEMBL::Utils::Scalar qw( assert_ref );
 
-# @ISA = qw(Bio::EnsEMBL::DBSQL::BaseAdaptor Bio::EnsEMBL::DBSQL::BaseSequenceAdaptor);
-use base qw(Bio::EnsEMBL::DBSQL::BaseAdaptor Bio::EnsEMBL::DBSQL::BaseSequenceAdaptor);
-# 
-# our $SEQ_CHUNK_PWR   = 18; # 2^18 = approx. 250KB
-# our $SEQ_CACHE_SZ    = 5;
-# our $SEQ_CACHE_MAX   = (2 ** $SEQ_CHUNK_PWR) * $SEQ_CACHE_SZ;
+@ISA = qw(Bio::EnsEMBL::DBSQL::BaseAdaptor);
 
-our @EXPORT = (@{$DBI::EXPORT_TAGS{'sql_types'}});
+our $SEQ_CHUNK_PWR   = 18; # 2^18 = approx. 250KB
+our $SEQ_CACHE_SZ    = 5;
+our $SEQ_CACHE_MAX   = (2 ** $SEQ_CHUNK_PWR) * $SEQ_CACHE_SZ;
+
+@EXPORT = (@{$DBI::EXPORT_TAGS{'sql_types'}});
 
 =head2 new
 
@@ -73,15 +72,16 @@ our @EXPORT = (@{$DBI::EXPORT_TAGS{'sql_types'}});
 
 sub new {
   my $caller = shift;
-  my $class = ref($caller) || $caller;
-  my $self = $class->SUPER::new(@_);
-  $self->_init_seq_instance();
 
-  # # use an LRU cache to limit the size
-  # my %seq_cache;
-  # tie(%seq_cache, 'Bio::EnsEMBL::Utils::Cache', $SEQ_CACHE_SZ);
-  # 
-  # $self->{'seq_cache'} = \%seq_cache;
+  my $class = ref($caller) || $caller;
+
+  my $self = $class->SUPER::new(@_);
+
+  # use an LRU cache to limit the size
+  my %seq_cache;
+  tie(%seq_cache, 'Bio::EnsEMBL::Utils::Cache', $SEQ_CACHE_SZ);
+
+  $self->{'seq_cache'} = \%seq_cache;
 
 
 #
@@ -107,22 +107,22 @@ sub new {
   
   return $self;
 }
-# 
-# =head2 clear_cache
-# 
-#   Example     : $sa->clear_cache();
-#   Description : Removes all entries from the associcated sequence cache
-#   Returntype  : None
-#   Exceptions  : None
-# 
-# =cut
-# 
-# sub clear_cache {
-#   my ($self) = @_;
-#   %{$self->{seq_cache}} = ();
-#   return;
-# }
-# 
+
+=head2 clear_cache
+
+  Example			: $sa->clear_cache();
+  Description	: Removes all entries from the associcated sequence cache
+  Returntype 	: None
+  Exceptions 	: None
+
+=cut
+
+sub clear_cache {
+  my ($self) = @_;
+  %{$self->{seq_cache}} = ();
+  return;
+}
+
 
 =head2 fetch_by_Slice_start_end_strand
 
@@ -442,7 +442,7 @@ sub _rna_edit {
   return;
 }
 
-=cut
+
 sub _fetch_seq {
   my $self          = shift;
   my $seq_region_id = shift;
@@ -518,21 +518,6 @@ sub _fetch_seq {
 
     return \$tmp_seq;
   }
-}
-=cut
-sub _fetch_raw_seq {
-  my ($self, $id, $start, $length) = @_;
-  my $sql = <<'SQL';
-SELECT UPPER(SUBSTRING(d.sequence, ?, ?))
-FROM dna d
-WHERE d.seq_region_id =?
-SQL
-  my $seq = $self->dbc()->sql_helper()->execute_single_result(
-    -SQL => $sql, 
-    -PARAMS => [[$start, SQL_INTEGER], [$length, SQL_INTEGER], [$id, SQL_INTEGER]],
-    -NO_ERROR => 1
-  );
-  return \$seq;
 }
 
 
