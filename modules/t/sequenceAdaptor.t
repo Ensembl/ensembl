@@ -30,6 +30,10 @@ my $seq_adaptor = $db->get_SequenceAdaptor();
 my $slice = $slice_adaptor->fetch_by_region('chromosome', $CHR, $START, $END);
 compare_compliments($slice, $seq_adaptor);
 
+#Bigger than 1Mb
+$slice = $slice_adaptor->fetch_by_region('chromosome', $CHR, $START, $START+2_000_000);
+compare_compliments($slice, $seq_adaptor);
+
 $slice = $slice_adaptor->fetch_by_region('clone','AL031658.11');
 compare_compliments($slice, $seq_adaptor);
 
@@ -47,20 +51,20 @@ sub compare_compliments {
   my $seq = ${$seq_adaptor->fetch_by_Slice_start_end_strand($slice,1,undef,1)};
 
   debug('FORWARD STRAND SLICE SEQ for ' . $slice->name());
-  debug($seq);
+  debug($slice->length);
 
   my $invert_seq = 
     ${$seq_adaptor->fetch_by_Slice_start_end_strand($slice->invert,1,undef,1)};
 
   debug('REVERSE STRAND SLICE SEQ for ' . $slice->name());
-  debug($invert_seq);
+  
 
-  ok(length($seq) == $slice->length); #sequence is correct length
+  is(length($seq), $slice->length, 'sequence is correct length');
 
   $seq = reverse $seq;  #reverse complement seq
   $seq =~ tr/ACTG/TGAC/;
 
-  ok($seq eq $invert_seq); #revcom same as seq on inverted slice
+  ok($seq eq $invert_seq, 'revcom same as seq on inverted slice');
 }
 
 done_testing();

@@ -39,7 +39,7 @@ Allowed parameters are:
 =item force_species - Specify species we want to redump even though 
                       our queries of production could say otherwise
 
-=item run_all - Do not check a thing. Override and run every dump
+=item run_all - Do not check a thing. Schedule every species
 
 =back
 
@@ -72,7 +72,7 @@ sub param_defaults {
     %{$self->SUPER::param_defaults()},
     
     force_species => [],
-    force_all_species => 1,
+    run_all => 1,
   };
   return $p;
 }
@@ -91,16 +91,6 @@ sub fetch_input {
   }
   $self->param('force_species_lookup', \%force_species_lookup);
   
-  return;
-}
-
-#Allows a user to use '-force_species human' rather than '-force_species human -species human'
-sub _add_force_species_to_species {
-  my ($self) = @_;
-  my $force_species = $self->param('force_species');
-  my $species = $self->param('species');
-  my %final_species = map { $_ => 1 } (@{$force_species}, @{$species});
-  $self->param('species', [keys %final_species]);
   return;
 }
 
