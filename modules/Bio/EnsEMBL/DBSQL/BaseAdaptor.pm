@@ -835,6 +835,7 @@ sub _no_id_cache {
                   in order to trigger the _build_id_cache at first query.                  
     Example     : $adaptor->ignore_cache_override(1);              
     Returntype  : Boolean
+
 =cut
 
 sub ignore_cache_override {
