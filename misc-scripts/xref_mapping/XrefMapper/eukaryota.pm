@@ -185,7 +185,7 @@ sub set_source_id_to_external_name {
 	elsif($name =~ /notransfer$/){
 	}
 	else{
-	    die "ERROR: Could not find $name in external_db table please add this too continue";
+	    die "ERROR: Could not find a display_name for $name in external_db table please add this to continue";
 	}
     }
     
