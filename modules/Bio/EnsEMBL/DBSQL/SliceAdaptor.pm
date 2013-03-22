@@ -466,6 +466,10 @@ sub fetch_by_region {
                 Suppress warnings from this method
   Arg[3]      : boolean $no_fuzz
                 Stop fuzzy matching of sequence regions from occuring
+  Arg[4]      : boolean $ucsc
+                If we are unsuccessful at retriving a location retry taking any 
+                possible chr prefix into account e.g. chrX and X are treated as
+                equivalents
   Example     : my $slice = $sa->fetch_by_toplevel_location('X:1-10000')
                 my $slice = $sa->fetch_by_toplevel_location('X:1-10000:-1')
   Description : Converts an Ensembl location/region into the sequence region
@@ -482,8 +486,8 @@ sub fetch_by_region {
 =cut
 
 sub fetch_by_toplevel_location {
-  my ($self, $location, $no_warnings, $no_fuzz) = @_;
-  return $self->fetch_by_location($location, 'toplevel', undef, $no_warnings, $no_fuzz);
+  my ($self, $location, $no_warnings, $no_fuzz, $ucsc) = @_;
+  return $self->fetch_by_location($location, 'toplevel', undef, $no_warnings, $no_fuzz, $ucsc);
 }
 
 =head2 fetch_by_location
@@ -495,7 +499,7 @@ sub fetch_by_toplevel_location {
                 specification as a +/- or 1/-1. 
                 
                 Location names must be separated by a C<:>. All others can be
-                separated by C<..>, C<:> or C<->.
+                separated by C<..>, C<:>, C<_> or C<->.
   Arg[2]      : String $coord_system_name
                 The coordinate system to retrieve
   Arg[3]      : String $coord_system_version
@@ -504,6 +508,10 @@ sub fetch_by_toplevel_location {
                 Suppress warnings from this method
   Arg[5]      : boolean $no_fuzz
                 Stop fuzzy matching of sequence regions from occuring
+  Arg[6]      : boolean $ucsc
+                If we are unsuccessful at retriving a location retry taking any 
+                possible chr prefix into account e.g. chrX and X are treated as
+                equivalents
   Example     : my $slice = $sa->fetch_by_toplevel_location('X:1-10000')
                 my $slice = $sa->fetch_by_toplevel_location('X:1-10000:-1')
   Description : Converts an Ensembl location/region into the sequence region
@@ -520,7 +528,7 @@ sub fetch_by_toplevel_location {
 =cut
 
 sub fetch_by_location {
-  my ($self, $location, $coord_system_name, $coord_system_version, $no_warnings, $no_fuzz) = @_;
+  my ($self, $location, $coord_system_name, $coord_system_version, $no_warnings, $no_fuzz, $ucsc) = @_;
   
   throw "No coordinate system name specified" unless $coord_system_name;
   
@@ -535,7 +543,22 @@ sub fetch_by_location {
   }
   
   my $slice = $self->fetch_by_region($coord_system_name, $seq_region_name, $start, $end, $strand, $coord_system_version, $no_fuzz);
-  return unless $slice;
+  if(! defined $slice) {
+    if($ucsc) {
+      my $ucsc_seq_region_name = $seq_region_name;
+      $ucsc_seq_region_name =~ s/^chr//;
+      if($ucsc_seq_region_name ne $seq_region_name) {
+        $slice = $self->fetch_by_region($coord_system_name, $ucsc_seq_region_name,  $start, $end, $strand, $coord_system_version, $no_fuzz);
+        return if ! defined $slice; #if we had no slice still then bail
+      }
+      else {
+        return; #If it was not different then we didn't have the prefix so just return (same bail as before)
+      }
+    }
+    else {
+      return; #We didn't have a slice and no UCSC specifics are being triggered
+    }
+  }
   
   my $srl = $slice->seq_region_length();
   my $name = $slice->seq_region_name();
@@ -559,7 +582,7 @@ sub fetch_by_location {
                 specification as a +/- or 1/-1. 
                 
                 Location names must be separated by a C<:>. All others can be
-                separated by C<..>, C<:> or C<->.
+                separated by C<..>, C<:> C<_>, or C<->.
   Arg[2]      : boolean $no_warnings
                 Suppress warnings from this method
   Arg[3]      : boolean $no_errors
@@ -577,10 +600,10 @@ sub parse_location_to_values {
   
   throw 'You must specify a location' if ! $location;
   
-  #cleanup any nomenclature like 1_000 or 1 000 or 1,000
-  my $number_seps_regex = qr/\s+|,|_/;
-  my $separator_regex = qr/(?:-|[.]{2}|\:)?/;
-  my $number_regex = qr/[0-9,_ E]+/xms;
+  #cleanup any nomenclature like 1 000 or 1,000
+  my $number_seps_regex = qr/\s+|,/;
+  my $separator_regex = qr/(?:-|[.]{2}|\:|_)?/;
+  my $number_regex = qr/[0-9, E]+/xms;
   my $strand_regex = qr/[+-1]|-1/xms;
   
   my $regex = qr/^((?:\w|\.|_|-)+) \s* :? \s* ($number_regex)? $separator_regex ($number_regex)? $separator_regex ($strand_regex)? $/xms;

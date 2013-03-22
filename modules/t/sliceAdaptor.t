@@ -475,14 +475,32 @@ test_toplevel_location('1:100', 'chromosome', '1', 100, 246874334);
 test_toplevel_location('1:', 'chromosome', '1', 1, 246874334);
 test_toplevel_location('1', 'chromosome', '1', 1, 246874334);
 
+test_toplevel_location('1:1_1000', 'chromosome', '1', 1, 1000);
+test_toplevel_location('1:1_', 'chromosome', '1', 1, 246874334);
+test_toplevel_location('1:_10', 'chromosome', '1', 1, 10);
+test_toplevel_location('1:100', 'chromosome', '1', 100, 246874334);
+test_toplevel_location('1:', 'chromosome', '1', 1, 246874334);
+test_toplevel_location('1', 'chromosome', '1', 1, 246874334);
+
 test_toplevel_location('1: 1-1,000', 'chromosome', '1', 1, 1000);
 test_toplevel_location('1: 1-1,000,000', 'chromosome', '1', 1, 1000000);
 test_toplevel_location('1: 1-1 000 000', 'chromosome', '1', 1, 1000000);
 test_toplevel_location('1: 1', 'chromosome', '1', 1, 246874334);
 test_toplevel_location('1: -10', 'chromosome', '1', 1, 10);
 test_toplevel_location('1: 100', 'chromosome', '1', 100, 246874334);
-test_toplevel_location('1:100..2_000_000_000', 'chromosome', '1', 100, 246874334);
+test_toplevel_location('1:100..2000000000', 'chromosome', '1', 100, 246874334);
 test_toplevel_location('1:100..2E9', 'chromosome', '1', 100, 246874334);
+
+# Try chr
+my $ucsc = 1;
+test_toplevel_location('chr1: 1-1,000', 'chromosome', '1', 1, 1000, 1, $ucsc);
+test_toplevel_location('chr1: 1-1,000,000', 'chromosome', '1', 1, 1000000, 1, $ucsc);
+test_toplevel_location('chr1: 1-1 000 000', 'chromosome', '1', 1, 1000000, 1, $ucsc);
+test_toplevel_location('chr1: 1', 'chromosome', '1', 1, 246874334, 1, $ucsc);
+test_toplevel_location('chr1: -10', 'chromosome', '1', 1, 10, 1, $ucsc);
+test_toplevel_location('chr1: 100', 'chromosome', '1', 100, 246874334, 1, $ucsc);
+test_toplevel_location('chr1:100..2000000000', 'chromosome', '1', 100, 246874334, 1, $ucsc);
+test_toplevel_location('chr1:100..2E9', 'chromosome', '1', 100, 246874334, 1, $ucsc);
 
 #Try strands
 test_toplevel_location('1:1-1000:1', 'chromosome', '1', 1, 1000, 1);
@@ -494,7 +512,7 @@ test_toplevel_location('1:1-1000--1', 'chromosome', '1', 1, 1000, -1);
 
 dies_ok { $slice_adaptor->fetch_by_toplevel_location(); } 'Checking calling without a location fails';
 dies_ok { $slice_adaptor->fetch_by_toplevel_location('', 1); } 'Checking calling with a blank location fails';
-dies_ok { $slice_adaptor->fetch_by_toplevel_location('1:1_000_000_000..100', 1); } 'Checking calling with an excessive start throws an error';
+dies_ok { $slice_adaptor->fetch_by_toplevel_location('1:1000000000..100', 1); } 'Checking calling with an excessive start throws an error';
 ok(!defined $slice_adaptor->fetch_by_toplevel_location('wibble', 1), 'Checking with a bogus region returns undef');
 ok(!defined $slice_adaptor->fetch_by_toplevel_location('1:-100--50', 1), 'Checking with a bogus region with negative coords returns undef');
 
@@ -523,8 +541,10 @@ ok(!defined $slice_adaptor->fetch_by_toplevel_location('1:-100--50', 1), 'Checki
 ############# METHODS BELOW HERE 
 
 sub test_toplevel_location {
-  my ($location, $cs_name, $seq_region_name, $start, $end, $strand) = @_;
-  my $incoming_slice = $slice_adaptor->fetch_by_toplevel_location($location, 1);
+  my ($location, $cs_name, $seq_region_name, $start, $end, $strand, $ucsc) = @_;
+  my $no_warnings = 1;
+  my $no_fuzz = undef;
+  my $incoming_slice = $slice_adaptor->fetch_by_toplevel_location($location, $no_warnings, $no_fuzz, $ucsc);
   test_slice($location, $incoming_slice, $cs_name, $seq_region_name, $start, $end, $strand);
   return;
 }
