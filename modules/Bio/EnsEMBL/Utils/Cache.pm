@@ -96,7 +96,7 @@ Work has been done to optimize refreshing cache entries that are
 frequently read from, code like $cache{entry}, which moves the 
 entry to the end of the linked list internally.
 
-=cut Documentation continues at the end of the module.
+=cut
 
 sub TIEHASH {
     my($class, $max_count, $options) = @_;
