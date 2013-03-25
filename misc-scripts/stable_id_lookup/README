@@ -26,7 +26,8 @@ USR=''
 PASS=''
 
 cd $DIR
-bsub -q normal -M 1500000 -R'select[mem>1500] rusage[mem=1500]' -o ./stable_ids_${RELEASE}.out -e ./stable_ids_${RELEASE}.err perl populate_stable_id_lookup.pl -lhost ens-staging1 -luser $USR -lpass $PASS -create -host ens-staging1 -host ens-staging2 -user ensro
+bsub -q normal -M 1500000 -R'select[mem>1500] rusage[mem=1500]' -o ./stable_ids_${RELEASE}.out -e ./stable_ids_${RELEASE}.err perl populate_stable_id_lookup.pl \
+-lhost ens-staging1 -luser $USR -lpass $PASS -create -host ens-staging1 -host ens-staging2 -user ensro
 
 
 For release 70 the job consumed 1Gb of memory and took 1hr 40 minutes to run
