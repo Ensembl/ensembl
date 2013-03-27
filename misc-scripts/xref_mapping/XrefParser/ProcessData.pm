@@ -338,7 +338,7 @@ DSS
 	if (
 	    $new->run( { source_id  => $source_id,
 			 species_id => $species_id,
-			 files      => \@files_to_parse,
+			 files      => [@files_to_parse],
 			 rel_file   => $release_url,
 			 verbose    => $verbose } ) )
 	  {
@@ -349,7 +349,7 @@ DSS
 	if (
 	    $new->run(  { source_id  => $source_id,
 			  species_id => $species_id,
-			  files      => \@files_to_parse,
+			  files      => [@files_to_parse],
 			  verbose    => $verbose } ))
 	  {
 	    ++$summary{$name}->{$parser};
