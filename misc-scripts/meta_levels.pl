@@ -1,10 +1,11 @@
-#!/usr/local/ensembl/bin/perl -w
+#!/usr/bin/env perl
 
 # Populate meta table with (e.g.) genebuild.level = toplevel if all genes are
 # top level. Using v41 API code this can speed fetching & dumping greatly.
 #
 
 use strict;
+use warnings;
 use DBI;
 
 use Getopt::Long;
