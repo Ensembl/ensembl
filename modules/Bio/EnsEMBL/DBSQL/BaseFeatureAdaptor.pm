@@ -731,6 +731,10 @@ sub _get_by_Slice {
         push @feature_coord_systems, $slice->coord_system();
     } else {
         @feature_coord_systems = @{ $self->db->get_MetaCoordContainer->fetch_all_CoordSystems_by_feature_type($table_name)};
+        unless( @feature_coord_systems) {
+            warning("No CoordinateSystems defined for $table_name table. Please"
+            ." check meta_coord table and consider running ensembl/misc-scripts/meta_levels.pl");
+        }
     }
 	
     my $assembly_mapper_adaptor = $self->db->get_AssemblyMapperAdaptor();
