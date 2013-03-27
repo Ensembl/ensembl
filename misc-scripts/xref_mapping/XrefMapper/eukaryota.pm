@@ -24,6 +24,7 @@ sub gene_display_xref_sources {
     print STDERR "getting the list of external_dbs for assigning gene names from eukaryota.pm\n";
 
     my @list = qw(
+                 TAIR_SYMBOL
                  RFAM
                  RNAMMER
                  TRNASCAN_SE
@@ -137,6 +138,7 @@ LOCP
 
 sub gene_description_sources {
   return (
+          "TAIR_LOCUS",
           "PomBase_GENE",
           "PomBase_TRANSCRIPT",
           "Uniprot/SWISSPROT",
