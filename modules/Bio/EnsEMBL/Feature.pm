@@ -1194,7 +1194,7 @@ sub coord_system_name {
                attached database that overlaps with this feature.
                Returns undef if there is no slice or no database.
                Returns undef if this feature is unstranded (i.e. strand=0).
-  Returntype : undef or string
+  Returntype : String or undef
   Exceptions : warning if this feature is not stranded
   Caller     : general
   Status     : Stable
