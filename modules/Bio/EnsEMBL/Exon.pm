@@ -24,7 +24,7 @@ Bio::EnsEMBL::Exon - A class representing an Exon
 
 =head1 SYNOPSIS
 
-    $ex = new Bio::EnsEMBL::Exon(
+    $exon = new Bio::EnsEMBL::Exon(
       -START     => 100,
       -END       => 200,
       -STRAND    => 1,
