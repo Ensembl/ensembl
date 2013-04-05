@@ -41,6 +41,7 @@ CREATE TABLE term (
   name          VARCHAR(255) NOT NULL,
   definition    TEXT,
   is_root       INT,
+  is_obsolete   INT,
 
   PRIMARY KEY (term_id),
   UNIQUE INDEX accession_idx (accession),

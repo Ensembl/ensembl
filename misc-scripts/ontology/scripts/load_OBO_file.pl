@@ -170,7 +170,7 @@ sub write_term {
 
   $dbh->do("LOCK TABLES term WRITE, synonym WRITE");
 
-  my $statement = "INSERT IGNORE INTO term (ontology_id, subsets, accession, name, definition, is_root) VALUES (?,?,?,?,?,?)";
+  my $statement = "INSERT IGNORE INTO term (ontology_id, subsets, accession, name, definition, is_root, is_obsolete) VALUES (?,?,?,?,?,?,?)";
 
   my $syn_stmt = "INSERT INTO synonym (term_id, name) VALUES (?,?)";
 
@@ -213,12 +213,13 @@ sub write_term {
       }
       else {
         #if not link it to Unknown ontology
-        $sth->bind_param(1, $unknown_onto_id,     SQL_INTEGER);
-        $sth->bind_param(2, $term_subsets,        SQL_VARCHAR);
-        $sth->bind_param(3, $term->{'accession'}, SQL_VARCHAR);
-        $sth->bind_param(4, 'UNKNOWN NAME',       SQL_VARCHAR);
-        $sth->bind_param(5, 'UNKNOWN DEFINITION', SQL_VARCHAR);
-        $sth->bind_param(6, $term->{'is_root'},   SQL_INTEGER);
+        $sth->bind_param(1, $unknown_onto_id,        SQL_INTEGER);
+        $sth->bind_param(2, $term_subsets,           SQL_VARCHAR);
+        $sth->bind_param(3, $term->{'accession'},    SQL_VARCHAR);
+        $sth->bind_param(4, 'UNKNOWN NAME',          SQL_VARCHAR);
+        $sth->bind_param(5, 'UNKNOWN DEFINITION',    SQL_VARCHAR);
+        $sth->bind_param(6, $term->{'is_root'},      SQL_INTEGER);
+        $sth->bind_param(7, $term->{'is_obsolete'},  SQL_INTEGER);
         $sth->execute();
         my $id = $dbh->last_insert_id(undef, undef, 'term', 'term_id');
         $term->{'id'} = $id;
@@ -240,6 +241,7 @@ sub write_term {
         $update_sth->bind_param(4, $term->{'definition'},                     SQL_VARCHAR);
         $update_sth->bind_param(5, $existing_term_id,                         SQL_INTEGER);
         $update_sth->bind_param(6, $term->{'is_root'},                        SQL_INTEGER);
+        $update_sth->bind_param(7, $term->{'is_obsolete'},                    SQL_INTEGER);
 
         $update_sth->execute();
 
@@ -254,6 +256,7 @@ sub write_term {
         $sth->bind_param(4, $term->{'name'},                           SQL_VARCHAR);
         $sth->bind_param(5, $term->{'definition'},                     SQL_VARCHAR);
         $sth->bind_param(6, $term->{'is_root'},                        SQL_INTEGER);
+        $sth->bind_param(7, $term->{'is_obsolete'},                    SQL_INTEGER);
 
         $sth->execute();
         my $id = $dbh->last_insert_id(undef, undef, 'term', 'term_id');
@@ -633,7 +636,6 @@ foreach my $subs (@subsets) {
 
 # get all non obsolete terms
 foreach my $t (@{$ontology->get_terms()}) {
-  if (!($t->is_obsolete())) {
 
     my %term;
     my $is_root = 1;
@@ -648,15 +650,21 @@ foreach my $t (@{$ontology->get_terms()}) {
     }
     $namespaces{$term{'namespace'}} = $ontology_name;
 
-    $term{'accession'}  = $t->id();
-    $term{'name'}       = $t->name();
-    $term{'definition'} = $t->def_as_string();
+    $term{'accession'}   = $t->id();
+    $term{'name'}        = $t->name();
+    $term{'definition'}  = $t->def_as_string();
+
+    $term{'is_obsolete'} = $t->is_obsolete();
 
     if ($t->idspace() ne $ontology_name) {
       $is_root = 0;
     } else {
       if (scalar(@{ $ontology->get_parent_terms($t) }) > 0) {
         $is_root = 0;
+      } else {
+        if ($t->is_obsolete()) {
+          $is_root = 0;
+        }
       }
     }
     $term{'is_root'} = $is_root;
@@ -701,7 +709,6 @@ foreach my $t (@{$ontology->get_terms()}) {
 
     $terms{$term{'accession'}} = {%term};
 
-  }
 }
 
 #get all relationship types
