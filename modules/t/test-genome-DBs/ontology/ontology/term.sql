@@ -8,6 +8,7 @@ CREATE TABLE `term` (
   `name` varchar(255) NOT NULL,
   `definition` text,
   `is_root` int(11) DEFAULT NULL,
+  `is_obsolete` int(11) DEFAULT NULL,
   PRIMARY KEY (`term_id`),
   UNIQUE KEY `accession_idx` (`accession`),
   UNIQUE KEY `ontology_acc_idx` (`ontology_id`,`accession`),
