@@ -99,9 +99,9 @@ sub new {
 
   my $this = $proto->SUPER::new(@_);
 
-  my ( $accession, $ontology, $namespace, $name, $definition, $is_root, $subsets )
+  my ( $accession, $ontology, $namespace, $name, $definition, $is_root, $is_obsolete, $subsets )
     = rearrange( [ 'ACCESSION',  'ONTOLOGY', 'NAMESPACE', 'NAME',
-                   'DEFINITION', 'IS_ROOT', 'SUBSETS' ],
+                   'DEFINITION', 'IS_ROOT', 'IS_OBSOLETE', 'SUBSETS' ],
                  @_ );
 
   $this->{'accession'}  = $accession;
@@ -110,6 +110,7 @@ sub new {
   $this->{'name'}       = $name;
   $this->{'definition'} = $definition;
   $this->{'is_root'}    = $is_root;
+  $this->{'is_obsolete'}= $is_obsolete;
   $this->{'subsets'}    = [ @{$subsets} ];
 
   $this->{'child_terms_fetched'}  = 0;
@@ -219,6 +220,24 @@ sub is_root {
   my ($this) = @_;
   return $this->{'is_root'};
 }
+
+=head2 is_obsolete
+
+  Arg           : None
+
+  Description   : Returns true if the term is obsolete 
+
+  Example       : my $is_obsolete = $term->is_obsolete();
+
+  Return type   : Boolean (TRUE if it is obsolete, else FALSE)
+
+=cut
+
+sub is_obsolete {
+  my ($this) = @_;
+  return $this->{'is_obsolete'};
+}
+
 
 
 =head2 synonyms

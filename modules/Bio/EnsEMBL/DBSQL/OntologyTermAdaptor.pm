@@ -81,7 +81,7 @@ use base qw( Bio::EnsEMBL::DBSQL::BaseAdaptor );
 =cut
 
 sub fetch_all_by_name {
-  my ( $this, $pattern, $ontology ) = @_;
+  my ( $this, $pattern, $ontology, $include_obsolete ) = @_;
 
   my $statement = q(
 SELECT DISTINCT
@@ -91,6 +91,7 @@ SELECT DISTINCT
         term.definition,
         term.subsets,
         term.is_root,
+        term.is_obsolete,
         ontology.name,
         ontology.namespace
 FROM    ontology
@@ -101,6 +102,7 @@ WHERE   ( term.name LIKE ? OR synonym.name LIKE ? ));
   if ( defined($ontology) ) {
     $statement .= " AND ontology.name = ?";
   }
+  $statement .= " AND term.is_obsolete = 0" unless $include_obsolete;
 
   my $sth = $this->prepare($statement);
   $sth->bind_param( 1, $pattern, SQL_VARCHAR );
@@ -112,9 +114,9 @@ WHERE   ( term.name LIKE ? OR synonym.name LIKE ? ));
 
   $sth->execute();
 
-  my ( $dbid, $accession, $name, $definition, $subsets, $is_root, $namespace );
+  my ( $dbid, $accession, $name, $definition, $subsets, $is_root, $is_obsolete, $namespace );
   $sth->bind_columns(
-     \( $dbid, $accession, $name, $definition, $subsets, $is_root, $ontology, $namespace ) );
+     \( $dbid, $accession, $name, $definition, $subsets, $is_root, $is_obsolete, $ontology, $namespace ) );
 
   my @terms;
 
@@ -127,6 +129,7 @@ WHERE   ( term.name LIKE ? OR synonym.name LIKE ? ));
                                '-adaptor'     => $this,
                                '-accession'   => $accession,
                                '-is_root'     => $is_root,
+                               '-is_obsolete' => $is_obsolete,
                                '-ontology'    => $ontology,
                                '-namespace'   => $namespace,
                                '-subsets'     => [ split( /,/, $subsets ) ],
@@ -156,7 +159,7 @@ WHERE   ( term.name LIKE ? OR synonym.name LIKE ? ));
 =cut
 
 sub fetch_by_accession {
-  my ( $this, $accession ) = @_;
+  my ( $this, $accession, $include_obsolete ) = @_;
 
   my $statement = q(
 SELECT  term.term_id,
@@ -165,20 +168,23 @@ SELECT  term.term_id,
         term.definition,
         term.subsets,
         term.is_root,
+        term.is_obsolete,
         ontology.name,
         ontology.namespace
 FROM    ontology
   JOIN  term USING (ontology_id)
 WHERE   term.accession = ?);
 
+  $statement .= " AND term.is_obsolete = 0" unless $include_obsolete;
+
   my $sth = $this->prepare($statement);
   $sth->bind_param( 1, $accession, SQL_VARCHAR );
 
   $sth->execute();
 
-  my ( $dbid, $name, $definition, $subsets, $is_root, $ontology, $namespace );
+  my ( $dbid, $name, $definition, $subsets, $is_root, $is_obsolete, $ontology, $namespace );
   $sth->bind_columns(
-      \( $dbid, $accession, $name, $definition, $subsets, $is_root, $ontology, $namespace ) );
+      \( $dbid, $accession, $name, $definition, $subsets, $is_root, $is_obsolete, $ontology, $namespace ) );
 
   $sth->fetch();
   
@@ -193,6 +199,7 @@ WHERE   term.accession = ?);
                     '-adaptor'    => $this,
                     '-accession'  => $accession,
                     '-is_root'    => $is_root,
+                    '-is_obsolete'=> $is_obsolete,
                     '-ontology'   => $ontology,
                     '-namespace'  => $namespace,
                     '-subsets'    => [ split( /,/, $subsets ) ],
@@ -223,7 +230,7 @@ WHERE   term.accession = ?);
 =cut
 
 sub fetch_all_by_parent_term {
-  my ( $this, $term, $ontology ) = @_;
+  my ( $this, $term, $ontology, $include_obsolete ) = @_;
 
   assert_ref( $term, 'Bio::EnsEMBL::OntologyTerm' );
 
@@ -237,6 +244,7 @@ SELECT  child_term.term_id,
         child_term.definition,
         child_term.subsets,
         child_term.is_root,
+        child_term.is_obsolete,
         rt.name
 FROM    term child_term
   JOIN  relation ON (relation.child_term_id = child_term.term_id)
@@ -244,6 +252,8 @@ FROM    term child_term
   JOIN  ontology ON (ontology.ontology_id = relation.ontology_id)
 WHERE   relation.parent_term_id = ?
    AND  ontology.name = ?);
+
+    $statement .= " AND child_term.is_obsolete = 0" unless $include_obsolete;
 
     my $sth = $this->prepare($statement);
     $sth->bind_param( 1, $term->dbID(), SQL_INTEGER );
@@ -256,25 +266,26 @@ WHERE   relation.parent_term_id = ?
 
     $sth->execute();
 
-    my ( $dbid, $accession, $name, $definition, $subsets, $is_root, $relation );
+    my ( $dbid, $accession, $name, $definition, $subsets, $is_root, $is_obsolete, $relation );
     $sth->bind_columns(
-      \( $dbid, $accession, $name, $definition, $subsets, $is_root, $relation ) );
+      \( $dbid, $accession, $name, $definition, $subsets, $is_root, $is_obsolete, $relation ) );
 
     while ( $sth->fetch() ) {
       $subsets ||= '';
 
       my $child_term =
         Bio::EnsEMBL::OntologyTerm->new(
-                               '-dbid'      => $dbid,
-                               '-adaptor'   => $this,
-                               '-accession' => $accession,
+                               '-dbid'        => $dbid,
+                               '-adaptor'     => $this,
+                               '-accession'   => $accession,
                                '-is_root'     => $is_root,
-                               '-ontology'  => $term->{'ontology'},
-                               '-namespace' => $term->{'namespace'},
-                               '-subsets' => [ split( /,/, $subsets ) ],
-                               '-name'    => $name,
-                               '-definition' => $definition, 
-                               '-synonyms' => $this->_fetch_synonyms_by_dbID($dbid)
+                               '-is_obsolete' => $is_obsolete,
+                               '-ontology'    => $term->{'ontology'},
+                               '-namespace'   => $term->{'namespace'},
+                               '-subsets'     => [ split( /,/, $subsets ) ],
+                               '-name'        => $name,
+                               '-definition'  => $definition, 
+                               '-synonyms'    => $this->_fetch_synonyms_by_dbID($dbid)
       );
 
       push( @terms,                              $child_term );
@@ -322,7 +333,8 @@ SELECT DISTINCT
         child_term.name,
         child_term.definition,
         child_term.subsets,
-        child_term.is_root
+        child_term.is_root,
+        child_term.is_obsolete
 FROM    term child_term
   JOIN  closure ON (closure.child_term_id = child_term.term_id)
   JOIN  ontology ON (closure.ontology_id = ontology.ontology_id)
@@ -340,9 +352,9 @@ ORDER BY closure.distance, child_term.accession);
   $sth->bind_param( 2, $ontology, SQL_VARCHAR );
   $sth->execute();
 
-  my ( $dbid, $accession, $name, $definition, $subsets, $is_root );
+  my ( $dbid, $accession, $name, $definition, $subsets, $is_root, $is_obsolete );
   $sth->bind_columns(
-                 \( $dbid, $accession, $name, $definition, $subsets, $is_root ) );
+                 \( $dbid, $accession, $name, $definition, $subsets, $is_root, $is_obsolete ) );
 
   my @terms;
 
@@ -351,16 +363,17 @@ ORDER BY closure.distance, child_term.accession);
 
     push( @terms,
           Bio::EnsEMBL::OntologyTerm->new(
-                               '-dbid'      => $dbid,
-                               '-adaptor'   => $this,
-                               '-accession' => $accession,
+                               '-dbid'        => $dbid,
+                               '-adaptor'     => $this,
+                               '-accession'   => $accession,
                                '-is_root'     => $is_root,
-                               '-ontology'  => $term->{'ontology'},
-                               '-namespace' => $term->{'namespace'},
-                               '-subsets' => [ split( /,/, $subsets ) ],
-                               '-name'    => $name,
-                               '-definition' => $definition,
-                               '-synonyms' => $this->_fetch_synonyms_by_dbID($dbid)
+                               '-is_obsolete' => $is_obsolete,
+                               '-ontology'    => $term->{'ontology'},
+                               '-namespace'   => $term->{'namespace'},
+                               '-subsets'     => [ split( /,/, $subsets ) ],
+                               '-name'        => $name,
+                               '-definition'  => $definition,
+                               '-synonyms'    => $this->_fetch_synonyms_by_dbID($dbid)
     ) );
   }
 
@@ -398,6 +411,7 @@ SELECT  parent_term.term_id,
         parent_term.definition,
         parent_term.subsets,
         parent_term.is_root,
+        parent_term.is_obsolete,
         rt.name
 FROM    term parent_term
   JOIN  relation ON (relation.parent_term_id = parent_term.term_id)
@@ -416,25 +430,26 @@ WHERE   relation.child_term_id = ?
 
     $sth->execute();
 
-    my ( $dbid, $accession, $name, $definition, $subsets, $is_root, $relation );
+    my ( $dbid, $accession, $name, $definition, $subsets, $is_root, $is_obsolete, $relation );
     $sth->bind_columns(
-      \( $dbid, $accession, $name, $definition, $subsets, $is_root, $relation ) );
+      \( $dbid, $accession, $name, $definition, $subsets, $is_root, $is_obsolete, $relation ) );
 
     while ( $sth->fetch() ) {
       $subsets ||= '';
 
       my $parent_term =
         Bio::EnsEMBL::OntologyTerm->new(
-                               '-dbid'      => $dbid,
-                               '-adaptor'   => $this,
-                               '-accession' => $accession,
+                               '-dbid'        => $dbid,
+                               '-adaptor'     => $this,
+                               '-accession'   => $accession,
                                '-is_root'     => $is_root,
-                               '-ontology'  => $term->{'ontology'},
-                               '-namespace' => $term->{'namespace'},
-                               '-subsets' => [ split( /,/, $subsets ) ],
-                               '-name'    => $name,
-                               '-definition' => $definition,
-                               '-synonyms' => $this->_fetch_synonyms_by_dbID($dbid)
+                               '-is_obsolete' => $is_obsolete,
+                               '-ontology'    => $term->{'ontology'},
+                               '-namespace'   => $term->{'namespace'},
+                               '-subsets'     => [ split( /,/, $subsets ) ],
+                               '-name'        => $name,
+                               '-definition'  => $definition,
+                               '-synonyms'    => $this->_fetch_synonyms_by_dbID($dbid)
       );
 
       push( @terms,                             $parent_term );
@@ -506,6 +521,7 @@ SELECT DISTINCT
         parent_term.definition,
         parent_term.subsets,
         parent_term.is_root,
+        parent_term.is_obsolete,
         closure.distance
 FROM    term parent_term
   JOIN  closure ON (closure.parent_term_id = parent_term.term_id)
@@ -543,9 +559,9 @@ ORDER BY closure.distance, parent_term.accession);
 
   $sth->execute();
 
-  my ( $dbid, $accession, $name, $definition, $subsets, $is_root, $distance );
+  my ( $dbid, $accession, $name, $definition, $subsets, $is_root, $is_obsolete, $distance );
   $sth->bind_columns(
-      \( $dbid, $accession, $name, $definition, $subsets, $is_root, $distance ) );
+      \( $dbid, $accession, $name, $definition, $subsets, $is_root, $is_obsolete, $distance ) );
 
   my @terms;
   my $min_distance;
@@ -557,16 +573,17 @@ ORDER BY closure.distance, parent_term.accession);
     if ( !$closest_only || $distance == $min_distance ) {
       push( @terms,
             Bio::EnsEMBL::OntologyTerm->new(
-                               '-dbid'      => $dbid,
-                               '-adaptor'   => $this,
-                               '-accession' => $accession,
+                               '-dbid'        => $dbid,
+                               '-adaptor'     => $this,
+                               '-accession'   => $accession,
                                '-is_root'     => $is_root,
-                               '-ontology'  => $term->{'ontology'},
-                               '-namespace' => $term->{'namespace'},
-                               '-subsets' => [ split( /,/, $subsets ) ],
-                               '-name'    => $name,
-                               '-definition' => $definition,
-                               '-synonyms' => $this->_fetch_synonyms_by_dbID($dbid)
+                               '-is_obsolete' => $is_obsolete,
+                               '-ontology'    => $term->{'ontology'},
+                               '-namespace'   => $term->{'namespace'},
+                               '-subsets'     => [ split( /,/, $subsets ) ],
+                               '-name'        => $name,
+                               '-definition'  => $definition,
+                               '-synonyms'    => $this->_fetch_synonyms_by_dbID($dbid)
     ) );
     } else {
       $sth->finish();
@@ -707,7 +724,7 @@ ORDER BY closure.distance);
 # provided by the parent class Bio::EnsEMBL::DBSQL::BaseAdaptor.
 
 sub fetch_by_dbID {
-  my ( $this, $dbid ) = @_;
+  my ( $this, $dbid, $include_obsolete ) = @_;
 
   my $statement = q(
 SELECT  term.term_id,
@@ -716,21 +733,24 @@ SELECT  term.term_id,
         term.definition,
         term.subsets,
         term.is_root,
+        term.is_obsolete,
         ontology.name,
         ontology.namespace
 FROM    ontology
   JOIN  term USING (ontology_id)
 WHERE   term.term_id = ?);
 
+  $statement .= " AND term.is_obsolete = 0" unless $include_obsolete;
+
   my $sth = $this->prepare($statement);
   $sth->bind_param( 1, $dbid, SQL_INTEGER );
 
   $sth->execute();
 
-  my ( $accession, $name, $definition, $subsets, $is_root, $ontology,
+  my ( $accession, $name, $definition, $subsets, $is_root, $is_obsolete, $ontology,
        $namespace );
   $sth->bind_columns(
-      \( $dbid, $accession, $name, $definition, $subsets, $is_root, $ontology, $namespace
+      \( $dbid, $accession, $name, $definition, $subsets, $is_root, $is_obsolete, $ontology, $namespace
       ) );
 
   $sth->fetch();
@@ -741,16 +761,17 @@ WHERE   term.term_id = ?);
 
   my $term =
     Bio::EnsEMBL::OntologyTerm->new(
-                    '-dbid'       => $dbid,
-                    '-adaptor'    => $this,
-                    '-accession'  => $accession,
+                    '-dbid'        => $dbid,
+                    '-adaptor'     => $this,
+                    '-accession'   => $accession,
                     '-is_root'     => $is_root,
-                    '-ontology'   => $ontology,
-                    '-namespace'  => $namespace,
-                    '-subsets'    => [ split( /,/, $subsets ) ],
-                    '-name'       => $name,
-                    '-definition' => $definition,
-                    '-synonyms' => $this->_fetch_synonyms_by_dbID($dbid)
+                    '-is_obsolete' => $is_obsolete,
+                    '-ontology'    => $ontology,
+                    '-namespace'   => $namespace,
+                    '-subsets'     => [ split( /,/, $subsets ) ],
+                    '-name'        => $name,
+                    '-definition'  => $definition,
+                    '-synonyms'    => $this->_fetch_synonyms_by_dbID($dbid)
     );
   $sth->finish();
 
@@ -758,7 +779,7 @@ WHERE   term.term_id = ?);
 } ## end sub fetch_by_dbID
 
 sub fetch_all_by_dbID_list {
-  my ( $this, $dbids ) = @_;
+  my ( $this, $dbids, $include_obsolete ) = @_;
 
   if ( !@{$dbids} ) { return [] }
 
@@ -769,6 +790,7 @@ SELECT  term.term_id,
         term.definition,
         term.subsets,
         term.is_root,
+        term.is_obsolete,
         ontology.name,
         ontology.namespace
 FROM    ontology
@@ -783,14 +805,16 @@ WHERE   term.term_id IN (%s));
         $this->dbc()->db_handle()->quote( $_, SQL_INTEGER )
         } @{$dbids} ) );
 
+  $statement .= " AND term.is_obsolete = 0" unless $include_obsolete;
+
   my $sth = $this->prepare($statement);
 
   $sth->execute();
 
-  my ( $dbid, $accession, $name, $definition, $subsets, $is_root, $ontology,
+  my ( $dbid, $accession, $name, $definition, $subsets, $is_root, $is_obsolete, $ontology,
        $namespace );
   $sth->bind_columns( \( $dbid,    $accession, $name, $definition,
-                         $subsets, $is_root, $ontology,  $namespace ) );
+                         $subsets, $is_root, $is_obsolete, $ontology,  $namespace ) );
 
   my @terms;
 
@@ -799,16 +823,17 @@ WHERE   term.term_id IN (%s));
 
     push( @terms,
           Bio::EnsEMBL::OntologyTerm->new(
-                               '-dbid'      => $dbid,
-                               '-adaptor'   => $this,
-                               '-accession' => $accession,
+                               '-dbid'        => $dbid,
+                               '-adaptor'     => $this,
+                               '-accession'   => $accession,
                                '-is_root'     => $is_root,
-                               '-ontology'  => $ontology,
-                               '-namespace' => $namespace,
-                               '-subsets' => [ split( /,/, $subsets ) ],
-                               '-name'    => $name,
-                               '-definition' => $definition,
-                               '-synonyms' => $this->_fetch_synonyms_by_dbID($dbid)
+                               '-is_obsolete' => $is_obsolete,
+                               '-ontology'    => $ontology,
+                               '-namespace'   => $namespace,
+                               '-subsets'     => [ split( /,/, $subsets ) ],
+                               '-name'        => $name,
+                               '-definition'  => $definition,
+                               '-synonyms'    => $this->_fetch_synonyms_by_dbID($dbid)
     ) );
   }
 
@@ -845,6 +870,7 @@ SELECT  term.term_id,
         term.definition,
         term.subsets,
         term.is_root,
+        term.is_obsolete,
         ontology.name,
         ontology.namespace
 FROM    ontology
@@ -861,10 +887,10 @@ FROM    ontology
   }
   $sth->execute();
 
-  my ( $dbid, $accession, $name, $definition, $subsets, $is_root, $ontology,
+  my ( $dbid, $accession, $name, $definition, $subsets, $is_root, $is_obsolete, $ontology,
        $namespace );
   $sth->bind_columns( \( $dbid,    $accession, $name, $definition,
-                         $subsets, $is_root, $ontology,  $namespace ) );
+                         $subsets, $is_root, $is_obsolete, $ontology,  $namespace ) );
 
   my @terms;
 
@@ -873,16 +899,17 @@ FROM    ontology
 
     push( @terms,
           Bio::EnsEMBL::OntologyTerm->new(
-                               '-dbid'      => $dbid,
-                               '-adaptor'   => $this,
-                               '-accession' => $accession,
-                               '-is_root'   => $is_root,
-                               '-ontology'  => $ontology,
-                               '-namespace' => $namespace,
-                               '-subsets' => [ split( /,/, $subsets ) ],
-                               '-name'    => $name,
-                               '-definition' => $definition,
-                               '-synonyms' => $this->_fetch_synonyms_by_dbID($dbid)
+                               '-dbid'        => $dbid,
+                               '-adaptor'     => $this,
+                               '-accession'   => $accession,
+                               '-is_root'     => $is_root,
+                               '-is_obsolete' => $is_obsolete,
+                               '-ontology'    => $ontology,
+                               '-namespace'   => $namespace,
+                               '-subsets'     => [ split( /,/, $subsets ) ],
+                               '-name'        => $name,
+                               '-definition'  => $definition,
+                               '-synonyms'    => $this->_fetch_synonyms_by_dbID($dbid)
 
     ));
   }
@@ -892,7 +919,7 @@ FROM    ontology
 
 
 sub fetch_all {
-  my ($this) = @_;
+  my ($this, $include_obsolete) = @_;
 
   my $statement = q(
 SELECT  term.term_id,
@@ -901,18 +928,21 @@ SELECT  term.term_id,
         term.definition,
         term.subsets,
         term.is_root,
+        term.is_obsolete,
         ontology.name,
         ontology.namespace
 FROM    ontology
   JOIN  term USING (ontology_id));
 
+  $statement .= " AND term.is_obsolete = 0" unless $include_obsolete;
+
   my $sth = $this->prepare($statement);
   $sth->execute();
 
-  my ( $dbid, $accession, $name, $definition, $subsets, $is_root, $ontology,
+  my ( $dbid, $accession, $name, $definition, $subsets, $is_root, $is_obsolete, $ontology,
        $namespace );
   $sth->bind_columns( \( $dbid,    $accession, $name, $definition,
-                         $subsets, $is_root, $ontology,  $namespace ) );
+                         $subsets, $is_root, $is_obsolete, $ontology,  $namespace ) );
 
   my @terms;
 
@@ -921,16 +951,17 @@ FROM    ontology
 
     push( @terms,
           Bio::EnsEMBL::OntologyTerm->new(
-                               '-dbid'      => $dbid,
-                               '-adaptor'   => $this,
-                               '-accession' => $accession,
-                               '-is_root'   => $is_root,
-                               '-ontology'  => $ontology,
-                               '-namespace' => $namespace,
-                               '-subsets' => [ split( /,/, $subsets ) ],
-                               '-name'    => $name,
-                               '-definition' => $definition,
-                               '-synonyms' => $this->_fetch_synonyms_by_dbID($dbid)
+                               '-dbid'        => $dbid,
+                               '-adaptor'     => $this,
+                               '-accession'   => $accession,
+                               '-is_root'     => $is_root,
+                               '-is_obsolete' => $is_obsolete,
+                               '-ontology'    => $ontology,
+                               '-namespace'   => $namespace,
+                               '-subsets'     => [ split( /,/, $subsets ) ],
+                               '-name'        => $name,
+                               '-definition'  => $definition,
+                               '-synonyms'    => $this->_fetch_synonyms_by_dbID($dbid)
     ) );
   }
 
