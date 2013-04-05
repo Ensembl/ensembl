@@ -30,11 +30,18 @@ my $human = Bio::EnsEMBL::Test::MultiTestDB->new();
 my $db = $human->get_DBAdaptor("core");
 debug("Test database instatiated");
 ok($db);
-
-my $accession = "GO:0003677";
 my $go_adaptor = $odb->get_OntologyTermAdaptor();
+
+my $accession = "GO:0000217";
 my $term = $go_adaptor->fetch_by_accession($accession);
-ok(!$term->is_root, "Term is not a root");
+is($term, undef, "GO:0000217 does not exist in the non obsolete list");
+$term = $go_adaptor->fetch_by_accession($accession, 1);
+ok($term->is_obsolete, "GO:0003677 is obsolete");
+
+$accession = "GO:0003677";
+$term = $go_adaptor->fetch_by_accession($accession, 1);
+ok(!$term->is_obsolete, "GO:0003677 is not obsolete");
+ok(!$term->is_root, "GO:0003677 is not a root");
 
 my $gene;
 my $ga = $db->get_GeneAdaptor();
@@ -44,7 +51,10 @@ is(@{$genes}, 2, "Genes match the GO term");
 
 my $pattern = '%binding%';
 my $terms = $go_adaptor->fetch_all_by_name($pattern);
-is(@{$terms}, 138, "Found binding terms");
+is(@{$terms}, 134, "Found binding terms");
+
+$terms = $go_adaptor->fetch_all_by_name($pattern, undef, 1);
+is(@{$terms}, 138, "Found binding terms, including obsolete ones");
 
 my $roots = $go_adaptor->fetch_all_roots();
 is(@{$roots}, 1, "Found roots");
