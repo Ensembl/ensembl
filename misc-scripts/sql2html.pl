@@ -2,73 +2,23 @@
 # 1st Feb 2011
 # Generate an HTML documentation page from an SQL file.
 #
-# It needs to have a "javascript like" documentation above each table. e.g.:
+# It needs to have a "javascript like" documentation above each table.
+# See the content of the method sql_documentation_format();
 ####################################################################################
-#/**
-#@table variation
 
-#@desc This is the schema's generic representation of a variation.
-
-#@colour #FF0000
-
-#@column variation_id        Primary key, internal identifier.
-#@column source_id          Foreign key references to the @link source table.
-#@column name                Name of the variation. e.g. "rs1333049".
-#@column validation_status  Variant discovery method and validation from dbSNP.
-#@column ancestral_allele    Taken from dbSNP to show ancestral allele for the variation.
-#@column flipped            This is set to 1 if the variant is flipped.
-#@column class_so_id        Class of the variation, based on the Sequence Ontology.
-
-#@see variation_synonym
-#@see flanking_sequence
-#@see failed_variation
-#@see variation_feature
-#@see variation_group_variation
-#@see allele
-#@see allele_group_allele
-#@see individual_genotype_multiple_bp
-#*/
-#
-#
-#create table variation (
-#    variation_id int(10) unsigned not null auto_increment, # PK
-#    source_id int(10) unsigned not null, 
-#    name varchar(255),
-#    validation_status SET('cluster','freq','submitter','doublehit','hapmap','1000Genome','failed','precious'),
-#    ancestral_allele text,
-#    flipped tinyint(1) unsigned NULL DEFAULT NULL,
-#    class_so_id ENUM('SO:0001483','SO:1000002','SO:0000667') DEFAULT 'SO:0001059', # default to sequence_alteration
-#
-#    primary key( variation_id ),
-#    unique ( name ),
-#    key source_idx (source_id)
-#);
-#
-#/**
-#@legend #FF0000 Table storing variation data
-#*/
-#
-########################################################################################
-# Tags description:
-# /** and */ : begin and end of the document block
-# @header    : tag to create a group of tables
-# @table     : name of the sql table
-# @desc      : description of the role/content of the table, set or info tags
-# @colour    : tag to colour the header of the table (e.g. if the tables are coloured in the graphic SQL schema and you want to reproduce it in the HTML version)
-# @column    : column_name [tab(s)] Column description. Note: 1 ligne = 1 column
-# @see       : tables names linked to the described table
-# @link      : Internal link to an other table description. The format is ... @link table_name ...
-# @info      : tag to describe additional information about a table or a set of tables
-# @legend    : tag to fill the colour legend table at the end of the HTML page
 
 use strict;
 use POSIX;
 use Getopt::Long;
+use Bio::EnsEMBL::DBSQL::DBAdaptor;
+
 
 ###############
 ### Options ###
 ###############
-my ($sql_file,$html_file,$db_team,$show_colour,$header_flag,$format_headers,$sort_headers,$sort_tables,$help);
+
+my ($sql_file,$html_file,$db_team,$show_colour,$header_flag,$format_headers,$sort_headers,$sort_tables,$help,$help_format);
+my ($host,$port,$dbname,$user,$pass,$skip_conn,$db_handle);
 
 usage() if (!scalar(@ARGV));
  
@@ -81,11 +31,19 @@ GetOptions(
     'format_headers=i' => \$format_headers,
     'sort_headers=i'   => \$sort_headers,
     'sort_tables=i'    => \$sort_tables,
-    
-    'help!' => \$help
+    'host=s'           => \$host,
+    'port=i'           => \$port,
+    'dbname=s'         => \$dbname,
+    'user=s'           => \$user,
+    'pass=s'           => \$pass,
+    'skip_connection'  => \$skip_conn,
+    'help!'            => \$help,
+    'help_format'      => \$help_format,
 );
 
 usage() if ($help);
+sql_documentation_format() if ($help_format);
+
 
 if (!$sql_file) {
   print "> Error! Please give a sql file using the option '-i' \n";
@@ -102,82 +60,20 @@ $format_headers = 1 if (!defined($format_headers));
 $sort_headers   = 1 if (!defined($sort_headers));
 $sort_tables    = 1 if (!defined($sort_tables));
 
-
-##############
-### Header ###
-##############
-my $html_header = qq{
-<html>
-<head>
-<meta http-equiv="CONTENT-TYPE" content="text/html; charset=utf-8" />
-<title>$db_team Schema Documentation</title>
-
-<script language="Javascript" type="text/javascript">
-  // Function to show/hide the columns table
-  function show_hide (param) {
-    div   = document.getElementById('div_'+param);
-    alink = document.getElementById('a_'+param);
-    if (div.style.display=='inline') {
-      div.style.display='none';
-      alink.innerHTML='Show';
-    }
-    else {
-      if (div.style.display=='none') {
-        div.style.display='inline';
-        alink.innerHTML='Hide';
-      }
-    }
-  }
-  
-  // Function to show/hide all the tables
-  function show_hide_all () {
-    expand_flag = document.getElementById('expand');
-    divs = document.getElementsByTagName('div');
-    for(var i=0; i < divs.length; i++){
-      param = divs[i].id.substring(4);
-      div   = document.getElementById('div_'+param);
-      alink = document.getElementById('a_'+param);
-      
-      if (div && alink) {
-        if (expand_flag.value=='0') {
-          div.style.display='inline';
-          alink.innerHTML='Hide';
-        }
-        else {
-          div.style.display='none';
-          alink.innerHTML='Show';
-        }
-      }
-    }
-    if (expand_flag.value=='0') {
-      expand_flag.value='1';
-    }
-    else {
-      expand_flag.value='0';
-    }
-  }
-</script>
-
-</head>
-
-<body>
-<h1>Ensembl $db_team Schema Documentation</h1>
-
-<h2>Introduction</h2>
-
-<p><i>
-&lt;please, insert your introduction here&gt;
-</i></p>
-<br />
-};
+$skip_conn      = undef if ($skip_conn == 0);
 
 
-##############
-### Footer  ##
-##############
-my $html_footer = qq{
-</body>
-</html>};
+# Dababase connection (optional)
+if (defined($host) && !defined($skip_conn)) {
+  my $db_adaptor = new Bio::EnsEMBL::DBSQL::DBAdaptor(
+    -host => $host,
+    -user => $user,
+    -pass => $pass,
+    -port => $port,
+    -dbname => $dbname
+  ) or die("DATABASE CONNECTION ERROR: Could not get a database adaptor for $dbname on $host:$port\n");
+  $db_handle = $db_adaptor->dbc->db_handle;
+}
 
 
 
@@ -209,12 +105,119 @@ my $display = 'Show';
 my $parenth_count = 0;
 my $header_colour;
 
+my $SQL_LIMIT = 50;
+my $img_plus  = qq{<img src="/i/16/plus-button.png" style="width:12px;height:12px;vertical-align:middle" alt="show"/>};
+my $img_minus = qq{<img src="/i/16/minus-button.png" style="width:12px;height:12px;vertical-align:middle;margin-right:6px" alt="hide"/>};
+my $link_text = 'columns';
+
+
+
+
+##############
+### Header ###
+##############
+
+my $html_header = qq{
+<html>
+<head>
+<meta http-equiv="CONTENT-TYPE" content="text/html; charset=utf-8" />
+<title>$db_team Schema Documentation</title>
+
+<script language="Javascript" type="text/javascript">
+  var img_plus   = '$img_plus';
+  var img_minus  = '$img_minus';
+  var link_text  = 'columns';
+  var span_open  = ' <span style="vertical-align:middle">';
+  var span_close = '</span>';
+
+  // Function to show/hide the columns table
+  function show_hide (param, type) {
+    // Example tables
+    if (type === 'example') {
+      div    = document.getElementById('ex_'+param);
+      alink  = document.getElementById('e_'+param);
+      a_text = 'query results'; 
+    } 
+    // Schema tables
+    else { 
+      div    = document.getElementById('div_'+param);
+      alink  = document.getElementById('a_'+param);
+      a_text = link_text;
+    }  
+    
+    if (div.style.display=='inline') {
+      div.style.display='none';
+      alink.innerHTML=img_plus+span_open+'Show '+a_text+span_close;
+    }
+    else {
+      if (div.style.display=='none') {
+        div.style.display='inline';
+        alink.innerHTML=img_minus+span_open+'Hide '+a_text+span_close;
+      }
+    }
+  }
+  
+  // Function to show/hide all the tables
+  function show_hide_all () {
+    expand_flag = document.getElementById('expand');
+    divs = document.getElementsByTagName('div');
+    for(var i=0; i < divs.length; i++){
+      param = divs[i].id.substring(4);
+      div   = document.getElementById('div_'+param);
+      alink = document.getElementById('a_'+param);
+      
+      if (div && alink) {
+        if (expand_flag.value=='0') {
+          div.style.display='inline';
+          alink.innerHTML=img_minus+span_open+'Hide '+link_text+span_close;
+        }
+        else {
+          div.style.display='none';
+          alink.innerHTML=img_plus+span_open+'Show '+link_text+span_close;
+        }
+      }
+    }
+    if (expand_flag.value=='0') {
+      expand_flag.value='1';
+    }
+    else {
+      expand_flag.value='0';
+    }
+  }
+</script>
+
+</head>
+
+<body>
+<h1>Ensembl $db_team Schema Documentation</h1>
+
+<h2>Introduction</h2>
+
+<p><i>
+&lt;please, insert your introduction here&gt;
+</i></p>
+<br />
+};
+
+
+
+
+##############
+### Footer  ##
+##############
+
+my $html_footer = qq{
+</body>
+</html>};
+
 
 
 
 #############
 ## Parser  ##
 #############
+
+# Create a complex hash "%$documentation" to store all the documentation content
 
 open SQLFILE, "< $sql_file" or die "Can't open $sql_file : $!";
 while (<SQLFILE>) {
@@ -239,7 +242,9 @@ while (<SQLFILE>) {
   
   my $doc = remove_char($_);
   
-  ## Parsing of the documentation ##
+  #================================================#
+  # Parsing the documentation part of the SQL file #
+  #================================================#
   if ($in_doc==1) {
     # Header name
     if ($doc =~ /^\@header\s*(.+)$/i and $header_flag == 1) {
@@ -252,7 +257,7 @@ while (<SQLFILE>) {
     elsif ($doc =~ /^\@table\s*(\w+)/i) {
       $table = $1;
       push(@{$tables_names->{$header}},$table);
-      $documentation->{$header}{'tables'}{$table} = { 'desc' => '', 'colour' => '', 'column' => [], 'see' => [], 'info' => [] };
+      $documentation->{$header}{'tables'}{$table} = { 'desc' => '', 'colour' => '', 'column' => [], 'example' => [], 'see' => [], 'info' => [] };
       $tag = $tag_content = '';    
     }
     # Description (used for both set, table and info tags)
@@ -265,6 +270,10 @@ while (<SQLFILE>) {
     }
     # Column
     elsif ($doc =~ /^\@(column)\s*(.+)$/i) {
+      fill_documentation ($1,$2);
+    }
+    # Example 
+    elsif ($doc =~ /^\@(example)\s*(.+)$/i) {
       fill_documentation ($1,$2);
     }
     # See other tables
@@ -292,8 +301,9 @@ while (<SQLFILE>) {
     }
   }
   
-  
-  ## Parsing of the SQL table to fetch the columns types ##
+  #=====================================================#
+  # Parsing of the SQL table to fetch the columns types #
+  #=====================================================#
   elsif ($in_table==1) {
     
     # END OF TABLE DEFINITION
@@ -319,7 +329,9 @@ while (<SQLFILE>) {
     }
     else {
 
-      ## INDEXES ##
+      #---------#
+      # INDEXES #
+      #---------#
       if ($doc =~ /^\s*(primary\s+key)\s*\w*\s*\((.+)\)/i or $doc =~ /^\s*(unique)\s*\((.+)\)/i){ # Primary or unique;
         add_column_index($1,$2);
         next;
@@ -333,8 +345,9 @@ while (<SQLFILE>) {
         next;
       }
       
-    
-      ## TYPES & DEFAULT VALUES ##
+      #----------------------------------#
+      # COLUMNS & TYPES & DEFAULT VALUES #
+      #----------------------------------#
       my $col_name = '';
       my $col_type = '';
       my $col_def  = '';
@@ -412,17 +425,23 @@ if ($show_colour and scalar @colours > 1) {
   $html_content .= qq{A colour legend is available at the <a href="#legend">bottom of the page</a>.\n<br /><br />};
 }
 
-# List of tables by header
+#=============================================#
+# List of tables by header (i.e. like a menu) #
+#=============================================#
 $html_content .= display_tables_list();
 my $table_count = 1;
 my $col_count = 1;
 
-# Display the detailled tables by header
+#========================================#
+# Display the detailled tables by header #
+#========================================#
 foreach my $header_name (@header_names) {
   my $tables = $tables_names->{$header_name};
   my $hcolour = $documentation->{$header_name}{'colour'};
-    
-  # Header display  
+   
+  #----------------#  
+  # Header display #
+  #----------------#  
   if ($header_flag == 1 and $header_name ne 'default') {
     $html_content .= qq{\n<br /><br />
 <div style="$list_bg;padding:5px;margin:5px 0px;border-top:2px solid $hcolour">
@@ -432,13 +451,17 @@ foreach my $header_name (@header_names) {
     $html_content .= qq{<p style="width:800px">$header_desc</p>} if (defined($header_desc));
   }
   
-  # Additional information
+  #------------------------#
+  # Additional information #
+  #------------------------#
   if ($header_name eq 'default' and defined($documentation->{$header_name}{'info'})) {
     $html_content .= qq{<h2>Additional information about the schema</h2>\n};
   }  
   $html_content .= add_info($documentation->{$header_name}{'info'});
   
-  # Tables display
+  #----------------#
+  # Tables display #
+  #----------------#
   foreach my $t_name (@{$tables}) {
     my $data = $documentation->{$header_name}{'tables'}{$t_name};
     my $colour = ($header_flag && $hcolour) ? $hcolour : $data->{colour};
@@ -447,13 +470,18 @@ foreach my $header_name (@header_names) {
     $html_content .= add_description($data->{desc});
     $html_content .= add_info($data->{info});  
     $html_content .= add_columns($t_name,$data);
+    $html_content .= add_examples($t_name,$data);
     $html_content .= add_see($data->{see});
   }
 }
 $html_content .= add_legend();
 
 
+
+
+######################
 ## HTML/output file ##
+######################
 open  HTML, "> $html_file" or die "Can't open $html_file : $!";
 print HTML $html_header."\n";
 print HTML $html_content."\n";
@@ -467,6 +495,9 @@ close(HTML);
 ##  Methods  ##
 ###############
 
+# List the table names. 
+# Group them if the header option "-format_headers" is selected.
+# By default there is one group, named "default" and it contains all the tables.
 sub display_tables_list {
 
   my $html; 
@@ -516,75 +547,56 @@ sub display_tables_list {
     }
     
     
-    # Header
-#    if ($header_flag == 1 and $header_name ne 'default') {
-#      if ($nb_col_line+$nbc > 4 and $format_headers == 1) {
-#        $html .= qq{  <div style="clear:both" />\n</div>\n\n<div>};
-#        $nb_col_line = 0;
-#      }
-#      
-#      $html .= display_header($header_name,$nbc);
-#      $nb_col_line += $nbc;
-#      $has_header = 1;
-#    }
-		
-		if ($header_flag == 1) {
-			if ($header_name ne 'default') {
-				if ($nb_col_line+$nbc > 4 and $format_headers == 1) {
-      	  $html .= qq{  <div style="clear:both" />\n</div>\n\n<div>};
-      	  $nb_col_line = 0;
-     	 	}
+    # Header #
+    if ($header_flag == 1) {
+      if ($header_name ne 'default') {
+        if ($nb_col_line+$nbc > 4 and $format_headers == 1) {
+          $html .= qq{  <div style="clear:both" />\n</div>\n\n<div>};
+          $nb_col_line = 0;
+          }
       
-      	$html .= display_header($header_name,$nbc);
-      	$nb_col_line += $nbc;
-      	$has_header = 1;
-    	}
-			
-			# List of tables
-			$html .= qq{\n      <ul style="padding:0px 4px 0px 22px;margin-bottom:2px">\n};
-			foreach my $t_name (@{$tables}) {
-				my $t_colour;
-      	if ($has_header == 0 && $show_colour) {
-        	$t_colour = $documentation->{$header_name}{'tables'}{$t_name}{'colour'};
-      	}
-				$html .= add_table_name_to_list($t_name,$t_colour);
-			}
-			$html .= qq{      </ul>};
-			
-			if ($format_headers == 1) {
-      	$html .= qq{  </div>\n};
-      	if ($nbc > 1) {
-        	$html .= qq{  <div style="clear:both" />\n</div>\n\n<div>};
-        	$nb_col_line = 0;
-      	}
-    	}		
-		}
-		else {
-    	$html .= qq{\n    <table style="padding:0px 2px"><tr><td>\n      <ul style="padding-left:20px">\n};
-
-    	# List of tables
-    	foreach my $t_name (@{$tables}) {
-      	if ($table_count == $nb_by_col and $col_count<$nb_col and $nb_col>1){
-        	$html .= qq{      </ul>\n    </td><td>\n      <ul style="padding-left:20px">\n};
-        	$table_count = 0;
-      	}
-      	my $t_colour;
-      	if ($has_header == 0 && $show_colour) {
-      	  $t_colour = $documentation->{$header_name}{'tables'}{$t_name}{'colour'};
-      	}
-      	$html .= add_table_name_to_list($t_name,$t_colour);
-      	$table_count ++;
-    	}
-    	$html .= qq{      </ul>\n    </td></tr></table>\n};
+        $html .= display_header($header_name,$nbc);
+        $nb_col_line += $nbc;
+        $has_header = 1;
+      }
+      
+      # List of tables #
+      $html .= qq{\n      <ul style="padding:0px 4px 0px 22px;margin-bottom:2px">\n};
+      foreach my $t_name (@{$tables}) {
+        my $t_colour;
+        if ($has_header == 0 && $show_colour) {
+          $t_colour = $documentation->{$header_name}{'tables'}{$t_name}{'colour'};
+        }
+        $html .= add_table_name_to_list($t_name,$t_colour);
+      }
+      $html .= qq{      </ul>};
+      
+      if ($format_headers == 1) {
+        $html .= qq{  </div>\n};
+        if ($nbc > 1) {
+          $html .= qq{  <div style="clear:both" />\n</div>\n\n<div>};
+          $nb_col_line = 0;
+        }
+      }    
     }
-		
-  #  if ($header_flag == 1 and $format_headers == 1) {
-#      $html .= qq{  </div>\n};
-#      if ($nbc > 1) {
-#        $html .= qq{  <div style="clear:both" />\n</div>\n\n<div>};
-#        $nb_col_line = 0;
-#      }
-#    }
+    else {
+      $html .= qq{\n    <table style="padding:0px 2px"><tr><td>\n      <ul style="padding-left:20px">\n};
+
+      # List of tables #
+      foreach my $t_name (@{$tables}) {
+        if ($table_count == $nb_by_col and $col_count<$nb_col and $nb_col>1){
+          $html .= qq{      </ul>\n    </td><td>\n      <ul style="padding-left:20px">\n};
+          $table_count = 0;
+        }
+        my $t_colour;
+        if ($has_header == 0 && $show_colour) {
+          $t_colour = $documentation->{$header_name}{'tables'}{$t_name}{'colour'};
+        }
+        $html .= add_table_name_to_list($t_name,$t_colour);
+        $table_count ++;
+      }
+      $html .= qq{      </ul>\n    </td></tr></table>\n};
+    }
   }
   
   my $input_margin;
@@ -604,6 +616,8 @@ sub display_tables_list {
 }
 
 
+# If the option "-show_header" is selected, the tables will be displayed by group ("Header") in the HTML page.
+# This method generates the HTML code to display the group names & descriptions.
 sub display_header {
   my $header_name = shift;
   my $nb_col = shift;
@@ -638,6 +652,7 @@ sub display_header {
 }
 
 
+# Method to pick up the documentation information contained in the SQL file.
 # If the line starts by a @<tag>, the previous tag content is added to the documentation hash.
 # This method allows to describe the content of a tag in several lines.
 sub fill_documentation {
@@ -697,7 +712,7 @@ sub fill_documentation {
         print STDERR "COLUMN: The description content of the column '$1' is missing in the table $table!\n";
       }
       push(@{$documentation->{$header}{'tables'}{$table}{$tag}},$column);
-    }
+    } 
     else{
       push(@{$documentation->{$header}{'tables'}{$table}{$tag}},$tag_content);
     }
@@ -713,6 +728,7 @@ sub fill_documentation {
 }
  
 
+# Method generating the HTML code to display the table name into the top menu.
 sub add_table_name_to_list {
   my $t_name = shift;
   my $t_colour = shift;
@@ -725,6 +741,8 @@ sub add_table_name_to_list {
   return $html;
 }
 
+
+# Method generating the HTML code to display the title/header of the table description block
 sub add_table_name {
   my $t_name = shift;
   my $colour = shift || '#000000';
@@ -740,7 +758,11 @@ sub add_table_name {
   <table style="border: 2px groove #CCCCCC;background-color:#FAFAFF">
     <tr style="vertical-align:middle">$c_box
       <td style="width:420px;text-align:left;height:10px"><span id="$t_name" style="font-size:11pt;font-weight:bold">$t_name</span></td>
-      <td style="width:180px;text-align:right"><a id="a_$t_name" style="cursor:pointer;text-decoration:underline" onclick="show_hide('$t_name')">Show</a> columns
+      <td style="width:200px;text-align:right">
+        <a id="a_$t_name" style="cursor:pointer;text-decoration:none" onclick="show_hide('$t_name')">
+          $img_plus
+          <span style="vertical-align:middle">Show $link_text</span>
+        </a>
         &nbsp;<b>|</b>&nbsp;<a href="#top">[Back to top]</a></td>
     </tr>
   </table>\n};
@@ -749,11 +771,14 @@ sub add_table_name {
 }
 
 
+# Method generating the HTML code to display the description content
 sub add_description {
   my $desc = shift;
   return qq{  <p style="padding:5px 0px;margin-bottom:0px;width:800px">$desc</p>\n};
 }
 
+
+# Method generating the HTML code to display additional information contained in the tags @info
 sub add_info {
   my $infos = shift;
   my $html = '';
@@ -770,6 +795,8 @@ sub add_info {
   return $html;
 }
 
+
+# Method generating the HTML code of the table listing the columns of the given SQL table.
 sub add_columns {
   my $table = shift;
   my $data  = shift;
@@ -806,12 +833,67 @@ sub add_columns {
   return $html;
 }
 
+
+# Method generating the HTML code to display the content of the tags @example (description + SQL query + Table of SQL query results)
+sub add_examples {
+  my $table = shift;
+  my $data  = shift;
+  my $examples  = $data->{example};
+  my $html;
+
+  my $nb = (scalar(@$examples) > 1) ? 1 : '';
+
+  foreach my $ex (@$examples) {
+    my @lines = split("\n",$ex);
+    my $nb_display = ($nb ne '') ? " $nb" : $nb;
+    $html .= qq{<div style="margin: 10px 5px"><p style="font-weight:bold">Example$nb_display:</p>};
+    my $has_desc = 0;
+    my $sql;
+    
+    # Parse the example lines
+    foreach my $line (@lines) {
+      chomp($line);
+      
+      # Pick up the SQl query if it exists
+      if ($line =~ /(.*)\s*\@sql\s*(.+)/) {
+        $html .= ($has_desc == 1) ? $1 : qq{<p style="padding-left:10px">$1};
+        $sql = $2;
+      } elsif (!defined($sql)){
+        $html .= qq{<p style="padding-left:10px">} if ($has_desc == 0);
+        $html .= $line;
+        $has_desc = 1;
+      }
+      else {
+        $sql .= $line;
+      }
+    }
+    $html .= qq{</p>};
+    
+    # Add a table of examples
+    if (defined($sql)) {
+      my $show_hide = '';
+      my $sql_table = '';
+      if (!defined($skip_conn) && defined($host)) {
+        $show_hide .= qq{<a id="e_$table$nb" style="cursor:pointer;text-decoration:none" onclick="show_hide('$table$nb','example')">$img_plus<span style="vertical-align:middle"> Show query results</span></a>};
+        $sql_table = get_example_table($sql,$table,$nb);
+      }
+      $html .= qq{<pre style="display:inline;border:1px solid #555;padding:2px;margin-right:15px;margin-left:10px">$sql</pre> $show_hide\n$sql_table};
+    }
+    $html .= qq{</div>};
+    $nb ++;
+  }
+  
+  return $html;
+}
+
+
+# Method generating the HTML code to display the content of the tags @see
 sub add_see {
   my $sees = shift;
   my $html = '';
   
   if (scalar @$sees) {
-    $html .= qq{  <p style="padding-top:5px"><b>See also:</b></p>\n  <ul>\n};
+    $html .= qq{  <p style="margin-top:10px"><b>See also:</b></p>\n  <ul>\n};
     foreach my $see (@$sees) {
       $html .= qq{    <li><a href="#$see">$see</a></li>\n};
     }
@@ -822,6 +904,8 @@ sub add_see {
 }
 
 
+# Method parsing the index information from the SQL table description in order to display it in the
+# HTML table listing the columns of the corresponding SQL table.
 sub add_column_index {
   my $idx_type = shift;
   my $idx_col  = shift;
@@ -862,6 +946,8 @@ sub add_column_index {
 }
 
 
+# Method parsing the column type and default value from the SQL table description, in order to display them in the
+# HTML table listing the columns of the corresponding SQL table.
 sub add_column_type_and_default_value {
   my $c_name    = shift;
   my $c_type    = shift;
@@ -884,6 +970,62 @@ sub add_column_type_and_default_value {
 }
 
 
+# Method to query the database with the SQL query example, get the result and display it
+# in an HTML table.
+sub get_example_table {
+  my $sql   = shift;
+  my $table = shift;
+  my $nb    = shift;
+  my $html;
+  
+  if (!defined($db_handle)) {
+  
+  
+  }
+  
+  $sql =~ /select\s+(\S+)\s+from/i;
+  my $cols = $1;
+  my @tcols;
+  if ($cols eq '*') {
+    my $table_cols = $db_handle->selectall_arrayref(qq{SHOW COLUMNS FROM $table});
+    foreach my $col (@$table_cols) {
+      push(@tcols,$col->[0]);
+    }
+  } else {
+     $cols =~ s/ //g;
+     @tcols = split(',',$cols);
+  }
+  
+  my $results = $db_handle->selectall_arrayref($sql);
+  if (scalar(@$results)) {
+    $html .= qq{
+  <div id="ex_$table$nb" style="display:none;">
+    <table class="ss" style="width:80%;margin-top:20px;margin-left:10px">\n      <tr><th>};
+    $html .= join("</th><th>",@tcols);
+    $html .= qq{</th></tr>};
+    
+    my $bg = '';
+    
+    my $count = 0;
+    foreach my $result (@$results) {
+      last if ($count >= $SQL_LIMIT);
+      $html .= qq{      <tr$bg><td>};
+      $html .= join("</td><td>", @$result);
+      $html .= qq{</td></tr>};
+      
+      $bg = ($bg eq '')  ? ' class="bg2"' : '';  
+      $count ++;
+    }
+    $html .= qq{    </table>\n  </div>};
+  } else {
+    $html .= qq{<div style="padding:5px;font-weight:bold;border:2px solid red;color:red">ERROR: the SQL query displayed above returned no result!</div>};
+  }
+  
+  return $html;
+}
+
+
+# Method generating a "Colour legend" paragraph, based on the header colours.
 sub add_legend {
   my $html = '';
   my $default = 'Other tables';
@@ -932,34 +1074,125 @@ sub length_names {
 
 
 
+
+##################
+## Help methods ##
+##################
+
+sub sql_documentation_format {
+  print q{
+	
+#--------------------------#
+# Example of documentation #	
+#--------------------------#
+	
+/**
+@table variation
+
+@desc This is the schema's generic representation of a variation.
+
+@colour #FF0000
+
+@column variation_id       Primary key, internal identifier.
+@column source_id          Foreign key references to the \@link source table.
+@column name               Name of the variation. e.g. "rs1333049".
+@column validation_status  Variant discovery method and validation from dbSNP.
+@column ancestral_allele   Taken from dbSNP to show ancestral allele for the variation.
+@column flipped            This is set to 1 if the variant is flipped.
+@column class_so_id        Class of the variation, based on the Sequence Ontology.
+
+@example Example of SQL query for to retrieve data from this table:
+         @sql SELECT * FROM variation WHERE source_id=1 LIMIT 10;
+
+@see variation_synonym
+@see flanking_sequence
+@see failed_variation
+@see variation_feature
+@see variation_group_variation
+@see allele
+@see allele_group_allele
+@see individual_genotype_multiple_bp
+*/
+
+
+create table variation (
+    variation_id int(10) unsigned not null auto_increment, # PK
+    source_id int(10) unsigned not null, 
+    name varchar(255),
+    validation_status SET('cluster','freq','submitter','doublehit','hapmap','1000Genome','failed','precious'),
+    ancestral_allele text,
+    flipped tinyint(1) unsigned NULL DEFAULT NULL,
+    class_so_id ENUM('SO:0001483','SO:1000002','SO:0000667') DEFAULT 'SO:0001059', # default to sequence_alteration
+
+    primary key( variation_id ),
+    unique ( name ),
+    key source_idx (source_id)
+);
+
+/**
+@legend #FF0000 Table storing variation data
+*/
+
+
+#========================================================================================================================#
+
+
+#------------------#
+# Tags description #
+#------------------#
+
+ /** and */ : begin and end of the document block
+ @header    : tag to create a group of tables
+ @table     : name of the sql table
+ @desc      : description of the role/content of the table, set or info tags
+ @colour    : tag to colour the header of the table (e.g. if the tables are coloured in the graphic SQL schema and you want to reproduce it in the HTML version)
+ @column    : column_name [tab(s)] Column description. Note: 1 ligne = 1 column
+ @see       : tables names linked to the described table
+ @link      : Internal link to an other table description. The format is ... @link table_name ...
+ @info      : tag to describe additional information about a table or a set of tables
+ @legend    : tag to fill the colour legend table at the end of the HTML page
+ @example   : tag to add some examples, like examples of SQL queries
+ @sql       : tag inside the @example tag, used to delimit a SQL query
+
+};
+  exit(0);
+}
+
+
 sub usage {
   
-  print qq{
+  print q{
   Usage: perl sql2html.pl [OPTION]
   
   Convert the SQL documentation into an HTML document.
   
   Options:
 
-    -help           Print this message
+    -help            Print this message
+    -help_format     Print the description of the documentation format in the SQL files
       
     An input file must be specified. This file must be a SQL file, with the "Java-doc like documentation". 
     For more information, please visit the following page: 
     http://www.ebi.ac.uk/seqdb/confluence/display/EV/SQL+documentation
 
-    -i               A SQL file name (Required)
-    -o               An HTML output file name (Required)
-    -d               The name of the database (e.g Core, Variation, Functional Genomics, ...)
-    -c               A flag to display the colours associated with the tables (1) or not (0).
-                     By default, the value is set to 1.
-    -show_header     A flag to display headers for a group of tables (1) or not (0). 
-                     By default, the value is set to 1.
-    -format_headers  A flag to display formatted headers for a group of tables (1) or not (0) 
-                     in the top menu list. By default, the value is set to 1.                
-    -sort_headers    A flag to sort (1) or not (0) the headers by alphabetic order.
-                     By default, the value is set to 1.
-    -sort_tables     A flag to sort (1) or not (0) the tables by alphabetic order.
-                     By default, the value is set to 1.               
+    -i                A SQL file name (Required)
+    -o                An HTML output file name (Required)
+    -d                The name of the database (e.g Core, Variation, Functional Genomics, ...)
+    -c                A flag to display the colours associated with the tables (1) or not (0). By default, the value is set to 1.
+    -show_header      A flag to display headers for a group of tables (1) or not (0). By default, the value is set to 1.
+    -format_headers   A flag to display formatted headers for a group of tables (1) or not (0) in the top menu list. By default, the value is set to 1.                
+    -sort_headers     A flag to sort (1) or not (0) the headers by alphabetic order. By default, the value is set to 1.
+    -sort_tables      A flag to sort (1) or not (0) the tables by alphabetic order. By default, the value is set to 1.
+                     
+    Other optional options - if you want to add some SQL query results as examples
+    
+    -host             Host name of the MySQL server
+    -port             Port of the MySQL server
+    -db_name          Database name
+    -user             MySQL user name
+    -pass             MySQL password (not always required)
+    -skip_connection  Avoid to run the MySQL queries contained in the "@example" tags.
+    
   } . "\n";
   exit(0);
 }
