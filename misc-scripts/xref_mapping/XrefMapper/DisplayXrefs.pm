@@ -770,7 +770,7 @@ sub transcript_names_from_gene {
         $ins_ox_sth->execute($ox_id, $transcript_id, $reuse_xref_id);
         $update_tran_sth->execute($reuse_xref_id, $transcript_id);
       } else {
-        $ins_xref_sth->execute($xref_id, $external_db_id, $acc. "-" . $ext, $label . "-" . $ext, $description);
+        $ins_xref_sth->execute($xref_id, $external_db_id, $label. "-" . $ext, $label . "-" . $ext, $description);
         $ins_ox_sth->execute($ox_id, $transcript_id, $xref_id); 
         $update_tran_sth->execute($xref_id, $transcript_id);
       }
