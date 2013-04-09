@@ -1188,7 +1188,7 @@ sub usage {
     
     -host             Host name of the MySQL server
     -port             Port of the MySQL server
-    -db_name          Database name
+    -dbname           Database name
     -user             MySQL user name
     -pass             MySQL password (not always required)
     -skip_connection  Avoid to run the MySQL queries contained in the "@example" tags.
