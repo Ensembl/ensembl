@@ -744,12 +744,13 @@ sub transcript_names_from_gene {
   my $ins_ox_sth = $self->core->dbc->prepare("INSERT into object_xref (object_xref_id, ensembl_id, ensembl_object_type, xref_id) values(?, ?, 'Transcript', ?)");
   my $update_tran_sth = $self->core->dbc->prepare("UPDATE transcript t SET t.display_xref_id= ? WHERE t.transcript_id=?");
 
-  my $get_genes = $self->core->dbc->prepare("SELECT g.gene_id, x.external_db_id, x.dbprimary_acc, x.display_label, x.description FROM gene g, xref x where g.display_xref_id = x.xref_id");
+  my $get_genes = $self->core->dbc->prepare("SELECT g.gene_id, e.db_name, x.dbprimary_acc, x.display_label, x.description FROM gene g, xref x, external_db e where g.display_xref_id = x.xref_id and e.external_db_id = x.external_db_id");
   my $get_transcripts = $self->core->dbc->prepare("SELECT transcript_id FROM transcript WHERE gene_id = ? ORDER BY seq_region_start, seq_region_end");
+  my $get_source_id = $self->core->dbc->prepare("SELECT external_db_id FROM external_db WHERE db_name like ?");
 
   $get_genes->execute();
-  my ($gene_id, $external_db_id, $acc, $label, $description, $transcript_id, $xref_id, $ox_id, $ext, $reuse_xref_id);
-  $get_genes->bind_columns(\$gene_id, \$external_db_id, \$acc, \$label, \$description);
+  my ($gene_id, $external_db, $external_db_id, $acc, $label, $description, $transcript_id, $xref_id, $ox_id, $ext, $reuse_xref_id);
+  $get_genes->bind_columns(\$gene_id, \$external_db, \$acc, \$label, \$description);
   $xref_id_sth->execute();
   $xref_id_sth->bind_columns(\$xref_id);
   $xref_id_sth->fetch();
@@ -759,6 +760,9 @@ sub transcript_names_from_gene {
   $del_xref_sth->execute();
   while ($get_genes->fetch()) {
     $ext = '201';
+    $get_source_id->execute($external_db . "_transcript_name");
+    $get_source_id->bind_columns(\$external_db_id);
+    $get_source_id->fetch();
     $get_transcripts->execute($gene_id);
     $get_transcripts->bind_columns(\$transcript_id);
     while ($get_transcripts->fetch) {
@@ -785,6 +789,7 @@ sub transcript_names_from_gene {
   $xref_id_sth->finish();
   $ox_id_sth->finish();
   $get_genes->finish();
+  $get_source_id->finish();
   $get_transcripts->finish();
   $ins_xref_sth->finish();
   $ins_ox_sth->finish();
