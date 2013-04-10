@@ -476,7 +476,7 @@ foreach my $header_name (@header_names) {
     
     $html_content .= add_table_name($t_name,$colour);
     $html_content .= add_description($data);
-    $html_content .= add_info($data->{info});  
+    $html_content .= add_info($data->{info},$data);  
     $html_content .= add_columns($t_name,$data);
     $html_content .= add_examples($t_name,$data);
     $html_content .= add_see($data->{see});
@@ -793,10 +793,13 @@ sub add_description {
 # Method generating the HTML code to display additional information contained in the tags @info
 sub add_info {
   my $infos = shift;
-  my $html = '';
+	my $data  = shift;
+  my $html  = '';
   
   foreach my $inf (@{$infos}) {
     my ($title,$content) = split('@info@', $inf);
+		$content = add_internal_link($content,$data) if (defined($data));
+		
     $html .= qq{
     <table>
       <tr class="bg3"><th>$title</th></tr>
@@ -1001,13 +1004,8 @@ sub get_example_table {
   my $table = shift;
   my $nb    = shift;
   my $html;
-  
-  if (!defined($db_handle)) {
-  
-  
-  }
-  
-  $sql =~ /select\s+(\S+)\s+from/i;
+	
+  $sql =~ /select\s+(.+)\s+from/i;
   my $cols = $1;
   my @tcols;
   if ($cols eq '*') {
