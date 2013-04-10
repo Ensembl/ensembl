@@ -332,12 +332,20 @@ while (<SQLFILE>) {
       #---------#
       # INDEXES #
       #---------#
+			
+			# Skip the FOREIGN KEY
+			next if ($doc =~ /^\s*foreign\s+key/i);
+			
       if ($doc =~ /^\s*(primary\s+key)\s*\w*\s*\((.+)\)/i or $doc =~ /^\s*(unique)\s*\((.+)\)/i){ # Primary or unique;
         add_column_index($1,$2);
         next;
       }
       elsif ($doc =~ /^\s*(unique\s+)?(key|index)\s+(\S+)\s*\((.+)\)/i) { # Keys and indexes
         add_column_index("$1$2",$4,$3);
+        next;
+      }
+			elsif ($doc =~ /^\s*(unique)\s+(\S*)\s*\((.+)\)/i) { # Unique
+        add_column_index("$1",$3,$2);
         next;
       }
       elsif ($doc =~ /^\s*(key)\s+\((.+)\)/i) { # Keys
@@ -351,7 +359,7 @@ while (<SQLFILE>) {
       my $col_name = '';
       my $col_type = '';
       my $col_def  = '';
-    
+			
       # All the type is contained in the same line (type followed by parenthesis)
       if ($doc =~ /^\W*(\w+)\W+(\w+\s?\(.*\))/ ){
         $col_name = $1;
@@ -467,7 +475,7 @@ foreach my $header_name (@header_names) {
     my $colour = ($header_flag && $hcolour) ? $hcolour : $data->{colour};
     
     $html_content .= add_table_name($t_name,$colour);
-    $html_content .= add_description($data->{desc});
+    $html_content .= add_description($data);
     $html_content .= add_info($data->{info});  
     $html_content .= add_columns($t_name,$data);
     $html_content .= add_examples($t_name,$data);
@@ -773,7 +781,11 @@ sub add_table_name {
 
 # Method generating the HTML code to display the description content
 sub add_description {
-  my $desc = shift;
+  my $data = shift;
+	
+	# Search if there are some @link tags in the description text.
+	my $desc = add_internal_link($data->{desc},$data);
+	
   return qq{  <p style="padding:5px 0px;margin-bottom:0px;width:800px">$desc</p>\n};
 }
 
@@ -791,7 +803,7 @@ sub add_info {
       <tr class="bg1"><td>$content</td></tr>
     </table>\n};
   }
-  
+	
   return $html;
 }
 
@@ -814,15 +826,8 @@ sub add_columns {
     my $desc    = $col->{desc};
     my $index   = $col->{index};
     
-    # links
-    while ($desc =~ /\@link\s?(\w+)/) {
-      my $link = $1;
-      if (!grep {$link eq $_} @{$data->{see}} and defined($link)) {
-        push @{$data->{see}}, $link;
-      }
-      my $table_to_link = qq{<a href="#$link">$link</a>};
-      $desc =~ s/\@link\s?\w+/$table_to_link/;
-    }
+		# links
+		$desc = add_internal_link($desc,$data);
     
     $html .= qq{      <tr class="bg$bg"><td><b>$name</b></td><td>$type</td><td>$default</td><td>$desc</td><td>$index</td></tr>\n};
     if ($bg==1) { $bg=2; }
@@ -868,6 +873,9 @@ sub add_examples {
       }
     }
     $html .= qq{</p>};
+		
+		# Search if there are some @link tags in the example description.
+		$html = add_internal_link($html,$data);
     
     # Add a table of examples
     if (defined($sql)) {
@@ -901,6 +909,22 @@ sub add_see {
   }
   
   return $html;
+}
+
+
+# Method searching the tag @link into the string given as argument and replace it by an internal HTML link 
+sub add_internal_link {
+	my $desc = shift;
+	my $data = shift;
+  while ($desc =~ /\@link\s?(\w+)/) {
+    my $link = $1;
+    if ((!grep {$link eq $_} @{$data->{see}}) and defined($link)) {
+      push @{$data->{see}}, $link;
+    }
+    my $table_to_link = qq{<a href="#$link">$link</a>};
+    $desc =~ s/\@link\s?\w+/$table_to_link/;
+  }
+  return $desc;
 }
 
 
