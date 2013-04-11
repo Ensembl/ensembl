@@ -188,10 +188,7 @@ my $html_header = qq{
 </script>
 
 </head>
-
 <body>
-<h1>Ensembl $db_team Schema Documentation</h1>
-
 };
 
 
@@ -402,21 +399,11 @@ while (<SQLFILE>) {
 close(SQLFILE);
 
 
-#################
-### Intro   #####
-#################
-my $html_intro = qq{
-<h2>Introduction</h2>
-};
 
-my $intro_content = slurp_intro($intro_file);
-$html_intro .= qq{<p>};
-$html_intro .= $intro_content;
-$html_intro .= qq{</p>};
 
-############
-### Core  ##
-############
+###########
+## Core  ##
+###########
 
 my $html_content;
 
@@ -432,7 +419,7 @@ if ($sort_tables == 1) {
 }
 
 # Legend link
-if ($show_colour and scalar @colours > 1) {
+if ($show_colour and scalar @colours > 1 and $header_flag != 1) {
   $html_content .= qq{A colour legend is available at the <a href="#legend">bottom of the page</a>.\n<br /><br />};
 }
 
@@ -495,7 +482,7 @@ $html_content .= add_legend();
 ######################
 open  HTML, "> $html_file" or die "Can't open $html_file : $!";
 print HTML $html_header."\n";
-print HTML $html_intro."\n";
+print HTML slurp_intro($intro_file)."\n";
 print HTML $html_content."\n";
 print HTML $html_footer."\n";
 close(HTML);
@@ -1101,7 +1088,7 @@ sub length_names {
 sub slurp_intro {
   my ($intro_file) = @_;
   if (!defined $intro_file) {
-    return qq{<p><i>please, insert your introduction here</i><p><br />}
+    return qq{<h1>Ensembl $db_team Schema Documentation</h1>\n<h2>Introduction</h2>\n<p><i>please, insert your introduction here</i><p><br />};
   }
 
   local $/=undef;
