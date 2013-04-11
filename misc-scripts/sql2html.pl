@@ -17,7 +17,7 @@ use Bio::EnsEMBL::DBSQL::DBAdaptor;
 ### Options ###
 ###############
 
-my ($sql_file,$html_file,$db_team,$show_colour,$header_flag,$format_headers,$sort_headers,$sort_tables,$help,$help_format);
+my ($sql_file,$html_file,$db_team,$show_colour,$header_flag,$format_headers,$sort_headers,$sort_tables,$intro_file,$help,$help_format);
 my ($host,$port,$dbname,$user,$pass,$skip_conn,$db_handle);
 
 usage() if (!scalar(@ARGV));
@@ -37,6 +37,7 @@ GetOptions(
     'user=s'           => \$user,
     'pass=s'           => \$pass,
     'skip_connection'  => \$skip_conn,
+    'intro=s'          => \$intro_file,
     'help!'            => \$help,
     'help_format'      => \$help_format,
 );
@@ -191,15 +192,7 @@ my $html_header = qq{
 <body>
 <h1>Ensembl $db_team Schema Documentation</h1>
 
-<h2>Introduction</h2>
-
-<p><i>
-&lt;please, insert your introduction here&gt;
-</i></p>
-<br />
 };
-
-
 
 
 ##############
@@ -409,7 +402,17 @@ while (<SQLFILE>) {
 close(SQLFILE);
 
 
+#################
+### Intro   #####
+#################
+my $html_intro = qq{
+<h2>Introduction</h2>
+};
 
+my $intro_content = slurp_intro($intro_file);
+$html_intro .= qq{<p>};
+$html_intro .= $intro_content;
+$html_intro .= qq{</p>};
 
 ############
 ### Core  ##
@@ -492,6 +495,7 @@ $html_content .= add_legend();
 ######################
 open  HTML, "> $html_file" or die "Can't open $html_file : $!";
 print HTML $html_header."\n";
+print HTML $html_intro."\n";
 print HTML $html_content."\n";
 print HTML $html_footer."\n";
 close(HTML);
@@ -1094,7 +1098,18 @@ sub length_names {
   return ";width:200px" if ($max<=25);
 }
 
+sub slurp_intro {
+  my ($intro_file) = @_;
+  if (!defined $intro_file) {
+    return qq{<p><i>please, insert your introduction here</i><p><br />}
+  }
 
+  local $/=undef;
+  open my $fh, "< $intro_file" or die "Can't open $intro_file: $!";
+  my $intro_html = <$fh>;
+  close $fh;
+  return $intro_html;
+}
 
 
 ##################
@@ -1201,6 +1216,7 @@ sub usage {
     -o                An HTML output file name (Required)
     -d                The name of the database (e.g Core, Variation, Functional Genomics, ...)
     -c                A flag to display the colours associated with the tables (1) or not (0). By default, the value is set to 1.
+    -intro            A html/text file to include in the Introduction section (Optional. If not provided a default text will be inserted)
     -show_header      A flag to display headers for a group of tables (1) or not (0). By default, the value is set to 1.
     -format_headers   A flag to display formatted headers for a group of tables (1) or not (0) in the top menu list. By default, the value is set to 1.                
     -sort_headers     A flag to sort (1) or not (0) the headers by alphabetic order. By default, the value is set to 1.
