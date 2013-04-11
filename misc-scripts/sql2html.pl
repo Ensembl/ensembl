@@ -1087,13 +1087,16 @@ sub length_names {
 
 sub slurp_intro {
   my ($intro_file) = @_;
+
+  my $intro_html = qq{<h1>Ensembl $db_team Schema Documentation</h1>\n<h2>Introduction</h2>\n};
+
   if (!defined $intro_file) {
-    return qq{<h1>Ensembl $db_team Schema Documentation</h1>\n<h2>Introduction</h2>\n<p><i>please, insert your introduction here</i><p><br />};
+    return $intro_html . qq{<p><i>please, insert your introduction here</i><p><br />};
   }
 
   local $/=undef;
   open my $fh, "< $intro_file" or die "Can't open $intro_file: $!";
-  my $intro_html = <$fh>;
+  $intro_html .= <$fh>;
   close $fh;
   return $intro_html;
 }
