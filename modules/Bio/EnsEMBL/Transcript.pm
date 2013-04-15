@@ -1707,6 +1707,7 @@ sub five_prime_utr_Feature {
   my ($self) = @_;
   my ($start, $end);
   my $cdna_coding = $self->cdna_coding_start();
+  return unless $cdna_coding;
   my ($genomic_pos) = $self->cdna2genomic($cdna_coding, $cdna_coding);
   if($self->strand() == 1) {
     $start = $self->seq_region_start();
@@ -1749,6 +1750,7 @@ sub three_prime_utr_Feature {
   my ($self) = @_;
   my ($start, $end);
   my $cdna_coding = $self->cdna_coding_end();
+  return unless $cdna_coding;
   my ($genomic_pos) = $self->cdna2genomic($cdna_coding, $cdna_coding);
   if($self->strand() == 1) {
     $end = $self->seq_region_end();
