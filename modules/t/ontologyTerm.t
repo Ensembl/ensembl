@@ -36,7 +36,11 @@ my $accession = "GO:0000217";
 my $term = $go_adaptor->fetch_by_accession($accession);
 is($term, undef, "GO:0000217 does not exist in the non obsolete list");
 $term = $go_adaptor->fetch_by_accession($accession, 1);
-ok($term->is_obsolete, "GO:0003677 is obsolete");
+ok($term->is_obsolete, "GO:0000217 is obsolete");
+
+$accession = "GO:0003698";
+$term = $go_adaptor->fetch_by_accession($accession);
+ok($term->name, "GO:0003698 alt_id was fetched");
 
 $accession = "GO:0003677";
 $term = $go_adaptor->fetch_by_accession($accession, 1);
