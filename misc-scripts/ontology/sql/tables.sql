@@ -59,6 +59,16 @@ CREATE TABLE synonym (
   INDEX name_idx (name(50))
 );
 
+CREATE TABLE alt_id (
+  alt_id        INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  term_id       INT UNSIGNED NOT NULL,
+  accession     VARCHAR(64) NOT NULL,
+
+  PRIMARY KEY (alt_id),
+  UNIQUE INDEX term_alt_idx (term_id, alt_id),
+  INDEX accession_idx (accession(50))
+);
+
 CREATE TABLE relation_type (
   relation_type_id  INT UNSIGNED NOT NULL AUTO_INCREMENT,
   name              VARCHAR(64) NOT NULL,
