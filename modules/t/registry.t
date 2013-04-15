@@ -6,6 +6,7 @@ use Test::More;
 use File::Temp qw/tempfile/;
 use Bio::EnsEMBL::Registry;
 use Bio::EnsEMBL::Test::MultiTestDB;
+use Bio::EnsEMBL::Test::TestUtils qw/warns_like/;
 
 my $threads;
 if($Config{useithreads} && ! $ENV{ENS_FORCE_NOTHREADS}) {
@@ -40,6 +41,7 @@ my $registry_template = <<'TMPL';
 1;
 TMPL
 
+#Testing threaded re-loads of the registry
 {
   my ($fh, $filename) = tempfile();
   my $final = sprintf($registry_template, $dbc->host(), $dbc->port(), $dbc->username(), $dbc->password(), $dbc->dbname());
@@ -76,6 +78,23 @@ TMPL
     }
     ok("Calling of single-threaded load went off without any problems");
   }
+}
+
+#Testing auto-correction of arguments for common 1st line methods
+{
+  my $tester = sub {
+    my ($misspelling) = @_;
+    my %params = (-HOST => $dbc->host(), -PORT => $dbc->port(), -USER => $dbc->username());
+    $params{-PASS} = $dbc->password() if $dbc->password();
+    my $db_version = -2;
+    $params{"-${misspelling}"} = $db_version;
+    warns_like( sub { $reg->load_registry_from_db(%params) }, qr/${misspelling}.+mis-spelling/, "Testing that param -${misspelling} succeeded");
+    return;
+  };
+  $tester->('dbversion');
+  $tester->('version');
+  $tester->('verion');
+  $tester->('verison');
 }
 
 done_testing();
