@@ -271,7 +271,7 @@ CREATE TABLE exon (
 @column seq_region_start              Sequence start position.
 @column seq_region_end                Sequence end position.
 @column seq_region_strand             Sequence region strand: 1 - forward; -1 - reverse.
-@column hit_name		                  External entity name/identifier.
+@column hit_name                      External entity name/identifier.
 @column score                         Score supporting the intron 
 @column score_type                    The type of score e.g. NONE
 @column is_splice_canonical           Indicates if the splice junction can be considered canonical i.e. behaves according to accepted rules
@@ -281,22 +281,22 @@ CREATE TABLE exon (
 */
 
 CREATE TABLE intron_supporting_evidence (
-	intron_supporting_evidence_id INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
-	analysis_id                   SMALLINT UNSIGNED NOT NULL,
-	seq_region_id                 INT(10) UNSIGNED NOT NULL,
-	seq_region_start              INT(10) UNSIGNED NOT NULL,
-	seq_region_end                INT(10) UNSIGNED NOT NULL,
-	seq_region_strand             TINYINT(2) NOT NULL,
-	hit_name                      VARCHAR(100) NOT NULL,
-	score                         DECIMAL(10,3),
-	score_type                    ENUM('NONE', 'DEPTH') DEFAULT 'NONE',
-	is_splice_canonical           BOOLEAN NOT NULL DEFAULT 0,
-	
-	PRIMARY KEY (intron_supporting_evidence_id),
-	
-	UNIQUE KEY (analysis_id, seq_region_id, seq_region_start, seq_region_end, seq_region_strand, hit_name),
-	KEY seq_region_idx (seq_region_id, seq_region_start)
-	
+        intron_supporting_evidence_id INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
+        analysis_id                   SMALLINT UNSIGNED NOT NULL,
+        seq_region_id                 INT(10) UNSIGNED NOT NULL,
+        seq_region_start              INT(10) UNSIGNED NOT NULL,
+        seq_region_end                INT(10) UNSIGNED NOT NULL,
+        seq_region_strand             TINYINT(2) NOT NULL,
+        hit_name                      VARCHAR(100) NOT NULL,
+        score                         DECIMAL(10,3),
+        score_type                    ENUM('NONE', 'DEPTH') DEFAULT 'NONE',
+        is_splice_canonical           BOOLEAN NOT NULL DEFAULT 0,
+
+        PRIMARY KEY (intron_supporting_evidence_id),
+
+        UNIQUE KEY (analysis_id, seq_region_id, seq_region_start, seq_region_end, seq_region_strand, hit_name),
+        KEY seq_region_idx (seq_region_id, seq_region_start)
+        
 ) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
 
 /**
@@ -2390,6 +2390,38 @@ CREATE TABLE ontology_xref (
   KEY source_idx (source_xref_id),
   KEY object_idx (object_xref_id),
   UNIQUE KEY object_source_type_idx (object_xref_id, source_xref_id, linkage_type)
+
+) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
+
+
+/**
+@table associated_xref
+@desc This table associates extra associated annotations with a given ontology xref evidence and source under a specific condition.   For GO this allows qualifiers (with/from) or annotation extensions to be added to a given ontology annotation.
+
+This table can also be used to associate other annotations to an ontology annotation.
+
+@column object_xref_id
+@column associated_xref_id Associated external reference
+@column source_xref_id     
+@column condition          Free text condition description eg with, from,
+                           localises
+
+@see object_xref
+*/
+
+CREATE TABLE associated_xref (
+
+  object_xref_id                 INT(10) UNSIGNED DEFAULT '0' NOT NULL,
+  associated_xref_id             INT(10) UNSIGNED DEFAULT NULL,
+  source_xref_id                 INT(10) UNSIGNED DEFAULT NULL,
+  condition_type                 VARCHAR(128) DEFAULT NULL,
+  linked_associated_xref_id      INT(10) UNSIGNED DEFAULT '0' NOT NULL,
+
+  KEY source_idx (source_xref_id),
+  KEY object_idx (object_xref_id),
+  KEY associated_idx (associated_xref_id),
+  KEY linked_associated_idx (linked_associated_xref_id),
+  UNIQUE KEY object_associated_source_type_idx (object_xref_id, associated_xref_id, source_xref_id, condition_type, linked_associated_xref_id)
 
 ) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
 
