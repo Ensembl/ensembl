@@ -17,7 +17,7 @@ use Bio::EnsEMBL::DBSQL::DBAdaptor;
 ### Options ###
 ###############
 
-my ($sql_file,$html_file,$db_team,$show_colour,$header_flag,$format_headers,$sort_headers,$sort_tables,$intro_file,$help,$help_format);
+my ($sql_file,$html_file,$db_team,$show_colour,$version,$header_flag,$format_headers,$sort_headers,$sort_tables,$intro_file,$help,$help_format);
 my ($host,$port,$dbname,$user,$pass,$skip_conn,$db_handle);
 
 usage() if (!scalar(@ARGV));
@@ -27,6 +27,7 @@ GetOptions(
     'o=s' => \$html_file,
     'd=s' => \$db_team,
     'c=i' => \$show_colour,
+    'v=i' => \$version,
     'show_header=i'    => \$header_flag,
     'format_headers=i' => \$format_headers,
     'sort_headers=i'   => \$sort_headers,
@@ -322,10 +323,10 @@ while (<SQLFILE>) {
       #---------#
       # INDEXES #
       #---------#
-			
-			# Skip the FOREIGN KEY
-			next if ($doc =~ /^\s*foreign\s+key/i);
-			
+      
+      # Skip the FOREIGN KEY
+      next if ($doc =~ /^\s*foreign\s+key/i);
+      
       if ($doc =~ /^\s*(primary\s+key)\s*\w*\s*\((.+)\)/i or $doc =~ /^\s*(unique)\s*\((.+)\)/i){ # Primary or unique;
         add_column_index($1,$2);
         next;
@@ -334,7 +335,7 @@ while (<SQLFILE>) {
         add_column_index("$1$2",$4,$3);
         next;
       }
-			elsif ($doc =~ /^\s*(unique)\s+(\S*)\s*\((.+)\)/i) { # Unique
+      elsif ($doc =~ /^\s*(unique)\s+(\S*)\s*\((.+)\)/i) { # Unique
         add_column_index("$1",$3,$2);
         next;
       }
@@ -349,7 +350,7 @@ while (<SQLFILE>) {
       my $col_name = '';
       my $col_type = '';
       my $col_def  = '';
-			
+      
       # All the type is contained in the same line (type followed by parenthesis)
       if ($doc =~ /^\W*(\w+)\W+(\w+\s?\(.*\))/ ){
         $col_name = $1;
@@ -773,10 +774,10 @@ sub add_table_name {
 # Method generating the HTML code to display the description content
 sub add_description {
   my $data = shift;
-	
-	# Search if there are some @link tags in the description text.
-	my $desc = add_internal_link($data->{desc},$data);
-	
+  
+  # Search if there are some @link tags in the description text.
+  my $desc = add_internal_link($data->{desc},$data);
+  
   return qq{  <p style="padding:5px 0px;margin-bottom:0px;width:800px">$desc</p>\n};
 }
 
@@ -784,20 +785,20 @@ sub add_description {
 # Method generating the HTML code to display additional information contained in the tags @info
 sub add_info {
   my $infos = shift;
-	my $data  = shift;
+  my $data  = shift;
   my $html  = '';
   
   foreach my $inf (@{$infos}) {
     my ($title,$content) = split('@info@', $inf);
-		$content = add_internal_link($content,$data) if (defined($data));
-		
+    $content = add_internal_link($content,$data) if (defined($data));
+    
     $html .= qq{
     <table>
       <tr class="bg3"><th>$title</th></tr>
       <tr class="bg1"><td>$content</td></tr>
     </table>\n};
   }
-	
+  
   return $html;
 }
 
@@ -820,8 +821,8 @@ sub add_columns {
     my $desc    = $col->{desc};
     my $index   = $col->{index};
     
-		# links
-		$desc = add_internal_link($desc,$data);
+    # links
+    $desc = add_internal_link($desc,$data);
     
     $html .= qq{      <tr class="bg$bg"><td><b>$name</b></td><td>$type</td><td>$default</td><td>$desc</td><td>$index</td></tr>\n};
     if ($bg==1) { $bg=2; }
@@ -867,9 +868,9 @@ sub add_examples {
       }
     }
     $html .= qq{</p>};
-		
-		# Search if there are some @link tags in the example description.
-		$html = add_internal_link($html,$data);
+    
+    # Search if there are some @link tags in the example description.
+    $html = add_internal_link($html,$data);
     
     # Add a table of examples
     if (defined($sql)) {
@@ -908,8 +909,8 @@ sub add_see {
 
 # Method searching the tag @link into the string given as argument and replace it by an internal HTML link 
 sub add_internal_link {
-	my $desc = shift;
-	my $data = shift;
+  my $desc = shift;
+  my $data = shift;
   while ($desc =~ /\@link\s?(\w+)/) {
     my $link = $1;
     if ((!grep {$link eq $_} @{$data->{see}}) and defined($link)) {
@@ -995,7 +996,7 @@ sub get_example_table {
   my $table = shift;
   my $nb    = shift;
   my $html;
-	
+  
   $sql =~ /select\s+(.+)\s+from/i;
   my $cols = $1;
   my @tcols;
@@ -1085,6 +1086,7 @@ sub length_names {
   return ";width:200px" if ($max<=25);
 }
 
+# Insert the introduction text of the web page
 sub slurp_intro {
   my ($intro_file) = @_;
   if (!defined $intro_file) {
@@ -1095,6 +1097,9 @@ sub slurp_intro {
   open my $fh, "< $intro_file" or die "Can't open $intro_file: $!";
   my $intro_html = <$fh>;
   close $fh;
+  
+  $intro_html =~ s/####DB_VERSION####/$version/g if (defined($version));
+  
   return $intro_html;
 }
 
@@ -1105,11 +1110,11 @@ sub slurp_intro {
 
 sub sql_documentation_format {
   print q{
-	
+  
 #--------------------------#
-# Example of documentation #	
+# Example of documentation #  
 #--------------------------#
-	
+  
 /**
 @table variation
 
@@ -1203,6 +1208,7 @@ sub usage {
     -o                An HTML output file name (Required)
     -d                The name of the database (e.g Core, Variation, Functional Genomics, ...)
     -c                A flag to display the colours associated with the tables (1) or not (0). By default, the value is set to 1.
+    -v                Version of the schema. Replace the string ####DB_VERSION#### by the value of the parameter "-v", in the introduction text. (Optional)
     -intro            A html/text file to include in the Introduction section (Optional. If not provided a default text will be inserted)
     -show_header      A flag to display headers for a group of tables (1) or not (0). By default, the value is set to 1.
     -format_headers   A flag to display formatted headers for a group of tables (1) or not (0) in the top menu list. By default, the value is set to 1.                
