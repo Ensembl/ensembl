@@ -510,6 +510,8 @@ INSERT INTO meta (species_id, meta_key, meta_value) VALUES
 # NOTE: Avoid line-breaks in values.
 INSERT INTO meta (species_id, meta_key, meta_value)
   VALUES (NULL, 'patch', 'patch_71_72_a.sql|schema_version');
+INSERT INTO meta (species_id, meta_key, meta_value)
+  VALUES (NULL, 'patch', 'patch_71_72_b.sql|associated_xref');
 
 /**
 @table meta_coord
@@ -2423,6 +2425,22 @@ CREATE TABLE associated_xref (
   KEY linked_associated_idx (linked_associated_xref_id),
   UNIQUE KEY object_associated_source_type_idx (object_xref_id, associated_xref_id, source_xref_id, condition_type, linked_associated_xref_id)
 
+) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
+
+/**
+@table associated_group
+
+@associated_group_id
+@description
+
+*/
+
+CREATE TABLE associated_group (
+
+  associated_group_id            INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
+  description                    VARCHAR(128) DEFAULT NULL,
+
+  PRIMARY KEY (associated_group_id)
 ) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
 
 
