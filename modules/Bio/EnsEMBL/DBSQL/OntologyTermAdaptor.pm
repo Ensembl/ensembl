@@ -187,14 +187,16 @@ WHERE   term.accession = ?);
       \( $dbid, $accession, $name, $definition, $subsets, $is_root, $is_obsolete, $ontology, $namespace ) );
 
   $sth->fetch();
-  
-  # early exit in the event of bad $accession
-  unless ($dbid) {return;}
-  
-  $subsets ||= '';
+  $sth->finish();
 
-  my $term =
-    Bio::EnsEMBL::OntologyTerm->new(
+  my $term;
+  if (!$dbid) {
+    $term = $this->fetch_by_alt_id($accession);
+  } else {
+    $subsets ||= '';
+
+    $term =
+      Bio::EnsEMBL::OntologyTerm->new(
                     '-dbid'       => $dbid,
                     '-adaptor'    => $this,
                     '-accession'  => $accession,
@@ -206,11 +208,78 @@ WHERE   term.accession = ?);
                     '-name'       => $name,
                     '-definition' => $definition,
                     '-synonyms' => $this->_fetch_synonyms_by_dbID($dbid)
+      );
+  }
+
+  return $term;
+} ## end sub fetch_by_accession
+
+
+=head2 fetch_by_alt_id
+
+  Arg [1]       : String
+
+  Description   : Fetches an ontology term given an alt_id.
+
+  Example       :
+
+    my $term = $ot_adaptor->fetch_by_alt_id('GO:0019952');
+
+  Return type   : Bio::EnsEMBL::OntologyTerm
+
+=cut
+
+sub fetch_by_alt_id {
+  my ( $this, $accession ) = @_;
+
+  my $statement = q(
+SELECT  term.term_id,
+        alt_id.accession,
+        term.name,
+        term.definition,
+        term.subsets,
+        term.is_root,
+        term.is_obsolete,
+        ontology.name,
+        ontology.namespace
+FROM    ontology
+  JOIN  term USING (ontology_id)
+  JOIN  alt_id USING (term_id)
+WHERE   alt_id.accession = ?);
+
+  my $sth = $this->prepare($statement);
+  $sth->bind_param( 1, $accession, SQL_VARCHAR );
+
+  $sth->execute();
+
+  my ( $dbid, $name, $definition, $subsets, $is_root, $is_obsolete, $ontology, $namespace );
+  $sth->bind_columns(
+      \( $dbid, $accession, $name, $definition, $subsets, $is_root, $is_obsolete, $ontology, $namespace ) );
+
+  $sth->fetch();
+
+  # early exit in the event of bad $accession
+  unless ($dbid) {return;}
+
+  $subsets ||= '';
+  my $term =
+    Bio::EnsEMBL::OntologyTerm->new(
+                    '-dbid'       => $dbid,
+                    '-adaptor'    => $this,
+                    '-accession'  => $accession,
+                    '-ontology'   => $ontology,
+                    '-namespace'  => $namespace,
+                    '-subsets'    => [ split( /,/, $subsets ) ],
+                    '-name'       => $name,
+                    '-definition' => $definition,
+                    '-synonyms' => $this->_fetch_synonyms_by_dbID($dbid)
     );
   $sth->finish();
 
   return $term;
-} ## end sub fetch_by_accession
+} ## end sub fetch_by_alt_id
+
+
 
 =head2 fetch_all_by_parent_term
 
@@ -839,6 +908,46 @@ WHERE   term.term_id IN (%s));
 
   return \@terms;
 } ## end sub fetch_all_by_dbID_list
+
+
+=head2 fetch_all_alt_ids
+
+  Arg [1]       : String
+
+  Description   : Fetches all alt_ids for a given ontology term
+
+  Example       :
+
+    my ($accessions) =
+      @{ $ot_adaptor->fetch_all_alt_ids( 'GO:0000003' ) };
+
+  Return type   : listref of accessions
+
+=cut
+sub fetch_all_alt_ids {
+  my ($this, $accession) = @_;
+
+  my $statement = q(
+SELECT  alt_id.accession,
+FROM    term
+  JOIN  alt_id USING (term_id)
+ WHERE  term.accession = ?);
+
+  my $sth = $this->prepare($statement);
+  $sth->bind_param(1, $accession, SQL_VARCHAR);
+  $sth->execute();
+
+  my (@accessions, $alt_id);
+  $sth->bind_columns( \$alt_id);
+
+  while ( $sth->fetch() ) {
+    push( @accessions, $alt_id);
+  }
+
+  return \@accessions;
+}
+
+
 
 
 =head2 fetch_all_roots
