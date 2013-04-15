@@ -166,13 +166,15 @@ sub write_subset {
 sub write_term {
   my ($dbh, $terms, $subsets, $namespaces, $unknown_onto_id) = @_;
 
-  print("Writing to 'term' and 'synonym' tables...\n");
+  print("Writing to 'term', 'synonym' and 'alt_id' tables...\n");
 
-  $dbh->do("LOCK TABLES term WRITE, synonym WRITE");
+  $dbh->do("LOCK TABLES term WRITE, synonym WRITE, alt_id WRITE");
 
   my $statement = "INSERT IGNORE INTO term (ontology_id, subsets, accession, name, definition, is_root, is_obsolete) VALUES (?,?,?,?,?,?,?)";
 
   my $syn_stmt = "INSERT INTO synonym (term_id, name) VALUES (?,?)";
+
+  my $alt_stmt = "INSERT INTO alt_id (term_id, accession) VALUES (?,?)";
 
   my $existing_term_st = "SELECT term_id, ontology_id FROM term WHERE accession = ?";
 
@@ -181,6 +183,7 @@ sub write_term {
   my $sth               = $dbh->prepare($statement);
   my $update_sth        = $dbh->prepare($update_stmt);
   my $syn_sth           = $dbh->prepare($syn_stmt);
+  my $alt_sth           = $dbh->prepare($alt_stmt);
   my $existing_term_sth = $dbh->prepare($existing_term_st);
 
   my $count         = 0;
@@ -287,12 +290,30 @@ sub write_term {
           }
         }
       }
+
+      if(!$term->{alt_id}->is_empty) {
+        if($reuse) {
+          print "REUSE: SKIPPING ALT_ID writing as term already exists in this database\n";
+        }
+        else {
+          foreach my $acc ($term->{'alt_id'}->get_set()) {
+            $alt_sth->bind_param(1, $term->{id},  SQL_INTEGER);
+            $alt_sth->bind_param(2, $acc, SQL_VARCHAR);
+
+            $alt_sth->execute();
+
+            ++$syn_count;
+          }
+        }
+      }
+
     }
   } ## end foreach my $accession ( sort...)
   alarm(0);
 
   $dbh->do("OPTIMIZE TABLE term");
   $dbh->do("OPTIMIZE TABLE synonym");
+  $dbh->do("OPTIMIZE TABLE alt_id");
   $dbh->do("UNLOCK TABLES");
 
   printf("\tWrote %d entries into 'term', updated %d entries in 'term' and wrote %d entries into 'synonym'\n", $count, $updated_count, $syn_count);
@@ -706,6 +727,8 @@ foreach my $t (@{$ontology->get_terms()}) {
     foreach my $t_synonym (@t_synonyms) {
       push(@{$term{'synonyms'}}, $t_synonym->def_as_string());
     }
+
+    $term{'alt_id'} = $t->alt_id();
 
     $terms{$term{'accession'}} = {%term};
 
