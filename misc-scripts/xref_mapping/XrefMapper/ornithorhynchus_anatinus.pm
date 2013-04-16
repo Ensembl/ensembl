@@ -72,7 +72,7 @@ sub gene_description_sources {
          "IMGT/GENE_DB",
          "Uniprot/SWISSPROT",
          "RefSeq_peptide",
-         "RefSeq_dna",
+         "RefSeq_mRNA",
          "Uniprot/Varsplic",
          "Uniprot/SPTREMBL");
 

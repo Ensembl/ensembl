@@ -22,7 +22,7 @@ sub gene_description_sources {
 	  "miRBase",
 	  "Uniprot/SWISSPROT",
 	  "RefSeq_peptide",
-	  "RefSeq_dna",
+	  "RefSeq_mRNA",
 	  "Uniprot/Varsplic",
 	  "Uniprot/SPTREMBL");
 }

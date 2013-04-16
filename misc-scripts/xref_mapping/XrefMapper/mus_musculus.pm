@@ -77,7 +77,7 @@ sub gene_description_sources {
 	  "Uniprot/SWISSPROT", 
 	  "Uniprot/Varsplic", 
 	  "RefSeq_peptide", 
-	  "RefSeq_dna", 	  
+	  "RefSeq_mRNA", 	  
 	  "Uniprot/SPTREMBL" );
 
 }
