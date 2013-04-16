@@ -27,7 +27,7 @@ sub run {
   my (%refseq) =  %{$self->get_valid_codes('refseq',$species_id)};
   my @list;
   push @list, 'refseq_peptide';
-  push @list, 'refseq_dna';
+  push @list, 'refseq_mRNA';
   my (%entrezgene) = %{$self->get_valid_xrefs_for_dependencies('EntrezGene',@list)};
 
 
