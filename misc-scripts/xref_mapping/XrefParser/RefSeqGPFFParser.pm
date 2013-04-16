@@ -36,8 +36,6 @@ sub run {
 
   $peptide_source_id =
     $self->get_source_id_for_source_name('RefSeq_peptide');
-  $dna_source_id =
-    $self->get_source_id_for_source_name('RefSeq_dna');
   $mrna_source_id =
     $self->get_source_id_for_source_name('RefSeq_mRNA','refseq');
   $ncrna_source_id =
@@ -45,8 +43,6 @@ sub run {
 
   $pred_peptide_source_id =
     $self->get_source_id_for_source_name('RefSeq_peptide_predicted');
-  $pred_dna_source_id =
-    $self->get_source_id_for_source_name('RefSeq_dna_predicted');
   $pred_mrna_source_id =
     $self->get_source_id_for_source_name('RefSeq_mRNA_predicted','refseq');
   $pred_ncrna_source_id =
@@ -54,11 +50,9 @@ sub run {
 
   if($verbose){
     print "RefSeq_peptide source ID = $peptide_source_id\n";
-    print "RefSeq_dna source ID = $dna_source_id\n";
     print "RefSeq_mRNA source ID = $mrna_source_id\n";
     print "RefSeq_ncRNA source ID = $ncrna_source_id\n";
     print "RefSeq_peptide_predicted source ID = $pred_peptide_source_id\n";
-    print "RefSeq_dna_predicted source ID = $pred_dna_source_id\n" ;
     print "RefSeq_mRNA_predicted source ID = $pred_mrna_source_id\n" ;
     print "RefSeq_ncRNA_predicted source ID = $pred_ncrna_source_id\n" ;
   }
@@ -145,10 +139,6 @@ sub create_xrefs {
     $type = 'peptide';
 
   } elsif ($file =~ /rna/) {
-
-    $type = 'dna';
-
-  } elsif($file =~ /RefSeq_dna/){
 
     $type = 'dna';
 
