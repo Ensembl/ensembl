@@ -38,8 +38,6 @@ sub run {
 
   my $pred_peptide_source_id =
     $self->get_source_id_for_source_name('RefSeq_peptide_predicted');
-  my $pred_dna_source_id =
-    $self->get_source_id_for_source_name('RefSeq_dna_predicted');
   my $pred_mrna_source_id =
     $self->get_source_id_for_source_name('RefSeq_mRNA_predicted','refseq');
   my $pred_ncrna_source_id =
@@ -51,7 +49,6 @@ sub run {
     print "RefSeq_mRNA source ID = $mrna_source_id\n";
     print "RefSeq_ncRNA source ID = $ncrna_source_id\n";
     print "RefSeq_peptide_predicted source ID = $pred_peptide_source_id\n";
-    print "RefSeq_dna_predicted source ID = $pred_dna_source_id\n" ;
     print "RefSeq_mRNA_predicted source ID = $pred_mrna_source_id\n" ;
     print "RefSeq_ncRNA_predicted source ID = $pred_ncrna_source_id\n" ;
   }
@@ -63,7 +60,6 @@ sub run {
           $self->create_xrefs( $peptide_source_id,
                                $dna_source_id,
                                $pred_peptide_source_id,
-                               $pred_dna_source_id,
 			       $mrna_source_id, $ncrna_source_id,
 			       $pred_mrna_source_id, $pred_ncrna_source_id,
                                $file,
@@ -102,7 +98,6 @@ sub run {
         $self->set_release( $mrna_source_id,         $release );
         $self->set_release( $ncrna_source_id,        $release );
         $self->set_release( $pred_peptide_source_id, $release );
-        $self->set_release( $pred_dna_source_id,     $release );
         $self->set_release( $pred_mrna_source_id,    $release );
         $self->set_release( $pred_ncrna_source_id,   $release );
     }
@@ -120,7 +115,7 @@ sub run {
 
 sub create_xrefs {
   my ($self, $peptide_source_id, $dna_source_id, $pred_peptide_source_id,
-      $pred_dna_source_id, $mrna_source_id, $ncrna_source_id, 
+      $mrna_source_id, $ncrna_source_id, 
       $pred_mrna_source_id, $pred_ncrna_source_id, $file, $species_id ) = @_;
 
   # Create a hash of all valid names for this species
