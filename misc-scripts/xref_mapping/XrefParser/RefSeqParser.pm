@@ -29,8 +29,6 @@ sub run {
 
   my $peptide_source_id =
     $self->get_source_id_for_source_name('RefSeq_peptide');
-  my $dna_source_id =
-    $self->get_source_id_for_source_name('RefSeq_dna');
   my $mrna_source_id =
     $self->get_source_id_for_source_name('RefSeq_mRNA','refseq');
   my $ncrna_source_id =
@@ -45,7 +43,6 @@ sub run {
 
   if($verbose){
     print "RefSeq_peptide source ID = $peptide_source_id\n";
-    print "RefSeq_dna source ID = $dna_source_id\n";
     print "RefSeq_mRNA source ID = $mrna_source_id\n";
     print "RefSeq_ncRNA source ID = $ncrna_source_id\n";
     print "RefSeq_peptide_predicted source ID = $pred_peptide_source_id\n";
@@ -58,7 +55,6 @@ sub run {
 
         my $xrefs =
           $self->create_xrefs( $peptide_source_id,
-                               $dna_source_id,
                                $pred_peptide_source_id,
 			       $mrna_source_id, $ncrna_source_id,
 			       $pred_mrna_source_id, $pred_ncrna_source_id,
@@ -94,7 +90,6 @@ sub run {
 
         $self->set_release( $source_id,              $release );
         $self->set_release( $peptide_source_id,      $release );
-        $self->set_release( $dna_source_id,          $release );
         $self->set_release( $mrna_source_id,         $release );
         $self->set_release( $ncrna_source_id,        $release );
         $self->set_release( $pred_peptide_source_id, $release );
@@ -114,7 +109,7 @@ sub run {
 # Slightly different formats
 
 sub create_xrefs {
-  my ($self, $peptide_source_id, $dna_source_id, $pred_peptide_source_id,
+  my ($self, $peptide_source_id, $pred_peptide_source_id,
       $mrna_source_id, $ncrna_source_id, 
       $pred_mrna_source_id, $pred_ncrna_source_id, $file, $species_id ) = @_;
 
@@ -175,8 +170,6 @@ sub create_xrefs {
 	$source_id = $mrna_source_id;
       } elsif( $acc =~ /^NR/) {
 	$source_id = $ncrna_source_id;
-      } else {
-	$source_id = $dna_source_id;
       }
       $xref->{SOURCE_ID} = $source_id;
 
