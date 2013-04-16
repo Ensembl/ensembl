@@ -235,7 +235,7 @@ CCDS
   }
 
 
-  print "Parsed $line_count RefSeq_dna identifiers from $file, added $xref_count xrefs and $direct_count direct_xrefs  from $line_count lines.\n" if ($verbose);
+  print "Parsed $line_count RefSeq_mRNA identifiers from $file, added $xref_count xrefs and $direct_count direct_xrefs  from $line_count lines.\n" if ($verbose);
 
 
   return 0;
