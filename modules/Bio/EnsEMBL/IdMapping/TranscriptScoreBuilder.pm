@@ -317,20 +317,36 @@ sub score_matrix_from_flag_matrix {
 
         } else {
 
-=cut
+          my $source_transcript_biotype_group = $self->get_biotype_group($source_transcript->biotype());
+          my $target_transcript_biotype_group = $self->get_biotype_group($target_transcript->biotype());
+
           # debug
           $self->logger->info($source_transcript->id.":".$target_transcript->id.
             " source score: $source_transcript_score".
             " source length: $source_transcript_length".
+            " source biotype:" . $source_transcript->biotype() .
+            " source group: $source_transcript_biotype_group".
             " target score: $target_transcript_score".
+            " target biotype:" . $target_transcript->biotype() .
+            " target group: $target_transcript_biotype_group".
             " target length: $target_transcript_length\n");
-=cut
+
           
-          # everything is fine, add score to matrix
           my $transcript_score =
             ($source_transcript_score + $target_transcript_score) /
             ($source_transcript_length + $target_transcript_length);
 
+## Add penalty if biotypes are different
+          if ($source_transcript->biotype() ne $target_transcript->biotype()) {
+            $transcript_score = $transcript_score * 0.9;
+          }
+
+## Add penalty if biotype groups are different
+          if ($source_transcript_biotype_group ne $target_transcript_biotype_group) {
+            $transcript_score = $transcript_score * 0.8;
+          }
+
+          # everything is fine, add score to matrix
           if ($transcript_score > $transcript_score_threshold) {
             $matrix->add_score($source_transcript->id, $target_transcript->id,
               $transcript_score);
@@ -492,6 +508,23 @@ sub non_mapped_gene_rescore {
   $self->logger->debug( "Scored transcripts in non-mapped genes: $i\n",
                         1 );
 } ## end sub non_mapped_gene_rescore
+
+
+sub get_biotype_group {
+  my ($self, $biotype) = @_;
+  my $dba = $self->cache->get_production_DBAdaptor();
+  my $helper   = $self->cache->get_production_DBAdaptor()->dbc()->sql_helper();
+
+  my $sql      = q{
+     SELECT biotype_group
+     FROM biotype
+     WHERE object_type = 'transcript'
+     AND is_current = 1
+     AND name = ?
+     AND db_type like '%core%' };
+  my $result = $helper->execute_simple(-SQL => $sql, -PARAMS => [$biotype]);
+  return $result->[0];
+}
 
   
 1;

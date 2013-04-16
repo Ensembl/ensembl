@@ -1037,6 +1037,18 @@ sub get_DBAdaptor {
 } ## end sub get_DBAdaptor
 
 
+sub get_production_DBAdaptor() {
+  my ($self) = @_;
+  my $dba = new Bio::EnsEMBL::DBSQL::DBAdaptor(
+                       -host   => $self->conf->param("productionhost"),
+                       -port   => $self->conf->param("productionport"),
+                       -user   => $self->conf->param("productionuser"),
+                       -pass   => $self->conf->param("productionpass"),
+                       -dbname => $self->conf->param("productiondbname"));
+  return $dba;
+}
+
+
 sub cache_file_exists {
   my $self = shift;
   my $type = shift;
