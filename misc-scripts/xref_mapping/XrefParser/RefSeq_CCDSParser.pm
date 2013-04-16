@@ -163,8 +163,8 @@ CCDS
     }
   }    
 
-  # for each object_xref for refseq_dna change internal_id to xref transcript_id
-  $sth->execute("Refseq_dna") or croak( $dbi2->errstr() );
+  # for each object_xref for refseq_mRNA change internal_id to xref transcript_id
+  $sth->execute("RefSeq_mRNA") or croak( $dbi2->errstr() );
   while ( my @row = $sth->fetchrow_array() ) {
     my $refseq = $row[0];
     my $internal_id = $row[1];
