@@ -70,7 +70,7 @@ INSERT INTO closure
   (child_term_id, parent_term_id, distance, subparent_term_id, ontology_id)
 SELECT  term_id, term_id, 0, NULL, ontology_id
 FROM    term
- WHERE  isnull(is_obsolete)
+ WHERE  is_obsolete = 0
 ) );
 
 $dbh->do(
@@ -81,7 +81,7 @@ SELECT term_id, term_id, 0, NULL, r.ontology_id
 FROM   term t, relation r
 WHERE  term_id = child_term_id
 AND    t.ontology_id != r.ontology_id
-AND    isnull(is_obsolete)
+AND    is_obsolete = 0
 ) );
 
 $dbh->do(

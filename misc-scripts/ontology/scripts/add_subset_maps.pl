@@ -69,7 +69,7 @@ FROM    ontology,
         term,
         subset
 WHERE   ontology.ontology_id = term.ontology_id
-  AND   isnull(is_obsolete)
+  AND   is_obsolete = 0
   AND   FIND_IN_SET(subset.name, term.subsets) > 0
 );
 
@@ -94,8 +94,8 @@ WHERE   ontology.name = %s
   AND   FIND_IN_SET(%s, parent_term.subsets) > 0
   AND   parent_term.ontology_id = closure.ontology_id
   AND   child_term.ontology_id = closure.ontology_id
-  AND   isnull(parent_term.is_obsolete)
-  AND   isnull(child_term.is_obsolete)
+  AND   parent_term.is_obsolete = 0
+  AND   child_term.is_obsolete = 0
 GROUP BY child_term.term_id, parent_term.term_id
 );
 
