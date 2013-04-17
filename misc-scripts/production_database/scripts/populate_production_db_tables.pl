@@ -207,6 +207,7 @@ my %data;
     print( '=' x 80, "\n" );
 
     my @backup_tables;
+    my @updates;
 
     foreach my $table ( keys(%data) ) {
       printf( "==> %s: ", $table );
@@ -254,36 +255,95 @@ my %data;
       $dbh->do( sprintf( 'INSERT INTO %s SELECT * FROM %s',
                          $full_table_name_bak, $full_table_name ) );
 
-      # Truncate (empty) the table before inserting new data into it.
-      $dbh->do( sprintf( 'TRUNCATE TABLE %s', $full_table_name ) );
+      if ($table eq 'external_db') {
 
-      # Get column information.
-      my $colinfo_sth =
-        $dbh->column_info( undef, $dbname, $table, '%' );
-      my $colinfo =
-        $colinfo_sth->fetchall_hashref( ['ORDINAL_POSITION'] );
+        my %external_db;
+        my $sth = $dbh->prepare( sprintf(
+          'SELECT * FROM %s', $full_table_name) );
+        $sth->execute();
 
-      my $numcols = scalar( keys( %{$colinfo} ) );
-
-      # For each row read from the master table,
-      # issue an INSERT statement.
-      foreach my $row ( @{ $data{$table} } ) {
-        my $insert_statement = sprintf(
-          'INSERT INTO %s (%s) VALUES (%s)',
-          $full_table_name,
-          join( ', ',
-                map { $colinfo->{$_}{'COLUMN_NAME'} } 1 .. $numcols ),
-          join(
-            ', ',
-            map {
-              $dbh->quote( $row->[ $_ - 1 ],
-                           $colinfo->{$_}{'DATA_TYPE'} )
-            } ( 1 .. $numcols ) ) );
-
-        if ($verbose) {
-          printf( STDERR "EXECUTING: %s\n", $insert_statement );
+        while ( my $row = $sth->fetchrow_arrayref() ) {
+          my $external_db_id = $row->[0];
+          push ( @{ $external_db{$external_db_id} }, @{$row} );
         }
-        $dbh->do($insert_statement);
+
+
+        foreach my $row ( @{ $data{$table} } ) {
+          my $colinfo_sth =
+            $dbh->column_info( undef, $dbname, $table, '%' );
+          my $colinfo =
+            $colinfo_sth->fetchall_hashref( ['ORDINAL_POSITION'] );
+          my $numcols = scalar( keys( %{$colinfo} ) );
+          my $external_db_id = $row->[0];
+
+          if (!$external_db{$external_db_id}) {
+            my $insert_statement = sprintf(
+              'INSERT INTO %s (%s) VALUES (%s)',
+              $full_table_name,
+              join( ', ',
+                    map { $colinfo->{$_}{'COLUMN_NAME'} } 1 .. $numcols ),
+              join(
+                ', ',
+                map {
+                  $dbh->quote( $row->[ $_ - 1 ],
+                               $colinfo->{$_}{'DATA_TYPE'} )
+                } ( 1 .. $numcols ) ) );
+            if ($verbose) {
+              printf( STDERR "EXECUTING: %s\n", $insert_statement );
+            }
+            $dbh->do($insert_statement);
+          } else {
+            my @data = @{ $external_db{$external_db_id} };
+            for (my $i = 1; $i < $numcols; $i++) {
+              if (defined $row->[$i]) {
+                if ($data[$i] ne $row->[$i]) {
+                  push (@updates, $external_db_id);
+                  my $update_statement = sprintf(
+                    "UPDATE %s SET %s = '%s' WHERE external_db_id = %s",
+                    $full_table_name, $colinfo->{$i+1}{'COLUMN_NAME'}, $data[$i], $external_db_id);
+                  if ($verbose) {
+                    printf( STDERR "EXECUTING: %s\n", $update_statement );
+                  }
+                  $dbh->do($update_statement);
+                }
+              }
+            }
+          }
+        }
+
+      } else {
+
+        # Truncate (empty) the table before inserting new data into it.
+        $dbh->do( sprintf( 'TRUNCATE TABLE %s', $full_table_name ) );
+
+        # Get column information.
+        my $colinfo_sth =
+          $dbh->column_info( undef, $dbname, $table, '%' );
+        my $colinfo =
+          $colinfo_sth->fetchall_hashref( ['ORDINAL_POSITION'] );
+
+        my $numcols = scalar( keys( %{$colinfo} ) );
+
+        # For each row read from the master table,
+        # issue an INSERT statement.
+        foreach my $row ( @{ $data{$table} } ) {
+          my $insert_statement = sprintf(
+            'INSERT INTO %s (%s) VALUES (%s)',
+            $full_table_name,
+            join( ', ',
+                  map { $colinfo->{$_}{'COLUMN_NAME'} } 1 .. $numcols ),
+            join(
+              ', ',
+              map {
+                $dbh->quote( $row->[ $_ - 1 ],
+                             $colinfo->{$_}{'DATA_TYPE'} )
+              } ( 1 .. $numcols ) ) );
+
+          if ($verbose) {
+            printf( STDERR "EXECUTING: %s\n", $insert_statement );
+          }
+          $dbh->do($insert_statement);
+        }
       }
 
       print("<inserted data>");
@@ -323,6 +383,21 @@ my %data;
           print("\n");
         }
       }
+
+      print("<updated data>");
+
+      {
+
+        if (@updates) {
+          print("\n");
+          print("Data updated:\n");
+          printf( "SELECT * FROM %s WHERE %s_id IN (%s);\n",
+                  $table, $table, join( ',', @updates ) );
+          print("\n");
+        }
+
+      }
+
       {
         my $statement = sprintf( 'SELECT %s ' . 'FROM %s ' .
                                    'LEFT JOIN %s t USING (%s) ' .
