@@ -300,7 +300,7 @@ my %data;
                   push (@updates, $external_db_id);
                   my $update_statement = sprintf(
                     "UPDATE %s SET %s = '%s' WHERE external_db_id = %s",
-                    $full_table_name, $colinfo->{$i+1}{'COLUMN_NAME'}, $data[$i], $external_db_id);
+                    $full_table_name, $colinfo->{$i+1}{'COLUMN_NAME'}, $row->[$i], $external_db_id);
                   if ($verbose) {
                     printf( STDERR "EXECUTING: %s\n", $update_statement );
                   }
@@ -309,6 +309,15 @@ my %data;
               }
             }
           }
+          delete $external_db{$external_db_id};
+        }
+        foreach my $k (keys %external_db) {
+          my $delete_statement = sprintf(
+            "DELETE FROM %s WHERE external_db_id = %s", $full_table_name, $k);
+          if ($verbose) {
+            printf( STDERR "EXECUTING: %s\n", $delete_statement );
+          }
+          $dbh->do($delete_statement);
         }
 
       } else {
@@ -382,12 +391,12 @@ my %data;
                   $table, $table, join( ',', @keys ) );
           print("\n");
         }
+        print("\n");
       }
 
       print("<updated data>");
 
       {
-
         if (@updates) {
           print("\n");
           print("Data updated:\n");
@@ -395,7 +404,7 @@ my %data;
                   $table, $table, join( ',', @updates ) );
           print("\n");
         }
-
+        print("\n");
       }
 
       {
