@@ -1574,7 +1574,7 @@ sub load_registry_from_db {
     # Do checking for the -DB_VERSION flag which can be mis-spelt. Regex assembled using:
     # perl -MRegexp::Assemble -e '$r=Regexp::Assemble->new(); $r->add($_) for ("-dbversion","-version","-verion","-verison"); print $r->re, "\n";'
     my $db_version_flag_re = qr/(?-xism:-(?:ver(?:is?|si)|dbversi)on)/xism;
-    for(my $i = 0; $i <= @args; $i = $i+2) {
+    for(my $i = 0; $i < scalar(@args); $i = $i+2) {
       if($args[$i] =~ $db_version_flag_re) {
         my $msg = sprintf(q{Detected no -DB_VERSION flag but found '%s'; assuming a mis-spelling. Please fix}, $args[$i]);
         warning($msg);
