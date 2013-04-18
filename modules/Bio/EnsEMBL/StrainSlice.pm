@@ -178,11 +178,11 @@ sub _filter_af_by_coverage{
     my $rc_adaptor = $variation_db->get_ReadCoverageAdaptor();
     #this is ugly, but ReadCoverage is always defined in the positive strand
 
-### EK : - it looks like the arguments to fetch_all_by_Slice_Sample_depth have changed
+### EK : - it looks like the arguments to fetch_all_by_Slice_Individual_depth have changed
 ###  passing 1 will only get you the coverage of level 1
 ###  by omitting the parameter we take into account all coverage regions 
-#    my $rcs = $rc_adaptor->fetch_all_by_Slice_Sample_depth($self,$self->{'_strain'},1);
-    my $rcs = $rc_adaptor->fetch_all_by_Slice_Sample_depth($self,$self->{'_strain'});
+#    my $rcs = $rc_adaptor->fetch_all_by_Slice_Individual_depth($self,$self->{'_strain'},1);
+    my $rcs = $rc_adaptor->fetch_all_by_Slice_Individual_depth($self,$self->{'_strain'});
     my $new_af;
     foreach my $af (@{$allele_features}){
 	foreach my $rc (@{$rcs}){
@@ -320,11 +320,11 @@ sub _add_coverage_information{
     }
     
     my $rc_adaptor = $variation_db->get_ReadCoverageAdaptor();
-### EK : - it looks like the arguments to fetch_all_by_Slice_Sample_depth have changed
+### EK : - it looks like the arguments to fetch_all_by_Slice_Individual_depth have changed
 ###  passing 1 will only get you the coverage of level 1
 ###  by omitting the parameter we take into account all coverage regions 
-#    my $rcs = $rc_adaptor->fetch_all_by_Slice_Sample_depth($self,$self->{'_strain'},1);
-    my $rcs = $rc_adaptor->fetch_all_by_Slice_Sample_depth($self,$self->{'_strain'});
+#    my $rcs = $rc_adaptor->fetch_all_by_Slice_Individual_depth($self,$self->{'_strain'},1);
+    my $rcs = $rc_adaptor->fetch_all_by_Slice_Individual_depth($self,$self->{'_strain'});
     my $rcs_sorted;
     @{$rcs_sorted} = sort {$a->start <=> $b->start} @{$rcs} if ($self->strand == -1);
     $rcs = $rcs_sorted if ($self->strand == -1);
