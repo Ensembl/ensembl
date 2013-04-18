@@ -84,7 +84,7 @@ if (defined($host) && !defined($skip_conn)) {
 ### Settings  ##
 ################
 
-my $default_colour = '#000000'; # Black
+my $default_colour = '#000'; # Black
 my $list_bg = "background-color:#F2F2F2";
 
 my %display_col = ('Show' => 'none', 'Hide' => 'inline');
@@ -745,27 +745,25 @@ sub add_table_name_to_list {
 # Method generating the HTML code to display the title/header of the table description block
 sub add_table_name {
   my $t_name = shift;
-  my $colour = shift || '#000000';
+  my $colour = shift || '#000';
   
   my $c_box = '';
   if ($show_colour) {
-    $c_box = qq{
-      <td style="padding:0px;width:10px;background-color:$colour"></td>
-      <td style="width:2px"></td>};
+		$c_box = qq{    <div style="float:left;padding:0px;height:20px;width:10px;background-color:$colour;margin-right:10px"></div>};
   }
-  
-  my $html = qq{\n<br />
-  <table style="border: 2px groove #CCCCCC;background-color:#FAFAFF">
-    <tr style="vertical-align:middle">$c_box
-      <td style="width:420px;text-align:left;height:10px"><span id="$t_name" style="font-size:11pt;font-weight:bold">$t_name</span></td>
-      <td style="width:200px;text-align:right">
-        <a id="a_$t_name" style="cursor:pointer;text-decoration:none" onclick="show_hide('$t_name')">
-          $img_plus
-          <span style="vertical-align:middle">Show $link_text</span>
-        </a>
-        &nbsp;<b>|</b>&nbsp;<a href="#top">[Back to top]</a></td>
-    </tr>
-  </table>\n};
+
+  my $html = qq{
+  <div id="$t_name" style="width:820px;height:20px;border: 2px groove #CCC;background-color:#FAFAFF;padding:2px;margin-top:35px;margin-bottom:2px">
+    $c_box
+    <div style="float:left;text-align:left;font-size:11pt;font-weight:bold">$t_name</div>
+    <div style="float:right;text-align:right;padding-right:1px">
+      <a id="a_$t_name" style="cursor:pointer;text-decoration:none" onclick="show_hide('$t_name')">
+        $img_plus
+        <span style="vertical-align:middle">Show $link_text</span>
+      </a> 
+			<b> | </b> <a href="#top">[Back to top]</a>
+		</div>
+  </div>\n};  
   
   return $html;
 }
@@ -1014,7 +1012,7 @@ sub get_example_table {
   if (scalar(@$results)) {
     $html .= qq{
   <div id="ex_$table$nb" style="display:none;">
-    <table class="ss" style="width:80%;margin-top:20px;margin-left:10px">\n      <tr><th>};
+    <table class="ss" style="width:50%;margin-top:20px;margin-left:10px">\n      <tr><th>};
     $html .= join("</th><th>",@tcols);
     $html .= qq{</th></tr>};
     
