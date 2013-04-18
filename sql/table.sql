@@ -2402,28 +2402,34 @@ CREATE TABLE ontology_xref (
 
 This table can also be used to associate other annotations to an ontology annotation.
 
+@column associated_xref_id Primary key, internal reference
 @column object_xref_id
-@column associated_xref_id Associated external reference
+@column xref_id
 @column source_xref_id     
-@column condition          Free text condition description eg with, from,
+@column condition_type     Free text condition description eg with, from,
                            localises
+@column associated_group_id Foreign key, reference to associated_group table
+@rank
 
 @see object_xref
 */
 
 CREATE TABLE associated_xref (
 
+  associated_xref_id             INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
   object_xref_id                 INT(10) UNSIGNED DEFAULT '0' NOT NULL,
-  associated_xref_id             INT(10) UNSIGNED DEFAULT NULL,
+  xref_id                        INT(10) UNSIGNED DEFAULT '0' NOT NULL,
   source_xref_id                 INT(10) UNSIGNED DEFAULT NULL,
   condition_type                 VARCHAR(128) DEFAULT NULL,
-  linked_associated_xref_id      INT(10) UNSIGNED DEFAULT '0' NOT NULL,
+  associated_group_id            INT(10) UNSIGNED DEFAULT NULL,
+  rank                           INT(10) UNSIGNED DEFAULT '0',
 
-  KEY source_idx (source_xref_id),
-  KEY object_idx (object_xref_id),
-  KEY associated_idx (associated_xref_id),
-  KEY linked_associated_idx (linked_associated_xref_id),
-  UNIQUE KEY object_associated_source_type_idx (object_xref_id, associated_xref_id, source_xref_id, condition_type, linked_associated_xref_id)
+  PRIMARY KEY (associated_xref_id),
+  KEY associated_source_idx (source_xref_id),
+  KEY associated_object_idx (object_xref_id),
+  KEY associated_idx (xref_id),
+  FOREIGN KEY associated_group_idx (associated_group_id) REFERENCES associated_group (associated_group_id),
+  UNIQUE KEY object_associated_source_type_idx (object_xref_id, xref_id, source_xref_id, condition_type, associated_group_id)
 
 ) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
 
