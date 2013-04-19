@@ -19,6 +19,8 @@ my $port = 5306;
 my $db_version = '-';
 
 eval {
+  require DBI;
+  require DBD::mysql;
   require Bio::EnsEMBL::Registry;
   require Bio::EnsEMBL::ApiVersion;
   require Bio::Perl;
@@ -72,6 +74,12 @@ eval {
 #Print all the errors which could have occured 
 if($error) {
   print "ERROR: Error detected when connecting to Ensembl!\n";
+  if($error =~ /DBI/) {
+    print "\tCannot find the DBI perl module. Please install this using your package management system, cpan or cpanm. Please consult http://www.ensembl.org/info/docs/api/api_installation.html\n";
+  }
+  if($error =~ /mysql/) {
+    print "\tCannot find the DBD::mysql perl module. Please install this using your package management system, cpan or cpanm. Also install the mysql libs. Please consult http://www.ensembl.org/info/docs/api/api_installation.html\n";
+  }
   if($error =~ /Can't locate Bio\/E/) {
     print "\tLooks like you need to setup your PERL5LIB with the Ensembl API. Please consult http://www.ensembl.org/info/docs/api/api_installation.html\n";
   }
