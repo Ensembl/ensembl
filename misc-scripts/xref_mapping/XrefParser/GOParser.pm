@@ -47,19 +47,19 @@ sub run {
     my $desc = undef;
     while ( $_ = $go_desc_io->getline() ) {
       if(/\<id\>   # start of id tag
-	  (GO:\d+)  # GO: followed by the id
-	  \<\/id\>  # end of id tag
+          (GO:\d+)  # GO: followed by the id
+          \<\/id\>  # end of id tag
 	  /x){
-	$term = $1;
+        $term = $1;
       }
       elsif(/\<name\>   # start of name tag
-	     (.*)       # the name we want
-	     \<\/name\> # end of name tag
+              (.*)       # the name we want
+              \<\/name\> # end of name tag
 	     /x){
-	if(defined($term)){
-	  $go_to_desc{$term} = $1;
-	} 
-	$term = undef;
+        if(defined($term)){
+          $go_to_desc{$term} = $1;
+        }
+        $term = undef;
       }
     }
     $go_desc_io->close();
@@ -94,12 +94,15 @@ sub run {
   my %cerevisiae;
   my $cerevisiae_set;
 
+  my %fly;
+  my $fly_set;
+
   my $count  = 0;
 
 
 
-  my %sp2tax     =  $self->species_id2taxonomy();  #some species have multiple
-                                                                    #tax_id i.e. strains
+  my %sp2tax     =  $self->species_id2taxonomy();   #some species have multiple
+                                                    #tax_id i.e. strains
 
   my @tax_ids = @{$sp2tax{$species_id}};
   foreach my $tax_id ( @tax_ids){
@@ -119,62 +122,62 @@ sub run {
 
       chomp;
       my @array = split (/\t/x,$_);
-	
+
       # Skip "NOT" terms entirely
       next if ($array[3] eq "NOT");
-	
+
       $array[9] =~ s/\'/\\\'/gx; # replace ' with \'
       my $master=0;
       if($array[0] =~ /ENSEMBL/){
-	#these might be good for a check
-	# match GO to Uniprot
-	# match Uniprot to ENSEMBL
-	# check ENSEMBL's are the same.
+        #these might be good for a check
+        # match GO to Uniprot
+        # match Uniprot to ENSEMBL
+        # check ENSEMBL's are the same.
       }
       elsif($array[0] =~ /RefSeq/){
-	if($refseq{$array[1]}) {
-	  foreach my $xref_id (@{$refseq{$array[1]}}){
-	    $self->add_dependent_xref({ master_xref_id => $xref_id,
-					acc            => $array[4],
-					label          => $array[4],
-					desc           => $go_to_desc{$array[4]} || '',
-					linkage        => $array[6],
-					source_id      => $source_id,
-					species_id     => $species_id} );
-	    $count++;
-	  }
-	}
-	else{
-	  $refseq_miss++;
-	}
+        if($refseq{$array[1]}) {
+          foreach my $xref_id (@{$refseq{$array[1]}}){
+            $self->add_dependent_xref({ master_xref_id => $xref_id,
+              acc            => $array[4],
+              label          => $array[4],
+              desc           => $go_to_desc{$array[4]} || '',
+              linkage        => $array[6],
+              source_id      => $source_id,
+              species_id     => $species_id} );
+            $count++;
+          }
+        }
+        else{
+          $refseq_miss++;
+        }
       }
       elsif($array[0] =~ /UniProt/){
-	if($swiss{$array[1]}){
-	  foreach my $xref_id (@{$swiss{$array[1]}}){
-	    $self->add_dependent_xref({ master_xref_id => $xref_id,
-					acc            => $array[4],
-					label          => $array[4],
-					desc           => $go_to_desc{$array[4]} || '',
-					linkage        => $array[6],
-					source_id      => $source_id,
-					species_id     => $species_id} );
-	    $count++;
-	  }
-	}
-	else{
-	  $swiss_miss++;
-	}
+        if($swiss{$array[1]}){
+          foreach my $xref_id (@{$swiss{$array[1]}}){
+            $self->add_dependent_xref({ master_xref_id => $xref_id,
+              acc            => $array[4],
+              label          => $array[4],
+              desc           => $go_to_desc{$array[4]} || '',
+              linkage        => $array[6],
+              source_id      => $source_id,
+              species_id     => $species_id} );
+            $count++;
+          }
+        }
+        else{
+          $swiss_miss++;
+        }
       }
       elsif($array[0] =~ /^WB/x){
-	#WB      CE20707 ZYG-9           GO:0008017      WB:WBPaper00003099|PMID:9606208 ISS             F                       protein  taxon:6239      20030829        WB
-	if(!defined($wormset)){
-	  $wormset = 1;
+        #WB  CE20707 ZYG-9  GO:0008017  WB:WBPaper00003099|PMID:9606208 ISS  F  protein  taxon:6239  20030829  WB
+        if(!defined($wormset)){
+          $wormset = 1;
           %worm = %{$self->get_valid_codes("wormbase_gene",$species_id)};
-	}
+        }
 
         my $worm_acc = $array[1];
 
-	if(defined($worm{$worm_acc})){
+        if(defined($worm{$worm_acc})){
           foreach my $xref_id (@{$worm{$worm_acc}}) {
             $self->add_dependent_xref({ master_xref_id => $xref_id,
                                         acc            => $array[4],
@@ -186,102 +189,125 @@ sub run {
             $count++;
           }
 
-	}
-	else{
-	  $miss++;
-	}
+        }
+        else{
+          $miss++;
+        }
       }
       elsif($array[0] =~ /^ZFIN/x){
-	#ZFIN    ZDB-GENE-030131-5418    rfng            GO:0030902      ZFIN:ZDB-PUB-050125-4|PMID:15659486     IMP     ZFIN:ZDB-MRPHLNO-050308-5     radical fringe homolog (Drosophila)              gene    taxon:7955      20050310        ZFIN
-	if(!defined($fishset)){
-	  $fishset = 1;
-	  %fish = %{$self->get_valid_xrefs_for_dependencies
-		      ('ZFIN_ID','Uniprot/SPTREMBL','RefSeq_peptide',
-		       'Uniprot/SWISSPROT')};
-	}
-	if(defined($fish{$array[1]})){
-	    $self->add_dependent_xref({ master_xref_id => $fish{$array[1]},
-					acc            => $array[4],
-					label          => $array[4],
-					desc           => $go_to_desc{$array[4]} || '',
-					linkage        => $array[6],
-					source_id      => $source_id,
-					species_id     => $species_id} );
-	  $count++;
-	}
+        #ZFIN  ZDB-GENE-030131-5418  rfng  GO:0030902  ZFIN:ZDB-PUB-050125-4|PMID:15659486  IMP  ZFIN:ZDB-MRPHLNO-050308-5  radical fringe homolog (Drosophila)  gene  taxon:7955  20050310  ZFIN
+        if(!defined($fishset)){
+          $fishset = 1;
+          %fish = %{$self->get_valid_xrefs_for_dependencies
+                ('ZFIN_ID','Uniprot/SPTREMBL','RefSeq_peptide',
+                'Uniprot/SWISSPROT')};
+        }
+        if(defined($fish{$array[1]})){
+            $self->add_dependent_xref({ master_xref_id => $fish{$array[1]},
+                acc            => $array[4],
+                label          => $array[4],
+                desc           => $go_to_desc{$array[4]} || '',
+                linkage        => $array[6],
+                source_id      => $source_id,
+                species_id     => $species_id} );
+          $count++;
+        }
       }
 
       elsif($array[0] =~ /MGI/x){
-	# MGI	MGI:1923501	0610007P08Rik		GO:0004386	MGI:MGI:1354194	IEA
-	#  0         1                2         3             4                  5        6
-	if(!defined($mouse_set)){
-	  $mouse_set = 1;
-	  # Todo: Make sure we get this hash populated
-	  %mouse = %{$self->get_valid_codes("MGI",$species_id)};
-	  
-	  print "Got " . keys (%mouse) . " MGI ids\n";
-	  
-	}
-	if ( $mouse{$array[1]} ){
-	  foreach my $xref_id ( @{$mouse{$array[1]}} ) {
-	    $self->add_dependent_xref({ master_xref_id => $xref_id,
-					acc            => $array[4],
-					label          => $array[4],
-					desc           => $go_to_desc{$array[4]} || '',
-					linkage        => $array[6],
-					source_id      => $source_id,
-					species_id     => $species_id} );
-	    $count++;
-	  }
-	}
+        # MGI	MGI:1923501	0610007P08Rik 		GO:0004386	MGI:MGI:1354194	IEA
+        # 0   1           2             3   4           5               6
+        if(!defined($mouse_set)){
+          $mouse_set = 1;
+          # Todo: Make sure we get this hash populated
+          %mouse = %{$self->get_valid_codes("MGI",$species_id)};
+
+          print "Got " . keys (%mouse) . " MGI ids\n";
+
+        }
+        if ( $mouse{$array[1]} ){
+          foreach my $xref_id ( @{$mouse{$array[1]}} ) {
+            $self->add_dependent_xref({ master_xref_id => $xref_id,
+                acc            => $array[4],
+                label          => $array[4],
+                desc           => $go_to_desc{$array[4]} || '',
+                linkage        => $array[6],
+                source_id      => $source_id,
+                species_id     => $species_id} );
+            $count++;
+          }
+        }
       }
       # SGD GO code
       elsif ($array[0] =~ /SGD/x) {
-	
-	if(!defined($cerevisiae_set)){
-	  $cerevisiae_set = 1;
-	  # Todo: Make sure we get this hash populated
-	  %cerevisiae = %{$self->get_valid_codes("sgd_translation",$species_id)};
-	  
-	  print STDERR "Got " . keys (%cerevisiae) . " cerevisiae ids\n";
-	  
-	}
-	
-	if($cerevisiae{$array[1]}){
-	  foreach my $xref_id (@{$cerevisiae{$array[1]}}){
 
-	      my $label = $array[2];
-	      #print STDERR "GO SGD label: $label\n";
+        if(!defined($cerevisiae_set)){
+          $cerevisiae_set = 1;
+          # Todo: Make sure we get this hash populated
+          %cerevisiae = %{$self->get_valid_codes("sgd_translation",$species_id)};
 
-	      # Only keep GO annotations for protein_coding genes
-	      # as the other annotations would get attached to transcript objects, instead of translations, 
-	      # GO attached to Transcripts used to break the webcode display and Biomart, although not a problem aymore !?
+          print STDERR "Got " . keys (%cerevisiae) . " cerevisiae ids\n";
 
-	      if (($label !~ /^t\w\(/) && ($label !~ /^\d+/) && ($label !~ /^RDN/)
-		  && ($label !~ /^snR/) && ($label !~ /^LSR/) && ($label !~ /^R|^T|^S|^P|^I|^H/)
-		  && ($label !~ /^EMT\d/) && ($label !~ /^FDH\d/) && ($label !~ /^NME\d/) && ($label !~ /^CDC\d+/)) {
-		  $self->add_dependent_xref({ master_xref_id => $xref_id,
-					      acc            => $array[4],
-					      label          => $array[4],
-					      desc           => $go_to_desc{$array[4]} || '',
-					      linkage        => $array[6],
-					      source_id      => $source_id,
-					      species_id     => $species_id} );
-		  $count++;
-	      }
-	  }
-	}
+        }
+
+        if($cerevisiae{$array[1]}){
+          foreach my $xref_id (@{$cerevisiae{$array[1]}}){
+
+            my $label = $array[2];
+            #print STDERR "GO SGD label: $label\n";
+
+            # Only keep GO annotations for protein_coding genes
+            # as the other annotations would get attached to transcript objects, instead of translations,
+            # GO attached to Transcripts used to break the webcode display and Biomart, although not a problem aymore !?
+
+            if (($label !~ /^t\w\(/) && ($label !~ /^\d+/) && ($label !~ /^RDN/)
+            && ($label !~ /^snR/) && ($label !~ /^LSR/) && ($label !~ /^R|^T|^S|^P|^I|^H/)
+            && ($label !~ /^EMT\d/) && ($label !~ /^FDH\d/) && ($label !~ /^NME\d/) && ($label !~ /^CDC\d+/)) {
+              $self->add_dependent_xref({ master_xref_id => $xref_id,
+                      acc            => $array[4],
+                      label          => $array[4],
+                      desc           => $go_to_desc{$array[4]} || '',
+                      linkage        => $array[6],
+                      source_id      => $source_id,
+                      species_id     => $species_id} );
+              $count++;
+            }
+          }
+        }
       }
-	
+      elsif ($array[0] =~ /^FB/x) {
+        if(!defined($fly_set)){
+          $fly_set = 1;
+          %fly = %{$self->get_valid_codes("flybase_gene_id", $species_id)};
+          print STDERR "Got " . keys (%fly) . " fruitfly ids\n";
+        }
+
+        my $fly_id = $array[1];
+        if ( $fly{$fly_id} ) {
+          foreach my $xref_id (@{$fly{$fly_id}}) {
+            $self->add_dependent_xref({ master_xref_id => $xref_id,
+                                        acc            => $array[4],
+                                        label          => $array[4],
+                                        desc           => $go_to_desc{$array[4]} || '',
+                                        linkage        => $array[6],
+                                        source_id      => $gene_source_id,
+                                        species_id     => $species_id} );
+            $count++;
+          }
+        }
+        else {
+          $miss++;
+        }
+      }
       elsif(!defined($wrongtype{$array[0]})){
-	print STDERR "WARNING: unknown type ".$array[0]."\n" if($verbose);
-	$wrongtype{$array[0]} = 1;
+        print STDERR "WARNING: unknown type ".$array[0]."\n" if($verbose);
+        $wrongtype{$array[0]} = 1;
       }
     }
 
     $go_io->close();
 
-    print "\t$count GO dependent xrefs added $refseq_miss refseq not found and $swiss_miss Swissprot not found \n" if($verbose); 
+    print "\t$count GO dependent xrefs added $refseq_miss refseq not found and $swiss_miss Swissprot not found \n" if($verbose);
   }
   if ( defined $release_file ) {
     # Parse and set release information from $release_file.
@@ -292,7 +318,7 @@ sub run {
     my $release = <$release_io>;
     $release_io->close();
 
-    $release =~ tr /\n/ /;
+    $release =~ s/[\n\r]+/ /gm;
     $release =~
           s/.*The following table describes.*?of (GOA.*?)<ul>.*/$1/;
     $release =~ s/<[^>]+>//gx;
