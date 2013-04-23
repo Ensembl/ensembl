@@ -23,38 +23,8 @@ our %object_types = ( gene       => 1,
                       snRNA      => 1,
                       tRNA       => 1 );
 
-# This is some statistics from the 5.4 file 'dmel-all-r5.4.gff.gz',
-# looking at the FlyBase (2nd column) object types (3rd column) gene,
-# mRNA, miRNA, ncRNA, protein, pseudogene, rRNA, snRNA, snoRNA, and tRNA
-# only:
-#
-# cnt   Dbxref name             source_name in Xref database
-# 57884 FlyBase_Annotation_IDs  (special, see below)
-# 33441 GB_protein              protein_id
-# 14324 GB                      EMBL
-# 13951 flygrid                 FlyGrid
-# 13265 FlyBase                 flybase_annotation_id
-# 12768 dedb                    dedb
-# 11745 UniProt/TrEMBL          Uniprot/SPTREMBL
-# 10076 INTERPRO                Interpro
-# 8077  orthologs               SKIPPED
-# 2089  UniProt/Swiss-Prot      Uniprot/SWISSPROT
-# 1596  bdgpinsituexpr          bdgpinsituexpr
-# 1207  hybrigenics             SKIPPED
-# 787   if                      SKIPPED
-# 290   MITODROME               SKIPPED
-# 153   TF                      SKIPPED
-# 82    EPD                     SKIPPED
-# 80    MIR                     SKIPPED
-# 61    PDB                     SKIPPED
-# 56    MEROPS                  SKIPPED
-# 17    GCR                     SKIPPED
-# 15    Rfam                    SKIPPED
-# 12    NRL_3D                  SKIPPED
-# 11    GO                      SKIPPED
-#
-# The Dbxref name 'FlyBase_Annotation_IDs' will be associated with the
-# source_names FlyBaseCGID_{gene,transcript,translation} depending on
+# The Dbxref name 'flybase_annotation_id' will be associated with the
+# source_name FlyBaseCGID_{gene,transcript,translation} depending on
 # the type of 'ID' of the line.
 #
 # Likewise, the source_names FlyBaseName_{gene,transcript,translation}
@@ -67,10 +37,10 @@ our %object_types = ( gene       => 1,
 
 # This hash will translate the Dbxref names in the data file into source
 # names known by the Xref system.
-# It's important to _not_ import the FlyBase UniProt annotations; they're
-# done at the gene level, which means that when we do our UniProt analysis
-# at the translation# level results are shifted to the gene level, which
-# messes up the web display.
+# The protein-level FlyBase annotations (UniProt, SwissProt, Interpro) are
+# not imported; they're attached to genes, which means that when
+# we run our protein pipeline (at the translation level), those results are
+# shifted to the gene level, which messes up the web display.
 our %source_name_map = ( 'FlyBase'            => 'flybase_annotation_id',
                          'BIOGRID'            => 'BioGRID',
                          'EPD'                => 'EPD',
@@ -85,11 +55,7 @@ our %source_name_map = ( 'FlyBase'            => 'flybase_annotation_id',
                          'MITODROME'          => 'MitoDrome',
                          'Rfam'               => 'Rfam',
                          'TF'                 => 'TransFac',
-                         'INTERPRO'           => 'Interpro',
-                         #'FlyAtlas'           => 'FlyAtlas',
-                         #'UniProt/Swiss-Prot' => 'Uniprot/SWISSPROT',
-                         #'UniProt/TrEMBL'     => 'Uniprot/SPTREMBL',
-		       );
+);
 
 # This is for source_ids that depend on the type of 'ID' of the line.
 our %special_source_name_map = (
@@ -121,15 +87,12 @@ sub get_source_id_for_source_name {
       $self->SUPER::get_source_id_for_source_name($source_name, $priority_desc);
 
     printf( "source_id for source '%s' is %d\n",
-            $source_name, $source_id{$source_name} ) if ($verbose);
+      $source_name, $source_id{$source_name} ) if ($verbose);
   }
 
-  if ( !defined( $source_id{$source_name} )
-       || $source_id{$source_name} < 0 )
+  if ( !defined( $source_id{$source_name} ) || $source_id{$source_name} < 0 )
   {
-    carp(
-       sprintf( "Can not find source_id for source '%s'", $source_name )
-    );
+    carp( sprintf( "Can not find source_id for source '%s'", $source_name ) );
   }
 
   return $source_id{$source_name};
@@ -148,24 +111,20 @@ sub run {
   }
   $verbose |=0;
 
-
-	# Create a go source id for GO terms extracted from the GFF file
-	# The reason being to separate from any other sources for GO terms
-	# like dependent xrefs (GOA UniProt).
-
-	my $go_source_id = $self->SUPER::get_source_id_for_source_name('GO','flybasego');
+  # Note: The import of the GO terms from the FlyBase GFF has been removed.
+  # Only Dmel is annotated with evidence codes by FlyBase, the other flies
+  # are inferred from Interpro analysis - so can be handled equally well by
+  # the GOParser (which maps them to translations rather than genes too).
+  # In addition, the evidence codes for Dmel are not even in the GFF
+  # file, and have to be patched across further down the line. A new Dmel-
+  # specific section has been added to GOParser to automate this, in the same
+  # way that C. elegans is done, for example.
 
   print "-------------------------\n";
   print "FlybaseParser::run species_id $species_id\n";
   print "-------------------------\n\n";
 
   my $data_file = @{$files}[0];
-
-  # Fetch hashes of already stored Uniprot and Interpro accessions.
-  my %pre_xref_ids = (
-        'Uniprot'  => $self->get_valid_codes( 'uniprot',  $species_id ),
-        'Interpro' => $self->get_valid_codes( 'interpro', $species_id )
-  );
 
   my %xref_ids;
 
@@ -222,133 +181,55 @@ sub run {
     if    ( substr( $id, 0, 4 ) eq 'FBgn' ) { $type = 'gene' }
     elsif ( substr( $id, 0, 4 ) eq 'FBtr' ) { $type = 'transcript' }
     elsif ( substr( $id, 0, 4 ) eq 'FBpp' ) { $type = 'translation' }
-    else                                    { $type = 'unknown' }
+    else                                     { $type = 'unknown' }
 
-    # For the 'Dbxref' and 'Ontology_term' attributes, split them up on
-    # commas, divide into key-value pairs, and store them.
-    foreach my $attribute_key ( 'Dbxref', 'Ontology_term' ) {
-      if ( exists( $attributes{$attribute_key} ) ) {
-        my %tmphash;
-        foreach
-          my $subattribute ( split( /,/, $attributes{$attribute_key} ) )
-        {
-						# For GO term, we keep the form GO:0004080
-						if ($subattribute =~ /^GO/) {
-								#print "$attribute_key Storing GO term: $subattribute for $id\n";
-								push( @{ $tmphash{'GO'} }, $subattribute );
-						} else {
-								my ( $key, $value ) = split( /:/, $subattribute, 2 );
-								push( @{ $tmphash{$key} }, $value );
-						}
-        }
-
-        # Replace the attribute entry with the hash.
-        $attributes{$attribute_key} = \%tmphash;
+    if ( exists( $attributes{'Dbxref'} ) ) {
+      my %tmphash;
+      foreach my $subattribute ( split( /,/, $attributes{'Dbxref'} ) ) {
+        my ( $key, $value ) = split( /:/, $subattribute, 2 );
+        push( @{ $tmphash{$key} }, $value );
       }
+
+      # Replace the attribute entry with the hash.
+      $attributes{'Dbxref'} = \%tmphash;
     }
 
-    # For the 'Alias' attributes, we split them up by commas 
-    # but we can't divide them in to key-value. So, we'll create 
-    # a fake key Alias. 
+    # For the 'Alias' attributes, we split them up by commas
+    # but we can't divide them in to key-value. So, we'll create
+    # a fake key Alias.
     # Aliases will be stored as synonyms and will comprise secondary
     # IDs from FlyBase to keep tracks of split/merged annotations.
-
     my $alias_key = 'Alias';
-
     if ( exists( $attributes{$alias_key} ) ) {
       my @tmp_array = split( /,/, $attributes{$alias_key} );
-
       $attributes{$alias_key} =\@tmp_array;
     }
-		
 
+    #----------------------------------------------------------------------
+    # Store Xrefs and Direct Xrefs for all the interesting Dbxref entries.
+    #----------------------------------------------------------------------
     my $dbxref = $attributes{'Dbxref'};
-
-    #-------------------------------------------------------------------
-    # Store Xrefs and Direct Xrefs for all the interesting Dbxref
-    # entries.
-    #-------------------------------------------------------------------
     foreach my $dbxref_name ( keys( %{$dbxref} ) ) {
       if ( exists( $source_name_map{$dbxref_name} ) ) {
         my $source_name = $source_name_map{$dbxref_name};
-        my $source_id =
-          $self->get_source_id_for_source_name($source_name);
+        my $source_id = $self->get_source_id_for_source_name($source_name);
 
-        # Treat Uniprot and Interpro differently.
-        my ($pre_source) = ( $source_name =~ /^(Uniprot|Interpro)/ );
-
-        if ( defined($pre_source) ) {
-          foreach my $accession ( @{ $dbxref->{$dbxref_name} } ) {
-            if ( exists( $pre_xref_ids{$pre_source}{$accession} ) ) {
-	      foreach my $xref_id (@{ $pre_xref_ids{$pre_source}{$accession} }){
-		$self->add_direct_xref($xref_id, $id, $type, '' );
-		$xref_ids{$pre_source}{$accession} = $xref_id;
-	      }	
-            } else {
-              $xref_ids{ $pre_source . ' (missed)' }{$accession} = -1;
-            }
+        foreach my $accession ( @{ $dbxref->{$dbxref_name} } ) {
+          my $xref_id;
+          if ( exists( $xref_ids{$source_name}{$accession} ) ) {
+            $xref_id = $xref_ids{$source_name}{$accession};
+          } else {
+            $xref_id =
+              $self->add_xref({ acc        => $accession,
+                                label      => $accession,
+                                source_id  => $source_id,
+                                species_id => $species_id,
+                                info_type  => 'DIRECT'}
+            );
+            $xref_ids{$source_name}{$accession} = $xref_id;
           }
-        } else {
-          foreach my $accession ( @{ $dbxref->{$dbxref_name} } ) {
-            my $xref_id;
-            if ( exists( $xref_ids{$source_name}{$accession} ) ) {
-              $xref_id = $xref_ids{$source_name}{$accession};
-            } else {
-              # The Dbxref 'bdgpinsituexpr' needs case sensitivity, just
-              # like the FlyBase Names, so use the ID as the accession
-              # for this source.
-              if ( $dbxref_name eq 'bdgpinsituexpr' ) {
-                $xref_id =
-                  $self->add_xref({ acc        => $id,
-				    label      => $accession,
-				    source_id  => $source_id,
-				    species_id => $species_id,
-				    info_type  =>'DIRECT'} );
-              } else {
-                $xref_id =
-                  $self->add_xref({ acc        => $accession,
-				    label      => $accession,
-				    source_id  => $source_id,
-				    species_id => $species_id,
-				    info_type  => 'DIRECT'} );
-              }
-              $xref_ids{$source_name}{$accession} = $xref_id;
-					}
-
-            $self->add_direct_xref( $xref_id, $id, $type, '' );
-          }
+          $self->add_direct_xref( $xref_id, $id, $type, '' );
         }
-      } ## end if ( exists( $source_name_map...
-    } ## end foreach my $dbxref_name ( keys...
-
-    #-------------------------------------------------------------------
-    # Store Xrefs and Direct Xrefs for the GO 'Ontology_term' entries.
-    #-------------------------------------------------------------------
-
-    if ( exists( $attributes{'Ontology_term'}{'GO'} ) ) {
-      my $source_name = 'GO';
-      #my $source_id =
-      #  $self->get_source_id_for_source_name($source_name);
-
-
-      foreach my $accession ( @{ $attributes{'Ontology_term'}{'GO'} } )
-      {
-					my $xref_id;
-					if ( exists( $xref_ids{$source_name}{$accession} ) ) {
-							$xref_id = $xref_ids{$source_name}{$accession};
-					} else {
-							#print "FlyBaseParser\t$source_name\tadd_xref: $accession, $go_source_id\n";  
-							$xref_id =
-									$self->add_xref({ acc        => $accession,
-																		label      => $accession,
-																		source_id  => $go_source_id,
-																		species_id => $species_id,
-																		info_type  => 'DIRECT'} );
-							$xref_ids{$source_name}{$accession} = $xref_id;
-					}
-					
-					#print "Add GO direct xref for $id with $type \n";
-					$self->add_direct_xref( $xref_id, $id, $type, 'IEA' );
       }
     }
 
@@ -358,54 +239,48 @@ sub run {
     #-------------------------------------------------------------------
     if ( exists( $dbxref->{'FlyBase_Annotation_IDs'} ) ) {
       my $source_name = $special_source_name_map{$type}{'Dbxref'};
-      my $source_id =
-        $self->get_source_id_for_source_name($source_name);
+      my $source_id = $self->get_source_id_for_source_name($source_name);
 
-      foreach my $accession ( @{ $dbxref->{'FlyBase_Annotation_IDs'} } )
-      {
+      foreach my $accession ( @{ $dbxref->{'FlyBase_Annotation_IDs'} } ) {
         my $xref_id;
         if ( exists( $xref_ids{$source_name}{$accession} ) ) {
           $xref_id = $xref_ids{$source_name}{$accession};
         } else {
           $xref_id =
             $self->add_xref({ acc        => $accession,
-			      label      => $accession,
-			      source_id  => $source_id,
-			      species_id => $species_id,
-			      info_type  => 'DIRECT'} );
+                              label      => $accession,
+                              source_id  => $source_id,
+                              species_id => $species_id,
+                              info_type  => 'DIRECT'}
+          );
           $xref_ids{$source_name}{$accession} = $xref_id;
         }
-
         $self->add_direct_xref( $xref_id, $id, $type, '' );
       }
-
     }
 
-    #-------------------------------------------------------------------
-    # Store Xref and Direct Xref for the 'Name' (depends on type of
-    # 'ID').
-    #-------------------------------------------------------------------
+    #----------------------------------------------------------------------
+    # Store Xref and Direct Xref for the 'Name' (depends on type of 'ID').
+    #----------------------------------------------------------------------
     {
       my $source_name = $special_source_name_map{$type}{'Name'};
-      my $source_id =
-        $self->get_source_id_for_source_name($source_name);
+      my $source_id = $self->get_source_id_for_source_name($source_name);
 
       my $accession = $attributes{'Name'};
 
-			# every fly Names but d. melanogaster ones start with D...\ (like Dper\β3galt6)
-			# we remove the prefix. 
-			if ($accession =~ m/D...\\(.+)/) {
-					$accession = $1;
-			}
+			# Names other than D. melanogaster start with D...\ (like Dper\β3galt6)
+			$accession =~ s/^D...\\//;
 
 			my $description = (defined($attributes{'fullname'})) ? $attributes{'fullname'} : '';
 
-			# because FlyBase use %2C to distinguish from the , separator in the GFF dump
+			# FlyBase use %2C to distinguish from the , separator in the GFF dump;
 			# we have to put it back
-			$description =~ s/%2C/,/g; 
+			$description =~ s/%2C/,/g;
 
 			# Embedded newlines wreak havoc further down the line
 			$description =~ s/[\n\r]//gm;
+			# And slashes to ensure that slashes aren't mistakenly interpreted as control characters
+			$description =~ s/\\/\\\\/gm;
 
       my $xref_id;
 
@@ -414,15 +289,14 @@ sub run {
       } else {
         $xref_id =
           $self->add_xref({ acc =>  $id,
-			    label => $accession,
-			    desc => $description,
-			    source_id => $source_id,
-			    species_id => $species_id,
-			    info_type => 'DIRECT'} );
-
+                            label => $accession,
+                            desc => $description,
+                            source_id => $source_id,
+                            species_id => $species_id,
+                            info_type => 'DIRECT'}
+        );
         $xref_ids{$source_name}{$accession} = $xref_id;
       }
-
       $self->add_direct_xref( $xref_id, $id, $type, '' );
     }
 
@@ -431,8 +305,7 @@ sub run {
     #-------------------------------------------------------------------
     {
       my $source_name = $special_source_name_map{$type}{'ID'};
-      my $source_id =
-        $self->get_source_id_for_source_name($source_name);
+      my $source_id = $self->get_source_id_for_source_name($source_name);
 
       my $accession = $id;
       my $xref_id;
@@ -442,45 +315,47 @@ sub run {
       } else {
         $xref_id =
           $self->add_xref({ acc        => $accession,
-			    label      => $accession,
-			    source_id  => $source_id,
-			    species_id => $species_id,
-			    onfo_type  => 'DIRECT'} );
+                            label      => $accession,
+                            source_id  => $source_id,
+                            species_id => $species_id,
+                            info_type  => 'DIRECT'}
+        );
         $xref_ids{$source_name}{$accession} = $xref_id;
       }
-
       $self->add_direct_xref( $xref_id, $id, $type, '' );
- 
-
 
 			#-------------------------------------------------------------------
 			# Now, if we have aliases for this gene/transcript/translation
 			# Store them in the external_synonym table.
 			#-------------------------------------------------------------------
-			
+
 			if (defined ($attributes{$alias_key})) {
-					foreach my $alias (@{$attributes{$alias_key}}) {
-							$self->add_synonym($xref_id, $alias);
-					}
+        foreach my $alias (@{$attributes{$alias_key}}) {
+          # Skip synonyms with non-ASCII characters
+          next unless $alias =~ /^[\x00-\x7F]+$/;
+          # Embedded newlines wreak havoc further down the line
+          $alias =~ s/[\n\r]//gm;
+          $self->add_synonym($xref_id, $alias);
+        }
 			}
 	  }
-	
-  } ## end while ( defined( my $line...
+
+  }
   $data_io->close();
 
   alarm(0);
 
-  print("FlybaseParser Summary:\n") if($verbose);
-	print("--------------------------------------------------------------\n") if($verbose);
-  foreach my $label ( sort( keys(%xref_ids) ) ) {
-    my $accessions = $xref_ids{$label};
-    printf( "\t%-32s %6d\n", $label, scalar( keys( %{$accessions} ) ) ) if($verbose);
+  if ($verbose) {
+    print("FlybaseParser Summary:\n");
+    print("--------------------------------------------------------------\n");
+    foreach my $label ( sort( keys(%xref_ids) ) ) {
+      my $accessions = $xref_ids{$label};
+      printf( "\t%-32s %6d\n", $label, scalar( keys( %{$accessions} ) ) );
+    }
+    print("--------------------------------------------------------------\n");
   }
-	print("--------------------------------------------------------------\n") if($verbose);
-
-
 
   return 0;
-} ## end sub run
+}
 
 1;
