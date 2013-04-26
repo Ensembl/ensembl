@@ -1594,10 +1594,8 @@ sub load_registry_from_db {
   $user ||= "ensro";
   if ( !defined($port) ) {
     $port = 3306;
-    if ( $host eq "ensembldb.ensembl.org" ) {
-      if ( (!defined($db_version)) or ($db_version >= 48) ) {
-        $port = 5306;
-      }
+    if ( $host eq "ensembldb.ensembl.org" && defined($db_version) && $db_version < 48 ) {
+      $port = 4306;
     }
   }
 
