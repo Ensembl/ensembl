@@ -609,6 +609,7 @@ sub register_component {
   if($sth->rows() == 0) {
     #this component is not used in the assembled part i.e. gap
     $asm_mapper->register_component($cmp_seq_region);
+    $sth->finish();
     return;
   }
 
@@ -618,6 +619,7 @@ sub register_component {
   #   chromosome:EquCab2|contig ( use '|' delimiter for 1-1 mappings )
   #
   if($sth->rows() != 1) {
+    $sth->finish();
     throw("Multiple assembled regions for single " .
           "component region cmp_seq_region_id=[$cmp_seq_region]\n".
           "Remember that multiple mappings use the \#-operaator".
