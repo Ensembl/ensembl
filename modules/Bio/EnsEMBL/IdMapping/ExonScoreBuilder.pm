@@ -784,7 +784,7 @@ sub non_mapped_transcript_rescore {
          'Need a Bio::EnsEMBL::IdMapping::MappingList of transcripts.');
   }
 
-  # create of lookup hash of mapped source transcripts to target
+  # create a lookup hash of mapped source transcripts to target
   # transcripts
   my %transcript_lookup =
     map { $_->source => $_->target }
@@ -808,7 +808,7 @@ sub non_mapped_transcript_rescore {
       foreach my $target_tr (@target_transcripts) {
         my $mapped_target = $transcript_lookup{ $source_tr->id };
 
-        if ( $mapped_target and ( $mapped_target == $target_tr->id ) ) {
+        if ( $mapped_target ) {
           $found_mapped = 1;
           last TR;
         }
@@ -827,5 +827,6 @@ sub non_mapped_transcript_rescore {
   $self->logger->debug( "Scored exons in non-mapped transcripts: $i\n",
                         1 );
 } ## end sub non_mapped_transcript_rescore
+
 
 1;
