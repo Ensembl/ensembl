@@ -88,8 +88,7 @@ sub new {
 # See if this has any seq_region_attrib of type "_rna_edit_cache" if so store these
 # in a  hash.
 #
-
-  my $sth = $self->dbc->prepare('select sra.seq_region_id, sra.value from seq_region_attrib sra, attrib_type at where sra.attrib_type_id = at.attrib_type_id and code like "_rna_edit"');
+  my $sth = $self->dbc->prepare('select sra.seq_region_id, sra.value from seq_region_attrib sra, attrib_type at where sra.attrib_type_id = at.attrib_type_id and code = "_rna_edit"');
   
   $sth->execute();
   my ($seq_region_id, $value);
@@ -98,6 +97,12 @@ sub new {
   my $count = 0;
   while($sth->fetch()){
     $count++;
+    my ($start, $end, $substring) = split (/\s+/, $value);
+    my $edit_length = ($end - $start) + 1;
+    my $substring_length = length($substring);
+    if($edit_length != $substring_length) {
+      throw "seq_region_id $seq_region_id has an attrib of type '_rna_edit' (value '$value'). Edit length ${edit_length} is not the same as the replacement's length ${substring_length}. Please fix. We only support substitutions via this mechanism";
+    }
     push @{$edits{$seq_region_id}}, $value;
   }
   $sth->finish;
