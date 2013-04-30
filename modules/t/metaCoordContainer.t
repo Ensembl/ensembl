@@ -19,38 +19,47 @@ $multi->save('core', 'meta_coord');
 #
 
 my $mcc = $db->get_MetaCoordContainer();
-ok($mcc);
+ok($mcc, 'We have a MetaCoordContainer');
 
+{
+  my @coord_systems = @{$mcc->fetch_all_CoordSystems_by_feature_type('exon')};
+  is(scalar(@coord_systems), 1, 'We have only one coordinate system');
+  is($coord_systems[0]->name, 'chromosome', 'Only coordinate system is chromosome');
+  my $cs = $coord_systems[0];
+  my $current_max = $mcc->fetch_max_length_by_CoordSystem_feature_type($cs, 'exon');
+  my $less_length = $current_max - 1;
+  my $greater_length = $current_max + 1;
 
-my @coord_systems = @{$mcc->fetch_all_CoordSystems_by_feature_type('exon')};
+  #Test if we try to set max to something smaller
+  $mcc->add_feature_type($cs, 'exon', $less_length);
+  is($mcc->fetch_max_length_by_CoordSystem_feature_type($cs, 'exon'), $current_max, 'Submission of a smaller length does not replace the current max');
 
-ok(@coord_systems == 1);
-
-ok($coord_systems[0]->name eq 'chromosome');
-
-my $cs = $db->get_CoordSystemAdaptor->fetch_by_name('contig');
-
-my $count = count_rows($db, 'meta_coord');
-
-my $max = -1;
-for( my $i=0; $i<10; $i++ ) {
-  my $length = int(rand( 1000) + 100);
-  $mcc->add_feature_type($cs, 'exon', $length );
-  $max = $length if ( $length > $max );
+  #Test if we try to set max to something bigger
+  $mcc->add_feature_type($cs, 'exon', $greater_length);
+  is($mcc->fetch_max_length_by_CoordSystem_feature_type($cs, 'exon'), $greater_length, 'Submission of a greater length does replace the current max');
 }
 
-my $length = $mcc->fetch_max_length_by_CoordSystem_feature_type( $cs, "exon" ); 
-#debug( "max = $max; length=$length ");
-ok( $max == $length );
-ok(count_rows($db, 'meta_coord') == $count + 1);
+{
+  #Adding new maximum to a new coord system
+  my $cs = $db->get_CoordSystemAdaptor->fetch_by_name('contig');
+  my $count = count_rows($db, 'meta_coord');
+  my $expected_max = -1;
+  # Generate 10 random lengths
+  for( my $i=0; $i<10; $i++ ) {
+    my $length = int(rand( 1000) + 100);
+    $mcc->add_feature_type($cs, 'exon', $length );
+    $expected_max = $length if ( $length > $expected_max );
+  }
+  my $actual_max = $mcc->fetch_max_length_by_CoordSystem_feature_type( $cs, 'exon' );
+  is($actual_max, $expected_max, 'The expected and actual maximums agree');
+  is(count_rows($db, 'meta_coord'), ($count + 1), 'meta_coord has grown by one row');
+}
 
-@coord_systems = @{$mcc->fetch_all_CoordSystems_by_feature_type('exon')};
-
-ok(@coord_systems == 2);
-
-ok($coord_systems[0]->name eq 'chromosome');
-ok($coord_systems[1]->name eq 'contig');
-
+{
+  my @coord_systems = @{$mcc->fetch_all_CoordSystems_by_feature_type('exon')};
+  is(scalar(@coord_systems), 2, 'We have two entries returned for exon');
+  is_deeply([qw/chromosome contig/], [sort map { $_->name() } @coord_systems], 'We have the two expected coordinate systems returned');
+}
 
 $multi->restore('core', 'meta_coord');
 
