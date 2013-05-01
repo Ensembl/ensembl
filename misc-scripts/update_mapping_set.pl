@@ -156,7 +156,12 @@ foreach my $h ($host,$host2) {
     my $sth_update_build = $dbh->prepare("UPDATE $current_dbname.mapping_set SET internal_schema_build = ?");
     my $sth_update_old = $dbh->prepare("UPDATE $current_dbname.seq_region_mapping SET internal_seq_region_id = ? WHERE internal_seq_region_id = ?");
     my $sth_remove_deprecated = $dbh->prepare("DELETE FROM $current_dbname.seq_region_mapping WHERE internal_seq_region_id = ?");
+    my $latest_schema_build = get_latest_schema_build($dbh, $current_dbname);
     my $schema_build = get_schema_and_build($current_dbname);
+    if ($latest_schema_build eq $schema_build) {
+      print STDERR "$current_dbname already has a mapping for $schema_build, skipping\n";
+      next;
+    }
     my $current_assembly = get_assembly($dbh,$current_dbname) ;
     my $count_removed = 0;
     my $count_updated = 0;
@@ -318,6 +323,15 @@ sub get_max_mapping_set_id {
     my ($max_mapping_set_id) = $sth_mapping->fetchrow_array();
     if (!defined $max_mapping_set_id) { return 0; }
     return $max_mapping_set_id;
+}
+
+sub get_latest_schema_build {
+    my ($dbh, $dbname) = @_;
+    my $sth_mapping = $dbh->prepare("select internal_schema_build from $dbname.mapping_set order by mapping_set_id desc limit 1");
+    $sth_mapping->execute();
+    my ($internal_schema_build) = $sth_mapping->fetchrow_array();
+    if (!defined $internal_schema_build) { return 0; }
+    return $internal_schema_build;
 }
 
 # This method will return the name of the previous database to release for same species (assuming is present)
