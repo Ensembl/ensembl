@@ -809,9 +809,10 @@ sub add_columns {
   my $display_style = $display_col{$display};
   
   my $html = qq{\n  <div id="div_$table" style="display:$display_style">
-    <table style="border:1px outset #222222">
-      <tr class="bg3 center"><th style="width:180px">Column</th><th style="width:150px">Type</th><th style="width:100px">Default value</th><th style="width:400px">Description</th><th style="width:150px">Index</th></tr>\n};
-  my $bg = 1;
+    <table style="border:1px solid #667aa6;padding:0px;min-width:1000px;max-width:1200px">
+      <tr class="center" style="color:#FFFFFF;background-color:#667aa6"><th style="color:#FFF;padding:2px">Column</th><th style="color:#FFF;padding:2px">Type</th><th style="color:#FFF;padding:2px;min-width:80px">Default value</th><th style="color:#FFF;padding:2px;min-width:500px">Description</th><th style="color:#FFF;padding:2px;min-width:100px">Index</th></tr>\n};
+	my $bg = 1;
+	
   foreach my $col (@$cols) {
     my $name    = $col->{name};
     my $type    = $col->{type};
@@ -878,6 +879,11 @@ sub add_examples {
         $show_hide .= qq{<a id="e_$table$nb" style="cursor:pointer;text-decoration:none" onclick="show_hide('$table$nb','example')">$img_plus<span style="vertical-align:middle"> Show query results</span></a>};
         $sql_table = get_example_table($sql,$table,$nb);
       }
+			if (defined($sql)) {
+			  foreach my $word (qw(SELECT FROM WHERE LIMIT DESC ORDER)) {
+			    $sql =~ s/$word/$word/i;
+				}
+			}
       $html .= qq{<pre style="display:inline;border:1px solid #555;padding:2px;margin-right:15px;margin-left:10px">$sql</pre> $show_hide\n$sql_table};
     }
     $html .= qq{</div>};
@@ -1012,7 +1018,7 @@ sub get_example_table {
   if (scalar(@$results)) {
     $html .= qq{
   <div id="ex_$table$nb" style="display:none;">
-    <table class="ss" style="width:50%;margin-top:20px;margin-left:10px">\n      <tr><th>};
+    <table class="ss" style="width:50%;margin-top:20px;margin-left:10px;border-spacing:2px">\n      <tr><th>};
     $html .= join("</th><th>",@tcols);
     $html .= qq{</th></tr>};
     
