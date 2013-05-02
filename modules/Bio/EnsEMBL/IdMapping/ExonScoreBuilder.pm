@@ -808,7 +808,7 @@ sub non_mapped_transcript_rescore {
       foreach my $target_tr (@target_transcripts) {
         my $mapped_target = $transcript_lookup{ $source_tr->id };
 
-        if ( $mapped_target ) {
+        if ( $mapped_target && $mapped_target == $target_tr->id ) {
           $found_mapped = 1;
           last TR;
         }
@@ -827,6 +827,7 @@ sub non_mapped_transcript_rescore {
   $self->logger->debug( "Scored exons in non-mapped transcripts: $i\n",
                         1 );
 } ## end sub non_mapped_transcript_rescore
+
 
 
 1;
