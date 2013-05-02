@@ -18,6 +18,8 @@ ALTER table assembly ADD FOREIGN KEY (cmp_seq_region_id) REFERENCES seq_region(s
 ALTER table assembly_exception ADD FOREIGN KEY (exc_seq_region_id) REFERENCES seq_region(seq_region_id);
 ALTER table assembly_exception ADD FOREIGN KEY (seq_region_id) REFERENCES seq_region(seq_region_id);
 
+ALTER table associated_xref ADD FOREIGN KEY (associated_group_id) REFERENCES associated_group(associated_group_id);
+
 ALTER table data_file ADD FOREIGN KEY (coord_system_id) REFERENCES coord_system(coord_system_id);
 ALTER table data_file ADD FOREIGN KEY (analysis_id) REFERENCES analysis(analysis_id);
 

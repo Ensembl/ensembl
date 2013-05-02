@@ -512,6 +512,8 @@ INSERT INTO meta (species_id, meta_key, meta_value)
   VALUES (NULL, 'patch', 'patch_71_72_a.sql|schema_version');
 INSERT INTO meta (species_id, meta_key, meta_value)
   VALUES (NULL, 'patch', 'patch_71_72_b.sql|associated_xref');
+INSERT INTO meta (species_id, meta_key, meta_value)
+  VALUES (NULL, 'patch', 'patch_71_72_c.sql|remove_associated_xref_fk');
 
 /**
 @table meta_coord
@@ -2428,7 +2430,7 @@ CREATE TABLE associated_xref (
   KEY associated_source_idx (source_xref_id),
   KEY associated_object_idx (object_xref_id),
   KEY associated_idx (xref_id),
-  FOREIGN KEY associated_group_idx (associated_group_id) REFERENCES associated_group (associated_group_id),
+  KEY associated_group_idx (associated_group_id),
   UNIQUE KEY object_associated_source_type_idx (object_xref_id, xref_id, source_xref_id, condition_type, associated_group_id)
 
 ) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
