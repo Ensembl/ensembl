@@ -749,6 +749,8 @@ sub fetch_all_by_biotype {
                backward compatibility only and used to fall back to the gene
                analysis_id if no analysis object is attached to the transcript
                (which you should do for new code).
+  Arg [4]    : prevent coordinate recalculation if you are persisting 
+               transcripts with this gene
   Example    : $transID = $tr_adaptor->store($transcript, $gene->dbID);
   Description: Stores a transcript in the database and returns the new
                internal identifier for the stored transcript.
@@ -760,7 +762,7 @@ sub fetch_all_by_biotype {
 =cut
 
 sub store {
-  my ( $self, $transcript, $gene_dbID, $analysis_id ) = @_;
+  my ( $self, $transcript, $gene_dbID, $analysis_id, $skip_recalculating_coordinates ) = @_;
 
   if (    !ref($transcript)
        || !$transcript->isa('Bio::EnsEMBL::Transcript') )
@@ -775,7 +777,12 @@ sub store {
   }
 
   # Force lazy-loading of exons and ensure coords are correct.
-  $transcript->recalculate_coordinates();
+  # If we have been told not to do this then skip doing this
+  # and we assume the user knows what they are doing. You have been
+  # warned
+  if(! $skip_recalculating_coordinates) {
+    $transcript->recalculate_coordinates();
+  }
 
   my $is_current = ( defined( $transcript->is_current() )
                      ? $transcript->is_current()

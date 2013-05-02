@@ -1141,6 +1141,8 @@ sub store_alt_alleles {
                The gene to store in the database
   Arg [2]    : ignore_release in xrefs [default 1] set to 0 to use release info 
                in external database references
+  Arg [3]    : prevent coordinate recalculation if you are persisting 
+               transcripts with this gene
   Example    : $gene_adaptor->store($gene);
   Description: Stores a gene in the database.
   Returntype : the database identifier (dbID) of the newly stored gene
@@ -1152,7 +1154,7 @@ sub store_alt_alleles {
 =cut
 
 sub store {
-  my ($self, $gene, $ignore_release) = @_;
+  my ($self, $gene, $ignore_release, $skip_recalculating_coordinates) = @_;
 
   if (!ref $gene || !$gene->isa('Bio::EnsEMBL::Gene')) {
 	throw("Must store a gene object, not a $gene");
@@ -1281,7 +1283,7 @@ sub store {
 	my $new = $transcripts->[$i];
 	my $old = $original_transcripts->[$i];
 
-	$transcript_adaptor->store($new, $gene_dbID, $analysis_id);
+	$transcript_adaptor->store($new, $gene_dbID, $analysis_id, $skip_recalculating_coordinates);
 
 	if (!defined($new_canonical_transcript_id)
 		&& $new->is_canonical())
