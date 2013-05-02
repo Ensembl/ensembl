@@ -64,6 +64,7 @@ sub init_basic {
 #
 # reduce score for mappings of exons which do not belong to mapped
 # transcripts
+# (ie where source exon transcript does not map target exon transcript)
 #
 sub mapped_transcript {
   my $self = shift;
@@ -71,11 +72,12 @@ sub mapped_transcript {
   my $esb = shift;
   my $mappings = shift;
   my $exon_scores = shift;
+  my $transcript_mappings = shift;
 
   $self->logger->info("Exons in mapped transcript...\n", 0, 'stamped');
 
   unless ($exon_scores->loaded) {
-    $esb->non_mapped_transcript_rescore($exon_scores, $mappings);
+    $esb->non_mapped_transcript_rescore($exon_scores, $transcript_mappings);
     $exon_scores->write_to_file;
   }
 

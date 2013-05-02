@@ -317,7 +317,7 @@ sub map_exons {
     #
     foreach my $plugin (@plugins) {
       ($exon_scores, $new_mappings) = $self->delegate_to_plugin($plugin, $i++,
-        $esb, $new_mappings, $exon_scores);
+        $esb, $new_mappings, $exon_scores, $transcript_mappings);
 
       push(@mappings, $new_mappings);
     }
@@ -642,6 +642,7 @@ sub write_ambiguous {
       print $fh "\n    " unless (($i++)%10);
       print $fh $e->$other_db_type, ", ";
     }
+    print $fh "\n";
   }
 
   print $fh "\n";
