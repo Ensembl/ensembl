@@ -2462,6 +2462,9 @@ sub transform {
     $new_transcript->{_ise_array} = \@new_features;
   }
 
+  if(exists $self->{attributes}) {
+    $new_transcript->{attributes} = [@{$self->{attributes}}];
+  }
 
   # flush cached internal values that depend on the exon coords
   $new_transcript->{'transcript_mapper'}   = undef;
@@ -2537,6 +2540,9 @@ sub transfer {
     $new_transcript->{_ise_array} = \@new_features;
   }
 
+  if(exists $self->{attributes}) {
+    $new_transcript->{attributes} = [@{$self->{attributes}}];
+  }
 
   # flush cached internal values that depend on the exon coords
   $new_transcript->{'transcript_mapper'}   = undef;

@@ -1161,6 +1161,11 @@ sub transform {
 
     $new_gene->{'_transcript_array'} = \@new_transcripts;
   }
+
+  if(exists $self->{attributes}) {
+    $new_transcript->{attributes} = [@{$self->{attributes}}];
+  }
+
   return $new_gene;
 }
 
@@ -1192,6 +1197,11 @@ sub transfer {
     }
     $new_gene->{'_transcript_array'} = \@new_transcripts;
   }
+
+  if(exists $self->{attributes}) {
+    $new_transcript->{attributes} = [@{$self->{attributes}}];
+  }
+  
   return $new_gene;
 }
 
