@@ -1367,10 +1367,13 @@ sub get_all_alt_locations {
   Arg [1]    : Bio::EnsEMBL::Feature $f
                The other feature you want to check overlap with this feature
                for.
-  Description: This method does a range comparison of this features start and
-               end and compares it with another features start and end. It will
-               return true if these ranges overlap and the features are on the
-               same seq_region.
+  Description: This method does a range comparison of this feature's C<seq_region_start> and
+               C<seq_region_end> and compares it with another feature's C<seq_region_start>
+               and C<seq_region_end>. It will return true if these ranges overlap 
+               and the features are on the same seq_region.
+
+               For local coordinate overlaps tests (those values returned from
+               start and end) use C<overlaps_local()>.
   Returntype : TRUE if features overlap, FALSE if they don't
   Exceptions : warning if features are on different seq_regions
   Caller     : general
@@ -1379,20 +1382,46 @@ sub get_all_alt_locations {
 =cut
 
 sub overlaps {
-  my $self = shift;
-  my $f = shift;
-
-  my $sr1_name = $self->seq_region_name;
-  my $sr2_name = $f->seq_region_name;
-
-  if ($sr1_name and $sr2_name and ($sr1_name ne $sr2_name)) {
-    warning("Bio::EnsEMBL::Feature->overlaps(): features are on different seq regions.");
-    return undef;
+  my ($self, $f) = @_;
+  my ($sr1, $sr2) = ($self->seq_region_name, $f->seq_region_name);
+  if($sr1 && $sr2 && ($sr1 ne $sr2)) {
+    warning("Bio::EnsEMBL::Feature->overlaps(): features are on different seq regions. \$self is on $sr1 and \$feature is on $sr2");
+    return 0;
   }
-  
-  return ($self->seq_region_end >= $f->seq_region_start and $self->seq_region_start <= $f->seq_region_end);
+  return ($self->seq_region_end >= $f->seq_region_start and $self->seq_region_start <= $f->seq_region_end) ? 1 : 0;
 }
 
+=head2 overlaps_local
+
+  Arg [1]    : Bio::EnsEMBL::Feature $f
+               The other feature you want to check overlap with this feature
+               for.
+  Description: This method does a range comparison of this feature's start and
+               end and compares it with another feature's and end. It will 
+               return true if these ranges overlap and the features are 
+               on the same seq_region.
+
+               This method will not attempt to resolve starts and ends with 
+               reference to the feature's backing Slice.
+
+               For global coordinate overlaps tests (with reference to the feature's 
+               backing sequence region) use C<overlaps()>.
+  Returntype : TRUE if features overlap, FALSE if they don't
+  Exceptions : warning if features are on different seq_regions
+  Caller     : general
+  Status     : Stable
+
+=cut
+
+sub overlaps_local {
+  my ($self, $f) = @_;
+  my ($sr1, $sr2) = ($self->seq_region_name, $f->seq_region_name);
+  if($sr1 && $sr2 && ($sr1 ne $sr2)) {
+    warning("Bio::EnsEMBL::Feature->overlaps_local(): features are on different seq regions. \$self is on $sr1 and \$feature is on $sr2");
+    return;
+  }
+  return ($self->end >= $f->start and $self->start <= $f->end) ? 1 : 0;
+}
 
 =head2 get_overlapping_Genes
 

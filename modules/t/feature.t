@@ -463,6 +463,12 @@ my $chr_slice = $db->get_SliceAdaptor->fetch_by_region('chromosome',
 						       '20',
 						       30_249_935,
 						       31_000_000);
+my $all_chr_slice =  $db->get_SliceAdaptor->fetch_by_region('chromosome', 20);
+
+my $hap_chr_slice = $db->get_SliceAdaptor->fetch_by_region('chromosome',
+                   '20_HAP1',
+                   30_249_935,
+                   31_000_000);
 
 # my $sctg_slice  = $db->get_SliceAdaptor->fetch_by_region('supercontig',
 # 							 'NT_028392');
@@ -490,8 +496,8 @@ my $f2 = new Bio::EnsEMBL::Feature( -start => 10,
 # simple same coord system overlap
 #
 
-debug( "f1<->f2 overlap = ".($f1->overlaps( $f2 )));
-ok( $f1->overlaps( $f2 ));
+ok( $f1->overlaps( $f2 ), 'Overlaps: feature 1 <-> feature 2 overlap (1 ends @ 10. 2 starts @ 10)');
+ok( $f1->overlaps_local( $f2 ), 'Overlaps Local: feature 1 <-> feature 2 overlap (1 ends @ 10. 2 starts @ 10)');
 
 $f2 = new Bio::EnsEMBL::Feature( -start => 11,
 				 -end => 20,
@@ -500,10 +506,29 @@ $f2 = new Bio::EnsEMBL::Feature( -start => 11,
 				 -analysis => $analysis
 			       );
 
-ok( ! $f2->overlaps( $f1 ));
+ok( ! $f1->overlaps( $f2 ), 'Overlaps: feature 1 <-> new feature 2 do not overlap (1 ends @ 10. 2 starts @ 11)');
+ok( ! $f1->overlaps_local( $f2 ), 'Overlaps Local: feature 1 <-> feature 2 overlap (1 ends @ 10. 2 starts @ 10)');
 
+#
+# Testing when seq_region overlaps do not return true but local ones do
+#
+my $f1_absolute = Bio::EnsEMBL::Feature->new(-start => 30_249_935, -end => 30_249_945, -strand => 1, -slice => $all_chr_slice);
+ok($f1->overlaps($f1_absolute), 'Overlaps: feature 1 overlaps as both it and absolute feature are on the same chromsomal coordinate');
+ok(!$f1->overlaps_local($f1_absolute), 'Overlaps Local: feature 1 does not overlap absolute feature; their starts and ends are different');
 
+# 
+# Testing alternative seq region overlap
+#
+my $hap_feature_1 = Bio::EnsEMBL::Feature->new(-start => 1, -end => 10, -strand => 1, -slice => $hap_chr_slice);
+warns_like 
+  { ok( ! $hap_feature_1->overlaps( $f1 ), 'Overlaps: feature 1 <-> new feature 2 do not overlap (different seq regions)') }
+  qr/different seq regions/,
+  'Error when using different seq regions as expected';
 
+warns_like 
+  { ok( ! $hap_feature_1->overlaps_local( $f1 ), 'Overlaps Local: feature 1 <-> feature 2 overlap (different seq regions)') }
+  qr/different seq regions/,
+  'Error when using different seq regions as expected';
 
 #
 # test get_all_alt_locations
