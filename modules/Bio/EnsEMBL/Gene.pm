@@ -1163,7 +1163,7 @@ sub transform {
   }
 
   if(exists $self->{attributes}) {
-    $new_transcript->{attributes} = [@{$self->{attributes}}];
+    $new_gene->{attributes} = [@{$self->{attributes}}];
   }
 
   return $new_gene;
@@ -1199,7 +1199,7 @@ sub transfer {
   }
 
   if(exists $self->{attributes}) {
-    $new_transcript->{attributes} = [@{$self->{attributes}}];
+    $new_gene->{attributes} = [@{$self->{attributes}}];
   }
   
   return $new_gene;
