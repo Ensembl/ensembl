@@ -2133,6 +2133,32 @@ sub get_all_StructuralVariationFeatures_by_VariationSet {
   }
 }
 
+=head2 get_all_StructuralVariationFeatures_by_Study
+
+    Arg [1]     : Bio::EnsEMBL:Variation::Study $study
+    Description :returns all structural variation features on this slice associated with a 
+                 given study.
+                 This function will only work correctly if the variation database has been
+                 attached to the core database. 
+    ReturnType : listref of Bio::EnsEMBL::Variation::StructuralVariationFeature
+    Exceptions : none
+    Caller     : contigview, snpview
+    Status     : Stable
+
+=cut
+
+sub get_all_StructuralVariationFeatures_by_Study {
+  my $self  = shift;
+  my $study = shift;
+
+  if (my $svf_adaptor = $self->_get_StructuralVariationFeatureAdaptor) {
+    return $svf_adaptor->fetch_all_by_Slice_Study($self, $study);  
+  }
+  else {
+    return [];
+  }
+}
+
 
 =head2 get_all_somatic_StructuralVariationFeatures
 
