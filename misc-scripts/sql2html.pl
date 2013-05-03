@@ -268,7 +268,7 @@ while (<SQLFILE>) {
       fill_documentation ($1,$2);
     }
     # See other tables
-    elsif ($doc =~ /^\@(see)\s*(.+)$/i) {
+    elsif ($doc =~ /^\@(see)\s*(\w+)\s*$/i) {
       fill_documentation ($1,$2);  
     }
     # Addtional information block
