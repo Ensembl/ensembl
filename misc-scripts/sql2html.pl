@@ -881,7 +881,7 @@ sub add_examples {
       }
 			if (defined($sql)) {
 			  foreach my $word (qw(SELECT FROM WHERE LIMIT DESC ORDER)) {
-			    $sql =~ s/$word/$word/i;
+			    $sql =~ s/$word /$word /i;
 				}
 			}
       $html .= qq{<pre style="display:inline;border:1px solid #555;padding:2px;margin-right:15px;margin-left:10px">$sql</pre> $show_hide\n$sql_table};
