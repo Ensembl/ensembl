@@ -4,6 +4,7 @@ use warnings;
 use FindBin qw/$Bin/;
 use Test::More;
 use Bio::EnsEMBL::Test::MultiTestDB;
+use Bio::EnsEMBL::Utils::IO qw/slurp/;
 use File::Spec::Functions qw/updir catfile catdir/;
 
 my $db = Bio::EnsEMBL::Test::MultiTestDB->new();
@@ -23,6 +24,15 @@ SKIP: {
   my $new_db_name = $db->create_db_name('schematemp');
   note 'Creating database '.$new_db_name;
   $dba->dbc()->do("create database $new_db_name");
+
+  my $table_string = slurp $sql_file;  
+  my @fks = sort grep /FOREIGN[\s\n]+?KEY[\s\n]+?\(.+?\)[\s\n]+?REFERENCES/i, $table_string;
+  if(@fks) {
+    fail("Definition of foreign keys detected in SQL schema file");
+  } else {
+    pass("SQL schema file does not define foreign keys");
+  }
+
   my %args = ( host => $dbc->host(), port => $dbc->port(), user => $dbc->username(), password => $dbc->password());
   my $cmd_args = join(q{ }, map { "--${_}=$args{$_}" } keys %args);
   my $cmd = "mysql $cmd_args $new_db_name < $sql_file 2>&1";
