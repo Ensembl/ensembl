@@ -2399,21 +2399,20 @@ CREATE TABLE ontology_xref (
 
 
 /**
-@table associated_xref
-@desc This table associates extra associated annotations with a given ontology xref evidence and source under a specific condition.   For GO this allows qualifiers (with/from) or annotation extensions to be added to a given ontology annotation.
+@table  associated_xref
+@desc   This table associates extra associated annotations with a given ontology xref evidence and source under a specific condition.   For GO this allows qualifiers (with/from) or annotation extensions to be added to a given ontology annotation.
 
-This table can also be used to associate other annotations to an ontology annotation.
-
-@column associated_xref_id Primary key, internal reference
-@column object_xref_id
-@column xref_id
-@column source_xref_id     
-@column condition_type     Free text condition description eg with, from,
-                           localises
-@column associated_group_id Foreign key, reference to associated_group table
-@rank
+@column associated_xref_id Associated xref id. Primary key, internal identifier
+@column object_xref_id Object xref id this associated xref is linked to. Foreign key linked to the @link object_xref table
+@column xref_id Xref which is the associated term. Foreign key linked to the @link xref table
+@column source_xref_id  Xref which is source of this association. Foreign key linked to the @link xref table
+@column condition_type The type of condition this link occurs in e.g. evidence, from, residue or assigned_by
+@column associated_group_id Foreign key to allow for @link associated_group
+@column rank The rank in which the association occurs within an @link associated_group
 
 @see object_xref
+@see associcated_group
+@see xref
 */
 
 CREATE TABLE associated_xref (
@@ -2436,11 +2435,11 @@ CREATE TABLE associated_xref (
 ) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
 
 /**
-@table associated_group
+@table  associated_group
+@desc   Groups together xref associations under a single description. Used when more than one associated xref term must be used to describe a condition
 
-@associated_group_id
-@description
-
+@column associated_group_id Associated group id. Primary key, internal identifier
+@column description Optional description for this group
 */
 
 CREATE TABLE associated_group (
