@@ -255,6 +255,12 @@ sub check_for_stops {
         next TRANS;
       }
     }
+    foreach my $attrib (@{$trans->get_all_Attributes('hidden_remark')}) {
+      if ($attrib->value eq 'ribosomal_frameshift') {
+        $log_object->_save_log('log', '', $gsi, '', $tsi, '', "Skipping $tsi ($tname) since it has a ribosomal frameshift hidden_remark");
+        next TRANS;
+      }
+    }
 
     #$support->log_verbose("Studying transcript $tsi ($tname, $tID)\n",1);
     $log_object->_save_log('log_verbose', '', $gsi, '', $tsi, '', "Studying transcript $tsi ($tname, $tID)");
