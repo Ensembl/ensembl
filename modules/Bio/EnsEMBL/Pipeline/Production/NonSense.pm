@@ -73,10 +73,9 @@ sub get_sample_ids {
 
   my ($sample_id, $name);
   my $sql = q{
-     SELECT p.sample_id, s.name
-     FROM sample s, population p
-     WHERE p.sample_id = s.sample_id
-     AND s.name = ? };
+     SELECT p.population_id, p.name
+     FROM population p
+     WHERE p.name = ? };
   foreach my $pop (@$pops) {
     my $result = $helper->execute(-SQL => $sql, -PARAMS => [$pop])->[0] ;
     if ($result) {
@@ -102,7 +101,7 @@ sub get_features {
   my $frequency = $self->param('frequency');
   my $observation = $self->param('observation');
   my $sql = q{
-     SELECT a.sample_id, tv.feature_stable_id, vf.variation_name, substring_index(tv.consequence_types, ",", 1)
+     SELECT a.population_id, tv.feature_stable_id, vf.variation_name, substring_index(tv.consequence_types, ",", 1)
      FROM transcript_variation tv, variation_feature vf, allele_code ac, allele a
      WHERE vf.variation_feature_id = tv.variation_feature_id
      AND vf.variation_id = a.variation_id
