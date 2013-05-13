@@ -40,7 +40,7 @@ Usage:
   --pass / -p\tdatabase user password (optional, no default)
 
   --type / -t   restrict to database schema type
-                (i.e. core, funcgen, or variation)
+                (i.e. core, compara, funcgen, variation, production or ontology)
                 (required if --database is not specified)
 
   --database / -d   full name of database, or database name pattern
@@ -105,8 +105,9 @@ sub about {
     to determine what databases should be or shouldn't be patched.
 
     The script is able to patch databases that have Ensembl Core
-    schemas, Ensembl Regulation schemas, and Ensembl Variation schemas,
-    provided that the apropriate CVS modules have been checked out
+    schemas, Ensembl Compara schemas, Ensembl Regulation schemas, 
+    Ensembl Variation schemas, Ensembl Production and Ontology schemas
+    provided that the appropriate CVS modules have been checked out
     and are available to this script.  The CVS root directory where
     all Ensembl CVS modules are located may be specified using the
     --cvsdir=/some/path command line switch if the script is unable to
@@ -247,8 +248,11 @@ if ( !GetOptions( 'host|h=s'     => \$opt_host,
 
 if ( defined($opt_type) &&
      $opt_type ne 'core' &&
+     $opt_type ne 'compara' && 
      $opt_type ne 'funcgen' &&
-     $opt_type ne 'variation' )
+     $opt_type ne 'variation' &&
+     $opt_type ne 'production' &&
+     $opt_type ne 'ontology' )
 {
   die( sprintf( "Unknown schema type: %s\n", $opt_type ) );
 }
@@ -259,17 +263,20 @@ my %patches;
 # Get available patches.
 
 foreach my $thing ( [ 'ensembl',               'core', 'table.sql' ],
+		    [ 'ensembl-compara',       'compara', 'table.sql' ], 
                     [ 'ensembl-functgenomics', 'funcgen', 'efg.sql' ],
-                    [ 'ensembl-variation',     'variation', 'table.sql' ] )
+                    [ 'ensembl-variation',     'variation', 'table.sql' ],
+		    [ 'ensembl-production',    'production', 'tables.sql' ],
+		    [ 'ensembl',               'ontology', 'tables.sql' ] )
 {
   my ($cvs_module, $schema_type, $schema_file) = @{$thing};
 
   if ( defined($opt_type) && $schema_type ne $opt_type ) { next }
 
-  my $sql_dir = _sql_dir($cvs_module, $schema_file);
+  my $sql_dir = _sql_dir($cvs_module, $schema_type, $schema_file);
   if(! defined $sql_dir) {
     if ( !$opt_quiet ) {
-      warn(sprintf("No SQL directory found for CVS module %s\n", $cvs_module));
+      warn(sprintf("No SQL directory found for CVS module %s, %s schema type\n", $cvs_module, $schema_type));
     }
     next;
   }
@@ -305,6 +312,7 @@ foreach my $thing ( [ 'ensembl',               'core', 'table.sql' ],
   }
 
 } ## end foreach my $thing ( [ 'ensembl'...])
+
 
 if ( defined($opt_release) && $opt_release > $latest_release ) {
   die( sprintf( "Release %d is too new, " .
@@ -422,7 +430,8 @@ while ( $sth->fetch() ) {
   if ( ! $schema_version ) {
 	#remove defined as version maybe empty string
 
-    if ( $database =~ /_(\d+)_\w+$/ ) {
+    if ( $database =~ /^ensembl.+?(\d+)$/ or # this captures compara|eg|ontology|production naming conventions
+	 $database =~ /_(\d+)_\w+$/) {
 
       $schema_version = $1;
 
@@ -441,7 +450,7 @@ while ( $sth->fetch() ) {
   }
 
   if ( !defined($schema_type) ) {
-    if ( $database =~ /_(core|funcgen|variation)_/ ) {
+    if ( $database =~ /_(core|funcgen|variation|compara|production|ontology)_/ ) {
       $schema_type = $1;
       if ( defined($opt_type) ) {
         if   ( $schema_type eq $opt_type ) { $schema_type_ok = 1 }
@@ -455,9 +464,13 @@ while ( $sth->fetch() ) {
     }
   }
   if ( !defined($species) ) {
-    if ($database =~ /([a-z][a-z_]+[a-z])_(?:core|funcgen|variation)_/ )
+if ($database =~ /compara_([a-z][a-z_]+[a-z])?_\d+_\d+/ or # EG case, e.g. ensembl_compara_fungi_18_71
+    $database =~ /ensembl[a-z]?_(?:compara|production|ontology)_/ or 
+    $database =~ /([a-z][a-z_]+[a-z])_(?:core|funcgen|variation)_/) 
     {
       $species = $1;
+      $species = 'multi' unless defined $species;
+
       if ( defined($opt_species) ) {
         if ( $species eq $opt_species ) { $species_ok = 1 }
       }
@@ -535,6 +548,7 @@ while ( $sth->fetch() ) {
   my $schema_version_warning = 0;
   
   for ( my $r = $start_version; $r <= $opt_release; ++$r ) {
+    next unless exists $patches{$schema_type}{$r};
     foreach my $entry ( sort { $a->{'patch'} cmp $b->{'patch'} }
                         @{ $patches{$schema_type}{$r} } )
     {
@@ -640,7 +654,7 @@ if(!$found_databases) {
 $dbh->disconnect();
 
 sub _sql_dir {
-  my ($cvs_module, $schema_file) = @_;
+  my ($cvs_module, $schema_type, $schema_file) = @_;
   my $cvs_dir;
   if($opt_cvsdir) {
     $cvs_dir = $opt_cvsdir;
@@ -650,7 +664,12 @@ sub _sql_dir {
     $directories = curdir() unless $directories;
     $cvs_dir = catdir($directories, updir(), updir());
   }
-  my $sql_dir = rel2abs(canonpath( catdir( $cvs_dir, $cvs_module, 'sql' ) ));
+  my $sql_dir;
+  if ($schema_type eq 'ontology') {
+    $sql_dir = rel2abs(canonpath( catdir( $cvs_dir, $cvs_module, 'misc-scripts', 'ontology', 'sql' ) ));
+  } else {
+    $sql_dir = rel2abs(canonpath( catdir( $cvs_dir, $cvs_module, 'sql' ) ));
+  }
   my $schema_location = catfile($sql_dir, $schema_file);
   if(! -f $schema_location) {
     if($opt_verbose) {

@@ -10,4 +10,6 @@ CREATE TABLE alt_id (
   INDEX accession_idx (accession(50))
 );
 
-
+-- Patch identifier
+INSERT INTO meta (meta_key, meta_value)
+  VALUES ('patch', 'patch_71_72b.sql|alt_id table');
