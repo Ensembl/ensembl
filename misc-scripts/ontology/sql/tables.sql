@@ -12,8 +12,16 @@ CREATE TABLE meta (
   UNIQUE INDEX key_value_idx (meta_key, meta_value)
 );
 
+# Add schema type and schema version to the meta table
+INSERT INTO meta (meta_key, meta_value) VALUES 
+  ('schema_type', 'ontology'),
+  ('schema_version', '72');
+
+# Patches included in this schema file
 INSERT INTO meta (meta_key, meta_value)
-  VALUES ('schema_type', 'ontology');
+  VALUES ('patch', 'patch_71_72b.sql|alt_id table');
+INSERT INTO meta (meta_key, meta_value)
+  VALUES ('patch', 'patch_71_72c.sql|schema_version');
 
 CREATE TABLE ontology (
   ontology_id   INT UNSIGNED NOT NULL AUTO_INCREMENT,
