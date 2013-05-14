@@ -629,12 +629,12 @@ sub count_by_Slice_constraint {
     # except we need to alter projected features in that code with an offset
     my $local_constraint = $constraint;
     if ( $seg_slice->name() ne $slice->name() ) {
-      my ($limit_start, $limit_end) = (1,1); #limit both by default
+      my ($limit_start, $limit_end) = (1,1); #limit both by default, flags are reset every iteration
       if($i == 0) {
-        $limit_start = 1; #don't check start as we are on the final projection
+        $limit_start = 0; #don't check start as we are on the final projection
       }
       elsif($i == ($proj_ref_length - 1)) {
-        $limit_end = 1; #don't check end as we are on the final projection
+        $limit_end = 0; #don't check end as we are on the final projection
       }
       $local_constraint .= ' AND ' if $local_constraint;
       my @conditionals;
