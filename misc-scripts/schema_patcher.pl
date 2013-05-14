@@ -257,6 +257,9 @@ if ( defined($opt_type) &&
   die( sprintf( "Unknown schema type: %s\n", $opt_type ) );
 }
 
+# turn on autoflush
+$| = 1;
+
 my $latest_release;
 my %patches;
 
@@ -464,33 +467,25 @@ while ( $sth->fetch() ) {
     }
   }
   if ( !defined($species) ) {
-if ($database =~ /compara_([a-z][a-z_]+[a-z])?_\d+_\d+/ or # EG case, e.g. ensembl_compara_fungi_18_71
-    $database =~ /ensembl[a-z]?_(?:compara|production|ontology)_/ or 
-    $database =~ /([a-z][a-z_]+[a-z])_(?:core|funcgen|variation)_/) 
-    {
-      $species = $1;
-      $species = 'multi' unless defined $species;
+    if ($database =~ /compara_([a-z][a-z_]+[a-z])?_\d+_\d+/ or # EG case, e.g. ensembl_compara_fungi_18_71
+	$database =~ /ensembl[a-z]?_(?:compara|production|ontology)_/ or 
+	$database =~ /([a-z][a-z_]+[a-z])_(?:core|funcgen|variation)_/) 
+      {
+	$species = $1;
+	$species = 'multi' unless defined $species;
 
-      if ( defined($opt_species) ) {
-        if ( $species eq $opt_species ) { $species_ok = 1 }
+	if ( defined($opt_species) ) {
+	  if ( $species eq $opt_species ) { $species_ok = 1 }
+	}
+	else { $species_ok = 1 }
       }
-      else { $species_ok = 1 }
-    }
     elsif ( $opt_species && !$opt_quiet ) {
-      warn(
-        sprintf( "Can not determine species from '%s'\n", $database ) );
+      warn( sprintf( "Can not determine species from '%s'\n", $database ) );
     }
   }
   
   #Quick check if fix-last is active. If so we will hard-code some values
-  if($opt_fixlast) {
-    if(defined $schema_version) {
-      $opt_fix = 1;
-      $opt_oldest = ($schema_version == $latest_release) ? $latest_release : $latest_release - 1;
-      die "Cannot use --fixlast with a schema release too far from the latest release; oldest allowed is $opt_oldest" if $schema_version < ($opt_oldest);
-      printf("--fixlast is active. Will apply patches for version %d and up (if available)\n", $opt_oldest);
-    }
-  }
+  $opt_fix = 1 if $opt_fixlast and defined $schema_version;
   
   if ( $schema_version_ok &&
        $schema_type_ok &&
@@ -504,6 +499,11 @@ if ($database =~ /compara_([a-z][a-z_]+[a-z])?_\d+_\d+/ or # EG case, e.g. ensem
     printf( "Considering '%s' [%s,%s,%d]\n",
             $database, defined($species) ? $species : 'unknown',
             $schema_type, $schema_version );
+    $opt_oldest = ($schema_version == $latest_release) ? $latest_release : $latest_release - 1;
+
+    next "Cannot use --fixlast with a schema release too far from the latest release; oldest allowed is $opt_oldest. Skipping $database" 
+      if $schema_version < ($opt_oldest);
+    printf("--fixlast is active. Will apply patches for version %d and up (if available)\n", $opt_oldest);
   }
   else { 
     if($opt_verbose) {
