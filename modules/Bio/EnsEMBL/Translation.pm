@@ -725,7 +725,7 @@ sub get_all_xrefs {
 
                ProteinFeatures are lazy-loaded from the database unless they
                added manually to the Translation or had already been loaded.
-  Returntype : Bio::EnsEMBL::ProteinFeature
+  Returntype : Listref of Bio::EnsEMBL::ProteinFeature
   Exceptions : none
   Caller     : general
   Status     : Stable
@@ -785,7 +785,7 @@ sub get_all_ProteinFeatures {
                are 'domain' features are those with analysis logic names:
                'pfscan', 'scanprosite', 'superfamily', 'pfam', 'prints',
                'smart', 'pirsf', 'tigrfam'.
-  Returntype : listref of Bio::EnsEMBL::ProteinFeatures
+  Returntype : listref of Bio::EnsEMBL::ProteinFeature
   Exceptions : none
   Caller     : webcode (protview)
   Status     : Stable
