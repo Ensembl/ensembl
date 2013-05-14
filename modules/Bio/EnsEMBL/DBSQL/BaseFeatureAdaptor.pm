@@ -584,77 +584,90 @@ sub _create_feature_fast {
     Arg [2]     : String Custom SQL constraint
     Arg [3]     : String Logic name to search by
     Description : Finds all features with at least partial overlap to the given
-                  slice and sums them up
+                  slice and sums them up.
+                  Explanation of workings with projections:
+                  
+                  |-------------------------Constraint Slice---------------------------------|
+                  |             |                                           |                |
+                  |--Segment 1--|                                           |                |
+                  |             |--Segment 2, on desired Coordinate System--|                |
+                  |             |                                           |---Segment 3----|
+              #Feature 1#    #Feature 2#                               #Feature 3#           |
+                  |         #####################Feature 4####################               |
+                  | #Feature 5# |                                           |                |
+                  
+                  Feature 1 is overlapping the original constraint. Counted in Segment 1
+                  Feature 2,3 and 4  are counted when inspecting Segment 2
+                  Feature 5 is counted in Segment 1
+                  
     Returntype  : Integer
 =cut
 
 sub count_by_Slice_constraint {
-	my ($self, $slice, $constraint, $logic_name) = @_;
-	
-	assert_ref($slice, 'Bio::EnsEMBL::Slice', 'slice');
-	
-	my $count = 0;
-	
-	#Remember the bind params
-	my $bind_params = $self->bind_param_generic_fetch();
-	
-	#Table synonym
-	my @tables = $self->_tables;
-  my ($table_name, $table_synonym) = @{ $tables[0] };
-	
-	#Constraints
-	$constraint ||= '';
-  $constraint = $self->_logic_name_to_constraint( $constraint, $logic_name );
-  # If the logic name was invalid, undef was returned
-  return $count if ! defined $constraint;
+    my ($self, $slice, $constraint, $logic_name) = @_;
+    
+    assert_ref($slice, 'Bio::EnsEMBL::Slice', 'slice');
+    
+    my $count = 0;
+    
+    #Remember the bind params
+    my $bind_params = $self->bind_param_generic_fetch();
+    
+    #Table synonym
+    my @tables = $self->_tables;
+    my ($table_name, $table_synonym) = @{ $tables[0] };
+    
+    # Basic constraints limit the feature hits to the starting Slice constraint
+    $constraint ||= '';
+    $constraint = $self->_logic_name_to_constraint( $constraint, $logic_name );
   
-  #Query logic
-  my $sa = $slice->adaptor();
-  my $proj_ref = $self->_get_and_filter_Slice_projections($slice);
+    return $count if ! defined $constraint;
+  
+    #Query logic
+    my $sa = $slice->adaptor();
+    my $projections = $self->_get_and_filter_Slice_projections($slice);
 
-  my $proj_ref_length = @{$proj_ref};
-  #Manual loop to support look-ahead/behind
-  for (my $i = 0; $i < $proj_ref_length; $i++) {
-    my $seg = $proj_ref->[$i];
-    my $seg_slice = $seg->to_Slice();
-    $self->_bind_param_generic_fetch($bind_params);
+    my $segment_count = @{$projections};
+    #Manual loop to support look-ahead/behind
+    for (my $i = 0; $i < $segment_count; $i++) {
+        my $seg = $projections->[$i];
+        my $seg_slice = $seg->to_Slice();
+        $self->_bind_param_generic_fetch($bind_params);
     
-    # Because we cannot filter boundary crossing features in code we need to
-    # do it in SQL. So we detect when we are not on the original query Slice
-    # we do manual filtering by the seg_Slice's start and end. If we are on
-    # the *1st* section we only limit by the *end* and when we are on the *last*
-    # we filter by the *start*
-    #
-    # This is the same as fetch_all_by_Slice_constraint()'s in-memory filtering
-    # except we need to alter projected features in that code with an offset
-    my $local_constraint = $constraint;
-    if ( $seg_slice->name() ne $slice->name() ) {
-      my ($limit_start, $limit_end) = (1,1); #limit both by default, flags are reset every iteration
-      if($i == 0) {
-        $limit_start = 0; #don't check start as we are on the final projection
-      }
-      elsif($i == ($proj_ref_length - 1)) {
-        $limit_end = 0; #don't check end as we are on the final projection
-      }
-      $local_constraint .= ' AND ' if $local_constraint;
-      my @conditionals;
+        # We cannot filter boundary crossing features in code, so we constrain the
+        # SQL. We detect when we are not on the original query Slice and manually
+        # filter by the segment Slice's start and end. If we are on "earlier" (5')
+        # projection segments, we only limit by the *end* and when we are on the later
+        # projection segments, we filter by the *start*.
+        
+        # This is the same as fetch_all_by_Slice_constraint()'s in-memory filtering
+        # except we need to alter projected features in that code with an offset
+        my $local_constraint = $constraint;
+        if ( $seg_slice->name() ne $slice->name() ) {
+            my ($limit_start, $limit_end) = (1,1); #fully constrained by default, flags are reset every iteration
+            if($i == 0) {
+                $limit_start = 0;
+            } elsif ($i == ($segment_count - 1)) {
+                $limit_end = 0; #don't check end as we are on the final projection
+            }
+            $local_constraint .= ' AND ' if $local_constraint;
+            my @conditionals;
       
-      #Do not cross the start boundary so our feature must be less than slice end on all counts
-      if($limit_start) {
-        push(@conditionals, sprintf('%1$s.seq_region_start <= %2$d AND %1$s.seq_region_end <= %2$d', $table_synonym, $seg_slice->end));
-      }
-      #Do not cross the start boundary so our feature must be larger than slice start on all counts
-      if($limit_end) {
-        push(@conditionals, sprintf('%1$s.seq_region_start >= %2$d AND %1$s.seq_region_end >= %2$d', $table_synonym, $seg_slice->start));
-      }
+            if($limit_end) {
+            # Restrict features to the end of this projection segment when after the named segment 
+                push(@conditionals, sprintf('%1$s.seq_region_end <= %2$d', $table_synonym, $seg_slice->end));
+            }
+            if($limit_start) {
+            #Do not cross the start boundary on this projection segment
+                 push(@conditionals, sprintf('%1$s.seq_region_start >= %2$d', $table_synonym, $seg_slice->start));
+            }
       
-      $local_constraint .= join(q{ AND }, @conditionals);
+            $local_constraint .= join(q{ AND }, @conditionals);
+        }
+    
+  	    my $count_array = $self->_get_by_Slice($seg_slice, $local_constraint, 'count');
+  	    $count += $_ for @$count_array;
     }
-    
-  	my $count_array = $self->_get_by_Slice($seg_slice, $local_constraint, 'count');
-  	#Data comes out as an array
-  	$count += $_ for @$count_array;
-  }
 	
 	return $count;
 }
