@@ -1,0 +1,2 @@
+1	liver	NULL	NULL	EFO:0000887
+2	brain	NULL	cerebellum,hippocampus,prefrontal cortex	EFO:0000302
