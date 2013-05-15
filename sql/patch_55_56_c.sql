@@ -127,15 +127,15 @@ DELETE from external_db  where external_db_id=3211 and db_name='ARRAY_LIV_AEGDET
 
 -- Also need to remove xref only array data for db_name like AGILENT, Illumina, CODELINK
 
---+----------------+-------------+
---| external_db_id | db_name     |
---+----------------+-------------+
---|           3250 | Illumina    | 
---|           3255 | Illumina_V1 | 
---|           3256 | Illumina_V2 | 
---|           4300 | AgilentProbe | 
---|           4305 | AgilentCGH   | 
---|           6000 | Codelink | 
+--  +----------------+-------------+
+--  | external_db_id | db_name     |
+--  +----------------+-------------+
+--  |           3250 | Illumina    | 
+--  |           3255 | Illumina_V1 | 
+--  |           3256 | Illumina_V2 | 
+--  |           4300 | AgilentProbe | 
+--  |           4305 | AgilentCGH   | 
+--  |           6000 | Codelink | 
 
 
 DELETE ox from external_db edb, xref x, object_xref ox where edb.external_db_id=3250 and edb.db_name='Illumina' and edb.external_db_id=x.external_db_id and x.xref_id=ox.xref_id;
