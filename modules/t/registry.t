@@ -97,4 +97,10 @@ TMPL
   $tester->('verison');
 }
 
+# Test get_all_species
+
+my @species = $reg->get_all_species();
+ok(scalar(@species) == 1, "get_all_species");
+ok(scalar(@{ $reg->get_all_species('cahoona') }) == 0, "get_all_species with bogus data.");
+
 done_testing();

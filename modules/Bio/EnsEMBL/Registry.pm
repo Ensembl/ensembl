@@ -2663,6 +2663,32 @@ sub version_check {
   return 1;    # Ok
 } ## end sub version_check
 
+=head2 get_all_species 
+
+  Arg [1]    : String group type, such as core, or otherfeatures
+  Description: Method for getting all valid species names found in available
+               databases. This excludes the ancestral sequence databases, and
+               any species from a non-core database. Specifying a group allows
+               the list to apply to non-core database types.
+  Example    : my @species_names = @{ $reg->get_all_species() };
+  Returntype : Listref of species names
+  
+=cut
+
+sub get_all_species {
+    my ($self,$group) = @_;
+    $group ||= 'core';
+    my @species;
+    foreach my $name (keys %{$registry_register{_SPECIES}}) {
+        push @species, $name if (
+            # limit species names to given db group and no ancestral dbs
+            $registry_register{_SPECIES}->{$name}->{$group}
+            && $name !~ /^ancestral/i 
+        );
+    }
+    return \@species;
+}
+
 
 =head2 get_species_and_object_type
 
