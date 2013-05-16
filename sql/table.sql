@@ -509,9 +509,9 @@ INSERT INTO meta (species_id, meta_key, meta_value) VALUES
 # NOTE: At start of release cycle, remove patch entries from last release.
 # NOTE: Avoid line-breaks in values.
 INSERT INTO meta (species_id, meta_key, meta_value)
-  VALUES (NULL, 'patch', 'patch_70_71_a.sql|schema_version');
+  VALUES (NULL, 'patch', 'patch_71_72_a.sql|schema_version');
 INSERT INTO meta (species_id, meta_key, meta_value)
-  VALUES (NULL, 'patch', 'patch_70_71_b.sql|mapping_set_index');
+  VALUES (NULL, 'patch', 'patch_71_72_b.sql|associated_xref');
 
 /**
 @table meta_coord
@@ -2393,6 +2393,60 @@ CREATE TABLE ontology_xref (
   KEY object_idx (object_xref_id),
   UNIQUE KEY object_source_type_idx (object_xref_id, source_xref_id, linkage_type)
 
+) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
+
+/**
+@table associated_xref
+@desc This table associates extra associated annotations with a given ontology xref evidence and source under a specific condition.   For GO this allows qualifiers (with/from) or annotation extensions to be added to a given ontology annotation.
+
+This table can also be used to associate other annotations to an ontology annotation.
+
+@column associated_xref_id Primary key, internal reference
+@column object_xref_id
+@column xref_id
+@column source_xref_id     
+@column condition_type     Free text condition description eg with, from,
+                           localises
+@column associated_group_id Foreign key, reference to associated_group table
+@rank
+
+@see object_xref
+*/
+
+CREATE TABLE associated_xref (
+
+  associated_xref_id             INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
+  object_xref_id                 INT(10) UNSIGNED DEFAULT '0' NOT NULL,
+  xref_id                        INT(10) UNSIGNED DEFAULT '0' NOT NULL,
+  source_xref_id                 INT(10) UNSIGNED DEFAULT NULL,
+  condition_type                 VARCHAR(128) DEFAULT NULL,
+  associated_group_id            INT(10) UNSIGNED DEFAULT NULL,
+  rank                           INT(10) UNSIGNED DEFAULT '0',
+
+  PRIMARY KEY (associated_xref_id),
+  KEY associated_source_idx (source_xref_id),
+  KEY associated_object_idx (object_xref_id),
+  KEY associated_idx (xref_id),
+  FOREIGN KEY associated_group_idx (associated_group_id) REFERENCES associated_group (associated_group_id),
+  UNIQUE KEY object_associated_source_type_idx (object_xref_id, xref_id, source_xref_id, condition_type, associated_group_id)
+
+) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
+
+
+/**
+@table associated_group
+
+@associated_group_id
+@description
+
+*/
+
+CREATE TABLE associated_group (
+
+  associated_group_id            INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
+  description                    VARCHAR(128) DEFAULT NULL,
+
+  PRIMARY KEY (associated_group_id)
 ) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
 
 
