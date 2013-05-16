@@ -80,13 +80,15 @@ sub new {
   # allow to be called as class or object method
   my $class = ref($caller) || $caller;
 
-  my ($name, $desc, $ontology, $object, $value) =
-    rearrange([qw(NAME DESCRIPTION ONTOLOGY OBJECT VALUE)], @_);
+  my ($name, $desc, $ontology, $object, $analysis, $value, $value_type) =
+    rearrange([qw(NAME DESCRIPTION ONTOLOGY OBJECT ANALYSIS VALUE VALUE_TYPE)], @_);
 
   return bless {'name'        => $name,
                 'description' => $desc,
                 'ontology'    => $ontology,
                 'object'      => $object,
+                'analysis'    => $analysis,
+                'value_type'  => $value_type,
                 'value'       => $value}, $class;
 }
 
@@ -132,7 +134,7 @@ sub name {
 =head2 description
 
   Arg [1]    : string $description (optional)
-  Example    : $description = $attribute->description();
+  Example    : $description = $expression->description();
   Description: Getter/Setter for description attribute
   Returntype : string
   Exceptions : none
@@ -150,7 +152,7 @@ sub description {
 =head2 ontology
 
   Arg [1]    : string $ontology (optional)
-  Example    : $ontology = $attribute->ontology();
+  Example    : $ontology = $expression->ontology();
   Description: Getter/Setter for ontology attribute
   Returntype : string
   Exceptions : none
@@ -166,11 +168,10 @@ sub ontology {
 }
 
 
-
 =head2 value
 
   Arg [1]    : string $value (optional)
-  Example    : $value = $attribute->value();
+  Example    : $value = $expression->value();
   Description: Getter/Setter for value attribute
   Returntype : string
   Exceptions : none
@@ -185,10 +186,30 @@ sub value {
   return $self->{'value'};
 }
 
+
+=head2 value_type
+
+  Arg [1]    : string $value_type (optional)
+  Example    : $value_type = $expression->value_type();
+  Description: Getter/Setter for value_type attribute
+  Returntype : string
+  Exceptions : none
+  Caller     : general
+  Status     : Stable
+
+=cut
+
+sub value_type {
+  my $self = shift;
+  $self->{'value_type'} = shift if(@_);
+  return $self->{'value_type'};
+}
+
+
 =head2 object
 
   Arg [1]    : string $object (optional)
-  Example    : $object = $attribute->object();
+  Example    : $object = $expression->object();
   Description: Getter/Setter for object expression
   Returntype : string
   Exceptions : none
@@ -202,6 +223,36 @@ sub object {
   $self->{'object'} = shift if(@_);
   return $self->{'object'};
 }
+
+
+
+=head2 analysis
+
+  Arg [1]    : Bio::EnsEMBL::Analysis $analysis (optional)
+  Example    : $analysis = $expression->analysis();
+  Description: Getter/Setter for the analysis associated
+               with the expression
+  Returntype : Bio::EnsEMBL::Analysis
+  Exceptions : thrown if argument is not a Bio::EnsEMBL::Analysis object
+  Caller     : general
+  Status     : Stable
+
+=cut
+
+sub analysis {
+  my $self = shift;
+
+  if(@_) {
+    my $an = shift;
+    if(defined($an) && (!ref($an) || !$an->isa('Bio::EnsEMBL::Analysis'))) {
+      throw('analysis argument must be a Bio::EnsEMBL::Analysis');
+    }
+    $self->{'analysis'} = $an;
+  }
+
+  return $self->{'analysis'};
+}
+
 
 
 
