@@ -117,8 +117,8 @@ sub store_on_ {
 
   for my $exp ( @$expressions) {
 
-    if(!ref($exp) && $exp->isa('Bio::EnsEMBL::Attribute')) {
-      throw("Reference to list of Bio::EnsEMBL::Attribute objects " .
+    if(!ref($exp) && $exp->isa('Bio::EnsEMBL::Expression')) {
+      throw("Reference to list of Bio::EnsEMBL::Expression objects " .
             "argument expected.");
     }
 
@@ -133,7 +133,7 @@ sub store_on_ {
 }
 
 
-sub remove_from_{
+sub remove_from_ {
   my $self   = shift;
   my $type   = shift;
   my $object = shift;
@@ -141,7 +141,7 @@ sub remove_from_{
   my $table;
 
   if(!ref($object) || !$object->isa('Bio::EnsEMBL::'.$type)) {
-    throw("$type argument is required or a attrib code. but you passed $object");
+    throw("$type argument is required but you passed $object");
   }
 
   my $object_id = $object->dbID();
@@ -150,9 +150,10 @@ sub remove_from_{
     throw("$type must have dbID.");
   }
 
+  $table = lc($type);
   my $sth;
   if(defined($name)){
-    $sth = $self->prepare("DELETE a FROM ".$table."_expression e, tissue t " .
+    $sth = $self->prepare("DELETE e FROM ".$table."_expression e, tissue t " .
                          "WHERE t.tissue_id = e.tissue_id AND ".
                          "e.".$type."_id = ? AND ".
 			 "t.name like ?");
@@ -193,11 +194,12 @@ sub get_all_tissues {
 
 
 sub fetch_all_by_{
-  my $self     = shift;
-  my $type     = shift;
-  my $object   = shift;
-  my $name     = shift;
-  my $cutoff   = shift;
+  my $self       = shift;
+  my $type       = shift;
+  my $object     = shift;
+  my $name       = shift;
+  my $logic_name = shift;
+  my $cutoff     = shift;
 
   if (defined($object)){
     if(!ref($object) || !$object->isa('Bio::EnsEMBL::'.$type)) {
@@ -209,7 +211,7 @@ sub fetch_all_by_{
   my $object_id;
   $object_id = $object->dbID() if defined $object;
 
-  my $sql = "SELECT t.name, t.description, e.".$type."_id, e.value " .
+  my $sql = "SELECT t.name, t.description, t.ontology, e.".$type."_id, e.value, e.analysis_id " .
               "FROM ".$type."_expression e, tissue t ".
                  "WHERE e.tissue_id = t.tissue_id";
 
@@ -219,14 +221,20 @@ sub fetch_all_by_{
   if(defined($object_id)){
     $sql .= " AND e.".$type."_id = ".$object_id;
   }
+  if (defined($logic_name)){
+    my $aa = $self->db->get_AnalysisAdaptor();
+    my $an = $aa->fetch_by_logic_name($logic_name);
+    my $an_id = $an->dbID();
+    $sql .= ' AND e.analysis_id = ' . $an_id;
+  }
   if (defined($cutoff)){
     $sql .= " AND e.value > $cutoff";
   }
 		   
   my $sth = $self->prepare($sql);
   $sth->execute();
-  my ($desc, $value);
-  $sth->bind_columns(\$name, \$desc, \$object_id, \$value);
+  my ($desc, $ontology, $value, $analysis_id);
+  $sth->bind_columns(\$name, \$desc, \$ontology, \$object_id, \$value, \$analysis_id);
 
   my $object_adaptor = "get_" . $type . "Adaptor";
   my $adaptor = $self->db->$object_adaptor();
@@ -238,6 +246,7 @@ sub fetch_all_by_{
     my $exp = Bio::EnsEMBL::Expression->new_fast
               ( {'name' => $name,
                  'description' => $desc,
+                 'ontology' => $ontology,
                  'object' => $object,
                  'value' => $value} );
     push @out, $exp;
@@ -262,17 +271,18 @@ sub _store_type {
   my $tissue = shift;
 
   my $sth1 = $self->prepare
-    ("INSERT IGNORE INTO tissue set name = ?, description = ?" );
+    ("INSERT IGNORE INTO tissue set name = ?, description = ?, ontology = ?" );
 
   $sth1->bind_param(1,$tissue->name,SQL_VARCHAR);
   $sth1->bind_param(2,$tissue->description,SQL_LONGVARCHAR);
+  $sth1->bind_param(3,$tissue->ontology,SQL_VARCHAR);
 
   my $rows_inserted =  $sth1->execute();
 
   my $atid = $sth1->{'mysql_insertid'};
 
   if($rows_inserted == 0) {
-    # the insert failed because the code is already stored
+    # the insert failed because the tissue is already stored
     my $sth2 = $self->prepare
       ("SELECT tissue_id FROM tissue " .
        "WHERE name = ?");

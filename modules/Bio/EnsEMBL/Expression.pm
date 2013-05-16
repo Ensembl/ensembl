@@ -29,10 +29,12 @@ Bio::EnsEMBL::Expression - A generic Expression class.
   my $expression = Bio::EnsEMBL::Expression->new
        (-NAME => 'My Tissue',
         -DESCRIPTION => 'This is my tissue description.',
+        -ONTOLOGY => 'EFO:0000302',
         -VALUE => '0.8');
 
   print $expression->name(), "\n";
   print $expression->description(), "\n";
+  print $expression->ontology(), "\n";
   print $expression->value(), "\n";
 
 =head1 DESCRIPTION
@@ -78,13 +80,14 @@ sub new {
   # allow to be called as class or object method
   my $class = ref($caller) || $caller;
 
-  my ($name, $desc, $object, $value) =
-    rearrange([qw(NAME DESCRIPTION OBJECT VALUE)], @_);
+  my ($name, $desc, $ontology, $object, $value) =
+    rearrange([qw(NAME DESCRIPTION ONTOLOGY OBJECT VALUE)], @_);
 
-  return bless {'name'    => $name,
+  return bless {'name'        => $name,
                 'description' => $desc,
-                'object' => $object,
-                'value'   => $value}, $class;
+                'ontology'    => $ontology,
+                'object'      => $object,
+                'value'       => $value}, $class;
 }
 
 =head2 new_fast
@@ -143,6 +146,25 @@ sub description {
   $self->{'description'} = shift if(@_);
   return $self->{'description'};
 }
+
+=head2 ontology
+
+  Arg [1]    : string $ontology (optional)
+  Example    : $ontology = $attribute->ontology();
+  Description: Getter/Setter for ontology attribute
+  Returntype : string
+  Exceptions : none
+  Caller     : general
+  Status     : Stable
+
+=cut
+
+sub ontology {
+  my $self = shift;
+  $self->{'ontology'} = shift if(@_);
+  return $self->{'ontology'};
+}
+
 
 
 =head2 value
