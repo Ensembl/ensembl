@@ -2735,8 +2735,8 @@ CREATE TABLE exon_expression (
 
 CREATE TABLE tissue (
   tissue_id                   INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
+  ontology                    VARCHAR(64) NOT NULL,
   name                        VARCHAR(255),
-  is_a                        VARCHAR(255), 
   description                 TEXT,
 
   PRIMARY KEY (tissue_id),
