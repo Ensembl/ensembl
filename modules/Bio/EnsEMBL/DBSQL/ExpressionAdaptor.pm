@@ -45,6 +45,7 @@ package Bio::EnsEMBL::DBSQL::ExpressionAdaptor;
 use strict;
 use warnings;
 
+
 use Bio::EnsEMBL::DBSQL::BaseAdaptor;
 use Bio::EnsEMBL::Expression;
 
@@ -113,7 +114,7 @@ sub store_on_ {
 
   my $sth = $self->prepare( "INSERT into ".$type."_expression ".
 			    "SET ".$type."_id = ?, tissue_id = ?, ".
-			    "value = ? " );
+			    "value = ?, analysis_id = ?, value_type = ?" );
 
   for my $exp ( @$expressions) {
 
@@ -123,9 +124,19 @@ sub store_on_ {
     }
 
     my $expid = $self->_store_type( $exp);
+    
+    my $an_id;
+    my $analysis = $exp->analysis();
+    if ($analysis->is_stored($self->db)){
+      $an_id = $analysis->dbID();
+    } else {
+      $an_id = $self->db->get_AnalysisAdaptor->store($analysis);
+    }
     $sth->bind_param(1,$object_id,SQL_INTEGER);
     $sth->bind_param(2,$expid,SQL_INTEGER);
     $sth->bind_param(3,$exp->value,SQL_VARCHAR);
+    $sth->bind_param(4,$an_id, SQL_INTEGER);
+    $sth->bind_param(5,$exp->value_type,SQL_VARCHAR);
     $sth->execute();
   }
 
@@ -134,10 +145,11 @@ sub store_on_ {
 
 
 sub remove_from_ {
-  my $self   = shift;
-  my $type   = shift;
-  my $object = shift;
-  my $name   = shift;
+  my $self       = shift;
+  my $type       = shift;
+  my $object     = shift;
+  my $name       = shift;
+  my $logic_name = shift;
   my $table;
 
   if(!ref($object) || !$object->isa('Bio::EnsEMBL::'.$type)) {
@@ -151,28 +163,24 @@ sub remove_from_ {
   }
 
   $table = lc($type);
-  my $sth;
+  my $sql = "DELETE e FROM ".$table."_expression e, tissue t " .
+                         "WHERE ".$type."_id = " . $object_id .
+                         " AND t.tissue_id = e.tissue_id";
   if(defined($name)){
-    $sth = $self->prepare("DELETE e FROM ".$table."_expression e, tissue t " .
-                         "WHERE t.tissue_id = e.tissue_id AND ".
-                         "e.".$type."_id = ? AND ".
-			 "t.name like ?");
-    $sth->bind_param(1,$object_id,SQL_INTEGER);
-    $sth->bind_param(2,$name,SQL_VARCHAR);
+    $sql .= " AND t.name like '" . $name . "'"; 
   }
-  else{
-    $sth = $self->prepare("DELETE FROM ".$table."_expression " .
-                         "WHERE ".$type."_id = ?");
-    $sth->bind_param(1,$object_id,SQL_INTEGER);
+  if (defined($logic_name)){
+    my $aa = $self->db->get_AnalysisAdaptor();
+    my $an = $aa->fetch_by_logic_name($logic_name);
+    my $an_id = $an->dbID();
+    $sql .= " AND e.analysis_id = " . $an_id;
   }
+  my $sth = $self->prepare($sql);
   $sth->execute();
 
   $sth->finish();
 
   return;
-}
-
-sub fetch_all {
 }
 
 
@@ -199,6 +207,7 @@ sub fetch_all_by_{
   my $object     = shift;
   my $name       = shift;
   my $logic_name = shift;
+  my $value_type = shift;
   my $cutoff     = shift;
 
   if (defined($object)){
@@ -210,22 +219,30 @@ sub fetch_all_by_{
   $type = lc($type);
   my $object_id;
   $object_id = $object->dbID() if defined $object;
+  my $aa = $self->db->get_AnalysisAdaptor();
+  my @out;
 
-  my $sql = "SELECT t.name, t.description, t.ontology, e.".$type."_id, e.value, e.analysis_id " .
+  my $sql = "SELECT t.name, t.description, t.ontology, e.".$type."_id, e.value, e.analysis_id, e.value_type " .
               "FROM ".$type."_expression e, tissue t ".
                  "WHERE e.tissue_id = t.tissue_id";
 
   if(defined($name)){
-    $sql .= ' AND t.name like "'.$name . '"';
+    $sql .= " AND t.name like '" . $name . "'";
   }
   if(defined($object_id)){
     $sql .= " AND e.".$type."_id = ".$object_id;
   }
   if (defined($logic_name)){
-    my $aa = $self->db->get_AnalysisAdaptor();
     my $an = $aa->fetch_by_logic_name($logic_name);
+    if (!defined $an) {
+      @out = undef;
+      return [];
+    }
     my $an_id = $an->dbID();
-    $sql .= ' AND e.analysis_id = ' . $an_id;
+    $sql .= " AND e.analysis_id = " . $an_id;
+  }
+  if (defined($value_type)){
+    $sql .= " AND e.value_type = '" . $value_type . "'";
   }
   if (defined($cutoff)){
     $sql .= " AND e.value > $cutoff";
@@ -234,21 +251,24 @@ sub fetch_all_by_{
   my $sth = $self->prepare($sql);
   $sth->execute();
   my ($desc, $ontology, $value, $analysis_id);
-  $sth->bind_columns(\$name, \$desc, \$ontology, \$object_id, \$value, \$analysis_id);
+  $sth->bind_columns(\$name, \$desc, \$ontology, \$object_id, \$value, \$analysis_id, \$value_type);
 
   my $object_adaptor = "get_" . $type . "Adaptor";
   my $adaptor = $self->db->$object_adaptor();
-  my @out;
 
   while ($sth->fetch()) {
+
+    my $analysis = $aa->fetch_by_dbID($analysis_id);
     my $object = $adaptor->fetch_by_dbID($object_id);
 
     my $exp = Bio::EnsEMBL::Expression->new_fast
-              ( {'name' => $name,
+              ( {'name'        => $name,
                  'description' => $desc,
-                 'ontology' => $ontology,
-                 'object' => $object,
-                 'value' => $value} );
+                 'ontology'    => $ontology,
+                 'analysis'    => $analysis,
+                 'value_type'  => $value_type,
+                 'object'      => $object,
+                 'value'       => $value} );
     push @out, $exp;
   }
 
@@ -297,6 +317,7 @@ sub _store_type {
 	    "Wrong database user/permissions?");
     }
   }
+
 
   $sth1->finish();
 
