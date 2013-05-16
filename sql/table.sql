@@ -503,7 +503,7 @@ CREATE TABLE IF NOT EXISTS meta (
 # Add schema type and schema version to the meta table.
 INSERT INTO meta (species_id, meta_key, meta_value) VALUES
   (NULL, 'schema_type',     'core'),
-  (NULL, 'schema_version',  '71');
+  (NULL, 'schema_version',  '72');
 
 # Patches included in this schema file:
 # NOTE: At start of release cycle, remove patch entries from last release.
@@ -2588,5 +2588,105 @@ CREATE TABLE data_file (
   UNIQUE KEY df_unq_idx(coord_system_id, analysis_id, name, file_type),
   INDEX df_name_idx(name),
   INDEX df_analysis_idx(analysis_id)
+) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
+
+/**
+@table gene_expression
+@desc Stores a valid expression for a given gene and tissue
+
+@column gene_expression_id    Auto-increment primary key
+@column gene_id               Gene linked to the expression
+@column tissue_id             Tissue linked to the expression
+@value                        Value of the expression analysis
+@analysis_id                  Analysis used to generate the expression value
+
+*/
+
+CREATE TABLE gene_expression (
+  gene_expression_id          INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
+  gene_id                     INT(10) UNSIGNED NOT NULL,
+  tissue_id                   INT(10) UNSIGNED NOT NULL,
+  value                       TEXT NOT NULL,
+  analysis_id                 SMALLINT UNSIGNED NOT NULL,
+
+  PRIMARY KEY (gene_expression_id),
+  UNIQUE KEY gene_expression_idx(gene_id, tissue_id, analysis_id)
+
+
+
+) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
+
+/**
+@table transcript_expression
+@desc Stores a valid expression for a given transcript and tissue
+
+@column transcript_expression_id    Auto-increment primary key
+@column transcript_id               Transcript linked to the expression
+@column tissue_id                   Tissue linked to the expression
+@value                              Value of the expression analysis
+@analysis_id                        Analysis used to generate the expression value
+
+*/
+
+CREATE TABLE transcript_expression (
+  transcript_expression_id          INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
+  transcript_id                     INT(10) UNSIGNED NOT NULL,
+  tissue_id                   INT(10) UNSIGNED NOT NULL,
+  value                       TEXT NOT NULL,
+  analysis_id                 SMALLINT UNSIGNED NOT NULL,
+
+  PRIMARY KEY (transcript_expression_id),
+  UNIQUE KEY transcript_expression_idx(transcript_id, tissue_id, analysis_id)
+
+
+
+) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
+
+/**
+@table exon_expression
+@desc Stores a valid expression for a given exon and tissue
+
+@column exon_expression_id    Auto-increment primary key
+@column exon_id               Exon linked to the expression
+@column tissue_id             Tissue linked to the expression
+@value                        Value of the expression analysis
+@analysis_id                  Analysis used to generate the expression value
+
+*/
+
+CREATE TABLE exon_expression (
+  exon_expression_id          INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
+  exon_id                     INT(10) UNSIGNED NOT NULL,
+  tissue_id                   INT(10) UNSIGNED NOT NULL,
+  value                       TEXT NOT NULL,
+  analysis_id                 SMALLINT UNSIGNED NOT NULL,
+
+  PRIMARY KEY (exon_expression_id),
+  UNIQUE KEY exon_expression_idx(exon_id, tissue_id, analysis_id)
+
+
+
+) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
+
+/**
+@table tissue
+@desc Stores the tissue for which expression data is available
+
+@column tissue_id            Auto-increment primary key
+@colum name                  Name of the tissue
+@column ontology             List of subgroups the tissue is part of
+@column description          Description of the tissue
+
+*/
+
+CREATE TABLE tissue (
+  tissue_id                   INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
+  name                        VARCHAR(255),
+  is_a                        VARCHAR(255), 
+  description                 TEXT,
+
+  PRIMARY KEY (tissue_id),
+  UNIQUE KEY name_idx (name)
+
 ) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
 
