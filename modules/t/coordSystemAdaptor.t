@@ -3,6 +3,7 @@ use strict;
 use Test::More;
 use Bio::EnsEMBL::Test::MultiTestDB;
 use Bio::EnsEMBL::Test::TestUtils;
+use Test::Exception;
 
 our $verbose = 1; #set to 1 to turn on debug printouts
 
@@ -175,6 +176,27 @@ ok( @{$new_path} == 2 &&
 
 my $new_paths2 = $csa->store_mapping_path( $cs, $cln_cs );
 ok( @{$new_paths2} == 0 ); # Should not update second time round
+
+#
+# Do some inserting of mock coord systems and 
+# do version retrieval
+#
+my $newcs_two = Bio::EnsEMBL::CoordSystem->new(
+  -NAME            => 'newsystem_number_two',
+  -VERSION         => 'NCBI35',
+  -DEFAULT         => 0,
+  -SEQUENCE_LEVEL  => 0,
+  -RANK            => 11
+);
+$csa->store($newcs_two);
+
+dies_ok { $csa->fetch_all_by_version() } 'fetch_all_by_version should die if not given a version to check';
+is_deeply($csa->fetch_all_by_version('NCBI35'), [ $cs, $newcs_two ], 'Checking version rank retrieval works');
+is_deeply(
+  $csa->fetch_all_by_version('NCBI33'), 
+  [$csa->fetch_by_name('chromosome')], 
+  'Retrieval by name should return the same as version for NCBI33');
+is_deeply($csa->fetch_all_by_version('thisdoesnotexist'), [], 'Bogus coordinate system results in no results');
 
 $multi->restore('core', 'coord_system');
 $multi->restore('core', 'meta');

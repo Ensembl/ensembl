@@ -516,9 +516,31 @@ sub fetch_all_by_name {
   return $self->{'_name_cache'}->{$name} || [];
 }
 
+=head2 fetch_all_by_version
 
+  Arg [1]    : string $version
+               The version of the coordinate systems to retrieve.
+  Example    : foreach my $cs (@{$csa->fetch_all_by_version('GRCh37')}){
+                 print $cs->name(), ' ', $cs->version();
+               }
+  Description: Retrieves all coordinate systems of a particular version
+  Returntype : ArrayRef of Bio::EnsEMBL::CoordSystem objects
+  Exceptions : throw if no name argument provided
+  Caller     : general
+  Status     : Stable
 
+=cut
 
+sub fetch_all_by_version {
+  my ($self, $version) = @_;
+  throw "Version argument is required" if ! $version;
+  my $coord_systems = [
+    grep { $_->version() eq $version } 
+    map { $self->{_rank_cache}->{$_} } 
+    sort keys %{$self->{_rank_cache}}
+  ];
+  return $coord_systems;
+}
 
 =head2 fetch_by_dbID
 
