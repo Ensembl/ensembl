@@ -265,12 +265,12 @@ my %patches;
 
 # Get available patches.
 
-foreach my $thing ( [ 'ensembl',               'core', 'table.sql' ],
-		    [ 'ensembl-compara',       'compara', 'table.sql' ], 
-                    [ 'ensembl-functgenomics', 'funcgen', 'efg.sql' ],
-                    [ 'ensembl-variation',     'variation', 'table.sql' ],
-		    [ 'ensembl-production',    'production', 'tables.sql' ],
-		    [ 'ensembl',               'ontology', 'tables.sql' ] )
+foreach my $thing ( [ 'ensembl',               'core',        'table.sql'   ],
+                    [ 'ensembl-compara',       'compara',     'table.sql'   ], 
+                    [ 'ensembl-functgenomics', 'funcgen',     'efg.sql'     ],
+                    [ 'ensembl-variation',     'variation',   'table.sql'   ],
+                    [ 'ensembl-production',    'production',  'tables.sql'  ],
+                    [ 'ensembl',               'ontology',    'tables.sql'  ] )
 {
   my ($cvs_module, $schema_type, $schema_file) = @{$thing};
 
