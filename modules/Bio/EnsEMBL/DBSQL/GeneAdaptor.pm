@@ -837,12 +837,12 @@ sub fetch_all_by_external_name {
 
   my @ids = $entryAdaptor->list_gene_ids_by_extids($external_name, $external_db_name, $override);
 
-  my %genes_by_dbIDs =
-	map { $_->dbID(), $_ } @{$self->fetch_all_by_dbID_list(\@ids)};
+  my %genes_by_dbIDs = map { $_->dbID(), $_ } @{$self->fetch_all_by_dbID_list(\@ids)};
 
-  my @result = map { $genes_by_dbIDs{$_} } @ids;
-
-  return \@result;
+  my @features = map { $genes_by_dbIDs{$_} } @ids;
+  my @reference = grep { $_->slice()->is_reference() } @features;
+  my @non_reference = grep { ! $_->slice()->is_reference() } @features;
+  return [ @reference, @non_reference ];
 }
 
 =head2 fetch_all_by_description

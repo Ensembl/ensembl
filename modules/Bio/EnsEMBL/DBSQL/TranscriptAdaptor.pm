@@ -519,7 +519,10 @@ sub fetch_all_by_external_name {
     $entryAdaptor->list_transcript_ids_by_extids( $external_name,
                                                   $external_db_name, $override );
 
-  return $self->fetch_all_by_dbID_list( \@ids );
+  my @features = @{ $self->fetch_all_by_dbID_list( \@ids ) };
+  my @reference = grep { $_->slice()->is_reference() } @features;
+  my @non_reference = grep { ! $_->slice()->is_reference() } @features;
+  return [ @reference, @non_reference ];
 }
 
 =head2 fetch_all_by_GOTerm

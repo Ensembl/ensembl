@@ -313,16 +313,23 @@ sub fetch_all_by_external_name {
 
   my $transcript_adaptor = $self->db()->get_TranscriptAdaptor();
 
-  my @out;
+  my @reference;
+  my @non_reference;
   foreach my $id (@ids) {
     my $transcript = $transcript_adaptor->fetch_by_translation_id($id);
 
     if ( defined($transcript) ) {
-      push @out, $self->fetch_by_Transcript($transcript);
+      my $translation = $self->fetch_by_Transcript($transcript);
+      if($transcript->slice()->is_reference()) {
+        push(@reference, $translation);
+      }
+      else {
+        push(@non_reference, $translation);
+      }
     }
   }
 
-  return \@out;
+  return [@reference, @non_reference];
 }
 
 =head2 fetch_all_by_GOTerm
