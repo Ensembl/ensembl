@@ -45,21 +45,20 @@ The steps to run the projection are as follows:
 	# location of other databases - note read/write access is required
 	<Fill in the @config array with the details of the 2 staging servers, e.g.>
 
-        my @config = ( {
-            '-host'       => 'ens-staging1',
-            '-port'       => '3306',
-            '-user'       => 'ensadmin',
-            '-pass'       => 'ensembl',
-            '-db_version' => $release
-          },
-          {
-            '-host'       => 'ens-staging2',
-            '-port'       => '3306',
-            '-user'       => 'ensadmin',
-            '-pass'       => 'ensembl',
-            '-db_version' => $release
-          } );
-
+	my @config = ( {
+    	'-host'       => 'HOST',
+    	'-port'       => 'PORT',
+    	'-user'       => 'USER',
+    	'-pass'       => 'PASS',
+    	'-db_version' => $release
+  		},
+  	{
+    	'-host'       => 'HOST',
+    	'-port'       => 'PORT',
+    	'-user'       => 'USER',
+    	'-pass'       => 'PASS',
+    	'-db_version' => $release
+  	} );
 
 3. Run submit_projections.pl. It will submit all the Farm jobs and then exit.
 
