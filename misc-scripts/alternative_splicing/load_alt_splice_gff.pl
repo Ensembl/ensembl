@@ -393,5 +393,3 @@ sub dbi
     return $dbi;
 }
 
-##mysql -hens-research -uensadmin -pensembl ianl_homo_sapiens_core_54_36p -e"delete form splicing_event"
-#mysql -hens-research -uensadmin -pensembl ianl_homo_sapiens_core_54_36p -e"load data local infile 'SE.txt' into table splicing_event"
