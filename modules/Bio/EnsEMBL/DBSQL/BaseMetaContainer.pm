@@ -72,7 +72,7 @@ sub get_schema_version {
     if ( !defined($ver) ) {    # old style format
       return 0;
     }
-    return $ver;
+    return $ver * 1; #multiply by 1 to get this into a number
   } else {
     warning(
       sprintf(

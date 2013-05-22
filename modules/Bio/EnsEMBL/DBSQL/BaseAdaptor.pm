@@ -845,6 +845,23 @@ sub ignore_cache_override {
     return $self->{'_override'}; 
 }
 
+=head2 schema_version
+
+    Description : Returns the schema version of the currently connected
+                  DBAdaptor. The subroutine also caches this value so
+                  repeated calls continue to be speedy.                  
+    Example     : $adaptor->schema_version();            
+    Returntype  : Integer
+
+=cut
+
+sub schema_version {
+  my ($self) = @_;
+  return $self->{_schema_version} if exists $self->{_schema_version};
+  my $mc = $self->db()->get_MetaContainer();
+  return $self->{_schema_version} = $mc->get_schema_version();
+}
+
 #_tables
 #
 #  Args       : none

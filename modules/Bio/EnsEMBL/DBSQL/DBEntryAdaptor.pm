@@ -1282,8 +1282,11 @@ sub _fetch_by_object_type {
     throw("Can't fetch_by_EnsObject_type without a type");
   }
 
+  ### TODO - SCHEMA VERSION HACK. Please remove sometime in the future once we do not want backwards compatibility
+  my $schema_version = $self->schema_version();
+
   #  my $sth = $self->prepare("
-  my $sql = (<<SSQL);
+  my $columns_sql = (<<COLUMNS_SQL);
     SELECT xref.xref_id, xref.dbprimary_acc, xref.display_label, xref.version,
            exDB.priority,
            exDB.db_name, exDB.db_release, exDB.status, exDB.db_display_name,
@@ -1295,20 +1298,40 @@ sub _fetch_by_object_type {
            idt.cigar_line, idt.score, idt.evalue, oxr.analysis_id,
            gx.linkage_type,
            xref.info_type, xref.info_text, exDB.type, gx.source_xref_id,
-           oxr.linkage_annotation, xref.description,
-           ax.xref_id, ax.source_xref_id, ax.condition_type, 
-           ax.associated_group_id, ax.rank
+           oxr.linkage_annotation, xref.description
+COLUMNS_SQL
+
+  my $tables_sql = <<'TABLES_SQL';
     FROM   (xref xref, external_db exDB, object_xref oxr)
     LEFT JOIN external_synonym es on es.xref_id = xref.xref_id
     LEFT JOIN identity_xref idt on idt.object_xref_id = oxr.object_xref_id
     LEFT JOIN ontology_xref gx on gx.object_xref_id = oxr.object_xref_id
-    LEFT JOIN associated_xref ax ON ax.object_xref_id = oxr.object_xref_id
-    LEFT JOIN associated_group ag ON ax.associated_group_id = ag.associated_group_id
+TABLES_SQL
+  
+  my $where_sql = <<'WHERE_SQL';
     WHERE  xref.xref_id = oxr.xref_id
       AND  xref.external_db_id = exDB.external_db_id
       AND  oxr.ensembl_id = ?
       AND  oxr.ensembl_object_type = ?
-SSQL
+WHERE_SQL
+
+  if($schema_version >= 72) {
+    $columns_sql .= ','; #need the extra comma
+    $columns_sql .= <<'EXTRA';
+    ax.xref_id, ax.source_xref_id, ax.condition_type, ax.associated_group_id, ax.rank
+EXTRA
+    $tables_sql .= <<'EXTRA';
+    LEFT JOIN associated_xref ax ON ax.object_xref_id = oxr.object_xref_id
+    LEFT JOIN associated_group ag ON ax.associated_group_id = ag.associated_group_id
+EXTRA
+
+  }
+
+  #Join the above together into one statement
+  my $sql = "$columns_sql
+$tables_sql
+$where_sql";
+  # warn $sql; # uncomment me to see the full SQL generated
 
   if ( defined($exdbname) ) {
     if ( index( $exdbname, '%' ) != -1 ) {
