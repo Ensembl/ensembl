@@ -14,21 +14,21 @@ use Bio::EnsEMBL::Translation;
 use Bio::EnsEMBL::Gene;
 use Bio::EnsEMBL::DnaDnaAlignFeature;
 
-# switch on the debug prints
+# switch on the note prints
 our $verbose = 0;
 
-debug("Startup test");
+note("Startup test");
 ok(1);
 
 my $multi = Bio::EnsEMBL::Test::MultiTestDB->new('ontology');
 
 my $odb = $multi->get_DBAdaptor("ontology");
-debug("Ontology database instatiated");
+note("Ontology database instatiated");
 ok($odb);
 
 my $human = Bio::EnsEMBL::Test::MultiTestDB->new();
 my $db = $human->get_DBAdaptor("core");
-debug("Test database instatiated");
+note("Test database instatiated");
 ok($db);
 my $go_adaptor = $odb->get_OntologyTermAdaptor();
 
@@ -68,6 +68,16 @@ is(@{$go_roots}, 1, "Found go roots");
 
 my $efo_roots = $go_adaptor->fetch_all_roots('efo');
 is(@{$efo_roots}, 0, "Found no efo roots");
+
+#Now go back to the OntologyXref & see if we can do the reverse lookup
+{
+  my $go_db_links = $genes->[0]->get_all_DBLinks('GO');
+  foreach my $dbentry (@{$go_db_links}) {
+    my $term = $dbentry->get_OntologyTerm();
+    my $direct_term = $go_adaptor->fetch_by_accession($dbentry->primary_id());
+    is_deeply($term, $direct_term, 'Fetching the OntologyTerm from the OntologyXref should match the same object from OntologyTermAdaptor');
+  }
+}
 
 
 

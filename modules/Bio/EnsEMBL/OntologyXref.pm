@@ -64,8 +64,39 @@ identifier but with different evidence tags.  For this reason a single
 package Bio::EnsEMBL::OntologyXref;
 
 use strict;
+use warnings;
 
 use base qw( Bio::EnsEMBL::DBEntry );
+
+require Bio::EnsEMBL::Registry;
+
+=head2 get_OntologyTerm
+
+  Example    : $ontology_xref->get_OntologyTerm();
+  Description: Queries the OntologyTermAdaptor for a term which is the same 
+               as the primary id of this object. This method requires a
+               OntologyDBAdaptor to be available in the Bio::EnsEMBL::Registry. 
+               If you have loaded data from an Ensembl release using
+               Bio::EnsEMBL::Registry->load_registry_from_db() then this should
+               work.
+  Returntype : Bio::EnsEMBL::OntologyTerm
+  Exceptions : None
+  Caller     : general
+  Status     : Experimantal
+
+=cut
+
+
+sub get_OntologyTerm {
+  my ($self) = @_;
+  my $dbas = Bio::EnsEMBL::Registry->get_all_DBAdaptors(-GROUP => 'ontology');
+  foreach my $ontology_dba (@{$dbas}) {
+    my $ota = $ontology_dba->get_OntologyTermAdaptor();
+    my $term = $ota->fetch_by_accession($self->primary_id());
+    return $term if $term;
+  }
+  return;
+}
 
 =head2 add_linkage_type
 
