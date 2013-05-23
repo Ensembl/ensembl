@@ -818,12 +818,17 @@ sub get_all_Exons {
 
 =head2 get_all_homologous_Genes
 
+  Arg[1]     : String The compara synonym to use when looking for a database in the
+               registry. If not provided we will use the very first compara database
+               we find.
   Description: Queries the Ensembl Compara database and retrieves all
                Genes from other species that are orthologous.
                REQUIRES properly setup Registry conf file. Meaning that
                one of the aliases for each core db has to be "Genus species"
                e.g. "Homo sapiens" (as in the name column in genome_db table
                in the compara database).
+
+               The data is cached in this Object for faster re-retreival.
   Returntype : listref [
                         Bio::EnsEMBL::Gene,
                         Bio::EnsEMBL::Compara::Homology,
@@ -836,37 +841,32 @@ sub get_all_Exons {
 =cut
 
 sub get_all_homologous_Genes {
-  my $self = shift;
+  my ($self, $db_synonym) = @_;
 
-  if( exists( $self->{'homologues'} ) ){
-    return $self->{'homologues'};
+  #Look for DBAdaptors which have a group of compara; these are compara DBAs. 
+  #If given a synonym 
+  my %args = (-GROUP => 'compara');
+  $args{-SPECIES} = $db_synonym if $db_synonym;
+  my ($compara_dba) = @{Bio::EnsEMBL::Registry->get_all_DBAdaptors(%args)};
+  unless( $compara_dba ) {
+    throw("No compara found in Bio::EnsEMBL::Registry. Please fully populate the Registry or construct a Bio::EnsEMBL::Compara::DBSQL::DBAdaptor");
   }
-  $self->{'homologues'} = [];
-
-  # TODO: Find a robust way of retrieving compara dba directly.
-  # For now look through all DBAs
-  my $compara_dba;
-  foreach my $dba( @{Bio::EnsEMBL::Registry->get_all_DBAdaptors} ){
-    if( $dba->isa('Bio::EnsEMBL::Compara::DBSQL::DBAdaptor') ){
-      $compara_dba = $dba;
-      last;
-    }
+  my $compara_species = $compara_dba->species();
+  if( exists( $self->{'homologues'}->{$compara_species} ) ){
+    return $self->{'homologues'}->{$compara_species};
   }
-  unless( $compara_dba ){
-    warning("No compara in Bio::EnsEMBL::Registry");
-    return $self->{'homologues'};
-  }
+  $self->{'homologues'}->{$compara_species} = [];
 
   # Get the compara 'member' corresponding to self
   my $member_adaptor   = $compara_dba->get_adaptor('GeneMember');
   my $query_member = $member_adaptor->fetch_by_source_stable_id
       ("ENSEMBLGENE",$self->stable_id);
-  unless( $query_member ){ return $self->{'homologues'} };
+  unless( $query_member ){ return $self->{'homologues'}->{$compara_species} };
 
   # Get the compara 'homologies' corresponding to 'member'
   my $homology_adaptor = $compara_dba->get_adaptor('Homology');
   my @homolos = @{$homology_adaptor->fetch_all_by_Member($query_member)};
-  unless( scalar(@homolos) ){ return $self->{'homologues'} };
+  unless( scalar(@homolos) ){ return $self->{'homologues'}->{$compara_species} };
 
   # Get the ensembl 'genes' corresponding to 'homologies'
   foreach my $homolo( @homolos ){
@@ -882,10 +882,25 @@ sub get_all_homologous_Genes {
               -description=>$member->description, );
       }
       my $hspecies = $member->genome_db->name;
-      push @{$self->{'homologues'}}, [$hgene,$homolo,$hspecies];
+      push @{$self->{'homologues'}->{$compara_species}}, [$hgene,$homolo,$hspecies];
     }
   }
-  return $self->{'homologues'};
+  return $self->{'homologues'}->{$compara_species};
+}
+
+=head2 _clear_homologues
+
+  Description: Removes any cached homologues from the Gene which could have been
+               fetched from the C<get_all_homologous_Genes()> call.
+  Returntype : none
+  Exceptions : none
+  Caller     : general
+
+=cut
+
+sub _clear_homologues {
+  my ($self) = @_;
+  delete $self->{homologues};
 }
 
 

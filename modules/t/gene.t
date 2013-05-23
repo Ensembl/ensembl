@@ -2,6 +2,7 @@ use strict;
 use warnings;
 
 use Test::More;
+use Test::Exception;
 
 use Bio::EnsEMBL::Registry;
 use Bio::EnsEMBL::Test::MultiTestDB;
@@ -80,14 +81,6 @@ debug("Links: " . scalar(@$links));
 
 ok(scalar @$links == 6);
 
-SKIP: {
-  my $compara_dba = Bio::EnsEMBL::Registry->get_DBAdaptor('multi', 'compara', 1);
-  skip 'No comapra database adaptor found', 1 if !$compara_dba;
-  my $homologies = $gene->get_all_homologous_Genes();
-  debug("Homologies: " . scalar(@$homologies));
-
-  ok(scalar @$homologies ? ($homologies->[0][0]->isa("Bio::EnsEMBL::Gene")) : 1);
-}
 # now create a new gene ...
 
 my $sa = $db->get_SliceAdaptor();
@@ -817,5 +810,10 @@ ok($new_gene->canonical_annotation eq 'longest transcript in gene');    #test 86
 my $registry = 'Bio::EnsEMBL::Registry';
 my ($species, $object_type, $db_type) = $registry->get_species_and_object_type('ENSG00000355555');
 ok($species eq 'homo_sapiens' && $object_type eq 'Gene');
+
+# Testing compara dba retrieval
+{
+  dies_ok { $new_gene->get_all_homologous_Genes(); } 'No Compara DBAdaptor has been configured. No way to retrieve data';
+}
 
 done_testing();
