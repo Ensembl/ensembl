@@ -76,11 +76,10 @@ sub print_feature {
 
 sub _make_start_codon_features {
   my ($self, $trans) = @_;
+  defined $trans or
+    throw("Transcript object not defined");
 
-
-  if (!$trans->translation) {
-    return (());
-  }
+  return (()) unless $trans->translation;
 
   my @translateable = @{$trans->get_all_translateable_Exons};
 
@@ -106,14 +105,14 @@ sub _make_start_codon_features {
   my @startc_feat;
   my $phase = 0;
   foreach my $pepgencoord (@pepgencoords) {
-    push @startc_feat, new Bio::EnsEMBL::SeqFeature(
-                             -seqname => $trans->stable_id,
-                             -source_tag => 'starttrans',
-                             -primary_tag => 'similarity',
-                             -start => $pepgencoord->start,
-                             -end   => $pepgencoord->end,
-                             -phase => $phase,
-                             -strand => $translateable[0]->strand);
+    push @startc_feat, 
+      new Bio::EnsEMBL::SeqFeature(-seqname => $trans->stable_id,
+				   -source_tag => 'starttrans',
+				   -primary_tag => 'similarity',
+				   -start => $pepgencoord->start,
+				   -end   => $pepgencoord->end,
+				   -phase => $phase,
+				   -strand => $translateable[0]->strand);
     $phase = 3 - ($pepgencoord->end - $pepgencoord->start + 1);
   }
   if ($translateable[0]->strand == 1) {
@@ -121,7 +120,65 @@ sub _make_start_codon_features {
   } else {
     @startc_feat = sort {$b->start <=> $a->start } @startc_feat;
   }
+
   return @startc_feat;
+
+}
+
+=head2 _make_stop_codon_features
+
+    Arg [1]    : Bio::EnsEMBL::Transcript
+    Example    : 
+    Description: 
+    Returntype : Array
+
+=cut
+
+sub _make_stop_codon_features {
+  my ($self, $trans) = @_;
+
+  defined $trans or
+    throw("Transcript object not defined");
+
+  return (()) unless $trans->translation;
+
+  my @translateable = @{$trans->get_all_translateable_Exons};
+
+  my $cdna_endpos = $trans->cdna_coding_end;
+
+  my @pepgencoords = $trans->cdna2genomic($cdna_endpos-2,$cdna_endpos);
+
+  if(scalar(@pepgencoords) > 3) {
+    throw(sprintf "Pep end for transcript %s does not map cleanly", $trans->display_id);
+  }
+  unless($pepgencoords[0]->isa('Bio::EnsEMBL::Mapper::Coordinate')) {
+    throw(sprintf "Pep end for transcript %s maps to gap", $trans->display_id);
+  }
+  unless($pepgencoords[$#pepgencoords]->isa('Bio::EnsEMBL::Mapper::Coordinate')) {
+    throw(sprintf "Pep end (end of) for transcript %s maps to gap", $trans->display_id);
+  }
+
+  my @stopc_feat;
+  my $phase = 0;
+  foreach my $pepgencoord (@pepgencoords) {
+    push @stopc_feat, 
+      new Bio::EnsEMBL::SeqFeature(-seqname => $trans->display_id,
+				   -source_tag => 'endtrans',
+				   -primary_tag => 'similarity',
+				   -start => $pepgencoord->start,
+				   -end   => $pepgencoord->end,
+				   -phase => $phase,
+				   -strand => $translateable[0]->strand);
+    $phase = 3 - ($pepgencoord->end-$pepgencoord->start+1);
+  }
+
+  if ($translateable[0]->strand == 1) {
+    @stopc_feat = sort {$a->start <=> $b->start } @stopc_feat;
+  } else {
+    @stopc_feat = sort {$b->start <=> $a->start } @stopc_feat;
+  }
+
+  return @stopc_feat;
 
 }
 
