@@ -32,6 +32,7 @@ package Bio::EnsEMBL::Utils::IO::GTFSerializer;
 use strict;
 use warnings;
 
+use  Bio::Tools::CodonTable;
 use Bio::EnsEMBL::SeqFeature;
 use Bio::EnsEMBL::Utils::Exception;
 use Bio::EnsEMBL::Utils::IO::FeatureSerializer;
@@ -179,6 +180,51 @@ sub _make_stop_codon_features {
   }
 
   return @stopc_feat;
+
+}
+
+=head2 _check_start_and_stop
+
+    Arg [1]    : Bio::EnsEMBL::Transcript
+    Example    : 
+    Description: 
+    Returntype : Array
+
+=cut
+
+sub _check_start_and_stop {
+  my ($self, ,$trans) = @_;
+
+  return (0,0) unless defined $trans->translation;
+
+  my $tln = $trans->translation;
+
+  my $coding_start = $trans->cdna_coding_start;
+  my $coding_end   = $trans->cdna_coding_end;
+  my $cdna_seq     = uc($trans->spliced_seq);
+
+  my $startseq     = substr($cdna_seq,$coding_start-1,3);
+  my $endseq       = substr($cdna_seq,$coding_end-3,3);
+
+  my $has_start = 1;
+  my $has_end = 1;
+
+  # reimplemented because verterbrate specific
+  # $has_start = 0  if ($startseq ne "ATG");
+  # $has_end = 0 if ($endseq ne "TAG" && $endseq ne "TGA" && $endseq ne "TAA");
+
+  my ($attrib) = @{ $self->slice()->get_all_Attributes('codon_table') };
+
+  my $codon_table_id = $attrib->value()
+    if defined $attrib;
+  $codon_table_id ||= 1; # default vertebrate codon table
+
+  my $codon_table = Bio::Tools::CodonTable->new( -id => $codon_table_id );
+
+  $has_start = 0 unless $codon_table->is_start_codon($startseq);
+  $has_end = 0 unless $codon_table->is_ter_codon($endseq);
+
+  return ($has_start, $has_end);
 
 }
 
