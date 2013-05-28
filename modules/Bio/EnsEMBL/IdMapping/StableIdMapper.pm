@@ -376,53 +376,12 @@ sub generate_similarity_events {
 
   my $mapped;
 
-  #
-  # add similarities for mapped entries
-  #
   foreach my $e ( @{ $mappings->get_all_Entries } ) {
 
     # create lookup hash for mapped sources and targets; we'll need this
     # later
     $mapped->{'source'}->{ $e->source } = 1;
     $mapped->{'target'}->{ $e->target } = 1;
-
-    # loop over all other entries which contain either source or target;
-    # add similarity if score is within 1.5% of this entry (which is the
-    # top scorer)
-    my @others = @{ $scores->get_Entries_for_target( $e->target ) };
-    push @others, @{ $scores->get_Entries_for_source( $e->source ) };
-
-    while ( my $e2 = shift(@others) ) {
-
-      # skip self
-      if ( ( $e->source eq $e2->source ) and
-           ( $e->target eq $e2->target ) )
-      {
-        next;
-      }
-
-      if ( $e2->score > ( $e->score*0.985 ) ) {
-
-        my $s_obj =
-          $self->cache->get_by_key( "${type}s_by_id", 'source',
-                                    $e2->source );
-        my $t_obj =
-          $self->cache->get_by_key( "${type}s_by_id", 'target',
-                                    $e2->target );
-
-        my $key = join( "\t",
-                        $s_obj->stable_id,         $s_obj->version,
-                        $t_obj->stable_id,         $t_obj->version,
-                        $self->mapping_session_id, $type,
-                        $e2->score );
-        $self->add_stable_id_event( 'similarity', $key );
-
-      }
-
-      # [todo] add overlap hack here? (see Java code)
-      # probably better solution: let synteny rescoring affect this
-      # decision
-    } ## end while ( my $e2 = shift(@others...))
 
   } ## end foreach my $e ( @{ $mappings...})
 
@@ -451,6 +410,9 @@ sub generate_similarity_events {
 
       # add similarities for all entries within 5% of top scorer
       while ( my $e = shift(@entries) ) {
+
+        if ( $mapped->{'source'}->{$e->source} ) { next ; }
+        if ( $mapped->{'target'}->{$e->target} ) { next ; }
 
         if ( $e->score > ( $top_score*0.95 ) ) {
 
