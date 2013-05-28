@@ -1111,10 +1111,9 @@ sub _remap {
   my $slice_strand = $slice->strand();
   my $slice_cs    = $slice->coord_system();
 
-  my ($seq_region, $start, $end, $strand);
+  my ($seq_region_id, $start, $end, $strand);
 
   my $slice_seq_region_id = $slice->get_seq_region_id();
-  my $slice_seq_region = $slice->seq_region_name();
 
   foreach my $f (@$features) {
     #since feats were obtained in contig coords, attached seq is a contig
@@ -1122,28 +1121,27 @@ sub _remap {
     if(!$fslice) {
       throw("Feature does not have attached slice.\n");
     }
-    my $fseq_region = $fslice->seq_region_name();
     my $fseq_region_id = $fslice->get_seq_region_id();
     my $fcs = $fslice->coord_system();
 
     if(!$slice_cs->equals($fcs)) {
       #slice of feature in different coord system, mapping required
-
-      ($seq_region, $start, $end, $strand) =
+      # $seq_region comes out as an integer not a string
+      ($seq_region_id, $start, $end, $strand) =
         $mapper->fastmap($fseq_region_id,$f->start(),$f->end(),$f->strand(),$fcs);
 
       # undefined start means gap
       next if(!defined $start);
     } else {
-      $start      = $f->start();
-      $end        = $f->end();
-      $strand     = $f->strand();
-      $seq_region = $f->slice->seq_region_name();
+      $start          = $f->start();
+      $end            = $f->end();
+      $strand         = $f->strand();
+      $seq_region_id  = $fseq_region_id;
     }
-    
+
     # maps to region outside desired area
     next if ($start > $slice_end) || ($end < $slice_start) || 
-      ($slice_seq_region ne $seq_region);
+      ($slice_seq_region_id != $seq_region_id);
 
     #shift the feature start, end and strand in one call
     if($slice_strand == -1) {
