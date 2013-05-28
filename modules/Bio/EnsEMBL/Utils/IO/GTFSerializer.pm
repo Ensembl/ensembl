@@ -40,7 +40,7 @@ use Bio::EnsEMBL::Utils::Scalar qw/check_ref/;
 
 use base qw(Bio::EnsEMBL::Utils::IO::FeatureSerializer);
 
-my %strand_conversion = ( '1' => '+', '0' => '?', '-1' => '-');
+my %strand_conversion = ( '1' => '+', '0' => '.', '-1' => '-');
 
 =head2 print_feature
 
@@ -53,17 +53,212 @@ my %strand_conversion = ( '1' => '+', '0' => '?', '-1' => '-');
 
 sub print_feature {
   my $self = shift;
-  my $feature = shift;
+  my $transcript = shift;
 
-  throw(sprintf "Feature is of type %s. Cannot write non transcripts to GTF", ref($feature))
-    unless check_ref($feature, "Bio::EnsEMBL::Transcript");
+  throw(sprintf "Feature is of type %s. Cannot write non transcripts to GTF", ref($transcript))
+    unless check_ref($transcript, "Bio::EnsEMBL::Transcript");
 
-  my $text_buffer = "";
-
-  #filehandle is inherited
+  # filehandle is inherited
   my $fh = $self->{'filehandle'};
-  print $fh $text_buffer;
 
+  my $slice = $transcript->slice();
+  my $sliceoffset = $slice->start-1;
+  my $idstr = $slice->seq_region_name; 
+
+  my @startcs =  $self->_make_start_codon_features($transcript);
+  my @endcs   =  $self->_make_stop_codon_features($transcript);
+  my ($hasstart, $hasend) = $self->_check_start_and_stop($transcript);
+  #
+  # production does not use this option
+  #
+  # if (!$include_codons) {
+  #   $hasstart = $hasend = 0;
+  # }
+
+  # TODO: ask Andy if this is safe
+  my $dbname = $transcript->adaptor()->dbc()->dbname();
+  my $vegadb = $dbname =~ /vega/;
+  my $gene = $transcript->get_Gene();
+
+  my ($biotype_display, $transcript_biotype);
+  {
+    no warnings 'uninitialized';
+    $biotype_display = $vegadb ? $gene->status . '_' . $gene->biotype : $gene->biotype;
+    $transcript_biotype = $vegadb ? $transcript->status . '_' . $transcript->biotype : $transcript->biotype;
+  }
+
+  my @translateable_exons = 
+    @{$transcript->get_all_translateable_Exons} 
+      if $transcript->translation;
+
+  my ($count, $intrans, $instop) = (1, 0, 0);
+
+  foreach my $exon (@{$transcript->get_all_Exons}) {
+    my $strand = $strand_conversion{$exon->strand};
+
+    print $fh 
+      # Column 1 - seqname, the name of the sequence/chromosome the feature is on. Landmark for start below
+      $idstr . "\t" . 
+      # Column 2 - source
+      $transcript_biotype . "\t" . 
+      # Column 3 - feature type name
+      'exon' . "\t" . 
+      # Column 4 - start, the start coordinate of the feature
+      ($exon->start+$sliceoffset) . "\t". 
+      # Column 5 - end, coordinates (absolute) for the end of this feature
+      ($exon->end+$sliceoffset) . "\t". 
+      # Column 6 - score, for variations only
+      "." . "\t". 
+      # Column 7 - strand, forward (+) or reverse (-)
+      $strand . "\t". 
+      # Column 8 - frame (reading phase), what base of this feature is the first base of a codon
+      "." . "\t";
+    # Column 9 - attribute, a ;-separated list of key-value pairs (additional feature info)
+    $self->_print_attribs($gene, $biotype_display, $transcript, $count, 'exon', $exon, $vegadb);
+    print $fh "\n";
+
+    $intrans = 1 
+      if $transcript->translation and 
+	$exon == $transcript->translation->start_Exon;
+
+    if ($intrans) {
+      # print the CDS of this exon
+
+      my $cdsexon = shift @translateable_exons;
+      #
+      # Here is computing the value of the GTF frame (taking into
+      # account the Ensembl convention), but it's misleadingly called phase
+      #
+      my $phase = $cdsexon->phase;
+      if ($cdsexon->phase == 1) {
+        $phase = 2;
+      } elsif ($cdsexon->phase == 2) {
+        $phase = 1;
+      } elsif ($cdsexon->phase == -1) {
+        $phase = 0;
+      }
+
+      my $exon_start = $cdsexon->start;
+      my $exon_end   = $cdsexon->end;
+      if ($transcript->translation && 
+          $hasend && 
+          ($exon->end >= $endcs[0]->start && $exon->start <= $endcs[0]->end)) {
+
+        if ($cdsexon->strand == 1) {
+          $exon_end = $cdsexon->end - $endcs[0]->length;
+        } else {
+          $exon_start = $cdsexon->start + $endcs[0]->length;
+        }
+      }
+
+      if ($exon_start <= $cdsexon->end &&
+          $exon_end >= $cdsexon->start &&
+          !$instop) {
+        print $fh $idstr . "\t" . 
+	  $transcript_biotype . "\t" . 
+          'CDS' . "\t" . 
+          ($exon_start + $sliceoffset) . "\t". 
+          ($exon_end + $sliceoffset) . "\t". 
+          "." . "\t". 
+          $strand . "\t". 
+          $phase . "\t";
+        $self->_print_attribs($gene, $biotype_display, $transcript, $count, 'CDS');
+        print $fh "\n";
+      }
+    }
+    if ($transcript->translation && 
+        $exon == $transcript->translation->start_Exon && $hasstart) {
+      my $tmpcnt = $count;
+      foreach my $startc (@startcs) {
+
+        print $fh $idstr . "\t" . 
+	  $transcript_biotype . "\t" . 
+          'start_codon' . "\t" . 
+          ($startc->start+$sliceoffset) . "\t". 
+          ($startc->end+$sliceoffset) . "\t". 
+          "." . "\t". 
+          $strand . "\t". 
+          $startc->phase . "\t";
+
+        $self->_print_attribs($gene, $biotype_display, $transcript, $tmpcnt++, 'start_codon');
+        print $fh "\n";
+      }
+    }
+    if ($transcript->translation && 
+        ($exon == $transcript->translation->end_Exon)) {
+      if ($hasend) {
+        my $tmpcnt = $count - $#endcs;
+
+        foreach my $endc (@endcs) {
+
+          print $fh $idstr . "\t" . 
+	    $transcript_biotype . "\t" . 
+            'stop_codon' . "\t" . 
+            ($endc->start+$sliceoffset) . "\t". 
+            ($endc->end+$sliceoffset) . "\t". 
+            "." . "\t". 
+            $strand . "\t". 
+            $endc->phase . "\t";
+
+          $self->_print_attribs($gene, $biotype_display, $transcript, $tmpcnt++, 'stop_codon');
+          print $fh "\n";
+        }
+      }
+      $intrans = 0;
+    }
+
+    if (scalar(@endcs) && 
+        ($exon->end >= $endcs[0]->start && $exon->start <= $endcs[0]->end)) {
+      $instop = 1;
+    }
+
+    $count++;
+  }
+
+}
+
+=head2 _print_attribs
+
+    Arg []     : 
+    Example    : 
+    Description: 
+    Returntype : None
+
+=cut
+
+sub _print_attribs {
+  my ($self, $gene, $gene_biotype, $transcript, $count, $type, $exon, $vegadb) = @_;
+
+  my $gene_name;
+  $gene_name = $gene->external_name;
+  $gene_name =~ s/^[A-Z]{1,3}:// if $vegadb;
+
+  my $trans_name;
+  $trans_name = $transcript->external_name;
+  $trans_name =~ s/^[A-Z]{1,3}:// if $vegadb;
+
+  my $fh = $self->{'filehandle'};
+
+  print $fh "\tgene_id \"" .  get_id_from_obj($gene) . "\";" .
+            " transcript_id \"" . get_id_from_obj($transcript) . "\";";
+  print $fh " exon_number \"$count\";";
+  print $fh " gene_name \"" . $gene_name . "\";" if ($gene_name);
+  print $fh " gene_biotype \"" . $gene_biotype ."\";";
+  print $fh " transcript_name \"" . $trans_name . "\";" if ($trans_name);
+  if ($type eq 'CDS') {
+    print $fh ' protein_id "' . get_id_from_obj($transcript->translation) . '";';
+  }
+  if($exon) {
+    printf $fh ' exon_id "%s";', get_id_from_obj($exon);
+  }
+  return;
+}
+
+sub get_id_from_obj {
+  my ($obj) = @_;
+  my $id = $obj->stable_id();
+  $id = $obj->dbID() unless defined $id;
+  return $id;
 }
 
 =head2 _make_start_codon_features
@@ -137,7 +332,6 @@ sub _make_start_codon_features {
 
 sub _make_stop_codon_features {
   my ($self, $trans) = @_;
-
   defined $trans or
     throw("Transcript object not defined");
 
@@ -213,7 +407,7 @@ sub _check_start_and_stop {
   # $has_start = 0  if ($startseq ne "ATG");
   # $has_end = 0 if ($endseq ne "TAG" && $endseq ne "TGA" && $endseq ne "TAA");
 
-  my ($attrib) = @{ $self->slice()->get_all_Attributes('codon_table') };
+  my ($attrib) = @{ $trans->slice()->get_all_Attributes('codon_table') };
 
   my $codon_table_id = $attrib->value()
     if defined $attrib;
