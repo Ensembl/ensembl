@@ -434,7 +434,8 @@ sub clear{
 
 sub add_db {
   my ( $class, $db, $name, $adap ) = @_;
-
+  #No warnings brought in due to some overzelous webcode triggering a lot of warnings.
+  no warnings 'uninitialized';
   if ( lc( $db->species() ) ne lc( $adap->species ) ) {
     $registry_register{_SPECIES}{ lc( $db->species() ) }
       { lc( $db->group() ) }{'_special'}{ lc($name) } = $adap;
