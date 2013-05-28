@@ -27,17 +27,41 @@ for the GTF format.
 
 =cut
 
-package Bio::EnsEMBL::Utils::IO::GFFSerializer;
+package Bio::EnsEMBL::Utils::IO::GTFSerializer;
 
 use strict;
 use warnings;
 
 use Bio::EnsEMBL::Utils::Exception;
 use Bio::EnsEMBL::Utils::IO::FeatureSerializer;
-use Bio::EnsEMBL::Utils::Scalar qw/assert_ref check_ref/;
+use Bio::EnsEMBL::Utils::Scalar qw/check_ref/;
 
 use base qw(Bio::EnsEMBL::Utils::IO::FeatureSerializer);
 
 my %strand_conversion = ( '1' => '+', '0' => '?', '-1' => '-');
+
+=head2 print_feature
+
+    Arg [1]    : Bio::EnsEMBL::Transcript
+    Example    : $serializer->print_feature($transcript)
+    Description: 
+    Returntype : none
+
+=cut
+
+sub print_feature {
+  my $self = shift;
+  my $feature = shift;
+
+  throw(sprintf "Feature is of type %s. Cannot write non transcripts to GTF", ref($feature))
+    unless check_ref($feature, "Bio::EnsEMBL::Transcript");
+
+  my $text_buffer = "";
+
+  #filehandle is inherited
+  my $fh = $self->{'filehandle'};
+  print $fh $text_buffer;
+
+}
 
 1;
