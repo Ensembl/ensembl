@@ -32,6 +32,7 @@ package Bio::EnsEMBL::Utils::IO::GTFSerializer;
 use strict;
 use warnings;
 
+use Bio::EnsEMBL::SeqFeature;
 use Bio::EnsEMBL::Utils::Exception;
 use Bio::EnsEMBL::Utils::IO::FeatureSerializer;
 use Bio::EnsEMBL::Utils::Scalar qw/check_ref/;
@@ -61,6 +62,66 @@ sub print_feature {
   #filehandle is inherited
   my $fh = $self->{'filehandle'};
   print $fh $text_buffer;
+
+}
+
+=head2 _make_start_codon_features
+
+    Arg [1]    : Bio::EnsEMBL::Transcript
+    Example    : 
+    Description: 
+    Returntype : Array
+
+=cut
+
+sub _make_start_codon_features {
+  my ($self, $trans) = @_;
+
+
+  if (!$trans->translation) {
+    return (());
+  }
+
+  my @translateable = @{$trans->get_all_translateable_Exons};
+
+  my @pepgencoords = $trans->pep2genomic(1,1);
+
+  # cdna can come padded these days so allow gap at the start
+  if($pepgencoords[0]->isa('Bio::EnsEMBL::Mapper::Gap')){
+    shift @pepgencoords;
+  }
+
+  if(scalar(@pepgencoords) > 3) {
+    throw(sprintf "Pep start for transcript %s does not map cleanly", $trans->display_id);
+  }
+
+  unless($pepgencoords[0]->isa('Bio::EnsEMBL::Mapper::Coordinate')) {
+    throw(sprintf "Pep start for transcript %s maps to gap", $trans->display_id);
+  }
+  unless($pepgencoords[$#pepgencoords]->isa('Bio::EnsEMBL::Mapper::Coordinate')) {
+    throw(sprintf "Pep start (end of) for transcript %s maps to gap", $trans->display_id);
+  }
+
+  @translateable = @{$trans->get_all_translateable_Exons};
+  my @startc_feat;
+  my $phase = 0;
+  foreach my $pepgencoord (@pepgencoords) {
+    push @startc_feat, new Bio::EnsEMBL::SeqFeature(
+                             -seqname => $trans->stable_id,
+                             -source_tag => 'starttrans',
+                             -primary_tag => 'similarity',
+                             -start => $pepgencoord->start,
+                             -end   => $pepgencoord->end,
+                             -phase => $phase,
+                             -strand => $translateable[0]->strand);
+    $phase = 3 - ($pepgencoord->end - $pepgencoord->start + 1);
+  }
+  if ($translateable[0]->strand == 1) {
+    @startc_feat = sort {$a->start <=> $b->start } @startc_feat;
+  } else {
+    @startc_feat = sort {$b->start <=> $a->start } @startc_feat;
+  }
+  return @startc_feat;
 
 }
 
