@@ -264,23 +264,25 @@ sub seq {
 	
     #apply all differences to the reference sequence
     #first, in case there are any indels, create the new sequence (containing the '-' bases)
-   # sort edits in reverse order to remove complication of
+    # sort edits in reverse order to remove complication of
     # adjusting downstream edits
-    my @indels_ordered = sort {$b->start() <=> $a->start()} @{$self->{'alignIndels'}} if (defined $self->{'alignIndels'});
+    my @indels_ordered;
+    @indels_ordered = sort {$b->start() <=> $a->start()} @{$self->{'alignIndels'}} if (defined $self->{'alignIndels'});
 
     foreach my $vf (@indels_ordered){
-	$vf->apply_edit($reference_sequence); #change, in the reference sequence, the vf
+      $vf->apply_edit($reference_sequence); #change, in the reference sequence, the vf
     }
 	
     #need to find coverage information if diffe
     # sort edits in reverse order to remove complication of
     # adjusting downstream edits
-    my @variation_features_ordered = sort {$b->start() <=> $a->start()} @{$self->{'alleleFeatures'}} if (defined $self->{'alleleFeatures'});
+    my @variation_features_ordered;
+    @variation_features_ordered = sort {$b->start() <=> $a->start()} @{$self->{'alleleFeatures'}} if (defined $self->{'alleleFeatures'});
 
     foreach my $vf (@variation_features_ordered){
-	$vf->apply_edit($reference_sequence); #change, in the reference sequence, the vf
+      $vf->apply_edit($reference_sequence); #change, in the reference sequence, the vf
     }
-	
+
     #need to find coverage information if different from reference
     my $indAdaptor = $self->adaptor->db->get_db_adaptor('variation')->get_IndividualAdaptor;
     my $ref_strain = $indAdaptor->get_reference_strain_name;
@@ -293,7 +295,7 @@ sub seq {
   return 'N' x $self->length();
 }
 
-sub expanded_length() {
+sub expanded_length {
 	my $self = shift;
 	
 	my $length = $self->SUPER::length();
@@ -335,7 +337,8 @@ sub _add_coverage_information{
 	# and unmasks seq where there is read coverage
 	
 	# get all length-changing vars
-	my @indels_ordered = sort {$a->start() <=> $b->start()} @{$self->{'alignIndels'}} if (defined $self->{'alignIndels'});
+  my @indels_ordered;
+	@indels_ordered = sort {$a->start() <=> $b->start()} @{$self->{'alignIndels'}} if (defined $self->{'alignIndels'});
 	
 	my $masked_seq = '~' x length($$reference_sequence);
 	
@@ -724,7 +727,8 @@ sub mapper{
 	my $mapper = Bio::EnsEMBL::Mapper->new('Slice','StrainSlice');
 	#align with Slice
 	#get all the VariationFeatures in the strain Slice, from start to end in the Slice
-	my @variation_features_ordered = sort {$a->start() <=> $b->start()} @{$self->{'alleleFeatures'}} if (defined $self->{'alleleFeatures'});
+  my @variation_features_ordered;
+	@variation_features_ordered = sort {$a->start() <=> $b->start()} @{$self->{'alleleFeatures'}} if (defined $self->{'alleleFeatures'});
 	
 	my $start_slice = 1;
 	my $end_slice;

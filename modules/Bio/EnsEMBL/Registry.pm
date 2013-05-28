@@ -355,7 +355,7 @@ sub load_all {
                             $adaptor, $section );
                 }
 
-                my $test_eval = eval "require $adaptor";
+                my $test_eval = eval "require $adaptor"; ## no critic
                 if ($@ or (!$test_eval)) { die($@) }
 
                 $adaptor->new(%adaptor_args);
@@ -370,7 +370,7 @@ sub load_all {
             if($NEW_EVAL) {
               require Bio::EnsEMBL::Utils::IO;
               my $contents = Bio::EnsEMBL::Utils::IO::slurp($config_file);
-              $test_eval = eval $contents;
+              $test_eval = eval $contents; ## no critic
             }
             else {
               $test_eval = eval { require($config_file) };
@@ -1024,7 +1024,7 @@ sub get_adaptor {
   my $dba = $registry_register{_SPECIES}{$species}{ lc($group) }{'_DB'};
   my $module = $ret;
 
-  my $test_eval = eval "require $module";
+  my $test_eval = eval "require $module"; ## no critic
   if ($@ or (!$test_eval)) {
     warning("'$module' cannot be found.\nException $@\n");
     return;
@@ -1856,7 +1856,7 @@ sub load_registry_from_db {
 
   # Variation
 
-  my $test_eval = eval "require Bio::EnsEMBL::Variation::DBSQL::DBAdaptor";
+  my $test_eval = eval "require Bio::EnsEMBL::Variation::DBSQL::DBAdaptor"; ## no critic
   if ($@or (!$test_eval)) {
     # Ignore variations as code required not there for this
     if ($verbose) {
@@ -1938,7 +1938,7 @@ sub load_registry_from_db {
     } ## end foreach my $multidb (@variation_multidbs)
   }
 
-  my $func_eval = eval "require Bio::EnsEMBL::Funcgen::DBSQL::DBAdaptor";
+  my $func_eval = eval "require Bio::EnsEMBL::Funcgen::DBSQL::DBAdaptor"; ## no critic
   if ($@ or (!$func_eval)) {
     if ($verbose) {
       # Ignore funcgen DBs as code required not there for this
@@ -2023,7 +2023,7 @@ sub load_registry_from_db {
   my @compara_dbs = grep { /^ensembl_compara/ } @dbnames;
 
   if (@compara_dbs) {
-    my $comp_eval = eval "require Bio::EnsEMBL::Compara::DBSQL::DBAdaptor";
+    my $comp_eval = eval "require Bio::EnsEMBL::Compara::DBSQL::DBAdaptor"; ## no critic
     if ($@ or (!$comp_eval)) {
       # Ignore Compara as code required not there for this
       if ($verbose) {

@@ -50,6 +50,9 @@ $segment->from_start(), $segement->from_end(), $segment->to_Slice().
 
 package Bio::EnsEMBL::ProjectionSegment;
 
+use strict;
+use warnings;
+
 #
 # WARNING: THIS CLASS IS REPRESENTED BY A BLESSED ARRAY REFERENCE
 #  NOT A HASH REFERENCE

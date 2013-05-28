@@ -135,10 +135,10 @@ sub parse_common_options {
   my $conffile = $h{'conffile'} || $self->serverroot . "/sanger-plugins/vega/conf/ini-files/Conversion.ini";
   $conffile = abs_path($conffile);
   if (-e $conffile) {
-    open(CONF, $conffile) or throw( 
+    open(my $fh, '<', $conffile) or throw( 
       "Unable to open configuration file $conffile for reading: $!");
     my $serverroot = $self->serverroot;
-    while (<CONF>) {
+    while (<$fh>) {
       chomp;
 
       # remove comments
@@ -155,6 +155,7 @@ sub parse_common_options {
       }
       $self->param($name, $val);
     }
+    close $fh;
     $self->param('conffile', $conffile);
   }
   elsif ($conffile) {
@@ -616,12 +617,12 @@ sub list_or_file {
   if (scalar(@vals) == 1 && -e $firstval) {
     # we didn't get a list of values, but a file to read values from
     @vals = ();
-    open(IN, $firstval) or throw("Cannot open $firstval for reading: $!");
-    while(<IN>){
+    open(my $fh, '<', $firstval) or throw("Cannot open $firstval for reading: $!");
+    while(<$fh>){
       chomp;
       push(@vals, $_);
     }
-    close(IN);
+    close($fh);
     $self->param($param, @vals);
   }
   $self->comma_to_list($param);
@@ -881,11 +882,11 @@ sub dynamic_use {
   my ($self, $classname) = @_;
   my ($parent_namespace, $module) = $classname =~/^(.*::)(.*)$/ ? ($1,$2) : ('::', $classname);
 
-  no strict 'refs';
+  no strict 'refs'; ## no critic
   # return if module has already been imported
   return 1 if $parent_namespace->{$module.'::'} && %{ $parent_namespace->{$module.'::'}||{} };
 
-  eval "require $classname";
+  eval "require $classname"; ## no critic
   throw("Failed to require $classname: $@") if ($@);
   $classname->import();
 
@@ -1278,7 +1279,7 @@ sub log {
 
 sub lock_log {
   my ($self) = @_;
-  
+  ## no critic
   my $fh = $self->{'_log_filehandle'};
   return if -t $fh or -p $fh; # Shouldn't lock such things
   flock($self->{'_log_filehandle'},LOCK_EX) || return 0;
@@ -1294,7 +1295,7 @@ sub lock_log {
 
 sub unlock_log {
   my ($self) = @_;
-
+  ## no critic
   my $fh = $self->{'_log_filehandle'};
   return if -t $fh or -p $fh; # We don't lock such things
   # flush is implicit in flock

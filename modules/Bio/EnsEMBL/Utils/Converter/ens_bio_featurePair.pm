@@ -83,7 +83,7 @@ sub _convert_single_repeatFeature {
     );
     
     my $output_module = $self->out;
-    require "$output_module";
+    eval "require $output_module"; ## no critic
     return new Bio::SeqFeature::FeaturePair(
         -feature1 => $feature1,
         -feature2 => $feature2

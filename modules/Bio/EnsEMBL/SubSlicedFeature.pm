@@ -43,6 +43,9 @@ my $transcripts = $truncated_gene->get_all_Transcripts();
 
 package Bio::EnsEMBL::SubSlicedFeature;
 
+use strict;
+use warnings;
+
 use Bio::EnsEMBL::Utils::Argument qw/rearrange/;
 use base qw/Bio::EnsEMBL::Utils::Proxy/;
 

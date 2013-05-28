@@ -1,3 +1,5 @@
+## no critic (RequireFilenameMatchesPackage)
+
 package main;
 
 use strict;
@@ -18,7 +20,7 @@ my $gene_ids = [18256, 18257, 18258];
 my $genes = $gene_adaptor->fetch_all_by_dbID_list($gene_ids);
 
 sub BEGIN {
-  no strict 'refs';
+  no strict 'refs'; ##no critic
   *Bio::EnsEMBL::DBSQL::GeneAdaptor::_build_id_cache = sub {
     my ($self) = @_;
     return Bio::EnsEMBL::DBSQL::Support::LruIdCache->new($self, 3);

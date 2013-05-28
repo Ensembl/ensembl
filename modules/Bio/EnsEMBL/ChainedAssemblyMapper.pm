@@ -70,11 +70,6 @@ normal assembly mapper.
 
 =cut
 
-
-my $FIRST = 'first';
-my $MIDDLE = 'middle';
-my $LAST  = 'last';
-
 package Bio::EnsEMBL::ChainedAssemblyMapper;
 
 use strict;
@@ -85,6 +80,10 @@ use Bio::EnsEMBL::Mapper;
 use Bio::EnsEMBL::Mapper::RangeRegistry;
 use Bio::EnsEMBL::Utils::Exception qw(throw deprecate);
 use Scalar::Util qw(weaken);
+
+my $FIRST = 'first';
+my $MIDDLE = 'middle';
+my $LAST  = 'last';
 
 #2^20 = approx 10^6
 my $CHUNKFACTOR = 20;

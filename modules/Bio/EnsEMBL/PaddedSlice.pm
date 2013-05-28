@@ -36,6 +36,9 @@ is carried out using C<subseq()> calls.
 
 package Bio::EnsEMBL::PaddedSlice;
 
+use strict;
+use warnings;
+
 use Bio::EnsEMBL::Utils::Argument qw/rearrange/;
 use Bio::EnsEMBL::Utils::Scalar qw/assert_ref assert_strand/;
 use base qw/Bio::EnsEMBL::Utils::Proxy/;
@@ -162,11 +165,11 @@ sub subseq {
   
   #Return if we were upstream of overlap
   if($start < $parent_start && $end < $parent_start) {
-    return N x (( $end - $start )+1);
+    return 'N' x (( $end - $start )+1);
   }
   #Return if we were downstream of overlap
   if($start > $parent_end && $end > $parent_end) {
-    return N x (( $end - $start )+1);
+    return 'N' x (( $end - $start )+1);
   }
   
   my $prefix  = '';
@@ -174,11 +177,11 @@ sub subseq {
   my $subslice_start = ($start - $parent_start)+1;
   my $subslice_end = ($end - $parent_start) + 1;
   if($start < $parent_start) {
-    $prefix = N x ($parent_start - $start);
+    $prefix = 'N' x ($parent_start - $start);
     $subslice_start = 1;
   }
   if($end > $parent_end) {
-    $suffix = N x ($end - $parent_end);
+    $suffix = 'N' x ($end - $parent_end);
     $subslice_end = (($parent_end - $parent_start)+1);
   }
   

@@ -519,6 +519,7 @@ sub deprecate {
 
 =cut
 
+## no critic
 sub try (&$) {
   my ($try, $catch) = @_;
   eval { &$try };
@@ -529,6 +530,7 @@ sub try (&$) {
   }
 }
 
+## no critic
 sub catch (&) {
   shift;
 }

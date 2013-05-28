@@ -623,7 +623,7 @@ sub _parse_features {
   my $hstrand     = $f[0]->hstrand;
   my $slice       = $f[0]->slice();
   my $hslice       = $f[0]->hslice();
-  my $name        = $slice->name() if($slice);
+  my $name        = $slice ? $slice->name() : undef;
   my $hname       = $f[0]->hseqname;
   my $score       = $f[0]->score;
   my $percent     = $f[0]->percent_id;

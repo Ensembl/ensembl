@@ -85,10 +85,11 @@ bypassing object creation via the related BaseFeatureAdaptor method.
 
 package Bio::EnsEMBL::Utils::Collector;
 
-use Bio::EnsEMBL::Utils::Argument  ('rearrange');
-use Bio::EnsEMBL::Utils::Exception ('throw');
 use strict;
 use warnings;
+
+use Bio::EnsEMBL::Utils::Argument  ('rearrange');
+use Bio::EnsEMBL::Utils::Exception ('throw');
 
 ### Global package config vars
 

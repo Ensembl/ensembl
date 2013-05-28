@@ -243,12 +243,12 @@ sub inject {
   my $classname = shift;
   my ($parent_namespace, $module) = $classname =~/^(.*::)(.*)$/ ?
                                       ($1,$2) : ('::', $classname);
-  no strict 'refs';
+  no strict 'refs'; ## no critic
 
   # return if module has already been imported
   return 1 if $parent_namespace->{$module.'::'};
   
-  eval "require $classname";
+  eval "require $classname"; ## no critic
   die("Failed to require $classname: $@") if ($@);
 
   $classname->import();

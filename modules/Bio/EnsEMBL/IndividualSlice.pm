@@ -169,7 +169,8 @@ sub seq {
 
     # sort edits in reverse order to remove complication of
     # adjusting downstream edits
-    my @allele_features_ordered = sort {$b->start() <=> $a->start() || $b->end() <=> $a->end()} @{$self->{'alleleFeatures'}} if (defined $self->{'alleleFeatures'});
+    my @allele_features_ordered;
+    @allele_features_ordered = sort {$b->start() <=> $a->start() || $b->end() <=> $a->end()} @{$self->{'alleleFeatures'}} if (defined $self->{'alleleFeatures'});
 
     foreach my $af (@allele_features_ordered){
 	$af->apply_edit($reference_sequence); #change, in the reference sequence, the af
@@ -343,7 +344,8 @@ sub mapper{
 	my $mapper = Bio::EnsEMBL::Mapper->new('Slice','IndividualSlice');
 	#align with Slice
 	#get all the VariationFeatures in the Individual Slice, from start to end in the Slice
-	my @allele_features_ordered = sort {$a->start() <=> $b->start() || $b->end() <=> $a->end()} @{$self->{'alleleFeatures'}} if (defined $self->{'alleleFeatures'});
+  my @allele_features_ordered;
+	@allele_features_ordered = sort {$a->start() <=> $b->start() || $b->end() <=> $a->end()} @{$self->{'alleleFeatures'}} if (defined $self->{'alleleFeatures'});
 	
 	my $start_slice = 1;
 	my $end_slice;
@@ -485,7 +487,8 @@ sub subseq {
     #apply all differences to the reference sequence
     # sort edits in reverse order to remove complication of
     # adjusting downstream edits
-    my @allele_features_ordered = sort {$b->start() <=> $a->start() || $b->end() <=> $a->end()} @{$self->{'alleleFeatures'}} if (defined $self->{'alleleFeatures'});
+    my @allele_features_ordered;
+    @allele_features_ordered = sort {$b->start() <=> $a->start() || $b->end() <=> $a->end()} @{$self->{'alleleFeatures'}} if (defined $self->{'alleleFeatures'});
     my $af_start;
     my $af_end;
     foreach my $af (@allele_features_ordered){

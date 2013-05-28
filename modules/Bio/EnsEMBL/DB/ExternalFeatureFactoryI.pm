@@ -131,6 +131,10 @@ above.
 =cut
 
 package Bio::EnsEMBL::DB::ExternalFeatureFactoryI;
+
+use strict;
+use warnings;
+
 use Bio::EnsEMBL::External::ExternalFeatureAdaptor;
 use vars qw(@ISA);
 

@@ -1,4 +1,7 @@
+## no critic (RequireFilenameMatchesPackage)
 package Test::SO::Term;
+use strict;
+use warnings;
 
 sub new {
   my ($class) = @_;

@@ -515,12 +515,11 @@ sub fetch_all_by_Slice_and_external_dbname_link {
   my $dbe_adaptor = $self->db()->get_DBEntryAdaptor();
 
   my %linked_genes;
-  foreach $external_db_id (@external_db_ids) {
-	my @linked_genes = $dbe_adaptor->list_gene_ids_by_external_db_id($external_db_id);
-
-	foreach my $gene_id (@linked_genes) {
-	  $linked_genes{$gene_id} = 1;
-	}
+  foreach my $local_external_db_id (@external_db_ids) {
+    my @linked_genes = $dbe_adaptor->list_gene_ids_by_external_db_id($local_external_db_id);
+    foreach my $gene_id (@linked_genes) {
+      $linked_genes{$gene_id} = 1;
+    }
   }
 
   # Get all the genes on the slice.
@@ -1878,9 +1877,11 @@ sub fetch_all_by_exon_supporting_evidence {
 	throw("feature type must be dna_align_feature or protein_align_feature");
   }
 
-  my $anal_from = ", analysis a " if ($analysis);
-  my $anal_where = "AND a.analysis_id = f.analysis_id AND a.analysis_id=? "
-	if ($analysis);
+  my ($anal_from, $anal_where);
+  if($analysis) {
+    $anal_from = ", analysis a ";
+    $anal_where = "AND a.analysis_id = f.analysis_id AND a.analysis_id=? ";
+  }
 
   my $sql = qq(
       SELECT DISTINCT(g.gene_id)
@@ -1943,9 +1944,11 @@ sub fetch_all_by_transcript_supporting_evidence {
 	throw("feature type must be dna_align_feature or protein_align_feature");
   }
 
-  my $anal_from = ", analysis a " if ($analysis);
-  my $anal_where = "AND a.analysis_id = f.analysis_id AND a.analysis_id=? "
-	if ($analysis);
+  my ($anal_from, $anal_where);
+  if($analysis) {
+    $anal_from = ", analysis a ";
+    $anal_where = "AND a.analysis_id = f.analysis_id AND a.analysis_id=? ";
+  }
 
   my $sql = qq(
       SELECT DISTINCT(g.gene_id)

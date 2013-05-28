@@ -1,0 +1,4 @@
+severity  = 5
+
+[Subroutines::ProhibitExplicitReturnUndef]
+severity=4

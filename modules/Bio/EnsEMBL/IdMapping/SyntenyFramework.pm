@@ -390,7 +390,7 @@ sub rescore_gene_matrix_lsf {
   $self->logger->debug("$cmd\n\n");
 
   local *BSUB;
-  open( BSUB, $bsub_cmd )
+  open( BSUB, $bsub_cmd ) ## no critic
     or $self->logger->error("Could not open open pipe to bsub: $!\n");
 
   print BSUB $cmd;

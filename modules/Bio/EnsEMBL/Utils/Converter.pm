@@ -171,7 +171,7 @@ sub _convert_single{
 
 foreach my $field (qw(in out)){
     my $slot=__PACKAGE__ ."::$field";
-    no strict 'refs';
+    no strict 'refs'; ## no critic
     *$field=sub{
         my $self=shift;
         $self->{$slot}=shift if @_;

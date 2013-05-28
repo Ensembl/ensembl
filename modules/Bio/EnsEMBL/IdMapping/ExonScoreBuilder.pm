@@ -343,6 +343,7 @@ sub sort_exons {
   my $self  = shift;
   my $exons = shift;
 
+  ## no critic 
   return sort {
     ( $a->[0]->common_sr_name cmp $b->[0]->common_sr_name ) ||
       ( $a->[1] <=> $b->[1] )
@@ -497,7 +498,7 @@ sub run_exonerate {
                $self->conf()->param('lsf_opt_exonerate') );
 
   local *BSUB;
-  open( BSUB, $bsub_cmd )
+  open( BSUB, $bsub_cmd ) ## no critic
     or $self->logger->error("Could not open open pipe to bsub: $!\n");
 
   print BSUB $exonerate_job;
@@ -688,11 +689,11 @@ sub parse_exonerate_results {
 
     $num_files++;
 
-    open( F, '<', "$dump_path/$file" );
+    open( my $fh, '<', "$dump_path/$file" ); 
 
     my $threshold = $self->conf->param('exonerate_threshold') || 0.5;
 
-    while (<F>) {
+    while (<$fh>) {
       $num_lines++;
       chomp;
 

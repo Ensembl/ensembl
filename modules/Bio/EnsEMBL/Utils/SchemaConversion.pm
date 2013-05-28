@@ -48,10 +48,10 @@ Bio::EnsEMBL::Utils::ConversionSupport
 
 package Bio::EnsEMBL::Utils::SchemaConversion;
 
-use  Bio::EnsEMBL::Utils::ConversionSupport;
 use strict;
 use warnings;
 
+use Bio::EnsEMBL::Utils::ConversionSupport;
 use Data::Dumper;
 
 =head2 new
@@ -184,7 +184,7 @@ sub choose_conversion_type {
     $species = $self->species_alias($self->conv_support->param('source_db'));
     if ($self->conv_support->param('do_vega_sc')) {
         $species = "vega::".$species;
-        eval "require SeqStoreConverter::$species";
+        eval "require SeqStoreConverter::$species"; ## no critic
         if($@) {
             warn("Could not require conversion module SeqStoreConverter::$species\ for vega conversion\n" .
                     "Using SeqStoreConverter::BasicConverter instead:\n$@");
@@ -196,7 +196,7 @@ sub choose_conversion_type {
         }
     }
     else {
-        eval "require SeqStoreConverter::$species";
+        eval "require SeqStoreConverter::$species"; ## no critic
         if($@) {
             warn("Could not require conversion module SeqStoreConverter::$species for Ensembl conversion\n" .
                     "Using SeqStoreConverter::BasicConverter instead:\n$@");

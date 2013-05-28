@@ -37,7 +37,7 @@ Allowed parameters are:
 
 =cut
 
-package Bio::EnsEMBL::Pipeline::FASTA::FindDirs;
+package Bio::EnsEMBL::Pipeline::Flatfile::FindDirs;
 
 use strict;
 use warnings;

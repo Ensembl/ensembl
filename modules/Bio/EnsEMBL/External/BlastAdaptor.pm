@@ -847,9 +847,9 @@ sub get_all_SearchFeatures {
 sub dynamic_use {
   my( $self, $classname ) = @_;
   my( $parent_namespace, $module ) = $classname =~/^(.*::)(.*?)$/;
-  no strict 'refs';
+  no strict 'refs'; ## no critic
   return 1 if $parent_namespace->{$module.'::'}; # return if already used
-  eval "require $classname";
+  eval "require $classname"; ## no critic
   if($@) {
     warn "DrawableContainer: failed to use $classname\nDrawableContainer: $@";
     return 0;

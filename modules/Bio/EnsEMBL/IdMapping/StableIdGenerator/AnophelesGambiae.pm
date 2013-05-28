@@ -18,7 +18,7 @@
 
 =cut
 
-package Bio::EnsEMBL::IdMapping::StableIdGenerator::AedesAegypti;
+package Bio::EnsEMBL::IdMapping::StableIdGenerator::AnophelesGambiae;
 
 # Package that implements incrementing and verification of Aedes aegypti
 # stable IDs as used by the VectorBase project.

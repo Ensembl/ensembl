@@ -135,7 +135,7 @@ sub checksum {
 
 sub permissions {
   my ($self, $file) = @_;
-  my $mode = 0666;
+  my $mode = 0666; ## no critic
   chmod($mode, $file) or $self->throw("Cannot perform the chmod to mode $mode for file $file");
   return;
 }

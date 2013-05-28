@@ -71,11 +71,11 @@ sub store_attrib {
 sub run_pepstats {
   my ($self, $tmpfile) = @_;
   my $PEPSTATS = $self->param('binpath') . '/bin/pepstats';
-  open(OUT, "$PEPSTATS -filter < $tmpfile 2>&1 |");
-  my @lines   = <OUT>;
+  open(my $fh, "$PEPSTATS -filter < $tmpfile 2>&1 |"); ## no critic
+  my @lines   = <$fh>;
   my $attribs = {};
   my $tid;
-  close(OUT);
+  close($fh);
   foreach my $line (@lines) {
 
 	if ($line =~ /PEPSTATS of ([^ ]+)/) {
@@ -130,7 +130,7 @@ sub dump_translation {
   my $helper = $dba->dbc()->sql_helper();
   my $dbtype = $self->param('dbtype');
   my $ta     = Bio::EnsEMBL::Registry->get_adaptor($self->param('species'), $dbtype, 'translation');
-  open(TMP, "> $tmpfile");
+  open(my $fh, '>', $tmpfile);
   my $sql = q{
     SELECT tl.translation_id
     FROM translation tl, transcript tr, seq_region s, coord_system cs
@@ -146,9 +146,9 @@ sub dump_translation {
 	if ($peptide_seq !~ /\n$/) {
 	  $peptide_seq .= "\n";
 	}
-	print TMP ">$dbid\n$peptide_seq";
+	print $fh ">$dbid\n$peptide_seq";
   }
-  close(TMP);
+  close($fh);
 } ## end sub dump_translation
 
 1;

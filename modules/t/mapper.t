@@ -1,8 +1,5 @@
 ## Bioperl Test Harness Script for Modules
 ##
-# CVS Version
-# $Id$
-
 
 # Before `make install' is performed this script should be runnable with
 # `make test'. After `make install' it should work as `perl test.t'
@@ -20,6 +17,8 @@
 #-----------------------------------------------------------------------
 
 use Test::More;
+use strict;
+use warnings;
 
 # This test script heavily edited by ihh@fruitfly.org
 
@@ -37,7 +36,7 @@ ok( 1 );
 use Bio::EnsEMBL::Mapper;
 
 
-$mapper = Bio::EnsEMBL::Mapper->new( "rawcontig", "virtualcontig" );
+my $mapper = Bio::EnsEMBL::Mapper->new( "rawcontig", "virtualcontig" );
 load_sgp_dump( $mapper, undef );
 
 # loading done successfully
@@ -335,10 +334,10 @@ chr1	625359	1214016	1216330	1	2315	1
 	@sgp_dump = reverse (@sgp_dump) if defined $reverse;   # test the auto-sorting feature
 
 	my $first = 1;
-	for $line ( @sgp_dump ) {
+	for my $local_line ( @sgp_dump ) {
 	  if( $first ) { $first = 0; next; }
 	  my ( $chr_name, $contig_id, $chr_start, 
-	       $chr_end, $contig_start, $contig_end, $contig_ori ) = split ( /\t/, $line );
+	       $chr_end, $contig_start, $contig_end, $contig_ori ) = split ( /\t/, $local_line );
 
 # new argument order:
 	  $map->add_map_coordinates( $contig_id, $contig_start, $contig_end, $contig_ori,  

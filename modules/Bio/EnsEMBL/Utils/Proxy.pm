@@ -58,6 +58,9 @@ most classes.
 
 package Bio::EnsEMBL::Utils::Proxy;
 
+use strict;
+use warnings;
+
 use Bio::EnsEMBL::Utils::Exception qw/throw/;
 
 use vars '$AUTOLOAD';
@@ -179,7 +182,10 @@ sub AUTOLOAD {
     my $type = ref $self ? 'object' : 'class';
     throw qq{Can't locate $type method "$method_name" via package "$package_name". No subroutine was generated};
   }
-  *$AUTOLOAD = $sub;
+  {
+    no strict 'refs'; ## no critic ProhibitNoStrict
+    *{$AUTOLOAD} = $sub;
+  }
   goto &$sub;
 }
 

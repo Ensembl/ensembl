@@ -117,7 +117,7 @@ my $scalar;
 my $other_scalar;
 open my $scalar_fh, '>', \$scalar;
 open my $other_scalar_fh, '>', \$other_scalar;
-bless($other_scalar_fh);
+bless($other_scalar_fh, __PACKAGE__);
 my $io_handle = IO::Handle->new(); # no need to close as it isn't opened yet just created
 throws_ok { assert_file_handle(undef) } qr/undefined/, 'Passing in undefined scalar means death';
 dies_ok { assert_file_handle(bless(1, 'Brian'), 'met')} 'Passing in a blessed scalar means death';

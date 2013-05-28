@@ -157,13 +157,13 @@ sub parse_options {
   $conffile = abs_path($conffile);
 
   if (-e $conffile) {
-    open(CONF, $conffile) or throw( 
+    open(my $fh, '<', $conffile) or throw( 
         "Unable to open configuration file $conffile for reading: $!");
 
     my $serverroot = $self->serverroot;
     my $last;
 
-    while (my $line = <CONF>) {
+    while (my $line = <$fh>) {
       chomp $line;
       
       # remove leading and trailing whitespace
@@ -200,6 +200,7 @@ sub parse_options {
       }
       $self->param($name, $val);
     }
+    close($fh);
 
     $self->param('conffile', $conffile);
   }
@@ -556,14 +557,14 @@ sub list_or_file {
     # we didn't get a list of values, but a file to read values from
     @vals = ();
     
-    open(IN, $firstval) or throw("Cannot open $firstval for reading: $!");
+    open(my $fh, '<', $firstval) or throw("Cannot open $firstval for reading: $!");
     
-    while(<IN>){
+    while(<$fh>){
       chomp;
       push(@vals, $_);
     }
     
-    close(IN);
+    close($fh);
     
     $self->param($param, @vals);
   }

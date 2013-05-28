@@ -1003,7 +1003,7 @@ sub get_dumped_data {
     my $data = shift;
 
     $data =~ s/\n|\r|\f|\\//g;
-    return eval ($data);
+    return eval ($data); ## no critic
 }
 
 

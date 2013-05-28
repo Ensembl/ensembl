@@ -1,5 +1,7 @@
 
 use Test::More;
+use strict;
+use warnings;
 
 use Bio::EnsEMBL::SeqEdit;
 use Bio::EnsEMBL::Attribute;

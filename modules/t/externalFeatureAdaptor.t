@@ -1,4 +1,7 @@
+## no critic (RequireFilenameMatchesPackage)
+
 use strict;
+use warnings;
 
 our $verbose = 0;
 
@@ -75,7 +78,7 @@ package ExternalFF2;
 
 
 
-package Test;
+package main;
 
 use Bio::EnsEMBL::Test::TestUtils;
 
