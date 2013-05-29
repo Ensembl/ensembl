@@ -126,7 +126,8 @@ sub open_file{
 	throw("Cannot perform open with unsupported operator:\t${file_op}${filepath}");
   }
 
-  my $success = open my $fh, $file_op, $filepath;
+  my $fh;
+  my $success = open $fh, $file_op, $filepath;
   #$fh will be still be GLOB on fail
   
   #These warn instead of throw/die to allow
