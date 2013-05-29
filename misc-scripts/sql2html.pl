@@ -1,4 +1,4 @@
-#!/bin/perl
+#!/usr/bin/env perl
 # 1st Feb 2011
 # Generate an HTML documentation page from an SQL file.
 #
@@ -331,7 +331,7 @@ while (<SQLFILE>) {
         add_column_index($1,$2);
         next;
       }
-      elsif ($doc =~ /^\s*(unique\s+)?(key|index)\s+(\S+)\s*\((.+)\)/i) { # Keys and indexes
+      elsif ($doc =~ /^\s*(unique\s+)?(key|index)\s+([^\s\(]+)\s*\((.+)\)/i) { # Keys and indexes
         add_column_index("$1$2",$4,$3);
         next;
       }
@@ -340,7 +340,7 @@ while (<SQLFILE>) {
         next;
       }
       elsif ($doc =~ /^\s*(key)\s+\((.+)\)/i) { # Keys
-        add_column_index("$1",$2,'');
+        add_column_index("$1",$2);
         next;
       }
       
@@ -749,7 +749,7 @@ sub add_table_name {
   
   my $c_box = '';
   if ($show_colour) {
-		$c_box = qq{    <div style="float:left;padding:0px;height:20px;width:10px;background-color:$colour;margin-right:10px"></div>};
+    $c_box = qq{    <div style="float:left;padding:0px;height:20px;width:10px;background-color:$colour;margin-right:10px"></div>};
   }
 
   my $html = qq{
@@ -761,8 +761,8 @@ sub add_table_name {
         $img_plus
         <span style="vertical-align:middle">Show $link_text</span>
       </a> 
-			<b> | </b> <a href="#top">[Back to top]</a>
-		</div>
+      <b> | </b> <a href="#top">[Back to top]</a>
+    </div>
   </div>\n};  
   
   return $html;
@@ -811,8 +811,8 @@ sub add_columns {
   my $html = qq{\n  <div id="div_$table" style="display:$display_style">
     <table style="border:1px solid #667aa6;padding:0px;min-width:1000px;max-width:1200px">
       <tr class="center" style="color:#FFFFFF;background-color:#667aa6"><th style="color:#FFF;padding:2px">Column</th><th style="color:#FFF;padding:2px">Type</th><th style="color:#FFF;padding:2px;min-width:80px">Default value</th><th style="color:#FFF;padding:2px;min-width:500px">Description</th><th style="color:#FFF;padding:2px;min-width:100px">Index</th></tr>\n};
-	my $bg = 1;
-	
+  my $bg = 1;
+  
   foreach my $col (@$cols) {
     my $name    = $col->{name};
     my $type    = $col->{type};
@@ -879,11 +879,11 @@ sub add_examples {
         $show_hide .= qq{<a id="e_$table$nb" style="cursor:pointer;text-decoration:none" onclick="show_hide('$table$nb','example')">$img_plus<span style="vertical-align:middle"> Show query results</span></a>};
         $sql_table = get_example_table($sql,$table,$nb);
       }
-			if (defined($sql)) {
-			  foreach my $word (qw(SELECT FROM WHERE LIMIT DESC ORDER)) {
-			    $sql =~ s/$word /$word /i;
-				}
-			}
+      if (defined($sql)) {
+        foreach my $word (qw(SELECT FROM WHERE LIMIT DESC ORDER)) {
+          $sql =~ s/$word /$word /i;
+        }
+      }
       $html .= qq{<pre style="display:inline;border:1px solid #555;padding:2px;margin-right:15px;margin-left:10px">$sql</pre> $show_hide\n$sql_table};
     }
     $html .= qq{</div>};
@@ -935,10 +935,12 @@ sub add_column_index {
   my $idx_name = shift;
   
   my $index = $idx_type;
-  if (defined($idx_name)) {
+  if (!defined($idx_name)) {
+    $idx_name = $idx_col;
+  }
+  if ($idx_type !~ /primary/i) {
     $index .= ": $idx_name";
   }
-  
   my @idx_cols = split(',',$idx_col); # The index can involve several columns
   
   my %is_found = ();
@@ -1036,7 +1038,9 @@ sub get_example_table {
     }
     $html .= qq{    </table>\n  </div>};
   } else {
-    $html .= qq{<div style="padding:5px;font-weight:bold;border:2px solid red;color:red">ERROR: the SQL query displayed above returned no result!</div>};
+    my $msg = qq{ERROR: the SQL query displayed above returned no results!};
+    $html .= qq{<div style="padding:5px;margin:10px;width:500px;font-weight:bold;border:2px solid red;color:red">$msg</div>};
+    print STDERR qq{SQL: $sql\n$msg\n};
   }
   
   return $html;
