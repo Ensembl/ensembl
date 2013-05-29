@@ -114,9 +114,10 @@ my %transcript_so_mapping = (
     );
 
 my %feature_so_mapping = (
+    'Bio::EnsEMBL::Feature' => 'SO:0000001', # region
     'Bio::EnsEMBL::Gene' => 'SO:0000704', # gene
     'Bio::EnsEMBL::Transcript' => 'SO:0000673', # transcript
-    'Bio::EnsEMBL::Exon' => 'SO:0000147',
+    'Bio::EnsEMBL::Exon' => 'SO:0000147', # exon
     'Bio::EnsEMBL::Slice' => 'SO:0000001', # region
     'Bio::EnsEMBL::SimpleFeature' => 'SO:0001411', # biological_region
     'Bio::EnsEMBL::MiscFeature' => 'SO:0001411', # biological_region

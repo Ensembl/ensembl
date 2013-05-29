@@ -52,7 +52,7 @@ my %strand_conversion = ( '1' => '+', '0' => '?', '-1' => '-');
     Constructor
     Arg [1]    : Ontology Adaptor
     Arg [2]    : Optional File handle
-    Arg [3]    : Default source of the features. Defaults to ensembl
+    Arg [3]    : Default source of the features. Defaults to .
     
     Returntype : Bio::EnsEMBL::Utils::IO::GFFSerializer
 
@@ -77,7 +77,7 @@ sub new {
         $self->{'stdout'} = 1;
     }
     if(!defined $self->{default_source}) {
-        $self->{default_source} = 'ensembl';
+        $self->{default_source} = '.';
     }
     return $self;
 }
