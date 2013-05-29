@@ -2849,6 +2849,7 @@ sub summary_as_hash {
   $summary_ref->{'logic_name'} = $self->analysis->logic_name();
   my $parent_gene = $self->get_Gene();
   $summary_ref->{'Parent'} = $parent_gene->stable_id;
+  $summary_ref->{'source'} = $self->source() || $parent_gene->source();
   return $summary_ref;
 }
 

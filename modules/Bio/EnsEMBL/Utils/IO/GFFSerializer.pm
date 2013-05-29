@@ -52,6 +52,7 @@ my %strand_conversion = ( '1' => '+', '0' => '?', '-1' => '-');
     Constructor
     Arg [1]    : Ontology Adaptor
     Arg [2]    : Optional File handle
+    Arg [3]    : Default source of the features. Defaults to ensembl
     
     Returntype : Bio::EnsEMBL::Utils::IO::GFFSerializer
 
@@ -62,6 +63,7 @@ sub new {
     my $self = {
         ontology_adaptor => shift,
         filehandle => shift,
+        default_source => shift
     };
     bless $self, $class;
     if ( ! check_ref($self->{'ontology_adaptor'}, "Bio::EnsEMBL::DBSQL::OntologyTermAdaptor" )) {
@@ -73,6 +75,9 @@ sub new {
         # no file handle, let the handle point to a copy of STDOUT instead
         open $self->{'filehandle'}, ">&STDOUT";
         $self->{'stdout'} = 1;
+    }
+    if(!defined $self->{default_source}) {
+        $self->{default_source} = 'ensembl';
     }
     return $self;
 }
@@ -102,8 +107,9 @@ sub print_feature {
         if (!defined($summary{'seq_region_name'})) {$summary{'seq_region_name'} = "?";}
         $row .= $summary{'seq_region_name'}."\t";
 
-#    Column 2 - source, complicated with Ensembl not being the originator of all data
-        $row .= "EnsEMBL\t";
+#    Column 2 - source, complicated with Ensembl not being the originator of all data but user can specify or it switches to ensembl.
+        $row .= $summary{source} || $self->_default_source();
+        $row .= qq{\t};
 
 #   Column 3 - feature, the ontology term for the kind of feature this row is
         my $so_term = $biotype_mapper->translate_feature_to_SO_term($feature);
@@ -157,6 +163,7 @@ sub print_feature {
         delete $summary{'end'};
         delete $summary{'strand'};
         delete $summary{'score'};
+        delete $summary{'source'};
 #   Slice the hash for specific keys in GFF-friendly order
         my @ordered_keys = qw(ID Name Alias Parent Target Gap Derives_from Note Dbxref Ontology_term Is_circular);
         my @ordered_values = @summary{@ordered_keys};
@@ -168,17 +175,20 @@ sub print_feature {
             delete $summary{$key};
         }
 #   Catch the remaining keys, containing whatever else the Feature provided
-        my @keys = keys %summary;
+        my @keys = sort keys %summary;
         while(my $attribute = shift @keys) {
-            if (ref $summary{$attribute} eq "ARRAY") {
+            my $data_written = 0;
+            if (ref $summary{$attribute} eq "ARRAY" && scalar(@{$summary{$attribute}}) > 0) {
                 $row .= $attribute."=".join (',',map { uri_escape($_,'\t\n\r;=%&,') } grep { defined $_ } @{$summary{$attribute}});
+                $data_written = 1;
             }
             else {
                 if ($summary{$attribute}) { 
                   $row .= $attribute."=".uri_escape($summary{$attribute},'\t\n\r;=%&,'); 
+                  $data_written = 1;
                 }
             }
-            $row .= ';' if scalar(@keys) > 0;
+            $row .= ';' if scalar(@keys) > 0 && $data_written;
         }
 # trim off any trailing commas left by the ordered keys stage above:
         $text_buffer .= $row."\n";
@@ -216,6 +226,11 @@ sub print_metadata {
     my $text = shift;
     my $fh = $self->{'filehandle'};
     print $fh "\n#".$text."\n";
+}
+
+sub _default_source {
+    my ($self) = @_;
+    return $self->{default_source};
 }
 
 
