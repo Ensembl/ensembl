@@ -12,4 +12,4 @@ CREATE TABLE alt_id (
 
 -- Patch identifier
 INSERT INTO meta (meta_key, meta_value)
-  VALUES ('patch', 'patch_71_72b.sql|alt_id table');
+  VALUES ('patch', 'patch_71_72_b.sql|alt_id table');

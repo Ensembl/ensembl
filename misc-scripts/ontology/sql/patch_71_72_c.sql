@@ -1,4 +1,4 @@
--- patch_71_72c.sql
+-- patch_71_72_c.sql
 --
 -- Title: Insert schema version.
 --
@@ -11,6 +11,6 @@ INSERT INTO meta (meta_key, meta_value)
 
 -- Patch identifier
 INSERT INTO meta (meta_key, meta_value)
-  VALUES ('patch', 'patch_71_72c.sql|schema_version');
+  VALUES ('patch', 'patch_71_72_c.sql|schema_version');
 
 

@@ -22,6 +22,10 @@ INSERT INTO meta (meta_key, meta_value)
   VALUES ('patch', 'patch_71_72b.sql|alt_id table');
 INSERT INTO meta (meta_key, meta_value)
   VALUES ('patch', 'patch_71_72c.sql|schema_version');
+INSERT INTO meta (meta_key, meta_value)
+  VALUES ('patch', 'patch_71_72_d.sql|patch_version_fix');
+INSERT INTO meta (meta_key, meta_value)
+  VALUES ('patch', 'patch_71_72_e.sql|is_obsolete');
 
 CREATE TABLE ontology (
   ontology_id   INT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -48,8 +52,8 @@ CREATE TABLE term (
   accession     VARCHAR(64) NOT NULL,
   name          VARCHAR(255) NOT NULL,
   definition    TEXT,
-  is_root       INT,
-  is_obsolete   INT,
+  is_root       INT NOT NULL DEFAULT 0,
+  is_obsolete   INT NOT NULL DEFAULT 0,
 
   PRIMARY KEY (term_id),
   UNIQUE INDEX accession_idx (accession),
