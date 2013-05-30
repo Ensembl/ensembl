@@ -165,14 +165,15 @@ sub print_feature {
         delete $summary{'score'};
         delete $summary{'source'};
 #   Slice the hash for specific keys in GFF-friendly order
-        my @ordered_keys = qw(ID Name Alias Parent Target Gap Derives_from Note Dbxref Ontology_term Is_circular);
+        my @ordered_keys = grep { exists $summary{$_} } qw(ID Name Alias Parent Target Gap Derives_from Note Dbxref Ontology_term Is_circular);
         my @ordered_values = @summary{@ordered_keys};
         while (my $key = shift @ordered_keys) {
             my $value = shift @ordered_values;
             if ($value) {
-                $row .= $key."=".uri_escape($value,'\t\n\r;=%&,').";";
+                $row .= $key."=".uri_escape($value,'\t\n\r;=%&,');
+                delete $summary{$key};
+                $row .= ';' if scalar(@ordered_keys) > 0 || scalar(keys %summary) > 0;
             }
-            delete $summary{$key};
         }
 #   Catch the remaining keys, containing whatever else the Feature provided
         my @keys = sort keys %summary;
