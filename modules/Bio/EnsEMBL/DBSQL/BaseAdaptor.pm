@@ -92,7 +92,7 @@ use vars qw(@ISA @EXPORT);
 use strict;
 
 use Bio::EnsEMBL::Utils::Exception qw(throw);
-use Bio::EnsEMBL::Utils::Scalar qw(assert_ref assert_integer);
+use Bio::EnsEMBL::Utils::Scalar qw(assert_ref assert_integer wrap_array);
 use DBI qw(:sql_types);
 use Data::Dumper;
 
@@ -383,7 +383,56 @@ sub _bind_param_generic_fetch {
   return $self->{_bind_param_generic_fetch};
 }
 
+=head2 generate_in_constraint
+  
+  Arg [1]     : ArrayRef or Scalar $list
+                List or a single value of items to be pushed into an IN statement
+  Arg [2]     : Scalar $column
+                Column this IN statement is being applied to. Please fully resolve the
+                column.
+  Arg [3]     : Scalar $param_type
+                Data type which should be used when binding. Please use DBI data type symbols
+  Arg [4]     : Scalar boolean $inline_variables
+                Boolean to control if variables are inlined in the constraint. If
+                false values are bound via bind_param_generic_fetch() (the default behaviour).
 
+  Description : Used internally to generate a SQL constraint to restrict a query by an IN statement.
+                The code generates the complete IN statement.
+  Returntype  : String
+  Exceptions  : If no list is supplied, the list of values is empty or no data type was given
+  Caller      : general
+
+=cut
+
+sub generate_in_constraint {
+  my ($self, $list, $column, $param_type, $inline_variables) = @_;
+  throw("A list of values must be given") if ! defined $list;
+  $list = wrap_array($list); # homogenise into an array
+  throw "We should be given at least one value to insert" if scalar(@{$list}) == 0;
+  throw "Please supply the DBI param type" if ! defined $param_type;
+  #Figure out if we need to quote our values if we are asked to inline the variables
+  my $quote_values = 1;
+  if($param_type == SQL_INTEGER || $param_type == SQL_TINYINT || $param_type == SQL_DOUBLE ) {
+    $quote_values = 0;
+  }
+
+  my $constraint = qq{${column} IN (};
+  if($inline_variables) {
+    if($quote_values) {
+      $constraint .= join(q{,}, map { qq{"${_}"} } @{$list});  
+    }
+    else {
+      $constraint .= join(q{,}, @{$list});  
+    }
+  }
+  else {
+    my @subs = ('?') x scalar(@{$list});
+    $constraint .= join(q{,}, @subs);
+    $self->bind_param_generic_fetch($_, $param_type) for @{$list};
+  }
+  $constraint .= q{)};
+  return $constraint;
+}
 
 =head2 generic_fetch
 

@@ -271,7 +271,7 @@ sub fetch_all_by_biotype {
 
 =head2 biotype_constraint 
 
-  Arg [1]    : String $biotype 
+  Arg [1]    : String $biotypes 
                listref of $biotypes
                The biotype of the gene to retrieve. You can have as an argument a reference
                to a list of biotypes
@@ -284,24 +284,10 @@ sub fetch_all_by_biotype {
 =cut
 
 sub biotype_constraint {
-  my ($self, $biotype) = @_;
-  if (!defined $biotype) {
-	throw("Biotype or listref of biotypes expected");
-  }
-  my $constraint;
-  if (ref($biotype) eq 'ARRAY') {
-	$constraint = "g.biotype IN (";
-	foreach my $b (@{$biotype}) {
-	  $constraint .= "?,";
-	  $self->bind_param_generic_fetch($b, SQL_VARCHAR);
-	}
-	chop($constraint);    #remove last , from expression
-	$constraint .= ") and g.is_current = 1";
-
-  } else {
-	$constraint = "g.biotype = ? and g.is_current = 1";
-	$self->bind_param_generic_fetch($biotype, SQL_VARCHAR);
-  }
+  my ($self, $biotypes, $inline_variables) = @_;
+  my $constraint = "g.is_current = 1";
+  my $in_statement = $self->generate_in_constraint($biotypes, 'g.biotype', SQL_VARCHAR, $inline_variables);
+  $constraint .= " and $in_statement";
   return $constraint;
 }
 
@@ -571,7 +557,8 @@ sub fetch_all_by_Slice {
 	$constraint .= " and g.source = '$source'";
   }
   if (defined($biotype)) {
-	$constraint .= " and g.biotype = '$biotype'";
+    my $inline_variables = 1;
+    $constraint .= " and ".$self->generate_in_constraint($biotype, 'g.biotype', SQL_VARCHAR, $inline_variables);
   }
 
   my $genes = $self->SUPER::fetch_all_by_Slice_constraint($slice, $constraint, $logic_name);
