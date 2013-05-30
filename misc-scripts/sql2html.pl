@@ -579,16 +579,9 @@ sub display_tables_list {
           $t_count = 0;
         }
       }
-      $html .= qq{      </ul>};
+      $html .= qq{\n      </ul>};
       $html .= qq{\n      </div>} if ($count > $nb_by_col);
-      
-      if ($format_headers == 1) {
-        $html .= qq{  </div>\n};
-        if ($nbc > 1) {
-          $html .= qq{  <div style="clear:both" />\n</div>\n\n<div>};
-          $nb_col_line = 0;
-        }
-      }    
+      $html .= qq{\n    </div>\n} if ($format_headers == 1);   
     }
     else {
       $html .= qq{\n    <table style="padding:0px 2px"><tr><td>\n      <ul style="padding-left:20px">\n};
