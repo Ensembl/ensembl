@@ -64,6 +64,7 @@ use base qw( Bio::EnsEMBL::DBSQL::BaseAdaptor );
 
   Arg [1]       : String, name of term, or SQL pattern
   Arg [2]       : (optional) String, name of ontology
+  Arg [3]       : (optional) Boolean, search through obsolete terms as well
 
   Description   : Fetches ontology term(s) given a name, a synonym, or a
                   SQL pattern like "%splice_site%"
@@ -147,6 +148,7 @@ WHERE   ( term.name LIKE ? OR synonym.name LIKE ? ));
 =head2 fetch_by_accession
 
   Arg [1]       : String
+  Arg [2]       : (optional) Boolean, search through obsolete terms as well
 
   Description   : Fetches an ontology term given an accession.
 
