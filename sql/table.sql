@@ -9,9 +9,7 @@
 
 /**
 @header Fundamental Tables
-@desc A PDF document of the schema is available <a href="fundamental_tables_core.pdf" target="_blank">here</a>.<br />
-<a href="fundamental_tables_core.pdf" target="_blank">
-<img border="0" src="fundamental_tables_thumb.png" alt="Fundamental Tables Schema Diagram" style="margin-left:20px; margin-top:20px;" /></a>
+@colour  #000
 
 */
 
@@ -321,6 +319,7 @@ previous_exon_id              INT(10) UNSIGNED NOT NULL,
 next_exon_id                  INT(10) UNSIGNED NOT NULL,
 PRIMARY KEY (intron_supporting_evidence_id, transcript_id)
 ) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
+
 
 
 /**
@@ -670,6 +669,32 @@ CREATE TABLE seq_region (
 ) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
 
 
+/**
+@table seq_region_synonym
+@desc Allows for storing multiple names for sequence regions.
+
+@column seq_region_synonym_id           Primary key, internal identifier.
+@column seq_region_id                   Foreign key references to the @link seq_region table.
+@column synonym                         Alternative name for sequence region.
+@column external_db_id                  Foreign key references to the @link external_db table.
+
+*/
+
+CREATE TABLE seq_region_synonym (
+
+  seq_region_synonym_id       INT UNSIGNED NOT NULL  AUTO_INCREMENT,
+  seq_region_id               INT(10) UNSIGNED NOT NULL,
+  synonym                     VARCHAR(40) NOT NULL,
+  external_db_id              INTEGER UNSIGNED,
+
+  PRIMARY KEY (seq_region_synonym_id),
+  UNIQUE KEY syn_idx (synonym),
+  KEY seq_region_idx (seq_region_id)
+
+) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
+
+
+
 
 /**
 @table seq_region_attrib
@@ -873,9 +898,6 @@ CREATE TABLE unconventional_transcript_association (
 
 /**
 @header Features and Analyses
-@desc A PDF document of the schema is available <a href="features_analyses_core.pdf" target="_blank">here</a>.<br />
-<a href="features_analyses_core.pdf" target="_blank">
-<img border="0" src="features_analyses_thumb.png" alt="Features and Analyses Schema Diagram" style="margin-left:20px; margin-top:20px;" /></a>
 */
 
 
@@ -1979,12 +2001,41 @@ CREATE TABLE transcript_supporting_feature (
 
 ) COLLATE=latin1_swedish_ci ENGINE=MyISAM MAX_ROWS=100000000 AVG_ROW_LENGTH=80;
 
+/**
+@table data_file
+@desc Allows the storage of flat file locations used to store large quanitities of data currently unsuitable in a traditional database table.
+
+@column data_file_id      Auto-increment surrogate primary key
+@column coord_system_id   Coordinate system this file is linked to. Used to decipher the assembly version it was mapped to
+@column analysis_id       Analysis this file is linked to
+@column name              Name of the file
+@column version_lock      Indicates that this file is only compatible with the current Ensembl release version
+@column absolute          Flags that the URL given is fully resolved and should be used without question
+@column url               Optional path to the file (can be absolute or relative)
+@column file_type         Type of file e.g. BAM, BIGBED, BIGWIG and VCF
+*/
+
+CREATE TABLE data_file (
+  data_file_id      INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
+  coord_system_id   INT(10) UNSIGNED NOT NULL,
+  analysis_id       SMALLINT UNSIGNED NOT NULL,
+  name              VARCHAR(100) NOT NULL,
+  version_lock      TINYINT(1) DEFAULT 0 NOT NULL,
+  absolute          TINYINT(1) DEFAULT 0 NOT NULL,
+  url               TEXT,
+  file_type         ENUM('BAM','BIGBED','BIGWIG','VCF'),
+
+  PRIMARY KEY (data_file_id),
+  UNIQUE KEY df_unq_idx(coord_system_id, analysis_id, name, file_type),
+  INDEX df_name_idx(name),
+  INDEX df_analysis_idx(analysis_id)
+) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
+
+
+
 
 /**
 @header ID Mapping
-@desc A PDF document of the schema is available <a href="id_mapping_core.pdf" target="_blank">here</a>.<br />
-<a href="id_mapping_core.pdf" target="_blank">
-<img border="0" src="id_mapping_thumb.png" alt="ID Mapping Schema Diagram" style="margin-left:20px; margin-top:20px;" /></a>
 */
 
 /**
@@ -2169,9 +2220,6 @@ CREATE TABLE seq_region_mapping (
 
 /**
 @header External References
-@desc A PDF document of the schema is available <a href="xrefs_core.pdf" target="_blank">here</a>.<br />
-<a href="xrefs_core.pdf" target="_blank">
-<img border="0" src="xrefs_thumb.png" alt="External References Schema Diagram" style="margin-left:20px; margin-top:20px;" /></a>
 */
 
 
@@ -2451,32 +2499,6 @@ CREATE TABLE associated_group (
 ) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
 
 
-/**
-@table seq_region_synonym
-@desc Allows for storing multiple names for sequence regions.
-
-@column seq_region_synonym_id           Primary key, internal identifier.
-@column seq_region_id                   Foreign key references to the @link seq_region table.
-@column synonym                         Alternative name for sequence region.
-@column external_db_id                  Foreign key references to the @link external_db table.
-
-*/
-
-CREATE TABLE seq_region_synonym (
-
-  seq_region_synonym_id       INT UNSIGNED NOT NULL  AUTO_INCREMENT,
-  seq_region_id               INT(10) UNSIGNED NOT NULL,
-  synonym                     VARCHAR(40) NOT NULL,
-  external_db_id              INTEGER UNSIGNED,
-
-  PRIMARY KEY (seq_region_synonym_id),
-  UNIQUE KEY syn_idx (synonym),
-  KEY seq_region_idx (seq_region_id)
-
-) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
-
-
-
 
 /**
 @table unmapped_object
@@ -2587,21 +2609,13 @@ CREATE TABLE xref (
 
 ) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
 
-
-/**
-@header Miscellaneous
-@desc Other tables
-*/
-
-
 /**
 @table interpro
 @desc Allows storage of links to the InterPro database. InterPro is a database of protein families, domains and functional sites in which identifiable features found in known proteins can be applied to unknown protein sequences.
+ <a href="http://www.ebi.ac.uk/interpro/">InterPro</a> - The InterPro website
 
 @column interpro_ac               InterPro protein accession number.
 @column id                        InterPro protein id.
-
-@desc <a href="http://www.ebi.ac.uk/interpro/">InterPro</a> - The InterPro website
 
 */
 
@@ -2614,34 +2628,4 @@ CREATE TABLE interpro (
   KEY id_idx (id)
 ) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
 
-
-/**
-@table data_file
-@desc Allows the storage of flat file locations used to store large quanitities of data currently unsuitable in a traditional database table.
-
-@column data_file_id      Auto-increment surrogate primary key
-@column coord_system_id   Coordinate system this file is linked to. Used to decipher the assembly version it was mapped to
-@column analysis_id       Analysis this file is linked to
-@column name              Name of the file
-@column version_lock      Indicates that this file is only compatible with the current Ensembl release version
-@column absolute          Flags that the URL given is fully resolved and should be used without question
-@column url               Optional path to the file (can be absolute or relative)
-@column file_type         Type of file e.g. BAM, BIGBED, BIGWIG and VCF
-*/
-
-CREATE TABLE data_file (
-  data_file_id      INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
-  coord_system_id   INT(10) UNSIGNED NOT NULL,
-  analysis_id       SMALLINT UNSIGNED NOT NULL,
-  name              VARCHAR(100) NOT NULL,
-  version_lock      TINYINT(1) DEFAULT 0 NOT NULL,
-  absolute          TINYINT(1) DEFAULT 0 NOT NULL,
-  url               TEXT,
-  file_type         ENUM('BAM','BIGBED','BIGWIG','VCF'),
-  
-  PRIMARY KEY (data_file_id),
-  UNIQUE KEY df_unq_idx(coord_system_id, analysis_id, name, file_type),
-  INDEX df_name_idx(name),
-  INDEX df_analysis_idx(analysis_id)
-) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
 
