@@ -533,6 +533,7 @@ sub display_tables_list {
     my $count = scalar @{$tables};
     next if ($count == 0);
     
+    # Number of columns needed to display the tables of the group
     my $nb_col = ceil($count/$nb_by_col);
     my $nbc = $nb_col;
     my $table_count = 0;
@@ -553,7 +554,7 @@ sub display_tables_list {
         if ($nb_col_line+$nbc > 4 and $format_headers == 1) {
           $html .= qq{  <div style="clear:both" />\n</div>\n\n<div>};
           $nb_col_line = 0;
-          }
+        }
       
         $html .= display_header($header_name,$nbc);
         $nb_col_line += $nbc;
@@ -561,15 +562,25 @@ sub display_tables_list {
       }
       
       # List of tables #
+      $html .= qq{\n      <div style="float:left">} if ($count > $nb_by_col);
       $html .= qq{\n      <ul style="padding:0px 4px 0px 22px;margin-bottom:2px">\n};
+      my $t_count = 0;
       foreach my $t_name (@{$tables}) {
         my $t_colour;
         if ($has_header == 0 && $show_colour) {
           $t_colour = $documentation->{$header_name}{'tables'}{$t_name}{'colour'};
         }
         $html .= add_table_name_to_list($t_name,$t_colour);
+        $t_count++;
+        if ($t_count>=$nb_by_col) {
+          $html .= qq{\n      </ul>\n      </div>};
+          $html .= qq{\n      <div style="float:left">};
+          $html .= qq{\n      <ul style="padding:0px 4px 0px 22px;margin-bottom:2px">\n};
+          $t_count = 0;
+        }
       }
       $html .= qq{      </ul>};
+      $html .= qq{\n      </div>} if ($count > $nb_by_col);
       
       if ($format_headers == 1) {
         $html .= qq{  </div>\n};
