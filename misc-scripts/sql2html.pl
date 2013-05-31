@@ -884,7 +884,7 @@ sub add_examples {
         $sql_table = get_example_table($sql,$table,$nb);
       }
       if (defined($sql)) {
-        foreach my $word (qw(SELECT FROM WHERE LIMIT DESC ORDER)) {
+        foreach my $word (qw(SELECT DISTINCT CONCAT FROM LEFT JOIN USING WHERE LIMIT DESC ORDER GROUP)) {
           $sql =~ s/$word /$word /i;
         }
       }
@@ -1010,14 +1010,26 @@ sub get_example_table {
   $sql =~ /select\s+(.+)\s+from/i;
   my $cols = $1;
   my @tcols;
-  if ($cols eq '*') {
-    my $table_cols = $db_handle->selectall_arrayref(qq{SHOW COLUMNS FROM $table});
-    foreach my $col (@$table_cols) {
-      push(@tcols,$col->[0]);
+     
+  foreach my $col (split(',',$cols)) {
+  
+    # Columns selection like the expressions "table.*" or "*"
+    my $table_name;
+    $table_name = $table if ($cols eq '*');
+    $table_name = $1 if ($col =~ /(\S+)\.\*/ and !defined($table_name));
+    if (defined($table_name)) {
+      my $table_cols = $db_handle->selectall_arrayref(qq{SHOW COLUMNS FROM $table_name});
+      foreach my $col (@$table_cols) {
+        push(@tcols,$col->[0]);
+      }
+      next;
     }
-  } else {
-     $cols =~ s/ //g;
-     @tcols = split(',',$cols);
+     
+    # Check for alias
+    $col = $1 if ($col =~ /\s+as\s+(\S+)$/i);
+       
+    $col =~ s/ //g;
+    push(@tcols,$col);
   }
   
   my $results = $db_handle->selectall_arrayref($sql);
