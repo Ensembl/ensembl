@@ -52,6 +52,11 @@ use Bio::EnsEMBL::Utils::IO qw/gz_work_with_file/; # iterate_lines
 use Bio::EnsEMBL::Utils::Exception;
 use Bio::EnsEMBL::Utils::IO::GTFSerializer;
 
+if ( not $ENV{TEST_AUTHOR} ) {
+  my $msg = 'Author test. Set $ENV{TEST_AUTHOR} to a true value to run.';
+  plan( skip_all => $msg );
+}
+
 # my $current_release = software_version();
 # my $last_release = $current_release - 1;
 my $release = 71;
