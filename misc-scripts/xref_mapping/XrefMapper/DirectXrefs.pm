@@ -61,13 +61,6 @@ IOS
 
   my $ins_ix_sth = $self->get_ins_ix_sth();
 
-  my $ins_go_no_source_sql = (<<"IG2");
-INSERT INTO go_xref (object_xref_id, linkage_type) 
-  VALUES (?,?)
-IG2
-  my $insert_go_sth = $self->xref->dbc->prepare($ins_go_no_source_sql);
-
-
 my $stable_sql=(<<"SQL");
   SELECT so.name, dx.general_xref_id, s.internal_id, dx.ensembl_stable_id , dx.linkage_xref
     FROM source so, xref x, TYPE_direct_xref dx left join TYPE_stable_id s on s.stable_id = dx.ensembl_stable_id
@@ -122,9 +115,6 @@ SQL
      else{
        $ins_ix_sth->execute($object_xref_id);
        push  @master_xref_ids, $xref_id;
-     }
-     if(defined($linkage_type) and $linkage_type ne ""){
-       $insert_go_sth->execute($object_xref_id, $linkage_type);
      }
      $self->process_dependents({master_xrefs        => \@master_xref_ids,
 				max_object_xref_id => \$object_xref_id,
