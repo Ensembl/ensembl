@@ -32,7 +32,7 @@ package Bio::EnsEMBL::Utils::IO::GTFSerializer;
 use strict;
 use warnings;
 
-use  Bio::Tools::CodonTable;
+use Bio::Tools::CodonTable;
 use Bio::EnsEMBL::SeqFeature;
 use Bio::EnsEMBL::Utils::Exception;
 use Bio::EnsEMBL::Utils::IO::FeatureSerializer;
@@ -239,7 +239,7 @@ sub _print_attribs {
 
   my $fh = $self->{'filehandle'};
 
-  print $fh "\tgene_id \"" .  get_id_from_obj($gene) . "\";" .
+  print $fh "gene_id \"" .  get_id_from_obj($gene) . "\";" .
             " transcript_id \"" . get_id_from_obj($transcript) . "\";";
   print $fh " exon_number \"$count\";";
   print $fh " gene_name \"" . $gene_name . "\";" if ($gene_name);
