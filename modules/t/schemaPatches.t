@@ -23,7 +23,7 @@ SKIP: {
   my $last_release = $current_release - 1;
   my $last_table_sql = get_table_sql($last_release);
 
-  # Get patch location
+  # Get patch location and relevant set of patches
   my $sql_dir = catdir($Bin, updir(), updir(), 'sql');
   my @patches;
   find(sub {
@@ -82,7 +82,7 @@ SKIP: {
   }
 
   # check the two schemas after applying the patch
-  compare_after_patches($dbc, $patched_db_name, $current_db_name);
+  compare_after_patches($dbc, $patched_db_name, $current_db_name, $last_release, $current_release);
   
   note 'Dropping database ' . $patched_db_name;
   $dba->dbc()->do("drop database if exists $patched_db_name");
@@ -94,7 +94,7 @@ done_testing();
 
 # Compare source schema with target after a series of patches
 sub compare_after_patches {
-  my ($dbc, $source_schema, $target_schema) = @_;
+  my ($dbc, $source_schema, $target_schema, $last_release, $current_release) = @_;
 
   # compare source/target schema type/version
   $dbc->do("use $target_schema");
@@ -128,6 +128,15 @@ sub compare_after_patches {
 	   "Table $_ definition")} 
     @{$source_tables};
 
+  # get target patches
+  $dbc->do("use $target_schema");
+  my $target_patches = $sql_helper->execute_simple(-SQL => "select meta_value from meta where meta_key='patch'");
+
+  # get target-specific patches in source
+  $dbc->do("use $source_schema");
+  my $source_patches = $sql_helper->execute_simple(-SQL => "select meta_value from meta where meta_key='patch' and meta_value like 'patch_${last_release}_${current_release}_%'");
+  
+  map { ok($_ ~~ @{$source_patches}, "$_ in patched database") } @{$target_patches};
 }
 
 # Get the name of all tables of a certain schema
