@@ -202,6 +202,9 @@ sub get_dba_args_for_opts {
 				  ->execute(
 "SELECT species_id,meta_value FROM $dbname.meta WHERE meta_key='species.production_name'"
 				  );
+                                if ( scalar( @{$species_ids} ) == 0 ) {
+                                  croak "No species.production_name found in database";
+                                }
 				if ( scalar( @{$species_ids} ) > 1 ) {
 					$multi = 1;
 				}
