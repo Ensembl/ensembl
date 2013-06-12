@@ -31,24 +31,26 @@
   
   # For a known Gene, find the reference alternative allele
   my $aag = $aag_adaptor->fetch_Group_by_dbID($gene->dbID);
-  my $reference_gene = $aag->get_ref_Gene;
+  my $reference_gene = $aag->get_representative_Gene;
   
   # Get a list of AltAlleleGroups
-  my $list = $aag_adaptor->fetch_all_Groups_by_type('PROJECTED');
+  my $list = $aag_adaptor->fetch_all_Groups_by_type('HAS_CODING_POTENTIAL');
   $list = $aag_adaptor->fetch_all_Groups();
   
   while ($aag = shift @$list) {
       $aag->get_all_Genes;
-      # Do you important things ...
+      # Do your important things ...
   }
   
   # Creating and editing an AltAlleleGroup
   
+  my $type_flags = [qw(IS_MOST_COMMON_ALLELE AUTOMATICALLY_ASSIGNED)];
+  
   $aag = Bio::EnsEMBL::AltAlleleGroup->new(
-     -MEMBERS => [ [$gene_id,$is_ref,$type ] ],
+     -MEMBERS => [ [$gene_id,$is_rep,$type_flags ] ],
   );
   $aag->remove_all_members;
-  $aag->add_member([$gene_id,$is_ref,$type]);
+  $aag->add_member([$gene_id,$is_rep,$type_flags]);
   
   my $dbID = $aag_adaptor->store($aag);
   
@@ -60,20 +62,46 @@
     IDs and fully fledged Gene objects.
     
     AltAlleleGroup members are assigned types to differentiate them by their
-    origin. Valid types are:
-        PROJECTED
-        MANUAL
-        CODING_POTENTIAL
-        NONE
+    origin. These types are set as flags, allowing you to select the union of
+    types as well as by individual ones.
         
-    None denotes a situation of no information. It can imply that the value is
-    not set, is not known, or is not covered by the other types.
+    No flags set denotes a situation of no information.
+    Valid flags are as follows:
+    'IS_REPRESENTATIVE',
+    'IS_MOST_COMMON_ALLELE',
+    'IN_CORRECTED_ASSEMBLY',
+    'HAS_CODING_POTENTIAL',
+    'IN_ARTIFICIALLY_DUPLICATED_ASSEMBLY',
+    'IN_SYNTENIC_REGION',
+    'HAS_SAME_UNDERLYING_DNA_SEQUENCE',
+    'IN_BROKEN_ASSEMBLY_REGION',
+    'IS_VALID_ALTERNATE',
+    'SAME_AS_REPRESENTATIVE',
+    'SAME_AS_ANOTHER_ALLELE',
+    'MANUALLY_ASSIGNED',
+    'AUTOMATICALLY_ASSIGNED'
 =cut
 
 package Bio::EnsEMBL::AltAlleleGroup;
 
 use strict;
 use warnings;
+#use constant {
+#    IS_REPRESENTATIVE => 1,
+#    IS_MOST_COMMON_ALLELE => 2,
+#    IN_CORRECTED_ASSEMBLY => 3,
+#    HAS_CODING_POTENTIAL => 4,
+#    IN_ARTIFICIALLY_DUPLICATED_ASSEMBLY => 5,
+#    IN_SYNTENIC_REGION => 6,
+#    HAS_SAME_UNDERLYING_DNA_SEQUENCE => 7,
+#    IN_BROKEN_ASSEMBLY_REGION => 8,
+#    IS_VALID_ALTERNATE => 9,
+#    SAME_AS_REPRESENTATIVE => 10,
+#    SAME_AS_ANOTHER_ALLELE => 11,
+#    MANUALLY_ASSIGNED => 12,
+#    AUTOMATICALLY_ASSIGNED => 13,
+#};
+
 
 use Bio::EnsEMBL::Utils::Argument qw(rearrange);
 use Bio::EnsEMBL::Utils::Exception qw(warning throw);
@@ -82,12 +110,11 @@ use base qw/Bio::EnsEMBL::Storable/;
 
 =head2 new
 
-  Arg [-MEMBERS]: A list reference of [gene_id,is_ref,type]
+  Arg [-MEMBERS]: A list reference of [gene_id,type_flags]
                 : gene_id is a dbID for Gene (consistent only within one release)
-                : is_ref is a boolean flag denoting the reference allele
-                : type is a string for descriptive purposes
+                : type_flags is a hash ref of attributes for this member
   Example    : $aag = Bio::EnsEMBL::AltAlleleGroup->new(
-                   -MEMBERS => [ [1,0,TYPE], [2,1,TYPE],[3,0,TYPE] ],
+                   -MEMBERS => [ [1,{$type} ], [2,{$other_type}],[3,{$type}],
                );
   Description: Creates a new alt-allele group object
   Returntype : Bio::EnsEMBL::AltAlleleGroup
@@ -111,23 +138,20 @@ sub new {
 =head2 add_member
 
   Arg [1]     : Gene dbID
-  Arg [2]     : Is reference gene (Boolean)
-  Arg [3]     : Type (String), used for assigning additional annotation types
+  Arg [2]     : Type List, used for assigning type flags of this member, see Description above
   Description : Adds a record of one new member to the AltAlleleGroup. Once a
                 change is made, this must be persisted to the database with
                 AltAlleleGroupAdaptor->store or ->update
-  Example     : $aag->add_member(1040032,0,"PROJECTED");
-                # denotes a non-reference gene identified by autonomous means
-                $aaga->update($aag);
-
+  Example     : $aag->add_member(1040032,$types_hash);
+                $aaga->update($aag); # updating the whole group is necessary.
 =cut
 
 sub add_member {
     my $self = shift;
-    my ($gene_id,$is_ref,$type) = @_;
+    my ($gene_id,$type_hash) = @_;
     
     my $members = $self->{'MEMBERS'};
-    push @$members,[$gene_id,$is_ref,$type];
+    push @$members,[$gene_id,$type_hash];
     $self->{'MEMBERS'} = $members;
     return;
 }
@@ -139,11 +163,18 @@ sub get_all_members_with_type {
     my @filtered_members;
     my $members = $self->{'MEMBERS'};
     foreach my $member (@$members) {
-        if ($member->[2] eq $type) {
+        if (exists($member->[1]->{$type})) {
             push @filtered_members,$member;
         }
     }
     return \@filtered_members;
+}
+
+sub attribs {
+    my $self = shift;
+    my $member_id = shift;
+    
+    
 }
 
 =head2 remove_all_members
@@ -159,31 +190,31 @@ sub remove_all_members {
     return;
 }
 
-=head2 ref_Gene_id
+=head2 rep_Gene_id
 
-  Arg[1]     : Optional - set a new reference Gene id for the group
-  Description: Reports or sets the reference Gene for this AltAlleleGroup
-               If you wish to remove the reference status of all genes without
-               setting a new one, see unset_ref_Gene_id
+  Arg[1]     : Optional - set a new representative Gene id for the group
+  Description: Reports or sets the representative Gene for this AltAlleleGroup
+               If you wish to remove the representative status of all genes without
+               setting a new one, see unset_rep_Gene_id
   Returntype : Integer or undef if none set
 =cut
 
-sub ref_Gene_id {
+sub rep_Gene_id {
     my $self = shift;
     my $new_id = shift;
     my $list = $self->{'MEMBERS'};
     my $change;
     
     foreach my $allele (@$list) {
-        my ($gene_id,$is_ref,$type) = @$allele;
-        if ($is_ref && !defined($new_id) ) {
+        my ($gene_id,$type) = @$allele;
+        if (exists($type->{IS_REPRESENTATIVE}) && !defined($new_id) ) {
             return $gene_id;
         }
         
         if ($new_id) {
-            unless ($gene_id == $new_id) {$allele->[1] = 0}
+            unless ($gene_id == $new_id) {delete($allele->[1]->{IS_REPRESENTATIVE})}
             else {
-                $allele->[1] = 1; 
+                $allele->[1]->{IS_REPRESENTATIVE} = 1; 
                 $change = $new_id;
             }
         }
@@ -193,29 +224,29 @@ sub ref_Gene_id {
         $self->{'MEMBERS'} = $list;
         return $new_id;
     } elsif ($new_id && !$change) {
-        throw("Requested reference gene ID was not set because it is not in this AltAlleleGroup");
+        throw("Requested representative gene ID was not set because it is not in this AltAlleleGroup, ID ".$self->dbID);
     }
     else {
-        warning("No reference allele currently set for this AltAlleleGroup");
+        warning("No representative allele currently set for this AltAlleleGroup");
         return;
     }
 }
 
-=head2 unset_ref_Gene_id
+=head2 unset_rep_Gene_id
 
-  Description: Removes the reference Gene flag from this AltAlleleGroup.
-               This action is not possible through ref_Gene_id due to
+  Description: Removes the representative Gene flag from this AltAlleleGroup.
+               This action is not possible through rep_Gene_id due to
                validation of inputs.
   Returntype : 
 
 =cut
 
-sub unset_ref_Gene_id {
+sub unset_rep_Gene_id {
     my $self = shift;
     my $list = $self->{'MEMBERS'};
     
     foreach my $allele (@$list) {
-        $allele->[1] = 0;
+        delete($allele->[1]->{IS_REPRESENTATIVE});
     }
     $self->{'MEMBERS'} = $list;
     return;
@@ -223,9 +254,9 @@ sub unset_ref_Gene_id {
 
 =head2 get_all_Gene_ids
 
-  Arg[1]      : Boolean - Do not include reference gene in list of ids.
+  Arg[1]      : Boolean - Do not include representative gene in list of ids.
   Description : fetches all the Gene dbIDs within the allele group. It can also
-                be used to list those ids that are not reference.
+                be used to list those ids that are not the representative Gene.
                 
   Returntype  : listref of gene dbIDs
 
@@ -233,30 +264,30 @@ sub unset_ref_Gene_id {
 
 sub get_all_Gene_ids {
     my $self = shift;
-    my $all_but_ref = shift;
+    my $all_but_rep = shift;
     my $list = $self->{'MEMBERS'};
     
     my @gene_ids;
     
     foreach my $allele (@$list) {
-        my ($gene_id,$is_ref,$type) = @$allele;
-        if ($all_but_ref && $is_ref) {next;} 
+        my ($gene_id,$type) = @$allele;
+        if ($all_but_rep && $type->{IS_REPRESENTATIVE}) {next;} 
         push @gene_ids,$gene_id;
     }
     return \@gene_ids;
 }
 
-sub get_ref_Gene {
+sub get_representative_Gene {
     my $self = shift;
     my $ga = $self->adaptor->db->get_GeneAdaptor;
     
-    return $ga->fetch_by_dbID($self->ref_Gene_id);
+    return $ga->fetch_by_dbID($self->rep_Gene_id);
 }
 
 sub get_all_Genes {
     my $self = shift;
-    my $all_but_ref = shift; # falls through to get_all_Gene_ids
-    my $gene_ids = $self->get_all_Gene_ids($all_but_ref);
+    my $all_but_rep = shift; # falls through to get_all_Gene_ids
+    my $gene_ids = $self->get_all_Gene_ids($all_but_rep);
     my $genes;
     my $ga = $self->adaptor->db->get_GeneAdaptor;
     $genes = $ga->fetch_all_by_dbID_list($gene_ids);
@@ -273,7 +304,7 @@ sub size {
 
 =head2 get_all_members
   Description: Retrieves all of the information about all members.
-  Returntype : Listref of triplets: [gene_id,is_ref,type]
+  Returntype : Listref of triplets: [gene_id,type]
   Caller     : AltAlleleGroupAdaptor->store
 =cut
 
@@ -282,5 +313,6 @@ sub get_all_members {
     my $members = $self->{'MEMBERS'};
     return $members;
 }
+
 
 1;

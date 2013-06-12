@@ -36,7 +36,7 @@ Alternative allele groupings
   my $reference_gene = $aag->get_ref_Gene;
   
   # Get a list of AltAlleleGroups
-  my $list = $aag_adaptor->fetch_all_Groups_by_type('MANUAL');
+  my $list = $aag_adaptor->fetch_all_Groups_by_type('IS_REPRESENTATIVE');
   $list = $aag_adaptor->fetch_all_Groups();
   
   my $dbID = $aag_adaptor->store($aag);
@@ -88,20 +88,40 @@ sub fetch_all_Groups {
     if ($self->db->is_multispecies()) {
         # multispecies databases must be restricted in their treatment
         $species_id = $self->db->species_id;
+        
+        if ($type) {
+            $get_all_sql = q(
+                SELECT DISTINCT alt_allele_group_id FROM alt_allele a
+                JOIN (gene g, seq_region s, coord_system c, alt_allele_attrib b)
+                ON (
+                    c.coord_system_id = s.coord_system_id 
+                    AND s.seq_region_id = g.seq_region_id
+                    AND g.gene_id = a.gene_id
+                    AND a.alt_allele_id = b.alt_allele_id
+                )
+                WHERE c.species_id = ? AND b.attrib = ?
+            );
+        }
         $get_all_sql = q(
-            SELECT DISTINCT alt_allele_id FROM alt_allele a
+            SELECT DISTINCT alt_allele_group_id FROM alt_allele a
             JOIN (gene g, seq_region s, coord_system c)
             ON (
                 c.coord_system_id = s.coord_system_id 
-            AND s.seq_region_id = g.seq_region_id
-            AND g.gene_id = a.gene_id
+                AND s.seq_region_id = g.seq_region_id
+                AND g.gene_id = a.gene_id
             )
             WHERE c.species_id = ? 
         );
-        if ($type) {$get_all_sql .= q( AND a.type = ? )}
     } else {
-        $get_all_sql = q(SELECT DISTINCT alt_allele_id FROM alt_allele);
-        if ($type) {$get_all_sql .= q( WHERE type = ?);}
+        if ($type) {
+            $get_all_sql = q(SELECT DISTINCT alt_allele_group_id 
+                FROM alt_allele a, alt_allele_attrib b
+                WHERE a.alt_allele_id = b.alt_allele_id
+                AND b.attrib = ?);
+        } else {
+            $get_all_sql = q(SELECT DISTINCT alt_allele_group_id FROM alt_allele);
+        }
+       
     }
     
     my $sth = $self->prepare($get_all_sql);
@@ -111,21 +131,22 @@ sub fetch_all_Groups {
         $sth->bind_param($x,$species_id, SQL_INTEGER);
         $x++;
     }
-    $sth->bind_param($x,$type, SQL_VARCHAR) if ($type);
     
+    $sth->bind_param($x,$type, SQL_VARCHAR) if ($type);
     eval { $sth->execute() };
     if ($@) {
         throw("Query error in AltAlleleGroupAdaptor: $@");
     }
     
     
-    my ($allele_id, @alt_alleles);    
-    $sth->bind_columns( \$allele_id );
+    my $group_id;    
+    $sth->bind_col(1, \$group_id );
     
     while ( $sth->fetch() ) {
-        my $aag = $self->fetch_Group_by_id($allele_id);
+        my $aag = $self->fetch_Group_by_id($group_id);
         push @group_list, $aag;
     }
+    $sth->finish;
     return \@group_list;
 }
 
@@ -140,7 +161,7 @@ sub fetch_all_Groups {
 
 sub fetch_all_Groups_by_type {
     my $self = shift;
-    my $type = shift; # refers to alt_allele.type
+    my $type = shift; # refers to alt_allele_attrib type
     
     my $group_list = $self->fetch_all_Groups($type);
     return $group_list;
@@ -148,8 +169,8 @@ sub fetch_all_Groups_by_type {
 
 =head2 fetch_Group_by_id
 
-  Arg[1]      : Alt-allele db ID.
-  Description : Creates and returns an AltAlleleGroup for the given alt-allele
+  Arg[1]      : AltAlleleGroup dbID.
+  Description : Creates and returns an AltAlleleGroup for the given group id
                 
   Returntype  : Bio::EnsEMBL::AltAlleleGroup
 
@@ -157,27 +178,44 @@ sub fetch_all_Groups_by_type {
 
 sub fetch_Group_by_id {
     my $self = shift;
-    my $allele_id = shift;
+    my $group_id = shift;
     
     my @members;
     
     my $get_alt_allele_sql = q(
-        SELECT gene_id, is_ref, type FROM alt_allele
-        WHERE alt_allele_id = ?
+        SELECT alt_allele_id, gene_id FROM alt_allele
+        WHERE alt_allele_group_id = ? ORDER BY alt_allele_id
     );
     my $sth = $self->prepare($get_alt_allele_sql);
     
-    $sth->bind_param(1,$allele_id, SQL_INTEGER);
+    $sth->bind_param(1,$group_id, SQL_INTEGER);
     
     $sth->execute();
-    my ($gene_id, $is_ref, $type);
-    $sth->bind_columns( \($gene_id,$is_ref,$type) );
+    my ($alt_allele_id, $gene_id);
+    $sth->bind_columns( \($alt_allele_id,$gene_id) );
+    
+    my $attrib_fetch = q(
+        SELECT attrib FROM alt_allele_attrib WHERE alt_allele_id = ?
+    );
+    my $attrib_sth = $self->prepare($attrib_fetch);
+    my $attrib;
+    
     while ($sth->fetch()) {
-        push @members,[$gene_id,$is_ref,$type];
+        # fetch alt_allele attributes
+        $attrib_sth->execute($alt_allele_id);
+        $attrib_sth->bind_col(1,\$attrib);
+        my %attrib_list;
+        while ($attrib_sth->fetch) {
+            $attrib_list{$attrib} = 1;
+        }
+        push @members,[$gene_id, \%attrib_list];
     }
-    if ($allele_id && scalar(@members) > 0) {
+    $attrib_sth->finish;
+    $sth->finish;
+    
+    if ($group_id && scalar(@members) > 0) {
         my $aag = Bio::EnsEMBL::AltAlleleGroup->new(
-            -dbID => $allele_id,
+            -dbID => $group_id,
             -MEMBERS => \@members,
             -ADAPTOR => $self,
         );
@@ -191,7 +229,7 @@ sub fetch_Group_by_Gene_dbID {
     my $gene_id = shift;
     
     my $gene_id_sql = q(
-        SELECT alt_allele_id FROM alt_allele
+        SELECT alt_allele_group_id FROM alt_allele
         WHERE gene_id = ?
     );
     my $sth = $self->prepare($gene_id_sql);
@@ -199,9 +237,9 @@ sub fetch_Group_by_Gene_dbID {
     
     my $group_id;
     $sth->execute();
-    $sth->bind_columns(\$group_id);
+    $sth->bind_col(1,\$group_id);
     $sth->fetch;
-    
+    $sth->finish;
     if (!$@ && $group_id) {
         return $self->fetch_Group_by_id($group_id);
     }
@@ -213,7 +251,7 @@ sub fetch_Group_by_Gene_dbID {
   Description: Used for persisting new groups to the database.
                It updates the dbID of the object handed to it to match the
                database.
-  Returntype : Alt Allele Group id
+  Returntype : Integer Alt Allele Group id
 
 =cut
 
@@ -229,23 +267,58 @@ sub store {
             return;
         }
         
-        # first dbID goes in as undef for new records. Mysql swallows this and autoincrements
         my $dbID = $allele_group->dbID;
         
-        my $sth = $self->prepare("INSERT INTO alt_allele (alt_allele_id, gene_id, is_ref, type) VALUES (?,?,?,?)");
+        my $new_group_sth = $self->prepare("INSERT INTO alt_allele_group (alt_allele_group_id) VALUES (?)");
+        my $group_sth = $self->prepare("SELECT alt_allele_group_id FROM alt_allele_group WHERE alt_allele_group_id = ?");
+        my $altered_rows;
+        
+        # Do not create a new group ID if one already exists, such as when updating a group.
+        my $existing_rows = $group_sth->execute($dbID);
+        if ($existing_rows == 0) {
+            $altered_rows = $new_group_sth->execute($dbID);
+            
+            if ($altered_rows > 0) {
+                $dbID = $self->last_insert_id(undef,undef,undef,'alt_allele_group');
+                $allele_group->dbID($dbID);
+            } 
+        }
+        
+        my $sth = $self->prepare("INSERT INTO alt_allele (alt_allele_id, alt_allele_group_id, gene_id) VALUES (?,?,?)");
+        my $attrib_sth = $self->prepare("INSERT INTO alt_allele_attrib (alt_allele_id,attrib) VALUES (?,?)");
         
         foreach my $allele (@{ $allele_group->get_all_members() }) {
-            $sth->bind_param(1, $dbID, SQL_INTEGER);
-            $sth->bind_param(2, $allele->[0], SQL_INTEGER);
-            $sth->bind_param(3, $allele->[1], SQL_BOOLEAN);
-            $sth->bind_param(4, $allele->[2], SQL_VARCHAR);
-            $sth->execute();
-            $dbID = $sth->{'mysql_insertid'}; # all alleles get added to the same alt_allele_id group
+            my $gene_id = $allele->[0];
+            my %flags = %{$allele->[1]};
+            
+            $sth->bind_param(1, undef, SQL_INTEGER);
+            $sth->bind_param(2, $dbID, SQL_INTEGER);
+            $sth->bind_param(3, $gene_id, SQL_INTEGER);
+            my $altered_rows = $sth->execute();
+            my $allele_id;
+            if ($altered_rows > 0) {
+                $allele_id = $self->last_insert_id(); # all alleles get added to the same alt_allele_id group
+            } else {
+                throw("Creation of new alt_allele failed: $@");
+            }
+            
+                
+            foreach my $flag (keys %flags) {
+                $attrib_sth->bind_param(1, $allele_id);
+                $attrib_sth->bind_param(2, $flag);
+                $attrib_sth->execute();
+            }
+            
+            if (! $dbID) {
+                $group_sth->bind_param(1, $dbID);
+                $group_sth->execute($allele_id);
+            }
         }
         if ($@) {throw ("Problem inserting new AltAlleleGroup into database: $@");}
         $sth->finish;
+        $attrib_sth->finish;
+        $group_sth->finish;
         
-        $allele_group->dbID($dbID);
         return $dbID;
     }
 }
@@ -274,9 +347,9 @@ sub update {
 
 =head2 remove
 
-  Arg [1]    : The AltAlleleGroup to delete or dbID thereof 
+  Arg [1]    : The AltAlleleGroup to remove.
   Example    : $aaga->remove($alt_allele_group);
-  Description: This removes an AltAlleleGroup from the database. 
+  Description: This removes an AltAlleleGroup from all tables of the database. 
   Exceptions : None
   
 =cut
@@ -285,17 +358,39 @@ sub remove {
     my $self = shift;
     my $allele_group = shift;
     
-    my $sth = $self->prepare(
-        "DELETE FROM alt_allele WHERE alt_allele_id = ?"
-    );
+    my $group_id;
     if (ref($allele_group) eq "Bio::EnsEMBL::AltAlleleGroup") {
-        $sth->bind_param(1,$allele_group->dbID,SQL_INTEGER);
+        $group_id = $allele_group->dbID;
     } else {
-        $sth->bind_param(1,$allele_group,SQL_INTEGER);
+        throw("Cannot remove a non-AltAlleleGroup.");
     }
+    
+    my $allele_sth = $self->prepare("SELECT alt_allele_id FROM alt_allele WHERE alt_allele_group_id = ?");
+    my $attrib_sth = $self->prepare("DELETE FROM alt_allele_attrib WHERE alt_allele_id IN (". join(',', ('?')x$allele_group->size) .")" );
+
+    $allele_sth->execute($group_id);
+    
+    my $allele_id;
+    $allele_sth->bind_columns(\$allele_id);
+    my @ids;
+    while ($allele_sth->fetch) {
+        push @ids,$allele_id;
+        $attrib_sth->bind_param($#ids+1,$ids[$#ids],SQL_INTEGER);
+    }
+    $attrib_sth->execute();
+
+    my $sth = $self->prepare("DELETE FROM alt_allele WHERE alt_allele_group_id = ?");
+    
+    $sth->bind_param(1,$group_id,SQL_INTEGER);
+    
     $sth->execute;
     $sth->finish;
+    $allele_sth->finish;
+    $attrib_sth->finish;
 }
 
+sub _tables {
+    return (['alt_allele', 'a'], ['alt_allele_group', 'g'], ['alt_allele_attrib', 'b']);
+}
 
 1;
