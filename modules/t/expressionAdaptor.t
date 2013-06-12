@@ -17,8 +17,9 @@ my $multi = Bio::EnsEMBL::Test::MultiTestDB->new;
 my $db = $multi->get_DBAdaptor("core");
 
 my $sa = $db->get_SliceAdaptor();
-my $ea = $db->get_ExonAdaptor();
+my $exa = $db->get_ExonAdaptor();
 my $ga = $db->get_GeneAdaptor();
+my $ta = $db->get_TranscriptAdaptor();
 
 
 #
@@ -31,7 +32,7 @@ ok($ea && ref($ea) && $ea->isa('Bio::EnsEMBL::DBSQL::ExpressionAdaptor'));
 
 # hide the contents of the attrib_type, misc_attrib, seq_region_attrib tables
 # so we can test storing etc. with a clean slate
-$multi->hide('core', 'gene_expression', 'tissue');
+$multi->hide('core', 'gene_expression', 'transcript_expression', 'exon_expression', 'tissue');
 
 
 #################
@@ -59,10 +60,6 @@ $ea->store_on_Gene($gene, [$expression]);
 #
 my $count = $db->dbc->db_handle->selectall_arrayref
   ("SELECT count(*) FROM gene_expression " .
-   "WHERE gene_id = ".$gene->dbID())->[0]->[0];
-
-my $ana_id = $db->dbc->db_handle->selectall_arrayref
-("SELECT analysis_id FROM gene_expression ".
    "WHERE gene_id = ".$gene->dbID())->[0]->[0];
 
 is($count, 1, "Stored a gene expression for ENSG00000131044");
@@ -192,7 +189,79 @@ $count = $db->dbc->db_handle->selectall_arrayref
 is($count, 0, "No gene expressions fetched");
 
 
+#################
+# Transcript functionality tests
+#
 
-$multi->restore('core', 'gene_expression', 'tissue');
+my $transcript = $ta->fetch_by_stable_id('ENST00000355555');
+
+$ea->store_on_Transcript($transcript, [$expression]);
+
+#
+# make sure the transcript_expression table was updated
+#
+my $count = $db->dbc->db_handle->selectall_arrayref
+  ("SELECT count(*) FROM transcript_expression " .
+   "WHERE transcript_id = ".$transcript->dbID())->[0]->[0];
+
+is($count, 1, "Stored a transcript expression for ENST00000355555");
+
+#
+# test that we can now retrieve this expression
+#
+my @expressions = @{$ea->fetch_all_by_Transcript($transcript)};
+is(@expressions, 1, "Fetched one expression for ENST00000355555");
+
+#
+# test the removal of this expression with tissue code
+#
+note("Removing test_name2 from transcript");
+$ea->remove_from_Transcript($transcript, "test_name2");
+$count = $db->dbc->db_handle->selectall_arrayref
+  ("SELECT count(*) FROM transcript_expression " .
+   "WHERE transcript_id = " . $transcript->dbID())->[0]->[0];
+
+is($count, 0, "No entry in transcript_expression table for transcript ENST00000355555 and tissue test_name2");
+
+
+#################
+# Exon functionality tests
+#
+
+my $exon = $exa->fetch_by_stable_id('ENSE00000859937');
+print $exon . " fetched transcript\n" ;
+
+$ea->store_on_Exon($exon, [$expression]);
+
+#
+# make sure the exon_expression table was updated
+#
+my $count = $db->dbc->db_handle->selectall_arrayref
+  ("SELECT count(*) FROM exon_expression " .
+   "WHERE exon_id = ".$exon->dbID())->[0]->[0];
+
+is($count, 1, "Stored a exon expression for ENSE00000859937");
+
+#
+# test that we can now retrieve this expression
+#
+my @expressions = @{$ea->fetch_all_by_Exon($exon)};
+is(@expressions, 1, "Fetched one expression for ENSE00000859937");
+
+#
+# test the removal of this expression with tissue code
+#
+note("Removing test_name2 from exon");
+$ea->remove_from_Exon($exon, "test_name2");
+$count = $db->dbc->db_handle->selectall_arrayref
+  ("SELECT count(*) FROM exon_expression " .
+   "WHERE exon_id = " . $exon->dbID())->[0]->[0];
+
+is($count, 0, "No entry in exon_expression table for exon ENSE00000859937 and tissue test_name2");
+
+
+
+
+$multi->restore('core', 'gene_expression', 'transcript_expression', 'exon_expression', 'tissue');
 
 done_testing();
