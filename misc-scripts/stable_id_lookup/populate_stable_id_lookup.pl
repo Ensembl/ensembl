@@ -29,15 +29,15 @@ sub insert_species_id;
 GetOptions( "lhost|lh=s" => \$lhost,
             "lport=i" => \$lport,
             "luser|lu=s" => \$luser,
-	    "lpass|lp=s" => \$lpass,
-	    "ldbname|ld=s" =>\$ldbname,
-	    "create!" => \$create,
-	    "db_version=i" => \$db_version,
-	    "host|h=s",\@host,
-	    "user|u=s",\@user,
-	    "port=i",\@port,
-	    "help" ,     \&usage,
-	    
+            "lpass|lp=s" => \$lpass,
+            "ldbname|ld=s" =>\$ldbname,
+            "create!" => \$create,
+            "db_version=i" => \$db_version,
+            "host|h=s",\@host,
+            "user|u=s",\@user,
+            "port=i",\@port,
+            "help" ,     \&usage,
+        
 );
 
 usage() if (!defined $lhost || !defined $luser || !defined $lpass || !@host || !@user ); 
@@ -50,21 +50,21 @@ my $port_count = @port;
 # if we have fewer user names specified than hosts copy user name from the first -u parameter
 if ($user_count < $host_count) {
     for (my $i = $user_count; $i < $host_count; $i++) {
-	push(@user,$user[0]);
+        push(@user,$user[0]);
     }
 }
 
 if ( (!@port) || ($port_count < $host_count) ) { 
 
     if (!defined $port[0]) {
-	$port[0] = 3306;
+        $port[0] = 3306;
     }
 
     for (my $i=1; $i<$host_count;$i++) {
 
-	if (!defined $port[$i]) {
-	    push(@port,$port[0]);
-	}
+        if (!defined $port[$i]) {
+            push(@port,$port[0]);
+        }
     } 
 }
 
@@ -82,9 +82,9 @@ if ($host_count == 1) {
     my @server_array;
 
     for (my $i=0; $i < @host; $i++) {
-	push @server_array, { -host => $host[$i], -user => $user[$i], -port => $port[$i]};
+        push @server_array, { -host => $host[$i], -user => $user[$i], -port => $port[$i]};
     }
-    $registry->load_registry_from_multiple_dbs(@server_array); 
+        $registry->load_registry_from_multiple_dbs(@server_array); 
 
 }
 $registry->set_disconnect_when_inactive();
@@ -101,37 +101,37 @@ if (@dbas) {
     #if any db adaptors exist (create and) connect to the stable id lookup database
     my $dsn = "DBI:mysql:host=$lhost;";
     if ($lport) {
-	$dsn .= "port=$lport;";
+        $dsn .= "port=$lport;";
     }
     if (!$create) {
-	$dsn .= "database=$ldbname";
+        $dsn .= "database=$ldbname";
     }
     $dbh = DBI->connect( $dsn, $luser, $lpass,
                           { 'PrintError' => 1, 'RaiseError' => 1 } );
    
     if ($create) {
-	print "Creating database $ldbname\n";
+    print "Creating database $ldbname\n";
 
-	eval {
-	    $dbh->do("drop database if exists $ldbname");
-	    $dbh->do("create database $ldbname");
+    eval {
+        $dbh->do("drop database if exists $ldbname");
+        $dbh->do("create database $ldbname");
 
-	    my $cmd = "mysql -h $lhost";
-	    if ($lport) {
-		$cmd .= " -P $lport";
-	    }
-	    $cmd .= " -u $luser --password=$lpass $ldbname < ./sql/tables.sql";
-	    system($cmd) == 0 or die("error encountered when creating schema for database $ldbname\n");
+        my $cmd = "mysql -h $lhost";
+        if ($lport) {
+            $cmd .= " -P $lport";
+        }
+        $cmd .= " -u $luser --password=$lpass $ldbname < ./sql/tables.sql";
+        system($cmd) == 0 or die("error encountered when creating schema for database $ldbname\n");
 
-	    $dbh->do("use $ldbname");
+        $dbh->do("use $ldbname");
 
-	    $dbh->do("INSERT INTO meta(species_id,meta_key,meta_value) VALUES (NULL,'schema_version',$db_version)");
+        $dbh->do("INSERT INTO meta(species_id,meta_key,meta_value) VALUES (NULL,'schema_version',$db_version)");
 
-	};
+    };
 
-	if ($@) { 
-            die("An SQL error occured while creating database $ldbname:\n$@");
-	}
+    if ($@) { 
+        die("An SQL error occured while creating database $ldbname:\n$@");
+    }
 
 
     }
@@ -149,19 +149,18 @@ if (@dbas) {
  
 
 my %group_objects = (
-                      core => {
-
-                             Exon => 1,
-			     Gene => 1,
-			     Transcript => 1,
-			     Translation => 1,
-			     Operon => 1,
-			     OperonTranscript => 1,
-			   },
-		      compara => {
-			     GeneTree => 1,
-			     Family => 1,
-			   },
+            core => {
+                 Exon => 1,
+                 Gene => 1,
+                 Transcript => 1,
+                 Translation => 1,
+                 Operon => 1,
+                 OperonTranscript => 1,
+            },
+            compara => {
+                 GeneTree => 1,
+                 Family => 1,
+            },
                     );
 
 
@@ -181,44 +180,44 @@ while (my $dba = shift @dbas) {
 
     if (@stable_id_objects) {
 
-	my $species_name = $dba->species();
-	$species_sth->bind_param( 1, $species_name, SQL_VARCHAR );
-	$species_sth->execute();
+    my $species_name = $dba->species();
+    $species_sth->bind_param( 1, $species_name, SQL_VARCHAR );
+    $species_sth->execute();
 
-	($species_id) = $species_sth->fetchrow_array();
+    ($species_id) = $species_sth->fetchrow_array();
 
-	if (!$species_id) {
-	    $species_id = insert_species_id($dba);
-	}
+    if (!$species_id) {
+        $species_id = insert_species_id($dba);
+    }
 
-	if ($species_id) {
-	    $dba_species{$dba->species()} = 1; 
-	} 	
+    if ($species_id) {
+        $dba_species{$dba->species()} = 1; 
+    }     
 
     }
 
     foreach my $object_name (@stable_id_objects) {
-	
-	my $adaptor =  $dba->get_adaptor($object_name);
-	my %stable_ids;
-
-	if ($adaptor->can('list_stable_ids')) {
-
-	    %stable_ids = map { $_ => 1 } @{$adaptor->list_stable_ids()};
-	 
-	} else {
-
-	    %stable_ids = map { ($_->stable_id() || '') => 1 } @{$adaptor->fetch_all()};
-	}
-
-
-	delete $stable_ids{''};
-	my @stable_ids = keys %stable_ids;
-
-	if (@stable_ids) {
-
-	   insert_stable_ids(\@stable_ids,$dba,$object_name, $species_id);
-	}
+    
+        my $adaptor =  $dba->get_adaptor($object_name);
+        my %stable_ids;
+    
+        if ($adaptor->can('list_stable_ids')) {
+    
+            %stable_ids = map { $_ => 1 } @{$adaptor->list_stable_ids()};
+         
+        } else {
+    
+            %stable_ids = map { ($_->stable_id() || '') => 1 } @{$adaptor->fetch_all()};
+        }
+    
+    
+        delete $stable_ids{''};
+        my @stable_ids = keys %stable_ids;
+    
+        if (@stable_ids) {
+    
+           insert_stable_ids(\@stable_ids,$dba,$object_name, $species_id);
+        }
     }
 
 }
@@ -246,34 +245,34 @@ sub insert_stable_ids {
     my @object_type;
 
     for (1..@stable_ids) {
-	 push @species_id, $lookup_db_species_id;
-	 push @db_type, $dba->group();
-	 push @object_type, $object;
+        push @species_id, $lookup_db_species_id;
+        push @db_type, $dba->group();
+        push @object_type, $object;
     }
 
     my $tuples;
     my @tuple_status;
     eval {
-	$tuples = $stable_id_insert_sth->execute_array(
-	{ ArrayTupleStatus => \@tuple_status },
-	     \@stable_ids,
-	     \@species_id,
-	     \@db_type,
-	     \@object_type,
-	 );
+    $tuples = $stable_id_insert_sth->execute_array(
+    { ArrayTupleStatus => \@tuple_status },
+         \@stable_ids,
+         \@species_id,
+         \@db_type,
+         \@object_type,
+     );
     };
 
     if ($tuples) {
-      printf STDOUT "Successfully inserted %d stable ids for %s (%d), db type : %s, object type : %s\n", scalar @stable_ids, $dba->species(), $species_id[0], $dba->group(), $object;
+        printf STDOUT "Successfully inserted %d stable ids for %s (%d), db type : %s, object type : %s\n", scalar @stable_ids, $dba->species(), $species_id[0], $dba->group(), $object;
     }
     else {
-	 for my $tuple (0..@stable_ids-1) {
-	      my $status = $tuple_status[$tuple];
-	      $status = [0, "Skipped"] unless defined $status;
-	      next unless ref $status;
-	      printf STDERR "Failed to insert (%s, %s, %s, %s): %s\n",
-	      $stable_ids[$tuple], $species_id[$tuple], $db_type[$tuple], $object_type[$tuple], $status->[1];
-	 }
+     for my $tuple (0..@stable_ids-1) {
+          my $status = $tuple_status[$tuple];
+          $status = [0, "Skipped"] unless defined $status;
+          next unless ref $status;
+          printf STDERR "Failed to insert (%s, %s, %s, %s): %s\n",
+          $stable_ids[$tuple], $species_id[$tuple], $db_type[$tuple], $object_type[$tuple], $status->[1];
+     }
     }
 
 }
@@ -291,8 +290,8 @@ sub insert_species_id {
     if ($meta_container) {
        my $values = $meta_container->list_value_by_key('species.taxonomy_id'); 
        if ($values) {
-	   my @values = @$values;
-	   $taxonomy_id = $values[0];
+           my @values = @$values;
+           $taxonomy_id = $values[0];
        }
     }
 
@@ -304,7 +303,7 @@ sub insert_species_id {
     my $species_id = $dbh->last_insert_id( undef, undef, 'species', 'species_id' ); 
 
     if (!$species_id) {
-	die("Failed to insert row for species $species_name\n");
+        die("Failed to insert row for species $species_name\n");
     }
     return $species_id;
 
@@ -349,7 +348,7 @@ Usage:
                        the first user name will be used for the hosts where no user name was given)
 
   -port                Database port where stable_ids are to be copied from (if more than one host is specified 
-		       multiple ports can be provided)
+               multiple ports can be provided)
 
   -lh|lhost            Database host where stable_id lookup database exists or is to be created
 
