@@ -50,6 +50,7 @@ use Bio::EnsEMBL::DBSQL::BaseAdaptor;
 use Bio::EnsEMBL::Expression;
 
 use Bio::EnsEMBL::Utils::Exception qw(throw warning);
+use Bio::EnsEMBL::Utils::Scalar qw(assert_ref);
 
 use vars qw(@ISA);
 
@@ -79,41 +80,14 @@ sub new {
 }
 
 
-use vars '$AUTOLOAD';
 
-sub AUTOLOAD {
-  my ($self,@args) = @_;
-  my @array_return=();
-  my $ref_return = undef;
-  $AUTOLOAD =~ /^.*::(\w+_)+(\w+)$/ ;
-
-  my $sub = $1;
-  my $type = $2;
-
-  if($self->can($sub)){
-    return $self->$sub($type,@args);
-  }
-  else{
-    warn("In ExpressionAdaptor cannot call sub $sub$type\n");
-  }
-  return undef;
-}
-
-
-
-sub store_on_ {
-  my $self        = shift;
-  my $type        = shift;
-  my $object      = shift;
-  my $expressions = shift;
-  my $table;
-
+sub store_on_Object {
+  my ($self, $object, $expressions, $table) = @_;
 
   my $object_id = $object->dbID();
-  $type = lc($type);
 
-  my $sth = $self->prepare( "INSERT into ".$type."_expression ".
-			    "SET ".$type."_id = ?, tissue_id = ?, ".
+  my $sth = $self->prepare( "INSERT into ".$table."_expression ".
+			    "SET ".$table."_id = ?, tissue_id = ?, ".
 			    "value = ?, analysis_id = ?, value_type = ?" );
 
   for my $exp ( @$expressions) {
@@ -143,28 +117,42 @@ sub store_on_ {
   return;
 }
 
+sub store_on_Gene {
+  my ($self, $object, $expressions) = @_;
 
-sub remove_from_ {
-  my $self       = shift;
-  my $type       = shift;
-  my $object     = shift;
-  my $name       = shift;
-  my $logic_name = shift;
-  my $table;
+  $self->store_on_Object($object, $expressions, 'gene');
 
-  if(!ref($object) || !$object->isa('Bio::EnsEMBL::'.$type)) {
-    throw("$type argument is required but you passed $object");
-  }
+  return;
+}
+
+sub store_on_Transcript {
+  my ($self, $object, $expressions) = @_;
+
+  $self->store_on_Object($object, $expressions, 'transcript');
+
+  return;
+}
+
+sub store_on_Exon {
+  my ($self, $object, $expressions) = @_;
+
+  $self->store_on_Object($object, $expressions, 'exon');
+
+  return;
+}
+
+
+sub remove_from_Object {
+  my ($self, $object, $table, $name, $logic_name) = @_;
 
   my $object_id = $object->dbID();
 
   if(!defined($object_id)) {
-    throw("$type must have dbID.");
+    throw("$table must have dbID.");
   }
 
-  $table = lc($type);
   my $sql = "DELETE e FROM ".$table."_expression e, tissue t " .
-                         "WHERE ".$type."_id = " . $object_id .
+                         "WHERE ".$table."_id = " . $object_id .
                          " AND t.tissue_id = e.tissue_id";
   if(defined($name)){
     $sql .= " AND t.name like '" . $name . "'"; 
@@ -179,6 +167,36 @@ sub remove_from_ {
   $sth->execute();
 
   $sth->finish();
+
+  return;
+}
+
+sub remove_from_Gene {
+  my ($self, $object, $name, $logic_name) = @_;
+
+  assert_ref($object, 'Bio::EnsEMBL::Gene');
+
+  $self->remove_from_Object($object, 'gene', $name, $logic_name);
+
+  return;
+}
+
+sub remove_from_Transcript {
+  my ($self, $object, $name, $logic_name) = @_;
+
+  assert_ref($object, 'Bio::EnsEMBL::Transcript');
+
+  $self->remove_from_Object($object, 'transcript', $name, $logic_name);
+
+  return;
+}
+
+sub remove_from_Exon {
+  my ($self, $object, $name, $logic_name) = @_;
+
+  assert_ref($object, 'Bio::EnsEMBL::Exon');
+
+  $self->remove_from_Object($object, 'exon', $name, $logic_name);
 
   return;
 }
@@ -201,36 +219,23 @@ sub get_all_tissues {
 
 
 
-sub fetch_all_by_{
-  my $self       = shift;
-  my $type       = shift;
-  my $object     = shift;
-  my $name       = shift;
-  my $logic_name = shift;
-  my $value_type = shift;
-  my $cutoff     = shift;
+sub fetch_all_by_Object {
+  my ($self, $object, $table, $name, $logic_name, $value_type, $cutoff) = @_;
 
-  if (defined($object)){
-    if(!ref($object) || !$object->isa('Bio::EnsEMBL::'.$type)) {
-      throw("$type argument is required. but you passed $object");
-    }
-  }
-
-  $type = lc($type);
   my $object_id;
   $object_id = $object->dbID() if defined $object;
   my $aa = $self->db->get_AnalysisAdaptor();
   my @out;
 
-  my $sql = "SELECT t.name, t.description, t.ontology, e.".$type."_id, e.value, e.analysis_id, e.value_type " .
-              "FROM ".$type."_expression e, tissue t ".
+  my $sql = "SELECT t.name, t.description, t.ontology, e.".$table."_id, e.value, e.analysis_id, e.value_type " .
+              "FROM ".$table."_expression e, tissue t ".
                  "WHERE e.tissue_id = t.tissue_id";
 
   if(defined($name)){
     $sql .= " AND t.name like '" . $name . "'";
   }
   if(defined($object_id)){
-    $sql .= " AND e.".$type."_id = ".$object_id;
+    $sql .= " AND e.".$table."_id = ".$object_id;
   }
   if (defined($logic_name)){
     my $an = $aa->fetch_by_logic_name($logic_name);
@@ -253,7 +258,7 @@ sub fetch_all_by_{
   my ($desc, $ontology, $value, $analysis_id);
   $sth->bind_columns(\$name, \$desc, \$ontology, \$object_id, \$value, \$analysis_id, \$value_type);
 
-  my $object_adaptor = "get_" . $type . "Adaptor";
+  my $object_adaptor = "get_" . $table . "Adaptor";
   my $adaptor = $self->db->$object_adaptor();
 
   while ($sth->fetch()) {
@@ -278,8 +283,40 @@ sub fetch_all_by_{
   
 }
 
+sub fetch_all_by_Gene {
+  my ($self, $object, $name, $logic_name, $value_type, $cutoff) = @_;
 
-sub DESTROY{
+  if (defined($object)){
+    assert_ref($object, 'Bio::EnsEMBL::Gene');
+  }
+
+  my $out = $self->fetch_all_by_Object($object, 'gene', $name, $logic_name, $value_type, $cutoff);
+
+  return $out;
+}
+
+sub fetch_all_by_Transcript {
+  my ($self, $object, $name, $logic_name, $value_type, $cutoff) = @_;
+
+  if (defined($object)){
+    assert_ref($object, 'Bio::EnsEMBL::Transcript');
+  }
+
+  my $out = $self->fetch_all_by_Object($object, 'transcript', $name, $logic_name, $value_type, $cutoff);
+
+  return $out;
+}
+
+sub fetch_all_by_Exon {
+  my ($self, $object, $name, $logic_name, $value_type, $cutoff) = @_;
+
+  if (defined($object)){
+    assert_ref($object, 'Bio::EnsEMBL::Exon');
+  }
+
+  my $out = $self->fetch_all_by_Object($object, 'exon', $name, $logic_name, $value_type, $cutoff);
+
+  return $out;
 }
 
 
