@@ -121,8 +121,7 @@ sub store_batch_on_Object {
 }
 
 sub _store_batch_rows {
-  my ($self, $type, $rows) = @_;
-  my $table = lc($type);
+  my ($self, $table, $rows) = @_;
   if (scalar(@$rows) > 0) {
         $self->dbc()->sql_helper()->execute_update(-SQL => 'INSERT INTO ' . $table . '_attrib() VALUES' . join(',', @$rows));
   }
