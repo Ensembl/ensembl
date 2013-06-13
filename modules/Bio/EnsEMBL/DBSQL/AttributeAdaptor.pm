@@ -311,37 +311,6 @@ sub remove_from_Object {
 }
 
 
-sub store_on_Object {
-  my ($self, $object_id, $attributes, $table, $type) = @_;
-
-  my $db = $self->db();
-  if (!defined $type) {
-    $type = $table;
-  }
-
-  my $sth = $self->prepare( "INSERT into " . $table. "_attrib ".
-                            "SET " . $type . "_id = ?, attrib_type_id = ?, ".
-                            "value = ? " );
-
-  for my $attrib ( @$attributes ) {
-    if(!ref($attrib) && $attrib->isa('Bio::EnsEMBL::Attribute')) {
-      throw("Reference to list of Bio::EnsEMBL::Attribute objects " .
-            "argument expected.");
-    }
-
-    my $atid = $self->_store_type( $attrib );
-    $sth->bind_param(1,$object_id,SQL_INTEGER);
-    $sth->bind_param(2,$atid,SQL_INTEGER);
-    $sth->bind_param(3,$attrib->value,SQL_VARCHAR);
-    $sth->execute();
-  }
-
-  return;
-}
-
-
-
-
 sub remove_from_MiscFeature {
   my ($self, $object, $code) = @_;
 
