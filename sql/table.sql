@@ -893,23 +893,54 @@ CREATE TABLE unconventional_transcript_association (
 @desc Stores information about genes on haplotypes that may be orthologous.
 
 @column alt_allele_id          Primary key, internal identifier.
-@column gene_id                Foreign key references to the @link gene table.
-@column is_ref		       Indicates a reference allele if set to 1.
-@column type               ENUM of alt_allele types, e.g. CODING_POTENTIAL
+@column alt_allele_group_id    A group ID to show which alleles are related
+@column gene_id                Gene dbID from gene table
 
 */
 
-CREATE TABLE alt_allele (
-  alt_allele_id         INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
-  gene_id               INT(10) UNSIGNED NOT NULL,
-  is_ref                BOOLEAN NOT NULL DEFAULT 0,
-  type                  ENUM(PROJECTED,MANUAL,CODING_POTENTIAL,NONE) NOT NULL DEFAULT 'NONE',
+CREATE TABLE alt_allele (alt_allele_id INT UNSIGNED AUTO_INCREMENT, 
+                         alt_allele_group_id INT UNSIGNED NOT NULL, 
+                         gene_id INT UNSIGNED NOT NULL,
+                         PRIMARY KEY (alt_allele_id),
+                         KEY (gene_id,group_id)
+                         ) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
 
-  UNIQUE KEY gene_idx (gene_id),
-  UNIQUE KEY allele_idx (alt_allele_id, gene_id),
-  KEY type_idx (type,alt_allele_id)
+/**
+@table alt_allele_attrib
+@desc Holds all the different attributes assigned to individual alleles.
 
+@column alt_allele_id           Primary key, internal identifier.
+@column attrib                  Enum of attributes assigned to alternative alleles
+*/
+
+CREATE TABLE alt_allele_attrib (alt_allele_id INT UNSIGNED,
+                                attrib ENUM('IS_REPRESENTATIVE',
+                                            'IS_MOST_COMMON_ALLELE',
+                                            'IN_CORRECTED_ASSEMBLY',
+                                            'HAS_CODING_POTENTIAL',
+                                            'IN_ARTIFICIALLY_DUPLICATED_ASSEMBLY',
+                                            'IN_SYNTENIC_REGION',
+                                            'HAS_SAME_UNDERLYING_DNA_SEQUENCE',
+                                            'IN_BROKEN_ASSEMBLY_REGION',
+                                            'IS_VALID_ALTERNATE',
+                                            'SAME_AS_REPRESENTATIVE',
+                                            'SAME_AS_ANOTHER_ALLELE',
+                                            'MANUALLY_ASSIGNED',
+                                            'AUTOMATICALLY_ASSIGNED'),
+                                KEY aa_idx (alt_allele_id,attrib)
 ) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
+
+/**
+@table alt_allele_group_id
+@desc A minimal table used for tracking unique alt_allele_group_id's. MySQL does not allow multiple autoincrement fields. Further information about a group could be added here at a later date.
+
+@column alt_allele_group_id     Primary key and only column.
+*/
+
+CREATE TABLE alt_allele_group (alt_allele_group_id INT UNSIGNED AUTO_INCREMENT,
+                               PRIMARY KEY (alt_allele_group_id)
+                               ) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
+
 
 
 /**
