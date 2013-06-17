@@ -244,9 +244,14 @@ sub store_on_Slice {
 sub store_on_Gene {
   my ($self, $object, $attributes) = @_;
 
-  assert_ref( $object, 'Bio::EnsEMBL::Gene');
+  my $object_id;
+  if (!ref($object)){      
+    $object_id = $object;
+  }
+  else {
+    $object_id = $object->dbID;    
+  }
 
-  my $object_id = $object->dbID();
   $self->store_on_Object($object_id, $attributes, 'gene');
  
   return;
@@ -255,9 +260,14 @@ sub store_on_Gene {
 sub store_on_Transcript {
   my ($self, $object, $attributes) = @_;
 
-  assert_ref( $object, 'Bio::EnsEMBL::Transcript');
+  my $object_id;
+  if (!ref($object)){      
+    $object_id = $object;
+  }
+  else {
+    $object_id = $object->dbID;    
+  }
 
-  my $object_id = $object->dbID();
   $self->store_on_Object($object_id, $attributes, 'transcript');
 
   return;
@@ -266,9 +276,14 @@ sub store_on_Transcript {
 sub store_on_Translation {
   my ($self, $object, $attributes) = @_;
 
-  assert_ref( $object, 'Bio::EnsEMBL::Translation');
+  my $object_id;
+  if (!ref($object)){
+    $object_id = $object;
+  }
+  else {
+    $object_id = $object->dbID;
+  }
 
-  my $object_id = $object->dbID();
   $self->store_on_Object($object_id, $attributes, 'translation');
 
   return;
