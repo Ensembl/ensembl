@@ -29,6 +29,8 @@ sub default_options {
 
         max_run => '100',
 
+        snp_analyses => 1,
+
         ### Defaults
 
         pipeline_name => 'misc_tasks_'.$self->o('release'),
@@ -49,6 +51,19 @@ sub pipeline_create_commands {
 sub pipeline_analyses {
     my ($self) = @_;
 
+    my $flow_into = {
+      '3->B'  => ['PercentRepeat'],
+      'B->3'  => ['PercentGC'],
+      '3->C'  => ['CodingDensity'],
+      'C->3'  => ['NonCodingDensity'],
+      '3->A'  => ['PercentRepeat', 'CodingDensity', 'NonCodingDensity', 'PercentGC'],
+      '2->A'  => ['GeneGC', 'PepStats', 'GeneCount', 'ConstitutiveExons'],
+      'A->1'  => ['Notify'],
+    };
+    if ($self->o('snp_analyses')) {
+      $$flow_into{'5->A'} = ['SnpDensity', 'SnpCount', 'NonSense'];
+    }
+
     return [
 
       {
@@ -61,16 +76,8 @@ sub pipeline_analyses {
         },
         -input_ids  => [ {} ],
         -max_retry_count  => 10,
-        -flow_into  => {
-         '3->B'  => ['PercentRepeat'],
-         'B->3'  => ['PercentGC'],
-         '3->C'  => ['CodingDensity'],
-         'C->3'  => ['NonCodingDensity'],
-         '5->A'  => ['SnpDensity', 'SnpCount', 'NonSense'],
-         '3->A'  => ['PercentRepeat', 'CodingDensity', 'NonCodingDensity', 'PercentGC'],
-         '2->A'  => ['GeneGC', 'PepStats', 'GeneCount', 'ConstitutiveExons'],
-         'A->1'  => ['Notify'],
-        },
+        -flow_into       => $flow_into,
+        -rc_name         => 'normal',
       },
 
       {
@@ -216,6 +223,7 @@ sub pipeline_analyses {
           email   => $self->o('email'),
           subject => $self->o('pipeline_name').' has finished',
         },
+        -rc_name    => 'default',
       }
 
     ];
