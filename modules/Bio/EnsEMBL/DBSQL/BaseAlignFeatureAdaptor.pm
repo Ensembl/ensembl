@@ -200,8 +200,8 @@ sub fetch_all_by_Slice_and_pid {
                The analysis logic name of the type of features to
                obtain.
   Example    : @feats =
-                 @{ $adaptor->fetch_all_by_hit_name( $name,
-                   $logic_name ); }
+                 @{ $adaptor->fetch_all_by_hit_name( 'AK078491.1',
+                   'vertrna' ); }
   Description: Returns a listref of features created from the
                database which correspond to the given hit_name.  If
                logic name is defined, only features with an analysis
