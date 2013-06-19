@@ -359,11 +359,11 @@ sub create_xrefs {
 	$depe{ACCESSION} = $self->get_name($xref->{ACCESSION},$depe{LABEL});
 	$gene_name = $depe{ACCESSION};
 
-	$depe{SOURCE_NAME} = "Uniprot_genename";
-	$depe{SOURCE_ID} = $dependent_sources{"Uniprot_genename"};
+	$depe{SOURCE_NAME} = "Uniprot_gn";
+	$depe{SOURCE_ID} = $dependent_sources{"Uniprot_gn"};
 	$depe{LINKAGE_SOURCE_ID} = $xref->{SOURCE_ID};
 	push @{$xref->{DEPENDENT_XREFS}}, \%depe;
-	$dependent_xrefs{"Uniprot_genename"}++;
+	$dependent_xrefs{"Uniprot_gn"}++;
 	my @syn;
 	if($gn =~ /Synonyms=([^;]+);/){
 	  my $syn = $1;
