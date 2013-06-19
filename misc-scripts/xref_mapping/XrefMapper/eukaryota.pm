@@ -28,7 +28,7 @@ sub gene_display_xref_sources {
                  RFAM
                  RNAMMER
                  TRNASCAN_SE
-                 Uniprot_genename
+                 Uniprot_gn
                  ENA_GENE
                  BROAD_U_maydis
                  BROAD_F_oxysporum
@@ -87,7 +87,7 @@ sub transcript_display_xref_sources {
                  RFAM
                  RNAMMER
                  TRNASCAN_SE
-                 Uniprot_genename
+                 Uniprot_gn
                  ENA_GENE
                  BROAD_U_maydis
                  BROAD_F_oxysporum

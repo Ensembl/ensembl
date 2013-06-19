@@ -13,7 +13,7 @@ sub gene_display_xref_sources {
   my @list = qw(RFAM
                 miRBase
                 RGD
-                Uniprot_genename
+                Uniprot_gn
                 EntrezGene);
 
   my %ignore;

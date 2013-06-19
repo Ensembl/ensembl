@@ -28,7 +28,7 @@ use base qw( XrefMapper::BasicMapper);
 #               i)   official domain name source (HGNC, MGI, ZFIN_ID)
 #               ii)  RFAM
 #               iii) miRBase
-#               iv)  Uniprot_genename
+#               iv)  Uniprot_gn
 #               v)   Vega clone name
 #               vi)  Clone name
 #
@@ -52,7 +52,7 @@ use base qw( XrefMapper::BasicMapper);
 #     we assign a transcript extention (splice number?)
 #     This comes from Vega or is just counter starting at 201 
 #     (to sigmify it does not come from vega) which is incremented each time
-#     We add this to the name to get a "XXX_transcript_name"xref  where XXX is the 
+#     We add this to the name to get a "XXX_trans_name"xref  where XXX is the 
 #     type of source used to get the name. This is then added as an xref and 
 #     is set to the display_xref for that transcript.
 #
@@ -249,7 +249,7 @@ SQ0
 
     ####################################################
     # If not found look for other valid database sources
-    # These are RFAM and miRBase, as well as Uniprot_genename
+    # These are RFAM and miRBase, as well as Uniprot_gn
     ####################################################
     if(!defined($gene_symbol)){ 
       ($gene_symbol, $gene_symbol_xref_id) = 
@@ -313,7 +313,7 @@ SQ0
                                             gene_id          =>  $gene_id,
 					    gene_symbol      => $gene_symbol,
 					    desc             => $desc, 
-                                            source_id        => $dbname_to_source_id->{$tran_source."_transcript_name"}, 
+                                            source_id        => $dbname_to_source_id->{$tran_source."_trans_name"}, 
                                             xref_added       => \%xref_added, 
                                             seen_gene        => \%seen_gene, 
                                             gene_to_tran     => \%gene_to_transcripts, 
@@ -1066,7 +1066,7 @@ sub find_from_other_sources{
   my $other_name_num = $self->get_other_name_hash();
 
   my ($display, $xref_id, $object_xref_id, $level, $desc);
-  foreach my $ext_db_name (qw(miRBase RFAM Uniprot_genename)){
+  foreach my $ext_db_name (qw(miRBase RFAM Uniprot_gn)){
     $dbentrie_sth->execute($ext_db_name, $gene_id, "Gene");
     $dbentrie_sth->bind_columns(\$display, \$xref_id, \$object_xref_id, \$level, \$desc);
     while($dbentrie_sth->fetch){
@@ -1083,7 +1083,7 @@ sub find_from_other_sources{
       else{
 	$other_name_num->{$gene_symbol} = 1;
       }
-      if ($ext_db_name ne 'Uniprot_genename') {
+      if ($ext_db_name ne 'Uniprot_gn') {
         $gene_symbol .= ".".$other_name_num->{$gene_symbol};
       }
       next;
@@ -1392,14 +1392,14 @@ Clone_based_vega_gene
 Clone_based_ensembl_gene
 RFAM_gene_name
 miRBase_gene_name
-Uniprot_genename_gene_name
+Uniprot_gn_gene_name
 Clone_based_ensembl_transcript
 Clone_based_vega_transcript
-RFAM_transcript_name
-miRBase_transcript_name
-Uniprot_genename_transcript_name);
+RFAM_trans_name
+miRBase_trans_name
+Uniprot_gn_trans_name);
 
-  push @list, $dbname."_transcript_name";
+  push @list, $dbname."_trans_name";
   push @list, $dbname;
 
   my $sth = $self->xref->dbc->prepare("select source_id from source where name like ?");
@@ -1438,10 +1438,10 @@ Clone_based_ensembl_gene
 RFAM_gene_name
 miRBase_gene_name
 Clone_based_ensembl_transcript
-RFAM_transcript_name
-miRBase_transcript_name);
+RFAM_trans_name
+miRBase_trans_name);
 
-  push @sources, $dbname."_transcript_name";  
+  push @sources, $dbname."_trans_name";  
 
   my @source_ids = map {$dbname_to_source_id->{$_}} @sources;
   my $list = join(", ",@source_ids);

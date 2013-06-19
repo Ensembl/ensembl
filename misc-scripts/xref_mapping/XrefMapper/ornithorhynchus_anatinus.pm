@@ -14,7 +14,7 @@ sub gene_display_xref_sources {
   my @list = qw(Oxford_FGU_Oa_gene
                 RFAM
                 miRBase
-                Uniprot_genename
+                Uniprot_gn
                 EntrezGene);
 
   my %ignore;

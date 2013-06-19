@@ -34,7 +34,7 @@ sub gene_display_xref_sources {
   my @list = qw(Xenopus_Jamboree
                 RFAM
                 miRBase
-                Uniprot_genename
+                Uniprot_gn
                 EntrezGene);
 
   my %ignore;

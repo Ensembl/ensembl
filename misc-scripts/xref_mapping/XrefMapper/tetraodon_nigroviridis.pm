@@ -12,7 +12,7 @@ sub gene_display_xref_sources {
   my @list = qw(Genoscope_annotated_gene
                 RFAM
                 miRBase
-                Uniprot_genename
+                Uniprot_gn
                 EntrezGene
                 Genoscope_pred_gene
 );

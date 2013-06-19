@@ -11,7 +11,7 @@ sub gene_display_xref_sources {
     my $self     = shift;
 
     my @list = qw(
-                 Uniprot_genename
+                 Uniprot_gn
                );
     
     my %ignore;
@@ -23,7 +23,7 @@ sub transcript_display_xref_sources {
     my $self     = shift;
 
     my @list = qw(
-                 Uniprot_genename
+                 Uniprot_gn
                );
     
     my %ignore;

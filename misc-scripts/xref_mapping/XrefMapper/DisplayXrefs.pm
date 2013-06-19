@@ -67,7 +67,7 @@ sub gene_display_xref_sources {
 	
   my @list = qw(RFAM
                 miRBase
-                Uniprot_genename
+                Uniprot_gn
                 EntrezGene);
 
   my %ignore;
@@ -760,7 +760,7 @@ sub transcript_names_from_gene {
   $del_xref_sth->execute();
   while ($get_genes->fetch()) {
     $ext = '201';
-    $get_source_id->execute($external_db . "_transcript_name");
+    $get_source_id->execute($external_db . "_trans_name");
     $get_source_id->bind_columns(\$external_db_id);
     $get_source_id->fetch();
     $get_transcripts->execute($gene_id);
