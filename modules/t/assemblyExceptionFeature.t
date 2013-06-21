@@ -38,14 +38,15 @@ ok(test_getter_setter($aef,'type', 'HAP'));
 
 # check adaptor attaching
 $aef->adaptor($aefa);
-ok($aef->adaptor->isa('Bio::EnsEMBL::DBSQL::AssemblyExceptionFeatureAdaptor'));
+is(ref($aef->adaptor), 'Bio::EnsEMBL::DBSQL::AssemblyExceptionFeatureAdaptor', "Created AssemblyExceptionFeature adaptor");
 
 # fetch all
 my $chr_slice = $dba->get_SliceAdaptor->fetch_by_region('chromosome', 
                                                         '20_HAP1');
 my @features = @{$aefa->fetch_all_by_Slice($chr_slice)};
 
-ok(@features);
+is(@features, 1, "Fetched one assembly exception feature for 20_HAP1");
+
 foreach my $f (@features) {
   debug( "Feature: " . $f->slice->seq_region_name . " " . 
          $f->start . " " . $f->end . " " . $f->type);
@@ -55,12 +56,12 @@ foreach my $f (@features) {
 }
 
 my ($f) = @features;
-ok($f->display_id eq $f->alternate_slice->seq_region_name);
+is($f->display_id, $f->alternate_slice->seq_region_name, "Feature display id matches feature's alternate slice name");
 
 
 my $feat = $aefa->fetch_by_dbID(1);
 
-ok($feat->dbID() == 1);
+is($feat->dbID(), 1, "Feature dbID is 1");
 
 #check we can store assembly exception features
 my $aef_store = new Bio::EnsEMBL::AssemblyExceptionFeature();
@@ -84,7 +85,7 @@ my $asx_id = $aefa->store($aef_store,$aef_store2);
 
 my $aef_new = $aefa->fetch_by_dbID($asx_id);
 
-ok($aef_new->dbID == $asx_id);
+is($aef_new->dbID, $asx_id, "Assembly exception new dbID matches the stored id");
 
 $aefa->remove($aef_store);
 
