@@ -78,7 +78,9 @@ is(@{$efo_roots}, 0, "Found no efo roots");
     is_deeply($term, $direct_term, 'Fetching the OntologyTerm from the OntologyXref should match the same object from OntologyTermAdaptor');
   }
 }
-
-
+$term = $go_adaptor->fetch_by_accession('GO:0000182',1); # unintentionally picked an obsolete term for testing on.
+my $term_list = $go_adaptor->fetch_all_by_descendant_term($term);
+my $inclusive_term_list = $go_adaptor->fetch_all_by_descendant_term($term,undef,undef,1);
+ok (scalar(@$term_list) == scalar(@$inclusive_term_list) - 1, "Zero_distance flag on fetch_all_by_descendant_term");
 
 done_testing();
