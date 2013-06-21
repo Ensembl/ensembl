@@ -14,6 +14,7 @@ ok(1);
 
 my $db = $multi->get_DBAdaptor('core');
 my $sfa = $db->get_SimpleFeatureAdaptor();
+my $aexc_adaptor = $db->get_AssemblyExceptionFeatureAdaptor();
 my $slice_adaptor = $db->get_SliceAdaptor();
 
 ##chromosome Y is a fake 'PAR' linked to chromosome 20
@@ -35,7 +36,7 @@ my $org_slice = $slice_adaptor->fetch_by_region('chromosome', '20',
 $feats = $sfa->fetch_all_by_Slice($slice);
 
 debug("Got " . scalar(@$feats));
-ok( @$feats == 9 );
+is( @$feats, 9 , "Fetched 9 features");
 
 print_features($feats);
 
@@ -61,7 +62,7 @@ $feats = $sfa->fetch_all_by_Slice( $slice );
 
 debug( "After storing retrieval" );
 print_features($feats);
-ok(@$feats == 14);
+is(@$feats, 14, "Fetched 14 features");
 
 
 
@@ -90,7 +91,7 @@ $slice = $slice_adaptor->fetch_by_region('chromosome', '20_HAP1',
 					 30_499_998,30_500_002);
 
 debug($slice->seq);
-ok( $slice->seq() eq "GTNNN" );
+is( $slice->seq(), "GTNNN", "Fetched haplotype subslice");
 
 $multi->restore();
 
