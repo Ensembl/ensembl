@@ -288,7 +288,7 @@ sub _remap {
   my $slice_strand = $slice->strand();
   my $slice_cs    = $slice->coord_system();
 
-  my ($seq_region, $start, $end, $strand);
+  my ($seq_region, $start, $end, $strand, $seq_region_name);
 
   my $slice_seq_region = $slice->seq_region_name();
 
@@ -300,24 +300,26 @@ sub _remap {
     }
     my $fseq_region = $fslice->seq_region_name();
     my $fcs = $fslice->coord_system();
-
     if(!$slice_cs->equals($fcs)) {
       # slice of feature in different coord system, mapping required
       ($seq_region, $start, $end, $strand) =
         $mapper->fastmap($fseq_region,$f->start(),$f->end(),$f->strand(),$fcs);
-
       # undefined start means gap
       next if(!defined $start);
+
+      my $slice_adaptor = $self->db()->get_SliceAdaptor();
+      $seq_region_name = $slice_adaptor->fetch_by_seq_region_id($seq_region)->seq_region_name;
+
     } else {
-      $start      = $f->start();
-      $end        = $f->end();
-      $strand     = $f->strand();
-      $seq_region = $f->slice->seq_region_name();
+      $start           = $f->start();
+      $end             = $f->end();
+      $strand          = $f->strand();
+      $seq_region_name = $f->slice->seq_region_name();
     }
 
     # maps to region outside desired area
     next if ($start > $slice_end) || ($end < $slice_start) || 
-      ($slice_seq_region ne $seq_region);
+      ($slice_seq_region ne $seq_region_name);
 
     # create new copies of successfully mapped feaatures with shifted start,
     # end and strand
