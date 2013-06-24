@@ -31,3 +31,7 @@
 1501	0000-00-00 00:00:00	cisred	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N
 1502	0000-00-00 00:00:00	cisred_search	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N
 1503	0000-00-00 00:00:00	DitagAlign	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N
+8405	2009-05-14 15:43:42	havana	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL
+8406	2009-06-01 09:01:22	xrefexoneratedna	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL
+8407	2007-09-07 12:01:22	est2genome_human_havana	NULL	10-Nov-10 (105)	NULL	NULL	NULL	NULL	ori_analysis => Est2genome_human_raw, mode => single	ClusterDepthFilter	NULL	EST_Human	similarity
+8408	2007-09-07 12:01:22	uniprot_sw_havana	NULL	2010_11	NULL	NULL	NULL	NULL	percentid_cutoff => 40, ori_analysis => Uniprot_raw, hit_db => Swissprot, mode => single	DepthFilter	NULL	SwissProt	NULL
