@@ -22,3 +22,8 @@ regulatory_feature	1	121
 regulatory_search_region	1	121
 operon	1	106713
 operon_transcript	1	106713
+gene	2	4145
+exon	2	392
+dna_align_feature	2	383
+transcript	2	730
+protein_align_feature	2	354

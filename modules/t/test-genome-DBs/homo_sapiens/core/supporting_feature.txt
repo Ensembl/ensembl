@@ -328,3 +328,11 @@
 162030	dna_align_feature	29498396
 162031	dna_align_feature	29498395
 162032	dna_align_feature	29498394
+7296474	dna_align_feature	29385292
+7296475	protein_align_feature	19573204
+7296475	protein_align_feature	19573205
+7296475	protein_align_feature	19573206
+7296476	protein_align_feature	19573207
+7296476	protein_align_feature	19573208
+7296476	protein_align_feature	19573209
+7296476	protein_align_feature	19573210
