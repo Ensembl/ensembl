@@ -975,7 +975,9 @@ sub get_all_Transcripts {
       $self->{'_transcript_array'} = $transcripts;
     }
   }
-  return $self->{'_transcript_array'};
+  # copy of cache references needed to protect Gene cache
+  my @transcripts = @{$self->{'_transcript_array'}}; 
+  return \@transcripts;
 }
 
 
