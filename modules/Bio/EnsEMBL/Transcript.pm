@@ -1714,14 +1714,16 @@ sub five_prime_utr_Feature {
     if($start == $genomic_pos->start()) {
       return; # just return as we have no UTR
     }
-    $end = $genomic_pos->start() - 1;
+    # cdna2genomic returns a 'genomic' position relative to the transcript slice
+    $end = $genomic_pos->start() + ($self->slice->start - 1) - 1;
   }
   else {
     $end = $self->seq_region_end();
     if($end == $genomic_pos->start()) {
       return; # just return as we have no UTR
     }
-    $start = $genomic_pos->start() + 1;
+    # cdna2genomic returns a 'genomic' position relative to the transcript slice
+    $start = $genomic_pos->start() - ($self->slice->start - 1) + 1;
   }
     
   my $feature = Bio::EnsEMBL::Feature->new(
@@ -1757,14 +1759,16 @@ sub three_prime_utr_Feature {
     if($end == $genomic_pos->start()) {
       return; # just return as we have no UTR
     }
-    $start = $genomic_pos->start() + 1;
+    # cdna2genomic returns a 'genomic' position relative to the transcript slice
+    $start = $genomic_pos->start() - ($self->slice->start - 1) + 1;
   }
   else {
     $start = $self->seq_region_start();
     if($start == $genomic_pos->start()) {
       return; # just return as we have no UTR
     }
-    $end = $genomic_pos->start() - 1;
+    # cdna2genomic returns a 'genomic' position relative to the transcript slice
+    $end = $genomic_pos->start() + ($self->slice->start - 1) - 1;
   }
   my $feature = Bio::EnsEMBL::Feature->new(
     -START => $start,
