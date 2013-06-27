@@ -159,31 +159,6 @@ sub new {
 }
 
 
-=head2 new_fast
-
-  Arg [...]  : hashref to bless as new MiscFeature
-  Example    : $miscfeature = Bio::EnsEMBL::MiscFeature->new_fast();
-  Description: Creates a new Miscfeature.
-  Returntype : Bio::EnsEMBL::MiscFeature
-  Exceptions : none
-  Caller     : general
-  Status     : Stable
-
-=cut
-
-
-sub new_fast {
-  my $class = shift;
-  my $hashref = shift;
-
-  $hashref->{'attributes'} ||= [];
-
-  my $self = bless $hashref, $class;
-  weaken($self->{adaptor})  if ( ! isweak($self->{adaptor}) );
-  return $self;
-}
-
-
 
 =head2 add_Attribute
 
