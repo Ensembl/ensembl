@@ -51,6 +51,9 @@ Bio::EnsEMBL::Slice - Arbitary Slice of a genome
 A Slice object represents a region of a genome.  It can be used to retrieve
 sequence or features from an area of interest.
 
+NOTE: The Slice is defined by its Strand, but normal behaviour for get_all_*
+methods is to return Features on both Strands. 
+
 =head1 METHODS
 
 =cut
@@ -1452,7 +1455,7 @@ sub get_all_PredictionTranscripts {
                logic name $logic_name and with score above $score.  If
                $logic_name is not defined features of all logic names are
                retrieved.  If $score is not defined features of all scores are
-               retrieved.
+               retrieved. Strand of the Slice is not considered.
   Returntype : listref of Bio::EnsEMBL::DnaDnaAlignFeatures
   Exceptions : warning if slice does not have attached adaptor
   Caller     : general
@@ -2653,7 +2656,8 @@ sub get_all_SNPs_transcripts {
   Arg [5]    : (optional) string $biotype
                The biotype of the genes to retrieve.
   Example    : @genes = @{$slice->get_all_Genes};
-  Description: Retrieves all genes that overlap this slice.
+  Description: Retrieves all genes that overlap this slice, including those on
+               the reverse strand.
   Returntype : listref of Bio::EnsEMBL::Genes
   Exceptions : none
   Caller     : none
@@ -2706,7 +2710,8 @@ sub get_all_Genes{
                biotypes of genes are used.
 
                The logic name is the analysis of the genes that are retrieved.
-               If not provided all genes will be retrieved instead.
+               If not provided all genes will be retrieved instead. Both
+               positive and negative strand Genes will be returned.
 
   Returntype : listref of Bio::EnsEMBL::Genes
   Exceptions : none
@@ -2737,7 +2742,7 @@ sub get_all_Genes_by_type{
                be used (but a slow down if they are not).
   Example    : @genes = @{$slice->get_all_Genes_by_source('ensembl')};
   Description: Retrieves genes that overlap this slice of source $source.
-
+               Strand of the Slice does not affect the result.
   Returntype : listref of Bio::EnsEMBL::Genes
   Exceptions : none
   Caller     : general
@@ -2769,7 +2774,8 @@ sub get_all_Genes_by_source {
   Description: Gets all transcripts which overlap this slice.  If you want to
                specify a particular analysis or type, then you are better off
                using get_all_Genes or get_all_Genes_by_type and iterating
-               through the transcripts of each gene.
+               through the transcripts of each gene. Strand of the Slice is
+               ignored.
   Returntype : reference to a list of Bio::EnsEMBL::Transcripts
   Exceptions : none
   Caller     : general
@@ -3534,8 +3540,8 @@ sub get_all_ExternalFeatures {
   Arg [1]    : (optional) string logic_name
   Example    : @dna_dna_align_feats = @{$slice->get_all_DitagFeatures};
   Description: Retrieves the DitagFeatures of a specific type which overlap
-               this slice with. If type is not defined, all features are
-               retrieved.
+               this slice. If type is not defined, all features are retrieved.
+               Strandedness of the Slice is ignored.
   Returntype : listref of Bio::EnsEMBL::DitagFeatures
   Exceptions : warning if slice does not have attached adaptor
   Caller     : general
