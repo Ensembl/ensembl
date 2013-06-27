@@ -135,28 +135,6 @@ sub new {
   return $self;
 }
 
-=head2 new_fast
-
-  Arg [...]  : none
-  Example    : $feature = Bio::EnsEMBL::UnmappedObject->new_fast();
-  Description: Creates a new Unmapped Object.
-  Returntype : Bio::EnsEMBL::UnmappedObject
-  Exceptions : none
-  Caller     : general
-  Status     : At Risk
-
-=cut
-
-sub new_fast{
-  my $caller = shift;
-
-  #allow constructor to be called as class or object method
-  my $class = ref($caller) || $caller;
-
-  my $self = $class->SUPER::new(@_);
-
-  return $self;
-}
 
 =head2 description
 
