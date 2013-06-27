@@ -120,29 +120,6 @@ sub new {
 }
 
 
-=head2 new_fast
-
-  Arg [...]  : none
-  Example    : $feature = Bio::EnsEMBL::DensityFeature->new_fast();  
-  Description: Creates a new density feature.
-  Returntype : Bio::EnsEMBL::DensityFeature
-  Exceptions : none
-  Caller     : general
-  Status     : Stable
-
-=cut
-
-sub new_fast{
-  my $caller = shift;
-
-  #allow constructor to be called as class or object method
-  my $class = ref($caller) || $caller;
-
-  my $self = $class->SUPER::new(@_);
-
-  return $self;
-}
-
 
 =head2 strand
 
