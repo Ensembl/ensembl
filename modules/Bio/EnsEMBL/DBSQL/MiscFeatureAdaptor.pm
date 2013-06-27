@@ -513,7 +513,7 @@ sub _objs_from_sth {
                                        'slice'   => $slice,
                                        'adaptor' => $self,
                                        'dbID'    => $misc_feature_id,
-                                       'attributes' => $feat_attribs
+                                       'attributes' => $feat_attribs ||= []
                                      } );
 
       push @features, $feat;
