@@ -172,6 +172,7 @@ sub create_xrefs {
 
 
   my %dependent_xrefs;
+  my $ens = 0;
 
   while ( $_ = $uniprot_io->getline() ) {
      
@@ -208,6 +209,14 @@ sub create_xrefs {
 
     my @all_lines = split /\n/, $acc;
 
+    # Check for CC (caution) lines containing certain text
+    # If sequence is from Ensembl, do not use
+
+    if ($_ =~ / CAUTION: The sequence shown here is derived from an Ensembl/) {
+      $ens++;
+      next;
+    }
+
     # extract ^AC lines only & build list of accessions
     my @accessions;
     foreach my $line (@all_lines) {
@@ -226,9 +235,6 @@ sub create_xrefs {
     for (my $a=1; $a <= $#accessions; $a++) {
       push(@{$xref->{"SYNONYMS"} }, $accessions[$a]);
     }
-
-    # Check for CC (caution) lines containing certain text
-    # if this appears then set the source of this and and dependent xrefs to the predicted equivalents
 
     my ($label, $sp_type) = $_ =~ /ID\s+(\w+)\s+(\w+)/;
     my ($protein_evidence_code) = $_ =~ /PE\s+(\d+)/; 
@@ -520,6 +526,7 @@ sub create_xrefs {
 
   print "Read $num_sp SwissProt xrefs, $num_sptr SPTrEMBL xrefs with protein evidence codes 1-2, and $num_sptr_non_display SPTrEMBL xrefs with protein evidence codes > 2 from $file\n" if($verbose);
   print "Found $num_sp_pred predicted SwissProt xrefs and $num_sptr_pred predicted SPTrEMBL xrefs\n" if (($num_sp_pred > 0 || $num_sptr_pred > 0) and $verbose);
+  print "Skipped $ens ensembl annotations\n";
 
 
 #  print "$kount gene anmes added\n";
