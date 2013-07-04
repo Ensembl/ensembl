@@ -348,6 +348,97 @@ sub fetch_all {
 }
 
 
+=head2 fetch_all_by_Slice_constraint
+
+  Arg [1]    : Bio::EnsEMBL::Slice $slice
+               the slice from which to obtain features
+  Arg [2]    : (optional) string $constraint
+               An SQL query constraint (i.e. part of the WHERE clause)
+  Example    : $fs = $a->fetch_all_by_Slice_constraint($slc, 'density_type_id = 88');
+  Description: Returns a listref of features created from the database which 
+               are on the Slice defined by $slice and fulfill the SQL 
+               constraint defined by $constraint. 
+               Note that this is a re-implementation of a method with the same name
+               in the BaseFeatureAdaptor.
+               This was necessary to remove the use of symliked sequences for density features
+  Returntype : listref of Bio::EnsEMBL::SeqFeatures in Slice coordinates
+  Exceptions : thrown if $slice is not defined
+  Caller     : Bio::EnsEMBL::Slice
+  Status     : Stable
+
+=cut
+
+
+sub fetch_all_by_Slice_constraint {
+  my $self = shift;
+  my $slice = shift;
+  my $constraint = shift;
+
+  my @result;
+
+  #Pull out here as we need to remember them & reset accordingly
+  my $bind_params = $self->bind_param_generic_fetch();
+
+  if ( !ref($slice)
+       || !(    $slice->isa('Bio::EnsEMBL::Slice')
+             or $slice->isa('Bio::EnsEMBL::LRGSlice') ) )
+  {
+    throw("Bio::EnsEMBL::Slice argument expected.");
+  }
+
+  $constraint ||= '';
+
+  # If the logic name was invalid, undef was returned
+  if ( !defined($constraint) ) { return [] }
+
+  my $key;
+  my $cache;
+
+  # Will only use feature_cache if hasn't been no_cache attribute set
+  if (
+    !( defined( $self->db()->no_cache() ) && $self->db()->no_cache() ) )
+  {
+
+    #strain test and add to constraint if so to stop caching.
+    if ( $slice->isa('Bio::EnsEMBL::StrainSlice') ) {
+      my $string =
+        $self->dbc()->db_handle()->quote( $slice->strain_name() );
+
+      if ( $constraint ne "" ) {
+        $constraint .= " AND $string = $string ";
+      } else {
+        $constraint .= " $string = $string ";
+      }
+    }
+
+    # Check the cache and return the cached results if we have already
+    # done this query.  The cache key is the made up from the slice
+    # name, the constraint, and the bound parameters (if there are any).
+    $key = uc( join( ':', $slice->name(), $constraint ) );
+
+    if ( defined($bind_params) ) {
+      $key .= ':'
+        . join( ':', map { $_->[0] . '/' . $_->[1] } @{$bind_params} );
+    }
+
+    $cache = $self->_slice_feature_cache();
+    if ( exists( $cache->{$key} ) ) {
+      # Clear the bound parameters and return the cached data.
+      $self->{'_bind_param_generic_fetch'} = ();
+      return $cache->{$key};
+    }
+  } ## end if ( !( defined( $self...)))
+
+  $self->_bind_param_generic_fetch($bind_params);
+  my $features = $self->_slice_fetch( $slice, $constraint );
+
+  if ( defined($key) ) {
+    $cache->{$key} = $features;
+  }
+
+  return $features;
+}
+
 
 sub _tables {
   my $self = shift;
