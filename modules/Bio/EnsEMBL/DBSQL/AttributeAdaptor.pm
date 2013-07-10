@@ -426,11 +426,13 @@ sub fetch_all_by_Object {
 sub fetch_all_by_MiscFeature {
   my ($self, $object, $code) = @_;
 
+  my $object_id;
+
   if (defined($object)) {
     assert_ref($object, 'Bio::EnsEMBL::MiscFeature');
+    $object_id = $object->dbID();
   }
 
-  my $object_id = $object->dbID() if defined $object;
   my $results = $self->fetch_all_by_Object($object_id, 'misc', $code, 'misc_feature');
 
   return $results;
@@ -440,11 +442,13 @@ sub fetch_all_by_MiscFeature {
 sub fetch_all_by_Slice {
   my ($self, $object, $code) = @_;
 
+  my $object_id;
+
   if (defined($object)) {
     assert_ref($object, 'Bio::EnsEMBL::Slice');
+    $object_id = $object->dbID();
   }
 
-  my $object_id = $object->get_seq_region_id() if defined $object;
   my $results = $self->fetch_all_by_Object($object_id, 'seq_region', $code);
 
   return $results;
@@ -454,11 +458,13 @@ sub fetch_all_by_Slice {
 sub fetch_all_by_Gene {
   my ($self, $object, $code) = @_;
 
+  my $object_id;
+
   if (defined($object)) {
     assert_ref($object, 'Bio::EnsEMBL::Gene');
+    $object_id = $object->dbID();
   }
 
-  my $object_id = $object->dbID() if defined $object;
   my $results = $self->fetch_all_by_Object($object_id, 'gene', $code);
 
   return $results;
@@ -468,11 +474,13 @@ sub fetch_all_by_Gene {
 sub fetch_all_by_Transcript {
   my ($self, $object, $code) = @_;
 
+  my $object_id;
+
   if (defined($object)) {
     assert_ref($object, 'Bio::EnsEMBL::Transcript');
+    $object_id = $object->dbID();
   }
 
-  my $object_id = $object->dbID() if defined $object;
   my $results = $self->fetch_all_by_Object($object_id, 'transcript', $code);
 
   return $results;
@@ -482,11 +490,13 @@ sub fetch_all_by_Transcript {
 sub fetch_all_by_Translation {
   my ($self, $object, $code) = @_;
 
+  my $object_id;
+
   if (defined($object)) {
     assert_ref($object, 'Bio::EnsEMBL::Translation');
+    $object_id = $object->dbID();
   }
 
-  my $object_id = $object->dbID() if defined $object;
   my $results = $self->fetch_all_by_Object($object_id, 'translation', $code);
   
   return $results;
