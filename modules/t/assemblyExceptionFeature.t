@@ -43,40 +43,15 @@ is(ref($aef->adaptor), 'Bio::EnsEMBL::DBSQL::AssemblyExceptionFeatureAdaptor', "
 # fetch all
 my $chr_slice = $dba->get_SliceAdaptor->fetch_by_region('chromosome', 
                                                         '20_HAP1');
-my $ref_slice = $dba->get_SliceAdaptor->fetch_by_region('chromosome', 'X');
-my $patch_slice = $dba->get_SliceAdaptor->fetch_by_region('supercontig', 'HG480_HG481_PATCH');
-
 my @features = @{$aefa->fetch_all_by_Slice($chr_slice)};
 
 is(@features, 1, "Fetched one assembly exception feature for 20_HAP1");
-
-my @ref_features = @{$aefa->fetch_all_by_Slice($ref_slice)};
-is(@ref_features, 1, "Fetched one assembly exception features for chromosome X");
-
-my @patch_features = @{ $aefa->fetch_all_by_Slice($patch_slice) };
-is(@patch_features, 1, "Fetched one assembly exception for HG480_HG481_PATCH");
 
 foreach my $f (@features) {
   debug( "Feature: " . $f->slice->seq_region_name . " " . 
          $f->start . " " . $f->end . " " . $f->type);
   my $as = $f->alternate_slice();
   debug(" Alternate slice: " . $as->seq_region_name . " " . 
-        $as->start . " " . $as->end);
-}
-
-foreach my $f (@ref_features) {
-  debug( "Feature: " . $f->slice->seq_region_name . " " .
-         $f->start . " " . $f->end . " " . $f->type);
-  my $as = $f->alternate_slice();
-  debug(" Alternate slice: " . $as->seq_region_name . " " .
-        $as->start . " " . $as->end);
-}
-
-foreach my $f (@patch_features) {
-  debug( "Feature: " . $f->slice->seq_region_name . " " .
-         $f->start . " " . $f->end . " " . $f->type);
-  my $as = $f->alternate_slice();
-  debug(" Alternate slice: " . $as->seq_region_name . " " .
         $as->start . " " . $as->end);
 }
 
