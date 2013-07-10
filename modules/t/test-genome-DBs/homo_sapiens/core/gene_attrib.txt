@@ -1,6 +1,2 @@
 18256	10	This is a note on gene 18256
 18259	10	Another note on gene 18259
-633682	348	lincRNA
-633682	142	48.11
-633683	348	processed_pseudogene
-633683	142	51.72

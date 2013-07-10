@@ -1,7 +1,0 @@
-2047706	4	RP11-309M23.1-001
-2047706	52	Havana
-2047706	53	vega@sanger.ac.uk
-2047707	4	RP11-309M23.2-001
-2047707	52	Havana
-2047707	53	vega@sanger.ac.uk
-2047707	54	ribosomal protein L14 (RPL14) pseudogene
