@@ -975,9 +975,18 @@ sub get_all_Transcripts {
       $self->{'_transcript_array'} = $transcripts;
     }
   }
-  # copy of cache references needed to protect Gene cache
-  my @transcripts = @{$self->{'_transcript_array'}}; 
-  return \@transcripts;
+  # copy of cache references needed to protect Gene cache  
+  if (exists($self->{'_transcript_array'})) {
+    my @transcripts = @{$self->{'_transcript_array'}};      
+    return \@transcripts;
+  }
+  else {
+    # Original implementation returned the Gene's cache. If there was no cache
+    # it returned undef, rather than an empty array reference.
+    # Code should read: return [];
+    # Not fixed to retain legacy support.
+    return;
+  }
 }
 
 
