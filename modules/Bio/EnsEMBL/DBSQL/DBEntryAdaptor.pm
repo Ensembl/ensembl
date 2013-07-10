@@ -836,25 +836,41 @@ sub _store_object_xref_mapping {
 =cut
 
 sub get_external_db_id {
-  my ($self, $db_name, $db_release, $ignore_release) = @_;
-
-  my $sql_helper = $self->dbc->sql_helper;  
-  my $sql = 'SELECT external_db_id FROM external_db WHERE db_name = ?';
-  my @bound_params;
-  push @bound_params,$db_name;
-  unless ($ignore_release) {
-    if ($db_release) {
-      $sql .= ' AND db_release = ?';
-      push @bound_params,$db_release;
-    } 
-    else {
-      $sql .= ' AND db_release is NULL';
-    }
-  }
-  
-  my ($db_id) = @{ $sql_helper->execute_simple(-SQL => $sql, -PARAMS => \@bound_params) };
-  return $db_id;
+  my $self = shift;
+  my $db_ids = $self->get_external_db_ids(@_);
+  return shift @$db_ids;
 }
+
+=head2 get_external_db_ids_like
+
+
+=cut
+
+sub get_external_db_ids {
+    my ($self, $db_name, $db_release, $ignore_release) = @_;
+    my $sql_helper = $self->dbc->sql_helper;
+    my $sql = 'SELECT external_db_id FROM external_db WHERE db_name';
+    if ($db_name =~ /%|_/) { 
+        $sql .= ' LIKE ?';
+    } else {
+        $sql .= ' = ?';
+    }
+    my @bound_params;
+    push @bound_params,$db_name;
+    unless ($ignore_release) {
+        if ($db_release) {
+            $sql .= ' AND db_release = ?';
+            push @bound_params,$db_release;
+        } 
+        else {
+            $sql .= ' AND db_release is NULL';
+        }
+    }
+    
+    my @db_ids = @{ $sql_helper->execute_simple(-SQL => $sql, -PARAMS => \@bound_params) };
+    return \@db_ids;
+}
+
 
 =head2 _check_external_db 
 
@@ -1612,6 +1628,13 @@ sub list_transcript_ids_by_extids {
   return keys %T;
 }
 
+sub list_transcript_ids_by_external_db_id {
+    my ( $self, $external_db_id) = @_;
+    my %T = map { ( $_, 1 ) }
+        $self->_type_by_external_db_id( $external_db_id, 'Translation', 'transcript' ),
+        $self->_type_by_external_db_id( $external_db_id, 'Transcript',  'transcript' );
+    return keys %T;
+}
 
 =head2 list_translation_ids_by_extids
 
@@ -1841,7 +1864,9 @@ SQL
   Arg [1]    : integer $type - external_db_id
   Arg [2]    : string $ensType - ensembl_object_type
   Arg [3]    : (optional) string $extraType
-  	       other object type to be returned
+  	       other object type to be returned. This references the _id fields of
+  	       the transcript table, and if left unset defaults to the translation_id
+  	       from the translation table.
   Example    : $self->_type_by_external_db_id(1030, 'Translation');
   Description: Gets.
                NOTE:  In a multi-species database, this method will
