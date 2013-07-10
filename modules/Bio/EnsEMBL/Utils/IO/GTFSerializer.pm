@@ -87,7 +87,8 @@ sub print_feature {
     $transcript_biotype = $vegadb ? $transcript->status . '_' . $transcript->biotype : $transcript->biotype;
   }
 
-  my @translateable_exons = 
+  my @translateable_exons;
+  @translateable_exons = 
     @{$transcript->get_all_translateable_Exons} 
       if $transcript->translation;
 
@@ -409,7 +410,8 @@ sub _check_start_and_stop {
 
   my ($attrib) = @{ $trans->slice()->get_all_Attributes('codon_table') };
 
-  my $codon_table_id = $attrib->value()
+  my $codon_table_id;
+  $codon_table_id = $attrib->value()
     if defined $attrib;
   $codon_table_id ||= 1; # default vertebrate codon table
 
