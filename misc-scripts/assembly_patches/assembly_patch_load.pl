@@ -16,7 +16,7 @@ my $dbname;
 my $host;
 my $user;
 my $port            = 3306;
-my $scaf_syn_ext_id = 700;
+my $scaf_syn_ext_id = 50710; # INSDC = 50710
 my $central_coord_system;
 
 GetOptions(
