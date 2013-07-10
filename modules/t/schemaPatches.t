@@ -1,3 +1,23 @@
+=head1 NAME
+
+  schemaPatches.t
+
+=head1 SYNOPSIS
+
+  # print usage 
+  $ perl schemaPatches.t -h 
+
+  # Get current release schema file from file system instead
+  # of CVS repository
+  $ perl schemaPatches.t -current-schema-no-cvs
+
+=head1 DESCRIPTION
+
+  This script is used to assert that a previous version schema plus
+  patches equals the current table.sql.
+  
+=cut
+
 use strict;
 use warnings;
 
@@ -6,12 +26,25 @@ use Test::More;
 
 use Bio::EnsEMBL::ApiVersion qw/software_version/;
 use Bio::EnsEMBL::Utils::Net qw/do_GET/;
+use Bio::EnsEMBL::Utils::IO qw/slurp/;
 use Bio::EnsEMBL::Test::MultiTestDB;
 use File::Find;
 use File::Spec::Functions qw/updir catfile catdir/;
 use File::Temp qw/tempfile/;
 use FindBin qw/$Bin/;
+use Getopt::Long;
 
+my $help = 0;
+my $current_schema_no_cvs = 0;
+
+#
+# Parse command-line arguments
+#
+my $options_ok = 
+  GetOptions(
+    "current-schema-no-cvs" => \$current_schema_no_cvs,
+    "h"                     => \$help);
+($help or !$options_ok) && usage();
 
 SKIP: {
 
@@ -54,7 +87,18 @@ SKIP: {
     unless $loaded_schema;
 
   # Create last release DB  
-  my $current_table_sql = get_table_sql($current_release);
+  my $current_table_sql;
+  if ($current_schema_no_cvs) {
+    my $table_sql = catfile($sql_dir, 'table.sql');
+    skip 'Skipping DB patch test as we cannot find last release schema file (table.sql)', 1
+      unless -e $table_sql;
+    skip 'Skipping DB patch test as we last release schema file (table.sql) is not readable', 1
+      unless -r $table_sql;
+    $current_table_sql = slurp($table_sql);
+  } else {
+    $current_table_sql = get_table_sql($current_release);  
+  }
+  
   skip "Skipping DB patch tests as we cannot find the SQL for release $current_release", (scalar(@patches)+1) 
     unless defined $current_table_sql;
 
@@ -249,4 +293,16 @@ sub union_intersection_difference {
     }
   }
   return (\@union, \@isect, \@diff);
+}
+
+sub usage {
+  my $prog = `basename $0`; chomp($prog);
+    
+  print "Usage: $prog [OPTIONS]\n\n";
+  print "Options:\n";
+  print "  -current_schema_no_cvs\tDo no get current schema file from CVS\n";
+  print "  -h\t\t\t\tPrint this message\n";
+  print "\n\n";
+
+  exit 1;
 }
