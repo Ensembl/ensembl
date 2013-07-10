@@ -446,7 +446,7 @@ sub fetch_all_by_Slice {
 
   if (defined($object)) {
     assert_ref($object, 'Bio::EnsEMBL::Slice');
-    $object_id = $object->dbID();
+    $object_id = $object->get_seq_region_id();
   }
 
   my $results = $self->fetch_all_by_Object($object_id, 'seq_region', $code);
