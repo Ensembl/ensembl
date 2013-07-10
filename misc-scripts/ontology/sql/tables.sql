@@ -15,17 +15,11 @@ CREATE TABLE meta (
 # Add schema type and schema version to the meta table
 INSERT INTO meta (meta_key, meta_value) VALUES 
   ('schema_type', 'ontology'),
-  ('schema_version', '72');
+  ('schema_version', '73');
 
 # Patches included in this schema file
 INSERT INTO meta (meta_key, meta_value)
-  VALUES ('patch', 'patch_71_72b.sql|alt_id table');
-INSERT INTO meta (meta_key, meta_value)
-  VALUES ('patch', 'patch_71_72c.sql|schema_version');
-INSERT INTO meta (meta_key, meta_value)
-  VALUES ('patch', 'patch_71_72_d.sql|patch_version_fix');
-INSERT INTO meta (meta_key, meta_value)
-  VALUES ('patch', 'patch_71_72_e.sql|is_obsolete');
+  VALUES ('patch', 'patch_72_73_a.sql|schema_version');
 
 CREATE TABLE ontology (
   ontology_id   INT UNSIGNED NOT NULL AUTO_INCREMENT,
