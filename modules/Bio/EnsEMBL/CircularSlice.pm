@@ -258,6 +258,32 @@ sub length {
   return $ln;
 }
 
+sub _split {
+  my $self = shift;
+
+  my $sl1 =
+    Bio::EnsEMBL::CircularSlice->new(
+                     -COORD_SYSTEM      => $self->{'coord_system'},
+                     -SEQ_REGION_NAME   => $self->{'seq_region_name'},
+                     -SEQ_REGION_LENGTH => $self->{'seq_region_length'},
+                     -START             => $self->{'start'},
+                     -END               => $self->{'seq_region_length'},
+                     -STRAND            => $self->{'strand'},
+                     -ADAPTOR           => $self->adaptor() );
+
+  my $sl2 =
+    Bio::EnsEMBL::CircularSlice->new(
+                     -COORD_SYSTEM      => $self->{'coord_system'},
+                     -SEQ_REGION_NAME   => $self->{'seq_region_name'},
+                     -SEQ_REGION_LENGTH => $self->{'seq_region_length'},
+                     -START             => 1,
+                     -END               => $self->{'end'},
+                     -STRAND            => $self->{'strand'},
+                     -ADAPTOR           => $self->adaptor() );
+
+  return ($sl1, $sl2);
+}
+
 =head2 seq
 
   Arg [1]    : none
@@ -449,26 +475,7 @@ sub project {
   my $csa = $db->get_CoordSystemAdaptor();
   my $cs  = $csa->fetch_by_name( $cs_name, $cs_version );
 
-  my $sl01 =
-    Bio::EnsEMBL::CircularSlice->new(
-                     -COORD_SYSTEM      => $self->{'coord_system'},
-                     -SEQ_REGION_NAME   => $self->{'seq_region_name'},
-                     -SEQ_REGION_LENGTH => $self->{'seq_region_length'},
-                     -START             => $self->{'start'},
-                     -END               => $self->{'seq_region_length'},
-                     -STRAND            => $self->{'strand'},
-                     -ADAPTOR           => $self->adaptor() );
-
-  my $sl02 =
-    Bio::EnsEMBL::CircularSlice->new(
-                     -COORD_SYSTEM      => $self->{'coord_system'},
-                     -SEQ_REGION_NAME   => $self->{'seq_region_name'},
-                     -SEQ_REGION_LENGTH => $self->{'seq_region_length'},
-                     -START             => 1,
-                     -END               => $self->{'end'},
-                     -STRAND            => $self->{'strand'},
-                     -ADAPTOR           => $self->adaptor() );
-
+  my ($sl01, $sl02) = $self->_split;
   my @projection;
   my $current_start = 1;
 
@@ -969,25 +976,7 @@ sub get_all_Attributes {
   my $attribute_adaptor = $self->adaptor->db->get_AttributeAdaptor();
 
 ## circular BOF
-  my $sl1 =
-    Bio::EnsEMBL::CircularSlice->new(
-                     -COORD_SYSTEM      => $self->{'coord_system'},
-                     -SEQ_REGION_NAME   => $self->{'seq_region_name'},
-                     -SEQ_REGION_LENGTH => $self->{'seq_region_length'},
-                     -START             => $self->{'start'},
-                     -END               => $self->{'seq_region_length'},
-                     -STRAND            => $self->{'strand'},
-                     -ADAPTOR           => $self->adaptor() );
-
-  my $sl2 =
-    Bio::EnsEMBL::CircularSlice->new(
-                     -COORD_SYSTEM      => $self->{'coord_system'},
-                     -SEQ_REGION_NAME   => $self->{'seq_region_name'},
-                     -SEQ_REGION_LENGTH => $self->{'seq_region_length'},
-                     -START             => 1,
-                     -END               => $self->{'end'},
-                     -STRAND            => $self->{'strand'},
-                     -ADAPTOR           => $self->adaptor() );
+  my ($sl1, $sl2) = $self->_split;
   my $pta_ref = [];
 
   if ( defined $attrib_code ) {
@@ -1053,26 +1042,7 @@ sub get_all_PredictionTranscripts {
   my $pta = $self->adaptor()->db()->get_PredictionTranscriptAdaptor();
 
 ## circular BOF
-  my $sl1 =
-    Bio::EnsEMBL::CircularSlice->new(
-                     -COORD_SYSTEM      => $self->{'coord_system'},
-                     -SEQ_REGION_NAME   => $self->{'seq_region_name'},
-                     -SEQ_REGION_LENGTH => $self->{'seq_region_length'},
-                     -START             => $self->{'start'},
-                     -END               => $self->{'seq_region_length'},
-                     -STRAND            => $self->{'strand'},
-                     -ADAPTOR           => $self->adaptor() );
-
-  my $sl2 =
-    Bio::EnsEMBL::CircularSlice->new(
-                     -COORD_SYSTEM      => $self->{'coord_system'},
-                     -SEQ_REGION_NAME   => $self->{'seq_region_name'},
-                     -SEQ_REGION_LENGTH => $self->{'seq_region_length'},
-                     -START             => 1,
-                     -END               => $self->{'end'},
-                     -STRAND            => $self->{'strand'},
-                     -ADAPTOR           => $self->adaptor() );
-
+  my ($sl1, $sl2) = $self->_split;
   my ( @arr, @arr1, @arr2 );
   @arr1 =
     @{ $pta->fetch_all_by_Slice( $sl1, $logic_name, $load_exons ) };
@@ -1136,27 +1106,8 @@ sub get_all_DnaAlignFeatures {
     warning "cannot specify score and hcoverage. Using score only";
   }
 
-## circular BOF
-  my $sl1 =
-    Bio::EnsEMBL::CircularSlice->new(
-                     -COORD_SYSTEM      => $self->{'coord_system'},
-                     -SEQ_REGION_NAME   => $self->{'seq_region_name'},
-                     -SEQ_REGION_LENGTH => $self->{'seq_region_length'},
-                     -START             => $self->{'start'},
-                     -END               => $self->{'seq_region_length'},
-                     -STRAND            => $self->{'strand'},
-                     -ADAPTOR           => $self->adaptor() );
-
-  my $sl2 =
-    Bio::EnsEMBL::CircularSlice->new(
-                     -COORD_SYSTEM      => $self->{'coord_system'},
-                     -SEQ_REGION_NAME   => $self->{'seq_region_name'},
-                     -SEQ_REGION_LENGTH => $self->{'seq_region_length'},
-                     -START             => 1,
-                     -END               => $self->{'end'},
-                     -STRAND            => $self->{'strand'},
-                     -ADAPTOR           => $self->adaptor() );
-
+  ## circular BOF
+  my ($sl1, $sl2) = $self->_split;
   my ( @arr, @arr1, @arr2 );
   my %union;
   if ( defined($score) ) {
@@ -1178,10 +1129,6 @@ sub get_all_DnaAlignFeatures {
 
 ## circular EOF
 
-# if(defined($score)){
-#   return $dafa->fetch_all_by_Slice_and_score($self,$score, $logic_name);
-# }
-# return $dafa->fetch_all_by_Slice_and_hcoverage($self,$hcoverage, $logic_name);
 } ## end sub get_all_DnaAlignFeatures
 
 =head2 get_all_ProteinAlignFeatures
@@ -1232,25 +1179,7 @@ sub get_all_ProteinAlignFeatures {
     warning "cannot specify score and hcoverage. Using score only";
   }
 
-  my $sl1 =
-    Bio::EnsEMBL::CircularSlice->new(
-                     -COORD_SYSTEM      => $self->{'coord_system'},
-                     -SEQ_REGION_NAME   => $self->{'seq_region_name'},
-                     -SEQ_REGION_LENGTH => $self->{'seq_region_length'},
-                     -START             => $self->{'start'},
-                     -END               => $self->{'seq_region_length'},
-                     -STRAND            => $self->{'strand'},
-                     -ADAPTOR           => $self->adaptor() );
-
-  my $sl2 =
-    Bio::EnsEMBL::CircularSlice->new(
-                     -COORD_SYSTEM      => $self->{'coord_system'},
-                     -SEQ_REGION_NAME   => $self->{'seq_region_name'},
-                     -SEQ_REGION_LENGTH => $self->{'seq_region_length'},
-                     -START             => 1,
-                     -END               => $self->{'end'},
-                     -STRAND            => $self->{'strand'},
-                     -ADAPTOR           => $self->adaptor() );
+  my ($sl1, $sl2) = $self->_split;
   my ( @arr, @arr1, @arr2 );
   if ( defined($score) ) {
     @arr1 = @{ $pafa->fetch_all_by_Slice_and_score( $sl1, $score,
@@ -1271,11 +1200,6 @@ sub get_all_ProteinAlignFeatures {
 
   push @arr, @arr1, @arr2;
   return \@arr;
-
-#  if(defined($score)){
-#    return $pafa->fetch_all_by_Slice_and_score($self,$score, $logic_name);
-#  }
-#  return $pafa->fetch_all_by_Slice_and_hcoverage($self,$hcoverage, $logic_name);
 
 } ## end sub get_all_ProteinAlignFeatures
 
@@ -1418,26 +1342,7 @@ sub get_all_Genes {
   }
 
 ## circular BOF
-  my $sl1 =
-    Bio::EnsEMBL::CircularSlice->new(
-                     -COORD_SYSTEM      => $self->{'coord_system'},
-                     -SEQ_REGION_NAME   => $self->{'seq_region_name'},
-                     -SEQ_REGION_LENGTH => $self->{'seq_region_length'},
-                     -START             => $self->{'start'},
-                     -END               => $self->{'seq_region_length'},
-                     -STRAND            => $self->{'strand'},
-                     -ADAPTOR           => $self->adaptor() );
-
-  my $sl2 =
-    Bio::EnsEMBL::CircularSlice->new(
-                     -COORD_SYSTEM      => $self->{'coord_system'},
-                     -SEQ_REGION_NAME   => $self->{'seq_region_name'},
-                     -SEQ_REGION_LENGTH => $self->{'seq_region_length'},
-                     -START             => 1,
-                     -END               => $self->{'end'},
-                     -STRAND            => $self->{'strand'},
-                     -ADAPTOR           => $self->adaptor() );
-
+  my ($sl1, $sl2) = $self->_split;
   my ( @arr, @arr1, @arr2 );
   @arr1 = @{
     $ga->fetch_all_by_Slice( $sl1, $logic_name, $load_transcripts,
@@ -1503,26 +1408,7 @@ sub get_all_Transcripts {
   }
 
 ## circular BOF
-  my $sl1 =
-    Bio::EnsEMBL::CircularSlice->new(
-                     -COORD_SYSTEM      => $self->{'coord_system'},
-                     -SEQ_REGION_NAME   => $self->{'seq_region_name'},
-                     -SEQ_REGION_LENGTH => $self->{'seq_region_length'},
-                     -START             => $self->{'start'},
-                     -END               => $self->{'seq_region_length'},
-                     -STRAND            => $self->{'strand'},
-                     -ADAPTOR           => $self->adaptor() );
-
-  my $sl2 =
-    Bio::EnsEMBL::CircularSlice->new(
-                     -COORD_SYSTEM      => $self->{'coord_system'},
-                     -SEQ_REGION_NAME   => $self->{'seq_region_name'},
-                     -SEQ_REGION_LENGTH => $self->{'seq_region_length'},
-                     -START             => 1,
-                     -END               => $self->{'end'},
-                     -STRAND            => $self->{'strand'},
-                     -ADAPTOR           => $self->adaptor() );
-
+  my ($sl1, $sl2) = $self->_split;
   my ( @arr, @arr1, @arr2 );
   @arr1 =
     @{ $ta->fetch_all_by_Slice( $sl1, $load_exons, $logic_name ) };
@@ -1531,7 +1417,7 @@ sub get_all_Transcripts {
   push @arr, @arr1, @arr2;
   return \@arr;
 ## circular EOF
-  #return $ta->fetch_all_by_Slice($self, $load_exons, $logic_name);
+
 } ## end sub get_all_Transcripts
 
 =head2 get_all_Exons
@@ -1557,26 +1443,7 @@ sub get_all_Exons {
   }
 
   ## circular BOF
-  my $sl1 =
-    Bio::EnsEMBL::CircularSlice->new(
-                     -COORD_SYSTEM      => $self->{'coord_system'},
-                     -SEQ_REGION_NAME   => $self->{'seq_region_name'},
-                     -SEQ_REGION_LENGTH => $self->{'seq_region_length'},
-                     -START             => $self->{'start'},
-                     -END               => $self->{'seq_region_length'},
-                     -STRAND            => $self->{'strand'},
-                     -ADAPTOR           => $self->adaptor() );
-
-  my $sl2 =
-    Bio::EnsEMBL::CircularSlice->new(
-                     -COORD_SYSTEM      => $self->{'coord_system'},
-                     -SEQ_REGION_NAME   => $self->{'seq_region_name'},
-                     -SEQ_REGION_LENGTH => $self->{'seq_region_length'},
-                     -START             => 1,
-                     -END               => $self->{'end'},
-                     -STRAND            => $self->{'strand'},
-                     -ADAPTOR           => $self->adaptor() );
-
+  my ($sl1, $sl2) = $self->_split;
   my ( @arr, @arr1, @arr2 );
   @arr1 =
     @{ $sl1->adaptor->db->get_ExonAdaptor->fetch_all_by_Slice($sl1) };
@@ -1616,26 +1483,7 @@ sub get_all_QtlFeatures {
   }
 
   ## circular BOF
-  my $sl1 =
-    Bio::EnsEMBL::CircularSlice->new(
-                     -COORD_SYSTEM      => $self->{'coord_system'},
-                     -SEQ_REGION_NAME   => $self->{'seq_region_name'},
-                     -SEQ_REGION_LENGTH => $self->{'seq_region_length'},
-                     -START             => $self->{'start'},
-                     -END               => $self->{'seq_region_length'},
-                     -STRAND            => $self->{'strand'},
-                     -ADAPTOR           => $self->adaptor() );
-
-  my $sl2 =
-    Bio::EnsEMBL::CircularSlice->new(
-                     -COORD_SYSTEM      => $self->{'coord_system'},
-                     -SEQ_REGION_NAME   => $self->{'seq_region_name'},
-                     -SEQ_REGION_LENGTH => $self->{'seq_region_length'},
-                     -START             => 1,
-                     -END               => $self->{'end'},
-                     -STRAND            => $self->{'strand'},
-                     -ADAPTOR           => $self->adaptor() );
-
+  my ($sl1, $sl2) = $self->_split;
   my ( @arr, @arr1, @arr2 );
   @arr1 = @{ $qfAdaptor->fetch_all_by_Slice_constraint($sl1) };
   @arr2 = @{ $qfAdaptor->fetch_all_by_Slice_constraint($sl2) };
@@ -1643,7 +1491,6 @@ sub get_all_QtlFeatures {
   return \@arr;
   ## circular EOF
 
-  #return $qfAdaptor->fetch_all_by_Slice_constraint( $self );
 } ## end sub get_all_QtlFeatures
 
 =head2 get_all_KaryotypeBands
@@ -1669,26 +1516,7 @@ sub get_all_KaryotypeBands {
   my $kadp = $self->adaptor->db->get_KaryotypeBandAdaptor();
 
   ## circular BOF
-  my $sl1 =
-    Bio::EnsEMBL::CircularSlice->new(
-                     -COORD_SYSTEM      => $self->{'coord_system'},
-                     -SEQ_REGION_NAME   => $self->{'seq_region_name'},
-                     -SEQ_REGION_LENGTH => $self->{'seq_region_length'},
-                     -START             => $self->{'start'},
-                     -END               => $self->{'seq_region_length'},
-                     -STRAND            => $self->{'strand'},
-                     -ADAPTOR           => $self->adaptor() );
-
-  my $sl2 =
-    Bio::EnsEMBL::CircularSlice->new(
-                     -COORD_SYSTEM      => $self->{'coord_system'},
-                     -SEQ_REGION_NAME   => $self->{'seq_region_name'},
-                     -SEQ_REGION_LENGTH => $self->{'seq_region_length'},
-                     -START             => 1,
-                     -END               => $self->{'end'},
-                     -STRAND            => $self->{'strand'},
-                     -ADAPTOR           => $self->adaptor() );
-
+  my ($sl1, $sl2) = $self->_split;
   my ( @arr, @arr1, @arr2 );
   @arr1 = @{ $kadp->fetch_all_by_Slice($sl1) };
   @arr2 = @{ $kadp->fetch_all_by_Slice($sl2) };
@@ -1696,7 +1524,6 @@ sub get_all_KaryotypeBands {
   return \@arr;
   ## circular EOF
 
-  #return $kadp->fetch_all_by_Slice($self);
 } ## end sub get_all_KaryotypeBands
 
 
@@ -1729,33 +1556,14 @@ sub get_all_AssemblyExceptionFeatures {
   my $aefa = $adaptor->db->get_AssemblyExceptionFeatureAdaptor();
 
   ## circular BOF
-  my $sl1 =
-    Bio::EnsEMBL::CircularSlice->new(
-                     -COORD_SYSTEM      => $self->{'coord_system'},
-                     -SEQ_REGION_NAME   => $self->{'seq_region_name'},
-                     -SEQ_REGION_LENGTH => $self->{'seq_region_length'},
-                     -START             => $self->{'start'},
-                     -END               => $self->{'seq_region_length'},
-                     -STRAND            => $self->{'strand'},
-                     -ADAPTOR           => $self->adaptor() );
-
-  my $sl2 =
-    Bio::EnsEMBL::CircularSlice->new(
-                     -COORD_SYSTEM      => $self->{'coord_system'},
-                     -SEQ_REGION_NAME   => $self->{'seq_region_name'},
-                     -SEQ_REGION_LENGTH => $self->{'seq_region_length'},
-                     -START             => 1,
-                     -END               => $self->{'end'},
-                     -STRAND            => $self->{'strand'},
-                     -ADAPTOR           => $self->adaptor() );
-
+  my ($sl1, $sl2) = $self->_split;
   my ( @arr, @arr1, @arr2 );
   @arr1 = @{ $aefa->fetch_all_by_Slice($sl1) };
   @arr2 = @{ $aefa->fetch_all_by_Slice($sl2) };
   push @arr, @arr1, @arr2;
   return \@arr;
   ## circular EOF
-  #return $aefa->fetch_all_by_Slice($self);
+
 } ## end sub get_all_AssemblyExceptionFeatures
 
 =head2 get_all_MiscFeatures
@@ -1804,26 +1612,7 @@ sub get_all_MiscFeatures {
   }
 
   ## circular BOF
-  my $sl1 =
-    Bio::EnsEMBL::CircularSlice->new(
-                     -COORD_SYSTEM      => $self->{'coord_system'},
-                     -SEQ_REGION_NAME   => $self->{'seq_region_name'},
-                     -SEQ_REGION_LENGTH => $self->{'seq_region_length'},
-                     -START             => $self->{'start'},
-                     -END               => $self->{'seq_region_length'},
-                     -STRAND            => $self->{'strand'},
-                     -ADAPTOR           => $self->adaptor() );
-
-  my $sl2 =
-    Bio::EnsEMBL::CircularSlice->new(
-                     -COORD_SYSTEM      => $self->{'coord_system'},
-                     -SEQ_REGION_NAME   => $self->{'seq_region_name'},
-                     -SEQ_REGION_LENGTH => $self->{'seq_region_length'},
-                     -START             => 1,
-                     -END               => $self->{'end'},
-                     -STRAND            => $self->{'strand'},
-                     -ADAPTOR           => $self->adaptor() );
-
+  my ($sl1, $sl2) = $self->_split;
   my ( @arr, @arr1, @arr2 );
 
   if ($misc_set) {
@@ -1840,11 +1629,6 @@ sub get_all_MiscFeatures {
   return \@arr;
   ## circular EOF
 
-  #  if($misc_set) {
-  #    return $mfa->fetch_all_by_Slice_and_set_code($self,$misc_set);
-  #  }
-
-  #  return $mfa->fetch_all_by_Slice($self);
 } ## end sub get_all_MiscFeatures
 
 =head2 get_all_AffyFeatures
@@ -1871,26 +1655,7 @@ sub get_all_AffyFeatures {
   my $features;
 
   ## circular BOF
-  my $sl1 =
-    Bio::EnsEMBL::CircularSlice->new(
-                     -COORD_SYSTEM      => $self->{'coord_system'},
-                     -SEQ_REGION_NAME   => $self->{'seq_region_name'},
-                     -SEQ_REGION_LENGTH => $self->{'seq_region_length'},
-                     -START             => $self->{'start'},
-                     -END               => $self->{'seq_region_length'},
-                     -STRAND            => $self->{'strand'},
-                     -ADAPTOR           => $self->adaptor() );
-
-  my $sl2 =
-    Bio::EnsEMBL::CircularSlice->new(
-                     -COORD_SYSTEM      => $self->{'coord_system'},
-                     -SEQ_REGION_NAME   => $self->{'seq_region_name'},
-                     -SEQ_REGION_LENGTH => $self->{'seq_region_length'},
-                     -START             => 1,
-                     -END               => $self->{'end'},
-                     -STRAND            => $self->{'strand'},
-                     -ADAPTOR           => $self->adaptor() );
-
+  my ($sl1, $sl2) = $self->_split;
   my ( @arr, @arr1, @arr2 );
 
   if (@arraynames) {
@@ -1904,12 +1669,6 @@ sub get_all_AffyFeatures {
   return \@arr;
   ## circular EOF
 
-#    if ( @arraynames ) {
-#        $features = $fa->fetch_all_by_Slice_arrayname( $self, @arraynames );
-#    } else {
-#        $features = $fa->fetch_all_by_Slice( $self );
-#    }
-#    return $features;
 } ## end sub get_all_AffyFeatures
 
 =head2 get_all_OligoFeatures
@@ -1938,26 +1697,7 @@ sub get_all_OligoFeatures {
   my $features;
 
   ## circular BOF
-  my $sl1 =
-    Bio::EnsEMBL::CircularSlice->new(
-                     -COORD_SYSTEM      => $self->{'coord_system'},
-                     -SEQ_REGION_NAME   => $self->{'seq_region_name'},
-                     -SEQ_REGION_LENGTH => $self->{'seq_region_length'},
-                     -START             => $self->{'start'},
-                     -END               => $self->{'seq_region_length'},
-                     -STRAND            => $self->{'strand'},
-                     -ADAPTOR           => $self->adaptor() );
-
-  my $sl2 =
-    Bio::EnsEMBL::CircularSlice->new(
-                     -COORD_SYSTEM      => $self->{'coord_system'},
-                     -SEQ_REGION_NAME   => $self->{'seq_region_name'},
-                     -SEQ_REGION_LENGTH => $self->{'seq_region_length'},
-                     -START             => 1,
-                     -END               => $self->{'end'},
-                     -STRAND            => $self->{'strand'},
-                     -ADAPTOR           => $self->adaptor() );
-
+  my ($sl1, $sl2) = $self->_split;
   my ( @arr, @arr1, @arr2 );
 
   if (@arraynames) {
@@ -1971,12 +1711,6 @@ sub get_all_OligoFeatures {
   return \@arr;
   ## circular EOF
 
-#    if ( @arraynames ) {
-#        $features = $fa->fetch_all_by_Slice_arrayname( $self, @arraynames );
-#    } else {
-#        $features = $fa->fetch_all_by_Slice( $self );
-#    }
-#    return $features;
 } ## end sub get_all_OligoFeatures
 
 =head2 get_all_OligoFeatures_by_type
@@ -2005,26 +1739,7 @@ sub get_all_OligoFeatures_by_type {
   my $fa = $sa->db()->get_OligoFeatureAdaptor();
 
   ## circular BOF
-  my $sl1 =
-    Bio::EnsEMBL::CircularSlice->new(
-                     -COORD_SYSTEM      => $self->{'coord_system'},
-                     -SEQ_REGION_NAME   => $self->{'seq_region_name'},
-                     -SEQ_REGION_LENGTH => $self->{'seq_region_length'},
-                     -START             => $self->{'start'},
-                     -END               => $self->{'seq_region_length'},
-                     -STRAND            => $self->{'strand'},
-                     -ADAPTOR           => $self->adaptor() );
-
-  my $sl2 =
-    Bio::EnsEMBL::CircularSlice->new(
-                     -COORD_SYSTEM      => $self->{'coord_system'},
-                     -SEQ_REGION_NAME   => $self->{'seq_region_name'},
-                     -SEQ_REGION_LENGTH => $self->{'seq_region_length'},
-                     -START             => 1,
-                     -END               => $self->{'end'},
-                     -STRAND            => $self->{'strand'},
-                     -ADAPTOR           => $self->adaptor() );
-
+  my ($sl1, $sl2) = $self->_split;
   my ( @arr, @arr1, @arr2 );
   @arr1 = @{ $fa->fetch_all_by_Slice_type( $sl1, $type, $logic_name ) };
   @arr2 = @{ $fa->fetch_all_by_Slice_type( $sl2, $type, $logic_name ) };
@@ -2032,8 +1747,6 @@ sub get_all_OligoFeatures_by_type {
   return \@arr;
   ## circular EOF
 
-#my $features = $fa->fetch_all_by_Slice_type( $self, $type, $logic_name );
-#return $features;
 } ## end sub get_all_OligoFeatures_by_type
 
 =head2 get_all_MarkerFeatures
@@ -2065,26 +1778,7 @@ sub get_all_MarkerFeatures {
   my $ma = $self->adaptor->db->get_MarkerFeatureAdaptor;
 
   ## circular BOF
-  my $sl1 =
-    Bio::EnsEMBL::CircularSlice->new(
-                     -COORD_SYSTEM      => $self->{'coord_system'},
-                     -SEQ_REGION_NAME   => $self->{'seq_region_name'},
-                     -SEQ_REGION_LENGTH => $self->{'seq_region_length'},
-                     -START             => $self->{'start'},
-                     -END               => $self->{'seq_region_length'},
-                     -STRAND            => $self->{'strand'},
-                     -ADAPTOR           => $self->adaptor() );
-
-  my $sl2 =
-    Bio::EnsEMBL::CircularSlice->new(
-                     -COORD_SYSTEM      => $self->{'coord_system'},
-                     -SEQ_REGION_NAME   => $self->{'seq_region_name'},
-                     -SEQ_REGION_LENGTH => $self->{'seq_region_length'},
-                     -START             => 1,
-                     -END               => $self->{'end'},
-                     -STRAND            => $self->{'strand'},
-                     -ADAPTOR           => $self->adaptor() );
-
+  my ($sl1, $sl2) = $self->_split;
   my ( @arr, @arr1, @arr2 );
   @arr1 = @{
     $ma->fetch_all_by_Slice_and_priority( $sl1, $priority, $map_weight,
@@ -2096,8 +1790,6 @@ sub get_all_MarkerFeatures {
   return \@arr;
   ## circular EOF
 
-#  my $feats = $ma->fetch_all_by_Slice_and_priority($self, $priority, $map_weight, $logic_name);
-#  return $feats;
 } ## end sub get_all_MarkerFeatures
 
 =head2 get_all_compara_DnaAlignFeatures
@@ -2156,27 +1848,9 @@ sub get_all_compara_DnaAlignFeatures {
   }
 
   my $dafa = $compara_db->get_DnaAlignFeatureAdaptor;
+
   ## circular BOF
-  my $sl1 =
-    Bio::EnsEMBL::CircularSlice->new(
-                     -COORD_SYSTEM      => $self->{'coord_system'},
-                     -SEQ_REGION_NAME   => $self->{'seq_region_name'},
-                     -SEQ_REGION_LENGTH => $self->{'seq_region_length'},
-                     -START             => $self->{'start'},
-                     -END               => $self->{'seq_region_length'},
-                     -STRAND            => $self->{'strand'},
-                     -ADAPTOR           => $self->adaptor() );
-
-  my $sl2 =
-    Bio::EnsEMBL::CircularSlice->new(
-                     -COORD_SYSTEM      => $self->{'coord_system'},
-                     -SEQ_REGION_NAME   => $self->{'seq_region_name'},
-                     -SEQ_REGION_LENGTH => $self->{'seq_region_length'},
-                     -START             => 1,
-                     -END               => $self->{'end'},
-                     -STRAND            => $self->{'strand'},
-                     -ADAPTOR           => $self->adaptor() );
-
+  my ($sl1, $sl2) = $self->_split;
   my ( @arr, @arr1, @arr2 );
   @arr1 = @{
     $dafa->fetch_all_by_Slice( $sl1, $qy_species, $qy_assembly,
@@ -2187,7 +1861,7 @@ sub get_all_compara_DnaAlignFeatures {
   push @arr, @arr1, @arr2;
   return \@arr;
   ## circular EOF
-#return $dafa->fetch_all_by_Slice($self, $qy_species, $qy_assembly, $alignment_type);
+
 } ## end sub get_all_compara_DnaAlignFeatures
 
 =head2 get_all_compara_Syntenies
@@ -2246,26 +1920,7 @@ sub get_all_compara_Syntenies {
     @{ $dfa->fetch_all_by_GenomeDB_region( $this_gdb, $cs, $sr ) };
 
   ## circular BOF
-  my $sl1 =
-    Bio::EnsEMBL::CircularSlice->new(
-                     -COORD_SYSTEM      => $self->{'coord_system'},
-                     -SEQ_REGION_NAME   => $self->{'seq_region_name'},
-                     -SEQ_REGION_LENGTH => $self->{'seq_region_length'},
-                     -START             => $self->{'start'},
-                     -END               => $self->{'seq_region_length'},
-                     -STRAND            => $self->{'strand'},
-                     -ADAPTOR           => $self->adaptor() );
-
-  my $sl2 =
-    Bio::EnsEMBL::CircularSlice->new(
-                     -COORD_SYSTEM      => $self->{'coord_system'},
-                     -SEQ_REGION_NAME   => $self->{'seq_region_name'},
-                     -SEQ_REGION_LENGTH => $self->{'seq_region_length'},
-                     -START             => 1,
-                     -END               => $self->{'end'},
-                     -STRAND            => $self->{'strand'},
-                     -ADAPTOR           => $self->adaptor() );
-
+  my ($sl1, $sl2) = $self->_split;
   my ( @arr, @arr1, @arr2 );
   @arr1 = @{
     $sra->fetch_all_by_MethodLinkSpeciesSet_DnaFrag( $mlss, $dnafrag,
@@ -2278,7 +1933,7 @@ sub get_all_compara_Syntenies {
   push @arr, @arr1, @arr2;
   return \@arr;
   ## circular EOF
-#return $sra->fetch_all_by_MethodLinkSpeciesSet_DnaFrag($mlss, $dnafrag, $self->start, $self->end);
+
 } ## end sub get_all_compara_Syntenies
 
 =head2 get_all_Haplotypes
@@ -2315,26 +1970,7 @@ sub get_all_Haplotypes {
   my $haplo_adaptor = $haplo_db->get_HaplotypeAdaptor;
 
   ## circular BOF
-  my $sl1 =
-    Bio::EnsEMBL::CircularSlice->new(
-                     -COORD_SYSTEM      => $self->{'coord_system'},
-                     -SEQ_REGION_NAME   => $self->{'seq_region_name'},
-                     -SEQ_REGION_LENGTH => $self->{'seq_region_length'},
-                     -START             => $self->{'start'},
-                     -END               => $self->{'seq_region_length'},
-                     -STRAND            => $self->{'strand'},
-                     -ADAPTOR           => $self->adaptor() );
-
-  my $sl2 =
-    Bio::EnsEMBL::CircularSlice->new(
-                     -COORD_SYSTEM      => $self->{'coord_system'},
-                     -SEQ_REGION_NAME   => $self->{'seq_region_name'},
-                     -SEQ_REGION_LENGTH => $self->{'seq_region_length'},
-                     -START             => 1,
-                     -END               => $self->{'end'},
-                     -STRAND            => $self->{'strand'},
-                     -ADAPTOR           => $self->adaptor() );
-
+  my ($sl1, $sl2) = $self->_split;
   my ( @arr, @arr1, @arr2 );
   @arr1 = @{ $haplo_adaptor->fetch_all_by_Slice( $sl1, $lite_flag ) };
   @arr2 = @{ $haplo_adaptor->fetch_all_by_Slice( $sl2, $lite_flag ) };
@@ -2342,8 +1978,6 @@ sub get_all_Haplotypes {
   return \@arr;
   ## circular EOF
 
-#my $haplotypes = $haplo_adaptor->fetch_all_by_Slice($self, $lite_flag);
-#return $haplotypes;
 } ## end sub get_all_Haplotypes
 
 
@@ -2417,32 +2051,14 @@ sub get_all_ExternalFeatures {
   }
 
   ## circular BOF
-  my $sl1 =
-    Bio::EnsEMBL::CircularSlice->new(
-                     -COORD_SYSTEM      => $self->{'coord_system'},
-                     -SEQ_REGION_NAME   => $self->{'seq_region_name'},
-                     -SEQ_REGION_LENGTH => $self->{'seq_region_length'},
-                     -START             => $self->{'start'},
-                     -END               => $self->{'seq_region_length'},
-                     -STRAND            => $self->{'strand'},
-                     -ADAPTOR           => $self->adaptor() );
-
-  my $sl2 =
-    Bio::EnsEMBL::CircularSlice->new(
-                     -COORD_SYSTEM      => $self->{'coord_system'},
-                     -SEQ_REGION_NAME   => $self->{'seq_region_name'},
-                     -SEQ_REGION_LENGTH => $self->{'seq_region_length'},
-                     -START             => 1,
-                     -END               => $self->{'end'},
-                     -STRAND            => $self->{'strand'},
-                     -ADAPTOR           => $self->adaptor() );
-
+  my ($sl1, $sl2) = $self->_split;
   foreach my $xfa (@xf_adaptors) {
     push @$features, @{ $xfa->fetch_all_by_Slice($sl1) };
     push @$features, @{ $xfa->fetch_all_by_Slice($sl2) };
   }
   return $features;
   ## circular EOF
+
 } ## end sub get_all_ExternalFeatures
 
 =head2 get_all_DitagFeatures
@@ -2471,33 +2087,14 @@ sub get_all_DitagFeatures {
   my $dfa = $self->adaptor->db->get_DitagFeatureAdaptor();
 
   ## circular BOF
-  my $sl1 =
-    Bio::EnsEMBL::CircularSlice->new(
-                     -COORD_SYSTEM      => $self->{'coord_system'},
-                     -SEQ_REGION_NAME   => $self->{'seq_region_name'},
-                     -SEQ_REGION_LENGTH => $self->{'seq_region_length'},
-                     -START             => $self->{'start'},
-                     -END               => $self->{'seq_region_length'},
-                     -STRAND            => $self->{'strand'},
-                     -ADAPTOR           => $self->adaptor() );
-
-  my $sl2 =
-    Bio::EnsEMBL::CircularSlice->new(
-                     -COORD_SYSTEM      => $self->{'coord_system'},
-                     -SEQ_REGION_NAME   => $self->{'seq_region_name'},
-                     -SEQ_REGION_LENGTH => $self->{'seq_region_length'},
-                     -START             => 1,
-                     -END               => $self->{'end'},
-                     -STRAND            => $self->{'strand'},
-                     -ADAPTOR           => $self->adaptor() );
-
+  my ($sl1, $sl2) = $self->_split;
   my ( @arr, @arr1, @arr2 );
   @arr1 = @{ $dfa->fetch_all_by_Slice( $sl1, $type, $logic_name ) };
   @arr2 = @{ $dfa->fetch_all_by_Slice( $sl2, $type, $logic_name ) };
   push @arr, @arr1, @arr2;
   return \@arr;
   ## circular EOF
-  #return $dfa->fetch_all_by_Slice($self, $type, $logic_name);
+
 } ## end sub get_all_DitagFeatures
 
 # GENERIC FEATURES (See DBAdaptor.pm)
@@ -2539,33 +2136,13 @@ sub get_generic_features {
     my $adaptor_obj = $adaptors{$adaptor_name};
     # get the features and add them to the hash
     ## circular BOF
-    my $sl1 =
-      Bio::EnsEMBL::CircularSlice->new(
-                     -COORD_SYSTEM      => $self->{'coord_system'},
-                     -SEQ_REGION_NAME   => $self->{'seq_region_name'},
-                     -SEQ_REGION_LENGTH => $self->{'seq_region_length'},
-                     -START             => $self->{'start'},
-                     -END               => $self->{'seq_region_length'},
-                     -STRAND            => $self->{'strand'},
-                     -ADAPTOR           => $self->adaptor() );
-
-    my $sl2 =
-      Bio::EnsEMBL::CircularSlice->new(
-                     -COORD_SYSTEM      => $self->{'coord_system'},
-                     -SEQ_REGION_NAME   => $self->{'seq_region_name'},
-                     -SEQ_REGION_LENGTH => $self->{'seq_region_length'},
-                     -START             => 1,
-                     -END               => $self->{'end'},
-                     -STRAND            => $self->{'strand'},
-                     -ADAPTOR           => $self->adaptor() );
-
+    my ($sl1, $sl2) = $self->_split;
     my ( @arr1, @arr2 );
     my $features_ref;
     @arr1 = @{ $adaptor_obj->fetch_all_by_Slice($sl1) };
     @arr2 = @{ $adaptor_obj->fetch_all_by_Slice($sl2) };
     push @{$features_ref}, @arr1, @arr2;
     ## circular EOF
-    #my $features_ref = $adaptor_obj->fetch_all_by_Slice($self);
 
     # add each feature to the hash to be returned
     foreach my $feature (@$features_ref) {
