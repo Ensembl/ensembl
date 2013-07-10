@@ -180,7 +180,12 @@ sub compare_after_patches {
   $dbc->do("use $source_schema");
   my $source_patches = $sql_helper->execute_simple(-SQL => "select meta_value from meta where meta_key='patch' and meta_value like 'patch_${last_release}_${current_release}_%'");
   
-  map { ok($_ ~~ @{$source_patches}, "$_ in patched database") } @{$target_patches};
+  # Does not work on <5.10 versions of Perl
+  # map { ok($_ ~~ @{$source_patches}, "$_ in patched database") } @{$target_patches};
+  my %source_patches;
+  map { $source_patches{$_}++ } @{$source_patches};
+  map { ok(exists $source_patches{$_}, "$_ in patched database") } @{$target_patches};
+
 }
 
 # Get the name of all tables of a certain schema
