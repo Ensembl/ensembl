@@ -9,11 +9,9 @@ use File::Basename;
 
 use base qw( XrefParser::BaseParser );
 my $peptide_source_id;
-my $dna_source_id ;
 my $mrna_source_id ;
 my $ncrna_source_id ;
 my $pred_peptide_source_id ;
-my $pred_dna_source_id ;
 my $pred_mrna_source_id ;
 my $pred_ncrna_source_id ;
 
@@ -94,9 +92,7 @@ sub run {
         $self->set_release( $ncrna_source_id,        $release );
         $self->set_release( $pred_mrna_source_id,    $release );
         $self->set_release( $pred_ncrna_source_id,   $release );
-        $self->set_release( $dna_source_id,          $release );
         $self->set_release( $pred_peptide_source_id, $release );
-        $self->set_release( $pred_dna_source_id,     $release );
     }
 
   return 0; # successful
@@ -192,8 +188,6 @@ sub create_xrefs {
 	  $source_id = $mrna_source_id;
 	} elsif( $acc =~ /^NR/) {
 	  $source_id = $ncrna_source_id;
-	} else {
-	  $source_id = $dna_source_id;
 	}
       } 
       elsif ($type =~ /peptide/) {
