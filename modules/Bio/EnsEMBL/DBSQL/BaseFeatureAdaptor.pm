@@ -806,7 +806,7 @@ COORD_SYSTEM: foreach my $coord_system (@feature_coord_systems) {
                             . " OR ".$table_synonym.".seq_region_start <= ".$slice->end
                             . " OR ".$table_synonym.".seq_region_end >= ".$slice->start
                             . " OR ".$table_synonym.".seq_region_end <= ".$slice->end
-                            . " OR ".$table_synonym.".seq_region_start > ".$table_synonym.".seq_region_end";
+                            . " OR ".$table_synonym.".seq_region_start > ".$table_synonym.".seq_region_end)";
                     } else {
                         $constraint .= " ((".$table_synonym.".seq_region_start <= ".$slice->end
                             . " AND ".$table_synonym.".seq_region_end >= ".$slice->start.") "
