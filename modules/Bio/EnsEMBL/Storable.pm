@@ -46,7 +46,7 @@ package Bio::EnsEMBL::Storable;
 use Bio::EnsEMBL::Utils::Exception qw(throw warning);
 use Bio::EnsEMBL::Utils::Argument qw(rearrange);
 use Bio::EnsEMBL::Utils::Scalar qw(assert_ref);
-use Scalar::Util qw(weaken);
+use Scalar::Util qw(weaken isweak);
 
 =head2 new
 
@@ -77,6 +77,28 @@ sub new {
   return $self;
 }
 
+=head2 new_fast
+
+  Arg [1]    : hashref to be blessed
+  Description: Construct a new Bio::EnsEMBL::Storable object using the hashref.
+               This is a very quick constructor that requires internal knowledge 
+               of the class. This is used in speed critical sections of the code
+               where many objects need to be created quickly.
+  Exceptions : none
+  Returntype : Instance of Bio::EnsEMBL::Storable subclass
+  Caller     : general, subclass constructors
+  Status     : Stable
+
+=cut
+
+
+sub new_fast {
+  my $class = shift;
+  my $hashref = shift;
+  my $self = bless $hashref, $class;
+  weaken($self->{adaptor})  if ( ! isweak($self->{adaptor}) );
+  return $self;
+}
 
 =head2 dbID
 

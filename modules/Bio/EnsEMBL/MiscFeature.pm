@@ -110,7 +110,6 @@ use warnings;
 
 use Bio::EnsEMBL::Feature;
 use Bio::EnsEMBL::Utils::Exception qw(throw);
-use Scalar::Util qw(weaken isweak);
 
 use vars qw(@ISA);
 

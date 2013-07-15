@@ -43,32 +43,8 @@ use Bio::Annotation::DBLink;
 
 use Bio::EnsEMBL::Utils::Argument qw(rearrange);
 use Bio::EnsEMBL::Utils::Exception qw(deprecate);
-use Scalar::Util qw(weaken isweak);
 
 our @ISA = qw(Bio::EnsEMBL::Storable Bio::Annotation::DBLink);
-
-
-=head2 new_fast
-
-  Arg [1]    : Hashref $hashref - hash reference to bless as new DBEntry object
-  Description: A very quick constructor that requires internal knowledge of
-               the class. This is used in speed critical sections of the code
-               where many objects need to be created quickly.
-  Returntype : Bio::EnsEMBL::DBEntry
-  Exceptions : none
-  Caller     : general
-  Status     : Stable
-
-=cut
-
-sub new_fast {
-  my $class = shift;
-  my $hashref = shift;
-  my $self = bless $hashref, $class;
-  weaken($self->{adaptor})  if ( ! isweak($self->{adaptor}) );
-  return $self;
-}
-
 
 =head2 new
 

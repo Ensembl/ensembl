@@ -144,42 +144,6 @@ sub new {
 }
 
 
-# =head2 new_fast
-
-#   Arg [1]    : Bio::EnsEMBL::Slice $slice
-#   Arg [2]    : int $start
-#   Arg [3]    : int $end
-#   Arg [4]    : int $strand (1 or -1)
-#   Example    : none
-#   Description: create an Exon object
-#   Returntype : Bio::EnsEMBL::Exon
-#   Exceptions : throws if end < start
-#   Caller     : general
-#   Status     : Stable
-
-# =cut
-
-# sub new_fast {
-#   my ($class, $slice, $start, $end, $strand) = @_;
-
-#   my $self = bless {}, $class;
-
-#   # Swap start and end if they're in the wrong order
-#   # We assume that the strand is correct and keep the input value.
-
-#   if ($start > $end) {
-#     throw( "End smaller than start not allowed" );
-#   }
-
-#   $self->start ($start);
-#   $self->end   ($end);
-#   $self->strand($strand);
-#   $self->slice($slice);
-
-#   return $self;
-# }
-
-
 =head2 end_phase
 
   Arg [1]    : (optional) int $end_phase

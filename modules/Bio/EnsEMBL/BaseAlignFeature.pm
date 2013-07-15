@@ -135,7 +135,6 @@ package Bio::EnsEMBL::BaseAlignFeature;
 use Bio::EnsEMBL::FeaturePair;
 use Bio::EnsEMBL::Utils::Argument qw(rearrange);
 use Bio::EnsEMBL::Utils::Exception qw(throw warning);
-use Scalar::Util qw(weaken isweak);
 
 use vars qw(@ISA);
 use strict;

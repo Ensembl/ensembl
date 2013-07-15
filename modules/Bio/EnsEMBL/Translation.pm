@@ -52,11 +52,10 @@ package Bio::EnsEMBL::Translation;
 use vars qw($AUTOLOAD @ISA);
 use strict;
 
-use Scalar::Util qw(weaken isweak);
-
 use Bio::EnsEMBL::Utils::Exception qw( deprecate throw warning );
 use Bio::EnsEMBL::Utils::Argument qw( rearrange );
 use Bio::EnsEMBL::Utils::Scalar qw( assert_ref );
+use Scalar::Util qw(weaken);
 
 use Bio::EnsEMBL::Storable;
 
@@ -123,25 +122,7 @@ sub new {
   return $self;
 }
 
-=head2 new_fast
 
-  Arg [1]    : hashref to be blessed
-  Description: Construct a new Bio::EnsEMBL::Translation using the hashref.
-  Exceptions : none
-  Returntype : Bio::EnsEMBL::Translation
-  Caller     : general, subclass constructors
-  Status     : Stable
-
-=cut
-
-
-sub new_fast {
-  my $class = shift;
-  my $hashref = shift;
-  my $self = bless $hashref, $class;
-  weaken($self->{adaptor})  if ( ! isweak($self->{adaptor}) );
-  return $self;
-}
 
 =head2 transcript
 

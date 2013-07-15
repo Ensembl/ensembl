@@ -24,7 +24,6 @@ use strict;
 
 use Bio::EnsEMBL::Storable;
 use Bio::EnsEMBL::Utils::Argument qw(rearrange);
-use Scalar::Util qw(weaken isweak);
 
 use vars qw(@ISA);
 @ISA = qw(Bio::EnsEMBL::Storable);
@@ -75,27 +74,6 @@ sub new {
   $self->{'repeat_consensus'} = $repeat_consensus;
   $self->{'repeat_type'} = $repeat_type;
 
-  return $self;
-}
-
-
-=head2 new_fast
-
-  Arg [1] : hashref to bless as a new RepeatConsensus 
-
-  Description: Creates a new Bio::EnsEMBL::RepeatConsensus object
-  Returntype : Bio::EnsEMBL::RepeatConsensus
-  Exceptions : none
-  Caller     : internal
-  Status     : Stable
-
-=cut
-
-sub new_fast {
-  my $class = shift;
-  my $hashref = shift;
-  my $self = bless $hashref, $class;
-  weaken($self->{adaptor})  if ( ! isweak($self->{adaptor}) );
   return $self;
 }
 
