@@ -4,223 +4,111 @@
 #
 # Test Bio::EnsEMBL::Utils::IO::GTFSerializer.
 #
-# Strategy:
-#
-#   In theory, we should know the GTF output for some 
-#   transcripts and compare it against the output of the 
-#   serializer. In practice, this is difficult and very 
-#   time consuming.
-#   One way to circumnvent this is to start from the observation
-#   that the serializer was built from the ashes of the web
-#   script ensembl-webcode/utils/ensembl2gtf_forweb used by
-#   production to get GTFs for last release (71).
-#   The strategy is then to download the GTF files for all last release
-#   species from the FTP site, and for each file compare its output
-#   relative to transcripts with the corresponding output of the 
-#   serializer.
-#   
-# Notes:
-# 
-#   - This strategy only works for testing the GTFSerializer during
-#     the transition from 71 to 72, as after the current release the 
-#     GTF files will be produced using the GTFSerializer itself via
-#     the Hive pipeline.
-#    
-#   - The first run of the test reports 9 out 610 failuere for certain
-#     species (canis_familiaris cavia_porcellus danio_rerio equus_caballus 
-#     loxodonta_africana ornithorhynchus_anatinus oryctolagus_cuniculus 
-#     xenopus_tropicalis). This is because the GTFSerializer has corrected
-#     a bug of the original script, which was using an incorrect codon
-#     table assumption in method check_start_and_stop which is not working
-#     for all species.
-#     Hence, this failures are ok.
-#
-
 
 use strict;
 use warnings;
 
+use Data::Dumper;
 use Test::More;
 use Test::Differences;
 use IO::String;
 use Net::FTP;
 
-use Bio::EnsEMBL::Registry;
-use Bio::EnsEMBL::ApiVersion qw/software_version/;
-use Bio::EnsEMBL::Utils::IO qw/gz_work_with_file/; # iterate_lines
-# use Bio::EnsEMBL::Test::MultiTestDB;
-use Bio::EnsEMBL::Utils::Exception;
+use Bio::EnsEMBL::Test::MultiTestDB;
 use Bio::EnsEMBL::Utils::IO::GTFSerializer;
 
-if ( not $ENV{TEST_AUTHOR} ) {
-  my $msg = 'Author test. Set $ENV{TEST_AUTHOR} to a true value to run.';
-  plan( skip_all => $msg );
-}
+my $transcripts_gtf = 
+  {
+   ENST00000310998 => "20\tprotein_coding\texon\t30274334\t30274425\t.\t+\t.\tgene_id \"ENSG00000131044\"; transcript_id \"ENST00000310998\"; exon_number \"1\"; gene_name \"C20orf125\"; gene_biotype \"protein_coding\"; transcript_name \"C20orf125\"; exon_id \"ENSE00001155821\";
+20\tprotein_coding\tCDS\t30274334\t30274425\t.\t+\t0\tgene_id \"ENSG00000131044\"; transcript_id \"ENST00000310998\"; exon_number \"1\"; gene_name \"C20orf125\"; gene_biotype \"protein_coding\"; transcript_name \"C20orf125\"; protein_id \"ENSP00000308980\";
+20\tprotein_coding\texon\t30284451\t30284562\t.\t+\t.\tgene_id \"ENSG00000131044\"; transcript_id \"ENST00000310998\"; exon_number \"2\"; gene_name \"C20orf125\"; gene_biotype \"protein_coding\"; transcript_name \"C20orf125\"; exon_id \"ENSE00000859878\";
+20\tprotein_coding\tCDS\t30284451\t30284562\t.\t+\t1\tgene_id \"ENSG00000131044\"; transcript_id \"ENST00000310998\"; exon_number \"2\"; gene_name \"C20orf125\"; gene_biotype \"protein_coding\"; transcript_name \"C20orf125\"; protein_id \"ENSP00000308980\";
+20\tprotein_coding\texon\t30285597\t30285782\t.\t+\t.\tgene_id \"ENSG00000131044\"; transcript_id \"ENST00000310998\"; exon_number \"3\"; gene_name \"C20orf125\"; gene_biotype \"protein_coding\"; transcript_name \"C20orf125\"; exon_id \"ENSE00000661128\";
+20\tprotein_coding\tCDS\t30285597\t30285782\t.\t+\t0\tgene_id \"ENSG00000131044\"; transcript_id \"ENST00000310998\"; exon_number \"3\"; gene_name \"C20orf125\"; gene_biotype \"protein_coding\"; transcript_name \"C20orf125\"; protein_id \"ENSP00000308980\";
+20\tprotein_coding\texon\t30295724\t30295792\t.\t+\t.\tgene_id \"ENSG00000131044\"; transcript_id \"ENST00000310998\"; exon_number \"4\"; gene_name \"C20orf125\"; gene_biotype \"protein_coding\"; transcript_name \"C20orf125\"; exon_id \"ENSE00000991632\";
+20\tprotein_coding\tCDS\t30295724\t30295792\t.\t+\t0\tgene_id \"ENSG00000131044\"; transcript_id \"ENST00000310998\"; exon_number \"4\"; gene_name \"C20orf125\"; gene_biotype \"protein_coding\"; transcript_name \"C20orf125\"; protein_id \"ENSP00000308980\";
+20\tprotein_coding\texon\t30296506\t30296579\t.\t+\t.\tgene_id \"ENSG00000131044\"; transcript_id \"ENST00000310998\"; exon_number \"5\"; gene_name \"C20orf125\"; gene_biotype \"protein_coding\"; transcript_name \"C20orf125\"; exon_id \"ENSE00001155786\";
+20\tprotein_coding\tCDS\t30296506\t30296579\t.\t+\t0\tgene_id \"ENSG00000131044\"; transcript_id \"ENST00000310998\"; exon_number \"5\"; gene_name \"C20orf125\"; gene_biotype \"protein_coding\"; transcript_name \"C20orf125\"; protein_id \"ENSP00000308980\";
+20\tprotein_coding\texon\t30298823\t30298904\t.\t+\t.\tgene_id \"ENSG00000131044\"; transcript_id \"ENST00000310998\"; exon_number \"6\"; gene_name \"C20orf125\"; gene_biotype \"protein_coding\"; transcript_name \"C20orf125\"; exon_id \"ENSE00001180831\";
+20\tprotein_coding\tCDS\t30298823\t30298904\t.\t+\t1\tgene_id \"ENSG00000131044\"; transcript_id \"ENST00000310998\"; exon_number \"6\"; gene_name \"C20orf125\"; gene_biotype \"protein_coding\"; transcript_name \"C20orf125\"; protein_id \"ENSP00000308980\";
+",
 
-# my $current_release = software_version();
-# my $last_release = $current_release - 1;
-my $release = 71;
+   ENST00000278995 => "20\tprotein_coding\texon\t30285705\t30285782\t.\t+\t.\tgene_id \"ENSG00000131044\"; transcript_id \"ENST00000278995\"; exon_number \"1\"; gene_name \"C20orf125\"; gene_biotype \"protein_coding\"; transcript_name \"Q9BR18\"; exon_id \"ENSE00000991635\";
+20\tprotein_coding\tCDS\t30285705\t30285782\t.\t+\t0\tgene_id \"ENSG00000131044\"; transcript_id \"ENST00000278995\"; exon_number \"1\"; gene_name \"C20orf125\"; gene_biotype \"protein_coding\"; transcript_name \"Q9BR18\"; protein_id \"ENSP00000278995\";
+20\tprotein_coding\texon\t30295724\t30295792\t.\t+\t.\tgene_id \"ENSG00000131044\"; transcript_id \"ENST00000278995\"; exon_number \"2\"; gene_name \"C20orf125\"; gene_biotype \"protein_coding\"; transcript_name \"Q9BR18\"; exon_id \"ENSE00000991632\";
+20\tprotein_coding\tCDS\t30295724\t30295792\t.\t+\t0\tgene_id \"ENSG00000131044\"; transcript_id \"ENST00000278995\"; exon_number \"2\"; gene_name \"C20orf125\"; gene_biotype \"protein_coding\"; transcript_name \"Q9BR18\"; protein_id \"ENSP00000278995\";
+20\tprotein_coding\texon\t30298823\t30298913\t.\t+\t.\tgene_id \"ENSG00000131044\"; transcript_id \"ENST00000278995\"; exon_number \"3\"; gene_name \"C20orf125\"; gene_biotype \"protein_coding\"; transcript_name \"Q9BR18\"; exon_id \"ENSE00000991636\";
+20\tprotein_coding\tCDS\t30298823\t30298913\t.\t+\t0\tgene_id \"ENSG00000131044\"; transcript_id \"ENST00000278995\"; exon_number \"3\"; gene_name \"C20orf125\"; gene_biotype \"protein_coding\"; transcript_name \"Q9BR18\"; protein_id \"ENSP00000278995\";
+20\tprotein_coding\texon\t30300869\t30300924\t.\t+\t.\tgene_id \"ENSG00000131044\"; transcript_id \"ENST00000278995\"; exon_number \"4\"; gene_name \"C20orf125\"; gene_biotype \"protein_coding\"; transcript_name \"Q9BR18\"; exon_id \"ENSE00000991637\";
+20\tprotein_coding\tCDS\t30300869\t30300924\t.\t+\t2\tgene_id \"ENSG00000131044\"; transcript_id \"ENST00000278995\"; exon_number \"4\"; gene_name \"C20orf125\"; gene_biotype \"protein_coding\"; transcript_name \"Q9BR18\"; protein_id \"ENSP00000278995\";
+",
 
-my $registry = 'Bio::EnsEMBL::Registry';
-eval { 
-  $registry->load_registry_from_db(
-    -host => 'mysql-ensembl-mirror.ebi.ac.uk',
-    -port => 4240,
-    -db_version => $release,
-    -user => 'anonymous',
-    -verbose => 0
-  )
+   ENST00000252021 => "20\tprotein_coding\texon\t30301733\t30301887\t.\t+\t.\tgene_id \"ENSG00000174873\"; transcript_id \"ENST00000252021\"; exon_number \"1\"; gene_biotype \"protein_coding\"; exon_id \"ENSE00001155773\";
+20\tprotein_coding\tCDS\t30301733\t30301887\t.\t+\t0\tgene_id \"ENSG00000174873\"; transcript_id \"ENST00000252021\"; exon_number \"1\"; gene_biotype \"protein_coding\"; protein_id \"ENSP00000252021\";
+20\tprotein_coding\texon\t30309589\t30309718\t.\t+\t.\tgene_id \"ENSG00000174873\"; transcript_id \"ENST00000252021\"; exon_number \"2\"; gene_biotype \"protein_coding\"; exon_id \"ENSE00001180789\";
+20\tprotein_coding\tCDS\t30309589\t30309718\t.\t+\t1\tgene_id \"ENSG00000174873\"; transcript_id \"ENST00000252021\"; exon_number \"2\"; gene_biotype \"protein_coding\"; protein_id \"ENSP00000252021\";
+20\tprotein_coding\texon\t30310552\t30310748\t.\t+\t.\tgene_id \"ENSG00000174873\"; transcript_id \"ENST00000252021\"; exon_number \"3\"; gene_biotype \"protein_coding\"; exon_id \"ENSE00001048784\";
+20\tprotein_coding\tCDS\t30310552\t30310748\t.\t+\t0\tgene_id \"ENSG00000174873\"; transcript_id \"ENST00000252021\"; exon_number \"3\"; gene_biotype \"protein_coding\"; protein_id \"ENSP00000252021\";
+20\tprotein_coding\texon\t30313256\t30313369\t.\t+\t.\tgene_id \"ENSG00000174873\"; transcript_id \"ENST00000252021\"; exon_number \"4\"; gene_biotype \"protein_coding\"; exon_id \"ENSE00001048782\";
+20\tprotein_coding\tCDS\t30313256\t30313369\t.\t+\t1\tgene_id \"ENSG00000174873\"; transcript_id \"ENST00000252021\"; exon_number \"4\"; gene_biotype \"protein_coding\"; protein_id \"ENSP00000252021\";
+20\tprotein_coding\texon\t30315002\t30315126\t.\t+\t.\tgene_id \"ENSG00000174873\"; transcript_id \"ENST00000252021\"; exon_number \"5\"; gene_biotype \"protein_coding\"; exon_id \"ENSE00001155819\";
+20\tprotein_coding\tCDS\t30315002\t30315126\t.\t+\t1\tgene_id \"ENSG00000174873\"; transcript_id \"ENST00000252021\"; exon_number \"5\"; gene_biotype \"protein_coding\"; protein_id \"ENSP00000252021\";
+20\tprotein_coding\texon\t30318805\t30318881\t.\t+\t.\tgene_id \"ENSG00000174873\"; transcript_id \"ENST00000252021\"; exon_number \"6\"; gene_biotype \"protein_coding\"; exon_id \"ENSE00001180793\";
+20\tprotein_coding\tCDS\t30318805\t30318878\t.\t+\t2\tgene_id \"ENSG00000174873\"; transcript_id \"ENST00000252021\"; exon_number \"6\"; gene_biotype \"protein_coding\"; protein_id \"ENSP00000252021\";
+20\tprotein_coding\tstop_codon\t30318879\t30318881\t.\t+\t0\tgene_id \"ENSG00000174873\"; transcript_id \"ENST00000252021\"; exon_number \"6\"; gene_biotype \"protein_coding\";
+",
+
+   ENST00000202017 => "20\tprotein_coding\texon\t30327735\t30327869\t.\t-\t.\tgene_id \"ENSG00000088356\"; transcript_id \"ENST00000202017\"; exon_number \"1\"; gene_name \"C20orf126\"; gene_biotype \"protein_coding\"; transcript_name \"C20orf126\"; exon_id \"ENSE00001155739\";
+20\tprotein_coding\tCDS\t30327735\t30327869\t.\t-\t0\tgene_id \"ENSG00000088356\"; transcript_id \"ENST00000202017\"; exon_number \"1\"; gene_name \"C20orf126\"; gene_biotype \"protein_coding\"; transcript_name \"C20orf126\"; protein_id \"ENSP00000202017\";
+20\tprotein_coding\texon\t30326172\t30326247\t.\t-\t.\tgene_id \"ENSG00000088356\"; transcript_id \"ENST00000202017\"; exon_number \"2\"; gene_name \"C20orf126\"; gene_biotype \"protein_coding\"; transcript_name \"C20orf126\"; exon_id \"ENSE00000661139\";
+20\tprotein_coding\tCDS\t30326172\t30326247\t.\t-\t0\tgene_id \"ENSG00000088356\"; transcript_id \"ENST00000202017\"; exon_number \"2\"; gene_name \"C20orf126\"; gene_biotype \"protein_coding\"; transcript_name \"C20orf126\"; protein_id \"ENSP00000202017\";
+20\tprotein_coding\texon\t30324668\t30324742\t.\t-\t.\tgene_id \"ENSG00000088356\"; transcript_id \"ENST00000202017\"; exon_number \"3\"; gene_name \"C20orf126\"; gene_biotype \"protein_coding\"; transcript_name \"C20orf126\"; exon_id \"ENSE00000661138\";
+20\tprotein_coding\tCDS\t30324668\t30324742\t.\t-\t2\tgene_id \"ENSG00000088356\"; transcript_id \"ENST00000202017\"; exon_number \"3\"; gene_name \"C20orf126\"; gene_biotype \"protein_coding\"; transcript_name \"C20orf126\"; protein_id \"ENSP00000202017\";
+20\tprotein_coding\texon\t30322356\t30322436\t.\t-\t.\tgene_id \"ENSG00000088356\"; transcript_id \"ENST00000202017\"; exon_number \"4\"; gene_name \"C20orf126\"; gene_biotype \"protein_coding\"; transcript_name \"C20orf126\"; exon_id \"ENSE00000661137\";
+20\tprotein_coding\tCDS\t30322356\t30322436\t.\t-\t2\tgene_id \"ENSG00000088356\"; transcript_id \"ENST00000202017\"; exon_number \"4\"; gene_name \"C20orf126\"; gene_biotype \"protein_coding\"; transcript_name \"C20orf126\"; protein_id \"ENSP00000202017\";
+20\tprotein_coding\texon\t30320853\t30321749\t.\t-\t.\tgene_id \"ENSG00000088356\"; transcript_id \"ENST00000202017\"; exon_number \"5\"; gene_name \"C20orf126\"; gene_biotype \"protein_coding\"; transcript_name \"C20orf126\"; exon_id \"ENSE00001109504\";
+20\tprotein_coding\tCDS\t30321670\t30321749\t.\t-\t2\tgene_id \"ENSG00000088356\"; transcript_id \"ENST00000202017\"; exon_number \"5\"; gene_name \"C20orf126\"; gene_biotype \"protein_coding\"; transcript_name \"C20orf126\"; protein_id \"ENSP00000202017\";
+",
+
+   ENST00000246203 => "20\tprotein_coding\texon\t30565065\t30566129\t.\t-\t.\tgene_id \"ENSG00000125979\"; transcript_id \"ENST00000246203\"; exon_number \"1\"; gene_name \"TSPYL3\"; gene_biotype \"protein_coding\"; transcript_name \"TSPYL3\"; exon_id \"ENSE00000859919\";
+20\tprotein_coding\tCDS\t30565065\t30566129\t.\t-\t0\tgene_id \"ENSG00000125979\"; transcript_id \"ENST00000246203\"; exon_number \"1\"; gene_name \"TSPYL3\"; gene_biotype \"protein_coding\"; transcript_name \"TSPYL3\"; protein_id \"ENSP00000246203\";
+20\tprotein_coding\tstart_codon\t30566127\t30566129\t.\t-\t0\tgene_id \"ENSG00000125979\"; transcript_id \"ENST00000246203\"; exon_number \"1\"; gene_name \"TSPYL3\"; gene_biotype \"protein_coding\"; transcript_name \"TSPYL3\";
+",
+
+   ENST00000201961 => "20\tprotein_coding\texon\t30911297\t30911383\t.\t-\t.\tgene_id \"ENSG00000088303\"; transcript_id \"ENST00000201961\"; exon_number \"1\"; gene_name \"Q9NQF5\"; gene_biotype \"protein_coding\"; transcript_name \"Q9NQF5\"; exon_id \"ENSE00000661216\";
+20\tprotein_coding\tCDS\t30911297\t30911383\t.\t-\t0\tgene_id \"ENSG00000088303\"; transcript_id \"ENST00000201961\"; exon_number \"1\"; gene_name \"Q9NQF5\"; gene_biotype \"protein_coding\"; transcript_name \"Q9NQF5\"; protein_id \"ENSP00000201961\";
+20\tprotein_coding\tstart_codon\t30911381\t30911383\t.\t-\t0\tgene_id \"ENSG00000088303\"; transcript_id \"ENST00000201961\"; exon_number \"1\"; gene_name \"Q9NQF5\"; gene_biotype \"protein_coding\"; transcript_name \"Q9NQF5\";
+20\tprotein_coding\texon\t30903618\t30903773\t.\t-\t.\tgene_id \"ENSG00000088303\"; transcript_id \"ENST00000201961\"; exon_number \"2\"; gene_name \"Q9NQF5\"; gene_biotype \"protein_coding\"; transcript_name \"Q9NQF5\"; exon_id \"ENSE00000661215\";
+20\tprotein_coding\tCDS\t30903618\t30903773\t.\t-\t0\tgene_id \"ENSG00000088303\"; transcript_id \"ENST00000201961\"; exon_number \"2\"; gene_name \"Q9NQF5\"; gene_biotype \"protein_coding\"; transcript_name \"Q9NQF5\"; protein_id \"ENSP00000201961\";
+20\tprotein_coding\texon\t30896671\t30896782\t.\t-\t.\tgene_id \"ENSG00000088303\"; transcript_id \"ENST00000201961\"; exon_number \"3\"; gene_name \"Q9NQF5\"; gene_biotype \"protein_coding\"; transcript_name \"Q9NQF5\"; exon_id \"ENSE00000560920\";
+20\tprotein_coding\tCDS\t30896671\t30896782\t.\t-\t0\tgene_id \"ENSG00000088303\"; transcript_id \"ENST00000201961\"; exon_number \"3\"; gene_name \"Q9NQF5\"; gene_biotype \"protein_coding\"; transcript_name \"Q9NQF5\"; protein_id \"ENSP00000201961\";
+20\tprotein_coding\texon\t30887207\t30887316\t.\t-\t.\tgene_id \"ENSG00000088303\"; transcript_id \"ENST00000201961\"; exon_number \"4\"; gene_name \"Q9NQF5\"; gene_biotype \"protein_coding\"; transcript_name \"Q9NQF5\"; exon_id \"ENSE00000560923\";
+20\tprotein_coding\tCDS\t30887207\t30887316\t.\t-\t2\tgene_id \"ENSG00000088303\"; transcript_id \"ENST00000201961\"; exon_number \"4\"; gene_name \"Q9NQF5\"; gene_biotype \"protein_coding\"; transcript_name \"Q9NQF5\"; protein_id \"ENSP00000201961\";
+20\tprotein_coding\texon\t30885729\t30885800\t.\t-\t.\tgene_id \"ENSG00000088303\"; transcript_id \"ENST00000201961\"; exon_number \"5\"; gene_name \"Q9NQF5\"; gene_biotype \"protein_coding\"; transcript_name \"Q9NQF5\"; exon_id \"ENSE00000661212\";
+20\tprotein_coding\tCDS\t30885729\t30885800\t.\t-\t0\tgene_id \"ENSG00000088303\"; transcript_id \"ENST00000201961\"; exon_number \"5\"; gene_name \"Q9NQF5\"; gene_biotype \"protein_coding\"; transcript_name \"Q9NQF5\"; protein_id \"ENSP00000201961\";
+"
 };
-throw "Can't connect to db host" if $@;
 
+my $mtdb = Bio::EnsEMBL::Test::MultiTestDB->new();
+my $db = $mtdb->get_DBAdaptor("core");
+my $transcript_adaptor = $db->get_TranscriptAdaptor;
 
-SKIP: {
-  note "Connecting to Ensembl FTP site";
-  my $ftp = eval { ensembl_ftp_connect() };
-  skip "Cannot login to Ensembl FTP site. We cannot continue with the tests", 1
-    if $@;
+foreach my $transcript_id (keys %{$transcripts_gtf}) {
+  my $transcript = $transcript_adaptor->fetch_by_stable_id($transcript_id);
+  defined $transcript or 
+    $transcript = $transcript_adaptor->fetch_by_dbID($transcript_id);
 
-  note "Retrieving species list";
-  my $species_list = eval { get_species_list($ftp, $release) };
-  skip "Cannot retrieve GTF species list from FTP site (release $release). We cannot continue with the tests.", 1
-    if $@;
-  skip "Empty GTF species list from FTP site (release $release). We cannot continue with the tests", 1
-    unless scalar $species_list;
+  skip "Cannot retrieve transcript $transcript_id. Skipping test", 1
+    unless defined $transcript;
 
-  foreach my $species (@{$species_list}) {
-    note "Testing GTF dumps for species $species";
-    my $species_gtf = 
-      retrieve_gtf_for_species($ftp, $release, $species);  
+  my $fh = IO::String->new();
+  my $gtf_serializer = 
+    Bio::EnsEMBL::Utils::IO::GTFSerializer->new($fh);
+  $gtf_serializer->print_feature($transcript);
 
-    skip "Cannot retrieve GTF for $species. We cannot continue with the tests", 1
-      unless $species_gtf;
-
-    note "Fetching GTF for 10 randomly chosen transcripts";
-    my $transcripts_gtf = eval { get_random_transcripts_gtf($species_gtf, 10) };
-    skip "Couldn't fetch 10 transcript. We cannot continue the test.", 1
-      unless scalar keys %{$transcripts_gtf} == 10;
-
-    note "Comparing GTF serializer output with release $release data for $species";
-    compare_transcript_output($species, $transcripts_gtf);
+  is(${$fh->string_ref()}, $transcripts_gtf->{$transcript_id}, "Transcript $transcript_id serialises to GTF as expected");
     
-    unlink $species_gtf;
-  } 
-
-
 }
 
 done_testing();
 
-sub compare_transcript_output {
-  my ($species, $transcripts_gtf) = @_;
-
-  my $transcript_adaptor =
-    $registry->get_adaptor( $species, 'Core', 'Transcript' );
-
-  foreach my $transcript_id (keys %{$transcripts_gtf}) {
-    my $transcript = $transcript_adaptor->fetch_by_stable_id($transcript_id);
-    defined $transcript or 
-      $transcript = $transcript_adaptor->fetch_by_dbID($transcript_id);
-
-    skip "Cannot retrieve transcript $transcript_id. Skipping test", 1
-      unless defined $transcript;
-
-    my $fh = IO::String->new();
-    my $gtf_serializer = 
-      Bio::EnsEMBL::Utils::IO::GTFSerializer->new($fh);
-    $gtf_serializer->print_feature($transcript);
-
-    is(${$fh->string_ref()}, $transcripts_gtf->{$transcript_id}, "Transcript $transcript_id serialises to GTF as expected");
-    # if ($eq_out == 0) {
-    #   diag ${$fh->string_ref()};
-    #   diag $transcripts_gtf->{$transcript_id};
-    # }
-    
-  }
-}
-
-sub get_random_transcripts_gtf {
-  my ($gtf_file, $how_many_transcripts) = @_;
-  my $transcripts_gtf;
-
-  gz_work_with_file($gtf_file, 'r', sub {
-    my ($fh) = @_;
-
-    my $last_insert;
-    while( defined $fh and my $line = <$fh> and scalar keys %{$transcripts_gtf} <= $how_many_transcripts) {                              
-      $line =~ /transcript_id \"(.+?)\"/;
-      $transcripts_gtf->{$1} .= $line;
-      $last_insert = $1;
-    }
-    delete $transcripts_gtf->{$last_insert};
-    return;
-  });
-
-  return $transcripts_gtf;
-}
-
-
-sub retrieve_gtf_for_species {
-  my ($ftp, $release, $species) = @_;
-
-  $ftp->cwd("/pub/release-$release/gtf/$species");
-  my @gtf_files = grep { $_ =~ /gtf/ } @{$ftp->ls()};
-
-  throw("No GTF file detected for $species")
-    unless scalar @gtf_files;
-  throw("More than one GTF file detected for $species")
-    if scalar @gtf_files > 1;
-
-  $ftp->binary;
-  return $ftp->get($gtf_files[0]);
-}
-
-sub get_species_list {
-  my ($ftp, $release) = @_;
-  $ftp->cwd("/pub/release-$release/gtf") 
-    or die "Cannot cd to pub/release-$release/gtf";
-
-  return $ftp->ls();
-}
-
-sub ensembl_ftp_connect {
-  my $ftp = Net::FTP->new("ftp.ensembl.org", Debug => 0) or
-    die "Cannot connect to ensembl.org: $@";
-  $ftp->login("anonymous",'-anonymous@') or die "Cannot login ", $ftp->message;
-
-  return $ftp;
-}
-
-
-
-
-
-# my $db = Bio::EnsEMBL::Test::MultiTestDB->new();
-# my $dba = $db->get_DBAdaptor('core');
-
-# my $id = 'ENSG00000131044';
-
-# my $ga = $dba->get_GeneAdaptor();
-# my $gene = $ga->fetch_by_stable_id($id);
-
-# SKIP: {
-#   my $fh = IO::String->new();
-#   my $ser = Bio::EnsEMBL::Utils::IO::GTFSerializer->new($fh);
-#   # $ser->print_main_header([$gene->feature_Slice()]);
-#   $ser->print_feature($gene);
-  
-#   my $expected = <<'OUT';
-# ##gff-version 3
-# ##sequence-region   20 30274334 30300924
-# OUT
-#   #Have to do this outside of the HERETO thanks to tabs
-#   $expected .= join("\t", 
-#     qw/20  EnsEMBL feature 30274334  30300924  . + ./,
-#     'ID=ENSG00000131044;logic_name=ensembl;external_name=C20orf125;description=DJ310O13.1.2 (NOVEL PROTEIN SIMILAR DROSOPHILA PROTEIN CG7474%2C ISOFORM 2 ) (FRAGMENT). [Source:SPTREMBL%3BAcc:Q9BR18];biotype=protein_coding' 
-#   );
-#   $expected .= "\n";
-
-#   is(${$fh->string_ref()}, $expected, 'Gene serialises to GFF3 as expected');
-# }
-
-# done_testing();
