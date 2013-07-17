@@ -310,25 +310,7 @@ sub seq {
     if ( $self->{'start'} > $self->{'end'} ) {
       my $length = $self->{'seq_region_length'};
 
-      my $sl1 =
-        Bio::EnsEMBL::Slice->new(
-                     -COORD_SYSTEM      => $self->{'coord_system'},
-                     -SEQ_REGION_NAME   => $self->{'seq_region_name'},
-                     -SEQ_REGION_LENGTH => $self->{'seq_region_length'},
-                     -START             => $self->{'start'},
-                     -END               => $self->{'seq_region_length'},
-                     -STRAND            => $self->{'strand'},
-                     -ADAPTOR           => $self->adaptor() );
-
-      my $sl2 =
-        Bio::EnsEMBL::Slice->new(
-                     -COORD_SYSTEM      => $self->{'coord_system'},
-                     -SEQ_REGION_NAME   => $self->{'seq_region_name'},
-                     -SEQ_REGION_LENGTH => $self->{'seq_region_length'},
-                     -START             => 1,
-                     -END               => $self->{'end'},
-                     -STRAND            => $self->{'strand'},
-                     -ADAPTOR           => $self->adaptor() );
+      my ($sl1, $sl2) = $self->_split;
 
       my $seq1 = ${
         $seqAdaptor->fetch_by_Slice_start_end_strand( $sl1, 1, undef,
