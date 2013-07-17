@@ -68,14 +68,6 @@ ok(test_getter_setter($dbc, 'username', 'ensembl_user'));
 ok(test_getter_setter($dbc, 'password', 'ensembl_password'));
 
 #
-# 8-9 _get_adaptor NO LONGER ALLOWED MUST GO VIA DBAdaptor
-#
-#my $adaptor_name = 'Bio::EnsEMBL::DBSQL::GeneAdaptor';
-#my $adaptor = $dbc->_get_adaptor($adaptor_name);
-#ok($adaptor->isa($adaptor_name));
-#ok($adaptor == $dbc->_get_adaptor($adaptor_name)); #verify cache is used
-
-#
 # 10 dbhandle
 #
 ok(test_getter_setter($dbc, 'db_handle', $dbc->db_handle));
@@ -90,30 +82,6 @@ ok(test_getter_setter($dbc, 'db_handle', $dbc->db_handle));
   ok($sth->rows);
   $sth->finish;
 }
-
-# AGAIN NOW DONE VIA DBADAPTOR
-#
-# 12 add_db_adaptor
-#
-#$dbc->add_db_adaptor('core', $db);
-#
-#my $db1 = $dbc->get_all_db_adaptors->{'core'};
-#my $db2 = $db->_obj;
-#debug("\n\ndb1=[$db1] db2=[$db2]\n\n"); 
-#ok($db1 == $db2);
-#
-##
-## 13 get_db_adaptor
-##
-#ok($dbc->get_db_adaptor('core')->isa('Bio::EnsEMBL::DBSQL::DBConnection'));
-#
-##
-## 14-15 remove_db_adaptor
-##
-#$dbc->remove_db_adaptor('core');
-#ok(!defined $dbc->get_db_adaptor('core'));
-#ok(!defined $dbc->get_all_db_adaptors->{'core'});
-
 
 #
 # try the database with the disconnect_when_inactive flag set.
