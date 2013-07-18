@@ -172,7 +172,7 @@ sub create_xrefs {
 
 
   my %dependent_xrefs;
-  my $ens = 0;
+  my $ensembl_derived_protein_count = 0;
 
   while ( $_ = $uniprot_io->getline() ) {
      
@@ -211,10 +211,10 @@ sub create_xrefs {
 
     # Check for CC (caution) lines containing certain text
     # If sequence is from Ensembl, do not use
-
-    if ($_ =~ / CAUTION: The sequence shown here is derived from an Ensembl/) {
-      $ens++;
-      next;
+    my $ensembl_derived_protein = 0;
+    if ($_ =~ /CAUTION: The sequence shown here is derived from an Ensembl/xms) {
+      $ensembl_derived_protein = 1;
+      $ensembl_derived_protein_count++;
     }
 
     # extract ^AC lines only & build list of accessions
@@ -356,27 +356,32 @@ sub create_xrefs {
     my @gn_lines = ();
     if ( defined $gns ) { @gn_lines = split /\n/, $gns }
   
-    foreach my $gn (@gn_lines){
-      my $gene_name = undef;
-      my %depe;
-      
-      if($gn =~ /Name=(\S+);/){
-	$depe{LABEL} = uc($1);
-	$depe{ACCESSION} = $self->get_name($xref->{ACCESSION},$depe{LABEL});
-	$gene_name = $depe{ACCESSION};
+    # Do not allow the addition of UniProt Gene Name dependent Xrefs
+    # if the protein was imported from Ensembl. Otherwise we will
+    # re-import previously set symbols
+    if(! $ensembl_derived_protein) {
+      foreach my $gn (@gn_lines){
+        my $gene_name = undef;
+        my %depe;
 
-	$depe{SOURCE_NAME} = "Uniprot_gn";
-	$depe{SOURCE_ID} = $dependent_sources{"Uniprot_gn"};
-	$depe{LINKAGE_SOURCE_ID} = $xref->{SOURCE_ID};
-	push @{$xref->{DEPENDENT_XREFS}}, \%depe;
-	$dependent_xrefs{"Uniprot_gn"}++;
-	my @syn;
-	if($gn =~ /Synonyms=([^;]+);/){
-	  my $syn = $1;
- 	  $syn =~ s/\s+//g;
-	  @syn= split(/,/,$syn);
-          push (@{$depe{"SYNONYMS"}}, @syn);
-	}
+        if($gn =~ /Name=(\S+);/){
+          $depe{LABEL} = uc($1);
+          $depe{ACCESSION} = $self->get_name($xref->{ACCESSION},$depe{LABEL});
+          $gene_name = $depe{ACCESSION};
+
+          $depe{SOURCE_NAME} = "Uniprot_gn";
+          $depe{SOURCE_ID} = $dependent_sources{"Uniprot_gn"};
+          $depe{LINKAGE_SOURCE_ID} = $xref->{SOURCE_ID};
+          push @{$xref->{DEPENDENT_XREFS}}, \%depe;
+          $dependent_xrefs{"Uniprot_gn"}++;
+          my @syn;
+          if($gn =~ /Synonyms=([^;]+);/){
+            my $syn = $1;
+            $syn =~ s/\s+//g;
+            @syn= split(/,/,$syn);
+            push (@{$depe{"SYNONYMS"}}, @syn);
+          }
+        }
       }
     }
 
@@ -395,34 +400,33 @@ sub create_xrefs {
 	next;
       }
       if ($dep =~ /^DR\s+(.+)/) {
-	my ($source, $acc, @extra) = split /;\s*/, $1;
-	if($source =~ "RGD"){  #using RGD file now instead.
-	  next;
-	}
-	if($source =~ "IPI"){
-	  next;
-	}
-	if($source =~ "UCSC"){
-	  next;
-	}
-	if($source =~ "SGD"){
-	  next;
-	}
-	if($source =~ "HGNC"){
-	  next;
-	}
-	if($source =~ "Orphanet"){
-	  #we don't want to parse Orphanet xrefs via Uniprot, we get them from Orphanet with descriptions
-	  next;
-	}
-	if($source =~ "ArrayExpress"){
-	    next;
-	}
+        my ($source, $acc, @extra) = split /;\s*/, $1;
+        if($source =~ "RGD"){  #using RGD file now instead.
+      	  next;
+      	}
+      	if($source =~ "IPI"){
+      	  next;
+      	}
+      	if($source =~ "UCSC"){
+      	  next;
+      	}
+      	if($source =~ "SGD"){
+      	  next;
+      	}
+      	if($source =~ "HGNC"){
+      	  next;
+      	}
+      	if($source =~ "Orphanet"){
+      	  #we don't want to parse Orphanet xrefs via Uniprot, we get them from Orphanet with descriptions
+      	  next;
+      	}
+      	if($source =~ "ArrayExpress"){
+      	    next;
+      	}
         if($source =~ "GenomeRNAi"){
             next;
         }
-
-	if (exists $dependent_sources{$source} ) {
+	   if (exists $dependent_sources{$source} ) {
 	  # create dependent xref structure & store it
 	  my %dep;
           $dep{SOURCE_NAME} = $source;
@@ -526,7 +530,7 @@ sub create_xrefs {
 
   print "Read $num_sp SwissProt xrefs, $num_sptr SPTrEMBL xrefs with protein evidence codes 1-2, and $num_sptr_non_display SPTrEMBL xrefs with protein evidence codes > 2 from $file\n" if($verbose);
   print "Found $num_sp_pred predicted SwissProt xrefs and $num_sptr_pred predicted SPTrEMBL xrefs\n" if (($num_sp_pred > 0 || $num_sptr_pred > 0) and $verbose);
-  print "Skipped $ens ensembl annotations\n";
+  print "Skipped $ensembl_derived_protein_count ensembl annotations as Gene names\n";
 
 
 #  print "$kount gene anmes added\n";
