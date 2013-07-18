@@ -212,7 +212,7 @@ sub create_xrefs {
     # Check for CC (caution) lines containing certain text
     # If sequence is from Ensembl, do not use
     my $ensembl_derived_protein = 0;
-    if ($_ =~ /CAUTION: The sequence shown here is derived from an Ensembl/xms) {
+    if ($_ =~ /CAUTION: The sequence shown here is derived from an Ensembl/) {
       $ensembl_derived_protein = 1;
       $ensembl_derived_protein_count++;
     }
