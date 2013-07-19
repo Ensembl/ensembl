@@ -29,6 +29,9 @@
   # ping Ensembl with user provided species
   $ ping_ensembl.pl -s "dog"
 
+  # ping Ensembl with a different version (Human)
+  $ ping_ensembl.pl -db_version 70
+
   # ping the US Ensembl mirror
   $ ping_ensembl.pl -ue
 
@@ -63,21 +66,23 @@ my $help = 0;
 my $host = 'ensembldb.ensembl.org';
 my $user = 'anonymous';
 my $port = 5306;
-my $db_version = '-';
+my $db_version = -1;
 
 my $useast = 0;
 my $ensembl_genomes = 0;
 my $species = undef;
+my $api_version = -1;
 
 #
 # Parse command-line arguments
 #
 my $options_ok = 
   GetOptions(
-    "ue"        => \$useast,
-    "eg"        => \$ensembl_genomes,
-    "species=s" => \$species,
-    "h"         => \$help);
+    "ue"            => \$useast,
+    "eg"            => \$ensembl_genomes,
+    "species=s"     => \$species,
+    "db_version=i"  => \$db_version,
+    "help"          => \$help);
 ($help or !$options_ok) && usage();
 
 $useast and $ensembl_genomes and
@@ -100,12 +105,14 @@ eval {
   require Bio::EnsEMBL::Registry;
   require Bio::EnsEMBL::ApiVersion;
   require Bio::EnsEMBL::LookUp if $ensembl_genomes;
+  $api_version = Bio::EnsEMBL::ApiVersion::software_version();
+  $db_version = $api_version if $db_version == -1; #if it was still -1 then it wasn't set. Default is current API version
   Bio::EnsEMBL::Registry->load_registry_from_db(
-    -host    => $host,
-    -port    => $port,
-    -user    => $user
+    -host       => $host,
+    -port       => $port,
+    -user       => $user,
+    -db_version => $db_version,
   );
-  $db_version = Bio::EnsEMBL::ApiVersion::software_version();
   $species = "human" unless defined $species;
   my $species_adaptor = Bio::EnsEMBL::Registry->get_DBAdaptor("$species", 'core');  
   print "Installation is good. Connection to Ensembl works and you can query the $species core database\n";
@@ -165,7 +172,7 @@ if($error) {
     print "\tSpecies was not found. You may have accidentally download the HEAD API version (found API release $db_version & public FTP release is $ftp_version). Please consult http://www.ensembl.org/info/docs/api/api_installation.html\n";
   }
   if($error =~ /Species not defined/) {
-    print "\tSpecies was not found. You may have accidentally download the HEAD API version (found API release $db_version & public FTP release is $ftp_version). Please consult http://www.ensembl.org/info/docs/api/api_installation.html\n";
+    print "\tSpecies was not found. You may have accidentally download the HEAD API version (told to load release $db_version, API version is $api_version & public FTP release is $ftp_version). Please consult http://www.ensembl.org/info/docs/api/api_installation.html\n";
   }
   if($error =~ /Missing the checkout/) {
     print "\tYour core installation was good but supplementary modules cannot be found. If you wish to access these other Ensembl resources add the libraries to your PERL5LIB:\n";
@@ -197,10 +204,11 @@ sub usage {
     
   print "Usage: $prog [OPTIONS]\n\n";
   print "Options:\n";
-  print "  -ue\t\tPing Ensembl US mirror\n";
-  print "  -eg\t\tPing Ensembl Genomes (can't be used together with \"ue\")\n";
-  print "  -s <species>\tUse species <species> (use double quotes if species name contains spaces)\n";
-  print "  -h\t\tPrint this message\n";
+  print "  -ue                    Ping Ensembl US mirror\n";
+  print "  -eg                    Ping Ensembl Genomes (can't be used together with \"ue\")\n";
+  print "  -species <species>     Use species <species> (use double quotes if species name contains spaces)\n";
+  print "  -db_version <version>  Use the specified version of Ensembl not the API version\n";
+  print "  -help                  Print this message\n";
   print "\n\n";
 
   exit 1;
