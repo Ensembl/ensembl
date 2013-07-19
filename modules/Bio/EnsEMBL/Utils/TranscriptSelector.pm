@@ -37,7 +37,7 @@ Bio::EnsEMBL::Utils::TranscriptSelector - Finds canonical transcripts
     longest translation of transcript present in CCDS that is reference sequence
     longest translation of protein-coding transcript
     longest translation of transcript marked nonsense-mediated-decay
-    longest translation of any other transcript
+    longest translation of any other transcript (premature stop codon translations have an effective length of 0)
     longest non-coding transcript
     first stable ID in alphabetical order
     
