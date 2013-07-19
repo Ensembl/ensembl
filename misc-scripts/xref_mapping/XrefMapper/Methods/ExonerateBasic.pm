@@ -123,7 +123,7 @@ sub resubmit_exonerate {
 
   my $queue = $self->mapper->farm_queue || 'long';
   
-  my $usage = '-M 1500000 -R"select[mem>1500] rusage[tmp='.$disk_space_needed.', mem=1500]" -J "'.$unique_name.'" -q '.$queue;
+  my $usage = '-M 1500 -R"select[mem>1500] rusage[tmp='.$disk_space_needed.', mem=1500]" -J "'.$unique_name.'" -q '.$queue;
 
 
   my $com = "bsub $usage -o $root_dir/$outfile -e $root_dir/$errfile ".$exe_file;
