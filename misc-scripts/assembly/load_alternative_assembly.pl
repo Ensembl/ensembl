@@ -231,7 +231,7 @@ $sql = qq(SELECT MAX(seq_region_id) FROM seq_region);
 $sth = $dbh->{'ref'}->prepare($sql);
 $sth->execute;
 my ($max_sri) = $sth->fetchrow_array;
-my $sri_adjust = 10**(length($max_sri));
+my $sri_adjust = 1+$max_sri;
 
 $sql = qq(SELECT MAX(coord_system_id) FROM coord_system);
 $sth = $dbh->{'ref'}->prepare($sql);
