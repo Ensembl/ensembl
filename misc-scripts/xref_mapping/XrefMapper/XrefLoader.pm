@@ -46,7 +46,7 @@ sub update{
 
   my $sql = "DELETE es FROM xref x, external_synonym es WHERE x.xref_id = es.xref_id and x.info_type = 'PROJECTION'";
   my $sth = $self->core->dbc->prepare($sql);
-  my $affected_projection_rows = $sth->execute();
+  my $count = $sth->execute();
   print "\tDeleted $count PROJECTED external_synonym row(s)\n" if $verbose;
 
   $sql = <<SQL;
@@ -55,17 +55,17 @@ FROM ontology_xref, object_xref, xref
 WHERE ontology_xref.object_xref_id = object_xref.object_xref_id AND object_xref.xref_id = xref.xref_id AND xref.info_type = 'PROJECTION'
 SQL
   $sth = $self->core->dbc->prepare($sql);
-  $affected_projection_rows = $sth->execute();
+  $count = $sth->execute();
   print "\tDeleted $count PROJECTED ontology_xref row(s)\n" if $verbose;
 
   $sql = "DELETE object_xref FROM object_xref, xref WHERE object_xref.xref_id = xref.xref_id AND xref.info_type = 'PROJECTION'";
   $sth = $self->core->dbc->prepare($sql);
-  $affected_projection_rows = $sth->execute();
+  $count = $sth->execute();
   print "\tDeleted $count PROJECTED object_xref row(s)\n" if $verbose;
 
   $sql = "DELETE xref FROM xref WHERE xref.info_type = 'PROJECTION'";
   $sth = $self->core->dbc->prepare($sql);
-  $affected_projection_rows = $sth->execute();
+  $count = $sth->execute();
   print "\tDeleted $count PROJECTED xref row(s)\n" if $verbose;
 
   $sth->finish;
@@ -118,7 +118,6 @@ SQL
 
   $sth = $self->xref->dbc->prepare('select s.name, count(*) from xref x, object_xref ox, source s where ox.xref_id = x.xref_id and x.source_id = s.source_id and ox_status = "DUMP_OUT"  group by s.name');
   $sth->execute();
-  my $count;
   $sth->bind_columns(\$name,\$count);
 
   my $synonym_sth  =  $self->core->dbc->prepare('DELETE external_synonym FROM external_synonym, xref WHERE external_synonym.xref_id = xref.xref_id AND xref.external_db_id = ?');
