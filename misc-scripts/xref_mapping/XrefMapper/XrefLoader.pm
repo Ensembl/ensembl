@@ -42,17 +42,32 @@ sub update{
   #####################################
   # first remove all the projections. #
   #####################################
+  print "Deleting all PROJECTIONs from this database\n" if $verbose;
 
   my $sql = "DELETE es FROM xref x, external_synonym es WHERE x.xref_id = es.xref_id and x.info_type = 'PROJECTION'";
   my $sth = $self->core->dbc->prepare($sql);
-  $sth->execute();
+  my $affected_projection_rows = $sth->execute();
+  print "\tDeleted $count PROJECTED external_synonym row(s)\n" if $verbose;
+
+  $sql = <<SQL;
+DELETE ontology_xref 
+FROM ontology_xref, object_xref, xref 
+WHERE ontology_xref.object_xref_id = object_xref.object_xref_id AND object_xref.xref_id = xref.xref_id AND xref.info_type = 'PROJECTION'
+SQL
+  $sth = $self->core->dbc->prepare($sql);
+  $affected_projection_rows = $sth->execute();
+  print "\tDeleted $count PROJECTED ontology_xref row(s)\n" if $verbose;
 
   $sql = "DELETE object_xref FROM object_xref, xref WHERE object_xref.xref_id = xref.xref_id AND xref.info_type = 'PROJECTION'";
   $sth = $self->core->dbc->prepare($sql);
-  $sth->execute();
+  $affected_projection_rows = $sth->execute();
+  print "\tDeleted $count PROJECTED object_xref row(s)\n" if $verbose;
+
   $sql = "DELETE xref FROM xref WHERE xref.info_type = 'PROJECTION'";
   $sth = $self->core->dbc->prepare($sql);
-  $sth->execute();
+  $affected_projection_rows = $sth->execute();
+  print "\tDeleted $count PROJECTED xref row(s)\n" if $verbose;
+
   $sth->finish;
 
   #########################################
@@ -136,13 +151,20 @@ sub update{
     my $ex_id = $name_to_external_db_id{$name};
 
     print "Deleting data for $name from core before updating from new xref database\n" if ($verbose);
-    $synonym_sth->execute($ex_id);
-    $go_sth->execute();
-    $identity_sth->execute($ex_id);
-    $object_sth->execute($ex_id);  
-    $dependent_sth->execute($ex_id);
-    $xref_sth->execute($ex_id);
-    $unmapped_sth->execute($ex_id);
+    my $count = $synonym_sth->execute($ex_id);
+    print "\tDeleted $count external_synonym row(s)\n" if $verbose;
+    $count = $go_sth->execute();
+    print "\tDeleted $count ontology_xref row(s)\n" if $verbose;
+    $count = $identity_sth->execute($ex_id);
+    print "\tDeleted $count identity_xref row(s)\n" if $verbose;
+    $count = $object_sth->execute($ex_id);  
+    print "\tDeleted $count object_xref row(s)\n" if $verbose;
+    $count = $dependent_sth->execute($ex_id);
+    print "\tDeleted $count dependent_xref row(s)\n" if $verbose;
+    $count = $xref_sth->execute($ex_id);
+    print "\tDeleted $count xref row(s)\n" if $verbose;
+    $count = $unmapped_sth->execute($ex_id);
+    print "\tDeleted $count unmapped_object row(s)\n" if $verbose;
   }
   $sth->finish;
   $transaction_end_sth->execute();
