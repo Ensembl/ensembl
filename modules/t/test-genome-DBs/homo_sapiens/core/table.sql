@@ -1,10 +1,30 @@
-CREATE TABLE `alt_allele` (
-  `alt_allele_id` int(11) NOT NULL AUTO_INCREMENT,
-  `gene_id` int(11) NOT NULL DEFAULT '0',
-  `is_ref` tinyint(1) NOT NULL DEFAULT '0',
-  UNIQUE KEY `gene_idx` (`gene_id`),
-  UNIQUE KEY `allele_idx` (`alt_allele_id`,`gene_id`)
-) ENGINE=MyISAM AUTO_INCREMENT=2 DEFAULT CHARSET=latin1 COLLATE=latin1_bin;
+CREATE TABLE alt_allele_attrib (alt_allele_id INT UNSIGNED,
+                                attrib ENUM('IS_REPRESENTATIVE',
+                                            'IS_MOST_COMMON_ALLELE',
+                                            'IN_CORRECTED_ASSEMBLY',
+                                            'HAS_CODING_POTENTIAL',
+                                            'IN_ARTIFICIALLY_DUPLICATED_ASSEMBLY',
+                                            'IN_SYNTENIC_REGION',
+                                            'HAS_SAME_UNDERLYING_DNA_SEQUENCE',
+                                            'IN_BROKEN_ASSEMBLY_REGION',
+                                            'IS_VALID_ALTERNATE',
+                                            'SAME_AS_REPRESENTATIVE',
+                                            'SAME_AS_ANOTHER_ALLELE',
+                                            'MANUALLY_ASSIGNED',
+                                            'AUTOMATICALLY_ASSIGNED'),
+                                KEY aa_idx (alt_allele_id,attrib)
+);
+
+CREATE TABLE alt_allele (alt_allele_id INT UNSIGNED AUTO_INCREMENT, 
+                         alt_allele_group_id INT UNSIGNED NOT NULL, 
+                         gene_id INT UNSIGNED NOT NULL,
+                         PRIMARY KEY (alt_allele_id),
+                         KEY (gene_id,alt_allele_group_id)
+                         );
+
+CREATE TABLE alt_allele_group (alt_allele_group_id INT UNSIGNED AUTO_INCREMENT,
+                               PRIMARY KEY (alt_allele_group_id)
+                               );
 
 CREATE TABLE `analysis` (
   `analysis_id` int(10) unsigned NOT NULL AUTO_INCREMENT,
