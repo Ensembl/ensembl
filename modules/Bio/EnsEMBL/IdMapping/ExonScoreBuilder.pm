@@ -744,9 +744,9 @@ sub parse_exonerate_results {
         }
       } ## end if ( $score > $threshold)
 
-    } ## end while (<F>)
+    } ## end while (<$fh>)
 
-    close(F);
+    close($fh);
   } ## end while ( defined( my $file...))
 
   closedir(DUMPDIR);
