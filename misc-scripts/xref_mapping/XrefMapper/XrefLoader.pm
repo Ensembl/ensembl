@@ -152,7 +152,7 @@ SQL
     print "Deleting data for $name from core before updating from new xref database\n" if ($verbose);
     $affected_rows = $synonym_sth->execute($ex_id);
     print "\tDeleted $affected_rows external_synonym row(s)\n" if $verbose;
-    $affected_rows = $go_sth->execute();
+    $affected_rows = $go_sth->execute($ex_id);
     print "\tDeleted $affected_rows ontology_xref row(s)\n" if $verbose;
     $affected_rows = $identity_sth->execute($ex_id);
     print "\tDeleted $affected_rows identity_xref row(s)\n" if $verbose;
