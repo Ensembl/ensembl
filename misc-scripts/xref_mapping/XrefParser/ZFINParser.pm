@@ -82,7 +82,7 @@ sub run {
 
   while ( $_ = $swissprot_io->getline() ) {
     chomp;
-    my ($zfin, $label, $acc) = split (/\s+/,$_);
+    my ($zfin, $so, $label, $acc) = split (/\s+/,$_);
     if(defined($swiss{$acc})){
       foreach my $xref_id (@{$swiss{$acc}}){
 	$self->add_dependent_xref({ master_xref_id => $xref_id,
@@ -114,7 +114,7 @@ sub run {
 
   while ( $_ = $refseq_io->getline() ) {
     chomp;
-    my ($zfin, $label, $acc) = split (/\s+/,$_);
+    my ($zfin, $so, $label, $acc) = split (/\s+/,$_);
     if(defined($refseq{$acc})){
       foreach my $xref_id (@{$refseq{$acc}}){
 	$self->add_dependent_xref({ master_xref_id => $xref_id,
