@@ -1,4 +1,4 @@
-# patch_70_71_b.sql
+# patch_72_73_b.sql
 #
 # Title: Introduce alt allele types
 #
