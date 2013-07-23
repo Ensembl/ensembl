@@ -443,5 +443,38 @@ sub biotype_gene_rescore {
 } ## end sub biotype_gene_rescore
 
 
+sub location_gene_rescore {
+  my $self   = shift;
+  my $matrix = shift;
+
+  unless ($matrix
+      and $matrix->isa('Bio::EnsEMBL::IdMapping::ScoredMappingMatrix') )
+  {
+    throw('Need a Bio::EnsEMBL::IdMapping::ScoredMappingMatrix.');
+  }
+
+  my $i = 0;
+
+  foreach my $entry ( @{ $matrix->get_all_Entries } ) {
+
+    my $source_gene =
+      $self->cache->get_by_key( 'genes_by_id', 'source',
+                                $entry->source );
+
+    my $target_gene =
+      $self->cache->get_by_key( 'genes_by_id', 'target',
+                                $entry->target );
+
+    if ( $source_gene->seq_region_name() ne $target_gene->seq_region_name() ) {
+      # PENALTY: Lower the score for mappings that are not on the same slice.
+      $matrix->set_score( $entry->source(), $entry->target(),
+                          0.9*$entry->score() );
+      $i++;
+    }
+  }
+
+}
+
+
 1;
 

@@ -98,6 +98,7 @@ sub map_genes {
     # determine which plugin methods to run
     my @default_plugins = (qw(
       Bio::EnsEMBL::IdMapping::InternalIdMapper::EnsemblGeneGeneric::init_basic
+      Bio::EnsEMBL::IdMapping::InternalIdMapper::EnsemblGeneGeneric::location
       Bio::EnsEMBL::IdMapping::InternalIdMapper::EnsemblGeneGeneric::best_transcript
       Bio::EnsEMBL::IdMapping::InternalIdMapper::EnsemblGeneGeneric::biotype
       Bio::EnsEMBL::IdMapping::InternalIdMapper::EnsemblGeneGeneric::synteny
@@ -299,6 +300,7 @@ sub map_exons {
     my @default_plugins = (qw(
       Bio::EnsEMBL::IdMapping::InternalIdMapper::EnsemblExonGeneric::init_basic
       Bio::EnsEMBL::IdMapping::InternalIdMapper::EnsemblExonGeneric::mapped_transcript
+      Bio::EnsEMBL::IdMapping::InternalIdMapper::EnsemblExonGeneric::single_transcript
       Bio::EnsEMBL::IdMapping::InternalIdMapper::EnsemblExonGeneric::internal_id
     ));
 

@@ -156,6 +156,29 @@ sub biotype {
   return ($new_scores, $new_mappings); 
 }
 
+sub location {
+  my $self = shift;
+  my $num = shift;
+  my $gsb = shift;
+  my $mappings = shift;
+  my $gene_scores = shift;
+
+  $self->logger->info("Retry with location disambiguation...\n", 0, 'stamped');
+
+  unless ($gene_scores->loaded) {
+    $gsb->location_gene_rescore($gene_scores);
+    $gene_scores->write_to_file;
+  }
+
+  my $new_mappings = $self->basic_mapping($gene_scores, "gene_mappings$num");
+  $num++;
+  my $new_scores = $gsb->create_shrinked_matrix($gene_scores, $new_mappings,
+    "gene_matrix$num");
+
+  return ($new_scores, $new_mappings);
+
+}
+
 
 #
 # selectively rescore by penalising scores between genes with different
