@@ -243,6 +243,7 @@ sub fetch_Group_by_Gene_dbID {
     if (!$@ && $group_id) {
         return $self->fetch_Group_by_id($group_id);
     }
+    return;
 }
 
 =head2 store
