@@ -6,7 +6,7 @@
 #              integrate old data into the new tables
 
 # Relocate existing data out of the way
-CREATE TABLE aa_bak LIKE alt_allele
+CREATE TABLE aa_bak LIKE alt_allele;
 INSERT INTO aa_bak SELECT * FROM alt_allele;
 
 DROP TABLE alt_allele;
@@ -16,8 +16,8 @@ CREATE TABLE alt_allele (alt_allele_id INT UNSIGNED AUTO_INCREMENT,
                          alt_allele_group_id INT UNSIGNED NOT NULL, 
                          gene_id INT UNSIGNED NOT NULL,
                          PRIMARY KEY (alt_allele_id),
-                         KEY (gene_id,group_id)
-                         );
+                         KEY (gene_id,alt_allele_group_id)
+                         ) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
 
 CREATE TABLE alt_allele_attrib (alt_allele_id INT UNSIGNED,
                                 attrib ENUM('IS_REPRESENTATIVE',
@@ -34,11 +34,11 @@ CREATE TABLE alt_allele_attrib (alt_allele_id INT UNSIGNED,
                                             'MANUALLY_ASSIGNED',
                                             'AUTOMATICALLY_ASSIGNED'),
                                 KEY aa_idx (alt_allele_id,attrib)
-);
+) COLLATE=latin1_swedish_ci ENGINE=MyISAM;;
 
 CREATE TABLE alt_allele_group (alt_allele_group_id INT UNSIGNED AUTO_INCREMENT,
                                PRIMARY KEY (alt_allele_group_id)
-                               );
+                               ) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
 
 # Port data into new structure
 INSERT INTO alt_allele_group (alt_allele_group_id) SELECT DISTINCT alt_allele_id FROM aa_bak;
@@ -48,9 +48,9 @@ INSERT INTO alt_allele_attrib (alt_allele_id,attrib) SELECT a.alt_allele_id,'IS_
     WHERE b.is_ref = 1 AND a.gene_id = b.gene_id AND a.group_id = b.alt_allele_id;
 
 # Clean up remains
-DROP TABLE aa_back;
+DROP TABLE aa_bak;
 
 
 # Patch identifier
 INSERT INTO meta (species_id, meta_key, meta_value)
-  VALUES (NULL, 'patch', 'patch_70_71_b.sql|alt_allele_type');
+  VALUES (NULL, 'patch', 'patch_72_73_b.sql|alt_allele_type');
