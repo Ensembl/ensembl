@@ -24,7 +24,7 @@ sub run {
   my $file = @{$files}[0];
   my $dir = dirname($file);
 
-  my (%swiss) = %{$self->get_valid_codes("uniprot/",$species_id)};
+  my (%swiss) = %{$self->get_valid_codes("uniprot",$species_id)};
   my (%refseq) = %{$self->get_valid_codes("refseq",$species_id)};
 
   my $swissprot_io =
