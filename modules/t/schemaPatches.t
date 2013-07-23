@@ -42,7 +42,7 @@ my $current_schema_no_cvs = 0;
 #
 my $options_ok = 
   GetOptions(
-    "current-schema-no-cvs" => \$current_schema_no_cvs,
+    "current_schema_no_cvs" => \$current_schema_no_cvs,
     "h"                     => \$help);
 ($help or !$options_ok) && usage();
 
