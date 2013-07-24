@@ -973,41 +973,39 @@ sub fetch_all_alt_alleles {
 	return [];
   }
 
-  my $sth = $self->prepare("SELECT aa1.gene_id " . "FROM   alt_allele aa1, alt_allele aa2 " . "WHERE  aa1.alt_allele_id = aa2.alt_allele_id " . "AND    aa2.gene_id = ? " . "AND    aa1.gene_id <> ?");
-
-  $sth->bind_param(1, $gene_id, SQL_INTEGER);
-  $sth->bind_param(2, $gene_id, SQL_INTEGER);
-  $sth->execute();
-
-  my @alt_ids;
-  my $row;
-  while ($row = $sth->fetchrow_arrayref()) {
-	push @alt_ids, $row->[0];
+  my $aaga = $self->db->get_adaptor('AltAlleleGroup');
+  my $aag = $aaga->fetch_Group_by_Gene_dbID($gene->dbID);
+  unless ($aag) {
+      warning("Supplied gene has no alternative alleles"); 
+      return [];
   }
-  $sth->finish();
-
-  if (@alt_ids) {
-	return $self->fetch_all_by_dbID_list(\@alt_ids);
-  }
-
-  return [];
+  return $aag->get_all_Genes('No starting Gene');
 } ## end sub fetch_all_alt_alleles
+
+=head2 is_ref
+
+  Arg [1]    : Gene dbID
+  Description: Used to determine whether a given Gene is the representative 
+               Gene of an alt allele group. If it does not have an alternative
+               allele that is more representative, then this ID will be said to
+               be representative.
+  Returntype : Boolean - True for yes or no alternatives  
+
+=cut
 
 sub is_ref {
   my ($self, $gene_id) = @_;
-  my $is_not_ref;
-
-  # easier to find if it is not an alt_Allele do this and then negate it.
-  my $sth = $self->prepare("select count(1) from alt_allele where gene_id = $gene_id and is_ref = 0");
-  $sth->execute();
-  $sth->bind_columns(\$is_not_ref);
-  $sth->fetch;
-
-  if (defined($is_not_ref) and $is_not_ref) {
-	return 0;
+  my $aag = $self->db->get_adaptor('AltAlleleGroup')->fetch_Group_by_Gene_dbID($gene_id);
+  if (defined($aag)) {
+      if ($aag->rep_Gene_id == $gene_id) {
+          return 1;
+      } else {
+          return 0;
+      }
+  } else {
+      return 1;
   }
-
-  return 1;
+  throw("Unhandled circumstance in GeneAdaptor->is_ref");
 }
 
 =head2 store_alt_alleles
@@ -1018,8 +1016,11 @@ sub is_ref {
   Description: This method creates a group of alternative alleles (i.e. locus)
                from a set of genes. The genes should be genes from alternate
                haplotypes which are similar. The genes must already be stored
-               in this database. 
-  Returntype : int alt_allele_id or undef if no alt_alleles were stored
+               in this database. WARNING - now that more fine-grained support
+               for alt_alleles has been implemented, this method is rather coarse.
+               Consider working directly with AltAlleleGroup and 
+               AltAlleleGroupAdaptor.
+  Returntype : int alt_allele_group_id or undef if no alt_alleles were stored
   Exceptions : throw on incorrect arguments
                throw on sql error (e.g. duplicate unique id)
   Caller     : general
@@ -1034,91 +1035,35 @@ sub store_alt_alleles {
   if (!ref($genes) eq 'ARRAY') {
 	throw('List reference of Bio::EnsEMBL::Gene argument expected.');
   }
-
   my @genes     = @$genes;
   my $num_genes = scalar(@genes);
-
   if ($num_genes < 2) {
 	warning('At least 2 genes must be provided to construct alternative alleles (gene id: ' . $genes[0]->dbID() . '). Ignoring.');
 	return;
   }
 
-  my @is_ref;
-  my @ref_genes     = ();
-  my @non_ref_genes = ();
-  my @gene_ids      = ();
-
-  foreach my $gene (@genes) {
-
-	if (!ref($gene) || !$gene->isa('Bio::EnsEMBL::Gene')) {
-	  throw('List reference of Bio::EnsEMBL::Gene argument expected.');
-	}
-
-	my $gene_id = $gene->dbID();
-
-	if (!$gene_id) {
-	  throw('Genes must have dbIDs in order to construct alternative alleles.');
-	} else {
-	  push @gene_ids, $gene_id;
-	}
-
-	my $is_ref = $gene->slice->is_reference();
-
-	push @is_ref, $is_ref;
-
-	if ($is_ref) {
-	  push @ref_genes, $gene->dbID();
-	} else {
-	  push @non_ref_genes, $gene->dbID();
-	}
-  }
-  if (scalar(@ref_genes) > 1) {
-	warning('More than one alternative allele on the reference sequence (gene ids: ' . join(',', @ref_genes) . '). Ignoring.');
-	return;
+  my $allele_list;
+  foreach my $gene (@$genes) {
+      my $aa_record = [];
+      push @$aa_record, $gene->dbID;
+      my %type = {};
+      if ($gene->slice->is_reference()) {
+          $type{'IS_REPRESENTATIVE'} = 1;
+      }
+      push @$aa_record, \%type; 
+      push @$allele_list, $aa_record;
   }
 
-  #
-  #insert the first gene seperately in order to get a unique identifier for
-  #the set of alleles
-  #
-
-  my $sth = $self->prepare("INSERT INTO alt_allele (gene_id, is_ref) VALUES (?,?)");
-  $sth->bind_param(1, $gene_ids[0], SQL_INTEGER);
-  $sth->bind_param(2, $is_ref[0],   SQL_INTEGER);
-  eval { $sth->execute(); };
-  my $alt_allele_id = $sth->{'mysql_insertid'};
-
-  if (!$alt_allele_id || $@) {
-	throw("An SQL error occured inserting alternative alleles:\n$@");
+  my $aag = Bio::EnsEMBL::AltAlleleGroup->new(
+    -MEMBERS => $allele_list,
+  );
+  if ($aag->get_all_members_with_type('IS_REPRESENTATIVE') != 1) {
+    warning('Inappropriate number of alternative alleles on the reference sequence. Ignoring.');
+    return;
   }
-  $sth->finish();
-  #
-  # Insert all subsequent alt alleles using the alt_allele identifier
-  # from the first insert
-  #
-
-  $sth = $self->prepare("INSERT INTO alt_allele (alt_allele_id, gene_id, is_ref) " . "VALUES (?,?,?)");
-
-  for (my $i = 1; $i < $num_genes; $i++) {
-
-	$sth->bind_param(1, $alt_allele_id, SQL_INTEGER);
-	$sth->bind_param(2, $gene_ids[$i],  SQL_INTEGER);
-	$sth->bind_param(3, $is_ref[$i],    SQL_INTEGER);
-	eval { $sth->execute(); };
-
-	if ($@) {
-	  # an error occured, revert the db to the previous state
-	  $sth = $self->prepare("DELETE FROM alt_allele WHERE alt_allele_id = ?");
-	  $sth->bind_param(1, $alt_allele_id, SQL_INTEGER);
-	  $sth->execute();
-	  $sth->finish();
-	  throw("An SQL error occured inserting alternative alleles:\n$@");
-	}
-  }
-
-  $sth->finish();
-
-  return $alt_allele_id;
+  
+  my $aaga = $self->db->get_adaptor('AltAlleleGroup');
+  return $aaga->store($aag);
 } ## end sub store_alt_alleles
 
 =head2 store
