@@ -38,6 +38,10 @@ Optional arguments:
 
   --oldpass=pass          password for old database server
 
+  --previous_dbname       old database name
+                          allows to skip the expected name matching between
+                          old and new database
+
   --help                  print help (this message)
 
 =head1 DESCRIPTION
