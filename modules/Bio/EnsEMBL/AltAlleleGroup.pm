@@ -47,10 +47,10 @@
   my $type_flags = [qw(IS_MOST_COMMON_ALLELE AUTOMATICALLY_ASSIGNED)];
   
   $aag = Bio::EnsEMBL::AltAlleleGroup->new(
-     -MEMBERS => [ [$gene_id,$is_rep,$type_flags ] ],
+     -MEMBERS => [ [$gene_id,$type_flags ] ],
   );
   $aag->remove_all_members;
-  $aag->add_member([$gene_id,$is_rep,$type_flags]);
+  $aag->add_member([$gene_id,$type_flags]);
   
   my $dbID = $aag_adaptor->store($aag);
   
@@ -304,7 +304,7 @@ sub size {
 
 =head2 get_all_members
   Description: Retrieves all of the information about all members.
-  Returntype : Listref of triplets: [gene_id,type]
+  Returntype : Listref of id and type list: [gene_id,type]
   Caller     : AltAlleleGroupAdaptor->store
 =cut
 
