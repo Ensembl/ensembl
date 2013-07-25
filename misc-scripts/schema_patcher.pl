@@ -502,7 +502,10 @@ while ( $sth->fetch() ) {
     if ($opt_fixlast) {
       $opt_oldest = ($schema_version == $latest_release) ? $latest_release : $latest_release - 1;
 
-      next "Cannot use --fixlast with a schema release too far from the latest release; oldest allowed is $opt_oldest. Skipping $database" if $schema_version < ($opt_oldest);
+      if ($schema_version < $opt_oldest) {
+        printf("Cannot use --fixlast with a schema release too far from the latest release; oldest allowed is $opt_oldest. Skipping $database");
+        next;
+      }
       printf("--fixlast is active. Will apply patches for version %d and up (if available)\n", $opt_oldest);
     }
 
