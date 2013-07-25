@@ -45,7 +45,7 @@ INSERT INTO alt_allele_group (alt_allele_group_id) SELECT DISTINCT alt_allele_id
 INSERT INTO alt_allele (alt_allele_group_id,gene_id) SELECT alt_allele_id,gene_id FROM aa_bak;
 
 INSERT INTO alt_allele_attrib (alt_allele_id,attrib) SELECT a.alt_allele_id,'IS_REPRESENTATIVE' FROM alt_allele a, aa_bak b 
-    WHERE b.is_ref = 1 AND a.gene_id = b.gene_id AND a.group_id = b.alt_allele_id;
+    WHERE b.is_ref = 1 AND a.gene_id = b.gene_id AND a.alt_allele_group_id = b.alt_allele_id;
 
 # Clean up remains
 DROP TABLE aa_bak;
