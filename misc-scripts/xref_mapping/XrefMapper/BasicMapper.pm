@@ -489,65 +489,42 @@ sub get_id_from_species_name {
 
 sub get_alt_alleles {
   my $self =  shift;
-
-  my $gene_id;
-  my $alt_id;
-  my $is_ref;
-  my $sth = $self->core->dbc->prepare("select alt_allele_id, gene_id, is_ref from alt_allele");
-  $sth->execute;
-  $sth->bind_columns(\$alt_id,\$gene_id, \$is_ref);
-  my $count = 0 ;
+  
+  my $aaga = $self->core->db->get_adaptor('AltAlleleGroupAdaptor');
+  my $aa_list = $aaga->fetch_all_groups();
+  
+  my $count = scalar(@aa_list);
   my %alt_id_to_gene_id;
   my %gene_id_to_alt_id;
   my $max_alt_id = 0;
   my %is_reference;
 
-  while($sth->fetch){
-    $count++;
-    push @{$alt_id_to_gene_id{$alt_id}}, $gene_id;
-    $gene_id_to_alt_id{$gene_id} = $alt_id;
-      if($alt_id > $max_alt_id){
-	$max_alt_id = $alt_id;
-      }
-    if ($is_ref) {
-	$is_reference{$gene_id} = 1;
-    }
-  }
-
   my $insert_sth = $self->xref->dbc->prepare("insert into alt_allele (alt_allele_id, gene_id, is_reference) values (?, ?,?)");
 
   if($count){
-     
     $sth = $self->xref->dbc->prepare("delete from alt_allele");
     $sth->execute;
-
     my $alt_added = 0;
     my $num_of_genes = 0;
-    my $alt_failed = 0;
-    foreach my $alt_id (keys %alt_id_to_gene_id){
-
-      # make sure only one gene or none are on the reference
-      my $ref_count = 0;
-      foreach my $gene (@{$alt_id_to_gene_id{$alt_id}}){
-	if(defined($is_reference{$gene})){
-	  $ref_count++;
-	}
-      }
-      if($ref_count == 1 || $ref_count == 0){
-	$alt_added++;
-	foreach my $gene (@{$alt_id_to_gene_id{$alt_id}}){
-	  $num_of_genes++;
-	  my $ref =0 ;
-	  if(defined($is_reference{$gene})){
-	    $ref = 1;
-	  }
-	  $insert_sth->execute($alt_id, $gene, $ref);
-	}
-      }
-      else{
-	$alt_failed++;
-      }
+    
+    # Iterate through all alt-allele groups, pushing unique alleles into the xref alt allele table.
+    # Track the reference gene IDs.
+    
+    foreach my $aag (@$aa_list) {
+        my $ref_gene = $aag->rep_Gene_id();
+        $is_reference{$ref_gene} = 1;
+        my $others = $aag->get_all_Gene_ids('no rep');
+        $insert_sth->execute($aag->dbID,$ref_gene,1);
+        $num_of_genes++;
+        $alt_added++;
+        foreach my $aa (@$others) {
+            $insert_sth->execute($aag->dbID,$aa,0);
+            $num_of_genes++;
+        }
+        
+        if ($aag->dbID > $max_alt_id) { $max_alt_id = $aag->dbID }
     }
+    
     print "$alt_added alleles found containing $num_of_genes genes\n";
   }
   else{
@@ -588,24 +565,27 @@ LRG
   
 
   while ($sth->fetch()){
-    if(defined($gene_id_to_alt_id{$core_gene_id})){
-      $insert_sth->execute($gene_id_to_alt_id{$core_gene_id}, $lrg_gene_id, 0);
-      $old_count++;
-    }
-    elsif(defined($gene_id_to_alt_id{$lrg_gene_id})){
-      $insert_sth->execute($gene_id_to_alt_id{$lrg_gene_id}, $core_gene_id, 1);
-      print "LRG perculiarity\t$core_gene_id\t$lrg_gene_id\n";
-      $lrg_count++;
-    }
-    else{ # new one.
-      $max_alt_id++;
-      $insert_sth->execute($max_alt_id, $lrg_gene_id, 0);
-      $insert_sth->execute($max_alt_id, $core_gene_id, 1);
-      $new_count++;
+    my $aag = $aaga->fetch_Group_by_Gene_dbID($core_gene_id);
+    if ($aag) {
+        $insert_sth->execute($aag->dbID, $lrg_gene_id, 0);
+        $old_count++;
+    } else {
+        $aag = $aaga->fetch_Group_by_Gene_dbID($lrg_gene_id);
+        if ($aag) {
+            $insert_sth->execute($aag->dbID, $lrg_gene_id, 1);
+            print "LRG perculiarity\t$core_gene_id\t$lrg_gene_id\n";
+            $lrg_count++;
+        } else {
+            $max_alt_id++;
+            $insert_sth->execute($max_alt_id, $lrg_gene_id, 0);
+            $insert_sth->execute($max_alt_id, $core_gene_id, 1);
+            $new_count++;
+        }
     }
     $count++;
   }
 
+  
   if($count){
     print "Added $count alt_allels for the lrgs. $old_count added to previous alt_alleles and $new_count new ones\n";
     print "LRG problem count = $lrg_count\n";
