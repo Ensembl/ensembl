@@ -8,7 +8,7 @@ use File::Basename;
 use IPC::Open3;
 
 use XrefMapper::db;
-
+use Bio::EnsEMBL::DBSQL::AltAlleleGroupAdaptor;
 
 =head2 new
 
@@ -490,7 +490,9 @@ sub get_id_from_species_name {
 sub get_alt_alleles {
   my $self =  shift;
   
-  my $aaga = $self->core->db->get_adaptor('AltAlleleGroupAdaptor');
+  my $dbc = $self->core->dbc;
+  my $aaga = Bio::EnsEMBL::DBSQL::AltAlleleGroupAdaptor->new($dbc);
+  
   my $aa_list = $aaga->fetch_all_groups();
   
   my $count = scalar(@$aa_list);
