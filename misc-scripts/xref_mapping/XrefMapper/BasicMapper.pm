@@ -493,12 +493,12 @@ sub get_alt_alleles {
   my $aaga = $self->core->db->get_adaptor('AltAlleleGroupAdaptor');
   my $aa_list = $aaga->fetch_all_groups();
   
-  my $count = scalar(@aa_list);
+  my $count = scalar(@$aa_list);
   my %alt_id_to_gene_id;
   my %gene_id_to_alt_id;
   my $max_alt_id = 0;
   my %is_reference;
-
+  my $sth;
   my $insert_sth = $self->xref->dbc->prepare("insert into alt_allele (alt_allele_id, gene_id, is_reference) values (?, ?,?)");
 
   if($count){
