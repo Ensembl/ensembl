@@ -43,7 +43,7 @@ sub dbc{
 sub dba {
     my $self = shift;
     my $dbc = $self->dbc;
-    return Bio::EnsEMBL::DBSQL::DBAdaptor->new(-dbc => $dbc, -species => $self->species);
+    return Bio::EnsEMBL::DBSQL::DBAdaptor->new(-dbconn => $dbc, -species => $self->species);
 }
 
 =head2 dir
