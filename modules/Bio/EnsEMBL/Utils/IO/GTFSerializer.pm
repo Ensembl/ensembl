@@ -396,10 +396,10 @@ sub _check_start_and_stop {
 
   my $coding_start = $trans->cdna_coding_start;
   my $coding_end   = $trans->cdna_coding_end;
-  my $cdna_seq     = uc($trans->spliced_seq);
+  my $cds_seq     = uc($trans->translateable_seq); # uc($trans->spliced_seq);
 
-  my $startseq     = substr($cdna_seq,$coding_start-1,3);
-  my $endseq       = substr($cdna_seq,$coding_end-3,3);
+  my $startseq     = substr($cds_seq,$coding_start-1,3);
+  my $endseq       = substr($cds_seq,$coding_end-3,3);
 
   my $has_start = 1;
   my $has_end = 1;
