@@ -493,7 +493,7 @@ sub get_alt_alleles {
   my $dba = $self->core->dba;
   my $aaga = Bio::EnsEMBL::DBSQL::AltAlleleGroupAdaptor->new($dba);
   
-  my $aa_list = $aaga->fetch_all_groups();
+  my $aa_list = $aaga->fetch_all_Groups();
   
   my $count = scalar(@$aa_list);
   my %alt_id_to_gene_id;
