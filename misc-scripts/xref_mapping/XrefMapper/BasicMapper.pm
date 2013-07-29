@@ -490,8 +490,8 @@ sub get_id_from_species_name {
 sub get_alt_alleles {
   my $self =  shift;
   
-  my $dbc = $self->core->dbc;
-  my $aaga = Bio::EnsEMBL::DBSQL::AltAlleleGroupAdaptor->new($dbc);
+  my $dba = $self->core->dba;
+  my $aaga = Bio::EnsEMBL::DBSQL::AltAlleleGroupAdaptor->new($dba);
   
   my $aa_list = $aaga->fetch_all_groups();
   
