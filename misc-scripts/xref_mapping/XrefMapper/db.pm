@@ -2,6 +2,7 @@ package XrefMapper::db;
 
 use vars '@ISA';
 use Bio::EnsEMBL::DBSQL::DBConnection;
+use Bio::EnsEMBL::DBSQL::DBAdaptor;
 use Cwd;
 
 sub new{
@@ -10,7 +11,7 @@ sub new{
   my $self ={};
   bless $self,$class;
 
-   $self->dbc(new Bio::EnsEMBL::DBSQL::DBConnection(@args));
+  $self->dbc(new Bio::EnsEMBL::DBSQL::DBConnection(@args));
 
   return $self;
 } 
@@ -37,6 +38,12 @@ sub dbc{
     $self->{_dbc} = $arg;
   }
   return $self->{_dbc};
+}
+
+sub dba {
+    my $self = shift;
+    my $dbc = $self->dbc;
+    return Bio::EnsEMBL::DBSQL::DBAdaptor->new(-dbc => $dbc, -species => $self->species);
 }
 
 =head2 dir
