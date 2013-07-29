@@ -922,6 +922,23 @@ CREATE TABLE alt_allele (alt_allele_id INT UNSIGNED AUTO_INCREMENT,
 @column attrib                  Enum of attributes assigned to alternative alleles
 */
 
+CREATE TABLE alt_allele_attrib (alt_allele_id INT UNSIGNED,
+                                attrib ENUM('IS_REPRESENTATIVE',
+                                            'IS_MOST_COMMON_ALLELE',
+                                            'IN_CORRECTED_ASSEMBLY',
+                                            'HAS_CODING_POTENTIAL',
+                                            'IN_ARTIFICIALLY_DUPLICATED_ASSEMBLY',
+                                            'IN_SYNTENIC_REGION',
+                                            'HAS_SAME_UNDERLYING_DNA_SEQUENCE',
+                                            'IN_BROKEN_ASSEMBLY_REGION',
+                                            'IS_VALID_ALTERNATE',
+                                            'SAME_AS_REPRESENTATIVE',
+                                            'SAME_AS_ANOTHER_ALLELE',
+                                            'MANUALLY_ASSIGNED',
+                                            'AUTOMATICALLY_ASSIGNED'),
+                                KEY aa_idx (alt_allele_id,attrib)
+) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
+
 /**
 @table alt_allele_group_id
 @desc A minimal table used for tracking unique alt_allele_group_id's. MySQL does not allow multiple autoincrement fields. Further information about a group could be added here at a later date.
