@@ -36,10 +36,14 @@ is_deeply($id_list,[qw( 1 2 3 )], "Get all Gene IDs within a prefab group");
 
 my $id = $group->rep_Gene_id();
 is($id,'2',"Get reference Gene ID");
-is($other_group->rep_Gene_id(),undef,"Test behaviour without a reference Gene set");
+warns_like {
+    is($other_group->rep_Gene_id(),undef,"Test behaviour without a reference Gene set");
+} qr/No representative allele currently set/, 'Ensuring appropriate warning about lack of reference gene is emitted';
 
 $group->unset_rep_Gene_id();
-is($group->rep_Gene_id(), undef,"Check successful unsetting.");
+warns_like {
+    is($group->rep_Gene_id(), undef,"Check successful unsetting.");
+} qr/No representative allele currently set/, 'Ensuring appropriate warning about lack of reference gene is emitted';
 
 throws_ok{$group->rep_Gene_id(5)} qr/Requested representative gene ID/, "Exception thrown when invalid ID given";
 ok($group->rep_Gene_id(3) == 3,"Successful setting of reference gene");

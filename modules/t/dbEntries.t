@@ -199,44 +199,44 @@ $xref = Bio::EnsEMBL::DBEntry->new
    );
 
 my $threaded;
-  use Config;
-  if($Config{useithreads}) {
-    note 'Using threaded tests';
-    require threads;
-    $threaded = 1;
-    {
-      local $ENV{RUNTESTS_HARNESS} = 1;
-      local $ENV{RUNTESTS_HARNESS_NORESTORE} = 1;
-      
-      # db connection must be severed for threads to access DB    
-      $dbEntryAdaptor->dbc->disconnect_if_idle();
-      $multi->get_DBAdaptor('empty'); # seem to have to do this to stop thread whinging under some perls
-  
-      my $parallel_store = sub{
-          my $xref_id = $dbEntryAdaptor->store( $xref, $tr->dbID, "Transcript" );
-          return $xref_id
-      };
-         
-      my $thread1 = threads->create($parallel_store);
-      my $thread2 = threads->create($parallel_store);
-      my $thread3 = threads->create($parallel_store);
-      
-          
-      my @xref_ids;
-      @xref_ids = ($thread1->join,$thread2->join,$thread3->join);
-      
-      note("Threaded xrefs: ".$xref_ids[0]." ".$xref_ids[1]." ".$xref_ids[2]);
-      
-      # Test 10 - Verify that only one xref has been inserted under parallel inserts
-      is($xref_ids[0], 1000009, 'Thread 1 ID assertion');
-      is($xref_ids[1], $xref_ids[0], 'Thread 2 ID is the same as thread 1');
-      is($xref_ids[2], $xref_ids[0], 'Thread 3 ID is the same as thread 1');
-    }
-  
+use Config;
+if($Config{useithreads}) {
+  note 'Using threaded tests';
+  require threads;
+  $threaded = 1;
+  {
+    local $ENV{RUNTESTS_HARNESS} = 1;
+    local $ENV{RUNTESTS_HARNESS_NORESTORE} = 1;
+    
+    # db connection must be severed for threads to access DB    
+    $dbEntryAdaptor->dbc->disconnect_if_idle();
+    $multi->get_DBAdaptor('empty'); # seem to have to do this to stop thread whinging under some perls
+
+    my $parallel_store = sub{
+        my $xref_id = $dbEntryAdaptor->store( $xref, $tr->dbID, "Transcript" );
+        return $xref_id
+    };
+       
+    my $thread1 = threads->create($parallel_store);
+    my $thread2 = threads->create($parallel_store);
+    my $thread3 = threads->create($parallel_store);
+    
+        
+    my @xref_ids;
+    @xref_ids = ($thread1->join,$thread2->join,$thread3->join);
+    
+    note("Threaded xrefs: ".$xref_ids[0]." ".$xref_ids[1]." ".$xref_ids[2]);
+    
+    # Test 10 - Verify that only one xref has been inserted under parallel inserts
+    is($xref_ids[0], 1000003, 'Thread 1 ID assertion');
+    is($xref_ids[1], $xref_ids[0], 'Thread 2 ID is the same as thread 1');
+    is($xref_ids[2], $xref_ids[0], 'Thread 3 ID is the same as thread 1');
   }
-  else {
-    note 'Skipping threaded tests';
-  }
+
+}
+else {
+  note 'Skipping threaded tests';
+}
   
 
 # Test 11 - Exception testing on ->store()
@@ -260,9 +260,9 @@ $xref = Bio::EnsEMBL::DBEntry->new
 my $xref_id = $dbEntryAdaptor->store($xref, undef, "Transcript");
 note("Xref_id from insert: ".$xref_id);
 if ($threaded) {
-  ok($xref_id == 1000010);   
+  ok($xref_id == 1000004);   
 } else {
-  is($xref_id,1000009, "dbID for new DBEntry.");
+  is($xref_id,1000003, "dbID for new DBEntry.");
 }
 
 #

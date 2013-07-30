@@ -224,7 +224,8 @@ sub rep_Gene_id {
         $self->{'MEMBERS'} = $list;
         return $new_id;
     } elsif ($new_id && !$change) {
-        throw("Requested representative gene ID was not set because it is not in this AltAlleleGroup, ID ".$self->dbID);
+        my $db_id = $self->dbID() || 'unknown';
+        throw("Requested representative gene ID was not set because it is not in this AltAlleleGroup, ID $db_id");
     }
     else {
         warning("No representative allele currently set for this AltAlleleGroup");

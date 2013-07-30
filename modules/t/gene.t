@@ -544,15 +544,16 @@ push(@alt_genes, $ga->fetch_by_dbID(18270));
 push(@alt_genes, $ga->fetch_by_dbID(18271));
 push(@alt_genes, $ga->fetch_by_dbID(18272));
 
-warns_like(
-  sub {
-#	my ($stdout_ref, $stderr_ref) = @_;
-	$ga->store_alt_alleles(\@alt_genes);
-#	my $check = qr/.+alternative.+reference\ssequence.+Ignoring/;
-#	like(${$stderr_ref}, $check, 'Checking we are still warning about multiple alt_alleles on refs');
-  }, qr/.+alternative.+reference\ssequence.+Ignoring/, 'Checking we are still warning about multiple alt_alleles on refs');
+warns_like {
+  $ga->store_alt_alleles(\@alt_genes);
+} qr/.+alternative.+reference\ssequence.+Ignoring/, 'Checking we are still warning about multiple alt_alleles on refs';
 $gene      = $ga->fetch_by_dbID(18270);
-$alt_genes = $gene->get_all_alt_alleles();
+
+note 'Do not use GeneAdaptor::store_alt_alleles() for storing alt alleles. Ensuring we still warn';
+warns_like { 
+  $alt_genes = $gene->get_all_alt_alleles();
+} qr/Supplied gene has no alternative alleles/, 'Passing multiple genes to GeneAdaptor::store_alt_alleles() results in no REF being stored';
+
 %gene_ids  = (18271 => 1, 18272 => 1);
 
 $ok = 1;
