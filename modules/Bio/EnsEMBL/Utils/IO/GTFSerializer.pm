@@ -68,12 +68,6 @@ sub print_feature {
   my @startcs =  $self->_make_start_codon_features($transcript);
   my @endcs   =  $self->_make_stop_codon_features($transcript);
   my ($hasstart, $hasend) = $self->_check_start_and_stop($transcript);
-  #
-  # production does not use this option
-  #
-  # if (!$include_codons) {
-  #   $hasstart = $hasend = 0;
-  # }
 
   # TODO: ask Andy if this is safe
   my $dbname = $transcript->adaptor()->dbc()->dbname();
@@ -392,8 +386,7 @@ sub _check_start_and_stop {
 
   return (0,0) unless defined $trans->translation;
 
-  my $tln = $trans->translation;
-  my $cds_seq     = uc($trans->translateable_seq); 
+  my $cds_seq = uc($trans->translateable_seq); 
 
   my $startseq = substr($cds_seq, 0, 3); 
   my $endseq = substr($cds_seq, -3); 
@@ -401,7 +394,7 @@ sub _check_start_and_stop {
   my $has_start = 1;
   my $has_end = 1;
 
-  # reimplemented because verterbrate specific
+  # reimplemented since there are alternatively valid codon tables
   $has_start = 0  if ($startseq ne "ATG");
   $has_end = 0 if ($endseq ne "TAG" && $endseq ne "TGA" && $endseq ne "TAA");
 
