@@ -3,7 +3,7 @@ use warnings;
 
 use Test::More;
 use Test::Exception;
-
+use Data::Dumper;
 use Bio::EnsEMBL::Registry;
 use Bio::EnsEMBL::Test::MultiTestDB;
 use Bio::EnsEMBL::Test::TestUtils;
@@ -512,7 +512,7 @@ $gene = $ga->fetch_by_dbID(18256);
 my $alt_genes = $gene->get_all_alt_alleles();
 
 ok($gene->is_reference == 1);
-
+#diag Dumper($alt_genes);
 ok(scalar(@$alt_genes) == 3);
 
 # expect the following alleles
@@ -522,7 +522,7 @@ for my $gene (@$alt_genes) {
   $ok = $ok && $gene_ids{$gene->dbID()};
   $ok = $ok && !($gene->is_reference);
 }
-ok($ok);
+ok($ok, "Retrieved alt alleles have correct dbIDs");
 
 #
 # test storing a new allele group
@@ -544,13 +544,13 @@ push(@alt_genes, $ga->fetch_by_dbID(18270));
 push(@alt_genes, $ga->fetch_by_dbID(18271));
 push(@alt_genes, $ga->fetch_by_dbID(18272));
 
-capture_std_streams(
+warns_like(
   sub {
-	my ($stdout_ref, $stderr_ref) = @_;
+#	my ($stdout_ref, $stderr_ref) = @_;
 	$ga->store_alt_alleles(\@alt_genes);
-	my $check = qr/.+ alternative .+ reference sequence .+ Ignoring/;
-	like(${$stderr_ref}, $check, 'Checking we are still warning about multiple alt_alleles on refs');
-  });
+#	my $check = qr/.+alternative.+reference\ssequence.+Ignoring/;
+#	like(${$stderr_ref}, $check, 'Checking we are still warning about multiple alt_alleles on refs');
+  }, qr/.+alternative.+reference\ssequence.+Ignoring/, 'Checking we are still warning about multiple alt_alleles on refs');
 $gene      = $ga->fetch_by_dbID(18270);
 $alt_genes = $gene->get_all_alt_alleles();
 %gene_ids  = (18271 => 1, 18272 => 1);
