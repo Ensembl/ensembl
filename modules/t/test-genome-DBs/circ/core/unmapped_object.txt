@@ -1,4 +1,0 @@
-1	xref	9	4100	X1234	1	70.5	60.2	21716	Translation
-2	xref	9	4100	X5678	1	75.0	50.1	21717	Transcript
-3	cDNA	1290	4200	cDNA12	2	80.0	40.0	21718	Translation
-4	cDNA	1290	4200	cDNA34	2	60.5	30.9	21719	Transcript

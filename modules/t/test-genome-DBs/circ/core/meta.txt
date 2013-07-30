@@ -1,36 +1,57 @@
-1	\N	schema_version	72
-2	1	assembly.default	NCBI34
-33	1	species.classification	Chordata
-32	1	species.classification	Vertebrata
-31	1	species.classification	Mammalia
-30	1	species.classification	Eutheria
-29	1	species.classification	Primates
-28	1	species.classification	Catarrhini
-27	1	species.classification	Hominidae
-34	1	species.classification	Metazoa
-35	1	species.classification	Eukaryota
-26	1	species.classification	Homo sapiens
-36	1	species.common_name	Human
-70	1	species.scientific_name	Homo sapiens
-3	1	species.taxonomy_id	9606
-55	1	assembly.mapping	chromosome:NCBI33|contig
-56	1	assembly.mapping	clone|contig
-57	1	assembly.mapping	supercontig|contig
-58	1	assembly.mapping	chromosome:NCBI33|contig|clone
-59	1	assembly.mapping	chromosome:NCBI33|contig|supercontig
-60	1	assembly.mapping	supercontig|contig|clone
-64	1	assembly.mapping	chromosome:NCBI33#chunk
-65	1	assembly.mapping	alt_chrom#chromosome:NCBI33
-66	1	assembly.mapping	alt_chrom|chromosome:NCBI33|contig
-67	1	species.production_name	circ
-75	\N	schema_type	core
-76	\N	patch	patch_68_69_a.sql|schema_version
-77	\N	patch	patch_69_70_a.sql|schema_version
-78	\N	patch	patch_69_70_b.sql|add_mapping_set_history
-79	\N	patch	patch_69_70_c.sql|column_datatype_consistency
-80	\N	patch	patch_69_70_d.sql|data_file_id_auto_increment
-81	\N	patch	patch_69_70_e.sql|protein_feature_hit_description
-82	\N	patch	patch_70_71_a.sql|schema_version
-83	\N	patch	patch_70_71_b.sql|mapping_set_index
-84	\N	patch	patch_71_72_a.sql|schema_version
-85	\N	patch	patch_71_72_b.sql|associated_xref
+3	\N	patch	patch_71_72_a.sql|schema_version
+4	\N	patch	patch_71_72_b.sql|associated_xref
+1	\N	schema_type	core
+2	\N	schema_version	72
+8	1	assembly.accession	GCA_000292705.1
+10	1	assembly.date	2012-08
+7	1	assembly.default	GCA_000292705.1
+11	1	assembly.description	Bacillus thuringiensis HD-789 Genome sequencing
+45	1	assembly.mapping	chromosome:GCA_000292705.1#contig
+44	1	assembly.mapping	plasmid:GCA_000292705.1#contig
+17	1	assembly.master_accession	CP003763
+9	1	assembly.name	ASM29270v1
+56	1	exonbuild.level	toplevel
+53	1	genebuild.hash	6538e11c93c6a472265adaf11a8ad2ce
+14	1	genebuild.initial_release_date	2012-08-EnsemblBacteria
+15	1	genebuild.last_geneset_update	2012-08
+54	1	genebuild.level	toplevel
+16	1	genebuild.method	Generated from ENA annotation
+13	1	genebuild.start_date	2012-08-EnsemblBacteria
+12	1	genebuild.version	2012-08-EnsemblBacteria
+42	1	provider.name	European Nucleotide Archive
+43	1	provider.url	http://www.ebi.ac.uk/ena/data/view/GCA_000292705
+18	1	repeat.analysis	Dust
+19	1	repeat.analysis	TRF
+48	1	sample.gene_param	BTF1_30792
+49	1	sample.gene_text	BTF1_30792
+46	1	sample.location_param	p02:80287-81642
+47	1	sample.location_text	p02:80287-81642
+52	1	sample.search_text	synthetase
+50	1	sample.transcript_param	AFQ30259
+51	1	sample.transcript_text	BTF1_30792-1
+5	1	schema.load_started	2013-07-16 13:02:46
+6	1	schema.load_started	2013-07-16 13:02:53
+57	1	simple_featurebuild.level	toplevel
+37	1	species.alias	Bacillus thuringiensis HD-789
+38	1	species.alias	bacillus_thuringiensis
+24	1	species.classification	Bacillaceae
+25	1	species.classification	Bacillales
+26	1	species.classification	Bacilli
+23	1	species.classification	Bacillus
+22	1	species.classification	Bacillus cereus group
+21	1	species.classification	Bacillus thuringiensis
+20	1	species.classification	Bacillus thuringiensis HD-789
+28	1	species.classification	Bacteria
+27	1	species.classification	Firmicutes
+29	1	species.classification	cellular organisms
+34	1	species.common_name	Bacillus thuringiensis HD-789
+39	1	species.db_name	bacillus_thuringiensis
+33	1	species.display_name	Bacillus thuringiensis HD-789
+41	1	species.division	EnsemblBacteria
+36	1	species.ensembl_alias_name	Bacillus thuringiensis HD-789
+30	1	species.production_name	bacillus_thuringiensis
+32	1	species.scientific_name	Bacillus thuringiensis HD-789
+35	1	species.short_name	Bacillus thuringiensis HD-789
+40	1	species.taxonomy_id	1217737
+31	1	species.url	Bacillus_thuringiensis
+55	1	transcriptbuild.level	toplevel

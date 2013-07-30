@@ -1,2 +1,0 @@
-1	stupidity	-0.2	20	92	94
-2	long nose	-0.1	20	65	66
