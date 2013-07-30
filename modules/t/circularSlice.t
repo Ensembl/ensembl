@@ -351,16 +351,24 @@ foreach my $sl (sort keys %{$slices}) {
 # If we exclude density features, simple features are the only feature 
 # type stored in the test DB. 
 #
-# $slice = $slice_adaptor->fetch_by_region($COORD_SYSTEM, $CHR, 5335000, 5337000); # 5336890, 5337706
-# is($slice->seq_region_name, $CHR,"seq region name $CHR");
-# is($slice->start, 5335000, "start == 5335000");
-# is($slice->end, 5337000, "end == 5337000");
-# is($slice->seq_region_length, $SEQ_REGION_LENGTH, 
-#    "seq_region_length == $SEQ_REGION_LENGTH");
-# is($slice->adaptor, $slice_adaptor, "adaptor is adaptor");
+$slice = $slice_adaptor->fetch_by_region($COORD_SYSTEM, $CHR, 5335000, 5337000); # 5336890, 5337706
+is($slice->seq_region_name, $CHR,"seq region name $CHR");
+is($slice->start, 5335000, "start == 5335000");
+is($slice->end, 5337000, "end == 5337000");
+is($slice->seq_region_length, $SEQ_REGION_LENGTH, 
+   "seq_region_length == $SEQ_REGION_LENGTH");
+is($slice->adaptor, $slice_adaptor, "adaptor is adaptor");
 
-# my $simple_features = $slice->get_all_SimpleFeatures;
-# is(scalar @{$simple_features}, 1, "Number of simple features on chromosome:11:5335000-5337000");
+my $simple_features = $slice->get_all_SimpleFeatures;
+is(scalar @{$simple_features}, 1, "Number of simple features on chromosome:11:5335000-5337000");
+SKIP: {
+  skip 'Cannot test simple feature location attributes', 1 unless scalar @{$simple_features} == 1;
+
+  my $simple_feature = $simple_features->[0];
+  is($simple_feature->start, 1891, "simple feature start");
+  is($simple_feature->end, 2707, "simple feature end");
+  is($simple_feature->strand, 1, "simple feature strand"); 
+}
 
 #
 # Test get_attributes
