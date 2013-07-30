@@ -1606,6 +1606,8 @@ sub _objs_from_sth {
     # If a destination slice was provided convert the coords.
     #
     if (defined($dest_slice)) {
+      my $seq_region_len = $dest_slice->seq_region_length();
+
       if ( $dest_slice_strand == 1 ) {
         $seq_region_start = $seq_region_start - $dest_slice_start + 1;
         $seq_region_end   = $seq_region_end - $dest_slice_start + 1;
@@ -1633,42 +1635,63 @@ sub _objs_from_sth {
           }
         }
       } else {
-        if (    $dest_slice->is_circular()
-             && $seq_region_start > $seq_region_end )
-        {
-          if ( $seq_region_end > $dest_slice_start ) {
-            # Looking at the region in the beginning of the chromosome.
-            $seq_region_start = $dest_slice_end - $seq_region_end + 1;
-            $seq_region_end =
-              $seq_region_end -
-              $dest_slice->seq_region_length() -
-              $dest_slice_start + 1;
-          } else {
-            my $tmp_seq_region_start = $seq_region_start;
-            $seq_region_start =
-              $dest_slice_end -
-              $seq_region_end -
-              $dest_slice->seq_region_length() + 1;
-            $seq_region_end =
-              $dest_slice_end - $tmp_seq_region_start + 1;
-          }
+	my $start = $dest_slice_end - $seq_region_end + 1;
+	my $end = $dest_slice_end - $seq_region_start + 1;
 
-        } else {
-          my $tmp_seq_region_start = $seq_region_start;
-          $seq_region_start = $dest_slice_end - $seq_region_end + 1;
-          $seq_region_end = $dest_slice_end - $tmp_seq_region_start + 1;
-        }
+	if ($dest_slice->is_circular()) {
 
-        $seq_region_strand = -$seq_region_strand;
+	  if ($dest_slice_start > $dest_slice_end) { 
+	    # slice spans origin or replication
+
+	    if ($seq_region_start >= $dest_slice_start) {
+	      $end += $seq_region_len;
+	      $start += $seq_region_len 
+		if $seq_region_end > $dest_slice_start;
+
+	    } elsif ($seq_region_start <= $dest_slice_end) {
+	      # do nothing
+	    } elsif ($seq_region_end >= $dest_slice_start) {
+	      $start += $seq_region_len;
+	      $end += $seq_region_len;
+
+	    } elsif ($seq_region_end <= $dest_slice_end) {
+
+	      $end += $seq_region_len
+		if $end < 0;
+
+	    } elsif ($seq_region_start > $seq_region_end) {
+		  
+	      $end += $seq_region_len;
+
+	    } else {
+		  
+	    }
+      
+	  } else {
+
+	    if ($seq_region_start <= $dest_slice_end and $seq_region_end >= $dest_slice_start) {
+	      # do nothing
+	    } elsif ($seq_region_start > $seq_region_end) {
+	      if ($seq_region_start <= $dest_slice_end) {
+	  
+		$start -= $seq_region_len;
+
+	      } elsif ($seq_region_end >= $dest_slice_start) {
+		$end += $seq_region_len;
+
+	      } else {
+		    
+	      }
+	    }
+	  }
+
+	}
+
+	$seq_region_start = $start;
+	$seq_region_end = $end;
+	$seq_region_strand *= -1;
+
       } ## end else [ if ( $dest_slice_strand...)]
-
-      # Throw away features off the end of the requested slice
-      if (    $seq_region_end < 1
-           || $seq_region_start > $dest_slice_length
-           || ( $dest_slice_sr_id ne $seq_region_id ) )
-      {
-        next FEATURE;
-      }
 
       $slice = $dest_slice;
     }
