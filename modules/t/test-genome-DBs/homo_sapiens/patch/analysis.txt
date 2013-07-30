@@ -1,0 +1,49 @@
+8405	2009-05-14 15:43:42	ensembl_havana_gene	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL
+8406	2009-06-01 09:01:22	xrefexoneratedna	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL
+8407	2009-05-14 15:43:42	havana	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL
+8408	2007-09-07 12:01:22	est2genome_human_havana	NULL	10-Nov-10 (105)	NULL	NULL	NULL	NULL	ori_analysis => Est2genome_human_raw, mode => single	ClusterDepthFilter	NULL	EST_Human	similarity
+8409	2007-09-07 12:01:22	vertrna_havana	NULL	10-Nov-10 (105)	NULL	NULL	NULL	NULL	ori_analysis => vertrna_raw, mode => single, no_filter => 9606	ClusterDepthFilter	NULL	vertebrate_mRNA	similarity
+8410	2010-09-30 09:17:16	human_cdna2genome	NULL	NULL	NULL	NULL	NULL	/nfs/users/nfs_j/jhv/bin/exonerate.hacked.cdna2genome	NULL	Exonerate2Genes	NULL	NULL	NULL
+8411	0000-00-00 00:00:00	human_cdna	NULL	NULL	NULL	exonerate	0.9.0	/usr/local/ensembl/bin/exonerate-0.9.0	NULL	Exonerate2Genes	NULL	Exonerate	similarity
+8412	2007-09-07 12:01:22	uniprot_sw_havana	NULL	2010_11	NULL	NULL	NULL	NULL	percentid_cutoff => 40, ori_analysis => Uniprot_raw, hit_db => Swissprot, mode => single	DepthFilter	NULL	SwissProt	NULL
+8413	2009-03-11 17:25:55	human_protein	NULL	refseq_40,uniprot_2010_07	NULL	NULL	NULL	NULL	NULL	BestTargetted	NULL	NULL	NULL
+8414	2007-09-07 12:01:22	uniprot_tr_havana	NULL	2010_11	NULL	NULL	NULL	NULL	percentid_cutoff => 40, ori_analysis => Uniprot_raw, hit_db => TrEMBL, mode => single	DepthFilter	NULL	TrEMBL	NULL
+8415	2009-06-01 09:01:22	xrefexonerateprotein	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL
+8416	2012-09-03 17:48:15	xrefchecksum	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL
+8417	2013-04-02 14:50:52	pfam	Pfam	NULL	/data/blastdb/Ensembl/interpro_scan/Pfam-A.hmm	/software/ensembl/bin/hmmer3/hmmscan	NULL	/software/ensembl/bin/hmmer3/hmmscan	--acc --noali --cut_ga --cpu 1	ProteinAnnotation/Hmmpfam	NULL	Pfam	domain
+8418	2013-04-02 14:50:52	superfamily	Superfamily	NULL	/data/blastdb/Ensembl/interpro_scan/superfamily.tab	/software/ensembl/bin/superfamily.pl	NULL	/software/ensembl/bin/superfamily.pl	-t /tmp -m /data/blastdb/Ensembl/interpro_scan/superfamily.hmm -d /data/blastdb/Ensembl/interpro_scan/superfamily.tab -a /data/blastdb/Ensembl/interpro_scan/superfamily.acc -p /software/ensembl/bin/hmmpfam -s /software/ensembl/bin/ 1e-05 -r y	ProteinAnnotation/Superfamily	NULL	Superfamily	domain
+8419	2013-04-02 14:50:52	smart	Smart	NULL	/data/blastdb/Ensembl/interpro_scan/smart.HMMs	hmmpfam	NULL	hmmpfam	-E 0.01 -A 100 -Z 350000 --acc --cpu 1	ProteinAnnotation/Hmmpfam	NULL	Smart	domain
+8420	2013-04-02 14:50:51	seg	low_complexity	NULL	NULL	seg	NULL	seg	NULL	ProteinAnnotation/Seg	NULL	Seg	annotation
+8421	2013-04-02 14:50:52	pirsf	PIRSF	NULL	/data/blastdb/Ensembl/interpro_scan/pirsf.dat	/software/ensembl/bin/pirsf.pl	NULL	/software/ensembl/bin/pirsf.pl	-pirsf /data/blastdb/Ensembl/interpro_scan/pirsf.dat -sfhmm /data/blastdb/Ensembl/interpro_scan/sf_hmm.bin -subsf /data/blastdb/Ensembl/interpro_scan/sf_hmm_sub -sfseq /data/blastdb/Ensembl/interpro_scan/sf.seq -sftb /data/blastdb/Ensembl/interpro_scan/sf.tb -hmmer /software/ensembl/bin/hmmpfam -blast /software/ensembl/bin/blastall	ProteinAnnotation/PIRSF	NULL	PIRSF	domain
+8422	2013-04-02 14:50:52	pfscan	Prosite_profiles	NULL	/data/blastdb/Ensembl/interpro_scan/prosite.profiles	pfscan	NULL	pfscan	NULL	ProteinAnnotation/PrositeProfile	NULL	Profile	domain
+8423	2013-04-02 14:50:52	signalp	signal_peptide	NULL	NULL	signalp	NULL	/software/worm/signalp/signalp	NULL	ProteinAnnotation/Signalp	NULL	Signalp	annotation
+8424	2010-09-23 14:40:18	ccds	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL
+8425	2009-05-14 15:43:42	ensembl_havana_transcript	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL
+8426	2013-04-02 14:50:51	ensembl	NULL	NULL	NULL	NULL	NULL	NULL	NULL	GeneBuilder	NULL	NULL	NULL
+8427	2013-04-02 14:50:52	prints	Prints	NULL	/data/blastdb/Ensembl/interpro_scan/prints.pval	/software//ensembl/bin/FingerPRINTScan	NULL	/software/ensembl/bin/FingerPRINTScan	-e 0.0001 -d 10 -E 257043 84355444 -fjR -a -o 15	ProteinAnnotation/Prints	NULL	Prints	domain
+8428	2007-09-07 12:01:22	est2genome_mouse_havana	NULL	10-Nov-10 (105)	NULL	NULL	NULL	NULL	ori_analysis => Est2genome_mouse_raw, mode => single	ClusterDepthFilter	NULL	EST_Mouse	similarity
+8429	2013-04-02 14:50:52	ncoils	coiled_coil	NULL	/usr/local/ensembl/data/coils	ncoils	NULL	ncoils	NULL	ProteinAnnotation/Coil	NULL	ncoils	annotation
+8430	2009-05-12 18:26:57	ncrna	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL
+8431	2009-05-20 12:21:05	rfamblast	Rfam	NULL	/lustre/scratch1/ensembl/sw4/ncRNA/BLAST/high_copy.fasta	wublastn	NULL	wublastn	lowcopy => /lustre/scratch1/ensembl/sw4/ncRNA/BLAST/low_copy.fasta	Bio::EnsEMBL::Analysis::RunnableDB::BlastRfam	NULL	ensembl	gene
+8432	2009-03-27 11:33:33	human_est	human_ests	NULL	/lustre/work1/ensembl/jb16/NCBI37/ests/est_chunks	NULL	NULL	exonerate-0.9.0	NULL	Exonerate2Genes	NULL	NULL	NULL
+8433	2012-03-02 14:01:07	proj_ncrna	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL
+8434	2012-03-01 13:57:43	projected_transcript	NULL	NULL	NULL	NULL	NULL	NULL	NULL	ProjectedTranscriptEvidence	NULL	NULL	NULL
+8435	2012-03-02 14:01:07	proj_havana	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL
+8436	2013-04-30 11:33:07	lrg_import	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL
+8437	2011-02-15 17:06:42	firstef	firstef	NULL	NULL	firstef	NULL	NULL	-repeatmasked	FirstEF	NULL	firstef	exon
+8438	2011-02-15 17:06:42	eponine	Eponine	NULL	NULL	eponine-scan	1	/vol/software/linux-x86_64/jdk1.6.0_01/bin/java	-epojar => /usr/local/ensembl/lib/eponine-scan.jar, -threshold => 0.999	EponineTSS	NULL	Eponine	TSS
+8439	2011-02-15 17:06:42	cpg	cpg	NULL	NULL	cpg	NULL	cpg	NULL	CPG	NULL	cpg	cpg_island
+8440	2011-02-15 17:06:42	genscan	HumanIso.smat	NULL	HumanIso.smat	genscan	1.0	genscan	NULL	Genscan	NULL	genscan	prediction
+8441	2013-07-25 14:40:18	shortnoncodingdensity	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL
+8442	2013-07-25 14:40:18	codingdensity	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL
+8443	2013-07-25 14:40:19	percentagerepeat	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL
+8444	2013-07-25 14:43:46	percentgc	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL
+8445	2013-07-25 14:43:46	pseudogenedensity	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL
+8446	2013-07-25 14:43:46	longnoncodingdensity	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL
+8447	2011-02-23 14:35:10	marker	NULL	NULL	/lustre/scratch103/ensembl/amonida/builds/homo_sapiens/GRCh37_jan11_e62/marker_features/dumped_markers.out	e-PCR	1.2.0	NULL	-M=>150,-W=>7,-NMIN=>0, -NMAX=>2	EPCR	NULL	e-PCR	sts
+8448	2013-07-29 09:24:09	xrefcoordinatemapping	NULL	NULL	NULL	xref_mapper.pl	NULL	NULL	weights(coding,ensembl)=2.00,3.00;transcript_score_threshold=0.75	CoordinateMapper.pm	NULL	NULL	NULL
+41	2009-03-12 16:36:37	fantom_gis_pet_raw	NULL	NULL	NULL	NULL	NULL	NULL	NULL	ExonerateTags	NULL	NULL	NULL
+42	2009-03-12 16:36:37	fantom_gsc_pet_raw	NULL	NULL	NULL	NULL	NULL	NULL	NULL	ExonerateTags	NULL	NULL	NULL
+2	2011-02-15 17:06:42	repeatmask	repbase	3.2.5	repbase	RepeatMasker	3.2.5	/nfs/ensembl/genebuild/human_repeatmasker/RepeatMasker/RepeatMasker	-nolow -species homo -s	RepeatMasker	NULL	RepeatMasker	repeat
+6	2011-02-15 17:06:42	trf	NULL	NULL	NULL	trf	NULL	trf	NULL	TRF	NULL	trf	tandem_repeat
+7	2011-02-15 17:06:42	dust	Dust	NULL	NULL	dust	1	tcdust	NULL	Dust	NULL	NULL	NULL

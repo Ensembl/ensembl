@@ -1,0 +1,44 @@
+1	\N	schema_version	73
+2014	1	species.classification	Haplorrhini
+40	1	assembly.default	GRCh37
+41	1	assembly.date	2009-02
+42	1	assembly.name	GRCh37.p11
+48	1	assembly.mapping	chromosome:GRCh37#contig
+49	1	assembly.long_name	Genome Reference Consortium Human Reference 37
+50	1	assembly.accession	GCA_000001405.12
+51	1	assembly.mapping	supercontig:GRCh37#contig
+69	1	assembly.mapping	clone#contig
+81	1	assembly.mapping	chromosome:GRCh37|supercontig:GRCh37
+119	1	assembly.mapping	chromosome:GRCh37#contig#clone
+365	1	assembly.mapping	chromosome:GRCh37#chromosome:NCBI36
+366	1	assembly.mapping	chromosome:GRCh37#chromosome:NCBI35
+367	1	assembly.mapping	chromosome:GRCh37#chromosome:NCBI34
+368	1	assembly.mapping	supercontig:GRCh37#contig#clone
+462	1	assembly.coverage_depth	high
+2004	1	species.stable_id_prefix	ENS
+1999	1	species.alias	homo sapiens
+1994	1	species.alias	human
+2036	1	species.production_name	homo_sapiens
+809	1	assembly.mapping	lrg#contig
+808	1	lrg	lrg
+804	\N	schema_type	core
+2035	1	species.scientific_name	Homo sapiens
+2005	1	species.taxonomy_id	9606
+2006	1	species.common_name	human
+2027	1	species.classification	Craniata
+2007	1	species.display_name	Human
+2026	1	species.classification	Vertebrata
+1995	1	species.alias	9606
+2019	1	species.classification	Mammalia
+2000	1	species.alias	homo_sapiens
+2008	1	species.classification	Homo sapiens
+2009	1	species.classification	Homininae
+1960	1	assembly.mapping	chromosome:GRCh37#lrg
+2030	1	species.classification	Bilateria
+2031	1	species.classification	Eumetazoa
+2032	1	species.classification	Metazoa
+2033	1	species.classification	Opisthokonta
+2034	1	species.classification	Eukaryota
+2048	\N	patch	patch_72_73_a.sql|schema_version
+2049	\N	patch	patch_72_73_b.sql|alt_allele_type
+2050	\N	patch	patch_72_73_c.sql|add_object_type_marker
