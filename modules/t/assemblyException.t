@@ -12,31 +12,27 @@ our $verbose = 0;
 my $multi = Bio::EnsEMBL::Test::MultiTestDB->new();
 ok(1);
 
-my $db = $multi->get_DBAdaptor('core');
+my $db = $multi->get_DBAdaptor('patch');
 my $sfa = $db->get_SimpleFeatureAdaptor();
 my $aexc_adaptor = $db->get_AssemblyExceptionFeatureAdaptor();
 my $slice_adaptor = $db->get_SliceAdaptor();
 
-##chromosome Y is a fake 'PAR' linked to chromosome 20
-my $slice = $slice_adaptor->fetch_by_region('chromosome', 'Y',8e6,13e6);
+my $slice = $slice_adaptor->fetch_by_region('chromosome', 'Y', 1, 400000);
 my $feats = $sfa->fetch_all_by_Slice($slice);
-debug("Got " . scalar(@$feats));
-ok( @$feats ==58 );
+is( @$feats, 94, "Returned 58 features" );
 
 print_features($feats);
 
 
-#HAP_1 is a fake haplotype on chromosome 20
-$slice = $slice_adaptor->fetch_by_region('chromosome', '20_HAP1',
-                                            30_399_998,30_600_002);
-my $org_slice = $slice_adaptor->fetch_by_region('chromosome', '20',
-                                            30_430_000,30_500_000 );
+$slice = $slice_adaptor->fetch_by_region('chromosome', 'Y',
+                                            1, 200000);
+my $org_slice = $slice_adaptor->fetch_by_region('chromosome', 'X',
+                                            1, 200000);
 
 
 $feats = $sfa->fetch_all_by_Slice($slice);
 
-debug("Got " . scalar(@$feats));
-is( @$feats, 9 , "Fetched 9 features");
+is( @$feats, 24 , "Fetched 24 features");
 
 print_features($feats);
 
@@ -56,13 +52,13 @@ for my $f ( @$feats ) {
 }
 
 
-$slice = $slice_adaptor->fetch_by_region('chromosome', '20_HAP1',
-					 30_400_000,30_600_000);
+$slice = $slice_adaptor->fetch_by_region('chromosome', 'Y',
+					 1, 200000);
 $feats = $sfa->fetch_all_by_Slice( $slice );
 
 debug( "After storing retrieval" );
 print_features($feats);
-is(@$feats, 14, "Fetched 14 features");
+is(@$feats, 24, "Fetched 24 features");
 
 
 
@@ -70,28 +66,27 @@ is(@$feats, 14, "Fetched 14 features");
 # sequence getting tests
 #
 
-my $hap_slice = $slice_adaptor->fetch_by_region('chromosome', '20_HAP1',
-                                             30_400_000,30_700_000 );
+my $hap_slice = $slice_adaptor->fetch_by_region('chromosome', 'Y',
+                                             10001, 400000);
 
-$org_slice = $slice_adaptor->fetch_by_region('chromosome', '20',
-                                             30_400_000,30_800_000 );
+$org_slice = $slice_adaptor->fetch_by_region('chromosome', 'X',
+                                             60001, 400000);
 
 my ( $fhs, $bhs, $fos, $bos );
 
 debug( "Front hap seq: ".($fhs = $hap_slice->subseq( 99_991, 100_000 )));
-debug( "Back hap seq: ".($bhs = $hap_slice->subseq( 200_001, 200_010 )));
+debug( "Back hap seq: ".($bhs = $hap_slice->subseq( 400_001, 400_010 )));
 debug( "Front org seq: ".( $fos = $org_slice->subseq( 99_991, 100_000 )));
-debug( "Back org seq: ".( $bos = $org_slice->subseq( 300_001, 300_010 )));
+debug( "Back org seq: ".( $bos = $org_slice->subseq( 400_001, 400_010 )));
 
-ok( $fhs eq $fos );
-ok( $bhs eq $bos );
+is( $fhs, $fos, "Front sequences for haplotype and reference are the same" );
+is( $bhs, $bos, "Back sequences for haplotype and reference are the same" );
 
 
-$slice = $slice_adaptor->fetch_by_region('chromosome', '20_HAP1',
-					 30_499_998,30_500_002);
+$slice = $slice_adaptor->fetch_by_region('chromosome', 'Y',
+					 299_998, 300_002);
 
-debug($slice->seq);
-is( $slice->seq(), "GTNNN", "Fetched haplotype subslice");
+is( $slice->seq(), "ACAGA", "Fetched haplotype subslice");
 
 $multi->restore();
 
