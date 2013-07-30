@@ -303,24 +303,112 @@ sub _objs_from_sth {
     # If the dest_slice starts at 1 and is foward strand, nothing needs doing
     #
     if($dest_slice) {
-      if($dest_slice_start != 1 || $dest_slice_strand != 1) {
-        if($dest_slice_strand == 1) {
-          $seq_region_start = $seq_region_start - $dest_slice_start + 1;
-          $seq_region_end   = $seq_region_end   - $dest_slice_start + 1;
-        } else {
-          my $tmp_seq_region_start = $seq_region_start;
-          $seq_region_start = $dest_slice_end - $seq_region_end + 1;
-          $seq_region_end   = $dest_slice_end - $tmp_seq_region_start + 1;
-          $seq_region_strand *= -1;
-        }
-      }
-       
-      #throw away features off the end of the requested slice
-      if($seq_region_end < 1 || $seq_region_start > $dest_slice_length ||
-	( $dest_slice_seq_region_id != $seq_region_id )) {
-#	print STDERR "IGNORED DUE TO CUTOFF  $dest_slice_seq_region_id ne $seq_region_id . $sr_name\n";
+      my $seq_region_len = $dest_slice->seq_region_length();
+
+      if ($dest_slice_strand == 1) { # Positive strand
+		
+	$seq_region_start = $seq_region_start - $dest_slice_start + 1;
+	$seq_region_end   = $seq_region_end - $dest_slice_start + 1;
+
+	if ($dest_slice->is_circular()) {
+	  # Handle cicular chromosomes.
+
+	  if ($seq_region_start > $seq_region_end) {
+	    # Looking at a feature overlapping the chromsome origin.
+
+	    if ($seq_region_end > $dest_slice_start) {
+
+	      # Looking at the region in the beginning of the
+	      # chromosome.
+	      $seq_region_start -= $seq_region_len;
+	    }
+
+	    if ($seq_region_end < 0) {
+	      $seq_region_end += $seq_region_len;
+	    }
+
+	  } else {
+
+	    if (   $dest_slice_start > $dest_slice_end
+		   && $seq_region_end < 0) {
+	      # Looking at the region overlapping the chromosome
+	      # origin and a feature which is at the beginning of the
+	      # chromosome.
+	      $seq_region_start += $seq_region_len;
+	      $seq_region_end   += $seq_region_len;
+	    }
+	  }
+
+	}		       ## end if ($dest_slice->is_circular...)
+
+      } else {			# Negative strand
+
+	my $start = $dest_slice_end - $seq_region_end + 1;
+	my $end = $dest_slice_end - $seq_region_start + 1;
+
+	if ($dest_slice->is_circular()) {
+
+	  if ($dest_slice_start > $dest_slice_end) { 
+	    # slice spans origin or replication
+
+	    if ($seq_region_start >= $dest_slice_start) {
+	      $end += $seq_region_len;
+	      $start += $seq_region_len 
+		if $seq_region_end > $dest_slice_start;
+
+	    } elsif ($seq_region_start <= $dest_slice_end) {
+	      # do nothing
+	    } elsif ($seq_region_end >= $dest_slice_start) {
+	      $start += $seq_region_len;
+	      $end += $seq_region_len;
+
+	    } elsif ($seq_region_end <= $dest_slice_end) {
+
+	      $end += $seq_region_len
+		if $end < 0;
+
+	    } elsif ($seq_region_start > $seq_region_end) {
+		  
+	      $end += $seq_region_len;
+
+	    } else {
+		  
+	    }
+      
+	  } else {
+
+	    if ($seq_region_start <= $dest_slice_end and $seq_region_end >= $dest_slice_start) {
+	      # do nothing
+	    } elsif ($seq_region_start > $seq_region_end) {
+	      if ($seq_region_start <= $dest_slice_end) {
+	  
+		$start -= $seq_region_len;
+
+	      } elsif ($seq_region_end >= $dest_slice_start) {
+		$end += $seq_region_len;
+
+	      } else {
+		    
+	      }
+	    }
+	  }
+
+	}
+
+	$seq_region_start = $start;
+	$seq_region_end = $end;
+	$seq_region_strand *= -1;
+
+      }	## end else [ if ($dest_slice_strand...)]
+
+      # Throw away features off the end of the requested slice or on
+      # different seq_region.
+      if (   $seq_region_end < 1
+	     || $seq_region_start > $dest_slice_length
+	     || ($dest_slice_seq_region_id ne $seq_region_id)) {
 	next FEATURE;
       }
+
       $slice = $dest_slice;
     }
 

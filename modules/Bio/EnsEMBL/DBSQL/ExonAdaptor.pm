@@ -745,6 +745,15 @@ FEATURE: while ( $sth->fetch() ) {
 
       } ## end else [ if ( $dest_slice_strand...)]
 
+      # Throw away features off the end of the requested slice or on
+      # different seq_region.
+      if (   $seq_region_end < 1
+	     || $seq_region_start > $dest_slice_length
+	     || ($dest_slice_sr_id ne $seq_region_id))
+	{
+	  next FEATURE;
+	}
+
       $slice = $dest_slice;
     } ## end if ( defined($dest_slice...))
 
