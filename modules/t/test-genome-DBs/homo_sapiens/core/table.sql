@@ -515,7 +515,7 @@ CREATE TABLE `misc_set` (
 CREATE TABLE `object_xref` (
   `object_xref_id` int(11) NOT NULL AUTO_INCREMENT,
   `ensembl_id` int(10) unsigned NOT NULL DEFAULT '0',
-  `ensembl_object_type` enum('RawContig','Transcript','Gene','Translation','regulatory_factor','regulatory_feature') COLLATE latin1_bin NOT NULL DEFAULT 'RawContig',
+  `ensembl_object_type` enum('RawContig', 'Transcript', 'Gene', 'Translation', 'Operon', 'OperonTranscript', 'Marker') COLLATE latin1_bin NOT NULL DEFAULT 'RawContig',
   `xref_id` int(10) unsigned NOT NULL,
   `linkage_annotation` varchar(255) COLLATE latin1_bin DEFAULT NULL,
   `analysis_id` smallint(5) unsigned NOT NULL,

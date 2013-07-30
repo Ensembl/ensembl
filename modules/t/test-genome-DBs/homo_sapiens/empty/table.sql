@@ -1,9 +1,20 @@
 CREATE TABLE `alt_allele` (
-  `alt_allele_id` int(11) NOT NULL AUTO_INCREMENT,
-  `gene_id` int(11) NOT NULL DEFAULT '0',
-  `is_ref` tinyint(1) NOT NULL DEFAULT '0',
-  UNIQUE KEY `gene_idx` (`gene_id`),
-  UNIQUE KEY `allele_idx` (`alt_allele_id`,`gene_id`)
+  `alt_allele_id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+  `alt_allele_group_id` int(10) unsigned NOT NULL,
+  `gene_id` int(10) unsigned NOT NULL,
+  PRIMARY KEY (`alt_allele_id`),
+  KEY `gene_id` (`gene_id`,`alt_allele_group_id`)
+) ENGINE=MyISAM DEFAULT CHARSET=latin1;
+
+CREATE TABLE `alt_allele_attrib` (
+  `alt_allele_id` int(10) unsigned DEFAULT NULL,
+  `attrib` enum('IS_REPRESENTATIVE','IS_MOST_COMMON_ALLELE','IN_CORRECTED_ASSEMBLY','HAS_CODING_POTENTIAL','IN_ARTIFICIALLY_DUPLICATED_ASSEMBLY','IN_SYNTENIC_REGION','HAS_SAME_UNDERLYING_DNA_SEQUENCE','IN_BROKEN_ASSEMBLY_REGION','IS_VALID_ALTERNATE','SAME_AS_REPRESENTATIVE','SAME_AS_ANOTHER_ALLELE','MANUALLY_ASSIGNED','AUTOMATICALLY_ASSIGNED') DEFAULT NULL,
+  KEY `aa_idx` (`alt_allele_id`,`attrib`)
+) ENGINE=MyISAM DEFAULT CHARSET=latin1;
+
+CREATE TABLE `alt_allele_group` (
+  `alt_allele_group_id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+  PRIMARY KEY (`alt_allele_group_id`)
 ) ENGINE=MyISAM DEFAULT CHARSET=latin1;
 
 CREATE TABLE `analysis` (
@@ -447,7 +458,7 @@ CREATE TABLE `meta` (
   PRIMARY KEY (`meta_id`),
   UNIQUE KEY `species_key_value_idx` (`species_id`,`meta_key`,`meta_value`),
   KEY `species_value_idx` (`species_id`,`meta_value`)
-) ENGINE=MyISAM AUTO_INCREMENT=86 DEFAULT CHARSET=latin1;
+) ENGINE=MyISAM AUTO_INCREMENT=89 DEFAULT CHARSET=latin1;
 
 CREATE TABLE `meta_coord` (
   `table_name` varchar(40) CHARACTER SET latin1 COLLATE latin1_bin NOT NULL DEFAULT '',
@@ -494,7 +505,7 @@ CREATE TABLE `misc_set` (
 CREATE TABLE `object_xref` (
   `object_xref_id` int(11) NOT NULL AUTO_INCREMENT,
   `ensembl_id` int(10) unsigned NOT NULL DEFAULT '0',
-  `ensembl_object_type` enum('RawContig','Transcript','Gene','Translation','regulatory_factor','regulatory_feature') CHARACTER SET latin1 COLLATE latin1_bin NOT NULL DEFAULT 'RawContig',
+  `ensembl_object_type` enum('RawContig','Transcript','Gene','Translation','Operon','OperonTranscript','Marker') NOT NULL,
   `xref_id` int(10) unsigned NOT NULL,
   `linkage_annotation` varchar(255) CHARACTER SET latin1 COLLATE latin1_bin DEFAULT NULL,
   `analysis_id` smallint(5) unsigned NOT NULL,
