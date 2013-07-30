@@ -4,13 +4,11 @@ use warnings;
 use Bio::EnsEMBL::AltAlleleGroup;
 use Bio::EnsEMBL::DBSQL::AltAlleleGroupAdaptor;
 
-our $verbose = 0; #set to 1 to turn on debug printouts
 use Test::More;
 use Test::Exception;
 use Test::Differences;
 use Bio::EnsEMBL::Test::TestUtils;
 use Bio::EnsEMBL::Test::MultiTestDB;
-use Data::Dump::Color qw(dump);
 
 # Tests for basic methods on fake data
 
