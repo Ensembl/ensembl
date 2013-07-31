@@ -300,14 +300,71 @@ sub fetch_pairs_by_Slice {
   $sth->execute();
   $sth->bind_columns( \$tag_id, \$pair_id, \$seq_region_id, \$start, \$end, \$strand, \$analysis_id ,\$tag_count);
   while ( $sth->fetch ) {
-    #convert into relative slice coordinates
-    if($slice->strand == 1) {
+    # convert into relative slice coordinates
+    my $seq_region_len = $slice->seq_region_length();
+
+    if ($slice->strand == 1) { # Positive strand
       $start = $start - $slice->start + 1;
-      $end   = $end   - $slice->start + 1;
-    }
-    else{
-      $start  = $slice->end - $end + 1;
-      $end    = $slice->end - $start + 1;
+      $end   = $end - $slice->start + 1;
+
+      if ($slice->is_circular()) { # Handle circular chromosomes
+	if ($start > $end) { # Looking at a feature overlapping the chromsome origin
+	  if ($end > $slice->start) {
+	    # Looking at the region in the beginning of the chromosome
+	    $start -= $seq_region_len;
+	  }
+
+	  if ($end < 0) {
+	    $end += $seq_region_len;
+	  }
+	} else {
+	  if ($slice->start > $slice->end && $end < 0) {
+	    # Looking at the region overlapping the chromosome origin and 
+	    # a feature which is at the beginning of the chromosome
+	    $start += $seq_region_len;
+	    $end   += $seq_region_len;
+	  }
+	}
+      } # end if ($dest_slice->is_circular...)
+
+    } else { # Negative strand
+      my ($seq_region_start, $seq_region_end) = ($start, $end);
+      $start = $slice->end - $seq_region_end + 1;
+      $end = $slice->end - $seq_region_start + 1;
+
+      if ($slice->is_circular()) {
+	if ($slice->start > $slice->end) { # slice spans origin or replication
+	  if ($seq_region_start >= $slice->start) {
+	    $end += $seq_region_len;
+	    $start += $seq_region_len 
+	      if $seq_region_end > $slice->start;
+
+	  } elsif ($seq_region_start <= $slice->end) {
+	    # do nothing
+	  } elsif ($seq_region_end >= $slice->start) {
+	    $start += $seq_region_len;
+	    $end += $seq_region_len;
+
+	  } elsif ($seq_region_end <= $slice->end) {
+	    $end += $seq_region_len
+	      if $end < 0;
+	  } elsif ($seq_region_start > $seq_region_end) {
+	    $end += $seq_region_len;
+	  } else { }
+      
+	} else {
+	  if ($seq_region_start <= $slice->end and $seq_region_end >= $slice->start) {
+	    # do nothing
+	  } elsif ($seq_region_start > $seq_region_end) {
+	    if ($seq_region_start <= $slice->end) {
+	      $start -= $seq_region_len;
+	    } elsif ($seq_region_end >= $slice->start) {
+	      $end += $seq_region_len;
+	    } else { }
+	  }
+	}
+      }
+
       $strand *= -1;
     }
 
@@ -375,8 +432,75 @@ sub _fetch {
           $seqend      = $dest_slice_end - $tmp_seq_region_start + 1;
           $strand     *= -1;
         }
-	$slice = $dest_slice;
       }
+
+      my $seq_region_len = $dest_slice->seq_region_length();
+
+      if ($dest_slice_strand == 1) { # Positive strand		
+	$seqstart = $seqstart - $dest_slice_start + 1;
+	$seqend   = $seqend - $dest_slice_start + 1;
+
+	if ($dest_slice->is_circular()) { # Handle cicular chromosomes
+	  if ($seqstart > $seqend) { # Looking at a feature overlapping the chromsome origin
+	    if ($seqend > $dest_slice_start) {
+	      # Looking at the region in the beginning of the chromosome.
+	      $seqstart -= $seq_region_len;
+	    }
+
+	    if ($seqend < 0) {
+	      $seqend += $seq_region_len;
+	    }
+	  } else {
+	    if ($dest_slice_start > $dest_slice_end && $seqend < 0) {
+	      # Looking at the region overlapping the chromosome origin and 
+	      # a feature which is at the beginning of the chromosome.
+	      $seqstart += $seq_region_len;
+	      $seqend   += $seq_region_len;
+	    }
+	  }
+	}
+      } else { # Negative strand
+	my $start = $dest_slice_end - $seqend + 1;
+	my $end = $dest_slice_end - $seqstart + 1;
+
+	if ($dest_slice->is_circular()) {
+	  if ($dest_slice_start > $dest_slice_end) { 
+	    # slice spans origin or replication
+	    if ($seqstart >= $dest_slice_start) {
+	      $end += $seq_region_len;
+	      $start += $seq_region_len 
+		if $seqend > $dest_slice_start;
+
+	    } elsif ($seqstart <= $dest_slice_end) {
+	      # do nothing
+	    } elsif ($seqend >= $dest_slice_start) {
+	      $start += $seq_region_len;
+	      $end += $seq_region_len;
+	    } elsif ($seqend <= $dest_slice_end) {
+	      $end += $seq_region_len
+		if $end < 0;
+	    } elsif ($seqstart > $seqend) {
+	      $end += $seq_region_len;
+	    } else { }
+	  } else {
+	    if ($seqstart <= $dest_slice_end and $seqend >= $dest_slice_start) {
+	      # do nothing
+	    } elsif ($seqstart > $seqend) {
+	      if ($seqstart <= $dest_slice_end) {
+		$start -= $seq_region_len;
+	      } elsif ($seqend >= $dest_slice_start) {
+		$end += $seq_region_len;
+	      } else { }
+	    }
+	  }
+	}
+
+	$seqstart = $start;
+	$seqend = $end;
+	$strand *= -1;
+      }
+
+      $slice = $dest_slice;
     }
 
     push @ditag_features,

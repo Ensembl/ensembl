@@ -324,14 +324,108 @@ sub _remap {
     # create new copies of successfully mapped feaatures with shifted start,
     # end and strand
     my ($new_start, $new_end);
-    if($slice_strand == -1) {
-      $new_start = $slice_end - $end + 1;
-      $new_end = $slice_end - $start + 1;
-    } else {
-      $new_start = $start - $slice_start + 1;
-      $new_end = $end - $slice_start + 1;
-    }
+    # if($slice_strand == -1) {
+    #   $new_start = $slice_end - $end + 1;
+    #   $new_end = $slice_end - $start + 1;
+    # } else {
+    #   $new_start = $start - $slice_start + 1;
+    #   $new_end = $end - $slice_start + 1;
+    # }
     
+    my $seq_region_len = $slice->seq_region_length();
+
+    if ($slice_strand == 1) { # Positive strand
+		
+      $new_start = $start - $slice_start + 1;
+      $new_end   = $end - $slice_start + 1;
+
+      if ($slice->is_circular()) {
+	# Handle circular chromosomes.
+
+	if ($new_start > $new_end) {
+	  # Looking at a feature overlapping the chromsome origin.
+
+	  if ($new_end > $slice_start) {
+
+	    # Looking at the region in the beginning of the
+	    # chromosome.
+	    $new_start -= $seq_region_len;
+	  }
+
+	  if ($new_end < 0) {
+	    $new_end += $seq_region_len;
+	  }
+
+	} else {
+
+	  if (   $slice_start > $slice_end
+		 && $new_end < 0) {
+	    # Looking at the region overlapping the chromosome
+	    # origin and a feature which is at the beginning of the
+	    # chromosome.
+	    $new_start += $seq_region_len;
+	    $new_end   += $seq_region_len;
+	  }
+	}
+
+      }			       ## end if ($dest_slice->is_circular...)
+
+    } else {			# Negative strand
+
+      my $new_start = $slice_end - $end + 1;
+      my $new_end = $slice_end - $start + 1;
+
+      if ($slice->is_circular()) {
+
+	if ($slice_start > $slice_end) { 
+	  # slice spans origin or replication
+
+	  if ($start >= $slice_start) {
+	    $new_end += $seq_region_len;
+	    $new_start += $seq_region_len 
+	      if $end > $slice_start;
+
+	  } elsif ($start <= $slice_end) {
+	    # do nothing
+	  } elsif ($end >= $slice_start) {
+	    $new_start += $seq_region_len;
+	    $new_end += $seq_region_len;
+
+	  } elsif ($end <= $slice_end) {
+
+	    $new_end += $seq_region_len
+	      if $new_end < 0;
+
+	  } elsif ($start > $end) {
+		  
+	    $new_end += $seq_region_len;
+
+	  } else {
+		  
+	  }
+      
+	} else {
+
+	  if ($start <= $slice_end and $end >= $slice_start) {
+	    # do nothing
+	  } elsif ($start > $end) {
+	    if ($start <= $slice_end) {
+	  
+	      $new_start -= $seq_region_len;
+
+	    } elsif ($end >= $slice_start) {
+	      $new_end += $seq_region_len;
+
+	    } else {
+		    
+	    }
+	  }
+	}
+
+      }
+
+    }			     ## end else [ if ($dest_slice_strand...)]
+
     push @out, Bio::EnsEMBL::AssemblyExceptionFeature->new(
             '-dbID'            => $f->dbID,
             '-start'           => $new_start,
