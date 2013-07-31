@@ -1173,53 +1173,6 @@ sub get_all_DASFeatures {
 }
 
 
-=head2 get_all_ExternalFeatures
-
-  Arg [1]    : (optional) string $track_name
-               If specified only features from ExternalFeatureAdaptors with 
-               the track name $track_name are retrieved.  
-               If not set, all features from every ExternalFeatureAdaptor are 
-               retrieved.
-  Example    : @x_features = @{$slice->get_all_ExternalFeatures}
-  Description: Retrieves features on this slice from external feature adaptors 
-  Returntype : listref of Bio::SeqFeatureI implementing objects in slice 
-               coordinates 
-  Exceptions : none
-  Caller     : general
-  Status     : Stable
-
-=cut
-
-sub get_all_ExternalFeatures {
-  my ( $self, $track_name ) = @_;
-  if ( !$self->adaptor() ) {
-    warning("Cannot retrieve features without attached adaptor");
-    return [];
-  }
-  my $features    = [];
-  my $xfa_hash    = $self->adaptor->db->get_ExternalFeatureAdaptors;
-  my @xf_adaptors = ();
-  if ($track_name) {
-    #use a specific adaptor
-    if ( exists $xfa_hash->{$track_name} ) {
-      push @xf_adaptors, $xfa_hash->{$track_name};
-    }
-  } else {
-    #use all of the adaptors
-    push @xf_adaptors, values %$xfa_hash;
-  }
-
-  ## circular BOF
-  my ($sl1, $sl2) = $self->_split;
-  foreach my $xfa (@xf_adaptors) {
-    push @$features, @{ $xfa->fetch_all_by_Slice($sl1) };
-    push @$features, @{ $xfa->fetch_all_by_Slice($sl2) };
-  }
-  return $features;
-  ## circular EOF
-
-} ## end sub get_all_ExternalFeatures
-
 # GENERIC FEATURES (See DBAdaptor.pm)
 
 =head2 get_generic_features
