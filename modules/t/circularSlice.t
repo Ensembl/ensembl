@@ -7,6 +7,7 @@ use Test::More;
 use Bio::EnsEMBL::Test::TestUtils qw/capture_std_streams/;
 use Bio::EnsEMBL::Test::MultiTestDB;
 use Bio::EnsEMBL::ProjectionSegment;
+use Bio::EnsEMBL::Utils::Exception qw(warning throw);
 
 #
 # Slice Compiles
@@ -175,7 +176,6 @@ my $slices =
 	  seq_region_length => $SEQ_REGION_LENGTH, 
 	  start => 5493000, 
 	  end => 400, 
-	  strand => 1, # $STRAND, 
 	  coord_system => 'chromosome' },
    #
    # - seq_region_start <= slice->end
@@ -192,7 +192,6 @@ my $slices =
    	   seq_region_length => $SEQ_REGION_LENGTH, 
    	   start => 5493000, 
    	   end => 2500, 
-   	   strand => 1, #$STRAND, 
    	   coord_system => 'chromosome' },   
    #
    # - seq_region_start > seq_region_end
@@ -204,7 +203,6 @@ my $slices =
    	   seq_region_length => $SEQ_REGION_LENGTH, 
    	   start => 5495000, 
    	   end => 100, 
-   	   strand => 1, #$STRAND, 
    	   coord_system => 'chromosome' },
    #
    # b. slice not spanning the origin of replication:
@@ -220,7 +218,6 @@ my $slices =
    	   seq_region_length => $SEQ_REGION_LENGTH, 
    	   start => 5490000, 
    	   end => 5495000, 
-   	   strand => 1, #$STRAND, 
    	   coord_system => 'chromosome' },
    #
    # - seq_region_start > seq_region_end AND seq_region_start <= slice->end
@@ -233,7 +230,6 @@ my $slices =
    	   seq_region_length => $SEQ_REGION_LENGTH, 
    	   start => 5494000, 
    	   end => 5495000, 
-   	   strand => 1, #$STRAND, 
    	   coord_system => 'chromosome' },
    #
    # - seq_region_start > seq_region_end AND seq_region_end >= slice->start
@@ -246,7 +242,6 @@ my $slices =
    	   seq_region_length => $SEQ_REGION_LENGTH, 
    	   start => 100, 
    	   end => 400, 
-   	   strand => 1, #$STRAND, 
    	   coord_system => 'chromosome' },
    
 };
@@ -266,7 +261,13 @@ my @query_templates =
    "SELECT %s_id as db_id, seq_region_start, seq_region_end, seq_region_strand%s FROM %s WHERE seq_region_id = %d AND ((seq_region_start <= %d AND seq_region_end >= %d) OR (seq_region_start > seq_region_end AND (seq_region_start <= %d OR seq_region_end >= %d)))"
 );
 
-my @tables = qw(gene transcript exon simple_feature misc_feature protein_align_feature dna_align_feature prediction_transcript); # marker? (does not have strand attribute)
+# 
+# NOTE
+# Cannot test with the query above the following features:
+# - AssemblyExceptionFeature
+# - MarkerFeature (does not have strand attribute)
+#
+my @tables = qw(gene transcript exon simple_feature prediction_transcript dna_align_feature protein_align_feature misc_feature ); 
 my @stable_id_tables = qw(gene transcript exon);
 
 $dbc->do(sprintf "use $dbname");
@@ -304,7 +305,6 @@ foreach my $sl (sort keys %{$slices}) {
 	$query = sprintf $query_templates[1], $table, $table ~~ @stable_id_tables?', stable_id':'', $table, $seq_id, $send, $sstart, $send, $sstart; 
       }
 
-      # print "*** $table ***\n\n$query\n\n";
       my $expected_objects = 
 	$sql_helper->execute(
 			     -SQL      => $query,
@@ -336,7 +336,6 @@ foreach my $sl (sort keys %{$slices}) {
 
       }
       
-      last if $table eq 'simple_feature';
     }
 
   }
@@ -448,12 +447,6 @@ $slice = $slice->expand(0, -1000);
 isa_ok($slice, 'Bio::EnsEMBL::Slice');
 is(($slice->start == $start) && ($slice->end() == $end), 1,'expand near end: 0,-1000');
 
-done_testing();
-
-exit;
-
-
-
 #
 # Test CircularSlice::invert
 #
@@ -462,7 +455,7 @@ isnt($slice, $inverted_slice,'slice is not same object as inverted slice');
 #inverted slice on opposite strand
 is($slice->strand,($inverted_slice->strand * -1),'inverted slice strand is correct'); 
 #slice still on same strand
-is($slice->strand,$STRAND, 'slice still on same strand');
+is($slice->strand, 1, 'slice still on same strand');
 
 
 #
@@ -500,103 +493,6 @@ SKIP: {
 }
 
 #
-# Test CircularSlice::get_all_PredictionTranscripts
-# jh15 20120704: unfortunately we have none at this time in e_coli_k12
-my $pts = $slice->get_all_PredictionTranscripts;
-is(scalar @$pts, 0, 'number of prediction transcripts');
-
-#
-# Test CircularSlice::get_seq_region_id
-#
-is($slice->get_seq_region_id(),469283,'seq_region_id');
-
-#
-# Test CircularSlice::get_all_DnaAlignFeatures
-# jh15 20120704: unfortunately we have none at this time in e_coli_k12
-my $count = 0;
-my $dafs = $slice->get_all_DnaAlignFeatures;
-is(scalar @$dafs, 107, 'number of dna align features');
-$count += scalar @$dafs;
-
-#
-# Test CircularSlice::get_all_ProteinAlignFeatures
-# jh15 20120704: unfortunately we have none at this time in e_coli_k12
-my $pafs = $slice->get_all_ProteinAlignFeatures;
-is(scalar @$pafs, 5, 'number of protein align features');
-$count += scalar @$pafs;
-
-#
-# Test CircularSlice::get_all_SimilarityFeatures
-#
-is($count, scalar @{$slice->get_all_SimilarityFeatures}, 'all simililarity features');
-
-#
-#  Test CircularSlice::get_all_SimpleFeatures
-#
-is(scalar @{$slice->get_all_SimpleFeatures},0, 'all simple features');
-
-#
-#  Test CircularSlice::get_all_RepeatFeatures
-#
-is(scalar @{$slice->get_all_RepeatFeatures},0, 'all repeat features');
-
-#
-#  Test CircularSlice::get_all_Genes
-#
-my $total = scalar @{$slstart->get_all_Genes};
-$total += scalar @{$slend->get_all_Genes};
-is($total, scalar @{$slice->get_all_Genes}, 'spanning origin: all genes');
-
-#
-#  Test CircularSlice::get_all_Genes_by_type
-#
-$total = scalar @{$slstart->get_all_Genes_by_type('protein_coding')};
-$total += scalar @{$slend->get_all_Genes_by_type('protein_coding')};
-is($total, scalar @{$slice->get_all_Genes_by_type('protein_coding')},'spanning origin: all genes by type');
-
-#
-#  Test CircularSlice::get_all_Transcripts
-#
-$total = scalar @{$slstart->get_all_Transcripts};
-$total += scalar @{$slend->get_all_Transcripts};
-is($total, scalar @{$slice->get_all_Transcripts},'spanning origin: all transcripts');
-
-
-
-#
-# Test CircularSlice::get_all_KaryotypeBands
-#
- $total = scalar @{$slstart->get_all_KaryotypeBands};
- $total += scalar @{$slend->get_all_KaryotypeBands};
-is($total, scalar @{$slice->get_all_KaryotypeBands},'spanning origin: all karyotype bands');
-
-
-#
-# Test Slice::get_RepeatMaskedSeq
-#
-is(length($slice->get_repeatmasked_seq->seq), length($slice->seq),'repeatmask: length is correct');
-
-my $softmasked_seq = $slice->get_repeatmasked_seq(['RepeatMask'], 1)->seq;
-
-SKIP : {
-  skip 'Cannot test due to known invert bug', 2 if $circular_invert_broken;
-  isnt($softmasked_seq, $slice->seq,'repeatmask: masked sequence is different');
-  is(uc($softmasked_seq), $slice->seq, 'repeatmask: manually reverted soft mask is same as original seq');
-}
-
-#
-# Test Slice::get_all_MiscFeatures
-#
-ok(scalar @{$slice->get_all_MiscFeatures()});
-
-#
-# Test CircularSlice::get_all_MiscFeatures
-#
-$total = scalar @{$slstart->get_all_MiscFeatures};
-$total += scalar @{$slend->get_all_MiscFeatures};
-is($total, scalar @{$slice->get_all_MiscFeatures}, 'across origin: all misc features');
-
-#
 # Test CircularSlice::project
 #
 
@@ -619,32 +515,37 @@ if( $@ ) {
 #
 # get_base_count
 # ! not reimplemented in CircularSlice
-$hash = $slice->get_base_count;
-$a = $hash->{'a'};
-$c = $hash->{'c'};
-$t = $hash->{'t'};
-$g = $hash->{'g'};
-$n = $hash->{'n'};
-$gc_content = $hash->{'%gc'};
+#
+# $hash = $slice->get_base_count;
+# $a = $hash->{'a'};
+# $c = $hash->{'c'};
+# $t = $hash->{'t'};
+# $g = $hash->{'g'};
+# $n = $hash->{'n'};
+# $gc_content = $hash->{'%gc'};
 
-note( "Base count: a=$a c=$c t=$t g=$g n=$n \%gc=$gc_content");
-is($a, 10977, 'base count a');
-is($c, 8792, 'base count c');
-is($t, 13113, 'base count t');
-is($g, 9473, 'base count g');
-is($n, 43643, 'base count n');
-is($gc_content, 43.12, 'gc content'); 
-is($a+$c+$t+$g+$n, $slice->length, 'total bases == length');
+# note( "Base count: a=$a c=$c t=$t g=$g n=$n \%gc=$gc_content");
+# is($a, 10977, 'base count a');
+# is($c, 8792, 'base count c');
+# is($t, 13113, 'base count t');
+# is($g, 9473, 'base count g');
+# is($n, 43643, 'base count n');
+# is($gc_content, 43.12, 'gc content'); 
+# is($a+$c+$t+$g+$n, $slice->length, 'total bases == length');
 
+#
+# Test seq_region_Slice
+#
 $slice = $slice_adaptor->fetch_by_region($COORD_SYSTEM, $CHR, 10, 30);
-
 my $sr_slice = $slice->seq_region_Slice();
 
-is($sr_slice->start(), 1, 'start == 1');
-is($sr_slice->end(), $slice->seq_region_length, 'end == length');
-is($sr_slice->strand(), 1, 'strand == 1');
+is($sr_slice->start(), 1, 'seq_region_Slice: start == 1');
+is($sr_slice->end(), $slice->seq_region_length, 'seq_region_Slice: end == length');
+is($sr_slice->strand(), 1, 'seq_region_Slice: strand == 1');
 
-# synonym tests
+#
+# Test synonyms
+#
 note("START syn test");
 my $multi = $multi_db;
 $multi->save("core", "seq_region_synonym");
@@ -657,58 +558,44 @@ foreach my $syn (@alt_names){
   note("syn\t".$syn->name."\n");
 }
 note("altnames ".scalar(@alt_names)."\n");
-is(scalar @alt_names, 2, 'number of alt names');
-
+is(scalar @alt_names, 0, 'number of alt names');
 
 $slice->add_synonym("PrimaryChromosome");
 @alt_names = @{$slice->get_all_synonyms()};
+is(scalar @alt_names, 1, 'number of alt names after adding one');
 
-is(scalar @alt_names, 3, 'number of alt names after adding one');
 
-
-#slcie aleady stored so need to store syns
+# slice aleady stored so need to store syns
 my $syn_adap =  $db->get_SeqRegionSynonymAdaptor; 
 foreach my $syn (@alt_names){
  $syn_adap->store($syn);	
 }
 
 $slice = $slice_adaptor->fetch_by_region($COORD_SYSTEM, $CHR, 1, 10);
-
 @alt_names = @{$slice->get_all_synonyms()};
-
-is(scalar @alt_names, 3, 'number of alt names after saving and reloading');
+is(scalar @alt_names, 1, 'number of alt names after saving and reloading');
 
 $multi->restore();
-
-
-
 $multi->save("core", 'seq_region_synonym');
 
 $slice = $slice_adaptor->fetch_by_region($COORD_SYSTEM, $CHR, 1, 10);
-
 @alt_names = @{$slice->get_all_synonyms()};
-
-is(scalar @alt_names, 2, 'number of seq region synonyms');
+is(scalar @alt_names, 0, 'number of seq region synonyms');
 
 $slice->add_synonym("1ish");
-
 @alt_names = @{$slice->get_all_synonyms()};
-
-is(scalar @alt_names, 3, 'number of seq region synonyms after adding one');
+is(scalar @alt_names, 1, 'number of seq region synonyms after adding one');
 
 foreach my $syn (@alt_names){
  $syn_adap->store($syn);	
 }
 
-
 $slice = $slice_adaptor->fetch_by_region($COORD_SYSTEM, $CHR, 1, 10);
-
 @alt_names = @{$slice->get_all_synonyms()};
 
-is(scalar @alt_names, 3, 'number of seq region synonyms after saving and reloading');
+is(scalar @alt_names, 1, 'number of seq region synonyms after saving and reloading');
 
 $multi->restore();
-
 
 #Test assembly exception type on HAP
 my $pla_slice = $slice_adaptor->fetch_by_region($COORD_SYSTEM, $CHR, 1, 10);
