@@ -376,26 +376,77 @@ sub fetch_all_by_Slice {
     }
   }
 
-  #shift the feature coordinates again if
-  #the requested slice is not the full seqregion
-  if($slice->start != 1 || $slice->strand != 1) {
-    #convert from assembly coords to slice coords
+  # convert from assembly coords to slice coords
+  # handle the circular slice case
+  my $seq_region_len = $slice->seq_region_length();
+  foreach my $f (@out) {
     my($f_start, $f_end, $f_strand);
-    foreach my $f (@out) {
-      if($slice_strand == 1) {
-        $f_start  = $f->start - $slice_start + 1;
-        $f_end    = $f->end   - $slice_start + 1;
-        $f_strand = $f->strand;
-      } else {
-        $f_start  = $slice_end - $f->end   + 1;
-        $f_end    = $slice_end - $f->start + 1;
-        $f_strand = $f->strand * -1;
+
+    if ($slice->strand == 1) { # Positive strand
+      $f_start = $f->start - $slice_start + 1;
+      $f_end   = $f->end - $slice_start + 1;
+      $f_strand = $f->strand;
+
+      if ($slice->is_circular()) { # Handle cicular chromosomes
+	if ($f_start > $f_end) { # Looking at a feature overlapping the chromsome origin.
+	  if ($f_end > $slice_start) {
+	    # Looking at the region in the beginning of the chromosome.
+	    $f_start -= $seq_region_len;
+	  }
+
+	  if ($f_end < 0) {
+	    $f_end += $seq_region_len;
+	  }
+	} else {
+	  if ($slice_start > $slice_end && $f_end < 0) {
+	    # Looking at the region overlapping the chromosome origin and 
+	    # a feature which is at the beginning of the chromosome.
+	    $f_start += $seq_region_len;
+	    $f_end   += $seq_region_len;
+	  }
+	}
       }
-    
-      $f->start($f_start);
-      $f->end($f_end);
-      $f->strand($f_strand);
+    } else { # Negative strand
+      my ($seq_region_start, $seq_region_end) = ($f->start, $f->end);
+      $f_start = $slice_end - $seq_region_end + 1;
+      $f_end = $slice_end - $seq_region_start + 1;
+      $f_strand = $f->strand * -1;
+
+      if ($slice->is_circular()) {
+	if ($slice_start > $slice_end) { # slice spans origin or replication
+	  if ($seq_region_start >= $slice_start) {
+	    $f_end += $seq_region_len;
+	    $f_start += $seq_region_len 
+	      if $seq_region_end > $slice_start;
+
+	  } elsif ($seq_region_start <= $slice_end) {
+	    # do nothing
+	  } elsif ($seq_region_end >= $slice_start) {
+	    $f_start += $seq_region_len;
+	    $f_end += $seq_region_len;
+	  } elsif ($seq_region_end <= $slice_end) {
+	    $f_end += $seq_region_len
+	      if $f_end < 0;
+	  } elsif ($seq_region_start > $seq_region_end) {
+	    $f_end += $seq_region_len;
+	  } else { }
+	} else {
+	  if ($seq_region_start <= $slice_end and $seq_region_end >= $slice_start) {
+	    # do nothing
+	  } elsif ($seq_region_start > $seq_region_end) {
+	    if ($seq_region_start <= $slice_end) {
+	      $f_start -= $seq_region_len;
+	    } elsif ($seq_region_end >= $slice_start) {
+	      $f_end += $seq_region_len;
+	    } else { }
+	  }
+	}
+      }
     }
+
+    $f->start($f_start);
+    $f->end($f_end);
+    $f->strand($f_strand);    
   }
   
   return \@out;
