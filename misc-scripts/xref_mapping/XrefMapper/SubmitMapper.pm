@@ -1033,7 +1033,7 @@ sub submit_depend_job {
 #  push @depend_bsub, ('-q', $queue, '-o', "$root_dir/depend.out", '-e', "$root_dir/depend.err");
 
   my $jobid = 0;
-  my $memory_resources = q{-M 5 -R"select[mem>5] rusage[mem=5]"}
+  my $memory_resources = q{-M 5 -R"select[mem>5] rusage[mem=5]"};
   my $com = "bsub -K -q $queue $memory_resources -o $root_dir/depend.out -e $root_dir/depend.err $ended_str /bin/true";
 
 
