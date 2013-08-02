@@ -1,3 +1,5 @@
+# FIXME: should this be ::ODBC rather than ::odbc ??
+
 package Bio::EnsEMBL::DBSQL::Driver::odbc;
 
 use warnings;
@@ -11,6 +13,25 @@ sub new {
     my ($self, @args) = @_;
     warning(__PACKAGE__ . ' is untested and is being used only to collect odbc-specific code');
     return $self->SUPER::new(@args);
+}
+
+sub connect_params {
+    my ($self, $conn) = @_;
+
+    my $dsn = sprintf( "DBI:ODBC:%s", $conn->dbname() );
+
+    return {
+        dsn        => $dsn,
+        username   => $conn->username(),
+        password   => $conn->password(),
+        attributes => {
+            'LongTruncOk'     => 1,
+            'LongReadLen'     => 2**16 - 8,
+            'RaiseError'      => 1,
+            'PrintError'      => 0,
+            'odbc_cursortype' => 2,
+        },
+    };
 }
 
 sub from_date_to_seconds {
