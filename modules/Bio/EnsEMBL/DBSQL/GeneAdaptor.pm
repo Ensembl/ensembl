@@ -1100,7 +1100,7 @@ sub store_alt_alleles {
   $sth->bind_param(1, $gene_ids[0], SQL_INTEGER);
   $sth->bind_param(2, $is_ref[0],   SQL_INTEGER);
   eval { $sth->execute(); };
-  my $alt_allele_id = $sth->{'mysql_insertid'};
+  my $alt_allele_id = $self->last_insert_id('alt_allele_id', undef, 'alt_allele');
 
   if (!$alt_allele_id || $@) {
 	throw("An SQL error occured inserting alternative alleles:\n$@");
@@ -1257,7 +1257,7 @@ sub store {
   $sth->execute();
   $sth->finish();
 
-  my $gene_dbID = $sth->{'mysql_insertid'};
+  my $gene_dbID = $self->last_insert_id('gene_id', undef, 'gene');
 
   # store the dbentries associated with this gene
   my $dbEntryAdaptor = $db->get_DBEntryAdaptor();

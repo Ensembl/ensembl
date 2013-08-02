@@ -241,7 +241,7 @@ sub store {
 
   $sth->execute();
 
-  my $dbID = $sth->{'mysql_insertid'};
+  my $dbID = $self->last_insert_id('protein_feature_id', undef, 'protein_feature');
 
   $feature->adaptor($self);
   $feature->dbID($dbID);
@@ -333,7 +333,7 @@ sub save {
 	$sth->bind_param(12, $extra_data,           SQL_LONGVARCHAR);
 
 	$sth->execute();
-	$original->dbID($sth->{'mysql_insertid'});
+        $original->dbID($self->last_insert_id("${tablename}_id", undef, $tablename));
 	$original->adaptor($self);
   } ## end foreach my $feat (@feats)
 
