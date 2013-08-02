@@ -25,6 +25,10 @@ sub parent {
     return $self->{'_parent'};
 }
 
+sub last_insert_id_args {
+    return;
+}
+
 sub AUTOLOAD {
     my ($self, @args) = @_;
     my $class = ref $self;
