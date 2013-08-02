@@ -1180,28 +1180,39 @@ sub store {
 
   ($gene, $seq_region_id) = $self->_pre_store($gene);
 
-  my $store_gene_sql = qq(
-        INSERT INTO gene
-           SET biotype = ?,
-               analysis_id = ?,
-               seq_region_id = ?,
-               seq_region_start = ?,
-               seq_region_end = ?,
-               seq_region_strand = ?,
-               description = ?,
-               source = ?,
-               status = ?,
-               is_current = ?,
-               canonical_transcript_id = ?,
-               canonical_annotation = ?
+  my @columns = qw(
+               biotype
+               analysis_id
+               seq_region_id
+               seq_region_start
+               seq_region_end
+               seq_region_strand
+               description
+               source
+               status
+               is_current
+               canonical_transcript_id
+               canonical_annotation
   );
 
-  if (defined($gene->stable_id)) {
-	my $created  = $self->db->dbc->from_seconds_to_date($gene->created_date());
-	my $modified = $self->db->dbc->from_seconds_to_date($gene->modified_date());
-	$store_gene_sql .= ", stable_id = ?, version = ?, created_date = " . $created . " , modified_date = " . $modified;
+  my @canned_columns;
+  my @canned_values;
 
+  if (defined($gene->stable_id)) {
+      push @columns, 'stable_id', 'version';
+
+      my $created  = $self->db->dbc->from_seconds_to_date($gene->created_date());
+      my $modified = $self->db->dbc->from_seconds_to_date($gene->modified_date());
+
+      push @canned_columns, 'created_date', 'modified_date';
+      push @canned_values,  $created,       $modified;
   }
+
+  my $columns = join(', ', @columns, @canned_columns);
+  my $values  = join(', ', ('?') x @columns, @canned_values);
+  my $store_gene_sql = qq(
+        INSERT INTO gene ( $columns ) VALUES ( $values )
+  );
 
   # column status is used from schema version 34 onwards (before it was
   # confidence)

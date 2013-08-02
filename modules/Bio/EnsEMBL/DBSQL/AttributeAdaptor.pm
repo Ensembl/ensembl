@@ -178,7 +178,12 @@ sub store_on_ {
 
 	}
   } ## end else [ if ($type =~ /[GT][er][na][en]/)]
-  my $sth = $self->prepare("INSERT into " . $table . "_attrib " . "SET " . $type . "_id = ?, attrib_type_id = ?, " . "value = ? ");
+  my $sth = $self->prepare( qq{
+        INSERT INTO ${table}_attrib
+                    (${type}_id, attrib_type_id, value)
+             VALUES (?, ?, ?)
+        }
+      );
 
   my $undef_circular_cache = 0;
   for my $attrib (@$attributes) {
