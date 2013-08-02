@@ -165,7 +165,7 @@ sub print_feature {
         $exon == $transcript->translation->start_Exon && $hasstart) {
       my $tmpcnt = $count;
       foreach my $startc (@startcs) {
-
+	# here we should check the start codon covers 3 bases
         print $fh $idstr . "\t" . 
 	  $transcript_biotype . "\t" . 
           'start_codon' . "\t" . 
@@ -185,7 +185,7 @@ sub print_feature {
         my $tmpcnt = $count - $#endcs;
 
         foreach my $endc (@endcs) {
-
+	  # here we should check the stop codon covers 3 bases
           print $fh $idstr . "\t" . 
 	    $transcript_biotype . "\t" . 
             'stop_codon' . "\t" . 
@@ -385,31 +385,45 @@ sub _check_start_and_stop {
   my ($self, ,$trans) = @_;
 
   return (0,0) unless defined $trans->translation;
+  my ($has_start, $has_end);
 
+  # transcript could be annotated has having incomplete
+  # CDS at either 5', 3' end or both
+  my @attrib = @{$trans->get_all_Attributes('cds_start_NF')};
+  $has_start = scalar @attrib == 1 and $attrib[0]->value() == 1?0:1;
+  @attrib = @{$trans->get_all_Attributes('cds_end_NF')};
+  $has_end = scalar @attrib == 1 and $attrib[0]->value() == 1?0:1;
+  return (0, 0) unless $has_start and $has_end;
+
+  #
+  # even if the transcript is not annotated with incomplete start/end 
+  # CDS, we need to test whether the extracted start/stop codons are valid
+  #
+  # use translateable_seq (CDS) instead of spliced_seq (CDNA) which is
+  # not padded for non-triplet issues
+  #
   my $cds_seq = uc($trans->translateable_seq); 
-
   my $startseq = substr($cds_seq, 0, 3); 
   my $endseq = substr($cds_seq, -3); 
 
-  my $has_start = 1;
-  my $has_end = 1;
-
   # reimplemented since there are alternatively valid codon tables
-  $has_start = 0  if ($startseq ne "ATG");
-  $has_end = 0 if ($endseq ne "TAG" && $endseq ne "TGA" && $endseq ne "TAA");
+  # $has_start = $has_end = 1;
+  # $has_start = 0  if ($startseq ne "ATG");
+  # $has_end = 0 if ($endseq ne "TAG" && $endseq ne "TGA" && $endseq ne "TAA");
+  
+  my ($attrib) = @{ $trans->slice()->get_all_Attributes('codon_table') };
 
-  # my ($attrib) = @{ $trans->slice()->get_all_Attributes('codon_table') };
+  my $codon_table_id;
+  $codon_table_id = $attrib->value()
+    if defined $attrib;
+  $codon_table_id ||= 1; # default codon table (vertebrate)
+  my $codon_table = Bio::Tools::CodonTable->new( -id => $codon_table_id );
 
-  # my $codon_table_id;
-  # $codon_table_id = $attrib->value()
-  #   if defined $attrib;
-  # $codon_table_id ||= 1; # default vertebrate codon table
-
-  # my $codon_table = Bio::Tools::CodonTable->new( -id => $codon_table_id );
-
-  # $has_start = 0 unless $codon_table->is_start_codon($startseq);
-  # $has_end = 0 unless $codon_table->is_ter_codon($endseq);
-
+  $has_start = 0 
+    unless $codon_table->is_start_codon($startseq);
+  $has_end = 0 
+    unless $codon_table->is_ter_codon($endseq);
+  
   return ($has_start, $has_end);
 
 }
