@@ -45,6 +45,28 @@ is($slice->seq_region_length, $SEQ_REGION_LENGTH,
    "seq_region_length == $SEQ_REGION_LENGTH");
 is($slice->adaptor, $slice_adaptor, "adaptor is adaptor");
 
+# centrepoint method
+is($slice->centrepoint, 5402639, "slice centre point");
+
+# _split private method
+my ($sl1, $sl2) = $slice->_split;
+isa_ok($sl1, 'Bio::EnsEMBL::CircularSlice');
+is($sl1->is_circular, 1,"subslice is circular");
+is($sl1->seq_region_name, $CHR,"subslice seq region name $CHR");
+is($sl1->start, $START, "subslice start == $START");
+is($sl1->end, $SEQ_REGION_LENGTH, "subslice end == $SEQ_REGION_LENGTH");
+
+isa_ok($sl2, 'Bio::EnsEMBL::CircularSlice');
+is($sl2->is_circular, 1,"subslice is circular");
+is($sl2->seq_region_name, $CHR,"subslice seq region name $CHR");
+is($sl2->start, 1, "subslice start == 1");
+is($sl2->end, $END, "subslice end == $END");
+
+# seq method
+my $seq = $slice->seq;
+is(length $seq, 205278, "sequence length");
+exit;
+
 my $slstart = $slice_adaptor->fetch_by_region($COORD_SYSTEM, $CHR, 1, $END);
 my $slend   = $slice_adaptor->fetch_by_region($COORD_SYSTEM, $CHR, $START, 
 					      $SEQ_REGION_LENGTH);

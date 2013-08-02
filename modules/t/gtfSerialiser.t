@@ -54,9 +54,10 @@ my $transcripts_gtf =
 20\tprotein_coding\texon\t30315002\t30315126\t.\t+\t.\tgene_id \"ENSG00000174873\"; transcript_id \"ENST00000252021\"; exon_number \"5\"; gene_biotype \"protein_coding\"; exon_id \"ENSE00001155819\";
 20\tprotein_coding\tCDS\t30315002\t30315126\t.\t+\t1\tgene_id \"ENSG00000174873\"; transcript_id \"ENST00000252021\"; exon_number \"5\"; gene_biotype \"protein_coding\"; protein_id \"ENSP00000252021\";
 20\tprotein_coding\texon\t30318805\t30318881\t.\t+\t.\tgene_id \"ENSG00000174873\"; transcript_id \"ENST00000252021\"; exon_number \"6\"; gene_biotype \"protein_coding\"; exon_id \"ENSE00001180793\";
-20\tprotein_coding\tCDS\t30318805\t30318878\t.\t+\t2\tgene_id \"ENSG00000174873\"; transcript_id \"ENST00000252021\"; exon_number \"6\"; gene_biotype \"protein_coding\"; protein_id \"ENSP00000252021\";
-20\tprotein_coding\tstop_codon\t30318879\t30318881\t.\t+\t0\tgene_id \"ENSG00000174873\"; transcript_id \"ENST00000252021\"; exon_number \"6\"; gene_biotype \"protein_coding\";
+20\tprotein_coding\tCDS\t30318805\t30318881\t.\t+\t2\tgene_id \"ENSG00000174873\"; transcript_id \"ENST00000252021\"; exon_number \"6\"; gene_biotype \"protein_coding\"; protein_id \"ENSP00000252021\";
 ",
+# last line 20\tprotein_coding\tstop_codon\t30318879\t30318881\t.\t+\t0\tgene_id \"ENSG00000174873\"; transcript_id \"ENST00000252021\"; exon_number \"6\"; gene_biotype \"protein_coding\";
+# CDS end on previous line extended to stop_codon length, was 30318878
 
    ENST00000202017 => "20\tprotein_coding\texon\t30327735\t30327869\t.\t-\t.\tgene_id \"ENSG00000088356\"; transcript_id \"ENST00000202017\"; exon_number \"1\"; gene_name \"C20orf126\"; gene_biotype \"protein_coding\"; transcript_name \"C20orf126\"; exon_id \"ENSE00001155739\";
 20\tprotein_coding\tCDS\t30327735\t30327869\t.\t-\t0\tgene_id \"ENSG00000088356\"; transcript_id \"ENST00000202017\"; exon_number \"1\"; gene_name \"C20orf126\"; gene_biotype \"protein_coding\"; transcript_name \"C20orf126\"; protein_id \"ENSP00000202017\";
@@ -72,12 +73,11 @@ my $transcripts_gtf =
 
    ENST00000246203 => "20\tprotein_coding\texon\t30565065\t30566129\t.\t-\t.\tgene_id \"ENSG00000125979\"; transcript_id \"ENST00000246203\"; exon_number \"1\"; gene_name \"TSPYL3\"; gene_biotype \"protein_coding\"; transcript_name \"TSPYL3\"; exon_id \"ENSE00000859919\";
 20\tprotein_coding\tCDS\t30565065\t30566129\t.\t-\t0\tgene_id \"ENSG00000125979\"; transcript_id \"ENST00000246203\"; exon_number \"1\"; gene_name \"TSPYL3\"; gene_biotype \"protein_coding\"; transcript_name \"TSPYL3\"; protein_id \"ENSP00000246203\";
-20\tprotein_coding\tstart_codon\t30566127\t30566129\t.\t-\t0\tgene_id \"ENSG00000125979\"; transcript_id \"ENST00000246203\"; exon_number \"1\"; gene_name \"TSPYL3\"; gene_biotype \"protein_coding\"; transcript_name \"TSPYL3\";
 ",
+# last line 20\tprotein_coding\tstart_codon\t30566127\t30566129\t.\t-\t0\tgene_id \"ENSG00000125979\"; transcript_id \"ENST00000246203\"; exon_number \"1\"; gene_name \"TSPYL3\"; gene_biotype \"protein_coding\"; transcript_name \"TSPYL3\"; 
 
    ENST00000201961 => "20\tprotein_coding\texon\t30911297\t30911383\t.\t-\t.\tgene_id \"ENSG00000088303\"; transcript_id \"ENST00000201961\"; exon_number \"1\"; gene_name \"Q9NQF5\"; gene_biotype \"protein_coding\"; transcript_name \"Q9NQF5\"; exon_id \"ENSE00000661216\";
 20\tprotein_coding\tCDS\t30911297\t30911383\t.\t-\t0\tgene_id \"ENSG00000088303\"; transcript_id \"ENST00000201961\"; exon_number \"1\"; gene_name \"Q9NQF5\"; gene_biotype \"protein_coding\"; transcript_name \"Q9NQF5\"; protein_id \"ENSP00000201961\";
-20\tprotein_coding\tstart_codon\t30911381\t30911383\t.\t-\t0\tgene_id \"ENSG00000088303\"; transcript_id \"ENST00000201961\"; exon_number \"1\"; gene_name \"Q9NQF5\"; gene_biotype \"protein_coding\"; transcript_name \"Q9NQF5\";
 20\tprotein_coding\texon\t30903618\t30903773\t.\t-\t.\tgene_id \"ENSG00000088303\"; transcript_id \"ENST00000201961\"; exon_number \"2\"; gene_name \"Q9NQF5\"; gene_biotype \"protein_coding\"; transcript_name \"Q9NQF5\"; exon_id \"ENSE00000661215\";
 20\tprotein_coding\tCDS\t30903618\t30903773\t.\t-\t0\tgene_id \"ENSG00000088303\"; transcript_id \"ENST00000201961\"; exon_number \"2\"; gene_name \"Q9NQF5\"; gene_biotype \"protein_coding\"; transcript_name \"Q9NQF5\"; protein_id \"ENSP00000201961\";
 20\tprotein_coding\texon\t30896671\t30896782\t.\t-\t.\tgene_id \"ENSG00000088303\"; transcript_id \"ENST00000201961\"; exon_number \"3\"; gene_name \"Q9NQF5\"; gene_biotype \"protein_coding\"; transcript_name \"Q9NQF5\"; exon_id \"ENSE00000560920\";
@@ -87,6 +87,7 @@ my $transcripts_gtf =
 20\tprotein_coding\texon\t30885729\t30885800\t.\t-\t.\tgene_id \"ENSG00000088303\"; transcript_id \"ENST00000201961\"; exon_number \"5\"; gene_name \"Q9NQF5\"; gene_biotype \"protein_coding\"; transcript_name \"Q9NQF5\"; exon_id \"ENSE00000661212\";
 20\tprotein_coding\tCDS\t30885729\t30885800\t.\t-\t0\tgene_id \"ENSG00000088303\"; transcript_id \"ENST00000201961\"; exon_number \"5\"; gene_name \"Q9NQF5\"; gene_biotype \"protein_coding\"; transcript_name \"Q9NQF5\"; protein_id \"ENSP00000201961\";
 "
+# third line 20\tprotein_coding\tstart_codon\t30911381\t30911383\t.\t-\t0\tgene_id \"ENSG00000088303\"; transcript_id \"ENST00000201961\"; exon_number \"1\"; gene_name \"Q9NQF5\"; gene_biotype \"protein_coding\"; transcript_name \"Q9NQF5\";
 };
 
 my $mtdb = Bio::EnsEMBL::Test::MultiTestDB->new();
