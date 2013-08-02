@@ -65,7 +65,6 @@ is($sl2->end, $END, "subslice end == $END");
 # seq method
 my $seq = $slice->seq;
 is(length $seq, 205278, "sequence length");
-exit;
 
 my $slstart = $slice_adaptor->fetch_by_region($COORD_SYSTEM, $CHR, 1, $END);
 my $slend   = $slice_adaptor->fetch_by_region($COORD_SYSTEM, $CHR, $START, 
