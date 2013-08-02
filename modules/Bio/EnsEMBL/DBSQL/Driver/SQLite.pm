@@ -32,4 +32,8 @@ sub from_seconds_to_date {
     return "DATETIME($seconds)";
 }
 
+sub insert_ignore_clause {
+    return 'INSERT OR IGNORE';
+}
+
 1;
