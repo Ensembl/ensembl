@@ -207,10 +207,14 @@ $dba->get_OperonAdaptor()->remove($operon);
 $dba->get_GeneAdaptor()->remove($gene);
 $dba->get_GeneAdaptor()->remove($gene2);
 
-#test the get_species_and_object_type method from the Registry
-my $registry = 'Bio::EnsEMBL::Registry';
-my ( $species, $object_type, $db_type ) = $registry->get_species_and_object_type('T16152-16153-4840');
-ok( $species eq 'homo_sapiens' && $object_type eq 'OperonTranscript');
+SKIP: {
+  skip 'No registry support for SQLite yet', 1 if $dba->dbc->driver() eq 'SQLite';
+
+  #test the get_species_and_object_type method from the Registry
+  my $registry = 'Bio::EnsEMBL::Registry';
+  my ( $species, $object_type, $db_type ) = $registry->get_species_and_object_type('T16152-16153-4840');
+  ok( $species eq 'homo_sapiens' && $object_type eq 'OperonTranscript');
+}
 
 #48
 my $ota = $dba->get_OperonTranscriptAdaptor();
