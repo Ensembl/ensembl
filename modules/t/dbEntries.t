@@ -182,6 +182,11 @@ $multi->restore();
 
 # test parallel insertions of identical xrefs
 
+# This is horrible, but fixing it properly will have to wait for
+# another day. The issue is that SQLite doesn't permit the setting
+# of the base AUTOINCREMENT value, and uses MAX(id)+1
+my $next_auto_id = $db->dbc->driver() eq 'SQLite' ? 1000000 : 1000009;
+
 $xref = Bio::EnsEMBL::DBEntry->new
   (
    -primary_id => "1",
@@ -228,9 +233,11 @@ my $threaded;
       note("Threaded xrefs: ".$xref_ids[0]." ".$xref_ids[1]." ".$xref_ids[2]);
       
       # Test 10 - Verify that only one xref has been inserted under parallel inserts
-      is($xref_ids[0], 1000009, 'Thread 1 ID assertion');
+      is($xref_ids[0], $next_auto_id, 'Thread 1 ID assertion');
       is($xref_ids[1], $xref_ids[0], 'Thread 2 ID is the same as thread 1');
       is($xref_ids[2], $xref_ids[0], 'Thread 3 ID is the same as thread 1');
+
+      ++$next_auto_id;
     }
   
   }
@@ -259,11 +266,8 @@ $xref = Bio::EnsEMBL::DBEntry->new
    
 my $xref_id = $dbEntryAdaptor->store($xref, undef, "Transcript");
 note("Xref_id from insert: ".$xref_id);
-if ($threaded) {
-  ok($xref_id == 1000010);   
-} else {
-  is($xref_id,1000009, "dbID for new DBEntry.");
-}
+
+is($xref_id,$next_auto_id, "dbID for new DBEntry.");
 
 #
 # 12-14 Test that external synonyms and go evidence tags are retrieved
