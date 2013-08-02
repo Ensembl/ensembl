@@ -454,7 +454,7 @@ CREATE TABLE alt_allele_attrib (
 
 
 /**
-@table alt_allele_group_id
+@table alt_allele_group
 @desc A minimal table used for tracking unique alt_allele_group_id's. MySQL does not allow multiple autoincrement fields. Further information about a group could be added here at a later date.
 
 @column alt_allele_group_id     Primary key and only column.
@@ -1950,7 +1950,8 @@ CREATE TABLE peptide_archive (
 @desc Table structure for seq_region mapping between releases.
 
 @column mapping_set_id            Primary key, internal identifier.
-@column schema_build              E.g. 61_37f
+@column internal_schema_build     Schema version of the current database (eg 72_37)
+@column external_schema_build     Schema version of the database the comparison was run against (eg 71_37)
 
 
 */
@@ -2146,9 +2147,7 @@ CREATE TABLE external_db (
   external_db_id              INTEGER UNSIGNED NOT NULL AUTO_INCREMENT,
   db_name                     VARCHAR(100) NOT NULL,
   db_release                  VARCHAR(255),
-  status                      ENUM('KNOWNXREF','KNOWN','XREF','PRED','ORTH',
-                                   'PSEUDO')
-                              NOT NULL,
+  status                      ENUM('KNOWNXREF','KNOWN','XREF','PRED','ORTH', 'PSEUDO') NOT NULL,
   priority                    INT NOT NULL,
   db_display_name             VARCHAR(255),
   type                        ENUM('ARRAY', 'ALT_TRANS', 'ALT_GENE', 'MISC', 'LIT', 'PRIMARY_DB_SYNONYM', 'ENSEMBL'),
@@ -2271,8 +2270,7 @@ CREATE TABLE object_xref (
   object_xref_id              INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
   ensembl_id                  INT(10) UNSIGNED NOT NULL,
   ensembl_object_type         ENUM('RawContig', 'Transcript', 'Gene',
-                                   'Translation', 'Operon', 'OperonTranscript', 'Marker')
-                              NOT NULL,
+                                   'Translation', 'Operon', 'OperonTranscript', 'Marker') NOT NULL,
   xref_id                     INT(10) UNSIGNED NOT NULL,
   linkage_annotation          VARCHAR(255) DEFAULT NULL,
   analysis_id                 SMALLINT UNSIGNED DEFAULT 0 NOT NULL,
@@ -2358,8 +2356,7 @@ CREATE TABLE unmapped_object (
   query_score           DOUBLE,
   target_score          DOUBLE,
   ensembl_id            INT(10) UNSIGNED DEFAULT '0',
-  ensembl_object_type   ENUM('RawContig','Transcript','Gene','Translation')
-                        DEFAULT 'RawContig',
+  ensembl_object_type   ENUM('RawContig','Transcript','Gene','Translation') DEFAULT 'RawContig',
   parent                VARCHAR(255) DEFAULT NULL,
 
   PRIMARY KEY (unmapped_object_id),
