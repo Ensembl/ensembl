@@ -539,7 +539,7 @@ CREATE UNIQUE INDEX c02 ON misc_set (code);
 -- Table: object_xref
 --
 CREATE TABLE object_xref (
-  object_xref_id integer NOT NULL,
+  object_xref_id integer PRIMARY KEY NOT NULL,
   ensembl_id integer NOT NULL DEFAULT 0,
   ensembl_object_type enum NOT NULL DEFAULT 'RawContig',
   xref_id integer NOT NULL,
