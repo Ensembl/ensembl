@@ -49,10 +49,10 @@ is(@{$terms}, 138, "Found binding terms");
 my $roots = $go_adaptor->fetch_all_roots();
 is(@{$roots}, 1, "Found roots");
 
-my $go_roots = $go_adaptor->fetch_all_roots('go');
+my $go_roots = $go_adaptor->fetch_all_roots('GO');
 is(@{$go_roots}, 1, "Found go roots");
 
-my $efo_roots = $go_adaptor->fetch_all_roots('efo');
+my $efo_roots = $go_adaptor->fetch_all_roots('EFO');
 is(@{$efo_roots}, 0, "Found no efo roots");
 
 
