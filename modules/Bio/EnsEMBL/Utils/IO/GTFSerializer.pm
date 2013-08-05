@@ -389,11 +389,11 @@ sub _check_start_and_stop {
 
   # transcript could be annotated has having incomplete
   # CDS at either 5', 3' end or both
-  my @attrib = @{$trans->get_all_Attributes('cds_start_NF')};
-  $has_start = scalar @attrib == 1 and $attrib[0]->value() == 1?0:1;
-  @attrib = @{$trans->get_all_Attributes('cds_end_NF')};
-  $has_end = scalar @attrib == 1 and $attrib[0]->value() == 1?0:1;
-  return (0, 0) unless $has_start and $has_end;
+  # my @attrib = @{$trans->get_all_Attributes('cds_start_NF')};
+  # $has_start = scalar @attrib == 1 and $attrib[0]->value() == 1?0:1;
+  # @attrib = @{$trans->get_all_Attributes('cds_end_NF')};
+  # $has_end = scalar @attrib == 1 and $attrib[0]->value() == 1?0:1;
+  # return (0, 0) unless $has_start and $has_end;
 
   #
   # even if the transcript is not annotated with incomplete start/end 
@@ -402,9 +402,16 @@ sub _check_start_and_stop {
   # use translateable_seq (CDS) instead of spliced_seq (CDNA) which is
   # not padded for non-triplet issues
   #
-  my $cds_seq = uc($trans->translateable_seq); 
-  my $startseq = substr($cds_seq, 0, 3); 
-  my $endseq = substr($cds_seq, -3); 
+  # my $cds_seq = uc($trans->translateable_seq); 
+  # my $startseq = substr($cds_seq, 0, 3); 
+  # my $endseq = substr($cds_seq, -3); 
+
+  $has_start = $has_end = 1;
+  my $coding_start = $trans->cdna_coding_start;
+  my $coding_end = $trans->cdna_coding_end;
+  my $cdna_seq = uc($trans->spliced_seq);
+  my $startseq = substr($cdna_seq, $coding_start-1, 3);
+  my $endseq = substr($cdna_seq, $coding_end-3, 3);
 
   # reimplemented since there are alternatively valid codon tables
   # $has_start = $has_end = 1;
