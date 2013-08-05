@@ -1107,48 +1107,5 @@ sub is_circular {
   return $self->{'circular'};
 }
 
-# sub DEPRECATED METHODS #
-###############################################################################
-
-=head1 DEPRECATED METHODS
-
-=cut
-
-=head2 chr_name
-
-  DEPRECATED use seq_region_name() instead
-
-=cut
-
-sub chr_name {
-  deprecate("Use seq_region_name() instead");
-  seq_region_name(@_);
-}
-
-=head2 chr_start
-
-  DEPRECATED use start() instead
-
-=cut
-
-sub chr_start {
-  deprecate('Use start() instead');
-  start(@_);
-}
-
-=head2 chr_end
-
-  DEPRECATED use end() instead
-
-  Returntype : int
-  Exceptions : none
-  Caller     : SliceAdaptor, general
-
-=cut
-
-sub chr_end {
-  deprecate('Use end() instead');
-  end(@_);
-}
 
 1;
