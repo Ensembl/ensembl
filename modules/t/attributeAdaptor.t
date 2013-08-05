@@ -15,7 +15,6 @@ my $dbtype = 'patch';
 my $dbid = 92975;
 my $stable_id = "ENSG00000112761";
 my $stable_id2 = "ENSG00000112769";
-my $count;
 
 # get a DBAdaptor
 my $db = $multi->get_DBAdaptor($dbtype);
@@ -208,7 +207,6 @@ is_rows(0, $db, "seq_region_attrib", "where seq_region_id = ? " , [$seqid]);
   cmp_ok($new_rows, '>', $current_rows, 'Asserting the storage of undefined attributes will always store them');
   # now remove again
   $aa->remove_from_Slice($slice);
-  $count = $db->dbc->db_handle->selectall_arrayref("SELECT count(*) FROM seq_region_attrib " . "WHERE seq_region_id = " . $slice->get_seq_region_id())->[0]->[0];
 
   is_rows(0, $db, "seq_region_attrib", "where seq_region_id = ? ", [$seqid]);
 
