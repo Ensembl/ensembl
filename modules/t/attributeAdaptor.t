@@ -224,21 +224,19 @@ $attrib = Bio::EnsEMBL::Attribute->new(-NAME        => 'test_name2',
 									   -VALUE       => 'test_value2');
 
 my $gene = $ga->fetch_by_stable_id($stable_id);
+my $gene_id = $gene->dbID();
 
 $aa->store_on_Gene($gene, [$attrib]);
 
 #
 # make sure the seq_region_attrib table was updated
 #
-$count = $db->dbc->db_handle->selectall_arrayref("SELECT count(*) FROM gene_attrib " . "WHERE gene_id = " . $gene->dbID())->[0]->[0];
-
-is($count, 1, "One gene attrib fetched");
+is_rows(1, $db, "gene_attrib", "where gene_id = ? ", [$gene_id]);
 
 #
 # make sure the attrib_type table was updated
 #
-$count = $db->dbc->db_handle->selectall_arrayref("SELECT count(*) FROM attrib_type " . "WHERE code = 'test_code2'")->[0]->[0];
-is($count, 1, "One attrib_type available");
+is_rows(1, $db, "attrib_type", "where code = ? ", ["test_code2"]);
 
 #
 # test that we can now retrieve this attribute
@@ -266,18 +264,14 @@ is($attrib->value, 'test_value2', "Attrib value is test_value2");
 # test the removal of this attribute with atrrib code
 #
 $aa->remove_from_Gene($gene, "junk");
-$count = $db->dbc->db_handle->selectall_arrayref("SELECT count(*) FROM gene_attrib " . "WHERE gene_id = " . $gene->dbID())->[0]->[0];
-
-is($count, 1, "One gene attrib available");
+is_rows(1, $db, "gene_attrib", "where gene_id = ? ", [$gene_id]);
 
 #
 # test the removal of this attribute
 #
 
 $aa->remove_from_Gene($gene, "test_code2");
-$count = $db->dbc->db_handle->selectall_arrayref("SELECT count(*) FROM gene_attrib " . "WHERE gene_id = " . $gene->dbID())->[0]->[0];
-
-is($count, 0, "Gene attrib has been removed");
+is_rows(0, $db, "gene_attrib", "where gene_id = ? ", [$gene_id]);
 
 #
 # make sure the attribute is no longer retrievable
@@ -292,18 +286,14 @@ $aa->store_on_Gene($gene, [$attrib]);
 #
 # make sure the seq_region_attrib table was updated
 #
-$count = $db->dbc->db_handle->selectall_arrayref("SELECT count(*) FROM gene_attrib " . "WHERE gene_id = " . $gene->dbID())->[0]->[0];
-
-is($count, 1, "One attrib added for gene");
+is_rows(1, $db, "gene_attrib", "where gene_id = ? ", [$gene_id]);
 
 #
 # make sure the attrib_type table was updated
 #
-$count = $db->dbc->db_handle->selectall_arrayref("SELECT count(*) FROM attrib_type " . "WHERE code = 'test_code2'")->[0]->[0];
-is($count, 1, "One attrib stored for code test_code2");
+is_rows(1, $db, "attrib_type", "where code = ? ", ["test_code2"]);
 
 @attribs = @{$aa->fetch_all_by_Gene($gene)};
-note "attribs: " . scalar(@attribs);
 is(@attribs, 1, "One attrib for gene");
 
 @attribs = @{$aa->fetch_all_by_Gene(undef)};
@@ -313,9 +303,7 @@ is(@attribs, 1, "One attrib for genes");
 # test the removal of this attribute
 #
 $aa->remove_from_Gene($gene);
-$count = $db->dbc->db_handle->selectall_arrayref("SELECT count(*) FROM gene_attrib " . "WHERE gene_id = " . $gene->dbID())->[0]->[0];
-
-is($count, 0, "Attrib has been removed from gene");
+is_rows(0, $db, "gene_attrib", "where gene_id = ? ", [$gene_id]);
 
 #
 # test the storage of empty attrib values
@@ -330,9 +318,7 @@ is($count, 0, "Attrib has been removed from gene");
   cmp_ok($new_rows, '>', $current_rows, 'Asserting the storage of undefined attributes will always store them');
   # now remove again
   $aa->remove_from_Gene($gene);
-  $count = $db->dbc->db_handle->selectall_arrayref("SELECT count(*) FROM gene_attrib " . "WHERE gene_id = " . $gene->dbID())->[0]->[0];
-
-  is($count, 0, "Attrib has been removed from gene");
+  is_rows(0, $db, "gene_attrib", "where gene_id = ? ", [$gene_id]);
 
 }
 
