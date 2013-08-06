@@ -10,6 +10,8 @@ use IO::Handle;
 
 my $gene = Bio::EnsEMBL::IdMapping::TinyGene->new_fast([]);
 
+# Assert ref check
+
 dies_ok { assert_ref(undef, 'ARRAY') } 'Undef value results in death';
 dies_ok { assert_ref([], undef) } 'Undef assertion results in death';
 throws_ok { assert_ref('string', 'ARRAY') } qr/produced no type/, 'Passing in a Scalar means death';
@@ -40,6 +42,71 @@ ok ( check_ref([], 'ARRAY'), 'Ref of an array should be a ARRAY');
 ok ( check_ref({}, 'HASH'), 'Ref of a hash should be a HASH');
 ok ( check_ref($gene, 'Bio::EnsEMBL::IdMapping::TinyFeature'), 'Ref of a gene should be a TinyFeature');
 ok ( check_ref($gene, 'Bio::EnsEMBL::IdMapping::TinyGene'), 'Ref of a gene should be a TinyGene');
+
+# Array assertions
+dies_ok { assert_array_contents([undef], 'ARRAY') } 'ARRAY: Undef value results in death';
+dies_ok { assert_array_contents([], undef) } 'ARRAY: Undef assertion results in death';
+throws_ok { assert_array_contents(['string'], 'ARRAY') } qr/produced no type/, 'ARRAY: Passing in a Scalar means death';
+dies_ok { assert_array_contents([\''], 'ARRAY') } 'ARRAY: Ref of a Scalar is not an ARRAY so death';
+dies_ok { assert_array_contents([$gene], 'CODE') } 'ARRAY: TinyGene object is not a CODE so death';
+dies_ok { assert_array_contents([$gene], 'Bio::EnsEMBL::Feature') } 'ARRAY: TinyGene object is not a Bio::EnsEMBL::Feature so death';
+dies_ok { assert_array_contents([$gene], 'HASH') }  'ARRAY: TinyGene is blessed so we expect false even though it is a HASH';
+
+lives_ok { assert_array_contents([\''], 'SCALAR') } 'ARRAY: Ref of a Scalar should be a SCALAR';
+lives_ok { assert_array_contents([[]], 'ARRAY') } 'ARRAY: Ref of an array should be a ARRAY';
+lives_ok { assert_array_contents([{}], 'HASH') } 'ARRAY: Ref of a hash should be a HASH';
+lives_ok { assert_array_contents([$gene], 'Bio::EnsEMBL::IdMapping::TinyFeature') } 'ARRAY: Ref of a gene should be a TinyFeature';
+lives_ok { assert_array_contents([$gene], 'Bio::EnsEMBL::IdMapping::TinyGene') } 'ARRAY: Ref of a gene should be a TinyGene';
+lives_ok { assert_array_contents([], 'Bio::EnsEMBL::IdMapping::TinyGene') } 'ARRAY: Empty array means no death';
+
+# Array checks
+dies_ok { check_array_contents([], undef) } 'ARRAY: Undef for assertion in check_array_contents results in death';
+
+ok(! check_array_contents([undef], 'ARRAY'), 'ARRAY: Undef value returns false');
+ok(! check_array_contents(['string'], 'ARRAY'), 'ARRAY: Passing in a Scalar means returns false');
+ok(! check_array_contents([\''], 'ARRAY'),  'ARRAY: Ref of a Scalar is not an ARRAY so returns false');
+ok(! check_array_contents([$gene], 'CODE'),  'ARRAY: TinyGene object is not a CODE so returns false');
+ok(! check_array_contents([$gene], 'Bio::EnsEMBL::Feature'),  'ARRAY: TinyGene object is not a Bio::EnsEMBL::Feature so returns false');
+ok(! check_array_contents([$gene], 'HASH'),  'ARRAY: TinyGene is blessed so we expect false even though it is a HASH');
+
+ok ( check_array_contents([\''], 'SCALAR'), 'ARRAY: Ref of a Scalar should be a SCALAR');
+ok ( check_array_contents([[]], 'ARRAY'), 'ARRAY: Ref of an array should be a ARRAY');
+ok ( check_array_contents([{}], 'HASH'), 'ARRAY: Ref of a hash should be a HASH');
+ok ( check_array_contents([$gene], 'Bio::EnsEMBL::IdMapping::TinyFeature'), 'ARRAY: Ref of a gene should be a TinyFeature');
+ok ( check_array_contents([$gene], 'Bio::EnsEMBL::IdMapping::TinyGene'), 'ARRAY: Ref of a gene should be a TinyGene');
+
+# Hash assertions
+dies_ok { assert_hash_contents({a => undef}, 'ARRAY') } 'HASH: Undef value results in death';
+dies_ok { assert_hash_contents({}, undef) } 'HASH: Undef assertion results in death';
+throws_ok { assert_hash_contents({ a => 'string'}, 'ARRAY') } qr/produced no type/, 'HASH: Passing in a Scalar means death';
+dies_ok { assert_hash_contents({a => \''}, 'ARRAY') } 'HASH: Ref of a Scalar is not an ARRAY so death';
+dies_ok { assert_hash_contents({a => $gene}, 'CODE') } 'HASH: TinyGene object is not a CODE so death';
+dies_ok { assert_hash_contents({a => $gene}, 'Bio::EnsEMBL::Feature') } 'HASH: TinyGene object is not a Bio::EnsEMBL::Feature so death';
+dies_ok { assert_hash_contents({a => $gene}, 'HASH') }  'HASH: TinyGene is blessed so we expect false even though it is a HASH';
+
+lives_ok { assert_hash_contents({a => \'' }, 'SCALAR') } 'HASH: Ref of a Scalar should be a SCALAR';
+lives_ok { assert_hash_contents({a => []}, 'ARRAY') } 'HASH: Ref of an array should be a ARRAY';
+lives_ok { assert_hash_contents({a => {}}, 'HASH') } 'HASH: Ref of a hash should be a HASH';
+lives_ok { assert_hash_contents({a => $gene}, 'Bio::EnsEMBL::IdMapping::TinyFeature') } 'HASH: Ref of a gene should be a TinyFeature';
+lives_ok { assert_hash_contents({a => $gene}, 'Bio::EnsEMBL::IdMapping::TinyGene') } 'HASH: Ref of a gene should be a TinyGene';
+lives_ok { assert_hash_contents({}, 'Bio::EnsEMBL::IdMapping::TinyGene') } 'HASH: Empty array means no death';
+
+# Hash checks
+dies_ok { check_hash_contents({}, undef) } 'HASH: Undef for assertion in check_hash_contents results in death';
+
+ok(! check_hash_contents({a => undef}, 'ARRAY'), 'HASH: Undef value returns false');
+ok(! check_hash_contents({a => 'string'}, 'ARRAY'), 'HASH: Passing in a Scalar means returns false');
+ok(! check_hash_contents({a => \''}, 'ARRAY'),  'HASH: Ref of a Scalar is not an ARRAY so returns false');
+ok(! check_hash_contents({a => $gene}, 'CODE'),  'HASH: TinyGene object is not a CODE so returns false');
+ok(! check_hash_contents({a => $gene}, 'Bio::EnsEMBL::Feature'),  'HASH: TinyGene object is not a Bio::EnsEMBL::Feature so returns false');
+ok(! check_hash_contents({a => $gene}, 'HASH'),  'HASH: TinyGene is blessed so we expect false even though it is a HASH');
+
+ok ( check_hash_contents({a => \''}, 'SCALAR'), 'HASH: Ref of a Scalar should be a SCALAR');
+ok ( check_hash_contents({a => []}, 'ARRAY'), 'HASH: Ref of an array should be a ARRAY');
+ok ( check_hash_contents({a => {}}, 'HASH'), 'HASH: Ref of a hash should be a HASH');
+ok ( check_hash_contents({a => $gene}, 'Bio::EnsEMBL::IdMapping::TinyFeature'), 'HASH: Ref of a gene should be a TinyFeature');
+ok ( check_hash_contents({a => $gene}, 'Bio::EnsEMBL::IdMapping::TinyGene'), 'HASH: Ref of a gene should be a TinyGene');
+
 
 #Array Wrapping
 
@@ -85,7 +152,10 @@ throws_ok { assert_integer(undef) } qr/undefined/, 'Passing in undefined scalar 
 dies_ok { assert_integer(bless(1, 'Brian'), 'met')} 'Passing in a blessed scalar means death';
 dies_ok { assert_integer('hello')} 'Passing in a String scalar means death';
 dies_ok { assert_integer({})} 'Passing in a HashRef means death';
-dies_ok { assert_integer(1E-10) } 'Passing in scientific notation numeric means death';
+dies_ok { assert_integer(1E-10) } 'Passing in negative scientific notation numeric means death';
+lives_ok { assert_integer(1E10) } 'Passing in positive scientific notation numeric means lives';
+lives_ok { assert_integer(1_000) } 'Separators means lives';
+lives_ok { assert_integer('2') } 'A string numeric is ok';
 dies_ok { assert_integer(1.2) } 'Passing in floating point means death';
 lives_ok { assert_integer(1) } 'Passing in integer means lives';
 
@@ -179,6 +249,8 @@ close($_) for ($scalar_fh, $other_scalar_fh);
   lives_ok {assert_integer([])          } 'Assertions off; [] returns true for assert_integer()';
   lives_ok {assert_numeric([])          } 'Assertions off; [] returns true for assert_numeric()';
   lives_ok {assert_ref_can([], 'wibble')} 'Assertions off; [] returns true for assert_ref_can()';
+  lives_ok {assert_array_contents([{}], 'wibble')} 'Assertions off; [{}] returns true for assert_array_contents() when asserting type "wibble"';
+  lives_ok {assert_hash_contents({a => {}}, 'wibble')} 'Assertions off; {a => {}} returns true for assert_hash_contents() when asserting type "wibble"';
 }
 dies_ok { assert_ref([], 'HASH') } 'Assertions back on; [] is not a HASH';
 

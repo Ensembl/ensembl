@@ -36,9 +36,15 @@ Bio::EnsEMBL::Utils::Scalar
 	check_ref({}, 'ARRAY'); # Will return false
 	check_ref($dba, 'Bio::EnsEMBL::DBSQL::DBAdaptor'); #Returns true if $dba is a DBAdaptor
 
+  # Returns true if all array contents are of the given type
+  check_array_contents([$dba], 'Bio::EnsEMBL::DBSQL::DBAdaptor'); 
+
 	assert_ref([], 'ARRAY'); #Returns true
 	assert_ref({}, 'ARRAY'); #throws an exception
 	assert_ref($dba, 'Bio::EnsEMBL::Gene'); #throws an exception if $dba is not a Gene
+
+  # Throws an exception if all array contents are not of the given type
+  assert_array_contents([$dba], 'Bio::EnsEMBL::Gene'); #throws an exception if $dba is not a Gene
 
 	wrap_array([]); #Returns the same reference
 	wrap_array($a); #Returns [$a] if $a was not an array
@@ -102,15 +108,15 @@ our %EXPORT_TAGS;
 our @EXPORT_OK;
 
 @EXPORT_OK = qw(
-  check_ref check_ref_can
-  assert_ref assert_ref_can assert_numeric assert_integer assert_boolean assert_strand assert_file_handle
+  check_ref check_ref_can check_array_contents check_hash_contents
+  assert_ref assert_ref_can assert_numeric assert_integer assert_boolean assert_strand assert_file_handle assert_array_contents assert_hash_contents
   wrap_array
   scope_guard
   split_array
 );
 %EXPORT_TAGS = (
-  assert  => [qw(assert_ref assert_ref_can assert_integer assert_numeric assert_boolean assert_strand assert_file_handle)],
-  check   => [qw(check_ref check_ref_can)],
+  assert  => [qw(assert_ref assert_ref_can assert_integer assert_numeric assert_boolean assert_strand assert_file_handle assert_array_contents assert_hash_contents)],
+  check   => [qw(check_ref check_ref_can check_array_contents check_hash_contents)],
   array   => [qw/wrap_array split_array/],
   all     => [@EXPORT_OK]
 );
@@ -193,6 +199,189 @@ sub assert_ref {
     throw("$attribute_name was expected to be '${expected}' but was '${class}'") if $expected ne $class;
   }
   return 1;
+}
+
+=head2 assert_array_contents
+
+ Arg [1]     : ArrayRef references to check
+ Arg [2]     : The type we expect
+ Arg [3]     : The attribute name you are asserting; not required but allows
+               for more useful error messages to be generated. Defaults to
+               C<-Unknown->.
+ Description : A subroutine which checks to see if the given objects/refs are
+               what you expect. This behaves in an identical manner as
+               C<assert_ref> does works on an array ref of references
+
+               You can turn assertions off by using the global variable
+               $Bio::EnsEMBL::Utils::Scalar::ASSERTIONS = 0
+ Returntype  : Boolean; true if we managed to get to the return
+ Example     : assert_array_contents([[],[],[]], 'ARRAY');
+ Exceptions  : Throws is references argument is not an ArrayRef, also
+               if the expected type was not set and if the given reference
+               was not assignable to the expected value.
+ Status      : Stable
+
+=cut
+
+sub assert_array_contents {
+  my ($array, $expected, $attribute_name) = @_;
+  return 1 unless $ASSERTIONS;
+  throw('No expected type given') if ! defined $expected;
+  $attribute_name ||= '-Unknown-';
+  assert_ref($array, 'ARRAY', $attribute_name);
+  my $count = scalar(@{$array});
+  for(my $i = 0; $i<$count; $i++) {
+    my $ref = $array->[$i];
+    my $class = ref($ref);
+    throw("The given reference for attribute $attribute_name was undef (at position ${i})") unless defined $ref;
+    throw("Asking for the type of the attribute $attribute_name produced no type; check it is a reference (at position ${i})") unless $class;
+    if(blessed($ref)) {
+      throw("${attribute_name}'s type '${class}' is not an ISA of '${expected}' (at position ${i})") if ! $ref->isa($expected);
+    }
+    else {
+      throw("$attribute_name was expected to be '${expected}' but was '${class}' (at position ${i})") if $expected ne $class;
+    }
+  }
+  return 1;
+}
+
+=head2 check_array_contents
+
+ Arg [1]     : ArrayRef references to check
+ Arg [2]     : The type we expect
+ Arg [3]     : The attribute name you are asserting; not required but allows
+               for more useful error messages to be generated. Defaults to
+               C<-Unknown->.
+ Description : A subroutine which checks to see if the given objects/refs are
+               what you expect. 
+ Returntype  : Boolean; true if all contents were as expected
+ Example     : check_array_contents([[],[],[]], 'ARRAY');
+ Exceptions  : Thrown if no type was given
+ Status      : Stable
+
+=cut
+
+sub check_array_contents {
+  my ($array, $expected, $attribute_name) = @_;
+  return 0 if ! check_ref($array, 'ARRAY');
+  throw('No expected type given') if ! defined $expected;
+  my $contents_ok = 1;
+  my $count = scalar(@{$array});
+  for(my $i = 0; $i<$count; $i++) {
+    my $ref = $array->[$i];
+    if(!$ref) {
+      $contents_ok = 0;
+      last;
+    }
+    my $class = ref($ref);
+    if(!$class) {
+      $contents_ok = 0;
+      last;
+    }
+    if(blessed($ref)) {
+      if(! $ref->isa($expected)) {
+        $contents_ok = 0;
+        last;
+      }
+    }
+    elsif($expected ne $class) {
+      $contents_ok = 0;
+      last;
+    }
+  }
+  return $contents_ok;
+}
+
+=head2 assert_hash_contents
+
+ Arg [1]     : HashRef references to check
+ Arg [2]     : The type we expect
+ Arg [3]     : The attribute name you are asserting; not required but allows
+               for more useful error messages to be generated. Defaults to
+               C<-Unknown->.
+ Description : A subroutine which checks to see if the given objects/refs are
+               what you expect. This behaves in an identical manner as
+               C<assert_ref> does works on a HashRef of references. Hash keys 
+               are always Strings so do not need asserting.
+
+               You can turn assertions off by using the global variable
+               $Bio::EnsEMBL::Utils::Scalar::ASSERTIONS = 0
+ Returntype  : Boolean; true if we managed to get to the return
+ Example     : assert_hash_contents({a => [], b => []}, 'ARRAY');
+ Exceptions  : Throws is references argument is not an ArrayRef, also
+               if the expected type was not set and if the given reference
+               was not assignable to the expected value.
+ Status      : Stable
+
+=cut
+
+sub assert_hash_contents {
+  my ($hash, $expected, $attribute_name) = @_;
+  return 1 unless $ASSERTIONS;
+  throw('No expected type given') if ! defined $expected;
+  $attribute_name ||= '-Unknown-';
+  assert_ref($hash, 'HASH', $attribute_name);
+  my @keys = keys %{$hash};
+  while(my $key = shift @keys) {
+    my $ref = $hash->{$key};
+    my $class = ref($ref);
+    throw("The given reference for attribute $attribute_name was undef (with key ${key})") unless defined $ref;
+    throw("Asking for the type of the attribute $attribute_name produced no type; check it is a reference (with key ${key})") unless $class;
+    if(blessed($ref)) {
+      throw("${attribute_name}'s type '${class}' is not an ISA of '${expected}' (with key ${key})") if ! $ref->isa($expected);
+    }
+    else {
+      throw("$attribute_name was expected to be '${expected}' but was '${class}' (with key ${key})") if $expected ne $class;
+    }
+  }
+  return 1;
+}
+
+=head2 check_hash_contents
+
+ Arg [1]     : HashRef references to check
+ Arg [2]     : The type we expect
+ Arg [3]     : The attribute name you are asserting; not required but allows
+               for more useful error messages to be generated. Defaults to
+               C<-Unknown->.
+ Description : A subroutine which checks to see if the given objects/refs are
+               what you expect. 
+ Returntype  : Boolean; true if all contents were as expected
+ Example     : check_hash_contents({a => [], b => []}, 'ARRAY');
+ Exceptions  : Thrown if no type was given
+ Status      : Stable
+
+=cut
+
+sub check_hash_contents {
+  my ($hash, $expected, $attribute_name) = @_;
+  throw('No expected type given') if ! defined $expected;
+  return 0 if ! check_ref($hash, 'HASH');
+  my $contents_ok = 1;
+  my @keys = keys %{$hash};
+  while(my $key = shift @keys) {
+    my $ref = $hash->{$key};
+    if(!$ref) {
+      $contents_ok = 0;
+      last;
+    }
+    my $class = ref($ref);
+    if(!$class) {
+      $contents_ok = 0;
+      last;
+    }
+    if(blessed($ref)) {
+      if(! $ref->isa($expected)) {
+        $contents_ok = 0;
+        last;
+      }
+    }
+    elsif($expected ne $class) {
+      $contents_ok = 0;
+      last;
+    }
+  }
+  return $contents_ok;
 }
 
 =head2 wrap_array()
@@ -453,7 +642,7 @@ sub assert_file_handle {
   Arg [2]     : ArrayRef The array to split
   Description : Takes an array of values and splits the array into multiple 
                 arrays where the maximum size of each array is as specified
-  Example     : 
+  Example     : my $split_arrays = split_array($large_array, 10);
   Returntype  : ArrayRef of ArrayRefs where each element is a split list
 =cut
 
