@@ -263,23 +263,23 @@ sub _split {
 
   my $sl1 =
     Bio::EnsEMBL::CircularSlice->new(
-                     -COORD_SYSTEM      => $self->{'coord_system'},
-                     -SEQ_REGION_NAME   => $self->{'seq_region_name'},
-                     -SEQ_REGION_LENGTH => $self->{'seq_region_length'},
-                     -START             => $self->{'start'},
-                     -END               => $self->{'seq_region_length'},
-                     -STRAND            => $self->{'strand'},
-                     -ADAPTOR           => $self->adaptor() );
+			     -COORD_SYSTEM      => $self->{'coord_system'},
+			     -SEQ_REGION_NAME   => $self->{'seq_region_name'},
+			     -SEQ_REGION_LENGTH => $self->{'seq_region_length'},
+			     -START             => $self->{'start'},
+			     -END               => $self->{'seq_region_length'},
+			     -STRAND            => $self->{'strand'},
+			     -ADAPTOR           => $self->adaptor() );
 
   my $sl2 =
     Bio::EnsEMBL::CircularSlice->new(
-                     -COORD_SYSTEM      => $self->{'coord_system'},
-                     -SEQ_REGION_NAME   => $self->{'seq_region_name'},
-                     -SEQ_REGION_LENGTH => $self->{'seq_region_length'},
-                     -START             => 1,
-                     -END               => $self->{'end'},
-                     -STRAND            => $self->{'strand'},
-                     -ADAPTOR           => $self->adaptor() );
+			     -COORD_SYSTEM      => $self->{'coord_system'},
+			     -SEQ_REGION_NAME   => $self->{'seq_region_name'},
+			     -SEQ_REGION_LENGTH => $self->{'seq_region_length'},
+			     -START             => 1,
+			     -END               => $self->{'end'},
+			     -STRAND            => $self->{'strand'},
+			     -ADAPTOR           => $self->adaptor() );
 
   return ($sl1, $sl2);
 }
@@ -313,11 +313,11 @@ sub seq {
       my ($sl1, $sl2) = $self->_split;
 
       my $seq1 = ${
-        $seqAdaptor->fetch_by_Slice_start_end_strand( $sl1, 1, undef,
-                                                      1 ) };
+        $seqAdaptor->fetch_by_Slice_start_end_strand( $sl1, 1, $sl1->end - $sl1->start + 1, $sl1->strand) };
+                                                      
       my $seq2 = ${
-        $seqAdaptor->fetch_by_Slice_start_end_strand( $sl2, 1, undef,
-                                                      1 ) };
+        $seqAdaptor->fetch_by_Slice_start_end_strand( $sl2, 1, $sl2->end - $sl2->start + 1, $sl2->strand) };
+                                                      
       return $seq1 . $seq2;
 
     } else {
@@ -398,296 +398,8 @@ sub subseq {
   return $subseq;
 } ## end sub subseq
 
-=head2 project
 
-  Arg [1]    : string $name
-               The name of the coordinate system to project this slice onto
-  Arg [2]    : string $version
-               The version of the coordinate system (such as 'NCBI34') to
-               project this slice onto
-  Example    :
-    my $clone_projection = $slice->project('clone');
 
-    foreach my $seg (@$clone_projection) {
-      my $clone = $segment->to_Slice();
-      print $slice->seq_region_name(), ':', $seg->from_start(), '-',
-        $seg->from_end(), ' -> ',
-        $clone->seq_region_name(), ':', $clone->start(), '-',
-        $clone->end(),
-        $clone->strand(), "\n";
-    }
-  Description: Returns the results of 'projecting' this slice onto another
-               coordinate system.  Projecting to a coordinate system that
-               the slice is assembled from is analagous to retrieving a tiling
-               path.  This method may also be used to 'project up' to a higher
-               level coordinate system, however.
-
-               This method returns a listref of triplets [start,end,slice]
-               which represents the projection.  The start and end defined the
-               region of this slice which is made up of the third value of
-               the triplet: a slice in the requested coordinate system.
-  Returntype : list reference of Bio::EnsEMBL::ProjectionSegment objects which
-               can also be used as [$start,$end,$slice] triplets
-  Exceptions : none
-  Caller     : general
-  Status     : Stable
-
-=cut
-
-sub project {
-  my $self       = shift;
-  my $cs_name    = shift;
-  my $cs_version = shift;
-
-  throw('Coord_system name argument is required') if ( !$cs_name );
-
-  my $slice_adaptor = $self->adaptor();
-
-  if ( !$slice_adaptor ) {
-    warning("Cannot project without attached adaptor.");
-    return [];
-  }
-
-  if ( !$self->coord_system() ) {
-    warning("Cannot project without attached coord system.");
-    return [];
-  }
-
-  my $db  = $slice_adaptor->db();
-  my $csa = $db->get_CoordSystemAdaptor();
-  my $cs  = $csa->fetch_by_name( $cs_name, $cs_version );
-
-  my ($sl01, $sl02) = $self->_split;
-  my @projection;
-  my $current_start = 1;
-
-  foreach my $sl2 ( $sl01, $sl02 ) {
-    my $slice_cs = $sl2->coord_system();
-
-    if ( !$cs ) {
-      throw(   "Cannot project to unknown coordinate system "
-             . "[$cs_name $cs_version]" );
-    }
-
-# no mapping is needed if the requested coord system is the one we are in
-# but we do need to check if some of the slice is outside of defined regions
-    if ( $slice_cs->equals($cs) ) {
-      return $self->_constrain_to_region();
-    }
-
-    # decompose this slice into its symlinked components.
-    # this allows us to handle haplotypes and PARs
-    my $normal_slice_proj =
-      $slice_adaptor->fetch_normalized_slice_projection($sl2);
-
-    foreach my $segment (@$normal_slice_proj) {
-      my $normal_slice = $segment->[2];
-
-      $slice_cs = $normal_slice->coord_system();
-
-      my $asma = $db->get_AssemblyMapperAdaptor();
-      my $asm_mapper = $asma->fetch_by_CoordSystems( $slice_cs, $cs );
-
-      # perform the mapping between this slice and the requested system
-      my @coords;
-
-      if ( defined $asm_mapper ) {
-        @coords = $asm_mapper->map( $normal_slice->seq_region_name(),
-                                    $normal_slice->start(),
-                                    $normal_slice->end(),
-                                    $normal_slice->strand(),
-                                    $slice_cs );
-
-      } else {
-        $coords[0] =
-          Bio::EnsEMBL::Mapper::Gap->new( $normal_slice->start(),
-                                          $normal_slice->end() );
-      }
-
-      #construct a projection from the mapping results and return it
-      foreach my $coord (@coords) {
-        my $coord_start = $coord->start();
-        my $coord_end   = $coord->end();
-        my $length      = $coord_end - $coord_start + 1;
-
-        #skip gaps
-        if ( $coord->isa('Bio::EnsEMBL::Mapper::Coordinate') ) {
-          my $coord_cs = $coord->coord_system();
-
-      # If the normalised projection just ended up mapping to the
-      # same coordinate system we were already in then we should just
-      # return the original region.  This can happen for example, if we
-      # were on a PAR region on Y which refered to X and a projection to
-      # 'toplevel' was requested.
-
-          if ( $coord_cs->equals($slice_cs) ) {
-            # trim off regions which are not defined
-            return $self->_constrain_to_region();
-          }
-          #create slices for the mapped-to coord system
-
-          my $slice =
-            $slice_adaptor->fetch_by_seq_region_id(
-                                          $coord->id(), $coord_start,
-                                          $coord_end,   $coord->strand()
-            );
-
-          my $current_end = $current_start + $length - 1;
-          push @projection,
-            bless( [ $current_start, $current_end, $slice ],
-                   "Bio::EnsEMBL::ProjectionSegment" );
-        } ## end if ( $coord->isa('Bio::EnsEMBL::Mapper::Coordinate'...))
-
-        $current_start += $length;
-      } ## end foreach my $coord (@coords)
-    } ## end foreach my $segment (@$normal_slice_proj)
-  }    #foreach
-
-  return \@projection;
-} ## end sub project
-
-sub project_org {
-  my $self       = shift;
-  my $cs_name    = shift;
-  my $cs_version = shift;
-
-  throw('Coord_system name argument is required') if ( !$cs_name );
-
-  my $slice_adaptor = $self->adaptor();
-
-  if ( !$slice_adaptor ) {
-    warning("Cannot project without attached adaptor.");
-    return [];
-  }
-
-  if ( !$self->coord_system() ) {
-    warning("Cannot project without attached coord system.");
-    return [];
-  }
-
-  my $db       = $slice_adaptor->db();
-  my $csa      = $db->get_CoordSystemAdaptor();
-  my $cs       = $csa->fetch_by_name( $cs_name, $cs_version );
-  my $slice_cs = $self->coord_system();
-
-  if ( !$cs ) {
-    throw(   "Cannot project to unknown coordinate system "
-           . "[$cs_name $cs_version]" );
-  }
-
-  # No mapping is needed if the requested coord system is the one we
-  # are in.  But we do need to check if some of the slice is outside of
-  # defined regions.
-  if ( $slice_cs->equals($cs) ) {
-    return $self->_constrain_to_region();
-  }
-
-  my @projection;
-  my $current_start = 1;
-
-  # Decompose this slice into its symlinked components.  This allows us
-  # to handle haplotypes and PARs.
-  my $normal_slice_proj =
-    $slice_adaptor->fetch_normalized_slice_projection($self);
-  foreach my $segment (@$normal_slice_proj) {
-    my $normal_slice = $segment->[2];
-
-    $slice_cs = $normal_slice->coord_system();
-
-    my $asma = $db->get_AssemblyMapperAdaptor();
-    my $asm_mapper = $asma->fetch_by_CoordSystems( $slice_cs, $cs );
-
-    # perform the mapping between this slice and the requested system
-    my @coords;
-
-    if ( defined $asm_mapper ) {
-      @coords = $asm_mapper->map( $normal_slice->seq_region_name(),
-                                  $normal_slice->start(),
-                                  $normal_slice->end(),
-                                  $normal_slice->strand(),
-                                  $slice_cs );
-
-    } else {
-      $coords[0] =
-        Bio::EnsEMBL::Mapper::Gap->new( $normal_slice->start(),
-                                        $normal_slice->end() );
-    }
-
-    #construct a projection from the mapping results and return it
-    foreach my $coord (@coords) {
-      my $coord_start = $coord->start();
-      my $coord_end   = $coord->end();
-      my $length      = $coord_end - $coord_start + 1;
-
-      #skip gaps
-      if ( $coord->isa('Bio::EnsEMBL::Mapper::Coordinate') ) {
-        my $coord_cs = $coord->coord_system();
-
-        # If the normalised projection just ended up mapping to the
-        # same coordinate system we were already in then we should just
-        # return the original region.  This can happen for example,
-        # if we were on a PAR region on Y which refered to X and a
-        # projection to 'toplevel' was requested.
-
-        if ( $coord_cs->equals($slice_cs) ) {
-          # trim off regions which are not defined
-          return $self->_constrain_to_region();
-        }
-        #create slices for the mapped-to coord system
-
-        my $slice =
-          $slice_adaptor->fetch_by_seq_region_id( $coord->id(),
-                           $coord_start, $coord_end, $coord->strand() );
-
-        my $current_end = $current_start + $length - 1;
-
-        push @projection,
-          bless( [ $current_start, $current_end, $slice ],
-                 "Bio::EnsEMBL::ProjectionSegment" );
-      } ## end if ( $coord->isa('Bio::EnsEMBL::Mapper::Coordinate'...))
-
-      $current_start += $length;
-    } ## end foreach my $coord (@coords)
-  } ## end foreach my $segment (@$normal_slice_proj)
-
-  return \@projection;
-} ## end sub project_org
-
-sub _constrain_to_region {
-  my $self = shift;
-
-  my $entire_len = $self->seq_region_length();
-
-  # If the slice has negative coordinates or coordinates exceeding the
-  # exceeding length of the sequence region we want to shrink the slice
-  # to the defined region.
-
-  if ( $self->{'start'} > $entire_len || $self->{'end'} < 1 ) {
-    #none of this slice is in a defined region
-    return [];
-  }
-
-  my $right_contract = 0;
-  my $left_contract  = 0;
-  if ( $self->{'end'} > $entire_len ) {
-    $right_contract = $entire_len - $self->{'end'};
-  }
-  if ( $self->{'start'} < 1 ) {
-    $left_contract = $self->{'start'} - 1;
-  }
-
-  my $new_slice;
-  if ( $left_contract || $right_contract ) {
-    $new_slice = $self->expand( $left_contract, $right_contract );
-  } else {
-    $new_slice = $self;
-  }
-
-  return [ bless [ 1 - $left_contract,
-                   $self->length() + $right_contract,
-                   $new_slice ],
-           "Bio::EnsEMBL::ProjectionSegment" ];
-} ## end sub _constrain_to_region
 
 =head2 expand
 
