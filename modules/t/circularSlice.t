@@ -34,6 +34,7 @@ my $COORD_SYSTEM_VERSION = 'GCA_000292705.1';
 
 my $slice_adaptor = $db->get_SliceAdaptor;
 my $csa = $db->get_CoordSystemAdaptor();
+my $coord_system = $csa->fetch_by_name($COORD_SYSTEM);
 
 my $slice = $slice_adaptor->fetch_by_region($COORD_SYSTEM, $CHR, $START, $END);
 isa_ok($slice, 'Bio::EnsEMBL::CircularSlice');
@@ -51,20 +52,35 @@ is($slice->centrepoint, 5402639, "slice centre point");
 # _split private method
 my ($sl1, $sl2) = $slice->_split;
 isa_ok($sl1, 'Bio::EnsEMBL::CircularSlice');
-is($sl1->is_circular, 1,"subslice is circular");
+is($sl1->is_circular, 1, "subslice is circular");
 is($sl1->seq_region_name, $CHR,"subslice seq region name $CHR");
 is($sl1->start, $START, "subslice start == $START");
 is($sl1->end, $SEQ_REGION_LENGTH, "subslice end == $SEQ_REGION_LENGTH");
 
 isa_ok($sl2, 'Bio::EnsEMBL::CircularSlice');
-is($sl2->is_circular, 1,"subslice is circular");
+is($sl2->is_circular, 1, "subslice is circular");
 is($sl2->seq_region_name, $CHR,"subslice seq region name $CHR");
 is($sl2->start, 1, "subslice start == 1");
 is($sl2->end, $END, "subslice end == $END");
 
+#
 # seq method
+#
+# - slice spanning the origin of replication
 my $seq = $slice->seq;
-is(length $seq, 205278, "sequence length");
+is(length $seq, $slice->length, "sequence length");
+
+# - slice not spanning the origin of replication
+$slice = Bio::EnsEMBL::CircularSlice->new(-seq_region_name   => $CHR,
+					  -seq_region_length => $SEQ_REGION_LENGTH,
+					  -start             => 10,
+					  -end               => 100,
+					  -strand            => 1,
+					  -coord_system      => $coord_system);
+$seq = $slice->seq;
+is(length $seq, $slice->length, "sequence length");
+
+
 
 my $slstart = $slice_adaptor->fetch_by_region($COORD_SYSTEM, $CHR, 1, $END);
 my $slend   = $slice_adaptor->fetch_by_region($COORD_SYSTEM, $CHR, $START, 
@@ -73,7 +89,6 @@ my $slend   = $slice_adaptor->fetch_by_region($COORD_SYSTEM, $CHR, $START,
 #
 # CircularSlice::new
 #
-my $coord_system = $csa->fetch_by_name($COORD_SYSTEM);
 my $test_seq = 'ATGCATGCATGCATGCATGCATGC';
 my $test_slice = 
   Bio::EnsEMBL::CircularSlice->new(-seq_region_name   => 'misc',
@@ -85,6 +100,8 @@ my $test_slice =
 				   -seq               => $test_seq);
 isa_ok($test_slice, 'Bio::EnsEMBL::CircularSlice');
 is($test_slice->length, 24, 'slice length 24');
+is(length $test_slice->seq, 24, 'slice seq length 24');
+
 
 #
 # Base count
