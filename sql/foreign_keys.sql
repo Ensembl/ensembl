@@ -9,6 +9,9 @@
 # key constraints on MyISAM tables.
 
 ALTER table alt_allele ADD FOREIGN KEY (gene_id) REFERENCES gene(gene_id);
+ALTER table alt_allele ADD FOREIGN KEY (alt_allele_group_id) REFERENCES alt_allele_group(alt_allele_group_id)
+ALTER table alt_allele_id ADD FOREIGN KEY (alt_allele_id) REFERENCES alt_allele(alt_allele_id);
+
 
 ALTER table analysis_description ADD FOREIGN KEY (analysis_id) REFERENCES analysis(analysis_id);
 
