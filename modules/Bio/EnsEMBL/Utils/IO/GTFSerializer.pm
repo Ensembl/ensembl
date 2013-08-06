@@ -69,7 +69,6 @@ sub print_feature {
   my @endcs   =  $self->_make_stop_codon_features($transcript);
   my ($hasstart, $hasend) = $self->_check_start_and_stop($transcript);
 
-  # TODO: ask Andy if this is safe
   my $dbname = $transcript->adaptor()->dbc()->dbname();
   my $vegadb = $dbname =~ /vega/;
   my $gene = $transcript->get_Gene();
@@ -165,7 +164,7 @@ sub print_feature {
         $exon == $transcript->translation->start_Exon && $hasstart) {
       my $tmpcnt = $count;
       foreach my $startc (@startcs) {
-	# here we should check the start codon covers 3 bases
+	# here we should check the start codon covers 3 bases	
         print $fh $idstr . "\t" . 
 	  $transcript_biotype . "\t" . 
           'start_codon' . "\t" . 
@@ -272,8 +271,6 @@ sub _make_start_codon_features {
 
   return (()) unless $trans->translation;
 
-  my @translateable = @{$trans->get_all_translateable_Exons};
-
   my @pepgencoords = $trans->pep2genomic(1,1);
 
   # cdna can come padded these days so allow gap at the start
@@ -292,7 +289,7 @@ sub _make_start_codon_features {
     throw(sprintf "Pep start (end of) for transcript %s maps to gap", $trans->display_id);
   }
 
-  @translateable = @{$trans->get_all_translateable_Exons};
+  my @translateable = @{$trans->get_all_translateable_Exons};
   my @startc_feat;
   my $phase = 0;
   foreach my $pepgencoord (@pepgencoords) {
