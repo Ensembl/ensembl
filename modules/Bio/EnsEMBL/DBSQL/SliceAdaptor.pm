@@ -103,6 +103,7 @@ use Bio::EnsEMBL::LRGSlice;
 use Bio::EnsEMBL::Utils::Exception qw(throw deprecate warning stack_trace_dump);
 use Bio::EnsEMBL::ProjectionSegment;
 use Scalar::Util qw/looks_like_number/;
+use Bio::EnsEMBL::Utils::Scalar qw/assert_integer/;
 
 @ISA = ('Bio::EnsEMBL::DBSQL::BaseAdaptor');
 
@@ -195,6 +196,9 @@ sub fetch_by_region {
   my ( $self, $coord_system_name, $seq_region_name, $start, $end,
        $strand, $version, $no_fuzz )
     = @_;
+
+  assert_integer($start, 'start') if $start;
+  assert_integer($end, 'end') if $end;
 
   if ( !defined($start) )  { $start  = 1 }
   if ( !defined($strand) ) { $strand = 1 }
