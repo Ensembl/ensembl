@@ -46,9 +46,12 @@ Bio::EnsEMBL::DBSQL::Support::BaseCache - Base cache code
   
   is($cache->size(), 0);
 
+  #Try using SQL - cache will be consulted accordingly
+  my $ids = $cache->get_by_sql('select dbid from table where val like ?', ['someval%']);
+
 =head1 DESCRIPTION
 
-A base class used for holding methods common to all cache implemnetations. 
+A base class used for holding methods common to all cache implementations. 
 Never use this class to do direct caching instead use one of the following
 
 =over 8
@@ -58,6 +61,10 @@ Never use this class to do direct caching instead use one of the following
 =item C<Bio::EnsEMBL::DBSQL::Support::FullIdCache>
 
 =back
+
+To provide exta functionality to the caches you should override one of the above
+classes and extend. Caches work when you use inheritence by composition in their
+target adaptor.
 
 =head1 METHODS
 
@@ -75,7 +82,7 @@ use Scalar::Util qw/weaken/;
 =head2 new
 
   Arg [1]    : Bio::EnsEMBL::DBSQL::BaseAdaptor $db_adaptor
-  Example    : $cache = new CacheInheritedFromBaseCache($db_adaptor);
+  Example    : $cache = CacheInheritedFromBaseCache->new($db_adaptor);
   Description: Creates a new cache class which handles all the basics of
                working with a cache apart from what that cache implementation
                is (apart from a hash)
@@ -188,7 +195,7 @@ sub get {
   Description: Retrieves the values held in the cache. If a key cannot be
                found you get no entry in the resulting array returned.
   Returntype : ArrayRef of found values
-  Exceptions : None
+  Exceptions : If the given ArrayRef was undefined
   Caller     : BaseAdaptors
   Status     : Beta
 
@@ -208,6 +215,35 @@ sub get_by_list {
   return \@output;
 }
 
+=head2 get_by_sql
+
+  Arg [1]    : String SQL to execute. Should return the key of this cache in column 1
+  Arg [2]    : ArrayRef Parameters to bind to the specified query
+  Example    : $cache->get_by_sql('select id from tables where p like ?', ['val%']);
+  Description: Executes the given SQL statement against the construnction adaptor's
+               backing database. The found IDs are then passed into C<get_by_list()>
+               where the elements are returned should the cache hold them.
+
+               Remember if the cache is un-aware of the key or the specific 
+               implementation used cannot perform database lookups based on cache misses
+               you will not be able to retreive the object in question.
+  Returntype : ArrayRef of found values
+  Exceptions : Thrown if SQL and parameters are empty and not the expected types. All
+               other exceptions come from DBI/SQL operations.
+  Caller     : BaseAdaptors
+  Status     : Beta
+
+=cut
+
+sub get_by_sql {
+  my ($self, $sql, $params) = @_;
+  throw "No SQL given" unless $sql;
+  assert_ref($params, 'ARRAY', 'params');
+  my $helper = $self->adaptor()->dbc()->sql_helper();
+  my $ids = $helper->execute_simple(-SQL => $sql, -PARAMS => $params);
+  return $self->get_by_list($ids);
+}
+
 =head2 put
 
   Arg [1]    : String key to store
@@ -216,7 +252,7 @@ sub get_by_list {
   Description: Stores a value in the cache. Returns the previous value held 
                under that key if one existed
   Returntype : Scalar of the previously held value if one existed
-  Exceptions : None
+  Exceptions : If key was undefined
   Caller     : BaseAdaptors
   Status     : Beta
 
@@ -274,6 +310,7 @@ sub remove {
 
 sub clear_cache {
   my ($self) = @_;
+  #Clear the cache
   my $cache = $self->cache();
   %{$cache} = ();
   return;
@@ -293,6 +330,23 @@ sub clear_cache {
 sub cache_keys {
   my ($self) = @_;
   return keys %{$self->cache()};
+}
+
+
+=head2 cached_values
+
+  Example    : my @values = $cache->cached_values();
+  Description: Returns all values held by the cache
+  Returntype : List of all available values
+  Exceptions : None
+  Caller     : BaseAdaptors
+  Status     : Beta
+
+=cut
+
+sub cached_values {
+  my ($self) = @_;
+  return values %{$self->cache()};
 }
 
 =head2 size

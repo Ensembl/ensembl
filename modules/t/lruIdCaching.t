@@ -84,7 +84,17 @@ sub BEGIN {
   
   is(scalar(keys(%{$gene_adaptor->_slice_feature_cache()})), 0, 'clear_cache() should have hit the slice feature cache as well');
   is(scalar($cache->cache_keys()), 0, 'Cache clear has resulted in no more elements being held');
-  
+
+  #### Quick test of the get_by_sql method
+  {
+    my $genes_refetch = $adaptor->fetch_all_by_dbID_list($gene_ids);
+    is($cache->size(), 3, 'We should have only persisted 3 values in the cache');
+    my $original_keys = join(q{!=!}, $cache->cache_keys());
+    my $sql = 'select gene_id from gene where biotype =?';
+    my $pc_sql_genes = $cache->get_by_sql($sql, ['protein_coding']);
+    isnt(join(q{!=!}, $cache->cache_keys()), $original_keys, 'Using SQL genes should have reset the IDs in the cache');
+    $adaptor->clear_cache();
+  }
   
   #Quick repopulate of the cache then store
   if($STORE_TESTS) {
