@@ -291,8 +291,11 @@ sub connect {
 
     my $dbparam = ($dbname) ? "database=${dbname};" : q{};
 
+    my $driver = $self->driver();
+    $driver = 'Pg' if($driver eq 'pgsql');
+
     $dsn = sprintf( "DBI:%s:%shost=%s;port=%s",
-                    $self->driver(), $dbparam,
+                    $driver, $dbparam,
                     $self->host(),   $self->port() );
 
     if ( $self->{'disconnect_when_inactive'} ) {
