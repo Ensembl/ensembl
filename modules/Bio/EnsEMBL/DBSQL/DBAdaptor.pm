@@ -61,10 +61,11 @@ use Bio::EnsEMBL::DBSQL::BaseFeatureAdaptor;
 use Bio::EnsEMBL::Utils::SeqRegionCache;
 use Bio::EnsEMBL::Utils::Exception qw(throw warning deprecate);
 use Bio::EnsEMBL::Utils::Argument qw(rearrange);
-use Bio::EnsEMBL::Registry;
+use Bio::EnsEMBL::Utils::Scalar qw(check_ref scope_guard);
 use Bio::EnsEMBL::Utils::ConfigRegistry;
 
-my $reg = "Bio::EnsEMBL::Registry";
+my $REGISTRY = "Bio::EnsEMBL::Registry";
+require Bio::EnsEMBL::Registry;
 
 =head2 new
 
@@ -125,7 +126,7 @@ sub new {
   my $self = bless {}, $class;
 
   my ( $is_multispecies, $species, $species_id, $group, $con, $dnadb,
-    $no_cache, $dbname )
+    $no_cache, $dbname)
     = rearrange( [
       'MULTISPECIES_DB', 'SPECIES', 'SPECIES_ID', 'GROUP',
       'DBCONN',          'DNADB',   'NO_CACHE',   'DBNAME'
@@ -141,15 +142,10 @@ sub new {
     $self->dbc( new Bio::EnsEMBL::DBSQL::DBConnection(@args) );
   }
 
-  if ( defined($species) ) { $self->species($species) }
-  if ( defined($group) )   { $self->group($group) }
+  if ( defined($species) )  { $self->species($species) }
+  if ( defined($group) )    { $self->group($group) }
 
- 
   $self = Bio::EnsEMBL::Utils::ConfigRegistry::gen_load($self);
-
-#  if(!defined($species) ){
-#     $reg->find_and_add_aliases($self);
-#  }
 
   $self->species_id( $species_id || 1 );
 
@@ -176,7 +172,7 @@ sub new {
 
 sub clear_caches {
   my ($self) = @_;
-  my $adaptors = Bio::EnsEMBL::Registry->get_all_adaptors(
+  my $adaptors = $REGISTRY->get_all_adaptors(
     $self->species(), $self->group());
   foreach my $adaptor (@{$adaptors}) {
     if($adaptor->can('clear_cache')) {
@@ -214,8 +210,6 @@ sub dbc{
   return $self->{_dbc};
 }
 
-
-
 =head2 add_db_adaptor
 
   Arg [1]    : string $name
@@ -240,7 +234,7 @@ sub add_db_adaptor {
     throw('adaptor and name arguments are required');
   }
 
-  Bio::EnsEMBL::Registry->add_db($self, $name, $adaptor);
+  $REGISTRY->add_db($self, $name, $adaptor);
 
 }
 
@@ -262,8 +256,7 @@ sub add_db_adaptor {
 
 sub remove_db_adaptor {
   my ($self, $name) = @_;
-
-  return Bio::EnsEMBL::Registry->remove_db($self, $name);
+  return $REGISTRY->remove_db($self, $name);
 }
 
 
@@ -285,7 +278,7 @@ sub remove_db_adaptor {
 
 sub get_all_db_adaptors {
   my ($self) = @_;
-  return Bio::EnsEMBL::Registry->get_all_db_adaptors($self);
+  return $REGISTRY->get_all_db_adaptors($self);
 }
 
 
@@ -309,7 +302,7 @@ sub get_all_db_adaptors {
 sub get_db_adaptor {
   my ($self, $name) = @_;
 
-  return Bio::EnsEMBL::Registry->get_db($self, $name);
+  return $REGISTRY->get_db($self, $name);
 }
 
 =head2 get_available_adaptors
@@ -324,39 +317,68 @@ sub get_db_adaptor {
 =cut 
 
 sub get_available_adaptors {
-  my %pairs = (
+  my $adaptors = {
     # Firstly those that just have an adaptor named after there object
     # in the main DBSQL directory.
-    map( { $_ => "Bio::EnsEMBL::DBSQL::${_}Adaptor" } qw(
-        Analysis                 ArchiveStableId      Attribute
-        AssemblyExceptionFeature AssemblyMapper       CoordSystem
-        CompressedSequence       DBEntry              DnaAlignFeature
-        DensityFeature           DensityType          Exon
-        Gene                     KaryotypeBand        MiscSet
-        MiscFeature              PredictionTranscript PredictionExon
-        ProteinFeature           ProteinAlignFeature  RepeatConsensus
-        RepeatFeature            Sequence             SeqRegionSynonym  SimpleFeature
-        Slice                    SupportingFeature    Transcript
-        TranscriptSupportingFeature Translation       UnmappedObject
-        UnconventionalTranscriptAssociation           AssemblySlice
-        SplicingEvent            SplicingEventFeature SplicingTranscriptPair
-        Operon 			 OperonTranscript
-        DataFile                 Assembly
-        IntronSupportingEvidence AltAlleleGroup
-        ) ),
+    AltAlleleGroup                      => 'Bio::EnsEMBL::DBSQL::AltAlleleGroupAdaptor',
+    Analysis                            => 'Bio::EnsEMBL::DBSQL::AnalysisAdaptor',
+    ArchiveStableId                     => 'Bio::EnsEMBL::DBSQL::ArchiveStableIdAdaptor',
+    Assembly                            => 'Bio::EnsEMBL::DBSQL::AssemblyAdaptor',
+    AssemblyExceptionFeature            => 'Bio::EnsEMBL::DBSQL::AssemblyExceptionFeatureAdaptor',
+    AssemblyMapper                      => 'Bio::EnsEMBL::DBSQL::AssemblyMapperAdaptor',
+    AssemblySlice                       => 'Bio::EnsEMBL::DBSQL::AssemblySliceAdaptor',
+    Attribute                           => 'Bio::EnsEMBL::DBSQL::AttributeAdaptor',
+    CompressedSequence                  => 'Bio::EnsEMBL::DBSQL::CompressedSequenceAdaptor',
+    CoordSystem                         => 'Bio::EnsEMBL::DBSQL::CoordSystemAdaptor',
+    DataFile                            => 'Bio::EnsEMBL::DBSQL::DataFileAdaptor',
+    DBEntry                             => 'Bio::EnsEMBL::DBSQL::DBEntryAdaptor',
+    DensityFeature                      => 'Bio::EnsEMBL::DBSQL::DensityFeatureAdaptor',
+    DensityType                         => 'Bio::EnsEMBL::DBSQL::DensityTypeAdaptor',
+    DnaAlignFeature                     => 'Bio::EnsEMBL::DBSQL::DnaAlignFeatureAdaptor',
+    Exon                                => 'Bio::EnsEMBL::DBSQL::ExonAdaptor',
+    Gene                                => 'Bio::EnsEMBL::DBSQL::GeneAdaptor',
+    IntronSupportingEvidence            => 'Bio::EnsEMBL::DBSQL::IntronSupportingEvidenceAdaptor',
+    KaryotypeBand                       => 'Bio::EnsEMBL::DBSQL::KaryotypeBandAdaptor',
+    MiscFeature                         => 'Bio::EnsEMBL::DBSQL::MiscFeatureAdaptor',
+    MiscSet                             => 'Bio::EnsEMBL::DBSQL::MiscSetAdaptor',
+    Operon                              => 'Bio::EnsEMBL::DBSQL::OperonAdaptor',
+    OperonTranscript                    => 'Bio::EnsEMBL::DBSQL::OperonTranscriptAdaptor',
+    PredictionExon                      => 'Bio::EnsEMBL::DBSQL::PredictionExonAdaptor',
+    PredictionTranscript                => 'Bio::EnsEMBL::DBSQL::PredictionTranscriptAdaptor',
+    ProteinAlignFeature                 => 'Bio::EnsEMBL::DBSQL::ProteinAlignFeatureAdaptor',
+    ProteinFeature                      => 'Bio::EnsEMBL::DBSQL::ProteinFeatureAdaptor',
+    RepeatConsensus                     => 'Bio::EnsEMBL::DBSQL::RepeatConsensusAdaptor',
+    RepeatFeature                       => 'Bio::EnsEMBL::DBSQL::RepeatFeatureAdaptor',
+    SeqRegionSynonym                    => 'Bio::EnsEMBL::DBSQL::SeqRegionSynonymAdaptor',
+    Sequence                            => 'Bio::EnsEMBL::DBSQL::SequenceAdaptor',
+    SimpleFeature                       => 'Bio::EnsEMBL::DBSQL::SimpleFeatureAdaptor',
+    Slice                               => 'Bio::EnsEMBL::DBSQL::SliceAdaptor',
+    SplicingEvent                       => 'Bio::EnsEMBL::DBSQL::SplicingEventAdaptor',
+    SplicingEventFeature                => 'Bio::EnsEMBL::DBSQL::SplicingEventFeatureAdaptor',
+    SplicingTranscriptPair              => 'Bio::EnsEMBL::DBSQL::SplicingTranscriptPairAdaptor',
+    SupportingFeature                   => 'Bio::EnsEMBL::DBSQL::SupportingFeatureAdaptor',
+    Transcript                          => 'Bio::EnsEMBL::DBSQL::TranscriptAdaptor',
+    TranscriptSupportingFeature         => 'Bio::EnsEMBL::DBSQL::TranscriptSupportingFeatureAdaptor',
+    Translation                         => 'Bio::EnsEMBL::DBSQL::TranslationAdaptor',
+    UnconventionalTranscriptAssociation => 'Bio::EnsEMBL::DBSQL::UnconventionalTranscriptAssociationAdaptor',
+    UnmappedObject                      => 'Bio::EnsEMBL::DBSQL::UnmappedObjectAdaptor',
+
     # Those whose adaptors are in Map::DBSQL
-    map( { $_ => "Bio::EnsEMBL::Map::DBSQL::${_}Adaptor" } qw(
-        Marker MarkerFeature QtlFeature Qtl Ditag DitagFeature
-        ) ),
+    Ditag                               => 'Bio::EnsEMBL::Map::DBSQL::DitagAdaptor',
+    DitagFeature                        => 'Bio::EnsEMBL::Map::DBSQL::DitagFeatureAdaptor',
+    Marker                              => 'Bio::EnsEMBL::Map::DBSQL::MarkerAdaptor',
+    MarkerFeature                       => 'Bio::EnsEMBL::Map::DBSQL::MarkerFeatureAdaptor',
+    Qtl                                 => 'Bio::EnsEMBL::Map::DBSQL::QtlAdaptor',
+    QtlFeature                          => 'Bio::EnsEMBL::Map::DBSQL::QtlFeatureAdaptor',
+
     # Finally the exceptions... those that have non-standard mapping
     # between object / adaptor ....
-    # 'Blast'                => 'Bio::EnsEMBL::External::BlastAdaptor',
-    'MetaCoordContainer' => 'Bio::EnsEMBL::DBSQL::MetaCoordContainer',
-    'MetaContainer'      => 'Bio::EnsEMBL::DBSQL::MetaContainer',
-    'SNP'                => 'Bio::EnsEMBL::DBSQL::ProxySNPAdaptor',
-  );
-
-  return ( \%pairs );
+    # Blast                               => 'Bio::EnsEMBL::External::BlastAdaptor',
+    MetaContainer                       => 'Bio::EnsEMBL::DBSQL::MetaContainer',
+    MetaCoordContainer                  => 'Bio::EnsEMBL::DBSQL::MetaCoordContainer',
+    SNP                                 => 'Bio::EnsEMBL::DBSQL::ProxySNPAdaptor',
+  };
+  return $adaptors;
 } ## end sub get_available_adaptors
 
 ###########################################################
@@ -555,7 +577,7 @@ sub add_ExternalFeatureFactory{
 sub get_adaptor {
   my ($self, $canonical_name, @other_args) = @_;
 
-  return $reg->get_adaptor($self->species(),$self->group(),$canonical_name);
+  return $REGISTRY->get_adaptor($self->species(),$self->group(),$canonical_name);
 }
 
 
@@ -580,7 +602,7 @@ sub get_adaptor {
 sub set_adaptor {
   my ($self, $canonical_name, $module) = @_;
 
-  $reg->add_adaptor($self->species(),$self->group(),$canonical_name,$module);
+  $REGISTRY->add_adaptor($self->species(),$self->group(),$canonical_name,$module);
 
   return $module;
 }
@@ -694,30 +716,10 @@ sub species {
 
 sub all_species {
   my ($self) = @_;
-
   if ( !$self->is_multispecies() ) { return [ $self->species() ] }
-
-  if ( exists( $self->{'_all_species'} ) ) {
-    return $self->{'_all_species'};
-  }
-
-  my $statement =
-      "SELECT meta_value "
-    . "FROM meta "
-    . "WHERE meta_key = 'species.db_name'";
-
-  my $sth = $self->dbc()->db_handle()->prepare($statement);
-
-  $sth->execute();
-
-  my $species;
-  $sth->bind_columns( \$species );
-
-  my @all_species;
-  while ( $sth->fetch() ) { push( @all_species, $species ) }
-
-  $self->{'_all_species'} = \@all_species;
-
+  return $self->{'_all_species'} if exists $self->{_all_species};
+  my $sql = "SELECT meta_value FROM meta WHERE meta_key = 'species.db_name'";
+  $self->{_all_species} = $self->dbc->sql_helper()->execute_simple(-SQL => $sql);
   return $self->{'_all_species'};
 } ## end sub all_species
 
@@ -895,11 +897,11 @@ sub dnadb {
 
   if(@_) {
     my $arg = shift;
-    $reg->add_DNAAdaptor($self->species(),$self->group(),$arg->species(),$arg->group());
+    $REGISTRY->add_DNAAdaptor($self->species(),$self->group(),$arg->species(),$arg->group());
   }
 
 #  return $self->{'dnadb'} || $self;
-  return $reg->get_DNAAdaptor($self->species(),$self->group()) || $self;
+  return $REGISTRY->get_DNAAdaptor($self->species(),$self->group()) || $self;
 }
 
 
@@ -917,7 +919,7 @@ sub AUTOLOAD {
     throw( sprintf( "Could not work out type for %s\n", $AUTOLOAD ) );
   }
   
-  my $ret = $reg->get_adaptor( $self->species(), $self->group(), $type );
+  my $ret = $REGISTRY->get_adaptor( $self->species(), $self->group(), $type );
 
   return $ret if $ret;
   
@@ -957,6 +959,88 @@ sub to_hash {
   return $hash;
 }
 
+#########################
+# Switchable adaptor methods
+#########################
+
+=head2 switch_adaptor
+
+  Arg [1]     : String name of the adaptor type to switch out
+  Arg [2]     : Reference The switchable adaptor implementation
+  Arg [3]     : (optional) CodeRef Callback which provides automatic switchable adaptor cleanup 
+                once the method has finished
+  Arg [4]     : (optional) Boolean override any existing switchable adaptor
+  Example     : $dba->switch_adaptor("seqeunce", $my_replacement_sequence_adaptor);
+                $dba->switch_adaptor("seqeunce", $my_other_replacement_sequence_adaptor, 1);
+                $dba->switch_adaptor("seqeunce", $my_replacement_sequence_adaptor, sub {
+                  #Make calls as normal without having to do manual cleanup
+                });
+  Returntype  : None
+  Description : Provides a wrapper around the Registry add_switchable_adaptor() method
+                defaulting both species and group to the current DBAdaptor. Callbacks are
+                also available providing automatic resource cleanup.
+
+                The method also remembers the last switch you did. It will not remember
+                multiple switches though.
+  Exceptions  : Thrown if no switchable adaptor instance was given
+
+=cut
+
+sub switch_adaptor {
+  my ($self, $adaptor_name, $instance, $callback, $force) = @_;
+  my ($species, $group) = ($self->species(), $self->group());
+  $REGISTRY->add_switchable_adaptor($species, $group, $adaptor_name, $instance, $force);
+  $self->{_last_switchable_adaptor} = $adaptor_name;
+  if(check_ref($callback, 'CODE')) {
+    #Scope guard will reset the adaptor once it falls out of scope. They
+    #are implemented as callback DESTROYS so are neigh on impossible
+    #to stop executing
+    my $guard = scope_guard(sub { $REGISTRY->remove_switchable_adaptor($species, $group, $adaptor_name); } );
+    $callback->();
+  }
+  return;
+}
+
+=head2 has_switched_adaptor
+
+  Arg [1]     : String name of the adaptor type to switch back in
+  Example     : $dba->has_switchable_adaptor("seqeunce"); #explicit switching back
+  Returntype  : Boolean indicating if the given adaptor is being activly switched
+  Description : Provides a wrapper around the Registry has_switchable_adaptor() method
+                defaulting both species and group to the current DBAdaptor. This will
+                inform if the specified adaptor is being switched out
+  Exceptions  : None
+
+=cut
+
+sub has_switched_adaptor {
+  my ($self, $adaptor_name) = @_;
+  return $REGISTRY->has_switchable_adaptor($self->species, $self->group, $adaptor_name);
+}
+
+=head2 revert_adaptor
+
+  Arg [1]     : (optional) String name of the adaptor type to switch back in
+  Example     : $dba->revert_adaptor(); #implicit switching back whatever was the last switch_adaptor() call
+                $dba->revert_adaptor("seqeunce"); #explicit switching back
+  Returntype  : The removed adaptor
+  Description : Provides a wrapper around the Registry remove_switchable_adaptor() method
+                defaulting both species and group to the current DBAdaptor. This will remove
+                a switchable adaptor. You can also remove the last adaptor you switched
+                in without having to specify any parameter.
+  Exceptions  : Thrown if no switchable adaptor name was given or could be found in the internal
+                last adaptor variable
+
+=cut
+
+sub revert_adaptor {
+  my ($self, $adaptor_name) = @_;
+  $adaptor_name ||= $self->{_last_switchable_adaptor};
+  throw "Not given an adaptor name to remove and cannot find the name of the last switched adaptor" if ! $adaptor_name;
+  my $deleted_adaptor = $REGISTRY->remove_switchable_adaptor($self->species, $self->group, $adaptor_name);
+  delete $self->{last_switch};
+  return $deleted_adaptor;
+}
 
 #########################
 # sub DEPRECATED METHODS
