@@ -1,26 +1,3 @@
-package TemporaryGeneCache;
-
-use base qw/Bio::EnsEMBL::DBSQL::Support::FullIdCache/;
-use strict;
-use warnings;
-
-sub support_additional_lookups {
-  return 1;
-}
-
-sub compute_keys {
-  my ($self, $object) = @_;
-  return { 
-    biotype => $object->biotype(), 
-    logic_name => $object->analysis()->logic_name(), 
-    dbID => $object->dbID()
-  };
-}
-
-1;
-
-#######################
-
 package main;
 
 use strict;
@@ -44,7 +21,7 @@ sub BEGIN {
   no strict 'refs'; ## no critic
   *Bio::EnsEMBL::DBSQL::GeneAdaptor::_build_id_cache = sub {
     my ($self) = @_;
-    return TemporaryGeneCache->new($self);
+    return Bio::EnsEMBL::DBSQL::Support::FullIdCache->new($self);
   };
   no warnings 'redefine';
   my $original_store = \&Bio::EnsEMBL::DBSQL::GeneAdaptor::store; 
@@ -87,39 +64,6 @@ sub BEGIN {
   is_deeply($first_gene_refetch, $refetched_cached_ids->[0], 'fetch_by_dbID() should return the same object as fetch_all_by_dbID_list()');
   ok(! defined $adaptor->fetch_by_dbID(1), 'Fetching with a bad ID returns nothing');
   is(scalar(@{$adaptor->fetch_all_by_dbID_list([1])}), 0, 'Fetching with a bad ID returns an empty array');
-
-  ############ Test additional lookup code
-  {
-    my $protein_coding_genes = $cache->get_all_by_additional_lookup('biotype', 'protein_coding');
-    is_deeply([sort map { $_->dbID() } @{$protein_coding_genes} ], [sort map { $_->dbID() } @{$genes} ], 'Protein coding lookup returns all genes');
-
-    my $wibble_genes = $cache->get_all_by_additional_lookup('biotype', 'wibble');
-    is_deeply([], $wibble_genes, 'biotype is a valid lookup but wibble is a bad key. Empty array return');
-
-    my $bad_lookup = $cache->get_all_by_additional_lookup('wibble', 'wibble');
-    is_deeply([], $wibble_genes, 'wibble is a bad lookup. Empty array return');
-
-    my $individual_gene = $cache->get_by_additional_lookup('dbID', $gene_ids->[0]);
-    is($individual_gene->dbID, $gene_ids->[0], 'Lookup of dbID returns a single value');
-    is($cache->get($gene_ids->[0]), $individual_gene, 'Same object is returned from the main get() method and the lookup');
-
-    dies_ok { $cache->get_by_additional_lookup('biotype', 'protein_coding') } 'Expect to die as the query will return more than one value';
-
-    $cache->remove($individual_gene->dbID());
-    my $new_protein_coding_genes = $cache->get_all_by_additional_lookup('biotype', 'protein_coding');
-
-    ok(! defined $cache->get_by_additional_lookup('dbID', $gene_ids->[0]), 'Removed gene so lookups can no longer return an object');
-    ok(! exists $cache->_additional_lookup()->{dbID}->{$gene_ids->[0]}, 'Removed the resulting array from the lookup hash');
-    ok(exists $cache->_additional_lookup()->{biotype}->{protein_coding}, 'Biotype lookup still exists for protein_coding');
-    is(scalar(@{$new_protein_coding_genes}), (scalar(@{$protein_coding_genes}) -1), 'Reduced the returned number of protein coding genes by one');
-
-    $cache->put($individual_gene->dbID(), $individual_gene);
-    ok(defined $cache->get_by_additional_lookup('dbID', $gene_ids->[0]), 'Added the gene back in. Everything is OK again');
-
-    #Checking DBSQL based lookup works
-    my $sql_protein_coding_genes = $cache->get_by_sql('select gene_id from gene where biotype =?', ['protein_coding']);
-    is_deeply([sort map { $_->dbID() } @{$sql_protein_coding_genes} ], [sort map { $_->dbID() } @{$protein_coding_genes} ], 'SQL based protein_coding lookup returns all genes');
-  }
   
   #Turn off caching; we should get a fresh object out of the cache
   my $cached_obj = $adaptor->fetch_by_dbID($gene_ids->[0]);

@@ -33,8 +33,6 @@ An implementation of caching which uses a raw hash to hold all available
 values from an adaptor. Useful for working with a controlled vocabulary
 table where cardinality is low.
 
-Provides extra functionality to compute additional lookup keys.
-
 =head1 METHODS
 
 =cut
@@ -61,228 +59,63 @@ sub build_cache {
   my ($self) = @_;
   my $adaptor = $self->adaptor();
   my %cache; 
-  my $objects = $adaptor->generic_fetch();
-  my $support_additional_lookups = $self->support_additional_lookups();
-  foreach my $object (@{$objects}) {
-    my $key = $object->dbID();
-    $cache{$key} = $object;
-    #Add to additional lookup
-    $self->add_to_additional_lookups($key, $object);
+  my $objs = $adaptor->generic_fetch();
+  foreach my $obj (@{$objs}) {
+    $cache{$obj->dbID()} = $obj;
   }
   return \%cache;
 }
 
-########### Additional lookup code
+=head2 clear_cache
 
-sub put {
-  my ($self, $key, $object) = @_;
-  my $old = $self->SUPER::put($key, $object);
-  #Add to additional lookup
-  $self->add_to_additional_lookups($key, $object);
-  return $old if $old;
-  return;
-}
+  Description: Delegates to C<delete_cache()> in order to clear all values
+               and on the next cache request will force a C<build_cache()> 
+               call
+  Returntype : None
+  Exceptions : None
+  Caller     : BaseAdaptors
+  Status     : Beta
 
-sub remove {
-  my ($self, $key) = @_;
-  my $old = $self->SUPER::remove($key);
-  if($old) {
-    #Remove it from the additional lookup
-    $self->remove_from_additional_lookup($key, $old);
-    return $old;
-  }
-  return;
-}
+=cut
 
 sub clear_cache {
   my ($self) = @_;
   $self->delete_cache();
-  #Remove the additional lookup hash contents
-  delete $self->{_additional_lookup};
   return;
 }
 
-=head2 get_by_additional_lookup
+=head2 put
 
-  Arg [1]     : String key of the lookup to search for the value in
-  Arg [2]     : String value to search for. We expect exact lookups in the hash
-  Description : Returns the object linked to the value in the specified lookup.
-  Example     : my $analysis = $cache->get_by_additional_lookup('logic_name', 'xrefchecksum');
-  Returntype  : Object a single object
-  Exceptions  : Throws an exception if there are more than one ID linked to the
-                value lookup. Also thrown if additional lookups are not supported 
-  Caller      : BaseAdaptors
-  Status      : Beta
+  Description: Unsupported operation since this cache is read only apart from
+               during the build process
+  Returntype : None
+  Exceptions : Thrown if ever called
+  Caller     : BaseAdaptors
+  Status     : Beta
 
 =cut
 
-sub get_by_additional_lookup {
-  my ($self, $key, $value) = @_;
-  my $additional_lookup = $self->_additional_lookup();
-  if(exists $additional_lookup->{$key}) {
-    if(exists $additional_lookup->{$key}->{$value}) {
-      my $ids = $additional_lookup->{$key}->{$value};
-      my $size = scalar(@{$ids});
-      if($size > 1) {
-        throw "The lookup $key and search value $value has more than one value attached. Use get_all_by_additional_lookup() instead to fetch";
-      }
-      elsif($size == 1) {
-        return $self->get($ids->[0]);
-      }
-    }
-  }
-  return;
-}
-
-=head2 get_all_by_additional_lookup
-
-  Arg [1]     : String key of the lookup to search for the value in
-  Arg [2]     : String value to search for. We expect exact lookups in the hash
-  Description : Returns an array of all the objects linked to the value
-                in the specified lookup.
-  Example     : my $array = $cache->get_all_by_additional_lookup('logic_name', 'xrefchecksum');
-  Returntype  : ArrayRef of objects keyed agains the second argument
-  Exceptions  : Throws an exception if there are more than one ID linked to the
-                value lookup. Also thrown if additional lookups are not supported
-  Caller      : BaseAdaptors
-  Status      : Beta
-
-=cut
-
-sub get_all_by_additional_lookup {
-  my ($self, $key, $value) = @_;
-  my $additional_lookup = $self->_additional_lookup();
-  if(exists $additional_lookup->{$key}) {
-    if(exists $additional_lookup->{$key}->{$value}) {
-      my $ids = $additional_lookup->{$key}->{$value};
-      return $self->get_by_list($ids);
-    }
-  }
-  return [];
-}
-
-=head2 remove_from_additional_lookup
-
-  Arg [1]     : String The lookup key to remove from the additional lookup hash
-  Arg [2]     : Object The object to remove from the additional lookup hash
-  Description : Re-computes the additional keys for this object 
-  Example     : $cache->remove_Object_from_additional_lookup($lookup_key, $object);
-  Returntype  : None
-  Exceptions  : Thrown if we do not support additional lookups
-  Caller      : BaseAdaptors
-  Status      : Beta
-
-=cut
-
-sub remove_from_additional_lookup {
-  my ($self, $lookup_key, $object) = @_;
-
-  my $additional_lookup = $self->_additional_lookup();
-
-  # Compute the keys
-  my $keys = $self->compute_keys($object);
-
-  foreach my $key (keys %{$keys}) {
-    my $value = $keys->{$key};
-
-    #Only remove if we had originally stored this as an
-    #additional lookup
-    if(exists $additional_lookup->{$key}) {
-      if(exists $additional_lookup->{$key}->{$value}) {
-
-        #Get the object ID & lookup the array of DBIDs
-        my $lookup_keys = $additional_lookup->{$key}->{$value};
-        my $length = scalar(@{$lookup_keys});
-        for(my $i = 0; $i < $length; $i++) {
-          if($lookup_keys->[$i] == $lookup_key) {
-            #remove the 1 lookup key from the array and then terminate the
-            #loop as we found our value
-            splice(@{$lookup_keys}, $i, 1); 
-            last;
-          }
-        }
-
-        #If the size has hit 0 then delete the array
-        if(scalar(@{$lookup_keys}) == 0) {
-          delete $additional_lookup->{$key}->{$value};
-        }
-      }
-    }
-  }
-
-  return;
-}
-
-=head2 compute_keys
-
-  Arg [1]     : Object The object to compute keys from
-  Description : Override to provide support for additional key lookup. The
-                keys of the hash should represent the lookup name and the
-                value is the computed key.
-  Example     : Example of returning hash not of its usage. Proposed Analysis encoding
-                { logic_name => 'xrefalignment', display_label => 'Xref Alignment'}
-  Returntype  : HashRef key is the lookup name and value is the computed key
-  Exceptions  : none
-  Caller      : BaseAdaptors
-  Status      : Beta
-
-=cut
-
-sub compute_keys {
-  my ($self, $object) = @_;
-  return {};
-}
-
-=head2 add_to_additional_lookups
-
-  Arg [1]     : String The key used in the primary lookup hash. Normally
-                a DB identifier
-  Arg [2]     : Object The object to add to the additional lookups
-  Description : Internally calls the C<compute_keys()> method and adds
-                the object to the C<_additional_lookup()> hash.
-  Returntype  : None
-  Exceptions  : Thrown if additional lookups are not supported
-  Caller      : BaseAdaptors
-  Status      : Beta
-
-=cut
-
-sub add_to_additional_lookups {
-  my ($self, $lookup_key, $object) = @_;
-  my $keys = $self->compute_keys($object);
-  my $additional_lookup = $self->_additional_lookup();
-  foreach my $key (keys %{$keys}) {
-    my $value = $keys->{$key};
-    push(@{$additional_lookup->{$key}->{$value}}, $lookup_key);
-  }
-  return;
-}
-
-=head2 _additional_lookup
-
-  Description : Returns the additional lookup hash
-  Example     : Example of additional hash structure (key is 
-                lookup name, second key is value to search for
-                and value is an array of dbIDs)
-                {
-                  logic_name => {
-                    xrefalignment => [1]
-                  },
-                  display_label => {
-                    'Xref Alignment' => [1]
-                  }
-                }
-  Returntype  : HashRef
-  Exceptions  : none
-  Caller      : BaseAdaptors
-  Status      : Beta
-
-=cut
-
-sub _additional_lookup {
+sub put {
   my ($self) = @_;
-  $self->{_additional_lookup} ||= {};
-  return $self->{_additional_lookup};
+  throw 'Unsupported operation';
+  return;
+}
+
+=head2 remove
+
+  Description: Unsupported operation since this cache is read only apart from
+               during the build process
+  Returntype : None
+  Exceptions : Thrown if ever called
+  Caller     : BaseAdaptors
+  Status     : Beta
+
+=cut
+
+sub remove {
+  my ($self) = @_;
+  throw 'Unsupported operation';
+  return;
 }
 
 1;
