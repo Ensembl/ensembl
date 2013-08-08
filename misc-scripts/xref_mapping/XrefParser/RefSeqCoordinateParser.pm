@@ -264,15 +264,18 @@ sub run_script {
           my $t = $ta->fetch_by_stable_id($best_id);
           my $tl = $t->translation();
           if (defined $tl && defined $tl_of) {
-            ($acc, $version) = split(/\./, $tl_of->stable_id());
-            my $tl_xref_id = $self->add_xref({ acc => $acc,
-                                            version => $version,
-                                            label => $tl_of->stable_id(),
-                                            desc => '',
-                                            source_id => $peptide_source_id,
-                                            species_id => $species_id,
-                                            info_type => 'DIRECT' });
-            $self->add_direct_xref($tl_xref_id, $tl->stable_id(), "Translation", "");
+            if ($tl_of->seq eq $tl->seq) {
+print "Both translation sequences match\n" ;
+              ($acc, $version) = split(/\./, $tl_of->stable_id());
+              my $tl_xref_id = $self->add_xref({ acc => $acc,
+                                              version => $version,
+                                              label => $acc,
+                                              desc => '',
+                                              source_id => $peptide_source_id,
+                                              species_id => $species_id,
+                                              info_type => 'DIRECT' });
+              $self->add_direct_xref($tl_xref_id, $tl->stable_id(), "Translation", "");
+            }
           }
         }
       }
