@@ -198,12 +198,11 @@ $xref = Bio::EnsEMBL::DBEntry->new
     -analysis => $analysis
    );
 
-my $threaded;
 use Config;
+my $stored_xref_id = 1000002;
 if($Config{useithreads}) {
   note 'Using threaded tests';
   require threads;
-  $threaded = 1;
   {
     local $ENV{RUNTESTS_HARNESS} = 1;
     local $ENV{RUNTESTS_HARNESS_NORESTORE} = 1;
@@ -228,9 +227,10 @@ if($Config{useithreads}) {
     note("Threaded xrefs: ".$xref_ids[0]." ".$xref_ids[1]." ".$xref_ids[2]);
     
     # Test 10 - Verify that only one xref has been inserted under parallel inserts
-    is($xref_ids[0], 1000003, 'Thread 1 ID assertion');
     is($xref_ids[1], $xref_ids[0], 'Thread 2 ID is the same as thread 1');
     is($xref_ids[2], $xref_ids[0], 'Thread 3 ID is the same as thread 1');
+
+    $stored_xref_id = $xref_ids[0];
   }
 
 }
@@ -259,11 +259,7 @@ $xref = Bio::EnsEMBL::DBEntry->new
    
 my $xref_id = $dbEntryAdaptor->store($xref, undef, "Transcript");
 note("Xref_id from insert: ".$xref_id);
-if ($threaded) {
-  ok($xref_id == 1000004);   
-} else {
-  is($xref_id,1000003, "dbID for new DBEntry.");
-}
+is($xref_id, $stored_xref_id + 1, "dbID for new DBEntry.");
 
 #
 # 12-14 Test that external synonyms and go evidence tags are retrieved
