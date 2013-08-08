@@ -14,9 +14,6 @@ use IO::Compress::Gzip qw/gzip $GzipError/;
 use Pod::Usage;
 use Sys::Hostname;
 
-my $rcsid = '$Revision$';
-our ($VERSION) = $rcsid =~ /(\d+\.\d+)/;
-
 my $PIGZ_BINARY = 'pigz';
 my $PIGZ_PROCESSORS = 2; #some machines only have 4 cores so do not go mad
 my $MAX_FILE_SIZE = 1 * 1024 * 1024; #anything greater than 1MB farm out
@@ -319,6 +316,8 @@ sub modify_sql {
     $sql =~ s/DEFAULT\s+CHARSET=latin1//xms;
     $sql =~ s/COLLATE=latin1_bin//xms;
     $sql =~ s/AUTO_INCREMENT=\d+//xms;
+    $sql =~ s/CHARACTER SET latin1//g;
+    $sql =~ s/COLLATE latin1_bin//g;
   }
   return $sql;
 }
