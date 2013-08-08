@@ -308,7 +308,7 @@ my @query_templates =
 my @tables = qw(gene transcript exon simple_feature prediction_transcript dna_align_feature protein_align_feature misc_feature ); 
 my @stable_id_tables = qw(gene transcript exon);
 
-$dbc->do(sprintf "use $dbname");
+# $dbc->do(sprintf "use $dbname");
 my $sql_helper = $dbc->sql_helper;
 foreach my $sl (sort keys %{$slices}) {
   note "Testing case $sl";
