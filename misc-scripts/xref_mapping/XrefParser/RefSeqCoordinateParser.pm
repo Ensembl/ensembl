@@ -265,7 +265,6 @@ sub run_script {
           my $tl = $t->translation();
           if (defined $tl && defined $tl_of) {
             if ($tl_of->seq eq $tl->seq) {
-print "Both translation sequences match\n" ;
               ($acc, $version) = split(/\./, $tl_of->stable_id());
               my $tl_xref_id = $self->add_xref({ acc => $acc,
                                               version => $version,
