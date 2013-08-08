@@ -305,7 +305,7 @@ my @query_templates =
 # - AssemblyExceptionFeature
 # - MarkerFeature (does not have strand attribute)
 #
-my @tables = qw(gene transcript exon simple_feature prediction_transcript dna_align_feature protein_align_feature misc_feature ); 
+my @tables = qw(gene transcript exon simple_feature); # removed since there are no features of these types and BaseFeatureAdaptor would complain: prediction_transcript dna_align_feature protein_align_feature misc_feature ); 
 my @stable_id_tables = qw(gene transcript exon);
 
 # $dbc->do(sprintf "use $dbname");
