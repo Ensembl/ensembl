@@ -959,6 +959,14 @@ sub add_Transcript {
   Example    : my @transcripts = @{ $gene->get_all_Transcripts };
   Description: Returns the Transcripts in this gene.
   Returntype : Listref of Bio::EnsEMBL::Transcript objects
+  Warning    : This method returns the internal transcript array 
+               used by this object. Avoid any modification
+               of this array. We class use of shift and 
+               reassignment of the loop variable when iterating
+               this array as modification.
+
+               Dereferencing the structure as shown in the example is
+               a safe way of using this data structure.
   Exceptions : none
   Caller     : general
   Status     : Stable
@@ -975,18 +983,7 @@ sub get_all_Transcripts {
       $self->{'_transcript_array'} = $transcripts;
     }
   }
-  # copy of cache references needed to protect Gene cache  
-  if (exists($self->{'_transcript_array'})) {
-    my @transcripts = @{$self->{'_transcript_array'}};      
-    return \@transcripts;
-  }
-  else {
-    # Original implementation returned the Gene's cache. If there was no cache
-    # it returned undef, rather than an empty array reference.
-    # Code should read: return [];
-    # Not fixed to retain legacy support.
-    return;
-  }
+  return $self->{'_transcript_array'};
 }
 
 
