@@ -180,6 +180,10 @@ sub new {
                 }
             }
         }
+    } elsif($driver eq 'pgsql') {
+        if(!defined($port)){
+            $port   = 5432;
+        }
     }
 
     $wait_timeout   ||= 0;
