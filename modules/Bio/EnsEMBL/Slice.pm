@@ -874,12 +874,12 @@ sub get_base_count {
   Example    :
     my $clone_projection = $slice->project('clone');
 
-    foreach my $seg (@$clone_projection) {
+    foreach my $segment (@$clone_projection) {
       my $clone = $segment->to_Slice();
       print $slice->seq_region_name(), ':', $seg->from_start(), '-',
             $seg->from_end(), ' -> ',
             $clone->seq_region_name(), ':', $clone->start(), '-',$clone->end(),
-            $clone->strand(), "\n";
+            ':', $clone->strand(), "\n";
     }
   Description: Returns the results of 'projecting' this slice onto another
                coordinate system.  Projecting to a coordinate system that
