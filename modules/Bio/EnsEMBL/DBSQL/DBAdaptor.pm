@@ -64,7 +64,7 @@ use Bio::EnsEMBL::Utils::Argument qw(rearrange);
 use Bio::EnsEMBL::Registry;
 use Bio::EnsEMBL::Utils::ConfigRegistry;
 
-my $reg = "Bio::EnsEMBL::Registry";
+my $registry = "Bio::EnsEMBL::Registry";
 
 =head2 new
 
@@ -146,10 +146,6 @@ sub new {
 
  
   $self = Bio::EnsEMBL::Utils::ConfigRegistry::gen_load($self);
-
-#  if(!defined($species) ){
-#     $reg->find_and_add_aliases($self);
-#  }
 
   $self->species_id( $species_id || 1 );
 
@@ -555,7 +551,7 @@ sub add_ExternalFeatureFactory{
 sub get_adaptor {
   my ($self, $canonical_name, @other_args) = @_;
 
-  return $reg->get_adaptor($self->species(),$self->group(),$canonical_name);
+  return $registry->get_adaptor($self->species(),$self->group(),$canonical_name);
 }
 
 
@@ -580,7 +576,7 @@ sub get_adaptor {
 sub set_adaptor {
   my ($self, $canonical_name, $module) = @_;
 
-  $reg->add_adaptor($self->species(),$self->group(),$canonical_name,$module);
+  $registry->add_adaptor($self->species(),$self->group(),$canonical_name,$module);
 
   return $module;
 }
@@ -895,11 +891,11 @@ sub dnadb {
 
   if(@_) {
     my $arg = shift;
-    $reg->add_DNAAdaptor($self->species(),$self->group(),$arg->species(),$arg->group());
+    $registry->add_DNAAdaptor($self->species(),$self->group(),$arg->species(),$arg->group());
   }
 
 #  return $self->{'dnadb'} || $self;
-  return $reg->get_DNAAdaptor($self->species(),$self->group()) || $self;
+  return $registry->get_DNAAdaptor($self->species(),$self->group()) || $self;
 }
 
 
@@ -917,7 +913,7 @@ sub AUTOLOAD {
     throw( sprintf( "Could not work out type for %s\n", $AUTOLOAD ) );
   }
   
-  my $ret = $reg->get_adaptor( $self->species(), $self->group(), $type );
+  my $ret = $registry->get_adaptor( $self->species(), $self->group(), $type );
 
   return $ret if $ret;
   
