@@ -464,42 +464,6 @@ sub list_ids {
   }
 } ## end sub list_ids
 
-#sub list_seq_regions {
-#  throw('Incorrect number of arguments.') if(@_ != 5);
-#  my($self, $frm_seq_region_name, $frm_start, $frm_end, $frm_cs) = @_;
-
-#  if($frm_cs->equals($self->component_CoordSystem())) {
-
-#    if(!$self->have_registered_component($seq_region_id)) {
-#      $self->adaptor->register_component($self,$seq_region_id);
-#    }
-
-#    #pull out the 'from' identifiers of the mapper pairs.  The
-#    #we loaded the assembled side as the 'from' side in the constructor
-#    return
-#      map {$_->from()->id()}
-#      $self->mapper()->list_pairs($seq_region_id, $frm_start,
-#                                  $frm_end, $COMPONENT);
-
-#  } elsif($frm_cs->equals($self->assembled_CoordSystem())) {
-
-#    $self->adaptor->register_assembled($self,
-#                                       $frm_seq_region,$frm_start,$frm_end);
-
-#    #pull out the 'to' identifiers of the mapper pairs
-#    #we loaded the component side as the 'to' coord system in the constructor
-#    return
-#      map {$_->to->id()}
-#        $self->mapper()->list_pairs($frm_seq_region, $frm_start,
-#                                    $frm_end, $ASSEMBLED);
-#  } else {
-#    throw("Coordinate system " . $frm_cs->name . " " . $frm_cs->version .
-#          " is neither the assembled nor the component coordinate system " .
-#          " of this AssemblyMapper");
-#  }
-#}
-
-
 =head2 list_seq_regions
 
   Arg [1]    : string $frm_seq_region
@@ -551,26 +515,6 @@ sub list_seq_regions {
   return @{ $self->adaptor()->seq_ids_to_regions( \@seq_ids ) };
 }
 
-#sub list_ids {
-#  throw('Incorrect number of arguments.') if(@_ != 5);
-#  my($self, $frm_seq_region, $frm_start, $frm_end, $frm_cs) = @_;
-
-#  #retrieve the seq_region names
-#  my @seq_regs =
-#    $self->list_seq_regions($frm_seq_region,$frm_start,$frm_end,$frm_cs);
-
-#  #The seq_regions are from the 'to' coordinate system not the
-#  #from coordinate system we used to obtain them
-#  my $to_cs;
-#  if($frm_cs->equals($self->assembled_CoordSystem())) {
-#    $to_cs = $self->component_CoordSystem();
-#  } else {
-#    $to_cs = $self->assembled_CoordSystem();
-#  }
-
-#  #convert them to ids
-#  return @{$self->adaptor()->seq_regions_to_ids($to_cs, \@seq_regs)};
-#}
 
 =head2 have_registered_component
 
