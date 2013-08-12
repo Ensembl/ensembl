@@ -24,9 +24,9 @@ Bio::EnsEMBL::StableIdHistoryTree - object representing a stable ID history tree
 
 =head1 SYNOPSIS
 
-  my $reg = "Bio::EnsEMBL::Registry";
+  my $registry = "Bio::EnsEMBL::Registry";
   my $archiveStableIdAdaptor =
-    $reg->get_adaptor( 'human', 'core', 'ArchiveStableId' );
+    $registry->get_adaptor( 'human', 'core', 'ArchiveStableId' );
 
   my $stable_id = 'ENSG00000068990';
   my $history =
