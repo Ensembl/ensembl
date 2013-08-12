@@ -588,7 +588,7 @@ sub transform {
 	else{
 	  foreach my $proj (@{$projection}) {
 	    my $slice = $proj->[2];
-	    warn "available slice ".$slice->seq_regon_name."\n";
+	    warn "available slice ".$slice->seq_region_name."\n";
 	  }
 	  warn "MORE than one projection and no to slice specified (".$to_slice->seq_region_name.")\n";
 	}
