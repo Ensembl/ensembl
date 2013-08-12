@@ -1759,9 +1759,9 @@ sub fetch_normalized_slice_projection {
     my $hap_start = 1;
     my $last = 0;
 
-    my $seq_reg_slice = $self->fetch_by_seq_region_id($slice_seq_region_id);
+    my $seq_region_slice = $self->fetch_by_seq_region_id($slice_seq_region_id);
     my $exc_slice = $self->fetch_by_seq_region_id( $sort_haps[0][2] );
-    my $len1 = $seq_reg_slice->length();
+    my $len1 = $seq_region_slice->length();
     my $len2 = $exc_slice->length();
     my $max_len = ($len1 > $len2) ? $len1 : $len2;
 
