@@ -48,7 +48,7 @@ use strict;
 use Bio::EnsEMBL::Utils::Exception qw(throw warning deprecate);
 use Bio::EnsEMBL::Utils::Argument qw(rearrange);
 use Bio::EnsEMBL::Registry;
-my $reg = "Bio::EnsEMBL::Registry";
+my $registry = "Bio::EnsEMBL::Registry";
 
 
 =head2 new
@@ -86,12 +86,12 @@ sub new {
   my @adaps;
   if (!defined ($groups)){
       #get all adaptors for that species and type
-      @adaps = @{$reg->get_all_adaptors(-species => $species, -type => $type)};
+      @adaps = @{$registry->get_all_adaptors(-species => $species, -type => $type)};
   }
   else{
       #get only specified adaptors for the particular groups
       foreach my $group (@{$groups}){
-	  push @adaps, $reg->get_adaptor($species,$group,$type);
+	  push @adaps, $registry->get_adaptor($species,$group,$type);
       }
   }
  
