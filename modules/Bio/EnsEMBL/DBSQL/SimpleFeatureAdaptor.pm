@@ -24,13 +24,13 @@ Bio::EnsEMBL::DBSQL::SimpleFeatureAdaptor
 
 =head1 SYNOPSIS
 
-  my $reg = 'Bio::EnsEMBL::Registry';
+  my $registry = 'Bio::EnsEMBL::Registry';
 
-  $reg->
+  $registry->
     load_registry_from_db( ...
 
   my $sfa =
-    $reg->get_adaptor('homo sapiens', 'core', 'SimpleFeature');
+    $registry->get_adaptor('homo sapiens', 'core', 'SimpleFeature');
 
   print ref($sfa), "\n";
 
