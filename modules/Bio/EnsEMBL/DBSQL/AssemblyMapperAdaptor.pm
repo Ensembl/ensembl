@@ -1509,7 +1509,7 @@ sub register_all_chained {
 
   }
 
-  my ( $mid_cs_id, $start_cs_id, $reg, $mapper );
+  my ( $mid_cs_id, $start_cs_id, $registry, $mapper );
   if ( !defined $mid_cs ) {
     $mid_cs_id   = $last_cs->dbID();
     $start_cs_id = $first_cs->dbID();
@@ -1520,7 +1520,7 @@ sub register_all_chained {
     $mapper      = $start_mid_mapper;
   }
 
-  $reg =  $casm_mapper->first_registry();
+  $registry =  $casm_mapper->first_registry();
 
   while($sth->fetch()) {
     $mapper->add_map_coordinates
@@ -1530,7 +1530,7 @@ sub register_all_chained {
       );
     push( @ranges, [$start_seq_region_id, $start_start, $start_end ] );
 
-    $reg->check_and_register( $start_seq_region_id, 1, $start_length );
+    $registry->check_and_register( $start_seq_region_id, 1, $start_length );
     if( ! defined $mid_cs ) {
       $casm_mapper->last_registry()->check_and_register
 	( $mid_seq_region_id, $mid_start, $mid_end );
@@ -1599,7 +1599,7 @@ sub register_all_chained {
   }
 
   my $end_cs_id = $last_cs->dbID();
-  $reg = $casm_mapper->last_registry();
+  $registry = $casm_mapper->last_registry();
 
   while($sth->fetch()) {
     $end_mid_mapper->add_map_coordinates
@@ -1608,7 +1608,7 @@ sub register_all_chained {
        $mid_seq_region_id, $mid_start, $mid_end
       );
 
-    $reg->check_and_register( $end_seq_region_id, 1, $end_length );
+    $registry->check_and_register( $end_seq_region_id, 1, $end_length );
 
     my $arr = [ $end_seq_region_id, $end_seq_region,
              $end_cs_id, $end_length ];
