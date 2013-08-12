@@ -83,7 +83,7 @@ use Scalar::Util qw(weaken isweak);
 
 # use Data::Dumper;
 
-my $reg = "Bio::EnsEMBL::Registry";
+my $registry = "Bio::EnsEMBL::Registry";
 
 @ISA = qw(Bio::PrimarySeqI);
 
@@ -2675,12 +2675,12 @@ sub get_all_Genes{
 
   my $ga;
    if($dbtype) {
-     my $db = $reg->get_db($self->adaptor()->db(), $dbtype);
+     my $db = $registry->get_db($self->adaptor()->db(), $dbtype);
      if(defined($db)){
-       $ga = $reg->get_adaptor( $db->species(), $db->group(), "Gene" );
+       $ga = $registry->get_adaptor( $db->species(), $db->group(), "Gene" );
      }
      else{
-       $ga = $reg->get_adaptor( $self->adaptor()->db()->species(), $dbtype, "Gene" );
+       $ga = $registry->get_adaptor( $self->adaptor()->db()->species(), $dbtype, "Gene" );
      }
      if(!defined $ga) {
        warning( "$dbtype genes not available" );
@@ -2796,11 +2796,11 @@ sub get_all_Transcripts {
 
   my $ta;
   if($dbtype) {
-    my $db = $reg->get_db($self->adaptor()->db(), $dbtype);
+    my $db = $registry->get_db($self->adaptor()->db(), $dbtype);
     if(defined($db)){
-      $ta = $reg->get_adaptor( $db->species(), $db->group(), "Transcript" );
+      $ta = $registry->get_adaptor( $db->species(), $db->group(), "Transcript" );
     } else{
-      $ta = $reg->get_adaptor( $self->adaptor()->db()->species(), $dbtype, "Transcript" );
+      $ta = $registry->get_adaptor( $self->adaptor()->db()->species(), $dbtype, "Transcript" );
     }
     if(!defined $ta) {
       warning( "$dbtype genes not available" );
@@ -3152,11 +3152,11 @@ sub get_all_MiscFeatures {
 
   my $mfa;
   if($dbtype) {
-    my $db = $reg->get_db($adaptor->db(), $dbtype);
+    my $db = $registry->get_db($adaptor->db(), $dbtype);
     if(defined($db)){
-      $mfa = $reg->get_adaptor( lc($db->species()), $db->group(), "miscfeature" );
+      $mfa = $registry->get_adaptor( lc($db->species()), $db->group(), "miscfeature" );
     } else{
-      $mfa = $reg->get_adaptor( $adaptor->db()->species(), $dbtype, "miscfeature" );
+      $mfa = $registry->get_adaptor( $adaptor->db()->species(), $dbtype, "miscfeature" );
     }
     if(!defined $mfa) {
       warning( "$dbtype misc features not available" );
