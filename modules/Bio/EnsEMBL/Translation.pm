@@ -698,6 +698,7 @@ sub get_all_xrefs {
   Arg [1]    : (optional) string $logic_name
                The analysis logic_name of the features to retrieve.  If not
                specified, all features are retrieved instead.
+               If no logic_name is found, looking for analysis db name instead.
   Example    : $features = $self->get_all_ProteinFeatures('PFam');
   Description: Retrieves all ProteinFeatures associated with this 
                Translation. If a logic_name is specified, only features with 
@@ -717,21 +718,26 @@ sub get_all_ProteinFeatures {
   my $self = shift;
   my $logic_name = shift;
 
+  my (%hash, %db_hash);
+  my $no_pf = 0;
+
   if(!$self->{'protein_features'}) {
+    $no_pf = 1;
     my $adaptor = $self->adaptor();
     my $dbID    = $self->dbID();
 
     return [] if (!$adaptor || !$dbID);
 
-    my %hash;
     $self->{'protein_features'} = \%hash;
 
     my $pfa = $adaptor->db()->get_ProteinFeatureAdaptor();
-    my $name;
+    my ($name, $ana_db);
     foreach my $f (@{$pfa->fetch_all_by_translation_id($dbID)}) {
       my $analysis = $f->analysis();
       if($analysis) {
         $name = lc($f->analysis->logic_name());
+        $ana_db = lc($f->analysis->db());
+        $db_hash{$ana_db} = $name;
       } else {
         warning("ProteinFeature has no attached analysis\n");
         $name = '';
@@ -744,6 +750,9 @@ sub get_all_ProteinFeatures {
   # a specific type of protein feature was requested
   if(defined($logic_name)) {
     $logic_name = lc($logic_name);
+    if (!$hash{$logic_name} && $no_pf) {
+      $logic_name = $db_hash{$logic_name};
+    }
     return $self->{'protein_features'}->{$logic_name} || [];
   }
 
