@@ -2810,10 +2810,10 @@ sub get_species_and_object_type {
       my @results;
       my $dba_adaptor_type = $group2adaptor{$dba->group()};
       if($dba_adaptor_type eq 'Bio::EnsEMBL::DBSQL::DBAdaptor') {
-        @results = $self->_core_get_species_and_object_type($stable_id, $known_type, $known_species, $known_db_type, $dba);
+        @results = $self->_core_get_species_and_object_type($stable_id, $known_type, $dba);
       }
       elsif($dba_adaptor_type eq 'Bio::EnsEMBL::Compara::DBSQL::DBAdaptor') {
-        @results = $self->_compara_get_species_and_object_type($stable_id, $known_type, $known_species, $known_db_type, $dba);
+        @results = $self->_compara_get_species_and_object_type($stable_id, $known_type, $dba);
       }
       return @results if scalar(@results) > 0;
     } ## end foreach my $dba ( sort { $a...})
@@ -2861,24 +2861,32 @@ sub _lookup_db_get_species_and_object_type {
 
 # Loop over a known set of object types for a core DB until we find a hit 
 sub _core_get_species_and_object_type {
-  my ($self, $stable_id, $known_type, $known_species, $known_db_type, $dba) = @_;
+  my ($self, $stable_id, $known_type, $dba) = @_;
   my @types = defined $known_type ? ($known_type) : ('Gene', 'Transcript', 'Translation', 'Exon', 'Operon', 'OperonTranscript');
+  my ($species, $final_type, $final_db_type);
   foreach my $type (@types) {
     my $statement = sprintf $stable_id_stmts{lc $type}, $dba->dbc->dbname;
     my $sth = $dba->dbc()->prepare($statement);
     $sth->bind_param(1, $stable_id, SQL_VARCHAR);
     $sth->execute;
-    my $species = $sth->fetchall_arrayref->[0][0];
+    $species = $sth->fetchall_arrayref->[0][0];
     $sth->finish;
-    return ($species, $type, $known_db_type) if defined $species;
+    if(defined $species) {
+      $final_type = $type;
+      $final_db_type = $dba->group();
+      last;
+    }
   }
+  $dba->disconnect_if_idle(); # always disconnect after lookup
+  return ($species, $final_type, $final_db_type) if defined $species;
   return;
 }
 
 # Loop over a known set of object types for a compara DB until we find a hit
 sub _compara_get_species_and_object_type {
-  my ($self, $stable_id, $known_type, $known_species, $known_db_type, $dba) = @_;
+  my ($self, $stable_id, $known_type, $dba) = @_;
   my @types = defined $known_type ? ($known_type) : ('GeneTree');
+  my ($species, $final_type, $final_db_type);
   foreach my $type (@types) {
     my $statement = sprintf $compara_stable_id_stmts{lc $type}, $dba->dbc->dbname;
     my $sth = $dba->dbc()->prepare($statement);
@@ -2886,8 +2894,15 @@ sub _compara_get_species_and_object_type {
     $sth->execute;
     my $found = $sth->fetchall_arrayref->[0][0];
     $sth->finish;
-    return ($known_species, $type, $known_db_type) if defined $found;
+    if(defined $found) {
+      $species = $dba->species();
+      $final_type = $type;
+      $final_db_type = $dba->group();
+      last;
+    }
   }
+  $dba->disconnect_if_idle(); # always disconnect after lookup
+  return ($species, $final_type, $final_db_type);
   return;
 }
 
