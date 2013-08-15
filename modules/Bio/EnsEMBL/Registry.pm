@@ -2877,7 +2877,7 @@ sub _core_get_species_and_object_type {
       last;
     }
   }
-  $dba->disconnect_if_idle(); # always disconnect after lookup
+  $dba->dbc->disconnect_if_idle(); # always disconnect after lookup
   return ($species, $final_type, $final_db_type) if defined $species;
   return;
 }
@@ -2901,7 +2901,7 @@ sub _compara_get_species_and_object_type {
       last;
     }
   }
-  $dba->disconnect_if_idle(); # always disconnect after lookup
+  $dba->dbc->disconnect_if_idle(); # always disconnect after lookup
   return ($species, $final_type, $final_db_type);
   return;
 }
