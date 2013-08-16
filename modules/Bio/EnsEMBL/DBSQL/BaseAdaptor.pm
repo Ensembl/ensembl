@@ -579,7 +579,7 @@ sub _generate_sql {
   my $tablenames = join(', ', map({ join(' ', @$_) } @tables));
 
   my $sql =
-      "SELECT $straight_join $columns\n"
+      "SELECT $straight_join $columns \n"
     . "FROM $left_join_prefix ($tablenames) $left_join";
 
   my $default_where = $self->_default_where_clause();
