@@ -163,4 +163,26 @@ sub translation_id {
   return $self->{'translation_id'};
 }
 
+=head2 summary_as_hash
+
+  Example       : $protein_feature_summary = $protein_feature->summary_as_hash();
+  Description   : Retrieves a textual summary of this Protein feature.
+                  Not inherited from Feature.
+  Returns       : hashref of arrays of descriptive strings
+  Status        : Intended for internal use
+=cut
+
+sub summary_as_hash {
+  my $self = shift;
+  my %summary;
+  $summary{'type'} = $self->analysis->db;
+  $summary{'ID'} = $self->display_id;
+  $summary{'start'} = $self->start,
+  $summary{'end'} = $self->end,
+  $summary{'interpro'} = $self->interpro_ac;
+  $summary{'description'} = $self->idesc;
+  return \%summary;
+}
+
+
 1;
