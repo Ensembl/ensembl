@@ -1618,7 +1618,7 @@ sub chr_name {
 =head2 fetch_coded_for_regulatory_factors
 
   Arg [1]    : none
-  Example    : $gene->fetch_coded_for_regualtory_factors()
+  Example    : $gene->fetch_coded_for_regulatory_factors()
   Description: DEPRECATED: Fetches any regulatory_factors that are coded for by
                this gene.
   Returntype : Listref of Bio::Ensembl::RegulatoryFactor
