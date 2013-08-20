@@ -305,9 +305,11 @@ sub belongs_to_groups {
     my $member = shift;
     my @belongs_to;
     foreach my $group (keys %grouping_of_biotypes) {
-        $group = lc($group);
+        my $lc_group = lc($group);
         foreach my $biotype ( @{ $grouping_of_biotypes{$group} }) {
-            if ($biotype eq $member) {push @belongs_to,$group;}
+            if ($biotype eq $member) {
+                push(@belongs_to, $lc_group);
+            }
         }
     }
     return \@belongs_to;
@@ -345,8 +347,9 @@ sub member_of_group {
     my $biotype = shift;
     my $query_group = lc(shift);
     my @groups = @{ $self->belongs_to_groups($biotype) };
-    while (my $group = lc(shift @groups)) {
-        if ($group eq $query_group) {
+    while (my $group = shift @groups) {
+        my $lc_group = lc($group);
+        if ($lc_group eq $query_group) {
             return 1;   
         }
     }
