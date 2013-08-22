@@ -27,13 +27,13 @@ my $asia = $db->get_ArchiveStableIdAdaptor();
 # 2-4 ArchiveStableId retrieval
 #
 my $asi = $asia->fetch_by_stable_id("T1");
-ok( $asi->release == 2);
+is( $asi->release, 2, "T1 is from release 2");
 
 $asi = $asia->fetch_by_stable_id_version("T2", 3);
-ok( $asi->release == 3);
+is( $asi->release, 3, "T2 is from release 3");
 
 $asi = $asia->fetch_by_stable_id_dbname("T1", "release_2");
-ok( $asi->release == 2);
+is( $asi->release, 2, "T1 is from release 2");
 
 
 #
@@ -46,10 +46,36 @@ ok( $asi );
 
 
 #
-# 6 how many predecessors does it have
+# 6 retrieval of the event related to a specific stable id
+#
+my $event = $asi->get_event("G2");
+
+is(ref($event), 'Bio::EnsEMBL::StableIdEvent', "A stable id event was fetched");
+is($event->score, 0.54, "Mapping score between G1 and G2");
+
+my $old_archive_stable_id = $event->old_ArchiveStableId;
+my $new_archive_stable_id = $event->new_ArchiveStableId;
+
+is($new_archive_stable_id, $asi, "Initial archive is new archive");
+is($old_archive_stable_id->stable_id, "G2", "Old stable id");
+is($new_archive_stable_id->stable_id, "G1", "New stable id");
+
+$event = $old_archive_stable_id->get_event("G1");
+
+is($event->score, 0.54, "Mapping score between G1 and G2");
+
+$old_archive_stable_id = $event->old_ArchiveStableId;
+$new_archive_stable_id = $event->new_ArchiveStableId;
+
+is($old_archive_stable_id->stable_id, "G2", "Old stable id");
+is($new_archive_stable_id->stable_id, "G1", "New stable id");
+
+
+#
+# 7 how many predecessors does it have
 #
 my $pre_asis = $asi->get_all_predecessors();
-ok( scalar( @$pre_asis ) == 2 );
+is( scalar( @$pre_asis ), 2, "G1 has 2 predecessors" );
 
 for my $asi ( @$pre_asis ) {
   debug( "\tPre G1" );
@@ -58,7 +84,7 @@ for my $asi ( @$pre_asis ) {
 
 
 #
-# 7 transcripts for a gene
+# 8 transcripts for a gene
 #
 my $transcripts = $pre_asis->[0]->get_all_transcript_archive_ids();
 
@@ -72,20 +98,20 @@ for my $asi ( @$transcripts ) {
   }
 }
 
-ok( scalar( @$transcripts ) == 1);
+is( scalar( @$transcripts ), 1, "G1 has 1 transcript");
 
 
 #
-# 8 no predecessor case
+# 9 no predecessor case
 #
 $pre_asis = $pre_asis->[0]->get_all_predecessors();
 debug( "\tPredecessors: ".scalar( @$pre_asis ) );
 
-ok( scalar( @$pre_asis ) == 0 );
+is( scalar( @$pre_asis ), 0, "No predecessors found" );
 
 
 #
-# 9 successor case
+# 10 successor case
 #
 $asi = $asia->fetch_by_stable_id_dbname( "G4", "release_1" );
 my $succ_asis = $asi->get_all_successors();
@@ -95,10 +121,10 @@ for my $asi ( @$succ_asis ) {
   _print_asi( $asi );
 }
 
-ok( scalar( @$succ_asis ) == 1 );
+is( scalar( @$succ_asis ), 1, "G4 has 1 sucessor" );
 
 #
-# 10 no successor case
+# 11 no successor case
 #
 $succ_asis = $succ_asis->[0]->get_all_successors();
 
@@ -107,11 +133,11 @@ for my $asi ( @$succ_asis ) {
   _print_asi( $asi );
 }
 
-ok( scalar( @$succ_asis ) == 0 );
+is( scalar( @$succ_asis ), 0, "G4.1 has no sucessors");
 
 
 #
-# 11 fetch_successor_history
+# 12 fetch_successor_history
 #
 $asi = $asia->fetch_by_stable_id_dbname( "G2", "release_1" );
 my $asis = $asia->fetch_successor_history( $asi );
@@ -121,30 +147,30 @@ for my $asi ( @$asis ) {
  _print_asi( $asi );
 }
 
-ok(( $asis->[-1]->db_name eq "release_4" ) &&
-   ( scalar @$asis == 5 ));
+is( $asis->[-1]->db_name, "release_4", "Current release for G2 is release 4");
+is( scalar @$asis, 5, "G2 has 5 sucessors");
 
 #
-# 12-16 history tree
+# 13-17 history tree
 #
 $asi = $asia->fetch_by_stable_id_dbname( "G2", "release_1" );
 my $history = $asi->get_history_tree;
 
 my @asis = @{ $history->get_all_ArchiveStableIds };
-ok( scalar(@asis) == 9);
+is( scalar(@asis), 9, "G2 history has 9 related archives");
 
 my @events = @{ $history->get_all_StableIdEvents };
-ok( scalar(@events) == 10);
+is( scalar(@events), 10, "G2 history has 10 related events");
 
-ok( scalar(@{ $history->get_release_display_names }) == 4);
-ok( scalar(@{ $history->get_unique_stable_ids }) == 3);
+is( scalar(@{ $history->get_release_display_names }), 4, "G2 has 4 display names");
+is( scalar(@{ $history->get_unique_stable_ids }), 3, "G2 has 3 unique stable ids");
 
 my ($x, $y) = @{ $history->coords_by_ArchiveStableId($asi) };
 ok( $x == 0 and $y == 1 );
 
 
 #
-# 17-18 check for current version and fetch latest incarnation
+# 18-19 check for current version and fetch latest incarnation
 #
 ok( ! $asi->is_latest, 'Not on the latest version so is_latest is false');
 
@@ -153,7 +179,7 @@ ok($asi->is_latest(), 'Latest incarnation must be the latest version');
 is($asi->version, 4, 'Latest version is 4');
 
 #
-# 19 associated IDs in archive
+# 20 associated IDs in archive
 #
 $asi = $asia->fetch_by_stable_id_version( "G2", "2" );
 my @assoc = @{ $asi->get_all_associated_archived };
@@ -166,7 +192,7 @@ ok( scalar(@assoc) == 2 and
 
 
 #
-# 20 archived peptide sequence
+# 21 archived peptide sequence
 #
 $asi = $asia->fetch_by_stable_id_version("P2", 1);
 ok( $asi->get_peptide eq 'PTWOVERSIONONE*' );
