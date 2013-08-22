@@ -172,6 +172,27 @@ sub get_history_tree {
 }
 
 
+=head2 get_event
+
+  Args        : stable_id
+  Description : Retrieve a specific event for this archive and a given stable id
+  Returntype  : listref of Bio::EnsEMBL::StableIdEvent
+  Exceptions  : none
+  Caller      : general
+  Status      : At Risk
+              : under development
+
+=cut
+
+sub get_event {
+  my ($self, $stable_id) = @_;
+
+  my $event = $self->adaptor->fetch_stable_id_event($self, $stable_id);
+
+  return $event;
+}
+
+
 =head2 get_all_predecessors
 
   Args        : none
@@ -500,7 +521,6 @@ sub successors {
   $self->{'successors'} = \@_;
   return $self->{'successors'};
 }
-
 
 1;
 

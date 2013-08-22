@@ -1193,6 +1193,104 @@ sub fetch_predecessor_history {
 }
 
 
+=head2 fetch_stable_id_event
+
+  Arg [1]     : Bio::EnsEMBL::ArchiveStableId $arch_id
+  Arg [2]     : stable_id
+  Example     : my $archive = $archive_stable_id_adaptor->fetch_by_stable_id($id);
+                my $event = $archive_stable_id_adaptor($archive, $id2);
+  Description : Gives back the event that links an archive stable id
+                to a specific stable id
+                
+  Returntype  : Bio::EnsEMBL::StableIdEvent
+                Undef if no event was found
+  Exceptions  : none
+  Caller      : general
+  Status      : At Risk
+              : under development
+
+=cut
+
+
+sub fetch_stable_id_event {
+  my $self = shift;
+  my $arch_id = shift;
+  my $stable_id = shift;
+
+  my $event;
+
+  my $sql = qq(
+    SELECT sie.old_stable_id, sie.old_version, sie.new_stable_id, sie.new_version, sie.type, sie.score,
+           ms.old_db_name, ms.new_db_name, ms.old_release, ms.new_release, ms.old_assembly, ms.new_assembly
+    FROM stable_id_event sie, mapping_session ms
+    WHERE ms.mapping_session_id = sie.mapping_session_id
+    AND (old_stable_id = ? AND ms.old_db_name = ? AND old_release = ? AND old_assembly = ? AND new_stable_id = ?)
+    OR (new_stable_id = ? AND ms.new_db_name = ? AND new_release = ? AND new_assembly = ? AND old_stable_id = ?)
+  );
+
+  my $sth = $self->prepare($sql);
+  $sth->bind_param(1, $arch_id->stable_id, SQL_VARCHAR);
+  $sth->bind_param(2, $arch_id->db_name, SQL_VARCHAR);
+  $sth->bind_param(3, $arch_id->release, SQL_INTEGER);
+  $sth->bind_param(4, $arch_id->assembly, SQL_VARCHAR);
+  $sth->bind_param(5, $stable_id, SQL_VARCHAR);
+  $sth->bind_param(6, $arch_id->stable_id, SQL_VARCHAR);
+  $sth->bind_param(7, $arch_id->db_name, SQL_VARCHAR);
+  $sth->bind_param(8, $arch_id->release, SQL_INTEGER);
+  $sth->bind_param(9, $arch_id->assembly, SQL_VARCHAR);
+  $sth->bind_param(10, $stable_id, SQL_VARCHAR);
+  $sth->execute();
+
+  my ($old_stable_id, $old_version, $new_stable_id, $new_version, $type, $score);
+  my ($old_db_name, $new_db_name, $old_release, $new_release, $old_assembly, $new_assembly);
+  $sth->bind_columns(\$old_stable_id, \$old_version, \$new_stable_id, \$new_version, \$type, \$score,
+                     \$old_db_name, \$new_db_name, \$old_release, \$new_release, \$old_assembly, \$new_assembly);
+
+  while ($sth->fetch) {
+    if ($new_stable_id eq $stable_id) {
+
+      my $alt_id = Bio::EnsEMBL::ArchiveStableId->new(
+          -stable_id => $new_stable_id,
+          -version => $new_version,
+          -db_name => $new_db_name,
+          -release => $new_release,
+          -assembly => $new_assembly,
+          -type => $type,
+          -adaptor => $self
+      );
+
+      $event = Bio::EnsEMBL::StableIdEvent->new(
+        -old_id => $arch_id,
+        -new_id => $alt_id,
+        -score => $score
+      );
+
+    } elsif ($old_stable_id eq $stable_id) {
+
+      my $alt_id = Bio::EnsEMBL::ArchiveStableId->new(
+          -stable_id => $old_stable_id,
+          -version => $old_version,
+          -db_name => $old_db_name,
+          -release => $old_release,
+          -assembly => $old_assembly,
+          -type => $type,
+          -adaptor => $self
+      );
+
+      $event = Bio::EnsEMBL::StableIdEvent->new(
+        -old_id => $alt_id,
+        -new_id => $arch_id,
+        -score => $score
+      );
+
+    }
+  }
+  $sth->finish();
+
+  return $event;
+}
+
+
 =head2 list_dbnames
 
   Args        : none
