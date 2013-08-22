@@ -258,6 +258,28 @@ sub display_id {
 }
 
 
+=head2 summary_as_hash
+
+  Example       : $repeat_feature_summary = $protein_feature->summary_as_hash();
+  Description   : Retrieves a textual summary of this Repeat feature.
+                  Not inherited from Feature.
+  Returns       : hashref of arrays of descriptive strings
+  Status        : Intended for internal use
+=cut
+
+sub summary_as_hash {
+  my $self = shift;
+  my %summary;
+  $summary{'start'} = $self->seq_region_start;
+  $summary{'end'} = $self->seq_region_end;
+  $summary{'strand'} = $self->strand;
+  $summary{'seq_region_name'} = $self->seq_region_name;
+  $summary{'description'} = $self->display_id;
+  return \%summary;
+}
+
+
+
 1;
 
 __END__
