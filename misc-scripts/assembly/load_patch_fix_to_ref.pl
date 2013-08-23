@@ -1,4 +1,4 @@
-#!/usr/local/ensembl/bin/perl
+##!/usr/local/ensembl/bin/perl
 
 =head1 NAME
 
@@ -187,6 +187,8 @@ my $alt_sql = qq(
          AND s3.seq_region_id = ax.exc_seq_region_id;
 );
 
+## Get chromosome to contig mapping for the equivalent contig on the new assembly
+
 my $ref_sql = qq(
         SELECT asm_start, asm_end, cmp_start, cmp_end, ori
         FROM assembly asm, seq_region s1, coord_system cs1,
@@ -197,20 +199,6 @@ my $ref_sql = qq(
          AND s2.coord_system_id = cs2.coord_system_id AND cs2.name = "contig"
          AND s1.name = ? and s2.name = ?
          AND (cmp_start = ? OR cmp_end = ?);
-);
-#         AND cmp_start = ? AND cmp_end = ? AND ori = ?;
-#);
-
-my $new_sql = qq(
-        SELECT asm_start, asm_end, cmp_start, cmp_end, ori
-        FROM assembly asm, seq_region s1, coord_system cs1,
-            seq_region s2, coord_system cs2
-        WHERE s1.seq_region_id = asm_seq_region_id
-         AND s2.seq_region_id = cmp_seq_region_id
-         AND s1.coord_system_id = cs1.coord_system_id AND cs1.name = "chromosome"
-         AND s2.coord_system_id = cs2.coord_system_id AND cs2.name = "contig"
-         AND s1.name = ? and s2.name = ?
-         AND cmp_start = ? AND cmp_end = ?;
 );
 
 my $update_sql = qq(
@@ -233,7 +221,6 @@ foreach my $mapping (@$patch_mappings) {
   $alt_ori = $mapping->[7];
 
   my $ref_mappings = $ref_helper->execute(-SQL => $ref_sql, -PARAMS => [$chr_name, $contig_name, $alt_cmp_start, $alt_cmp_end]);
-  my $full_mappings = $ref_helper->execute(-SQL => $new_sql, -PARAMS => [$chr_name, $contig_name, $alt_cmp_start, $alt_cmp_end]);
 
   if (scalar(@$ref_mappings) == 0) {
     $support->log_stamped("Could not map $patch_name. Found no mapping in reference for $chr_name and $contig_name\n", 1);
@@ -261,11 +248,11 @@ foreach my $mapping (@$patch_mappings) {
 
         if ($alt_cmp_end > $ref_cmp_end) {
           $asm_end = $alt_asm_end - ($alt_cmp_end - $ref_cmp_end);
-          $support->log_stamped("About to add adjusted end assembly entry for $chr_name: " . $ref_names_hash{$chr_name} . ", $patch_name: " . $alt_names_hash{$patch_name} . " on coordinates $ref_asm_start, $ref_asm_end, $alt_asm_start-$asm_end\n", 1);
+          $support->log_stamped("About to add adjusted alt end assembly entry for $chr_name: " . $ref_names_hash{$chr_name} . ", $patch_name: " . $alt_names_hash{$patch_name} . " on coordinates $ref_asm_start, $ref_asm_end, $alt_asm_start-$asm_end\n", 1);
           $c += $ref_helper->execute_update(-SQL => $update_sql, -PARAMS => [$ref_names_hash{$chr_name}, $alt_names_hash{$patch_name}, $ref_asm_start, $ref_asm_end, $alt_asm_start, $asm_end, $ori]);
         } else {
           $asm_end = $ref_asm_end - ($ref_cmp_end - $alt_cmp_end);
-          $support->log_stamped("About to add adjusted end assembly entry for $chr_name: " . $ref_names_hash{$chr_name} . ", $patch_name: " . $alt_names_hash{$patch_name} . " on coordinates $ref_asm_start, $asm_end, $alt_asm_start-$alt_asm_end\n", 1);
+          $support->log_stamped("About to add adjusted ref end assembly entry for $chr_name: " . $ref_names_hash{$chr_name} . ", $patch_name: " . $alt_names_hash{$patch_name} . " on coordinates $ref_asm_start, $asm_end, $alt_asm_start-$alt_asm_end\n", 1);
           $c += $ref_helper->execute_update(-SQL => $update_sql, -PARAMS => [$ref_names_hash{$chr_name}, $alt_names_hash{$patch_name}, $ref_asm_start, $asm_end, $alt_asm_start, $alt_asm_end, $ori]);
         }
 
@@ -273,11 +260,11 @@ foreach my $mapping (@$patch_mappings) {
 
         if ($alt_cmp_start < $ref_cmp_start) {
           $asm_start = $alt_asm_start - $alt_cmp_start + $ref_cmp_start;
-          $support->log_stamped("About to add adjusted start assembly entry for $chr_name: " . $ref_names_hash{$chr_name} . ", $patch_name: " . $alt_names_hash{$patch_name} . " on coordinates $ref_asm_start, $ref_asm_end, $asm_start-$alt_asm_end\n", 1);
+          $support->log_stamped("About to add adjusted alt start assembly entry for $chr_name: " . $ref_names_hash{$chr_name} . ", $patch_name: " . $alt_names_hash{$patch_name} . " on coordinates $ref_asm_start, $ref_asm_end, $asm_start-$alt_asm_end\n", 1);
           $c += $ref_helper->execute_update(-SQL => $update_sql, -PARAMS => [$ref_names_hash{$chr_name}, $alt_names_hash{$patch_name}, $ref_asm_start, $ref_asm_end, $asm_start, $alt_asm_end, $ori]);
         } else {
           $asm_start = $ref_asm_start - $alt_cmp_start + $ref_cmp_start;
-          $support->log_stamped("About to add adjusted start assembly entry for $chr_name: " . $ref_names_hash{$chr_name} . ", $patch_name: " . $alt_names_hash{$patch_name} . " on coordinates $asm_start, $ref_asm_end, $alt_asm_start-$alt_asm_end\n", 1);
+          $support->log_stamped("About to add adjusted ref start assembly entry for $chr_name: " . $ref_names_hash{$chr_name} . ", $patch_name: " . $alt_names_hash{$patch_name} . " on coordinates $asm_start, $ref_asm_end, $alt_asm_start-$alt_asm_end\n", 1);
           $c += $ref_helper->execute_update(-SQL => $update_sql, -PARAMS => [$ref_names_hash{$chr_name}, $alt_names_hash{$patch_name}, $asm_start, $ref_asm_end, $alt_asm_start, $alt_asm_end, $ori]);
         }
 
