@@ -153,9 +153,9 @@ sub stain{
 =head2 strand
 
   Arg [1]    : none
-	Example    : $strand = $qtl_feat->strand();
+	Example    : $strand = $karyotype_feat->strand();
   Description: Overrides the Feature strand method to always return a
-               value of 0 for qtl features (they are unstranded features)
+               value of 0 for karyotype features (they are unstranded features)
   Returntype : int (always 0)
   Exceptions : none
   Caller     : general
