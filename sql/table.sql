@@ -187,27 +187,6 @@ CREATE TABLE dna (
 ) COLLATE=latin1_swedish_ci ENGINE=MyISAM MAX_ROWS=750000 AVG_ROW_LENGTH=19000;
 
 
-/**
-@table dnac
-@desc Contains equivalent data to dna table, but 4 letters of DNA code are represented by a single binary character, based on 2 bit encoding.
-
-@column seq_region_id           Primary key, internal identifier. Foreign key references to the @link seq_region table.
-@column sequence                Compressed DNA sequence.
-@column n_line                  Contains start-end pairs of coordinates in the string that are Ns.
-
-*/
-
-
-CREATE TABLE dnac (
-
-  seq_region_id     INT(10) UNSIGNED NOT NULL,
-  sequence          MEDIUMBLOB NOT NULL,
-  n_line            TEXT,
-
-  PRIMARY KEY (seq_region_id)
-
-) COLLATE=latin1_swedish_ci ENGINE=MyISAM MAX_ROWS=750000 AVG_ROW_LENGTH=19000;
-
 
 /**
 @table karyotype

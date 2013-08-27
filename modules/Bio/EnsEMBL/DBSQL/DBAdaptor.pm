@@ -326,7 +326,7 @@ sub get_available_adaptors {
     map( { $_ => "Bio::EnsEMBL::DBSQL::${_}Adaptor" } qw(
         Analysis                 ArchiveStableId      Attribute
         AssemblyExceptionFeature AssemblyMapper       CoordSystem
-        CompressedSequence       DBEntry              DnaAlignFeature
+        DBEntry              DnaAlignFeature
         DensityFeature           DensityType          Exon
         Gene                     KaryotypeBand        MiscSet
         MiscFeature              PredictionTranscript PredictionExon

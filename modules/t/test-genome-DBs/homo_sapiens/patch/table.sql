@@ -235,13 +235,6 @@ CREATE TABLE `dna_align_feature` (
   KEY `pair_idx` (`pair_dna_align_feature_id`)
 ) ENGINE=MyISAM AUTO_INCREMENT=29797338 DEFAULT CHARSET=latin1 COLLATE=latin1_bin MAX_ROWS=100000000 AVG_ROW_LENGTH=80;
 
-CREATE TABLE `dnac` (
-  `seq_region_id` int(10) unsigned NOT NULL DEFAULT '0',
-  `sequence` mediumblob NOT NULL,
-  `n_line` text COLLATE latin1_bin,
-  PRIMARY KEY (`seq_region_id`)
-) ENGINE=MyISAM DEFAULT CHARSET=latin1 COLLATE=latin1_bin MAX_ROWS=750000 AVG_ROW_LENGTH=19000;
-
 CREATE TABLE `exon` (
   `exon_id` int(10) unsigned NOT NULL AUTO_INCREMENT,
   `seq_region_id` int(10) unsigned NOT NULL,

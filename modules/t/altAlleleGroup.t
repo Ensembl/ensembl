@@ -63,7 +63,7 @@ my $aaga = $db->get_adaptor('AltAlleleGroup');
 
 my $group_list = $aaga->fetch_all_Groups;
 my $aag = $group_list->[0];
-ok ($aag->rep_Gene_id == 18256,"Check for correct selection of allele");
+is($aag->rep_Gene_id, 18256,"Check for correct selection of allele");
 
 is_deeply ($aag->get_all_Gene_ids,[18256,18257,18258,18259],"Check group members");
 is_deeply ($aag->get_all_Gene_ids('no ref'),[18257,18258,18259],"Test effect of excluding reference gene");
