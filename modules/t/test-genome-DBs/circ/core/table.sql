@@ -897,14 +897,6 @@ CREATE TABLE `translation_attrib` (
   KEY `translation_idx` (`translation_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
-CREATE TABLE `unconventional_transcript_association` (
-  `transcript_id` int(10) unsigned NOT NULL,
-  `gene_id` int(10) unsigned NOT NULL,
-  `interaction_type` enum('antisense','sense_intronic','sense_overlaping_exonic','chimeric_sense_exonic') DEFAULT NULL,
-  KEY `transcript_idx` (`transcript_id`),
-  KEY `gene_idx` (`gene_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=latin1;
-
 CREATE TABLE `unmapped_object` (
   `unmapped_object_id` int(10) unsigned NOT NULL AUTO_INCREMENT,
   `type` enum('xref','cDNA','Marker') NOT NULL,

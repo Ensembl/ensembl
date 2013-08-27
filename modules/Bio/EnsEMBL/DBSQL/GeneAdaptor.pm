@@ -1280,11 +1280,6 @@ sub store {
   my $attr_adaptor = $db->get_AttributeAdaptor();
   $attr_adaptor->store_on_Gene($gene_dbID, $gene->get_all_Attributes);
 
-  # store unconventional transcript associations if there are any
-  my $utaa = $db->get_UnconventionalTranscriptAssociationAdaptor();
-  foreach my $uta (@{$gene->get_all_unconventional_transcript_associations()}) {
-	$utaa->store($uta);
-  }
 
   # set the adaptor and dbID on the original passed in gene not the
   # transfered copy
@@ -1345,13 +1340,6 @@ sub remove {
   foreach my $trans (@{$gene->get_all_Transcripts()}) {
 	$transcriptAdaptor->remove($trans);
   }
-
-  # remove any unconventional transcript associations involving this gene
-
-  $sth = $self->prepare("DELETE FROM unconventional_transcript_association " . "WHERE gene_id = ? ");
-  $sth->bind_param(1, $gene->dbID, SQL_INTEGER);
-  $sth->execute();
-  $sth->finish();
 
   # remove this gene from the database
 

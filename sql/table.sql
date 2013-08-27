@@ -255,17 +255,17 @@ CREATE TABLE IF NOT EXISTS meta (
 # Add schema type and schema version to the meta table.
 INSERT INTO meta (species_id, meta_key, meta_value) VALUES
   (NULL, 'schema_type',     'core'),
-  (NULL, 'schema_version',  '73');
+  (NULL, 'schema_version',  '74');
 
 # Patches included in this schema file:
 # NOTE: At start of release cycle, remove patch entries from last release.
 # NOTE: Avoid line-breaks in values.
 INSERT INTO meta (species_id, meta_key, meta_value)
-  VALUES (NULL, 'patch', 'patch_72_73_a.sql|schema_version');
+  VALUES (NULL, 'patch', 'patch_73_74_a.sql|schema_version');
 INSERT INTO meta (species_id, meta_key, meta_value)
-  VALUES (NULL, 'patch', 'patch_72_73_b.sql|alt_allele_type');
+  VALUES (NULL, 'patch', 'patch_73_74_b.sql|remove_dnac');
 INSERT INTO meta (species_id, meta_key, meta_value)
-  VALUES (NULL, 'patch', 'patch_72_73_c.sql|add_object_type_marker');
+  VALUES (NULL, 'patch', 'patch_73_74_c.sql|remove_unconventional_transcript_association');
 
 
 /**
@@ -2612,29 +2612,6 @@ CREATE TABLE qtl_synonym (
   KEY qtl_idx (qtl_id)
 
 ) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
-
-
-/**
-@table unconventional_transcript_association
-@desc Describes transcripts that do not link to a single gene in the normal way.
-
-@column transcript_id            Foreign key references to the @link transcript table.
-@column gene_id                  Foreign key references to the @link gene table.
-@column interaction_type         Type of interaction: 'antisense','sense_intronic','sense_overlaping_exonic','chimeric_sense_exonic'.
-
-*/
-
-
-CREATE TABLE unconventional_transcript_association (
-
-       transcript_id    INT(10) UNSIGNED NOT NULL,
-       gene_id          INT(10) UNSIGNED NOT NULL,
-       interaction_type ENUM("antisense","sense_intronic","sense_overlaping_exonic","chimeric_sense_exonic"),
-
-       KEY transcript_idx (transcript_id),
-       KEY gene_idx (gene_id)
-
-) ENGINE=MyISAM DEFAULT CHARSET=latin1;
 
 
 

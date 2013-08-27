@@ -334,7 +334,7 @@ sub get_available_adaptors {
         RepeatFeature            Sequence             SeqRegionSynonym  SimpleFeature
         Slice                    SupportingFeature    Transcript
         TranscriptSupportingFeature Translation       UnmappedObject
-        UnconventionalTranscriptAssociation           AssemblySlice
+        AssemblySlice
         SplicingEvent            SplicingEventFeature SplicingTranscriptPair
         Operon 			 OperonTranscript
         DataFile                 Assembly

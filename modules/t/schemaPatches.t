@@ -35,7 +35,7 @@ use FindBin qw/$Bin/;
 use Getopt::Long;
 
 my $help = 0;
-my $current_schema_no_cvs = 0;
+my $current_schema_no_cvs = 1;
 
 #
 # Parse command-line arguments
