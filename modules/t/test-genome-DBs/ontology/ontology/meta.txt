@@ -5,3 +5,5 @@
 5	OBO_load_date	SO.obo/Thu Feb 14 14:33:14 2013
 6	OBO_file_date	EFO.obo.new/04:01:2013 13:28
 7	OBO_load_date	EFO.obo.new/Thu Feb 14 14:33:33 2013
+8	schema_version	73
+9	patch	patch_72_73_a.sql|schema_version
