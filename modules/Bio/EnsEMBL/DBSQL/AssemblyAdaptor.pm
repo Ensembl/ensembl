@@ -109,26 +109,25 @@ sub fetch_info {
       $assembly_info{'schema_build'} = $schema_build;
   }
   
- #fetch available coordinate systems
-
+  #fetch available coordinate systems
   my $csa = $self->db()->get_adaptor('CoordSystem');
-  my %versions;
-  foreach my $cs (@{$csa->fetch_all()}) {
-    $versions{$cs->version()} = 1;
-  }
-  my @coord_system_versions = keys %versions;
-
-  $assembly_info{'coord_system_versions'} = \@coord_system_versions;
+  my $coord_systems = $csa->fetch_all();
+  my %versions = map { $_->version(), 1 } @{$coord_systems};
+  $assembly_info{'coord_system_versions'} = [keys %versions];
+  my ($default_assembly) = @{$coord_systems};
+  $assembly_info{default_coord_system_version} = $default_assembly->version();
 
   #fetch top level seq_region names
 
   my $sa = $self->db()->get_adaptor('Slice');
 
   my $slices = $sa->fetch_all('toplevel');
-  
   my %unique = map { $_->seq_region_name(), 0 } @{$slices};
   my $names = [sort { $a cmp $b } keys %unique];
   $assembly_info{'top_level_seq_region_names'} = $names;
+
+  my $karyotype = $sa->fetch_all_karyotype();
+  $assembly_info{karyotype} = [ map { $_->seq_region_name() } @{$karyotype}];
 
   return \%assembly_info;
 }

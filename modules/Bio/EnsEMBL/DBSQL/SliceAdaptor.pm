@@ -1147,18 +1147,18 @@ sub fetch_all_karyotype {
 
   my $sth = 
     $self->prepare( 'SELECT sr.seq_region_id, sr.name, '
-                      . 'sr.length, sr.coord_system_id '
+                      . 'sr.length, sr.coord_system_id, sra.value '
                       . 'FROM seq_region sr, seq_region_attrib sra, '
                       . 'attrib_type at, coord_system cs '
                       . 'WHERE at.code = "karyotype_rank" '
                       . 'AND at.attrib_type_id = sra.attrib_type_id '
                       . 'AND sra.seq_region_id = sr.seq_region_id '
                       . 'AND sr.coord_system_id = cs.coord_system_id '
-                      . 'AND cs.species_id = ?' );
+                      . 'AND cs.species_id = ?');
   $sth->bind_param( 1, $self->species_id(), SQL_INTEGER );
   $sth->execute();
-  my ( $seq_region_id, $name, $length, $cs_id );
-  $sth->bind_columns( \( $seq_region_id, $name, $length, $cs_id ) );
+  my ( $seq_region_id, $name, $length, $cs_id, $rank );
+  $sth->bind_columns( \( $seq_region_id, $name, $length, $cs_id, $rank ) );
 
   my @out;
   while($sth->fetch()) {
@@ -1166,16 +1166,21 @@ sub fetch_all_karyotype {
 
     my $slice = Bio::EnsEMBL::Slice->new_fast({
           'start'           => 1,
-          'end'             => $length,
+          'end'             => ($length+0),
           'strand'          => 1,
          'seq_region_name'  => $name,
-         'seq_region_length'=> $length,
+         'seq_region_length'=> ($length+0),
          'coord_system'     => $cs,
-         'adaptor'          => $self});
+         'adaptor'          => $self,
+         'karyotype'        => 1,
+         'karyotype_rank'   => ($rank+0),
+         });
 
     push @out, $slice;
-
   }
+
+  #Sort using Perl as value in MySQL is a text field and not portable
+  @out = sort { $a->{karyotype_rank} <=> $b->{karyotype_rank} } @out;
 
   return \@out;
 }
