@@ -109,7 +109,7 @@ sub gen_load {
     }
     $pre_hook = \&Bio::EnsEMBL::Utils::ConfigRegistry::pre_funcgen_hook;
     $config_sub = \&Bio::EnsEMBL::Utils::ConfigRegistry::load_funcgen;
-  } elsif ( $dba->isa('Bio::Ensembl::DBSQL::OntologyTermAdaptor') ) {
+  } elsif ( $dba->isa('Bio::EnsEMBL::DBSQL::OntologyDBAdaptor') || $dba->isa('Bio::Ensembl::DBSQL::OntologyTermAdaptor') ) {
     if ( !defined( $dba->group() ) ) {
       $dba->group('ontology');
     }
