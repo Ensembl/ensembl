@@ -7,6 +7,7 @@ CREATE TABLE meta (
   meta_id       INT UNSIGNED NOT NULL AUTO_INCREMENT,
   meta_key      VARCHAR(64) NOT NULL,
   meta_value    VARCHAR(128),
+  species_id    INT UNSIGNED DEFAULT NULL,
 
   PRIMARY KEY (meta_id),
   UNIQUE INDEX key_value_idx (meta_key, meta_value)
@@ -20,6 +21,8 @@ INSERT INTO meta (meta_key, meta_value) VALUES
 # Patches included in this schema file
 INSERT INTO meta (meta_key, meta_value)
   VALUES ('patch', 'patch_72_73_a.sql|schema_version');
+INSERT INTO meta (meta_key, meta_value)
+  VALUES ('patch', 'patch_72_73_b.sql|meta_species');
 
 CREATE TABLE ontology (
   ontology_id   INT UNSIGNED NOT NULL AUTO_INCREMENT,
