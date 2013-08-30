@@ -212,7 +212,7 @@ sub get_create_table {
   
   # stripping AUTOINCREMENT=? definitions in the way since 
   # they are allowed to be different
-  $create_table =~ s/AUTO_INCREMENT=\d+?//;
+  $create_table =~ s/AUTO_INCREMENT=\d+//;
 
   return $create_table;
 }
