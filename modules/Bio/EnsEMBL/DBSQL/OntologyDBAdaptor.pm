@@ -42,7 +42,6 @@ sub get_available_adaptors {
   return {
     'GOTerm' => 'Bio::EnsEMBL::DBSQL::OntologyTermAdaptor',  #deprecated
     'SOTerm' => 'Bio::EnsEMBL::DBSQL::OntologyTermAdaptor',  #deprecated
-    'MetaContainer' => 'Bio::EnsEMBL::DBSQL::MetaContainer',
     'OntologyTerm' => 'Bio::EnsEMBL::DBSQL::OntologyTermAdaptor' };
 }
 
