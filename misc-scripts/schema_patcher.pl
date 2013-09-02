@@ -469,6 +469,7 @@ while ( $sth->fetch() ) {
   if ( !defined($species) ) {
     if ($database =~ /compara_([a-z][a-z_]+[a-z])?_\d+_\d+/ or # EG case, e.g. ensembl_compara_fungi_18_71
 	$database =~ /ensembl[a-z]?_(?:compara|production|ontology)_/ or 
+        $database =~ /_test_db_([a-z_]+)_([a-z])_/ or
 	$database =~ /([a-z][a-z_]+[a-z])_(?:core|funcgen|variation)_/) 
       {
 	$species = $1;
