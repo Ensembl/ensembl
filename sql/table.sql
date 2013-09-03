@@ -255,17 +255,25 @@ CREATE TABLE IF NOT EXISTS meta (
 # Add schema type and schema version to the meta table.
 INSERT INTO meta (species_id, meta_key, meta_value) VALUES
   (NULL, 'schema_type',     'core'),
-  (NULL, 'schema_version',  '73');
+  (NULL, 'schema_version',  '74');
 
 # Patches included in this schema file:
 # NOTE: At start of release cycle, remove patch entries from last release.
 # NOTE: Avoid line-breaks in values.
 INSERT INTO meta (species_id, meta_key, meta_value)
-  VALUES (NULL, 'patch', 'patch_72_73_a.sql|schema_version');
+  VALUES (NULL, 'patch', 'patch_73_74_a.sql|schema_version');
 INSERT INTO meta (species_id, meta_key, meta_value)
-  VALUES (NULL, 'patch', 'patch_72_73_b.sql|alt_allele_type');
+  VALUES (NULL, 'patch', 'patch_73_74_b.sql|remove_dnac');
 INSERT INTO meta (species_id, meta_key, meta_value)
-  VALUES (NULL, 'patch', 'patch_72_73_c.sql|add_object_type_marker');
+  VALUES (NULL, 'patch', 'patch_73_74_c.sql|remove_unconventional_transcript_association');
+INSERT INTO meta (species_id, meta_key, meta_value)
+  VALUES (NULL, 'patch', 'patch_73_74_d.sql|remove_qtl');
+INSERT INTO meta (species_id, meta_key, meta_value)
+  VALUES (NULL, 'patch', 'patch_73_74_e.sql|remove_canonical_annotation');
+INSERT INTO meta (species_id, meta_key, meta_value)
+ VALUES (NULL, 'patch', 'patch_73_74_f.sql|remove_pair_dna_align');
+
+
 
 
 /**
@@ -573,7 +581,6 @@ CREATE TABLE attrib_type (
 @column external_db_id              Foreign key references to the @link external_db table.
 @column hcoverage                   Hit coverage.
 @column external_data               External data.
-@column pair_dna_align_feature_id   The id of the dna feature aligned.
 
 
 @see cigar_line
@@ -599,15 +606,13 @@ CREATE TABLE dna_align_feature (
   external_db_id              INTEGER UNSIGNED,
   hcoverage                   DOUBLE,
   external_data               TEXT,
-  pair_dna_align_feature_id   INT(10) UNSIGNED,
 
   PRIMARY KEY (dna_align_feature_id),
   KEY seq_region_idx (seq_region_id, analysis_id, seq_region_start, score),
   KEY seq_region_idx_2 (seq_region_id, seq_region_start),
   KEY hit_idx (hit_name),
   KEY analysis_idx (analysis_id),
-  KEY external_db_idx (external_db_id),
-  KEY pair_idx (pair_dna_align_feature_id)
+  KEY external_db_idx (external_db_id)
 
 ) COLLATE=latin1_swedish_ci ENGINE=MyISAM MAX_ROWS=100000000 AVG_ROW_LENGTH=80;
 
@@ -706,7 +711,6 @@ CREATE TABLE exon_transcript (
 @column description                 Gene description
 @column is_current                  1 - gene is current. Always set to 1 in ensembl dbs, but needed for otterlace dbs
 @column canonical_transcript_id     Foreign key references to the @link transcript table.
-@column canonical_annotation        Canonical annotation.
 @column stable_id                   Release-independent stable identifier.
 @column version                     Stable identifier version number.
 @column created_date                Date created.
@@ -732,7 +736,6 @@ CREATE TABLE gene (
   description                 TEXT,
   is_current                  BOOLEAN NOT NULL DEFAULT 1,
   canonical_transcript_id     INT(10) UNSIGNED NOT NULL,
-  canonical_annotation        VARCHAR(255) DEFAULT NULL,
   stable_id                   VARCHAR(128) DEFAULT NULL,
   version                     SMALLINT UNSIGNED NOT NULL DEFAULT 1,
   created_date                DATETIME NOT NULL DEFAULT '0000-00-00 00:00:00',
@@ -2520,121 +2523,5 @@ CREATE TABLE operon_transcript_gene (
 
   KEY operon_transcript_gene_idx (operon_transcript_id,gene_id)
 ) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
-
-
-/**
-@table qtl
-@desc Describes the markers (of which there may be up to three) which define Quantitative Trait Loci.
-Note that QTL is a statistical technique used to find links between certain expressed traits and regions in a genetic map.
-A QTL is defined by three markers, two flanking and one peak (optional) marker. Its a region (or more often a group of regions) which is likely to affect the phenotype (trait) described in this Qtl.
-
-@column qtl_id                Primary key, internal identifier.
-@column trait                 Expressed trait.
-@column lod_score             LOD score for QTL.
-@column flank_marker_id_1     Flanking marker 1.
-@column flank_marker_id_2     Flanking marker 2.
-@column peak_marker_id        Peak marker.
-
-@see qtl_synonym
-
-*/
-
-
-CREATE TABLE qtl (
-
-  qtl_id                      INT(10) UNSIGNED AUTO_INCREMENT NOT NULL,
-  trait                       VARCHAR(255) NOT NULL,
-  lod_score                   FLOAT,
-  flank_marker_id_1           INT(10) UNSIGNED,
-  flank_marker_id_2           INT(10) UNSIGNED,
-  peak_marker_id              INT(10) UNSIGNED,
-
-  PRIMARY KEY (qtl_id),
-  KEY trait_idx (trait)
-
-) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
-
-
-/**
-@table qtl_feature
-@desc Describes Quantitative Trail Loci (QTL) positions as obtained from inbreeding experiments. Note the values in this table are in chromosomal co-ordinates. Also, this table is not populated for all schemas.
-
-
-@column seq_region_id               Foreign key references to the @link seq_region table.
-@column seq_region_start            Sequence start position.
-@column seq_region_end              Sequence end position.
-@column qtl_id                      Foreign key references to the @link qtl table.
-@column analysis_id                 Foreign key references to the @link analysis table.
-
-
-@see qtl
-@see qtl_synonym
-
-
-*/
-
-
-CREATE TABLE qtl_feature (
-
-  seq_region_id         INT(10) UNSIGNED NOT NULL,
-  seq_region_start      INT(10) UNSIGNED NOT NULL,
-  seq_region_end        INT(10) UNSIGNED NOT NULL,
-  qtl_id                INT(10) UNSIGNED NOT NULL,
-  analysis_id           SMALLINT UNSIGNED NOT NULL,
-
-  KEY qtl_idx (qtl_id),
-  KEY loc_idx (seq_region_id, seq_region_start),
-  KEY analysis_idx (analysis_id)
-
-) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
-
-
-/**
-@table qtl_synonym
-@desc Describes alternative names for Quantitative Trait Loci (QTLs).
-
-@column qtl_synonym_id          Primary key, internal identifier.
-@column qtl_id                  Foreign key references to the @link qtl table.
-@column source_database         Synonym source database.
-@column source_primary_id       Source database primary ID.
-
-*/
-
-
-CREATE TABLE qtl_synonym (
-
-  qtl_synonym_id              INT(10) UNSIGNED AUTO_INCREMENT NOT NULL,
-  qtl_id                      INT(10) UNSIGNED NOT NULL,
-  source_database             ENUM("rat genome database", "ratmap") NOT NULL,
-  source_primary_id           VARCHAR(255) NOT NULL,
-
-  PRIMARY KEY (qtl_synonym_id),
-  KEY qtl_idx (qtl_id)
-
-) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
-
-
-/**
-@table unconventional_transcript_association
-@desc Describes transcripts that do not link to a single gene in the normal way.
-
-@column transcript_id            Foreign key references to the @link transcript table.
-@column gene_id                  Foreign key references to the @link gene table.
-@column interaction_type         Type of interaction: 'antisense','sense_intronic','sense_overlaping_exonic','chimeric_sense_exonic'.
-
-*/
-
-
-CREATE TABLE unconventional_transcript_association (
-
-       transcript_id    INT(10) UNSIGNED NOT NULL,
-       gene_id          INT(10) UNSIGNED NOT NULL,
-       interaction_type ENUM("antisense","sense_intronic","sense_overlaping_exonic","chimeric_sense_exonic"),
-
-       KEY transcript_idx (transcript_id),
-       KEY gene_idx (gene_id)
-
-) ENGINE=MyISAM DEFAULT CHARSET=latin1;
-
 
 
