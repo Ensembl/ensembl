@@ -23,10 +23,6 @@ $test_adaptor = $db->get_ArchiveStableIdAdaptor();
 if (defined $test_adaptor) {
   ok($test_adaptor->isa("Bio::EnsEMBL::DBSQL::ArchiveStableIdAdaptor"));
 }
-$test_adaptor = $db->get_QtlFeatureAdaptor();
-ok($test_adaptor->isa("Bio::EnsEMBL::Map::DBSQL::QtlFeatureAdaptor"));
-$test_adaptor = $db->get_QtlAdaptor();
-ok($test_adaptor->isa("Bio::EnsEMBL::Map::DBSQL::QtlAdaptor"));
 $test_adaptor = $db->get_ProteinFeatureAdaptor();
 ok($test_adaptor->isa("Bio::EnsEMBL::DBSQL::ProteinFeatureAdaptor"));
 $test_adaptor = $db->get_PredictionTranscriptAdaptor();

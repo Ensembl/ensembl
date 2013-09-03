@@ -70,7 +70,8 @@ ok(@seq_regions == 1 && $seq_regions[0] eq '20');
 
 $str = join("\n", "----------", @seq_regions);
 debug("$str\n");
-ok(@seq_regions == 1 && $seq_regions[0] eq '20');
+is(@seq_regions, 1, "Got 1 seq region");
+is($seq_regions[0], 20, "Seq region is 20");
 
 
 #

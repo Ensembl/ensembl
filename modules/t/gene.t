@@ -766,47 +766,6 @@ ok($gene->is_current == 1);
 
 $multi->restore;
 
-#
-# Tests for unconventional transcript association functionality
-#
-
-# test a gene with existing associations
-$gene = $ga->fetch_by_dbID(18256);
-ok(@{$gene->get_all_unconventional_transcript_associations()} == 3);
-
-# test removing them all
-$gene->remove_unconventional_transcript_associations();
-ok(@{$gene->get_all_unconventional_transcript_associations()} == 0);
-
-# test adding to a new gene
-my $new_gene       = $ga->fetch_by_dbID(18260);
-my $new_transcript = $db->get_TranscriptAdaptor()->fetch_by_dbID(21720);
-
-ok(@{$new_gene->get_all_unconventional_transcript_associations()} == 0);
-$new_gene->add_unconventional_transcript_association($new_transcript, 'sense_intronic');
-ok(@{$new_gene->get_all_unconventional_transcript_associations()} == 1);
-
-# test storing
-
-$new_gene = $ga->fetch_by_dbID(18261);
-ok(@{$new_gene->get_all_unconventional_transcript_associations()} == 0);
-
-$new_gene->add_unconventional_transcript_association($new_transcript, 'sense_intronic');
-$new_gene->add_unconventional_transcript_association($new_transcript, 'antisense');
-
-$ga->store($new_gene);
-
-# test removing
-$new_gene->remove_unconventional_transcript_associations();
-
-my $utaa = $db->get_UnconventionalTranscriptAssociationAdaptor();
-ok(@{$utaa->fetch_all_by_gene($new_gene)} == 0);
-
-#testing canonical_transcript information
-$new_gene = $ga->fetch_by_dbID(18256);
-ok($new_gene->canonical_transcript->dbID == 21716);    #test 85
-ok($new_gene->canonical_annotation eq 'longest transcript in gene');    #test 86
-
 #test the get_species_and_object_type method from the Registry
 my $registry = 'Bio::EnsEMBL::Registry';
 my ($species, $object_type, $db_type) = $registry->get_species_and_object_type('ENSG00000355555');
@@ -814,7 +773,7 @@ ok($species eq 'homo_sapiens' && $object_type eq 'Gene');
 
 # Testing compara dba retrieval
 {
-  dies_ok { $new_gene->get_all_homologous_Genes(); } 'No Compara DBAdaptor has been configured. No way to retrieve data';
+  dies_ok { $gene->get_all_homologous_Genes(); } 'No Compara DBAdaptor has been configured. No way to retrieve data';
 }
 
 done_testing();

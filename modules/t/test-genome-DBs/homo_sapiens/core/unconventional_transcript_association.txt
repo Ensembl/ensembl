@@ -1,5 +1,0 @@
-21716	18256	antisense
-21717	18256	antisense
-21719	18256	sense_intronic
-21718	18257	sense_intronic
-21718	18258	antisense

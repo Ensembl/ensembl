@@ -3,8 +3,13 @@
 58	\N	patch	patch_72_73_a.sql|schema_version
 59	\N	patch	patch_72_73_b.sql|alt_allele_type
 60	\N	patch	patch_72_73_c.sql|add_object_type_marker
+62	\N	patch	patch_73_74_a.sql|schema_version
+63	\N	patch	patch_73_74_c.sql|remove_unconventional_transcript_association
+64	\N	patch	patch_73_74_d.sql|remove_qtl
+65	\N	patch	patch_73_74_e.sql|remove_canonical_annotation
+66	\N	patch	patch_73_74_f.sql|remove_pair_dna_align
 1	\N	schema_type	core
-2	\N	schema_version	73
+2	\N	schema_version	74
 8	1	assembly.accession	GCA_000292705.1
 10	1	assembly.date	2012-08
 7	1	assembly.default	GCA_000292705.1
@@ -21,6 +26,7 @@
 16	1	genebuild.method	Generated from ENA annotation
 13	1	genebuild.start_date	2012-08-EnsemblBacteria
 12	1	genebuild.version	2012-08-EnsemblBacteria
+61	1	patch	patch_73_74_b.sql|remove_dnac
 42	1	provider.name	European Nucleotide Archive
 43	1	provider.url	http://www.ebi.ac.uk/ena/data/view/GCA_000292705
 18	1	repeat.analysis	Dust
@@ -45,8 +51,8 @@
 21	1	species.classification	Bacillus thuringiensis
 20	1	species.classification	Bacillus thuringiensis HD-789
 28	1	species.classification	Bacteria
-27	1	species.classification	Firmicutes
 29	1	species.classification	cellular organisms
+27	1	species.classification	Firmicutes
 34	1	species.common_name	Bacillus thuringiensis HD-789
 39	1	species.db_name	bacillus_thuringiensis
 33	1	species.display_name	Bacillus thuringiensis HD-789

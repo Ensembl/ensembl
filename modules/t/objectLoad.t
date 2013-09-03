@@ -26,7 +26,6 @@ my $expected_keys = {
     is_current biotype status source
     description
     canonical_transcript canonical_transcript_id _transcript_array
-    canonical_annotation
     dbentries display_xref external_name external_db external_status
   /],
   'transcript' => [sort @generic_keys, @location_keys, qw/

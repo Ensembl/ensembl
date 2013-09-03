@@ -110,8 +110,7 @@ ok(@protein_features == 3);
 # test get_all_DomainFeatures
 #
 my @domain_features = @{$translation->get_all_DomainFeatures()};
-debug("Got " . scalar(@domain_features) . " domain features.");
-ok(@domain_features == 3);
+is(@domain_features, 3, "Got 3 domain features");
 
 ok($translation->display_id eq $translation->stable_id);
 

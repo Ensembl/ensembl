@@ -102,7 +102,7 @@ CREATE TABLE `attrib_type` (
   `description` text,
   PRIMARY KEY (`attrib_type_id`),
   UNIQUE KEY `code_idx` (`code`)
-) ENGINE=InnoDB AUTO_INCREMENT=14078 DEFAULT CHARSET=latin1;
+) ENGINE=InnoDB AUTO_INCREMENT=391 DEFAULT CHARSET=latin1;
 
 CREATE TABLE `coord_system` (
   `coord_system_id` int(10) unsigned NOT NULL AUTO_INCREMENT,
@@ -142,7 +142,7 @@ CREATE TABLE `density_feature` (
   PRIMARY KEY (`density_feature_id`),
   KEY `seq_region_idx` (`density_type_id`,`seq_region_id`,`seq_region_start`),
   KEY `seq_region_id_idx` (`seq_region_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=1051 DEFAULT CHARSET=latin1;
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
 CREATE TABLE `density_type` (
   `density_type_id` int(10) unsigned NOT NULL AUTO_INCREMENT,
@@ -152,7 +152,7 @@ CREATE TABLE `density_type` (
   `value_type` enum('sum','ratio') NOT NULL,
   PRIMARY KEY (`density_type_id`),
   UNIQUE KEY `analysis_idx` (`analysis_id`,`block_size`,`region_features`)
-) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=latin1;
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
 CREATE TABLE `dependent_xref` (
   `object_xref_id` int(10) unsigned NOT NULL,
@@ -216,14 +216,12 @@ CREATE TABLE `dna_align_feature` (
   `external_db_id` int(10) unsigned DEFAULT NULL,
   `hcoverage` double DEFAULT NULL,
   `external_data` text,
-  `pair_dna_align_feature_id` int(10) unsigned DEFAULT NULL,
   PRIMARY KEY (`dna_align_feature_id`),
   KEY `seq_region_idx` (`seq_region_id`,`analysis_id`,`seq_region_start`,`score`),
   KEY `seq_region_idx_2` (`seq_region_id`,`seq_region_start`),
   KEY `hit_idx` (`hit_name`),
   KEY `analysis_idx` (`analysis_id`),
-  KEY `external_db_idx` (`external_db_id`),
-  KEY `pair_idx` (`pair_dna_align_feature_id`)
+  KEY `external_db_idx` (`external_db_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1 MAX_ROWS=100000000 AVG_ROW_LENGTH=80;
 
 CREATE TABLE `exon` (
@@ -290,7 +288,6 @@ CREATE TABLE `gene` (
   `description` text,
   `is_current` tinyint(1) NOT NULL DEFAULT '1',
   `canonical_transcript_id` int(10) unsigned NOT NULL,
-  `canonical_annotation` varchar(255) DEFAULT NULL,
   `stable_id` varchar(128) DEFAULT NULL,
   `version` smallint(5) unsigned NOT NULL DEFAULT '1',
   `created_date` datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
@@ -454,11 +451,11 @@ CREATE TABLE `meta` (
   `meta_id` int(11) NOT NULL AUTO_INCREMENT,
   `species_id` int(10) unsigned DEFAULT '1',
   `meta_key` varchar(40) NOT NULL,
-  `meta_value` varchar(255) CHARACTER SET latin1 COLLATE latin1_bin DEFAULT NULL,
+  `meta_value` varchar(255) DEFAULT NULL,
   PRIMARY KEY (`meta_id`),
   UNIQUE KEY `species_key_value_idx` (`species_id`,`meta_key`,`meta_value`),
   KEY `species_value_idx` (`species_id`,`meta_value`)
-) ENGINE=InnoDB AUTO_INCREMENT=61 DEFAULT CHARSET=latin1;
+) ENGINE=InnoDB AUTO_INCREMENT=67 DEFAULT CHARSET=latin1;
 
 CREATE TABLE `meta_coord` (
   `table_name` varchar(40) NOT NULL,
@@ -649,37 +646,6 @@ CREATE TABLE `protein_feature` (
   KEY `analysis_idx` (`analysis_id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=24117 DEFAULT CHARSET=latin1;
 
-CREATE TABLE `qtl` (
-  `qtl_id` int(10) unsigned NOT NULL AUTO_INCREMENT,
-  `trait` varchar(255) NOT NULL,
-  `lod_score` float DEFAULT NULL,
-  `flank_marker_id_1` int(10) unsigned DEFAULT NULL,
-  `flank_marker_id_2` int(10) unsigned DEFAULT NULL,
-  `peak_marker_id` int(10) unsigned DEFAULT NULL,
-  PRIMARY KEY (`qtl_id`),
-  KEY `trait_idx` (`trait`)
-) ENGINE=InnoDB DEFAULT CHARSET=latin1;
-
-CREATE TABLE `qtl_feature` (
-  `seq_region_id` int(10) unsigned NOT NULL,
-  `seq_region_start` int(10) unsigned NOT NULL,
-  `seq_region_end` int(10) unsigned NOT NULL,
-  `qtl_id` int(10) unsigned NOT NULL,
-  `analysis_id` smallint(5) unsigned NOT NULL,
-  KEY `qtl_idx` (`qtl_id`),
-  KEY `loc_idx` (`seq_region_id`,`seq_region_start`),
-  KEY `analysis_idx` (`analysis_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=latin1;
-
-CREATE TABLE `qtl_synonym` (
-  `qtl_synonym_id` int(10) unsigned NOT NULL AUTO_INCREMENT,
-  `qtl_id` int(10) unsigned NOT NULL,
-  `source_database` enum('rat genome database','ratmap') NOT NULL,
-  `source_primary_id` varchar(255) NOT NULL,
-  PRIMARY KEY (`qtl_synonym_id`),
-  KEY `qtl_idx` (`qtl_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=latin1;
-
 CREATE TABLE `repeat_consensus` (
   `repeat_consensus_id` int(10) unsigned NOT NULL AUTO_INCREMENT,
   `repeat_name` varchar(255) NOT NULL,
@@ -718,7 +684,7 @@ CREATE TABLE `seq_region` (
   PRIMARY KEY (`seq_region_id`),
   UNIQUE KEY `name_cs_idx` (`name`,`coord_system_id`),
   KEY `cs_idx` (`coord_system_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=15 DEFAULT CHARSET=latin1;
+) ENGINE=InnoDB AUTO_INCREMENT=14 DEFAULT CHARSET=latin1;
 
 CREATE TABLE `seq_region_attrib` (
   `seq_region_id` int(10) unsigned NOT NULL DEFAULT '0',
@@ -744,7 +710,7 @@ CREATE TABLE `seq_region_synonym` (
   PRIMARY KEY (`seq_region_synonym_id`),
   UNIQUE KEY `syn_idx` (`synonym`),
   KEY `seq_region_idx` (`seq_region_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=15 DEFAULT CHARSET=latin1;
+) ENGINE=InnoDB AUTO_INCREMENT=7 DEFAULT CHARSET=latin1;
 
 CREATE TABLE `simple_feature` (
   `simple_feature_id` int(10) unsigned NOT NULL AUTO_INCREMENT,
@@ -895,14 +861,6 @@ CREATE TABLE `translation_attrib` (
   KEY `type_val_idx` (`attrib_type_id`,`value`(40)),
   KEY `val_only_idx` (`value`(40)),
   KEY `translation_idx` (`translation_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=latin1;
-
-CREATE TABLE `unconventional_transcript_association` (
-  `transcript_id` int(10) unsigned NOT NULL,
-  `gene_id` int(10) unsigned NOT NULL,
-  `interaction_type` enum('antisense','sense_intronic','sense_overlaping_exonic','chimeric_sense_exonic') DEFAULT NULL,
-  KEY `transcript_idx` (`transcript_id`),
-  KEY `gene_idx` (`gene_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
 CREATE TABLE `unmapped_object` (

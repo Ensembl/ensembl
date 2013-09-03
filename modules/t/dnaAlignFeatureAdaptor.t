@@ -56,7 +56,6 @@ ok($feat);
 print_features([$feat]);
 ok($feat->db_name eq 'EMBL');
 ok($feat->db_display_name eq 'EMBL');
-ok($feat->pair_dna_align_feature_id == 1449321);
 
 
 $feat = $feat->transform('supercontig');
@@ -96,7 +95,6 @@ my $evalue     = 23.2;
 my $cigar_string = '100M';
 my $hcoverage  = 99.5;
 my $external_db_id = 2200;
-my $pair_dna_align_feature_id = 10;
 
 $feat = Bio::EnsEMBL::DnaDnaAlignFeature->new
   (-START  => $start,
@@ -113,8 +111,7 @@ $feat = Bio::EnsEMBL::DnaDnaAlignFeature->new
    -P_VALUE => $evalue,
    -ANALYSIS => $analysis,
    -HCOVERAGE => $hcoverage,
-   -EXTERNAL_DB_ID => $external_db_id,
-   -PAIR_DNA_ALIGN_FEATURE_ID => $pair_dna_align_feature_id );
+   -EXTERNAL_DB_ID => $external_db_id);
 
 ok(!$feat->is_stored($db));
 
@@ -142,7 +139,6 @@ ok($feat->p_value == $evalue);
 ok($feat->analysis->logic_name eq $analysis->logic_name);
 ok($feat->external_db_id == $external_db_id);
 ok($feat->hcoverage == $hcoverage);
-ok($feat->pair_dna_align_feature_id == $pair_dna_align_feature_id);
 
 $multi->restore('core', 'dna_align_feature');
 

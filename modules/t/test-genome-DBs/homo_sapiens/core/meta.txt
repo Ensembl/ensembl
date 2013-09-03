@@ -1,18 +1,17 @@
-1	\N	schema_version	73
+1	\N	schema_version	74
 2	1	assembly.default	NCBI34
-33	1	species.classification	Chordata
-32	1	species.classification	Vertebrata
-31	1	species.classification	Mammalia
-30	1	species.classification	Eutheria
-29	1	species.classification	Primates
-28	1	species.classification	Catarrhini
+3	1	species.taxonomy_id	9606
+26	1	species.classification	Homo sapiens
 27	1	species.classification	Hominidae
+28	1	species.classification	Catarrhini
+29	1	species.classification	Primates
+30	1	species.classification	Eutheria
+31	1	species.classification	Mammalia
+32	1	species.classification	Vertebrata
+33	1	species.classification	Chordata
 34	1	species.classification	Metazoa
 35	1	species.classification	Eukaryota
-26	1	species.classification	Homo sapiens
 36	1	species.common_name	Human
-70	1	species.scientific_name	Homo sapiens
-3	1	species.taxonomy_id	9606
 55	1	assembly.mapping	chromosome:NCBI33|contig
 56	1	assembly.mapping	clone|contig
 57	1	assembly.mapping	supercontig|contig
@@ -23,6 +22,7 @@
 65	1	assembly.mapping	alt_chrom#chromosome:NCBI33
 66	1	assembly.mapping	alt_chrom|chromosome:NCBI33|contig
 67	1	species.production_name	homo_sapiens
+70	1	species.scientific_name	Homo sapiens
 71	\N	patch	patch_68_69_a.sql|schema_version
 72	\N	patch	patch_69_70_a.sql|schema_version
 73	\N	patch	patch_69_70_b.sql|add_mapping_set_history
@@ -37,3 +37,9 @@
 82	\N	patch	patch_72_73_a.sql|schema_version
 83	\N	patch	patch_72_73_b.sql|alt_allele_type
 84	\N	patch	patch_72_73_c.sql|add_object_type_marker
+85	\N	patch	patch_73_74_b.sql|remove_dnac
+88	\N	patch	patch_73_74_a.sql|schema_version
+89	\N	patch	patch_73_74_c.sql|remove_unconventional_transcript_association
+90	\N	patch	patch_73_74_d.sql|remove_qtl
+97	\N	patch	patch_73_74_e.sql|remove_canonical_annotation
+98	\N	patch	patch_73_74_f.sql|remove_pair_dna_align
