@@ -320,39 +320,65 @@ sub get_db_adaptor {
 =cut 
 
 sub get_available_adaptors {
-  my %pairs = (
+
+  my $adaptors = {
     # Firstly those that just have an adaptor named after there object
     # in the main DBSQL directory.
-    map( { $_ => "Bio::EnsEMBL::DBSQL::${_}Adaptor" } qw(
-        Analysis                 ArchiveStableId      Attribute
-        AssemblyExceptionFeature AssemblyMapper       CoordSystem
-        DBEntry              DnaAlignFeature
-        DensityFeature           DensityType          Exon
-        Gene                     KaryotypeBand        MiscSet
-        MiscFeature              PredictionTranscript PredictionExon
-        ProteinFeature           ProteinAlignFeature  RepeatConsensus
-        RepeatFeature            Sequence             SeqRegionSynonym  SimpleFeature
-        Slice                    SupportingFeature    Transcript
-        TranscriptSupportingFeature Translation       UnmappedObject
-        UnconventionalTranscriptAssociation           AssemblySlice
-        SplicingEvent            SplicingEventFeature SplicingTranscriptPair
-        Operon 			 OperonTranscript
-        DataFile                 Assembly
-        IntronSupportingEvidence AltAlleleGroup
-        ) ),
+    AltAlleleGroup                      => 'Bio::EnsEMBL::DBSQL::AltAlleleGroupAdaptor',
+    Analysis                            => 'Bio::EnsEMBL::DBSQL::AnalysisAdaptor',
+    ArchiveStableId                     => 'Bio::EnsEMBL::DBSQL::ArchiveStableIdAdaptor',
+    Assembly                            => 'Bio::EnsEMBL::DBSQL::AssemblyAdaptor',
+    AssemblyExceptionFeature            => 'Bio::EnsEMBL::DBSQL::AssemblyExceptionFeatureAdaptor',
+    AssemblyMapper                      => 'Bio::EnsEMBL::DBSQL::AssemblyMapperAdaptor',
+    AssemblySlice                       => 'Bio::EnsEMBL::DBSQL::AssemblySliceAdaptor',
+    Attribute                           => 'Bio::EnsEMBL::DBSQL::AttributeAdaptor',
+    CoordSystem                         => 'Bio::EnsEMBL::DBSQL::CoordSystemAdaptor',
+    DataFile                            => 'Bio::EnsEMBL::DBSQL::DataFileAdaptor',
+    DBEntry                             => 'Bio::EnsEMBL::DBSQL::DBEntryAdaptor',
+    DensityFeature                      => 'Bio::EnsEMBL::DBSQL::DensityFeatureAdaptor',
+    DensityType                         => 'Bio::EnsEMBL::DBSQL::DensityTypeAdaptor',
+    DnaAlignFeature                     => 'Bio::EnsEMBL::DBSQL::DnaAlignFeatureAdaptor',
+    Exon                                => 'Bio::EnsEMBL::DBSQL::ExonAdaptor',
+    Gene                                => 'Bio::EnsEMBL::DBSQL::GeneAdaptor',
+    IntronSupportingEvidence            => 'Bio::EnsEMBL::DBSQL::IntronSupportingEvidenceAdaptor',
+    KaryotypeBand                       => 'Bio::EnsEMBL::DBSQL::KaryotypeBandAdaptor',
+    MiscFeature                         => 'Bio::EnsEMBL::DBSQL::MiscFeatureAdaptor',
+    MiscSet                             => 'Bio::EnsEMBL::DBSQL::MiscSetAdaptor',
+    Operon                              => 'Bio::EnsEMBL::DBSQL::OperonAdaptor',
+    OperonTranscript                    => 'Bio::EnsEMBL::DBSQL::OperonTranscriptAdaptor',
+    PredictionExon                      => 'Bio::EnsEMBL::DBSQL::PredictionExonAdaptor',
+    PredictionTranscript                => 'Bio::EnsEMBL::DBSQL::PredictionTranscriptAdaptor',
+    ProteinAlignFeature                 => 'Bio::EnsEMBL::DBSQL::ProteinAlignFeatureAdaptor',
+    ProteinFeature                      => 'Bio::EnsEMBL::DBSQL::ProteinFeatureAdaptor',
+    RepeatConsensus                     => 'Bio::EnsEMBL::DBSQL::RepeatConsensusAdaptor',
+    RepeatFeature                       => 'Bio::EnsEMBL::DBSQL::RepeatFeatureAdaptor',
+    SeqRegionSynonym                    => 'Bio::EnsEMBL::DBSQL::SeqRegionSynonymAdaptor',
+    Sequence                            => 'Bio::EnsEMBL::DBSQL::SequenceAdaptor',
+    SimpleFeature                       => 'Bio::EnsEMBL::DBSQL::SimpleFeatureAdaptor',
+    Slice                               => 'Bio::EnsEMBL::DBSQL::SliceAdaptor',
+    SplicingEvent                       => 'Bio::EnsEMBL::DBSQL::SplicingEventAdaptor',
+    SplicingEventFeature                => 'Bio::EnsEMBL::DBSQL::SplicingEventFeatureAdaptor',
+    SplicingTranscriptPair              => 'Bio::EnsEMBL::DBSQL::SplicingTranscriptPairAdaptor',
+    SupportingFeature                   => 'Bio::EnsEMBL::DBSQL::SupportingFeatureAdaptor',
+    Transcript                          => 'Bio::EnsEMBL::DBSQL::TranscriptAdaptor',
+    TranscriptSupportingFeature         => 'Bio::EnsEMBL::DBSQL::TranscriptSupportingFeatureAdaptor',
+    Translation                         => 'Bio::EnsEMBL::DBSQL::TranslationAdaptor',
+    UnmappedObject                      => 'Bio::EnsEMBL::DBSQL::UnmappedObjectAdaptor',
+
     # Those whose adaptors are in Map::DBSQL
-    map( { $_ => "Bio::EnsEMBL::Map::DBSQL::${_}Adaptor" } qw(
-        Marker MarkerFeature QtlFeature Qtl Ditag DitagFeature
-        ) ),
+    Ditag                               => 'Bio::EnsEMBL::Map::DBSQL::DitagAdaptor',
+    DitagFeature                        => 'Bio::EnsEMBL::Map::DBSQL::DitagFeatureAdaptor',
+    Marker                              => 'Bio::EnsEMBL::Map::DBSQL::MarkerAdaptor',
+    MarkerFeature                       => 'Bio::EnsEMBL::Map::DBSQL::MarkerFeatureAdaptor',
+
     # Finally the exceptions... those that have non-standard mapping
     # between object / adaptor ....
-    # 'Blast'                => 'Bio::EnsEMBL::External::BlastAdaptor',
-    'MetaCoordContainer' => 'Bio::EnsEMBL::DBSQL::MetaCoordContainer',
-    'MetaContainer'      => 'Bio::EnsEMBL::DBSQL::MetaContainer',
-    'SNP'                => 'Bio::EnsEMBL::DBSQL::ProxySNPAdaptor',
-  );
-
-  return ( \%pairs );
+    # Blast                               => 'Bio::EnsEMBL::External::BlastAdaptor',
+    MetaContainer                       => 'Bio::EnsEMBL::DBSQL::MetaContainer',
+    MetaCoordContainer                  => 'Bio::EnsEMBL::DBSQL::MetaCoordContainer',
+    SNP                                 => 'Bio::EnsEMBL::DBSQL::ProxySNPAdaptor',
+  };
+  return $adaptors;
 } ## end sub get_available_adaptors
 
 ###########################################################

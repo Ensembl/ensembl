@@ -133,8 +133,7 @@ sub new {
     $modified_date,           $confidence,
     $biotype,                 $source,
     $status,                  $is_current,
-    $canonical_transcript_id, $canonical_transcript,
-    $canonical_annotation
+    $canonical_transcript_id, $canonical_transcript
     )
     = rearrange( [
       'STABLE_ID',               'VERSION',
@@ -186,9 +185,6 @@ sub new {
   } elsif ( defined($canonical_transcript_id) ) {
     $self->{'canonical_transcript_id'} = $canonical_transcript_id;
   }
-
-  $self->canonical_annotation($canonical_annotation)
-    if ( defined $canonical_annotation );
 
   return $self;
 }
@@ -495,24 +491,6 @@ sub canonical_transcript {
   return $self->{'canonical_transcript'};
 } ## end sub canonical_transcript
 
-
-=head2 canonical_annotation
-
-  Arg [1]    : (optional) String - canonical_annotation
-  Example    : $gene->canonical_annotation('This is the canonical_annotation');
-  Description: Getter/setter for the canonical_annotation
-  Returntype : String
-  Exceptions : none
-  Caller     : general
-  Status     : Stable
-
-=cut
-
-sub canonical_annotation {
-    my $self = shift;
-    $self->{'canonical_annotation'} = shift if( @_ );
-    return $self->{'canonical_annotation'};
-}
 
 =head2 get_all_Attributes
 
@@ -1362,90 +1340,6 @@ sub get_all_DAS_Features{
   return $self->SUPER::get_all_DAS_Features($slice);
 }
 
-
-
-
-=head2 add_unconventional_transcript_association
-
-  Arg [1]    : Bio::EnsEMBL::Transcript $trans
-               The transcript to associate with the gene, in an unconventional manner.
-  Arg [2]    : String $type
-               The type of association between this gene and this transcript, e.g.
-               "antisense","sense_intronic","sense_overlaping_exonic","chimeric_sense_exonic"
-  Example    : my $transcript = Bio::EnsEMBL::Transcript->new(...);
-               $gene->add_unconventional_transcript_association($transcript, "antisense");
-  Description: Associate a transcript with this gene in a way that is
-               non-conventional.
-  Returntype : none
-  Exceptions : none
-  Caller     : general
-  Status     : At Risk.
-
-=cut
-
-sub add_unconventional_transcript_association {
-
-   my ($self, $transcript, $type) = @_;
-
-   if( !ref $transcript || ! $transcript->isa("Bio::EnsEMBL::Transcript") ) {
-       throw("$transcript is not a Bio::EnsEMBL::Transcript!");
-   }
-
-   my $uta = Bio::EnsEMBL::UnconventionalTranscriptAssociation->new($transcript, $self, $type);
-   $self->{'_unconventional_transcript_array'} ||= [];
-   push(@{$self->{'_unconventional_transcript_array'}}, $uta);
-
-}
-
-
-=head2 get_all_unconventional_transcript_associations
-
-  Arg [1]    : (optional) String - Only get transcripts where the association
-               between this gene and the transcripts is of a certain type.
-  Example    : my @transcripts = @{ $gene->get_all_unconventional_transcript_associations, "antisense" };
-  Description: Returns the unconventional transcripts associated with this gene.
-  Returntype : Listref of Bio::EnsEMBL::UnconventionalTranscriptAssociation objects
-  Exceptions : none
-  Caller     : general
-  Status     : At risk.
-
-=cut
-
-sub get_all_unconventional_transcript_associations {
-
-  my ($self, $type) = @_;
-
-  if( ! exists $self->{'_unconventional_transcript_array'} ) {
-    $self->{'_unconventional_transcript_array'} = [];
-    if( defined $self->adaptor() ) {
-      my $utaa = $self->adaptor()->db()->get_UnconventionalTranscriptAssociationAdaptor();
-      my $utas = $utaa->fetch_all_by_gene( $self, $type );
-      $self->{'_unconventional_transcript_array'} = $utas;
-    }
-  }
-
-  return $self->{'_unconventional_transcript_array'};
-}
-
-=head2 remove_unconventional_transcript_associations
-
-  Args       : None
-  Example    : $gene->remove_unconventional_transcript_associations();
-  Description: Returns the unconventional transcripts associated with this gene.
-  Returntype : Listref of Bio::EnsEMBL::UnconventionalTranscriptAssociation objects
-  Exceptions : none
-  Caller     : general
-  Status     : At risk.
-
-=cut
-
-sub remove_unconventional_transcript_associations {
-
-  my $self = shift;
-
-  $self->{'_unconventional_transcript_array'} = [];
-
-}
 
 =head2 load
 

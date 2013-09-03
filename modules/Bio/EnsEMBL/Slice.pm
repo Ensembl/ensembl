@@ -2858,39 +2858,6 @@ sub get_all_Exons {
 
 
 
-=head2 get_all_QtlFeatures
-
-  Args       : none
-  Example    : none
-  Description: returns overlapping QtlFeatures
-  Returntype : listref Bio::EnsEMBL::Map::QtlFeature
-  Exceptions : none
-  Caller     : general
-  Status     : Stable
-
-=cut
-
-sub get_all_QtlFeatures {
-  my $self = shift;
-
-  if(!$self->adaptor()) {
-    warning('Cannot get QtlFeatures without attached adaptor');
-    return [];
-  }
-
-  my $qfAdaptor;
-  if( $self->adaptor()) {
-    $qfAdaptor = $self->adaptor()->db()->get_QtlFeatureAdaptor();
-  } else {
-    return [];
-  }
-
-  return $qfAdaptor->fetch_all_by_Slice_constraint( $self );
-}
-
-
-
-
 =head2 get_all_KaryotypeBands
 
   Arg [1]    : none

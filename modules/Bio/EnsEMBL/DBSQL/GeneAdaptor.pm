@@ -101,7 +101,7 @@ sub _columns {
   my $created_date  = $self->db()->dbc()->from_date_to_seconds("g.created_date");
   my $modified_date = $self->db()->dbc()->from_date_to_seconds("g.modified_date");
 
-  return ('g.gene_id', 'g.seq_region_id', 'g.seq_region_start', 'g.seq_region_end', 'g.seq_region_strand', 'g.analysis_id', 'g.biotype', 'g.display_xref_id', 'g.description', 'g.status', 'g.source', 'g.is_current', 'g.canonical_transcript_id', 'g.canonical_annotation', 'g.stable_id', 'g.version', $created_date, $modified_date, 'x.display_label', 'x.dbprimary_acc', 'x.description', 'x.version', 'exdb.db_name', 'exdb.status', 'exdb.db_release', 'exdb.db_display_name', 'x.info_type', 'x.info_text');
+  return ('g.gene_id', 'g.seq_region_id', 'g.seq_region_start', 'g.seq_region_end', 'g.seq_region_strand', 'g.analysis_id', 'g.biotype', 'g.display_xref_id', 'g.description', 'g.status', 'g.source', 'g.is_current', 'g.canonical_transcript_id', 'g.stable_id', 'g.version', $created_date, $modified_date, 'x.display_label', 'x.dbprimary_acc', 'x.description', 'x.version', 'exdb.db_name', 'exdb.status', 'exdb.db_release', 'exdb.db_display_name', 'x.info_type', 'x.info_text');
 }
 
 sub _left_join {
@@ -1137,8 +1137,7 @@ sub store {
                source = ?,
                status = ?,
                is_current = ?,
-               canonical_transcript_id = ?,
-               canonical_annotation = ?
+               canonical_transcript_id = ?
   );
 
   if (defined($gene->stable_id)) {
@@ -1167,13 +1166,12 @@ sub store {
   # Set it to zero for now.
   $sth->bind_param(11, 0, SQL_TINYINT);
 
-  $sth->bind_param(12, $gene->canonical_annotation(), SQL_VARCHAR);
 
   if (defined($gene->stable_id)) {
 
-	$sth->bind_param(13, $gene->stable_id, SQL_VARCHAR);
+	$sth->bind_param(12, $gene->stable_id, SQL_VARCHAR);
 	my $version = ($gene->version()) ? $gene->version() : 1;
-	$sth->bind_param(14, $version, SQL_INTEGER);
+	$sth->bind_param(13, $version, SQL_INTEGER);
   }
 
   $sth->execute();
@@ -1280,12 +1278,6 @@ sub store {
   my $attr_adaptor = $db->get_AttributeAdaptor();
   $attr_adaptor->store_on_Gene($gene_dbID, $gene->get_all_Attributes);
 
-  # store unconventional transcript associations if there are any
-  my $utaa = $db->get_UnconventionalTranscriptAssociationAdaptor();
-  foreach my $uta (@{$gene->get_all_unconventional_transcript_associations()}) {
-	$utaa->store($uta);
-  }
-
   # set the adaptor and dbID on the original passed in gene not the
   # transfered copy
   $original->adaptor($self);
@@ -1345,13 +1337,6 @@ sub remove {
   foreach my $trans (@{$gene->get_all_Transcripts()}) {
 	$transcriptAdaptor->remove($trans);
   }
-
-  # remove any unconventional transcript associations involving this gene
-
-  $sth = $self->prepare("DELETE FROM unconventional_transcript_association " . "WHERE gene_id = ? ");
-  $sth->bind_param(1, $gene->dbID, SQL_INTEGER);
-  $sth->execute();
-  $sth->finish();
 
   # remove this gene from the database
 
@@ -1452,8 +1437,7 @@ sub update {
               status = ?,
               description = ?,
               is_current = ?,
-              canonical_transcript_id = ?,
-              canonical_annotation = ?
+              canonical_transcript_id = ?
         WHERE gene_id = ?
   );
 
@@ -1481,8 +1465,7 @@ sub update {
 	$sth->bind_param(7, 0, SQL_INTEGER);
   }
 
-  $sth->bind_param(8, $gene->canonical_annotation(), SQL_VARCHAR);
-  $sth->bind_param(9, $gene->dbID(), SQL_INTEGER);
+  $sth->bind_param(8, $gene->dbID(), SQL_INTEGER);
 
   $sth->execute();
 
@@ -1520,9 +1503,9 @@ sub _objs_from_sth {
   my %sr_name_hash;
   my %sr_cs_hash;
 
-  my ($gene_id, $seq_region_id, $seq_region_start, $seq_region_end, $seq_region_strand, $analysis_id, $biotype, $display_xref_id, $gene_description, $status, $source, $is_current, $canonical_transcript_id, $canonical_annotation, $stable_id, $version, $created_date, $modified_date, $xref_display_id, $xref_primary_acc, $xref_desc, $xref_version, $external_db, $external_status, $external_release, $external_db_name, $info_type, $info_text);
+  my ($gene_id, $seq_region_id, $seq_region_start, $seq_region_end, $seq_region_strand, $analysis_id, $biotype, $display_xref_id, $gene_description, $status, $source, $is_current, $canonical_transcript_id, $stable_id, $version, $created_date, $modified_date, $xref_display_id, $xref_primary_acc, $xref_desc, $xref_version, $external_db, $external_status, $external_release, $external_db_name, $info_type, $info_text);
 
-  $sth->bind_columns(\($gene_id, $seq_region_id, $seq_region_start, $seq_region_end, $seq_region_strand, $analysis_id, $biotype, $display_xref_id, $gene_description, $status, $source, $is_current, $canonical_transcript_id, $canonical_annotation, $stable_id, $version, $created_date, $modified_date, $xref_display_id, $xref_primary_acc, $xref_desc, $xref_version, $external_db, $external_status, $external_release, $external_db_name, $info_type, $info_text));
+  $sth->bind_columns(\($gene_id, $seq_region_id, $seq_region_start, $seq_region_end, $seq_region_strand, $analysis_id, $biotype, $display_xref_id, $gene_description, $status, $source, $is_current, $canonical_transcript_id, $stable_id, $version, $created_date, $modified_date, $xref_display_id, $xref_primary_acc, $xref_desc, $xref_version, $external_db, $external_status, $external_release, $external_db_name, $info_type, $info_text));
 
   my $asm_cs;
   my $cmp_cs;
@@ -1761,8 +1744,7 @@ FEATURE: while ($sth->fetch()) {
 		 'status'                  => $status,
 		 'source'                  => $source,
 		 'is_current'              => $is_current,
-		 'canonical_transcript_id' => $canonical_transcript_id,
-		 'canonical_annotation'    => $canonical_annotation}));
+		 'canonical_transcript_id' => $canonical_transcript_id}));
 
   } ## end while ($sth->fetch())
 

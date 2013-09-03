@@ -203,7 +203,6 @@ sub feature_classes{
             PredictionTranscript
             ProteinAlignFeature
             ProteinFeature
-            QtlFeature
             RepeatFeature
             SimpleFeature
             );

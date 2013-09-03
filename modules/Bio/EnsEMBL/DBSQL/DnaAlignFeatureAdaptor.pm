@@ -110,7 +110,6 @@ sub _columns {
             daf.external_db_id
             daf.hcoverage
 	    daf.external_data
-	    daf.pair_dna_align_feature_id
 	    exdb.db_name
 	    exdb.db_display_name);
 }
@@ -152,9 +151,8 @@ sub store {
                              seq_region_end, seq_region_strand,
                              hit_start, hit_end, hit_strand, hit_name,
                              cigar_line, analysis_id, score, evalue,
-                             perc_ident, external_db_id, hcoverage,
-                             pair_dna_align_feature_id)
-     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"    # 16 arguments
+                             perc_ident, external_db_id, hcoverage)
+     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"    # 15 arguments
   );
 
 FEATURE:
@@ -220,8 +218,6 @@ FEATURE:
     $sth->bind_param( 13, $feat->percent_id,     SQL_FLOAT );
     $sth->bind_param( 14, $feat->external_db_id, SQL_INTEGER );
     $sth->bind_param( 15, $feat->hcoverage,      SQL_DOUBLE );
-    $sth->bind_param( 16, $feat->pair_dna_align_feature_id,
-      SQL_INTEGER );
 
     $sth->execute();
 
@@ -245,7 +241,7 @@ sub save {
   my $db = $self->db();
   my $analysis_adaptor = $db->get_AnalysisAdaptor();
 
-  my $sql = qq{INSERT INTO $tablename (seq_region_id, seq_region_start, seq_region_end, seq_region_strand, hit_start, hit_end, hit_strand, hit_name, cigar_line, analysis_id, score, evalue, perc_ident, external_db_id, hcoverage, pair_dna_align_feature_id, external_data) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)};
+  my $sql = qq{INSERT INTO $tablename (seq_region_id, seq_region_start, seq_region_end, seq_region_strand, hit_start, hit_end, hit_strand, hit_name, cigar_line, analysis_id, score, evalue, perc_ident, external_db_id, hcoverage, external_data) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)};
 
   my %analyses = ();
 
@@ -316,8 +312,7 @@ sub save {
     $sth->bind_param(13,$feat->percent_id,SQL_FLOAT);
     $sth->bind_param(14,$feat->external_db_id,SQL_INTEGER);
     $sth->bind_param(15,$feat->hcoverage,SQL_DOUBLE);
-    $sth->bind_param(16,$feat->pair_dna_align_feature_id,SQL_INTEGER);
-    $sth->bind_param(17,$extra_data,SQL_LONGVARCHAR);
+    $sth->bind_param(16,$extra_data,SQL_LONGVARCHAR);
 
 
     $sth->execute();
@@ -395,7 +390,7 @@ sub _objs_from_sth {
        $cigar_line,           $evalue,
        $perc_ident,           $score,
        $external_db_id,       $hcoverage,
-       $extra_data,           $pair_dna_align_feature_id,
+       $extra_data,
        $external_db_name,     $external_display_db_name );
 
   $sth->bind_columns( \( $dna_align_feature_id, $seq_region_id,
@@ -406,7 +401,7 @@ sub _objs_from_sth {
                          $cigar_line,           $evalue,
                          $perc_ident,           $score,
                          $external_db_id,       $hcoverage,
-                         $extra_data,       $pair_dna_align_feature_id,
+                         $extra_data,
                          $external_db_name, $external_display_db_name )
   );
 
@@ -636,8 +631,7 @@ FEATURE:
                'hcoverage'      => $hcoverage,
                'extra_data'     => $evalled_extra_data,
                'dbname'                    => $external_db_name,
-               'db_display_name'           => $external_display_db_name,
-               'pair_dna_align_feature_id' => $pair_dna_align_feature_id
+               'db_display_name'           => $external_display_db_name
              } ) );
 
   } ## end while ( $sth->fetch() )

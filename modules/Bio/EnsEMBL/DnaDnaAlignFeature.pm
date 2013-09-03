@@ -46,7 +46,7 @@ use Bio::EnsEMBL::Utils::Argument qw(rearrange);
 
 =head2 new
 
-  Arg [..]   : List of named arguments. (-pair_dna_align_feature_id) defined
+  Arg [..]   : List of named arguments. defined
                in this constructor, others defined in BaseFeaturePair and 
                SeqFeature superclasses.  
   Example    : $daf = new DnaDnaAlignFeature(-cigar_string => '3M3I12M');
@@ -67,34 +67,9 @@ sub new {
 
   my $self = $class->SUPER::new(@_);
 
-  my ($pair_dna_align_feature_id) = rearrange([qw(PAIR_DNA_ALIGN_FEATURE_ID)], @_);
-  if (defined $pair_dna_align_feature_id){
-      $self->{'pair_dna_align_feature_id'} = $pair_dna_align_feature_id;
-  }
   return $self;
 }
 
-
-=head2 pair_dna_align_feature_id
-
-  Arg[1]     : (optional) String $arg - value to set
-  Example    : $self->pair_dna_align_feature_id($pair_feature_id);
-  Description: Getter/setter for attribute 'pair_dna_align_feature_id'
-               The id of the dna feature aligned
-  Returntype : String
-  Exceptions : none
-  Caller     : general
-  Status     : Stable
-
-=cut
-
-sub pair_dna_align_feature_id{
-    my ($self, $arg) = @_;
-    if (defined $arg){
-	$self->{pair_dna_align_feature_id} = $arg;
-    }
-    return $self->{pair_dna_align_feature_id};
-}
 
 =head2 _hit_unit
 
