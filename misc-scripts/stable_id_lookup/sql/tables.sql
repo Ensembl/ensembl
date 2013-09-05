@@ -21,6 +21,19 @@ CREATE TABLE stable_id_lookup (
 ) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
 
 
+CREATE TABLE archive_id_lookup (
+ archive_id        VARCHAR(128) NOT NULL,
+ species_id       INTEGER UNSIGNED NOT NULL,
+ db_type          VARCHAR(255) NOT NULL,
+ object_type      VARCHAR(255) NOT NULL,
+
+ UNIQUE INDEX archive_id_lookup_idx (archive_id,species_id,db_type,object_type),
+ KEY archive_id_db_type (archive_id,db_type,object_type),
+ KEY archive_id_object_type (archive_id,object_type)
+
+) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
+
+
 CREATE TABLE meta (
 
   meta_id                     INT NOT NULL AUTO_INCREMENT,

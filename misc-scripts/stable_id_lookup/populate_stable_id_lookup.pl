@@ -95,9 +95,11 @@ my $dbh;
 my $species_insert_sth;
 my $species_sth;
 my $stable_id_insert_sth;
+my $archive_id_insert_sth;
 
 
 if (@dbas) {
+
     #if any db adaptors exist (create and) connect to the stable id lookup database
     my $dsn = "DBI:mysql:host=$lhost;";
     if ($lport) {
@@ -142,6 +144,7 @@ if (@dbas) {
    
     #statements used when populating stable_id_lookup table
     $stable_id_insert_sth = $dbh->prepare("INSERT INTO stable_id_lookup VALUES(?,?,?,?)");
+    $archive_id_insert_sth = $dbh->prepare("INSERT INTO archive_id_lookup VALUES(?,?,?,?)");
    
 } else {
     die("No DBAdaptors found on ". join(',',@host) ." for db version $db_version\n");
@@ -156,6 +159,9 @@ my %group_objects = (
                  Translation => 1,
                  Operon => 1,
                  OperonTranscript => 1,
+                 GeneArchive => 1,
+                 TranscriptArchive => 1,
+                 TranslationArchive => 1,
             },
             compara => {
                  GeneTree => 1,
@@ -180,43 +186,72 @@ while (my $dba = shift @dbas) {
 
     if (@stable_id_objects) {
 
-    my $species_name = $dba->species();
-    $species_sth->bind_param( 1, $species_name, SQL_VARCHAR );
-    $species_sth->execute();
+        my $species_name = $dba->species();
+        $species_sth->bind_param( 1, $species_name, SQL_VARCHAR );
+        $species_sth->execute();
 
-    ($species_id) = $species_sth->fetchrow_array();
+        ($species_id) = $species_sth->fetchrow_array();
 
-    if (!$species_id) {
-        $species_id = insert_species_id($dba);
-    }
+        if (!$species_id) {
+            $species_id = insert_species_id($dba);
+        }
 
-    if ($species_id) {
-        $dba_species{$dba->species()} = 1; 
-    }     
+        if ($species_id) {
+            $dba_species{$dba->species()} = 1; 
+        }     
 
     }
 
     foreach my $object_name (@stable_id_objects) {
     
-        my $adaptor =  $dba->get_adaptor($object_name);
-        my %stable_ids;
-    
-        if ($adaptor->can('list_stable_ids')) {
-    
-            %stable_ids = map { $_ => 1 } @{$adaptor->list_stable_ids()};
-         
+        if ($object_name =~ /([A-Za-z]+)Archive/) {
+
+            my $object = $1;
+            my $lc_object = lc($object);
+
+            my $dba_dbh = $dba->dbc->db_handle();
+            my $archive_sql = qq(SELECT DISTINCT old_stable_id FROM stable_id_event
+                                        WHERE old_stable_id IS NOT NULL
+                                          AND type = '$lc_object'
+                                          AND old_stable_id NOT IN (SELECT stable_id FROM $lc_object));
+            my $archive_sth = $dba_dbh->prepare($archive_sql);
+            $archive_sth->execute;
+            my @archive_ids;
+
+            while ((my $archive) = $archive_sth->fetchrow_array) {
+
+               push (@archive_ids, $archive);
+
+            }
+
+            if (@archive_ids) {
+
+                insert_ids(\@archive_ids, $dba, $object, $species_id, 'archive');
+
+            }
+
         } else {
+            my $adaptor =  $dba->get_adaptor($object_name);
+            my %stable_ids;
+            my @archive_ids;
+
+            if ($adaptor->can('list_stable_ids')) {
     
-            %stable_ids = map { ($_->stable_id() || '') => 1 } @{$adaptor->fetch_all()};
-        }
+                %stable_ids = map { $_ => 1 } @{$adaptor->list_stable_ids()};
+         
+            } else {
+    
+                %stable_ids = map { ($_->stable_id() || '') => 1 } @{$adaptor->fetch_all()};
+            }
     
     
-        delete $stable_ids{''};
-        my @stable_ids = keys %stable_ids;
+            delete $stable_ids{''};
+            my @stable_ids = keys %stable_ids;
+     
+            if (@stable_ids) {
     
-        if (@stable_ids) {
-    
-           insert_stable_ids(\@stable_ids,$dba,$object_name, $species_id);
+                insert_ids(\@stable_ids, $dba, $object_name, $species_id, 'stable');
+            }
         }
     }
 
@@ -225,26 +260,28 @@ while (my $dba = shift @dbas) {
 $species_sth->finish() if ($species_sth);
 $species_insert_sth->finish() if ($species_insert_sth);
 $stable_id_insert_sth->finish() if ($stable_id_insert_sth);
+$archive_id_insert_sth->finish() if ($archive_id_insert_sth);
 
 $dbh->disconnect() if ($dbh);
 
 
 
-sub insert_stable_ids {
+sub insert_ids {
 
-    my $stable_ids = shift;
+    my $ids = shift;
     my $dba = shift;
     my $object = shift;
     my $lookup_db_species_id = shift;
+    my $id_type = shift;
 
 
-    my @stable_ids = @$stable_ids;
+    my @ids = @$ids;
 
     my @species_id;
     my @db_type;
     my @object_type;
 
-    for (1..@stable_ids) {
+    for (1..@ids) {
         push @species_id, $lookup_db_species_id;
         push @db_type, $dba->group();
         push @object_type, $object;
@@ -252,26 +289,38 @@ sub insert_stable_ids {
 
     my $tuples;
     my @tuple_status;
-    eval {
-    $tuples = $stable_id_insert_sth->execute_array(
-    { ArrayTupleStatus => \@tuple_status },
-         \@stable_ids,
-         \@species_id,
-         \@db_type,
-         \@object_type,
-     );
-    };
+    if ($id_type eq 'stable') {
+      eval {
+      $tuples = $stable_id_insert_sth->execute_array(
+      { ArrayTupleStatus => \@tuple_status },
+           \@ids,
+           \@species_id,
+           \@db_type,
+           \@object_type,
+       );
+      };
+    } elsif ($id_type eq 'archive') {
+      eval {
+      $tuples = $archive_id_insert_sth->execute_array(
+      { ArrayTupleStatus => \@tuple_status },
+           \@ids,
+           \@species_id,
+           \@db_type,
+           \@object_type,
+       );
+      };
+    }
 
     if ($tuples) {
-        printf STDOUT "Successfully inserted %d stable ids for %s (%d), db type : %s, object type : %s\n", scalar @stable_ids, $dba->species(), $species_id[0], $dba->group(), $object;
+        printf STDOUT "Successfully inserted %d %s ids for %s (%d), db type : %s, object type : %s\n", scalar @ids, $id_type, $dba->species(), $species_id[0], $dba->group(), $object;
     }
     else {
-     for my $tuple (0..@stable_ids-1) {
+     for my $tuple (0..@ids-1) {
           my $status = $tuple_status[$tuple];
           $status = [0, "Skipped"] unless defined $status;
           next unless ref $status;
           printf STDERR "Failed to insert (%s, %s, %s, %s): %s\n",
-          $stable_ids[$tuple], $species_id[$tuple], $db_type[$tuple], $object_type[$tuple], $status->[1];
+          $ids[$tuple], $species_id[$tuple], $db_type[$tuple], $object_type[$tuple], $status->[1];
      }
     }
 
