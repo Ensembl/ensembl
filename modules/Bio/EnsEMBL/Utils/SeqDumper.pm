@@ -484,8 +484,8 @@ sub dump_embl {
   # after printing the sequence and having the base counts
   # we can seek to this position and write the proper sequence 
   # header
-  my $offset = tell($FH);
-  $offset == -1 and throw "Unable to get offset for output fh";
+  my $sq_offset = tell($FH);
+  $sq_offset == -1 and throw "Unable to get offset for output fh";
 
   # print a sequence header template, to be replaced with a real
   # one containing the base counts
@@ -495,14 +495,19 @@ sub dump_embl {
   my $acgt = $self->write_embl_seq($slice, $FH);
   
   # print the end of EMBL entry
-  $self->print( $FH, "\n//\n" );
+  $self->print( $FH, "//\n" );
+  my $end_of_entry_offset = tell($FH);
+  $end_of_entry_offset == -1 and throw "Unable to get offset for output fh";
 
   # seek backwards to the position of the sequence header and 
   # write it with the actual base counts
-  seek($FH, $offset, SEEK_SET) 
+  seek($FH, $sq_offset, SEEK_SET) 
     or throw "Cannot seek backward to sequence header position";
   $self->print($FH, sprintf "SQ   Sequence %10d BP; %10d A; %10d C; %10d G; %10d T; %10d other;", 
 	       $acgt->{tot}, $acgt->{a}, $acgt->{c}, $acgt->{g}, $acgt->{t}, $acgt->{n});
+
+  seek($FH, $end_of_entry_offset, SEEK_SET) 
+    or throw "Cannot seek forward to end of entry";
 
   # Set formatting back to normal
   $: = " \n-";
@@ -1122,7 +1127,7 @@ sub write_embl_seq {
       formline($EMBL_SEQ, 
 	       $sseq, $sseq, $sseq, $sseq, $sseq, $sseq, 
 	       $end - $total);
-      print $FH $^A or throw "Error writing to file handle: $!";
+      $self->print($FH, $^A);
       $^A = '';
     }
 
