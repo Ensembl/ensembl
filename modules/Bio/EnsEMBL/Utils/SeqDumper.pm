@@ -55,6 +55,7 @@ package Bio::EnsEMBL::Utils::SeqDumper;
 use strict;
 
 use IO::File;
+use Fcntl qw( SEEK_SET );
 use vars qw(@ISA);
 
 use Bio::EnsEMBL::Utils::Exception qw(throw warning);
@@ -116,6 +117,10 @@ sub new {
   foreach my $p (sort keys %{$params || {}}) {
       $self->{$p} = $params->{$p};
   }
+
+  # default 60kb buffer 
+  exists $self->{'chunk_factor'} and defined $self->{'chunk_factor'}
+    or $self->{'chunk_factor'} = 1000;
 
   return $self;
 }
@@ -339,7 +344,7 @@ sub dump {
   Example    : $seq_dumper->dump_embl($slice, $FH);
   Description: Dumps an EMBL flat file to an open file handle
   Returntype : none
-  Exceptions : none
+  Exceptions : if calls to get/set the filehandle position fail
   Caller     : dump
 
 =cut
@@ -348,7 +353,6 @@ sub dump_embl {
   my $self = shift;
   my $slice = shift;
   my $FH   = shift;
-  my $SEQ = shift;
 
   my $len = $slice->length;
 
@@ -371,10 +375,7 @@ sub dump_embl {
                                     undef,undef,undef,
                                     $cs->version);
 
-
   my $entry_name = $slice->seq_region_name();
-
-
 
   if($full_slice->name eq $slice->name) {
     $name_str .= ' full sequence';
@@ -395,8 +396,6 @@ sub dump_embl {
   }
 
   $acc = $slice->name();
-
-
 
   #line breaks are allowed near the end of the line on ' ', "\t", "\n", ',' 
   $: = (" \t\n-,");
@@ -465,7 +464,7 @@ sub dump_embl {
   }
 
   ####################
-  #DUMP FEATURE TABLE
+  # DUMP FEATURE TABLE
   ####################
   $self->print( $FH, "FH   Key             Location/Qualifiers\n" );
 
@@ -478,35 +477,36 @@ sub dump_embl {
   $self->print( $FH, "XX\n" );
 
   ###################
-  #DUMP SEQUENCE
+  # DUMP SEQUENCE
   ###################
 
-  if(!defined($SEQ)){
-    $SEQ = $slice->seq();
-  }
-#  my $SEQ     = $slice->seq();
-  my $length  = length($SEQ);
-  my $a_count = $SEQ =~ tr/aA/aA/;
-  my $c_count = $SEQ =~ tr/cC/cC/;
-  my $t_count = $SEQ =~ tr/tT/tT/;
-  my $g_count = $SEQ =~ tr/gG/gG/;
-  my $other_count = $length - $a_count - $c_count - $t_count - $g_count;
+  # record position before writing sequence header, so that 
+  # after printing the sequence and having the base counts
+  # we can seek to this position and write the proper sequence 
+  # header
+  my $offset = tell($FH);
+  $offset == -1 and throw "Unable to get offset for output fh";
 
-  my $value = "Sequence $length BP; $a_count A; $c_count C; " .
-    "$g_count G; $t_count T; $other_count other;";
-  $self->print($FH, 'SQ   '.$value."\n");
+  # print a sequence header template, to be replaced with a real
+  # one containing the base counts
+  $self->print($FH, "SQ   Sequence ########## BP; ########## A; ########## C; ########## G; ########## T; ########## other;\n");
+  
+  # dump the sequence and get the base counts
+  my $acgt = $self->write_embl_seq($slice, $FH);
+  
+  # print the end of EMBL entry
+  $self->print( $FH, "\n//\n" );
 
-  $self->write_embl_seq($FH, \$SEQ);
-
-
-  $self->print( $FH, "//\n" );
+  # seek backwards to the position of the sequence header and 
+  # write it with the actual base counts
+  seek($FH, $offset, SEEK_SET) 
+    or throw "Cannot seek backward to sequence header position";
+  $self->print($FH, sprintf "SQ   Sequence %10d BP; %10d A; %10d C; %10d G; %10d T; %10d other;", 
+	       $acgt->{tot}, $acgt->{a}, $acgt->{c}, $acgt->{g}, $acgt->{t}, $acgt->{n});
 
   # Set formatting back to normal
   $: = " \n-";
 }
-
-
-
 
 =head2 dump_genbank
 
@@ -1086,27 +1086,53 @@ sub write_genbank_seq {
 
 sub write_embl_seq {
   my $self = shift;
+  my $slice = shift;
   my $FH   = shift;
-  my $seq  = shift;
-  my $base_total = shift;
 
-  $base_total ||= 0;
+  my $width = 60;
 
+  # set buffer size
+  my $chunk_size = $self->{'chunk_factor'} * $width;
+  $chunk_size > 0 or throw "Invalid chunk size: check chunk_factor parameter";
+
+  my $start = 1;
+  my $end = $slice->length;
+  my $total = $end;
+
+  # chunk the sequence to conserve memory, and print
+  my $here = $start;
   my $EMBL_SEQ = 
-'     ^<<<<<<<<< ^<<<<<<<<< ^<<<<<<<<< ^<<<<<<<<< ^<<<<<<<<< ^<<<<<<<<<@>>>>>>>>>~
+    '     ^<<<<<<<<< ^<<<<<<<<< ^<<<<<<<<< ^<<<<<<<<< ^<<<<<<<<< ^<<<<<<<<<@>>>>>>>>>~
 ';
-  #keep track of total and print lines of 60 bases with spaces every 10bp
-  my $length = length($$seq);
-  my $total = $length - $base_total;
-  while($$seq) {
-    $total -= 60;
-    $total = 0 if($total < 0);
-    formline($EMBL_SEQ, 
-	     $$seq, $$seq, $$seq, $$seq, $$seq, $$seq, 
-	     $length - $total);
-    $self->print( $FH, $^A );
-    $^A = '';
+  my $acgt;
+
+  while($here <= $end) {
+    my $there = $here + $chunk_size - 1;
+    $there = $end if($there > $end);
+    my $sseq = $slice->subseq($here, $there);
+
+    $acgt->{a} += $sseq =~ tr/Aa//;
+    $acgt->{c} += $sseq =~ tr/Cc//;
+    $acgt->{g} += $sseq =~ tr/Gg//;
+    $acgt->{t} += $sseq =~ tr/Tt//;
+
+    while($sseq) {
+      $total -= 60;
+      $total = 0 if $total < 0;
+      formline($EMBL_SEQ, 
+	       $sseq, $sseq, $sseq, $sseq, $sseq, $sseq, 
+	       $end - $total);
+      print $FH $^A or throw "Error writing to file handle: $!";
+      $^A = '';
+    }
+
+    $here = $there + 1;
   }
+
+  $acgt->{n} = $end - ($acgt->{a} + $acgt->{c} + $acgt->{g} + $acgt->{t});
+  $acgt->{tot} = $end;
+
+  return $acgt;
 }
 
 sub print {
