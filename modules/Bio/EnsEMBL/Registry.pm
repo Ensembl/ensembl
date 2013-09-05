@@ -2781,13 +2781,14 @@ my %compara_stable_id_stmts = (
 );
 
 sub get_species_and_object_type {
-  my ($self, $stable_id, $known_type, $known_species, $known_db_type, $force_long_lookup) = @_;
+  my ($self, $stable_id, $known_type, $known_species, $known_db_type, $force_long_lookup, $use_archive) = @_;
 
   #get the stable_id lookup database adaptor
+
   my $stable_ids_dba = $self->get_DBAdaptor("multi", "stable_ids", 1);
   
   if ($stable_ids_dba && ! $force_long_lookup) {
-    return $self->_lookup_db_get_species_and_object_type($stable_id, $known_type, $known_species, $known_db_type);
+    return $self->_lookup_db_get_species_and_object_type($stable_id, $known_type, $known_species, $known_db_type, $use_archive);
   } 
   else {
     if(defined $known_type) {
@@ -2823,8 +2824,27 @@ sub get_species_and_object_type {
 } ## end sub get_species_and_object_type
 
 sub _lookup_db_get_species_and_object_type {
-  my ($self, $stable_id, $known_type, $known_species, $known_db_type) = @_;
+  my ($self, $stable_id, $known_type, $known_species, $known_db_type, $use_archive) = @_;
+
+  my $retired;
   my $stable_ids_dba = $self->get_DBAdaptor("multi", "stable_ids", 1);
+
+  my ($species, $type, $db_type) = $self->stable_id_lookup($stable_id, $known_type, $known_species, $known_db_type);
+
+  if (!$species && $use_archive) {
+    ($species, $type, $db_type) = $self->archive_id_lookup($stable_id, $known_type, $known_species, $known_db_type);
+    $retired = 1 if $species;
+  }
+
+  return ($species ,$type, $db_type, $retired);
+} ## end sub _lookup_db_get_species_and_object_type
+
+
+sub stable_id_lookup {
+  my ($self, $stable_id, $known_type, $known_species, $known_db_type) = @_;
+  my $retired;
+  my $stable_ids_dba = $self->get_DBAdaptor("multi", "stable_ids", 1);
+
   my $statement = 'SELECT name, object_type, db_type FROM stable_id_lookup join species using(species_id) WHERE stable_id = ?';
   if ($known_species) {
     $statement .= ' AND name = ?';
@@ -2835,7 +2855,7 @@ sub _lookup_db_get_species_and_object_type {
   if ($known_type) {
     $statement .= ' AND object_type = ?';
   }
-  
+
   my $sth = $stable_ids_dba->dbc()->prepare($statement);
   $sth->bind_param(1, $stable_id, SQL_VARCHAR);
   my $param_count = 1;
@@ -2855,8 +2875,50 @@ sub _lookup_db_get_species_and_object_type {
   $sth->execute();
   my ($species, $type, $db_type) = $sth->fetchrow_array();
   $sth->finish();
+
   return ($species ,$type, $db_type);
-} ## end sub _lookup_db_get_species_and_object_type
+}
+
+sub archive_id_lookup {
+  my ($self, $stable_id, $known_type, $known_species, $known_db_type) = @_;
+  my $retired;
+  my $stable_ids_dba = $self->get_DBAdaptor("multi", "stable_ids", 1);
+
+  my $archive_statement = 'SELECT name, object_type, db_type FROM archive_id_lookup join species using(species_id) WHERE archive_id = ?';
+  if ($known_species) {
+    $archive_statement .= ' AND name = ?';
+  }
+  if ($known_db_type) {
+    $archive_statement .= ' AND db_type = ?';
+  }
+  if ($known_type) {
+    $archive_statement .= ' AND object_type = ?';
+  }
+
+  my $archive_sth = $stable_ids_dba->dbc()->prepare($archive_statement);
+  $archive_sth->bind_param(1, $stable_id, SQL_VARCHAR);
+  my $param_count = 1;
+  if ($known_species) {
+    $known_species = $self->get_alias($known_species);
+    $param_count++;
+    $archive_sth->bind_param($param_count, $known_species, SQL_VARCHAR);
+  }
+  if ($known_db_type) {
+    $param_count++;
+    $archive_sth->bind_param($param_count, $known_db_type, SQL_VARCHAR);
+  }
+  if ($known_type) {
+    $param_count++;
+    $archive_sth->bind_param($param_count, $known_type, SQL_VARCHAR);
+  }
+
+  $archive_sth->execute();
+  my ($species, $type, $db_type) = $archive_sth->fetchrow_array();
+  $archive_sth->finish();
+
+  return ($species ,$type, $db_type);
+}
+
 
 
 # Loop over a known set of object types for a core DB until we find a hit 
