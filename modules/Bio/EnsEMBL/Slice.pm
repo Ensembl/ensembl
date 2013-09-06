@@ -551,6 +551,24 @@ sub has_karyotype {
   return $self->{'karyotype'};
 }
 
+=head2 karyotype_rank
+  Arg        : none
+  Example    : my $rank = $slice->karyotype_rank()
+  Description: Returns the numeric ranking in the karyotype. Otherwise 0 is returned
+  Returntype : int
+  Caller     : general
+  Status     : At Risk
+
+=cut
+
+sub karyotype_rank {
+  my ($self) = @_;
+  if(! defined( $self->{karyotype_rank})) {
+    my $rank = $self->adaptor()->get_karyotype_rank($self->get_seq_region_id());
+    $self->{karyotype_rank} = $rank if $rank;
+  }
+  return $self->{karyotype_rank} || 0;
+}
 
 =head2 is_circular
   Arg        : none
