@@ -116,7 +116,7 @@ use warnings;
 use base qw(Exporter);
 
 our $GZIP_OK = 0;
-our @EXPORT_OK = qw/slurp slurp_to_array fh_to_array process_to_array work_with_file gz_slurp gz_slurp_to_array gz_work_with_file iterate_file iterate_lines move_data/;
+our @EXPORT_OK = qw/slurp slurp_to_array fh_to_array process_to_array work_with_file gz_slurp gz_slurp_to_array gz_work_with_file filter_dir iterate_file iterate_lines move_data/;
 our %EXPORT_TAGS = (
   all     => [@EXPORT_OK],
   slurp   => [qw/slurp slurp_to_array gz_slurp gz_slurp_to_array/],
@@ -434,6 +434,40 @@ sub gz_work_with_file {
   close($fh) or throw "Cannot close FH from ${file}: $!";
   return;
 }
+
+=head2 filter_dir
+
+  Arg [1]     : String; directory
+  Arg [2]     : CodeRef; the callback which is given a file in the
+                directory as its only argument
+  Description : Return the lexicographically sorted content of a directory.
+                The callback allows to specify the criteria an entry in
+                the directory must satisfy in order to appear in the content.
+  Returntype  : Arrayref; list with the filtered files/directory
+  Example     : filter_dir('/tmp', sub { 
+                  my $file = shift;
+
+                  # select perl scripts in the directory
+                  return $file if $file =~ /\.pl$/; 
+                });
+  Exceptions  : If the directory cannot be opened or its handle
+                cannot be closed
+  Status      : Stable
+
+=cut
+
+sub filter_dir {
+  my ($dir, $callback) = @_;
+
+  assert_ref($callback, 'CODE', 'callback');
+
+  opendir(my $dh, $dir) or throw "Cannot open directory $dir";
+  my @files = sort grep { $callback->($_) } readdir($dh);
+  closedir($dh) or throw "Cannot close directory $dir";
+
+  return \@files;
+}
+
 
 =head2 move_data
 
