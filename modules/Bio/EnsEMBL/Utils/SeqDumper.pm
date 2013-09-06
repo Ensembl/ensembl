@@ -526,7 +526,7 @@ sub dump_embl {
 =cut
 
 sub dump_genbank {
-  my ($self, $slice, $FH, $SEQ) = @_;
+  my ($self, $slice, $FH) = @_;
 
   #line breaks are allowed near the end of the line on ' ', "\t", "\n", ',' 
   $: = " \t\n-,";
@@ -640,26 +640,34 @@ sub dump_genbank {
   # DUMP SEQUENCE
   ####################
 
-  if(!defined($SEQ)){
-    $SEQ = $slice->seq();
-  }
-#  my $SEQ       = $slice->seq();
-  my $a_count = $SEQ =~ tr/aA/aA/;
-  my $c_count = $SEQ =~ tr/cC/cC/;
-  my $t_count = $SEQ =~ tr/tT/tT/;
-  my $g_count = $SEQ =~ tr/gG/gG/;
-  my $bp_length = length($SEQ);
-  my $other_count = $bp_length - $a_count - $c_count - $t_count - $g_count;
+  # record position before writing sequence header, so that 
+  # after printing the sequence and having the base counts
+  # we can seek to this position and write the proper sequence 
+  # header
+  my $sq_offset = tell($FH);
+  $sq_offset == -1 and throw "Unable to get offset for output fh";
 
-  $tag   = 'BASE COUNT';
-  $value = "$a_count a $c_count c $g_count g $t_count t";
-  $value .= " $other_count n" if($other_count);
-  $self->print($FH, qq{$tag  $value\n});
-  $self->print( $FH, "ORIGIN\n" );
-
-  $self->write_genbank_seq($FH, \$SEQ);
-
+  # print a sequence header template, to be replaced with a real
+  # one containing the base counts
+  $self->print($FH, "BASE COUNT  ########## a ########## c ########## g ########## t ########## n\nORIGIN\n");
+  
+  # dump the sequence and get the base counts
+  my $acgt = $self->write_genbank_seq($slice, $FH);
+  
+  # print the end of genbank entry
   $self->print( $FH, "//\n" );
+  my $end_of_entry_offset = tell($FH);
+  $end_of_entry_offset == -1 and throw "Unable to get offset for output fh";
+
+  # seek backwards to the position of the sequence header and 
+  # write it with the actual base counts
+  seek($FH, $sq_offset, SEEK_SET) 
+    or throw "Cannot seek backward to sequence header position";
+  $self->print($FH, sprintf "BASE COUNT  %10d a %10d c %10d g %10d t %10d n", 
+	       $acgt->{a}, $acgt->{c}, $acgt->{g}, $acgt->{t}, $acgt->{n});
+
+  seek($FH, $end_of_entry_offset, SEEK_SET) 
+    or throw "Cannot seek forward to end of entry";
 
   # Set formatting back to normal
   $: = " \n-";
@@ -1088,6 +1096,55 @@ sub write_genbank_seq {
     $^A = '';
   }
 }
+
+sub write_genbank_seq {
+  my $self = shift;
+  my $slice = shift;
+  my $FH   = shift;
+
+  my $width = 60;
+
+  # set buffer size
+  my $chunk_size = $self->{'chunk_factor'} * $width;
+  $chunk_size > 0 or throw "Invalid chunk size: check chunk_factor parameter";
+
+  my $start = 1;
+  my $end = $slice->length;
+  my $total = -59;
+
+  # chunk the sequence to conserve memory, and print
+  my $here = $start;
+  my $GENBANK_SEQ = 
+'@>>>>>>>> ^<<<<<<<<< ^<<<<<<<<< ^<<<<<<<<< ^<<<<<<<<< ^<<<<<<<<< ^<<<<<<<<<~
+';
+  my $acgt;
+
+  while($here <= $end) {
+    my $there = $here + $chunk_size - 1;
+    $there = $end if($there > $end);
+    my $sseq = $slice->subseq($here, $there);
+
+    $acgt->{a} += $sseq =~ tr/Aa//;
+    $acgt->{c} += $sseq =~ tr/Cc//;
+    $acgt->{g} += $sseq =~ tr/Gg//;
+    $acgt->{t} += $sseq =~ tr/Tt//;
+
+    while($sseq) {
+      $total += 60;
+      formline($GENBANK_SEQ, $total, $sseq, $sseq, $sseq, $sseq, $sseq, $sseq);
+      $self->print($FH, $^A);
+      $^A = '';
+    }
+
+    $here = $there + 1;
+  }
+
+  $acgt->{n} = $end - ($acgt->{a} + $acgt->{c} + $acgt->{g} + $acgt->{t});
+  $acgt->{tot} = $end;
+
+  return $acgt;
+}
+
 
 sub write_embl_seq {
   my $self = shift;
