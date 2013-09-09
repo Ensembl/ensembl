@@ -39,12 +39,12 @@ This step is entirely optional, you can proceed to step (2) immediately if you
 like.
 
   $ ensembl/misc-scripts/schema_patcher.pl --host HOST --port PORT \
-    --user xxx --pass xxx --type core --from 65 --to 66 --verbose --dryrun 
+    --user xxx --pass xxx --type core --from 65 --release 66 --verbose --dryrun 
 
 2. Patch the databases:
 
   $ ensembl/misc-scripts/schema_patcher.pl --host HOST --port PORT \
-    --user xxx --pass xxx --type core --from 65 --to 66 --verbose
+    --user xxx --pass xxx --type core --from 65 --release 66 --verbose
 
 Patching other databases:
 -------------------------
@@ -54,7 +54,7 @@ variation databases. If you want to patch the variation DBs then run as
 follows
 
   $ ensembl/misc-scripts/schema_patcher.pl --host HOST --port PORT \
-    --user xxx --pass xxx --type variation --from 65 --to 66 --verbose
+    --user xxx --pass xxx --type variation --from 65 --release 66 --verbose
 
 Running against a single database:
 ----------------------------------
@@ -64,7 +64,7 @@ Some circumstances require the running of the code against a single database
 already been reported as run in the meta table).
 
   $ ensembl/misc-scripts/schema_patcher.pl --host HOST --port PORT \
-    --user xxx --pass xxx --database homo_sapiens_core_66_37 --from 65 --to 66 --verbose
+    --user xxx --pass xxx --database homo_sapiens_core_66_37 --from 65 --release 66 --verbose
 
 Checking if you are up to date:
 -------------------------------
