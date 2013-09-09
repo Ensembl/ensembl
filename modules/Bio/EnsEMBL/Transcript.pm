@@ -1481,7 +1481,7 @@ sub get_all_IntronSupportingEvidence {
     my $isea = $self->adaptor()->db()->get_IntronSupportingEvidenceAdaptor();
     $self->{_ise_array} = $isea->fetch_all_by_Transcript($self);
   }
-  return $self->{_ise_array};
+  return $self->{_ise_array} || [];
 }
 
 
