@@ -225,7 +225,7 @@ sub fetch_by_chr_band {
 =cut
 
 sub list_dbIDs {
-  my ($self, $ordered) = shift;
+  my ($self, $ordered) = @_;
 
   return $self->_list_dbIDs("karyotype",undef, $ordered);
 }
