@@ -407,6 +407,12 @@ sub dump_embl {
   # move at the end of file in case the file
   # is open more than once (i.e. human chromosome Y, 
   # two chromosome slices
+  #
+  # WARNING
+  #
+  # When the file is open not for the first time,
+  # it must be in read/write mode
+  #
   seek($FH, 0, SEEK_END);
 
   my $EMBL_HEADER = 
@@ -601,6 +607,12 @@ sub dump_genbank {
   # move at the end of file in case the file
   # is open more than once (i.e. human chromosome Y, 
   # two chromosome slices
+  #
+  # WARNING
+  #
+  # When the file is open not for the first time,
+  # it must be in read/write mode
+  #
   seek($FH, 0, SEEK_END);
 
   #LOCUS
