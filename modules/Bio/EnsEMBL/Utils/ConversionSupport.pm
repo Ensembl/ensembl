@@ -861,7 +861,7 @@ sub get_dbconnection {
 =cut
 
 sub dba {
-  my ($self, $database) = shift;
+  my ($self, $database) = @_;
   return $self->{'_dba'}->{$database} || $self->{'_dba'}->{'default'};
 }
 
