@@ -55,7 +55,7 @@ package Bio::EnsEMBL::Utils::SeqDumper;
 use strict;
 
 use IO::File;
-use Fcntl qw( SEEK_SET );
+use Fcntl qw( SEEK_SET SEEK_END );
 use vars qw(@ISA);
 
 use Bio::EnsEMBL::Utils::Exception qw(throw warning);
@@ -404,6 +404,11 @@ sub dump_embl {
   # dump header
   #############
 
+  # move at the end of file in case the file
+  # is open more than once (i.e. human chromosome Y, 
+  # two chromosome slices
+  seek($FH, 0, SEEK_END);
+
   my $EMBL_HEADER = 
 '@<   ^<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<~
 ';
@@ -506,6 +511,7 @@ sub dump_embl {
   $self->print($FH, sprintf "SQ   Sequence %10d BP; %10d A; %10d C; %10d G; %10d T; %10d other;", 
 	       $acgt->{tot}, $acgt->{a}, $acgt->{c}, $acgt->{g}, $acgt->{t}, $acgt->{n});
 
+  # move forward to end of file to dump the next slice
   seek($FH, $end_of_entry_offset, SEEK_SET) 
     or throw "Cannot seek forward to end of entry";
 
@@ -591,6 +597,11 @@ sub dump_genbank {
   my $date = $self->_date_string;
 
   my $meta_container = $slice->adaptor()->db()->get_MetaContainer();
+
+  # move at the end of file in case the file
+  # is open more than once (i.e. human chromosome Y, 
+  # two chromosome slices
+  seek($FH, 0, SEEK_END);
 
   #LOCUS
   my $tag   = 'LOCUS';
