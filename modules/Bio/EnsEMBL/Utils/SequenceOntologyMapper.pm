@@ -18,6 +18,10 @@ SequenceOntologyMapper - Translates EnsEMBL objects into Sequence Ontology terms
 
 use Bio::EnsEMBL::Utils::SequenceOntologyMapper
 
+# get an Ensembl feature somehow
+...
+...
+
 my $ontology_adaptor = $registry->get_adaptor( 'Multi', 'Ontology', 'OntologyTerm' );
 my $mapper = SequenceOntologyMapper->new($ontology_adaptor);
 
@@ -25,16 +29,11 @@ print $mapper->translate($feature);
 
 =head1 DESCRIPTION
 
-BiotypeMapper provides a series of nearest matches between EnsEMBL biotypes and
-the Sequence Ontology (http://www.sequenceontology.org). In addition, biotypes
-are members of groupings, such as "short non-coding". This allows one to
-conveniently select all the biotypes of a certain kind. 
+Basic mapper from Ensembl feature objects to Sequence Ontology 
+(http://www.sequenceontology.org) terms.
 
-SO Mappings are imperfect due to the inexact correspondance of biotypes to 
-several SO terms. The a best guess has been chosen in each case.
-
-Reverse mappings from SO to biotype are vague, due to many-to-one relationships.
-In this case a list of possible terms is given. 
+There's no reverse mapping as there doesn't seem to be any utility 
+in it at the moment (would require to create empty feature objects).
 
 =cut
 
