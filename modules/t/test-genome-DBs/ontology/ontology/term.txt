@@ -147,3 +147,13 @@
 33677	3	N	GO:0097100	supercoiled DNA binding	"Interacting selectively and non-covalently with supercoiled DNA. During replication and transcription, template DNA is negatively supercoiled in the receding downstream DNA and positively supercoiled in the approaching downstream DNA." [GOC:pr, GOC:rph, PMID:20723754, PMID:21345933, Wikipedia:DNA_supercoil]	0	0
 33736	3	N	GO:0097159	organic cyclic compound binding	"Interacting selectively and non-covalently with an organic cyclic compound, any molecular entity that contains carbon arranged in a cyclic molecular structure." [CHEBI:33832, GOC:sjw, PMID:7583672]	0	0
 35405	3	N	GO:1901363	heterocyclic compound binding	"Interacting selectively and non-covalently with heterocyclic compound." [GOC:TermGenie]	0	0
+39579	5	SOFA	SO:0000001	region	"""A sequence_feature with an extent greater than zero. A nucleotide region is composed of bases and a polypeptide region is composed of amino acids."" [SO:ke]"	0	0
+39724	5	SOFA	SO:0000147	exon	"""A region of the transcript sequence within a gene which is not removed from the primary RNA transcript by RNA splicing."" [SO:ke]"	0	0
+40233	5	SOFA	SO:0000657	repeat_region	"""A region of sequence containing one or more repeat units."" [SO:ke]"	0	0
+40249	5	SOFA	SO:0000673	transcript	"""An RNA synthesized on a DNA or RNA template by an RNA polymerase."" [SO:ma]"	0	0
+40280	5	SOFA	SO:0000704	gene	"""A region (or regions) that includes all of the sequence elements necessary to encode a functional transcript. A gene may include regulatory regions, transcribed regions and/or other functional sequence regions."" [SO:immuno_workshop]"	0	0
+40582	5	NULL	SO:0001009	DNA_constraint_sequence	"""A double-stranded DNA used to control macromolecular structure and function."" [http:/www.ncbi.nlm.nih.gov/entrez/query.fcgi?cmd=search&db=pubmed&term=SILVERMAN+SK[au\]&dispmax=50]"	0	0
+40633	5	NULL	SO:0001060	sequence_variant	"""A sequence_variant is a non exact copy of a sequence_feature or genome exhibiting one or more sequence_alteration."" [SO:ke]"	1	0
+40981	5	SOFA	SO:0001411	biological_region	"""A region defined by its disposition to be involved in a biological process."" [SO:cb]"	0	0
+41106	5	NULL	SO:0001537	structural_variant	"""A sequence variant that changes one or more sequence features."" [SO:ke]"	0	0
+41493	5	SOFA	SO:0005836	regulatory_region	"""A region of sequence that is involved in the control of a biological process."" [SO:ke]"	0	0
