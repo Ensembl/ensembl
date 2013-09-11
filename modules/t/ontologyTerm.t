@@ -61,7 +61,7 @@ $terms = $go_adaptor->fetch_all_by_name($pattern, undef, 1);
 is(@{$terms}, 138, "Found binding terms, including obsolete ones");
 
 my $roots = $go_adaptor->fetch_all_roots();
-is(@{$roots}, 1, "Found roots");
+is(@{$roots}, 2, "Found roots");
 
 my $go_roots = $go_adaptor->fetch_all_roots('go');
 is(@{$go_roots}, 1, "Found go roots");
