@@ -52,7 +52,7 @@ use Bio::EnsEMBL::Utils::Exception;
     Constructor
     Arg [1]    : OntologyTermAdaptor from the EnsEMBL registry
     Returntype : Bio::EnsEMBL::SequenceOntologyMapper
-    Exceptions : If no ontology term adaptor is given
+    Exceptions : If no ontology term adaptor is passed as argument
 
 =cut
 
@@ -92,7 +92,8 @@ sub new {
 
 =head2 translate
 
-    Arg [0]    : Instance of Bio::EnsEMBL::Feature subclass
+    Arg [0]    : Instance of Bio::EnsEMBL::Feature, subclass or
+                 related Storable
     Description: Translates a Feature type into an SO term. 
     Returntype : String; the SO term
     Exceptions : if argument is not an instance of Bio::EnsEMBL::Feature
@@ -107,18 +108,15 @@ sub translate {
     my $so_accession;
     my $so_name;
     my $ref = ref($feature);
-
-    $feature->isa('Bio::EnsEMBL::Feature') or 
-      throw "Need an instance of Bio::EnsEMBL::Feature";
   
     my $mapping = $self->{feat_to_acc};
     if (exists $mapping->{$ref}) {
       $so_accession = $mapping->{$ref};
     } elsif ($feature->can('SO_term')) {
       $so_accession = $feature->SO_term();
-    } else {
-      $so_accession = $mapping->{'Bio::EnsEMBL::Feature'};
-    }
+    }#  else {
+    #   $so_accession = $mapping->{'Bio::EnsEMBL::Feature'};
+    # }
 
     if ($so_accession) {
        $so_name = $self->_fetch_SO_name_by_accession($so_accession);
@@ -133,7 +131,7 @@ sub translate {
 	 if $feature->isa('Bio::EnsEMBL::Variation::BaseVariationFeature');
      }
     
-    throw sprintf "%s: sequence ontology mapping not found", $ref
+    throw sprintf "%s: mapping to sequence ontology term not found", $ref
       unless $so_name;
     
     return $so_name;
