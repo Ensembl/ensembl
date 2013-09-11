@@ -18,7 +18,7 @@ SequenceOntologyMapper - Translates EnsEMBL objects into Sequence Ontology terms
 
 use Bio::EnsEMBL::Utils::SequenceOntologyMapper
 
-# get an Ensembl feature somehow
+# get an Ensembl feature somehow in $feature
 ...
 ...
 
@@ -37,7 +37,7 @@ in it at the moment (would require to create empty feature objects).
 
 =cut
 
-package Bio::EnsEMBL::Utils::BiotypeMapper;
+package Bio::EnsEMBL::Utils::SequenceOntologyMapper;
 
 use strict;
 use warnings;
@@ -57,10 +57,12 @@ use Bio::EnsEMBL::Utils::Exception;
 =cut
 
 sub new {
-  my $class = shift;
+  my ($class, $oa) = @_;
+  defined $oa or throw "No ontology term adaptor specified";
+
   my $self = 
     { 	
-     ontology_adaptor => shift || throw "No ontology term adaptor specified",
+     ontology_adaptor => $oa,
      feat_to_acc => 
      {
       'Bio::EnsEMBL::Feature' => 'SO:0000001', # region
@@ -90,8 +92,8 @@ sub new {
 
 =head2 translate
 
-    Arg [0]    : Bio::EnsEMBL::Feature, subclass or related Storable
-    Description: Translates a Feature type into an SO term
+    Arg [0]    : Instance of Bio::EnsEMBL::Feature subclass
+    Description: Translates a Feature type into an SO term. 
     Returntype : String; the SO term
     Exceptions : if argument is not an instance of Bio::EnsEMBL::Feature
                  or if cannot translate
@@ -124,8 +126,8 @@ sub translate {
        #
        # WARNING
        # 
-       # There doesn't seem to be a class_SO_term method in class
-       # BaseVariationFeature or its ancestors
+       # This is inherited from BiotypeMapper, but there doesn't seem to be 
+       # a class_SO_term method in class BaseVariationFeature or its ancestors
        #
        $so_name = $feature->class_SO_term()
 	 if $feature->isa('Bio::EnsEMBL::Variation::BaseVariationFeature');
