@@ -17,7 +17,6 @@ GFFSerializer - Feature to GFF converter
 =head1 SYNOPSIS
 
 use Bio::EnsEMBL::Utils::IO::GFFSerializer;
-use Bio::EnsEMBL::Utils::BiotypeMapper;
 
 my $ontology_adaptor = $registry->get_adaptor( 'Multi', 'Ontology', 'OntologyTerm' );
 my $serializer = Bio::EnsEMBL::Utils::IO::GFFSerializer->new($ontology_adaptor,$output_fh);
@@ -30,15 +29,17 @@ $serializer->print_feature_Iterator($iterator);
 =head1 DESCRIPTION
 
 Subclass of Serializer that can turn a feature into a line for the GFF3 format. Requires
-a BiotypeMapper in order to translate biotypes to SO terms.
+a SequenceOntologyMapper in order to translate features (biotypes in case of genes and 
+transcripts) to SO terms.
 
 =cut
 
 package Bio::EnsEMBL::Utils::IO::GFFSerializer;
+
 use strict;
 use warnings;
 use Bio::EnsEMBL::Utils::Exception;
-use Bio::EnsEMBL::Utils::BiotypeMapper;
+use Bio::EnsEMBL::Utils::SequenceOntologyMapper;
 use URI::Escape;
 use Bio::EnsEMBL::Utils::IO::FeatureSerializer;
 use Bio::EnsEMBL::Utils::Scalar qw/check_ref/;
@@ -69,7 +70,7 @@ sub new {
     if ( ! check_ref($self->{'ontology_adaptor'}, "Bio::EnsEMBL::DBSQL::OntologyTermAdaptor" )) {
         throw("GFF format requires an instance of Bio::EnsEMBL::DBSQL::OntologyTermAdaptor to function. See also Bio::EnsEMBL::Utils::BiotypeMapper");        
     }
-    $self->{'mapper'} = new Bio::EnsEMBL::Utils::BiotypeMapper($self->{'ontology_adaptor'});
+    $self->{'mapper'} = Bio::EnsEMBL::Utils::SequenceOntologyMapper->new($self->{'ontology_adaptor'});
     
     if (!defined ($self->{'filehandle'})) {
         # no file handle, let the handle point to a copy of STDOUT instead
@@ -97,7 +98,7 @@ sub new {
 sub print_feature {
     my $self = shift;
     my $feature = shift;
-    my $biotype_mapper = $self->{'mapper'};
+    my $so_mapper = $self->{'mapper'};
 
     my $text_buffer = "";
     if ($feature->can('summary_as_hash') ) {
@@ -112,7 +113,8 @@ sub print_feature {
         $row .= qq{\t};
 
 #   Column 3 - feature, the ontology term for the kind of feature this row is
-        my $so_term = $biotype_mapper->translate_feature_to_SO_term($feature);
+	my $so_term = eval { $so_mapper->to_name($feature); };
+	$@ and throw sprintf "Unable to map feature %s to SO term.\n$@", $summary{ID};
         $row .= $so_term."\t";
 
 #    Column 4 - start, the start coordinate of the feature, here shifted to chromosomal coordinates
