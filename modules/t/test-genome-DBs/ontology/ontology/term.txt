@@ -157,3 +157,9 @@
 40981	5	SOFA	SO:0001411	biological_region	"""A region defined by its disposition to be involved in a biological process."" [SO:cb]"	0	0
 41106	5	NULL	SO:0001537	structural_variant	"""A sequence variant that changes one or more sequence features."" [SO:ke]"	0	0
 41493	5	SOFA	SO:0005836	regulatory_region	"""A region of sequence that is involved in the control of a biological process."" [SO:ke]"	0	0
+39724	5	SOFA	SO:0000147	exon	"""A region of the transcript sequence within a gene which is not removed from the primary RNA transcript by RNA splicing."" [SO:ke]"	0	0
+40145	5	NULL	SO:0000569	retrotransposed	"""An attribute of a feature that occurred as the product of a reverse transcriptase mediated event."" [SO:ke]"	0	0
+40249	5	SOFA	SO:0000673	transcript	"""An RNA synthesized on a DNA or RNA template by an RNA polymerase."" [SO:ma]"	0	0
+40788	5	NULL	SO:0001217	protein_coding_gene	""""" []"	0	0
+40842	5	NULL	SO:0001272	tRNA_gene	""""" []"	0	0
+41072	5	NULL	SO:0001503	processed_transcript	"""A transcript for which no open reading frame has been identified and for which no other function has been determined."" [MGI:hdeen]"	0	0
