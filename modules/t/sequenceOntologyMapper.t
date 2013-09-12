@@ -8,12 +8,9 @@
 use strict;
 use warnings;
 
-use Data::Dumper;
 use Test::More;
 use Test::Exception;
 
-use Bio::EnsEMBL::Registry;
-use Bio::EnsEMBL::Utils::Scalar qw ( assert_ref );
 use Bio::EnsEMBL::Test::MultiTestDB;
 use Bio::EnsEMBL::Utils::SequenceOntologyMapper;
 
@@ -55,7 +52,7 @@ my $mappings =
    # test generic feature
    { obj => Bio::EnsEMBL::Feature->new(), accession => 'SO:0000001', name => 'region' },
    # test various genes with/without biotypes
-   { obj => Bio::EnsEMBL::Gene->new(), accession => 'SO:0000704', name => 'gene' },
+   { obj => Bio::EnsEMBL::Gene->new(-biotype => 'dummy'), accession => 'SO:0000704', name => 'gene' }, # if we don't pass a non empty biotype it will default to protein_coding hence it will fail
    { obj => Bio::EnsEMBL::Gene->new(-biotype => 'protein_coding'), accession => 'SO:0001217', name => 'protein_coding_gene' },
    { obj => Bio::EnsEMBL::Gene->new(-biotype => 'tRNA'), accession => 'SO:0001272', name => 'tRNA_gene' },
    # test various transcripts with/without biotypes
@@ -74,12 +71,12 @@ my $mappings =
    { obj => Bio::EnsEMBL::RepeatFeature->new(), accession => 'SO:0000657', name => 'repeat_region' },
   ];
 
-throws_ok { $mapper->translate( bless({}, 'Someclass')) } 
-  qr /not found/, "translate method raises exception";
+throws_ok { $mapper->to_accession( bless({}, 'Someclass')) } 
+  qr /not found/, "to_accession raises exception";
 
 map { 
   is($mapper->to_accession($_->{obj}), $_->{accession}, sprintf "%s maps to correct accession", ref($_->{obj})) and
-    is($mapper->to_name($_->{obj}), $_->{name}, sprintf "%s maps to correct", ref($_->{obj})) }
+    is($mapper->to_name($_->{obj}), $_->{name}, sprintf "%s maps to correct name", ref($_->{obj})) }
   @{$mappings};
 
 done_testing();
