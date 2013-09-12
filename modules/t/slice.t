@@ -254,7 +254,7 @@ ok($slice->get_seq_region_id());
 #
 my $count = 0;
 my $dafs = $slice->get_all_DnaAlignFeatures;
-ok(@$dafs == 27081);
+is(scalar(@$dafs), 27081, 'Checking count of returned DnaAlignFeatures');
 $count += scalar @$dafs;
 
 #
