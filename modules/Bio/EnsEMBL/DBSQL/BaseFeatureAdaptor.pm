@@ -450,6 +450,11 @@ sub fetch_all_by_Slice_constraint {
     if ( exists( $cache->{$key} ) ) {
       # Clear the bound parameters and return the cached data.
       $self->{'_bind_param_generic_fetch'} = ();
+      #IMPORTANT: NEVER EVER RETURN A COPY OF THE DATA STRUCTURE.
+      #           This will hold arrays of values. Since we've been doing
+      #           this for so long people are expecting multiple calls
+      #           to fetch_by_SliceXXXXX() methods to return the same
+      #           array reference.
       return $cache->{$key};
     }
   } ## end if ( !( defined( $self...)))
