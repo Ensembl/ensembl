@@ -272,9 +272,8 @@ INSERT INTO meta (species_id, meta_key, meta_value)
   VALUES (NULL, 'patch', 'patch_73_74_e.sql|remove_canonical_annotation');
 INSERT INTO meta (species_id, meta_key, meta_value)
  VALUES (NULL, 'patch', 'patch_73_74_f.sql|remove_pair_dna_align');
-
-
-
+INSERT INTO meta (species_id, meta_key, meta_value) 
+  VALUES (NULL, 'patch', 'patch_73_74_g.sql|add_transcript_idx_tise');
 
 /**
 @table meta_coord
@@ -1823,7 +1822,8 @@ transcript_id                 INT(10) UNSIGNED NOT NULL,
 intron_supporting_evidence_id INT(10) UNSIGNED NOT NULL,
 previous_exon_id              INT(10) UNSIGNED NOT NULL,
 next_exon_id                  INT(10) UNSIGNED NOT NULL,
-PRIMARY KEY (intron_supporting_evidence_id, transcript_id)
+PRIMARY KEY (intron_supporting_evidence_id, transcript_id),
+KEY transcript_idx (transcript_id)
 ) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
 
 
