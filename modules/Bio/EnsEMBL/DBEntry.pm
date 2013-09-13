@@ -337,8 +337,8 @@ sub comment {
 
   Arg [1]    : int $priority
   Example    : none
-  Priority   : Getter/setter for attribute 'priority'. Note this
-               is the priority from the external_db table.
+  Priority   : Getter/setter for attribute 'priority'.
+               The external database priority.
   Returntype : String
   Exceptions : none
   Caller     : general
@@ -391,6 +391,11 @@ sub db_display_name {
   Arg [1]    : String $info_type
   Example    : none
   Description: Getter/setter for attribute 'info_type'.
+               Defines the method by which the linked object was
+               connected to this xref. Available types are:
+               'CHECKSUM', 'COORDINATE_OVERLAP', 'DEPENDENT',
+               'DIRECT', 'INFERRED_PAIR', 'MISC', 'NONE', 'PROBE',
+               'PROJECTION', 'SEQUENCE_MATCH' AND 'UNMAPPED'.
   Returntype : String
   Exceptions : none
   Caller     : general
@@ -411,6 +416,8 @@ sub info_type {
   Arg [1]    : String $info_text
   Example    : none
   Description: Getter/setter for attribute 'info_text'.
+               Additional information recorded during the xref
+               association. Intended to be used as metadata.
   Returntype : String
   Exceptions : none
   Caller     : general
@@ -430,6 +437,7 @@ sub info_text {
   Arg [1]    : String $object_xref_text
   Example    : none
   Description: Getter/setter for attribute 'linkage_annotation'.
+               The object xref 'linkage annotation'.
   Returntype : String
   Exceptions : none
   Caller     : general
@@ -450,6 +458,7 @@ sub linkage_annotation {
   Arg [1]    : String $type
   Example    : none
   Description: Getter/setter for attribute 'type'.
+               The external database type.
   Returntype : String
   Exceptions : none
   Caller     : general
@@ -468,6 +477,7 @@ sub type {
 
   Arg [1]    : String $secondary_db_name
   Description: Getter/setter for attribute 'secondary_db_name'.
+               The external database 'secondary' database name.
   Returntype : String
   Exceptions : none
   Caller     : general
@@ -487,6 +497,7 @@ sub secondary_db_name {
 
   Arg [1]    : String $secondary_db_table
   Description: Getter/setter for attribute 'secondary_db_table'.
+               The external database 'secondary' database table.
   Returns    : String
   Exceptions : none
   Caller     : general
@@ -512,7 +523,6 @@ sub secondary_db_table {
   Status     : Stable
 
 =cut
-
 
 sub add_synonym {
   my ( $self, $arg ) = @_;
@@ -612,13 +622,13 @@ sub flush_synonyms {
 
   Arg [1]    : (optional) String $arg - value to set
   Description: Getter/setter for attribute 'status'.
+               The external database status.
   Returntype : String
   Exceptions : none
   Caller     : general
   Status     : Stable
 
 =cut
-
 
 sub status{
   my ( $self, $arg ) = @_;
@@ -632,13 +642,15 @@ sub status{
 
   Arg [1]    : (optional) String $arg - value to set
   Description: Getter/setter for attribute ensembl_object_type.
+               The object xref ensembl object type, one of 'Gene',
+               'Marker', 'Operon', 'OperonTranscript', 'RawContig',
+               'Transcript' or 'Translation'.
   Returntype : String
   Exceptions : none
   Caller     : general
   Status     : Stable
 
 =cut
-
 
 sub ensembl_object_type{
   my ( $self, $arg ) = @_;
@@ -652,13 +664,16 @@ sub ensembl_object_type{
 
   Arg [1]    : (optional) String $arg - value to set
   Description: Getter/setter for attribute ensembl_id.
+               The ensembl_id is the internal identifier of the object
+               linked via object_xref. This should be used in
+               conjunction with ensembl_object_type to identify the
+               correct object type.
   Returntype : String
   Exceptions : none
   Caller     : general
   Status     : Stable
 
 =cut
-
 
 sub ensembl_id{
   my ( $self, $arg ) = @_;
