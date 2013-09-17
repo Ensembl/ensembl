@@ -105,6 +105,7 @@ use warnings;
 
 use Bio::EnsEMBL::Utils::Argument qw(rearrange);
 use Bio::EnsEMBL::Utils::Exception qw(warning throw);
+use Bio::EnsEMBL::Utils::Scalar qw(check_ref assert_integer);
 
 use base qw/Bio::EnsEMBL::Storable/;
 
@@ -147,14 +148,22 @@ sub new {
 =cut
 
 sub add_member {
-    my $self = shift;
-    my ($gene_id,$type_hash) = @_;
-    
-    my $members = $self->{'MEMBERS'};
-    push @$members,[$gene_id,$type_hash];
-    $self->{'MEMBERS'} = $members;
-    return;
+  my ($self, $gene_id,$type_hash) = @_;
+  if(!$self->contains_member($gene_id)) {
+    push(@{$self->{MEMBERS}}, [$gene_id, {}]);
+    $self->set_attribs($gene_id, $type_hash);
+  }
+  return;
 }
+
+=head2 get_all_members_with_type
+
+  Arg [1]     : String The type to search members by
+  Description : Loops through the internal members array returning all
+                attributes of the same type as what has been specified
+  Example     : my $members = $aag->get_all_members_with_type('IS_VALID_ALTERNATE');
+
+=cut
 
 sub get_all_members_with_type {
     my $self = shift;
@@ -170,33 +179,173 @@ sub get_all_members_with_type {
     return \@filtered_members;
 }
 
+=head2 attribs
+
+  Arg [1]     : Int gene id to record attributes against
+  Description : Returns all known attributes of the given gene id. Attributes
+                are returned as a HashRef but is a copy of the interally
+                held attribute list
+  Returntype  : HashRef copy of all the given id's attributes
+  Example     : $aag->attribs(10, 'IS_VALID_ALTERNATE');
+                $aag->attribs(10, [ 'IS_VALID_ALTERNATE' ]);
+                $aag->attribs(10, {IS_VALID_ALTERNATE => 1});
+
+=cut
+
 sub attribs {
-    my $self = shift;
-    my $member_id = shift;
-    
-    
+  my ($self, $gene_id) = @_;
+  assert_integer($gene_id, 'gene_id');
+  foreach my $member (@{$self->{MEMBERS}}) {
+    if($member->[0] == $gene_id) {
+      my $attribs = $member->[1];
+      return { %{$attribs} }; # make a copy. never leak
+    }
+  }
+  return {};
+}
+
+=head2 set_attribs
+
+  Arg [1]     : Int gene id to set attributes against
+  Arg [2]     : ArrayRef/HashRef/Scalar The attribute you wish to record
+  Description : Adds the given type to the specified gene id in this group. You
+                can specify the type using an ArrayRef, HashRef or a single scalar
+  Example     : $aag->attribs(10, 'IS_VALID_ALTERNATE');
+                $aag->attribs(10, [ 'IS_VALID_ALTERNATE' ]);
+                $aag->attribs(10, {IS_VALID_ALTERNATE => 1});
+
+=cut
+
+sub set_attribs {
+  my ($self, $gene_id, $attribs) = @_;
+  assert_integer($gene_id, 'gene_id');
+  my $current_attribs = $self->attribs($gene_id);
+  if(check_ref($attribs, 'ARRAY')) {
+    #Loop & add
+    $current_attribs->{uc($_)} = 1 for @{$attribs};
+  }
+  elsif(check_ref($attribs, 'HASH')) {
+    #loop through the keys adding them in
+    foreach my $key (keys %{$attribs}) {
+      $current_attribs->{uc($key)} = 1;
+    }
+  }
+  #Simple scalar value so just add it in
+  else {
+    $current_attribs->{uc($attribs)} = 1;
+  }
+  foreach my $member (@{$self->{MEMBERS}}) {
+    if($member->[0] == $gene_id) {
+      $member->[1] = $current_attribs;
+    }
+  }
+  return;
+}
+
+=head2 remove_attribs
+
+  Arg [1]     : Int gene id to retrieve attributes against
+  Arg [2]     : ArrayRef/HashRef/Scalar The attribute you wish to remove
+  Description : Removes the given type from this group against the specified
+                gene identifier
+  Example     : $aag->remove_attribs(10, 'IS_VALID_ALTERNATE');
+                $aag->remove_attribs(10, [ 'IS_VALID_ALTERNATE' ]);
+                $aag->remove_attribs(10, {IS_VALID_ALTERNATE => 1});
+
+=cut
+
+sub remove_attribs {
+  my ($self, $gene_id, $attribs) = @_;
+  assert_integer($gene_id, 'gene_id');
+  my @to_remove;
+  if(check_ref($attribs, 'ARRAY')) {
+    @to_remove = map { uc($_) } @{$attribs};
+  }
+  elsif(check_ref($attribs, 'HASH')) {
+    @to_remove = map { uc($_) } keys %{$attribs};
+  }
+  #Simple scalar value so just add it in
+  else {
+    @to_remove = uc($attribs);
+  }
+  foreach my $member (@{$self->{MEMBERS}}) {
+    if($member->[0] == $gene_id) {
+      my $current_attribs = $member->[1];
+      delete $current_attribs->{$_} for @to_remove;
+    }
+  }
+  return;
+}
+
+=head2 remove_member
+
+  Arg [1]     : Int gene id to retrieve attributes against
+  Arg [2]     : ArrayRef/HashRef/Scalar The attribute you wish to remove
+  Description : Removes the given member from this group. Any changes
+                must be persisted back to the database via update() or
+                store() methods in Bio::EnsEMBL::DBSQL::AltAlleleGroupAdaptor.
+  Example     : $aag->remove_member(10);
+
+=cut
+
+sub remove_member {
+  my ($self, $gene_id) = @_;
+  assert_integer($gene_id, 'gene_id');
+  my $members = $self->{MEMBERS};
+  my $size = scalar(@{$members});
+  for(my $i = 0; $i < $size; $i++) {
+    my $current_id = $members->[$i]->[0];
+    #If this was the ID then splice it out of the array and exit
+    if($current_id == $gene_id) {
+      splice(@{$members}, $i, 1);
+      last;
+    }
+  }
+  return;
+}
+
+=head2 contains_member
+
+  Arg [1]     : Int gene id to retrieve attributes against
+  Description : Searches through the members list looking for the
+                specified gene id. Returns true if it was found
+                or false if not.
+  Returntype  : Boolean indicating if the given gene id is held in this group
+  Example     : $aag->contains_member(10);
+
+=cut
+
+sub contains_member {
+  my ($self, $gene_id) = @_;
+  assert_integer($gene_id, 'gene_id');
+  foreach my $member (@{$self->{MEMBERS}}) {
+    if($member->[0] == $gene_id) {
+      return 1;
+    }
+  }
+  return 0;
 }
 
 =head2 remove_all_members
 
-  Description: Remove members from this object, but NOT the database. See
-               AltAlleleGroupAdaptor->remove()
-               Use in conjunction with add_member if members need to be altered
+  Description : Remove members from this object, but NOT the database. See
+                AltAlleleGroupAdaptor->remove() to remove the group from the
+                database
 =cut
 
 sub remove_all_members {
-    my $self = shift;
-    $self->{'MEMBERS'} = [];
-    return;
+  my $self = shift;
+  $self->{'MEMBERS'} = [];
+  return;
 }
 
 =head2 rep_Gene_id
 
-  Arg[1]     : Optional - set a new representative Gene id for the group
-  Description: Reports or sets the representative Gene for this AltAlleleGroup
-               If you wish to remove the representative status of all genes without
-               setting a new one, see unset_rep_Gene_id
-  Returntype : Integer or undef if none set
+  Arg[1]      : Optional - set a new representative Gene id for the group
+  Description : Reports or sets the representative Gene for this AltAlleleGroup
+                If you wish to remove the representative status of all genes without
+                setting a new one, see unset_rep_Gene_id
+  Returntype  : Integer or undef if none set
 =cut
 
 sub rep_Gene_id {
@@ -235,10 +384,9 @@ sub rep_Gene_id {
 
 =head2 unset_rep_Gene_id
 
-  Description: Removes the representative Gene flag from this AltAlleleGroup.
-               This action is not possible through rep_Gene_id due to
-               validation of inputs.
-  Returntype : 
+  Description : Removes the representative Gene flag from this AltAlleleGroup.
+                This action is not possible through rep_Gene_id due to
+                validation of inputs.
 
 =cut
 
@@ -275,8 +423,17 @@ sub get_all_Gene_ids {
         if ($all_but_rep && $type->{IS_REPRESENTATIVE}) {next;} 
         push @gene_ids,$gene_id;
     }
-    return \@gene_ids;
+    return [sort {$a <=> $b} @gene_ids];
 }
+
+=head2 get_representative_Gene
+
+  Description : Used to fetch a Gene object which has been marked as the
+                representative Gene for this alt allele group.
+  Returntype  : Bio::EnsEMBL::Gene object which is the representative gene
+
+=cut
+
 
 sub get_representative_Gene {
     my $self = shift;
@@ -285,34 +442,77 @@ sub get_representative_Gene {
     return $ga->fetch_by_dbID($self->rep_Gene_id);
 }
 
+=head2 get_all_Genes
+
+  Arg[1]      : Boolean - Do not include representative gene in list of ids.
+  Description : Fetches all the Gene objects within the allele group. It can also
+                be used to list those Genes that are not the representative Gene.
+  Returntype  : ArrayRef of Bio::EnsEMBL::Gene objects
+
+=cut
+
+
 sub get_all_Genes {
-    my $self = shift;
-    my $all_but_rep = shift; # falls through to get_all_Gene_ids
-    my $gene_ids = $self->get_all_Gene_ids($all_but_rep);
-    my $genes;
-    my $ga = $self->adaptor->db->get_GeneAdaptor;
-    $genes = $ga->fetch_all_by_dbID_list($gene_ids);
-    
-    return $genes;
+  my ($self, $all_but_rep) = @_;
+  my $gene_ids = $self->get_all_Gene_ids($all_but_rep);
+  return $self->adaptor()->db()->get_GeneAdaptor()->fetch_all_by_dbID_list($gene_ids);
 }
 
+
+=head2 get_all_Gene_ids
+
+  Arg[1]      : Boolean - Do not include representative gene in list of ids.
+  Description : Fetches all the Gene objects within the allele group and their
+                associcated attributes. It can also be used to list those 
+                Genes that are not the representative Gene.
+  Returntype  : ArrayRef. 2 dimensional holding [Bio::EnsEMBL::Gene, {attribute_hash}]
+
+=cut
+
+sub get_all_Genes_types {
+  my ($self, $all_but_rep) = @_;
+  my $gene_ids = $self->get_all_Gene_ids($all_but_rep);
+  my $ga = $self->adaptor()->db()->get_GeneAdaptor();
+  my @output;
+  my $members = $self->{MEMBERS};
+  foreach my $allele (@{$members}) {
+    my ($gene_id,$attribs) = @$allele;
+    if ($all_but_rep && $attribs->{IS_REPRESENTATIVE}) {next;} 
+    my $gene = $ga->fetch_by_dbID($gene_id);
+    my %attribs_copy = %{$attribs};
+    push(@output, [$gene, \%attribs_copy])
+  }
+  return \@output;
+}
+
+=head2 size
+
+  Description : Returns the current size of this group in members
+  Returntype  : Int the size of the current alt allele group
+
+=cut
+
 sub size {
-    my $self = shift;
-    my $list = $self->{'MEMBERS'};
-    return scalar(@$list);
+  my $self = shift;
+  my $list = $self->{'MEMBERS'};
+  return scalar(@$list);
 }
 
 
 =head2 get_all_members
-  Description: Retrieves all of the information about all members.
-  Returntype : Listref of id and type list: [gene_id,type]
-  Caller     : AltAlleleGroupAdaptor->store
+
+  Description : Retrieves all of the information about all members. Be aware
+                that this emits the interal data structure so direct modification
+                should be done with caution.
+  Returntype  : ArrayRef of id and type list: [gene_id,type]
+  Caller      : AltAlleleGroupAdaptor->store
+
 =cut
 
 sub get_all_members {
-    my $self = shift;
-    my $members = $self->{'MEMBERS'};
-    return $members;
+  my $self = shift;
+  my $members = $self->{'MEMBERS'};
+  return $members;
 }
 
 

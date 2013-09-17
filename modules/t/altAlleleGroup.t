@@ -51,12 +51,37 @@ ok($group->rep_Gene_id(3) == 3,"Successful setting of reference gene");
 $other_group->remove_all_members;
 ok($other_group->size == 0, "Test remove_all_members");
 
+# Test the methods which attempt to modify an AltAlleleGroup object
+{
+    my $copy_group = bless({%{$group}}, ref($group));
+    ok($copy_group->contains_member(1), 'Group contains the member 1');
+    ok(!$copy_group->contains_member(4), 'Group does not contain the member 4');
+    is_deeply($copy_group->attribs(1), {}, 'Group member 1 attributes are empty');
+    $copy_group->set_attribs(1, ['IN_CORRECTED_ASSEMBLY']);
+    $copy_group->set_attribs(1, {'manually_assigned' => 1}); #lower case intentional
+    $copy_group->set_attribs(1, 'IS_VALID_ALTERNATE');
+    is_deeply($copy_group->attribs(1), { map { $_, 1} qw/IN_CORRECTED_ASSEMBLY IS_VALID_ALTERNATE MANUALLY_ASSIGNED/ }, 'Group member 1 attributes are empty');
+    $copy_group->add_member(1,{});
+    is_deeply($copy_group->attribs(1), { map { $_, 1} qw/IN_CORRECTED_ASSEMBLY IS_VALID_ALTERNATE MANUALLY_ASSIGNED/ }, 'Attributes were not replaced because the member was already in');
+    $copy_group->remove_attribs(1, 'IS_VALID_ALTERNATE');
+    $copy_group->remove_attribs(1, ['IN_CORRECTED_ASSEMBLY']);
+    $copy_group->remove_attribs(1, {MANUALLY_ASSIGNED => 1});
+    is_deeply($copy_group->attribs(1), {}, 'Group member 1 attributes are empty');
+
+    $copy_group->remove_member(4);
+    is($copy_group->size(), 3, 'Removing an non-existent ID does nothing');
+    $copy_group->remove_member(1);
+    is($copy_group->size(), 2, 'Removing ID 1 reduces our group size');
+    ok(!$copy_group->contains_member(1), 'Group does not contain the member 1 post removal');
+    $copy_group->add_member(1,{});
+    is_deeply($copy_group->attribs(1), {}, 'Group member 1 attributes are empty post removal and addition');
+}
+
 # Tests for methods applied to test db
 
 my $multi = Bio::EnsEMBL::Test::MultiTestDB->new();
-ok(1);
 my $db = $multi->get_DBAdaptor( 'core' );
-ok($db);
+ok($db, 'DB was retrieved');
 
 my $aaga = $db->get_adaptor('AltAlleleGroup');
 # Test data consists of a single group, of type AUTOMATIC, with a reference Allele and 3 others
@@ -87,11 +112,11 @@ $aag = $group_list->[0];
 my $group_id = $aag->dbID;
 my $new_aag = $aaga->fetch_Group_by_id($group_id);
 
-is_deeply($aag,$new_aag,"Compare previously fetched group with group found by using the dbID");
+is_deeply($aag, $new_aag, "Compare previously fetched group with group found by using the dbID");
 
 $aag = $aaga->fetch_Group_by_id(undef);
 
-ok(!defined($aag),"See what happens if no argument is given");
+ok(!defined($aag), "See what happens if no argument is given");
 
 # fetch_Group_by_Gene_dbID
 $aag = $aaga->fetch_all_Groups->[0];
@@ -100,20 +125,25 @@ is_deeply($new_aag,$aag,"Check single gene ID returns entire group correctly");
 
 # check store method
 my $dbID = $aaga->store($group);
-ok($dbID);
+ok($dbID, 'A dbID was returned from the store method');
 
-my $aag2 = $aaga->fetch_Group_by_id($dbID);
-is_deeply($aag2->get_all_members,$group->get_all_members,"Compare stored with original");
-ok( $aaga->remove($aag2) );
-$group->dbID($dbID);
-$group->rep_Gene_id(1);
-note("dbID = ".$group->dbID());
-my $new_dbID = $aaga->update($group);
-note($new_dbID);
-$aag2 = $aaga->fetch_Group_by_id($dbID);
+{
+    my $aag2 = $aaga->fetch_Group_by_id($dbID);
+    is_deeply($aag2->get_all_members,$group->get_all_members,"Compare stored with original");
+    $group->add_member(4, {});
+    my $update_dbID = $aaga->update($group);
+    cmp_ok($update_dbID, '==', $dbID, 'We should have kept the db id of the group');
+}
 
-is_deeply($aag2->get_all_Gene_ids,[1,2,3], "Update and re-retrieve the same AltAlleleGroup") or diag explain $aag2->get_all_Gene_ids;
-eq_or_diff($aag2->get_all_Gene_ids,[1,2,3], "Update and re-retrieve the same AltAlleleGroup");
+$group->remove_member(4);
+$aaga->remove($group);
+ok(! defined $aaga->fetch_Group_by_id($dbID), 'Using a deleted ID means no group returned');
+my $new_dbID = $aaga->store($group);
+
+cmp_ok($new_dbID, '!=', $dbID, 'Should have been assgined a new ID');
+my $aag2 = $aaga->fetch_Group_by_id($new_dbID);
+my $gene_ids = $aag2->get_all_Gene_ids();
+eq_or_diff($gene_ids,[1,2,3], "Update and re-retrieve the same AltAlleleGroup") or diag explain $gene_ids;
 
 # Vaguely verify the AltAlleleGroupAdaptor's fetch_all_Groups with a multispecies database
 # Proper test data is hard to fabricate and no samples exist.
