@@ -79,25 +79,23 @@ my $index_count_fh = sub {
 };
 
 {
-  my $frag_size = 1e7;
-  my $seq = 'A'x$frag_size.'C'x$frag_size.'T'x$frag_size.'G'x$frag_size;
   my $sd = Bio::EnsEMBL::Utils::SeqDumper->new();
   $sd->{feature_types}->{$_} = 0 for keys %{$sd->{feature_types}};
   
   {
     my $fh = IO::String->new();
-    $sd->dump_embl($slice, $fh, $seq);
+    $sd->dump_embl($slice, $fh);
     my $lines = $index_fh->($fh, 'SQ ');
     is(scalar(@{$lines}), 1, 'Expect only 1 EMBL SQ line describing a sequence');
-    is($lines->[0], 'SQ   Sequence 40000000 BP; 10000000 A; 10000000 C; 10000000 G; 10000000 T; 0 other;', 'Formatting of SQ as expected');
+    is($lines->[0], 'SQ   Sequence     100001 BP;      24986 A;      24316 C;      24224 G;      26475 T;          0 other;', 'Formatting of SQ as expected');
   }
   
   {
     my $fh = IO::String->new();
-    $sd->dump_genbank($slice, $fh, $seq);
+    $sd->dump_genbank($slice, $fh);
     my $lines = $index_fh->($fh, 'BASE COUNT');
     is(@{$lines}, 1, 'Expect only 1 Genbank BASE COUNT line describing a sequence');
-    is($lines->[0], 'BASE COUNT  10000000 a 10000000 c 10000000 g 10000000 t', 'Formatting of BASE COUNT as expected');
+    is($lines->[0], 'BASE COUNT       24986 a      24316 c      24224 g      26475 t          0 n', 'Formatting of BASE COUNT as expected');
   }
   
 }
