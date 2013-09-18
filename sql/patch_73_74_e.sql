@@ -1,4 +1,4 @@
-# patch_73_74_f.sql
+# patch_73_74_e.sql
 #
 # title: Canonical_annotation removal
 #
