@@ -1811,14 +1811,14 @@ sub get_all_VariationFeatures{
 =cut
 
 sub get_all_other_VariationFeatures {
-  my ($self, $dbtype) = @_;
+  my ($self, $dbtype, @terms) = @_;
   if(!$dbtype) {
     warning('Database type required (e.g. "variation")');
     return [];
   }
 
   if (my $vf_adaptor = $self->_get_VariationFeatureAdaptor($dbtype)) {
-    return $vf_adaptor->fetch_all_by_Slice_SO_terms($self, @_);
+    return $vf_adaptor->fetch_all_by_Slice_SO_terms($self, @terms);
   }
   return [];
 }
