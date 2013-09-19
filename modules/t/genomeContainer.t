@@ -71,8 +71,8 @@ is($alt_lnoncoding_count, $genome->get_alt_lnoncoding_count, "Long non coding co
 my $alt_snoncoding_count = $sql_helper->execute_single_result(-SQL => $sql, -PARAMS => ['snoncoding_acnt']);
 is($alt_snoncoding_count, $genome->get_alt_snoncoding_count, "Short non coding count on alternate sequences is correct");
 
-my $snp_count = $sql_helper->execute_single_result(-SQL => $sql, -PARAMS => ['SNPcount'], -NO_ERROR => 1);
-is($snp_count, $genome->get_snp_count, "SNP count is correct");
+my $short_variation_count = $sql_helper->execute_single_result(-SQL => $sql, -PARAMS => ['SNPcount'], -NO_ERROR => 1);
+is($short_variation_count, $genome->get_short_variation_count, "Short variants count is correct");
 
 is_rows($genome->get_prediction_count, $db, "prediction_transcript");
 is_rows($genome->get_prediction_count('genscan'), $db, "prediction_transcript", "where analysis_id = ?", [8440]);

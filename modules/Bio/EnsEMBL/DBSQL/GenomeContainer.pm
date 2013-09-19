@@ -519,11 +519,11 @@ sub get_alt_pseudogene_count {
   return $self->{'alt_pseudogene_count'};
 }
 
-=head2 get_snp_count
+=head2 get_short_variation_count
 
   Arg [1]    : none
-  Example    : $snp_count = $genome->get_snp_count();
-  Description: Returns the number of snps in the current build
+  Example    : $short_variation_count = $genome->get_short_variation_count();
+  Description: Returns the number of short variants in the current build
 
   Returntype : integer
   Exceptions : none
@@ -532,15 +532,15 @@ sub get_alt_pseudogene_count {
 
 =cut
 
-sub get_snp_count {
-  my ($self, $snp_count) = @_;
-  if (defined $snp_count) {
-    $self->{'snp_count'} = $snp_count;
+sub get_short_variation_count {
+  my ($self, $short_variation_count) = @_;
+  if (defined $short_variation_count) {
+    $self->{'short_variation_count'} = $short_variation_count;
   }
-  if (!defined $self->{'snp_count'}) {
-    $self->{'snp_count'} = $self->_get_count('snp_count');
+  if (!defined $self->{'short_variation_count'}) {
+    $self->{'short_variation_count'} = $self->_get_count('short_variation_count');
   }
-  return $self->{'snp_count'};
+  return $self->{'short_variation_count'};
 }
 
 
@@ -578,11 +578,11 @@ sub get_prediction_count {
 }
 
 
-=head2 get_struct_count
+=head2 get_structural_variation_count
 
   Arg [1]    : none
-  Example    : $struct_count = $genome->_get_struct_count();
-  Description: Internal method to return the length for a type of slices
+  Example    : $structural_variation_count = $genome->get_structural_variation_count();
+  Description: Return the number of structural variations in the current build
   Returntype : integer
   Exceptions : none
   Caller     : general
@@ -590,7 +590,7 @@ sub get_prediction_count {
 
 =cut
 
-sub get_struct_count {
+sub get_structural_variation_count {
   my $self = @_;
   my $slice_adaptor = $self->db->get_adaptor('Slice');
   my $slices = $slice_adaptor->fetch_all('toplevel');
