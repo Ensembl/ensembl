@@ -98,7 +98,7 @@ sub new {
   Returntype : Bio::EnsEMBL::DBSQL::MetaContainer
   Exceptions : none
   Caller     : general
-  Status     : At risk
+  Status     : Stable
 
 =cut
 
@@ -166,7 +166,7 @@ sub get_accession {
   Returntype : integer
   Exceptions : none
   Caller     : general
-  Status     : At risk
+  Status     : Stable
 
 =cut
 
@@ -308,7 +308,7 @@ sub get_coord_systems {
   Returntype : integer
   Exceptions : none
   Caller     : general
-  Status     : At risk
+  Status     : Stable
 
 =cut
 
@@ -586,7 +586,7 @@ sub get_prediction_count {
   Returntype : integer
   Exceptions : none
   Caller     : general
-  Status     : At risk
+  Status     : Stable
 
 =cut
 
