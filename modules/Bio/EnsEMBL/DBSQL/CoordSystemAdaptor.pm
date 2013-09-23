@@ -620,6 +620,35 @@ sub fetch_sequence_level {
 }
 
 
+=head2 get_default_version
+
+  Arg [1]    : none
+  Example    : $version = $csa->get_default_version();
+  Description: Retrieves the default version of the assembly
+  Returntype : String
+  Exceptions : throw if no default version is defined
+  Caller     : general
+  Status     : Stable
+
+=cut
+
+sub get_default_version {
+  my $self = shift;
+
+  my $version;
+  foreach my $dbID (keys %{$self->{'_is_default_version'}}) {
+    if ($self->{'_dbID_cache'}->{$dbID}->version) {
+      $version = $self->{'_dbID_cache'}->{$dbID}->version;
+      last;
+    }
+  }
+
+  throw('No default version is defined') if(!$version);
+
+  return $version;
+}
+
+
 
 
 =head2 get_mapping_path
