@@ -34,6 +34,10 @@ ok(!$cs->is_sequence_level());
 ok($cs->is_default());
 
 
+my $version = $csa->get_default_version();
+is($version, "NCBI33", "Found the correct default version");
+
+
 #
 #  Test fetch_all_by_name
 #
