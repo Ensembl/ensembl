@@ -37,6 +37,9 @@ ok($cs->is_default());
 my $version = $csa->get_default_version();
 is($version, "NCBI33", "Found the correct default version");
 
+my @versions = @{ $csa->get_all_versions() };
+is($versions[0], "NCBI33", "Found the first version");
+
 
 #
 #  Test fetch_all_by_name
