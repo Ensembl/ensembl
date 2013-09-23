@@ -128,8 +128,7 @@ sub get_version {
   }
   if (!defined $self->{'version'}) {
     my $csa = $self->db()->get_adaptor('CoordSystem');
-    my @cs = @{ $csa->fetch_all() };
-    $self->{'version'} = $cs[0]->version();
+    $self->{'version'} = $csa->get_default_version;
   }
   return $self->{'version'};
 }
@@ -157,6 +156,157 @@ sub get_accession {
   }
   return $self->{'accession'};
 }
+
+
+=head2 get_assembly_name
+
+  Arg [1]    : (optional) assembly name
+  Example    : $assembly_name = $genome->get_assembly_name();
+  Description: Getter/setter for the name of the assembly currently used
+
+  Returntype : string
+  Exceptions : none
+  Caller     : general
+  Status     : Stable
+
+=cut
+
+sub get_assembly_name {
+  my ($self, $assembly_name) = @_;
+  if (defined $assembly_name) {
+    $self->{'assembly_name'} = $assembly_name;
+  }
+  if (!defined $self->{'assembly_name'}) {
+    $self->{'assembly_name'} = $self->_meta_container->single_value_by_key('assembly.name');
+  }
+  return $self->{'assembly_name'};
+}
+
+
+=head2 get_assembly_date
+
+  Arg [1]    : (optional) assembly date
+  Example    : $assembly_date = $genome->get_assembly_date();
+  Description: Getter/setter for the date of the assembly currently used
+
+  Returntype : string
+  Exceptions : none
+  Caller     : general
+  Status     : Stable
+
+=cut
+
+sub get_assembly_date {
+  my ($self, $assembly_date) = @_;
+  if (defined $assembly_date) {
+    $self->{'assembly_date'} = $assembly_date;
+  }
+  if (!defined $self->{'assembly_date'}) {
+    $self->{'assembly_date'} = $self->_meta_container->single_value_by_key('assembly.date');
+  }
+  return $self->{'assembly_date'};
+}
+
+
+=head2 get_genebuild_start_date
+
+  Arg [1]    : (optional) genebuild start date
+  Example    : $genebuild_start_date = $genome->get_genebuild_start_date();
+  Description: Getter/setter for the start date of the genebuild currently used
+
+  Returntype : string
+  Exceptions : none
+  Caller     : general
+  Status     : Stable
+
+=cut
+
+sub get_genebuild_start_date {
+  my ($self, $genebuild_start_date) = @_;
+  if (defined $genebuild_start_date) {
+    $self->{'genebuild_start_date'} = $genebuild_start_date;
+  }
+  if (!defined $self->{'genebuild_start_date'}) {
+    $self->{'genebuild_start_date'} = $self->_meta_container->single_value_by_key('genebuild.start_date');
+  }
+  return $self->{'genebuild_start_date'};
+}
+
+
+=head2 get_genebuild_method
+
+  Arg [1]    : (optional) genebuild start date
+  Example    : $genebuild_method = $genome->get_genebuild_method();
+  Description: Getter/setter for the method of the genebuild currently used
+
+  Returntype : string
+  Exceptions : none
+  Caller     : general
+  Status     : Stable
+
+=cut
+
+sub get_genebuild_method {
+  my ($self, $genebuild_method) = @_;
+  if (defined $genebuild_method) {
+    $self->{'genebuild_method'} = $genebuild_method;
+  }
+  if (!defined $self->{'genebuild_method'}) {
+    $self->{'genebuild_method'} = $self->_meta_container->single_value_by_key('genebuild.method');
+  }
+  return $self->{'genebuild_method'};
+}
+
+
+=head2 get_genebuild_initial_release_date
+
+  Arg [1]    : (optional) genebuild initial release date
+  Example    : $genebuild_initial_release_date = $genome->get_initial_release_date();
+  Description: Getter/setter for the initial release date of the genebuild currently used
+
+  Returntype : string
+  Exceptions : none
+  Caller     : general
+  Status     : Stable
+
+=cut
+
+sub get_genebuild_initial_release_date {
+  my ($self, $genebuild_initial_release_date) = @_;
+  if (defined $genebuild_initial_release_date) {
+    $self->{'genebuild_initial_release_date'} = $genebuild_initial_release_date;
+  }
+  if (!defined $self->{'genebuild_initial_release_date'}) {
+    $self->{'genebuild_initial_release_date'} = $self->_meta_container->single_value_by_key('genebuild.initial_release_date');
+  }
+  return $self->{'genebuild_initial_release_date'};
+}
+
+
+=head2 get_genebuild_last_geneset_update
+
+  Arg [1]    : (optional) genebuild last geneset update
+  Example    : $genebuild_last_geneset_update = $genome->get_last_geneset_update();
+  Description: Getter/setter for the last geneset update of the genebuild currently used
+
+  Returntype : string
+  Exceptions : none
+  Caller     : general
+  Status     : Stable
+
+=cut
+
+sub get_genebuild_last_geneset_update {
+  my ($self, $genebuild_last_geneset_update) = @_;
+  if (defined $genebuild_last_geneset_update) {
+    $self->{'genebuild_last_geneset_update'} = $genebuild_last_geneset_update;
+  }
+  if (!defined $self->{'genebuild_last_geneset_update'}) {
+    $self->{'genebuild_last_geneset_update'} = $self->_meta_container->single_value_by_key('genebuild.last_geneset_update');
+  }
+  return $self->{'genebuild_last_geneset_update'};
+}
+
 
 =head2 _get_length
 
@@ -188,7 +338,6 @@ sub _get_length {
   Arg [1]    : (optional) golden path length
   Example    : $ref_length = $genome->get_ref_length();
   Description: Getter/setter for the golden path of the assembly currently used
-
   Returntype : integer
   Exceptions : none
   Caller     : general
@@ -246,11 +395,9 @@ sub get_total_length {
 =cut
 
 sub get_toplevel {
-  my $self = @_;
-  if (!defined $self->{'toplevel'}) {
-    my $sa = $self->db()->get_adaptor('Slice');
-    $self->{'toplevel'} = $sa->fetch_all('toplevel');
-  }
+  my ($self) = @_;
+  my $sa = $self->db->get_adaptor('Slice');
+  $self->{'toplevel'} = $sa->fetch_all('toplevel');
   return $self->{'toplevel'};
 }
 
@@ -269,11 +416,9 @@ sub get_toplevel {
 =cut
 
 sub get_karyotype {
-  my $self = @_;
-  if (!defined $self->{'karyotype'}) {
-    my $sa = $self->db()->get_adaptor('Slice');
-    $self->{'karyotype'} = $sa->fetch_all_karyotype;
-  }
+  my ($self) = @_;
+  my $sa = $self->db->get_adaptor('Slice');
+  $self->{'karyotype'} = $sa->fetch_all_karyotype;
   return $self->{'karyotype'};
 }
 
@@ -291,11 +436,13 @@ sub get_karyotype {
 =cut
 
 sub get_coord_systems {
-  my $self = @_;
-  if (!defined $self->{'coord_systems'}) {
-    my $version = $self->version();
-    my $csa = $self->db->get_adaptor('CoordSystem');
+  my ($self, $all) = @_;
+  my $csa = $self->db->get_adaptor('CoordSystem');
+  if (!$all) {
+    my $version = $self->get_version();
     $self->{'coord_systems'} = $csa->fetch_all_by_version($version);
+  } else {
+    $self->{'coord_systems'} = $csa->fetch_all();
   }
   return $self->{'coord_systems'};
 }
