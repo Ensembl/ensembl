@@ -618,8 +618,6 @@ sub fetch_sequence_level {
 
   return $self->{'_dbID_cache'}->{$dbIDs[0]};
 }
-
-
 =head2 get_default_version
 
   Arg [1]    : none
@@ -649,6 +647,39 @@ sub get_default_version {
 }
 
 
+
+=head2 get_all_versions
+
+  Arg [1]    : none
+  Example    : @versions = $csa->get_all_versions();
+  Description: Retrieves all the available versions of assemblies
+  Returntype : Listref of versions (strings)
+  Exceptions : throw if no version is defined
+  Caller     : general
+  Status     : Stable
+
+=cut
+
+sub get_all_versions {
+  my $self = shift;
+
+  my %hash_versions;
+  my @versions;
+  my $version;
+  foreach my $dbID (sort {$a <=> $b} keys %{$self->{'_rank_cache'}}) {
+    if ($self->{'_rank_cache'}->{$dbID}->version) {
+      $version = $self->{'_rank_cache'}->{$dbID}->version;
+      if (!$hash_versions{$version}) {
+        $hash_versions{$version} = 1;
+        push @versions, $version;
+      }
+    }
+  }
+
+  throw('No versions found') if(!scalar(@versions));
+
+  return \@versions;
+}
 
 
 =head2 get_mapping_path
