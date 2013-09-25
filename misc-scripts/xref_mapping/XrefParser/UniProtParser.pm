@@ -501,7 +501,7 @@ sub create_xrefs {
 	    push @{$xref->{DEPENDENT_XREFS}}, \%dep; # array of hashrefs
 	    $seen{$dep{SOURCE_NAME}.":".$dep{ACCESSION}} =1;
 	  }
-	  if($dep =~ /EMBL/){
+	  if($dep =~ /EMBL/ && !($dep =~ /ChEMBL/)){
 	    my ($protein_id) = $extra[0];
 	    if(($protein_id ne "-") and (!defined($seen{$source.":".$protein_id}))){
 	      my %dep2;
