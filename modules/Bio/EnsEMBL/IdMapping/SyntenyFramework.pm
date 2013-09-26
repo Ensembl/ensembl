@@ -379,7 +379,7 @@ sub rescore_gene_matrix_lsf {
   my $cmd = qq{$Bin/synteny_rescore.pl $options --index \$LSB_JOBINDEX};
 
   my $bsub_cmd =
-    sprintf( "|bsub -J%s[1-%d] "
+    sprintf( "|bsub -J '%s[1-%d]' "
                             . "-o %s/synteny_rescore.%%I.out "
                             . "-e %s/synteny_rescore.%%I.err %s",
              $lsf_name, $num_jobs, $logpath, $logpath,
@@ -401,7 +401,9 @@ sub rescore_gene_matrix_lsf {
   # submit dependent job to monitor finishing of jobs
   $self->logger->info("Waiting for jobs to finish...\n", 0, 'stamped');
 
-  my $dependent_job = qq{bsub -K -w "ended($lsf_name)" -q small } .
+  my $dependent_job =
+    qq{bsub -K -w "ended($lsf_name)" -q small } .
+    qq{-M 100 -R 'select[mem>100]' -R 'rusage[mem=100]' } .
     qq{-o $logpath/synteny_rescore_depend.out /bin/true};
 
   system($dependent_job) == 0 or
