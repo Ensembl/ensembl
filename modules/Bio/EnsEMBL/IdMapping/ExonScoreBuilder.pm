@@ -490,7 +490,7 @@ sub run_exonerate {
   $self->logger->debug("$exonerate_job\n\n");
 
   my $bsub_cmd = sprintf(
-               "|bsub -J%s[1-%d]%%%d -o %s/exonerate.%%I.out %s",
+               "|bsub -J '%s[1-%d]%%%d' -o %s/exonerate.%%I.out %s",
                $lsf_name,
                $num_jobs,
                $self->conf()->param('exonerate_concurrent_jobs') || 200,
@@ -509,7 +509,9 @@ sub run_exonerate {
   # submit dependent job to monitor finishing of exonerate jobs
   $self->logger->info("Waiting for exonerate jobs to finish...\n", 0, 'stamped');
 
-  my $dependent_job = qq{bsub -K -w "ended($lsf_name)" -q small } .
+  my $dependent_job =
+    qq{bsub -K -w "ended($lsf_name)" -q small } .
+    qq{-M 100 -R 'select[mem>100]' -R 'rusage[mem=100]' } .
     qq{-o $logpath/exonerate_depend.out /bin/true};
 
   system($dependent_job) == 0 or
