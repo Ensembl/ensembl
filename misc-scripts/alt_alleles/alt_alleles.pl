@@ -1,7 +1,9 @@
 #!/usr/bin/env perl
 
 use strict;
+use warnings;
 use Bio::EnsEMBL::DBSQL::DBAdaptor;
+use Bio::EnsEMBL::AltAlleleGroup;
 use Getopt::Long qw(:config pass_through);
 
 # (make sure api version is correct
@@ -41,113 +43,102 @@ if(!defined($cdbname)){
 }
 
 #
-# Connect to the core database 
+# Connect to the core & vega database 
 #
 
-my $core_dba = Bio::EnsEMBL::DBSQL::DBAdaptor->new(-host => $chost||'ens-staging1',
-                                          -user => $cuser||'ensadmin',
-					  -pass => $cpass,
-                                          -species => "test",
-                                          -dbname => $cdbname||"homo_sapiens_core_63_37");
+my $core_dba = Bio::EnsEMBL::DBSQL::DBAdaptor->new(
+  -host => $chost||'ens-staging1',
+  -user => $cuser||'ensadmin',
+  -pass => $cpass,
+  -group => 'core',
+  -dbname => $cdbname
+);
 
+my $vega_dba = Bio::EnsEMBL::DBSQL::DBAdaptor->new(
+  -host => $vhost||'ens-staging1',
+  -user => $vuser||'ensadmin',
+  -pass => $vpass,
+  -group => 'vega',
+  -dbname => $vdbname
+);
 
 
 #
-# get ensembl gene ids and vega stable ids from the core database
+# get ensembl gene ids and vega stable ids from the *core* database
 # 
+my $vega_core_sql = <<'SQL';
+select ensembl_id, display_label 
+from object_xref 
+join xref using(xref_id) 
+join external_db using(external_db_id) 
+where db_name = 'OTTG' 
+and ensembl_object_type = 'Gene'
+SQL
 
+# sometimes we will see more than one gene associated with an OTTG
+# this happens when an OTTG on the primary assemby has been projected to a patch.
+my %vega_to_ensembl_core_gene_id;
+$core_dba->dbc->sql_helper()->execute_no_return(-SQL => $vega_core_sql, -CALLBACK => sub {
+  my ($row) = @_;
+  my ($vega_stable_id, $gene_id) = @{$row};
+  $vega_to_ensembl_core_gene_id{$vega_stable_id}{$gene_id} = $gene_id;
+});
 
-my %vega_to_ens_id;
-my ($vega_stable_id, $gene_id);
-
-my $sth =  $core_dba->dbc->prepare("select ensembl_id, display_label from object_xref join xref using(xref_id) join external_db using(external_db_id) where db_name = 'OTTG' and ensembl_object_type = 'Gene'");
-$sth->execute;
-
-$sth->bind_columns(\$gene_id, \$vega_stable_id);
-
-while ($sth->fetch){
-    # sometimes we will see more than one gene associated with an OTTG
-    # this happens when an OTTG on the primary assemby has been projected to a patch
-  $vega_to_ens_id{$vega_stable_id}{$gene_id} = $gene_id;
-}
-$sth->finish;
-
-print "\nFetched ".(scalar(keys %vega_to_ens_id))." vega_stable_ids\n";
-
-my $vega_dba = Bio::EnsEMBL::DBSQL::DBAdaptor->new(-host => $vhost||'ens-staging1',
-                                          -user => $vuser||'ensro',
-                                          -port => $vport||3306,
-                                          -dbname => $vdbname||"homo_sapiens_vega_63_37");
+print "\nFetched ".(scalar(keys %vega_to_ensembl_core_gene_id))." Vega Stable IDs\n";
 
 #
-# SQL to get alt_allele data from vega
+# Get AltAlleles from vega
 #
+my $vega_aaga = $vega_dba->get_AltAlleleGroupAdaptor();
+#TODO deprecated call in 74
+my $vega_groups = $vega_aaga->fetch_all_Groups(); 
+# my $groups = $vega_aaga->fetch_all();  #replace the above with me ASAP
 
-my $sql =(<<EOS);
-select aa.alt_allele_id, g.stable_id
- from alt_allele aa, gene g 
- where aa.gene_id = g.gene_id
-EOS
-
-
-#
-# Store data in a hash where the key is the alt_id and the ensembl gene ids 
-# stored in an anonymous array (value of the hash).
-#
-
-my $sth = $vega_dba->dbc->prepare($sql);
-$sth->execute;
-my ($alt_id, $vega_stable_id);
-my %alt_alleles;
-$sth->bind_columns(\$alt_id, \$vega_stable_id);
-
+my $cnt_vega_rows = @{$vega_groups};
+print STDERR "Fetched $cnt_vega_rows rows from the vega db alt_allele table\n";
 
 my %no_gene_id;
-
-my $cnt_vega_rows = 0;
-while($sth->fetch()){
-  $cnt_vega_rows++;
-  if (exists $vega_to_ens_id{$vega_stable_id} ) {
-    foreach my $gene_id ( keys %{$vega_to_ens_id{$vega_stable_id}} ) {
-      push @{$alt_alleles{$alt_id}}, $gene_id ;
+my @new_groups;
+foreach my $group (@{$vega_groups}) {
+  my $members = $group->get_all_Genes_types();
+  my $new_core_group = undef;
+  foreach my $member (@{$members}) {
+    my ($vega_gene, $attribs_hash) = @{$member};
+    if(exists $vega_to_ensembl_core_gene_id{$vega_gene->stable_id()}) {
+      $new_core_group ||= Bio::EnsEMBL::AltAlleleGroup->new(); # initalise if we don't already have one
+      foreach my $gene_id (keys %{$vega_to_ens_id{$vega_stable_id}} ) {
+        #Add each gene in. If we had a 1:m relationship then we copy the attribute already assigned
+        #across
+        $new_core_group->add_member($gene_id, $attribs_hash);
+      }
     }
-  } else {
-    push @{$no_gene_id{$alt_id}}, $vega_stable_id;
-    print STDERR "no ensembl gene_id found for vega stable id $vega_stable_id in core\n";
+    else {
+      push @{$no_gene_id{$group->dbID()}}, $vega_stable_id;
+      print STDERR "no ensembl gene_id found for vega stable id $vega_stable_id in core\n";
+    }
   }
+  push(@new_groups, $new_core_group);
 }
-$sth->finish;
-print STDERR "Fetched $cnt_vega_rows rows from the vega db alt_allele table\n";
 
 #
 # Delete the old data
 #
-
 print STDERR "\n\nDeleting all alt_alleles...\n\n";
-my $sth = $core_dba->dbc->prepare("delete from alt_allele");
-$sth->execute;
+$core_dba->dbc->do("delete from alt_allele");
 
 
 #
 # Store alt_alleles.
 #
-
 print STDERR "Storing new alt alleles...\n\n";
 my $alt_allele_count=0;
 my $gene_count = 0;
 
-my $ga = $core_dba->get_adaptor("gene");
-
-foreach my $key (keys %alt_alleles){
-  my @gene_ids = @{$alt_alleles{$key}};
-  my @genes;
-  foreach my $gene_id (@gene_ids) {
-      push @genes, $ga->fetch_by_dbID($gene_id);
-  }
-
-  my $alt_allele_id = $ga->store_alt_alleles(\@genes);
-  $alt_allele_count ++ if ($alt_allele_id);
-  $gene_count += scalar(@genes) if ($alt_allele_id);
+my $core_aaga = $core_dba->get_AltAlleleGroupAdaptor();
+foreach my $group (@new_groups) {
+  my $alt_allele_id = $core_aaga->store($group);
+  $alt_allele_count++;
+  $gene_count += $group->size()
 }
 
 print "Added $alt_allele_count alt_allele ids for $gene_count genes\nDONE\n";
