@@ -90,9 +90,7 @@ print "\nFetched ".(scalar(keys %vega_to_ensembl_core_gene_id))." Vega Stable ID
 # Get AltAlleles from vega
 #
 my $vega_aaga = $vega_dba->get_AltAlleleGroupAdaptor();
-#TODO deprecated call in 74
-my $vega_groups = $vega_aaga->fetch_all_Groups(); 
-# my $groups = $vega_aaga->fetch_all();  #replace the above with me ASAP
+my $vega_groups = $vega_aaga->fetch_all();
 
 my $cnt_vega_rows = @{$vega_groups};
 print STDERR "Fetched $cnt_vega_rows rows from the vega db alt_allele table\n";
