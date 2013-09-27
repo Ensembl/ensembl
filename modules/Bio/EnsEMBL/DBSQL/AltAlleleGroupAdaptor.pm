@@ -32,16 +32,16 @@ Alternative allele groupings
   my $aag_adaptor = Bio::EnsEMBL::Registry->get_DBAdaptor("Human","core","AltAlleleGroup");
   
   # For a known Gene, find the reference alternative allele
-  my $aag = $aag_adaptor->fetch_Group_by_dbID($gene->dbID);
+  my $aag = $aag_adaptor->fetch_by_gene_id($gene->dbID);
   my $reference_gene = $aag->get_ref_Gene;
   
   # Get a list of AltAlleleGroups
-  my $list = $aag_adaptor->fetch_all_Groups_by_type('IS_REPRESENTATIVE');
-  $list = $aag_adaptor->fetch_all_Groups();
+  my $list = $aag_adaptor->fetch_all_('IS_REPRESENTATIVE');
+  $list = $aag_adaptor->fetch_all();
   
   my $dbID = $aag_adaptor->store($aag);
   
-  $aag = $aag_adaptor->fetch_Group_by_id($dbID);
+  $aag = $aag_adaptor->fetch_by_dbID($dbID);
   $aag_adaptor->remove($aag);
 
 =head1 DESCRIPTION
@@ -59,23 +59,41 @@ use warnings;
 use base qw/Bio::EnsEMBL::DBSQL::BaseAdaptor/;
 
 use Bio::EnsEMBL::AltAlleleGroup;
-use Bio::EnsEMBL::Utils::Exception qw/throw/;
+use Bio::EnsEMBL::Utils::Exception qw/throw deprecate/;
 use Bio::EnsEMBL::Utils::Scalar qw/assert_ref/;
 use DBI qw( :sql_types );
 
 =head2 fetch_all_Groups
 
   Arg[1]      : (optional) String - type of group
-  Description : Fetches all the alt-allele groups, creates objects to represent
-                them and returns them in a list
-                Multispecies support is triggered by the is_multispecies flag
-                and species_id of the DBAdaptor.
-                Specifying a group type identifies all groups containing a
-                member of this type. It does not filter out the other members
-  Returntype  : Listref of Bio::EnsEMBL::AltAlleleGroup
+  Description : DEPRECATED. Please use fetch_all()
+  Returntype  : ArrayRef of Bio::EnsEMBL::AltAlleleGroup
+
 =cut
 
 sub fetch_all_Groups {
+    my ($self, $type) = @_;
+    deprecate('Please use fetch_all()');
+    return $self->fetch_all($type);
+}
+
+=head2 fetch_all
+
+  Arg[1]      : (optional) String - type of group
+                Restrict group fetches to just one type. Technically it selects 
+                out mixed-annotation groups where a single member contains that type.
+  Description : Fetches all the alt-allele groups, creates objects to represent
+                them and returns them in a list. Specifying a group type 
+                identifies all groups containing a member of this type. It 
+                does not filter out the other members
+                
+                Multispecies support is triggered by the is_multispecies flag
+                and species_id of the DBAdaptor.
+  Returntype  : ArrayRef of Bio::EnsEMBL::AltAlleleGroup
+
+=cut
+
+sub fetch_all {
     my $self = shift;
     my $type = shift;
 
@@ -103,16 +121,18 @@ sub fetch_all_Groups {
                 WHERE c.species_id = ? AND b.attrib = ?
             );
         }
-        $get_all_sql = q(
-            SELECT DISTINCT alt_allele_group_id FROM alt_allele a
-            JOIN (gene g, seq_region s, coord_system c)
-            ON (
-                c.coord_system_id = s.coord_system_id 
-                AND s.seq_region_id = g.seq_region_id
-                AND g.gene_id = a.gene_id
-            )
-            WHERE c.species_id = ? 
-        );
+        else {
+            $get_all_sql = q(
+                SELECT DISTINCT alt_allele_group_id FROM alt_allele a
+                JOIN (gene g, seq_region s, coord_system c)
+                ON (
+                    c.coord_system_id = s.coord_system_id 
+                    AND s.seq_region_id = g.seq_region_id
+                    AND g.gene_id = a.gene_id
+                )
+                WHERE c.species_id = ? 
+            );
+        }
     } else {
         if ($type) {
             $get_all_sql = q(SELECT DISTINCT alt_allele_group_id 
@@ -144,7 +164,7 @@ sub fetch_all_Groups {
     $sth->bind_col(1, \$group_id );
     
     while ( $sth->fetch() ) {
-        my $aag = $self->fetch_Group_by_id($group_id);
+        my $aag = $self->fetch_by_dbID($group_id);
         push @group_list, $aag;
     }
     $sth->finish;
@@ -154,21 +174,33 @@ sub fetch_all_Groups {
 =head2 fetch_all_Groups_by_type
 
   Arg[1]      : String - type of group
-  Description : Convenience method for restricting group fetches to just one
-                type. Technically it selects out mixed-annotation groups where 
-                a single member contains that type.       
-  Returntype  : Listref of Bio::EnsEMBL::AltAlleleGroup
+  Description : DEPRECATED. Please use fetch_all()
+  Returntype  : ArrayRef of Bio::EnsEMBL::AltAlleleGroup
+
 =cut
 
 sub fetch_all_Groups_by_type {
-    my $self = shift;
-    my $type = shift; # refers to alt_allele_attrib type
-    
-    my $group_list = $self->fetch_all_Groups($type);
+    my ($self, $type) = @_;
+    deprecate('Please use fetch_all()');
+    my $group_list = $self->fetch_all($type);
     return $group_list;
 }
 
 =head2 fetch_Group_by_id
+
+  Arg[1]      : AltAlleleGroup dbID.
+  Description : DEPRECATED. Please use fetch_by_dbID
+  Returntype  : Bio::EnsEMBL::AltAlleleGroup
+
+=cut
+
+sub fetch_Group_by_id {
+    my ($self, $group_id) = @_;
+    deprecate('Please use fetch_by_dbID()');
+    return $self->fetch_by_dbID($group_id);
+}
+
+=head2 fetch_by_dbID
 
   Arg[1]      : AltAlleleGroup dbID.
   Description : Creates and returns an AltAlleleGroup for the given group id
@@ -177,7 +209,7 @@ sub fetch_all_Groups_by_type {
 
 =cut
 
-sub fetch_Group_by_id {
+sub fetch_by_dbID {
     my $self = shift;
     my $group_id = shift;
     
@@ -225,10 +257,33 @@ sub fetch_Group_by_id {
     return;
 }
 
+=head2 fetch_Group_by_Gene_dbID
+
+  Arg[1]      : Integer Gene ID of the member to query by
+  Description : DEPRECATED. Please use fetch_by_gene_id 
+  Returntype  : Bio::EnsEMBL::AltAlleleGroup
+
+=cut
+
+
 sub fetch_Group_by_Gene_dbID {
-    my $self = shift;
-    my $gene_id = shift;
-    
+    my ($self, $gene_id) = @_;
+    deprecate('Please use fetch_by_gene_id()');
+    return $self->fetch_by_gene_id($gene_id);
+}
+
+=head2 fetch_by_gene_id
+
+  Arg[1]      : Integer Gene ID of the member to query by
+  Description : Creates and returns an AltAlleleGroup which contains
+                the specified gene member                
+  Returntype  : Bio::EnsEMBL::AltAlleleGroup
+
+=cut
+
+sub fetch_by_gene_id {
+    my ($self, $gene_id) = @_;
+
     my $gene_id_sql = q(
         SELECT alt_allele_group_id FROM alt_allele
         WHERE gene_id = ?
@@ -242,14 +297,14 @@ sub fetch_Group_by_Gene_dbID {
     $sth->fetch;
     $sth->finish;
     if (!$@ && $group_id) {
-        return $self->fetch_Group_by_id($group_id);
+        return $self->fetch_by_dbID($group_id);
     }
     return;
 }
 
 =head2 store
 
-  Arg[0]     : Bio::EnsEMBL::AltAlleleGroup
+  Arg[1]     : Bio::EnsEMBL::AltAlleleGroup
   Description: Used for persisting new groups to the database.
                It updates the dbID of the object handed to it to match the
                database.

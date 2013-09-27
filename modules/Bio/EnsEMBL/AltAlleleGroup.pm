@@ -459,7 +459,7 @@ sub get_all_Genes {
 }
 
 
-=head2 get_all_Gene_ids
+=head2 get_all_Genes_types
 
   Arg[1]      : Boolean - Do not include representative gene in list of ids.
   Description : Fetches all the Gene objects within the allele group and their

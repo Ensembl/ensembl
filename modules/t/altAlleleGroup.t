@@ -86,7 +86,7 @@ ok($db, 'DB was retrieved');
 my $aaga = $db->get_adaptor('AltAlleleGroup');
 # Test data consists of a single group, of type AUTOMATIC, with a reference Allele and 3 others
 
-my $group_list = $aaga->fetch_all_Groups;
+my $group_list = $aaga->fetch_all;
 my $aag = $group_list->[0];
 is($aag->rep_Gene_id, 18256,"Check for correct selection of allele");
 
@@ -101,26 +101,26 @@ $gene = $gene_list->[0];
 is (ref($gene),'Bio::EnsEMBL::Gene',"Returned object type from get_all_Genes");
 ok ($gene->dbID == 18256,"Ensure Gene objects acquire correct information");
 
-# test fetch_all_Groups_by_type
-$group_list = $aaga->fetch_all_Groups_by_type('UNLIKELY STRING');
+# test fetch_all
+$group_list = $aaga->fetch_all('UNLIKELY STRING');
 ok(scalar(@{$group_list}) == 0,"Try outlandish typed group lookup");
-$group_list = $aaga->fetch_all_Groups_by_type('HAS_CODING_POTENTIAL');
+$group_list = $aaga->fetch_all('HAS_CODING_POTENTIAL');
 ok(scalar(@$group_list) == 1,"Try known group type lookup");
 
 # fetch_Group_by_id
 $aag = $group_list->[0];
 my $group_id = $aag->dbID;
-my $new_aag = $aaga->fetch_Group_by_id($group_id);
+my $new_aag = $aaga->fetch_by_dbID($group_id);
 
 is_deeply($aag, $new_aag, "Compare previously fetched group with group found by using the dbID");
 
-$aag = $aaga->fetch_Group_by_id(undef);
+$aag = $aaga->fetch_by_dbID(undef);
 
 ok(!defined($aag), "See what happens if no argument is given");
 
 # fetch_Group_by_Gene_dbID
-$aag = $aaga->fetch_all_Groups->[0];
-$new_aag = $aaga->fetch_Group_by_Gene_dbID(18257);
+$aag = $aaga->fetch_all->[0];
+$new_aag = $aaga->fetch_by_gene_id(18257);
 is_deeply($new_aag,$aag,"Check single gene ID returns entire group correctly");
 
 # check store method
@@ -128,7 +128,7 @@ my $dbID = $aaga->store($group);
 ok($dbID, 'A dbID was returned from the store method');
 
 {
-    my $aag2 = $aaga->fetch_Group_by_id($dbID);
+    my $aag2 = $aaga->fetch_by_dbID($dbID);
     is_deeply($aag2->get_all_members,$group->get_all_members,"Compare stored with original");
     $group->add_member(4, {});
     my $update_dbID = $aaga->update($group);
@@ -137,11 +137,11 @@ ok($dbID, 'A dbID was returned from the store method');
 
 $group->remove_member(4);
 $aaga->remove($group);
-ok(! defined $aaga->fetch_Group_by_id($dbID), 'Using a deleted ID means no group returned');
+ok(! defined $aaga->fetch_by_dbID($dbID), 'Using a deleted ID means no group returned');
 my $new_dbID = $aaga->store($group);
 
 cmp_ok($new_dbID, '!=', $dbID, 'Should have been assgined a new ID');
-my $aag2 = $aaga->fetch_Group_by_id($new_dbID);
+my $aag2 = $aaga->fetch_by_dbID($new_dbID);
 my $gene_ids = $aag2->get_all_Gene_ids();
 eq_or_diff($gene_ids,[1,2,3], "Update and re-retrieve the same AltAlleleGroup") or diag explain $gene_ids;
 
@@ -149,7 +149,7 @@ eq_or_diff($gene_ids,[1,2,3], "Update and re-retrieve the same AltAlleleGroup") 
 # Proper test data is hard to fabricate and no samples exist.
 
 $aaga->db->is_multispecies(1);
-$group_list = $aaga->fetch_all_Groups;
+$group_list = $aaga->fetch_all;
 $aag = $group_list->[0];
 
 ok(scalar(@$group_list) == 1, "Pretend multi-species fetch returns same groups as normal.");
