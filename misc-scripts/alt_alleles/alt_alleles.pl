@@ -99,12 +99,12 @@ my %no_gene_id;
 my @new_groups;
 foreach my $group (@{$vega_groups}) {
   my $members = $group->get_all_Genes_types();
-  my $new_core_group = undef;
+  my $new_core_group = Bio::EnsEMBL::AltAlleleGroup->new();
   foreach my $member (@{$members}) {
     my ($vega_gene, $attribs_hash) = @{$member};
-    if(exists $vega_to_ensembl_core_gene_id{$vega_gene->stable_id()}) {
-      $new_core_group ||= Bio::EnsEMBL::AltAlleleGroup->new(); # initalise if we don't already have one
-      foreach my $gene_id (keys %{$vega_to_ens_id{$vega_stable_id}} ) {
+    my $vega_stable_id = $vega_gene->stable_id();
+    if(exists $vega_to_ensembl_core_gene_id{$vega_stable_id}) {
+      foreach my $gene_id (keys %{$vega_to_ensembl_core_gene_id{$vega_stable_id}} ) {
         #Add each gene in. If we had a 1:m relationship then we copy the attribute already assigned
         #across
         $new_core_group->add_member($gene_id, $attribs_hash);
@@ -115,7 +115,9 @@ foreach my $group (@{$vega_groups}) {
       print STDERR "no ensembl gene_id found for vega stable id $vega_stable_id in core\n";
     }
   }
-  push(@new_groups, $new_core_group);
+  if($new_core_group->size() > 0) {
+    push(@new_groups, $new_core_group);
+  }
 }
 
 #

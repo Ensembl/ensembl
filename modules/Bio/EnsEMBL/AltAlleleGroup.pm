@@ -131,7 +131,7 @@ sub new {
     my $self = $class->SUPER::new(@_);
     my ( $list ) = rearrange( [ 'MEMBERS'], @_ );
     
-    $self->{'MEMBERS'} = $list;
+    $self->{'MEMBERS'} = $list || [];
     
     return $self;
 }
