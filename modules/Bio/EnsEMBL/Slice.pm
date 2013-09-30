@@ -1687,8 +1687,15 @@ sub _get_StructuralVariationFeatureAdaptor {
 
 sub _get_VariationAdaptor {
   my ($self, $object_type, $dbtype) = @_;
+  # very important to do this defaulting since we *have* to assume the variation
+  # database is called 'variation'. Using the current group will not work because
+  # that will be something like 'core' (most likely), 'ensembl' or 'vega'.
   $dbtype ||= 'variation';
-  return $self->_get_Adaptor($object_type, $dbtype);
+
+  # Also we do not care about Registry->get_db() for variation DBs
+  my $do_not_check_db = 1;
+  
+  return $self->_get_Adaptor($object_type, $dbtype, $do_not_check_db);
 }
 
 =head2 _get_CoreAdaptor
@@ -1704,7 +1711,7 @@ sub _get_VariationAdaptor {
 
 sub _get_CoreAdaptor {
   my ($self, $object_type, $dbtype) = @_;
-  $dbtype ||= 'core';
+  #Simple pass through
   return $self->_get_Adaptor($object_type, $dbtype);
 }
 
@@ -1712,6 +1719,8 @@ sub _get_CoreAdaptor {
 
   Arg  [1]    : String object_type to retrieve an adaptor for
   Arg  [2]    : String dbtype to search for the given adaptor in
+  Arg  [3]    : Boolean Turn off the checking of Registry->get_db() for your 
+                adaptor.
   Description : Searches for the specified adaptor in the Registry and returns it. Otherwise
                 it will return nothing if the adaptor was not found. We consult the 
                 "special" adaptors held by Bio::EnsEMBL::Registry::get_db() method and then
@@ -1726,14 +1735,10 @@ sub _get_CoreAdaptor {
 =cut
 
 sub _get_Adaptor {
-  my ($self, $object_type, $dbtype) = @_;
+  my ($self, $object_type, $dbtype, $do_not_check_db) = @_;
 
   if(!$object_type) {
     warning('Object type is a required parameter');
-    return;
-  }
-  if(!$dbtype) {
-    warning('DB type is a required parameter');
     return;
   }
 
@@ -1750,14 +1755,22 @@ sub _get_Adaptor {
   #First we query for the DBAdaptor using get_db(). This is a deprecated method
   #call but "special" adaptors can be registered via this method. We must
   #consult here 1st to find the possible special adaptor
-  my $db = $registry->get_db($local_db, $dbtype);
-  if($db) {
-    # If we got a return then use this DBAdaptor's species name, group and the given object type.
-    # Special adaptors can have different species names
-    $adaptor = $registry->get_adaptor($db->species(), $db->group(), $object_type);
+  if(!$do_not_check_db && $dbtype) {
+    my $db = $registry->get_db($local_db, $dbtype);
+    if($db) {
+      # If we got a return then use this DBAdaptor's species name, group and the given object type.
+      # Special adaptors can have different species names
+      $adaptor = $registry->get_adaptor($db->species(), $db->group(), $object_type);
+    }
+    else {
+      #Otherwise just use the current species, dbtype and object type
+      $adaptor = $registry->get_adaptor($species, $dbtype, $object_type);
+    }
   }
+  # Otherwise our query group is the one attached to the current adaptor
   else {
-    #Otherwise just use the current species, dbtype and object type
+    #If not set use the group attached to the local adaptor 
+    $dbtype ||= $local_db->group();
     $adaptor = $registry->get_adaptor($species, $dbtype, $object_type);
   }
   return $adaptor if $adaptor;
@@ -1767,7 +1780,23 @@ sub _get_Adaptor {
 }
 
 =head2 get_all_VariationFeatures
-    Args        : $so_terms [optional] - list of so_terms to limit the fetch to
+
+    Args [1]    : (optional) ArrayRef $so_terms
+                  SequenceOntology terms to limit the fetch to
+    Args [2]    : (optional) boolean $without_children
+                  Do not query using the children of the given SO terms 
+                  i.e. query using the given terms directly
+    Args [3]    : (optional) ArrayRef $included_so 
+                  ArrayRef of SequenceOntology which should be queried for
+                  without children. This argument allows you to combine SO terms with children
+                  from argument 1 with extra non-child SO terms. e.g. you wish to query for
+                  all protein_altering_variant (specified in argument 1) variations which 
+                  would be defined by child SO terms but also wanted stop_retained_variant linked variations
+                  defined by this argument
+    Args [4]    : (optional) string $dbtype
+                  The dbtype of variation to obtain (i.e. can be different from the "variation" type).
+                  This assumes that the extra db has been added to the DBAdaptor under this name (using the
+                  DBConnection::add_db_adaptor method).
     Description : Returns all germline variation features on this slice. This function will 
                   only work correctly if the variation database has been attached to the core 
                   database.
@@ -1782,43 +1811,10 @@ sub _get_Adaptor {
 =cut
 
 sub get_all_VariationFeatures{
-  my $self     = shift;
-
-  if (my $vf_adaptor = $self->_get_VariationFeatureAdaptor) {
-    return $vf_adaptor->fetch_all_by_Slice_SO_terms($self, @_);
-  }
-  return [];
-}
-
-=head2 get_all_other_VariationFeatures
-
-    Arg [1]     : string $dbtype
-                  The dbtype of variation to obtain (i.e. can be different from the "variation" type).
-                  This assumes that the extra db has been added to the DBAdaptor under this name (using the
-                  DBConnection::add_db_adaptor method).
-    Arg [2]     : $so_terms [optional] - listref of so_terms to limit the fetch to
-    Description : Returns all germline variation features on this slice. This function will 
-                  only work correctly if the variation database has been attached to the core 
-                  database.
-                  If $so_terms is specified, only variation features with a consequence type
-                  that matches or is an ontological child of any of the supplied terms will
-                  be returned
-    ReturnType  : listref of Bio::EnsEMBL::Variation::VariationFeature
-    Exceptions  : none
-    Caller      : contigview, snpview
-    Status      : Stable
-
-=cut
-
-sub get_all_other_VariationFeatures {
-  my ($self, $dbtype, @terms) = @_;
-  if(!$dbtype) {
-    warning('Database type required (e.g. "variation")');
-    return [];
-  }
+  my ($self, $so_terms, $without_children, $included_so, $dbtype) = @_;
 
   if (my $vf_adaptor = $self->_get_VariationFeatureAdaptor($dbtype)) {
-    return $vf_adaptor->fetch_all_by_Slice_SO_terms($self, @terms);
+    return $vf_adaptor->fetch_all_by_Slice_SO_terms($self, $so_terms, $without_children, $included_so);
   }
   return [];
 }
@@ -1847,7 +1843,8 @@ sub get_all_somatic_VariationFeatures {
 
 =head2 get_all_somatic_VariationFeatures_by_source
 
-    Arg [1]     : $source [optional]
+    Arg [1]     : string $source [optional]
+                  The name of the source to query for
     Arg [2]     : string $dbtype [optional]
                   The dbtype of variation to obtain (i.e. can be different from the "variation" type).
                   This assumes that the extra db has been added to the DBAdaptor under this name (using the
