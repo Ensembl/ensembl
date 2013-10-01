@@ -95,6 +95,7 @@ use Bio::EnsEMBL::Utils::Exception qw(throw);
 use Bio::EnsEMBL::Utils::Scalar qw(assert_ref assert_integer wrap_array);
 use DBI qw(:sql_types);
 use Data::Dumper;
+use Scalar::Util qw/looks_like_number/;
 
 @ISA = qw(Exporter);
 @EXPORT = (@{$DBI::EXPORT_TAGS{'sql_types'}});
@@ -702,8 +703,7 @@ sub fetch_all_by_dbID_list {
 # otherwise we'd constantly loop
 sub _uncached_fetch_all_by_dbID_list {
   my ( $self, $id_list_ref, $slice ) = @_;
-
-  return $self->_uncached_fetch_all_by_id_list($id_list_ref, $slice, "dbID");
+  return $self->_uncached_fetch_all_by_id_list($id_list_ref, $slice, "dbID", 1);
 } ## end sub fetch_all_by_dbID_list
 
 =head2 _uncached_fetch_all_by_id_list
@@ -715,21 +715,43 @@ sub _uncached_fetch_all_by_dbID_list {
                Valid values include dbID and stable_id. dbID is an alias for
                the primary key, while other names map directly to table columns
                of the Feature this adaptor manages.
+  Arg [4]    : Boolean $numeric
+               Indicates if the incoming data is to be processed as a numeric
+               or as a String. If arg [3] was set to dbID then we default this to
+               be true. If arg [3] was set to stable_id then we default this to
+               be false.
+               When not using a standard arg[3] the IDs are assumed to be Strings.
+  Arg [5]    : Integer $max_size
+               Control the maximum number of IDs sent to a database in a single 
+               query. Defaults to 2K for Strings and 16K for integers. Only
+               provide if you know *exactly* why you need to edit it.
   Example    : $list_of_features = $adaptor->_uncached_fetch_all_by_id_list(
                    [qw(ENSG00000101321 ENSG00000101346 ENSG00000101367)],
                    undef,
-                   "stable_id");
+                   "stable_id", 0); #using strings
+               
+               # Numeric set to true because we are using numerics
+               $list_of_features = $adaptor->_uncached_fetch_all_by_id_list(
+                   [1,2,3,4],
+                   undef,
+                   "dbID", 1);
+
+               # Numeric defaults to true because we are querying using dbID
+               $list_of_features = $adaptor->_uncached_fetch_all_by_id_list(
+                   [1,2,3,4],
+                   undef,
+                   "dbID");
   Description: This is a generic method used to fetch lists of features by IDs.
                It avoids caches, meaning it is best suited for block fetching.
                See fetch_all_by_dbID_list() for more info.
-  Returntype : ListRef of Bio::EnsEMBL::Feature
+  Returntype : ArrayRef of Bio::EnsEMBL::Feature
   Exceptions : Thrown if a list of IDs is not supplied.
   Caller     : BaseFeatureAdaptor, BaseAdaptor and derived classes.
 
 =cut
 
 sub _uncached_fetch_all_by_id_list {
-    my ( $self, $id_list_ref, $slice, $id_type ) = @_;
+    my ( $self, $id_list_ref, $slice, $id_type, $numeric, $max_size ) = @_;
 
   if ( !defined($id_list_ref) || ref($id_list_ref) ne 'ARRAY' ) {
     throw("id_list list reference argument is required");
@@ -741,57 +763,74 @@ sub _uncached_fetch_all_by_id_list {
   my @tabs = $self->_tables();
   my ( $name, $syn ) = @{ $tabs[0] };
 
-  # Ensure that we do not exceed MySQL's max_allowed_packet (defaults to
-  # 1 MB) splitting large queries into smaller queries of at most 256 KB
-  # (32768 8-bit characters).  Assuming a (generous) average dbID string
-  # length of 16, this means 2048 dbIDs in each query.
-  my $max_size = 2048;
-
-  # prepare column name for query
+  # prepare column name for query. If the id_type was
+  # set to dbID then we assume the column must be
+  # tablename_id e.g. gene_id. Otherwise we assume the id_type
+  # is the field/column name
   my $field_name;
-  if ($id_type eq "dbID") {
-      $field_name = $name."_id";
-  } else {
-      $field_name = $id_type;
+  if($id_type eq 'dbID') {
+    $field_name = $name.'_id';
+    # If numeric was not set default it to 1 since this is an int
+    $numeric = 1 if ! defined $numeric;
+  }
+  elsif($id_type eq 'stable_id') {
+    # If numeric was not set default it to 0 since this is a string
+    $numeric = 0 if ! defined $numeric; 
+    $field_name = $id_type;
+  }
+  else {
+    $field_name = $id_type;
+  }
+
+  my $sql_data_type;
+
+  # Ensuring we do not exceed MySQL's max_allowed_packet (defaults to 1MB)
+  # by splitting large queries into smaller queries of at most 256KB
+  # (262,144 8-bit characters)
+  # If we had a numeric then really we are talking about working with
+  # integers. Normal max ensembl id size is 12 plus 2 characters for
+  # commas in our IN statement comes to 14. Even bloating this to 16 gives
+  # a max number of 16,384 IDs (262114/16).
+  # 
+  if($numeric) {
+    my $first_id = $id_list_ref->[0];
+    if(!looks_like_number($first_id)) {
+      throw "You specified that we are looking for numerics but $first_id is not a numeric";
+    }
+    $max_size = 16384 if ! defined $max_size;
+    $sql_data_type = SQL_INTEGER;
+  }
+  # However when dealing with Strings those can be very large (assuming
+  # 128 is the max length of a stable ID). 128 is 8x smaller than our
+  # previous max expected integer so we reduce the max ids by 8. This gives
+  # 2048 IDs (16384/8)
+  else {
+    $max_size = 2048 if ! defined $max_size;
+    $sql_data_type = SQL_VARCHAR;
   }
   
   # build up unique id list, also validate on the way by
   my %id_list;
   for (@{$id_list_ref}) {
-      $id_list{$_}++;
-      if ($id_type ne "stable_id") { 
-          assert_integer($_,"$field_name");
-      }
+    $id_list{$_}++;
   }
   my @id_list = keys %id_list;
 
   my @out;
-
+  my $inline = 1;
   while (@id_list) {
     my @ids;
     my $id_str;
 
     if ( scalar(@id_list) > $max_size ) {
       @ids = splice( @id_list, 0, $max_size );
-    } else {
+    } 
+    else {
       @ids     = @id_list;
       @id_list = ();
     }
-    
-    if ( scalar(@ids) > 1 ) {
-        # stable_ids are the only feature attribute which is expressed as a
-        # varchar. These need to be quoted or the SQL will bounce
-        if ($id_type eq "stable_id") {
-            $id_str = " IN (" . join( ',', map qq("$_"), @ids ) . ")";
-        } else {
-            $id_str = " IN (" . join( ',', @ids). ")";
-        }
-    } else {
-      $id_str = " = " . $ids[0];
-    }
-    
-    my $constraint = "${syn}.${field_name} $id_str";
-
+    # Push off to our IN statement constructor for this work
+    my $constraint = $self->generate_in_constraint(\@ids, "${syn}.${field_name}", $sql_data_type, $inline);
     push @out, @{ $self->generic_fetch($constraint, undef, $slice) };
   }
 
