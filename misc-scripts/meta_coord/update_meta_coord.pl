@@ -26,7 +26,6 @@ my @table_names = qw(
   prediction_exon
   prediction_transcript
   protein_align_feature
-  qtl_feature
   repeat_feature
   simple_feature
   splicing_event
