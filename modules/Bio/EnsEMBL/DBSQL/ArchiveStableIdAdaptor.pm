@@ -802,12 +802,18 @@ sub fetch_successors_by_archive_id {
 
 =head2 fetch_history_tree_by_stable_id
 
-  Arg[1]      : String $stable_id - the stable ID to fetch the history tree for
-  Arg[2]      : (optional) Int $num_high_scorers
+  Arg [1]     : String $stable_id - the stable ID to fetch the history tree for
+  Arg [2]     : (optional) Int $num_high_scorers
                 number of mappings per stable ID allowed when filtering
-  Arg[3]      : (optional) Int $max_rows
+  Arg [3]     : (optional) Int $max_rows
                 maximum number of stable IDs in history tree (used for
                 filtering)
+  Arg [4]     : (optional) Float $time_limit
+                Optimise tree normally runs until it hits a minimised state
+                but this can take a very long time. Therefore you can
+                opt to bail out of the optimisation early. Specify the
+                time in seconds. Floating point values are supported should you
+                require sub-second limits
   Example     : my $history = $archive_adaptor->fetch_history_tree_by_stable_id(
                   'ENSG00023747897');
   Description : Returns the history tree for a given stable ID. This will
@@ -825,7 +831,7 @@ sub fetch_successors_by_archive_id {
 =cut
 
 sub fetch_history_tree_by_stable_id {
-  my ($self, $stable_id, $num_high_scorers, $max_rows) = @_;
+  my ($self, $stable_id, $num_high_scorers, $max_rows, $time_limit) = @_;
 
   throw("Expecting a stable ID argument.") unless $stable_id;
 
@@ -981,7 +987,7 @@ sub fetch_history_tree_by_stable_id {
   
   # calculate grid coordinates for the sorted tree; this will also try to
   # untangle the tree
-  $history->calculate_coords;
+  $history->calculate_coords($time_limit);
   
   return $history;
 }
