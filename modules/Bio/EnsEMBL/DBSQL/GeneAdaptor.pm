@@ -1057,7 +1057,7 @@ sub store_alt_alleles {
   my $aag = Bio::EnsEMBL::AltAlleleGroup->new(
     -MEMBERS => $allele_list,
   );
-  if ($aag->get_all_members_with_type('IS_REPRESENTATIVE') != 1) {
+  if (scalar( @{$aag->get_all_members_with_type('IS_REPRESENTATIVE')} ) != 1) {
     warning('Inappropriate number of alternative alleles on the reference sequence. Ignoring.');
     return;
   }
