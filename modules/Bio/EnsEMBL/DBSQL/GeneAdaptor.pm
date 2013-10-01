@@ -974,7 +974,7 @@ sub fetch_all_alt_alleles {
   }
 
   my $aaga = $self->db->get_adaptor('AltAlleleGroup');
-  my $aag = $aaga->fetch_Group_by_Gene_dbID($gene->dbID);
+  my $aag = $aaga->fetch_by_gene_id($gene->dbID);
   unless ($aag) {
       warning("Supplied gene has no alternative alleles"); 
       return [];
@@ -995,7 +995,7 @@ sub fetch_all_alt_alleles {
 
 sub is_ref {
   my ($self, $gene_id) = @_;
-  my $aag = $self->db->get_adaptor('AltAlleleGroup')->fetch_Group_by_Gene_dbID($gene_id);
+  my $aag = $self->db->get_adaptor('AltAlleleGroup')->fetch_by_gene_id($gene_id);
   if (defined($aag)) {
       if ($aag->rep_Gene_id == $gene_id) {
           return 1;
