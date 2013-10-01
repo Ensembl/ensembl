@@ -314,14 +314,15 @@ sub connect {
                            { 'RaiseError' => 1 } );
     };
   }
+  my $error = $@;
 
-  if ( !$dbh || $@ || !$dbh->ping() ) {
+  if ( !$dbh || $error || !$dbh->ping() ) {
     warn(   "Could not connect to database "
           . $self->dbname()
           . " as user "
           . $self->username()
           . " using [$dsn] as a locator:\n"
-          . $DBI::errstr );
+          . $error );
 
     $self->connected(0);
 
@@ -330,7 +331,7 @@ sub connect {
            . " as user "
            . $self->username()
            . " using [$dsn] as a locator:\n"
-           . $DBI::errstr );
+           . $error );
   }
 
   $self->db_handle($dbh);

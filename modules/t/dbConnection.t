@@ -2,6 +2,7 @@ use strict;
 use warnings;
 
 use Test::More;
+use Test::Exception;
 use Test::MockObject::Extends;
 use Time::HiRes qw/usleep/;
 
@@ -214,6 +215,31 @@ my $dbc_copy = mock_object($dbc);
   $pdbc->check_reconnection();
   $dbc_copy->__is_called('connected', 1, "connected() was called since we had to check if the DBConnection was active");
   $dbc_copy->__is_called('reconnect', 1, "reconnect() as we had gone beyond our normal timeout interval");
+}
+
+# Test error reporting when we connect using a bogus driver
+{
+  throws_ok {
+    my $dbc = Bio::EnsEMBL::DBSQL::DBConnection->new(
+      -HOST => '127.0.0.1', -PORT => 3306, -USER => 'usr', -DRIVER => 'bogusdriver'
+    );
+    local $SIG{__WARN__} = sub {
+      #swallow the warning. we get it raised via an error anyway
+    };
+    $dbc->db_handle;
+  } qr/install_driver.+failed/, 'Checking for an error message from DBI detailing missing driver problems';
+  
+  if($db->dbc->driver() eq 'mysql') {
+    throws_ok {
+      my $dbc = Bio::EnsEMBL::DBSQL::DBConnection->new(
+        -HOST => $db->dbc->host, -PORT => $db->dbc->port, -USER => 'arandomuser', -DRIVER => 'mysql'
+      );
+      local $SIG{__WARN__} = sub {
+        #swallow the warning. we get it raised via an error anyway
+      };
+      $dbc->db_handle;
+    } qr/Access denied for user/, 'Checking we raise an error about a bogus connection details';
+  }
 }
 
 done_testing();
