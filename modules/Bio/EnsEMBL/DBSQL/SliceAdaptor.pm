@@ -805,7 +805,7 @@ sub fetch_by_name {
 =cut
 
 sub fetch_by_seq_region_id {
-  my ( $self, $seq_region_id, $start, $end, $strand ) = @_;
+  my ( $self, $seq_region_id, $start, $end, $strand, $check_prior_ids ) = @_;
 
   my $arr = $self->{'sr_id_cache'}->{$seq_region_id};
   my ( $name, $length, $cs, $cs_id );
@@ -823,7 +823,19 @@ sub fetch_by_seq_region_id {
     $sth->bind_param( 1, $seq_region_id, SQL_INTEGER );
     $sth->execute();
 
-    if ( $sth->rows() == 0 ) { return undef }
+    if ( $sth->rows() == 0 ) { 
+      # This could have been an old seq region id so see if we can
+      # translate it into a more recent version.
+      if($check_prior_ids) {
+        my $csa = $self->db()->get_CoordSystemAdaptor();
+        if(exists $csa->{_external_seq_region_mapping}->{$seq_region_id}) {
+          my $new_seq_region_id = $csa->{_external_seq_region_mapping}->{$seq_region_id};
+          # No need to pass check prior ids flag because it's a 1 step relationship
+          return $self->fetch_by_seq_region_id($new_seq_region_id, $start, $end, $strand);
+        }
+      }
+      return undef;
+    }
 
     ( $name, $cs_id, $length ) = $sth->fetchrow_array();
     $sth->finish();

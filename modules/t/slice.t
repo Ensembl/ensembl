@@ -508,5 +508,41 @@ is($chr_one_slice->assembly_exception_type(), 'REF', 'Ensuring reference regions
   }
 }
 
+# Test alternative region mappings from fetch_by_seq_region_id()
+{
+  my $current_slice = $slice_adaptor->fetch_by_region('chromosome', $CHR, $START, $END);
+  my $alternative_seq_region_id = 1;
+
+  #Get the alternative seq region id. Expect nothing
+  ok(! defined $slice_adaptor->fetch_by_seq_region_id($alternative_seq_region_id), 'Asking for a non-existent ID results in no slice returned');
+
+  #Save the tables and add the mapping values in
+  my @tables = ('seq_region_mapping', 'mapping_set');
+  $multi_db->save('core', @tables);
+  my $ms_sql = 'insert into mapping_set (mapping_set_id, internal_schema_build, external_schema_build) values (?,?,?)';
+  $db->dbc->sql_helper->execute_update(-SQL => $ms_sql, -PARAMS => [1, $db->_get_schema_build(), 'oldbuild']);
+  my $srm_sql = 'insert into seq_region_mapping (mapping_set_id, internal_seq_region_id, external_seq_region_id) values (?,?,?)';
+  $db->dbc->sql_helper->execute_update(-SQL => $srm_sql, -PARAMS => [1, $current_slice->get_seq_region_id(), $alternative_seq_region_id]);
+
+
+  #Force a refresh in CSA
+  delete $db->get_CoordSystemAdaptor->{$_} for qw/_internal_seq_region_mapping _external_seq_region_mapping/;
+  $db->get_CoordSystemAdaptor->_cache_seq_region_mapping();
+  my $alternative_slice = $slice_adaptor->fetch_by_seq_region_id($alternative_seq_region_id);
+  ok(!defined $alternative_slice, 'Cannot retrieve the alternative slice without asking to look at alternatives');
+  $alternative_slice = $slice_adaptor->fetch_by_seq_region_id($alternative_seq_region_id, undef, undef, undef, 1); #don't care about start,end,strand
+  ok(defined $alternative_slice, 'Got a slice after asking for it');
+  cmp_ok($current_slice->get_seq_region_id(), '==', $alternative_slice->get_seq_region_id(), 'Seq region IDs should be equivalent even though query seq_region_id was different');
+  
+  #Restore & force a refresh
+  $multi_db->restore('core', @tables);
+  delete $db->get_CoordSystemAdaptor->{$_} for qw/_internal_seq_region_mapping _external_seq_region_mapping/;
+  $db->get_CoordSystemAdaptor->_cache_seq_region_mapping();
+
+  # Just checking we are back to normal
+  $alternative_slice = $slice_adaptor->fetch_by_seq_region_id($alternative_seq_region_id);
+  ok(!defined $alternative_slice, 'Cannot retrieve the alternative slice post restore');
+}
+
 done_testing();
 
