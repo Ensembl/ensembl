@@ -128,6 +128,7 @@ no warnings 'uninitialized';
 
 use Bio::EnsEMBL::Utils::Argument qw(rearrange);
 use Bio::EnsEMBL::Utils::Exception qw(throw warning);
+use Time::HiRes;
 
 
 =head2 new
@@ -644,6 +645,12 @@ sub _sort_stable_ids {
 
 =head2 optimise_tree
 
+  Arg [1]     : (optional) Float $time_limit
+                Optimise tree normally runs until it hits a minimised state
+                but this can take a very long time. Therefore you can
+                opt to bail out of the optimisation early. Specify the
+                time in seconds. Floating point values are supported should you
+                require sub-second limits              
   Example     : $history->optimise_tree;
   Description : This method sorts the history tree so that the number of
                 overlapping branches is minimised (thus "untangling" the tree).
@@ -663,6 +670,7 @@ sub _sort_stable_ids {
 
 sub optimise_tree {
   my $self = shift;
+  my $time_limit = shift;
 
   # get all non-self events
   my @links;
@@ -687,8 +695,16 @@ sub optimise_tree {
   # find the number of permutations for the given number of stable IDs
   my $fact = $self->_factorial(scalar(keys %pos));
 
+  my $starting_time = Time::HiRes::time();
+
   OPT:
   while ($successive_fails < 100) {
+
+    if(defined $time_limit) {
+      my $current_time = Time::HiRes::time();
+      my $diff = $current_time - $starting_time;
+      last OPT if $diff > $time_limit;
+    }
 
     # sort links by vertical distance
     #warn "sorting\n";
@@ -886,6 +902,12 @@ sub coords_by_ArchiveStableId {
 
 =head2 calculate_coords
 
+  Arg [1]     : (optional) Float $time_limit
+                Optimise tree normally runs until it hits a minimised state
+                but this can take a very long time. Therefore you can
+                opt to bail out of the optimisation early. Specify the
+                time in seconds. Floating point values are supported should you
+                require sub-second limits
   Example     : $history->calculate_coords;
   Description : Pre-calculates the grid coordinates of all nodes in the tree.
   Return type : none
@@ -898,6 +920,7 @@ sub coords_by_ArchiveStableId {
 
 sub calculate_coords {
   my $self = shift;
+  my $time_limit = shift;
 
   # reset any previous tree cordinate calculations
   $self->reset_tree;
@@ -907,7 +930,7 @@ sub calculate_coords {
   my $db_names = $self->get_release_db_names;
 
   # untangle tree by sorting stable IDs appropriately
-  $self->optimise_tree;
+  $self->optimise_tree($time_limit);
   my $stable_ids = $self->get_unique_stable_ids;
   
   # for performance reasons, additionally store coordinates in a lookup hash
