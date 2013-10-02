@@ -76,6 +76,36 @@ sub new {
 }
 
 
+# _tables
+#  Arg [1]    : none
+#  Description: PROTECTED implementation of superclass abstract method.
+#               Returns the names, aliases of the tables to use for queries.
+#  Returntype : list of listrefs of strings
+#  Exceptions : none
+#  Caller     : internal
+#  Status     : Stable
+
+sub _tables {
+  return (['density_type', 'dt']);
+}
+
+
+# _columns
+#  Arg [1]    : none
+#  Example    : none
+#  Description: PROTECTED implementation of superclass abstract method.
+#               Returns a list of columns to use for queries.
+#  Returntype : list of strings
+#  Exceptions : none
+#  Caller     : internal
+#  Status     : Stable
+
+sub _columns {
+  return ('dt.density_type_id', 'dt.analysis_id', 'dt.block_size', 'dt.region_features', 'dt.value_type');
+}
+
+
+
 
 =head2 fetch_all
 
