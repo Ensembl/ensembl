@@ -146,32 +146,47 @@ sub fetch_all {
 
 sub fetch_all_by_feature_class {
   my $self = shift;
-  deprecate("Deprecated. Hard-coded logic is not supported");
   my $feat_class = shift || throw( "Need a feature type, e.g. SimpleFeature" );
  
-  my @feature_classes = $self->feature_classes; # List of all feature classes
-  my %feat_table_map;
-  foreach my $class( @feature_classes ){
-    # Map e.g. DnaAlignFeature to dna_align_feature
-    my $table = join( "_", map lc, ( $class =~ /([A-Z][a-z]+)/g ) );
-    $feat_table_map{$class} = $table;
+  # Need a special case for density
+  # DensityFeature is the feature, but the analysis is linked to the DensityType
+  if ($feat_class =~ /Density/) {
+    $feat_class = 'DensityType';
   }
-  $feat_table_map{DensityFeature}='density_type'; # analysis_id in diff table
-  my $feat_table = $feat_table_map{$feat_class} || 
-      ( warning( "No feature type corresponding to $feat_class" ) &&
-        return [] );
+
+  my $adaptor = $self->db->get_adaptor($feat_class);
+  if (!$adaptor) {
+    throw("$feat_class is not a know feature. No adaptor found");
+  }
+
+  # Check that feature has an analysis
+  my $has_analysis = 0;
+  my @columns = $adaptor->_columns;
+  foreach my $column (@columns) {
+    if ($column =~ /analysis/) {
+      $has_analysis = 1;
+      last;
+    }
+  }
+  if ($has_analysis == 0) {
+    throw("$feat_class does not have an analysis column");
+  }
+
+  # Retrieve the name of the table
+  my @tables = $adaptor->_tables();
+  my $table = $tables[0]->[0];
 
   my $sql_t = qq|
 SELECT DISTINCT analysis_id FROM %s |;
   
-  my $sql = sprintf( $sql_t, $feat_table );
+  my $sql = sprintf( $sql_t, $table );
   my $sth = $self->prepare( $sql );
   my $rv  = $sth->execute();
   my $res = $sth->fetchall_arrayref;
   my @analyses;
   foreach my $r( @{$res} ){
     my $analysis = $self->fetch_by_dbID($r->[0]) 
-        || throw( "analysis_id $r->[0] from $feat_table table "
+        || throw( "analysis_id $r->[0] from $table table "
                   . "is not in the analysis table!" );
     push @analyses, $analysis;
   }
