@@ -337,21 +337,28 @@ foreach my $sl (sort keys %{$slices}) {
 
     foreach my $table (@tables) {
       my $query;
-      if ($sstart > $send) {
-	$query = sprintf $query_templates[0], $table, $table ~~ @stable_id_tables?', stable_id':'', $table, $seq_id, $sstart, $send, $sstart, $send;
-      } else {
-	$query = sprintf $query_templates[1], $table, $table ~~ @stable_id_tables?', stable_id':'', $table, $seq_id, $send, $sstart, $send, $sstart; 
+      
+      my $table_in_stable_id_tables = 0;
+      foreach my $stable_id_table (@stable_id_tables) {
+        $table_in_stable_id_tables = 1 if $stable_id_table eq $table;
+        last;
       }
 
-      my $expected_objects = 
-	$sql_helper->execute(
-			     -SQL      => $query,
-			     -USE_HASHREFS => 1,
-			     -CALLBACK => sub {
-			       my $row = shift @_;
-			     
-			       return feature_slice_boundaries($row, $sstart, $send, $sstrand, $srl);
-			     });
+      if ($sstart > $send) {
+        $query = sprintf $query_templates[0], $table, $table_in_stable_id_tables ? ', stable_id':'', $table, $seq_id, $sstart, $send, $sstart, $send;
+      } 
+      else {
+        $query = sprintf $query_templates[1], $table, $table_in_stable_id_tables ? ', stable_id':'', $table, $seq_id, $send, $sstart, $send, $sstart; 
+      }
+
+      my $expected_objects = $sql_helper->execute(
+        -SQL      => $query,
+        -USE_HASHREFS => 1,
+        -CALLBACK => sub {
+          my $row = shift @_;
+          return feature_slice_boundaries($row, $sstart, $send, $sstrand, $srl);
+        }
+      );
     
       my $method = ucfirst($table); $method =~ s/_([a-z])/\u$1/g; $method = sprintf 'get_all_%ss', $method;
       # print "Calling $method\n";
@@ -359,25 +366,19 @@ foreach my $sl (sort keys %{$slices}) {
       is(scalar @{$got_objects}, scalar @{$expected_objects}, sprintf "Number of $table objects on slice [%d, %d]", $sstart, $send);
 
       foreach my $expected (@{$expected_objects}) {
-	my $got = (grep { $expected->{db_id} == $_->dbID } @{$got_objects})[0];
-
-      SKIP: {
-	  skip 'Cannot test attributes with no returned object', 1 unless $got;
-
-	  ok($got, sprintf "Object of type $table (%d) retrieved", $got->dbID);	
-	  is($got->stable_id, $expected->{stable_id}, sprintf "%d: stable id", $got->dbID) 
-	    if $table ~~ @stable_id_tables;
-	  is($got->start, $expected->{start}, sprintf "%d: start", $got->dbID);
-	  is($got->end, $expected->{end}, sprintf "%d: end", $got->dbID);
-	  is($got->strand, $expected->{strand}, sprintf "%d: strand", $got->dbID); 
-	}
-
-      }
+        my $got = (grep { $expected->{db_id} == $_->dbID } @{$got_objects})[0];
       
+        SKIP: {
+          skip 'Cannot test attributes with no returned object', 1 unless $got;
+          ok($got, sprintf "Object of type $table (%d) retrieved", $got->dbID);	
+          is($got->stable_id, $expected->{stable_id}, sprintf "%d: stable id", $got->dbID) if $table_in_stable_id_tables;
+          is($got->start, $expected->{start}, sprintf "%d: start", $got->dbID);
+          is($got->end, $expected->{end}, sprintf "%d: end", $got->dbID);
+          is($got->strand, $expected->{strand}, sprintf "%d: strand", $got->dbID); 
+        }
+      }
     }
-
   }
-
 }
 
 #
