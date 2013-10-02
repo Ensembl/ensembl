@@ -92,14 +92,15 @@ $analysis_updated = $analysis_ad->fetch_by_dbID($dbID);
 is($analysis_updated->description(), "updated description", "Description matches the update");
 is_rows(2, $db, "analysis_description");
 
-# Fetch all analyses for a feature class
-my @analyses = $analysis_ad->fetch_all_by_feature_class('Gene');
-is(scalar(@analyses), 1, "Found 1 analysis for genes");
-
-
-
-
 $multi->restore();
+
+# Fetch all analyses for a feature class
+my @analyses = @{ $analysis_ad->fetch_all_by_feature_class('Gene') };
+is(scalar(@analyses), 6, "Found 6 analyses for genes");
+
+@analyses = @{ $analysis_ad->fetch_all_by_feature_class('DensityFeature') };
+is(scalar(@analyses), 6, "Found 6 analyses for density features");
+
 
 
 sub check_methods { 
