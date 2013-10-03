@@ -125,6 +125,7 @@ sub clear_cache {
 
 sub get_by_additional_lookup {
   my ($self, $key, $value) = @_;
+  $self->cache(); # trigger cache building
   my $additional_lookup = $self->_additional_lookup();
   if(exists $additional_lookup->{$key}) {
     if(exists $additional_lookup->{$key}->{$value}) {
@@ -158,6 +159,7 @@ sub get_by_additional_lookup {
 
 sub get_all_by_additional_lookup {
   my ($self, $key, $value) = @_;
+  $self->cache(); # trigger cache building
   my $additional_lookup = $self->_additional_lookup();
   if(exists $additional_lookup->{$key}) {
     if(exists $additional_lookup->{$key}->{$value}) {

@@ -105,6 +105,16 @@ sub BEGIN {
 
     dies_ok { $cache->get_by_additional_lookup('biotype', 'protein_coding') } 'Expect to die as the query will return more than one value';
 
+    #Clear the cache and make sure that we can still retrieve by additional values
+    {
+      $cache->clear_cache();
+      my $db_id = $protein_coding_genes->[0]->dbID();
+      my $fetched_gene = $cache->get_by_additional_lookup('dbID', $db_id);
+      ok(defined $fetched_gene, 'Checking we got a gene back if we fetched using additional lookups alone');
+      cmp_ok($fetched_gene->dbID(), '==', $db_id, 'Checking we got a gene back if we fetched using additional lookups alone');
+    }
+
+
     $cache->remove($individual_gene->dbID());
     my $new_protein_coding_genes = $cache->get_all_by_additional_lookup('biotype', 'protein_coding');
 
