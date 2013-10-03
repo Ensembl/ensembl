@@ -397,7 +397,7 @@ sub get_total_length {
 sub get_toplevel {
   my ($self) = @_;
   my $sa = $self->db->get_adaptor('Slice');
-  $self->{'toplevel'} = $sa->fetch_all('toplevel');
+  $self->{'toplevel'} = $sa->fetch_all('toplevel', undef, undef, 1);
   return $self->{'toplevel'};
 }
 
