@@ -194,6 +194,9 @@ sub parse_common_options {
   Example     : $support->parse_extra_options('string_opt=s', 'numeric_opt=n');
   Description : Parse extra commandline options by passing them on to
                 Getopt::Long and storing parameters in $self->param('name).
+                If the last option is '...' then unknown options are kept
+                in @ARGV for future calls to this method. Without '...'
+                then it is an error to have further options.
   Return type : true on success
   Exceptions  : none (caugth by $self->error)
   Caller      : general
@@ -202,7 +205,12 @@ sub parse_common_options {
 
 sub parse_extra_options {
   my ($self, @params) = @_;
-  Getopt::Long::Configure("no_pass_through");
+  if(@params and $params[-1] eq "...") {
+    pop @params;
+    Getopt::Long::Configure("pass_through");
+  } else {
+    Getopt::Long::Configure("no_pass_through");
+  }
   eval {
     # catch warnings to pass to $self->error
     local $SIG{__WARN__} = sub { die @_; };
