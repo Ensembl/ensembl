@@ -1,12 +1,20 @@
 =head1 LICENSE
 
-  Copyright (c) 1999-2013 The European Bioinformatics Institute and
-  Genome Research Limited.  All rights reserved.
+Copyright [2013] EMBL - European Bioinformatics Institute and Genome Research Limited.
 
-  This software is distributed under a modified Apache license.
-  For license details, please see
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
 
-    http://www.ensembl.org/info/about/code_licence.html
+     http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+
+=cut
 
 =head1 CONTACT
 
@@ -62,7 +70,6 @@ sub build_cache {
   my $adaptor = $self->adaptor();
   my %cache; 
   my $objects = $adaptor->generic_fetch();
-  my $support_additional_lookups = $self->support_additional_lookups();
   foreach my $object (@{$objects}) {
     my $key = $object->dbID();
     $cache{$key} = $object;
@@ -177,10 +184,11 @@ sub get_all_by_additional_lookup {
 sub remove_from_additional_lookup {
   my ($self, $lookup_key, $object) = @_;
 
-  my $additional_lookup = $self->_additional_lookup();
-
   # Compute the keys
   my $keys = $self->compute_keys($object);
+  return if scalar(keys %{$keys}) == 0;
+
+  my $additional_lookup = $self->_additional_lookup();
 
   foreach my $key (keys %{$keys}) {
     my $value = $keys->{$key};
@@ -250,6 +258,7 @@ sub compute_keys {
 sub add_to_additional_lookups {
   my ($self, $lookup_key, $object) = @_;
   my $keys = $self->compute_keys($object);
+  return if scalar(keys %{$keys}) == 0;
   my $additional_lookup = $self->_additional_lookup();
   foreach my $key (keys %{$keys}) {
     my $value = $keys->{$key};
