@@ -493,7 +493,7 @@ sub get_alt_alleles {
   my $dba = $self->core->dba;
   my $aaga = Bio::EnsEMBL::DBSQL::AltAlleleGroupAdaptor->new($dba);
   
-  my $aa_list = $aaga->fetch_all_Groups();
+  my $aa_list = $aaga->fetch_all();
   
   my $count = scalar(@$aa_list);
   my %alt_id_to_gene_id;
@@ -567,12 +567,12 @@ LRG
   
 
   while ($sth->fetch()){
-    my $aag = $aaga->fetch_Group_by_Gene_dbID($core_gene_id);
+    my $aag = $aaga->fetch_by_gene_id($core_gene_id);
     if ($aag) {
         $insert_sth->execute($aag->dbID, $lrg_gene_id, 0);
         $old_count++;
     } else {
-        $aag = $aaga->fetch_Group_by_Gene_dbID($lrg_gene_id);
+        $aag = $aaga->fetch_by_gene_id($lrg_gene_id);
         if ($aag) {
             $insert_sth->execute($aag->dbID, $lrg_gene_id, 1);
             print "LRG perculiarity\t$core_gene_id\t$lrg_gene_id\n";
