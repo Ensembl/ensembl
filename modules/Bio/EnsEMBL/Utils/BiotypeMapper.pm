@@ -142,7 +142,9 @@ my %grouping_of_biotypes = (
     'short_noncoding'=> [qw( miRNA misc_RNA  Mt_tRNA 
                              rRNA snoRNA  snRNA 
                         )],
+
     # practical Ensembl core categories for fasta dumping
+    # protein coding/pseudogene
     'cdna'              => [qw( protein_coding polymorphic_pseudogene IG_V_gene TR_V_gene 
                                 IG_J_gene TR_J_gene IG_D_gene IG_C_gene TR_C_gene pseudogene
                                 retrotransposed IG_V_pseudogene TR_V_pseudogene 
@@ -150,10 +152,15 @@ my %grouping_of_biotypes = (
                                 antisense ambiguous_orf transcribed_processed_pseudogene
                                 disrupted_domain processed_pseudogene
                            )],
+
+    # protein coding transcript
+    # protein coding
     'peptide_producing' => [qw( protein_coding polymorphic_pseudogene IG_V_gene TR_V_gene 
                                 IG_J_gene TR_J_gene IG_D_gene IG_C_gene TR_C_gene IG_LV_gene
                                 nonsense_mediated_decay
                            )],
+
+    # short/long noncoding
     'ncrna'             => [qw( ncRNA miRNA miRNA_pseudogene misc_RNA misc_RNA_pseudogene Mt_tRNA 
                             Mt_tRNA_pseudogene Mt_rRNA rRNA rRNA_pseudogene scRNA_pseudogene 
                             snoRNA snoRNA_pseudogene snRNA snRNA_pseudogene tRNA_pseudogene

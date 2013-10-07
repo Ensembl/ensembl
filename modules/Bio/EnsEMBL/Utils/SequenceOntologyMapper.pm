@@ -18,15 +18,15 @@ SequenceOntologyMapper - Translates EnsEMBL objects into Sequence Ontology terms
 
 use Bio::EnsEMBL::Utils::SequenceOntologyMapper
 
-# get an Ensembl feature somehow in $feature
+# get an Ensembl feature somehow in scalar $feature 
 ...
 ...
 
 my $ontology_adaptor = $registry->get_adaptor( 'Multi', 'Ontology', 'OntologyTerm' );
 my $mapper = SequenceOntologyMapper->new($ontology_adaptor);
 
-print $mapper->to_SO_accession($feature), "\n";
-print $mapper->to_SO_name($feature), "\n";
+print $mapper->to_accession($feature), "\n";
+print $mapper->to_name($feature), "\n";
 
 =head1 DESCRIPTION
 
@@ -90,7 +90,6 @@ my %transcript_so_mapping =
    '3prime_overlapping_ncrna'			=> 'SO:0000483',
    'TR_V_gene'							=> 'SO:0000466',
    'TR_V_pseudogene'					=> 'SO:0000336',
-
    'TR_J_gene'							=> 'SO:0000470',
    'IG_C_gene'							=> 'SO:0000478',
    'IG_C_pseudogene'					=> 'SO:0000336',
