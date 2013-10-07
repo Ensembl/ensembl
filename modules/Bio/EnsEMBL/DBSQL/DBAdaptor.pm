@@ -327,7 +327,6 @@ sub get_available_adaptors {
     AltAlleleGroup                      => 'Bio::EnsEMBL::DBSQL::AltAlleleGroupAdaptor',
     Analysis                            => 'Bio::EnsEMBL::DBSQL::AnalysisAdaptor',
     ArchiveStableId                     => 'Bio::EnsEMBL::DBSQL::ArchiveStableIdAdaptor',
-    Assembly                            => 'Bio::EnsEMBL::DBSQL::AssemblyAdaptor',
     AssemblyExceptionFeature            => 'Bio::EnsEMBL::DBSQL::AssemblyExceptionFeatureAdaptor',
     AssemblyMapper                      => 'Bio::EnsEMBL::DBSQL::AssemblyMapperAdaptor',
     AssemblySlice                       => 'Bio::EnsEMBL::DBSQL::AssemblySliceAdaptor',
