@@ -2214,6 +2214,7 @@ sub allowed_duplicate_regions {
     'gorilla' => [],
     'wallaby' => [],
     'chimp' => [],
+    'rat'   => [],
   };
 
 return $regions;
