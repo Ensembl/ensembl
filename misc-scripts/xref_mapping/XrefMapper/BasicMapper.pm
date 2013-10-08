@@ -524,7 +524,7 @@ sub get_alt_alleles {
             }
         }
         if (!$ref_gene) { 
-            warning('Tried very hard but failed to select a representative gene for alt-allele-group '.$aag->dbID);
+            warn('Tried very hard but failed to select a representative gene for alt-allele-group '.$aag->dbID);
             next;
         }
         $is_reference{$ref_gene} = 1;
