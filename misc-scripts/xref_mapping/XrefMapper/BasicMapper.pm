@@ -514,12 +514,28 @@ sub get_alt_alleles {
     
     foreach my $aag (@$aa_list) {
         my $ref_gene = $aag->rep_Gene_id();
+        # Representative gene not guaranteed, try to find an alternative best fit
+        if (!$ref_gene) {
+            my $genes = $aag->get_all_Genes;
+            foreach my $gene (@$genes) {
+                if ($gene->slice->is_reference) {
+                    $ref_gene = $gene->dbID;
+                }
+            }
+        }
+        if (!$ref_gene) { 
+            warning('Tried very hard but failed to select a representative gene for alt-allele-group '.$aag->dbID);
+            next;
+        }
         $is_reference{$ref_gene} = 1;
         my $others = $aag->get_all_Gene_ids('no rep');
+        # Extra step in place to handle non-ref situations
+        my @cleaned_others = grep {!/$ref_gene/} @$others;
+        
         $insert_sth->execute($aag->dbID,$ref_gene,1);
         $num_of_genes++;
         $alt_added++;
-        foreach my $aa (@$others) {
+        foreach my $aa (@cleaned_others) {
             $insert_sth->execute($aag->dbID,$aa,0);
             $num_of_genes++;
         }
