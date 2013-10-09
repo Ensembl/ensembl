@@ -150,7 +150,6 @@ my %group2adaptor = (
       'ontology'  => 'Bio::EnsEMBL::DBSQL::OntologyDBAdaptor',
       'otherfeatures' => 'Bio::EnsEMBL::DBSQL::DBAdaptor',
       'pipeline'      => 'Bio::EnsEMBL::Pipeline::DBSQL::DBAdaptor',
-      'production' => 'Bio::EnsEMBL::Production::DBSQL::DBAdaptor',
       'snp'       => 'Bio::EnsEMBL::ExternalData::SNPSQL::DBAdaptor',
       'stable_ids' => 'Bio::EnsEMBL::DBSQL::DBAdaptor',
       'variation' => 'Bio::EnsEMBL::Variation::DBSQL::DBAdaptor',
@@ -1588,9 +1587,6 @@ sub load_registry_from_db {
   my $ontology_db;
   my $ontology_version;
 
-  my $production_db;
-  my $production_version;
-
   my $stable_ids_db;
   my $stable_ids_version;
 
@@ -1655,19 +1651,6 @@ sub load_registry_from_db {
       if ( $1 eq $software_version ) {
         $ontology_db      = $db;
         $ontology_version = $1;
-      }
-    } elsif ( $db =~ /^ensembl(?:genomes)?_production(_\d+)?/x ) {
-      # production db can come with no version (i.e. that on ens-staging1),
-      # but it's backed up with a release number
-      my $version = $1;
-      if ($version) {
-	$version =~ s/_//;
-	if ($software_version and $version eq $software_version) {
-	  $production_db      = $db;
-	  $production_version = $version;
-	} 
-      } else { # this is the default choice
-	$production_db = $db if $db =~ /^ensembl(?:genomes)?_production$/;
       }
     } elsif ( $db =~ /^ensembl(?:genomes)?_stable_ids_(?:\d+_)?(\d+)/x ) {
       if ( $1 eq $software_version ) {
@@ -2144,30 +2127,6 @@ sub load_registry_from_db {
     print("No ontology database found\n");
   }
 
-  # Production
-
-  if ( defined($production_db) ) {
-    require Bio::EnsEMBL::Production::DBSQL::DBAdaptor;
-
-    my $dba =
-      Bio::EnsEMBL::Production::DBSQL::DBAdaptor->new(
-                                '-species' => 'multi' . $species_suffix,
-                                '-group'   => 'production',
-                                '-host'    => $host,
-                                '-port'    => $port,
-                                '-user'    => $user,
-                                '-pass'    => $pass,
-                                '-dbname'  => $production_db, );
-
-    if ($verbose) {
-      printf( "%s loaded\n", $production_db );
-    }
-  }
-  elsif ($verbose) {
-    print("No production database found\n");
-  }
-
-  # Stable IDs
 
   if ( defined($stable_ids_db) && $stable_ids_version != 0 ) {
 
@@ -2196,9 +2155,6 @@ sub load_registry_from_db {
     -species => 'multi'.$species_suffix,
     -alias   => ['ontology'.$species_suffix] );
 
-  Bio::EnsEMBL::Utils::ConfigRegistry->add_alias(
-    -species => 'multi'.$species_suffix,
-    -alias   => ['production'.$species_suffix] );
 
   Bio::EnsEMBL::Utils::ConfigRegistry->add_alias(
     -species => 'multi'.$species_suffix,
