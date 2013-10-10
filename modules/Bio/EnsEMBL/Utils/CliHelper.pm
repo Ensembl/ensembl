@@ -165,8 +165,11 @@ sub get_dba_args_for_opts {
   my ( $self, $opts, $single_species, $prefix ) = @_;
   $prefix         ||= '';
   $single_species ||= 0;
-  my ( $host, $port, $user, $pass, $dbname, $pattern, $driver ) =
-    map { $prefix . $_ } qw(host port user pass dbname pattern driver);
+
+  my ( $host,    $port,   $user,    $pass, $dbname,
+       $pattern, $driver, $species, $species_id )
+    = map { $prefix . $_ }
+    qw(host port user pass dbname pattern driver species species_id);
   my @db_args;
   if ( defined $opts->{$host} ) {
     my $dbc =
@@ -195,24 +198,27 @@ sub get_dba_args_for_opts {
 #Decipher group of DBAdaptor by capturing the name_name(_name?)_core_ code. Otherwise we don't know
       my ($group) = $dbname =~
         /^[a-z]+_[a-z0-9]+(?:_[a-z0-9]+)?_([a-z]+)(?:_\d+)?_\d+/;
-
-      my $multi = 0;
-      my $species_ids = [ [ 1, undef ] ];
-      if ( !$single_species ) {
+      # set multi where we have collections
+      my $multi = $dbname =~ m/_collection_/ ? 1 : 0;
+      my $species_ids;
+      if ( $single_species != 1 ) {
         $species_ids =
           $dbc->sql_helper()
           ->execute(
 "SELECT species_id,meta_value FROM $dbname.meta WHERE meta_key='species.production_name'"
           );
-        if ( scalar( @{$species_ids} ) == 0 ) {
+        if ( !defined $opts->{$species_id} &&
+             scalar( @{$species_ids} ) == 0 )
+        {
           croak "No species.production_name found in database";
         }
-        if ( scalar( @{$species_ids} ) > 1 ) {
-          $multi = 1;
-        }
-        if ( defined $opts->{species_id} ) {
-          $species_ids = [ [ $opts->{species_id}, $opts->{species} ] ];
-        }
+      }
+      if ( defined $species_id ) {
+        $species_ids = [ [ $opts->{$species_id}, $opts->{$species} ] ];
+      }
+      else {
+        $species_ids = [ [ 1, undef ] ];
+
       }
       for my $species_id ( @{$species_ids} ) {
         my $args = { -HOST            => $opts->{$host},
