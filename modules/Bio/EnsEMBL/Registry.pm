@@ -2065,6 +2065,11 @@ sub load_registry_from_db {
         }
       } ## end foreach my $compara_db (@compara_dbs)
     } ## end else [ if ($@)
+
+    Bio::EnsEMBL::Utils::ConfigRegistry->add_alias(
+      -species => 'multi'.$species_suffix,
+      -alias   => ['compara'.$species_suffix] );
+
   } elsif ($verbose) {
     print("No Compara databases found\n");
   }
@@ -2100,6 +2105,11 @@ sub load_registry_from_db {
           join( ', ', @ancestral_dbs ) );
       }
     }
+
+    Bio::EnsEMBL::Utils::ConfigRegistry->add_alias(
+      -species => 'Ancestral sequences'.$species_suffix,
+      -alias   => ['ancestral_sequences'.$species_suffix] );
+
   } elsif ($verbose) {
     print("No ancestral database found\n");
   }
@@ -2122,6 +2132,11 @@ sub load_registry_from_db {
     if ($verbose) {
       printf( "%s loaded\n", $ontology_db );
     }
+
+    Bio::EnsEMBL::Utils::ConfigRegistry->add_alias(
+      -species => 'multi'.$species_suffix,
+      -alias   => ['ontology'.$species_suffix] );
+
   }
   elsif ($verbose) {
     print("No ontology database found\n");
@@ -2144,25 +2159,11 @@ sub load_registry_from_db {
       printf( "%s loaded\n", $stable_ids_db );
     }      
 
+    Bio::EnsEMBL::Utils::ConfigRegistry->add_alias(
+      -species => 'multi'.$species_suffix,
+      -alias   => ['stable_ids'.$species_suffix] );
+
   }
-
-
-  Bio::EnsEMBL::Utils::ConfigRegistry->add_alias(
-    -species => 'multi'.$species_suffix,
-    -alias   => ['compara'.$species_suffix] );
-
-  Bio::EnsEMBL::Utils::ConfigRegistry->add_alias(
-    -species => 'multi'.$species_suffix,
-    -alias   => ['ontology'.$species_suffix] );
-
-
-  Bio::EnsEMBL::Utils::ConfigRegistry->add_alias(
-    -species => 'multi'.$species_suffix,
-    -alias   => ['stable_ids'.$species_suffix] );
-
-  Bio::EnsEMBL::Utils::ConfigRegistry->add_alias(
-    -species => 'Ancestral sequences'.$species_suffix,
-    -alias   => ['ancestral_sequences'.$species_suffix] );
 
   # Register aliases as found in adaptor meta tables.
 
