@@ -86,17 +86,15 @@ use Bio::EnsEMBL::Registry;
 use Bio::EnsEMBL::DBSQL::DBConnection;
 use Bio::EnsEMBL::DBSQL::DBAdaptor;
 
-my $dba_opts =
-  [ { args => [ 'host', 'dbhost', 'h'  ], type => '=s' },
-    { args => [ 'port', 'dbport', 'P'  ], type => ':i' },
-    { args => [ 'user', 'dbuser', 'u'  ], type => '=s' },
-    { args => [ 'pass', 'dbpass', 'p'  ], type => ':s' },
-    { args => [         'dbname', 'D'  ], type => ':s' },
-    { args => [ 'pattern', 'dbpattern' ], type => ':s' },
-    { args => [ 'driver'               ], type => ':s' },
-    { args => [ 'species_id'           ], type => ':i' },
-    { args => [ 'species'              ], type => ':i' },
-  ];
+my $dba_opts = [ { args => [ 'host', 'dbhost', 'h' ], type => '=s' },
+                 { args => [ 'port', 'dbport', 'P' ], type => ':i' },
+                 { args => [ 'user', 'dbuser', 'u' ], type => '=s' },
+                 { args => [ 'pass', 'dbpass', 'p' ], type => ':s' },
+                 { args => [ 'dbname',  'D' ],         type => ':s' },
+                 { args => [ 'pattern', 'dbpattern' ], type => ':s' },
+                 { args => ['driver'],     type => ':s' },
+                 { args => ['species_id'], type => ':i' },
+                 { args => ['species'],    type => ':i' }, ];
 
 =head2 new()
 
@@ -107,9 +105,9 @@ my $dba_opts =
 =cut
 
 sub new {
-	my ( $class, @args ) = @_;
-	my $self = bless( {}, ref($class) || $class );
-	return $self;
+  my ( $class, @args ) = @_;
+  my $self = bless( {}, ref($class) || $class );
+  return $self;
 }
 
 =head2 get_dba_opts()
@@ -122,13 +120,13 @@ sub new {
 =cut
 
 sub get_dba_opts {
-	my ( $self, $prefix ) = @_;
-	$prefix ||= '';
-	my @dba_opts = map {
-		my $opt = join '|', map { $prefix . $_ } @{ $_->{args} };
-		$opt . $_->{type};
-	} @{$dba_opts};
-	return \@dba_opts;
+  my ( $self, $prefix ) = @_;
+  $prefix ||= '';
+  my @dba_opts = map {
+    my $opt = join '|', map { $prefix . $_ } @{ $_->{args} };
+    $opt . $_->{type};
+  } @{$dba_opts};
+  return \@dba_opts;
 }
 
 =head2 process_args()
@@ -142,12 +140,12 @@ sub get_dba_opts {
 =cut
 
 sub process_args {
-	my ( $self, $opts_def, $usage_sub ) = @_;
-	my $opts = {};
-	push @{$opts_def}, q/help|?/ => $usage_sub;
-	GetOptions( $opts, @{$opts_def} )
-	  || croak 'Could not parse command line arguments';
-	return $opts;
+  my ( $self, $opts_def, $usage_sub ) = @_;
+  my $opts = {};
+  push @{$opts_def}, q/help|?/ => $usage_sub;
+  GetOptions( $opts, @{$opts_def} ) ||
+    croak 'Could not parse command line arguments';
+  return $opts;
 }
 
 =head2 get_dba_args_for_opts()
@@ -164,75 +162,77 @@ sub process_args {
 =cut
 
 sub get_dba_args_for_opts {
-	my ( $self, $opts, $single_species, $prefix ) = @_;
-	$prefix         ||= '';
-	$single_species ||= 0;
-	my ( $host, $port, $user, $pass, $dbname, $pattern, $driver ) =
-	  map { $prefix . $_ } qw(host port user pass dbname pattern driver);
-	my @db_args;
-	if ( defined $opts->{$host} ) {
-		my $dbc =
-		  Bio::EnsEMBL::DBSQL::DBConnection->new( -USER   => $opts->{$user},
-                                                          -PASS   => $opts->{$pass},
-                                                          -HOST   => $opts->{$host},
-                                                          -PORT   => $opts->{$port},
-                                                          -DRIVER => $opts->{$driver} );
-		my @dbnames;
-		if ( defined $opts->{$dbname} ) {
-			push @dbnames, $opts->{$dbname};
-		} elsif ( defined $opts->{$pattern} ) {
-		   # get a basic DBConnection and use to find out which dbs are involved
-			@dbnames =
-			  grep { m/$opts->{pattern}/smx }
-			  @{ $dbc->sql_helper()->execute_simple(q/SHOW DATABASES/) };
-		} else {
-			print Dumper($opts);
-			croak 'dbname or dbpattern arguments required';
-		}
-		for my $dbname (@dbnames) {
+  my ( $self, $opts, $single_species, $prefix ) = @_;
+  $prefix         ||= '';
+  $single_species ||= 0;
+  my ( $host, $port, $user, $pass, $dbname, $pattern, $driver ) =
+    map { $prefix . $_ } qw(host port user pass dbname pattern driver);
+  my @db_args;
+  if ( defined $opts->{$host} ) {
+    my $dbc =
+      Bio::EnsEMBL::DBSQL::DBConnection->new(-USER   => $opts->{$user},
+                                             -PASS   => $opts->{$pass},
+                                             -HOST   => $opts->{$host},
+                                             -PORT   => $opts->{$port},
+                                             -DRIVER => $opts->{$driver}
+      );
+    my @dbnames;
+    if ( defined $opts->{$dbname} ) {
+      push @dbnames, $opts->{$dbname};
+    }
+    elsif ( defined $opts->{$pattern} ) {
+   # get a basic DBConnection and use to find out which dbs are involved
+      @dbnames =
+        grep { m/$opts->{pattern}/smx }
+        @{ $dbc->sql_helper()->execute_simple(q/SHOW DATABASES/) };
+    }
+    else {
+      print Dumper($opts);
+      croak 'dbname or dbpattern arguments required';
+    }
+    for my $dbname (@dbnames) {
 
-      #Decipher group of DBAdaptor by capturing the name_name(_name?)_core_ code. Otherwise we don't know 
-      my ($group) = $dbname =~ /^[a-z]+_[a-z0-9]+(?:_[a-z0-9]+)?_([a-z]+)(?:_\d+)?_\d+/;
-            
-			my $multi = 0;
-			my $species_ids = [ [ 1, undef ] ];
-			if ( !$single_species ) {
-				$species_ids =
-				  $dbc->sql_helper()
-				  ->execute(
+#Decipher group of DBAdaptor by capturing the name_name(_name?)_core_ code. Otherwise we don't know
+      my ($group) = $dbname =~
+        /^[a-z]+_[a-z0-9]+(?:_[a-z0-9]+)?_([a-z]+)(?:_\d+)?_\d+/;
+
+      my $multi = 0;
+      my $species_ids = [ [ 1, undef ] ];
+      if ( !$single_species ) {
+        $species_ids =
+          $dbc->sql_helper()
+          ->execute(
 "SELECT species_id,meta_value FROM $dbname.meta WHERE meta_key='species.production_name'"
-				  );
-                                if ( scalar( @{$species_ids} ) == 0 ) {
-                                  croak "No species.production_name found in database";
-                                }
-				if ( scalar( @{$species_ids} ) > 1 ) {
-					$multi = 1;
-				}
-				if ( defined $opts->{species_id} ) {
-					$species_ids =
-					  [ [ $opts->{species_id}, $opts->{species} ] ];
-				}
-			}
-			for my $species_id ( @{$species_ids} ) {
-				my $args = {
-					-HOST            => $opts->{$host},
-					-USER            => $opts->{$user},
-					-PORT            => $opts->{$port},
-					-PASS            => $opts->{$pass},
-					-DBNAME          => $dbname,
-					-DRIVER          => $opts->{$driver},
-					-SPECIES_ID      => $species_id->[0],
-					-SPECIES         => $species_id->[1],
-					-MULTISPECIES_DB => $multi };
-				$args->{-GROUP} = $group if $group;
-				push(@db_args, $args);
-			}
-		}
-	} ## end if ( defined $opts->{$host...})
-        else {
-            croak '(db)host arguments required';
+          );
+        if ( scalar( @{$species_ids} ) == 0 ) {
+          croak "No species.production_name found in database";
         }
-	return \@db_args;
+        if ( scalar( @{$species_ids} ) > 1 ) {
+          $multi = 1;
+        }
+        if ( defined $opts->{species_id} ) {
+          $species_ids = [ [ $opts->{species_id}, $opts->{species} ] ];
+        }
+      }
+      for my $species_id ( @{$species_ids} ) {
+        my $args = { -HOST            => $opts->{$host},
+                     -USER            => $opts->{$user},
+                     -PORT            => $opts->{$port},
+                     -PASS            => $opts->{$pass},
+                     -DBNAME          => $dbname,
+                     -DRIVER          => $opts->{$driver},
+                     -SPECIES_ID      => $species_id->[0],
+                     -SPECIES         => $species_id->[1],
+                     -MULTISPECIES_DB => $multi };
+        $args->{-GROUP} = $group if $group;
+        push( @db_args, $args );
+      }
+    } ## end for my $dbname (@dbnames)
+  } ## end if ( defined $opts->{$host...})
+  else {
+    croak '(db)host arguments required';
+  }
+  return \@db_args;
 } ## end sub get_dba_args_for_opts
 
 =head2 get_dba_args_for_opts()
@@ -248,16 +248,17 @@ sub get_dba_args_for_opts {
 =cut
 
 sub get_dbas_for_opts {
-	my ( $self, $opts, $single_species, $prefix ) = @_;
+  my ( $self, $opts, $single_species, $prefix ) = @_;
 
 # get all the DBA details that we want to work with and create DBAs for each in turn
-	my $dbas;
-	for my $args (
-		  @{ $self->get_dba_args_for_opts( $opts, $single_species, $prefix ) } )
-	{
-		push @{$dbas}, Bio::EnsEMBL::DBSQL::DBAdaptor->new( %{$args} );
-	}
-	return $dbas;
+  my $dbas;
+  for my $args (
+    @{ $self->get_dba_args_for_opts( $opts, $single_species, $prefix ) }
+    )
+  {
+    push @{$dbas}, Bio::EnsEMBL::DBSQL::DBAdaptor->new( %{$args} );
+  }
+  return $dbas;
 }
 
 =head2 load_registry_for_opts
@@ -274,18 +275,17 @@ sub get_dbas_for_opts {
 =cut
 
 sub load_registry_for_opts {
-  my ($self, $opts, $prefix) = @_;
+  my ( $self, $opts, $prefix ) = @_;
   $prefix ||= q{};
-  if($opts->{registry}) {
+  if ( $opts->{registry} ) {
     my $location = $opts->{registry};
     return Bio::EnsEMBL::Registry->load_all($location);
   }
-  my ( $host, $port, $user, $pass ) = map { $prefix . $_ } qw(host port user pass);
-  my %args = (
-    -HOST => $opts->{$host},
-    -PORT => $opts->{$port},
-    -USER => $opts->{$user},
-  );
+  my ( $host, $port, $user, $pass ) =
+    map { $prefix . $_ } qw(host port user pass);
+  my %args = ( -HOST => $opts->{$host},
+               -PORT => $opts->{$port},
+               -USER => $opts->{$user}, );
   $args{-PASS} = $opts->{$pass};
   return Bio::EnsEMBL::Registry->load_registry_from_db(%args);
 }
