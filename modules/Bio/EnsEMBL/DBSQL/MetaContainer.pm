@@ -79,13 +79,32 @@ sub get_production_name {
                   example, a short label in a GUI.
   Returntype    : string
   Exceptions    : none
-  Status        : Stable
+  Status        : Deprecated in release 74
 
 =cut
 
 sub get_short_name {
   my ($self) = @_;
+  deprecate('Call is deprecated. short_name is not in use any more, use get_common_name instead');
   return $self->single_value_by_key('species.short_name');
+}
+
+
+=head2 get_display_name
+
+  Args          : none
+  Example       : $species = $meta_container->get_display_name();
+  Description   : Obtains the name of the species in a form usable as, for
+                  example, a short label in a GUI.
+  Returntype    : string
+  Exceptions    : none
+  Status        : Stable
+
+=cut
+
+sub get_display_name {
+  my ($self) = @_;
+  return $self->single_value_by_key('species.display_name');
 }
 
 =head2 get_common_name
