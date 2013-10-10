@@ -641,8 +641,6 @@ sub get_default_version {
     }
   }
 
-  throw('No default version is defined') if(!$version);
-
   return $version;
 }
 
