@@ -1,0 +1,34 @@
+# I/O control
+--standard-error-output
+
+# Basic Options
+--maximum-line-length=72
+--indent-columns=2
+
+# Code Indentation Control
+--line-up-parentheses
+
+# Whitespace Control
+--nospace-for-semicolon
+--nowant-left-space="* /"
+--nowant-right-space="* /"
+
+# Comment Controls
+--closing-side-comments
+--closing-side-comment-interval=25
+--closing-side-comment-else-flag=1
+
+# Line Break Control
+--nocuddled-else    # for block readability
+--opening-token-right
+--vertical-tightness=2
+--vertical-tightness-closing=2
+-sot    # --stack-opening-token
+-sct    # --stack-closing-token
+--break-after-all-operators
+
+# Retaining or Ignoring Existing Line Breaks
+--ignore-old-breakpoints
+
+# Blank Line Control
+--no-blanks-before-comments
