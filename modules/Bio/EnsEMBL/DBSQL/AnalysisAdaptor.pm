@@ -464,25 +464,10 @@ sub store {
   $dbID ||= $self->last_insert_id('analysis_id', undef, 'analysis');
   $sth->finish();
 
-  my $insert_ignore = $self->insert_ignore_clause();
-
   # store description and display_label
   if( defined( $analysis->description() ) || defined( $analysis->display_label() )|| defined( $analysis->web_data() )) {
-      $sth = $self->prepare( "${insert_ignore} INTO analysis_description (analysis_id, display_label, description, displayable, web_data) VALUES (?,?,?,?, ?)");
-
-      $sth->bind_param(1,$dbID,SQL_INTEGER);
-      $sth->bind_param(2,$analysis->display_label(),SQL_VARCHAR);
-      $sth->bind_param(3,$analysis->description,SQL_LONGVARCHAR);
-      $sth->bind_param(4,$analysis->displayable,SQL_TINYINT);
-      #$sth->bind_param(5,$analysis->web_data(),SQL_LONGVARCHAR);
-      my $web_data;
-      $web_data = $self->dump_data($analysis->web_data()) if ($analysis->web_data());
-      $sth->bind_param(5,$web_data,SQL_LONGVARCHAR);
-      $sth->execute();
-
-      $sth->finish();
+      $self->_store_description($analysis, $dbID);
   }
-  
 
 
   $self->{_cache}->{$dbID} = $analysis;
@@ -494,6 +479,32 @@ sub store {
   return $dbID;
 }
 
+
+sub _store_description {
+  my ($self, $analysis, $dbID) = @_;
+
+  my $insert_ignore = $self->insert_ignore_clause();
+  my $sth = $self->prepare(
+    "${insert_ignore} INTO analysis_description (analysis_id, display_label, description, displayable, web_data) " .
+    "VALUES (?,?,?,?,?)"
+    );
+
+  my $display_label = $analysis->display_label();
+  $display_label = '' unless defined $display_label; # SQLite doesn't ignore NOT NULL errors
+
+  my $web_data;
+  $web_data = $self->dump_data($analysis->web_data()) if ($analysis->web_data());
+
+  $sth->bind_param(1,$dbID,SQL_INTEGER);
+  $sth->bind_param(2,$display_label,SQL_VARCHAR);
+  $sth->bind_param(3,$analysis->description,SQL_LONGVARCHAR);
+  $sth->bind_param(4,$analysis->displayable,SQL_TINYINT);
+  $sth->bind_param(5,$web_data,SQL_LONGVARCHAR);
+  $sth->execute();
+
+  $sth->finish();
+  return;
+}
 
 
 =head2 update
@@ -569,18 +580,7 @@ sub update {
   } else { # create new entry
 
     if( $a->description() || $a->display_label() || $a->web_data) {
-	$web_data = $self->dump_data($a->web_data()) if ($a->web_data());
-      #my $web_data = $self->dump_data($a->web_data());
-      my $insert_ignore = $self->insert_ignore_clause();
-      $sth = $self->prepare( "${insert_ignore} INTO analysis_description (analysis_id, display_label, description, displayable, web_data) VALUES (?,?,?,?,?)");
-	$sth->bind_param(1,$a->dbID,SQL_INTEGER);	
-	$sth->bind_param(2,$a->display_label(),SQL_VARCHAR);
-	$sth->bind_param(3,$a->description,SQL_LONGVARCHAR);     
-	$sth->bind_param(4,$a->displayable,SQL_TINYINT);
-	#my $web_data = $self->dump_data($a->web_data());
-	$sth->bind_param(5,$web_data,SQL_LONGVARCHAR);
-	$sth->execute();
-
+        $self->_store_description($a, $a->dbID);
     }
 
   }
