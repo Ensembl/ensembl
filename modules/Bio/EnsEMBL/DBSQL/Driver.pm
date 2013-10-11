@@ -5,7 +5,7 @@ use strict;
 
 use Scalar::Util qw(weaken);
 
-use Bio::EnsEMBL::Utils::Exception qw(throw);
+use Bio::EnsEMBL::Utils::Exception qw(throw warning);
 
 sub new {
     my ($class, $parent) = @_;
@@ -56,6 +56,13 @@ sub last_insert_id_args {
 }
 
 sub can_straight_join {
+    return;
+}
+
+sub set_wait_timeout {
+    my $self = shift;
+    my $class = ref $self;
+    warning("'set_wait_timeout()' is not implemented in ${class}");
     return;
 }
 

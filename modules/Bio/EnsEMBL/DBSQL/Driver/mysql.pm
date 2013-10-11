@@ -27,4 +27,10 @@ sub can_straight_join {
     return 1;
 }
 
+sub set_wait_timeout {
+    my ($self, $dbh, $timeout) = @_;
+    $dbh->do( "SET SESSION wait_timeout=${timeout}" );
+    return;
+}
+
 1;
