@@ -1190,7 +1190,7 @@ sub store {
   $sth->execute();
   $sth->finish();
 
-  my $gene_dbID = $sth->{'mysql_insertid'};
+  my $gene_dbID = $self->last_insert_id('gene_id', undef, 'gene');
 
   # store the dbentries associated with this gene
   my $dbEntryAdaptor = $db->get_DBEntryAdaptor();

@@ -225,7 +225,8 @@ FEATURE:
 
     $sth->execute();
 
-    $original->dbID( $sth->{'mysql_insertid'} );
+    my $dbId = $self->last_insert_id("${tablename}_id", undef, $tablename);
+    $original->dbID( $dbId );
     $original->adaptor($self);
   } ## end foreach my $feat (@feats)
 
@@ -321,7 +322,7 @@ sub save {
 
 
     $sth->execute();
-    $original->dbID($sth->{'mysql_insertid'});
+    $original->dbID($self->last_insert_id("${tablename}_id", undef, $tablename));
     $original->adaptor($self);
   }
 
