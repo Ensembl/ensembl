@@ -264,7 +264,7 @@ my $dbc_copy = mock_object($dbc);
       #swallow the warning. we get it raised via an error anyway
     };
     $dbc->db_handle;
-  } qr/install_driver.+failed/, 'Checking for an error message from DBI detailing missing driver problems';
+  } qr/Cannot load.+::bogusdriver/, 'Checking for an error message from DBI detailing missing driver problems';
   
   if($db->dbc->driver() eq 'mysql') {
     throws_ok {

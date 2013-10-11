@@ -159,6 +159,10 @@ sub new {
   bless $self, $class;
 
   my $driver = $dbconn ? $dbconn->driver() : $driver_arg;
+  if ($driver eq 'pgsql') {
+      warning("Using 'pgsql' as an alias for the 'Pg' driver is deprecated.");
+      $driver = 'Pg';
+  }
   $driver ||= 'mysql';
   $self->driver($driver);
 
@@ -251,88 +255,17 @@ sub connect {
              . "reseting connected boolean\n" );
   }
 
-  my ( $dsn, $dbh );
-  my $dbname = $self->dbname();
+  my $dbh;
 
-  if ( $self->driver() eq "Oracle" ) {
-
-    $dsn = "DBI:Oracle:";
-
-    eval {
-      $dbh = DBI->connect( $dsn,
-                           sprintf( "%s@%s",
-                                    $self->username(), $dbname ),
-                           $self->password(),
-                           { 'RaiseError' => 1, 'PrintError' => 0 } );
-    };
-
-  } elsif ( $self->driver() eq "ODBC" ) {
-
-    $dsn = sprintf( "DBI:ODBC:%s", $self->dbname() );
-
-    eval {
-      $dbh = DBI->connect( $dsn,
-                           $self->username(),
-                           $self->password(), {
-                             'LongTruncOk'     => 1,
-                             'LongReadLen'     => 2**16 - 8,
-                             'RaiseError'      => 1,
-                             'PrintError'      => 0,
-                             'odbc_cursortype' => 2 } );
-    };
-
-  } elsif ( $self->driver() eq "Sybase" ) {
-    my $dbparam = ($dbname) ? ";database=${dbname}" : q{};
-
-    $dsn = sprintf( "DBI:Sybase:server=%s%s;tdsLevel=CS_TDS_495",
-                    $self->host(), $dbparam );
-
-    eval {
-      $dbh = DBI->connect( $dsn,
-                           $self->username(),
-                           $self->password(), {
-                             'LongTruncOk' => 1,
-                             'RaiseError'  => 1,
-                             'PrintError'  => 0 } );
-    };
-
-  } elsif ( lc( $self->driver() ) eq 'sqlite' ) {
-
-    throw "We require a dbname to connect to a SQLite database"
-      if !$dbname;
-
-    $dsn = sprintf( "DBI:SQLite:%s", $dbname );
-
-    eval {
-      $dbh = DBI->connect( $dsn, '', '', { 'RaiseError' => 1, } );
-    };
-
-  } else {
-
-    my $dbparam = ($dbname) ? "database=${dbname};" : q{};
-
-    my $driver = $self->driver();
-    $driver = 'Pg' if($driver eq 'pgsql');
-
-    $dsn = sprintf( "DBI:%s:%shost=%s;port=%s",
-                    $driver, $dbparam,
-                    $self->host(),   $self->port() );
-
-    if ( $self->{'disconnect_when_inactive'} ) {
-      $self->{'count'}++;
-      if ( $self->{'count'} > 1000 ) {
-        sleep 1;
-        $self->{'count'} = 0;
-      }
-    }
-    eval {
-      $dbh = DBI->connect( $dsn, $self->username(), $self->password(),
-                           { 'RaiseError' => 1 } );
-    };
-  }
+  my $params = $self->_driver_object->connect_params($self);
+  eval {
+      $dbh = DBI->connect( @{$params}{qw(dsn username password attributes)} );
+  };
   my $error = $@;
 
   if ( !$dbh || $error || !$dbh->ping() ) {
+
+    my $dsn = $params->{dsn};
     warn(   "Could not connect to database "
           . $self->dbname()
           . " as user "
