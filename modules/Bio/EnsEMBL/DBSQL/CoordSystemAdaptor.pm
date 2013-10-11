@@ -1219,7 +1219,7 @@ sub store {
   $sth->bind_param( 5, $self->species_id(), SQL_INTEGER );
 
   $sth->execute();
-  my $dbID = $sth->{'mysql_insertid'};
+  my $dbID = $self->last_insert_id('coord_system_id', undef, 'coord_system');
   $sth->finish();
 
   if(!$dbID) {

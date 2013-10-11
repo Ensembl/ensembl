@@ -80,7 +80,7 @@ sub store {
   $sth->bind_param(2, $syn->name         ,  SQL_VARCHAR);
   $sth->bind_param(3, $syn->external_db_id, SQL_INTEGER);
   $sth->execute;
-  $syn->{'dbID'} = $sth->{'mysql_insertid'};
+  $syn->{'dbID'} = $self->last_insert_id('seq_region_synonym_id', undef, 'seq_region_synonym');
   $sth->finish;
 }
 

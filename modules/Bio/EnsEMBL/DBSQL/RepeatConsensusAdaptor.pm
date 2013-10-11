@@ -285,7 +285,7 @@ sub store {
 
     $sth->execute();
 
-    my $db_id = $sth->{'mysql_insertid'}
+    my $db_id = $self->last_insert_id('repeat_consensus_id', undef, 'repeat_consensus')
     or throw("Didn't get an insertid from the INSERT statement");
 
     $rc->dbID($db_id);

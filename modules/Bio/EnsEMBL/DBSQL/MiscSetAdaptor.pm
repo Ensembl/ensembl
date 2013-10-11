@@ -270,7 +270,7 @@ sub store {
               "Wrong database user/permissions?");
       }
     } else {
-      $dbID = $sth->{'mysql_insertid'};
+      $dbID = $self->last_insert_id('misc_set_id', undef, 'misc_set');
     }
 
     $ms->dbID($dbID);

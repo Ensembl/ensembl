@@ -1045,7 +1045,7 @@ sub store {
   $tst->execute();
   $tst->finish();
 
-  my $transc_dbID = $tst->{'mysql_insertid'};
+  my $transc_dbID = $self->last_insert_id('transcript_id', undef, 'transcript');
 
   #
   # Store translation

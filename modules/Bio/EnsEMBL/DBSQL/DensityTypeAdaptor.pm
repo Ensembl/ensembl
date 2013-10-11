@@ -331,7 +331,7 @@ sub store {
       }
       $dbID = $stored_dt->dbID();
     } else {
-      $dbID = $sth->{'mysql_insertid'};
+      $dbID = $self->last_insert_id('density_type_id', undef, 'density_type');
     }
 
     # next two lines are to set the density type as stored

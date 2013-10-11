@@ -2028,7 +2028,7 @@ sub store {
 
   $sth->execute();
 
-  my $seq_region_id = $sth->{'mysql_insertid'};
+  my $seq_region_id = $self->last_insert_id('seq_region_id', undef, 'seq_region');
 
   if(!$seq_region_id) {
     throw("Database seq_region insertion failed.");

@@ -461,7 +461,7 @@ sub store {
     $analysis->created( $new_analysis->created() );
   }
   
-  $dbID ||= $sth->{'mysql_insertid'};
+  $dbID ||= $self->last_insert_id('analysis_id', undef, 'analysis');
   $sth->finish();
 
   my $insert_ignore = $self->insert_ignore_clause();

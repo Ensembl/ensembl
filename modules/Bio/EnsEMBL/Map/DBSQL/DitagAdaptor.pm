@@ -312,7 +312,7 @@ sub store {
       $sth->bind_param(3,$ditag->tag_count,SQL_VARCHAR);
       $sth->bind_param(4,$ditag->sequence,SQL_VARCHAR);
       $sth->execute();
-      my $dbID = $sth->{'mysql_insertid'};
+      my $dbID = $self->last_insert_id('ditag_id', undef, 'ditag');
       $ditag->dbID($dbID);
       $ditag->adaptor($self);
     }

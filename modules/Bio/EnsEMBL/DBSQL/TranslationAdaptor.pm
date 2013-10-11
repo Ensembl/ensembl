@@ -521,7 +521,7 @@ sub store {
 
   $sth->execute();
  
-  my $transl_dbID = $sth->{'mysql_insertid'};
+  my $transl_dbID = $self->last_insert_id('translation_id', undef, 'translation');
 
   #
   # store object xref mappings to translations

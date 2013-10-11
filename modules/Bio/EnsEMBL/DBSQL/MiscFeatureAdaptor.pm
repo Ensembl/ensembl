@@ -716,7 +716,7 @@ sub store {
     $feature_sth->bind_param(4,$mf->strand,SQL_TINYINT);
     $feature_sth->execute();
 
-    my $dbID = $feature_sth->{'mysql_insertid'};
+    my $dbID = $self->last_insert_id('misc_feature_id', undef, 'misc_feature');
 
     $mf->dbID($dbID);
     $mf->adaptor($self);

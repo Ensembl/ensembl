@@ -538,7 +538,7 @@ sub store {
 	$sth->execute();
 	$sth->finish();
 
-	my $operon_dbID = $sth->{'mysql_insertid'};
+	my $operon_dbID = $self->last_insert_id('operon_id', undef, 'operon');
 
 	my $transcripts = $operon->get_all_OperonTranscripts();
 

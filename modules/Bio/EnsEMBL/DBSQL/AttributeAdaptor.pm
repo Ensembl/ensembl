@@ -582,7 +582,7 @@ sub _store_type {
 
   my $rows_inserted = $sth1->execute();
 
-  my $atid = $sth1->{'mysql_insertid'};
+  my $atid = $self->last_insert_id('attrib_type_id', undef, 'attrib_type');
 
   if ($rows_inserted == 0) {
 	# the insert failed because the code is already stored

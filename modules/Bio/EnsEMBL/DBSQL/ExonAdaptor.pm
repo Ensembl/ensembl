@@ -346,7 +346,7 @@ sub store {
   }
 
   $exonst->execute();
-  $exonId = $exonst->{'mysql_insertid'};
+  $exonId = $self->last_insert_id('exon_id', undef, 'exon');
 
   # Now the supporting evidence
   my $esf_adaptor = $db->get_SupportingFeatureAdaptor;

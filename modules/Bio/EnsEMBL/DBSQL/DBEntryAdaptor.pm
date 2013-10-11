@@ -740,7 +740,7 @@ sub _store_object_xref_mapping {
     $sth->bind_param( 5, $analysis_id,                  SQL_INTEGER );
     $sth->execute();
     $sth->finish();
-    my $object_xref_id = $self->last_insert_id();
+    my $object_xref_id = $self->last_insert_id('object_xref_id', undef, 'object_xref');
     
     $dbEntry->adaptor($self); # hand Adaptor to dbEntry for future use with OntologyXrefs
     
