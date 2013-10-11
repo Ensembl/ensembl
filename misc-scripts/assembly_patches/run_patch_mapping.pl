@@ -18,7 +18,7 @@ my $user         = '';
 my $pass         = '';
 my $port         = '';
 my $dbname       = '';
-my @patch_types = ('PATCH_FIX','PATCH_NOVEL');
+my @patch_types = ('PATCH_FIX','PATCH_NOVEL','HAP');
 my $align_by_component;
 my $align_non_ident;
 my $fix_overlap;
