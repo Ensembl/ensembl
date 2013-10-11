@@ -286,7 +286,7 @@ sub connect {
   $self->db_handle($dbh);
 
   if ( $self->timeout() ) {
-    $dbh->do( "SET SESSION wait_timeout=" . $self->timeout() );
+    $self->_driver_object->set_wait_timeout( $dbh, $self->timeout() );
   }
 
   #print("CONNECT\n");
