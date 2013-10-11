@@ -276,10 +276,14 @@ ok($tl->cdna_end() == 1690);
 ok($tl->genomic_start() == 30572315);
 ok($tl->genomic_end() == 30578038);
 
-#test the get_species_and_object_type method from the Registry
-my $registry = 'Bio::EnsEMBL::Registry';
-my ($species, $object_type, $db_type) = $registry->get_species_and_object_type('ENSP00000201961');
-ok($species eq 'homo_sapiens' && $object_type eq 'Translation');
+SKIP: {
+  skip 'No registry support for SQLite yet', 1 if $db->dbc->driver() eq 'SQLite';
+
+  #test the get_species_and_object_type method from the Registry
+  my $registry = 'Bio::EnsEMBL::Registry';
+  my ( $species, $object_type, $db_type ) = $registry->get_species_and_object_type('ENSP00000201961');
+  ok( $species eq 'homo_sapiens' && $object_type eq 'Translation');
+}
 
 #41
 

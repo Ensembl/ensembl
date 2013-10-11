@@ -66,11 +66,14 @@ is( $operon2->analysis(),
 	$operon->analysis(),
 	"Analysis" );
 
-#test the get_species_and_object_type method from the Registry
-my $registry = 'Bio::EnsEMBL::Registry';
-my ( $species, $object_type, $db_type ) = $registry->get_species_and_object_type('16152-16153-4840');
-ok( $species eq 'homo_sapiens' && $object_type eq 'Operon');
+SKIP: {
+  skip 'No registry support for SQLite yet', 1 if $operon_adaptor->dbc->driver() eq 'SQLite';
 
+  #test the get_species_and_object_type method from the Registry
+  my $registry = 'Bio::EnsEMBL::Registry';
+  my ( $species, $object_type, $db_type ) = $registry->get_species_and_object_type('16152-16153-4840');
+  ok( $species eq 'homo_sapiens' && $object_type eq 'Operon');
+}
 
 debug ("Operon->list_stable_ids");
 my $stable_ids = $operon_adaptor->list_stable_ids();
