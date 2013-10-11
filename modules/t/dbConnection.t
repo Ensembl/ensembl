@@ -108,6 +108,7 @@ is_deeply($dbc->to_hash(), \%dbc_args, 'Checking to_hash() can roundtrip a DBCon
   #
   my $sth = $dbc->prepare('SELECT * from gene limit 1');
   $sth->execute;
+  my @row = $sth->fetchrow_array;
   ok($sth->rows);
   $sth->finish;
 }
@@ -126,6 +127,7 @@ ok(!$dbh->ping());
   # reconnect should happen now
   my $sth2 = $dbc->prepare('SELECT * from gene limit 1');
   $sth2->execute;
+  $sth2->fetchrow_array;
   ok($sth2->rows);
   $sth2->finish;
 
@@ -150,8 +152,8 @@ $dbh = $dbc->db_handle();
     $sth2->finish();
   }
 
-  ok($sth1->rows);
   my @gene = $sth1->fetchrow_array();
+  ok($sth1->rows);
   ok(@gene);
 
   $sth1->finish;
@@ -167,6 +169,7 @@ ok($dbc->db_handle->ping());
 {
   my $sth1 = $dbc->prepare('SELECT * from gene limit 1');
   $sth1->execute();
+  $sth1->fetchrow_array();
   ok($sth1->rows());
   $sth1->finish();
 }
