@@ -839,28 +839,38 @@ sub store {
   #
   # Store transcript
   #
-  my $store_transcript_sql = qq(
-      INSERT INTO transcript 
-        SET gene_id = ?, 
-            analysis_id = ?, 
-            seq_region_id = ?, 
-            seq_region_start = ?,
-            seq_region_end = ?, 
-            seq_region_strand = ?, 
-            biotype = ?, 
-            status = ?, 
-            description = ?,
-            is_current = ?, 
-            canonical_translation_id = ? 
+  my @columns = qw(
+            gene_id
+            analysis_id
+            seq_region_id
+            seq_region_start
+            seq_region_end
+            seq_region_strand
+            biotype
+            status
+            description
+            is_current
+            canonical_translation_id
   );
 
+  my @canned_columns;
+  my @canned_values;
+
   if ( defined( $transcript->stable_id() ) ) {
+      push @columns, 'stable_id', 'version';
 
       my $created = $self->db->dbc->from_seconds_to_date($transcript->created_date());
       my $modified = $self->db->dbc->from_seconds_to_date($transcript->modified_date());
-      $store_transcript_sql .= ", stable_id = ?, version = ?, created_date = " . $created . " , modified_date = " . $modified;
 
+      push @canned_columns, 'created_date', 'modified_date';
+      push @canned_values,  $created,       $modified;
   }
+
+  my $columns = join(', ', @columns, @canned_columns);
+  my $values  = join(', ', ('?') x @columns, @canned_values);
+  my $store_transcript_sql = qq(
+        INSERT INTO transcript ( $columns ) VALUES ( $values )
+  );
 
   my $tst = $self->prepare($store_transcript_sql);
   $tst->bind_param( 1,  $gene_dbID,                 SQL_INTEGER );

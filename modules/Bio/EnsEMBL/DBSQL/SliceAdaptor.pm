@@ -1998,9 +1998,9 @@ sub store {
   #store the seq_region
 
   my $sth = $db->dbc->prepare("INSERT INTO seq_region " .
-                         "SET    name = ?, " .
-                         "       length = ?, " .
-                         "       coord_system_id = ?" );
+                              "            ( name, length, coord_system_id ) " .
+                              "     VALUES ( ?, ?, ? )"
+      );
 
   $sth->bind_param(1,$sr_name,SQL_VARCHAR);
   $sth->bind_param(2,$sr_len,SQL_INTEGER);
@@ -2116,13 +2116,14 @@ sub store_assembly{
   #
   my $sth = $self->db->dbc->prepare
       ("INSERT INTO assembly " .
-       "SET     asm_seq_region_id = ?, " .
-       "        cmp_seq_region_id = ?, " .
-       "        asm_start = ?, " .
-       "        asm_end   = ?, " .
-       "        cmp_start = ?, " .
-       "        cmp_end   = ?, " .
-       "        ori       = ?" );
+       "      ( asm_seq_region_id, " .
+       "        cmp_seq_region_id, " .
+       "        asm_start, " .
+       "        asm_end  , " .
+       "        cmp_start, " .
+       "        cmp_end  , " .
+       "        ori       )" .
+       "VALUES ( ?, ?, ?, ?, ?, ?, ? )");
 
   my $asm_seq_region_id = $self->get_seq_region_id( $asm_slice );
   my $cmp_seq_region_id = $self->get_seq_region_id( $cmp_slice );
