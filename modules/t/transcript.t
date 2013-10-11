@@ -699,7 +699,9 @@ $multi->restore;
   
 }
 
-{
+SKIP: {
+  skip 'No registry support for SQLite yet', 1 if $db->dbc->driver() eq 'SQLite';
+
   #test the get_species_and_object_type method from the Registry
   my $registry = 'Bio::EnsEMBL::Registry';
   my ( $species, $object_type, $db_type ) = $registry->get_species_and_object_type('ENST00000355555');
