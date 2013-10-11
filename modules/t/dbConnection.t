@@ -188,7 +188,13 @@ $dbc->disconnect_when_inactive();
 
 #Testing quote identifiers
 my $quote_result = $dbc->quote_identifier(qw/a b c/, [undef, qw/db table/], [1]);
-is_deeply($quote_result, [qw/`a` `b` `c`/, '`db`.`table`', '`1`'], 'Checking quote identifier will quote everything') or diag explain $quote_result;
+my $expected_quote_result;
+if ( $dbc->driver() eq 'SQLite' ) {
+  $expected_quote_result = [qw/"a" "b" "c"/, '"db"."table"', '"1"'];
+} else {
+  $expected_quote_result = [qw/`a` `b` `c`/, '`db`.`table`', '`1`'];
+}
+is_deeply($quote_result, $expected_quote_result, 'Checking quote identifier will quote everything') or diag explain $quote_result;
 
 #Testing reconnection via proxy
 $db->dbc()->disconnect_if_idle();
