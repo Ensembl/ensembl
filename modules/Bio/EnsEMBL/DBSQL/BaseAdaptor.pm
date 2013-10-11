@@ -897,11 +897,7 @@ sub last_insert_id {
 
 sub insert_ignore_clause {
     my $self = shift;
-    if ($self->dbc->driver eq 'mysql') {
-        return 'INSERT IGNORE';
-    } else {
-        return 'INSERT OR IGNORE';
-    }
+    return $self->dbc->_driver_object->insert_ignore_clause;
 }
 
 =head2 _id_cache

@@ -19,4 +19,8 @@ sub last_insert_id_args {
     return (undef, undef, undef, undef);
 }
 
+sub insert_ignore_clause {
+    return 'INSERT IGNORE';
+}
+
 1;
