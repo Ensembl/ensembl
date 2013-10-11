@@ -882,9 +882,10 @@ sub last_insert_id {
   }
   else {
     if(!$table) {
-      ($table) = $self->_tables();
+      my ($table_entry) = $self->_tables(); # first table entry
+      $table = $table_entry->[0];           # table_entry is [ name, alias ]
     }
-    @args = (undef, $dbc->dbname(), $table->[0], $field);
+    @args = (undef, $dbc->dbname(), $table, $field);
   }
   $attributes ||= {};
   return $dbh->last_insert_id(@args, $attributes);
