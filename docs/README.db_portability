@@ -1,0 +1,432 @@
+experimental/db-portability/master 2014-02-17
+==================================
+
+cliHelper is not supported; test is skipped.
+
+t/dbEntries.t has a single failure.
+
+
+experimental/db-portability/74
+==============================
+
+t/cliHelper.t is not supported.
+
+t/dbEntries.t fails but does so as for MySQL.
+
+
+branch-e73-db-portability &
+branch-e72-db-portability
+=========================
+
+No major changes, see below for previous items.
+
+
+branch-e71-db-portability
+=========================
+
+See below for notes from the original work for porting EnsEMBL 70 to
+SQLite, and especially see the bottom of this file for an important
+disclaimer.
+
+t/circularSlice.t
+  now passes for SQLite.
+
+t/dbEntries.t
+  now also passes for SQLite, but further work is needed in
+  DBEntryAdaptor.pm to replicate the changes made in
+  _store_or_fetch_xref() to allow for the differences in behaviour
+  between MySQL 'INSERT IGNORE' and SQLite 'INSERT OR IGNORE'.
+
+
+branch-e70-db-portability
+=========================
+
+Overview
+--------
+
+The first revision to be considered of useful quality is that reached
+at 2013-02-15 18:06:00 (registry.t: don't hardcode db driver in config
+file).
+
+The development up to that point has been rearranged to group related
+changes into single commits, detailed below.
+
+For the complete story, see also changes on the
+branch-e70-db-portability branch of ensembl-test.
+
+The main area of missing functionality under SQLite is registry
+support.
+
+
+Test results
+------------
+
+All tests still pass for MySQL, except for those requiring a threaded
+perl, which the author has not yet tried to configure (and which thus
+also fail for the umodified EnsEMBL).
+
+The following tests fail for SQLite:
+
+   t/circularSlice.t: test-genome-DBs/circ/*.txt need patching.
+ * t/dbEntries.t:     needs threads.
+ * t/registry.t:      no tests run (needs threads?)
+   t/schema.t:        need to work around 'create database' in test
+   t/schemaPatches.t: need to work around 'create database' in test
+
+*: these tests also fail on MySQL for want of a threaded perl.
+
+
+Development commits
+-------------------
+
+Schema conversion:
+
+  Date:   Tue Feb 12 17:42:31 2013 +0000
+
+    Run ensembl-test/scripts/convert_test_schemas.sh.
+    Converts MySQL test schemas to SQLite test schemas.
+
+    modules/t/test-genome-DBs/circ/core/SQLite/table.sql
+    modules/t/test-genome-DBs/homo_sapiens/core/SQLite/table.sql
+    modules/t/test-genome-DBs/homo_sapiens/empty/SQLite/table.sql
+
+
+Cherry-picked patches already applied to MAIN:
+
+  Date:   Wed Feb 13 09:40:42 2013 +0000
+
+    Patched out a pair of CVS keywords that interfere with Git
+    compatibility for benefit of Anacode. This in no way implies
+    endorsement of Git for Ensembl.
+
+    misc-scripts/doxygen_filter/EnsEMBL/Filter.pm
+    misc-scripts/utilities/dna_compress.pl
+
+  Date:   Wed Feb 13 14:12:25 2013 +0000
+
+    proteinFeatureAdaptor now cleans up after itself
+    fix sent by mg13
+
+    modules/t/proteinFeatureAdaptor.t
+
+  Date:   Wed Feb 13 14:31:08 2013 +0000
+
+    Applying Michael Gray's patches for the purposes of future
+    database independence.
+
+    Extended support for different SQL backends through specific
+    return values. See Michael Gray's efforts.
+
+    See JIRA ticket ENSCORESW-349
+
+    modules/Bio/EnsEMBL/DBSQL/IntronSupportingEvidenceAdaptor.pm
+    modules/Bio/EnsEMBL/Utils/SqlHelper.pm
+
+  Date:   Wed Feb 13 14:57:03 2013 +0000
+
+    ENSCORESW-348
+    also save and restore operon_transcript_gene table
+    entries in the operon_transcript_gene table are not cleaned up
+
+    modules/t/operon_transcript.t
+
+
+Portability patches:
+
+  (*) indicates that the fix has been re-factored below under
+      "Portability architercture"
+
+  Date:   Fri Feb 15 17:14:16 2013 +0000
+
+    rows() doesn't work on SQLite for SELECT unless all rows actually fetched!
+    [test scripts]
+
+    modules/t/MultiTestDB.t
+    modules/t/dbConnection.t
+
+  Date:   Fri Feb 15 17:16:23 2013 +0000
+
+    rows() doesn't work on SQLite for SELECT unless all rows actually fetched!
+    [Adaptors]
+
+    modules/Bio/EnsEMBL/DBSQL/AssemblyMapperAdaptor.pm
+    modules/Bio/EnsEMBL/DBSQL/MiscSetAdaptor.pm
+    modules/Bio/EnsEMBL/DBSQL/ProteinFeatureAdaptor.pm
+    modules/Bio/EnsEMBL/DBSQL/SliceAdaptor.pm
+
+  Date:   Fri Feb 15 17:18:09 2013 +0000
+
+    BaseAdaptor.pm: properly unpack _tables().
+
+    modules/Bio/EnsEMBL/DBSQL/BaseAdaptor.pm
+
+  Date:   Fri Feb 15 17:21:02 2013 +0000
+
+    "INSERT INTO table SET col1=val1, col2=val2" does not work for SQLite.
+
+    Use "INSERT INTO table (col1, col2) VALUES (val1, val2) instead.
+
+    modules/Bio/EnsEMBL/DBSQL/AttributeAdaptor.pm
+    modules/Bio/EnsEMBL/DBSQL/CoordSystemAdaptor.pm
+    modules/Bio/EnsEMBL/DBSQL/DBEntryAdaptor.pm
+    modules/Bio/EnsEMBL/DBSQL/GeneAdaptor.pm
+    modules/Bio/EnsEMBL/DBSQL/MiscFeatureAdaptor.pm
+    modules/Bio/EnsEMBL/DBSQL/MiscSetAdaptor.pm
+    modules/Bio/EnsEMBL/DBSQL/OperonAdaptor.pm
+    modules/Bio/EnsEMBL/DBSQL/OperonTranscriptAdaptor.pm
+    modules/Bio/EnsEMBL/DBSQL/ProteinFeatureAdaptor.pm
+    modules/Bio/EnsEMBL/DBSQL/SliceAdaptor.pm
+    modules/Bio/EnsEMBL/DBSQL/TranscriptAdaptor.pm
+    modules/Bio/EnsEMBL/DBSQL/TranslationAdaptor.pm
+
+  Date:   Fri Feb 15 17:23:48 2013 +0000
+
+    "INSERT IGNORE" vs "INSERT OR IGNORE" portability. (*)
+
+    modules/Bio/EnsEMBL/DBSQL/AnalysisAdaptor.pm
+    modules/Bio/EnsEMBL/DBSQL/AttributeAdaptor.pm
+    modules/Bio/EnsEMBL/DBSQL/BaseAdaptor.pm
+    modules/Bio/EnsEMBL/DBSQL/DBEntryAdaptor.pm
+    modules/Bio/EnsEMBL/DBSQL/DensityTypeAdaptor.pm
+    modules/Bio/EnsEMBL/DBSQL/IntronSupportingEvidenceAdaptor.pm
+    modules/Bio/EnsEMBL/DBSQL/MetaCoordContainer.pm
+    modules/Bio/EnsEMBL/DBSQL/MiscFeatureAdaptor.pm
+    modules/Bio/EnsEMBL/DBSQL/MiscSetAdaptor.pm
+    modules/Bio/EnsEMBL/DBSQL/SeqRegionSynonymAdaptor.pm
+
+  Date:   Fri Feb 15 17:26:11 2013 +0000
+
+    Need to use last_insert_id() instead of {mysql_insertid}.
+
+    modules/Bio/EnsEMBL/DBSQL/AnalysisAdaptor.pm
+    modules/Bio/EnsEMBL/DBSQL/AssemblyExceptionFeatureAdaptor.pm
+    modules/Bio/EnsEMBL/DBSQL/AttributeAdaptor.pm
+    modules/Bio/EnsEMBL/DBSQL/CoordSystemAdaptor.pm
+    modules/Bio/EnsEMBL/DBSQL/DBEntryAdaptor.pm
+    modules/Bio/EnsEMBL/DBSQL/DensityFeatureAdaptor.pm
+    modules/Bio/EnsEMBL/DBSQL/DensityTypeAdaptor.pm
+    modules/Bio/EnsEMBL/DBSQL/DnaAlignFeatureAdaptor.pm
+    modules/Bio/EnsEMBL/DBSQL/ExonAdaptor.pm
+    modules/Bio/EnsEMBL/DBSQL/GeneAdaptor.pm
+    modules/Bio/EnsEMBL/DBSQL/MiscFeatureAdaptor.pm
+    modules/Bio/EnsEMBL/DBSQL/MiscSetAdaptor.pm
+    modules/Bio/EnsEMBL/DBSQL/OperonAdaptor.pm
+    modules/Bio/EnsEMBL/DBSQL/OperonTranscriptAdaptor.pm
+    modules/Bio/EnsEMBL/DBSQL/PredictionExonAdaptor.pm
+    modules/Bio/EnsEMBL/DBSQL/PredictionTranscriptAdaptor.pm
+    modules/Bio/EnsEMBL/DBSQL/ProteinAlignFeatureAdaptor.pm
+    modules/Bio/EnsEMBL/DBSQL/ProteinFeatureAdaptor.pm
+    modules/Bio/EnsEMBL/DBSQL/RepeatConsensusAdaptor.pm
+    modules/Bio/EnsEMBL/DBSQL/RepeatFeatureAdaptor.pm
+    modules/Bio/EnsEMBL/DBSQL/SeqRegionSynonymAdaptor.pm
+    modules/Bio/EnsEMBL/DBSQL/SimpleFeatureAdaptor.pm
+    modules/Bio/EnsEMBL/DBSQL/SliceAdaptor.pm
+    modules/Bio/EnsEMBL/DBSQL/TranscriptAdaptor.pm
+    modules/Bio/EnsEMBL/DBSQL/TranslationAdaptor.pm
+    modules/Bio/EnsEMBL/DBSQL/UnmappedObjectAdaptor.pm
+    modules/Bio/EnsEMBL/Map/DBSQL/DitagAdaptor.pm
+    modules/Bio/EnsEMBL/Map/DBSQL/DitagFeatureAdaptor.pm
+    modules/Bio/EnsEMBL/Map/DBSQL/MarkerAdaptor.pm
+    modules/Bio/EnsEMBL/Map/DBSQL/MarkerFeatureAdaptor.pm
+
+  Date:   Fri Feb 15 17:27:37 2013 +0000
+
+    port() and host() may not be set for all drivers.
+
+    modules/Bio/EnsEMBL/Storable.pm
+    modules/t/dbConnection.t
+
+  Date:   Fri Feb 15 17:30:06 2013 +0000
+
+    DBConnection.pm: date conversions for SQLite. (*)
+
+    modules/Bio/EnsEMBL/DBSQL/DBConnection.pm
+
+  Date:   Fri Feb 15 17:31:06 2013 +0000
+
+    dbConnection.t: quoting for SQLite.
+
+    modules/t/dbConnection.t
+
+  Date:   Fri Feb 15 17:31:50 2013 +0000
+
+    sqlHelper.t: only attempt to alter engine for MySQL.
+
+    modules/t/sqlHelper.t
+
+  Date:   Fri Feb 15 17:34:25 2013 +0000
+
+    AttributeAdaptor.pm: portable SQL.
+
+    This may be sub-optimal for MySQL.
+
+    modules/Bio/EnsEMBL/DBSQL/AttributeAdaptor.pm
+
+  Date:   Fri Feb 15 17:35:41 2013 +0000
+
+    Make SQL more portable, where this has no side-effects.
+
+    modules/Bio/EnsEMBL/DBSQL/ArchiveStableIdAdaptor.pm
+    modules/Bio/EnsEMBL/DBSQL/CompressedSequenceAdaptor.pm
+    modules/Bio/EnsEMBL/DBSQL/SequenceAdaptor.pm
+
+  Date:   Fri Feb 15 17:42:34 2013 +0000
+
+    STRAIGHT_JOIN optimisation only works on MySQL. (*)
+
+    modules/Bio/EnsEMBL/DBSQL/BaseAdaptor.pm
+    modules/Bio/EnsEMBL/DBSQL/ExonAdaptor.pm
+    modules/Bio/EnsEMBL/DBSQL/TranscriptAdaptor.pm
+
+  Date:   Fri Feb 15 17:43:31 2013 +0000
+
+    No support for the registry in SQLite yet.
+
+    modules/t/exon.t
+    modules/t/gene.t
+    modules/t/operon.t
+    modules/t/operon_transcript.t
+    modules/t/transcript.t
+    modules/t/translation.t
+
+
+Portability architecture:
+
+  Date:   Fri Feb 15 17:48:12 2013 +0000
+
+    Split out driver-specfic code into delegated subclasses.
+
+    modules/Bio/EnsEMBL/DBSQL/DBConnection.pm
+    modules/Bio/EnsEMBL/DBSQL/Driver.pm
+    modules/Bio/EnsEMBL/DBSQL/Driver/SQLite.pm
+    modules/Bio/EnsEMBL/DBSQL/Driver/TestDummy.pm
+    modules/Bio/EnsEMBL/DBSQL/Driver/mysql.pm
+    modules/Bio/EnsEMBL/DBSQL/Driver/odbc.pm
+    modules/t/dbConnection.t
+
+  Date:   Fri Feb 15 17:52:23 2013 +0000
+
+    Move DBD connection details into Driver::<type> subclasses.
+
+    modules/Bio/EnsEMBL/DBSQL/DBConnection.pm
+    modules/Bio/EnsEMBL/DBSQL/Driver/Oracle.pm
+    modules/Bio/EnsEMBL/DBSQL/Driver/SQLite.pm
+    modules/Bio/EnsEMBL/DBSQL/Driver/Sybase.pm
+    modules/Bio/EnsEMBL/DBSQL/Driver/mysql.pm
+    modules/Bio/EnsEMBL/DBSQL/Driver/odbc.pm
+
+  Date:   Fri Feb 15 17:56:03 2013 +0000
+
+    last_insert_id(): move driver-specifics to Driver::<type> subclasses.
+
+    modules/Bio/EnsEMBL/DBSQL/BaseAdaptor.pm
+    modules/Bio/EnsEMBL/DBSQL/Driver.pm
+    modules/Bio/EnsEMBL/DBSQL/Driver/mysql.pm
+
+  Date:   Fri Feb 15 17:57:14 2013 +0000
+
+    insert_ignore_clause(): move driver-specifics to Driver::<type> subclasses.
+
+    modules/Bio/EnsEMBL/DBSQL/BaseAdaptor.pm
+    modules/Bio/EnsEMBL/DBSQL/Driver/SQLite.pm
+    modules/Bio/EnsEMBL/DBSQL/Driver/mysql.pm
+
+  Date:   Fri Feb 15 17:59:34 2013 +0000
+
+    Move can_straight_join() to Driver::<type> subclasses.
+
+    modules/Bio/EnsEMBL/DBSQL/BaseAdaptor.pm
+    modules/Bio/EnsEMBL/DBSQL/Driver.pm
+    modules/Bio/EnsEMBL/DBSQL/Driver/mysql.pm
+
+
+Further portability work:
+
+  Date:   Fri Feb 15 18:00:31 2013 +0000
+
+    Setting wait_timeout is MySQL-specific.
+
+    modules/Bio/EnsEMBL/DBSQL/DBConnection.pm
+    modules/Bio/EnsEMBL/DBSQL/Driver.pm
+    modules/Bio/EnsEMBL/DBSQL/Driver/mysql.pm
+
+  Date:   Fri Feb 15 18:01:28 2013 +0000
+
+    dbConnection.t: under DBI, true is not always 1.
+
+    (Can be 0E0, for example.)
+
+    modules/t/dbConnection.t
+
+  Date:   Fri Feb 15 18:02:33 2013 +0000
+
+    sliceAdaptor.t: save/restore assembly table.
+
+    Not saving it relies on MySQL not re-using
+    primary keys after a restore. SQLite starts
+    where it left off after the restore.
+
+    modules/t/sliceAdaptor.t
+
+  Date:   Fri Feb 15 18:03:30 2013 +0000
+
+    operon_transcript.t: avoid datatype mismatch warnings on translation coords.
+
+    modules/t/operon_transcript.t
+
+  Date:   Fri Feb 15 18:04:22 2013 +0000
+
+    qtl.t: do not depend on ordering of list_traits().
+
+    modules/t/qtl.t
+
+  Date:   Fri Feb 15 18:05:16 2013 +0000
+
+    registry.t: don't hardcode db driver in config file.
+
+    modules/t/registry.t
+
+
+Further work required
+---------------------
+
+
+DnaAlignFeatureAdaptor & ProteinFeatureAdaptor:
+
+I don't like use of "${tablename}_id" in last_insert_id().
+Consider extending the _table() tuple to include id column.
+
+
+DBEntryAdaptor:
+
+Will need fixups for $sth->rows() called before fetching.
+Possible test:
+
+---vvvvv--- cut here ---vvvvv---
+
+# test fetch_all_by_name
+
+$xrefs = $dbEntryAdaptor->fetch_all_by_name('NM_030815');
+ok(@{$xrefs} == 1);  # test 61
+
+---^^^^^--- cut here ---^^^^^---
+
+
+OntologyTermAdaptor: FIND_IN_SET() is not available in SQLite.
+
+ProxyDBConnection: Not considered.
+
+
+Disclaimer
+----------
+
+To date this work has been steered by the ensembl test suite. I have
+attempted to identify other instances of identified problems
+throughout the adaptor code, but can make no guarantess about the
+correct functionality under SQLite of any code not covered by the test
+suite.
+
+
+Michael Gray
+mg13@sanger.ac.uk
+February 2013
