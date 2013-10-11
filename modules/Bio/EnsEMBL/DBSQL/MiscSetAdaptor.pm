@@ -260,12 +260,12 @@ sub store {
       $sth2->bind_param(1,$ms->code,SQL_VARCHAR);
       $sth2->execute();
 
+      ($dbID) = $sth2->fetchrow_array();
+
       if($sth2->rows() != 1) {
         throw("Could not retrieve or store MiscSet, code=[".$ms->code."]\n".
               "Wrong database user/permissions?");
       }
-
-      ($dbID) = $sth2->fetchrow_array();
     } else {
       $dbID = $sth->{'mysql_insertid'};
     }

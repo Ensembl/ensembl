@@ -150,13 +150,14 @@ sub fetch_by_dbID {
 
   $sth->bind_param(1, $protfeat_id, SQL_INTEGER);
   my $res = $sth->execute();
+   
+  my ($start, $end, $analysis_id, $score, $perc_ident, $pvalue, $hstart, 
+      $hend, $hseqname, $idesc, $interpro_ac) = $sth->fetchrow_array();
 
-  if ($sth->rows == 0) {
-	$sth->finish();
-	return undef;
+  if($sth->rows == 0) {
+    $sth->finish();
+    return undef;
   }
-
-  my ($start, $end, $analysis_id, $score, $perc_ident, $pvalue, $hstart, $hend, $hseqname, $idesc, $interpro_ac) = $sth->fetchrow_array();
 
   $sth->finish();
 
