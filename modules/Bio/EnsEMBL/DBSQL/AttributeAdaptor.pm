@@ -314,11 +314,13 @@ sub remove_from_Object {
   }
   
   my $sth;
-  if(defined($code)){
-    $sth = $self->prepare("DELETE a FROM " . $table . "_attrib a, attrib_type at " .
-                         "WHERE a.attrib_type_id = at.attrib_type_id AND ".
-                         "a." . $type . "_id = ? AND ".
-                         "at.code like ?");
+  if (defined($code)) {
+    $sth = $self->prepare(qq{DELETE FROM ${table}_attrib
+                              WHERE ${type}_id = ? AND
+                                     attrib_type_id IN
+                             (SELECT attrib_type_id
+                                FROM attrib_type
+                               WHERE code LIKE ? ) });
     $sth->bind_param(1,$object_id,SQL_INTEGER);
     $sth->bind_param(2,$code,SQL_VARCHAR);
   }
