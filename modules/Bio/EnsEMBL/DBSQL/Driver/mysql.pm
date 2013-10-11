@@ -23,4 +23,8 @@ sub insert_ignore_clause {
     return 'INSERT IGNORE';
 }
 
+sub can_straight_join {
+    return 1;
+}
+
 1;

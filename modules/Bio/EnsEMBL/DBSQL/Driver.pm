@@ -55,6 +55,10 @@ sub last_insert_id_args {
     return;
 }
 
+sub can_straight_join {
+    return;
+}
+
 sub AUTOLOAD {
     my ($self, @args) = @_;
     my $class = ref $self;
