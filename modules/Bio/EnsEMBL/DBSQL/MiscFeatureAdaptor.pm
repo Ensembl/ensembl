@@ -682,8 +682,9 @@ sub store {
       ) VALUES (?, ?, ?, ?)
     });
 
+  my $insert_ignore = $self->insert_ignore_clause();
   my $feature_set_sth = $self->prepare(
-    qq{INSERT IGNORE INTO misc_feature_misc_set (
+    qq{${insert_ignore} INTO misc_feature_misc_set (
          misc_feature_id,
          misc_set_id
        ) VALUES (?, ?)

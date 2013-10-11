@@ -891,6 +891,18 @@ sub last_insert_id {
   return $dbh->last_insert_id(@args, $attributes);
 }
 
+=head2 insert_ignore_clause
+=cut
+
+sub insert_ignore_clause {
+    my $self = shift;
+    if ($self->dbc->driver eq 'mysql') {
+        return 'INSERT IGNORE';
+    } else {
+        return 'INSERT OR IGNORE';
+    }
+}
+
 =head2 _id_cache
 
   Description : Used to return an instance of a support BaseCache module

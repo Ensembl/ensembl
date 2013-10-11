@@ -224,8 +224,9 @@ sub store {
   # otherwise 2 processes could try to insert at the same time and one
   # would fail
 
+  my $insert_ignore = $self->insert_ignore_clause();
   my $sth = $self->prepare(
-    qq{INSERT IGNORE INTO misc_set (
+    qq{${insert_ignore} INTO misc_set (
          code,
          name,
          description,

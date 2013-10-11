@@ -381,7 +381,7 @@ sub store {
     throw("Analysis cannot be stored without a valid logic_name");
   }
     
-  my $insertion_method = (lc($self->dbc->driver) eq 'sqlite') ? 'INSERT OR IGNORE' : 'INSERT IGNORE';
+  my $insert_ignore = $self->insert_ignore_clause();
 
   my $rows_inserted = 0;
   my $sth;
@@ -394,7 +394,7 @@ sub store {
 
     $sth = $self->prepare(
       qq{
-          $insertion_method INTO analysis
+          ${insert_ignore} INTO analysis
               (created, logic_name, db, db_version, db_file, program, program_version, program_file, parameters, module, module_version, gff_source, gff_feature)
           VALUES  (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       }
@@ -418,7 +418,7 @@ sub store {
   } else {
     $sth = $self->prepare(
       qq{
-          $insertion_method INTO analysis
+          ${insert_ignore} INTO analysis
               (created, logic_name, db, db_version, db_file, program, program_version, program_file, parameters, module, module_version, gff_source, gff_feature)
           VALUES  (CURRENT_TIMESTAMP, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       }
@@ -464,9 +464,11 @@ sub store {
   $dbID ||= $sth->{'mysql_insertid'};
   $sth->finish();
 
+  my $insert_ignore = $self->insert_ignore_clause();
+
   # store description and display_label
   if( defined( $analysis->description() ) || defined( $analysis->display_label() )|| defined( $analysis->web_data() )) {
-      $sth = $self->prepare( "INSERT IGNORE INTO analysis_description (analysis_id, display_label, description, displayable, web_data) VALUES (?,?,?,?, ?)");
+      $sth = $self->prepare( "${insert_ignore} INTO analysis_description (analysis_id, display_label, description, displayable, web_data) VALUES (?,?,?,?, ?)");
 
       $sth->bind_param(1,$dbID,SQL_INTEGER);
       $sth->bind_param(2,$analysis->display_label(),SQL_VARCHAR);
@@ -569,7 +571,8 @@ sub update {
     if( $a->description() || $a->display_label() || $a->web_data) {
 	$web_data = $self->dump_data($a->web_data()) if ($a->web_data());
       #my $web_data = $self->dump_data($a->web_data());
-      $sth = $self->prepare( "INSERT IGNORE INTO analysis_description (analysis_id, display_label, description, displayable, web_data) VALUES (?,?,?,?,?)");
+      my $insert_ignore = $self->insert_ignore_clause();
+      $sth = $self->prepare( "${insert_ignore} INTO analysis_description (analysis_id, display_label, description, displayable, web_data) VALUES (?,?,?,?,?)");
 	$sth->bind_param(1,$a->dbID,SQL_INTEGER);	
 	$sth->bind_param(2,$a->display_label(),SQL_VARCHAR);
 	$sth->bind_param(3,$a->description,SQL_LONGVARCHAR);     
