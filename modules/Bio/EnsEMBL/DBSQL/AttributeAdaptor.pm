@@ -132,7 +132,7 @@ sub store_batch_on_Object {
 sub _store_batch_rows {
   my ($self, $table, $rows) = @_;
   if (scalar(@$rows) > 0) {
-        $self->dbc()->sql_helper()->execute_update(-SQL => 'INSERT INTO ' . $table . '_attrib() VALUES' . join(',', @$rows));
+        $self->dbc()->sql_helper()->execute_update(-SQL => 'INSERT INTO ' . $table . '_attrib(' . $table . '_id, attrib_type_id, value) VALUES ' . join(',', @$rows));
   }
   return [];
 }
