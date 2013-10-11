@@ -713,8 +713,9 @@ sub _store_object_xref_mapping {
         $analysis_id = 0; ## This used to be undef, but uniqueness in mysql requires a value
     }
     
+    my $insert_ignore = $self->insert_ignore_clause();
     my $sth = $self->prepare(qq(
-        INSERT IGNORE INTO object_xref
+        ${insert_ignore} INTO object_xref
               ( xref_id,
                 ensembl_object_type,
                 ensembl_id,
@@ -737,7 +738,7 @@ sub _store_object_xref_mapping {
         #no existing object_xref, therefore 
         if ( $dbEntry->isa('Bio::EnsEMBL::IdentityXref') ) {
         $sth = $self->prepare( "
-             INSERT ignore INTO identity_xref
+             ${insert_ignore} INTO identity_xref
            ( object_xref_id,
              xref_identity,
              ensembl_identity,
@@ -762,7 +763,7 @@ sub _store_object_xref_mapping {
         $sth->execute();
       } elsif ( $dbEntry->isa('Bio::EnsEMBL::OntologyXref') ) {
         $sth = $self->prepare( "
-             INSERT ignore INTO ontology_xref
+             ${insert_ignore} INTO ontology_xref
                   ( object_xref_id,
                     source_xref_id,
                     linkage_type    )
@@ -918,8 +919,9 @@ sub _store_or_fetch_xref {
     my $dbRef = shift;
     my $xref_id;
     
+    my $insert_ignore = $self->insert_ignore_clause();
     my $sth = $self->prepare( "
-       INSERT IGNORE INTO xref
+       ${insert_ignore} INTO xref
          ( dbprimary_acc,
            display_label,
            version,
@@ -949,7 +951,7 @@ sub _store_or_fetch_xref {
                    AND synonym = ?");
     
         my $synonym_store_sth = $self->prepare(
-            "INSERT ignore INTO external_synonym
+            "${insert_ignore} INTO external_synonym
              ( xref_id, synonym ) VALUES ( ?, ? ) ");
     
         my $synonyms = $dbEntry->get_all_synonyms();
