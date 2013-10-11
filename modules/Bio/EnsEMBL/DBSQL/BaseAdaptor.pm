@@ -881,10 +881,7 @@ sub last_insert_id {
   my $dbc = $self->dbc();
   my $dbh = $dbc->db_handle();
   my @args;
-  if($dbc->driver() eq 'mysql') {
-    @args = (undef,undef,undef,undef);
-  }
-  else {
+  unless (@args = $dbc->_driver_object->last_insert_id_args($field, $table)) {
     if(!$table) {
       my ($table_entry) = $self->_tables(); # first table entry
       $table = $table_entry->[0];           # table_entry is [ name, alias ]

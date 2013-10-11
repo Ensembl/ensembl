@@ -51,6 +51,10 @@ sub connect_params {
     };
 }
 
+sub last_insert_id_args {
+    return;
+}
+
 sub AUTOLOAD {
     my ($self, @args) = @_;
     my $class = ref $self;
