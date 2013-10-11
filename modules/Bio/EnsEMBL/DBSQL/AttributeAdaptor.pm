@@ -180,9 +180,8 @@ sub store_on_Object {
     $type = $table;
   }
 
-  my $sth = $self->prepare( "INSERT into " . $table. "_attrib ".
-                            "SET " . $type . "_id = ?, attrib_type_id = ?, ".
-                            "value = ? " );
+  my $sth = $self->prepare( "INSERT into " . $table. "_attrib (" . $type . "_id, attrib_type_id, value)" .
+                            "VALUES (?, ?, ?)" );
 
   for my $attrib ( @$attributes ) {
     if(!ref($attrib) && $attrib->isa('Bio::EnsEMBL::Attribute')) {
