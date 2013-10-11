@@ -216,9 +216,9 @@ sub is_stored {
   #
   # Databases are the same if they share the same port, host and username
   #
-  if ( $db->port() eq $cur_db->port()
-    && $db->host()   eq $cur_db->host()
-    && $db->dbname() eq $cur_db->dbname() )
+  if ( ($db->port()||'') eq ($cur_db->port()||'')
+    && ($db->host()||'') eq ($cur_db->host()||'')
+    &&  $db->dbname()    eq  $cur_db->dbname() )
   {
     return 1;
   }

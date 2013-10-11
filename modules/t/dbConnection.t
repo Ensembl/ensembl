@@ -185,7 +185,7 @@ my $dbc2 = Bio::EnsEMBL::DBSQL::DBConnection->new(-DBCONN => $dbc);
 ok($dbc->equals($dbc2));
 ok(! $dbc->equals());
 ok($dbc2->dbname eq $dbc->dbname());
-ok($dbc2->host   eq $dbc->host());
+ok(($dbc2->host||'')   eq ($dbc->host()||''));
 ok($dbc2->username()   eq $dbc->username());
 ok($dbc2->password eq $dbc->password());
 ok($dbc2->port  == $dbc->port());
