@@ -431,6 +431,9 @@ SQL
   }
   $sth->execute();
 
+  my $max_rows = 1000;
+
+  my $precache = $sth->fetchall_arrayref( undef, $max_rows ); # need to fetch to ensure rows() works for SQLite
 
   if ( !$sth->rows() && lc($dbname) eq 'interpro' ) {
   # This is a minor hack that means that results still come back even
@@ -438,6 +441,7 @@ SQL
   # the xref table.  This has happened in the past and had the result of
   # breaking domainview
 
+    $precache = undef;
     $sth->finish();
     $sth = $self->prepare(
       "SELECT   NULL,
@@ -457,9 +461,9 @@ SQL
 
   my %exDB;
   my @exDBlist;
-  my $max_rows = 1000;
 
-  while ( my $rowcache = $sth->fetchall_arrayref( undef, $max_rows ) ) {
+  while ( my $rowcache = $precache || $sth->fetchall_arrayref( undef, $max_rows ) ) {
+    $precache = undef;
     while ( my $arrayref = shift( @{$rowcache} ) ) {
       my ( $dbID,                $dbprimaryId,
            $displayid,           $version,
@@ -557,12 +561,17 @@ sub fetch_by_db_accession {
   $sth->bind_param( 2, $dbname,    SQL_VARCHAR );
   $sth->execute();
 
+  my $max_rows = 1000;
+
+  my $precache = $sth->fetchall_arrayref( undef, $max_rows ); # need to fetch to ensure rows() works for SQLite
+
   if ( !$sth->rows() && lc($dbname) eq 'interpro' ) {
   # This is a minor hack that means that results still come back even
   # when a mistake was made and no interpro accessions were loaded into
   # the xref table.  This has happened in the past and had the result of
   # breaking domainview
 
+    $precache = undef;
     $sth->finish();
     $sth = $self->prepare(
       "SELECT   NULL,
@@ -582,9 +591,8 @@ sub fetch_by_db_accession {
 
   my $exDB;
 
-  my $max_rows = 1000;
-
-  while ( my $rowcache = $sth->fetchall_arrayref( undef, $max_rows ) ) {
+  while ( my $rowcache = $precache || $sth->fetchall_arrayref( undef, $max_rows ) ) {
+    $precache = undef;
     while ( my $arrayref = shift( @{$rowcache} ) ) {
       my ( $dbID,                $dbprimaryId,
            $displayid,           $version,
@@ -965,7 +973,10 @@ sub _store_or_fetch_xref {
     my $dbEntry = shift;
     my $dbRef = shift;
     my $xref_id;
-    
+
+    my $display_id = $dbEntry->display_id;
+    $display_id = '' unless defined $display_id; # SQLite doesn't ignore NOT NULL errors
+
     my $insert_ignore = $self->insert_ignore_clause();
     my $sth = $self->prepare( "
        ${insert_ignore} INTO xref
@@ -978,15 +989,15 @@ sub _store_or_fetch_xref {
            info_text )
          VALUES ( ?, ?, ?, ?, ?, ?, ? ) ");
     $sth->bind_param(1, $dbEntry->primary_id,SQL_VARCHAR);
-    $sth->bind_param(2, $dbEntry->display_id,SQL_VARCHAR);
+    $sth->bind_param(2, $display_id,SQL_VARCHAR);
     $sth->bind_param(3, ($dbEntry->version || q{0}),SQL_VARCHAR);
     $sth->bind_param(4, $dbEntry->description,SQL_VARCHAR);
     $sth->bind_param(5, $dbRef,SQL_INTEGER);
     $sth->bind_param(6, ($dbEntry->info_type || 'NONE'), SQL_VARCHAR);
     $sth->bind_param(7, ($dbEntry->info_text || ''), SQL_VARCHAR);
 
-    $sth->execute();
-    $xref_id = $self->last_insert_id('xref_id',undef,'xref');
+    my $count = $sth->execute();
+    $xref_id = $self->last_insert_id('xref_id',undef,'xref') if $count > 0;
     $sth->finish();
     
     if ($xref_id) { #insert was successful, store supplementary synonyms
@@ -1276,12 +1287,13 @@ sub remove_from_object {
   $sth->bind_param(3,$object_type,SQL_VARCHAR);
   $sth->execute();
 
+  my ($ox_id) = $sth->fetchrow_array();
+
   if(!$sth->rows() == 1) {
     $sth->finish();
     return;
   }
 
-  my ($ox_id) = $sth->fetchrow_array();
   $sth->finish();
 
   # delete from the tables which contain additional linkage information
