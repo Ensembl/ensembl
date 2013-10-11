@@ -91,27 +91,24 @@ sub fetch_all_Groups {
         
         if ($type) {
             $get_all_sql = q(
-                SELECT DISTINCT alt_allele_group_id FROM alt_allele a
-                JOIN (gene g, seq_region s, coord_system c, alt_allele_attrib b)
-                ON (
-                    c.coord_system_id = s.coord_system_id 
-                    AND s.seq_region_id = g.seq_region_id
-                    AND g.gene_id = a.gene_id
-                    AND a.alt_allele_id = b.alt_allele_id
-                )
+                SELECT DISTINCT alt_allele_group_id
+                FROM alt_allele        a
+                JOIN gene              g  ON g.gene_id         = a.gene_id
+                JOIN seq_region        s  ON s.seq_region_id   = g.seq_region_id
+                JOIN coord_system      c  ON c.coord_system_id = s.coord_system_id
+                JOIN alt_allele_attrib b  ON a.alt_allele_id   = b.alt_allele_id
                 WHERE c.species_id = ? AND b.attrib = ?
             );
+        } else {
+            $get_all_sql = q(
+                SELECT DISTINCT alt_allele_group_id
+                FROM alt_allele a
+                JOIN gene              g  ON g.gene_id         = a.gene_id
+                JOIN seq_region        s  ON s.seq_region_id   = g.seq_region_id
+                JOIN coord_system      c  ON c.coord_system_id = s.coord_system_id
+                WHERE c.species_id = ?
+            );
         }
-        $get_all_sql = q(
-            SELECT DISTINCT alt_allele_group_id FROM alt_allele a
-            JOIN (gene g, seq_region s, coord_system c)
-            ON (
-                c.coord_system_id = s.coord_system_id 
-                AND s.seq_region_id = g.seq_region_id
-                AND g.gene_id = a.gene_id
-            )
-            WHERE c.species_id = ? 
-        );
     } else {
         if ($type) {
             $get_all_sql = q(SELECT DISTINCT alt_allele_group_id 
@@ -275,8 +272,9 @@ sub store {
         my $altered_rows;
         
         # Do not create a new group ID if one already exists, such as when updating a group.
-        my $existing_rows = $group_sth->execute($dbID);
-        if ($existing_rows == 0) {
+        $group_sth->execute($dbID);
+        my @existing_row = $group_sth->fetchrow_array;
+        unless (@existing_row) {
             $altered_rows = $new_group_sth->execute($dbID);
             
             if ($altered_rows > 0) {
