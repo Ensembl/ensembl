@@ -347,6 +347,10 @@ sub _straight_join {
   return $self->{'_straight_join'};
 }
 
+sub _can_straight_join {
+    my $self = shift;
+    return ($self->dbc->driver eq 'mysql');
+}
 
 =head2 bind_param_generic_fetch
 
@@ -581,7 +585,7 @@ sub _generate_sql {
 
   my $straight_join = '';
 
-  if($self->_straight_join()) {
+  if($self->_straight_join() and $self->_can_straight_join) {
     $straight_join = "STRAIGHT_JOIN";
   }
 

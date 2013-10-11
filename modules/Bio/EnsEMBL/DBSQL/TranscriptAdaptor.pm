@@ -1272,8 +1272,9 @@ sub store {
 sub get_Interpro_by_transid {
    my ($self,$trans_stable_id) = @_;
 
+   my $straight_join = $self->_can_straight_join ? 'STRAIGHT_JOIN' : '';
    my $sth = $self->prepare(qq(
-      SELECT  STRAIGHT_JOIN i.interpro_ac, x.description
+      SELECT  ${straight_join} i.interpro_ac, x.description
       FROM    transcript t,
               translation tl,
               protein_feature pf,

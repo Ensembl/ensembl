@@ -861,9 +861,10 @@ sub fetch_all_by_gene_id {
   
   $self->{rchash} = {};
   
+  my $straight_join = $self->_can_straight_join ? 'STRAIGHT_JOIN' : '';
   my $query = qq {
     SELECT 
-      STRAIGHT_JOIN 
+      ${straight_join}
 	e.exon_id
       , e.contig_id
       , e.contig_start
