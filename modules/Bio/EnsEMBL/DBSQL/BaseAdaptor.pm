@@ -349,7 +349,7 @@ sub _straight_join {
 
 sub _can_straight_join {
     my $self = shift;
-    return ($self->dbc->driver eq 'mysql');
+    return $self->dbc->_driver_object->can_straight_join;
 }
 
 =head2 bind_param_generic_fetch
