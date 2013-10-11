@@ -191,7 +191,7 @@ ok($dbc2->password eq $dbc->password());
 ok($dbc2->port  == $dbc->port());
 ok($dbc2->driver eq $dbc->driver());
 
-ok(! $dbc->equals(Bio::EnsEMBL::DBSQL::DBConnection->new(-DRIVER => 'sqlite', -DBNAME => 'bill')));
+ok(! $dbc->equals(Bio::EnsEMBL::DBSQL::DBConnection->new(-DRIVER => 'TestDummy', -DBNAME => 'bill')));
 
 #Test spanning db_handle() methods
 my $db_handle_ref;

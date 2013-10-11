@@ -144,7 +144,7 @@ sub new {
   my $class = shift;
 
   my (
-    $db,                  $host,     $driver,
+    $db,                  $host,     $driver_arg,
     $user,                $password, $port,
     $inactive_disconnect, $dbconn,   $wait_timeout, $reconnect
     )
@@ -158,12 +158,21 @@ sub new {
   my $self = {};
   bless $self, $class;
 
+  my $driver = $dbconn ? $dbconn->driver() : $driver_arg;
+  $driver ||= 'mysql';
+  $self->driver($driver);
+
+  my $driver_class = 'Bio::EnsEMBL::DBSQL::Driver::' . $driver;
+  eval "require $driver_class";
+  throw("Cannot load '$driver_class': $@") if $@;
+  my $driver_object = $driver_class->new($self);
+  $self->_driver_object($driver_object);
+
   if($dbconn) {
-    if($db || $host || $driver || $password || $port || $inactive_disconnect || $reconnect) {
+    if($db || $host || $driver_arg || $password || $port || $inactive_disconnect || $reconnect) {
       throw("Cannot specify other arguments when -DBCONN argument used.");
     }
 
-    $self->driver($dbconn->driver());
     $self->host($dbconn->host());
     $self->port($dbconn->port());
     $self->username($dbconn->username());
@@ -174,8 +183,7 @@ sub new {
       $self->disconnect_when_inactive(1);
     }
   } else {
-    $driver ||= 'mysql';
-    
+
     if($driver eq 'mysql') {
         $user || throw("-USER argument is required.");
         $host ||= 'mysql';
@@ -197,7 +205,6 @@ sub new {
 
     $wait_timeout   ||= 0;
 
-    $self->driver($driver);
     $self->host( $host );
     $self->port($port);
     $self->username( $user );
@@ -1058,26 +1065,9 @@ sub add_limit_clause{
 =cut
 
 sub from_date_to_seconds{
-    my $self=  shift;
-    my $column = shift;
-
-    my $string;
-    if ($self->driver eq 'mysql'){
-        $string = "UNIX_TIMESTAMP($column)";
-    }
-    elsif ($self->driver eq 'odbc'){
-        $string = "DATEDIFF(second,'JAN 1 1970',$column)";
-    }
-    elsif ($self->driver eq 'SQLite'){
-        $string = "STRFTIME('%s', $column)";
-    }
-    else{
-        warning("Not possible to convert $column due to an unknown database driver: ", $self->driver);
-        return '';
-    }    
-    return $string;
+    my ($self, @args) = @_;
+    return $self->_driver_object->from_date_to_seconds(@args);
 }
-
 
 =head2 from_seconds_to_date
 
@@ -1092,41 +1082,14 @@ sub from_date_to_seconds{
 
 =cut
 
-sub from_seconds_to_date{
-    my $self=  shift;
+sub from_seconds_to_date {
+    my $self = shift;
     my $seconds = shift;
 
-    my $string;
-    if ($self->driver eq 'mysql'){
-        if ($seconds){
-            $string = "from_unixtime( ".$seconds.")";
-        }
-        else{
-            $string = "\"0000-00-00 00:00:00\"";
-        }
+    if ($seconds) {
+        return $self->_driver_object->from_seconds_to_date($seconds);
     }
-    elsif ($self->driver eq 'odbc'){
-        if ($seconds){
-            $string = "DATEDIFF(date,'JAN 1 1970',$seconds)";
-        }
-        else{
-            $string = "\"0000-00-00 00:00:00\"";
-        }
-    }
-    elsif ($self->driver eq 'SQLite'){
-        if ($seconds){
-            $string = "DATETIME($seconds)";
-        }
-        else{
-            $string = "\"0000-00-00 00:00:00\"";
-        }
-    }
-    else{
-        warning("Not possible to convert $seconds due to an unknown database driver: ", $self->driver);
-        return '';
-
-    }    
-    return $string;
+    return '"0000-00-00 00:00:00"'; # should this use DBI's quote() ?
 }
 
 =head2 sql_helper
@@ -1210,6 +1173,15 @@ sub species {
     ( $self->{_species} = $arg );
   deprecate "species should not be called from DBConnection but from an adaptor\n";
   return $self->{_species};
+}
+
+=head2 _driver_object
+=cut
+
+sub _driver_object {
+    my ($self, @args) = @_;
+    ($self->{_driver_object}) = @args if @args;
+    return $self->{_driver_object};
 }
 
 1;
