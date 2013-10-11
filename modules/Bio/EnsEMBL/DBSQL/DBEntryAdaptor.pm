@@ -800,13 +800,14 @@ sub _store_object_xref_mapping {
         } #end foreach
         
         $sth = $self->prepare( "
-             INSERT ignore INTO associated_xref
-                SET object_xref_id = ?,
-                    xref_id = ?,
-                    source_xref_id = ?,
-                    condition_type = ?,
-                    associated_group_id = ?,
-                    rank = ? " );
+             ${insert_ignore} INTO associated_xref
+                  ( object_xref_id,
+                    xref_id,
+                    source_xref_id,
+                    condition_type,
+                    associated_group_id,
+                    rank                 )
+           VALUES ( ?, ?, ?, ?, ?, ? ) " );
         
         my $annotext = $dbEntry->get_all_associated_xrefs();
         foreach my $ax_group (sort keys %{ $annotext }) {
