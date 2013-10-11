@@ -290,10 +290,10 @@ sub fetch_by_region {
     }
 
     $sth->execute();
+    my @row = $sth->fetchrow_array();
+    $sth->finish();
 
-    if ( $sth->rows() == 0 ) {
-      $sth->finish();
-
+    unless ( @row ) {
 
       # try synonyms
       my $syn_sql_sth = $self->prepare("select s.name, cs.name, cs.version from seq_region s join seq_region_synonym ss using (seq_region_id) join coord_system cs using (coord_system_id) where ss.synonym = ? and cs.species_id =?");
@@ -398,9 +398,7 @@ sub fetch_by_region {
     } else {
 
       my ( $id, $cs_id );
-      ( $seq_region_name, $id, $length, $cs_id ) =
-        $sth->fetchrow_array();
-      $sth->finish();
+      ( $seq_region_name, $id, $length, $cs_id ) = @row;
 
       # cache to speed up for future queries
       my $arr = [ $id, $seq_region_name, $cs_id, $length ];
@@ -823,9 +821,10 @@ sub fetch_by_seq_region_id {
     $sth->bind_param( 1, $seq_region_id, SQL_INTEGER );
     $sth->execute();
 
-    if ( $sth->rows() == 0 ) { return undef }
+    my @row = $sth->fetchrow_array();
+    return undef unless @row;
 
-    ( $name, $cs_id, $length ) = $sth->fetchrow_array();
+    ( $name, $cs_id, $length ) = @row;
     $sth->finish();
 
     $cs = $self->db->get_CoordSystemAdaptor->fetch_by_dbID($cs_id);
@@ -894,14 +893,16 @@ sub get_seq_region_id {
   $sth->bind_param(2,$cs_id,SQL_INTEGER);
   $sth->execute();
 
-  if($sth->rows() != 1) {
-    throw("Non existant or ambigous seq_region:\n" .
-          "  coord_system=[$cs_id],\n" .
-          "  name=[$seq_region_name],\n");
-
+  my @row = $sth->fetchrow_array();
+  unless ( @row ) {
+    throw("No-existent seq_region [$seq_region_name] in coord system [$cs_id]");
+  }
+  my @more = $sth->fetchrow_array();
+  if ( @more ) {
+    throw("Ambiguous seq_region [$seq_region_name] in coord system [$cs_id]");
   }
 
-  my($seq_region_id, $length) = $sth->fetchrow_array();
+  my($seq_region_id, $length) = @row;
   $sth->finish();
 
   #cache information for future requests
@@ -2402,12 +2403,12 @@ sub fetch_by_clone_accession{
     $sth->bind_param( 1, $self->species_id(), SQL_INTEGER );
     $sth->execute();
 
+    ($name) = $sth->fetchrow_array();
+
     if(!$sth->rows()) {
       $sth->finish();
       throw("Clone $name not found in database");
     }
-
-    ($name) = $sth->fetchrow_array();
 
     $sth->finish();
   }
