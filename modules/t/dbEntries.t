@@ -199,7 +199,12 @@ $xref = Bio::EnsEMBL::DBEntry->new
    );
 
 use Config;
-my $stored_xref_id = 1000002;
+
+# This is horrible, but fixing it properly will have to wait for
+# another day. The issue is that SQLite doesn't permit the setting
+# of the base AUTOINCREMENT value, and uses MAX(id)+1
+my $stored_xref_id = $db->dbc->driver() eq 'SQLite' ? 999999 : 1000002;
+
 if($Config{useithreads}) {
   note 'Using threaded tests';
   require threads;
