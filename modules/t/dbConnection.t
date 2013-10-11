@@ -200,9 +200,11 @@ $dbc->prevent_disconnect(sub {
   is($dbc->disconnect_when_inactive(), 0, 'Ensuring disconnect_when_inactive() has been turned off');
   my $sql = 'select 1';
   $db_handle_ref = $dbc->db_handle();
-  is($dbc->do($sql), 1, 'Asserting do returns 1');
+  my $do_result_1 = $dbc->do($sql);
+  ok($do_result_1, "Asserting do returns true [$do_result_1]");
   is($dbc->db_handle(), $db_handle_ref, 'Checking DBH is the same as it was at the beginning');
-  is($dbc->do($sql), 1, 'Asserting do returns 1');
+  my $do_result_2 = $dbc->do($sql);
+  ok($do_result_2, "Asserting do returns true [$do_result_2]");
   is($dbc->db_handle(), $db_handle_ref, 'Checking DBH is the same as it was at the beginning');
   my $sth1 = $dbc->prepare($sql);
   $sth1->execute();
