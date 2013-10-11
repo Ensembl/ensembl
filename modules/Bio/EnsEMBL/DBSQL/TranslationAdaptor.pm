@@ -477,21 +477,32 @@ sub store {
     throw("end_Exon must have a dbID for Translation to be stored.");
   }
 
-  my $store_translation_sql = qq(
-         INSERT INTO translation 
-             SET seq_start = ?, 
-                 start_exon_id = ?,
-                 seq_end = ?, 
-                 end_exon_id = ?, 
-                 transcript_id = ?
+  my @columns = qw(
+                 seq_start
+                 start_exon_id
+                 seq_end
+                 end_exon_id
+                 transcript_id
   );
 
+  my @canned_columns;
+  my @canned_values;
+
   if (defined($translation->stable_id)) {
+      push @columns, 'stable_id', 'version';
+
       my $created = $self->db->dbc->from_seconds_to_date($translation->created_date());
       my $modified = $self->db->dbc->from_seconds_to_date($translation->modified_date());
-      $store_translation_sql .= ", stable_id = ?, version = ?, created_date = " . $created . " , modified_date = " . $modified;
 
+      push @canned_columns, 'created_date', 'modified_date';
+      push @canned_values,  $created,       $modified;
   }
+
+  my $columns = join(', ', @columns, @canned_columns);
+  my $values  = join(', ', ('?') x @columns, @canned_values);
+  my $store_translation_sql = qq(
+        INSERT INTO translation ( $columns ) VALUES ( $values )
+  );
 
   my $sth = $self->prepare($store_translation_sql);
   $sth->bind_param(1,$translation->start,SQL_INTEGER);

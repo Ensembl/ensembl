@@ -725,11 +725,12 @@ sub _store_object_xref_mapping {
     
     my $sth = $self->prepare(qq(
         INSERT IGNORE INTO object_xref
-          SET   xref_id = ?,
-                ensembl_object_type = ?,
-                ensembl_id = ?,
-                linkage_annotation = ?,
-                analysis_id = ? ) 
+              ( xref_id,
+                ensembl_object_type,
+                ensembl_id,
+                linkage_annotation,
+                analysis_id )
+          VALUES ( ?, ?, ?, ?, ? ) )
         );
     $sth->bind_param( 1, $dbEntry->dbID(),              SQL_INTEGER );
     $sth->bind_param( 2, $ensembl_type,                 SQL_VARCHAR );
@@ -747,16 +748,17 @@ sub _store_object_xref_mapping {
         if ( $dbEntry->isa('Bio::EnsEMBL::IdentityXref') ) {
         $sth = $self->prepare( "
              INSERT ignore INTO identity_xref
-             SET object_xref_id = ?,
-             xref_identity = ?,
-             ensembl_identity = ?,
-             xref_start = ?,
-             xref_end   = ?,
-             ensembl_start = ?,
-             ensembl_end = ?,
-             cigar_line = ?,
-             score = ?,
-             evalue = ?" );
+           ( object_xref_id,
+             xref_identity,
+             ensembl_identity,
+             xref_start,
+             xref_end  ,
+             ensembl_start,
+             ensembl_end,
+             cigar_line,
+             score,
+             evalue )
+           VALUES ( ?, ?, ?, ?, ?, ?, ?, ?, ?, ? )" );
         $sth->bind_param( 1, $object_xref_id,            SQL_INTEGER );
         $sth->bind_param( 2, $dbEntry->xref_identity,    SQL_INTEGER );
         $sth->bind_param( 3, $dbEntry->ensembl_identity, SQL_INTEGER );
@@ -771,9 +773,10 @@ sub _store_object_xref_mapping {
       } elsif ( $dbEntry->isa('Bio::EnsEMBL::OntologyXref') ) {
         $sth = $self->prepare( "
              INSERT ignore INTO ontology_xref
-                SET object_xref_id = ?,
-                    source_xref_id = ?,
-                    linkage_type = ? " );
+                  ( object_xref_id,
+                    source_xref_id,
+                    linkage_type    )
+               VALUES ( ?, ?, ? )" );
         foreach my $info ( @{ $dbEntry->get_all_linkage_info() } ) {
             my ( $linkage_type, $sourceXref ) = @{$info};
             my $sourceXid = undef;
@@ -964,13 +967,14 @@ sub _store_or_fetch_xref {
     
     my $sth = $self->prepare( "
        INSERT IGNORE INTO xref
-       SET dbprimary_acc = ?,
-           display_label = ?,
-           version = ?,
-           description = ?,
-           external_db_id = ?,
-           info_type = ?,
-           info_text = ?");
+         ( dbprimary_acc,
+           display_label,
+           version,
+           description,
+           external_db_id,
+           info_type,
+           info_text )
+         VALUES ( ?, ?, ?, ?, ?, ?, ? ) ");
     $sth->bind_param(1, $dbEntry->primary_id,SQL_VARCHAR);
     $sth->bind_param(2, $dbEntry->display_id,SQL_VARCHAR);
     $sth->bind_param(3, ($dbEntry->version || q{0}),SQL_VARCHAR);
@@ -993,7 +997,7 @@ sub _store_or_fetch_xref {
     
         my $synonym_store_sth = $self->prepare(
             "INSERT ignore INTO external_synonym
-             SET xref_id = ?, synonym = ?");
+             ( xref_id, synonym ) VALUES ( ?, ? ) ");
     
         my $synonyms = $dbEntry->get_all_synonyms();
         foreach my $syn ( @$synonyms ) {

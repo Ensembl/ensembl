@@ -220,7 +220,21 @@ sub store {
 	$db->get_AnalysisAdaptor->store($analysis);
   }
 
-  my $sth = $self->prepare("INSERT INTO protein_feature " . "        SET translation_id  = ?, " . "            seq_start       = ?, " . "            seq_end         = ?, " . "            analysis_id     = ?, " . "            hit_start       = ?, " . "            hit_end         = ?, " . "            hit_name        = ?, " . "            hit_description = ?, " . "            score           = ?, " . "            perc_ident      = ?, " . "            evalue          = ?");
+  my $sth = $self->prepare(q{
+    INSERT INTO protein_feature
+                ( translation_id,
+                  seq_start,
+                  seq_end,
+                  analysis_id,
+                  hit_start,
+                  hit_end,
+                  hit_name,
+                  hit_description,
+                  score,
+                  perc_ident,
+                  evalue     )
+         VALUES ( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ? )
+  });
 
   $sth->bind_param(1,  $translation_id,        SQL_INTEGER);
   $sth->bind_param(2,  $feature->start,        SQL_INTEGER);

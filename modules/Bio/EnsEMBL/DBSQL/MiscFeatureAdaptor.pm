@@ -673,17 +673,21 @@ sub store {
 
   my $db = $self->db();
 
-  my $feature_sth = $self->prepare
-    ("INSERT INTO misc_feature SET " .
-     " seq_region_id    = ?, " .
-     " seq_region_start = ?, " .
-     " seq_region_end   = ?, " .
-     " seq_region_strand = ?");
+  my $feature_sth = $self->prepare(
+    q{INSERT INTO misc_feature (
+        seq_region_id,
+        seq_region_start,
+        seq_region_end,
+        seq_region_strand
+      ) VALUES (?, ?, ?, ?)
+    });
 
-  my $feature_set_sth = $self->prepare
-    ("INSERT IGNORE misc_feature_misc_set SET " .
-     " misc_feature_id = ?, " .
-     " misc_set_id = ?");
+  my $feature_set_sth = $self->prepare(
+    qq{INSERT IGNORE INTO misc_feature_misc_set (
+         misc_feature_id,
+         misc_set_id
+       ) VALUES (?, ?)
+      });
 
   my $msa = $db->get_MiscSetAdaptor();
   my $aa  = $db->get_AttributeAdaptor();

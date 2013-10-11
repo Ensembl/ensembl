@@ -544,23 +544,32 @@ sub store {
 	} else {
 		$analysis_id = $db->get_AnalysisAdaptor->store($analysis);
 	}
-	my $store_operon_transcript_sql = qq(
-        INSERT INTO operon_transcript
-           SET seq_region_id = ?,
-               seq_region_start = ?,
-               seq_region_end = ?,
-               seq_region_strand = ?,
-               display_label = ?,
-               operon_id = ?,
-               analysis_id =?
-  );
+	my @columns = qw(
+               seq_region_id
+               seq_region_start
+               seq_region_end
+               seq_region_strand
+               display_label
+               operon_id
+               analysis_id
+        );
 
+        my ($created, $modified);
 	if ( defined($operon_transcript->stable_id()) ) {
-	    my $created = $self->db->dbc->from_seconds_to_date($operon_transcript->created_date());
-	    my $modified = $self->db->dbc->from_seconds_to_date($operon_transcript->modified_date());
-	    $store_operon_transcript_sql .= ", stable_id = ?, version = ?, created_date = " . $created . ",modified_date = " . $modified;
+	    $created = $self->db->dbc->from_seconds_to_date($operon_transcript->created_date());
+	    $modified = $self->db->dbc->from_seconds_to_date($operon_transcript->modified_date());
+            push @columns, qw(
+              stable_id
+              version
+              created_date
+              modified_date
+            );
 	}
-	
+        my $i_columns = join(', ', @columns);
+        my $i_values  = join(', ', ('?') x @columns);
+        my $store_operon_transcript_sql = qq(
+          INSERT INTO operon_transcript ( ${i_columns} ) VALUES ( $i_values )
+        );
 
 	# column status is used from schema version 34 onwards (before it was
 	# confidence)
@@ -577,7 +586,9 @@ sub store {
 	if ( defined($operon_transcript->stable_id()) ) {
 	    $sth->bind_param( 8, $operon_transcript->stable_id(), SQL_VARCHAR );
 	    my $version = ($operon_transcript->version()) ? $operon_transcript->version() : 1;
-	    $sth->bind_param( 9, $version, SQL_INTEGER ); 
+	    $sth->bind_param( 9, $version,  SQL_INTEGER );
+	    $sth->bind_param(10, $created,  SQL_DATETIME );
+	    $sth->bind_param(11, $modified, SQL_DATETIME );
 	}
 
 	$sth->execute();

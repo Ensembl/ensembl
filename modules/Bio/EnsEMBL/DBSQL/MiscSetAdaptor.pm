@@ -224,12 +224,14 @@ sub store {
   # otherwise 2 processes could try to insert at the same time and one
   # would fail
 
-  my $sth = $self->prepare
-    ("INSERT IGNORE INTO misc_set " .
-     "SET code = ?, " .
-     "    name = ?, " .
-     "    description = ?, " .
-     "    max_length  = ?");
+  my $sth = $self->prepare(
+    qq{INSERT IGNORE INTO misc_set (
+         code,
+         name,
+         description,
+         max_length
+      ) VALUES (?, ?, ?, ?)
+    });
 
   my $db = $self->db();
 
