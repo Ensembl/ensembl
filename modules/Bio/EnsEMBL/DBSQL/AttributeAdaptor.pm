@@ -189,9 +189,9 @@ sub store_on_Object {
     $type = $table;
   }
 
-  my $sth = $self->prepare( "INSERT IGNORE into " . $table. "_attrib ".
-                            "SET " . $type . "_id = ?, attrib_type_id = ?, ".
-                            "value = ? " );
+  my $insert_ignore = $self->insert_ignore_clause();
+  my $sth = $self->prepare( "${insert_ignore} INTO ${table}_attrib (${type}_id, attrib_type_id, value)" .
+                            "VALUES (?, ?, ?)" );
 
   for my $attrib ( @$attributes ) {
     if(!ref($attrib) && $attrib->isa('Bio::EnsEMBL::Attribute')) {
