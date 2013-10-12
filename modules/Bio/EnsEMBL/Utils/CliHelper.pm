@@ -79,7 +79,6 @@ use warnings;
 use strict;
 
 use Carp;
-use Data::Dumper;
 use Getopt::Long qw(:config auto_version no_ignore_case);
 
 use Bio::EnsEMBL::Registry;
@@ -169,7 +168,7 @@ sub get_dba_args_for_opts {
   my ( $host,    $port,   $user,    $pass, $dbname,
        $pattern, $driver, $species, $species_id )
     = map { $prefix . $_ }
-    qw(host port user pass dbname pattern driver species species_id);
+    qw(host port user pass dbname dbpattern driver species species_id);
   my @db_args;
   if ( defined $opts->{$host} ) {
     my $dbc =
@@ -186,11 +185,10 @@ sub get_dba_args_for_opts {
     elsif ( defined $opts->{$pattern} ) {
    # get a basic DBConnection and use to find out which dbs are involved
       @dbnames =
-        grep { m/$opts->{pattern}/smx }
+        grep { m/$opts->{$pattern}/smx }
         @{ $dbc->sql_helper()->execute_simple(q/SHOW DATABASES/) };
     }
     else {
-      print Dumper($opts);
       croak 'dbname or dbpattern arguments required';
     }
     for my $dbname (@dbnames) {
