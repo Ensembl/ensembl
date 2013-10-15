@@ -236,7 +236,7 @@ sub get_all_Genes {
 	}
 	return $self->{_gene_array};
 }
-=head2 add_gene
+=head2 add_Gene
 
   Arg [1]    : Bio::EnsEMBL::Gene - gene to attach to this polycistronic transcript
   Example    : $operon->add_gene($gene);
@@ -246,13 +246,28 @@ sub get_all_Genes {
   Status     : Stable
 
 =cut
-sub add_gene {
+sub add_Gene {
 	my ($self,$gene) = @_;
 	assert_ref($gene,'Bio::EnsEMBL::Gene');
 	push @{$self->get_all_Genes()},$gene;
 	return;
 }
 
+=head2 add_gene
+
+  Arg [1]    : Bio::EnsEMBL::Gene - gene to attach to this polycistronic transcript
+  Example    : $operon->add_gene($gene);
+  Description: Attach a gene to this polycistronic transcript
+  Exceptions : if argument is not Bio::EnsEMBL::Gene
+  Caller     : general
+  Status     : DEPRECATED - use add_Gene
+
+=cut
+sub add_gene {
+	my ($self,$gene) = @_;
+	deprecate('Call is deprecated. Use $self->add_Gene()');
+	return $self->add_Gene($gene);
+}
 =head2 add_DBEntry
 
   Arg [1]    : Bio::EnsEMBL::DBEntry $dbe
