@@ -150,6 +150,7 @@ my %group2adaptor = (
       'ontology'  => 'Bio::EnsEMBL::DBSQL::OntologyDBAdaptor',
       'otherfeatures' => 'Bio::EnsEMBL::DBSQL::DBAdaptor',
       'pipeline'      => 'Bio::EnsEMBL::Pipeline::DBSQL::DBAdaptor',
+      'production' => 'Bio::EnsEMBL::Production::DBSQL::DBAdaptor',
       'snp'       => 'Bio::EnsEMBL::ExternalData::SNPSQL::DBAdaptor',
       'stable_ids' => 'Bio::EnsEMBL::DBSQL::DBAdaptor',
       'variation' => 'Bio::EnsEMBL::Variation::DBSQL::DBAdaptor',
@@ -1587,6 +1588,11 @@ sub load_registry_from_db {
   my $ontology_db;
   my $ontology_version;
 
+  my $production_dba_ok = 
+    eval { require Bio::EnsEMBL::Production::DBSQL::DBAdaptor; 1 };
+  my $production_db;
+  my $production_version;
+
   my $stable_ids_db;
   my $stable_ids_version;
 
@@ -1651,6 +1657,19 @@ sub load_registry_from_db {
       if ( $1 eq $software_version ) {
         $ontology_db      = $db;
         $ontology_version = $1;
+      }
+    } elsif ( $production_dba_ok and $db =~ /^ensembl(?:genomes)?_production(_\d+)?/x ) {
+      # production db can come with no version (i.e. that on ens-staging1),
+      # but it's backed up with a release number
+      my $version = $1;
+      if ($version) {
+	$version =~ s/_//;
+	if ($software_version and $version eq $software_version) {
+	  $production_db      = $db;
+	  $production_version = $version;
+	} 
+      } else { # this is the default choice
+	$production_db = $db if $db =~ /^ensembl(?:genomes)?_production$/;
       }
     } elsif ( $db =~ /^ensembl(?:genomes)?_stable_ids_(?:\d+_)?(\d+)/x ) {
       if ( $1 eq $software_version ) {
@@ -2065,11 +2084,6 @@ sub load_registry_from_db {
         }
       } ## end foreach my $compara_db (@compara_dbs)
     } ## end else [ if ($@)
-
-    Bio::EnsEMBL::Utils::ConfigRegistry->add_alias(
-      -species => 'multi'.$species_suffix,
-      -alias   => ['compara'.$species_suffix] );
-
   } elsif ($verbose) {
     print("No Compara databases found\n");
   }
@@ -2105,11 +2119,6 @@ sub load_registry_from_db {
           join( ', ', @ancestral_dbs ) );
       }
     }
-
-    Bio::EnsEMBL::Utils::ConfigRegistry->add_alias(
-      -species => 'Ancestral sequences'.$species_suffix,
-      -alias   => ['ancestral_sequences'.$species_suffix] );
-
   } elsif ($verbose) {
     print("No ancestral database found\n");
   }
@@ -2132,16 +2141,35 @@ sub load_registry_from_db {
     if ($verbose) {
       printf( "%s loaded\n", $ontology_db );
     }
-
-    Bio::EnsEMBL::Utils::ConfigRegistry->add_alias(
-      -species => 'multi'.$species_suffix,
-      -alias   => ['ontology'.$species_suffix] );
-
   }
   elsif ($verbose) {
     print("No ontology database found\n");
   }
 
+  # Production
+
+  if ( $production_dba_ok and defined($production_db) ) {
+    # require Bio::EnsEMBL::Production::DBSQL::DBAdaptor;
+
+    my $dba =
+      Bio::EnsEMBL::Production::DBSQL::DBAdaptor->new(
+                                '-species' => 'multi' . $species_suffix,
+                                '-group'   => 'production',
+                                '-host'    => $host,
+                                '-port'    => $port,
+                                '-user'    => $user,
+                                '-pass'    => $pass,
+                                '-dbname'  => $production_db, );
+
+    if ($verbose) {
+      printf( "%s loaded\n", $production_db );
+    }
+  }
+  elsif ($verbose) {
+    print("No production database or adaptor found\n");
+  }
+
+  # Stable IDs
 
   if ( defined($stable_ids_db) && $stable_ids_version != 0 ) {
 
@@ -2159,11 +2187,29 @@ sub load_registry_from_db {
       printf( "%s loaded\n", $stable_ids_db );
     }      
 
-    Bio::EnsEMBL::Utils::ConfigRegistry->add_alias(
-      -species => 'multi'.$species_suffix,
-      -alias   => ['stable_ids'.$species_suffix] );
-
   }
+
+
+  Bio::EnsEMBL::Utils::ConfigRegistry->add_alias(
+    -species => 'multi'.$species_suffix,
+    -alias   => ['compara'.$species_suffix] );
+
+  Bio::EnsEMBL::Utils::ConfigRegistry->add_alias(
+    -species => 'multi'.$species_suffix,
+    -alias   => ['ontology'.$species_suffix] );
+
+  $production_dba_ok and 
+    Bio::EnsEMBL::Utils::ConfigRegistry->add_alias(
+						   -species => 'multi'.$species_suffix,
+						   -alias   => ['production'.$species_suffix] );
+
+  Bio::EnsEMBL::Utils::ConfigRegistry->add_alias(
+    -species => 'multi'.$species_suffix,
+    -alias   => ['stable_ids'.$species_suffix] );
+
+  Bio::EnsEMBL::Utils::ConfigRegistry->add_alias(
+    -species => 'Ancestral sequences'.$species_suffix,
+    -alias   => ['ancestral_sequences'.$species_suffix] );
 
   # Register aliases as found in adaptor meta tables.
 
