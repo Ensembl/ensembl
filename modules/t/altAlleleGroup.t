@@ -83,7 +83,8 @@ my $multi = Bio::EnsEMBL::Test::MultiTestDB->new();
 my $db = $multi->get_DBAdaptor( 'core' );
 ok($db, 'DB was retrieved');
 
-my $aaga = $db->get_adaptor('AltAlleleGroup');
+my $aaga = $db->get_AltAlleleGroupAdaptor;
+my $ga = $db->get_GeneAdaptor();
 # Test data consists of a single group, of type AUTOMATIC, with a reference Allele and 3 others
 
 my $group_list = $aaga->fetch_all;
@@ -95,6 +96,10 @@ is_deeply ($aag->get_all_Gene_ids('no ref'),[18257,18258,18259],"Test effect of 
 
 my $gene = $aag->get_representative_Gene;
 is($gene->stable_id, 'ENSG00000131044',"Ensure both correct instantiation of Gene and ID thereof");
+
+#Checking we can filter the members list by a gene object and an ID
+is_deeply($aag->get_all_Gene_ids(undef, [18259]), [18256, 18257,18258], 'Filtering out a Gene by ID');
+is_deeply($aag->get_all_Gene_ids(undef, [$ga->fetch_by_dbID(18259)]), [18256, 18257,18258], 'Filtering out a Gene by object');
 
 my $gene_list = $aag->get_all_Genes;
 $gene = $gene_list->[0];

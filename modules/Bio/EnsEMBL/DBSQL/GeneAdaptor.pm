@@ -941,6 +941,9 @@ sub fetch_all_by_GOTerm_accession {
 
   Arg [1]    : Bio::EnsEMBL::Gene $gene
                The gene to fetch alternative alleles for
+  Arg [2]    : Boolean (optional)
+               Ask the method to warn about any gene without an alt allele 
+               group. Defaults to false
   Example    : my @alt_genes = @{ $gene_adaptor->fetch_all_alt_alleles($gene) };
                foreach my $alt_gene (@alt_genes) {
                  print "Alternate allele: " . $alt_gene->stable_id() . "\n" ;
@@ -950,9 +953,10 @@ sub fetch_all_by_GOTerm_accession {
                on an alternative haplotype of the same region. There are not 
                currently very many of these. This method will return a 
                reference to an empty list if no alternative alleles are found.
-  Returntype : listref of Bio::EnsEMBL::Genes
+  Returntype : ArrayRef of Bio::EnsEMBL::Gene objects
   Exceptions : throw if incorrect arg provided
-               warning if gene arg does not have dbID
+               warning if gene arg does not have an entry in an alt allele and if
+               the warn flag is true
   Caller     : Gene::get_all_alt_alleles
   Status     : Stable
 
@@ -961,25 +965,30 @@ sub fetch_all_by_GOTerm_accession {
 sub fetch_all_alt_alleles {
   my $self = shift;
   my $gene = shift;
+  my $warn = shift;
 
   if (!ref($gene) || !$gene->isa('Bio::EnsEMBL::Gene')) {
-	throw('Bio::EnsEMBL::Gene argument is required');
+    throw('Bio::EnsEMBL::Gene argument is required');
   }
 
   my $gene_id = $gene->dbID();
 
   if (!$gene_id) {
-	warning('Cannot retrieve alternate alleles for gene without dbID');
-	return [];
+    warning('Cannot retrieve alternate alleles for gene without dbID');
+    return [];
   }
 
   my $aaga = $self->db->get_adaptor('AltAlleleGroup');
   my $aag = $aaga->fetch_by_gene_id($gene->dbID);
   unless ($aag) {
+    if ($warn) {
       warning("Supplied gene has no alternative alleles"); 
-      return [];
+    }
+    return [];
   }
-  return $aag->get_all_Genes('No starting Gene');
+  # query for all alternative genes. do not filter 
+  # the representative but do filter this gene out
+  return $aag->get_all_Genes(undef, [$gene]);
 } ## end sub fetch_all_alt_alleles
 
 =head2 is_ref
@@ -1013,7 +1022,10 @@ sub is_ref {
 
   Arg [1]    : reference to list of Bio::EnsEMBL::Genes $genes
   Example    : $gene_adaptor->store_alt_alleles([$gene1, $gene2, $gene3]);
-  Description: This method creates a group of alternative alleles (i.e. locus)
+  Description: DEPRECATED. Switch to using AltAlleleGroup and the 
+               AltAlleleGroupAdaptor which supports more complex queries
+
+               This method creates a group of alternative alleles (i.e. locus)
                from a set of genes. The genes should be genes from alternate
                haplotypes which are similar. The genes must already be stored
                in this database. WARNING - now that more fine-grained support
@@ -1031,6 +1043,8 @@ sub is_ref {
 sub store_alt_alleles {
   my $self  = shift;
   my $genes = shift;
+
+  warning "Unsupported. Switch to using AltAlleleGroupAdaptor::store() and AltAlleleGroups";
 
   if (!ref($genes) eq 'ARRAY') {
 	throw('List reference of Bio::EnsEMBL::Gene argument expected.');

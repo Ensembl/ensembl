@@ -105,7 +105,7 @@ use warnings;
 
 use Bio::EnsEMBL::Utils::Argument qw(rearrange);
 use Bio::EnsEMBL::Utils::Exception qw(warning throw);
-use Bio::EnsEMBL::Utils::Scalar qw(check_ref assert_integer);
+use Bio::EnsEMBL::Utils::Scalar qw(check_ref assert_integer assert_ref);
 
 use base qw/Bio::EnsEMBL::Storable/;
 
@@ -404,23 +404,34 @@ sub unset_rep_Gene_id {
 =head2 get_all_Gene_ids
 
   Arg[1]      : Boolean - Do not include representative gene in list of ids.
+  Arg[2]      : ArrayRef - Can contain dbIDs or Gene objects to exclude from the returned list
   Description : fetches all the Gene dbIDs within the allele group. It can also
                 be used to list those ids that are not the representative Gene.
-                
-  Returntype  : listref of gene dbIDs
+  Returntype  : ArrayRef of gene dbIDs
 
 =cut
 
 sub get_all_Gene_ids {
     my $self = shift;
     my $all_but_rep = shift;
+    my $excluded_genes = shift;
     my $list = $self->{'MEMBERS'};
+
+    my %gene_exclusions;
+    if($excluded_genes) {
+      assert_ref($excluded_genes, 'ARRAY', 'excluded genes');
+      foreach my $gene (@{$excluded_genes}) {
+        my $gene_id = (ref($gene)) ? $gene->dbID() : $gene;
+        $gene_exclusions{$gene_id} = $gene_id;
+      }
+    }
     
     my @gene_ids;
     
     foreach my $allele (@$list) {
         my ($gene_id,$type) = @$allele;
         if ($all_but_rep && $type->{IS_REPRESENTATIVE}) {next;} 
+        if(exists $gene_exclusions{$gene_id}) { next; }
         push @gene_ids,$gene_id;
     }
     return [sort {$a <=> $b} @gene_ids];
@@ -445,6 +456,7 @@ sub get_representative_Gene {
 =head2 get_all_Genes
 
   Arg[1]      : Boolean - Do not include representative gene in list of ids.
+  Arg[2]      : ArrayRef - Can contain dbIDs or Gene objects to exclude from the returned list
   Description : Fetches all the Gene objects within the allele group. It can also
                 be used to list those Genes that are not the representative Gene.
   Returntype  : ArrayRef of Bio::EnsEMBL::Gene objects
@@ -453,8 +465,8 @@ sub get_representative_Gene {
 
 
 sub get_all_Genes {
-  my ($self, $all_but_rep) = @_;
-  my $gene_ids = $self->get_all_Gene_ids($all_but_rep);
+  my ($self, $all_but_rep, $excluded_genes) = @_;
+  my $gene_ids = $self->get_all_Gene_ids($all_but_rep, $excluded_genes);
   return $self->adaptor()->db()->get_GeneAdaptor()->fetch_all_by_dbID_list($gene_ids);
 }
 
@@ -462,6 +474,7 @@ sub get_all_Genes {
 =head2 get_all_Genes_types
 
   Arg[1]      : Boolean - Do not include representative gene in list of ids.
+  Arg[2]      : ArrayRef - Can contain dbIDs or Gene objects to exclude from the returned list
   Description : Fetches all the Gene objects within the allele group and their
                 associcated attributes. It can also be used to list those 
                 Genes that are not the representative Gene.
@@ -470,8 +483,8 @@ sub get_all_Genes {
 =cut
 
 sub get_all_Genes_types {
-  my ($self, $all_but_rep) = @_;
-  my $gene_ids = $self->get_all_Gene_ids($all_but_rep);
+  my ($self, $all_but_rep, $excluded_genes) = @_;
+  my $gene_ids = $self->get_all_Gene_ids($all_but_rep, $excluded_genes);
   my $ga = $self->adaptor()->db()->get_GeneAdaptor();
   my @output;
   my $members = $self->{MEMBERS};

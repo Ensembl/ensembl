@@ -512,17 +512,12 @@ $gene = $ga->fetch_by_dbID(18256);
 my $alt_genes = $gene->get_all_alt_alleles();
 
 ok($gene->is_reference == 1);
-#diag Dumper($alt_genes);
-ok(scalar(@$alt_genes) == 3);
-
 # expect the following alleles
-my %gene_ids = (18257 => 1, 18258 => 1, 18259 => 1);
-my $ok = 1;
-for my $gene (@$alt_genes) {
-  $ok = $ok && $gene_ids{$gene->dbID()};
-  $ok = $ok && !($gene->is_reference);
-}
-ok($ok, "Retrieved alt alleles have correct dbIDs");
+is_deeply(
+  [sort {$a <=> $b} map {$_->dbID()} @{$alt_genes}], 
+  [18257,18258,18259], 
+  'Checking retrieved alt allele IDs are expected'
+) or diag explain $alt_genes;
 
 #
 # test storing a new allele group
@@ -544,23 +539,12 @@ push(@alt_genes, $ga->fetch_by_dbID(18270));
 push(@alt_genes, $ga->fetch_by_dbID(18271));
 push(@alt_genes, $ga->fetch_by_dbID(18272));
 
+note 'Do not use GeneAdaptor::store_alt_alleles() for storing alt alleles. Ensuring we still warn';
 warns_like {
   $ga->store_alt_alleles(\@alt_genes);
-} qr/.+alternative.+reference\ssequence.+Ignoring/, 'Checking we are still warning about multiple alt_alleles on refs';
-$gene      = $ga->fetch_by_dbID(18270);
-
-note 'Do not use GeneAdaptor::store_alt_alleles() for storing alt alleles. Ensuring we still warn';
-warns_like { 
-  $alt_genes = $gene->get_all_alt_alleles();
-} qr/Supplied gene has no alternative alleles/, 'Passing multiple genes to GeneAdaptor::store_alt_alleles() results in no REF being stored';
-
-%gene_ids  = (18271 => 1, 18272 => 1);
-
-$ok = 1;
-for my $gene (@$alt_genes) {
-  $ok = $ok && $gene_ids{$gene->dbID()};
-}
-ok($ok);
+} qr/Unsupported.+alternative.+reference\ssequence.+Ignoring/is, 'Checking we are still warning about multiple alt_alleles on refs';
+$gene = $ga->fetch_by_dbID(18270);
+is(scalar(@{$gene->get_all_alt_alleles()}), 0, 'Checking we have no alleles retrieved because we had too many representatives (too many ref genes)');
 
 #
 # Gene remove test
