@@ -226,7 +226,7 @@ my $get_value = sub {
   # First try retries until the very last attempt
   {
     my $counter = 0;
-    $helper->transaction( -RETRY => 3, -SLEEP => 1, -CALLBACK => sub {
+    $helper->transaction( -RETRY => 3, -PAUSE => 0.1, -CALLBACK => sub {
       #Die for the first 3 times (so we will succeed on the final attempt)
       $counter++;
       if($counter != 4) {
@@ -243,7 +243,7 @@ my $get_value = sub {
   {
     my $counter = 0;
     throws_ok {
-      $helper->transaction( -RETRY => 2, -CALLBACK => sub {
+      $helper->transaction( -RETRY => 2, -PAUSE => 0.1, -CALLBACK => sub {
         $counter++;
         die 'Throwing an error 2';
       })
@@ -257,7 +257,7 @@ my $get_value = sub {
   {
     my $counter = 0;
     throws_ok {
-      $helper->transaction( -RETRY => 1, -CALLBACK => sub {
+      $helper->transaction( -RETRY => 1, -PAUSE => 0.1, -CALLBACK => sub {
         $helper->transaction( -RETRY => 10, -CALLBACK => sub {
           $counter++;
           die 'Throwing an error 3';
@@ -273,7 +273,8 @@ my $get_value = sub {
     my $counter = 0;
     throws_ok {
       $helper->transaction( 
-        -RETRY => 4, 
+        -RETRY => 4,
+        -PAUSE => 0.1,
         -CALLBACK => sub {
           $counter++;
           die 'fake deadlock' if $counter <= 2;
@@ -313,7 +314,7 @@ my $get_value = sub {
   #Sixth says you cannot repeat the transaction if it worked
   {
     my $counter = 0;
-    $helper->transaction( -RETRY => 5, -CALLBACK => sub {
+    $helper->transaction( -RETRY => 5, -PAUSE => 0.1, -CALLBACK => sub {
       $helper->execute_single_result('select 1');
       $counter++;
     });
@@ -330,17 +331,27 @@ my $get_value = sub {
 #Doing hashref checks
 {
   my $sql = 'select meta_key, meta_value from meta where meta_key =?';
-  my $callback = sub {
-    my ($row) = @_;
-    return { name => $row->{meta_value} };
-  };
-  my $array_of_hashes = $helper->execute(
-    -SQL => $sql,
-    -CALLBACK => $callback,
-    -USE_HASHREFS => 1,
-    -PARAMS => ['species.common_name']
-  );
-  is_deeply($array_of_hashes, [ { name => 'Human' } ], 'HashRefs in a callback works');
+  my $params = ['species.common_name'];
+  {
+    my $array_of_hashes = $helper->execute(
+      -SQL => $sql,
+      -CALLBACK => sub {
+        my ($row) = @_;
+        return { name => $row->{meta_value} };
+      },
+      -USE_HASHREFS => 1,
+      -PARAMS => $params
+    );
+    is_deeply($array_of_hashes, [ { name => 'Human' } ], 'HashRefs in a callback works');
+  }
+  {
+    my $array_of_hashes = $helper->execute(
+      -SQL => $sql,
+      -USE_HASHREFS => 1,
+      -PARAMS => $params
+    );
+    is_deeply($array_of_hashes, [ { meta_key => $params->[0], meta_value => 'Human' } ], 'HashRefs using a default callback works'); 
+  }
 }
 
 $dba->dbc()->do('alter table meta engine=MyISAM');

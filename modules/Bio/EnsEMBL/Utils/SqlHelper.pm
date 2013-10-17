@@ -84,6 +84,7 @@ use Bio::EnsEMBL::Utils::Exception qw(throw);
 use Bio::EnsEMBL::Utils::Iterator;
 use English qw( -no_match_vars ); #Used for $PROCESS_ID
 use Scalar::Util qw(weaken); #Used to not hold a strong ref to DBConnection
+use Time::HiRes;
 
 =pod
 
@@ -264,8 +265,12 @@ sub execute {
 	
 	#If no callback then we execute using a default one which returns a 2D array
 	if(!defined $callback) {
-    throw('Cannot use fetchrow_hashref() with default mappers. Turn off this option') if $use_hashrefs;
-    $callback = $self->_mappers()->{array_ref};
+    if($use_hashrefs) {
+      $callback = $self->_mappers()->{hash_ref};
+    }
+    else {
+      $callback = $self->_mappers()->{array_ref};
+    }    
 	}
 	
 	return $self->_execute( $sql, $callback, $has_return, $use_hashrefs, $params, $prepare_params, $iterator );
@@ -523,7 +528,8 @@ sub execute_single_result {
   Arg [RETRY]         : integer the number of retries to attempt with this 
                         transactional block. Defaults to 0. 
   Arg [PAUSE]         : integer the time in seconds to pause in-between retries.
-                        Defaults to 1.
+                        Defaults to 1. Fractions are allowed as use delegate to
+                        Time::HiRes' sleep function
   Arg [CONDITION]     : CodeRef allows you to inspect the exception raised
                         and should your callback return true then the 
                         retry will be attempted. If not given then all 
@@ -658,7 +664,7 @@ sub transaction {
       if($iteration != $retry) {
         if($condition->($error)) {
           warn("Encountered error on attempt ${iteration} of ${retry} and have issued a rollback. Will retry after sleeping for $pause second(s): $error");
-          sleep $pause;
+          Time::HiRes::sleep $pause;
         }
         else {
           last; #break early if condition of error was not matched
@@ -888,7 +894,11 @@ my $default_mappers = {
   },
   array_ref => sub {
     my $row = shift @_;
-   return [@{$row}];
+    return [@{$row}]; #copy of array done because DBI's array is read only
+  },
+  hash_ref => sub {
+    my $row = shift @_;
+    return {%{$row}}; #applying same logic as above
   }
 }; 
 
