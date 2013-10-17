@@ -969,7 +969,6 @@ sub fetch_all_alt_alleles {
   my $gene_id = $gene->dbID();
 
   if (!$gene_id) {
-	warning('Cannot retrieve alternate alleles for gene without dbID');
 	return [];
   }
 
