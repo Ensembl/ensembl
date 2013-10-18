@@ -199,7 +199,8 @@ $xref = Bio::EnsEMBL::DBEntry->new
    );
 
 use Config;
-my $stored_xref_id = 1000002;
+my $stored_xref_id = 
+  $db->dbc->sql_helper()->execute_single_result(-SQL => 'select IFNULL(max(xref_id), 0) from xref', -NO_ERROR => 1);
 if($Config{useithreads}) {
   note 'Using threaded tests';
   require threads;
