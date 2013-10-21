@@ -58,6 +58,16 @@ package Bio::EnsEMBL::Utils::Argument;
 use strict;
 use warnings;
 
+BEGIN {
+
+  if (eval { require Bio::EnsEMBL::XS; 1 }) {
+    *rearrange = \&Bio::EnsEMBL::XS::Utils::Argument::rearrange;
+  } else {
+    *rearrange = \&rearrange_pp;
+  } 
+   
+}
+
 use Exporter;
 
 use vars qw(@ISA @EXPORT);
@@ -67,7 +77,7 @@ use vars qw(@ISA @EXPORT);
 
 
 
-=head2 rearrange
+=head2 rearrange_pp
 
  Usage     : rearrange( array_ref, list_of_arguments)
  Purpose   : Rearranges named parameters to requested order.
@@ -126,7 +136,7 @@ use vars qw(@ISA @EXPORT);
 =cut
 
 
-sub rearrange {
+sub rearrange_pp {
   my $order = shift;
 
   if ( $order eq "Bio::EnsEMBL::Utils::Argument" ) {
