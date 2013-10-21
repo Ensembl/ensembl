@@ -20,9 +20,11 @@ sub run {
 
   my $file = @{$files}[0];
 
-  my $file_io = $self->get_filehandle($file)
-      || ( print( "ERROR: Cannot open $file\n" ) && return 1 );
-
+  my $file_io = $self->get_filehandle($file);
+  unless ($file_io) {
+      print( "ERROR: Cannot open $file\n" ); 
+      return 1 ;
+  }
 
   my %interpros = %{$self->get_valid_codes("interpro",$species_id)};
 
