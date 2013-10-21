@@ -975,7 +975,6 @@ sub fetch_all_alt_alleles {
   my $aaga = $self->db->get_adaptor('AltAlleleGroup');
   my $aag = $aaga->fetch_Group_by_Gene_dbID($gene->dbID);
   unless ($aag) {
-      warning("Supplied gene has no alternative alleles"); 
       return [];
   }
   return $aag->get_all_Genes('No starting Gene');
