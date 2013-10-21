@@ -1377,8 +1377,8 @@ sub overlaps {
                The other feature you want to check overlap with this feature
                for.
   Description: This method does a range comparison of this feature's start and
-               end and compares it with another feature's and end. It will 
-               return true if these ranges overlap and the features are 
+               end and compares it with another feature's start and end. It 
+               will return true if these ranges overlap and the features are 
                on the same seq_region.
 
                This method will not attempt to resolve starts and ends with 
