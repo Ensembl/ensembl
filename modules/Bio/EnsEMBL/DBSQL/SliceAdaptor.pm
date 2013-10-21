@@ -516,13 +516,12 @@ sub fetch_by_toplevel_location {
                 If we are unsuccessful at retriving a location retry taking any 
                 possible chr prefix into account e.g. chrX and X are treated as
                 equivalents
-  Example     : my $slice = $sa->fetch_by_toplevel_location('X:1-10000')
-                my $slice = $sa->fetch_by_toplevel_location('X:1-10000:-1')
+  Example     : my $slice = $sa->fetch_by_location('X:1-10000','chromosome')
+                my $slice = $sa->fetch_by_location('X:1-10000:-1','toplevel')
   Description : Converts an Ensembl location/region into the sequence region
                 name, start and end and passes them onto C<fetch_by_region()>. 
-                The code assumes that the required slice is on the top level
-                coordinate system. The code assumes that location formatting
-                is not perfect and will perform basic cleanup before parsing.
+                The code assumes that location formatting is not perfect and 
+                will perform basic cleanup before parsing.
   Returntype  : Bio::EnsEMBL::Slice
   Exceptions  : If $location or coordinate system is false otherwise 
                 see C<fetch_by_region()>
