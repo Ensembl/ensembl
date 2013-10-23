@@ -127,6 +127,7 @@ sub parse_common_options {
 	       'logappend|log_append',
 	       'verbose|v',
 	       'interactive|i=s',
+         'hideparamlist=s',
 	       'dry_run|dry|n',
 	       'help|h|?',
 	     );
@@ -277,6 +278,7 @@ sub get_common_params {
 	    logappend
 	    verbose
 	    interactive
+      hideparamlist
 	    dry_run
 	  );
 }
@@ -384,6 +386,7 @@ sub confirm_params {
   my $self = shift;
 
   # print parameter table
+  return 1 if($self->param('hideparamlist') and not $self->param('interactive'));
   print "Running script with these parameters:\n\n";
   print $self->list_all_params;
 
@@ -1506,17 +1509,18 @@ sub init_log {
   my $log = $self->log_filehandle(undef,$date);
 
   # print script name, date, user who is running it
-  my $hostname = `hostname`;
-  chomp $hostname;
-  my $script = "$hostname:$Bin/$Script";
-  my $user = `whoami`;
-  chomp $user;
-  $self->log("Script: $script\nDate: ".$self->date_and_time."\nUser: $user\n");
+  unless($self->param('hideparamlist')) {
+    my $hostname = `hostname`;
+    chomp $hostname;
+    my $script = "$hostname:$Bin/$Script";
+    my $user = `whoami`;
+    chomp $user;
+    $self->log("Script: $script\nDate: ".$self->date_and_time."\nUser: $user\n");
 
-  # print parameters the script is running with
-  $self->log("Parameters:\n\n");
-  $self->log($self->list_all_params);
-
+    # print parameters the script is running with
+    $self->log("Parameters:\n\n");
+    $self->log($self->list_all_params);
+  }
   # remember start time
   $self->{'_start_time'} = time;
 
