@@ -82,6 +82,10 @@ my $registry = "Bio::EnsEMBL::Registry";
                the database if not used properly.  If in doubt, do
                not use it or ask in the developer mailing list.
 
+  Arg [-ADD_ALIASES]: (optional) boolean
+                      Used to automatically load aliases for this 
+                      species into the Registry upon loading.
+
   Arg [..]   : Other args are passed to superclass
                Bio::EnsEMBL::DBSQL::DBConnection
 
@@ -125,10 +129,11 @@ sub new {
   my $self = bless {}, $class;
 
   my ( $is_multispecies, $species, $species_id, $group, $con, $dnadb,
-    $no_cache, $dbname )
+    $no_cache, $dbname, $add_aliases )
     = rearrange( [
       'MULTISPECIES_DB', 'SPECIES', 'SPECIES_ID', 'GROUP',
-      'DBCONN',          'DNADB',   'NO_CACHE',   'DBNAME'
+      'DBCONN',          'DNADB',   'NO_CACHE',   'DBNAME',
+      'ADD_ALIASES'
     ],
     @args
     );
@@ -154,6 +159,7 @@ sub new {
 
   if ( defined($dnadb) )    { $self->dnadb($dnadb) }
   if ( defined($no_cache) ) { $self->no_cache($no_cache) }
+  if ( defined($add_aliases) ) { $self->find_and_add_aliases($add_aliases) }
 
   return $self;
 } ## end sub new
@@ -179,6 +185,25 @@ sub clear_caches {
       $adaptor->clear_cache();
     }
   }
+  return;
+}
+
+=head2 find_and_add_aliases
+
+  Example     : $dba->find_and_add_aliases();
+  Description : When executed we delegate to the find_and_add_aliases
+                method in Bio::EnsEMBL::Registry which scans the 
+                database's MetaContainer for species.alias entries 
+                indicating alternative names for this species. This
+                is best executed on a core DBAdaptor instance.
+  Returntype  : None
+  Exceptions  : None
+
+=cut
+
+sub find_and_add_aliases {
+  my ($self) = @_;
+  $registry->find_and_add_aliases(-ADAPTOR => $self);
   return;
 }
 
