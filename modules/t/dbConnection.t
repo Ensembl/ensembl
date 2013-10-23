@@ -25,6 +25,7 @@ my $db    = $multi->get_DBAdaptor('core');
 # 2 new
 #
 my $dbc;
+my %dbc_args;
 {
   my $db_name = $db->dbc->dbname;
   my $port    = $db->dbc->port;
@@ -32,13 +33,15 @@ my $dbc;
   my $pass    = $db->dbc->password;
   my $host    = $db->dbc->host;
   my $driver  = $db->dbc->driver;
-
-  $dbc = Bio::EnsEMBL::DBSQL::DBConnection->new(-dbname => $db_name,
-						-user   => $user,
-						-pass   => $pass,
-						-port   => $port,
-						-host   => $host,
-						-driver => $driver);
+  %dbc_args = (
+    -DBNAME => $db_name,
+    -USER   => $user,
+    -PASS   => $pass,
+    -PORT   => $port,
+    -HOST   => $host,
+    -DRIVER => $driver
+  );
+  $dbc = Bio::EnsEMBL::DBSQL::DBConnection->new(%dbc_args);
 }
 
 ok($dbc->isa('Bio::EnsEMBL::DBSQL::DBConnection'));
@@ -73,6 +76,8 @@ ok(test_getter_setter($dbc, 'password', 'ensembl_password'));
 #
 ok(test_getter_setter($dbc, 'db_handle', $dbc->db_handle));
 
+# Check the to_hash() works
+is_deeply($dbc->to_hash(), \%dbc_args, 'Checking to_hash() can roundtrip a DBConnection');
 
 {
   #
