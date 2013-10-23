@@ -449,10 +449,11 @@ sub fetch_all_by_domain {
   Arg [3]    : (optional) boolean $load_transcripts
                if true, transcripts will be loaded immediately
                rather than lazy loaded later.
-  Arg [4]    : Name of the external database
+  Arg [4]    : String
+               Name of the external database to fetch the Genes by
   Example    : @genes = @{
                  $ga->fetch_all_by_Slice_and_external_dbname_link(
-                                          $slice, undef, undef, "HUGO" ) };
+                                          $slice, undef, undef, "HGNC" ) };
   Description: Overrides superclass method to optionally load
                transcripts immediately rather than lazy-loading them
                later.  This is more efficient when there are a lot
@@ -470,38 +471,21 @@ sub fetch_all_by_Slice_and_external_dbname_link {
   my ($self, $slice, $logic_name, $load_transcripts, $db_name) = @_;
 
   # Get the external_db_id(s) from the name.
-  my $sth = $self->prepare("SELECT external_db_id FROM external_db WHERE db_name = ?");
+  my $dbentry_adaptor = $self->get_DBEntryAdaptor();
+  my $external_db_ids = $dbentry_adaptor->get_external_db_ids($db_name, undef, 'ignore release');
 
-  $sth->bind_param(1, $db_name, SQL_VARCHAR);
-  $sth->execute();
-
-  my $external_db_id;
-  $sth->bind_columns(\$external_db_id);
-
-  my @external_db_ids;
-  while ($sth->fetch()) {
-	push(@external_db_ids, $external_db_id);
-  }
-
-  if (scalar(@external_db_ids) == 0) {
-	warn sprintf("Could not find external database " . "'%s' in the external_db table\n" . "Available are:\n", $db_name);
-
-	$sth = $self->prepare("SELECT DISTINCT db_name FROM external_db");
-
-	$sth->execute();
-	$sth->bind_columns(\$external_db_id);
-
-	while ($sth->fetch()) {
-	  warn "\t$external_db_id\n";
-	}
-	return [];
+  if (scalar(@{$external_db_ids}) == 0) {
+    my $external_db_names = $dbentry_adaptor->get_distinct_external_dbs();
+    my $available = join("\n", map { "\t${_}"} @{$external_db_names});
+    warning sprintf("Could not find external database " . "'%s' in the external_db table\n" . "Available are:\n%s", $db_name, $available);
+    return [];
   }
 
   # Get the gene_ids for those with links.
   my $dbe_adaptor = $self->db()->get_DBEntryAdaptor();
 
   my %linked_genes;
-  foreach my $local_external_db_id (@external_db_ids) {
+  foreach my $local_external_db_id (@{$external_db_ids}) {
     my @linked_genes = $dbe_adaptor->list_gene_ids_by_external_db_id($local_external_db_id);
     foreach my $gene_id (@linked_genes) {
       $linked_genes{$gene_id} = 1;

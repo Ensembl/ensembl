@@ -826,10 +826,19 @@ sub _store_object_xref_mapping {
 
 =head2 get_external_db_id
 
-  Arg [1]    : External DB name
-  Arg [2]    : External DB release
-  Arg [3]    : Ignore version flag
-  Description: Looks for the internal identifier of an external DB
+  Arg [1]    : String
+               The external DB name to query by. Supports LIKE statements
+  Arg [2]    : String (optional) 
+               External DB release to use. If not specified then we 
+               will search for NULL db_release entries
+  Arg [3]    : Boolean (optional)
+               If true we will never look at the db_release value 
+               when querying for an external db id
+  Description: Looks for the internal identifier of an external DB. You can
+               search using direct equality or using like statements specify. We
+               only return one value from this method.
+
+               If you want more than one entry use get_external_db_ids().
   Exceptions : None
   Returntype : Int 
 
@@ -841,8 +850,21 @@ sub get_external_db_id {
   return shift @$db_ids;
 }
 
-=head2 get_external_db_ids_like
+=head2 get_external_db_ids
 
+  Arg [1]    : String
+               The external DB name to query by. Supports LIKE statements
+  Arg [2]    : String (optional) 
+               External DB release to use. If not specified then we 
+               will search for NULL db_release entries
+  Arg [3]    : Boolean (optional)
+               If true we will never look at the db_release value 
+               when querying for an external db id
+  Description: Looks for the internal identifier of an external DB. You can
+               search using direct equality or using like statements specify. We
+               only return one value from this method. Returns more than one value
+  Exceptions : None
+  Returntype : ArrayRef of Int 
 
 =cut
 
@@ -871,6 +893,21 @@ sub get_external_db_ids {
     return \@db_ids;
 }
 
+=head2 get_distinct_external_dbs
+
+  Description: Queries the external_db table for all unique 
+               DB names
+  Exceptions : None
+  Returntype : ArrayRef of String
+
+=cut
+
+sub get_distinct_external_dbs {
+  my ($self) = @_;
+  my $sql = 'SELECT DISTINCT db_name FROM external_db';
+  my $names =  $self->dbc->sql_helper->execute_simple(-SQL => $sql);
+  return [ sort @{$names} ];
+}
 
 =head2 _check_external_db 
 
