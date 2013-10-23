@@ -1121,8 +1121,8 @@ sub to_hash {
     -USER => $self->username(),
     -DRIVER => $self->driver(),
   };
-  $hash->{'DBNAME'} = $self->dbname() if defined $self->dbname();
-  $hash->{'PASS'} = $self->password() if defined $self->password();
+  $hash->{'-DBNAME'} = $self->dbname() if defined $self->dbname();
+  $hash->{'-PASS'} = $self->password() if defined $self->password();
   return $hash;
 }
 
