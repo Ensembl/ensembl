@@ -274,6 +274,8 @@ INSERT INTO meta (species_id, meta_key, meta_value)
  VALUES (NULL, 'patch', 'patch_73_74_f.sql|remove_pair_dna_align');
 INSERT INTO meta (species_id, meta_key, meta_value) 
   VALUES (NULL, 'patch', 'patch_73_74_g.sql|add_transcript_idx_tise');
+INSERT INTO meta (species_id, meta_key, meta_value) 
+  VALUES (NULL, 'patch', 'patch_73_74_h.sql|alt_allele_unique_gene_idx');
 
 /**
 @table meta_coord
@@ -405,6 +407,7 @@ CREATE TABLE alt_allele (
         gene_id INT UNSIGNED NOT NULL,
 
         PRIMARY KEY (alt_allele_id),
+        UNIQUE KEY gene_idx (gene_id),
         KEY (gene_id,alt_allele_group_id)
 
 ) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
