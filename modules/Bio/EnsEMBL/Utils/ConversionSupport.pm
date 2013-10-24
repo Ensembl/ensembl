@@ -128,6 +128,7 @@ sub parse_common_options {
 	       'verbose|v',
 	       'interactive|i=s',
          'hideparamlist=s',
+         'joblog=s',
 	       'dry_run|dry|n',
 	       'help|h|?',
 	     );
@@ -279,6 +280,7 @@ sub get_common_params {
 	    verbose
 	    interactive
       hideparamlist
+      joblog
 	    dry_run
 	  );
 }
@@ -1540,17 +1542,38 @@ sub init_log {
 
 sub finish_log {
   my $self = shift;
-  $self->log("\nAll done. ".$self->warnings." warnings. ");
-  if ($self->{'_start_time'}) {
-    $self->log("Runtime ");
-    my $diff = time - $self->{'_start_time'};
-    my $sec = $diff % 60;
-    $diff = ($diff - $sec) / 60;
-    my $min = $diff % 60;
-    my $hours = ($diff - $min) / 60;
-    $self->log("${hours}h ${min}min ${sec}sec ");
+
+  unless($self->param('hideparamlist')) {
+    $self->log("\nAll done. ".$self->warnings." warnings. ");
+    if ($self->{'_start_time'}) {
+      $self->log("Runtime ");
+      my $diff = time - $self->{'_start_time'};
+      my $sec = $diff % 60;
+      $diff = ($diff - $sec) / 60;
+      my $min = $diff % 60;
+      my $hours = ($diff - $min) / 60;
+      $self->log("${hours}h ${min}min ${sec}sec ");
+    }
+    $self->log($self->date_and_mem."\n\n");
   }
-  $self->log($self->date_and_mem."\n\n");
+  if($self->param('joblog')) {
+    unless(open(JOB,'>',$self->param('joblog'))) {
+      $self->log_warning("Could not log job to '".$self->param('joblog').
+                         "': $!");
+      return 1;
+    }
+    my @keys;
+    push @keys,"RUNTIME",(time - $self->{'_start_time'});
+    my $mem = `ps -p $$ -o vsz |tail -1`;
+    chomp $mem;
+    push @keys,"MEMORY",$mem;
+    push @keys,"WARNINGS",$self->warnings;
+    while(@keys) {
+      my ($k,$v) = splice(@keys,0,2);
+      print JOB "$k: $v\n"; 
+    }
+    close JOB;
+  }
   return(1);
 }
 
