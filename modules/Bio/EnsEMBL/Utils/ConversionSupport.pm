@@ -1568,6 +1568,8 @@ sub finish_log {
     chomp $mem;
     push @keys,"MEMORY",$mem;
     push @keys,"WARNINGS",$self->warnings;
+    push @keys,"START",$self->{'_start_time'};
+    push @keys,"END",time;
     while(@keys) {
       my ($k,$v) = splice(@keys,0,2);
       print JOB "$k: $v\n"; 
