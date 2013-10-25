@@ -102,6 +102,19 @@ $Revision$
 use strict;
 use warnings;
 
+BEGIN {
+
+  if (eval { require Bio::EnsEMBL::XS; 1 }) {
+    *check_ref = \&Bio::EnsEMBL::XS::Utils::Scalar::check_ref;
+    *assert_ref = \&Bio::EnsEMBL::XS::Utils::Scalar::assert_ref;
+  } else {
+    *check_ref = \&check_ref_pp;
+    *assert_ref = \&assert_ref_pp;
+  } 
+   
+}
+
+
 use base qw(Exporter);
 
 our %EXPORT_TAGS;
@@ -126,7 +139,7 @@ use Scalar::Util qw(blessed looks_like_number openhandle);
 
 our $ASSERTIONS = 1;
 
-=head2 check_ref()
+=head2 check_ref_pp()
 
   Arg [1]     : The reference to check
   Arg [2]     : The type we expect
@@ -144,7 +157,7 @@ our $ASSERTIONS = 1;
 
 =cut
 
-sub check_ref {
+sub check_ref_pp {
 	my ($ref, $expected) = @_;
 	throw('No expected type given') if ! defined $expected;
 	if(defined $ref) {
@@ -159,7 +172,7 @@ sub check_ref {
 	return 0;
 }
 
-=head2 assert_ref()
+=head2 assert_ref_pp()
 
   Arg [1]     : The reference to check
   Arg [2]     : The type we expect
@@ -184,7 +197,7 @@ sub check_ref {
 
 =cut
 
-sub assert_ref {
+sub assert_ref_pp {
   my ($ref, $expected, $attribute_name) = @_;
   return 1 unless $ASSERTIONS;
   $attribute_name ||= '-Unknown-';
