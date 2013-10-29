@@ -102,14 +102,24 @@ $Revision$
 use strict;
 use warnings;
 
+#
+# Interface with some of the module function XS reimplementation
+# 
+# If Bio::EnsEMBL::XS is installed, assign the function glob to
+# the XS counterpart, otherwise assign to the original function
+#
 BEGIN {
 
   if (eval { require Bio::EnsEMBL::XS; 1 }) {
     *check_ref = \&Bio::EnsEMBL::XS::Utils::Scalar::check_ref;
     *assert_ref = \&Bio::EnsEMBL::XS::Utils::Scalar::assert_ref;
+    # *assert_numeric = \&Bio::EnsEMBL::XS::Utils::Scalar::assert_numeric;
+    # *assert_integer = \&Bio::EnsEMBL::XS::Utils::Scalar::assert_integer;
   } else {
     *check_ref = \&check_ref_pp;
     *assert_ref = \&assert_ref_pp;
+    # *assert_numeric = \&assert_numeric_pp;
+    # *assert_integer = \&assert_integer_pp;
   } 
    
 }
@@ -481,7 +491,7 @@ sub assert_ref_can {
   return 1;
 }
 
-=head2 assert_numeric
+=head2 assert_numeric_pp
 
   Arg [1]     : The Scalar to check
   Arg [2]     : The attribute name you are asserting; not required but allows
@@ -501,7 +511,7 @@ sub assert_ref_can {
 
 =cut
 
-sub assert_numeric {
+sub assert_numeric_pp {
   my ($integer, $attribute_name) = @_;
   return 1 unless $ASSERTIONS;
   $attribute_name ||= '-Unknown-';
@@ -513,7 +523,7 @@ sub assert_numeric {
   return 1;
 }
 
-=head2 assert_integer
+=head2 assert_integer_pp
 
   Arg [1]     : The Scalar to check
   Arg [2]     : The attribute name you are asserting; not required but allows
@@ -534,11 +544,11 @@ sub assert_numeric {
 
 =cut
 
-sub assert_integer {
+sub assert_integer_pp {
   my ($integer, $attribute_name) = @_;
   return 1 unless $ASSERTIONS;
   $attribute_name ||= '-Unknown-';
-  assert_numeric($integer, $attribute_name);
+  assert_numeric_pp($integer, $attribute_name);
   if($integer != int($integer)) {
     throw "Attribute $attribute_name was a number but not an Integer";
   }
@@ -569,7 +579,7 @@ sub assert_boolean {
   my ($boolean, $attribute_name) = @_;
   return 1 unless $ASSERTIONS;
   $attribute_name ||= '-Unknown-';
-  assert_numeric($boolean, $attribute_name);
+  assert_numeric_pp($boolean, $attribute_name);
   if($boolean != 0 && $boolean != 1) {
     throw "Attribute $attribute_name was an invalid boolean. Expected: 1 or 0. Got: $boolean";
   }
@@ -600,7 +610,7 @@ sub assert_strand {
   my ($strand, $attribute_name) = @_;
   return 1 unless $ASSERTIONS;
   $attribute_name ||= '-Unknown-';
-  assert_numeric($strand, $attribute_name);
+  assert_numeric_pp($strand, $attribute_name);
   if($strand != -1 && $strand != 0 && $strand ne 1) {
     throw "Attribute $attribute_name was an invalid strand. Expected: 1, 0 or -1. Got: $strand";
   }
