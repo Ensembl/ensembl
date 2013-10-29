@@ -58,6 +58,12 @@ package Bio::EnsEMBL::Utils::Argument;
 use strict;
 use warnings;
 
+#
+# Interface with some of the module function XS reimplementation
+# 
+# If Bio::EnsEMBL::XS is installed, assign the function glob to
+# the XS counterpart, otherwise assign to the original function
+#
 BEGIN {
 
   if (eval { require Bio::EnsEMBL::XS; 1 }) {
