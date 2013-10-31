@@ -98,8 +98,8 @@ my $gene = $aag->get_representative_Gene;
 is($gene->stable_id, 'ENSG00000131044',"Ensure both correct instantiation of Gene and ID thereof");
 
 #Checking we can filter the members list by a gene object and an ID
-is_deeply($aag->get_all_Gene_ids(undef, [18259]), [18256, 18257,18258,18259], 'Filtering out a Gene by ID');
-is_deeply($aag->get_all_Gene_ids(undef, [$ga->fetch_by_dbID(18259)]), [18256, 18257,18258,18259], 'Filtering out a Gene by object');
+is_deeply($aag->get_all_Gene_ids(undef, [18259]), [18256, 18257,18258], 'Filtering out a Gene by ID');
+is_deeply($aag->get_all_Gene_ids(undef, [$ga->fetch_by_dbID(18259)]), [18256, 18257,18258], 'Filtering out a Gene by object');
 
 my $gene_list = $aag->get_all_Genes;
 $gene = $gene_list->[0];

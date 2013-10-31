@@ -118,10 +118,10 @@ BEGIN {
   } else {
     *check_ref = \&check_ref_pp;
     *assert_ref = \&assert_ref_pp;
-    # *assert_numeric = \&assert_numeric_pp;
-    # *assert_integer = \&assert_integer_pp;
   } 
-   
+
+  *assert_numeric = \&assert_numeric_pp;
+  *assert_integer = \&assert_integer_pp;
 }
 
 
