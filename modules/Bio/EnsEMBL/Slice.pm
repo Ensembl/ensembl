@@ -2096,12 +2096,16 @@ sub get_all_StructuralVariationFeatures_by_VariationSet {
 =head2 get_all_StructuralVariationFeatures_by_Study
 
     Arg [1]     : Bio::EnsEMBL:Variation::Study $study
-    Arg [2]     : (optional) string $dbtype
+    Arg [2]     : (optional) int $include_evidence
+    Arg [3]     : (optional) string $dbtype
                   The dbtype of structural variation to obtain (i.e. can be different from the "variation" type).
                   This assumes that the extra db has been added to the DBAdaptor under this name (using the
                   DBConnection::add_db_adaptor method).    
     Description : returns all structural variation features on this slice associated with a 
                   given study.
+                  If $include_evidence is set (i.e. $include_evidence=1), structural variation features from 
+                  both structural variation (SV) and their supporting structural variations (SSV) will be 
+                  returned. By default, it only returns features from structural variations (SV).
                   This function will only work correctly if the variation database has been
                   attached to the core database. 
     ReturnType  : listref of Bio::EnsEMBL::Variation::StructuralVariationFeature
@@ -2114,10 +2118,11 @@ sub get_all_StructuralVariationFeatures_by_VariationSet {
 sub get_all_StructuralVariationFeatures_by_Study {
   my $self  = shift;
   my $study = shift;
+  my $include_evidence = shift;
   my $dbtype = shift;
   
   if (my $svf_adaptor = $self->_get_StructuralVariationFeatureAdaptor($dbtype)) {
-    return $svf_adaptor->fetch_all_by_Slice_Study($self, $study);  
+    return $svf_adaptor->fetch_all_by_Slice_Study($self, $study, $include_evidence);  
   }
   return [];
 }
