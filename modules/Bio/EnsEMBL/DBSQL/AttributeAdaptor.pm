@@ -394,6 +394,24 @@ sub fetch_all {
   throw("Use of method fetch_all not supported for attributes");
 }
 
+sub fetch_by_code {
+  my ($self, $code) = @_;
+
+  my $sql = "SELECT attrib_type_id, code, name, description " .
+            "FROM attrib_type 
+             WHERE code = '$code' ";
+  my $sth = $self->prepare($sql);
+  $sth->execute();
+
+  my ($attrib_type_id, $name, $desc);
+  $sth->bind_columns(\$attrib_type_id, \$code, \$name, \$desc);
+
+  my @results = $sth->fetchrow_array;
+  $sth->finish();
+
+  return \@results;
+}
+
 
 
 sub fetch_all_by_Object {
