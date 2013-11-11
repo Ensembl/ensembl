@@ -806,6 +806,7 @@ sub fetch_by_name {
 sub fetch_by_seq_region_id {
   my ( $self, $seq_region_id, $start, $end, $strand, $check_prior_ids ) = @_;
 
+  my $csa = $self->db->get_CoordSystemAdaptor();
   my $arr = $self->{'sr_id_cache'}->{$seq_region_id};
   my ( $name, $length, $cs, $cs_id );
 
@@ -826,7 +827,6 @@ sub fetch_by_seq_region_id {
       # This could have been an old seq region id so see if we can
       # translate it into a more recent version.
       if($check_prior_ids) {
-        my $csa = $self->db()->get_CoordSystemAdaptor();
         if(exists $csa->{_external_seq_region_mapping}->{$seq_region_id}) {
           my $new_seq_region_id = $csa->{_external_seq_region_mapping}->{$seq_region_id};
           # No need to pass check prior ids flag because it's a 1 step relationship
@@ -2044,13 +2044,97 @@ sub store {
   return $seq_region_id;
 }
 
+=head2 fetch_assembly
+
+  Arg [1]    : Bio::EnsEMBL::Slice $asm_slice
+  Arg [2]    : Bio::EnsEMBL::Slice $cmp_slice
+  Example    : $asm = $slice_adaptor->fetch_assembly( $slice1, $slice2 );
+  Description: Fetches from the assembly table based on the 
+               coordinates of the two slices supplied. 
+               Returns a mapper object mapping the two slices
+               Do not call this method unless you really know what you are doing
+  Returntype : Bio::EnsEMBL::Mapper
+  Exceptions : throw if either slice has no coord system (cs).
+               throw if there is no mapping path between coord systems
+               throw if there are existing mappings between either slice
+               and the oposite cs
+  Caller     : Internal
+  Status     : Experimental
+
+=cut
+
+
+sub fetch_assembly {
+  my $self      = shift;
+  my $asm_slice = shift;
+  my $cmp_slice = shift;
+
+  if(!ref($asm_slice) || !($asm_slice->isa('Bio::EnsEMBL::Slice') or $asm_slice->isa('Bio::EnsEMBL::LRGSlice'))) {
+    throw('Assembled Slice argument is required');
+  }
+  if(!ref($cmp_slice) || !($cmp_slice->isa('Bio::EnsEMBL::Slice') or $cmp_slice->isa('Bio::EnsEMBL::LRGSlice')) ) {
+    throw('Assembled Slice argument is required');
+  }
+
+  my $asm_cs = $asm_slice->coord_system();
+  throw("Slice must have attached CoordSystem.") if(!$asm_cs);
+  my $cmp_cs = $cmp_slice->coord_system();
+  throw("Slice must have attached CoordSystem.") if(!$cmp_cs);
+
+  my @path =
+    @{ $asm_cs->adaptor()->get_mapping_path( $asm_cs, $cmp_cs ) };
+
+  if ( !@path ) {
+    throw("No mapping path defined between "
+        . $asm_cs->name() . " and "
+        . $cmp_cs->name() );
+  }
+
+  #
+  # Checks complete. Fetch the data
+  #
+  my $sth = $self->db->dbc->prepare
+      ("SELECT * FROM assembly " .
+       "WHERE   asm_seq_region_id = ? AND " .
+       "        cmp_seq_region_id = ? AND " .
+       "        asm_start = ? AND " .
+       "        asm_end   = ? AND " .
+       "        cmp_start = ? AND " .
+       "        cmp_end   = ? AND " .
+       "        ori       = ?" );
+
+  my $asm_seq_region_id = $self->get_seq_region_id( $asm_slice );
+  my $cmp_seq_region_id = $self->get_seq_region_id( $cmp_slice );
+  my $ori = $asm_slice->strand * $cmp_slice->strand;
+
+  $sth->bind_param(1,$asm_seq_region_id,SQL_INTEGER);
+  $sth->bind_param(2,$cmp_seq_region_id,SQL_INTEGER);
+  $sth->bind_param(3,$asm_slice->start,SQL_INTEGER);
+  $sth->bind_param(4,$asm_slice->end,SQL_INTEGER);
+  $sth->bind_param(5,$cmp_slice->start,SQL_INTEGER);
+  $sth->bind_param(6,$cmp_slice->end,SQL_INTEGER);
+  $sth->bind_param(7,$ori,SQL_INTEGER);
+
+  $sth->execute();
+
+  my $results = $sth->fetchrow_array();
+  $sth->finish();
+
+  my $mapper;
+  if ($results) {
+    $mapper = Bio::EnsEMBL::Mapper->new($asm_slice, $cmp_slice, $asm_cs, $cmp_cs);
+  }
+
+  return $mapper;
+
+}
 
 =head2 store_assembly
 
   Arg [1]    : Bio::EnsEMBL::Slice $asm_slice
   Arg [2]    : Bio::EnsEMBL::Slice $cmp_slice
   Example    : $asm = $slice_adaptor->store_assembly( $slice1, $slice2 );
-  Description: Creates an entry in the analysis table based on the 
+  Description: Creates an entry in the assembly table based on the 
                coordinates of the two slices supplied. Returns a string 
                representation of the assembly that gets created.
   Returntype : string
@@ -2087,10 +2171,10 @@ sub store_assembly{
   my $cmp_cs = $cmp_slice->coord_system();
   throw("Slice must have attached CoordSystem.") if(!$cmp_cs);
 
-  unless( $asm_cs->rank < $cmp_cs->rank ){
-    throw("Assembled Slice CoordSystem->rank must be lower than ".
-          "the component Slice Coord_system" );
-  }
+#  unless( $asm_cs->rank < $cmp_cs->rank ){
+#    throw("Assembled Slice CoordSystem->rank must be lower than ".
+#          "the component Slice Coord_system" );
+#  }
 
   my @path =
     @{ $asm_cs->adaptor()->get_mapping_path( $asm_cs, $cmp_cs ) };
