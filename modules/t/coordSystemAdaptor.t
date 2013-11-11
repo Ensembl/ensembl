@@ -173,16 +173,16 @@ $sth->finish();
 #
 
 my $new_paths = $csa->store_mapping_path( $cs, $cln_cs );
-ok( @{$new_paths} == 1 &&
-    $new_paths->[0] eq 'clone|newsystem:NCBI35' );
+is( @{$new_paths}, 1, "Stored one result");
+is( $new_paths->[0], 'newsystem:NCBI35|clone', "It maps newsystem to clone" );
 
 my $new_path = $csa->get_mapping_path( $cs, $cln_cs );
-ok( @{$new_path} == 2 &&
-    $new_path->[0]->name eq 'clone' &&
-    $new_path->[1]->name eq 'newsystem' );
+is( @{$new_path}, 2, "Stored two results");
+is( $new_path->[0]->name, 'newsystem', "Assembled is newsystem" );
+is( $new_path->[1]->name, 'clone', "Component is clone");
 
 my $new_paths2 = $csa->store_mapping_path( $cs, $cln_cs );
-ok( @{$new_paths2} == 0 ); # Should not update second time round
+is( @{$new_paths2}, 0, "No mapping path was added" ); # Should not update second time round
 
 #
 # Do some inserting of mock coord systems and 
