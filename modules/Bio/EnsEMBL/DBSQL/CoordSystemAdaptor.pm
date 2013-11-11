@@ -938,6 +938,84 @@ sub store_mapping_path{
   return [@retlist];
 }
 
+
+=head2 store_multiple_mapping_path
+
+  Arg [1]    : Bio::EnsEMBL::CoordSystem $cs1
+  Arg [2]    : Bio::EnsEMBL::CoordSystem $cs2
+  Arg [3..n] : Bio::EnsEMBL::CoordSystem $cs3..$csN
+  Example    : my $pathref = $csa->store_multiple_mapping_path($cs1,$cs2);
+  Description: Given two or more coordinate systems this will store 
+               multiple mapping paths between them in the database. 
+
+               Works similarly to the store_mapping_path method
+               But will presume every coord system can be mapped in multiple
+               ways to the other coord systems
+               This is represented by the use of '#' instead of '|'
+               in the mapping key
+
+  Returntype : reference to a list of lists of new meta_value mapping strings
+               created for assembly.mapping
+  Exceptions : CoordSystems with no rank/duplicated rank
+  Caller     : general
+  Status     : Experimental
+
+=cut
+
+sub store_multiple_mapping_path{
+  my $self = shift;
+  my @csystems = @_;
+
+  # Validate and sort the args
+  my %seen_ranks;
+  @csystems >= 2 or throw('Need two or more CoordSystems');
+  my $validate = sub{
+    ref($_[0]) && $_[0]->isa('Bio::EnsEMBL::CoordSystem') or
+        throw('CoordSystem argument expected.');
+    my $rank = $_[0]->rank ||
+        throw('CoordSystem has no rank: '.$_[0]->name);
+    $seen_ranks{$rank} &&
+        throw('CoordSystem '.$_[0]->name." shares rank $rank with ".
+              $seen_ranks{$rank}->name);
+    $seen_ranks{$rank} = $_[0];
+  };
+  @csystems = map{&{$validate}($_)} @csystems;
+  my ($key, @keys);
+  foreach my $cs (@csystems) {
+    $key = $cs->name();
+    if ($cs->version()) {
+      $key .= ":" . $cs->version();
+    }
+    push @keys, $key;
+  }
+  # For each pair in the sorted list, store in the DB
+  my $meta = $self->db->get_MetaContainer;
+  my @retlist;
+  for( my $i=1; $i<@keys; $i++ ){
+    for( my $j=0; $j<(@keys-$i); $j++ ){
+      my $mapping = join( "#", @keys );
+
+      my $mapping_key = join( "#", @keys );
+      # Skip existing
+      next if $self->{'_mapping_paths'}->{$mapping_key};
+
+      # Update the database
+      $meta->store_key_value('assembly.mapping',$mapping);
+      push @retlist, $mapping;
+    }
+  }
+
+  if( @retlist ){
+    # Update mapping path cache
+    $self->_cache_mapping_paths;
+  }
+
+  # Return the mappings that we have just created
+  return [@retlist];
+}
+
+
+
 =head2 fetch_by_attrib
 
   Arg [1]    : string attrib
