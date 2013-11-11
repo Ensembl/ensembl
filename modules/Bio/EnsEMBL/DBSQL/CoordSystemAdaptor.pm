@@ -313,8 +313,10 @@ MAP_PATH:
     my $cs1 = $coord_systems[0];
     my $cs2 = $coord_systems[$#coord_systems];
 
-    my $key1 = $cs1->name() . ':' . $cs1->version();
-    my $key2 = $cs2->name() . ':' . $cs2->version();
+    my $key1 = $cs1->name();
+    $key1 .= ':' . $cs1->version() if $cs1->version();
+    my $key2 = $cs2->name();
+    $key2 .= ':' . $cs2->version() if $cs2->version();
 
     if ( exists( $mapping_paths{"$key1|$key2"} ) ) {
       warning(   "Meta table specifies multiple mapping paths between "
@@ -534,12 +536,20 @@ sub fetch_all_by_name {
 sub fetch_all_by_version {
   my ($self, $version) = @_;
   throw "Version argument is required" if ! $version;
-  my $coord_systems = [
-    grep { $_->version() eq $version } 
-    map { $self->{_rank_cache}->{$_} } 
-    sort keys %{$self->{_rank_cache}}
-  ];
-  return $coord_systems;
+  my @coord_systems;
+
+  foreach my $rank (sort {$a <=> $b} keys %{$self->{'_rank_cache'}}) {
+    if ($self->{'_rank_cache'}->{$rank}->version()) {
+      if ($self->{'_rank_cache'}->{$rank}->version() eq $version) {
+        push @coord_systems, $self->{'_rank_cache'}->{$rank};
+      }
+    } else {
+      if (!$version) {
+        push @coord_systems, $self->{'_rank_cache'}->{$rank};
+      }
+    }
+  }
+  return \@coord_systems;
 }
 
 =head2 fetch_by_dbID
@@ -747,8 +757,10 @@ sub get_mapping_path {
     throw('Two Bio::EnsEMBL::CoordSystem arguments expected.');
   }
 
-  my $key1 = $cs1->name() . ":" . $cs1->version();
-  my $key2 = $cs2->name() . ":" . $cs2->version();
+  my $key1 = $cs1->name();
+  $key1 .= ':' . $cs1->version() if ($cs1->version());
+  my $key2 = $cs2->name();
+  $key2 .= ':' . $cs2->version() if ($cs2->version());
 
   my $path = $self->{'_mapping_paths'}->{"$key1|$key2"};
 
@@ -843,10 +855,6 @@ sub get_mapping_path {
   Description: Given two or more coordinate systems this will store 
                mapping paths between them in the database. 
 
-               The 'rank' attrib of the CoordSystems is used to
-               determine the assembled/component relationships between
-               them.
-
                For example, if $cs1 represents chrs of version
                V1, $cs2 represents contigs, and $cs3 clones then, unless
                they already exist, the following entries will be created 
@@ -894,22 +902,24 @@ sub store_mapping_path{
               $seen_ranks{$rank}->name);
     $seen_ranks{$rank} = $_[0];
   };
-  @csystems = sort{$a->rank <=> $b->rank} map{&{$validate}($_)} @csystems;
+  @csystems = map{&{$validate}($_)} @csystems;
+  my ($key, @keys);
+  foreach my $cs (@csystems) {
+    $key = $cs->name();
+    if ($cs->version()) {
+      $key .= ":" . $cs->version();
+    }
+    push @keys, $key;
+  }
 
-  # Get a list of all existing assembly.mappings
-  #my %mappings = map{$_=>1} @{$meta->list_value_by_key('assembly.mapping')};
-  
   # For each pair in the sorted list, store in the DB
   my $meta = $self->db->get_MetaContainer;
   my @retlist;
-  for( my $i=1; $i<@csystems; $i++ ){
-    for( my $j=0; $j<(@csystems-$i); $j++ ){
-      my $mapping = join( "|", 
-                          map{join( ':', $_->name, ($_->version||()) )} 
-                          @csystems[$j..$j+$i] );
-      my $mapping_key = join( "|",
-                              map{join( ':', $_->name, ($_->version||'') )}
-                              @csystems[$j..$j+$i] );
+  for( my $i=1; $i<@keys; $i++ ){
+    for( my $j=0; $j<(@keys-$i); $j++ ){
+      my $mapping = join( "|", @keys );
+      
+      my $mapping_key = join( "|", @keys );
       # Skip existing
       next if $self->{'_mapping_paths'}->{$mapping_key};
       
