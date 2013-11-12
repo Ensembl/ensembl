@@ -550,7 +550,7 @@ sub add_map_coordinates {
     throw("7 arguments expected");
   }
 
-  if ( ( $contig_end - $contig_start ) != ( $chr_end - $chr_start ) ) {
+  if ( ( $chr_end > $chr_start ) and ( $contig_end - $contig_start ) != ( $chr_end - $chr_start ) ) {
     throw("Cannot deal with mis-lengthed mappings so far");
   }
 
