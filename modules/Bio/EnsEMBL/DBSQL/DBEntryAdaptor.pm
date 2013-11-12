@@ -826,10 +826,19 @@ sub _store_object_xref_mapping {
 
 =head2 get_external_db_id
 
-  Arg [1]    : External DB name
-  Arg [2]    : External DB release
-  Arg [3]    : Ignore version flag
-  Description: Looks for the internal identifier of an external DB
+  Arg [1]    : String
+               The external DB name to query by. Supports LIKE statements
+  Arg [2]    : String (optional) 
+               External DB release to use. If not specified then we 
+               will search for NULL db_release entries
+  Arg [3]    : Boolean (optional)
+               If true we will never look at the db_release value 
+               when querying for an external db id
+  Description: Looks for the internal identifier of an external DB. You can
+               search using direct equality or using like statements specify. We
+               only return one value from this method.
+
+               If you want more than one entry use get_external_db_ids().
   Exceptions : None
   Returntype : Int 
 
@@ -841,8 +850,21 @@ sub get_external_db_id {
   return shift @$db_ids;
 }
 
-=head2 get_external_db_ids_like
+=head2 get_external_db_ids
 
+  Arg [1]    : String
+               The external DB name to query by. Supports LIKE statements
+  Arg [2]    : String (optional) 
+               External DB release to use. If not specified then we 
+               will search for NULL db_release entries
+  Arg [3]    : Boolean (optional)
+               If true we will never look at the db_release value 
+               when querying for an external db id
+  Description: Looks for the internal identifier of an external DB. You can
+               search using direct equality or using like statements specify. We
+               only return one value from this method. Returns more than one value
+  Exceptions : None
+  Returntype : ArrayRef of Int 
 
 =cut
 
@@ -871,6 +893,21 @@ sub get_external_db_ids {
     return \@db_ids;
 }
 
+=head2 get_distinct_external_dbs
+
+  Description: Queries the external_db table for all unique 
+               DB names
+  Exceptions : None
+  Returntype : ArrayRef of String
+
+=cut
+
+sub get_distinct_external_dbs {
+  my ($self) = @_;
+  my $sql = 'SELECT DISTINCT db_name FROM external_db';
+  my $names =  $self->dbc->sql_helper->execute_simple(-SQL => $sql);
+  return [ sort @{$names} ];
+}
 
 =head2 _check_external_db 
 
@@ -1787,24 +1824,34 @@ SQL
       . ' AND xdb.external_db_id = x.external_db_id AND';
   }
 
-  my $query1 = qq(
-      SELECT    $ID_sql
-      FROM      $from_sql
-                xref x,
-                object_xref oxr
-      WHERE     $where_sql
-                ( x.dbprimary_acc $comparison_operator ? OR x.display_label $comparison_operator ? )
-      AND         x.xref_id = oxr.xref_id
-      AND         oxr.ensembl_object_type = ?
-  );
+  my @queries;
+  push (@queries, qq(
+        SELECT    $ID_sql
+        FROM      $from_sql
+                  xref x,
+                  object_xref oxr
+        WHERE     $where_sql
+                    x.dbprimary_acc $comparison_operator ?
+        AND         x.xref_id = oxr.xref_id
+        AND         oxr.ensembl_object_type = ?
+    ));
 
-  my $query2;
+  push (@queries, qq(
+        SELECT    $ID_sql
+        FROM      $from_sql
+                  xref x,
+                  object_xref oxr
+        WHERE     $where_sql
+                    x.display_label $comparison_operator ?
+        AND         x.xref_id = oxr.xref_id
+        AND         oxr.ensembl_object_type = ?
+    ));
 
   if ( defined($external_db_name) ) {
     # If we are given the name of an external database, we need to join
     # between the 'xref' and the 'object_xref' tables on 'xref_id'.
 
-    $query2 = qq(
+    push (@queries, qq(
       SELECT    $ID_sql
       FROM      $from_sql
                 external_synonym syn,
@@ -1814,13 +1861,13 @@ SQL
                 syn.synonym $comparison_operator ?
       AND       syn.xref_id = oxr.xref_id
       AND       oxr.ensembl_object_type = ?
-      AND       x.xref_id = oxr.xref_id);
+      AND       x.xref_id = oxr.xref_id));
 
   } else {
     # If we weren't given an external database name, we can get away
     # with less joins here.
 
-    $query2 = qq(
+    push (@queries, qq(
       SELECT    $ID_sql
       FROM      $from_sql
                 external_synonym syn,
@@ -1828,32 +1875,21 @@ SQL
       WHERE     $where_sql
                 syn.synonym $comparison_operator ?
       AND       syn.xref_id = oxr.xref_id
-      AND       oxr.ensembl_object_type = ?);
+      AND       oxr.ensembl_object_type = ?));
 
   }
 
   my %result;
-
-  my $sth = $self->prepare($query1);
-
-  my $queryBind = 1;
-  $sth->bind_param( $queryBind++, $self->species_id(), SQL_INTEGER ) if $multispecies;
-  $sth->bind_param( $queryBind++, $name,               SQL_VARCHAR );
-  $sth->bind_param( $queryBind++, $name,               SQL_VARCHAR );
-  $sth->bind_param( $queryBind++, $ensType,            SQL_VARCHAR );
-  $sth->execute();
-  my $r;
-  while ( $r = $sth->fetchrow_array() ) { $result{$r} = 1 }
-
-  $sth = $self->prepare($query2);
-
-  $queryBind = 1;
-  $sth->bind_param( $queryBind++, $self->species_id(), SQL_INTEGER ) if $multispecies;
-  $sth->bind_param( $queryBind++, $name,               SQL_VARCHAR );
-  $sth->bind_param( $queryBind++, $ensType,            SQL_VARCHAR );
-  $sth->execute();
-
-  while ( $r = $sth->fetchrow_array() ) { $result{$r} = 1 }
+  my $h = $self->dbc()->sql_helper();
+  my @params = ([$name, SQL_VARCHAR], [$ensType, SQL_VARCHAR]);
+  unshift(@params, [$self->species_id(), SQL_INTEGER] ) if $multispecies;
+  foreach my $query (@queries) {
+    $h->execute_no_return(-SQL => $query, -PARAMS => \@params, -CALLBACK => sub {
+      my ($row) = @_;
+      my ($id) = @{$row};
+      $result{$id} = 1;
+    });
+  }
 
   return keys(%result);
 
