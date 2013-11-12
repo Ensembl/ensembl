@@ -97,6 +97,9 @@ use vars qw(@ISA);
         string - the transcripts status i.e. "KNOWN","NOVEL"
   Arg [-IS_CURRENT]:
         Boolean - specifies if this is the current version of the transcript
+  Arg [-SOURCE]:
+        string - the transcript source, e.g. "ensembl"
+
   Example    : $tran = new Bio::EnsEMBL::Transcript(-EXONS => \@exons);
   Description: Constructor. Instantiates a Transcript object.
   Returntype : Bio::EnsEMBL::Transcript
@@ -118,7 +121,8 @@ sub new {
     $external_name,    $external_db,  $external_status,
     $display_xref,     $created_date, $modified_date,
     $description,      $biotype,      $confidence,
-    $external_db_name, $status,       $is_current
+    $external_db_name, $status,       $is_current,
+    $source
   );
 
   # Catch for old style constructor calling:
@@ -133,7 +137,8 @@ sub new {
       $external_name,    $external_db,  $external_status,
       $display_xref,     $created_date, $modified_date,
       $description,      $biotype,      $confidence,
-      $external_db_name, $status,       $is_current
+      $external_db_name, $status,       $is_current,
+      $source
       )
       = rearrange( [
         'EXONS',            'STABLE_ID',
@@ -143,7 +148,7 @@ sub new {
         'MODIFIED_DATE',    'DESCRIPTION',
         'BIOTYPE',          'CONFIDENCE',
         'EXTERNAL_DB_NAME', 'STATUS',
-        'IS_CURRENT'
+        'IS_CURRENT',       'SOURCE'
       ],
       @_
       );
@@ -169,6 +174,7 @@ sub new {
   $self->status($confidence);    # old style name
   $self->status($status);        # new style name
   $self->biotype($biotype);
+  $self->source($source);
 
   # default is_current
   $is_current = 1 unless ( defined($is_current) );
@@ -628,6 +634,23 @@ sub biotype {
   return ( $self->{'biotype'} || "protein_coding" );
 }
 
+=head2 source
+
+  Arg [1]    : (optional) String - the source to set
+  Example    : $transcript->source('ensembl');
+  Description: Getter/setter for attribute source
+  Returntype : String
+  Exceptions : none
+  Caller     : general
+  Status     : Stable
+
+=cut
+
+sub source {
+  my $self = shift;
+  $self->{'source'} = shift if( @_ );
+  return ( $self->{'source'} || "ensembl" );
+}
 
 =head2 display_xref
 
