@@ -1824,24 +1824,34 @@ SQL
       . ' AND xdb.external_db_id = x.external_db_id AND';
   }
 
-  my $query1 = qq(
-      SELECT    $ID_sql
-      FROM      $from_sql
-                xref x,
-                object_xref oxr
-      WHERE     $where_sql
-                ( x.dbprimary_acc $comparison_operator ? OR x.display_label $comparison_operator ? )
-      AND         x.xref_id = oxr.xref_id
-      AND         oxr.ensembl_object_type = ?
-  );
+  my @queries;
+  push (@queries, qq(
+        SELECT    $ID_sql
+        FROM      $from_sql
+                  xref x,
+                  object_xref oxr
+        WHERE     $where_sql
+                    x.dbprimary_acc $comparison_operator ?
+        AND         x.xref_id = oxr.xref_id
+        AND         oxr.ensembl_object_type = ?
+    ));
 
-  my $query2;
+  push (@queries, qq(
+        SELECT    $ID_sql
+        FROM      $from_sql
+                  xref x,
+                  object_xref oxr
+        WHERE     $where_sql
+                    x.display_label $comparison_operator ?
+        AND         x.xref_id = oxr.xref_id
+        AND         oxr.ensembl_object_type = ?
+    ));
 
   if ( defined($external_db_name) ) {
     # If we are given the name of an external database, we need to join
     # between the 'xref' and the 'object_xref' tables on 'xref_id'.
 
-    $query2 = qq(
+    push (@queries, qq(
       SELECT    $ID_sql
       FROM      $from_sql
                 external_synonym syn,
@@ -1851,13 +1861,13 @@ SQL
                 syn.synonym $comparison_operator ?
       AND       syn.xref_id = oxr.xref_id
       AND       oxr.ensembl_object_type = ?
-      AND       x.xref_id = oxr.xref_id);
+      AND       x.xref_id = oxr.xref_id));
 
   } else {
     # If we weren't given an external database name, we can get away
     # with less joins here.
 
-    $query2 = qq(
+    push (@queries, qq(
       SELECT    $ID_sql
       FROM      $from_sql
                 external_synonym syn,
@@ -1865,32 +1875,21 @@ SQL
       WHERE     $where_sql
                 syn.synonym $comparison_operator ?
       AND       syn.xref_id = oxr.xref_id
-      AND       oxr.ensembl_object_type = ?);
+      AND       oxr.ensembl_object_type = ?));
 
   }
 
   my %result;
-
-  my $sth = $self->prepare($query1);
-
-  my $queryBind = 1;
-  $sth->bind_param( $queryBind++, $self->species_id(), SQL_INTEGER ) if $multispecies;
-  $sth->bind_param( $queryBind++, $name,               SQL_VARCHAR );
-  $sth->bind_param( $queryBind++, $name,               SQL_VARCHAR );
-  $sth->bind_param( $queryBind++, $ensType,            SQL_VARCHAR );
-  $sth->execute();
-  my $r;
-  while ( $r = $sth->fetchrow_array() ) { $result{$r} = 1 }
-
-  $sth = $self->prepare($query2);
-
-  $queryBind = 1;
-  $sth->bind_param( $queryBind++, $self->species_id(), SQL_INTEGER ) if $multispecies;
-  $sth->bind_param( $queryBind++, $name,               SQL_VARCHAR );
-  $sth->bind_param( $queryBind++, $ensType,            SQL_VARCHAR );
-  $sth->execute();
-
-  while ( $r = $sth->fetchrow_array() ) { $result{$r} = 1 }
+  my $h = $self->dbc()->sql_helper();
+  my @params = ([$name, SQL_VARCHAR], [$ensType, SQL_VARCHAR]);
+  unshift(@params, [$self->species_id(), SQL_INTEGER] ) if $multispecies;
+  foreach my $query (@queries) {
+    $h->execute_no_return(-SQL => $query, -PARAMS => \@params, -CALLBACK => sub {
+      my ($row) = @_;
+      my ($id) = @{$row};
+      $result{$id} = 1;
+    });
+  }
 
   return keys(%result);
 
