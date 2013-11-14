@@ -87,7 +87,7 @@ sub transcript_display_xref_sources {
                  RFAM
                  RNAMMER
                  TRNASCAN_SE
-                 Uniprot_gn
+                 Uniprot_gn_trans_name
                  ENA_GENE
                  BROAD_U_maydis
                  BROAD_F_oxysporum
