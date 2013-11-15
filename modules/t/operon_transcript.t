@@ -118,8 +118,8 @@ my $operon_transcript =
 									   -END    => $end,
 									   -STRAND => $strand,
 									   -SLICE  => $slice, -STABLE_ID=>"opt1", -ANALYSIS=>$analysis  );
-$operon_transcript->add_gene($gene);
-$operon_transcript->add_gene($gene2);
+$operon_transcript->add_Gene($gene);
+$operon_transcript->add_Gene($gene2);
 $operon->add_OperonTranscript($operon_transcript);
 is( $analysis,        $operon_transcript->analysis(), "Analysis" );
 
@@ -128,7 +128,7 @@ my $operon_transcript2 =
 									   -END    => $gene_start2,
 									   -STRAND => $strand,
 									   -SLICE  => $slice, -STABLE_ID=>"opt2", -ANALYSIS=>$analysis  );
-$operon_transcript2->add_gene($gene);
+$operon_transcript2->add_Gene($gene);
 $operon->add_OperonTranscript($operon_transcript2);
 	is( $analysis,        $operon_transcript->analysis(), "Analysis" );
 
