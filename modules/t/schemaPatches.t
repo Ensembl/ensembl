@@ -1,5 +1,5 @@
 # We respond to the following ENV
-#  ENS_LOCAL_SCHEMA - If set to true we will use the local schema as the reference schema. Otherwise we use the previous version's schema from source control
+#  ENS_REMOTE_SCHEMA - If set to true we will use the remote schema as the reference schema. Otherwise we use the local schema held in sql/table.sql
 
 use strict;
 use warnings;
@@ -63,16 +63,16 @@ SKIP: {
 
   # Create last release DB  
   my $current_table_sql;
-  if ($ENV{ENS_LOCAL_SCHEMA}) {
+  if ($ENV{ENS_REMOTE_SCHEMA}) {
+    $current_table_sql = get_table_sql($current_release);
+  }
+  else {
     my $table_sql = catfile($sql_dir, 'table.sql');
     skip 'Skipping DB patch test as we cannot find last release schema file (table.sql)', 1
       unless -e $table_sql;
     skip 'Skipping DB patch test as we last release schema file (table.sql) is not readable', 1
       unless -r $table_sql;
     $current_table_sql = slurp($table_sql);
-  }
-  else {
-    $current_table_sql = get_table_sql($current_release);  
   }
   
   skip "Skipping DB patch tests as we cannot find the SQL for release $current_release", (scalar(@patches)+1) 
