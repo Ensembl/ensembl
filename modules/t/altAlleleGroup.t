@@ -128,6 +128,9 @@ $aag = $aaga->fetch_all->[0];
 $new_aag = $aaga->fetch_by_gene_id(18257);
 is_deeply($new_aag,$aag,"Check single gene ID returns entire group correctly");
 
+# Saving the multi DBs
+$multi->save('core', qw/alt_allele alt_allele_group alt_allele_attrib/);
+
 # check store method
 my $dbID = $aaga->store($group);
 ok($dbID, 'A dbID was returned from the store method');
