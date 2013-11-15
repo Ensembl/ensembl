@@ -1,22 +1,5 @@
-=head1 NAME
-
-  schemaPatches.t
-
-=head1 SYNOPSIS
-
-  # print usage 
-  $ perl schemaPatches.t -h 
-
-  # Get current release schema file from file system instead
-  # of CVS repository
-  $ perl schemaPatches.t -current-schema-no-cvs
-
-=head1 DESCRIPTION
-
-  This script is used to assert that a previous version schema plus
-  patches equals the current table.sql.
-  
-=cut
+# We respond to the following ENV
+#  ENS_LOCAL_SCHEMA - If set to true we will use the local schema as the reference schema. Otherwise we use the previous version's schema from source control
 
 use strict;
 use warnings;
@@ -32,38 +15,30 @@ use File::Find;
 use File::Spec::Functions qw/updir catfile catdir/;
 use File::Temp qw/tempfile/;
 use FindBin qw/$Bin/;
-use Getopt::Long;
-
-my $help = 0;
-my $current_schema_no_cvs = 0;
-
-#
-# Parse command-line arguments
-#
-my $options_ok = 
-  GetOptions(
-    "current_schema_no_cvs" => \$current_schema_no_cvs,
-    "h"                     => \$help);
-($help or !$options_ok) && usage();
 
 SKIP: {
 
-  my $ensembl_ok = test_ensembl();
-  skip 'Cannot communicate with ensembl.org. We cannot continue with the tests', 1 unless $ensembl_ok;
-
-  # Get last DB version and download last SQL schema
+  # Get last DB version
   my $current_release = software_version();
   my $last_release = $current_release - 1;
-  my $last_table_sql = get_table_sql($last_release);
 
   # Get patch location and relevant set of patches
-  my $sql_dir = catdir($Bin, updir(), updir(), 'sql');
+  my $project_dir = catdir($Bin, updir(), updir());
+  my $sql_dir = catdir($project_dir, 'sql');
   my @patches;
   find(sub {
     if($_ =~ /^patch_${last_release}_${current_release}_\w+\.sql$/) {
       push(@patches, $File::Find::name);
     }
   }, $sql_dir);
+
+  if(-d catdir($project_dir, '.git')) {
+    fail 'This was bad. Project is a Git project';
+    skip 'Skipping: We do not currently get SQL from Git. ABORT!', 1;
+  }
+
+  # Get the last SQL schema
+  my $last_table_sql = get_table_sql($last_release);
 
   skip "Skipping DB patch tests as we cannot find the SQL for release $last_release", (scalar(@patches)+1) 
     unless defined $last_table_sql;
@@ -88,14 +63,15 @@ SKIP: {
 
   # Create last release DB  
   my $current_table_sql;
-  if ($current_schema_no_cvs) {
+  if ($ENV{ENS_LOCAL_SCHEMA}) {
     my $table_sql = catfile($sql_dir, 'table.sql');
     skip 'Skipping DB patch test as we cannot find last release schema file (table.sql)', 1
       unless -e $table_sql;
     skip 'Skipping DB patch test as we last release schema file (table.sql) is not readable', 1
       unless -r $table_sql;
     $current_table_sql = slurp($table_sql);
-  } else {
+  }
+  else {
     $current_table_sql = get_table_sql($current_release);  
   }
   
@@ -296,16 +272,4 @@ sub union_intersection_difference {
     }
   }
   return (\@union, \@isect, \@diff);
-}
-
-sub usage {
-  my $prog = `basename $0`; chomp($prog);
-    
-  print "Usage: $prog [OPTIONS]\n\n";
-  print "Options:\n";
-  print "  -current_schema_no_cvs\tDo no get current schema file from CVS\n";
-  print "  -h\t\t\t\tPrint this message\n";
-  print "\n\n";
-
-  exit 1;
 }
