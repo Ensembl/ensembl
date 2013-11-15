@@ -1554,6 +1554,7 @@ sub load_registry_from_url {
 sub load_registry_from_db {
   my ( $self, @args ) = @_;
 
+  my @args_copy = @args;
   my ( $host,         $port,     $user,
        $pass,         $verbose,  $db_version,
        $wait_timeout, $no_cache, $species, $species_suffix )
@@ -1575,7 +1576,7 @@ sub load_registry_from_db {
   if(! defined $db_version) {
     # Do checking for the -DB_VERSION flag which can be mis-spelt. Regex assembled using:
     # perl -MRegexp::Assemble -e '$r=Regexp::Assemble->new(); $r->add($_) for ("-dbversion","-version","-verion","-verison"); print $r->re, "\n";'
-    my %hashed_args = @args;
+    my %hashed_args = @args_copy;
     my ($possible_key) = grep { $_ =~ /(?-xism:-(?:ver(?:is?|si)|dbversi)on)/xism } keys %hashed_args;
     if($possible_key) {
       my $msg = sprintf(q{Detected no -DB_VERSION flag but found '%s'; assuming a mis-spelling. Please fix}, $possible_key);
