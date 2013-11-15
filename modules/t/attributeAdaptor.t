@@ -325,8 +325,8 @@ is_rows(0, $db, "gene_attrib", "where gene_id = ? ", [$gene_id]);
 #
 
 my $gene2 = $ga->fetch_by_stable_id($stable_id2);
-my $batch = {$gene->dbID()  => [Bio::EnsEMBL::Attribute->new(-NAME => 'test_name2', -CODE => 'test_code2', -DESCRIPTION => 'test_desc2', VALUE => 'val1'), Bio::EnsEMBL::Attribute->new(-NAME => 'test_name2', -CODE => 'test_code2', -DESCRIPTION => 'test_desc2', VALUE => 'val2')],
-			 $gene2->dbID() => [Bio::EnsEMBL::Attribute->new(-NAME => 'test_name2', -CODE => 'test_code2', -DESCRIPTION => 'test_desc2', VALUE => 'val3'),]};
+my $batch = {$gene->dbID()  => [Bio::EnsEMBL::Attribute->new(-NAME => 'test_name2', -CODE => 'test_code2', -DESCRIPTION => 'test_desc2', -VALUE => 'val1'), Bio::EnsEMBL::Attribute->new(-NAME => 'test_name2', -CODE => 'test_code2', -DESCRIPTION => 'test_desc2', -VALUE => 'val2')],
+			 $gene2->dbID() => [Bio::EnsEMBL::Attribute->new(-NAME => 'test_name2', -CODE => 'test_code2', -DESCRIPTION => 'test_desc2', -VALUE => 'val3'),]};
 my $current_rows = count_rows($db, 'gene_attrib');
 $aa->store_batch_on_Gene($batch);
 my $new_rows = count_rows($db, 'gene_attrib');
@@ -339,8 +339,8 @@ is(@attribs, 2, "Two attribs available for gene");
 is(@attribs, 1, "One attrib stored for gene2");
 
 my $slice2 = $slice_adaptor->fetch_by_region('chromosome', 'X');
-my $batch = {$slice->get_seq_region_id()  => [Bio::EnsEMBL::Attribute->new(-NAME => 'test_name2', -CODE => 'test_code2', -DESCRIPTION => 'test_desc2', VALUE => 'val1'), Bio::EnsEMBL::Attribute->new(-NAME => 'test_name2', -CODE => 'test_code2', -DESCRIPTION => 'test_desc2', VALUE => 'val2')],
-                         $slice2->get_seq_region_id() => [Bio::EnsEMBL::Attribute->new(-NAME => 'test_name2', -CODE => 'test_code2', -DESCRIPTION => 'test_desc2', VALUE => 'val3'),]};
+my $batch = {$slice->get_seq_region_id()  => [Bio::EnsEMBL::Attribute->new(-NAME => 'test_name2', -CODE => 'test_code2', -DESCRIPTION => 'test_desc2', -VALUE => 'val1'), Bio::EnsEMBL::Attribute->new(-NAME => 'test_name2', -CODE => 'test_code2', -DESCRIPTION => 'test_desc2', -VALUE => 'val2')],
+                         $slice2->get_seq_region_id() => [Bio::EnsEMBL::Attribute->new(-NAME => 'test_name2', -CODE => 'test_code2', -DESCRIPTION => 'test_desc2', -VALUE => 'val3'),]};
 my $current_rows = count_rows($db, 'seq_region_attrib');
 $aa->store_batch_on_Slice($batch);
 my $new_rows = count_rows($db, 'seq_region_attrib');
