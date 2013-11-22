@@ -42,7 +42,6 @@ sub gene_display_xref_sources {
                  PGD_GENE
                  Mycgr3_jgi_v2.0_gene
                  BROAD_Magnaporthe_DB
-                 PGSC_GENE
                  PHYTOZOME_GMAX_GENE
                );
     
@@ -101,7 +100,6 @@ sub transcript_display_xref_sources {
                  PGD_GENE
                  Mycgr3_jgi_v2.0_gene
                  BROAD_Magnaporthe_DB
-                 PGSC_GENE
                  PHYTOZOME_GMAX_GENE
                );
     
