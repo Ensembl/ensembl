@@ -437,7 +437,7 @@ while ( my $line = $in->getline() ) {
     $failed = 1;
   }
 
-  if(! $failed && $source_server =~ /^ens-staging\d+$/ && $opt_optimize) {
+  if(! $failed && $source_server =~ /^ens-staging\d?$/ && $opt_optimize) {
     my $tmpl = q{line %d: Source server '%s' is an ens-staging machine. Do not optimize on this server. Rerun with -noopt};
     warn(sprintf($tmpl, $lineno, $source_server));
     $failed = 1;
