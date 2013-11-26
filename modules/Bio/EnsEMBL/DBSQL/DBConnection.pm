@@ -526,6 +526,21 @@ sub username {
   $self->{_username};
 }
 
+=head2 user
+
+  Arg [1]    : (optional) string $arg
+               The new value of the username used by this connection. 
+  Example    : $user = $db_connection->user()
+  Description: Convenience alias for the username method
+  Returntype : String
+
+=cut
+
+sub user {
+  my ($self, $arg) = @_;
+  return $self->username($arg);
+}
+
 
 =head2 host
 
@@ -548,6 +563,21 @@ sub host {
   ( defined $arg ) &&
     ( $self->{_host} = $arg );
   $self->{_host};
+}
+
+=head2 hostname
+
+  Arg [1]    : (optional) string $arg
+               The new value of the host used by this connection. 
+  Example    : $hostname = $db_connection->hostname()
+  Description: Convenience alias for the host method
+  Returntype : String
+
+=cut
+
+sub hostname {
+  my ($self, $arg) = @_;
+  return $self->host($arg);
 }
 
 
@@ -582,7 +612,20 @@ sub password {
   return ( ref( $self->{_password} ) && &{ $self->{_password} } ) || '';
 }
 
+=head2 pass
 
+  Arg [1]    : (optional) string $arg
+               The new value of the password used by this connection. 
+  Example    : $pass = $db_connection->pass()
+  Description: Convenience alias for the password method
+  Returntype : String
+
+=cut
+
+sub pass {
+  my ($self, $arg) = @_;
+  return $self->password($arg);
+}
 
 =head2 disconnect_when_inactive
 

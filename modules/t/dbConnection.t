@@ -79,16 +79,24 @@ ok(test_getter_setter($dbc, 'dbname'  , 'ensembl_db_name'));
 # 6 username
 #
 ok(test_getter_setter($dbc, 'username', 'ensembl_user'));
+is($dbc->user(), $dbc->username(), 'Checking user() returns same as username()');
 
 #
 # 7 password
 #
 ok(test_getter_setter($dbc, 'password', 'ensembl_password'));
+is($dbc->pass(), $dbc->password(), 'Checking pass() returns same as password()');
 
 #
 # 10 dbhandle
 #
 ok(test_getter_setter($dbc, 'db_handle', $dbc->db_handle));
+
+#
+# dbname
+#
+ok(test_getter_setter($dbc, 'host', $dbc->host));
+is($dbc->hostname(), $dbc->host(), 'Checking hostname() returns same as host()');
 
 # Check the to_hash() works
 is_deeply($dbc->to_hash(), \%dbc_args, 'Checking to_hash() can roundtrip a DBConnection');
