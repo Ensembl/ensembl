@@ -269,27 +269,15 @@ CREATE TABLE IF NOT EXISTS meta (
 # Add schema type and schema version to the meta table.
 INSERT INTO meta (species_id, meta_key, meta_value) VALUES
   (NULL, 'schema_type',     'core'),
-  (NULL, 'schema_version',  '74');
+  (NULL, 'schema_version',  '75');
 
 # Patches included in this schema file:
 # NOTE: At start of release cycle, remove patch entries from last release.
 # NOTE: Avoid line-breaks in values.
 INSERT INTO meta (species_id, meta_key, meta_value)
-  VALUES (NULL, 'patch', 'patch_73_74_a.sql|schema_version');
+  VALUES (NULL, 'patch', 'patch_74_75_a.sql|schema_version');
 INSERT INTO meta (species_id, meta_key, meta_value)
-  VALUES (NULL, 'patch', 'patch_73_74_b.sql|remove_dnac');
-INSERT INTO meta (species_id, meta_key, meta_value)
-  VALUES (NULL, 'patch', 'patch_73_74_c.sql|remove_unconventional_transcript_association');
-INSERT INTO meta (species_id, meta_key, meta_value)
-  VALUES (NULL, 'patch', 'patch_73_74_d.sql|remove_qtl');
-INSERT INTO meta (species_id, meta_key, meta_value)
-  VALUES (NULL, 'patch', 'patch_73_74_e.sql|remove_canonical_annotation');
-INSERT INTO meta (species_id, meta_key, meta_value)
- VALUES (NULL, 'patch', 'patch_73_74_f.sql|remove_pair_dna_align');
-INSERT INTO meta (species_id, meta_key, meta_value) 
-  VALUES (NULL, 'patch', 'patch_73_74_g.sql|add_transcript_idx_tise');
-INSERT INTO meta (species_id, meta_key, meta_value) 
-  VALUES (NULL, 'patch', 'patch_73_74_h.sql|alt_allele_unique_gene_idx');
+  VALUES (NULL, 'patch', 'patch_74_75_b.sql|transcript_source');
 
 /**
 @table meta_coord
@@ -1033,6 +1021,7 @@ Note that a transcript is usually associated with a translation, but may not be,
 @column seq_region_end              Sequence end position.
 @column seq_region_strand           Sequence region strand: 1 - forward; -1 - reverse.
 @column display_xref_id             External reference for EnsEMBL web site. Foreign key references to the @link xref table.
+@column source                      e.g ensembl, havana etc.
 @column biotype                     Biotype, e.g. protein_coding.
 @column status                      Status, e.g.'KNOWN', 'NOVEL', 'PUTATIVE', 'PREDICTED', 'KNOWN_BY_PROJECTION', 'UNKNOWN'.
 @column description                 Transcript description.
@@ -1056,6 +1045,7 @@ CREATE TABLE transcript (
   seq_region_end              INT(10) UNSIGNED NOT NULL,
   seq_region_strand           TINYINT(2) NOT NULL,
   display_xref_id             INT(10) UNSIGNED,
+  source                      VARCHAR(20) NOT NULL,
   biotype                     VARCHAR(40) NOT NULL,
   status                      ENUM('KNOWN', 'NOVEL', 'PUTATIVE', 'PREDICTED', 'KNOWN_BY_PROJECTION', 'UNKNOWN', 'ANNOTATED'),
   description                 TEXT,
