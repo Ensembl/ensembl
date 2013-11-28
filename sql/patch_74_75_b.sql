@@ -18,7 +18,7 @@
 #
 # Description: Column allowing an optional source to be added to a transcript
 
-ALTER TABLE transcript ADD COLUMN source VARCHAR(20) NOT NULL;
+ALTER TABLE transcript ADD COLUMN source VARCHAR(20) NOT NULL AFTER display_xref_id;
 
 # Patch identifier
 INSERT INTO meta (species_id, meta_key, meta_value)
