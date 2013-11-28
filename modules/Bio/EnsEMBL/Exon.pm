@@ -928,7 +928,7 @@ sub transform {
   Example    : none
   Description: Moves this Exon to given target slice coordinates. If Features
                are attached they are moved as well. Returns a new exon.
-  Returntype : Bio::EnsEMBL::Gene
+  Returntype : Bio::EnsEMBL::Exon
   Exceptions : none
   Caller     : general
   Status     : Stable
