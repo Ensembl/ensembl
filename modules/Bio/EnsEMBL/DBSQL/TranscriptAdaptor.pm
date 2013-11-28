@@ -116,21 +116,26 @@ sub _columns {
   my $modified_date =
     $self->db()->dbc()->from_date_to_seconds("modified_date");
 
-  return (
-    't.transcript_id',     't.seq_region_id',
-    't.seq_region_start',  't.seq_region_end',
-    't.seq_region_strand', 't.analysis_id',
-    't.gene_id',           't.is_current',
-    't.stable_id',         't.version',
-    $created_date,         $modified_date,
-    't.description',       't.biotype',
-    't.status',            'exdb.db_name',
-    'exdb.status',         'exdb.db_display_name',
-    'x.xref_id',           'x.display_label',
-    'x.dbprimary_acc',     'x.version',
-    'x.description',       'x.info_type',
-    'x.info_text'
-  );
+  my @columns = 
+    (
+     't.transcript_id',     't.seq_region_id',
+     't.seq_region_start',  't.seq_region_end',
+     't.seq_region_strand', 't.analysis_id',
+     't.gene_id',           't.is_current',
+     't.stable_id',         't.version',
+     $created_date,         $modified_date,
+     't.description',       't.biotype',
+     't.status',            'exdb.db_name',
+     'exdb.status',         'exdb.db_display_name',
+     'x.xref_id',           'x.display_label',
+     'x.dbprimary_acc',     'x.version',
+     'x.description',       'x.info_type',
+     'x.info_text'
+    );
+
+  $self->schema_version > 74 and push @columns, 't.source';
+
+  return @columns;
 }
 
 sub _left_join {
@@ -848,20 +853,9 @@ sub store {
   #
   # Store transcript
   #
-  my $store_transcript_sql = qq(
-      INSERT INTO transcript 
-        SET gene_id = ?, 
-            analysis_id = ?, 
-            seq_region_id = ?, 
-            seq_region_start = ?,
-            seq_region_end = ?, 
-            seq_region_strand = ?, 
-            biotype = ?, 
-            status = ?, 
-            description = ?,
-            is_current = ?, 
-            canonical_translation_id = ? 
-  );
+  my $store_transcript_sql = 
+    sprintf "INSERT INTO transcript SET gene_id = ?, analysis_id = ?, seq_region_id = ?, seq_region_start = ?, seq_region_end = ?, seq_region_strand = ?,%s biotype = ?, status = ?, description = ?, is_current = ?, canonical_translation_id = ?", ($self->schema_version > 74)?" source = ?,":'';
+
 
   if ( defined( $transcript->stable_id() ) ) {
 
@@ -872,27 +866,31 @@ sub store {
   }
 
   my $tst = $self->prepare($store_transcript_sql);
-  $tst->bind_param( 1,  $gene_dbID,                 SQL_INTEGER );
-  $tst->bind_param( 2,  $new_analysis_id,           SQL_INTEGER );
-  $tst->bind_param( 3,  $seq_region_id,             SQL_INTEGER );
-  $tst->bind_param( 4,  $transcript->start(),       SQL_INTEGER );
-  $tst->bind_param( 5,  $transcript->end(),         SQL_INTEGER );
-  $tst->bind_param( 6,  $transcript->strand(),      SQL_TINYINT );
-  $tst->bind_param( 7,  $transcript->biotype(),     SQL_VARCHAR );
-  $tst->bind_param( 8,  $transcript->status(),      SQL_VARCHAR );
-  $tst->bind_param( 9,  $transcript->description(), SQL_LONGVARCHAR );
-  $tst->bind_param( 10, $is_current,                SQL_TINYINT );
+  my $i = 0;
+  $tst->bind_param( ++$i,  $gene_dbID,                 SQL_INTEGER );
+  $tst->bind_param( ++$i,  $new_analysis_id,           SQL_INTEGER );
+  $tst->bind_param( ++$i,  $seq_region_id,             SQL_INTEGER );
+  $tst->bind_param( ++$i,  $transcript->start(),       SQL_INTEGER );
+  $tst->bind_param( ++$i,  $transcript->end(),         SQL_INTEGER );
+  $tst->bind_param( ++$i,  $transcript->strand(),      SQL_TINYINT );
+
+  $self->schema_version > 74 and 
+    $tst->bind_param( ++$i,  $transcript->source(),      SQL_VARCHAR );
+
+  $tst->bind_param( ++$i,  $transcript->biotype(),     SQL_VARCHAR );
+  $tst->bind_param( ++$i,  $transcript->status(),      SQL_VARCHAR );
+  $tst->bind_param( ++$i,  $transcript->description(), SQL_LONGVARCHAR );
+  $tst->bind_param( ++$i, $is_current,                SQL_TINYINT );
 
   # If the transcript has a translation, this is updated later:
-  $tst->bind_param( 11, undef, SQL_INTEGER );
+  $tst->bind_param( ++$i, undef, SQL_INTEGER );
 
   if ( defined( $transcript->stable_id() ) ) {
 
-    $tst->bind_param( 12, $transcript->stable_id(), SQL_VARCHAR );
+    $tst->bind_param( ++$i, $transcript->stable_id(), SQL_VARCHAR );
     my $version = ($transcript->version()) ? $transcript->version() : 1;
-    $tst->bind_param( 13, $version,                 SQL_INTEGER );
+    $tst->bind_param( ++$i, $version,                 SQL_INTEGER );
   }
-
 
   $tst->execute();
   $tst->finish();
@@ -1376,17 +1374,8 @@ sub update {
     throw("Must update a transcript object, not a $transcript");
   }
 
-  my $update_transcript_sql = qq(
-       UPDATE transcript
-          SET analysis_id = ?,
-              display_xref_id = ?,
-              description = ?,
-              biotype = ?,
-              status = ?,
-              is_current = ?,
-              canonical_translation_id = ?
-        WHERE transcript_id = ?
-  );
+  my $update_transcript_sql = 
+    sprintf "UPDATE transcript SET analysis_id = ?, display_xref_id = ?, description = ?,%s biotype = ?, status = ?, is_current = ?, canonical_translation_id = ? WHERE transcript_id = ?", ($self->schema_version > 74)?" source = ?,":'';
 
   my $display_xref = $transcript->display_xref();
   my $display_xref_id;
@@ -1398,19 +1387,23 @@ sub update {
   }
 
   my $sth = $self->prepare($update_transcript_sql);
+  my $i = 0;
+  $sth->bind_param( ++$i, $transcript->analysis()->dbID(), SQL_INTEGER );
+  $sth->bind_param( ++$i, $display_xref_id, SQL_INTEGER );
+  $sth->bind_param( ++$i, $transcript->description(), SQL_LONGVARCHAR );
 
-  $sth->bind_param( 1, $transcript->analysis()->dbID(), SQL_INTEGER );
-  $sth->bind_param( 2, $display_xref_id, SQL_INTEGER );
-  $sth->bind_param( 3, $transcript->description(), SQL_LONGVARCHAR );
-  $sth->bind_param( 4, $transcript->biotype(),     SQL_VARCHAR );
-  $sth->bind_param( 5, $transcript->status(),      SQL_VARCHAR );
-  $sth->bind_param( 6, $transcript->is_current(),  SQL_TINYINT );
-  $sth->bind_param( 7, (
+  $self->schema_version > 74 and 
+    $sth->bind_param( ++$i,  $transcript->source(),      SQL_VARCHAR );
+
+  $sth->bind_param( ++$i, $transcript->biotype(),     SQL_VARCHAR );
+  $sth->bind_param( ++$i, $transcript->status(),      SQL_VARCHAR );
+  $sth->bind_param( ++$i, $transcript->is_current(),  SQL_TINYINT );
+  $sth->bind_param( ++$i, (
                       defined( $transcript->translation() )
                       ? $transcript->translation()->dbID()
                       : undef ),
                     SQL_INTEGER );
-  $sth->bind_param( 8, $transcript->dbID(), SQL_INTEGER );
+  $sth->bind_param( ++$i, $transcript->dbID(), SQL_INTEGER );
 
   $sth->execute();
 } ## end sub update
@@ -1493,21 +1486,36 @@ sub _objs_from_sth {
     $external_db,    $external_status,    $external_db_name,
     $xref_id,        $xref_display_label, $xref_primary_acc,
     $xref_version,   $xref_description,   $xref_info_type,
-    $xref_info_text
+    $xref_info_text, $source
   );
 
-  $sth->bind_columns(
-    \(
-      $transcript_id,  $seq_region_id,      $seq_region_start,
-      $seq_region_end, $seq_region_strand,  $analysis_id,
-      $gene_id,        $is_current,         $stable_id,
-      $version,        $created_date,       $modified_date,
-      $description,    $biotype,            $status,
-      $external_db,    $external_status,    $external_db_name,
-      $xref_id,        $xref_display_label, $xref_primary_acc,
-      $xref_version,   $xref_description,   $xref_info_type,
-      $xref_info_text
-    ) );
+  if ($self->schema_version() > 74) {
+    $sth->bind_columns(
+		       \(
+			 $transcript_id,  $seq_region_id,      $seq_region_start,
+			 $seq_region_end, $seq_region_strand,  $analysis_id,
+			 $gene_id,        $is_current,         $stable_id,
+			 $version,        $created_date,       $modified_date,
+			 $description,    $biotype,            $status,
+			 $external_db,    $external_status,    $external_db_name,
+			 $xref_id,        $xref_display_label, $xref_primary_acc,
+			 $xref_version,   $xref_description,   $xref_info_type,
+			 $xref_info_text, $source
+			) );
+  } else {
+    $sth->bind_columns(
+		       \(
+			 $transcript_id,  $seq_region_id,      $seq_region_start,
+			 $seq_region_end, $seq_region_strand,  $analysis_id,
+			 $gene_id,        $is_current,         $stable_id,
+			 $version,        $created_date,       $modified_date,
+			 $description,    $biotype,            $status,
+			 $external_db,    $external_status,    $external_db_name,
+			 $xref_id,        $xref_display_label, $xref_primary_acc,
+			 $xref_version,   $xref_description,   $xref_info_type,
+			 $xref_info_text
+			) );    
+  }
 
   my $asm_cs;
   my $cmp_cs;
@@ -1733,33 +1741,35 @@ sub _objs_from_sth {
 
 
     # Finally, create the new Transcript.
-    push(
-      @transcripts,
-      $self->_create_feature_fast(
-        'Bio::EnsEMBL::Transcript',
-        {
-          'analysis'              => $analysis,
-          'start'                 => $seq_region_start,
-          'end'                   => $seq_region_end,
-          'strand'                => $seq_region_strand,
-          'adaptor'               => $self,
-          'slice'                 => $slice,
-          'dbID'                  => $transcript_id,
-          'stable_id'             => $stable_id,
-          'version'               => $version,
-          'created_date'          => $created_date || undef,
-          'modified_date'         => $modified_date || undef,
-          'external_name'         => $xref_display_label,
-          'external_db'           => $external_db,
-          'external_status'       => $external_status,
-          'external_display_name' => $external_db_name,
-          'display_xref'          => $display_xref,
-          'description'           => $description,
-          'biotype'               => $biotype,
-          'status'                => $status,
-          'is_current'            => $is_current,
-          'edits_enabled'         => 1
-        } ) );
+    my $params = 
+      {
+       'analysis'              => $analysis,
+       'start'                 => $seq_region_start,
+       'end'                   => $seq_region_end,
+       'strand'                => $seq_region_strand,
+       'adaptor'               => $self,
+       'slice'                 => $slice,
+       'dbID'                  => $transcript_id,
+       'stable_id'             => $stable_id,
+       'version'               => $version,
+       'created_date'          => $created_date || undef,
+       'modified_date'         => $modified_date || undef,
+       'external_name'         => $xref_display_label,
+       'external_db'           => $external_db,
+       'external_status'       => $external_status,
+       'external_display_name' => $external_db_name,
+       'display_xref'          => $display_xref,
+       'description'           => $description,
+       'biotype'               => $biotype,
+       'status'                => $status,
+       'is_current'            => $is_current,
+       'edits_enabled'         => 1
+      };
+    
+    $self->schema_version > 74 and $params->{'source'} = $source;
+    push( @transcripts, 
+	  $self->_create_feature_fast('Bio::EnsEMBL::Transcript', 
+				      $params) );
 
   }
 
