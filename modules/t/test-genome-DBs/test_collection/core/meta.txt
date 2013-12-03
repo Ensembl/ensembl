@@ -1,0 +1,120 @@
+3	\N	patch	patch_71_72_a.sql|schema_version
+4	\N	patch	patch_71_72_b.sql|associated_xref
+58	\N	patch	patch_72_73_a.sql|schema_version
+59	\N	patch	patch_72_73_b.sql|alt_allele_type
+60	\N	patch	patch_72_73_c.sql|add_object_type_marker
+62	\N	patch	patch_73_74_a.sql|schema_version
+63	\N	patch	patch_73_74_c.sql|remove_unconventional_transcript_association
+64	\N	patch	patch_73_74_d.sql|remove_qtl
+65	\N	patch	patch_73_74_e.sql|remove_canonical_annotation
+66	\N	patch	patch_73_74_f.sql|remove_pair_dna_align
+1	\N	schema_type	core
+2	\N	schema_version	74
+8	1	assembly.accession	GCA_000292705.1
+10	1	assembly.date	2012-08
+7	1	assembly.default	GCA_000292705.1
+11	1	assembly.description	Bacillus thuringiensis HD-789 Genome sequencing
+45	1	assembly.mapping	chromosome:GCA_000292705.1#contig
+44	1	assembly.mapping	plasmid:GCA_000292705.1#contig
+17	1	assembly.master_accession	CP003763
+9	1	assembly.name	ASM29270v1
+56	1	exonbuild.level	toplevel
+53	1	genebuild.hash	6538e11c93c6a472265adaf11a8ad2ce
+14	1	genebuild.initial_release_date	2012-08-EnsemblBacteria
+15	1	genebuild.last_geneset_update	2012-08
+54	1	genebuild.level	toplevel
+16	1	genebuild.method	Generated from ENA annotation
+13	1	genebuild.start_date	2012-08-EnsemblBacteria
+12	1	genebuild.version	2012-08-EnsemblBacteria
+61	1	patch	patch_73_74_b.sql|remove_dnac
+42	1	provider.name	European Nucleotide Archive
+43	1	provider.url	http://www.ebi.ac.uk/ena/data/view/GCA_000292705
+18	1	repeat.analysis	Dust
+19	1	repeat.analysis	TRF
+48	1	sample.gene_param	BTF1_30792
+49	1	sample.gene_text	BTF1_30792
+46	1	sample.location_param	p02:80287-81642
+47	1	sample.location_text	p02:80287-81642
+52	1	sample.search_text	synthetase
+50	1	sample.transcript_param	AFQ30259
+51	1	sample.transcript_text	BTF1_30792-1
+5	1	schema.load_started	2013-07-16 13:02:46
+6	1	schema.load_started	2013-07-16 13:02:53
+57	1	simple_featurebuild.level	toplevel
+37	1	species.alias	Bacillus thuringiensis HD-789
+38	1	species.alias	bacillus_thuringiensis
+24	1	species.classification	Bacillaceae
+25	1	species.classification	Bacillales
+26	1	species.classification	Bacilli
+23	1	species.classification	Bacillus
+22	1	species.classification	Bacillus cereus group
+21	1	species.classification	Bacillus thuringiensis
+20	1	species.classification	Bacillus thuringiensis HD-789
+28	1	species.classification	Bacteria
+29	1	species.classification	cellular organisms
+27	1	species.classification	Firmicutes
+34	1	species.common_name	Bacillus thuringiensis HD-789
+39	1	species.db_name	bacillus_thuringiensis
+33	1	species.display_name	Bacillus thuringiensis HD-789
+41	1	species.division	EnsemblBacteria
+36	1	species.ensembl_alias_name	Bacillus thuringiensis HD-789
+30	1	species.production_name	bacillus_thuringiensis
+32	1	species.scientific_name	Bacillus thuringiensis HD-789
+35	1	species.short_name	Bacillus thuringiensis HD-789
+40	1	species.taxonomy_id	1217737
+31	1	species.url	Bacillus_thuringiensis
+55	1	transcriptbuild.level	toplevel
+118	2	assembly.accession	GCA_000292706.1
+110	2	assembly.date	2012-08
+107	2	assembly.default	GCA_000292706.1
+111	2	assembly.description	Bacillus thuringiensis HD-790 Genome sequencing
+145	2	assembly.mapping	chromosome:GCA_000292706.1#contig
+144	2	assembly.mapping	plasmid:GCA_000292706.1#contig
+117	2	assembly.master_accession	CP003763
+109	2	assembly.name	ASM29270v2
+156	2	exonbuild.level	toplevel
+153	2	genebuild.hash	6538e11c93c6a472265adaf11a8ad2ce
+114	2	genebuild.initial_release_date	2012-08-EnsemblBacteria
+115	2	genebuild.last_geneset_update	2012-08
+154	2	genebuild.level	toplevel
+116	2	genebuild.method	Generated from ENA annotation
+113	2	genebuild.start_date	2012-08-EnsemblBacteria
+112	2	genebuild.version	2012-08-EnsemblBacteria
+161	2	patch	patch_73_74_b.sql|remove_dnac
+142	2	provider.name	European Nucleotide Archive
+143	2	provider.url	http://www.ebi.ac.uk/ena/data/view/GCA_000292706
+118	2	repeat.analysis	Dust
+119	2	repeat.analysis	TRF
+148	2	sample.gene_param	BTF1_30792
+149	2	sample.gene_text	BTF1_30792
+146	2	sample.location_param	p02:80287-81642
+147	2	sample.location_text	p02:80287-81642
+152	2	sample.search_text	synthetase
+150	2	sample.transcript_param	AFQ30259
+151	2	sample.transcript_text	BTF1_30792-1
+105	2	schema.load_started	2013-07-16 13:02:46
+106	2	schema.load_started	2013-07-16 13:02:53
+157	2	simple_featurebuild.level	toplevel
+137	2	species.alias	Bacillus thuringiensis HD-790
+138	2	species.alias	bacillus_thuringiensis
+124	2	species.classification	Bacillaceae
+125	2	species.classification	Bacillales
+126	2	species.classification	Bacilli
+123	2	species.classification	Bacillus
+122	2	species.classification	Bacillus cereus group
+121	2	species.classification	Bacillus thuringiensis
+120	2	species.classification	Bacillus thuringiensis HD-790
+128	2	species.classification	Bacteria
+129	2	species.classification	cellular organisms
+127	2	species.classification	Firmicutes
+134	2	species.common_name	Bacillus thuringiensis HD-790
+139	2	species.db_name	bacillus_thuringiensis_hd_790
+133	2	species.display_name	Bacillus thuringiensis HD-790
+141	2	species.division	EnsemblBacteria
+136	2	species.ensembl_alias_name	Bacillus thuringiensis HD-790
+130	2	species.production_name	bacillus_thuringiensis_hd_790
+132	2	species.scientific_name	Bacillus thuringiensis HD-790
+135	2	species.short_name	Bacillus thuringiensis HD-790
+140	2	species.taxonomy_id	1217737
+131	2	species.url	Bacillus_thuringiensis_hd_790
+155	2	transcriptbuild.level	toplevel
