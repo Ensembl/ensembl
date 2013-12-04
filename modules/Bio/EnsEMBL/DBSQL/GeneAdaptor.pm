@@ -1939,16 +1939,19 @@ sub fetch_all_by_transcript_supporting_evidence {
 
   Arg [1]    : Feature object
   Example    : $genes = $gene_adaptor->fetch_nearest_Gene_by_Feature($feat);
-  Description: Gets the nearest gene to the feature 
+  Description: DEPRECATED; BE AWARE THE RESULTS OF THIS METHOD ARE UNRELIABLE
+               ESPECIALLY WRT STRANDED AND STREAM.
   Returntype : Listref of Bio::EnsEMBL::Gene, EMPTY list if no nearest
   Caller     : general
-  Status     : UnStable
+  Status     : DEPRECATED
 
 =cut
 
 sub fetch_nearest_Gene_by_Feature {
   my $self = shift;
   my $feat = shift;
+
+  deprecate("fetch_nearest_Gene_by_Feature() is a deprecated method. Strand and stream implementations are unreliable. Please use with caution");
 
   my $stranded = shift;
   my $stream   = shift;    # 1 up stream -1 downstream
