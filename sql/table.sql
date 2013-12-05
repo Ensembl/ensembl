@@ -203,6 +203,39 @@ CREATE TABLE dna (
 
 
 /**
+@table genome_statistics
+@desc Contains genome and assembly related statistics
+      These include but are not limited to: feature counts, sequence lengths
+
+@column genome_statistics_id  Primary key, internal identifier.
+@column statistic            Name of the statistics
+@column value                 Corresponding value of the statistics (count/length)
+@column species_id            Indentifies the species for multi-species databases.
+@column attrib_type_id        To distinguish similar statistics for different cases
+@column timestamp             Date the statistics was generated
+
+*/
+
+
+CREATE TABLE genome_statistics(
+
+  genome_statistics_id     INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
+  statistic                VARCHAR(128) NOT NULL,
+  value                    INT(10) UNSIGNED DEFAULT '0' NOT NULL,
+  species_id               INT UNSIGNED DEFAULT 1,
+  attrib_type_id           INT(10) UNSIGNED DEFAULT NULL,
+  timestamp                DATETIME NOT NULL DEFAULT '0000-00-00 00:00:00',
+
+  PRIMARY KEY (genome_statistics_id),
+  UNIQUE KEY stats_uniq(statistic, attrib_type_id, species_id),
+  KEY stats_idx (statistic, attrib_type_id, species_id)
+
+) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
+
+
+
+
+/**
 @table karyotype
 @desc Describes bands that can be stained on the chromosome.
 
@@ -278,6 +311,8 @@ INSERT INTO meta (species_id, meta_key, meta_value)
   VALUES (NULL, 'patch', 'patch_74_75_a.sql|schema_version');
 INSERT INTO meta (species_id, meta_key, meta_value)
   VALUES (NULL, 'patch', 'patch_74_75_b.sql|transcript_source');
+INSERT INTO meta (species_id, meta_key, meta_value)
+ VALUES (NULL, 'patch', 'patch_74_75_c.sql|add_genome_statistics');
 
 /**
 @table meta_coord
