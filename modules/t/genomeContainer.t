@@ -108,7 +108,7 @@ is($ref_length, $genome->get_ref_length, "Reference length is correct");
 
 $sql = "SELECT sum(length(sequence)) FROM dna";
 my $total_length = $sql_helper->execute_single_result(-SQL => $sql);    
-is($total_length, $genome->get_total_length, "Reference length is correct");
+is($total_length, $genome->get_total_length, "Total length is correct");
 
 
 
