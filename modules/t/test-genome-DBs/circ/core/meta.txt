@@ -12,6 +12,7 @@
 68	\N	patch	patch_73_74_h.sql|alt_allele_unique_gene_idx
 69	\N	patch	patch_74_75_a.sql|schema_version
 70	\N	patch	patch_74_75_b.sql|transcript_source
+71	\N	patch	patch_74_75_c.sql|add_genome_statistics
 1	\N	schema_type	core
 2	\N	schema_version	75
 8	1	assembly.accession	GCA_000292705.1

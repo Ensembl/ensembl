@@ -47,3 +47,4 @@
 96	\N	patch	patch_73_74_h.sql|alt_allele_unique_gene_idx
 97	\N	patch	patch_74_75_a.sql|schema_version
 98	\N	patch	patch_74_75_b.sql|transcript_source
+99	\N	patch	patch_74_75_c.sql|add_genome_statistics
