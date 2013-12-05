@@ -519,15 +519,19 @@ $geneCount = $ga->count_all_by_biotype(['protein_coding', 'sRNA']);
 ok($geneCount == 20);
 
 #
-# test TranscriptAdaptor::fetch_all_by_source
+# test GeneAdaptor::fetch_all_by_source
 #
 note("Test fetch_all_by_source");
 @genes = @{$ga->fetch_all_by_source('ensembl')};
 note "Got ".scalar(@genes)." ensembl genes\n";
 ok(@genes == 18);
+$geneCount = $ga->count_all_by_source('ensembl');
+ok($geneCount == 18);
 @genes = @{$ga->fetch_all_by_source(['havana','vega'])};
 note "Got ".scalar(@genes)." (havana, vega) transcripts\n";
 ok(@genes == 2);
+$geneCount = $ga->count_all_by_source(['havana', 'vega']);
+ok($geneCount == 2);
 
 #
 # test Gene: get_all_alt_alleles
