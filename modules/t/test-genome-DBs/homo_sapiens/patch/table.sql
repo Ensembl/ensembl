@@ -103,7 +103,7 @@ CREATE TABLE `attrib_type` (
   `description` text COLLATE latin1_bin,
   PRIMARY KEY (`attrib_type_id`),
   UNIQUE KEY `c` (`code`)
-) ENGINE=MyISAM AUTO_INCREMENT=394 DEFAULT CHARSET=latin1 COLLATE=latin1_bin;
+) ENGINE=MyISAM AUTO_INCREMENT=395 DEFAULT CHARSET=latin1 COLLATE=latin1_bin;
 
 CREATE TABLE `coord_system` (
   `coord_system_id` int(10) unsigned NOT NULL AUTO_INCREMENT,
@@ -320,6 +320,29 @@ CREATE TABLE `gene_attrib` (
   KEY `gene_idx` (`gene_id`)
 ) ENGINE=MyISAM DEFAULT CHARSET=latin1 COLLATE=latin1_bin;
 
+CREATE TABLE `genome` (
+  `stats_id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+  `statistics` varchar(128) NOT NULL,
+  `value` int(10) unsigned NOT NULL DEFAULT '0',
+  `species_id` int(10) unsigned DEFAULT '1',
+  `attribute` varchar(128) DEFAULT NULL,
+  `timestamp` datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
+  PRIMARY KEY (`stats_id`),
+  KEY `stats_idx` (`statistics`,`attribute`)
+) ENGINE=MyISAM DEFAULT CHARSET=latin1;
+
+CREATE TABLE `genome_statistics` (
+  `genome_statistics_id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+  `statistic` varchar(128) NOT NULL,
+  `value` int(10) unsigned NOT NULL DEFAULT '0',
+  `species_id` int(10) unsigned DEFAULT '1',
+  `attrib_type_id` int(10) unsigned DEFAULT NULL,
+  `timestamp` datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
+  PRIMARY KEY (`genome_statistics_id`),
+  UNIQUE KEY `stats_uniq` (`statistic`,`attrib_type_id`,`species_id`),
+  KEY `stats_idx` (`statistic`,`attrib_type_id`,`species_id`)
+) ENGINE=MyISAM DEFAULT CHARSET=latin1;
+
 CREATE TABLE `identity_xref` (
   `object_xref_id` int(10) unsigned NOT NULL DEFAULT '0',
   `xref_identity` int(5) DEFAULT NULL,
@@ -449,7 +472,7 @@ CREATE TABLE `meta` (
   PRIMARY KEY (`meta_id`),
   UNIQUE KEY `species_key_value_idx` (`species_id`,`meta_key`,`meta_value`),
   KEY `species_value_idx` (`species_id`,`meta_value`)
-) ENGINE=MyISAM AUTO_INCREMENT=2057 DEFAULT CHARSET=latin1;
+) ENGINE=MyISAM AUTO_INCREMENT=2062 DEFAULT CHARSET=latin1;
 
 CREATE TABLE `meta_coord` (
   `table_name` varchar(40) COLLATE latin1_bin NOT NULL DEFAULT '',
@@ -747,6 +770,7 @@ CREATE TABLE `transcript` (
   `seq_region_end` int(10) unsigned NOT NULL,
   `seq_region_strand` tinyint(2) NOT NULL,
   `display_xref_id` int(10) unsigned DEFAULT NULL,
+  `source` varchar(20) NOT NULL,
   `biotype` varchar(40) NOT NULL,
   `status` enum('KNOWN','NOVEL','PUTATIVE','PREDICTED','KNOWN_BY_PROJECTION','UNKNOWN') DEFAULT NULL,
   `description` text,
@@ -778,7 +802,8 @@ CREATE TABLE `transcript_intron_supporting_evidence` (
   `intron_supporting_evidence_id` int(10) unsigned NOT NULL,
   `previous_exon_id` int(10) unsigned NOT NULL,
   `next_exon_id` int(10) unsigned NOT NULL,
-  PRIMARY KEY (`intron_supporting_evidence_id`,`transcript_id`)
+  PRIMARY KEY (`intron_supporting_evidence_id`,`transcript_id`),
+  KEY `transcript_idx` (`transcript_id`)
 ) ENGINE=MyISAM DEFAULT CHARSET=latin1;
 
 CREATE TABLE `transcript_supporting_feature` (

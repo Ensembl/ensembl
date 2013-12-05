@@ -251,3 +251,6 @@
 389	snoncoding_cnt	Short non coding gene count	Number of short non coding genes
 390	lnoncoding_cnt	Long non coding gene count	Number of long non coding genes
 391	TlUPsCount	translated_unprocessed_pseudogene	Number of Translated Unprocessed Pseudogenes
+392	genscan	Genscan transcripts	Transcripts predicted using Genscan
+393	ref_length		\N
+394	total_length		\N

@@ -85,7 +85,7 @@ is($alt_lnoncoding_count, $genome->get_alt_lnoncoding_count, "Long non coding co
 my $alt_snoncoding_count = $sql_helper->execute_single_result(-SQL => $sql, -PARAMS => ['snoncoding_acnt']);
 is($alt_snoncoding_count, $genome->get_alt_snoncoding_count, "Short non coding count on alternate sequences is correct");
 
-my $short_variation_count = $sql_helper->execute_single_result(-SQL => $sql, -PARAMS => ['SNPcount'], -NO_ERROR => 1);
+my $short_variation_count = $sql_helper->execute_single_result(-SQL => $sql, -PARAMS => ['SNPCount'], -NO_ERROR => 1);
 is($short_variation_count, $genome->get_short_variation_count, "Short variants count is correct");
 
 is_rows($genome->get_prediction_count, $db, "prediction_transcript");
@@ -108,6 +108,7 @@ is($ref_length, $genome->get_ref_length, "Reference length is correct");
 
 $sql = "SELECT sum(length(sequence)) FROM dna";
 my $total_length = $sql_helper->execute_single_result(-SQL => $sql);    
+print "$total_length is the calculated sql length\n";
 is($total_length, $genome->get_total_length, "Total length is correct");
 
 
