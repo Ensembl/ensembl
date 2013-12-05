@@ -99,6 +99,139 @@ sub new {
   return $self;
 }
 
+
+
+=head2 fetch_by_version
+
+  Arg [1]    : (optional) Int $version
+               Version used to fetch a genome object
+               If none is provided, use the default version
+  Example    : $genome = $genome_adaptor->fetch_by_version('GRCh37');
+  Description: Retrieves a genome object
+  Returntype : Bio::EnsEMBL::Genome
+  Exceptions : none
+  Caller     : general
+  Status     : Stable
+
+=cut
+
+sub fetch_by_version {
+  my ($self, $version) = @_;
+
+  if (!$version) {
+    my $csa = $self->db()->get_adaptor('CoordSystem');
+    my @cs = @{ $csa->fetch_all() };
+    $version = $cs[0]->version();
+  }
+
+  my $genome = Bio::EnsEMBL::Genome->new(
+         -VERSION => $version,
+         -ADAPTOR => $self,
+        );
+
+  return $genome;
+}
+
+
+=head2 store
+
+  Arg [1]    : Statistic
+               The type of statistic to store
+  Arg [2]    : Value
+               The corresponding value for the statistic
+  Arg [3]    : (optional) Description for the statistic
+  Arg [4]    : (optional) Attribute
+               If more than one value exists for the statistics, it will be distinguished by its attribute
+  Example    : $genome_adaptor->store('coding_cnt', 20769);
+  Description: Stores a genome statistic in the database
+  Returntype : The database identifier (dbID) of the newly stored genome statistic
+  Exceptions : 
+  Caller     : general
+  Status     : Stable
+
+=cut
+
+sub store {
+  my ($self, $statistic, $value, $attribute) = @_;
+
+  my $stats_id = @{ $self->_get_statistic($statistic, $attribute) }[0];
+  if (defined $stats_id) {
+    $self->update($statistic, $value, $attribute);
+  } else {
+
+    my $db = $self->db();
+    my $species_id = $db->species_id();
+
+    my $store_genome_sql = q{
+    INSERT INTO genome_statistics 
+       SET statistic = ?,
+               value = ?,
+          species_id = ?,
+           timestamp = now()
+    };
+
+    if (defined $attribute) {
+      $store_genome_sql .= ", attrib_type_id = ?";
+    }
+
+    my $sth = $self->prepare($store_genome_sql);
+    $sth->bind_param(1,   $statistic,         SQL_VARCHAR);
+    $sth->bind_param(2,   $value,             SQL_INTEGER);
+    $sth->bind_param(3,   $species_id,        SQL_INTEGER);
+
+    if (defined $attribute) {
+      my $attribute_adaptor = $db->get_AttributeAdaptor();
+      my $attribute_object = Bio::EnsEMBL::Attribute->new(-code => $attribute);
+      my $attribute_type_id = $attribute_adaptor->_store_type($attribute_object);
+      $sth->bind_param(4, $attribute_type_id, SQL_VARCHAR);
+    }
+
+    $sth->execute();
+    $sth->finish();
+
+    $stats_id = $sth->{'mysql_insertid'};
+  }
+
+  return $stats_id;
+  
+}
+
+sub update {
+  my ($self, $statistic, $value, $attribute) = @_;
+
+  my $db = $self->db();
+
+  my $update_genome_sql = q{
+    UPDATE genome_statistics
+       SET value = ?,
+       timestamp = now() 
+  };
+
+  if (defined $attribute) {
+    $update_genome_sql .= ', attrib_type_id = ?';
+  }
+
+  $update_genome_sql .= ' WHERE statistic = ?';
+  
+  my $sth = $self->prepare($update_genome_sql);
+  $sth->bind_param(1,   $value,     SQL_INTEGER);
+
+  my $increment = 2;
+  if (defined $attribute) {
+    my $attribute_adaptor = $db->get_AttributeAdaptor();
+    my $attribute_object = Bio::EnsEMBL::Attribute->new(-code => $attribute);
+    my $attribute_type_id = $attribute_adaptor->_store_type($attribute_object);
+    $sth->bind_param($increment, $attribute_type_id, SQL_VARCHAR);
+    $increment++;
+  }
+  
+  $sth->bind_param($increment, $statistic, SQL_VARCHAR);
+
+  $sth->execute();
+  $sth->finish();
+}
+
+
 =head2 _meta_container
 
   Arg [1]    : none
@@ -360,7 +493,7 @@ sub get_ref_length {
     $self->{'ref_length'} = $ref_length;
   }
   if (!defined $self->{'ref_length'}) {
-    $self->{'ref_length'} = $self->_get_length('toplevel');
+    $self->{'ref_length'} = @{ $self->_get_statistic('ref_length')}[2];
   }
   return $self->{'ref_length'};
 }
@@ -385,7 +518,7 @@ sub get_total_length {
     $self->{'total_length'} = $total_length;
   }
   if (!defined $self->{'total_length'}) {
-    $self->{'total_length'} = $self->_get_length('seqlevel');
+    $self->{'total_length'} = @{ $self->_get_statistic('total_length')}[2];
   }
   return $self->{'total_length'};
 }
@@ -469,14 +602,47 @@ sub get_coord_systems {
 =cut
 
 sub _get_count {
-  my ($self, $code) = @_;
-  my $aa = $self->db()->get_adaptor('Attribute');
-  my $attributes = $aa->fetch_all_by_Object(undef, 'seq_region', $code);
-  my $count;
-  foreach my $attribute (@$attributes) {
-    $count += $attribute->value();
+  my ($self, $code, $attribute) = @_;
+  my @results = @{ $self->_get_statistic($code, $attribute) };
+  return $results[2];
+}
+
+=head2 _get_statistic
+
+  Arg [1]    : none
+  Example    : $results = $genome->_get_statistic('coding_cnt');
+  Description: Internal method to return the results for a given statistic
+  Returntype : integer
+  Exceptions : none
+  Caller     : general
+  Status     : Stable
+
+=cut
+
+sub _get_statistic {
+  my ($self, $statistic, $attribute) = @_;
+  my $db = $self->db;
+  my ($value, $timestamp);
+  my $fetch_sql = q{
+    SELECT genome_statistics_id, statistic, value, species_id, code, timestamp
+      FROM genome_statistics, attrib_type 
+     WHERE genome_statistics.attrib_type_id = attrib_type.attrib_type_id
+       AND statistic = ?
+  };
+  if (defined $attribute) {
+    $fetch_sql .= " AND code = ?";
   }
-  return $count;
+
+  my $sth = $self->prepare($fetch_sql);
+  $sth->bind_param(1, $statistic, SQL_VARCHAR);
+  if (defined $attribute) {
+    $sth->bind_param(2, $attribute, SQL_VARCHAR);
+  }
+  $sth->execute();
+  my @results = $sth->fetchrow_array();
+  $sth->finish();
+
+  return \@results;
 }
 
 =head2 get_coding_count
@@ -694,7 +860,7 @@ sub get_short_variation_count {
     $self->{'short_variation_count'} = $short_variation_count;
   }
   if (!defined $self->{'short_variation_count'}) {
-    $self->{'short_variation_count'} = $self->_get_count('short_variation_count');
+    $self->{'short_variation_count'} = $self->_get_count('SNPcount');
   }
   return $self->{'short_variation_count'};
 }
@@ -703,7 +869,6 @@ sub get_short_variation_count {
 =head2 get_prediction_count
 
   Arg [1]    : (optional) logic_name
-  Arg [2]    : (optional) prediction_count
   Example    : $prediction_count = $genome->get_prediction_count();
   Description: Return the number of predicted genes in the current build
                Can be restricted to a given analysis
@@ -716,19 +881,9 @@ sub get_short_variation_count {
 =cut
 
 sub get_prediction_count {
-  my ($self, $logic_name, $prediction_count) = @_;
-  if (defined $prediction_count) {
-    $self->{'prediction_count'} = $prediction_count;
-  }
+  my ($self, $logic_name) = @_;
   if (!defined $self->{'prediction_count'}) {
-    my $constraint;
-    my $pa = $self->db->get_adaptor('PredictionTranscript');
-    if ($logic_name) {
-      my $analysis_adaptor = $self->get_adaptor('Analysis');
-      my $analysis = $analysis_adaptor->fetch_by_logic_name($logic_name);
-      $constraint = 'analysis_id = ' . $analysis->dbID;
-    }
-    $self->{'prediction_count'} = $pa->generic_count($constraint);
+    $self->{'prediction_count'} = $self->_get_count('PredictionTranscript', $logic_name);
   }
   return $self->{'prediction_count'};
 }
@@ -748,13 +903,10 @@ sub get_prediction_count {
 
 sub get_structural_variation_count {
   my $self = @_;
-  my $slice_adaptor = $self->db->get_adaptor('Slice');
-  my $slices = $slice_adaptor->fetch_all('toplevel');
-  my $count;
-  foreach my $seq (@$slices) {
-    $count += scalar(@{ $seq->get_all_StructuralVariationFeatures() });
-  }
-  return $count;
+  if (!defined $self->{'structural_variation_count'}) {
+    $self->{'structural_variation_count'} = $self->_get_count('StructuralVariation');
+   }
+  return $self->{'structural_variation_count'};
 }
 
 
