@@ -706,6 +706,53 @@ sub fetch_all_by_exon_stable_id {
   return \@trans;
 }
 
+=head2 fetch_all_by_source
+
+  Arg [1]    : String $source
+               listref of $sources
+               The source of the transcript to retrieve. You can also have a reference
+               to a list of sources in the event of needing several.
+  Example    : $transcript = $transcript_adaptor->fetch_all_by_source('ensembl'); 
+               $transcript = $transcript_adaptor->fetch_all_by_source(['ensembl','another_source']);
+  Description: Retrieves an array reference of transcript objects from the 
+               database via its source or sources.
+               The transcript will be retrieved in its native coordinate system
+               (i.e. in the coordinate system it is stored in the database). 
+               It may be converted to a different coordinate system through a 
+               call to transform() or transfer(). If the transcript is not found
+               undef is returned instead.
+  Returntype : listref of Bio::EnsEMBL::Transcript
+  Exceptions : if we cant get the transcript in given coord system
+  Caller     : general
+  Status     : Stable
+
+=cut
+
+sub fetch_all_by_source {
+  my ($self, $source) = @_;
+
+  if (!defined $source){
+      throw("Source or listref of sources expected");
+  }
+  my $constraint;
+  if (ref($source) eq 'ARRAY'){
+      $constraint = "t.source IN (";
+      foreach my $s (@{$source}){
+        $constraint .= "?,";    
+        $self->bind_param_generic_fetch($s,SQL_VARCHAR);
+      }
+      chop($constraint); #remove last , from expression
+      $constraint .= ") and t.is_current = 1";
+      
+  }
+  else{
+      $constraint = "t.source = ? and t.is_current = 1";
+      $self->bind_param_generic_fetch($source,SQL_VARCHAR);
+  }
+  my @transcripts  = @{ $self->generic_fetch($constraint) };
+  return \@transcripts ;
+}
+
 =head2 fetch_all_by_biotype 
 
   Arg [1]    : String $biotype 
