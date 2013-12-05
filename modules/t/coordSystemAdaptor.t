@@ -198,6 +198,10 @@ is( $new_path->[1]->name, 'clone', "Component is clone");
 my $new_paths2 = $csa->store_mapping_path( $cs, $cln_cs );
 is( @{$new_paths2}, 0, "No mapping path was added" ); # Should not update second time round
 
+my $new_paths3 = $csa->store_multiple_mapping_path($cs, $ctg_cs);
+is( @{$new_paths3}, 1, "Added a multiple mapping path");
+is( $new_paths3->[0], "newsystem:NCBI35#contig", "Multiple mapping between newsystem and clone");
+
 #
 # Do some inserting of mock coord systems and 
 # do version retrieval
