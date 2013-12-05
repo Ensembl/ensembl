@@ -248,7 +248,7 @@ sub inheritance_action {
 	   my @parents = $line =~ /Bio::EnsEMBL::[\w:]+/g;
 	   push @inheritance,@parents;
     }
-    elsif ($line =~ /use base/) {
+    elsif ($line =~ /use base/ or $line =~ /use parent/) {
         my @parents = $line =~ /Bio::EnsEMBL::[\w:]+/g;
         push @inheritance,@parents;
     }
