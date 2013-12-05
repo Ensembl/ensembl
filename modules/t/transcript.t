@@ -276,6 +276,7 @@ ok(@transcripts == 25);
 @transcripts = @{$ta->fetch_all_by_biotype(['protein_coding','pseudogene'])};
 note "Got ".scalar(@transcripts)." transcripts\n";
 ok(@transcripts == 25);
+my $transcriptCount;
 
 #
 # test TranscriptAdaptor::fetch_all_by_source
@@ -284,9 +285,13 @@ note("Test fetch_all_by_source");
 my @transcripts = @{$ta->fetch_all_by_source('ensembl')};
 note "Got ".scalar(@transcripts)." ensembl transcripts\n";
 ok(@transcripts == 21);
+$transcriptCount = $ta->count_all_by_source('ensembl');
+ok($transcriptCount == 21);
 @transcripts = @{$ta->fetch_all_by_source(['havana','vega'])};
 note "Got ".scalar(@transcripts)." (havana, vega) transcripts\n";
 ok(@transcripts == 4);
+$transcriptCount = $ta->count_all_by_source(['havana', 'vega']);
+ok($transcriptCount == 4);
 
 #
 # Test get_all_Introns by joining Exons and introns
