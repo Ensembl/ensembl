@@ -706,6 +706,54 @@ sub fetch_all_by_exon_stable_id {
   return \@trans;
 }
 
+=head2 fetch_all_by_source
+
+  Arg [1]    : String $source
+               listref of $sources
+               The source of the transcript to retrieve. You can have as an argument a reference
+               to a list of sources
+  Example    : $transcripts = $transcript_adaptor->fetch_all_by_source('havana'); 
+               $transcripts = $transcript_adaptor->fetch_all_by_source(['ensembl', 'vega']);
+  Description: Retrieves an array reference of transcript objects from the database via its source or sources.
+               The transcript will be retrieved in its native coordinate system (i.e.
+               in the coordinate system it is stored in the database). It may
+               be converted to a different coordinate system through a call to
+               transform() or transfer(). If the gene or exon is not found
+               undef is returned instead.
+  Returntype  : listref of Bio::EnsEMBL::Transcript
+  Exceptions : if we cant get the gene in given coord system
+  Caller     : general
+  Status     : Stable
+
+=cut
+
+sub fetch_all_by_source {
+  my ($self, $source) = @_;
+  my @transcripts = @{$self->generic_fetch($self->source_constraint($source))};
+  return \@transcripts;
+}
+
+=head2 source_constraint 
+
+  Arg [1]    : String $source
+               listref of $sources
+               The source of the transcript to retrieve. You can have as an argument a reference
+               to a list of sources
+  Description: Used internally to generate a SQL constraint to restrict a transcript query by source
+  Returntype  : String
+  Exceptions : If source is not supplied
+  Caller     : general
+  Status     : Stable
+
+=cut
+
+sub source_constraint {
+  my ($self, $sources, $inline_variables) = @_;
+  my $constraint = "t.is_current = 1";
+  my $in_statement = $self->generate_in_constraint($sources, 't.source', SQL_VARCHAR, $inline_variables);
+  $constraint .= " and $in_statement";
+  return $constraint;
+}
 
 =head2 fetch_all_by_biotype 
 
