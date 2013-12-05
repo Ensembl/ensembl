@@ -49,7 +49,6 @@
 2055	\N	patch	patch_73_74_e.sql|remove_canonical_annotation
 2056	\N	patch	patch_73_74_f.sql|remove_pair_dna_align
 2057	\N	patch	patch_73_74_g.sql|add_transcript_idx_tise
-2058	\N	patch	patch_73_74_h.sql|add_genome
 2059	\N	patch	patch_74_75_a.sql|schema_version
 2060	\N	patch	patch_74_75_b.sql|transcript_source
 2061	\N	patch	patch_74_75_c.sql|add_genome_statistics
