@@ -755,6 +755,26 @@ sub source_constraint {
   return $constraint;
 }
 
+=head2 count_all_by_source
+
+  Arg [1]     : String $source
+                listref of $source
+                The source of the transcript to retrieve. You can have as an argument a reference
+                to a list of sources
+  Example     : $cnt = $transcript_adaptor->count_all_by_source('ensembl'); 
+                $cnt = $transcript_adaptor->count_all_by_source(['havana', 'vega']);
+  Description : Retrieves count of transcript objects from the database via its source or sources.
+  Returntype  : integer
+  Caller      : general
+  Status      : Stable
+
+=cut
+
+sub count_all_by_source {
+  my ($self, $source) = @_;
+  return $self->generic_count($self->source_constraint($source));
+}
+
 =head2 fetch_all_by_biotype 
 
   Arg [1]    : String $biotype 
