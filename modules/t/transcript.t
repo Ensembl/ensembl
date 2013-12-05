@@ -273,16 +273,19 @@ ok($tr->display_id() eq $tr->stable_id());
 note("Test fetch_all_by_biotype");
 my @transcripts = @{$ta->fetch_all_by_biotype('protein_coding')};
 ok(@transcripts == 25);
+my $transcriptCount = $ta->count_all_by_biotype('protein_coding');
+ok($transcriptCount == 25);
 @transcripts = @{$ta->fetch_all_by_biotype(['protein_coding','pseudogene'])};
 note "Got ".scalar(@transcripts)." transcripts\n";
 ok(@transcripts == 25);
-my $transcriptCount;
+$transcriptCount = $ta->count_all_by_biotype(['protein_coding', 'pseudogene']);
+ok($transcriptCount == 25);
 
 #
 # test TranscriptAdaptor::fetch_all_by_source
 #
 note("Test fetch_all_by_source");
-my @transcripts = @{$ta->fetch_all_by_source('ensembl')};
+@transcripts = @{$ta->fetch_all_by_source('ensembl')};
 note "Got ".scalar(@transcripts)." ensembl transcripts\n";
 ok(@transcripts == 21);
 $transcriptCount = $ta->count_all_by_source('ensembl');
