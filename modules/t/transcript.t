@@ -281,6 +281,15 @@ ok(@transcripts == 25);
 $transcriptCount = $ta->count_all_by_biotype(['protein_coding', 'pseudogene']);
 ok($transcriptCount == 25);
 
+
+#
+# test TranscriptAdaptor::fetch_all_by_Slice
+#
+note("Test fetch_all_by_Slice");
+@transcripts = @{$ta->fetch_all_by_Slice($slice)};
+$transcriptCount = $ta->count_all_by_Slice($slice);
+is(@transcripts, $transcriptCount, "Counted as many transcripts as were fetched from slice");
+
 #
 # test TranscriptAdaptor::fetch_all_by_source
 #
