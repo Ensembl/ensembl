@@ -573,6 +573,38 @@ sub store {
   return;
 }
 
+=head2 remove
+
+  Arg [1]    : int $seq_region_id the id of the sequence region this dna
+               is associated with.
+  Example    : $seq_adaptor->remove(11);
+  Description: removes a dna sequence for a given seq_region_id
+  Returntype : none
+  Exceptions : throw if the database delete fails
+  Caller     : Internal
+  Status     : Stable
+
+=cut
+
+sub remove {
+  my ($self, $seq_region_id) = @_;
+
+  if(!$seq_region_id) {
+    throw('seq_region_id is required');
+  }
+
+  my $statement =
+    $self->prepare("DELETE FROM dna WHERE seq_region_id = ?");
+
+  $statement->bind_param(1,$seq_region_id,SQL_INTEGER);
+  $statement->execute();
+
+  $statement->finish();
+
+  return;
+}
+
+
 
 
 

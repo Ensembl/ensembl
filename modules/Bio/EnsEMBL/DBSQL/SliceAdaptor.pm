@@ -2053,6 +2053,75 @@ sub store {
   return $seq_region_id;
 }
 
+=head2 remove
+
+  Arg [1]    : Bio::EnsEMBL::Slice $slice
+               The slice to remove from the database
+  Example    : $slice_adaptor->remove($slice);
+  Description: Removes a slice completely from the database.
+               All associated seq_region_attrib are removed as well.
+               If dna is attached to the slice, it is also removed.
+  Returntype : none
+  Exceptions : throw if slice has no coord system.
+               throw if slice argument is not passed
+               warning if slice is not stored in this database
+  Caller     : general
+  Status     : Stable
+
+=cut
+
+
+sub remove {
+  my $self = shift;
+  my $slice = shift;
+
+  #
+  # Get all of the sanity checks out of the way before storing anything
+  #
+
+  if(!ref($slice) || !($slice->isa('Bio::EnsEMBL::Slice') or $slice->isa('Bio::EnsEMBL::LRGSlice'))) {
+    throw('Slice argument is required');
+  }
+
+  my $cs = $slice->coord_system();
+  throw("Slice must have attached CoordSystem.") if(!$cs);
+
+  my $db = $self->db();
+  my $seq_region_id = $slice->get_seq_region_id();
+
+  if ($cs->is_sequence_level()) {
+    my $seq_adaptor = $db->get_SequenceAdaptor();
+    $seq_adaptor->remove($seq_region_id);
+  }
+
+  if(defined($slice->{'synonym'})){
+    foreach my $syn (@{$slice->{'synonym'}} ){
+      $syn->seq_region_id($seq_region_id); # set the seq_region_id
+      $syn->adaptor->remove($syn);
+    }
+  }
+
+  my $attrib_adaptor = $self->db->get_AttributeAdaptor();
+  $attrib_adaptor->remove_from_Slice($slice);
+
+  my $sr_name  = $slice->seq_region_name();
+
+  #remove the seq_region
+
+  my $sth = $db->dbc->prepare("DELETE FROM seq_region " .
+                         "WHERE name = ? AND " .
+                         "      coord_system_id = ?" );
+
+  $sth->bind_param(1,$sr_name,SQL_VARCHAR);
+  $sth->bind_param(2,$cs->dbID,SQL_INTEGER);
+
+  $sth->execute();
+
+  return;
+}
+
+
+
 =head2 fetch_assembly
 
   Arg [1]    : Bio::EnsEMBL::Slice $asm_slice
