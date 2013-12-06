@@ -783,7 +783,7 @@ sub count_all_by_source {
                 the biotype of the features to count.
   Arg [1]    : (optional) string $source
                the source name of the features to count.
-  Example    : $cnt = $gene_adaptor->count_all_by_Slice();
+  Example    : $cnt = $transcript_adaptor->count_all_by_Slice();
   Description: Method to count transcripts on a given slice, filtering by biotype and source
   Returntype : integer
   Exceptions : thrown if exon cannot be placed on transcript slice
