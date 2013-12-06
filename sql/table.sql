@@ -313,6 +313,8 @@ INSERT INTO meta (species_id, meta_key, meta_value)
   VALUES (NULL, 'patch', 'patch_74_75_b.sql|transcript_source');
 INSERT INTO meta (species_id, meta_key, meta_value)
  VALUES (NULL, 'patch', 'patch_74_75_c.sql|add_genome_statistics');
+INSERT INTO meta (species_id, meta_key, meta_value)
+ VALUES (NULL, 'patch', 'patch_74_75_d.sql|default_transcript_source');
 
 /**
 @table meta_coord
@@ -1080,7 +1082,7 @@ CREATE TABLE transcript (
   seq_region_end              INT(10) UNSIGNED NOT NULL,
   seq_region_strand           TINYINT(2) NOT NULL,
   display_xref_id             INT(10) UNSIGNED,
-  source                      VARCHAR(20) NOT NULL,
+  source                      VARCHAR(20) NOT NULL default 'ensembl',
   biotype                     VARCHAR(40) NOT NULL,
   status                      ENUM('KNOWN', 'NOVEL', 'PUTATIVE', 'PREDICTED', 'KNOWN_BY_PROJECTION', 'UNKNOWN', 'ANNOTATED'),
   description                 TEXT,
