@@ -775,6 +775,36 @@ sub count_all_by_source {
   return $self->generic_count($self->source_constraint($source));
 }
 
+=head2 count_all_by_Slice
+
+  Arg [1]    : Bio::EnsEMBL::Slice $slice
+               The slice to count transcripts on.
+  Arg [2]    : (optional) biotype(s) string or arrayref of strings
+                the biotype of the features to count.
+  Arg [1]    : (optional) string $source
+               the source name of the features to count.
+  Example    : $cnt = $gene_adaptor->count_all_by_Slice();
+  Description: Method to count transcripts on a given slice, filtering by biotype and source
+  Returntype : integer
+  Exceptions : thrown if exon cannot be placed on transcript slice
+  Status     : Stable
+  Caller     : general
+=cut
+
+sub count_all_by_Slice {
+  my ($self, $slice, $biotype, $source) = @_;
+
+  my $constraint = 't.is_current = 1';
+  if (defined($source)) {
+        $constraint .= " and t.source = '$source'";
+  }
+  if (defined($biotype)) {
+        $constraint .= " and " . $self->biotype_constraint($biotype);
+  }
+
+  return $self->count_by_Slice_constraint($slice, $constraint);
+}
+
 =head2 fetch_all_by_biotype 
 
   Arg [1]    : String $biotype 
