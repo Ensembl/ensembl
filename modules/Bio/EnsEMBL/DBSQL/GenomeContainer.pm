@@ -945,7 +945,6 @@ sub get_transcript_count {
 =cut
 
 sub get_alt_transcript_count {
-  my $self = @_;
   my ($self, $alt_transcript_count) = @_;
   if (defined $alt_transcript_count) {
     $self->{'alt_transcript_count'} = $alt_transcript_count;
