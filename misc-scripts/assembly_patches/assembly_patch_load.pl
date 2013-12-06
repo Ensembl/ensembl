@@ -26,6 +26,7 @@ my $pass;
 my $mapping_file   = "./data/alt.scaf.agp";
 my $txt_file       = "./data/alt_scaffold_placement.txt";
 my $patchtype_file = "./data/patch_type";
+my $sql_file       = "./sql.txt";
 my $dbname;
 my $host;
 my $user;
@@ -38,6 +39,7 @@ GetOptions(
             'mapping_file=s'    => \$mapping_file,
             'txt_file=s'        => \$txt_file,
             'patchtype_file=s'  => \$patchtype_file,
+            'sql_file=s'        => \$sql_file,
             'host=s'            => \$host,
             'dbname=s'          => \$dbname,
             'user=s'            => \$user,
@@ -175,7 +177,7 @@ open(MAPPER,"<".$mapping_file)  || die "Could not open file $mapping_file";
 open(TXT,"<".$txt_file)         || die "Could not open file $txt_file";
 open(TYPE,"<".$patchtype_file)         || die "Could not open file $patchtype_file";
 
-open(SQL,">sql.txt") || die "Could not open sql.txt for writing\n";
+open(SQL,">".$sql_file) || die "Could not open $sql_file for writing\n";
 
 my %acc_to_name;
 my %txt_data; 
@@ -305,7 +307,7 @@ SCAF: while(<TXT>){
     print SQL "insert into seq_region_attrib (seq_region_id, attrib_type_id, value) values ($max_seq_region_id, $toplevel, 1);\n";
     print SQL "insert into seq_region_attrib (seq_region_id, attrib_type_id, value) values ($max_seq_region_id, $non_ref, 1);\n";
 
-    # is this patch a novel or fix type?
+    # is this a hap, a patch_novel or a patch_fix?
     my $hap_type;
     if (exists $name_to_type{$alt_name} && defined $name_to_type{$alt_name}) {
       if ($name_to_type{$alt_name} =~ /fix/i) {
@@ -314,6 +316,10 @@ SCAF: while(<TXT>){
       } elsif ($name_to_type{$alt_name} =~ /novel/i) {
         print SQL "insert into seq_region_attrib (seq_region_id, attrib_type_id, value) values ($max_seq_region_id, $patch_novel, $time);\n";
         $hap_type = "'PATCH_NOVEL'";
+      } elsif ($name_to_type{$alt_name} =~ /hap/i) {
+		# note there is no need to insert anything into the seq_region_attrib because the only attrib for haps has already been inserted above (non_ref)
+		$hap_type = "'HAP'"; # 'HAP' type does not appear in the original patch_type files since there is no such file for haps
+		                     # but fake patch_type files are created by us to be able to use this script with haps too
       } else {
         throw("Patch type ".$name_to_type{$alt_name}." for $alt_name not recognised");
       }
