@@ -909,5 +909,52 @@ sub get_structural_variation_count {
   return $self->{'structural_variation_count'};
 }
 
+=head2 get_transcript_count
+
+  Arg [1]    : none
+  Example    : $transcript_count = $genome->get_transcript_count();
+  Description: Return the number of transcripts in the current build
+  Returntype : integer
+  Exceptions : none
+  Caller     : general
+  Status     : Stable
+
+=cut
+
+sub get_transcript_count {
+  my ($self, $transcript_count) = @_;
+  if (defined $transcript_count) {
+    $self->{'transcript_count'} = $transcript_count;
+  }
+  if (!defined $self->{'transcript_count'}) {
+    $self->{'transcript_count'} = $self->_get_count('transcript');
+  }
+  return $self->{'transcript_count'};
+}
+
+=head2 get_alt_transcript_count
+
+  Arg [1]    : none
+  Example    : $alt_transcript_count = $genome->get_alt_transcript_count();
+  Description: Return the number of transcripts on alternate sequences in the current build
+  Returntype : integer
+  Exceptions : none
+  Caller     : general
+  Status     : Stable
+
+=cut
+
+sub get_alt_transcript_count {
+  my $self = @_;
+  my ($self, $alt_transcript_count) = @_;
+  if (defined $alt_transcript_count) {
+    $self->{'alt_transcript_count'} = $alt_transcript_count;
+  }
+  if (!defined $self->{'alt_transcript_count'}) {
+    $self->{'alt_transcript_count'} = $self->_get_count('alt_transcript');
+  }
+  return $self->{'alt_transcript_count'};
+}
+
 
 1;
