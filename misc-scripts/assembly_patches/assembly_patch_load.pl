@@ -1,4 +1,4 @@
-#!/usr/local/ensembl/bin/perl -w
+#!/usr/bin/env perl
 # Copyright [1999-2013] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
 # 
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -19,6 +19,7 @@ use Bio::EnsEMBL::Utils::Exception qw(throw warning);
 use Getopt::Long;
 
 use strict;
+use warnings;
 
 my $assembly_acc;
 my $assembly_name;

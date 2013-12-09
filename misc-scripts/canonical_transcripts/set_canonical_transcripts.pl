@@ -1,3 +1,4 @@
+#!/usr/bin/env perl
 # Copyright [1999-2013] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
 # 
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -80,10 +81,9 @@
 
 =cut
 
-#!/usr/local/ensembl/bin/perl
-
 use strict;
 use warnings;
+
 use Carp;
 use Data::Dumper;
 use DBI qw(:sql_types);

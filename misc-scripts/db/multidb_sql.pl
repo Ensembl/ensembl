@@ -25,6 +25,8 @@
 
 
 use strict;
+use warnings;
+
 use DBI;
 use Getopt::Long;
 

@@ -17,6 +17,8 @@
 # Transfer karyotype data from old -> new database, scaling appropriately.
 
 use strict;
+use warnings;
+
 
 use DBI;
 use Getopt::Long;

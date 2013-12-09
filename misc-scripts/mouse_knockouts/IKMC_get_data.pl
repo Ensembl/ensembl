@@ -21,6 +21,8 @@
 # for the simple features so
 #
 use strict;
+use warnings;
+
 use LWP::UserAgent;
 
 

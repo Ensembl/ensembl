@@ -1,3 +1,4 @@
+#!/usr/bin/env perl
 # Copyright [1999-2013] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
 # 
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,9 +13,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+use strict;
+use warnings;
+
 use Bio::EnsEMBL::Registry;
 use Bio::SeqIO;
-use strict;
 my $reg = "Bio::EnsEMBL::Registry";
 
 my $species = shift;

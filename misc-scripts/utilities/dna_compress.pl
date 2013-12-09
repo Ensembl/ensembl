@@ -1,4 +1,4 @@
-#!/usr/local/ensembl/bin/perl --    # -*-Perl-*-
+#!/usr/bin/env perl
 # Copyright [1999-2013] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
 # 
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -18,6 +18,7 @@
 # (compressed dna) table of ensembl.  Use -T for pod based tutorial
 
 use strict;
+use warnings;
 use Getopt::Std;
 use vars qw($opt_H $opt_T
 	    $opt_u $opt_d $opt_P $opt_h $opt_p $opt_C $opt_U);

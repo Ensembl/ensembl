@@ -1,3 +1,4 @@
+#!/usr/bin/env perl
 # Copyright [1999-2013] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
 # 
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,6 +16,8 @@
 # Compare xrefs between 2 databases by source
 
 use strict;
+use warnings;
+
 
 use DBI;
 use Bio::EnsEMBL::DBSQL::DBAdaptor;

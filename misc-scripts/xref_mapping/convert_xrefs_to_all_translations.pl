@@ -1,3 +1,4 @@
+#!/usr/bin/env perl
 # Copyright [1999-2013] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
 # 
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -17,6 +18,8 @@
 # to be all translations in order to facilitate comparison.
 
 use strict;
+use warnings;
+
 use Getopt::Long;
 use Bio::EnsEMBL::DBSQL::DBAdaptor;
 
