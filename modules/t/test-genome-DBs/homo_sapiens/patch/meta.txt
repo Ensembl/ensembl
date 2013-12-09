@@ -52,3 +52,4 @@
 2059	\N	patch	patch_74_75_a.sql|schema_version
 2060	\N	patch	patch_74_75_b.sql|transcript_source
 2061	\N	patch	patch_74_75_c.sql|add_genome_statistics
+2062	\N	patch	patch_74_75_d.sql|default_transcript_source

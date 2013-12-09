@@ -108,9 +108,28 @@ is($ref_length, $genome->get_ref_length, "Reference length is correct");
 
 $sql = "SELECT sum(length(sequence)) FROM dna";
 my $total_length = $sql_helper->execute_single_result(-SQL => $sql);    
-print "$total_length is the calculated sql length\n";
 is($total_length, $genome->get_total_length, "Total length is correct");
 
+#
+# Test transcript counts
+#
+
+my $transcript_sql = "select count(*) from transcript t, seq_region s
+where t.seq_region_id = s.seq_region_id
+and t.seq_region_id not in (
+select sa.seq_region_id from seq_region_attrib sa, attrib_type at
+where at.attrib_type_id = sa.attrib_type_id
+and at.code = 'non_ref')";
+my $transcript_count = $sql_helper->execute_single_result(-SQL => $transcript_sql);
+is($transcript_count, $genome->get_transcript_count(), "Number of transcripts is correct");
+my $alt_transcript_sql = "select count(*) from transcript t, seq_region s, seq_region_attrib sa, attrib_type at
+where s.seq_region_id = t.seq_region_id
+and s.seq_region_id = sa.seq_region_id
+and sa.attrib_type_id = at.attrib_type_id
+and at.code = 'non_ref'
+and biotype not in ('LRG_gene')";
+my $alt_transcript_count = $sql_helper->execute_single_result(-SQL => $alt_transcript_sql);
+is($alt_transcript_count, $genome->get_alt_transcript_count(), "Number of alt transcripts is correct");
 
 
 done_testing();

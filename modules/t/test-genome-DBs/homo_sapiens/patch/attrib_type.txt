@@ -28,8 +28,8 @@
 29	fp_size	FP size	\N
 30	BACend_flag	BAC end flags	\N
 31	fpc_clone_id	fpc clone	\N
-32	KnwnPCCount	protein_coding_KNOWN	Number of Known Protein Coding
-33	NovPCCount	protein_coding_NOVEL	Number of Novel Protein Coding
+32	transcript	transcript count	Number of transcripts
+33	alt_transcript	alternative transcript count	Number of transcripts on alternate sequences
 34	NovPTCount	processed_transcript_NOVEL	Number of Novel Processed Transcripts
 35	PutPTCount	processed_transcript_PUTATIVE	Number of Putative Processed Transcripts
 36	PredPCCount	protein_coding_PREDICTED	Number of Predicted Protein Coding

@@ -48,3 +48,4 @@
 101	\N	patch	patch_74_75_a.sql|schema_version
 102	\N	patch	patch_74_75_b.sql|transcript_source
 103	\N	patch	patch_74_75_c.sql|add_genome_statistics
+104	\N	patch	patch_74_75_d.sql|default_transcript_source
