@@ -1,4 +1,5 @@
-#!/usr/local/ensembl/bin/perl
+#!/usr/bin/env perl
+#
 # Copyright [1999-2013] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
 # 
 # Licensed under the Apache License, Version 2.0 (the "License");
