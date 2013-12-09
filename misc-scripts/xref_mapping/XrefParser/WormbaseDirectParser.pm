@@ -44,11 +44,13 @@ sub run {
   my $file = @{$files}[0];
 
   my $wormbasegene_src_id = $self->get_source_id_for_source_name('wormbase_gene');
+  my $wormbasegseq_src_id = $self->get_source_id_for_source_name('wormbase_gseqname');
   my $wormbaselocus_src_id = $self->get_source_id_for_source_name('wormbase_locus');
   my $wormbasetran_src_id = $self->get_source_id_for_source_name('wormbase_transcript');
   my $wormpep_src_id = $self->get_source_id_for_source_name('wormpep_id');
 
   my $xref_wgene_sth = $self->dbi()->prepare("SELECT xref_id FROM xref WHERE accession=? AND source_id=$wormbasegene_src_id AND species_id=$species_id");
+  my $xref_gseq_sth = $self->dbi()->prepare("SELECT xref_id FROM xref WHERE accession=? AND source_id=$wormbasegseq_src_id AND species_id=$species_id");
   my $xref_wloc_sth = $self->dbi()->prepare("SELECT xref_id FROM xref WHERE accession=? AND source_id=$wormbaselocus_src_id AND species_id=$species_id");
   my $xref_wtran_sth = $self->dbi()->prepare("SELECT xref_id FROM xref WHERE accession=? AND source_id=$wormbasetran_src_id AND species_id=$species_id");
   my $xref_wpep_sth = $self->dbi()->prepare("SELECT xref_id FROM xref WHERE accession=? AND source_id=$wormpep_src_id AND species_id=$species_id");
@@ -62,99 +64,108 @@ sub run {
 
   my ($x_count, $d_count);
 
-  my (%gene2wbgene, %gene2wbloc, %tran2wbtran, %tran2wpep);
+  my (%wbgene2seqid, %wbgene2loc, %tran2wbtran, %tran2wpep);
 
   while ( $_ = $pep_io->getline() ) {
-    my ($gid, $wbgeneid, $locus, $wbtranscript, $wormpep) = split(/\t/, $_);
+    my ($gseqid, $wbgeneid, $locus, $wbtranscript, $wormpep) = split(/\t/, $_);
 
-    $gene2wbgene{$gid}->{$wbgeneid} = 1;
-    $tran2wbtran{$wbtranscript}->{$wbtranscript} = 1;
+    # Each WBGeneid should have only one sequence name and (optionally) one locus name
+    $wbgene2seqid{$wbgeneid} = $gseqid;
+    $wbgene2loc{$wbgeneid} = $locus if $locus ne '.';
 
-    $gene2wbloc{$gid}->{$locus} = 1 if $locus ne '.';
-    $tran2wpep{$wbtranscript}->{$wormpep} = 1 if $wormpep ne '.';
+    $tran2wbtran{$wbtranscript} = 1;
+    $tran2wpep{$wbtranscript} = $wormpep if $wormpep ne '.';
 
   }
   $pep_io->close();
 
-  foreach my $gid (keys %gene2wbgene) {
+  foreach my $wbgid (keys %wbgene2seqid) {
     # reuse or create xref
-    foreach my $wbgid (keys %{$gene2wbgene{$gid}}) {
-      $xref_wgene_sth->execute($wbgid);
-      
-      my $xref_id = ($xref_wgene_sth->fetchrow_array())[0];
+    $xref_wgene_sth->execute($wbgid);
+    my $xref_id = ($xref_wgene_sth->fetchrow_array())[0];
+    if (!$xref_id) {
+      $xref_id = $self->add_xref({ acc        => $wbgid,
+                                   label      => $wbgid,
+                                   source_id  => $wormbasegene_src_id,
+                                   species_id => $species_id,
+                                   info_type  => "DIRECT"} );
+      $x_count++;
+    }
+    $self->add_direct_xref($xref_id, $wbgid, "gene", "");
+    $d_count++;
+    
+    my $gseqname = $wbgene2seqid{$wbgid};
+
+    $xref_gseq_sth->execute($wbgid);
+    $xref_id = ($xref_gseq_sth->fetchrow_array())[0];
+    if (not $xref_id) {
+      $xref_id = $self->add_xref({ acc        => $wbgid,
+                                   label      => $gseqname,
+                                   source_id  => $wormbasegseq_src_id,
+                                   species_id => $species_id,
+                                   info_type  => "DIRECT"} );
+      $x_count++;
+    }
+    $self->add_direct_xref($xref_id, $wbgid, "gene", "");
+    $d_count++;
+
+
+    if (exists $wbgene2loc{$wbgid}) {
+      my $loc_sym = $wbgene2loc{$wbgid};
+
+      $xref_wloc_sth->execute($wbgid);    
+      $xref_id = ($xref_wloc_sth->fetchrow_array())[0];
       if (!$xref_id) {
         $xref_id = $self->add_xref({ acc        => $wbgid,
-                                     label      => $wbgid,
-                                     source_id  => $wormbasegene_src_id,
-                                     species_id => $species_id,
-                                     info_type  => "DIRECT"} );
-        $x_count++;
-      }
-      
-      # and direct xref
-      $self->add_direct_xref($xref_id, $gid, "gene", "");
-      $d_count++;
-    }
-    
-    my @locs = (exists $gene2wbloc{$gid}) ?  keys %{$gene2wbloc{$gid}} : ($gid);
-    
-    foreach my $wbloc (@locs) {
-      $xref_wloc_sth->execute($wbloc);
-      
-      my $xref_id = ($xref_wloc_sth->fetchrow_array())[0];
-      if (!$xref_id) {
-        $xref_id = $self->add_xref({ acc        => $gid,
-                                     label      => $wbloc,
+                                     label      => $loc_sym,
                                      source_id  => $wormbaselocus_src_id,
                                      species_id => $species_id,
                                      info_type  => "DIRECT"} );
         $x_count++;
       }
-      
-      # and direct xref
-      $self->add_direct_xref($xref_id, $gid, "gene", "");
-      $d_count++;
     }
+    
+    # and direct xref
+    $self->add_direct_xref($xref_id, $wbgid, "gene", "");
+    $d_count++;
   }
+  
 
   foreach my $tid (keys %tran2wbtran) {
-    foreach my $wbtran (keys %{$tran2wbtran{$tid}}) {
-      $xref_wtran_sth->execute($wbtran);
-      
-      my $xref_id = ($xref_wtran_sth->fetchrow_array())[0];
-      if (!$xref_id) {
-        $xref_id = $self->add_xref({ acc        => $wbtran,
-                                     label      => $wbtran,
-                                     source_id  => $wormbasetran_src_id,
-                                     species_id => $species_id,
-                                     info_type  => "DIRECT"} );
-        $x_count++;
-      }
-
-      # and direct xref
-      $self->add_direct_xref($xref_id, $tid, "transcript", "");
-      $d_count++;
+    $xref_wtran_sth->execute($tid);      
+    my $xref_id = ($xref_wtran_sth->fetchrow_array())[0];
+    if (!$xref_id) {
+      $xref_id = $self->add_xref({ acc        => $tid,
+                                   label      => $tid,
+                                   source_id  => $wormbasetran_src_id,
+                                   species_id => $species_id,
+                                   info_type  => "DIRECT"} );
+      $x_count++;
     }
+    
+    # and direct xref
+    $self->add_direct_xref($xref_id, $tid, "transcript", "");
+    $d_count++;
   }
 
   foreach my $tid (keys %tran2wpep) {
-    foreach my $wpep (keys %{$tran2wpep{$tid}}) {
-      $xref_wpep_sth->execute($wpep);
-      
-      my $xref_id = ($xref_wpep_sth->fetchrow_array())[0];
-      if (!$xref_id) {
-        $xref_id = $self->add_xref({ acc        => $wpep,
-                                     label      => $wpep,
-                                     source_id  => $wormpep_src_id,
-                                     species_id => $species_id,
-                                     info_type  => "DIRECT"} );
-        $x_count++;
-      }
+    my $wpep = $tran2wpep{$tid};
 
-      # and direct xref
-      $self->add_direct_xref($xref_id, $tid, "translation", "");
-      $d_count++;
+    $xref_wpep_sth->execute($wpep);
+      
+    my $xref_id = ($xref_wpep_sth->fetchrow_array())[0];
+    if (!$xref_id) {
+      $xref_id = $self->add_xref({ acc        => $wpep,
+                                   label      => $wpep,
+                                   source_id  => $wormpep_src_id,
+                                   species_id => $species_id,
+                                   info_type  => "DIRECT"} );
+      $x_count++;
     }
+
+    # and direct xref
+    $self->add_direct_xref($xref_id, $tid, "translation", "");
+    $d_count++;
   }
 
   print "Added $d_count direct xrefs and $x_count xrefs\n" if($verbose);
