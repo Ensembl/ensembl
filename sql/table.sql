@@ -315,6 +315,8 @@ INSERT INTO meta (species_id, meta_key, meta_value)
  VALUES (NULL, 'patch', 'patch_74_75_c.sql|add_genome_statistics');
 INSERT INTO meta (species_id, meta_key, meta_value)
  VALUES (NULL, 'patch', 'patch_74_75_d.sql|default_transcript_source');
+INSERT INTO meta (species_id, meta_key, meta_value)
+ VALUES (NULL, 'patch', 'patch_74_75_e.sql|unique_attrib_key');
 
 /**
 @table meta_coord
@@ -420,7 +422,8 @@ CREATE TABLE seq_region_attrib (
 
   KEY type_val_idx (attrib_type_id, value(40)),
   KEY val_only_idx (value(40)),
-  KEY seq_region_idx (seq_region_id)
+  KEY seq_region_idx (seq_region_id),
+  UNIQUE KEY region_attribx (seq_region_id, attrib_type_id, value(40))
 
 ) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
 
@@ -813,7 +816,8 @@ CREATE TABLE gene_attrib (
 
   KEY type_val_idx (attrib_type_id, value(40)),
   KEY val_only_idx (value(40)),
-  KEY gene_idx (gene_id)
+  KEY gene_idx (gene_id),
+  UNIQUE KEY gene_attribx (gene_id, attrib_type_id, value(40))
 
 ) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
 
@@ -1125,7 +1129,8 @@ CREATE TABLE transcript_attrib (
 
   KEY type_val_idx (attrib_type_id, value(40)),
   KEY val_only_idx (value(40)),
-  KEY transcript_idx (transcript_id)
+  KEY transcript_idx (transcript_id),
+  UNIQUE KEY transcript_attribx (transcript_id, attrib_type_id, value(40))
 
 ) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
 
@@ -1212,7 +1217,8 @@ CREATE TABLE translation_attrib (
 
   KEY type_val_idx (attrib_type_id, value(40)),
   KEY val_only_idx (value(40)),
-  KEY translation_idx (translation_id)
+  KEY translation_idx (translation_id),
+  UNIQUE KEY translation_attribx (translation_id, attrib_type_id, value(40))
 
 ) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
 
@@ -1583,7 +1589,8 @@ CREATE TABLE misc_attrib (
 
   KEY type_val_idx (attrib_type_id, value(40)),
   KEY val_only_idx (value(40)),
-  KEY misc_feature_idx (misc_feature_id)
+  KEY misc_feature_idx (misc_feature_id),
+  UNIQUE KEY misc_attribx (misc_feature_id, attrib_type_id, value(40))
 
 ) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
 
