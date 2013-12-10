@@ -423,7 +423,7 @@ CREATE TABLE seq_region_attrib (
   KEY type_val_idx (attrib_type_id, value(40)),
   KEY val_only_idx (value(40)),
   KEY seq_region_idx (seq_region_id),
-  UNIQUE KEY region_attribx (seq_region_id, attrib_type_id, value(40))
+  UNIQUE KEY region_attribx (seq_region_id, attrib_type_id, value(500))
 
 ) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
 
@@ -817,7 +817,7 @@ CREATE TABLE gene_attrib (
   KEY type_val_idx (attrib_type_id, value(40)),
   KEY val_only_idx (value(40)),
   KEY gene_idx (gene_id),
-  UNIQUE KEY gene_attribx (gene_id, attrib_type_id, value(40))
+  UNIQUE KEY gene_attribx (gene_id, attrib_type_id, value(500))
 
 ) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
 
@@ -1130,7 +1130,7 @@ CREATE TABLE transcript_attrib (
   KEY type_val_idx (attrib_type_id, value(40)),
   KEY val_only_idx (value(40)),
   KEY transcript_idx (transcript_id),
-  UNIQUE KEY transcript_attribx (transcript_id, attrib_type_id, value(40))
+  UNIQUE KEY transcript_attribx (transcript_id, attrib_type_id, value(500))
 
 ) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
 
@@ -1218,7 +1218,7 @@ CREATE TABLE translation_attrib (
   KEY type_val_idx (attrib_type_id, value(40)),
   KEY val_only_idx (value(40)),
   KEY translation_idx (translation_id),
-  UNIQUE KEY translation_attribx (translation_id, attrib_type_id, value(40))
+  UNIQUE KEY translation_attribx (translation_id, attrib_type_id, value(500))
 
 ) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
 
@@ -1590,7 +1590,7 @@ CREATE TABLE misc_attrib (
   KEY type_val_idx (attrib_type_id, value(40)),
   KEY val_only_idx (value(40)),
   KEY misc_feature_idx (misc_feature_id),
-  UNIQUE KEY misc_attribx (misc_feature_id, attrib_type_id, value(40))
+  UNIQUE KEY misc_attribx (misc_feature_id, attrib_type_id, value(500))
 
 ) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
 
