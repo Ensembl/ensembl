@@ -702,7 +702,7 @@ sub store {
     my $xref_id = $self->_store_or_fetch_xref($dbEntry,$dbRef);
     $dbEntry->dbID($xref_id); #keeps DBEntry in sync with database
     ### Attempt to create an object->xref mapping
-    if ($ensembl_id) {$self->_store_object_xref_mapping($ensembl_id,$dbEntry,$ensType)};
+    if ($ensembl_id) {$self->_store_object_xref_mapping($ensembl_id,$dbEntry,$ensType, $ignore_release)};
     
     return $xref_id;
 }
@@ -712,6 +712,7 @@ sub _store_object_xref_mapping {
     my $ensembl_id = shift;
     my $dbEntry = shift;
     my $ensembl_type = shift;
+    my $ignore_release = shift;
     
     if (not defined ($ensembl_type)) { warning("No Ensembl data type provided for new xref");}
     
@@ -777,7 +778,7 @@ sub _store_object_xref_mapping {
             my ( $linkage_type, $sourceXref ) = @{$info};
             my $sourceXid = undef;
             if ($sourceXref) {
-              $sourceXref->is_stored( $self->dbc ) || $self->store($sourceXref);
+              $sourceXref->is_stored( $self->dbc ) || $self->store($sourceXref, undef, undef, $ignore_release);
               $sourceXid = $sourceXref->dbID;
             }
             $sth->bind_param( 1, $object_xref_id, SQL_INTEGER );
