@@ -1,0 +1,3 @@
+requires 'URI';
+requires 'Text::Glob';
+requires 'LWP::UserAgent';
