@@ -237,9 +237,10 @@ sub _print_attribs {
   $gene_name =~ s/^[A-Z]{1,3}:// if $vegadb;
   $gene_source = $gene->source;
 
-  my $trans_name;
+  my ($trans_name, $trans_source);
   $trans_name = $transcript->external_name;
   $trans_name =~ s/^[A-Z]{1,3}:// if $vegadb;
+  $trans_source = $transcript->source;
 
   my $fh = $self->{'filehandle'};
 
@@ -250,6 +251,7 @@ sub _print_attribs {
   print $fh " gene_source \"" . $gene_source . "\";" if ($gene_source);
   print $fh " gene_biotype \"" . $gene_biotype ."\";";
   print $fh " transcript_name \"" . $trans_name . "\";" if ($trans_name);
+  print $fh " transcript_source \"" . $trans_source . "\";" if ($trans_source);
   if ($type eq 'CDS') {
     print $fh ' protein_id "' . get_id_from_obj($transcript->translation) . '";';
   }
