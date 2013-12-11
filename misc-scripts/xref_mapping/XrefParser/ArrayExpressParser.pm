@@ -18,13 +18,8 @@ limitations under the License.
 
 package XrefParser::ArrayExpressParser;
 
-## Parsing format looks like:
-# ggallus_gene_ensembl
-# hsapiens_gene_ensembl
-# mmulatta_gene_ensembl
-# mmusculus_gene_ensembl
-# osativa_eg_gene
-# ptrichocarpa_eg_gene
+## Parsing format looks like (so we extract the species name):
+# anopheles_gambiae.A-AFFY-102.tsv
 #
 
 use strict;
@@ -32,7 +27,10 @@ use warnings;
 use Carp;
 use base qw( XrefParser::BaseParser );
 use Bio::EnsEMBL::Registry;
+use Net::FTP;
 
+my $default_ftp_server = 'ftp.ebi.ac.uk';
+my $default_ftp_dir = 'pub/databases/microarray/data/atlas/bioentity_properties/ensembl';
 
 sub run_script {
 
@@ -48,7 +46,6 @@ sub run_script {
   $verbose |=0;
 
   my $project;
-  my $wget = "";
   my $user  ="ensro";
   my $host;
   my $port = 3306;
@@ -57,9 +54,6 @@ sub run_script {
 
   if($file =~ /project[=][>](\S+?)[,]/){
     $project = $1;
-  }
-  if($file =~ /wget[=][>](\S+?)[,]/){
-    $wget = $1;
   }
   if($file =~ /host[=][>](\S+?)[,]/){
     $host = $1;
@@ -77,25 +71,11 @@ sub run_script {
     $user = $1;
   }
 
-
-
-  my $ua = LWP::UserAgent->new();
-  $ua->timeout(10);
-  $ua->env_proxy();
-
-  my $response = $ua->get($wget);
-
-  if ( !$response->is_success() ) {
-    warn($response->status_line);
-    return 1;
-  }
-  my @lines = split(/\n/,$response->content);
-
   my %species_id_to_names = $self->species_id2name();
   my $species_id_to_names = \%species_id_to_names;
   my $names = $species_id_to_names->{$species_id};
-  my $contents_lookup = $self->_get_contents(\@lines, $verbose);
-  my $active = $self->_is_active($contents_lookup, $names, $verbose);
+  my $species_lookup = $self->_get_species($verbose);
+  my $active = $self->_is_active($species_lookup, $names, $verbose);
  
   if (!$active) {
       return;
@@ -107,7 +87,7 @@ sub run_script {
 
   my $registry = "Bio::EnsEMBL::Registry";
   my $gene_adaptor;
-
+  print "Loading the Registry\n" if $verbose;
   if ($project eq 'ensembl') {
       if ($host) {
           my $db = Bio::EnsEMBL::DBSQL::DBAdaptor->new(
@@ -151,6 +131,7 @@ sub run_script {
   } else {
       die("Missing or unsupported project value. Supported values: ensembl, ensemblgenomes");
   }
+  print "Finished loading the registry\n" if $verbose;
 
   my @stable_ids = map { $_->stable_id } @{$gene_adaptor->fetch_all()};
 
@@ -178,47 +159,35 @@ sub run_script {
 
 }
 
+sub _get_species {
+  my ($self, $verbose) = @_;
+  $verbose = (defined $verbose) ? $verbose : 0;
+  
+  my $ftp = Net::FTP->new($default_ftp_server, Debug => $verbose) or confess "Cannot connect to $default_ftp_server: $@";
+  $ftp->login("anonymous",'-anonymous@') or confess "Cannot login ", $ftp->message;
+  $ftp->cwd($default_ftp_dir);
+  my @files = $ftp->ls() or confess "Cannot change to $default_ftp_dir: $@";
+  $ftp->quit;
 
-
-sub _get_contents {
-  my ($self, $lines, $verbose) = @_;
-  my @lines = @$lines;
-  my %lookup;
-
-  foreach my $line (@lines) {
-    my ($species, $remainder) = $line =~ /^([a-z|A-Z]+)_(.+)$/;
-    croak "The line '$line' is not linked to a gene set. This is unexpected." if $remainder !~ /gene/;
-    $lookup{$species} = 1;
+  my %species_lookup;
+  foreach my $file (@files) {
+    my ($species) = split(/\./, $file);
+    $species_lookup{$species} = 1;
   }
-  if($verbose) {
-    printf("ArrayExpress is using the species [%s]\n", join(q{, }, keys %lookup));
-  }
-  return \%lookup;
+  return \%species_lookup;
 }
 
 sub _is_active {
-  my ($self, $contents_lookup, $names, $verbose) = @_;
+  my ($self, $species_lookup, $names, $verbose) = @_;
   #Loop through the names and aliases first. If we get a hit then great
   my $active = 0;
   foreach my $name (@{$names}) {
-    if($contents_lookup->{$name}) {
+    if($species_lookup->{$name}) {
       printf('Found ArrayExpress has declared the name "%s". This was an alias'."\n", $name) if $verbose;
       $active = 1;
       last;
     }
   }
-  
-  #Last ditch using the default name and messing around with the name
-  if(!$active) {
-    my $default_name = $names->[0];
-    my ($letter, $remainder) = $default_name =~ /^(\w).+_(.+)$/;
-    my $new_name = join(q{}, $letter, $remainder);
-    if($contents_lookup->{$new_name}) {
-      printf('Found ArrayExpress has declared the name "%s". We have constructed this from the default name'."\n", $new_name) if $verbose;
-      $active = 1;
-    }
-  }
-  
   return $active;
 }
 
