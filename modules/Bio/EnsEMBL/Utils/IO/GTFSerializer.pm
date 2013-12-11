@@ -232,9 +232,10 @@ sub print_feature {
 sub _print_attribs {
   my ($self, $gene, $gene_biotype, $transcript, $count, $type, $exon, $vegadb) = @_;
 
-  my $gene_name;
+  my ($gene_name, $gene_source);
   $gene_name = $gene->external_name;
   $gene_name =~ s/^[A-Z]{1,3}:// if $vegadb;
+  $gene_source = $gene->source;
 
   my $trans_name;
   $trans_name = $transcript->external_name;
@@ -246,6 +247,7 @@ sub _print_attribs {
             " transcript_id \"" . get_id_from_obj($transcript) . "\";";
   print $fh " exon_number \"$count\";";
   print $fh " gene_name \"" . $gene_name . "\";" if ($gene_name);
+  print $fh " gene_source \"" . $gene_source . "\";" if ($gene_source);
   print $fh " gene_biotype \"" . $gene_biotype ."\";";
   print $fh " transcript_name \"" . $trans_name . "\";" if ($trans_name);
   if ($type eq 'CDS') {
