@@ -139,8 +139,7 @@ sub fetch_by_version {
                The type of statistic to store
   Arg [2]    : Value
                The corresponding value for the statistic
-  Arg [3]    : (optional) Description for the statistic
-  Arg [4]    : (optional) Attribute
+  Arg [3]    : (optional) Attribute
                If more than one value exists for the statistics, it will be distinguished by its attribute
   Example    : $genome_adaptor->store('coding_cnt', 20769);
   Description: Stores a genome statistic in the database
@@ -195,6 +194,24 @@ sub store {
   return $stats_id;
   
 }
+
+
+=head2 update
+
+  Arg [1]    : Statistic
+               The type of statistic to update
+  Arg [2]    : Value
+               The corresponding value for the statistic
+  Arg [3]    : (optional) Attribute
+               If more than one value exists for the statistics, it will be distinguished by its attribute
+  Example    : $genome_adaptor->update('coding_cnt', 20769);
+  Description: Updates an existing genome statistic in the database
+  Returntype : none
+  Exceptions :
+  Caller     : general
+  Status     : Stable
+
+=cut
 
 sub update {
   my ($self, $statistic, $value, $attribute) = @_;
@@ -645,11 +662,38 @@ sub _get_statistic {
   return \@results;
 }
 
+=head2 get_attrib
+
+  Arg [1]    : statistic
+  Example    : $results = $genome->_get_attrib('coding_cnt');
+  Description: Returns the attribute object for a given statistic
+  Returntype : Bio::EnsEMBL::Attrib
+  Exceptions : none
+  Caller     : general
+  Status     : Stable
+
+=cut
+
+sub get_attrib {
+  my ($self, $statistic) = @_;
+  my $db = $self->db();
+  my $attribute_adaptor = $db->get_adaptor('attribute');
+  my @results = @{ $self->_get_statistic($statistic) };
+  my $code = $results[4];
+  my @attribs = @{ $attribute_adaptor->fetch_by_code($code) };
+  my $attrib = Bio::EnsEMBL::Attribute->new(
+  -code => $attribs[1],
+  -name => $attribs[2],
+  -description => $attribs[3]
+  );
+  return $attrib;
+}
+
 =head2 get_coding_count
 
-  Arg [1]    : none
+  Arg [1]    : (optional) coding count
   Example    : $coding_count = $genome->get_coding_count();
-  Description: Returns the number of coding genes in the current build
+  Description: Getter/setter for the number of coding genes in the current build
 
   Returntype : integer
   Exceptions : none
@@ -672,9 +716,9 @@ sub get_coding_count {
 
 =head2 get_snoncoding_count
 
-  Arg [1]    : none
+  Arg [1]    : (optional) short non coding count
   Example    : $snoncoding_count = $genome->get_snoncoding_count();
-  Description: Returns the number of short non coding genes in the current build
+  Description: Getter/setter for the number of short non coding genes in the current build
 
   Returntype : integer
   Exceptions : none
@@ -696,9 +740,9 @@ sub get_snoncoding_count {
 
 =head2 get_lnoncoding_count
 
-  Arg [1]    : none
+  Arg [1]    : (optional) long non coding count
   Example    : $lnoncoding_count = $genome->get_lnoncoding_count();
-  Description: Returns the number of long non coding genes in the current build
+  Description: Getter/setter for the number of long non coding genes in the current build
 
   Returntype : integer
   Exceptions : none
@@ -720,9 +764,9 @@ sub get_lnoncoding_count {
 
 =head2 get_pseudogene_count
 
-  Arg [1]    : none
+  Arg [1]    : (optional) pseudogene count
   Example    : $pseudogene_count = $genome->get_pseudogene_count();
-  Description: Returns the number of pseudogenes in the current build
+  Description: Getter/setter for the number of pseudogenes in the current build
 
   Returntype : integer
   Exceptions : none
@@ -745,9 +789,9 @@ sub get_pseudogene_count {
 
 =head2 get_alt_coding_count
 
-  Arg [1]    : none
+  Arg [1]    : (optional) alt coding count
   Example    : $alt_coding_count = $genome->get_alt_coding_count();
-  Description: Returns the number of coding genes on alternate sequences
+  Description: Getter/setter for the number of coding genes on alternate sequences
 
   Returntype : integer
   Exceptions : none
@@ -770,9 +814,9 @@ sub get_alt_coding_count {
 
 =head2 get_alt_snoncoding_count
 
-  Arg [1]    : none
+  Arg [1]    : (optional) alt short non coding count
   Example    : $alt_snoncoding_count = $genome->get_alt_snoncoding_count();
-  Description: Returns the number of short non coding genes on alternate sequences
+  Description: Getter/setter for the number of short non coding genes on alternate sequences
 
   Returntype : integer
   Exceptions : none
@@ -794,9 +838,9 @@ sub get_alt_snoncoding_count {
 
 =head2 get_alt_lnoncoding_count
 
-  Arg [1]    : none
+  Arg [1]    : (optional) alt short non coding count
   Example    : $alt_lnoncoding_count = $genome->get_alt_lnoncoding_count();
-  Description: Returns the number of long non coding genes on alternate sequences
+  Description: Getter/setter for the number of long non coding genes on alternate sequences
 
   Returntype : integer
   Exceptions : none
@@ -819,9 +863,9 @@ sub get_alt_lnoncoding_count {
 
 =head2 get_alt_pseudogene_count
 
-  Arg [1]    : none
+  Arg [1]    : (optional) alt short non coding count
   Example    : $alt_pseudogene_count = $genome->get_alt_pseudogene_count();
-  Description: Returns the number of pseudogenes on alternate sequences
+  Description: Getter/setter for the number of pseudogenes on alternate sequences
 
   Returntype : integer
   Exceptions : none
@@ -843,9 +887,9 @@ sub get_alt_pseudogene_count {
 
 =head2 get_short_variation_count
 
-  Arg [1]    : none
+  Arg [1]    : (optional) short variation count
   Example    : $short_variation_count = $genome->get_short_variation_count();
-  Description: Returns the number of short variants in the current build
+  Description: Getter/setter for the number of short variants in the current build
 
   Returntype : integer
   Exceptions : none
@@ -869,8 +913,9 @@ sub get_short_variation_count {
 =head2 get_prediction_count
 
   Arg [1]    : (optional) logic_name
+  Arg [2]    : (optional) prediction count
   Example    : $prediction_count = $genome->get_prediction_count();
-  Description: Return the number of predicted genes in the current build
+  Description: Getter/setter for the number of predicted genes in the current build
                Can be restricted to a given analysis
 
   Returntype : integer
@@ -881,7 +926,10 @@ sub get_short_variation_count {
 =cut
 
 sub get_prediction_count {
-  my ($self, $logic_name) = @_;
+  my ($self, $logic_name, $prediction_count) = @_;
+  if (defined $prediction_count) {
+    $self->{'prediction_count'} = $prediction_count;
+  }
   if (!defined $self->{'prediction_count'}) {
     $self->{'prediction_count'} = $self->_get_count('PredictionTranscript', $logic_name);
   }
@@ -902,7 +950,10 @@ sub get_prediction_count {
 =cut
 
 sub get_structural_variation_count {
-  my $self = @_;
+  my ($self, $structural_variation_count) = @_;
+  if (defined $structural_variation_count) {
+    $self->{'structural_variation_count'} = $structural_variation_count;
+  }
   if (!defined $self->{'structural_variation_count'}) {
     $self->{'structural_variation_count'} = $self->_get_count('StructuralVariation');
    }
@@ -911,9 +962,9 @@ sub get_structural_variation_count {
 
 =head2 get_transcript_count
 
-  Arg [1]    : none
+  Arg [1]    : (optional) transcript count
   Example    : $transcript_count = $genome->get_transcript_count();
-  Description: Return the number of transcripts in the current build
+  Description: Getter/setter for the number of transcripts in the current build
   Returntype : integer
   Exceptions : none
   Caller     : general
@@ -934,9 +985,9 @@ sub get_transcript_count {
 
 =head2 get_alt_transcript_count
 
-  Arg [1]    : none
+  Arg [1]    : (optional) alt transcript count
   Example    : $alt_transcript_count = $genome->get_alt_transcript_count();
-  Description: Return the number of transcripts on alternate sequences in the current build
+  Description: Getter/setter for the number of transcripts on alternate sequences in the current build
   Returntype : integer
   Exceptions : none
   Caller     : general
