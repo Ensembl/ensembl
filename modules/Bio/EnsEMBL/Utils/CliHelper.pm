@@ -179,7 +179,7 @@ sub get_dba_args_for_opts {
   my ($host,    $port,   $user,    $pass, $dbname,
 	  $pattern, $driver, $species, $species_id)
 	= map { $prefix . $_ }
-	qw(host port user pass dbname dbpattern driver species species_id);
+	qw(host port user pass dbname pattern driver species species_id);
 	
   my @db_args;
   if (defined $opts->{$host}) {
