@@ -409,10 +409,10 @@ sub driver {
 =cut
 
 sub port {
-  my ( $self, $value ) = @_;
+  my ( $self, @args ) = @_;
 
-  if ( defined($value) ) {
-    $self->{'_port'} = $value;
+  if ( @args ) {
+    $self->{'_port'} = $args[0];
   }
 
   return $self->{'_port'};
@@ -436,9 +436,9 @@ sub port {
 =cut
 
 sub dbname {
-  my ($self, $arg ) = @_;
-  ( defined $arg ) &&
-    ( $self->{_dbname} = $arg );
+  my ($self, @args ) = @_;
+  ( @args ) &&
+    ( $self->{_dbname} = $args[0] );
   $self->{_dbname};
 }
 
@@ -460,9 +460,9 @@ sub dbname {
 =cut
 
 sub username {
-  my ($self, $arg ) = @_;
-  ( defined $arg ) &&
-    ( $self->{_username} = $arg );
+  my ($self, @args ) = @_;
+  ( @args ) &&
+    ( $self->{_username} = $args[0] );
   $self->{_username};
 }
 
@@ -477,8 +477,8 @@ sub username {
 =cut
 
 sub user {
-  my ($self, $arg) = @_;
-  return $self->username($arg);
+  my ($self, @args) = @_;
+  return $self->username(@args);
 }
 
 
@@ -499,9 +499,9 @@ sub user {
 =cut
 
 sub host {
-  my ($self, $arg ) = @_;
-  ( defined $arg ) &&
-    ( $self->{_host} = $arg );
+  my ($self, @args ) = @_;
+  ( @args ) &&
+    ( $self->{_host} = $args[0] );
   $self->{_host};
 }
 
@@ -516,8 +516,8 @@ sub host {
 =cut
 
 sub hostname {
-  my ($self, $arg) = @_;
-  return $self->host($arg);
+  my ($self, @args) = @_;
+  return $self->host(@args);
 }
 
 
@@ -538,15 +538,15 @@ sub hostname {
 =cut
 
 sub password {
-  my ( $self, $arg ) = @_;
+  my ( $self, @args ) = @_;
 
-  if ( defined($arg) ) {
+  if ( @args ) {
     # Use an anonymous subroutine that will return the password when
     # invoked.  This will prevent the password from being accidentally
     # displayed when using e.g. Data::Dumper on a structure containing
     # one of these objects.
 
-    $self->{_password} = sub { $arg };
+    $self->{_password} = sub { $args[0] };
   }
 
   return ( ref( $self->{_password} ) && &{ $self->{_password} } ) || '';
@@ -563,8 +563,8 @@ sub password {
 =cut
 
 sub pass {
-  my ($self, $arg) = @_;
-  return $self->password($arg);
+  my ($self, @args) = @_;
+  return $self->password(@args);
 }
 
 =head2 disconnect_when_inactive

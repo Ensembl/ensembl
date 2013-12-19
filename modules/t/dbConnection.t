@@ -184,12 +184,12 @@ my $dbc2 = Bio::EnsEMBL::DBSQL::DBConnection->new(-DBCONN => $dbc);
 #equality checks
 ok($dbc->equals($dbc2));
 ok(! $dbc->equals());
-ok($dbc2->dbname eq $dbc->dbname());
-ok(($dbc2->host||'')   eq ($dbc->host()||''));
-ok($dbc2->username()   eq $dbc->username());
-ok($dbc2->password eq $dbc->password());
-ok($dbc2->port  == $dbc->port());
-ok($dbc2->driver eq $dbc->driver());
+is($dbc2->dbname(),   $dbc->dbname());
+is($dbc2->host(),     $dbc->host());
+is($dbc2->username(), $dbc->username());
+is($dbc2->password(), $dbc->password());
+is($dbc2->port(),     $dbc->port());
+is($dbc2->driver(),   $dbc->driver());
 
 ok(! $dbc->equals(Bio::EnsEMBL::DBSQL::DBConnection->new(-DRIVER => 'TestDummy', -DBNAME => 'bill')));
 
