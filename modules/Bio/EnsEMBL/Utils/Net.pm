@@ -143,9 +143,9 @@ sub do_GET {
 =cut
 
 sub do_FTP {
-  my ($url, $total_attempts, $sleep) = @_;
+  my ($url, $total_attempts, $sleep, $filename) = @_;
   return _retry_sleep(sub {
-    return _get_lwp($url);
+    return _get_lwp($url, $filename);
   }, $total_attempts, $sleep);
 }
 
@@ -166,7 +166,7 @@ sub _retry_sleep {
     Time::HiRes::sleep($sleep);
   }
   if($fail) {
-    throw "Could request remote resource after $total_attempts attempts";
+    throw "Could not request remote resource after $total_attempts attempts";
   }
   return $response;
 }
@@ -180,12 +180,18 @@ sub _get_http_tiny {
 }
 
 sub _get_lwp {
-  my ($url) = @_;
+  my ($url, $filename) = @_;
   throw "Cannot perform action as LWP::UserAgent is not available" unless $LWP;
   my $ua = LWP::UserAgent->new();
   $ua->env_proxy;
-  my $response = $ua->get($url);
-  return $response->decoded_content if $response->is_success;
+  my $response;
+  if ($filename) {
+    $response = $ua->get($url, ':content_file' => $filename);
+    return 1 if $response->is_success;
+  } else {
+    $response = $ua->get($url);
+    return $response->decoded_content if $response->is_success;
+  }
   return;
 }
 
