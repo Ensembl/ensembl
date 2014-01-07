@@ -281,7 +281,7 @@ my %patches;
 
 foreach my $thing ( [ 'ensembl',               'core',        'table.sql'   ],
                     [ 'ensembl-compara',       'compara',     'table.sql'   ], 
-                    [ 'ensembl-functgenomics', 'funcgen',     'efg.sql'     ],
+                    [ 'ensembl-funcgen',       'funcgen',     'efg.sql'     ],
                     [ 'ensembl-variation',     'variation',   'table.sql'   ],
                     [ 'ensembl-production',    'production',  'tables.sql'  ],
                     [ 'ensembl',               'ontology',    'tables.sql'  ] )
