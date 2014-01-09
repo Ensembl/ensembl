@@ -1247,5 +1247,66 @@ sub store {
   return $cs;
 }
 
+=head2 remove
+
+  Arg [1]    : Bio::EnsEMBL::CoordSystem
+  Example    : $csa->remove($coord_system);
+  Description: Removes a CoordSystem object from the database.
+  Returntype : none
+  Exceptions : Warning if CoordSystem is not stored in this database.
+  Caller     : none
+  Status     : Stable
+
+=cut
+
+sub remove {
+  my $self = shift;
+  my $cs = shift;
+
+  if(!$cs || !ref($cs) || !$cs->isa('Bio::EnsEMBL::CoordSystem')) {
+    throw('CoordSystem argument expected.');
+  }
+
+  my $db = $self->db();
+  my $name = $cs->name();
+  my $version = $cs->version();
+  my $dbID = $cs->dbID();
+  my $rank = $cs->rank(); 
+
+  #
+  # Do lots of sanity checking to prevent bad data from being entered
+  #
+
+  if(!$cs->is_stored($db)) {
+    warning("CoordSystem $name $version does not exist in db.\n");
+    return;
+  }
+
+  if($name eq 'toplevel' || $name eq 'seqlevel' || !$name) {
+    throw("[$name] is not a valid name for a CoordSystem.");
+  }
+
+  #
+  # store the coordinate system in the database
+  #
+
+  my $sth =
+    $db->dbc->prepare(   'DELETE FROM coord_system '
+                       . 'WHERE name = ? AND '
+                       . 'version = ?' );
+
+  $sth->bind_param( 1, $name,               SQL_VARCHAR );
+  $sth->bind_param( 2, $version,            SQL_VARCHAR );
+
+  $sth->execute();
+  $sth->finish();
+
+  delete $self->{'_name_cache'}->{lc($name)};
+
+  delete $self->{'_dbID_cache'}->{$dbID};
+  delete $self->{'_rank_cache'}->{$rank};
+
+  return $cs;
+}
 
 1;
