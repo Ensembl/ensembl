@@ -1416,6 +1416,8 @@ sub remove {
 
   # remove this gene from the database
 
+  $self->_pre_remove($gene);
+
   $sth = $self->prepare("DELETE FROM gene WHERE gene_id = ? ");
   $sth->bind_param(1, $gene->dbID, SQL_INTEGER);
   $sth->execute();
