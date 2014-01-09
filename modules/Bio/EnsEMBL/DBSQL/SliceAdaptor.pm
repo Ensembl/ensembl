@@ -2121,6 +2121,53 @@ sub remove {
 }
 
 
+=head2 remove_assembly
+
+  Arg [1]    : Bio::EnsEMBL::Slice $asm_slice or $cmp_slice
+  Example    : $slice_adaptor->remove_assembly( $slice );
+  Description: Deletes from the assembly table 
+               where asm or cmp corresponds to slice
+               Do not call this method unless you really know what you are doing
+  Returntype : none
+  Exceptions : throw if slice has no coord system (cs).
+               throw if no slice provided, or argument is not a slice
+  Caller     : Internal
+  Status     : Experimental
+
+=cut
+
+
+sub remove_assembly {
+  my $self      = shift;
+  my $slice = shift;
+
+  if(!ref($slice) || !($slice->isa('Bio::EnsEMBL::Slice') or $slice->isa('Bio::EnsEMBL::LRGSlice'))) {
+    throw('Slice argument is required');
+  }
+
+  my $cs = $slice->coord_system();
+  throw("Slice must have attached CoordSystem.") if(!$cs);
+
+  #
+  # Checks complete. Delete the data
+  #
+  my $sth = $self->db->dbc->prepare
+      ("DELETE FROM assembly " .
+       "WHERE   asm_seq_region_id = ? OR " .
+       "        cmp_seq_region_id = ? ");
+
+  my $asm_seq_region_id = $self->get_seq_region_id( $slice );
+  my $cmp_seq_region_id = $self->get_seq_region_id( $slice );
+
+  $sth->bind_param(1,$asm_seq_region_id,SQL_INTEGER);
+  $sth->bind_param(2,$cmp_seq_region_id,SQL_INTEGER);
+
+  $sth->execute();
+  $sth->finish();
+
+  return;
+
+}
 
 =head2 fetch_assembly
 
@@ -2248,11 +2295,6 @@ sub store_assembly{
   throw("Slice must have attached CoordSystem.") if(!$asm_cs);
   my $cmp_cs = $cmp_slice->coord_system();
   throw("Slice must have attached CoordSystem.") if(!$cmp_cs);
-
-#  unless( $asm_cs->rank < $cmp_cs->rank ){
-#    throw("Assembled Slice CoordSystem->rank must be lower than ".
-#          "the component Slice Coord_system" );
-#  }
 
   my @path =
     @{ $asm_cs->adaptor()->get_mapping_path( $asm_cs, $cmp_cs ) };
