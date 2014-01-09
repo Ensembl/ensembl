@@ -2103,6 +2103,7 @@ sub remove {
 
   my $attrib_adaptor = $self->db->get_AttributeAdaptor();
   $attrib_adaptor->remove_from_Slice($slice);
+  $self->remove_assembly($slice);
 
   my $sr_name  = $slice->seq_region_name();
 
