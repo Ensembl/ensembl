@@ -189,7 +189,7 @@ sub store_on_Object {
     $type = $table;
   }
 
-  my $sth = $self->prepare( "INSERT into " . $table. "_attrib ".
+  my $sth = $self->prepare( "INSERT IGNORE into " . $table. "_attrib ".
                             "SET " . $type . "_id = ?, attrib_type_id = ?, ".
                             "value = ? " );
 
