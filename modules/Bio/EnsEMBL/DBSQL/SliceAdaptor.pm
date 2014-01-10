@@ -2316,12 +2316,12 @@ sub store_assembly{
   # logic needs to be coded below.
 
   my $asm_proj = $asm_slice->project( $cmp_cs->name, $cmp_cs->version );
-  if( @$asm_proj ){
+  if( @$asm_proj && $cmp_cs->name ne 'lrg' && $asm_cs->name ne 'lrg'){
     throw("Regions of the assembled slice are already assembled ".
           "into the component CoordSystem" ); 
   }
   my $cmp_proj = $cmp_slice->project( $asm_cs->name, $asm_cs->version );
-  if( @$cmp_proj ){
+  if( @$cmp_proj && $cmp_cs->name ne 'lrg' && $asm_cs->name ne 'lrg'){
     throw("Regions of the component slice are already assembled ".
           "into the assembled CoordSystem" ); 
   }
