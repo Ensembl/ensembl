@@ -242,11 +242,11 @@ sub load_sql {
 # Get table.sql for a given Ensembl release
 sub get_table_sql {
   my $release = shift;
-  $release = $release == software_version()?'HEAD':"branch-ensembl-${release}";
   
-  my $cvs_url = "http://cvs.sanger.ac.uk/cgi-bin/viewvc.cgi/ensembl/sql/table.sql?root=ensembl&view=co&pathrev=${release}";
+  my $git_url = 
+    "https://raw2.github.com/Ensembl/ensembl/release/${release}/sql/table.sql";
   
-  return get_url($cvs_url);
+  return get_url($git_url);
 }
 
 # Assume if ensembl.org is down then there is no point in continuing with the tests (1 shot)
@@ -262,6 +262,19 @@ sub test_ensembl {
 
 sub get_url {
   my ($url) = @_;
+
+  # Here we check the installation of IO::Socket::SSL,
+  # as HTTP::Tiny or LWP will need it to download from
+  # github using https
+  my $IO_Socket_SSL = 0;
+  eval {
+    require IO::Socket::SSL;
+    $IO_Socket_SSL = 1;
+  };
+
+  fail "Unable to download from $url, need IO::Socket::SSL"
+    unless $IO_Socket_SSL;
+
   my $content = eval { do_GET($url, 5, 0.5); };
   return $content if defined $content;
   diag $@;
