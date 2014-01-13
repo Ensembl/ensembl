@@ -36,7 +36,7 @@ Usage:
   $indent --type=schema-type | --database=dbname \\
   $indent [ --release=new-release ] [ --from=old-release ] \\
   $indent [ --species=dbspecies ] \\
-  $indent [ --cvsdir=/some/path ] \\
+  $indent [ --gitdir=/some/path ] \\
   $indent [ --dryrun ] \\
   $indent [ --interactive 0|1 ]\\
   $indent [ --verbose ] [ --quiet ] \\
@@ -68,7 +68,7 @@ Usage:
 
   --species / -s    restrict to species (optional, no default)
 
-  --cvsdir          the directory where the relevant Ensembl CVS modules
+  --gitdir          the directory where the relevant Ensembl Git repositories
                     have been checked out (optional, default=misc-scripts/../..)
 
   --dryrun / -n     do not actually modify databases
@@ -121,10 +121,10 @@ sub about {
     The script is able to patch databases that have Ensembl Core
     schemas, Ensembl Compara schemas, Ensembl Regulation schemas, 
     Ensembl Variation schemas, Ensembl Production and Ontology schemas
-    provided that the appropriate CVS modules have been checked out
-    and are available to this script.  The CVS root directory where
-    all Ensembl CVS modules are located may be specified using the
-    --cvsdir=/some/path command line switch if the script is unable to
+    provided that the appropriate Git repositories have been checked out
+    and are available to this script.  The Git root directory where
+    all Ensembl Git repositories are located may be specified using the
+    --gitdir=/some/path command line switch if the script is unable to
     determine it by itself.
 
     The user has to specify either a particular database to patch (using
@@ -176,11 +176,11 @@ sub about {
           -d my_database_66 -r 66 --dryrun
 
       The release coordinator patches all mouse Core-like databases to
-      the latest release.  She has checked out the 'ensembl' CVS modules
-      in her ~/cvs directory:
+      the latest release.  She has checked out the 'ensembl' Git repo
+      in her ~/src directory:
 
         $0 -h host -u user -p password \\
-          -t core -s mouse --cvsdir=~/cvs
+          -t core -s mouse --gitdir=~/src
 
       A genebuilder (username 'my') patches all her human databases to
       the latest release.
@@ -220,7 +220,7 @@ my ( $opt_user, $opt_pass ) = ( undef, undef );
 my ( $opt_species, $opt_type, $opt_release ) = ( undef, undef, undef );
 my $opt_database;
 
-my $opt_cvsdir;
+my $opt_gitdir;
 
 my $opt_dryrun;
 my $opt_from;
@@ -241,7 +241,7 @@ if ( !GetOptions( 'host|h=s'     => \$opt_host,
                   'from|f=i'     => \$opt_from,
                   'release|r=i'  => \$opt_release,
                   'database|d=s' => \$opt_database,
-                  'cvsdir=s'     => \$opt_cvsdir,
+                  'gitdir=s'     => \$opt_gitdir,
                   'dryrun|n!'    => \$opt_dryrun,
                   'fix!'         => \$opt_fix,
                   'fixlast!'     => \$opt_fixlast,
@@ -286,14 +286,14 @@ foreach my $thing ( [ 'ensembl',               'core',        'table.sql'   ],
                     [ 'ensembl-production',    'production',  'tables.sql'  ],
                     [ 'ensembl',               'ontology',    'tables.sql'  ] )
 {
-  my ($cvs_module, $schema_type, $schema_file) = @{$thing};
+  my ($git_repo, $schema_type, $schema_file) = @{$thing};
 
   if ( defined($opt_type) && $schema_type ne $opt_type ) { next }
 
-  my $sql_dir = _sql_dir($cvs_module, $schema_type, $schema_file);
+  my $sql_dir = _sql_dir($git_repo, $schema_type, $schema_file);
   if(! defined $sql_dir) {
     if ( !$opt_quiet ) {
-      warn(sprintf("No SQL directory found for CVS module %s, %s schema type\n", $cvs_module, $schema_type));
+      warn(sprintf("No SQL directory found for Git repo %s, %s schema type\n", $git_repo, $schema_type));
     }
     next;
   }
@@ -539,7 +539,7 @@ while ( $sth->fetch() ) {
         }
       }
       if($schema_type_ok && ! exists $patches{$schema_type}) {
-        printf("\t%s patches could not be found. Check your --cvsdir option and try again\n", $schema_type);
+        printf("\t%s patches could not be found. Check your --gitdir option and try again\n", $schema_type);
       }
     }
     next; 
@@ -674,27 +674,27 @@ if(!$found_databases) {
 $dbh->disconnect();
 
 sub _sql_dir {
-  my ($cvs_module, $schema_type, $schema_file) = @_;
-  my $cvs_dir;
-  if($opt_cvsdir) {
-    $cvs_dir = $opt_cvsdir;
+  my ($git_repo, $schema_type, $schema_file) = @_;
+  my $git_dir;
+  if($opt_gitdir) {
+    $git_dir = $opt_gitdir;
   }
   else {
     my ($volume, $directories, $file) = splitpath(__FILE__);
     $directories = curdir() unless $directories;
-    $cvs_dir = catdir($directories, updir(), updir());
+    $git_dir = catdir($directories, updir(), updir());
   }
   my $sql_dir;
   if ($schema_type eq 'ontology') {
-    $sql_dir = rel2abs(canonpath( catdir( $cvs_dir, $cvs_module, 'misc-scripts', 'ontology', 'sql' ) ));
+    $sql_dir = rel2abs(canonpath( catdir( $git_dir, $git_repo, 'misc-scripts', 'ontology', 'sql' ) ));
   } else {
-    $sql_dir = rel2abs(canonpath( catdir( $cvs_dir, $cvs_module, 'sql' ) ));
+    $sql_dir = rel2abs(canonpath( catdir( $git_dir, $git_repo, 'sql' ) ));
   }
   my $schema_location = catfile($sql_dir, $schema_file);
   if(! -f $schema_location) {
     if($opt_verbose) {
-      printf("Could not find the schema file '%s' for E! module %s", $schema_location, $cvs_module);
-      printf("\tTry using --cvsdir if your checkouts are in a non-standard location\n") if $opt_cvsdir;
+      printf("Could not find the schema file '%s' for E! module %s", $schema_location, $git_repo);
+      printf("\tTry using --gitdir if your checkouts are in a non-standard location\n") if $opt_gitdir;
     }
     return;
   }
