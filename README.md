@@ -1,9 +1,9 @@
 # Ensembl Core API
 
-[![Build Status](https://travis-ci.org/andrewyatz/ensembl.png?branch=master)][travis]
-[![Coverage Status](https://coveralls.io/repos/andrewyatz/ensembl/badge.png)][coveralls]
+[![Build Status](https://travis-ci.org/Ensembl/ensembl.png?branch=master)][travis]
+[![Coverage Status](https://coveralls.io/repos/Ensembl/ensembl/badge.png)][coveralls]
 
-[travis]: https://travis-ci.org/andrewyatz/ensembl
-[coveralls]: https://coveralls.io/r/andrewyatz/ensembl
+[travis]: https://travis-ci.org/Ensembl/ensembl
+[coveralls]: https://coveralls.io/r/Ensembl/ensembl
 
 
