@@ -18,8 +18,8 @@
 use strict;
 use warnings;
 
-use Data::Dumper;
 use Test::More;
+use Test::Differences;
 
 use Bio::EnsEMBL::ApiVersion qw/software_version/;
 use Bio::EnsEMBL::Utils::Net qw/do_GET/;
@@ -47,8 +47,7 @@ SKIP: {
   }, $sql_dir);
 
   if(-d catdir($project_dir, '.git')) {
-    fail 'This was bad. Project is a Git project';
-    skip 'Skipping: We do not currently get SQL from Git. ABORT!', 1;
+    note 'This was bad. Project is a Git project';
   }
 
   # Get the last SQL schema
@@ -105,8 +104,8 @@ SKIP: {
   skip 'Skipping DB patch tests as we cannot load current release schema into a database', scalar(@patches) 
     unless $loaded_schema;
 
-  # Now apply all current patches
-  foreach my $patch (@patches) {
+  # Now apply all current patches in order
+  foreach my $patch (sort @patches) {
     # Get the number of patch entries before applying next patch
     my $previous_patches = get_num_patches($dbc, $patched_db_name);
 
@@ -157,7 +156,7 @@ sub compare_after_patches {
   is(scalar @{$diff}, 0, "Same table set");
   
   # check each table has the same definition in both schemas
-  map { is(get_create_table($dbc, $source_schema, $_), 
+  map { eq_or_diff(get_create_table($dbc, $source_schema, $_), 
 	   get_create_table($dbc, $target_schema, $_),
 	   "Table $_ definition")} 
     @{$source_tables};
