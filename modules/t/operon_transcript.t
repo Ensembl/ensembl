@@ -31,7 +31,7 @@ ok(1);
 
 my $multi = Bio::EnsEMBL::Test::MultiTestDB->new();
 
-$multi->save('core', 'operon', 'operon_transcript', 'operon_transcript_gene', 'gene', 'transcript');
+$multi->save('core', 'operon', 'operon_transcript', 'operon_transcript_gene', 'gene', 'transcript', 'meta_coord');
 
 my $dba = $multi->get_DBAdaptor("core");
 

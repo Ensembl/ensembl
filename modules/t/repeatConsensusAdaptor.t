@@ -78,7 +78,7 @@ is(@{$rca->fetch_all_repeat_types()}, 3, 'Checking number of repeat types return
 # Test store
 #
 
-$multi_db->save('core', 'repeat_consensus');
+$multi_db->save('core', 'repeat_consensus', 'meta_coord');
 
 $rc = Bio::EnsEMBL::RepeatConsensus->new
   (-REPEAT_CONSENSUS => 'ACTG',

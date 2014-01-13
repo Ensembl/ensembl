@@ -115,7 +115,7 @@ ok( $operon );
 #
 
 $multi->save( "core", "operon", "operon_transcript",
-	      "object_xref", "ontology_xref", "identity_xref");
+	      'xref', "object_xref", "ontology_xref", "identity_xref", 'meta_coord');
 
 $operon = $operon_adaptor->fetch_by_stable_id( "16152-16153-4840" );
 

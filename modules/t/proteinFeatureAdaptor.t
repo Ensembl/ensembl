@@ -67,7 +67,7 @@ my $idesc = 'interpro description';
 my $interpro_ac = 'interpro accession';
 
 my $analysis = Bio::EnsEMBL::Analysis->new(-LOGIC_NAME => 'test');
-$multi->save('core', 'protein_feature');
+$multi->save('core', 'protein_feature', 'meta_coord');
 
 
 my $f = Bio::EnsEMBL::ProteinFeature->new

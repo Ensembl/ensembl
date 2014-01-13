@@ -94,7 +94,7 @@ print_features($feats);
 # Test store
 #
 
-$multi->save('core', 'protein_align_feature');
+$multi->save('core', 'protein_align_feature', 'meta_coord');
 
 my $analysis   = $feat->analysis;
 my $slice      =

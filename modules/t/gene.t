@@ -279,7 +279,7 @@ my $stable_id = 'ENSG00000171456';
 $gene->description($desc);
 $gene->stable_id($stable_id);
 
-$multi->hide("core", "meta_coord", "gene", "transcript", "exon", "exon_transcript", "translation", "supporting_feature", "dna_align_feature");
+$multi->hide("core", "meta_coord", "gene", "transcript", "exon", "exon_transcript", "translation", "supporting_feature", "dna_align_feature", 'xref', 'object_xref', 'identity_xref');
 
 my $gene_ad = $db->get_GeneAdaptor();
 debug("Storing the gene");
@@ -579,7 +579,7 @@ is(scalar(@{$gene->get_all_alt_alleles()}), 0, 'Checking we have no alleles retr
 # Gene remove test
 #
 
-$multi->save("core", "gene", "transcript", "translation", "protein_feature", "exon", "exon_transcript", "supporting_feature", "object_xref", "ontology_xref", "identity_xref", "dna_align_feature", "protein_align_feature");
+$multi->save("core", "gene", "transcript", "translation", "protein_feature", "exon", "exon_transcript", "supporting_feature", "object_xref", "ontology_xref", "identity_xref", "dna_align_feature", "protein_align_feature", 'meta_coord');
 
 $gene = $ga->fetch_by_stable_id("ENSG00000171456");
 
@@ -666,7 +666,7 @@ ok($gene->end() == 400);
 #
 # test that the display_xref_id is set for the gene and its transcript
 #
-$multi->hide("core", "gene", "transcript", "exon", 'xref', 'object_xref', "exon_transcript", "translation");
+$multi->hide("core", "gene", "transcript", "exon", 'xref', 'object_xref', "exon_transcript", "translation", 'meta_coord');
 
 $gene->analysis($analysis);
 my $analysis_adap = $db->get_AnalysisAdaptor();
@@ -745,7 +745,7 @@ foreach my $t (@{$gene->get_all_Transcripts}) {
   $t->get_all_Exons;
 }
 
-$multi->hide("core", "gene", "transcript", "exon", 'xref', 'object_xref', "exon_transcript", "translation");
+$multi->hide("core", "gene", "transcript", "exon", 'xref', 'object_xref', "exon_transcript", "translation", 'meta_coord');
 
 $gene->version(3);
 $gene->dbID(undef);

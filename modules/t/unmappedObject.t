@@ -40,8 +40,7 @@ ok($analysis_ad);
 # Test store
 #
 
-$multi->save('core', 'unmapped_object');
-$multi->save('core', 'unmapped_reason');
+$multi->save('core', 'unmapped_object', 'unmapped_reason', 'meta_coord');
 
 my $analysis = $analysis_ad->fetch_by_logic_name('Unigene');
 

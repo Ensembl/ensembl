@@ -259,7 +259,7 @@ my $dbc_copy = mock_object($dbc);
   if($db->dbc->driver() eq 'mysql') {
     throws_ok {
       my $dbc = Bio::EnsEMBL::DBSQL::DBConnection->new(
-        -HOST => $db->dbc->host, -PORT => $db->dbc->port, -USER => 'arandomuser', -DRIVER => 'mysql'
+        -HOST => $db->dbc->host, -PORT => $db->dbc->port, -USER => 'arandomuser', -PASS => 'sobogusthisis', -DRIVER => 'mysql'
       );
       local $SIG{__WARN__} = sub {
         #swallow the warning. we get it raised via an error anyway

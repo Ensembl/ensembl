@@ -52,7 +52,7 @@ my $expected_keys = {
     cdna_coding_start cdna_coding_end
     alternative_translations translation edits_enabled
     
-    is_current biotype status description
+    is_current biotype status description source
     
     dbentries display_xref external_name external_db external_status external_display_name
   /],

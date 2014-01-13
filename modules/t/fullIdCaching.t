@@ -79,7 +79,6 @@ sub BEGIN {
 }
 
 {
-  $multi->save('core', 'gene', 'transcript');
   
   my $adaptor = $gene_adaptor;
   my $cache = $adaptor->_id_cache();
@@ -166,12 +165,12 @@ sub BEGIN {
   #hit seq region cache & check we clear that one out as well
   $adaptor->fetch_all_by_Slice($genes->[0]->slice());
   $adaptor->clear_cache();
-  
   is(scalar(keys(%{$gene_adaptor->_slice_feature_cache()})), 0, 'clear_cache() should have hit the slice feature cache as well');
   ok(! defined $adaptor->{_id_cache}->{cache}, 'Cache clear has deleted the hash');
   
   #Quick repopulate of the cache then store
   if($STORE_TESTS) {
+    $multi->save('core', 'gene', 'transcript');
     $adaptor->fetch_all_by_dbID_list($gene_ids);
     my $old_gene = $cached_ids->[0];
     my $new_gene = Bio::EnsEMBL::Gene->new(
@@ -187,9 +186,9 @@ sub BEGIN {
     $adaptor->update($cached_ids->[0]);
     ok(! defined $adaptor->{_id_cache}->{cache}, 'Cache clear has deleted the hash');
     ok(scalar(grep { $_ == $new_id} $cache->cache_keys()), 'cache already has the new ID');
+    
+    $multi->restore('core');
   }
-  
-  $multi->restore('core');
 }
 
 done_testing();

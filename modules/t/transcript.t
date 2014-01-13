@@ -223,7 +223,7 @@ ok( scalar( @{$tr->get_all_Exons()} ) == 0 );
 # get a fresh tr to check the update method
 $tr = $ta->fetch_by_stable_id( "ENST00000217347" );
 
-$multi->save('core', 'transcript');
+$multi->save('core', 'transcript', 'meta_coord');
 
 # the first update should have no effect
 $ta->update($tr);
@@ -239,7 +239,7 @@ $ta->update($tr);
 $up_tr = $ta->fetch_by_stable_id( "ENST00000217347" );
 ok ( $up_tr->display_xref->dbID() == 614 );
 
-$multi->restore('core', 'transcript');
+$multi->restore('core', 'transcript', 'meta_coord');
 
 
 
@@ -296,14 +296,14 @@ is(@transcripts, $transcriptCount, "Counted as many transcripts as were fetched 
 note("Test fetch_all_by_source");
 @transcripts = @{$ta->fetch_all_by_source('ensembl')};
 note "Got ".scalar(@transcripts)." ensembl transcripts\n";
-ok(@transcripts == 21);
+is(22, scalar(@transcripts));
 $transcriptCount = $ta->count_all_by_source('ensembl');
-ok($transcriptCount == 21);
+is(22, $transcriptCount);
 @transcripts = @{$ta->fetch_all_by_source(['havana','vega'])};
 note "Got ".scalar(@transcripts)." (havana, vega) transcripts\n";
-ok(@transcripts == 4);
+is(3, scalar(@transcripts));
 $transcriptCount = $ta->count_all_by_source(['havana', 'vega']);
-ok($transcriptCount == 4);
+is(3, $transcriptCount);
 
 #
 # Test get_all_Introns by joining Exons and introns
@@ -371,7 +371,7 @@ $multi->save("core", "transcript", "translation",
              "protein_feature", "exon",
              "exon_transcript", "object_xref",
              "supporting_feature", "dna_align_feature","protein_align_feature",
-             "ontology_xref", "identity_xref");
+             'xref', "ontology_xref", "identity_xref", 'meta_coord');
 
 $ta->remove($tr);
 
@@ -522,7 +522,7 @@ $tr->adaptor(undef);
 }
 
 $multi->hide('core', 'transcript', 'transcript_attrib', 'translation',
-             'exon_transcript', 'exon');
+             'exon_transcript', 'exon', 'meta_coord');
 
 
 my $attrib1 = Bio::EnsEMBL::Attribute->new
@@ -589,7 +589,7 @@ $g = $db->get_GeneAdaptor->fetch_by_transcript_id($tr->dbID);
 $tr->get_all_Exons;
 
 $multi->hide( "core", "gene", "transcript", "exon", 'xref', 'object_xref',
-              "exon_transcript", "translation" );
+              "exon_transcript", "translation", 'meta_coord' );
 
 $tr->version(3);
 $tr->dbID(undef);

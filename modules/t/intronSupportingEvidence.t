@@ -191,7 +191,7 @@ $assert_ise_vs_intron->(21719, 30326248, 30327734, -1);
 
 {
   note 'Starting Transcript based tests. Hiding transcript and intron tables. Saving exon state';
-  $db->hide('core', qw/transcript exon_transcript transcript_attrib transcript_supporting_feature/, @intron_tables);
+  $db->hide('core', qw/transcript exon_transcript transcript_attrib transcript_supporting_feature meta_coord/, @intron_tables);
   $db->save('core', qw/exon dna_align_feature protein_align_feature/);
   
   my $gene = $dba->get_GeneAdaptor()->fetch_by_dbID(18258);

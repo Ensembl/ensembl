@@ -156,7 +156,7 @@ ok(length($seq) == $translation->length());
 # test remove method
 #
 
-$multi->save('core', 'translation', 'protein_feature', 'object_xref', 'identity_xref', 'ontology_xref');
+$multi->save('core', 'translation', 'protein_feature', 'object_xref', 'identity_xref', 'ontology_xref', 'meta_coord');
 
 my $tl_count    = count_rows($db, 'translation');
 my $pfeat_count = count_rows($db, 'protein_feature');
@@ -252,7 +252,7 @@ $tl = $tr->translation();
 $tl->adaptor(undef);
 $tl->dbID(undef);
 
-$multi->hide('core', 'transcript', 'translation_attrib', 'translation');
+$multi->hide('core', 'transcript', 'translation_attrib', 'translation', 'meta_coord');
 
 # add a couple of attributes to the translation
 

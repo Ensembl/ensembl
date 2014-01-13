@@ -200,7 +200,7 @@ ok($first_seq->display_id()  && $first_seq->display_id() eq $second_seq->display
 #
 
 $multi->save("core", "exon", "supporting_feature",
-  "dna_align_feature", "protein_align_feature");
+  "dna_align_feature", "protein_align_feature", 'meta_coord');
 
 my $ex_count = count_rows($db, 'exon');
 my $supfeat_count = count_rows($db, 'supporting_feature');
@@ -239,7 +239,7 @@ ok( scalar(@exons) == 1 );
 # store/update tests
 
 $multi->hide( "core", "exon", "supporting_feature", 
-	      "protein_align_feature", "dna_align_feature");
+	      "protein_align_feature", "dna_align_feature", 'meta_coord');
 
 my $e1 = Bio::EnsEMBL::Exon->new(
   -start => 10,
