@@ -19,6 +19,7 @@ use strict;
 use warnings;
 
 use Test::More;
+use Test::Warnings;
 use Test::Differences;
 
 use Bio::EnsEMBL::ApiVersion qw/software_version/;
@@ -45,10 +46,6 @@ SKIP: {
       push(@patches, $File::Find::name);
     }
   }, $sql_dir);
-
-  if(-d catdir($project_dir, '.git')) {
-    note 'This was bad. Project is a Git project';
-  }
 
   # Get the last SQL schema
   my $last_table_sql = get_table_sql($last_release);
@@ -241,11 +238,10 @@ sub load_sql {
 # Get table.sql for a given Ensembl release
 sub get_table_sql {
   my $release = shift;
+  $release = $release == software_version() ? 'master' : "release/${release}";
   
-  my $git_url = 
-    "https://raw2.github.com/Ensembl/ensembl/release/${release}/sql/table.sql";
-  
-  return get_url($git_url);
+  my $url = "https://raw2.github.com/Ensembl/ensembl/${release}/sql/table.sql";
+  return get_url($url);
 }
 
 # Assume if ensembl.org is down then there is no point in continuing with the tests (1 shot)
@@ -261,19 +257,6 @@ sub test_ensembl {
 
 sub get_url {
   my ($url) = @_;
-
-  # Here we check the installation of IO::Socket::SSL,
-  # as HTTP::Tiny or LWP will need it to download from
-  # github using https
-  my $IO_Socket_SSL = 0;
-  eval {
-    require IO::Socket::SSL;
-    $IO_Socket_SSL = 1;
-  };
-
-  fail "Unable to download from $url, need IO::Socket::SSL"
-    unless $IO_Socket_SSL;
-
   my $content = eval { do_GET($url, 5, 0.5); };
   return $content if defined $content;
   diag $@;

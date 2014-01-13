@@ -13,6 +13,7 @@
 # limitations under the License.
 
 use Test::More;
+use Test::Warnings;
 
 use strict;
 use warnings;

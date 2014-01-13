@@ -16,6 +16,7 @@ use strict;
 use warnings;
 
 use Test::More;
+use Test::Warnings;
 use Test::Exception;
 use Bio::EnsEMBL::Test::MultiTestDB;
 use Bio::EnsEMBL::Test::TestUtils;
@@ -61,11 +62,11 @@ my $assert_ise_vs_intron = sub {
   my $intron_from_exons = Bio::EnsEMBL::Intron->new($e1, $e2);
   
   note 'Asserting Intron tests';
-  capture_std_streams(sub {
-    my($stdout_ref, $stderr_ref) = @_;
-    Bio::EnsEMBL::Intron->new($e1, $exon_adaptor->fetch_by_dbID(162033));
-    like($$stderr_ref, qr/Exons have different slice references/, 'Intron must warn if a different reference slice is used');
-  });
+  warns_like 
+    { Bio::EnsEMBL::Intron->new($e1, $exon_adaptor->fetch_by_dbID(162033)); }
+    qr/Exons have different slice references/, 
+    'Intron must warn if a different reference slice is used';
+
   ok($intron_from_exons->is_splice_canonical(), 'Checking Intron is canonical in its splicing');
   
   note 'Starting IntronSupportingEvidence tests';
