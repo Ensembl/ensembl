@@ -344,7 +344,7 @@ my $batch = {$gene->dbID()  => [Bio::EnsEMBL::Attribute->new(-NAME => 'test_name
 my $current_rows = count_rows($db, 'gene_attrib');
 $aa->store_batch_on_Gene($batch);
 my $new_rows = count_rows($db, 'gene_attrib');
-cmp_ok($new_rows, '=', $current_rows + 3, 'Asserting the storage of multiple attributes will always store them');
+cmp_ok($new_rows, '==', $current_rows + 3, 'Asserting the storage of multiple attributes will always store them');
 
 @attribs = @{$aa->fetch_all_by_Gene($gene)};
 is(@attribs, 2, "Two attribs available for gene");
@@ -358,7 +358,7 @@ my $batch = {$slice->get_seq_region_id()  => [Bio::EnsEMBL::Attribute->new(-NAME
 my $current_rows = count_rows($db, 'seq_region_attrib');
 $aa->store_batch_on_Slice($batch);
 my $new_rows = count_rows($db, 'seq_region_attrib');
-cmp_ok($new_rows, '=', $current_rows + 3, 'Asserting the storage of multiple attributes will always store them');
+cmp_ok($new_rows, '==', $current_rows + 3, 'Asserting the storage of multiple attributes will always store them');
 
 @attribs = @{$aa->fetch_all_by_Slice($slice)};
 is(@attribs, 2, "Two attribs available for slice");
