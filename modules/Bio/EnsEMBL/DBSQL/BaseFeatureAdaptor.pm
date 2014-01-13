@@ -1283,7 +1283,7 @@ sub remove {
 
   # Update meta_coord as necessary
   my $mcc = $self->db->get_MetaCoordContainer();
-  my $cs = $feature->cs();
+  my $cs = $feature->slice->coord_system();
   $mcc->add_feature_type($cs, $table, $feature->length, 1);
 
   #unset the feature dbID ad adaptor
