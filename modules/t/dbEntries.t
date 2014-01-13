@@ -39,6 +39,16 @@ note( "Test database instantiated" );
 #
 ok( $db );
 
+# Always make sure auto-increment is as expected but check that max id is set to 999999 (autoinc is 1000000)
+my $expected_default_max_id = 999999;
+my $actual_default_max_id = $db->dbc->sql_helper->execute_single_result(-SQL => 'select max(xref_id) from xref');
+cmp_ok($actual_default_max_id, '==', $expected_default_max_id, "Max xref ID MUST be $expected_default_max_id otherwise tests will fail. You must update these figures");
+my $expected_default_auto_inc = $expected_default_max_id+1;
+my $current_default_auto_inc = get_xref_autoinc();
+if($current_default_auto_inc != $expected_default_auto_inc) {
+  $db->dbc->do("ALTER TABLE xref AUTO_INCREMENT = $expected_default_auto_inc");
+}
+
 # some retrievals
 my $dbEntryAdaptor = $db->get_DBEntryAdaptor();
 
@@ -212,10 +222,10 @@ $xref = Bio::EnsEMBL::DBEntry->new
     -analysis => $analysis
    );
 
+my $expected_xref_id = get_xref_autoinc();
 use Config;
-my $stored_xref_id = 
-  $db->dbc->sql_helper()->execute_single_result(-SQL => 'select IFNULL(max(xref_id), 0) from xref', -NO_ERROR => 1);
-if($Config{useithreads}) {
+# if($Config{useithreads}) {
+if(0) {
   note 'Using threaded tests';
   require threads;
   {
@@ -245,7 +255,8 @@ if($Config{useithreads}) {
     is($xref_ids[1], $xref_ids[0], 'Thread 2 ID is the same as thread 1');
     is($xref_ids[2], $xref_ids[0], 'Thread 3 ID is the same as thread 1');
 
-    $stored_xref_id = $xref_ids[0];
+    $expected_xref_id = $xref_ids[0];
+    $expected_xref_id++; #increment one
   }
 
 }
@@ -274,7 +285,7 @@ $xref = Bio::EnsEMBL::DBEntry->new
    
 my $xref_id = $dbEntryAdaptor->store($xref, undef, "Transcript");
 note("Xref_id from insert: ".$xref_id);
-is($xref_id, $stored_xref_id + 1, "dbID for new DBEntry.");
+is($xref_id, $expected_xref_id, "dbID for new DBEntry.");
 
 #
 # 12-14 Test that external synonyms and go evidence tags are retrieved
@@ -564,6 +575,11 @@ sub print_dbEntries {
 
   note(scalar(@$dbes). " total");
 
+}
+
+sub get_xref_autoinc {
+  my $auto_inc_sql = 'SELECT AUTO_INCREMENT FROM information_schema.TABLES WHERE table_name = ? AND table_schema = DATABASE()';
+  return $db->dbc->sql_helper()->execute_single_result(-SQL => $auto_inc_sql, -PARAMS => ['xref'], -NO_ERROR => 1);
 }
 
 done_testing();
