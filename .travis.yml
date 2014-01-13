@@ -1,0 +1,32 @@
+language: "perl"
+
+perl:
+  - "5.14"
+  - "5.12"
+
+env:
+  - COVERALLS=true
+  - COVERALLS=false
+
+before_install:
+    - sudo apt-get -y update
+    - sudo apt-get -y install unzip
+    - git clone --branch master --depth 1 https://github.com/Ensembl/ensembl-test.git
+    - wget https://github.com/bioperl/bioperl-live/archive/bioperl-release-1-2-3.zip
+    - unzip bioperl-release-1-2-3.zip
+
+
+install:
+    - cpanm -v --installdeps --notest .
+    - cpanm -n Devel::Cover::Report::Coveralls
+    - cp travisci/MultiTestDB.conf.travisci modules/t/MultiTestDB.conf
+
+script: "./travisci/harness.sh"
+
+# Get the matrix to only build coveralls support when on 5.14
+matrix:
+  exclude:
+    - perl: "5.12"
+      env: COVERALLS=true
+    - perl: "5.14"
+      env: COVERALLS=false
