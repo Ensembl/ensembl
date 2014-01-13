@@ -317,6 +317,8 @@ INSERT INTO meta (species_id, meta_key, meta_value)
  VALUES (NULL, 'patch', 'patch_74_75_d.sql|default_transcript_source');
 INSERT INTO meta (species_id, meta_key, meta_value)
  VALUES (NULL, 'patch', 'patch_74_75_e.sql|unique_attrib_key');
+INSERT INTO meta (species_id, meta_key, meta_value)
+ VALUES (NULL, 'patch', 'patch_74_75_f.sql|longer_code');
 
 /**
 @table meta_coord
@@ -594,7 +596,7 @@ CREATE TABLE IF NOT EXISTS analysis_description (
 CREATE TABLE attrib_type (
 
   attrib_type_id              SMALLINT(5) UNSIGNED NOT NULL AUTO_INCREMENT,
-  code                        VARCHAR(15) NOT NULL DEFAULT '',
+  code                        VARCHAR(20) NOT NULL DEFAULT '',
   name                        VARCHAR(255) NOT NULL DEFAULT '',
   description                 TEXT,
 
