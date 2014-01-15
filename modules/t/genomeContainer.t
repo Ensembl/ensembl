@@ -67,29 +67,51 @@ $sql = "select sum(value) from seq_region_attrib sa, attrib_type at, seq_region 
 my $coding_count = $sql_helper->execute_single_result(-SQL => $sql, -PARAMS => ['coding_cnt']);
 is($coding_count, $genome->get_coding_count, "Coding count is correct");
 
+my $rcoding_count = $sql_helper->execute_single_result(-SQL => $sql, -PARAMS => ['coding_rcnt'], -NO_ERROR => 1);
+is($rcoding_count, $genome->get_rcoding_count, "Readthough coding count is correct");
+
 my $lnoncoding_count = $sql_helper->execute_single_result(-SQL => $sql, -PARAMS => ['lnoncoding_cnt']);
 is($lnoncoding_count, $genome->get_lnoncoding_count, "Long non coding count is correct");
+
+my $rlnoncoding_count = $sql_helper->execute_single_result(-SQL => $sql, -PARAMS => ['lnoncoding_rcnt'], -NO_ERROR => 1);
+is($rlnoncoding_count, $genome->get_rlnoncoding_count, "Readthrough long non coding count is correct");
 
 my $snoncoding_count = $sql_helper->execute_single_result(-SQL => $sql, -PARAMS => ['snoncoding_cnt']);
 is($snoncoding_count, $genome->get_snoncoding_count, "Short non coding count is correct");
 
+my $rsnoncoding_count = $sql_helper->execute_single_result(-SQL => $sql, -PARAMS => ['snoncoding_rcnt'], -NO_ERROR => 1);
+is($rsnoncoding_count, $genome->get_rsnoncoding_count, "Readthrough short non coding count is correct");
+
 my $pseudogene_count = $sql_helper->execute_single_result(-SQL => $sql, -PARAMS => ['pseudogene_cnt']);
 is($pseudogene_count, $genome->get_pseudogene_count, "Pseudogene count is correct");
+
+my $rpseudogene_count = $sql_helper->execute_single_result(-SQL => $sql, -PARAMS => ['pseudogene_rcnt'], -NO_ERROR => 1);
+is($rpseudogene_count, $genome->get_rpseudogene_count, "Readthrough pseudogene count is correct");
 
 my $alt_coding_count = $sql_helper->execute_single_result(-SQL => $sql, -PARAMS => ['coding_acnt']);
 is($alt_coding_count, $genome->get_alt_coding_count, "Coding count on alternate sequences is correct");
 
+my $alt_rcoding_count = $sql_helper->execute_single_result(-SQL => $sql, -PARAMS => ['coding_racnt'], -NO_ERROR => 1);
+is($alt_rcoding_count, $genome->get_alt_rcoding_count, "Readthrough coding count on alternate sequences is correct");
+
 my $alt_lnoncoding_count = $sql_helper->execute_single_result(-SQL => $sql, -PARAMS => ['lnoncoding_acnt']);
 is($alt_lnoncoding_count, $genome->get_alt_lnoncoding_count, "Long non coding count on alternate sequences is correct");
 
+my $alt_rlnoncoding_count = $sql_helper->execute_single_result(-SQL => $sql, -PARAMS => ['lnoncoding_racnt'], -NO_ERROR => 1);
+is($alt_rlnoncoding_count, $genome->get_alt_rlnoncoding_count, "Readthrough long non coding count on alternate sequences is correct");
+
 my $alt_snoncoding_count = $sql_helper->execute_single_result(-SQL => $sql, -PARAMS => ['snoncoding_acnt']);
 is($alt_snoncoding_count, $genome->get_alt_snoncoding_count, "Short non coding count on alternate sequences is correct");
+
+my $alt_rsnoncoding_count = $sql_helper->execute_single_result(-SQL => $sql, -PARAMS => ['snoncoding_racnt'], -NO_ERROR => 1);
+is($alt_rsnoncoding_count, $genome->get_alt_rsnoncoding_count, "Readthrough short non coding count on alternate sequences is correct");
 
 my $short_variation_count = $sql_helper->execute_single_result(-SQL => $sql, -PARAMS => ['SNPCount'], -NO_ERROR => 1);
 is($short_variation_count, $genome->get_short_variation_count, "Short variants count is correct");
 
 is_rows($genome->get_prediction_count, $db, "prediction_transcript");
 is_rows($genome->get_prediction_count('genscan'), $db, "prediction_transcript", "where analysis_id = ?", [8440]);
+
 
 #
 # Test genome length
