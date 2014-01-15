@@ -160,7 +160,7 @@ sub flush {
 
 sub map_coordinates {
   my ( $self, $id, $start, $end, $strand, $type ) = @_;
-
+$DB::single=1;;
   unless (    defined($id)
            && defined($start)
            && defined($end)
@@ -982,11 +982,11 @@ sub _merge_pairs {
 	  # duplicate filter
 	  if( $current_pair->{'to'}->{'start'} == $next_pair->{'to'}->{'start'} 
 	     and $current_pair->{'from'}->{'id'} == $next_pair->{'from'}->{'id'} ) {
-	    $del_pair = $next_pair;
+	    #TODO removing this solves the human contig mapper problem
+      # $del_pair = $next_pair;
 	  } elsif(( $current_pair->{'from'}->{'id'} eq $next_pair->{'from'}->{'id'} ) &&
 		  ( $next_pair->{'ori'} == $current_pair->{'ori'} ) &&
 		  ( $next_pair->{'to'}->{'start'} -1 == $current_pair->{'to'}->{'end'} )) {
-	      
 	      if( $current_pair->{'ori'} == 1 ) {
 		  # check forward strand merge
 		  if( $next_pair->{'from'}->{'start'} - 1 == $current_pair->{'from'}->{'end'} ) {
@@ -998,6 +998,7 @@ sub _merge_pairs {
 	      } else {
 		  # check backward strand merge
 		  if( $next_pair->{'from'}->{'end'} + 1 == $current_pair->{'from'}->{'start'} ) {
+		    warn 'reverse string merge';
 		      # yes its a merge
 		      $current_pair->{'to'}->{'end'} = $next_pair->{'to'}->{'end'};
 		      $current_pair->{'from'}->{'start'} = $next_pair->{'from'}->{'start'};
