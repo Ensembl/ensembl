@@ -99,7 +99,7 @@ CREATE TABLE `associated_xref` (
 
 CREATE TABLE `attrib_type` (
   `attrib_type_id` smallint(5) unsigned NOT NULL AUTO_INCREMENT,
-  `code` varchar(15) NOT NULL DEFAULT '',
+  `code` varchar(20) NOT NULL DEFAULT '',
   `name` varchar(255) NOT NULL DEFAULT '',
   `description` text,
   PRIMARY KEY (`attrib_type_id`),
@@ -316,8 +316,10 @@ CREATE TABLE `gene_archive` (
 CREATE TABLE `gene_attrib` (
   `gene_id` int(10) unsigned NOT NULL DEFAULT '0',
   `attrib_type_id` smallint(5) unsigned NOT NULL DEFAULT '0',
-  `value` varchar(255) NOT NULL DEFAULT '',
-  KEY `type_val_idx` (`attrib_type_id`,`value`),
+  `value` text NOT NULL,
+  UNIQUE KEY `gene_attribx` (`gene_id`,`attrib_type_id`,`value`(500)),
+  KEY `type_val_idx` (`attrib_type_id`,`value`(40)),
+  KEY `val_only_idx` (`value`(40)),
   KEY `gene_idx` (`gene_id`)
 ) ENGINE=MyISAM DEFAULT CHARSET=latin1;
 
@@ -461,7 +463,7 @@ CREATE TABLE `meta` (
   PRIMARY KEY (`meta_id`),
   UNIQUE KEY `species_key_value_idx` (`species_id`,`meta_key`,`meta_value`),
   KEY `species_value_idx` (`species_id`,`meta_value`)
-) ENGINE=MyISAM AUTO_INCREMENT=101 DEFAULT CHARSET=latin1;
+) ENGINE=MyISAM AUTO_INCREMENT=103 DEFAULT CHARSET=latin1;
 
 CREATE TABLE `meta_coord` (
   `table_name` varchar(40) NOT NULL DEFAULT '',
@@ -473,8 +475,10 @@ CREATE TABLE `meta_coord` (
 CREATE TABLE `misc_attrib` (
   `misc_feature_id` int(10) unsigned NOT NULL DEFAULT '0',
   `attrib_type_id` smallint(5) unsigned NOT NULL DEFAULT '0',
-  `value` varchar(255) NOT NULL DEFAULT '',
-  KEY `type_val_idx` (`attrib_type_id`,`value`),
+  `value` text NOT NULL,
+  UNIQUE KEY `misc_attribx` (`misc_feature_id`,`attrib_type_id`,`value`(500)),
+  KEY `type_val_idx` (`attrib_type_id`,`value`(40)),
+  KEY `val_only_idx` (`value`(40)),
   KEY `misc_feature_idx` (`misc_feature_id`)
 ) ENGINE=MyISAM DEFAULT CHARSET=latin1;
 
@@ -693,8 +697,10 @@ CREATE TABLE `seq_region` (
 CREATE TABLE `seq_region_attrib` (
   `seq_region_id` int(10) unsigned NOT NULL DEFAULT '0',
   `attrib_type_id` smallint(5) unsigned NOT NULL DEFAULT '0',
-  `value` varchar(255) NOT NULL DEFAULT '',
-  KEY `type_val_idx` (`attrib_type_id`,`value`),
+  `value` text NOT NULL,
+  UNIQUE KEY `region_attribx` (`seq_region_id`,`attrib_type_id`,`value`(500)),
+  KEY `type_val_idx` (`attrib_type_id`,`value`(40)),
+  KEY `val_only_idx` (`value`(40)),
   KEY `seq_region_idx` (`seq_region_id`)
 ) ENGINE=MyISAM DEFAULT CHARSET=latin1;
 
@@ -781,8 +787,10 @@ CREATE TABLE `transcript` (
 CREATE TABLE `transcript_attrib` (
   `transcript_id` int(10) unsigned NOT NULL DEFAULT '0',
   `attrib_type_id` smallint(5) unsigned NOT NULL DEFAULT '0',
-  `value` varchar(255) NOT NULL DEFAULT '',
-  KEY `type_val_idx` (`attrib_type_id`,`value`),
+  `value` text NOT NULL,
+  UNIQUE KEY `transcript_attribx` (`transcript_id`,`attrib_type_id`,`value`(500)),
+  KEY `type_val_idx` (`attrib_type_id`,`value`(40)),
+  KEY `val_only_idx` (`value`(40)),
   KEY `transcript_idx` (`transcript_id`)
 ) ENGINE=MyISAM DEFAULT CHARSET=latin1;
 
@@ -822,8 +830,10 @@ CREATE TABLE `translation` (
 CREATE TABLE `translation_attrib` (
   `translation_id` int(10) unsigned NOT NULL DEFAULT '0',
   `attrib_type_id` smallint(5) unsigned NOT NULL DEFAULT '0',
-  `value` varchar(255) NOT NULL DEFAULT '',
-  KEY `type_val_idx` (`attrib_type_id`,`value`),
+  `value` text NOT NULL,
+  UNIQUE KEY `translation_attribx` (`translation_id`,`attrib_type_id`,`value`(500)),
+  KEY `type_val_idx` (`attrib_type_id`,`value`(40)),
+  KEY `val_only_idx` (`value`(40)),
   KEY `translation_idx` (`translation_id`)
 ) ENGINE=MyISAM DEFAULT CHARSET=latin1;
 

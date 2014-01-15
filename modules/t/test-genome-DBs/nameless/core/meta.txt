@@ -1,4 +1,4 @@
-1	\N	schema_version	74
+1	\N	schema_version	75
 2	1	assembly.default	NCBI34
 3	1	species.taxonomy_id	9606
 26	1	species.classification	Homo sapiens
@@ -42,3 +42,11 @@
 90	\N	patch	patch_73_74_d.sql|remove_qtl
 97	\N	patch	patch_73_74_e.sql|remove_canonical_annotation
 98	\N	patch	patch_73_74_f.sql|remove_pair_dna_align
+99	\N	patch	patch_73_74_g.sql|add_transcript_idx_tise
+100	\N	patch	patch_73_74_h.sql|alt_allele_unique_gene_idx
+101	\N	patch	patch_74_75_a.sql|schema_version
+102	\N	patch	patch_74_75_b.sql|transcript_source
+103	\N	patch	patch_74_75_c.sql|add_genome_statistics
+104	\N	patch	patch_74_75_d.sql|default_transcript_source
+105	\N	patch	patch_74_75_e.sql|unique_attrib_key
+106	\N	patch	patch_74_75_f.sql|longer_code
