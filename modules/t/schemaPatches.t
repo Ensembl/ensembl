@@ -48,10 +48,10 @@ SKIP: {
   }, $sql_dir);
 
   # Get the last SQL schema
-  my $last_table_sql = get_table_sql($last_release);
+  my $last_table_sql = eval { get_table_sql($last_release); };
 
-  skip "Skipping DB patch tests as we cannot find the SQL for release $last_release", (scalar(@patches)+1) 
-    unless defined $last_table_sql;
+  skip "Skipping DB patch tests as we cannot fetch the SQL for release $last_release", (scalar(@patches)+1) 
+    if $@;
 
   my $db = Bio::EnsEMBL::Test::MultiTestDB->new();
   my $dba = $db->get_DBAdaptor('core');
@@ -74,13 +74,14 @@ SKIP: {
   # Create last release DB  
   my $current_table_sql;
   if ($ENV{ENS_REMOTE_SCHEMA}) {
-    $current_table_sql = get_table_sql($current_release);
-  }
-  else {
+    $current_table_sql = eval { get_table_sql($current_release); };
+    skip 'Skipping DB patch test as we cannot fetch current release schema file (table.sql)', 1
+      if $@;
+  } else {
     my $table_sql = catfile($sql_dir, 'table.sql');
-    skip 'Skipping DB patch test as we cannot find last release schema file (table.sql)', 1
+    skip 'Skipping DB patch test as we cannot find current release schema file (table.sql)', 1
       unless -e $table_sql;
-    skip 'Skipping DB patch test as we last release schema file (table.sql) is not readable', 1
+    skip 'Skipping DB patch test as we current release schema file (table.sql) is not readable', 1
       unless -r $table_sql;
     $current_table_sql = slurp($table_sql);
   }
@@ -238,10 +239,19 @@ sub load_sql {
 # Get table.sql for a given Ensembl release
 sub get_table_sql {
   my $release = shift;
-  $release = $release == software_version() ? 'master' : "release/${release}";
-  
-  my $url = "https://raw2.github.com/Ensembl/ensembl/${release}/sql/table.sql";
-  return get_url($url);
+  my ($fh, $fname) = tempfile();
+
+  my $git_cmd = sprintf "git show %s:sql/table.sql > $fname", 
+    $release == software_version() ? 'master' : "release/${release}";
+
+  my $output = `$git_cmd`;
+  my $ec = ($? >> 8);
+  if($ec != 0) {
+    note($output);
+    die "MySQL command failed with error code '$ec'";
+  }
+
+  return slurp($fname);
 }
 
 # Assume if ensembl.org is down then there is no point in continuing with the tests (1 shot)
