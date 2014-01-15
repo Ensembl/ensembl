@@ -1,0 +1,14 @@
+1	\N	schema_version	75
+2	1	assembly.default	MULTIMAP
+3	1	species.taxonomy_id	1
+4	1	assembly.mapping	chromosome:MULTIMAP#contig
+5	1	species.production_name	mapping
+6	1	species.scientific_name	Mapping
+7	\N	schema_type	core
+8	\N	patch	patch_74_75_a.sql|schema_version
+9	\N	patch	patch_74_75_b.sql|transcript_source
+10	\N	patch	patch_74_75_c.sql|add_genome_statistics
+11	\N	patch	patch_74_75_d.sql|default_transcript_source
+12	\N	patch	patch_74_75_e.sql|unique_attrib_key
+13	\N	patch	patch_74_75_f.sql|longer_code
+
