@@ -16,7 +16,7 @@ use strict;
 use warnings;
 
 use Test::More;
-use Test::Warnings;
+
 use Test::Exception;
 use Data::Dumper;
 use Bio::EnsEMBL::Registry;

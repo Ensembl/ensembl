@@ -49,3 +49,5 @@
 102	\N	patch	patch_74_75_b.sql|transcript_source
 103	\N	patch	patch_74_75_c.sql|add_genome_statistics
 104	\N	patch	patch_74_75_d.sql|default_transcript_source
+105	\N	patch	patch_74_75_e.sql|unique_attrib_key
+106	\N	patch	patch_74_75_f.sql|longer_code

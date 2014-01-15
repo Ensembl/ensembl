@@ -33,7 +33,7 @@ my $slice_adaptor = $db->get_SliceAdaptor();
 
 my $slice = $slice_adaptor->fetch_by_region('chromosome', 'Y', 1, 400000);
 my $feats = $sfa->fetch_all_by_Slice($slice);
-is( @$feats, 94, "Returned 58 features" );
+is( @$feats, 94, "Returned 94 features" );
 
 print_features($feats);
 

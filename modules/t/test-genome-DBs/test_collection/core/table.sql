@@ -3,6 +3,7 @@ CREATE TABLE `alt_allele` (
   `alt_allele_group_id` int(10) unsigned NOT NULL,
   `gene_id` int(10) unsigned NOT NULL,
   PRIMARY KEY (`alt_allele_id`),
+  UNIQUE KEY `gene_idx` (`gene_id`),
   KEY `gene_id` (`gene_id`,`alt_allele_group_id`)
 ) ENGINE=MyISAM DEFAULT CHARSET=latin1;
 
@@ -97,7 +98,7 @@ CREATE TABLE `associated_xref` (
 
 CREATE TABLE `attrib_type` (
   `attrib_type_id` smallint(5) unsigned NOT NULL AUTO_INCREMENT,
-  `code` varchar(50) DEFAULT NULL,
+  `code` varchar(20) NOT NULL DEFAULT '',
   `name` varchar(255) NOT NULL DEFAULT '',
   `description` text,
   PRIMARY KEY (`attrib_type_id`),
@@ -319,10 +320,23 @@ CREATE TABLE `gene_attrib` (
   `gene_id` int(10) unsigned NOT NULL DEFAULT '0',
   `attrib_type_id` smallint(5) unsigned NOT NULL DEFAULT '0',
   `value` text NOT NULL,
+  UNIQUE KEY `gene_attribx` (`gene_id`,`attrib_type_id`,`value`(500)),
   KEY `type_val_idx` (`attrib_type_id`,`value`(40)),
   KEY `val_only_idx` (`value`(40)),
   KEY `gene_idx` (`gene_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+
+CREATE TABLE `genome_statistics` (
+  `genome_statistics_id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+  `statistic` varchar(128) NOT NULL,
+  `value` int(10) unsigned NOT NULL DEFAULT '0',
+  `species_id` int(10) unsigned DEFAULT '1',
+  `attrib_type_id` int(10) unsigned DEFAULT NULL,
+  `timestamp` datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
+  PRIMARY KEY (`genome_statistics_id`),
+  UNIQUE KEY `stats_uniq` (`statistic`,`attrib_type_id`,`species_id`),
+  KEY `stats_idx` (`statistic`,`attrib_type_id`,`species_id`)
+) ENGINE=MyISAM DEFAULT CHARSET=latin1;
 
 CREATE TABLE `identity_xref` (
   `object_xref_id` int(10) unsigned NOT NULL,
@@ -455,7 +469,7 @@ CREATE TABLE `meta` (
   PRIMARY KEY (`meta_id`),
   UNIQUE KEY `species_key_value_idx` (`species_id`,`meta_key`,`meta_value`),
   KEY `species_value_idx` (`species_id`,`meta_value`)
-) ENGINE=InnoDB AUTO_INCREMENT=67 DEFAULT CHARSET=latin1;
+) ENGINE=InnoDB AUTO_INCREMENT=170 DEFAULT CHARSET=latin1;
 
 CREATE TABLE `meta_coord` (
   `table_name` varchar(40) NOT NULL,
@@ -468,6 +482,7 @@ CREATE TABLE `misc_attrib` (
   `misc_feature_id` int(10) unsigned NOT NULL DEFAULT '0',
   `attrib_type_id` smallint(5) unsigned NOT NULL DEFAULT '0',
   `value` text NOT NULL,
+  UNIQUE KEY `misc_attribx` (`misc_feature_id`,`attrib_type_id`,`value`(500)),
   KEY `type_val_idx` (`attrib_type_id`,`value`(40)),
   KEY `val_only_idx` (`value`(40)),
   KEY `misc_feature_idx` (`misc_feature_id`)
@@ -690,6 +705,7 @@ CREATE TABLE `seq_region_attrib` (
   `seq_region_id` int(10) unsigned NOT NULL DEFAULT '0',
   `attrib_type_id` smallint(5) unsigned NOT NULL DEFAULT '0',
   `value` text NOT NULL,
+  UNIQUE KEY `region_attribx` (`seq_region_id`,`attrib_type_id`,`value`(500)),
   KEY `type_val_idx` (`attrib_type_id`,`value`(40)),
   KEY `val_only_idx` (`value`(40)),
   KEY `seq_region_idx` (`seq_region_id`)
@@ -795,6 +811,7 @@ CREATE TABLE `transcript` (
   `seq_region_end` int(10) unsigned NOT NULL,
   `seq_region_strand` tinyint(2) NOT NULL,
   `display_xref_id` int(10) unsigned DEFAULT NULL,
+  `source` varchar(20) NOT NULL DEFAULT 'ensembl',
   `biotype` varchar(40) NOT NULL,
   `status` enum('KNOWN','NOVEL','PUTATIVE','PREDICTED','KNOWN_BY_PROJECTION','UNKNOWN','ANNOTATED') DEFAULT NULL,
   `description` text,
@@ -817,6 +834,7 @@ CREATE TABLE `transcript_attrib` (
   `transcript_id` int(10) unsigned NOT NULL DEFAULT '0',
   `attrib_type_id` smallint(5) unsigned NOT NULL DEFAULT '0',
   `value` text NOT NULL,
+  UNIQUE KEY `transcript_attribx` (`transcript_id`,`attrib_type_id`,`value`(500)),
   KEY `type_val_idx` (`attrib_type_id`,`value`(40)),
   KEY `val_only_idx` (`value`(40)),
   KEY `transcript_idx` (`transcript_id`)
@@ -827,7 +845,8 @@ CREATE TABLE `transcript_intron_supporting_evidence` (
   `intron_supporting_evidence_id` int(10) unsigned NOT NULL,
   `previous_exon_id` int(10) unsigned NOT NULL,
   `next_exon_id` int(10) unsigned NOT NULL,
-  PRIMARY KEY (`intron_supporting_evidence_id`,`transcript_id`)
+  PRIMARY KEY (`intron_supporting_evidence_id`,`transcript_id`),
+  KEY `transcript_idx` (`transcript_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
 CREATE TABLE `transcript_supporting_feature` (
@@ -858,6 +877,7 @@ CREATE TABLE `translation_attrib` (
   `translation_id` int(10) unsigned NOT NULL DEFAULT '0',
   `attrib_type_id` smallint(5) unsigned NOT NULL DEFAULT '0',
   `value` text NOT NULL,
+  UNIQUE KEY `translation_attribx` (`translation_id`,`attrib_type_id`,`value`(500)),
   KEY `type_val_idx` (`attrib_type_id`,`value`(40)),
   KEY `val_only_idx` (`value`(40)),
   KEY `translation_idx` (`translation_id`)
