@@ -241,7 +241,7 @@ sub get_table_sql {
   my $release = shift;
   my ($fh, $fname) = tempfile();
 
-  my $git_cmd = sprintf "git show %s:sql/table.sql > $fname", 
+  my $git_cmd = sprintf "git show %s:sql/table.sql > $fname",
     $release == software_version() ? 'master' : "release/${release}";
 
   my $output = `$git_cmd`;
