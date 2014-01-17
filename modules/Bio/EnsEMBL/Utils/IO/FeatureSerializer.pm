@@ -45,6 +45,15 @@ use base qw(Bio::EnsEMBL::Utils::IO::Serializer);
 
 # Majority of methods inherited from Serializer
 
+=head2 print_feature
+
+	Arg []     : None
+	Description: Abstract method to print a feature.
+                     Implemented in derived classes.
+        Returntype : None
+
+=cut
+
 sub print_feature {
 	throw( "print_feature method not implemented.");
 }
@@ -53,7 +62,7 @@ sub print_feature {
 
 	Arg [1]    : Listref of Features
 	Description: Run print_feature on every feature in the list
-
+        Returntype : None
 =cut
 
 sub print_feature_list {
