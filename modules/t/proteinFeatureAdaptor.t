@@ -17,7 +17,7 @@ use strict;
 use Bio::EnsEMBL::Test::TestUtils;
 
 use Test::More;
-
+use Test::Warnings;
 
 use Bio::EnsEMBL::Test::MultiTestDB;
 

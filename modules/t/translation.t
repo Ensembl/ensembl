@@ -20,7 +20,7 @@ use Bio::EnsEMBL::Translation;
 use Bio::EnsEMBL::Exon;
 
 use Test::More;
-
+use Test::Warnings;
 
 my $loaded = 0;
 END { print "not ok 1\n" unless $loaded; }
