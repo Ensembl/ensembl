@@ -83,7 +83,7 @@ sub DESTROY {
 	
 	Arg [1]    : String
 	Description: Pipes a custom string into the filehandle that the serializer is using
-
+        Returntype:  None
 =cut
 
 sub print_metadata {
@@ -96,7 +96,7 @@ sub print_metadata {
 =head2 print_main_header
 
 	Arg [1]    : Data for header, depends on serializer
-	Description: Printing the header text or metadata required for this file format,
+	Description: Abstract method for printing the header text or metadata required for this file format,
 	             Re-implement in the serializer.
 	Returntype : None
 =cut
