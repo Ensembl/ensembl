@@ -1100,7 +1100,7 @@ sub get_short_variation_count {
     $self->{'short_variation_count'} = $short_variation_count;
   }
   if (!defined $self->{'short_variation_count'}) {
-    $self->{'short_variation_count'} = $self->_get_count('SNPcount');
+    $self->{'short_variation_count'} = $self->_get_count('SNPCount');
   }
   return $self->{'short_variation_count'};
 }
