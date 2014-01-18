@@ -165,9 +165,14 @@ sub print_feature {
         }
       }
 
+      # Before logic was the first 3 conditions. Added the length of
+      # exon is less than 3 as the GTF dumper missed off
+      # 1bp CDS exons. Seems that $instop was set to true meaning
+      # we bailed out. The other conditions are fine. Not sure
+      # if this test is the right one to do but it does work
       if ( $exon_start <= $cdsexon->end &&
            $exon_end >= $cdsexon->start &&
-           !$instop )
+           (!$instop || $cdsexon->length() < 3) )
       {
         print $fh $idstr . "\t" . $transcript_biotype .
           "\t" . 'CDS' . "\t" . ( $exon_start + $sliceoffset ) .
