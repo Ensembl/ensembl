@@ -52,6 +52,36 @@ use base qw(Bio::EnsEMBL::Utils::IO::FeatureSerializer);
 
 my %strand_conversion = ( '1' => '+', '0' => '.', '-1' => '-' );
 
+sub print_main_header {
+  my $self = shift;
+  my $dba = shift;
+  my $fh = $self->{'filehandle'};
+  
+  my $mc = $dba->get_MetaContainer();
+
+  # Get the build. name gives us GRCh37.p1 where as default gives us GRCh37
+  my $assembly_name = $mc->single_value_by_key('assembly.name');
+  $assembly_name ||= $mc->single_value_by_key('assembly.default');
+  print $fh "#!genome-build ${assembly_name}\n";
+
+  # Get accession and only print if it is there
+  my $accession = $mc->single_value_by_key('assembly.accession');
+  if($accession) {
+    my $accession_source = $mc->single_value_by_key('assembly.web_accession_source');
+    print $fh "#!genome-build-accession ${accession_source}:${accession}\n";
+  }
+
+  return;
+}
+
+sub print_Gene {
+  my ($self, $gene) = @_;
+  foreach my $t (@{$gene->get_all_Transcripts()}) {
+    $self->print_feature($t, $gene);
+  }
+  return;
+}
+
 =head2 print_feature
 
     Arg [1]    : Bio::EnsEMBL::Transcript
@@ -64,6 +94,7 @@ my %strand_conversion = ( '1' => '+', '0' => '.', '-1' => '-' );
 sub print_feature {
   my $self       = shift;
   my $transcript = shift;
+  my $gene = shift;
 
   throw( sprintf
            "Feature is of type %s. Cannot write non transcripts to GTF",
@@ -81,9 +112,13 @@ sub print_feature {
   my @endcs   = $self->_make_stop_codon_features($transcript);
   my ( $hasstart, $hasend ) = $self->_check_start_and_stop($transcript);
 
-  my $dbname = $transcript->adaptor()->dbc()->dbname();
-  my $vegadb = $dbname =~ /vega/;
-  my $gene   = $transcript->get_Gene();
+  my $vegadb = 0;
+  if($transcript->adaptor()) {
+    my $dbname = $transcript->adaptor()->dbc()->dbname();
+    $vegadb = $dbname =~ /vega/;
+  }
+  $gene   ||= $transcript->get_Gene();
+  my $translation = $transcript->translation();
 
   my ( $biotype_display, $transcript_biotype );
   {
@@ -95,10 +130,50 @@ sub print_feature {
       $transcript->biotype;
   }
 
+  # Find selenocysteine
+  my $has_selenocysteine = 0;
+  my $selenocysteines = [];
+  if($translation) {
+    $selenocysteines = $translation->get_all_selenocysteine_SeqEdits();
+    $has_selenocysteine = 1 if @{$selenocysteines};
+  }
+
+  #Print Transcript summary
+  print $fh sprintf(qq{%s\t%s\ttranscript\t%d\t%d\t.\t%s\t.\t}, 
+        $idstr, $transcript_biotype, 
+        ($transcript->start()+$sliceoffset), ($transcript->end()+$sliceoffset),
+        ($strand_conversion{$transcript->strand}));
+  $self->_print_attribs($gene, $biotype_display, $transcript, 0, 'transcript', undef, undef, $has_selenocysteine);
+  print $fh "\n";
+
+  #Process any selenocystines we may have
+  if($has_selenocysteine) {
+    foreach my $edit (@{$selenocysteines}) {
+      my $edit_start = $edit->start();
+      my ($projection) = $transcript->pep2genomic($edit_start, $edit_start);
+      my $strand = $strand_conversion{$projection->strand()};
+      my $start = $projection->start();
+      my $end = $projection->end();
+      print $fh sprintf(qq{%s\t%s\tSelenocysteine\t%d\t%d\t.\t%s\t.\t}, 
+        $idstr, $transcript_biotype, ($start+$sliceoffset), ($end+$sliceoffset), $strand);
+      $self->_print_attribs($gene, $biotype_display, $transcript, 0, 'Selenocystine', undef, undef, $has_selenocysteine);
+      print $fh "\n";
+    }
+  }
+
+  my $five_prime_utr = $transcript->five_prime_utr_Feature();
+  if($five_prime_utr) {
+    my $strand = $strand_conversion{$five_prime_utr->strand()};
+    print $fh sprintf(qq{%s\t%s\tUTR\t%d\t%d\t.\t%s\t.\t}, 
+        $idstr, $transcript_biotype, ($five_prime_utr->start()+$sliceoffset), ($five_prime_utr->end+$sliceoffset), $strand);
+    $self->_print_attribs($gene, $biotype_display, $transcript, 0, 'UTR', undef, undef, $has_selenocysteine);
+    print $fh "\n";
+  }
+
   my @translateable_exons;
   @translateable_exons = @{ $transcript->get_all_translateable_Exons }
-    if $transcript->translation;
-
+    if $translation;
+    
   my ( $count, $intrans, $instop ) = ( 1, 0, 0 );
 
   foreach my $exon ( @{ $transcript->get_all_Exons } ) {
@@ -123,12 +198,12 @@ sub print_feature {
       "." . "\t";
 # Column 9 - attribute, a ;-separated list of key-value pairs (additional feature info)
     $self->_print_attribs( $gene, $biotype_display, $transcript,
-                           $count, 'exon', $exon, $vegadb );
+                           $count, 'exon', $exon, $vegadb, $has_selenocysteine );
     print $fh "\n";
 
     $intrans = 1
-      if $transcript->translation and
-      $exon == $transcript->translation->start_Exon;
+      if $translation and
+      $exon == $translation->start_Exon;
 
     if ($intrans) {
       # print the CDS of this exon
@@ -151,7 +226,7 @@ sub print_feature {
 
       my $exon_start = $cdsexon->start;
       my $exon_end   = $cdsexon->end;
-      if ( $transcript->translation &&
+      if ( $translation &&
            $hasend &&
            ( $exon->end >= $endcs[0]->start &&
              $exon->start <= $endcs[0]->end ) )
@@ -179,12 +254,12 @@ sub print_feature {
           "\t" . ( $exon_end + $sliceoffset ) .
           "\t" . "." . "\t" . $strand . "\t" . $phase . "\t";
         $self->_print_attribs( $gene, $biotype_display, $transcript,
-                               $count, 'CDS' );
+                               $count, 'CDS', undef, undef, $has_selenocysteine );
         print $fh "\n";
       }
     } ## end if ($intrans)
-    if ( $transcript->translation &&
-         $exon == $transcript->translation->start_Exon &&
+    if ( $translation &&
+         $exon == $translation->start_Exon &&
          $hasstart )
     {
       my $tmpcnt = $count;
@@ -196,12 +271,12 @@ sub print_feature {
           "\t" . "." . "\t" . $strand . "\t" . $startc->phase . "\t";
 
         $self->_print_attribs( $gene, $biotype_display, $transcript,
-                               $tmpcnt++, 'start_codon' );
+                               $tmpcnt++, 'start_codon', undef, undef, $has_selenocysteine );
         print $fh "\n";
       }
     }
-    if ( $transcript->translation &&
-         ( $exon == $transcript->translation->end_Exon ) )
+    if ( $translation &&
+         ( $exon == $translation->end_Exon ) )
     {
       if ($hasend) {
         my $tmpcnt = $count - $#endcs;
@@ -214,7 +289,7 @@ sub print_feature {
             "\t" . "." . "\t" . $strand . "\t" . $endc->phase . "\t";
 
           $self->_print_attribs( $gene, $biotype_display, $transcript,
-                                 $tmpcnt++, 'stop_codon' );
+                                 $tmpcnt++, 'stop_codon', undef, undef, $has_selenocysteine );
           print $fh "\n";
         }
       }
@@ -231,6 +306,16 @@ sub print_feature {
     $count++;
   } ## end foreach my $exon ( @{ $transcript...})
 
+  my $three_prime_utr = $transcript->three_prime_utr_Feature();
+  if($three_prime_utr) {
+    my $strand = $strand_conversion{$three_prime_utr->strand()};
+    print $fh sprintf(qq{%s\t%s\tUTR\t%d\t%d\t.\t%s\t.\t}, 
+        $idstr, $transcript_biotype, ($three_prime_utr->start()+$sliceoffset), ($three_prime_utr->end+$sliceoffset), $strand);
+    $self->_print_attribs($gene, $biotype_display, $transcript, 0, 'UTR', undef, undef, $has_selenocysteine);
+    print $fh "\n";
+  }
+
+  return;
 } ## end sub print_feature
 
 =head2 _print_attribs
@@ -244,7 +329,7 @@ sub print_feature {
 
 sub _print_attribs {
   my ( $self, $gene, $gene_biotype, $transcript, $count, $type, $exon,
-       $vegadb )
+       $vegadb, $has_selenocysteine )
     = @_;
 
   my ( $gene_name, $gene_source );
@@ -261,7 +346,7 @@ sub _print_attribs {
 
   print $fh "gene_id \"" . get_id_from_obj($gene) .
     "\";" . " transcript_id \"" . get_id_from_obj($transcript) . "\";";
-  print $fh " exon_number \"$count\";";
+  print $fh " exon_number \"$count\";" if $count > 0;
   print $fh " gene_name \"" . $gene_name . "\";"     if ($gene_name);
   print $fh " gene_source \"" . $gene_source . "\";" if ($gene_source);
   print $fh " gene_biotype \"" . $gene_biotype . "\";";
@@ -270,6 +355,15 @@ sub _print_attribs {
   print $fh " transcript_source \"" . $trans_source . "\";"
     if ($trans_source);
 
+  my $ccds_entries = $transcript->get_all_DBEntries('CCDS');
+  if(@{$ccds_entries}) {
+    print $fh qq{ tag "CCDS";};
+    foreach my $ccds (sort { $a->primary_id() cmp $b->primary_id() } @{$ccds_entries}) {
+      my $primary_ccds_id = $ccds->primary_id();
+      print $fh qq{ ccds_id "$primary_ccds_id";};
+    }
+  }
+
   if ( $type eq 'CDS' ) {
     print $fh ' protein_id "' .
       get_id_from_obj( $transcript->translation ) . '";';
@@ -277,6 +371,11 @@ sub _print_attribs {
   if ($exon) {
     printf $fh ' exon_id "%s";', get_id_from_obj($exon);
   }
+
+  if($has_selenocysteine) {
+    print $fh qq{ tag "seleno";};
+  }
+
   return;
 } ## end sub _print_attribs
 
