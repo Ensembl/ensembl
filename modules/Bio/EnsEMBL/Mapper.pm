@@ -52,6 +52,9 @@ coordinate systems. This mapper is intended to be 'context neutral' - in
 that it does not contain any code relating to any particular coordinate
 system. This is provided in, for example, Bio::EnsEMBL::AssemblyMapper.
 
+Mappings consist of pairs of 'to-' and 'from-' contigs with coordinates on each.
+Orientation is abbreviated to 'ori', 
+
 =head1 METHODS
 
 =cut
@@ -974,60 +977,64 @@ sub _merge_pairs {
       $del_pair = undef;
       
       if(exists $current_pair->{'indel'} || exists $next_pair->{'indel'}){
-	  #necessary to modify the merge function to not merge indels
-	  $next++;
-	  $i++;
+        #necessary to modify the merge function to not merge indels
+        $next++;
+        $i++;
       }
       else{
-	  # duplicate filter
-	  if( $current_pair->{'to'}->{'start'} == $next_pair->{'to'}->{'start'} 
-	     and $current_pair->{'from'}->{'id'} == $next_pair->{'from'}->{'id'} ) {
-	    #TODO removing this solves the human contig mapper problem
-      # $del_pair = $next_pair;
-	  } elsif(( $current_pair->{'from'}->{'id'} eq $next_pair->{'from'}->{'id'} ) &&
-		  ( $next_pair->{'ori'} == $current_pair->{'ori'} ) &&
-		  ( $next_pair->{'to'}->{'start'} -1 == $current_pair->{'to'}->{'end'} )) {
-	      if( $current_pair->{'ori'} == 1 ) {
-		  # check forward strand merge
-		  if( $next_pair->{'from'}->{'start'} - 1 == $current_pair->{'from'}->{'end'} ) {
-		      # normal merge with previous element
-		      $current_pair->{'to'}->{'end'} = $next_pair->{'to'}->{'end'};
-		      $current_pair->{'from'}->{'end'} = $next_pair->{'from'}->{'end'};
-		      $del_pair = $next_pair;
-		  }
-	      } else {
-		  # check backward strand merge
-		  if( $next_pair->{'from'}->{'end'} + 1 == $current_pair->{'from'}->{'start'} ) {
-		    warn 'reverse string merge';
-		      # yes its a merge
-		      $current_pair->{'to'}->{'end'} = $next_pair->{'to'}->{'end'};
-		      $current_pair->{'from'}->{'start'} = $next_pair->{'from'}->{'start'};
-		      $del_pair = $next_pair;
-		  }
-	      }
-	  }
+        # duplicate filter
+        if( $current_pair->{'to'}->{'start'} == $next_pair->{'to'}->{'start'} 
+           && $current_pair->{'from'}->{'id'} == $next_pair->{'from'}->{'id'} 
+           && $current_pair->{'from'}->{'start'} == $next_pair->{'from'}->{'start'}) {
+        # Modified in e75 to support GRCh38. Contigs used repeatedly in one seq region were 
+        # being pre-emptively deleted as copies. Extra from-start condition above ensures copy
+        # deletion is restricted to same-location copies. Even more stringent checks can be made
+        # at cost of speed.
+            $del_pair = $next_pair;
+          } elsif ( ( $current_pair->{'from'}->{'id'} eq $next_pair->{'from'}->{'id'} ) &&
+                    ( $next_pair->{'ori'} == $current_pair->{'ori'} ) &&
+                    ( $next_pair->{'to'}->{'start'} -1 == $current_pair->{'to'}->{'end'} )) {
+          
+          if( $current_pair->{'ori'} == 1 ) {
+            # check forward strand merge
+            if( $next_pair->{'from'}->{'start'} - 1 == $current_pair->{'from'}->{'end'} ) {
+              # normal merge with previous element
+              $current_pair->{'to'}->{'end'} = $next_pair->{'to'}->{'end'};
+              $current_pair->{'from'}->{'end'} = $next_pair->{'from'}->{'end'};
+              $del_pair = $next_pair;
+            }
+          } else {
+            # check backward strand merge
+            if( $next_pair->{'from'}->{'end'} + 1 == $current_pair->{'from'}->{'start'} ) {
+              # yes its a merge
+              $current_pair->{'to'}->{'end'} = $next_pair->{'to'}->{'end'};
+              $current_pair->{'from'}->{'start'} = $next_pair->{'from'}->{'start'};
+              $del_pair = $next_pair;
+            }
+          }
+        }
       
-	  if( defined $del_pair ) {
-	      splice( @$lr, $next, 1 );
-	      $lr_from = $self->{"_pair_$map_from"}->{uc($del_pair->{'from'}->{'id'})};
-	      for( my $j=0; $j <= $#{$lr_from}; $j++ ) {
-		  if( $lr_from->[$j] == $del_pair ) {
-		      splice( @$lr_from, $j, 1 );
-		      last;
-		  }
-	      }
-	      $length--;
-	      if( $length < $next ) { last; }
-	  }
-	  else {
-	      $next++;
-	      $i++;
-	  }
+          if( defined $del_pair ) {
+            splice( @$lr, $next, 1 );
+            $lr_from = $self->{"_pair_$map_from"}->{uc($del_pair->{'from'}->{'id'})};
+            for( my $j=0; $j <= $#{$lr_from}; $j++ ) {
+              if( $lr_from->[$j] == $del_pair ) {
+                splice( @$lr_from, $j, 1 );
+                last;
+              }
+            }
+            $length--;
+            if( $length < $next ) { last; }
+          }
+          else {
+            $next++;
+            $i++;
+          }
       }  
       
-   }
+    }
     $self->{'pair_count'} += scalar( @$lr );
- }
+  }
 }
 
 
