@@ -163,7 +163,6 @@ sub flush {
 
 sub map_coordinates {
   my ( $self, $id, $start, $end, $strand, $type ) = @_;
-$DB::single=1;;
   unless (    defined($id)
            && defined($start)
            && defined($end)
@@ -244,11 +243,9 @@ $DB::single=1;;
     #       $rank++;
     #     }
 
-    if ( defined($last_target_coord)
-         and $target_coord->{'id'} ne $last_target_coord )
-    {
-      if ( $self_coord->{'start'} < $start )
-      {    # i.e. the same bit is being mapped to another assembled bit
+    if ( defined($last_target_coord) && $target_coord->{'id'} ne $last_target_coord ) {
+      if ( $self_coord->{'start'} < $start ) {    
+      # i.e. the same bit is being mapped to another assembled bit
         $start = $orig_start;
       }
     } else {
@@ -256,20 +253,14 @@ $DB::single=1;;
     }
 
     # if we haven't even reached the start, move on
-    if ( $self_coord->{'end'} < $orig_start ) {
-      next;
-    }
+    if ( $self_coord->{'end'} < $orig_start ) { next;}
 
     # if we have over run, break
-    if ( $self_coord->{'start'} > $end ) {
-      last;
-    }
+    if ( $self_coord->{'start'} > $end ) { last;}
 
     if ( $start < $self_coord->{'start'} ) {
       # gap detected
-      my $gap = Bio::EnsEMBL::Mapper::Gap->new( $start,
-                                    $self_coord->{'start'} - 1, $rank );
-
+      my $gap = Bio::EnsEMBL::Mapper::Gap->new( $start, $self_coord->{'start'} - 1, $rank );
       push( @result, $gap );
       $start = $gap->{'end'} + 1;
     }
@@ -293,9 +284,7 @@ $DB::single=1;;
     } else {
       # start is somewhere inside the region
       if ( $pair->{'ori'} == 1 ) {
-        $target_start =
-          $target_coord->{'start'} +
-          ( $start - $self_coord->{'start'} );
+        $target_start = $target_coord->{'start'} + ( $start - $self_coord->{'start'} );
       } else {
         $target_end =
           $target_coord->{'end'} - ( $start - $self_coord->{'start'} );
@@ -324,11 +313,8 @@ $DB::single=1;;
         }
       }
 
-      $res =
-        Bio::EnsEMBL::Mapper::Coordinate->new( $target_coord->{'id'},
-                     $target_start, $target_end, $pair->{'ori'}*$strand,
-                     $cs, $rank );
-
+      $res = Bio::EnsEMBL::Mapper::Coordinate->new( $target_coord->{'id'},
+               $target_start, $target_end, $pair->{'ori'}*$strand,$cs, $rank );
     } ## end else [ if ( exists $pair->{'indel'...})]
 
     push( @result, $res );
@@ -344,8 +330,7 @@ $DB::single=1;;
 
   } elsif ( $last_used_pair->{$from}->{'end'} < $end ) {
     # gap at the end
-    my $gap =
-      Bio::EnsEMBL::Mapper::Gap->new(
+    my $gap = Bio::EnsEMBL::Mapper::Gap->new(
                                   $last_used_pair->{$from}->{'end'} + 1,
                                   $end, $rank );
     push( @result, $gap );
@@ -615,8 +600,8 @@ sub add_indel_coordinates{
       $contig_ori, $chr_name, $chr_start, $chr_end) = @_;
 
   unless(defined($contig_id) && defined($contig_start) && defined($contig_end)
-	 && defined($contig_ori) && defined($chr_name) && defined($chr_start)
-	 && defined($chr_end)) {
+   && defined($contig_ori) && defined($chr_name) && defined($chr_start)
+   && defined($chr_end)) {
     throw("7 arguments expected");
   }
 
@@ -907,19 +892,17 @@ sub from {
 #
 
 sub _dump{
-   my ($self,$fh) = @_;
+  my ($self,$fh) = @_;
 
-   if( !defined $fh ) {
-       $fh = \*STDERR;
-   }
-
-   foreach my $id ( keys %{$self->{'_pair_hash_from'}} ) {
-       print $fh "From Hash $id\n";
-       foreach my $pair ( @{$self->{'_pair_hash_from'}->{uc($id)}} ) {
-	   print $fh "    ",$pair->from->start," ",$pair->from->end,":",$pair->to->start," ",$pair->to->end," ",$pair->to->id,"\n";
-       }
-   }
-
+  if( !defined $fh ) {
+    $fh = \*STDERR;
+  }
+  foreach my $id ( keys %{$self->{'_pair_hash_from'}} ) {
+    print $fh "From Hash $id\n";
+    foreach my $pair ( @{$self->{'_pair_hash_from'}->{uc($id)}} ) {
+      print $fh "    ",$pair->from->start," ",$pair->from->end,":",$pair->to->start," ",$pair->to->end," ",$pair->to->id,"\n";
+    }
+  }
 }
 
 
