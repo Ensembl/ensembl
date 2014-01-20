@@ -45,8 +45,9 @@ my $db = $mtdb->get_DBAdaptor("core");
   # Creating a temporary transcript to get a transcript which will have a Selenocysteinea,
   # 5' and 3' UTRs and a CCDS reference
   my $slice = $db->get_SliceAdaptor()->fetch_by_toplevel_location('20');
-  my $exon = Bio::EnsEMBL::Exon->new(-START => 30274331, -END => 30274348, -STRAND => 1, -SLICE => $slice, -PHASE => 0);
-  my $transcript = Bio::EnsEMBL::Transcript->new(-EXONS => [$exon], -STABLE_ID => 'TRANS', -BIOTYPE => 'protein_coding');
+  my $exon = Bio::EnsEMBL::Exon->new(-START => 30274331, -END => 30274348, -STRAND => 1, -SLICE => $slice, -PHASE => 0, -STABLE_ID => 'e1');
+  my $exon_two = Bio::EnsEMBL::Exon->new(-START => 30274401, -END => 30274404, -STRAND => 1, -SLICE => $slice, -PHASE => 0, -STABLE_ID => 'e2');
+  my $transcript = Bio::EnsEMBL::Transcript->new(-EXONS => [$exon, $exon_two], -STABLE_ID => 'TRANS', -BIOTYPE => 'protein_coding');
   my $seq_edit = Bio::EnsEMBL::SeqEdit->new(-CODE => '_selenocysteine', -START => 2, -END => 2, -ALT_SEQ => 'U');
   my $translation = Bio::EnsEMBL::Translation->new(-START_EXON => $exon, -END_EXON => $exon, -SEQ_START => 4, -SEQ_END => 15, -STABLE_ID => 'PEP');
   $translation->add_Attributes($seq_edit->get_Attribute());
@@ -61,19 +62,23 @@ my $db = $mtdb->get_DBAdaptor("core");
   my $gtf_serializer = Bio::EnsEMBL::Utils::IO::GTFSerializer->new($fh);
   $gtf_serializer->print_Gene($gene);
   my $gtf = <<GTF;
-20\tprotein_coding\ttranscript\t30274331\t30274348\t.\t+\t.\tgene_id \"GENE\"; transcript_id \"TRANS\"; gene_source \"ensembl\"; gene_biotype \"protein_coding\"; transcript_source \"ensembl\"; tag \"CCDS\"; ccds_id \"CCDS.1\"; tag \"seleno\";
+20\tprotein_coding\tgene\t30274331\t30274404\t.\t+\t.\tgene_id \"GENE\"; gene_source \"ensembl\"; gene_biotype \"protein_coding\";
+20\tprotein_coding\ttranscript\t30274331\t30274404\t.\t+\t.\tgene_id \"GENE\"; transcript_id \"TRANS\"; gene_source \"ensembl\"; gene_biotype \"protein_coding\"; transcript_source \"ensembl\"; tag \"CCDS\"; ccds_id \"CCDS.1\"; tag \"seleno\";
 20\tprotein_coding\tSelenocysteine\t30274337\t30274339\t.\t+\t.\tgene_id \"GENE\"; transcript_id \"TRANS\"; gene_source \"ensembl\"; gene_biotype \"protein_coding\"; transcript_source \"ensembl\"; tag \"CCDS\"; ccds_id \"CCDS.1\"; tag \"seleno\";
-20\tprotein_coding\tUTR\t30274331\t30274333\t.\t+\t.\tgene_id \"GENE\"; transcript_id \"TRANS\"; gene_source \"ensembl\"; gene_biotype \"protein_coding\"; transcript_source \"ensembl\"; tag \"CCDS\"; ccds_id \"CCDS.1\"; tag \"seleno\";
-20\tprotein_coding\texon\t30274331\t30274348\t.\t+\t.\tgene_id \"GENE\"; transcript_id \"TRANS\"; exon_number \"1\"; gene_source \"ensembl\"; gene_biotype \"protein_coding\"; transcript_source \"ensembl\"; tag \"CCDS\"; ccds_id \"CCDS.1\"; exon_id \"\"; tag \"seleno\";
+20\tprotein_coding\texon\t30274331\t30274348\t.\t+\t.\tgene_id \"GENE\"; transcript_id \"TRANS\"; exon_number \"1\"; gene_source \"ensembl\"; gene_biotype \"protein_coding\"; transcript_source \"ensembl\"; tag \"CCDS\"; ccds_id \"CCDS.1\"; exon_id \"e1\"; tag \"seleno\";
 20\tprotein_coding\tCDS\t30274334\t30274345\t.\t+\t0\tgene_id \"GENE\"; transcript_id \"TRANS\"; exon_number \"1\"; gene_source \"ensembl\"; gene_biotype \"protein_coding\"; transcript_source \"ensembl\"; tag \"CCDS\"; ccds_id \"CCDS.1\"; protein_id \"PEP\"; tag \"seleno\";
+20\tprotein_coding\texon\t30274401\t30274404\t.\t+\t.\tgene_id \"GENE\"; transcript_id \"TRANS\"; exon_number \"2\"; gene_source \"ensembl\"; gene_biotype \"protein_coding\"; transcript_source \"ensembl\"; tag \"CCDS\"; ccds_id \"CCDS.1\"; exon_id \"e2\"; tag \"seleno\";
+20\tprotein_coding\tUTR\t30274331\t30274333\t.\t+\t.\tgene_id \"GENE\"; transcript_id \"TRANS\"; gene_source \"ensembl\"; gene_biotype \"protein_coding\"; transcript_source \"ensembl\"; tag \"CCDS\"; ccds_id \"CCDS.1\"; tag \"seleno\";
 20\tprotein_coding\tUTR\t30274346\t30274348\t.\t+\t.\tgene_id \"GENE\"; transcript_id \"TRANS\"; gene_source \"ensembl\"; gene_biotype \"protein_coding\"; transcript_source \"ensembl\"; tag \"CCDS\"; ccds_id \"CCDS.1\"; tag \"seleno\";
+20\tprotein_coding\tUTR\t30274401\t30274404\t.\t+\t.\tgene_id \"GENE\"; transcript_id \"TRANS\"; gene_source \"ensembl\"; gene_biotype \"protein_coding\"; transcript_source \"ensembl\"; tag \"CCDS\"; ccds_id \"CCDS.1\"; tag \"seleno\";
 GTF
   eq_or_diff(${$fh->string_ref}, $gtf, 'Checking custom Gene object dumps UTRs, Selenocysteine, seleno tag and CCDS');
 }
 
+
 my $transcripts_gtf = 
   {
-   ENST00000310998 => "#!genome-build NCBI34
+   ENST00000310998 => "#!genome-version NCBI33
 20\tprotein_coding\ttranscript\t30274334\t30298904\t.\t+\t.\tgene_id \"ENSG00000131044\"; transcript_id \"ENST00000310998\"; gene_name \"C20orf125\"; gene_source \"ensembl\"; gene_biotype \"protein_coding\"; transcript_name \"C20orf125\"; transcript_source \"ensembl\";
 20\tprotein_coding\texon\t30274334\t30274425\t.\t+\t.\tgene_id \"ENSG00000131044\"; transcript_id \"ENST00000310998\"; exon_number \"1\"; gene_name \"C20orf125\"; gene_source \"ensembl\"; gene_biotype \"protein_coding\"; transcript_name \"C20orf125\"; transcript_source \"ensembl\"; exon_id \"ENSE00001155821\";
 20\tprotein_coding\tCDS\t30274334\t30274425\t.\t+\t0\tgene_id \"ENSG00000131044\"; transcript_id \"ENST00000310998\"; exon_number \"1\"; gene_name \"C20orf125\"; gene_source \"ensembl\"; gene_biotype \"protein_coding\"; transcript_name \"C20orf125\"; transcript_source \"ensembl\"; protein_id \"ENSP00000308980\";
@@ -89,7 +94,7 @@ my $transcripts_gtf =
 20\tprotein_coding\tCDS\t30298823\t30298904\t.\t+\t1\tgene_id \"ENSG00000131044\"; transcript_id \"ENST00000310998\"; exon_number \"6\"; gene_name \"C20orf125\"; gene_source \"ensembl\"; gene_biotype \"protein_coding\"; transcript_name \"C20orf125\"; transcript_source \"ensembl\"; protein_id \"ENSP00000308980\";
 ",
 
-   ENST00000278995 => "#!genome-build NCBI34
+   ENST00000278995 => "#!genome-version NCBI33
 20\tprotein_coding\ttranscript\t30285705\t30300924\t.\t+\t.\tgene_id \"ENSG00000131044\"; transcript_id \"ENST00000278995\"; gene_name \"C20orf125\"; gene_source \"ensembl\"; gene_biotype \"protein_coding\"; transcript_name \"Q9BR18\"; transcript_source \"ensembl\";
 20\tprotein_coding\texon\t30285705\t30285782\t.\t+\t.\tgene_id \"ENSG00000131044\"; transcript_id \"ENST00000278995\"; exon_number \"1\"; gene_name \"C20orf125\"; gene_source \"ensembl\"; gene_biotype \"protein_coding\"; transcript_name \"Q9BR18\"; transcript_source \"ensembl\"; exon_id \"ENSE00000991635\";
 20\tprotein_coding\tCDS\t30285705\t30285782\t.\t+\t0\tgene_id \"ENSG00000131044\"; transcript_id \"ENST00000278995\"; exon_number \"1\"; gene_name \"C20orf125\"; gene_source \"ensembl\"; gene_biotype \"protein_coding\"; transcript_name \"Q9BR18\"; transcript_source \"ensembl\"; protein_id \"ENSP00000278995\";
@@ -101,7 +106,7 @@ my $transcripts_gtf =
 20\tprotein_coding\tCDS\t30300869\t30300924\t.\t+\t2\tgene_id \"ENSG00000131044\"; transcript_id \"ENST00000278995\"; exon_number \"4\"; gene_name \"C20orf125\"; gene_source \"ensembl\"; gene_biotype \"protein_coding\"; transcript_name \"Q9BR18\"; transcript_source \"ensembl\"; protein_id \"ENSP00000278995\";
 ",
 
-   ENST00000252021 => "#!genome-build NCBI34
+   ENST00000252021 => "#!genome-version NCBI33
 20\tprotein_coding\ttranscript\t30301733\t30318881\t.\t+\t.\tgene_id \"ENSG00000174873\"; transcript_id \"ENST00000252021\"; gene_source \"ensembl\"; gene_biotype \"protein_coding\"; transcript_source \"ensembl\";
 20\tprotein_coding\texon\t30301733\t30301887\t.\t+\t.\tgene_id \"ENSG00000174873\"; transcript_id \"ENST00000252021\"; exon_number \"1\"; gene_source \"ensembl\"; gene_biotype \"protein_coding\"; transcript_source \"ensembl\"; exon_id \"ENSE00001155773\";
 20\tprotein_coding\tCDS\t30301733\t30301887\t.\t+\t0\tgene_id \"ENSG00000174873\"; transcript_id \"ENST00000252021\"; exon_number \"1\"; gene_source \"ensembl\"; gene_biotype \"protein_coding\"; transcript_source \"ensembl\"; protein_id \"ENSP00000252021\";
@@ -118,7 +123,7 @@ my $transcripts_gtf =
 20\tprotein_coding\tstop_codon\t30318879\t30318881\t.\t+\t0\tgene_id \"ENSG00000174873\"; transcript_id \"ENST00000252021\"; exon_number \"6\"; gene_source \"ensembl\"; gene_biotype \"protein_coding\"; transcript_source \"ensembl\";
 ",
 
-   ENST00000202017 => "#!genome-build NCBI34
+   ENST00000202017 => "#!genome-version NCBI33
 20\tprotein_coding\ttranscript\t30320853\t30327869\t.\t-\t.\tgene_id \"ENSG00000088356\"; transcript_id \"ENST00000202017\"; gene_name \"C20orf126\"; gene_source \"vega\"; gene_biotype \"protein_coding\"; transcript_name \"C20orf126\"; transcript_source \"vega\";
 20\tprotein_coding\texon\t30327735\t30327869\t.\t-\t.\tgene_id \"ENSG00000088356\"; transcript_id \"ENST00000202017\"; exon_number \"1\"; gene_name \"C20orf126\"; gene_source \"vega\"; gene_biotype \"protein_coding\"; transcript_name \"C20orf126\"; transcript_source \"vega\"; exon_id \"ENSE00001155739\";
 20\tprotein_coding\tCDS\t30327735\t30327869\t.\t-\t0\tgene_id \"ENSG00000088356\"; transcript_id \"ENST00000202017\"; exon_number \"1\"; gene_name \"C20orf126\"; gene_source \"vega\"; gene_biotype \"protein_coding\"; transcript_name \"C20orf126\"; transcript_source \"vega\"; protein_id \"ENSP00000202017\";
@@ -133,14 +138,15 @@ my $transcripts_gtf =
 20\tprotein_coding\tUTR\t30320853\t30321669\t.\t-\t.\tgene_id \"ENSG00000088356\"; transcript_id \"ENST00000202017\"; gene_name \"C20orf126\"; gene_source \"vega\"; gene_biotype \"protein_coding\"; transcript_name \"C20orf126\"; transcript_source \"vega\";
 ",
 
-   ENST00000246203 => "#!genome-build NCBI34
+
+   ENST00000246203 => "#!genome-version NCBI33
 20\tprotein_coding\ttranscript\t30565065\t30566129\t.\t-\t.\tgene_id \"ENSG00000125979\"; transcript_id \"ENST00000246203\"; gene_name \"TSPYL3\"; gene_source \"ensembl\"; gene_biotype \"protein_coding\"; transcript_name \"TSPYL3\"; transcript_source \"ensembl\";
 20\tprotein_coding\texon\t30565065\t30566129\t.\t-\t.\tgene_id \"ENSG00000125979\"; transcript_id \"ENST00000246203\"; exon_number \"1\"; gene_name \"TSPYL3\"; gene_source \"ensembl\"; gene_biotype \"protein_coding\"; transcript_name \"TSPYL3\"; transcript_source \"ensembl\"; exon_id \"ENSE00000859919\";
 20\tprotein_coding\tCDS\t30565065\t30566129\t.\t-\t0\tgene_id \"ENSG00000125979\"; transcript_id \"ENST00000246203\"; exon_number \"1\"; gene_name \"TSPYL3\"; gene_source \"ensembl\"; gene_biotype \"protein_coding\"; transcript_name \"TSPYL3\"; transcript_source \"ensembl\"; protein_id \"ENSP00000246203\";
 20\tprotein_coding\tstart_codon\t30566127\t30566129\t.\t-\t0\tgene_id \"ENSG00000125979\"; transcript_id \"ENST00000246203\"; exon_number \"1\"; gene_name \"TSPYL3\"; gene_source \"ensembl\"; gene_biotype \"protein_coding\"; transcript_name \"TSPYL3\"; transcript_source \"ensembl\";
 ",
 
-   ENST00000201961 => "#!genome-build NCBI34
+   ENST00000201961 => "#!genome-version NCBI33
 20\tprotein_coding\ttranscript\t30885729\t30911383\t.\t-\t.\tgene_id \"ENSG00000088303\"; transcript_id \"ENST00000201961\"; gene_name \"Q9NQF5\"; gene_source \"ensembl\"; gene_biotype \"protein_coding\"; transcript_name \"Q9NQF5\"; transcript_source \"ensembl\";
 20\tprotein_coding\texon\t30911297\t30911383\t.\t-\t.\tgene_id \"ENSG00000088303\"; transcript_id \"ENST00000201961\"; exon_number \"1\"; gene_name \"Q9NQF5\"; gene_source \"ensembl\"; gene_biotype \"protein_coding\"; transcript_name \"Q9NQF5\"; transcript_source \"ensembl\"; exon_id \"ENSE00000661216\";
 20\tprotein_coding\tCDS\t30911297\t30911383\t.\t-\t0\tgene_id \"ENSG00000088303\"; transcript_id \"ENST00000201961\"; exon_number \"1\"; gene_name \"Q9NQF5\"; gene_source \"ensembl\"; gene_biotype \"protein_coding\"; transcript_name \"Q9NQF5\"; transcript_source \"ensembl\"; protein_id \"ENSP00000201961\";

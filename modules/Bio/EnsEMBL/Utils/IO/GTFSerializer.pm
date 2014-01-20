@@ -47,6 +47,7 @@ use Bio::EnsEMBL::SeqFeature;
 use Bio::EnsEMBL::Utils::Exception;
 use Bio::EnsEMBL::Utils::IO::FeatureSerializer;
 use Bio::EnsEMBL::Utils::Scalar qw/check_ref/;
+use Bio::EnsEMBL::Feature;
 
 use base qw(Bio::EnsEMBL::Utils::IO::FeatureSerializer);
 
@@ -58,24 +59,62 @@ sub print_main_header {
   my $fh = $self->{'filehandle'};
   
   my $mc = $dba->get_MetaContainer();
+  my $gc = $dba->get_GenomeContainer();
 
   # Get the build. name gives us GRCh37.p1 where as default gives us GRCh37
-  my $assembly_name = $mc->single_value_by_key('assembly.name');
-  $assembly_name ||= $mc->single_value_by_key('assembly.default');
-  print $fh "#!genome-build ${assembly_name}\n";
+  my $assembly_name = $gc->get_assembly_name();
+  print $fh "#!genome-build ${assembly_name}\n" if $assembly_name;
+
+  # Get the build default
+  my $version = $gc->get_version();
+  print $fh "#!genome-version ${version}\n" if $version;
+
+  # Get the date of the genome build
+  my $assembly_date = $gc->get_assembly_date();
+  print $fh "#!genome-date ${assembly_date}\n" if $assembly_date;
 
   # Get accession and only print if it is there
-  my $accession = $mc->single_value_by_key('assembly.accession');
+  my $accession = $gc->get_accession();
   if($accession) {
     my $accession_source = $mc->single_value_by_key('assembly.web_accession_source');
     print $fh "#!genome-build-accession ${accession_source}:${accession}\n";
   }
+
+  # Genebuild last updated
+  my $genebuild_last_date = $gc->get_genebuild_last_geneset_update();
+  print $fh "#!genebuild-last-updated ${genebuild_last_date}\n" if $genebuild_last_date;
 
   return;
 }
 
 sub print_Gene {
   my ($self, $gene) = @_;
+
+  #Print Gene summary
+  my $slice           = $gene->slice();
+  my $idstr           = $slice->seq_region_name;
+  my $sliceoffset     = $slice->start - 1;
+  my $vegadb          = 0;
+  my $fh              = $self->{'filehandle'};
+  my $biotype_display = q{};
+  if($gene->adaptor()) {
+    my $dbname = $gene->adaptor()->dbc()->dbname();
+    $vegadb = $dbname =~ /vega/;
+  }
+
+  {
+    no warnings 'uninitialized';
+    $biotype_display = $vegadb ? $gene->status . '_' . $gene->biotype : $gene->biotype;
+  }
+
+  print $fh sprintf(qq{%s\t%s\tgene\t%d\t%d\t.\t%s\t.\t}, 
+        $idstr, $biotype_display, 
+        ($gene->start()+$sliceoffset), ($gene->end()+$sliceoffset),
+        ($strand_conversion{$gene->strand}));
+  $self->_print_attribs($gene, $biotype_display, $gene, 0, 'gene');
+  print $fh "\n";
+
+  # Now print all transcripts
   foreach my $t (@{$gene->get_all_Transcripts()}) {
     $self->print_feature($t, $gene);
   }
@@ -150,24 +189,17 @@ sub print_feature {
   if($has_selenocysteine) {
     foreach my $edit (@{$selenocysteines}) {
       my $edit_start = $edit->start();
-      my ($projection) = $transcript->pep2genomic($edit_start, $edit_start);
-      my $strand = $strand_conversion{$projection->strand()};
-      my $start = $projection->start();
-      my $end = $projection->end();
-      print $fh sprintf(qq{%s\t%s\tSelenocysteine\t%d\t%d\t.\t%s\t.\t}, 
-        $idstr, $transcript_biotype, ($start+$sliceoffset), ($end+$sliceoffset), $strand);
-      $self->_print_attribs($gene, $biotype_display, $transcript, 0, 'Selenocystine', undef, undef, $has_selenocysteine);
-      print $fh "\n";
+      my @projections = $transcript->pep2genomic($edit_start, $edit_start);
+      foreach my $projection (@projections) {
+        my $strand = $strand_conversion{$projection->strand()};
+        my $start = $projection->start();
+        my $end = $projection->end();
+        print $fh sprintf(qq{%s\t%s\tSelenocysteine\t%d\t%d\t.\t%s\t.\t}, 
+          $idstr, $transcript_biotype, ($start+$sliceoffset), ($end+$sliceoffset), $strand);
+        $self->_print_attribs($gene, $biotype_display, $transcript, 0, 'Selenocystine', undef, undef, $has_selenocysteine);
+        print $fh "\n";
+      }
     }
-  }
-
-  my $five_prime_utr = $transcript->five_prime_utr_Feature();
-  if($five_prime_utr) {
-    my $strand = $strand_conversion{$five_prime_utr->strand()};
-    print $fh sprintf(qq{%s\t%s\tUTR\t%d\t%d\t.\t%s\t.\t}, 
-        $idstr, $transcript_biotype, ($five_prime_utr->start()+$sliceoffset), ($five_prime_utr->end+$sliceoffset), $strand);
-    $self->_print_attribs($gene, $biotype_display, $transcript, 0, 'UTR', undef, undef, $has_selenocysteine);
-    print $fh "\n";
   }
 
   my @translateable_exons;
@@ -205,10 +237,12 @@ sub print_feature {
       if $translation and
       $exon == $translation->start_Exon;
 
+    my $last_used_coding_exon;
     if ($intrans) {
       # print the CDS of this exon
 
       my $cdsexon = shift @translateable_exons;
+      $last_used_coding_exon = $cdsexon;
    #
    # Here is computing the value of the GTF frame (taking into
    # account the Ensembl convention), but it's misleadingly called phase
@@ -258,6 +292,11 @@ sub print_feature {
         print $fh "\n";
       }
     } ## end if ($intrans)
+
+    # The alternative is that this region could be described as UTR but *only* if
+    # the transcript was coding.
+
+
     if ( $translation &&
          $exon == $translation->start_Exon &&
          $hasstart )
@@ -306,14 +345,23 @@ sub print_feature {
     $count++;
   } ## end foreach my $exon ( @{ $transcript...})
 
-  my $three_prime_utr = $transcript->three_prime_utr_Feature();
-  if($three_prime_utr) {
-    my $strand = $strand_conversion{$three_prime_utr->strand()};
+  my $utrs = $self->get_all_UTR_features($transcript);
+  foreach my $utr (sort { $a->start() <=> $b->start() } @{$utrs}) {
+    my $strand = $strand_conversion{$utr->strand()};
     print $fh sprintf(qq{%s\t%s\tUTR\t%d\t%d\t.\t%s\t.\t}, 
-        $idstr, $transcript_biotype, ($three_prime_utr->start()+$sliceoffset), ($three_prime_utr->end+$sliceoffset), $strand);
+        $idstr, $transcript_biotype, ($utr->start()+$sliceoffset), ($utr->end+$sliceoffset), $strand);
     $self->_print_attribs($gene, $biotype_display, $transcript, 0, 'UTR', undef, undef, $has_selenocysteine);
     print $fh "\n";
   }
+
+  # my $three_prime_utr = $transcript->three_prime_utr_Feature();
+  # if($three_prime_utr) {
+  #   my $strand = $strand_conversion{$three_prime_utr->strand()};
+  #   print $fh sprintf(qq{%s\t%s\tUTR\t%d\t%d\t.\t%s\t.\t}, 
+  #       $idstr, $transcript_biotype, ($three_prime_utr->start()+$sliceoffset), ($three_prime_utr->end+$sliceoffset), $strand);
+  #   $self->_print_attribs($gene, $biotype_display, $transcript, 0, 'UTR', undef, undef, $has_selenocysteine);
+  #   print $fh "\n";
+  # }
 
   return;
 } ## end sub print_feature
@@ -344,23 +392,27 @@ sub _print_attribs {
 
   my $fh = $self->{'filehandle'};
 
-  print $fh "gene_id \"" . get_id_from_obj($gene) .
-    "\";" . " transcript_id \"" . get_id_from_obj($transcript) . "\";";
-  print $fh " exon_number \"$count\";" if $count > 0;
+  print $fh "gene_id \"" . get_id_from_obj($gene) ."\";";
+  if($type ne 'gene') {
+    print $fh " transcript_id \"" . get_id_from_obj($transcript) . "\";";
+    print $fh " exon_number \"$count\";" if $count > 0;
+  }
   print $fh " gene_name \"" . $gene_name . "\";"     if ($gene_name);
   print $fh " gene_source \"" . $gene_source . "\";" if ($gene_source);
   print $fh " gene_biotype \"" . $gene_biotype . "\";";
-  print $fh " transcript_name \"" . $trans_name . "\";"
-    if ($trans_name);
-  print $fh " transcript_source \"" . $trans_source . "\";"
-    if ($trans_source);
 
-  my $ccds_entries = $transcript->get_all_DBEntries('CCDS');
-  if(@{$ccds_entries}) {
-    print $fh qq{ tag "CCDS";};
-    foreach my $ccds (sort { $a->primary_id() cmp $b->primary_id() } @{$ccds_entries}) {
-      my $primary_ccds_id = $ccds->primary_id();
-      print $fh qq{ ccds_id "$primary_ccds_id";};
+  if($type ne 'gene') {
+    print $fh " transcript_name \"" . $trans_name . "\";"
+      if ($trans_name);
+    print $fh " transcript_source \"" . $trans_source . "\";"
+      if ($trans_source);
+    my $ccds_entries = $transcript->get_all_DBEntries('CCDS');
+    if(@{$ccds_entries}) {
+      print $fh qq{ tag "CCDS";};
+      foreach my $ccds (sort { $a->primary_id() cmp $b->primary_id() } @{$ccds_entries}) {
+        my $primary_ccds_id = $ccds->primary_id();
+        print $fh qq{ ccds_id "$primary_ccds_id";};
+      }
     }
   }
 
@@ -575,5 +627,44 @@ sub _check_start_and_stop {
   return ( $has_start, $has_end );
 
 } ## end sub _check_start_and_stop
+
+sub get_all_UTR_features {
+  my ($self, $transcript) = @_;
+  my $translation = $transcript->translation();
+  return [] if ! $translation;
+  
+  my @utrs;
+
+  my $cdna_coding_start = $transcript->cdna_coding_start();
+  # if it is greater than 1 then it must have UTR
+  if($cdna_coding_start > 1) {
+    my @projections = $transcript->cdna2genomic(1, ($cdna_coding_start-1));
+    foreach my $projection (@projections) {
+      next if $projection->isa('Bio::EnsEMBL::Mapper::Gap');
+      my $f = Bio::EnsEMBL::Feature->new(
+        -START => $projection->start, 
+        -END => $projection->end,
+        -STRAND => $projection->strand,
+      );
+      push(@utrs, $f);
+    }
+  }
+
+  my $cdna_coding_end = $transcript->cdna_coding_end();
+  if($cdna_coding_end < $transcript->length()) {
+    my @projections = $transcript->cdna2genomic(($cdna_coding_end+1), $transcript->length());
+    foreach my $projection (@projections) {
+      next if $projection->isa('Bio::EnsEMBL::Mapper::Gap');
+      my $f = Bio::EnsEMBL::Feature->new(
+        -START => $projection->start, 
+        -END => $projection->end,
+        -STRAND => $projection->strand,
+      );
+      push(@utrs, $f);
+    } 
+  }
+
+  return \@utrs;
+}
 
 1;
