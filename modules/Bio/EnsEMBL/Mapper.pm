@@ -55,6 +55,82 @@ system. This is provided in, for example, Bio::EnsEMBL::AssemblyMapper.
 Mappings consist of pairs of 'to-' and 'from-' contigs with coordinates on each.
 Orientation is abbreviated to 'ori', 
 
+The contig pair hash is divided into mappings per seq_region, the code 
+below makes assumptions about how to filter these results, thus the comparisons 
+for some properties are absent in the code but implicit by data structure.
+
+The assembly mapping hash '_pair_last' orders itself by the target seq region and looks like this:
+
+   1 => ARRAY(0x1024c79c0)
+      0  Bio::EnsEMBL::Mapper::Pair=HASH(0x1024d6198)
+         'from' => Bio::EnsEMBL::Mapper::Unit=HASH(0x1025edf98)
+            'end' => 4
+            'id' => 4
+            'start' => 1
+         'ori' => 1
+         'to' => Bio::EnsEMBL::Mapper::Unit=HASH(0x1025edf68)
+            'end' => 4
+            'id' => 1
+            'start' => 1
+      1  Bio::EnsEMBL::Mapper::Pair=HASH(0x1026c20f0)
+         'from' => Bio::EnsEMBL::Mapper::Unit=HASH(0x1025ee3a0)
+            'end' => 12
+            'id' => 4
+            'start' => 9
+         'ori' => 1
+         'to' => Bio::EnsEMBL::Mapper::Unit=HASH(0x1025ee370)
+            'end' => 4
+            'id' => 1
+            'start' => 1
+   2 => ARRAY(0x1025ee460)
+      0  Bio::EnsEMBL::Mapper::Pair=HASH(0x1025ee400)
+         'from' => Bio::EnsEMBL::Mapper::Unit=HASH(0x1025ee2c8)
+            'end' => 8
+            'id' => 4
+            'start' => 5
+         'ori' => 1
+         'to' => Bio::EnsEMBL::Mapper::Unit=HASH(0x1025ee2b0)
+            'end' => 4
+            'id' => 2
+            'start' => 1
+      1  Bio::EnsEMBL::Mapper::Pair=HASH(0x1025ee658)
+         'from' => Bio::EnsEMBL::Mapper::Unit=HASH(0x1025eea48)
+            'end' => 16
+            'id' => 4
+            'start' => 13
+         'ori' => 1
+         'to' => Bio::EnsEMBL::Mapper::Unit=HASH(0x1025eea18)
+            'end' => 4
+            'id' => 2
+            'start' => 1
+
+The other mapping hash available is the reverse sense, putting the 'from' seq_region as the
+sorting key. Here is an excerpt.
+
+0  HASH(0x102690bb8)
+   4 => ARRAY(0x1025ee028)
+      0  Bio::EnsEMBL::Mapper::Pair=HASH(0x1024d6198)
+         'from' => Bio::EnsEMBL::Mapper::Unit=HASH(0x1025edf98)
+            'end' => 4
+            'id' => 4
+            'start' => 1
+         'ori' => 1
+         'to' => Bio::EnsEMBL::Mapper::Unit=HASH(0x1025edf68)
+            'end' => 4
+            'id' => 1
+            'start' => 1
+      1  Bio::EnsEMBL::Mapper::Pair=HASH(0x1025ee400)
+         'from' => Bio::EnsEMBL::Mapper::Unit=HASH(0x1025ee2c8)
+            'end' => 8
+            'id' => 4
+            'start' => 5
+         'ori' => 1
+         'to' => Bio::EnsEMBL::Mapper::Unit=HASH(0x1025ee2b0)
+            'end' => 4
+            'id' => 2
+            'start' => 1
+
+
 =head1 METHODS
 
 =cut
@@ -974,7 +1050,7 @@ sub _merge_pairs {
         # deletion is restricted to same-location copies. Even more stringent checks can be made
         # at cost of speed.
             $del_pair = $next_pair;
-          } elsif ( ( $current_pair->{'from'}->{'id'} eq $next_pair->{'from'}->{'id'} ) &&
+          } elsif ( ( $current_pair->{'from'}->{'id'} == $next_pair->{'from'}->{'id'} ) &&
                     ( $next_pair->{'ori'} == $current_pair->{'ori'} ) &&
                     ( $next_pair->{'to'}->{'start'} -1 == $current_pair->{'to'}->{'end'} )) {
           
