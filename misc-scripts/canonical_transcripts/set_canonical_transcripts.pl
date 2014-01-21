@@ -17,13 +17,17 @@
 
 =head1 SYNOPSIS
 
-  Script to set canonical transcripts for each gene
+  Script to set canonical transcripts for each gene (DEPRECATED)
 
 =head1 DESCRIPTION
 
   The rule is if the cluster contains translated transcripts take the
   one with the longest cds otherwise take the one with the longest
-  cdna
+  cdna.
+
+  This script is now obsoleted by select_canonical_transcripts.pl
+  The newer script uses a more rigourous approach and produces more
+  consistent results.
 
 =head1 OPTIONS
 
@@ -43,9 +47,9 @@
 
   -dnadbname    DNA Databsse name
 
-  -dnadbhost    DNA Database host
+  -dnahost      DNA Database host
 
-  -dnadbuser    DNA Database user
+  -dnauser      DNA Database user
 
   -ccds_dbname  CCDS database name
 
@@ -102,6 +106,8 @@ my $write = 0;
 my $include_non_ref = 1;
 my $include_duplicates;
 my $verbose = 0;
+
+warn "This script is now obsolete. Please use select_canonical_transcripts.pl instead, as its results are more predictable";
 
 GetOptions( 'dbhost:s'            => \$host,
             'dbport:n'            => \$port,
