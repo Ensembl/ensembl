@@ -346,7 +346,7 @@ sub print_feature {
   } ## end foreach my $exon ( @{ $transcript...})
 
   my $utrs = $self->get_all_UTR_features($transcript);
-  foreach my $utr (sort { $a->start() <=> $b->start() } @{$utrs}) {
+  foreach my $utr (@{$utrs}) {
     my $strand = $strand_conversion{$utr->strand()};
     print $fh sprintf(qq{%s\t%s\tUTR\t%d\t%d\t.\t%s\t.\t}, 
         $idstr, $transcript_biotype, ($utr->start()+$sliceoffset), ($utr->end+$sliceoffset), $strand);
