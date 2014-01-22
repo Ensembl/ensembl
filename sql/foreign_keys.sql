@@ -23,8 +23,8 @@
 # key constraints on MyISAM tables.
 
 ALTER table alt_allele ADD FOREIGN KEY (gene_id) REFERENCES gene(gene_id);
-ALTER table alt_allele ADD FOREIGN KEY (alt_allele_group_id) REFERENCES alt_allele_group(alt_allele_group_id)
-ALTER table alt_allele_id ADD FOREIGN KEY (alt_allele_id) REFERENCES alt_allele(alt_allele_id);
+ALTER table alt_allele ADD FOREIGN KEY (alt_allele_group_id) REFERENCES alt_allele_group(alt_allele_group_id);
+ALTER table alt_allele ADD FOREIGN KEY (alt_allele_id) REFERENCES alt_allele(alt_allele_id);
 
 
 ALTER table analysis_description ADD FOREIGN KEY (analysis_id) REFERENCES analysis(analysis_id);
@@ -58,9 +58,6 @@ ALTER table dna ADD FOREIGN KEY (seq_region_id) REFERENCES seq_region(seq_region
 ALTER table dna_align_feature ADD FOREIGN KEY (analysis_id) REFERENCES analysis(analysis_id);
 ALTER table dna_align_feature ADD FOREIGN KEY (seq_region_id) REFERENCES seq_region(seq_region_id);
 ALTER table dna_align_feature ADD FOREIGN KEY (external_db_id) REFERENCES external_db(external_db_id);
-ALTER table dna_align_feature ADD FOREIGN KEY (pair_dna_align_feature_id) REFERENCES dna_align_feature(dna_align_feature_id);
-
-ALTER table dnac ADD FOREIGN KEY (seq_region_id) REFERENCES seq_region(seq_region_id);
 
 ALTER table exon ADD FOREIGN KEY (seq_region_id) REFERENCES seq_region(seq_region_id);
 
@@ -138,16 +135,6 @@ ALTER table protein_align_feature ADD FOREIGN KEY (external_db_id) REFERENCES ex
 ALTER table protein_feature ADD FOREIGN KEY (analysis_id) REFERENCES analysis(analysis_id);
 ALTER table protein_feature ADD FOREIGN KEY (translation_id) REFERENCES translation(translation_id);
 
-ALTER table qtl ADD FOREIGN KEY (flank_marker_id_1) REFERENCES marker(marker_id);
-ALTER table qtl ADD FOREIGN KEY (flank_marker_id_2) REFERENCES marker(marker_id);
-ALTER table qtl ADD FOREIGN KEY (peak_marker_id) REFERENCES marker(marker_id);
-
-ALTER table qtl_feature ADD FOREIGN KEY (analysis_id) REFERENCES analysis(analysis_id);
-ALTER table qtl_feature ADD FOREIGN KEY (qtl_id) REFERENCES qtl(qtl_id);
-ALTER table qtl_feature ADD FOREIGN KEY (seq_region_id) REFERENCES seq_region(seq_region_id);
-
-ALTER table qtl_synonym ADD FOREIGN KEY (qtl_id) REFERENCES qtl(qtl_id);
-
 ALTER table repeat_feature ADD FOREIGN KEY (analysis_id) REFERENCES analysis(analysis_id);
 ALTER table repeat_feature ADD FOREIGN KEY (repeat_consensus_id) REFERENCES repeat_consensus(repeat_consensus_id);
 ALTER table repeat_feature ADD FOREIGN KEY (seq_region_id) REFERENCES seq_region(seq_region_id);
@@ -195,9 +182,6 @@ ALTER table translation ADD FOREIGN KEY (transcript_id) REFERENCES transcript(tr
 
 ALTER table translation_attrib ADD FOREIGN KEY (attrib_type_id) REFERENCES attrib_type(attrib_type_id);
 ALTER table translation_attrib ADD FOREIGN KEY (translation_id) REFERENCES translation(translation_id);
-
-ALTER table unconventional_transcript_association ADD FOREIGN KEY (gene_id) REFERENCES gene(gene_id);
-ALTER table unconventional_transcript_association ADD FOREIGN KEY (transcript_id) REFERENCES transcript(transcript_id);
 
 ALTER table unmapped_object ADD FOREIGN KEY (analysis_id) REFERENCES analysis(analysis_id);
 ALTER table unmapped_object ADD FOREIGN KEY (external_db_id) REFERENCES external_db(external_db_id);

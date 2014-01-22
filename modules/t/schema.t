@@ -20,6 +20,7 @@ use Test::More;
 use Bio::EnsEMBL::Test::MultiTestDB;
 use Bio::EnsEMBL::Utils::IO qw/slurp/;
 use File::Spec::Functions qw/updir catfile catdir/;
+use File::Temp qw/tempfile/;
 
 my $db = Bio::EnsEMBL::Test::MultiTestDB->new();
 my $dba = $db->get_DBAdaptor('core');
@@ -42,7 +43,7 @@ SKIP: {
   my $table_string = slurp $sql_file;  
   my @fks = sort grep /FOREIGN[\s\n]+?KEY[\s\n]+?\(.+?\)[\s\n]+?REFERENCES/i, $table_string;
   if(@fks) {
-    fail("Definition of foreign keys detected in SQL schema file");
+    fail("Definition of foreign keys detected in SQL schema file\n".join(', ',@fks));
   } else {
     pass("SQL schema file does not define foreign keys");
   }
@@ -62,6 +63,38 @@ SKIP: {
   
   note 'Dropping database '.$new_db_name;
   $dba->dbc()->do("drop database $new_db_name");
+
+  # Check viability of foreign_keys.sql 
+
+  $table_string =~ s/ENGINE=MyISAM/ENGINE=InnoDB/g;
+  my $fk_file = catfile($sql_dir, 'foreign_keys.sql');
+  $table_string .= slurp $fk_file;
+
+  my ($temp_fh,$temp_filename) = tempfile;
+  {
+    local $| = 1;
+    print $temp_fh $table_string;
+  }
+  $new_db_name = $db->create_db_name('fkschematemp');
+  note 'Creating database with foreign keys '.$new_db_name;
+  $dba->dbc()->do("create database $new_db_name");
+
+  %args = ( host => $dbc->host(), port => $dbc->port(), user => $dbc->username(), password => $dbc->password());
+  $cmd_args = join(q{ }, map { "--${_}=$args{$_}" } keys %args);
+  $cmd = "mysql $cmd_args $new_db_name < $temp_filename 2>&1";
+  $output = `$cmd`;
+  $ec = ($? >> 8);
+  if($ec != 0) {
+    note($output);
+    fail("MySQL (InnoDB) command failed with error code '$ec'");
+  }
+  else {
+    pass("MySQL (InnoDB) was able to load the Ensembl core schema with foreign keys");
+  }
+  
+  note 'Dropping database '.$new_db_name;
+  $dba->dbc()->do("drop database $new_db_name");
 }
+
 
 done_testing();

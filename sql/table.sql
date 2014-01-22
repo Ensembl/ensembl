@@ -969,8 +969,8 @@ CREATE TABLE splicing_event (
 @column splicing_event_id                   Foreign key references to the @link splicing_event table.
 @column exon_id                             Foreign key references to the @link exon table.
 @column transcript_id                       Foreign key references to the @link transcript table.
-@column feature_order             	    Feature order number according to genomic location.
-@column transcript_association    	    Transcript sequence.
+@column feature_order                       Feature order number according to genomic location.
+@column transcript_association              Transcript sequence.
 @column type                                E.g. 'constitutive_exon','exon','flanking_exon'.
 @column start                               Sequence start.
 @column end                                 Sequence end.
