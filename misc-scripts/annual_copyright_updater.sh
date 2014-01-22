@@ -1,5 +1,5 @@
 #!/bin/bash
-# Copyright [1999-2013] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
+# Copyright [1999-2014] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
 # 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -34,8 +34,8 @@ for var in "$dirs"; do
   year=$(date "+%Y")
   last_year=$(($year - 1))
 
-  search="Copyright (c) 1999-${last_year}"
-  replacement="Copyright (c) 1999-${year}"
+  search="\\[1999-${last_year}\\] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute"
+  replacement="\\[1999-${year}\\] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute"
 
   echo "About to scan $(pwd) for files to replace '$search' with '$replacement'"
 
