@@ -245,7 +245,7 @@ sub transcript {
       my $new_seq = $projected_transcript->spliced_seq();
       $total_length = length($old_seq);
       if ($old_seq ne $new_seq) {
-        $state = ($is_pc) ? '££' : '**';
+        $state = ($is_pc) ? ';;' : '**';
         $difference = diff(\$old_seq, \$new_seq);
       }
     }
