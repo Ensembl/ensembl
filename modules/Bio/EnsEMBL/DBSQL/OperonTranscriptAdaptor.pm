@@ -553,23 +553,23 @@ sub store {
                operon_id
                analysis_id
         );
-
-        my ($created, $modified);
+  my @canned_columns;
+  my @canned_values;
 	if ( defined($operon_transcript->stable_id()) ) {
-	    $created = $self->db->dbc->from_seconds_to_date($operon_transcript->created_date());
-	    $modified = $self->db->dbc->from_seconds_to_date($operon_transcript->modified_date());
-            push @columns, qw(
-              stable_id
-              version
-              created_date
-              modified_date
-            );
+		push @columns, qw(
+      stable_id
+      version
+    );
+		my $created = $self->db->dbc->from_seconds_to_date($operon_transcript->created_date());
+	  my $modified = $self->db->dbc->from_seconds_to_date($operon_transcript->modified_date());
+		push @canned_columns, 'created_date', 'modified_date';
+    push @canned_values,  $created,       $modified;
 	}
-        my $i_columns = join(', ', @columns);
-        my $i_values  = join(', ', ('?') x @columns);
-        my $store_operon_transcript_sql = qq(
-          INSERT INTO operon_transcript ( ${i_columns} ) VALUES ( $i_values )
-        );
+	my $i_columns = join(', ', @columns, @canned_columns);
+  my $i_values  = join(', ', (('?') x scalar(@columns)), @canned_values);
+  my $store_operon_transcript_sql = qq(
+    INSERT INTO operon_transcript ( ${i_columns} ) VALUES ( $i_values )
+  );
 
 	# column status is used from schema version 34 onwards (before it was
 	# confidence)
@@ -587,8 +587,6 @@ sub store {
 	    $sth->bind_param( 8, $operon_transcript->stable_id(), SQL_VARCHAR );
 	    my $version = ($operon_transcript->version()) ? $operon_transcript->version() : 1;
 	    $sth->bind_param( 9, $version,  SQL_INTEGER );
-	    $sth->bind_param(10, $created,  SQL_DATETIME );
-	    $sth->bind_param(11, $modified, SQL_DATETIME );
 	}
 
 	$sth->execute();
