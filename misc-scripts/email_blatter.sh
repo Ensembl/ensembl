@@ -20,7 +20,7 @@ scan_and_replace() {
 
   for file in $(grep -R --files-with-matches "$search" .); do
 
-    if [ "$(basename $file)" != "email_blatter.sh" ]; then
+    if [ "$(basename $file)" == "email_blatter.sh" ]; then
       echo "Skipping the email_blatter.sh script"
     else
       echo "Replacing email in $file"
