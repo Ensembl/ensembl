@@ -25,7 +25,7 @@ scan_and_replace() {
     else
       echo "Replacing email in $file"
       if [ "$(uname)" = "Darwin" ]; then
-        LANG='' sed -i '' -e "s/$search/$replacement/g" $file
+        LC_CTYPE=C LANG=C sed -i '' -e "s/$search/$replacement/g" $file
       else
         sed --in-place -e "s/$search/$replacement/g" $file
       fi
