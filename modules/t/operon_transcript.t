@@ -84,7 +84,7 @@ $transcript->add_Exon($exon);
 $translation->start_Exon($exon);
 $translation->end_Exon($exon);
 $translation->start(1);
-$translation->end( ( $gene_start - $gene_end + 1 )/3 );
+$translation->end( int(( $gene_start - $gene_end + 1 )/3) );
 $translation->transcript($transcript);
 $transcript->translation($translation);
 $gene->add_Transcript($transcript);
@@ -113,7 +113,7 @@ $transcript2->add_Exon($exon2);
 $translation2->start_Exon($exon2);
 $translation2->end_Exon($exon2);
 $translation2->start(1);
-$translation2->end( ( $gene_start2 - $gene_end2 + 1 )/3 );
+$translation2->end( int(( $gene_start2 - $gene_end2 + 1 )/3) );
 $translation2->transcript($transcript2);
 $transcript2->translation($translation2);
 $gene2->add_Transcript($transcript2);
@@ -222,10 +222,14 @@ $dba->get_OperonAdaptor()->remove($operon);
 $dba->get_GeneAdaptor()->remove($gene);
 $dba->get_GeneAdaptor()->remove($gene2);
 
-#test the get_species_and_object_type method from the Registry
-my $registry = 'Bio::EnsEMBL::Registry';
-my ( $species, $object_type, $db_type ) = $registry->get_species_and_object_type('T16152-16153-4840');
-ok( $species eq 'homo_sapiens' && $object_type eq 'OperonTranscript');
+SKIP: {
+  skip 'No registry support for SQLite yet', 1 if $dba->dbc->driver() eq 'SQLite';
+
+  #test the get_species_and_object_type method from the Registry
+  my $registry = 'Bio::EnsEMBL::Registry';
+  my ( $species, $object_type, $db_type ) = $registry->get_species_and_object_type('T16152-16153-4840');
+  ok( $species eq 'homo_sapiens' && $object_type eq 'OperonTranscript');
+}
 
 #48
 my $ota = $dba->get_OperonTranscriptAdaptor();

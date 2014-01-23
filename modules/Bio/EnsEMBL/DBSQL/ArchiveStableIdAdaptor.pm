@@ -350,15 +350,15 @@ sub _fetch_archive_id {
   # using a UNION is much faster in this query than somthing like
   # "... AND (sie.old_stable_id = ? OR sie.new_stable_id = ?)"
   my $sql = qq(
-    (SELECT * FROM stable_id_event sie, mapping_session ms
+    SELECT * FROM stable_id_event sie, mapping_session ms
     WHERE sie.mapping_session_id = ms.mapping_session_id
     AND sie.old_stable_id = ?
-    $extra_sql1)
+    $extra_sql1
     UNION
-    (SELECT * FROM stable_id_event sie, mapping_session ms
+    SELECT * FROM stable_id_event sie, mapping_session ms
     WHERE sie.mapping_session_id = ms.mapping_session_id
     AND sie.new_stable_id = ?
-    $extra_sql2)
+    $extra_sql2
     ORDER BY created DESC, score DESC
     LIMIT 1
   );
@@ -849,21 +849,25 @@ sub fetch_history_tree_by_stable_id {
 
   # using a UNION is much faster in this query than somthing like
   # "... AND (sie.old_stable_id = ?) OR (sie.new_stable_id = ?)"
+  #
+  # SQLite uses the fully qualified column name as the key in
+  # fetchrow_hashref() when there's a UNION, hence the need to
+  # avoid table names qualifiers in the column lists.
   my $sql = qq(
-    SELECT sie.old_stable_id, sie.old_version,
-           ms.old_db_name, ms.old_release, ms.old_assembly,
-           sie.new_stable_id, sie.new_version,
-           ms.new_db_name, ms.new_release, ms.new_assembly,
-           sie.type, sie.score
+    SELECT old_stable_id, old_version,
+           old_db_name, old_release, old_assembly,
+           new_stable_id, new_version,
+           new_db_name, new_release, new_assembly,
+           type, score
     FROM stable_id_event sie, mapping_session ms
     WHERE sie.mapping_session_id = ms.mapping_session_id
     AND sie.old_stable_id = ?
     UNION
-    SELECT sie.old_stable_id, sie.old_version,
-           ms.old_db_name, ms.old_release, ms.old_assembly,
-           sie.new_stable_id, sie.new_version,
-           ms.new_db_name, ms.new_release, ms.new_assembly,
-           sie.type, sie.score
+    SELECT old_stable_id, old_version,
+           old_db_name, old_release, old_assembly,
+           new_stable_id, new_version,
+           new_db_name, new_release, new_assembly,
+           type, score
     FROM stable_id_event sie, mapping_session ms
     WHERE sie.mapping_session_id = ms.mapping_session_id
     AND sie.new_stable_id = ?

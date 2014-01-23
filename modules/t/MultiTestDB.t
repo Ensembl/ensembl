@@ -33,25 +33,25 @@ ok($dba);
 my $sth = $dba->dbc->prepare("select * from gene");
 $sth->execute;
 
-ok(scalar($sth->rows) == 20);
+ok(scalar(@{$sth->fetchall_arrayref}) == 20);
 
 
 # now hide the gene table i.e. make an empty version of it
 $ens_test->hide("core","gene");
 $sth->execute;
-ok($sth->rows == 0);
+ok(scalar(@{$sth->fetchall_arrayref}) == 0);
 
 
 # restore the gene table
 $ens_test->restore();
 $sth->execute;
-ok(scalar($sth->rows) == 20);
+ok(scalar(@{$sth->fetchall_arrayref}) == 20);
 
 
 # now save the gene table i.e. make a copy of it
 $ens_test->save("core","gene");
 $sth->execute;
-ok(scalar($sth->rows) == 20);
+ok(scalar(@{$sth->fetchall_arrayref}) == 20);
 
 
 # delete 9 genes from the db
@@ -61,13 +61,13 @@ $sth->execute;
 $sth = $dba->dbc->prepare("select * from gene");
 $sth->execute;
 
-ok(scalar($sth->rows) == 10);
+ok(scalar(@{$sth->fetchall_arrayref}) == 10);
 
 
 # check to see whether the restore works again
 $ens_test->restore();
 $sth->execute;
-ok(scalar($sth->rows) == 20);
+ok(scalar(@{$sth->fetchall_arrayref}) == 20);
 
 
 $sth->finish;

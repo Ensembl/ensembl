@@ -590,7 +590,7 @@ sub store {
 
     $ptstore_sth->execute();
 
-    my $pt_id = $ptstore_sth->{'mysql_insertid'};
+    my $pt_id = $self->last_insert_id('prediction_transcript_id', undef, 'prediction_transcript');
     $original->dbID($pt_id);
     $original->adaptor($self);
 

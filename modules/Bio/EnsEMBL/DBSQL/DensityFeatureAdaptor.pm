@@ -727,7 +727,7 @@ sub store{
     $sth->bind_param(5,$df->density_value,SQL_FLOAT);
     $sth->execute();
 
-    $original->dbID($sth->{'mysql_insertid'});
+    $original->dbID($self->last_insert_id('density_feature_id', undef, 'density_feature'));
     $original->adaptor($self);
   }
 }

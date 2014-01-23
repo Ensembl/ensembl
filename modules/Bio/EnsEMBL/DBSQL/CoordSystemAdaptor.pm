@@ -1209,11 +1209,8 @@ sub store {
 
   my $sth =
     $db->dbc->prepare(   'INSERT INTO coord_system '
-                       . 'SET name = ?, '
-                       . 'version = ?, '
-                       . 'attrib = ?,'
-                       . 'rank = ?,'
-                       . 'species_id = ?' );
+                       . '( name, version, attrib, rank, species_id ) '
+                         . 'VALUES ( ?, ?, ?, ?, ? )' );
 
   $sth->bind_param( 1, $name,               SQL_VARCHAR );
   $sth->bind_param( 2, $version,            SQL_VARCHAR );
@@ -1222,7 +1219,7 @@ sub store {
   $sth->bind_param( 5, $self->species_id(), SQL_INTEGER );
 
   $sth->execute();
-  my $dbID = $sth->{'mysql_insertid'};
+  my $dbID = $self->last_insert_id('coord_system_id', undef, 'coord_system');
   $sth->finish();
 
   if(!$dbID) {

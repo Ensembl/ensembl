@@ -119,27 +119,22 @@ sub fetch_all {
         
         if ($type) {
             $get_all_sql = q(
-                SELECT DISTINCT alt_allele_group_id FROM alt_allele a
-                JOIN (gene g, seq_region s, coord_system c, alt_allele_attrib b)
-                ON (
-                    c.coord_system_id = s.coord_system_id 
-                    AND s.seq_region_id = g.seq_region_id
-                    AND g.gene_id = a.gene_id
-                    AND a.alt_allele_id = b.alt_allele_id
-                )
+                SELECT DISTINCT alt_allele_group_id
+                FROM alt_allele        a
+                JOIN gene              g  ON g.gene_id         = a.gene_id
+                JOIN seq_region        s  ON s.seq_region_id   = g.seq_region_id
+                JOIN coord_system      c  ON c.coord_system_id = s.coord_system_id
+                JOIN alt_allele_attrib b  ON a.alt_allele_id   = b.alt_allele_id
                 WHERE c.species_id = ? AND b.attrib = ?
             );
-        }
-        else {
+        } else {
             $get_all_sql = q(
-                SELECT DISTINCT alt_allele_group_id FROM alt_allele a
-                JOIN (gene g, seq_region s, coord_system c)
-                ON (
-                    c.coord_system_id = s.coord_system_id 
-                    AND s.seq_region_id = g.seq_region_id
-                    AND g.gene_id = a.gene_id
-                )
-                WHERE c.species_id = ? 
+                SELECT DISTINCT alt_allele_group_id
+                FROM alt_allele a
+                JOIN gene              g  ON g.gene_id         = a.gene_id
+                JOIN seq_region        s  ON s.seq_region_id   = g.seq_region_id
+                JOIN coord_system      c  ON c.coord_system_id = s.coord_system_id
+                WHERE c.species_id = ?
             );
         }
     } else {
@@ -419,7 +414,11 @@ sub remove {
     assert_ref($allele_group, 'Bio::EnsEMBL::AltAlleleGroup', 'allele_group');
 
     my $helper = $self->dbc()->sql_helper();
-    my $delete_attribs_sql = 'DELETE aaa FROM alt_allele_attrib aaa join alt_allele aa using (alt_allele_id) where alt_allele_group_id =?';
+    my $delete_attribs_sql = q{
+        DELETE FROM alt_allele_attrib WHERE alt_allele_id IN (
+            SELECT alt_allele_id FROM alt_allele WHERE alt_allele_group_id = ?
+        )
+    };
     my $delete_alt_alleles_sql = 'DELETE FROM alt_allele where alt_allele_group_id =?';
     my $delete_group_sql = 'DELETE from alt_allele_group where alt_allele_group_id =?';
     my $params = [[$allele_group->dbID, SQL_INTEGER]];

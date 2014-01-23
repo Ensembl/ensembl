@@ -484,7 +484,7 @@ sub store {
 
     $sth->execute();
 
-    my $db_id = $sth->{'mysql_insertid'}
+    my $db_id = $self->last_insert_id('repeat_feature_id', undef, 'repeat_feature')
       or throw("Didn't get an insertid from the INSERT statement");
 
     $original->dbID($db_id);

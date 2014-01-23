@@ -134,7 +134,7 @@ sub store{
 
     $sth->execute();
 
-    $original->dbID($sth->{'mysql_insertid'});
+    $original->dbID($self->last_insert_id('simple_feature_id', undef, 'simple_feature'));
     $original->adaptor($self);
   }
 }
