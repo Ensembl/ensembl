@@ -21,7 +21,7 @@ scan_and_replace() {
 
   for file in $(grep -R --files-with-matches "$search" .); do
     echo "Replacing email in $file"
-    sed -i "" -e "s/$search/$replacement/g" $file
+    sed -i -e "s/$search/$replacement/g" $file
   done
 }
 
