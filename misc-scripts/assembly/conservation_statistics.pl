@@ -32,7 +32,7 @@ tie my %exon_states, 'Tie::IxHash', (
 );
 tie my %transcript_states, 'Tie::IxHash', (
   '@@' => 'Protein Coding Protein MisMatch',
-  '££' => 'Protein Coding cDNA MisMatch',
+  ';;' => 'Protein Coding cDNA MisMatch',
   '**' => 'Non-Coding MisMatch',
   'XX' => 'Missed mapping',
   '^^' => 'Eval error'
@@ -45,7 +45,7 @@ my %totals;
 open my $fh, '<', $file or die "Cannot open file '$file': $!";
 while(my $line = <$fh>) {
   chomp $line;
-  if($line =~ /(^[!%?&@£*X^]{2})/xms) {
+  if($line =~ /(^[!%?&@;*X^]{2})/xms) {
     $states{$1}++;
     next;
   }

@@ -15,7 +15,7 @@
 
 # this script tries to build repeat consensus sequences
 # for TRF repeats that are unique and minimal.This should reduce the amount 
-# of TRF consensus objects.
+# of TRF consensus objects.
 
 # further it will replace all repeat consensi longer than 8 characters with 
 # just one for the length.
