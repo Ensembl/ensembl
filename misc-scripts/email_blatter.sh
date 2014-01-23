@@ -20,8 +20,13 @@ scan_and_replace() {
   echo "About to scan $(pwd) for files to replace '$search' with '$replacement'"
 
   for file in $(grep -R --files-with-matches "$search" .); do
-    echo "Replacing email in $file"
-    sed -i "s/$search/$replacement/g" $file
+
+    if [ "$(basename $file)" != "email_blatter.sh" ]; then
+      echo "Skipping the email_blatter.sh script"
+    else
+      echo "Replacing email in $file"
+      sed -i "s/$search/$replacement/g" $file
+    fi
   done
 }
 
