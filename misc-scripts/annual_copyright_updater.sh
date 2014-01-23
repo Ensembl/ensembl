@@ -41,7 +41,7 @@ for var in $dirs; do
 
   for file in $(grep -R --files-with-matches "$search" .); do
     echo "Replacing date in $file"
-    sed -i "s/$search/$replacement/g" $file
+    sed -i '' -e "s/$search/$replacement/g" $file
   done
 
   cd $original_wd

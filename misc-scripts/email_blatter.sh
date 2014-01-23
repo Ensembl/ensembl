@@ -25,7 +25,7 @@ scan_and_replace() {
       echo "Skipping the email_blatter.sh script"
     else
       echo "Replacing email in $file"
-      sed -i "s/$search/$replacement/g" $file
+      sed -i '' -e "s/$search/$replacement/g" $file
     fi
   done
 }
