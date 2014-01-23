@@ -14,7 +14,7 @@
 # limitations under the License.
 
 
-if [ -z "$@" ]; then
+if [[ "$#" -eq 0 ]]; then
   dirs=$(pwd)
 else
   dirs=$@
@@ -22,7 +22,7 @@ fi
 
 original_wd=$(pwd)
 
-for var in "$dirs"; do
+for var in $dirs; do
 
   if [ ! -d $var ] ; then
     echo "$var is not a directory. Skipping"
@@ -41,7 +41,7 @@ for var in "$dirs"; do
 
   for file in $(grep -R --files-with-matches "$search" .); do
     echo "Replacing date in $file"
-    sed -i '' "s/$search/$replacement/g" $file
+    sed -i "s/$search/$replacement/g" $file
   done
 
   cd $original_wd

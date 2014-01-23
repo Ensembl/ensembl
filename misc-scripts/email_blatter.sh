@@ -21,11 +21,11 @@ scan_and_replace() {
 
   for file in $(grep -R --files-with-matches "$search" .); do
     echo "Replacing email in $file"
-    sed -i -e "s/$search/$replacement/g" $file
+    sed -i "s/$search/$replacement/g" $file
   done
 }
 
-if [ -z "$@" ]; then
+if [[ "$#" -eq 0 ]]; then
   dirs=$(pwd)
 else
   dirs=$@
@@ -33,7 +33,7 @@ fi
 
 original_wd=$(pwd)
 
-for var in "$dirs"; do
+for var in $dirs; do
 
   if [ ! -d $var ] ; then
     echo "$var is not a directory. Skipping"
@@ -43,8 +43,11 @@ for var in "$dirs"; do
   cd $var
 
   scan_and_replace 'helpdesk@ensembl.org' 'http:\/\/www.ensembl.org\/Help\/Contact'
+  scan_and_replace 'helpdesk&#64;ensembl.org' 'http:\/\/www.ensembl.org\/Help\/Contact'
   scan_and_replace 'dev@ensembl.org' 'http:\/\/lists.ensembl.org\/mailman\/listinfo\/dev'
+  scan_and_replace 'dev&#64;ensembl.org' 'http:\/\/lists.ensembl.org\/mailman\/listinfo\/dev'
   scan_and_replace 'announce@ensembl.org' 'http:\/\\/lists.ensembl.org\/mailman\/listinfo\/announce'
+  scan_and_replace 'announce&#64;ensembl.org' 'http:\/\\/lists.ensembl.org\/mailman\/listinfo\/announce'
   
   cd $original_wd
 done
