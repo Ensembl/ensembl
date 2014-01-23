@@ -41,7 +41,7 @@ for var in $dirs; do
   for file in $(grep -R --files-with-matches "$search" .); do
     echo "Replacing date in $file"
     if [ "$(uname)" = "Darwin" ]; then
-      sed -i '' -e "s/$search/$replacement/g" $file
+      LC_CTYPE=C LANG=C sed -i '' -e "s/$search/$replacement/g" $file
     else
       sed --in-place -e "s/$search/$replacement/g" $file
     fi
