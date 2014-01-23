@@ -479,7 +479,7 @@ sub _fetch_seq {
         # retrieve uncached portions of the sequence
 
         my $sth =
-          $self->prepare(   "SELECT SUBSTRING(d.sequence, ?, ?) "
+          $self->prepare(   "SELECT SUBSTR(d.sequence, ?, ?) "
                           . "FROM dna d "
                           . "WHERE d.seq_region_id = ?" );
 
@@ -512,7 +512,7 @@ sub _fetch_seq {
 
     # do not do any caching for requests of very large sequences
     my $sth =
-      $self->prepare(   "SELECT SUBSTRING(d.sequence, ?, ?) "
+      $self->prepare(   "SELECT SUBSTR(d.sequence, ?, ?) "
                       . "FROM dna d "
                       . "WHERE d.seq_region_id = ?" );
 

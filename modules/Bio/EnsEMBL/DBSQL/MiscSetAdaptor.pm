@@ -224,12 +224,15 @@ sub store {
   # otherwise 2 processes could try to insert at the same time and one
   # would fail
 
-  my $sth = $self->prepare
-    ("INSERT IGNORE INTO misc_set " .
-     "SET code = ?, " .
-     "    name = ?, " .
-     "    description = ?, " .
-     "    max_length  = ?");
+  my $insert_ignore = $self->insert_ignore_clause();
+  my $sth = $self->prepare(
+    qq{${insert_ignore} INTO misc_set (
+         code,
+         name,
+         description,
+         max_length
+      ) VALUES (?, ?, ?, ?)
+    });
 
   my $db = $self->db();
 
@@ -260,14 +263,14 @@ sub store {
       $sth2->bind_param(1,$ms->code,SQL_VARCHAR);
       $sth2->execute();
 
+      ($dbID) = $sth2->fetchrow_array();
+
       if($sth2->rows() != 1) {
         throw("Could not retrieve or store MiscSet, code=[".$ms->code."]\n".
               "Wrong database user/permissions?");
       }
-
-      ($dbID) = $sth2->fetchrow_array();
     } else {
-      $dbID = $sth->{'mysql_insertid'};
+      $dbID = $self->last_insert_id('misc_set_id', undef, 'misc_set');
     }
 
     $ms->dbID($dbID);

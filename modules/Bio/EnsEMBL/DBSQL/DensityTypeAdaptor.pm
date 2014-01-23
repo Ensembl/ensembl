@@ -278,8 +278,9 @@ sub store {
     throw("Must call store with list of Density Types");
   }
 
+  my $insert_ignore = $self->insert_ignore_clause();
   my $sth = $self->prepare
-    ("INSERT IGNORE INTO density_type (analysis_id,".
+    ("${insert_ignore} INTO density_type (analysis_id,".
                                   "block_size, value_type, region_features ) ". 
     "VALUES (?, ?, ?, ?)");
 
@@ -330,7 +331,7 @@ sub store {
       }
       $dbID = $stored_dt->dbID();
     } else {
-      $dbID = $sth->{'mysql_insertid'};
+      $dbID = $self->last_insert_id('density_type_id', undef, 'density_type');
     }
 
     # next two lines are to set the density type as stored

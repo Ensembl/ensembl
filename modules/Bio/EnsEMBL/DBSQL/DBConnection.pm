@@ -144,7 +144,7 @@ sub new {
   my $class = shift;
 
   my (
-    $db,                  $host,     $driver,
+    $db,                  $host,     $driver_arg,
     $user,                $password, $port,
     $inactive_disconnect, $dbconn,   $wait_timeout, $reconnect
     )
@@ -158,12 +158,25 @@ sub new {
   my $self = {};
   bless $self, $class;
 
+  my $driver = $dbconn ? $dbconn->driver() : $driver_arg;
+  if ($driver eq 'pgsql') {
+      warning("Using 'pgsql' as an alias for the 'Pg' driver is deprecated.");
+      $driver = 'Pg';
+  }
+  $driver ||= 'mysql';
+  $self->driver($driver);
+
+  my $driver_class = 'Bio::EnsEMBL::DBSQL::Driver::' . $driver;
+  eval "require $driver_class";
+  throw("Cannot load '$driver_class': $@") if $@;
+  my $driver_object = $driver_class->new($self);
+  $self->_driver_object($driver_object);
+
   if($dbconn) {
-    if($db || $host || $driver || $password || $port || $inactive_disconnect || $reconnect) {
+    if($db || $host || $driver_arg || $password || $port || $inactive_disconnect || $reconnect) {
       throw("Cannot specify other arguments when -DBCONN argument used.");
     }
 
-    $self->driver($dbconn->driver());
     $self->host($dbconn->host());
     $self->port($dbconn->port());
     $self->username($dbconn->username());
@@ -174,8 +187,7 @@ sub new {
       $self->disconnect_when_inactive(1);
     }
   } else {
-    $driver ||= 'mysql';
-    
+
     if($driver eq 'mysql') {
         $user || throw("-USER argument is required.");
         $host ||= 'mysql';
@@ -197,7 +209,6 @@ sub new {
 
     $wait_timeout   ||= 0;
 
-    $self->driver($driver);
     $self->host( $host );
     $self->port($port);
     $self->username( $user );
@@ -244,88 +255,17 @@ sub connect {
              . "reseting connected boolean\n" );
   }
 
-  my ( $dsn, $dbh );
-  my $dbname = $self->dbname();
+  my $dbh;
 
-  if ( $self->driver() eq "Oracle" ) {
-
-    $dsn = "DBI:Oracle:";
-
-    eval {
-      $dbh = DBI->connect( $dsn,
-                           sprintf( "%s@%s",
-                                    $self->username(), $dbname ),
-                           $self->password(),
-                           { 'RaiseError' => 1, 'PrintError' => 0 } );
-    };
-
-  } elsif ( $self->driver() eq "ODBC" ) {
-
-    $dsn = sprintf( "DBI:ODBC:%s", $self->dbname() );
-
-    eval {
-      $dbh = DBI->connect( $dsn,
-                           $self->username(),
-                           $self->password(), {
-                             'LongTruncOk'     => 1,
-                             'LongReadLen'     => 2**16 - 8,
-                             'RaiseError'      => 1,
-                             'PrintError'      => 0,
-                             'odbc_cursortype' => 2 } );
-    };
-
-  } elsif ( $self->driver() eq "Sybase" ) {
-    my $dbparam = ($dbname) ? ";database=${dbname}" : q{};
-
-    $dsn = sprintf( "DBI:Sybase:server=%s%s;tdsLevel=CS_TDS_495",
-                    $self->host(), $dbparam );
-
-    eval {
-      $dbh = DBI->connect( $dsn,
-                           $self->username(),
-                           $self->password(), {
-                             'LongTruncOk' => 1,
-                             'RaiseError'  => 1,
-                             'PrintError'  => 0 } );
-    };
-
-  } elsif ( lc( $self->driver() ) eq 'sqlite' ) {
-
-    throw "We require a dbname to connect to a SQLite database"
-      if !$dbname;
-
-    $dsn = sprintf( "DBI:SQLite:%s", $dbname );
-
-    eval {
-      $dbh = DBI->connect( $dsn, '', '', { 'RaiseError' => 1, } );
-    };
-
-  } else {
-
-    my $dbparam = ($dbname) ? "database=${dbname};" : q{};
-
-    my $driver = $self->driver();
-    $driver = 'Pg' if($driver eq 'pgsql');
-
-    $dsn = sprintf( "DBI:%s:%shost=%s;port=%s",
-                    $driver, $dbparam,
-                    $self->host(),   $self->port() );
-
-    if ( $self->{'disconnect_when_inactive'} ) {
-      $self->{'count'}++;
-      if ( $self->{'count'} > 1000 ) {
-        sleep 1;
-        $self->{'count'} = 0;
-      }
-    }
-    eval {
-      $dbh = DBI->connect( $dsn, $self->username(), $self->password(),
-                           { 'RaiseError' => 1 } );
-    };
-  }
+  my $params = $self->_driver_object->connect_params($self);
+  eval {
+      $dbh = DBI->connect( @{$params}{qw(dsn username password attributes)} );
+  };
   my $error = $@;
 
   if ( !$dbh || $error || !$dbh->ping() ) {
+
+    my $dsn = $params->{dsn};
     warn(   "Could not connect to database "
           . $self->dbname()
           . " as user "
@@ -346,7 +286,7 @@ sub connect {
   $self->db_handle($dbh);
 
   if ( $self->timeout() ) {
-    $dbh->do( "SET SESSION wait_timeout=" . $self->timeout() );
+    $self->_driver_object->set_wait_timeout( $dbh, $self->timeout() );
   }
 
   #print("CONNECT\n");
@@ -469,10 +409,10 @@ sub driver {
 =cut
 
 sub port {
-  my ( $self, $value ) = @_;
+  my ( $self, @args ) = @_;
 
-  if ( defined($value) ) {
-    $self->{'_port'} = $value;
+  if ( @args ) {
+    $self->{'_port'} = $args[0];
   }
 
   return $self->{'_port'};
@@ -496,9 +436,9 @@ sub port {
 =cut
 
 sub dbname {
-  my ($self, $arg ) = @_;
-  ( defined $arg ) &&
-    ( $self->{_dbname} = $arg );
+  my ($self, @args ) = @_;
+  ( @args ) &&
+    ( $self->{_dbname} = $args[0] );
   $self->{_dbname};
 }
 
@@ -520,9 +460,9 @@ sub dbname {
 =cut
 
 sub username {
-  my ($self, $arg ) = @_;
-  ( defined $arg ) &&
-    ( $self->{_username} = $arg );
+  my ($self, @args ) = @_;
+  ( @args ) &&
+    ( $self->{_username} = $args[0] );
   $self->{_username};
 }
 
@@ -537,8 +477,8 @@ sub username {
 =cut
 
 sub user {
-  my ($self, $arg) = @_;
-  return $self->username($arg);
+  my ($self, @args) = @_;
+  return $self->username(@args);
 }
 
 
@@ -559,9 +499,9 @@ sub user {
 =cut
 
 sub host {
-  my ($self, $arg ) = @_;
-  ( defined $arg ) &&
-    ( $self->{_host} = $arg );
+  my ($self, @args ) = @_;
+  ( @args ) &&
+    ( $self->{_host} = $args[0] );
   $self->{_host};
 }
 
@@ -576,8 +516,8 @@ sub host {
 =cut
 
 sub hostname {
-  my ($self, $arg) = @_;
-  return $self->host($arg);
+  my ($self, @args) = @_;
+  return $self->host(@args);
 }
 
 
@@ -598,15 +538,15 @@ sub hostname {
 =cut
 
 sub password {
-  my ( $self, $arg ) = @_;
+  my ( $self, @args ) = @_;
 
-  if ( defined($arg) ) {
+  if ( @args ) {
     # Use an anonymous subroutine that will return the password when
     # invoked.  This will prevent the password from being accidentally
     # displayed when using e.g. Data::Dumper on a structure containing
     # one of these objects.
 
-    $self->{_password} = sub { $arg };
+    $self->{_password} = sub { $args[0] };
   }
 
   return ( ref( $self->{_password} ) && &{ $self->{_password} } ) || '';
@@ -623,8 +563,8 @@ sub password {
 =cut
 
 sub pass {
-  my ($self, $arg) = @_;
-  return $self->password($arg);
+  my ($self, @args) = @_;
+  return $self->password(@args);
 }
 
 =head2 disconnect_when_inactive
@@ -1058,26 +998,9 @@ sub add_limit_clause{
 =cut
 
 sub from_date_to_seconds{
-    my $self=  shift;
-    my $column = shift;
-
-    my $string;
-    if ($self->driver eq 'mysql'){
-        $string = "UNIX_TIMESTAMP($column)";
-    }
-    elsif ($self->driver eq 'odbc'){
-        $string = "DATEDIFF(second,'JAN 1 1970',$column)";
-    }
-    elsif ($self->driver eq 'SQLite'){
-        $string = "STRFTIME('%s', $column)";
-    }
-    else{
-        warning("Not possible to convert $column due to an unknown database driver: ", $self->driver);
-        return '';
-    }    
-    return $string;
+    my ($self, @args) = @_;
+    return $self->_driver_object->from_date_to_seconds(@args);
 }
-
 
 =head2 from_seconds_to_date
 
@@ -1092,41 +1015,14 @@ sub from_date_to_seconds{
 
 =cut
 
-sub from_seconds_to_date{
-    my $self=  shift;
+sub from_seconds_to_date {
+    my $self = shift;
     my $seconds = shift;
 
-    my $string;
-    if ($self->driver eq 'mysql'){
-        if ($seconds){
-            $string = "from_unixtime( ".$seconds.")";
-        }
-        else{
-            $string = "\"0000-00-00 00:00:00\"";
-        }
+    if ($seconds) {
+        return $self->_driver_object->from_seconds_to_date($seconds);
     }
-    elsif ($self->driver eq 'odbc'){
-        if ($seconds){
-            $string = "DATEDIFF(date,'JAN 1 1970',$seconds)";
-        }
-        else{
-            $string = "\"0000-00-00 00:00:00\"";
-        }
-    }
-    elsif ($self->driver eq 'SQLite'){
-        if ($seconds){
-            $string = "DATETIME($seconds)";
-        }
-        else{
-            $string = "\"0000-00-00 00:00:00\"";
-        }
-    }
-    else{
-        warning("Not possible to convert $seconds due to an unknown database driver: ", $self->driver);
-        return '';
-
-    }    
-    return $string;
+    return '"0000-00-00 00:00:00"'; # should this use DBI's quote() ?
 }
 
 =head2 sql_helper
@@ -1210,6 +1106,15 @@ sub species {
     ( $self->{_species} = $arg );
   deprecate "species should not be called from DBConnection but from an adaptor\n";
   return $self->{_species};
+}
+
+=head2 _driver_object
+=cut
+
+sub _driver_object {
+    my ($self, @args) = @_;
+    ($self->{_driver_object}) = @args if @args;
+    return $self->{_driver_object};
 }
 
 1;
