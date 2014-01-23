@@ -13,7 +13,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-
 if [[ "$#" -eq 0 ]]; then
   dirs=$(pwd)
 else
@@ -41,7 +40,11 @@ for var in $dirs; do
 
   for file in $(grep -R --files-with-matches "$search" .); do
     echo "Replacing date in $file"
-    sed -i '' -e "s/$search/$replacement/g" $file
+    if [ "$(uname)" = "Darwin" ]; then
+      sed -i '' -e "s/$search/$replacement/g" $file
+    else
+      sed --in-place -e "s/$search/$replacement/g" $file
+    fi
   done
 
   cd $original_wd

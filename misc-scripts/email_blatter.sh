@@ -13,7 +13,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-
 scan_and_replace() {
   search=$1
   replacement=$2
@@ -25,7 +24,11 @@ scan_and_replace() {
       echo "Skipping the email_blatter.sh script"
     else
       echo "Replacing email in $file"
-      sed -i '' -e "s/$search/$replacement/g" $file
+      if [ "$(uname)" = "Darwin" ]; then
+        sed -i '' -e "s/$search/$replacement/g" $file
+      else
+        sed --in-place -e "s/$search/$replacement/g" $file
+      fi
     fi
   done
 }
@@ -53,6 +56,7 @@ for var in $dirs; do
   scan_and_replace 'dev&#64;ensembl.org' 'http:\/\/lists.ensembl.org\/mailman\/listinfo\/dev'
   scan_and_replace 'announce@ensembl.org' 'http:\/\\/lists.ensembl.org\/mailman\/listinfo\/announce'
   scan_and_replace 'announce&#64;ensembl.org' 'http:\/\\/lists.ensembl.org\/mailman\/listinfo\/announce'
+  scan_and_replace 'vega@sanger.ac.uk' 'v@somewhere.com'
   
   cd $original_wd
 done
