@@ -414,11 +414,22 @@ sub remove {
     assert_ref($allele_group, 'Bio::EnsEMBL::AltAlleleGroup', 'allele_group');
 
     my $helper = $self->dbc()->sql_helper();
-    my $delete_attribs_sql = q{
+    my $delete_attribs_sql;
+    if ($self->dbc->driver() eq 'mysql') {
+      $delete_attribs_sql = q{
+        DELETE aaa 
+        FROM alt_allele_attrib aaa 
+        JOIN alt_allele aa using (alt_allele_id) 
+        where alt_allele_group_id =?
+      };
+    }
+    else {
+      $delete_attribs_sql = q{
         DELETE FROM alt_allele_attrib WHERE alt_allele_id IN (
             SELECT alt_allele_id FROM alt_allele WHERE alt_allele_group_id = ?
         )
-    };
+      };
+    }
     my $delete_alt_alleles_sql = 'DELETE FROM alt_allele where alt_allele_group_id =?';
     my $delete_group_sql = 'DELETE from alt_allele_group where alt_allele_group_id =?';
     my $params = [[$allele_group->dbID, SQL_INTEGER]];
