@@ -28,8 +28,6 @@ use lib "$Bin/../../../ensembl-analysis/modules";
 require AssemblyMapper::Support;
 use Bio::EnsEMBL::Utils::Exception qw( throw );
 use Pod::Usage;
-use Bio::EnsEMBL::DBSQL::OntologyDBAdaptor;
-use Bio::EnsEMBL::Utils::BiotypeMapper;
 
 #Genebuilder utils
 require Bio::EnsEMBL::Analysis::Tools::GeneBuildUtils::TranscriptUtils;
@@ -51,11 +49,9 @@ unless ($support->parse_arguments(@_)) {
 }
 $support->connect_dbs;
 
-my $onto_db_adaptor = Bio::EnsEMBL::DBSQL::OntologyDBAdaptor->new(
-  -DBNAME => $support->ref_dba->dbc->dbname,
-  -DBCONN => $support->ref_dba->dbc,
-);
-my $biotype_mapper = new Bio::EnsEMBL::Utils::BiotypeMapper($onto_db_adaptor);
+my $biotype_manager = 
+  Bio::EnsEMBL::Registry->get_DBAdaptor('multi', 'production')->get_biotype_manager();
+  
 
 $support->log_stamped("Beginning analysis.\n");
 $support->log("EXON KEY       : !! = Very bad (pc mismatch), %% = Somewhat bad (mismatch), ?? = No mapping, might be bad, && = eval error\n");
@@ -149,18 +145,11 @@ sub exon {
       # Determine severity of the problem
       $difference = diff(\$old_seq, \$projected_seq);
 
-      my $group_list = $biotype_mapper->belongs_to_groups($parent_gene->biotype);
+      my $group_list = $biotype_manager->belongs_to_groups($parent_gene);
       foreach my $group (@$group_list) {
-        if ($group eq 'protein_coding') {
-          $state = '!!';
-          last;
-        }
+	$state = '!!' and last if $group eq 'protein_coding'
       }
-      if (!$state) {
-
-        # Middle badness.
-        $state = '%%';
-      }
+      $state = '%%' unless $state; # Middle badness
     }
 
     $location = sprintf('%d : %d', $projected_exon->start(), $projected_exon->end());
@@ -220,13 +209,10 @@ sub transcript {
   if ($projected_transcript) {
 
     #Check if it was protein coding
-    my $group_list = $biotype_mapper->belongs_to_groups($projected_transcript->biotype);
+    my $group_list = $biotype_manager->belongs_to_groups($projected_transcript);
     my $is_pc      = 0;
     foreach my $group (@$group_list) {
-      if ($group eq 'protein_coding') {
-        $is_pc = 1;
-        last;
-      }
+      $is_pc = 1 and last if $group eq 'protein_coding';
     }
 
     #Now check for protein sequence mis-match
