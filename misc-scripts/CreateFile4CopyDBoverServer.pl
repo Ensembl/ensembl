@@ -19,7 +19,7 @@
 # neded by the script CopyDBoverServer.pl
 #
 # Please post comments/questions to the Ensembl development list
-# <dev@ensembl.org>
+# <http://lists.ensembl.org/mailman/listinfo/dev>
 #
 #########################################
 use strict;

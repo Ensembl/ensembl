@@ -84,7 +84,7 @@ Patrick Meidl <pm2@sanger.ac.uk>
 
 =head1 CONTACT
 
-Post questions to the EnsEMBL development list dev@ensembl.org
+Post questions to the EnsEMBL development list http://lists.ensembl.org/mailman/listinfo/dev
 
 =cut
 

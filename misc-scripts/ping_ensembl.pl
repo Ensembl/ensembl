@@ -16,7 +16,7 @@
 =head1 CONTACT
 
   Please email comments or questions to the Ensembl help desk
-  <helpdesk@ensembl.org>.
+  <http://www.ensembl.org/Help/Contact>.
 
 =head1 NAME
 
@@ -50,7 +50,7 @@
   This script is used to detect if you can contact the Ensembl database 
   server with your current setup. The program will attempt to print out
   helpful hints about how to resolve your problems. If they still persist
-  then please contact helpdesk@ensembl.org.
+  then please contact http://www.ensembl.org/Help/Contact.
 
 =head1 SUBROUTINES
 

@@ -64,7 +64,7 @@ Daniel Rios <dani@ebi.ac.uk>, Ensembl core API team
 =head1 CONTACT
 
 Please post comments/questions to the Ensembl development list
-<dev@ensembl.org>
+<http://lists.ensembl.org/mailman/listinfo/dev>
 
 =cut
 
