@@ -77,7 +77,7 @@ sub new {
     };
     bless $self, $class;
     if ( ! check_ref($self->{'ontology_adaptor'}, "Bio::EnsEMBL::DBSQL::OntologyTermAdaptor" )) {
-        throw("GFF format requires an instance of Bio::EnsEMBL::DBSQL::OntologyTermAdaptor to function. See also Bio::EnsEMBL::Utils::BiotypeMapper");        
+        throw("GFF format requires an instance of Bio::EnsEMBL::DBSQL::OntologyTermAdaptor to function.");        
     }
     $self->{'mapper'} = Bio::EnsEMBL::Utils::SequenceOntologyMapper->new($self->{'ontology_adaptor'});
     
