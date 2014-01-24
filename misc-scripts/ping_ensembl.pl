@@ -1,5 +1,5 @@
 #!/usr/bin/env perl
-# Copyright [1999-2013] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
+# Copyright [1999-2014] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
 # 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -16,7 +16,7 @@
 =head1 CONTACT
 
   Please email comments or questions to the Ensembl help desk
-  <helpdesk@ensembl.org>.
+  <http://www.ensembl.org/Help/Contact>.
 
 =head1 NAME
 
@@ -50,7 +50,7 @@
   This script is used to detect if you can contact the Ensembl database 
   server with your current setup. The program will attempt to print out
   helpful hints about how to resolve your problems. If they still persist
-  then please contact helpdesk@ensembl.org.
+  then please contact http://www.ensembl.org/Help/Contact.
 
 =head1 SUBROUTINES
 

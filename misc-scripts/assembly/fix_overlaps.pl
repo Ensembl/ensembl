@@ -1,5 +1,5 @@
 #!/usr/bin/env perl
-# Copyright [1999-2013] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
+# Copyright [1999-2014] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
 # 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -75,7 +75,7 @@ Patrick Meidl <meidl@ebi.ac.uk>, Ensembl core API team
 =head1 CONTACT
 
 Please post comments/questions to the Ensembl development list
-<dev@ensembl.org>
+<http://lists.ensembl.org/mailman/listinfo/dev>
 
 =cut
 
