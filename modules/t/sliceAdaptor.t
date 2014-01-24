@@ -247,7 +247,7 @@ foreach my $seg (@projection) {
 my $csa = $db->get_CoordSystemAdaptor();
 my $ctg_cs  = $csa->fetch_by_name('contig');
 
-$multi->save('core', 'seq_region', 'dna');
+$multi->save('core', 'seq_region', 'dna', 'assembly');
 
 my $ctg_len = 50;
 my $name = 'testregion';
@@ -322,7 +322,7 @@ my $chr_map = $ctg_slice->project( $chr_cs->name, $chr_cs->version );
 #    $chr_map->[0]->[2]->name eq $chr_slice->name );
 
 
-$multi->restore('core', 'seq_region', 'dna');
+$multi->restore('core', 'seq_region', 'dna', 'assembly');
 
 
 #

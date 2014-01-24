@@ -677,7 +677,7 @@ TAG:
       $sth1->bind_param( 11, $ditag_feature->ditag_side,                SQL_VARCHAR );
       $sth1->bind_param( 12, $ditag_feature->ditag_pair_id,             SQL_VARCHAR );
       $sth1->execute();
-      my $dbID = $sth1->{'mysql_insertid'};
+      my $dbID = $self->last_insert_id('ditag_feature_id', undef, 'ditag_feature');
       $ditag_feature->dbID($dbID);
       $ditag_feature->adaptor($self);
     }

@@ -780,10 +780,14 @@ ok($gene->is_current == 1);
 
 $multi->restore;
 
-#test the get_species_and_object_type method from the Registry
-my $registry = 'Bio::EnsEMBL::Registry';
-my ($species, $object_type, $db_type) = $registry->get_species_and_object_type('ENSG00000355555');
-ok($species eq 'homo_sapiens' && $object_type eq 'Gene');
+SKIP: {
+  skip 'No registry support for SQLite yet', 1 if $db->dbc->driver() eq 'SQLite';
+
+  #test the get_species_and_object_type method from the Registry
+  my $registry = 'Bio::EnsEMBL::Registry';
+  my ( $species, $object_type, $db_type ) = $registry->get_species_and_object_type('ENSG00000355555');
+  ok( $species eq 'homo_sapiens' && $object_type eq 'Gene');
+}
 
 # Testing compara dba retrieval
 {

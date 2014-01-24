@@ -503,7 +503,7 @@ sub store {
                   $seq_region_id, $mf->start, $mf->end,
                   $analysis_id, $mf->map_weight || 0);
 
-    my $dbID = $sth->{'mysql_insertid'};
+    my $dbID = $self->last_insert_id('marker_feature_id', undef, 'marker_feature');
 
     $original->dbID($dbID);
     $original->adaptor($self);

@@ -132,7 +132,7 @@ sub store_batch_on_Object {
 sub _store_batch_rows {
   my ($self, $table, $rows) = @_;
   if (scalar(@$rows) > 0) {
-        $self->dbc()->sql_helper()->execute_update(-SQL => 'INSERT INTO ' . $table . '_attrib() VALUES' . join(',', @$rows));
+        $self->dbc()->sql_helper()->execute_update(-SQL => 'INSERT INTO ' . $table . '_attrib(' . $table . '_id, attrib_type_id, value) VALUES ' . join(',', @$rows));
   }
   return [];
 }
@@ -189,9 +189,9 @@ sub store_on_Object {
     $type = $table;
   }
 
-  my $sth = $self->prepare( "INSERT IGNORE into " . $table. "_attrib ".
-                            "SET " . $type . "_id = ?, attrib_type_id = ?, ".
-                            "value = ? " );
+  my $insert_ignore = $self->insert_ignore_clause();
+  my $sth = $self->prepare( "${insert_ignore} INTO ${table}_attrib (${type}_id, attrib_type_id, value)" .
+                            "VALUES (?, ?, ?)" );
 
   for my $attrib ( @$attributes ) {
     if(!ref($attrib) && $attrib->isa('Bio::EnsEMBL::Attribute')) {
@@ -314,11 +314,20 @@ sub remove_from_Object {
   }
   
   my $sth;
-  if(defined($code)){
-    $sth = $self->prepare("DELETE a FROM " . $table . "_attrib a, attrib_type at " .
-                         "WHERE a.attrib_type_id = at.attrib_type_id AND ".
-                         "a." . $type . "_id = ? AND ".
-                         "at.code like ?");
+  if (defined($code)) {
+    if ($db->dbc->driver() eq 'mysql') {
+      $sth = $self->prepare("DELETE a FROM " . $table . "_attrib a, attrib_type at " .
+                            "WHERE a.attrib_type_id = at.attrib_type_id AND ".
+                            "a." . $type . "_id = ? AND ".
+                            "at.code like ?");
+    } else {
+      $sth = $self->prepare(qq{DELETE FROM ${table}_attrib
+                                WHERE ${type}_id = ? AND
+                                       attrib_type_id IN
+                               (SELECT attrib_type_id
+                                  FROM attrib_type
+                                 WHERE code LIKE ? ) });
+    }
     $sth->bind_param(1,$object_id,SQL_INTEGER);
     $sth->bind_param(2,$code,SQL_VARCHAR);
   }
@@ -571,7 +580,10 @@ sub _store_type {
   my $self   = shift;
   my $attrib = shift;
 
-  my $sth1 = $self->prepare("INSERT IGNORE INTO attrib_type set code = ?, name = ?, " . "description = ?");
+  my $insert_ignore = $self->insert_ignore_clause();
+  my $sth1 = $self->prepare
+    ("${insert_ignore} INTO attrib_type (code, name, description) values (?, ?, ?)" );
+
 
   $sth1->bind_param(1, $attrib->code,        SQL_VARCHAR);
   $sth1->bind_param(2, $attrib->name,        SQL_VARCHAR);
@@ -579,7 +591,7 @@ sub _store_type {
 
   my $rows_inserted = $sth1->execute();
 
-  my $atid = $sth1->{'mysql_insertid'};
+  my $atid = $self->last_insert_id('attrib_type_id', undef, 'attrib_type');
 
   if ($rows_inserted == 0) {
 	# the insert failed because the code is already stored

@@ -347,6 +347,10 @@ sub _straight_join {
   return $self->{'_straight_join'};
 }
 
+sub _can_straight_join {
+    my $self = shift;
+    return $self->dbc->_driver_object->can_straight_join;
+}
 
 =head2 bind_param_generic_fetch
 
@@ -581,7 +585,7 @@ sub _generate_sql {
 
   my $straight_join = '';
 
-  if($self->_straight_join()) {
+  if($self->_straight_join() and $self->_can_straight_join) {
     $straight_join = "STRAIGHT_JOIN";
   }
 
@@ -877,17 +881,23 @@ sub last_insert_id {
   my $dbc = $self->dbc();
   my $dbh = $dbc->db_handle();
   my @args;
-  if($dbc->driver() eq 'mysql') {
-    @args = (undef,undef,undef,undef);
-  }
-  else {
+  unless (@args = $dbc->_driver_object->last_insert_id_args($field, $table)) {
     if(!$table) {
-      ($table) = $self->_tables();
+      my ($table_entry) = $self->_tables(); # first table entry
+      $table = $table_entry->[0];           # table_entry is [ name, alias ]
     }
-    @args = (undef, $dbc->dbname(), $table->[0], $field);
+    @args = (undef, $dbc->dbname(), $table, $field);
   }
   $attributes ||= {};
   return $dbh->last_insert_id(@args, $attributes);
+}
+
+=head2 insert_ignore_clause
+=cut
+
+sub insert_ignore_clause {
+    my $self = shift;
+    return $self->dbc->_driver_object->insert_ignore_clause;
 }
 
 =head2 _id_cache

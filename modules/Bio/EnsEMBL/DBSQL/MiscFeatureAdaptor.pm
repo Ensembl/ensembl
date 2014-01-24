@@ -673,17 +673,22 @@ sub store {
 
   my $db = $self->db();
 
-  my $feature_sth = $self->prepare
-    ("INSERT INTO misc_feature SET " .
-     " seq_region_id    = ?, " .
-     " seq_region_start = ?, " .
-     " seq_region_end   = ?, " .
-     " seq_region_strand = ?");
+  my $feature_sth = $self->prepare(
+    q{INSERT INTO misc_feature (
+        seq_region_id,
+        seq_region_start,
+        seq_region_end,
+        seq_region_strand
+      ) VALUES (?, ?, ?, ?)
+    });
 
-  my $feature_set_sth = $self->prepare
-    ("INSERT IGNORE misc_feature_misc_set SET " .
-     " misc_feature_id = ?, " .
-     " misc_set_id = ?");
+  my $insert_ignore = $self->insert_ignore_clause();
+  my $feature_set_sth = $self->prepare(
+    qq{${insert_ignore} INTO misc_feature_misc_set (
+         misc_feature_id,
+         misc_set_id
+       ) VALUES (?, ?)
+      });
 
   my $msa = $db->get_MiscSetAdaptor();
   my $aa  = $db->get_AttributeAdaptor();
@@ -711,7 +716,7 @@ sub store {
     $feature_sth->bind_param(4,$mf->strand,SQL_TINYINT);
     $feature_sth->execute();
 
-    my $dbID = $feature_sth->{'mysql_insertid'};
+    my $dbID = $self->last_insert_id('misc_feature_id', undef, 'misc_feature');
 
     $mf->dbID($dbID);
     $mf->adaptor($self);

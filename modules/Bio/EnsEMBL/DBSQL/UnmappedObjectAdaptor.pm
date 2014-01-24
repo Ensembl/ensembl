@@ -295,7 +295,7 @@ sub store{
       $sth_reason->bind_param(2,$uo->{'description'},SQL_VARCHAR);
       $sth_reason->execute();
       $uo->{'unmapped_reason_id'} = $desc_to_id{$uo->{'description'}} 
-	= $sth_reason->{'mysql_insertid'};
+	= $self->last_insert_id('unmapped_reason_id', undef, 'unmapped_reason');
       
     }
     else{
@@ -311,7 +311,7 @@ sub store{
     $sth_unmapped_object->bind_param(8,$uo->{'ensembl_id'},SQL_INTEGER);
     $sth_unmapped_object->bind_param(9,$uo->{'ensembl_object_type'},SQL_VARCHAR);
     $sth_unmapped_object->execute();
-    $uo->dbID($sth_unmapped_object->{'mysql_insertid'});
+    $uo->dbID($self->last_insert_id('unmpapped_object_id', undef, 'unmapped_object'));
   }
   $sth_reason->finish();      
   return;

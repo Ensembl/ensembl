@@ -150,13 +150,14 @@ sub fetch_by_dbID {
 
   $sth->bind_param(1, $protfeat_id, SQL_INTEGER);
   my $res = $sth->execute();
+   
+  my ($start, $end, $analysis_id, $score, $perc_ident, $pvalue, $hstart, 
+      $hend, $hseqname, $idesc, $interpro_ac) = $sth->fetchrow_array();
 
-  if ($sth->rows == 0) {
-	$sth->finish();
-	return undef;
+  if($sth->rows == 0) {
+    $sth->finish();
+    return undef;
   }
-
-  my ($start, $end, $analysis_id, $score, $perc_ident, $pvalue, $hstart, $hend, $hseqname, $idesc, $interpro_ac) = $sth->fetchrow_array();
 
   $sth->finish();
 
@@ -219,7 +220,21 @@ sub store {
 	$db->get_AnalysisAdaptor->store($analysis);
   }
 
-  my $sth = $self->prepare("INSERT INTO protein_feature " . "        SET translation_id  = ?, " . "            seq_start       = ?, " . "            seq_end         = ?, " . "            analysis_id     = ?, " . "            hit_start       = ?, " . "            hit_end         = ?, " . "            hit_name        = ?, " . "            hit_description = ?, " . "            score           = ?, " . "            perc_ident      = ?, " . "            evalue          = ?");
+  my $sth = $self->prepare(q{
+    INSERT INTO protein_feature
+                ( translation_id,
+                  seq_start,
+                  seq_end,
+                  analysis_id,
+                  hit_start,
+                  hit_end,
+                  hit_name,
+                  hit_description,
+                  score,
+                  perc_ident,
+                  evalue     )
+         VALUES ( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ? )
+  });
 
   $sth->bind_param(1,  $translation_id,        SQL_INTEGER);
   $sth->bind_param(2,  $feature->start,        SQL_INTEGER);
@@ -235,7 +250,7 @@ sub store {
 
   $sth->execute();
 
-  my $dbID = $sth->{'mysql_insertid'};
+  my $dbID = $self->last_insert_id('protein_feature_id', undef, 'protein_feature');
 
   $feature->adaptor($self);
   $feature->dbID($dbID);
@@ -327,7 +342,7 @@ sub save {
 	$sth->bind_param(12, $extra_data,           SQL_LONGVARCHAR);
 
 	$sth->execute();
-	$original->dbID($sth->{'mysql_insertid'});
+        $original->dbID($self->last_insert_id("${tablename}_id", undef, $tablename));
 	$original->adaptor($self);
   } ## end foreach my $feat (@feats)
 

@@ -158,7 +158,8 @@ sub store{
    $sth->bind_param(14,$feat->hcoverage,SQL_DOUBLE);
 
    $sth->execute();
-   $original->dbID($sth->{'mysql_insertid'});
+   my $dbId = $self->last_insert_id("${tablename}_id", undef, $tablename);
+   $original->dbID($dbId);
    $original->adaptor($self);
  }
 

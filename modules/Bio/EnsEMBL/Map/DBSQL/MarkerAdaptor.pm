@@ -374,7 +374,7 @@ INSERT INTO marker ( left_primer, right_primer,
                    $marker->priority,
                    $marker->type );
 
-    my $dbID = $sth->{'mysql_insertid'};
+    my $dbID = $self->last_insert_id('marker_id', undef, 'marker');
     $marker->dbID($dbID);
     $marker->adaptor($self);
 
@@ -463,7 +463,7 @@ VALUES ( ?,?,?) );
                  $ms->source,
                  $ms->name );
 
-  my $dbID = $sth->{'mysql_insertid'};
+  my $dbID = $self->last_insert_id('marker_synonym_id', undef, 'marker_synonym');
   $ms->dbID($dbID);
   return $dbID;
 }

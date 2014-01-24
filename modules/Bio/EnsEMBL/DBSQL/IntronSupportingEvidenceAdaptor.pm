@@ -316,11 +316,12 @@ sub store {
   my $seq_region_id;
   ($sf, $seq_region_id) = $self->_pre_store($sf);
 
-  my $sql = <<SQL;
-insert ignore into intron_supporting_evidence 
+  my $insert_ignore = $self->insert_ignore_clause();
+  my $sql = qq{
+${insert_ignore} into intron_supporting_evidence
 (analysis_id, seq_region_id, seq_region_start, seq_region_end, seq_region_strand, hit_name, score, score_type, is_splice_canonical)
-values (?,?,?,?,?,?,?,?,?) 
-SQL
+values (?,?,?,?,?,?,?,?,?)
+  };
 
   #Used later on for duplicate entry retrieval
   my $query_params = [
@@ -385,11 +386,12 @@ sub store_transcript_linkage {
   
   throw "Cannot perform the link. The IntronSupportingEvidence must be persisted first" unless $sf->is_stored($self->db());
   
-  my $sql = <<SQL;
-insert ignore into transcript_intron_supporting_evidence 
+  my $insert_ignore = $self->insert_ignore_clause();
+  my $sql = qq{
+${insert_ignore} into transcript_intron_supporting_evidence
 (transcript_id, intron_supporting_evidence_id, previous_exon_id, next_exon_id)
-values (?,?,?,?) 
-SQL
+values (?,?,?,?)
+  };
 
   my $intron = $sf->get_Intron($transcript);
   my ($previous_exon, $next_exon) = ($intron->prev_Exon(), $intron->next_Exon());
