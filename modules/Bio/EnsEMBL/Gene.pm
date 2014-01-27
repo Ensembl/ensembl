@@ -116,8 +116,6 @@ use vars qw(@ISA);
   Arg [-CANONICAL_TRANSCRIPT_ID]:
         integer - the canonical transcript dbID of this gene, if the
         transcript object itself is not available.
-  Arg [-CANONICAL_ANNOTATION]:
-        string - canonical annotation
 
   Example    : $gene = Bio::EnsEMBL::Gene->new(...);
   Description: Creates a new gene object
@@ -153,8 +151,7 @@ sub new {
       'MODIFIED_DATE',           'CONFIDENCE',
       'BIOTYPE',                 'SOURCE',
       'STATUS',                  'IS_CURRENT',
-      'CANONICAL_TRANSCRIPT_ID', 'CANONICAL_TRANSCRIPT',
-      'CANONICAL_ANNOTATION'
+      'CANONICAL_TRANSCRIPT_ID', 'CANONICAL_TRANSCRIPT'
     ],
     @_
     );
