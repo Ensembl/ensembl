@@ -1413,7 +1413,8 @@ sub overlaps_local {
 }
 
 =head2 get_overlapping_Genes
-
+  Arg [1]    : Optional Boolean: Stranded match i.e. match strand of Feature and Genes
+  Arg [2]    : Optional Int:     Prime overlaps e.g. 5 or 3
   Description: Get all the genes that overlap this feature.
   Returntype : list ref of Bio::EnsEMBL::Gene
   Caller     : general
@@ -1422,33 +1423,67 @@ sub overlaps_local {
 =cut
 
 sub get_overlapping_Genes{
-  my $self = shift;
+  my ($self, $match_strands, $prime) = @_;
 
-  my $slice = $self->feature_Slice;
-  return $slice->get_all_Genes();
+  my $fslice      = $self->feature_Slice;
+  my $slice_genes = $fslice->get_all_Genes();
+  my $ogenes      = [];
+
+#  warn "overlapping prime is $prime";
+
+  if($prime || $match_strands){
+
+    foreach my $gene(@$slice_genes){
+
+      if($match_strands){
+        next if $fslice->strand ne $gene->seq_region_strand;
+      }
+
+      #local start/end is +ve and not longer than the slice length.
+      if($prime){
+        if (
+          ( $prime == 5 && ( ($gene->start < 1) || ($gene->start > $fslice->length) ) )
+          || 
+          ( $prime == 3 && ( ($gene->end < 1) || ($gene->end > $fslice->length) )) )
+        { next;}
+        else {throw("Invalid prime specified $prime. Must be 5 or 3")}
+      }
+
+      push @$ogenes, $gene;
+    }#end of gene loop
+  } else{ #All overlapping genes
+    $ogenes = $slice_genes;
+  }
+    #This is not accounting for contained features!?
+    #at least on opposite strand
+    
+    #Gene     -----------------------------
+    #Feature                          ---
+
+    #or is it that we are not account for this in the caller?
+    #or maybe the strand of the feature?
+
+    #nearest_Genes sql does not account for this.
+
+  return $ogenes;
 }
 
 # query for absolute nearest.
 # select x.display_label, g.gene_id, g.seq_region_start, ABS(cast((32921638 - g.seq_region_end) as signed))  as 'dist' from gene g, xref x where g.display_xref_id = x.xref_id and seq_region_id = 27513 order by ABS(cast((32921638 - g.seq_region_end) as signed)) limit 10;
 
-=head2 get_nearest_Gene
+=head2 get_nearest_Genes
 
-  Description: Get the nearest gene to the feature
-  Returntype : Bio::EnsEMBL::Gene
+  Description: Get the nearest genes to the feature
+  Returntype : listref of Bio::EnsEMBL::Gene
   Caller     : general
-  Status     : UnStable
+  Status     : At risk
 
 =cut
 
-sub get_nearest_Gene {
-  my $self = shift;
-  my $stranded = shift;
-  my $stream = shift;
-
-  my $ga = Bio::EnsEMBL::Registry->get_adaptor($self->adaptor->db->species,"core","Gene");
-
-  return $ga->fetch_nearest_Gene_by_Feature($self, $stranded, $stream);
-
+sub get_nearest_Genes {
+  my $self = shift; 
+  my $ga = Bio::EnsEMBL::Registry->get_adaptor($self->adaptor->db->species,'core','Gene');
+  return $ga->fetch_nearest_by_Feature($self, @_);
 }
 
 =head2 summary_as_hash
@@ -1491,6 +1526,23 @@ sub species {
 ##############################################
 # Methods included for backwards compatibility
 ##############################################
+
+=head2 get_nearest_Gene
+
+ Description: DEPRECATED - use get_nearest_Genes instead
+
+=cut
+
+sub get_nearest_Gene {
+  my $self = shift;
+  my $stranded = shift;
+  my $stream = shift;
+
+  deprecate( "use get_nearest_Genes instead");
+
+  my $gene_list = $self->get_nearest_Genes(undef $stranded, $stream);
+  return shift @$gene_list;
+}
 
 
 =head2 contig

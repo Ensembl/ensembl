@@ -182,18 +182,18 @@ sub fetch_by_display_label {
   my @genes = @{$self->generic_fetch($constraint)};
   my $gene;
   if (scalar(@genes) > 1) {
-	foreach my $gene_tmp (@genes) {
-	  if ($gene_tmp->slice->is_reference) {
-		$gene = $gene_tmp;
-	  }
-	  last if ($gene);
-	}
-	if (!$gene) {
-	  $gene = $genes[0];
-	}
+    foreach my $gene_tmp (@genes) {
+      if ($gene_tmp->slice->is_reference) {
+        $gene = $gene_tmp;
+      }
+      last if ($gene);
+    }
+    if (!$gene) {
+      $gene = $genes[0];
+    }
 
   } elsif (scalar(@genes) == 1) {
-	$gene = $genes[0];
+    $gene = $genes[0];
   }
 
   return $gene;
@@ -487,7 +487,7 @@ sub fetch_all_by_domain {
   throw("domain argument is required") unless ($domain);
 
   my $sth = $self->prepare(
-	qq(
+  qq(
   SELECT    tr.gene_id
   FROM      interpro i,
             protein_feature pf,
@@ -576,9 +576,9 @@ sub fetch_all_by_Slice_and_external_dbname_link {
   # Create a list of those that are in the gene_ids list.
   my @genes_passed;
   foreach my $gene (@$genes) {
-	if (exists($linked_genes{$gene->dbID()})) {
-	  push(@genes_passed, $gene);
-	}
+    if (exists($linked_genes{$gene->dbID()})) {
+      push(@genes_passed, $gene);
+    }
   }
 
   # Return the list of those that passed.
@@ -616,7 +616,7 @@ sub fetch_all_by_Slice {
   my $constraint = 'g.is_current = 1';
 
   if (defined($source)) {
-	$constraint .= " and g.source = '$source'";
+    $constraint .= " and g.source = '$source'";
   }
   if (defined($biotype)) {
     my $inline_variables = 1;
@@ -627,7 +627,7 @@ sub fetch_all_by_Slice {
 
   # If there are less than two genes, still do lazy-loading.
   if (!$load_transcripts || @$genes < 2) {
-	return $genes;
+    return $genes;
   }
 
   # Preload all of the transcripts now, instead of lazy loading later,
@@ -636,27 +636,27 @@ sub fetch_all_by_Slice {
   # First check if transcripts are already preloaded.
   # FIXME: Should check all transcripts.
   if (exists($genes->[0]->{'_transcript_array'})) {
-	return $genes;
+    return $genes;
   }
 
   # Get extent of region spanned by transcripts.
   my ($min_start, $max_end);
   foreach my $g (@$genes) {
-	if (!defined($min_start) || $g->seq_region_start() < $min_start) {
-	  $min_start = $g->seq_region_start();
-	}
-	if (!defined($max_end) || $g->seq_region_end() > $max_end) {
-	  $max_end = $g->seq_region_end();
-	}
+    if (!defined($min_start) || $g->seq_region_start() < $min_start) {
+      $min_start = $g->seq_region_start();
+    }
+    if (!defined($max_end) || $g->seq_region_end() > $max_end) {
+      $max_end = $g->seq_region_end();
+    }
   }
 
   my $ext_slice;
 
   if ($min_start >= $slice->start() && $max_end <= $slice->end()) {
-	$ext_slice = $slice;
+    $ext_slice = $slice;
   } else {
-	my $sa = $self->db()->get_SliceAdaptor();
-	$ext_slice = $sa->fetch_by_region($slice->coord_system->name(), $slice->seq_region_name(), $min_start, $max_end, $slice->strand(), $slice->coord_system->version());
+    my $sa = $self->db()->get_SliceAdaptor();
+    $ext_slice = $sa->fetch_by_region($slice->coord_system->name(), $slice->seq_region_name(), $min_start, $max_end, $slice->strand(), $slice->coord_system->version());
   }
 
   # Associate transcript identifiers with genes.
@@ -675,7 +675,7 @@ sub fetch_all_by_Slice {
   my %tr_g_hash;
 
   while ($sth->fetch()) {
-	$tr_g_hash{$tr_id} = $g_hash{$g_id};
+    $tr_g_hash{$tr_id} = $g_hash{$g_id};
   }
 
   my $ta = $self->db()->get_TranscriptAdaptor();
@@ -683,19 +683,19 @@ sub fetch_all_by_Slice {
 
   # Move transcripts onto gene slice, and add them to genes.
   foreach my $tr (@{$transcripts}) {
-	if (!exists($tr_g_hash{$tr->dbID()})) { next }
+    if (!exists($tr_g_hash{$tr->dbID()})) { next }
 
-	my $new_tr;
-	if ($slice != $ext_slice) {
-	  $new_tr = $tr->transfer($slice);
-	  if (!defined($new_tr)) {
-		throw("Unexpected. " . "Transcript could not be transfered onto Gene slice.");
-	  }
-	} else {
-	  $new_tr = $tr;
-	}
+    my $new_tr;
+    if ($slice != $ext_slice) {
+      $new_tr = $tr->transfer($slice);
+      if (!defined($new_tr)) {
+        throw("Unexpected. " . "Transcript could not be transfered onto Gene slice.");
+      }
+    } else {
+      $new_tr = $tr;
+    }
 
-	$tr_g_hash{$tr->dbID()}->add_Transcript($new_tr);
+    $tr_g_hash{$tr->dbID()}->add_Transcript($new_tr);
   }
 
   return $genes;
@@ -722,10 +722,10 @@ sub count_all_by_Slice {
 
   my $constraint = 'g.is_current = 1';
   if (defined($source)) {
-	$constraint .= " and g.source = '$source'";
+    $constraint .= " and g.source = '$source'";
   }
   if (defined($biotype)) {
-	$constraint .= " and " . $self->biotype_constraint($biotype);
+    $constraint .= " and " . $self->biotype_constraint($biotype);
   }
 
   return $self->count_by_Slice_constraint($slice, $constraint);
@@ -755,7 +755,7 @@ sub fetch_by_transcript_id {
 
   # this is a cheap SQL call
   my $sth = $self->prepare(
-	qq(
+  qq(
       SELECT tr.gene_id
       FROM transcript tr
       WHERE tr.transcript_id = ?
@@ -793,9 +793,9 @@ sub fetch_by_transcript_stable_id {
   my ($self, $trans_stable_id) = @_;
 
   my $sth = $self->prepare(
-	qq(
+  qq(
         SELECT  gene_id
-	FROM	transcript
+  FROM	transcript
         WHERE   stable_id = ?
         AND     is_current = 1
     ));
@@ -830,11 +830,11 @@ sub fetch_by_translation_stable_id {
   my ($self, $translation_stable_id) = @_;
 
   my $sth = $self->prepare(
-	qq(
+  qq(
         SELECT  tr.gene_id
-	FROM    transcript tr,
+  FROM    transcript tr,
                 translation tl
-	WHERE   tl.stable_id = ?
+  WHERE   tl.stable_id = ?
         AND     tr.transcript_id = tl.transcript_id
         AND     tr.is_current = 1
     ));
@@ -845,7 +845,7 @@ sub fetch_by_translation_stable_id {
   my ($geneid) = $sth->fetchrow_array();
   $sth->finish;
   if (!defined $geneid) {
-	return undef;
+    return undef;
   }
   return $self->fetch_by_dbID($geneid);
 }
@@ -941,15 +941,15 @@ sub fetch_all_by_GOTerm {
 
   assert_ref($term, 'Bio::EnsEMBL::OntologyTerm');
   if ($term->ontology() ne 'GO') {
-	throw('Argument is not a GO term');
+    throw('Argument is not a GO term');
   }
 
   my $entryAdaptor = $self->db->get_DBEntryAdaptor();
 
   my %unique_dbIDs;
   foreach my $accession (map { $_->accession() } ($term, @{$term->descendants()})) {
-	my @ids = $entryAdaptor->list_gene_ids_by_extids($accession, 'GO');
-	foreach my $dbID (@ids) { $unique_dbIDs{$dbID} = 1 }
+    my @ids = $entryAdaptor->list_gene_ids_by_extids($accession, 'GO');
+    foreach my $dbID (@ids) { $unique_dbIDs{$dbID} = 1 }
   }
 
   my @result = @{$self->fetch_all_by_dbID_list([sort { $a <=> $b } keys(%unique_dbIDs)])};
@@ -989,7 +989,7 @@ sub fetch_all_by_GOTerm_accession {
   my ($self, $accession) = @_;
 
   if ($accession !~ /^GO:/) {
-	throw('Argument is not a GO term accession');
+    throw('Argument is not a GO term accession');
   }
 
   my $goAdaptor = Bio::EnsEMBL::Registry->get_adaptor('Multi', 'Ontology', 'OntologyTerm');
@@ -1109,13 +1109,13 @@ sub store_alt_alleles {
   warning "Unsupported. Switch to using AltAlleleGroupAdaptor::store() and AltAlleleGroups";
 
   if (!ref($genes) eq 'ARRAY') {
-	throw('List reference of Bio::EnsEMBL::Gene argument expected.');
+    throw('List reference of Bio::EnsEMBL::Gene argument expected.');
   }
   my @genes     = @$genes;
   my $num_genes = scalar(@genes);
   if ($num_genes < 2) {
-	warning('At least 2 genes must be provided to construct alternative alleles (gene id: ' . $genes[0]->dbID() . '). Ignoring.');
-	return;
+    warning('At least 2 genes must be provided to construct alternative alleles (gene id: ' . $genes[0]->dbID() . '). Ignoring.');
+    return;
   }
 
   my $allele_list;
@@ -1164,15 +1164,15 @@ sub store {
   my ($self, $gene, $ignore_release, $skip_recalculating_coordinates) = @_;
 
   if (!ref $gene || !$gene->isa('Bio::EnsEMBL::Gene')) {
-	throw("Must store a gene object, not a $gene");
+    throw("Must store a gene object, not a $gene");
   }
   if (!defined($ignore_release)) {
-	$ignore_release = 1;
+    $ignore_release = 1;
   }
   my $db = $self->db();
 
   if ($gene->is_stored($db)) {
-	return $gene->dbID();
+    return $gene->dbID();
   }
 
   # ensure coords are correct before storing
@@ -1183,9 +1183,9 @@ sub store {
 
   my $analysis_id;
   if ($analysis->is_stored($db)) {
-	$analysis_id = $analysis->dbID();
+    $analysis_id = $analysis->dbID();
   } else {
-	$analysis_id = $db->get_AnalysisAdaptor->store($analysis);
+    $analysis_id = $db->get_AnalysisAdaptor->store($analysis);
   }
 
   my $type = $gene->biotype || "";
@@ -1217,9 +1217,9 @@ sub store {
   );
 
   if (defined($gene->stable_id)) {
-	my $created  = $self->db->dbc->from_seconds_to_date($gene->created_date());
-	my $modified = $self->db->dbc->from_seconds_to_date($gene->modified_date());
-	$store_gene_sql .= ", stable_id = ?, version = ?, created_date = " . $created . " , modified_date = " . $modified;
+    my $created  = $self->db->dbc->from_seconds_to_date($gene->created_date());
+    my $modified = $self->db->dbc->from_seconds_to_date($gene->modified_date());
+    $store_gene_sql .= ", stable_id = ?, version = ?, created_date = " . $created . " , modified_date = " . $modified;
 
   }
 
@@ -1245,9 +1245,9 @@ sub store {
 
   if (defined($gene->stable_id)) {
 
-	$sth->bind_param(12, $gene->stable_id, SQL_VARCHAR);
-	my $version = ($gene->version()) ? $gene->version() : 1;
-	$sth->bind_param(13, $version, SQL_INTEGER);
+    $sth->bind_param(12, $gene->stable_id, SQL_VARCHAR);
+    my $version = ($gene->version()) ? $gene->version() : 1;
+    $sth->bind_param(13, $version, SQL_INTEGER);
   }
 
   $sth->execute();
@@ -1259,7 +1259,7 @@ sub store {
   my $dbEntryAdaptor = $db->get_DBEntryAdaptor();
 
   foreach my $dbe (@{$gene->get_all_DBEntries}) {
-	$dbEntryAdaptor->store($dbe, $gene_dbID, "Gene", $ignore_release);
+    $dbEntryAdaptor->store($dbe, $gene_dbID, "Gene", $ignore_release);
   }
 
   # We allow transcripts not to share equal exons and instead have
@@ -1269,14 +1269,14 @@ sub store {
   my %exons;
 
   foreach my $trans (@{$gene->get_all_Transcripts}) {
-	foreach my $e (@{$trans->get_all_Exons}) {
-	  my $key = $e->hashkey();
-	  if (exists $exons{$key}) {
-		$trans->swap_exons($e, $exons{$key});
-	  } else {
-		$exons{$key} = $e;
-	  }
-	}
+    foreach my $e (@{$trans->get_all_Exons}) {
+      my $key = $e->hashkey();
+      if (exists $exons{$key}) {
+        $trans->swap_exons($e, $exons{$key});
+      } else {
+        $exons{$key} = $e;
+      }
+    }
   }
 
   my $transcript_adaptor = $db->get_TranscriptAdaptor();
@@ -1285,69 +1285,67 @@ sub store {
 
   my $new_canonical_transcript_id;
   for (my $i = 0; $i < @$transcripts; $i++) {
-	my $new = $transcripts->[$i];
-	my $old = $original_transcripts->[$i];
+    my $new = $transcripts->[$i];
+    my $old = $original_transcripts->[$i];
 
-	$transcript_adaptor->store($new, $gene_dbID, $analysis_id, $skip_recalculating_coordinates);
+    $transcript_adaptor->store($new, $gene_dbID, $analysis_id, $skip_recalculating_coordinates);
 
-	if (!defined($new_canonical_transcript_id)
-		&& $new->is_canonical())
-	{
-	  $new_canonical_transcript_id = $new->dbID();
-	}
+    if (!defined($new_canonical_transcript_id) && $new->is_canonical()) {
+      $new_canonical_transcript_id = $new->dbID();
+    }
 
-	# update the original transcripts since we may have made copies of
-	# them by transforming the gene
-	$old->dbID($new->dbID());
-	$old->adaptor($new->adaptor());
+  # update the original transcripts since we may have made copies of
+  # them by transforming the gene
+    $old->dbID($new->dbID());
+    $old->adaptor($new->adaptor());
 
-	if ($new->translation) {
-	  $old->translation->dbID($new->translation()->dbID);
-	  $old->translation->adaptor($new->translation()->adaptor);
-	}
+    if ($new->translation) {
+      $old->translation->dbID($new->translation()->dbID);
+      $old->translation->adaptor($new->translation()->adaptor);
+    }
   }
 
   if (defined($new_canonical_transcript_id)) {
-	# Now the canonical transcript has been stored, so update the
-	# canonical_transcript_id of this gene with the new dbID.
-	my $sth = $self->prepare(
-	  q(
-      UPDATE gene
-      SET canonical_transcript_id = ?
-      WHERE gene_id = ?)
-	);
+  # Now the canonical transcript has been stored, so update the
+  # canonical_transcript_id of this gene with the new dbID.
+    my $sth = $self->prepare(
+      q(
+        UPDATE gene
+        SET canonical_transcript_id = ?
+        WHERE gene_id = ?)
+    );
 
-	$sth->bind_param(1, $new_canonical_transcript_id, SQL_INTEGER);
-	$sth->bind_param(2, $gene_dbID, SQL_INTEGER);
+    $sth->bind_param(1, $new_canonical_transcript_id, SQL_INTEGER);
+    $sth->bind_param(2, $gene_dbID, SQL_INTEGER);
 
-	$sth->execute();
-	$sth->finish();
+    $sth->execute();
+    $sth->finish();
   }
 
   # update gene to point to display xref if it is set
   if (my $display_xref = $gene->display_xref) {
-	my $dxref_id;
-	if ($display_xref->is_stored($db)) {
-	  $dxref_id = $display_xref->dbID();
-	} else {
-	  $dxref_id = $dbEntryAdaptor->exists($display_xref);
-	}
+    my $dxref_id;
+    if ($display_xref->is_stored($db)) {
+      $dxref_id = $display_xref->dbID();
+    } else {
+      $dxref_id = $dbEntryAdaptor->exists($display_xref);
+    }
 
-	if (defined($dxref_id)) {
-	  my $sth = $self->prepare("UPDATE gene SET display_xref_id = ? WHERE gene_id = ?");
-	  $sth->bind_param(1, $dxref_id,  SQL_INTEGER);
-	  $sth->bind_param(2, $gene_dbID, SQL_INTEGER);
-	  $sth->execute();
-	  $sth->finish();
-	  $display_xref->dbID($dxref_id);
-	  $display_xref->adaptor($dbEntryAdaptor);
-	  $display_xref->dbID($dxref_id);
-	  $display_xref->adaptor($dbEntryAdaptor);
-	} else {
-	  warning("Display_xref " . $display_xref->dbname() . ":" . $display_xref->display_id() . " is not stored in database.\n" . "Not storing relationship to this gene.");
-	  $display_xref->dbID(undef);
-	  $display_xref->adaptor(undef);
-	}
+  if (defined($dxref_id)) {
+    my $sth = $self->prepare("UPDATE gene SET display_xref_id = ? WHERE gene_id = ?");
+      $sth->bind_param(1, $dxref_id,  SQL_INTEGER);
+      $sth->bind_param(2, $gene_dbID, SQL_INTEGER);
+      $sth->execute();
+      $sth->finish();
+      $display_xref->dbID($dxref_id);
+      $display_xref->adaptor($dbEntryAdaptor);
+      $display_xref->dbID($dxref_id);
+      $display_xref->adaptor($dbEntryAdaptor);
+    } else {
+      warning("Display_xref " . $display_xref->dbname() . ":" . $display_xref->display_id() . " is not stored in database.\n" . "Not storing relationship to this gene.");
+      $display_xref->dbID(undef);
+      $display_xref->adaptor(undef);
+    }
   }
 
   # store gene attributes if there are any
@@ -1383,19 +1381,19 @@ sub remove {
   my $gene = shift;
 
   if (!ref($gene) || !$gene->isa('Bio::EnsEMBL::Gene')) {
-	throw("Bio::EnsEMBL::Gene argument expected.");
+    throw("Bio::EnsEMBL::Gene argument expected.");
   }
 
   if (!$gene->is_stored($self->db())) {
-	warning("Cannot remove gene " . $gene->dbID() . ". Is not stored in " . "this database.");
-	return;
+    warning("Cannot remove gene " . $gene->dbID() . ". Is not stored in " . "this database.");
+    return;
   }
 
   # remove all object xrefs associated with this gene
 
   my $dbe_adaptor = $self->db()->get_DBEntryAdaptor();
   foreach my $dbe (@{$gene->get_all_DBEntries()}) {
-	$dbe_adaptor->remove_from_object($dbe, $gene, 'Gene');
+    $dbe_adaptor->remove_from_object($dbe, $gene, 'Gene');
   }
 
   # remove all alternative allele entries associated with this gene
@@ -1411,7 +1409,7 @@ sub remove {
   # remove all of the transcripts associated with this gene
   my $transcriptAdaptor = $self->db->get_TranscriptAdaptor();
   foreach my $trans (@{$gene->get_all_Transcripts()}) {
-	$transcriptAdaptor->remove($trans);
+    $transcriptAdaptor->remove($trans);
   }
 
   # remove this gene from the database
@@ -1476,10 +1474,10 @@ sub get_Interpro_by_geneid {
   my @out;
   my %h;
   while ((my $arr = $sth->fetchrow_arrayref())) {
-	if ($h{$arr->[0]}) { next; }
-	$h{$arr->[0]} = 1;
-	my $string = $arr->[0] . ":" . $arr->[1];
-	push(@out, $string);
+    if ($h{$arr->[0]}) { next; }
+    $h{$arr->[0]} = 1;
+    my $string = $arr->[0] . ":" . $arr->[1];
+    push(@out, $string);
   }
 
   return \@out;
@@ -1504,7 +1502,7 @@ sub update {
   my $update = 0;
 
   if (!defined $gene || !ref $gene || !$gene->isa('Bio::EnsEMBL::Gene')) {
-	throw("Must update a gene object, not a $gene");
+    throw("Must update a gene object, not a $gene");
   }
 
   my $update_gene_sql = qq(
@@ -1523,9 +1521,9 @@ sub update {
   my $display_xref_id;
 
   if ($display_xref && $display_xref->dbID()) {
-	$display_xref_id = $display_xref->dbID();
+    $display_xref_id = $display_xref->dbID();
   } else {
-	$display_xref_id = undef;
+    $display_xref_id = undef;
   }
 
   my $sth = $self->prepare($update_gene_sql);
@@ -1538,9 +1536,9 @@ sub update {
   $sth->bind_param(6, $gene->is_current(),     SQL_TINYINT);
 
   if (defined($gene->canonical_transcript())) {
-	$sth->bind_param(7, $gene->canonical_transcript()->dbID(), SQL_INTEGER);
+    $sth->bind_param(7, $gene->canonical_transcript()->dbID(), SQL_INTEGER);
   } else {
-	$sth->bind_param(7, 0, SQL_INTEGER);
+    $sth->bind_param(7, 0, SQL_INTEGER);
   }
 
   $sth->bind_param(8, $gene->dbID(), SQL_INTEGER);
@@ -1593,12 +1591,12 @@ sub _objs_from_sth {
   my $cmp_cs_name;
 
   if ($mapper) {
-	$asm_cs      = $mapper->assembled_CoordSystem();
-	$cmp_cs      = $mapper->component_CoordSystem();
-	$asm_cs_name = $asm_cs->name();
-	$asm_cs_vers = $asm_cs->version();
-	$cmp_cs_name = $cmp_cs->name();
-	$cmp_cs_vers = $cmp_cs->version();
+    $asm_cs      = $mapper->assembled_CoordSystem();
+    $cmp_cs      = $mapper->component_CoordSystem();
+    $asm_cs_name = $asm_cs->name();
+    $asm_cs_vers = $asm_cs->version();
+    $cmp_cs_name = $cmp_cs->name();
+    $cmp_cs_vers = $cmp_cs->version();
   }
 
   my $dest_slice_start;
@@ -1609,165 +1607,164 @@ sub _objs_from_sth {
   my $dest_slice_sr_id;
 
   if ($dest_slice) {
-	$dest_slice_start   = $dest_slice->start();
-	$dest_slice_end     = $dest_slice->end();
-	$dest_slice_strand  = $dest_slice->strand();
-	$dest_slice_length  = $dest_slice->length();
-	$dest_slice_sr_name = $dest_slice->seq_region_name();
-	$dest_slice_sr_id   = $dest_slice->get_seq_region_id();
+    $dest_slice_start   = $dest_slice->start();
+    $dest_slice_end     = $dest_slice->end();
+    $dest_slice_strand  = $dest_slice->strand();
+    $dest_slice_length  = $dest_slice->length();
+    $dest_slice_sr_name = $dest_slice->seq_region_name();
+    $dest_slice_sr_id   = $dest_slice->get_seq_region_id();
   }
 
 FEATURE: while ($sth->fetch()) {
-	#get the analysis object
-	my $analysis = $analysis_hash{$analysis_id} ||= $aa->fetch_by_dbID($analysis_id);
+  #get the analysis object
+  my $analysis = $analysis_hash{$analysis_id} ||= $aa->fetch_by_dbID($analysis_id);
 
-	#need to get the internal_seq_region, if present
-	$seq_region_id = $self->get_seq_region_id_internal($seq_region_id);
-	my $slice = $slice_hash{"ID:" . $seq_region_id};
+  #need to get the internal_seq_region, if present
+  $seq_region_id = $self->get_seq_region_id_internal($seq_region_id);
+  my $slice = $slice_hash{"ID:" . $seq_region_id};
 
-	if (!$slice) {
-	  $slice                              = $sa->fetch_by_seq_region_id($seq_region_id);
-	  $slice_hash{"ID:" . $seq_region_id} = $slice;
-	  $sr_name_hash{$seq_region_id}       = $slice->seq_region_name();
-	  $sr_cs_hash{$seq_region_id}         = $slice->coord_system();
-	}
+  if (!$slice) {
+    $slice                              = $sa->fetch_by_seq_region_id($seq_region_id);
+    $slice_hash{"ID:" . $seq_region_id} = $slice;
+    $sr_name_hash{$seq_region_id}       = $slice->seq_region_name();
+    $sr_cs_hash{$seq_region_id}         = $slice->coord_system();
+  }
 
-	my $sr_name = $sr_name_hash{$seq_region_id};
-	my $sr_cs   = $sr_cs_hash{$seq_region_id};
+  my $sr_name = $sr_name_hash{$seq_region_id};
+  my $sr_cs   = $sr_cs_hash{$seq_region_id};
 
-	#
-	# remap the feature coordinates to another coord system
-	# if a mapper was provided
-	#
-	if ($mapper) {
+  #
+  # remap the feature coordinates to another coord system
+  # if a mapper was provided
+  #
+  if ($mapper) {
 
-	  if (defined $dest_slice
-		  && $mapper->isa('Bio::EnsEMBL::ChainedAssemblyMapper'))
-	  {
-		($seq_region_id, $seq_region_start, $seq_region_end, $seq_region_strand) = $mapper->map($sr_name, $seq_region_start, $seq_region_end, $seq_region_strand, $sr_cs, 1, $dest_slice);
+    if (defined $dest_slice
+      && $mapper->isa('Bio::EnsEMBL::ChainedAssemblyMapper'))
+    {
+    ($seq_region_id, $seq_region_start, $seq_region_end, $seq_region_strand) = $mapper->map($sr_name, $seq_region_start, $seq_region_end, $seq_region_strand, $sr_cs, 1, $dest_slice);
 
-	  } else {
+    } else {
+      ($seq_region_id, $seq_region_start, $seq_region_end, $seq_region_strand) = $mapper->fastmap($sr_name, $seq_region_start, $seq_region_end, $seq_region_strand, $sr_cs);
+    }
 
-		($seq_region_id, $seq_region_start, $seq_region_end, $seq_region_strand) = $mapper->fastmap($sr_name, $seq_region_start, $seq_region_end, $seq_region_strand, $sr_cs);
-	  }
+    #skip features that map to gaps or coord system boundaries
+    next FEATURE if (!defined($seq_region_id));
 
-	  #skip features that map to gaps or coord system boundaries
-	  next FEATURE if (!defined($seq_region_id));
+    #get a slice in the coord system we just mapped to
+    #      if($asm_cs == $sr_cs || ($cmp_cs != $sr_cs && $asm_cs->equals($sr_cs))) {
+    $slice = $slice_hash{"ID:" . $seq_region_id} ||= $sa->fetch_by_seq_region_id($seq_region_id);
+    #      } else {
+    #        $slice = $slice_hash{"NAME:$sr_name:$asm_cs_name:$asm_cs_vers"} ||=
+    #          $sa->fetch_by_region($asm_cs_name, $sr_name, undef, undef, undef,
+    #                               $asm_cs_vers);
+    #      }
+  }
 
-	  #get a slice in the coord system we just mapped to
-	  #      if($asm_cs == $sr_cs || ($cmp_cs != $sr_cs && $asm_cs->equals($sr_cs))) {
-	  $slice = $slice_hash{"ID:" . $seq_region_id} ||= $sa->fetch_by_seq_region_id($seq_region_id);
-	  #      } else {
-	  #        $slice = $slice_hash{"NAME:$sr_name:$asm_cs_name:$asm_cs_vers"} ||=
-	  #          $sa->fetch_by_region($asm_cs_name, $sr_name, undef, undef, undef,
-	  #                               $asm_cs_vers);
-	  #      }
-	}
+  #
+  # If a destination slice was provided convert the coords.
+  #
+  if (defined($dest_slice)) {
+    my $seq_region_len = $dest_slice->seq_region_length();
 
-	#
-	# If a destination slice was provided convert the coords.
-	#
-	if (defined($dest_slice)) {
-	  my $seq_region_len = $dest_slice->seq_region_length();
+    if ($dest_slice_strand == 1) { # Positive strand
+    
+    $seq_region_start = $seq_region_start - $dest_slice_start + 1;
+    $seq_region_end   = $seq_region_end - $dest_slice_start + 1;
 
-	  if ($dest_slice_strand == 1) { # Positive strand
-		
-		$seq_region_start = $seq_region_start - $dest_slice_start + 1;
-		$seq_region_end   = $seq_region_end - $dest_slice_start + 1;
+    if ($dest_slice->is_circular()) {
+      # Handle cicular chromosomes.
 
-		if ($dest_slice->is_circular()) {
-		  # Handle cicular chromosomes.
+      if ($seq_region_start > $seq_region_end) {
+      # Looking at a feature overlapping the chromsome origin.
 
-		  if ($seq_region_start > $seq_region_end) {
-			# Looking at a feature overlapping the chromsome origin.
+      if ($seq_region_end > $dest_slice_start) {
 
-			if ($seq_region_end > $dest_slice_start) {
+      # Looking at the region in the beginning of the
+      # chromosome.
+        $seq_region_start -= $seq_region_len;
+      }
 
-			  # Looking at the region in the beginning of the
-			  # chromosome.
-			  $seq_region_start -= $seq_region_len;
-			}
+      if ($seq_region_end < 0) {
+        $seq_region_end += $seq_region_len;
+      }
 
-			if ($seq_region_end < 0) {
-			  $seq_region_end += $seq_region_len;
-			}
+      } else {
 
-		  } else {
+      if (   $dest_slice_start > $dest_slice_end
+        && $seq_region_end < 0)
+        {
+          # Looking at the region overlapping the chromosome
+          # origin and a feature which is at the beginning of the
+          # chromosome.
+          $seq_region_start += $seq_region_len;
+          $seq_region_end   += $seq_region_len;
+        }
+      }
 
-			if (   $dest_slice_start > $dest_slice_end
-				&& $seq_region_end < 0)
-			{
-			  # Looking at the region overlapping the chromosome
-			  # origin and a feature which is at the beginning of the
-			  # chromosome.
-			  $seq_region_start += $seq_region_len;
-			  $seq_region_end   += $seq_region_len;
-			}
-		  }
+    } ## end if ($dest_slice->is_circular...)
 
-		} ## end if ($dest_slice->is_circular...)
+    } else { # Negative strand
 
-	  } else { # Negative strand
+      my $start = $dest_slice_end - $seq_region_end + 1;
+      my $end = $dest_slice_end - $seq_region_start + 1;
 
-	    my $start = $dest_slice_end - $seq_region_end + 1;
-	    my $end = $dest_slice_end - $seq_region_start + 1;
+      if ($dest_slice->is_circular()) {
 
-	    if ($dest_slice->is_circular()) {
+        if ($dest_slice_start > $dest_slice_end) { 
+    # slice spans origin or replication
 
-	      if ($dest_slice_start > $dest_slice_end) { 
-		# slice spans origin or replication
+    if ($seq_region_start >= $dest_slice_start) {
+      $end += $seq_region_len;
+      $start += $seq_region_len 
+        if $seq_region_end > $dest_slice_start;
 
-		if ($seq_region_start >= $dest_slice_start) {
-		  $end += $seq_region_len;
-		  $start += $seq_region_len 
-		    if $seq_region_end > $dest_slice_start;
+    } elsif ($seq_region_start <= $dest_slice_end) {
+      # do nothing
+    } elsif ($seq_region_end >= $dest_slice_start) {
+      $start += $seq_region_len;
+      $end += $seq_region_len;
 
-		} elsif ($seq_region_start <= $dest_slice_end) {
-		  # do nothing
-		} elsif ($seq_region_end >= $dest_slice_start) {
-		  $start += $seq_region_len;
-		  $end += $seq_region_len;
+    } elsif ($seq_region_end <= $dest_slice_end) {
 
-		} elsif ($seq_region_end <= $dest_slice_end) {
+      $end += $seq_region_len
+        if $end < 0;
 
-		  $end += $seq_region_len
-		    if $end < 0;
-
-		} elsif ($seq_region_start > $seq_region_end) {
-		  
-		  $end += $seq_region_len;
-
-		} else {
-		  
-		}
+    } elsif ($seq_region_start > $seq_region_end) {
       
-	      } else {
+      $end += $seq_region_len;
 
-		if ($seq_region_start <= $dest_slice_end and $seq_region_end >= $dest_slice_start) {
-		  # do nothing
-		} elsif ($seq_region_start > $seq_region_end) {
-		  if ($seq_region_start <= $dest_slice_end) {
-	  
-		    $start -= $seq_region_len;
+    } else {
+      
+    }
+      
+        } else {
 
-		  } elsif ($seq_region_end >= $dest_slice_start) {
-		    $end += $seq_region_len;
+    if ($seq_region_start <= $dest_slice_end and $seq_region_end >= $dest_slice_start) {
+      # do nothing
+    } elsif ($seq_region_start > $seq_region_end) {
+      if ($seq_region_start <= $dest_slice_end) {
+    
+        $start -= $seq_region_len;
 
-		  } else {
-		    
-		  }
-		}
-	      }
+      } elsif ($seq_region_end >= $dest_slice_start) {
+        $end += $seq_region_len;
 
-	    }
+      } else {
+        
+      }
+    }
+        }
 
-	    $seq_region_start = $start;
-	    $seq_region_end = $end;
-	    $seq_region_strand *= -1;
+      }
 
-	  } ## end else [ if ($dest_slice_strand...)]
+      $seq_region_start = $start;
+      $seq_region_end = $end;
+      $seq_region_strand *= -1;
 
-	  # Throw away features off the end of the requested slice or on
+    } ## end else [ if ($dest_slice_strand...)]
+
+  # Throw away features off the end of the requested slice or on
           # different seq_region.
           if (   $seq_region_end < 1
                   || $seq_region_start > $dest_slice_length
@@ -1776,53 +1773,54 @@ FEATURE: while ($sth->fetch()) {
                 next FEATURE;
           }
 
-	  $slice = $dest_slice;
-	} ## end if (defined($dest_slice...))
+    $slice = $dest_slice;
+  } ## end if (defined($dest_slice...))
 
-	my $display_xref;
+  my $display_xref;
 
-	if ($display_xref_id) {
-	  $display_xref = Bio::EnsEMBL::DBEntry->new_fast({'dbID'            => $display_xref_id,
-													   'adaptor'         => $dbEntryAdaptor,
-													   'display_id'      => $xref_display_id,
-													   'primary_id'      => $xref_primary_acc,
-													   'version'         => $xref_version,
-													   'description'     => $xref_desc,
-													   'release'         => $external_release,
-													   'dbname'          => $external_db,
-													   'db_display_name' => $external_db_name,
-													   'info_type'       => $info_type,
-													   'info_text'       => $info_text});
-	  $display_xref->status($external_status);
-	}
+  if ($display_xref_id) {
+    $display_xref = Bio::EnsEMBL::DBEntry->new_fast({
+      'dbID'            => $display_xref_id,
+      'adaptor'         => $dbEntryAdaptor,
+      'display_id'      => $xref_display_id,
+      'primary_id'      => $xref_primary_acc,
+      'version'         => $xref_version,
+      'description'     => $xref_desc,
+      'release'         => $external_release,
+      'dbname'          => $external_db,
+      'db_display_name' => $external_db_name,
+      'info_type'       => $info_type,
+      'info_text'       => $info_text});
+    $display_xref->status($external_status);
+  }
 
-	# Finally, create the new Gene.
-	push(
-	  @genes,
-	  $self->_create_feature_fast(
-		'Bio::EnsEMBL::Gene', {
-		 'analysis'                => $analysis,
-		 'biotype'                 => $biotype,
-		 'start'                   => $seq_region_start,
-		 'end'                     => $seq_region_end,
-		 'strand'                  => $seq_region_strand,
-		 'adaptor'                 => $self,
-		 'slice'                   => $slice,
-		 'dbID'                    => $gene_id,
-		 'stable_id'               => $stable_id,
-		 'version'                 => $version,
-		 'created_date'            => $created_date || undef,
-		 'modified_date'           => $modified_date || undef,
-		 'description'             => $gene_description,
-		 'external_name'           => undef,                      # will use display_id
-		                                                          # from display_xref
-		 'external_db'             => $external_db,
-		 'external_status'         => $external_status,
-		 'display_xref'            => $display_xref,
-		 'status'                  => $status,
-		 'source'                  => $source,
-		 'is_current'              => $is_current,
-		 'canonical_transcript_id' => $canonical_transcript_id}));
+  # Finally, create the new Gene.
+  push(
+    @genes,
+    $self->_create_feature_fast(
+    'Bio::EnsEMBL::Gene', {
+     'analysis'                => $analysis,
+     'biotype'                 => $biotype,
+     'start'                   => $seq_region_start,
+     'end'                     => $seq_region_end,
+     'strand'                  => $seq_region_strand,
+     'adaptor'                 => $self,
+     'slice'                   => $slice,
+     'dbID'                    => $gene_id,
+     'stable_id'               => $stable_id,
+     'version'                 => $version,
+     'created_date'            => $created_date || undef,
+     'modified_date'           => $modified_date || undef,
+     'description'             => $gene_description,
+     'external_name'           => undef,                      # will use display_id
+                                                              # from display_xref
+     'external_db'             => $external_db,
+     'external_status'         => $external_status,
+     'display_xref'            => $display_xref,
+     'status'                  => $status,
+     'source'                  => $source,
+     'is_current'              => $is_current,
+     'canonical_transcript_id' => $canonical_transcript_id}));
 
   } ## end while ($sth->fetch())
 
@@ -1867,8 +1865,8 @@ sub cache_gene_seq_mappings {
   my $csnew = $mcc->fetch_all_CoordSystems_by_feature_type('gene');
 
   foreach my $cs2 (@$csnew) {
-	my $am = $ama->fetch_by_CoordSystems($cs1, $cs2);
-	$am->register_all();
+    my $am = $ama->fetch_by_CoordSystems($cs1, $cs2);
+    $am->register_all();
   }
 
 } ## end sub cache_gene_seq_mappings
@@ -1896,7 +1894,7 @@ sub fetch_all_by_exon_supporting_evidence {
   my ($self, $hit_name, $feature_type, $analysis) = @_;
 
   if ($feature_type !~ /(dna)|(protein)_align_feature/) {
-	throw("feature type must be dna_align_feature or protein_align_feature");
+    throw("feature type must be dna_align_feature or protein_align_feature");
   }
 
   my ($anal_from, $anal_where);
@@ -1934,8 +1932,8 @@ sub fetch_all_by_exon_supporting_evidence {
   my @genes;
 
   while (my $id = $sth->fetchrow_array) {
-	my $gene = $self->fetch_by_dbID($id);
-	push(@genes, $gene) if $gene;
+    my $gene = $self->fetch_by_dbID($id);
+    push(@genes, $gene) if $gene;
   }
 
   return \@genes;
@@ -1963,7 +1961,7 @@ sub fetch_all_by_transcript_supporting_evidence {
   my ($self, $hit_name, $feature_type, $analysis) = @_;
 
   if ($feature_type !~ /(dna)|(protein)_align_feature/) {
-	throw("feature type must be dna_align_feature or protein_align_feature");
+    throw("feature type must be dna_align_feature or protein_align_feature");
   }
 
   my ($anal_from, $anal_where);
@@ -1999,171 +1997,430 @@ sub fetch_all_by_transcript_supporting_evidence {
   my @genes;
 
   while (my $id = $sth->fetchrow_array) {
-	my $gene = $self->fetch_by_dbID($id);
-	push(@genes, $gene) if $gene;
+    my $gene = $self->fetch_by_dbID($id);
+    push(@genes, $gene) if $gene;
   }
 
   return \@genes;
 } ## end sub fetch_all_by_transcript_supporting_evidence
 
-=head2 fetch_nearest_Gene_by_Feature
+=head2 fetch_nearest_by_Feature
 
-  Arg [1]    : Feature object
-  Example    : $genes = $gene_adaptor->fetch_nearest_Gene_by_Feature($feat);
-  Description: DEPRECATED; BE AWARE THE RESULTS OF THIS METHOD ARE UNRELIABLE
-               ESPECIALLY WRT STRANDED AND STREAM.
-  Returntype : Listref of Bio::EnsEMBL::Gene, EMPTY list if no nearest
+  Arg [1]    : Bio::EnsEMBL::Feature - 'Source' Feature to find other nearest 'target' Features by.
+  Arg [2]    : Int (optional)     : Target Feature prime end i.e. calculate from gene 5' or 3' end
+                                    Default = (stream == -1(up)) ? 5 : 3
+  Arg [3]    : Boolean (optional) : Stranded search i.e. match Feature and Gene strand. 1 or 0 default = 0
+  Arg [4]    : Int (optional)     : Stream 1 = up stream, -1 = down stream of source Feature
+  Arg [5]    : Int (optional)     : Max number of genes to return. Default = 1 #(or all if overlaps found ??????)
+  Arg [6]    : Int (optional)     : Max distance in bp. Setting this may improve performance as it uses a range query.
+  Arg [7]    : Boolean (optional) : Flag to measure up/down stream distances from source Feature midpoint. Default for 
+                                    up/down stream queries is to measure from relevant end of source Feature 
+                                    i.e. omitting overlapping target start/ends.
+  Example    : To fetch the gene(s) with the nearest 5' end:
+                   $genes = $gene_adaptor->fetch_nearest_Gene_by_Feature($feat, 5);
+
+  Description: Gets the nearest Features to a given 'source' Feature
+  Returntype : Listref containing an Arrayref of Bio::EnsEMBL::Feature objects,
+               and a corresponding Arrayref of distances.
   Caller     : general
-  Status     : DEPRECATED
+  Status     : At risk
 
 =cut
 
-sub fetch_nearest_Gene_by_Feature {
-  my $self = shift;
-  my $feat = shift;
+#How would we handle non primed features? Easy, simply disable for all but genes and transcript
 
-  deprecate("fetch_nearest_Gene_by_Feature() is a deprecated method. Strand and stream implementations are unreliable. Please use with caution");
+# Can we convert all these to midpoint comparisons? by using ABS instead?
+# No issues around ABS, using the midpoint will cause problems for up/down stream
+# as we will have to filter features which don't overlap?
 
-  my $stranded = shift;
-  my $stream   = shift;    # 1 up stream -1 downstream
-  my @genes;
+# We can use the current non-midpoint up/down stream queries using primes and then calculate midpoint distance on the fly
+# by subtracting or adding 1/2 feature length!, then calling ABS on that! (would we need to call ABS on this?, Yes)
 
-  my $strand = $feat->strand;
-  if (defined($stream) and !$strand) {
-	warn("stream specified but feature has no strand so +ve strand will be used");
-	$strand = 1;
+# Genes     5'     |a||      |b|   3'
+# Feature        |||||||F|||||||
+
+#e.g. Using F, we have to do both streams to capture b
+# Where as using F3' will return both, but with incorrect distances
+
+# Distance = (ended distance) - (1/2 Feature length)
+# Feature length        = 15
+# Feature length factor = (15 / 2) - 0.5 => 7
+# -0.5 here prevent round up before ABS when 1/3 Feature length is not a int
+
+# For 1/2 feature length is not int
+
+# Upstream 3' distances
+# With 1/2 feature length
+# b =  0 - 7.5 => -7.5 => ABS(-7) => 7
+# a =  9 - 7.5 =>  1.5 => ABS(2)  => 2
+# With feature length factor
+# No CEILING required before ABS
+# b =  0 - 7 => -7 => ABS(-7) => 7
+# a =  9 - 7 =>  2 => ABS(2)  => 2
+
+# Downstream 5' distances
+# With 1/2 feature length
+# b =  12 - 7.5  => 4.5  => ABS(5) => 5
+# a =  2  - 7.5  => -5.5 => ABS(5) => 5
+# With feature length factor
+# b =  12 - 7  => 5 => ABS(5) => 5
+# a =  2  - 7  => 5 => ABS(5) => 5
+
+
+# For 1/2 feature length is int
+# Feature length = 8
+# Feature length factor = 7.5
+# Genes     5'     |a||      |b||   3'
+# Feature        |||||||FF|||||||
+
+# Upstream 3' distances
+# With feature length, distances are skewed/shifted
+# b =  0 - 8 => -8 => ABS(-8) => 8   # Actual figure is 7.5?
+# a =  10 - 8 => 2 => ABS(2)  => 2   # Actual figure is 2.5?
+# With feature length factor
+# b =  0 - 7.5 => -7.5  => ABS(-7.5) => 7.5 !!
+# a =  10 - 7.5 => 2.5 => ABS(2.5)   => 2.5 !!
+
+# Likewise for downstream 5' distances
+
+#Do we want to keep the -ve distances when returning?
+# i.e. delay ABS for handling in the API
+
+# Primeless queries can only give useful distances if we use F and the nearest of 5' or 3'
+# What if we have something that fully overlaps and extends beyond?
+# Assuming 'Genes' can overlap here
+
+# Genes     5'   ||||||a||      |b|   3'
+# Genes       |||||||||||||c||||||||||
+# Feature       |||||||||F||||||||
+
+# Which is nearest now? Would have to return all, even if max feats were set to one?
+# No we can still pick the following here:
+# a - if primeless as 3' is closest to F
+# b - if 5' 
+# c - ? Never unless $num_feats >=3
+#
+
+# What about true upstream query?
+# i.e. we want a or  b if 5'/primeless,  but not c?
+
+# Genes     5' |a||   |b|| ||c||       3'
+# Feature               |||||||FF|||||||
+
+# We need an omit encapsulated bounds flag?
+ 
+# todo Include all overlapping features flag!
+# if $num_feats is low we may not capture all overlapping features
+# setting this would return all overlaps, regardless of $num_feats or $max_dist?
+
+
+sub fetch_nearest_by_Feature{
+  my ($self, $feat, $prime, $stranded, $stream, $num_feats, $max_dist, $stream_from_midpoint) = @_;
+  #Can't set a default $max_dist as this may not return $num_feats
+  #No overlaps option?
+  #This would mean adding the ? < g.seq_region_end/start clause to the
+  #primed queries and skipping the overlap method for primeless queries
+
+  my $fstrand          = $feat->seq_region_strand;
+  my $mid_point_factor = ($feat->length / 2) - 0.5;
+  #Used for dynamically calculating midpoint distance when using source ended queries
+ 
+  $num_feats  ||= 1;
+  my $primed = ($prime) ? 'primed' : 'primeless';
+  #define here before we set default primes
+  #primeless mean we chose the closest prime/seq_region_start/end
+ 
+  my $having_clause = '';
+
+  if(defined $stream){
+    $having_clause = ' HAVING dist >= 0 ';
+    if(! $stream_from_midpoint){
+      $mid_point_factor = 0;
+    }
+    if(! $fstrand){
+      throw('Cannot determine up/down stream for un-stranded feature. '.
+            'Please omit stream or define strand in the Feature.');
+    }
+    if(($stream != 1) && ($stream != -1)){ 
+     throw('You have passed an invalid stream, must be -1(up) or 1(down)');
+    }
   }
-  my $min_dist = 999;
-  my $gene_id  = 0;
+  elsif(defined $stream_from_midpoint){
+    throw(q(The 'stream from midpoint' argument has been set without defining a 'stream' to measure. Please omit or set the stream.));
+  }
 
-  my $overlapping = $feat->get_overlapping_Genes();
 
-  return $overlapping if (defined(@{$overlapping}[0]));
+  #This is required to avoid complicated distance calculation of multiple 
+  #overlapping features from different primes
+  #This changes the previous default behaviour of deprecated 
+  #method fetch_nearest_Genes_by_Feature
 
+  #Really? Don't we just get overlaps first, then use closest seq_region_start/end up/down wrt +ve strand
+  
+  #if(! $stream){
+  #  throw('You must define a prime to search from if you are not defining a stream i.e. up or down');
+  #  #Could get around this by using gene midpoint
+  #}
+
+  if($stranded && ! $fstrand){
+    throw('Cannot match strand for an un-stranded Feature.'.
+          ' Please omit stranded match or set strand in Feature');
+  }
+
+  my @feats;
+  #Prime setting is correct
+  #Do we still need overlaps then?
+  #we are not getting overlap as overlapping prime is too far away!
+
+  #This is odd
+  #G --------------------------------------> This will not be returned!!!
+  #F                                   -->
+  #G            <----        <-----
+  #G                                 <--     Was originally missed with hardcoded seq_region_end instead of prime???
+  #          ^Max dist
+  #
+
+  #if($primed eq 'primeless'){
+  #  warn "Getting overlaps";
+  #  @feats = @{$feat->get_overlapping_Genes($stranded, undef)};#undef was prime
+    #primeless overlapping_Genes queries do not discard encompassing genes
+    #but may have duplicates from additional queries below
+
+    ##For 5/3' overlapping_Genes query discards Genes which encompass features
+    # ##Gene     ------------------------
+    # # #Feature       --
+
+  #}
+  #warn scalar(@feats)." overlapping genes";
+
+  #if(scalar(@feats) < $num_feats){
+
+  my @table_info = $self->_tables;
+  my ($table, $table_syn) = @{$table_info[0]};
+
+  $num_feats -= scalar(@feats);
   my $seq_region_id = $feat->slice->adaptor->get_seq_region_id($feat->slice);
-  my $start         = ($feat->start + $feat->slice->start) - 1;
-  my $end           = ($feat->end + $feat->slice->start) - 1;
+  my $sr_start = ($feat->start + $feat->slice->start) -1;
+  my $sr_end   = ($feat->end   + $feat->slice->start) -1;
+  $stranded = (defined $stranded) ? " ${table_syn}.seq_region_strand = $fstrand AND " : '';
+  my $order_limit = ' order by dist limit '.$num_feats;  
+  my @queries;
+  my @params;
 
-  my @gene_ids;
-  if (!defined($stream) or $stream == 0) {
+  my @start_params  = ($sr_start, $seq_region_id, $sr_start);
+  my @end_params    = ($sr_end, $seq_region_id, $sr_end);
+  my %range_query   = (1=>'', -1 =>'');
+  my %target_strand = 
+   ( 1  => {5 => $table_syn.'.seq_region_strand=1',
+            3 => $table_syn.'.seq_region_strand=-1'},
+     -1 => {5 => $table_syn.'.seq_region_strand=-1',
+            3 => $table_syn.'.seq_region_strand=1'} );
 
-	my $sql1 = "select g.gene_id, (? - g.seq_region_end)  as 'dist' from gene g where ";
-	if ($stranded) {
-	  $sql1 .= "g.seq_region_strand = " . $strand . " and ";
-	}
-	$sql1 .= "seq_region_id = ? and g.seq_region_end < ? order by dist limit 10";
+  #$gene_start_end{strand_factor}{prime}
+  #strand factor is opposite of gene strand
+  #to enable all +/-ve strand gene query combinations
+  #using gene_start_end values  
+  
+  my %target_start_end = 
+   (#These look odd as when these are actually used
+    #the gene strand is flipped between 5 and 3 for each case below
+    1  => {5         => $table_syn.'.seq_region_start',
+           3         => $table_syn.'.seq_region_start',
+           primeless => ''  }, #to avoid use of undef in %range_query
+    -1 => {5         => $table_syn.'.seq_region_end',
+           3         => $table_syn.'.seq_region_end',
+           primeless => '' }); #to avoid use of undef in %range_query
 
-	#
-	# MAYBE set the result of prepare to be static in case lots of calls.
-	#
-	my $sql1_sth = $self->prepare($sql1) || die "Could not prepare $sql1";
-	$sql1_sth->execute($start, $seq_region_id, $start)
-	  || die "Could not execute sql";
-	$sql1_sth->bind_columns(\$gene_id, \$min_dist)
-	  || die "Could mot bin columns";
+  #These seem to work for strand factor 1, but what about -1?
+  
 
-	my $last_dist = 99999999999999999;
-	while ($sql1_sth->fetch()) {
-	  if ($min_dist <= $last_dist) {
-		push @gene_ids, $gene_id;
-		$last_dist = $min_dist;
-	  }
-	}
-	$sql1_sth->finish();
+  #Range query for max_dist, should speed things up
+  if(defined($max_dist)){
+    #subselect works but not useful for range query
+    #hence have to duplicate calculation SQL rather than use field alias
 
-	my $sql2 = "select g.gene_id, (g.seq_region_start - ?)  as 'dist' from gene g  where ";
-	if ($stranded) {
-	  $sql2 .= "g.seq_region_strand = " . $feat->strand . " and ";
-	}
-	$sql2 .= "seq_region_id = ? and g.seq_region_start > ? order by dist limit 10";
+    #Need to account for strand_factor in here! $range_query{$fstrand*$stream}{$primed}
+    #Also do we need to change primeless clauses here as we do not want overlapping features?
 
-	my $sql2_sth = $self->prepare($sql2) || die "could not prepare $sql2";
+    $range_query{1}  = 
+     {primeless   => " (? - ${table_syn}.seq_region_end) <= $max_dist AND ",
+      primed_1    => ' (? - '.$target_start_end{1}{$prime}.") <= $max_dist AND ",
+      'primed_-1' => ' (? - '.$target_start_end{-1}{$prime}.") <= $max_dist AND "};
+    
+    $range_query{-1} = 
+     {primeless   => " (${table_syn}.seq_region_start - ?) <= $max_dist AND ",
+      primed_1    => ' ('.$target_start_end{1}{$prime}." - ?) <= $max_dist AND ",
+      'primed_-1' => ' ('.$target_start_end{-1}{$prime}." - ?) <= $max_dist AND "};
 
-	my ($tmp_min_dist, $tmp_gene_id);
-	$sql2_sth->execute($end, $seq_region_id, $end)
-	  || die "Could not execute sql";
-	$sql2_sth->bind_columns(\$tmp_gene_id, \$tmp_min_dist)
-	  || die "Could mot bin columns";
-	my $first = 1;
-	while ($sql2_sth->fetch()) {
-	  if ($tmp_min_dist <= $last_dist) {
-		if ($first) {
-		  $first = 0;
-		  if ($tmp_min_dist < $last_dist) {
-			@gene_ids = ();    #reset
-		  }
-		}
-		push @gene_ids, $tmp_gene_id;
-		$last_dist = $tmp_min_dist;
-	  }
-	}
-	$sql2_sth->finish();
-
-  } elsif (($stream*$strand) == 1) {
-	my $sql1 = "select g.gene_id, (? - g.seq_region_end)  as 'dist' from gene g where ";
-	if ($stranded) {
-	  $sql1 .= "g.seq_region_strand = " . $strand . " and ";
-	}
-	$sql1 .= "seq_region_id = ? and g.seq_region_end < ? order by dist limit 10";
-
-	#
-	# MAYBE set the result of prepare to be static in case lots of calls.
-	#
-	my $sql1_sth = $self->prepare($sql1) || die "Could not prepare $sql1";
-	$sql1_sth->execute($start, $seq_region_id, $start)
-	  || die "Could not execute sql";
-	$sql1_sth->bind_columns(\$gene_id, \$min_dist)
-	  || die "Could mot bin columns";
-
-	my $last_dist;
-	my $first = 1;
-	while ($sql1_sth->fetch()) {
-	  if ($first) {
-		$first = 0;
-	  } else {
-		next if ($min_dist > $last_dist);
-	  }
-	  push @gene_ids, $gene_id;
-	  $last_dist = $min_dist;
-	}
-	$sql1_sth->finish();
-  } elsif (($stream*$strand) == -1) {
-
-	my $sql2 = "select g.gene_id, (g.seq_region_start - ?)  as 'dist' from gene g  where ";
-	if ($stranded) {
-	  $sql2 .= "g.seq_region_strand = " . $feat->strand . " and ";
-	}
-	$sql2 .= "seq_region_id = ? and g.seq_region_start > ? order by dist limit 10";
-
-	my $sql2_sth = $self->prepare($sql2) || die "could not prepare $sql2";
-
-	my ($tmp_min_dist, $tmp_gene_id);
-	$sql2_sth->execute($end, $seq_region_id, $end)
-	  || die "Could not execute sql";
-	$sql2_sth->bind_columns(\$tmp_gene_id, \$tmp_min_dist)
-	  || die "Could mot bin columns";
-	my $first = 1;
-	my $last_dist;
-	while ($sql2_sth->fetch()) {
-	  if ($first) {
-		$first = 0;
-	  } else {
-		next if ($tmp_min_dist > $last_dist);
-	  }
-	  push @gene_ids, $tmp_gene_id;
-	  $last_dist = $tmp_min_dist;
-	}
-	$sql2_sth->finish();
-  } else {
-	die "Invalid stream or strand must be -1, 0 or 1\n";
+    #redefine execute params as we have added another bound param '?' above
+    @start_params    = ($sr_start, $sr_start, $seq_region_id, $sr_start);
+    @end_params      = ($sr_end, $sr_end, $seq_region_id, $sr_end);
   }
 
-  foreach my $gene_id (@gene_ids) {
-	push @genes, $self->fetch_by_dbID($gene_id);
-  }
-  return \@genes;
+  my %sql = 
+   (     
+    1 => 
+     {primeless  => 
+      {#Upstream of 3' end if +ve strand
+       #Downstream of 5' end if -ve strand?
+       #queries => ["select ${table_syn}.${table}_id, (? - ${table_syn}.seq_region_end) as 'dist' from $table $table_syn where ".
+       #            $stranded.$range_query{1}{primeless}." ${table_syn}.seq_region_id = ? AND ${table_syn}.seq_region_end < ? "],
+       ##Already have overlapping genes so use g.seq_region_end < f.seq_region_start
+       #params => \@start_params,
+       
+       queries => ["select ${table_syn}.${table}_id, (? - ${table_syn}.seq_region_end - $mid_point_factor) as 'dist' ".
+                   "from $table $table_syn ".
+                   "where ".$stranded.$range_query{1}{primeless}." ${table_syn}.seq_region_id = ? ".
+                   "AND ${table_syn}.seq_region_end <= ? $having_clause"], #' HAVING dist >= 0 '; if $stream
 
-} ## end sub fetch_nearest_Gene_by_Feature
+       #primless queries here use start/ends dependant on $stream and $stream_from_midpoint
+       #Consider upstream of 3' end for +ve strand (only need to consider one case as we already dynamically handle the other)
+       #t  -------          ------           _____     ______
+       #s    ---              -----       _____       _____
+      
+       params => (! defined $stream  || $stream_from_midpoint) ? \@end_params : \@start_params,
+      },
+    primed    => 
+     {queries => 
+        [#strand factor = 1
+         #3' Target strand - 1       <------  Looks right
+         #5' Target strand   1       ------>  So this must be right??? Maybe not
+         #Feature                               <----->
+         "select ${table_syn}.${table}_id, (? - ".$target_start_end{1}{$prime}.
+         ") as 'dist' from $table $table_syn where ".$stranded.$range_query{1}{"${primed}_1"}.
+         " ${table_syn}.seq_region_id = ? AND ".$target_strand{1}{$prime}.' AND '
+         .$target_start_end{1}{$prime}.' <= ? ',
+          
+         #strand factor = -1
+         #3' Target strand   1    ------->  This is the one we're missing
+         #5' Target strand  -1
+         "select ${table_syn}.${table}_id, (? - ".$target_start_end{-1}{$prime}.
+         ") as 'dist' from $table $table_syn where ".$stranded.$range_query{1}{"${primed}_-1"}.
+         " ${table_syn}.seq_region_id = ? AND ".$target_strand{-1}{$prime}.' AND '
+         .$target_start_end{-1}{$prime}.' <= ? ',
+        ],
+       #Do not have overlaps
+       #Accounts for encompassing genes by removing last g.seq_region_end < f.seq_region_start
+       #Selects gene seq_region_start/end to used based on prime required
+       params => [@start_params, @start_params],
+      },
+     },
+     
+     
+    -1 => 
+     {primeless =>
+      {
+       #queries => ["select ${table_syn}.${table}_id, (${table_syn}.seq_region_start - ?) as 'dist' from $table_syn $table_syn where ".
+       #            $stranded.$range_query{-1}{primeless}." ${table_syn}.seq_region_id = ? AND ${table_syn}.seq_region_start > ? "],
+       ##Already have overlapping genes so use g.seq_region_start < f.seq_region_start
+       #surely this was g.seq_region_start > f.seq_region_end?
+        #    params => \@end_params,
+
+
+       #Now gets overlaps and calc midpoint distances
+       queries => ["select ${table_syn}.${table}_id, (${table_syn}.seq_region_start - ? - $mid_point_factor) as 'dist' from $table_syn $table_syn where ".
+                   $stranded.$range_query{-1}{primeless}." ${table_syn}.seq_region_id = ? AND ${table_syn}.seq_region_start >= ? "],
+       params => (! defined $stream  || $stream_from_midpoint) ? \@start_params : \@end_params,
+     },
+         
+     primed    =>
+      {queries => 
+        [#strand factor   1
+         #3' Target strand  1  
+         #5' Target strand -1
+         "select ${table_syn}.${table}_id, (".$target_start_end{1}{$prime}.
+         " - ?) as 'dist' from $table $table_syn where ".$stranded.$range_query{-1}{"${primed}_1"}.
+         " ${table_syn}.seq_region_id = ? AND ".$target_strand{1}{$prime}.' AND '.
+         $target_start_end{1}{$prime}.' >= ? ',
+           
+         #strand factor  -1
+         #3' Target strand -1
+         #5' Target strand  1
+         "select ${table_syn}.${table}_id, (".$target_start_end{-1}{$prime}.
+         " - ?) as 'dist' from $table_syn $table_syn where ".$stranded.$range_query{-1}{"${primed}_-1"}.
+         " ${table_syn}.seq_region_id = ? AND ".$target_strand{-1}{$prime}.' AND '.
+         $target_start_end{-1}{$prime}.' >= ? ',
+        ],
+
+       #Accounts for encompassing genes by removing last g.seq_region_end < f.seq_region_start
+       #Selects gene seq_region_start/end to used based on prime required
+       params => [@end_params, @end_params],
+      },
+     }
+
+    #ORDER and LIMIT done via sub select as can not be used with UNION in this way
+   );
+
+  #Select queries and params based on stream and strand
+
+  if (! defined $stream) { # All streams
+    #strand are specification done in queries
+    push @queries, @{$sql{1}->{$primed}->{queries}};
+    push @params,  @{$sql{1}->{$primed}->{params}};
+    push @queries, @{$sql{-1}->{$primed}->{queries}};
+    push @params,  @{$sql{-1}->{$primed}->{params}};
+  } 
+  else {  #Select stream strand
+    #strand already implicitly validated
+    my $ss_product = $stream * $fstrand;
+    push @queries, @{$sql{$ss_product}->{$primed}->{queries}};
+    push @params,  @{$sql{$ss_product}->{$primed}->{params}};
+  }
+
+  #UNION returns NR rows, so no issues around filtering duplicates from queries
+  my $sql =  "select x.${table}_id, x.dist from (\n".join("\nUNION\n", @queries)."\n) as x order by x.dist limit $num_feats";
+
+  #warn $sql."\n";
+  #warn "@params\n";
+
+  my ($feat_id, $dist, @distances);
+  my $sth = $self->prepare($sql);
+  $sth->execute(@params);
+  $sth->bind_columns(\$feat_id, \$dist);
+    
+  while ($sth->fetch){
+    my $feat =  $self->fetch_by_dbID($feat_id);
+    print $feat->stable_id."\t".$dist."\n";
+    push @feats,     $feat;
+    push @distances, $dist;
+  } 
+  
+  $sth->finish;
+  
+  #This would remove duplicates!
+  #But need to do this prior to here, to ensure the max_genes count is correct
+
+  #push @$genes, $self->fetch_by_dbID_list(@gene_ids);
+
+  #}#end of if(! (scalar(@{$genes}) > $num_genes))
+
+
+  return [\@feats, \@distances];
+} # end sub fetch_nearest_by_Feature
+
+
+##########################
+#                        #
+#  DEPRECATED METHODS    #
+#                        #
+##########################
+
+=head2 fetch_nearest_Gene_by_Feature
+
+ Description: DEPRECATED - use fetch_nearest_Genes_by_Feature
+
+=cut
+
+sub fetch_nearest_Gene_by_Feature{
+  my ($self, $feat, $stranded, $stream) = @_;
+  #This had no prime spec and was returning all overlaps regardless of strand
+  #else the first 10 from the stream with the first closest gene
+
+  deprecate( "use fetch_nearest_Genes_by_Feature instead");
+  #need to change params order here to account for new prime arg
+  return $_[0]->fetch_nearest_Genes_by_Feature($feat, undef, $stranded, $stream);
+}
+
 
 ##########################
 #                        #
