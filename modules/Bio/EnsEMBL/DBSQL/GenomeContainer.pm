@@ -1109,9 +1109,8 @@ sub get_short_variation_count {
 =head2 get_prediction_count
 
   Arg [1]    : (optional) logic_name
-  Arg [2]    : (optional) prediction count
   Example    : $prediction_count = $genome->get_prediction_count();
-  Description: Getter/setter for the number of predicted genes in the current build
+  Description: Getter for the number of predicted genes in the current build
                Can be restricted to a given analysis
 
   Returntype : integer
@@ -1122,14 +1121,8 @@ sub get_short_variation_count {
 =cut
 
 sub get_prediction_count {
-  my ($self, $logic_name, $prediction_count) = @_;
-  if (defined $prediction_count) {
-    $self->{'prediction_count'} = $prediction_count;
-  }
-  if (!defined $self->{'prediction_count'}) {
-    $self->{'prediction_count'} = $self->_get_count('PredictionTranscript', $logic_name);
-  }
-  return $self->{'prediction_count'};
+  my ($self, $logic_name) = @_;
+  return $self->_get_count('PredictionTranscript', $logic_name);
 }
 
 
