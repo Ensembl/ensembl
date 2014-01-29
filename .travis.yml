@@ -1,37 +1,37 @@
 language: "perl"
 
 perl:
-	- "5.14"
-	- "5.12"
+  - "5.14"
+  - "5.12"
 
 env:
-	- COVERALLS=true
-	- COVERALLS=false
+  - COVERALLS=true
+  - COVERALLS=false
 
 before_install:
-		- sudo apt-get -y update
-		- sudo apt-get -y install unzip
-		- git clone --branch master --depth 1 https://github.com/Ensembl/ensembl-test.git
-		- wget https://github.com/bioperl/bioperl-live/archive/bioperl-release-1-2-3.zip
-		- unzip bioperl-release-1-2-3.zip
+    - sudo apt-get -y update
+    - sudo apt-get -y install unzip
+    - git clone --branch master --depth 1 https://github.com/Ensembl/ensembl-test.git
+    - wget https://github.com/bioperl/bioperl-live/archive/bioperl-release-1-2-3.zip
+    - unzip bioperl-release-1-2-3.zip
 
 
 install:
-		- cpanm -v --installdeps --notest .
-		- cpanm -n Devel::Cover::Report::Coveralls
-		- cp travisci/MultiTestDB.conf.travisci modules/t/MultiTestDB.conf
+    - cpanm -v --installdeps --notest .
+    - cpanm -n Devel::Cover::Report::Coveralls
+    - cp travisci/MultiTestDB.conf.travisci modules/t/MultiTestDB.conf
 
 script: "./travisci/harness.sh"
 
 # Get the matrix to only build coveralls support when on 5.14
 matrix:
-	exclude:
-		- perl: "5.12"
-			env: COVERALLS=true
-		- perl: "5.14"
-			env: COVERALLS=false
+  exclude:
+    - perl: "5.12"
+      env: COVERALLS=true
+    - perl: "5.14"
+      env: COVERALLS=false
 
 notifications:
-	email:
-	recipients:
-		- secure: "fKzuA5h7oBhhCLaUQj0HbNNrLe6QqRMcm+4lGAVbEtfrAhFrIuu/G8Mb47ALZotkMw2R7FniWVR/oniCNlok51lKdGGWe5t0HATf9NJ7+AjQ1rV+GgM8ijHzbDW6AIH5Z5e+WXIK2/q3kXVc6Pm+V1BF9dESF/PksvvcnMA/0t0="
+  email:
+  recipients:
+    - secure: "fKzuA5h7oBhhCLaUQj0HbNNrLe6QqRMcm+4lGAVbEtfrAhFrIuu/G8Mb47ALZotkMw2R7FniWVR/oniCNlok51lKdGGWe5t0HATf9NJ7+AjQ1rV+GgM8ijHzbDW6AIH5Z5e+WXIK2/q3kXVc6Pm+V1BF9dESF/PksvvcnMA/0t0="
