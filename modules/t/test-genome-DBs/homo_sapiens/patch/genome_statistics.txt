@@ -10,5 +10,5 @@
 25	pseudogene_acnt	0	1	370	2013-11-28 09:42:06
 35	PredictionTranscript	18	1	392	2013-11-28 09:42:09
 34	coding_acnt	4	1	369	2013-11-28 09:42:06
-38	transcript	1	1	32	2013-11-28 09:42:06
-37	alt_transcript	0	1	33	2013-11-28 09:42:06
+38	transcript	6	1	32	2013-11-28 09:42:06
+37	alt_transcript	7	1	33	2013-11-28 09:42:06
