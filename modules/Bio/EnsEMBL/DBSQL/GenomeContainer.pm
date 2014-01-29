@@ -1167,7 +1167,7 @@ sub get_transcript_count {
     $self->{'transcript_count'} = $transcript_count;
   }
   if (!defined $self->{'transcript_count'}) {
-    $self->{'transcript_count'} = $self->_get_count('transcript');
+    $self->{'transcript_count'} = $self->_get_count('transcript_cnt');
   }
   return $self->{'transcript_count'};
 }
@@ -1190,7 +1190,7 @@ sub get_alt_transcript_count {
     $self->{'alt_transcript_count'} = $alt_transcript_count;
   }
   if (!defined $self->{'alt_transcript_count'}) {
-    $self->{'alt_transcript_count'} = $self->_get_count('alt_transcript');
+    $self->{'alt_transcript_count'} = $self->_get_count('transcript_acnt');
   }
   return $self->{'alt_transcript_count'};
 }
