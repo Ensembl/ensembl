@@ -528,14 +528,16 @@ while ( $sth->fetch() ) {
   else { 
     if($opt_verbose) {
       printf("Skipping database %s (type: %s | version: %d)\n", $database, ($schema_type||'-'), ($schema_version || 0));
-      if( $schema_type_ok && $schema_type eq $opt_type && $schema_version_ok && $schema_version == $opt_release) {
+      if( $schema_type_ok && $schema_version_ok && $schema_version == $opt_release) {
+        if (defined($opt_type) && $opt_type eq $schema_type) {
         
-        my $release_patches = join(q{, }, sort map { $_->{patch} } @{$patches{$schema_type}{$schema_version}});
-        my $db_patches = join(q{, }, sort keys %{$dbpatches{$schema_version}});
+          my $release_patches = join(q{, }, sort map { $_->{patch} } @{$patches{$schema_type}{$schema_version}});
+          my $db_patches = join(q{, }, sort keys %{$dbpatches{$schema_version}});
         
-        if($release_patches ne $db_patches) {
-          printf("\t%s patches [%s] are not the same as release %i patches [%s]; rerun with --fix and --dryrun\n", 
-            $database, $db_patches, $opt_release, $release_patches);
+          if($release_patches ne $db_patches) {
+            printf("\t%s patches [%s] are not the same as release %i patches [%s]; rerun with --fix and --dryrun\n", 
+              $database, $db_patches, $opt_release, $release_patches);
+          }
         }
       }
       if($schema_type_ok && ! exists $patches{$schema_type}) {
