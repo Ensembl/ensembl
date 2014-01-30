@@ -1074,11 +1074,7 @@ sub _pre_store_userdata {
 # hstart/hend/hstrand etc.
 #
 sub _check_start_end_strand {
-  my $self = shift;
-  my $start = shift;
-  my $end   = shift;
-  my $strand = shift;
-  my $slice = shift;
+  my ($self, $start, $end, $strand, $slice) = @_;
 
   #
   # Make sure that the start, end, strand are valid
@@ -1092,7 +1088,7 @@ sub _check_start_end_strand {
   if(int($strand) != $strand || $strand < -1 || $strand > 1) {
     throw("Invalid Feature strand [$strand]. Must be -1, 0 or 1.");
   }
-  if($end < $start && !$slice->is_circular()) {
+  if($end < $start && ! (defined $slice && $slice->is_circular())) {
     throw("Invalid Feature start/end [$start/$end]. Start must be less " .
           "than or equal to end.");
   }
