@@ -1508,5 +1508,396 @@ sub remove_by_feature_id {
   $sth->finish();
 }
 
+=head2 fetch_nearest_by_Feature
+
+  Arg [1]    : Bio::EnsEMBL::Feature - 'Source' Feature to find other nearest 'target' Features by.
+  Arg [2]    : Int (optional)     : Target Feature prime end i.e. calculate from gene 5' or 3' end
+                                    Default = (stream == -1(up)) ? 5 : 3
+  Arg [3]    : Boolean (optional) : Stranded search i.e. match Feature and Gene strand. 1 or 0 default = 0
+  Arg [4]    : Int (optional)     : Stream 1 = up stream, -1 = down stream of source Feature
+  Arg [5]    : Int (optional)     : Max number of genes to return. Default = 1 #(or all if overlaps found ??????)
+  Arg [6]    : Int (optional)     : Max distance in bp. Setting this may improve performance as it uses a range query.
+  Arg [7]    : Boolean (optional) : Flag to measure up/down stream distances from source Feature midpoint. Default for 
+                                    up/down stream queries is to measure from relevant end of source Feature 
+                                    i.e. omitting overlapping target start/ends.
+  Example    : To fetch the gene(s) with the nearest 5' end:
+                   $genes = $gene_adaptor->fetch_nearest_Gene_by_Feature($feat, 5);
+
+  Description: Gets the nearest Features to a given 'source' Feature
+  Returntype : Listref containing an Arrayref of Bio::EnsEMBL::Feature objects,
+               and a corresponding Arrayref of distances.
+  Caller     : general
+  Status     : At risk
+
+=cut
+
+#How would we handle non primed features? Easy, simply disable for all but genes and transcript
+
+# Can we convert all these to midpoint comparisons? by using ABS instead?
+# No issues around ABS, using the midpoint will cause problems for up/down stream
+# as we will have to filter features which don't overlap?
+
+# We can use the current non-midpoint up/down stream queries using primes and then calculate midpoint distance on the fly
+# by subtracting or adding 1/2 feature length!, then calling ABS on that! (would we need to call ABS on this?, Yes)
+
+# Genes     5'     |a||      |b|   3'
+# Feature        |||||||F|||||||
+
+#e.g. Using F, we have to do both streams to capture b
+# Where as using F3' will return both, but with incorrect distances
+
+# Distance = (ended distance) - (1/2 Feature length)
+# Feature length        = 15
+# Feature length factor = (15 / 2) - 0.5 => 7
+# -0.5 here prevent round up before ABS when 1/3 Feature length is not a int
+
+# For 1/2 feature length is not int
+
+# Upstream 3' distances
+# With 1/2 feature length
+# b =  0 - 7.5 => -7.5 => ABS(-7) => 7
+# a =  9 - 7.5 =>  1.5 => ABS(2)  => 2
+# With feature length factor
+# No CEILING required before ABS
+# b =  0 - 7 => -7 => ABS(-7) => 7
+# a =  9 - 7 =>  2 => ABS(2)  => 2
+
+# Downstream 5' distances
+# With 1/2 feature length
+# b =  12 - 7.5  => 4.5  => ABS(5) => 5
+# a =  2  - 7.5  => -5.5 => ABS(5) => 5
+# With feature length factor
+# b =  12 - 7  => 5 => ABS(5) => 5
+# a =  2  - 7  => 5 => ABS(5) => 5
+
+
+# For 1/2 feature length is int
+# Feature length = 8
+# Feature length factor = 7.5
+# Genes     5'     |a||      |b||   3'
+# Feature        |||||||FF|||||||
+
+# Upstream 3' distances
+# With feature length, distances are skewed/shifted
+# b =  0 - 8 => -8 => ABS(-8) => 8   # Actual figure is 7.5?
+# a =  10 - 8 => 2 => ABS(2)  => 2   # Actual figure is 2.5?
+# With feature length factor
+# b =  0 - 7.5 => -7.5  => ABS(-7.5) => 7.5 !!
+# a =  10 - 7.5 => 2.5 => ABS(2.5)   => 2.5 !!
+
+# Likewise for downstream 5' distances
+
+#Do we want to keep the -ve distances when returning?
+# i.e. delay ABS for handling in the API
+
+# Primeless queries can only give useful distances if we use F and the nearest of 5' or 3'
+# What if we have something that fully overlaps and extends beyond?
+# Assuming 'Genes' can overlap here
+
+# Genes     5'   ||||||a||      |b|   3'
+# Genes       |||||||||||||c||||||||||
+# Feature       |||||||||F||||||||
+
+# Which is nearest now? Would have to return all, even if max feats were set to one?
+# No we can still pick the following here:
+# a - if primeless as 3' is closest to F
+# b - if 5' 
+# c - ? Never unless $num_feats >=3
+#
+
+# What about true upstream query?
+# i.e. we want a or  b if 5'/primeless,  but not c?
+
+# Genes     5' |a||   |b|| ||c||       3'
+# Feature               |||||||FF|||||||
+
+# We need an omit encapsulated bounds flag?
+ 
+# todo Include all overlapping features flag!
+# if $num_feats is low we may not capture all overlapping features
+# setting this would return all overlaps, regardless of $num_feats or $max_dist?
+
+
+sub fetch_nearest_by_Feature{
+  my ($self, $feat, $prime, $stranded, $stream, $num_feats, $max_dist, $stream_from_midpoint) = @_;
+  #Can't set a default $max_dist as this may not return $num_feats
+  #No overlaps option?
+  #This would mean adding the ? < g.seq_region_end/start clause to the
+  #primed queries and skipping the overlap method for primeless queries
+
+  my $fstrand          = $feat->seq_region_strand;
+  my $mid_point_factor = ($feat->length / 2) - 0.5;
+  #Used for dynamically calculating midpoint distance when using source ended queries
+ 
+  $num_feats  ||= 1;
+  my $primed = ($prime) ? 'primed' : 'primeless';
+  #define here before we set default primes
+  #primeless mean we chose the closest prime/seq_region_start/end
+ 
+  my $having_clause = '';
+
+  if($stream){
+    $having_clause = ' HAVING dist >= 0 ';
+    if(! $stream_from_midpoint){
+      $mid_point_factor = 0;
+    }
+    if(! $fstrand){
+      throw('Cannot determine up/down stream for un-stranded feature. '.
+            'Please omit stream or define strand in the Feature.');
+    }
+    if(($stream != 1) && ($stream != -1)){ 
+     throw('You have passed an invalid stream, must be -1(up) or 1(down)');
+    }
+  }
+  elsif($stream_from_midpoint){
+    throw(q(The 'stream from midpoint' argument has been set without defining a 'stream' to measure. Please omit or set the stream.));
+  }
+
+
+  #This is required to avoid complicated distance calculation of multiple 
+  #overlapping features from different primes
+  #This changes the previous default behaviour of deprecated 
+  #method fetch_nearest_Genes_by_Feature
+
+  #if(! $stream){
+  #  throw('You must define a prime to search from if you are not defining a stream i.e. up or down');
+  #  #Could get around this by using gene midpoint
+  #}
+
+  if($stranded && ! $fstrand){
+    throw('Cannot match strand for an un-stranded Feature.'.
+          ' Please omit stranded match or set strand in Feature');
+  }
+
+  my @feats;
+  #Prime setting is correct
+  #Do we still need overlaps then?
+  #we are not getting overlap as overlapping prime is too far away!
+
+  #This is odd
+  #G --------------------------------------> This will not be returned!!!
+  #F                                   -->
+  #G            <----        <-----
+  #G                                 <--     Was originally missed with hardcoded seq_region_end instead of prime???
+  #          ^Max dist
+  #
+
+  #if($primed eq 'primeless'){
+  #  warn "Getting overlaps";
+  #  @feats = @{$feat->get_overlapping_Genes($stranded, undef)};#undef was prime
+    #primeless overlapping_Genes queries do not discard encompassing genes
+    #but may have duplicates from additional queries below
+
+    ##For 5/3' overlapping_Genes query discards Genes which encompass features
+    # ##Gene     ------------------------
+    # # #Feature       --
+
+  #}
+  #warn scalar(@feats)." overlapping genes";
+
+  #if(scalar(@feats) < $num_feats){
+
+  my @table_info = $self->_tables;
+  my ($table, $table_syn) = @{$table_info[0]};
+
+  $num_feats -= scalar(@feats);
+  my $seq_region_id = $feat->slice->adaptor->get_seq_region_id($feat->slice);
+  my $sr_start = ($feat->start + $feat->slice->start) -1;
+  my $sr_end   = ($feat->end   + $feat->slice->start) -1;
+  $stranded = (defined $stranded) ? " ${table_syn}.seq_region_strand = $fstrand AND " : '';
+  my $order_limit = ' order by dist limit '.$num_feats;  
+  my @queries;
+  my @params;
+
+  my @start_params  = ($sr_start, $seq_region_id, $sr_start);
+  my @end_params    = ($sr_end, $seq_region_id, $sr_end);
+  my %range_query   = (1=>'', -1 =>'');
+  my %target_strand = 
+   ( 1  => {5 => $table_syn.'.seq_region_strand=1',
+            3 => $table_syn.'.seq_region_strand=-1'},
+     -1 => {5 => $table_syn.'.seq_region_strand=-1',
+            3 => $table_syn.'.seq_region_strand=1'} );
+
+  #$gene_start_end{strand_factor}{prime}
+  #strand factor is opposite of gene strand
+  #to enable all +/-ve strand gene query combinations
+  #using gene_start_end values  
+  
+  my %target_start_end = 
+   (#These look odd as when these are actually used
+    #the gene strand is flipped between 5 and 3 for each case below
+    1  => {5         => $table_syn.'.seq_region_start',
+           3         => $table_syn.'.seq_region_start',
+           primeless => ''  }, #to avoid use of undef in %range_query
+    -1 => {5         => $table_syn.'.seq_region_end',
+           3         => $table_syn.'.seq_region_end',
+           primeless => '' }); #to avoid use of undef in %range_query
+
+  #These seem to work for strand factor 1, but what about -1?
+  
+
+  #Range query for max_dist, should speed things up
+  if(defined($max_dist)){
+    #subselect works but not useful for range query
+    #hence have to duplicate calculation SQL rather than use field alias
+
+    #Need to account for strand_factor in here! $range_query{$fstrand*$stream}{$primed}
+
+    $range_query{1}  = 
+     {primeless   => " (? - ${table_syn}.seq_region_end) <= $max_dist AND ",
+      primed_1    => ' (? - '.$target_start_end{1}{$prime}.") <= $max_dist AND ",
+      'primed_-1' => ' (? - '.$target_start_end{-1}{$prime}.") <= $max_dist AND "};
+    
+    $range_query{-1} = 
+     {primeless   => " (${table_syn}.seq_region_start - ?) <= $max_dist AND ",
+      primed_1    => ' ('.$target_start_end{1}{$prime}." - ?) <= $max_dist AND ",
+      'primed_-1' => ' ('.$target_start_end{-1}{$prime}." - ?) <= $max_dist AND "};
+
+    #redefine execute params as we have added another bound param '?' above
+    @start_params    = ($sr_start, $sr_start, $seq_region_id, $sr_start);
+    @end_params      = ($sr_end, $sr_end, $seq_region_id, $sr_end);
+  }
+
+  my %sql = 
+   (     
+    1 => 
+     {primeless  => 
+      {#Upstream of 3' end if +ve strand
+       #Downstream of 5' end if -ve strand?
+       #queries => ["select ${table_syn}.${table}_id, (? - ${table_syn}.seq_region_end) as 'dist' from $table $table_syn where ".
+       #            $stranded.$range_query{1}{primeless}." ${table_syn}.seq_region_id = ? AND ${table_syn}.seq_region_end < ? "],
+       ##Already have overlapping genes so use g.seq_region_end < f.seq_region_start
+       #params => \@start_params,
+       
+       queries => ["select ${table_syn}.${table}_id, (? - ${table_syn}.seq_region_end - $mid_point_factor) as 'dist' ".
+                   "from $table $table_syn ".
+                   "where ".$stranded.$range_query{1}{primeless}." ".${table_syn}.".seq_region_id = ? ".
+                   "AND ${table_syn}.seq_region_end <= ? $having_clause"], #' HAVING dist >= 0 '; if $stream
+
+       #primless queries here use start/ends dependant on $stream and $stream_from_midpoint
+       #Consider upstream of 3' end for +ve strand (only need to consider one case as we already dynamically handle the other)
+       #t  -------          ------           _____     ______
+       #s    ---              -----       _____       _____
+      
+       params => (! defined $stream  || $stream_from_midpoint) ? \@end_params : \@start_params,
+      },
+    primed    => 
+     {queries => 
+        [#strand factor = 1
+         #3' Target strand - 1       <------  Looks right
+         #5' Target strand   1       ------>  So this must be right??? Maybe not
+         #Feature                               <----->
+         "select ${table_syn}.${table}_id, (? - ".$target_start_end{1}{$prime}.
+         ") as 'dist' from $table $table_syn where ".$stranded.$range_query{1}{"${primed}_1"}.
+         " ${table_syn}.seq_region_id = ? AND ".$target_strand{1}{$prime}.' AND '
+         .$target_start_end{1}{$prime}.' <= ? ',
+          
+         #strand factor = -1
+         #3' Target strand   1    ------->  This is the one we're missing
+         #5' Target strand  -1
+         "select ${table_syn}.${table}_id, (? - ".$target_start_end{-1}{$prime}.
+         ") as 'dist' from $table $table_syn where ".$stranded.$range_query{1}{"${primed}_-1"}.
+         " ${table_syn}.seq_region_id = ? AND ".$target_strand{-1}{$prime}.' AND '
+         .$target_start_end{-1}{$prime}.' <= ? ',
+        ],
+       #Do not have overlaps
+       #Accounts for encompassing genes by removing last g.seq_region_end < f.seq_region_start
+       #Selects gene seq_region_start/end to used based on prime required
+       params => [@start_params, @start_params],
+      },
+     },
+     
+     
+    -1 => 
+     {primeless =>
+      {
+       #queries => ["select ${table_syn}.${table}_id, (${table_syn}.seq_region_start - ?) as 'dist' from $table_syn $table_syn where ".
+       #            $stranded.$range_query{-1}{primeless}." ${table_syn}.seq_region_id = ? AND ${table_syn}.seq_region_start > ? "],
+       ##Already have overlapping genes so use g.seq_region_start < f.seq_region_start
+       #surely this was g.seq_region_start > f.seq_region_end?
+        #    params => \@end_params,
+
+
+       #Now gets overlaps and calc midpoint distances
+       queries => ["select ${table_syn}.${table}_id, (${table_syn}.seq_region_start - ? - $mid_point_factor) as 'dist' from $table $table_syn where ".
+                   $stranded.$range_query{-1}{primeless}." ${table_syn}.seq_region_id = ? AND ${table_syn}.seq_region_start >= ? "],
+       params => (! defined $stream  || $stream_from_midpoint) ? \@start_params : \@end_params,
+     },
+         
+     primed    =>
+      {queries => 
+        [#strand factor   1
+         #3' Target strand  1  
+         #5' Target strand -1
+         "select ${table_syn}.${table}_id, (".$target_start_end{1}{$prime}.
+         " - ?) as 'dist' from $table $table_syn where ".$stranded.$range_query{-1}{"${primed}_1"}.
+         " ${table_syn}.seq_region_id = ? AND ".$target_strand{1}{$prime}.' AND '.
+         $target_start_end{1}{$prime}.' >= ? ',
+           
+         #strand factor  -1
+         #3' Target strand -1
+         #5' Target strand  1
+         "select ${table_syn}.${table}_id, (".$target_start_end{-1}{$prime}.
+         " - ?) as 'dist' from $table $table_syn where ".$stranded.$range_query{-1}{"${primed}_-1"}.
+         " ${table_syn}.seq_region_id = ? AND ".$target_strand{-1}{$prime}.' AND '.
+         $target_start_end{-1}{$prime}.' >= ? ',
+        ],
+
+       #Accounts for encompassing genes by removing last g.seq_region_end < f.seq_region_start
+       #Selects gene seq_region_start/end to used based on prime required
+       params => [@end_params, @end_params],
+      },
+     }
+
+    #ORDER and LIMIT done via sub select as can not be used with UNION in this way
+   );
+
+  #Select queries and params based on stream and strand
+
+  if (! defined $stream) { # All streams
+    #strand are specification done in queries
+    push @queries, @{$sql{1}->{$primed}->{queries}};
+    push @params,  @{$sql{1}->{$primed}->{params}};
+    push @queries, @{$sql{-1}->{$primed}->{queries}};
+    push @params,  @{$sql{-1}->{$primed}->{params}};
+  } 
+  else {  #Select stream strand
+    #strand already implicitly validated
+    my $ss_product = $stream * $fstrand;
+    push @queries, @{$sql{$ss_product}->{$primed}->{queries}};
+    push @params,  @{$sql{$ss_product}->{$primed}->{params}};
+  }
+
+  #UNION returns NR rows, so no issues around filtering duplicates from queries
+  my $sql =  "select x.${table}_id, x.dist from (\n".join("\nUNION\n", @queries)."\n) as x order by x.dist limit $num_feats";
+
+  #warn $sql."\n";
+  #warn "@params\n";
+
+  my ($feat_id, $dist, @distances);
+  my $sth = $self->prepare($sql);
+  $sth->execute(@params);
+  $sth->bind_columns(\$feat_id, \$dist);
+    
+  while ($sth->fetch){
+    my $feat =  $self->fetch_by_dbID($feat_id);
+    # print $feat->stable_id."\t".$dist."\n";
+    push @feats,     $feat;
+    push @distances, $dist;
+  } 
+  
+  $sth->finish;
+  
+  #This would remove duplicates!
+  #But need to do this prior to here, to ensure the max_genes count is correct
+
+  #push @$genes, $self->fetch_by_dbID_list(@gene_ids);
+
+  #}#end of if(! (scalar(@{$genes}) > $num_genes))
+
+
+  return [\@feats, \@distances];
+} # end sub fetch_nearest_by_Feature
+
 
 1;
