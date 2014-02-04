@@ -1,6 +1,6 @@
 =head1 LICENSE
 
-Copyright [1999-2014] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
+Copyright [1999-2013] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -20,10 +20,10 @@ limitations under the License.
 =head1 CONTACT
 
   Please email comments or questions to the public Ensembl
-  developers list at <http://lists.ensembl.org/mailman/listinfo/dev>.
+  developers list at <dev@ensembl.org>.
 
   Questions may also be sent to the Ensembl help desk at
-  <http://www.ensembl.org/Help/Contact>.
+  <helpdesk@ensembl.org>.
 
 =cut
 
@@ -160,8 +160,8 @@ sub store {
                              seq_region_end, seq_region_strand,
                              hit_start, hit_end, hit_strand, hit_name,
                              cigar_line, analysis_id, score, evalue,
-                             perc_ident, external_db_id, hcoverage)
-     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"    # 15 arguments
+                             perc_ident, external_db_id, hcoverage, external_data)
+     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"    # 16 arguments
   );
 
 FEATURE:
@@ -211,7 +211,7 @@ FEATURE:
     my $original = $feat;
     my $seq_region_id;
     ( $feat, $seq_region_id ) = $self->_pre_store($feat);
-
+    
     $sth->bind_param( 1,  $seq_region_id,        SQL_INTEGER );
     $sth->bind_param( 2,  $feat->start,          SQL_INTEGER );
     $sth->bind_param( 3,  $feat->end,            SQL_INTEGER );
@@ -227,11 +227,14 @@ FEATURE:
     $sth->bind_param( 13, $feat->percent_id,     SQL_FLOAT );
     $sth->bind_param( 14, $feat->external_db_id, SQL_INTEGER );
     $sth->bind_param( 15, $feat->hcoverage,      SQL_DOUBLE );
+    # Eagle change: also store the extra data, if available
+    my $extra_data;
+    $extra_data = $self->dump_data($feat->extra_data()) if ($feat->extra_data());
+    $sth->bind_param( 16, $extra_data,  SQL_LONGVARCHAR );
 
     $sth->execute();
 
-    my $dbId = $self->last_insert_id("${tablename}_id", undef, $tablename);
-    $original->dbID( $dbId );
+    $original->dbID( $sth->{'mysql_insertid'} );
     $original->adaptor($self);
   } ## end foreach my $feat (@feats)
 
@@ -326,7 +329,7 @@ sub save {
 
 
     $sth->execute();
-    $original->dbID($self->last_insert_id("${tablename}_id", undef, $tablename));
+    $original->dbID($sth->{'mysql_insertid'});
     $original->adaptor($self);
   }
 
