@@ -678,9 +678,7 @@ sub get_attrib {
   my ($self, $statistic) = @_;
   my $db = $self->db();
   my $attribute_adaptor = $db->get_adaptor('attribute');
-  my @results = @{ $self->_get_statistic($statistic) };
-  my $code = $results[4];
-  my @attribs = @{ $attribute_adaptor->fetch_by_code($code) };
+  my @attribs = @{ $attribute_adaptor->fetch_by_code($statistic) };
   my $attrib = Bio::EnsEMBL::Attribute->new(
   -code => $attribs[1],
   -name => $attribs[2],
