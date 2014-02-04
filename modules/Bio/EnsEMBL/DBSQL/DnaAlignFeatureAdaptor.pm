@@ -160,8 +160,8 @@ sub store {
                              seq_region_end, seq_region_strand,
                              hit_start, hit_end, hit_strand, hit_name,
                              cigar_line, analysis_id, score, evalue,
-                             perc_ident, external_db_id, hcoverage)
-     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"    # 15 arguments
+                             perc_ident, external_db_id, hcoverage, external_data)
+     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"    # 16 arguments
   );
 
 FEATURE:
@@ -211,7 +211,7 @@ FEATURE:
     my $original = $feat;
     my $seq_region_id;
     ( $feat, $seq_region_id ) = $self->_pre_store($feat);
-
+    
     $sth->bind_param( 1,  $seq_region_id,        SQL_INTEGER );
     $sth->bind_param( 2,  $feat->start,          SQL_INTEGER );
     $sth->bind_param( 3,  $feat->end,            SQL_INTEGER );
@@ -227,6 +227,10 @@ FEATURE:
     $sth->bind_param( 13, $feat->percent_id,     SQL_FLOAT );
     $sth->bind_param( 14, $feat->external_db_id, SQL_INTEGER );
     $sth->bind_param( 15, $feat->hcoverage,      SQL_DOUBLE );
+    # Eagle change: also store the extra data, if available
+    my $extra_data;
+    $extra_data = $self->dump_data($feat->extra_data()) if ($feat->extra_data());
+    $sth->bind_param( 16, $extra_data,  SQL_LONGVARCHAR );
 
     $sth->execute();
 
