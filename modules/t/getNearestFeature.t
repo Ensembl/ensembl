@@ -97,8 +97,10 @@ $sfa->store(@simple_features);
 
 cmp_ok(scalar(@{$sfa->fetch_all}),'==',6,'verify successful storage of test features');
 #($self, $feat, $prime, $stranded, $stream, $num_feats, $max_dist, $stream_from_midpoint)
-my ($results,$distances) = @{ $sfa->fetch_nearest_by_Feature($a,undef,undef,undef,undef,1000,undef) };
-
+my ($results,$distances) = @{ $sfa->fetch_nearest_by_Feature($a,undef,undef,undef,5,1000,undef) };
+foreach (@$results) {
+    note($_->display_label);
+}
 #note(dump($results) );
 note(dump($distances));
 done_testing;

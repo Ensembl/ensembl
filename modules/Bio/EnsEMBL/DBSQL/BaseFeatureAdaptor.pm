@@ -1516,7 +1516,7 @@ sub remove_by_feature_id {
   Arg [3]    : Boolean (optional) : Stranded search i.e. match Feature and Gene strand. 1 or 0 default = 0
   Arg [4]    : Int (optional)     : Stream 1 = up stream, -1 = down stream of source Feature
   Arg [5]    : Int (optional)     : Max number of genes to return. Default = 1 #(or all if overlaps found ??????)
-  Arg [6]    : Int (optional)     : Max distance in bp. Setting this may improve performance as it uses a range query.
+  Arg [6]    : Int (MANDATORY)    : Max distance in bp. Setting this may improve performance as it uses a range query.
   Arg [7]    : Boolean (optional) : Flag to measure up/down stream distances from source Feature midpoint. Default for 
                                     up/down stream queries is to measure from relevant end of source Feature 
                                     i.e. omitting overlapping target start/ends.
@@ -1878,11 +1878,13 @@ sub fetch_nearest_by_Feature{
   my $sth = $self->prepare($sql);
   $sth->execute(@params);
   $sth->bind_columns(\$feat_id, \$dist);
-    
+  
+  my $nearby_feat;  
   while ($sth->fetch){
-    my $feat =  $self->fetch_by_dbID($feat_id);
+    my $nearby_feat =  $self->fetch_by_dbID($feat_id);
+    if ($nearby_feat->dbID == $feat->dbID) {next} # exclude self from results
     # print $feat->stable_id."\t".$dist."\n";
-    push @feats,     $feat;
+    push @feats,     $nearby_feat;
     push @distances, $dist;
   } 
   
