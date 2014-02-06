@@ -3439,7 +3439,7 @@ sub get_all_ExternalFeatures {
 sub get_all_DitagFeatures {
   my ($self, $type, $logic_name) = @_;
   if(my $adaptor = $self->_get_CoreAdaptor('DitagFeature')) {
-    return $adaptor->fetch_all_by_Slice($type, $logic_name);
+    return $adaptor->fetch_all_by_Slice($self, $type, $logic_name);
   }
   return [];
 }
