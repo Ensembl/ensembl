@@ -1628,6 +1628,7 @@ sub fetch_all_nearest_by_Feature{
  
   $num_feats  ||= 1;
   my $primed = ($prime) ? 'primed' : 'primeless';
+  throw('Prime argument must be 5, 3 or undefined') unless (!defined($prime) || ($prime == 5 || $prime == 3));
   #define here before we set default primes
   #primeless mean we chose the closest prime/seq_region_start/end
  
@@ -1842,7 +1843,6 @@ sub fetch_all_nearest_by_Feature{
     push @params,  @{$sql{$ss_product}->{$primed}->{params}};
   }
 
-  #UNION returns NR rows, so no issues around filtering duplicates from queries
   my $query =  "select x.${table}_id, x.dist from (\n".join("\nUNION\n", @sub_queries)."\n) as x order by x.dist limit $num_feats";
 
   warn $query."\n";
