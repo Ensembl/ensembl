@@ -186,6 +186,14 @@ my @attrib = @{$clone->get_all_Attributes('htg_phase')};
 ok(@attrib == 1 && $attrib[0]->value() == 4);
 
 #
+# Test get_all_DitagFeatures
+#
+
+my @ditags = @{ $slice->get_all_DitagFeatures() };
+
+is(scalar(@ditags), 0, "Fetched ditag features from slice");
+
+#
 # Test expand
 #
 my $len = $clone->length();
