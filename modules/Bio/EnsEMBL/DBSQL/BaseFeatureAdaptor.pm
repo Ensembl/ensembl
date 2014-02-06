@@ -1508,11 +1508,12 @@ sub remove_by_feature_id {
   $sth->finish();
 }
 
-=head2 fetch_nearest_by_Feature
+=head2 fetch_all_nearest_by_Feature
 
   Arg [1]    : Bio::EnsEMBL::Feature - 'Source' Feature to find other nearest 'target' Features by.
   Arg [2]    : Int (optional)     : Target Feature prime end i.e. calculate from gene 5' or 3' end
                                     Default = (stream == -1(up)) ? 5 : 3
+                                    namely the far end of the starting feature
   Arg [3]    : Boolean (optional) : Stranded search i.e. match Feature and Gene strand. 1 or 0 default = 0
   Arg [4]    : Int (optional)     : Stream 1 = up stream, -1 = down stream of source Feature
   Arg [5]    : Int (optional)     : Max number of genes to return. Default = 1 #(or all if overlaps found ??????)
@@ -1534,11 +1535,11 @@ sub remove_by_feature_id {
 #How would we handle non primed features? Easy, simply disable for all but genes and transcript
 
 # Can we convert all these to midpoint comparisons? by using ABS instead?
-# No issues around ABS, using the midpoint will cause problems for up/down stream
-# as we will have to filter features which don't overlap?
+# Using the midpoint will cause problems for up/down stream
+# as we will have to filter features which don't overlap
 
 # We can use the current non-midpoint up/down stream queries using primes and then calculate midpoint distance on the fly
-# by subtracting or adding 1/2 feature length!, then calling ABS on that! (would we need to call ABS on this?, Yes)
+# by subtracting or adding 1/2 feature length, then calling ABS on that.
 
 # Genes     5'     |a||      |b|   3'
 # Feature        |||||||F|||||||
@@ -1592,36 +1593,32 @@ sub remove_by_feature_id {
 
 # Primeless queries can only give useful distances if we use F and the nearest of 5' or 3'
 # What if we have something that fully overlaps and extends beyond?
-# Assuming 'Genes' can overlap here
+# Assuming Features can overlap here
 
 # Genes     5'   ||||||a||      |b|   3'
 # Genes       |||||||||||||c||||||||||
 # Feature       |||||||||F||||||||
 
-# Which is nearest now? Would have to return all, even if max feats were set to one?
-# No we can still pick the following here:
+# Which is nearest now? We can pick the following here:
 # a - if primeless as 3' is closest to F
-# b - if 5' 
+# b - if 5'
 # c - ? Never unless $num_feats >=3
-#
 
 # What about true upstream query?
 # i.e. we want a or  b if 5'/primeless,  but not c?
 
 # Genes     5' |a||   |b|| ||c||       3'
 # Feature               |||||||FF|||||||
-
-# We need an omit encapsulated bounds flag?
  
 # todo Include all overlapping features flag!
 # if $num_feats is low we may not capture all overlapping features
 # setting this would return all overlaps, regardless of $num_feats or $max_dist?
 
 
-sub fetch_nearest_by_Feature{
+sub fetch_all_nearest_by_Feature{
   my ($self, $feat, $prime, $stranded, $stream, $num_feats, $max_dist, $stream_from_midpoint) = @_;
   #Can't set a default $max_dist as this may not return $num_feats
-  #No overlaps option?
+  
   #This would mean adding the ? < g.seq_region_end/start clause to the
   #primed queries and skipping the overlap method for primeless queries
 
@@ -1682,21 +1679,6 @@ sub fetch_nearest_by_Feature{
   #          ^Max dist
   #
 
-  #if($primed eq 'primeless'){
-  #  warn "Getting overlaps";
-  #  @feats = @{$feat->get_overlapping_Genes($stranded, undef)};#undef was prime
-    #primeless overlapping_Genes queries do not discard encompassing genes
-    #but may have duplicates from additional queries below
-
-    ##For 5/3' overlapping_Genes query discards Genes which encompass features
-    # ##Gene     ------------------------
-    # # #Feature       --
-
-  #}
-  #warn scalar(@feats)." overlapping genes";
-
-  #if(scalar(@feats) < $num_feats){
-
   my @table_info = $self->_tables;
   my ($table, $table_syn) = @{$table_info[0]};
 
@@ -1705,10 +1687,11 @@ sub fetch_nearest_by_Feature{
   my $sr_start = ($feat->start + $feat->slice->start) -1;
   my $sr_end   = ($feat->end   + $feat->slice->start) -1;
   $stranded = (defined $stranded) ? " ${table_syn}.seq_region_strand = $fstrand AND " : '';
-  my $order_limit = ' order by dist limit '.$num_feats;  
-  my @queries;
+  my $order_limit = ' ORDER BY dist LIMIT '.$num_feats;  
+  my @sub_queries;
   my @params;
 
+  # distance correction, seq region, 
   my @start_params  = ($sr_start, $seq_region_id, $sr_start);
   my @end_params    = ($sr_end, $seq_region_id, $sr_end);
   my %range_query   = (1=>'', -1 =>'');
@@ -1732,9 +1715,6 @@ sub fetch_nearest_by_Feature{
     -1 => {5         => $table_syn.'.seq_region_end',
            3         => $table_syn.'.seq_region_end',
            primeless => '' }); #to avoid use of undef in %range_query
-
-  #These seem to work for strand factor 1, but what about -1?
-  
 
   #Range query for max_dist, should speed things up
   if(defined($max_dist)){
@@ -1769,12 +1749,12 @@ sub fetch_nearest_by_Feature{
        ##Already have overlapping genes so use g.seq_region_end < f.seq_region_start
        #params => \@start_params,
        
-       queries => ["select ${table_syn}.${table}_id, (? - ${table_syn}.seq_region_end - $mid_point_factor) as 'dist' ".
-                   "from $table $table_syn ".
-                   "where ".$stranded.$range_query{1}{primeless}." ".${table_syn}.".seq_region_id = ? ".
+       queries => ["SELECT ${table_syn}.${table}_id, (? - ${table_syn}.seq_region_end - $mid_point_factor) as 'dist' ".
+                   "FROM $table $table_syn ".
+                   "WHERE ".$stranded.$range_query{1}{primeless}." ".${table_syn}.".seq_region_id = ? ".
                    "AND ${table_syn}.seq_region_end <= ? $having_clause"], #' HAVING dist >= 0 '; if $stream
 
-       #primless queries here use start/ends dependant on $stream and $stream_from_midpoint
+       #primeless queries here use start/ends dependant on $stream and $stream_from_midpoint
        #Consider upstream of 3' end for +ve strand (only need to consider one case as we already dynamically handle the other)
        #t  -------          ------           _____     ______
        #s    ---              -----       _____       _____
@@ -1811,13 +1791,7 @@ sub fetch_nearest_by_Feature{
     -1 => 
      {primeless =>
       {
-       #queries => ["select ${table_syn}.${table}_id, (${table_syn}.seq_region_start - ?) as 'dist' from $table_syn $table_syn where ".
-       #            $stranded.$range_query{-1}{primeless}." ${table_syn}.seq_region_id = ? AND ${table_syn}.seq_region_start > ? "],
-       ##Already have overlapping genes so use g.seq_region_start < f.seq_region_start
-       #surely this was g.seq_region_start > f.seq_region_end?
-        #    params => \@end_params,
-
-
+       #Already have overlapping genes so use g.seq_region_start < f.seq_region_start
        #Now gets overlaps and calc midpoint distances
        queries => ["select ${table_syn}.${table}_id, (${table_syn}.seq_region_start - ? - $mid_point_factor) as 'dist' from $table $table_syn where ".
                    $stranded.$range_query{-1}{primeless}." ${table_syn}.seq_region_id = ? AND ${table_syn}.seq_region_start >= ? "],
@@ -1856,48 +1830,38 @@ sub fetch_nearest_by_Feature{
 
   if (! defined $stream) { # All streams
     #strand are specification done in queries
-    push @queries, @{$sql{1}->{$primed}->{queries}};
+    push @sub_queries, @{$sql{1}->{$primed}->{queries}};
     push @params,  @{$sql{1}->{$primed}->{params}};
-    push @queries, @{$sql{-1}->{$primed}->{queries}};
+    push @sub_queries, @{$sql{-1}->{$primed}->{queries}};
     push @params,  @{$sql{-1}->{$primed}->{params}};
   } 
   else {  #Select stream strand
     #strand already implicitly validated
     my $ss_product = $stream * $fstrand;
-    push @queries, @{$sql{$ss_product}->{$primed}->{queries}};
+    push @sub_queries, @{$sql{$ss_product}->{$primed}->{queries}};
     push @params,  @{$sql{$ss_product}->{$primed}->{params}};
   }
 
   #UNION returns NR rows, so no issues around filtering duplicates from queries
-  my $sql =  "select x.${table}_id, x.dist from (\n".join("\nUNION\n", @queries)."\n) as x order by x.dist limit $num_feats";
+  my $query =  "select x.${table}_id, x.dist from (\n".join("\nUNION\n", @sub_queries)."\n) as x order by x.dist limit $num_feats";
 
-  #warn $sql."\n";
+  warn $query."\n";
   #warn "@params\n";
 
   my ($feat_id, $dist, @distances);
-  my $sth = $self->prepare($sql);
+  my $sth = $self->prepare($query);
   $sth->execute(@params);
   $sth->bind_columns(\$feat_id, \$dist);
   
   my $nearby_feat;  
   while ($sth->fetch){
     my $nearby_feat =  $self->fetch_by_dbID($feat_id);
-    if ($nearby_feat->dbID == $feat->dbID) {next} # exclude self from results
-    # print $feat->stable_id."\t".$dist."\n";
     push @feats,     $nearby_feat;
     push @distances, $dist;
   } 
   
   $sth->finish;
   
-  #This would remove duplicates!
-  #But need to do this prior to here, to ensure the max_genes count is correct
-
-  #push @$genes, $self->fetch_by_dbID_list(@gene_ids);
-
-  #}#end of if(! (scalar(@{$genes}) > $num_genes))
-
-
   return [\@feats, \@distances];
 } # end sub fetch_nearest_by_Feature
 

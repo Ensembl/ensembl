@@ -1483,7 +1483,7 @@ sub get_overlapping_Genes{
 sub get_nearest_Genes {
   my $self = shift; 
   my $ga = Bio::EnsEMBL::Registry->get_adaptor($self->adaptor->db->species,'core','Gene');
-  return $ga->fetch_nearest_by_Feature($self, @_);
+  return $ga->fetch_all_nearest_by_Feature($self, @_);
 }
 
 =head2 summary_as_hash

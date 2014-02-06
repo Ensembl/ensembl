@@ -45,6 +45,7 @@ my $a = Bio::EnsEMBL::SimpleFeature->new(
     -slice => $par_slice,
     -analysis => $analysis,
     -display_label => 'Test me!',
+    #midpoint = 30300105
 );
 
 my $b = Bio::EnsEMBL::SimpleFeature->new(
@@ -54,6 +55,7 @@ my $b = Bio::EnsEMBL::SimpleFeature->new(
     -slice => $par_slice,
     -analysis => $analysis,
     -display_label => 'Downstream overlap',
+    #midpoint = 30300112
 );
 
 my $c = Bio::EnsEMBL::SimpleFeature->new(
@@ -63,6 +65,7 @@ my $c = Bio::EnsEMBL::SimpleFeature->new(
     -slice => $par_slice,
     -analysis => $analysis,
     -display_label => 'Downstream far',
+    #midpoint = 30300265
 );
 
 my $d = Bio::EnsEMBL::SimpleFeature->new(
@@ -72,6 +75,7 @@ my $d = Bio::EnsEMBL::SimpleFeature->new(
     -slice => $ref_slice,
     -analysis => $analysis,
     -display_label => 'Upstream far, assembly exception',
+    #midpoint = 9999950
 );
 
 my $e = Bio::EnsEMBL::SimpleFeature->new(
@@ -81,6 +85,7 @@ my $e = Bio::EnsEMBL::SimpleFeature->new(
     -slice => $ref_slice,
     -analysis => $analysis,
     -display_label => 'Reverse strand',
+    #midpoint = ??
 );
 
 my $f = Bio::EnsEMBL::SimpleFeature->new(
@@ -90,6 +95,7 @@ my $f = Bio::EnsEMBL::SimpleFeature->new(
     -slice => $par_slice,
     -analysis => $analysis,
     -display_label => 'Enveloping',
+    #midpoint = 30300105
 );
 
 my @simple_features = ($a,$b,$c,$d,$e,$f);
@@ -97,10 +103,16 @@ $sfa->store(@simple_features);
 
 cmp_ok(scalar(@{$sfa->fetch_all}),'==',6,'verify successful storage of test features');
 #($self, $feat, $prime, $stranded, $stream, $num_feats, $max_dist, $stream_from_midpoint)
-my ($results,$distances) = @{ $sfa->fetch_nearest_by_Feature($a,undef,undef,undef,5,1000,undef) };
+my ($results,$distances) = @{ $sfa->fetch_all_nearest_by_Feature($a,undef,undef,-1,2,1000,1) };
 foreach (@$results) {
     note($_->display_label);
 }
+
+# Test primeless (= test from midpoint), both strands, downstream, range 1000
+my ($features,$distances) = @{ $sfa->fetch_all_nearest_by_Feature($a,undef,undef,-1,1,1000,undef) };
+cmp_ok($features->[0]->display_label,'eq','Enveloping','Test downstream primeless');
+cmp_ok($distances->[0], '==', )
+
 #note(dump($results) );
 note(dump($distances));
 done_testing;
