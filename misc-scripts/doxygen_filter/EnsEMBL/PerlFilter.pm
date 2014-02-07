@@ -159,6 +159,7 @@ sub filter {
 }
 
 
+my $packaged;
 sub normal_parser {
     my $args = $_[0];
     my $self = $args->[0];
@@ -177,7 +178,10 @@ sub normal_parser {
 	    warn "Reached end of code: 1;\n";
 	}
 	elsif ($line =~ /^\s*package\s+(.*);/) { 
-	    $class_declaration = $1;
+        if ($packaged) {$state = TERMINAL} else {
+            $class_declaration = $1;
+            $packaged = 1;
+        }
 	}
 	elsif ($line =~/^\s*use\s/ || $line =~/^(our|my)?\s*\@ISA/ || $line =~(/^\s*.*::ISA/) ){
 	    $state = INHERIT;
