@@ -892,14 +892,14 @@ COORD_SYSTEM: foreach my $coord_system (@feature_coord_systems) {
 	   foreach my $query (@query_accumulator) {
 	       my ($local_constraint,$local_mapper,$local_slice) = @$query;
 	       $self->_bind_param_generic_fetch($bind_params);
-    	   if ($query_type and $query_type eq 'count') {
+    	     if ($query_type and $query_type eq 'count') {
   	       push @pan_coord_features, $self->generic_count($local_constraint);
-    	   } 
-    	   else {
-           my $features = $self->generic_fetch( $local_constraint, $local_mapper, $local_slice );
-           $features = $self->_remap( $features, $local_mapper, $local_slice );
-           push @pan_coord_features, @$features;
-    	   }
+    	     } 
+    	     else {
+               my $features = $self->generic_fetch( $local_constraint, $local_mapper, $local_slice );
+               $features = $self->_remap( $features, $local_mapper, $local_slice );
+               push @pan_coord_features, @$features;
+    	     }
 	   }
 	   $mapper = undef;
     } # End foreach
@@ -1725,12 +1725,12 @@ sub fetch_all_nearest_by_Feature{
     #Need to account for strand_factor in here! $range_query{$fstrand*$stream}{$primed}
 
     $range_query{1}  = 
-     {primeless   => " (? - ${table_syn}.seq_region_end) <= $max_dist AND ",
+     {primeless   => " (? - ${table_syn}.seq_region_start) <= $max_dist AND ",
       primed_1    => ' (? - '.$target_start_end{1}{$prime}.") <= $max_dist AND ",
       'primed_-1' => ' (? - '.$target_start_end{-1}{$prime}.") <= $max_dist AND "};
     
     $range_query{-1} = 
-     {primeless   => " (${table_syn}.seq_region_start - ?) <= $max_dist AND ",
+     {primeless   => " (${table_syn}.seq_region_end - ?) <= $max_dist AND ",
       primed_1    => ' ('.$target_start_end{1}{$prime}." - ?) <= $max_dist AND ",
       'primed_-1' => ' ('.$target_start_end{-1}{$prime}." - ?) <= $max_dist AND "};
 
@@ -1750,10 +1750,10 @@ sub fetch_all_nearest_by_Feature{
        ##Already have overlapping genes so use g.seq_region_end < f.seq_region_start
        #params => \@start_params,
        
-       queries => ["SELECT ${table_syn}.${table}_id, (? - ${table_syn}.seq_region_end - $mid_point_factor) as 'dist' ".
+       queries => ["SELECT ${table_syn}.${table}_id, (? - ${table_syn}.seq_region_start - $mid_point_factor) as 'dist' ".
                    "FROM $table $table_syn ".
                    "WHERE ".$stranded.$range_query{1}{primeless}." ".${table_syn}.".seq_region_id = ? ".
-                   "AND ${table_syn}.seq_region_end <= ? $having_clause"], #' HAVING dist >= 0 '; if $stream
+                   "AND ${table_syn}.seq_region_start <= ? $having_clause"], #' HAVING dist >= 0 '; if $stream
 
        #primeless queries here use start/ends dependant on $stream and $stream_from_midpoint
        #Consider upstream of 3' end for +ve strand (only need to consider one case as we already dynamically handle the other)
@@ -1794,8 +1794,8 @@ sub fetch_all_nearest_by_Feature{
       {
        #Already have overlapping genes so use g.seq_region_start < f.seq_region_start
        #Now gets overlaps and calc midpoint distances
-       queries => ["select ${table_syn}.${table}_id, (${table_syn}.seq_region_start - ? - $mid_point_factor) as 'dist' from $table $table_syn where ".
-                   $stranded.$range_query{-1}{primeless}." ${table_syn}.seq_region_id = ? AND ${table_syn}.seq_region_start >= ? "],
+       queries => ["select ${table_syn}.${table}_id, (${table_syn}.seq_region_end - ? - $mid_point_factor) as 'dist' from $table $table_syn where ".
+                   $stranded.$range_query{-1}{primeless}." ${table_syn}.seq_region_id = ? AND ${table_syn}.seq_region_end >= ? "],
        params => (! defined $stream  || $stream_from_midpoint) ? \@start_params : \@end_params,
      },
          
@@ -1843,10 +1843,10 @@ sub fetch_all_nearest_by_Feature{
     push @params,  @{$sql{$ss_product}->{$primed}->{params}};
   }
 
-  my $query =  "select x.${table}_id, x.dist from (\n".join("\nUNION\n", @sub_queries)."\n) as x order by x.dist limit $num_feats";
+  my $query =  "select x.${table}_id, x.dist from (\n".join("\nUNION\n", @sub_queries)."\n) as x order by abs(x.dist) limit $num_feats";
 
-  warn $query."\n";
-  #warn "@params\n";
+  #warn $query."\n";
+  #foreach my $p (@params) { print "Using $p\n"; }
 
   my ($feat_id, $dist, @distances);
   my $sth = $self->prepare($query);
