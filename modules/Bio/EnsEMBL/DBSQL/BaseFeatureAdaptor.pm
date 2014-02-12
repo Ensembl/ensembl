@@ -882,26 +882,26 @@ COORD_SYSTEM: foreach my $coord_system (@feature_coord_systems) {
                     
                     push @query_accumulator, [$constraint,$mapper,$slice];
                 } # end multi-query cycle
-		    } # end else
+        } # end else
             
-	   } # end else (coord sytems not matching)
-	   
-	   #Record the bind params if we have to do multiple queries
-	   my $bind_params = $self->bind_param_generic_fetch();
-	   
-	   foreach my $query (@query_accumulator) {
-	       my ($local_constraint,$local_mapper,$local_slice) = @$query;
-	       $self->_bind_param_generic_fetch($bind_params);
-    	     if ($query_type and $query_type eq 'count') {
-  	       push @pan_coord_features, $self->generic_count($local_constraint);
-    	     } 
-    	     else {
-               my $features = $self->generic_fetch( $local_constraint, $local_mapper, $local_slice );
-               $features = $self->_remap( $features, $local_mapper, $local_slice );
-               push @pan_coord_features, @$features;
-    	     }
-	   }
-	   $mapper = undef;
+     } # end else (coord sytems not matching)
+     
+     #Record the bind params if we have to do multiple queries
+     my $bind_params = $self->bind_param_generic_fetch();
+     
+     foreach my $query (@query_accumulator) {
+         my ($local_constraint,$local_mapper,$local_slice) = @$query;
+         $self->_bind_param_generic_fetch($bind_params);
+         if ($query_type and $query_type eq 'count') {
+           push @pan_coord_features, $self->generic_count($local_constraint);
+         } 
+         else {
+             my $features = $self->generic_fetch( $local_constraint, $local_mapper, $local_slice );
+             $features = $self->_remap( $features, $local_mapper, $local_slice );
+             push @pan_coord_features, @$features;
+         }
+     }
+     $mapper = undef;
     } # End foreach
     return \@pan_coord_features;
 }
