@@ -28,6 +28,7 @@ use lib "$Bin/../../../ensembl-analysis/modules";
 require AssemblyMapper::Support;
 use Bio::EnsEMBL::Utils::Exception qw( throw );
 use Pod::Usage;
+use Bio::EnsEMBL::Production::DBSQL::DBAdaptor;
 
 #Genebuilder utils
 require Bio::EnsEMBL::Analysis::Tools::GeneBuildUtils::TranscriptUtils;
@@ -49,8 +50,35 @@ unless ($support->parse_arguments(@_)) {
 }
 $support->connect_dbs;
 
-my $biotype_manager = 
-  Bio::EnsEMBL::Registry->get_DBAdaptor('multi', 'production')->get_biotype_manager();
+my ($prod_host, $prod_user, $prod_pass, $prod_port);
+if ($support->param('prod_host')) { $prod_host = $support->param('prod_host');
+} else { $prod_host = $support->param('host'); }
+
+if ($support->param('prod_user')) { $prod_user = $support->param('prod_user');
+} else { $prod_user = $support->param('user'); }
+
+if ($support->param('prod_pass')) { $prod_pass = $support->param('prod_pass');
+} elsif ($support->param('prod_user')) {
+# if prod_user is provided but not pass, there is no pass
+} else { 
+# else, use same pass as for user/pass
+  $prod_pass = $support->param('pass'); }
+
+if ($support->param('prod_port')) { $prod_port = $support->param('prod_port');
+} else { $prod_port = $support->param('port'); }
+
+my $production_db = Bio::EnsEMBL::Production::DBSQL::DBAdaptor->new(
+  -host    => $prod_host,
+  -user    => $prod_user,
+  -pass    => $prod_pass,
+  -port    => $prod_port,
+  -dbname  => $support->param('prod_dbname'),
+  -species => 'multi',
+  -group   => 'production'
+);
+
+
+my $biotype_manager = $production_db->get_biotype_manager();
   
 
 $support->log_stamped("Beginning analysis.\n");
@@ -124,9 +152,7 @@ sub exon {
   # hence we must go around the houses somewhat when looking for the appropriate source gene.
   #warn "!! fetching gene adaptor ".$old_exon->adaptor->species.":".$old_exon->adaptor->dbc->dbname."Gene";
   my $old_gene_adaptor = $old_exon->adaptor->db->get_GeneAdaptor();
-  my $gene_list = $old_gene_adaptor->fetch_nearest_Gene_by_Feature($old_exon, undef, undef);
-  if (scalar(@$gene_list) > 1) { warn "Encountered many possible genes for the exon." }
-  my $parent_gene = $gene_list->[0];
+  my $parent_gene = $old_gene_adaptor->fetch_by_exon_stable_id($old_exon->stable_id);
 
   my $state;
   my $location;
@@ -145,9 +171,13 @@ sub exon {
       # Determine severity of the problem
       $difference = diff(\$old_seq, \$projected_seq);
 
-      my $group_list = $biotype_manager->belongs_to_groups($parent_gene);
+      my $biotype_group = $biotype_manager->fetch_biotype($parent_gene)->biotype_group;
+      my $group_list = $biotype_manager->group_members($biotype_group);
       foreach my $group (@$group_list) {
-	$state = '!!' and last if $group eq 'protein_coding'
+        if ($group eq 'coding') {
+	  $state = '!!';
+          last;
+        }
       }
       $state = '%%' unless $state; # Middle badness
     }
@@ -209,10 +239,14 @@ sub transcript {
   if ($projected_transcript) {
 
     #Check if it was protein coding
-    my $group_list = $biotype_manager->belongs_to_groups($projected_transcript);
+    my $biotype_group = $biotype_manager->fetch_biotype($projected_transcript)->biotype_group;
+    my $group_list = $biotype_manager->group_members($biotype_group);
     my $is_pc      = 0;
     foreach my $group (@$group_list) {
-      $is_pc = 1 and last if $group eq 'protein_coding';
+      if ($group eq 'coding') {
+        $is_pc = 1;
+        last;
+      }
     }
 
     #Now check for protein sequence mis-match
@@ -295,6 +329,9 @@ perl exon_conservation_check.pl <many arguments>
     --assembly=ASSEMBLY                 assembly version ASSEMBLY
     --altdbname=NAME                    alternative database NAME
     --altassembly=ASSEMBLY              alternative assembly version ASSEMBLY
+    --prod_host                         database host for production database
+    --prod_user                         database user for production database
+    --prod_db                           database name for production database
 
 Optional options
     --logfile, --log=FILE               log to FILE (default: *STDOUT)
