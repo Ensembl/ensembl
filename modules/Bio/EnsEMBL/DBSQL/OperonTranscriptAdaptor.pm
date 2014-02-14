@@ -266,106 +266,135 @@ sub fetch_all_versions_by_stable_id {
 =cut
 
 sub fetch_all_by_Slice {
-	my ( $self, $slice, $logic_name, $load_transcripts ) = @_;
+  my ( $self, $slice, $logic_name, $load_transcripts ) = @_;
 
-	my $constraint = '';
+  my $constraint = '';
 
-	my $operons =
-	  $self->SUPER::fetch_all_by_Slice_constraint( $slice, $constraint,
-												   $logic_name );
+  my $operons =
+    $self->SUPER::fetch_all_by_Slice_constraint( $slice, $constraint,
+						 $logic_name );
 
-	# If there are less than two operons, still do lazy-loading.
-	if ( !$load_transcripts || @$operons < 2 ) {
-		return $operons;
-	}
+  # If there are less than two operons, still do lazy-loading.
+  if ( !$load_transcripts || @$operons < 2 ) {
+    return $operons;
+  }
 
-	# Preload all of the transcripts now, instead of lazy loading later,
-	# faster than one query per transcript.
+  # Preload all of the transcripts now, instead of lazy loading later,
+  # faster than one query per transcript.
 
-	# First check if transcripts are already preloaded.
-	# FIXME: Should check all transcripts.
-	if ( exists( $operons->[0]->{'_operon_transcript_array'} ) ) {
-		return $operons;
-	}
+  # First check if transcripts are already preloaded.
+  # FIXME: Should check all transcripts.
+  if ( exists( $operons->[0]->{'_operon_transcript_array'} ) ) {
+    return $operons;
+  }
 
-	# Get extent of region spanned by transcripts.
-	my ( $min_start, $max_end );
-	foreach my $o (@$operons) {
-		if ( !defined($min_start) || $o->seq_region_start() < $min_start ) {
-			$min_start = $o->seq_region_start();
-		}
-		if ( !defined($max_end) || $o->seq_region_end() > $max_end ) {
-			$max_end = $o->seq_region_end();
-		}
-	}
+  # Get extent of region spanned by transcripts.
+  my ($min_start, $max_end);
+  my $ext_slice;
 
-	my $ext_slice;
+  unless ($slice->is_circular()) {
+    foreach my $o (@$operons) {
+      if (!defined($min_start) || $o->seq_region_start() < $min_start) {
+	$min_start = $o->seq_region_start();
+      }
+      if (!defined($max_end) || $o->seq_region_end() > $max_end) {
+	$max_end = $o->seq_region_end();
+      }
+    }
 
-	if ( $min_start >= $slice->start() && $max_end <= $slice->end() ) {
-		$ext_slice = $slice;
-	} else {
-		my $sa = $self->db()->get_SliceAdaptor();
-		$ext_slice =
-		  $sa->fetch_by_region( $slice->coord_system->name(),
-								$slice->seq_region_name(),
-								$min_start,
-								$max_end,
-								$slice->strand(),
-								$slice->coord_system->version() );
-	}
+    if ($min_start >= $slice->start() && $max_end <= $slice->end()) {
+      $ext_slice = $slice;
+    } else {
+      my $sa = $self->db()->get_SliceAdaptor();
+      $ext_slice = $sa->fetch_by_region($slice->coord_system->name(), $slice->seq_region_name(), $min_start, $max_end, $slice->strand(), $slice->coord_system->version());
+    }
 
-	# Associate transcript identifiers with operon_transcripts.
+  } else {
+    # feature might be crossing the origin of replication (i.e. seq_region_start > seq_region_end)
+    # the computation of min_start|end based on seq_region_start|end is not safe
+    # use feature start/end relative to the slice instead
+    my ($min_start_feature, $max_end_feature);
+    foreach my $o (@$operons) {
+      if (!defined($min_start) || $o->start() < $min_start) {
+  	$min_start = $o->start();
+  	$min_start_feature = $o;
+      }
+      if (!defined($max_end) || $o->end() > $max_end) {
+  	$max_end = $o->end();
+  	$max_end_feature = $o;
+      }
+    }
+    
+    # now we can reassign min_start|end to seq_region_start|end of
+    # the feature which spans the largest region
+    $min_start = $min_start_feature->seq_region_start();
+    $max_end = $max_end_feature->seq_region_end();
 
-	my %o_hash = map { $_->dbID => $_ } @{$operons};
+    my $sa = $self->db()->get_SliceAdaptor();
+    $ext_slice = 
+      $sa->fetch_by_region($slice->coord_system->name(), 
+  			   $slice->seq_region_name(), 
+  			   $min_start, 
+  			   $max_end, 
+  			   $slice->strand(), 
+  			   $slice->coord_system->version());
+  }
 
-	my $o_id_str = join( ',', keys(%o_hash) );
 
-	my $sth =
-	  $self->prepare(   "SELECT operon_id, operon_transcript_id "
-					  . "FROM   operon_transcript "
-					  . "WHERE  operon_id IN ($o_id_str)" );
+  # Associate transcript identifiers with operon_transcripts.
 
-	$sth->execute();
+  my %o_hash = map { $_->dbID => $_ } @{$operons};
 
-	my ( $o_id, $tr_id );
-	$sth->bind_columns( \( $o_id, $tr_id ) );
+  my $o_id_str = join( ',', keys(%o_hash) );
 
-	my %tr_o_hash;
+  my $sth =
+    $self->prepare(   "SELECT operon_id, operon_transcript_id "
+		      . "FROM   operon_transcript "
+		      . "WHERE  operon_id IN ($o_id_str)" );
 
-	while ( $sth->fetch() ) {
-		$tr_o_hash{$tr_id} = $o_hash{$o_id};
-	}
+  $sth->execute();
 
-	my $ta = $self->db()->get_OperonTranscriptAdaptor();
-	my $transcripts =
-	  $ta->fetch_all_by_Slice( $ext_slice,
-							   1, undef,
-							   sprintf( "ot.operon_transcript_id IN (%s)",
-										join( ',',
-											  sort { $a <=> $b }
-												keys(%tr_o_hash) ) ) );
+  my ( $o_id, $tr_id );
+  $sth->bind_columns( \( $o_id, $tr_id ) );
 
-# Move transcripts onto operon_transcript slice, and add them to operon_transcripts.
-	foreach my $tr ( @{$transcripts} ) {
-		if ( !exists( $tr_o_hash{ $tr->dbID() } ) ) { next }
+  my %tr_o_hash;
 
-		my $new_tr;
-		if ( $slice != $ext_slice ) {
-			$new_tr = $tr->transfer($slice);
-			if ( !defined($new_tr) ) {
-				throw("Unexpected. "
-					. "Transcript could not be transfered onto OperonTranscript slice."
-				);
-			}
-		} else {
-			$new_tr = $tr;
-		}
+  while ( $sth->fetch() ) {
+    $tr_o_hash{$tr_id} = $o_hash{$o_id};
+  }
 
-		$tr_o_hash{ $tr->dbID() }->add_OperonTranscript($new_tr);
-	}
+  my $ta = $self->db()->get_OperonTranscriptAdaptor();
+  my $transcripts =
+    $ta->fetch_all_by_Slice( $ext_slice,
+			     1, undef,
+			     sprintf( "ot.operon_transcript_id IN (%s)",
+				      join( ',',
+					    sort { $a <=> $b }
+					    keys(%tr_o_hash) ) ) );
 
-	return $operons;
-} ## end sub fetch_all_by_Slice
+  # Move transcripts onto operon_transcript slice, and add them to operon_transcripts.
+  foreach my $tr ( @{$transcripts} ) {
+    if ( !exists( $tr_o_hash{ $tr->dbID() } ) ) {
+      next;
+    }
+
+    my $new_tr;
+    if ( $slice != $ext_slice ) {
+      $new_tr = $tr->transfer($slice);
+      if ( !defined($new_tr) ) {
+	throw("Unexpected. "
+	      . "Transcript could not be transfered onto OperonTranscript slice."
+	     );
+      }
+    } else {
+      $new_tr = $tr;
+    }
+
+    $tr_o_hash{ $tr->dbID() }->add_OperonTranscript($new_tr);
+  }
+
+  return $operons;
+}				## end sub fetch_all_by_Slice
 
 =head2 fetch_by_Operon
 

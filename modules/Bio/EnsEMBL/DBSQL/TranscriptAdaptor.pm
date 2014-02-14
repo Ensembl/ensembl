@@ -410,28 +410,58 @@ sub fetch_all_by_Slice {
   }
 
   # get extent of region spanned by transcripts
-  my ( $min_start, $max_end );
-  foreach my $tr (@$transcripts) {
-    if ( !defined($min_start) || $tr->seq_region_start() < $min_start )
-    {
-      $min_start = $tr->seq_region_start();
-    }
-    if ( !defined($max_end) || $tr->seq_region_end() > $max_end ) {
-      $max_end = $tr->seq_region_end();
-    }
-  }
-
+  my ($min_start, $max_end);
   my $ext_slice;
 
-  if ( $min_start >= $slice->start() && $max_end <= $slice->end() ) {
-    $ext_slice = $slice;
+  unless ($slice->is_circular()) {
+    foreach my $t (@$transcripts) {
+      if (!defined($min_start) || $t->seq_region_start() < $min_start) {
+	$min_start = $t->seq_region_start();
+      }
+      if (!defined($max_end) || $t->seq_region_end() > $max_end) {
+	$max_end = $t->seq_region_end();
+      }
+    }
+
+    if ($min_start >= $slice->start() && $max_end <= $slice->end()) {
+      $ext_slice = $slice;
+    } else {
+      my $sa = $self->db()->get_SliceAdaptor();
+      $ext_slice = $sa->fetch_by_region($slice->coord_system->name(), $slice->seq_region_name(), $min_start, $max_end, $slice->strand(), $slice->coord_system->version());
+    }
+
   } else {
+    # feature might be crossing the origin of replication (i.e. seq_region_start > seq_region_end)
+    # the computation of min_start|end based on seq_region_start|end is not safe
+    # use feature start/end relative to the slice instead
+    my ($min_start_feature, $max_end_feature);
+    foreach my $t (@$transcripts) {
+      if (!defined($min_start) || $t->start() < $min_start) {
+  	$min_start = $t->start();
+  	$min_start_feature = $t;
+      }
+      if (!defined($max_end) || $t->end() > $max_end) {
+  	$max_end = $t->end();
+  	$max_end_feature = $t;
+      }
+    }
+    
+    # now we can reassign min_start|end to seq_region_start|end of
+    # the feature which spans the largest region
+    $min_start = $min_start_feature->seq_region_start();
+    $max_end = $max_end_feature->seq_region_end();
+
     my $sa = $self->db()->get_SliceAdaptor();
-    $ext_slice = $sa->fetch_by_region(
-      $slice->coord_system->name(), $slice->seq_region_name(),
-      $min_start,                   $max_end,
-      $slice->strand(),             $slice->coord_system->version() );
+    $ext_slice = 
+      $sa->fetch_by_region($slice->coord_system->name(), 
+  			   $slice->seq_region_name(), 
+  			   $min_start, 
+  			   $max_end, 
+  			   $slice->strand(), 
+  			   $slice->coord_system->version());
   }
+
+
 
   # associate exon identifiers with transcripts
 
