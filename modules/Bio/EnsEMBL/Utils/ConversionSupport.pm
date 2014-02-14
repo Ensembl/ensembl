@@ -1108,8 +1108,8 @@ sub species {
 =cut
 
 sub sort_chromosomes {
-  my ($self, $chr_hashref) = @_;
-  $chr_hashref = $self->get_chrlength unless ($chr_hashref);
+  my ($self, $chr_hashref, $version, $include_non_reference) = @_;
+  $chr_hashref = $self->get_chrlength($self->dba, $version, 'chromosome', $include_non_reference) unless ($chr_hashref);
   throw("You have to pass a hashref of your chromosomes")
     unless ($chr_hashref and ref($chr_hashref) eq 'HASH');
   return (sort _by_chr_num keys %$chr_hashref);
