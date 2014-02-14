@@ -1075,31 +1075,21 @@ sub seq_region_start {
   my ($self) = @_;
 
   my $slice = $self->slice();
-
+  
   if ( defined($slice) ) {
+
+    return $self->_seq_region_start_from_db()
+      if $slice->is_circular();
+
     my $start;
-
     if ( $slice->strand() == 1 ) {
-      if ( defined( $self->start() ) ) {
-	  if ($self->start < 0 && $slice->is_circular) {
-	      $start = $slice->seq_region_length + $self->start;
-	  } else {
-        $start = $slice->start() + $self->start() - 1;
-    }
-      }
+      	$start = $slice->start() + $self->start() - 1
+	  if defined $self->start();
     } else {
-      if ( defined( $self->end() ) ) {
-        $start = $slice->end() - $self->end() + 1;
-      }
+      $start = $slice->end() - $self->end() + 1
+	if defined $self->end();
     }
-
-    if (    defined($start)
-         && $slice->is_circular()
-         && $start > $slice->seq_region_length() )
-    {
-      $start -= $slice->seq_region_length();
-    }
-
+    
     return $start;
   }
 
@@ -1605,6 +1595,18 @@ sub id {
   return $self->{'hseqname'} if($self->{'hseqname'});
   return $self->{'seqname'}  if($self->{'seqname'});
   return $self->{'dbID'};
+}
+
+sub _seq_region_start_from_db {
+  my $self = shift;
+  
+  my $sql_helper = 
+    $self->adaptor->dbc->sql_helper;
+  throw "Unable to get SqlHelper instance"
+    unless defined $sql_helper;
+
+  return $sql_helper->execute_single_result(-SQL => 
+					    "SELECT seq_region_start from ");
 }
 
 1;
