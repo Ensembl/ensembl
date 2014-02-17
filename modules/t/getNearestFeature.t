@@ -113,12 +113,13 @@ foreach (@$distances) {
 
 # Test primeless (= test from midpoint), both strands, downstream, range 1000
 ($results,$distances) = @{ $sfa->fetch_all_nearest_by_Feature($a,undef,undef,-1,3,1000,undef) };
-print $results->[0]->display_label . " overlaps ";
-print $distances->[0] . "\n";
-print $results->[1]->display_label . " overlaps ";
-print $distances->[1] . "\n";
-print $results->[2]->display_label . " overlaps ";
-print $distances->[2] . "\n";
+note(dump($distances));
+# print $results->[0]->display_label . " overlaps ";
+# print $distances->[0] . "\n";
+# print $results->[1]->display_label . " overlaps ";
+# print $distances->[1] . "\n";
+# print $results->[2]->display_label . " overlaps ";
+# print $distances->[2] . "\n";
 is($results->[0]->display_label, 'Test me!', 'First feature is itself');
 is($results->[1]->display_label, 'Downstream overlap', 'Second feature is closest downstream');
 is($results->[2]->display_label, 'Enveloping', 'Third feature is enveloping');
@@ -126,9 +127,29 @@ is($distances->[0], '0', 'Closest feature is on the same point');
 is($distances->[1], '7', 'Downstream is 7 away');
 is($distances->[2], '50', 'Enveloping end is 50 away');
 ($results, $distances) = @{ $sfa->fetch_all_nearest_by_Feature($a, undef, undef, 1, 2, 1000, undef) };
+note(dump($distances));
 is($results->[0]->display_label, 'Test me!', 'First feature is itself');
 is($results->[1]->display_label, 'Enveloping', 'Second feature upstream is enveloping');
 is($distances->[1], '50', 'Enveloping is 50 away');
 
+($results, $distances) = @{ $sfa->fetch_all_nearest_by_Feature($a, 5, undef, -1, 6, 1000, undef) };
 note(dump($distances));
+($results, $distances) = @{ $sfa->fetch_all_nearest_by_Feature($a, 3, undef, -1, 6, 1000, undef) };
+note(dump($distances));
+($results, $distances) = @{ $sfa->fetch_all_nearest_by_Feature($a, 5, undef, 1, 6, 1000, undef) };
+note(dump($distances));
+($results, $distances) = @{ $sfa->fetch_all_nearest_by_Feature($a, 3, undef, 1, 6, 1000, undef) };
+note(dump($distances));
+
+($results, $distances) = @{ $sfa->fetch_all_nearest_by_Feature($a, undef, 1, undef, 6, 1000, undef) };
+note(dump($distances));
+note(dump(map { $_->display_label } @$results));
+($results, $distances) = @{ $sfa->fetch_all_nearest_by_Feature($a, undef, -1, undef, 6, 1000, undef) };
+note(dump($distances));
+note(dump(map { $_->display_label } @$results));
+
+
+
+
+
 done_testing;
