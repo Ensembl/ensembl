@@ -172,14 +172,11 @@ sub exon {
       $difference = diff(\$old_seq, \$projected_seq);
 
       my $biotype_group = $biotype_manager->fetch_biotype($parent_gene)->biotype_group;
-      my $group_list = $biotype_manager->group_members($biotype_group);
-      foreach my $group (@$group_list) {
-        if ($group eq 'coding') {
-	  $state = '!!';
-          last;
-        }
+      if ($biotype_group eq 'coding') {
+        $state = '!!';
+      } else {
+        $state = '%%';
       }
-      $state = '%%' unless $state; # Middle badness
     }
 
     $location = sprintf('%d : %d', $projected_exon->start(), $projected_exon->end());
@@ -240,17 +237,11 @@ sub transcript {
 
     #Check if it was protein coding
     my $biotype_group = $biotype_manager->fetch_biotype($projected_transcript)->biotype_group;
-    my $group_list = $biotype_manager->group_members($biotype_group);
-    my $is_pc      = 0;
-    foreach my $group (@$group_list) {
-      if ($group eq 'coding') {
-        $is_pc = 1;
-        last;
-      }
-    }
 
+    my $is_pc = 0;
     #Now check for protein sequence mis-match
-    if ($is_pc) {
+    if ($biotype_group eq 'coding') {
+      $is_pc = 1;
       my $old_seq = $old_transcript->translate()->seq();
       my $new_seq = $projected_transcript->translate()->seq();
       $total_length = length($old_seq);
