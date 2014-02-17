@@ -1712,32 +1712,31 @@ sub fetch_all_nearest_by_Feature{
     #the gene strand is flipped between 5 and 3 for each case below
     1  => {5         => $table_syn.'.seq_region_start',
            3         => $table_syn.'.seq_region_start',
-           primeless => ''  }, #to avoid use of undef in %range_query
+           primeless => ''  },
     -1 => {5         => $table_syn.'.seq_region_end',
            3         => $table_syn.'.seq_region_end',
-           primeless => '' }); #to avoid use of undef in %range_query
+           primeless => '' }
+   ); #primeless = '' to avoid use of undef in %range_query
 
   #Range query for max_dist, should speed things up
-  if(defined($max_dist)){
-    #subselect works but not useful for range query
-    #hence have to duplicate calculation SQL rather than use field alias
+  #subselect works but not useful for range query
+  #hence have to duplicate calculation SQL rather than use field alias
 
-    #Need to account for strand_factor in here! $range_query{$fstrand*$stream}{$primed}
+  #Need to account for strand_factor in here! $range_query{$fstrand*$stream}{$primed}
 
-    $range_query{1}  = 
-     {primeless   => " (? - ${table_syn}.seq_region_start) <= $max_dist AND ",
-      primed_1    => ' (? - '.$target_start_end{1}{$prime}.") <= $max_dist AND ",
-      'primed_-1' => ' (? - '.$target_start_end{-1}{$prime}.") <= $max_dist AND "};
-    
-    $range_query{-1} = 
-     {primeless   => " (${table_syn}.seq_region_end - ?) <= $max_dist AND ",
-      primed_1    => ' ('.$target_start_end{1}{$prime}." - ?) <= $max_dist AND ",
-      'primed_-1' => ' ('.$target_start_end{-1}{$prime}." - ?) <= $max_dist AND "};
+  $range_query{1}  = 
+   {primeless   => " (? - ${table_syn}.seq_region_start) <= $max_dist AND ",
+    primed_1    => ' (? - '.$target_start_end{1}{$prime}.") <= $max_dist AND ",
+    'primed_-1' => ' (? - '.$target_start_end{-1}{$prime}.") <= $max_dist AND "};
+                      # ($feature->start + $feature_slice->start - 1) - seq_region_start
+  $range_query{-1} = 
+   {primeless   => " (${table_syn}.seq_region_end - ?) <= $max_dist AND ",
+    primed_1    => ' ('.$target_start_end{1}{$prime}." - ?) <= $max_dist AND ",
+    'primed_-1' => ' ('.$target_start_end{-1}{$prime}." - ?) <= $max_dist AND "};
 
-    #redefine execute params as we have added another bound param '?' above
-    @start_params    = ($sr_start, $sr_start, $seq_region_id, $sr_start);
-    @end_params      = ($sr_end, $sr_end, $seq_region_id, $sr_end);
-  }
+  #redefine execute params as we have added another bound param '?' above
+  @start_params    = ($sr_start, $sr_start, $seq_region_id, $sr_start);
+  @end_params      = ($sr_end, $sr_end, $seq_region_id, $sr_end);
 
   my %sql = 
    (     
@@ -1783,7 +1782,7 @@ sub fetch_all_nearest_by_Feature{
         ],
        #Do not have overlaps
        #Accounts for encompassing genes by removing last g.seq_region_end < f.seq_region_start
-       #Selects gene seq_region_start/end to used based on prime required
+       #Selects gene seq_region_start/end to be used based on prime required
        params => [@start_params, @start_params],
       },
      },
@@ -1845,8 +1844,8 @@ sub fetch_all_nearest_by_Feature{
 
   my $query =  "select x.${table}_id, x.dist from (\n".join("\nUNION\n", @sub_queries)."\n) as x order by abs(x.dist) limit $num_feats";
 
-  #warn $query."\n";
-  #foreach my $p (@params) { print "Using $p\n"; }
+  warn $query."\n";
+  foreach my $p (@params) { print "Using $p\n"; }
 
   my ($feat_id, $dist, @distances);
   my $sth = $self->prepare($query);
