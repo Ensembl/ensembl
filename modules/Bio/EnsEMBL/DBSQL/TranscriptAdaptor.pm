@@ -335,7 +335,6 @@ sub fetch_all_by_Gene {
     $slice = $gslice;
   }
 
-print "Fetching all transcripts for slice " . $slice->name() . "\n";
   my $transcripts =
     $self->fetch_all_by_Slice_constraint( $slice, $constraint );
 
