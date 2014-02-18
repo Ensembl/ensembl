@@ -1794,27 +1794,27 @@ sub fetch_normalized_slice_projection {
       my $chr_end;
       my $hap_end;
       if(defined($sort_haps[$count]) and defined($sort_haps[$count][0]) ){
-	$hap_end = $sort_haps[$count][0]-1;
-	$chr_end = $sort_haps[$count][3]-1
+        $hap_end = $sort_haps[$count][0]-1;
+        $chr_end = $sort_haps[$count][3]-1
       }
       else{
-	$last = 1;
-	$hap_end = $len1;
-	$chr_end = $len2;
-	my $diff = ($hap_end-$hap_start)-($chr_end-$chr_start);
-	if($diff > 0){
-	  push( @syms, [ $hap_start, $hap_end, $sort_haps[0][2], $chr_start, $chr_end+$diff] );  
-	}
-	elsif($diff < 0){
-	  push( @syms, [ $hap_start, $hap_end - $diff, $sort_haps[0][2], $chr_start, $chr_end] );  
-	}
-	else{
-	  push( @syms, [ $hap_start, $hap_end, $sort_haps[0][2], $chr_start, $chr_end] );  
-	}	
-	next;
+  $last = 1;
+  $hap_end = $len1;
+  $chr_end = $len2;
+  my $diff = ($hap_end-$hap_start)-($chr_end-$chr_start);
+  if($diff > 0){
+    push( @syms, [ $hap_start, $hap_end, $sort_haps[0][2], $chr_start, $chr_end+$diff] );  
+  }
+  elsif($diff < 0){
+    push( @syms, [ $hap_start, $hap_end - $diff, $sort_haps[0][2], $chr_start, $chr_end] );  
+  }
+  else{
+    push( @syms, [ $hap_start, $hap_end, $sort_haps[0][2], $chr_start, $chr_end] );  
+  }	
+  next;
       }
       if($hap_end and $hap_start < $len1){ # if hap at start or end of chromosome
-	push( @syms, [ $hap_start, $hap_end, $sort_haps[0][2], $chr_start, $chr_end] );  
+        push( @syms, [ $hap_start, $hap_end, $sort_haps[0][2], $chr_start, $chr_end] );  
       }
       $chr_start = $chr_end + ($sort_haps[$count][4]-$sort_haps[$count][3]) + 2;
       $hap_start = $hap_end + ($sort_haps[$count][1]-$sort_haps[$count][0]) + 2;
@@ -1853,7 +1853,7 @@ sub fetch_normalized_slice_projection {
   my @out;
   for my $coord ( @linked ) {
     if( $coord->isa( "Bio::EnsEMBL::Mapper::Gap" )) {
-	my $exc_slice = Bio::EnsEMBL::Slice->new_fast({
+      my $exc_slice = Bio::EnsEMBL::Slice->new_fast({
         'start'             => $coord->start(),
         'end'               => $coord->end(),
         'strand'            => $slice->strand(),
