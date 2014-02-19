@@ -1510,8 +1510,9 @@ sub remove_by_feature_id {
 
 =head2 fetch_all_nearest_by_Feature
 
-  Arg [1]    : -FEATURE ,Bio::EnsEMBL::Feature : 'Source' Feature to anchor the search for nearest Features of this adaptor type
-  Arg [2]    : -STRAND, Boolean (optional)  : Respect the strand of the source Feature with ref, only returning Features on the same strand
+  Arg [1]    : -FEATURE ,Bio::EnsEMBL::Feature : 'Source' Feature to anchor the search for nearest Features
+  Arg [2]    : -STRAND, Boolean (optional)  : Respect the strand of the source Feature with ref, only 
+                                              returning Features on the same strand
   Arg [3]    : -STREAM, -1/1 (optional) : Search downstream (-1) from the source Feature, or upstream (1)
   Arg [4]    : -RANGE, Int     : The size of the space to search for Features. Defaults to 1000 as a sensible starting point
   Arg [5]    : -NOT_OVERLAPPING, Boolean (optional) : Do not return Features that overlap the source Feature
@@ -1519,13 +1520,28 @@ sub remove_by_feature_id {
   Arg [7]    : -THREE_PRIME, Boolean (optional): Determine range to a Feature by the 3' end, respecting strand
   Arg [8]    : -LIMIT, Int     : The maximum number of Features to return.
   Example    : #To fetch the gene(s) with the nearest 5' end:
-               $genes = $gene_adaptor->fetch_nearest_Gene_by_Feature($feat, 5);
+               $genes = $gene_adaptor->fetch_all_nearest_by_Feature(-FEATURE => $feat, -FIVE_PRIME => 1);
 
-  Description: Gets the nearest Features to a given 'source' Feature.
+  Description: Gets the nearest Features to a given 'source' Feature. The Feature returned and the format of the result are non-obvious,
+               please read on.
+
+               When looking beyond the boundaries of the source Feature, the distance is measured to the nearest end of that
+               Feature to the nearby Feature's nearest end.
                If Features overlap the source Feature, then a minimal distance to the middle of the source Feature is given.
-               This helps to determine which Feature is nearest, when they all have an effective zero distance.
+               This helps to determine which Feature is nearest, when they all have an effective zero distance. 
+               
+               fetch_all_nearest_by_Feature will find the 'source' Feature if it is of the same type as the Adaptor being
+               used. This behaviour can be hidden by using -NOT_OVERLAPPING.
+
+               Features are found and prioritised within 1000 base pairs unless a -RANGE is given to the method. Any overlap with
+               the search region is included, and the results can be restricted to upstream, downstream, forward strand or reverse
+
+               The -FIVE_PRIME and -THREE_PRIME options allow searching for specific ends of nearby features, but still needs
+               a -STREAM value and/or -NOT_OVERLAPPING to fulfil its most common application.
+
 
   Returntype : Listref containing an Arrayref of Bio::EnsEMBL::Feature objects, their overlap status, and distance
+               [ [$feature, $overlap, $distance] ... ]
   Caller     : general
   Status     : At risk
 
@@ -1545,21 +1561,6 @@ sub fetch_all_nearest_by_Feature{
     my ($region_start,$region_end);
     
     # Define search box.
-
-    # if ($stream) {
-    #     if ($stream == -1) { # aka downstream
-    #         $region_start = $ref_feature->start;
-    #         $region_end = $ref_feature->end + $search_range;
-    #     } elsif ($stream == 1) { # aka upstream
-    #         $region_start = $ref_feature->start - $search_range;
-    #         $region_end = $ref_feature->end;
-    #     } else { # up and downstream, the default
-    #         $region_start = $ref_feature->start - $search_range;
-    #         $region_end = $ref_feature->end + $search_range;
-    #     }
-    # }
-
-    # my $slice = $ref_feature->slice;
     my $slice = $ref_feature->feature_Slice;
 
     my $five_prime_expansion = 0;
@@ -1587,27 +1588,9 @@ sub fetch_all_nearest_by_Feature{
       }
     }
 
-    # # Find features in search box
-    # my $search_slices = $sa->fetch_by_region( $slice->coord_system_name,
-    #                                           $slice->seq_region_name,
-    #                                           $region_start,
-    #                                           $region_end,
-    #                                           $ref_feature->strand,
-    #                                           $slice->coord_system->version);
-    # print "Found :".scalar @$search_slices."\n";
-    # foreach my $s (@$search_slices) { print $s->name."\n"}
-    # my @candidates;
-    # foreach my $slice (@$search_slices) {
-    #     my @more_candidates = @{ $self->fetch_all_by_Slice($slice) };
-    #     foreach my $feature (@more_candidates) {
-    #       next if ($respect_strand && $feature->strand != $ref_feature->strand);
-    #       push @candidates,$feature;
-    #     }
+    # foreach my $cand( @candidates) {
+    #   print "Found ".$cand->display_label." on strand".$cand->strand."\n";
     # }
-
-    foreach my $cand( @candidates) {
-      print "Found ".$cand->display_label." on strand".$cand->strand."\n";
-    }
     # Then sort and prioritise the candidates
     my $finalists; # = [[feature, overlapping or not, distance],..]
     $finalists = $self->select_nearest($ref_feature,\@candidates,$limit,$not_overlapping,$five_prime,$three_prime);
@@ -1648,15 +1631,18 @@ sub select_nearest {
             next if ($not_overlapping);
             $overlaps = 1;
         }
-        if ($five_prime) {$shortest_distance = $self->_compute_nearest_five_prime($ref_start,$ref_midpoint,$ref_end,$neigh_start,$neigh_midpoint,$neigh_end)}
-        elsif ($three_prime) {$shortest_distance = $self->_compute_nearest_three_prime($ref_start,$ref_midpoint,$ref_end,$neigh_start,$neigh_midpoint,$neigh_end)}
-        else {$shortest_distance = $self->_compute_nearest($ref_start,$ref_midpoint,$ref_end,$neigh_start,$neigh_midpoint,$neigh_end)}
+        my @args = ($ref_start,$ref_midpoint,$ref_end,$neigh_start,$neigh_midpoint,$neigh_end);
+        if ($five_prime) {$shortest_distance = $self->_compute_nearest_five_prime($args)}
+        elsif ($three_prime) {$shortest_distance = $self->_compute_nearest_three_prime(@args)}
+        else {$shortest_distance = $self->_compute_nearest(@args)}
         push @$position_matrix,[ $neighbour, $overlaps, $shortest_distance];
     }
     # order by overlaps flag, then distance to give a good chance at an early exit.
-    # Wow, not proud of this line. It sorts and re-emits the original array in sorted order.
+    # Wow, not proud of this line. It re-emits the original array in sorted order.
+    # $position_matrix looks like this:
+    # [ [ $feature, $overlap T/F, closest measure of distance] ] 
     my @ordered_matrix = map { [$_->[0],$_->[1],$_->[2]] } sort { $b->[1] <=> $a->[1] || abs($a->[2]) <=> abs($b->[2]) } @$position_matrix;
-    # Knock off unwanted hits.
+    # Knock off unwanted hits. They asked for two, they get two.
     splice @ordered_matrix, $limit;
     return \@ordered_matrix;
 }
