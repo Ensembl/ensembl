@@ -5,8 +5,9 @@ perl:
   - "5.12"
 
 env:
-  - COVERALLS=true
-  - COVERALLS=false
+  - COVERALLS=true  DB=mysql
+  - COVERALLS=false DB=mysql
+  - COVERALLS=false DB=sqlite
 
 before_install:
     - sudo apt-get -y update
@@ -33,7 +34,5 @@ matrix:
 
 notifications:
   email:
-  recipients:
-    - secure: "fKzuA5h7oBhhCLaUQj0HbNNrLe6QqRMcm+4lGAVbEtfrAhFrIuu/G8Mb47ALZotkMw2R7FniWVR/oniCNlok51lKdGGWe5t0HATf9NJ7+AjQ1rV+GgM8ijHzbDW6AIH5Z5e+WXIK2/q3kXVc6Pm+V1BF9dESF/PksvvcnMA/0t0="
-  on_success: always
-  on_failure: always
+    on_success: always
+    on_failure: always
