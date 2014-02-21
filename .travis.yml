@@ -20,7 +20,8 @@ before_install:
 install:
     - cpanm -v --installdeps --notest .
     - cpanm -n Devel::Cover::Report::Coveralls
-    - cp travisci/MultiTestDB.conf.travisci modules/t/MultiTestDB.conf
+    - cp travisci/MultiTestDB.conf.travisci.mysql  modules/t/MultiTestDB.conf.mysql
+    - cp travisci/MultiTestDB.conf.travisci.SQLite modules/t/MultiTestDB.conf.SQLite
 
 script: "./travisci/harness.sh"
 
@@ -28,9 +29,11 @@ script: "./travisci/harness.sh"
 matrix:
   exclude:
     - perl: "5.12"
-      env: COVERALLS=true
+      env: COVERALLS=true  DB=mysql
+    - perl: "5.12"
+      env: COVERALLS=false DB=sqlite
     - perl: "5.14"
-      env: COVERALLS=false
+      env: COVERALLS=false DB=mysql
 
 notifications:
   email:
