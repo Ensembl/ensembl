@@ -1632,7 +1632,7 @@ sub select_nearest {
             $overlaps = 1;
         }
         my @args = ($ref_start,$ref_midpoint,$ref_end,$neigh_start,$neigh_midpoint,$neigh_end);
-        if ($five_prime) {$shortest_distance = $self->_compute_nearest_five_prime($args)}
+        if ($five_prime) {$shortest_distance = $self->_compute_nearest_five_prime(@args)}
         elsif ($three_prime) {$shortest_distance = $self->_compute_nearest_three_prime(@args)}
         else {$shortest_distance = $self->_compute_nearest(@args)}
         push @$position_matrix,[ $neighbour, $overlaps, $shortest_distance];
