@@ -135,14 +135,21 @@ cmp_ok(scalar(@results),'==', 1, 'Found distant feature only upstream and downst
 # print_what_you_got(\@results);
 cmp_ok(scalar(@results), '==', 4,'Found all features in area');
 
-# THESE DO NOT WORK yet.
 @results = @{ $sfa->fetch_all_nearest_by_Feature(-FEATURE => $a, -LIMIT => 5, -THREE_PRIME => 1) };
-print_what_you_got(\@results);
 
 @results = @{ $sfa->fetch_all_nearest_by_Feature(-FEATURE => $a, -LIMIT => 5, -FIVE_PRIME => 1) };
+
+@results = @{ $sfa->fetch_all_nearest_by_Feature(-FEATURE => $d, -LIMIT => 6) };
+cmp_ok(scalar(@results), '==', 6, 'Assembly exception brings in HAP data');
+
+
+@results = @{ $sfa->fetch_all_nearest_by_Feature(-FEATURE => $d, -LIMIT => 6, -STRAND => 1) };
+cmp_ok(scalar(@results), '==', 5, 'Strand restriction removes reverse stranded feature');
+
+
+@results = @{ $sfa->fetch_all_nearest_by_Feature(-FEATURE => $e, -LIMIT => 6, -STRAND => 1) };
 print_what_you_got(\@results);
-
-
+cmp_ok(scalar(@results), '==', 1, 'Reverse strand restriction removes all candidates');
 sub print_what_you_got {
     my $results = shift;
     note ("Results:");

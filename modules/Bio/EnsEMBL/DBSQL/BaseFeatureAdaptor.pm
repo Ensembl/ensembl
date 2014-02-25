@@ -1582,7 +1582,9 @@ sub fetch_all_nearest_by_Feature{
       my @more_candidates = @{$self->fetch_all_by_Slice($ps->[2])};
       #@candidates = grep { } instead
       foreach my $feature (@more_candidates) {
-          next if ($respect_strand && $feature->strand != $ref_feature->strand);
+          # normalised projection, has altered all strands relative to the original Feature,
+          # therefore opposite strand is -1
+          next if ($respect_strand && $feature->strand != 1);
           push @candidates,$feature;
       }
     }
@@ -1688,9 +1690,9 @@ sub _compute_nearest_end {
 
     if ($rh_dist <= 0 || $lh_dist >= 0) {
         # In the event of overlap, find the smallest distance to the middle of the reference feature
-        my $start_middle = $ref_midpoint - $f_start;
-        my $end_middle = $ref_midpoint - $f_end;
-        my $middle_middle = $ref_midpoint - $f_midpoint;
+        my $start_middle = $f_start - $ref_midpoint;
+        my $end_middle = $f_end - $ref_midpoint;
+        my $middle_middle = $f_midpoint - $ref_midpoint;
         ( $adjusted_dist ) = sort {abs($a) <=> abs($b)} ($start_middle, $middle_middle, $end_middle );
     } elsif ( $rh_dist > 0 ) {
         $adjusted_dist = $rh_dist;
@@ -1709,7 +1711,7 @@ sub _compute_nearest_end {
   Arg [5]    : Considered feature mid-point
   Arg [6]    : Considered feature end
   Arg [7]    : Considered feature strand
-  Example    : $distance = $feature_adaptor->_compute_five_prime_distance($ref_start,$ref_midpoint,$ref_end,$f_start,$f_midpoint,$f_end,$f_strand)
+  Example    : $distance = $feature_adaptor->_compute_prime_distance($ref_start,$ref_midpoint,$ref_end,$f_start,$f_midpoint,$f_end,$f_strand)
   Description: Calculate the smallest distance to the 5' end of the considered feature
   Returntype : Integer distance in base pairs or a string warning that the result doesn't mean anything.
                Nearest 5' and 3' features shouldn't reside inside the reference Feature
@@ -1721,9 +1723,9 @@ sub _compute_prime_distance {
     
     my $prime_end;
     if ($five_prime) { 
-      ($f_strand ==1 ) ? $f_start: $f_end;
+      $prime_end = ($f_strand ==1 ) ? $f_start : $f_end;
     } else { # three prime end required
-      ($f_strand ==1 ) ? $f_end: $f_start;
+      $prime_end = ($f_strand ==1 ) ? $f_end : $f_start;
     };
 
     my $rh_dist = $prime_end - $ref_end;
@@ -1732,12 +1734,12 @@ sub _compute_prime_distance {
     # If feature's end falls outside of the reference feature, compute distance to reference midpoint.
     if ($rh_dist > 0) {
       if ($lh_dist < 0) { $effective_distance = "Ignore me"}
-      $effective_distance = $ref_midpoint - $f_end if ($f_strand == 1);
-      $effective_distance = $ref_midpoint - $f_start if ($f_strand == -1);
+      $effective_distance = $f_end - $ref_midpoint if ($f_strand == 1);
+      $effective_distance = $f_start - $ref_midpoint if ($f_strand == -1);
     } elsif ($lh_dist < 0) {
       if ($rh_dist > 0) { $effective_distance = "Ignore me"}
-      $effective_distance = $ref_midpoint - $f_end if ($f_strand == 1);
-      $effective_distance = $ref_midpoint - $f_start if ($f_strand == -1);
+      $effective_distance = $f_end - $ref_midpoint if ($f_strand == 1);
+      $effective_distance = $f_start - $ref_midpoint if ($f_strand == -1);
     } else {
       $effective_distance = "Ignore me";
     }
