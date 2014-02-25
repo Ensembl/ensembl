@@ -1518,7 +1518,7 @@ sub remove_by_feature_id {
   Arg [5]    : -NOT_OVERLAPPING, Boolean (optional) : Do not return Features that overlap the source Feature
   Arg [6]    : -FIVE_PRIME, Boolean (optional) : Determine range to a Feature by the 5' end, respecting strand
   Arg [7]    : -THREE_PRIME, Boolean (optional): Determine range to a Feature by the 3' end, respecting strand
-  Arg [8]    : -LIMIT, Int     : The maximum number of Features to return.
+  Arg [8]    : -LIMIT, Int     : The maximum number of Features to return, defaulting to one
   Example    : #To fetch the gene(s) with the nearest 5' end:
                $genes = $gene_adaptor->fetch_all_nearest_by_Feature(-FEATURE => $feat, -FIVE_PRIME => 1);
 
@@ -1575,22 +1575,18 @@ sub fetch_all_nearest_by_Feature{
     }
 
     $slice = $slice->expand( $five_prime_expansion, $three_prime_expansion);
-    print "Stretched Ref_slice ".$slice->name."\n";
     my $sa = $self->db->get_SliceAdaptor;
     my @candidates; # Features in the search region
     my $search_projections = $sa->fetch_normalized_slice_projection($slice);
     foreach my $ps (@$search_projections) {
-      print "Found : ".$ps->[2]->name."\n";
       my @more_candidates = @{$self->fetch_all_by_Slice($ps->[2])};
+      #@candidates = grep { } instead
       foreach my $feature (@more_candidates) {
           next if ($respect_strand && $feature->strand != $ref_feature->strand);
           push @candidates,$feature;
       }
     }
 
-    # foreach my $cand( @candidates) {
-    #   print "Found ".$cand->display_label." on strand".$cand->strand."\n";
-    # }
     # Then sort and prioritise the candidates
     my $finalists; # = [[feature, overlapping or not, distance],..]
     $finalists = $self->select_nearest($ref_feature,\@candidates,$limit,$not_overlapping,$five_prime,$three_prime);
@@ -1598,6 +1594,23 @@ sub fetch_all_nearest_by_Feature{
     return $finalists;
 }
 
+
+=head2 select_nearest
+
+  Arg [1]    : Bio::Ensembl::Feature, a Feature to find the nearest neighbouring feature to.
+  Arg [2]    : Listref of Features to be considered for nearness.
+  Arg [3]    : Integer, limited number of Features to return. Excess Features are forgotten
+  Arg [4]    : Boolean, Overlapping prohibition. Overlapped Features are forgotten
+  Arg [5]    : Boolean, use the 5' ends of the nearby features for distance calculation
+  Arg [6]    : Boolean, use the 3' ends of the nearby features for distance calculation
+  Example    : $feature_list = $feature_adaptor->select_nearest($ref_feature,\@candidates,$limit,$not_overlapping)
+  Description: Take a list of possible features, and determine which is nearest. Nearness is a
+               tricky concept. Beware of using the distance between Features, as it may not be the number you think
+               it should be.
+  Returntype : listref of Features ordered by proximity
+  Caller     : BaseFeatureAdaptor->fetch_all_nearest_by_Feature
+
+=cut
 
 sub select_nearest {
     my $self = shift;
@@ -1613,7 +1626,7 @@ sub select_nearest {
     my $ref_end = $ref_feature->end;
     my $ref_midpoint = $self->_compute_midpoint($ref_feature);
     
-    my $position_matrix;
+    my $position_matrix = [];
     my $shortest_distance;
 
     foreach my $neighbour (@$candidates) {
@@ -1631,12 +1644,16 @@ sub select_nearest {
             next if ($not_overlapping);
             $overlaps = 1;
         }
-        my @args = ($ref_start,$ref_midpoint,$ref_end,$neigh_start,$neigh_midpoint,$neigh_end);
-        if ($five_prime) {$shortest_distance = $self->_compute_nearest_five_prime(@args)}
-        elsif ($three_prime) {$shortest_distance = $self->_compute_nearest_three_prime(@args)}
-        else {$shortest_distance = $self->_compute_nearest(@args)}
-        push @$position_matrix,[ $neighbour, $overlaps, $shortest_distance];
+        my @args = ($ref_start,$ref_midpoint,$ref_end,$neigh_start,$neigh_midpoint,$neigh_end,$neighbour->strand);
+        if ($five_prime || $three_prime) {
+          my $five = $five_prime ? 1 : 0; # Choose 5' or 3' end, and find that
+          $shortest_distance = $self->_compute_prime_distance($five,@args);
+        }
+        else {$shortest_distance = $self->_compute_nearest_end(@args)}
+        push @$position_matrix,[ $neighbour, $overlaps, $shortest_distance] unless ($shortest_distance eq "Ignore me");
     }
+    #if (scalar(@$position_matrix) < 1 ) { return []}
+    
     # order by overlaps flag, then distance to give a good chance at an early exit.
     # Wow, not proud of this line. It re-emits the original array in sorted order.
     # $position_matrix looks like this:
@@ -1647,7 +1664,22 @@ sub select_nearest {
     return \@ordered_matrix;
 }
 
-sub _compute_nearest {
+=head2 _compute_nearest_end
+
+  Arg [1]    : Reference feature start
+  Arg [2]    : Reference feature mid-point
+  Arg [3]    : Reference feature end
+  Arg [4]    : Considered feature start
+  Arg [5]    : Considered feature mid-point
+  Arg [6]    : Considered feature end
+  Example    : $distance = $feature_adaptor->_compute_nearest_end($ref_start,$ref_midpoint,$ref_end,$f_start,$f_midpoint,$f_end)
+  Description: For a given feature, calculate the smallest legitimate distance to a reference feature
+               Calculate by mid-points to accommodate overlaps
+  Returntype : Integer distance in base pairs
+  Caller     : BaseFeatureAdaptor->select_nearest()
+
+=cut
+sub _compute_nearest_end {
     my ($self,$ref_start,$ref_midpoint,$ref_end,$f_start,$f_midpoint,$f_end) = @_;
     # general case
     my $rh_dist = $f_start - $ref_end;
@@ -1668,30 +1700,60 @@ sub _compute_nearest {
     return $adjusted_dist;
 }
 
-sub _compute_nearest_five_prime {
-    my ($self,$ref_start,$ref_midpoint,$ref_end,$ref_strand,$f_start,$f_midpoint,$f_end,$f_strand) = @_;
+=head2 _compute_prime_distance
+
+  Arg [1]    : Reference feature start
+  Arg [2]    : Reference feature mid-point
+  Arg [3]    : Reference feature end
+  Arg [4]    : Considered feature start
+  Arg [5]    : Considered feature mid-point
+  Arg [6]    : Considered feature end
+  Arg [7]    : Considered feature strand
+  Example    : $distance = $feature_adaptor->_compute_five_prime_distance($ref_start,$ref_midpoint,$ref_end,$f_start,$f_midpoint,$f_end,$f_strand)
+  Description: Calculate the smallest distance to the 5' end of the considered feature
+  Returntype : Integer distance in base pairs or a string warning that the result doesn't mean anything.
+               Nearest 5' and 3' features shouldn't reside inside the reference Feature
+  Caller     : BaseFeatureAdaptor->select_nearest()
+
+=cut
+sub _compute_prime_distance {
+    my ($self,$five_prime,$ref_start,$ref_midpoint,$ref_end,$f_start,$f_midpoint,$f_end,$f_strand) = @_;
     
-    my $rh_dist = (($f_strand == 1) ? $f_start : $f_end ) - $ref_end;
-    my $lh_dist = (($f_strand == 1) ? $f_start : $f_end ) - $ref_start;
+    my $prime_end;
+    if ($five_prime) { 
+      ($f_strand ==1 ) ? $f_start: $f_end;
+    } else { # three prime end required
+      ($f_strand ==1 ) ? $f_end: $f_start;
+    };
 
-    if ($rh_dist <= 0 || $lh_dist >= 0) {
-        return $ref_midpoint - $f_start if ($f_strand == 1);
-        return $ref_midpoint - $f_end if ($f_strand == -1);
-    } 
-}
-
-sub _compute_nearest_three_prime {
-    my ($self,$ref_start,$ref_midpoint,$ref_end,$ref_strand,$f_start,$f_midpoint,$f_end,$f_strand) = @_;
-    
-    my $rh_dist = (($f_strand == 1) ? $f_end : $f_start ) - $ref_end;
-    my $lh_dist = (($f_strand == 1) ? $f_end : $f_start ) - $ref_start;
-
-    if ($rh_dist <= 0 || $lh_dist >= 0) {
-        return $ref_midpoint - $f_end if ($f_strand == 1);
-        return $ref_midpoint - $f_start if ($f_strand == -1);
+    my $rh_dist = $prime_end - $ref_end;
+    my $lh_dist = $prime_end - $ref_start;
+    my $effective_distance;
+    # If feature's end falls outside of the reference feature, compute distance to reference midpoint.
+    if ($rh_dist > 0) {
+      if ($lh_dist < 0) { $effective_distance = "Ignore me"}
+      $effective_distance = $ref_midpoint - $f_end if ($f_strand == 1);
+      $effective_distance = $ref_midpoint - $f_start if ($f_strand == -1);
+    } elsif ($lh_dist < 0) {
+      if ($rh_dist > 0) { $effective_distance = "Ignore me"}
+      $effective_distance = $ref_midpoint - $f_end if ($f_strand == 1);
+      $effective_distance = $ref_midpoint - $f_start if ($f_strand == -1);
+    } else {
+      $effective_distance = "Ignore me";
     }
+    return $effective_distance;
 }
 
+=head2 _compute_midpoint
+
+  Arg [1]    : Bio::EnsEMBL::Feature
+  Example    : $middle = $feature_adaptor->_compute_midpoint($feature);
+  Description: Calculate the mid-point of a Feature. Used for comparing Features that overlap each other
+               and determining a canonical distance between two Features for the majority of use cases.
+  Returntype : Integer coordinate rounded down.
+  Caller     : BaseFeatureAdaptor->select_nearest()
+
+=cut
 sub _compute_midpoint {
     my $self = shift;
     my $feature = shift;

@@ -105,20 +105,54 @@ cmp_ok(scalar(@{$sfa->fetch_all}),'==',6,'verify successful storage of test feat
 
 my @results = @{ $sfa->fetch_all_nearest_by_Feature(-FEATURE => $a, -STREAM => -1, -LIMIT => 2) };
 
-for (my $i =0 ; $i<scalar(@results);$i++) {
-    my ($feature,$overlap,$distance) = @{$results[$i]};
-    note("Final result: ".$feature->display_id." at ".$distance.". Overlap? ".$overlap);
+cmp_ok($results[0]->[2], '==', 0,'Nearest feature is very very close indeed');
+cmp_ok($results[1]->[2], '==', 0,'Next nearest feature is also exceedingly close');
+
+# print_what_you_got(\@results);
+
+
+@results = @{ $sfa->fetch_all_nearest_by_Feature(-FEATURE => $a,-STREAM => -1, -LIMIT => 5) };
+cmp_ok(scalar(@results), '==', 4,'Found all features downstream');
+#print_what_you_got(\@results);
+
+@results = @{ $sfa->fetch_all_nearest_by_Feature(-FEATURE => $a, -STREAM => 1, -LIMIT => 5) };
+# print_what_you_got(\@results);
+cmp_ok(scalar(@results), '==', 3,'Found only overlapping features upstream');
+
+@results = @{ $sfa->fetch_all_nearest_by_Feature(-FEATURE => $a, -STREAM => 1, -LIMIT => 5, -NOT_OVERLAPPING => 1) };
+# print_what_you_got(\@results);
+cmp_ok(scalar(@results), '==', 0, 'Found nothing upstream after excluding overlaps');
+
+@results = @{ $sfa->fetch_all_nearest_by_Feature(-FEATURE => $a, -STREAM => -1, -LIMIT => 5, -NOT_OVERLAPPING => 1) };
+# print_what_you_got(\@results);
+cmp_ok(scalar(@results),'==', 1, 'Found distant feature only downstream, after excluding overlaps');
+
+@results = @{ $sfa->fetch_all_nearest_by_Feature(-FEATURE => $a, -LIMIT => 5, -NOT_OVERLAPPING => 1) };
+# print_what_you_got(\@results);
+cmp_ok(scalar(@results),'==', 1, 'Found distant feature only upstream and downstream, after excluding overlaps');
+
+@results = @{ $sfa->fetch_all_nearest_by_Feature(-FEATURE => $a, -LIMIT => 5) };
+# print_what_you_got(\@results);
+cmp_ok(scalar(@results), '==', 4,'Found all features in area');
+
+# THESE DO NOT WORK yet.
+@results = @{ $sfa->fetch_all_nearest_by_Feature(-FEATURE => $a, -LIMIT => 5, -THREE_PRIME => 1) };
+print_what_you_got(\@results);
+
+@results = @{ $sfa->fetch_all_nearest_by_Feature(-FEATURE => $a, -LIMIT => 5, -FIVE_PRIME => 1) };
+print_what_you_got(\@results);
+
+
+sub print_what_you_got {
+    my $results = shift;
+    note ("Results:");
+    if (scalar(@$results) == 0) { note("No hits"); return;}
+    for (my $i =0 ; $i<scalar(@$results);$i++) {
+        my ($feature,$overlap,$distance) = @{$results->[$i]};
+        note("Feature: ".$feature->display_id." at ".$distance.". Overlap? ".$overlap);
+    }
 }
 
-# # Test primeless (= test from midpoint), both strands, downstream, range 1000
-# ($results,$distances) = @{ $sfa->fetch_all_nearest_by_Feature(-FEATURE => $a,-STREAM => -1, -LIMIT => 3) };
-# note(dump($distances));
-# # print $results->[0]->display_label . " overlaps ";
-# # print $distances->[0] . "\n";
-# # print $results->[1]->display_label . " overlaps ";
-# # print $distances->[1] . "\n";
-# # print $results->[2]->display_label . " overlaps ";
-# # print $distances->[2] . "\n";
 # is($results->[0]->display_label, 'Test me!', 'First feature is itself');
 # is($results->[1]->display_label, 'Downstream overlap', 'Second feature is closest downstream');
 # is($results->[2]->display_label, 'Enveloping', 'Third feature is enveloping');
