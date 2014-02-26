@@ -1577,18 +1577,8 @@ sub fetch_all_nearest_by_Feature{
     $slice = $slice->expand( $five_prime_expansion, $three_prime_expansion);
     my $sa = $self->db->get_SliceAdaptor;
     my @candidates; # Features in the search region
-    my $search_projections = $sa->fetch_normalized_slice_projection($slice);
-    foreach my $ps (@$search_projections) {
-      my @more_candidates = @{$self->fetch_all_by_Slice($ps->[2])};
-      #@candidates = grep { } instead
-      foreach my $feature (@more_candidates) {
-          # normalised projection, has altered all strands relative to the original Feature,
-          # therefore opposite strand is -1
-          next if ($respect_strand && $feature->strand != 1);
-          push @candidates,$feature;
-      }
-    }
-
+    @candidates = @{$self->fetch_all_by_Slice($slice)};
+    if ($respect_strand == 1) { @candidates = grep {$_->strand == 1} @candidates }
     # Then sort and prioritise the candidates
     my $finalists; # = [[feature, overlapping or not, distance],..]
     $finalists = $self->select_nearest($ref_feature,\@candidates,$limit,$not_overlapping,$five_prime,$three_prime);
@@ -1627,7 +1617,7 @@ sub select_nearest {
     my $ref_start = ($ref_feature->start < $ref_feature->end) ? $ref_feature->start : $ref_feature->start - $ref_feature->length; # Not ->end, in case circular
     my $ref_end = $ref_feature->end;
     my $ref_midpoint = $self->_compute_midpoint($ref_feature);
-    
+
     my $position_matrix = [];
     my $shortest_distance;
 

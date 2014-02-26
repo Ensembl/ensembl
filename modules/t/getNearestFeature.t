@@ -103,6 +103,10 @@ $sfa->store(@simple_features);
 
 cmp_ok(scalar(@{$sfa->fetch_all}),'==',6,'verify successful storage of test features');
 
+# Test distance calculations
+cmp_ok($sfa->_compute_midpoint($a), '==', 30300105, 'Midpoints calculated correctly');
+my $distance = $sfa->_compute_nearest_end($a->start,$sfa->_compute_midpoint($a),$a->end,$c->start,$sfa->_compute_midpoint($c),$c->end);
+cmp_ok($distance, '==', 155, 'A->C distance correct, i.e. nearest edge to reference middle');
 my @results = @{ $sfa->fetch_all_nearest_by_Feature(-FEATURE => $a, -STREAM => -1, -LIMIT => 2) };
 
 cmp_ok($results[0]->[2], '==', 0,'Nearest feature is very very close indeed');
@@ -113,17 +117,19 @@ cmp_ok($results[1]->[2], '==', 0,'Next nearest feature is also exceedingly close
 
 @results = @{ $sfa->fetch_all_nearest_by_Feature(-FEATURE => $a,-STREAM => -1, -LIMIT => 5) };
 cmp_ok(scalar(@results), '==', 4,'Found all features downstream');
+is($results[0]->[0]->display_id, 'Enveloping','Found enveloping feature first');
 #print_what_you_got(\@results);
 
 @results = @{ $sfa->fetch_all_nearest_by_Feature(-FEATURE => $a, -STREAM => 1, -LIMIT => 5) };
+is($results[0]->[0]->display_id, 'Enveloping','Found enveloping feature first upstream');
 # print_what_you_got(\@results);
 cmp_ok(scalar(@results), '==', 3,'Found only overlapping features upstream');
 
 @results = @{ $sfa->fetch_all_nearest_by_Feature(-FEATURE => $a, -STREAM => 1, -LIMIT => 5, -NOT_OVERLAPPING => 1) };
-# print_what_you_got(\@results);
 cmp_ok(scalar(@results), '==', 0, 'Found nothing upstream after excluding overlaps');
 
 @results = @{ $sfa->fetch_all_nearest_by_Feature(-FEATURE => $a, -STREAM => -1, -LIMIT => 5, -NOT_OVERLAPPING => 1) };
+is($results[0]->[0]->display_id, 'Downstream far','Found downstream feature first downstream without overlaps');
 # print_what_you_got(\@results);
 cmp_ok(scalar(@results),'==', 1, 'Found distant feature only downstream, after excluding overlaps');
 
@@ -148,8 +154,13 @@ cmp_ok(scalar(@results), '==', 5, 'Strand restriction removes reverse stranded f
 
 
 @results = @{ $sfa->fetch_all_nearest_by_Feature(-FEATURE => $e, -LIMIT => 6, -STRAND => 1) };
-print_what_you_got(\@results);
+# print_what_you_got(\@results);
 cmp_ok(scalar(@results), '==', 1, 'Reverse strand restriction removes all candidates');
+
+@results = @{ $sfa->fetch_all_nearest_by_Feature(-FEATURE => $e, -LIMIT => 6, -STREAM => 1, -THREE_PRIME => 1) };
+# print_what_you_got(\@results);
+cmp_ok(scalar(@results), '==', 5, 'Upstream of reverse stranded feature gives all five features');
+
 sub print_what_you_got {
     my $results = shift;
     note ("Results:");
@@ -159,37 +170,5 @@ sub print_what_you_got {
         note("Feature: ".$feature->display_id." at ".$distance.". Overlap? ".$overlap);
     }
 }
-
-# is($results->[0]->display_label, 'Test me!', 'First feature is itself');
-# is($results->[1]->display_label, 'Downstream overlap', 'Second feature is closest downstream');
-# is($results->[2]->display_label, 'Enveloping', 'Third feature is enveloping');
-# is($distances->[0], '0', 'Closest feature is on the same point');
-# is($distances->[1], '7', 'Downstream is 7 away');
-# is($distances->[2], '50', 'Enveloping end is 50 away');
-# ($results, $distances) = @{ $sfa->fetch_all_nearest_by_Feature(-FEATURE => $a, -STREAM => 1, -LIMIT => 2) };
-# note(dump($distances));
-# is($results->[0]->display_label, 'Test me!', 'First feature is itself');
-# is($results->[1]->display_label, 'Enveloping', 'Second feature upstream is enveloping');
-# is($distances->[1], '50', 'Enveloping is 50 away');
-
-# ($results, $distances) = @{ $sfa->fetch_all_nearest_by_Feature($a, 5, undef, -1, 6, 1000, undef) };
-# note(dump($distances));
-# ($results, $distances) = @{ $sfa->fetch_all_nearest_by_Feature($a, 3, undef, -1, 6, 1000, undef) };
-# note(dump($distances));
-# ($results, $distances) = @{ $sfa->fetch_all_nearest_by_Feature($a, 5, undef, 1, 6, 1000, undef) };
-# note(dump($distances));
-# ($results, $distances) = @{ $sfa->fetch_all_nearest_by_Feature($a, 3, undef, 1, 6, 1000, undef) };
-# note(dump($distances));
-
-# ($results, $distances) = @{ $sfa->fetch_all_nearest_by_Feature($a, undef, 1, undef, 6, 1000, undef) };
-# note(dump($distances));
-# note(dump(map { $_->display_label } @$results));
-# ($results, $distances) = @{ $sfa->fetch_all_nearest_by_Feature($a, undef, -1, undef, 6, 1000, undef) };
-# note(dump($distances));
-# note(dump(map { $_->display_label } @$results));
-
-
-
-
 
 done_testing;
