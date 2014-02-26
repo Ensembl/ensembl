@@ -184,7 +184,7 @@ FEATURE:
     my $hstart  = $feat->hstart();
     my $hend    = $feat->hend();
     my $hstrand = $feat->hstrand();
-    $self->_check_start_end_strand( $hstart, $hend, $hstrand );
+    $self->_check_start_end_strand( $hstart, $hend, $hstrand, $feat->hslice );
 
     my $cigar_string = $feat->cigar_string();
     if ( !$cigar_string ) {

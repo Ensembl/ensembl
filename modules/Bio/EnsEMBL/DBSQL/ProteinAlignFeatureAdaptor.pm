@@ -110,7 +110,7 @@ sub store{
    #sanity check the hstart and hend
    my $hstart  = $feat->hstart();
    my $hend    = $feat->hend();
-   $self->_check_start_end_strand($hstart,$hend,1);
+   $self->_check_start_end_strand($hstart,$hend,1,$feat->hslice);
 
    my $cigar_string = $feat->cigar_string();
    if(!$cigar_string) {
