@@ -1896,7 +1896,6 @@ sub _objs_from_sth {
 
        'external_status'       => $external_status,
        'external_display_name' => $external_db_name,
-       'description'           => $xref_description,
        'external_db'           => $external_db,
        'external_status'       => $external_status,
        'display_xref'          => $display_xref,
