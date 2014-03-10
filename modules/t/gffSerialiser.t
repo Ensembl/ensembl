@@ -72,7 +72,7 @@ OUT
   #Have to do this outside of the HERETO thanks to tabs
   $expected .= join("\t", 
     qw/20  ensembl region 30274334  30300924  . + ./,
-    'ID=ENSG00000131044;biotype=protein_coding;external_name=C20orf125;logic_name=ensembl' 
+    'ID=gene:ENSG00000131044;biotype=protein_coding;external_name=C20orf125;logic_name=ensembl' 
   );
   $expected .= "\n";
 
@@ -118,7 +118,7 @@ OUT
   #Have to do this outside of the HERETO thanks to tabs
   $expected .= join("\t", 
     qw/20  wibble region 30274334  30300924  . + ./,
-    'ID=ENSG00000131044;biotype=protein_coding;description=DJ310O13.1.2 (NOVEL PROTEIN SIMILAR DROSOPHILA PROTEIN CG7474%2C ISOFORM 2 ) (FRAGMENT). [Source:SPTREMBL%3BAcc:Q9BR18];external_name=C20orf125;logic_name=ensembl' 
+    'ID=gene:ENSG00000131044;biotype=protein_coding;description=DJ310O13.1.2 (NOVEL PROTEIN SIMILAR DROSOPHILA PROTEIN CG7474%2C ISOFORM 2 ) (FRAGMENT). [Source:SPTREMBL%3BAcc:Q9BR18];external_name=C20orf125;logic_name=ensembl' 
   );
   $expected .= "\n";
 

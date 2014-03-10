@@ -193,7 +193,7 @@ sub print_feature {
         my @ordered_values = @summary{@ordered_keys};
         while (my $key = shift @ordered_keys) {
             my $value = shift @ordered_values;
-            if ($value) {
+            if ($value && $value ne '') {
                 if ($key eq 'ID') {
                   if ($feature->isa('Bio::EnsEMBL::Transcript')) {
                     $value = 'transcript:' . $value;
@@ -213,12 +213,13 @@ sub print_feature {
                   }
                 }
                 $row .= $key."=".uri_escape($value,'\t\n\r;=%&,');
-                delete $summary{$key};
                 $row .= ';' if scalar(@ordered_keys) > 0 || scalar(keys %summary) > 0;
             }
+            delete $summary{$key};
         }
 #   Catch the remaining keys, containing whatever else the Feature provided
         my @keys = sort keys %summary;
+        #$row =~ s/;?$// if $row =~ /;$/; # Remove trailing ';' if there is any
         while(my $attribute = shift @keys) {
             my $data_written = 0;
             if (ref $summary{$attribute} eq "ARRAY" && scalar(@{$summary{$attribute}}) > 0) {
@@ -233,6 +234,7 @@ sub print_feature {
             }
             $row .= ';' if scalar(@keys) > 0 && $data_written;
         }
+        $row =~ s/;?$//; # Remove trailing ';' if there is any
 # trim off any trailing commas left by the ordered keys stage above:
         $text_buffer .= $row."\n";
     }
