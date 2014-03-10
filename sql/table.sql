@@ -254,8 +254,8 @@ CREATE TABLE karyotype (
   seq_region_id               INT(10) UNSIGNED NOT NULL,
   seq_region_start            INT(10) UNSIGNED NOT NULL,
   seq_region_end              INT(10) UNSIGNED NOT NULL,
-  band                        VARCHAR(40) NOT NULL,
-  stain                       VARCHAR(40) NOT NULL,
+  band                        VARCHAR(40) DEFAULT NULL,
+  stain                       VARCHAR(40) DEFAULT NULL,
 
   PRIMARY KEY (karyotype_id),
   KEY region_band_idx (seq_region_id,band)
@@ -302,23 +302,15 @@ CREATE TABLE IF NOT EXISTS meta (
 # Add schema type and schema version to the meta table.
 INSERT INTO meta (species_id, meta_key, meta_value) VALUES
   (NULL, 'schema_type',     'core'),
-  (NULL, 'schema_version',  '75');
+  (NULL, 'schema_version',  '76');
 
 # Patches included in this schema file:
 # NOTE: At start of release cycle, remove patch entries from last release.
 # NOTE: Avoid line-breaks in values.
 INSERT INTO meta (species_id, meta_key, meta_value)
-  VALUES (NULL, 'patch', 'patch_74_75_a.sql|schema_version');
+  VALUES (NULL, 'patch', 'patch_75_76_a.sql|schema_version');
 INSERT INTO meta (species_id, meta_key, meta_value)
-  VALUES (NULL, 'patch', 'patch_74_75_b.sql|transcript_source');
-INSERT INTO meta (species_id, meta_key, meta_value)
- VALUES (NULL, 'patch', 'patch_74_75_c.sql|add_genome_statistics');
-INSERT INTO meta (species_id, meta_key, meta_value)
- VALUES (NULL, 'patch', 'patch_74_75_d.sql|default_transcript_source');
-INSERT INTO meta (species_id, meta_key, meta_value)
- VALUES (NULL, 'patch', 'patch_74_75_e.sql|unique_attrib_key');
-INSERT INTO meta (species_id, meta_key, meta_value)
- VALUES (NULL, 'patch', 'patch_74_75_f.sql|longer_code');
+  VALUES (NULL, 'patch', 'patch_75_76_b.sql|allow_null_karyotype');
 
 /**
 @table meta_coord
