@@ -159,11 +159,11 @@ sub new {
   bless $self, $class;
 
   my $driver = $dbconn ? $dbconn->driver() : $driver_arg;
+  $driver ||= 'mysql';
   if ($driver eq 'pgsql') {
       warning("Using 'pgsql' as an alias for the 'Pg' driver is deprecated.");
       $driver = 'Pg';
   }
-  $driver ||= 'mysql';
   $self->driver($driver);
 
   my $driver_class = 'Bio::EnsEMBL::DBSQL::Driver::' . $driver;
