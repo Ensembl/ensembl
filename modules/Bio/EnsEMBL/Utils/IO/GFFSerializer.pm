@@ -193,12 +193,15 @@ sub print_feature {
         my @ordered_values = @summary{@ordered_keys};
         while (my $key = shift @ordered_keys) {
             my $value = shift @ordered_values;
+            delete $summary{$key};
             if ($value && $value ne '') {
                 if ($key eq 'ID') {
                   if ($feature->isa('Bio::EnsEMBL::Transcript')) {
                     $value = 'transcript:' . $value;
                   } elsif ($feature->isa('Bio::EnsEMBL::Gene')) {
                     $value = 'gene:' . $value;
+                  } elsif ($feature->isa('Bio::EnsEMBL::Exon')) {
+                    $key = 'Name';
                   } else {
                     $value = $so_term . ':' . $value;
                   }
@@ -215,7 +218,6 @@ sub print_feature {
                 $row .= $key."=".uri_escape($value,'\t\n\r;=%&,');
                 $row .= ';' if scalar(@ordered_keys) > 0 || scalar(keys %summary) > 0;
             }
-            delete $summary{$key};
         }
 #   Catch the remaining keys, containing whatever else the Feature provided
         my @keys = sort keys %summary;
