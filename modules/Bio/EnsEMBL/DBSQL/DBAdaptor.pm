@@ -95,6 +95,10 @@ my $registry = "Bio::EnsEMBL::Registry";
                       Used to automatically load aliases for this 
                       species into the Registry upon loading.
 
+  Arg [-ADD_SPECIES_ID]: (optional) boolean
+                         Used to automatically load the species id
+                         based on the species if none is defined.
+
   Arg [..]   : Other args are passed to superclass
                Bio::EnsEMBL::DBSQL::DBConnection
 
@@ -138,11 +142,11 @@ sub new {
   my $self = bless {}, $class;
 
   my ( $is_multispecies, $species, $species_id, $group, $con, $dnadb,
-    $no_cache, $dbname, $add_aliases )
+    $no_cache, $dbname, $add_aliases, $add_species_id )
     = rearrange( [
       'MULTISPECIES_DB', 'SPECIES', 'SPECIES_ID', 'GROUP',
       'DBCONN',          'DNADB',   'NO_CACHE',   'DBNAME',
-      'ADD_ALIASES'
+      'ADD_ALIASES', 'ADD_SPECIES_ID'
     ],
     @args
     );
@@ -161,7 +165,13 @@ sub new {
  
   $self = Bio::EnsEMBL::Utils::ConfigRegistry::gen_load($self);
 
-  $self->species_id( $species_id || 1 );
+  if (defined $species_id) {
+    $self->species_id($species_id);
+  } elsif (defined $add_species_id) {
+    $self->find_and_add_species_id();
+  } else {
+    $self->species_id(1);
+  }
 
   $self->is_multispecies( defined($is_multispecies)
                           && $is_multispecies == 1 );
@@ -215,6 +225,8 @@ sub find_and_add_aliases {
   $registry->find_and_add_aliases(-ADAPTOR => $self);
   return;
 }
+
+=head2 add_species_id
 
 =head2 dbc
 
