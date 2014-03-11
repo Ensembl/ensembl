@@ -167,7 +167,7 @@ sub new {
 
   if (defined $species_id) {
     $self->species_id($species_id);
-  } elsif (defined $add_species_id) {
+  } elsif (defined $add_species_id and defined $species) {
     $self->find_and_add_species_id();
   } else {
     $self->species_id(1);
