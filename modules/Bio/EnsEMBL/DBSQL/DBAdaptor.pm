@@ -159,7 +159,7 @@ sub new {
     $self->dbc( new Bio::EnsEMBL::DBSQL::DBConnection(@args) );
   }
 
-  if ( defined($species) ) { $self->species($species) }
+  if ( defined($species) ) { $self->species($species); } 
   if ( defined($group) )   { $self->group($group) }
 
  
@@ -226,7 +226,38 @@ sub find_and_add_aliases {
   return;
 }
 
-=head2 add_species_id
+=head2 find_and_add_species_id
+
+  Description : 
+  Returntype  : None
+  Exceptions  : None
+
+=cut
+
+sub find_and_add_species_id {
+  my ($self) = @_;
+  my $species = $self->species;
+  defined $species or throw "Undefined species";
+
+  my $dbc = $self->dbc;
+  my $sth = $dbc->prepare(sprintf "SELECT DISTINCT species_id FROM %s.meta " .
+			  "WHERE meta_key='species.alias' AND meta_value LIKE '%%s%'", 
+			  $dbc->db_handle->quote_identifier($dbc->dbname), $species);
+  $sth->execute() or
+    throw "Error querying for species_id: perhaps the DB doesn't have a meta table?\n" .
+      "$DBI::err .... $DBI::errstr\n";
+
+  my $species_id;
+  $sth->bind_columns(\$species_id);
+  $sth->fetch;
+
+  throw "Undefined species_id" unless defined $species_id;
+  throw "Something wrong retrieving the species_id"
+    unless $species_id >= 1;
+
+  $self->species_id($species_id);
+  return;
+}
 
 =head2 dbc
 
