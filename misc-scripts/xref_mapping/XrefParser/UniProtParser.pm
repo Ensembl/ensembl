@@ -444,6 +444,9 @@ sub create_xrefs {
         if($source =~ "GenomeRNAi"){
             next;
         }
+        if($source =~ "Xenbase"){
+            next;
+        }
 	   if (exists $dependent_sources{$source} ) {
 	  # create dependent xref structure & store it
 	  my %dep;
