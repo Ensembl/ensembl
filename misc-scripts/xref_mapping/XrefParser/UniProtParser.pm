@@ -282,7 +282,8 @@ sub create_xrefs {
 
 
     # some straightforward fields
-    $xref->{LABEL} = $label;
+    # the previous $label flag of type BRCA2_HUMAN is not used in Uniprot any more, use accession instead
+    $xref->{LABEL} = $accessions[0];
     $xref->{SPECIES_ID} = $species_id;
     $xref->{SEQUENCE_TYPE} = 'peptide';
     $xref->{STATUS} = 'experimental';
