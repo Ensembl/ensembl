@@ -187,7 +187,6 @@ SQL
   foreach my $ccds (keys %ccds_to_stable_id){
     if(defined($ccds_to_hgnc{$ccds})){
       my $hgnc = $ccds_to_hgnc{$ccds};
-      $hgnc =~ s/HGNC://;
       my $xref_id = $self->add_xref({ acc        => $hgnc,
 				      version    => $version{$hgnc} ,
 				      label      => $label{$hgnc}||$hgnc ,
