@@ -16,7 +16,7 @@ use strict;
 use warnings;
 
 use Test::More;
-use Test::Warnings;
+use Test::Warnings qw( allow_warnings );
 
 use Bio::EnsEMBL::Test::MultiTestDB;
 use Bio::EnsEMBL::Test::TestUtils;
@@ -98,7 +98,13 @@ $exon->add_supporting_features(@evidence);
 $multi->hide( "core", "exon", "supporting_feature", 
 	      "protein_align_feature", "dna_align_feature");
 
+# We get some 'datatype mismatch: bind param (11) 3.2e-42 as float' warnings
+#
+allow_warnings(1) if $db->dbc->driver() eq 'SQLite';
+
 $exonad->store($exon);
+
+allow_warnings(0) if $db->dbc->driver() eq 'SQLite';
 
 ok($exon->dbID() && $exon->adaptor == $exonad);
 
