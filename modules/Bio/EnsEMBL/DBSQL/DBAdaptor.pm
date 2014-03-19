@@ -167,7 +167,7 @@ sub new {
 
   if (defined $species_id) {
     $self->species_id($species_id);
-  } elsif (defined $add_species_id and defined $species) {
+  } elsif ($add_species_id and defined $species) {
     $self->find_and_add_species_id();
   } else {
     $self->species_id(1);
@@ -177,8 +177,8 @@ sub new {
                           && $is_multispecies == 1 );
 
   if ( defined($dnadb) )    { $self->dnadb($dnadb) }
-  if ( defined($no_cache) ) { $self->no_cache($no_cache) }
-  if ( defined($add_aliases) ) { $self->find_and_add_aliases($add_aliases) }
+  if ( $no_cache ) { $self->no_cache($no_cache) }
+  if ( $add_aliases ) { $self->find_and_add_aliases($add_aliases) }
 
   return $self;
 } ## end sub new
