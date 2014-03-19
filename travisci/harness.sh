@@ -6,7 +6,7 @@ if [ "$DB" = 'mysql' ]; then
     (cd modules/t && ln -sf MultiTestDB.conf.mysql MultiTestDB.conf)
 elif [ "$DB" = 'sqlite' ]; then
     (cd modules/t && ln -sf MultiTestDB.conf.SQLite MultiTestDB.conf)
-    SKIP_TESTS="--skip schema.t,schemaPatches.t"
+    SKIP_TESTS="--skip dbConnection.t,schema.t,schemaPatches.t"
 else
     echo "Don't know about DB '$DB'"
     exit 1;
