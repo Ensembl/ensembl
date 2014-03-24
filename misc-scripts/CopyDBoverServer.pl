@@ -346,7 +346,7 @@ foreach my $key ( keys(%executables) ) {
   } ## end if ( $rc != 0 )
 } ## end foreach my $key ( keys(%executables...))
 
-my $run_hostaddr = inet_ntoa( ( gethostbyname( hostname() ) )[4] );
+my $run_hostaddr = hostname_to_ip(hostname());
 my $working_dir = rel2abs( curdir() );
 
 ##====================================================================##
@@ -405,10 +405,8 @@ while ( my $line = $in->getline() ) {
        $target_location
   ) = split( /\s+/, $line );
 
-  my $source_hostaddr =
-    inet_ntoa( ( gethostbyname($source_server) )[4] );
-  my $target_hostaddr =
-    inet_ntoa( ( gethostbyname($target_server) )[4] );
+  my $source_hostaddr = hostname_to_ip($source_server);
+  my $target_hostaddr = hostname_to_ip($target_server);
 
   # Verify source server and port.
   if ( !defined($source_hostaddr) || $source_hostaddr eq '' ) {
@@ -1020,6 +1018,22 @@ foreach my $spec (@todo) {
 }
 
 print("DONE!\n");
+
+# Provides a way to convert from server names into IP addresses with some error checking in
+# there. Usage is
+#   my $ip = hostname_to_ip('ens-staging1')
+sub hostname_to_ip {
+  my ($name) = @_;
+  if(! defined $name) {
+    die "Cannot convert an undefined name into an IP address. Please check your input";
+  }
+  my $packed_ip = gethostbyname($name);
+  if(! defined $packed_ip) {
+    die "Cannot convert '${name}' into an IP address. Please check for typos";
+  }
+  my $resolved_ip = inet_ntoa($packed_ip);
+  return $resolved_ip;
+}
 
 END {
   my $seconds = time() - $start_time;
