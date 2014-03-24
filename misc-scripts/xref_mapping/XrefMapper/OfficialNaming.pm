@@ -47,8 +47,9 @@ use base qw( XrefMapper::BasicMapper);
 #               ii)  RFAM
 #               iii) miRBase
 #               iv)  Uniprot_gn
-#               v)   Vega clone name
-#               vi)  Clone name
+#               v)   EntrezGene
+#               vi)  Vega clone name
+#               vii) Clone name
 #
 #      NOTE: for "i)" above, if more than one exists we find the "best" one if possible
 #            and remove the other ones. If there is more than one "best" we keep all and
@@ -127,8 +128,8 @@ sub run {
 
 
   ###########################################################
-  # HGNC has already been moved to the gene level so we need
-  # to do this for MGI or ZFIN_ID depepndent on the species
+  # If there are any official names on transcripts or translations
+  # moved them onto gene level
   #
   # This is done for 2 reasons
   #  1) to make the code the same as HGNC is on a gene
@@ -137,15 +138,14 @@ sub run {
   #     from the genes so move them now.
   ###########################################################
 
-  if($dbname eq "MGI"){ # first Copy MGI to Genes
+  if($dbname eq "MGI"){ # Copy MGI to Genes
     $self->biomart_fix("MGI","Translation","Gene");
     $self->biomart_fix("MGI","Transcript","Gene");
   }
-  if($dbname eq "ZFIN_ID"){ # first Copy MGI to Genes
+  if($dbname eq "ZFIN_ID"){ # Copy ZFIN_ID to Genes
     $self->biomart_fix("ZFIN_ID","Translation","Gene");
     $self->biomart_fix("ZFIN_ID","Transcript","Gene");
   }
-
 
 
   ######################################################
@@ -337,6 +337,7 @@ SQ0
                                             gene_to_tran     => \%gene_to_transcripts, 
                                             tran_to_vega_ext => $tran_to_vega_ext,
 					    ens_clone_genes  => \%ens_clone_genes,
+                                            tran_source      => $tran_source,
 					   });
     }
 
@@ -689,6 +690,7 @@ sub set_transcript_display_xrefs{
   my $seen_gene =           $arg_ref->{seen_gene};
   my $gene_to_transcripts = $arg_ref->{gene_to_tran};
   my $tran_to_vega_ext =    $arg_ref->{tran_to_vega_ext};
+  my $tran_source         = $arg_ref->{tran_source};
 
 
   # statement handles needed
@@ -714,7 +716,7 @@ sub set_transcript_display_xrefs{
     }
     my $id = $gene_symbol."-".$ext;
     if(!defined($source_id)){
-      croak "id = $id\n but NO source_id for this entry???\n";
+      croak "id = $id\n but NO source_id for this entry for $tran_source???\n";
     }
     if(!defined($xref_added->{$id.":".$source_id})){
       $$max_xref_id++;
@@ -1076,19 +1078,48 @@ sub find_from_other_sources{
   my $gene_id               = $ref_args->{gene_id};
   my $display_label_to_desc = $ref_args->{label_to_desc}; 
 
+  my $ignore_sql =<<IEG;
+  SELECT DISTINCT ox.object_xref_id
+    FROM object_xref ox, dependent_xref dx,
+       xref xmas, xref xdep,
+       source smas, source sdep
+    WHERE ox.xref_id = dx.dependent_xref_id AND
+          dx.dependent_xref_id = xdep.xref_id AND
+          dx.master_xref_id = xmas.xref_id AND
+          xmas.source_id = smas.source_id AND
+          xdep.source_id = sdep.source_id AND
+          smas.name like "Refseq%predicted" AND
+          sdep.name like "EntrezGene" AND
+          ox.ox_status = "DUMP_OUT"
+IEG
+
+  my %ignore_object;
+  my $ignore_sth = $self->xref->dbc->prepare($ignore_sql);
+  $ignore_sth->execute();
+  my ($ignore_object_xref_id);
+  $ignore_sth->bind_columns(\$ignore_object_xref_id);
+  while($ignore_sth->fetch()){
+    $ignore_object{$ignore_object_xref_id} = 1;
+  }
+  $ignore_sth->finish;
 
   my ($gene_symbol, $gene_symbol_xref_id);
-
   my $dbentrie_sth = $self->get_dbentrie_with_desc_sth();
-  
   my $other_name_num = $self->get_other_name_hash();
 
   my ($display, $xref_id, $object_xref_id, $level, $desc);
-  foreach my $ext_db_name (qw(miRBase RFAM Uniprot_gn)){
+  my %found_gene;
+  foreach my $ext_db_name (qw(miRBase RFAM Uniprot_gn EntrezGene)){
     $dbentrie_sth->execute($ext_db_name, $gene_id, "Gene");
     $dbentrie_sth->bind_columns(\$display, \$xref_id, \$object_xref_id, \$level, \$desc);
     while($dbentrie_sth->fetch){
+      if (defined $found_gene{$gene_id}) {
+        last;
+      }
       if ($display =~ /^LOC/ || $display =~ /^SSC/) {
+        next;
+      }
+      if (defined $ignore_object{$object_xref_id}) {
         next;
       }
       $gene_symbol = $display;
@@ -1101,9 +1132,10 @@ sub find_from_other_sources{
       else{
 	$other_name_num->{$gene_symbol} = 1;
       }
-      if ($ext_db_name ne 'Uniprot_gn') {
+      if ($ext_db_name eq 'miRBase' || $ext_db_name eq 'RFAM') {
         $gene_symbol .= ".".$other_name_num->{$gene_symbol};
       }
+      $found_gene{$gene_id} = 1;
       next;
     }
   }  
@@ -1415,7 +1447,8 @@ Clone_based_ensembl_transcript
 Clone_based_vega_transcript
 RFAM_trans_name
 miRBase_trans_name
-Uniprot_gn_trans_name);
+Uniprot_gn_trans_name
+EntrezGene_trans_name);
 
   push @list, $dbname."_trans_name";
   push @list, $dbname;
