@@ -474,8 +474,10 @@ sub _seq_region_name_to_id {
   my $sr_name = shift;
   my $cs_id   = shift;
 
-  ($sr_name && $cs_id) || throw('seq_region_name and coord_system_id args ' .
-				'are required');
+  if(!defined($sr_name) or
+     !defined($cs_id)){
+      throw('seq_region_name and coord_system_id args are required');
+  }
 
   my $arr = $self->{'sr_name_cache'}->{"$sr_name:$cs_id"};
   if( $arr ) {
