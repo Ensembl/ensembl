@@ -263,7 +263,7 @@ sub is_valid {
   Description : Determines the version for a mapped stable Id. For Ensembl
                 genes, the rules for incrementing the version number are:
                     - exons: if exon sequence changed
-                    - transcript: if spliced exon sequence changed
+                    - transcript: if spliced exon sequence changed or if number of exons changed
                     - translation: if translated sequence changed
                     - gene: if any of its transcript changed
   Return type : String - the version to be used
@@ -286,6 +286,8 @@ sub calculate_version {
   elsif ( $s_obj->isa('Bio::EnsEMBL::IdMapping::TinyTranscript') ) {
     # increment version if spliced exon sequence changed
     if ( $s_obj->seq_md5_sum() ne $t_obj->seq_md5_sum() ) { ++$version }
+    # also increment version if number of exons changed
+    if ( scalar(@{$s_obj->get_all_Exons}) != scalar(@{$t_obj->get_all_Exons}) ) { ++$version }
   }
   elsif ( $s_obj->isa('Bio::EnsEMBL::IdMapping::TinyTranslation') ) {
     # increment version if transcript or translation sequences changed
