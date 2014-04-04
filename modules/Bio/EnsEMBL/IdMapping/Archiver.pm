@@ -179,7 +179,7 @@ sub dump_gene {
   foreach my $s_tr (@{ $s_gene->get_all_Transcripts }) {
 
     my $changed_flag = 1;
-    my ($t_tl, $s_tl);
+    my $t_tl;
     my $s_tl = $s_tr->translation;
 
     if ( $t_gene ) {
