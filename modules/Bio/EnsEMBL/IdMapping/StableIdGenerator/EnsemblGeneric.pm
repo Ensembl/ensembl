@@ -284,10 +284,29 @@ sub calculate_version {
     if ( $s_obj->seq() ne $t_obj->seq() ) { ++$version }
   }
   elsif ( $s_obj->isa('Bio::EnsEMBL::IdMapping::TinyTranscript') ) {
+    my $change = 0;
     # increment version if spliced exon sequence changed
-    if ( $s_obj->seq_md5_sum() ne $t_obj->seq_md5_sum() ) { ++$version }
-    # also increment version if number of exons changed
-    if ( scalar(@{$s_obj->get_all_Exons}) != scalar(@{$t_obj->get_all_Exons}) ) { ++$version }
+    if ( $s_obj->seq_md5_sum() ne $t_obj->seq_md5_sum() ) { $change = 1 }
+
+    # Look for changes in exon version
+    my $s_e_ident = join(
+      ":",
+      map { $_->stable_id() . '.' . $_->version() } sort {
+        $a->stable_id() cmp $b->stable_id()
+        } @{ $s_obj->get_all_Exons() } );
+    my $t_e_ident = join(
+      ":",
+      map { $_->stable_id() . '.' . $_->version() } sort {
+        $a->stable_id() cmp $b->stable_id()
+        } @{ $t_obj->get_all_Exons() } );
+
+    if ( $s_e_ident ne $t_e_ident ) { $change = 1 }
+
+    # Look for changes on the region
+    if ( $s_obj->seq_region_name() ne $t_obj->seq_region_name() ) { $change = 1 }
+
+    if ($change) { ++$version }
+
   }
   elsif ( $s_obj->isa('Bio::EnsEMBL::IdMapping::TinyTranslation') ) {
     # increment version if transcript or translation sequences changed
