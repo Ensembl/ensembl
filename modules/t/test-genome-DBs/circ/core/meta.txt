@@ -18,6 +18,7 @@
 74	\N	patch	patch_74_75_f.sql|longer_code
 75	\N	patch	patch_75_76_a.sql|schema_version
 76	\N	patch	patch_75_76_b.sql|allow_null_karyotype
+77	\N	patch	patch_75_76_c.sql|remove_alternative_splicing
 1	\N	schema_type	core
 2	\N	schema_version	76
 8	1	assembly.accession	GCA_000292705.1

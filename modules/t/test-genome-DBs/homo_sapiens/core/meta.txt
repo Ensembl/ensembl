@@ -53,3 +53,4 @@
 106	\N	patch	patch_74_75_f.sql|longer_code
 114	\N	patch	patch_75_76_a.sql|schema_version
 115	\N	patch	patch_75_76_b.sql|allow_null_karyotype
+116	\N	patch	patch_75_76_c.sql|remove_alternative_splicing

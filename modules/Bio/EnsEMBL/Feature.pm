@@ -1607,7 +1607,6 @@ my $feature_tables =
    'Bio::EnsEMBL::OperonTranscript' => 'operon_transcript',
    'Bio::EnsEMBL::RepeatFeature' => 'repeat_feature',
    'Bio::EnsEMBL::SimpleFeature' => 'simple_feature',
-   'Bio::EnsEMBL::SplicingEvent' => 'splicing_event',
    'Bio::EnsEMBL::Transcript' => 'transcript',
    'Bio::EnsEMBL::PredictionTranscript' => 'prediction_transcript'
   };
