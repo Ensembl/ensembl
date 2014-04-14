@@ -187,7 +187,6 @@ sub add_feature_type {
   my $cs   = shift;
   my $table = lc(shift);
   my $length = shift;
-  my $remove = shift;
   if(!ref($cs) || !$cs->isa('Bio::EnsEMBL::CoordSystem')) {
     throw('CoordSystem argument is required.');
   }
@@ -200,35 +199,16 @@ sub add_feature_type {
 
   my ($exists) = grep {$cs->dbID() == $_} @$cs_ids;
   if( $exists ) {
-    my $sth;
-    if ($remove) {
-      delete $self->{'_max_len_cache'}->{$cs->dbID()}->{$table};
-      if (!$self->{'_max_len_cache'}->{$cs->dbID()}->{$table}) {
-        $sth = $self->prepare('DELETE FROM meta_coord ' .
-                               "WHERE coord_system_id = ? " . 
-                               "AND table_name = ?");
-        $sth->execute( $cs->dbID(), $table );
-      } elsif ($self->{'_max_len_cache'}->{$cs->dbID()}->{$table} < $length) {
-        $sth = $self->prepare('UPDATE meta_coord ' .
-                               "SET max_length = " . $self->{'_max_len_cache'}->{$cs->dbID()}->{$table} . " " .
-                               'WHERE coord_system_id = ? ' .
-                               'AND table_name = ? '.
-                               "AND (max_length<$length ".
-                               "OR max_length is null)");
-        $sth->execute( $cs->dbID(), $table );
-      }
-    } else {
-      if( !$self->{'_max_len_cache'}->{$cs->dbID()}->{$table} ||
-        $self->{'_max_len_cache'}->{$cs->dbID()}->{$table} < $length) {
-        $sth = $self->prepare('UPDATE meta_coord ' .
+    if( !$self->{'_max_len_cache'}->{$cs->dbID()}->{$table} ||
+        $self->{'_max_len_cache'}->{$cs->dbID()}->{$table} < $length ) {
+      my $sth = $self->prepare('UPDATE meta_coord ' .
                                "SET max_length = $length " .
                                'WHERE coord_system_id = ? ' .
                                'AND table_name = ? '.
                                "AND (max_length<$length ".
                                "OR max_length is null)");
-        $sth->execute( $cs->dbID(), $table );
-        $self->{'_max_len_cache'}->{$cs->dbID()}->{$table} = $length;
-      }
+      $sth->execute( $cs->dbID(), $table );
+      $self->{'_max_len_cache'}->{$cs->dbID()}->{$table} = $length;
     }
     return;
   }
