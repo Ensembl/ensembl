@@ -1515,7 +1515,6 @@ sub remove {
   $sth->finish();
 
 
-  $self->_pre_remove($transcript);
   $sth = $self->prepare( "DELETE FROM transcript
                           WHERE transcript_id = ?" );
   $sth->bind_param(1, $transcript->dbID, SQL_INTEGER);
