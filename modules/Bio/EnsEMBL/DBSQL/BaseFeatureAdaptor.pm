@@ -1277,46 +1277,9 @@ sub remove {
   $sth->bind_param(1,$feature->dbID,SQL_INTEGER);
   $sth->execute();
 
-  # Update meta_coord as necessary
-  my $mcc = $self->db->get_MetaCoordContainer();
-  my $cs = $feature->slice->coord_system();
-  $mcc->add_feature_type($cs, $table, $feature->length, 1);
-
   #unset the feature dbID ad adaptor
   $feature->dbID(undef);
   $feature->adaptor(undef);
-
-  return;
-}
-
-#
-# Helper function containing some common feature removal functionality
-#
-# This method will ensure that meta coords are updated accordingly
-#
-
-sub _pre_remove {
-  my $self    = shift;
-  my $feature = shift;
-
-  my $db = $self->db();
-  if(!ref($feature) || !$feature->isa('Bio::EnsEMBL::Feature')) {
-    throw('Expected Feature argument.');
-  }
-
-  if(!$feature->is_stored($db)) {
-    throw("This feature is not stored in this database");
-  }
-
-  my ($tab) = $self->_tables();
-  my $tabname = $tab->[0];
-
-  my $slice = $feature->slice();
-  my $cs = $slice->coord_system;
-
-  # Update meta_coord table
-  my $mcc = $db->get_MetaCoordContainer();
-  $mcc->add_feature_type($cs, $tabname, $feature->length, 1);
 
   return;
 }
