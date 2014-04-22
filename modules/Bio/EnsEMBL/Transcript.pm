@@ -849,7 +849,8 @@ sub add_alternative_translation {
 
 =head2 spliced_seq
 
-  Args       : none
+  Args       : soft_mask (opt)
+               if specified, will return a sequence where UTR regions are lowercased
   Description: Retrieves all Exon sequences and concats them together.
                No phase padding magic is done, even if phases do not align.
   Returntype : Text
@@ -860,7 +861,7 @@ sub add_alternative_translation {
 =cut
 
 sub spliced_seq {
-  my ( $self ) = @_;
+  my ( $self, $soft_mask ) = @_;
 
   my $seq_string = "";
   for my $ex ( @{$self->get_all_Exons()} ) {
@@ -871,7 +872,22 @@ sub spliced_seq {
               "be correct.");
       $seq_string .= 'N' x $ex->length();
     } else {
-      $seq_string .= $seq->seq();
+      my $exon_seq = $seq->seq();
+      if ($soft_mask) {
+        my $padstr;
+        if (!defined ($ex->coding_region_start($self))) {
+          $exon_seq = lc($exon_seq);
+        } elsif ($ex->coding_region_start($self) > $ex->start()) {
+          my $length = $ex->coding_region_start($self) - $ex->start();
+          $padstr = lc substr ($exon_seq, 0, $length);
+          $exon_seq = lc (substr($exon_seq, 0, $length)) . substr($exon_seq, $length); 
+        } elsif ($ex->coding_region_end($self) < $ex->end()) {
+          my $length = $ex->coding_region_end($self) - $ex->start();
+          $padstr = lc substr ($exon_seq, $length + 1);
+          $exon_seq = substr($exon_seq, 0, $length+1) . lc substr($exon_seq, $length+1);
+        }
+      }
+      $seq_string .= $exon_seq;
     }
   }
 

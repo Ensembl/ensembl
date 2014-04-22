@@ -146,6 +146,9 @@ is( $tr->start(), 79874, 'Start is correct' );
 is( $tr->end(), 110306, 'End is correct' );
 
 is ( substr( $tr->spliced_seq(), 0, 10 ), "ACGAGACGAA", 'Start of spliced seq is correct' ); 
+is ( substr( $tr->spliced_seq(1), 0, 10 ), "acgagacgaa", 'Spliced seq with utr lower casing is correct');
+is ( length($tr->spliced_seq()), length($tr->spliced_seq(1)), "Spliced seq with or without utr lower casing has the same length");
+is ( $tr->spliced_seq(), uc($tr->spliced_seq(1)), "Spliced seq is identical to upper case utr masked spliced seq");
 
 is ( substr( $tr->translateable_seq(),0,10 ), "ATGGCAGTGA", 'Start of translateable sequence is correct' );
 
