@@ -206,9 +206,9 @@ $clone = $clone->expand(0,1000);
 is($clone->start, 1, "Clone start matches 1");
 is($clone->end(), $len + 1000, "Clone end matches $len + 1000");
 
-$clone = $clone->expand(-1000, 0);
-is($clone->start, 1001, "Expanded clone start is correct");
-is($clone->end(), $len + 1000, "Expanded clone end is correct");
+$clone = $clone->expand(-1000, 0, 1);
+is($clone->start, 1001, "Expanded clone start is correct if forced");
+is($clone->end(), $len + 1000, "Expanded clone end is correct if forced");
 
 #
 # Test constrain_to_seq_region
@@ -222,6 +222,7 @@ $tidy_clone = $clone->expand(0,-1000);
 $tidy_clone = $tidy_clone->constrain_to_seq_region;
 is($tidy_clone->start, 1001, "Tidy clone $tidy_clone->start and $tidy_clone->end are correct");
 is($tidy_clone->end(), 84710, 'constrain_to_seq_region does no harm');
+
 
 #
 # Test Slice::invert
@@ -311,6 +312,11 @@ ok(scalar @{$slice->get_all_Genes});
 #  Test Slice::get_all_Genes_by_type
 #
 ok(scalar @{$slice->get_all_Genes_by_type('protein_coding')});
+
+#
+#  Test Slice::get_all_Genes_by_source
+#
+ok(scalar @{$slice->get_all_Genes_by_source('ensembl')});
 
 #
 #  Test Slice::get_all_Transcripts
@@ -552,6 +558,13 @@ is($chr_one_slice->assembly_exception_type(), 'REF', 'Ensuring reference regions
   $alternative_slice = $slice_adaptor->fetch_by_seq_region_id($alternative_seq_region_id);
   ok(!defined $alternative_slice, 'Cannot retrieve the alternative slice post restore');
 }
+
+
+# Test slice attributes
+my $current_slice = $slice_adaptor->fetch_by_region('chromosome', $CHR, $START, $END);
+is($current_slice->is_chromosome, 1, "Slice is a chromosome");
+is($current_slice->has_karyotype, 0, "Slice has no karyotype attribute");
+is($current_slice->karyotype_rank, 0, "No karyotype rank could be found");
 
 done_testing();
 
