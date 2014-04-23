@@ -69,13 +69,13 @@ my %feature_conversion = (     'Bio::EnsEMBL::Gene' => 'Gene',
 # Hash for selecting the correct attributes of unseen features for crude summary. This hash is 
 # for fallback behaviour, slicing summary hashes for a limited set of values.
 my %printables = ( 
-                    'Bio::EnsEMBL::Gene' => ['ID','biotype','start','end'],
-                    'Bio::EnsEMBL::Transcript' => ['ID','start','end'],
-                    'Bio::EnsEMBL::Translation' => ['ID'],
-                    'Bio::EnsEMBL::Variation::VariationFeature' => ['ID','start','end','strand','seq_region_name'],
-                    'Bio::EnsEMBL::Variation::StructuralVariationFeature' => ['ID','start','end','strand','seq_region_name'],
-                    'Bio::EnsEMBL::Funcgen::RegulatoryFeature' => ['ID','start','end','strand'],
-                    'Bio::EnsEMBL::Compara::ConstrainedElement' => ['ID','start','end','strand','seq_region_name'],
+                    'Bio::EnsEMBL::Gene' => ['id','biotype','start','end'],
+                    'Bio::EnsEMBL::Transcript' => ['id','start','end'],
+                    'Bio::EnsEMBL::Translation' => ['id'],
+                    'Bio::EnsEMBL::Variation::VariationFeature' => ['id','start','end','strand','seq_region_name'],
+                    'Bio::EnsEMBL::Variation::StructuralVariationFeature' => ['id','start','end','strand','seq_region_name'],
+                    'Bio::EnsEMBL::Funcgen::RegulatoryFeature' => ['id','start','end','strand'],
+                    'Bio::EnsEMBL::Compara::ConstrainedElement' => ['id','start','end','strand','seq_region_name'],
                 );
 
 =head2 print_feature
@@ -131,32 +131,32 @@ sub print_feature_list {
         if ($feature_count == 100) {last;}
         # Begin the feature-specific formatting code
         if ($feature_type eq "Bio::EnsEMBL::Gene") {
-            print $fh "\tGene ".$feature_count.": ".$attributes{'external_name'}.",".$attributes{'ID'}."\n";
+            print $fh "\tGene ".$feature_count.": ".$attributes{'external_name'}.",".$attributes{'id'}."\n";
             print $fh "\tBiotype: ".$attributes{'biotype'}."\n";
             print $fh "\tLocation: ".$attributes{'start'}."-".$attributes{'end'}." bp\n\n";
             
             print $fh "\tTranscripts and proteins\n";
             foreach my $transcript (@{$feature->get_all_Transcripts}) {
                 my %tr_summary = %{$transcript->summary_as_hash};
-                print $fh "\t\t ".$tr_summary{'ID'};
+                print $fh "\t\t ".$tr_summary{'id'};
                 my $translation = $transcript->translation;
                 if (defined $translation) {
                     my %pr_summary = %{$translation->summary_as_hash};
-                    print $fh " - ".$pr_summary{'ID'}."\n\n";
+                    print $fh " - ".$pr_summary{'id'}."\n\n";
                 }
                 else {print $fh " - no protein\n\n";}
             }
             print $fh "\n";
         }
         elsif ($feature_type eq "Bio::EnsEMBL::Funcgen::RegulatoryFeature") {
-            print $fh "\t".$attributes{'ID'}."\n";
+            print $fh "\t".$attributes{'id'}."\n";
         }
         elsif ($feature_type eq "Bio::EnsEMBL::Compara::ConstrainedElement") {
             print $fh "\t".$attributes{'start'}."-".$attributes{'end'}."\n";
         } 
         elsif ( $feature_type eq "Bio::EnsEMBL::Variation::StructuralVariationFeature" 
             or $feature_type eq "Bio::EnsEMBL::Variation::VariationFeature") {
-            print $fh "\tID: ".$attributes{'ID'}."  Position: ".
+            print $fh "\tID: ".$attributes{'id'}."  Position: ".
                 $attributes{'start'}."-".$attributes{'end'}." on strand ".$attributes{'strand'}." \n";
         }
         else {

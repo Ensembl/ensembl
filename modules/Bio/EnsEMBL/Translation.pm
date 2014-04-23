@@ -1233,7 +1233,7 @@ sub get_all_DAS_Features{
 sub summary_as_hash {
   my $self = shift;
   my %summary;
-  $summary{'ID'} = $self->display_id;
+  $summary{'id'} = $self->display_id;
   $summary{'genomic_start'} = $self->genomic_start;
   $summary{'genomic_end'} = $self->genomic_end;
   my $transcript = $self->transcript;

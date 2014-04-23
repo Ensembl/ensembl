@@ -1447,7 +1447,7 @@ sub get_nearest_Gene {
 sub summary_as_hash {
   my $self = shift;
   my %summary;
-  $summary{'ID'} = $self->display_id;
+  $summary{'id'} = $self->display_id;
   $summary{'start'} = $self->seq_region_start;
   $summary{'end'} = $self->seq_region_end;
   $summary{'strand'} = $self->strand;
