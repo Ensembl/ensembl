@@ -2965,12 +2965,15 @@ sub _mask_features {
     my $padstr;
     # if we decide to define masking on the base of the repeat_type, we'll need
     # to add the following, and the other commented line few lines below.
-    # my $rc_type = "repeat_type_" . $f->repeat_consensus->repeat_type;
-    my $rc_class = "repeat_class_" . $f->repeat_consensus->repeat_class;
-    my $rc_name = "repeat_name_" . $f->repeat_consensus->name;
+    my $rc_class;
+    my $rc_name;
+
+    if ($f->isa('Bio::EnsEMBL::RepeatFeature')) {
+      $rc_class = "repeat_class_" . $f->repeat_consensus->repeat_class;
+      $rc_name = "repeat_name_" . $f->repeat_consensus->name;
+    }
 
     my $masking_type;
-    # $masking_type = $not_default_masking_cases->{$rc_type} if (defined $not_default_masking_cases->{$rc_type});
     $masking_type = $not_default_masking_cases->{$rc_class} if (defined $not_default_masking_cases->{$rc_class});
     $masking_type = $not_default_masking_cases->{$rc_name} if (defined $not_default_masking_cases->{$rc_name});
 
