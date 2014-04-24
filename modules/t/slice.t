@@ -323,6 +323,12 @@ ok(scalar @{$slice->get_all_Genes_by_source('ensembl')});
 #
 ok(scalar @{$slice->get_all_Transcripts});
 
+#
+# Test Slice:get_all_Exons
+#
+
+my @exons = @{$slice->get_all_Exons};
+is(scalar(@exons), 155, "Fetched all exons");
 
 
 #
