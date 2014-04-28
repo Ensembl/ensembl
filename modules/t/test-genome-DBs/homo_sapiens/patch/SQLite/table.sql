@@ -1,6 +1,6 @@
 -- 
 -- Created by SQL::Translator::Producer::SQLite
--- Created on Tue Mar 18 16:33:40 2014
+-- Created on Mon Apr 28 13:55:26 2014
 -- 
 
 BEGIN TRANSACTION;
@@ -422,8 +422,8 @@ CREATE TABLE karyotype (
   seq_region_id integer NOT NULL DEFAULT 0,
   seq_region_start integer NOT NULL DEFAULT 0,
   seq_region_end integer NOT NULL DEFAULT 0,
-  band varchar(40) NOT NULL DEFAULT '',
-  stain varchar(40) NOT NULL DEFAULT ''
+  band varchar(40),
+  stain varchar(40)
 );
 
 --
