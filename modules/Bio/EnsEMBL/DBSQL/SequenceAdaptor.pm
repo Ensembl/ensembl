@@ -419,7 +419,7 @@ sub _rna_edit {
 sub _fetch_raw_seq {
   my ($self, $id, $start, $length) = @_;
   my $sql = <<'SQL';
-SELECT UPPER(SUBSTRING(d.sequence, ?, ?))
+SELECT UPPER(SUBSTR(d.sequence, ?, ?))
 FROM dna d
 WHERE d.seq_region_id =?
 SQL
