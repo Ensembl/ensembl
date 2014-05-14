@@ -1,6 +1,6 @@
 =head1 LICENSE
 
-Copyright [1999-2013] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
+Copyright [1999-2014] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -20,10 +20,10 @@ limitations under the License.
 =head1 CONTACT
 
   Please email comments or questions to the public Ensembl
-  developers list at <dev@ensembl.org>.
+  developers list at <http://lists.ensembl.org/mailman/listinfo/dev>.
 
   Questions may also be sent to the Ensembl help desk at
-  <helpdesk@ensembl.org>.
+  <http://www.ensembl.org/Help/Contact>.
 
 =cut
 
@@ -173,36 +173,38 @@ sub new{
 =cut
 
 sub _filter_af_by_coverage{
-    my $self = shift;
-    my $allele_features = shift;
-
-    my $variation_db = $self->adaptor->db->get_db_adaptor('variation');
-
-    unless($variation_db) {
-	warning("Variation database must be attached to core database to " .
-		"retrieve variation information" );
-	return '';
+  my $self = shift;
+  my $allele_features = shift;
+  
+  my $variation_db = $self->adaptor->db->get_db_adaptor('variation');
+  
+  unless($variation_db) {
+    warning("Variation database must be attached to core database to " .
+    "retrieve variation information" );
+    return '';
+  }  
+  
+  return $allele_features unless $self->individual->has_coverage;
+  
+  my $rc_adaptor = $variation_db->get_ReadCoverageAdaptor();
+  #this is ugly, but ReadCoverage is always defined in the positive strand
+  
+  ### EK : - it looks like the arguments to fetch_all_by_Slice_Individual_depth have changed
+  ###  passing 1 will only get you the coverage of level 1
+  ###  by omitting the parameter we take into account all coverage regions 
+  #    my $rcs = $rc_adaptor->fetch_all_by_Slice_Individual_depth($self,$self->{'_strain'},1);
+  my $rcs = $rc_adaptor->fetch_all_by_Slice_Individual_depth($self,$self->{'_strain'});
+  my $new_af;
+  foreach my $af (@{$allele_features}){
+    foreach my $rc (@{$rcs}){
+      if ($af->start <= $rc->end and $af->start >= $rc->start){
+        push @{$new_af}, $af;
+        last;
+      }
     }
-    
-    my $rc_adaptor = $variation_db->get_ReadCoverageAdaptor();
-    #this is ugly, but ReadCoverage is always defined in the positive strand
-
-### EK : - it looks like the arguments to fetch_all_by_Slice_Individual_depth have changed
-###  passing 1 will only get you the coverage of level 1
-###  by omitting the parameter we take into account all coverage regions 
-#    my $rcs = $rc_adaptor->fetch_all_by_Slice_Individual_depth($self,$self->{'_strain'},1);
-    my $rcs = $rc_adaptor->fetch_all_by_Slice_Individual_depth($self,$self->{'_strain'});
-    my $new_af;
-    foreach my $af (@{$allele_features}){
-	foreach my $rc (@{$rcs}){
-	    if ($af->start <= $rc->end and $af->start >= $rc->start){
-		push @{$new_af}, $af;
-		last;
-	    }
-	}
-    }
-    
-    return $new_af;
+  }
+  
+  return $new_af;
 }
 
 
@@ -223,6 +225,21 @@ sub strain_name{
        $self->{'strain_name'} = shift @_;
    }
    return $self->{'strain_name'};
+}
+
+
+=head2 individual
+
+    Example     : my $ind = $strainSlice->individual();
+    Description : Getter for the Individual object associated
+    ReturnType  : Bio::EnsEMBL::Variation::Individual
+    Exceptions  : none
+    Caller      : general
+
+=cut
+
+sub individual{
+  return $_[0]->{_strain};
 }
 
 
@@ -270,6 +287,11 @@ sub seq {
   if($self->adaptor()) {
     my $seqAdaptor = $self->adaptor()->db()->get_SequenceAdaptor();
     my $reference_sequence = $seqAdaptor->fetch_by_Slice_start_end_strand($self,1,undef,1); #get the reference sequence for that slice
+    
+    # default to lowercase sequence
+    # this gets overwritten with uppercase sequence in covered regions
+    # remains lowercase in strains with implicit coverage
+    $$reference_sequence = lc($$reference_sequence) if $with_coverage;
 	
     #apply all differences to the reference sequence
     #first, in case there are any indels, create the new sequence (containing the '-' bases)
@@ -319,27 +341,30 @@ sub expanded_length {
 
 
 sub _add_coverage_information{
-    my $self = shift;
-    my $reference_sequence = shift;
-
-    my $variation_db = $self->adaptor->db->get_db_adaptor('variation');
-
-    unless($variation_db) {
-	warning("Variation database must be attached to core database to " .
-		"retrieve variation information" );
-	return '';
-    }
-    
-    my $rc_adaptor = $variation_db->get_ReadCoverageAdaptor();
-### EK : - it looks like the arguments to fetch_all_by_Slice_Individual_depth have changed
-###  passing 1 will only get you the coverage of level 1
-###  by omitting the parameter we take into account all coverage regions 
-#    my $rcs = $rc_adaptor->fetch_all_by_Slice_Individual_depth($self,$self->{'_strain'},1);
-    my $rcs = $rc_adaptor->fetch_all_by_Slice_Individual_depth($self,$self->{'_strain'});
-    my $rcs_sorted;
-    @{$rcs_sorted} = sort {$a->start <=> $b->start} @{$rcs} if ($self->strand == -1);
-    $rcs = $rcs_sorted if ($self->strand == -1);
-    my $start = 1;
+  my $self = shift;
+  my $reference_sequence = shift;
+  
+  my $variation_db = $self->adaptor->db->get_db_adaptor('variation');
+  
+  unless($variation_db) {
+    warning("Variation database must be attached to core database to " .
+    "retrieve variation information" );
+    return '';
+  }
+  
+  # only fetch RC data if individual is flagged as having coverage
+  return unless $self->individual->has_coverage;
+  
+  my $rc_adaptor = $variation_db->get_ReadCoverageAdaptor();
+  ### EK : - it looks like the arguments to fetch_all_by_Slice_Individual_depth have changed
+  ###  passing 1 will only get you the coverage of level 1
+  ###  by omitting the parameter we take into account all coverage regions 
+  #    my $rcs = $rc_adaptor->fetch_all_by_Slice_Individual_depth($self,$self->{'_strain'},1);
+  my $rcs = $rc_adaptor->fetch_all_by_Slice_Individual_depth($self,$self->{'_strain'});
+  my $rcs_sorted;
+  @{$rcs_sorted} = sort {$a->start <=> $b->start} @{$rcs} if ($self->strand == -1);
+  $rcs = $rcs_sorted if ($self->strand == -1);
+  my $start = 1;
 	
 	
 	# wm2 - new code to mask sequence, instead starts with masked string
@@ -368,23 +393,8 @@ sub _add_coverage_information{
 		$end = CORE::length($masked_seq) if $end > CORE::length($masked_seq);
 		
 		# now unmask the sequence using $$reference_sequence
-		substr($masked_seq, $start - 1, $end - $start + 1) = substr($$reference_sequence, $start - 1, $end - $start + 1);
+		substr($masked_seq, $start - 1, $end - $start + 1) = uc(substr($$reference_sequence, $start - 1, $end - $start + 1));
 	}
-	
-	# wm2 - old code, starts with sequence and masks regions between read coverage - BUGGY
-#    foreach my $rc (@{$rcs}){
-#		$rc->start(1) if ($rc->start < 0); #if the region lies outside the boundaries of the slice
-#		$rc->end($self->end - $self->start + 1) if ($rc->end + $self->start > $self->end);
-#		
-#		warn "Adjusted: ", $rc->start, "-", $rc->end;
-#		
-#		warn "Covering from ", $start, " over ", ($rc->start - $start - 1), " bases";
-#		
-#        substr($$reference_sequence, $start-1,($rc->start - $start - 1),'~' x ($rc->start - $start - 1)) if ($rc->start - 1 > $start);
-#        $start = $rc->end;
-#
-#    }
-#    substr($$reference_sequence, $start, ($self->length - $start) ,'~' x ($self->length - $start)) if ($self->length -1 > $start);
 	
 	# copy the masked sequence to the reference sequence
 	$$reference_sequence = $masked_seq;
