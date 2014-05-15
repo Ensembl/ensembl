@@ -361,14 +361,6 @@ SQ0
     }
   } # for each gene
 
-
-
-  ########################################################
-  # Copy $dbname from gene to the canonical transcripts. #
-  ########################################################
-
-  $self->odn_xrefs_to_canonical_transcripts($max_object_xref_id, $dbname, $ins_dep_ix_sth);
-
   $self->update_process_status('official_naming_done');
   return;
 }
@@ -1307,76 +1299,6 @@ sub find_lrg_hgnc{
 }
 
 #############################END LRG BIT ################################################
-
-
-
-#
-# Copy the official database names (HGNC, MGI, ZFIN_ID) for the gene onto
-# the canonical transcript
-#
-sub odn_xrefs_to_canonical_transcripts{
-  my ($self, $max_object_xref_id, $dbname, $ins_dep_ix_sth) = @_;
-
-  # remove the ignore later on after testing
-  my $sth_add_ox = $self->xref->dbc->prepare("insert ignore into object_xref (object_xref_id, xref_id, ensembl_id, ensembl_object_type, linkage_type, ox_status, master_xref_id) values(?, ?, ?, 'Transcript', ?, ?, ?)");
-  
-  #  my $object_xref_id = $max_object_xref_id + 1;
-  
-  $max_object_xref_id++;
-  
-  if($max_object_xref_id == 1){
-    croak "max_object_xref_id should not be 1\n";
-  }
-  
-  my $object_sql = (<<"FSQL");
-select x.xref_id, o.ensembl_id, o.linkage_type, o.ox_status, o.master_xref_id, ix.query_identity, ix.target_identity
-  from xref x, source s, object_xref o, identity_xref ix
-    where x.source_id = s.source_id and 
-      ix.object_xref_id  = o.object_xref_id and
-      o.ox_status = "DUMP_OUT" and
-      s.name like "$dbname" and 
-      o.xref_id = x.xref_id  and
-      o.ensembl_object_type = "Gene";
-FSQL
-  
-  my $sql = "select gene_id, canonical_transcript_id from gene";
-  my $sth = $self->core->dbc->prepare($sql);
-  
-  $sth->execute();
-
-  my $gene_id;
-  my $tran_id;
-  $sth->bind_columns(\$gene_id,\$tran_id);
-  my %gene_to_tran_canonical;
-  while ($sth->fetch){
-    $gene_to_tran_canonical{$gene_id} = $tran_id;
-  }
-  $sth->finish;
-
-  $sth = $self->xref->dbc->prepare($object_sql);
-
-  $sth->execute();
-  my ($xref_id, $linkage_type, $ox_status, $q_id, $t_id, $master_id);
-  $sth->bind_columns(\$xref_id, \$gene_id, \$linkage_type, \$ox_status, \$q_id, \$t_id, \$master_id);
-
-
-  my $canonical_count = 0;
-  while ($sth->fetch){
-    if(defined($gene_to_tran_canonical{$gene_id})){
-      $canonical_count++;
-      $max_object_xref_id++;
-      $sth_add_ox->execute($max_object_xref_id, $xref_id, $gene_to_tran_canonical{$gene_id}, $linkage_type, $ox_status, $master_id) || print STDERR "(Gene id - $gene_id) Could not add  $max_object_xref_id, .".$gene_to_tran_canonical{$gene_id}.", $xref_id, $linkage_type, $ox_status to object_xref, master_xref_id to $master_id\n";
-      $ins_dep_ix_sth->execute($max_object_xref_id, $q_id, $t_id);
-    }
-    else{
-      print STDERR "Could not find canonical for gene $gene_id\n";
-    }
-  }
-  $sth->finish;
-
-  print "Copied $canonical_count $dbname from gene to canonical transcripts\n" if($self->verbose);
-  return;
-}
 
 sub get_clone_name{
   my ($self, $gene_id, $ga, $dbname) = @_;
