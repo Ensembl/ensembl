@@ -185,7 +185,7 @@ sub summary_as_hash {
   my $self = shift;
   my %summary;
   $summary{'type'} = $self->analysis->db;
-  $summary{'ID'} = $self->display_id;
+  $summary{'id'} = $self->display_id;
   $summary{'start'} = $self->start,
   $summary{'end'} = $self->end,
   $summary{'interpro'} = $self->interpro_ac;

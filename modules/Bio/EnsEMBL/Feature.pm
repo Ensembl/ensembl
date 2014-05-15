@@ -1447,7 +1447,7 @@ sub get_nearest_Gene {
 sub summary_as_hash {
   my $self = shift;
   my %summary;
-  $summary{'ID'} = $self->display_id;
+  $summary{'id'} = $self->display_id;
   $summary{'start'} = $self->seq_region_start;
   $summary{'end'} = $self->seq_region_end;
   $summary{'strand'} = $self->strand;
@@ -1607,7 +1607,6 @@ my $feature_tables =
    'Bio::EnsEMBL::OperonTranscript' => 'operon_transcript',
    'Bio::EnsEMBL::RepeatFeature' => 'repeat_feature',
    'Bio::EnsEMBL::SimpleFeature' => 'simple_feature',
-   'Bio::EnsEMBL::SplicingEvent' => 'splicing_event',
    'Bio::EnsEMBL::Transcript' => 'transcript',
    'Bio::EnsEMBL::PredictionTranscript' => 'prediction_transcript'
   };

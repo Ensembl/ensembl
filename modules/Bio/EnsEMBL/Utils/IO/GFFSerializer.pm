@@ -123,7 +123,11 @@ sub print_feature {
 
 #   Column 3 - feature, the ontology term for the kind of feature this row is
 	my $so_term = eval { $so_mapper->to_name($feature); };
-	$@ and throw sprintf "Unable to map feature %s to SO term.\n$@", $summary{ID};
+	$@ and throw sprintf "Unable to map feature %s to SO term.\n$@", $summary{id};
+        if ($so_term eq 'protein_coding_gene') { 
+# Special treatment for protein_coding_gene, as more commonly expected term is 'gene'
+          $so_term = 'gene';
+        }
         $row .= $so_term."\t";
 
 #    Column 4 - start, the start coordinate of the feature, here shifted to chromosomal coordinates
@@ -136,6 +140,14 @@ sub print_feature {
             }
             # non-circular, but end still before start
             else {$summary{'end'} = $summary{'start'};}
+        }
+        if ($feature->slice()) {
+          if ($summary{'start'} < $feature->slice->start()) {
+            $summary{'start'} = $feature->slice->start();
+          }
+          if ($summary{'end'} > $feature->slice->end()) {
+            $summary{'end'} = $feature->slice->end();
+          }
         }
         $row .= $summary{'start'} . "\t";
 
@@ -173,21 +185,43 @@ sub print_feature {
         delete $summary{'start'};
         delete $summary{'end'};
         delete $summary{'strand'};
+        delete $summary{'phase'};
         delete $summary{'score'};
         delete $summary{'source'};
 #   Slice the hash for specific keys in GFF-friendly order
-        my @ordered_keys = grep { exists $summary{$_} } qw(ID Name Alias Parent Target Gap Derives_from Note Dbxref Ontology_term Is_circular);
+        my @ordered_keys = grep { exists $summary{$_} } qw(id Name Alias Parent Target Gap Derives_from Note Dbxref Ontology_term Is_circular);
         my @ordered_values = @summary{@ordered_keys};
         while (my $key = shift @ordered_keys) {
             my $value = shift @ordered_values;
-            if ($value) {
-                $row .= $key."=".uri_escape($value,'\t\n\r;=%&,');
-                delete $summary{$key};
+            delete $summary{$key};
+            if ($value && $value ne '') {
+                if ($key eq 'id') {
+                  if ($feature->isa('Bio::EnsEMBL::Transcript')) {
+                    $value = 'transcript:' . $value;
+                  } elsif ($feature->isa('Bio::EnsEMBL::Gene')) {
+                    $value = 'gene:' . $value;
+                  } elsif ($feature->isa('Bio::EnsEMBL::Exon')) {
+                    $key = 'Name';
+                  } else {
+                    $value = $so_term . ':' . $value;
+                  }
+                }
+                if ($key eq 'Parent') {
+                 if ($feature->isa('Bio::EnsEMBL::Transcript')) {
+                    $value = 'gene:' . $value;
+                  } elsif ($feature->isa('Bio::EnsEMBL::Exon')) {
+                    $value = 'transcript:' . $value;
+                  } elsif ($so_term eq 'CDS') {
+                    $value = 'transcript:' . $value;
+                  }
+                }
+                $row .= uc($key)."=".uri_escape($value,'\t\n\r;=%&,');
                 $row .= ';' if scalar(@ordered_keys) > 0 || scalar(keys %summary) > 0;
             }
         }
 #   Catch the remaining keys, containing whatever else the Feature provided
         my @keys = sort keys %summary;
+        #$row =~ s/;?$// if $row =~ /;$/; # Remove trailing ';' if there is any
         while(my $attribute = shift @keys) {
             my $data_written = 0;
             if (ref $summary{$attribute} eq "ARRAY" && scalar(@{$summary{$attribute}}) > 0) {
@@ -195,13 +229,14 @@ sub print_feature {
                 $data_written = 1;
             }
             else {
-                if ($summary{$attribute}) { 
+                if (defined $summary{$attribute}) { 
                   $row .= $attribute."=".uri_escape($summary{$attribute},'\t\n\r;=%&,'); 
                   $data_written = 1;
                 }
             }
             $row .= ';' if scalar(@keys) > 0 && $data_written;
         }
+        $row =~ s/;?$//; # Remove trailing ';' if there is any
 # trim off any trailing commas left by the ordered keys stage above:
         $text_buffer .= $row."\n";
     }
