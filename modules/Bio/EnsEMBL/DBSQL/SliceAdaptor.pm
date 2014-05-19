@@ -2054,6 +2054,70 @@ sub store {
   return $seq_region_id;
 }
 
+
+sub update {
+  my $self = shift;
+  my $slice = shift;
+
+  #
+  # Get all of the sanity checks out of the way before storing anything
+  #
+
+  if(!ref($slice) || !($slice->isa('Bio::EnsEMBL::Slice') or $slice->isa('Bio::EnsEMBL::LRGSlice'))) {
+    throw('Slice argument is required');
+  }
+
+  my $cs = $slice->coord_system();
+  throw("Slice must have attached CoordSystem.") if(!$cs);
+
+  my $db = $self->db();
+
+  if($slice->start != 1 || $slice->strand != 1) {
+    throw("Slice must have start==1 and strand==1.");
+  }
+
+  if($slice->end() != $slice->seq_region_length()) {
+    throw("Slice must have end==seq_region_length");
+  }
+
+  my $sr_len = $slice->length();
+  my $sr_name  = $slice->seq_region_name();
+
+  if(!$sr_name) {
+    throw("Slice must have valid seq region name.");
+  }
+
+  #update the seq_region
+
+  my $seq_region_id = $slice->get_seq_region_id();
+  my $update_sql = qq(
+     UPDATE seq_region
+        SET name = ?,
+            length = ?,
+            coord_system_id = ?
+      WHERE seq_region_id = ?
+  );
+
+  my $sth = $db->dbc->prepare($update_sql);
+
+  $sth->bind_param(1,$sr_name,SQL_VARCHAR);
+  $sth->bind_param(2,$sr_len,SQL_INTEGER);
+  $sth->bind_param(3,$cs->dbID,SQL_INTEGER);
+
+  $sth->bind_param(4, $seq_region_id, SQL_INTEGER);
+
+  $sth->execute();
+
+  #synonyms
+  if(defined($slice->{'synonym'})){
+    foreach my $syn (@{$slice->{'synonym'}} ){
+      $syn->seq_region_id($seq_region_id); # set the seq_region_id
+      my $syn_adaptor = $db->get_SeqRegionSynonymAdaptor();
+      $syn_adaptor->store($syn);
+    }
+  }
+}
+
 =head2 remove
 
   Arg [1]    : Bio::EnsEMBL::Slice $slice
