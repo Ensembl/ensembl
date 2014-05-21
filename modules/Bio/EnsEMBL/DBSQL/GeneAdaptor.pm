@@ -643,20 +643,52 @@ sub fetch_all_by_Slice {
   my ($min_start, $max_end);
   my $ext_slice;
 
-  foreach my $g (@$genes) {
-    if (!defined($min_start) || $g->seq_region_start() < $min_start) {
-      $min_start = $g->seq_region_start();
+  unless ($slice->is_circular()) {
+    foreach my $g (@$genes) {
+      if (!defined($min_start) || $g->seq_region_start() < $min_start) {
+	$min_start = $g->seq_region_start();
+      }
+      if (!defined($max_end) || $g->seq_region_end() > $max_end) {
+	$max_end = $g->seq_region_end();
+      }
     }
-    if (!defined($max_end) || $g->seq_region_end() > $max_end) {
-      $max_end = $g->seq_region_end();
-    }
-  }
 
-  if ($min_start >= $slice->start() && $max_end <= $slice->end()) {
-    $ext_slice = $slice;
+    if ($min_start >= $slice->start() && $max_end <= $slice->end()) {
+      $ext_slice = $slice;
+    } else {
+      my $sa = $self->db()->get_SliceAdaptor();
+      $ext_slice = $sa->fetch_by_region($slice->coord_system->name(), $slice->seq_region_name(), $min_start, $max_end, $slice->strand(), $slice->coord_system->version());
+    }
+
   } else {
+    # feature might be crossing the origin of replication (i.e. seq_region_start > seq_region_end)
+    # the computation of min_start|end based on seq_region_start|end is not safe
+    # use feature start/end relative to the slice instead
+    my ($min_start_feature, $max_end_feature);
+    foreach my $g (@$genes) {
+      if (!defined($min_start) || $g->start() < $min_start) {
+  	$min_start = $g->start();
+  	$min_start_feature = $g;
+      }
+      if (!defined($max_end) || $g->end() > $max_end) {
+  	$max_end = $g->end();
+  	$max_end_feature = $g;
+      }
+    }
+    
+    # now we can reassign min_start|end to seq_region_start|end of
+    # the feature which spans the largest region
+    $min_start = $min_start_feature->seq_region_start();
+    $max_end = $max_end_feature->seq_region_end();
+
     my $sa = $self->db()->get_SliceAdaptor();
-    $ext_slice = $sa->fetch_by_region($slice->coord_system->name(), $slice->seq_region_name(), $min_start, $max_end, $slice->strand(), $slice->coord_system->version());
+    $ext_slice = 
+      $sa->fetch_by_region($slice->coord_system->name(), 
+  			   $slice->seq_region_name(), 
+  			   $min_start, 
+  			   $max_end, 
+  			   $slice->strand(), 
+  			   $slice->coord_system->version());
   }
 
   # Associate transcript identifiers with genes.
