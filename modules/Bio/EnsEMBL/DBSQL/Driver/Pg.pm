@@ -26,7 +26,7 @@ limitations under the License.
 
 =cut
 
-package Bio::EnsEMBL::DBSQL::Driver::Oracle;
+package Bio::EnsEMBL::DBSQL::Driver::Pg;
 
 use warnings;
 use strict;
@@ -37,8 +37,26 @@ use base 'Bio::EnsEMBL::DBSQL::Driver';
 
 sub new {
     my ($self, @args) = @_;
-    warning(__PACKAGE__ . ' is untested and is being used only to collect Postgres-specific code');
+#    warning(__PACKAGE__ . ' is untested and is being used only to collect Postgres-specific code');
     return $self->SUPER::new(@args);
+}
+
+sub connect_params {
+    my ($self, $conn) = @_;
+
+    my $dbname = $conn->dbname();
+
+
+    my $dbparam = ($dbname) ? "dbname=${dbname};" : q{};
+    my $dsn = sprintf( "dbi:Pg:%shost=%s;port=%s",
+                       $dbparam, $conn->host(),   $conn->port() );
+
+    return {
+        dsn        => $dsn,
+        username   => $conn->username(),
+        password   => $conn->password(),
+        attributes => { 'RaiseError' => 1, 'PrintError' => 0 },
+    };
 }
 
 1;
