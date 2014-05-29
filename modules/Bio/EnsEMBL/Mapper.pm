@@ -1050,7 +1050,7 @@ sub _merge_pairs {
         # deletion is restricted to same-location copies. Even more stringent checks can be made
         # at cost of speed.
             $del_pair = $next_pair;
-          } elsif ( ( $current_pair->{'from'}->{'id'} == $next_pair->{'from'}->{'id'} ) &&
+          } elsif ( ( $current_pair->{'from'}->{'id'} eq $next_pair->{'from'}->{'id'} ) &&
                     ( $next_pair->{'ori'} == $current_pair->{'ori'} ) &&
                     ( $next_pair->{'to'}->{'start'} -1 == $current_pair->{'to'}->{'end'} )) {
           
