@@ -1,4 +1,4 @@
-1	\N	schema_version	75
+1	\N	schema_version	76
 2	1	assembly.default	MULTIMAP
 3	1	species.taxonomy_id	1
 4	1	assembly.mapping	chromosome:MULTIMAP#contig
@@ -11,4 +11,7 @@
 11	\N	patch	patch_74_75_d.sql|default_transcript_source
 12	\N	patch	patch_74_75_e.sql|unique_attrib_key
 13	\N	patch	patch_74_75_f.sql|longer_code
-
+107	0		\N
+108	\N	patch	patch_75_76_a.sql|schema_version
+109	\N	patch	patch_75_76_b.sql|allow_null_karyotype
+110	\N	patch	patch_75_76_c.sql|remove_alternative_splicing
