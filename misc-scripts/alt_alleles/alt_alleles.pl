@@ -81,7 +81,7 @@ my $vega_dba = Bio::EnsEMBL::DBSQL::DBAdaptor->new(
 # get ensembl gene ids and vega stable ids from the *core* database
 # 
 my $vega_core_sql = <<'SQL';
-select ensembl_id, display_label 
+select display_label, ensembl_id
 from object_xref 
 join xref using(xref_id) 
 join external_db using(external_db_id) 
