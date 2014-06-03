@@ -613,6 +613,8 @@ sub get_DBAdaptor {
 
   my $ispecies = $class->get_alias( $species, $no_alias_check );
 
+  if ($group eq 'regulation') { $group = 'funcgen'; }
+
   if ( !defined($ispecies) ) {
     if(! $no_alias_check) {
       throw("Can not find internal name for species '$species'");
