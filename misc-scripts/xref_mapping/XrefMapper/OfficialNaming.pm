@@ -219,6 +219,31 @@ SQ0
   my %ens_clone_genes;
   my %official_name_used;
 
+  my $ignore_sql =<<IEG;
+  SELECT DISTINCT ox.object_xref_id
+    FROM object_xref ox, dependent_xref dx,
+       xref xmas, xref xdep,
+       source smas, source sdep
+    WHERE ox.xref_id = dx.dependent_xref_id AND
+          dx.dependent_xref_id = xdep.xref_id AND
+          dx.master_xref_id = xmas.xref_id AND
+          xmas.source_id = smas.source_id AND
+          xdep.source_id = sdep.source_id AND
+          smas.name like "Refseq%predicted" AND
+          sdep.name like "EntrezGene" AND
+          ox.ox_status = "DUMP_OUT"
+IEG
+
+  my %ignore_object;
+  my $ignore_sth = $self->xref->dbc->prepare($ignore_sql);
+  $ignore_sth->execute();
+  my ($ignore_object_xref_id);
+  $ignore_sth->bind_columns(\$ignore_object_xref_id);
+  while($ignore_sth->fetch()){
+    $ignore_object{$ignore_object_xref_id} = 1;
+  }
+  $ignore_sth->finish;
+
   while ( my $gene_id = shift @sorted_gene_ids){
 
     my $tran_source = $dbname;
@@ -271,7 +296,8 @@ SQ0
     ####################################################
     if(!defined($gene_symbol)){ 
       ($gene_symbol, $gene_symbol_xref_id) = 
-	$self->find_from_other_sources({gene_id       => $gene_id, 
+	$self->find_from_other_sources(\%ignore_object, 
+                                       {gene_id       => $gene_id, 
 					label_to_desc => \%display_label_to_desc,
 					tran_source   => \$tran_source});
     }
@@ -1065,35 +1091,11 @@ sub get_other_name_hash{
 
 
 sub find_from_other_sources{
-  my ($self, $ref_args) = @_;
+  my ($self, $ignore_object, $ref_args) = @_;
   my $tran_source           = $ref_args->{tran_source};
   my $gene_id               = $ref_args->{gene_id};
   my $display_label_to_desc = $ref_args->{label_to_desc}; 
-
-  my $ignore_sql =<<IEG;
-  SELECT DISTINCT ox.object_xref_id
-    FROM object_xref ox, dependent_xref dx,
-       xref xmas, xref xdep,
-       source smas, source sdep
-    WHERE ox.xref_id = dx.dependent_xref_id AND
-          dx.dependent_xref_id = xdep.xref_id AND
-          dx.master_xref_id = xmas.xref_id AND
-          xmas.source_id = smas.source_id AND
-          xdep.source_id = sdep.source_id AND
-          smas.name like "Refseq%predicted" AND
-          sdep.name like "EntrezGene" AND
-          ox.ox_status = "DUMP_OUT"
-IEG
-
-  my %ignore_object;
-  my $ignore_sth = $self->xref->dbc->prepare($ignore_sql);
-  $ignore_sth->execute();
-  my ($ignore_object_xref_id);
-  $ignore_sth->bind_columns(\$ignore_object_xref_id);
-  while($ignore_sth->fetch()){
-    $ignore_object{$ignore_object_xref_id} = 1;
-  }
-  $ignore_sth->finish;
+  my %ignore_object = %{$ignore_object};
 
   my ($gene_symbol, $gene_symbol_xref_id);
   my $dbentrie_sth = $self->get_dbentrie_with_desc_sth();
