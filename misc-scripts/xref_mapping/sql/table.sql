@@ -415,8 +415,8 @@ CREATE TABLE translation_stable_id (
   internal_id                 INT UNSIGNED NOT NULL,
   stable_id                   VARCHAR(128) NOT NULL,
 
-  PRIMARY KEY (stable_id),
-  INDEX internal_idx (internal_id)
+  PRIMARY KEY (internal_id),
+  INDEX stable_idx (stable_id)
 
 ) COLLATE=latin1_swedish_ci ENGINE=InnoDB;
 
