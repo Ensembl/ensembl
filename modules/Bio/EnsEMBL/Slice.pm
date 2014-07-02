@@ -3222,7 +3222,12 @@ sub get_all_compara_Syntenies {
 
   my $this_gdb = $gdba->fetch_by_core_DBAdaptor($self->adaptor()->db());
   my $query_gdb = $gdba->fetch_by_registry_name($qy_species);
-  my $mlss = $mlssa->fetch_by_method_link_type_GenomeDBs($method_link_type, [$this_gdb, $query_gdb]);
+  my $mlss;
+  if($this_gdb eq $query_gdb) {
+    $mlss = $mlssa->fetch_by_method_link_type_GenomeDBs($method_link_type, [$this_gdb]);
+  } else {
+    $mlss = $mlssa->fetch_by_method_link_type_GenomeDBs($method_link_type, [$this_gdb, $query_gdb]);
+  }
 
   my $cs = $self->coord_system()->name();
   my $sr = $self->seq_region_name();
