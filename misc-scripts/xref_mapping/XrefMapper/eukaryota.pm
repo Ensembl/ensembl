@@ -26,6 +26,13 @@ use vars qw(@ISA);
 @ISA = qw(XrefMapper::BasicMapper);
 
 
+=head2 set_methods
+
+ Overrides the default exonerate method and non default methods which should be used for 
+ one or more sources.
+
+=cut
+
 sub set_methods{
  
   my $default_method = 'ExonerateGappedBest1';
@@ -35,6 +42,13 @@ sub set_methods{
 
   return $default_method, \%override_method_for_source;
 }
+
+
+=head2 gene_display_xref_sources
+
+ Overrides the list of sources to use for assigning gene names
+
+=cut
 
 sub gene_display_xref_sources {
     my $self     = shift;
@@ -95,6 +109,12 @@ LOCP
 }
 
 
+=head2 transcript_display_xref_sources
+
+ Overrides the list of sources to use for assigning transcript names
+
+=cut
+
 sub transcript_display_xref_sources {
     my $self     = shift;
 
@@ -152,6 +172,13 @@ LOCP
     return [\@list,\%ignore];
 }
 
+
+=head2 gene_description_sources
+
+ Overrides the list of external_db entries to use for assigning gene descriptions
+
+=cut
+
 sub gene_description_sources {
   return (
           "TAIR_LOCUS",
@@ -179,6 +206,12 @@ sub gene_description_sources {
 }
 
 
+=head2 set_source_id_to_external_name
+
+ Overrides the source_id to source external name mapping
+
+=cut
+
 sub set_source_id_to_external_name {
     
     my $self = shift;
@@ -197,6 +230,8 @@ sub set_source_id_to_external_name {
     $sth->bind_columns(\$id, \$name);
     while($sth->fetch()){
 	if(defined($name_to_external_name_href->{$name})){
+            # Here is the override code
+	    # Map $name instead of $name_to_external_name_href->{$name} to their source ids
 	    $source_id_to_external_name_href->{$id} = $name;
 	    $name_to_source_id_href->{$name} = $id;
 	}
@@ -211,6 +246,15 @@ sub set_source_id_to_external_name {
     
     return ($source_id_to_external_name_href, $name_to_source_id_href);
 }
+
+
+=head2 transcript_names_from_gene
+
+ Overrides the transcript names logic assignment from gene names
+ Avoid adding '-\d+' suffix to any of them
+
+=cut
+
 
 sub transcript_names_from_gene {
   my $self = shift;
