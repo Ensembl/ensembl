@@ -26,6 +26,13 @@ use vars qw(@ISA);
 @ISA = qw(XrefMapper::BasicMapper);
 
 
+=head2 set_methods
+
+ Overrides the default exonerate method and non default methods which should be used for 
+ one or more sources.
+
+=cut
+
 sub set_methods{
  
   my $default_method = 'ExonerateGappedBest1';
@@ -35,6 +42,13 @@ sub set_methods{
 
   return $default_method, \%override_method_for_source;
 }
+
+
+=head2 gene_display_xref_sources
+
+ Overrides the list of sources to use for assigning gene names
+
+=cut
 
 sub gene_display_xref_sources {
     my $self     = shift;
@@ -95,6 +109,12 @@ LOCP
 }
 
 
+=head2 transcript_display_xref_sources
+
+ Overrides the list of sources to use for assigning transcript names
+
+=cut
+
 sub transcript_display_xref_sources {
     my $self     = shift;
 
@@ -152,6 +172,13 @@ LOCP
     return [\@list,\%ignore];
 }
 
+
+=head2 gene_description_sources
+
+ Overrides the list of external_db entries to use for assigning gene descriptions
+
+=cut
+
 sub gene_description_sources {
   return (
           "TAIR_LOCUS",
@@ -179,6 +206,12 @@ sub gene_description_sources {
 }
 
 
+=head2 set_source_id_to_external_name
+
+ Overrides the source_id to source external name mapping
+
+=cut
+
 sub set_source_id_to_external_name {
     
     my $self = shift;
@@ -197,6 +230,8 @@ sub set_source_id_to_external_name {
     $sth->bind_columns(\$id, \$name);
     while($sth->fetch()){
 	if(defined($name_to_external_name_href->{$name})){
+            # Here is the override code
+	    # Map $name instead of $name_to_external_name_href->{$name} to their source ids
 	    $source_id_to_external_name_href->{$id} = $name;
 	    $name_to_source_id_href->{$name} = $id;
 	}
@@ -210,6 +245,96 @@ sub set_source_id_to_external_name {
     $sth->finish;
     
     return ($source_id_to_external_name_href, $name_to_source_id_href);
+}
+
+
+=head2 transcript_names_from_gene
+
+ Overrides the transcript names logic assignment from gene names
+ Avoid adding '-\d+' suffix to any of them
+
+=cut
+
+
+sub transcript_names_from_gene {
+  my $self = shift;
+
+  print "Assigning transcript names from gene names\n" if ($self->verbose);
+
+  my $reset_sth = $self->core->dbc->prepare("UPDATE transcript SET display_xref_id = null");
+  $reset_sth->execute();
+  $reset_sth->finish;
+
+  my $xref_id_sth = $self->core->dbc->prepare("SELECT max(xref_id) FROM xref");
+  my $ox_id_sth = $self->core->dbc->prepare("SELECT max(object_xref_id) FROM object_xref");
+  my $del_xref_sth = $self->core->dbc->prepare("DELETE x FROM xref x, object_xref ox WHERE x.xref_id = ox.xref_id AND ensembl_object_type = 'Transcript' AND display_label REGEXP '-2[0-9]{2}\$'");
+  my $reuse_xref_sth = $self->core->dbc->prepare("SELECT xref_id FROM xref x WHERE external_db_id = ? AND display_label = ? AND version = 0 AND description = ? AND info_type = 'MISC' AND info_text = 'via gene name'");
+  my $del_ox_sth = $self->core->dbc->prepare("DELETE ox FROM object_xref ox LEFT JOIN xref x ON x.xref_id = ox.xref_id WHERE isnull(x.xref_id)");
+  my $ins_xref_sth = $self->core->dbc->prepare("INSERT IGNORE into xref (xref_id, external_db_id, dbprimary_acc, display_label, version, description, info_type, info_text) values(?, ?, ?, ?, 0, ?, 'MISC', 'via gene name')");
+  my $ins_ox_sth = $self->core->dbc->prepare("INSERT into object_xref (object_xref_id, ensembl_id, ensembl_object_type, xref_id) values(?, ?, 'Transcript', ?)");
+  my $update_tran_sth = $self->core->dbc->prepare("UPDATE transcript t SET t.display_xref_id= ? WHERE t.transcript_id=?");
+
+  my $get_genes = $self->core->dbc->prepare("SELECT g.gene_id, e.db_name, x.dbprimary_acc, x.display_label, x.description FROM gene g, xref x, external_db e where g.display_xref_id = x.xref_id and e.external_db_id = x.external_db_id");
+  my $get_transcripts = $self->core->dbc->prepare("SELECT transcript_id FROM transcript WHERE gene_id = ? ORDER BY seq_region_start, seq_region_end");
+  my $get_source_id = $self->core->dbc->prepare("SELECT external_db_id FROM external_db WHERE db_name like ?");
+
+  $get_genes->execute();
+  my ($gene_id, $external_db, $external_db_id, $acc, $label, $description, $transcript_id, $xref_id, $ox_id, $ext, $reuse_xref_id);
+  $get_genes->bind_columns(\$gene_id, \$external_db, \$acc, \$label, \$description);
+  $xref_id_sth->execute();
+  $xref_id_sth->bind_columns(\$xref_id);
+  $xref_id_sth->fetch();
+  $ox_id_sth->execute();
+  $ox_id_sth->bind_columns(\$ox_id);
+  $ox_id_sth->fetch();
+  $del_xref_sth->execute();
+  while ($get_genes->fetch()) {
+    my $ext = '';
+    my $index=0;
+    $get_source_id->execute($external_db . "_trans_name");
+    $get_source_id->bind_columns(\$external_db_id);
+    $get_source_id->fetch();
+    $get_transcripts->execute($gene_id);
+    $get_transcripts->bind_columns(\$transcript_id);
+    while ($get_transcripts->fetch) {
+      $xref_id++;
+      $ox_id++;
+      if ($ext ne '') {
+	  $reuse_xref_sth->execute($external_db_id, $label . '-' . $ext, $description);
+      }
+      else {
+	  $reuse_xref_sth->execute($external_db_id, $label, $description);
+      }
+      $reuse_xref_sth->bind_columns(\$reuse_xref_id);
+      if ($reuse_xref_sth->fetch()) {
+        $ins_ox_sth->execute($ox_id, $transcript_id, $reuse_xref_id);
+        $update_tran_sth->execute($reuse_xref_id, $transcript_id);
+      } else {
+	  if ($ext ne '') {
+	      $ins_xref_sth->execute($xref_id, $external_db_id, $label. "-" . $ext, $label . "-" . $ext, $description);
+	  }
+	  else {
+	      $ins_xref_sth->execute($xref_id, $external_db_id, $label, $label, $description);
+	  }
+        $ins_ox_sth->execute($ox_id, $transcript_id, $xref_id);
+        $update_tran_sth->execute($xref_id, $transcript_id);
+      }
+      $index++;
+    }
+  }
+
+  $del_xref_sth->finish();
+  $del_ox_sth->execute();
+  $del_ox_sth->finish();
+  $reuse_xref_sth->finish();
+  $xref_id_sth->finish();
+  $ox_id_sth->finish();
+  $get_genes->finish();
+  $get_source_id->finish();
+  $get_transcripts->finish();
+  $ins_xref_sth->finish();
+  $ins_ox_sth->finish();
+  $update_tran_sth->finish();
 }
 
 1;
