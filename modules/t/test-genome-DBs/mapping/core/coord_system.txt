@@ -1,0 +1,2 @@
+1	1	chromosome	MULTIMAP	1	default_version
+2	1	contig	\N	4	default_version,sequence_level

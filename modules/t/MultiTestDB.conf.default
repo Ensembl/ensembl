@@ -22,6 +22,9 @@
     },
     'ontology' => {
       'ontology' => 'Bio::EnsEMBL::DBSQL::OntologyDBAdaptor',
-    }
+    },
+    'mapping' => {
+      'core' => 'Bio::EnsEMBL::DBSQL::DBAdaptor',
+    },
   },
 }

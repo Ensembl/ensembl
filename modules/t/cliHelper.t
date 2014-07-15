@@ -29,6 +29,9 @@ my $multi = Bio::EnsEMBL::Test::MultiTestDB->new();
 
 my $dba = $multi->get_DBAdaptor("core");
 
+SKIP: {
+skip 'CliHelper not supported for SQLite yet', 1 if $dba->dbc()->driver() eq 'SQLite';
+
 my $cli_helper = Bio::EnsEMBL::Utils::CliHelper->new();
 
 debug("Checking default options");
@@ -174,5 +177,7 @@ is( $dba_args->[1]->{-DBNAME}, $opts->{dbname} );
 ok( defined $dba_args->[1]->{-SPECIES} );
 is( $dba_args->[1]->{-SPECIES_ID},2 );
 is( $dba_args->[1]->{-MULTISPECIES_DB}, 1 );
+
+} # SKIP for SQLite
 
 done_testing();

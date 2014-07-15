@@ -107,7 +107,7 @@ my $stable_ids = $ta->list_stable_ids();
 ok (@{$stable_ids});
 
 my $tr = $ta->fetch_by_display_label( "DNMT3B" );
-ok($tr && $tr->dbID() == 21737 );
+is($tr->dbID, 21737, 'Fetched correct dbID');
 
 
 $tr = $ta->fetch_by_stable_id( "ENST00000217347" );
@@ -117,13 +117,13 @@ $tr = $tr->transform('contig');
 ok( $tr );
 
 note ( "External transcript name: " . $tr->external_name );
-ok ( $tr->external_name eq "MAPRE1");
+is ($tr->external_name, "MAPRE1", 'Fetched correct external name');
 
 note ( "External transcript dbname: " . $tr->external_db );
-ok ( $tr->external_db eq 'HUGO' );
+is ( $tr->external_db, 'HUGO' , 'Fetched correct external db');
 
 note ( "Display_xref_id: " . $tr->display_xref->dbID() );
-ok ( $tr->display_xref->dbID() == 97759 );
+is ( $tr->display_xref->dbID(), 97759, 'Fetched correct display xref id' );
 ok( test_getter_setter( $tr, "display_xref", 42 ));
 
 ok( test_getter_setter( $tr, "dbID", 100000 ));
@@ -141,27 +141,23 @@ ok( $date_time[3] == 6 && $date_time[4] == 11 && $date_time[5] == 104 );
 
 ok( $tr->translation->isa( "Bio::EnsEMBL::Translation" ));
 
-note( "start() == ".$tr->start() );
-ok( $tr->start() == 79874 );
+is( $tr->start(), 79874, 'Start is correct' );
 
-note( "end() == ".$tr->end() );
-ok( $tr->end() == 110306 );
+is( $tr->end(), 110306, 'End is correct' );
 
-note( "spliced_seq->substr == \"".substr( $tr->spliced_seq(),0, 10 )."\"" );
-ok( substr( $tr->spliced_seq(), 0, 10 ) eq "ACGAGACGAA" ); 
+is ( substr( $tr->spliced_seq(), 0, 10 ), "ACGAGACGAA", 'Start of spliced seq is correct' ); 
+is ( substr( $tr->spliced_seq(1), 0, 10 ), "acgagacgaa", 'Spliced seq with utr lower casing is correct');
+is ( length($tr->spliced_seq()), length($tr->spliced_seq(1)), "Spliced seq with or without utr lower casing has the same length");
+is ( $tr->spliced_seq(), uc($tr->spliced_seq(1)), "Spliced seq is identical to upper case utr masked spliced seq");
 
-note( "translateable_seq->substr == \"".substr( $tr->translateable_seq(),0,10 )."\"" );
-ok( substr( $tr->translateable_seq(),0,10 ) eq "ATGGCAGTGA" );
+is ( substr( $tr->translateable_seq(),0,10 ), "ATGGCAGTGA", 'Start of translateable sequence is correct' );
 
-note( "coding_region_start() == ".$tr->coding_region_start() );
-ok( $tr->coding_region_start() == 85834 );
+is( $tr->coding_region_start(), 85834, 'Correct coding region start' );
 
-note( "coding_region_end() == ".$tr->coding_region_end() );
-ok( $tr->coding_region_end() == 108631 );
+is( $tr->coding_region_end(), 108631, 'Correct coding region end' );
 
-note( "pep2genomic: ".($tr->pep2genomic( 10,20 ))[0]->start());
 my @pepcoords = $tr->pep2genomic( 10, 20 );
-ok( $pepcoords[0]->start() == 85861 );
+is( $pepcoords[0]->start(), 85861, 'Correct translation start' );
 
 my $t_start = $tr->start;
 my $t_end   = $tr->end;
@@ -189,36 +185,28 @@ foreach my $c ($tr->genomic2pep($t_start, $t_end, $t_strand)) {
   }
 }
 
-note("expecting $coord_num coords (in pep coords), got " . scalar(@coords));
-ok(scalar(@coords) == $coord_num);
+is(scalar(@coords), $coord_num, 'Number of coords is correct');
 my ($last_coord) = reverse(@coords); 
-note("expecting peptide length: $pep_len, got".$last_coord->end);
-ok($pep_len == $last_coord->end);
+is($pep_len, $last_coord->end, 'Peptide length matched end coordinate');
 
 note( "start Exon: ".$tr->start_Exon->stable_id() );
 note( "end Exon: ".$tr->end_Exon->stable_id() );
 
-note( "cdna_coding_start: ". $tr->cdna_coding_start );
-ok($tr->cdna_coding_start == 65);
+is($tr->cdna_coding_start, 65, 'Correct cdna coding start');
 ok(test_getter_setter($tr, 'cdna_coding_start', 99));
 
-note( "five_prime_utr: ".substr( $tr->five_prime_utr()->seq(), -5 , 5 ));
-ok( substr( $tr->five_prime_utr()->seq(), -5, 5) eq "CGAAG" ); 
+is( substr( $tr->five_prime_utr()->seq(), -5, 5), "CGAAG", 'Five prime utr seq is correct' ); 
 
-note( "cdna_coding_end: ". $tr->cdna_coding_end );
-ok($tr->cdna_coding_end == 868);
+is($tr->cdna_coding_end, 868, 'Correct cdna coding end');
 ok(test_getter_setter($tr, 'cdna_coding_end', 102));
 
-note( "three_prime_utr: ".substr( $tr->three_prime_utr()->seq(), -5, 5  ));
-ok( substr( $tr->three_prime_utr()->seq(), -5, 5  ) eq "TTCAA");
+is( substr( $tr->three_prime_utr()->seq(), -5, 5  ), "TTCAA", 'Three prime utr seq is correct');
 
-note( "Transcript has: ". scalar( @{$tr->get_all_Exons()} ). " Exons" );
-ok( scalar( @{$tr->get_all_Exons()} ) == 7 );
+is( scalar( @{$tr->get_all_Exons()} ), 7, 'Transcript has 7 exons' );
 
-note( "Flushing Exons" );
 $tr->flush_Exons();
 
-ok( scalar( @{$tr->get_all_Exons()} ) == 0 );
+is( scalar( @{$tr->get_all_Exons()} ), 0, 'No exons left after flushing' );
 
 
 # get a fresh tr to check the update method
@@ -230,7 +218,7 @@ $multi->save('core', 'transcript', 'meta_coord');
 $ta->update($tr);
 
 my $up_tr = $ta->fetch_by_stable_id( "ENST00000217347" );
-ok ( $up_tr->display_xref->dbID() == 97759 );
+is( $up_tr->display_xref->dbID(), 97759, 'Fetched the correct dbID' );
 
 my $dbentryAdaptor = $db->get_DBEntryAdaptor();
 
@@ -238,7 +226,7 @@ $tr->display_xref($dbentryAdaptor->fetch_by_dbID( 614 ));
 $ta->update($tr);
 
 $up_tr = $ta->fetch_by_stable_id( "ENST00000217347" );
-ok ( $up_tr->display_xref->dbID() == 614 );
+is ( $up_tr->display_xref->dbID(), 614, 'Fetched the correct display xref id');
 
 $multi->restore('core', 'transcript', 'meta_coord');
 
@@ -256,7 +244,7 @@ ok(@$interpro == 1);
 #
 
 ($tr) = @{$ta->fetch_all_by_external_name('PLAGL2')};
-ok($tr && $tr->stable_id eq 'ENST00000246229');
+is($tr->stable_id, 'ENST00000246229', 'Fetched correct transcript by external name');
 
 #
 # test fetch_by_translation_id
@@ -264,23 +252,22 @@ ok($tr && $tr->stable_id eq 'ENST00000246229');
 
 $tr = $ta->fetch_by_translation_id(21734);
 
-ok($tr && $tr->stable_id eq 'ENST00000201961');
+is($tr->stable_id, 'ENST00000201961', 'Fetched correct transcript by translation id');
 
-ok($tr->display_id() eq $tr->stable_id());
+is($tr->display_id(), $tr->stable_id(), 'Transcript stable id and display id are identical');
 
 #
 # test TranscriptAdaptor::fetch_all_by_biotype
 #
 note("Test fetch_all_by_biotype");
 my @transcripts = @{$ta->fetch_all_by_biotype('protein_coding')};
-ok(@transcripts == 25);
+is(@transcripts, 25, 'Fetching all protein coding transcript');
 my $transcriptCount = $ta->count_all_by_biotype('protein_coding');
-ok($transcriptCount == 25);
+is($transcriptCount, 25, 'Counting all protein coding');
 @transcripts = @{$ta->fetch_all_by_biotype(['protein_coding','pseudogene'])};
-note "Got ".scalar(@transcripts)." transcripts\n";
-ok(@transcripts == 25);
+is(@transcripts, 25, 'Got 25 transcript');
 $transcriptCount = $ta->count_all_by_biotype(['protein_coding', 'pseudogene']);
-ok($transcriptCount == 25);
+is($transcriptCount, 25, 'Count by biotype is correct');
 
 
 #
@@ -336,7 +323,7 @@ foreach my $stable_id (qw(ENST00000201961 ENST00000217347)){ #test both strands
 
   }
 
-  ok($orig_seq eq $new_seq);
+  is($orig_seq, $new_seq, 'Correct new origin seq');
 
 }
 
@@ -379,9 +366,9 @@ $ta->remove($tr);
 ok(!defined($tr->dbID()));
 ok(!defined($tr->adaptor()));
 
-ok( count_rows( $db, "transcript") == ($tr_count - 1));
-ok( count_rows( $db, "translation") == ($tl_count - 1));
-ok( count_rows( $db, "exon_transcript") == ($ex_tr_count - $ex_tr_minus));
+is( count_rows( $db, "transcript"), ($tr_count - 1), 'Row count matches transcript count');
+is( count_rows( $db, "translation"), ($tl_count - 1), 'Row count matches translation count');
+is( count_rows( $db, "exon_transcript"), ($ex_tr_count - $ex_tr_minus), 'Row count matches exon count');
 
 #
 # test _rna_edit for transcripts
@@ -408,7 +395,7 @@ my $attrib = Bio::EnsEMBL::Attribute->new
 
 $tr->add_Attributes( $attrib );
 
-my $seq2 = $tr->spliced_seq();
+my $seq2 = $tr->spliced_seq(1);
 
 ok( $seq1 ne $seq2 );
 ok( $seq2 =~ /^GATTACA/ );
@@ -416,8 +403,8 @@ ok( $seq2 =~ /^GATTACA/ );
 my $cdna_cds_start2 = $tr->cdna_coding_start();
 my $cdna_cds_end2   = $tr->cdna_coding_end();
 
-ok($cdna_cds_start1 == $cdna_cds_start2 - 1);
-ok($cdna_cds_end1   == $cdna_cds_end2   - 1);
+is($cdna_cds_start1, $cdna_cds_start2 - 1, 'Both cdna starts match');
+is($cdna_cds_end1, $cdna_cds_end2   - 1, 'Both cdna ends match');
 
 
 # insert just at the start of the translation
@@ -437,17 +424,17 @@ ok( $tlseq1 ne $tlseq2 );
 ok( $tlseq2 =~ /^NNNATG/ );
 ok( $tlseq1 eq substr( $tlseq2,3 ));
 
-ok($cdna_cds_start2 == $tr->cdna_coding_start());
-ok($cdna_cds_end2   == $tr->cdna_coding_end() - 3);
+is($cdna_cds_start2, $tr->cdna_coding_start(), 'Cds start matches cdna coding start');
+is($cdna_cds_end2  , $tr->cdna_coding_end() - 3, 'Coding end -3 matches cds end');
 
 # test that the edits can be disabled
 $tr->edits_enabled(0);
 
-ok($tr->cdna_coding_start() == $cdna_cds_start1);
-ok($tr->cdna_coding_end()   == $cdna_cds_end1);
+is($tr->cdna_coding_start(), $cdna_cds_start1, 'Cds start matches cdna coding start');
+is($tr->cdna_coding_end()  , $cdna_cds_end1, 'Cds end matches cdna coding end');
 
-ok($tr->spliced_seq() eq $seq1);
-ok($tr->translateable_seq() eq $tlseq1);
+is($tr->spliced_seq(), $seq1, 'Spliced sequence is correct');
+is($tr->translateable_seq(), $tlseq1, 'Translateable sequence is correct');
 
 #
 # try save and retrieve by lazy load
@@ -464,7 +451,7 @@ $tr->edits_enabled(1);
 #print " $tr->translateable_seq() : " .  $tr->translateable_seq() . "\n";
 #print "$tr->spliced_seq() : " . $tr->spliced_seq() . "\n";
 
-ok( $tr->translateable_seq() eq $tlseq2 );
+is( $tr->translateable_seq(), $tlseq2, 'Translateable sequence is correct' );
 ok( $tr->spliced_seq() =~ /^GATTACA/ );
 
 $multi->restore();
@@ -492,7 +479,7 @@ $tr = $ta->fetch_by_stable_id('ENST00000355555');
 
 note($tr->translate->seq());
 
-ok($tr->translate->seq() eq 'MNFALILMINTLLALLLMIITFWLPQLNGYMEKSTPYECGFDPMSPARVPFSMKFFLVAITFLLFDLEIALLLPLPWALQTTNLPLMVMSSLLLIIILALSLAYEWLQKGLDWAE');
+is($tr->translate->seq(), 'MNFALILMINTLLALLLMIITFWLPQLNGYMEKSTPYECGFDPMSPARVPFSMKFFLVAITFLLFDLEIALLLPLPWALQTTNLPLMVMSSLLLIIILALSLAYEWLQKGLDWAE', 'Translates correctly');
 
 
 
@@ -519,7 +506,7 @@ $tr->adaptor(undef);
   # testing transform with gaps in introns
   my $tr = $ta->fetch_by_dbID( 21739 );
   my $mapped_tr = $tr->transform( "alt_chrom" );
-  ok( $tr->spliced_seq() eq $mapped_tr->spliced_seq() );
+  is( $tr->spliced_seq(), $mapped_tr->spliced_seq(), 'Transcript seq matches mapped seq' );
 }
 
 $multi->hide('core', 'transcript', 'transcript_attrib', 'translation',
@@ -542,7 +529,7 @@ $tr->add_Attributes($attrib2);
 
 $ta->store($tr, $g->dbID());
 
-ok(count_rows($db, 'transcript_attrib') == 2);
+is(count_rows($db, 'transcript_attrib'), 2, '2 rows for transcript_attrib');
 
 $multi->restore('core');
 
@@ -551,37 +538,33 @@ $multi->restore('core');
 #
 
 $tr = $ta->fetch_by_stable_id('ENST00000355555');
-note("fetch_by_stable_id");
-ok( $tr->dbID == 21740 );
+is( $tr->dbID, 21740, 'Fetched transcript by stable id' );
 
 @transcripts = @{ $ta->fetch_all_versions_by_stable_id('ENST00000355555') };
-note("fetch_all_versions_by_stable_id");
-ok( scalar(@transcripts) == 1 );
+is( scalar(@transcripts), 1, 'Fetched all transcripts by stable_id' );
 
 $tr = $ta->fetch_by_translation_stable_id('ENSP00000355555');
-note("fetch_by_translation_stable_id");
-ok( $tr->dbID == 21740 );
+is( $tr->dbID, 21740, 'Fetched transcript by translation stable id' );
 
 @transcripts = @{ $ta->fetch_all_by_exon_stable_id('ENSE00001109603') };
-note("fetch_all_by_exon_stable_id");
-ok( scalar(@transcripts) == 1 && $transcripts[0]->dbID == 21740 );
+is( scalar(@transcripts), 1);
+is( $transcripts[0]->dbID, 21740, 'Fetched transcript by exon stable id' );
 
 $g = $db->get_GeneAdaptor->fetch_by_stable_id('ENSG00000355555');
 @transcripts = @{ $ta->fetch_all_by_Gene($g) };
-note("fetch_all_by_Gene");
-ok( scalar(@transcripts) == 1 && $transcripts[0]->dbID == 21740 );
+is( scalar(@transcripts), 1);
+is( $transcripts[0]->dbID, 21740, 'Fetched transcript by gene' );
 
 my $sl = $sa->fetch_by_region('chromosome', 'MT_NC_001807');
 @transcripts = @{ $sl->get_all_Transcripts };
-ok( scalar(@transcripts) == 1 );
+is( scalar(@transcripts), 1, 'Fetched all transcripts for region' );
 
 @transcripts = @{ $ta->fetch_all_by_external_name('MAE1_HUMAN') };
-note( "fetch_all_by_external_name" );
-ok( scalar(@transcripts) == 1 && $transcripts[0]->dbID == 21738 );
+is( scalar(@transcripts), 1);
+is( $transcripts[0]->dbID, 21738, 'Fetched transcript by external name' );
 
 $tr = $ta->fetch_by_display_label('MAPRE1');
-note("fetch_by_display_label");
-ok( $tr->dbID == 21738 );
+is( $tr->dbID, 21738, 'Fetched transcript by display label' );
 
 # store/update
 
@@ -603,12 +586,12 @@ $tr->dbID(undef);
 $tr->adaptor(undef);
 $ta->store($tr, $g->dbID);
 $tr = $ta->fetch_by_stable_id('ENST00000355555');
-ok($tr->is_current == 1);   # 148
+is($tr->is_current, 1, 'Transcript is current');   # 148
 
 @transcripts = @{ $ta->fetch_all_versions_by_stable_id('ENST00000355555') };
 foreach my $t (@transcripts) {
   next unless ($t->version == 4);
-  ok($t->is_current == 0);  # 149
+  is($t->is_current, 0, 'Transcript is not current');  # 149
 }
 
 $tr->is_current(0);
@@ -619,7 +602,7 @@ ok(!$t1);   # 150
 $tr->is_current(1);
 $ta->update($tr);
 $tr = $ta->fetch_by_stable_id('ENST00000355555');
-ok($tr->is_current == 1);   # 151
+is($tr->is_current, 1, 'Transcript is now current');   # 151
 
 $multi->restore;
 
@@ -699,7 +682,9 @@ $multi->restore;
   
 }
 
-{
+SKIP: {
+  skip 'No registry support for SQLite yet', 1 if $db->dbc->driver() eq 'SQLite';
+
   #test the get_species_and_object_type method from the Registry
   my $registry = 'Bio::EnsEMBL::Registry';
   my ( $species, $object_type, $db_type ) = $registry->get_species_and_object_type('ENST00000355555');
@@ -722,8 +707,8 @@ sub test_trans_mapper_edits {
   @coords = $tr->genomic2cdna($start, $end, $tr->strand());
 
   ok(@coords == 1 && $coords[0]->isa('Bio::EnsEMBL::Mapper::Coordinate'));
-  ok($coords[0]->start() == 1);
-  ok($coords[0]->end()   == 12);
+  is($coords[0]->start(), 1, 'Start is correct');
+  is($coords[0]->end(), 12, 'End is correct');
 
   # deletion of 3 bp
   my $se = Bio::EnsEMBL::SeqEdit->new

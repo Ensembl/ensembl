@@ -474,8 +474,10 @@ sub _seq_region_name_to_id {
   my $sr_name = shift;
   my $cs_id   = shift;
 
-  ($sr_name && $cs_id) || throw('seq_region_name and coord_system_id args ' .
-				'are required');
+  if(!defined($sr_name) or
+     !defined($cs_id)){
+      throw('seq_region_name and coord_system_id args are required');
+  }
 
   my $arr = $self->{'sr_name_cache'}->{"$sr_name:$cs_id"};
   if( $arr ) {
@@ -494,12 +496,16 @@ sub _seq_region_name_to_id {
   $sth->bind_param(2,$cs_id,SQL_INTEGER);
   $sth->execute();
 
-  if(!$sth->rows() == 1) {
-    throw("Ambiguous or non-existant seq_region [$sr_name] " .
-	  "in coord system $cs_id");
+  my @row = $sth->fetchrow_array();
+  unless ( @row ) {
+    throw("No-existent seq_region [$sr_name] in coord system $cs_id");
+  }
+  my @more = $sth->fetchrow_array();
+  if ( @more ) {
+    throw("Ambiguous seq_region [$sr_name] in coord system $cs_id");
   }
 
-  my ($sr_id, $sr_length) = $sth->fetchrow_array();
+  my ($sr_id, $sr_length) = @row;
   $sth->finish();
 
   $arr = [ $sr_id, $sr_name, $cs_id, $sr_length ];
@@ -532,11 +538,12 @@ sub _seq_region_id_to_name {
   $sth->bind_param(1,$sr_id,SQL_INTEGER);
   $sth->execute();
 
+  my @row = $sth->fetchrow_array();
   if(!$sth->rows() == 1) {
     throw("non-existant seq_region [$sr_id]");
   }
 
-  my ($sr_name, $sr_length, $cs_id) = $sth->fetchrow_array();
+  my ($sr_name, $sr_length, $cs_id) = @row;
   $sth->finish();
 
   $arr = [ $sr_id, $sr_name, $cs_id, $sr_length ];
@@ -615,6 +622,8 @@ sub register_component {
   $sth->bind_param(2,$asm_cs_id,SQL_INTEGER);
   $sth->execute();
 
+  my @rows = $sth->fetchrow_array();
+
   if($sth->rows() == 0) {
     #this component is not used in the assembled part i.e. gap
     $asm_mapper->register_component($cmp_seq_region);
@@ -627,6 +636,7 @@ sub register_component {
   #   chromosome:EquCab2#contig ( use'#' for multiple mappings )
   #   chromosome:EquCab2|contig ( use '|' delimiter for 1-1 mappings )
   #
+  my @more = $sth->fetchrow_array();
   if($sth->rows() != 1) {
     $sth->finish();
     throw("Multiple assembled regions for single " .
@@ -636,7 +646,7 @@ sub register_component {
   }
 
   my ($asm_start, $asm_end, $asm_seq_region_id,
-      $asm_seq_region, $asm_seq_region_length) = $sth->fetchrow_array();
+      $asm_seq_region, $asm_seq_region_length) = @rows;
 
   my $arr = [ $asm_seq_region_id, $asm_seq_region,
               $asm_cs_id, $asm_seq_region_length ];

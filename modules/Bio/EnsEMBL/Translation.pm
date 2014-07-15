@@ -63,7 +63,7 @@ use strict;
 
 use Bio::EnsEMBL::Utils::Exception qw( deprecate throw warning );
 use Bio::EnsEMBL::Utils::Argument qw( rearrange );
-use Bio::EnsEMBL::Utils::Scalar qw( assert_ref );
+use Bio::EnsEMBL::Utils::Scalar qw( assert_ref wrap_array );
 use Scalar::Util qw(weaken);
 
 use Bio::EnsEMBL::Storable;
@@ -1042,7 +1042,9 @@ sub add_Attributes {
 
 =head2 get_all_SeqEdits
 
+  Arg [1]    : ArrayRef $edits. Specify the name of the edits to fetch
   Example    : my @seqeds = @{$transcript->get_all_SeqEdits()};
+               my @seqeds = @{$transcript->get_all_SeqEdits('_selenocysteine')};
   Description: Retrieves all post transcriptional sequence modifications for
                this transcript.
   Returntype : Bio::EnsEMBL::SeqEdit
@@ -1054,15 +1056,16 @@ sub add_Attributes {
 
 sub get_all_SeqEdits {
   my $self = shift;
+  my $edits = shift;
 
   my @seqeds;
 
   my $attribs;
   
-  my @edits = ('initial_met', '_selenocysteine', 'amino_acid_sub');
+  $edits ||= ['initial_met', '_selenocysteine', 'amino_acid_sub'];
   
 
-  foreach my $edit(@edits){
+  foreach my $edit(@{wrap_array($edits)}){
     $attribs = $self->get_all_Attributes($edit);
 
     # convert attributes to SeqEdit objects
@@ -1071,6 +1074,21 @@ sub get_all_SeqEdits {
     }
   }
   return \@seqeds;
+}
+
+=head2 get_all_selenocysteine_SeqEdits
+
+  Example    : my @edits = @{$transcript->get_all_selenocysteine_SeqEdits()};
+  Description: Retrieves all post transcriptional sequence modifications related
+               to selenocysteine PTMs
+  Returntype : Bio::EnsEMBL::SeqEdit
+  Exceptions : none
+
+=cut
+
+sub get_all_selenocysteine_SeqEdits {
+  my ($self) = @_;
+  return $self->get_all_SeqEdits(['_selenocysteine']);
 }
   
 
@@ -1215,7 +1233,7 @@ sub get_all_DAS_Features{
 sub summary_as_hash {
   my $self = shift;
   my %summary;
-  $summary{'ID'} = $self->display_id;
+  $summary{'id'} = $self->display_id;
   $summary{'genomic_start'} = $self->genomic_start;
   $summary{'genomic_end'} = $self->genomic_end;
   my $transcript = $self->transcript;

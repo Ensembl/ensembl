@@ -186,25 +186,10 @@ sub genes_and_transcripts_attributes_set{
   }
   else{
       $self->set_gene_descriptions();
-    }	
+  }	
   $self->set_status(); # set KNOWN,NOVEL etc 
-  #  }
 
   $self->build_meta_timestamp;
-
-  # Special removal of LRG transcript display xref, xref and object_xrefs;
-
-  my $sth_lrg =  $self->core->dbc->prepare('DELETE ox, x  FROM object_xref ox, xref x, transcript t WHERE ox.xref_id = x.xref_id and t.display_xref_id = x.xref_id and t.stable_id like "LRG%"');
-  $sth_lrg->execute;
-
-  $sth_lrg = $self->core->dbc->prepare('UPDATE transcript SET display_xref_id = null WHERE stable_id like "LRG%" ');
-  $sth_lrg->execute;
-
-  #End of Special
-
-  $sth_lrg = $self->core->dbc->prepare("UPDATE xref SET info_text=null WHERE info_text=''");
-  $sth_lrg->execute;
-
 
   $sth_stat = $self->xref->dbc->prepare("insert into process_status (status, date) values('gene_description_done',now())");
   $sth_stat->execute();
@@ -235,7 +220,7 @@ sub set_display_xrefs_from_stable_table{
   $reset_sth->execute();
   $reset_sth->finish;
  
-  $reset_sth = $self->core->dbc->prepare("UPDATE transcript SET display_xref_id = null");
+  $reset_sth = $self->core->dbc->prepare("UPDATE transcript SET display_xref_id = null WHERE biotype NOT IN ('LRG_gene')");
   $reset_sth->execute();
   $reset_sth->finish;
 
@@ -572,7 +557,7 @@ sub set_display_xrefs{
   $reset_sth->execute();
   $reset_sth->finish;
  
-  $reset_sth = $self->core->dbc->prepare("UPDATE transcript SET display_xref_id = null");
+  $reset_sth = $self->core->dbc->prepare("UPDATE transcript SET display_xref_id = null WHERE biotype NOT IN ('LRG_gene')");
   $reset_sth->execute();
   $reset_sth->finish;
 
@@ -749,7 +734,7 @@ sub transcript_names_from_gene {
 
   print "Assigning transcript names from gene names\n" if ($self->verbose);
 
-  my $reset_sth = $self->core->dbc->prepare("UPDATE transcript SET display_xref_id = null");
+  my $reset_sth = $self->core->dbc->prepare("UPDATE transcript SET display_xref_id = null WHERE biotype NOT IN ('LRG_gene')");
   $reset_sth->execute();
   $reset_sth->finish;
 

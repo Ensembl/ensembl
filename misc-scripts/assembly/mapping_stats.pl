@@ -144,7 +144,7 @@ my $fmt4 = "%-40s%12s%10s\n";
 
 $support->log("Looping over toplevel seq_regions...\n\n");
 
-foreach my $chr ($support->sort_chromosomes) {
+foreach my $chr ($support->sort_chromosomes(undef, $support->param('assembly'), 1)) {
   $support->log_stamped("Toplevel seq_region $chr...\n", 1);
 
   # determine non-N sequence length of alternative toplevel seq_region

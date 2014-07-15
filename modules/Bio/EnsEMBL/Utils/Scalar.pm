@@ -225,8 +225,8 @@ sub assert_ref_pp {
   $attribute_name ||= '-Unknown-';
   throw('No expected type given') if ! defined $expected;
   my $class = ref($ref);
-  throw("The given reference for attribute $attribute_name was undef") unless defined $ref;
-  throw("Asking for the type of the attribute $attribute_name produced no type; check it is a reference") unless $class;
+  throw("The given reference for attribute $attribute_name was undef. Expected '$expected'") unless defined $ref;
+  throw("Asking for the type of the attribute $attribute_name produced no type; check it is a reference. Expected '$expected'") unless $class;
   if(blessed($ref)) {
     throw("${attribute_name}'s type '${class}' is not an ISA of '${expected}'") if ! $ref->isa($expected);
   }
@@ -268,8 +268,8 @@ sub assert_array_contents {
   for(my $i = 0; $i<$count; $i++) {
     my $ref = $array->[$i];
     my $class = ref($ref);
-    throw("The given reference for attribute $attribute_name was undef (at position ${i})") unless defined $ref;
-    throw("Asking for the type of the attribute $attribute_name produced no type; check it is a reference (at position ${i})") unless $class;
+    throw("The given reference for attribute $attribute_name was undef (at position ${i}). Expected '$expected'") unless defined $ref;
+    throw("Asking for the type of the attribute $attribute_name produced no type; check it is a reference (at position ${i}). Expected '$expected'") unless $class;
     if(blessed($ref)) {
       throw("${attribute_name}'s type '${class}' is not an ISA of '${expected}' (at position ${i})") if ! $ref->isa($expected);
     }
@@ -360,8 +360,8 @@ sub assert_hash_contents {
   while(my $key = shift @keys) {
     my $ref = $hash->{$key};
     my $class = ref($ref);
-    throw("The given reference for attribute $attribute_name was undef (with key ${key})") unless defined $ref;
-    throw("Asking for the type of the attribute $attribute_name produced no type; check it is a reference (with key ${key})") unless $class;
+    throw("The given reference for attribute $attribute_name was undef (with key ${key}). Expected '$expected'") unless defined $ref;
+    throw("Asking for the type of the attribute $attribute_name produced no type; check it is a reference (with key ${key}). Expected '$expected'") unless $class;
     if(blessed($ref)) {
       throw("${attribute_name}'s type '${class}' is not an ISA of '${expected}' (with key ${key})") if ! $ref->isa($expected);
     }
@@ -494,8 +494,8 @@ sub assert_ref_can {
   return 1 unless $ASSERTIONS;
   $attribute_name ||= '-Unknown-';
   throw('No method given') if ! defined $method;
-  throw "The given reference $attribute_name is not defined" unless defined $ref;
-  throw "The given reference $attribute_name is not blessed" unless blessed($ref);
+  throw "The given reference $attribute_name is not defined. Expected method '$method'" unless defined $ref;
+  throw "The given reference $attribute_name is not blessed. Expected method '$method'" unless blessed($ref);
   if(! $ref->can($method)) {
     my $str_ref = ref($ref);
     throw sprintf(q{The given blessed reference '%s' for attribute '%s' does not implement the method '%s'}, $str_ref, $attribute_name, $method);
@@ -527,8 +527,8 @@ sub assert_numeric_pp {
   my ($integer, $attribute_name) = @_;
   return 1 unless $ASSERTIONS;
   $attribute_name ||= '-Unknown-';
-  throw "$attribute_name attribute is undefined" if ! defined $integer;
-  throw "The given attribute $attribute_name is blessed; cannot work with blessed values" if blessed($integer);
+  throw "$attribute_name attribute is undefined. Expected a number" if ! defined $integer;
+  throw "The given attribute $attribute_name is blessed; cannot work with blessed values. Expected a number" if blessed($integer);
   if(! looks_like_number($integer)) {
     throw "Attribute $attribute_name was not a number";
   }
@@ -560,7 +560,11 @@ sub assert_integer_pp {
   my ($integer, $attribute_name) = @_;
   return 1 unless $ASSERTIONS;
   $attribute_name ||= '-Unknown-';
-  assert_numeric_pp($integer, $attribute_name);
+  throw "$attribute_name attribute is undefined. Expected an Integer" if ! defined $integer;
+  throw "The given attribute $attribute_name is blessed; cannot work with blessed values. Expected an Integer" if blessed($integer);
+  if(! looks_like_number($integer)) {
+    throw "Attribute $attribute_name was not a number. Expected an Integer";
+  }
   if($integer != int($integer)) {
     throw "Attribute $attribute_name was a number but not an Integer";
   }
@@ -591,7 +595,11 @@ sub assert_boolean {
   my ($boolean, $attribute_name) = @_;
   return 1 unless $ASSERTIONS;
   $attribute_name ||= '-Unknown-';
-  assert_numeric_pp($boolean, $attribute_name);
+  throw "$attribute_name attribute is undefined. Expected a boolean" if ! defined $boolean;
+  throw "The given attribute $attribute_name is blessed; cannot work with blessed values. Expected an Integer" if blessed($boolean);
+  if(! looks_like_number($boolean)) {
+    throw "Attribute $attribute_name was not a number. Expected a boolean";
+  }
   if($boolean != 0 && $boolean != 1) {
     throw "Attribute $attribute_name was an invalid boolean. Expected: 1 or 0. Got: $boolean";
   }
@@ -622,7 +630,11 @@ sub assert_strand {
   my ($strand, $attribute_name) = @_;
   return 1 unless $ASSERTIONS;
   $attribute_name ||= '-Unknown-';
-  assert_numeric_pp($strand, $attribute_name);
+  throw "$attribute_name attribute is undefined. Expected: 1, 0 or -1" if ! defined $strand;
+  throw "The given attribute $attribute_name is blessed; cannot work with blessed values. Expected: 1, 0 or -1" if blessed($strand);
+  if(! looks_like_number($strand)) {
+    throw "Attribute $attribute_name was not a number. Expected: 1, 0 or -1";
+  }
   if($strand != -1 && $strand != 0 && $strand ne 1) {
     throw "Attribute $attribute_name was an invalid strand. Expected: 1, 0 or -1. Got: $strand";
   }
@@ -655,9 +667,9 @@ sub assert_file_handle {
   my ($file_handle, $attribute_name) = @_;
   return 1 unless $ASSERTIONS;
   $attribute_name ||= '-Unknown-';
-  throw "Attribute $attribute_name was undefined" if ! defined $file_handle;
+  throw "Attribute $attribute_name was undefined. Expected a FileHandle" if ! defined $file_handle;
   my $ref = ref($file_handle);
-  throw "Attribute $attribute_name was not a reference. Got: $file_handle" if ! $ref;
+  throw "Attribute $attribute_name was not a reference. Got: $file_handle. Expected a FileHandle" if ! $ref;
   if(!openhandle($file_handle)) {
     if(blessed($file_handle)) {
       if(! $file_handle->isa('IO::Handle')) {

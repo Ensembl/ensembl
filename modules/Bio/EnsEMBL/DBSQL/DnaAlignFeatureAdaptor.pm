@@ -160,8 +160,8 @@ sub store {
                              seq_region_end, seq_region_strand,
                              hit_start, hit_end, hit_strand, hit_name,
                              cigar_line, analysis_id, score, evalue,
-                             perc_ident, external_db_id, hcoverage)
-     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"    # 15 arguments
+                             perc_ident, external_db_id, hcoverage, external_data)
+     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"    # 16 arguments
   );
 
 FEATURE:
@@ -184,7 +184,7 @@ FEATURE:
     my $hstart  = $feat->hstart();
     my $hend    = $feat->hend();
     my $hstrand = $feat->hstrand();
-    $self->_check_start_end_strand( $hstart, $hend, $hstrand );
+    $self->_check_start_end_strand( $hstart, $hend, $hstrand, $feat->hslice );
 
     my $cigar_string = $feat->cigar_string();
     if ( !$cigar_string ) {
@@ -211,7 +211,7 @@ FEATURE:
     my $original = $feat;
     my $seq_region_id;
     ( $feat, $seq_region_id ) = $self->_pre_store($feat);
-
+    
     $sth->bind_param( 1,  $seq_region_id,        SQL_INTEGER );
     $sth->bind_param( 2,  $feat->start,          SQL_INTEGER );
     $sth->bind_param( 3,  $feat->end,            SQL_INTEGER );
@@ -227,10 +227,15 @@ FEATURE:
     $sth->bind_param( 13, $feat->percent_id,     SQL_FLOAT );
     $sth->bind_param( 14, $feat->external_db_id, SQL_INTEGER );
     $sth->bind_param( 15, $feat->hcoverage,      SQL_DOUBLE );
+    # Eagle change: also store the extra data, if available
+    my $extra_data;
+    $extra_data = $self->dump_data($feat->extra_data()) if ($feat->extra_data());
+    $sth->bind_param( 16, $extra_data,  SQL_LONGVARCHAR );
 
     $sth->execute();
 
-    $original->dbID( $sth->{'mysql_insertid'} );
+    my $dbId = $self->last_insert_id("${tablename}_id", undef, $tablename);
+    $original->dbID( $dbId );
     $original->adaptor($self);
   } ## end foreach my $feat (@feats)
 
@@ -325,7 +330,7 @@ sub save {
 
 
     $sth->execute();
-    $original->dbID($sth->{'mysql_insertid'});
+    $original->dbID($self->last_insert_id("${tablename}_id", undef, $tablename));
     $original->adaptor($self);
   }
 
@@ -414,203 +419,161 @@ sub _objs_from_sth {
                          $external_db_name, $external_display_db_name )
   );
 
-  my $asm_cs;
-  my $cmp_cs;
-  my $asm_cs_vers;
-  my $asm_cs_name;
-  my $cmp_cs_vers;
-  my $cmp_cs_name;
-
-  if ( defined($mapper) ) {
-    $asm_cs      = $mapper->assembled_CoordSystem();
-    $cmp_cs      = $mapper->component_CoordSystem();
-    $asm_cs_name = $asm_cs->name();
-    $asm_cs_vers = $asm_cs->version();
-    $cmp_cs_name = $cmp_cs->name();
-    $cmp_cs_vers = $cmp_cs->version();
-  }
-
   my $dest_slice_start;
   my $dest_slice_end;
   my $dest_slice_strand;
   my $dest_slice_length;
+  my $dest_slice_cs;
   my $dest_slice_sr_name;
-  my $dest_slice_seq_region_id;
+  my $dest_slice_sr_id;
+  my $asma;
 
-  if ( defined($dest_slice) ) {
-    $dest_slice_start         = $dest_slice->start();
-    $dest_slice_end           = $dest_slice->end();
-    $dest_slice_strand        = $dest_slice->strand();
-    $dest_slice_length        = $dest_slice->length();
-    $dest_slice_sr_name       = $dest_slice->seq_region_name();
-    $dest_slice_seq_region_id = $dest_slice->get_seq_region_id();
+  if ($dest_slice) {
+    $dest_slice_start   = $dest_slice->start();
+    $dest_slice_end     = $dest_slice->end();
+    $dest_slice_strand  = $dest_slice->strand();
+    $dest_slice_length  = $dest_slice->length();
+    $dest_slice_cs      = $dest_slice->coord_system();
+    $dest_slice_sr_name = $dest_slice->seq_region_name();
+    $dest_slice_sr_id   = $dest_slice->get_seq_region_id();
+    $asma               = $self->db->get_AssemblyMapperAdaptor();
   }
 
-FEATURE:
-  while ( $sth->fetch() ) {
-    # Get the analysis object.
-    my $analysis = $analysis_hash{$analysis_id} ||=
-      $aa->fetch_by_dbID($analysis_id);
+  FEATURE: while($sth->fetch()) {
 
-    # Get the slice object.
-    my $slice = $slice_hash{ "ID:" . $seq_region_id };
+    #get the analysis object
+    my $analysis = $analysis_hash{$analysis_id} ||= $aa->fetch_by_dbID($analysis_id);
+    $analysis_hash{$analysis_id} = $analysis;
 
-    if ( !defined($slice) ) {
-      $slice = $sa->fetch_by_seq_region_id($seq_region_id);
-      if ( defined($slice) ) {
-        $slice_hash{ "ID:" . $seq_region_id } = $slice;
-        $sr_name_hash{$seq_region_id} = $slice->seq_region_name();
-        $sr_cs_hash{$seq_region_id}   = $slice->coord_system();
-      }
+    #need to get the internal_seq_region, if present
+    $seq_region_id = $self->get_seq_region_id_internal($seq_region_id);
+    my $slice = $slice_hash{"ID:".$seq_region_id};
+
+    if (!$slice) {
+      $slice                            = $sa->fetch_by_seq_region_id($seq_region_id);
+      $slice_hash{"ID:".$seq_region_id} = $slice;
+      $sr_name_hash{$seq_region_id}     = $slice->seq_region_name();
+      $sr_cs_hash{$seq_region_id}       = $slice->coord_system();
+    }
+
+    #obtain a mapper if none was defined, but a dest_seq_region was
+    if(!$mapper && $dest_slice && !$dest_slice_cs->equals($slice->coord_system)) {
+      $mapper = $asma->fetch_by_CoordSystems($dest_slice_cs, $slice->coord_system);
     }
 
     my $sr_name = $sr_name_hash{$seq_region_id};
     my $sr_cs   = $sr_cs_hash{$seq_region_id};
 
-    # Remap the feature coordinates to another coord system
-    # if a mapper was provided.
-    if ( defined($mapper) ) {
+    #
+    # remap the feature coordinates to another coord system
+    # if a mapper was provided
+    #
 
-	if (defined $dest_slice && $mapper->isa('Bio::EnsEMBL::ChainedAssemblyMapper')  ) {
-	    ( $seq_region_id,  $seq_region_start,
-	      $seq_region_end, $seq_region_strand )
-		=
-		$mapper->map( $sr_name, $seq_region_start, $seq_region_end,
-                          $seq_region_strand, $sr_cs, 1, $dest_slice);
+    if ($mapper) {
 
-	} else {
+      if (defined $dest_slice && $mapper->isa('Bio::EnsEMBL::ChainedAssemblyMapper') ) {
+        ($seq_region_id, $seq_region_start, $seq_region_end, $seq_region_strand) =
+         $mapper->map($sr_name, $seq_region_start, $seq_region_end, $seq_region_strand, $sr_cs, 1, $dest_slice);
 
-	    ( $seq_region_id,  $seq_region_start,
-	      $seq_region_end, $seq_region_strand )
-		=
-		$mapper->fastmap( $sr_name, $seq_region_start, $seq_region_end,
-                          $seq_region_strand, $sr_cs );
-	}
-
-      # Skip features that map to gaps or coord system boundaries.
-      if ( !defined($seq_region_id) ) { next FEATURE }
-
-      # Get a slice in the coord system we just mapped to.
-      if ( $asm_cs == $sr_cs
-           || ( $cmp_cs != $sr_cs && $asm_cs->equals($sr_cs) ) )
-      {
-        $slice = $slice_hash{ "ID:" . $seq_region_id } ||=
-          $sa->fetch_by_seq_region_id($seq_region_id);
       } else {
-        $slice = $slice_hash{ "ID:" . $seq_region_id } ||=
-          $sa->fetch_by_seq_region_id($seq_region_id);
+        ($seq_region_id, $seq_region_start, $seq_region_end, $seq_region_strand) =
+         $mapper->fastmap($sr_name, $seq_region_start, $seq_region_end, $seq_region_strand, $sr_cs);
       }
+
+      #skip features that map to gaps or coord system boundaries
+      next FEATURE if (!defined($seq_region_id));
+
+      #get a slice in the coord system we just mapped to
+      $slice = $slice_hash{"ID:".$seq_region_id} ||= $sa->fetch_by_seq_region_id($seq_region_id);
     }
 
-    # If a destination slice was provided, convert the coords.  If the
-    # dest_slice starts at 1 and is forward strand, nothing needs doing.
-    if ( defined($dest_slice) ) {
+    #
+    # If a destination slice was provided convert the coords.
+    #
+    if (defined($dest_slice)) {
       my $seq_region_len = $dest_slice->seq_region_length();
 
-      if ($dest_slice_strand == 1) { # Positive strand
-		
-	$seq_region_start = $seq_region_start - $dest_slice_start + 1;
-	$seq_region_end   = $seq_region_end - $dest_slice_start + 1;
+      if ( $dest_slice_strand == 1 ) {
+        $seq_region_start = $seq_region_start - $dest_slice_start + 1;
+        $seq_region_end   = $seq_region_end - $dest_slice_start + 1;
 
-	if ($dest_slice->is_circular()) {
-	  # Handle cicular chromosomes.
+        if ( $dest_slice->is_circular ) {
+        # Handle circular chromosomes.
 
-	  if ($seq_region_start > $seq_region_end) {
-	    # Looking at a feature overlapping the chromsome origin.
+          if ( $seq_region_start > $seq_region_end ) {
+            # Looking at a feature overlapping the chromosome origin.
 
-	    if ($seq_region_end > $dest_slice_start) {
+            if ( $seq_region_end > $dest_slice_start ) {
+              # Looking at the region in the beginning of the chromosome
+              $seq_region_start -= $seq_region_len;
+            }
+            if ( $seq_region_end < 0 ) {
+              $seq_region_end += $seq_region_len;
+            }
+          } else {
+            if ($dest_slice_start > $dest_slice_end && $seq_region_end < 0) {
+              # Looking at the region overlapping the chromosome
+              # origin and a feature which is at the beginning of the
+              # chromosome.
+              $seq_region_start += $seq_region_len;
+              $seq_region_end   += $seq_region_len;
+            }
+          }
+        }
+      } else {
 
-	      # Looking at the region in the beginning of the
-	      # chromosome.
-	      $seq_region_start -= $seq_region_len;
-	    }
+        my $start = $dest_slice_end - $seq_region_end + 1;
+        my $end = $dest_slice_end - $seq_region_start + 1;
 
-	    if ($seq_region_end < 0) {
-	      $seq_region_end += $seq_region_len;
-	    }
+        if ($dest_slice->is_circular()) {
 
-	  } else {
+          if ($dest_slice_start > $dest_slice_end) {
+            # slice spans origin or replication
 
-	    if (   $dest_slice_start > $dest_slice_end
-		   && $seq_region_end < 0) {
-	      # Looking at the region overlapping the chromosome
-	      # origin and a feature which is at the beginning of the
-	      # chromosome.
-	      $seq_region_start += $seq_region_len;
-	      $seq_region_end   += $seq_region_len;
-	    }
-	  }
+            if ($seq_region_start >= $dest_slice_start) {
+              $end += $seq_region_len;
+              $start += $seq_region_len if $seq_region_end > $dest_slice_start;
 
-	}		       ## end if ($dest_slice->is_circular...)
+            } elsif ($seq_region_start <= $dest_slice_end) {
+              # do nothing
+            } elsif ($seq_region_end >= $dest_slice_start) {
+              $start += $seq_region_len;
+              $end += $seq_region_len;
 
-      } else {			# Negative strand
+            } elsif ($seq_region_end <= $dest_slice_end) {
+              $end += $seq_region_len if $end < 0;
 
-	my $start = $dest_slice_end - $seq_region_end + 1;
-	my $end = $dest_slice_end - $seq_region_start + 1;
+            } elsif ($seq_region_start > $seq_region_end) {
+              $end += $seq_region_len;
+            }
 
-	if ($dest_slice->is_circular()) {
+          } else {
 
-	  if ($dest_slice_start > $dest_slice_end) { 
-	    # slice spans origin or replication
-
-	    if ($seq_region_start >= $dest_slice_start) {
-	      $end += $seq_region_len;
-	      $start += $seq_region_len 
-		if $seq_region_end > $dest_slice_start;
-
-	    } elsif ($seq_region_start <= $dest_slice_end) {
-	      # do nothing
-	    } elsif ($seq_region_end >= $dest_slice_start) {
-	      $start += $seq_region_len;
-	      $end += $seq_region_len;
-
-	    } elsif ($seq_region_end <= $dest_slice_end) {
-
-	      $end += $seq_region_len
-		if $end < 0;
-
-	    } elsif ($seq_region_start > $seq_region_end) {
-		  
-	      $end += $seq_region_len;
-
-	    } else {
-		  
-	    }
-      
-	  } else {
-
-	    if ($seq_region_start <= $dest_slice_end and $seq_region_end >= $dest_slice_start) {
-	      # do nothing
-	    } elsif ($seq_region_start > $seq_region_end) {
-	      if ($seq_region_start <= $dest_slice_end) {
-	  
-		$start -= $seq_region_len;
-
-	      } elsif ($seq_region_end >= $dest_slice_start) {
-		$end += $seq_region_len;
-
-	      } else {
-		    
-	      }
-	    }
-	  }
-
-	}
-
-	$seq_region_start = $start;
-	$seq_region_end = $end;
-	$seq_region_strand *= -1;
-
-      }	## end else [ if ($dest_slice_strand...)]
-
-      # Throw away features off the end of the requested slice.
-      if (    $seq_region_end < 1
-	      || $seq_region_start > $dest_slice_length
-	      || ( $dest_slice_seq_region_id ne $seq_region_id ) )
-        {
-          next FEATURE;
+            if ($seq_region_start <= $dest_slice_end and $seq_region_end >= $dest_slice_start) {
+              # do nothing
+            } elsif ($seq_region_start > $seq_region_end) {
+              if ($seq_region_start <= $dest_slice_end) {
+                $start -= $seq_region_len;
+              } elsif ($seq_region_end >= $dest_slice_start) {
+                $end += $seq_region_len;
+              }
+            }
+          }
         }
 
+        $seq_region_start = $start;
+        $seq_region_end = $end;
+        $seq_region_strand *= -1;
+
+      } ## end else [ if ( $dest_slice_strand...)]
+
+      # Throw away features off the end of the requested slice or on
+      # different seq_region.
+      if ($seq_region_end < 1
+          || $seq_region_start > $dest_slice_length
+          || ($dest_slice_sr_id != $seq_region_id)) {
+        next FEATURE;
+      }
       $slice = $dest_slice;
     }
 
@@ -621,26 +584,26 @@ FEATURE:
     push( @features,
           $self->_create_feature_fast(
              'Bio::EnsEMBL::DnaDnaAlignFeature', {
-               'slice'          => $slice,
-               'start'          => $seq_region_start,
-               'end'            => $seq_region_end,
-               'strand'         => $seq_region_strand,
-               'hseqname'       => $hit_name,
-               'hstart'         => $hit_start,
-               'hend'           => $hit_end,
-               'hstrand'        => $hit_strand,
-               'score'          => $score,
-               'p_value'        => $evalue,
-               'percent_id'     => $perc_ident,
-               'cigar_string'   => $cigar_line,
-               'analysis'       => $analysis,
-               'adaptor'        => $self,
-               'dbID'           => $dna_align_feature_id,
-               'external_db_id' => $external_db_id,
-               'hcoverage'      => $hcoverage,
-               'extra_data'     => $evalled_extra_data,
-               'dbname'                    => $external_db_name,
-               'db_display_name'           => $external_display_db_name
+               'slice'           => $slice,
+               'start'           => $seq_region_start,
+               'end'             => $seq_region_end,
+               'strand'          => $seq_region_strand,
+               'hseqname'        => $hit_name,
+               'hstart'          => $hit_start,
+               'hend'            => $hit_end,
+               'hstrand'         => $hit_strand,
+               'score'           => $score,
+               'p_value'         => $evalue,
+               'percent_id'      => $perc_ident,
+               'cigar_string'    => $cigar_line,
+               'analysis'        => $analysis,
+               'adaptor'         => $self,
+               'dbID'            => $dna_align_feature_id,
+               'external_db_id'  => $external_db_id,
+               'hcoverage'       => $hcoverage,
+               'extra_data'      => $evalled_extra_data,
+               'dbname'          => $external_db_name,
+               'db_display_name' => $external_display_db_name
              } ) );
 
   } ## end while ( $sth->fetch() )

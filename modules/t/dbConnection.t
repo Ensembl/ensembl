@@ -108,6 +108,7 @@ is_deeply($dbc->to_hash(), \%dbc_args, 'Checking to_hash() can roundtrip a DBCon
   #
   my $sth = $dbc->prepare('SELECT * from gene limit 1');
   $sth->execute;
+  my @row = $sth->fetchrow_array;
   ok($sth->rows);
   $sth->finish;
 }
@@ -126,6 +127,7 @@ ok(!$dbh->ping());
   # reconnect should happen now
   my $sth2 = $dbc->prepare('SELECT * from gene limit 1');
   $sth2->execute;
+  $sth2->fetchrow_array;
   ok($sth2->rows);
   $sth2->finish;
 
@@ -150,8 +152,8 @@ $dbh = $dbc->db_handle();
     $sth2->finish();
   }
 
-  ok($sth1->rows);
   my @gene = $sth1->fetchrow_array();
+  ok($sth1->rows);
   ok(@gene);
 
   $sth1->finish;
@@ -167,6 +169,7 @@ ok($dbc->db_handle->ping());
 {
   my $sth1 = $dbc->prepare('SELECT * from gene limit 1');
   $sth1->execute();
+  $sth1->fetchrow_array();
   ok($sth1->rows());
   $sth1->finish();
 }
@@ -181,14 +184,14 @@ my $dbc2 = Bio::EnsEMBL::DBSQL::DBConnection->new(-DBCONN => $dbc);
 #equality checks
 ok($dbc->equals($dbc2));
 ok(! $dbc->equals());
-ok($dbc2->dbname eq $dbc->dbname());
-ok($dbc2->host   eq $dbc->host());
-ok($dbc2->username()   eq $dbc->username());
-ok($dbc2->password eq $dbc->password());
-ok($dbc2->port  == $dbc->port());
-ok($dbc2->driver eq $dbc->driver());
+is($dbc2->dbname(),   $dbc->dbname());
+is($dbc2->host(),     $dbc->host());
+is($dbc2->username(), $dbc->username());
+is($dbc2->password(), $dbc->password());
+is($dbc2->port(),     $dbc->port());
+is($dbc2->driver(),   $dbc->driver());
 
-ok(! $dbc->equals(Bio::EnsEMBL::DBSQL::DBConnection->new(-DRIVER => 'sqlite', -DBNAME => 'bill')));
+ok(! $dbc->equals(Bio::EnsEMBL::DBSQL::DBConnection->new(-DRIVER => 'TestDummy', -DBNAME => 'bill')));
 
 #Test spanning db_handle() methods
 my $db_handle_ref;
@@ -197,9 +200,14 @@ $dbc->prevent_disconnect(sub {
   is($dbc->disconnect_when_inactive(), 0, 'Ensuring disconnect_when_inactive() has been turned off');
   my $sql = 'select 1';
   $db_handle_ref = $dbc->db_handle();
-  is($dbc->do($sql), 1, 'Asserting do returns 1');
+  my $do_result_1 = $dbc->do($sql);
+  ok($do_result_1, "Asserting do returns true [$do_result_1]");
   is($dbc->db_handle(), $db_handle_ref, 'Checking DBH is the same as it was at the beginning');
-  is($dbc->do($sql), 1, 'Asserting do returns 1');
+  my $do_result_2 = $dbc->do($sql);
+  ok($do_result_2, "Asserting do returns true [$do_result_2]");
+  is($dbc->db_handle(), $db_handle_ref, 'Checking DBH is the same as it was at the beginning');
+  my $do_result_3 = $dbc->do($sql, undef, 1);
+  ok($do_result_3, "Asserting do accepts bind_values arguments [$do_result_3]");
   is($dbc->db_handle(), $db_handle_ref, 'Checking DBH is the same as it was at the beginning');
   my $sth1 = $dbc->prepare($sql);
   $sth1->execute();
@@ -214,7 +222,13 @@ $dbc->disconnect_when_inactive();
 
 #Testing quote identifiers
 my $quote_result = $dbc->quote_identifier(qw/a b c/, [undef, qw/db table/], [1]);
-is_deeply($quote_result, [qw/`a` `b` `c`/, '`db`.`table`', '`1`'], 'Checking quote identifier will quote everything') or diag explain $quote_result;
+my $expected_quote_result;
+if ( $dbc->driver() eq 'SQLite' ) {
+  $expected_quote_result = [qw/"a" "b" "c"/, '"db"."table"', '"1"'];
+} else {
+  $expected_quote_result = [qw/`a` `b` `c`/, '`db`.`table`', '`1`'];
+}
+is_deeply($quote_result, $expected_quote_result, 'Checking quote identifier will quote everything') or diag explain $quote_result;
 
 #Testing reconnection via proxy
 $db->dbc()->disconnect_if_idle();
@@ -255,7 +269,7 @@ my $dbc_copy = mock_object($dbc);
       #swallow the warning. we get it raised via an error anyway
     };
     $dbc->db_handle;
-  } qr/install_driver.+failed/, 'Checking for an error message from DBI detailing missing driver problems';
+  } qr/Cannot load.+::bogusdriver/, 'Checking for an error message from DBI detailing missing driver problems';
   
   if($db->dbc->driver() eq 'mysql') {
     throws_ok {

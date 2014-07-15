@@ -431,6 +431,9 @@ SQL
   }
   $sth->execute();
 
+  my $max_rows = 1000;
+
+  my $precache = $sth->fetchall_arrayref( undef, $max_rows ); # need to fetch to ensure rows() works for SQLite
 
   if ( !$sth->rows() && lc($dbname) eq 'interpro' ) {
   # This is a minor hack that means that results still come back even
@@ -438,6 +441,7 @@ SQL
   # the xref table.  This has happened in the past and had the result of
   # breaking domainview
 
+    $precache = undef;
     $sth->finish();
     $sth = $self->prepare(
       "SELECT   NULL,
@@ -457,9 +461,9 @@ SQL
 
   my %exDB;
   my @exDBlist;
-  my $max_rows = 1000;
 
-  while ( my $rowcache = $sth->fetchall_arrayref( undef, $max_rows ) ) {
+  while ( my $rowcache = $precache || $sth->fetchall_arrayref( undef, $max_rows ) ) {
+    $precache = undef;
     while ( my $arrayref = shift( @{$rowcache} ) ) {
       my ( $dbID,                $dbprimaryId,
            $displayid,           $version,
@@ -557,12 +561,17 @@ sub fetch_by_db_accession {
   $sth->bind_param( 2, $dbname,    SQL_VARCHAR );
   $sth->execute();
 
+  my $max_rows = 1000;
+
+  my $precache = $sth->fetchall_arrayref( undef, $max_rows ); # need to fetch to ensure rows() works for SQLite
+
   if ( !$sth->rows() && lc($dbname) eq 'interpro' ) {
   # This is a minor hack that means that results still come back even
   # when a mistake was made and no interpro accessions were loaded into
   # the xref table.  This has happened in the past and had the result of
   # breaking domainview
 
+    $precache = undef;
     $sth->finish();
     $sth = $self->prepare(
       "SELECT   NULL,
@@ -582,9 +591,8 @@ sub fetch_by_db_accession {
 
   my $exDB;
 
-  my $max_rows = 1000;
-
-  while ( my $rowcache = $sth->fetchall_arrayref( undef, $max_rows ) ) {
+  while ( my $rowcache = $precache || $sth->fetchall_arrayref( undef, $max_rows ) ) {
+    $precache = undef;
     while ( my $arrayref = shift( @{$rowcache} ) ) {
       my ( $dbID,                $dbprimaryId,
            $displayid,           $version,
@@ -723,13 +731,15 @@ sub _store_object_xref_mapping {
         $analysis_id = 0; ## This used to be undef, but uniqueness in mysql requires a value
     }
     
+    my $insert_ignore = $self->insert_ignore_clause();
     my $sth = $self->prepare(qq(
-        INSERT IGNORE INTO object_xref
-          SET   xref_id = ?,
-                ensembl_object_type = ?,
-                ensembl_id = ?,
-                linkage_annotation = ?,
-                analysis_id = ? ) 
+        ${insert_ignore} INTO object_xref
+              ( xref_id,
+                ensembl_object_type,
+                ensembl_id,
+                linkage_annotation,
+                analysis_id )
+          VALUES ( ?, ?, ?, ?, ? ) )
         );
     $sth->bind_param( 1, $dbEntry->dbID(),              SQL_INTEGER );
     $sth->bind_param( 2, $ensembl_type,                 SQL_VARCHAR );
@@ -738,7 +748,7 @@ sub _store_object_xref_mapping {
     $sth->bind_param( 5, $analysis_id,                  SQL_INTEGER );
     $sth->execute();
     $sth->finish();
-    my $object_xref_id = $self->last_insert_id();
+    my $object_xref_id = $self->last_insert_id('object_xref_id', undef, 'object_xref');
     
     $dbEntry->adaptor($self); # hand Adaptor to dbEntry for future use with OntologyXrefs
     
@@ -746,17 +756,18 @@ sub _store_object_xref_mapping {
         #no existing object_xref, therefore 
         if ( $dbEntry->isa('Bio::EnsEMBL::IdentityXref') ) {
         $sth = $self->prepare( "
-             INSERT ignore INTO identity_xref
-             SET object_xref_id = ?,
-             xref_identity = ?,
-             ensembl_identity = ?,
-             xref_start = ?,
-             xref_end   = ?,
-             ensembl_start = ?,
-             ensembl_end = ?,
-             cigar_line = ?,
-             score = ?,
-             evalue = ?" );
+             ${insert_ignore} INTO identity_xref
+           ( object_xref_id,
+             xref_identity,
+             ensembl_identity,
+             xref_start,
+             xref_end  ,
+             ensembl_start,
+             ensembl_end,
+             cigar_line,
+             score,
+             evalue )
+           VALUES ( ?, ?, ?, ?, ?, ?, ?, ?, ?, ? )" );
         $sth->bind_param( 1, $object_xref_id,            SQL_INTEGER );
         $sth->bind_param( 2, $dbEntry->xref_identity,    SQL_INTEGER );
         $sth->bind_param( 3, $dbEntry->ensembl_identity, SQL_INTEGER );
@@ -770,10 +781,11 @@ sub _store_object_xref_mapping {
         $sth->execute();
       } elsif ( $dbEntry->isa('Bio::EnsEMBL::OntologyXref') ) {
         $sth = $self->prepare( "
-             INSERT ignore INTO ontology_xref
-                SET object_xref_id = ?,
-                    source_xref_id = ?,
-                    linkage_type = ? " );
+             ${insert_ignore} INTO ontology_xref
+                  ( object_xref_id,
+                    source_xref_id,
+                    linkage_type    )
+               VALUES ( ?, ?, ? )" );
         foreach my $info ( @{ $dbEntry->get_all_linkage_info() } ) {
             my ( $linkage_type, $sourceXref ) = @{$info};
             my $sourceXid = undef;
@@ -788,13 +800,14 @@ sub _store_object_xref_mapping {
         } #end foreach
         
         $sth = $self->prepare( "
-             INSERT ignore INTO associated_xref
-                SET object_xref_id = ?,
-                    xref_id = ?,
-                    source_xref_id = ?,
-                    condition_type = ?,
-                    associated_group_id = ?,
-                    rank = ? " );
+             ${insert_ignore} INTO associated_xref
+                  ( object_xref_id,
+                    xref_id,
+                    source_xref_id,
+                    condition_type,
+                    associated_group_id,
+                    rank                 )
+           VALUES ( ?, ?, ?, ?, ?, ? ) " );
         
         my $annotext = $dbEntry->get_all_associated_xrefs();
         foreach my $ax_group (sort keys %{ $annotext }) {
@@ -961,26 +974,31 @@ sub _store_or_fetch_xref {
     my $dbEntry = shift;
     my $dbRef = shift;
     my $xref_id;
-    
+
+    my $display_id = $dbEntry->display_id;
+    $display_id = '' unless defined $display_id; # SQLite doesn't ignore NOT NULL errors
+
+    my $insert_ignore = $self->insert_ignore_clause();
     my $sth = $self->prepare( "
-       INSERT IGNORE INTO xref
-       SET dbprimary_acc = ?,
-           display_label = ?,
-           version = ?,
-           description = ?,
-           external_db_id = ?,
-           info_type = ?,
-           info_text = ?");
+       ${insert_ignore} INTO xref
+         ( dbprimary_acc,
+           display_label,
+           version,
+           description,
+           external_db_id,
+           info_type,
+           info_text )
+         VALUES ( ?, ?, ?, ?, ?, ?, ? ) ");
     $sth->bind_param(1, $dbEntry->primary_id,SQL_VARCHAR);
-    $sth->bind_param(2, $dbEntry->display_id,SQL_VARCHAR);
+    $sth->bind_param(2, $display_id,SQL_VARCHAR);
     $sth->bind_param(3, ($dbEntry->version || q{0}),SQL_VARCHAR);
     $sth->bind_param(4, $dbEntry->description,SQL_VARCHAR);
     $sth->bind_param(5, $dbRef,SQL_INTEGER);
     $sth->bind_param(6, ($dbEntry->info_type || 'NONE'), SQL_VARCHAR);
     $sth->bind_param(7, ($dbEntry->info_text || ''), SQL_VARCHAR);
 
-    $sth->execute();
-    $xref_id = $self->last_insert_id('xref_id',undef,'xref');
+    my $count = $sth->execute();
+    $xref_id = $self->last_insert_id('xref_id',undef,'xref') if $count > 0;
     $sth->finish();
     
     if ($xref_id) { #insert was successful, store supplementary synonyms
@@ -992,8 +1010,8 @@ sub _store_or_fetch_xref {
                    AND synonym = ?");
     
         my $synonym_store_sth = $self->prepare(
-            "INSERT ignore INTO external_synonym
-             SET xref_id = ?, synonym = ?");
+            "${insert_ignore} INTO external_synonym
+             ( xref_id, synonym ) VALUES ( ?, ? ) ");
     
         my $synonyms = $dbEntry->get_all_synonyms();
         foreach my $syn ( @$synonyms ) {
@@ -1270,12 +1288,13 @@ sub remove_from_object {
   $sth->bind_param(3,$object_type,SQL_VARCHAR);
   $sth->execute();
 
+  my ($ox_id) = $sth->fetchrow_array();
+
   if(!$sth->rows() == 1) {
     $sth->finish();
     return;
   }
 
-  my ($ox_id) = $sth->fetchrow_array();
   $sth->finish();
 
   # delete from the tables which contain additional linkage information

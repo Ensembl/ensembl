@@ -1075,31 +1075,21 @@ sub seq_region_start {
   my ($self) = @_;
 
   my $slice = $self->slice();
-
+  
   if ( defined($slice) ) {
+
+    return $self->_seq_region_boundary_from_db('start')
+      if $slice->is_circular() and $self->adaptor();
+
     my $start;
-
     if ( $slice->strand() == 1 ) {
-      if ( defined( $self->start() ) ) {
-	  if ($self->start < 0 && $slice->is_circular) {
-	      $start = $slice->seq_region_length + $self->start;
-	  } else {
-        $start = $slice->start() + $self->start() - 1;
-    }
-      }
+      $start = $slice->start() + $self->start() - 1
+	if defined $self->start();
     } else {
-      if ( defined( $self->end() ) ) {
-        $start = $slice->end() - $self->end() + 1;
-      }
+      $start = $slice->end() - $self->end() + 1
+	if defined $self->end();
     }
-
-    if (    defined($start)
-         && $slice->is_circular()
-         && $start > $slice->seq_region_length() )
-    {
-      $start -= $slice->seq_region_length();
-    }
-
+    
     return $start;
   }
 
@@ -1129,23 +1119,17 @@ sub seq_region_end {
   my $slice = $self->slice();
 
   if ( defined($slice) ) {
+
+    return $self->_seq_region_boundary_from_db('end')
+      if $slice->is_circular() and $self->adaptor();
+
     my $end;
-
     if ( $slice->strand() == 1 ) {
-      if ( defined( $self->end() ) ) {
-        $end = $slice->start() + $self->end() - 1;
-      }
+      $end = $slice->start() + $self->end() - 1
+	  if defined $self->end(); 
     } else {
-      if ( defined( $self->start() ) ) {
-        $end = $slice->end() - $self->start() + 1;
-      }
-    }
-
-    if (    defined($end)
-         && $slice->is_circular()
-         && $end > $slice->seq_region_length() )
-    {
-      $end -= $slice->seq_region_length();
+      $end = $slice->end() - $self->start() + 1
+	if defined $self->start()
     }
 
     return $end;
@@ -1498,7 +1482,7 @@ sub get_nearest_Genes {
 sub summary_as_hash {
   my $self = shift;
   my %summary;
-  $summary{'ID'} = $self->display_id;
+  $summary{'id'} = $self->display_id;
   $summary{'start'} = $self->seq_region_start;
   $summary{'end'} = $self->seq_region_end;
   $summary{'strand'} = $self->strand;
@@ -1657,6 +1641,63 @@ sub id {
   return $self->{'hseqname'} if($self->{'hseqname'});
   return $self->{'seqname'}  if($self->{'seqname'});
   return $self->{'dbID'};
+}
+
+my $feature_tables = 
+  {
+   'Bio::EnsEMBL::AssemblyExceptionFeature' => 'assembly_exception',
+   'Bio::EnsEMBL::DensityFeature' => 'density_feature',
+   'Bio::EnsEMBL::Exon' => 'exon',
+   'Bio::EnsEMBL::PredictionExon' => 'prediction_exon',
+   'Bio::EnsEMBL::Gene' => 'gene',
+   'Bio::EnsEMBL::IntronSupportingEvidence' => 'intron_supporting_evidence',
+   'Bio::EnsEMBL::KaryotypeBand' => 'karyotype',
+   'Bio::EnsEMBL::Map::DitagFeature' => 'ditag_feature',
+   'Bio::EnsEMBL::Map::MarkerFeature' => 'marker_feature',
+   'Bio::EnsEMBL::MiscFeature' => 'misc_feature',
+   'Bio::EnsEMBL::Operon' => 'operon',
+   'Bio::EnsEMBL::OperonTranscript' => 'operon_transcript',
+   'Bio::EnsEMBL::RepeatFeature' => 'repeat_feature',
+   'Bio::EnsEMBL::SimpleFeature' => 'simple_feature',
+   'Bio::EnsEMBL::Transcript' => 'transcript',
+   'Bio::EnsEMBL::PredictionTranscript' => 'prediction_transcript'
+  };
+
+#
+# get seq region boundary (start|end) for a feature
+# the method attempts to retrieve the boundary directly from the db
+# if feature is not of class in the feature_table hash, it means the
+# feature it's not stored in the db or we don't know how to get the
+# region boundary from the db.
+# Return undef in these cases.
+#
+sub _seq_region_boundary_from_db {
+  my ($self, $boundary) = @_;
+
+  throw "Undefined boundary"
+    unless defined $boundary;
+
+  $boundary eq 'start' or $boundary eq 'end'
+    or throw "Wrong boundary: select start|end";
+
+  $boundary = 'seq_region_' . $boundary;
+    
+  my $sql_helper = 
+    $self->adaptor->dbc->sql_helper;
+  throw "Unable to get SqlHelper instance"
+    unless defined $sql_helper;
+
+  my $feature_table =
+    $feature_tables->{ref $self};
+
+  return undef unless defined $feature_table;
+
+  my $db_id = $self->dbID;
+  my $attrib_id = $feature_table . '_id';
+  my $query = "SELECT ${boundary} from ${feature_table} WHERE ${attrib_id} = ${db_id}"; 
+  
+  return $sql_helper->execute_single_result(-SQL => $query);
+
 }
 
 1;

@@ -16,7 +16,7 @@ use strict;
 use warnings;
 
 use Test::More;
-use Test::Warnings;
+use Test::Warnings qw( allow_warnings );
 
 use Bio::EnsEMBL::Test::MultiTestDB;
 use Bio::EnsEMBL::Test::TestUtils;
@@ -98,7 +98,13 @@ $exon->add_supporting_features(@evidence);
 $multi->hide( "core", "exon", "supporting_feature", 
 	      "protein_align_feature", "dna_align_feature");
 
+# We get some 'datatype mismatch: bind param (11) 3.2e-42 as float' warnings
+#
+allow_warnings(1) if $db->dbc->driver() eq 'SQLite';
+
 $exonad->store($exon);
+
+allow_warnings(0) if $db->dbc->driver() eq 'SQLite';
 
 ok($exon->dbID() && $exon->adaptor == $exonad);
 
@@ -305,11 +311,14 @@ ok( $exon->cdna_coding_end($transcript) == 462 );
 ok( $exon->coding_region_start($transcript) == 30577779 );
 ok( $exon->coding_region_end($transcript) == 30578038 );
 
-#test the get_species_and_object_type method from the Registry
-my $registry = 'Bio::EnsEMBL::Registry';
-my ( $species, $object_type, $db_type ) = $registry->get_species_and_object_type('ENSE00000859937');
-ok( $species eq 'homo_sapiens' && $object_type eq 'Exon');
+SKIP: {
+  skip 'No registry support for SQLite yet', 1 if $db->dbc->driver() eq 'SQLite';
 
+  #test the get_species_and_object_type method from the Registry
+  my $registry = 'Bio::EnsEMBL::Registry';
+  my ( $species, $object_type, $db_type ) = $registry->get_species_and_object_type('ENSE00000859937');
+  ok( $species eq 'homo_sapiens' && $object_type eq 'Exon');
+}
 
 # UTR and coding region tests. Only testing simple +ve orientation transcript ATMO but it is a start
 # tests are based on offsetted coordinates from ENST00000000233 in release 67

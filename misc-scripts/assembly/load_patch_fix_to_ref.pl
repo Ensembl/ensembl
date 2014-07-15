@@ -263,10 +263,18 @@ foreach my $mapping (@$patch_mappings) {
 
         if ($alt_cmp_end > $ref_cmp_end) {
           $asm_end = $alt_asm_end - ($alt_cmp_end - $ref_cmp_end);
+          if (($asm_end - $alt_asm_start) != ($ref_asm_end - $ref_asm_start)) {
+            $support->log_stamped("$patch_name does not have a correct mapping to $chr_name with $contig_name. $alt_asm_start-$asm_end has different length from $ref_asm_start-$ref_asm_end\n", 1);
+            last;
+          }
           $support->log_stamped("About to add adjusted alt end assembly entry for $chr_name: " . $ref_names_hash{$chr_name} . ", $patch_name: " . $alt_names_hash{$patch_name} . " on coordinates $ref_asm_start, $ref_asm_end, $alt_asm_start-$asm_end\n", 1);
           $c += $ref_helper->execute_update(-SQL => $update_sql, -PARAMS => [$ref_names_hash{$chr_name}, $alt_names_hash{$patch_name}, $ref_asm_start, $ref_asm_end, $alt_asm_start, $asm_end, $ori]);
         } else {
           $asm_end = $ref_asm_end - ($ref_cmp_end - $alt_cmp_end);
+          if (($asm_end - $ref_asm_start) != ($alt_asm_end - $alt_asm_start)) {
+            $support->log_stamped("$patch_name does not have a correct mapping to $chr_name with $contig_name. $alt_asm_start-$alt_asm_end has different length from $ref_asm_start-$asm_end\n", 1);
+            last;
+          }
           $support->log_stamped("About to add adjusted ref end assembly entry for $chr_name: " . $ref_names_hash{$chr_name} . ", $patch_name: " . $alt_names_hash{$patch_name} . " on coordinates $ref_asm_start, $asm_end, $alt_asm_start-$alt_asm_end\n", 1);
           $c += $ref_helper->execute_update(-SQL => $update_sql, -PARAMS => [$ref_names_hash{$chr_name}, $alt_names_hash{$patch_name}, $ref_asm_start, $asm_end, $alt_asm_start, $alt_asm_end, $ori]);
         }
@@ -275,10 +283,18 @@ foreach my $mapping (@$patch_mappings) {
 
         if ($alt_cmp_start < $ref_cmp_start) {
           $asm_start = $alt_asm_start - $alt_cmp_start + $ref_cmp_start;
+          if (($alt_asm_end - $asm_start) != ($ref_asm_end - $ref_asm_start)) {
+            $support->log_stamped("$patch_name does not have a correct mapping to $chr_name with $contig_name. $asm_start-$alt_asm_end has different length from $ref_asm_start-$ref_asm_end\n", 1);
+            last;
+          }
           $support->log_stamped("About to add adjusted alt start assembly entry for $chr_name: " . $ref_names_hash{$chr_name} . ", $patch_name: " . $alt_names_hash{$patch_name} . " on coordinates $ref_asm_start, $ref_asm_end, $asm_start-$alt_asm_end\n", 1);
           $c += $ref_helper->execute_update(-SQL => $update_sql, -PARAMS => [$ref_names_hash{$chr_name}, $alt_names_hash{$patch_name}, $ref_asm_start, $ref_asm_end, $asm_start, $alt_asm_end, $ori]);
         } else {
           $asm_start = $ref_asm_start - $alt_cmp_start + $ref_cmp_start;
+          if (($ref_asm_end - $asm_start) != ($alt_asm_end - $alt_asm_start)) {
+            $support->log_stamped("$patch_name does not have a correct mapping to $chr_name with $contig_name. $alt_asm_start-$alt_asm_end has different length from $asm_start-$ref_asm_end\n", 1);
+            last;
+          }
           $support->log_stamped("About to add adjusted ref start assembly entry for $chr_name: " . $ref_names_hash{$chr_name} . ", $patch_name: " . $alt_names_hash{$patch_name} . " on coordinates $asm_start, $ref_asm_end, $alt_asm_start-$alt_asm_end\n", 1);
           $c += $ref_helper->execute_update(-SQL => $update_sql, -PARAMS => [$ref_names_hash{$chr_name}, $alt_names_hash{$patch_name}, $asm_start, $ref_asm_end, $alt_asm_start, $alt_asm_end, $ori]);
         }

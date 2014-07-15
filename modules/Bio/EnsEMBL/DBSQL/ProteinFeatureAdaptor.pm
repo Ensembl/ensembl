@@ -92,13 +92,13 @@ sub fetch_all_by_translation_id {
   my @features;
   my $analysis_adaptor = $self->db()->get_AnalysisAdaptor();
 
-  my $sth = $self->prepare("SELECT protein_feature_id, p.seq_start, p.seq_end, p.analysis_id, " . "       p.score, p.perc_ident, p.evalue, p.hit_start, p.hit_end, " . "       p.hit_name, p.hit_description, x.display_label, i.interpro_ac " . "FROM   protein_feature p " . "LEFT JOIN interpro AS i ON p.hit_name = i.id " . "LEFT JOIN xref AS x ON x.dbprimary_acc = i.interpro_ac " . "WHERE p.translation_id = ?");
+  my $sth = $self->prepare("SELECT protein_feature_id, p.seq_start, p.seq_end, p.analysis_id, " . "       p.score, p.perc_ident, p.evalue, p.hit_start, p.hit_end, " . "       p.hit_name, p.hit_description, x.description, x.display_label, i.interpro_ac " . "FROM   protein_feature p " . "LEFT JOIN interpro AS i ON p.hit_name = i.id " . "LEFT JOIN xref AS x ON x.dbprimary_acc = i.interpro_ac " . "WHERE p.translation_id = ?");
 
   $sth->bind_param(1, $translation_id, SQL_INTEGER);
   $sth->execute();
 
   while (my $row = $sth->fetchrow_arrayref) {
-	my ($dbID, $start, $end, $analysisid, $score, $perc_id, $evalue, $hstart, $hend, $hid, $hdesc, $desc, $interpro_ac) = @$row;
+	my ($dbID, $start, $end, $analysisid, $score, $perc_id, $evalue, $hstart, $hend, $hid, $hdesc, $desc, $ilabel, $interpro_ac) = @$row;
 
 	my $analysis = $analysis_adaptor->fetch_by_dbID($analysisid);
 
@@ -120,6 +120,7 @@ sub fetch_all_by_translation_id {
 												 -HSEQNAME     => $hid,
 												 -HDESCRIPTION => $hdesc,
 												 -IDESC        => $desc,
+                                                                                                 -ILABEL       => $ilabel,
 												 -INTERPRO_AC  => $interpro_ac);
 
 	push(@features, $feat);
@@ -146,17 +147,18 @@ sub fetch_all_by_translation_id {
 sub fetch_by_dbID {
   my ($self, $protfeat_id) = @_;
 
-  my $sth = $self->prepare("SELECT p.seq_start, p.seq_end, p.analysis_id, " . "       p.score, p.perc_ident, p.evalue, " . "       p.hit_start, p.hit_end, p.hit_name, " . "       x.display_label, i.interpro_ac " . "FROM   protein_feature p " . "LEFT JOIN interpro AS i ON p.hit_name = i.id " . "LEFT JOIN xref AS x ON x.dbprimary_acc = i.interpro_ac " . "WHERE  p.protein_feature_id = ?");
+  my $sth = $self->prepare("SELECT p.seq_start, p.seq_end, p.analysis_id, " . "       p.score, p.perc_ident, p.evalue, " . "       p.hit_start, p.hit_end, p.hit_name, " . "       x.description, x.display_label, i.interpro_ac " . "FROM   protein_feature p " . "LEFT JOIN interpro AS i ON p.hit_name = i.id " . "LEFT JOIN xref AS x ON x.dbprimary_acc = i.interpro_ac " . "WHERE  p.protein_feature_id = ?");
 
   $sth->bind_param(1, $protfeat_id, SQL_INTEGER);
   my $res = $sth->execute();
+   
+  my ($start, $end, $analysis_id, $score, $perc_ident, $pvalue, $hstart, 
+      $hend, $hseqname, $idesc, $ilabel, $interpro_ac) = $sth->fetchrow_array();
 
-  if ($sth->rows == 0) {
-	$sth->finish();
-	return undef;
+  if($sth->rows == 0) {
+    $sth->finish();
+    return undef;
   }
-
-  my ($start, $end, $analysis_id, $score, $perc_ident, $pvalue, $hstart, $hend, $hseqname, $idesc, $interpro_ac) = $sth->fetchrow_array();
 
   $sth->finish();
 
@@ -175,6 +177,7 @@ sub fetch_by_dbID {
 									  -P_VALUE     => $pvalue,
 									  -PERCENT_ID  => $perc_ident,
 									  -IDESC       => $idesc,
+                                                                          -ILABEL      => $ilabel,
 									  -INTERPRO_AC => $interpro_ac);
 } ## end sub fetch_by_dbID
 
@@ -219,7 +222,21 @@ sub store {
 	$db->get_AnalysisAdaptor->store($analysis);
   }
 
-  my $sth = $self->prepare("INSERT INTO protein_feature " . "        SET translation_id  = ?, " . "            seq_start       = ?, " . "            seq_end         = ?, " . "            analysis_id     = ?, " . "            hit_start       = ?, " . "            hit_end         = ?, " . "            hit_name        = ?, " . "            hit_description = ?, " . "            score           = ?, " . "            perc_ident      = ?, " . "            evalue          = ?");
+  my $sth = $self->prepare(q{
+    INSERT INTO protein_feature
+                ( translation_id,
+                  seq_start,
+                  seq_end,
+                  analysis_id,
+                  hit_start,
+                  hit_end,
+                  hit_name,
+                  hit_description,
+                  score,
+                  perc_ident,
+                  evalue     )
+         VALUES ( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ? )
+  });
 
   $sth->bind_param(1,  $translation_id,        SQL_INTEGER);
   $sth->bind_param(2,  $feature->start,        SQL_INTEGER);
@@ -235,7 +252,7 @@ sub store {
 
   $sth->execute();
 
-  my $dbID = $sth->{'mysql_insertid'};
+  my $dbID = $self->last_insert_id('protein_feature_id', undef, 'protein_feature');
 
   $feature->adaptor($self);
   $feature->dbID($dbID);
@@ -327,7 +344,7 @@ sub save {
 	$sth->bind_param(12, $extra_data,           SQL_LONGVARCHAR);
 
 	$sth->execute();
-	$original->dbID($sth->{'mysql_insertid'});
+        $original->dbID($self->last_insert_id("${tablename}_id", undef, $tablename));
 	$original->adaptor($self);
   } ## end foreach my $feat (@feats)
 

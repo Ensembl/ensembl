@@ -2965,12 +2965,15 @@ sub _mask_features {
     my $padstr;
     # if we decide to define masking on the base of the repeat_type, we'll need
     # to add the following, and the other commented line few lines below.
-    # my $rc_type = "repeat_type_" . $f->repeat_consensus->repeat_type;
-    my $rc_class = "repeat_class_" . $f->repeat_consensus->repeat_class;
-    my $rc_name = "repeat_name_" . $f->repeat_consensus->name;
+    my $rc_class;
+    my $rc_name;
+
+    if ($f->isa('Bio::EnsEMBL::RepeatFeature')) {
+      $rc_class = "repeat_class_" . $f->repeat_consensus->repeat_class;
+      $rc_name = "repeat_name_" . $f->repeat_consensus->name;
+    }
 
     my $masking_type;
-    # $masking_type = $not_default_masking_cases->{$rc_type} if (defined $not_default_masking_cases->{$rc_type});
     $masking_type = $not_default_masking_cases->{$rc_class} if (defined $not_default_masking_cases->{$rc_class});
     $masking_type = $not_default_masking_cases->{$rc_name} if (defined $not_default_masking_cases->{$rc_name});
 
@@ -3219,7 +3222,12 @@ sub get_all_compara_Syntenies {
 
   my $this_gdb = $gdba->fetch_by_core_DBAdaptor($self->adaptor()->db());
   my $query_gdb = $gdba->fetch_by_registry_name($qy_species);
-  my $mlss = $mlssa->fetch_by_method_link_type_GenomeDBs($method_link_type, [$this_gdb, $query_gdb]);
+  my $mlss;
+  if($this_gdb eq $query_gdb) {
+    $mlss = $mlssa->fetch_by_method_link_type_GenomeDBs($method_link_type, [$this_gdb]);
+  } else {
+    $mlss = $mlssa->fetch_by_method_link_type_GenomeDBs($method_link_type, [$this_gdb, $query_gdb]);
+  }
 
   my $cs = $self->coord_system()->name();
   my $sr = $self->seq_region_name();
@@ -3439,7 +3447,7 @@ sub get_all_ExternalFeatures {
 sub get_all_DitagFeatures {
   my ($self, $type, $logic_name) = @_;
   if(my $adaptor = $self->_get_CoreAdaptor('DitagFeature')) {
-    return $adaptor->fetch_all_by_Slice($type, $logic_name);
+    return $adaptor->fetch_all_by_Slice($self, $type, $logic_name);
   }
   return [];
 }

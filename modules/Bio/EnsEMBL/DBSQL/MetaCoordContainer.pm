@@ -187,7 +187,6 @@ sub add_feature_type {
   my $cs   = shift;
   my $table = lc(shift);
   my $length = shift;
-  my $remove = shift;
   if(!ref($cs) || !$cs->isa('Bio::EnsEMBL::CoordSystem')) {
     throw('CoordSystem argument is required.');
   }
@@ -200,35 +199,16 @@ sub add_feature_type {
 
   my ($exists) = grep {$cs->dbID() == $_} @$cs_ids;
   if( $exists ) {
-    my $sth;
-    if ($remove) {
-      delete $self->{'_max_len_cache'}->{$cs->dbID()}->{$table};
-      if (!$self->{'_max_len_cache'}->{$cs->dbID()}->{$table}) {
-        $sth = $self->prepare('DELETE FROM meta_coord ' .
-                               "WHERE coord_system_id = ? " . 
-                               "AND table_name = ?");
-        $sth->execute( $cs->dbID(), $table );
-      } elsif ($self->{'_max_len_cache'}->{$cs->dbID()}->{$table} < $length) {
-        $sth = $self->prepare('UPDATE meta_coord ' .
-                               "SET max_length = " . $self->{'_max_len_cache'}->{$cs->dbID()}->{$table} . " " .
-                               'WHERE coord_system_id = ? ' .
-                               'AND table_name = ? '.
-                               "AND (max_length<$length ".
-                               "OR max_length is null)");
-        $sth->execute( $cs->dbID(), $table );
-      }
-    } else {
-      if( !$self->{'_max_len_cache'}->{$cs->dbID()}->{$table} ||
-        $self->{'_max_len_cache'}->{$cs->dbID()}->{$table} < $length) {
-        $sth = $self->prepare('UPDATE meta_coord ' .
+    if( !$self->{'_max_len_cache'}->{$cs->dbID()}->{$table} ||
+        $self->{'_max_len_cache'}->{$cs->dbID()}->{$table} < $length ) {
+      my $sth = $self->prepare('UPDATE meta_coord ' .
                                "SET max_length = $length " .
                                'WHERE coord_system_id = ? ' .
                                'AND table_name = ? '.
                                "AND (max_length<$length ".
                                "OR max_length is null)");
-        $sth->execute( $cs->dbID(), $table );
-        $self->{'_max_len_cache'}->{$cs->dbID()}->{$table} = $length;
-      }
+      $sth->execute( $cs->dbID(), $table );
+      $self->{'_max_len_cache'}->{$cs->dbID()}->{$table} = $length;
     }
     return;
   }
@@ -236,11 +216,11 @@ sub add_feature_type {
   #store the new tablename -> coord system relationship in the db
   #ignore failures b/c during the pipeline multiple processes may try
   #to update this table and only the first will be successful
-  my $sth = $self->prepare('INSERT IGNORE INTO meta_coord ' .
-                              'SET coord_system_id = ?, ' .
-                                  'table_name = ?, ' .
-			   'max_length = ? ' 
-			  );
+  my $insert_ignore = $self->insert_ignore_clause();
+  my $sth = $self->prepare(qq{ ${insert_ignore} INTO meta_coord
+                                      (coord_system_id, table_name, max_length)
+                               VALUES (?, ?, ?)
+                             } );
 
   $sth->execute($cs->dbID, $table, $length );
 
@@ -248,6 +228,52 @@ sub add_feature_type {
   $self->{'_feature_cache'}->{$table} ||= [];
   push @{$self->{'_feature_cache'}->{$table}}, $cs->dbID();
   $self->{'_max_len_cache'}->{$cs->dbID()}->{$table} = $length;
+
+  return;
+}
+
+
+=head2 remove_feature_type
+
+  Arg [1]    : Bio::EnsEMBL::CoordSystem $cs
+               The coordinate system to associate with a feature table
+  Arg [2]    : string $table - the name of the table in which features of
+               a given coordinate system are being removed
+  Example    : $csa->remove_feature_table($chr_coord_system, 'gene');
+  Description: This function tells the coordinate system adaptor that
+               features have been fully removed from a certain coordinate system.
+               Use with caution as it will cause issues if there are still features
+               left.
+  Returntype : none
+  Exceptions : none
+  Caller     : BaseFeatureAdaptor
+  Status     : Stable
+
+=cut
+
+sub remove_feature_type {
+  my $self = shift;
+  my $cs   = shift;
+  my $table = lc(shift);
+  my $length = shift;
+  if(!ref($cs) || !$cs->isa('Bio::EnsEMBL::CoordSystem')) {
+    throw('CoordSystem argument is required.');
+  }
+
+  if(!$table) {
+    throw('Table argument is required.');
+  }
+
+  my $cs_ids = $self->{'_feature_cache'}->{$table} || [];
+
+  my ($exists) = grep {$cs->dbID() == $_} @$cs_ids;
+  if( $exists ) {
+    my $sth = $self->prepare('DELETE FROM meta_coord ' .
+                             'WHERE coord_system_id = ? ' .
+                             'AND table_name = ? ');
+    $sth->execute( $cs->dbID(), $table );
+    delete $self->{'_max_len_cache'}->{$cs->dbID()}->{$table};
+  }
 
   return;
 }

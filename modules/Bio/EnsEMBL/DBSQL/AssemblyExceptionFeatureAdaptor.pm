@@ -545,7 +545,7 @@ sub store{
   $asx_st->bind_param(7, $asx2->end(), SQL_INTEGER);
   
   $asx_st->execute();
-  $asx_id = $asx_st->{'mysql_insertid'};
+  $asx_id = $self->last_insert_id('assembly_exception_id', undef, 'assembly_exception');
   
   #finally, update the dbID and adaptor of the asx and asx2
   $original->adaptor($self);

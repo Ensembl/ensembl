@@ -128,6 +128,11 @@ sub parse_common_options {
 	       'port|dbport|db_port=n',
 	       'user|dbuser|db_user=s',
 	       'pass|dbpass|db_pass=s',
+               'prod_dbname=s',
+               'prod_host=s',
+               'prod_port=n',
+               'prod_user=s',
+               'prod_pass=s',
 	       'conffile|conf=s',
 	       'logfile|log=s',
                'nolog',
@@ -1108,8 +1113,8 @@ sub species {
 =cut
 
 sub sort_chromosomes {
-  my ($self, $chr_hashref) = @_;
-  $chr_hashref = $self->get_chrlength unless ($chr_hashref);
+  my ($self, $chr_hashref, $version, $include_non_reference) = @_;
+  $chr_hashref = $self->get_chrlength($self->dba, $version, 'chromosome', $include_non_reference) unless ($chr_hashref);
   throw("You have to pass a hashref of your chromosomes")
     unless ($chr_hashref and ref($chr_hashref) eq 'HASH');
   return (sort _by_chr_num keys %$chr_hashref);
@@ -2136,6 +2141,107 @@ sub remove_duplicate_attribs {
   $dbh->do(qq(drop table nondup_${table}_attrib));
 }
 
+=head2 sav_seq
+
+  Arg[1]      : string (sequence to save)
+  Example     : $support->save_seq('ACGT')
+  Description : creates a temporary file containing the sequence you give it
+  Return type : string (filename)
+  Caller      : general
+  Status      : stable
+
+=cut
+
+sub save_seq {
+  my $self = shift;
+  my $content = shift ;
+  my $seq_file = $self->param('logpath') . '/SEQ_' . time() . int(rand()*100000000) . $$;
+  open (TMP,">$seq_file") or die("Cannot create working file.$!");
+  print TMP $content;
+  close TMP;
+  return ($seq_file);
+}
+
+=head2 get_alignment
+
+  Arg[1]      : string (first sequence)
+  Arg[1]      : string (second sequence)
+  Arg[1]      : string (sequence type))
+  Example     : $support->get_alignment('AAAAA','CCCCCCC','DNA')
+  Description : creates a temporary file containing the sequence you give it
+  Return type : string (filename)
+  Caller      : general
+  Status      : stable
+
+=cut
+
+sub get_alignment {
+  my $self = shift;
+  my $ext_seq  = shift || return undef;
+  my $int_seq  = shift || return undef;
+  $int_seq =~ s/<br \/>//g;
+  my $seq_type = shift || return undef;
+
+
+  # To stop box running out of memory - put an upper limit on the size of sequence
+  # that alignview can handle
+  if (length $int_seq > 1e6 || length $ext_seq > 1e6)  {
+    $self->log_error('Cannot align if sequence > 1 Mbase');
+  }
+
+  my $int_seq_file = $self->save_seq($int_seq);
+  my $ext_seq_file = $self->save_seq($ext_seq);
+
+  my $label_width  = '22'; # width of column for e! object label
+  my $output_width = 61;   # width of alignment
+  my $dnaAlignExe  = '/localsw/bin/emboss/bin/matcher -asequence %s -bsequence %s -outfile %s';
+  my $pepAlignExe  = '/localsw/bin/wise2/bin/psw -dymem explicit -m /localsw/bin/wise2/wisecfg/blosum62.bla %s %s -n %s -w %s > %s';
+
+  my $out_file = time() . int(rand()*100000000) . $$;
+  $out_file = $self->param('logpath').'/' . $out_file . '.out';
+
+  my $command;
+  if ($seq_type eq 'DNA') {
+    $command = sprintf $dnaAlignExe, $int_seq_file, $ext_seq_file, $out_file;
+    `$command`;
+    unless (open(OUT, "<$out_file")) {
+      $command = sprintf $dnaAlignExe, $int_seq_file, $ext_seq_file, $out_file;
+      `$command`;
+    }
+  }
+  elsif ($seq_type eq 'PEP') {
+    $command = sprintf $pepAlignExe, $int_seq_file, $ext_seq_file, $label_width, $output_width, $out_file;
+    `$command`;
+    unless (open(OUT, "<$out_file")) {
+      $self->log_warning("Cannot open alignment file\n");
+    }
+  }
+  my $alignment ;
+  while (<OUT>) {
+    next if $_ =~ 
+    /\#Report_file
+     |\#----.*
+     |\/\/\s*
+     |\#\#\#
+     |^\#$
+     |Rundate: #matcher
+     |Commandline #matcher
+     |asequence #matcher
+     |bsequence #matcher
+     |outfile #matcher
+     |aformat #matcher
+     |Align_format #matcher
+     |Report_file #matcher
+     /x;
+    $alignment .= $_;
+  }
+
+  $alignment =~ s/\n+$//;
+  unlink $out_file;
+  unlink $int_seq_file;
+  unlink $ext_seq_file;
+  return $alignment;
+}
 
 sub allowed_duplicate_regions {
   my $self = shift;
@@ -2154,7 +2260,7 @@ sub allowed_duplicate_regions {
         '6-SSTO' => 'all',
       },
       {
-        '19'       => '54600000:55600000',
+        '19'       => '54020000:54910000',
         '19-PGF_1' => 'all',
         '19-PGF_2' => 'all',
         '19-COX_1' => 'all',
@@ -2246,6 +2352,10 @@ sub allowed_duplicate_regions {
       {
         '7'               => '24728583:29807435',
         '7-LW'            => 'all',
+      },
+      {
+        'X'               => 'all',
+        'X-WTSI'          => 'all',
       },
     ],
     'zebrafish' => [],

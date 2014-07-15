@@ -74,12 +74,13 @@ sub store {
     throw("seq_region_id is needed to store a seq_region_synoym");
   }
 
-  my $sth = $self->prepare("INSERT IGNORE INTO seq_region_synonym (seq_region_id, synonym, external_db_id) VALUES (?, ?, ?)");
+  my $insert_ignore = $self->insert_ignore_clause();
+  my $sth = $self->prepare("${insert_ignore} INTO seq_region_synonym (seq_region_id, synonym, external_db_id) VALUES (?, ?, ?)");
   $sth->bind_param(1, $syn->seq_region_id,  SQL_INTEGER);
   $sth->bind_param(2, $syn->name         ,  SQL_VARCHAR);
   $sth->bind_param(3, $syn->external_db_id, SQL_INTEGER);
   $sth->execute;
-  $syn->{'dbID'} = $sth->{'mysql_insertid'};
+  $syn->{'dbID'} = $self->last_insert_id('seq_region_synonym_id', undef, 'seq_region_synonym');
   $sth->finish;
 }
 

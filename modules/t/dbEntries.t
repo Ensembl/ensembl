@@ -47,7 +47,7 @@ cmp_ok($actual_default_max_id, '==', $expected_default_max_id, "Max xref ID MUST
 my $expected_default_auto_inc = $expected_default_max_id+1;
 my $current_default_auto_inc = get_xref_autoinc();
 if($current_default_auto_inc != $expected_default_auto_inc) {
-  $db->dbc->do("ALTER TABLE xref AUTO_INCREMENT = $expected_default_auto_inc");
+  set_xref_autoinc($expected_default_auto_inc);
 }
 
 # some retrievals
@@ -579,8 +579,29 @@ sub print_dbEntries {
 }
 
 sub get_xref_autoinc {
-  my $auto_inc_sql = 'SELECT AUTO_INCREMENT FROM information_schema.TABLES WHERE table_name = ? AND table_schema = DATABASE()';
-  return $db->dbc->sql_helper()->execute_single_result(-SQL => $auto_inc_sql, -PARAMS => ['xref'], -NO_ERROR => 1);
+  my $auto_inc_sql;
+  my $offset = 0;
+  if ($db->dbc->driver eq 'SQLite') {
+    $auto_inc_sql = 'SELECT seq FROM sqlite_sequence WHERE name = ?';
+    $offset = 1;
+  } else {
+    $auto_inc_sql = 'SELECT AUTO_INCREMENT FROM information_schema.TABLES WHERE table_name = ? AND table_schema = DATABASE()';
+  }
+  return ($db->dbc->sql_helper()->execute_single_result(-SQL => $auto_inc_sql, -PARAMS => ['xref'], -NO_ERROR => 1)
+          + $offset);
+}
+
+sub set_xref_autoinc {
+  my ($val) = @_;
+  my $auto_inc_sql;
+  if ($db->dbc->driver eq 'SQLite') {
+    --$val; # offset in opposite direction to correction in get_xref_autoinc()
+    $auto_inc_sql = "UPDATE sqlite_sequence SET seq = $val WHERE name = 'xref'";
+  } else {
+    $auto_inc_sql = "ALTER TABLE xref AUTO_INCREMENT = $val";
+  }
+  $db->dbc->do($auto_inc_sql);
+  return;
 }
 
 done_testing();

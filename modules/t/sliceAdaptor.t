@@ -247,7 +247,7 @@ foreach my $seg (@projection) {
 my $csa = $db->get_CoordSystemAdaptor();
 my $ctg_cs  = $csa->fetch_by_name('contig');
 
-$multi->save('core', 'seq_region', 'dna');
+$multi->save('core', 'seq_region', 'dna', 'assembly');
 
 my $ctg_len = 50;
 my $name = 'testregion';
@@ -298,6 +298,19 @@ ok($chr_slice->seq_region_length() == $chr_len);
 ok($chr_slice->seq_region_name eq $name);
 
 #
+# Update a slice
+#
+
+$chr_slice->add_synonym('testregion3');
+$slice_adaptor->update($chr_slice);
+
+my $updated_slice = $slice_adaptor->fetch_by_region('chromosome', 'testregion3');
+ok($updated_slice->length() == $chr_len);
+ok($updated_slice->seq_region_length() == $chr_len);
+ok($updated_slice->seq_region_name eq $name);
+
+
+#
 # Store an assembly between the slices
 #
 my $asm_start = 9999;
@@ -322,7 +335,7 @@ my $chr_map = $ctg_slice->project( $chr_cs->name, $chr_cs->version );
 #    $chr_map->[0]->[2]->name eq $chr_slice->name );
 
 
-$multi->restore('core', 'seq_region', 'dna');
+$multi->restore('core', 'seq_region', 'dna', 'assembly');
 
 
 #

@@ -475,7 +475,7 @@ sub _objs_from_sth {
   # and a fair bit of gymnastics have been used.
   #
 
-  my $sa = $self->db()->get_SliceAdaptor();
+  my $sa  = $self->db()->get_SliceAdaptor();
   my $dta = $self->db()->get_DensityTypeAdaptor();
 
   my @features;
@@ -484,90 +484,78 @@ sub _objs_from_sth {
   my %sr_name_hash;
   my %sr_cs_hash;
 
-  my($density_feature_id, $seq_region_id, $seq_region_start, $seq_region_end,
-     $density_value, $density_type_id );
+  my(
+    $density_feature_id, $seq_region_id, $seq_region_start,
+    $seq_region_end, $density_value, $density_type_id );
 
-  $sth->bind_columns(\$density_feature_id, \$seq_region_id, \$seq_region_start,
-                     \$seq_region_end, \$density_value, \$density_type_id);
-
-  my $asm_cs;
-  my $cmp_cs;
-  my $asm_cs_vers;
-  my $asm_cs_name;
-  my $cmp_cs_vers;
-  my $cmp_cs_name;
-  if($mapper) {
-    $asm_cs = $mapper->assembled_CoordSystem();
-    $cmp_cs = $mapper->component_CoordSystem();
-    $asm_cs_name = $asm_cs->name();
-    $asm_cs_vers = $asm_cs->version();
-    $cmp_cs_name = $cmp_cs->name();
-    $cmp_cs_vers = $cmp_cs->version();
-  }
+  $sth->bind_columns(\(
+                      $density_feature_id, $seq_region_id, $seq_region_start,
+                      $seq_region_end, $density_value, $density_type_id));
 
   my $dest_slice_start;
   my $dest_slice_end;
   my $dest_slice_strand;
   my $dest_slice_length;
+  my $dest_slice_cs;
   my $dest_slice_sr_name;
   my $dest_slice_sr_id;
+  my $asma;
 
-  if($dest_slice) {
-    $dest_slice_start  = $dest_slice->start();
-    $dest_slice_end    = $dest_slice->end();
-    $dest_slice_strand = $dest_slice->strand();
-    $dest_slice_length = $dest_slice->length();
+  if ($dest_slice) {
+    $dest_slice_start   = $dest_slice->start();
+    $dest_slice_end     = $dest_slice->end();
+    $dest_slice_strand  = $dest_slice->strand();
+    $dest_slice_length  = $dest_slice->length();
+    $dest_slice_cs      = $dest_slice->coord_system();
     $dest_slice_sr_name = $dest_slice->seq_region_name();
-    $dest_slice_sr_id  = $dest_slice->get_seq_region_id();
+    $dest_slice_sr_id   = $dest_slice->get_seq_region_id();
+    $asma               = $self->db->get_AssemblyMapperAdaptor();
   }
 
   FEATURE: while($sth->fetch()) {
-    #get the density type object
-    my $density_type = $dtype_hash{$density_type_id} ||=
-      $dta->fetch_by_dbID($density_type_id);
 
-    #get the slice object
+    #get the density type object
+    my $density_type = $dtype_hash{$density_type_id} ||= $dta->fetch_by_dbID($density_type_id);
+
     #need to get the internal_seq_region, if present
     $seq_region_id = $self->get_seq_region_id_internal($seq_region_id);
     my $slice = $slice_hash{"ID:".$seq_region_id};
-    if(!$slice) {
-      $slice = $sa->fetch_by_seq_region_id($seq_region_id);
+
+    if (!$slice) {
+      $slice                            = $sa->fetch_by_seq_region_id($seq_region_id);
       $slice_hash{"ID:".$seq_region_id} = $slice;
-      $sr_name_hash{$seq_region_id} = $slice->seq_region_name();
-      $sr_cs_hash{$seq_region_id} = $slice->coord_system();
+      $sr_name_hash{$seq_region_id}     = $slice->seq_region_name();
+      $sr_cs_hash{$seq_region_id}       = $slice->coord_system();
+    }
+
+    #obtain a mapper if none was defined, but a dest_seq_region was
+    if(!$mapper && $dest_slice && !$dest_slice_cs->equals($slice->coord_system)) {
+      $mapper = $asma->fetch_by_CoordSystems($dest_slice_cs, $slice->coord_system);
     }
 
     my $sr_name = $sr_name_hash{$seq_region_id};
     my $sr_cs   = $sr_cs_hash{$seq_region_id};
- 
-   #
+
+    #
     # remap the feature coordinates to another coord system
     # if a mapper was provided
     #
-    if($mapper) {
+
+    if ($mapper) {
 
       my $len = $seq_region_end - $seq_region_start + 1;
 
-      my @coords;
-
-      if (defined $dest_slice && $mapper->isa('Bio::EnsEMBL::ChainedAssemblyMapper')  ) {
-	    
-	  @coords = $mapper->map( $sr_name, $seq_region_start, $seq_region_end,
-                          1, $sr_cs, 0, $dest_slice);
+      if (defined $dest_slice && $mapper->isa('Bio::EnsEMBL::ChainedAssemblyMapper') ) {
+        ($seq_region_id, $seq_region_start, $seq_region_end) =
+         $mapper->map( $sr_name, $seq_region_start, $seq_region_end, 1, $sr_cs, 0, $dest_slice);
 
       } else {
-	  @coords = $mapper->map($sr_name, $seq_region_start, $seq_region_end,1, $sr_cs);
+        ($seq_region_id, $seq_region_start, $seq_region_end) =
+         $mapper->map($sr_name, $seq_region_start, $seq_region_end, 1, $sr_cs);
       }
 
-      #filter out gaps
-      @coords = grep {!$_->isa('Bio::EnsEMBL::Mapper::Gap')} @coords;
-
-      #throw out density features mapped to gaps, or split
-      next FEATURE if(@coords != 1);
-
-      $seq_region_start  = $coords[0]->{'start'};
-      $seq_region_end    = $coords[0]->{'end'};
-      $seq_region_id     = $coords[0]->{'id'};
+      #skip features that map to gaps or coord system boundaries
+      next FEATURE if (!defined($seq_region_id));
 
       if($density_type->value_type() eq 'sum') {
         #adjust density value so it reflects length of feature actually used
@@ -576,50 +564,109 @@ sub _objs_from_sth {
       }
 
       #get a slice in the coord system we just mapped to
-#      if($asm_cs == $sr_cs || ($cmp_cs != $sr_cs && $asm_cs->equals($sr_cs))) {
-        $slice = $slice_hash{"ID:".$seq_region_id} ||=
-          $sa->fetch_by_seq_region_id($seq_region_id);
-#      } else {
-#        $slice = $slice_hash{"NAME:$sr_name:$asm_cs_name:$asm_cs_vers"} ||=
-#          $sa->fetch_by_region($asm_cs_name, $sr_name, undef, undef, undef,
-#                               $asm_cs_vers);
-#      }
+      $slice = $slice_hash{"ID:".$seq_region_id} ||= $sa->fetch_by_seq_region_id($seq_region_id);
     }
 
     #
-    # If a destination slice was provided convert the coords
-    # If the dest_slice starts at 1 and is foward strand, nothing needs doing
+    # If a destination slice was provided convert the coords.
     #
-    if($dest_slice) {
-      if($dest_slice_start != 1 || $dest_slice_strand != 1) {
-        if($dest_slice_strand == 1) {
-          $seq_region_start = $seq_region_start - $dest_slice_start + 1;
-          $seq_region_end   = $seq_region_end   - $dest_slice_start + 1;
-        } else {
-          my $tmp_seq_region_start = $seq_region_start;
-          $seq_region_start = $dest_slice_end - $seq_region_end + 1;
-          $seq_region_end   = $dest_slice_end - $tmp_seq_region_start + 1;
+    if (defined($dest_slice)) {
+      my $seq_region_len = $dest_slice->seq_region_length();
+
+      if ( $dest_slice_strand == 1 ) {
+        $seq_region_start = $seq_region_start - $dest_slice_start + 1;
+        $seq_region_end   = $seq_region_end - $dest_slice_start + 1;
+
+        if ( $dest_slice->is_circular ) {
+        # Handle circular chromosomes.
+
+          if ( $seq_region_start > $seq_region_end ) {
+            # Looking at a feature overlapping the chromosome origin.
+
+            if ( $seq_region_end > $dest_slice_start ) {
+              # Looking at the region in the beginning of the chromosome
+              $seq_region_start -= $seq_region_len;
+            }
+            if ( $seq_region_end < 0 ) {
+              $seq_region_end += $seq_region_len;
+            }
+          } else {
+            if ($dest_slice_start > $dest_slice_end && $seq_region_end < 0) {
+              # Looking at the region overlapping the chromosome
+              # origin and a feature which is at the beginning of the
+              # chromosome.
+              $seq_region_start += $seq_region_len;
+              $seq_region_end   += $seq_region_len;
+            }
+          }
         }
+      } else {
+
+        my $start = $dest_slice_end - $seq_region_end + 1;
+        my $end = $dest_slice_end - $seq_region_start + 1;
+
+        if ($dest_slice->is_circular()) {
+
+          if ($dest_slice_start > $dest_slice_end) {
+            # slice spans origin or replication
+
+            if ($seq_region_start >= $dest_slice_start) {
+              $end += $seq_region_len;
+              $start += $seq_region_len if $seq_region_end > $dest_slice_start;
+
+            } elsif ($seq_region_start <= $dest_slice_end) {
+              # do nothing
+            } elsif ($seq_region_end >= $dest_slice_start) {
+              $start += $seq_region_len;
+              $end += $seq_region_len;
+
+            } elsif ($seq_region_end <= $dest_slice_end) {
+              $end += $seq_region_len if $end < 0;
+
+            } elsif ($seq_region_start > $seq_region_end) {
+              $end += $seq_region_len;
+            }
+
+          } else {
+
+            if ($seq_region_start <= $dest_slice_end and $seq_region_end >= $dest_slice_start) {
+              # do nothing
+            } elsif ($seq_region_start > $seq_region_end) {
+              if ($seq_region_start <= $dest_slice_end) {
+                $start -= $seq_region_len;
+              } elsif ($seq_region_end >= $dest_slice_start) {
+                $end += $seq_region_len;
+              }
+            }
+          }
+        }
+
+        $seq_region_start = $start;
+        $seq_region_end = $end;
       }
 
-      #throw away features entirely off the end of the requested slice
-      if($seq_region_end < 1 || $seq_region_start > $dest_slice_length ||
-	 ( $dest_slice_sr_id ne $seq_region_id )) {
-	next FEATURE;
+      # Throw away features off the end of the requested slice or on
+      # different seq_region.
+      if ($seq_region_end < 1
+          || $seq_region_start > $dest_slice_length
+          || ($dest_slice_sr_id != $seq_region_id)) {
+        next FEATURE;
       }
       $slice = $dest_slice;
     }
 
-    push( @features,
-          $self->_create_feature( 'Bio::EnsEMBL::DensityFeature', {
-                                    -dbID       => $density_feature_id,
-                                    -adaptor    => $self,
-                                    -start      => $seq_region_start,
-                                    -end        => $seq_region_end,
-                                    -seq_region => $slice,
-                                    -density_value => $density_value,
-                                    -density_type  => $density_type
-                                  } ) );
+    push(
+      @features,
+      $self->_create_feature(
+      'Bio::EnsEMBL::DensityFeature', {
+       -dbID       => $density_feature_id,
+       -adaptor    => $self,
+       -start      => $seq_region_start,
+       -end        => $seq_region_end,
+       -seq_region => $slice,
+       -density_value => $density_value,
+       -density_type  => $density_type
+     } ) );
 
   }
 
@@ -727,7 +774,7 @@ sub store{
     $sth->bind_param(5,$df->density_value,SQL_FLOAT);
     $sth->execute();
 
-    $original->dbID($sth->{'mysql_insertid'});
+    $original->dbID($self->last_insert_id('density_feature_id', undef, 'density_feature'));
     $original->adaptor($self);
   }
 }

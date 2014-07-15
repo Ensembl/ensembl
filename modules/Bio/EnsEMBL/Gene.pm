@@ -64,6 +64,7 @@ use strict;
 
 use POSIX;
 use Bio::EnsEMBL::Feature;
+use Bio::EnsEMBL::Intron;
 use Bio::EnsEMBL::Utils::Argument qw(rearrange);
 use Bio::EnsEMBL::Utils::Exception qw(throw warning deprecate);
 use Bio::EnsEMBL::Utils::Scalar qw(assert_ref);
@@ -116,8 +117,6 @@ use vars qw(@ISA);
   Arg [-CANONICAL_TRANSCRIPT_ID]:
         integer - the canonical transcript dbID of this gene, if the
         transcript object itself is not available.
-  Arg [-CANONICAL_ANNOTATION]:
-        string - canonical annotation
 
   Example    : $gene = Bio::EnsEMBL::Gene->new(...);
   Description: Creates a new gene object
@@ -153,8 +152,7 @@ sub new {
       'MODIFIED_DATE',           'CONFIDENCE',
       'BIOTYPE',                 'SOURCE',
       'STATUS',                  'IS_CURRENT',
-      'CANONICAL_TRANSCRIPT_ID', 'CANONICAL_TRANSCRIPT',
-      'CANONICAL_ANNOTATION'
+      'CANONICAL_TRANSCRIPT_ID', 'CANONICAL_TRANSCRIPT'
     ],
     @_
     );
@@ -800,6 +798,38 @@ sub get_all_Exons {
   push @out, values %h;
 
   return \@out;
+}
+
+=head2 get_all_Introns
+
+  Arg [1]    : none
+  Example    : my @introns = @{$gene->get_all_Introns()};
+  Description: Returns an listref of the introns in this gene in order.
+               i.e. the first intron in the listref is the 5prime most exon in
+               the gene.
+  Returntype : listref to Bio::EnsEMBL::Intron objects
+  Exceptions : none
+  Caller     : general
+  Status     : Stable
+
+=cut
+
+sub get_all_Introns {
+  my $self = shift;
+
+  my %h;
+  my @out = ();
+  my @introns;
+
+  foreach my $trans ( @{$self->get_all_Transcripts} ) {
+    my @exons = @{ $trans->get_all_Exons() };
+    for (my $i = 0; $i < scalar(@exons) - 1; $i++) {
+      my $intron = new Bio::EnsEMBL::Intron($exons[$i], $exons[$i+1]);
+      push (@introns, $intron);
+    }
+  }
+
+  return \@introns;
 }
 
 

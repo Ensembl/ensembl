@@ -1201,27 +1201,38 @@ sub store {
 
   ($gene, $seq_region_id) = $self->_pre_store($gene);
 
-  my $store_gene_sql = qq(
-        INSERT INTO gene
-           SET biotype = ?,
-               analysis_id = ?,
-               seq_region_id = ?,
-               seq_region_start = ?,
-               seq_region_end = ?,
-               seq_region_strand = ?,
-               description = ?,
-               source = ?,
-               status = ?,
-               is_current = ?,
-               canonical_transcript_id = ?
+  my @columns = qw(
+               biotype
+               analysis_id
+               seq_region_id
+               seq_region_start
+               seq_region_end
+               seq_region_strand
+               description
+               source
+               status
+               is_current
+               canonical_transcript_id
   );
 
-  if (defined($gene->stable_id)) {
-    my $created  = $self->db->dbc->from_seconds_to_date($gene->created_date());
-    my $modified = $self->db->dbc->from_seconds_to_date($gene->modified_date());
-    $store_gene_sql .= ", stable_id = ?, version = ?, created_date = " . $created . " , modified_date = " . $modified;
+  my @canned_columns;
+  my @canned_values;
 
+  if (defined($gene->stable_id)) {
+      push @columns, 'stable_id', 'version';
+
+      my $created  = $self->db->dbc->from_seconds_to_date($gene->created_date());
+      my $modified = $self->db->dbc->from_seconds_to_date($gene->modified_date());
+
+      push @canned_columns, 'created_date', 'modified_date';
+      push @canned_values,  $created,       $modified;
   }
+
+  my $columns = join(', ', @columns, @canned_columns);
+  my $values  = join(', ', ('?') x @columns, @canned_values);
+  my $store_gene_sql = qq(
+        INSERT INTO gene ( $columns ) VALUES ( $values )
+  );
 
   # column status is used from schema version 34 onwards (before it was
   # confidence)
@@ -1253,7 +1264,7 @@ sub store {
   $sth->execute();
   $sth->finish();
 
-  my $gene_dbID = $sth->{'mysql_insertid'};
+  my $gene_dbID = $self->last_insert_id('gene_id', undef, 'gene');
 
   # store the dbentries associated with this gene
   my $dbEntryAdaptor = $db->get_DBEntryAdaptor();
@@ -1413,8 +1424,6 @@ sub remove {
   }
 
   # remove this gene from the database
-
-  $self->_pre_remove($gene);
 
   $sth = $self->prepare("DELETE FROM gene WHERE gene_id = ? ");
   $sth->bind_param(1, $gene->dbID, SQL_INTEGER);
@@ -1579,248 +1588,234 @@ sub _objs_from_sth {
   my %sr_name_hash;
   my %sr_cs_hash;
 
-  my ($gene_id, $seq_region_id, $seq_region_start, $seq_region_end, $seq_region_strand, $analysis_id, $biotype, $display_xref_id, $gene_description, $status, $source, $is_current, $canonical_transcript_id, $stable_id, $version, $created_date, $modified_date, $xref_display_id, $xref_primary_acc, $xref_desc, $xref_version, $external_db, $external_status, $external_release, $external_db_name, $info_type, $info_text);
+  my (
+    $gene_id,                 $seq_region_id,     $seq_region_start,
+    $seq_region_end,          $seq_region_strand, $analysis_id,
+    $biotype,                 $display_xref_id,   $gene_description,
+    $status,                  $source,            $is_current,
+    $canonical_transcript_id, $stable_id,         $version,
+    $created_date,            $modified_date,     $xref_display_label,
+    $xref_primary_acc,        $xref_description,  $xref_version,
+    $external_db,             $external_status,   $external_release,
+    $external_db_name,        $info_type,         $info_text
+  );
 
-  $sth->bind_columns(\($gene_id, $seq_region_id, $seq_region_start, $seq_region_end, $seq_region_strand, $analysis_id, $biotype, $display_xref_id, $gene_description, $status, $source, $is_current, $canonical_transcript_id, $stable_id, $version, $created_date, $modified_date, $xref_display_id, $xref_primary_acc, $xref_desc, $xref_version, $external_db, $external_status, $external_release, $external_db_name, $info_type, $info_text));
-
-  my $asm_cs;
-  my $cmp_cs;
-  my $asm_cs_vers;
-  my $asm_cs_name;
-  my $cmp_cs_vers;
-  my $cmp_cs_name;
-
-  if ($mapper) {
-    $asm_cs      = $mapper->assembled_CoordSystem();
-    $cmp_cs      = $mapper->component_CoordSystem();
-    $asm_cs_name = $asm_cs->name();
-    $asm_cs_vers = $asm_cs->version();
-    $cmp_cs_name = $cmp_cs->name();
-    $cmp_cs_vers = $cmp_cs->version();
-  }
+  $sth->bind_columns(\(
+                      $gene_id,                 $seq_region_id,     $seq_region_start,
+                      $seq_region_end,          $seq_region_strand, $analysis_id,
+                      $biotype,                 $display_xref_id,   $gene_description,
+                      $status,                  $source,            $is_current,
+                      $canonical_transcript_id, $stable_id,         $version,
+                      $created_date,            $modified_date,     $xref_display_label,
+                      $xref_primary_acc,        $xref_description,  $xref_version,
+                      $external_db,             $external_status,   $external_release,
+                      $external_db_name,        $info_type,         $info_text
+                    ) );
 
   my $dest_slice_start;
   my $dest_slice_end;
   my $dest_slice_strand;
   my $dest_slice_length;
+  my $dest_slice_cs;
   my $dest_slice_sr_name;
   my $dest_slice_sr_id;
+  my $asma;
 
   if ($dest_slice) {
     $dest_slice_start   = $dest_slice->start();
     $dest_slice_end     = $dest_slice->end();
     $dest_slice_strand  = $dest_slice->strand();
     $dest_slice_length  = $dest_slice->length();
+    $dest_slice_cs      = $dest_slice->coord_system();
     $dest_slice_sr_name = $dest_slice->seq_region_name();
     $dest_slice_sr_id   = $dest_slice->get_seq_region_id();
+    $asma               = $self->db->get_AssemblyMapperAdaptor();
   }
 
-FEATURE: while ($sth->fetch()) {
-  #get the analysis object
-  my $analysis = $analysis_hash{$analysis_id} ||= $aa->fetch_by_dbID($analysis_id);
+  FEATURE: while($sth->fetch()) {
 
-  #need to get the internal_seq_region, if present
-  $seq_region_id = $self->get_seq_region_id_internal($seq_region_id);
-  my $slice = $slice_hash{"ID:" . $seq_region_id};
+    #get the analysis object
+    my $analysis = $analysis_hash{$analysis_id} ||= $aa->fetch_by_dbID($analysis_id);
+    $analysis_hash{$analysis_id} = $analysis;
 
-  if (!$slice) {
-    $slice                              = $sa->fetch_by_seq_region_id($seq_region_id);
-    $slice_hash{"ID:" . $seq_region_id} = $slice;
-    $sr_name_hash{$seq_region_id}       = $slice->seq_region_name();
-    $sr_cs_hash{$seq_region_id}         = $slice->coord_system();
-  }
+    #need to get the internal_seq_region, if present
+    $seq_region_id = $self->get_seq_region_id_internal($seq_region_id);
+    my $slice = $slice_hash{"ID:".$seq_region_id};
 
-  my $sr_name = $sr_name_hash{$seq_region_id};
-  my $sr_cs   = $sr_cs_hash{$seq_region_id};
-
-  #
-  # remap the feature coordinates to another coord system
-  # if a mapper was provided
-  #
-  if ($mapper) {
-
-    if (defined $dest_slice
-      && $mapper->isa('Bio::EnsEMBL::ChainedAssemblyMapper'))
-    {
-    ($seq_region_id, $seq_region_start, $seq_region_end, $seq_region_strand) = $mapper->map($sr_name, $seq_region_start, $seq_region_end, $seq_region_strand, $sr_cs, 1, $dest_slice);
-
-    } else {
-      ($seq_region_id, $seq_region_start, $seq_region_end, $seq_region_strand) = $mapper->fastmap($sr_name, $seq_region_start, $seq_region_end, $seq_region_strand, $sr_cs);
+    if (!$slice) {
+      $slice                            = $sa->fetch_by_seq_region_id($seq_region_id);
+      $slice_hash{"ID:".$seq_region_id} = $slice;
+      $sr_name_hash{$seq_region_id}     = $slice->seq_region_name();
+      $sr_cs_hash{$seq_region_id}       = $slice->coord_system();
     }
 
-    #skip features that map to gaps or coord system boundaries
-    next FEATURE if (!defined($seq_region_id));
+    #obtain a mapper if none was defined, but a dest_seq_region was
+    if(!$mapper && $dest_slice && !$dest_slice_cs->equals($slice->coord_system)) {
+      $mapper = $asma->fetch_by_CoordSystems($dest_slice_cs, $slice->coord_system);
+    }
 
-    #get a slice in the coord system we just mapped to
-    #      if($asm_cs == $sr_cs || ($cmp_cs != $sr_cs && $asm_cs->equals($sr_cs))) {
-    $slice = $slice_hash{"ID:" . $seq_region_id} ||= $sa->fetch_by_seq_region_id($seq_region_id);
-    #      } else {
-    #        $slice = $slice_hash{"NAME:$sr_name:$asm_cs_name:$asm_cs_vers"} ||=
-    #          $sa->fetch_by_region($asm_cs_name, $sr_name, undef, undef, undef,
-    #                               $asm_cs_vers);
-    #      }
-  }
+    my $sr_name = $sr_name_hash{$seq_region_id};
+    my $sr_cs   = $sr_cs_hash{$seq_region_id};
 
-  #
-  # If a destination slice was provided convert the coords.
-  #
-  if (defined($dest_slice)) {
-    my $seq_region_len = $dest_slice->seq_region_length();
+    #
+    # remap the feature coordinates to another coord system
+    # if a mapper was provided
+    #
 
-    if ($dest_slice_strand == 1) { # Positive strand
-    
-    $seq_region_start = $seq_region_start - $dest_slice_start + 1;
-    $seq_region_end   = $seq_region_end - $dest_slice_start + 1;
+    if ($mapper) {
 
-    if ($dest_slice->is_circular()) {
-      # Handle cicular chromosomes.
-
-      if ($seq_region_start > $seq_region_end) {
-      # Looking at a feature overlapping the chromsome origin.
-
-      if ($seq_region_end > $dest_slice_start) {
-
-      # Looking at the region in the beginning of the
-      # chromosome.
-        $seq_region_start -= $seq_region_len;
-      }
-
-      if ($seq_region_end < 0) {
-        $seq_region_end += $seq_region_len;
-      }
+      if (defined $dest_slice && $mapper->isa('Bio::EnsEMBL::ChainedAssemblyMapper') ) {
+        ($seq_region_id, $seq_region_start, $seq_region_end, $seq_region_strand) =
+         $mapper->map($sr_name, $seq_region_start, $seq_region_end, $seq_region_strand, $sr_cs, 1, $dest_slice);
 
       } else {
-
-      if (   $dest_slice_start > $dest_slice_end
-        && $seq_region_end < 0)
-        {
-          # Looking at the region overlapping the chromosome
-          # origin and a feature which is at the beginning of the
-          # chromosome.
-          $seq_region_start += $seq_region_len;
-          $seq_region_end   += $seq_region_len;
-        }
+        ($seq_region_id, $seq_region_start, $seq_region_end, $seq_region_strand) =
+         $mapper->fastmap($sr_name, $seq_region_start, $seq_region_end, $seq_region_strand, $sr_cs);
       }
 
-    } ## end if ($dest_slice->is_circular...)
+      #skip features that map to gaps or coord system boundaries
+      next FEATURE if (!defined($seq_region_id));
 
-    } else { # Negative strand
-
-      my $start = $dest_slice_end - $seq_region_end + 1;
-      my $end = $dest_slice_end - $seq_region_start + 1;
-
-      if ($dest_slice->is_circular()) {
-
-        if ($dest_slice_start > $dest_slice_end) { 
-    # slice spans origin or replication
-
-    if ($seq_region_start >= $dest_slice_start) {
-      $end += $seq_region_len;
-      $start += $seq_region_len 
-        if $seq_region_end > $dest_slice_start;
-
-    } elsif ($seq_region_start <= $dest_slice_end) {
-      # do nothing
-    } elsif ($seq_region_end >= $dest_slice_start) {
-      $start += $seq_region_len;
-      $end += $seq_region_len;
-
-    } elsif ($seq_region_end <= $dest_slice_end) {
-
-      $end += $seq_region_len
-        if $end < 0;
-
-    } elsif ($seq_region_start > $seq_region_end) {
-      
-      $end += $seq_region_len;
-
-    } else {
-      
+      #get a slice in the coord system we just mapped to
+      $slice = $slice_hash{"ID:".$seq_region_id} ||= $sa->fetch_by_seq_region_id($seq_region_id);
     }
-      
-        } else {
 
-    if ($seq_region_start <= $dest_slice_end and $seq_region_end >= $dest_slice_start) {
-      # do nothing
-    } elsif ($seq_region_start > $seq_region_end) {
-      if ($seq_region_start <= $dest_slice_end) {
-    
-        $start -= $seq_region_len;
+    #
+    # If a destination slice was provided convert the coords.
+    #
+    if (defined($dest_slice)) {
+      my $seq_region_len = $dest_slice->seq_region_length();
 
-      } elsif ($seq_region_end >= $dest_slice_start) {
-        $end += $seq_region_len;
+      if ( $dest_slice_strand == 1 ) {
+        $seq_region_start = $seq_region_start - $dest_slice_start + 1;
+        $seq_region_end   = $seq_region_end - $dest_slice_start + 1;
 
-      } else {
-        
-      }
-    }
-        }
+        if ( $dest_slice->is_circular ) {
+        # Handle circular chromosomes.
 
-      }
+          if ( $seq_region_start > $seq_region_end ) {
+            # Looking at a feature overlapping the chromosome origin.
 
-      $seq_region_start = $start;
-      $seq_region_end = $end;
-      $seq_region_strand *= -1;
-
-    } ## end else [ if ($dest_slice_strand...)]
-
-  # Throw away features off the end of the requested slice or on
-          # different seq_region.
-          if (   $seq_region_end < 1
-                  || $seq_region_start > $dest_slice_length
-                  || ($dest_slice_sr_id ne $seq_region_id))
-          {
-                next FEATURE;
+            if ( $seq_region_end > $dest_slice_start ) {
+              # Looking at the region in the beginning of the chromosome
+              $seq_region_start -= $seq_region_len;
+            }
+            if ( $seq_region_end < 0 ) {
+              $seq_region_end += $seq_region_len;
+            }
+          } else {
+            if ($dest_slice_start > $dest_slice_end && $seq_region_end < 0) {
+              # Looking at the region overlapping the chromosome
+              # origin and a feature which is at the beginning of the
+              # chromosome.
+              $seq_region_start += $seq_region_len;
+              $seq_region_end   += $seq_region_len;
+            }
           }
+        }
+      } else {
 
-    $slice = $dest_slice;
-  } ## end if (defined($dest_slice...))
+        my $start = $dest_slice_end - $seq_region_end + 1;
+        my $end = $dest_slice_end - $seq_region_start + 1;
 
-  my $display_xref;
+        if ($dest_slice->is_circular()) {
 
-  if ($display_xref_id) {
-    $display_xref = Bio::EnsEMBL::DBEntry->new_fast({
-      'dbID'            => $display_xref_id,
-      'adaptor'         => $dbEntryAdaptor,
-      'display_id'      => $xref_display_id,
-      'primary_id'      => $xref_primary_acc,
-      'version'         => $xref_version,
-      'description'     => $xref_desc,
-      'release'         => $external_release,
-      'dbname'          => $external_db,
-      'db_display_name' => $external_db_name,
-      'info_type'       => $info_type,
-      'info_text'       => $info_text});
-    $display_xref->status($external_status);
-  }
+          if ($dest_slice_start > $dest_slice_end) {
+            # slice spans origin or replication
 
-  # Finally, create the new Gene.
-  push(
-    @genes,
-    $self->_create_feature_fast(
-    'Bio::EnsEMBL::Gene', {
-     'analysis'                => $analysis,
-     'biotype'                 => $biotype,
-     'start'                   => $seq_region_start,
-     'end'                     => $seq_region_end,
-     'strand'                  => $seq_region_strand,
-     'adaptor'                 => $self,
-     'slice'                   => $slice,
-     'dbID'                    => $gene_id,
-     'stable_id'               => $stable_id,
-     'version'                 => $version,
-     'created_date'            => $created_date || undef,
-     'modified_date'           => $modified_date || undef,
-     'description'             => $gene_description,
-     'external_name'           => undef,                      # will use display_id
-                                                              # from display_xref
-     'external_db'             => $external_db,
-     'external_status'         => $external_status,
-     'display_xref'            => $display_xref,
-     'status'                  => $status,
-     'source'                  => $source,
-     'is_current'              => $is_current,
-     'canonical_transcript_id' => $canonical_transcript_id}));
+            if ($seq_region_start >= $dest_slice_start) {
+              $end += $seq_region_len;
+              $start += $seq_region_len if $seq_region_end > $dest_slice_start;
+
+            } elsif ($seq_region_start <= $dest_slice_end) {
+              # do nothing
+            } elsif ($seq_region_end >= $dest_slice_start) {
+              $start += $seq_region_len;
+              $end += $seq_region_len;
+
+            } elsif ($seq_region_end <= $dest_slice_end) {
+              $end += $seq_region_len if $end < 0;
+
+            } elsif ($seq_region_start > $seq_region_end) {
+              $end += $seq_region_len;
+            }
+
+          } else {
+
+            if ($seq_region_start <= $dest_slice_end and $seq_region_end >= $dest_slice_start) {
+              # do nothing
+            } elsif ($seq_region_start > $seq_region_end) {
+              if ($seq_region_start <= $dest_slice_end) {
+                $start -= $seq_region_len;
+              } elsif ($seq_region_end >= $dest_slice_start) {
+                $end += $seq_region_len;
+              }
+            }
+          }
+        }
+
+        $seq_region_start = $start;
+        $seq_region_end = $end;
+        $seq_region_strand *= -1;
+
+      } ## end else [ if ( $dest_slice_strand...)]
+
+      # Throw away features off the end of the requested slice or on
+      # different seq_region.
+      if ($seq_region_end < 1
+          || $seq_region_start > $dest_slice_length
+          || ($dest_slice_sr_id != $seq_region_id)) {
+        next FEATURE;
+      }
+      $slice = $dest_slice;
+    }
+
+    my $display_xref;
+
+    if ($display_xref_id) {
+      $display_xref = Bio::EnsEMBL::DBEntry->new_fast({
+        'dbID'            => $display_xref_id,
+        'adaptor'         => $dbEntryAdaptor,
+        'display_id'      => $xref_display_label,
+        'primary_id'      => $xref_primary_acc,
+        'version'         => $xref_version,
+        'description'     => $xref_description,
+        'release'         => $external_release,
+        'dbname'          => $external_db,
+        'db_display_name' => $external_db_name,
+        'info_type'       => $info_type,
+        'info_text'       => $info_text
+      });
+      $display_xref->status($external_status);
+    }
+
+    # Finally, create the new Gene.
+    push(
+      @genes,
+      $self->_create_feature_fast(
+      'Bio::EnsEMBL::Gene', {
+       'analysis'                => $analysis,
+       'biotype'                 => $biotype,
+       'start'                   => $seq_region_start,
+       'end'                     => $seq_region_end,
+       'strand'                  => $seq_region_strand,
+       'adaptor'                 => $self,
+       'slice'                   => $slice,
+       'dbID'                    => $gene_id,
+       'stable_id'               => $stable_id,
+       'version'                 => $version,
+       'created_date'            => $created_date || undef,
+       'modified_date'           => $modified_date || undef,
+       'description'             => $gene_description,
+       'external_name'           => undef,                      # will use display_id
+                                                                # from display_xref
+       'external_db'             => $external_db,
+       'external_status'         => $external_status,
+       'display_xref'            => $display_xref,
+       'status'                  => $status,
+       'source'                  => $source,
+       'is_current'              => $is_current,
+       'canonical_transcript_id' => $canonical_transcript_id}));
 
   } ## end while ($sth->fetch())
 

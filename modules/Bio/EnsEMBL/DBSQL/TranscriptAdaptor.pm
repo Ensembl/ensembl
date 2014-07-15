@@ -130,7 +130,7 @@ sub _columns {
      'x.xref_id',           'x.display_label',
      'x.dbprimary_acc',     'x.version',
      'x.description',       'x.info_type',
-     'x.info_text'
+     'x.info_text',         'exdb.db_release'
     );
 
   $self->schema_version > 74 and push @columns, 't.source';
@@ -409,28 +409,58 @@ sub fetch_all_by_Slice {
   }
 
   # get extent of region spanned by transcripts
-  my ( $min_start, $max_end );
-  foreach my $tr (@$transcripts) {
-    if ( !defined($min_start) || $tr->seq_region_start() < $min_start )
-    {
-      $min_start = $tr->seq_region_start();
-    }
-    if ( !defined($max_end) || $tr->seq_region_end() > $max_end ) {
-      $max_end = $tr->seq_region_end();
-    }
-  }
-
+  my ($min_start, $max_end);
   my $ext_slice;
 
-  if ( $min_start >= $slice->start() && $max_end <= $slice->end() ) {
-    $ext_slice = $slice;
+  unless ($slice->is_circular()) {
+    foreach my $t (@$transcripts) {
+      if (!defined($min_start) || $t->seq_region_start() < $min_start) {
+	$min_start = $t->seq_region_start();
+      }
+      if (!defined($max_end) || $t->seq_region_end() > $max_end) {
+	$max_end = $t->seq_region_end();
+      }
+    }
+
+    if ($min_start >= $slice->start() && $max_end <= $slice->end()) {
+      $ext_slice = $slice;
+    } else {
+      my $sa = $self->db()->get_SliceAdaptor();
+      $ext_slice = $sa->fetch_by_region($slice->coord_system->name(), $slice->seq_region_name(), $min_start, $max_end, $slice->strand(), $slice->coord_system->version());
+    }
+
   } else {
+    # feature might be crossing the origin of replication (i.e. seq_region_start > seq_region_end)
+    # the computation of min_start|end based on seq_region_start|end is not safe
+    # use feature start/end relative to the slice instead
+    my ($min_start_feature, $max_end_feature);
+    foreach my $t (@$transcripts) {
+      if (!defined($min_start) || ($t->start >= 0 && $t->start() < $min_start)) {
+  	$min_start = $t->start();
+  	$min_start_feature = $t;
+      }
+      if (!defined($max_end) || ($t->end() >= 0 && $t->end() > $max_end)) {
+  	$max_end = $t->end();
+  	$max_end_feature = $t;
+      }
+    }
+    
+    # now we can reassign min_start|end to seq_region_start|end of
+    # the feature which spans the largest region
+    $min_start = $min_start_feature->seq_region_start();
+    $max_end = $max_end_feature->seq_region_end();
+
     my $sa = $self->db()->get_SliceAdaptor();
-    $ext_slice = $sa->fetch_by_region(
-      $slice->coord_system->name(), $slice->seq_region_name(),
-      $min_start,                   $max_end,
-      $slice->strand(),             $slice->coord_system->version() );
+    $ext_slice = 
+      $sa->fetch_by_region($slice->coord_system->name(), 
+  			   $slice->seq_region_name(), 
+  			   $min_start, 
+  			   $max_end, 
+  			   $slice->strand(), 
+  			   $slice->coord_system->version());
   }
+
+
 
   # associate exon identifiers with transcripts
 
@@ -973,17 +1003,47 @@ sub store {
   #
   # Store transcript
   #
-  my $store_transcript_sql = 
-    sprintf "INSERT INTO transcript SET gene_id = ?, analysis_id = ?, seq_region_id = ?, seq_region_start = ?, seq_region_end = ?, seq_region_strand = ?,%s biotype = ?, status = ?, description = ?, is_current = ?, canonical_translation_id = ?", ($self->schema_version > 74)?" source = ?,":'';
 
+#  my $store_transcript_sql = 
+#    sprintf "INSERT INTO transcript SET gene_id = ?, analysis_id = ?, seq_region_id = ?, seq_region_start = ?, seq_region_end = ?, seq_region_strand = ?,%s biotype = ?, status = ?, description = ?, is_current = ?, canonical_translation_id = ?", ($self->schema_version > 74)?" source = ?,":'';
+
+  my @columns = qw(
+            gene_id
+            analysis_id
+            seq_region_id
+            seq_region_start
+            seq_region_end
+            seq_region_strand
+  );
+
+  push @columns, 'source' if ($self->schema_version > 74);
+
+  push @columns, qw(
+            biotype
+            status
+            description
+            is_current
+            canonical_translation_id
+  );
+
+  my @canned_columns;
+  my @canned_values;
 
   if ( defined( $transcript->stable_id() ) ) {
+      push @columns, 'stable_id', 'version';
 
       my $created = $self->db->dbc->from_seconds_to_date($transcript->created_date());
       my $modified = $self->db->dbc->from_seconds_to_date($transcript->modified_date());
-      $store_transcript_sql .= ", stable_id = ?, version = ?, created_date = " . $created . " , modified_date = " . $modified;
 
+      push @canned_columns, 'created_date', 'modified_date';
+      push @canned_values,  $created,       $modified;
   }
+
+  my $columns = join(', ', @columns, @canned_columns);
+  my $values  = join(', ', ('?') x @columns, @canned_values);
+  my $store_transcript_sql = qq(
+        INSERT INTO transcript ( $columns ) VALUES ( $values )
+  );
 
   my $tst = $self->prepare($store_transcript_sql);
   my $i = 0;
@@ -1015,7 +1075,7 @@ sub store {
   $tst->execute();
   $tst->finish();
 
-  my $transc_dbID = $tst->{'mysql_insertid'};
+  my $transc_dbID = $self->last_insert_id('transcript_id', undef, 'transcript');
 
   #
   # Store translation
@@ -1242,8 +1302,9 @@ sub store {
 sub get_Interpro_by_transid {
    my ($self,$trans_stable_id) = @_;
 
+   my $straight_join = $self->_can_straight_join ? 'STRAIGHT_JOIN' : '';
    my $sth = $self->prepare(qq(
-      SELECT  STRAIGHT_JOIN i.interpro_ac, x.description
+      SELECT  ${straight_join} i.interpro_ac, x.description
       FROM    transcript t,
               translation tl,
               protein_feature pf,
@@ -1454,7 +1515,6 @@ sub remove {
   $sth->finish();
 
 
-  $self->_pre_remove($transcript);
   $sth = $self->prepare( "DELETE FROM transcript
                           WHERE transcript_id = ?" );
   $sth->bind_param(1, $transcript->dbID, SQL_INTEGER);
@@ -1588,8 +1648,8 @@ sub _objs_from_sth {
   # a fair bit of gymnastics is used.
   #
 
-  my $sa = $self->db()->get_SliceAdaptor();
-  my $aa = $self->db->get_AnalysisAdaptor();
+  my $sa             = $self->db()->get_SliceAdaptor();
+  my $aa             = $self->db()->get_AnalysisAdaptor();
   my $dbEntryAdaptor = $self->db()->get_DBEntryAdaptor();
 
   my @transcripts;
@@ -1599,58 +1659,43 @@ sub _objs_from_sth {
   my %sr_cs_hash;
 
   my (
-    $transcript_id,  $seq_region_id,      $seq_region_start,
-    $seq_region_end, $seq_region_strand,  $analysis_id,
-    $gene_id,        $is_current,         $stable_id,
-    $version,        $created_date,       $modified_date,
-    $description,    $biotype,            $status,
-    $external_db,    $external_status,    $external_db_name,
-    $xref_id,        $xref_display_label, $xref_primary_acc,
-    $xref_version,   $xref_description,   $xref_info_type,
-    $xref_info_text, $source
+    $transcript_id,   $seq_region_id,      $seq_region_start,
+    $seq_region_end,  $seq_region_strand,  $analysis_id,
+    $gene_id,         $is_current,         $stable_id,
+    $version,         $created_date,       $modified_date,
+    $description,     $biotype,            $status,
+    $external_db,     $external_status,    $external_db_name,
+    $display_xref_id, $xref_display_label, $xref_primary_acc,
+    $xref_version,    $xref_description,   $xref_info_type,
+    $xref_info_text,  $external_release,   $source
   );
 
   if ($self->schema_version() > 74) {
     $sth->bind_columns(
-		       \(
-			 $transcript_id,  $seq_region_id,      $seq_region_start,
-			 $seq_region_end, $seq_region_strand,  $analysis_id,
-			 $gene_id,        $is_current,         $stable_id,
-			 $version,        $created_date,       $modified_date,
-			 $description,    $biotype,            $status,
-			 $external_db,    $external_status,    $external_db_name,
-			 $xref_id,        $xref_display_label, $xref_primary_acc,
-			 $xref_version,   $xref_description,   $xref_info_type,
-			 $xref_info_text, $source
-			) );
+           \(
+       $transcript_id,   $seq_region_id,      $seq_region_start,
+       $seq_region_end,  $seq_region_strand,  $analysis_id,
+       $gene_id,         $is_current,         $stable_id,
+       $version,         $created_date,       $modified_date,
+       $description,     $biotype,            $status,
+       $external_db,     $external_status,    $external_db_name,
+       $display_xref_id, $xref_display_label, $xref_primary_acc,
+       $xref_version,    $xref_description,   $xref_info_type,
+       $xref_info_text,  $external_release,   $source
+      ) );
   } else {
     $sth->bind_columns(
-		       \(
-			 $transcript_id,  $seq_region_id,      $seq_region_start,
-			 $seq_region_end, $seq_region_strand,  $analysis_id,
-			 $gene_id,        $is_current,         $stable_id,
-			 $version,        $created_date,       $modified_date,
-			 $description,    $biotype,            $status,
-			 $external_db,    $external_status,    $external_db_name,
-			 $xref_id,        $xref_display_label, $xref_primary_acc,
-			 $xref_version,   $xref_description,   $xref_info_type,
-			 $xref_info_text
-			) );    
-  }
-
-  my $asm_cs;
-  my $cmp_cs;
-  my $asm_cs_vers;
-  my $asm_cs_name;
-  my $cmp_cs_vers;
-  my $cmp_cs_name;
-  if($mapper) {
-    $asm_cs = $mapper->assembled_CoordSystem();
-    $cmp_cs = $mapper->component_CoordSystem();
-    $asm_cs_name = $asm_cs->name();
-    $asm_cs_vers = $asm_cs->version();
-    $cmp_cs_name = $cmp_cs->name();
-    $cmp_cs_vers = $cmp_cs->version();
+           \(
+       $transcript_id,   $seq_region_id,      $seq_region_start,
+       $seq_region_end,  $seq_region_strand,  $analysis_id,
+       $gene_id,         $is_current,         $stable_id,
+       $version,         $created_date,       $modified_date,
+       $description,     $biotype,            $status,
+       $external_db,     $external_status,    $external_db_name,
+       $display_xref_id, $xref_display_label, $xref_primary_acc,
+       $xref_version,    $xref_description,   $xref_info_type,
+       $xref_info_text,  $external_release
+      ) );    
   }
 
   my $dest_slice_start;
@@ -1660,84 +1705,65 @@ sub _objs_from_sth {
   my $dest_slice_cs;
   my $dest_slice_sr_name;
   my $dest_slice_sr_id;
-
   my $asma;
-  if($dest_slice) {
-    $dest_slice_start  = $dest_slice->start();
-    $dest_slice_end    = $dest_slice->end();
-    $dest_slice_strand = $dest_slice->strand();
-    $dest_slice_length = $dest_slice->length();
-    $dest_slice_cs     = $dest_slice->coord_system();
+
+  if ($dest_slice) {
+    $dest_slice_start   = $dest_slice->start();
+    $dest_slice_end     = $dest_slice->end();
+    $dest_slice_strand  = $dest_slice->strand();
+    $dest_slice_length  = $dest_slice->length();
+    $dest_slice_cs      = $dest_slice->coord_system();
     $dest_slice_sr_name = $dest_slice->seq_region_name();
     $dest_slice_sr_id   = $dest_slice->get_seq_region_id();
-    $asma              = $self->db->get_AssemblyMapperAdaptor();
+    $asma               = $self->db->get_AssemblyMapperAdaptor();
   }
 
   FEATURE: while($sth->fetch()) {
 
     #get the analysis object
-    my $analysis = $analysis_hash{$analysis_id} ||=
-      $aa->fetch_by_dbID($analysis_id);
+    my $analysis = $analysis_hash{$analysis_id} ||= $aa->fetch_by_dbID($analysis_id);
+    $analysis_hash{$analysis_id} = $analysis;
+
     #need to get the internal_seq_region, if present
     $seq_region_id = $self->get_seq_region_id_internal($seq_region_id);
     my $slice = $slice_hash{"ID:".$seq_region_id};
-    my $dest_mapper = $mapper;
 
-    if(!$slice) {
-      $slice = $sa->fetch_by_seq_region_id($seq_region_id);
+    if (!$slice) {
+      $slice                            = $sa->fetch_by_seq_region_id($seq_region_id);
       $slice_hash{"ID:".$seq_region_id} = $slice;
-      $sr_name_hash{$seq_region_id} = $slice->seq_region_name();
-      $sr_cs_hash{$seq_region_id} = $slice->coord_system();
+      $sr_name_hash{$seq_region_id}     = $slice->seq_region_name();
+      $sr_cs_hash{$seq_region_id}       = $slice->coord_system();
     }
 
     #obtain a mapper if none was defined, but a dest_seq_region was
-    if(!$dest_mapper && $dest_slice && 
-       !$dest_slice_cs->equals($slice->coord_system)) {
-      $dest_mapper = $asma->fetch_by_CoordSystems($dest_slice_cs,
-                                                 $slice->coord_system);
-      $asm_cs = $dest_mapper->assembled_CoordSystem();
-      $cmp_cs = $dest_mapper->component_CoordSystem();
-      $asm_cs_name = $asm_cs->name();
-      $asm_cs_vers = $asm_cs->version();
-      $cmp_cs_name = $cmp_cs->name();
-      $cmp_cs_vers = $cmp_cs->version();
+    if(!$mapper && $dest_slice && !$dest_slice_cs->equals($slice->coord_system)) {
+      $mapper = $asma->fetch_by_CoordSystems($dest_slice_cs, $slice->coord_system);
     }
 
     my $sr_name = $sr_name_hash{$seq_region_id};
     my $sr_cs   = $sr_cs_hash{$seq_region_id};
+
     #
-    # remap the feature coordinates to another coord system 
+    # remap the feature coordinates to another coord system
     # if a mapper was provided
     #
-    if($dest_mapper) {
 
-      if (defined $dest_slice && $dest_mapper->isa('Bio::EnsEMBL::ChainedAssemblyMapper')  ) {
-	    ( $seq_region_id,  $seq_region_start,
-	      $seq_region_end, $seq_region_strand )
-		=
-		$dest_mapper->map( $sr_name, $seq_region_start, $seq_region_end,
-                          $seq_region_strand, $sr_cs, 1, $dest_slice);
+    if ($mapper) {
+
+      if (defined $dest_slice && $mapper->isa('Bio::EnsEMBL::ChainedAssemblyMapper') ) {
+        ($seq_region_id, $seq_region_start, $seq_region_end, $seq_region_strand) =
+         $mapper->map($sr_name, $seq_region_start, $seq_region_end, $seq_region_strand, $sr_cs, 1, $dest_slice);
 
       } else {
-
-	    ( $seq_region_id,  $seq_region_start,
-	      $seq_region_end, $seq_region_strand )
-		= $dest_mapper->fastmap( $sr_name, $seq_region_start,
-                                 $seq_region_end, $seq_region_strand,
-                                 $sr_cs );
+        ($seq_region_id, $seq_region_start, $seq_region_end, $seq_region_strand) =
+         $mapper->fastmap($sr_name, $seq_region_start, $seq_region_end, $seq_region_strand, $sr_cs);
       }
 
       #skip features that map to gaps or coord system boundaries
-      next FEATURE if(!defined($seq_region_id));
+      next FEATURE if (!defined($seq_region_id));
 
       #get a slice in the coord system we just mapped to
-      if($asm_cs == $sr_cs || ($cmp_cs != $sr_cs && $asm_cs->equals($sr_cs))) {
-        $slice = $slice_hash{"ID:".$seq_region_id} ||=
-          $sa->fetch_by_seq_region_id($seq_region_id);
-      } else {
-        $slice = $slice_hash{"ID:".$seq_region_id} ||=
-          $sa->fetch_by_seq_region_id($seq_region_id);
-      }
+      $slice = $slice_hash{"ID:".$seq_region_id} ||= $sa->fetch_by_seq_region_id($seq_region_id);
     }
 
     #
@@ -1751,120 +1777,109 @@ sub _objs_from_sth {
         $seq_region_end   = $seq_region_end - $dest_slice_start + 1;
 
         if ( $dest_slice->is_circular ) {
+        # Handle circular chromosomes.
+
           if ( $seq_region_start > $seq_region_end ) {
-            # Looking at a feature overlapping the chromsome origin.
+            # Looking at a feature overlapping the chromosome origin.
+
             if ( $seq_region_end > $dest_slice_start ) {
               # Looking at the region in the beginning of the chromosome
-              $seq_region_start -= $dest_slice->seq_region_length();
+              $seq_region_start -= $seq_region_len;
             }
             if ( $seq_region_end < 0 ) {
-              $seq_region_end += $dest_slice->seq_region_length();
+              $seq_region_end += $seq_region_len;
             }
           } else {
-            if (    $dest_slice_start > $dest_slice_end
-                 && $seq_region_end < 0 )
-            {
+            if ($dest_slice_start > $dest_slice_end && $seq_region_end < 0) {
               # Looking at the region overlapping the chromosome
               # origin and a feature which is at the beginning of the
               # chromosome.
-              $seq_region_start += $dest_slice->seq_region_length();
-              $seq_region_end   += $dest_slice->seq_region_length();
+              $seq_region_start += $seq_region_len;
+              $seq_region_end   += $seq_region_len;
             }
           }
         }
       } else {
-	my $start = $dest_slice_end - $seq_region_end + 1;
-	my $end = $dest_slice_end - $seq_region_start + 1;
 
-	if ($dest_slice->is_circular()) {
+        my $start = $dest_slice_end - $seq_region_end + 1;
+        my $end = $dest_slice_end - $seq_region_start + 1;
 
-	  if ($dest_slice_start > $dest_slice_end) { 
-	    # slice spans origin or replication
+        if ($dest_slice->is_circular()) {
 
-	    if ($seq_region_start >= $dest_slice_start) {
-	      $end += $seq_region_len;
-	      $start += $seq_region_len 
-		if $seq_region_end > $dest_slice_start;
+          if ($dest_slice_start > $dest_slice_end) {
+            # slice spans origin or replication
 
-	    } elsif ($seq_region_start <= $dest_slice_end) {
-	      # do nothing
-	    } elsif ($seq_region_end >= $dest_slice_start) {
-	      $start += $seq_region_len;
-	      $end += $seq_region_len;
+            if ($seq_region_start >= $dest_slice_start) {
+              $end += $seq_region_len;
+              $start += $seq_region_len if $seq_region_end > $dest_slice_start;
 
-	    } elsif ($seq_region_end <= $dest_slice_end) {
+            } elsif ($seq_region_start <= $dest_slice_end) {
+              # do nothing
+            } elsif ($seq_region_end >= $dest_slice_start) {
+              $start += $seq_region_len;
+              $end += $seq_region_len;
 
-	      $end += $seq_region_len
-		if $end < 0;
+            } elsif ($seq_region_end <= $dest_slice_end) {
+              $end += $seq_region_len if $end < 0;
 
-	    } elsif ($seq_region_start > $seq_region_end) {
-		  
-	      $end += $seq_region_len;
+            } elsif ($seq_region_start > $seq_region_end) {
+              $end += $seq_region_len;
+            }
 
-	    } else {
-		  
-	    }
-      
-	  } else {
+          } else {
 
-	    if ($seq_region_start <= $dest_slice_end and $seq_region_end >= $dest_slice_start) {
-	      # do nothing
-	    } elsif ($seq_region_start > $seq_region_end) {
-	      if ($seq_region_start <= $dest_slice_end) {
-	  
-		$start -= $seq_region_len;
+            if ($seq_region_start <= $dest_slice_end and $seq_region_end >= $dest_slice_start) {
+              # do nothing
+            } elsif ($seq_region_start > $seq_region_end) {
+              if ($seq_region_start <= $dest_slice_end) {
+                $start -= $seq_region_len;
+              } elsif ($seq_region_end >= $dest_slice_start) {
+                $end += $seq_region_len;
+              }
+            }
+          }
+        }
 
-	      } elsif ($seq_region_end >= $dest_slice_start) {
-		$end += $seq_region_len;
-
-	      } else {
-		    
-	      }
-	    }
-	  }
-
-	}
-
-	$seq_region_start = $start;
-	$seq_region_end = $end;
-	$seq_region_strand *= -1;
+        $seq_region_start = $start;
+        $seq_region_end = $end;
+        $seq_region_strand *= -1;
 
       } ## end else [ if ( $dest_slice_strand...)]
 
       # Throw away features off the end of the requested slice or on
       # different seq_region.
-      if (   $seq_region_end < 1
-	     || $seq_region_start > $dest_slice_length
-	     || ($dest_slice_sr_id ne $seq_region_id))
-	{
-	  next FEATURE;
-	}
-      
+      if ($seq_region_end < 1
+          || $seq_region_start > $dest_slice_length
+          || ($dest_slice_sr_id != $seq_region_id)) {
+        next FEATURE;
+      }
       $slice = $dest_slice;
     }
 
     my $display_xref;
 
-    if ($xref_id) {
+    if ($display_xref_id) {
       $display_xref = Bio::EnsEMBL::DBEntry->new_fast( {
-          'dbID'            => $xref_id,
+          'dbID'            => $display_xref_id,
+          'adaptor'         => $dbEntryAdaptor,
           'display_id'      => $xref_display_label,
           'primary_id'      => $xref_primary_acc,
           'version'         => $xref_version,
           'description'     => $xref_description,
-          'info_type'       => $xref_info_type,
-          'info_text'       => $xref_info_text,
-          'adaptor'         => $dbEntryAdaptor,
+          'release'         => $external_release,
+          'dbname'          => $external_db,
           'db_display_name' => $external_db_name,
-          'dbname'          => $external_db
-      } );
+          'info_type'       => $xref_info_type,
+          'info_text'       => $xref_info_text
+      });
+      $display_xref->status($external_status);
     }
-
 
     # Finally, create the new Transcript.
     my $params = 
       {
        'analysis'              => $analysis,
+       'biotype'               => $biotype,
        'start'                 => $seq_region_start,
        'end'                   => $seq_region_end,
        'strand'                => $seq_region_strand,
@@ -1875,13 +1890,14 @@ sub _objs_from_sth {
        'version'               => $version,
        'created_date'          => $created_date || undef,
        'modified_date'         => $modified_date || undef,
+       'description'           => $description,
        'external_name'         => $xref_display_label,
-       'external_db'           => $external_db,
+
        'external_status'       => $external_status,
        'external_display_name' => $external_db_name,
+       'external_db'           => $external_db,
+       'external_status'       => $external_status,
        'display_xref'          => $display_xref,
-       'description'           => $description,
-       'biotype'               => $biotype,
        'status'                => $status,
        'is_current'            => $is_current,
        'edits_enabled'         => 1
@@ -1889,8 +1905,8 @@ sub _objs_from_sth {
     
     $self->schema_version > 74 and $params->{'source'} = $source;
     push( @transcripts, 
-	  $self->_create_feature_fast('Bio::EnsEMBL::Transcript', 
-				      $params) );
+    $self->_create_feature_fast(
+          'Bio::EnsEMBL::Transcript',$params) );
 
   }
 
