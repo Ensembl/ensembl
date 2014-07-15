@@ -19,7 +19,6 @@ use warnings;
 use Test::More;
 use Test::Warnings;
 use Test::Exception;
-use Data::Dump::Color qw/dump/;
 
 use Bio::EnsEMBL::Test::MultiTestDB;
 
