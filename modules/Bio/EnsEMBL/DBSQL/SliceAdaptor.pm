@@ -65,7 +65,7 @@ the creation of Slice objects.
   # include non-reference regions
   $slices = $slice_adaptor->fetch_all( 'toplevel', undef, 1 );
 
-  # include non-duplicate regions
+  # include duplicate regions
   $slices = $slice_adaptor->fetch_all( 'toplevel', undef, 0, 1 );
 
   # split up a list of slices into smaller slices
