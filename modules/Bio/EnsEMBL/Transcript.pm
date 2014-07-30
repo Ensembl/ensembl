@@ -878,13 +878,21 @@ sub spliced_seq {
         if (!defined ($ex->coding_region_start($self))) {
           $exon_seq = lc($exon_seq);
         } elsif ($ex->coding_region_start($self) > $ex->start()) {
-          my $length = $ex->coding_region_start($self) - $ex->start();
-          $padstr = lc substr ($exon_seq, 0, $length);
-          $exon_seq = lc (substr($exon_seq, 0, $length)) . substr($exon_seq, $length); 
+          my $forward_length = $ex->coding_region_start($self) - $ex->start();
+          my $reverse_length = $ex->end() - $ex->coding_region_start($self);
+          if ($ex->strand == 1) {
+            $exon_seq = lc (substr($exon_seq, 0, $forward_length)) . substr($exon_seq, $forward_length); 
+          } else {
+            $exon_seq = substr($exon_seq, 0, $reverse_length) . lc(substr($exon_seq, $reverse_length));
+          }
         } elsif ($ex->coding_region_end($self) < $ex->end()) {
-          my $length = $ex->coding_region_end($self) - $ex->start();
-          $padstr = lc substr ($exon_seq, $length + 1);
-          $exon_seq = substr($exon_seq, 0, $length+1) . lc substr($exon_seq, $length+1);
+          my $forward_length = $ex->coding_region_end($self) - $ex->start();
+          my $reverse_length = $ex->end() - $ex->coding_region_end($self);
+          if ($ex->strand == 1) {
+            $exon_seq = substr($exon_seq, 0, $forward_length+1) . lc(substr($exon_seq, $forward_length+1));
+          } else {
+            $exon_seq = lc(substr($exon_seq, 0, $reverse_length)) . substr($exon_seq, $reverse_length);
+          }
         }
       }
       $seq_string .= $exon_seq;
