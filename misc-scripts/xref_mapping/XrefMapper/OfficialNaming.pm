@@ -253,6 +253,7 @@ IEG
     my $gene_symbol_xref_id = undef;
     my $vega_clone_name = undef;
     my $clone_name = undef;
+    my $is_lrg = 0;
 
     ########################################
     # Get the vega data needed for this gene
@@ -287,7 +288,7 @@ IEG
     # If not found see if there is an LRG entry
     ############################################
     if(!defined($gene_symbol)){ # look for LRG
-      ($gene_symbol, $gene_symbol_xref_id) = $self->find_lrg_hgnc($gene_id);
+      ($gene_symbol, $gene_symbol_xref_id, $is_lrg) = $self->find_lrg_hgnc($gene_id);
     }
 
     ####################################################
@@ -352,7 +353,8 @@ IEG
       }
       $set_gene_display_xref_sth->execute($gene_symbol_xref_id, $gene_id);
 
-      $self->set_transcript_display_xrefs({ max_xref         => \$max_xref_id, 
+      if (!$is_lrg) {
+        $self->set_transcript_display_xrefs({ max_xref         => \$max_xref_id, 
                                             max_object       => \$max_object_xref_id,
                                             gene_id          =>  $gene_id,
 					    gene_symbol      => $gene_symbol,
@@ -365,6 +367,7 @@ IEG
 					    ens_clone_genes  => \%ens_clone_genes,
                                             tran_source      => $tran_source,
 					   });
+      }
     }
 
     if (!defined($gene_symbol)) { # use clone name 
@@ -1297,7 +1300,7 @@ sub find_lrg_hgnc{
 	  $gene_symbol_xref_id = $new_xref_id;
     }
   }
-  return ($gene_symbol, $gene_symbol_xref_id);
+  return ($gene_symbol, $gene_symbol_xref_id, 1);
 }
 
 #############################END LRG BIT ################################################

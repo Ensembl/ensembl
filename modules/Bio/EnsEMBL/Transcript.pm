@@ -2255,6 +2255,7 @@ sub swap_exons {
   my $arref = $self->{'_trans_exon_array'};
   for(my $i = 0; $i < @$arref; $i++) {
     if($arref->[$i] == $old_exon) {
+      $new_exon->add_supporting_features(@{$old_exon->get_all_supporting_features});
       $arref->[$i] = $new_exon;
       last;
     }
