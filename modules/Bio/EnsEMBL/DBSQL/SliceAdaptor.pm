@@ -222,18 +222,6 @@ sub fetch_by_region {
   if ( defined($coord_system_name) ) {
     $cs = $csa->fetch_by_name( $coord_system_name, $version );
 
-    ## REMOVE THESE THREE LINES WHEN STICKLEBACK DB IS FIXED!
-    ## Anne/ap5 (2007-10-09):
-    # The problem was that the stickleback genebuild called the
-    # chromosomes 'groups', which meant they weren't being picked out by
-    # the karyotype drawing code.  Apparently they are usually called
-    # 'groups' in the stickleback community, even though they really are
-    # chromosomes!
-
-    if ( !defined($cs) && $coord_system_name eq 'chromosome' ) {
-      $cs = $csa->fetch_by_name( 'group', $version );
-    }
-
     if ( !defined($cs) ) {
       throw( sprintf( "Unknown coordinate system:\n"
                         . "name='%s' version='%s'\n",
