@@ -80,7 +80,7 @@ the creation of Slice objects.
   }
   close FILE;
 
-  # retreive a list of slices from a file
+  # retrieve a list of slices from a file
   open( FILE, $filename ) or die("Could not open file $filename");
   while ( $name = <FILE> ) {
     chomp($name);

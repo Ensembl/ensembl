@@ -439,7 +439,7 @@ sub equals {
 
 =head2 canonical_transcript
 
-  Arg [1]    : (optional) Bio::EnsEMBL::Transcipt - canonical_transcript object
+  Arg [1]    : (optional) Bio::EnsEMBL::Transcript - canonical_transcript object
   Example    : $gene->canonical_transcript($canonical_transcript);
   Description: Getter/setter for the canonical_transcript
   Returntype : Bio::EnsEMBL::Transcript
@@ -1361,7 +1361,7 @@ sub get_all_DASFactories {
 =head2 get_all_DAS_Features
 
   Example    : $features = $prot->get_all_DAS_Features;
-  Description: Retreives a hash reference to a hash of DAS feature
+  Description: Retrieves a hash reference to a hash of DAS feature
                sets, keyed by the DNS, NOTE the values of this hash
                are an anonymous array containing:
                 (1) a pointer to an array of features

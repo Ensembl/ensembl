@@ -1043,10 +1043,10 @@ sub add_Attributes {
 =head2 get_all_SeqEdits
 
   Arg [1]    : ArrayRef $edits. Specify the name of the edits to fetch
-  Example    : my @seqeds = @{$transcript->get_all_SeqEdits()};
-               my @seqeds = @{$transcript->get_all_SeqEdits('_selenocysteine')};
+  Example    : my @seqeds = @{$translation->get_all_SeqEdits()};
+               my @seqeds = @{$translation->get_all_SeqEdits('_selenocysteine')};
   Description: Retrieves all post transcriptional sequence modifications for
-               this transcript.
+               this translation.
   Returntype : Bio::EnsEMBL::SeqEdit
   Exceptions : none
   Caller     : spliced_seq()
@@ -1078,7 +1078,7 @@ sub get_all_SeqEdits {
 
 =head2 get_all_selenocysteine_SeqEdits
 
-  Example    : my @edits = @{$transcript->get_all_selenocysteine_SeqEdits()};
+  Example    : my @edits = @{$translation->get_all_selenocysteine_SeqEdits()};
   Description: Retrieves all post transcriptional sequence modifications related
                to selenocysteine PTMs
   Returntype : Bio::EnsEMBL::SeqEdit
@@ -1198,7 +1198,7 @@ sub get_all_DASFactories {
 =head2 get_all_DAS_Features
 
   Example    : $features = $prot->get_all_DAS_Features;
-  Description: Retreives a hash reference to a hash of DAS feature
+  Description: Retrieves a hash reference to a hash of DAS feature
                sets, keyed by the DNS, NOTE the values of this hash
                are an anonymous array containing:
                 (1) a pointer to an array of features;

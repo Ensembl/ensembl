@@ -2061,7 +2061,7 @@ sub fetch_all_by_transcript_supporting_evidence {
 sub get_display_xref {
   my ($self, $transcript) = @_;
 	
-  deprecate("display_xref should be retreived from Transcript object directly.");
+  deprecate("display_xref should be retrieved from Transcript object directly.");
   
   if ( !defined $transcript ) {
     throw("Must call with a Transcript object");

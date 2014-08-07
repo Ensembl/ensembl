@@ -157,7 +157,7 @@ sub clear_cache {
                default = 1
   Example    : $dna = $seq_adptr->fetch_by_Slice_start_end_strand($slice, 1, 
                                                                   1000, -1);
-  Description: retrieves from db the sequence for this slice
+  Description: Retrieves from db the sequence for this slice
                uses AssemblyMapper to find the assembly
   Returntype : string 
   Exceptions : endBasePair should be less or equal to length of slice 

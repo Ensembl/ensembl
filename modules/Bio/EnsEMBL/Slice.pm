@@ -2993,7 +2993,7 @@ sub _mask_features {
 
   Arg [1]    : scalar $ticket_ids
   Example    : $slice->get_all_SearchFeatures('BLA_KpUwwWi5gY');
-  Description: Retreives all search features for stored blast
+  Description: Retrieves all search features for stored blast
                results for the ticket that overlap this slice
   Returntype : listref of Bio::EnsEMBL::SeqFeatures
   Exceptions : none
@@ -3032,7 +3032,7 @@ sub get_all_SearchFeatures {
 =head2 get_all_AssemblyExceptionFeatures
 
   Example    : $slice->get_all_AssemblyExceptionFeatures();
-  Description: Retreives all misc features which overlap this slice. If
+  Description: Retrieves all misc features which overlap this slice. If
                a set code is provided only features which are members of
                the requested set are returned.
   Returntype : listref of Bio::EnsEMBL::AssemblyExceptionFeatures
@@ -3057,7 +3057,7 @@ sub get_all_AssemblyExceptionFeatures {
   Arg [1]    : string $set (optional)
   Arg [2]    : string $database (optional)
   Example    : $slice->get_all_MiscFeatures('cloneset');
-  Description: Retreives all misc features which overlap this slice. If
+  Description: Retrieves all misc features which overlap this slice. If
                a set code is provided only features which are members of
                the requested set are returned.
   Returntype : listref of Bio::EnsEMBL::MiscFeatures
@@ -3295,7 +3295,7 @@ sub get_all_DASFeatures_dsn {
 
   Arg [1]    : none
   Example    : $features = $slice->get_all_DASFeatures;
-  Description: Retreives a hash reference to a hash of DAS feature
+  Description: Retrieves a hash reference to a hash of DAS feature
                sets, keyed by the DNS, NOTE the values of this hash
                are an anonymous array containing:
                 (1) a pointer to an array of features;

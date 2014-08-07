@@ -99,7 +99,7 @@ use vars qw(@ISA);
   Arg [-MODIFIED_DATE]:
         string - the date the transcript was last modified
   Arg [-DESCRIPTION]:
-        string - the transcipts description
+        string - the transcripts description
   Arg [-BIOTYPE]: 
         string - the biotype e.g. "protein_coding"
   Arg [-STATUS]:
@@ -393,7 +393,7 @@ sub add_DBEntry {
 =head2 get_all_supporting_features
 
   Example    : my @evidence = @{ $transcript->get_all_supporting_features };
-  Description: Retreives any supporting features added manually by 
+  Description: Retrieves any supporting features added manually by 
                calls to add_supporting_features.
   Returntype : Listref of Bio::EnsEMBL::FeaturePair objects
   Exceptions : none
@@ -2794,7 +2794,7 @@ sub get_all_DASFactories {
 
   Arg [1]    : none
   Example    : $features = $prot->get_all_DAS_Features;
-  Description: Retreives a hash reference to a hash of DAS feature
+  Description: Retrieves a hash reference to a hash of DAS feature
                sets, keyed by the DNS, NOTE the values of this hash
                are an anonymous array containing:
                 (1) a pointer to an array of features;

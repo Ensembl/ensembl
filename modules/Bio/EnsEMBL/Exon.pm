@@ -1032,7 +1032,7 @@ sub flush_supporting_features {
 
   Arg [1]    : none
   Example    : @evidence = @{$exon->get_all_supporting_features()};
-  Description: Retreives any supporting features added manually by 
+  Description: Retrieves any supporting features added manually by 
                calls to add_supporting_features. If no features have been
                added manually and this exon is in a database (i.e. it has
                an adaptor), fetch from the database
