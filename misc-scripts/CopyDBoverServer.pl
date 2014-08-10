@@ -1,12 +1,12 @@
 #!/usr/bin/env perl
 # Copyright [1999-2014] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
-# 
+#
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
-# 
+#
 #      http://www.apache.org/licenses/LICENSE-2.0
-# 
+#
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -96,7 +96,7 @@ Command line switches:
                     MACHINES. THESE ARE OPTIMIZED BY THE PRODUCTION
                     TEAM DURING THE RELEASE CYCLE. ATTEMPTING TO DO
                     THIS WILL CAUSE THE SCRIPT TO DIE.
-  
+
   --notargetflush   (Optional)
                     Skips table flushing on the target machine.
 
@@ -138,12 +138,15 @@ Command line switches:
 
   --udr             (Optional)
                     Switches to using UDR (https://github.com/LabAdvComp/UDR)
-		    as the transport binary rather than rsync. UDR is an rsync
-		    compatible replacement over UDP whose speed on local
-		    networks is approx. twice that of plain rsync.
+		                as the transport binary rather than rsync. UDR is an rsync
+		                compatible replacement over UDP whose speed on local
+		                networks is approx. twice that of plain rsync.
 
-		    udr must be on your PATH on the target source and target 
+		                udr must be on your PATH on the target source and target
                     machine.
+
+  --routines        (Optional)
+                    Also copies functions and procedures
 
   --help            (Optional)
                     Displays this text.
@@ -190,7 +193,7 @@ Input file format:
 
   Blank lines, lines containing only whitespaces, and lines starting
   with '#', are silently ignored.
-  
+
   Column 7 is used only when you need to copy the database to a location
   which is not the MySQL server's data directory.  The same rules
   applies; the mysqlens user must have write access to this directory
@@ -226,6 +229,7 @@ my $opt_innodb     = 1;    # Don't skip InnoDB by default
 my $opt_flushtarget = 1;
 my $opt_udr = 0; #Do not use udr for file transfer
 my $opt_tmpdir;
+my $opt_routines = 0;
 my ( $opt_source, $opt_target );
 
 if ( !GetOptions( 'pass=s'        => \$opt_password,
@@ -242,7 +246,8 @@ if ( !GetOptions( 'pass=s'        => \$opt_password,
                   'help!'         => \$opt_help,
                   'source=s'      => \$opt_source,
                   'target=s'      => \$opt_target,
-		  'udr'           => \$opt_udr,
+            		  'udr'           => \$opt_udr,
+                  'routines'      => \$opt_routines,
      ) ||
      ( !defined($opt_password) && !defined($opt_help) ) )
 {
@@ -312,8 +317,7 @@ foreach my $key ( keys(%executables) ) {
     if ( $loc_rc == 0 ) {
       chomp $possible_location;
       $executables{$key} = $possible_location;
-      printf( "Can not find '%s'; using '%s'\n",
-              $exe, $executables{$key} );
+      printf( "Can not find '%s'; using '%s'\n", $exe, $executables{$key} );
     }
 
     else {
@@ -322,26 +326,25 @@ foreach my $key ( keys(%executables) ) {
       my $final_rc = $? >> 8;
 
       if($final_rc == 0) {
-	chomp $final_which_output;
-	$executables{$key} = $final_which_output;
+        chomp $final_which_output;
+        $executables{$key} = $final_which_output;
         printf( "Can not find '%s'; using '%s'\n", $exe, $executables{$key} );
       }
       else {
 
-      if ( !$opt_check && $key eq 'myisamchk' ) {
-        print( "Can not find 'myisamchk' " .
-               "but --nocheck was specified so skipping\n" ),;
+        if ( !$opt_check && $key eq 'myisamchk' ) {
+          print( "Can not find 'myisamchk' " .
+              "but --nocheck was specified so skipping\n" ),;
+        }
+        else {
+          die(
+              sprintf(
+                "Can not find '%s' and neither 'which %s' nor 'locate %s' "
+                . "yields anything useful. Check your \$PATH",
+                $exe, $key, $key
+                ) );
+        }
       }
-      else {
-        die(
-           sprintf(
-             "Can not find '%s' and neither 'which %s' nor 'locate %s' "
-               . "yields anything useful. Check your \$PATH",
-             $exe, $key, $key
-           ) );
-      }
-      }
-
     }
   } ## end if ( $rc != 0 )
 } ## end foreach my $key ( keys(%executables...))
@@ -923,9 +926,6 @@ TABLE:
         }
       }
     } ## end foreach my $table (@tables)
-
-    if ($check_failed) { next TODO }
-
   } ## end else [ if ( !$opt_check ) ]
 
   ##------------------------------------------------------------------##
@@ -988,7 +988,7 @@ TABLE:
     $spec->{'status'} =
       sprintf( "SUCCESS: cleanup of '%s' may be needed", $staging_dir );
   }
-  
+
   # Flush tables on target.
   if ($opt_flushtarget) {
     print("FLUSHING TABLES ON TARGET...\n");
@@ -999,9 +999,57 @@ TABLE:
                                  'AutoCommit' => 0
                                } );
     $tdbh->do("use $target_db");
-    my $ddl = sprintf('FLUSH TABLES %s', join(q{, }, @tables)); 
+    my $ddl = sprintf('FLUSH TABLES %s', join(q{, }, @tables));
     $tdbh->do($ddl);
     $tdbh->disconnect();
+  }
+  #------------------------------------------------------------------##
+  ## COPYING FUNCTIONS AND PROCEDURES                                ##
+  ##-----------------------------------------------------------------##
+
+
+  if($opt_routines){
+    print( '-' x 31, ' Procedures ', '-' x 31, "\n" );
+    $target_dbh = DBI->connect( $target_dsn,
+                                'ensadmin',
+                                $opt_password, {
+                                'PrintError' => 1,
+                                'AutoCommit' => 0
+                             } );
+
+    $source_dbh = DBI->connect( $source_dsn,
+                                'ensadmin',
+                                $opt_password, {
+                                'PrintError' => 1,
+                                'AutoCommit' => 0
+                            } );
+
+    my $sql_select = "select name, type, returns, body from mysql.proc where db = '$source_db'";
+    my $proc_funcs = $source_dbh->selectall_hashref($sql_select, 'name') or die $source_dbh->errstr ;
+
+    foreach my $name (sort keys %{$proc_funcs}){
+
+      my $type = $proc_funcs->{$name}->{type};
+      if($type !~ /FUNCTION|PROCEDURE/){
+        warn "Copying '$type' not implemted. Skipping....";
+        next;
+      }
+
+      # Functions must return something, Procedures must not return anything
+      my $returns = '';
+      if($type eq 'FUNCTION') {
+        $returns = "RETURNS $proc_funcs->{$name}->{returns}";
+      }
+
+      my $sql = "CREATE $type $target_db.$name()\n $returns\n $proc_funcs->{$name}->{body}";
+      print "COPYING $proc_funcs->{$name}->{type} $name\n";
+      $target_dbh->do($sql) or die $source_dbh->errstr;
+    }
+    print "\n\t\tFinished copying functions and procedures\n";
+
+    $target_dbh->disconnect;
+    $source_dbh->disconnect;
+
   }
 
 } ## end foreach my $spec (@todo)
