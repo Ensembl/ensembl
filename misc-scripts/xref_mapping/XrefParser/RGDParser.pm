@@ -40,6 +40,14 @@ sub run {
   }
   $verbose |=0;
 
+  my $source_sql = "select source_id from source where name = 'RGD' and priority_description = 'direct_xref'";
+  my $sth = $self->dbi->prepare($source_sql);
+  $sth->execute();
+  my ($direct_source_id);
+  $sth->bind_columns(\$direct_source_id);
+  $sth->fetch();
+  $sth->finish();
+
   my $file = @{$files}[0];
 
   my $dbi = $self->dbi();
@@ -79,18 +87,22 @@ sub run {
     die ("GENBANK_NUCLEOTIDE is not the twentysixth element in the header but ".$linearr[23]." is.\\n");
   }
   if($linearr[29] ne "OLD_SYMBOL"){
-    die ("NAME is not the third element in the header\n$line\n");
+    die ("OLD_SYMBOL is not the 30th element in the header\n$line\n");
   }  
+  if($linearr[37] ne "ENSEMBL_ID"){
+    die ("ENSEMBL_ID is not the 38th element in the header\n$line\n");
+  }
 
   my $sql = "insert into synonym (xref_id, synonym) values (?, ?)";
   my $add_syn_sth = $dbi->prepare($sql);    
   
   my $count= 0;
+  my $ensembl_count = 0;
   my $mismatch = 0;
   my $syn_count = 0;
   while ( $line = $rgd_io->getline() ) {
     chomp $line;
-    my ($rgd, $symbol, $name, $refseq,$old_name) = (split (/\t/,$line))[0,1,2,23,29];
+    my ($rgd, $symbol, $name, $refseq,$old_name, $ensembl_id) = (split (/\t/,$line))[0,1,2,23,29, 37];
     my @nucs = split(/\;/,$refseq);
     my $done = 0;
     my $failed_list ="";
@@ -114,6 +126,25 @@ sub run {
 	    }
 	  }
 	}
+        if ($ensembl_id) {
+          my @ensembl_ids = split(/\;/, $ensembl_id);
+          $done = 1;
+          foreach my $id (@ensembl_ids) {
+            $ensembl_count++;
+            $self->add_to_direct_xrefs({ stable_id => $id,
+                                         type => 'gene',
+                                         acc => $rgd,
+                                         label => $symbol,
+                                         desc => $name,
+                                         source_id => $direct_source_id,
+                                         species_id => $species_id} );
+            my $xref_id = $self->get_xref($rgd, $direct_source_id, $species_id);
+            my @syns = split(/\;/, $old_name);
+            foreach my $syn(@syns) {
+              $add_syn_sth->execute($xref_id, $syn);
+            }
+          }
+        }
 	else{
 	  $failed_list .= " $nuc";
 	}
@@ -137,6 +168,7 @@ sub run {
   if($verbose){
     print "\t$count xrefs succesfully loaded and dependent on refseq\n";
     print "\t$mismatch xrefs added but with NO dependencies\n";
+    print "\t$ensembl_count direct xrefs successfully loaded\n";
     print "added $syn_count synonyms\n";
   }
   return 0;
