@@ -37,13 +37,14 @@ use base qw( XrefMapper::BasicMapper);
 #      ZebraFish (ZFIN_ID),
 #      Human (HGNC)
 #      Mouse (MGI)
+#      Rat (RGD)
 #      Pig (PIGGY)
 #         There is currently no official domain source for pig, but it has manual annotation
 #         We use PIGGY as a fake official naming source
 #
 #  1) So we find the best official name for each gene
 #     order for this is:-
-#               i)   official domain name source (HGNC, MGI, ZFIN_ID)
+#               i)   official domain name source (HGNC, MGI, ZFIN_ID, RGD)
 #               ii)  RFAM
 #               iii) miRBase
 #               iv)  Uniprot_gn
@@ -146,6 +147,11 @@ sub run {
     $self->biomart_fix("ZFIN_ID","Translation","Gene");
     $self->biomart_fix("ZFIN_ID","Transcript","Gene");
   }
+  if($dbname eq "RGD"){ # Copy RGD to Genes
+    $self->biomart_fix("RGD","Translation","Gene");
+    $self->biomart_fix("RGD","Transcript","Gene");
+  }
+
 
 
   ######################################################
@@ -319,12 +325,12 @@ IEG
 
     ##############################################
     # Finally if all else fails use the clone name
-    # but only for human, mouse and zebrafish
+    # but only for human, mouse, zebrafish and rat
     # as pig is special with no official naming source, we'd rather leave ensembl stable ids
     # than use ensembl clone names
     ##############################################
     if((!defined($gene_symbol)) and (!defined($vega_clone_name))){
-      if ($dbname eq 'HGNC' || $dbname eq 'MGI' || $dbname eq 'ZFIN_ID') {
+      if ($dbname eq 'HGNC' || $dbname eq 'MGI' || $dbname eq 'ZFIN_ID' || $dbname eq 'RGD') {
         $clone_name = $self->get_clone_name($gene_id, $ga, $dbname);
         if(defined($clone_name)){
           $clone_name =~ s/[.]\d+//;    #remove .number
@@ -401,7 +407,7 @@ IEG
 # Get offical name if it has one
 #
 # Search gene for dbname entries.
-# dbname (HGNC||MGI||ZFIN_ID depenedent on species
+# dbname (HGNC||MGI||ZFIN_ID|RGD) dependent on species
 #
 # Find the "best" one
 # Remove the lesser ones (set status to MULTI_DELETE for object_xref)
@@ -1312,7 +1318,7 @@ sub get_clone_name{
   my $gene= $ga->fetch_by_dbID($gene_id);
   my $slice = $gene->slice->sub_Slice($gene->start,$gene->end,$gene->strand);
   my $len = 0;
-  if($dbname ne "ZFIN_ID" && $dbname ne 'MGI' && $dbname ne "PIGGY"){
+  if($dbname ne "ZFIN_ID" && $dbname ne 'MGI' && $dbname ne "PIGGY" && $dbname ne 'RGD'){
     my $clone_projection = $slice->project('clone'); 
     foreach my $seg (@$clone_projection) {
       my $clone = $seg->to_Slice();
@@ -1335,7 +1341,7 @@ sub get_clone_name{
       }
     }
     $len = 0;
-    if($dbname ne "ZFIN_ID" && $dbname ne 'MGI' && $dbname ne "PIGGY"){
+    if($dbname ne "ZFIN_ID" && $dbname ne 'MGI' && $dbname ne "PIGGY" && $dbname ne 'RGD'){
       my $clone_projection = $super->project('clone');
       foreach my $seg (@$clone_projection) {
 	my $clone = $seg->to_Slice();
