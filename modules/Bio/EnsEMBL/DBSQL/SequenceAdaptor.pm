@@ -267,7 +267,7 @@ sub fetch_by_Slice_start_end_strand {
                                     $seq_slice->start, $seq_slice->length())};
 
      if(!defined $tmp_seq) {
-         throw('No sequence found for seq_region '.$seq_region_id.':'.$min);
+         throw('No sequence found for seq_region '.$seq_region_id.':'.$seq_slice->start);
      }
 
      #reverse compliment on negatively oriented slices
