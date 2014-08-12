@@ -423,6 +423,9 @@ sub create_xrefs {
         if($source =~ "RGD"){  #using RGD file now instead.
       	  next;
       	}
+        if($source =~ "CCDS"){
+          next;
+        }
       	if($source =~ "IPI"){
       	  next;
       	}
