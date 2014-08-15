@@ -2279,6 +2279,50 @@ sub swap_exons {
   }
 }
 
+=head2 exon_rank
+
+  Arg [1]    : Bio::EnsEMBL::Exon $Exon
+               Query exon
+  Example    : $rank = $transcript->exon_rank($exon);
+  Description: Returns the rank of an exon relative to the transcript
+  Returntype : none
+  Exceptions : Throws if the exon does not belong to the transcript
+  Caller     : General
+  Status     : Stable
+
+=cut
+
+sub exon_rank {
+  my ( $self, $exon ) = @_;
+
+  if (!defined( $self->{'_trans_exon_array'} )
+    && defined( $self->adaptor() ) )
+  {
+    $self->{'_trans_exon_array'} =
+      $self->adaptor()->db()->get_ExonAdaptor()
+      ->fetch_all_by_Transcript($self);
+  }
+
+  my $arref = $self->{'_trans_exon_array'};
+  my $rank;
+
+  if (!defined $arref) {
+    throw "Transcript does not have any exons";
+  }
+  for(my $i = 0; $i < @$arref; $i++) {
+    if($arref->[$i]->stable_id() eq $exon->stable_id()) {
+      $rank = $i+1;
+      last;
+    }
+  }
+
+ if (!defined $rank) {
+   throw "Exon does not belong to transcript";
+  }
+
+  return $rank;
+}
+
 
 =head2 equals
 
