@@ -740,7 +740,7 @@ sub coding_region_end {
 } ## end sub coding_region_end
 
 
-=head2 cdna_start
+=head2 rank
 
     Arg [1]     : Bio::EnsEMBL::Transcript $transcript
                   The transcript for which the exon rank
