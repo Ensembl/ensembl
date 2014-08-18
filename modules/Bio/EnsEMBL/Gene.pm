@@ -876,8 +876,7 @@ sub get_all_homologous_Genes {
 
   # Get the compara 'member' corresponding to self
   my $member_adaptor   = $compara_dba->get_adaptor('GeneMember');
-  my $query_member = $member_adaptor->fetch_by_source_stable_id
-      ("ENSEMBLGENE",$self->stable_id);
+  my $query_member = $member_adaptor->fetch_by_stable_id($self->stable_id);
   unless( $query_member ){ return $self->{'homologues'}->{$compara_species} };
 
   # Get the compara 'homologies' corresponding to 'member'
