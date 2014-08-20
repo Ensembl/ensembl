@@ -86,13 +86,14 @@ sub new {
 
   my $class = ref($proto) || $proto;
 
-  my ($idesc, $interpro_ac, $translation_id) = rearrange(['IDESC', 'INTERPRO_AC', 'TRANSLATION_ID'], @_);
+  my ($idesc, $ilabel, $interpro_ac, $translation_id) = rearrange(['IDESC', 'ILABEL', 'INTERPRO_AC', 'TRANSLATION_ID'], @_);
 
   my $self = $class->SUPER::new(@_);
 
   # the strand of protein features is always 0
   $self->{'strand'}         = 0;
   $self->{'idesc'}          = $idesc || '';
+  $self->{'ilabel'}         = $ilabel || '';
   $self->{'interpro_ac'}    = $interpro_ac || '';
   $self->{'translation_id'} = $translation_id || '';
 
@@ -132,6 +133,25 @@ sub idesc {
   my $self = shift;
   $self->{'idesc'} = shift if (@_);
   return $self->{'idesc'};
+}
+
+=head2 ilabel
+
+  Arg [1]    : (optional) string The interpro label
+  Example    : print $protein_feature->ilabel();
+  Description: Getter/Setter for the interpro label of this protein
+               feature.
+  Returntype : string
+  Exceptions : none
+  Caller     : general
+  Status     : Stable
+
+=cut
+
+sub ilabel {
+  my $self = shift;
+  $self->{'ilabel'} = shift if (@_);
+  return $self->{'ilabel'};
 }
 
 =head2 interpro_ac
@@ -185,7 +205,7 @@ sub summary_as_hash {
   my $self = shift;
   my %summary;
   $summary{'type'} = $self->analysis->db;
-  $summary{'ID'} = $self->display_id;
+  $summary{'id'} = $self->display_id;
   $summary{'start'} = $self->start,
   $summary{'end'} = $self->end,
   $summary{'interpro'} = $self->interpro_ac;

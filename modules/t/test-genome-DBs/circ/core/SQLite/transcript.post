@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX canonical_translation_idx ON transcript (canonical_translation_id);

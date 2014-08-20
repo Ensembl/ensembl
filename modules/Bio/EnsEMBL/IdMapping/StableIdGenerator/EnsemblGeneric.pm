@@ -263,7 +263,7 @@ sub is_valid {
   Description : Determines the version for a mapped stable Id. For Ensembl
                 genes, the rules for incrementing the version number are:
                     - exons: if exon sequence changed
-                    - transcript: if spliced exon sequence changed
+                    - transcript: if spliced exon sequence changed or if number of exons changed
                     - translation: if translated sequence changed
                     - gene: if any of its transcript changed
   Return type : String - the version to be used
@@ -284,8 +284,29 @@ sub calculate_version {
     if ( $s_obj->seq() ne $t_obj->seq() ) { ++$version }
   }
   elsif ( $s_obj->isa('Bio::EnsEMBL::IdMapping::TinyTranscript') ) {
+    my $change = 0;
     # increment version if spliced exon sequence changed
-    if ( $s_obj->seq_md5_sum() ne $t_obj->seq_md5_sum() ) { ++$version }
+    if ( $s_obj->seq_md5_sum() ne $t_obj->seq_md5_sum() ) { $change = 1 }
+
+    # Look for changes in exon version
+    my $s_e_ident = join(
+      ":",
+      map { $_->stable_id() . '.' . $_->version() } sort {
+        $a->stable_id() cmp $b->stable_id()
+        } @{ $s_obj->get_all_Exons() } );
+    my $t_e_ident = join(
+      ":",
+      map { $_->stable_id() . '.' . $_->version() } sort {
+        $a->stable_id() cmp $b->stable_id()
+        } @{ $t_obj->get_all_Exons() } );
+
+    if ( $s_e_ident ne $t_e_ident ) { $change = 1 }
+
+    # Look for changes on the region
+    if ( $s_obj->seq_region_name() ne $t_obj->seq_region_name() ) { $change = 1 }
+
+    if ($change) { ++$version }
+
   }
   elsif ( $s_obj->isa('Bio::EnsEMBL::IdMapping::TinyTranslation') ) {
     # increment version if transcript or translation sequences changed

@@ -157,7 +157,7 @@ sub clear_cache {
                default = 1
   Example    : $dna = $seq_adptr->fetch_by_Slice_start_end_strand($slice, 1, 
                                                                   1000, -1);
-  Description: retrieves from db the sequence for this slice
+  Description: Retrieves from db the sequence for this slice
                uses AssemblyMapper to find the assembly
   Returntype : string 
   Exceptions : endBasePair should be less or equal to length of slice 
@@ -265,6 +265,10 @@ sub fetch_by_Slice_start_end_strand {
 
      $tmp_seq = ${$self->_fetch_seq($seq_region_id,
                                     $seq_slice->start, $seq_slice->length())};
+
+     if(!defined $tmp_seq) {
+         throw('No sequence found for seq_region '.$seq_region_id.':'.$seq_slice->start);
+     }
 
      #reverse compliment on negatively oriented slices
      if($seq_slice->strand == -1) {

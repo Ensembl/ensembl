@@ -1284,16 +1284,18 @@ sub remove {
   }
 
   #
-  # store the coordinate system in the database
+  # remove the coordinate system from in the database
   #
 
-  my $sth =
-    $db->dbc->prepare(   'DELETE FROM coord_system '
-                       . 'WHERE name = ? AND '
-                       . 'version = ?' );
+  my $sql = "DELETE FROM coord_system WHERE name = ?";
+  if ($version) {
+    $sql .= " AND version = ?";
+  }
+  
+  my $sth = $db->dbc->prepare($sql);
 
   $sth->bind_param( 1, $name,               SQL_VARCHAR );
-  $sth->bind_param( 2, $version,            SQL_VARCHAR );
+  $sth->bind_param( 2, $version,            SQL_VARCHAR ) if $version;
 
   $sth->execute();
   $sth->finish();

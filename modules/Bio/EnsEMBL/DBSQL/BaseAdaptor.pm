@@ -378,7 +378,7 @@ sub bind_param_generic_fetch{
     elsif (defined $param && defined $sql_type){
 	#check when there is a SQL_INTEGER type that the parameter is really a number
 	if ($sql_type eq SQL_INTEGER){
-	    throw "Trying to assign a non numerical parameter to an integer value in the database" if ($param !~ /^\d+$/);
+	    throw "Trying to assign a non numerical parameter to an integer value in the database" if ($param !~ /^[+-]{0,1}\d+$/);
 	}
 	#both paramters have been entered, push it to the bind_param array
 	push @{$self->{'_bind_param_generic_fetch'}},[$param,$sql_type];

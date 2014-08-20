@@ -65,7 +65,7 @@ the creation of Slice objects.
   # include non-reference regions
   $slices = $slice_adaptor->fetch_all( 'toplevel', undef, 1 );
 
-  # include non-duplicate regions
+  # include duplicate regions
   $slices = $slice_adaptor->fetch_all( 'toplevel', undef, 0, 1 );
 
   # split up a list of slices into smaller slices
@@ -80,7 +80,7 @@ the creation of Slice objects.
   }
   close FILE;
 
-  # retreive a list of slices from a file
+  # retrieve a list of slices from a file
   open( FILE, $filename ) or die("Could not open file $filename");
   while ( $name = <FILE> ) {
     chomp($name);
@@ -221,18 +221,6 @@ sub fetch_by_region {
 
   if ( defined($coord_system_name) ) {
     $cs = $csa->fetch_by_name( $coord_system_name, $version );
-
-    ## REMOVE THESE THREE LINES WHEN STICKLEBACK DB IS FIXED!
-    ## Anne/ap5 (2007-10-09):
-    # The problem was that the stickleback genebuild called the
-    # chromosomes 'groups', which meant they weren't being picked out by
-    # the karyotype drawing code.  Apparently they are usually called
-    # 'groups' in the stickleback community, even though they really are
-    # chromosomes!
-
-    if ( !defined($cs) && $coord_system_name eq 'chromosome' ) {
-      $cs = $csa->fetch_by_name( 'group', $version );
-    }
 
     if ( !defined($cs) ) {
       throw( sprintf( "Unknown coordinate system:\n"
@@ -2052,6 +2040,70 @@ sub store {
   $slice->adaptor($self);
 
   return $seq_region_id;
+}
+
+
+sub update {
+  my $self = shift;
+  my $slice = shift;
+
+  #
+  # Get all of the sanity checks out of the way before storing anything
+  #
+
+  if(!ref($slice) || !($slice->isa('Bio::EnsEMBL::Slice') or $slice->isa('Bio::EnsEMBL::LRGSlice'))) {
+    throw('Slice argument is required');
+  }
+
+  my $cs = $slice->coord_system();
+  throw("Slice must have attached CoordSystem.") if(!$cs);
+
+  my $db = $self->db();
+
+  if($slice->start != 1 || $slice->strand != 1) {
+    throw("Slice must have start==1 and strand==1.");
+  }
+
+  if($slice->end() != $slice->seq_region_length()) {
+    throw("Slice must have end==seq_region_length");
+  }
+
+  my $sr_len = $slice->length();
+  my $sr_name  = $slice->seq_region_name();
+
+  if(!$sr_name) {
+    throw("Slice must have valid seq region name.");
+  }
+
+  #update the seq_region
+
+  my $seq_region_id = $slice->get_seq_region_id();
+  my $update_sql = qq(
+     UPDATE seq_region
+        SET name = ?,
+            length = ?,
+            coord_system_id = ?
+      WHERE seq_region_id = ?
+  );
+
+  my $sth = $db->dbc->prepare($update_sql);
+
+  $sth->bind_param(1,$sr_name,SQL_VARCHAR);
+  $sth->bind_param(2,$sr_len,SQL_INTEGER);
+  $sth->bind_param(3,$cs->dbID,SQL_INTEGER);
+
+  $sth->bind_param(4, $seq_region_id, SQL_INTEGER);
+
+  $sth->execute();
+
+  #synonyms
+  if(defined($slice->{'synonym'})){
+    foreach my $syn (@{$slice->{'synonym'}} ){
+      $syn->seq_region_id($seq_region_id); # set the seq_region_id
+      my $syn_adaptor = $db->get_SeqRegionSynonymAdaptor();
+      $syn_adaptor->store($syn);
+    }
+  }
 }
 
 =head2 remove

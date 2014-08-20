@@ -333,6 +333,7 @@ sub build_cache_from_genes {
                                ( $tr->is_known ? 1 : 0 ) ] );
 
       $ltr->biotype( $tr->biotype() );
+      $ltr->seq_region_name( $tr->slice->seq_region_name() );
       $lgene->add_Transcript($ltr);
 
       # build transcript caches

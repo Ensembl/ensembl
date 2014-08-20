@@ -52,6 +52,85 @@ coordinate systems. This mapper is intended to be 'context neutral' - in
 that it does not contain any code relating to any particular coordinate
 system. This is provided in, for example, Bio::EnsEMBL::AssemblyMapper.
 
+Mappings consist of pairs of 'to-' and 'from-' contigs with coordinates on each.
+Orientation is abbreviated to 'ori', 
+
+The contig pair hash is divided into mappings per seq_region, the code 
+below makes assumptions about how to filter these results, thus the comparisons 
+for some properties are absent in the code but implicit by data structure.
+
+The assembly mapping hash '_pair_last' orders itself by the target seq region and looks like this:
+
+   1 => ARRAY(0x1024c79c0)
+      0  Bio::EnsEMBL::Mapper::Pair=HASH(0x1024d6198)
+         'from' => Bio::EnsEMBL::Mapper::Unit=HASH(0x1025edf98)
+            'end' => 4
+            'id' => 4
+            'start' => 1
+         'ori' => 1
+         'to' => Bio::EnsEMBL::Mapper::Unit=HASH(0x1025edf68)
+            'end' => 4
+            'id' => 1
+            'start' => 1
+      1  Bio::EnsEMBL::Mapper::Pair=HASH(0x1026c20f0)
+         'from' => Bio::EnsEMBL::Mapper::Unit=HASH(0x1025ee3a0)
+            'end' => 12
+            'id' => 4
+            'start' => 9
+         'ori' => 1
+         'to' => Bio::EnsEMBL::Mapper::Unit=HASH(0x1025ee370)
+            'end' => 4
+            'id' => 1
+            'start' => 1
+   2 => ARRAY(0x1025ee460)
+      0  Bio::EnsEMBL::Mapper::Pair=HASH(0x1025ee400)
+         'from' => Bio::EnsEMBL::Mapper::Unit=HASH(0x1025ee2c8)
+            'end' => 8
+            'id' => 4
+            'start' => 5
+         'ori' => 1
+         'to' => Bio::EnsEMBL::Mapper::Unit=HASH(0x1025ee2b0)
+            'end' => 4
+            'id' => 2
+            'start' => 1
+      1  Bio::EnsEMBL::Mapper::Pair=HASH(0x1025ee658)
+         'from' => Bio::EnsEMBL::Mapper::Unit=HASH(0x1025eea48)
+            'end' => 16
+            'id' => 4
+            'start' => 13
+         'ori' => 1
+         'to' => Bio::EnsEMBL::Mapper::Unit=HASH(0x1025eea18)
+            'end' => 4
+            'id' => 2
+            'start' => 1
+
+The other mapping hash available is the reverse sense, putting the 'from' seq_region as the
+sorting key. Here is an excerpt.
+
+0  HASH(0x102690bb8)
+   4 => ARRAY(0x1025ee028)
+      0  Bio::EnsEMBL::Mapper::Pair=HASH(0x1024d6198)
+         'from' => Bio::EnsEMBL::Mapper::Unit=HASH(0x1025edf98)
+            'end' => 4
+            'id' => 4
+            'start' => 1
+         'ori' => 1
+         'to' => Bio::EnsEMBL::Mapper::Unit=HASH(0x1025edf68)
+            'end' => 4
+            'id' => 1
+            'start' => 1
+      1  Bio::EnsEMBL::Mapper::Pair=HASH(0x1025ee400)
+         'from' => Bio::EnsEMBL::Mapper::Unit=HASH(0x1025ee2c8)
+            'end' => 8
+            'id' => 4
+            'start' => 5
+         'ori' => 1
+         'to' => Bio::EnsEMBL::Mapper::Unit=HASH(0x1025ee2b0)
+            'end' => 4
+            'id' => 2
+            'start' => 1
+
+
 =head1 METHODS
 
 =cut
@@ -160,7 +239,6 @@ sub flush {
 
 sub map_coordinates {
   my ( $self, $id, $start, $end, $strand, $type ) = @_;
-
   unless (    defined($id)
            && defined($start)
            && defined($end)
@@ -241,11 +319,9 @@ sub map_coordinates {
     #       $rank++;
     #     }
 
-    if ( defined($last_target_coord)
-         and $target_coord->{'id'} ne $last_target_coord )
-    {
-      if ( $self_coord->{'start'} < $start )
-      {    # i.e. the same bit is being mapped to another assembled bit
+    if ( defined($last_target_coord) && $target_coord->{'id'} ne $last_target_coord ) {
+      if ( $self_coord->{'start'} < $start ) {    
+      # i.e. the same bit is being mapped to another assembled bit
         $start = $orig_start;
       }
     } else {
@@ -253,20 +329,14 @@ sub map_coordinates {
     }
 
     # if we haven't even reached the start, move on
-    if ( $self_coord->{'end'} < $orig_start ) {
-      next;
-    }
+    if ( $self_coord->{'end'} < $orig_start ) { next;}
 
     # if we have over run, break
-    if ( $self_coord->{'start'} > $end ) {
-      last;
-    }
+    if ( $self_coord->{'start'} > $end ) { last;}
 
     if ( $start < $self_coord->{'start'} ) {
       # gap detected
-      my $gap = Bio::EnsEMBL::Mapper::Gap->new( $start,
-                                    $self_coord->{'start'} - 1, $rank );
-
+      my $gap = Bio::EnsEMBL::Mapper::Gap->new( $start, $self_coord->{'start'} - 1, $rank );
       push( @result, $gap );
       $start = $gap->{'end'} + 1;
     }
@@ -290,9 +360,7 @@ sub map_coordinates {
     } else {
       # start is somewhere inside the region
       if ( $pair->{'ori'} == 1 ) {
-        $target_start =
-          $target_coord->{'start'} +
-          ( $start - $self_coord->{'start'} );
+        $target_start = $target_coord->{'start'} + ( $start - $self_coord->{'start'} );
       } else {
         $target_end =
           $target_coord->{'end'} - ( $start - $self_coord->{'start'} );
@@ -321,11 +389,8 @@ sub map_coordinates {
         }
       }
 
-      $res =
-        Bio::EnsEMBL::Mapper::Coordinate->new( $target_coord->{'id'},
-                     $target_start, $target_end, $pair->{'ori'}*$strand,
-                     $cs, $rank );
-
+      $res = Bio::EnsEMBL::Mapper::Coordinate->new( $target_coord->{'id'},
+               $target_start, $target_end, $pair->{'ori'}*$strand,$cs, $rank );
     } ## end else [ if ( exists $pair->{'indel'...})]
 
     push( @result, $res );
@@ -341,8 +406,7 @@ sub map_coordinates {
 
   } elsif ( $last_used_pair->{$from}->{'end'} < $end ) {
     # gap at the end
-    my $gap =
-      Bio::EnsEMBL::Mapper::Gap->new(
+    my $gap = Bio::EnsEMBL::Mapper::Gap->new(
                                   $last_used_pair->{$from}->{'end'} + 1,
                                   $end, $rank );
     push( @result, $gap );
@@ -612,8 +676,8 @@ sub add_indel_coordinates{
       $contig_ori, $chr_name, $chr_start, $chr_end) = @_;
 
   unless(defined($contig_id) && defined($contig_start) && defined($contig_end)
-	 && defined($contig_ori) && defined($chr_name) && defined($chr_start)
-	 && defined($chr_end)) {
+   && defined($contig_ori) && defined($chr_name) && defined($chr_start)
+   && defined($chr_end)) {
     throw("7 arguments expected");
   }
 
@@ -904,19 +968,17 @@ sub from {
 #
 
 sub _dump{
-   my ($self,$fh) = @_;
+  my ($self,$fh) = @_;
 
-   if( !defined $fh ) {
-       $fh = \*STDERR;
-   }
-
-   foreach my $id ( keys %{$self->{'_pair_hash_from'}} ) {
-       print $fh "From Hash $id\n";
-       foreach my $pair ( @{$self->{'_pair_hash_from'}->{uc($id)}} ) {
-	   print $fh "    ",$pair->from->start," ",$pair->from->end,":",$pair->to->start," ",$pair->to->end," ",$pair->to->id,"\n";
-       }
-   }
-
+  if( !defined $fh ) {
+    $fh = \*STDERR;
+  }
+  foreach my $id ( keys %{$self->{'_pair_hash_from'}} ) {
+    print $fh "From Hash $id\n";
+    foreach my $pair ( @{$self->{'_pair_hash_from'}->{uc($id)}} ) {
+      print $fh "    ",$pair->from->start," ",$pair->from->end,":",$pair->to->start," ",$pair->to->end," ",$pair->to->id,"\n";
+    }
+  }
 }
 
 
@@ -974,59 +1036,64 @@ sub _merge_pairs {
       $del_pair = undef;
       
       if(exists $current_pair->{'indel'} || exists $next_pair->{'indel'}){
-	  #necessary to modify the merge function to not merge indels
-	  $next++;
-	  $i++;
+        #necessary to modify the merge function to not merge indels
+        $next++;
+        $i++;
       }
       else{
-	  # duplicate filter
-	  if( $current_pair->{'to'}->{'start'} == $next_pair->{'to'}->{'start'} 
-	     and $current_pair->{'from'}->{'id'} == $next_pair->{'from'}->{'id'} ) {
-	    $del_pair = $next_pair;
-	  } elsif(( $current_pair->{'from'}->{'id'} eq $next_pair->{'from'}->{'id'} ) &&
-		  ( $next_pair->{'ori'} == $current_pair->{'ori'} ) &&
-		  ( $next_pair->{'to'}->{'start'} -1 == $current_pair->{'to'}->{'end'} )) {
-	      
-	      if( $current_pair->{'ori'} == 1 ) {
-		  # check forward strand merge
-		  if( $next_pair->{'from'}->{'start'} - 1 == $current_pair->{'from'}->{'end'} ) {
-		      # normal merge with previous element
-		      $current_pair->{'to'}->{'end'} = $next_pair->{'to'}->{'end'};
-		      $current_pair->{'from'}->{'end'} = $next_pair->{'from'}->{'end'};
-		      $del_pair = $next_pair;
-		  }
-	      } else {
-		  # check backward strand merge
-		  if( $next_pair->{'from'}->{'end'} + 1 == $current_pair->{'from'}->{'start'} ) {
-		      # yes its a merge
-		      $current_pair->{'to'}->{'end'} = $next_pair->{'to'}->{'end'};
-		      $current_pair->{'from'}->{'start'} = $next_pair->{'from'}->{'start'};
-		      $del_pair = $next_pair;
-		  }
-	      }
-	  }
+        # duplicate filter
+        if( $current_pair->{'to'}->{'start'} == $next_pair->{'to'}->{'start'} 
+           && $current_pair->{'from'}->{'id'} == $next_pair->{'from'}->{'id'} 
+           && $current_pair->{'from'}->{'start'} == $next_pair->{'from'}->{'start'}) {
+        # Modified in e75 to support GRCh38. Contigs used repeatedly in one seq region were 
+        # being pre-emptively deleted as copies. Extra from-start condition above ensures copy
+        # deletion is restricted to same-location copies. Even more stringent checks can be made
+        # at cost of speed.
+            $del_pair = $next_pair;
+          } elsif ( ( $current_pair->{'from'}->{'id'} eq $next_pair->{'from'}->{'id'} ) &&
+                    ( $next_pair->{'ori'} == $current_pair->{'ori'} ) &&
+                    ( $next_pair->{'to'}->{'start'} -1 == $current_pair->{'to'}->{'end'} )) {
+          
+          if( $current_pair->{'ori'} == 1 ) {
+            # check forward strand merge
+            if( $next_pair->{'from'}->{'start'} - 1 == $current_pair->{'from'}->{'end'} ) {
+              # normal merge with previous element
+              $current_pair->{'to'}->{'end'} = $next_pair->{'to'}->{'end'};
+              $current_pair->{'from'}->{'end'} = $next_pair->{'from'}->{'end'};
+              $del_pair = $next_pair;
+            }
+          } else {
+            # check backward strand merge
+            if( $next_pair->{'from'}->{'end'} + 1 == $current_pair->{'from'}->{'start'} ) {
+              # yes its a merge
+              $current_pair->{'to'}->{'end'} = $next_pair->{'to'}->{'end'};
+              $current_pair->{'from'}->{'start'} = $next_pair->{'from'}->{'start'};
+              $del_pair = $next_pair;
+            }
+          }
+        }
       
-	  if( defined $del_pair ) {
-	      splice( @$lr, $next, 1 );
-	      $lr_from = $self->{"_pair_$map_from"}->{uc($del_pair->{'from'}->{'id'})};
-	      for( my $j=0; $j <= $#{$lr_from}; $j++ ) {
-		  if( $lr_from->[$j] == $del_pair ) {
-		      splice( @$lr_from, $j, 1 );
-		      last;
-		  }
-	      }
-	      $length--;
-	      if( $length < $next ) { last; }
-	  }
-	  else {
-	      $next++;
-	      $i++;
-	  }
+          if( defined $del_pair ) {
+            splice( @$lr, $next, 1 );
+            $lr_from = $self->{"_pair_$map_from"}->{uc($del_pair->{'from'}->{'id'})};
+            for( my $j=0; $j <= $#{$lr_from}; $j++ ) {
+              if( $lr_from->[$j] == $del_pair ) {
+                splice( @$lr_from, $j, 1 );
+                last;
+              }
+            }
+            $length--;
+            if( $length < $next ) { last; }
+          }
+          else {
+            $next++;
+            $i++;
+          }
       }  
       
-   }
+    }
     $self->{'pair_count'} += scalar( @$lr );
- }
+  }
 }
 
 

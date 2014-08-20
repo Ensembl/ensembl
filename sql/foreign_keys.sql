@@ -150,17 +150,6 @@ ALTER table seq_region_mapping ADD FOREIGN KEY (mapping_set_id) REFERENCES mappi
 ALTER table simple_feature ADD FOREIGN KEY (analysis_id) REFERENCES analysis (analysis_id);
 ALTER table simple_feature ADD FOREIGN KEY (seq_region_id) REFERENCES seq_region (seq_region_id);
 
-ALTER table splicing_event ADD FOREIGN KEY (seq_region_id) REFERENCES seq_region (seq_region_id);
-ALTER table splicing_event ADD FOREIGN KEY (gene_id) REFERENCES gene (gene_id);
-
-ALTER table splicing_event_feature ADD FOREIGN KEY (splicing_event_id) REFERENCES splicing_event (splicing_event_id);
-ALTER table splicing_event_feature ADD FOREIGN KEY (exon_id) REFERENCES exon (exon_id);
-ALTER table splicing_event_feature ADD FOREIGN KEY (transcript_id) REFERENCES transcript (transcript_id);
-
-ALTER table splicing_transcript_pair ADD FOREIGN KEY (splicing_event_id) REFERENCES splicing_event (splicing_event_id);
-ALTER table splicing_transcript_pair ADD FOREIGN KEY (transcript_id_1) REFERENCES transcript (transcript_id);
-ALTER table splicing_transcript_pair ADD FOREIGN KEY (transcript_id_2) REFERENCES transcript (transcript_id);
-
 ALTER table stable_id_event ADD FOREIGN KEY (mapping_session_id) REFERENCES mapping_session (mapping_session_id);
 
 ALTER table supporting_feature ADD FOREIGN KEY (exon_id) REFERENCES exon (exon_id);

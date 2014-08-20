@@ -282,7 +282,8 @@ sub create_xrefs {
 
 
     # some straightforward fields
-    $xref->{LABEL} = $label;
+    # the previous $label flag of type BRCA2_HUMAN is not used in Uniprot any more, use accession instead
+    $xref->{LABEL} = $accessions[0];
     $xref->{SPECIES_ID} = $species_id;
     $xref->{SEQUENCE_TYPE} = 'peptide';
     $xref->{STATUS} = 'experimental';
@@ -422,6 +423,9 @@ sub create_xrefs {
         if($source =~ "RGD"){  #using RGD file now instead.
       	  next;
       	}
+        if($source =~ "CCDS"){
+          next;
+        }
       	if($source =~ "IPI"){
       	  next;
       	}
@@ -442,6 +446,9 @@ sub create_xrefs {
       	    next;
       	}
         if($source =~ "GenomeRNAi"){
+            next;
+        }
+        if($source =~ "Xenbase"){
             next;
         }
 	   if (exists $dependent_sources{$source} ) {

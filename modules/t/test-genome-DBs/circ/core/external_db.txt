@@ -494,9 +494,7 @@
 50681	Ens_Ac_transcript	\N	XREF	40	Ensembl Anole Lizard Transcript	MISC	\N	\N	\N
 50682	BGI_Gene	1	XREF	50	BGI_2005_indica_Gene	MISC	\N	\N	BGI gene identifier
 50683	GeneIndex	1	XREF	50	GeneIndex	MISC	\N	\N	\N
-50684	EO	1	XREF	0	Environment Ontology	MISC	\N	\N	Plant environmental conditions ontology terms.\
-More information in there:\
-http://www.gramene.org/plant_ontology/ontology_browse.html#eo
+50684	EO	1	XREF	0	Environment Ontology	MISC	\N	\N	Plant environmental conditions ontology terms. More information in there: http://www.gramene.org/plant_ontology/ontology_browse.html#eo
 50685	Ens_Rn_transcript	\N	XREF	5	Ensembl Rat Transcript	MISC	\N	\N	\N
 50686	Ens_Rn_translation	\N	XREF	5	Ensembl Rat Translation	MISC	\N	\N	\N
 50687	Uppsala University	\N	KNOWN	5	Uppsala University	MISC	\N	\N	\N
@@ -543,8 +541,7 @@ http://www.gramene.org/plant_ontology/ontology_browse.html#eo
 50731	Turkey Genome Consortium	\N	KNOWN	5	Turkey Genome Consortium	MISC	\N	\N	Turkey Genome Consortium
 50732	Yutaka_Satou_Kyoto_University	\N	KNOWN	5	Yutaka Satou Kyoto University	MISC	\N	\N	Yutaka Satou Kyoto University
 50733	Chicken_Genome_Consortium	\N	KNOWN	5	International Chicken Genome Consortium	MISC	\N	\N	\N
-50734	TAIR_TRANSLATION	1	XREF	1	TAIR Translation identifiers	MISC	\N	\N	TAIR identifiers to link to Ensembl Translation identifiers.\
-The main requirement behind this entry, is to be able to link TAIR GO annotations to Ensembl Translations.
+50734	TAIR_TRANSLATION	1	XREF	1	TAIR Translation identifiers	MISC	\N	\N	TAIR identifiers to link to Ensembl Translation identifiers. The main requirement behind this entry, is to be able to link TAIR GO annotations to Ensembl Translations.
 50735	AGI_GENE	1	XREF	1	AGI Gene	MISC	\N	\N	annotation provided by Arizona Genome Institute
 50736	AGI_TRANSCRIPT	1	XREF	1	AGI Transcript	MISC	\N	\N	annotation provided by Arizona Genome Institute
 50737	CGNC	\N	KNOWNXREF	100	CGNC Symbol	PRIMARY_DB_SYNONYM	\N	\N	\N

@@ -1,20 +1,6 @@
--- Copyright [1999-2014] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
--- 
--- Licensed under the Apache License, Version 2.0 (the "License");
--- you may not use this file except in compliance with the License.
--- You may obtain a copy of the License at
--- 
---      http://www.apache.org/licenses/LICENSE-2.0
--- 
--- Unless required by applicable law or agreed to in writing, software
--- distributed under the License is distributed on an "AS IS" BASIS,
--- WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
--- See the License for the specific language governing permissions and
--- limitations under the License.
-
 -- 
 -- Created by SQL::Translator::Producer::SQLite
--- Created on Fri Jan 17 10:14:46 2014
+-- Created on Mon Apr 28 13:55:35 2014
 -- 
 
 BEGIN TRANSACTION;
@@ -442,8 +428,8 @@ CREATE TABLE karyotype (
   seq_region_id integer NOT NULL,
   seq_region_start integer NOT NULL,
   seq_region_end integer NOT NULL,
-  band varchar(40) NOT NULL,
-  stain varchar(40) NOT NULL
+  band varchar(40),
+  stain varchar(40)
 );
 
 --
@@ -825,46 +811,6 @@ CREATE TABLE simple_feature (
   display_label varchar(255) NOT NULL,
   analysis_id smallint NOT NULL,
   score double precision
-);
-
---
--- Table: splicing_event
---
-CREATE TABLE splicing_event (
-  splicing_event_id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
-  name varchar(134),
-  gene_id integer NOT NULL,
-  seq_region_id integer NOT NULL,
-  seq_region_start integer NOT NULL,
-  seq_region_end integer NOT NULL,
-  seq_region_strand tinyint NOT NULL,
-  attrib_type_id smallint NOT NULL DEFAULT 0
-);
-
---
--- Table: splicing_event_feature
---
-CREATE TABLE splicing_event_feature (
-  splicing_event_feature_id integer NOT NULL,
-  splicing_event_id integer NOT NULL,
-  exon_id integer NOT NULL,
-  transcript_id integer NOT NULL,
-  feature_order integer NOT NULL,
-  transcript_association integer NOT NULL,
-  type enum,
-  start integer NOT NULL,
-  end integer NOT NULL,
-  PRIMARY KEY (splicing_event_feature_id, exon_id, transcript_id)
-);
-
---
--- Table: splicing_transcript_pair
---
-CREATE TABLE splicing_transcript_pair (
-  splicing_transcript_pair_id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
-  splicing_event_id integer NOT NULL,
-  transcript_id_1 integer NOT NULL,
-  transcript_id_2 integer NOT NULL
 );
 
 --

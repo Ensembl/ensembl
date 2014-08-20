@@ -178,6 +178,19 @@ foreach my $h ($host,$host2) {
        $previous_dbname = $compare_dbname;
     }
 
+    if (!defined($previous_dbname)) {
+      print STDERR "First instance known for $current_dbname, no mapping needed\n";
+      next;
+    }
+
+# If it is a new assembly, no mapping needed
+    my $current_assembly = get_assembly($dbh,$current_dbname) ;
+    my $old_assembly = get_assembly($old_dbh,$previous_dbname);
+    if ($old_assembly ne $current_assembly) {
+      print STDERR "New assembly $current_assembly for $current_dbname, no mapping needed\n" ;
+      next;
+    }
+
     update_mapping($dbh, $current_dbname, $previous_dbname, $dry_run);
 
     my $mapping_set_id = get_max_mapping_set_id($dbh,$current_dbname) + 1;
@@ -205,19 +218,6 @@ sub update_mapping {
   my $count_removed = 0;
   my $count_updated = 0;
   my $count_added = 0;
-
-# If there is no previous database, no mapping needed
-  if (!defined($previous_dbname)) {
-     print STDERR "First instance known for $current_dbname, no mapping needed\n";
-     return;
-  }
-
-# If it is a new assembly, no mapping needed
-  my $old_assembly = get_assembly($old_dbh,$previous_dbname); 
-  if ($old_assembly ne $current_assembly) { 
-    print STDERR "New assembly $current_assembly for $current_dbname, no mapping needed\n" ;
-    return; 
-  }
 
 # If there has been no change in seq_region, no mapping needed
   my $cur_seq_region_checksum = &get_seq_region_checksum($dbh,$current_dbname);

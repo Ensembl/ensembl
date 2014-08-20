@@ -464,7 +464,6 @@ sub remove {
 
   # delete the exon
 
-  $self->_pre_remove($exon);
   $sth = $self->prepare( "DELETE FROM exon WHERE exon_id = ?" );
   $sth->bind_param(1, $exon->dbID, SQL_INTEGER);
   $sth->execute();

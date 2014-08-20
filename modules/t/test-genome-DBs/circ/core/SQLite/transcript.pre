@@ -1,0 +1,1 @@
+DROP INDEX canonical_translation_idx;
