@@ -132,7 +132,10 @@ sub resubmit_exonerate {
   my $exe_file = $root_dir."/resub_".$job_id."_".$array_number;
   open(my $rh, ">", $exe_file) || die "Could not open file $exe_file";
   
-  print $rh ". /usr/local/lsf/conf/profile.lsf\n";
+  my $lsf_profile = '/usr/local/lsf/conf/profile.lsf';
+  if (-e $lsf_profile) {
+    print $rh ". $lsf_profile\n";
+  }
   print $rh $command."\n";
 
   close $rh;
