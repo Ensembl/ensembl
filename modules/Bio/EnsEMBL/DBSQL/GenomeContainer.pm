@@ -154,10 +154,10 @@ sub store {
   my ($self, $statistic, $value, $attribute) = @_;
 
   my $stats_id = @{ $self->_get_statistic($statistic, $attribute) }[0];
+
   if (defined $stats_id) {
     $self->update($statistic, $value, $attribute);
   } else {
-
     my $db = $self->db();
     my $species_id = $db->species_id();
 
@@ -228,7 +228,7 @@ sub update {
     $update_genome_sql .= ', attrib_type_id = ?';
   }
 
-  $update_genome_sql .= ' WHERE statistic = ?';
+  $update_genome_sql .= ' WHERE statistic = ? and species_id = ?';
   
   my $sth = $self->prepare($update_genome_sql);
   $sth->bind_param(1,   $value,     SQL_INTEGER);
@@ -242,7 +242,8 @@ sub update {
     $increment++;
   }
   
-  $sth->bind_param($increment, $statistic, SQL_VARCHAR);
+  $sth->bind_param($increment++, $statistic, SQL_VARCHAR);
+  $sth->bind_param($increment, $db->species_id(), SQL_INTEGER);
 
   $sth->execute();
   $sth->finish();
@@ -639,12 +640,13 @@ sub _get_count {
 sub _get_statistic {
   my ($self, $statistic, $attribute) = @_;
   my $db = $self->db;
+  my $species_id = $self->db->species_id();
   my ($value, $timestamp);
   my $fetch_sql = q{
     SELECT genome_statistics_id, statistic, value, species_id, code, timestamp
       FROM genome_statistics, attrib_type 
      WHERE genome_statistics.attrib_type_id = attrib_type.attrib_type_id
-       AND statistic = ?
+       AND statistic = ? AND species_id=?
   };
   if (defined $attribute) {
     $fetch_sql .= " AND code = ?";
@@ -652,8 +654,9 @@ sub _get_statistic {
 
   my $sth = $self->prepare($fetch_sql);
   $sth->bind_param(1, $statistic, SQL_VARCHAR);
+  $sth->bind_param(2, $species_id, SQL_INTEGER);
   if (defined $attribute) {
-    $sth->bind_param(2, $attribute, SQL_VARCHAR);
+    $sth->bind_param(3, $attribute, SQL_VARCHAR);
   }
   $sth->execute();
   my @results = $sth->fetchrow_array();

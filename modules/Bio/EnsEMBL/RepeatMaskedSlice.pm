@@ -68,7 +68,7 @@ use vars qw(@ISA);
 @ISA = ('Bio::EnsEMBL::Slice');
 
 # The BLOCK_PWR is the lob_bin of the chunksize where you want your repeat features
-# to be retreived. This will create repeat feature retrieval calls that are likely 
+# to be retrieved. This will create repeat feature retrieval calls that are likely 
 # to be on the same slice and hopefully create cache hits and less database traffic
 my $BLOCK_PWR = 18;
 

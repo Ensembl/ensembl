@@ -199,11 +199,11 @@ sub fetch_all_by_Slice {
     # use feature start/end relative to the slice instead
     my ($min_start_feature, $max_end_feature);
     foreach my $t (@$transcripts) {
-      if (!defined($min_start) || $t->start() < $min_start) {
+      if (!defined($min_start) || ($t->start() >= 0 && $t->start() < $min_start)) {
   	$min_start = $t->start();
   	$min_start_feature = $t;
       }
-      if (!defined($max_end) || $t->end() > $max_end) {
+      if (!defined($max_end) || ($t->end() >= 0 && $t->end() > $max_end)) {
   	$max_end = $t->end();
   	$max_end_feature = $t;
       }

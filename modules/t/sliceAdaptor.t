@@ -298,6 +298,19 @@ ok($chr_slice->seq_region_length() == $chr_len);
 ok($chr_slice->seq_region_name eq $name);
 
 #
+# Update a slice
+#
+
+$chr_slice->add_synonym('testregion3');
+$slice_adaptor->update($chr_slice);
+
+my $updated_slice = $slice_adaptor->fetch_by_region('chromosome', 'testregion3');
+ok($updated_slice->length() == $chr_len);
+ok($updated_slice->seq_region_length() == $chr_len);
+ok($updated_slice->seq_region_name eq $name);
+
+
+#
 # Store an assembly between the slices
 #
 my $asm_start = 9999;

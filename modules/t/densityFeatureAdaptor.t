@@ -157,7 +157,7 @@ debug( "Created ".scalar( @density_features )." density features on chr 20" );
 
 @stored_features = @{$dfa->fetch_all_by_Slice($chr_20_slice,'GeneDensityTest', 100, "interpolate" )};
 ok( scalar( @stored_features ) == 100 );
-debug( "Interpolated retreived ".scalar( @stored_features ));
+debug( "Interpolated retrieved ".scalar( @stored_features ));
 
 ok( abs( $stored_features[0]->density_value() - 15) < 0.0001 );
 debug( "Density value = ".$stored_features[0]->density_value() );

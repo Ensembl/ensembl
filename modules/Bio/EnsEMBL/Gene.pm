@@ -64,6 +64,7 @@ use strict;
 
 use POSIX;
 use Bio::EnsEMBL::Feature;
+use Bio::EnsEMBL::Intron;
 use Bio::EnsEMBL::Utils::Argument qw(rearrange);
 use Bio::EnsEMBL::Utils::Exception qw(throw warning deprecate);
 use Bio::EnsEMBL::Utils::Scalar qw(assert_ref);
@@ -438,7 +439,7 @@ sub equals {
 
 =head2 canonical_transcript
 
-  Arg [1]    : (optional) Bio::EnsEMBL::Transcipt - canonical_transcript object
+  Arg [1]    : (optional) Bio::EnsEMBL::Transcript - canonical_transcript object
   Example    : $gene->canonical_transcript($canonical_transcript);
   Description: Getter/setter for the canonical_transcript
   Returntype : Bio::EnsEMBL::Transcript
@@ -799,6 +800,38 @@ sub get_all_Exons {
   return \@out;
 }
 
+=head2 get_all_Introns
+
+  Arg [1]    : none
+  Example    : my @introns = @{$gene->get_all_Introns()};
+  Description: Returns an listref of the introns in this gene in order.
+               i.e. the first intron in the listref is the 5prime most exon in
+               the gene.
+  Returntype : listref to Bio::EnsEMBL::Intron objects
+  Exceptions : none
+  Caller     : general
+  Status     : Stable
+
+=cut
+
+sub get_all_Introns {
+  my $self = shift;
+
+  my %h;
+  my @out = ();
+  my @introns;
+
+  foreach my $trans ( @{$self->get_all_Transcripts} ) {
+    my @exons = @{ $trans->get_all_Exons() };
+    for (my $i = 0; $i < scalar(@exons) - 1; $i++) {
+      my $intron = new Bio::EnsEMBL::Intron($exons[$i], $exons[$i+1]);
+      push (@introns, $intron);
+    }
+  }
+
+  return \@introns;
+}
+
 
 =head2 get_all_homologous_Genes
 
@@ -843,8 +876,7 @@ sub get_all_homologous_Genes {
 
   # Get the compara 'member' corresponding to self
   my $member_adaptor   = $compara_dba->get_adaptor('GeneMember');
-  my $query_member = $member_adaptor->fetch_by_source_stable_id
-      ("ENSEMBLGENE",$self->stable_id);
+  my $query_member = $member_adaptor->fetch_by_stable_id($self->stable_id);
   unless( $query_member ){ return $self->{'homologues'}->{$compara_species} };
 
   # Get the compara 'homologies' corresponding to 'member'
@@ -1328,7 +1360,7 @@ sub get_all_DASFactories {
 =head2 get_all_DAS_Features
 
   Example    : $features = $prot->get_all_DAS_Features;
-  Description: Retreives a hash reference to a hash of DAS feature
+  Description: Retrieves a hash reference to a hash of DAS feature
                sets, keyed by the DNS, NOTE the values of this hash
                are an anonymous array containing:
                 (1) a pointer to an array of features

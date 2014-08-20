@@ -190,7 +190,7 @@ sub summary_as_hash {
   $hash->{score} = $self->score() if $self->score();
   $hash->{'external_name'} = $self->display_label() if $self->display_label();
   $hash->{'logic_name'} = $self->analysis->logic_name();
-  delete $hash->{ID};
+  delete $hash->{id};
   return $hash;
 }
 

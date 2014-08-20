@@ -35,7 +35,7 @@ sub gene_description_filter_regexps {
 
 sub gene_description_sources {
 
-  return ("Xenopus_Jamboree",	  
+  return ("Xenbase",	  
 	  "RFAM",
 	  "miRBase",
 	  "Uniprot/SWISSPROT",
@@ -49,7 +49,7 @@ sub gene_description_sources {
 sub gene_display_xref_sources {
   my $self     = shift;
 	
-  my @list = qw(Xenopus_Jamboree
+  my @list = qw(Xenbase
                 RFAM
                 miRBase
                 Uniprot_gn
@@ -91,7 +91,7 @@ LOCP
 sub transcript_display_xref_sources {
   my $self     = shift;
 
-  my @list = qw(Xenopus_Jamboree
+  my @list = qw(Xenbase
                 RFAM
                 miRBase
                 Uniprot/SWISSPROT

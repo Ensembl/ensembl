@@ -24,63 +24,31 @@ use vars '@ISA';
 
 @ISA = qw{ XrefMapper::BasicMapper };
 
+sub get_official_name {
+  return 'RGD';
+}
 
-sub gene_display_xref_sources {
-  my $self     = shift;
-	
-  my @list = qw(RFAM
-                miRBase
-                RGD
-                Uniprot_gn
-                EntrezGene);
+sub get_canonical_name{
+   return "RGD";
+}
 
-  my %ignore;
+# Not running transcript_names_from_gene for merged species
+# as this is already been done in the OfficialNaming mapper
+sub transcript_names_from_gene {
+  return;
+}
 
-  #don't use EntrezGene labels dependent on predicted RefSeqs
-
-$ignore{'EntrezGene'} =<<IEG;
-SELECT DISTINCT ox.object_xref_id
-  FROM object_xref ox, dependent_xref dx, 
-       xref xmas, xref xdep, 
-       source smas, source sdep
-    WHERE ox.xref_id = dx.dependent_xref_id AND
-          dx.dependent_xref_id = xdep.xref_id AND
-          dx.master_xref_id = xmas.xref_id AND
-          xmas.source_id = smas.source_id AND
-          xdep.source_id = sdep.source_id AND
-          smas.name like "Refseq%predicted" AND
-          sdep.name like "EntrezGene" AND
-          ox.ox_status = "DUMP_OUT" 	 
-IEG
-
-  #don't use labels starting with LOC
-
-$ignore{'LOC_prefix'} =<<LOCP;
-SELECT object_xref_id
-  FROM object_xref JOIN xref USING(xref_id) JOIN source USING(source_id)
-   WHERE ox_status = 'DUMP_OUT' AND label REGEXP '^LOC[[:digit:]]+'
-LOCP
-
-  return [\@list,\%ignore];
+sub set_display_xrefs{
+  my $self = shift;
+  my $display = XrefMapper::DisplayXrefs->new($self);
+  $display->set_display_xrefs_from_stable_table();
 
 }
 
-
-sub transcript_display_xref_sources {
-  my $self     = shift;
-
-  my @list = qw(RFAM
-	      miRBase
-	      RGD 
-	      Uniprot/SWISSPROT
-	      Uniprot/Varsplic
-);
-
-
-  my %ignore;
-
-  return [\@list,\%ignore];
-  
+sub set_gene_descriptions(){
+  my $self = shift;
+  my $display = XrefMapper::DisplayXrefs->new($self);
+  $display->set_gene_descriptions_from_display_xref()
 }
 
 sub gene_description_filter_regexps {

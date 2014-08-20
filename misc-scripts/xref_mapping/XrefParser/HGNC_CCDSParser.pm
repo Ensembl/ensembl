@@ -121,7 +121,7 @@ SQL
 
 
   
-  $sql = 'select ox.ensembl_id, x.display_label from object_xref ox, xref x, external_db e where x.xref_id = ox.xref_id and x.external_db_id = e.external_db_id and e.db_name like "CCDS"'; 
+  $sql = 'select ox.ensembl_id, x.display_label from object_xref ox, xref x, external_db e where x.xref_id = ox.xref_id and x.external_db_id = e.external_db_id and ox.ensembl_object_type = "Transcript" and e.db_name like "CCDS"'; 
 
   my %ccds_to_stable_id;
   $sth = $dbi2->prepare($sql); 
@@ -187,7 +187,6 @@ SQL
   foreach my $ccds (keys %ccds_to_stable_id){
     if(defined($ccds_to_hgnc{$ccds})){
       my $hgnc = $ccds_to_hgnc{$ccds};
-      $hgnc =~ s/HGNC://;
       my $xref_id = $self->add_xref({ acc        => $hgnc,
 				      version    => $version{$hgnc} ,
 				      label      => $label{$hgnc}||$hgnc ,

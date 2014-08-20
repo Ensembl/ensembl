@@ -95,6 +95,10 @@ my $registry = "Bio::EnsEMBL::Registry";
                       Used to automatically load aliases for this 
                       species into the Registry upon loading.
 
+  Arg [-ADD_SPECIES_ID]: (optional) boolean
+                         Used to automatically load the species id
+                         based on the species if none is defined.
+
   Arg [..]   : Other args are passed to superclass
                Bio::EnsEMBL::DBSQL::DBConnection
 
@@ -138,11 +142,11 @@ sub new {
   my $self = bless {}, $class;
 
   my ( $is_multispecies, $species, $species_id, $group, $con, $dnadb,
-    $no_cache, $dbname, $add_aliases )
+    $no_cache, $dbname, $add_aliases, $add_species_id )
     = rearrange( [
       'MULTISPECIES_DB', 'SPECIES', 'SPECIES_ID', 'GROUP',
       'DBCONN',          'DNADB',   'NO_CACHE',   'DBNAME',
-      'ADD_ALIASES'
+      'ADD_ALIASES', 'ADD_SPECIES_ID'
     ],
     @args
     );
@@ -155,20 +159,26 @@ sub new {
     $self->dbc( new Bio::EnsEMBL::DBSQL::DBConnection(@args) );
   }
 
-  if ( defined($species) ) { $self->species($species) }
+  if ( defined($species) ) { $self->species($species); } 
   if ( defined($group) )   { $self->group($group) }
 
  
   $self = Bio::EnsEMBL::Utils::ConfigRegistry::gen_load($self);
 
-  $self->species_id( $species_id || 1 );
+  if (defined $species_id) {
+    $self->species_id($species_id);
+  } elsif ($add_species_id and defined $species) {
+    $self->find_and_add_species_id();
+  } else {
+    $self->species_id(1);
+  }
 
   $self->is_multispecies( defined($is_multispecies)
                           && $is_multispecies == 1 );
 
   if ( defined($dnadb) )    { $self->dnadb($dnadb) }
-  if ( defined($no_cache) ) { $self->no_cache($no_cache) }
-  if ( defined($add_aliases) ) { $self->find_and_add_aliases($add_aliases) }
+  if ( $no_cache ) { $self->no_cache($no_cache) }
+  if ( $add_aliases ) { $self->find_and_add_aliases($add_aliases) }
 
   return $self;
 } ## end sub new
@@ -213,6 +223,39 @@ sub clear_caches {
 sub find_and_add_aliases {
   my ($self) = @_;
   $registry->find_and_add_aliases(-ADAPTOR => $self);
+  return;
+}
+
+=head2 find_and_add_species_id
+
+  Description : 
+  Returntype  : None
+  Exceptions  : None
+
+=cut
+
+sub find_and_add_species_id {
+  my ($self) = @_;
+  my $species = $self->species;
+  defined $species or throw "Undefined species";
+
+  my $dbc = $self->dbc;
+  my $sth = $dbc->prepare(sprintf "SELECT DISTINCT species_id FROM %s.meta " .
+			  "WHERE meta_key='species.alias' AND meta_value LIKE '%%s%'", 
+			  $dbc->db_handle->quote_identifier($dbc->dbname), $species);
+  $sth->execute() or
+    throw "Error querying for species_id: perhaps the DB doesn't have a meta table?\n" .
+      "$DBI::err .... $DBI::errstr\n";
+
+  my $species_id;
+  $sth->bind_columns(\$species_id);
+  $sth->fetch;
+
+  throw "Undefined species_id" unless defined $species_id;
+  throw "Something wrong retrieving the species_id"
+    unless $species_id >= 1;
+
+  $self->species_id($species_id);
   return;
 }
 
@@ -389,9 +432,6 @@ sub get_available_adaptors {
     Sequence                            => 'Bio::EnsEMBL::DBSQL::SequenceAdaptor',
     SimpleFeature                       => 'Bio::EnsEMBL::DBSQL::SimpleFeatureAdaptor',
     Slice                               => 'Bio::EnsEMBL::DBSQL::SliceAdaptor',
-    SplicingEvent                       => 'Bio::EnsEMBL::DBSQL::SplicingEventAdaptor',
-    SplicingEventFeature                => 'Bio::EnsEMBL::DBSQL::SplicingEventFeatureAdaptor',
-    SplicingTranscriptPair              => 'Bio::EnsEMBL::DBSQL::SplicingTranscriptPairAdaptor',
     SupportingFeature                   => 'Bio::EnsEMBL::DBSQL::SupportingFeatureAdaptor',
     Transcript                          => 'Bio::EnsEMBL::DBSQL::TranscriptAdaptor',
     TranscriptSupportingFeature         => 'Bio::EnsEMBL::DBSQL::TranscriptSupportingFeatureAdaptor',

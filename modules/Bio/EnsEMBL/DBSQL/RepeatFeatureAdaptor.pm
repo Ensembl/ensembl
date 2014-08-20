@@ -517,6 +517,11 @@ sub store {
       throw("RepeatFeature cannot be stored without an associated slice.");
     }
 
+    #store the analysis if it has not been stored yet
+    if(!$rf->analysis->is_stored($db)) {
+      $db->get_AnalysisAdaptor->store($rf->analysis());
+    }
+
     my $original = $rf;
     my $seq_region_id;
     ($rf, $seq_region_id) = $self->_pre_store($rf);
