@@ -39,7 +39,6 @@ use File::Basename;
 use File::Spec::Functions;
 use IO::File;
 use Net::FTP;
-use HTTP::Tiny;
 use URI;
 use URI::file;
 use Text::Glob qw( match_glob );
@@ -252,17 +251,17 @@ sub fetch_files {
 
         if ( -e $file_path ) { unlink($file_path) }
 
-        open OUT, ">$file_path" or die "Couldn't open file $file_path $!";
-        my $http = HTTP::Tiny->new();
+        my $ua = LWP::UserAgent->new();
+        $ua->env_proxy();
 
-        my $response = $http->get($uri->as_string());
+        my $response =
+          $ua->get( $uri->as_string(), ':content_file' => $file_path );
 
-        if ( !$response->{success} ) {
+        if ( !$response->is_success() ) {
           printf( "==> Could not get '%s': %s\n",
-                  basename( $uri->path() ), $response->{content} );
+                  basename( $uri->path() ), $response->content() );
           return ();
         }
-        print OUT $response->{content};
       }
 
       push( @processed_files, $file_path );

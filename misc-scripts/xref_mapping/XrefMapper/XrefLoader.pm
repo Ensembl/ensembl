@@ -294,8 +294,10 @@ GCNTSQL
      # SQL to add data to core
      #########################
  
-     my $add_identity_xref_sth  = $self->core->dbc->prepare('insert ignore into identity_xref (object_xref_id, xref_identity, ensembl_identity, xref_start, xref_end, ensembl_start, ensembl_end, cigar_line, score, evalue) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
-     my $add_go_xref_sth        = $self->core->dbc->prepare('insert ignore into ontology_xref (object_xref_id, source_xref_id, linkage_type) values (?, ?, ?)');
+     my $add_xref_sth           = $self->core->dbc->prepare('insert ignore into xref (xref_id, external_db_id, dbprimary_acc, display_label, version, description, info_type, info_text) values (?, ?, ?, ?, ?, ?, ?, ?)');
+     my $add_object_xref_sth    = $self->core->dbc->prepare('insert into object_xref (object_xref_id, ensembl_id, ensembl_object_type, xref_id, analysis_id) values (?, ?, ?, ?, ?)');
+     my $add_identity_xref_sth  = $self->core->dbc->prepare('insert into identity_xref (object_xref_id, xref_identity, ensembl_identity, xref_start, xref_end, ensembl_start, ensembl_end, cigar_line, score, evalue) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
+     my $add_go_xref_sth        = $self->core->dbc->prepare('insert into ontology_xref (object_xref_id, source_xref_id, linkage_type) values (?, ?, ?)');
      my $add_dependent_xref_sth = $self->core->dbc->prepare('insert ignore into dependent_xref (object_xref_id, master_xref_id, dependent_xref_id) values (?, ?, ?)');
      my $add_syn_sth            = $self->core->dbc->prepare('insert ignore into external_synonym (xref_id, synonym) values (?, ?)');
      my $add_release_info_sth   = $self->core->dbc->prepare('update external_db set db_release = ? where external_db_id = ?');
@@ -343,11 +345,11 @@ GCNTSQL
 	 if($last_xref != $xref_id){
 	   push @xref_list, $xref_id;
 	   $count++;
-	   $xref_id = $self->add_xref($xref_offset, $xref_id, $ex_id, $acc, $label, $version, $desc, $type, $info || $where_from);
+	   $add_xref_sth->execute(($xref_id+$xref_offset), $ex_id, $acc, $label, $version, $desc, $type, $info || $where_from);
 	   $last_xref = $xref_id;
 	 }
-         $object_xref_id = $self->add_object_xref($object_xref_offset, $object_xref_id, $ensembl_id, $ensembl_type, ($xref_id+$xref_offset), $analysis_ids{$ensembl_type});
-         $add_go_xref_sth->execute( ($object_xref_id+$object_xref_offset), 0, $linkage_type);
+	 $add_go_xref_sth->execute( ($object_xref_id+$object_xref_offset), 0, $linkage_type);
+	 $add_object_xref_sth->execute(   ($object_xref_id+$object_xref_offset), $ensembl_id, $ensembl_type, ($xref_id+$xref_offset), $analysis_ids{$ensembl_type} );
        }
        print "Direct GO $count\n" if ($verbose);
      }
@@ -361,10 +363,10 @@ GCNTSQL
          if($last_xref != $xref_id){
 	  push @xref_list, $xref_id;
 	  $count++;
-	  $xref_id = $self->add_xref($xref_offset, $xref_id, $ex_id, $acc, $label, $version, $desc, $type, $info || $where_from);
+	  $add_xref_sth->execute(($xref_id+$xref_offset), $ex_id, $acc, $label, $version, $desc, $type, $info || $where_from);
 	  $last_xref = $xref_id;
         }
-        $object_xref_id = $self->add_object_xref($object_xref_offset, $object_xref_id, $ensembl_id, $ensembl_type, ($xref_id+$xref_offset), $analysis_ids{$ensembl_type});
+        $add_object_xref_sth->execute(($object_xref_id+$object_xref_offset), $ensembl_id, $ensembl_type, ($xref_id+$xref_offset), $analysis_ids{$ensembl_type});
       }  
       print "DIRECT $count\n" if ($verbose);
      }
@@ -384,10 +386,10 @@ GCNTSQL
         if($last_xref != $xref_id) {
           push @xref_list, $xref_id;
           $count++;
-          $xref_id = $self->add_xref($xref_offset, $xref_id, $ex_id, $acc, $label, $version, $desc, $type, $info || $where_from);
+          $add_xref_sth->execute(($xref_id+$xref_offset), $ex_id, $acc, $label, $version, $desc, $type, $info || $where_from);
           $last_xref = $xref_id;
         }
-        $object_xref_id = $self->add_object_xref($object_xref_offset, $object_xref_id, $ensembl_id, $ensembl_type, ($xref_id+$xref_offset), $checksum_analysis_id);
+        $add_object_xref_sth->execute(($object_xref_id+$object_xref_offset), $ensembl_id, $ensembl_type, ($xref_id+$xref_offset), $checksum_analysis_id);
       }
       print "CHECKSUM $count\n" if ($verbose);
     }
@@ -405,10 +407,9 @@ GCNTSQL
 	 if($last_xref != $xref_id){
 	   push @xref_list, $xref_id;
 	   $count++;
-	   $xref_id = $self->add_xref($xref_offset, $xref_id, $ex_id, $acc, $label, $version, $desc, $type, $info || $where_from);
+	   $add_xref_sth->execute(($xref_id+$xref_offset), $ex_id, $acc, $label, $version, $desc, $type, $info || $where_from);
 	   $last_xref = $xref_id;
 	 }
-         $object_xref_id = $self->add_object_xref($object_xref_offset, $object_xref_id, $ensembl_id, $ensembl_type, ($xref_id+$xref_offset), $analysis_ids{$ensembl_type});
 	 if(defined($master_xref_id)){  # need to sort this out as all should habe one really. (interpro generates go without these!!)
 	   $add_dependent_xref_sth->execute(($object_xref_id+$object_xref_offset), ($master_xref_id+$xref_offset), ($xref_id+$xref_offset) );
 	   $add_go_xref_sth->execute( ($object_xref_id+$object_xref_offset), ($master_xref_id+$xref_offset), $linkage_type);
@@ -416,6 +417,7 @@ GCNTSQL
 	 else {
 	     $add_go_xref_sth->execute( ($object_xref_id+$object_xref_offset), 0, $linkage_type);
 	 }
+	 $add_object_xref_sth->execute(   ($object_xref_id+$object_xref_offset), $ensembl_id, $ensembl_type, ($xref_id+$xref_offset), $analysis_ids{$ensembl_type} );
        }       
        print "GO $count\n" if ($verbose);     
      }
@@ -433,10 +435,10 @@ GCNTSQL
 	 if($last_xref != $xref_id){
 	   push @xref_list, $xref_id;
 	   $count++;
-	   $xref_id = $self->add_xref($xref_offset, $xref_id, $ex_id, $acc, $label || $acc, $version, $desc, $type, $info || $where_from);
+	   $add_xref_sth->execute(($xref_id+$xref_offset), $ex_id, $acc, $label || $acc, $version, $desc, $type, $info || $where_from);
 	 }
 	 if($last_xref != $xref_id or $last_ensembl != $ensembl_id){
-	   $object_xref_id = $self->add_object_xref($object_xref_offset, $object_xref_id, $ensembl_id, $ensembl_type, ($xref_id+$xref_offset), $analysis_ids{$ensembl_type});
+	   $add_object_xref_sth->execute(($object_xref_id+$object_xref_offset), $ensembl_id, $ensembl_type, ($xref_id+$xref_offset), $analysis_ids{$ensembl_type});
 	   if (defined($master_xref_id)){ # need to sort this out for FlyBase since there are EMBL direct entries from the GFF and dependent xrefs from Uniprot
 	     $add_dependent_xref_sth->execute(($object_xref_id+$object_xref_offset), ($master_xref_id+$xref_offset), ($xref_id+$xref_offset) );
 	   }
@@ -473,10 +475,10 @@ GCNTSQL
         if($last_xref != $xref_id){
 	  push @xref_list, $xref_id;
 	  $count++;
-	  $xref_id = $self->add_xref($xref_offset, $xref_id, $ex_id, $acc, $label, $version, $desc, $type, $info || $where_from);
+	  $add_xref_sth->execute(($xref_id+$xref_offset), $ex_id, $acc, $label, $version, $desc, $type, $info || $where_from);
 	  $last_xref = $xref_id;
         }
-        $object_xref_id = $self->add_object_xref ($object_xref_offset, $object_xref_id, $ensembl_id, $ensembl_type, ($xref_id+$xref_offset), $analysis_ids{$ensembl_type});
+        $add_object_xref_sth->execute(   ($object_xref_id+$object_xref_offset), $ensembl_id, $ensembl_type, ($xref_id+$xref_offset), $analysis_ids{$ensembl_type});
 	$add_identity_xref_sth->execute( ($object_xref_id+$object_xref_offset), $query_identity, $target_identity, $hit_start, $hit_end, 
 					 $translation_start, $translation_end, $cigar_line, $score, $evalue);  
       }  
@@ -611,7 +613,7 @@ GCNTSQL
   
   while($get_xref_interpro_sth->fetch){
     $version||='0';
-    $xref_id = $self->add_xref($xref_offset, $xref_id, $ex_id, $acc, $label, $version, $desc, 'UNMAPPED', $info);
+    $add_xref_sth->execute(($xref_id+$xref_offset), $ex_id, $acc, $label, $version, $desc, 'UNMAPPED', $info);
     $set_unmapped_sth->execute($analysis_id, $ex_id, $acc, $reason_id{"NO_MAPPING"} );
     push @xref_list, $xref_id;
   }
@@ -669,7 +671,7 @@ DIR
   while($direct_unmapped_sth->fetch()){
     my $ex_id = $name_to_external_db_id{$dbname};
     if(defined($name_to_external_db_id{$dbname})){
-      $xref_id = $self->add_xref($xref_offset, $xref_id, $ex_id, $acc, $label, $version, $desc, 'UNMAPPED', $info);   
+      $add_xref_sth->execute(($xref_id+$xref_offset), $ex_id, $acc, $label, $version, $desc, 'UNMAPPED', $info);   
       $set_unmapped_sth->execute($analysis_id, $ex_id, $acc, $reason_id{"NO_STABLE_ID"});
       push @xref_list, $xref_id;
     }
@@ -705,7 +707,7 @@ MIS
   while($misc_unmapped_sth->fetch()){
     my $ex_id = $name_to_external_db_id{$dbname};
     if(defined($name_to_external_db_id{$dbname})){
-      $xref_id = $self->add_xref($xref_offset, $xref_id, $ex_id, $acc, $label, $version, $desc, 'UNMAPPED', $info);   
+      $add_xref_sth->execute(($xref_id+$xref_offset), $ex_id, $acc, $label, $version, $desc, 'UNMAPPED', $info);   
       $set_unmapped_sth->execute($analysis_id, $ex_id, $acc, $reason_id{"NO_MAPPING"});
       push @xref_list, $xref_id;
     }	
@@ -752,7 +754,7 @@ DEP
       next;
     }
     if($last_acc ne $acc){
-      $xref_id = $self->add_xref($xref_offset, $xref_id, $ex_id, $acc, $label||$acc, $version, $desc, 'UNMAPPED', $info);
+      $add_xref_sth->execute(($xref_id+$xref_offset), $ex_id, $acc, $label||$acc, $version, $desc, 'UNMAPPED', $info);
     }
     $last_acc = $acc;
     $set_unmapped_sth->execute($analysis_id, $ex_id, $acc, $parent);
@@ -806,7 +808,7 @@ SEQ
       next;
     }
     if($last_xref != $xref_id){
-      $xref_id = $self->add_xref($xref_offset, $xref_id, $ex_id, $acc, $label, $version, $desc, 'UNMAPPED', $info);
+      $add_xref_sth->execute(($xref_id+$xref_offset), $ex_id, $acc, $label, $version, $desc, 'UNMAPPED', $info);
     }
     $last_xref = $xref_id;
     if(defined($ensembl_id)){
@@ -866,7 +868,7 @@ WEL
     if(!defined($ex_id)){
       next;
     }
-    $xref_id = $self->add_xref($xref_offset, $xref_id, $ex_id, $acc, $label, $version, $desc, 'UNMAPPED', $info);
+    $add_xref_sth->execute(($xref_id+$xref_offset), $ex_id, $acc, $label, $version, $desc, 'UNMAPPED', $info);
     $set_unmapped_sth->execute($analysis_id, $ex_id, $acc);
     push @xref_list, $xref_id;
   }
@@ -933,40 +935,6 @@ sub get_single_analysis {
   return $analysis_id;
 }
 
-
-sub add_xref {
-  my ($self, $offset, $xref_id, $external_db_id, $dbprimary_acc, $display_label, $version, $description, $info_type, $info_text)  = @_;
-  my $dbc = $self->core->dbc();
-  my $select_sth = $dbc->prepare("select xref_id from xref where dbprimary_acc = ? and external_db_id = ? and info_type = ? and info_text = ? and version = ?");
-  my $insert_sth = $dbc->prepare("insert into xref (xref_id, external_db_id, dbprimary_acc, display_label, version, description, info_type, info_text) values (?, ?, ?, ?, ?, ?, ?, ?)");
-  my $new_xref_id;
-  $select_sth->execute($dbprimary_acc, $external_db_id, $info_type, $info_text, $version);
-  $select_sth->bind_columns(\$new_xref_id);
-  $select_sth->fetch();
-  if (!$new_xref_id) {
-    $insert_sth->execute(($xref_id+$offset), $external_db_id, $dbprimary_acc, $display_label, $version, $description, $info_type, $info_text);
-    return $xref_id;
-  } else {
-    return $new_xref_id - $offset;
-  }
-}
-
-sub add_object_xref {
-  my ($self, $offset, $object_xref_id, $ensembl_id, $ensembl_object_type, $xref_id, $analysis_id) = @_;
-  my $dbc = $self->core->dbc();
-  my $select_sth = $dbc->prepare("select object_xref_id from object_xref where xref_id = ? and ensembl_object_type = ? and ensembl_id = ? and analysis_id = ?");
-  my $insert_sth = $dbc->prepare("insert into object_xref (object_xref_id, ensembl_id, ensembl_object_type, xref_id, analysis_id) values (?, ?, ?, ?, ?)");
-  my $new_object_xref_id;
-  $select_sth->execute($xref_id, $ensembl_object_type, $ensembl_id, $analysis_id);
-  $select_sth->bind_columns(\$new_object_xref_id);
-  $select_sth->fetch();
-  if (!$new_object_xref_id) {
-    $insert_sth->execute(($object_xref_id+$offset), $ensembl_id, $ensembl_object_type, $xref_id, $analysis_id);
-    return $object_xref_id;
-  } else {
-    return $new_object_xref_id - $offset;
-  }
-}
 
 
 

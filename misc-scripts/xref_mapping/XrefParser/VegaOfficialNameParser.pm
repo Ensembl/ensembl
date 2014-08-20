@@ -53,7 +53,7 @@ sub run_script {
   my $species_name = $id2name{$species_id}[0];
 
   my $prepend = 1;
-  if($species_name eq "mus_musculus" || $species_name eq 'homo_sapiens'){
+  if($species_name eq "mus_musculus" ){
     $prepend = 0;
   }
 

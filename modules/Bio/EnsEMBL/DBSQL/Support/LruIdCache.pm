@@ -156,7 +156,7 @@ sub get {
   Arg [2]    : Bio::EnsEMBL::Slice optional attribute for 
                C<_uncached_fetch_all_by_dbID_list()> delegation
   Example    : is($cache->get_by_list([1,2]), ['a','b']);
-  Description: Attempts to retrieve all values currently available in the cache,
+  Description: Attempts to retreive all values currently available in the cache,
                fetches any remaining values and stores these in the cache.
   Returntype : ArrayRef of found values
   Exceptions : None

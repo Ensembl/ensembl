@@ -48,7 +48,6 @@ sub run_script {
   my $dbname;
   my $pass;
   my $transcript_score_threshold = 0.90;
-  my $tl_transcript_score_threshold = 0.90;
   my $project;
 
 # Grep the project name, should be ensembl or ensemblgenomes
@@ -203,24 +202,15 @@ sub run_script {
 # Create a range registry for all the exons of the refseq transcript
       foreach my $transcript_of (sort { $a->start() <=> $b->start() } @$transcripts_of) {
         my %transcript_result;
-        my %tl_transcript_result;
         my $id = $transcript_of->stable_id();
         if ($id =~ /^XM_/) { next; }
         my $exons_of = $transcript_of->get_all_Exons();
         my $rr1 = Bio::EnsEMBL::Mapper::RangeRegistry->new();
-        my $tl_exons_of = $transcript_of->get_all_translateable_Exons();
-        my $rr3 = Bio::EnsEMBL::Mapper::RangeRegistry->new();
 
         foreach my $exon_of (@$exons_of) {
           my $start_of = $exon_of->seq_region_start();
           my $end_of = $exon_of->seq_region_end();
           $rr1->check_and_register( 'exon', $start_of, $end_of );
-        }
-
-        foreach my $tl_exon_of (@$tl_exons_of) {
-          my $tl_start_of = $tl_exon_of->seq_region_start();
-          my $tl_end_of = $tl_exon_of->seq_region_end();
-          $rr3->check_and_register( 'exon', $tl_start_of, $tl_end_of );
         }
 
 # Fetch slice in core database which overlaps refseq transcript
@@ -231,10 +221,7 @@ sub run_script {
         foreach my $transcript(@$transcripts) {
           my $exons = $transcript->get_all_Exons();
           my $rr2 = Bio::EnsEMBL::Mapper::RangeRegistry->new();
-          my $rr4 = Bio::EnsEMBL::Mapper::RangeRegistry->new();
           my $exon_match = 0;
-          my $tl_exons = $transcript->get_all_translateable_Exons();
-          my $tl_exon_match = 0;
 
           foreach my $exon (@$exons) {
             my $start = $exon->seq_region_start();
@@ -244,16 +231,7 @@ sub run_script {
             $rr2->check_and_register('exon', $start, $end);
           }
 
-          foreach my $tl_exon (@$tl_exons) {
-            my $tl_start = $tl_exon->seq_region_start();
-            my $tl_end = $tl_exon->seq_region_end();
-            my $tl_overlap = $rr3->overlap_size('exon', $tl_start, $tl_end);
-            $tl_exon_match += $tl_overlap/($tl_end - $tl_start + 1);
-            $rr4->check_and_register('exon', $tl_start, $tl_end);
-          }
-
           my $exon_match_of = 0;
-          my $tl_exon_match_of = 0;
 
 # Look for oeverlap between the two sets of exons
           foreach my $exon_of (@$exons_of) {
@@ -263,46 +241,23 @@ sub run_script {
             $exon_match_of += $overlap_of/($end_of - $start_of + 1);
           }
 
-          foreach my $tl_exon_of (@$tl_exons_of) {
-            my $tl_start_of = $tl_exon_of->seq_region_start();
-            my $tl_end_of = $tl_exon_of->seq_region_end();
-            my $tl_overlap_of = $rr4->overlap_size('exon', $tl_start_of, $tl_end_of);
-            $tl_exon_match_of += $tl_overlap_of/($tl_end_of - $tl_start_of + 1);
-          }
-
 # Comparing exon matching with number of exons to give a score
-          my $score = ( ($exon_match_of + $exon_match)) / (scalar(@$exons_of) + scalar(@$exons) );
-          my $tl_score = 0;
-          if (scalar(@$tl_exons_of) > 0) {
-            $tl_score = ( ($tl_exon_match_of + $tl_exon_match)) / (scalar(@$tl_exons_of) + scalar(@$tl_exons) );
-          }
+          my $score = ( ($exon_match_of + $exon_match)) /
+                        (scalar(@$exons_of) + scalar(@$exons) );
           if ($transcript->biotype eq $transcript_of->biotype) {
             $transcript_result{$transcript->stable_id} = $score;
-            $tl_transcript_result{$transcript->stable_id} = $tl_score;
           }
         }
 
         my $best_score = 0;
-        my $best_tl_score = 0;
         my $best_id;
-        my ($score, $tl_score);
-# Comparing the scores based on coding exon overlap
-# If there is a stale mate, chose best exon overlap score
+        my $score;
         foreach my $tid (keys(%transcript_result)) {
           $score = $transcript_result{$tid};
-          $tl_score = $tl_transcript_result{$tid};
-          if ($score > $transcript_score_threshold || $tl_score > $tl_transcript_score_threshold) {
-            if ($tl_score >= $best_tl_score) {
-              if ($tl_score > $best_tl_score) {
-                $best_id = $tid;
-                $best_score = $score;
-                $best_tl_score = $tl_score;
-              } elsif ($tl_score == $best_tl_score) {
-                if ($score > $best_score) {
-                  $best_id = $tid;
-                  $best_score = $score;
-                }
-              }
+          if ($score > $transcript_score_threshold) {
+            if ($score > $best_score) {
+              $best_id = $tid;
+              $best_score = $score;
             }
           }
         }

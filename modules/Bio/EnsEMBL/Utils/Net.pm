@@ -74,7 +74,6 @@ our @EXPORT_OK;
 @EXPORT_OK = qw(
   do_GET
   do_FTP
-  do_FTP_to_file
 );
 
 use Bio::EnsEMBL::Utils::Exception qw(throw);
@@ -144,34 +143,9 @@ sub do_GET {
 =cut
 
 sub do_FTP {
-  my ($url, $total_attempts, $sleep) = @_;
-  return _retry_sleep(sub {
-    return _get_lwp($url);
-  }, $total_attempts, $sleep);
-}
-
-=head2 do_FTP_to_file
-
-  Arg [1]     : string $uri
-  Arg [2]     : int; $total_attempts The number of times to try the URI 
-                before throwing an exception
-  Arg [3]     : number; $sleep Amount of time to sleep between attempts. 
-                Delegates onto Time::HiRes so floating point numbers are 
-                supported
-  Description : Performs a FTP fetch using a non-authenticated connection (
-                however some servers will allow you to encode this in the URI).
-  Returntype  : Boolean true if download was successful.
-  Example     : my $contents = do_GET('http://www.google.co.uk/');
-  Exceptions  : If we could not retrieve the resource after the specified 
-                number of attempts.
-  Status      : Stable
-
-=cut
-
-sub do_FTP_to_file {
   my ($url, $total_attempts, $sleep, $filename) = @_;
   return _retry_sleep(sub {
-    return _get_lwp_to_file($url, $filename);
+    return _get_lwp($url, $filename);
   }, $total_attempts, $sleep);
 }
 
@@ -206,25 +180,19 @@ sub _get_http_tiny {
 }
 
 sub _get_lwp {
-  my ($url) = @_;
-  throw "Cannot perform action as LWP::UserAgent is not available" unless $LWP;
-  my $ua = LWP::UserAgent->new();
-  $ua->env_proxy;
-  my $response = $ua->get($url);
-  return $response->decoded_content if $response->is_success;
-  return;
-}
-
-sub _get_lwp_to_file {
   my ($url, $filename) = @_;
   throw "Cannot perform action as LWP::UserAgent is not available" unless $LWP;
-  throw "Filename required for download to proceed." unless $filename;
   my $ua = LWP::UserAgent->new();
   $ua->env_proxy;
-  my $response = $ua->get($url, ":content_file" => $filename);
-  print 'UA Response: '.$response->is_success."\n";
-  if ($response->is_success) {return 1}
-  throw $response->status_line;
+  my $response;
+  if ($filename) {
+    $response = $ua->get($url, ':content_file' => $filename);
+    return 1 if $response->is_success;
+  } else {
+    $response = $ua->get($url);
+    return $response->decoded_content if $response->is_success;
+  }
+  return;
 }
 
 1;

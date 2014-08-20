@@ -206,9 +206,6 @@ $dbc->prevent_disconnect(sub {
   my $do_result_2 = $dbc->do($sql);
   ok($do_result_2, "Asserting do returns true [$do_result_2]");
   is($dbc->db_handle(), $db_handle_ref, 'Checking DBH is the same as it was at the beginning');
-  my $do_result_3 = $dbc->do($sql, undef, 1);
-  ok($do_result_3, "Asserting do accepts bind_values arguments [$do_result_3]");
-  is($dbc->db_handle(), $db_handle_ref, 'Checking DBH is the same as it was at the beginning');
   my $sth1 = $dbc->prepare($sql);
   $sth1->execute();
   my $expected = $sth1->fetchall_arrayref()->[0]->[0];

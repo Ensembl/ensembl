@@ -172,7 +172,6 @@ sub run {
       elsif($array[0] =~ /UniProt/){
         if($swiss{$array[1]}){
           foreach my $xref_id (@{$swiss{$array[1]}}){
-            if ($array[7] =~ /Ensembl/) { next; }
             $self->add_dependent_xref({ master_xref_id => $xref_id,
               acc            => $array[4],
               label          => $array[4],

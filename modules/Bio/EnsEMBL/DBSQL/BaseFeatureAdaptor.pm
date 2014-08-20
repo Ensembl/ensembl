@@ -758,6 +758,10 @@ sub _get_by_Slice {
         push @feature_coord_systems, $slice->coord_system();
     } else {
         @feature_coord_systems = @{ $self->db->get_MetaCoordContainer->fetch_all_CoordSystems_by_feature_type($table_name)};
+        unless( @feature_coord_systems) {
+            warning("No CoordinateSystems defined for $table_name table. Please"
+            ." check meta_coord table and consider running ensembl/misc-scripts/meta_coord/update_meta_coord.pl");
+        }
     }
 	
     my $assembly_mapper_adaptor = $self->db->get_AssemblyMapperAdaptor();
@@ -1273,9 +1277,46 @@ sub remove {
   $sth->bind_param(1,$feature->dbID,SQL_INTEGER);
   $sth->execute();
 
+  # Update meta_coord as necessary
+  my $mcc = $self->db->get_MetaCoordContainer();
+  my $cs = $feature->slice->coord_system();
+  $mcc->add_feature_type($cs, $table, $feature->length, 1);
+
   #unset the feature dbID ad adaptor
   $feature->dbID(undef);
   $feature->adaptor(undef);
+
+  return;
+}
+
+#
+# Helper function containing some common feature removal functionality
+#
+# This method will ensure that meta coords are updated accordingly
+#
+
+sub _pre_remove {
+  my $self    = shift;
+  my $feature = shift;
+
+  my $db = $self->db();
+  if(!ref($feature) || !$feature->isa('Bio::EnsEMBL::Feature')) {
+    throw('Expected Feature argument.');
+  }
+
+  if(!$feature->is_stored($db)) {
+    throw("This feature is not stored in this database");
+  }
+
+  my ($tab) = $self->_tables();
+  my $tabname = $tab->[0];
+
+  my $slice = $feature->slice();
+  my $cs = $slice->coord_system;
+
+  # Update meta_coord table
+  my $mcc = $db->get_MetaCoordContainer();
+  $mcc->add_feature_type($cs, $tabname, $feature->length, 1);
 
   return;
 }

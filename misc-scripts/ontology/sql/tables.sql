@@ -25,16 +25,16 @@ CREATE TABLE meta (
 
   PRIMARY KEY (meta_id),
   UNIQUE INDEX key_value_idx (meta_key, meta_value)
-) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
+);
 
 # Add schema type and schema version to the meta table
 INSERT INTO meta (meta_key, meta_value) VALUES 
   ('schema_type', 'ontology'),
-  ('schema_version', '77');
+  ('schema_version', '75');
 
 # Patches included in this schema file
 INSERT INTO meta (meta_key, meta_value)
-  VALUES ('patch', 'patch_76_77_a.sql|schema_version');
+  VALUES ('patch', 'patch_74_75_a.sql|schema_version');
 
 CREATE TABLE ontology (
   ontology_id   INT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -43,7 +43,7 @@ CREATE TABLE ontology (
 
   PRIMARY KEY (ontology_id),
   UNIQUE INDEX name_namespace_idx (name, namespace)
-) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
+);
 
 CREATE TABLE subset (
   subset_id     INT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -52,7 +52,7 @@ CREATE TABLE subset (
 
   PRIMARY KEY (subset_id),
   UNIQUE INDEX name_idx (name)
-) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
+);
 
 CREATE TABLE term (
   term_id       INT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -68,7 +68,7 @@ CREATE TABLE term (
   UNIQUE INDEX accession_idx (accession),
   UNIQUE INDEX ontology_acc_idx (ontology_id, accession),
   INDEX name_idx (name)
-) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
+);
 
 CREATE TABLE synonym (
   synonym_id    INT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -78,7 +78,7 @@ CREATE TABLE synonym (
   PRIMARY KEY (synonym_id),
   UNIQUE INDEX term_synonym_idx (term_id, synonym_id),
   INDEX name_idx (name(50))
-) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
+);
 
 CREATE TABLE alt_id (
   alt_id        INT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -88,7 +88,7 @@ CREATE TABLE alt_id (
   PRIMARY KEY (alt_id),
   UNIQUE INDEX term_alt_idx (term_id, alt_id),
   INDEX accession_idx (accession(50))
-) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
+);
 
 CREATE TABLE relation_type (
   relation_type_id  INT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -96,7 +96,7 @@ CREATE TABLE relation_type (
 
   PRIMARY KEY (relation_type_id),
   UNIQUE INDEX name_idx (name)
-) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
+);
 
 CREATE TABLE relation (
   relation_id       INT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -110,7 +110,7 @@ CREATE TABLE relation (
   UNIQUE INDEX child_parent_idx
     (child_term_id, parent_term_id, relation_type_id, intersection_of, ontology_id),
   INDEX parent_idx (parent_term_id)
-) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
+);
 
 CREATE TABLE closure (
   closure_id        INT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -125,7 +125,7 @@ CREATE TABLE closure (
     (child_term_id, parent_term_id, subparent_term_id, ontology_id),
   INDEX parent_subparent_idx
     (parent_term_id, subparent_term_id)
-) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
+);
 
 -- There are additional tables in the released databases called
 -- "aux_XX_YY_map".  These are created by the "add_subset_maps.pl"

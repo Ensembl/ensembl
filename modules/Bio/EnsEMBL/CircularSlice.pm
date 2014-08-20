@@ -605,7 +605,7 @@ sub get_all_genotyped_VariationFeatures {
 
   Arg [1]    : none
   Example    : $features = $slice->get_all_DASFeatures;
-  Description: Retrieves a hash reference to a hash of DAS feature
+  Description: Retreives a hash reference to a hash of DAS feature
                sets, keyed by the DNS, NOTE the values of this hash
                are an anonymous array containing:
                 (1) a pointer to an array of features;

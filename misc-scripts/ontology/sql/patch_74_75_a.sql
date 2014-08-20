@@ -21,7 +21,7 @@
 --   so that script schema_patcher.pl would work
 
 INSERT INTO meta (meta_key, meta_value)
-  VALUES ('schema_version', 75);
+  VALUES ('schema_version', 74);
 
 -- Patch identifier
 INSERT INTO meta (meta_key, meta_value)

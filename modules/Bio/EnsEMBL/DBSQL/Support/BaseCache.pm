@@ -235,7 +235,7 @@ sub get_by_list {
 
                Remember if the cache is un-aware of the key or the specific 
                implementation used cannot perform database lookups based on cache misses
-               you will not be able to retrieve the object in question.
+               you will not be able to retreive the object in question.
   Returntype : ArrayRef of found values
   Exceptions : Thrown if SQL and parameters are empty and not the expected types. All
                other exceptions come from DBI/SQL operations.

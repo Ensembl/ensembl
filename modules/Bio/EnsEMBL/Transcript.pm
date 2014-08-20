@@ -99,7 +99,7 @@ use vars qw(@ISA);
   Arg [-MODIFIED_DATE]:
         string - the date the transcript was last modified
   Arg [-DESCRIPTION]:
-        string - the transcripts description
+        string - the transcipts description
   Arg [-BIOTYPE]: 
         string - the biotype e.g. "protein_coding"
   Arg [-STATUS]:
@@ -393,7 +393,7 @@ sub add_DBEntry {
 =head2 get_all_supporting_features
 
   Example    : my @evidence = @{ $transcript->get_all_supporting_features };
-  Description: Retrieves any supporting features added manually by 
+  Description: Retreives any supporting features added manually by 
                calls to add_supporting_features.
   Returntype : Listref of Bio::EnsEMBL::FeaturePair objects
   Exceptions : none
@@ -849,8 +849,7 @@ sub add_alternative_translation {
 
 =head2 spliced_seq
 
-  Args       : soft_mask (opt)
-               if specified, will return a sequence where UTR regions are lowercased
+  Args       : none
   Description: Retrieves all Exon sequences and concats them together.
                No phase padding magic is done, even if phases do not align.
   Returntype : Text
@@ -861,7 +860,7 @@ sub add_alternative_translation {
 =cut
 
 sub spliced_seq {
-  my ( $self, $soft_mask ) = @_;
+  my ( $self ) = @_;
 
   my $seq_string = "";
   for my $ex ( @{$self->get_all_Exons()} ) {
@@ -872,30 +871,7 @@ sub spliced_seq {
               "be correct.");
       $seq_string .= 'N' x $ex->length();
     } else {
-      my $exon_seq = $seq->seq();
-      if ($soft_mask) {
-        my $padstr;
-        if (!defined ($ex->coding_region_start($self))) {
-          $exon_seq = lc($exon_seq);
-        } elsif ($ex->coding_region_start($self) > $ex->start()) {
-          my $forward_length = $ex->coding_region_start($self) - $ex->start();
-          my $reverse_length = $ex->end() - $ex->coding_region_start($self);
-          if ($ex->strand == 1) {
-            $exon_seq = lc (substr($exon_seq, 0, $forward_length)) . substr($exon_seq, $forward_length); 
-          } else {
-            $exon_seq = substr($exon_seq, 0, $reverse_length) . lc(substr($exon_seq, $reverse_length));
-          }
-        } elsif ($ex->coding_region_end($self) < $ex->end()) {
-          my $forward_length = $ex->coding_region_end($self) - $ex->start();
-          my $reverse_length = $ex->end() - $ex->coding_region_end($self);
-          if ($ex->strand == 1) {
-            $exon_seq = substr($exon_seq, 0, $forward_length+1) . lc(substr($exon_seq, $forward_length+1));
-          } else {
-            $exon_seq = lc(substr($exon_seq, 0, $reverse_length)) . substr($exon_seq, $reverse_length);
-          }
-        }
-      }
-      $seq_string .= $exon_seq;
+      $seq_string .= $seq->seq();
     }
   }
 
@@ -2263,7 +2239,6 @@ sub swap_exons {
   my $arref = $self->{'_trans_exon_array'};
   for(my $i = 0; $i < @$arref; $i++) {
     if($arref->[$i] == $old_exon) {
-      $new_exon->add_supporting_features(@{$old_exon->get_all_supporting_features});
       $arref->[$i] = $new_exon;
       last;
     }
@@ -2277,50 +2252,6 @@ sub swap_exons {
       $self->translation()->end_Exon( $new_exon );
     }
   }
-}
-
-=head2 exon_rank
-
-  Arg [1]    : Bio::EnsEMBL::Exon $Exon
-               Query exon
-  Example    : $rank = $transcript->exon_rank($exon);
-  Description: Returns the rank of an exon relative to the transcript
-  Returntype : none
-  Exceptions : Throws if the exon does not belong to the transcript
-  Caller     : General
-  Status     : Stable
-
-=cut
-
-sub exon_rank {
-  my ( $self, $exon ) = @_;
-
-  if (!defined( $self->{'_trans_exon_array'} )
-    && defined( $self->adaptor() ) )
-  {
-    $self->{'_trans_exon_array'} =
-      $self->adaptor()->db()->get_ExonAdaptor()
-      ->fetch_all_by_Transcript($self);
-  }
-
-  my $arref = $self->{'_trans_exon_array'};
-  my $rank;
-
-  if (!defined $arref) {
-    throw "Transcript does not have any exons";
-  }
-  for(my $i = 0; $i < @$arref; $i++) {
-    if($arref->[$i]->stable_id() eq $exon->stable_id()) {
-      $rank = $i+1;
-      last;
-    }
-  }
-
- if (!defined $rank) {
-   throw "Exon does not belong to transcript";
-  }
-
-  return $rank;
 }
 
 
@@ -2838,7 +2769,7 @@ sub get_all_DASFactories {
 
   Arg [1]    : none
   Example    : $features = $prot->get_all_DAS_Features;
-  Description: Retrieves a hash reference to a hash of DAS feature
+  Description: Retreives a hash reference to a hash of DAS feature
                sets, keyed by the DNS, NOTE the values of this hash
                are an anonymous array containing:
                 (1) a pointer to an array of features;

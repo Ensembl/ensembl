@@ -37,20 +37,18 @@ use base qw( XrefMapper::BasicMapper);
 #      ZebraFish (ZFIN_ID),
 #      Human (HGNC)
 #      Mouse (MGI)
-#      Rat (RGD)
 #      Pig (PIGGY)
 #         There is currently no official domain source for pig, but it has manual annotation
 #         We use PIGGY as a fake official naming source
 #
 #  1) So we find the best official name for each gene
 #     order for this is:-
-#               i)   official domain name source (HGNC, MGI, ZFIN_ID, RGD)
+#               i)   official domain name source (HGNC, MGI, ZFIN_ID)
 #               ii)  RFAM
 #               iii) miRBase
 #               iv)  Uniprot_gn
-#               v)   EntrezGene
-#               vi)  Vega clone name
-#               vii) Clone name
+#               v)   Vega clone name
+#               vi)  Clone name
 #
 #      NOTE: for "i)" above, if more than one exists we find the "best" one if possible
 #            and remove the other ones. If there is more than one "best" we keep all and
@@ -129,8 +127,8 @@ sub run {
 
 
   ###########################################################
-  # If there are any official names on transcripts or translations
-  # moved them onto gene level
+  # HGNC has already been moved to the gene level so we need
+  # to do this for MGI or ZFIN_ID depepndent on the species
   #
   # This is done for 2 reasons
   #  1) to make the code the same as HGNC is on a gene
@@ -139,17 +137,13 @@ sub run {
   #     from the genes so move them now.
   ###########################################################
 
-  if($dbname eq "MGI"){ # Copy MGI to Genes
+  if($dbname eq "MGI"){ # first Copy MGI to Genes
     $self->biomart_fix("MGI","Translation","Gene");
     $self->biomart_fix("MGI","Transcript","Gene");
   }
-  if($dbname eq "ZFIN_ID"){ # Copy ZFIN_ID to Genes
+  if($dbname eq "ZFIN_ID"){ # first Copy MGI to Genes
     $self->biomart_fix("ZFIN_ID","Translation","Gene");
     $self->biomart_fix("ZFIN_ID","Transcript","Gene");
-  }
-  if($dbname eq "RGD"){ # Copy RGD to Genes
-    $self->biomart_fix("RGD","Translation","Gene");
-    $self->biomart_fix("RGD","Transcript","Gene");
   }
 
 
@@ -225,31 +219,6 @@ SQ0
   my %ens_clone_genes;
   my %official_name_used;
 
-  my $ignore_sql =<<IEG;
-  SELECT DISTINCT ox.object_xref_id
-    FROM object_xref ox, dependent_xref dx,
-       xref xmas, xref xdep,
-       source smas, source sdep
-    WHERE ox.xref_id = dx.dependent_xref_id AND
-          dx.dependent_xref_id = xdep.xref_id AND
-          dx.master_xref_id = xmas.xref_id AND
-          xmas.source_id = smas.source_id AND
-          xdep.source_id = sdep.source_id AND
-          smas.name like "Refseq%predicted" AND
-          sdep.name like "EntrezGene" AND
-          ox.ox_status = "DUMP_OUT"
-IEG
-
-  my %ignore_object;
-  my $ignore_sth = $self->xref->dbc->prepare($ignore_sql);
-  $ignore_sth->execute();
-  my ($ignore_object_xref_id);
-  $ignore_sth->bind_columns(\$ignore_object_xref_id);
-  while($ignore_sth->fetch()){
-    $ignore_object{$ignore_object_xref_id} = 1;
-  }
-  $ignore_sth->finish;
-
   while ( my $gene_id = shift @sorted_gene_ids){
 
     my $tran_source = $dbname;
@@ -259,7 +228,6 @@ IEG
     my $gene_symbol_xref_id = undef;
     my $vega_clone_name = undef;
     my $clone_name = undef;
-    my $is_lrg = 0;
 
     ########################################
     # Get the vega data needed for this gene
@@ -294,7 +262,7 @@ IEG
     # If not found see if there is an LRG entry
     ############################################
     if(!defined($gene_symbol)){ # look for LRG
-      ($gene_symbol, $gene_symbol_xref_id, $is_lrg) = $self->find_lrg_hgnc($gene_id);
+      ($gene_symbol, $gene_symbol_xref_id) = $self->find_lrg_hgnc($gene_id);
     }
 
     ####################################################
@@ -303,8 +271,7 @@ IEG
     ####################################################
     if(!defined($gene_symbol)){ 
       ($gene_symbol, $gene_symbol_xref_id) = 
-	$self->find_from_other_sources(\%ignore_object, 
-                                       {gene_id       => $gene_id, 
+	$self->find_from_other_sources({gene_id       => $gene_id, 
 					label_to_desc => \%display_label_to_desc,
 					tran_source   => \$tran_source});
     }
@@ -325,12 +292,12 @@ IEG
 
     ##############################################
     # Finally if all else fails use the clone name
-    # but only for human, mouse, zebrafish and rat
+    # but only for human, mouse and zebrafish
     # as pig is special with no official naming source, we'd rather leave ensembl stable ids
     # than use ensembl clone names
     ##############################################
     if((!defined($gene_symbol)) and (!defined($vega_clone_name))){
-      if ($dbname eq 'HGNC' || $dbname eq 'MGI' || $dbname eq 'ZFIN_ID' || $dbname eq 'RGD') {
+      if ($dbname eq 'HGNC' || $dbname eq 'MGI' || $dbname eq 'ZFIN_ID') {
         $clone_name = $self->get_clone_name($gene_id, $ga, $dbname);
         if(defined($clone_name)){
           $clone_name =~ s/[.]\d+//;    #remove .number
@@ -359,8 +326,7 @@ IEG
       }
       $set_gene_display_xref_sth->execute($gene_symbol_xref_id, $gene_id);
 
-      if (!$is_lrg) {
-        $self->set_transcript_display_xrefs({ max_xref         => \$max_xref_id, 
+      $self->set_transcript_display_xrefs({ max_xref         => \$max_xref_id, 
                                             max_object       => \$max_object_xref_id,
                                             gene_id          =>  $gene_id,
 					    gene_symbol      => $gene_symbol,
@@ -371,9 +337,7 @@ IEG
                                             gene_to_tran     => \%gene_to_transcripts, 
                                             tran_to_vega_ext => $tran_to_vega_ext,
 					    ens_clone_genes  => \%ens_clone_genes,
-                                            tran_source      => $tran_source,
 					   });
-      }
     }
 
     if (!defined($gene_symbol)) { # use clone name 
@@ -396,6 +360,14 @@ IEG
     }
   } # for each gene
 
+
+
+  ########################################################
+  # Copy $dbname from gene to the canonical transcripts. #
+  ########################################################
+
+  $self->odn_xrefs_to_canonical_transcripts($max_object_xref_id, $dbname, $ins_dep_ix_sth);
+
   $self->update_process_status('official_naming_done');
   return;
 }
@@ -407,7 +379,7 @@ IEG
 # Get offical name if it has one
 #
 # Search gene for dbname entries.
-# dbname (HGNC||MGI||ZFIN_ID|RGD) dependent on species
+# dbname (HGNC||MGI||ZFIN_ID depenedent on species
 #
 # Find the "best" one
 # Remove the lesser ones (set status to MULTI_DELETE for object_xref)
@@ -717,7 +689,6 @@ sub set_transcript_display_xrefs{
   my $seen_gene =           $arg_ref->{seen_gene};
   my $gene_to_transcripts = $arg_ref->{gene_to_tran};
   my $tran_to_vega_ext =    $arg_ref->{tran_to_vega_ext};
-  my $tran_source         = $arg_ref->{tran_source};
 
 
   # statement handles needed
@@ -743,7 +714,7 @@ sub set_transcript_display_xrefs{
     }
     my $id = $gene_symbol."-".$ext;
     if(!defined($source_id)){
-      croak "id = $id\n but NO source_id for this entry for $tran_source???\n";
+      croak "id = $id\n but NO source_id for this entry???\n";
     }
     if(!defined($xref_added->{$id.":".$source_id})){
       $$max_xref_id++;
@@ -1100,29 +1071,24 @@ sub get_other_name_hash{
 
 
 sub find_from_other_sources{
-  my ($self, $ignore_object, $ref_args) = @_;
+  my ($self, $ref_args) = @_;
   my $tran_source           = $ref_args->{tran_source};
   my $gene_id               = $ref_args->{gene_id};
   my $display_label_to_desc = $ref_args->{label_to_desc}; 
-  my %ignore_object = %{$ignore_object};
+
 
   my ($gene_symbol, $gene_symbol_xref_id);
+
   my $dbentrie_sth = $self->get_dbentrie_with_desc_sth();
+  
   my $other_name_num = $self->get_other_name_hash();
 
   my ($display, $xref_id, $object_xref_id, $level, $desc);
-  my %found_gene;
-  foreach my $ext_db_name (qw(miRBase RFAM Uniprot_gn EntrezGene)){
+  foreach my $ext_db_name (qw(miRBase RFAM Uniprot_gn)){
     $dbentrie_sth->execute($ext_db_name, $gene_id, "Gene");
     $dbentrie_sth->bind_columns(\$display, \$xref_id, \$object_xref_id, \$level, \$desc);
     while($dbentrie_sth->fetch){
-      if (defined $found_gene{$gene_id}) {
-        last;
-      }
       if ($display =~ /^LOC/ || $display =~ /^SSC/) {
-        next;
-      }
-      if (defined $ignore_object{$object_xref_id}) {
         next;
       }
       $gene_symbol = $display;
@@ -1135,10 +1101,9 @@ sub find_from_other_sources{
       else{
 	$other_name_num->{$gene_symbol} = 1;
       }
-      if ($ext_db_name eq 'miRBase' || $ext_db_name eq 'RFAM') {
+      if ($ext_db_name ne 'Uniprot_gn') {
         $gene_symbol .= ".".$other_name_num->{$gene_symbol};
       }
-      $found_gene{$gene_id} = 1;
       next;
     }
   }  
@@ -1306,10 +1271,80 @@ sub find_lrg_hgnc{
 	  $gene_symbol_xref_id = $new_xref_id;
     }
   }
-  return ($gene_symbol, $gene_symbol_xref_id, 1);
+  return ($gene_symbol, $gene_symbol_xref_id);
 }
 
 #############################END LRG BIT ################################################
+
+
+
+#
+# Copy the official database names (HGNC, MGI, ZFIN_ID) for the gene onto
+# the canonical transcript
+#
+sub odn_xrefs_to_canonical_transcripts{
+  my ($self, $max_object_xref_id, $dbname, $ins_dep_ix_sth) = @_;
+
+  # remove the ignore later on after testing
+  my $sth_add_ox = $self->xref->dbc->prepare("insert ignore into object_xref (object_xref_id, xref_id, ensembl_id, ensembl_object_type, linkage_type, ox_status, master_xref_id) values(?, ?, ?, 'Transcript', ?, ?, ?)");
+  
+  #  my $object_xref_id = $max_object_xref_id + 1;
+  
+  $max_object_xref_id++;
+  
+  if($max_object_xref_id == 1){
+    croak "max_object_xref_id should not be 1\n";
+  }
+  
+  my $object_sql = (<<"FSQL");
+select x.xref_id, o.ensembl_id, o.linkage_type, o.ox_status, o.master_xref_id, ix.query_identity, ix.target_identity
+  from xref x, source s, object_xref o, identity_xref ix
+    where x.source_id = s.source_id and 
+      ix.object_xref_id  = o.object_xref_id and
+      o.ox_status = "DUMP_OUT" and
+      s.name like "$dbname" and 
+      o.xref_id = x.xref_id  and
+      o.ensembl_object_type = "Gene";
+FSQL
+  
+  my $sql = "select gene_id, canonical_transcript_id from gene";
+  my $sth = $self->core->dbc->prepare($sql);
+  
+  $sth->execute();
+
+  my $gene_id;
+  my $tran_id;
+  $sth->bind_columns(\$gene_id,\$tran_id);
+  my %gene_to_tran_canonical;
+  while ($sth->fetch){
+    $gene_to_tran_canonical{$gene_id} = $tran_id;
+  }
+  $sth->finish;
+
+  $sth = $self->xref->dbc->prepare($object_sql);
+
+  $sth->execute();
+  my ($xref_id, $linkage_type, $ox_status, $q_id, $t_id, $master_id);
+  $sth->bind_columns(\$xref_id, \$gene_id, \$linkage_type, \$ox_status, \$q_id, \$t_id, \$master_id);
+
+
+  my $canonical_count = 0;
+  while ($sth->fetch){
+    if(defined($gene_to_tran_canonical{$gene_id})){
+      $canonical_count++;
+      $max_object_xref_id++;
+      $sth_add_ox->execute($max_object_xref_id, $xref_id, $gene_to_tran_canonical{$gene_id}, $linkage_type, $ox_status, $master_id) || print STDERR "(Gene id - $gene_id) Could not add  $max_object_xref_id, .".$gene_to_tran_canonical{$gene_id}.", $xref_id, $linkage_type, $ox_status to object_xref, master_xref_id to $master_id\n";
+      $ins_dep_ix_sth->execute($max_object_xref_id, $q_id, $t_id);
+    }
+    else{
+      print STDERR "Could not find canonical for gene $gene_id\n";
+    }
+  }
+  $sth->finish;
+
+  print "Copied $canonical_count $dbname from gene to canonical transcripts\n" if($self->verbose);
+  return;
+}
 
 sub get_clone_name{
   my ($self, $gene_id, $ga, $dbname) = @_;
@@ -1318,7 +1353,7 @@ sub get_clone_name{
   my $gene= $ga->fetch_by_dbID($gene_id);
   my $slice = $gene->slice->sub_Slice($gene->start,$gene->end,$gene->strand);
   my $len = 0;
-  if($dbname ne "ZFIN_ID" && $dbname ne 'MGI' && $dbname ne "PIGGY" && $dbname ne 'RGD'){
+  if($dbname ne "ZFIN_ID" && $dbname ne 'MGI' && $dbname ne "PIGGY"){
     my $clone_projection = $slice->project('clone'); 
     foreach my $seg (@$clone_projection) {
       my $clone = $seg->to_Slice();
@@ -1341,7 +1376,7 @@ sub get_clone_name{
       }
     }
     $len = 0;
-    if($dbname ne "ZFIN_ID" && $dbname ne 'MGI' && $dbname ne "PIGGY" && $dbname ne 'RGD'){
+    if($dbname ne "ZFIN_ID" && $dbname ne 'MGI' && $dbname ne "PIGGY"){
       my $clone_projection = $super->project('clone');
       foreach my $seg (@$clone_projection) {
 	my $clone = $seg->to_Slice();
@@ -1380,8 +1415,7 @@ Clone_based_ensembl_transcript
 Clone_based_vega_transcript
 RFAM_trans_name
 miRBase_trans_name
-Uniprot_gn_trans_name
-EntrezGene_trans_name);
+Uniprot_gn_trans_name);
 
   push @list, $dbname."_trans_name";
   push @list, $dbname;

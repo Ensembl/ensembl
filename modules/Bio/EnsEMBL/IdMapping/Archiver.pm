@@ -175,49 +175,64 @@ sub dump_gene {
 
   # private method, so no argument check done for performance reasons
   
+  # deal with ncRNA differently
+  # hope this simple biotype regex is accurate enough...
+  my $is_ncRNA = 0;
+  $is_ncRNA = 1 if ($s_gene->biotype =~ /RNA/);
+
   # loop over source transcripts
   foreach my $s_tr (@{ $s_gene->get_all_Transcripts }) {
-
-    my $changed_flag = 1;
-    my $t_tl;
     my $s_tl = $s_tr->translation;
 
-    if ( $t_gene ) {
+    # we got a coding transcript
+    if ($s_tl) {
+      
+      # do a full dump of this gene if no target gene exists
+      if (! $t_gene) {
+        $self->dump_tuple($s_gene, $s_tr, $s_tl, $ga_fh, $pa_fh);
 
-      foreach my $t_tr (@{ $t_gene->get_all_Transcripts }) {
+      # otherwise, only dump if any transcript or its translation changed
+      } else {
 
-        $t_tl = $t_tr->translation;
+        my $changed_flag = 1;
+      
+        foreach my $t_tr (@{ $t_gene->get_all_Transcripts }) {
+          my $t_tl = $t_tr->translation;
+          next unless ($t_tl);
 
-        # If there is a translation, there should also be a target translation
-        # and both transcript and translation should have same stable id and version
-        if ( $s_tl ) {
-
-          if ( $t_tl ) {
-
-            if ( $s_tl->stable_id eq $t_tl->stable_id
-                 and $s_tl->version == $t_tl->version
-                 and $s_tr->stable_id eq $t_tr->stable_id
-                 and $s_tr->version == $t_tr->version ) {
-
-              $changed_flag = 0;
-
-            }
-          }
-        } else {
-
-        # nothing changed if source transcript has a target transcript with same stable id and version
-          if ( $s_tr->stable_id eq $t_tr->stable_id
-               and $s_tr->version == $t_tr->version ) {
-
+          if (($s_tr->stable_id eq $t_tr->stable_id) and
+              ($s_tl->stable_id eq $t_tl->stable_id) and
+              ($s_tl->seq eq $t_tl->seq)) {
             $changed_flag = 0;
-
           }
         }
-      }
-    }
 
-    if ($changed_flag) {
-      $self->dump_tuple($s_gene, $s_tr, $s_tl, $ga_fh, $pa_fh);
+        if ($changed_flag) {
+          $self->dump_tuple($s_gene, $s_tr, $s_tl, $ga_fh, $pa_fh);
+        }
+      }
+
+    # now deal with ncRNAs (they don't translate but we still want to archive
+    # them)
+    } elsif ($is_ncRNA) {
+    
+      if (! $t_gene) {
+    
+        $self->dump_nc_row($s_gene, $s_tr, $ga_fh);
+    
+      } else {
+        
+        my $changed_flag = 1;
+      
+        foreach my $t_tr (@{ $t_gene->get_all_Transcripts }) {
+          $changed_flag = 0 if ($s_tr->stable_id eq $t_tr->stable_id);
+        }
+
+        if ($changed_flag) {
+          $self->dump_nc_row($s_gene, $s_tr, $ga_fh);
+        }
+      
+      }
     }
   }
 }
@@ -250,33 +265,56 @@ sub dump_tuple {
                     $gene->stable_id,
                     $gene->version,
                     $tr->stable_id,
-                    $tr->version
-  );
-
-  print $ga_fh "\t";
-
-  if ( $tl ) {
-    print $ga_fh join("\t",
+                    $tr->version,
                     $tl->stable_id,
                     $tl->version,
                     $pa_id,
                     $self->mapping_session_id
-    );
+  );
+  print $ga_fh "\n";
 
-    # peptide archive
-    my $pep_seq = $tl->seq;
-    print $pa_fh join("\t", $pa_id, md5_hex($pep_seq), $pep_seq);
-    print $pa_fh "\n";
-    # increment peptide_archive_id
-    $pa_id++;
-  } else {
-    print $ga_fh join ("\t",
-                       '\N',
-                       '\N',
-                       '\N',
-                       $self->mapping_session_id
-    );
-  }
+  # peptide archive
+  my $pep_seq = $tl->seq;
+  print $pa_fh join("\t", $pa_id, md5_hex($pep_seq), $pep_seq);
+  print $pa_fh "\n";
+
+  # increment peptide_archive_id
+  $pa_id++;
+}
+
+
+=head2 dump_nc_row
+
+  Arg[1]      : Bio::EnsEMBL::IdMapping::TinyGene $gene - gene to archive
+  Arg[2]      : Bio::EnsEMBL::IdMapping::TinyTrancript $tr - its transcript
+  Arg[3]      : Filehandle $ga_fh - filehandle for writing gene_archive data
+  Example     : $archive->dump_nc_row($s_gene, $s_tr, $ga_fh);
+  Description : Writes an entry line for gene_archive for non-coding
+                transcripts.
+  Return type : none
+  Exceptions  : none
+  Caller      : dump_gene()
+  Status      : At Risk
+              : under development
+
+=cut
+
+sub dump_nc_row {
+  my ($self, $gene, $tr, $ga_fh) = @_;
+  
+  # private method, so no argument check done for performance reasons
+
+  # gene archive
+  print $ga_fh join("\t",
+                    $gene->stable_id,
+                    $gene->version,
+                    $tr->stable_id,
+                    $tr->version,
+                    '\N',
+                    '\N',
+                    '\N',
+                    $self->mapping_session_id
+  );
   print $ga_fh "\n";
 }
 

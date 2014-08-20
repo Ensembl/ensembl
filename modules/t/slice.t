@@ -48,11 +48,11 @@ my $slice_adaptor = $db->get_SliceAdaptor;
 my $csa = $db->get_CoordSystemAdaptor();
 
 my $slice = $slice_adaptor->fetch_by_region('chromosome', $CHR, $START, $END);
-is($slice->seq_region_name, $CHR, "Slice name is $CHR");
-is($slice->start, $START, "Slice start is $START");
-is($slice->end, $END, "Slice end is $END");
-is($slice->seq_region_length, 62842997, "Slice length is correct");
-is($slice->adaptor, $slice_adaptor, "Slice has adaptor $slice_adaptor");
+ok($slice->seq_region_name eq $CHR);
+ok($slice->start == $START);
+ok($slice->end == $END);
+ok($slice->seq_region_length == 62842997);
+ok($slice->adaptor == $slice_adaptor);
 
 
 #
@@ -75,7 +75,7 @@ my $test_slice = new Bio::EnsEMBL::Slice
 
 
 
-is($test_slice->length, 24, 'Tested slice length');
+ok($test_slice->length == 24);
 
 my $hash = $test_slice->get_base_count;
 my $a = $hash->{'a'};
@@ -99,18 +99,21 @@ ok($a == 6
 #
 
 my $subseq = $test_slice->subseq(2, 6);
-is($subseq, 'TGCAT', "Subseq is $subseq");
+
+debug("subseq = $subseq");
+ok($subseq eq 'TGCAT');
 
 $subseq = $test_slice->subseq(2,6,-1);
-is($subseq, 'ATGCA', "Subseq is $subseq");
+ok($subseq eq 'ATGCA');
+debug("subseq = $subseq");
 
 # test that subslice works correctly with attached sequence
 
 my $sub_slice = $test_slice->sub_Slice(2, 6);
-is($sub_slice->seq, 'TGCAT', "Sub slice seq is correct");
+ok($sub_slice->seq eq 'TGCAT');
 
 # test that invert works correctly with attached sequence
-is($sub_slice->invert()->seq(), 'ATGCA', "Inverted sub slice seq is correct");
+ok($sub_slice->invert()->seq() eq 'ATGCA');
 
 
 # test that slice can be created without db, seq or coord system
@@ -127,9 +130,11 @@ is($sub_slice->invert()->seq(), 'ATGCA', "Inverted sub slice seq is correct");
 }
 
 ok($test_slice);
-is($test_slice->seq(), 'NNN', "Test slice seq is only N's");
+ok($test_slice->seq() eq 'NNN');
 
-is($test_slice->name(), '::test:1:3:1', "Slice name is $test_slice->name");
+debug("\$test_slice->name = " . $test_slice->name());
+
+ok($test_slice->name() eq '::test:1:3:1');
 
 
 $slice = new Bio::EnsEMBL::Slice
@@ -141,18 +146,18 @@ $slice = new Bio::EnsEMBL::Slice
    -coord_system      => $coord_system);
 
 
-is($slice->seq_region_name, $CHR);
+ok($slice->seq_region_name eq $CHR);
 
-is($slice->start, $START, "Slice start is $START");
-is($slice->end, $END, "Slice end is $END");
-is($slice->strand, $STRAND, "Slice strand is $STRAND");
-is($slice->seq_region_length, $SEQ_REGION_LENGTH, "Slice length is $SEQ_REGION_LENGTH");
+ok($slice->start == $START);
+ok($slice->end == $END);
+ok($slice->strand == $STRAND);
+ok($slice->seq_region_length == $SEQ_REGION_LENGTH);
 
 #
 #Test - Slice::adaptor
 #
 $slice->adaptor($slice_adaptor);
-is($slice->adaptor, $slice_adaptor, "Slice has adaptor $slice_adaptor");
+ok($slice->adaptor == $slice_adaptor);
 
 
 #
@@ -160,12 +165,12 @@ is($slice->adaptor, $slice_adaptor, "Slice has adaptor $slice_adaptor");
 #
 #verify that chr_name start and end are contained in the name
 my $name = $slice->name;
-is($name, "chromosome:NCBI33:$CHR:$START:$END:$STRAND", "Chromosome name is $name");
+ok($name eq "chromosome:NCBI33:$CHR:$START:$END:$STRAND");
 
 #
 # Test Slice::length
 #
-is($slice->length, ($END-$START + 1));
+ok($slice->length == ($END-$START + 1));
 
 # Test exception name
 is($slice->assembly_exception_type(), 'REF', 'Type of region is REF');
@@ -178,8 +183,7 @@ my $clone = $slice_adaptor->fetch_by_region('clone','AL121583.25');
 
 my @attrib = @{$clone->get_all_Attributes('htg_phase')};
 
-is(@attrib, 1, "Attrib found");
-is($attrib[0]->value(), 4, "First attrib is 4");
+ok(@attrib == 1 && $attrib[0]->value() == 4);
 
 #
 # Test get_all_DitagFeatures
@@ -195,34 +199,28 @@ is(scalar(@ditags), 0, "Fetched ditag features from slice");
 my $len = $clone->length();
 
 $clone = $clone->expand(100,100);
-is($clone->start, -99, "Clone start is correct");
-is($clone->end(), $len+100, "Clone end is correct");
+ok(($clone->start == -99) && ($clone->end() == $len+100));
 
 $clone = $clone->expand(-100,-100);
-is($clone->start, 1, "Clone start matches 1");
-is($clone->end(), $len, "Clone end matches $len");
+ok(($clone->start == 1) && ($clone->end() == $len));
 
 $clone = $clone->expand(0,1000);
-is($clone->start, 1, "Clone start matches 1");
-is($clone->end(), $len + 1000, "Clone end matches $len + 1000");
+ok(($clone->start == 1) && ($clone->end() == $len + 1000));
 
-$clone = $clone->expand(-1000, 0, 1);
-is($clone->start, 1001, "Expanded clone start is correct if forced");
-is($clone->end(), $len + 1000, "Expanded clone end is correct if forced");
+$clone = $clone->expand(-1000, 0);
+ok(($clone->start == 1001) && ($clone->end() == $len + 1000));
 
 #
 # Test constrain_to_seq_region
 #
 my $tidy_clone = $clone->expand(1000000,10000000);
 $tidy_clone = $tidy_clone->constrain_to_seq_region;
-is($tidy_clone->start, 1, "Tidy clone is correct");
-is($tidy_clone->end, 84710, 'Huge expand call truncates nicely');
+ok($tidy_clone->start == 1 && $tidy_clone->end == 84710, 'Huge expand call truncates nicely');
 
 $tidy_clone = $clone->expand(0,-1000);
 $tidy_clone = $tidy_clone->constrain_to_seq_region;
-is($tidy_clone->start, 1001, "Tidy clone $tidy_clone->start and $tidy_clone->end are correct");
-is($tidy_clone->end(), 84710, 'constrain_to_seq_region does no harm');
-
+note($tidy_clone->start."-".$tidy_clone->end());
+ok(($tidy_clone->start == 1001) && ($tidy_clone->end() == 84710), 'constrain_to_seq_region does no harm');
 
 #
 # Test Slice::invert
@@ -230,9 +228,9 @@ is($tidy_clone->end(), 84710, 'constrain_to_seq_region does no harm');
 my $inverted_slice = $slice->invert;
 ok($slice != $inverted_slice); #slice is not same object as inverted slice
 #inverted slice on opposite strand
-is($slice->strand, ($inverted_slice->strand * -1), "Inverted slice on opposite strand is identical to initial slice"); 
+ok($slice->strand == ($inverted_slice->strand * -1)); 
 #slice still on same strand
-is($slice->strand, $STRAND, "Slice is still on the same strand");
+ok($slice->strand == $STRAND);
 
 
 #
@@ -241,12 +239,12 @@ is($slice->strand, $STRAND, "Slice is still on the same strand");
 my $seq = uc $slice->seq;
 my $invert_seq = uc $slice->invert->seq;
 
-is(length($seq), $slice->length, "Sequence is correct length");
+ok(length($seq) == $slice->length); #sequence is correct length
 
 $seq = reverse $seq;  #reverse complement seq
 $seq =~ tr/ACTG/TGAC/; 
 
-is($seq, $invert_seq, "revcom same as seq on inverted slice");
+ok($seq eq $invert_seq); #revcom same as seq on inverted slice
 
 #
 # Test Slice::subseq
@@ -291,7 +289,7 @@ $count += scalar @$pafs;
 #
 # Test Slice::get_all_SimilarityFeatures
 #
-is($count, scalar @{$slice->get_all_SimilarityFeatures}, "Checking count of returned similarity features");
+ok($count == scalar @{$slice->get_all_SimilarityFeatures});
 
 #
 #  Test Slice::get_all_SimpleFeatures
@@ -314,21 +312,10 @@ ok(scalar @{$slice->get_all_Genes});
 ok(scalar @{$slice->get_all_Genes_by_type('protein_coding')});
 
 #
-#  Test Slice::get_all_Genes_by_source
-#
-ok(scalar @{$slice->get_all_Genes_by_source('ensembl')});
-
-#
 #  Test Slice::get_all_Transcripts
 #
 ok(scalar @{$slice->get_all_Transcripts});
 
-#
-# Test Slice:get_all_Exons
-#
-
-my @exons = @{$slice->get_all_Exons};
-is(scalar(@exons), 155, "Fetched all exons");
 
 
 #
@@ -375,6 +362,20 @@ if( $@ ) {
   ok(1)
 }
 
+
+#my $super_slices = $slice->get_all_supercontig_Slices();
+
+
+##
+## get_all_supercontig_Slices()
+##
+#debug( "Supercontig starts at ".$super_slices->[0]->chr_start() );
+
+#ok( $super_slices->[0]->chr_start() == 29591966 );
+
+#debug( "Supercontig name ".$super_slices->[0]->name() );
+
+#ok( $super_slices->[0]->name() eq "NT_028392" );
 
 #
 # get_base_count
@@ -424,13 +425,14 @@ my @alt_names = @{$slice->get_all_synonyms()};
 foreach my $syn (@alt_names){
   debug("syn\t".$syn->name."\n");
 }
-is(@alt_names, 2, "Got 2 altnames");
+debug("altnames ".scalar(@alt_names)."\n");
+ok(@alt_names == 2);
 
 
 $slice->add_synonym("20ish");
 @alt_names = @{$slice->get_all_synonyms()};
 
-is(@alt_names, 3, "Got 3 alt names");
+ok(@alt_names == 3);
 
 
 #slcie aleady stored so need to store syns
@@ -443,7 +445,7 @@ $slice = $slice_adaptor->fetch_by_region('chromosome', 20, 1, 10);
 
 @alt_names = @{$slice->get_all_synonyms()};
 
-is(@alt_names, 3, "Got 3 altnames");
+ok(@alt_names == 3);
 
 $multi->restore();
 
@@ -455,14 +457,13 @@ $slice = $slice_adaptor->fetch_by_region('chromosome', 1, 1, 10);
 
 @alt_names = @{$slice->get_all_synonyms()};
 
-is(@alt_names, 0, "No altnames returned");
-
+ok(@alt_names == 0);
 
 $slice->add_synonym("1ish");
 
 @alt_names = @{$slice->get_all_synonyms()};
 
-is(@alt_names, 1, "One synonym retrieved");
+ok(@alt_names == 1);
 
 foreach my $syn (@alt_names){
  $syn_adap->store($syn);	
@@ -473,7 +474,7 @@ $slice = $slice_adaptor->fetch_by_region('chromosome', 1, 1, 10);
 
 @alt_names = @{$slice->get_all_synonyms()};
 
-is(@alt_names, 1, "One synonym found");
+ok(@alt_names == 1);
 
 $multi->restore();
 
@@ -564,13 +565,6 @@ is($chr_one_slice->assembly_exception_type(), 'REF', 'Ensuring reference regions
   $alternative_slice = $slice_adaptor->fetch_by_seq_region_id($alternative_seq_region_id);
   ok(!defined $alternative_slice, 'Cannot retrieve the alternative slice post restore');
 }
-
-
-# Test slice attributes
-my $current_slice = $slice_adaptor->fetch_by_region('chromosome', $CHR, $START, $END);
-is($current_slice->is_chromosome, 1, "Slice is a chromosome");
-is($current_slice->has_karyotype, 0, "Slice has no karyotype attribute");
-is($current_slice->karyotype_rank, 0, "No karyotype rank could be found");
 
 done_testing();
 

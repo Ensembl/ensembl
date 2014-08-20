@@ -64,8 +64,7 @@ sub run {
     while ( defined( my $line = $file_io->getline() ) ) {
  
 	$line =~ s/\s*$//;
-        # csv format can come with quoted columns, remove them
-        $line =~ s/"//g;
+		
 
         my ( $dbass_gene_id, $dbass_gene_name, $ensembl_id) = split( /,/, $line );
 

@@ -81,7 +81,6 @@ package Bio::EnsEMBL::IdMapping::TinyTranscript;
 # 11  translation
 # 12  [exons]
 # 13  biotype
-# 14  slice
 
 
 use strict;
@@ -298,41 +297,10 @@ sub get_all_Exons {
   return $_[0]->[12] || [];
 }
 
-=head2 biotype
-
-  Arg[1]      : (optional) String - the gene's biotype
-  Description : Getter/setter for the gene's biotype.
-  Return type : String
-  Exceptions  : none
-  Caller      : general
-  Status      : At Risk
-              : under development
-
-=cut
-
 sub biotype {
   my $self = shift;
   $self->[13] = shift if (@_);
   return $self->[13];
-}
-
-=head2 seq_region_name
-
-  Arg[1]      : (optional) String - seq_region name
-  Description : Getter/setter for the seq_region name of the slice the gene is
-                on.
-  Return type : String
-  Exceptions  : none
-  Caller      : general
-  Status      : At Risk
-              : under development
-
-=cut
-
-sub seq_region_name {
-  my $self = shift;
-  $self->[14] = shift if (@_);
-  return $self->[14];
 }
 
 

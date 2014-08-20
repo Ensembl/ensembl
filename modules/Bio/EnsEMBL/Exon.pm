@@ -739,35 +739,6 @@ sub coding_region_end {
   return $coding_region_end;
 } ## end sub coding_region_end
 
-
-=head2 rank
-
-    Arg [1]     : Bio::EnsEMBL::Transcript $transcript
-                  The transcript for which the exon rank
-                  is requested.
-    Example     : $rank = $exon->rank($transcript);
-    Description : Returns the rank of the exon relative to
-                  the transcript.
-                  Since an exon may be part of one or more transcripts,
-                  the relevant transcript must be given as argument to
-                  this method.
-    Return type : Integer
-    Exceptions  : Throws if the given argument is not a transcript.
-                  Throws if the exon does not belong to the transcript.
-    Caller      : General
-    Status      : Stable
-
-=cut
-
-sub rank {
-  my ($self, $transcript) = @_;
-  assert_ref($transcript, 'Bio::EnsEMBL::Transcript', 'transcript');
-
-  my $rank = $transcript->exon_rank($self);
-
-  return $rank;
-} ## end sub rank
-
 =head2 slice
 
   Arg [1]    : Bio::EnsEMBL::Slice
@@ -1061,10 +1032,9 @@ sub flush_supporting_features {
 
   Arg [1]    : none
   Example    : @evidence = @{$exon->get_all_supporting_features()};
-  Description: Retrieves any supporting features added manually by 
+  Description: Retreives any supporting features added manually by 
                calls to add_supporting_features. If no features have been
-               added manually and this exon is in a database (i.e. it has
-               an adaptor), fetch from the database
+               added manually and this exon is in a database (i.e. it h
   Returntype : listreference of Bio::EnsEMBL::BaseAlignFeature objects 
   Exceptions : none
   Caller     : general

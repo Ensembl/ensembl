@@ -177,11 +177,6 @@ my %group_objects = (
                  TranscriptArchive => 1,
                  TranslationArchive => 1,
             },
-            otherfeatures => {
-                 Gene => 1,
-                 Transcript => 1,
-                 Translation => 1,
-            },
             compara => {
                  GeneTree => 1,
                  Family => 1,
@@ -197,7 +192,7 @@ my %dba_species;
 
 while (my $dba = shift @dbas) {
 
-    next if ( exists($dba_species{$dba->species()}{$dba->group()}) );
+    next if ( exists($dba_species{$dba->species()}) );
 
     my @stable_id_objects = keys %{$group_objects{$dba->group()}};
 
@@ -216,7 +211,7 @@ while (my $dba = shift @dbas) {
         }
 
         if ($species_id) {
-            $dba_species{$dba->species()}{$dba->group()} = 1; 
+            $dba_species{$dba->species()} = 1; 
         }     
 
     }
@@ -246,39 +241,6 @@ while (my $dba = shift @dbas) {
             if (@archive_ids) {
 
                 insert_ids(\@archive_ids, $dba, $object, $species_id, 'archive');
-
-            }
-
-        } elsif($dba->group eq 'otherfeatures') {
-
-            my $import_sql;
-            my $dba_dbh = $dba->dbc->db_handle();
-            if ($object_name eq 'Translation') {
-
-                $import_sql = qq(SELECT DISTINCT tl.stable_id FROM translation tl, transcript t, analysis a
-                                             WHERE t.transcript_id = tl.transcript_id AND a.analysis_id = t.analysis_id
-                                               AND (logic_name like 'RefSeq_%' OR logic_name like 'CCDS_%'));
-
-            } else {
-
-                my $object = lc($object_name);
-                $import_sql = qq(SELECT DISTINCT stable_id FROM $object o, analysis a WHERE a.analysis_id = o.analysis_id AND (logic_name like 'RefSeq_%' OR logic_name like 'CCDS_%')); 
-
-            }
-
-            my $import_sth = $dba_dbh->prepare($import_sql);
-            $import_sth->execute;
-            my @import_ids;
-
-            while ((my $import) = $import_sth->fetchrow_array) {
-
-               push (@import_ids, $import);
-
-            }
-
-            if (@import_ids) {
-
-                insert_ids(\@import_ids, $dba, $object_name, $species_id, 'stable');
 
             }
 

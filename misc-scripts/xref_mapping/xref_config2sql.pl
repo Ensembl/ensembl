@@ -36,10 +36,9 @@ use strict;
 use warnings;
 
 use Config::IniFiles;
-my $file = (defined $ARGV[0] && -f $ARGV[0]) ? $ARGV[0] : 'xref_config.ini';
-warn "using ", $file;
-
-my $config = Config::IniFiles->new(-file => $file);
+my $file = ( defined $ARGV[0] && -f $ARGV[0]) ? $ARGV[0] : 'xref_config.ini';
+warn $file;
+my $config =Config::IniFiles->new(-file =>$file);
 if(! defined $config) {
   foreach my $e (@Config::IniFiles::errors) {
     warn "errors found";
@@ -52,7 +51,7 @@ my %source_ids;
 
 # Do the species.
 
-print('#' x 80, "\n");
+print( '#' x 80, "\n" );
 print("# SPECIES\n");
 print("\n");
 
@@ -72,7 +71,7 @@ foreach my $section ( $config->GroupMembers('species') ) {
 
     printf( "VALUES (%d, %d, '%s', '%s');\n",
             $species_id, $taxonomy_id, $species_name,
-            $config->val( $section, 'aliases' ) || $species_name );
+            $config->val( $section, 'aliases' ) );
   }
 
   print("\n");

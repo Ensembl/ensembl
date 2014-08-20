@@ -41,7 +41,6 @@ my $hspecies = 'Mus_musculus';
 my $hdes = "Hit description";
 
 my $idesc = 'interpro description';
-my $ilabel = 'interpro label';
 my $interpro_ac = 'interpro accession';
 
 my $analysis = Bio::EnsEMBL::Analysis->new(-LOGIC_NAME => 'test');
@@ -61,7 +60,6 @@ my $f = Bio::EnsEMBL::ProteinFeature->new
    -HSPECIES    => $hspecies,
    -HDESCRIPTION=> $hdes,
    -IDESC       => $idesc,
-   -ILABEL      => $ilabel,
    -INTERPRO_AC => $interpro_ac);
 
 
@@ -83,7 +81,6 @@ ok($f->hspecies eq $hspecies);
 ok($f->hdescription eq $hdes);
 
 ok($f->idesc eq $idesc);
-ok($f->ilabel eq $ilabel);
 ok($f->interpro_ac eq $interpro_ac);
 
 # check that the strand is 0
@@ -93,7 +90,6 @@ ok($f->strand == 0);
 # Test setters
 #
 ok(test_getter_setter($f, 'idesc', 'interpro desc1'));
-ok(test_getter_setter($f, 'ilabel', 'interpro label1'));
 ok(test_getter_setter($f, 'interpro_ac',   'interpro ac1'));
 
 

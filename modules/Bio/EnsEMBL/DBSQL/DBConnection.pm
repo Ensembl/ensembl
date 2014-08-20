@@ -159,11 +159,11 @@ sub new {
   bless $self, $class;
 
   my $driver = $dbconn ? $dbconn->driver() : $driver_arg;
-  $driver ||= 'mysql';
   if ($driver eq 'pgsql') {
       warning("Using 'pgsql' as an alias for the 'Pg' driver is deprecated.");
       $driver = 'Pg';
   }
+  $driver ||= 'mysql';
   $self->driver($driver);
 
   my $driver_class = 'Bio::EnsEMBL::DBSQL::Driver::' . $driver;
@@ -751,7 +751,7 @@ sub reconnect {
 =cut
 
 sub do {
-   my ($self,$string, $attr, @bind_values) = @_;
+   my ($self,$string) = @_;
 
    if( ! $string ) {
      throw("Attempting to do an empty SQL query.");
@@ -762,7 +762,7 @@ sub do {
    
    my $do_result = $self->work_with_db_handle(sub {
      my ($dbh) = @_;
-     my $result = eval { $dbh->do($string, $attr, @bind_values) };
+     my $result = eval { $dbh->do($string) };
      $error = $@ if $@;
      return $result;
    });

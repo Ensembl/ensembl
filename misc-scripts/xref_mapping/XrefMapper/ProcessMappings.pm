@@ -250,7 +250,7 @@ sub process_map_file{
 	    $source_name_sth->execute($query_id);
 	    my ($source_name)  = $source_name_sth->fetchrow_array;
 
-	    if ($source_name && ($source_name =~ /^RefSeq_(m|nc)RNA/ || $source_name =~ /^miRBase/ || $source_name =~ /^RFAM/)) { 
+	    if ($source_name && $source_name =~ /^RefSeq_(m|nc)RNA/) { 
 
 		#make sure mRNA xrefs are matched to protein_coding biotype only
 		$biotype_sth->execute($target_id);
@@ -262,9 +262,6 @@ sub process_map_file{
 		if ($source_name =~ /^RefSeq_ncRNA/ && !exists($mRNA_biotypes{$biotype}) ) {
 		    $load_object_xref = 1;	
 		}	
-                if (($source_name =~ /miRBase/ || $source_name =~ /^RFAM/) && $biotype =~ /RNA/) {
-                    $load_object_xref = 1;
-                }
 	    } else {
 		$load_object_xref = 1;
 	    }

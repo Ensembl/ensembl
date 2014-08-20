@@ -415,8 +415,8 @@ CREATE TABLE translation_stable_id (
   internal_id                 INT UNSIGNED NOT NULL,
   stable_id                   VARCHAR(128) NOT NULL,
 
-  PRIMARY KEY (internal_id),
-  INDEX stable_idx (stable_id)
+  PRIMARY KEY (stable_id),
+  INDEX internal_idx (internal_id)
 
 ) COLLATE=latin1_swedish_ci ENGINE=InnoDB;
 
@@ -442,7 +442,7 @@ CREATE TABLE object_xref (
   unused_priority             INT UNSIGNED,
   master_xref_id              INT UNSIGNED DEFAULT NULL,
 
-  UNIQUE (ensembl_object_type, ensembl_id, xref_id, ox_status, master_xref_id),
+  UNIQUE (ensembl_object_type, ensembl_id, xref_id, ox_status),
   KEY oxref_idx (object_xref_id, xref_id, ensembl_object_type, ensembl_id),
   KEY xref_idx (xref_id, ensembl_object_type)
 

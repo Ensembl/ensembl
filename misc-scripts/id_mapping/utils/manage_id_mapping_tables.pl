@@ -202,12 +202,11 @@ sub list_backup_counts {
     $sth->execute;
 
     while ( my ($bak) = $sth->fetchrow_array ) {
-      if ($bak =~ /_bak_(\d+)$/) {
-        my $num = $1;
-        $suffnum{$num} = 1;
+      $bak =~ /_bak_(\d+)$/;
+      my $num = $1;
+      $suffnum{$num} = 1;
 
-        $new_num = $num if ( $num > $new_num );
-      }
+      $new_num = $num if ( $num > $new_num );
     }
 
     $sth->finish;

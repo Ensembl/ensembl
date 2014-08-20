@@ -315,11 +315,11 @@ sub fetch_all_by_Slice {
     # use feature start/end relative to the slice instead
     my ($min_start_feature, $max_end_feature);
     foreach my $o (@$operons) {
-      if (!defined($min_start) || ($o->start() >= 0 && $o->start() < $min_start)) {
+      if (!defined($min_start) || $o->start() < $min_start) {
   	$min_start = $o->start();
   	$min_start_feature = $o;
       }
-      if (!defined($max_end) || ($o->end() >= 0 && $o->end() > $max_end)) {
+      if (!defined($max_end) || $o->end() > $max_end) {
   	$max_end = $o->end();
   	$max_end_feature = $o;
       }

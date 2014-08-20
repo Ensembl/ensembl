@@ -763,7 +763,7 @@ FeatureAdaptors
 
   When performing a non-locational fetch (e.g. by dbID) features are still
   returned in the coordinate system that they are calculated in.  This is to
-  ensure that the feature can always be retrieved in this manner of fetching
+  ensure that the feature can always be retreived in this manner of fetching
   and so that features which are not in the database can be distinguished from
   features which are simply not in the requested coordinate sytem.  When a 
   single feature which is not in the database is requested via a non-locational

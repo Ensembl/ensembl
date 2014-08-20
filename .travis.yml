@@ -5,9 +5,8 @@ perl:
   - "5.12"
 
 env:
-  - COVERALLS=true  DB=mysql
-  - COVERALLS=false DB=mysql
-  - COVERALLS=false DB=sqlite
+  - COVERALLS=true
+  - COVERALLS=false
 
 before_install:
     - sudo apt-get -y update
@@ -20,9 +19,7 @@ before_install:
 install:
     - cpanm -v --installdeps --notest .
     - cpanm -n Devel::Cover::Report::Coveralls
-    - cpanm -n DBD::SQLite
-    - cp travisci/MultiTestDB.conf.travisci.mysql  modules/t/MultiTestDB.conf.mysql
-    - cp travisci/MultiTestDB.conf.travisci.SQLite modules/t/MultiTestDB.conf.SQLite
+    - cp travisci/MultiTestDB.conf.travisci modules/t/MultiTestDB.conf
 
 script: "./travisci/harness.sh"
 
@@ -30,13 +27,13 @@ script: "./travisci/harness.sh"
 matrix:
   exclude:
     - perl: "5.12"
-      env: COVERALLS=true  DB=mysql
-    - perl: "5.12"
-      env: COVERALLS=false DB=sqlite
+      env: COVERALLS=true
     - perl: "5.14"
-      env: COVERALLS=false DB=mysql
+      env: COVERALLS=false
 
 notifications:
   email:
-    on_success: always
-    on_failure: always
+  recipients:
+    - secure: "fKzuA5h7oBhhCLaUQj0HbNNrLe6QqRMcm+4lGAVbEtfrAhFrIuu/G8Mb47ALZotkMw2R7FniWVR/oniCNlok51lKdGGWe5t0HATf9NJ7+AjQ1rV+GgM8ijHzbDW6AIH5Z5e+WXIK2/q3kXVc6Pm+V1BF9dESF/PksvvcnMA/0t0="
+  on_success: always
+  on_failure: always
