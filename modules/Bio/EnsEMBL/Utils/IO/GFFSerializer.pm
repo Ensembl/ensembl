@@ -118,7 +118,16 @@ sub print_feature {
         $row .= $summary{'seq_region_name'}."\t";
 
 #    Column 2 - source, complicated with Ensembl not being the originator of all data but user can specify or it switches to ensembl.
-        $row .= $summary{source} || $self->_default_source();
+#     Check whether the analysis has been defined with a 'gff_source' before using the default.
+        if (defined $summary{source}) {
+          $row .= $summary{source};
+        } else {
+          if ( defined($feature->analysis) && $feature->analysis->gff_source() ) {
+            $row .= $feature->analysis->gff_source();
+          } else {
+            $row .= $self->_default_source();
+          }
+        }
         $row .= qq{\t};
 
 #   Column 3 - feature, the ontology term for the kind of feature this row is
