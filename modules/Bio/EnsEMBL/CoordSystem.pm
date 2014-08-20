@@ -137,8 +137,6 @@ sub new {
                  'DEFAULT',   'RANK' ],
                @_ );
 
-  $version = '' if ( !defined($version) );
-
   $top_level      = ($top_level)      ? 1 : 0;
   $sequence_level = ($sequence_level) ? 1 : 0;
   $default        = ($default)        ? 1 : 0;
@@ -228,6 +226,8 @@ sub name {
 
 sub version {
   my $self = shift;
+
+  return '' unless defined $self->{'version'};
   return $self->{'version'};
 }
 
@@ -278,7 +278,7 @@ sub equals {
     throw('Argument must be a CoordSystem');
   }
 
-  if($self->{'version'} eq $cs->version() && $self->{'name'} eq $cs->name()) {
+  if($self->version() eq $cs->version() && $self->{'name'} eq $cs->name()) {
     return 1;
   }
 

@@ -91,7 +91,6 @@ sub process {
 
   my $update_ox_sth = $self->xref->dbc->prepare('update object_xref set ox_status = "FAILED_PRIORITY" where object_xref_id = ?');
   my $update_x_sth  = $self->xref->dbc->prepare("update xref set dumped = 'NO_DUMP_ANOTHER_PRIORITY' where xref_id = ?");
-  my $dep_sth       = $self->xref->dbc->prepare("select dependent_xref_id, object_xref_id from dependent_xref where master_xref_id = ?");
 
   #
   # Change of tact here to make the sql easier...
@@ -125,7 +124,7 @@ FSQL
   # So we can do a straight join and treat all info_types the same way.
   # 
   my $new_sql =(<<NEWS);
-   SELECT ox.object_xref_id, x.accession, x.xref_id, (ix.query_identity + ix.target_identity) as identity, ox.ox_status
+   SELECT ox.object_xref_id, x.accession, x.xref_id, (ix.query_identity + ix.target_identity) as identity, ox.ox_status, ox.ensembl_object_type, ensembl_id
       FROM object_xref ox, xref x, source s, identity_xref ix
         WHERE ox.object_xref_id = ix.object_xref_id 
           AND ox.xref_id = x.xref_id
@@ -137,8 +136,8 @@ NEWS
   my $sth = $self->xref->dbc->prepare($new_sql);
   foreach my $name (@names){
     $sth->execute($name);
-    my ($object_xref_id, $acc, $xref_id, $identity, $status);
-    $sth->bind_columns(\$object_xref_id, \$acc, \$xref_id, \$identity, \$status);
+    my ($object_xref_id, $acc, $xref_id, $identity, $status, $object_type, $ensembl_id);
+    $sth->bind_columns(\$object_xref_id, \$acc, \$xref_id, \$identity, \$status, \$object_type, \$ensembl_id);
     my $last_acc = "";
     my $last_name = "";
     my $best_xref_id = undef;
@@ -150,7 +149,7 @@ NEWS
 	    $update_x_sth->execute($xref_id);
 	    $update_ox_sth->execute($object_xref_id);
 #??? what about dependents
-	    $self->process_dependents($xref_id, $update_ox_sth, $dep_sth);
+	    $self->process_dependents($xref_id, $best_xref_id, $object_type, $ensembl_id);
 	  }
 	  else{
 	    $update_x_sth->execute($xref_id);
@@ -203,18 +202,36 @@ NEWS
 }
 
 sub process_dependents{
-  my ($self, $master_xref_id, $update_ox_sth, $dep_sth)= @_;
+  my ($self, $old_master_xref_id, $new_master_xref_id, $object_type, $ensembl_id) = @_;
+
+  my $dep_sth           = $self->xref->dbc->prepare("select dependent_xref_id, object_xref_id, linkage_annotation from dependent_xref where master_xref_id = ?");
+  my $update_dep_x_sth  = $self->xref->dbc->prepare("update dependent_xref set master_xref_id = ? where dependent_xref_id = ? and master_xref_id = ?");
+  my $remove_dep_ox_sth = $self->xref->dbc->prepare("delete from object_xref where master_xref_id = ? and ensembl_object_type = ? and ensembl_id = ? and xref_id = ?");
+  my $insert_dep_ox_sth = $self->xref->dbc->prepare("insert ignore into object_xref(master_xref_id, ensembl_object_type, ensembl_id, linkage_type, ox_status, xref_id) values(?, ?, ?, 'DEPENDENT', 'DUMP_OUT', ?)");
+  my $dep_ox_sth        = $self->xref->dbc->prepare("select object_xref_id from object_xref where master_xref_id = ? and ensembl_object_type = ? and ensembl_id = ? and linkage_type = 'DEPENDENT' AND ox_status = 'DUMP_OUT' and xref_id = ?");
+  my $remove_dep_go_sth = $self->xref->dbc->prepare("delete from go_xref where source_xref_id = ?");
+  my $insert_dep_go_sth = $self->xref->dbc->prepare("insert ignore into go_xref values(?, ?, ?)");
 
   my @master_xrefs;
 
-  push @master_xrefs, $master_xref_id;
+  push @master_xrefs, $old_master_xref_id;
 
   while(my $xref_id = pop(@master_xrefs)){
+    my ($dep_xref_id, $object_xref_id, $linkage_type, $new_object_xref_id);
     $dep_sth->execute($xref_id);
-    my ($dep_xref_id, $object_xref_id);
-    $dep_sth->bind_columns(\$dep_xref_id,\$object_xref_id);
+    $dep_sth->bind_columns(\$dep_xref_id,\$object_xref_id, \$linkage_type);
     while($dep_sth->fetch()){
-      $update_ox_sth->execute($object_xref_id);
+      $update_dep_x_sth->execute($new_master_xref_id, $dep_xref_id, $old_master_xref_id);
+      $remove_dep_ox_sth->execute($old_master_xref_id, $object_type, $ensembl_id, $dep_xref_id);
+      $insert_dep_ox_sth->execute($new_master_xref_id, $object_type, $ensembl_id, $dep_xref_id);
+      if ($linkage_type) {
+        $dep_ox_sth->execute($new_master_xref_id, $object_type, $ensembl_id, $dep_xref_id);
+        $dep_ox_sth->bind_columns(\$new_object_xref_id);
+        while ($dep_ox_sth->fetch()) {
+          $remove_dep_go_sth->execute($old_master_xref_id);
+          $insert_dep_go_sth->execute($new_object_xref_id, $linkage_type, $new_master_xref_id); 
+        }
+      }
       push @master_xrefs, $dep_xref_id; # remember dependents dependents
     }
   }

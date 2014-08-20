@@ -123,7 +123,7 @@ sub print_feature {
 
 #   Column 3 - feature, the ontology term for the kind of feature this row is
 	my $so_term = eval { $so_mapper->to_name($feature); };
-	$@ and throw sprintf "Unable to map feature %s to SO term.\n$@", $summary{ID};
+	$@ and throw sprintf "Unable to map feature %s to SO term.\n$@", $summary{id};
         if ($so_term eq 'protein_coding_gene') { 
 # Special treatment for protein_coding_gene, as more commonly expected term is 'gene'
           $so_term = 'gene';
@@ -189,13 +189,13 @@ sub print_feature {
         delete $summary{'score'};
         delete $summary{'source'};
 #   Slice the hash for specific keys in GFF-friendly order
-        my @ordered_keys = grep { exists $summary{$_} } qw(ID Name Alias Parent Target Gap Derives_from Note Dbxref Ontology_term Is_circular);
+        my @ordered_keys = grep { exists $summary{$_} } qw(id Name Alias Parent Target Gap Derives_from Note Dbxref Ontology_term Is_circular);
         my @ordered_values = @summary{@ordered_keys};
         while (my $key = shift @ordered_keys) {
             my $value = shift @ordered_values;
             delete $summary{$key};
             if ($value && $value ne '') {
-                if ($key eq 'ID') {
+                if ($key eq 'id') {
                   if ($feature->isa('Bio::EnsEMBL::Transcript')) {
                     $value = 'transcript:' . $value;
                   } elsif ($feature->isa('Bio::EnsEMBL::Gene')) {
@@ -215,7 +215,7 @@ sub print_feature {
                     $value = 'transcript:' . $value;
                   }
                 }
-                $row .= $key."=".uri_escape($value,'\t\n\r;=%&,');
+                $row .= uc($key)."=".uri_escape($value,'\t\n\r;=%&,');
                 $row .= ';' if scalar(@ordered_keys) > 0 || scalar(keys %summary) > 0;
             }
         }

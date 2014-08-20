@@ -16,7 +16,8 @@ use strict;
 use warnings;
 
 use Test::More;
-use Test::Warnings;
+use Test::Warnings qw( allow_warnings );
+use Test::Exception;
 
 use Bio::EnsEMBL::Test::MultiTestDB;
 use Bio::EnsEMBL::Test::TestUtils;
@@ -98,7 +99,13 @@ $exon->add_supporting_features(@evidence);
 $multi->hide( "core", "exon", "supporting_feature", 
 	      "protein_align_feature", "dna_align_feature");
 
+# We get some 'datatype mismatch: bind param (11) 3.2e-42 as float' warnings
+#
+allow_warnings(1) if $db->dbc->driver() eq 'SQLite';
+
 $exonad->store($exon);
+
+allow_warnings(0) if $db->dbc->driver() eq 'SQLite';
 
 ok($exon->dbID() && $exon->adaptor == $exonad);
 
@@ -296,6 +303,8 @@ ok( !defined $exon->cdna_coding_end($transcript) );
 ok( !defined $exon->coding_region_start($transcript) );
 ok( !defined $exon->coding_region_end($transcript) );
 
+is ( $exon->rank($transcript), 1, "First exon has rank 1");
+
 $exon = shift @exons;    # Second exon is coding.
 
 ok( $exon->cdna_start($transcript) == 89 );
@@ -304,6 +313,8 @@ ok( $exon->cdna_coding_start($transcript) == 203 );
 ok( $exon->cdna_coding_end($transcript) == 462 );
 ok( $exon->coding_region_start($transcript) == 30577779 );
 ok( $exon->coding_region_end($transcript) == 30578038 );
+
+is ( $exon->rank($transcript), 2, "Second exon has rank 2");
 
 SKIP: {
   skip 'No registry support for SQLite yet', 1 if $db->dbc->driver() eq 'SQLite';
@@ -325,9 +336,12 @@ SKIP: {
     -SLICE => $base_slice
   );
   
-  my $start_exon = Bio::EnsEMBL::Exon->new(-START => 99, -END => 319, -STRAND => 1);
+  my $start_exon = Bio::EnsEMBL::Exon->new(-START => 99, -END => 319, -STRAND => 1, -STABLE_ID => 'Exon1');
+  throws_ok { $start_exon->rank($base_transcript) } qr/does not have/, "No exons in transcript";
   $base_transcript->add_Exon($start_exon);
-  my $end_exon = Bio::EnsEMBL::Exon->new(-START => 1267, -END => 1759, -STRAND => 1);
+  is ($start_exon->rank($base_transcript), 1, "Start exon in position 1");
+  my $end_exon = Bio::EnsEMBL::Exon->new(-START => 1267, -END => 1759, -STRAND => 1, -STABLE_ID => 'Exon2');
+  throws_ok { $end_exon->rank($base_transcript) } qr/does not belong/, "Exon does not belong to transcript";
   $base_transcript->add_Exon($end_exon);
   
   $base_transcript->translation(Bio::EnsEMBL::Translation->new(

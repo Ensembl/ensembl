@@ -666,11 +666,11 @@ sub fetch_all_by_Slice {
     # use feature start/end relative to the slice instead
     my ($min_start_feature, $max_end_feature);
     foreach my $g (@$genes) {
-      if (!defined($min_start) || $g->start() < $min_start) {
+      if (!defined($min_start) || ($g->start() >= 0 && $g->start() < $min_start)) {
   	$min_start = $g->start();
   	$min_start_feature = $g;
       }
-      if (!defined($max_end) || $g->end() > $max_end) {
+      if (!defined($max_end) || ($g->end() >= 0 && $g->end() > $max_end)) {
   	$max_end = $g->end();
   	$max_end_feature = $g;
       }
@@ -1458,8 +1458,6 @@ sub remove {
   }
 
   # remove this gene from the database
-
-  $self->_pre_remove($gene);
 
   $sth = $self->prepare("DELETE FROM gene WHERE gene_id = ? ");
   $sth->bind_param(1, $gene->dbID, SQL_INTEGER);

@@ -428,6 +428,7 @@ ok($newgene->biotype eq 'dummy');
 
 $multi->restore('core', 'gene');
 
+
 #
 # test GeneAdaptor::fetch_all_by_domain
 #
@@ -533,6 +534,44 @@ note "Got ".scalar(@genes)." (havana, vega) transcripts\n";
 ok(@genes == 2);
 $geneCount = $ga->count_all_by_source(['havana', 'vega']);
 ok($geneCount == 2);
+
+
+#
+# Test Gene: get_all_Introns
+#
+
+#
+# Test get_all_Introns by joining Exons and introns
+# and comparing it to the original
+#
+
+foreach my $stable_id (qw(ENSG00000174873 ENSG00000101367)){ #test both strands
+
+  my $gene = $ga->fetch_by_stable_id($stable_id);
+
+  my @exons = sort { $a->start <=> $b->start } (@{$gene->get_all_Exons()});
+  my @introns = sort { $a->start <=> $b->start } (@{$gene->get_all_Introns()});
+
+  my $orig_seq = $gene->slice->subseq(
+                 $gene->start(),
+                 $gene->end(),
+                 $gene->strand());
+
+  my $idl=0;
+  my $new_seq = $exons[0]->seq()->seq();
+  foreach my $intron (@introns){
+    $new_seq .= $intron->seq;
+    $new_seq .= $exons[$idl+1]->seq->seq();
+    $idl++;
+
+  }
+
+  is ($gene->slice->subseq($gene->start(), $gene->start() + 9, $gene->strand()), substr($exons[0]->seq()->seq(), 0, 10), "Initial sequences match");
+
+  is (length($orig_seq), length($new_seq), "Sequence length match");
+  is($orig_seq, $new_seq, 'Correct new origin seq');
+
+}
 
 #
 # test Gene: get_all_alt_alleles
