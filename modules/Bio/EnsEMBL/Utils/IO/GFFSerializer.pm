@@ -55,7 +55,7 @@ use Bio::EnsEMBL::Utils::Scalar qw/check_ref/;
 
 use base qw(Bio::EnsEMBL::Utils::IO::FeatureSerializer);
 
-my %strand_conversion = ( '1' => '+', '0' => '?', '-1' => '-');
+my %strand_conversion = ( '1' => '+', '0' => '.', '-1' => '-');
 
 =head2 new
 
@@ -167,7 +167,7 @@ sub print_feature {
             $row .= $strand_conversion{$summary{'strand'}}."\t";
         }
         else {
-            $row .= ".\t";
+            $row .= "?\t";
         }
 
 #   Column 8 - reading phase, necessary only for Exons
