@@ -284,6 +284,7 @@ sub summary_as_hash {
   $summary{'strand'} = $self->strand;
   $summary{'seq_region_name'} = $self->seq_region_name;
   $summary{'description'} = $self->display_id;
+  $summary{'assembly_name'} = $self->slice->coord_system->version();
   return \%summary;
 }
 
