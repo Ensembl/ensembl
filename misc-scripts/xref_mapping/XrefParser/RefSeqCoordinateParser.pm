@@ -185,7 +185,7 @@ sub run_script {
   my $aa_of = $otherf_dba->get_AnalysisAdaptor();
   my $logic_name;
   foreach my $ana(@{ $aa_of->fetch_all() }) {
-    if ($ana->logic_name =~ /refseq/) {
+    if ($ana->logic_name =~ /refseq_[a-z]+_import/) {
       $logic_name = $ana->logic_name;
     }
   }
