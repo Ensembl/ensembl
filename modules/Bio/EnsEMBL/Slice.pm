@@ -635,6 +635,7 @@ sub invert {
   Example    : print "SEQUENCE = ", $slice->seq();
   Description: Returns the sequence of the region represented by this
                slice formatted as a string.
+               Only available for the default coord_system
   Returntype : string
   Exceptions : none
   Caller     : general
