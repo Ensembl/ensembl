@@ -213,7 +213,9 @@ CREATE TABLE pairs (
 
   source_id			 int unsigned not null,
   accession1                     varchar(255) not null,
-  accession2                     varchar(255) not null
+  accession2                     varchar(255) not null,
+
+  KEY ac2_idx(accession2)
 
 ) COLLATE=latin1_swedish_ci ENGINE=InnoDB;
 ################################################################################
