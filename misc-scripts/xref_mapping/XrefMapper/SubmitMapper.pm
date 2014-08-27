@@ -326,23 +326,24 @@ sub dump_xref{
       $sql   .= "  WHERE p.xref_id = x.xref_id AND ";
       $sql   .= "        p.sequence_type ='" . $sequence_type ."' ";
 
-      #for the dafault method don't select sources for which the method was overriden
+      #for the default method don't select sources for which the method was overriden
       if ($method eq $default_method && scalar(@all_source_ids) > 0 ) {
-	  $sql   .= "AND x.source_id not in (" . join(',',@all_source_ids).")";
+        $sql   .= "AND x.source_id not in (" . join(',',@all_source_ids).")";
       } 
 
-      #for a non dafault method only select sources which should have their xrefs mapped using this method
+      #for a non default method only select sources which should have their xrefs mapped using this method
       if ($method ne $default_method) {
-	  $sql   .= "AND x.source_id in (" . join(',',@{$methods_and_source_ids{$method}}).")";
+        $sql   .= "AND x.source_id in (" . join(',',@{$methods_and_source_ids{$method}}).")";
       }
        
       my $sth = $xref->dbc->prepare($sql);
       $sth->execute();
       while(my @row = $sth->fetchrow_array()){
-	
-	$row[1] =~ s/(.{60})/$1\n/g;
-	print $DH ">".$row[0]."\n".$row[1]."\n";
-	
+        # Ambiguous peptides must be cleaned out to protect Exonerate from J,O and U codes
+        $row[1] =~ s/(.{60})/$1\n/g;
+        if ($sequence_type eq 'peptide') { $row[1] =~ tr/JOU/X/ }
+        print $DH ">".$row[0]."\n".$row[1]."\n";
+
       }
 
       close $DH;
