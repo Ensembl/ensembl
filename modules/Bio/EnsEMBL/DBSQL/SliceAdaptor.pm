@@ -1953,6 +1953,7 @@ sub store {
   my $self = shift;
   my $slice = shift;
   my $seqref = shift;
+  my $not_dna = shift;
 
   #
   # Get all of the sanity checks out of the way before storing anything
@@ -1985,7 +1986,7 @@ sub store {
     throw("Slice must have valid seq region name.");
   }
 
-  if($cs->is_sequence_level()) {
+  if($cs->is_sequence_level() && !$not_dna) {
     if(!$seqref) {
       throw("Must provide sequence for sequence level coord system.");
     }
@@ -2022,7 +2023,7 @@ sub store {
     throw("Database seq_region insertion failed.");
   }
 
-  if($cs->is_sequence_level()) {
+  if($cs->is_sequence_level() && !$not_dna) {
     #store sequence if it was provided
     my $seq_adaptor = $db->get_SequenceAdaptor();
     $seq_adaptor->store($seq_region_id, $$seqref);
