@@ -1009,7 +1009,7 @@ sub store_multiple_mapping_path{
       next if $self->{'_mapping_paths'}->{$mapping_key};
 
       # Update the database
-      $meta->store_key_value('assembly.mapping',$mapping);
+      $meta->store_key_value('assembly.mapping',$mapping) unless $meta->key_value_exists('assembly.mapping',$mapping);
       push @retlist, $mapping;
     }
   }
