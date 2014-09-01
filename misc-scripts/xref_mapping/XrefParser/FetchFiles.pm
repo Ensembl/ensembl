@@ -263,6 +263,7 @@ sub fetch_files {
           return ();
         }
         print OUT $response->{content};
+        close OUT;
       }
 
       push( @processed_files, $file_path );
