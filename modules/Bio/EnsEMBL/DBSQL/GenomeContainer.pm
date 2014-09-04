@@ -1145,7 +1145,7 @@ sub get_structural_variation_count {
     $self->{'structural_variation_count'} = $structural_variation_count;
   }
   if (!defined $self->{'structural_variation_count'}) {
-    $self->{'structural_variation_count'} = $self->_get_count('StructuralVariationFeature');
+    $self->{'structural_variation_count'} = $self->_get_count('StructuralVariation');
    }
   return $self->{'structural_variation_count'};
 }
