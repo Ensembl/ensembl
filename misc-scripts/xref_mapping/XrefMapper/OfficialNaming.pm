@@ -1283,6 +1283,7 @@ sub find_lrg_hgnc{
   my ($self, $gene_id) =@_;
   my $gene_symbol;
   my $gene_symbol_xref_id;
+  my $is_lrg = 0;
 
   my $lrg_find_sth = $self->get_lrg_find_sth();
   my $lrg_set_status_sth = $self->get_lrg_set_status_sth();
@@ -1303,10 +1304,11 @@ sub find_lrg_hgnc{
     $lrg_to_hgnc_sth->fetch;
     if(defined($new_xref_id)){
       $gene_symbol = $display;
-	  $gene_symbol_xref_id = $new_xref_id;
+      $gene_symbol_xref_id = $new_xref_id;
+      $is_lrg = 1;
     }
   }
-  return ($gene_symbol, $gene_symbol_xref_id, 1);
+  return ($gene_symbol, $gene_symbol_xref_id, $is_lrg);
 }
 
 #############################END LRG BIT ################################################
