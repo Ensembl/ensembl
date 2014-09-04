@@ -382,7 +382,7 @@ sub get_schema_and_build {
 # Returns the assembly name for a given database
 sub get_assembly {
   my ($dbh, $dbname) = @_;
-  my $sth = $dbh->prepare("select meta_value from $dbname.meta where meta_key = 'assembly.default'");
+  my $sth = $dbh->prepare("select distinct version from $dbname.coord_system where attrib = 'default_version'");
   $sth->execute();
   return $sth->fetchrow();
 }
