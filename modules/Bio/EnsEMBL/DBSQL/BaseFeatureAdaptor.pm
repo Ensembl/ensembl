@@ -1716,5 +1716,22 @@ sub _compute_midpoint {
     return $midpoint;
 }
 
+sub _discard_excess_features_from_matrix {
+  my $self = shift;
+  my $list = shift;
+  my @ordered_matrix = @$list;
+  my $limit = shift;
+  return @ordered_matrix if $#ordered_matrix == 0 || $limit > scalar @ordered_matrix;
+  # cut off excess elements
+  my @spares = splice @ordered_matrix, $limit, scalar @ordered_matrix - $limit;
+  # Check nearest distance against other nearest features and include them if they are equal.
+  my $threshold_distance = $ordered_matrix[-1]->[1];
+  my $i = 0;
+  while ($i < $#spares && $spares[$i]->[2] == $threshold_distance) {
+    push @ordered_matrix, $spares[$i];
+    $i++;
+  }
+  return @ordered_matrix;
+}
 
 1;
