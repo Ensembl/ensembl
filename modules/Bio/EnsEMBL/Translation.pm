@@ -1236,6 +1236,7 @@ sub summary_as_hash {
   $summary{'id'} = $self->display_id;
   $summary{'genomic_start'} = $self->genomic_start;
   $summary{'genomic_end'} = $self->genomic_end;
+  $summary{'length'} = $self->length;
   my $transcript = $self->transcript;
   $summary{'Parent'} = $transcript->display_id;
   return \%summary;
