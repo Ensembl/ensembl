@@ -177,7 +177,7 @@ cmp_ok(scalar(@results), '==', 5, 'Upstream of reverse stranded feature gives al
 
 # Test iterative search
 
-@results = @{ $sfa->fetch_all_by_outward_search(-FEATURE => $a, -LIMIT => 5, -RANGE => 5, -MAX_RANGE => 25)};
+@results = @{ $sfa->fetch_all_by_outward_search(-FEATURE => $a, -LIMIT => 5, -RANGE => 10, -MAX_RANGE => 160)};
 cmp_ok($results[3]->[0]->display_id, 'eq', 'c', 'Check for a feature found outside its initial search range');
 
 
