@@ -1565,7 +1565,7 @@ sub fetch_all_by_outward_search {
 
 
   Returntype : Listref containing an Arrayref of Bio::EnsEMBL::Feature objects and the distance
-               [ [$feature, $overlap, $distance] ... ]
+               [ [$feature, $distance] ... ]
   Caller     : general
 
 =cut
@@ -1630,7 +1630,7 @@ sub fetch_all_nearest_by_Feature{
     # Then sort and prioritise the candidates
     my $finalists; # = [[feature, distance, centre-weighted distance, length, dbID],..]
     $finalists = $self->select_nearest($ref_feature,\@candidates,$limit,$not_overlapping,$five_prime,$three_prime);
-    # $finalists = [ map { splice @$_,0,2 } @$finalists ]; # Remove the ugly bits from the sight of users.
+    $finalists = [ map { [ splice @$_,0,2 ]} @$finalists ]; # Remove the ugly bits from the sight of users.
     return $finalists;
 }
 
