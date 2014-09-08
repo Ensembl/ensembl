@@ -182,18 +182,18 @@ sub fetch_by_display_label {
   my @genes = @{$self->generic_fetch($constraint)};
   my $gene;
   if (scalar(@genes) > 1) {
-	foreach my $gene_tmp (@genes) {
-	  if ($gene_tmp->slice->is_reference) {
-		$gene = $gene_tmp;
-	  }
-	  last if ($gene);
-	}
-	if (!$gene) {
-	  $gene = $genes[0];
-	}
+    foreach my $gene_tmp (@genes) {
+      if ($gene_tmp->slice->is_reference) {
+        $gene = $gene_tmp;
+      }
+      last if ($gene);
+    }
+    if (!$gene) {
+      $gene = $genes[0];
+    }
 
   } elsif (scalar(@genes) == 1) {
-	$gene = $genes[0];
+    $gene = $genes[0];
   }
 
   return $gene;
@@ -487,7 +487,7 @@ sub fetch_all_by_domain {
   throw("domain argument is required") unless ($domain);
 
   my $sth = $self->prepare(
-	qq(
+  qq(
   SELECT    tr.gene_id
   FROM      interpro i,
             protein_feature pf,
@@ -576,9 +576,9 @@ sub fetch_all_by_Slice_and_external_dbname_link {
   # Create a list of those that are in the gene_ids list.
   my @genes_passed;
   foreach my $gene (@$genes) {
-	if (exists($linked_genes{$gene->dbID()})) {
-	  push(@genes_passed, $gene);
-	}
+    if (exists($linked_genes{$gene->dbID()})) {
+      push(@genes_passed, $gene);
+    }
   }
 
   # Return the list of those that passed.
@@ -616,7 +616,7 @@ sub fetch_all_by_Slice {
   my $constraint = 'g.is_current = 1';
 
   if (defined($source)) {
-	$constraint .= " and g.source = '$source'";
+    $constraint .= " and g.source = '$source'";
   }
   if (defined($biotype)) {
     my $inline_variables = 1;
@@ -627,7 +627,7 @@ sub fetch_all_by_Slice {
 
   # If there are less than two genes, still do lazy-loading.
   if (!$load_transcripts || @$genes < 2) {
-	return $genes;
+    return $genes;
   }
 
   # Preload all of the transcripts now, instead of lazy loading later,
@@ -636,59 +636,27 @@ sub fetch_all_by_Slice {
   # First check if transcripts are already preloaded.
   # FIXME: Should check all transcripts.
   if (exists($genes->[0]->{'_transcript_array'})) {
-	return $genes;
+    return $genes;
   }
 
   # Get extent of region spanned by transcripts.
   my ($min_start, $max_end);
+  foreach my $g (@$genes) {
+    if (!defined($min_start) || $g->seq_region_start() < $min_start) {
+      $min_start = $g->seq_region_start();
+    }
+    if (!defined($max_end) || $g->seq_region_end() > $max_end) {
+      $max_end = $g->seq_region_end();
+    }
+  }
+
   my $ext_slice;
 
-  unless ($slice->is_circular()) {
-    foreach my $g (@$genes) {
-      if (!defined($min_start) || $g->seq_region_start() < $min_start) {
-	$min_start = $g->seq_region_start();
-      }
-      if (!defined($max_end) || $g->seq_region_end() > $max_end) {
-	$max_end = $g->seq_region_end();
-      }
-    }
-
-    if ($min_start >= $slice->start() && $max_end <= $slice->end()) {
-      $ext_slice = $slice;
-    } else {
-      my $sa = $self->db()->get_SliceAdaptor();
-      $ext_slice = $sa->fetch_by_region($slice->coord_system->name(), $slice->seq_region_name(), $min_start, $max_end, $slice->strand(), $slice->coord_system->version());
-    }
-
+  if ($min_start >= $slice->start() && $max_end <= $slice->end()) {
+    $ext_slice = $slice;
   } else {
-    # feature might be crossing the origin of replication (i.e. seq_region_start > seq_region_end)
-    # the computation of min_start|end based on seq_region_start|end is not safe
-    # use feature start/end relative to the slice instead
-    my ($min_start_feature, $max_end_feature);
-    foreach my $g (@$genes) {
-      if (!defined($min_start) || ($g->start() >= 0 && $g->start() < $min_start)) {
-  	$min_start = $g->start();
-  	$min_start_feature = $g;
-      }
-      if (!defined($max_end) || ($g->end() >= 0 && $g->end() > $max_end)) {
-  	$max_end = $g->end();
-  	$max_end_feature = $g;
-      }
-    }
-    
-    # now we can reassign min_start|end to seq_region_start|end of
-    # the feature which spans the largest region
-    $min_start = $min_start_feature->seq_region_start();
-    $max_end = $max_end_feature->seq_region_end();
-
     my $sa = $self->db()->get_SliceAdaptor();
-    $ext_slice = 
-      $sa->fetch_by_region($slice->coord_system->name(), 
-  			   $slice->seq_region_name(), 
-  			   $min_start, 
-  			   $max_end, 
-  			   $slice->strand(), 
-  			   $slice->coord_system->version());
+    $ext_slice = $sa->fetch_by_region($slice->coord_system->name(), $slice->seq_region_name(), $min_start, $max_end, $slice->strand(), $slice->coord_system->version());
   }
 
   # Associate transcript identifiers with genes.
@@ -707,7 +675,7 @@ sub fetch_all_by_Slice {
   my %tr_g_hash;
 
   while ($sth->fetch()) {
-	$tr_g_hash{$tr_id} = $g_hash{$g_id};
+    $tr_g_hash{$tr_id} = $g_hash{$g_id};
   }
 
   my $ta = $self->db()->get_TranscriptAdaptor();
@@ -715,19 +683,19 @@ sub fetch_all_by_Slice {
 
   # Move transcripts onto gene slice, and add them to genes.
   foreach my $tr (@{$transcripts}) {
-	if (!exists($tr_g_hash{$tr->dbID()})) { next }
+    if (!exists($tr_g_hash{$tr->dbID()})) { next }
 
-	my $new_tr;
-	if ($slice != $ext_slice) {
-	  $new_tr = $tr->transfer($slice);
-	  if (!defined($new_tr)) {
-		throw("Unexpected. " . "Transcript could not be transfered onto Gene slice.");
-	  }
-	} else {
-	  $new_tr = $tr;
-	}
+    my $new_tr;
+    if ($slice != $ext_slice) {
+      $new_tr = $tr->transfer($slice);
+      if (!defined($new_tr)) {
+        throw("Unexpected. " . "Transcript could not be transfered onto Gene slice.");
+      }
+    } else {
+      $new_tr = $tr;
+    }
 
-	$tr_g_hash{$tr->dbID()}->add_Transcript($new_tr);
+    $tr_g_hash{$tr->dbID()}->add_Transcript($new_tr);
   }
 
   return $genes;
@@ -754,10 +722,10 @@ sub count_all_by_Slice {
 
   my $constraint = 'g.is_current = 1';
   if (defined($source)) {
-	$constraint .= " and g.source = '$source'";
+    $constraint .= " and g.source = '$source'";
   }
   if (defined($biotype)) {
-	$constraint .= " and " . $self->biotype_constraint($biotype);
+    $constraint .= " and " . $self->biotype_constraint($biotype);
   }
 
   return $self->count_by_Slice_constraint($slice, $constraint);
@@ -787,7 +755,7 @@ sub fetch_by_transcript_id {
 
   # this is a cheap SQL call
   my $sth = $self->prepare(
-	qq(
+  qq(
       SELECT tr.gene_id
       FROM transcript tr
       WHERE tr.transcript_id = ?
@@ -825,9 +793,9 @@ sub fetch_by_transcript_stable_id {
   my ($self, $trans_stable_id) = @_;
 
   my $sth = $self->prepare(
-	qq(
+  qq(
         SELECT  gene_id
-	FROM	transcript
+  FROM	transcript
         WHERE   stable_id = ?
         AND     is_current = 1
     ));
@@ -862,11 +830,11 @@ sub fetch_by_translation_stable_id {
   my ($self, $translation_stable_id) = @_;
 
   my $sth = $self->prepare(
-	qq(
+  qq(
         SELECT  tr.gene_id
-	FROM    transcript tr,
+  FROM    transcript tr,
                 translation tl
-	WHERE   tl.stable_id = ?
+  WHERE   tl.stable_id = ?
         AND     tr.transcript_id = tl.transcript_id
         AND     tr.is_current = 1
     ));
@@ -877,7 +845,7 @@ sub fetch_by_translation_stable_id {
   my ($geneid) = $sth->fetchrow_array();
   $sth->finish;
   if (!defined $geneid) {
-	return undef;
+    return undef;
   }
   return $self->fetch_by_dbID($geneid);
 }
@@ -973,15 +941,15 @@ sub fetch_all_by_GOTerm {
 
   assert_ref($term, 'Bio::EnsEMBL::OntologyTerm');
   if ($term->ontology() ne 'GO') {
-	throw('Argument is not a GO term');
+    throw('Argument is not a GO term');
   }
 
   my $entryAdaptor = $self->db->get_DBEntryAdaptor();
 
   my %unique_dbIDs;
   foreach my $accession (map { $_->accession() } ($term, @{$term->descendants()})) {
-	my @ids = $entryAdaptor->list_gene_ids_by_extids($accession, 'GO');
-	foreach my $dbID (@ids) { $unique_dbIDs{$dbID} = 1 }
+    my @ids = $entryAdaptor->list_gene_ids_by_extids($accession, 'GO');
+    foreach my $dbID (@ids) { $unique_dbIDs{$dbID} = 1 }
   }
 
   my @result = @{$self->fetch_all_by_dbID_list([sort { $a <=> $b } keys(%unique_dbIDs)])};
@@ -1021,7 +989,7 @@ sub fetch_all_by_GOTerm_accession {
   my ($self, $accession) = @_;
 
   if ($accession !~ /^GO:/) {
-	throw('Argument is not a GO term accession');
+    throw('Argument is not a GO term accession');
   }
 
   my $goAdaptor = Bio::EnsEMBL::Registry->get_adaptor('Multi', 'Ontology', 'OntologyTerm');
@@ -1141,13 +1109,13 @@ sub store_alt_alleles {
   warning "Unsupported. Switch to using AltAlleleGroupAdaptor::store() and AltAlleleGroups";
 
   if (!ref($genes) eq 'ARRAY') {
-	throw('List reference of Bio::EnsEMBL::Gene argument expected.');
+    throw('List reference of Bio::EnsEMBL::Gene argument expected.');
   }
   my @genes     = @$genes;
   my $num_genes = scalar(@genes);
   if ($num_genes < 2) {
-	warning('At least 2 genes must be provided to construct alternative alleles (gene id: ' . $genes[0]->dbID() . '). Ignoring.');
-	return;
+    warning('At least 2 genes must be provided to construct alternative alleles (gene id: ' . $genes[0]->dbID() . '). Ignoring.');
+    return;
   }
 
   my $allele_list;
@@ -1196,15 +1164,15 @@ sub store {
   my ($self, $gene, $ignore_release, $skip_recalculating_coordinates) = @_;
 
   if (!ref $gene || !$gene->isa('Bio::EnsEMBL::Gene')) {
-	throw("Must store a gene object, not a $gene");
+    throw("Must store a gene object, not a $gene");
   }
   if (!defined($ignore_release)) {
-	$ignore_release = 1;
+    $ignore_release = 1;
   }
   my $db = $self->db();
 
   if ($gene->is_stored($db)) {
-	return $gene->dbID();
+    return $gene->dbID();
   }
 
   # ensure coords are correct before storing
@@ -1215,9 +1183,9 @@ sub store {
 
   my $analysis_id;
   if ($analysis->is_stored($db)) {
-	$analysis_id = $analysis->dbID();
+    $analysis_id = $analysis->dbID();
   } else {
-	$analysis_id = $db->get_AnalysisAdaptor->store($analysis);
+    $analysis_id = $db->get_AnalysisAdaptor->store($analysis);
   }
 
   my $type = $gene->biotype || "";
@@ -1288,9 +1256,9 @@ sub store {
 
   if (defined($gene->stable_id)) {
 
-	$sth->bind_param(12, $gene->stable_id, SQL_VARCHAR);
-	my $version = ($gene->version()) ? $gene->version() : 1;
-	$sth->bind_param(13, $version, SQL_INTEGER);
+    $sth->bind_param(12, $gene->stable_id, SQL_VARCHAR);
+    my $version = ($gene->version()) ? $gene->version() : 1;
+    $sth->bind_param(13, $version, SQL_INTEGER);
   }
 
   $sth->execute();
@@ -1302,7 +1270,7 @@ sub store {
   my $dbEntryAdaptor = $db->get_DBEntryAdaptor();
 
   foreach my $dbe (@{$gene->get_all_DBEntries}) {
-	$dbEntryAdaptor->store($dbe, $gene_dbID, "Gene", $ignore_release);
+    $dbEntryAdaptor->store($dbe, $gene_dbID, "Gene", $ignore_release);
   }
 
   # We allow transcripts not to share equal exons and instead have
@@ -1312,14 +1280,14 @@ sub store {
   my %exons;
 
   foreach my $trans (@{$gene->get_all_Transcripts}) {
-	foreach my $e (@{$trans->get_all_Exons}) {
-	  my $key = $e->hashkey();
-	  if (exists $exons{$key}) {
-		$trans->swap_exons($e, $exons{$key});
-	  } else {
-		$exons{$key} = $e;
-	  }
-	}
+    foreach my $e (@{$trans->get_all_Exons}) {
+      my $key = $e->hashkey();
+      if (exists $exons{$key}) {
+        $trans->swap_exons($e, $exons{$key});
+      } else {
+        $exons{$key} = $e;
+      }
+    }
   }
 
   my $transcript_adaptor = $db->get_TranscriptAdaptor();
@@ -1328,69 +1296,67 @@ sub store {
 
   my $new_canonical_transcript_id;
   for (my $i = 0; $i < @$transcripts; $i++) {
-	my $new = $transcripts->[$i];
-	my $old = $original_transcripts->[$i];
+    my $new = $transcripts->[$i];
+    my $old = $original_transcripts->[$i];
 
-	$transcript_adaptor->store($new, $gene_dbID, $analysis_id, $skip_recalculating_coordinates);
+    $transcript_adaptor->store($new, $gene_dbID, $analysis_id, $skip_recalculating_coordinates);
 
-	if (!defined($new_canonical_transcript_id)
-		&& $new->is_canonical())
-	{
-	  $new_canonical_transcript_id = $new->dbID();
-	}
+    if (!defined($new_canonical_transcript_id) && $new->is_canonical()) {
+      $new_canonical_transcript_id = $new->dbID();
+    }
 
-	# update the original transcripts since we may have made copies of
-	# them by transforming the gene
-	$old->dbID($new->dbID());
-	$old->adaptor($new->adaptor());
+  # update the original transcripts since we may have made copies of
+  # them by transforming the gene
+    $old->dbID($new->dbID());
+    $old->adaptor($new->adaptor());
 
-	if ($new->translation) {
-	  $old->translation->dbID($new->translation()->dbID);
-	  $old->translation->adaptor($new->translation()->adaptor);
-	}
+    if ($new->translation) {
+      $old->translation->dbID($new->translation()->dbID);
+      $old->translation->adaptor($new->translation()->adaptor);
+    }
   }
 
   if (defined($new_canonical_transcript_id)) {
-	# Now the canonical transcript has been stored, so update the
-	# canonical_transcript_id of this gene with the new dbID.
-	my $sth = $self->prepare(
-	  q(
-      UPDATE gene
-      SET canonical_transcript_id = ?
-      WHERE gene_id = ?)
-	);
+  # Now the canonical transcript has been stored, so update the
+  # canonical_transcript_id of this gene with the new dbID.
+    my $sth = $self->prepare(
+      q(
+        UPDATE gene
+        SET canonical_transcript_id = ?
+        WHERE gene_id = ?)
+    );
 
-	$sth->bind_param(1, $new_canonical_transcript_id, SQL_INTEGER);
-	$sth->bind_param(2, $gene_dbID, SQL_INTEGER);
+    $sth->bind_param(1, $new_canonical_transcript_id, SQL_INTEGER);
+    $sth->bind_param(2, $gene_dbID, SQL_INTEGER);
 
-	$sth->execute();
-	$sth->finish();
+    $sth->execute();
+    $sth->finish();
   }
 
   # update gene to point to display xref if it is set
   if (my $display_xref = $gene->display_xref) {
-	my $dxref_id;
-	if ($display_xref->is_stored($db)) {
-	  $dxref_id = $display_xref->dbID();
-	} else {
-	  $dxref_id = $dbEntryAdaptor->exists($display_xref);
-	}
+    my $dxref_id;
+    if ($display_xref->is_stored($db)) {
+      $dxref_id = $display_xref->dbID();
+    } else {
+      $dxref_id = $dbEntryAdaptor->exists($display_xref);
+    }
 
-	if (defined($dxref_id)) {
-	  my $sth = $self->prepare("UPDATE gene SET display_xref_id = ? WHERE gene_id = ?");
-	  $sth->bind_param(1, $dxref_id,  SQL_INTEGER);
-	  $sth->bind_param(2, $gene_dbID, SQL_INTEGER);
-	  $sth->execute();
-	  $sth->finish();
-	  $display_xref->dbID($dxref_id);
-	  $display_xref->adaptor($dbEntryAdaptor);
-	  $display_xref->dbID($dxref_id);
-	  $display_xref->adaptor($dbEntryAdaptor);
-	} else {
-	  warning("Display_xref " . $display_xref->dbname() . ":" . $display_xref->display_id() . " is not stored in database.\n" . "Not storing relationship to this gene.");
-	  $display_xref->dbID(undef);
-	  $display_xref->adaptor(undef);
-	}
+  if (defined($dxref_id)) {
+    my $sth = $self->prepare("UPDATE gene SET display_xref_id = ? WHERE gene_id = ?");
+      $sth->bind_param(1, $dxref_id,  SQL_INTEGER);
+      $sth->bind_param(2, $gene_dbID, SQL_INTEGER);
+      $sth->execute();
+      $sth->finish();
+      $display_xref->dbID($dxref_id);
+      $display_xref->adaptor($dbEntryAdaptor);
+      $display_xref->dbID($dxref_id);
+      $display_xref->adaptor($dbEntryAdaptor);
+    } else {
+      warning("Display_xref " . $display_xref->dbname() . ":" . $display_xref->display_id() . " is not stored in database.\n" . "Not storing relationship to this gene.");
+      $display_xref->dbID(undef);
+      $display_xref->adaptor(undef);
+    }
   }
 
   # store gene attributes if there are any
@@ -1426,19 +1392,19 @@ sub remove {
   my $gene = shift;
 
   if (!ref($gene) || !$gene->isa('Bio::EnsEMBL::Gene')) {
-	throw("Bio::EnsEMBL::Gene argument expected.");
+    throw("Bio::EnsEMBL::Gene argument expected.");
   }
 
   if (!$gene->is_stored($self->db())) {
-	warning("Cannot remove gene " . $gene->dbID() . ". Is not stored in " . "this database.");
-	return;
+    warning("Cannot remove gene " . $gene->dbID() . ". Is not stored in " . "this database.");
+    return;
   }
 
   # remove all object xrefs associated with this gene
 
   my $dbe_adaptor = $self->db()->get_DBEntryAdaptor();
   foreach my $dbe (@{$gene->get_all_DBEntries()}) {
-	$dbe_adaptor->remove_from_object($dbe, $gene, 'Gene');
+    $dbe_adaptor->remove_from_object($dbe, $gene, 'Gene');
   }
 
   # remove all alternative allele entries associated with this gene
@@ -1454,7 +1420,7 @@ sub remove {
   # remove all of the transcripts associated with this gene
   my $transcriptAdaptor = $self->db->get_TranscriptAdaptor();
   foreach my $trans (@{$gene->get_all_Transcripts()}) {
-	$transcriptAdaptor->remove($trans);
+    $transcriptAdaptor->remove($trans);
   }
 
   # remove this gene from the database
@@ -1517,10 +1483,10 @@ sub get_Interpro_by_geneid {
   my @out;
   my %h;
   while ((my $arr = $sth->fetchrow_arrayref())) {
-	if ($h{$arr->[0]}) { next; }
-	$h{$arr->[0]} = 1;
-	my $string = $arr->[0] . ":" . $arr->[1];
-	push(@out, $string);
+    if ($h{$arr->[0]}) { next; }
+    $h{$arr->[0]} = 1;
+    my $string = $arr->[0] . ":" . $arr->[1];
+    push(@out, $string);
   }
 
   return \@out;
@@ -1545,7 +1511,7 @@ sub update {
   my $update = 0;
 
   if (!defined $gene || !ref $gene || !$gene->isa('Bio::EnsEMBL::Gene')) {
-	throw("Must update a gene object, not a $gene");
+    throw("Must update a gene object, not a $gene");
   }
 
   my $update_gene_sql = qq(
@@ -1564,9 +1530,9 @@ sub update {
   my $display_xref_id;
 
   if ($display_xref && $display_xref->dbID()) {
-	$display_xref_id = $display_xref->dbID();
+    $display_xref_id = $display_xref->dbID();
   } else {
-	$display_xref_id = undef;
+    $display_xref_id = undef;
   }
 
   my $sth = $self->prepare($update_gene_sql);
@@ -1579,9 +1545,9 @@ sub update {
   $sth->bind_param(6, $gene->is_current(),     SQL_TINYINT);
 
   if (defined($gene->canonical_transcript())) {
-	$sth->bind_param(7, $gene->canonical_transcript()->dbID(), SQL_INTEGER);
+    $sth->bind_param(7, $gene->canonical_transcript()->dbID(), SQL_INTEGER);
   } else {
-	$sth->bind_param(7, 0, SQL_INTEGER);
+    $sth->bind_param(7, 0, SQL_INTEGER);
   }
 
   $sth->bind_param(8, $gene->dbID(), SQL_INTEGER);
@@ -1894,8 +1860,8 @@ sub cache_gene_seq_mappings {
   my $csnew = $mcc->fetch_all_CoordSystems_by_feature_type('gene');
 
   foreach my $cs2 (@$csnew) {
-	my $am = $ama->fetch_by_CoordSystems($cs1, $cs2);
-	$am->register_all();
+    my $am = $ama->fetch_by_CoordSystems($cs1, $cs2);
+    $am->register_all();
   }
 
 } ## end sub cache_gene_seq_mappings
@@ -1923,7 +1889,7 @@ sub fetch_all_by_exon_supporting_evidence {
   my ($self, $hit_name, $feature_type, $analysis) = @_;
 
   if ($feature_type !~ /(dna)|(protein)_align_feature/) {
-	throw("feature type must be dna_align_feature or protein_align_feature");
+    throw("feature type must be dna_align_feature or protein_align_feature");
   }
 
   my ($anal_from, $anal_where);
@@ -1961,8 +1927,8 @@ sub fetch_all_by_exon_supporting_evidence {
   my @genes;
 
   while (my $id = $sth->fetchrow_array) {
-	my $gene = $self->fetch_by_dbID($id);
-	push(@genes, $gene) if $gene;
+    my $gene = $self->fetch_by_dbID($id);
+    push(@genes, $gene) if $gene;
   }
 
   return \@genes;
@@ -1990,7 +1956,7 @@ sub fetch_all_by_transcript_supporting_evidence {
   my ($self, $hit_name, $feature_type, $analysis) = @_;
 
   if ($feature_type !~ /(dna)|(protein)_align_feature/) {
-	throw("feature type must be dna_align_feature or protein_align_feature");
+    throw("feature type must be dna_align_feature or protein_align_feature");
   }
 
   my ($anal_from, $anal_where);
@@ -2026,177 +1992,35 @@ sub fetch_all_by_transcript_supporting_evidence {
   my @genes;
 
   while (my $id = $sth->fetchrow_array) {
-	my $gene = $self->fetch_by_dbID($id);
-	push(@genes, $gene) if $gene;
+    my $gene = $self->fetch_by_dbID($id);
+    push(@genes, $gene) if $gene;
   }
 
   return \@genes;
 } ## end sub fetch_all_by_transcript_supporting_evidence
-
-=head2 fetch_nearest_Gene_by_Feature
-
-  Arg [1]    : Feature object
-  Example    : $genes = $gene_adaptor->fetch_nearest_Gene_by_Feature($feat);
-  Description: DEPRECATED; BE AWARE THE RESULTS OF THIS METHOD ARE UNRELIABLE
-               ESPECIALLY WRT STRANDED AND STREAM.
-  Returntype : Listref of Bio::EnsEMBL::Gene, EMPTY list if no nearest
-  Caller     : general
-  Status     : DEPRECATED
-
-=cut
-
-sub fetch_nearest_Gene_by_Feature {
-  my $self = shift;
-  my $feat = shift;
-
-  deprecate("fetch_nearest_Gene_by_Feature() is a deprecated method. Strand and stream implementations are unreliable. Please use with caution");
-
-  my $stranded = shift;
-  my $stream   = shift;    # 1 up stream -1 downstream
-  my @genes;
-
-  my $strand = $feat->strand;
-  if (defined($stream) and !$strand) {
-	warn("stream specified but feature has no strand so +ve strand will be used");
-	$strand = 1;
-  }
-  my $min_dist = 999;
-  my $gene_id  = 0;
-
-  my $overlapping = $feat->get_overlapping_Genes();
-
-  return $overlapping if (defined(@{$overlapping}[0]));
-
-  my $seq_region_id = $feat->slice->adaptor->get_seq_region_id($feat->slice);
-  my $start         = ($feat->start + $feat->slice->start) - 1;
-  my $end           = ($feat->end + $feat->slice->start) - 1;
-
-  my @gene_ids;
-  if (!defined($stream) or $stream == 0) {
-
-	my $sql1 = "select g.gene_id, (? - g.seq_region_end)  as 'dist' from gene g where ";
-	if ($stranded) {
-	  $sql1 .= "g.seq_region_strand = " . $strand . " and ";
-	}
-	$sql1 .= "seq_region_id = ? and g.seq_region_end < ? order by dist limit 10";
-
-	#
-	# MAYBE set the result of prepare to be static in case lots of calls.
-	#
-	my $sql1_sth = $self->prepare($sql1) || die "Could not prepare $sql1";
-	$sql1_sth->execute($start, $seq_region_id, $start)
-	  || die "Could not execute sql";
-	$sql1_sth->bind_columns(\$gene_id, \$min_dist)
-	  || die "Could mot bin columns";
-
-	my $last_dist = 99999999999999999;
-	while ($sql1_sth->fetch()) {
-	  if ($min_dist <= $last_dist) {
-		push @gene_ids, $gene_id;
-		$last_dist = $min_dist;
-	  }
-	}
-	$sql1_sth->finish();
-
-	my $sql2 = "select g.gene_id, (g.seq_region_start - ?)  as 'dist' from gene g  where ";
-	if ($stranded) {
-	  $sql2 .= "g.seq_region_strand = " . $feat->strand . " and ";
-	}
-	$sql2 .= "seq_region_id = ? and g.seq_region_start > ? order by dist limit 10";
-
-	my $sql2_sth = $self->prepare($sql2) || die "could not prepare $sql2";
-
-	my ($tmp_min_dist, $tmp_gene_id);
-	$sql2_sth->execute($end, $seq_region_id, $end)
-	  || die "Could not execute sql";
-	$sql2_sth->bind_columns(\$tmp_gene_id, \$tmp_min_dist)
-	  || die "Could mot bin columns";
-	my $first = 1;
-	while ($sql2_sth->fetch()) {
-	  if ($tmp_min_dist <= $last_dist) {
-		if ($first) {
-		  $first = 0;
-		  if ($tmp_min_dist < $last_dist) {
-			@gene_ids = ();    #reset
-		  }
-		}
-		push @gene_ids, $tmp_gene_id;
-		$last_dist = $tmp_min_dist;
-	  }
-	}
-	$sql2_sth->finish();
-
-  } elsif (($stream*$strand) == 1) {
-	my $sql1 = "select g.gene_id, (? - g.seq_region_end)  as 'dist' from gene g where ";
-	if ($stranded) {
-	  $sql1 .= "g.seq_region_strand = " . $strand . " and ";
-	}
-	$sql1 .= "seq_region_id = ? and g.seq_region_end < ? order by dist limit 10";
-
-	#
-	# MAYBE set the result of prepare to be static in case lots of calls.
-	#
-	my $sql1_sth = $self->prepare($sql1) || die "Could not prepare $sql1";
-	$sql1_sth->execute($start, $seq_region_id, $start)
-	  || die "Could not execute sql";
-	$sql1_sth->bind_columns(\$gene_id, \$min_dist)
-	  || die "Could mot bin columns";
-
-	my $last_dist;
-	my $first = 1;
-	while ($sql1_sth->fetch()) {
-	  if ($first) {
-		$first = 0;
-	  } else {
-		next if ($min_dist > $last_dist);
-	  }
-	  push @gene_ids, $gene_id;
-	  $last_dist = $min_dist;
-	}
-	$sql1_sth->finish();
-  } elsif (($stream*$strand) == -1) {
-
-	my $sql2 = "select g.gene_id, (g.seq_region_start - ?)  as 'dist' from gene g  where ";
-	if ($stranded) {
-	  $sql2 .= "g.seq_region_strand = " . $feat->strand . " and ";
-	}
-	$sql2 .= "seq_region_id = ? and g.seq_region_start > ? order by dist limit 10";
-
-	my $sql2_sth = $self->prepare($sql2) || die "could not prepare $sql2";
-
-	my ($tmp_min_dist, $tmp_gene_id);
-	$sql2_sth->execute($end, $seq_region_id, $end)
-	  || die "Could not execute sql";
-	$sql2_sth->bind_columns(\$tmp_gene_id, \$tmp_min_dist)
-	  || die "Could mot bin columns";
-	my $first = 1;
-	my $last_dist;
-	while ($sql2_sth->fetch()) {
-	  if ($first) {
-		$first = 0;
-	  } else {
-		next if ($tmp_min_dist > $last_dist);
-	  }
-	  push @gene_ids, $tmp_gene_id;
-	  $last_dist = $tmp_min_dist;
-	}
-	$sql2_sth->finish();
-  } else {
-	die "Invalid stream or strand must be -1, 0 or 1\n";
-  }
-
-  foreach my $gene_id (@gene_ids) {
-	push @genes, $self->fetch_by_dbID($gene_id);
-  }
-  return \@genes;
-
-} ## end sub fetch_nearest_Gene_by_Feature
 
 ##########################
 #                        #
 #  DEPRECATED METHODS    #
 #                        #
 ##########################
+
+=head2 fetch_nearest_Gene_by_Feature
+
+ Description: DEPRECATED - use fetch_nearest_Genes_by_Feature
+
+=cut
+
+sub fetch_nearest_Gene_by_Feature{
+  my ($self, $feat, $stranded, $stream) = @_;
+  #This had no prime spec and was returning all overlaps regardless of strand
+  #else the first 10 from the stream with the first closest gene
+
+  deprecate( "use fetch_nearest_Genes_by_Feature instead");
+  #need to change params order here to account for new prime arg
+  return $_[0]->fetch_nearest_Genes_by_Feature($feat, undef, $stranded, $stream);
+}
+
 
 =head2 fetch_by_maximum_DBLink
 

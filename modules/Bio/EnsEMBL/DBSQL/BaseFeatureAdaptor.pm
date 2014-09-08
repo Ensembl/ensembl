@@ -878,26 +878,26 @@ COORD_SYSTEM: foreach my $coord_system (@feature_coord_systems) {
                     
                     push @query_accumulator, [$constraint,$mapper,$slice];
                 } # end multi-query cycle
-		    } # end else
+        } # end else
             
-	   } # end else (coord sytems not matching)
-	   
-	   #Record the bind params if we have to do multiple queries
-	   my $bind_params = $self->bind_param_generic_fetch();
-	   
-	   foreach my $query (@query_accumulator) {
-	       my ($local_constraint,$local_mapper,$local_slice) = @$query;
-	       $self->_bind_param_generic_fetch($bind_params);
-    	   if ($query_type and $query_type eq 'count') {
-  	       push @pan_coord_features, $self->generic_count($local_constraint);
-    	   } 
-    	   else {
-           my $features = $self->generic_fetch( $local_constraint, $local_mapper, $local_slice );
-           $features = $self->_remap( $features, $local_mapper, $local_slice );
-           push @pan_coord_features, @$features;
-    	   }
-	   }
-	   $mapper = undef;
+     } # end else (coord sytems not matching)
+     
+     #Record the bind params if we have to do multiple queries
+     my $bind_params = $self->bind_param_generic_fetch();
+     
+     foreach my $query (@query_accumulator) {
+         my ($local_constraint,$local_mapper,$local_slice) = @$query;
+         $self->_bind_param_generic_fetch($bind_params);
+         if ($query_type and $query_type eq 'count') {
+           push @pan_coord_features, $self->generic_count($local_constraint);
+         } 
+         else {
+             my $features = $self->generic_fetch( $local_constraint, $local_mapper, $local_slice );
+             $features = $self->_remap( $features, $local_mapper, $local_slice );
+             push @pan_coord_features, @$features;
+         }
+     }
+     $mapper = undef;
     } # End foreach
     return \@pan_coord_features;
 }
@@ -1463,5 +1463,372 @@ sub remove_by_feature_id {
   $sth->finish();
 }
 
+=head2 fetch_nearest_by_Feature
+
+  Arg [1]    : Reference Feature to start the search from
+  Description: Searches iteratively outward from the starting feature until a nearby Feature is found
+               If you require more than one result or more control of which features are returned, see
+               fetch_all_nearest_by_Feature and fetch_all_by_outward_search. fetch_nearest_by_Feature
+               is a convenience method.
+  ReturnType : Bio::EnsEMBL::Feature
+=cut
+
+sub fetch_nearest_by_Feature {
+  my $self = shift;
+  my $feature = shift;
+  my @hits = @{ $self->fetch_all_by_outward_search(-FEATURE => $feature, -MAX_RANGE => 1000000, -RANGE => 1000 -LIMIT => 1) };
+  return $hits[0] if (@hits > 0);
+  return;
+}
+
+
+=head2 fetch_all_by_outward_search
+
+  Arguments the same as fetch_all_nearest_by_Feature
+  Arg [0]    : -MAX_RANGE : Set an upper limit on the search range, defaults to 10000 bp 
+  Arg [1]    : -FEATURE ,Bio::EnsEMBL::Feature : 'Source' Feature to anchor the search for nearest Features
+  Arg [2]    : -SAME_STRAND, Boolean (optional)  : Respect the strand of the source Feature with ref, only 
+               returning Features on the same strand.
+  Arg [3]    : -OPPOSITE_STRAND, Boolean (optional) : Find features on the opposite strand of the same
+  Arg [4]    : -DOWNSTREAM/-UPSTREAM, (optional) : Search ONLY downstream or upstream from the source Feature.
+               Can be omitted for searches in both directions.
+  Arg [5]    : -RANGE, Int     : The size of the space to search for Features. Defaults to 1000 as a sensible starting point
+  Arg [6]    : -NOT_OVERLAPPING, Boolean (optional) : Do not return Features that overlap the source Feature
+  Arg [7]    : -FIVE_PRIME, Boolean (optional) : Determine range to a Feature by the 5' end, respecting strand
+  Arg [8]    : -THREE_PRIME, Boolean (optional): Determine range to a Feature by the 3' end, respecting strand
+  Arg [9]    : -LIMIT, Int     : The maximum number of Features to return, defaulting to one. Equally near features are all returned
+
+  Description: Searches for features within the suggested -RANGE, and if it finds none, expands the search area
+               until it satisfies -LIMIT or hits -MAX_RANGE. Useful if you don't know how far away the features
+               might be, or if dealing with areas of high feature density. In the case of Variation Features, it is
+               conceivable that a 2000 bp window might contain very many features, resulting in a slow and bloated
+               response, thus the ability to explore outward in smaller sections can be useful.
+  Returntype : Listref of [$feature,$distance]
+=cut
+
+sub fetch_all_by_outward_search {
+  my $self = shift;
+   my ($ref_feature, $respect_strand, $opposite_strand, $downstream, $upstream, $search_range,
+       $limit,$not_overlapping,$five_prime,$three_prime, $max_range) =
+        rearrange([qw(FEATURE SAME_STRAND OPPOSITE_STRAND DOWNSTREAM UPSTREAM RANGE LIMIT NOT_OVERLAPPING FIVE_PRIME THREE_PRIME MAX_RANGE)], @_);
+  my $factor = 1;
+  my @results;
+  while (scalar @results < $limit && $search_range < $max_range) {
+    $search_range = $search_range * $factor;
+    @results = @{ 
+      $self->fetch_all_nearest_by_Feature(-RANGE => $search_range, 
+                                          -FEATURE => $ref_feature, 
+                                          -SAME_STRAND => $respect_strand, 
+                                          -OPPOSITE_STRAND => $opposite_strand,
+                                          -DOWNSTREAM => $downstream,
+                                          -UPSTREAM => $upstream,
+                                          -LIMIT => $limit,
+                                          -NOT_OVERLAPPING => $not_overlapping,
+                                          -FIVE_PRIME => $five_prime,
+                                          -THREE_PRIME => $three_prime,
+                                          )
+    };
+    $factor++;
+  }
+  return \@results;
+}
+
+=head2 fetch_all_nearest_by_Feature
+
+  Arg [1]    : -FEATURE ,Bio::EnsEMBL::Feature : 'Source' Feature to anchor the search for nearest Features
+  Arg [2]    : -SAME_STRAND, Boolean (optional): Respect the strand of the source Feature with ref, only 
+                                                 returning Features on the same strand
+  Arg [3]    : -OPPOSITE_STRAND, Boolean (optional) : Find features on the opposite strand of the same
+  Arg [4]    : -DOWNSTREAM/-UPSTREAM, (optional) : Search ONLY downstream or upstream from the source Feature.
+               Can be omitted for searches in both directions.
+  Arg [5]    : -RANGE, Int     : The size of the space to search for Features. Defaults to 1000 as a sensible starting point
+  Arg [6]    : -NOT_OVERLAPPING, Boolean (optional) : Do not return Features that overlap the source Feature
+  Arg [7]    : -FIVE_PRIME, Boolean (optional) : Determine range to a Feature by its 5' end, respecting strand
+  Arg [8]    : -THREE_PRIME, Boolean (optional): Determine range to a Feature by its 3' end, respecting strand
+  Arg [9]    : -LIMIT, Int     : The maximum number of Features to return, defaulting to one. Equally near features are all returned
+  Example    : #To fetch the gene(s) with the nearest 5' end:
+               $genes = $gene_adaptor->fetch_all_nearest_by_Feature(-FEATURE => $feat, -FIVE_PRIME => 1);
+
+  Description: Gets the nearest Features to a given 'source' Feature. The Feature returned and the format of the result
+               are non-obvious, please read on.
+
+               When looking beyond the boundaries of the source Feature, the distance is measured to the nearest end 
+               of that Feature to the nearby Feature's nearest end.
+               If Features overlap the source Feature, then they are given a distance of zero but ordered by
+               their proximity to the centre of the Feature.
+               
+               Features are found and prioritised within 1000 base pairs unless a -RANGE is given to the method. Any overlap with
+               the search region is included, and the results can be restricted to upstream, downstream, forward strand or reverse
+
+               The -FIVE_PRIME and -THREE_PRIME options allow searching for specific ends of nearby features, but still needs
+               a -DOWN/UPSTREAM value and/or -NOT_OVERLAPPING to fulfil its most common application.
+
+
+  Returntype : Listref containing an Arrayref of Bio::EnsEMBL::Feature objects and the distance
+               [ [$feature, $distance] ... ]
+  Caller     : general
+
+=cut
+sub fetch_all_nearest_by_Feature{
+    my $self = shift;
+    my ($ref_feature, $respect_strand, $opposite_strand, $downstream, $upstream, $search_range,$limit,$not_overlapping,$five_prime,$three_prime) =
+        rearrange([qw(FEATURE SAME_STRAND OPPOSITE_STRAND DOWNSTREAM UPSTREAM RANGE LIMIT NOT_OVERLAPPING FIVE_PRIME THREE_PRIME)], @_);
+
+    $search_range ||= 1000;
+
+    unless (defined($ref_feature) && $ref_feature->isa('Bio::EnsEMBL::Feature')) {
+      throw ('fetch_all_nearest_by_Feature method requires a valid Ensembl Feature object to operate');
+    }
+    throw ('Do not specify both -upstream and -downstream. This is the same as no arguments') if ($upstream && $downstream);
+    throw ('Do not use both -SAME_STRAND and -OPPOSITE_STRAND in one query') if ($opposite_strand && $respect_strand);
+    my ($region_start,$region_end);
+    
+    # Define search box. Features overlapping the boundaries are found and considered
+    my $slice = $ref_feature->feature_Slice;
+
+    my $five_prime_expansion = 0;
+    my $three_prime_expansion = 0;
+    if ($upstream) {
+      $five_prime_expansion = $search_range;
+      $three_prime_expansion = $slice->length * -1;
+      # shrinks the slice to exclude the features that do not exist beyond the end of the
+      # considered feature
+    } 
+    elsif ($downstream) {
+      $three_prime_expansion = $search_range;
+      $five_prime_expansion = $slice->length * -1;
+    } 
+    else {
+      $five_prime_expansion = $search_range;
+      $three_prime_expansion = $search_range;
+    }
+
+    $slice = $slice->expand( $five_prime_expansion, $three_prime_expansion);
+    my $sa = $self->db->get_SliceAdaptor;
+    my @candidates; # Features in the search region
+    @candidates = @{$self->fetch_all_by_Slice($slice)};
+    if ($respect_strand) { @candidates = grep {$_->strand == $ref_feature->strand} @candidates }
+    if ($opposite_strand) { @candidates = grep {$_->strand != $ref_feature->strand} @candidates }
+    # When user chooses UPSTREAM/DOWNSTREAM && FIVE_PRIME/THREE_PRIME, discount any features with
+    # their other end in the overlap region. fetch_all_by_Slice cannot filter these out.
+    # fetch_all_by_Slice_constraint could in principle with the correct constraint.
+    if (($upstream && $ref_feature->strand == 1) || ($downstream && $ref_feature->strand == -1)) {
+      if ($five_prime) {
+        @candidates = grep { ($_->strand == 1) ? $_->seq_region_start < $ref_feature->start : $_->seq_region_end < $ref_feature->start} @candidates;
+      } elsif ($three_prime) {
+        @candidates = grep { ($_->strand == 1) ? $_->seq_region_end < $ref_feature->start : $_->seq_region_start < $ref_feature->start} @candidates;
+      }
+    }
+    if (($downstream && $ref_feature->strand == 1)|| ($upstream && $ref_feature->strand == -1)) {
+      if ($five_prime) {
+        @candidates = grep { ($_->strand == 1) ? $_->seq_region_start > $ref_feature->end : $_->seq_region_end > $ref_feature->end } @candidates;
+      } elsif ($three_prime) {
+        @candidates = grep { ($_->strand == 1) ? $_->seq_region_end > $ref_feature->end : $_->seq_region_start > $ref_feature->end } @candidates;
+      }
+    }
+    # Then sort and prioritise the candidates
+    my $finalists; # = [[feature, distance, centre-weighted distance, length, dbID],..]
+    $finalists = $self->select_nearest($ref_feature,\@candidates,$limit,$not_overlapping,$five_prime,$three_prime);
+    $finalists = [ map { [ splice @$_,0,2 ]} @$finalists ]; # Remove the ugly bits from the sight of users.
+    return $finalists;
+}
+
+
+=head2 select_nearest
+
+  Arg [1]    : Bio::Ensembl::Feature, a Feature to find the nearest neighbouring feature to.
+  Arg [2]    : Listref of Features to be considered for nearness.
+  Arg [3]    : Integer, limited number of Features to return. Equally near features are all returned in spite of this limit
+  Arg [4]    : Boolean, Overlapping prohibition. Overlapped Features are forgotten
+  Arg [5]    : Boolean, use the 5' ends of the nearby features for distance calculation
+  Arg [6]    : Boolean, use the 3' ends of the nearby features for distance calculation
+  Example    : $feature_list = $feature_adaptor->select_nearest($ref_feature,\@candidates,$limit,$not_overlapping)
+  Description: Take a list of possible features, and determine which is nearest. Nearness is a
+               tricky concept. Beware of using the distance between Features, as it may not be the number you think
+               it should be.
+  Returntype : listref of Features ordered by proximity
+  Caller     : BaseFeatureAdaptor->fetch_all_nearest_by_Feature
+
+=cut
+
+sub select_nearest {
+    my $self = shift;
+    my $ref_feature = shift;
+    my $candidates = shift;
+    my $limit = shift;
+    my $not_overlapping = shift;
+    my $five_prime = shift;
+    my $three_prime = shift;
+  
+    # Convert circular coordinates to linear ones for distance calculation
+    my $ref_start = ($ref_feature->start < $ref_feature->end) ? $ref_feature->start : $ref_feature->start - $ref_feature->length; # Not ->end, in case circular
+    my $ref_end = $ref_feature->end;
+    my $ref_midpoint = $self->_compute_midpoint($ref_feature);
+
+    my $position_matrix = [];
+    my $shortest_distance;
+    my $adjusted_distance; # for when features overlap and we need another metric to order by
+
+    foreach my $neighbour (@$candidates) {
+        # rearrange coordinates into forward-stranded orientation, plus flatten circular features.
+        my $neigh_start = ($neighbour->seq_region_start < $neighbour->seq_region_end) 
+          ? $neighbour->seq_region_start : $neighbour->seq_region_start - $neighbour->length; # Not ->end, in case it is circular
+        my $neigh_midpoint = $self->_compute_midpoint($neighbour);
+        my $neigh_end = $neighbour->seq_region_end;
+
+        # discard overlaps early if not required.
+        next if ( $not_overlapping
+          && (
+               ( $neigh_start >= $ref_start && $neigh_end <= $ref_end )
+            || ( $neigh_end <= $ref_end && $neigh_end >= $ref_start )
+          )
+        );
+        my @args = ($ref_start,$ref_midpoint,$ref_end,$neigh_start,$neigh_midpoint,$neigh_end,$neighbour->strand);
+        if ($five_prime || $three_prime) {
+          my $five = $five_prime ? 1 : 0; # Choose 5' or 3' end
+          ($shortest_distance,$adjusted_distance) = $self->_compute_prime_distance($five,@args);
+          next unless ($shortest_distance || $adjusted_distance);
+        }
+        else {
+          ($shortest_distance,$adjusted_distance) = $self->_compute_nearest_end(@args);
+        }
+        push @$position_matrix,[ $neighbour, $shortest_distance, $adjusted_distance, $neighbour->length, $neighbour->display_id] unless ($not_overlapping && $shortest_distance == 0);
+    }
+    
+    # Order by distance, then centre-to-centre distance, then smallest feature first, then an arbitrary ID.
+    # $position_matrix looks like this:
+    # [ [ $feature, closest measure of distance, size, dbID ] ] 
+    # Not proud of this line. It re-emits the original array in sorted order to favour better measures of order.
+    my @ordered_matrix = map { [$_->[0],$_->[1],$_->[2],$_->[3],$_->[4]] } 
+      sort { abs($a->[1]) <=> abs($b->[1]) || abs($a->[2]) <=> abs($b->[2]) || $a->[3] <=> $b->[3] || $a->[4] <=> $b->[4]} @$position_matrix;
+    # Knock off unwanted hits. Equal distances are included, so more can be returned than asked for.
+    @ordered_matrix = $self->_discard_excess_features_from_matrix(\@ordered_matrix,$limit);
+    return \@ordered_matrix;
+}
+
+=head2 _compute_nearest_end
+
+  Arg [1]    : Reference feature start
+  Arg [2]    : Reference feature mid-point
+  Arg [3]    : Reference feature end
+  Arg [4]    : Considered feature start
+  Arg [5]    : Considered feature mid-point
+  Arg [6]    : Considered feature end
+  Example    : $distance = $feature_adaptor->_compute_nearest_end($ref_start,$ref_midpoint,$ref_end,$f_start,$f_midpoint,$f_end)
+  Description: For a given feature, calculate the smallest legitimate distance to a reference feature
+               Calculate by mid-points to accommodate overlaps
+  Returntype : Integer distance in base pairs
+  Caller     : BaseFeatureAdaptor->select_nearest()
+
+=cut
+sub _compute_nearest_end {
+    my ($self,$ref_start,$ref_midpoint,$ref_end,$f_start,$f_midpoint,$f_end) = @_;
+    my ($effective_distance,$weighted_distance);    
+    if ($ref_start > $f_end ) {
+      # upstream, no overlap
+      $effective_distance = $f_end - $ref_start; # negative result for upstream
+    } elsif ( $ref_end < $f_start ) {
+      # downstream
+      $effective_distance = $f_start - $ref_end; # positive result for downstream
+    } else {
+      # overlap,
+      $effective_distance = 0;
+      $weighted_distance = $f_midpoint - $ref_midpoint;
+    }
+    return $effective_distance, $weighted_distance;
+}
+
+=head2 _compute_prime_distance
+
+  Arg [1]    : Reference feature start
+  Arg [2]    : Reference feature mid-point
+  Arg [3]    : Reference feature end
+  Arg [4]    : Considered feature start
+  Arg [5]    : Considered feature mid-point
+  Arg [6]    : Considered feature end
+  Arg [7]    : Considered feature strand
+  Example    : $distance,$weighted_centre_distance = $feature_adaptor->_compute_prime_distance($ref_start,$ref_midpoint,$ref_end,$f_start,$f_midpoint,$f_end,$f_strand)
+  Description: Calculate the smallest distance to the 5' end of the considered feature
+  Returntype : Integer distance in base pairs or a string warning that the result doesn't mean anything.
+               Nearest 5' and 3' features shouldn't reside inside the reference Feature
+  Caller     : BaseFeatureAdaptor->select_nearest()
+
+=cut
+sub _compute_prime_distance {
+    my ($self,$five_prime,$ref_start,$ref_midpoint,$ref_end,$f_start,$f_midpoint,$f_end,$f_strand) = @_;
+    
+    my $f_coord;
+    my $effective_distance;
+    my $weighted_distance;
+
+    if ($five_prime) { 
+      $f_coord = ($f_strand == 1) ? $f_start : $f_end;
+    } else { # three prime end required
+      $f_coord = ($f_strand ==1 ) ? $f_end : $f_start;
+    }
+
+    if ($ref_start > $f_coord) {
+      # n' end of feature upstream of reference
+      $effective_distance = $f_coord - $ref_start;
+      if ($f_end < $ref_start) {
+        $weighted_distance = $f_coord - $ref_midpoint;
+      }
+    } elsif ($ref_end < $f_coord && $f_start > $ref_end) {
+      # n' end of feature downstream of reference
+      $effective_distance = $ref_end - $f_coord;
+      if ($f_start > $ref_end) {
+        $weighted_distance = $f_coord - $ref_midpoint;
+      }
+    } elsif ($ref_start < $f_coord && $ref_end > $f_coord) {
+      # total overlap condition
+      $effective_distance = 0;
+      $weighted_distance = $f_coord - $ref_midpoint;
+    }
+    # If feature's end falls outside of the reference feature, compute distance to reference midpoint.
+    return $effective_distance, $weighted_distance;
+}
+
+=head2 _compute_midpoint
+
+  Arg [1]    : Bio::EnsEMBL::Feature
+  Example    : $middle = $feature_adaptor->_compute_midpoint($feature);
+  Description: Calculate the mid-point of a Feature. Used for comparing Features that overlap each other
+               and determining a canonical distance between two Features for the majority of use cases.
+  Returntype : Integer coordinate rounded down.
+  Caller     : BaseFeatureAdaptor->select_nearest()
+
+=cut
+sub _compute_midpoint {
+    my $self = shift;
+    my $feature = shift;
+    my $start = $feature->seq_region_start;
+    my $end = $feature->seq_region_end;
+    my $midpoint;
+    # consider circular slice
+    if ($start > $end) {
+        $midpoint = int($end + ($start - $end) / 2);
+    } else {
+        $midpoint = int($start + ($end - $start) / 2);
+    }
+    return $midpoint;
+}
+
+sub _discard_excess_features_from_matrix {
+  my $self = shift;
+  my $list = shift;
+  my @ordered_matrix = @$list;
+  my $limit = shift;
+  return @ordered_matrix if $#ordered_matrix == 0 || $limit > scalar @ordered_matrix;
+  # cut off excess elements
+  my @spares = splice @ordered_matrix, $limit, scalar @ordered_matrix - $limit;
+  # Check nearest distance against other nearest features and include them if they are equal.
+  my $threshold_distance = $ordered_matrix[-1]->[1];
+  my $i = 0;
+  while ($i < $#spares && $spares[$i]->[2] == $threshold_distance) {
+    push @ordered_matrix, $spares[$i];
+    $i++;
+  }
+  return @ordered_matrix;
+}
 
 1;

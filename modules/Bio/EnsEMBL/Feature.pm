@@ -1397,7 +1397,9 @@ sub overlaps_local {
 }
 
 =head2 get_overlapping_Genes
-
+  Arg [1]    : Optional Boolean: Stranded match i.e. match strand of Feature and Genes
+  Arg [2]    : Optional Boolean: Get Genes with an overlapping 5' end
+  Arg [3]    : Optional Boolean: Get Genes with an overlapping 3' end
   Description: Get all the genes that overlap this feature.
   Returntype : list ref of Bio::EnsEMBL::Gene
   Caller     : general
@@ -1406,33 +1408,27 @@ sub overlaps_local {
 =cut
 
 sub get_overlapping_Genes{
-  my $self = shift;
-
-  my $slice = $self->feature_Slice;
-  return $slice->get_all_Genes();
+  my ($self, $match_strands, $five_prime, $three_prime) = @_;
+  my $ga = Bio::EnsEMBL::Registry->get_adaptor($self->adaptor->db->species,'core','Gene');
+  my $list = $ga->fetch_all_nearest_by_Feature(-FEATURE => $self, -RANGE => 0, -THREE_PRIME => $three_prime, -FIVE_PRIME => $five_prime, -MATCH_STRAND => $match_strands);
+  return [ map { $_->[0] } @$list ];
 }
 
 # query for absolute nearest.
-# select x.display_label, g.gene_id, g.seq_region_start, ABS(cast((32921638 - g.seq_region_end) as signed))  as 'dist' from gene g, xref x where g.display_xref_id = x.xref_id and seq_region_id = 27513 order by ABS(cast((32921638 - g.seq_region_end) as signed)) limit 10;
 
 =head2 get_nearest_Gene
 
-  Description: Get the nearest gene to the feature
-  Returntype : Bio::EnsEMBL::Gene
+  Description: Get the nearest genes to the feature
+  Returntype : listref of Bio::EnsEMBL::Gene
   Caller     : general
-  Status     : UnStable
+  Status     : At risk
 
 =cut
 
 sub get_nearest_Gene {
-  my $self = shift;
-  my $stranded = shift;
-  my $stream = shift;
-
-  my $ga = Bio::EnsEMBL::Registry->get_adaptor($self->adaptor->db->species,"core","Gene");
-
-  return $ga->fetch_nearest_Gene_by_Feature($self, $stranded, $stream);
-
+  my $self = shift; 
+  my $ga = Bio::EnsEMBL::Registry->get_adaptor($self->adaptor->db->species,'core','Gene');
+  return $ga->fetch_nearest_by_Feature($self);
 }
 
 =head2 summary_as_hash
@@ -1471,11 +1467,6 @@ sub species {
   throw "Can only call this method if you have attached an adaptor" if ! $self->adaptor();
   return $self->adaptor()->db()->species();
 }
-
-
-##############################################
-# Methods included for backwards compatibility
-##############################################
 
 
 =head2 contig
