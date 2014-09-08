@@ -1398,7 +1398,8 @@ sub overlaps_local {
 
 =head2 get_overlapping_Genes
   Arg [1]    : Optional Boolean: Stranded match i.e. match strand of Feature and Genes
-  Arg [2]    : Optional Int:     Prime overlaps e.g. 5 or 3
+  Arg [2]    : Optional Boolean: Get Genes with an overlapping 5' end
+  Arg [3]    : Optional Boolean: Get Genes with an overlapping 3' end
   Description: Get all the genes that overlap this feature.
   Returntype : list ref of Bio::EnsEMBL::Gene
   Caller     : general
@@ -1407,39 +1408,10 @@ sub overlaps_local {
 =cut
 
 sub get_overlapping_Genes{
-  my ($self, $match_strands, $prime) = @_;
-
-  my $fslice      = $self->feature_Slice;
-  my $slice_genes = $fslice->get_all_Genes();
-  my $ogenes      = [];
-
-#  warn "overlapping prime is $prime";
-
-  if($prime || $match_strands){
-
-    foreach my $gene(@$slice_genes){
-
-      if($match_strands){
-        next if $fslice->strand ne $gene->seq_region_strand;
-      }
-
-      #local start/end is +ve and not longer than the slice length.
-      if($prime){
-        if (
-          ( $prime == 5 && ( ($gene->start < 1) || ($gene->start > $fslice->length) ) )
-          || 
-          ( $prime == 3 && ( ($gene->end < 1) || ($gene->end > $fslice->length) )) )
-        { next;}
-        else {throw("Invalid prime specified $prime. Must be 5 or 3")}
-      }
-
-      push @$ogenes, $gene;
-    }#end of gene loop
-  } else{ #All overlapping genes
-    $ogenes = $slice_genes;
-  }
-
-  return $ogenes;
+  my ($self, $match_strands, $five_prime, $three_prime) = @_;
+  my $ga = Bio::EnsEMBL::Registry->get_adaptor($self->adaptor->db->species,'core','Gene');
+  my $list = $ga->fetch_all_nearest_by_Feature(-FEATURE => $self, -RANGE => 0, -THREE_PRIME => $three_prime, -FIVE_PRIME => $five_prime, -MATCH_STRAND => $match_strands);
+  return [ map { $_->[0] } @$list ];
 }
 
 # query for absolute nearest.

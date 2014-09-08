@@ -1575,7 +1575,6 @@ sub fetch_all_nearest_by_Feature{
         rearrange([qw(FEATURE SAME_STRAND OPPOSITE_STRAND DOWNSTREAM UPSTREAM RANGE LIMIT NOT_OVERLAPPING FIVE_PRIME THREE_PRIME)], @_);
 
     $search_range ||= 1000;
-    $limit ||= 1;
 
     unless (defined($ref_feature) && $ref_feature->isa('Bio::EnsEMBL::Feature')) {
       throw ('fetch_all_nearest_by_Feature method requires a valid Ensembl Feature object to operate');
