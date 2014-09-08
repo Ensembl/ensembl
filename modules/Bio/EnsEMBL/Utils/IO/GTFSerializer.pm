@@ -108,10 +108,10 @@ sub print_Gene {
   }
 
   print $fh sprintf(qq{%s\t%s\tgene\t%d\t%d\t.\t%s\t.\t}, 
-        $idstr, $biotype_display, 
+        $idstr, $gene->source, 
         ($gene->start()+$sliceoffset), ($gene->end()+$sliceoffset),
         ($strand_conversion{$gene->strand}));
-  $self->_print_attribs($gene, $biotype_display, $gene, 0, 'gene');
+  $self->_print_attribs($gene, $biotype_display, $gene, $biotype_display, 0, 'gene');
   print $fh "\n";
 
   # Now print all transcripts
@@ -179,10 +179,10 @@ sub print_feature {
 
   #Print Transcript summary
   print $fh sprintf(qq{%s\t%s\ttranscript\t%d\t%d\t.\t%s\t.\t}, 
-        $idstr, $transcript_biotype, 
+        $idstr, $transcript->source, 
         ($transcript->start()+$sliceoffset), ($transcript->end()+$sliceoffset),
         ($strand_conversion{$transcript->strand}));
-  $self->_print_attribs($gene, $biotype_display, $transcript, 0, 'transcript', undef, undef, $has_selenocysteine);
+  $self->_print_attribs($gene, $biotype_display, $transcript, $transcript_biotype, 0, 'transcript', undef, undef, $has_selenocysteine);
   print $fh "\n";
 
   #Process any selenocystines we may have
@@ -195,8 +195,8 @@ sub print_feature {
         my $start = $projection->start();
         my $end = $projection->end();
         print $fh sprintf(qq{%s\t%s\tSelenocysteine\t%d\t%d\t.\t%s\t.\t}, 
-          $idstr, $transcript_biotype, ($start+$sliceoffset), ($end+$sliceoffset), $strand);
-        $self->_print_attribs($gene, $biotype_display, $transcript, 0, 'Selenocystine', undef, undef, $has_selenocysteine);
+          $idstr, $transcript->source, ($start+$sliceoffset), ($end+$sliceoffset), $strand);
+        $self->_print_attribs($gene, $biotype_display, $transcript, $transcript_biotype, 0, 'Selenocystine', undef, undef, $has_selenocysteine);
         print $fh "\n";
       }
     }
@@ -215,7 +215,7 @@ sub print_feature {
 # Column 1 - seqname, the name of the sequence/chromosome the feature is on. Landmark for start below
       $idstr . "\t" .
       # Column 2 - source
-      $transcript_biotype . "\t" .
+      $transcript->source. "\t" .
       # Column 3 - feature type name
       'exon' . "\t" .
       # Column 4 - start, the start coordinate of the feature
@@ -229,7 +229,7 @@ sub print_feature {
 # Column 8 - frame (reading phase), what base of this feature is the first base of a codon
       "." . "\t";
 # Column 9 - attribute, a ;-separated list of key-value pairs (additional feature info)
-    $self->_print_attribs( $gene, $biotype_display, $transcript,
+    $self->_print_attribs( $gene, $biotype_display, $transcript, $transcript_biotype,
                            $count, 'exon', $exon, $vegadb, $has_selenocysteine );
     print $fh "\n";
 
@@ -283,11 +283,11 @@ sub print_feature {
            $exon_end >= $cdsexon->start &&
            (!$instop || $cdsexon->length() < 3) )
       {
-        print $fh $idstr . "\t" . $transcript_biotype .
+        print $fh $idstr . "\t" . $transcript->source .
           "\t" . 'CDS' . "\t" . ( $exon_start + $sliceoffset ) .
           "\t" . ( $exon_end + $sliceoffset ) .
           "\t" . "." . "\t" . $strand . "\t" . $phase . "\t";
-        $self->_print_attribs( $gene, $biotype_display, $transcript,
+        $self->_print_attribs( $gene, $biotype_display, $transcript, $transcript_biotype,
                                $count, 'CDS', undef, undef, $has_selenocysteine );
         print $fh "\n";
       }
@@ -304,12 +304,12 @@ sub print_feature {
       my $tmpcnt = $count;
       foreach my $startc (@startcs) {
         # here we should check the start codon covers 3 bases
-        print $fh $idstr . "\t" . $transcript_biotype . "\t" .
+        print $fh $idstr . "\t" . $transcript->source . "\t" .
           'start_codon' . "\t" . ( $startc->start + $sliceoffset ) .
           "\t" . ( $startc->end + $sliceoffset ) .
           "\t" . "." . "\t" . $strand . "\t" . $startc->phase . "\t";
 
-        $self->_print_attribs( $gene, $biotype_display, $transcript,
+        $self->_print_attribs( $gene, $biotype_display, $transcript, $transcript_biotype,
                                $tmpcnt++, 'start_codon', undef, undef, $has_selenocysteine );
         print $fh "\n";
       }
@@ -322,12 +322,12 @@ sub print_feature {
 
         foreach my $endc (@endcs) {
           # here we should check the stop codon covers 3 bases
-          print $fh $idstr . "\t" . $transcript_biotype . "\t" .
+          print $fh $idstr . "\t" . $transcript->source . "\t" .
             'stop_codon' . "\t" . ( $endc->start + $sliceoffset ) .
             "\t" . ( $endc->end + $sliceoffset ) .
             "\t" . "." . "\t" . $strand . "\t" . $endc->phase . "\t";
 
-          $self->_print_attribs( $gene, $biotype_display, $transcript,
+          $self->_print_attribs( $gene, $biotype_display, $transcript, $transcript_biotype,
                                  $tmpcnt++, 'stop_codon', undef, undef, $has_selenocysteine );
           print $fh "\n";
         }
@@ -349,8 +349,8 @@ sub print_feature {
   foreach my $utr (@{$utrs}) {
     my $strand = $strand_conversion{$utr->strand()};
     print $fh sprintf(qq{%s\t%s\tUTR\t%d\t%d\t.\t%s\t.\t}, 
-        $idstr, $transcript_biotype, ($utr->start()+$sliceoffset), ($utr->end+$sliceoffset), $strand);
-    $self->_print_attribs($gene, $biotype_display, $transcript, 0, 'UTR', undef, undef, $has_selenocysteine);
+        $idstr, $transcript->source, ($utr->start()+$sliceoffset), ($utr->end+$sliceoffset), $strand);
+    $self->_print_attribs($gene, $biotype_display, $transcript, $transcript_biotype, 0, 'UTR', undef, undef, $has_selenocysteine);
     print $fh "\n";
   }
 
@@ -376,7 +376,7 @@ sub print_feature {
 =cut
 
 sub _print_attribs {
-  my ( $self, $gene, $gene_biotype, $transcript, $count, $type, $exon,
+  my ( $self, $gene, $gene_biotype, $transcript, $trans_biotype, $count, $type, $exon,
        $vegadb, $has_selenocysteine )
     = @_;
 
@@ -406,6 +406,8 @@ sub _print_attribs {
       if ($trans_name);
     print $fh " transcript_source \"" . $trans_source . "\";"
       if ($trans_source);
+    print $fh " transcript_biotype \"" . $trans_biotype . "\";"
+      if ($trans_biotype);
     my $ccds_entries = $transcript->get_all_DBEntries('CCDS');
     if(@{$ccds_entries}) {
       print $fh qq{ tag "CCDS";};
