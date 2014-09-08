@@ -1438,24 +1438,13 @@ sub get_overlapping_Genes{
   } else{ #All overlapping genes
     $ogenes = $slice_genes;
   }
-    #This is not accounting for contained features!?
-    #at least on opposite strand
-    
-    #Gene     -----------------------------
-    #Feature                          ---
-
-    #or is it that we are not account for this in the caller?
-    #or maybe the strand of the feature?
-
-    #nearest_Genes sql does not account for this.
 
   return $ogenes;
 }
 
 # query for absolute nearest.
-# select x.display_label, g.gene_id, g.seq_region_start, ABS(cast((32921638 - g.seq_region_end) as signed))  as 'dist' from gene g, xref x where g.display_xref_id = x.xref_id and seq_region_id = 27513 order by ABS(cast((32921638 - g.seq_region_end) as signed)) limit 10;
 
-=head2 get_nearest_Genes
+=head2 get_nearest_Gene
 
   Description: Get the nearest genes to the feature
   Returntype : listref of Bio::EnsEMBL::Gene
@@ -1464,10 +1453,10 @@ sub get_overlapping_Genes{
 
 =cut
 
-sub get_nearest_Genes {
+sub get_nearest_Gene {
   my $self = shift; 
   my $ga = Bio::EnsEMBL::Registry->get_adaptor($self->adaptor->db->species,'core','Gene');
-  return $ga->fetch_all_nearest_by_Feature($self, @_);
+  return $ga->fetch_nearest_by_Feature($self);
 }
 
 =head2 summary_as_hash
@@ -1504,28 +1493,6 @@ sub species {
   my ($self) = @_;
   throw "Can only call this method if you have attached an adaptor" if ! $self->adaptor();
   return $self->adaptor()->db()->species();
-}
-
-
-##############################################
-# Methods included for backwards compatibility
-##############################################
-
-=head2 get_nearest_Gene
-
- Description: DEPRECATED - use get_nearest_Genes instead
-
-=cut
-
-sub get_nearest_Gene {
-  my $self = shift;
-  my $stranded = shift;
-  my $stream = shift;
-
-  deprecate( "use get_nearest_Genes instead");
-
-  my $gene_list = $self->get_nearest_Genes(undef $stranded, $stream);
-  return shift @$gene_list;
 }
 
 
