@@ -380,21 +380,25 @@ sub _print_attribs {
        $vegadb, $has_selenocysteine )
     = @_;
 
-  my ( $gene_name, $gene_source );
+  my ( $gene_name, $gene_source, $gene_version );
   $gene_name = $gene->external_name;
   $gene_name =~ s/^[A-Z]{1,3}:// if $vegadb;
   $gene_source = $gene->source;
+  $gene_version = $gene->version;
 
-  my ( $trans_name, $trans_source );
+  my ( $trans_name, $trans_source, $trans_version );
   $trans_name = $transcript->external_name;
   $trans_name =~ s/^[A-Z]{1,3}:// if $vegadb;
   $trans_source = $transcript->source;
+  $trans_version = $transcript->version;
 
   my $fh = $self->{'filehandle'};
 
   print $fh "gene_id \"" . get_id_from_obj($gene) ."\";";
+  print $fh " gene_version \"" . $gene_version . "\";" if $gene_version;
   if($type ne 'gene') {
     print $fh " transcript_id \"" . get_id_from_obj($transcript) . "\";";
+    print $fh " transcript_version \"" . $trans_version . "\";" if $trans_version;
     print $fh " exon_number \"$count\";" if $count > 0;
   }
   print $fh " gene_name \"" . $gene_name . "\";"     if ($gene_name);
@@ -421,9 +425,13 @@ sub _print_attribs {
   if ( $type eq 'CDS' ) {
     print $fh ' protein_id "' .
       get_id_from_obj( $transcript->translation ) . '";';
+    print $fh ' protein_version "' .
+      $transcript->translation->version . "\";" if $transcript->translation->version;
   }
   if ($exon) {
     printf $fh ' exon_id "%s";', get_id_from_obj($exon);
+    print $fh ' exon_version "' .
+      $exon->version . "\";" if $exon->version;
   }
 
   if($has_selenocysteine) {
