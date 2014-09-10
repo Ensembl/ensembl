@@ -420,9 +420,9 @@ sub calc_overlap_score {
   #
   ## PENALTY:
   ## penalise by 10% if phase if different
-  #if ( $source_exon->phase != $target_exon->phase ) {
-  #$score *= 0.9;
-  #}
+  if ( $source_exon->phase != $target_exon->phase ) {
+    $score *= 0.9;
+  }
 
   # add score to scoring matrix if it's at least 0.5
   if ( $score >= 0.5 ) {
