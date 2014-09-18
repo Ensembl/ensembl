@@ -363,8 +363,8 @@ sub _remap {
       }   ## end if ($dest_slice->is_circular...)
     } else {  # Negative strand
 
-      my $new_start = $slice_end - $end + 1;
-      my $new_end = $slice_end - $start + 1;
+      $new_start = $slice_end - $end + 1;
+      $new_end = $slice_end - $start + 1;
 
       if ($slice->is_circular()) {
 
