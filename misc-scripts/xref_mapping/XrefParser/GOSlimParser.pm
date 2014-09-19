@@ -81,7 +81,7 @@ sub run_script {
     $dbi2 = $db->dbi();
   }
 
-  my $add_dependent_xref_sth = $self->dbi->prepare("INSERT INTO dependent_xref  (master_xref_id,dependent_xref_id, linkage_source_id) VALUES (?,?, $source_id)");
+  my $add_dependent_xref_sth = $self->dbi->prepare("INSERT INTO dependent_xref  (master_xref_id,dependent_xref_id, linkage_annotation, linkage_source_id) VALUES (?, ?, 'IEA', $source_id)");
 
 
   if(!defined($dbi2)){
