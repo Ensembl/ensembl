@@ -68,9 +68,9 @@ if($ARGV[0]){
   exit(1);
 }
 
-my @species = split(/,/,join(',',$species));
-my @sources  = split(/,/,join(',',$sources));
-my @notsource  = split(/,/,join(',',$notsource));
+my @species = split(/,/,join(',',$species)) if $species;
+my @sources  = split(/,/,join(',',$sources)) if $sources;
+my @notsource  = split(/,/,join(',',$notsource)) if $notsource;
 
 $| = 1;
 
