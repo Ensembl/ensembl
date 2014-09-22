@@ -1988,7 +1988,7 @@ CREATE TABLE associated_group (
 @column rank The rank in which the association occurs within an @link associated_group
 
 @see object_xref
-@see associcated_group
+@see associated_group
 @see xref
 */
 
