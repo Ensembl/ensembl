@@ -939,6 +939,27 @@ sub display_id {
   return '';
 }
 
+=head2 version
+
+  Arg [1]    : none
+  Example    : print $f->version();
+  Description: This method returns a string that is considered to be
+               the identifier version.  It is overridden by subclasses to
+               return an appropriate value for objects of that particular
+               class.  If no appropriate version is available an empty
+               string is returned instead.
+  Returntype : string
+  Exceptions : none
+  Caller     : general
+  Status     : Stable
+
+=cut
+
+sub version {
+  my $self = shift;
+  return '';
+}
+
 
 =head2 feature_Slice
 
@@ -1444,6 +1465,7 @@ sub summary_as_hash {
   my $self = shift;
   my %summary;
   $summary{'id'} = $self->display_id;
+  $summary{'version'} = $self->version() if $self->version();
   $summary{'start'} = $self->seq_region_start;
   $summary{'end'} = $self->seq_region_end;
   $summary{'strand'} = $self->strand;
