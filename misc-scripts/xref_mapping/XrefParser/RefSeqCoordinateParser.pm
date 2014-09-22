@@ -179,13 +179,13 @@ sub run_script {
 
   my $sa = $core_dba->get_SliceAdaptor();
   my $sa_of = $otherf_dba->get_SliceAdaptor();
-  my $chromosomes_of = $sa_of->fetch_all('chromosome');
+  my $chromosomes_of = $sa_of->fetch_all('chromosome', undef, 1);
 
 # Fetch analysis object for refseq
   my $aa_of = $otherf_dba->get_AnalysisAdaptor();
   my $logic_name;
   foreach my $ana(@{ $aa_of->fetch_all() }) {
-    if ($ana->logic_name =~ /refseq_[a-z]+_import/) {
+    if ($ana->logic_name =~ /refseq_import/) {
       $logic_name = $ana->logic_name;
     }
   }
@@ -224,7 +224,7 @@ sub run_script {
         }
 
 # Fetch slice in core database which overlaps refseq transcript
-        my $chromosome = $sa->fetch_by_region('chromosome', $chr_name, $transcript_of->start, $transcript_of->end);
+        my $chromosome = $sa->fetch_by_region('chromosome', $chr_name, $transcript_of->seq_region_start, $transcript_of->seq_region_end);
         my $transcripts = $chromosome->get_all_Transcripts(1);
 
 # Create a range registry for all the exons of the ensembl transcript
