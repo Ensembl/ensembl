@@ -216,7 +216,6 @@ SQ0
   my $ins_xref_sth = $self->get_ins_xref_sth();
   my $ins_dep_ix_sth = $self->get_ins_dep_ix_sth();
   my $ins_object_xref_sth =  $self->get_ins_object_xref_sth();
-  my $set_tran_display_xref_sth = $self->get_set_transcript_display_xref_sth();
   my $set_gene_display_xref_sth = $self->get_set_gene_display_xref_sth();
 
   my %xref_added; # store those added  $xref_added{$accession:$source_id} = $xref_id;
@@ -363,6 +362,7 @@ IEG
         $self->set_transcript_display_xrefs({ max_xref         => \$max_xref_id, 
                                             max_object       => \$max_object_xref_id,
                                             gene_id          =>  $gene_id,
+                                            gene_id_to_stable_id => \%gene_id_to_stable_id,
 					    gene_symbol      => $gene_symbol,
 					    desc             => $desc, 
                                             source_id        => $dbname_to_source_id->{$tran_source."_trans_name"}, 
@@ -718,6 +718,7 @@ sub set_transcript_display_xrefs{
   my $gene_to_transcripts = $arg_ref->{gene_to_tran};
   my $tran_to_vega_ext =    $arg_ref->{tran_to_vega_ext};
   my $tran_source         = $arg_ref->{tran_source};
+  my $gene_id_to_stable_id = $arg_ref->{gene_id_to_stable_id};
 
 
   # statement handles needed
@@ -726,6 +727,7 @@ sub set_transcript_display_xrefs{
   my $set_tran_display_xref_sth = $self->get_set_transcript_display_xref_sth();
   my $ins_object_xref_sth =       $self->get_ins_object_xref_sth();
 
+  if ($gene_id_to_stable_id->{$gene_id} =~ /LRG/) { return; }
 
   my $no_vega_ext = 201;
   if(defined($seen_gene->{$gene_symbol})){
@@ -1507,13 +1509,7 @@ sub reset_display_xrefs{
   my $sth =  $self->xref->dbc->prepare("update transcript_stable_id set display_xref_id = null");
   $sth->execute;
 
-  $sth =  $self->xref->dbc->prepare("update gene_stable_id set display_xref_id = null");
-  $sth->execute;
-
   $sth = $self->xref->dbc->prepare("UPDATE gene_stable_id SET display_xref_id = null, desc_set =0");
-  $sth->execute;
-
-  $sth = $self->xref->dbc->prepare("UPDATE transcript_stable_id SET display_xref_id = null");
   $sth->execute;
 
   return;
