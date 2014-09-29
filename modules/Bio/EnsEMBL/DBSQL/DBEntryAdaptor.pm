@@ -739,7 +739,8 @@ sub _store_object_xref_mapping {
                 ensembl_id,
                 linkage_annotation,
                 analysis_id )
-          VALUES ( ?, ?, ?, ?, ? ) )
+          VALUES ( ?, ?, ?, ?, ? )
+          ON DUPLICATE KEY UPDATE object_xref_id=LAST_INSERT_ID(object_xref_id) )
         );
     $sth->bind_param( 1, $dbEntry->dbID(),              SQL_INTEGER );
     $sth->bind_param( 2, $ensembl_type,                 SQL_VARCHAR );
