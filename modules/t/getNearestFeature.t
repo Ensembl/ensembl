@@ -245,19 +245,13 @@ cmp_ok($results[3]->[0]->display_id, 'eq', 'c', 'Check for a feature found outsi
 
 ### Issues/Todos ###
 #
-#2 Ordering is wrong and seemingly arbitrary when dealing with negative numbers. Drop
-#  negative numbers, such that the distances are standardised.
-#  This will be useful for filtering, which will be a common task, and leave up/downsteam
-#  detection to users, as this will be much less common?
-
 #6 For streamed queries we probably do not want to return features where the target measurement point is enclosed
 #  by the source feature. This suggests we should change the functionality of -NOT_OVERLAPPING to -INCLUDE_ENCLOSED
 #  Including overlaps should be the default for non-streamed queries
-# 8 Strand tests seem lacking, so we need to add a target feature on the negative strand for each context?
 
 # 10 STRAND could be renamed, as this is a little ambiguous to. Could be -TARGET_STRAND ?
 #    Also take +/- aswell as 1/-1?
-# 13 Add iterator
+
 
 note("Nathan's tests");
 my $g = Bio::EnsEMBL::SimpleFeature->new(
@@ -458,11 +452,23 @@ sub print_what_you_got {
   note ("Results: ".scalar @$results." features");
   if (scalar(@$results) == 0) { note("No hits"); return;}
   for (my $i =0; $i<scalar(@$results);$i++) {
-    my ($feature,$distance,$effective,$length,$dbID) = @{$results->[$i]};
+    my ($feature,$distance) = @{$results->[$i]};
     no warnings 'uninitialized';
-    note("Feature: ".$feature->display_id." at ".$distance.", ".$effective.", length: ".$length);
+    note("Feature: ".$feature->display_id." at ".$distance);
   }
 }
+
+# test utility functions get_nearest_Gene and 
+$dba = $db->get_DBAdaptor('core');
+my $tra = $dba->get_TranscriptAdaptor();
+my $ga = $dba->get_GeneAdaptor();
+my $enst = $tra->fetch_by_stable_id('ENST00000300415');
+my $gene;
+($gene,$distance) = @{ $ga->fetch_nearest_by_Feature($enst) };
+is($gene->stable_id, 'ENSG00000101331','Simple usecase for fetch_nearest_by_Feature');
+my $ensg = $enst->get_nearest_Gene;
+# diag(Dumper $ensg);
+is($ensg->stable_id,'ENSG00000101331','Simple usecase for get_nearest_Gene');
 
 done_testing;
 

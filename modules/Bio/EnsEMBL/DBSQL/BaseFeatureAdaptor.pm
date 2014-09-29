@@ -1476,8 +1476,8 @@ sub remove_by_feature_id {
 sub fetch_nearest_by_Feature {
   my $self = shift;
   my $feature = shift;
-  my @hits = @{ $self->fetch_all_by_outward_search(-FEATURE => $feature, -MAX_RANGE => 1000000, -RANGE => 1000 -LIMIT => 1) };
-  return $hits[0] if (@hits > 0);
+  my @hits = @{ $self->fetch_all_by_outward_search(-FEATURE => $feature, -MAX_RANGE => 1000000, -RANGE => 1000, -LIMIT => 1) };
+  return $hits[0] if (scalar @hits > 0);
   return;
 }
 
