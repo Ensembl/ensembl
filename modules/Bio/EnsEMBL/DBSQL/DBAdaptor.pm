@@ -223,7 +223,7 @@ sub clear_caches {
 
 sub find_and_add_aliases {
   my ($self) = @_;
-  $registry->find_and_add_aliases(-ADAPTOR => $self);
+  $REGISTRY->find_and_add_aliases(-ADAPTOR => $self);
   return;
 }
 
