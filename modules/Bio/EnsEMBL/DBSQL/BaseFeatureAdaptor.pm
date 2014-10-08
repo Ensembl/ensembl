@@ -1573,8 +1573,9 @@ sub fetch_all_nearest_by_Feature{
     my $self = shift;
     my ($ref_feature, $respect_strand, $opposite_strand, $downstream, $upstream, $search_range,$limit,$not_overlapping,$five_prime,$three_prime) =
         rearrange([qw(FEATURE SAME_STRAND OPPOSITE_STRAND DOWNSTREAM UPSTREAM RANGE LIMIT NOT_OVERLAPPING FIVE_PRIME THREE_PRIME)], @_);
-
-    $search_range ||= 1000;
+    if ( !defined($search_range)) {
+      $search_range ||= 1000;
+    }
 
     unless (defined($ref_feature) && $ref_feature->isa('Bio::EnsEMBL::Feature')) {
       throw ('fetch_all_nearest_by_Feature method requires a valid Ensembl Feature object to operate');
@@ -1818,15 +1819,18 @@ sub _discard_excess_features_from_matrix {
   my $list = shift;
   my @ordered_matrix = @$list;
   my $limit = shift;
-  return @ordered_matrix if $#ordered_matrix == 0 || $limit > scalar @ordered_matrix;
+  return @ordered_matrix if $#ordered_matrix == 0 || !defined($limit) || $limit > scalar @ordered_matrix;
   # cut off excess elements
   my @spares = splice @ordered_matrix, $limit, scalar @ordered_matrix - $limit;
   # Check nearest distance against other nearest features and include them if they are equal.
-  my $threshold_distance = $ordered_matrix[-1]->[1];
-  my $i = 0;
-  while ($i < $#spares && $spares[$i]->[2] == $threshold_distance) {
-    push @ordered_matrix, $spares[$i];
-    $i++;
+  if (scalar @ordered_matrix > 0) {
+    my $threshold_distance = $ordered_matrix[-1]->[1];
+    my $i = 0;
+    while ($i < $#spares && $spares[$i]->[2] == $threshold_distance) {
+      push @ordered_matrix, $spares[$i];
+      $i++;
+    }
+    
   }
   return @ordered_matrix;
 }
