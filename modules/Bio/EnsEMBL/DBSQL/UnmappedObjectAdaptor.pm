@@ -60,7 +60,6 @@ use Bio::EnsEMBL::UnmappedObject;
 use Bio::EnsEMBL::Analysis;
 @ISA = qw(Bio::EnsEMBL::DBSQL::BaseFeatureAdaptor);
 
-our %desc_to_id;
 
 =head2 new
 
@@ -81,21 +80,6 @@ sub new {
   my $class = ref($proto) || $proto;
 
   my $self = $class->SUPER::new(@_);
-
-  my $sth =
-    $self->prepare(   "SELECT unmapped_reason_id, full_description "
-                    . "FROM unmapped_reason" );
-
-  $sth->execute();
-
-  my ( $id, $desc );
-  $sth->bind_columns( \( $id, $desc ) );
-
-  while ( $sth->fetch() ) {
-    $desc_to_id{$desc} = $id;
-  }
-
-  $sth->finish();
 
   return $self;
 }
@@ -269,7 +253,17 @@ sub store{
               ensembl_id, ensembl_object_type)".
 	    " VALUES (?,?,?,?,?,?,?,?,?)");
 
- FEATURE: foreach my $uo ( @uos ) {
+  my $sth_fetch_reason =
+    $self->prepare(
+      "SELECT 
+        unmapped_reason_id
+      FROM 
+        unmapped_reason
+      WHERE
+        full_description = ? 
+        " );
+
+  FEATURE: foreach my $uo ( @uos ) {
 
     if( !ref $uo || !$uo->isa("Bio::EnsEMBL::UnmappedObject") ) {
       throw("UnmappedObject must be an Ensembl UnmappedObject, " .
@@ -288,18 +282,25 @@ sub store{
     } else {
       $analysis_id = $db->get_AnalysisAdaptor->store($analysis);
     }
+    $sth_fetch_reason->execute($uo->{'description'});
+
+
+    my $unmapped_reason = $sth_fetch_reason->fetchrow_arrayref();
 
     #First check to see unmapped reason is stored
-    if(!defined($desc_to_id{$uo->{'description'}})){
+    if(! defined $unmapped_reason ){
       $sth_reason->bind_param(1,$uo->{'summary'},SQL_VARCHAR);
       $sth_reason->bind_param(2,$uo->{'description'},SQL_VARCHAR);
       $sth_reason->execute();
-      $uo->{'unmapped_reason_id'} = $desc_to_id{$uo->{'description'}} 
-	= $self->last_insert_id('unmapped_reason_id', undef, 'unmapped_reason');
+      $uo->{'unmapped_reason_id'} = $self->last_insert_id;
       
     }
     else{
-      $uo->{'unmapped_reason_id'} = $desc_to_id{$uo->{'description'}} ;
+      # description is not unique, multiple results possible?
+      if(scalar @$unmapped_reason != 1){
+        throw("Multiple results for this description");
+      }
+      $uo->{'unmapped_reason_id'} = $unmapped_reason->[0];
     }
     $sth_unmapped_object->bind_param(1,$uo->{'type'},SQL_VARCHAR);
     $sth_unmapped_object->bind_param(2,$uo->analysis->dbID,SQL_INTEGER);
