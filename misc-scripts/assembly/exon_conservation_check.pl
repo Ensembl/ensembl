@@ -67,19 +67,38 @@ if ($support->param('prod_pass')) { $prod_pass = $support->param('prod_pass');
 if ($support->param('prod_port')) { $prod_port = $support->param('prod_port');
 } else { $prod_port = $support->param('port'); }
 
-my $production_db = Bio::EnsEMBL::Production::DBSQL::DBAdaptor->new(
-  -host    => $prod_host,
-  -user    => $prod_user,
-  -pass    => $prod_pass,
-  -port    => $prod_port,
-  -dbname  => $support->param('prod_dbname'),
-  -species => 'multi',
-  -group   => 'production'
-);
 
+###################################################################
+#
+# Get Biotype Manager
+# Need to load the registry in order to get a production DBAdaptor
+#
+use Bio::EnsEMBL::Registry;
+Bio::EnsEMBL::Registry->no_version_check(1);
+Bio::EnsEMBL::Registry->no_cache_warnings(1);
 
-my $biotype_manager = $production_db->get_biotype_manager();
-  
+Bio::EnsEMBL::Registry->load_registry_from_multiple_dbs(
+    {
+	-host => 'ens-staging1',
+	-port => 3306,
+	# -db_version => $version,
+	-user => 'ensro',
+	-NO_CACHE => 1,
+    },
+    {
+	-host => 'ens-staging2',
+	-port => 3306,
+	# -db_version => $version,
+	-user => 'ensro',
+	-NO_CACHE => 1,
+    }
+    );
+
+my $biotype_manager = 
+    Bio::EnsEMBL::Registry->get_DBAdaptor('multi', 'production')->get_biotype_manager();
+$biotype_manager or die "Cannot get a production DB adaptor";
+#
+###################################################################
 
 $support->log_stamped("Beginning analysis.\n");
 $support->log("EXON KEY       : !! = Very bad (pc mismatch), %% = Somewhat bad (mismatch), ?? = No mapping, might be bad, && = eval error\n");
