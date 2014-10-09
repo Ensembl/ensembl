@@ -35,7 +35,9 @@ implementation of the .fai index lookup as defined by samtools. The code uses
 this indexing system to access portions of sequence and translates Slice requests
 into sensible locations for our FASTA query layer.
 
-The adaptor must be initalised with access to a Faidx compatible object.
+The adaptor must be initalised with access to a Faidx compatible object and the FASTA
+file backing must use the same seq_region_name as the querying slices otherwise
+we cannot return the required data.
 
 =cut
 
@@ -93,7 +95,9 @@ sub fetch_by_Slice_start_end_strand {
   $slice = $self->expand_Slice($slice, $start, $end, $strand);
   $slice = $slice->constrain_to_seq_region();
   
-  my $seq_ref = $self->faindex()->fetch_seq($slice->seq_region_name(), $slice->start(), $slice->length());
+  # This call is likely to barf if we try to query using a chr name
+  # we do not understand. Use can_access_Slice() to make sure
+  my $seq_ref = $self->fetch_seq($slice->seq_region_name(), $slice->start(), $slice->length());
   reverse_comp($seq_ref) if $strand == -1;
   return $seq_ref;
 }
@@ -134,6 +138,18 @@ sub can_access_Slice {
 
 sub store {
   throw "Unsupported operation. Cannot store sequence in a fasta file";
+}
+
+=head _fetch_raw_seq
+
+  Description : Provides access to the underlying faindex object and returns a sequence scalar ref
+
+=cut
+
+sub _fetch_raw_seq {
+  my ($self, $id, $start, $length) = @_;
+  my $seq_ref = $self->faindex()->fetch_seq($slice->seq_region_name(), $slice->start(), $slice->length());
+  return $seq_ref;
 }
 
 1;
