@@ -722,6 +722,9 @@ sub _store_object_xref_mapping {
     my $ensembl_type = shift;
     my $ignore_release = shift;
     
+    my $dbc = $self->dbc();
+    my $sql_helper = $dbc->sql_helper();
+    
     if (not defined ($ensembl_type)) { warning("No Ensembl data type provided for new xref");}
     
     my $analysis_id;
@@ -732,30 +735,54 @@ sub _store_object_xref_mapping {
     }
     
     my $insert_ignore = $self->insert_ignore_clause();
-    my $sth = $self->prepare(qq(
-        ${insert_ignore} INTO object_xref
-              ( xref_id,
-                ensembl_object_type,
-                ensembl_id,
-                linkage_annotation,
-                analysis_id )
-          VALUES ( ?, ?, ?, ?, ? )
-          ON DUPLICATE KEY UPDATE object_xref_id=LAST_INSERT_ID(object_xref_id) )
-        );
-    $sth->bind_param( 1, $dbEntry->dbID(),              SQL_INTEGER );
-    $sth->bind_param( 2, $ensembl_type,                 SQL_VARCHAR );
-    $sth->bind_param( 3, $ensembl_id,                   SQL_INTEGER );
-    $sth->bind_param( 4, $dbEntry->linkage_annotation(),SQL_VARCHAR );
-    $sth->bind_param( 5, $analysis_id,                  SQL_INTEGER );
-    $sth->execute();
-    $sth->finish();
-    my $object_xref_id = $self->last_insert_id('object_xref_id', undef, 'object_xref');
+    my $insert_params = [
+      [$dbEntry->dbID(),              SQL_INTEGER],
+      [$ensembl_type,                 SQL_VARCHAR],
+      [$ensembl_id,                   SQL_INTEGER],
+      [$dbEntry->linkage_annotation(),SQL_VARCHAR],
+      [$analysis_id,                  SQL_INTEGER],
+    ];
+    my $base_object_xref_insert_sql = qq(
+      ${insert_ignore} INTO object_xref
+            ( xref_id,
+              ensembl_object_type,
+              ensembl_id,
+              linkage_annotation,
+              analysis_id )
+        VALUES ( ?, ?, ?, ?, ? )
+    );
+    
+    my $object_xref_id;
+    
+    #If MySQL we can optimise into a single insert query to deal with object_xref_id retrieval on insert ignore
+    if($dbc->driver() eq 'mysql') {
+      my $sql = $base_object_xref_insert_sql.'ON DUPLICATE KEY UPDATE object_xref_id=LAST_INSERT_ID(object_xref_id)';
+      $sql_helper->execute_update(-SQL => $sql, -PARAMS => $insert_params);
+      $object_xref_id = $self->last_insert_id('object_xref_id', undef, 'object_xref');
+    }
+    #Otherwise we attempt & retrieve on failure
+    else {
+      my $updated_rows = $sql_helper->execute_update(-SQL => $base_object_xref_insert_sql, -PARAMS => $insert_params);
+      if($updated_rows == 1) {
+        $object_xref_id = $self->last_insert_id('object_xref_id', undef, 'object_xref');
+      }
+      else {
+        my $sql = 'select object_xref_id from object_xref where xref_id =? and ensembl_object_type =? and ensembl_id =? and analysis_id =?';
+        my $params = [
+          [$dbEntry->dbID(),  SQL_INTEGER],
+          [$ensembl_type,     SQL_VARCHAR],
+          [$ensembl_id,       SQL_INTEGER],
+          [$analysis_id,      SQL_INTEGER],
+        ];
+        $object_xref_id = $sql_helper->execute_single_result(-SQL => $sql, -PARAMS => $params);
+      }
+    }
     
     $dbEntry->adaptor($self); # hand Adaptor to dbEntry for future use with OntologyXrefs
-    
-    if ($object_xref_id) {
-        #no existing object_xref, therefore 
+    # This is here because everything else assumes it can reuse the $sth scalar ... grrr
+    my $sth;
         if ( $dbEntry->isa('Bio::EnsEMBL::IdentityXref') ) {
+        # Can attempt multiple inserts as object_xref_id is the PRIMARY KEY
         $sth = $self->prepare( "
              ${insert_ignore} INTO identity_xref
            ( object_xref_id,
@@ -844,7 +871,6 @@ sub _store_object_xref_mapping {
           }
         } #end foreach
       } #end elsif
-    } # end if ($object_xref_id)
     return $object_xref_id;
 }
 

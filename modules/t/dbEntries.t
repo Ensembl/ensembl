@@ -151,15 +151,18 @@ my $tr = $gene->get_all_Transcripts()->[0];
 my $tl = $tr->translation();
 
 my $oxr_count = count_rows($db, 'object_xref');
+my $ixr_count = count_rows($db, 'identity_xref');
+
 $dbEntryAdaptor->store( $xref, $tr->dbID, "Transcript" );
 $oxr_count = count_rows($db, 'object_xref');
 $dbEntryAdaptor->store( $ident_xref, $tl->dbID, "Translation" );
 #intentional duplicates should be filtered out and not increase row count
+$ixr_count = count_rows($db, 'identity_xref');
 $dbEntryAdaptor->store( $ident_xref, $tl->dbID, "Translation" ); 
 $dbEntryAdaptor->store( $ident_xref, $tl->dbID, "Translation" );
 $dbEntryAdaptor->store( $ident_xref, $tl->dbID, "Translation" );
 $dbEntryAdaptor->store( $ident_xref, $tl->dbID, "Translation" );
-
+is($ixr_count, count_rows($db, 'identity_xref'), 'No increase in identity_xref rows');
 
 $oxr_count = count_rows($db, 'object_xref');
 $dbEntryAdaptor->store( $goref, $tl->dbID, "Translation" );
