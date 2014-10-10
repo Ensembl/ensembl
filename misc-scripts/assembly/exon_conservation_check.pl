@@ -26,9 +26,9 @@ use lib "$Bin/../../../ensembl-analysis/modules";
 
 #runtime include normally
 require AssemblyMapper::Support;
+use Bio::EnsEMBL::Registry;
 use Bio::EnsEMBL::Utils::Exception qw( throw );
 use Pod::Usage;
-use Bio::EnsEMBL::Production::DBSQL::DBAdaptor;
 
 #Genebuilder utils
 require Bio::EnsEMBL::Analysis::Tools::GeneBuildUtils::TranscriptUtils;
@@ -73,26 +73,10 @@ if ($support->param('prod_port')) { $prod_port = $support->param('prod_port');
 # Get Biotype Manager
 # Need to load the registry in order to get a production DBAdaptor
 #
-use Bio::EnsEMBL::Registry;
-Bio::EnsEMBL::Registry->no_version_check(1);
-Bio::EnsEMBL::Registry->no_cache_warnings(1);
+my $reg_conf = $support->param('reg_conf');
+defined $reg_conf or die "Cannot load registry: missing registry configuration file";
 
-Bio::EnsEMBL::Registry->load_registry_from_multiple_dbs(
-    {
-	-host => 'ens-staging1',
-	-port => 3306,
-	# -db_version => $version,
-	-user => 'ensro',
-	-NO_CACHE => 1,
-    },
-    {
-	-host => 'ens-staging2',
-	-port => 3306,
-	# -db_version => $version,
-	-user => 'ensro',
-	-NO_CACHE => 1,
-    }
-    );
+Bio::EnsEMBL::Registry->load_all($reg_conf);
 
 my $biotype_manager = 
     Bio::EnsEMBL::Registry->get_DBAdaptor('multi', 'production')->get_biotype_manager();
@@ -342,6 +326,7 @@ perl exon_conservation_check.pl <many arguments>
     --prod_host                         database host for production database
     --prod_user                         database user for production database
     --prod_db                           database name for production database
+    --reg_conf                          registry configuration file
 
 Optional options
     --logfile, --log=FILE               log to FILE (default: *STDOUT)
