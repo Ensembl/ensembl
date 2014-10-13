@@ -82,9 +82,10 @@ sub run {
     if(/\*FIELD\*\s+NO\n(\d+)/){
       $number = $1;
       $source_id = $gene_source_id;      
-      if(/\*FIELD\*\sTI\n([\^\#\%\+\*]*)\d+(.*)\n/){
+      if(/\*FIELD\*\sTI\n([\^\#\%\+\*]*)\d+(.*)\n(.*)\n\*/){
 	$label =$2; # taken from description as acc is meaning less
 	$long_desc = $2;
+	$long_desc .= $3 if defined $3;
 	$type = $1;
 	$label =~ s/\;\s[A-Z0-9]+$//; # strip gene name at end
 	$label = substr($label,0,35)." [".$type.$number."]";
