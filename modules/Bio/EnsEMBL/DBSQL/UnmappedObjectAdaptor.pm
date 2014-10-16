@@ -55,6 +55,7 @@ use strict;
 use POSIX;
 use Bio::EnsEMBL::Utils::Cache;
 use Bio::EnsEMBL::Utils::Exception qw(throw warning);
+use Bio::EnsEMBL::Funcgen::Utils::EFGUtils  qw(dump_data);
 use Bio::EnsEMBL::DBSQL::BaseFeatureAdaptor;
 use Bio::EnsEMBL::UnmappedObject;
 use Bio::EnsEMBL::Analysis;
@@ -74,12 +75,33 @@ use Bio::EnsEMBL::Analysis;
 
 =cut
 
+our %desc_to_id;
 sub new {
   my $proto = shift;
 
   my $class = ref($proto) || $proto;
-
   my $self = $class->SUPER::new(@_);
+
+  my $sth =
+      $self->prepare("
+        SELECT 
+          unmapped_reason_id, 
+          full_description 
+        FROM 
+          unmapped_reason
+        ");
+
+    $sth->execute();
+
+    my ( $id, $desc );
+    $sth->bind_columns( \( $id, $desc ) );
+
+    while ( $sth->fetch() ) {
+      $desc_to_id{$desc} = $id;
+    }
+
+    $sth->finish();
+
 
   return $self;
 }
@@ -279,28 +301,51 @@ sub store{
     my $analysis_id;
     if($analysis->is_stored($db)) {
       $analysis_id = $analysis->dbID();
-    } else {
+    } 
+    else {
       $analysis_id = $db->get_AnalysisAdaptor->store($analysis);
     }
-    $sth_fetch_reason->execute($uo->{'description'});
+    
 
 
-    my $unmapped_reason = $sth_fetch_reason->fetchrow_arrayref();
+    # Check if unmapped reason is cached
+    # Check if it has been added since the cache was created
+    # Try to store it
 
-    #First check to see unmapped reason is stored
-    if(! defined $unmapped_reason ){
+    if(!defined($desc_to_id{$uo->{'description'}})){
       $sth_reason->bind_param(1,$uo->{'summary'},SQL_VARCHAR);
       $sth_reason->bind_param(2,$uo->{'description'},SQL_VARCHAR);
-      $sth_reason->execute();
-      $uo->{'unmapped_reason_id'} = $self->last_insert_id;
       
+      if(! eval{ $sth_reason->execute(); 1 }){    
+        # DBI Trace possible here?
+        warn $@;
+        my $msg;
+        $msg .= "INSERT INTO unmapped_reason (summary_description, full_description) VALUES (";
+        $msg .=  $uo->{'summary'} .','. $uo->{'description'}. ')';
+        warn("Qeury: \n$msg");
+        print STDERR "UnmappedObject: \n";
+        print STDERR dump_data($uo,1,1); 
+
+        $sth_fetch_reason->execute($uo->{'description'});
+        
+        my $unmapped_reasons = $sth_fetch_reason->fetchrow_arrayref();
+        if(! defined($unmapped_reasons)){
+          my $msg = $uo->{'description'}. " unable to store. Check MySQL schema, maybe PK not big enough?";
+          throw($msg);
+        }
+        if(scalar @$unmapped_reasons != 1){
+          throw("Multiple results for this description");
+        }
+        $uo->{'unmapped_reason_id'} = $unmapped_reasons->[0];
+
+      }    
+      else{
+        # print 'Last mohican: '.$self->last_insert_id ."\n";
+        $uo->{'unmapped_reason_id'} = $self->last_insert_id;
+      }
     }
     else{
-      # description is not unique, multiple results possible?
-      if(scalar @$unmapped_reason != 1){
-        throw("Multiple results for this description");
-      }
-      $uo->{'unmapped_reason_id'} = $unmapped_reason->[0];
+      $uo->{'unmapped_reason_id'} = $desc_to_id{$uo->{'description'}};
     }
     $sth_unmapped_object->bind_param(1,$uo->{'type'},SQL_VARCHAR);
     $sth_unmapped_object->bind_param(2,$uo->analysis->dbID,SQL_INTEGER);
