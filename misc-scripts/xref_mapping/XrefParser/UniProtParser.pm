@@ -201,7 +201,7 @@ sub create_xrefs {
     #OX   NCBI_TaxID=158878, 158879;
     #OX   NCBI_TaxID=103690;
 
-    my ($ox) = $_ =~ /OX\s+[a-zA-Z_]+=([0-9 ,]+);/;
+    my ($ox) = $_ =~ /OX\s+[a-zA-Z_]+=([0-9 ,]+).*;/;
     my @ox = ();
     my $found = 0;
 
@@ -211,6 +211,7 @@ sub create_xrefs {
         # my %taxonomy2species_id = $self->taxonomy2species_id();
 
         foreach my $taxon_id_from_file (@ox) {
+          $taxon_id_from_file =~ s/\s//;
           if ( exists $taxonomy2species_id{$taxon_id_from_file} ){
             $found = 1;
           }
@@ -383,7 +384,7 @@ sub create_xrefs {
         my $gene_name = undef;
         my %depe;
 
-        if($gn =~ /Name=(\S+);/){
+        if($gn =~ /Name=(\S+)/){
           $depe{LABEL} = uc($1);
           $depe{ACCESSION} = $self->get_name($xref->{ACCESSION},$depe{LABEL});
           $gene_name = $depe{ACCESSION};
