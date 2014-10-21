@@ -55,7 +55,6 @@ use strict;
 use POSIX;
 use Bio::EnsEMBL::Utils::Cache;
 use Bio::EnsEMBL::Utils::Exception qw(throw warning);
-use Bio::EnsEMBL::Funcgen::Utils::EFGUtils  qw(dump_data);
 use Bio::EnsEMBL::DBSQL::BaseFeatureAdaptor;
 use Bio::EnsEMBL::UnmappedObject;
 use Bio::EnsEMBL::Analysis;
@@ -318,13 +317,15 @@ sub store{
       
       if(! eval{ $sth_reason->execute(); 1 }){    
         # DBI Trace possible here?
-        warn $@;
+        warning($@); #
         my $msg;
         $msg .= "INSERT INTO unmapped_reason (summary_description, full_description) VALUES (";
         $msg .=  $uo->{'summary'} .','. $uo->{'description'}. ')';
-        warn("Qeury: \n$msg");
+        # Temporary fix for naughty cross-dependency regulation code.
+        use Data::Dumper;
+        warning("Query: \n$msg");
         print STDERR "UnmappedObject: \n";
-        print STDERR dump_data($uo,1,1); 
+        print STDERR Dumper $uo;
 
         $sth_fetch_reason->execute($uo->{'description'});
         
@@ -357,7 +358,7 @@ sub store{
     $sth_unmapped_object->bind_param(8,$uo->{'ensembl_id'},SQL_INTEGER);
     $sth_unmapped_object->bind_param(9,$uo->{'ensembl_object_type'},SQL_VARCHAR);
     $sth_unmapped_object->execute();
-    $uo->dbID($self->last_insert_id('unmpapped_object_id', undef, 'unmapped_object'));
+    $uo->dbID($self->last_insert_id('unmapped_object_id', undef, 'unmapped_object'));
   }
   $sth_reason->finish();      
   return;
