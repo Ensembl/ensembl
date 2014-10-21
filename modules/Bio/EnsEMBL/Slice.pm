@@ -1831,7 +1831,19 @@ sub get_all_VariationFeatures{
 
 =head2 get_all_somatic_VariationFeatures
 
-    Arg [1]     : (optional) string $dbtype
+    Args [1]    : (optional) ArrayRef $so_terms
+                  SequenceOntology terms to limit the fetch to
+    Args [2]    : (optional) boolean $without_children
+                  Do not query using the children of the given SO terms 
+                  i.e. query using the given terms directly
+    Args [3]    : (optional) ArrayRef $included_so 
+                  ArrayRef of SequenceOntology which should be queried for
+                  without children. This argument allows you to combine SO terms with children
+                  from argument 1 with extra non-child SO terms. e.g. you wish to query for
+                  all protein_altering_variant (specified in argument 1) variations which 
+                  would be defined by child SO terms but also wanted stop_retained_variant linked variations
+                  defined by this argument
+    Args [4]    : (optional) string $dbtype
                   The dbtype of variation to obtain (i.e. can be different from the "variation" type).
                   This assumes that the extra db has been added to the DBAdaptor under this name (using the
                   DBConnection::add_db_adaptor method).
@@ -1844,9 +1856,9 @@ sub get_all_VariationFeatures{
 =cut
 
 sub get_all_somatic_VariationFeatures {
-  my ($self, $dbtype) = @_;
+  my ($self, $so_terms, $without_children, $included_so, $dbtype) = @_;
   if (my $vf_adaptor = $self->_get_VariationFeatureAdaptor($dbtype)) {
-    return $vf_adaptor->fetch_all_somatic_by_Slice($self);
+    return $vf_adaptor->fetch_all_somatic_by_Slice_SO_terms($self, $so_terms, $without_children, $included_so);
   }
   return [];
 }
