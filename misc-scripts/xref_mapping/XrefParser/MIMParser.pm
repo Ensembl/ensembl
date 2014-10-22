@@ -82,13 +82,26 @@ sub run {
     if(/\*FIELD\*\s+NO\n(\d+)/){
       $number = $1;
       $source_id = $gene_source_id;      
-      if(/\*FIELD\*\sTI\n([\^\#\%\+\*]*)\d+(.*)\n(.*)\n\*/){
-	$label =$2; # taken from description as acc is meaning less
-	$long_desc = $2;
-	$long_desc .= $3 if defined $3;
-	$type = $1;
-	$label =~ s/\;\s[A-Z0-9]+$//; # strip gene name at end
-	$label = substr($label,0,35)." [".$type.$number."]";
+      # if(/\*FIELD\*\sTI\n([\^\#\%\+\*]*)\d+(.*)\n(.*)\n\*/){
+      # 	$label =$2; # taken from description as acc is meaning less
+      # 	$long_desc = $2;
+      # 	$long_desc .= $3 if defined $3;
+      # 	$type = $1;
+      # 	$label =~ s/\;\s[A-Z0-9]+$//; # strip gene name at end
+      # 	$label = substr($label,0,35)." [".$type.$number."]";
+
+      if(/\*FIELD\*\sTI(.+)\*FIELD\*\sTX/s) { # grab the whole TI field
+	my $ti = $1;
+	# extract the 'type' and the whole description
+	$ti =~ /([\^\#\%\+\*]*)\d+(.+)/s;
+	my $type = $1;
+	my $long_desc = $2;
+
+	# the first line of the long description is the label
+	$long_desc =~ /(.+)\n/;
+	# to which we attach the type and number
+	my $label = $1 . " [" . $type . $number . "]";
+
 	if($type eq "*"){ # gene only
 	  $gene++;
 	  $self->add_xref({ acc        => $number,
