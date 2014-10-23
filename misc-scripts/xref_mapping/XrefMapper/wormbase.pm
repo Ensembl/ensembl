@@ -77,8 +77,19 @@ sub set_display_xrefs {
     return;
   }
 
+  my $query_gseq_sth =  $self->core->dbc->prepare("SELECT ensembl_id, x.xref_id " .
+                                                 "FROM object_xref ox, xref x ". 
+                                                 "WHERE ox.xref_id = x.xref_id AND external_db_id = " . $external_dbs{wormbase_gseqname});
+  $query_gseq_sth->execute();
+  while( my ($gid, $xid) = $query_gseq_sth->fetchrow_array) {
+    $gene_display_xrefs{$gid} = $xid;
+  }
+  $query_gseq_sth->finish;
+  
+
+
   #
-  # Get the wormbase_locus xrefs for the genes
+  # Some genes will have a locus name. Over-write display xrefs for those that do
   #
   my $query_gene_sth = $self->core->dbc->prepare("SELECT ensembl_id, x.xref_id " .
                                                  "FROM object_xref ox, xref x ". 
