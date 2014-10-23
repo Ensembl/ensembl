@@ -295,7 +295,10 @@ EON
   my $exe_file = $root_dir."/".$unique_name.".submit";
   open(my $rh,">", $exe_file) || die "Could not open file $exe_file";
   
-  print $rh ". /usr/local/lsf/conf/profile.lsf\n";
+  my $lsf_conf = "/usr/local/lsf/conf/profile.lsf";
+  if (-e $lsf_conf) {
+    print $rh ". $lsf_conf\n";
+  }
   print $rh $command."\n";
 
   close $rh;
