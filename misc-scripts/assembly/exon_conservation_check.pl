@@ -71,16 +71,19 @@ if ($support->param('prod_port')) { $prod_port = $support->param('prod_port');
 ###################################################################
 #
 # Get Biotype Manager
-# Need to load the registry in order to get a production DBAdaptor
+# Need to first get a production DBAdaptor
+# Assumes the ensembl_production DB in on staging1
 #
-my $reg_conf = $support->param('reg_conf');
-defined $reg_conf or die "Cannot load registry: missing registry configuration file";
+use Bio::EnsEMBL::Production::DBSQL::DBAdaptor;
+my $prod_dba = Bio::EnsEMBL::Production::DBSQL::DBAdaptor->new(
+    -host => 'ens-staging1',
+    -user => 'ensro',
+    -port => 3306,
+    -dbname => 'ensembl_production',
+);
+$prod_dba or die "Cannot get a production DB adaptor";
+my $biotype_manager = $prod_dba->get_biotype_manager();
 
-Bio::EnsEMBL::Registry->load_all($reg_conf);
-
-my $biotype_manager = 
-    Bio::EnsEMBL::Registry->get_DBAdaptor('multi', 'production')->get_biotype_manager();
-$biotype_manager or die "Cannot get a production DB adaptor";
 #
 ###################################################################
 
