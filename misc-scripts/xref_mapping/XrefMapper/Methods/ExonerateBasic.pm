@@ -142,7 +142,7 @@ sub resubmit_exonerate {
 
   chmod 0755, $exe_file;
 
-  my $queue = $self->mapper->farm_queue || 'long';
+  my $queue = $self->mapper->farm_queue || 'normal';
   
   my $usage = '-M 1500 -R"select[mem>1500] rusage[tmp='.$disk_space_needed.', mem=1500]" -J "'.$unique_name.'" -q '.$queue;
 
@@ -283,7 +283,7 @@ EON
 
   my $output = $self->get_class_name() . "_" . $ensembl_type . "_" . "\$LSB_JOBINDEX.map";
 
-  my $queue = $self->mapper->farm_queue || 'long';
+  my $queue = $self->mapper->farm_queue || 'normal';
 
 
   my $usage = "-q $queue ".'-M 1500 -R"select[mem>1500] rusage[tmp='.$disk_space_needed.', mem=1500]" '.'-J "'.$unique_name.'[1-'.$num_jobs.']%200" -o '.$prefix.'.%J-%I.out -e  '.$prefix.'.%J-%I.err';
