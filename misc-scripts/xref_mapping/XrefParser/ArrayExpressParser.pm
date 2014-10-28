@@ -86,48 +86,44 @@ sub run_script {
   #get stable_ids from core and create xrefs 
 
   my $registry = "Bio::EnsEMBL::Registry";
-  my $gene_adaptor;
-  print "Loading the Registry\n" if $verbose;
-  if ($project eq 'ensembl') {
-      if ($host) {
-          my $db = Bio::EnsEMBL::DBSQL::DBAdaptor->new(
-              '-host'     => $host,
-              '-user'     => $user,
-              '-pass'     => $pass,
-              '-dbname'   => $dbname,
-              '-species'  => $species_name,
-              '-group'    => 'core',
-       );
-      $gene_adaptor = $db->get_GeneAdaptor();
-      } else {
-      $registry->load_registry_from_multiple_dbs( 
-	  {
-	      '-host'    => 'ens-staging1',
-	      '-user'    => 'ensro',
-	  },
-          {
-              '-host'     => 'ens-staging2',
-              '-user'     => 'ensro',
-          }
-       );
-       $gene_adaptor = $registry->get_adaptor($species_name, 'core', 'Gene');
-     }
+  my ($gene_adaptor);
+  if ($host) {
+    my $db = Bio::EnsEMBL::DBSQL::DBAdaptor->new(
+      '-host'     => $host,
+      '-user'     => $user,
+      '-pass'     => $pass,
+      '-dbname'   => $dbname,
+      '-species'  => $species_name,
+      '-group'    => 'core',
+        );
+    $gene_adaptor = $db->get_GeneAdaptor();
+  } elsif ($project eq 'ensembl') {
+    print "Loading the Registry\n" if $verbose;
+    $registry->load_registry_from_multiple_dbs( 
+      {
+        '-host'    => 'ens-staging1',
+        '-user'    => 'ensro',
+      },
+      {
+        '-host'     => 'ens-staging2',
+        '-user'     => 'ensro',
+      }
+        );
+    $gene_adaptor = $registry->get_adaptor($species_name, 'core', 'Gene');
   } elsif ($project eq 'ensemblgenomes') {
-
-      $registry->load_registry_from_multiple_dbs( 
-	  {
-	      '-host'     => 'mysql-eg-staging-1.ebi.ac.uk',
-	      '-port'     => 4160,
-	      '-user'     => 'ensro',
-	  },
-	  {
-	      '-host'     => 'mysql-eg-staging-2.ebi.ac.uk',
-	      '-port'     => 4275,
-	      '-user'     => 'ensro',
-	  },
- 
-      );
-      $gene_adaptor = $registry->get_adaptor($species_name, 'core', 'Gene');
+    $registry->load_registry_from_multiple_dbs( 
+      {
+        '-host'     => 'mysql-eg-staging-2.ebi.ac.uk',
+        '-port'     => 4160,
+        '-user'     => 'ensro',
+      },
+      {
+        '-host'     => 'mysql-eg-staging-2.ebi.ac.uk',
+        '-port'     => 4275,
+        '-user'     => 'ensro',
+      },
+        );
+    $gene_adaptor = $registry->get_adaptor($species_name, 'core', 'Gene');
   } else {
       die("Missing or unsupported project value. Supported values: ensembl, ensemblgenomes");
   }
