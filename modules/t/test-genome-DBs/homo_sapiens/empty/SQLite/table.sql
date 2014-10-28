@@ -1,6 +1,6 @@
 -- 
 -- Created by SQL::Translator::Producer::SQLite
--- Created on Mon Apr 28 13:55:16 2014
+-- Created on Tue Oct 28 16:45:41 2014
 -- 
 
 BEGIN TRANSACTION;
@@ -322,7 +322,7 @@ CREATE TABLE gene (
   seq_region_end integer NOT NULL,
   seq_region_strand tinyint NOT NULL,
   display_xref_id integer,
-  source varchar(20) NOT NULL,
+  source varchar(40) NOT NULL,
   status enum,
   description text,
   is_current tinyint NOT NULL DEFAULT 1,
@@ -847,7 +847,7 @@ CREATE TABLE transcript (
   seq_region_end integer NOT NULL,
   seq_region_strand tinyint NOT NULL,
   display_xref_id integer,
-  source varchar(20) NOT NULL DEFAULT 'ensembl',
+  source varchar(40) NOT NULL DEFAULT 'ensembl',
   biotype varchar(40) NOT NULL,
   status enum,
   description text,
@@ -930,7 +930,7 @@ CREATE TABLE unmapped_object (
   analysis_id integer NOT NULL,
   external_db_id integer,
   identifier varchar(255) NOT NULL,
-  unmapped_reason_id smallint NOT NULL,
+  unmapped_reason_id integer NOT NULL,
   query_score double precision,
   target_score double precision,
   ensembl_id integer DEFAULT 0,

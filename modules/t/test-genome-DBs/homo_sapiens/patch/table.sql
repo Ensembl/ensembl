@@ -462,7 +462,7 @@ CREATE TABLE `meta` (
   PRIMARY KEY (`meta_id`),
   UNIQUE KEY `species_key_value_idx` (`species_id`,`meta_key`,`meta_value`),
   KEY `species_value_idx` (`species_id`,`meta_value`)
-) ENGINE=MyISAM AUTO_INCREMENT=2071 DEFAULT CHARSET=latin1;
+) ENGINE=MyISAM AUTO_INCREMENT=2072 DEFAULT CHARSET=latin1;
 
 CREATE TABLE `meta_coord` (
   `table_name` varchar(40) COLLATE latin1_bin NOT NULL DEFAULT '',
@@ -838,7 +838,7 @@ CREATE TABLE `unmapped_object` (
   `analysis_id` int(10) unsigned NOT NULL,
   `external_db_id` int(11) DEFAULT NULL,
   `identifier` varchar(255) COLLATE latin1_bin NOT NULL,
-  `unmapped_reason_id` smallint(5) unsigned NOT NULL,
+  `unmapped_reason_id` int(10) unsigned NOT NULL,
   `query_score` double DEFAULT NULL,
   `target_score` double DEFAULT NULL,
   `ensembl_id` int(10) unsigned DEFAULT '0',
@@ -851,7 +851,7 @@ CREATE TABLE `unmapped_object` (
 ) ENGINE=MyISAM AUTO_INCREMENT=12401901 DEFAULT CHARSET=latin1 COLLATE=latin1_bin;
 
 CREATE TABLE `unmapped_reason` (
-  `unmapped_reason_id` smallint(5) unsigned NOT NULL AUTO_INCREMENT,
+  `unmapped_reason_id` int(10) unsigned NOT NULL AUTO_INCREMENT,
   `summary_description` varchar(255) COLLATE latin1_bin DEFAULT NULL,
   `full_description` varchar(255) COLLATE latin1_bin DEFAULT NULL,
   PRIMARY KEY (`unmapped_reason_id`)

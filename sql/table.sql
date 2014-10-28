@@ -309,6 +309,10 @@ INSERT INTO meta (species_id, meta_key, meta_value) VALUES
 # NOTE: Avoid line-breaks in values.
 INSERT INTO meta (species_id, meta_key, meta_value)
   VALUES (NULL, 'patch', 'patch_77_78_a.sql|schema_version');
+INSERT INTO meta (species_id, meta_key, meta_value)
+  VALUES (NULL, 'patch', 'patch_77_78_b.sql|source_column_increase');
+INSERT INTO meta (species_id, meta_key, meta_value) 
+  VALUES (NULL, 'patch', 'patch_77_78_c.sql|Change unmapped_reason_id from smallint to int');
 
 /**
 @table meta_coord
@@ -2276,7 +2280,7 @@ CREATE TABLE unmapped_object (
   analysis_id           SMALLINT UNSIGNED NOT NULL,
   external_db_id        INTEGER UNSIGNED,
   identifier            VARCHAR(255) NOT NULL,
-  unmapped_reason_id    SMALLINT(5) UNSIGNED NOT NULL,
+  unmapped_reason_id    INT(10) UNSIGNED NOT NULL,
   query_score           DOUBLE,
   target_score          DOUBLE,
   ensembl_id            INT(10) UNSIGNED DEFAULT '0',
@@ -2305,7 +2309,7 @@ CREATE TABLE unmapped_object (
 
 CREATE TABLE unmapped_reason (
 
-  unmapped_reason_id     SMALLINT(5) UNSIGNED NOT NULL AUTO_INCREMENT,
+  unmapped_reason_id     INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
   summary_description    VARCHAR(255),
   full_description       VARCHAR(255),
 

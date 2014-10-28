@@ -22,6 +22,7 @@
 78	\N	patch	patch_76_77_a.sql|schema_version
 79	\N	patch	patch_77_78_a.sql|schema_version
 80	\N	patch	patch_77_78_b.sql|source_column_increase
+81	\N	patch	patch_77_78_c.sql|Change unmapped_reason_id from smallint to int
 1	\N	schema_type	core
 2	\N	schema_version	78
 8	1	assembly.accession	GCA_000292705.1
