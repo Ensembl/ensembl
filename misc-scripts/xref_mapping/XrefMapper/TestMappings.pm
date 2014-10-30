@@ -332,7 +332,7 @@ sub entry_number_check{
   my %old_object_xref_count;
   my %new_object_xref_count;
 
-  my $sth = $self->xref->dbc->prepare('select s.name, count(distinct xref_id, ensembl_id) from xref x, object_xref ox, source s where ox.xref_id = x.xref_id  and x.source_id = s.source_id and ox_status = "DUMP_OUT" and s.name not like "AFFY%"   group by s.name');
+  my $sth = $self->xref->dbc->prepare('select s.name, count(distinct x.xref_id, ensembl_id) from xref x, object_xref ox, source s where ox.xref_id = x.xref_id  and x.source_id = s.source_id and ox_status = "DUMP_OUT" and s.name not like "AFFY%"   group by s.name');
   $sth->execute();
   my ($name, $count);
   $sth->bind_columns(\$name,\$count);
