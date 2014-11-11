@@ -69,8 +69,10 @@ use Getopt::Long;
 my $help = 0;
 my $host = 'ensembldb.ensembl.org';
 my $user = 'anonymous';
-my $port = 5306;
+my $port = 3306;
+my $verbose = 0;
 my $db_version = -1;
+my $grch37;
 
 my $useast = 0;
 my $ensembl_genomes = 0;
@@ -86,6 +88,8 @@ my $options_ok =
     "eg"            => \$ensembl_genomes,
     "species=s"     => \$species,
     "db_version=i"  => \$db_version,
+    "verbose"       => \$verbose,
+    "grch37"        => \$grch37,
     "help"          => \$help);
 ($help or !$options_ok) && usage();
 
@@ -94,6 +98,10 @@ $useast and $ensembl_genomes and
   "Options \"ue\" and \"eg\" are mutually exclusive\n";
 
 $useast and $host = "useastdb.ensembl.org";
+
+$verbose and $verbose = 1;
+
+$grch37 and $port = 3337;
 
 if ($ensembl_genomes) {
   $host = "mysql.ebi.ac.uk";
@@ -116,6 +124,7 @@ eval {
     -port       => $port,
     -user       => $user,
     -db_version => $db_version,
+    -verbose    => $verbose,
   );
   $species = "human" unless defined $species;
   my $species_adaptor = Bio::EnsEMBL::Registry->get_DBAdaptor("$species", 'core');  
@@ -212,6 +221,8 @@ sub usage {
   print "  -eg                    Ping Ensembl Genomes (can't be used together with \"ue\")\n";
   print "  -species <species>     Use species <species> (use double quotes if species name contains spaces)\n";
   print "  -db_version <version>  Use the specified version of Ensembl not the API version\n";
+  print "  -grch37                Use human assembly GRCh37 rather than the default GRCh38 version\n";
+  print "  -verbose               Ping output is more verbose. Not recommended for Ensembl genomes\n";
   print "  -help                  Print this message\n";
   print "\n\n";
 
