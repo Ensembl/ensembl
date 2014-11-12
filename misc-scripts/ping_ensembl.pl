@@ -104,7 +104,7 @@ $verbose and $verbose = 1;
 $grch37 and $port = 3337;
 
 if ($ensembl_genomes) {
-  $host = "mysql.ebi.ac.uk";
+  $host = "mysql-eg-publicsql.ebi.ac.uk";
   $port = 4157;
   $species = "arabidopsis thaliana"
     unless defined $species;
