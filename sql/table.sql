@@ -1332,7 +1332,7 @@ CREATE TABLE map (
 @column right_primer                    Right primer sequence.
 @column min_primer_dist                 Minimum primer distance.
 @column max_primer_dist                 Maximum primer distance.
-@column priority                        Priority.
+@column priority                        Deprecated.
 @column type                            Type, e.g. 'est', 'microsatellite'.
 
 
