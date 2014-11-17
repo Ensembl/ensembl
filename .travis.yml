@@ -27,17 +27,19 @@ install:
 
 script: "./travisci/harness.sh"
 
-# Get the matrix to only build coveralls support when on 5.14
+# Get the matrix to only build coveralls support when on 5.10
 matrix:
   exclude:
     - perl: "5.10"
-      env: COVERALLS=true  DB=mysql
-    - perl: "5.10"
+      env: COVERALLS=false DB=mysql
+    - perl: "5.12"
       env: COVERALLS=false DB=sqlite
     - perl: "5.12"
-      env: COVERALLS=false DB=mysql
+      env: COVERALLS=true  DB=mysql
     - perl: "5.14"
-      env: COVERALLS=false DB=mysql
+      env: COVERALLS=false DB=sqlite
+    - perl: "5.14"
+      env: COVERALLS=true  DB=mysql
 
 notifications:
   email:
