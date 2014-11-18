@@ -1256,8 +1256,8 @@ sub constrain_to_seq_region {
 
 =head2 sub_Slice
 
-  Arg   1    : int $start
-  Arg   2    : int $end
+  Arg   1    : int $start, refers to the start of the subslice relative to the input slice
+  Arg   2    : int $end, refers to the end of the subslice relative to the input slice
   Arge [3]   : int $strand
   Example    : none
   Description: Makes another Slice that covers only part of this Slice
