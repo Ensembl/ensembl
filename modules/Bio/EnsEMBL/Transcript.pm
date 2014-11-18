@@ -1939,7 +1939,7 @@ sub translate {
   # Alternative codon tables (such as the mitochondrial codon table)
   # can be specified for a sequence region via the seq_region_attrib
   # table.  A list of codon tables and their codes is at:
-  # http://www.ncbi.nlm.nih.gov/htbin-post/Taxonomy/wprintgc?mode=c
+  # http://www.ncbi.nlm.nih.gov/Taxonomy/Utils/wprintgc.cgi
 
   my $codon_table_id;
   my ( $complete5, $complete3 );
