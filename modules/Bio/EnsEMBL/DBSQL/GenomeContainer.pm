@@ -100,39 +100,6 @@ sub new {
 }
 
 
-
-=head2 fetch_by_version
-
-  Arg [1]    : (optional) Int $version
-               Version used to fetch a genome object
-               If none is provided, use the default version
-  Example    : $genome = $genome_adaptor->fetch_by_version('GRCh37');
-  Description: Retrieves a genome object
-  Returntype : Bio::EnsEMBL::Genome
-  Exceptions : none
-  Caller     : general
-  Status     : Stable
-
-=cut
-
-sub fetch_by_version {
-  my ($self, $version) = @_;
-
-  if (!$version) {
-    my $csa = $self->db()->get_adaptor('CoordSystem');
-    my @cs = @{ $csa->fetch_all() };
-    $version = $cs[0]->version();
-  }
-
-  my $genome = Bio::EnsEMBL::Genome->new(
-         -VERSION => $version,
-         -ADAPTOR => $self,
-        );
-
-  return $genome;
-}
-
-
 =head2 store
 
   Arg [1]    : Statistic
