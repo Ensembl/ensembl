@@ -899,6 +899,7 @@ COORD_SYSTEM: foreach my $coord_system (@feature_coord_systems) {
      }
      $mapper = undef;
     } # End foreach
+    $self->{_bind_param_generic_fetch} = undef;
     return \@pan_coord_features;
 }
 #
