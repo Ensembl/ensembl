@@ -226,7 +226,8 @@ sub print_feature {
                     $value = 'transcript:' . $value;
                   }
                 }
-                $row .= uc($key)."=".uri_escape($value,'\t\n\r;=%&,');
+                $key = uc($key) if $key eq 'id';
+                $row .= $key."=".uri_escape($value,'\t\n\r;=%&,');
                 $row .= ';' if scalar(@ordered_keys) > 0 || scalar(keys %summary) > 0;
             }
         }
