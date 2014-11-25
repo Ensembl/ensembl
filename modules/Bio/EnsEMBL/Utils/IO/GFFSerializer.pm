@@ -122,10 +122,12 @@ sub print_feature {
         if (defined $summary{source}) {
           $row .= $summary{source};
         } else {
-          if ( defined($feature->analysis) && $feature->analysis->gff_source() ) {
-            $row .= $feature->analysis->gff_source();
-          } else {
-            $row .= $self->_default_source();
+          if ( ref($feature)->isa('Bio::EnsEMBL::Feature') ) {
+            if ( defined($feature->analysis) && $feature->analysis->gff_source() ) {
+              $row .= $feature->analysis->gff_source();
+            } else {
+              $row .= $self->_default_source();
+            }
           }
         }
         $row .= qq{\t};
