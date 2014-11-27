@@ -177,6 +177,12 @@ sub run_script {
       die("Missing or unsupported project value. Supported values: ensembl, ensemblgenomes");
   }
 
+## Not all species have an otherfeatures database, skip if not found
+  if (!$otherf_dba) {
+    print STDERR "No otherfeatures database for $species_name, skipping import for refseq_import data\n";
+    return;
+  }
+
   my $sa = $core_dba->get_SliceAdaptor();
   my $sa_of = $otherf_dba->get_SliceAdaptor();
   my $chromosomes_of = $sa_of->fetch_all('chromosome', undef, 1);
@@ -189,8 +195,10 @@ sub run_script {
       $logic_name = $ana->logic_name;
     }
   }
+## Not all species have refseq_import data, skip if not found
   if (!defined $logic_name) {
-    die("Could not find logic_name for refseq in otherfeatures database");
+    print STDERR "No data found for RefSeq_import, skipping import\n";;
+    return;
   }
 
   foreach my $chromosome_of (@$chromosomes_of) {
