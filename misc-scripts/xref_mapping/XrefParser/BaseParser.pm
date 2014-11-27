@@ -31,9 +31,12 @@ use Getopt::Long;
 my $base_dir = File::Spec->curdir();
 
 my $add_xref_sth = undef;
+my $add_object_xref_sth = undef;
+my $add_identity_xref_sth = undef;
 my %add_direct_xref_sth;
 my $add_dependent_xref_sth = undef;
 my $get_xref_sth = undef;
+my $get_object_xref_sth = undef;
 my $add_synonym_sth = undef;
 
 my %xref_dependent_mapped;
@@ -857,6 +860,32 @@ sub get_xref{
   return;
 }
 
+###################################################################
+# return the object_xref_id for a particular xref_id, ensembl_id and ensembl_object_type
+# if not found return undef;
+###################################################################
+sub get_object_xref {
+  my ($self, $xref_id, $ensembl_id, $object_type) = @_;
+
+  my $dbi = $self->dbi;
+  #
+  # If the statement handle does nt exist create it.
+  #
+  if(!(defined $get_object_xref_sth) ){
+    my $sql = 'select object_xref_id from object_xref where xref_id = ? and ensembl_object_type = ? and ensembl_id = ?';
+    $get_object_xref_sth = $dbi->prepare($sql);
+  }
+
+  #
+  # Find the object_xref_id using the sql above
+  #
+  $get_object_xref_sth->execute( $xref_id, $ensembl_id, $object_type) or croak( $dbi->errstr() );
+  if(my @row = $get_object_xref_sth->fetchrow_array()) {
+    return $row[0];
+  }
+  return;
+}
+
 
 ###########################################################
 # Create an xref..
@@ -916,6 +945,80 @@ sub add_xref {
   return $add_xref_sth->{'mysql_insertid'};
 } ## end sub add_xref
 
+
+###########################################################
+# Create an object_xref..
+# If it already exists it return the object_xref_id
+# else creates it and returns the new object_xref_id
+###########################################################
+
+sub add_object_xref {
+  my ($self, $arg_ref) = @_;
+
+  my $xref_id     = $arg_ref->{xref_id}     || croak 'add_object_xref needs an xref_id';
+  my $ensembl_id  = $arg_ref->{ensembl_id}  || croak 'add_object_xref needs a ensembl_id';
+  my $object_type = $arg_ref->{object_type} || croak 'add_object_xref needs an object_type';
+
+  ##################################################################
+  # See if it already exists. It so return the xref_id for this one.
+  ##################################################################
+
+  my $object_xref_id = $self->get_object_xref($xref_id, $ensembl_id, $object_type);
+  if(defined $object_xref_id){
+    return $object_xref_id;
+  }
+
+  #######################################################################
+  # If the statement handle for the insertion of object_xrefs does not exist yet
+  # then create it
+  #######################################################################
+  if (!(defined $add_object_xref_sth) ) {
+    $add_object_xref_sth =
+      $self->dbi->prepare( 'INSERT INTO object_xref'
+         . '(ensembl_id, ensembl_object_type, xref_id) '
+         . 'VALUES(?,?,?)' );
+  }
+
+  ####################################
+  # Add the object_xref and croak if it fails
+  ####################################
+  $add_object_xref_sth->execute($ensembl_id, $object_type, $xref_id
+  ) or croak("$ensembl_id\t$object_type\t\t$xref_id\n");
+
+  return $add_object_xref_sth->{'mysql_insertid'};
+}
+
+###########################################################
+# Create an identity_xref
+###########################################################
+
+sub add_identity_xref {
+  my ($self, $arg_ref) = @_;
+
+  my $object_xref_id  = $arg_ref->{object_xref_id}  || croak 'add_identity_xref needs an object_xref_id';
+  my $score           = $arg_ref->{score}           || croak 'add_identity_xref needs a score';
+  my $target_identity = $arg_ref->{target_identity} || croak 'add_identity_xref needs a target_identity';
+  my $query_identity  = $arg_ref->{query_identity}  || croak 'add_identity_xref needs a query_identity';
+
+  #######################################################################
+  # If the statement handle for the insertion of object_xrefs does not exist yet
+  # then create it
+  #######################################################################
+  if (!(defined $add_identity_xref_sth) ) {
+    $add_identity_xref_sth =
+      $self->dbi->prepare( 'INSERT INTO identity_xref'
+         . '(object_xref_id, score, query_identity, target_identity) '
+         . 'VALUES(?,?,?,?)' );
+  }
+
+  ####################################
+  # Add the object_xref and croak if it fails
+  ####################################
+  $add_identity_xref_sth->execute($object_xref_id, $score, $query_identity, $target_identity
+  ) or croak("$object_xref_id\t$score\t\t$query_identity\t$target_identity\n");
+
+  return;
+}
 
 
 ###################################################################
