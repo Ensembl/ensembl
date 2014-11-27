@@ -206,48 +206,6 @@ sub gene_description_sources {
 }
 
 
-=head2 set_source_id_to_external_name
-
- Overrides the source_id to source external name mapping
-
-=cut
-
-sub set_source_id_to_external_name {
-    
-    my $self = shift;
-    my $name_to_external_name_href = shift;
-
-    my $source_id_to_external_name_href = {};
-    my $name_to_source_id_href = {};
-    
-    print STDERR "overwritting set_source_id_to_external_name in eukaryota.pm\n";
-    
-    my $sql = 'select s.source_id, s.name from source s, xref x where x.source_id = s.source_id group by s.source_id'; # only get those of interest
-    
-    my $sth = $self->xref->dbc->prepare($sql);
-    $sth->execute();
-    my ($id, $name);
-    $sth->bind_columns(\$id, \$name);
-    while($sth->fetch()){
-	if(defined($name_to_external_name_href->{$name})){
-            # Here is the override code
-	    # Map $name instead of $name_to_external_name_href->{$name} to their source ids
-	    $source_id_to_external_name_href->{$id} = $name;
-	    $name_to_source_id_href->{$name} = $id;
-	}
-	elsif($name =~ /notransfer$/){
-	}
-	else{
-	    die "ERROR: Could not find a display_name for $name in external_db table please add this to continue";
-	}
-    }
-    
-    $sth->finish;
-    
-    return ($source_id_to_external_name_href, $name_to_source_id_href);
-}
-
-
 =head2 transcript_names_from_gene
 
  Overrides the transcript names logic assignment from gene names
