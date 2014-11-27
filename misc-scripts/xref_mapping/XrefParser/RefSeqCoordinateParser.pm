@@ -204,6 +204,10 @@ sub run_script {
       foreach my $transcript_of (sort { $a->start() <=> $b->start() } @$transcripts_of) {
         my %transcript_result;
         my %tl_transcript_result;
+        my %transcript_to_dbid;
+        my %translation_to_dbid;
+        my %query_overlap;
+        my %target_overlap;
         my $id = $transcript_of->stable_id();
         if ($id =~ /^XM_/) { next; }
         my $exons_of = $transcript_of->get_all_Exons();
@@ -235,11 +239,16 @@ sub run_script {
           my $exon_match = 0;
           my $tl_exons = $transcript->get_all_translateable_Exons();
           my $tl_exon_match = 0;
+          my $overall_overlap = 0;
+          my $overall_overlap_of = 0;
+          my $tl_overall_overlap = 0;
+          my $tl_overall_overlap_of = 0;
 
           foreach my $exon (@$exons) {
             my $start = $exon->seq_region_start();
             my $end = $exon->seq_region_end();
             my $overlap = $rr1->overlap_size('exon', $start, $end);
+            $overall_overlap += $overlap;
             $exon_match += $overlap/($end - $start + 1);
             $rr2->check_and_register('exon', $start, $end);
           }
@@ -248,6 +257,7 @@ sub run_script {
             my $tl_start = $tl_exon->seq_region_start();
             my $tl_end = $tl_exon->seq_region_end();
             my $tl_overlap = $rr3->overlap_size('exon', $tl_start, $tl_end);
+            $tl_overall_overlap += $tl_overlap;
             $tl_exon_match += $tl_overlap/($tl_end - $tl_start + 1);
             $rr4->check_and_register('exon', $tl_start, $tl_end);
           }
@@ -255,11 +265,12 @@ sub run_script {
           my $exon_match_of = 0;
           my $tl_exon_match_of = 0;
 
-# Look for oeverlap between the two sets of exons
+# Look for overlap between the two sets of exons
           foreach my $exon_of (@$exons_of) {
             my $start_of = $exon_of->seq_region_start();
             my $end_of = $exon_of->seq_region_end();
             my $overlap_of = $rr2->overlap_size('exon', $start_of, $end_of);
+            $overall_overlap_of += $overlap_of;
             $exon_match_of += $overlap_of/($end_of - $start_of + 1);
           }
 
@@ -267,6 +278,7 @@ sub run_script {
             my $tl_start_of = $tl_exon_of->seq_region_start();
             my $tl_end_of = $tl_exon_of->seq_region_end();
             my $tl_overlap_of = $rr4->overlap_size('exon', $tl_start_of, $tl_end_of);
+            $tl_overall_overlap_of += $tl_overlap_of;
             $tl_exon_match_of += $tl_overlap_of/($tl_end_of - $tl_start_of + 1);
           }
 
@@ -275,10 +287,19 @@ sub run_script {
           my $tl_score = 0;
           if (scalar(@$tl_exons_of) > 0) {
             $tl_score = ( ($tl_exon_match_of + $tl_exon_match)) / (scalar(@$tl_exons_of) + scalar(@$tl_exons) );
+            if ($transcript->translation) {
+              my $tl_stable_id = $transcript->translation->stable_id;
+              $translation_to_dbid{$tl_stable_id} = $transcript->translation->stable_id;
+              $query_overlap{$tl_stable_id} = $tl_overall_overlap_of/$transcript_of->translation->length();
+              $target_overlap{$tl_stable_id} = $tl_overall_overlap/$transcript->translation->length();
+            }
           }
           if ($transcript->biotype eq $transcript_of->biotype) {
             $transcript_result{$transcript->stable_id} = $score;
+            $transcript_to_dbid{$transcript->stable_id} = $transcript->dbID;
             $tl_transcript_result{$transcript->stable_id} = $tl_score;
+            $query_overlap{$transcript->stable_id} = $overall_overlap_of/$transcript_of->length() * 100;
+            $target_overlap{$transcript->stable_id} = $overall_overlap/$transcript->length() * 100;
           }
         }
 
@@ -318,6 +339,17 @@ sub run_script {
                                           species_id => $species_id,
                                           info_type => 'DIRECT' });
           $self->add_direct_xref($xref_id, $best_id, "Transcript", "");
+          my $ensembl_id = $transcript_to_dbid{$best_id};
+          my $object_xref_id = $self->add_object_xref({
+             xref_id     => $xref_id,
+             ensembl_id  => $ensembl_id,
+             object_type => 'Transcript'});
+## Add 'identity_xref' to store the overlap values
+          $self->add_identity_xref({
+             object_xref_id  => $object_xref_id,
+             query_identity  => $query_overlap{$best_id},
+             target_identity => $target_overlap{$best_id},
+             score           => $best_score });
 
 # Also store refseq protein as direct xref for ensembl translation, if translation exists
           my $ta_of = $otherf_dba->get_TranscriptAdaptor();
@@ -329,6 +361,7 @@ sub run_script {
           if (defined $tl && defined $tl_of) {
             if ($tl_of->seq eq $tl->seq) {
               ($acc, $version) = split(/\./, $tl_of->stable_id());
+              my $tl_stable_id = $tl->stable_id;
               my $tl_xref_id = $self->add_xref({ acc => $acc,
                                               version => $version,
                                               label => $acc,
@@ -336,7 +369,18 @@ sub run_script {
                                               source_id => $peptide_source_id,
                                               species_id => $species_id,
                                               info_type => 'DIRECT' });
-              $self->add_direct_xref($tl_xref_id, $tl->stable_id(), "Translation", "");
+              $self->add_direct_xref($tl_xref_id, $tl_stable_id, "Translation", "");
+              my $tl_ensembl_id = $translation_to_dbid{$tl_stable_id};
+              my $tl_object_xref_id = $self->add_object_xref({
+                 xref_id     => $tl_xref_id,
+                 ensembl_id  => $tl_ensembl_id,
+                 object_type => 'Translation'});
+## Add 'identity_xref' to store the overlap values
+              $self->add_identity_xref({
+                 object_xref_id  => $tl_object_xref_id,
+                 query_identity  => $query_overlap{$tl_stable_id},
+                 target_identity => $target_overlap{$tl_stable_id},
+                 score           => $best_score });
             }
           }
         }
