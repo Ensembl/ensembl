@@ -197,6 +197,7 @@ sub fetch_files {
 	      push( @processed_files, $file_path );
 
       } ## end foreach my $remote_file ( (...))
+    if (!@processed_files) { printf ("No files found matching $uri") ; }
 
 
     } elsif ( $uri->scheme() eq 'http' ) {
