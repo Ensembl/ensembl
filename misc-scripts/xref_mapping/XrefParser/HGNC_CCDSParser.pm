@@ -121,7 +121,7 @@ SQL
 
 
   
-  $sql = 'select ox.ensembl_id, x.display_label from object_xref ox, xref x, external_db e where x.xref_id = ox.xref_id and x.external_db_id = e.external_db_id and ox.ensembl_object_type = "Transcript" and e.db_name like "CCDS"'; 
+  $sql = 'select ox.ensembl_id, x.dbprimary_acc from object_xref ox, xref x, external_db e where x.xref_id = ox.xref_id and x.external_db_id = e.external_db_id and ox.ensembl_object_type = "Transcript" and e.db_name like "CCDS"'; 
 
   my %ccds_to_stable_id;
   $sth = $dbi2->prepare($sql); 
