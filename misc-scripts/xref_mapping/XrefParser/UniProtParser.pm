@@ -384,7 +384,7 @@ sub create_xrefs {
         my $gene_name = undef;
         my %depe;
 
-        if($gn =~ /Name=(\S+)/){
+        if($gn =~ /Name=((.*?))[;\s]/){
           $depe{LABEL} = uc($1);
           $depe{ACCESSION} = $self->get_name($xref->{ACCESSION},$depe{LABEL});
           $gene_name = $depe{ACCESSION};
