@@ -145,15 +145,15 @@ use Bio::EnsEMBL::Utils::Scalar qw(:assert);
 use IO::File;
 
 eval {
-  require IO::Compress::Bzip2;
-  require IO::Uncompress::Bunzip2;
-  $BZIP2_OK = 1;
-};
-
-eval {
   require IO::Compress::Gzip;
   require IO::Uncompress::Gunzip;
   $GZIP_OK = 1;
+};
+
+eval {
+  require IO::Compress::Bzip2;
+  require IO::Uncompress::Bunzip2;
+  $BZIP2_OK = 1;
 };
 
 eval {
@@ -382,7 +382,7 @@ sub iterate_file {
 
 
 
-=head2 work_with_file()
+=head2 work_with_file
 
   Arg [1]     : string $file
   Arg [2]     : string; $mode 
@@ -415,7 +415,7 @@ sub work_with_file {
   return;
 }
 
-=head2 gz_work_with_file()
+=head2 gz_work_with_file
 
   Arg [1]     : string $file
   Arg [2]     : string; $mode 
@@ -454,6 +454,55 @@ sub gz_work_with_file {
     }
     elsif($mode eq '<' || $mode eq 'r') {
       $fh = IO::Uncompress::Gunzip->new($file, %$args) or throw "Cannot open '$file' for writing: $IO::Uncompress::Gunzip::GunzipError";
+    }
+    else {
+      throw "Could not decipher a mode from '$mode'";
+    }
+  };
+  $callback->($fh);
+  close($fh) or throw "Cannot close FH from ${file}: $!";
+  return;
+}
+
+=head2 bz_work_with_file
+
+  Arg [1]     : string $file
+  Arg [2]     : string; $mode 
+                Supports modes like C<r>, C<w>, C<\>> and C<\<>
+  Arg [3]     : CodeRef the callback which is given the open file handle as
+                its only argument
+  Arg [4]     : HashRef used to pass options into the IO 
+                compression/uncompression modules
+  Description : Performs the nitty gritty of checking if a file handle is open
+                and closing the resulting filehandle down.
+  Returntype  : None
+  Example     : bz_work_with_file('/tmp/out.txt.bz2', 'w', sub { 
+                  my ($fh) = @_; 
+                  print $fh 'hello'; 
+                  return;
+                });
+  Exceptions  : If we could not work with the file due to permissions
+  Status      : Stable
+
+=cut
+
+sub bz_work_with_file {
+  my ($file, $mode, $callback, $args) = @_;
+  throw "IO::Compress was not available"if ! $BZIP2_OK;
+  throw "We need a file name to open" if ! $file;
+  throw "We need a mode to open the requested file with" if ! $mode;
+  assert_ref($callback, 'CODE', 'callback');
+  $args ||= {};
+  
+  my $fh;
+  {
+    no warnings qw/once/;
+    if($mode =~ '>$' || $mode eq 'w') {
+      $args->{Append} = 1 if $mode =~ />>$/;
+      $fh = IO::Compress::Bzip2->new($file, %$args) or throw "Cannot open '$file' for writing: $IO::Compress::Gzip::Bzip2Error";
+    }
+    elsif($mode eq '<' || $mode eq 'r') {
+      $fh = IO::Uncompress::Bunzip2->new($file, %$args) or throw "Cannot open '$file' for writing: $IO::Uncompress::Gunzip::Bunzip2Error";
     }
     else {
       throw "Could not decipher a mode from '$mode'";
