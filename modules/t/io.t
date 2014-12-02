@@ -51,7 +51,7 @@ eval {
 };
 
 SKIP: {
-  skip "Cannot run Bzip tests, install related IO::[Un]Compress modules first",
+  skip "Cannot run Bzip2/Bunzip2 tests, install related IO::[Un]Compress modules first",
     2 unless $BZIP2_OK;
 
   # send the content of the tmpfile to another
@@ -70,6 +70,35 @@ SKIP: {
   like($content, qr/test data/, "Bzip2: correct content");
   like($content, qr/more data/, "Bzip2: more correct content");
 }
+
+my $ZIP_OK = 0;
+eval {
+  require IO::Compress::Zip;
+  require IO::Uncompress::Unzip;
+  $ZIP_OK = 1;
+};
+
+SKIP: {
+  skip "Cannot run Zip/Unzip tests, install related IO::[Un]Compress modules first",
+    2 unless $BZIP2_OK;
+
+  # send the content of the tmpfile to another
+  # bzip2 compressed file
+  my $file_content = slurp($tmpfilename);
+  my $bz2tmpfile = File::Temp->new(DIR => $dirname, SUFFIX => '.bz2');
+
+  zip_work_with_file($bz2tmpfile->filename, 'w', sub {
+    my ($fh) = @_;
+    print $fh $file_content;
+    return;
+  });
+
+  # check the content of the compressed file
+  my $content = zip_slurp($bz2tmpfile->filename);
+  like($content, qr/test data/, "Zip: correct content");
+  like($content, qr/more data/, "Zip: more correct content");
+}
+
 
 #
 # test filtering the content of a directory
