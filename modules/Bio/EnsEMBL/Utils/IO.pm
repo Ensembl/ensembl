@@ -262,8 +262,39 @@ sub bz_slurp {
   return ($want_ref) ? \$contents : $contents;
 }
 
+=head2 zip_slurp
 
-=head2 slurp_to_array()
+  Arg [1]     : string $file
+  Arg [2]     : boolean; $want_ref Indicates if we want to return a scalar reference
+  Arg [3]     : boolean; $binary
+  Arg [4]     : HashRef arguments to pass into IO compression layers
+  Description : Forces the contents of a file into a scalar. This is the 
+                fastest way to get a file into memory in Perl. You can also
+                get a scalar reference back to avoid copying the file contents
+                in Scalar references. If the input file is binary then specify
+                with the binary flag
+  Returntype  : Scalar or reference of the file contents depending on arg 2
+  Example     : my $contents = slurp('/tmp/file.txt.zip');
+  Exceptions  : If the file did not exist or was not readable
+  Status      : Stable
+
+=cut
+
+sub zip_slurp {
+  my ($file, $want_ref, $binary, $args) = @_;
+  my $contents;
+  zip_work_with_file($file, 'r', sub {
+    my ($fh) = @_;
+    local $/ = undef;
+    binmode($fh) if $binary;
+    $contents = <$fh>;
+    return;
+  }, $args);
+  return ($want_ref) ? \$contents : $contents;
+}
+
+
+=head2 slurp_to_array
 
   Arg [1]     : string $file
   Arg [2]     : boolean $chomp
