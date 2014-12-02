@@ -41,20 +41,22 @@ Bio::EnsEMBL::Utils::IO
 
 	use Bio::EnsEMBL::Utils::IO qw/slurp work_with_file slurp_to_array fh_to_array/;
 	#or
-	# use Bio::EnsEMBL::Utils::IO qw/:slurp/; #brings in any method starting with slurp
-	# use Bio::EnsEMBL::Utils::IO qw/:array/; #brings in any method which ends with _array
-	# use Bio::EnsEMBL::Utils::IO qw/:gz/;    #brings all methods which start with gz_
-	# use Bio::EnsEMBL::Utils::IO qw/:all/;   #brings all methods in
+	# use Bio::EnsEMBL::Utils::IO qw/:slurp/; # brings in any method starting with slurp
+	# use Bio::EnsEMBL::Utils::IO qw/:array/; # brings in any method which ends with _array
+	# use Bio::EnsEMBL::Utils::IO qw/:gz/;    # brings all methods which start with gz_
+	# use Bio::EnsEMBL::Utils::IO qw/:bz/;    # brings all methods which start with bz_
+	# use Bio::EnsEMBL::Utils::IO qw/:zip/;   # brings all methods which start with zip_
+	# use Bio::EnsEMBL::Utils::IO qw/:all/;   # brings all methods in
 	
-	#As a scalar
+  # As a scalar
   my $file_contents = slurp('/my/file/location.txt');
   print length($file_contents);
   
-  #As a ref
+  # As a ref
   my $file_contents_ref = slurp('/my/file/location.txt', 1);
   print length($$file_contents_ref);
   
-  #Sending it to an array
+  # Sending it to an array
   my $array = slurp_to_array('/my/location');
   work_with_file('/my/location', 'r', sub {
     $array = process_to_array($_[0], sub {
@@ -63,24 +65,24 @@ Bio::EnsEMBL::Utils::IO
     });
   });
   
-  #Simplified vesion but without the post processing
+  # Simplified vesion but without the post processing
   $array = fh_to_array($fh);
   
-  #Sending this back out to another file
+  # Sending this back out to another file
   work_with_file('/my/file/newlocation.txt', 'w', sub {
     my ($fh) = @_;
     print $fh $$file_contents_ref;
     return;
   });
   
-  #Gzipping the data to another file
+  # Gzipping the data to another file
   gz_work_with_file('/my/file.gz', 'w', sub {
     my ($fh) = @_;
     print $fh $$file_contents_ref;
     return;
   });
   
-  #Working with a set of lines manually
+  # Working with a set of lines manually
   work_with_file('/my/file', 'r', sub {
     my ($fh) = @_;
     iterate_lines($fh, sub {
@@ -91,14 +93,14 @@ Bio::EnsEMBL::Utils::IO
     return;
   });
   
-  #Doing the same in one go
+  # Doing the same in one go
   iterate_file('/my/file', sub {
     my ($line) = @_;
     print $line; #Send the line in the file back out
     return;
   });
   
-  #Move all data from one file handle to another. Bit like a copy
+  # Move all data from one file handle to another. Bit like a copy
   move_data($src_fh, $trg_fh);
   	
 =head1 DESCRIPTION
@@ -125,21 +127,39 @@ use warnings;
 use base qw(Exporter);
 
 our $GZIP_OK = 0;
-our @EXPORT_OK = qw/slurp slurp_to_array fh_to_array process_to_array work_with_file gz_slurp gz_slurp_to_array gz_work_with_file filter_dir iterate_file iterate_lines move_data/;
+our $BZIP2_OK = 0;
+our $ZIP_OK = 0;
+
+our @EXPORT_OK = qw/slurp slurp_to_array fh_to_array process_to_array work_with_file gz_slurp gz_slurp_to_array gz_work_with_file bz_slurp bz_slurp_to_array bz_work_with_file zip_slurp zip_slurp_to_array zip_work_with_file filter_dir iterate_file iterate_lines move_data/;
 our %EXPORT_TAGS = (
   all     => [@EXPORT_OK],
   slurp   => [qw/slurp slurp_to_array gz_slurp gz_slurp_to_array/],
   array   => [qw/fh_to_array process_to_array slurp_to_array gz_slurp_to_array/],
   gz      => [qw/gz_slurp gz_slurp_to_array gz_work_with_file/],
+  bz      => [qw/bz_slurp bz_slurp_to_array bz_work_with_file/],
+  zip     => [qw/zip_slurp zip_slurp_to_array zip_work_with_file/],
   iterate => [qw/iterate_file iterate_lines/],
 );
 use Bio::EnsEMBL::Utils::Exception qw(throw);
 use Bio::EnsEMBL::Utils::Scalar qw(:assert);
 use IO::File;
+
+eval {
+  require IO::Compress::Bzip2;
+  require IO::Uncompress::Bunzip2;
+  $BZIP2_OK = 1;
+};
+
 eval {
   require IO::Compress::Gzip;
   require IO::Uncompress::Gunzip;
   $GZIP_OK = 1;
+};
+
+eval {
+  require IO::Compress::Zip;
+  require IO::Uncompress::Unzip;
+  $ZIP_OK = 1;
 };
 
 =head2 slurp()
