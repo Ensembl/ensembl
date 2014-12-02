@@ -1858,6 +1858,7 @@ sub _objs_from_sth {
 
     my $display_xref;
 
+    $xref_display_label =~ s/;//;
     if ($display_xref_id) {
       $display_xref = Bio::EnsEMBL::DBEntry->new_fast( {
           'dbID'            => $display_xref_id,
