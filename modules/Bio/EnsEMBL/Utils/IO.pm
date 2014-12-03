@@ -317,14 +317,14 @@ sub slurp_to_array {
 	return $contents;
 }
 
-=head2 gz_slurp_to_array()
+=head2 gz_slurp_to_array
 
   Arg [1]     : string $file
   Arg [2]     : boolean $chomp
   Arg [3]     : HashRef arguments to pass into IO compression layers
   Description : Sends the contents of the given gzipped file into an ArrayRef
   Returntype  : ArrayRef
-  Example     : my $contents_array = slurp_to_array('/tmp/file.txt.gz');
+  Example     : my $contents_array = gz_slurp_to_array('/tmp/file.txt.gz');
   Exceptions  : If the file did not exist or was not readable
   Status      : Stable
 
@@ -341,7 +341,31 @@ sub gz_slurp_to_array {
   return $contents;
 }
 
-=head2 fh_to_array()
+=head2 bz_slurp_to_array
+
+  Arg [1]     : string $file
+  Arg [2]     : boolean $chomp
+  Arg [3]     : HashRef arguments to pass into IO compression layers
+  Description : Sends the contents of the given bzipped file into an ArrayRef
+  Returntype  : ArrayRef
+  Example     : my $contents_array = bz_slurp_to_array('/tmp/file.txt.bz2');
+  Exceptions  : If the file did not exist or was not readable
+  Status      : Stable
+
+=cut
+
+sub bz_slurp_to_array {
+  my ($file, $chomp, $args) = @_;
+  my $contents;
+  bz_work_with_file($file, 'r', sub {
+    my ($fh) = @_;
+    $contents = fh_to_array($fh, $chomp);
+    return;
+  }, $args);
+  return $contents;
+}
+
+=head2 fh_to_array
 
   Arg [1]     : Glob/IO::Handle $fh
   Arg [2]     : boolean $chomp

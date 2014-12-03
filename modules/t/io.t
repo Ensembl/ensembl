@@ -69,6 +69,12 @@ SKIP: {
   my $content = bz_slurp($bz2tmpfile->filename);
   like($content, qr/test data/, "Bzip2: correct content");
   like($content, qr/more data/, "Bzip2: more correct content");
+
+  # test bz_slurp_to_array
+  my $content_array = bz_slurp_to_array($bz2tmpfile->filename, 1);
+  ok($content_array->[0] eq 'test data', "Bzip2 slurped file first element");
+  ok($content_array->[1] eq 'some more data.', "Bzip2 slurped file second element");
+
 }
 
 my $ZIP_OK = 0;
@@ -80,12 +86,12 @@ eval {
 
 SKIP: {
   skip "Cannot run Zip/Unzip tests, install related IO::[Un]Compress modules first",
-    2 unless $BZIP2_OK;
+    2 unless $ZIP_OK;
 
   # send the content of the tmpfile to another
   # bzip2 compressed file
   my $file_content = slurp($tmpfilename);
-  my $bz2tmpfile = File::Temp->new(DIR => $dirname, SUFFIX => '.bz2');
+  my $bz2tmpfile = File::Temp->new(DIR => $dirname, SUFFIX => '.zip');
 
   zip_work_with_file($bz2tmpfile->filename, 'w', sub {
     my ($fh) = @_;
@@ -97,6 +103,7 @@ SKIP: {
   my $content = zip_slurp($bz2tmpfile->filename);
   like($content, qr/test data/, "Zip: correct content");
   like($content, qr/more data/, "Zip: more correct content");
+
 }
 
 
