@@ -91,18 +91,23 @@ SKIP: {
   # send the content of the tmpfile to another
   # bzip2 compressed file
   my $file_content = slurp($tmpfilename);
-  my $bz2tmpfile = File::Temp->new(DIR => $dirname, SUFFIX => '.zip');
+  my $ziptmpfile = File::Temp->new(DIR => $dirname, SUFFIX => '.zip');
 
-  zip_work_with_file($bz2tmpfile->filename, 'w', sub {
+  zip_work_with_file($ziptmpfile->filename, 'w', sub {
     my ($fh) = @_;
     print $fh $file_content;
     return;
   });
 
   # check the content of the compressed file
-  my $content = zip_slurp($bz2tmpfile->filename);
+  my $content = zip_slurp($ziptmpfile->filename);
   like($content, qr/test data/, "Zip: correct content");
   like($content, qr/more data/, "Zip: more correct content");
+
+  # test zip_slurp_to_array
+  my $content_array = zip_slurp_to_array($ziptmpfile->filename, 1);
+  ok($content_array->[0] eq 'test data', "Zip slurped file first element");
+  ok($content_array->[1] eq 'some more data.', "Zip slurped file second element");
 
 }
 
@@ -119,6 +124,6 @@ my $other_tmp_file2 = File::Temp->new(DIR => $dirname, SUFFIX => '.dat');
 is(scalar @{Bio::EnsEMBL::Utils::IO::filter_dir($dirname, sub {
 						  my $file = shift;
 						  return $file if $file =~ /\.pl$/;
-						})}, 3, "filter_dir: number of entries in dir");
+						})}, 3, "Number of entries in filtered and sorted dir");
 
 done_testing();

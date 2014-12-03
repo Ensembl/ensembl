@@ -365,6 +365,30 @@ sub bz_slurp_to_array {
   return $contents;
 }
 
+=head2 zip_slurp_to_array
+
+  Arg [1]     : string $file
+  Arg [2]     : boolean $chomp
+  Arg [3]     : HashRef arguments to pass into IO compression layers
+  Description : Sends the contents of the given zipped file into an ArrayRef
+  Returntype  : ArrayRef
+  Example     : my $contents_array = zip_slurp_to_array('/tmp/file.txt.zip');
+  Exceptions  : If the file did not exist or was not readable
+  Status      : Stable
+
+=cut
+
+sub zip_slurp_to_array {
+  my ($file, $chomp, $args) = @_;
+  my $contents;
+  zip_work_with_file($file, 'r', sub {
+    my ($fh) = @_;
+    $contents = fh_to_array($fh, $chomp);
+    return;
+  }, $args);
+  return $contents;
+}
+
 =head2 fh_to_array
 
   Arg [1]     : Glob/IO::Handle $fh
