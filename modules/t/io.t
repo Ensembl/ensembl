@@ -52,7 +52,7 @@ eval {
 
 SKIP: {
   skip "Cannot run Bzip2/Bunzip2 tests, install related IO::[Un]Compress modules first",
-    2 unless $BZIP2_OK;
+    4 unless $BZIP2_OK;
 
   # send the content of the tmpfile to another
   # bzip2 compressed file
@@ -86,7 +86,7 @@ eval {
 
 SKIP: {
   skip "Cannot run Zip/Unzip tests, install related IO::[Un]Compress modules first",
-    2 unless $ZIP_OK;
+    4 unless $ZIP_OK;
 
   # send the content of the tmpfile to another
   # bzip2 compressed file
