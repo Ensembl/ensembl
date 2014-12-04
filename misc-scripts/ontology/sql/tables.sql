@@ -77,6 +77,7 @@ CREATE TABLE synonym (
   synonym_id    INT UNSIGNED NOT NULL AUTO_INCREMENT,
   term_id       INT UNSIGNED NOT NULL,
   name          TEXT NOT NULL,
+  type		ENUM('EXACT', 'BROAD', 'NARROW', 'RELATED'),
 
   PRIMARY KEY (synonym_id),
   UNIQUE INDEX term_synonym_idx (term_id, synonym_id),
