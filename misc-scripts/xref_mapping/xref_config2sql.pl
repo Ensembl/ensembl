@@ -171,6 +171,7 @@ foreach my $species_section ( sort( $config->GroupMembers('species') ) )
      sort( split( /\n/, $config->val( $species_section, 'source' ) ) ) )
   {
     my $source_section = sprintf( "source %s", $source_name );
+    $source_section =~ s/\s$//;
 
     if ( !exists( $source_ids{$source_section} ) ) {
       die( sprintf( "Can not find source section '[%s]'\n"
