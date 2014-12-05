@@ -182,10 +182,6 @@ my %group_objects = (
                  Transcript => 1,
                  Translation => 1,
             },
-            compara => {
-                 GeneTree => 1,
-                 Family => 1,
-            },
                     );
 
 
