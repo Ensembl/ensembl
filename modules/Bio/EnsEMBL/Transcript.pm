@@ -454,8 +454,8 @@ sub add_supporting_features {
     
     if ((defined $self->slice() && defined $feature->slice())&&
       ( $self->slice()->name() ne $feature->slice()->name())){
-      throw("Supporting feat not in same coord system as exon\n" .
-            "exon is attached to [".$self->slice()->name()."]\n" .
+      throw("Supporting feat not in same coord system as transcript\n" .
+            "transcript is attached to [".$self->slice()->name()."]\n" .
             "feat is attached to [".$feature->slice()->name()."]");
     }
 
