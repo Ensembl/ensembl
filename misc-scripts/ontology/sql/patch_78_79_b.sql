@@ -19,7 +19,7 @@
 -- Description:
 --   Adds the type of the synonym to the synonym table
 
-ALTER TABLE SYNONYM
+ALTER TABLE synonym
 ADD COLUMN type ENUM('EXACT', 'BROAD', 'NARROW', 'RELATED');
 
 -- Patch identifier
