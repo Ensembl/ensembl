@@ -1176,7 +1176,14 @@ sub get_alt_transcript_count {
 =cut
 
 sub is_polyploid {
-  return shift->_meta_container->single_value_by_key('ploidy');
+  my $self = shift;
+
+  my $polyploid = $self->_meta_container->single_value_by_key('ploidy');
+
+  # polyploid could be not defined, meta_key is optional
+  return 0 unless defined $polyploid;
+
+  return $polyploid > 2;
 }
 
 1;
