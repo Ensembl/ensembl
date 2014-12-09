@@ -557,7 +557,7 @@ $multi->restore();
   is($dbEntryAdaptor->get_external_db_id('RFAM', 'wibble', 1), 4200, 'RFAM ID with a version of wibble but ignoring versions as expected');
 
   my $external_db_names = $dbEntryAdaptor->get_distinct_external_dbs();
-  cmp_ok(scalar(@{$external_db_names}), '==', 110, 'Retriving all the unique External DB names');
+  cmp_ok(scalar(@{$external_db_names}), '==', 111, 'Retriving all the unique External DB names');
 }
 
 sub print_dbEntries {
