@@ -408,8 +408,8 @@ sub key_value_exists {
 } ## end sub key_value_exists
 
 # This utility method determines whether the key is a species-specific
-# meta key or not.  If the key is either 'patch' or 'schema_version',
-# then it is not species-specific.
+# meta key or not.  If the key is either 'patch' or 'schema_version'
+# or 'schema_type', then it is not species-specific.
 
 # FIXME variation team messed up in release 65 and added the ploidy
 # entry without species_id - this will be corrected for release 66,
@@ -420,8 +420,7 @@ sub _species_specific_key {
 
   return (    $key ne 'patch'
            && $key ne 'schema_version'
-           && $key ne 'schema_type'
-           && $key ne 'ploidy');
+           && $key ne 'schema_type');
 }
 
 1;
