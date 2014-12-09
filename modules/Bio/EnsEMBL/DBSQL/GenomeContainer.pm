@@ -1163,5 +1163,20 @@ sub get_alt_transcript_count {
   return $self->{'alt_transcript_count'};
 }
 
+=head2 is_polyploid
+
+  Arg        : None
+  Example    : $is_polyploid = $genome->is_polyploid();
+  Description: Returns whether the genome is or is not polyploid.
+  Returntype : integer
+  Exceptions : none
+  Caller     : general
+  Status     : Stable
+
+=cut
+
+sub is_polyploid {
+  return shift->_meta_container->single_value_by_key('ploidy');
+}
 
 1;
