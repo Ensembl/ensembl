@@ -1,0 +1,18 @@
+1	encode	Encode regions	Regions that were examined in the <a rel="external" href="http://www.genome.gov/10005107">Encode</a> pilot project.	1877426
+2	genomicctg	Genomic contigs	The largest contigs constructed by the Genome Reference Consortium, <a rel="external" href="http://genomereference.org">GRC</a>, for this genomic assembly.	100530253
+3	tilepath	Tilepath	BAC clones upon which the current genomic assembly was based.  Colours indicate a finished sequence (gold clones), phase 1 sequencing (dark pink), phase 0 (light pink) or other (grey).  Clones that have been fluorescence in situ hybridisation (FISH) mapped are marked with a black triangle in the top left corner.  If a clone is shown in outline, the mapping to the genome is problematic and the true length may not be displayed.	1071649
+9	encode_excluded	ENCODE excluded regions	Genomic regions that have been identified as problematic in the human genome by the ENCODE project. These regions contain abnormally high unique-mapping read coverage signal in open chromatin and control/input datasets across many cell lines and are classified as dispersed high mappability artifacts, dispersed low mappability artifacts, satellite repeats, centromeric repeats, telomeric repeats or snRNA repeats.	4132352
+10	bac_map	BAC map	Full list of mapped BAC clones	500000
+11	ASSEMBLY	WGS/Clones assembly	The tiling path of clones and WGS contigs	1000000
+12	bacs	BACs	BACs	13738670
+13	gap	gaps		44494
+14	matepairs	Mate pairs	Inconsistent mate pairs	21557510
+15	atag_CLE	Assembly tag	Clone_left_end	1000000
+16	atag_CRE	Assembly tag	Clone_right_end	1000000
+17	atag_Misc	Assembly tag	Misc	1000000
+18	atag_Unsure	Assembly tag	Unsure	1000000
+19	CHORI-17	CHORI-17 library	Mapped clone end sequences from human CHORI-17 BAC library (CH17)	18090412
+20	RPCI-11	RPCI-11 library	Mapped clone end sequences from human RPCI-11 BAC library (RP11)	18084827
+21	ABC	ABC libraries	Mapped clone end sequences from ABCs (ABC7, ABC8, ABC9, ABC10, ABC11, ABC12, ABC13, ABC14, ABC16, ABC21, ABC22, ABC24, ABC27) human fosmid libraries (ABC)	18047227
+22	WIBR-2	WIBR-2 library	Mapped clone end sequences from WIBR-2 human fosmid library (WI2)	18043599
+23	CH243	CHORI-243 library	Mapped clone end sequences from sheep CHORI-243 BAC library (CH243)	197393133
