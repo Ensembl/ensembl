@@ -1186,4 +1186,30 @@ sub is_polyploid {
   return $polyploid > 2;
 }
 
+=head2 get_genome_components
+
+  Arg        : None
+  Example    : $components = $genome->get_genome_components();
+  Description: Returns the list of (diploid) components, for a
+               polyploid genome
+  Returntype : Arrayref
+  Exceptions : none
+  Caller     : general
+  Status     : Stable
+
+=cut
+
+sub get_genome_components {
+  my $self = shift;
+
+  my $sql_helper = $self->dbc->sql_helper;
+
+  my $sql = 
+    "SELECT DISTINCT value 
+     FROM seq_region_attrib JOIN attrib_type 
+     USING (attrib_type_id) WHERE attrib_type.code='genome_component'";
+
+  return $sql_helper->execute_simple(-SQL => $sql);
+}
+
 1;
