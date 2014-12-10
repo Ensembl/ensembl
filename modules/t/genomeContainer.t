@@ -153,5 +153,19 @@ and biotype not in ('LRG_gene')";
 my $alt_transcript_count = $sql_helper->execute_single_result(-SQL => $alt_transcript_sql);
 is($alt_transcript_count, $genome->get_alt_transcript_count(), "Number of alt transcripts is correct");
 
+#
+# Test polyploid genome support
+#
+
+my $human = $multi->get_DBAdaptor("core");
+my $hgdba = $human->get_adaptor('GenomeContainer');
+ok($hgdba && $hgdba->isa('Bio::EnsEMBL::DBSQL::GenomeContainer'), 'GenomeContainer adaptor');
+ok(!$hgdba->is_polyploid, "Human genome is not polyploid");
+
+my $multi_polyploid = Bio::EnsEMBL::Test::MultiTestDB->new("polyploidy");
+my $wheat = $multi_polyploid->get_DBAdaptor("core");
+my $wgdba = $wheat->get_adaptor('GenomeContainer');
+ok($wgdba && $wgdba->isa('Bio::EnsEMBL::DBSQL::GenomeContainer'), 'GenomeContainer adaptor');
+ok($wgdba->is_polyploid, "Triticum aestivum genome is polyploid");
 
 done_testing();
