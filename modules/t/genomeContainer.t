@@ -156,16 +156,21 @@ is($alt_transcript_count, $genome->get_alt_transcript_count(), "Number of alt tr
 #
 # Test polyploid genome support
 #
-
+# get a genome container for a non polyploid (human) genome core db
 my $human = $multi->get_DBAdaptor("core");
 my $hgdba = $human->get_adaptor('GenomeContainer');
+
 ok($hgdba && $hgdba->isa('Bio::EnsEMBL::DBSQL::GenomeContainer'), 'GenomeContainer adaptor');
 ok(!$hgdba->is_polyploid, "Human genome is not polyploid");
+is_deeply($hgdba->get_genome_components(), [], "Human does not have genome components");
 
+# get a genome container for a polyploid (bread wheat) genome core db
 my $multi_polyploid = Bio::EnsEMBL::Test::MultiTestDB->new("polyploidy");
 my $wheat = $multi_polyploid->get_DBAdaptor("core");
 my $wgdba = $wheat->get_adaptor('GenomeContainer');
+
 ok($wgdba && $wgdba->isa('Bio::EnsEMBL::DBSQL::GenomeContainer'), 'GenomeContainer adaptor');
 ok($wgdba->is_polyploid, "Triticum aestivum genome is polyploid");
+is_deeply($wgdba->get_genome_components(), ['A','B','D'], "Triticum aestivum genome components");
 
 done_testing();
