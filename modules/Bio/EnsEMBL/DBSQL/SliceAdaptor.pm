@@ -1139,6 +1139,95 @@ sub fetch_all {
   return \@out;
 }
 
+=head2 fetch_all_by_genome_component
+
+  Arg [1]    : string $genome_component_name
+               The name of the genome component to retrieve slices of.
+
+  Example    : 
+
+  Description: 
+
+  Returntype : listref of Bio::EnsEMBL::Slices
+  Exceptions : If argument is not provided or is not a valid genome
+               component
+  Caller     : general
+  Status     : Stable
+
+=cut
+
+sub fetch_all_by_genome_component {
+  my $self = shift;
+  my $genome_component = shift;
+  defined $genome_component or
+    throw "Undefined genome component";
+
+  # check the provided genome component is valid
+  my $gc = $self->db->get_adaptor('GenomeContainer');
+  my $is_valid_component = grep { $_ eq $genome_component } 
+    @{$gc->get_genome_components};
+  throw "Invalid genome component"
+    unless $is_valid_component;
+  
+  #
+  # Retrieve the toplevel seq_regions from the database
+  #
+  my $sth =
+    $self->prepare(   "SELECT sr.seq_region_id, sr.name, sr.length, sr.coord_system_id "
+		      . "FROM seq_region sr "
+		      . "JOIN seq_region_attrib sa1 USING (seq_region_id) "
+		      . "JOIN attrib_type a1 ON sa1.attrib_type_id = a1.attrib_type_id "
+		      . "JOIN seq_region_attrib sa2 USING (seq_region_id) "
+		      . "JOIN attrib_type a2 ON sa2.attrib_type_id = a2.attrib_type_id "
+		      . "WHERE sa2.value=? and a1.code='toplevel' and a2.code='genome_component'"
+		  );
+  
+  if (looks_like_number($genome_component)) {
+    $sth->bind_param( 1, $genome_component, SQL_INTEGER );
+  } else {
+    $sth->bind_param( 1, $genome_component, SQL_VARCHAR );
+  }
+  
+  $sth->execute();
+
+  my ( $seq_region_id, $name, $length, $cs_id );
+  $sth->bind_columns( \( $seq_region_id, $name, $length, $cs_id ) );
+
+  my $cache_count = 0;
+
+  my @out;
+  my $csa = $self->db->get_CoordSystemAdaptor();
+
+  while($sth->fetch()) {
+    my $cs = $csa->fetch_by_dbID($cs_id);
+    throw("seq_region $name references non-existent coord_system $cs_id.")
+	  unless $cs;
+    
+    # cache values for future reference, but stop adding to the cache once we
+    # we know we have filled it up
+    if($cache_count < $Bio::EnsEMBL::Utils::SeqRegionCache::SEQ_REGION_CACHE_SIZE) {
+      my $arr = [ $seq_region_id, $name, $cs_id, $length ];
+
+      $self->{'sr_name_cache'}->{"$name:$cs_id"} = $arr;
+      $self->{'sr_id_cache'}->{"$seq_region_id"} = $arr;
+
+      $cache_count++;
+    }
+
+    my $slice = 
+
+    push @out, Bio::EnsEMBL::Slice->new_fast({
+					      'start'           => 1,
+					      'end'             => $length,
+					      'strand'          => 1,
+					      'seq_region_name'  => $name,
+					      'seq_region_length'=> $length,
+					      'coord_system'     => $cs,
+					      'adaptor'          => $self});
+  }
+
+  return \@out;
+}
 
 =head2 fetch_all_karyotype
   Example    : my $top = $slice_adptor->fetch_all_karyotype()
