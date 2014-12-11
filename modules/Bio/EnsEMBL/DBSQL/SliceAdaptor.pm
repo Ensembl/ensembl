@@ -1143,11 +1143,9 @@ sub fetch_all {
 
   Arg [1]    : string $genome_component_name
                The name of the genome component to retrieve slices of.
-
-  Example    : 
-
-  Description: 
-
+  Example    : @slices = @{$slice_adaptor->fetch_all_by_genome_component('A')};
+  Description: Returns the list of all top level slices for a a given 
+               genome component
   Returntype : listref of Bio::EnsEMBL::Slices
   Exceptions : If argument is not provided or is not a valid genome
                component
