@@ -409,6 +409,60 @@ ok(@$slices == 1 && $slices->[0]->seq_region_name() eq '20');
 print_slices($slices);
 
 #
+# test fetch_all_by_genome_component
+#
+debug("Testing fetch_all_by_genome_component");
+my $multi_polyploid = Bio::EnsEMBL::Test::MultiTestDB->new("polyploidy");
+my $wheatdb = $multi_polyploid->get_DBAdaptor("core");
+my $wheat_slice_adaptor = Bio::EnsEMBL::DBSQL::SliceAdaptor->new($wheatdb);
+isa_ok($wheat_slice_adaptor, 'Bio::EnsEMBL::DBSQL::SliceAdaptor');
+
+# should throw if argument is not provided
+throws_ok { $wheat_slice_adaptor->fetch_all_by_genome_component }
+  qr/Undefined/, 'Call without argument';
+
+# should throw if argument is an invalid genome component
+throws_ok { $wheat_slice_adaptor->fetch_all_by_genome_component('C') }
+  qr/Invalid/, 'Call with invalid argument';
+
+# test with valid genome components
+debug("Getting top level slices on A");
+$slices = $wheat_slice_adaptor->fetch_all_by_genome_component('A');
+ok(scalar @$slices == 1, "Number of top level slices on component A");
+$slice = $slices->[0];
+isa_ok($slice, 'Bio::EnsEMBL::Slice');
+is($slice->seq_region_name, "IWGSC_CSS_5AL_scaff_2697823", "seq region name");
+is($slice->start, 1, "slice start");
+is($slice->end, 5428, "slice end");
+is($slice->strand, 1, "slice strand");
+is($slice->seq_region_length, 5428, "slice seq region length");
+is($slice->adaptor, $wheat_slice_adaptor, 'slice adaptor');
+
+debug("Getting top level slices on B");
+$slices = $wheat_slice_adaptor->fetch_all_by_genome_component('B');
+ok(scalar @$slices == 1, "Number of top level slices on component B");
+$slice = $slices->[0];
+isa_ok($slice, 'Bio::EnsEMBL::Slice');
+is($slice->seq_region_name, "IWGSC_CSS_6BS_scaff_233977", "seq region name");
+is($slice->start, 1, "slice start");
+is($slice->end, 4562, "slice end");
+is($slice->strand, 1, "slice strand");
+is($slice->seq_region_length, 4562, "slice seq region length");
+is($slice->adaptor, $wheat_slice_adaptor, 'slice adaptor');
+
+debug("Getting top level slices on D");
+$slices = $wheat_slice_adaptor->fetch_all_by_genome_component('D');
+ok(scalar @$slices == 1, "Number of top level slices on component D");
+$slice = $slices->[0];
+isa_ok($slice, 'Bio::EnsEMBL::Slice');
+is($slice->seq_region_name, "IWGSC_CSS_6DS_scaff_2121653", "seq region name");
+is($slice->start, 1, "slice start");
+is($slice->end, 18301, "slice end");
+is($slice->strand, 1, "slice strand");
+is($slice->seq_region_length, 18301, "slice seq region length");
+is($slice->adaptor, $wheat_slice_adaptor, 'slice adaptor');
+
+#
 # test the fuzzy matching of clone accessions
 #
 my $clone_name = 'AL031658';
