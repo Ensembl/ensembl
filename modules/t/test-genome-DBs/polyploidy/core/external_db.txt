@@ -494,9 +494,7 @@
 50681	Ens_Ac_transcript	\N	XREF	40	Ensembl Anole Lizard Transcript	MISC	\N	\N	\N
 50682	BGI_Gene	1	XREF	50	BGI_2005_indica_Gene	MISC	\N	\N	BGI gene identifier
 50683	GeneIndex	1	XREF	50	GeneIndex	MISC	\N	\N	\N
-50684	EO	1	XREF	0	Environment Ontology	MISC	\N	\N	Plant environmental conditions ontology terms.\
-More information in there:\
-http://www.gramene.org/plant_ontology/ontology_browse.html#eo
+50684	EO	1	XREF	0	Environment Ontology	MISC	\N	\N	Plant environmental conditions ontology terms.More information in there:http://www.gramene.org/plant_ontology/ontology_browse.html#eo
 50685	Ens_Rn_transcript	\N	XREF	5	Ensembl Rat Transcript	MISC	\N	\N	\N
 50686	Ens_Rn_translation	\N	XREF	5	Ensembl Rat Translation	MISC	\N	\N	\N
 50687	Uppsala University	\N	KNOWN	5	Uppsala University	MISC	\N	\N	\N
