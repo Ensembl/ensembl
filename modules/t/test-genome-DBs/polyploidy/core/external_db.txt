@@ -541,8 +541,7 @@
 50731	Turkey Genome Consortium	\N	KNOWN	5	Turkey Genome Consortium	MISC	\N	\N	Turkey Genome Consortium
 50732	Yutaka_Satou_Kyoto_University	\N	KNOWN	5	Yutaka Satou Kyoto University	MISC	\N	\N	Yutaka Satou Kyoto University
 50733	Chicken_Genome_Consortium	\N	KNOWN	5	International Chicken Genome Consortium	MISC	\N	\N	\N
-50734	TAIR_TRANSLATION	1	XREF	1	TAIR Translation identifier	MISC	\N	\N	TAIR identifier to link to Ensembl Translation entities.\
-The main requirement behind this entry, is to be able to link TAIR GO annotations to Ensembl Translation objects.
+50734	TAIR_TRANSLATION	1	XREF	1	TAIR Translation identifier	MISC	\N	\N	TAIR identifier to link to Ensembl Translation entities.The main requirement behind this entry, is to be able to link TAIR GO annotations to Ensembl Translation objects.
 50735	AGI_GENE	1	XREF	1	AGI Gene	MISC	\N	\N	annotation provided by Arizona Genome Institute
 50736	AGI_TRANSCRIPT	1	XREF	1	AGI Transcript	MISC	\N	\N	annotation provided by Arizona Genome Institute
 50737	CGNC	\N	KNOWNXREF	100	CGNC Symbol	PRIMARY_DB_SYNONYM	\N	\N	\N
@@ -583,8 +582,7 @@ The main requirement behind this entry, is to be able to link TAIR GO annotation
 50780	wormbase_gseqname	\N	KNOWN	6	WormBase Gene Sequence-name	MISC	\N	\N	\N
 50783	ENSP_ident	\N	XREF	1	Ensembl translation having exact match with Havana	ALT_TRANS	\N	\N	\N
 50782	Sanger	\N	KNOWN	5	Sanger Wellcome Trust Institute	MISC	\N	\N	\N
-50781	TriTryp_pathway_comparison	1	KNOWNXREF	50	TriTryp pathway comparison database	MISC	\N	\N	TriTryp pathway comparison database (http://tritrypdb.org/tritrypdb/)\
-
+50781	TriTryp_pathway_comparison	1	KNOWNXREF	50	TriTryp pathway comparison database	MISC	\N	\N	TriTryp pathway comparison database (http://tritrypdb.org/tritrypdb/)
 50784	Ensembl_Metazoa	1	XREF	1	Ensembl Metazoa	ENSEMBL	\N	\N	Ensembl Metazoa identifiers serving GO projections from a reference species to other metazoa species.
 50785	Ens_Mmu_translation	\N	XREF	40	Ensembl Macaque Translation	MISC	\N	\N	\N
 50786	PomBase_GO_AnnotationExtensions	\N	KNOWN	1	PomBase GO AnnotationExtensions	MISC	\N	\N	Specific accession used by PomBase for ontology annoation extensions
