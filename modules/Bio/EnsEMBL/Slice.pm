@@ -806,11 +806,10 @@ sub is_chromosome {
                     |clone
                     |contig
                     |genescaffold
-                    |group
                     |reftig
                     |supercontig
                     |ultracontig        
-                    /x) or ( $coord_system !~ /^chromosome$/i )) {
+                    /x) or ( $coord_system !~ /^chromosome$/i && $coord_system !~ /^group$/i ) ) {
     return 0;
   }
   
