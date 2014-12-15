@@ -183,5 +183,15 @@ foreach my $transcript_id (sort @keys) {
     
 }
 
+# Inferred stop codons
+# test data must have a stop codon in the wrong phase to recreate the problem.
+my $transcript = $transcript_adaptor->fetch_by_stable_id('ENST00000111111'); 
+my $fh = IO::String->new();
+my $gtf_serializer = Bio::EnsEMBL::Utils::IO::GTFSerializer->new($fh);
+$gtf_serializer->print_feature($transcript);
+
+my $expected = "clearly wrong\n";
+eq_or_diff(${$fh->string_ref},$expected,"Prove absent stop codons are handled correctly and not made into features");
+
 done_testing();
 
