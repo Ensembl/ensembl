@@ -153,6 +153,16 @@ and biotype not in ('LRG_gene')";
 my $alt_transcript_count = $sql_helper->execute_single_result(-SQL => $alt_transcript_sql);
 is($alt_transcript_count, $genome->get_alt_transcript_count(), "Number of alt transcripts is correct");
 
+
+# 
+# Test karyotype flag
+#
+
+is(1, $genome->has_karyotype, "Human has some chromosomes");
+my $empty_db = $multi->get_DBAdaptor("empty");
+my $empty_genome = $empty_db->get_adaptor('GenomeContainer');
+is(0, $empty_genome->has_karyotype, "Empty db does not have chromosomes");
+
 #
 # Test polyploid genome support
 #

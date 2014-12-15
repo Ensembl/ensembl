@@ -1163,6 +1163,32 @@ sub get_alt_transcript_count {
   return $self->{'alt_transcript_count'};
 }
 
+
+=head2 has_karyotype
+
+  Arg        : None
+  Example    : $has_karyotype = $genome->has_karyotype();
+  Description: Boolean indicating whether a genome has a karyotype (ie chromosomes)
+               or not
+  Returntype : integer
+  Exceptions : none
+  Caller     : general
+  Status     : Stable
+
+=cut
+
+sub has_karyotype {
+  my $self = shift;
+
+  my $db = $self->db();
+  my $slice_adaptor = $db->get_SliceAdaptor();
+  my $karyotype = $slice_adaptor->fetch_all_karyotype;
+
+  return 0 unless scalar(@$karyotype);
+
+  return 1;
+}
+
 =head2 is_polyploid
 
   Arg        : None
