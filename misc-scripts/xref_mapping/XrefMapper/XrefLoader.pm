@@ -253,6 +253,24 @@ SELECT x.xref_id, x.accession, x.label, x.version, x.description, x.info_text,
 DIRS
 
      my $seq_sth = $self->xref->dbc->prepare($seq_sql);
+
+
+    ###########################
+     # SQL to get data from xref without identity xref
+     ###########################
+
+
+  my $dir_sql =(<<DIRS);
+SELECT x.xref_id, x.accession, x.label, x.version, x.description, x.info_text,
+       ox.object_xref_id, ox.ensembl_id, ox.ensembl_object_type
+  FROM xref x, object_xref ox
+    WHERE ox.ox_status = "DUMP_OUT" AND
+          ox.xref_id = x.xref_id AND
+          x.source_id = ? AND
+          x.info_type = ? order by x.xref_id
+DIRS
+
+     my $dir_sth = $self->xref->dbc->prepare($dir_sql);
  
 #     $dependent_sth = $self->xref->dbc->prepare('select  x.xref_id, x.accession, x.label, x.version, x.description, x.info_text, ox.object_xref_id, ox.ensembl_id, ox.ensembl_object_type, d.master_xref_id from xref x, object_xref ox,  dependent_xref d where ox.ox_status = "DUMP_OUT" and ox.xref_id = x.xref_id and d.object_xref_id = ox.object_xref_id and x.source_id = ? and x.info_type = ? order by x.xref_id, ox.ensembl_id');
  
@@ -388,9 +406,9 @@ GCNTSQL
         $checksum_analysis_id = $self->get_single_analysis('xrefchecksum');
       }
       my $count = 0;
-      $seq_sth->execute($source_id, $type);
+      $dir_sth->execute($source_id, $type);
       my $last_xref = 0;
-      while(my $row = $seq_sth->fetchrow_arrayref()) {
+      while(my $row = $dir_sth->fetchrow_arrayref()) {
         my ($xref_id, $acc, $label, $version, $desc, $info, $object_xref_id, $ensembl_id, $ensembl_type) = @{$row};
         if($last_xref != $xref_id) {
           push @xref_list, $xref_id;
@@ -529,6 +547,8 @@ GCNTSQL
     }
   }
   $sth->finish;
+  $seq_sth->finish;
+  $dir_sth->finish;
   $transaction_end_sth->execute();
 
 
