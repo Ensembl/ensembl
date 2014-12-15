@@ -15,6 +15,7 @@
 use strict;
 use warnings;
 
+use Test::Warnings;
 use Bio::EnsEMBL::DBSQL::GenomeContainer;
 use Bio::EnsEMBL::Test::TestUtils;
 use Bio::EnsEMBL::Registry;
@@ -154,14 +155,23 @@ my $alt_transcript_count = $sql_helper->execute_single_result(-SQL => $alt_trans
 is($alt_transcript_count, $genome->get_alt_transcript_count(), "Number of alt transcripts is correct");
 
 
-# 
+#
 # Test karyotype flag
 #
 
-is(1, $genome->has_karyotype, "Human has some chromosomes");
 my $empty_db = $multi->get_DBAdaptor("empty");
 my $empty_genome = $empty_db->get_adaptor('GenomeContainer');
+
+is(1, $genome->has_karyotype, "Human has some chromosomes");
 is(0, $empty_genome->has_karyotype, "Empty db does not have chromosomes");
+
+
+#
+# Test high coverage flag
+#
+
+is(1, $genome->is_high_coverage, "Human genebuild is high coverage");
+is(0, $empty_genome->is_high_coverage, "Empty db is not high coverage");
 
 #
 # Test polyploid genome support

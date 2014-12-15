@@ -1189,6 +1189,39 @@ sub has_karyotype {
   return 1;
 }
 
+
+=head2 is_high_coverage
+
+  Arg        : None
+  Example    : $is_high_coverage = $genome->is_high_coverage();
+  Description: Boolean indicating whether an assembly is high coverage
+               or not
+  Returntype : integer
+  Exceptions : none
+  Caller     : general
+  Status     : Stable
+
+=cut
+
+sub is_high_coverage {
+  my $self = shift;
+
+  my $coverage_depth = $self->_meta_container->single_value_by_key('assembly.coverage_depth');
+
+  return 0 if !$coverage_depth;
+  $coverage_depth = lc($coverage_depth);
+
+  if ($coverage_depth eq 'high') {
+    return 1;
+  } elsif (($coverage_depth eq 'low') or ($coverage_depth eq 'medium')) {
+    return 0;
+  } elsif ($coverage_depth =~ /^([0-9]+)x$/) {
+    return $1<6 ? 0 : 1;
+  }
+
+  return 0;
+}
+
 =head2 is_polyploid
 
   Arg        : None
