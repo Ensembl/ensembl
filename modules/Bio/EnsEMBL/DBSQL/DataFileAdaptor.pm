@@ -141,7 +141,7 @@ sub DataFile_to_extensions {
   my ($self, $df) = @_;
   my $type = $df->file_type();
   my $extensions = {
-    BAM     => ['bam', 'bam.bai'],
+    BAM     => ['bam', 'bam.bai', 'bam.bw'],
 #    BIGBED  => 'bb',
     BIGWIG  => ['bw'],
     VCF     => ['vcf.gz', 'vcf.gz.tbi'],
