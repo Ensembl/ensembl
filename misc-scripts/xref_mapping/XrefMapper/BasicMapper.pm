@@ -860,15 +860,15 @@ sub clean_up{
 
   # remove all object_xref, identity_xref  entries
 
-  my $sql = "DELETE from object_xref";
+  my $sql = "TRUNCATE table object_xref";
   my $sth = $self->xref->dbc->prepare($sql);
   $sth->execute(); 
 
-  $sql = "DELETE from go_xref";
+  $sql = "TRUNCATE table go_xref";
   $sth = $self->xref->dbc->prepare($sql);
   $sth->execute(); 
 
-  $sql = "DELETE from identity_xref";
+  $sql = "TRUNCATE table identity_xref";
   $sth = $self->xref->dbc->prepare($sql);
   $sth->execute(); 
  
