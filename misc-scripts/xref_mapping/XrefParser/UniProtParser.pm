@@ -372,20 +372,20 @@ sub create_xrefs {
     #print "Adding " . $xref->{ACCESSION} . " " . $xref->{LABEL} ."\n";
 
     
-    my ($gns) = $_ =~ /(GN\s+Name.+)/; # /s allows . to match newline
+    my ($gns) = $_ =~ /(GN\s+.+)/s;
     my @gn_lines = ();
-    if ( defined $gns ) { @gn_lines = split /\n/, $gns }
+    if ( defined $gns ) { @gn_lines = split /;/, $gns }
   
     # Do not allow the addition of UniProt Gene Name dependent Xrefs
     # if the protein was imported from Ensembl. Otherwise we will
     # re-import previously set symbols
     if(! $ensembl_derived_protein) {
+      my %depe;
       foreach my $gn (@gn_lines){
         my $gene_name = undef;
-        my %depe;
 
-        if($gn =~ /Name=((.*?))[;\s]/){
-          $depe{LABEL} = uc($1);
+        if($gn =~ /Name=((.*?))[;\s]/s){ # /s for multi-line entries ; is the delimiter
+          $depe{LABEL} = $1; # leave name as is, upper/lower case is relevant in gene names
           $depe{ACCESSION} = $self->get_name($xref->{ACCESSION},$depe{LABEL});
           $gene_name = $depe{ACCESSION};
 
@@ -394,13 +394,15 @@ sub create_xrefs {
           $depe{LINKAGE_SOURCE_ID} = $xref->{SOURCE_ID};
           push @{$xref->{DEPENDENT_XREFS}}, \%depe;
           $dependent_xrefs{"Uniprot_gn"}++;
-          my @syn;
-          if($gn =~ /Synonyms=([^;]+);/){
-            my $syn = $1;
-            $syn =~ s/\s+//g;
-            @syn= split(/,/,$syn);
-            push (@{$depe{"SYNONYMS"}}, @syn);
-          }
+        }
+        my @syn;
+        if($gn =~ /Synonyms=(.*)/s){ # use of /s as synonyms can be across more than one line
+          my $syn = $1;
+          $syn =~ s/{.*}//g;
+          $syn =~ s/\n//g;
+          $syn =~ s/\s+//g;
+          @syn = split(/,/,$syn);
+          push (@{$depe{"SYNONYMS"}}, @syn);
         }
       }
     }
