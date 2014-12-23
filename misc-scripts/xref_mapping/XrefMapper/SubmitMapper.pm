@@ -340,6 +340,7 @@ sub dump_xref{
       $sth->execute();
       while(my @row = $sth->fetchrow_array()){
         # Ambiguous peptides must be cleaned out to protect Exonerate from J,O and U codes
+        $row[1] = uc($row[1]);
         $row[1] =~ s/(.{60})/$1\n/g;
         if ($sequence_type eq 'peptide') { $row[1] =~ tr/JOU/X/ }
         print $DH ">".$row[0]."\n".$row[1]."\n";
