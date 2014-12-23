@@ -1567,12 +1567,12 @@ sub load_registry_from_db {
 
   my ( $host,         $port,     $user,
        $pass,         $verbose,  $db_version,
-       $wait_timeout, $no_cache, $species, $species_suffix )
+       $wait_timeout, $no_cache, $species, $species_suffix, $db_prefix )
     = rearrange( [ 'HOST',         'PORT',
                    'USER',         'PASS',
                    'VERBOSE',      'DB_VERSION',
                    'WAIT_TIMEOUT', 'NO_CACHE',
-                   'SPECIES', 'SPECIES_SUFFIX' ],
+                   'SPECIES', 'SPECIES_SUFFIX', 'DB_PREFIX' ],
                  @args );
 
   if ( defined($species) ) {
@@ -1581,6 +1581,9 @@ sub load_registry_from_db {
   }
   if (!defined($species_suffix)) {
     $species_suffix = "";
+  }
+  if (defined($db_prefix)) {
+    $db_prefix = $db_prefix . '_';
   }
 
   if(! defined $db_version) {
@@ -1689,7 +1692,7 @@ sub load_registry_from_db {
       }
 
     } elsif (
-      $db =~ /^([a-z]+_[a-z0-9]+(?:_[a-z0-9]+)? # species name e.g. homo_sapiens or canis_lupus_familiaris
+      $db =~ /^(?:$db_prefix)([a-z]+_[a-z0-9]+(?:_[a-z0-9]+)? # species name e.g. homo_sapiens or canis_lupus_familiaris
            _
            [a-z]+            # db type
            (?:_\d+)?)        # optional end bit for ensembl genomes databases
