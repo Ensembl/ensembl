@@ -385,6 +385,8 @@ sub create_xrefs {
         my $gene_name = undef;
 
         if($gn =~ /Name=((.*?))[;\s]/s){ # /s for multi-line entries ; is the delimiter
+# Example line 
+# GN   Name=ctrc {ECO:0000313|Xenbase:XB-GENE-5790348};
           $depe{LABEL} = $1; # leave name as is, upper/lower case is relevant in gene names
           $depe{ACCESSION} = $self->get_name($xref->{ACCESSION},$depe{LABEL});
           $gene_name = $depe{ACCESSION};
@@ -397,10 +399,13 @@ sub create_xrefs {
         }
         my @syn;
         if($gn =~ /Synonyms=(.*)/s){ # use of /s as synonyms can be across more than one line
+# Example line
+# GN   Synonyms=cela2a {ECO:0000313|Ensembl:ENSXETP00000014934},
+# GN   MGC79767 {ECO:0000313|EMBL:AAH80976.1}
           my $syn = $1;
-          $syn =~ s/{.*}//g;
-          $syn =~ s/\n//g;
-          $syn =~ s/\s+//g;
+          $syn =~ s/{.*}//g;  # Remove any potential evidence codes
+          $syn =~ s/\n//g;    # Remove return carriages, as entry can span several lines
+          $syn =~ s/\s+//g;   # Remove white spaces that are left over if there was an evidence code
           @syn = split(/,/,$syn);
           push (@{$depe{"SYNONYMS"}}, @syn);
         }
