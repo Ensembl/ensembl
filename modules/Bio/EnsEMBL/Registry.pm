@@ -1707,6 +1707,7 @@ sub load_registry_from_db {
       # Species specific databases (core, cdna, vega etc.)
 
       my ( $sp_name, $db_rel, $assem ) = ( $1, $2, $3 );
+      if ($db_prefix) { $sp_name = $db_prefix . $sp_name; }
 
       if ( !defined($species) || $sp_name =~ /^$species/ ) {
         if ( $db_rel eq $software_version ) {
@@ -1729,7 +1730,7 @@ sub load_registry_from_db {
   my $core_like_dbs_found = 0;
   foreach my $type (qw(core cdna vega vega_update otherfeatures rnaseq)) {
 
-    my @dbs = grep { /^[a-z]+_[a-z0-9]+(?:_[a-z0-9]+)?  # species name
+    my @dbs = grep { /^(?:$db_prefix)[a-z]+_[a-z0-9]+(?:_[a-z0-9]+)?  # species name
                        _
                        $type            # the database type
                        _
@@ -1749,8 +1750,8 @@ sub load_registry_from_db {
       }
     
 
-      my ( $species, $num ) =
-        ( $database =~ /(^[a-z]+_[a-z0-9]+(?:_[a-z0-9]+)?)  # species name
+      my ( $prefix, $species, $num ) =
+        ( $database =~ /(^$db_prefix)([a-z]+_[a-z0-9]+(?:_[a-z0-9]+)?)  # species name
                      _
                      $type                   # type
                      _
