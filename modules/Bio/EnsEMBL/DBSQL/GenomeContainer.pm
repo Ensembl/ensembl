@@ -632,6 +632,36 @@ sub _get_statistic {
   return \@results;
 }
 
+=head2 is_empty
+
+  Arg [1]    : none
+  Example    : $results = $genome->is_empty;
+  Description: Boolean to check if there is data in the genome container
+  Returntype : Boolean
+  Exceptions : none
+  Caller     : general
+  Status     : Stable
+
+=cut
+
+sub is_empty {
+  my $self = shift;
+  my $db = $self->db;
+  my $species_id = $self->db->species_id();
+  my $is_empty = 0;
+  my $count_sql = q{
+    SELECT count(*) FROM genome_statistics
+  };
+
+  my $sth = $self->prepare($count_sql);
+  $sth->execute();
+  if ($sth->fetchrow()) {
+    $is_empty = 1;
+  }
+  $sth->finish();
+  return $is_empty;
+}
+
 =head2 get_attrib
 
   Arg [1]    : statistic

@@ -173,6 +173,14 @@ is(0, $empty_genome->has_karyotype, "Empty db does not have chromosomes");
 is(1, $genome->is_high_coverage, "Human genebuild is high coverage");
 is(0, $empty_genome->is_high_coverage, "Empty db is not high coverage");
 
+
+#
+# Test if there is data
+#
+
+is(1, $genome->is_empty, "Human core database has genome data");
+is(0, $empty_genome->is_empty, "Empty database has no genome data");
+
 #
 # Test polyploid genome support
 #
