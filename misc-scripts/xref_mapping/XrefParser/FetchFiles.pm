@@ -203,7 +203,10 @@ sub fetch_files {
     } elsif ( $uri->scheme() eq 'http' ) {
       # Deal with HTTP files.
 
-      my $file_path = catfile( $dest_dir, basename( $uri->path() ) );
+      my $filename = basename ($uri->path() );
+      if ($uri->path eq '') { $filename = "index.html"; }
+
+      my $file_path = catfile( $dest_dir, $filename );
 
       if ( $deletedownloaded && -e $file_path ) {
         if ($verbose) {
