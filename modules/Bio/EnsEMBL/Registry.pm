@@ -1584,6 +1584,8 @@ sub load_registry_from_db {
   }
   if (defined($db_prefix)) {
     $db_prefix = $db_prefix . '_';
+  } else {
+    $db_prefix = '';
   }
 
   if(! defined $db_version) {
