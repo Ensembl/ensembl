@@ -382,6 +382,8 @@ sub create_xrefs {
     if(! $ensembl_derived_protein) {
       my %depe;
       foreach my $gn (@gn_lines){
+# Make sure these are still GN lines
+        if ($gn !~ /^GN/) { next; }
         my $gene_name = undef;
 
         if($gn =~ /Name=((.*?))[;\s]/s){ # /s for multi-line entries ; is the delimiter
