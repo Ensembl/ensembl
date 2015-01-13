@@ -1389,6 +1389,23 @@ sub get_seq_region_id {
   }
 }
 
+=head2 get_genome_component
+
+  Arg []     : none
+  Example    : my $genome_component = $slice->get_genome_component();
+  Description: Returns the genome component of the slice
+  Returntype : Scalar; the identifier of the genome component of the slice
+  Exceptions : none
+  Caller     : general
+  Status     : Stable
+
+=cut
+
+sub get_genome_component {
+  my $self = shift;
+  return $self->adaptor->get_genome_component_for_slice($self);
+}
+
 =head2 get_all_Attributes
 
   Arg [1]    : optional string $attrib_code
