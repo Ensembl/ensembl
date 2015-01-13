@@ -478,6 +478,11 @@ isa_ok($slice, 'Bio::EnsEMBL::Slice');
 my $genome_component = $slice_adaptor->get_genome_component_for_slice($slice);
 ok(!$genome_component, "Genome component for human slice");
 
+# test with slices on polyploid genome
+$slice = $wheat_slice_adaptor->fetch_by_region('scaffold', 'IWGSC_CSS_5AL_scaff_2697823', 100, 10000);
+isa_ok($slice, 'Bio::EnsEMBL::Slice');
+$genome_component = $wheat_slice_adaptor->get_genome_component_for_slice($slice);
+is($genome_component, 'A', "Genome component from slice");
 
 #
 # test the fuzzy matching of clone accessions
