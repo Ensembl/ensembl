@@ -462,6 +462,23 @@ is($slice->strand, 1, "slice strand");
 is($slice->seq_region_length, 18301, "slice seq region length");
 is($slice->adaptor, $wheat_slice_adaptor, 'slice adaptor');
 
+# 
+# test get_genome_component_for_slice
+#
+debug("Testing get_genome_component_for_slice");
+
+# should throw if argument is not provided
+throws_ok { $slice_adaptor->get_genome_component_for_slice }
+  qr/Undefined/, 'Call with undefined argument';
+
+# should get an empty result for a slice on human chr (not polyploidy)
+$slice = $slice_adaptor->fetch_by_region('chromosome',$CHR, $START, $END);
+isa_ok($slice, 'Bio::EnsEMBL::Slice');
+
+my $genome_component = $slice_adaptor->get_genome_component_for_slice($slice);
+ok(!$genome_component, "Genome component for human slice");
+
+
 #
 # test the fuzzy matching of clone accessions
 #
