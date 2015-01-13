@@ -484,6 +484,11 @@ isa_ok($slice, 'Bio::EnsEMBL::Slice');
 $genome_component = $wheat_slice_adaptor->get_genome_component_for_slice($slice);
 is($genome_component, 'A', "Genome component from slice");
 
+$slice = $wheat_slice_adaptor->fetch_by_region('scaffold', 'IWGSC_CSS_6BS_scaff_233977', 1000, 5000, -1);
+isa_ok($slice, 'Bio::EnsEMBL::Slice');
+$genome_component = $wheat_slice_adaptor->get_genome_component_for_slice($slice);
+is($genome_component, 'B', "Genome component from slice");
+
 #
 # test the fuzzy matching of clone accessions
 #
