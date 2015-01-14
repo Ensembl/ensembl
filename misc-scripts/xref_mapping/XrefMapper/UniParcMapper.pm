@@ -30,4 +30,11 @@ sub external_db_name {
   return 'UniParc';
 }
 
+# Target file to use for checksum mapping
+# UniParc uses protein sequences
+sub target {
+  my ($self) = @_;
+  return $self->mapper()->core()->protein_file();
+}
+
 1;

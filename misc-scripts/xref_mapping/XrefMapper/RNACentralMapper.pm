@@ -25,23 +25,11 @@ use Bio::EnsEMBL::Utils::Exception qw(throw);
 
 use base qw(XrefMapper::ChecksumMapper);
 
-sub process {
+# Target file to use for checksum mapping
+# RNACentral uses mRNA file
+sub target {
   my ($self) = @_;
-
-  $self->_update_status('checksum_xrefs_started');
-  my $source_id = $self->source_id();
-  my $target = $self->mapper()->core()->dna_file();
-
-  if($self->_map_checksums()) {
-    my $method = $self->get_method();
-    my $results = $method->run($target, $source_id);
-print "Fetched " . scalar(@$results) . " for $source_id for $method\n";
-    $self->log_progress('Starting upload');
-    $self->upload($results);
-  }
-
-  $self->_update_status('checksum_xrefs_finished');
-  return;
+  return $self->mapper->core->dna_file();
 }
 
 sub external_db_name {

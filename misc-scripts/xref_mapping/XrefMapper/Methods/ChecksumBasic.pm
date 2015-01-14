@@ -57,10 +57,6 @@ sub batch_size {
 sub run {
   my ($self, $target, $source_id) = @_;
   
-  if(! defined $target) {
-    $target = $self->mapper()->core()->protein_file();
-  }
-  
   my $reader = $self->_get_sequence_parser($target);
   my @results;
   my @tmp_list;
@@ -72,7 +68,7 @@ sub run {
     if( ($count % $batch_size) == 0) {
       my $res = $self->perform_mapping(\@tmp_list, $source_id);
       push(@results, @{$res});
-      $self->mapper()->log_progress("Finished batch mapping of %d peptides\n", $batch_size);
+      $self->mapper()->log_progress("Finished batch mapping of %d sequences\n", $batch_size);
       $count = 0;
       @tmp_list = ();
     }

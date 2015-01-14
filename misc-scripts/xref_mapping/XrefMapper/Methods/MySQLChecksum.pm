@@ -43,9 +43,7 @@ sub perform_mapping {
       my $checksum = uc($self->md5_checksum($sequence));
       $sth->execute($checksum, $source_id);
       my $upi;
-print "Running checksum on $checksum and $source_id\n";
       while(my $row = $sth->fetchrow_arrayref()) {
-print "Fetched $row\n";
         my ($local_upi) = @{$row};
         if(defined $upi) {
           throw sprintf('The sequence %s had a checksum of %s but this resulted in more than one UPI: [%s, %s]', $sequence->id(), $checksum, $upi, $local_upi);

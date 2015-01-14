@@ -63,16 +63,21 @@ sub verbose {
   return $self->mapper()->verbose();
 }
 
+# No default target file, implemented by subclasses where necessary
+sub target {
+  return;
+}
+
 sub process {
   my ($self) = @_;
 
   $self->_update_status('checksum_xrefs_started');
   my $source_id = $self->source_id();
+  my $target = $self->target();
 
   if($self->_map_checksums()) {
     my $method = $self->get_method();
-    my $results = $method->run(undef, $source_id);
-print "Fetched " . scalar(@$results) . " for $source_id for $method\n";
+    my $results = $method->run($target, $source_id);
     $self->log_progress('Starting upload');
     $self->upload($results);
   }
