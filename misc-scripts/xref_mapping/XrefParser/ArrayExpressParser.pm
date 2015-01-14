@@ -113,7 +113,7 @@ sub run_script {
   } elsif ($project eq 'ensemblgenomes') {
     $registry->load_registry_from_multiple_dbs( 
       {
-        '-host'     => 'mysql-eg-staging-2.ebi.ac.uk',
+        '-host'     => 'mysql-eg-staging-1.ebi.ac.uk',
         '-port'     => 4160,
         '-user'     => 'ensro',
       },
