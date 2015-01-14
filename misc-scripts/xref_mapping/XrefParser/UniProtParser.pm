@@ -461,6 +461,10 @@ sub create_xrefs {
         if($source =~ "Xenbase"){
             next;
         }
+# Uniprot get Reactome links from Reactome, so we want to get the info from Reactome directly
+        if($source =~ "Reactome"){
+            next;
+        }
 	   if (exists $dependent_sources{$source} ) {
 	  # create dependent xref structure & store it
 	  my %dep;
