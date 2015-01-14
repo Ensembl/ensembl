@@ -55,7 +55,7 @@ sub batch_size {
 }
 
 sub run {
-  my ($self, $target) = @_;
+  my ($self, $target, $source_id) = @_;
   
   if(! defined $target) {
     $target = $self->mapper()->core()->protein_file();
@@ -70,7 +70,7 @@ sub run {
     push(@tmp_list, $sequence);
     $count++;
     if( ($count % $batch_size) == 0) {
-      my $res = $self->perform_mapping(\@tmp_list);
+      my $res = $self->perform_mapping(\@tmp_list, $source_id);
       push(@results, @{$res});
       $self->mapper()->log_progress("Finished batch mapping of %d peptides\n", $batch_size);
       $count = 0;
@@ -81,7 +81,7 @@ sub run {
   #Final mapping if there were some left over
   if(@tmp_list) {
     $self->mapper()->log_progress("Finishing progess\n");
-    my $res = $self->perform_mapping(\@tmp_list);
+    my $res = $self->perform_mapping(\@tmp_list, $source_id);
     push(@results, @{$res});
     @tmp_list = ();
   }

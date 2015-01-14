@@ -16,7 +16,7 @@ limitations under the License.
 
 =cut
 
-package XrefMapper::UniParcMapper;
+package XrefMapper::RNACentralMapper;
 
 use strict;
 use warnings;
@@ -25,9 +25,29 @@ use Bio::EnsEMBL::Utils::Exception qw(throw);
 
 use base qw(XrefMapper::ChecksumMapper);
 
+sub process {
+  my ($self) = @_;
+
+  $self->_update_status('checksum_xrefs_started');
+  my $source_id = $self->source_id();
+  my $target = $self->mapper()->core()->dna_file();
+
+  if($self->_map_checksums()) {
+    my $method = $self->get_method();
+    my $results = $method->run($target, $source_id);
+print "Fetched " . scalar(@$results) . " for $source_id for $method\n";
+    $self->log_progress('Starting upload');
+    $self->upload($results);
+  }
+
+  $self->_update_status('checksum_xrefs_finished');
+  return;
+}
+
 sub external_db_name {
   my ($self) = @_;
-  return 'UniParc';
+  return 'RNACentral';
 }
 
 1;
+

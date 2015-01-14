@@ -33,6 +33,7 @@ use XrefMapper::Interpro;
 use XrefMapper::DisplayXrefs;
 use XrefMapper::CoordinateMapper;
 use XrefMapper::UniParcMapper;
+use XrefMapper::RNACentralMapper;
 use XrefMapper::OfficialNaming;
 use XrefMapper::DirectXrefs;
 
@@ -221,11 +222,13 @@ if($status eq "alt_alleles_processed"){
 }
 
 
-#UniParc checksum mapping
+#UniParc and RNACentral checksum mapping
 #Allow for reruns if required and let the mapper decide if it can run or not
 $status = $mapper->xref_latest_status();
 if($status eq 'official_naming_done') {
   my $checksum_mapper = XrefMapper::UniParcMapper->new($mapper);
+  $checksum_mapper->process($upload);
+  $checksum_mapper = XrefMapper::RNACentralMapper->new($mapper);
   $checksum_mapper->process($upload);
 }
 

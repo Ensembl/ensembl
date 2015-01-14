@@ -16,7 +16,7 @@ limitations under the License.
 
 =cut
 
-package XrefMapper::Methods::MySQLUniParc;
+package XrefMapper::Methods::MySQLChecksum;
 
 use strict;
 use warnings;
@@ -25,24 +25,27 @@ use base qw/XrefMapper::Methods::ChecksumBasic/;
 
 use Bio::EnsEMBL::Utils::Exception qw(throw);
 
-my $UNIPARC_SQL = <<SQL;
+my $CHECKSUM_SQL = <<SQL;
 select accession
 from checksum_xref
 where checksum =?
+and source_id=?
 SQL
 
 sub perform_mapping {
-  my ($self, $sequences) = @_;
+  my ($self, $sequences, $source_id) = @_;
   
   my @final_results;
   
-  $self->mapper()->xref()->dbc()->sql_helper()->batch(-SQL => $UNIPARC_SQL, -CALLBACK => sub {
+  $self->mapper()->xref()->dbc()->sql_helper()->batch(-SQL => $CHECKSUM_SQL, -CALLBACK => sub {
     my ($sth) = @_;
     foreach my $sequence (@{$sequences}) {
       my $checksum = uc($self->md5_checksum($sequence));
-      $sth->execute($checksum);
+      $sth->execute($checksum, $source_id);
       my $upi;
+print "Running checksum on $checksum and $source_id\n";
       while(my $row = $sth->fetchrow_arrayref()) {
+print "Fetched $row\n";
         my ($local_upi) = @{$row};
         if(defined $upi) {
           throw sprintf('The sequence %s had a checksum of %s but this resulted in more than one UPI: [%s, %s]', $sequence->id(), $checksum, $upi, $local_upi);
