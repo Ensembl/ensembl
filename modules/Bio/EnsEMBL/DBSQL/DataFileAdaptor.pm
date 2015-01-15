@@ -141,9 +141,9 @@ sub DataFile_to_extensions {
   my ($self, $df) = @_;
   my $type = $df->file_type();
   my $extensions = {
-    BAM     => ['bam', 'bam.bai', 'bam.bw'],
+    BAM     => ['bam', 'bam.bai'],
 #    BIGBED  => 'bb',
-    BIGWIG  => ['bw'],
+    BIGWIG  => ['bw', 'bam.bw'],
     VCF     => ['vcf.gz', 'vcf.gz.tbi'],
   }->{$type}; 
   throw sprintf(q{No extensions found for the type '%s'}, $type ) if ! $extensions;
