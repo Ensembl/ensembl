@@ -53,8 +53,20 @@ my %base_args = (
     %base_args
   ], 'data file');
   is($df->path($base), $expected_base.'/core/wibble.bam', 'Checking non-absolute path');
-  is_deeply($df->get_all_paths($base), [ $expected_base.'/core/wibble.bam', $expected_base.'/core/wibble.bam.bai' ], 'Checking all non-abs paths');
+  is_deeply($df->get_all_paths($base), [ $expected_base.'/core/wibble.bam', $expected_base.'/core/wibble.bam.bai' ], 'Checking all non-abs paths (BAM)');
 }
+
+# now test non-abs paths with bigwig file type
+$base_args{-FILE_TYPE} = 'BIGWIG';
+{
+  my $df = new_ok('Bio::EnsEMBL::DataFile' => [
+    %base_args
+  ], 'data file');
+  is($df->path($base), $expected_base.'/core/wibble.bw', 'Checking non-absolute path');
+  is_deeply($df->get_all_paths($base), [ $expected_base.'/core/wibble.bw', $expected_base.'/core/wibble.bam.bw' ], 'Checking all non-abs paths (BIGWIG)');
+}
+
+$base_args{-FILE_TYPE} = 'BAM';
 
 {
   my $df = new_ok('Bio::EnsEMBL::DataFile' => [
