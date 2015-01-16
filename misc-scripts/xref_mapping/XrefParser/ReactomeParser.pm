@@ -53,7 +53,7 @@ sub run {
     # Parse and set release information from $release_file.
     my $release_io = $self->get_filehandle($release_file);
     while ( defined( my $line = $release_io->getline() ) ) {
-      if ( $line =~ /The current version \(v(\d+)\) of Reactome was released on/ ) {
+      if ( $line =~ /([0-9]*)/ ) {
         $release = $1;
         print "Reactome release is '$release'\n" if($verbose);
         last;
