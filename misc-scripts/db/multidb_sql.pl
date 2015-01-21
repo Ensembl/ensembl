@@ -91,7 +91,7 @@ foreach my $host ( @hosts ) {
   for my $dbname ( @dbnames) {   
     next if ( $dbname !~ /$dbpattern/ );
     unless ($result_only) { 
-      print  "$dbname\n";
+      print  "$dbname" . "@" . "$host\n";
     }
     if(( ! $expression ) && ( !$file )) {
       next;
@@ -111,7 +111,7 @@ foreach my $host ( @hosts ) {
         if($result_only){ 
           unless ($db_name_off){
             $db_name_off =1 ;
-            print  "==> $dbname :\n";
+            print  "==> $dbname" . "@" . $host . " :\n";
           }
         }
         print  "    Result: ",$result,"\n";
