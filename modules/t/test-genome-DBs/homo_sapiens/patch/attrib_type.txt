@@ -254,3 +254,11 @@
 392	genscan	Genscan transcripts	Transcripts predicted using Genscan
 393	ref_length		\N
 394	total_length		\N
+397	noncoding_cnt_s	Small non coding genes	Number of small non coding genes
+398	noncoding_cnt_l	Long non coding genes	Number of long non coding genes
+399	noncoding_acnt_l	Long non coding genes	Number of long non coding genes on alternate sequences
+400	noncoding_acnt_s	Small non coding genes	Number of small non coding genes on alternate sequences
+401	noncoding_cnt_m		\N
+402	transcript_cnt		\N
+403	noncoding_acnt_m		\N
+404	transcript_acnt		\N

@@ -755,7 +755,7 @@ sub get_snoncoding_count {
     $self->{'snoncoding_count'} = $snoncoding_count;
   }
   if (!defined $self->{'snoncoding_count'}) {
-    $self->{'snoncoding_count'} = $self->_get_count('snoncoding_cnt');
+    $self->{'snoncoding_count'} = $self->_get_count('noncoding_cnt_s');
   }
   return $self->{'snoncoding_count'};
 }
@@ -779,9 +779,57 @@ sub get_rsnoncoding_count {
     $self->{'rsnoncoding_count'} = $rsnoncoding_count;
   }
   if (!defined $self->{'rsnoncoding_count'}) {
-    $self->{'rsnoncoding_count'} = $self->_get_count('snoncoding_rcnt');
+    $self->{'rsnoncoding_count'} = $self->_get_count('noncoding_rcnt_s');
   }
   return $self->{'rsnoncoding_count'};
+}
+
+=head2 get_mnoncoding_count
+
+  Arg [1]    : (optional) miscellaneous non coding count
+  Example    : $mnoncoding_count = $genome->get_mnoncoding_count();
+  Description: Getter/setter for the number of miscellaneous non coding genes in the current build
+
+  Returntype : integer
+  Exceptions : none
+  Caller     : general
+  Status     : Stable
+
+=cut
+
+sub get_mnoncoding_count {
+  my ($self, $mnoncoding_count) = @_;
+  if (defined $mnoncoding_count) {
+    $self->{'mnoncoding_count'} = $mnoncoding_count;
+  }
+  if (!defined $self->{'mnoncoding_count'}) {
+    $self->{'mnoncoding_count'} = $self->_get_count('noncoding_cnt_m');
+  }
+  return $self->{'mnoncoding_count'};
+}
+
+=head2 get_rmnoncoding_count
+
+  Arg [1]    : (optional) readthrough miscellaneous non coding count
+  Example    : $rmnoncoding_count = $genome->get_rmnoncoding_count();
+  Description: Getter/setter for the number of readthrough miscellaneous non coding genes in the current build
+
+  Returntype : integer
+  Exceptions : none
+  Caller     : general
+  Status     : Stable
+
+=cut
+
+sub get_rmnoncoding_count {
+  my ($self, $rmnoncoding_count) = @_;
+  if (defined $rmnoncoding_count) {
+    $self->{'rmnoncoding_count'} = $rmnoncoding_count;
+  }
+  if (!defined $self->{'rmnoncoding_count'}) {
+    $self->{'rmnoncoding_count'} = $self->_get_count('noncoding_rcnt_m');
+  }
+  return $self->{'rmnoncoding_count'};
 }
 
 
@@ -804,7 +852,7 @@ sub get_lnoncoding_count {
     $self->{'lnoncoding_count'} = $lnoncoding_count;
   }
   if (!defined $self->{'lnoncoding_count'}) {
-    $self->{'lnoncoding_count'} = $self->_get_count('lnoncoding_cnt');
+    $self->{'lnoncoding_count'} = $self->_get_count('noncoding_cnt_l');
   }
   return $self->{'lnoncoding_count'};
 }
@@ -828,7 +876,7 @@ sub get_rlnoncoding_count {
     $self->{'rlnoncoding_count'} = $rlnoncoding_count;
   }
   if (!defined $self->{'rlnoncoding_count'}) {
-    $self->{'rlnoncoding_count'} = $self->_get_count('lnoncoding_rcnt');
+    $self->{'rlnoncoding_count'} = $self->_get_count('noncoding_rcnt_l');
   }
   return $self->{'rlnoncoding_count'};
 }
@@ -951,7 +999,7 @@ sub get_alt_snoncoding_count {
     $self->{'alt_snoncoding_count'} = $alt_snoncoding_count;
   }
   if (!defined $self->{'alt_snoncoding_count'}) {
-    $self->{'alt_snoncoding_count'} = $self->_get_count('snoncoding_acnt');
+    $self->{'alt_snoncoding_count'} = $self->_get_count('noncoding_acnt_s');
   }
   return $self->{'alt_snoncoding_count'};
 }
@@ -959,7 +1007,7 @@ sub get_alt_snoncoding_count {
 =head2 get_alt_rsnoncoding_count
 
   Arg [1]    : (optional) alt readthrough short non coding count
-  Example    : $alt_rsnoncoding_count = $genome->get_alt_snoncoding_count();
+  Example    : $alt_rsnoncoding_count = $genome->get_alt_rsnoncoding_count();
   Description: Getter/setter for the number of readthrough short non coding genes on alternate sequences
 
   Returntype : integer
@@ -975,9 +1023,57 @@ sub get_alt_rsnoncoding_count {
     $self->{'alt_rsnoncoding_count'} = $alt_rsnoncoding_count;
   }
   if (!defined $self->{'alt_rsnoncoding_count'}) {
-    $self->{'alt_rsnoncoding_count'} = $self->_get_count('snoncoding_racnt');
+    $self->{'alt_rsnoncoding_count'} = $self->_get_count('noncoding_racnt_s');
   }
   return $self->{'alt_rsnoncoding_count'};
+}
+
+=head2 get_alt_mnoncoding_count
+
+  Arg [1]    : (optional) alt miscellaneous non coding count
+  Example    : $alt_mnoncoding_count = $genome->get_alt_mnoncoding_count();
+  Description: Getter/setter for the number of miscellaneous non coding genes on alternate sequences
+
+  Returntype : integer
+  Exceptions : none
+  Caller     : general
+  Status     : Stable
+
+=cut
+
+sub get_alt_mnoncoding_count {
+  my ($self, $alt_mnoncoding_count) = @_;
+  if (defined $alt_mnoncoding_count) {
+    $self->{'alt_mnoncoding_count'} = $alt_mnoncoding_count;
+  }
+  if (!defined $self->{'alt_mnoncoding_count'}) {
+    $self->{'alt_mnoncoding_count'} = $self->_get_count('noncoding_acnt_m');
+  }
+  return $self->{'alt_mnoncoding_count'};
+}
+
+=head2 get_alt_rmnoncoding_count
+
+  Arg [1]    : (optional) alt readthrough miscellaneous non coding count
+  Example    : $alt_rmnoncoding_count = $genome->get_alt_rmnoncoding_count();
+  Description: Getter/setter for the number of readthrough miscellaneous non coding genes on alternate sequences
+
+  Returntype : integer
+  Exceptions : none
+  Caller     : general
+  Status     : Stable
+
+=cut
+
+sub get_alt_rmnoncoding_count {
+  my ($self, $alt_rmnoncoding_count) = @_;
+  if (defined $alt_rmnoncoding_count) {
+    $self->{'alt_rmnoncoding_count'} = $alt_rmnoncoding_count;
+  }
+  if (!defined $self->{'alt_rmnoncoding_count'}) {
+    $self->{'alt_rmnoncoding_count'} = $self->_get_count('noncoding_racnt_m');
+  }
+  return $self->{'alt_rmnoncoding_count'};
 }
 
 
@@ -1000,7 +1096,7 @@ sub get_alt_lnoncoding_count {
     $self->{'alt_lnoncoding_count'} = $alt_lnoncoding_count;
   }
   if (!defined $self->{'alt_lnoncoding_count'}) {
-    $self->{'alt_lnoncoding_count'} = $self->_get_count('lnoncoding_acnt');
+    $self->{'alt_lnoncoding_count'} = $self->_get_count('noncoding_acnt_l');
   }
   return $self->{'alt_lnoncoding_count'};
 }
@@ -1024,7 +1120,7 @@ sub get_alt_rlnoncoding_count {
     $self->{'alt_rlnoncoding_count'} = $alt_rlnoncoding_count;
   }
   if (!defined $self->{'alt_rlnoncoding_count'}) {
-    $self->{'alt_rlnoncoding_count'} = $self->_get_count('lnoncoding_racnt');
+    $self->{'alt_rlnoncoding_count'} = $self->_get_count('noncoding_racnt_l');
   }
   return $self->{'alt_rlnoncoding_count'};
 }
