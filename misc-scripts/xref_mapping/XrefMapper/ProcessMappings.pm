@@ -294,7 +294,8 @@ sub process_map_file{
     my $target_identity = int (100 * $identity / $target_length);
 
     my $status = "DUMP_OUT";
-    if($query_identity < $query_cutoff and $target_identity < $target_cutoff){
+# Only keep alignments where both sequences match cutoff
+    if($query_identity < $query_cutoff or $target_identity < $target_cutoff){
       $status = "FAILED_CUTOFF";
     }		
 

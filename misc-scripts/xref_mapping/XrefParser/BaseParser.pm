@@ -513,6 +513,15 @@ sub upload_xref_object_graphs {
 					 species_id => $xref->{SPECIES_ID}} );
        }
 
+       foreach my $direct_xref (@{$xref->{DIRECT_XREFS}}) {
+         $xref_id = $self->get_xref_id({ sth        => $xref_sth,
+                                         error      => $dbi->err,
+                                         acc        => $xref->{ACCESSION},
+                                         source_id  => $direct_xref->{SOURCE_ID},
+                                         species_id => $xref->{SPECIES_ID}} );
+         $self->add_direct_xref($xref_id, $direct_xref->{STABLE_ID}, $direct_xref->{ENSEMBL_TYPE},$direct_xref->{LINKAGE_TYPE});
+       }
+
        ################
        # Error checking
        ################
