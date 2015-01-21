@@ -2258,12 +2258,12 @@ sub modified_date {
 =cut
 
 sub swap_exons {
-  my ( $self, $old_exon, $new_exon ) = @_;
+  my ( $self, $old_exon, $new_exon, $skip_exon_sf) = @_;
   
   my $arref = $self->{'_trans_exon_array'};
   for(my $i = 0; $i < @$arref; $i++) {
-    if($arref->[$i] == $old_exon) {
-      $new_exon->add_supporting_features(@{$old_exon->get_all_supporting_features});
+    if($arref->[$i] == $old_exon ) {
+      $new_exon->add_supporting_features(@{$old_exon->get_all_supporting_features}) unless $skip_exon_sf;
       $arref->[$i] = $new_exon;
       last;
     }
