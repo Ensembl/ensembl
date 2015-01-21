@@ -386,7 +386,7 @@ sub create_xrefs {
         if ($gn !~ /^GN/) { next; }
         my $gene_name = undef;
 
-        if($gn =~ /Name=((.*?))[;\s]/s){ # /s for multi-line entries ; is the delimiter
+        if ($gn =~ / Name=([A-Za-z0-9_\-\.]+)/s) { #/s for multi-line entries ; is the delimiter
 # Example line 
 # GN   Name=ctrc {ECO:0000313|Xenbase:XB-GENE-5790348};
           $depe{LABEL} = $1; # leave name as is, upper/lower case is relevant in gene names
