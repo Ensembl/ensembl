@@ -348,16 +348,26 @@ sub store {
     
     my $sth = $self->prepare("INSERT INTO alt_allele (alt_allele_id, alt_allele_group_id, gene_id) VALUES (?,?,?)");
     my $attrib_sth = $self->prepare("INSERT INTO alt_allele_attrib (alt_allele_id,attrib) VALUES (?,?)");
-    
+    my $check_exists_sth = $self->prepare("SELECT alt_allele_id FROM alt_allele WHERE gene_id = ?");
+
     foreach my $allele (@{ $allele_group->get_all_members() }) {
         my $gene_id = $allele->[0];
         my %flags = %{$allele->[1]};
+        my $allele_id;
+
+# Check if gene is not already stored
+# Return allele_id if it is
+        $check_exists_sth->bind_param(1, $gene_id, SQL_INTEGER);
+        $check_exists_sth->execute();
+        $check_exists_sth->bind_col(1, \$allele_id);
+        if ($check_exists_sth->fetch() ) {
+          return $allele_id;
+        }
         
         $sth->bind_param(1, undef, SQL_INTEGER);
         $sth->bind_param(2, $dbID, SQL_INTEGER);
         $sth->bind_param(3, $gene_id, SQL_INTEGER);
         my $altered_rows = $sth->execute();
-        my $allele_id;
         if ($altered_rows > 0) {
             $allele_id = $self->last_insert_id(); # all alleles get added to the same alt_allele_id group
         } else {
@@ -374,6 +384,7 @@ sub store {
     if ($@) {throw ("Problem inserting new AltAlleleGroup into database: $@");}
     $sth->finish;
     $attrib_sth->finish;
+    $check_exists_sth->finish;
     
     $allele_group->dbID($dbID);
     
