@@ -592,6 +592,56 @@ sub _get_count {
   return $results[2];
 }
 
+=head2 get_count
+
+  Arg [1]    : none
+  Example    : $count = $genome->get_count('coding_cnt');
+  Description: Retrieve a count for a given attribute code
+  Returntype : integer
+  Exceptions : none
+  Caller     : general
+  Status     : Stable
+
+=cut
+
+sub get_count {
+  my ($self, $code, $attribute) = @_;
+  my @results = @{ $self->_get_statistic($code, $attribute) };
+  return $results[2];
+}
+
+=head2 get_all_counts
+
+  Arg [1]    : none
+  Example    : $list = $genome->get_all_counts();
+  Description: Retrieve all counts stored in the genome_statistics page
+  Returntype : ArrayRef of strings
+  Exceptions : none
+  Caller     : general
+  Status     : Stable
+
+=cut
+
+sub get_all_counts {
+  my ($self) = @_;
+  my $db = $self->db;
+  my $species_id = $self->db->species_id();
+  my @results;
+  my $fetch_sql = q{
+    SELECT statistic FROM genome_statistics WHERE species_id=?
+  };
+
+  my $sth = $self->prepare($fetch_sql);
+  $sth->bind_param(1, $species_id, SQL_INTEGER);
+  $sth->execute();
+  while (my $statistic = $sth->fetchrow_array) {
+    push @results, $statistic;
+  }
+  $sth->finish();
+
+  return \@results;
+}
+
 =head2 _get_statistic
 
   Arg [1]    : none
@@ -608,7 +658,7 @@ sub _get_statistic {
   my ($self, $statistic, $attribute) = @_;
   my $db = $self->db;
   my $species_id = $self->db->species_id();
-  my ($value, $timestamp);
+  my @results;
   my $fetch_sql = q{
     SELECT genome_statistics_id, statistic, value, species_id, code, timestamp
       FROM genome_statistics, attrib_type 
@@ -626,7 +676,9 @@ sub _get_statistic {
     $sth->bind_param(3, $attribute, SQL_VARCHAR);
   }
   $sth->execute();
-  my @results = $sth->fetchrow_array();
+  while (my $result = $sth->fetchrow_array()) {
+    push @results, $result;
+  }
   $sth->finish();
 
   return \@results;
