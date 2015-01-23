@@ -658,7 +658,6 @@ sub _get_statistic {
   my ($self, $statistic, $attribute) = @_;
   my $db = $self->db;
   my $species_id = $self->db->species_id();
-  my @results;
   my $fetch_sql = q{
     SELECT genome_statistics_id, statistic, value, species_id, code, timestamp
       FROM genome_statistics, attrib_type 
@@ -676,9 +675,7 @@ sub _get_statistic {
     $sth->bind_param(3, $attribute, SQL_VARCHAR);
   }
   $sth->execute();
-  while (my $result = $sth->fetchrow_array()) {
-    push @results, $result;
-  }
+  my @results = $sth->fetchrow_array();
   $sth->finish();
 
   return \@results;
