@@ -69,6 +69,8 @@ sub run {
   print "SwissProt source id for $file: $sp_source_id\n" if ($verbose);
   print "SpTREMBL source id for $file: $sptr_source_id\n" if ($verbose);
   print "SpTREMBL protein_evidence > 2 source id for $file: $sptr_non_display_source_id\n" if ($verbose);
+  print "SwissProt direct source id for $file: $sp_direct_source_id\n" if ($verbose);
+  print "SpTREMBL direct source id for $file: $sptr_direct_source_id\n" if ($verbose);
  
 
   my @xrefs =
@@ -130,6 +132,8 @@ sub create_xrefs {
   my $num_sp_pred = 0;
   my $num_sptr_pred = 0;
   my $num_sptr_non_display = 0;
+  my $num_direct_sp = 0;
+  my $num_direct_sptr = 0;
 
   my %dependent_sources = $self->get_xref_sources();
 
@@ -479,10 +483,12 @@ sub create_xrefs {
           $direct{STABLE_ID} = $extra[0];
           $direct{ENSEMBL_TYPE} = 'Translation';
           $direct{LINKAGE_TYPE} = 'DIRECT';
-          if ($xref->{SOURCE_ID} = $sp_source_id) {
+          if ($xref->{SOURCE_ID} == $sp_source_id) {
             $direct{SOURCE_ID} = $sp_direct_source_id;
+            $num_direct_sp++;
           } else {
             $direct{SOURCE_ID} = $sptr_direct_source_id;
+            $num_direct_sptr++;
           }
           push @{$xref->{DIRECT_XREFS}}, \%direct;
         }
@@ -589,6 +595,7 @@ sub create_xrefs {
   $uniprot_io->close();
 
   print "Read $num_sp SwissProt xrefs, $num_sptr SPTrEMBL xrefs with protein evidence codes 1-2, and $num_sptr_non_display SPTrEMBL xrefs with protein evidence codes > 2 from $file\n" if($verbose);
+  print "Added $num_direct_sp direct SwissProt xrefs and $num_direct_sptr direct SPTrEMBL xrefs\n" if ($verbose);
   print "Found $num_sp_pred predicted SwissProt xrefs and $num_sptr_pred predicted SPTrEMBL xrefs\n" if (($num_sp_pred > 0 || $num_sptr_pred > 0) and $verbose);
   print "Skipped $ensembl_derived_protein_count ensembl annotations as Gene names\n";
 
