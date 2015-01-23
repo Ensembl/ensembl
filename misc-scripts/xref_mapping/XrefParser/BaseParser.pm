@@ -514,6 +514,13 @@ sub upload_xref_object_graphs {
        }
 
        foreach my $direct_xref (@{$xref->{DIRECT_XREFS}}) {
+         $xref_sth->execute( $xref->{ACCESSION},
+                             $xref->{VERSION} || 0,
+                             $xref->{LABEL} || $xref->{ACCESSION},
+                             $xref->{DESCRIPTION},
+                             $direct_xref->{SOURCE_ID},
+                             $xref->{SPECIES_ID},
+                             $direct_xref->{LINKAGE_TYPE});
          $xref_id = $self->get_xref_id({ sth        => $xref_sth,
                                          error      => $dbi->err,
                                          acc        => $xref->{ACCESSION},
