@@ -16,6 +16,7 @@ use strict;
 use warnings;
 
 use Test::More;
+use Test::Exception;
 use Bio::EnsEMBL::Test::MultiTestDB;
 use Bio::EnsEMBL::ApiVersion;
 
@@ -86,7 +87,7 @@ my %base_args = (
 }
 
 {
-  my %exts = (BAM => ['bam', 'bam.bai'], BIGWIG => ['bw'], VCF => ['vcf.gz', 'vcf.gz.tbi']);
+  my %exts = (BAM => ['bam', 'bam.bai'], BIGWIG => ['bw'], VCF => ['vcf.gz', 'vcf.gz.tbi'], 'BAMCOV' => ['bam', 'bam.bai', 'bam.bw']);
   while( my ($type, $ext) = each %exts ) {
     is_deeply($dfa->DataFile_to_extensions(new_ok('Bio::EnsEMBL::DataFile'=>[%base_args, -FILE_TYPE => $type])), $ext, 'Checking '.$type.' extension');
   }
@@ -107,6 +108,54 @@ my %base_args = (
   is_deeply($dfa->fetch_all_by_Analysis($a), [$df], 'Checking retrieved data is the same as what we currently hold');
   is_deeply($dfa->fetch_all_by_CoordSystem($cs), [$df], 'Checking retrieved data is the same as what we currently hold');
   is_deeply($dfa->fetch_by_name_and_type('wibble', 'BAM'), $df, 'Checking retrieved data is the same as what we currently hold');    
+}
+
+{
+  my %type2adaptor = 
+    ( 'BAM'    => 'Bio::EnsEMBL::ExternalData::BAM::BAMAdaptor',
+      'BIGBED' => 'Bio::EnsEMBL::ExternalData::BigFile::BigBedAdaptor',
+      'BIGWIG' => 'Bio::EnsEMBL::ExternalData::BigFile::BigWigAdaptor',
+      'VCF'    => 'Bio::EnsEMBL::ExternalData::VCF::VCFAdaptor',
+      'BAMCOV' => 1
+    );
+   
+  for my $type (keys %type2adaptor) {
+    my $df = new_ok('Bio::EnsEMBL::DataFile'=>[%base_args, -FILE_TYPE => $type]);
+
+    if ($type eq 'BAMCOV') {
+      throws_ok { $dfa->DataFile_to_adaptor($df, $base, 'BIGBED') }
+	qr/handler found/, 'Request for type incompatible with BAMCOV';
+      
+      #
+      # Cannot actually do the following since this would require
+      # a dependency of this test case and hence of the core API
+      # on the various external data file adaptors, e.g. BAM/BIGWIG etc.
+      #
+      # my $eda = $dfa->DataFile_to_adaptor($df, $base, 'BAM');
+      # isa_ok($eda, 'Bio::EnsEMBL::ExternalData::BAM::BAMAdaptor', 'Checking BAM data adaptor');
+      # $eda = $dfa->DataFile_to_adaptor($df, $base, 'BAMCOV');
+      # isa_ok($eda, 'Bio::EnsEMBL::ExternalData::BAM::BAMAdaptor', 'Checking BAMCOV data adaptor');
+      # $eda = $dfa->DataFile_to_adaptor($df, $base, 'BIGWIG');
+      # isa_ok($eda, 'Bio::EnsEMBL::ExternalData::BAM::BigWigAdaptor', 'Checking BIGWIG data adaptor');
+
+    } else {
+      for my $requested_type (keys %type2adaptor) {
+	if ($requested_type ne $type) {
+	  throws_ok { $dfa->DataFile_to_adaptor($df, $base, $requested_type) }
+	    qr/but file is of type/, "Request for $requested_type adaptor, file type $type"
+	  } else {
+	    #
+	    # See the previous comment for the BAMCOV case
+	    # 
+	    # my $eda = $dfa->DataFile_to_adaptor($df, $base, $requested_type);
+	    # isa_ok($eda, $type2adaptor{$type}, "Checking $requested_type data adaptor");
+	  }
+       
+      }
+      
+    }
+  }
+  
 }
 
 $multi->restore();
