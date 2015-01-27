@@ -383,7 +383,7 @@ sub create_xrefs {
       my %depe;
       foreach my $gn (@gn_lines){
 # Make sure these are still GN lines
-        if ($gn !~ /^GN/) { next; }
+        if (($gn !~ /^GN/ || $gn !~ /Name=/) && $gn !~ /Synonyms=/) { next; }
         my $gene_name = undef;
 
         if ($gn =~ / Name=([A-Za-z0-9_\-\.]+)/s) { #/s for multi-line entries ; is the delimiter
