@@ -37,4 +37,10 @@ sub target {
   return $self->mapper()->core()->protein_file();
 }
 
+# UniParc xrefs are mapped on a translation level
+sub object_type {
+  my ($self) = @_;
+  return 'Translation';
+}
+
 1;

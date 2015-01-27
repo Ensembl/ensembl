@@ -37,5 +37,11 @@ sub external_db_name {
   return 'RNACentral';
 }
 
+# RNACentral xrefs are mapped on a transcript level
+sub object_type {
+  my ($self) = @_;
+  return 'Transcript';
+}
+
 1;
 

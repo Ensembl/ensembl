@@ -33,7 +33,7 @@ and source_id=?
 SQL
 
 sub perform_mapping {
-  my ($self, $sequences, $source_id) = @_;
+  my ($self, $sequences, $source_id, $object_type) = @_;
   
   my @final_results;
   
@@ -51,7 +51,7 @@ sub perform_mapping {
         $upi = $local_upi;
       }
       if(defined $upi){
-        push(@final_results, { id => $sequence->id(), upi => $upi, object_type => 'Translation' });
+        push(@final_results, { id => $sequence->id(), upi => $upi, object_type => $object_type });
       }
     }
     return;

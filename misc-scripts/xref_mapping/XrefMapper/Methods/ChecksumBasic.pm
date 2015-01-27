@@ -55,7 +55,7 @@ sub batch_size {
 }
 
 sub run {
-  my ($self, $target, $source_id) = @_;
+  my ($self, $target, $source_id, $object_type) = @_;
   
   my $reader = $self->_get_sequence_parser($target);
   my @results;
@@ -66,7 +66,7 @@ sub run {
     push(@tmp_list, $sequence);
     $count++;
     if( ($count % $batch_size) == 0) {
-      my $res = $self->perform_mapping(\@tmp_list, $source_id);
+      my $res = $self->perform_mapping(\@tmp_list, $source_id, $object_type);
       push(@results, @{$res});
       $self->mapper()->log_progress("Finished batch mapping of %d sequences\n", $batch_size);
       $count = 0;
@@ -77,7 +77,7 @@ sub run {
   #Final mapping if there were some left over
   if(@tmp_list) {
     $self->mapper()->log_progress("Finishing progess\n");
-    my $res = $self->perform_mapping(\@tmp_list, $source_id);
+    my $res = $self->perform_mapping(\@tmp_list, $source_id, $object_type);
     push(@results, @{$res});
     @tmp_list = ();
   }
