@@ -391,8 +391,8 @@ sub create_xrefs {
     if(! $ensembl_derived_protein) {
       my %depe;
       foreach my $gn (@gn_lines){
-# Make sure these are still GN lines
-        if (($gn !~ /^GN/ || $gn !~ /Name=/) && $gn !~ /Synonyms=/) { next; }
+# Make sure these are still lines with Name or Synonyms
+        if (($gn !~ /^GN/ || $gn !~ /Name=/) && $gn !~ /Synonyms=/) { last; }
         my $gene_name = undef;
 
         if ($gn =~ / Name=([A-Za-z0-9_\-\.]+)/s) { #/s for multi-line entries ; is the delimiter
