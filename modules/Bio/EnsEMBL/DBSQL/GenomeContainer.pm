@@ -67,6 +67,8 @@ package Bio::EnsEMBL::DBSQL::GenomeContainer;
 
 use strict;
 use warnings;
+
+use Bio::EnsEMBL::Genome;
 use Bio::EnsEMBL::DBSQL::DBAdaptor;
 use Bio::EnsEMBL::DBSQL::BaseAdaptor;
 use Bio::EnsEMBL::Utils::Exception qw( deprecate throw warning );
@@ -120,7 +122,7 @@ sub new {
 sub store {
   my ($self, $statistic, $value, $attribute) = @_;
 
-  my $stats_id = @{ $self->_get_statistic($statistic, $attribute) }[0];
+  my $stats_id = $self->fetch_by_statistic($statistic, $attribute)->dbID;
 
   if (defined $stats_id) {
     $self->update($statistic, $value, $attribute);
@@ -478,7 +480,7 @@ sub get_ref_length {
     $self->{'ref_length'} = $ref_length;
   }
   if (!defined $self->{'ref_length'}) {
-    $self->{'ref_length'} = @{ $self->_get_statistic('ref_length')}[2];
+    $self->{'ref_length'} = $self->fetch_by_statistic('ref_length')->value();
   }
   return $self->{'ref_length'};
 }
@@ -503,7 +505,7 @@ sub get_total_length {
     $self->{'total_length'} = $total_length;
   }
   if (!defined $self->{'total_length'}) {
-    $self->{'total_length'} = @{ $self->_get_statistic('total_length')}[2];
+    $self->{'total_length'} = $self->fetch_by_statistic('total_length')->value;
   }
   return $self->{'total_length'};
 }
@@ -588,8 +590,8 @@ sub get_coord_systems {
 
 sub _get_count {
   my ($self, $code, $attribute) = @_;
-  my @results = @{ $self->_get_statistic($code, $attribute) };
-  return $results[2];
+  my $statistic = $self->fetch_by_statistic($code, $attribute);
+  return $statistic->value();
 }
 
 =head2 get_count
@@ -606,60 +608,61 @@ sub _get_count {
 
 sub get_count {
   my ($self, $code, $attribute) = @_;
-  my @results = @{ $self->_get_statistic($code, $attribute) };
-  return $results[2];
+  my $statistic = $self->fetch_by_statistic($code, $attribute);
+  return $statistic->value();
 }
 
-=head2 get_all_counts
+=head2 fetch_all_statistics
 
   Arg [1]    : none
-  Example    : $list = $genome->get_all_counts();
-  Description: Retrieve all counts stored in the genome_statistics page
-  Returntype : ArrayRef of strings
+  Example    : $list = $genome->fetch_all_statistics();
+  Description: Retrieve all entries stored in the genome_statistics table
+  Returntype : ArrayRef of Bio::EnsEMBL::Genome
   Exceptions : none
   Caller     : general
   Status     : Stable
 
 =cut
 
-sub get_all_counts {
+sub fetch_all_statistics {
   my ($self) = @_;
   my $db = $self->db;
   my $species_id = $self->db->species_id();
   my @results;
-  my $fetch_sql = q{
-    SELECT statistic FROM genome_statistics WHERE species_id=?
+  my $sql = q{
+    SELECT genome_statistics_id, statistic, value, species_id, code, name, description
+      FROM genome_statistics, attrib_type
+     WHERE genome_statistics.attrib_type_id = attrib_type.attrib_type_id
+       AND species_id=?
   };
 
-  my $sth = $self->prepare($fetch_sql);
+  my $sth = $self->prepare($sql);
   $sth->bind_param(1, $species_id, SQL_INTEGER);
   $sth->execute();
-  while (my $statistic = $sth->fetchrow_array) {
-    push @results, $statistic;
-  }
+  my $results = $self->_obj_from_sth($sth);
   $sth->finish();
 
-  return \@results;
+  return $results;
 }
 
-=head2 _get_statistic
 
-  Arg [1]    : none
-  Example    : $results = $genome->_get_statistic('coding_cnt');
-  Description: Internal method to return the results for a given statistic
-  Returntype : integer
+=head2 fetch_by_statistic
+
+  Arg [1]    : string $statistic
+  Example    : $results = $genome->fetch_by_statistic('coding_cnt');
+  Description: Returns a Genome object for a given statistic
+  Returntype : Bio::EnsEMBL::Genome
   Exceptions : none
   Caller     : general
   Status     : Stable
 
 =cut
 
-sub _get_statistic {
-  my ($self, $statistic, $attribute) = @_;
+sub fetch_by_statistic {
+  my ($self, $statistic_name, $attribute) = @_;
   my $db = $self->db;
-  my $species_id = $self->db->species_id();
   my $fetch_sql = q{
-    SELECT genome_statistics_id, statistic, value, species_id, code, timestamp
+    SELECT genome_statistics_id, statistic, value, species_id, code, name, description
       FROM genome_statistics, attrib_type 
      WHERE genome_statistics.attrib_type_id = attrib_type.attrib_type_id
        AND statistic = ? AND species_id=?
@@ -669,16 +672,25 @@ sub _get_statistic {
   }
 
   my $sth = $self->prepare($fetch_sql);
-  $sth->bind_param(1, $statistic, SQL_VARCHAR);
-  $sth->bind_param(2, $species_id, SQL_INTEGER);
+  $sth->bind_param(1, $statistic_name, SQL_VARCHAR);
+  $sth->bind_param(2, $self->db->species_id, SQL_INTEGER);
   if (defined $attribute) {
     $sth->bind_param(3, $attribute, SQL_VARCHAR);
   }
   $sth->execute();
-  my @results = $sth->fetchrow_array();
+  my ($dbID, $statistic, $value, $species_id, $code, $name, $desc);
+  $sth->bind_columns(\$dbID, \$statistic, \$value, \$species_id, \$code, \$name, \$desc);
+
+  my @results = $sth->fetchrow_array;
   $sth->finish();
 
-  return \@results;
+  return Bio::EnsEMBL::Genome->new_fast({'dbID'        => $dbID,
+                                         'statistic'   => $statistic,
+                                         'code'        => $code,
+                                         'name'        => $name,
+                                         'description' => $desc,
+                                         'value'       => $value});
+
 }
 
 =head2 is_empty
@@ -1444,6 +1456,27 @@ sub get_genome_components {
      USING (attrib_type_id) WHERE attrib_type.code='genome_component'";
 
   return $sql_helper->execute_simple(-SQL => $sql);
+}
+
+sub _obj_from_sth {
+  my $self = shift;
+  my $sth  = shift;
+
+  my ($dbID, $statistic, $value, $species_id, $code, $name, $desc);
+  $sth->bind_columns(\$dbID, \$statistic, \$value, \$species_id, \$code, \$name, \$desc);
+
+  my @results;
+  while ($sth->fetch()) {
+        push @results,
+          Bio::EnsEMBL::Genome->new_fast({'dbID'        => $dbID,
+                                          'statistic'   => $statistic,
+                                          'code'        => $code,
+                                          'name'        => $name,
+                                          'description' => $desc,
+                                          'value'       => $value});
+  }
+
+  return \@results;
 }
 
 1;
