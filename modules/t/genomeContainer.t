@@ -162,8 +162,6 @@ is($alt_transcript_count, $genome->get_alt_transcript_count(), "Number of alt tr
 
 my $counts = $genome->fetch_all_statistics();
 is(scalar(@$counts), 16, "All separate statistics retrieved");
-is($counts->[0]->statistic, 'pseudogene_cnt', 'First statistic is coding_cnt');
-is($genome->get_count($counts->[0]->statistic), $genome->get_pseudogene_count, 'Same results with get_count($attrib) and get_$attrib_count');
 
 
 #
