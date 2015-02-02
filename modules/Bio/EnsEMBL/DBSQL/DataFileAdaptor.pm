@@ -143,7 +143,7 @@ sub DataFile_to_extensions {
   my $extensions = {
     BAM     => ['bam', 'bam.bai'],
     BAMCOV  => ['bam', 'bam.bai', 'bam.bw'], # BAM coverage files
-#    BIGBED  => 'bb',
+    BIGBED  => ['bb'],
     BIGWIG  => ['bw'],
     VCF     => ['vcf.gz', 'vcf.gz.tbi'],
   }->{$type}; 
