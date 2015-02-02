@@ -339,7 +339,9 @@ sub run {
 
     $release =~ s/[\n\r]+/ /gm;
     $release =~
-      s/.*The following table describes.*?of GOA UniProt .version (\d+).*?<ul>.*/$1/;
+      s/.*The following table describes.*?of (GOA .*?.version (\d+)\).*?)<\/p>.*/$1/;
+    $release =~ s/<span class="pbold">//g;
+    $release =~ s/<\/span>//g;
 
     print "GO release: '$release'\n" if($verbose);
     $self->set_release( $source_id, $release );
