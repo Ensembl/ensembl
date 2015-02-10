@@ -195,7 +195,7 @@ sub DataFile_to_adaptor {
       return Bio::EnsEMBL::ExternalData::BAM::BAMAdaptor->new($df->path($base))
 	if $requested_type eq 'BAM' or $requested_type eq 'BAMCOV';
       
-      return Bio::EnsEMBL::ExternalData::BigFile::BigWigAdaptor->new($df->path($base))
+      return Bio::EnsEMBL::ExternalData::BigFile::BigWigAdaptor->new($df->get_all_paths($base)->[2])
 	if $requested_type eq 'BIGWIG';
     }
 
