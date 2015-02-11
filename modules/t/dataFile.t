@@ -64,7 +64,17 @@ $base_args{-FILE_TYPE} = 'BIGWIG';
     %base_args
   ], 'data file');
   is($df->path($base), $expected_base.'/core/wibble.bw', 'Checking non-absolute path');
-  is_deeply($df->get_all_paths($base), [ $expected_base.'/core/wibble.bw', $expected_base.'/core/wibble.bam.bw' ], 'Checking all non-abs paths (BIGWIG)');
+  is_deeply($df->get_all_paths($base), [ $expected_base.'/core/wibble.bw' ], 'Checking all non-abs paths (BIGWIG)');
+}
+
+# now test non-abs paths with bamcov file type
+$base_args{-FILE_TYPE} = 'BAMCOV';
+{
+  my $df = new_ok('Bio::EnsEMBL::DataFile' => [
+    %base_args
+  ], 'data file');
+  is($df->path($base), $expected_base.'/core/wibble.bam', 'Checking non-absolute path');
+  is_deeply($df->get_all_paths($base), [ $expected_base.'/core/wibble.bam', $expected_base.'/core/wibble.bam.bai', $expected_base.'/core/wibble.bam.bw'], 'Checking all non-abs paths (BAMCOV)');
 }
 
 $base_args{-FILE_TYPE} = 'BAM';
