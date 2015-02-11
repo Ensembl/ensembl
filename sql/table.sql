@@ -169,7 +169,7 @@ CREATE TABLE data_file (
   version_lock      TINYINT(1) DEFAULT 0 NOT NULL,
   absolute          TINYINT(1) DEFAULT 0 NOT NULL,
   url               TEXT,
-  file_type         ENUM('BAM','BIGBED','BIGWIG','VCF'),
+  file_type         ENUM('BAM','BAMCOV','BIGBED','BIGWIG','VCF'),
 
   PRIMARY KEY (data_file_id),
   UNIQUE KEY df_unq_idx(coord_system_id, analysis_id, name, file_type),

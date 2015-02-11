@@ -24,6 +24,7 @@
 175	\N	patch	patch_77_78_b.sql|source_column_increase
 176	\N	patch	patch_77_78_c.sql|Change unmapped_reason_id from smallint to int
 177	\N	patch	patch_78_79_a.sql|schema_version
+178	\N	patch	patch_78_79_b.sql|bamcov support
 1	\N	schema_type	core
 2	\N	schema_version	79
 8	1	assembly.accession	GCA_000292705.1

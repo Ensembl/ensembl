@@ -58,3 +58,4 @@
 112	\N	patch	patch_77_78_b.sql|source_column_increase
 113	\N	patch	patch_77_78_c.sql|Change unmapped_reason_id from smallint to int
 114	\N	patch	patch_78_79_a.sql|schema_version
+115	\N	patch	patch_78_79_b.sql|bamcov support

@@ -64,3 +64,4 @@
 2071	\N	patch	patch_77_78_c.sql|Change unmapped_reason_id from smallint to int
 2072	\N	patch	patch_78_79_a.sql|schema_version
 2073	\N	patch	patch_73_74_h.sql|alt_allele_unique_gene_idx
+2074	\N	patch	patch_78_79_b.sql|bamcov support
