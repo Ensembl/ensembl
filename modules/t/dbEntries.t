@@ -1,4 +1,4 @@
-# Copyright [1999-2014] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
+# Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
 # 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -557,7 +557,7 @@ $multi->restore();
   is($dbEntryAdaptor->get_external_db_id('RFAM', 'wibble', 1), 4200, 'RFAM ID with a version of wibble but ignoring versions as expected');
 
   my $external_db_names = $dbEntryAdaptor->get_distinct_external_dbs();
-  cmp_ok(scalar(@{$external_db_names}), '==', 110, 'Retriving all the unique External DB names');
+  cmp_ok(scalar(@{$external_db_names}), '==', 111, 'Retriving all the unique External DB names');
 }
 
 sub print_dbEntries {

@@ -1,6 +1,6 @@
 =head1 LICENSE
 
-Copyright [1999-2014] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
+Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -41,6 +41,7 @@ sub run_script {
 
   my $peptide_source_id = $self->get_source_id_for_source_name('RefSeq_peptide', 'otherfeatures');
   my $mrna_source_id = $self->get_source_id_for_source_name('RefSeq_mRNA', 'otherfeatures');
+  my $ncrna_source_id = $self->get_source_id_for_source_name('RefSeq_ncRNA', 'otherfeatures');
 
   my $user = "ensro";
   my $host;
@@ -177,6 +178,12 @@ sub run_script {
       die("Missing or unsupported project value. Supported values: ensembl, ensemblgenomes");
   }
 
+## Not all species have an otherfeatures database, skip if not found
+  if (!$otherf_dba) {
+    print STDERR "No otherfeatures database for $species_name, skipping import for refseq_import data\n";
+    return;
+  }
+
   my $sa = $core_dba->get_SliceAdaptor();
   my $sa_of = $otherf_dba->get_SliceAdaptor();
   my $chromosomes_of = $sa_of->fetch_all('chromosome', undef, 1);
@@ -189,8 +196,10 @@ sub run_script {
       $logic_name = $ana->logic_name;
     }
   }
+## Not all species have refseq_import data, skip if not found
   if (!defined $logic_name) {
-    die("Could not find logic_name for refseq in otherfeatures database");
+    print STDERR "No data found for RefSeq_import, skipping import\n";;
+    return;
   }
 
   foreach my $chromosome_of (@$chromosomes_of) {
@@ -310,11 +319,13 @@ sub run_script {
 # If a best match was defined for the refseq transcript, store it as direct xref for ensembl transcript
         if ($best_id) {
           my ($acc, $version) = split(/\./, $id);
+          my $source_id = $mrna_source_id;
+          $source_id = $ncrna_source_id if $acc =~ /^NR_/;
           my $xref_id = $self->add_xref({ acc => $acc,
                                           version => $version,
                                           label => $id,
                                           desc => '',
-                                          source_id => $mrna_source_id,
+                                          source_id => $source_id,
                                           species_id => $species_id,
                                           info_type => 'DIRECT' });
           $self->add_direct_xref($xref_id, $best_id, "Transcript", "");

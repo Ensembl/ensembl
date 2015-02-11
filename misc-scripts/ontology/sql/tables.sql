@@ -1,4 +1,4 @@
--- Copyright [1999-2014] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
+-- Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
 -- 
 -- Licensed under the Apache License, Version 2.0 (the "License");
 -- you may not use this file except in compliance with the License.
@@ -30,11 +30,14 @@ CREATE TABLE meta (
 # Add schema type and schema version to the meta table
 INSERT INTO meta (meta_key, meta_value) VALUES 
   ('schema_type', 'ontology'),
-  ('schema_version', '78');
+  ('schema_version', '79');
 
 # Patches included in this schema file
 INSERT INTO meta (meta_key, meta_value)
-  VALUES ('patch', 'patch_77_78_a.sql|schema_version');
+  VALUES ('patch', 'patch_78_79_a.sql|schema_version');
+
+INSERT INTO meta (meta_key, meta_value)
+  VALUES ('patch', 'patch_78_79_b.sql|synonym_type');
 
 CREATE TABLE ontology (
   ontology_id   INT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -74,6 +77,7 @@ CREATE TABLE synonym (
   synonym_id    INT UNSIGNED NOT NULL AUTO_INCREMENT,
   term_id       INT UNSIGNED NOT NULL,
   name          TEXT NOT NULL,
+  type		ENUM('EXACT', 'BROAD', 'NARROW', 'RELATED'),
 
   PRIMARY KEY (synonym_id),
   UNIQUE INDEX term_synonym_idx (term_id, synonym_id),

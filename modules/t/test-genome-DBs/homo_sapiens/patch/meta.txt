@@ -1,4 +1,4 @@
-1	\N	schema_version	78
+1	\N	schema_version	79
 2014	1	species.classification	Haplorrhini
 40	1	assembly.default	GRCh37
 41	1	assembly.date	2009-02
@@ -62,3 +62,5 @@
 2069	\N	patch	patch_77_78_a.sql|schema_version
 2070	\N	patch	patch_77_78_b.sql|source_column_increase
 2071	\N	patch	patch_77_78_c.sql|Change unmapped_reason_id from smallint to int
+2072	\N	patch	patch_78_79_a.sql|schema_version
+2073	\N	patch	patch_73_74_h.sql|alt_allele_unique_gene_idx

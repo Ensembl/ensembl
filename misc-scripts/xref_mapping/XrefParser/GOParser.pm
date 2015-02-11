@@ -1,6 +1,6 @@
 =head1 LICENSE
 
-Copyright [1999-2014] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
+Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -339,8 +339,7 @@ sub run {
 
     $release =~ s/[\n\r]+/ /gm;
     $release =~
-          s/.*The following table describes.*?of (GOA.*?)<ul>.*/$1/;
-    $release =~ s/<[^>]+>//gx;
+      s/.*The following table describes.*?of GOA UniProt .version (\d+).*?<ul>.*/$1/;
 
     print "GO release: '$release'\n" if($verbose);
     $self->set_release( $source_id, $release );

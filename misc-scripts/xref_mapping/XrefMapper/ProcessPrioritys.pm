@@ -1,6 +1,6 @@
 =head1 LICENSE
 
-Copyright [1999-2014] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
+Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -124,7 +124,7 @@ FSQL
   # So we can do a straight join and treat all info_types the same way.
   # 
   my $new_sql =(<<NEWS);
-   SELECT ox.object_xref_id, x.accession, x.xref_id, (ix.query_identity + ix.target_identity) as identity, ox.ox_status, ox.ensembl_object_type, ensembl_id
+   SELECT ox.object_xref_id, x.accession, x.xref_id, (ix.query_identity + ix.target_identity) as identity, ox.ox_status, ox.ensembl_object_type, ensembl_id, info_type
       FROM object_xref ox, xref x, source s, identity_xref ix
         WHERE ox.object_xref_id = ix.object_xref_id 
           AND ox.xref_id = x.xref_id
@@ -133,11 +133,31 @@ FSQL
          ORDER BY x.accession DESC, s.priority ASC , identity DESC, x.xref_id DESC
 NEWS
 
+  #
+  # Query to copy identity_xref values from one xref to another
+  # This is to keep alignment information event if alignment was not the best match
+  #
+
+  my $idx_copy_sql = (<<IDXCP);
+   UPDATE identity_xref SET query_identity = ?, target_identity = ?, hit_start = ?, hit_end = ?, translation_start = ?, translation_end = ?, cigar_line = ?, score = ?, evalue = ?
+      WHERE object_xref_id = ?;
+IDXCP
+
+  my $idx_copy_sth = $self->xref->dbc->prepare($idx_copy_sql);
+
+  my $best_ox_sth = $self->xref->dbc->prepare("SELECT object_xref_id FROM object_xref WHERE xref_id = ? and ensembl_object_type = ? and ensembl_id = ?");
+
+  my $seq_score_sql = (<<SEQCP);
+    SELECT query_identity, target_identity, hit_start, hit_end, translation_start, translation_end, cigar_line, score, evalue
+      FROM identity_xref WHERE object_xref_id = ?
+SEQCP
+  my $seq_score_sth = $self->xref->dbc->prepare($seq_score_sql);
+
   my $sth = $self->xref->dbc->prepare($new_sql);
   foreach my $name (@names){
     $sth->execute($name);
-    my ($object_xref_id, $acc, $xref_id, $identity, $status, $object_type, $ensembl_id);
-    $sth->bind_columns(\$object_xref_id, \$acc, \$xref_id, \$identity, \$status, \$object_type, \$ensembl_id);
+    my ($object_xref_id, $acc, $xref_id, $identity, $status, $object_type, $ensembl_id, $info_type);
+    $sth->bind_columns(\$object_xref_id, \$acc, \$xref_id, \$identity, \$status, \$object_type, \$ensembl_id, \$info_type);
     my $last_acc = "";
     my $last_name = "";
     my $best_xref_id = undef;
@@ -145,6 +165,17 @@ NEWS
     while($sth->fetch){
       if($last_acc eq $acc){
 	if($xref_id != $best_xref_id){
+# If it is a sequence_match, we want to copy the alignment identity_xref to all the other entries for that accession
+          if ($info_type eq 'SEQUENCE_MATCH') {
+            my ($query_identity, $target_identity, $hit_start, $hit_end, $translation_start, $translation_end, $cigar_line, $score, $evalue, $best_object_xref_id);
+            $seq_score_sth->execute($object_xref_id);
+            $seq_score_sth->bind_columns(\$query_identity, \$target_identity, \$hit_start, \$hit_end, \$translation_start, \$translation_end, \$cigar_line, \$score, \$evalue);
+            $seq_score_sth->fetch();
+            $best_ox_sth->execute($best_xref_id, $object_type, $ensembl_id);
+            $best_ox_sth->bind_columns(\$best_object_xref_id);
+            $best_ox_sth->fetch();
+            $idx_copy_sth->execute($query_identity, $target_identity, $hit_start, $hit_end, $translation_start, $translation_end, $cigar_line, $score, $evalue, $best_object_xref_id);
+          }
 	  if($status eq "DUMP_OUT"){
 	    $update_x_sth->execute($xref_id);
 	    $update_ox_sth->execute($object_xref_id);
@@ -190,6 +221,9 @@ NEWS
 
   $update_ox_sth->finish;
   $update_x_sth->finish;
+  $seq_score_sth->finish;
+  $best_ox_sth->finish;
+  $idx_copy_sth->finish;
 
 
 # We want to make sure that if a priority xref is NOT MAPPEd then we only

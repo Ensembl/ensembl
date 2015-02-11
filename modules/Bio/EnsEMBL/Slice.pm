@@ -1,6 +1,6 @@
 =head1 LICENSE
 
-Copyright [1999-2014] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
+Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -806,11 +806,10 @@ sub is_chromosome {
                     |clone
                     |contig
                     |genescaffold
-                    |group
                     |reftig
                     |supercontig
                     |ultracontig        
-                    /x) or ( $coord_system !~ /^chromosome$/i )) {
+                    /x) or ( $coord_system !~ /^chromosome$/i && $coord_system !~ /^group$/i ) ) {
     return 0;
   }
   
@@ -1388,6 +1387,23 @@ sub get_seq_region_id {
     warning('Cannot retrieve seq_region_id without attached adaptor.');
     return undef;
   }
+}
+
+=head2 get_genome_component
+
+  Arg []     : none
+  Example    : my $genome_component = $slice->get_genome_component();
+  Description: Returns the genome component of the slice
+  Returntype : Scalar; the identifier of the genome component of the slice
+  Exceptions : none
+  Caller     : general
+  Status     : Stable
+
+=cut
+
+sub get_genome_component {
+  my $self = shift;
+  return $self->adaptor->get_genome_component_for_slice($self);
 }
 
 =head2 get_all_Attributes

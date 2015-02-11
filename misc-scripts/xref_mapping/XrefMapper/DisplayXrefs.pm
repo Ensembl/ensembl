@@ -1,6 +1,6 @@
 =head1 LICENSE
 
-Copyright [1999-2014] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
+Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -741,7 +741,7 @@ sub transcript_names_from_gene {
   my $xref_id_sth = $self->core->dbc->prepare("SELECT max(xref_id) FROM xref");
   my $ox_id_sth = $self->core->dbc->prepare("SELECT max(object_xref_id) FROM object_xref");
   my $del_xref_sth = $self->core->dbc->prepare("DELETE x FROM xref x, object_xref ox WHERE x.xref_id = ox.xref_id AND ensembl_object_type = 'Transcript' AND display_label REGEXP '-2[0-9]{2}\$'");
-  my $reuse_xref_sth = $self->core->dbc->prepare("SELECT xref_id FROM xref x WHERE external_db_id = ? AND display_label = ? AND version = 0 AND description = ? AND info_type = 'MISC' AND info_text = 'via gene name'");
+  my $reuse_xref_sth = $self->core->dbc->prepare("SELECT xref_id FROM xref x WHERE external_db_id = ? AND display_label = ? AND description = ? AND info_type = 'MISC' AND info_text = 'via gene name'");
   my $del_ox_sth = $self->core->dbc->prepare("DELETE ox FROM object_xref ox LEFT JOIN xref x ON x.xref_id = ox.xref_id WHERE isnull(x.xref_id)");
   my $ins_xref_sth = $self->core->dbc->prepare("INSERT IGNORE into xref (xref_id, external_db_id, dbprimary_acc, display_label, version, description, info_type, info_text) values(?, ?, ?, ?, 0, ?, 'MISC', 'via gene name')");
   my $ins_ox_sth = $self->core->dbc->prepare("INSERT into object_xref (object_xref_id, ensembl_id, ensembl_object_type, xref_id) values(?, ?, 'Transcript', ?)");

@@ -1,6 +1,6 @@
 =head1 LICENSE
 
-Copyright [1999-2014] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
+Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -197,12 +197,16 @@ sub fetch_files {
 	      push( @processed_files, $file_path );
 
       } ## end foreach my $remote_file ( (...))
+    if (!@processed_files) { printf ("No files found matching $uri") ; }
 
 
     } elsif ( $uri->scheme() eq 'http' ) {
       # Deal with HTTP files.
 
-      my $file_path = catfile( $dest_dir, basename( $uri->path() ) );
+      my $filename = basename ($uri->path() );
+      if ($uri->path eq '') { $filename = "index.html"; }
+
+      my $file_path = catfile( $dest_dir, $filename );
 
       if ( $deletedownloaded && -e $file_path ) {
         if ($verbose) {

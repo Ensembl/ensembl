@@ -1,6 +1,6 @@
 -- 
 -- Created by SQL::Translator::Producer::SQLite
--- Created on Tue Oct 28 16:45:49 2014
+-- Created on Tue Dec  9 09:23:25 2014
 -- 
 
 BEGIN TRANSACTION;
@@ -13,6 +13,8 @@ CREATE TABLE alt_allele (
   alt_allele_group_id integer NOT NULL,
   gene_id integer NOT NULL
 );
+
+CREATE UNIQUE INDEX gene_idx ON alt_allele (gene_id);
 
 --
 -- Table: alt_allele_attrib

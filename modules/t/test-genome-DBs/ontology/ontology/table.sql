@@ -179,6 +179,7 @@ CREATE TABLE `synonym` (
   `synonym_id` int(10) unsigned NOT NULL AUTO_INCREMENT,
   `term_id` int(10) unsigned NOT NULL,
   `name` text NOT NULL,
+  `type` enum('EXACT','BROAD','NARROW','RELATED') DEFAULT NULL,
   PRIMARY KEY (`synonym_id`),
   UNIQUE KEY `term_synonym_idx` (`term_id`,`synonym_id`),
   KEY `name_idx` (`name`(50))

@@ -1,4 +1,4 @@
--- Copyright [1999-2014] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
+-- Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
 -- 
 -- Licensed under the Apache License, Version 2.0 (the "License");
 -- you may not use this file except in compliance with the License.
@@ -302,17 +302,13 @@ CREATE TABLE IF NOT EXISTS meta (
 # Add schema type and schema version to the meta table.
 INSERT INTO meta (species_id, meta_key, meta_value) VALUES
   (NULL, 'schema_type',     'core'),
-  (NULL, 'schema_version',  '78');
+  (NULL, 'schema_version',  '79');
 
 # Patches included in this schema file:
 # NOTE: At start of release cycle, remove patch entries from last release.
 # NOTE: Avoid line-breaks in values.
 INSERT INTO meta (species_id, meta_key, meta_value)
-  VALUES (NULL, 'patch', 'patch_77_78_a.sql|schema_version');
-INSERT INTO meta (species_id, meta_key, meta_value)
-  VALUES (NULL, 'patch', 'patch_77_78_b.sql|source_column_increase');
-INSERT INTO meta (species_id, meta_key, meta_value) 
-  VALUES (NULL, 'patch', 'patch_77_78_c.sql|Change unmapped_reason_id from smallint to int');
+  VALUES (NULL, 'patch', 'patch_78_79_a.sql|schema_version');
 
 /**
 @table meta_coord

@@ -1,6 +1,6 @@
 =head1 LICENSE
 
-Copyright [1999-2014] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
+Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -1150,6 +1150,8 @@ sub store_alt_alleles {
                in external database references
   Arg [3]    : prevent coordinate recalculation if you are persisting 
                transcripts with this gene
+  Arg [4]    : prevent copying supporting features across exons
+               increased speed for lost accuracy
   Example    : $gene_adaptor->store($gene);
   Description: Stores a gene in the database.
   Returntype : the database identifier (dbID) of the newly stored gene
@@ -1161,7 +1163,7 @@ sub store_alt_alleles {
 =cut
 
 sub store {
-  my ($self, $gene, $ignore_release, $skip_recalculating_coordinates) = @_;
+  my ($self, $gene, $ignore_release, $skip_recalculating_coordinates, $skip_exon_sf) = @_;
 
   if (!ref $gene || !$gene->isa('Bio::EnsEMBL::Gene')) {
     throw("Must store a gene object, not a $gene");
@@ -1283,7 +1285,7 @@ sub store {
     foreach my $e (@{$trans->get_all_Exons}) {
       my $key = $e->hashkey();
       if (exists $exons{$key}) {
-        $trans->swap_exons($e, $exons{$key});
+        $trans->swap_exons($e, $exons{$key}, $skip_exon_sf);
       } else {
         $exons{$key} = $e;
       }

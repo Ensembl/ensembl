@@ -1,6 +1,6 @@
 =head1 LICENSE
 
-Copyright [1999-2014] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
+Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -1567,12 +1567,12 @@ sub load_registry_from_db {
 
   my ( $host,         $port,     $user,
        $pass,         $verbose,  $db_version,
-       $wait_timeout, $no_cache, $species, $species_suffix )
+       $wait_timeout, $no_cache, $species, $species_suffix, $db_prefix )
     = rearrange( [ 'HOST',         'PORT',
                    'USER',         'PASS',
                    'VERBOSE',      'DB_VERSION',
                    'WAIT_TIMEOUT', 'NO_CACHE',
-                   'SPECIES', 'SPECIES_SUFFIX' ],
+                   'SPECIES', 'SPECIES_SUFFIX', 'DB_PREFIX' ],
                  @args );
 
   if ( defined($species) ) {
@@ -1581,6 +1581,11 @@ sub load_registry_from_db {
   }
   if (!defined($species_suffix)) {
     $species_suffix = "";
+  }
+  if (defined($db_prefix)) {
+    $db_prefix = $db_prefix . '_';
+  } else {
+    $db_prefix = '';
   }
 
   if(! defined $db_version) {
@@ -1689,7 +1694,7 @@ sub load_registry_from_db {
       }
 
     } elsif (
-      $db =~ /^([a-z]+_[a-z0-9]+(?:_[a-z0-9]+)? # species name e.g. homo_sapiens or canis_lupus_familiaris
+      $db =~ /^(?:$db_prefix)([a-z]+_[a-z0-9]+(?:_[a-z0-9]+)? # species name e.g. homo_sapiens or canis_lupus_familiaris
            _
            [a-z]+            # db type
            (?:_\d+)?)        # optional end bit for ensembl genomes databases
@@ -1704,6 +1709,7 @@ sub load_registry_from_db {
       # Species specific databases (core, cdna, vega etc.)
 
       my ( $sp_name, $db_rel, $assem ) = ( $1, $2, $3 );
+      if ($db_prefix) { $sp_name = $db_prefix . $sp_name; }
 
       if ( !defined($species) || $sp_name =~ /^$species/ ) {
         if ( $db_rel eq $software_version ) {
@@ -1726,7 +1732,7 @@ sub load_registry_from_db {
   my $core_like_dbs_found = 0;
   foreach my $type (qw(core cdna vega vega_update otherfeatures rnaseq)) {
 
-    my @dbs = grep { /^[a-z]+_[a-z0-9]+(?:_[a-z0-9]+)?  # species name
+    my @dbs = grep { /^(?:$db_prefix)[a-z]+_[a-z0-9]+(?:_[a-z0-9]+)?  # species name
                        _
                        $type            # the database type
                        _
@@ -1746,8 +1752,8 @@ sub load_registry_from_db {
       }
     
 
-      my ( $species, $num ) =
-        ( $database =~ /(^[a-z]+_[a-z0-9]+(?:_[a-z0-9]+)?)  # species name
+      my ( $prefix, $species, $num ) =
+        ( $database =~ /(^$db_prefix)([a-z]+_[a-z0-9]+(?:_[a-z0-9]+)?)  # species name
                      _
                      $type                   # type
                      _
