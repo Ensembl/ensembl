@@ -170,9 +170,7 @@ sub display_id{
    if( defined $arg ) {
        $self->{display_id} = $arg;
    } 
-   my $display_id = $self->{display_id};
-   $display_id =~ s/;//;
-   return $display_id;
+   return $self->{display_id};
 }
 
 
