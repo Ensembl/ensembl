@@ -57,7 +57,7 @@ sub from_date_to_seconds {
 
 sub from_seconds_to_date {
     my ($self, $seconds) = @_;
-    return "DATETIME($seconds)";
+    return "DATETIME($seconds, 'unixepoch')";
 }
 
 sub insert_ignore_clause {
