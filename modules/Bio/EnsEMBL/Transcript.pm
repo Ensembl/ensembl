@@ -65,7 +65,6 @@ use strict;
 use Bio::EnsEMBL::Feature;
 use Bio::EnsEMBL::Intron;
 use Bio::EnsEMBL::TranscriptMapper;
-use Bio::EnsEMBL::Utils::TranscriptSNPs;
 use Bio::EnsEMBL::SeqEdit;
 
 use Bio::EnsEMBL::Utils::Argument qw( rearrange );
@@ -2763,56 +2762,6 @@ sub recalculate_coordinates {
 sub display_id {
   my $self = shift;
   return $self->{'stable_id'} || $self->dbID || '';
-}
-
-
-=head2 get_all_peptide_variations
-
-  Description: See Bio::EnsEMBL::Utils::TranscriptSNPs::get_all_peptide_variations
-  Status  : At Risk
-          : Will be replaced with modules from the ensembl-variation package
-
-
-=cut
-
-sub get_all_peptide_variations {
-  my ($self, $source, $snps) = @_;
-
-  if(!$snps) {
-    my $shash = Bio::EnsEMBL::Utils::TranscriptSNPs::get_all_cdna_SNPs($self, $source);
-    $snps = $shash->{'coding'};
-  }
-
-  return Bio::EnsEMBL::Utils::TranscriptSNPs::get_all_peptide_variations($self,
-                                                                        $snps);
-}
-
-
-=head2 get_all_SNPs
-
-  Description: See Bio::EnsEMBL::Utils::TranscriptSNPs::get_all_SNPs
-
-  Status  : At Risk
-          : Will be replaced with modules from the ensembl-variation package
-
-=cut
-
-sub get_all_SNPs {
-  return Bio::EnsEMBL::Utils::TranscriptSNPs::get_all_SNPs(@_);
-}
-
-
-=head2 get_all_cdna_SNPs
-
-  Description: See Bio::EnsEMBL::Utils::TranscriptSNPs::get_all_cdna_SNPs
- 
-  Status  : At Risk
-          : Will be replaced with modules from the ensembl-variation package
-
-=cut
-
-sub get_all_cdna_SNPs {
-  return Bio::EnsEMBL::Utils::TranscriptSNPs::get_all_cdna_SNPs(@_);
 }
 
 
