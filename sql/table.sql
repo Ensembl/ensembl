@@ -169,7 +169,7 @@ CREATE TABLE data_file (
   version_lock      TINYINT(1) DEFAULT 0 NOT NULL,
   absolute          TINYINT(1) DEFAULT 0 NOT NULL,
   url               TEXT,
-  file_type         ENUM('BAM','BIGBED','BIGWIG','VCF'),
+  file_type         ENUM('BAM','BAMCOV','BIGBED','BIGWIG','VCF'),
 
   PRIMARY KEY (data_file_id),
   UNIQUE KEY df_unq_idx(coord_system_id, analysis_id, name, file_type),
@@ -309,6 +309,8 @@ INSERT INTO meta (species_id, meta_key, meta_value) VALUES
 # NOTE: Avoid line-breaks in values.
 INSERT INTO meta (species_id, meta_key, meta_value)
   VALUES (NULL, 'patch', 'patch_78_79_a.sql|schema_version');
+INSERT INTO meta (species_id, meta_key, meta_value)
+  VALUES (NULL, 'patch', 'patch_78_79_b.sql|bamcov support');
 
 /**
 @table meta_coord

@@ -450,7 +450,6 @@ sub get_available_adaptors {
     GenomeContainer                     => 'Bio::EnsEMBL::DBSQL::GenomeContainer',
     MetaContainer                       => 'Bio::EnsEMBL::DBSQL::MetaContainer',
     MetaCoordContainer                  => 'Bio::EnsEMBL::DBSQL::MetaCoordContainer',
-    SNP                                 => 'Bio::EnsEMBL::DBSQL::ProxySNPAdaptor',
   };
   return $adaptors;
 } ## end sub get_available_adaptors

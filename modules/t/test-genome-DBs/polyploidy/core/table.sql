@@ -103,7 +103,7 @@ CREATE TABLE `attrib_type` (
   `description` text,
   PRIMARY KEY (`attrib_type_id`),
   UNIQUE KEY `code_idx` (`code`)
-) ENGINE=MyISAM AUTO_INCREMENT=20 DEFAULT CHARSET=latin1;
+) ENGINE=MyISAM AUTO_INCREMENT=437 DEFAULT CHARSET=latin1;
 
 CREATE TABLE `coord_system` (
   `coord_system_id` int(10) unsigned NOT NULL AUTO_INCREMENT,
@@ -116,7 +116,7 @@ CREATE TABLE `coord_system` (
   UNIQUE KEY `rank_idx` (`rank`,`species_id`),
   UNIQUE KEY `name_idx` (`name`,`version`,`species_id`),
   KEY `species_idx` (`species_id`)
-) ENGINE=MyISAM AUTO_INCREMENT=10 DEFAULT CHARSET=latin1;
+) ENGINE=MyISAM AUTO_INCREMENT=11 DEFAULT CHARSET=latin1;
 
 CREATE TABLE `data_file` (
   `data_file_id` int(10) unsigned NOT NULL AUTO_INCREMENT,
@@ -126,7 +126,7 @@ CREATE TABLE `data_file` (
   `version_lock` tinyint(1) NOT NULL DEFAULT '0',
   `absolute` tinyint(1) NOT NULL DEFAULT '0',
   `url` text,
-  `file_type` enum('BAM','BIGBED','BIGWIG','VCF') DEFAULT NULL,
+  `file_type` enum('BAM','BAMCOV','BIGBED','BIGWIG','VCF') DEFAULT NULL,
   PRIMARY KEY (`data_file_id`),
   UNIQUE KEY `df_unq_idx` (`coord_system_id`,`analysis_id`,`name`,`file_type`),
   KEY `df_name_idx` (`name`),
@@ -153,7 +153,7 @@ CREATE TABLE `density_type` (
   `value_type` enum('sum','ratio') NOT NULL,
   PRIMARY KEY (`density_type_id`),
   UNIQUE KEY `analysis_idx` (`analysis_id`,`block_size`,`region_features`)
-) ENGINE=MyISAM AUTO_INCREMENT=7 DEFAULT CHARSET=latin1;
+) ENGINE=MyISAM AUTO_INCREMENT=23 DEFAULT CHARSET=latin1;
 
 CREATE TABLE `dependent_xref` (
   `object_xref_id` int(10) unsigned NOT NULL,
@@ -242,7 +242,7 @@ CREATE TABLE `exon` (
   PRIMARY KEY (`exon_id`),
   KEY `seq_region_idx` (`seq_region_id`,`seq_region_start`),
   KEY `stable_id_idx` (`stable_id`,`version`)
-) ENGINE=MyISAM AUTO_INCREMENT=162051 DEFAULT CHARSET=latin1;
+) ENGINE=MyISAM AUTO_INCREMENT=382467 DEFAULT CHARSET=latin1;
 
 CREATE TABLE `exon_transcript` (
   `exon_id` int(10) unsigned NOT NULL,
@@ -299,7 +299,7 @@ CREATE TABLE `gene` (
   KEY `analysis_idx` (`analysis_id`),
   KEY `stable_id_idx` (`stable_id`,`version`),
   KEY `canonical_transcript_id_idx` (`canonical_transcript_id`)
-) ENGINE=MyISAM AUTO_INCREMENT=18284 DEFAULT CHARSET=latin1;
+) ENGINE=MyISAM AUTO_INCREMENT=40234 DEFAULT CHARSET=latin1;
 
 CREATE TABLE `gene_archive` (
   `gene_stable_id` varchar(128) NOT NULL,
@@ -336,7 +336,7 @@ CREATE TABLE `genome_statistics` (
   PRIMARY KEY (`genome_statistics_id`),
   UNIQUE KEY `stats_uniq` (`statistic`,`attrib_type_id`,`species_id`),
   KEY `stats_idx` (`statistic`,`attrib_type_id`,`species_id`)
-) ENGINE=MyISAM DEFAULT CHARSET=latin1;
+) ENGINE=MyISAM AUTO_INCREMENT=45 DEFAULT CHARSET=latin1;
 
 CREATE TABLE `identity_xref` (
   `object_xref_id` int(10) unsigned NOT NULL,
@@ -468,7 +468,7 @@ CREATE TABLE `meta` (
   PRIMARY KEY (`meta_id`),
   UNIQUE KEY `species_key_value_idx` (`species_id`,`meta_key`,`meta_value`),
   KEY `species_value_idx` (`species_id`,`meta_value`)
-) ENGINE=MyISAM AUTO_INCREMENT=122 DEFAULT CHARSET=latin1;
+) ENGINE=MyISAM AUTO_INCREMENT=197 DEFAULT CHARSET=latin1;
 
 CREATE TABLE `meta_coord` (
   `table_name` varchar(40) NOT NULL,
@@ -512,7 +512,7 @@ CREATE TABLE `misc_set` (
   `max_length` int(10) unsigned NOT NULL,
   PRIMARY KEY (`misc_set_id`),
   UNIQUE KEY `code_idx` (`code`)
-) ENGINE=MyISAM AUTO_INCREMENT=11 DEFAULT CHARSET=latin1;
+) ENGINE=MyISAM AUTO_INCREMENT=24 DEFAULT CHARSET=latin1;
 
 CREATE TABLE `object_xref` (
   `object_xref_id` int(10) unsigned NOT NULL AUTO_INCREMENT,
@@ -658,7 +658,7 @@ CREATE TABLE `protein_feature` (
   KEY `analysis_idx` (`analysis_id`),
   KEY `translation_idx` (`translation_id`),
   KEY `hitname_idx` (`hit_name`)
-) ENGINE=MyISAM AUTO_INCREMENT=242848 DEFAULT CHARSET=latin1;
+) ENGINE=MyISAM AUTO_INCREMENT=3502933 DEFAULT CHARSET=latin1;
 
 CREATE TABLE `repeat_consensus` (
   `repeat_consensus_id` int(10) unsigned NOT NULL AUTO_INCREMENT,
@@ -671,7 +671,7 @@ CREATE TABLE `repeat_consensus` (
   KEY `class` (`repeat_class`),
   KEY `consensus` (`repeat_consensus`(10)),
   KEY `type` (`repeat_type`)
-) ENGINE=MyISAM AUTO_INCREMENT=1020 DEFAULT CHARSET=latin1;
+) ENGINE=MyISAM AUTO_INCREMENT=1163919 DEFAULT CHARSET=latin1;
 
 CREATE TABLE `repeat_feature` (
   `repeat_feature_id` int(10) unsigned NOT NULL AUTO_INCREMENT,
@@ -688,7 +688,7 @@ CREATE TABLE `repeat_feature` (
   KEY `seq_region_idx` (`seq_region_id`,`seq_region_start`),
   KEY `repeat_idx` (`repeat_consensus_id`),
   KEY `analysis_idx` (`analysis_id`)
-) ENGINE=MyISAM AUTO_INCREMENT=922516 DEFAULT CHARSET=latin1 MAX_ROWS=100000000 AVG_ROW_LENGTH=80;
+) ENGINE=MyISAM AUTO_INCREMENT=10446798 DEFAULT CHARSET=latin1 MAX_ROWS=100000000 AVG_ROW_LENGTH=80;
 
 CREATE TABLE `seq_region` (
   `seq_region_id` int(10) unsigned NOT NULL AUTO_INCREMENT,
@@ -698,7 +698,7 @@ CREATE TABLE `seq_region` (
   PRIMARY KEY (`seq_region_id`),
   UNIQUE KEY `name_cs_idx` (`name`,`coord_system_id`),
   KEY `cs_idx` (`coord_system_id`)
-) ENGINE=MyISAM AUTO_INCREMENT=965911 DEFAULT CHARSET=latin1;
+) ENGINE=MyISAM AUTO_INCREMENT=3495795 DEFAULT CHARSET=latin1;
 
 CREATE TABLE `seq_region_attrib` (
   `seq_region_id` int(10) unsigned NOT NULL DEFAULT '0',
@@ -789,7 +789,7 @@ CREATE TABLE `transcript` (
   KEY `xref_id_index` (`display_xref_id`),
   KEY `analysis_idx` (`analysis_id`),
   KEY `stable_id_idx` (`stable_id`,`version`)
-) ENGINE=MyISAM AUTO_INCREMENT=21752 DEFAULT CHARSET=latin1;
+) ENGINE=MyISAM AUTO_INCREMENT=124988 DEFAULT CHARSET=latin1;
 
 CREATE TABLE `transcript_attrib` (
   `transcript_id` int(10) unsigned NOT NULL DEFAULT '0',
@@ -832,7 +832,7 @@ CREATE TABLE `translation` (
   PRIMARY KEY (`translation_id`),
   KEY `transcript_idx` (`transcript_id`),
   KEY `stable_id_idx` (`stable_id`,`version`)
-) ENGINE=MyISAM AUTO_INCREMENT=21747 DEFAULT CHARSET=latin1;
+) ENGINE=MyISAM AUTO_INCREMENT=124988 DEFAULT CHARSET=latin1;
 
 CREATE TABLE `translation_attrib` (
   `translation_id` int(10) unsigned NOT NULL DEFAULT '0',
@@ -868,7 +868,7 @@ CREATE TABLE `unmapped_reason` (
   `summary_description` varchar(255) DEFAULT NULL,
   `full_description` varchar(255) DEFAULT NULL,
   PRIMARY KEY (`unmapped_reason_id`)
-) ENGINE=MyISAM AUTO_INCREMENT=4 DEFAULT CHARSET=latin1;
+) ENGINE=MyISAM AUTO_INCREMENT=139 DEFAULT CHARSET=latin1;
 
 CREATE TABLE `xref` (
   `xref_id` int(10) unsigned NOT NULL AUTO_INCREMENT,

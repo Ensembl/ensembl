@@ -68,7 +68,8 @@ sub new {
 
 =head2 get_ExternalAdaptor
 
-  Arg[1]     	: Scalar; optional base path. Uses defaults if not given 
+  Arg[1]     	: Scalar; (optional) base path. Uses defaults if not given 
+  Arg[2]        : Scalar; (optional) file type
   Example       : my $ea = $df->get_ExternalAdaptor('/base/path');
   Description	: Delegates to the parent adaptor to retrieve the external 
                   adaptor for this data type
@@ -78,10 +79,10 @@ sub new {
 =cut
 
 sub get_ExternalAdaptor {
-  my ($self, $base_path) = @_;
+  my ($self, $base_path, $requested_type) = @_;
   my $adaptor = $self->adaptor();
   throw "No DataFileAdaptor found in this object. Cannot request ExternalAdaptor" if ! $adaptor;
-  return $adaptor->DataFile_to_adaptor($self, $base_path);
+  return $adaptor->DataFile_to_adaptor($self, $base_path, $requested_type);
 }
 
 =head2 path

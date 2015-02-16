@@ -72,6 +72,7 @@ my %printables = (
                     'Bio::EnsEMBL::Gene' => ['id','biotype','start','end'],
                     'Bio::EnsEMBL::Transcript' => ['id','start','end'],
                     'Bio::EnsEMBL::Translation' => ['id'],
+                    'Bio::EnsEMBL::Slice' => ['start','end','strand'],
                     'Bio::EnsEMBL::Variation::VariationFeature' => ['id','start','end','strand','seq_region_name'],
                     'Bio::EnsEMBL::Variation::StructuralVariationFeature' => ['id','start','end','strand','seq_region_name'],
                     'Bio::EnsEMBL::Funcgen::RegulatoryFeature' => ['id','start','end','strand'],
