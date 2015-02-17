@@ -2203,8 +2203,7 @@ CREATE TABLE object_xref (
 
   PRIMARY KEY (object_xref_id),
 
-  UNIQUE KEY xref_idx
-    (xref_id, ensembl_object_type, ensembl_id, analysis_id),
+  UNIQUE KEY xref_idx (xref_id, ensembl_object_type, ensembl_id, analysis_id),
 
   KEY ensembl_idx (ensembl_object_type, ensembl_id),
   KEY analysis_idx (analysis_id)
