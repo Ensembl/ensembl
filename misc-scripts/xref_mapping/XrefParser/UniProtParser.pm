@@ -58,7 +58,7 @@ sub run {
   $sp_source_id =
     $self->get_source_id_for_source_name('Uniprot/SWISSPROT','sequence_mapped');
   $sptr_source_id =
-    $self->get_source_id_for_source_name('Uniprot/SPTREMBL', '');
+    $self->get_source_id_for_source_name('Uniprot/SPTREMBL', 'sequence_mapped');
 
   $sptr_non_display_source_id =
     $self->get_source_id_for_source_name('Uniprot/SPTREMBL', 'protein_evidence_gt_2');
@@ -416,8 +416,10 @@ sub create_xrefs {
           my $syn = $1;
           $syn =~ s/{.*}//g;  # Remove any potential evidence codes
           $syn =~ s/\n//g;    # Remove return carriages, as entry can span several lines
-          $syn =~ s/\s+//g;   # Remove white spaces that are left over if there was an evidence code
-          @syn = split(/,/,$syn);
+          $syn =~ s/\s+$//g;  # Remove white spaces that are left over at the end if there was an evidence code
+          #$syn =~ s/^\s+//g;  # Remove white spaces that are left over at the beginning if there was an evidence code
+          $syn =~ s/\s+,/,/g;  # Remove white spaces that are left over before the comma if there was an evidence code
+          @syn = split(/, /,$syn);
           push (@{$depe{"SYNONYMS"}}, @syn);
         }
       }
