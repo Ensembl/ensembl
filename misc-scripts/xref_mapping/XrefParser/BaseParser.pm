@@ -466,7 +466,7 @@ sub upload_xref_object_graphs {
 
 
     foreach my $xref (@{$rxrefs}) {
-       my $xref_id=undef;
+       my ($xref_id, $direct_xref_id);
        if(!(defined $xref->{ACCESSION} )){
 	 print "Your xref does not have an accession-number,so it can't be stored in the database\n"
 	   || croak 'Could not write message';
@@ -521,12 +521,12 @@ sub upload_xref_object_graphs {
                              $direct_xref->{SOURCE_ID},
                              $xref->{SPECIES_ID},
                              $direct_xref->{LINKAGE_TYPE});
-         $xref_id = $self->get_xref_id({ sth        => $xref_sth,
+         $direct_xref_id = $self->get_xref_id({ sth        => $xref_sth,
                                          error      => $dbi->err,
                                          acc        => $xref->{ACCESSION},
                                          source_id  => $direct_xref->{SOURCE_ID},
                                          species_id => $xref->{SPECIES_ID}} );
-         $self->add_direct_xref($xref_id, $direct_xref->{STABLE_ID}, $direct_xref->{ENSEMBL_TYPE},$direct_xref->{LINKAGE_TYPE});
+         $self->add_direct_xref($direct_xref_id, $direct_xref->{STABLE_ID}, $direct_xref->{ENSEMBL_TYPE},$direct_xref->{LINKAGE_TYPE});
        }
 
        ################
