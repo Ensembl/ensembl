@@ -77,9 +77,9 @@ sub print_main_header {
   my $accession = $gc->get_accession();
   if($accession) {
      my $accession_source = $mc->single_value_by_key('assembly.web_accession_source');
-     my $string = "#!genome-build-accession";
+     my $string = "#!genome-build-accession ";
      $string .= "$accession_source:" if $accession_source;
-     $string .= "$accession\n"; 
+     $string .= "$accession"; 
 
      print $fh "$string\n";
      #my $accession_source = $mc->single_value_by_key('assembly.web_accession_source');
