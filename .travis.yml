@@ -43,7 +43,5 @@ matrix:
 
 notifications:
   email:
-    recipients:
-      - ensembl-core-git@ebi.ac.uk
     on_success: always
     on_failure: always
