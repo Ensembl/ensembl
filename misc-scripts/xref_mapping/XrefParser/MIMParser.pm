@@ -92,15 +92,15 @@ sub run {
 
       if(/\*FIELD\*\sTI(.+)\*FIELD\*\sTX/s) { # grab the whole TI field
 	my $ti = $1;
-	# extract the 'type' and the whole description
+        $ti =~ s/\n//g; # Remove return carriages
+        # extract the 'type' and the whole description
 	$ti =~ /([\^\#\%\+\*]*)\d+(.+)/s;
 	my $type = $1;
 	my $long_desc = $2;
+        my @fields = split(";;", $long_desc);
 
-	# the first line of the long description is the label
-	$long_desc =~ /(.+)\n/;
-	# to which we attach the type and number
-	my $label = $1 . " [" . $type . $number . "]";
+        # Use the first block of text as description
+	my $label = $fields[0] . " [" . $type . $number . "]";
 
 	if($type eq "*"){ # gene only
 	  $gene++;
