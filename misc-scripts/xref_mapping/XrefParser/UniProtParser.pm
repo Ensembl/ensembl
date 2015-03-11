@@ -335,7 +335,7 @@ sub create_xrefs {
 	$desc = $sub_description;
       }
       
-      $desc =~ s/\(\s*EC\s*\S*\)//g;
+      $desc =~ s/\s*\{ECO:.*?\}//g;
       $xref->{DESCRIPTION} = $desc;
 
       # Parse the EC_NUMBER line, only for S.cerevisiae for now
