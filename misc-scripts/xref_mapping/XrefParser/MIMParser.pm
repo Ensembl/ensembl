@@ -97,6 +97,7 @@ sub run {
 	$ti =~ /([\^\#\%\+\*]*)\d+(.+)/s;
 	my $type = $1;
 	my $long_desc = $2;
+        $long_desc =~ s/^\s//; # Remove white space at the start
         my @fields = split(";;", $long_desc);
 
         # Use the first block of text as description
