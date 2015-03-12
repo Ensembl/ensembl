@@ -78,12 +78,16 @@ sub run {
   my $dbi = $self->dbi();
 
   my $reactome_source_id =  $self->get_source_id_for_source_name("reactome", "direct");
+  my $transcript_reactome_source_id =  $self->get_source_id_for_source_name("reactome_transcript");
+  my $gene_reactome_source_id =  $self->get_source_id_for_source_name("reactome_gene");
   my $reactome_uniprot_source_id = $self->get_source_id_for_source_name("reactome", "uniprot");
-  if($reactome_source_id < 1){
-    die "Could not find source id for reactome direct???\n";
+  if($reactome_source_id < 1 || $transcript_reactome_source_id < 1 || $gene_reactome_source_id < 1){
+    die "Could not find source id for reactome sources???\n";
   }
   else{
     print "Source_id = $reactome_source_id\n";
+    print "Transcript_source_id = $transcript_reactome_source_id\n";
+    print "Gene_source_id = $gene_reactome_source_id\n";
   }
 
   if($reactome_uniprot_source_id < 1){
@@ -127,8 +131,13 @@ sub run {
           }
           $info_type = 'DEPENDENT';
         }
-        elsif ($ensembl_stable_id =~ /G[0-9]*$/) { $type = 'gene'; }
-        elsif ($ensembl_stable_id =~ /T[0-9]*$/) { $type = 'transcript'; }
+        elsif ($ensembl_stable_id =~ /G[0-9]*$/) { 
+          $type = 'gene';
+          $reactome_source_id = ;
+        }
+        elsif ($ensembl_stable_id =~ /T[0-9]*$/) { 
+          $type = 'transcript';
+        }
         elsif ($ensembl_stable_id =~ /P[0-9]*$/) { $type = 'translation'; }
         else {
   # Is not in Uniprot and does not match Ensembl stable id format
