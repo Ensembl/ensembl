@@ -1,4 +1,4 @@
-1	\N	schema_version	79
+1	\N	schema_version	80
 2	1	assembly.default	MULTIMAP
 3	1	species.taxonomy_id	1
 4	1	assembly.mapping	chromosome:MULTIMAP#contig
@@ -21,3 +21,4 @@
 114	\N	patch	patch_77_78_c.sql|Change unmapped_reason_id from smallint to int
 115	\N	patch	patch_78_79_a.sql|schema_version
 116	\N	patch	patch_78_79_b.sql|bamcov support
+117	\N	patch	patch_79_80_a.sql|schema_version
