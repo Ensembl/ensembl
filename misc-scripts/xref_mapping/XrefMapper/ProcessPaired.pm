@@ -192,7 +192,7 @@ sub process{
 sub process_dependents {
   my ($self, $translation_object_xref_id, $translation_id, $transcript_id) = @_;
 
-  my $dep_sth          = $self->xref->dbc->prepare("select distinct dependent_ox.object_xref_id from object_xref master_ox, object_xref dependent_ox, xref dependent, xref master, dependent_xref dx where dependent.xref_id = dx.dependent_xref_id and master.xref_id = dx.master_xref_id and dependent.xref_id = dependent_ox.xref_id and master.xref_id = master_ox.xref_id and master_ox.object_xref_id = ? and dependent_ox.master_xref_id = master.xref_id and ((dependent_ox.ensembl_id = ? and dependent_ox.ensembl_object_type = 'Translation') or (dependent_ox.ensembl_id = ? and dependent_ox.ensembl_object_type = 'Transcript'))");
+  my $dep_sth          = $self->xref->dbc->prepare("select distinct dependent_ox.object_xref_id from object_xref master_ox, object_xref dependent_ox, xref dependent, xref master, dependent_xref dx where dependent.xref_id = dx.dependent_xref_id and master.xref_id = dx.master_xref_id and dependent.xref_id = dependent_ox.xref_id and master.xref_id = master_ox.xref_id and master_ox.object_xref_id = ? and dependent_ox.master_xref_id = master.xref_id and ((dependent_ox.ensembl_id = ? and dependent_ox.ensembl_object_type = 'Translation') or (dependent_ox.ensembl_id = ? and dependent_ox.ensembl_object_type = 'Transcript')) and dependent_ox.ox_status = 'DUMP_OUT' ");
   my $ox_dx_delete_sth = $self->xref->dbc->prepare("update object_xref set ox_status = 'MULTI_DELETE' where object_xref_id = ?");
 
   my @master_object_xrefs;
