@@ -1,4 +1,4 @@
-1	\N	schema_version	79
+1	\N	schema_version	80
 2	1	assembly.default	NCBI34
 33	1	species.classification	Chordata
 32	1	species.classification	Vertebrata
@@ -60,3 +60,4 @@
 109	\N	patch	patch_77_78_c.sql|Change unmapped_reason_id from smallint to int
 110	\N	patch	patch_78_79_a.sql|schema_version
 111	\N	patch	patch_78_79_b.sql|bamcov support
+112	\N	patch	patch_79_80_a.sql|schema_version

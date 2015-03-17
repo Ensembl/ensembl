@@ -1,5 +1,5 @@
 1	\N	schema_type	core
-2	\N	schema_version	79
+2	\N	schema_version	80
 3	\N	patch	patch_68_69_a.sql|schema_version
 4	1	species.taxonomy_id	4565
 6	1	species.alias	bread wheat
@@ -114,3 +114,4 @@
 194	\N	patch	patch_77_78_c.sql|Change unmapped_reason_id from smallint to int
 195	\N	patch	patch_78_79_a.sql|schema_version
 196	\N	patch	patch_78_79_b.sql|bamcov support
+197	\N	patch	patch_79_80_a.sql|schema_version

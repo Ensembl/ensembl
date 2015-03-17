@@ -1,4 +1,4 @@
-1	\N	schema_version	79
+1	\N	schema_version	80
 2014	1	species.classification	Haplorrhini
 40	1	assembly.default	GRCh37
 41	1	assembly.date	2009-02
@@ -65,3 +65,4 @@
 2072	\N	patch	patch_78_79_a.sql|schema_version
 2073	\N	patch	patch_73_74_h.sql|alt_allele_unique_gene_idx
 2074	\N	patch	patch_78_79_b.sql|bamcov support
+2075	\N	patch	patch_79_80_a.sql|schema_version

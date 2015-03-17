@@ -1,4 +1,4 @@
-1	\N	schema_version	79
+1	\N	schema_version	80
 2	1	assembly.default	NCBI34
 3	1	species.taxonomy_id	9606
 26	1	species.classification	Homo sapiens
@@ -60,3 +60,4 @@
 120	\N	patch	patch_77_78_c.sql|Change unmapped_reason_id from smallint to int
 121	\N	patch	patch_78_79_a.sql|schema_version
 122	\N	patch	patch_78_79_b.sql|bamcov support
+123	\N	patch	patch_79_80_a.sql|schema_version
