@@ -133,10 +133,11 @@ sub run {
         }
         elsif ($ensembl_stable_id =~ /G[0-9]*$/) { 
           $type = 'gene';
-          $reactome_source_id = ;
+          $reactome_source_id = $gene_reactome_source_id;
         }
         elsif ($ensembl_stable_id =~ /T[0-9]*$/) { 
           $type = 'transcript';
+          $reactome_source_id = $transcript_reactome_source_id;
         }
         elsif ($ensembl_stable_id =~ /P[0-9]*$/) { $type = 'translation'; }
         else {
