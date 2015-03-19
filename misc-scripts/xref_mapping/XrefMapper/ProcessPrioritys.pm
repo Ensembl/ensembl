@@ -145,6 +145,17 @@ IDXCP
 
   my $idx_copy_sth = $self->xref->dbc->prepare($idx_copy_sql);
 
+  #
+  # Query to copy synonyms from one xref to another
+  #
+
+  my $syn_copy_sql = (<<SYNCP);
+    INSERT IGNORE INTO synonym (SELECT x.xref_id, s.synonym FROM xref x, synonym s
+       WHERE x.xref_id = ? AND s.xref_id = ?);
+SYNCP
+
+  my $syn_copy_sth = $self->xref->dbc->prepare($syn_copy_sql);
+
   my $best_ox_sth = $self->xref->dbc->prepare("SELECT object_xref_id FROM object_xref WHERE xref_id = ? and ensembl_object_type = ? and ensembl_id = ?");
 
   my $seq_score_sql = (<<SEQCP);
@@ -165,6 +176,8 @@ SEQCP
     while($sth->fetch){
       if($last_acc eq $acc){
 	if($xref_id != $best_xref_id){
+# Copy synonyms across if they are missing
+          $syn_copy_sth->execute($xref_id, $best_xref_id);
 # If it is a sequence_match, we want to copy the alignment identity_xref to all the other entries for that accession
           if ($info_type eq 'SEQUENCE_MATCH') {
             my ($query_identity, $target_identity, $hit_start, $hit_end, $translation_start, $translation_end, $cigar_line, $score, $evalue, $best_object_xref_id);
@@ -224,6 +237,7 @@ SEQCP
   $seq_score_sth->finish;
   $best_ox_sth->finish;
   $idx_copy_sth->finish;
+  $syn_copy_sth->finish;
 
 
 # We want to make sure that if a priority xref is NOT MAPPEd then we only
