@@ -26,6 +26,8 @@
 177	\N	patch	patch_78_79_a.sql|schema_version
 178	\N	patch	patch_78_79_b.sql|bamcov support
 179	\N	patch	patch_79_80_a.sql|schema_version
+180	\N	patch	patch_79_80_b.sql|xref_dbprimary_acc_longer
+181	\N	patch	patch_79_80_c.sql|seq_region_synonym_longer
 1	\N	schema_type	core
 2	\N	schema_version	80
 8	1	assembly.accession	GCA_000292705.1

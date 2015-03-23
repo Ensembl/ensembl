@@ -60,3 +60,5 @@
 114	\N	patch	patch_78_79_a.sql|schema_version
 115	\N	patch	patch_78_79_b.sql|bamcov support
 116	\N	patch	patch_79_80_a.sql|schema_version
+117	\N	patch	patch_79_80_b.sql|xref_dbprimary_acc_longer
+118	\N	patch	patch_79_80_c.sql|seq_region_synonym_longer

@@ -1,6 +1,6 @@
 -- 
 -- Created by SQL::Translator::Producer::SQLite
--- Created on Fri Dec  5 13:11:19 2014
+-- Created on Mon Mar 23 10:45:07 2015
 -- 
 
 BEGIN TRANSACTION;
@@ -794,7 +794,7 @@ CREATE TABLE seq_region_mapping (
 CREATE TABLE seq_region_synonym (
   seq_region_synonym_id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
   seq_region_id integer NOT NULL,
-  synonym varchar(40) NOT NULL,
+  synonym varchar(50) NOT NULL,
   external_db_id integer
 );
 
@@ -960,7 +960,7 @@ CREATE TABLE unmapped_reason (
 CREATE TABLE xref (
   xref_id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
   external_db_id integer NOT NULL,
-  dbprimary_acc varchar(512),
+  dbprimary_acc varchar(50) NOT NULL,
   display_label varchar(512),
   version varchar(10) NOT NULL DEFAULT '0',
   description text,
