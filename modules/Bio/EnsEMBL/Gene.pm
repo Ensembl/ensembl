@@ -969,6 +969,20 @@ sub add_Transcript {
    $self->recalculate_coordinates();
 }
 
+sub remove_Transcript {
+  my ($self,$trans) = @_;
+  if( !ref $trans || ! $trans->isa("Bio::EnsEMBL::Transcript") ) {
+       throw("$trans is not a Bio::EnsEMBL::Transcript!");
+  }
+  # Clean transcript from live data
+  $self->get_all_Transcripts; # force lazy load.
+  my $array = $self->{_transcript_array};
+  my $db_id = $trans->dbID;
+  @$array = grep { $_->dbID != $db_id } @$array;
+  # Recalculate and store new gene coordinates
+  $self->adaptor->update_coords($self);
+}
+
 
 =head2 get_all_Transcripts
 

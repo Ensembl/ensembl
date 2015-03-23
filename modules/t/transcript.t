@@ -371,6 +371,27 @@ is( count_rows( $db, "translation"), ($tl_count - 1), 'Row count matches transla
 is( count_rows( $db, "exon_transcript"), ($ex_tr_count - $ex_tr_minus), 'Row count matches exon count');
 
 #
+# test removal of transcript with supporting changes at the gene level
+#
+
+$tr = $ta->fetch_by_stable_id('ENST00000278995');
+my $gene = $tr->get_Gene;
+print $gene."\n\n";
+note(join "\n",map { $_->stable_id } @{$gene->get_all_Transcripts});
+
+$ta->remove($tr,1);
+
+ok(! grep { $_->stable_id eq 'ENST00000278995'} @{$gene->get_all_Transcripts});
+
+# note(join "\n",map { $_->stable_id } @{$gene->get_all_Transcripts});
+# old coords 30274334  30300924, the old gene above is still pointing to old coordinates, but remove cannot find it to change it.
+my $new_copy_gene = $ta->fetch_by_stable_id('ENST00000310998')->get_Gene;
+cmp_ok($new_copy_gene->start, '==', 30274334, 'Shortened Gene starts as before');
+cmp_ok($new_copy_gene->end, '==', 30298904, 'Shortened Gene ends earlier');
+
+$tr = $ta->fetch_by_stable_id('ENST00000278995');
+ok(! defined $tr);
+#
 # test _rna_edit for transcripts
 #
 

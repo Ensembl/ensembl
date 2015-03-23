@@ -437,6 +437,16 @@ ok($newgene->biotype eq 'dummy');
 
 $multi->restore('core', 'gene');
 
+# test update_coords method
+# old coords: 30735607 - 30815178
+$gene = $ga->fetch_by_stable_id("ENSG00000171456");
+$gene->start(30730000);
+$gene->end(30815178);
+$ga->update_coords($gene);
+
+my $new_gene = $ga->fetch_by_stable_id("ENSG00000171456");
+cmp_ok($new_gene->start(), '==', 30735607, 'Updated gene start');
+cmp_ok($new_gene->end(), '==', 30815178, 'Updated gene end');
 
 #
 # test GeneAdaptor::fetch_all_by_domain

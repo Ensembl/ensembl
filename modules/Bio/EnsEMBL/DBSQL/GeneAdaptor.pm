@@ -1559,6 +1559,38 @@ sub update {
   # maybe should update stable id ???
 } ## end sub update
 
+
+=head2 update_coords
+
+  Arg [1]    : Bio::EnsEMBL::Gene $gene
+               The gene to update
+  Example    : $gene_adaptor->update_coords($gene);
+  Description: In the event of a transcript being removed, coordinates for the Gene
+               need to be reset, but update() does not do this. update_coords 
+               fills this niche
+  Returntype : None
+  Exceptions : thrown if the $gene is not supplied
+  Caller     : general
+
+=cut
+
+sub update_coords {
+  my ($self, $gene) = @_;
+  throw('Must have a gene to update in order to update it') unless ($gene);
+  $gene->recalculate_coordinates;
+  my $update_sql = qq(
+    UPDATE gene
+       SET seq_region_start = ?,
+           seq_region_end = ?
+       WHERE gene_id = ?
+    );
+  my $sth = $self->prepare($update_sql);
+  $sth->bind_param(1, $gene->start);
+  $sth->bind_param(2, $gene->end);
+  $sth->bind_param(3, $gene->dbID);
+  $sth->execute();
+}
+
 # _objs_from_sth
 
 #  Arg [1]    : StatementHandle $sth
