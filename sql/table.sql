@@ -221,7 +221,7 @@ CREATE TABLE genome_statistics(
 
   genome_statistics_id     INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
   statistic                VARCHAR(128) NOT NULL,
-  value                    INT(10) UNSIGNED DEFAULT '0' NOT NULL,
+  value                    BIGINT(11) UNSIGNED DEFAULT '0' NOT NULL,
   species_id               INT UNSIGNED DEFAULT 1,
   attrib_type_id           INT(10) UNSIGNED DEFAULT NULL,
   timestamp                DATETIME NOT NULL DEFAULT '0000-00-00 00:00:00',
