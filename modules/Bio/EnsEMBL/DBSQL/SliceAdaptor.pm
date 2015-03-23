@@ -1,6 +1,6 @@
 =head1 LICENSE
 
-Copyright [1999-2014] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
+Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -1212,8 +1212,6 @@ sub fetch_all_by_genome_component {
       $cache_count++;
     }
 
-    my $slice = 
-
     push @out, Bio::EnsEMBL::Slice->new_fast({
 					      'start'           => 1,
 					      'end'             => $length,
@@ -1227,7 +1225,46 @@ sub fetch_all_by_genome_component {
   return \@out;
 }
 
+=head2 get_genome_component_for_slice
+
+  Arg [1]    : An object of type Bio::EnsEMBL::Slice
+  Example    : my $component = $slice->get_genome_component();
+  Description: Returns the genome component of a slice
+  Returntype : Scalar; the identifier of the genome component of the slice
+  Exceptions : none
+  Caller     : general
+  Status     : Stable
+
+=cut
+
+sub get_genome_component_for_slice {
+  my ($self, $slice) = @_;
+
+  throw "Undefined slice" unless defined $slice;
+  throw "Argument is not a slice"
+    unless $slice->isa("Bio::EnsEMBL::Slice");
+
+  my $seq_region_id = $self->get_seq_region_id($slice);
+
+  my $sth =
+    $self->prepare(   "SELECT sa.value "
+		      . "FROM seq_region_attrib sa "
+		      . "JOIN seq_region sr USING (seq_region_id) "
+		      . "JOIN attrib_type at ON sa.attrib_type_id = at.attrib_type_id "
+		      . "WHERE sr.seq_region_id=? AND at.code='genome_component'"
+		  );
+  $sth->bind_param( 1, $seq_region_id, SQL_INTEGER );
+  $sth->execute();
+
+  my $genome_component;
+  $sth->bind_columns( \( $genome_component ) );
+  $sth->fetch();
+
+  return $genome_component;
+}
+
 =head2 fetch_all_karyotype
+
   Example    : my $top = $slice_adptor->fetch_all_karyotype()
   Description: returns the list of all slices which are part of the karyotype
   Returntype : listref of Bio::EnsEMBL::Slices

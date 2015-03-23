@@ -1,6 +1,6 @@
 =head1 LICENSE
 
-Copyright [1999-2014] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
+Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -331,18 +331,31 @@ sub run {
   if ( defined $release_file ) {
     # Parse and set release information from $release_file.
     my $release_io = $self->get_filehandle($release_file);
+    my %release_hash;
+    my %date_hash;
+    my %species2name = $self->species_id2name();
+    my @names   = @{$species2name{$species_id}};
+    my %name2species_id     = map{ $_=>$species_id } @names;
 
-    # Slurp mode.
-    local $/;
-    my $release = <$release_io>;
-    $release_io->close();
+    while (my $line = $release_io->getline() ) {
+      my ($species, $version, $date) = split('\t', $line);
+      $release_hash{$species} = $version;
+      $date_hash{$species} = $date;
+    }
 
-    $release =~ s/[\n\r]+/ /gm;
-    $release =~
-      s/.*The following table describes.*?of GOA UniProt .version (\d+).*?<ul>.*/$1/;
-
-    print "GO release: '$release'\n" if($verbose);
-    $self->set_release( $source_id, $release );
+    my $found = 0;
+    foreach my $species (keys %release_hash) {
+      if ($name2species_id{$species}) {
+        print "GO release: " . $release_hash{$species} . "\n" if ($verbose);
+        $self->set_release( $source_id, $release_hash{$species});
+        $found = 1;
+        last;
+      }
+    }
+    if (!$found) {
+      print "Uniprot GO release: " . $release_hash{'uniprot'} . "\n" if ($verbose);
+      $self->set_release( $source_id, $release_hash{'uniprot'});
+    }
   }
 
   return 0;

@@ -1,6 +1,6 @@
 =head1 LICENSE
 
-Copyright [1999-2014] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
+Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -466,7 +466,7 @@ sub upload_xref_object_graphs {
 
 
     foreach my $xref (@{$rxrefs}) {
-       my $xref_id=undef;
+       my ($xref_id, $direct_xref_id);
        if(!(defined $xref->{ACCESSION} )){
 	 print "Your xref does not have an accession-number,so it can't be stored in the database\n"
 	   || croak 'Could not write message';
@@ -511,6 +511,22 @@ sub upload_xref_object_graphs {
 					 acc        => $xref->{ACCESSION},
 					 source_id  => $xref->{SOURCE_ID},
 					 species_id => $xref->{SPECIES_ID}} );
+       }
+
+       foreach my $direct_xref (@{$xref->{DIRECT_XREFS}}) {
+         $xref_sth->execute( $xref->{ACCESSION},
+                             $xref->{VERSION} || 0,
+                             $xref->{LABEL} || $xref->{ACCESSION},
+                             $xref->{DESCRIPTION},
+                             $direct_xref->{SOURCE_ID},
+                             $xref->{SPECIES_ID},
+                             $direct_xref->{LINKAGE_TYPE});
+         $direct_xref_id = $self->get_xref_id({ sth        => $xref_sth,
+                                         error      => $dbi->err,
+                                         acc        => $xref->{ACCESSION},
+                                         source_id  => $direct_xref->{SOURCE_ID},
+                                         species_id => $xref->{SPECIES_ID}} );
+         $self->add_direct_xref($direct_xref_id, $direct_xref->{STABLE_ID}, $direct_xref->{ENSEMBL_TYPE},$direct_xref->{LINKAGE_TYPE});
        }
 
        ################

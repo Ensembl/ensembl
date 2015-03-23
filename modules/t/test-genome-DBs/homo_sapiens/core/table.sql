@@ -126,7 +126,7 @@ CREATE TABLE `data_file` (
   `version_lock` tinyint(1) NOT NULL DEFAULT '0',
   `absolute` tinyint(1) NOT NULL DEFAULT '0',
   `url` text,
-  `file_type` enum('BAM','BIGBED','BIGWIG','VCF') DEFAULT NULL,
+  `file_type` enum('BAM','BAMCOV','BIGBED','BIGWIG','VCF') DEFAULT NULL,
   PRIMARY KEY (`data_file_id`),
   UNIQUE KEY `df_unq_idx` (`coord_system_id`,`analysis_id`,`name`,`file_type`),
   KEY `df_name_idx` (`name`),
@@ -266,7 +266,7 @@ CREATE TABLE `external_db` (
   `description` text,
   PRIMARY KEY (`external_db_id`),
   UNIQUE KEY `db_name_db_release_idx` (`db_name`,`db_release`)
-) ENGINE=MyISAM AUTO_INCREMENT=4201 DEFAULT CHARSET=latin1;
+) ENGINE=MyISAM AUTO_INCREMENT=11001 DEFAULT CHARSET=latin1;
 
 CREATE TABLE `external_synonym` (
   `xref_id` int(10) unsigned NOT NULL,
@@ -468,7 +468,7 @@ CREATE TABLE `meta` (
   PRIMARY KEY (`meta_id`),
   UNIQUE KEY `species_key_value_idx` (`species_id`,`meta_key`,`meta_value`),
   KEY `species_value_idx` (`species_id`,`meta_value`)
-) ENGINE=MyISAM AUTO_INCREMENT=122 DEFAULT CHARSET=latin1;
+) ENGINE=MyISAM AUTO_INCREMENT=126 DEFAULT CHARSET=latin1;
 
 CREATE TABLE `meta_coord` (
   `table_name` varchar(40) NOT NULL,
@@ -720,7 +720,7 @@ CREATE TABLE `seq_region_mapping` (
 CREATE TABLE `seq_region_synonym` (
   `seq_region_synonym_id` int(10) unsigned NOT NULL AUTO_INCREMENT,
   `seq_region_id` int(10) unsigned NOT NULL,
-  `synonym` varchar(40) NOT NULL,
+  `synonym` varchar(50) NOT NULL,
   `external_db_id` int(10) unsigned DEFAULT NULL,
   PRIMARY KEY (`seq_region_synonym_id`),
   UNIQUE KEY `syn_idx` (`synonym`),
@@ -873,7 +873,7 @@ CREATE TABLE `unmapped_reason` (
 CREATE TABLE `xref` (
   `xref_id` int(10) unsigned NOT NULL AUTO_INCREMENT,
   `external_db_id` int(10) unsigned NOT NULL,
-  `dbprimary_acc` varchar(40) NOT NULL,
+  `dbprimary_acc` varchar(50) NOT NULL,
   `display_label` varchar(128) NOT NULL,
   `version` varchar(10) NOT NULL DEFAULT '0',
   `description` text,

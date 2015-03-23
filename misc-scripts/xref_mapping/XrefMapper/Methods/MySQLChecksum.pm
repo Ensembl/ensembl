@@ -1,6 +1,6 @@
 =head1 LICENSE
 
-Copyright [1999-2014] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
+Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -16,7 +16,7 @@ limitations under the License.
 
 =cut
 
-package XrefMapper::Methods::MySQLUniParc;
+package XrefMapper::Methods::MySQLChecksum;
 
 use strict;
 use warnings;
@@ -25,22 +25,23 @@ use base qw/XrefMapper::Methods::ChecksumBasic/;
 
 use Bio::EnsEMBL::Utils::Exception qw(throw);
 
-my $UNIPARC_SQL = <<SQL;
+my $CHECKSUM_SQL = <<SQL;
 select accession
 from checksum_xref
 where checksum =?
+and source_id=?
 SQL
 
 sub perform_mapping {
-  my ($self, $sequences) = @_;
+  my ($self, $sequences, $source_id, $object_type) = @_;
   
   my @final_results;
   
-  $self->mapper()->xref()->dbc()->sql_helper()->batch(-SQL => $UNIPARC_SQL, -CALLBACK => sub {
+  $self->mapper()->xref()->dbc()->sql_helper()->batch(-SQL => $CHECKSUM_SQL, -CALLBACK => sub {
     my ($sth) = @_;
     foreach my $sequence (@{$sequences}) {
       my $checksum = uc($self->md5_checksum($sequence));
-      $sth->execute($checksum);
+      $sth->execute($checksum, $source_id);
       my $upi;
       while(my $row = $sth->fetchrow_arrayref()) {
         my ($local_upi) = @{$row};
@@ -50,7 +51,7 @@ sub perform_mapping {
         $upi = $local_upi;
       }
       if(defined $upi){
-        push(@final_results, { id => $sequence->id(), upi => $upi, object_type => 'Translation' });
+        push(@final_results, { id => $sequence->id(), upi => $upi, object_type => $object_type });
       }
     }
     return;

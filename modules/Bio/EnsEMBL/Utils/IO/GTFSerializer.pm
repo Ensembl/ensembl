@@ -1,7 +1,7 @@
 
 =head1 LICENSE
 
-Copyright [1999-2014] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
+Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -76,8 +76,14 @@ sub print_main_header {
   # Get accession and only print if it is there
   my $accession = $gc->get_accession();
   if($accession) {
-    my $accession_source = $mc->single_value_by_key('assembly.web_accession_source');
-    print $fh "#!genome-build-accession ${accession_source}:${accession}\n";
+     my $accession_source = $mc->single_value_by_key('assembly.web_accession_source');
+     my $string = "#!genome-build-accession ";
+     $string .= "$accession_source:" if $accession_source;
+     $string .= "$accession"; 
+
+     print $fh "$string\n";
+     #my $accession_source = $mc->single_value_by_key('assembly.web_accession_source');
+     #print $fh "#!genome-build-accession ${accession_source}:${accession}\n";
   }
 
   # Genebuild last updated

@@ -1,4 +1,4 @@
-# Copyright [1999-2014] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
+# Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
 # 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -280,6 +280,9 @@ my $stable_id = 'ENSG00000171456';
 $gene->description($desc);
 $gene->stable_id($stable_id);
 
+$gene->created_date( time());
+$gene->modified_date(time());
+
 $multi->hide("core", "meta_coord", "gene", "transcript", "exon", "exon_transcript", "translation", "supporting_feature", "dna_align_feature", 'xref', 'object_xref', 'identity_xref');
 
 my $gene_ad = $db->get_GeneAdaptor();
@@ -299,6 +302,12 @@ ok($gene_out->stable_id eq $stable_id);
 
 #make sure the description was stored
 ok($gene_out->description eq $desc);
+
+debug("gene_out created_date   = ", $gene_out->created_date);
+debug("gene_out modified_date  = ", $gene_out->modified_date);
+
+is($gene_out->created_date,  $gene->created_date,  'created_date roundtrips');
+is($gene_out->modified_date, $gene->modified_date, 'modified_date roundtrips');
 
 ok(scalar(@{$gene_out->get_all_Exons()}) == 3);
 
@@ -428,6 +437,16 @@ ok($newgene->biotype eq 'dummy');
 
 $multi->restore('core', 'gene');
 
+# test update_coords method
+# old coords: 30735607 - 30815178
+$gene = $ga->fetch_by_stable_id("ENSG00000171456");
+$gene->start(30730000);
+$gene->end(30815178);
+$ga->update_coords($gene);
+
+my $new_gene = $ga->fetch_by_stable_id("ENSG00000171456");
+cmp_ok($new_gene->start(), '==', 30735607, 'Updated gene start');
+cmp_ok($new_gene->end(), '==', 30815178, 'Updated gene end');
 
 #
 # test GeneAdaptor::fetch_all_by_domain

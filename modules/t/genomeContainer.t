@@ -1,4 +1,4 @@
-# Copyright [1999-2014] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
+# Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
 # 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -71,17 +71,23 @@ is($coding_count, $genome->get_coding_count, "Coding count is correct");
 my $rcoding_count = $sql_helper->execute_single_result(-SQL => $sql, -PARAMS => ['coding_rcnt'], -NO_ERROR => 1);
 is($rcoding_count, $genome->get_rcoding_count, "Readthough coding count is correct");
 
-my $lnoncoding_count = $sql_helper->execute_single_result(-SQL => $sql, -PARAMS => ['lnoncoding_cnt']);
+my $lnoncoding_count = $sql_helper->execute_single_result(-SQL => $sql, -PARAMS => ['noncoding_cnt_l']);
 is($lnoncoding_count, $genome->get_lnoncoding_count, "Long non coding count is correct");
 
-my $rlnoncoding_count = $sql_helper->execute_single_result(-SQL => $sql, -PARAMS => ['lnoncoding_rcnt'], -NO_ERROR => 1);
+my $rlnoncoding_count = $sql_helper->execute_single_result(-SQL => $sql, -PARAMS => ['noncoding_rcnt_l'], -NO_ERROR => 1);
 is($rlnoncoding_count, $genome->get_rlnoncoding_count, "Readthrough long non coding count is correct");
 
-my $snoncoding_count = $sql_helper->execute_single_result(-SQL => $sql, -PARAMS => ['snoncoding_cnt']);
+my $snoncoding_count = $sql_helper->execute_single_result(-SQL => $sql, -PARAMS => ['noncoding_cnt_s']);
 is($snoncoding_count, $genome->get_snoncoding_count, "Short non coding count is correct");
 
-my $rsnoncoding_count = $sql_helper->execute_single_result(-SQL => $sql, -PARAMS => ['snoncoding_rcnt'], -NO_ERROR => 1);
+my $rsnoncoding_count = $sql_helper->execute_single_result(-SQL => $sql, -PARAMS => ['noncoding_rcnt_s'], -NO_ERROR => 1);
 is($rsnoncoding_count, $genome->get_rsnoncoding_count, "Readthrough short non coding count is correct");
+
+my $mnoncoding_count = $sql_helper->execute_single_result(-SQL => $sql, -PARAMS => ['noncoding_cnt_m'], -NO_ERROR => 1);
+is($mnoncoding_count, $genome->get_mnoncoding_count, "Miscellaneous non coding count is correct");
+
+my $rmnoncoding_count = $sql_helper->execute_single_result(-SQL => $sql, -PARAMS => ['noncoding_rcnt_m'], -NO_ERROR => 1);
+is($rmnoncoding_count, $genome->get_rmnoncoding_count, "Readthrough miscellaneous non coding count is correct");
 
 my $pseudogene_count = $sql_helper->execute_single_result(-SQL => $sql, -PARAMS => ['pseudogene_cnt']);
 is($pseudogene_count, $genome->get_pseudogene_count, "Pseudogene count is correct");
@@ -154,6 +160,9 @@ and biotype not in ('LRG_gene')";
 my $alt_transcript_count = $sql_helper->execute_single_result(-SQL => $alt_transcript_sql);
 is($alt_transcript_count, $genome->get_alt_transcript_count(), "Number of alt transcripts is correct");
 
+my $counts = $genome->fetch_all_statistics();
+is(scalar(@$counts), 16, "All separate statistics retrieved");
+
 
 #
 # Test karyotype flag
@@ -172,6 +181,14 @@ is(0, $empty_genome->has_karyotype, "Empty db does not have chromosomes");
 
 is(1, $genome->is_high_coverage, "Human genebuild is high coverage");
 is(0, $empty_genome->is_high_coverage, "Empty db is not high coverage");
+
+
+#
+# Test if there is data
+#
+
+is(1, $genome->is_empty, "Human core database has genome data");
+is(0, $empty_genome->is_empty, "Empty database has no genome data");
 
 #
 # Test polyploid genome support

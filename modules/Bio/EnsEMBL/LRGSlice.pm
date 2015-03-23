@@ -1,6 +1,6 @@
 =head1 LICENSE
 
-Copyright [1999-2014] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
+Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -260,7 +260,7 @@ sub get_all_differences{
             
             else {
               # get a slice representing the sequence that was deleted
-              my $deleted_slice = $self->adaptor->fetch_by_region("chromosome", $chr_proj[0]->[2]->seq_region_name, $s, $e);
+              my $deleted_slice = $self->adaptor->fetch_by_region("chromosome", $chr_proj[0]->[2]->seq_region_name, $s, $e, $chr_proj[0]->[2]->strand);
               
               my $diff = {
                 'start' => $seg->[0],

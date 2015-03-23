@@ -1,6 +1,6 @@
 =head1 LICENSE
 
-Copyright [1999-2014] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
+Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -67,6 +67,8 @@ package Bio::EnsEMBL::DBSQL::GenomeContainer;
 
 use strict;
 use warnings;
+
+use Bio::EnsEMBL::Genome;
 use Bio::EnsEMBL::DBSQL::DBAdaptor;
 use Bio::EnsEMBL::DBSQL::BaseAdaptor;
 use Bio::EnsEMBL::Utils::Exception qw( deprecate throw warning );
@@ -120,7 +122,7 @@ sub new {
 sub store {
   my ($self, $statistic, $value, $attribute) = @_;
 
-  my $stats_id = @{ $self->_get_statistic($statistic, $attribute) }[0];
+  my $stats_id = $self->fetch_by_statistic($statistic, $attribute)->dbID;
 
   if (defined $stats_id) {
     $self->update($statistic, $value, $attribute);
@@ -478,7 +480,7 @@ sub get_ref_length {
     $self->{'ref_length'} = $ref_length;
   }
   if (!defined $self->{'ref_length'}) {
-    $self->{'ref_length'} = @{ $self->_get_statistic('ref_length')}[2];
+    $self->{'ref_length'} = $self->fetch_by_statistic('ref_length')->value();
   }
   return $self->{'ref_length'};
 }
@@ -503,7 +505,7 @@ sub get_total_length {
     $self->{'total_length'} = $total_length;
   }
   if (!defined $self->{'total_length'}) {
-    $self->{'total_length'} = @{ $self->_get_statistic('total_length')}[2];
+    $self->{'total_length'} = $self->fetch_by_statistic('total_length')->value;
   }
   return $self->{'total_length'};
 }
@@ -588,15 +590,15 @@ sub get_coord_systems {
 
 sub _get_count {
   my ($self, $code, $attribute) = @_;
-  my @results = @{ $self->_get_statistic($code, $attribute) };
-  return $results[2];
+  my $statistic = $self->fetch_by_statistic($code, $attribute);
+  return $statistic->value();
 }
 
-=head2 _get_statistic
+=head2 get_count
 
   Arg [1]    : none
-  Example    : $results = $genome->_get_statistic('coding_cnt');
-  Description: Internal method to return the results for a given statistic
+  Example    : $count = $genome->get_count('coding_cnt');
+  Description: Retrieve a count for a given attribute code
   Returntype : integer
   Exceptions : none
   Caller     : general
@@ -604,13 +606,63 @@ sub _get_count {
 
 =cut
 
-sub _get_statistic {
-  my ($self, $statistic, $attribute) = @_;
+sub get_count {
+  my ($self, $code, $attribute) = @_;
+  my $statistic = $self->fetch_by_statistic($code, $attribute);
+  return $statistic->value();
+}
+
+=head2 fetch_all_statistics
+
+  Arg [1]    : none
+  Example    : $list = $genome->fetch_all_statistics();
+  Description: Retrieve all entries stored in the genome_statistics table
+  Returntype : ArrayRef of Bio::EnsEMBL::Genome
+  Exceptions : none
+  Caller     : general
+  Status     : Stable
+
+=cut
+
+sub fetch_all_statistics {
+  my ($self) = @_;
   my $db = $self->db;
   my $species_id = $self->db->species_id();
-  my ($value, $timestamp);
+  my @results;
+  my $sql = q{
+    SELECT genome_statistics_id, statistic, value, species_id, code, name, description
+      FROM genome_statistics, attrib_type
+     WHERE genome_statistics.attrib_type_id = attrib_type.attrib_type_id
+       AND species_id=?
+  };
+
+  my $sth = $self->prepare($sql);
+  $sth->bind_param(1, $species_id, SQL_INTEGER);
+  $sth->execute();
+  my $results = $self->_obj_from_sth($sth);
+  $sth->finish();
+
+  return $results;
+}
+
+
+=head2 fetch_by_statistic
+
+  Arg [1]    : string $statistic
+  Example    : $results = $genome->fetch_by_statistic('coding_cnt');
+  Description: Returns a Genome object for a given statistic
+  Returntype : Bio::EnsEMBL::Genome
+  Exceptions : none
+  Caller     : general
+  Status     : Stable
+
+=cut
+
+sub fetch_by_statistic {
+  my ($self, $statistic_name, $attribute) = @_;
+  my $db = $self->db;
   my $fetch_sql = q{
-    SELECT genome_statistics_id, statistic, value, species_id, code, timestamp
+    SELECT genome_statistics_id, statistic, value, species_id, code, name, description
       FROM genome_statistics, attrib_type 
      WHERE genome_statistics.attrib_type_id = attrib_type.attrib_type_id
        AND statistic = ? AND species_id=?
@@ -620,16 +672,55 @@ sub _get_statistic {
   }
 
   my $sth = $self->prepare($fetch_sql);
-  $sth->bind_param(1, $statistic, SQL_VARCHAR);
-  $sth->bind_param(2, $species_id, SQL_INTEGER);
+  $sth->bind_param(1, $statistic_name, SQL_VARCHAR);
+  $sth->bind_param(2, $self->db->species_id, SQL_INTEGER);
   if (defined $attribute) {
     $sth->bind_param(3, $attribute, SQL_VARCHAR);
   }
   $sth->execute();
-  my @results = $sth->fetchrow_array();
+  my ($dbID, $statistic, $value, $species_id, $code, $name, $desc);
+  $sth->bind_columns(\$dbID, \$statistic, \$value, \$species_id, \$code, \$name, \$desc);
+
+  my @results = $sth->fetchrow_array;
   $sth->finish();
 
-  return \@results;
+  return Bio::EnsEMBL::Genome->new_fast({'dbID'        => $dbID,
+                                         'statistic'   => $statistic,
+                                         'code'        => $code,
+                                         'name'        => $name,
+                                         'description' => $desc,
+                                         'value'       => $value});
+
+}
+
+=head2 is_empty
+
+  Arg [1]    : none
+  Example    : $results = $genome->is_empty;
+  Description: Boolean to check if there is data in the genome container
+  Returntype : Boolean
+  Exceptions : none
+  Caller     : general
+  Status     : Stable
+
+=cut
+
+sub is_empty {
+  my $self = shift;
+  my $db = $self->db;
+  my $species_id = $self->db->species_id();
+  my $is_empty = 0;
+  my $count_sql = q{
+    SELECT count(*) FROM genome_statistics
+  };
+
+  my $sth = $self->prepare($count_sql);
+  $sth->execute();
+  if ($sth->fetchrow()) {
+    $is_empty = 1;
+  }
+  $sth->finish();
+  return $is_empty;
 }
 
 =head2 get_attrib
@@ -725,7 +816,7 @@ sub get_snoncoding_count {
     $self->{'snoncoding_count'} = $snoncoding_count;
   }
   if (!defined $self->{'snoncoding_count'}) {
-    $self->{'snoncoding_count'} = $self->_get_count('snoncoding_cnt');
+    $self->{'snoncoding_count'} = $self->_get_count('noncoding_cnt_s');
   }
   return $self->{'snoncoding_count'};
 }
@@ -749,9 +840,57 @@ sub get_rsnoncoding_count {
     $self->{'rsnoncoding_count'} = $rsnoncoding_count;
   }
   if (!defined $self->{'rsnoncoding_count'}) {
-    $self->{'rsnoncoding_count'} = $self->_get_count('snoncoding_rcnt');
+    $self->{'rsnoncoding_count'} = $self->_get_count('noncoding_rcnt_s');
   }
   return $self->{'rsnoncoding_count'};
+}
+
+=head2 get_mnoncoding_count
+
+  Arg [1]    : (optional) miscellaneous non coding count
+  Example    : $mnoncoding_count = $genome->get_mnoncoding_count();
+  Description: Getter/setter for the number of miscellaneous non coding genes in the current build
+
+  Returntype : integer
+  Exceptions : none
+  Caller     : general
+  Status     : Stable
+
+=cut
+
+sub get_mnoncoding_count {
+  my ($self, $mnoncoding_count) = @_;
+  if (defined $mnoncoding_count) {
+    $self->{'mnoncoding_count'} = $mnoncoding_count;
+  }
+  if (!defined $self->{'mnoncoding_count'}) {
+    $self->{'mnoncoding_count'} = $self->_get_count('noncoding_cnt_m');
+  }
+  return $self->{'mnoncoding_count'};
+}
+
+=head2 get_rmnoncoding_count
+
+  Arg [1]    : (optional) readthrough miscellaneous non coding count
+  Example    : $rmnoncoding_count = $genome->get_rmnoncoding_count();
+  Description: Getter/setter for the number of readthrough miscellaneous non coding genes in the current build
+
+  Returntype : integer
+  Exceptions : none
+  Caller     : general
+  Status     : Stable
+
+=cut
+
+sub get_rmnoncoding_count {
+  my ($self, $rmnoncoding_count) = @_;
+  if (defined $rmnoncoding_count) {
+    $self->{'rmnoncoding_count'} = $rmnoncoding_count;
+  }
+  if (!defined $self->{'rmnoncoding_count'}) {
+    $self->{'rmnoncoding_count'} = $self->_get_count('noncoding_rcnt_m');
+  }
+  return $self->{'rmnoncoding_count'};
 }
 
 
@@ -774,7 +913,7 @@ sub get_lnoncoding_count {
     $self->{'lnoncoding_count'} = $lnoncoding_count;
   }
   if (!defined $self->{'lnoncoding_count'}) {
-    $self->{'lnoncoding_count'} = $self->_get_count('lnoncoding_cnt');
+    $self->{'lnoncoding_count'} = $self->_get_count('noncoding_cnt_l');
   }
   return $self->{'lnoncoding_count'};
 }
@@ -798,7 +937,7 @@ sub get_rlnoncoding_count {
     $self->{'rlnoncoding_count'} = $rlnoncoding_count;
   }
   if (!defined $self->{'rlnoncoding_count'}) {
-    $self->{'rlnoncoding_count'} = $self->_get_count('lnoncoding_rcnt');
+    $self->{'rlnoncoding_count'} = $self->_get_count('noncoding_rcnt_l');
   }
   return $self->{'rlnoncoding_count'};
 }
@@ -921,7 +1060,7 @@ sub get_alt_snoncoding_count {
     $self->{'alt_snoncoding_count'} = $alt_snoncoding_count;
   }
   if (!defined $self->{'alt_snoncoding_count'}) {
-    $self->{'alt_snoncoding_count'} = $self->_get_count('snoncoding_acnt');
+    $self->{'alt_snoncoding_count'} = $self->_get_count('noncoding_acnt_s');
   }
   return $self->{'alt_snoncoding_count'};
 }
@@ -929,7 +1068,7 @@ sub get_alt_snoncoding_count {
 =head2 get_alt_rsnoncoding_count
 
   Arg [1]    : (optional) alt readthrough short non coding count
-  Example    : $alt_rsnoncoding_count = $genome->get_alt_snoncoding_count();
+  Example    : $alt_rsnoncoding_count = $genome->get_alt_rsnoncoding_count();
   Description: Getter/setter for the number of readthrough short non coding genes on alternate sequences
 
   Returntype : integer
@@ -945,9 +1084,57 @@ sub get_alt_rsnoncoding_count {
     $self->{'alt_rsnoncoding_count'} = $alt_rsnoncoding_count;
   }
   if (!defined $self->{'alt_rsnoncoding_count'}) {
-    $self->{'alt_rsnoncoding_count'} = $self->_get_count('snoncoding_racnt');
+    $self->{'alt_rsnoncoding_count'} = $self->_get_count('noncoding_racnt_s');
   }
   return $self->{'alt_rsnoncoding_count'};
+}
+
+=head2 get_alt_mnoncoding_count
+
+  Arg [1]    : (optional) alt miscellaneous non coding count
+  Example    : $alt_mnoncoding_count = $genome->get_alt_mnoncoding_count();
+  Description: Getter/setter for the number of miscellaneous non coding genes on alternate sequences
+
+  Returntype : integer
+  Exceptions : none
+  Caller     : general
+  Status     : Stable
+
+=cut
+
+sub get_alt_mnoncoding_count {
+  my ($self, $alt_mnoncoding_count) = @_;
+  if (defined $alt_mnoncoding_count) {
+    $self->{'alt_mnoncoding_count'} = $alt_mnoncoding_count;
+  }
+  if (!defined $self->{'alt_mnoncoding_count'}) {
+    $self->{'alt_mnoncoding_count'} = $self->_get_count('noncoding_acnt_m');
+  }
+  return $self->{'alt_mnoncoding_count'};
+}
+
+=head2 get_alt_rmnoncoding_count
+
+  Arg [1]    : (optional) alt readthrough miscellaneous non coding count
+  Example    : $alt_rmnoncoding_count = $genome->get_alt_rmnoncoding_count();
+  Description: Getter/setter for the number of readthrough miscellaneous non coding genes on alternate sequences
+
+  Returntype : integer
+  Exceptions : none
+  Caller     : general
+  Status     : Stable
+
+=cut
+
+sub get_alt_rmnoncoding_count {
+  my ($self, $alt_rmnoncoding_count) = @_;
+  if (defined $alt_rmnoncoding_count) {
+    $self->{'alt_rmnoncoding_count'} = $alt_rmnoncoding_count;
+  }
+  if (!defined $self->{'alt_rmnoncoding_count'}) {
+    $self->{'alt_rmnoncoding_count'} = $self->_get_count('noncoding_racnt_m');
+  }
+  return $self->{'alt_rmnoncoding_count'};
 }
 
 
@@ -970,7 +1157,7 @@ sub get_alt_lnoncoding_count {
     $self->{'alt_lnoncoding_count'} = $alt_lnoncoding_count;
   }
   if (!defined $self->{'alt_lnoncoding_count'}) {
-    $self->{'alt_lnoncoding_count'} = $self->_get_count('lnoncoding_acnt');
+    $self->{'alt_lnoncoding_count'} = $self->_get_count('noncoding_acnt_l');
   }
   return $self->{'alt_lnoncoding_count'};
 }
@@ -994,7 +1181,7 @@ sub get_alt_rlnoncoding_count {
     $self->{'alt_rlnoncoding_count'} = $alt_rlnoncoding_count;
   }
   if (!defined $self->{'alt_rlnoncoding_count'}) {
-    $self->{'alt_rlnoncoding_count'} = $self->_get_count('lnoncoding_racnt');
+    $self->{'alt_rlnoncoding_count'} = $self->_get_count('noncoding_racnt_l');
   }
   return $self->{'alt_rlnoncoding_count'};
 }
@@ -1269,6 +1456,27 @@ sub get_genome_components {
      USING (attrib_type_id) WHERE attrib_type.code='genome_component'";
 
   return $sql_helper->execute_simple(-SQL => $sql);
+}
+
+sub _obj_from_sth {
+  my $self = shift;
+  my $sth  = shift;
+
+  my ($dbID, $statistic, $value, $species_id, $code, $name, $desc);
+  $sth->bind_columns(\$dbID, \$statistic, \$value, \$species_id, \$code, \$name, \$desc);
+
+  my @results;
+  while ($sth->fetch()) {
+        push @results,
+          Bio::EnsEMBL::Genome->new_fast({'dbID'        => $dbID,
+                                          'statistic'   => $statistic,
+                                          'code'        => $code,
+                                          'name'        => $name,
+                                          'description' => $desc,
+                                          'value'       => $value});
+  }
+
+  return \@results;
 }
 
 1;

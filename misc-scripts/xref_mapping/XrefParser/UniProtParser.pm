@@ -1,6 +1,6 @@
 =head1 LICENSE
 
-Copyright [1999-2014] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
+Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -53,24 +53,29 @@ sub run {
 
   my $file = @{$files}[0];
 
-  my ( $sp_source_id, $sptr_source_id, $sp_release, $sptr_release, $sptr_non_display_source_id );
+  my ( $sp_source_id, $sptr_source_id, $sp_release, $sptr_release, $sptr_non_display_source_id, $sp_direct_source_id, $sptr_direct_source_id );
 
   $sp_source_id =
     $self->get_source_id_for_source_name('Uniprot/SWISSPROT','sequence_mapped');
   $sptr_source_id =
-    $self->get_source_id_for_source_name('Uniprot/SPTREMBL', '');
+    $self->get_source_id_for_source_name('Uniprot/SPTREMBL', 'sequence_mapped');
 
   $sptr_non_display_source_id =
     $self->get_source_id_for_source_name('Uniprot/SPTREMBL', 'protein_evidence_gt_2');
 
+  $sp_direct_source_id = $self->get_source_id_for_source_name('Uniprot/SWISSPROT', 'direct');
+  $sptr_direct_source_id = $self->get_source_id_for_source_name('Uniprot/SPTREMBL', 'direct');
+
   print "SwissProt source id for $file: $sp_source_id\n" if ($verbose);
   print "SpTREMBL source id for $file: $sptr_source_id\n" if ($verbose);
   print "SpTREMBL protein_evidence > 2 source id for $file: $sptr_non_display_source_id\n" if ($verbose);
+  print "SwissProt direct source id for $file: $sp_direct_source_id\n" if ($verbose);
+  print "SpTREMBL direct source id for $file: $sptr_direct_source_id\n" if ($verbose);
  
 
   my @xrefs =
     $self->create_xrefs( $sp_source_id, $sptr_source_id, $sptr_non_display_source_id, $species_id,
-      $file, $verbose );
+      $file, $verbose, $sp_direct_source_id, $sptr_direct_source_id );
 
   if ( !@xrefs ) {
       return 1;    # 1 error
@@ -107,6 +112,8 @@ sub run {
         $self->set_release( $sp_source_id,        $sp_release );
         $self->set_release( $sptr_source_id,      $sptr_release );
 	$self->set_release( $sptr_non_display_source_id, $sptr_release );
+        $self->set_release( $sp_direct_source_id, $sp_release );
+        $self->set_release( $sptr_direct_source_id,$sptr_release );
     }
 
 
@@ -118,13 +125,15 @@ sub run {
 # Parse file into array of xref objects
 
 sub create_xrefs {
-  my ($self, $sp_source_id, $sptr_source_id, $sptr_non_display_source_id, $species_id, $file, $verbose ) = @_;
+  my ($self, $sp_source_id, $sptr_source_id, $sptr_non_display_source_id, $species_id, $file, $verbose, $sp_direct_source_id, $sptr_direct_source_id ) = @_;
 
   my $num_sp = 0;
   my $num_sptr = 0;
   my $num_sp_pred = 0;
   my $num_sptr_pred = 0;
   my $num_sptr_non_display = 0;
+  my $num_direct_sp = 0;
+  my $num_direct_sptr = 0;
 
   my %dependent_sources = $self->get_xref_sources();
 
@@ -326,7 +335,7 @@ sub create_xrefs {
 	$desc = $sub_description;
       }
       
-      $desc =~ s/\(\s*EC\s*\S*\)//g;
+      $desc =~ s/\s*\{ECO:.*?\}//g;
       $xref->{DESCRIPTION} = $desc;
 
       # Parse the EC_NUMBER line, only for S.cerevisiae for now
@@ -372,20 +381,24 @@ sub create_xrefs {
     #print "Adding " . $xref->{ACCESSION} . " " . $xref->{LABEL} ."\n";
 
     
-    my ($gns) = $_ =~ /(GN\s+Name.+)/; # /s allows . to match newline
+    my ($gns) = $_ =~ /(GN\s+.+)/s;
     my @gn_lines = ();
-    if ( defined $gns ) { @gn_lines = split /\n/, $gns }
+    if ( defined $gns ) { @gn_lines = split /;/, $gns }
   
     # Do not allow the addition of UniProt Gene Name dependent Xrefs
     # if the protein was imported from Ensembl. Otherwise we will
     # re-import previously set symbols
     if(! $ensembl_derived_protein) {
+      my %depe;
       foreach my $gn (@gn_lines){
+# Make sure these are still lines with Name or Synonyms
+        if (($gn !~ /^GN/ || $gn !~ /Name=/) && $gn !~ /Synonyms=/) { last; }
         my $gene_name = undef;
-        my %depe;
 
-        if($gn =~ /Name=((.*?))[;\s]/){
-          $depe{LABEL} = uc($1);
+        if ($gn =~ / Name=([A-Za-z0-9_\-\.]+)/s) { #/s for multi-line entries ; is the delimiter
+# Example line 
+# GN   Name=ctrc {ECO:0000313|Xenbase:XB-GENE-5790348};
+          $depe{LABEL} = $1; # leave name as is, upper/lower case is relevant in gene names
           $depe{ACCESSION} = $self->get_name($xref->{ACCESSION},$depe{LABEL});
           $gene_name = $depe{ACCESSION};
 
@@ -394,13 +407,20 @@ sub create_xrefs {
           $depe{LINKAGE_SOURCE_ID} = $xref->{SOURCE_ID};
           push @{$xref->{DEPENDENT_XREFS}}, \%depe;
           $dependent_xrefs{"Uniprot_gn"}++;
-          my @syn;
-          if($gn =~ /Synonyms=([^;]+);/){
-            my $syn = $1;
-            $syn =~ s/\s+//g;
-            @syn= split(/,/,$syn);
-            push (@{$depe{"SYNONYMS"}}, @syn);
-          }
+        }
+        my @syn;
+        if($gn =~ /Synonyms=(.*)/s){ # use of /s as synonyms can be across more than one line
+# Example line
+# GN   Synonyms=cela2a {ECO:0000313|Ensembl:ENSXETP00000014934},
+# GN   MGC79767 {ECO:0000313|EMBL:AAH80976.1}
+          my $syn = $1;
+          $syn =~ s/{.*}//g;  # Remove any potential evidence codes
+          $syn =~ s/\n//g;    # Remove return carriages, as entry can span several lines
+          $syn =~ s/\s+$//g;  # Remove white spaces that are left over at the end if there was an evidence code
+          #$syn =~ s/^\s+//g;  # Remove white spaces that are left over at the beginning if there was an evidence code
+          $syn =~ s/\s+,/,/g;  # Remove white spaces that are left over before the comma if there was an evidence code
+          @syn = split(/, /,$syn);
+          push (@{$depe{"SYNONYMS"}}, @syn);
         }
       }
     }
@@ -451,6 +471,28 @@ sub create_xrefs {
         }
         if($source =~ "Xenbase"){
             next;
+        }
+# Uniprot get Reactome links from Reactome, so we want to get the info from Reactome directly
+        if($source =~ "Reactome"){
+            next;
+        }
+# If mapped to Ensembl, add as direct xref
+        if ($source eq "Ensembl") {
+# Example line:
+# DR   Ensembl; ENST00000380152; ENSP00000369497; ENSG00000139618.
+# $source is Ensembl, $acc is ENST00000380152 and @extra is the rest of the line
+          my %direct;
+          $direct{STABLE_ID} = $extra[0];
+          $direct{ENSEMBL_TYPE} = 'Translation';
+          $direct{LINKAGE_TYPE} = 'DIRECT';
+          if ($xref->{SOURCE_ID} == $sp_source_id) {
+            $direct{SOURCE_ID} = $sp_direct_source_id;
+            $num_direct_sp++;
+          } else {
+            $direct{SOURCE_ID} = $sptr_direct_source_id;
+            $num_direct_sptr++;
+          }
+          push @{$xref->{DIRECT_XREFS}}, \%direct;
         }
 	   if (exists $dependent_sources{$source} ) {
 	  # create dependent xref structure & store it
@@ -555,6 +597,7 @@ sub create_xrefs {
   $uniprot_io->close();
 
   print "Read $num_sp SwissProt xrefs, $num_sptr SPTrEMBL xrefs with protein evidence codes 1-2, and $num_sptr_non_display SPTrEMBL xrefs with protein evidence codes > 2 from $file\n" if($verbose);
+  print "Added $num_direct_sp direct SwissProt xrefs and $num_direct_sptr direct SPTrEMBL xrefs\n" if ($verbose);
   print "Found $num_sp_pred predicted SwissProt xrefs and $num_sptr_pred predicted SPTrEMBL xrefs\n" if (($num_sp_pred > 0 || $num_sptr_pred > 0) and $verbose);
   print "Skipped $ensembl_derived_protein_count ensembl annotations as Gene names\n";
 

@@ -1,6 +1,6 @@
 =head1 LICENSE
 
-Copyright [1999-2014] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
+Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -65,7 +65,6 @@ use strict;
 use Bio::EnsEMBL::Feature;
 use Bio::EnsEMBL::Intron;
 use Bio::EnsEMBL::TranscriptMapper;
-use Bio::EnsEMBL::Utils::TranscriptSNPs;
 use Bio::EnsEMBL::SeqEdit;
 
 use Bio::EnsEMBL::Utils::Argument qw( rearrange );
@@ -2258,12 +2257,12 @@ sub modified_date {
 =cut
 
 sub swap_exons {
-  my ( $self, $old_exon, $new_exon ) = @_;
+  my ( $self, $old_exon, $new_exon, $skip_exon_sf) = @_;
   
   my $arref = $self->{'_trans_exon_array'};
   for(my $i = 0; $i < @$arref; $i++) {
-    if($arref->[$i] == $old_exon) {
-      $new_exon->add_supporting_features(@{$old_exon->get_all_supporting_features});
+    if($arref->[$i] == $old_exon ) {
+      $new_exon->add_supporting_features(@{$old_exon->get_all_supporting_features}) unless $skip_exon_sf;
       $arref->[$i] = $new_exon;
       last;
     }
@@ -2763,56 +2762,6 @@ sub recalculate_coordinates {
 sub display_id {
   my $self = shift;
   return $self->{'stable_id'} || $self->dbID || '';
-}
-
-
-=head2 get_all_peptide_variations
-
-  Description: See Bio::EnsEMBL::Utils::TranscriptSNPs::get_all_peptide_variations
-  Status  : At Risk
-          : Will be replaced with modules from the ensembl-variation package
-
-
-=cut
-
-sub get_all_peptide_variations {
-  my ($self, $source, $snps) = @_;
-
-  if(!$snps) {
-    my $shash = Bio::EnsEMBL::Utils::TranscriptSNPs::get_all_cdna_SNPs($self, $source);
-    $snps = $shash->{'coding'};
-  }
-
-  return Bio::EnsEMBL::Utils::TranscriptSNPs::get_all_peptide_variations($self,
-                                                                        $snps);
-}
-
-
-=head2 get_all_SNPs
-
-  Description: See Bio::EnsEMBL::Utils::TranscriptSNPs::get_all_SNPs
-
-  Status  : At Risk
-          : Will be replaced with modules from the ensembl-variation package
-
-=cut
-
-sub get_all_SNPs {
-  return Bio::EnsEMBL::Utils::TranscriptSNPs::get_all_SNPs(@_);
-}
-
-
-=head2 get_all_cdna_SNPs
-
-  Description: See Bio::EnsEMBL::Utils::TranscriptSNPs::get_all_cdna_SNPs
- 
-  Status  : At Risk
-          : Will be replaced with modules from the ensembl-variation package
-
-=cut
-
-sub get_all_cdna_SNPs {
-  return Bio::EnsEMBL::Utils::TranscriptSNPs::get_all_cdna_SNPs(@_);
 }
 
 

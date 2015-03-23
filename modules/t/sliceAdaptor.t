@@ -1,4 +1,4 @@
-# Copyright [1999-2014] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
+# Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
 # 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -461,6 +461,38 @@ is($slice->end, 18301, "slice end");
 is($slice->strand, 1, "slice strand");
 is($slice->seq_region_length, 18301, "slice seq region length");
 is($slice->adaptor, $wheat_slice_adaptor, 'slice adaptor');
+
+# 
+# test get_genome_component_for_slice
+#
+debug("Testing get_genome_component_for_slice");
+
+# should throw if argument is not provided
+throws_ok { $slice_adaptor->get_genome_component_for_slice }
+  qr/Undefined/, 'Call with undefined argument';
+
+# should get an empty result for a slice on human chr (not polyploidy)
+$slice = $slice_adaptor->fetch_by_region('chromosome',$CHR, $START, $END);
+isa_ok($slice, 'Bio::EnsEMBL::Slice');
+
+my $genome_component = $slice_adaptor->get_genome_component_for_slice($slice);
+ok(!$genome_component, "Genome component for human slice");
+
+# test with slices on polyploid genome
+$slice = $wheat_slice_adaptor->fetch_by_region('scaffold', 'IWGSC_CSS_5AL_scaff_2697823', 100, 10000);
+isa_ok($slice, 'Bio::EnsEMBL::Slice');
+$genome_component = $wheat_slice_adaptor->get_genome_component_for_slice($slice);
+is($genome_component, 'A', "Genome component from slice");
+
+$slice = $wheat_slice_adaptor->fetch_by_region('scaffold', 'IWGSC_CSS_6BS_scaff_233977', 1000, 5000, -1);
+isa_ok($slice, 'Bio::EnsEMBL::Slice');
+$genome_component = $wheat_slice_adaptor->get_genome_component_for_slice($slice);
+is($genome_component, 'B', "Genome component from slice");
+
+$slice = $wheat_slice_adaptor->fetch_by_region('scaffold', 'IWGSC_CSS_6DS_scaff_2121653', 1000, 3000);
+isa_ok($slice, 'Bio::EnsEMBL::Slice');
+$genome_component = $wheat_slice_adaptor->get_genome_component_for_slice($slice);
+is($genome_component, 'D', "Genome component from slice");
 
 #
 # test the fuzzy matching of clone accessions

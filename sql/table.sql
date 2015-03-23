@@ -1,4 +1,4 @@
--- Copyright [1999-2014] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
+-- Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
 -- 
 -- Licensed under the Apache License, Version 2.0 (the "License");
 -- you may not use this file except in compliance with the License.
@@ -169,7 +169,7 @@ CREATE TABLE data_file (
   version_lock      TINYINT(1) DEFAULT 0 NOT NULL,
   absolute          TINYINT(1) DEFAULT 0 NOT NULL,
   url               TEXT,
-  file_type         ENUM('BAM','BIGBED','BIGWIG','VCF'),
+  file_type         ENUM('BAM','BAMCOV','BIGBED','BIGWIG','VCF'),
 
   PRIMARY KEY (data_file_id),
   UNIQUE KEY df_unq_idx(coord_system_id, analysis_id, name, file_type),
@@ -302,13 +302,13 @@ CREATE TABLE IF NOT EXISTS meta (
 # Add schema type and schema version to the meta table.
 INSERT INTO meta (species_id, meta_key, meta_value) VALUES
   (NULL, 'schema_type',     'core'),
-  (NULL, 'schema_version',  '79');
+  (NULL, 'schema_version',  '80');
 
 # Patches included in this schema file:
 # NOTE: At start of release cycle, remove patch entries from last release.
 # NOTE: Avoid line-breaks in values.
 INSERT INTO meta (species_id, meta_key, meta_value)
-  VALUES (NULL, 'patch', 'patch_78_79_a.sql|schema_version');
+  VALUES (NULL, 'patch', 'patch_79_80_a.sql|schema_version');
 
 /**
 @table meta_coord
@@ -382,7 +382,7 @@ CREATE TABLE seq_region_synonym (
 
   seq_region_synonym_id       INT UNSIGNED NOT NULL  AUTO_INCREMENT,
   seq_region_id               INT(10) UNSIGNED NOT NULL,
-  synonym                     VARCHAR(40) NOT NULL,
+  synonym                     VARCHAR(50) NOT NULL,
   external_db_id              INTEGER UNSIGNED,
 
   PRIMARY KEY (seq_region_synonym_id),
@@ -2201,8 +2201,7 @@ CREATE TABLE object_xref (
 
   PRIMARY KEY (object_xref_id),
 
-  UNIQUE KEY xref_idx
-    (xref_id, ensembl_object_type, ensembl_id, analysis_id),
+  UNIQUE KEY xref_idx (xref_id, ensembl_object_type, ensembl_id, analysis_id),
 
   KEY ensembl_idx (ensembl_object_type, ensembl_id),
   KEY analysis_idx (analysis_id)
@@ -2338,7 +2337,7 @@ CREATE TABLE xref (
 
    xref_id                    INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
    external_db_id             INTEGER UNSIGNED NOT NULL,
-   dbprimary_acc              VARCHAR(40) NOT NULL,
+   dbprimary_acc              VARCHAR(50) NOT NULL,
    display_label              VARCHAR(128) NOT NULL,
    version                    VARCHAR(10) DEFAULT '0' NOT NULL,
    description                TEXT,

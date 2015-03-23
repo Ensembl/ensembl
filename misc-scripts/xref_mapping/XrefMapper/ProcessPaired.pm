@@ -1,6 +1,6 @@
 =head1 LICENSE
 
-Copyright [1999-2014] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
+Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -81,11 +81,9 @@ sub process{
   my $xref_update_sth =  $self->xref->dbc->prepare("update xref set info_type = 'INFERRED_PAIR' where xref_id = ?");
   my $identity_update_sth = $self->xref->dbc->prepare("insert into identity_xref (object_xref_id, query_identity, target_identity) values(?, ?, ?)");
 
-  my $transl_object_xrefs_sth = $self->xref->dbc->prepare("select ox.object_xref_id, ox.ensembl_id, x.accession from  object_xref ox join xref x on (ox.xref_id = x.xref_id and ox.ox_status = 'DUMP_OUT' and ox.ensembl_object_type = 'Translation') join source s on (x.source_id = s.source_id and s.name like 'RefSeq\_peptide%')");
+  my $transl_object_xrefs_sth = $self->xref->dbc->prepare("select ox.object_xref_id, ox.ensembl_id, x.accession, gtt.transcript_id from gene_transcript_translation gtt join object_xref ox on (gtt.translation_id = ox.ensembl_id and ox.ensembl_object_type = 'Translation') join xref x on (ox.xref_id = x.xref_id and ox.ox_status = 'DUMP_OUT' and ox.ensembl_object_type = 'Translation') join source s on (x.source_id = s.source_id and s.name like 'RefSeq\_peptide%')");
 
   my $ox_mark_delete_sth = $self->xref->dbc->prepare("update object_xref set ox_status  = 'MULTI_DELETE' where object_xref_id = ?");
-  my $ox_dx_delete_sth = $self->xref->dbc->prepare("update object_xref master_ox, object_xref dependent_ox, xref dependent, xref master, dependent_xref dx set dependent_ox.ox_status = 'MULTI_DELETE' where dependent.xref_id = dx.dependent_xref_id and master.xref_id = dx.master_xref_id and dependent.xref_id = dependent_ox.xref_id and master.xref_id = master_ox.xref_id and master_ox.object_xref_id = ? and dependent_ox.ensembl_id = ?"); 
- 
 
   $transcr_obj_xrefs_sth->execute();
   
@@ -155,7 +153,7 @@ sub process{
 
   #go through RefSeq_peptide% object_xrefs 
   $transl_object_xrefs_sth->execute();
-  while (my ($translation_object_xref_id, $translation_id, $pep_accession) =  $transl_object_xrefs_sth->fetchrow_array() ) {
+  while (my ($translation_object_xref_id, $translation_id, $pep_accession, $transcript_id) =  $transl_object_xrefs_sth->fetchrow_array() ) {
 
       if (exists($RefSeq_pep_translation{$pep_accession}) ) {
 
@@ -169,8 +167,8 @@ sub process{
 	      #this translations's transcript is not matched with the paired RefSeq_mRNA%,
 	      #change the status to 'MULTI_DELETE'
 	      $ox_mark_delete_sth->execute($translation_object_xref_id) || die("Failed to update status to 'MULTI_DELETE for object_xref_id $translation_object_xref_id");
-              $ox_dx_delete_sth->execute($translation_object_xref_id, $translation_id);
               # Process all dependent xrefs as well
+              $self->process_dependents($translation_object_xref_id, $translation_id, $transcript_id);
 
 	      $change{'translation object xrefs removed'}++;
 	  }
@@ -189,6 +187,26 @@ sub process{
   my $sth_stat = $self->xref->dbc->prepare("insert into process_status (status, date) values('processed_pairs',now())");
   $sth_stat->execute();
   $sth_stat->finish;
+}
+
+sub process_dependents {
+  my ($self, $translation_object_xref_id, $translation_id, $transcript_id) = @_;
+
+  my $dep_sth          = $self->xref->dbc->prepare("select distinct dependent_ox.object_xref_id from object_xref master_ox, object_xref dependent_ox, xref dependent, xref master, dependent_xref dx where dependent.xref_id = dx.dependent_xref_id and master.xref_id = dx.master_xref_id and dependent.xref_id = dependent_ox.xref_id and master.xref_id = master_ox.xref_id and master_ox.object_xref_id = ? and dependent_ox.master_xref_id = master.xref_id and ((dependent_ox.ensembl_id = ? and dependent_ox.ensembl_object_type = 'Translation') or (dependent_ox.ensembl_id = ? and dependent_ox.ensembl_object_type = 'Transcript')) and dependent_ox.ox_status = 'DUMP_OUT' ");
+  my $ox_dx_delete_sth = $self->xref->dbc->prepare("update object_xref set ox_status = 'MULTI_DELETE' where object_xref_id = ?");
+
+  my @master_object_xrefs;
+  push @master_object_xrefs, $translation_object_xref_id;
+
+  while (my $master_object_xref_id = pop(@master_object_xrefs)) {
+    my $dependent_object_xref_id;
+    $dep_sth->execute($master_object_xref_id, $translation_id, $transcript_id);
+    $dep_sth->bind_columns(\$dependent_object_xref_id);
+    while ($dep_sth->fetch()) {
+      $ox_dx_delete_sth->execute($dependent_object_xref_id);
+      push @master_object_xrefs, $dependent_object_xref_id;
+    }
+  }
 }
 
 1;

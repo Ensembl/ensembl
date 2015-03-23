@@ -1,6 +1,6 @@
 =head1 LICENSE
 
-Copyright [1999-2014] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
+Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -142,7 +142,8 @@ sub DataFile_to_extensions {
   my $type = $df->file_type();
   my $extensions = {
     BAM     => ['bam', 'bam.bai'],
-#    BIGBED  => 'bb',
+    BAMCOV  => ['bam', 'bam.bai', 'bam.bw'], # BAM coverage files
+    BIGBED  => ['bb'],
     BIGWIG  => ['bw'],
     VCF     => ['vcf.gz', 'vcf.gz.tbi'],
   }->{$type}; 
@@ -155,36 +156,52 @@ sub DataFile_to_extensions {
 
   Arg[1]        : Bio::EnsEMBL::DataFile
   Arg[2]        : (optional) base path
+  Arg[3]        : (optional) file type
   Example       : my $bam = $dfa->DataFile_to_adaptor($bam_df);
-  Description   : Returns an adaptor instance which will access the given DataFile
-  Returntype    : Scalar actual return depends upon the given file type
-  Exceptions    : Raised if the given file type is not understood
+  Description   : Returns an adaptor instance which will access the given DataFile.
+                  Can explicitly request for an adaptor of a given file type (third
+                  argument), useful with composite types, e.g. BAM coverage files
+                  can be returned as BAM or BIGWIG
+  Returntype    : Scalar actual return depends upon the given file type and the
+                  requested type
+  Exceptions    : Raised if the given file type is not understood or if the requested
+                  file type is incompatible with the actual data file type.
 
 =cut
 
 sub DataFile_to_adaptor {
-  my ($self, $df, $base) = @_;
+  my ($self, $df, $base, $requested_type) = @_;
   my $type = $df->file_type();
-  my $dispatch = {
-    BAM     => sub {
-      require Bio::EnsEMBL::ExternalData::BAM::BAMAdaptor;
-      return Bio::EnsEMBL::ExternalData::BAM::BAMAdaptor->new($df->path($base));
-    },
-    BIGBED  => sub {
-      require Bio::EnsEMBL::ExternalData::BigFile::BigBedAdaptor;
-      return Bio::EnsEMBL::ExternalData::BigFile::BigBedAdaptor->new($df->path($base));
-    },
-    BIGWIG  => sub {
-      require Bio::EnsEMBL::ExternalData::BigFile::BigWigAdaptor;
-      return Bio::EnsEMBL::ExternalData::BigFile::BigWigAdaptor->new($df->path($base));
-    },
-    VCF     => sub {
-      require Bio::EnsEMBL::ExternalData::VCF::VCFAdaptor;
-      return Bio::EnsEMBL::ExternalData::VCF::VCFAdaptor->new($df->path($base));
-    },
-  }->{$type}; 
-  throw sprintf(q{No handler found for the type '%s'}, $type ) if ! $dispatch;
-  return $dispatch->();
+
+  throw sprintf("Request for a '%s' adaptor, but file is of type '%s'", $requested_type, $type)
+    if $type ne 'BAMCOV' and $type ne $requested_type;
+
+ SWITCH:
+  {
+    return Bio::EnsEMBL::ExternalData::BAM::BAMAdaptor->new($df->path($base))
+      if $type eq 'BAM';
+
+    return Bio::EnsEMBL::ExternalData::BigFile::BigBedAdaptor->new($df->path($base))
+      if $type eq 'BIGBED';
+
+    return Bio::EnsEMBL::ExternalData::BigFile::BigWigAdaptor->new($df->path($base))
+      if $type eq 'BIGWIG';
+
+    return Bio::EnsEMBL::ExternalData::VCF::VCFAdaptor->new($df->path($base))
+      if $type eq 'VCF';
+  
+    # BAMCOV composite case
+    if ($type eq 'BAMCOV') {
+      return Bio::EnsEMBL::ExternalData::BAM::BAMAdaptor->new($df->path($base))
+	if $requested_type eq 'BAM' or $requested_type eq 'BAMCOV';
+      
+      return Bio::EnsEMBL::ExternalData::BigFile::BigWigAdaptor->new($df->get_all_paths($base)->[2])
+	if $requested_type eq 'BIGWIG';
+    }
+
+    throw sprintf(q{No '%s' handler found for the type '%s'}, $requested_type, $type )
+  }
+
 }
 
 =head2 fetch_all_by_logic_name
