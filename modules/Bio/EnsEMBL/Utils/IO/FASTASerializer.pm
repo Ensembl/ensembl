@@ -50,7 +50,7 @@ Bio::EnsEMBL::Utils::IO::FASTASerializer
   Replacement for SeqDumper, making better use of shared code. Outputs FASTA
   format with optional custom header and formatting parameters. Set line_width
   and chunk_factor to dictate buffer size depending on application. A 60kb
-  buffer is used by default with a line width of 60 characters.
+  buffer is used by default with a line width of 60 characters. 
 
   Custom headers are set by supplying an anonymous subroutine to new(). Custom
   header code must accept a Slice or Bio::PrimarySeqI compliant object as
@@ -66,7 +66,7 @@ package Bio::EnsEMBL::Utils::IO::FASTASerializer;
 use strict;
 use warnings;
 use Bio::EnsEMBL::Utils::Exception;
-use Bio::EnsEMBL::Utils::Scalar qw/assert_ref check_ref/;
+use Bio::EnsEMBL::Utils::Scalar qw/assert_ref assert_integer check_ref/;
 
 use base qw(Bio::EnsEMBL::Utils::IO::Serializer);
 
@@ -97,7 +97,7 @@ sub new {
   my $self = $class->SUPER::new($filehandle);
 
   $self->{'header_function'} = $header_function;
-  $self->{'line_width'} = ($line_width)? $line_width : 60;
+  $self->line_width( ($line_width)? $line_width : 60 );
   $self->{'chunk_factor'} = ($chunk_factor)? $chunk_factor : 1000;
   # gives a 60kb buffer by default, increase for higher database and disk efficiency.
 
@@ -181,7 +181,10 @@ sub print_Seq {
     my $there = $here + $chunk_size - 1;
     $there = $end if($there > $end);
     my $seq = $slice->subseq($here, $there);
-    $seq =~ s/(.{1,$width})/$1\n/g;
+    my @lines = unpack ("(A$width)*", $seq);
+    push @lines,''; # ensure last line has a carriage return
+    $seq = join "\n",@lines;
+    # $seq =~ s/(.{1,$width})/$1\n/g; # straightforward but has a max line width of 32k
     print $fh $seq or throw "Error writing to file handle: $!";
     $here = $there + 1;
   }
@@ -193,7 +196,7 @@ sub print_Seq {
 =head2 line_width
 
   Arg [1]    : Integer e.g. 60 or 80
-  Description: Set and get FASTA format line width. Default is 60
+  Description: Set and get FASTA format line width. Default is 60, maximum is 2^32
   Returntype : Integer
 
 =cut
@@ -201,7 +204,12 @@ sub print_Seq {
 sub line_width {
   my $self = shift;
   my $line_width = shift;
-  if ($line_width) { $self->{'line_width'} = $line_width };
+  if ($line_width) {
+    assert_integer($line_width,'line width');
+    throw "Must have a sensible line width" if $line_width < 1;
+    throw "Maximum line width is 2^32, and you should have a really good reason even for that" if $line_width > 4294967296;
+    $self->{'line_width'} = $line_width
+  }
   return $self->{'line_width'}
 }
 
@@ -217,6 +225,7 @@ sub line_width {
 sub chunk_factor {
   my $self = shift;
   my $chunk_factor = shift;
+  assert_integer($chunk_factor,'chunk factor') if $chunk_factor;
   if ($chunk_factor) { $self->{'chunk_factor'} = $chunk_factor};
   return $self->{'chunk_factor'}
 }
