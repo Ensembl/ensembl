@@ -519,7 +519,8 @@ sub _make_start_codon_features {
 
     Arg [1]    : Bio::EnsEMBL::Transcript
     Example    : 
-    Description: 
+    Description: This method is only called after the sequence has already been checked
+                 As a result, the assumption of a 3-base stop codon is valid.
     Returntype : Array
 
 =cut
@@ -531,10 +532,9 @@ sub _make_stop_codon_features {
   return ( () ) unless $trans->translation;
 
   my @translateable = @{ $trans->get_all_translateable_Exons };
+  my @stopc_feat;
   my $cdna_endpos = $trans->cdna_coding_end;
-  my $cdna_end_phase = ($cdna_endpos - $trans->cdna_coding_start) % 3;
-  print "TRUE END PHASE:".$cdna_end_phase."\n";
-  my @pepgencoords = $trans->cdna2genomic( $cdna_endpos - (3- $cdna_end_phase), $cdna_endpos );
+  my @pepgencoords = $trans->cdna2genomic( $cdna_endpos - 2, $cdna_endpos );
 
   if ( scalar(@pepgencoords) > 3 ) {
     throw( sprintf "Pep end for transcript %s does not map cleanly", $trans->display_id );
@@ -546,7 +546,6 @@ sub _make_stop_codon_features {
     throw( sprintf "Pep end (end of) for transcript %s maps to gap", $trans->display_id );
   }
 
-  my @stopc_feat;
   my $phase = 0;
   foreach my $pepgencoord (@pepgencoords) {
     push @stopc_feat,
@@ -558,10 +557,8 @@ sub _make_stop_codon_features {
                                     -phase       => $phase,
                                     -strand => $translateable[0]->strand
       );
-      printf "END: %s\n",$pepgencoord->end;
-      printf "START: %s\n",$pepgencoord->start;
+
     $phase = 3 - ( $pepgencoord->end - $pepgencoord->start + 1 );
-    printf "END PHASE: %s\n",$phase;
   }
 
   if ( $translateable[0]->strand == 1 ) {
@@ -598,7 +595,7 @@ sub _check_start_and_stop {
   @attrib = @{ $trans->get_all_Attributes('cds_end_NF') };
   $has_end =
     ( scalar @attrib == 1 and $attrib[0]->value() == 1 ) ? 0 : 1;
-  return ( 0, 0 ) unless $has_start and $has_end;
+  return ( 0, 0 ) unless $has_start or $has_end;
 
 #
 # even if the transcript is not annotated with incomplete start/end
