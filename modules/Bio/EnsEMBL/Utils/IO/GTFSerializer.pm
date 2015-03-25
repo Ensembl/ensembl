@@ -216,7 +216,7 @@ sub print_feature {
     my $strand = $strand_conversion{ $exon->strand };
 
     print $fh
-# Column 1 - seqname, the name of the sequence/chromosome the feature is on. Landmark for start below
+      # Column 1 - seqname, the name of the sequence/chromosome the feature is on. Landmark for start below
       $idstr . "\t" .
       # Column 2 - source
       $transcript->source. "\t" .
@@ -224,17 +224,17 @@ sub print_feature {
       'exon' . "\t" .
       # Column 4 - start, the start coordinate of the feature
       ( $exon->start + $sliceoffset ) . "\t" .
-    # Column 5 - end, coordinates (absolute) for the end of this feature
+      # Column 5 - end, coordinates (absolute) for the end of this feature
       ( $exon->end + $sliceoffset ) . "\t" .
       # Column 6 - score, for variations only
       "." . "\t" .
       # Column 7 - strand, forward (+) or reverse (-)
       $strand . "\t" .
-# Column 8 - frame (reading phase), what base of this feature is the first base of a codon
+      # Column 8 - frame (reading phase), what base of this feature is the first base of a codon
       "." . "\t";
-# Column 9 - attribute, a ;-separated list of key-value pairs (additional feature info)
-    $self->_print_attribs( $gene, $biotype_display, $transcript, $transcript_biotype,
-                           $count, 'exon', $exon, $vegadb, $has_selenocysteine );
+      # Column 9 - attribute, a ;-separated list of key-value pairs (additional feature info)
+      $self->_print_attribs( $gene, $biotype_display, $transcript, $transcript_biotype,
+                             $count, 'exon', $exon, $vegadb, $has_selenocysteine );
     print $fh "\n";
 
     $intrans = 1 if $translation and $exon == $translation->start_Exon;
@@ -545,7 +545,10 @@ sub _make_stop_codon_features {
   unless ( $pepgencoords[$#pepgencoords]->isa('Bio::EnsEMBL::Mapper::Coordinate') ) {
     throw( sprintf "Pep end (end of) for transcript %s maps to gap", $trans->display_id );
   }
-
+  my $last_exon = $translateable[$#translateable];
+  if ($last_exon->end_phase != 0 && $last_exon->end_phase != -1) {
+    return @stopc_feat;
+  }
   my $phase = 0;
   foreach my $pepgencoord (@pepgencoords) {
     push @stopc_feat,
@@ -555,7 +558,7 @@ sub _make_stop_codon_features {
                                     -start       => $pepgencoord->start,
                                     -end         => $pepgencoord->end,
                                     -phase       => $phase,
-                                    -strand => $translateable[0]->strand
+                                    -strand      => $translateable[0]->strand
       );
 
     $phase = 3 - ( $pepgencoord->end - $pepgencoord->start + 1 );
@@ -606,7 +609,12 @@ sub _check_start_and_stop {
 
   my $cds_seq  = uc( $trans->translateable_seq );
   my $startseq = substr( $cds_seq, 0, 3 );
-  my $endseq   = substr( $cds_seq, -3 );
+
+  my @exons = @{ $trans->get_all_translateable_Exons };
+  my $last_exon = $exons[$#exons];
+  my $phase = $last_exon->end_phase;
+  $phase = 0 if $phase == -1;
+  my $endseq = substr( $cds_seq, -(3-$phase) );
 
 # reimplemented since there are alternatively valid codon tables
 
