@@ -68,3 +68,4 @@
 2075	\N	patch	patch_79_80_a.sql|schema_version
 2076	\N	patch	patch_79_80_b.sql|xref_dbprimary_acc_longer
 2077	\N	patch	patch_79_80_c.sql|seq_region_synonym_longer
+2078	\N	patch	patch_79_80_d.sql|genome_statistics_value_longer

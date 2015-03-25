@@ -329,7 +329,7 @@ CREATE TABLE `gene_attrib` (
 CREATE TABLE `genome_statistics` (
   `genome_statistics_id` int(10) unsigned NOT NULL AUTO_INCREMENT,
   `statistic` varchar(128) NOT NULL,
-  `value` int(10) unsigned NOT NULL DEFAULT '0',
+  `value` bigint(11) unsigned NOT NULL DEFAULT '0',
   `species_id` int(10) unsigned DEFAULT '1',
   `attrib_type_id` int(10) unsigned DEFAULT NULL,
   `timestamp` datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
@@ -468,7 +468,7 @@ CREATE TABLE `meta` (
   PRIMARY KEY (`meta_id`),
   UNIQUE KEY `species_key_value_idx` (`species_id`,`meta_key`,`meta_value`),
   KEY `species_value_idx` (`species_id`,`meta_value`)
-) ENGINE=MyISAM AUTO_INCREMENT=200 DEFAULT CHARSET=latin1;
+) ENGINE=MyISAM AUTO_INCREMENT=201 DEFAULT CHARSET=latin1;
 
 CREATE TABLE `meta_coord` (
   `table_name` varchar(40) NOT NULL,
