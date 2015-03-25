@@ -246,8 +246,8 @@ sub print_feature {
       my $cdsexon = shift @translateable_exons;
       $last_used_coding_exon = $cdsexon;
    #
-   # Here is computing the value of the GTF frame (taking into
-   # account the Ensembl convention), but it's misleadingly called phase
+   # Computing the value of the GTF frame (taking into
+   # account the Ensembl convention where it is called phase )
    #
       my $phase = $cdsexon->phase;
       if ( $cdsexon->phase == 1 ) {
@@ -267,7 +267,8 @@ sub print_feature {
            ( $exon->end >= $endcodons[0]->start &&
              $exon->start <= $endcodons[0]->end ) )
       {
-
+        # Only the first stop-codon feature is used to adjust the end of the exon
+        # This may not be sufficient all the time
         if ( $cdsexon->strand == 1 ) {
           $exon_end = $cdsexon->end - $endcodons[0]->length;
         }
@@ -457,8 +458,9 @@ sub get_id_from_obj {
 
     Arg [1]    : Bio::EnsEMBL::Transcript
     Example    : 
-    Description: 
-    Returntype : Array
+    Description: The start codon can lay across several seq_regions, hence an array of them
+                 is returned.
+    Returntype : Array of Bio::EnsEMBL::SeqFeature representing the start codon
 
 =cut
 
@@ -521,7 +523,9 @@ sub _make_start_codon_features {
     Example    : 
     Description: This method is only called after the sequence has already been checked
                  As a result, the assumption of a 3-base stop codon is valid.
-    Returntype : Array
+                 The stop can lay across several seq_regions, hence the need to generate
+                 several stop features.
+    Returntype : Array of Bio::EnsEMBL::SeqFeature representing the stop codon
 
 =cut
 
@@ -545,6 +549,8 @@ sub _make_stop_codon_features {
   unless ( $pepgencoords[$#pepgencoords]->isa('Bio::EnsEMBL::Mapper::Coordinate') ) {
     throw( sprintf "Pep end (end of) for transcript %s maps to gap", $trans->display_id );
   }
+
+  # In event of an irregular end phase, return no stop codon features
   my $last_exon = $translateable[$#translateable];
   if ($last_exon->end_phase != 0 && $last_exon->end_phase != -1) {
     return @stopc_feat;
@@ -579,7 +585,9 @@ sub _make_stop_codon_features {
 
     Arg [1]    : Bio::EnsEMBL::Transcript
     Example    : 
-    Description: 
+    Description: Perform a two step verification of start and stop codons.
+                 The results are used later to decide whether to generate the GTF 
+                 start and stop features
     Returntype : Array
 
 =cut
@@ -591,7 +599,8 @@ sub _check_start_and_stop {
   my ( $has_start, $has_end );
 
   # transcript could be annotated has having incomplete
-  # CDS at either 5', 3' end or both. Reject in both cases.
+  # CDS at either 5', 3' end or both. Reject in the event of 
+  # no identifiable start or stop from annotators.
   my @attrib = @{ $trans->get_all_Attributes('cds_start_NF') };
   $has_start =
     ( scalar @attrib == 1 and $attrib[0]->value() == 1 ) ? 0 : 1;
@@ -610,6 +619,9 @@ sub _check_start_and_stop {
   my $cds_seq  = uc( $trans->translateable_seq );
   my $startseq = substr( $cds_seq, 0, 3 );
 
+  # check last exon phase to verify stop codon length, before the stop codon is pulled directly
+  # from the CDS (which contains the stop codon usually). IG genes and other unusual cases can
+  # be missing a stop.
   my @exons = @{ $trans->get_all_translateable_Exons };
   my $last_exon = $exons[$#exons];
   my $phase = $last_exon->end_phase;
