@@ -178,7 +178,9 @@ sub end_phase {
   }
   else {
     if ( !defined( $self->{'end_phase'} ) ) {
-      warning("No end phase set in Exon. You must set it explicitly.");
+      my $stable_id = '';
+      $stable_id = $self->stable_id if defined $self->stable_id;
+      warning("No end phase set in Exon ".$stable_id.". You must set it explicitly.");
     }
   }
   return $self->{'end_phase'};
