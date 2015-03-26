@@ -25,7 +25,7 @@ my $gene_adaptor = $dba->get_GeneAdaptor();
 
 $gene_adaptor->bind_param_generic_fetch('protein_coding', SQL_VARCHAR);
 my $count = $gene_adaptor->generic_count('g.biotype =?');
-is($count, 20, 'Checking generic_count for protein_coding genes returns expected amounts');
+is($count, 21, 'Checking generic_count for protein_coding genes returns expected amounts');
 
 
 # fetch_all_by_dbID_list tests
@@ -52,6 +52,6 @@ throws_ok {
 # Making sure we can execute an excessivly large list of IDs by splitting into multiple queries
 my @ids = 1..256000;
 my $id_derrived_gene_list = $gene_adaptor->_uncached_fetch_all_by_id_list(\@ids, undef, "dbID", 1);
-is(scalar(@{$id_derrived_gene_list}), 20, 'Checking we get 20 genes back');
+is(scalar(@{$id_derrived_gene_list}), 21, 'Checking we get 21 genes back');
 
 done_testing();

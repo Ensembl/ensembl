@@ -261,13 +261,13 @@ is($tr->display_id(), $tr->stable_id(), 'Transcript stable id and display id are
 #
 note("Test fetch_all_by_biotype");
 my @transcripts = @{$ta->fetch_all_by_biotype('protein_coding')};
-is(@transcripts, 25, 'Fetching all protein coding transcript');
+is(@transcripts, 26, 'Fetching all protein coding transcript');
 my $transcriptCount = $ta->count_all_by_biotype('protein_coding');
-is($transcriptCount, 25, 'Counting all protein coding');
+is($transcriptCount, 26, 'Counting all protein coding');
 @transcripts = @{$ta->fetch_all_by_biotype(['protein_coding','pseudogene'])};
-is(@transcripts, 25, 'Got 25 transcript');
+is(@transcripts, 26, 'Got 25 transcript');
 $transcriptCount = $ta->count_all_by_biotype(['protein_coding', 'pseudogene']);
-is($transcriptCount, 25, 'Count by biotype is correct');
+is($transcriptCount, 26, 'Count by biotype is correct');
 
 
 #
@@ -284,9 +284,9 @@ is(@transcripts, $transcriptCount, "Counted as many transcripts as were fetched 
 note("Test fetch_all_by_source");
 @transcripts = @{$ta->fetch_all_by_source('ensembl')};
 note "Got ".scalar(@transcripts)." ensembl transcripts\n";
-is(22, scalar(@transcripts));
+is(23, scalar(@transcripts));
 $transcriptCount = $ta->count_all_by_source('ensembl');
-is(22, $transcriptCount);
+is(23, $transcriptCount);
 @transcripts = @{$ta->fetch_all_by_source(['havana','vega'])};
 note "Got ".scalar(@transcripts)." (havana, vega) transcripts\n";
 is(3, scalar(@transcripts));
