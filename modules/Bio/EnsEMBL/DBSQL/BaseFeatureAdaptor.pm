@@ -1513,8 +1513,11 @@ sub fetch_all_by_outward_search {
        $limit,$not_overlapping,$five_prime,$three_prime, $max_range) =
         rearrange([qw(FEATURE SAME_STRAND OPPOSITE_STRAND DOWNSTREAM UPSTREAM RANGE LIMIT NOT_OVERLAPPING FIVE_PRIME THREE_PRIME MAX_RANGE)], @_);
   my $factor = 1;
+  $limit ||= 1;
+  $search_range ||= 1000;
+  $max_range ||= 10000;
   my @results;
-  while (scalar @results < $limit && $search_range < $max_range) {
+  while (scalar @results < $limit && $search_range <= $max_range) {
     $search_range = $search_range * $factor;
     @results = @{ 
       $self->fetch_all_nearest_by_Feature(-RANGE => $search_range, 
@@ -1577,6 +1580,7 @@ sub fetch_all_nearest_by_Feature{
     if ( !defined($search_range)) {
       $search_range ||= 1000;
     }
+    $limit ||= 1;
 
     unless (defined($ref_feature) && $ref_feature->isa('Bio::EnsEMBL::Feature')) {
       throw ('fetch_all_nearest_by_Feature method requires a valid Ensembl Feature object to operate');
