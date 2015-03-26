@@ -45,8 +45,8 @@ my $db = $mtdb->get_DBAdaptor("core");
   # Creating a temporary transcript to get a transcript which will have a Selenocysteinea,
   # 5' and 3' UTRs and a CCDS reference
   my $slice = $db->get_SliceAdaptor()->fetch_by_toplevel_location('20');
-  my $exon = Bio::EnsEMBL::Exon->new(-START => 30274331, -END => 30274348, -STRAND => 1, -SLICE => $slice, -PHASE => 0, -STABLE_ID => 'e1');
-  my $exon_two = Bio::EnsEMBL::Exon->new(-START => 30274401, -END => 30274404, -STRAND => 1, -SLICE => $slice, -PHASE => 0, -STABLE_ID => 'e2');
+  my $exon = Bio::EnsEMBL::Exon->new(-START => 30274331, -END => 30274348, -STRAND => 1, -SLICE => $slice, -PHASE => 0, -END_PHASE => 0, -STABLE_ID => 'e1');
+  my $exon_two = Bio::EnsEMBL::Exon->new(-START => 30274401, -END => 30274404, -STRAND => 1, -SLICE => $slice, -PHASE => 0, END_PHASE => 1, -STABLE_ID => 'e2');
   my $transcript = Bio::EnsEMBL::Transcript->new(-EXONS => [$exon, $exon_two], -STABLE_ID => 'TRANS', -BIOTYPE => 'protein_coding');
   my $seq_edit = Bio::EnsEMBL::SeqEdit->new(-CODE => '_selenocysteine', -START => 2, -END => 2, -ALT_SEQ => 'U');
   my $translation = Bio::EnsEMBL::Translation->new(-START_EXON => $exon, -END_EXON => $exon, -SEQ_START => 4, -SEQ_END => 15, -STABLE_ID => 'PEP');
@@ -182,6 +182,25 @@ foreach my $transcript_id (sort @keys) {
   eq_or_diff(${$fh->string_ref()}, $transcripts_gtf->{$transcript_id}, "Transcript $transcript_id serialises to GTF as expected");
     
 }
+
+
+my $false_stop = qq/7\tensembl\ttranscript\t1\t150\t.\t+\t.\tgene_id "ENSG00000111111"; gene_version "1"; transcript_id "ENST00000111111"; transcript_version "1"; gene_source "ensembl"; gene_biotype "protein_coding"; transcript_source "ensembl"; transcript_biotype "protein_coding";
+7\tensembl\texon\t1\t6\t.\t+\t.\tgene_id "ENSG00000111111"; gene_version "1"; transcript_id "ENST00000111111"; transcript_version "1"; exon_number "1"; gene_source "ensembl"; gene_biotype "protein_coding"; transcript_source "ensembl"; transcript_biotype "protein_coding"; exon_id "ENSE00000111111"; exon_version "1";
+7\tensembl\tCDS\t1\t6\t.\t+\t0\tgene_id "ENSG00000111111"; gene_version "1"; transcript_id "ENST00000111111"; transcript_version "1"; exon_number "1"; gene_source "ensembl"; gene_biotype "protein_coding"; transcript_source "ensembl"; transcript_biotype "protein_coding"; protein_id "ENSP00000111111"; protein_version "1";
+7\tensembl\texon\t5\t9\t.\t+\t.\tgene_id "ENSG00000111111"; gene_version "1"; transcript_id "ENST00000111111"; transcript_version "1"; exon_number "2"; gene_source "ensembl"; gene_biotype "protein_coding"; transcript_source "ensembl"; transcript_biotype "protein_coding"; exon_id "ENSE00000111112"; exon_version "1";
+7\tensembl\tCDS\t5\t9\t.\t+\t0\tgene_id "ENSG00000111111"; gene_version "1"; transcript_id "ENST00000111111"; transcript_version "1"; exon_number "2"; gene_source "ensembl"; gene_biotype "protein_coding"; transcript_source "ensembl"; transcript_biotype "protein_coding"; protein_id "ENSP00000111111"; protein_version "1";
+/;
+
+
+
+# Inferred stop codons
+# test data must have a stop codon in the wrong phase to recreate the problem.
+my $transcript = $transcript_adaptor->fetch_by_stable_id('ENST00000111111'); 
+my $fh = IO::String->new();
+my $gtf_serializer = Bio::EnsEMBL::Utils::IO::GTFSerializer->new($fh);
+$gtf_serializer->print_feature($transcript);
+
+eq_or_diff(${$fh->string_ref},$false_stop,"Prove absent stop codons are handled correctly and not made into features");
 
 done_testing();
 

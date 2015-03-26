@@ -131,7 +131,7 @@ sub print_Gene {
 
     Arg [1]    : Bio::EnsEMBL::Transcript
     Example    : $serializer->print_feature($transcript)
-    Description: 
+    Description: Generate all the GTF features required for this transcript
     Returntype : none
 
 =cut
@@ -141,10 +141,8 @@ sub print_feature {
   my $transcript = shift;
   my $gene = shift;
 
-  throw( sprintf
-           "Feature is of type %s. Cannot write non transcripts to GTF",
-         ref($transcript)
-  ) unless check_ref( $transcript, "Bio::EnsEMBL::Transcript" );
+  throw( sprintf "Feature is of type %s. Cannot write non transcripts to GTF", ref($transcript) ) 
+    unless check_ref( $transcript, "Bio::EnsEMBL::Transcript" );
 
   # filehandle is inherited
   my $fh = $self->{'filehandle'};
@@ -153,8 +151,17 @@ sub print_feature {
   my $sliceoffset = $slice->start - 1;
   my $idstr       = $slice->seq_region_name;
 
-  my @startcs = $self->_make_start_codon_features($transcript);
-  my @endcs   = $self->_make_stop_codon_features($transcript);
+  # Create start codon features. Multiple due to outcomes of projection, but they will 
+  # overlap the first exon
+  my @startcodons = $self->_make_start_codon_features($transcript);
+
+  # Stop codons (multiple "features" from projection), are NOT included in the CDS in GTF, so the
+  # CDS coordinates get adjusted in the process of creating the stop.
+  my @endcodons   = $self->_make_stop_codon_features($transcript);
+
+  # We then verify the positions really are proper stops and starts, by looking for annotation
+  # and checking the bases constitute a stop. These flags are then used to decide whether to
+  # actually print the features created by the two calls above.
   my ( $hasstart, $hasend ) = $self->_check_start_and_stop($transcript);
 
   my $vegadb = 0;
@@ -202,7 +209,7 @@ sub print_feature {
         my $end = $projection->end();
         print $fh sprintf(qq{%s\t%s\tSelenocysteine\t%d\t%d\t.\t%s\t.\t}, 
           $idstr, $transcript->source, ($start+$sliceoffset), ($end+$sliceoffset), $strand);
-        $self->_print_attribs($gene, $biotype_display, $transcript, $transcript_biotype, 0, 'Selenocystine', undef, undef, $has_selenocysteine);
+        $self->_print_attribs($gene, $biotype_display, $transcript, $transcript_biotype, 0, 'Selenocysteine', undef, undef, $has_selenocysteine);
         print $fh "\n";
       }
     }
@@ -218,7 +225,7 @@ sub print_feature {
     my $strand = $strand_conversion{ $exon->strand };
 
     print $fh
-# Column 1 - seqname, the name of the sequence/chromosome the feature is on. Landmark for start below
+      # Column 1 - seqname, the name of the sequence/chromosome the feature is on. Landmark for start below
       $idstr . "\t" .
       # Column 2 - source
       $transcript->source. "\t" .
@@ -226,22 +233,20 @@ sub print_feature {
       'exon' . "\t" .
       # Column 4 - start, the start coordinate of the feature
       ( $exon->start + $sliceoffset ) . "\t" .
-    # Column 5 - end, coordinates (absolute) for the end of this feature
+      # Column 5 - end, coordinates (absolute) for the end of this feature
       ( $exon->end + $sliceoffset ) . "\t" .
       # Column 6 - score, for variations only
       "." . "\t" .
       # Column 7 - strand, forward (+) or reverse (-)
       $strand . "\t" .
-# Column 8 - frame (reading phase), what base of this feature is the first base of a codon
+      # Column 8 - frame (reading phase), what base of this feature is the first base of a codon
       "." . "\t";
-# Column 9 - attribute, a ;-separated list of key-value pairs (additional feature info)
-    $self->_print_attribs( $gene, $biotype_display, $transcript, $transcript_biotype,
-                           $count, 'exon', $exon, $vegadb, $has_selenocysteine );
+      # Column 9 - attribute, a ;-separated list of key-value pairs (additional feature info)
+      $self->_print_attribs( $gene, $biotype_display, $transcript, $transcript_biotype,
+                             $count, 'exon', $exon, $vegadb, $has_selenocysteine );
     print $fh "\n";
 
-    $intrans = 1
-      if $translation and
-      $exon == $translation->start_Exon;
+    $intrans = 1 if $translation and $exon == $translation->start_Exon;
 
     my $last_used_coding_exon;
     if ($intrans) {
@@ -250,8 +255,8 @@ sub print_feature {
       my $cdsexon = shift @translateable_exons;
       $last_used_coding_exon = $cdsexon;
    #
-   # Here is computing the value of the GTF frame (taking into
-   # account the Ensembl convention), but it's misleadingly called phase
+   # Computing the value of the GTF frame (taking into
+   # account the Ensembl convention where it is called phase )
    #
       my $phase = $cdsexon->phase;
       if ( $cdsexon->phase == 1 ) {
@@ -268,23 +273,21 @@ sub print_feature {
       my $exon_end   = $cdsexon->end;
       if ( $translation &&
            $hasend &&
-           ( $exon->end >= $endcs[0]->start &&
-             $exon->start <= $endcs[0]->end ) )
+           ( $exon->end >= $endcodons[0]->start &&
+             $exon->start <= $endcodons[0]->end ) )
       {
-
+        # Only the first stop-codon feature is used to adjust the end of the exon
+        # This may not be sufficient all the time
         if ( $cdsexon->strand == 1 ) {
-          $exon_end = $cdsexon->end - $endcs[0]->length;
+          $exon_end = $cdsexon->end - $endcodons[0]->length;
         }
         else {
-          $exon_start = $cdsexon->start + $endcs[0]->length;
+          $exon_start = $cdsexon->start + $endcodons[0]->length;
         }
       }
 
-      # Before logic was the first 3 conditions. Added the length of
-      # exon is less than 3 as the GTF dumper missed off
-      # 1bp CDS exons. Seems that $instop was set to true meaning
-      # we bailed out. The other conditions are fine. Not sure
-      # if this test is the right one to do but it does work
+      # Exons with length less than 3 are included to avoid missing 1bp CDS exons.
+
       if ( $exon_start <= $cdsexon->end &&
            $exon_end >= $cdsexon->start &&
            (!$instop || $cdsexon->length() < 3) )
@@ -303,12 +306,12 @@ sub print_feature {
     # the transcript was coding.
 
 
-    if ( $translation &&
-         $exon == $translation->start_Exon &&
-         $hasstart )
-    {
-      my $tmpcnt = $count;
-      foreach my $startc (@startcs) {
+    if ( $translation 
+         && $exon == $translation->start_Exon 
+         && $hasstart ) {
+      
+      my $tmpcnt = $count; # used to order GTF features in the file
+      foreach my $startc (@startcodons) {
         # here we should check the start codon covers 3 bases
         print $fh $idstr . "\t" . $transcript->source . "\t" .
           'start_codon' . "\t" . ( $startc->start + $sliceoffset ) .
@@ -320,13 +323,11 @@ sub print_feature {
         print $fh "\n";
       }
     }
-    if ( $translation &&
-         ( $exon == $translation->end_Exon ) )
-    {
+    if ( $translation && ( $exon == $translation->end_Exon ) ) {
       if ($hasend) {
-        my $tmpcnt = $count - $#endcs;
+        my $tmpcnt = $count - $#endcodons;
 
-        foreach my $endc (@endcs) {
+        foreach my $endc (@endcodons) {
           # here we should check the stop codon covers 3 bases
           print $fh $idstr . "\t" . $transcript->source . "\t" .
             'stop_codon' . "\t" . ( $endc->start + $sliceoffset ) .
@@ -341,9 +342,9 @@ sub print_feature {
       $intrans = 0;
     }
 
-    if ( scalar(@endcs) &&
-         ( $exon->end >= $endcs[0]->start &&
-           $exon->start <= $endcs[0]->end ) )
+    if ( scalar(@endcodons) &&
+         ( $exon->end >= $endcodons[0]->start &&
+           $exon->start <= $endcodons[0]->end ) )
     {
       $instop = 1;
     }
@@ -359,15 +360,6 @@ sub print_feature {
     $self->_print_attribs($gene, $biotype_display, $transcript, $transcript_biotype, 0, 'UTR', undef, undef, $has_selenocysteine);
     print $fh "\n";
   }
-
-  # my $three_prime_utr = $transcript->three_prime_utr_Feature();
-  # if($three_prime_utr) {
-  #   my $strand = $strand_conversion{$three_prime_utr->strand()};
-  #   print $fh sprintf(qq{%s\t%s\tUTR\t%d\t%d\t.\t%s\t.\t}, 
-  #       $idstr, $transcript_biotype, ($three_prime_utr->start()+$sliceoffset), ($three_prime_utr->end+$sliceoffset), $strand);
-  #   $self->_print_attribs($gene, $biotype_display, $transcript, 0, 'UTR', undef, undef, $has_selenocysteine);
-  #   print $fh "\n";
-  # }
 
   return;
 } ## end sub print_feature
@@ -475,8 +467,9 @@ sub get_id_from_obj {
 
     Arg [1]    : Bio::EnsEMBL::Transcript
     Example    : 
-    Description: 
-    Returntype : Array
+    Description: The start codon can lay across several seq_regions, hence an array of them
+                 is returned.
+    Returntype : Array of Bio::EnsEMBL::SeqFeature representing the start codon
 
 =cut
 
@@ -502,9 +495,7 @@ sub _make_start_codon_features {
     throw( sprintf "Pep start for transcript %s maps to gap",
            $trans->display_id );
   }
-  unless ( $pepgencoords[$#pepgencoords]
-           ->isa('Bio::EnsEMBL::Mapper::Coordinate') )
-  {
+  unless ( $pepgencoords[$#pepgencoords]->isa('Bio::EnsEMBL::Mapper::Coordinate') ){
     throw( sprintf "Pep start (end of) for transcript %s maps to gap",
            $trans->display_id );
   }
@@ -539,8 +530,11 @@ sub _make_start_codon_features {
 
     Arg [1]    : Bio::EnsEMBL::Transcript
     Example    : 
-    Description: 
-    Returntype : Array
+    Description: This method is only called after the sequence has already been checked
+                 As a result, the assumption of a 3-base stop codon is valid.
+                 The stop can lay across several seq_regions, hence the need to generate
+                 several stop features.
+    Returntype : Array of Bio::EnsEMBL::SeqFeature representing the stop codon
 
 =cut
 
@@ -551,28 +545,25 @@ sub _make_stop_codon_features {
   return ( () ) unless $trans->translation;
 
   my @translateable = @{ $trans->get_all_translateable_Exons };
-
+  my @stopc_feat;
   my $cdna_endpos = $trans->cdna_coding_end;
-
-  my @pepgencoords =
-    $trans->cdna2genomic( $cdna_endpos - 2, $cdna_endpos );
+  my @pepgencoords = $trans->cdna2genomic( $cdna_endpos - 2, $cdna_endpos );
 
   if ( scalar(@pepgencoords) > 3 ) {
-    throw( sprintf "Pep end for transcript %s does not map cleanly",
-           $trans->display_id );
+    throw( sprintf "Pep end for transcript %s does not map cleanly", $trans->display_id );
   }
   unless ( $pepgencoords[0]->isa('Bio::EnsEMBL::Mapper::Coordinate') ) {
-    throw( sprintf "Pep end for transcript %s maps to gap",
-           $trans->display_id );
+    throw( sprintf "Pep end for transcript %s maps to gap", $trans->display_id );
   }
-  unless ( $pepgencoords[$#pepgencoords]
-           ->isa('Bio::EnsEMBL::Mapper::Coordinate') )
-  {
-    throw( sprintf "Pep end (end of) for transcript %s maps to gap",
-           $trans->display_id );
+  unless ( $pepgencoords[$#pepgencoords]->isa('Bio::EnsEMBL::Mapper::Coordinate') ) {
+    throw( sprintf "Pep end (end of) for transcript %s maps to gap", $trans->display_id );
   }
 
-  my @stopc_feat;
+  # In event of an irregular end phase, return no stop codon features
+  my $last_exon = $translateable[$#translateable];
+  if ($last_exon->end_phase != 0 && $last_exon->end_phase != -1) {
+    return @stopc_feat;
+  }
   my $phase = 0;
   foreach my $pepgencoord (@pepgencoords) {
     push @stopc_feat,
@@ -582,8 +573,9 @@ sub _make_stop_codon_features {
                                     -start       => $pepgencoord->start,
                                     -end         => $pepgencoord->end,
                                     -phase       => $phase,
-                                    -strand => $translateable[0]->strand
+                                    -strand      => $translateable[0]->strand
       );
+
     $phase = 3 - ( $pepgencoord->end - $pepgencoord->start + 1 );
   }
 
@@ -602,26 +594,29 @@ sub _make_stop_codon_features {
 
     Arg [1]    : Bio::EnsEMBL::Transcript
     Example    : 
-    Description: 
+    Description: Perform a two step verification of start and stop codons.
+                 The results are used later to decide whether to generate the GTF 
+                 start and stop features
     Returntype : Array
 
 =cut
 
 sub _check_start_and_stop {
-  my ( $self,, $trans ) = @_;
+  my ( $self, $trans ) = @_;
 
   return ( 0, 0 ) unless defined $trans->translation;
   my ( $has_start, $has_end );
 
   # transcript could be annotated has having incomplete
-  # CDS at either 5', 3' end or both
+  # CDS at either 5', 3' end or both. Reject in the event of 
+  # no identifiable start or stop from annotators.
   my @attrib = @{ $trans->get_all_Attributes('cds_start_NF') };
   $has_start =
     ( scalar @attrib == 1 and $attrib[0]->value() == 1 ) ? 0 : 1;
   @attrib = @{ $trans->get_all_Attributes('cds_end_NF') };
   $has_end =
     ( scalar @attrib == 1 and $attrib[0]->value() == 1 ) ? 0 : 1;
-  return ( 0, 0 ) unless $has_start and $has_end;
+  return ( 0, 0 ) unless $has_start or $has_end;
 
 #
 # even if the transcript is not annotated with incomplete start/end
@@ -629,21 +624,20 @@ sub _check_start_and_stop {
 #
 # use translateable_seq (CDS) instead of spliced_seq (CDNA) which is
 # not padded for non-triplet issues
-#
-# $has_start = $has_end = 1;
-# my $coding_start = $trans->cdna_coding_start;
-# my $coding_end = $trans->cdna_coding_end;
-# my $cdna_seq = uc($trans->spliced_seq);
-# my $startseq = substr($cdna_seq, $coding_start-1, 3);
-# my $endseq = substr($cdna_seq, $coding_end-3, 3);
-#
+
   my $cds_seq  = uc( $trans->translateable_seq );
   my $startseq = substr( $cds_seq, 0, 3 );
-  my $endseq   = substr( $cds_seq, -3 );
+
+  # check last exon phase to verify stop codon length, before the stop codon is pulled directly
+  # from the CDS (which contains the stop codon usually). IG genes and other unusual cases can
+  # be missing a stop.
+  my @exons = @{ $trans->get_all_translateable_Exons };
+  my $last_exon = $exons[$#exons];
+  my $phase = $last_exon->end_phase;
+  $phase = 0 if $phase == -1;
+  my $endseq = substr( $cds_seq, -(3-$phase) );
 
 # reimplemented since there are alternatively valid codon tables
-# $has_start = 0  if ($startseq ne "ATG");
-# $has_end = 0 if ($endseq ne "TAG" && $endseq ne "TGA" && $endseq ne "TAA");
 
   my ($attrib) =
     @{ $trans->slice()->get_all_Attributes('codon_table') };
