@@ -131,7 +131,7 @@ sub print_Gene {
 
     Arg [1]    : Bio::EnsEMBL::Transcript
     Example    : $serializer->print_feature($transcript)
-    Description: 
+    Description: Generate all the GTF features required for this transcript
     Returntype : none
 
 =cut
@@ -151,8 +151,17 @@ sub print_feature {
   my $sliceoffset = $slice->start - 1;
   my $idstr       = $slice->seq_region_name;
 
+  # Create start codon features. Multiple due to outcomes of projection, but they will 
+  # overlap the first exon
   my @startcodons = $self->_make_start_codon_features($transcript);
+
+  # Stop codons (multiple "features" from projection), are NOT included in the CDS in GTF, so the
+  # CDS coordinates get adjusted in the process of creating the stop.
   my @endcodons   = $self->_make_stop_codon_features($transcript);
+
+  # We then verify the positions really are proper stops and starts, by looking for annotation
+  # and checking the bases constitute a stop. These flags are then used to decide whether to
+  # actually print the features created by the two calls above.
   my ( $hasstart, $hasend ) = $self->_check_start_and_stop($transcript);
 
   my $vegadb = 0;
