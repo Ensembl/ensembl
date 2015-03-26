@@ -476,6 +476,11 @@ sub create_xrefs {
         if($source =~ "Reactome"){
             next;
         }
+# MIM xrefs are already imported separately, ignore from Uniprot
+# Also, Uniprot deals with proteins, not appropriate for gene level xrefs
+        if ($source =~ "MIM_GENE" || $source =~ "MIM_MORBID") {
+            next;
+        }
 # If mapped to Ensembl, add as direct xref
         if ($source eq "Ensembl") {
 # Example line:
