@@ -172,6 +172,7 @@ SEQCP
     my $last_acc = "";
     my $last_name = "";
     my $best_xref_id = undef;
+    my $best_ensembl_id = undef;
     my @gone;
     while($sth->fetch){
       if($last_acc eq $acc){
@@ -193,7 +194,7 @@ SEQCP
 	    $update_x_sth->execute($xref_id);
 	    $update_ox_sth->execute($object_xref_id);
 #??? what about dependents
-	    $self->process_dependents($xref_id, $best_xref_id, $object_type, $ensembl_id);
+	    $self->process_dependents($xref_id, $best_xref_id, $object_type, $ensembl_id, $best_ensembl_id);
 	  }
 	  else{
 	    $update_x_sth->execute($xref_id);
@@ -211,6 +212,7 @@ SEQCP
 	if($status eq "DUMP_OUT"){
 	  $last_acc = $acc;
 	  $best_xref_id = $xref_id;
+          $best_ensembl_id = $ensembl_id;
 	  if(@gone and $last_name eq $acc){
 	    foreach my $d (@gone){
 	      $update_x_sth->execute($d);
@@ -250,13 +252,12 @@ SEQCP
 }
 
 sub process_dependents{
-  my ($self, $old_master_xref_id, $new_master_xref_id, $object_type, $ensembl_id) = @_;
+  my ($self, $old_master_xref_id, $new_master_xref_id, $object_type, $ensembl_id, $best_ensembl_id) = @_;
 
-  my $dep_sth           = $self->xref->dbc->prepare("select distinct dependent_xref_id, ox.object_xref_id, dx.linkage_annotation, query_identity, target_identity, hit_start, hit_end, translation_start, translation_end, cigar_line, score, evalue from dependent_xref dx, object_xref ox left join identity_xref ix on ix.object_xref_id = ox.object_xref_id where ox.master_xref_id = dx.master_xref_id and ox.xref_id = dx.dependent_xref_id and ensembl_id = ? and dx.master_xref_id = ?");
-  my $update_dep_x_sth  = $self->xref->dbc->prepare("update dependent_xref set master_xref_id = ? where dependent_xref_id = ? and master_xref_id = ?");
-  my $remove_dep_ox_sth = $self->xref->dbc->prepare("delete ox, ix from object_xref ox left join identity_xref ix on ix.object_xref_id = ox.object_xref_id where master_xref_id = ? and ensembl_object_type = ? and ensembl_id = ? and xref_id = ?");
-  my $insert_id_x_sth   = $self->xref->dbc->prepare("insert ignore into identity_xref values(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-  my $insert_dep_ox_sth = $self->xref->dbc->prepare("insert ignore into object_xref(master_xref_id, ensembl_object_type, ensembl_id, linkage_type, ox_status, xref_id) values(?, ?, ?, 'DEPENDENT', 'DUMP_OUT', ?)");
+  my $dep_sth           = $self->xref->dbc->prepare("select distinct dependent_xref_id, ox.object_xref_id, dx.linkage_annotation, dx.linkage_source_id from dependent_xref dx, object_xref ox where ox.master_xref_id = dx.master_xref_id and ox.xref_id = dx.dependent_xref_id and ensembl_id = ? and dx.master_xref_id = ?");
+  my $insert_dep_x_sth  = $self->xref->dbc->prepare("insert into dependent_xref(master_xref_id, dependent_xref_id, linkage_source_id) values(?, ?, ?)");
+  my $remove_dep_ox_sth = $self->xref->dbc->prepare("delete ox, ix, g from object_xref ox left join identity_xref ix on ix.object_xref_id = ox.object_xref_id left join go_xref g on g.object_xref_id = ox.object_xref_id where master_xref_id = ? and ensembl_object_type = ? and ensembl_id = ? and xref_id = ?");
+  my $insert_dep_ox_sth = $self->xref->dbc->prepare("insert ignore into object_xref(master_xref_id, ensembl_object_type, ensembl_id, linkage_type, ox_status, xref_id) select distinct ?, ?, ?, 'DEPENDENT', 'DUMP_OUT', x.xref_id from xref x, object_xref ox where x.xref_id = ox.xref_id and x.xref_id = ?");# values(?, ?, ?, 'DEPENDENT', 'DUMP_OUT', ?)");
   my $dep_ox_sth        = $self->xref->dbc->prepare("select object_xref_id from object_xref where master_xref_id = ? and ensembl_object_type = ? and ensembl_id = ? and linkage_type = 'DEPENDENT' AND ox_status = 'DUMP_OUT' and xref_id = ?");
   my $remove_dep_go_sth = $self->xref->dbc->prepare("delete from go_xref where source_xref_id = ? and object_xref_id = ?");
   my $insert_dep_go_sth = $self->xref->dbc->prepare("insert ignore into go_xref values(?, ?, ?)");
@@ -266,12 +267,13 @@ sub process_dependents{
   push @master_xrefs, $old_master_xref_id;
 
   while(my $xref_id = pop(@master_xrefs)){
-    my ($dep_xref_id, $old_object_xref_id, $linkage_type, $query_identity, $target_identity, $hit_start, $hit_end, $translation_start, $translation_end, $cigar_line, $score, $evalue, $new_object_xref_id);
+    my ($dep_xref_id, $old_object_xref_id, $linkage_type, $new_object_xref_id, $linkage_source_id);
     $dep_sth->execute($ensembl_id, $xref_id);
-    $dep_sth->bind_columns(\$dep_xref_id,\$old_object_xref_id, \$linkage_type, \$query_identity, \$target_identity, \$hit_start, \$hit_end, \$translation_start, \$translation_end, \$cigar_line, \$score, \$evalue);
+    $dep_sth->bind_columns(\$dep_xref_id,\$old_object_xref_id, \$linkage_type, \$linkage_source_id);
     while($dep_sth->fetch()){
+      $insert_dep_ox_sth->execute($new_master_xref_id, $object_type, $best_ensembl_id, $dep_xref_id);
       $remove_dep_ox_sth->execute($xref_id, $object_type, $ensembl_id, $dep_xref_id);
-      $insert_dep_ox_sth->execute($new_master_xref_id, $object_type, $ensembl_id, $dep_xref_id);
+      $insert_dep_x_sth->execute($new_master_xref_id, $dep_xref_id, $linkage_source_id);
       $dep_ox_sth->execute($new_master_xref_id, $object_type, $ensembl_id, $dep_xref_id);
       $dep_ox_sth->bind_columns(\$new_object_xref_id);
       while ($dep_ox_sth->fetch()) {
@@ -279,11 +281,18 @@ sub process_dependents{
           $remove_dep_go_sth->execute($xref_id, $old_object_xref_id);
           $insert_dep_go_sth->execute($new_object_xref_id, $linkage_type, $new_master_xref_id); 
         }
-        $insert_id_x_sth->execute($new_object_xref_id, $query_identity, $target_identity, $hit_start, $hit_end, $translation_start, $translation_end, $cigar_line, $score, $evalue);
       }
     }
     push @master_xrefs, $dep_xref_id; # remember dependents dependents
   }
+
+  $dep_sth->finish();
+  $insert_dep_x_sth->finish();
+  $remove_dep_ox_sth->finish();
+  $insert_dep_ox_sth->finish();
+  $dep_ox_sth->finish();
+  $remove_dep_go_sth->finish();
+  $insert_dep_go_sth->finish();
 
 }
 
