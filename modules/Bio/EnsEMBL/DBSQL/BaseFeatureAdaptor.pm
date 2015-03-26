@@ -1823,11 +1823,13 @@ sub _discard_excess_features_from_matrix {
   return @ordered_matrix if $#ordered_matrix == 0 || !defined($limit) || $limit > scalar @ordered_matrix;
   # cut off excess elements
   my @spares = splice @ordered_matrix, $limit, scalar @ordered_matrix - $limit;
-  # Check nearest distance against other nearest features and include them if they are equal.
+  # Check nearest distance of the last member of ordered_matrix against spares and include those that match
+  # This prevents first past the post.
   if (scalar @ordered_matrix > 0) {
     my $threshold_distance = $ordered_matrix[-1]->[1];
     my $i = 0;
-    while ($i < $#spares && $spares[$i]->[2] == $threshold_distance) {
+    while ($i <= $#spares && $spares[$i]->[1] == $threshold_distance) {
+      # printf "Considering option %s, %s\n",$spares[$i]->[0]->stable_id,$spares[$i]->[1];
       push @ordered_matrix, $spares[$i];
       $i++;
     }
