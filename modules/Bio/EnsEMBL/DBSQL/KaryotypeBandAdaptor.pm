@@ -65,6 +65,68 @@ use Bio::EnsEMBL::DBSQL::BaseFeatureAdaptor;
 
 @ISA = qw(Bio::EnsEMBL::DBSQL::BaseFeatureAdaptor);
 
+=head2 store
+
+  Arg [1]    : list of Bio::EnsEMBL::KaryotypeBand @k
+               the karyotype bands to store in the database
+  Example    : $karyotype_adaptor->store(@karyotype_band);
+  Description: Stores a list of karyotype band objects in the database
+  Returntype : none
+  Exceptions : thrown if @k is not defined, if any of the features do not
+               have an attached slice.
+               or if any elements of @k are not Bio::EnsEMBL::KaryotypeBand
+  Caller     : general
+  Status     : Stable
+
+=cut
+
+sub store{
+  my ($self,@k) = @_;
+
+  if( scalar(@k) == 0 ) {
+    throw("Must call store with list of karyotype bands");
+  }
+
+  my $sth = $self->prepare
+    ("INSERT INTO karyotype (seq_region_id, seq_region_start, " .
+                            "seq_region_end, band, " .
+                            "stain) " .
+     "VALUES (?,?,?,?,?)");
+
+  my $db = $self->db();
+  my $slice_adaptor = $db->get_SliceAdaptor();
+
+ BAND: foreach my $k ( @k ) {
+
+    if( !ref $k || !$k->isa("Bio::EnsEMBL::KaryotypeBand") ) {
+      throw("KaryotypeBand must be an Ensembl KaryotypeBand, " .
+            "not a [".ref($k)."]");
+    }
+
+    if($k->is_stored($db)) {
+      warning("KaryotypeBand [".$k->dbID."] is already stored" .
+              " in this database.");
+      next BAND;
+    }
+
+    my $original = $k;
+    my $seq_region_id;
+    ($k, $seq_region_id) = $self->_pre_store($k);
+
+    $sth->bind_param(1,$seq_region_id,SQL_INTEGER);
+    $sth->bind_param(2,$k->start,SQL_INTEGER);
+    $sth->bind_param(3,$k->end,SQL_INTEGER);
+    $sth->bind_param(4,$k->name,SQL_VARCHAR);
+    $sth->bind_param(5,$k->stain,SQL_VARCHAR);
+
+    $sth->execute();
+
+    $original->dbID($self->last_insert_id('karyotype_id', undef, 'karyotype'));
+    $original->adaptor($self);
+  }
+}
+
+
 #_tables
 #
 #  Arg [1]    : none
