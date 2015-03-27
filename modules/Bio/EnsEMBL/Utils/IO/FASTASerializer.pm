@@ -80,6 +80,7 @@ use base qw(Bio::EnsEMBL::Utils::IO::Serializer);
   Description: Constructor
                Allows the specification of a custom function for rendering
                header lines.
+               Set line width to 0 for no linefeeds in the sequence.
   Returntype : Bio::EnsEMBL::Utils::IO::FASTASerializer;
   Exceptions : none
   Caller     : general
@@ -97,7 +98,7 @@ sub new {
   my $self = $class->SUPER::new($filehandle);
 
   $self->{'header_function'} = $header_function;
-  $self->line_width( ($line_width)? $line_width : 60 );
+  $self->line_width( (defined $line_width)? $line_width : 60 );
   $self->{'chunk_factor'} = ($chunk_factor)? $chunk_factor : 1000;
   # gives a 60kb buffer by default, increase for higher database and disk efficiency.
 
@@ -169,26 +170,30 @@ sub print_Seq {
 
   # set buffer size
   my $chunk_size = $self->{'chunk_factor'} * $width;
-
+  $chunk_size = $self->{'chunk_factor'} if $width == 0;
   my $start = 1;
   my $end = $slice->length();
 
   #chunk the sequence to conserve memory, and print
 
   my $here = $start;
-
-  while($here <= $end) {
-    my $there = $here + $chunk_size - 1;
-    $there = $end if($there > $end);
-    my $seq = $slice->subseq($here, $there);
-    my @lines = unpack ("(A$width)*", $seq);
-    push @lines,''; # ensure last line has a carriage return
-    $seq = join "\n",@lines;
-    # $seq =~ s/(.{1,$width})/$1\n/g; # straightforward but has a max line width of 32k
-    print $fh $seq or throw "Error writing to file handle: $!";
-    $here = $there + 1;
+  if ($width == 0) {
+    print $fh $slice->seq."\n" or throw "Error writing to file handle: $!";
+  } else {
+    while($here <= $end) {
+      my $there = $here + $chunk_size - 1;
+      $there = $end if($there > $end);
+      my $seq = $slice->subseq($here, $there);
+      
+      my @lines = unpack ("(A$width)*", $seq);
+      push @lines,''; # ensure last line has a carriage return
+      $seq = join "\n",@lines;
+      # $seq =~ s/(.{1,$width})/$1\n/g; # straightforward but has cost
+      
+      print $fh $seq or throw "Error writing to file handle: $!";
+      $here = $there + 1;
+    }
   }
-
   if ($slice->length > 0) {$self->{'achieved_something'} = 1;}
 
 }
@@ -196,7 +201,8 @@ sub print_Seq {
 =head2 line_width
 
   Arg [1]    : Integer e.g. 60 or 80
-  Description: Set and get FASTA format line width. Default is 60, maximum is 2^32
+  Description: Set and get FASTA format line width. Default is 60, maximum is 2**30
+               Set to 0 for no line feeds in the sequence
   Returntype : Integer
 
 =cut
@@ -204,10 +210,10 @@ sub print_Seq {
 sub line_width {
   my $self = shift;
   my $line_width = shift;
-  if ($line_width) {
+  if (defined $line_width) {
     assert_integer($line_width,'line width');
-    throw "Must have a sensible line width" if $line_width < 1;
-    throw "Maximum line width is 2^32, and you should have a really good reason even for that" if $line_width > 4294967296;
+    throw "Must have a sensible line width" if $line_width < 0;
+    throw "Maximum line width is 2**30, consider using 0 for no line feeds instead" if $line_width > 1073741824;
     $self->{'line_width'} = $line_width
   }
   return $self->{'line_width'}
