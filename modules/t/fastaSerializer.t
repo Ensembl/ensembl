@@ -16,9 +16,11 @@ use strict;
 use warnings;
 
 use Test::More;
+use Test::Exception;
 
 use IO::String;
 use Bio::EnsEMBL::Utils::IO::FASTASerializer;
+use Bio::EnsEMBL::Test::TestUtils qw/warns_like/;
 use Bio::EnsEMBL::Slice;
 use Bio::EnsEMBL::CoordSystem;
 use Bio::Seq;
@@ -85,7 +87,7 @@ $fh_Serializer->close;
   my $s = Bio::EnsEMBL::Slice->new(-SEQ_REGION_NAME => 'a', -COORD_SYSTEM => $coord_system, -SEQ => $seq, -SEQ_REGION_LENGTH => 120, -START => 1, -END => 120);
   my $header = sub { return 'a'; };
   my $io = IO::String->new();
-  my $ser = Bio::EnsEMBL::Utils::IO::FASTASerializer->new($io, $header, 6, 20);
+  my $ser = Bio::EnsEMBL::Utils::IO::FASTASerializer->new($io, $header, 600, 20); # chunk is smaller than line width
   my $expected = <<'FASTA';
 >a
 AAAAAAAAAAAAAAAAAAAA
@@ -124,6 +126,19 @@ M
 FASTA
   $ser->print_Seq($seq);
   is(${$io->string_ref()}, $expected, 'Testing single base serialisation');
+  my $header = sub { return 'A'; };
+  $io = IO::String->new();
+  $ser = Bio::EnsEMBL::Utils::IO::FASTASerializer->new($io, $header, 1, '100000');
+  $ser->print_Seq($seq);
+  is(${$io->string_ref()}, $expected, 'Test with crazy line length');
+  $io->close;
 }
+throws_ok( sub {
+  my $io = IO::String->new;
+  my $ser = Bio::EnsEMBL::Utils::IO::FASTASerializer->new($io, 'Hello', 1, '1000000000000');
+}, qr/Maximum line width/, 'Test really crazy line length');
+
+throws_ok( sub { Bio::EnsEMBL::Utils::IO::FASTASerializer->new(undef, 'Hello', 1, '+INF'); }, qr/Maximum line width/,'Stupid line length input');
+
 
 done_testing();

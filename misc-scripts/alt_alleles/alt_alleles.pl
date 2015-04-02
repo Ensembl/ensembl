@@ -139,7 +139,8 @@ foreach my $group (@{$vega_groups}) {
 #
 print STDERR "\n\nDeleting all alt_alleles...\n\n";
 $core_dba->dbc->do("delete from alt_allele");
-
+$core_dba->dbc->do("delete from alt_allele_attrib");
+$core_dba->dbc->do("delete from alt_allele_group");
 
 #
 # Store alt_alleles.
