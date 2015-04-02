@@ -160,7 +160,7 @@ my $ga        = $db->get_GeneAdaptor;
 
 
 #Do this via direct SQL as unlikely to change
-my $sql = 'SELECT sr.name, g.seq_region_start from gene g, seq_region sr where g.seq_region_id = sr.seq_region_id order by g.seq_region_start limit 1';
+my $sql = 'SELECT sr.name, g.seq_region_start from gene g, seq_region sr where g.seq_region_id = sr.seq_region_id and sr.name = "MT_NC_001807"';
 my ($sr_name, $sr_start) = @{$db->dbc->db_handle->selectrow_arrayref($sql)};
 my $slice     = $sa->fetch_by_region('chromosome', $sr_name, 1, ($sr_start + 1000000));
 my @genes     = @{$ga->fetch_all_by_Slice($slice)};
