@@ -227,7 +227,11 @@ sub print_feature {
                   }
                 }
                 $key = uc($key) if $key eq 'id';
-                $row .= $key."=".uri_escape($value,'\t\n\r;=%&,');
+                if (ref $value eq "ARRAY" && scalar(@{$value}) > 0) {
+                  $row .= $key."=".join (',',map { uri_escape($_,'\t\n\r;=%&,') } grep { defined $_ } @{$value});
+                } else {
+                  $row .= $key."=".uri_escape($value,'\t\n\r;=%&,');
+                }
                 $row .= ';' if scalar(@ordered_keys) > 0 || scalar(keys %summary) > 0;
             }
         }
