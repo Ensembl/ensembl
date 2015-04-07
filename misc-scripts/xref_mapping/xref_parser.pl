@@ -79,6 +79,16 @@ if ( !$user || !$host || !$dbname ) {
     exit(1);
 }
 
+if ( $host =~ /staging/ || $host =~ /livemirror/ ){
+  print STDERR "$host was specified as host name. This is a production server and should not be used to create the xref database\n";
+  exit(1);
+}
+
+if ($dbname =~ /_core_/) {
+  print STDERR "$dbname was specified for the database name. This should be the name of the xref database, not the core database\n";
+  exit(1);
+}
+
 
 print "host os $host\n";
 
