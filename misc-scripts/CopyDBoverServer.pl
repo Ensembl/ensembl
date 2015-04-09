@@ -311,7 +311,7 @@ foreach my $key ( keys(%executables) ) {
   my $rc     = $? >> 8;
 
   if ( $rc != 0 ) {
-    my $possible_location = `locate -l 1 $key 2>&1`;  # Ugly but simple.
+    my $possible_location = `find -name $key 2>&1`; 
     my $loc_rc            = $? >> 8;
 
     if ( $loc_rc == 0 ) {
