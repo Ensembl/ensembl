@@ -187,8 +187,8 @@ is(0, $empty_genome->is_high_coverage, "Empty db is not high coverage");
 # Test if there is data
 #
 
-is(1, $genome->is_empty, "Human core database has genome data");
-is(0, $empty_genome->is_empty, "Empty database has no genome data");
+is(0, $genome->is_empty, "Human core database has genome data");
+is(1, $empty_genome->is_empty, "Empty database has no genome data");
 
 #
 # Test polyploid genome support

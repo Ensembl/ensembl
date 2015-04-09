@@ -709,7 +709,7 @@ sub is_empty {
   my $self = shift;
   my $db = $self->db;
   my $species_id = $self->db->species_id();
-  my $is_empty = 0;
+  my $is_empty = 1;
   my $count_sql = q{
     SELECT count(*) FROM genome_statistics
   };
@@ -717,7 +717,7 @@ sub is_empty {
   my $sth = $self->prepare($count_sql);
   $sth->execute();
   if ($sth->fetchrow()) {
-    $is_empty = 1;
+    $is_empty = 0;
   }
   $sth->finish();
   return $is_empty;
