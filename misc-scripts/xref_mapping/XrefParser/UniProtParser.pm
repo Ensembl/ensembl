@@ -395,10 +395,12 @@ sub create_xrefs {
         if (($gn !~ /^GN/ || $gn !~ /Name=/) && $gn !~ /Synonyms=/) { last; }
         my $gene_name = undef;
 
-        if ($gn =~ / Name=([A-Za-z0-9_\-\.]+)/s) { #/s for multi-line entries ; is the delimiter
+        if ($gn =~ / Name=([A-Za-z0-9_\-\.\s]+)/s) { #/s for multi-line entries ; is the delimiter
 # Example line 
 # GN   Name=ctrc {ECO:0000313|Xenbase:XB-GENE-5790348};
-          $depe{LABEL} = $1; # leave name as is, upper/lower case is relevant in gene names
+          my $name = $1;
+          $name =~ s/\s+$//g; # Remove white spaces that are left over at the end if there was an evidence code
+          $depe{LABEL} = $name; # leave name as is, upper/lower case is relevant in gene names
           $depe{ACCESSION} = $self->get_name($xref->{ACCESSION},$depe{LABEL});
           $gene_name = $depe{ACCESSION};
 
