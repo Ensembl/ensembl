@@ -134,6 +134,29 @@ OUT
   assert_gff3($gene->canonical_transcript(), $expected, 'Transcript with custom source serialises to GFF3 as expected. Source is wibble');
 }
 
+{
+  my $gene = $ga->fetch_by_stable_id($id);
+  
+  my $summary = $gene->summary_as_hash;
+  $$summary{'Dbxref'} = ['bibble', 'fibble'];
+  $$summary{'Ontology_term'} = 'GO:0001612';
+  local undef &{Bio::EnsEMBL::Gene::summary_as_hash};
+  local *{Bio::EnsEMBL::Gene::summary_as_hash} = sub {return $summary};
+  
+  my $expected = <<'OUT';
+##gff-version 3
+##sequence-region   20 30274334 30300924
+OUT
+  #Have to do this outside of the HERETO thanks to tabs
+  $expected .= join("\t", 
+    qw/20  ensembl region 30274334  30300924  . + ./,
+    'ID=gene:ENSG00000131044;Dbxref=bibble,fibble;Ontology_term=GO:0001612;assembly_name=NCBI33;biotype=protein_coding;description=DJ310O13.1.2 (NOVEL PROTEIN SIMILAR DROSOPHILA PROTEIN CG7474%2C ISOFORM 2 ) (FRAGMENT). [Source:SPTREMBL%3BAcc:Q9BR18];external_name=C20orf125;logic_name=ensembl;version=1' 
+  );
+  $expected .= "\n";
+
+  assert_gff3($gene, $expected, 'Gene with array- and string-valued attributes as expected.');
+}
+
 sub assert_gff3 {
   my ($feature, $expected, $msg) = @_;
   my $ota = Test::SO->new();
