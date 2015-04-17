@@ -299,55 +299,30 @@ if ( !defined($opt_source) ) {
   }
 }
 
-my %executables = (
-                'myisamchk' => '/usr/local/ensembl/mysql/bin/myisamchk',
-                'rsync'     => '/usr/bin/rsync' );
-$executables{udr} = '/usr/bin/udr' if $opt_udr;
+my @executables =('myisamchk','rsync');
+push (@executables, 'udr') if $opt_udr;
 
 # Make sure we can find all executables.
-foreach my $key ( keys(%executables) ) {
-  my $exe    = $executables{$key};
-  my $output = `which $exe`;
+foreach my $key (@executables) {
+  my $output = `which $key`;
   my $rc     = $? >> 8;
-
-  if ( $rc != 0 ) {
-    my $possible_location = `locate -l 1 $key 2>&1`;  # Ugly but simple.
-    my $loc_rc            = $? >> 8;
-
-    if ( $loc_rc == 0 ) {
-      chomp $possible_location;
-      $executables{$key} = $possible_location;
-      printf( "Can not find '%s'; using '%s'\n", $exe, $executables{$key} );
+  
+  if($rc != 0) {
+    chomp $output;
+    die(
+      sprintf(
+      "Can not find '%s' and 'which %s' "
+      . "yields anything useful. Check your \$PATH",
+      $key, $key
+      ) );
+  }
+  else {
+    if ( !$opt_check && $key eq 'myisamchk' ) {
+      print( "Can not find 'myisamchk' " .
+      "but --nocheck was specified so skipping\n" ),;
     }
-
-    else {
-
-      my $final_which_output = `which $key`;
-      my $final_rc = $? >> 8;
-
-      if($final_rc == 0) {
-        chomp $final_which_output;
-        $executables{$key} = $final_which_output;
-        printf( "Can not find '%s'; using '%s'\n", $exe, $executables{$key} );
-      }
-      else {
-
-        if ( !$opt_check && $key eq 'myisamchk' ) {
-          print( "Can not find 'myisamchk' " .
-              "but --nocheck was specified so skipping\n" ),;
-        }
-        else {
-          die(
-              sprintf(
-                "Can not find '%s' and neither 'which %s' nor 'locate %s' "
-                . "yields anything useful. Check your \$PATH",
-                $exe, $key, $key
-                ) );
-        }
-      }
-    }
-  } ## end if ( $rc != 0 )
-} ## end foreach my $key ( keys(%executables...))
+  } 
+} ## end foreach my $key ( @executables...)
 
 my $run_hostaddr = hostname_to_ip(hostname());
 my $working_dir = rel2abs( curdir() );
@@ -752,10 +727,10 @@ TABLE:
 
   my @copy_cmd;
   if($opt_udr) {
-    @copy_cmd = ($executables{'udr'}, 'rsync');
+    @copy_cmd = ('udr', 'rsync');
   }
   else {
-    @copy_cmd = ($executables{'rsync'});
+    @copy_cmd = ('rsync');
   }
   push(@copy_cmd, '--whole-file', '--archive', '--progress' );
 
@@ -905,7 +880,7 @@ TABLE:
          glob( catfile( $staging_dir, sprintf( '%s*.MYI', $table ) ) ) )
       {
         my @check_cmd = (
-          $executables{'myisamchk'}, '--check', '--check-only-changed',
+          'myisamchk', '--check', '--check-only-changed',
           '--update-state', '--silent', '--silent',    # Yes, twice.
           $index );
 
