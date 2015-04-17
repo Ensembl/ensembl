@@ -255,7 +255,7 @@ sub process_dependents{
   my ($self, $old_master_xref_id, $new_master_xref_id, $object_type, $ensembl_id, $best_ensembl_id) = @_;
 
   my $dep_sth           = $self->xref->dbc->prepare("select distinct dependent_xref_id, ox.object_xref_id, dx.linkage_annotation, dx.linkage_source_id from dependent_xref dx, object_xref ox where ox.master_xref_id = dx.master_xref_id and ox.xref_id = dx.dependent_xref_id and ensembl_id = ? and dx.master_xref_id = ?");
-  my $insert_dep_x_sth  = $self->xref->dbc->prepare("insert into dependent_xref(master_xref_id, dependent_xref_id, linkage_source_id) values(?, ?, ?)");
+  my $insert_dep_x_sth  = $self->xref->dbc->prepare("insert into dependent_xref(master_xref_id, dependent_xref_id, linkage_annotation, linkage_source_id) values(?, ?, ?, ?)");
   my $remove_dep_ox_sth = $self->xref->dbc->prepare("delete ox, ix, g from object_xref ox left join identity_xref ix on ix.object_xref_id = ox.object_xref_id left join go_xref g on g.object_xref_id = ox.object_xref_id where master_xref_id = ? and ensembl_object_type = ? and ensembl_id = ? and xref_id = ?");
   my $insert_dep_ox_sth = $self->xref->dbc->prepare("insert ignore into object_xref(master_xref_id, ensembl_object_type, ensembl_id, linkage_type, ox_status, xref_id) select distinct ?, ?, ?, 'DEPENDENT', 'DUMP_OUT', x.xref_id from xref x, object_xref ox where x.xref_id = ox.xref_id and x.xref_id = ?");# values(?, ?, ?, 'DEPENDENT', 'DUMP_OUT', ?)");
   my $dep_ox_sth        = $self->xref->dbc->prepare("select object_xref_id from object_xref where master_xref_id = ? and ensembl_object_type = ? and ensembl_id = ? and linkage_type = 'DEPENDENT' AND ox_status = 'DUMP_OUT' and xref_id = ?");
@@ -273,8 +273,8 @@ sub process_dependents{
     while($dep_sth->fetch()){
       $insert_dep_ox_sth->execute($new_master_xref_id, $object_type, $best_ensembl_id, $dep_xref_id);
       $remove_dep_ox_sth->execute($xref_id, $object_type, $ensembl_id, $dep_xref_id);
-      $insert_dep_x_sth->execute($new_master_xref_id, $dep_xref_id, $linkage_source_id);
-      $dep_ox_sth->execute($new_master_xref_id, $object_type, $ensembl_id, $dep_xref_id);
+      $insert_dep_x_sth->execute($new_master_xref_id, $dep_xref_id, $linkage_type, $linkage_source_id);
+      $dep_ox_sth->execute($new_master_xref_id, $object_type, $best_ensembl_id, $dep_xref_id);
       $dep_ox_sth->bind_columns(\$new_object_xref_id);
       while ($dep_ox_sth->fetch()) {
         if ($linkage_type) {
