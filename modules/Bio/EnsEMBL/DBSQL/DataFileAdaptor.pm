@@ -178,24 +178,24 @@ sub DataFile_to_adaptor {
 
  SWITCH:
   {
-    return Bio::EnsEMBL::ExternalData::BAM::BAMAdaptor->new($df->path($base))
+    return Bio::EnsEMBL::IO::Adaptor::BAMAdaptor->new($df->path($base))
       if $type eq 'BAM';
 
-    return Bio::EnsEMBL::ExternalData::BigFile::BigBedAdaptor->new($df->path($base))
+    return Bio::EnsEMBL::IO::Adaptor::BigBedAdaptor->new($df->path($base))
       if $type eq 'BIGBED';
 
-    return Bio::EnsEMBL::ExternalData::BigFile::BigWigAdaptor->new($df->path($base))
+    return Bio::EnsEMBL::IO::Adaptor::BigWigAdaptor->new($df->path($base))
       if $type eq 'BIGWIG';
 
-    return Bio::EnsEMBL::ExternalData::VCF::VCFAdaptor->new($df->path($base))
+    return Bio::EnsEMBL::IO::Adaptor::VCFAdaptor->new($df->path($base))
       if $type eq 'VCF';
   
     # BAMCOV composite case
     if ($type eq 'BAMCOV') {
-      return Bio::EnsEMBL::ExternalData::BAM::BAMAdaptor->new($df->path($base))
+      return Bio::EnsEMBL::IO::Adaptor::BAMAdaptor->new($df->path($base))
 	if $requested_type eq 'BAM' or $requested_type eq 'BAMCOV';
       
-      return Bio::EnsEMBL::ExternalData::BigFile::BigWigAdaptor->new($df->get_all_paths($base)->[2])
+      return Bio::EnsEMBL::IO::Adaptor::BigWigAdaptor->new($df->get_all_paths($base)->[2])
 	if $requested_type eq 'BIGWIG';
     }
 

@@ -134,10 +134,10 @@ $base_args{-FILE_TYPE} = 'BAM';
 
 {
   my %type2adaptor = 
-    ( 'BAM'    => 'Bio::EnsEMBL::ExternalData::BAM::BAMAdaptor',
-      'BIGBED' => 'Bio::EnsEMBL::ExternalData::BigFile::BigBedAdaptor',
-      'BIGWIG' => 'Bio::EnsEMBL::ExternalData::BigFile::BigWigAdaptor',
-      'VCF'    => 'Bio::EnsEMBL::ExternalData::VCF::VCFAdaptor',
+    ( 'BAM'    => 'Bio::EnsEMBL::IO::Adaptor::BAMAdaptor',
+      'BIGBED' => 'Bio::EnsEMBL::IO::Adaptor::BigBedAdaptor',
+      'BIGWIG' => 'Bio::EnsEMBL::IO::Adaptor::BigWigAdaptor',
+      'VCF'    => 'Bio::EnsEMBL::IO::Adaptor::VCFAdaptor',
       'BAMCOV' => 1
     );
    
@@ -154,11 +154,11 @@ $base_args{-FILE_TYPE} = 'BAM';
       # on the various external data file adaptors, e.g. BAM/BIGWIG etc.
       #
       # my $eda = $dfa->DataFile_to_adaptor($df, $base, 'BAM');
-      # isa_ok($eda, 'Bio::EnsEMBL::ExternalData::BAM::BAMAdaptor', 'Checking BAM data adaptor');
+      # isa_ok($eda, 'Bio::EnsEMBL::IO::Adaptor::BAMAdaptor', 'Checking BAM data adaptor');
       # $eda = $dfa->DataFile_to_adaptor($df, $base, 'BAMCOV');
-      # isa_ok($eda, 'Bio::EnsEMBL::ExternalData::BAM::BAMAdaptor', 'Checking BAMCOV data adaptor');
+      # isa_ok($eda, 'Bio::EnsEMBL::IO::Adaptor::BAMAdaptor', 'Checking BAMCOV data adaptor');
       # $eda = $dfa->DataFile_to_adaptor($df, $base, 'BIGWIG');
-      # isa_ok($eda, 'Bio::EnsEMBL::ExternalData::BAM::BigWigAdaptor', 'Checking BIGWIG data adaptor');
+      # isa_ok($eda, 'Bio::EnsEMBL::IO::Adaptor::BigWigAdaptor', 'Checking BIGWIG data adaptor');
 
     } else {
       for my $requested_type (keys %type2adaptor) {
