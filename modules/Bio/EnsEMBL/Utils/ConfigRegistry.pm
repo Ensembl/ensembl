@@ -84,12 +84,6 @@ sub gen_load {
       $dba->group('blast');
     }
     $config_sub = \&Bio::EnsEMBL::Utils::ConfigRegistry::load_blast;
-  } elsif ( $dba->isa('Bio::EnsEMBL::ExternalData::SNPSQL::DBAdaptor') )
-  {
-    if ( !defined( $dba->group() ) ) {
-      $dba->group('SNP');
-    }
-    $config_sub = \&Bio::EnsEMBL::Utils::ConfigRegistry::load_SNP;
   } elsif ( $dba->isa('Bio::EnsEMBL::Pipeline::DBSQL::DBAdaptor') ) {
     if ( !defined( $dba->group() ) ) {
       $dba->group('pipeline');
@@ -100,13 +94,6 @@ sub gen_load {
       $dba->group('hive');
     }
     $config_sub = \&Bio::EnsEMBL::Utils::ConfigRegistry::load_hive;
-  } elsif (
-    $dba->isa('Bio::EnsEMBL::ExternalData::Haplotype::DBAdaptor') )
-  {
-    if ( !defined( $dba->group() ) ) {
-      $dba->group('haplotype');
-    }
-    $config_sub = \&Bio::EnsEMBL::Utils::ConfigRegistry::load_haplotype;
   } elsif ( $dba->isa('Bio::EnsEMBL::Variation::DBSQL::DBAdaptor') ) {
     if ( !defined( $dba->group() ) ) {
       $dba->group('variation');
