@@ -658,6 +658,30 @@ $multi->restore;
   note 'Testing -ve strand 5 prime Exon UTR readthrough';
   $utr_testing->(21726, 30578039, 30583588, 30568364, 30572314);
   $three_prime_seq_test->(21726);
+
+  my $tid = 21729;
+  my $t = $db->get_TranscriptAdaptor()->fetch_by_dbID($tid);
+  my $five_utrs = $t->get_all_five_prime_utrs();
+  is(scalar(@$five_utrs), 2, "There are 2 five prime utr features");
+  is($five_utrs->[0]->start(), $t->seq_region_start(), "Correct five prime UTR start");
+  is($five_utrs->[1]->end(), 30685637, "Correct five prime UTR end");
+
+  my $three_utrs = $t->get_all_three_prime_utrs();
+  is(scalar(@$three_utrs), 1, "There is one three prime utr feature");
+  is($three_utrs->[0]->start(), 30707177, "Correct three prime UTR start");
+  is($three_utrs->[0]->end(), $t->seq_region_end(), "Correct three prime UTR end");
+
+  $tid = 21726;
+  $t = $db->get_TranscriptAdaptor()->fetch_by_dbID($tid);
+  $five_utrs = $t->get_all_five_prime_utrs();
+  is(scalar(@$five_utrs), 2, "There are 2 five prime utr features on reverse strand");
+  is($five_utrs->[1]->start(), 30578039, "Correct five prime UTR start on reverse strand");
+  is($five_utrs->[0]->end(), $t->seq_region_end(), "Correct five prime UTR end on reverse strand");
+
+  $three_utrs = $t->get_all_three_prime_utrs();
+  is(scalar(@$three_utrs), 1, "There is one three prime utr feature on reverse strand");
+  is($three_utrs->[0]->start(), $t->seq_region_start(), "Correct three prime UTR start on reverse strand");
+  is($three_utrs->[0]->end(), 30572314, "Correct three prime UTR end on reverse strand");
   
   # we have to build some of our own as it's easier to see the coordinates & do the maths
   my $transcript_builder = sub {

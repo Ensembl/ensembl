@@ -1760,27 +1760,18 @@ sub three_prime_utr {
 
 sub five_prime_utr_Feature {
   my ($self) = @_;
-  my ($start, $end);
-  my $cdna_coding = $self->cdna_coding_start();
-  return unless $cdna_coding;
-  my ($genomic_pos) = $self->cdna2genomic($cdna_coding, $cdna_coding);
-  if($self->strand() == 1) {
-    $start = $self->seq_region_start();
-    if($start == $genomic_pos->start()) {
-      return; # just return as we have no UTR
+  my $start = $self->seq_region_end();
+  my $end = 0;
+  my $features = $self->get_all_five_prime_utrs();
+  if (scalar(@$features) == 0) { return; }
+  foreach my $feature (@$features) {
+    if ($feature->start() < $start) {
+      $start = $feature->start();
     }
-    # cdna2genomic returns a 'genomic' position relative to the transcript slice
-    $end = $genomic_pos->start() + ($self->slice->start - 1) - 1;
-  }
-  else {
-    $end = $self->seq_region_end();
-    if($end == $genomic_pos->start()) {
-      return; # just return as we have no UTR
+    if ($feature->end() > $end) {
+      $end = $feature->end();
     }
-    # cdna2genomic returns a 'genomic' position relative to the transcript slice
-    $start = $genomic_pos->start() - ($self->slice->start - 1) + 1;
   }
-    
   my $feature = Bio::EnsEMBL::Feature->new(
     -START => $start,
     -END => $end,
@@ -1789,6 +1780,8 @@ sub five_prime_utr_Feature {
   );
   return $feature;
 }
+
+
 
 =head2 three_prime_utr_Feature
 
@@ -1805,25 +1798,17 @@ sub five_prime_utr_Feature {
 
 sub three_prime_utr_Feature {
   my ($self) = @_;
-  my ($start, $end);
-  my $cdna_coding = $self->cdna_coding_end();
-  return unless $cdna_coding;
-  my ($genomic_pos) = $self->cdna2genomic($cdna_coding, $cdna_coding);
-  if($self->strand() == 1) {
-    $end = $self->seq_region_end();
-    if($end == $genomic_pos->start()) {
-      return; # just return as we have no UTR
+  my $start = $self->seq_region_end();
+  my $end = 0;
+  my $features = $self->get_all_three_prime_utrs();
+  if (scalar(@$features) == 0) { return; }
+  foreach my $feature (@$features) {
+    if ($feature->start() < $start) {
+      $start = $feature->start();
     }
-    # cdna2genomic returns a 'genomic' position relative to the transcript slice
-    $start = $genomic_pos->start() - ($self->slice->start - 1) + 1;
-  }
-  else {
-    $start = $self->seq_region_start();
-    if($start == $genomic_pos->start()) {
-      return; # just return as we have no UTR
+    if ($feature->end() > $end) {
+      $end = $feature->end();
     }
-    # cdna2genomic returns a 'genomic' position relative to the transcript slice
-    $end = $genomic_pos->start() + ($self->slice->start - 1) - 1;
   }
   my $feature = Bio::EnsEMBL::Feature->new(
     -START => $start,
@@ -1833,6 +1818,78 @@ sub three_prime_utr_Feature {
   );
   return $feature;
 }
+
+
+=head2 get_all_five_prime_utrs
+
+  Example    : my $five_primes  = $transcript->get_all_five_prime_utrs
+                 or warn "No five prime UTR";
+  Description: Returns a list of features forming the 5' UTR of this transcript.
+  Returntype : listref of Bio::EnsEMBL::Feature or undef if there is no UTR
+  Exceptions : none
+
+=cut
+
+sub get_all_five_prime_utrs {
+  my ($self) = @_;
+  my $translation = $self->translation();
+  return [] if ! $translation;
+
+  my @utrs;
+
+  my $cdna_coding_start = $self->cdna_coding_start();
+  # if it is greater than 1 then it must have UTR
+  if($cdna_coding_start > 1) {
+    my @projections = $self->cdna2genomic(1, ($cdna_coding_start-1));
+    foreach my $projection (@projections) {
+      next if $projection->isa('Bio::EnsEMBL::Mapper::Gap');
+      my $f = Bio::EnsEMBL::Feature->new(
+        -START => $projection->start,
+        -END => $projection->end,
+        -STRAND => $projection->strand,
+      );
+      push(@utrs, $f);
+    }
+  }
+
+  return \@utrs;
+}
+
+
+=head2 get_all_three_prime_utrs
+
+  Example    : my $three_primes  = $transcript->get_all_three_prime_utrs
+                 or warn "No three prime UTR";
+  Description: Returns a list of features forming the 3' UTR of this transcript.
+  Returntype : listref of Bio::EnsEMBL::Feature or undef if there is no UTR
+  Exceptions : none
+
+=cut
+
+sub get_all_three_prime_utrs {
+  my ($self) = @_;
+  my $translation = $self->translation();
+  return [] if ! $translation;
+
+  my @utrs;
+
+  my $cdna_coding_end = $self->cdna_coding_end();
+  if($cdna_coding_end < $self->length()) {
+    my @projections = $self->cdna2genomic(($cdna_coding_end+1), $self->length());
+    foreach my $projection (@projections) {
+      next if $projection->isa('Bio::EnsEMBL::Mapper::Gap');
+      my $f = Bio::EnsEMBL::Feature->new(
+        -START => $projection->start,
+        -END => $projection->end,
+        -STRAND => $projection->strand,
+      );
+      push(@utrs, $f);
+    }
+  }
+
+  return \@utrs;
+}
+
 
 
 =head2 get_all_translateable_Exons

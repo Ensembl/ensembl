@@ -352,7 +352,9 @@ sub print_feature {
     $count++;
   } ## end foreach my $exon ( @{ $transcript...})
 
-  my $utrs = $self->get_all_UTR_features($transcript);
+
+  my $utrs = $transcript->get_all_five_prime_utrs();
+  push @$utrs, @{$transcript->get_all_three_prime_utrs()};
   foreach my $utr (@{$utrs}) {
     my $strand = $strand_conversion{$utr->strand()};
     print $fh sprintf(qq{%s\t%s\tUTR\t%d\t%d\t.\t%s\t.\t}, 
@@ -654,44 +656,5 @@ sub _check_start_and_stop {
   return ( $has_start, $has_end );
 
 } ## end sub _check_start_and_stop
-
-sub get_all_UTR_features {
-  my ($self, $transcript) = @_;
-  my $translation = $transcript->translation();
-  return [] if ! $translation;
-  
-  my @utrs;
-
-  my $cdna_coding_start = $transcript->cdna_coding_start();
-  # if it is greater than 1 then it must have UTR
-  if($cdna_coding_start > 1) {
-    my @projections = $transcript->cdna2genomic(1, ($cdna_coding_start-1));
-    foreach my $projection (@projections) {
-      next if $projection->isa('Bio::EnsEMBL::Mapper::Gap');
-      my $f = Bio::EnsEMBL::Feature->new(
-        -START => $projection->start, 
-        -END => $projection->end,
-        -STRAND => $projection->strand,
-      );
-      push(@utrs, $f);
-    }
-  }
-
-  my $cdna_coding_end = $transcript->cdna_coding_end();
-  if($cdna_coding_end < $transcript->length()) {
-    my @projections = $transcript->cdna2genomic(($cdna_coding_end+1), $transcript->length());
-    foreach my $projection (@projections) {
-      next if $projection->isa('Bio::EnsEMBL::Mapper::Gap');
-      my $f = Bio::EnsEMBL::Feature->new(
-        -START => $projection->start, 
-        -END => $projection->end,
-        -STRAND => $projection->strand,
-      );
-      push(@utrs, $f);
-    } 
-  }
-
-  return \@utrs;
-}
 
 1;
