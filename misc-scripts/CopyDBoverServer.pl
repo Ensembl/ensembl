@@ -738,6 +738,9 @@ TABLE:
     push( @copy_cmd, '--delete', '--delete-excluded' );
   }
 
+  # Set files permission to 755 (rwxr-xr-x)
+  push (@copy_cmd, '--chmod=Du=rwx,go=rx,Fu=rwx,go=rx');  
+
   if ( defined($opt_only_tables) ) {
     push( @copy_cmd, '--include=db.opt' );
 
