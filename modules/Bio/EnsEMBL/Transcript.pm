@@ -63,7 +63,10 @@ package Bio::EnsEMBL::Transcript;
 use strict;
 
 use Bio::EnsEMBL::Feature;
+use Bio::EnsEMBL::UTR;
 use Bio::EnsEMBL::Intron;
+use Bio::EnsEMBL::ExonTranscript;
+use Bio::EnsEMBL::CDS;
 use Bio::EnsEMBL::TranscriptMapper;
 use Bio::EnsEMBL::SeqEdit;
 
@@ -1498,6 +1501,45 @@ sub get_all_Exons {
   return \@result;
 } ## end sub get_all_Exons
 
+
+=head2 get_all_ExonTranscripts
+
+  Example    : my @exon_transcripts = @{ $transcript->get_all_ExonTranscripts() };
+
+  Description: Returns an listref of the exons in this transcript
+               in order, i.e. the first exon in the listref is the
+               5prime most exon in the transcript.
+
+  Returntype : listref to Bio::EnsEMBL::ExonTranscript objects
+  Exceptions : none
+  Caller     : general
+  Status     : Stable
+
+=cut
+
+sub get_all_ExonTranscripts {
+  my ( $self, @args ) = @_;
+
+  if (!defined( $self->{'_trans_exon_array'} )
+    && defined( $self->adaptor() ) )
+  {
+    $self->{'_trans_exon_array'} =
+      $self->adaptor()->db()->get_ExonAdaptor()
+      ->fetch_all_by_Transcript($self);
+  }
+
+  my @result;
+  foreach my $exon ( @{ $self->{'_trans_exon_array'} } ) {
+    my $exon_transcript = Bio::EnsEMBL::ExonTranscript->new(
+      -EXON => $exon,
+      -TRANSCRIPT => $self
+    );
+    push (@result, $exon_transcript) ;
+  }
+
+  return \@result;
+} ## end sub get_all_ExonTranscripts
+
 =head2 get_all_constitutive_Exons
 
   Arg        :  None
@@ -1777,6 +1819,8 @@ sub five_prime_utr_Feature {
     -END => $end,
     -STRAND => $self->strand(),
     -SLICE => $self->slice(),
+    -TYPE => 'five_prime_UTR',
+    -TRANSCRIPT => $self
   );
   return $feature;
 }
@@ -1815,6 +1859,8 @@ sub three_prime_utr_Feature {
     -END => $end,
     -STRAND => $self->strand(),
     -SLICE => $self->slice(),
+    -TYPE => 'three_prime_UTR',
+    -TRANSCRIPT => $self
   );
   return $feature;
 }
@@ -1823,9 +1869,8 @@ sub three_prime_utr_Feature {
 =head2 get_all_five_prime_utrs
 
   Example    : my $five_primes  = $transcript->get_all_five_prime_utrs
-                 or warn "No five prime UTR";
   Description: Returns a list of features forming the 5' UTR of this transcript.
-  Returntype : listref of Bio::EnsEMBL::Feature or undef if there is no UTR
+  Returntype : listref of Bio::EnsEMBL::UTR
   Exceptions : none
 
 =cut
@@ -1843,12 +1888,15 @@ sub get_all_five_prime_utrs {
     my @projections = $self->cdna2genomic(1, ($cdna_coding_start-1));
     foreach my $projection (@projections) {
       next if $projection->isa('Bio::EnsEMBL::Mapper::Gap');
-      my $f = Bio::EnsEMBL::Feature->new(
-        -START => $projection->start,
-        -END => $projection->end,
+      my $utr = Bio::EnsEMBL::UTR->new(
+        -START  => $projection->start,
+        -END    => $projection->end,
         -STRAND => $projection->strand,
+        -SLICE  => $self->slice,
+        -TRANSCRIPT => $self,
+        -TYPE   => 'five_prime_utr'
       );
-      push(@utrs, $f);
+      push(@utrs, $utr);
     }
   }
 
@@ -1859,9 +1907,8 @@ sub get_all_five_prime_utrs {
 =head2 get_all_three_prime_utrs
 
   Example    : my $three_primes  = $transcript->get_all_three_prime_utrs
-                 or warn "No three prime UTR";
   Description: Returns a list of features forming the 3' UTR of this transcript.
-  Returntype : listref of Bio::EnsEMBL::Feature or undef if there is no UTR
+  Returntype : listref of Bio::EnsEMBL::UTR
   Exceptions : none
 
 =cut
@@ -1878,16 +1925,55 @@ sub get_all_three_prime_utrs {
     my @projections = $self->cdna2genomic(($cdna_coding_end+1), $self->length());
     foreach my $projection (@projections) {
       next if $projection->isa('Bio::EnsEMBL::Mapper::Gap');
-      my $f = Bio::EnsEMBL::Feature->new(
-        -START => $projection->start,
-        -END => $projection->end,
+      my $utr = Bio::EnsEMBL::UTR->new(
+        -START  => $projection->start,
+        -END    => $projection->end,
         -STRAND => $projection->strand,
+        -SLICE  => $self->slice,
+        -TRANSCRIPT => $self,
+        -TYPE   => 'three_prime_utr'
       );
-      push(@utrs, $f);
+      push(@utrs, $utr);
     }
   }
 
   return \@utrs;
+}
+
+=head2 get_all_CDS
+
+  Example    : my $cds  = $transcript->get_all_CDS
+  Description: Returns a list of features forming the coding regions of the transcript
+  Returntype : listref of Bio::EnsEMBL::CDS
+  Exceptions : none
+
+=cut
+
+sub get_all_CDS {
+  my ($self) = @_;
+  my $translation = $self->translation();
+  return [] if ! $translation;
+
+  my @cds;
+
+  foreach my $exon (@{ $self->get_all_translateable_Exons}) {
+    my $phase = $exon->phase();
+    $phase = 0 if $phase < 0;
+    $phase =~ tr/12/21/;
+
+    my $cds = Bio::EnsEMBL::CDS->new(
+        -START      => $exon->start,
+        -END        => $exon->end,
+        -STRAND     => $exon->strand,
+        -STABLE_ID  => $translation->stable_id,
+        -SLICE      => $self->slice,
+        -TRANSCRIPT => $self,
+        -PHASE      => $phase 
+    );
+    push(@cds, $cds);
+  }
+
+  return \@cds;
 }
 
 

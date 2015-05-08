@@ -116,12 +116,22 @@ my %transcript_so_mapping =
    'snRNA_pseudogene'					=> 'SO:0000336', 
   );
 
+my %utr_so_mapping =
+  (
+   'UTR'             => 'SO:0000203',
+   'five_prime_utr'  => 'SO:0000204',
+   'three_prime_utr' => 'SO:0000205'
+  );
+
 my %feature_so_mapping = 
   (
    'Bio::EnsEMBL::Feature' => 'SO:0000001', # region
    'Bio::EnsEMBL::Gene' => 'SO:0000704',    # gene
    'Bio::EnsEMBL::Transcript' => 'SO:0000673', # transcript
    'Bio::EnsEMBL::Exon' => 'SO:0000147',       # exon
+   'Bio::EnsEMBL::UTR'  => 'SO:0000203',
+   'Bio::EnsEMBL::ExonTranscript' => 'SO:0000147',
+   'Bio::EnsEMBL::CDS'   => 'SO:0000316',
    'Bio::EnsEMBL::Slice' => 'SO:0000001',      # region
    'Bio::EnsEMBL::SimpleFeature' => 'SO:0001411', # biological_region
    'Bio::EnsEMBL::MiscFeature' => 'SO:0001411',	  # biological_region
@@ -153,6 +163,7 @@ sub new {
      ontology_adaptor => $oa,
      feat_to_acc => \%feature_so_mapping,
      gene_to_acc => \%gene_so_mapping,
+     utr_to_acc => \%utr_so_mapping,
      tran_to_acc => \%transcript_so_mapping
     };
  
@@ -183,8 +194,8 @@ sub to_accession {
   my $so_accession;
   my $ref = ref($feature);
   
-  my ($gene_to_acc, $tran_to_acc, $feat_to_acc) = 
-    ($self->{gene_to_acc}, $self->{tran_to_acc}, $self->{feat_to_acc});
+  my ($gene_to_acc, $tran_to_acc, $feat_to_acc, $utr_to_acc) = 
+    ($self->{gene_to_acc}, $self->{tran_to_acc}, $self->{feat_to_acc}, $self->{utr_to_acc});
   
   if ($feature->isa('Bio::EnsEMBL::Gene') and 
       exists $gene_to_acc->{$feature->biotype}) {
@@ -192,7 +203,10 @@ sub to_accession {
   } elsif ($feature->isa('Bio::EnsEMBL::Transcript') and 
 	   exists $tran_to_acc->{$feature->biotype}) {
     $so_accession = $tran_to_acc->{$feature->biotype};
-  } 
+  } elsif ($feature->isa('Bio::EnsEMBL::UTR') and
+           exists $utr_to_acc->{$feature->type}) {
+    $so_accession = $utr_to_acc->{$feature->type};
+  }
 
   if (not $so_accession and exists $feat_to_acc->{$ref}) {
     $so_accession = $feat_to_acc->{$ref};
