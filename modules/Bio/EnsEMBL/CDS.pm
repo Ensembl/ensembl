@@ -92,11 +92,12 @@ sub new {
   my $class = ref($caller) || $caller;
   my $self = $class->SUPER::new(@_);
 
-  my ($transcript, $phase) = rearrange(['TRANSCRIPT','PHASE'],@_);
+  my ($transcript, $phase, $translation_id) = rearrange(['TRANSCRIPT','PHASE', 'TRANSLATION_ID'],@_);
 
   $self->{'transcript'} = $transcript;
   $self->{'phase'} = $phase;
   $self->{'source'} = $transcript->source();
+  $self->{'translation_id'} = $translation_id;
 
   return $self;
 }
@@ -119,6 +120,25 @@ sub transcript {
   my $self = shift;
   $self->{'transcript'} = shift if(@_);
   return $self->{'transcript'};
+}
+
+=head2 translation_id
+
+  Arg [1]    : (optional) string $translation_id
+  Example    : $translation_id = $cds->translation_id();
+  Description: Getter/Setter for the stable_id for the translation
+               associated with this CDS.
+  Returntype : String
+  Exceptions : none
+  Caller     : general
+  Status     : Stable
+
+=cut
+
+sub translation_id {
+  my $self = shift;
+  $self->{'translation_id'} = shift if(@_);
+  return $self->{'translation_id'};
 }
 
 
@@ -157,9 +177,11 @@ sub phase {
 sub summary_as_hash {
   my ($self) = @_;
   my $hash = $self->SUPER::summary_as_hash();
-  $hash->{'phase'} = $self->phase() if $self->phase();
+  $hash->{'phase'} = $self->phase();
   $hash->{'Parent'} = $self->transcript->display_id() if $self->transcript();
   $hash->{'source'} = $self->transcript->source() if $self->transcript();
+  $hash->{'translation_id'} = $self->translation_id() if $self->translation_id();
+  delete $hash->{'id'};
   return $hash;
 }
 

@@ -1962,13 +1962,13 @@ sub get_all_CDS {
     $phase =~ tr/12/21/;
 
     my $cds = Bio::EnsEMBL::CDS->new(
-        -START      => $exon->start,
-        -END        => $exon->end,
-        -STRAND     => $exon->strand,
-        -STABLE_ID  => $translation->stable_id,
-        -SLICE      => $self->slice,
-        -TRANSCRIPT => $self,
-        -PHASE      => $phase 
+        -START           => $exon->start,
+        -END             => $exon->end,
+        -STRAND          => $exon->strand,
+        -TRANSLATION_ID  => $translation->stable_id,
+        -SLICE           => $self->slice,
+        -TRANSCRIPT      => $self,
+        -PHASE           => $phase 
     );
     push(@cds, $cds);
   }
