@@ -329,6 +329,24 @@ sub coord_system {
   return $self->{'coord_system'};
 }
 
+=head2 source
+
+  Arg [1]    : (optional) String $value
+  Example    : print $slice->source();
+  Description: Returns the source this slice is coming from
+  Returntype : string
+  Exceptions : none
+  Caller     : general
+  Status     : Stable
+
+=cut
+
+sub source {
+  my $self = shift;
+  $self->{'source'} = shift if (@_);
+  return $self->{'source'};
+}
+
 =head2 coord_system_name
 
   Arg [1]    : none
@@ -3739,13 +3757,23 @@ sub add_synonym{
 sub summary_as_hash {
   my $self = shift;
   my %summary;
-  $summary{'display_id'} = $self->display_id;
+  my @aliases = map { $_->name } @{$self->slice->get_all_synonyms()};
+
+  $summary{'seq_region_name'} = $self->seq_region_name;
+  $summary{'id'} = $self->seq_region_name;
   $summary{'start'} = $self->start;
   $summary{'end'} = $self->end;
   $summary{'strand'} = $self->strand;
-  $summary{'Is_circular'} = $self->is_circular ? "true" : "false";
-  $summary{'region_name'} = $self->seq_region_name();
+  $summary{'source'} = $self->source || $self->coord_system->version;
+  $summary{'alias'} = \@aliases if scalar(@aliases);
+  $summary{'Is_circular'} = $self->is_circular ? "true" : undef;
   return \%summary;
+}
+
+
+sub slice {
+  my $self = shift;
+  return $self;
 }
 
 #
