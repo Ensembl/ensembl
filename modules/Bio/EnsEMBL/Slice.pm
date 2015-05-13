@@ -3765,7 +3765,7 @@ sub summary_as_hash {
   $summary{'end'} = $self->end;
   $summary{'strand'} = $self->strand;
   $summary{'source'} = $self->source || $self->coord_system->version;
-  $summary{'alias'} = \@aliases if scalar(@aliases);
+  $summary{'Alias'} = \@aliases if scalar(@aliases);
   $summary{'Is_circular'} = $self->is_circular ? "true" : undef;
   return \%summary;
 }
