@@ -96,7 +96,6 @@ sub new {
 
   $self->{'transcript'} = $transcript;
   $self->{'phase'} = $phase;
-  $self->{'source'} = $transcript->source();
   $self->{'translation_id'} = $translation_id;
 
   return $self;
