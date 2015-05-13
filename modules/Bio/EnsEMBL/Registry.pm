@@ -148,7 +148,6 @@ use vars qw(%registry_register);
 # This is a map from group names to Ensembl DB adaptors.  Used by
 # load_all() and reset_DBAdaptor().
 my %group2adaptor = (
-      'blast'      => 'Bio::EnsEMBL::External::BlastAdaptor',
       'compara'    => 'Bio::EnsEMBL::Compara::DBSQL::DBAdaptor',
       'core'       => 'Bio::EnsEMBL::DBSQL::DBAdaptor',
       'estgene'    => 'Bio::EnsEMBL::DBSQL::DBAdaptor',

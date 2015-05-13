@@ -79,11 +79,6 @@ sub gen_load {
       $dba->group('lite');
     }
     $config_sub = \&Bio::EnsEMBL::Utils::ConfigRegistry::load_lite;
-  } elsif ( $dba->isa('Bio::EnsEMBL::External::BlastAdaptor') ) {
-    if ( !defined( $dba->group() ) ) {
-      $dba->group('blast');
-    }
-    $config_sub = \&Bio::EnsEMBL::Utils::ConfigRegistry::load_blast;
   } elsif ( $dba->isa('Bio::EnsEMBL::Pipeline::DBSQL::DBAdaptor') ) {
     if ( !defined( $dba->group() ) ) {
       $dba->group('pipeline');

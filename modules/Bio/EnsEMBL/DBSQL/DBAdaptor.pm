@@ -446,7 +446,6 @@ sub get_available_adaptors {
 
     # Finally the exceptions... those that have non-standard mapping
     # between object / adaptor ....
-    # Blast                               => 'Bio::EnsEMBL::External::BlastAdaptor',
     GenomeContainer                     => 'Bio::EnsEMBL::DBSQL::GenomeContainer',
     MetaContainer                       => 'Bio::EnsEMBL::DBSQL::MetaContainer',
     MetaCoordContainer                  => 'Bio::EnsEMBL::DBSQL::MetaCoordContainer',
