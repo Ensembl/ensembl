@@ -1471,7 +1471,6 @@ sub summary_as_hash {
   $summary{'end'} = $self->seq_region_end;
   $summary{'strand'} = $self->strand;
   $summary{'seq_region_name'} = $self->seq_region_name;
-  $summary{'assembly_name'} = $self->slice->coord_system->version() if $self->slice();
   return \%summary;
 }
 
