@@ -3763,7 +3763,7 @@ sub summary_as_hash {
   $summary{'id'} = $self->seq_region_name;
   $summary{'start'} = $self->start;
   $summary{'end'} = $self->end;
-  $summary{'strand'} = $self->strand;
+  $summary{'strand'} = '.';
   $summary{'source'} = $self->source || $self->coord_system->version;
   $summary{'Alias'} = \@aliases if scalar(@aliases);
   $summary{'Is_circular'} = $self->is_circular ? "true" : undef;
