@@ -77,7 +77,7 @@ my $mappings =
    # exons
    { obj => Bio::EnsEMBL::Exon->new, accession => 'SO:0000147', name => 'exon' },
    # slices
-   { obj => $db->get_SliceAdaptor->fetch_by_region('chromosome', '20', 30_270_000, 31_200_000), accession => 'SO:0000001', name => 'region' },
+   { obj => $db->get_SliceAdaptor->fetch_by_region('chromosome', '20', 30_270_000, 31_200_000), accession => 'SO:0000340', name => 'chromosome' },
    # simple features
    { obj => Bio::EnsEMBL::SimpleFeature->new(), accession => 'SO:0001411', name => 'biological_region' },
    # misc features
