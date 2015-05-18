@@ -661,24 +661,24 @@ $multi->restore;
 
   my $tid = 21729;
   my $t = $db->get_TranscriptAdaptor()->fetch_by_dbID($tid);
-  my $five_utrs = $t->get_all_five_prime_utrs();
+  my $five_utrs = $t->get_all_five_prime_UTRs();
   is(scalar(@$five_utrs), 2, "There are 2 five prime utr features");
   is($five_utrs->[0]->start(), $t->seq_region_start(), "Correct five prime UTR start");
   is($five_utrs->[1]->end(), 30685637, "Correct five prime UTR end");
 
-  my $three_utrs = $t->get_all_three_prime_utrs();
+  my $three_utrs = $t->get_all_three_prime_UTRs();
   is(scalar(@$three_utrs), 1, "There is one three prime utr feature");
   is($three_utrs->[0]->start(), 30707177, "Correct three prime UTR start");
   is($three_utrs->[0]->end(), $t->seq_region_end(), "Correct three prime UTR end");
 
   $tid = 21726;
   $t = $db->get_TranscriptAdaptor()->fetch_by_dbID($tid);
-  $five_utrs = $t->get_all_five_prime_utrs();
+  $five_utrs = $t->get_all_five_prime_UTRs();
   is(scalar(@$five_utrs), 2, "There are 2 five prime utr features on reverse strand");
   is($five_utrs->[1]->start(), 30578039, "Correct five prime UTR start on reverse strand");
   is($five_utrs->[0]->end(), $t->seq_region_end(), "Correct five prime UTR end on reverse strand");
 
-  $three_utrs = $t->get_all_three_prime_utrs();
+  $three_utrs = $t->get_all_three_prime_UTRs();
   is(scalar(@$three_utrs), 1, "There is one three prime utr feature on reverse strand");
   is($three_utrs->[0]->start(), $t->seq_region_start(), "Correct three prime UTR start on reverse strand");
   is($three_utrs->[0]->end(), 30572314, "Correct three prime UTR end on reverse strand");
@@ -725,6 +725,19 @@ $multi->restore;
   ok(! defined $no_pos_neg_utrs->three_prime_utr(), 'No 3 prime UTR means no seq');
   
   
+}
+
+# CDS tests
+
+{
+
+  my $tid = 21726;
+  my $t = $db->get_TranscriptAdaptor()->fetch_by_dbID($tid);
+  my $cds = $t->get_all_CDS();
+  is(scalar(@$cds), scalar(@{$t->get_all_translateable_Exons()}), "There are 2 coding structures");
+  is($cds->[1]->start, $t->coding_region_start, "Correct coding start");
+  is($cds->[0]->end, $t->coding_region_end, "Correct coding end");
+
 }
 
 SKIP: {
