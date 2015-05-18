@@ -199,6 +199,7 @@ sub print_feature {
         delete $summary{'phase'};
         delete $summary{'score'};
         delete $summary{'source'};
+        delete $summary{'type'};
 #   Slice the hash for specific keys in GFF-friendly order
         my @ordered_keys = grep { exists $summary{$_} } qw(id Name Alias Parent Target Gap Derives_from Note Dbxref Ontology_term Is_circular);
         my @ordered_values = @summary{@ordered_keys};
@@ -220,9 +221,7 @@ sub print_feature {
                 if ($key eq 'Parent') {
                  if ($feature->isa('Bio::EnsEMBL::Transcript')) {
                     $value = 'gene:' . $value;
-                  } elsif ($feature->isa('Bio::EnsEMBL::Exon')) {
-                    $value = 'transcript:' . $value;
-                  } elsif ($so_term eq 'CDS') {
+                  } elsif ($feature->isa('Bio::EnsEMBL::Exon') || $feature->isa('Bio::EnsEMBL::UTR') || $feature->isa('Bio::EnsEMBL::CDS')) {
                     $value = 'transcript:' . $value;
                   }
                 }
