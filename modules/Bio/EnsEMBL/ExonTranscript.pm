@@ -79,10 +79,11 @@ sub new {
   my $class = ref($caller) || $caller;
   my $self = $class->SUPER::new(@_);
 
-  my ($exon, $transcript) = rearrange(['EXON','TRANSCRIPT'],@_);
+  my ($exon, $transcript, $rank) = rearrange(['EXON','TRANSCRIPT', 'RANK'],@_);
 
   $self->{'exon'} = $exon;
   $self->{'transcript'} = $transcript;
+  $self->{'rank'} = $rank;
 
   foreach my $attribute (keys %$exon) {
     $self->{$attribute} = $exon->{$attribute};
@@ -131,6 +132,24 @@ sub transcript {
 }
 
 
+=head2 rank
+
+  Example    : print $et->rank();
+  Description: Getter/Setter for the exon rank
+  Returntype : String
+  Exceptions : none
+  Caller     : general
+  Status     : Stable
+
+=cut
+
+sub rank {
+  my $self = shift;
+  $self->{'rank'} = shift if( @_ );
+  return ( $self->{'rank'} );
+}
+
+
 =head2 summary_as_hash
 
   Example    : my $hash = $utr->summary_as_hash();
@@ -147,7 +166,7 @@ sub transcript {
 sub summary_as_hash {
   my ($self) = @_;
   my $hash = $self->SUPER::summary_as_hash();
-  $hash->{'rank'} = $self->transcript->exon_rank($self);
+  $hash->{'rank'} = $self->rank() if $self->rank();
   $hash->{'Parent'} = $self->transcript->display_id() if $self->transcript();
   $hash->{'source'} = $self->transcript->source() if $self->transcript();
   return $hash;

@@ -179,8 +179,7 @@ sub summary_as_hash {
   $hash->{'phase'} = $self->phase();
   $hash->{'Parent'} = $self->transcript->display_id() if $self->transcript();
   $hash->{'source'} = $self->transcript->source() if $self->transcript();
-  $hash->{'translation_id'} = $self->translation_id() if $self->translation_id();
-  delete $hash->{'id'};
+  $hash->{'id'} = $self->translation_id() if $self->translation_id();
   return $hash;
 }
 

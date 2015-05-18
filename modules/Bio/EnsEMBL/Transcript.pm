@@ -1529,9 +1529,12 @@ sub get_all_ExonTranscripts {
   }
 
   my @result;
+  my $i = 0;
   foreach my $exon ( @{ $self->{'_trans_exon_array'} } ) {
+    $i++;
     my $exon_transcript = Bio::EnsEMBL::ExonTranscript->new(
       -EXON => $exon,
+      -RANK => $i,
       -TRANSCRIPT => $self
     );
     push (@result, $exon_transcript) ;
@@ -1804,7 +1807,7 @@ sub five_prime_utr_Feature {
   my ($self) = @_;
   my $start = $self->seq_region_end();
   my $end = 0;
-  my $features = $self->get_all_five_prime_utrs();
+  my $features = $self->get_all_five_prime_UTRs();
   if (scalar(@$features) == 0) { return; }
   foreach my $feature (@$features) {
     if ($feature->start() < $start) {
@@ -1844,7 +1847,7 @@ sub three_prime_utr_Feature {
   my ($self) = @_;
   my $start = $self->seq_region_end();
   my $end = 0;
-  my $features = $self->get_all_three_prime_utrs();
+  my $features = $self->get_all_three_prime_UTRs();
   if (scalar(@$features) == 0) { return; }
   foreach my $feature (@$features) {
     if ($feature->start() < $start) {
@@ -1866,16 +1869,16 @@ sub three_prime_utr_Feature {
 }
 
 
-=head2 get_all_five_prime_utrs
+=head2 get_all_five_prime_UTRs
 
-  Example    : my $five_primes  = $transcript->get_all_five_prime_utrs
+  Example    : my $five_primes  = $transcript->get_all_five_prime_UTRs
   Description: Returns a list of features forming the 5' UTR of this transcript.
   Returntype : listref of Bio::EnsEMBL::UTR
   Exceptions : none
 
 =cut
 
-sub get_all_five_prime_utrs {
+sub get_all_five_prime_UTRs {
   my ($self) = @_;
   my $translation = $self->translation();
   return [] if ! $translation;
@@ -1904,16 +1907,16 @@ sub get_all_five_prime_utrs {
 }
 
 
-=head2 get_all_three_prime_utrs
+=head2 get_all_three_prime_UTRs
 
-  Example    : my $three_primes  = $transcript->get_all_three_prime_utrs
+  Example    : my $three_primes  = $transcript->get_all_three_prime_UTRs
   Description: Returns a list of features forming the 3' UTR of this transcript.
   Returntype : listref of Bio::EnsEMBL::UTR
   Exceptions : none
 
 =cut
 
-sub get_all_three_prime_utrs {
+sub get_all_three_prime_UTRs {
   my ($self) = @_;
   my $translation = $self->translation();
   return [] if ! $translation;
