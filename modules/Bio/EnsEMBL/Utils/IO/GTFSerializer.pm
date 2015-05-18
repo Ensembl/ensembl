@@ -353,8 +353,8 @@ sub print_feature {
   } ## end foreach my $exon ( @{ $transcript...})
 
 
-  my $utrs = $transcript->get_all_five_prime_utrs();
-  push @$utrs, @{$transcript->get_all_three_prime_utrs()};
+  my $utrs = $transcript->get_all_five_prime_UTRs();
+  push @$utrs, @{$transcript->get_all_three_prime_UTRs()};
   foreach my $utr (@{$utrs}) {
     my $strand = $strand_conversion{$utr->strand()};
     print $fh sprintf(qq{%s\t%s\tUTR\t%d\t%d\t.\t%s\t.\t}, 
