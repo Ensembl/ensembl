@@ -3042,7 +3042,7 @@ sub summary_as_hash {
   my $self = shift;
   my $summary_ref = $self->SUPER::summary_as_hash;
   $summary_ref->{'description'} = $self->description;
-  $summary_ref->{'external_name'} = $self->external_name;
+  $summary_ref->{'Name'} = $self->external_name if $self->external_name;
   $summary_ref->{'biotype'} = $self->biotype;
   $summary_ref->{'logic_name'} = $self->analysis->logic_name();
   my $parent_gene = $self->get_Gene();
