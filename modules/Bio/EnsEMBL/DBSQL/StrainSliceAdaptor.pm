@@ -158,20 +158,20 @@ sub fetch_by_name {
     return '';
   }
   
-  # now get an individual adaptor
-  my $ind_adaptor = $variation_db->get_IndividualAdaptor;
+  # now get a sample adaptor
+  my $sample_adaptor = $variation_db->get_SampleAdaptor;
   
   # check we got it
-  unless(defined $ind_adaptor) {
-    warning("Not possible to retrieve IndividualAdaptor from variation database");
+  unless(defined $sample_adaptor) {
+    warning("Not possible to retrieve SampleAdaptor from variation database");
     return '';
   }
   
-  # fetch individual object for this strain name
-  my $ind = shift @{$ind_adaptor->fetch_all_by_name($name)};
+  # fetch sample object for this strain name
+  my $sample = shift @{$sample_adaptor->fetch_all_by_name($name)};
   
   # check we got a result
-  unless(defined $ind) {
+  unless(defined $sample {
     warn("Strain ".$name." not found in the database");
     return '';
   }
@@ -193,7 +193,7 @@ sub fetch_by_name {
   # get the strain slice
   my $strain_slice = $slice->get_by_strain($ind->name);
   
-  # get all allele features for this slice and individual
+  # get all allele features for this slice and sample
   #my @afs = sort {$a->start() <=> $b->start()} @{$af_adaptor->fetch_all_by_Slice($slice, $ind)};
   
   # get allele features with coverage info
