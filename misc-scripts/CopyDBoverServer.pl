@@ -39,7 +39,6 @@ Usage:
   $0 --pass=XXX \\
   \t[--noflush] [--nocheck] [--notargetflush]\\
   \t[--noopt] [--noinnodb] [--skip_views] [--force] \\
-  \t[--udr] \\
   \t[ --only_tables=XXX,YYY | --skip_tables=XXX,YYY ] \\
   \t[ input_file |
   \t  --source=db\@host[:port] \\
@@ -136,15 +135,6 @@ Command line switches:
                     create a directory called 'tmp' in the directory
                     above the target data directory.
 
-  --udr             (Optional)
-                    Switches to using UDR (https://github.com/LabAdvComp/UDR)
-		                as the transport binary rather than rsync. UDR is an rsync
-		                compatible replacement over UDP whose speed on local
-		                networks is approx. twice that of plain rsync.
-
-		                udr must be on your PATH on the target source and target
-                    machine.
-
   --routines        (Optional)
                     Also copies functions and procedures
 
@@ -227,7 +217,6 @@ my $opt_force = 0; # Do not reuse existing staging directory by default.
 my $opt_skip_views = 0;    # Process views by default
 my $opt_innodb     = 1;    # Don't skip InnoDB by default
 my $opt_flushtarget = 1;
-my $opt_udr = 0; #Do not use udr for file transfer
 my $opt_tmpdir;
 my $opt_routines = 0;
 my ( $opt_source, $opt_target );
@@ -246,7 +235,6 @@ if ( !GetOptions( 'pass=s'        => \$opt_password,
                   'help!'         => \$opt_help,
                   'source=s'      => \$opt_source,
                   'target=s'      => \$opt_target,
-            		  'udr'           => \$opt_udr,
                   'routines'      => \$opt_routines,
      ) ||
      ( !defined($opt_password) && !defined($opt_help) ) )
@@ -300,7 +288,6 @@ if ( !defined($opt_source) ) {
 }
 
 my @executables =('myisamchk','rsync');
-push (@executables, 'udr') if $opt_udr;
 
 # Make sure we can find all executables.
 foreach my $key (@executables) {
@@ -726,12 +713,9 @@ TABLE:
   # options.
 
   my @copy_cmd;
-  if($opt_udr) {
-    @copy_cmd = ('udr', 'rsync');
-  }
-  else {
-    @copy_cmd = ('rsync');
-  }
+  
+  @copy_cmd = ('rsync');
+
   push(@copy_cmd, '--whole-file', '--archive', '--progress' );
 
   if ($opt_force) {
@@ -740,6 +724,9 @@ TABLE:
 
   # Set files permission to 755 (rwxr-xr-x)
   push (@copy_cmd, '--chmod=Du=rwx,go=rx,Fu=rwx,go=rx');  
+
+  # Add TCP with arcfour encryption, TCP does go pretty fast (~110 MB/s) and is a better choice in LAN situation.
+  push(@copy_cmd, '-e', q{ssh -c arcfour} );
 
   if ( defined($opt_only_tables) ) {
     push( @copy_cmd, '--include=db.opt' );
