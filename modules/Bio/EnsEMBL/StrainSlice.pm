@@ -102,63 +102,62 @@ use Bio::EnsEMBL::Utils::Exception qw(throw deprecate warning);
 =cut
 
 sub new{
-    my $caller = shift;
-    my $class = ref($caller) || $caller;
+  my $caller = shift;
+  my $class = ref($caller) || $caller;
 
-    my ($strain_name) = rearrange(['STRAIN_NAME'],@_);
+  my ($strain_name) = rearrange(['STRAIN_NAME'],@_);
 
-    my $self = $class->SUPER::new(@_);
+  my $self = $class->SUPER::new(@_);
 
-    $self->{'strain_name'} = $strain_name;
+  $self->{'strain_name'} = $strain_name;
 
-    if(!$self->adaptor()) {
-	warning('Cannot get new StrainSlice features without attached adaptor');
-	return '';
+  if(!$self->adaptor()) {
+    warning('Cannot get new StrainSlice features without attached adaptor');
+    return '';
+  }
+  my $variation_db = $self->adaptor->db->get_db_adaptor('variation');
+
+  unless($variation_db) {
+    warning("Variation database must be attached to core database to " .
+    "retrieve variation information" );
+    return '';
+  }
+
+  my $af_adaptor = $variation_db->get_AlleleFeatureAdaptor;
+
+  if( $af_adaptor ) {
+    #get the Sample for the given strain
+    my $sample_adaptor = $variation_db->get_SampleAdaptor;
+
+    if ($sample_adaptor){
+      my $sample = shift @{$sample_adaptor->fetch_all_by_name($self->{'strain_name'})}; #the name should be unique for a strain
+      #check that the sample returned isin the database
+
+      if (defined $sample){
+        my $allele_features = $af_adaptor->fetch_all_by_Slice($self, $sample);
+        #warning("No strain genotype data available for Slice ".$self->name." and Strain ".$sample->name) if ! defined $allele_features->[0];
+        my $vf_ids = {}; #hash containing the relation vf_id->af
+        $self->{'_strain'} = $sample;		
+        map {defined $_->{'_variation_feature_id'} ? $vf_ids->{$_->{'_variation_feature_id'}} = $_ : ''} @{$allele_features};
+        #		my $new_allele_features = $self->_filter_af_by_coverage($allele_features);
+        #		$self->{'alleleFeatures'} = $new_allele_features;
+        $self->{'alleleFeatures'} = $allele_features || [];
+        $self->{'_vf_ids'} = $vf_ids;
+        return $self;
+      }
+      else{ 
+        warning("Strain ($self->{strain_name}) not in the database");
+        return $self;
+      }
     }
-    my $variation_db = $self->adaptor->db->get_db_adaptor('variation');
-
-    unless($variation_db) {
-	warning("Variation database must be attached to core database to " .
-		"retrieve variation information" );
-	return '';
+    else{
+      warning("Not possible to retrieve SampleAdaptor from the variation database");
+      return '';
     }
-    
-    my $af_adaptor = $variation_db->get_AlleleFeatureAdaptor;
-    
-    if( $af_adaptor ) {
-	#get the Individual for the given strain
-	my $ind_adaptor = $variation_db->get_IndividualAdaptor;
-
-	if ($ind_adaptor){
-	    my $individual = shift @{$ind_adaptor->fetch_all_by_name($self->{'strain_name'})}; #the name should be unique for a strain
-	    #check that the individua returned isin the database
-
-            if (defined $individual){
-                my $allele_features = $af_adaptor->fetch_all_by_Slice($self,$individual);
-                #warning("No strain genotype data available for Slice ".$self->name." and Strain ".$individual->name) if ! defined $allele_features->[0];
-                my $vf_ids = {}; #hash containing the relation vf_id->af
-		$self->{'_strain'} = $individual;		
-		map {defined $_->{'_variation_feature_id'} ? $vf_ids->{$_->{'_variation_feature_id'}} = $_ : ''
-} @{$allele_features};
-#		my $new_allele_features = $self->_filter_af_by_coverage($allele_features);
-#		$self->{'alleleFeatures'} = $new_allele_features;
-		$self->{'alleleFeatures'} = $allele_features || [];
-		$self->{'_vf_ids'} = $vf_ids;
-		return $self;
-	    }
-	    else{ 
-		warning("Strain ($self->{strain_name}) not in the database");
-		return $self;
-	    }
-	}
-	else{
-	    warning("Not possible to retrieve IndividualAdaptor from the variation database");
-	    return '';
-	}
-    } else {
-	warning("Not possible to retrieve VariationFeatureAdaptor from variation database");
-	return '';
-    }
+  } else {
+    warning("Not possible to retrieve VariationFeatureAdaptor from variation database");
+    return '';
+  }
 }
 
 =head2 _filter_af_by_coverage
@@ -184,16 +183,16 @@ sub _filter_af_by_coverage{
     return '';
   }  
   
-  return $allele_features unless $self->individual->has_coverage;
+  return $allele_features unless $self->sample->has_coverage;
   
   my $rc_adaptor = $variation_db->get_ReadCoverageAdaptor();
   #this is ugly, but ReadCoverage is always defined in the positive strand
   
-  ### EK : - it looks like the arguments to fetch_all_by_Slice_Individual_depth have changed
+  ### EK : - it looks like the arguments to fetch_all_by_Slice_Sample_depth have changed
   ###  passing 1 will only get you the coverage of level 1
   ###  by omitting the parameter we take into account all coverage regions 
-  #    my $rcs = $rc_adaptor->fetch_all_by_Slice_Individual_depth($self,$self->{'_strain'},1);
-  my $rcs = $rc_adaptor->fetch_all_by_Slice_Individual_depth($self,$self->{'_strain'});
+  #    my $rcs = $rc_adaptor->fetch_all_by_Slice_Sample_depth($self,$self->{'_strain'},1);
+  my $rcs = $rc_adaptor->fetch_all_by_Slice_Sample_depth($self,$self->{'_strain'});
   my $new_af;
   foreach my $af (@{$allele_features}){
     foreach my $rc (@{$rcs}){
@@ -228,17 +227,17 @@ sub strain_name{
 }
 
 
-=head2 individual
+=head2 sample
 
-    Example     : my $ind = $strainSlice->individual();
-    Description : Getter for the Individual object associated
-    ReturnType  : Bio::EnsEMBL::Variation::Individual
+    Example     : my $sample = $strainSlice->sample();
+    Description : Getter for the Sample object associated
+    ReturnType  : Bio::EnsEMBL::Variation::Sample
     Exceptions  : none
     Caller      : general
 
 =cut
 
-sub individual{
+sub sample {
   return $_[0]->{_strain};
 }
 
@@ -315,8 +314,8 @@ sub seq {
     }
 
     #need to find coverage information if different from reference
-    my $indAdaptor = $self->adaptor->db->get_db_adaptor('variation')->get_IndividualAdaptor;
-    my $ref_strain = $indAdaptor->get_reference_strain_name;
+    my $sampleAdaptor = $self->adaptor->db->get_db_adaptor('variation')->get_SampleAdaptor;
+    my $ref_strain = $sampleAdaptor->get_reference_strain_name;
     $self->_add_coverage_information($reference_sequence) if ($with_coverage == 1 && $self->strain_name ne $ref_strain);
     return substr(${$reference_sequence},0,1) if ($self->length == 1); 
     return substr(${$reference_sequence},0,$self->expanded_length); #returns the reference sequence, applying the variationFeatures. Remove additional bases added due to indels
@@ -352,15 +351,15 @@ sub _add_coverage_information{
     return '';
   }
   
-  # only fetch RC data if individual is flagged as having coverage
-  return unless $self->individual->has_coverage;
+  # only fetch RC data if sample is flagged as having coverage
+  return unless $self->sample->has_coverage;
   
   my $rc_adaptor = $variation_db->get_ReadCoverageAdaptor();
-  ### EK : - it looks like the arguments to fetch_all_by_Slice_Individual_depth have changed
+  ### EK : - it looks like the arguments to fetch_all_by_Slice_Sample_depth have changed
   ###  passing 1 will only get you the coverage of level 1
   ###  by omitting the parameter we take into account all coverage regions 
-  #    my $rcs = $rc_adaptor->fetch_all_by_Slice_Individual_depth($self,$self->{'_strain'},1);
-  my $rcs = $rc_adaptor->fetch_all_by_Slice_Individual_depth($self,$self->{'_strain'});
+  #    my $rcs = $rc_adaptor->fetch_all_by_Slice_Sample_depth($self,$self->{'_strain'},1);
+  my $rcs = $rc_adaptor->fetch_all_by_Slice_Sample_depth($self,$self->{'_strain'});
   my $rcs_sorted;
   @{$rcs_sorted} = sort {$a->start <=> $b->start} @{$rcs} if ($self->strand == -1);
   $rcs = $rcs_sorted if ($self->strand == -1);
@@ -436,26 +435,26 @@ sub get_AlleleFeature{
 =cut
 
 sub get_all_AlleleFeatures_Slice{
-    my $self = shift;
-    my $with_coverage = shift;
+  my $self = shift;
+  my $with_coverage = shift;
 
-    my $variation_db = $self->adaptor->db->get_db_adaptor('variation');
+  my $variation_db = $self->adaptor->db->get_db_adaptor('variation');
 
-    unless($variation_db) {
-	warning("Variation database must be attached to core database to " .
-		"retrieve variation information" );
-	return '';
-    }
-    my $indAdaptor = $variation_db->get_IndividualAdaptor();
-    my $ref_name =  $indAdaptor->get_reference_strain_name;
-    return [] if ($self->strain_name eq $ref_name);
-    $with_coverage ||= 0; #by default, get all AlleleFeatures
-    if ($with_coverage == 1){
-	my $new_allele_features = $self->_filter_af_by_coverage($self->{'alleleFeatures'});
-	return $new_allele_features || [];
-    }
+  unless($variation_db) {
+    warning("Variation database must be attached to core database to " .
+    "retrieve variation information" );
+    return '';
+  }
+  my $sampleAdaptor = $variation_db->get_SampleAdaptor();
+  my $ref_name =  $sampleAdaptor->get_reference_strain_name;
+  return [] if ($self->strain_name eq $ref_name);
+  $with_coverage ||= 0; #by default, get all AlleleFeatures
+  if ($with_coverage == 1){
+    my $new_allele_features = $self->_filter_af_by_coverage($self->{'alleleFeatures'});
+    return $new_allele_features || [];
+  }
 
-    return $self->{'alleleFeatures'} || [];
+  return $self->{'alleleFeatures'} || [];
 }
 
 =head2 get_all_differences_StrainSlice
