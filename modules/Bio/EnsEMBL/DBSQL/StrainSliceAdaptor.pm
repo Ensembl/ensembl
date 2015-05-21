@@ -191,16 +191,16 @@ sub fetch_by_name {
   );
   
   # get the strain slice
-  my $strain_slice = $slice->get_by_strain($ind->name);
+  my $strain_slice = $slice->get_by_strain($sample->name);
   
   # get all allele features for this slice and sample
-  #my @afs = sort {$a->start() <=> $b->start()} @{$af_adaptor->fetch_all_by_Slice($slice, $ind)};
+  #my @afs = sort {$a->start() <=> $b->start()} @{$af_adaptor->fetch_all_by_Slice($slice, $sample)};
   
   # get allele features with coverage info
   my $afs = $strain_slice->get_all_AlleleFeatures_Slice(1);
   
   # check we got some data
-  #warning("No strain genotype data available for slice ".$slice->name." and strain ".$ind->name) if ! defined $afs[0];
+  #warning("No strain genotype data available for slice ".$slice->name." and strain ".$sample->name) if ! defined $afs[0];
   
   
   my $start_slice = $slice->start;
