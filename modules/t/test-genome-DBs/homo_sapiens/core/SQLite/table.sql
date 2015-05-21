@@ -1,6 +1,6 @@
 -- 
 -- Created by SQL::Translator::Producer::SQLite
--- Created on Mon Mar 23 10:40:27 2015
+-- Created on Thu May 21 16:24:27 2015
 -- 
 
 BEGIN TRANSACTION;
@@ -368,7 +368,7 @@ CREATE UNIQUE INDEX gene_attribx ON gene_attrib (gene_id, attrib_type_id, value)
 CREATE TABLE genome_statistics (
   genome_statistics_id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
   statistic varchar(128) NOT NULL,
-  value integer NOT NULL DEFAULT 0,
+  value bigint NOT NULL DEFAULT 0,
   species_id integer DEFAULT 1,
   attrib_type_id integer,
   timestamp datetime NOT NULL DEFAULT '0000-00-00 00:00:00'
