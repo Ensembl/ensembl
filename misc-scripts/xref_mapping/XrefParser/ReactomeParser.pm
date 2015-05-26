@@ -118,7 +118,6 @@ sub run {
   # 00000074047   REACT_268323    http://www.reactome.org/PathwayBrowser/#REACT_268323    Hedgehog 'off' state    TAS     Homo sapiens
         my $type;
         my $info_type = 'DIRECT';
-  print "Now checking $ensembl_stable_id with $reactome_id and $species_id\n";
         if (defined($uniprot{$ensembl_stable_id})) {
   # First check if it is a uniprot id
           foreach my $xref_id (@{$uniprot{$ensembl_stable_id}}){
