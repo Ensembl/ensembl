@@ -1572,9 +1572,12 @@ sub load_registry_from_db {
                    'SPECIES', 'SPECIES_SUFFIX', 'DB_PREFIX' ],
                  @args );
 
+  my $ignore_multi = 0;
+
   if ( defined($species) ) {
     $species = lc($species);
     $species =~ tr/ -/__/;
+    $ignore_multi = 1;
   }
   if (!defined($species_suffix)) {
     $species_suffix = "";
@@ -1786,39 +1789,41 @@ sub load_registry_from_db {
 
   my @multi_dbs = grep { /^\w+_collection_core_\w+$/ } @dbnames;
 
-  foreach my $multidb (@multi_dbs) {
-    my $sth = $dbh->prepare(
-      sprintf(
-        "SELECT species_id, meta_value FROM %s.meta "
-          . "WHERE meta_key = 'species.db_name'",
-        $dbh->quote_identifier($multidb) ) );
-
-    $sth->execute();
-
-    my ( $species_id, $species );
-    $sth->bind_columns( \( $species_id, $species ) );
-
-    while ( $sth->fetch() ) {
-      my $dba = Bio::EnsEMBL::DBSQL::DBAdaptor->new(
-        -group           => "core",
-        -species         => $species.$species_suffix,
-        -species_id      => $species_id,
-        -multispecies_db => 1,
-        -host            => $host,
-        -user            => $user,
-        -pass            => $pass,
-        -port            => $port,
-        -dbname          => $multidb,
-        -wait_timeout    => $wait_timeout,
-        -no_cache        => $no_cache
-      );
-
-      if ($verbose) {
-        printf( "Species '%s' (id:%d) loaded from database '%s'\n",
-          $species, $species_id, $multidb );
+  if (!$ignore_multi) {
+    foreach my $multidb (@multi_dbs) {
+      my $sth = $dbh->prepare(
+        sprintf(
+          "SELECT species_id, meta_value FROM %s.meta "
+            . "WHERE meta_key = 'species.db_name'",
+          $dbh->quote_identifier($multidb) ) );
+  
+      $sth->execute();
+  
+      my ( $species_id, $species );
+      $sth->bind_columns( \( $species_id, $species ) );
+  
+      while ( $sth->fetch() ) {
+        my $dba = Bio::EnsEMBL::DBSQL::DBAdaptor->new(
+          -group           => "core",
+          -species         => $species.$species_suffix,
+          -species_id      => $species_id,
+          -multispecies_db => 1,
+          -host            => $host,
+          -user            => $user,
+          -pass            => $pass,
+          -port            => $port,
+          -dbname          => $multidb,
+          -wait_timeout    => $wait_timeout,
+          -no_cache        => $no_cache
+        );
+  
+        if ($verbose) {
+          printf( "Species '%s' (id:%d) loaded from database '%s'\n",
+            $species, $species_id, $multidb );
+        }
       }
-    }
-  } ## end foreach my $multidb (@multi_dbs)
+    } ## end foreach my $multidb (@multi_dbs)
+  }
 
   if(!$core_like_dbs_found && $verbose) {
     print("No core-like databases found. Check your DB_VERSION (used '$software_version')\n");
@@ -1827,66 +1832,70 @@ sub load_registry_from_db {
   # User upload DBs
 
   my @userupload_dbs = grep { /_userdata$/ } @dbnames;
-  for my $userupload_db (@userupload_dbs) {
-    if ( index( $userupload_db, 'collection' ) != -1 ) {
-      # Skip multi-species databases.
-      next;
-    }
-
-    my ($species) = ( $userupload_db =~ /(^.+)_userdata$/ );
-    my $dba =
-      Bio::EnsEMBL::DBSQL::DBAdaptor->new(
-                                         -group        => "userupload",
-                                         -species      => $species.$species_suffix,
-                                         -host         => $host,
-                                         -user         => $user,
-                                         -pass         => $pass,
-                                         -port         => $port,
-                                         -wait_timeout => $wait_timeout,
-                                         -dbname   => $userupload_db,
-                                         -no_cache => $no_cache );
-
-    if ($verbose) {
-      printf( "%s loaded\n", $userupload_db );
+  if (!$ignore_multi) {
+    for my $userupload_db (@userupload_dbs) {
+      if ( index( $userupload_db, 'collection' ) != -1 ) {
+        # Skip multi-species databases.
+        next;
+      }
+  
+      my ($species) = ( $userupload_db =~ /(^.+)_userdata$/ );
+      my $dba =
+        Bio::EnsEMBL::DBSQL::DBAdaptor->new(
+                                           -group        => "userupload",
+                                           -species      => $species.$species_suffix,
+                                           -host         => $host,
+                                           -user         => $user,
+                                           -pass         => $pass,
+                                           -port         => $port,
+                                           -wait_timeout => $wait_timeout,
+                                           -dbname   => $userupload_db,
+                                           -no_cache => $no_cache );
+  
+      if ($verbose) {
+        printf( "%s loaded\n", $userupload_db );
+      }
     }
   }
 
   # Register multi-species userupload databases.
   my @userdata_multidbs = grep { /^.+_collection_userdata$/ } @dbnames;
 
-  foreach my $multidb (@userdata_multidbs) {
-    my $sth = $dbh->prepare(
-      sprintf(
-        "SELECT species_id, meta_value FROM %s.meta "
-          . "WHERE meta_key = 'species.db_name'",
-        $dbh->quote_identifier($multidb) ) );
-
-    $sth->execute();
-
-    my ( $species_id, $species );
-    $sth->bind_columns( \( $species_id, $species ) );
-
-    while ( $sth->fetch() ) {
-      my $dba = Bio::EnsEMBL::DBSQL::DBAdaptor->new(
-        -group           => "userupload",
-        -species         => $species.$species_suffix,
-        -species_id      => $species_id,
-        -multispecies_db => 1,
-        -host            => $host,
-        -user            => $user,
-        -pass            => $pass,
-        -port            => $port,
-        -dbname          => $multidb,
-        -wait_timeout    => $wait_timeout,
-        -no_cache        => $no_cache
-      );
-
-      if ($verbose) {
-        printf( "Species '%s' (id:%d) loaded from database '%s'\n",
-          $species, $species_id, $multidb );
+  if (!$ignore_multi) {
+    foreach my $multidb (@userdata_multidbs) {
+      my $sth = $dbh->prepare(
+        sprintf(
+          "SELECT species_id, meta_value FROM %s.meta "
+            . "WHERE meta_key = 'species.db_name'",
+          $dbh->quote_identifier($multidb) ) );
+  
+      $sth->execute();
+  
+      my ( $species_id, $species );
+      $sth->bind_columns( \( $species_id, $species ) );
+  
+      while ( $sth->fetch() ) {
+        my $dba = Bio::EnsEMBL::DBSQL::DBAdaptor->new(
+          -group           => "userupload",
+          -species         => $species.$species_suffix,
+          -species_id      => $species_id,
+          -multispecies_db => 1,
+          -host            => $host,
+          -user            => $user,
+          -pass            => $pass,
+          -port            => $port,
+          -dbname          => $multidb,
+          -wait_timeout    => $wait_timeout,
+          -no_cache        => $no_cache
+        );
+  
+        if ($verbose) {
+          printf( "Species '%s' (id:%d) loaded from database '%s'\n",
+            $species, $species_id, $multidb );
+        }
       }
-    }
-  } ## end foreach my $multidb (@userdata_multidbs)
+    } ## end foreach my $multidb (@userdata_multidbs)
+  }
 
   # Variation
 
@@ -1937,39 +1946,41 @@ sub load_registry_from_db {
     my @variation_multidbs =
       grep { /^\w+_collection_variation_\w+$/ } @dbnames;
 
-    foreach my $multidb (@variation_multidbs) {
-      my $sth = $dbh->prepare(
-        sprintf( 'SELECT species_id, meta_value FROM %s.meta ',
-          $dbh->quote_identifier($multidb) )
-           . "WHERE meta_key = 'species.db_name'"
-      );
-
-      $sth->execute();
-
-      my ( $species_id, $species );
-      $sth->bind_columns( \( $species_id, $species ) );
-
-      while ( $sth->fetch() ) {
-        my $dba = Bio::EnsEMBL::Variation::DBSQL::DBAdaptor->new(
-          -group           => 'variation',
-          -species         => $species.$species_suffix,
-          -species_id      => $species_id,
-          -multispecies_db => 1,
-          -host            => $host,
-          -user            => $user,
-          -pass            => $pass,
-          -port            => $port,
-          -dbname          => $multidb,
-          -wait_timeout    => $wait_timeout,
-          -no_cache        => $no_cache
+    if (!$ignore_multi) {
+      foreach my $multidb (@variation_multidbs) {
+        my $sth = $dbh->prepare(
+          sprintf( 'SELECT species_id, meta_value FROM %s.meta ',
+            $dbh->quote_identifier($multidb) )
+             . "WHERE meta_key = 'species.db_name'"
         );
-
-        if ($verbose) {
-          printf( "Species '%s' (id:%d) loaded from database '%s'\n",
-            $species, $species_id, $multidb );
+  
+        $sth->execute();
+  
+        my ( $species_id, $species );
+        $sth->bind_columns( \( $species_id, $species ) );
+  
+        while ( $sth->fetch() ) {
+          my $dba = Bio::EnsEMBL::Variation::DBSQL::DBAdaptor->new(
+            -group           => 'variation',
+            -species         => $species.$species_suffix,
+            -species_id      => $species_id,
+            -multispecies_db => 1,
+            -host            => $host,
+            -user            => $user,
+            -pass            => $pass,
+            -port            => $port,
+            -dbname          => $multidb,
+            -wait_timeout    => $wait_timeout,
+            -no_cache        => $no_cache
+          );
+  
+          if ($verbose) {
+            printf( "Species '%s' (id:%d) loaded from database '%s'\n",
+              $species, $species_id, $multidb );
+          }
         }
-      }
-    } ## end foreach my $multidb (@variation_multidbs)
+      } ## end foreach my $multidb (@variation_multidbs)
+    }
   }
 
   my $func_eval = eval "require Bio::EnsEMBL::Funcgen::DBSQL::DBAdaptor"; ## no critic
@@ -2017,89 +2028,93 @@ sub load_registry_from_db {
     my @funcgen_multidbs =
       grep { /^\w+_collection_funcgen_\w+$/ } @dbnames;
 
-    foreach my $multidb (@funcgen_multidbs) {
-      my $sth = $dbh->prepare(
-        sprintf( 'SELECT species_id, meta_value FROM %s.meta ',
-          $dbh->quote_identifier($multidb) )
-          . "WHERE meta_key = 'species.db_name'"
-      );
-
-      $sth->execute();
-
-      my ( $species_id, $species );
-      $sth->bind_columns( \( $species_id, $species ) );
-
-      while ( $sth->fetch() ) {
-        my $dba = Bio::EnsEMBL::Funcgen::DBSQL::DBAdaptor->new(
-          -group           => 'funcgen',
-          -species         => $species.$species_suffix,
-          -species_id      => $species_id,
-          -multispecies_db => 1,
-          -host            => $host,
-          -user            => $user,
-          -pass            => $pass,
-          -port            => $port,
-          -dbname          => $multidb,
-          -wait_timeout    => $wait_timeout,
-          -no_cache        => $no_cache
+    if (!$ignore_multi) {
+      foreach my $multidb (@funcgen_multidbs) {
+        my $sth = $dbh->prepare(
+          sprintf( 'SELECT species_id, meta_value FROM %s.meta ',
+            $dbh->quote_identifier($multidb) )
+            . "WHERE meta_key = 'species.db_name'"
         );
-
-        if ($verbose) {
-          printf( "Species '%s' (id:%d) loaded from database '%s'\n",
-            $species, $species_id, $multidb );
+  
+        $sth->execute();
+  
+        my ( $species_id, $species );
+        $sth->bind_columns( \( $species_id, $species ) );
+  
+        while ( $sth->fetch() ) {
+          my $dba = Bio::EnsEMBL::Funcgen::DBSQL::DBAdaptor->new(
+            -group           => 'funcgen',
+            -species         => $species.$species_suffix,
+            -species_id      => $species_id,
+            -multispecies_db => 1,
+            -host            => $host,
+            -user            => $user,
+            -pass            => $pass,
+            -port            => $port,
+            -dbname          => $multidb,
+            -wait_timeout    => $wait_timeout,
+            -no_cache        => $no_cache
+          );
+  
+          if ($verbose) {
+            printf( "Species '%s' (id:%d) loaded from database '%s'\n",
+              $species, $species_id, $multidb );
+          }
         }
-      }
-    } ## end foreach my $multidb (@funcgen_multidbs)
+      } ## end foreach my $multidb (@funcgen_multidbs)
+    }
   } ## end else [ if ($@) ]
 
   # Compara
 
   my @compara_dbs = grep { /^ensembl_compara/ } @dbnames;
 
-  if (@compara_dbs) {
-    my $comp_eval = eval "require Bio::EnsEMBL::Compara::DBSQL::DBAdaptor"; ## no critic
-    if ($@ or (!$comp_eval)) {
-      # Ignore Compara as code required not there for this
-      if ($verbose) {
-        printf(
-          "Bio::EnsEMBL::Compara::DBSQL::DBAdaptor "
-            . "not found so the following compara "
-            . "databases will be ignored: %s\n",
-          join( ', ', @compara_dbs ) );
-      }
-    } else {
-      foreach my $compara_db (@compara_dbs) {
-        # Looking for EnsEMBL Genomes Comparas.
-        # ensembl_compara_bacteria_2_53 is registered as
-        # 'bacteria', ensembl_compara_pan_homology_2_53 is
-        # registered as 'pan_homology', ensembl_compara_53 is
-        # registered as 'multi', and the alias 'compara' still
-        # operates.
-
-        my ($species) =
-          $compara_db =~ /^ensembl_compara_(\w+)(?:_\d+){2}$/xm;
-
-        $species ||= 'multi';
-
-        my $dba = Bio::EnsEMBL::Compara::DBSQL::DBAdaptor->new(
-          -group        => 'compara',
-          -species      => $species.$species_suffix,
-          -host         => $host,
-          -user         => $user,
-          -pass         => $pass,
-          -port         => $port,
-          -wait_timeout => $wait_timeout,
-          -dbname       => $compara_db,
-          -no_cache     => $no_cache
-        );
-
+  if (!$ignore_multi) {
+    if (@compara_dbs) {
+      my $comp_eval = eval "require Bio::EnsEMBL::Compara::DBSQL::DBAdaptor"; ## no critic
+      if ($@ or (!$comp_eval)) {
+        # Ignore Compara as code required not there for this
         if ($verbose) {
-          printf( "%s loaded\n", $compara_db );
+          printf(
+            "Bio::EnsEMBL::Compara::DBSQL::DBAdaptor "
+              . "not found so the following compara "
+              . "databases will be ignored: %s\n",
+            join( ', ', @compara_dbs ) );
         }
-      } ## end foreach my $compara_db (@compara_dbs)
-    } ## end else [ if ($@)
-  } elsif ($verbose) {
-    print("No Compara databases found\n");
+      } else {
+        foreach my $compara_db (@compara_dbs) {
+          # Looking for EnsEMBL Genomes Comparas.
+          # ensembl_compara_bacteria_2_53 is registered as
+          # 'bacteria', ensembl_compara_pan_homology_2_53 is
+          # registered as 'pan_homology', ensembl_compara_53 is
+          # registered as 'multi', and the alias 'compara' still
+          # operates.
+  
+          my ($species) =
+            $compara_db =~ /^ensembl_compara_(\w+)(?:_\d+){2}$/xm;
+  
+          $species ||= 'multi';
+  
+          my $dba = Bio::EnsEMBL::Compara::DBSQL::DBAdaptor->new(
+            -group        => 'compara',
+            -species      => $species.$species_suffix,
+            -host         => $host,
+            -user         => $user,
+            -pass         => $pass,
+            -port         => $port,
+            -wait_timeout => $wait_timeout,
+            -dbname       => $compara_db,
+            -no_cache     => $no_cache
+          );
+  
+          if ($verbose) {
+            printf( "%s loaded\n", $compara_db );
+          }
+        } ## end foreach my $compara_db (@compara_dbs)
+      } ## end else [ if ($@)
+    } elsif ($verbose) {
+      print("No Compara databases found\n");
+    }
   }
 
   # Ancestral sequences
@@ -2107,7 +2122,7 @@ sub load_registry_from_db {
   my @ancestral_dbs =
     sort grep { /^ensembl_ancestral/ } @dbnames;
 
-  if (@ancestral_dbs) {
+  if (@ancestral_dbs && !$ignore_multi) {
     my $ancestral_db = shift @ancestral_dbs;
 
     my $dba = Bio::EnsEMBL::DBSQL::DBAdaptor->new(
@@ -2139,7 +2154,7 @@ sub load_registry_from_db {
 
   # Ontology
 
-  if ( defined($ontology_version) && $ontology_version != 0 ) {
+  if ( defined($ontology_version) && $ontology_version != 0 && !$ignore_multi) {
     require Bio::EnsEMBL::DBSQL::OntologyDBAdaptor;
 
     my $dba =
@@ -2162,7 +2177,7 @@ sub load_registry_from_db {
 
   # Production
 
-  if ( $production_dba_ok and defined($production_db) ) {
+  if ( $production_dba_ok and defined($production_db) && !$ignore_multi) {
     # require Bio::EnsEMBL::Production::DBSQL::DBAdaptor;
 
     my $dba =
@@ -2185,7 +2200,7 @@ sub load_registry_from_db {
 
   # Stable IDs
 
-  if ( defined($stable_ids_db) && $stable_ids_version != 0 ) {
+  if ( defined($stable_ids_db) && $stable_ids_version != 0 && !$ignore_multi) {
 
     my $dba =
       Bio::EnsEMBL::DBSQL::DBAdaptor->new(
