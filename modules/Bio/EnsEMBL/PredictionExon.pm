@@ -235,6 +235,42 @@ sub transfer {
   return $new_exon;
 }
 
+=head2 summary_as_hash
+
+  Example       : $exon_summary = $exon->summary_as_hash();
+  Description   : Extends Feature::summary_as_hash
+                  Retrieves a summary of this prediction exon.
+  Returns       : hashref of descriptive strings
+  Status        : Intended for internal use
+=cut
+
+sub summary_as_hash {
+  my $self = shift;
+  my $summary_ref = $self->SUPER::summary_as_hash;
+  delete $summary_ref->{'constitutive'};
+  delete $summary_ref->{'ensembl_phase'};
+  delete $summary_ref->{'ensembl_end_phase'};
+  my $prediction_transcript = $self->get_PredictionTranscript();
+  $summary_ref->{'Parent'} = $prediction_transcript->stable_id();
+  $summary_ref->{'source'} = $prediction_transcript->analysis->gff_source() || 'ensembl';
+  return $summary_ref;
+}
+
+=head2 get_PredictionTranscript
+
+  Example     : $prediction_transcript = $exon->get_PredictionTranscript;
+  Description : Locates the parent prediction transcript using an exon dbID
+  Returns     : Bio::EnsEMBL::PredictionTranscript
+
+=cut
+
+sub get_PredictionTranscript {
+  my $self = shift;
+  my $prediction_transcript_adaptor = $self->adaptor->db->get_PredictionTranscriptAdaptor();
+  my $parent_prediction_transcript = $prediction_transcript_adaptor->fetch_by_prediction_exon_id($self->dbID);
+  return $parent_prediction_transcript;
+}
+
 
 =head2 add_supporting_features
 

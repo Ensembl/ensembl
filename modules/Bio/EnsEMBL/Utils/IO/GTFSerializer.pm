@@ -127,6 +127,35 @@ sub print_Gene {
   return;
 }
 
+sub print_Prediction {
+  my ($self, $prediction) = @_;
+
+  #Print prediction transcript summary
+  my $slice           = $prediction->slice();
+  my $idstr           = $slice->seq_region_name;
+  my $sliceoffset     = $slice->start - 1;
+  my $vegadb          = 0;
+  my $fh              = $self->{'filehandle'};
+
+  my $source = $prediction->analysis->gff_source || 'ensembl';
+
+  print $fh sprintf(qq{%s\t%s\ttranscript\t%d\t%d\t.\t%s\t.\t},
+        $idstr, $source,
+        ($prediction->start()+$sliceoffset), ($prediction->end()+$sliceoffset),
+        ($strand_conversion{$prediction->strand}));
+  print $fh "\n";
+
+  # Now print all transcripts
+  foreach my $exon (@{$prediction->get_all_Exons()}) {
+    print $fh sprintf(qq{%s\t%s\texon\t%d\t%d\t.\t%s\t.\t},
+          $idstr, $source,
+          ($exon->start()+$sliceoffset), ($exon->end()+$sliceoffset),
+          ($strand_conversion{$exon->strand}));
+    print $fh "\n";
+  }
+  return;
+}
+
 =head2 print_feature
 
     Arg [1]    : Bio::EnsEMBL::Transcript

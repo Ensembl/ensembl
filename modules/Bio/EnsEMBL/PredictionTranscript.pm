@@ -206,6 +206,32 @@ sub display_label{
 }
 
 
+=head2 summary_as_hash
+
+  Example    : my $hash = $misc_feature->summary_as_hash();
+  Description: Retrieves a textual summary of this prediction.
+               Not inherited from Features.
+  Returntype : Hashref of arrays of descriptive strings
+  Exceptions : none
+  Caller     : general
+  Status     : Stable
+
+=cut
+
+sub summary_as_hash {
+  my $self = shift;
+  my %summary;
+  $summary{'id'} = $self->display_id;
+  $summary{'version'} = $self->version() if $self->version();
+  $summary{'start'} = $self->seq_region_start;
+  $summary{'end'} = $self->seq_region_end;
+  $summary{'strand'} = $self->strand;
+  $summary{'seq_region_name'} = $self->seq_region_name;
+  $summary{'source'} = $self->analysis->gff_source() || 'ensembl';
+  return \%summary;
+}
+
+
 
 =head2 stable_id
 
