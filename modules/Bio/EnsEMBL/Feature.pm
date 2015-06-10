@@ -1440,7 +1440,7 @@ sub get_overlapping_Genes{
 =head2 get_nearest_Gene
 
   Description: Get the nearest genes to the feature
-  Returntype : Bio::EnsEMBL::Gene
+  Returntype : Bio::EnsEMBL::Gene or undef if none can be found nearby
   Caller     : general
   Status     : At risk
 
@@ -1449,8 +1449,13 @@ sub get_overlapping_Genes{
 sub get_nearest_Gene {
   my $self = shift; 
   my $ga = Bio::EnsEMBL::Registry->get_adaptor($self->adaptor->db->species,'core','Gene');
-  my ($gene, $distance) = @{ $ga->fetch_nearest_by_Feature($self) };
-  return $gene;
+  my $list = $ga->fetch_nearest_by_Feature($self);
+  if ($list && @$list >0) {
+    my ($gene, $distance) = @{ $list };
+    return $gene;
+  } else {
+    return;
+  }
 }
 
 =head2 summary_as_hash
