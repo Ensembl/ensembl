@@ -171,7 +171,7 @@ sub fetch_by_name {
   my $sample = shift @{$sample_adaptor->fetch_all_by_name($name)};
   
   # check we got a result
-  unless(defined $sample {
+  unless(defined $sample) {
     warn("Strain ".$name." not found in the database");
     return '';
   }
