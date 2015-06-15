@@ -150,7 +150,7 @@ sub run_coordinatemapping {
   my $analysis_sql = qq(
     SELECT  analysis_id
     FROM    analysis
-    WHERE   logic_name = 'xrefcoodinatemapping'
+    WHERE   logic_name = 'xrefcoordinatemapping'
     AND     parameters = ?
   );
 
@@ -163,7 +163,7 @@ sub run_coordinatemapping {
   if ( !defined($analysis_id) ) {
     $analysis_id =
       $core_dbh->selectall_arrayref( "SELECT analysis_id FROM analysis "
-               . "WHERE logic_name = 'xrefcoodinatemapping'" )->[0][0];
+               . "WHERE logic_name = 'xrefcoordinatemapping'" )->[0][0];
 
     if ( defined($analysis_id) && $do_upload ) {
       log_progress(   "Will update 'analysis' table "
@@ -183,7 +183,7 @@ sub run_coordinatemapping {
 
     } else {
       log_progress("Can not find analysis ID for this analysis:\n");
-      log_progress("  logic_name = 'xrefcoodinatemapping'\n");
+      log_progress("  logic_name = 'xrefcoordinatemapping'\n");
       log_progress( "  parameters = '%s'\n", $analysis_params );
 
       if ($do_upload) {
@@ -205,7 +205,7 @@ sub run_coordinatemapping {
         my $sth = $core_dbh->prepare($sql);
 
         $sth->bind_param( 1, ++$analysis_id,          SQL_INTEGER );
-        $sth->bind_param( 2, 'xrefcoodinatemapping', SQL_VARCHAR );
+        $sth->bind_param( 2, 'xrefcoordinatemapping', SQL_VARCHAR );
         $sth->bind_param( 3, 'xref_mapper.pl',        SQL_VARCHAR );
         $sth->bind_param( 4, $analysis_params,        SQL_VARCHAR );
         $sth->bind_param( 5, 'CoordinateMapper.pm',   SQL_VARCHAR );
