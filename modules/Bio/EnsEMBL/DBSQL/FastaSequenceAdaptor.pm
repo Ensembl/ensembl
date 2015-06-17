@@ -127,7 +127,7 @@ sub faindex {
 sub can_access_Slice {
   my ($self, $slice) = @_;
   return 0 if $slice->is_circular();
-  return exists $self->faindex()->lookup()->{$slice->seq_region_name()} ? 1 : 0;
+  return $self->faindex()->can_access_id($slice->seq_region_name());
 }
 
 =head2 store
