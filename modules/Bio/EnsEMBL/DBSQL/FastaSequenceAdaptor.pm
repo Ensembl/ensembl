@@ -97,7 +97,7 @@ sub fetch_by_Slice_start_end_strand {
   
   # This call is likely to barf if we try to query using a chr name
   # we do not understand. Use can_access_Slice() to make sure
-  my $seq_ref = $self->fetch_seq($slice->seq_region_name(), $slice->start(), $slice->length());
+  my $seq_ref = $self->_fetch_seq($slice->seq_region_name(), $slice->start(), $slice->length());
   reverse_comp($seq_ref) if $strand == -1;
   return $seq_ref;
 }
@@ -148,7 +148,7 @@ sub store {
 
 sub _fetch_raw_seq {
   my ($self, $id, $start, $length) = @_;
-  my $seq_ref = $self->faindex()->fetch_seq($slice->seq_region_name(), $slice->start(), $slice->length());
+  my $seq_ref = $self->faindex()->fetch_seq($id, $start, $length);
   return $seq_ref;
 }
 
