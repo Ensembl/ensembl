@@ -1035,9 +1035,9 @@ sub to_hash {
   Arg [3]     : (optional) CodeRef Callback which provides automatic switchable adaptor cleanup 
                 once the method has finished
   Arg [4]     : (optional) Boolean override any existing switchable adaptor
-  Example     : $dba->switch_adaptor("seqeunce", $my_replacement_sequence_adaptor);
-                $dba->switch_adaptor("seqeunce", $my_other_replacement_sequence_adaptor, 1);
-                $dba->switch_adaptor("seqeunce", $my_replacement_sequence_adaptor, sub {
+  Example     : $dba->switch_adaptor("sequence", $my_replacement_sequence_adaptor);
+                $dba->switch_adaptor("sequence", $my_other_replacement_sequence_adaptor, 1);
+                $dba->switch_adaptor("sequence", $my_replacement_sequence_adaptor, sub {
                   #Make calls as normal without having to do manual cleanup
                 });
   Returntype  : None
@@ -1069,7 +1069,7 @@ sub switch_adaptor {
 =head2 has_switched_adaptor
 
   Arg [1]     : String name of the adaptor type to switch back in
-  Example     : $dba->has_switchable_adaptor("seqeunce"); #explicit switching back
+  Example     : $dba->has_switchable_adaptor("sequence"); #explicit switching back
   Returntype  : Boolean indicating if the given adaptor is being activly switched
   Description : Provides a wrapper around the Registry has_switchable_adaptor() method
                 defaulting both species and group to the current DBAdaptor. This will
@@ -1087,7 +1087,7 @@ sub has_switched_adaptor {
 
   Arg [1]     : (optional) String name of the adaptor type to switch back in
   Example     : $dba->revert_adaptor(); #implicit switching back whatever was the last switch_adaptor() call
-                $dba->revert_adaptor("seqeunce"); #explicit switching back
+                $dba->revert_adaptor("sequence"); #explicit switching back
   Returntype  : The removed adaptor
   Description : Provides a wrapper around the Registry remove_switchable_adaptor() method
                 defaulting both species and group to the current DBAdaptor. This will remove
