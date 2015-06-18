@@ -143,6 +143,8 @@ use Bio::EnsEMBL::Utils::URI qw/parse_uri/;
 
 use DBI qw(:sql_types);
 
+use Scalar::Util qw/blessed/;
+
 use vars qw(%registry_register);
 
 # This is a map from group names to Ensembl DB adaptors.  Used by
@@ -921,6 +923,8 @@ sub add_adaptor {
   my ( $class, $species, $group, $type, $adap, $reset ) = @_;
 
   $species = $class->get_alias($species);
+  my $lc_group = lc($group);
+  my $lc_type = lc($type);
 
   # Since the adaptors are not stored initially, only their class paths
   # when the adaptors are obtained, we need to store these instead.  It
@@ -930,52 +934,151 @@ sub add_adaptor {
 
   if ( defined($reset) )
   {    # JUST RESET THE HASH VALUE NO MORE PROCESSING NEEDED
-    $registry_register{_SPECIES}{$species}{ lc($group) }{ lc($type) } =
-      $adap;
+    $registry_register{_SPECIES}{$species}{ $lc_group }{ $lc_type } = $adap;
     return;
   }
 
   if (
     defined(
-      $registry_register{_SPECIES}{$species}{ lc($group) }{ lc($type) }
+      $registry_register{_SPECIES}{$species}{ $lc_group }{ $lc_type }
     ) )
   {
   # print STDERR (
   #      "Overwriting Adaptor in Registry for $species $group $type\n");
-    $registry_register{_SPECIES}{$species}{ lc($group) }{ lc($type) } =
-      $adap;
+    $registry_register{_SPECIES}{$species}{ $lc_group }{ $lc_type } = $adap;
     return;
   }
-  $registry_register{_SPECIES}{$species}{ lc($group) }{ lc($type) } =
-    $adap;
+  $registry_register{_SPECIES}{$species}{ $lc_group }{ $lc_type } = $adap;
 
   if ( !defined( $registry_register{_SPECIES}{$species}{'list'} ) ) {
     $registry_register{_SPECIES}{$species}{'list'} = [$type];
-  } else {
+  } 
+  else {
     push( @{ $registry_register{_SPECIES}{$species}{'list'} }, $type );
   }
 
-  if ( !defined( $registry_register{_TYPE}{ lc($type) }{$species} ) ) {
-    $registry_register{_TYPE}{ lc($type) }{$species} = [$adap];
-  } else {
-    push( @{ $registry_register{_TYPE}{ lc($type) }{$species} },
-      $adap );
+  if ( !defined( $registry_register{_TYPE}{ $lc_type }{$species} ) ) {
+    $registry_register{_TYPE}{ $lc_type }{$species} = [$adap];
+  } 
+  else {
+    push( @{ $registry_register{_TYPE}{ $lc_type }{$species} }, $adap );
   }
   return;
 } ## end sub add_adaptor
 
 
-=head2 get_adaptor
+=head2 add_switchable_adaptor
 
-  Arg [1]    : name of the species to add the adaptor to in the registry.
-  Arg [2]    : name of the group to add the adaptor to in the registry.
-  Arg [3]    : name of the type to add the adaptor to in the registry.
-  Example    : $adap = Bio::EnsEMBL::Registry->get_adaptor("Human", "core", "Gene");
-  Returntype : adaptor
+  Arg [1]    : String name of the species to add its switchable adaptor into the registry
+  Arg [2]    : String name of the group to add its switchable adaptor into the registry
+  Arg [3]    : String name of the type to add its switchable adaptor into the registry
+  Arg [4]    : Reference switchable adaptor to insert
+  Arg [5]    : Boolean override any existing switchable adaptor
+  Example    : Bio::EnsEMBL::Registry->add_switchable_adaptor("Human", "core", "Gene", $my_other_source);
+  Returntype : None
+  Exceptions : Thrown if a valid internal name cannot be found for the given 
+               name. If thrown check your API and DB version. Also thrown if
+               no type, group or switchable adaptor instance was given
+
+=cut
+
+sub add_switchable_adaptor {
+  my ($class, $species, $group, $adaptor_type, $instance, $override) = @_;
+  
+  my $ispecies = $class->get_alias($species);
+  throw "Cannot decode given species ${species} to an internal registry name" if ! $species;
+  throw "No group given" if ! $group;
+  throw "No adaptor type given" if ! $adaptor_type;
+  throw "No switchable adaptor given" if ! $instance;
+  throw "Switchable adaptor was not a blessed reference" if ! blessed($instance);
+
+  $group = lc($group);
+  $adaptor_type = lc($adaptor_type);
+  if($override) {
+    $registry_register{_SWITCHABLE}{$species}{$group}{$adaptor_type} = $instance;
+    return;
+  }
+
+  if(exists $registry_register{_SWITCHABLE}{$species}{$group}{$adaptor_type}) {
+    my $existing_ref = ref($registry_register{_SWITCHABLE}{$species}{$group}{$adaptor_type});
+    throw "Cannot switch adaptors for ${species}, ${group} and ${adaptor_type} because one is already set ($existing_ref). Use the override flag or revert_switchable_adaptor";
+  }
+
+  $registry_register{_SWITCHABLE}{$species}{$group}{$adaptor_type} = $instance;
+  return;
+}
+
+=head2 has_switchable_adaptor
+
+  Arg [1]    : String name of the species to add its switchable adaptor into the registry
+  Arg [2]    : String name of the group to add its switchable adaptor into the registry
+  Arg [3]    : String name of the type to add its switchable adaptor into the registry
+  Example    : Bio::EnsEMBL::Registry->has_switchable_adaptor("Human", "core", "Gene");
+  Returntype : Boolean indicating if a switchable adaptor is available for your submitted combination
+  Exceptions : Thrown if a valid internal name cannot be found for the given 
+               name. If thrown check your API and DB version. Also thrown if
+               no type, group or switchable adaptor instance was given
+
+=cut
+
+sub has_switchable_adaptor {
+  my ($class, $species, $group, $adaptor_type) = @_;
+  
+  my $ispecies = $class->get_alias($species);
+  throw "Cannot decode given species ${species} to an internal registry name" if ! $species;
+  throw "No group given" if ! $group;
+  throw "No adaptor type given" if ! $adaptor_type;
+
+  $group = lc($group);
+  $adaptor_type = lc($adaptor_type);
+  return (defined $registry_register{_SWITCHABLE}{$species}{$group}{$adaptor_type}) ? 1 : 0;
+}
+
+=head2 remove_switchable_adaptor
+
+  Arg [1]    : name of the species to remove its switchable adaptor from the registry
+  Arg [2]    : name of the group to remove its switchable adaptor from the registry
+  Arg [3]    : name of the type to remove its switchable adaptor from the registry
+  Example    : $adap = Bio::EnsEMBL::Registry->remove_switchable_adaptor("Human", "core", "Gene");
+  Returntype : The removed adaptor if one was removed. Otherwise undef
   Exceptions : Thrown if a valid internal name cannot be found for the given 
                name. If thrown check your API and DB version. Also thrown if
                no type or group was given
-  Status     : Stable
+
+=cut
+
+sub remove_switchable_adaptor {
+  my ($class, $species, $group, $adaptor_type) = @_;
+  my $ispecies = $class->get_alias($species);
+  throw "Cannot decode given species ${species} to an internal registry name" if ! $species;
+  throw "No group given" if ! $group;
+  throw "No adaptor type given" if ! $adaptor_type;
+
+  $group = lc($group);
+  $adaptor_type = lc($adaptor_type);
+  if(defined $registry_register{_SWITCHABLE}{$ispecies}{$group}{$adaptor_type}) {
+    my $adaptor = $registry_register{_SWITCHABLE}{$ispecies}{$group}{$adaptor_type};
+    delete $registry_register{_SWITCHABLE}{$ispecies}{$group}{$adaptor_type};
+    return $adaptor;
+  }
+  return;
+}
+
+=head2 get_adaptor
+
+  Arg [1]     : name of the species to add the adaptor to in the registry.
+  Arg [2]     : name of the group to add the adaptor to in the registry.
+  Arg [3]     : name of the type to add the adaptor to in the registry.
+  Example     : $adap = Bio::EnsEMBL::Registry->get_adaptor("Human", "core", "Gene");
+  Description : Finds and returns the specified adaptor. This method will also check
+                if the species, group and adaptor combination satisfy a DNADB condition
+                (and will return that DNADB's implementation). Also we check for 
+                any available switchable adaptors and will return that if available.
+  Returntype  : adaptor
+  Exceptions  : Thrown if a valid internal name cannot be found for the given 
+                name. If thrown check your API and DB version. Also thrown if
+                no type or group was given
+  Status      : Stable
 
 =cut
 
@@ -991,6 +1094,9 @@ sub get_adaptor {
   
   throw 'No adaptor group given' if ! defined $group;
   throw 'No adaptor type given' if ! defined $type;
+
+  $group = lc($group);
+  my $lc_type = lc($type);
   
   
   if($type =~ /Adaptor$/i) {
@@ -998,43 +1104,50 @@ sub get_adaptor {
     $type =~ s/Adaptor$//i;
   }
 
+  # For historical reasons, allow use of group 'regulation' to refer to
+  # group 'funcgen'.
+  if ( $group eq 'regulation' ) { $group = 'funcgen' }
+
   my %dnadb_adaptors = (
     'sequence'                 => 1,
     'assemblymapper'           => 1,
     'karyotypeband'            => 1,
     'repeatfeature'            => 1,
-    'coordsystem'              => ((lc($group) ne 'funcgen') ? 1 : undef),
+    'coordsystem'              => (($group ne 'funcgen') ? 1 : undef),
     'assemblyexceptionfeature' => 1
   );
 
-  # warn "$species, $group, $type";
-
-  $type = lc($type);
-
-  # For historical reasons, allow use of group 'regulation' to refer to
-  # group 'funcgen'.
-  if ( lc($group) eq 'regulation' ) { $group = 'funcgen' }
-
-  my $dnadb_group =
-    $registry_register{_SPECIES}{$species}{ lc($group) }{'_DNA'};
-
-  if ( defined($dnadb_group)
-    && defined( $dnadb_adaptors{ lc($type) } ) )
-  {
-    $species =
-      $registry_register{_SPECIES}{$species}{ lc($group) }{'_DNA2'};
-    $group = $dnadb_group;
+  #Before looking for DNA adaptors we need to see if we have a switchable adaptor since they take preference
+  if(defined $registry_register{_SWITCHABLE}{$species}{$group}{$lc_type}) {
+    return $registry_register{_SWITCHABLE}{$species}{$group}{$lc_type};
   }
 
-  my $ret =
-    $registry_register{_SPECIES}{$species}{ lc($group) }{ lc($type) };
+  # Look for a possible DNADB group alongside the species hash
+  my $dnadb_group = $registry_register{_SPECIES}{$species}{ $group }{'_DNA'};
+
+  # If we found one & this is an adaptor we should be replaced by a DNADB then
+  # look up the species to use and replace the current group with the DNADB group
+  # (groups are held in _DNA, species are in _DNA2)
+  if ( defined($dnadb_group) && defined( $dnadb_adaptors{ $lc_type } ) ) {
+    $species = $registry_register{_SPECIES}{$species}{ $group }{'_DNA2'};
+    $group = $dnadb_group;
+
+    # Once we have switched to the possibility of a DNADB call now check again for
+    # a switchable adaptor
+    if(defined $registry_register{_SWITCHABLE}{$species}{$group}{$lc_type}) {
+      return $registry_register{_SWITCHABLE}{$species}{$group}{$lc_type};
+    }  
+  }
+
+  # No switchable adaptor? Ok then continue with the normal logic
+  my $ret = $registry_register{_SPECIES}{$species}{ $group }{ $lc_type };
 
   if ( !defined($ret) ) { return }
   if ( ref($ret) )      { return $ret }
 
   # Not instantiated yet
 
-  my $dba = $registry_register{_SPECIES}{$species}{ lc($group) }{'_DB'};
+  my $dba = $registry_register{_SPECIES}{$species}{ $group }{'_DB'};
   my $module = $ret;
 
   my $test_eval = eval "require $module"; ## no critic
@@ -1045,10 +1158,10 @@ sub get_adaptor {
 
   if (
     !defined(
-      $registry_register{_SPECIES}{$species}{ lc($group) }{'CHECKED'} )
+      $registry_register{_SPECIES}{$species}{ $group }{'CHECKED'} )
     )
   {
-    $registry_register{_SPECIES}{$species}{ lc($group) }{'CHECKED'} = 1;
+    $registry_register{_SPECIES}{$species}{ $group }{'CHECKED'} = 1;
     $class->version_check($dba);
   }
 

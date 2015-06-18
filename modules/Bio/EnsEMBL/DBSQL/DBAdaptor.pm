@@ -70,10 +70,12 @@ use Bio::EnsEMBL::DBSQL::BaseFeatureAdaptor;
 use Bio::EnsEMBL::Utils::SeqRegionCache;
 use Bio::EnsEMBL::Utils::Exception qw(throw warning deprecate);
 use Bio::EnsEMBL::Utils::Argument qw(rearrange);
-use Bio::EnsEMBL::Registry;
+use Bio::EnsEMBL::Utils::Scalar qw(check_ref scope_guard);
 use Bio::EnsEMBL::Utils::ConfigRegistry;
 
-my $registry = "Bio::EnsEMBL::Registry";
+
+my $REGISTRY = "Bio::EnsEMBL::Registry";
+require Bio::EnsEMBL::Registry;
 
 =head2 new
 
@@ -162,7 +164,6 @@ sub new {
   if ( defined($species) ) { $self->species($species); } 
   if ( defined($group) )   { $self->group($group) }
 
- 
   $self = Bio::EnsEMBL::Utils::ConfigRegistry::gen_load($self);
 
   if (defined $species_id) {
@@ -197,7 +198,7 @@ sub new {
 
 sub clear_caches {
   my ($self) = @_;
-  my $adaptors = Bio::EnsEMBL::Registry->get_all_adaptors(
+  my $adaptors = $REGISTRY->get_all_adaptors(
     $self->species(), $self->group());
   foreach my $adaptor (@{$adaptors}) {
     if($adaptor->can('clear_cache')) {
@@ -222,7 +223,7 @@ sub clear_caches {
 
 sub find_and_add_aliases {
   my ($self) = @_;
-  $registry->find_and_add_aliases(-ADAPTOR => $self);
+  $REGISTRY->find_and_add_aliases(-ADAPTOR => $self);
   return;
 }
 
@@ -287,8 +288,6 @@ sub dbc{
   return $self->{_dbc};
 }
 
-
-
 =head2 add_db_adaptor
 
   Arg [1]    : string $name
@@ -313,7 +312,7 @@ sub add_db_adaptor {
     throw('adaptor and name arguments are required');
   }
 
-  Bio::EnsEMBL::Registry->add_db($self, $name, $adaptor);
+  $REGISTRY->add_db($self, $name, $adaptor);
 
 }
 
@@ -335,8 +334,7 @@ sub add_db_adaptor {
 
 sub remove_db_adaptor {
   my ($self, $name) = @_;
-
-  return Bio::EnsEMBL::Registry->remove_db($self, $name);
+  return $REGISTRY->remove_db($self, $name);
 }
 
 
@@ -358,7 +356,7 @@ sub remove_db_adaptor {
 
 sub get_all_db_adaptors {
   my ($self) = @_;
-  return Bio::EnsEMBL::Registry->get_all_db_adaptors($self);
+  return $REGISTRY->get_all_db_adaptors($self);
 }
 
 
@@ -382,7 +380,7 @@ sub get_all_db_adaptors {
 sub get_db_adaptor {
   my ($self, $name) = @_;
 
-  return Bio::EnsEMBL::Registry->get_db($self, $name);
+  return $REGISTRY->get_db($self, $name);
 }
 
 =head2 get_available_adaptors
@@ -397,7 +395,6 @@ sub get_db_adaptor {
 =cut 
 
 sub get_available_adaptors {
-
   my $adaptors = {
     # Firstly those that just have an adaptor named after there object
     # in the main DBSQL directory.
@@ -650,8 +647,7 @@ sub add_ExternalFeatureFactory{
 
 sub get_adaptor {
   my ($self, $canonical_name, @other_args) = @_;
-
-  return $registry->get_adaptor($self->species(),$self->group(),$canonical_name);
+  return $REGISTRY->get_adaptor($self->species(),$self->group(),$canonical_name);
 }
 
 
@@ -675,9 +671,7 @@ sub get_adaptor {
 
 sub set_adaptor {
   my ($self, $canonical_name, $module) = @_;
-
-  $registry->add_adaptor($self->species(),$self->group(),$canonical_name,$module);
-
+  $REGISTRY->add_adaptor($self->species(),$self->group(),$canonical_name,$module);
   return $module;
 }
 
@@ -790,30 +784,10 @@ sub species {
 
 sub all_species {
   my ($self) = @_;
-
   if ( !$self->is_multispecies() ) { return [ $self->species() ] }
-
-  if ( exists( $self->{'_all_species'} ) ) {
-    return $self->{'_all_species'};
-  }
-
-  my $statement =
-      "SELECT meta_value "
-    . "FROM meta "
-    . "WHERE meta_key = 'species.db_name'";
-
-  my $sth = $self->dbc()->db_handle()->prepare($statement);
-
-  $sth->execute();
-
-  my $species;
-  $sth->bind_columns( \$species );
-
-  my @all_species;
-  while ( $sth->fetch() ) { push( @all_species, $species ) }
-
-  $self->{'_all_species'} = \@all_species;
-
+  return $self->{'_all_species'} if exists $self->{_all_species};
+  my $sql = "SELECT meta_value FROM meta WHERE meta_key = 'species.db_name'";
+  $self->{_all_species} = $self->dbc->sql_helper()->execute_simple(-SQL => $sql);
   return $self->{'_all_species'};
 } ## end sub all_species
 
@@ -991,11 +965,11 @@ sub dnadb {
 
   if(@_) {
     my $arg = shift;
-    $registry->add_DNAAdaptor($self->species(),$self->group(),$arg->species(),$arg->group());
+    $REGISTRY->add_DNAAdaptor($self->species(),$self->group(),$arg->species(),$arg->group());
   }
 
 #  return $self->{'dnadb'} || $self;
-  return $registry->get_DNAAdaptor($self->species(),$self->group()) || $self;
+  return $REGISTRY->get_DNAAdaptor($self->species(),$self->group()) || $self;
 }
 
 
@@ -1013,8 +987,7 @@ sub AUTOLOAD {
     throw( sprintf( "Could not work out type for %s\n", $AUTOLOAD ) );
   }
   
-  my $ret = $registry->get_adaptor( $self->species(), $self->group(), $type );
-
+  my $ret = $REGISTRY->get_adaptor( $self->species(), $self->group(), $type );
   return $ret if $ret;
   
   warning( sprintf(
@@ -1053,6 +1026,88 @@ sub to_hash {
   return $hash;
 }
 
+#########################
+# Switchable adaptor methods
+#########################
+
+=head2 switch_adaptor
+
+  Arg [1]     : String name of the adaptor type to switch out
+  Arg [2]     : Reference The switchable adaptor implementation
+  Arg [3]     : (optional) CodeRef Callback which provides automatic switchable adaptor cleanup 
+                once the method has finished
+  Arg [4]     : (optional) Boolean override any existing switchable adaptor
+  Example     : $dba->switch_adaptor("seqeunce", $my_replacement_sequence_adaptor);
+                $dba->switch_adaptor("seqeunce", $my_other_replacement_sequence_adaptor, 1);
+                $dba->switch_adaptor("seqeunce", $my_replacement_sequence_adaptor, sub {
+                  #Make calls as normal without having to do manual cleanup
+                });
+  Returntype  : None
+  Description : Provides a wrapper around the Registry add_switchable_adaptor() method
+                defaulting both species and group to the current DBAdaptor. Callbacks are
+                also available providing automatic resource cleanup.
+
+                The method also remembers the last switch you did. It will not remember
+                multiple switches though.
+  Exceptions  : Thrown if no switchable adaptor instance was given
+
+=cut
+
+sub switch_adaptor {
+  my ($self, $adaptor_name, $instance, $callback, $force) = @_;
+  my ($species, $group) = ($self->species(), $self->group());
+  $REGISTRY->add_switchable_adaptor($species, $group, $adaptor_name, $instance, $force);
+  $self->{_last_switchable_adaptor} = $adaptor_name;
+  if(check_ref($callback, 'CODE')) {
+    #Scope guard will reset the adaptor once it falls out of scope. They
+    #are implemented as callback DESTROYS so are neigh on impossible
+    #to stop executing
+    my $guard = scope_guard(sub { $REGISTRY->remove_switchable_adaptor($species, $group, $adaptor_name); } );
+    $callback->();
+  }
+  return;
+}
+
+=head2 has_switched_adaptor
+
+  Arg [1]     : String name of the adaptor type to switch back in
+  Example     : $dba->has_switchable_adaptor("seqeunce"); #explicit switching back
+  Returntype  : Boolean indicating if the given adaptor is being activly switched
+  Description : Provides a wrapper around the Registry has_switchable_adaptor() method
+                defaulting both species and group to the current DBAdaptor. This will
+                inform if the specified adaptor is being switched out
+  Exceptions  : None
+
+=cut
+
+sub has_switched_adaptor {
+  my ($self, $adaptor_name) = @_;
+  return $REGISTRY->has_switchable_adaptor($self->species, $self->group, $adaptor_name);
+}
+
+=head2 revert_adaptor
+
+  Arg [1]     : (optional) String name of the adaptor type to switch back in
+  Example     : $dba->revert_adaptor(); #implicit switching back whatever was the last switch_adaptor() call
+                $dba->revert_adaptor("seqeunce"); #explicit switching back
+  Returntype  : The removed adaptor
+  Description : Provides a wrapper around the Registry remove_switchable_adaptor() method
+                defaulting both species and group to the current DBAdaptor. This will remove
+                a switchable adaptor. You can also remove the last adaptor you switched
+                in without having to specify any parameter.
+  Exceptions  : Thrown if no switchable adaptor name was given or could be found in the internal
+                last adaptor variable
+
+=cut
+
+sub revert_adaptor {
+  my ($self, $adaptor_name) = @_;
+  $adaptor_name ||= $self->{_last_switchable_adaptor};
+  throw "Not given an adaptor name to remove and cannot find the name of the last switched adaptor" if ! $adaptor_name;
+  my $deleted_adaptor = $REGISTRY->remove_switchable_adaptor($self->species, $self->group, $adaptor_name);
+  delete $self->{last_switch};
+  return $deleted_adaptor;
+}
 
 #########################
 # sub DEPRECATED METHODS
