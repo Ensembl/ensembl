@@ -1,6 +1,6 @@
 =head1 LICENSE
 
-Copyright [1999-2014] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
+Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -88,32 +88,47 @@ my %transcript_so_mapping =
    'transcribed_unprocessed_pseudogene'=> 'SO:0000516', # pseudogenic_transcript
    'processed_pseudogene' 				=> 'SO:0000043', # processed_pseudogene
    'unprocessed_pseudogene' 			=> 'SO:0000336', # pseudogene
-   'unitary_pseudogene'				=> 'SO:0000336',
+   'unitary_pseudogene'				=> 'SO:0000336',        # pseudogene
    'pseudogene' 						=> 'SO:0000336', # pseudogene
-   'transcribed_processed_pseudogene'	=> 'SO:0000043', 
+   'transcribed_processed_pseudogene'	=> 'SO:0000043',                # processed_pseudogene
    'retrotransposed' 					=> 'SO:0000569', #retrotransposed
-   'ncrna_host' 						=> 'SO:0000483',
-   'polymorphic_pseudogene'			=> 'SO:0000336',
-   'lincRNA'							=> 'SO:0001463',
-   'ncrna_host'						=> 'SO:0000483',
-   '3prime_overlapping_ncrna'			=> 'SO:0000483',
-   'TR_V_gene'							=> 'SO:0000466',
-   'TR_V_pseudogene'					=> 'SO:0000336',
+   'ncrna_host' 						=> 'SO:0000483', # nc_primary_transcript
+   'polymorphic_pseudogene'			=> 'SO:0000336',        # pseudogene
+   'lincRNA'							=> 'SO:0001463', # lincRNA
+   'ncrna_host'						=> 'SO:0000483', # nc_primary_transcript
+   '3prime_overlapping_ncrna'			=> 'SO:0000483',         # nc_primary_transcript
+   'TR_V_gene'							=> 'SO:0000466', # V_gene_segment
+   'TR_V_pseudogene'					=> 'SO:0000336', # pseudogene
    'TR_J_gene'							=> 'SO:0000470',
    'IG_C_gene'							=> 'SO:0000478',
-   'IG_C_pseudogene'					=> 'SO:0000336',
-   'TR_C_gene'							=> 'SO:0000478',
-   'IG_J_pseudogene'					=> 'SO:0000336',
+   'IG_C_pseudogene'					=> 'SO:0000336', # pseudogene
+   'TR_C_gene'							=> 'SO:0000478', # C_gene_segment
+   'IG_J_pseudogene'					=> 'SO:0000336', # pseudogene
    'miRNA'								=> 'SO:0000276', #miRNA
-   'miRNA_pseudogene'					=> 'SO:0000336',
+   'miRNA_pseudogene'					=> 'SO:0000336', # pseudogene
    'disrupted_domain' 					=> 'SO:0000681', # aberrant_processed_transcript
    'rRNA' 								=> 'SO:0000252', #rRNA
-   'rRNA_pseudogene'					=> 'SO:0000777', 
-   'scRNA_pseudogene'					=> 'SO:0000336',
+   'rRNA_pseudogene'					=> 'SO:0000777', # pseudogenic_rRNA
+   'scRNA_pseudogene'					=> 'SO:0000336', # pseudogene
    'snoRNA' 							=> 'SO:0000275', # snoRNA
-   'snoRNA_pseudogene'					=> 'SO:0000336',
+   'snoRNA_pseudogene'					=> 'SO:0000336', # pseudogene
    'snRNA'								=> 'SO:0000274', # snRNA
-   'snRNA_pseudogene'					=> 'SO:0000336', 
+   'snRNA_pseudogene'					=> 'SO:0000336',  # pseudogene
+  );
+
+my %utr_so_mapping =
+  (
+   'UTR'             => 'SO:0000203', # UTR
+   'five_prime_utr'  => 'SO:0000204', # five_prime_UTR
+   'three_prime_utr' => 'SO:0000205'  # three_prime_UTR
+  );
+
+my %region_so_mapping =
+  (
+   'chromosome'  => 'SO:0000340', # chromosome
+   'supercontig' => 'SO:0000148', # supercontig
+   'scaffold'    => 'SO:0000148', # supercontig
+   'contig'      => 'SO:0000149'  # contig
   );
 
 my %feature_so_mapping = 
@@ -121,7 +136,12 @@ my %feature_so_mapping =
    'Bio::EnsEMBL::Feature' => 'SO:0000001', # region
    'Bio::EnsEMBL::Gene' => 'SO:0000704',    # gene
    'Bio::EnsEMBL::Transcript' => 'SO:0000673', # transcript
+   'Bio::EnsEMBL::PredictionTranscript' => 'SO:0000673', # transcript
    'Bio::EnsEMBL::Exon' => 'SO:0000147',       # exon
+   'Bio::EnsEMBL::PredictionExon' => 'SO:0000147',       # exon
+   'Bio::EnsEMBL::UTR'  => 'SO:0000203',       # UTR
+   'Bio::EnsEMBL::ExonTranscript' => 'SO:0000147', # Exon
+   'Bio::EnsEMBL::CDS'   => 'SO:0000316',      # CDS
    'Bio::EnsEMBL::Slice' => 'SO:0000001',      # region
    'Bio::EnsEMBL::SimpleFeature' => 'SO:0001411', # biological_region
    'Bio::EnsEMBL::MiscFeature' => 'SO:0001411',	  # biological_region
@@ -153,6 +173,8 @@ sub new {
      ontology_adaptor => $oa,
      feat_to_acc => \%feature_so_mapping,
      gene_to_acc => \%gene_so_mapping,
+     utr_to_acc => \%utr_so_mapping,
+     region_to_acc => \%region_so_mapping,
      tran_to_acc => \%transcript_so_mapping
     };
  
@@ -183,8 +205,8 @@ sub to_accession {
   my $so_accession;
   my $ref = ref($feature);
   
-  my ($gene_to_acc, $tran_to_acc, $feat_to_acc) = 
-    ($self->{gene_to_acc}, $self->{tran_to_acc}, $self->{feat_to_acc});
+  my ($gene_to_acc, $tran_to_acc, $feat_to_acc, $utr_to_acc, $region_to_acc) = 
+    ($self->{gene_to_acc}, $self->{tran_to_acc}, $self->{feat_to_acc}, $self->{utr_to_acc}, $self->{region_to_acc});
   
   if ($feature->isa('Bio::EnsEMBL::Gene') and 
       exists $gene_to_acc->{$feature->biotype}) {
@@ -192,7 +214,13 @@ sub to_accession {
   } elsif ($feature->isa('Bio::EnsEMBL::Transcript') and 
 	   exists $tran_to_acc->{$feature->biotype}) {
     $so_accession = $tran_to_acc->{$feature->biotype};
-  } 
+  } elsif ($feature->isa('Bio::EnsEMBL::UTR') and
+           exists $utr_to_acc->{$feature->type}) {
+    $so_accession = $utr_to_acc->{$feature->type};
+  } elsif ($feature->isa('Bio::EnsEMBL::Slice') and
+           exists $region_to_acc->{$feature->coord_system_name}) {
+    $so_accession = $region_to_acc->{$feature->coord_system_name};
+  }
 
   if (not $so_accession and exists $feat_to_acc->{$ref}) {
     $so_accession = $feat_to_acc->{$ref};

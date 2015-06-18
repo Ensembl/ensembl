@@ -1,4 +1,4 @@
-1	\N	schema_version	77
+1	\N	schema_version	81
 2	1	assembly.default	NCBI34
 3	1	species.taxonomy_id	9606
 26	1	species.classification	Homo sapiens
@@ -55,3 +55,13 @@
 115	\N	patch	patch_75_76_b.sql|allow_null_karyotype
 116	\N	patch	patch_75_76_c.sql|remove_alternative_splicing
 117	\N	patch	patch_76_77_a.sql|schema_version
+118	\N	patch	patch_77_78_a.sql|schema_version
+119	\N	patch	patch_77_78_b.sql|source_column_increase
+120	\N	patch	patch_77_78_c.sql|Change unmapped_reason_id from smallint to int
+121	\N	patch	patch_78_79_a.sql|schema_version
+122	\N	patch	patch_78_79_b.sql|bamcov support
+123	\N	patch	patch_79_80_a.sql|schema_version
+124	\N	patch	patch_79_80_b.sql|xref_dbprimary_acc_longer
+125	\N	patch	patch_79_80_c.sql|seq_region_synonym_longer
+126	\N	patch	patch_79_80_d.sql|genome_statistics_value_longer
+127	\N	patch	patch_80_81_a.sql|schema_version

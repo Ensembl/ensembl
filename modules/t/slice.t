@@ -1,4 +1,4 @@
-# Copyright [1999-2014] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
+# Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
 # 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -572,6 +572,37 @@ my $current_slice = $slice_adaptor->fetch_by_region('chromosome', $CHR, $START, 
 is($current_slice->is_chromosome, 1, "Slice is a chromosome");
 is($current_slice->has_karyotype, 0, "Slice has no karyotype attribute");
 is($current_slice->karyotype_rank, 0, "No karyotype rank could be found");
+
+#
+# Test get_genome_component
+#
+debug("Testing fetch_all_by_genome_component");
+my $multi_polyploid = Bio::EnsEMBL::Test::MultiTestDB->new("polyploidy");
+my $wheatdb = $multi_polyploid->get_DBAdaptor("core");
+my $wheat_slice_adaptor = Bio::EnsEMBL::DBSQL::SliceAdaptor->new($wheatdb);
+isa_ok($wheat_slice_adaptor, 'Bio::EnsEMBL::DBSQL::SliceAdaptor');
+
+# should get an empty result for a slice on human chr (not polyploidy)
+$slice = $slice_adaptor->fetch_by_region('chromosome', $CHR, $START, $END);
+isa_ok($slice, 'Bio::EnsEMBL::Slice');
+my $genome_component = $slice->get_genome_component();
+ok(!$genome_component, "Genome component for human slice");
+
+# test with slices on polyploid genome
+$slice = $wheat_slice_adaptor->fetch_by_region('scaffold', 'IWGSC_CSS_5AL_scaff_2697823', 100, 10000);
+isa_ok($slice, 'Bio::EnsEMBL::Slice');
+$genome_component = $slice->get_genome_component();
+is($genome_component, 'A', "Genome component from slice");
+
+$slice = $wheat_slice_adaptor->fetch_by_region('scaffold', 'IWGSC_CSS_6BS_scaff_233977', 1000, 5000, -1);
+isa_ok($slice, 'Bio::EnsEMBL::Slice');
+$genome_component = $slice->get_genome_component();
+is($genome_component, 'B', "Genome component from slice");
+
+$slice = $wheat_slice_adaptor->fetch_by_region('scaffold', 'IWGSC_CSS_6DS_scaff_2121653', 1000, 3000);
+isa_ok($slice, 'Bio::EnsEMBL::Slice');
+$genome_component = $slice->get_genome_component($slice);
+is($genome_component, 'D', "Genome component from slice");
 
 done_testing();
 

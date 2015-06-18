@@ -1,6 +1,6 @@
 -- 
 -- Created by SQL::Translator::Producer::SQLite
--- Created on Mon Apr 28 13:55:42 2014
+-- Created on Thu May 21 16:25:16 2015
 -- 
 
 BEGIN TRANSACTION;
@@ -270,7 +270,8 @@ CREATE UNIQUE INDEX name_idx02 ON subset (name);
 CREATE TABLE synonym (
   synonym_id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
   term_id integer NOT NULL,
-  name text NOT NULL
+  name text NOT NULL,
+  type enum
 );
 
 CREATE UNIQUE INDEX term_synonym_idx ON synonym (term_id, synonym_id);

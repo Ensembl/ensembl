@@ -1,6 +1,6 @@
 =head1 LICENSE
 
-Copyright [1999-2014] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
+Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -55,11 +55,7 @@ sub batch_size {
 }
 
 sub run {
-  my ($self, $target) = @_;
-  
-  if(! defined $target) {
-    $target = $self->mapper()->core()->protein_file();
-  }
+  my ($self, $target, $source_id, $object_type) = @_;
   
   my $reader = $self->_get_sequence_parser($target);
   my @results;
@@ -70,9 +66,9 @@ sub run {
     push(@tmp_list, $sequence);
     $count++;
     if( ($count % $batch_size) == 0) {
-      my $res = $self->perform_mapping(\@tmp_list);
+      my $res = $self->perform_mapping(\@tmp_list, $source_id, $object_type);
       push(@results, @{$res});
-      $self->mapper()->log_progress("Finished batch mapping of %d peptides\n", $batch_size);
+      $self->mapper()->log_progress("Finished batch mapping of %d sequences\n", $batch_size);
       $count = 0;
       @tmp_list = ();
     }
@@ -81,7 +77,7 @@ sub run {
   #Final mapping if there were some left over
   if(@tmp_list) {
     $self->mapper()->log_progress("Finishing progess\n");
-    my $res = $self->perform_mapping(\@tmp_list);
+    my $res = $self->perform_mapping(\@tmp_list, $source_id, $object_type);
     push(@results, @{$res});
     @tmp_list = ();
   }

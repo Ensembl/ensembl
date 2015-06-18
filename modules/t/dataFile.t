@@ -1,4 +1,4 @@
-# Copyright [1999-2014] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
+# Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
 # 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@ use strict;
 use warnings;
 
 use Test::More;
+use Test::Exception;
 use Bio::EnsEMBL::Test::MultiTestDB;
 use Bio::EnsEMBL::ApiVersion;
 
@@ -53,8 +54,30 @@ my %base_args = (
     %base_args
   ], 'data file');
   is($df->path($base), $expected_base.'/core/wibble.bam', 'Checking non-absolute path');
-  is_deeply($df->get_all_paths($base), [ $expected_base.'/core/wibble.bam', $expected_base.'/core/wibble.bam.bai' ], 'Checking all non-abs paths');
+  is_deeply($df->get_all_paths($base), [ $expected_base.'/core/wibble.bam', $expected_base.'/core/wibble.bam.bai' ], 'Checking all non-abs paths (BAM)');
 }
+
+# now test non-abs paths with bigwig file type
+$base_args{-FILE_TYPE} = 'BIGWIG';
+{
+  my $df = new_ok('Bio::EnsEMBL::DataFile' => [
+    %base_args
+  ], 'data file');
+  is($df->path($base), $expected_base.'/core/wibble.bw', 'Checking non-absolute path');
+  is_deeply($df->get_all_paths($base), [ $expected_base.'/core/wibble.bw' ], 'Checking all non-abs paths (BIGWIG)');
+}
+
+# now test non-abs paths with bamcov file type
+$base_args{-FILE_TYPE} = 'BAMCOV';
+{
+  my $df = new_ok('Bio::EnsEMBL::DataFile' => [
+    %base_args
+  ], 'data file');
+  is($df->path($base), $expected_base.'/core/wibble.bam', 'Checking non-absolute path');
+  is_deeply($df->get_all_paths($base), [ $expected_base.'/core/wibble.bam', $expected_base.'/core/wibble.bam.bai', $expected_base.'/core/wibble.bam.bw'], 'Checking all non-abs paths (BAMCOV)');
+}
+
+$base_args{-FILE_TYPE} = 'BAM';
 
 {
   my $df = new_ok('Bio::EnsEMBL::DataFile' => [
@@ -86,7 +109,7 @@ my %base_args = (
 }
 
 {
-  my %exts = (BAM => ['bam', 'bam.bai'], BIGWIG => ['bw'], VCF => ['vcf.gz', 'vcf.gz.tbi']);
+  my %exts = (BAM => ['bam', 'bam.bai'], BIGWIG => ['bw'], VCF => ['vcf.gz', 'vcf.gz.tbi'], 'BAMCOV' => ['bam', 'bam.bai', 'bam.bw']);
   while( my ($type, $ext) = each %exts ) {
     is_deeply($dfa->DataFile_to_extensions(new_ok('Bio::EnsEMBL::DataFile'=>[%base_args, -FILE_TYPE => $type])), $ext, 'Checking '.$type.' extension');
   }
@@ -107,6 +130,54 @@ my %base_args = (
   is_deeply($dfa->fetch_all_by_Analysis($a), [$df], 'Checking retrieved data is the same as what we currently hold');
   is_deeply($dfa->fetch_all_by_CoordSystem($cs), [$df], 'Checking retrieved data is the same as what we currently hold');
   is_deeply($dfa->fetch_by_name_and_type('wibble', 'BAM'), $df, 'Checking retrieved data is the same as what we currently hold');    
+}
+
+{
+  my %type2adaptor = 
+    ( 'BAM'    => 'Bio::EnsEMBL::IO::Adaptor::BAMAdaptor',
+      'BIGBED' => 'Bio::EnsEMBL::IO::Adaptor::BigBedAdaptor',
+      'BIGWIG' => 'Bio::EnsEMBL::IO::Adaptor::BigWigAdaptor',
+      'VCF'    => 'Bio::EnsEMBL::IO::Adaptor::VCFAdaptor',
+      'BAMCOV' => 1
+    );
+   
+  for my $type (keys %type2adaptor) {
+    my $df = new_ok('Bio::EnsEMBL::DataFile'=>[%base_args, -FILE_TYPE => $type]);
+
+    if ($type eq 'BAMCOV') {
+      throws_ok { $dfa->DataFile_to_adaptor($df, $base, 'BIGBED') }
+	qr/handler found/, 'Request for type incompatible with BAMCOV';
+      
+      #
+      # Cannot actually do the following since this would require
+      # a dependency of this test case and hence of the core API
+      # on the various external data file adaptors, e.g. BAM/BIGWIG etc.
+      #
+      # my $eda = $dfa->DataFile_to_adaptor($df, $base, 'BAM');
+      # isa_ok($eda, 'Bio::EnsEMBL::IO::Adaptor::BAMAdaptor', 'Checking BAM data adaptor');
+      # $eda = $dfa->DataFile_to_adaptor($df, $base, 'BAMCOV');
+      # isa_ok($eda, 'Bio::EnsEMBL::IO::Adaptor::BAMAdaptor', 'Checking BAMCOV data adaptor');
+      # $eda = $dfa->DataFile_to_adaptor($df, $base, 'BIGWIG');
+      # isa_ok($eda, 'Bio::EnsEMBL::IO::Adaptor::BigWigAdaptor', 'Checking BIGWIG data adaptor');
+
+    } else {
+      for my $requested_type (keys %type2adaptor) {
+	if ($requested_type ne $type) {
+	  throws_ok { $dfa->DataFile_to_adaptor($df, $base, $requested_type) }
+	    qr/but file is of type/, "Request for $requested_type adaptor, file type $type"
+	  } else {
+	    #
+	    # See the previous comment for the BAMCOV case
+	    # 
+	    # my $eda = $dfa->DataFile_to_adaptor($df, $base, $requested_type);
+	    # isa_ok($eda, $type2adaptor{$type}, "Checking $requested_type data adaptor");
+	  }
+       
+      }
+      
+    }
+  }
+  
 }
 
 $multi->restore();

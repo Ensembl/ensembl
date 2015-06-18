@@ -1,6 +1,6 @@
 =head1 LICENSE
 
-Copyright [1999-2014] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
+Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -142,7 +142,7 @@ sub resubmit_exonerate {
 
   chmod 0755, $exe_file;
 
-  my $queue = $self->mapper->farm_queue || 'long';
+  my $queue = $self->mapper->farm_queue || 'normal';
   
   my $usage = '-M 1500 -R"select[mem>1500] rusage[tmp='.$disk_space_needed.', mem=1500]" -J "'.$unique_name.'" -q '.$queue;
 
@@ -283,7 +283,7 @@ EON
 
   my $output = $self->get_class_name() . "_" . $ensembl_type . "_" . "\$LSB_JOBINDEX.map";
 
-  my $queue = $self->mapper->farm_queue || 'long';
+  my $queue = $self->mapper->farm_queue || 'normal';
 
 
   my $usage = "-q $queue ".'-M 1500 -R"select[mem>1500] rusage[tmp='.$disk_space_needed.', mem=1500]" '.'-J "'.$unique_name.'[1-'.$num_jobs.']%200" -o '.$prefix.'.%J-%I.out -e  '.$prefix.'.%J-%I.err';
@@ -295,7 +295,10 @@ EON
   my $exe_file = $root_dir."/".$unique_name.".submit";
   open(my $rh,">", $exe_file) || die "Could not open file $exe_file";
   
-  print $rh ". /usr/local/lsf/conf/profile.lsf\n";
+  my $lsf_conf = "/usr/local/lsf/conf/profile.lsf";
+  if (-e $lsf_conf) {
+    print $rh ". $lsf_conf\n";
+  }
   print $rh $command."\n";
 
   close $rh;

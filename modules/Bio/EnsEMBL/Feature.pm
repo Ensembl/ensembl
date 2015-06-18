@@ -1,6 +1,6 @@
 =head1 LICENSE
 
-Copyright [1999-2014] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
+Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -1440,7 +1440,7 @@ sub get_overlapping_Genes{
 =head2 get_nearest_Gene
 
   Description: Get the nearest genes to the feature
-  Returntype : Bio::EnsEMBL::Gene
+  Returntype : Bio::EnsEMBL::Gene or undef if none can be found nearby
   Caller     : general
   Status     : At risk
 
@@ -1449,8 +1449,13 @@ sub get_overlapping_Genes{
 sub get_nearest_Gene {
   my $self = shift; 
   my $ga = Bio::EnsEMBL::Registry->get_adaptor($self->adaptor->db->species,'core','Gene');
-  my ($gene, $distance) = @{ $ga->fetch_nearest_by_Feature($self) };
-  return $gene;
+  my $list = $ga->fetch_nearest_by_Feature($self);
+  if ($list && @$list >0) {
+    my ($gene, $distance) = @{ $list };
+    return $gene;
+  } else {
+    return;
+  }
 }
 
 =head2 summary_as_hash
@@ -1471,7 +1476,6 @@ sub summary_as_hash {
   $summary{'end'} = $self->seq_region_end;
   $summary{'strand'} = $self->strand;
   $summary{'seq_region_name'} = $self->seq_region_name;
-  $summary{'assembly_name'} = $self->slice->coord_system->version() if $self->slice();
   return \%summary;
 }
 

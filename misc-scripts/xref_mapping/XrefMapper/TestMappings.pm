@@ -1,6 +1,6 @@
 =head1 LICENSE
 
-Copyright [1999-2014] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
+Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -332,7 +332,7 @@ sub entry_number_check{
   my %old_object_xref_count;
   my %new_object_xref_count;
 
-  my $sth = $self->xref->dbc->prepare('select s.name, count(*) from xref x, object_xref ox, source s where ox.xref_id = x.xref_id  and x.source_id = s.source_id and ox_status = "DUMP_OUT" and s.name not like "AFFY%"   group by s.name');
+  my $sth = $self->xref->dbc->prepare('select s.name, count(distinct x.xref_id, ensembl_id) from xref x, object_xref ox, source s where ox.xref_id = x.xref_id  and x.source_id = s.source_id and ox_status = "DUMP_OUT" and s.name not like "AFFY%"   group by s.name');
   $sth->execute();
   my ($name, $count);
   $sth->bind_columns(\$name,\$count);

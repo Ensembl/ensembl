@@ -1,4 +1,4 @@
--- Copyright [1999-2014] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
+-- Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
 -- 
 -- Licensed under the Apache License, Version 2.0 (the "License");
 -- you may not use this file except in compliance with the License.
@@ -169,7 +169,7 @@ CREATE TABLE data_file (
   version_lock      TINYINT(1) DEFAULT 0 NOT NULL,
   absolute          TINYINT(1) DEFAULT 0 NOT NULL,
   url               TEXT,
-  file_type         ENUM('BAM','BIGBED','BIGWIG','VCF'),
+  file_type         ENUM('BAM','BAMCOV','BIGBED','BIGWIG','VCF'),
 
   PRIMARY KEY (data_file_id),
   UNIQUE KEY df_unq_idx(coord_system_id, analysis_id, name, file_type),
@@ -221,7 +221,7 @@ CREATE TABLE genome_statistics(
 
   genome_statistics_id     INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
   statistic                VARCHAR(128) NOT NULL,
-  value                    INT(10) UNSIGNED DEFAULT '0' NOT NULL,
+  value                    BIGINT(11) UNSIGNED DEFAULT '0' NOT NULL,
   species_id               INT UNSIGNED DEFAULT 1,
   attrib_type_id           INT(10) UNSIGNED DEFAULT NULL,
   timestamp                DATETIME NOT NULL DEFAULT '0000-00-00 00:00:00',
@@ -302,13 +302,13 @@ CREATE TABLE IF NOT EXISTS meta (
 # Add schema type and schema version to the meta table.
 INSERT INTO meta (species_id, meta_key, meta_value) VALUES
   (NULL, 'schema_type',     'core'),
-  (NULL, 'schema_version',  '77');
+  (NULL, 'schema_version',  '81');
 
 # Patches included in this schema file:
 # NOTE: At start of release cycle, remove patch entries from last release.
 # NOTE: Avoid line-breaks in values.
 INSERT INTO meta (species_id, meta_key, meta_value)
-  VALUES (NULL, 'patch', 'patch_76_77_a.sql|schema_version');
+  VALUES (NULL, 'patch', 'patch_80_81_a.sql|schema_version');
 
 /**
 @table meta_coord
@@ -382,7 +382,7 @@ CREATE TABLE seq_region_synonym (
 
   seq_region_synonym_id       INT UNSIGNED NOT NULL  AUTO_INCREMENT,
   seq_region_id               INT(10) UNSIGNED NOT NULL,
-  synonym                     VARCHAR(40) NOT NULL,
+  synonym                     VARCHAR(50) NOT NULL,
   external_db_id              INTEGER UNSIGNED,
 
   PRIMARY KEY (seq_region_synonym_id),
@@ -767,7 +767,7 @@ CREATE TABLE gene (
   seq_region_end              INT(10) UNSIGNED NOT NULL,
   seq_region_strand           TINYINT(2) NOT NULL,
   display_xref_id             INT(10) UNSIGNED,
-  source                      VARCHAR(20) NOT NULL,
+  source                      VARCHAR(40) NOT NULL,
   status                      ENUM('KNOWN', 'NOVEL', 'PUTATIVE', 'PREDICTED', 'KNOWN_BY_PROJECTION', 'UNKNOWN', 'ANNOTATED'),
   description                 TEXT,
   is_current                  BOOLEAN NOT NULL DEFAULT 1,
@@ -977,7 +977,7 @@ CREATE TABLE transcript (
   seq_region_end              INT(10) UNSIGNED NOT NULL,
   seq_region_strand           TINYINT(2) NOT NULL,
   display_xref_id             INT(10) UNSIGNED,
-  source                      VARCHAR(20) NOT NULL default 'ensembl',
+  source                      VARCHAR(40) NOT NULL default 'ensembl',
   biotype                     VARCHAR(40) NOT NULL,
   status                      ENUM('KNOWN', 'NOVEL', 'PUTATIVE', 'PREDICTED', 'KNOWN_BY_PROJECTION', 'UNKNOWN', 'ANNOTATED'),
   description                 TEXT,
@@ -2201,8 +2201,7 @@ CREATE TABLE object_xref (
 
   PRIMARY KEY (object_xref_id),
 
-  UNIQUE KEY xref_idx
-    (xref_id, ensembl_object_type, ensembl_id, analysis_id),
+  UNIQUE KEY xref_idx (xref_id, ensembl_object_type, ensembl_id, analysis_id),
 
   KEY ensembl_idx (ensembl_object_type, ensembl_id),
   KEY analysis_idx (analysis_id)
@@ -2276,7 +2275,7 @@ CREATE TABLE unmapped_object (
   analysis_id           SMALLINT UNSIGNED NOT NULL,
   external_db_id        INTEGER UNSIGNED,
   identifier            VARCHAR(255) NOT NULL,
-  unmapped_reason_id    SMALLINT(5) UNSIGNED NOT NULL,
+  unmapped_reason_id    INT(10) UNSIGNED NOT NULL,
   query_score           DOUBLE,
   target_score          DOUBLE,
   ensembl_id            INT(10) UNSIGNED DEFAULT '0',
@@ -2305,7 +2304,7 @@ CREATE TABLE unmapped_object (
 
 CREATE TABLE unmapped_reason (
 
-  unmapped_reason_id     SMALLINT(5) UNSIGNED NOT NULL AUTO_INCREMENT,
+  unmapped_reason_id     INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
   summary_description    VARCHAR(255),
   full_description       VARCHAR(255),
 
@@ -2338,7 +2337,7 @@ CREATE TABLE xref (
 
    xref_id                    INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
    external_db_id             INTEGER UNSIGNED NOT NULL,
-   dbprimary_acc              VARCHAR(40) NOT NULL,
+   dbprimary_acc              VARCHAR(50) NOT NULL,
    display_label              VARCHAR(128) NOT NULL,
    version                    VARCHAR(10) DEFAULT '0' NOT NULL,
    description                TEXT,

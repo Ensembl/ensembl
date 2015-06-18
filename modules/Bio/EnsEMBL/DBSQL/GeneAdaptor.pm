@@ -1,6 +1,6 @@
 =head1 LICENSE
 
-Copyright [1999-2014] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
+Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -1150,6 +1150,8 @@ sub store_alt_alleles {
                in external database references
   Arg [3]    : prevent coordinate recalculation if you are persisting 
                transcripts with this gene
+  Arg [4]    : prevent copying supporting features across exons
+               increased speed for lost accuracy
   Example    : $gene_adaptor->store($gene);
   Description: Stores a gene in the database.
   Returntype : the database identifier (dbID) of the newly stored gene
@@ -1161,7 +1163,7 @@ sub store_alt_alleles {
 =cut
 
 sub store {
-  my ($self, $gene, $ignore_release, $skip_recalculating_coordinates) = @_;
+  my ($self, $gene, $ignore_release, $skip_recalculating_coordinates, $skip_exon_sf) = @_;
 
   if (!ref $gene || !$gene->isa('Bio::EnsEMBL::Gene')) {
     throw("Must store a gene object, not a $gene");
@@ -1283,7 +1285,7 @@ sub store {
     foreach my $e (@{$trans->get_all_Exons}) {
       my $key = $e->hashkey();
       if (exists $exons{$key}) {
-        $trans->swap_exons($e, $exons{$key});
+        $trans->swap_exons($e, $exons{$key}, $skip_exon_sf);
       } else {
         $exons{$key} = $e;
       }
@@ -1556,6 +1558,38 @@ sub update {
 
   # maybe should update stable id ???
 } ## end sub update
+
+
+=head2 update_coords
+
+  Arg [1]    : Bio::EnsEMBL::Gene $gene
+               The gene to update
+  Example    : $gene_adaptor->update_coords($gene);
+  Description: In the event of a transcript being removed, coordinates for the Gene
+               need to be reset, but update() does not do this. update_coords 
+               fills this niche
+  Returntype : None
+  Exceptions : thrown if the $gene is not supplied
+  Caller     : general
+
+=cut
+
+sub update_coords {
+  my ($self, $gene) = @_;
+  throw('Must have a gene to update in order to update it') unless ($gene);
+  $gene->recalculate_coordinates;
+  my $update_sql = qq(
+    UPDATE gene
+       SET seq_region_start = ?,
+           seq_region_end = ?
+       WHERE gene_id = ?
+    );
+  my $sth = $self->prepare($update_sql);
+  $sth->bind_param(1, $gene->start);
+  $sth->bind_param(2, $gene->end);
+  $sth->bind_param(3, $gene->dbID);
+  $sth->execute();
+}
 
 # _objs_from_sth
 

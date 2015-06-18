@@ -1,6 +1,6 @@
 =head1 LICENSE
 
-Copyright [1999-2014] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
+Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -158,20 +158,20 @@ sub fetch_by_name {
     return '';
   }
   
-  # now get an individual adaptor
-  my $ind_adaptor = $variation_db->get_IndividualAdaptor;
+  # now get a sample adaptor
+  my $sample_adaptor = $variation_db->get_SampleAdaptor;
   
   # check we got it
-  unless(defined $ind_adaptor) {
-    warning("Not possible to retrieve IndividualAdaptor from variation database");
+  unless(defined $sample_adaptor) {
+    warning("Not possible to retrieve SampleAdaptor from variation database");
     return '';
   }
   
-  # fetch individual object for this strain name
-  my $ind = shift @{$ind_adaptor->fetch_all_by_name($name)};
+  # fetch sample object for this strain name
+  my $sample = shift @{$sample_adaptor->fetch_all_by_name($name)};
   
   # check we got a result
-  unless(defined $ind) {
+  unless(defined $sample) {
     warn("Strain ".$name." not found in the database");
     return '';
   }
@@ -191,16 +191,16 @@ sub fetch_by_name {
   );
   
   # get the strain slice
-  my $strain_slice = $slice->get_by_strain($ind->name);
+  my $strain_slice = $slice->get_by_strain($sample->name);
   
-  # get all allele features for this slice and individual
-  #my @afs = sort {$a->start() <=> $b->start()} @{$af_adaptor->fetch_all_by_Slice($slice, $ind)};
+  # get all allele features for this slice and sample
+  #my @afs = sort {$a->start() <=> $b->start()} @{$af_adaptor->fetch_all_by_Slice($slice, $sample)};
   
   # get allele features with coverage info
   my $afs = $strain_slice->get_all_AlleleFeatures_Slice(1);
   
   # check we got some data
-  #warning("No strain genotype data available for slice ".$slice->name." and strain ".$ind->name) if ! defined $afs[0];
+  #warning("No strain genotype data available for slice ".$slice->name." and strain ".$sample->name) if ! defined $afs[0];
   
   
   my $start_slice = $slice->start;

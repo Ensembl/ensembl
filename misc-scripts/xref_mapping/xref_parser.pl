@@ -1,5 +1,5 @@
 #!/usr/bin/env perl
-# Copyright [1999-2014] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
+# Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
 # 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -77,6 +77,16 @@ $| = 1;
 if ( !$user || !$host || !$dbname ) {
     usage();
     exit(1);
+}
+
+if ( $host =~ /staging/ || $host =~ /livemirror/ ){
+  print STDERR "$host was specified as host name. This is a production server and should not be used to create the xref database\n";
+  exit(1);
+}
+
+if ($dbname =~ /_core_/) {
+  print STDERR "$dbname was specified for the database name. This should be the name of the xref database, not the core database\n";
+  exit(1);
 }
 
 

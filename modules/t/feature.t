@@ -1,4 +1,4 @@
-# Copyright [1999-2014] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
+# Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
 # 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -629,7 +629,30 @@ ok( scalar( @alt ) == 0 );
 # ok( ($f1->overlaps( $f2 )));
 
 
+# get_overlapping_Genes
 
+my $gene_adaptor = $db->get_GeneAdaptor;
+my $gene = $gene_adaptor->fetch_by_stable_id('ENSG00000171456');
+my $o_genes = $gene->get_overlapping_Genes;
+is($o_genes->[0]->stable_id,'ENSG00000171456','Check overlap with a feature that overlaps nothing');
+$chr_slice = $o_genes->[0]->feature_Slice;
+
+my $f3 = new Bio::EnsEMBL::Feature( 
+  -start => 1,
+  -end => 100,
+  -strand => 1,
+  -slice => $chr_slice,
+  -analysis => $analysis,
+  -adaptor => $db->get_GeneAdaptor,
+); 
+
+$o_genes = $f3->get_overlapping_Genes;
+debug('Got some overlapping things:'.scalar @$o_genes);
+foreach my $g (@$o_genes) {
+  debug('Overlapping: '.$g->stable_id);
+}
+is($o_genes->[0]->stable_id,'ENSG00000171456','Check overlap with a fake feature on top of an existing gene');
+# Note, doesn't find itself as it isn't in the test database.
 sub print_locations {
   my $f = shift;
 

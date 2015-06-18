@@ -1,6 +1,6 @@
 =head1 LICENSE
 
-Copyright [1999-2014] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
+Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -79,17 +79,6 @@ sub gen_load {
       $dba->group('lite');
     }
     $config_sub = \&Bio::EnsEMBL::Utils::ConfigRegistry::load_lite;
-  } elsif ( $dba->isa('Bio::EnsEMBL::External::BlastAdaptor') ) {
-    if ( !defined( $dba->group() ) ) {
-      $dba->group('blast');
-    }
-    $config_sub = \&Bio::EnsEMBL::Utils::ConfigRegistry::load_blast;
-  } elsif ( $dba->isa('Bio::EnsEMBL::ExternalData::SNPSQL::DBAdaptor') )
-  {
-    if ( !defined( $dba->group() ) ) {
-      $dba->group('SNP');
-    }
-    $config_sub = \&Bio::EnsEMBL::Utils::ConfigRegistry::load_SNP;
   } elsif ( $dba->isa('Bio::EnsEMBL::Pipeline::DBSQL::DBAdaptor') ) {
     if ( !defined( $dba->group() ) ) {
       $dba->group('pipeline');
@@ -100,13 +89,6 @@ sub gen_load {
       $dba->group('hive');
     }
     $config_sub = \&Bio::EnsEMBL::Utils::ConfigRegistry::load_hive;
-  } elsif (
-    $dba->isa('Bio::EnsEMBL::ExternalData::Haplotype::DBAdaptor') )
-  {
-    if ( !defined( $dba->group() ) ) {
-      $dba->group('haplotype');
-    }
-    $config_sub = \&Bio::EnsEMBL::Utils::ConfigRegistry::load_haplotype;
   } elsif ( $dba->isa('Bio::EnsEMBL::Variation::DBSQL::DBAdaptor') ) {
     if ( !defined( $dba->group() ) ) {
       $dba->group('variation');

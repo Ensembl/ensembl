@@ -1,6 +1,6 @@
 =head1 LICENSE
 
-Copyright [1999-2014] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
+Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -82,12 +82,27 @@ sub run {
     if(/\*FIELD\*\s+NO\n(\d+)/){
       $number = $1;
       $source_id = $gene_source_id;      
-      if(/\*FIELD\*\sTI\n([\^\#\%\+\*]*)\d+(.*)\n/){
-	$label =$2; # taken from description as acc is meaning less
-	$long_desc = $2;
-	$type = $1;
-	$label =~ s/\;\s[A-Z0-9]+$//; # strip gene name at end
-	$label = substr($label,0,35)." [".$type.$number."]";
+      # if(/\*FIELD\*\sTI\n([\^\#\%\+\*]*)\d+(.*)\n(.*)\n\*/){
+      # 	$label =$2; # taken from description as acc is meaning less
+      # 	$long_desc = $2;
+      # 	$long_desc .= $3 if defined $3;
+      # 	$type = $1;
+      # 	$label =~ s/\;\s[A-Z0-9]+$//; # strip gene name at end
+      # 	$label = substr($label,0,35)." [".$type.$number."]";
+
+      if(/\*FIELD\*\sTI(.+)\*FIELD\*\sTX/s) { # grab the whole TI field
+	my $ti = $1;
+        $ti =~ s/\n//g; # Remove return carriages
+        # extract the 'type' and the whole description
+	$ti =~ /([\^\#\%\+\*]*)\d+(.+)/s;
+	my $type = $1;
+	my $long_desc = $2;
+        $long_desc =~ s/^\s//; # Remove white space at the start
+        my @fields = split(";;", $long_desc);
+
+        # Use the first block of text as description
+	my $label = $fields[0] . " [" . $type . $number . "]";
+
 	if($type eq "*"){ # gene only
 	  $gene++;
 	  $self->add_xref({ acc        => $number,

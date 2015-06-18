@@ -1,5 +1,5 @@
 #!/usr/bin/env perl
-# Copyright [1999-2014] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
+# Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
 # 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -139,7 +139,8 @@ foreach my $group (@{$vega_groups}) {
 #
 print STDERR "\n\nDeleting all alt_alleles...\n\n";
 $core_dba->dbc->do("delete from alt_allele");
-
+$core_dba->dbc->do("delete from alt_allele_attrib");
+$core_dba->dbc->do("delete from alt_allele_group");
 
 #
 # Store alt_alleles.

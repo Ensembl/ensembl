@@ -1,6 +1,6 @@
 =head1 LICENSE
 
-Copyright [1999-2014] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
+Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -41,20 +41,22 @@ Bio::EnsEMBL::Utils::IO
 
 	use Bio::EnsEMBL::Utils::IO qw/slurp work_with_file slurp_to_array fh_to_array/;
 	#or
-	# use Bio::EnsEMBL::Utils::IO qw/:slurp/; #brings in any method starting with slurp
-	# use Bio::EnsEMBL::Utils::IO qw/:array/; #brings in any method which ends with _array
-	# use Bio::EnsEMBL::Utils::IO qw/:gz/;    #brings all methods which start with gz_
-	# use Bio::EnsEMBL::Utils::IO qw/:all/;   #brings all methods in
+	# use Bio::EnsEMBL::Utils::IO qw/:slurp/; # brings in any method starting with slurp
+	# use Bio::EnsEMBL::Utils::IO qw/:array/; # brings in any method which ends with _array
+	# use Bio::EnsEMBL::Utils::IO qw/:gz/;    # brings all methods which start with gz_
+	# use Bio::EnsEMBL::Utils::IO qw/:bz/;    # brings all methods which start with bz_
+	# use Bio::EnsEMBL::Utils::IO qw/:zip/;   # brings all methods which start with zip_
+	# use Bio::EnsEMBL::Utils::IO qw/:all/;   # brings all methods in
 	
-	#As a scalar
+  # As a scalar
   my $file_contents = slurp('/my/file/location.txt');
   print length($file_contents);
   
-  #As a ref
+  # As a ref
   my $file_contents_ref = slurp('/my/file/location.txt', 1);
   print length($$file_contents_ref);
   
-  #Sending it to an array
+  # Sending it to an array
   my $array = slurp_to_array('/my/location');
   work_with_file('/my/location', 'r', sub {
     $array = process_to_array($_[0], sub {
@@ -63,24 +65,24 @@ Bio::EnsEMBL::Utils::IO
     });
   });
   
-  #Simplified vesion but without the post processing
+  # Simplified vesion but without the post processing
   $array = fh_to_array($fh);
   
-  #Sending this back out to another file
+  # Sending this back out to another file
   work_with_file('/my/file/newlocation.txt', 'w', sub {
     my ($fh) = @_;
     print $fh $$file_contents_ref;
     return;
   });
   
-  #Gzipping the data to another file
+  # Gzipping the data to another file
   gz_work_with_file('/my/file.gz', 'w', sub {
     my ($fh) = @_;
     print $fh $$file_contents_ref;
     return;
   });
   
-  #Working with a set of lines manually
+  # Working with a set of lines manually
   work_with_file('/my/file', 'r', sub {
     my ($fh) = @_;
     iterate_lines($fh, sub {
@@ -91,14 +93,14 @@ Bio::EnsEMBL::Utils::IO
     return;
   });
   
-  #Doing the same in one go
+  # Doing the same in one go
   iterate_file('/my/file', sub {
     my ($line) = @_;
     print $line; #Send the line in the file back out
     return;
   });
   
-  #Move all data from one file handle to another. Bit like a copy
+  # Move all data from one file handle to another. Bit like a copy
   move_data($src_fh, $trg_fh);
   	
 =head1 DESCRIPTION
@@ -125,21 +127,39 @@ use warnings;
 use base qw(Exporter);
 
 our $GZIP_OK = 0;
-our @EXPORT_OK = qw/slurp slurp_to_array fh_to_array process_to_array work_with_file gz_slurp gz_slurp_to_array gz_work_with_file filter_dir iterate_file iterate_lines move_data/;
+our $BZIP2_OK = 0;
+our $ZIP_OK = 0;
+
+our @EXPORT_OK = qw/slurp slurp_to_array fh_to_array process_to_array work_with_file gz_slurp gz_slurp_to_array gz_work_with_file bz_slurp bz_slurp_to_array bz_work_with_file zip_slurp zip_slurp_to_array zip_work_with_file filter_dir iterate_file iterate_lines move_data/;
 our %EXPORT_TAGS = (
   all     => [@EXPORT_OK],
   slurp   => [qw/slurp slurp_to_array gz_slurp gz_slurp_to_array/],
   array   => [qw/fh_to_array process_to_array slurp_to_array gz_slurp_to_array/],
   gz      => [qw/gz_slurp gz_slurp_to_array gz_work_with_file/],
+  bz      => [qw/bz_slurp bz_slurp_to_array bz_work_with_file/],
+  zip     => [qw/zip_slurp zip_slurp_to_array zip_work_with_file/],
   iterate => [qw/iterate_file iterate_lines/],
 );
 use Bio::EnsEMBL::Utils::Exception qw(throw);
 use Bio::EnsEMBL::Utils::Scalar qw(:assert);
 use IO::File;
+
 eval {
   require IO::Compress::Gzip;
   require IO::Uncompress::Gunzip;
   $GZIP_OK = 1;
+};
+
+eval {
+  require IO::Compress::Bzip2;
+  require IO::Uncompress::Bunzip2;
+  $BZIP2_OK = 1;
+};
+
+eval {
+  require IO::Compress::Zip;
+  require IO::Uncompress::Unzip;
+  $ZIP_OK = 1;
 };
 
 =head2 slurp()
@@ -180,7 +200,7 @@ sub slurp {
 	return ($want_ref) ? \$contents : $contents;
 }
 
-=head2 gz_slurp()
+=head2 gz_slurp
 
   Arg [1]     : string $file
   Arg [2]     : boolean; $want_ref Indicates if we want to return a scalar reference
@@ -211,7 +231,70 @@ sub gz_slurp {
   return ($want_ref) ? \$contents : $contents;
 }
 
-=head2 slurp_to_array()
+=head2 bz_slurp
+
+  Arg [1]     : string $file
+  Arg [2]     : boolean; $want_ref Indicates if we want to return a scalar reference
+  Arg [3]     : boolean; $binary
+  Arg [4]     : HashRef arguments to pass into IO compression layers
+  Description : Forces the contents of a file into a scalar. This is the 
+                fastest way to get a file into memory in Perl. You can also
+                get a scalar reference back to avoid copying the file contents
+                in Scalar references. If the input file is binary then specify
+                with the binary flag
+  Returntype  : Scalar or reference of the file contents depending on arg 2
+  Example     : my $contents = slurp('/tmp/file.txt.bz2');
+  Exceptions  : If the file did not exist or was not readable
+  Status      : Stable
+
+=cut
+
+sub bz_slurp {
+  my ($file, $want_ref, $binary, $args) = @_;
+  my $contents;
+  bz_work_with_file($file, 'r', sub {
+    my ($fh) = @_;
+    local $/ = undef;
+    binmode($fh) if $binary;
+    $contents = <$fh>;
+    return;
+  }, $args);
+  return ($want_ref) ? \$contents : $contents;
+}
+
+=head2 zip_slurp
+
+  Arg [1]     : string $file
+  Arg [2]     : boolean; $want_ref Indicates if we want to return a scalar reference
+  Arg [3]     : boolean; $binary
+  Arg [4]     : HashRef arguments to pass into IO compression layers
+  Description : Forces the contents of a file into a scalar. This is the 
+                fastest way to get a file into memory in Perl. You can also
+                get a scalar reference back to avoid copying the file contents
+                in Scalar references. If the input file is binary then specify
+                with the binary flag
+  Returntype  : Scalar or reference of the file contents depending on arg 2
+  Example     : my $contents = slurp('/tmp/file.txt.zip');
+  Exceptions  : If the file did not exist or was not readable
+  Status      : Stable
+
+=cut
+
+sub zip_slurp {
+  my ($file, $want_ref, $binary, $args) = @_;
+  my $contents;
+  zip_work_with_file($file, 'r', sub {
+    my ($fh) = @_;
+    local $/ = undef;
+    binmode($fh) if $binary;
+    $contents = <$fh>;
+    return;
+  }, $args);
+  return ($want_ref) ? \$contents : $contents;
+}
+
+
+=head2 slurp_to_array
 
   Arg [1]     : string $file
   Arg [2]     : boolean $chomp
@@ -234,14 +317,14 @@ sub slurp_to_array {
 	return $contents;
 }
 
-=head2 gz_slurp_to_array()
+=head2 gz_slurp_to_array
 
   Arg [1]     : string $file
   Arg [2]     : boolean $chomp
   Arg [3]     : HashRef arguments to pass into IO compression layers
   Description : Sends the contents of the given gzipped file into an ArrayRef
   Returntype  : ArrayRef
-  Example     : my $contents_array = slurp_to_array('/tmp/file.txt.gz');
+  Example     : my $contents_array = gz_slurp_to_array('/tmp/file.txt.gz');
   Exceptions  : If the file did not exist or was not readable
   Status      : Stable
 
@@ -258,7 +341,55 @@ sub gz_slurp_to_array {
   return $contents;
 }
 
-=head2 fh_to_array()
+=head2 bz_slurp_to_array
+
+  Arg [1]     : string $file
+  Arg [2]     : boolean $chomp
+  Arg [3]     : HashRef arguments to pass into IO compression layers
+  Description : Sends the contents of the given bzipped file into an ArrayRef
+  Returntype  : ArrayRef
+  Example     : my $contents_array = bz_slurp_to_array('/tmp/file.txt.bz2');
+  Exceptions  : If the file did not exist or was not readable
+  Status      : Stable
+
+=cut
+
+sub bz_slurp_to_array {
+  my ($file, $chomp, $args) = @_;
+  my $contents;
+  bz_work_with_file($file, 'r', sub {
+    my ($fh) = @_;
+    $contents = fh_to_array($fh, $chomp);
+    return;
+  }, $args);
+  return $contents;
+}
+
+=head2 zip_slurp_to_array
+
+  Arg [1]     : string $file
+  Arg [2]     : boolean $chomp
+  Arg [3]     : HashRef arguments to pass into IO compression layers
+  Description : Sends the contents of the given zipped file into an ArrayRef
+  Returntype  : ArrayRef
+  Example     : my $contents_array = zip_slurp_to_array('/tmp/file.txt.zip');
+  Exceptions  : If the file did not exist or was not readable
+  Status      : Stable
+
+=cut
+
+sub zip_slurp_to_array {
+  my ($file, $chomp, $args) = @_;
+  my $contents;
+  zip_work_with_file($file, 'r', sub {
+    my ($fh) = @_;
+    $contents = fh_to_array($fh, $chomp);
+    return;
+  }, $args);
+  return $contents;
+}
+
+=head2 fh_to_array
 
   Arg [1]     : Glob/IO::Handle $fh
   Arg [2]     : boolean $chomp
@@ -362,7 +493,7 @@ sub iterate_file {
 
 
 
-=head2 work_with_file()
+=head2 work_with_file
 
   Arg [1]     : string $file
   Arg [2]     : string; $mode 
@@ -395,7 +526,7 @@ sub work_with_file {
   return;
 }
 
-=head2 gz_work_with_file()
+=head2 gz_work_with_file
 
   Arg [1]     : string $file
   Arg [2]     : string; $mode 
@@ -419,7 +550,7 @@ sub work_with_file {
 
 sub gz_work_with_file {
   my ($file, $mode, $callback, $args) = @_;
-  throw "IO::Compress was not available"if ! $GZIP_OK;
+  throw "IO::Compress was not available" if ! $GZIP_OK;
   throw "We need a file name to open" if ! $file;
   throw "We need a mode to open the requested file with" if ! $mode;
   assert_ref($callback, 'CODE', 'callback');
@@ -434,6 +565,104 @@ sub gz_work_with_file {
     }
     elsif($mode eq '<' || $mode eq 'r') {
       $fh = IO::Uncompress::Gunzip->new($file, %$args) or throw "Cannot open '$file' for writing: $IO::Uncompress::Gunzip::GunzipError";
+    }
+    else {
+      throw "Could not decipher a mode from '$mode'";
+    }
+  };
+  $callback->($fh);
+  close($fh) or throw "Cannot close FH from ${file}: $!";
+  return;
+}
+
+=head2 bz_work_with_file
+
+  Arg [1]     : string $file
+  Arg [2]     : string; $mode 
+                Supports modes like C<r>, C<w>, C<\>> and C<\<>
+  Arg [3]     : CodeRef the callback which is given the open file handle as
+                its only argument
+  Arg [4]     : HashRef used to pass options into the IO 
+                compression/uncompression modules
+  Description : Performs the nitty gritty of checking if a file handle is open
+                and closing the resulting filehandle down.
+  Returntype  : None
+  Example     : bz_work_with_file('/tmp/out.txt.bz2', 'w', sub { 
+                  my ($fh) = @_; 
+                  print $fh 'hello'; 
+                  return;
+                });
+  Exceptions  : If we could not work with the file due to permissions
+  Status      : Stable
+
+=cut
+
+sub bz_work_with_file {
+  my ($file, $mode, $callback, $args) = @_;
+  throw "IO::Compress was not available" if ! $BZIP2_OK;
+  throw "We need a file name to open" if ! $file;
+  throw "We need a mode to open the requested file with" if ! $mode;
+  assert_ref($callback, 'CODE', 'callback');
+  $args ||= {};
+  
+  my $fh;
+  {
+    no warnings qw/once/;
+    if($mode =~ '>$' || $mode eq 'w') {
+      $args->{Append} = 1 if $mode =~ />>$/;
+      $fh = IO::Compress::Bzip2->new($file, %$args) or throw "Cannot open '$file' for writing: $IO::Compress::Bzip2::Bzip2Error";
+    }
+    elsif($mode eq '<' || $mode eq 'r') {
+      $fh = IO::Uncompress::Bunzip2->new($file, %$args) or throw "Cannot open '$file' for writing: $IO::Uncompress::Bunzip2::Bunzip2Error";
+    }
+    else {
+      throw "Could not decipher a mode from '$mode'";
+    }
+  };
+  $callback->($fh);
+  close($fh) or throw "Cannot close FH from ${file}: $!";
+  return;
+}
+
+=head2 zip_work_with_file
+
+  Arg [1]     : string $file
+  Arg [2]     : string; $mode 
+                Supports modes like C<r>, C<w>, C<\>> and C<\<>
+  Arg [3]     : CodeRef the callback which is given the open file handle as
+                its only argument
+  Arg [4]     : HashRef used to pass options into the IO 
+                compression/uncompression modules
+  Description : Performs the nitty gritty of checking if a file handle is open
+                and closing the resulting filehandle down.
+  Returntype  : None
+  Example     : zip_work_with_file('/tmp/out.txt.zip', 'w', sub { 
+                  my ($fh) = @_; 
+                  print $fh 'hello'; 
+                  return;
+                });
+  Exceptions  : If we could not work with the file due to permissions
+  Status      : Stable
+
+=cut
+
+sub zip_work_with_file {
+  my ($file, $mode, $callback, $args) = @_;
+  throw "IO::Compress was not available" if ! $ZIP_OK;
+  throw "We need a file name to open" if ! $file;
+  throw "We need a mode to open the requested file with" if ! $mode;
+  assert_ref($callback, 'CODE', 'callback');
+  $args ||= {};
+  
+  my $fh;
+  {
+    no warnings qw/once/;
+    if($mode =~ '>$' || $mode eq 'w') {
+      $args->{Append} = 1 if $mode =~ />>$/;
+      $fh = IO::Compress::Zip->new($file, %$args) or throw "Cannot open '$file' for writing: $IO::Compress::Zip::ZipError";
+    }
+    elsif($mode eq '<' || $mode eq 'r') {
+      $fh = IO::Uncompress::Unzip->new($file, %$args) or throw "Cannot open '$file' for writing: $IO::Uncompress::Unzip::UnzipError";
     }
     else {
       throw "Could not decipher a mode from '$mode'";

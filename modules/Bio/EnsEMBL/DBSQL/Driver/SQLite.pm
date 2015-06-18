@@ -1,6 +1,6 @@
 =head1 LICENSE
 
-Copyright [1999-2014] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
+Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -57,7 +57,7 @@ sub from_date_to_seconds {
 
 sub from_seconds_to_date {
     my ($self, $seconds) = @_;
-    return "DATETIME($seconds)";
+    return "DATETIME($seconds, 'unixepoch')";
 }
 
 sub insert_ignore_clause {

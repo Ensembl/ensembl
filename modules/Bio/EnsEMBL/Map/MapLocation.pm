@@ -1,6 +1,6 @@
 =head1 LICENSE
 
-Copyright [1999-2014] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
+Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -57,11 +57,12 @@ use Bio::EnsEMBL::Utils::Exception qw(deprecate);
   Arg [3]    : (optional) string $chromosome_name
   Arg [4]    : (optional) string $position
   Arg [5]    : (optional) float $lod_score
-  Example    : $map_location = Bio::EnsEMBL::Map::MapLocation('DS1234',
-                                                              'genethon',
-                                                              'X',
-                                                              '12.39',
-                                                              50.12);
+  Example    : $map_location = Bio::EnsEMBL::Map::MapLocation->
+                 new('DS1234',
+                     'genethon',
+                     'X',
+                     '12.39',
+                     50.12);
   Description: Creates a new MapLocation
   Returntype : Bio::EnsEMBL::Map::MapLocation
   Exceptions : none

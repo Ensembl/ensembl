@@ -1,5 +1,5 @@
 #!/usr/bin/env perl
-# Copyright [1999-2014] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
+# Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
 # 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -26,9 +26,9 @@ use lib "$Bin/../../../ensembl-analysis/modules";
 
 #runtime include normally
 require AssemblyMapper::Support;
+use Bio::EnsEMBL::Registry;
 use Bio::EnsEMBL::Utils::Exception qw( throw );
 use Pod::Usage;
-use Bio::EnsEMBL::Production::DBSQL::DBAdaptor;
 
 #Genebuilder utils
 require Bio::EnsEMBL::Analysis::Tools::GeneBuildUtils::TranscriptUtils;
@@ -67,19 +67,25 @@ if ($support->param('prod_pass')) { $prod_pass = $support->param('prod_pass');
 if ($support->param('prod_port')) { $prod_port = $support->param('prod_port');
 } else { $prod_port = $support->param('port'); }
 
-my $production_db = Bio::EnsEMBL::Production::DBSQL::DBAdaptor->new(
-  -host    => $prod_host,
-  -user    => $prod_user,
-  -pass    => $prod_pass,
-  -port    => $prod_port,
-  -dbname  => $support->param('prod_dbname'),
-  -species => 'multi',
-  -group   => 'production'
+
+###################################################################
+#
+# Get Biotype Manager
+# Need to first get a production DBAdaptor
+# Assumes the ensembl_production DB in on staging1
+#
+use Bio::EnsEMBL::Production::DBSQL::DBAdaptor;
+my $prod_dba = Bio::EnsEMBL::Production::DBSQL::DBAdaptor->new(
+    -host => 'ens-staging1',
+    -user => 'ensro',
+    -port => 3306,
+    -dbname => 'ensembl_production',
 );
+$prod_dba or die "Cannot get a production DB adaptor";
+my $biotype_manager = $prod_dba->get_biotype_manager();
 
-
-my $biotype_manager = $production_db->get_biotype_manager();
-  
+#
+###################################################################
 
 $support->log_stamped("Beginning analysis.\n");
 $support->log("EXON KEY       : !! = Very bad (pc mismatch), %% = Somewhat bad (mismatch), ?? = No mapping, might be bad, && = eval error\n");
@@ -323,6 +329,7 @@ perl exon_conservation_check.pl <many arguments>
     --prod_host                         database host for production database
     --prod_user                         database user for production database
     --prod_db                           database name for production database
+    --reg_conf                          registry configuration file
 
 Optional options
     --logfile, --log=FILE               log to FILE (default: *STDOUT)

@@ -1,0 +1,4 @@
+gene	8	35335
+transcript	8	35059
+repeat_feature	8	18170
+exon	8	7827

@@ -1,6 +1,6 @@
 =head1 LICENSE
 
-Copyright [1999-2014] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
+Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -327,6 +327,24 @@ sub seq_region_length {
 sub coord_system {
   my $self = shift;
   return $self->{'coord_system'};
+}
+
+=head2 source
+
+  Arg [1]    : (optional) String $value
+  Example    : print $slice->source();
+  Description: Returns the source this slice is coming from
+  Returntype : string
+  Exceptions : none
+  Caller     : general
+  Status     : Stable
+
+=cut
+
+sub source {
+  my $self = shift;
+  $self->{'source'} = shift if (@_);
+  return $self->{'source'};
 }
 
 =head2 coord_system_name
@@ -806,11 +824,10 @@ sub is_chromosome {
                     |clone
                     |contig
                     |genescaffold
-                    |group
                     |reftig
                     |supercontig
                     |ultracontig        
-                    /x) or ( $coord_system !~ /^chromosome$/i )) {
+                    /x) or ( $coord_system !~ /^chromosome$/i && $coord_system !~ /^group$/i ) ) {
     return 0;
   }
   
@@ -1256,8 +1273,8 @@ sub constrain_to_seq_region {
 
 =head2 sub_Slice
 
-  Arg   1    : int $start
-  Arg   2    : int $end
+  Arg   1    : int $start, refers to the start of the subslice relative to the input slice
+  Arg   2    : int $end, refers to the end of the subslice relative to the input slice
   Arge [3]   : int $strand
   Example    : none
   Description: Makes another Slice that covers only part of this Slice
@@ -1388,6 +1405,23 @@ sub get_seq_region_id {
     warning('Cannot retrieve seq_region_id without attached adaptor.');
     return undef;
   }
+}
+
+=head2 get_genome_component
+
+  Arg []     : none
+  Example    : my $genome_component = $slice->get_genome_component();
+  Description: Returns the genome component of the slice
+  Returntype : Scalar; the identifier of the genome component of the slice
+  Exceptions : none
+  Caller     : general
+  Status     : Stable
+
+=cut
+
+sub get_genome_component {
+  my $self = shift;
+  return $self->adaptor->get_genome_component_for_slice($self);
 }
 
 =head2 get_all_Attributes
@@ -1831,7 +1865,19 @@ sub get_all_VariationFeatures{
 
 =head2 get_all_somatic_VariationFeatures
 
-    Arg [1]     : (optional) string $dbtype
+    Args [1]    : (optional) ArrayRef $so_terms
+                  SequenceOntology terms to limit the fetch to
+    Args [2]    : (optional) boolean $without_children
+                  Do not query using the children of the given SO terms 
+                  i.e. query using the given terms directly
+    Args [3]    : (optional) ArrayRef $included_so 
+                  ArrayRef of SequenceOntology which should be queried for
+                  without children. This argument allows you to combine SO terms with children
+                  from argument 1 with extra non-child SO terms. e.g. you wish to query for
+                  all protein_altering_variant (specified in argument 1) variations which 
+                  would be defined by child SO terms but also wanted stop_retained_variant linked variations
+                  defined by this argument
+    Args [4]    : (optional) string $dbtype
                   The dbtype of variation to obtain (i.e. can be different from the "variation" type).
                   This assumes that the extra db has been added to the DBAdaptor under this name (using the
                   DBConnection::add_db_adaptor method).
@@ -1844,9 +1890,9 @@ sub get_all_VariationFeatures{
 =cut
 
 sub get_all_somatic_VariationFeatures {
-  my ($self, $dbtype) = @_;
+  my ($self, $so_terms, $without_children, $included_so, $dbtype) = @_;
   if (my $vf_adaptor = $self->_get_VariationFeatureAdaptor($dbtype)) {
-    return $vf_adaptor->fetch_all_somatic_by_Slice($self);
+    return $vf_adaptor->fetch_all_somatic_by_Slice_SO_terms($self, $so_terms, $without_children, $included_so);
   }
   return [];
 }
@@ -3711,13 +3757,23 @@ sub add_synonym{
 sub summary_as_hash {
   my $self = shift;
   my %summary;
-  $summary{'display_id'} = $self->display_id;
+  my @aliases = map { $_->name } @{$self->slice->get_all_synonyms()};
+
+  $summary{'seq_region_name'} = $self->seq_region_name;
+  $summary{'id'} = $self->seq_region_name;
   $summary{'start'} = $self->start;
   $summary{'end'} = $self->end;
-  $summary{'strand'} = $self->strand;
-  $summary{'Is_circular'} = $self->is_circular ? "true" : "false";
-  $summary{'region_name'} = $self->seq_region_name();
+  $summary{'strand'} = 0;
+  $summary{'source'} = $self->source || $self->coord_system->version;
+  $summary{'Alias'} = \@aliases if scalar(@aliases);
+  $summary{'Is_circular'} = $self->is_circular ? "true" : undef;
   return \%summary;
+}
+
+
+sub slice {
+  my $self = shift;
+  return $self;
 }
 
 #

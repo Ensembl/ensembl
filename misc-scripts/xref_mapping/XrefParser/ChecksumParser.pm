@@ -1,6 +1,6 @@
 =head1 LICENSE
 
-Copyright [1999-2014] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
+Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -16,7 +16,7 @@ limitations under the License.
 
 =cut
 
-package XrefParser::UniParcParser;
+package XrefParser::ChecksumParser;
 
 # Input format looks like:
 #
@@ -58,7 +58,7 @@ sub run {
   close($input_fh);
   close($output_fh);
   
-  $self->_load_table($target_file, $verbose);
+  $self->_load_table($target_file, $verbose, $source_id);
   
   return;
 }
@@ -77,12 +77,12 @@ sub _transfer_contents {
 }
 
 sub _load_table {
-  my ($self, $file, $verbose) = @_;
+  my ($self, $file, $verbose, $source_id) = @_;
   my $dbh = $self->dbi();
-  my ($count) = $dbh->selectrow_array('select count(*) from '.$TABLE_NAME);
+  my ($count) = $dbh->selectrow_array('select count(*) from '.$TABLE_NAME . ' WHERE source_id = ' . $source_id);
   if($count) {
-    print "'$TABLE_NAME' has rows; truncating\n" if $verbose;
-    $dbh->do('truncate table '.$TABLE_NAME);
+    print "'$TABLE_NAME' has rows for $source_id; deleting\n" if $verbose;
+    $dbh->do('deleting from ' . $TABLE_NAME . ' WHERE source_id = ' . $source_id);
   }
   print "Loading data into '$TABLE_NAME' from '$file'\n" if $verbose;
   my $load = sprintf(q{LOAD DATA LOCAL INFILE '%s'INTO TABLE %s}, $file, $TABLE_NAME);

@@ -1,0 +1,121 @@
+1	\N	schema_type	core
+2	\N	schema_version	81
+3	\N	patch	patch_68_69_a.sql|schema_version
+4	1	species.taxonomy_id	4565
+6	1	species.alias	bread wheat
+7	1	species.alias	common wheat
+8	1	species.alias	wheat
+9	1	species.strain	Chinese Spring
+10	1	species.scientific_name	Triticum aestivum
+11	1	species.production_name	triticum_aestivum
+12	1	species.classification	aestivum
+13	1	species.classification	Triticum
+14	1	species.classification	Triticeae
+15	1	species.classification	Pooideae
+16	1	species.classification	BEP clade
+17	1	species.classification	Poaceae
+18	1	species.classification	Poales
+19	1	species.classification	commelinids
+20	1	species.classification	Liliopsida
+21	1	species.classification	Magnoliophyta
+22	1	species.classification	Spermatophyta
+23	1	species.classification	Euphyllophyta
+24	1	species.classification	Tracheophyta
+25	1	species.classification	Embryophyta
+26	1	species.classification	Streptophytina
+27	1	species.classification	Streptophyta
+28	1	species.classification	Viridiplantae
+29	1	species.classification	Eukaryota
+30	1	species.division	EnsemblPlants
+31	1	assembly.name	IWGSC2
+32	1	assembly.date	2014-11
+33	1	assembly.default	IWGSC2
+39	1	species.display_name	Triticum aestivum
+40	1	species.url	Triticum_aestivum
+41	\N	patch	patch_69_70_a.sql|schema_version
+42	\N	patch	patch_69_70_b.sql|add_mapping_set_history
+43	\N	patch	patch_69_70_c.sql|column_datatype_consistency
+44	\N	patch	patch_69_70_d.sql|data_file_id_auto_increment
+45	\N	patch	patch_69_70_e.sql|protein_feature_hit_description
+167	1	assembly.mapping	chromosome:IWGSC2#scaffold:IWGSC2
+50	1	genebuild.start_date	2014-11-IWGSC
+51	\N	patch	patch_70_71_a.sql|schema_version
+52	\N	patch	patch_70_71_b.sql|mapping_set_index
+53	\N	patch	patch_71_72_a.sql|schema_version
+54	\N	patch	patch_71_72_b.sql|associated_xref
+169	1	assembly.mapping	scaffold:IWGSC2#contig
+60	\N	patch	patch_72_73_a.sql|schema_version
+66	1	sample.location_text	5D
+67	1	sample.location_param	5D:17389805-17402607
+69	1	repeat.analysis	dust
+70	1	repeat.analysis	repeatmask
+189	1	repeat_featurebuild.level	toplevel
+106	1	assembly.overlapping_regions	0
+78	1	species.alias	Triticum aestivum
+81	\N	patch	patch_72_73_b.sql|alt_allele_type
+80	1	repeat.analysis	repeatmask_trep
+82	\N	patch	patch_72_73_c.sql|add_object_type_marker
+83	\N	patch	patch_73_74_a.sql|schema_version
+84	\N	patch	patch_73_74_b.sql|remove_dnac
+85	\N	patch	patch_73_74_c.sql|remove_unconventional_transcript_association
+86	\N	patch	patch_73_74_d.sql|remove_qtl
+87	\N	patch	patch_73_74_e.sql|remove_canonical_annotation
+88	\N	patch	patch_73_74_f.sql|remove_pair_dna_align
+89	\N	patch	patch_73_74_g.sql|add_transcript_idx_tise
+170	1	assembly.mapping	scaffold:IWGSP1#contig
+91	\N	patch	patch_73_74_h.sql|alt_allele_unique_gene_idx
+187	1	genebuild.level	toplevel
+94	1	genebuild.initial_release_date	2013-12-MIPS
+95	1	genebuild.last_geneset_update	2013-12-MIPS
+96	1	genebuild.version	2.2
+97	1	provider.name	IWGSC
+98	1	provider.url	http://www.wheatgenome.org/
+188	1	transcriptbuild.level	toplevel
+100	1	genebuild.method	Imported from IWGSC
+101	1	sample.transcript_param	Traes_1BS_1172A6B03.1
+102	1	sample.transcript_text	Traes_1BS_1172A6B03.1
+103	1	sample.gene_param	Traes_1BS_1172A6B03
+104	1	sample.gene_text	Traes_1BS_1172A6B03
+191	1	xref.timestamp	2014-11-25 21:31:46
+108	1	sample.search_text	Calnexin
+109	\N	patch	patch_74_75_a.sql|schema_version
+110	\N	patch	patch_74_75_b.sql|transcript_source
+111	\N	patch	patch_74_75_c.sql|add_genome_statistics
+112	\N	patch	patch_74_75_d.sql|default_transcript_source
+113	\N	patch	patch_74_75_e.sql|unique_attrib_key
+114	\N	patch	patch_74_75_f.sql|longer_code
+123	1	ploidy	6
+124	\N	patch	patch_75_76_a.sql|schema_version
+125	\N	patch	patch_75_76_b.sql|allow_null_karyotype
+126	\N	patch	patch_75_76_c.sql|remove_alternative_splicing
+127	1	schema.load_started	2014-05-09 10:51:50
+129	1	genebuild.hash	a4c20be3e15ab706859fa4ee5cc18f9d
+137	1	schema.load_complete	2014-05-09 12:30:33
+138	1	schema.load_complete	2014-05-09 12:35:10
+171	1	assembly.mapping	chromosome:IWGSC2#scaffold:IWGSC2#contig
+140	1	schema.load_started	2014-05-09 15:05:28
+142	1	genebuild.hash	72373ce3078cb3394853af631d00afe2
+158	1	species.common_name	bread wheat
+159	1	species.wikipedia_url	http://wikipedia.org/wiki/Triticum_aestivum
+160	1	sample.variation_param	BA00683163
+161	1	sample.variation_text	BA00683163
+163	\N	patch	patch_76_77_a.sql|schema_version
+164	1	interproscan.version	5.8-49.0
+165	1	interproscan.date	20-November-2014
+166	1	interpro.version	49
+173	1	assembly.mapping	scaffold:IWGSC2#scaffold:IWGSP1
+174	1	liftover.mapping	scaffold:IWGSC2#scaffold:IWGSP1
+175	1	assembly.mapping	chromosome:IWGSC2#scaffold:IWGSP1
+190	1	liftover.mapping	chromosome:IWGSC2#scaffold:IWGSP1
+178	1	repeat.analysis	ena_repeat
+179	1	repeat.analysis	ena_repeat_direct
+192	\N	patch	patch_77_78_a.sql|schema_version
+193	\N	patch	patch_77_78_b.sql|source_column_increase
+194	\N	patch	patch_77_78_c.sql|Change unmapped_reason_id from smallint to int
+195	\N	patch	patch_78_79_a.sql|schema_version
+196	\N	patch	patch_78_79_b.sql|bamcov support
+197	\N	patch	patch_79_80_a.sql|schema_version
+198	\N	patch	patch_79_80_b.sql|xref_dbprimary_acc_longer
+199	\N	patch	patch_79_80_c.sql|seq_region_synonym_longer
+200	\N	patch	patch_79_80_d.sql|genome_statistics_value_longer
+201	\N	patch	patch_80_81_a.sql|schema_version

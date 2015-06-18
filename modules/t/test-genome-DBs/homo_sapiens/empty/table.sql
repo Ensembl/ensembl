@@ -127,7 +127,7 @@ CREATE TABLE `data_file` (
   `version_lock` tinyint(1) NOT NULL DEFAULT '0',
   `absolute` tinyint(1) NOT NULL DEFAULT '0',
   `url` text,
-  `file_type` enum('BAM','BIGBED','BIGWIG','VCF') DEFAULT NULL,
+  `file_type` enum('BAM','BAMCOV','BIGBED','BIGWIG','VCF') DEFAULT NULL,
   PRIMARY KEY (`data_file_id`),
   UNIQUE KEY `df_unq_idx` (`coord_system_id`,`analysis_id`,`name`,`file_type`),
   KEY `df_name_idx` (`name`),
@@ -283,7 +283,7 @@ CREATE TABLE `gene` (
   `seq_region_end` int(10) unsigned NOT NULL,
   `seq_region_strand` tinyint(2) NOT NULL,
   `display_xref_id` int(10) unsigned DEFAULT NULL,
-  `source` varchar(20) NOT NULL,
+  `source` varchar(40) NOT NULL,
   `status` enum('KNOWN','NOVEL','PUTATIVE','PREDICTED','KNOWN_BY_PROJECTION','UNKNOWN') DEFAULT NULL,
   `description` text,
   `is_current` tinyint(1) NOT NULL DEFAULT '1',
@@ -326,7 +326,7 @@ CREATE TABLE `gene_attrib` (
 CREATE TABLE `genome_statistics` (
   `genome_statistics_id` int(10) unsigned NOT NULL AUTO_INCREMENT,
   `statistic` varchar(128) NOT NULL,
-  `value` int(10) unsigned NOT NULL DEFAULT '0',
+  `value` bigint(11) unsigned NOT NULL DEFAULT '0',
   `species_id` int(10) unsigned DEFAULT '1',
   `attrib_type_id` int(10) unsigned DEFAULT NULL,
   `timestamp` datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
@@ -463,7 +463,7 @@ CREATE TABLE `meta` (
   PRIMARY KEY (`meta_id`),
   UNIQUE KEY `species_key_value_idx` (`species_id`,`meta_key`,`meta_value`),
   KEY `species_value_idx` (`species_id`,`meta_value`)
-) ENGINE=MyISAM AUTO_INCREMENT=105 DEFAULT CHARSET=latin1;
+) ENGINE=MyISAM AUTO_INCREMENT=116 DEFAULT CHARSET=latin1;
 
 CREATE TABLE `meta_coord` (
   `table_name` varchar(40) NOT NULL DEFAULT '',
@@ -714,7 +714,7 @@ CREATE TABLE `seq_region_mapping` (
 CREATE TABLE `seq_region_synonym` (
   `seq_region_synonym_id` int(10) unsigned NOT NULL AUTO_INCREMENT,
   `seq_region_id` int(10) unsigned NOT NULL,
-  `synonym` varchar(40) NOT NULL,
+  `synonym` varchar(50) NOT NULL,
   `external_db_id` smallint(5) unsigned DEFAULT NULL,
   PRIMARY KEY (`seq_region_synonym_id`),
   UNIQUE KEY `syn_idx` (`synonym`)
@@ -765,7 +765,7 @@ CREATE TABLE `transcript` (
   `seq_region_end` int(10) unsigned NOT NULL,
   `seq_region_strand` tinyint(2) NOT NULL,
   `display_xref_id` int(10) unsigned DEFAULT NULL,
-  `source` varchar(20) NOT NULL DEFAULT 'ensembl',
+  `source` varchar(40) NOT NULL DEFAULT 'ensembl',
   `biotype` varchar(40) NOT NULL,
   `status` enum('KNOWN','NOVEL','PUTATIVE','PREDICTED','KNOWN_BY_PROJECTION','UNKNOWN') DEFAULT NULL,
   `description` text,
@@ -843,7 +843,7 @@ CREATE TABLE `unmapped_object` (
   `analysis_id` int(10) unsigned NOT NULL,
   `external_db_id` int(11) DEFAULT NULL,
   `identifier` varchar(255) NOT NULL,
-  `unmapped_reason_id` smallint(5) unsigned NOT NULL,
+  `unmapped_reason_id` int(10) unsigned NOT NULL,
   `query_score` double DEFAULT NULL,
   `target_score` double DEFAULT NULL,
   `ensembl_id` int(10) unsigned DEFAULT '0',
@@ -855,7 +855,7 @@ CREATE TABLE `unmapped_object` (
 ) ENGINE=MyISAM DEFAULT CHARSET=latin1;
 
 CREATE TABLE `unmapped_reason` (
-  `unmapped_reason_id` smallint(5) unsigned NOT NULL AUTO_INCREMENT,
+  `unmapped_reason_id` int(10) unsigned NOT NULL AUTO_INCREMENT,
   `summary_description` varchar(255) DEFAULT NULL,
   `full_description` varchar(255) DEFAULT NULL,
   PRIMARY KEY (`unmapped_reason_id`)
@@ -864,7 +864,7 @@ CREATE TABLE `unmapped_reason` (
 CREATE TABLE `xref` (
   `xref_id` int(10) unsigned NOT NULL AUTO_INCREMENT,
   `external_db_id` int(11) NOT NULL DEFAULT '0',
-  `dbprimary_acc` varchar(40) NOT NULL DEFAULT '',
+  `dbprimary_acc` varchar(50) NOT NULL,
   `display_label` varchar(128) NOT NULL DEFAULT '',
   `version` varchar(10) NOT NULL DEFAULT '',
   `description` text,

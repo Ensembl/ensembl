@@ -1,4 +1,4 @@
-# Copyright [1999-2014] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
+# Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
 # 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -151,15 +151,18 @@ my $tr = $gene->get_all_Transcripts()->[0];
 my $tl = $tr->translation();
 
 my $oxr_count = count_rows($db, 'object_xref');
+my $ixr_count = count_rows($db, 'identity_xref');
+
 $dbEntryAdaptor->store( $xref, $tr->dbID, "Transcript" );
 $oxr_count = count_rows($db, 'object_xref');
 $dbEntryAdaptor->store( $ident_xref, $tl->dbID, "Translation" );
 #intentional duplicates should be filtered out and not increase row count
+$ixr_count = count_rows($db, 'identity_xref');
 $dbEntryAdaptor->store( $ident_xref, $tl->dbID, "Translation" ); 
 $dbEntryAdaptor->store( $ident_xref, $tl->dbID, "Translation" );
 $dbEntryAdaptor->store( $ident_xref, $tl->dbID, "Translation" );
 $dbEntryAdaptor->store( $ident_xref, $tl->dbID, "Translation" );
-
+is($ixr_count, count_rows($db, 'identity_xref'), 'No increase in identity_xref rows');
 
 $oxr_count = count_rows($db, 'object_xref');
 $dbEntryAdaptor->store( $goref, $tl->dbID, "Translation" );
@@ -554,7 +557,7 @@ $multi->restore();
   is($dbEntryAdaptor->get_external_db_id('RFAM', 'wibble', 1), 4200, 'RFAM ID with a version of wibble but ignoring versions as expected');
 
   my $external_db_names = $dbEntryAdaptor->get_distinct_external_dbs();
-  cmp_ok(scalar(@{$external_db_names}), '==', 110, 'Retriving all the unique External DB names');
+  cmp_ok(scalar(@{$external_db_names}), '==', 111, 'Retriving all the unique External DB names');
 }
 
 sub print_dbEntries {

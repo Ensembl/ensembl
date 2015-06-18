@@ -1,4 +1,4 @@
-# Copyright [1999-2014] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
+# Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
 # 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -166,10 +166,15 @@ sub compare_after_patches {
   # get target-specific patches in source
   $dbc->do("use $source_schema");
   my $source_patches = $sql_helper->execute_simple(-SQL => "select meta_value from meta where meta_key='patch' and meta_value like 'patch_${last_release}_${current_release}_%'");
-  
+
   my %source_patches;
+  my %target_patches;
   map { $source_patches{$_}++ } @{$source_patches};
+  map { $target_patches{$_}++ } @{$target_patches};
   map { ok(exists $source_patches{$_}, "$_ in patched database") } @{$target_patches};
+  map { ok(exists $target_patches{$_}, "$_ in original database") } @{$source_patches};
+
+
 
 }
 

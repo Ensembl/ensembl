@@ -1,6 +1,6 @@
 =head1 LICENSE
 
-Copyright [1999-2014] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
+Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -113,7 +113,7 @@ sub run_coordinatemapping {
   my $analysis_sql = qq(
     SELECT  analysis_id
     FROM    analysis
-    WHERE   logic_name = 'XrefCoordinateMapping'
+    WHERE   logic_name = 'xrefcoodinatemapping'
     AND     parameters = ?
   );
 
@@ -124,7 +124,7 @@ sub run_coordinatemapping {
   if ( !defined($analysis_id) ) {
     $analysis_id =
       $core_dbh->selectall_arrayref( "SELECT analysis_id FROM analysis "
-               . "WHERE logic_name = 'XrefCoordinateMapping'" )->[0][0];
+               . "WHERE logic_name = 'xrefcoodinatemapping'" )->[0][0];
 
     if ( defined($analysis_id) && $do_upload ) {
       log_progress(   "Will update 'analysis' table "
@@ -144,7 +144,7 @@ sub run_coordinatemapping {
 
     } else {
       log_progress("Can not find analysis ID for this analysis:\n");
-      log_progress("  logic_name = 'XrefCoordinateMapping'\n");
+      log_progress("  logic_name = 'xrefcoodinatemapping'\n");
       log_progress( "  parameters = '%s'\n", $analysis_params );
 
       if ($do_upload) {
@@ -162,7 +162,7 @@ sub run_coordinatemapping {
           . 'VALUES(?, now(), ?, \N, \N, \N, ?, \N, \N, ?, ?, \N, \N, \N)';
         my $sth = $core_dbh->prepare($sql);
 
-        $sth->execute( ++$analysis_id,   'XrefCoordinateMapping',
+        $sth->execute( ++$analysis_id,   'xrefcoodinatemapping',
                        'xref_mapper.pl', $analysis_params,
                        'CoordinateMapper.pm' );
       }

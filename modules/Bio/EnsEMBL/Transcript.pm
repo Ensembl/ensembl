@@ -1,6 +1,6 @@
 =head1 LICENSE
 
-Copyright [1999-2014] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
+Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -63,9 +63,11 @@ package Bio::EnsEMBL::Transcript;
 use strict;
 
 use Bio::EnsEMBL::Feature;
+use Bio::EnsEMBL::UTR;
 use Bio::EnsEMBL::Intron;
+use Bio::EnsEMBL::ExonTranscript;
+use Bio::EnsEMBL::CDS;
 use Bio::EnsEMBL::TranscriptMapper;
-use Bio::EnsEMBL::Utils::TranscriptSNPs;
 use Bio::EnsEMBL::SeqEdit;
 
 use Bio::EnsEMBL::Utils::Argument qw( rearrange );
@@ -454,8 +456,8 @@ sub add_supporting_features {
     
     if ((defined $self->slice() && defined $feature->slice())&&
       ( $self->slice()->name() ne $feature->slice()->name())){
-      throw("Supporting feat not in same coord system as exon\n" .
-            "exon is attached to [".$self->slice()->name()."]\n" .
+      throw("Supporting feat not in same coord system as transcript\n" .
+            "transcript is attached to [".$self->slice()->name()."]\n" .
             "feat is attached to [".$feature->slice()->name()."]");
     }
 
@@ -1499,6 +1501,48 @@ sub get_all_Exons {
   return \@result;
 } ## end sub get_all_Exons
 
+
+=head2 get_all_ExonTranscripts
+
+  Example    : my @exon_transcripts = @{ $transcript->get_all_ExonTranscripts() };
+
+  Description: Returns an listref of the exons in this transcript
+               in order, i.e. the first exon in the listref is the
+               5prime most exon in the transcript.
+
+  Returntype : listref to Bio::EnsEMBL::ExonTranscript objects
+  Exceptions : none
+  Caller     : general
+  Status     : Stable
+
+=cut
+
+sub get_all_ExonTranscripts {
+  my ( $self, @args ) = @_;
+
+  if (!defined( $self->{'_trans_exon_array'} )
+    && defined( $self->adaptor() ) )
+  {
+    $self->{'_trans_exon_array'} =
+      $self->adaptor()->db()->get_ExonAdaptor()
+      ->fetch_all_by_Transcript($self);
+  }
+
+  my @result;
+  my $i = 0;
+  foreach my $exon ( @{ $self->{'_trans_exon_array'} } ) {
+    $i++;
+    my $exon_transcript = Bio::EnsEMBL::ExonTranscript->new(
+      -EXON => $exon,
+      -RANK => $i,
+      -TRANSCRIPT => $self
+    );
+    push (@result, $exon_transcript) ;
+  }
+
+  return \@result;
+} ## end sub get_all_ExonTranscripts
+
 =head2 get_all_constitutive_Exons
 
   Arg        :  None
@@ -1761,35 +1805,30 @@ sub three_prime_utr {
 
 sub five_prime_utr_Feature {
   my ($self) = @_;
-  my ($start, $end);
-  my $cdna_coding = $self->cdna_coding_start();
-  return unless $cdna_coding;
-  my ($genomic_pos) = $self->cdna2genomic($cdna_coding, $cdna_coding);
-  if($self->strand() == 1) {
-    $start = $self->seq_region_start();
-    if($start == $genomic_pos->start()) {
-      return; # just return as we have no UTR
+  my $start = $self->seq_region_end();
+  my $end = 0;
+  my $features = $self->get_all_five_prime_UTRs();
+  if (scalar(@$features) == 0) { return; }
+  foreach my $feature (@$features) {
+    if ($feature->start() < $start) {
+      $start = $feature->start();
     }
-    # cdna2genomic returns a 'genomic' position relative to the transcript slice
-    $end = $genomic_pos->start() + ($self->slice->start - 1) - 1;
-  }
-  else {
-    $end = $self->seq_region_end();
-    if($end == $genomic_pos->start()) {
-      return; # just return as we have no UTR
+    if ($feature->end() > $end) {
+      $end = $feature->end();
     }
-    # cdna2genomic returns a 'genomic' position relative to the transcript slice
-    $start = $genomic_pos->start() - ($self->slice->start - 1) + 1;
   }
-    
   my $feature = Bio::EnsEMBL::Feature->new(
     -START => $start,
     -END => $end,
     -STRAND => $self->strand(),
     -SLICE => $self->slice(),
+    -TYPE => 'five_prime_UTR',
+    -TRANSCRIPT => $self
   );
   return $feature;
 }
+
+
 
 =head2 three_prime_utr_Feature
 
@@ -1806,34 +1845,140 @@ sub five_prime_utr_Feature {
 
 sub three_prime_utr_Feature {
   my ($self) = @_;
-  my ($start, $end);
-  my $cdna_coding = $self->cdna_coding_end();
-  return unless $cdna_coding;
-  my ($genomic_pos) = $self->cdna2genomic($cdna_coding, $cdna_coding);
-  if($self->strand() == 1) {
-    $end = $self->seq_region_end();
-    if($end == $genomic_pos->start()) {
-      return; # just return as we have no UTR
+  my $start = $self->seq_region_end();
+  my $end = 0;
+  my $features = $self->get_all_three_prime_UTRs();
+  if (scalar(@$features) == 0) { return; }
+  foreach my $feature (@$features) {
+    if ($feature->start() < $start) {
+      $start = $feature->start();
     }
-    # cdna2genomic returns a 'genomic' position relative to the transcript slice
-    $start = $genomic_pos->start() - ($self->slice->start - 1) + 1;
-  }
-  else {
-    $start = $self->seq_region_start();
-    if($start == $genomic_pos->start()) {
-      return; # just return as we have no UTR
+    if ($feature->end() > $end) {
+      $end = $feature->end();
     }
-    # cdna2genomic returns a 'genomic' position relative to the transcript slice
-    $end = $genomic_pos->start() + ($self->slice->start - 1) - 1;
   }
   my $feature = Bio::EnsEMBL::Feature->new(
     -START => $start,
     -END => $end,
     -STRAND => $self->strand(),
     -SLICE => $self->slice(),
+    -TYPE => 'three_prime_UTR',
+    -TRANSCRIPT => $self
   );
   return $feature;
 }
+
+
+=head2 get_all_five_prime_UTRs
+
+  Example    : my $five_primes  = $transcript->get_all_five_prime_UTRs
+  Description: Returns a list of features forming the 5' UTR of this transcript.
+  Returntype : listref of Bio::EnsEMBL::UTR
+  Exceptions : none
+
+=cut
+
+sub get_all_five_prime_UTRs {
+  my ($self) = @_;
+  my $translation = $self->translation();
+  return [] if ! $translation;
+
+  my @utrs;
+
+  my $cdna_coding_start = $self->cdna_coding_start();
+  # if it is greater than 1 then it must have UTR
+  if($cdna_coding_start > 1) {
+    my @projections = $self->cdna2genomic(1, ($cdna_coding_start-1));
+    foreach my $projection (@projections) {
+      next if $projection->isa('Bio::EnsEMBL::Mapper::Gap');
+      my $utr = Bio::EnsEMBL::UTR->new(
+        -START  => $projection->start,
+        -END    => $projection->end,
+        -STRAND => $projection->strand,
+        -SLICE  => $self->slice,
+        -TRANSCRIPT => $self,
+        -TYPE   => 'five_prime_utr'
+      );
+      push(@utrs, $utr);
+    }
+  }
+
+  return \@utrs;
+}
+
+
+=head2 get_all_three_prime_UTRs
+
+  Example    : my $three_primes  = $transcript->get_all_three_prime_UTRs
+  Description: Returns a list of features forming the 3' UTR of this transcript.
+  Returntype : listref of Bio::EnsEMBL::UTR
+  Exceptions : none
+
+=cut
+
+sub get_all_three_prime_UTRs {
+  my ($self) = @_;
+  my $translation = $self->translation();
+  return [] if ! $translation;
+
+  my @utrs;
+
+  my $cdna_coding_end = $self->cdna_coding_end();
+  if($cdna_coding_end < $self->length()) {
+    my @projections = $self->cdna2genomic(($cdna_coding_end+1), $self->length());
+    foreach my $projection (@projections) {
+      next if $projection->isa('Bio::EnsEMBL::Mapper::Gap');
+      my $utr = Bio::EnsEMBL::UTR->new(
+        -START  => $projection->start,
+        -END    => $projection->end,
+        -STRAND => $projection->strand,
+        -SLICE  => $self->slice,
+        -TRANSCRIPT => $self,
+        -TYPE   => 'three_prime_utr'
+      );
+      push(@utrs, $utr);
+    }
+  }
+
+  return \@utrs;
+}
+
+=head2 get_all_CDS
+
+  Example    : my $cds  = $transcript->get_all_CDS
+  Description: Returns a list of features forming the coding regions of the transcript
+  Returntype : listref of Bio::EnsEMBL::CDS
+  Exceptions : none
+
+=cut
+
+sub get_all_CDS {
+  my ($self) = @_;
+  my $translation = $self->translation();
+  return [] if ! $translation;
+
+  my @cds;
+
+  foreach my $exon (@{ $self->get_all_translateable_Exons}) {
+    my $phase = $exon->phase();
+    $phase = 0 if $phase < 0;
+    $phase =~ tr/12/21/;
+
+    my $cds = Bio::EnsEMBL::CDS->new(
+        -START           => $exon->start,
+        -END             => $exon->end,
+        -STRAND          => $exon->strand,
+        -TRANSLATION_ID  => $translation->stable_id,
+        -SLICE           => $self->slice,
+        -TRANSCRIPT      => $self,
+        -PHASE           => $phase 
+    );
+    push(@cds, $cds);
+  }
+
+  return \@cds;
+}
+
 
 
 =head2 get_all_translateable_Exons
@@ -1939,7 +2084,7 @@ sub translate {
   # Alternative codon tables (such as the mitochondrial codon table)
   # can be specified for a sequence region via the seq_region_attrib
   # table.  A list of codon tables and their codes is at:
-  # http://www.ncbi.nlm.nih.gov/htbin-post/Taxonomy/wprintgc?mode=c
+  # http://www.ncbi.nlm.nih.gov/Taxonomy/Utils/wprintgc.cgi
 
   my $codon_table_id;
   my ( $complete5, $complete3 );
@@ -2258,12 +2403,12 @@ sub modified_date {
 =cut
 
 sub swap_exons {
-  my ( $self, $old_exon, $new_exon ) = @_;
+  my ( $self, $old_exon, $new_exon, $skip_exon_sf) = @_;
   
   my $arref = $self->{'_trans_exon_array'};
   for(my $i = 0; $i < @$arref; $i++) {
-    if($arref->[$i] == $old_exon) {
-      $new_exon->add_supporting_features(@{$old_exon->get_all_supporting_features});
+    if($arref->[$i] == $old_exon ) {
+      $new_exon->add_supporting_features(@{$old_exon->get_all_supporting_features}) unless $skip_exon_sf;
       $arref->[$i] = $new_exon;
       last;
     }
@@ -2766,56 +2911,6 @@ sub display_id {
 }
 
 
-=head2 get_all_peptide_variations
-
-  Description: See Bio::EnsEMBL::Utils::TranscriptSNPs::get_all_peptide_variations
-  Status  : At Risk
-          : Will be replaced with modules from the ensembl-variation package
-
-
-=cut
-
-sub get_all_peptide_variations {
-  my ($self, $source, $snps) = @_;
-
-  if(!$snps) {
-    my $shash = Bio::EnsEMBL::Utils::TranscriptSNPs::get_all_cdna_SNPs($self, $source);
-    $snps = $shash->{'coding'};
-  }
-
-  return Bio::EnsEMBL::Utils::TranscriptSNPs::get_all_peptide_variations($self,
-                                                                        $snps);
-}
-
-
-=head2 get_all_SNPs
-
-  Description: See Bio::EnsEMBL::Utils::TranscriptSNPs::get_all_SNPs
-
-  Status  : At Risk
-          : Will be replaced with modules from the ensembl-variation package
-
-=cut
-
-sub get_all_SNPs {
-  return Bio::EnsEMBL::Utils::TranscriptSNPs::get_all_SNPs(@_);
-}
-
-
-=head2 get_all_cdna_SNPs
-
-  Description: See Bio::EnsEMBL::Utils::TranscriptSNPs::get_all_cdna_SNPs
- 
-  Status  : At Risk
-          : Will be replaced with modules from the ensembl-variation package
-
-=cut
-
-sub get_all_cdna_SNPs {
-  return Bio::EnsEMBL::Utils::TranscriptSNPs::get_all_cdna_SNPs(@_);
-}
-
-
 =head2 get_all_DASFactories
 
   Arg [1]   : none
@@ -2950,7 +3045,7 @@ sub summary_as_hash {
   my $self = shift;
   my $summary_ref = $self->SUPER::summary_as_hash;
   $summary_ref->{'description'} = $self->description;
-  $summary_ref->{'external_name'} = $self->external_name;
+  $summary_ref->{'Name'} = $self->external_name if $self->external_name;
   $summary_ref->{'biotype'} = $self->biotype;
   $summary_ref->{'logic_name'} = $self->analysis->logic_name();
   my $parent_gene = $self->get_Gene();

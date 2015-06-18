@@ -161,3 +161,4 @@
 40788	5	NULL	SO:0001217	protein_coding_gene	""""" []"	0	0
 40842	5	NULL	SO:0001272	tRNA_gene	""""" []"	0	0
 41072	5	NULL	SO:0001503	processed_transcript	"""A transcript for which no open reading frame has been identified and for which no other function has been determined."" [MGI:hdeen]"	0	0
+41494	5	SOFA	SO:0000340	chromosome	"Structural unit composed of a nucleic acid molecule which controls its own replication through the interaction of specific proteins at one or more origins of replication." [SO:ma]	0	0

@@ -1,6 +1,6 @@
 =head1 LICENSE
 
-Copyright [1999-2014] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
+Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -60,7 +60,6 @@ use Bio::EnsEMBL::UnmappedObject;
 use Bio::EnsEMBL::Analysis;
 @ISA = qw(Bio::EnsEMBL::DBSQL::BaseFeatureAdaptor);
 
-our %desc_to_id;
 
 =head2 new
 
@@ -75,27 +74,33 @@ our %desc_to_id;
 
 =cut
 
+our %desc_to_id;
 sub new {
   my $proto = shift;
 
   my $class = ref($proto) || $proto;
-
   my $self = $class->SUPER::new(@_);
 
   my $sth =
-    $self->prepare(   "SELECT unmapped_reason_id, full_description "
-                    . "FROM unmapped_reason" );
+      $self->prepare("
+        SELECT 
+          unmapped_reason_id, 
+          full_description 
+        FROM 
+          unmapped_reason
+        ");
 
-  $sth->execute();
+    $sth->execute();
 
-  my ( $id, $desc );
-  $sth->bind_columns( \( $id, $desc ) );
+    my ( $id, $desc );
+    $sth->bind_columns( \( $id, $desc ) );
 
-  while ( $sth->fetch() ) {
-    $desc_to_id{$desc} = $id;
-  }
+    while ( $sth->fetch() ) {
+      $desc_to_id{$desc} = $id;
+    }
 
-  $sth->finish();
+    $sth->finish();
+
 
   return $self;
 }
@@ -269,7 +274,17 @@ sub store{
               ensembl_id, ensembl_object_type)".
 	    " VALUES (?,?,?,?,?,?,?,?,?)");
 
- FEATURE: foreach my $uo ( @uos ) {
+  my $sth_fetch_reason =
+    $self->prepare(
+      "SELECT 
+        unmapped_reason_id
+      FROM 
+        unmapped_reason
+      WHERE
+        full_description = ? 
+        " );
+
+  FEATURE: foreach my $uo ( @uos ) {
 
     if( !ref $uo || !$uo->isa("Bio::EnsEMBL::UnmappedObject") ) {
       throw("UnmappedObject must be an Ensembl UnmappedObject, " .
@@ -285,21 +300,53 @@ sub store{
     my $analysis_id;
     if($analysis->is_stored($db)) {
       $analysis_id = $analysis->dbID();
-    } else {
+    } 
+    else {
       $analysis_id = $db->get_AnalysisAdaptor->store($analysis);
     }
+    
 
-    #First check to see unmapped reason is stored
+
+    # Check if unmapped reason is cached
+    # Check if it has been added since the cache was created
+    # Try to store it
+
     if(!defined($desc_to_id{$uo->{'description'}})){
       $sth_reason->bind_param(1,$uo->{'summary'},SQL_VARCHAR);
       $sth_reason->bind_param(2,$uo->{'description'},SQL_VARCHAR);
-      $sth_reason->execute();
-      $uo->{'unmapped_reason_id'} = $desc_to_id{$uo->{'description'}} 
-	= $self->last_insert_id('unmapped_reason_id', undef, 'unmapped_reason');
       
+      if(! eval{ $sth_reason->execute(); 1 }){    
+        # DBI Trace possible here?
+        warning($@); #
+        my $msg;
+        $msg .= "INSERT INTO unmapped_reason (summary_description, full_description) VALUES (";
+        $msg .=  $uo->{'summary'} .','. $uo->{'description'}. ')';
+        # Temporary fix for naughty cross-dependency regulation code.
+        use Data::Dumper;
+        warning("Query: \n$msg");
+        print STDERR "UnmappedObject: \n";
+        print STDERR Dumper $uo;
+
+        $sth_fetch_reason->execute($uo->{'description'});
+        
+        my $unmapped_reasons = $sth_fetch_reason->fetchrow_arrayref();
+        if(! defined($unmapped_reasons)){
+          my $msg = $uo->{'description'}. " unable to store. Check MySQL schema, maybe PK not big enough?";
+          throw($msg);
+        }
+        if(scalar @$unmapped_reasons != 1){
+          throw("Multiple results for this description");
+        }
+        $uo->{'unmapped_reason_id'} = $unmapped_reasons->[0];
+
+      }    
+      else{
+        # print 'Last mohican: '.$self->last_insert_id ."\n";
+        $uo->{'unmapped_reason_id'} = $self->last_insert_id;
+      }
     }
     else{
-      $uo->{'unmapped_reason_id'} = $desc_to_id{$uo->{'description'}} ;
+      $uo->{'unmapped_reason_id'} = $desc_to_id{$uo->{'description'}};
     }
     $sth_unmapped_object->bind_param(1,$uo->{'type'},SQL_VARCHAR);
     $sth_unmapped_object->bind_param(2,$uo->analysis->dbID,SQL_INTEGER);
@@ -311,7 +358,7 @@ sub store{
     $sth_unmapped_object->bind_param(8,$uo->{'ensembl_id'},SQL_INTEGER);
     $sth_unmapped_object->bind_param(9,$uo->{'ensembl_object_type'},SQL_VARCHAR);
     $sth_unmapped_object->execute();
-    $uo->dbID($self->last_insert_id('unmpapped_object_id', undef, 'unmapped_object'));
+    $uo->dbID($self->last_insert_id('unmapped_object_id', undef, 'unmapped_object'));
   }
   $sth_reason->finish();      
   return;

@@ -1,5 +1,5 @@
 #!/usr/bin/env perl
-# Copyright [1999-2014] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
+# Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -39,7 +39,6 @@ Usage:
   $0 --pass=XXX \\
   \t[--noflush] [--nocheck] [--notargetflush]\\
   \t[--noopt] [--noinnodb] [--skip_views] [--force] \\
-  \t[--udr] \\
   \t[ --only_tables=XXX,YYY | --skip_tables=XXX,YYY ] \\
   \t[ input_file |
   \t  --source=db\@host[:port] \\
@@ -136,15 +135,6 @@ Command line switches:
                     create a directory called 'tmp' in the directory
                     above the target data directory.
 
-  --udr             (Optional)
-                    Switches to using UDR (https://github.com/LabAdvComp/UDR)
-		                as the transport binary rather than rsync. UDR is an rsync
-		                compatible replacement over UDP whose speed on local
-		                networks is approx. twice that of plain rsync.
-
-		                udr must be on your PATH on the target source and target
-                    machine.
-
   --routines        (Optional)
                     Also copies functions and procedures
 
@@ -227,7 +217,6 @@ my $opt_force = 0; # Do not reuse existing staging directory by default.
 my $opt_skip_views = 0;    # Process views by default
 my $opt_innodb     = 1;    # Don't skip InnoDB by default
 my $opt_flushtarget = 1;
-my $opt_udr = 0; #Do not use udr for file transfer
 my $opt_tmpdir;
 my $opt_routines = 0;
 my ( $opt_source, $opt_target );
@@ -246,7 +235,6 @@ if ( !GetOptions( 'pass=s'        => \$opt_password,
                   'help!'         => \$opt_help,
                   'source=s'      => \$opt_source,
                   'target=s'      => \$opt_target,
-            		  'udr'           => \$opt_udr,
                   'routines'      => \$opt_routines,
      ) ||
      ( !defined($opt_password) && !defined($opt_help) ) )
@@ -299,55 +287,29 @@ if ( !defined($opt_source) ) {
   }
 }
 
-my %executables = (
-                'myisamchk' => '/usr/local/ensembl/mysql/bin/myisamchk',
-                'rsync'     => '/usr/bin/rsync' );
-$executables{udr} = '/usr/bin/udr' if $opt_udr;
+my @executables =('myisamchk','rsync');
 
 # Make sure we can find all executables.
-foreach my $key ( keys(%executables) ) {
-  my $exe    = $executables{$key};
-  my $output = `which $exe`;
+foreach my $key (@executables) {
+  my $output = `which $key`;
   my $rc     = $? >> 8;
-
-  if ( $rc != 0 ) {
-    my $possible_location = `locate -l 1 $key 2>&1`;  # Ugly but simple.
-    my $loc_rc            = $? >> 8;
-
-    if ( $loc_rc == 0 ) {
-      chomp $possible_location;
-      $executables{$key} = $possible_location;
-      printf( "Can not find '%s'; using '%s'\n", $exe, $executables{$key} );
+  
+  if($rc != 0) {
+    chomp $output;
+    die(
+      sprintf(
+      "Can not find '%s' and 'which %s' "
+      . "yields anything useful. Check your \$PATH",
+      $key, $key
+      ) );
+  }
+  else {
+    if ( !$opt_check && $key eq 'myisamchk' ) {
+      print( "Can not find 'myisamchk' " .
+      "but --nocheck was specified so skipping\n" ),;
     }
-
-    else {
-
-      my $final_which_output = `which $key`;
-      my $final_rc = $? >> 8;
-
-      if($final_rc == 0) {
-        chomp $final_which_output;
-        $executables{$key} = $final_which_output;
-        printf( "Can not find '%s'; using '%s'\n", $exe, $executables{$key} );
-      }
-      else {
-
-        if ( !$opt_check && $key eq 'myisamchk' ) {
-          print( "Can not find 'myisamchk' " .
-              "but --nocheck was specified so skipping\n" ),;
-        }
-        else {
-          die(
-              sprintf(
-                "Can not find '%s' and neither 'which %s' nor 'locate %s' "
-                . "yields anything useful. Check your \$PATH",
-                $exe, $key, $key
-                ) );
-        }
-      }
-    }
-  } ## end if ( $rc != 0 )
-} ## end foreach my $key ( keys(%executables...))
+  } 
+} ## end foreach my $key ( @executables...)
 
 my $run_hostaddr = hostname_to_ip(hostname());
 my $working_dir = rel2abs( curdir() );
@@ -751,17 +713,20 @@ TABLE:
   # options.
 
   my @copy_cmd;
-  if($opt_udr) {
-    @copy_cmd = ($executables{'udr'}, 'rsync');
-  }
-  else {
-    @copy_cmd = ($executables{'rsync'});
-  }
+  
+  @copy_cmd = ('rsync');
+
   push(@copy_cmd, '--whole-file', '--archive', '--progress' );
 
   if ($opt_force) {
     push( @copy_cmd, '--delete', '--delete-excluded' );
   }
+
+  # Set files permission to 755 (rwxr-xr-x)
+  push (@copy_cmd, '--chmod=Du=rwx,go=rx,Fu=rwx,go=rx');  
+
+  # Add TCP with arcfour encryption, TCP does go pretty fast (~110 MB/s) and is a better choice in LAN situation.
+  push(@copy_cmd, '-e', q{ssh -c arcfour} );
 
   if ( defined($opt_only_tables) ) {
     push( @copy_cmd, '--include=db.opt' );
@@ -905,7 +870,7 @@ TABLE:
          glob( catfile( $staging_dir, sprintf( '%s*.MYI', $table ) ) ) )
       {
         my @check_cmd = (
-          $executables{'myisamchk'}, '--check', '--check-only-changed',
+          'myisamchk', '--check', '--check-only-changed',
           '--update-state', '--silent', '--silent',    # Yes, twice.
           $index );
 

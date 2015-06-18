@@ -1,6 +1,6 @@
 =head1 LICENSE
 
-Copyright [1999-2014] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
+Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -969,6 +969,20 @@ sub add_Transcript {
    $self->recalculate_coordinates();
 }
 
+sub remove_Transcript {
+  my ($self,$trans) = @_;
+  if( !ref $trans || ! $trans->isa("Bio::EnsEMBL::Transcript") ) {
+       throw("$trans is not a Bio::EnsEMBL::Transcript!");
+  }
+  # Clean transcript from live data
+  $self->get_all_Transcripts; # force lazy load.
+  my $array = $self->{_transcript_array};
+  my $db_id = $trans->dbID;
+  @$array = grep { $_->dbID != $db_id } @$array;
+  # Recalculate and store new gene coordinates
+  $self->adaptor->update_coords($self);
+}
+
 
 =head2 get_all_Transcripts
 
@@ -1465,7 +1479,7 @@ sub summary_as_hash {
   my $summary_ref = $self->SUPER::summary_as_hash;
   $summary_ref->{'description'} = $self->description;
   $summary_ref->{'biotype'} = $self->biotype;
-  $summary_ref->{'external_name'} = $self->external_name;
+  $summary_ref->{'Name'} = $self->external_name if $self->external_name;
   $summary_ref->{'logic_name'} = $self->analysis->logic_name();
   $summary_ref->{'source'} = $self->source();
   return $summary_ref;

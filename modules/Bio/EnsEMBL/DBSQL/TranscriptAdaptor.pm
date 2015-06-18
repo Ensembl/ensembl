@@ -1,6 +1,6 @@
 =head1 LICENSE
 
-Copyright [1999-2014] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
+Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -1361,6 +1361,9 @@ sub is_Transcript_canonical {
 
   Arg [1]    : Bio::EnsEMBL::Transcript $transcript
                The transcript to remove from the database
+  Arg [2]    : Boolean, update Gene coordinates after removal. WARNING: this does not alter any other copies of the 
+               gene currently in memory. Other copies will retain their original coordinates. Either refetch them
+               or go directly through Gene->remove_Transcript first, then remove the Transcript here.
   Example    : $tr_adaptor->remove($transcript);
   Description: Removes a transcript completely from the database, and all
                associated information.
@@ -1380,7 +1383,7 @@ sub is_Transcript_canonical {
 sub remove {
   my $self = shift;
   my $transcript = shift;
-
+  my $update = shift;
   if(!ref($transcript) || !$transcript->isa('Bio::EnsEMBL::Transcript')) {
     throw("Bio::EnsEMBL::Transcript argument expected");
   }
@@ -1514,12 +1517,17 @@ sub remove {
   $sth->execute();
   $sth->finish();
 
+  my $gene = $transcript->get_Gene;
 
   $sth = $self->prepare( "DELETE FROM transcript
                           WHERE transcript_id = ?" );
   $sth->bind_param(1, $transcript->dbID, SQL_INTEGER);
   $sth->execute();
   $sth->finish();
+
+  if ($update) {
+    $gene->remove_Transcript($transcript);
+  }
 
   $transcript->dbID(undef);
   $transcript->adaptor(undef);

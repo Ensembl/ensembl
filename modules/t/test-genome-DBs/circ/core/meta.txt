@@ -20,8 +20,18 @@
 76	\N	patch	patch_75_76_b.sql|allow_null_karyotype
 77	\N	patch	patch_75_76_c.sql|remove_alternative_splicing
 78	\N	patch	patch_76_77_a.sql|schema_version
+79	\N	patch	patch_77_78_a.sql|schema_version
+80	\N	patch	patch_77_78_b.sql|source_column_increase
+81	\N	patch	patch_77_78_c.sql|Change unmapped_reason_id from smallint to int
+82	\N	patch	patch_78_79_a.sql|schema_version
+83	\N	patch	patch_78_79_b.sql|bamcov support
+84	\N	patch	patch_79_80_a.sql|schema_version
+85	\N	patch	patch_79_80_b.sql|xref_dbprimary_acc_longer
+86	\N	patch	patch_79_80_c.sql|seq_region_synonym_longer
+87	\N	patch	patch_79_80_d.sql|genome_statistics_value_longer
+88	\N	patch	patch_80_81_a.sql|schema_version
 1	\N	schema_type	core
-2	\N	schema_version	77
+2	\N	schema_version	81
 8	1	assembly.accession	GCA_000292705.1
 10	1	assembly.date	2012-08
 7	1	assembly.default	GCA_000292705.1

@@ -1,5 +1,5 @@
 #!/usr/bin/env perl
-# Copyright [1999-2014] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
+# Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
 # 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -171,6 +171,7 @@ foreach my $species_section ( sort( $config->GroupMembers('species') ) )
      sort( split( /\n/, $config->val( $species_section, 'source' ) ) ) )
   {
     my $source_section = sprintf( "source %s", $source_name );
+    $source_section =~ s/\s$//;
 
     if ( !exists( $source_ids{$source_section} ) ) {
       die( sprintf( "Can not find source section '[%s]'\n"

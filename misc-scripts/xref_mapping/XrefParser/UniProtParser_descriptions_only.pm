@@ -1,6 +1,6 @@
 =head1 LICENSE
 
-Copyright [1999-2014] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
+Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -162,7 +162,7 @@ sub create_xrefs {
     #OX   NCBI_TaxID=158878, 158879;
     #OX   NCBI_TaxID=103690;
 
-    my ($ox) = $_ =~ /OX\s+[a-zA-Z_]+=([0-9 ,]+);/;
+    my ($ox) = $_ =~ /OX\s+[a-zA-Z_]+=([0-9 ,]+)/;
     my @ox = ();
     my $found = 0;
 
@@ -172,6 +172,7 @@ sub create_xrefs {
       # my %taxonomy2species_id = $self->taxonomy2species_id();
 
       foreach my $taxon_id_from_file (@ox) {
+        $taxon_id_from_file =~ s/\s//;
 	if ( exists $taxonomy2species_id{$taxon_id_from_file} ){
 	  $found = 1;
 	}

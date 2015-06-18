@@ -1,6 +1,6 @@
 -- 
 -- Created by SQL::Translator::Producer::SQLite
--- Created on Mon Apr 28 13:55:16 2014
+-- Created on Thu May 21 16:24:38 2015
 -- 
 
 BEGIN TRANSACTION;
@@ -322,7 +322,7 @@ CREATE TABLE gene (
   seq_region_end integer NOT NULL,
   seq_region_strand tinyint NOT NULL,
   display_xref_id integer,
-  source varchar(20) NOT NULL,
+  source varchar(40) NOT NULL,
   status enum,
   description text,
   is_current tinyint NOT NULL DEFAULT 1,
@@ -364,7 +364,7 @@ CREATE UNIQUE INDEX gene_attribx ON gene_attrib (gene_id, attrib_type_id, value)
 CREATE TABLE genome_statistics (
   genome_statistics_id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
   statistic varchar(128) NOT NULL,
-  value integer NOT NULL DEFAULT 0,
+  value bigint NOT NULL DEFAULT 0,
   species_id integer DEFAULT 1,
   attrib_type_id integer,
   timestamp datetime NOT NULL DEFAULT '0000-00-00 00:00:00'
@@ -789,7 +789,7 @@ CREATE TABLE seq_region_mapping (
 CREATE TABLE seq_region_synonym (
   seq_region_synonym_id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
   seq_region_id integer NOT NULL,
-  synonym varchar(40) NOT NULL,
+  synonym varchar(50) NOT NULL,
   external_db_id smallint
 );
 
@@ -847,7 +847,7 @@ CREATE TABLE transcript (
   seq_region_end integer NOT NULL,
   seq_region_strand tinyint NOT NULL,
   display_xref_id integer,
-  source varchar(20) NOT NULL DEFAULT 'ensembl',
+  source varchar(40) NOT NULL DEFAULT 'ensembl',
   biotype varchar(40) NOT NULL,
   status enum,
   description text,
@@ -930,7 +930,7 @@ CREATE TABLE unmapped_object (
   analysis_id integer NOT NULL,
   external_db_id integer,
   identifier varchar(255) NOT NULL,
-  unmapped_reason_id smallint NOT NULL,
+  unmapped_reason_id integer NOT NULL,
   query_score double precision,
   target_score double precision,
   ensembl_id integer DEFAULT 0,
@@ -952,7 +952,7 @@ CREATE TABLE unmapped_reason (
 CREATE TABLE xref (
   xref_id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
   external_db_id integer NOT NULL DEFAULT 0,
-  dbprimary_acc varchar(40) NOT NULL DEFAULT '',
+  dbprimary_acc varchar(50) NOT NULL,
   display_label varchar(128) NOT NULL DEFAULT '',
   version varchar(10) NOT NULL DEFAULT '',
   description text,

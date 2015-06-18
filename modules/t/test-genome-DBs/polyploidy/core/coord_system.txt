@@ -1,0 +1,4 @@
+10	1	scaffold	IWGSP1	4	\N
+7	1	contig	\N	3	default_version,sequence_level
+8	1	scaffold	IWGSC2	2	default_version
+9	1	chromosome	IWGSC2	1	default_version

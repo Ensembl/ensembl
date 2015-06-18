@@ -1,4 +1,4 @@
-# Copyright [1999-2014] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
+# Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
 # 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -280,6 +280,9 @@ my $stable_id = 'ENSG00000171456';
 $gene->description($desc);
 $gene->stable_id($stable_id);
 
+$gene->created_date( time());
+$gene->modified_date(time());
+
 $multi->hide("core", "meta_coord", "gene", "transcript", "exon", "exon_transcript", "translation", "supporting_feature", "dna_align_feature", 'xref', 'object_xref', 'identity_xref');
 
 my $gene_ad = $db->get_GeneAdaptor();
@@ -299,6 +302,12 @@ ok($gene_out->stable_id eq $stable_id);
 
 #make sure the description was stored
 ok($gene_out->description eq $desc);
+
+debug("gene_out created_date   = ", $gene_out->created_date);
+debug("gene_out modified_date  = ", $gene_out->modified_date);
+
+is($gene_out->created_date,  $gene->created_date,  'created_date roundtrips');
+is($gene_out->modified_date, $gene->modified_date, 'modified_date roundtrips');
 
 ok(scalar(@{$gene_out->get_all_Exons()}) == 3);
 
@@ -428,6 +437,16 @@ ok($newgene->biotype eq 'dummy');
 
 $multi->restore('core', 'gene');
 
+# test update_coords method
+# old coords: 30735607 - 30815178
+$gene = $ga->fetch_by_stable_id("ENSG00000171456");
+$gene->start(30730000);
+$gene->end(30815178);
+$ga->update_coords($gene);
+
+my $new_gene = $ga->fetch_by_stable_id("ENSG00000171456");
+cmp_ok($new_gene->start(), '==', 30735607, 'Updated gene start');
+cmp_ok($new_gene->end(), '==', 30815178, 'Updated gene end');
 
 #
 # test GeneAdaptor::fetch_all_by_domain
@@ -512,13 +531,13 @@ ok($gene->display_id eq $gene->stable_id);
 #
 debug("Test fetch_all_by_biotype");
 @genes = @{$ga->fetch_all_by_biotype('protein_coding')};
-ok(@genes == 20);
+ok(@genes == 21, "Gene count for protein coding");
 @genes = @{$ga->fetch_all_by_biotype(['protein_coding', 'sRNA'])};
-ok(@genes == 20);
+ok(@genes == 21, "Gene count for protein coding and sRNA");
 $geneCount = $ga->count_all_by_biotype('protein_coding');
-ok($geneCount == 20);
+ok($geneCount == 21, "Gene count via method call for protein coders");
 $geneCount = $ga->count_all_by_biotype(['protein_coding', 'sRNA']);
-ok($geneCount == 20);
+ok($geneCount == 21, "Gene count via method call for protein coding and sRNA");
 
 #
 # test GeneAdaptor::fetch_all_by_source
@@ -526,9 +545,9 @@ ok($geneCount == 20);
 note("Test fetch_all_by_source");
 @genes = @{$ga->fetch_all_by_source('ensembl')};
 note "Got ".scalar(@genes)." ensembl genes\n";
-ok(@genes == 18);
+ok(@genes == 19);
 $geneCount = $ga->count_all_by_source('ensembl');
-ok($geneCount == 18);
+ok($geneCount == 19);
 @genes = @{$ga->fetch_all_by_source(['havana','vega'])};
 note "Got ".scalar(@genes)." (havana, vega) transcripts\n";
 ok(@genes == 2);

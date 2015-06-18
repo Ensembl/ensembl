@@ -1,4 +1,4 @@
-1	\N	schema_version	77
+1	\N	schema_version	81
 2	1	assembly.default	MULTIMAP
 3	1	species.taxonomy_id	1
 4	1	assembly.mapping	chromosome:MULTIMAP#contig
@@ -16,3 +16,13 @@
 109	\N	patch	patch_75_76_b.sql|allow_null_karyotype
 110	\N	patch	patch_75_76_c.sql|remove_alternative_splicing
 111	\N	patch	patch_76_77_a.sql|schema_version
+112	\N	patch	patch_77_78_a.sql|schema_version
+113	\N	patch	patch_77_78_b.sql|source_column_increase
+114	\N	patch	patch_77_78_c.sql|Change unmapped_reason_id from smallint to int
+115	\N	patch	patch_78_79_a.sql|schema_version
+116	\N	patch	patch_78_79_b.sql|bamcov support
+117	\N	patch	patch_79_80_a.sql|schema_version
+118	\N	patch	patch_79_80_b.sql|xref_dbprimary_acc_longer
+119	\N	patch	patch_79_80_c.sql|seq_region_synonym_longer
+120	\N	patch	patch_79_80_d.sql|genome_statistics_value_longer
+121	\N	patch	patch_80_81_a.sql|schema_version

@@ -1,6 +1,6 @@
 =head1 LICENSE
 
-Copyright [1999-2014] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
+Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -72,6 +72,7 @@ my %printables = (
                     'Bio::EnsEMBL::Gene' => ['id','biotype','start','end'],
                     'Bio::EnsEMBL::Transcript' => ['id','start','end'],
                     'Bio::EnsEMBL::Translation' => ['id'],
+                    'Bio::EnsEMBL::Slice' => ['start','end','strand'],
                     'Bio::EnsEMBL::Variation::VariationFeature' => ['id','start','end','strand','seq_region_name'],
                     'Bio::EnsEMBL::Variation::StructuralVariationFeature' => ['id','start','end','strand','seq_region_name'],
                     'Bio::EnsEMBL::Funcgen::RegulatoryFeature' => ['id','start','end','strand'],

@@ -1,6 +1,6 @@
 =head1 LICENSE
 
-Copyright [1999-2014] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
+Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -178,7 +178,9 @@ sub end_phase {
   }
   else {
     if ( !defined( $self->{'end_phase'} ) ) {
-      warning("No end phase set in Exon. You must set it explicitly.");
+      my $stable_id = '';
+      $stable_id = $self->stable_id if defined $self->stable_id;
+      warning("No end phase set in Exon ".$stable_id.". You must set it explicitly.");
     }
   }
   return $self->{'end_phase'};

@@ -1,6 +1,6 @@
 =head1 LICENSE
 
-Copyright [1999-2014] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
+Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -269,6 +269,46 @@ sub fetch_all_by_Slice {
   }
 
   return $transcripts;
+}
+
+
+=head2 fetch_by_prediction_exon_id
+
+  Arg [1]    : Int $prediction_exon_id
+               Unique database identifier for the prediction exon
+               whose prediction transcript should be retrieved.
+  Example    : $prediction_transcript = $prediction_transcript_adaptor->fetch_by_exon_id(1241);
+  Description: Retrieves a prediction transcript from the database via the database identifier
+               of one of its exons.
+  Returntype : Bio::EnsEMBL::PredictionTranscript
+  Exceptions : none
+  Caller     : general
+  Status     : Stable
+
+=cut
+
+sub fetch_by_prediction_exon_id {
+  my ($self, $prediction_exon_id) = @_;
+
+  # this is a cheap SQL call
+  my $sth = $self->prepare(
+  qq(
+      SELECT pe.prediction_transcript_id
+      FROM prediction_exon pe
+      WHERE pe.prediction_exon_id = ?
+  ));
+
+  $sth->bind_param(1, $prediction_exon_id, SQL_INTEGER);
+  $sth->execute();
+
+  my ($prediction_transcript_id) = $sth->fetchrow_array();
+
+  $sth->finish();
+
+  return undef if (!defined $prediction_transcript_id);
+
+  my $prediction_transcript = $self->fetch_by_dbID($prediction_transcript_id);
+  return $prediction_transcript;
 }
 
 

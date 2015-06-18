@@ -1,4 +1,4 @@
-# Copyright [1999-2014] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
+# Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
 # 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -77,7 +77,7 @@ my $mappings =
    # exons
    { obj => Bio::EnsEMBL::Exon->new, accession => 'SO:0000147', name => 'exon' },
    # slices
-   { obj => $db->get_SliceAdaptor->fetch_by_region('chromosome', '20', 30_270_000, 31_200_000), accession => 'SO:0000001', name => 'region' },
+   { obj => $db->get_SliceAdaptor->fetch_by_region('chromosome', '20', 30_270_000, 31_200_000), accession => 'SO:0000340', name => 'chromosome' },
    # simple features
    { obj => Bio::EnsEMBL::SimpleFeature->new(), accession => 'SO:0001411', name => 'biological_region' },
    # misc features

@@ -1,4 +1,4 @@
-# Copyright [1999-2014] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
+# Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
 # 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -78,11 +78,6 @@ ok($test_adaptor->isa("Bio::EnsEMBL::Map::DBSQL::MarkerFeatureAdaptor"));
 $test_adaptor = $db->get_MarkerAdaptor();
 ok($test_adaptor->isa("Bio::EnsEMBL::Map::DBSQL::MarkerAdaptor"));
 
-# Note get_BlastAdaptor() requirei DB of type 'blast' 
-# - these are not available via Bio::EnsEMBL::Test::MultiTestDB
-#ok($blast_db);
-#$test_adaptor = $blast_db->get_BlastAdaptor();
-#ok($test_adaptor->isa("Bio::EnsEMBL::External::BlastAdaptor"));
 #ok($test_adaptor->isa("Bio::EnsEMBL::DBSQL::ProxySNPAdaptor"));
 
 # Should get an error if we ask for something non-existent

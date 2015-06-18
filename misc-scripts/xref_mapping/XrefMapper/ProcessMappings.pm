@@ -1,6 +1,6 @@
 =head1 LICENSE
 
-Copyright [1999-2014] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
+Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -294,7 +294,8 @@ sub process_map_file{
     my $target_identity = int (100 * $identity / $target_length);
 
     my $status = "DUMP_OUT";
-    if($query_identity < $query_cutoff and $target_identity < $target_cutoff){
+# Only keep alignments where both sequences match cutoff
+    if($query_identity < $query_cutoff or $target_identity < $target_cutoff){
       $status = "FAILED_CUTOFF";
     }		
 
