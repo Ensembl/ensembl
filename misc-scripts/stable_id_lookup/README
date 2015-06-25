@@ -13,8 +13,6 @@ core	  Exon
 	  Operon
 	  OperonTranscript
 
-compara	  GeneTree
-	  Family
 
 For Gene, Transcript and Translation, an archive_id_lookup is also created, containing all previously used ids
 
