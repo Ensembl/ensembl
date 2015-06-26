@@ -67,3 +67,4 @@
 127	\N	patch	patch_80_81_a.sql|schema_version
 128	\N	patch	patch_81_82_a.sql|schema_version
 129	\N	patch	patch_81_82_b.sql|align_type
+130	\N	patch	patch_81_82_c.sql|protein_align_type

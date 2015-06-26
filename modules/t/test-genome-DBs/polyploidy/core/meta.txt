@@ -121,3 +121,4 @@
 201	\N	patch	patch_80_81_a.sql|schema_version
 202	\N	patch	patch_81_82_a.sql|schema_version
 203	\N	patch	patch_81_82_b.sql|align_type
+204	\N	patch	patch_81_82_c.sql|protein_align_type

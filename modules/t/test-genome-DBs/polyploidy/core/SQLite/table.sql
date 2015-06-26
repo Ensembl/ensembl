@@ -1,6 +1,6 @@
 -- 
 -- Created by SQL::Translator::Producer::SQLite
--- Created on Tue Jun 23 16:06:13 2015
+-- Created on Fri Jun 26 15:29:36 2015
 -- 
 
 BEGIN TRANSACTION;
@@ -707,7 +707,8 @@ CREATE TABLE protein_align_feature (
   perc_ident float,
   cigar_line text,
   external_db_id integer,
-  hcoverage double precision
+  hcoverage double precision,
+  align_type enum DEFAULT 'ensembl'
 );
 
 --

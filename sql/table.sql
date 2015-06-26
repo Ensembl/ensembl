@@ -309,6 +309,11 @@ INSERT INTO meta (species_id, meta_key, meta_value) VALUES
 # NOTE: Avoid line-breaks in values.
 INSERT INTO meta (species_id, meta_key, meta_value)
   VALUES (NULL, 'patch', 'patch_80_81_a.sql|schema_version');
+INSERT INTO meta (species_id, meta_key, meta_value)
+  VALUES (NULL, 'patch', 'patch_81_82_b.sql|dna_align_type');
+INSERT INTO meta (species_id, meta_key, meta_value)
+  VALUES (NULL, 'patch', 'patch_81_82_c.sql|protein_align_type');
+
 
 /**
 @table meta_coord
@@ -859,6 +864,7 @@ CREATE TABLE protein_align_feature (
   cigar_line                  TEXT,
   external_db_id              INTEGER UNSIGNED,
   hcoverage                   DOUBLE,
+  align_type                  ENUM('ensembl', 'cigar', 'vulgar'),
 
   PRIMARY KEY (protein_align_feature_id),
   KEY seq_region_idx (seq_region_id, analysis_id, seq_region_start, score),
