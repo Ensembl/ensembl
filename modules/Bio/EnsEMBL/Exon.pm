@@ -1595,6 +1595,7 @@ sub summary_as_hash {
   $summary_ref->{'constitutive'} = $self->is_constitutive;
   $summary_ref->{'ensembl_phase'} = $self->phase;
   $summary_ref->{'ensembl_end_phase'} = $self->end_phase;
+  $summary_ref->{'exon_id'} = $summary_ref->{'id'};
   return $summary_ref;
 }
 

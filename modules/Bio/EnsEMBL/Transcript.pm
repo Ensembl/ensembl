@@ -3051,8 +3051,43 @@ sub summary_as_hash {
   my $parent_gene = $self->get_Gene();
   $summary_ref->{'Parent'} = $parent_gene->stable_id;
   $summary_ref->{'source'} = $parent_gene->source();
+  $summary_ref->{'transcript_id'} = $summary_ref->{'id'};
+  $summary_ref->{'havana_transcript'} = $self->havana_transcript->display_id() if $self->havana_transcript();
+  $summary_ref->{'ccdsid'} = $self->ccds->display_id() if $self->ccds();
   return $summary_ref;
 }
+
+=head2 havana_transcript
+
+  Example       : $havana_transcript = $transcript->havana_transcript();
+  Description   : Locates the corresponding havana transcript
+  Returns       : Bio::EnsEMBL::DBEntry
+=cut
+
+sub havana_transcript {
+  my $self = shift;
+  my @otts = @{ $self->get_all_DBEntries('OTTT') };
+  my $ott;
+  $ott = $otts[0] if scalar(@otts) > 0;
+  return $ott;
+}
+
+=head2 ccds
+
+  Example       : $ccds = $transcript->ccds();
+  Description   : Locates the corresponding ccds xref
+  Returns       : Bio::EnsEMBL::DBEntry
+=cut
+
+sub ccds {
+  my $self = shift;
+  my @ccds = @{ $self->get_all_DBEntries('CCDS') };
+  my $ccds;
+  $ccds = $ccds[0] if scalar(@ccds) > 0;
+  return $ccds;
+}
+
+
 
 =head2 get_Gene
   

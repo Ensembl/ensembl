@@ -205,9 +205,8 @@ sub print_feature {
         my @ordered_values = @summary{@ordered_keys};
         while (my $key = shift @ordered_keys) {
             my $value = shift @ordered_values;
-            delete $summary{$key};
             if ($value && $value ne '') {
-                if ($key eq 'id') {
+                if ($key =~ /id/) {
                   if ($feature->isa('Bio::EnsEMBL::Transcript')) {
                     $value = 'transcript:' . $value;
                   } elsif ($feature->isa('Bio::EnsEMBL::Gene')) {
@@ -217,6 +216,8 @@ sub print_feature {
                   } else {
                     $value = $so_term . ':' . $value;
                   }
+                } else {
+                  delete $summary{$key};
                 }
                 if ($key eq 'Parent') {
                  if ($feature->isa('Bio::EnsEMBL::Transcript')) {
