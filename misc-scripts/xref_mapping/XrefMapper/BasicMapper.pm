@@ -717,9 +717,10 @@ EOF2
   else{
     $sql =(<<"EOF3");
   DELETE object_xref, identity_xref
-    FROM object_xref, xref, source, identity_xref
+    FROM xref, source, object_xref
+      LEFT JOIN identity_xref
+        ON identity_xref.object_xref_id = object_xref.object_xref_id
       WHERE object_xref.ensembl_object_type = "$from" AND
-        identity_xref.object_xref_id = object_xref.object_xref_id AND
 	xref.xref_id = object_xref.xref_id AND
 	  xref.source_id = source.source_id AND
             object_xref.ox_status = "DUMP_OUT"  AND
