@@ -107,7 +107,7 @@ my $score      = 80;
 my $percent_id = 90;
 my $evalue     = 23.2;
 my $cigar_string = '100M';
-my $cigar_type = 'ensembl';
+my $align_type = 'ensembl';
 my $hcoverage  = 99.5;
 my $external_db_id = 2200;
 
@@ -121,7 +121,7 @@ $feat = Bio::EnsEMBL::DnaDnaAlignFeature->new
    -HSTRAND => $hstrand,
    -HSEQNAME => $hseqname,
    -CIGAR_STRING => '100M',
-   -CIGAR_TYPE => $cigar_type,
+   -CIGAR_TYPE => $align_type,
    -PERCENT_ID => $percent_id,
    -SCORE    => $score,
    -P_VALUE => $evalue,
@@ -149,7 +149,7 @@ ok($feat->hend   == $hend);
 ok($feat->hstrand == $hstrand);
 ok($feat->hseqname eq $hseqname);
 ok($feat->cigar_string eq $cigar_string);
-ok($feat->cigar_type eq $cigar_type);
+ok($feat->align_type eq $align_type);
 ok($feat->percent_id == $percent_id);
 ok($feat->score == $score);
 ok($feat->p_value == $evalue);
@@ -170,7 +170,7 @@ sub print_features {
       my $seqname = $f->slice->seq_region_name();
       my $analysis = $f->analysis->logic_name();
       debug($seqname . ' ' . $f->start().'-'.$f->end().'('.$f->strand().
-            ') ['. $f->dbID.'] '. $f->cigar_string . ' ' . $f->cigar_type . ' ' .
+            ') ['. $f->dbID.'] '. $f->cigar_string . ' ' . $f->align_type. ' ' .
             $f->hstart .'-'.$f->hend.' ('.$f->hstrand.')'.$f->score() .
             " ($analysis) " . $f->percent_id);
     } else {
