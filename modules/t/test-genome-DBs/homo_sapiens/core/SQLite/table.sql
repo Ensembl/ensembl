@@ -1,6 +1,6 @@
 -- 
 -- Created by SQL::Translator::Producer::SQLite
--- Created on Thu May 21 16:24:27 2015
+-- Created on Tue Jun 23 16:05:22 2015
 -- 
 
 BEGIN TRANSACTION;
@@ -255,7 +255,8 @@ CREATE TABLE dna_align_feature (
   cigar_line text,
   external_db_id integer,
   hcoverage double precision,
-  external_data text
+  external_data text,
+  align_type enum DEFAULT 'ensembl'
 );
 
 --
