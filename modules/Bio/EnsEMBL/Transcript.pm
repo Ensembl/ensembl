@@ -3049,12 +3049,49 @@ sub summary_as_hash {
   $summary_ref->{'biotype'} = $self->biotype;
   $summary_ref->{'logic_name'} = $self->analysis->logic_name();
   my $parent_gene = $self->get_Gene();
-  $summary_ref->{'Parent'} = $parent_gene->stable_id;
+  $summary_ref->{'Parent'} = $parent_gene->stable_id . "." . $parent_gene->version;
   $summary_ref->{'source'} = $parent_gene->source();
   $summary_ref->{'transcript_id'} = $summary_ref->{'id'};
-  $summary_ref->{'havana_transcript'} = $self->havana_transcript->display_id() if $self->havana_transcript();
+
+  ## Specific attributes for merged species
+  ## No data will be stored if these fields are not available
+  my $havana_transcript = $self->havana_transcript();
+  $summary_ref->{'havana_transcript'} = $havana_transcript->display_id() . "." . $havana_transcript->version() if defined $havana_transcript;
   $summary_ref->{'ccdsid'} = $self->ccds->display_id() if $self->ccds();
+  $summary_ref->{'transcript_support_level'} = $self->tsl() if $self->tsl();
+  $summary_ref->{'tag'} = 'basic' if $self->gencode_basic();
   return $summary_ref;
+}
+
+=head2 gencode_basic
+
+  Example       : $gencode_basic = $transcript->tag();
+  Description   : Returns true if gencode_basic is set
+  Returns       : boolean
+=cut
+
+sub gencode_basic {
+  my $self = shift;
+  my @attributes = @{ $self->get_all_Attributes('gencode_basic') };
+  my $basic = 0;
+  $basic = 1 if scalar(@attributes) > 0;
+  return $basic;
+}
+
+=head2 tsl
+
+  Example       : $tsl = $transcript->tsl();
+  Description   : Returns the corresponding transcript support level
+  Returns       : string
+=cut
+
+sub tsl {
+  my $self = shift;
+  my @attributes = @{ $self->get_all_Attributes('TSL') };
+  my $tsl;
+  $tsl = $attributes[0]->value if scalar(@attributes) > 0;
+  if (defined $tsl) { $tsl =~ s/tsl//; }
+  return $tsl;
 }
 
 =head2 havana_transcript
