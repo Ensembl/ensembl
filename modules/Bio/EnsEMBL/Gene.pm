@@ -1499,9 +1499,14 @@ sub summary_as_hash {
 
 sub havana_gene {
   my $self = shift;
-  my @otts = @{ $self->get_all_DBEntries('OTTG') };
+  my @otts = @{ $self->get_all_DBEntries('Vega_gene') };
   my $ott;
-  $ott = $otts[0] if scalar(@otts) > 0;
+  foreach my $xref (@otts) {
+    if ($xref->display_id() =~ /OTT/) {
+      $ott = $xref;
+      last;
+    }
+  }
   return $ott;
 }
 

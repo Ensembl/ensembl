@@ -3103,9 +3103,14 @@ sub tsl {
 
 sub havana_transcript {
   my $self = shift;
-  my @otts = @{ $self->get_all_DBEntries('OTTT') };
+  my @otts = @{ $self->get_all_DBEntries('Vega_transcript') };
   my $ott;
-  $ott = $otts[0] if scalar(@otts) > 0;
+  foreach my $xref (@otts) {
+    if ($xref->display_id() =~ /OTT/) {
+      $ott = $xref;
+      last;
+    }
+  }
   return $ott;
 }
 
