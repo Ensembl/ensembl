@@ -1483,8 +1483,29 @@ sub summary_as_hash {
   $summary_ref->{'logic_name'} = $self->analysis->logic_name();
   $summary_ref->{'source'} = $self->source();
   $summary_ref->{'gene_id'} = $summary_ref->{'id'};
+
+  ## Will only work for for merged species
+  my $havana_gene = $self->havana_gene();
+  $summary_ref->{'havana_gene'} = $havana_gene->display_id() . "." . $havana_gene->version() if defined $havana_gene;
   return $summary_ref;
 }
+
+=head2 havana_gene
+
+  Example       : $havana_gene = $transcript->havana_gene();
+  Description   : Locates the corresponding havana gene
+  Returns       : Bio::EnsEMBL::DBEntry
+=cut
+
+sub havana_gene {
+  my $self = shift;
+  my @otts = @{ $self->get_all_DBEntries('OTTG') };
+  my $ott;
+  $ott = $otts[0] if scalar(@otts) > 0;
+  return $ott;
+}
+
+
 
 
 ###########################
