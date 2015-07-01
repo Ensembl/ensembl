@@ -66,7 +66,7 @@ push @feats, Bio::EnsEMBL::FeaturePair->new
 #
 # Test DnaDnaAlignFeature::new(-features)
 #
-my $dnaf = Bio::EnsEMBL::DnaDnaAlignFeature->new( -features => \@feats, -align_type => 'ensembl' );
+my $dnaf = Bio::EnsEMBL::DnaDnaAlignFeature->new( -features => \@feats, -cigar_type => 'ensembl' );
 ok(ref($dnaf) && $dnaf->isa('Bio::EnsEMBL::DnaDnaAlignFeature'));
 
 #
