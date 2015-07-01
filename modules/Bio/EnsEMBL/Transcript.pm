@@ -1958,6 +1958,10 @@ sub get_all_CDS {
   return [] if ! $translation;
 
   my @cds;
+  my $translation_id = $translation->stable_id();
+  if ($translation->version()) {
+    $translation_id .= "." . $translation->version();
+  }
 
   foreach my $exon (@{ $self->get_all_translateable_Exons}) {
     my $phase = $exon->phase();
@@ -1968,7 +1972,7 @@ sub get_all_CDS {
         -START           => $exon->start,
         -END             => $exon->end,
         -STRAND          => $exon->strand,
-        -TRANSLATION_ID  => $translation->stable_id,
+        -TRANSLATION_ID  => $translation_id,
         -SLICE           => $self->slice,
         -TRANSCRIPT      => $self,
         -PHASE           => $phase 
