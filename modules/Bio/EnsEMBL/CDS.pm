@@ -181,6 +181,7 @@ sub summary_as_hash {
   $hash->{'Parent'} = $parent->display_id. "." . $parent->version if defined $parent;
   $hash->{'source'} = $self->transcript->source() if $self->transcript();
   $hash->{'id'} = $self->translation_id() if $self->translation_id();
+  $hash->{'protein_id'} = $self->translation_id() if $self->translation_id();
   return $hash;
 }
 
