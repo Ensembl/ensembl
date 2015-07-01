@@ -1032,8 +1032,9 @@ sub to_hash {
 
   Arg [1]     : String name of the adaptor type to switch out
   Arg [2]     : Reference The switchable adaptor implementation
-  Arg [3]     : (optional) CodeRef Callback which provides automatic switchable adaptor cleanup 
-                once the method has finished
+  Arg [3]     : (optional) CodeRef Provide a subroutine reference as a callback. The
+                adaptor will be switched before your codeblock is executed and 
+                the adaptor switched back to the original once your code has finished running
   Arg [4]     : (optional) Boolean override any existing switchable adaptor
   Example     : $dba->switch_adaptor("sequence", $my_replacement_sequence_adaptor);
                 $dba->switch_adaptor("sequence", $my_other_replacement_sequence_adaptor, 1);
