@@ -250,21 +250,33 @@ sub summary_as_hash {
   delete $summary_ref->{'constitutive'};
   delete $summary_ref->{'ensembl_phase'};
   delete $summary_ref->{'ensembl_end_phase'};
-  my $prediction_transcript = $self->get_PredictionTranscript();
-  $summary_ref->{'Parent'} = $prediction_transcript->stable_id();
-  $summary_ref->{'source'} = $prediction_transcript->analysis->gff_source() || 'ensembl';
+  $summary_ref->{'source'} = $self->prediction_transcript->analysis->gff_source() || 'ensembl';
   return $summary_ref;
 }
 
-=head2 get_PredictionTranscript
+=head2 transcript
+  Example     : $prediction_transcript = $exon->transcript;
+  Description : Locates the parent prediction transcript using an exon dbID
+                Same as prediction_transcript, duplicated for compatibility
+                with Exon feature
+  Returns     : Bio::EnsEMBL::PredictionTranscript
 
-  Example     : $prediction_transcript = $exon->get_PredictionTranscript;
+=cut
+
+sub transcript {
+  my $self = shift;
+  return $self->prediction_transcript;
+}
+
+=head2 prediction_transcript
+
+  Example     : $prediction_transcript = $exon->prediction_transcript;
   Description : Locates the parent prediction transcript using an exon dbID
   Returns     : Bio::EnsEMBL::PredictionTranscript
 
 =cut
 
-sub get_PredictionTranscript {
+sub prediction_transcript{
   my $self = shift;
   my $prediction_transcript_adaptor = $self->adaptor->db->get_PredictionTranscriptAdaptor();
   my $parent_prediction_transcript = $prediction_transcript_adaptor->fetch_by_prediction_exon_id($self->dbID);
