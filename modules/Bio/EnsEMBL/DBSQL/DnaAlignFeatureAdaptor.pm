@@ -119,7 +119,6 @@ sub _columns {
             daf.external_db_id
             daf.hcoverage
 	    daf.external_data
-            daf.cigar_type
 	    exdb.db_name
 	    exdb.db_display_name);
 }
@@ -161,8 +160,8 @@ sub store {
                              seq_region_end, seq_region_strand,
                              hit_start, hit_end, hit_strand, hit_name,
                              cigar_line, analysis_id, score, evalue,
-                             perc_ident, external_db_id, hcoverage, external_data, cigar_type)
-     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"    # 17 arguments
+                             perc_ident, external_db_id, hcoverage, external_data)
+     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"    # 16 arguments
   );
 
 FEATURE:
@@ -193,7 +192,6 @@ FEATURE:
       warning( "DnaDnaAlignFeature does not define a cigar_string.\n"
           . "Assuming ungapped block with cigar_line=$cigar_string ." );
     }
-    my $cigar_type = $feat->cigar_type();
 
     my $hseqname = $feat->hseqname();
     if ( !$hseqname ) {
@@ -233,7 +231,6 @@ FEATURE:
     my $extra_data;
     $extra_data = $self->dump_data($feat->extra_data()) if ($feat->extra_data());
     $sth->bind_param( 16, $extra_data,  SQL_LONGVARCHAR );
-    $sth->bind_param( 17, $cigar_type,  SQL_VARCHAR);
 
     $sth->execute();
 
@@ -258,7 +255,7 @@ sub save {
   my $db = $self->db();
   my $analysis_adaptor = $db->get_AnalysisAdaptor();
 
-  my $sql = qq{INSERT INTO $tablename (seq_region_id, seq_region_start, seq_region_end, seq_region_strand, hit_start, hit_end, hit_strand, hit_name, cigar_line, analysis_id, score, evalue, perc_ident, external_db_id, hcoverage, external_data, cigar_type) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)};
+  my $sql = qq{INSERT INTO $tablename (seq_region_id, seq_region_start, seq_region_end, seq_region_strand, hit_start, hit_end, hit_strand, hit_name, cigar_line, analysis_id, score, evalue, perc_ident, external_db_id, hcoverage, external_data) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)};
 
   my %analyses = ();
 
@@ -330,7 +327,6 @@ sub save {
     $sth->bind_param(14,$feat->external_db_id,SQL_INTEGER);
     $sth->bind_param(15,$feat->hcoverage,SQL_DOUBLE);
     $sth->bind_param(16,$extra_data,SQL_LONGVARCHAR);
-    $sth->bind_param(17,$feat->cigar_type,SQL_VARCHAR);
 
 
     $sth->execute();
@@ -408,7 +404,7 @@ sub _objs_from_sth {
        $cigar_line,           $evalue,
        $perc_ident,           $score,
        $external_db_id,       $hcoverage,
-       $extra_data,           $cigar_type,
+       $extra_data,
        $external_db_name,     $external_display_db_name );
 
   $sth->bind_columns( \( $dna_align_feature_id, $seq_region_id,
@@ -419,7 +415,7 @@ sub _objs_from_sth {
                          $cigar_line,           $evalue,
                          $perc_ident,           $score,
                          $external_db_id,       $hcoverage,
-                         $extra_data,           $cigar_type,
+                         $extra_data,
                          $external_db_name, $external_display_db_name )
   );
 
@@ -606,7 +602,6 @@ sub _objs_from_sth {
                'external_db_id'  => $external_db_id,
                'hcoverage'       => $hcoverage,
                'extra_data'      => $evalled_extra_data,
-               'cigar_type'      => $cigar_type,
                'dbname'          => $external_db_name,
                'db_display_name' => $external_display_db_name
              } ) );

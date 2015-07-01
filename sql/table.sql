@@ -617,7 +617,6 @@ CREATE TABLE attrib_type (
 @column external_db_id              Foreign key references to the @link external_db table.
 @column hcoverage                   Hit coverage.
 @column external_data               External data.
-@column cigar_type                  Type of cigar string used
 
 
 @see cigar_line
@@ -643,7 +642,6 @@ CREATE TABLE dna_align_feature (
   external_db_id              INTEGER UNSIGNED,
   hcoverage                   DOUBLE,
   external_data               TEXT,
-  align_type                  ENUM('ensembl', 'cigar', 'vulgar'),
 
   PRIMARY KEY (dna_align_feature_id),
   KEY seq_region_idx (seq_region_id, analysis_id, seq_region_start, score),
