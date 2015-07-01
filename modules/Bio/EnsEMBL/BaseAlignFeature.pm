@@ -180,7 +180,7 @@ sub new {
 
   my $self = $class->SUPER::new(@_);
 
-  my ($cigar_string,$align_type,$features) = rearrange([qw(CIGAR_STRING ALIGN_TYPE FEATURES)], @_);
+  my ($cigar_string,$align_type,$features) = rearrange([qw(CIGAR_STRING CIGAR_TYPE FEATURES)], @_);
 
   if (defined($align_type)) {
     $self->{'align_type'} = $align_type;

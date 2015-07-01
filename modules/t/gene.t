@@ -166,7 +166,7 @@ push(@feats, $fp);
 #
 # 2 Test DnaDnaAlignFeature::new(-features)
 #
-my $dnaf = Bio::EnsEMBL::DnaDnaAlignFeature->new(-features => \@feats, -align_type => 'ensembl');
+my $dnaf = Bio::EnsEMBL::DnaDnaAlignFeature->new(-features => \@feats);
 $dnaf->analysis($f_analysis);
 
 $ex1->add_supporting_features($dnaf);
@@ -211,7 +211,7 @@ push(@feats, $fp);
 #
 # 2 Test DnaDnaAlignFeature::new(-features)
 #
-$dnaf = Bio::EnsEMBL::DnaDnaAlignFeature->new(-features => \@feats, align_type => 'ensembl');
+$dnaf = Bio::EnsEMBL::DnaDnaAlignFeature->new(-features => \@feats);
 $dnaf->analysis($f_analysis);
 
 $ex2->add_supporting_features($dnaf);

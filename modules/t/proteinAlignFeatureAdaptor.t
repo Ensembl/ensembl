@@ -129,7 +129,6 @@ $feat = Bio::EnsEMBL::DnaPepAlignFeature->new
    -P_VALUE => $evalue,
    -ANALYSIS => $analysis,
    -HCOVERAGE => $hcoverage,
-   -ALIGN_TYPE => 'ensembl',
    -EXTERNAL_DB_ID => $external_db_id );
 
 ok(!$feat->is_stored($db));

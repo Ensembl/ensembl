@@ -464,7 +464,7 @@ CREATE TABLE `meta` (
   PRIMARY KEY (`meta_id`),
   UNIQUE KEY `species_key_value_idx` (`species_id`,`meta_key`,`meta_value`),
   KEY `species_value_idx` (`species_id`,`meta_value`)
-) ENGINE=MyISAM AUTO_INCREMENT=120 DEFAULT CHARSET=latin1;
+) ENGINE=MyISAM AUTO_INCREMENT=119 DEFAULT CHARSET=latin1;
 
 CREATE TABLE `meta_coord` (
   `table_name` varchar(40) NOT NULL DEFAULT '',
@@ -627,7 +627,6 @@ CREATE TABLE `protein_align_feature` (
   `cigar_line` text,
   `external_db_id` smallint(5) unsigned DEFAULT NULL,
   `hcoverage` double DEFAULT NULL,
-  `align_type` enum('ensembl','cigar','vulgar') DEFAULT 'ensembl',
   PRIMARY KEY (`protein_align_feature_id`),
   KEY `seq_region_idx` (`seq_region_id`,`analysis_id`,`seq_region_start`,`score`),
   KEY `seq_region_idx_2` (`seq_region_id`,`seq_region_start`),

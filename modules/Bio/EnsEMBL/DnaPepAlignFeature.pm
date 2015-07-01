@@ -69,7 +69,6 @@ sub _hit_unit {
 }
 
 
-
 =head2 _query_unit
 
   Arg [1]    : none
