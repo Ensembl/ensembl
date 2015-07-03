@@ -186,8 +186,6 @@ SEQCP
             $seen = 0;
           }
           $last_xref_id = $xref_id;
-# Copy synonyms across if they are missing
-          $syn_copy_sth->execute($best_xref_id, $xref_id);
 # If it is a sequence_match, we want to copy the alignment identity_xref to prioritised mappings to the same ensembl_id
           if ($info_type eq 'SEQUENCE_MATCH') {
             my ($query_identity, $target_identity, $hit_start, $hit_end, $translation_start, $translation_end, $cigar_line, $score, $evalue, $best_object_xref_id);
@@ -204,7 +202,8 @@ SEQCP
 ## If it is the first time processing this xref_id, also process dependents and update status
             if (!$seen) {
               $update_x_sth->execute($xref_id);
-#??? what about dependents
+# Copy synonyms across if they are missing
+              $syn_copy_sth->execute($best_xref_id, $xref_id);
 	      $self->process_dependents($xref_id, $best_xref_id, $object_type, \@best_ensembl_id);
             }
 	  }

@@ -83,6 +83,7 @@ CREATE TABLE synonym (
   xref_id                     int unsigned not null,
   synonym                     varchar(255),
 
+  UNIQUE KEY (xref_id, synonym)
   KEY xref_idx(xref_id),
   KEY synonym_idx(synonym)
 
