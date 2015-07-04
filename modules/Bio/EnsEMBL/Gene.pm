@@ -1486,7 +1486,8 @@ sub summary_as_hash {
 
   ## Will only work for for merged species
   my $havana_gene = $self->havana_gene();
-  $summary_ref->{'havana_gene'} = $havana_gene->display_id() . "." . $havana_gene->version() if defined $havana_gene;
+  $summary_ref->{'havana_gene'} = $havana_gene->display_id() if defined $havana_gene;
+  $summary_ref->{'havana_version'} = $havana_gene->version() if defined $havana_gene;
   return $summary_ref;
 }
 

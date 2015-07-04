@@ -1470,9 +1470,7 @@ sub get_nearest_Gene {
 sub summary_as_hash {
   my $self = shift;
   my %summary;
-  my $id = $self->display_id;
-  if ($self->version()) { $id .= "." . $self->version(); }
-  $summary{'id'} = $id;
+  $summary{'id'} = $self->display_id;
   $summary{'version'} = $self->version() if $self->version();
   $summary{'start'} = $self->seq_region_start;
   $summary{'end'} = $self->seq_region_end;

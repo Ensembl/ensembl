@@ -1598,9 +1598,6 @@ sub summary_as_hash {
   $summary_ref->{'exon_id'} = $summary_ref->{'id'};
   my $parent = $self->transcript();
   my $parent_id = $parent->display_id();
-  if ($parent->version()) {
-    $parent_id .= "." . $parent->version();
-  }
   $summary_ref->{'Parent'} = $parent_id;
   return $summary_ref;
 }

@@ -1959,9 +1959,6 @@ sub get_all_CDS {
 
   my @cds;
   my $translation_id = $translation->stable_id();
-  if ($translation->version()) {
-    $translation_id .= "." . $translation->version();
-  }
 
   foreach my $exon (@{ $self->get_all_translateable_Exons}) {
     my $phase = $exon->phase();
@@ -3053,14 +3050,15 @@ sub summary_as_hash {
   $summary_ref->{'biotype'} = $self->biotype;
   $summary_ref->{'logic_name'} = $self->analysis->logic_name();
   my $parent_gene = $self->get_Gene();
-  $summary_ref->{'Parent'} = $parent_gene->stable_id . "." . $parent_gene->version;
+  $summary_ref->{'Parent'} = $parent_gene->stable_id;
   $summary_ref->{'source'} = $parent_gene->source();
   $summary_ref->{'transcript_id'} = $summary_ref->{'id'};
 
   ## Specific attributes for merged species
   ## No data will be stored if these fields are not available
   my $havana_transcript = $self->havana_transcript();
-  $summary_ref->{'havana_transcript'} = $havana_transcript->display_id() . "." . $havana_transcript->version() if defined $havana_transcript;
+  $summary_ref->{'havana_transcript'} = $havana_transcript->display_id() if defined $havana_transcript;
+  $summary_ref->{'havana_version'} = $havana_transcript->version() if defined $havana_transcript;
   $summary_ref->{'ccdsid'} = $self->ccds->display_id() if $self->ccds();
   $summary_ref->{'transcript_support_level'} = $self->tsl() if $self->tsl();
   $summary_ref->{'tag'} = 'basic' if $self->gencode_basic();

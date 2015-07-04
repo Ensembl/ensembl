@@ -159,7 +159,7 @@ sub summary_as_hash {
   my $hash = $self->SUPER::summary_as_hash();
   $hash->{'type'} = $self->type() if $self->type();
   my $parent = $self->transcript();
-  $hash->{'Parent'} = $parent->display_id. "." . $parent->version if defined $parent;
+  $hash->{'Parent'} = $parent->display_id if defined $parent;
   $hash->{'source'} = $self->transcript->source() if $self->transcript();
   delete $hash->{id};
   return $hash;
