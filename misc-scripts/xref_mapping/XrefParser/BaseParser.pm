@@ -1207,7 +1207,7 @@ sub add_to_syn_for_mult_sources{
 
   my $dbi = $self->dbi;
   if(!(defined $add_synonym_sth)){
-    $add_synonym_sth =  $dbi->prepare('INSERT INTO synonym VALUES(?,?)');
+    $add_synonym_sth =  $dbi->prepare('INSERT IGNORE INTO synonym VALUES(?,?)');
   }
 
   foreach my $source_id (@{$sources}){
@@ -1229,7 +1229,7 @@ sub add_to_syn{
 
   my $dbi = $self->dbi;
   if(!(defined $add_synonym_sth)){
-    $add_synonym_sth =  $dbi->prepare('INSERT INTO synonym VALUES(?,?)');
+    $add_synonym_sth =  $dbi->prepare('INSERT IGNORE INTO synonym VALUES(?,?)');
   }
   my $xref_id = $self->get_xref($acc, $source_id, $species_id);
   if(defined $xref_id){
@@ -1252,7 +1252,7 @@ sub add_synonym{
 
   my $dbi=$self->dbi;
   if(!(defined $add_synonym_sth)){
-    $add_synonym_sth =  $dbi->prepare('INSERT INTO synonym VALUES(?,?)');
+    $add_synonym_sth =  $dbi->prepare('INSERT IGNORE INTO synonym VALUES(?,?)');
   }
   $add_synonym_sth->execute( $xref_id, $syn ) 
     or croak( $dbi->errstr()."\n $xref_id\n $syn\n\n" );
