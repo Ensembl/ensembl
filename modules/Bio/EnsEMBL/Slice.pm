@@ -921,8 +921,8 @@ sub get_base_count {
 
     foreach my $segment (@$clone_projection) {
       my $clone = $segment->to_Slice();
-      print $slice->seq_region_name(), ':', $seg->from_start(), '-',
-            $seg->from_end(), ' -> ',
+      print $slice->seq_region_name(), ':', $segment->from_start(), '-',
+            $segment->from_end(), ' -> ',
             $clone->seq_region_name(), ':', $clone->start(), '-',$clone->end(),
             ':', $clone->strand(), "\n";
     }
