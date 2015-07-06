@@ -433,6 +433,10 @@ sub _print_attribs {
   print $fh " gene_name \"" . $gene_name . "\";"     if ($gene_name);
   print $fh " gene_source \"" . $gene_source . "\";" if ($gene_source);
   print $fh " gene_biotype \"" . $gene_biotype . "\";";
+  if ($gene->havana_gene()) {
+    print $fh " havana_gene \"" . $gene->havana_gene->display_id() . "\";";
+    print $fh " havana_gene_version \"" . $gene->havana_gene->version() . "\";";
+  }
 
   if($type ne 'gene') {
     print $fh " transcript_name \"" . $trans_name . "\";"
@@ -448,6 +452,10 @@ sub _print_attribs {
         my $primary_ccds_id = $ccds->primary_id();
         print $fh qq{ ccds_id "$primary_ccds_id";};
       }
+    }
+    if ($transcript->havana_transcript()) {
+      print $fh " havana_transcript \"" . $transcript->havana_transcript->display_id() . "\";";
+      print $fh " havana_transcript_version \"" . $transcript->havana_transcript->version() . "\";";
     }
   }
 
