@@ -50,7 +50,7 @@ sub run {
   $source_id = $self->get_source_id_for_source_name("CGNC");
 
   my $dbi = $self->dbi();
-  my $sql = "insert into synonym (xref_id, synonym) values (?, ?)";
+  my $sql = "insert ignore into synonym (xref_id, synonym) values (?, ?)";
   my $add_syn_sth = $dbi->prepare($sql);
   my $count = 0;
 

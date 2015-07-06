@@ -128,7 +128,7 @@ sub run_script {
 
 
   my $get_aliases_sth =  $dbi->prepare("select synonym from synonym where xref_id = ?");
-  my $add_alias_sth   =  $dbi->prepare("INSERT INTO synonym (xref_id, synonym) VALUES (?, ?)");
+  my $add_alias_sth   =  $dbi->prepare("INSERT IGNORE INTO synonym (xref_id, synonym) VALUES (?, ?)");
 
 
 

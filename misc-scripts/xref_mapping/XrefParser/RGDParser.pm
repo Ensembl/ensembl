@@ -93,7 +93,7 @@ sub run {
     die ("ENSEMBL_ID is not the 38th element in the header\n$line\n");
   }
 
-  my $sql = "insert into synonym (xref_id, synonym) values (?, ?)";
+  my $sql = "insert ignore into synonym (xref_id, synonym) values (?, ?)";
   my $add_syn_sth = $dbi->prepare($sql);    
   
   my $count= 0;

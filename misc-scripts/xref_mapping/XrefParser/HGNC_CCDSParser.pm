@@ -149,7 +149,7 @@ SQL
 
   my $dbi = $self->dbi();  
 
-  my $sql_syn = "insert into synonym (xref_id, synonym) values (?, ?)";
+  my $sql_syn = "insert ignore into synonym (xref_id, synonym) values (?, ?)";
   my $add_syn_sth = $dbi->prepare($sql_syn);
   
   my $syn_hash = $self->get_ext_synonyms("HGNC");

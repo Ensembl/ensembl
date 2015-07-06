@@ -64,7 +64,7 @@ sub run {
   my $dbi = $self->dbi();
 
 
-  my $sql = "insert into synonym (xref_id, synonym) values (?, ?)";
+  my $sql = "insert ignore into synonym (xref_id, synonym) values (?, ?)";
   my $add_syn_sth = $dbi->prepare($sql);    
 
   #get the source ids for HGNC refseq, entrezgene and unitprot

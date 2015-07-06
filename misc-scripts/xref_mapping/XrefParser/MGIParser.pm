@@ -82,7 +82,7 @@ sub run {
   $sth->finish;
 
   #synonyms
-  $sql = "insert into synonym (xref_id, synonym) values (?, ?)";
+  $sql = "insert ignore into synonym (xref_id, synonym) values (?, ?)";
   my $add_syn_sth = $dbi->prepare($sql);    
 
   my $syn_hash = $self->get_ext_synonyms("MGI");
