@@ -378,22 +378,9 @@ sub get_valid_codes{
 
   my ($self,$source_name,$species_id) =@_;
 
-  # First cache synonyms so we can quickly add them later
-  my %synonyms;
-  my $dbi = $self->dbi;
-  my $syn_sth = $dbi->prepare('SELECT xref_id, synonym FROM synonym');
-  $syn_sth->execute();
-
-  my ($xref_id, $synonym);
-  $syn_sth->bind_columns(\$xref_id, \$synonym);
-  while ($syn_sth->fetch()) {
-
-    push @{$synonyms{$xref_id}}, $synonym;
-
-  }
-
   my %valid_codes;
   my @sources;
+  my $dbi = $self->dbi();
 
   my $big_name = uc $source_name;
   my $sql = "select source_id from source where upper(name) like '%$big_name%'";
@@ -410,10 +397,6 @@ sub get_valid_codes{
     $sth->execute();
     while(my @row = $sth->fetchrow_array()){
       push @{$valid_codes{$row[0]}}, $row[1];
-      # add any synonyms for this xref as well
-      foreach my $syn (@{$synonyms{$row[1]}}) {
-	push @{$valid_codes{$syn}}, $row[1];
-      }
     }
   }
   return \%valid_codes;
