@@ -293,7 +293,8 @@ sub print_main_header {
   
     # Get the build. name gives us GRCh37.p1 where as default gives us GRCh37
     my $assembly_name = $gc->get_assembly_name();
-    my $provider = $mc->single_value_by_key('provider.name') || '';
+    my $providers = $mc->list_value_by_key('provider.name') || '';
+    my $provider = join(" and ", @$providers);
     print $fh "#!genome-build $provider $assembly_name\n" if $assembly_name;
   
     # Get the build default
