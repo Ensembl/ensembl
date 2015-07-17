@@ -47,6 +47,7 @@ use base qw(Bio::EnsEMBL::Utils::IO::FeatureSerializer);
     Arg [1]    : Ontology Adaptor
     Arg [2]    : Optional File handle
     Arg [3]    : Default source of the features. Defaults to .
+    Arg [4]    : RBG colour to emit. Defaults to black (0,0,0)
 
     Returntype : Bio::EnsEMBL::Utils::IO::GFFSerializer
 
@@ -55,7 +56,9 @@ use base qw(Bio::EnsEMBL::Utils::IO::FeatureSerializer);
 sub new {
     my $class = shift;
     my $self = {
-        filehandle => shift
+        filehandle => shift,
+        source => shift,
+        rgb => shift
     };
     bless $self, $class;
 
@@ -64,6 +67,9 @@ sub new {
         open $self->{'filehandle'}, ">&STDOUT";
         $self->{'stdout'} = 1;
     }
+
+    $self->{rgb} = '0,0,0' if ! defined $self->{rgb};
+
     return $self;
 }
 
@@ -93,21 +99,37 @@ sub print_feature {
   return 1;
 }
 
+sub rgb {
+  my ($self, $rgb) = @_;
+  $self->{rgb} = $rgb if defined $rgb;
+  return $self->{rgb};
+}
+
 sub _write_Transcript {
-  my ($self, $transcript) = @_;
+  my ($self, $transcript, $cache) = @_;
 
   # Not liking this. If we are in this situation we need to re-fetch the transcript
   # just so the thing ends up on the right Slice!
   my $new_transcript = $transcript->transfer($transcript->slice()->seq_region_Slice());
   $new_transcript->get_all_Exons(); # force exon loading
-  my $bed_array = $self->_feature_to_bed_array($transcript);
+  my $bed_array = $self->_feature_to_bed_array($transcript, $cache);
   my $bed_genomic_start = $bed_array->[1]; #remember this is in 0 coords
-  my ($coding_start, $coding_end, $exon_starts_string, $exon_lengths_string, $exon_count, $rgb) = (0,0,q{},q{},0,0);
+  # 12 column BED
+  my ($coding_start, $coding_end, $exon_starts_string, $exon_lengths_string, $exon_count) = (0,0,q{},q{},0);
+  my $rgb = $self->rgb();
+  # genePred BED extensions
+  my ($second_name, $cds_start_status, $cds_end_status, $exon_frames, $type, $gene_name, $second_gene_name, $gene_type) = (q{},q{none},q{none},q{},q{},q{},q{},q{});
   
+  # Set the remaining transcript attributes
+  $type = $transcript->biotype();
+  $second_name = $transcript->external_name() || q{none};
+
   # If we have a translation then we do some maths to calc the start of 
   # the thick sections. Otherwise we must have a ncRNA or pseudogene
   # and that thick section is just set to the transcript's end
+  my $has_cds = 0;
   if($new_transcript->translation()) {
+    $has_cds = 1;
     my ($cdna_start, $cdna_end) = ($new_transcript->cdna_coding_start(), $new_transcript->cdna_coding_end);
     if($new_transcript->strand() == -1) {
       ($cdna_start, $cdna_end) = ($cdna_end, $cdna_start);
@@ -118,11 +140,29 @@ sub _write_Transcript {
 
     #Same again but for the end
     $coding_end = $self->_cdna_to_genome($new_transcript, $cdna_end);
+
+    #Also figure out complete 5' and 3' CDS tags
+    my ($five_prime_nc, $three_prime_nc) =  map { $_->[0] } 
+                                            grep { defined $_ && @{$_} } 
+                                            map { $transcript->get_all_Attributes($_) } 
+                                            qw/cds_start_NF cds_end_NF/; 
+
+    ($cds_start_status, $cds_end_status) = ('cmpl', 'cmpl');
+    if($transcript->strand() == -1) {
+      # reverse the calls when on the negative strand
+      $cds_start_status = 'incmpl' if $three_prime_nc;
+      $cds_end_status = 'incmpl' if $five_prime_nc;
+    }
+    else {  
+      $cds_start_status = 'incmpl' if $five_prime_nc;
+      $cds_end_status = 'incmpl' if $three_prime_nc;
+    }
   }
   else {
     # apparently looking at UCSC's own BED output formats we do not need to bother
     # coverting $coding_start into 0 based coords for this one ... odd
-    $coding_start = $new_transcript->seq_region_end();
+    $coding_start = $new_transcript->seq_region_start();
+    $coding_start--;
     $coding_end = $coding_start;
   }
 
@@ -135,10 +175,29 @@ sub _write_Transcript {
     my $offset = $exon_start - $bed_genomic_start; # just have to minus current start from the genomic start
     $exon_starts_string .= $offset.',';
     $exon_lengths_string .= $exon->length().',';
+    
+    # We have to re-iterprite a phase -1 as 0 if we are on a coding exon. Otherwise we just 
+    # leave it (non-coding exons are always -1 it seems from UCSC's examples)
+    my $phase = $exon->phase();
+    my $exon_coding_start = $exon->coding_region_start($transcript);
+    if(defined $exon_coding_start) {
+      $phase = 0 if $phase == -1;
+    }
+    $exon_frames .= $phase.',';
     $exon_count++;
   }
 
+  # Get the gene and populate its fields
+  my $gene = $transcript->get_Gene();
+  $gene_name = $gene->stable_id();
+  $second_gene_name = $gene->external_name() || q{none};
+  $gene_type = $gene->biotype();
+
+  # Finally recreate 12 column BED format
   push(@{$bed_array}, $coding_start, $coding_end, $rgb, $exon_count, $exon_lengths_string, $exon_starts_string);
+  # And then the gene pred
+  push(@{$bed_array}, $second_name, $cds_start_status, $cds_end_status, $exon_frames, $type, $gene_name, $second_gene_name, $gene_type);
+
   return $bed_array;
 }
 
@@ -169,7 +228,8 @@ sub _feature_to_bed_array {
   my $end = $feature->seq_region_end();
   my $strand = ($feature->seq_region_strand() == -1) ? '-' : '+'; 
   my $display_id = $feature->display_id();
-  return [ $chr_name, $start, $end, $display_id, 0, $strand ];
+  my $score = 1000;
+  return [ $chr_name, $start, $end, $display_id, $score, $strand ];
 }
 
 =head2 _feature_to_UCSC_name
