@@ -147,28 +147,25 @@ sub _write_Transcript {
                                             map { $transcript->get_all_Attributes($_) } 
                                             qw/cds_start_NF cds_end_NF/; 
 
-    ($cds_start_status, $cds_end_status) = ('cmpl', 'cmpl');
+    
+    $cds_start_status = ($five_prime_nc) ? 'incmpl' : 'cmpl';
+    $cds_end_status = ($three_prime_nc) ? 'incmpl' : 'cmpl';
+    # reverse if we are on the negative strand
     if($transcript->strand() == -1) {
-      # reverse the calls when on the negative strand
-      $cds_start_status = 'incmpl' if $three_prime_nc;
-      $cds_end_status = 'incmpl' if $five_prime_nc;
-    }
-    else {  
-      $cds_start_status = 'incmpl' if $five_prime_nc;
-      $cds_end_status = 'incmpl' if $three_prime_nc;
+      ($cds_start_status, $cds_end_status) = ($cds_end_status, $cds_start_status);
     }
   }
   else {
-    # apparently looking at UCSC's own BED output formats we do not need to bother
-    # coverting $coding_start into 0 based coords for this one ... odd
-    $coding_start = $new_transcript->seq_region_start();
+    # When we represent non-coding transcripts we set the coding start/end (thickStart/thickEnd)
+    # in a BED file to the start of the transcript region (lowest coordinate).
+    $coding_start = $bed_genomic_start;
     $coding_start--;
     $coding_end = $coding_start;
   }
 
   # Now for the interesting bit. Exons are given relative to the bed start
-  # so we need to calculate the offset. Lovely.
-  # Also sort exons by start otherwise offset calcs are wrong
+  # so we need to calculate the offset. Exons are also sorted by start otherwise 
+  # offset calcs are wrong
   foreach my $exon (sort { $a->seq_region_start() <=> $b->seq_region_start() } @{$new_transcript->get_all_Exons()}) {
     my $exon_start = $exon->seq_region_start();
     $exon_start--; #move into 0 coords
