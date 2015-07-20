@@ -44,10 +44,9 @@ use base qw(Bio::EnsEMBL::Utils::IO::FeatureSerializer);
 =head2 new
 
     Constructor
-    Arg [1]    : Ontology Adaptor
-    Arg [2]    : Optional File handle
-    Arg [3]    : Default source of the features. Defaults to .
-    Arg [4]    : RBG colour to emit. Defaults to black (0,0,0)
+    Arg [1]    : Optional File handle
+    Arg [2]    : Default source of the features. Defaults to .
+    Arg [3]    : RBG colour to emit. Defaults to black (0,0,0)
 
     Returntype : Bio::EnsEMBL::Utils::IO::GFFSerializer
 
@@ -127,9 +126,7 @@ sub _write_Transcript {
   # If we have a translation then we do some maths to calc the start of 
   # the thick sections. Otherwise we must have a ncRNA or pseudogene
   # and that thick section is just set to the transcript's end
-  my $has_cds = 0;
   if($new_transcript->translation()) {
-    $has_cds = 1;
     my ($cdna_start, $cdna_end) = ($new_transcript->cdna_coding_start(), $new_transcript->cdna_coding_end);
     if($new_transcript->strand() == -1) {
       ($cdna_start, $cdna_end) = ($cdna_end, $cdna_start);
@@ -173,7 +170,7 @@ sub _write_Transcript {
     $exon_starts_string .= $offset.',';
     $exon_lengths_string .= $exon->length().',';
     
-    # We have to re-iterprite a phase -1 as 0 if we are on a coding exon. Otherwise we just 
+    # We have to re-interpret a phase -1 as 0 if we are on a coding exon. Otherwise we just 
     # leave it (non-coding exons are always -1 it seems from UCSC's examples)
     my $phase = $exon->phase();
     my $exon_coding_start = $exon->coding_region_start($transcript);
