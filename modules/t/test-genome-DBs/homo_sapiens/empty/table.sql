@@ -463,7 +463,7 @@ CREATE TABLE `meta` (
   PRIMARY KEY (`meta_id`),
   UNIQUE KEY `species_key_value_idx` (`species_id`,`meta_key`,`meta_value`),
   KEY `species_value_idx` (`species_id`,`meta_value`)
-) ENGINE=MyISAM AUTO_INCREMENT=116 DEFAULT CHARSET=latin1;
+) ENGINE=MyISAM AUTO_INCREMENT=119 DEFAULT CHARSET=latin1;
 
 CREATE TABLE `meta_coord` (
   `table_name` varchar(40) NOT NULL DEFAULT '',
@@ -864,8 +864,8 @@ CREATE TABLE `unmapped_reason` (
 CREATE TABLE `xref` (
   `xref_id` int(10) unsigned NOT NULL AUTO_INCREMENT,
   `external_db_id` int(11) NOT NULL DEFAULT '0',
-  `dbprimary_acc` varchar(50) NOT NULL,
-  `display_label` varchar(128) NOT NULL DEFAULT '',
+  `dbprimary_acc` varchar(512) NOT NULL,
+  `display_label` varchar(512) NOT NULL,
   `version` varchar(10) NOT NULL DEFAULT '',
   `description` text,
   `info_type` enum('NONE','PROJECTION','MISC','DEPENDENT','DIRECT','SEQUENCE_MATCH','INFERRED_PAIR','PROBE','UNMAPPED','CHECKSUM') NOT NULL DEFAULT 'NONE',

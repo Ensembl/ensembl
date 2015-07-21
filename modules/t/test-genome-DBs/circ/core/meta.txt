@@ -31,6 +31,7 @@
 87	\N	patch	patch_79_80_d.sql|genome_statistics_value_longer
 88	\N	patch	patch_80_81_a.sql|schema_version
 89	\N	patch	patch_81_82_a.sql|schema_version
+90	\N	patch	patch_81_82_b.sql|xref_width
 1	\N	schema_type	core
 2	\N	schema_version	82
 8	1	assembly.accession	GCA_000292705.1

@@ -27,3 +27,4 @@
 120	\N	patch	patch_79_80_d.sql|genome_statistics_value_longer
 121	\N	patch	patch_80_81_a.sql|schema_version
 122	\N	patch	patch_81_82_a.sql|schema_version
+123	\N	patch	patch_81_82_b.sql|xref_width
