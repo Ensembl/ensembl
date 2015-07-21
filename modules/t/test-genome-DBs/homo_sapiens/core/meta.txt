@@ -1,4 +1,4 @@
-1	\N	schema_version	81
+1	\N	schema_version	82
 2	1	assembly.default	NCBI34
 3	1	species.taxonomy_id	9606
 26	1	species.classification	Homo sapiens
@@ -65,3 +65,6 @@
 125	\N	patch	patch_79_80_c.sql|seq_region_synonym_longer
 126	\N	patch	patch_79_80_d.sql|genome_statistics_value_longer
 127	\N	patch	patch_80_81_a.sql|schema_version
+128	\N	patch	patch_81_82_a.sql|schema_version
+129	\N	patch	patch_81_82_b.sql|xref_width
+130	\N	patch	patch_81_82_c.sql|seq_synonym_key

@@ -463,7 +463,7 @@ CREATE TABLE `meta` (
   PRIMARY KEY (`meta_id`),
   UNIQUE KEY `species_key_value_idx` (`species_id`,`meta_key`,`meta_value`),
   KEY `species_value_idx` (`species_id`,`meta_value`)
-) ENGINE=MyISAM AUTO_INCREMENT=2079 DEFAULT CHARSET=latin1;
+) ENGINE=MyISAM AUTO_INCREMENT=2083 DEFAULT CHARSET=latin1;
 
 CREATE TABLE `meta_coord` (
   `table_name` varchar(40) COLLATE latin1_bin NOT NULL DEFAULT '',
@@ -715,7 +715,7 @@ CREATE TABLE `seq_region_synonym` (
   `synonym` varchar(50) NOT NULL,
   `external_db_id` smallint(5) unsigned DEFAULT NULL,
   PRIMARY KEY (`seq_region_synonym_id`),
-  UNIQUE KEY `syn_idx` (`synonym`)
+  UNIQUE KEY `syn_idx` (`synonym`,`seq_region_id`)
 ) ENGINE=MyISAM AUTO_INCREMENT=177 DEFAULT CHARSET=latin1;
 
 CREATE TABLE `simple_feature` (
@@ -861,8 +861,8 @@ CREATE TABLE `unmapped_reason` (
 CREATE TABLE `xref` (
   `xref_id` int(10) unsigned NOT NULL AUTO_INCREMENT,
   `external_db_id` int(11) NOT NULL,
-  `dbprimary_acc` varchar(50) COLLATE latin1_bin NOT NULL,
-  `display_label` varchar(128) COLLATE latin1_bin NOT NULL,
+  `dbprimary_acc` varchar(512) COLLATE latin1_bin NOT NULL,
+  `display_label` varchar(512) COLLATE latin1_bin NOT NULL,
   `version` varchar(10) COLLATE latin1_bin NOT NULL DEFAULT '0',
   `description` text COLLATE latin1_bin,
   `info_type` enum('NONE','PROJECTION','MISC','DEPENDENT','DIRECT','SEQUENCE_MATCH','INFERRED_PAIR','PROBE','UNMAPPED','CHECKSUM') COLLATE latin1_bin NOT NULL DEFAULT 'NONE',

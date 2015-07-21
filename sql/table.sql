@@ -302,13 +302,18 @@ CREATE TABLE IF NOT EXISTS meta (
 # Add schema type and schema version to the meta table.
 INSERT INTO meta (species_id, meta_key, meta_value) VALUES
   (NULL, 'schema_type',     'core'),
-  (NULL, 'schema_version',  '81');
+  (NULL, 'schema_version',  '82');
 
 # Patches included in this schema file:
 # NOTE: At start of release cycle, remove patch entries from last release.
 # NOTE: Avoid line-breaks in values.
 INSERT INTO meta (species_id, meta_key, meta_value)
-  VALUES (NULL, 'patch', 'patch_80_81_a.sql|schema_version');
+  VALUES (NULL, 'patch', 'patch_81_82_a.sql|schema_version');
+INSERT INTO meta (species_id, meta_key, meta_value)
+  VALUES (NULL, 'patch', 'patch_81_82_b.sql|xref_width');
+INSERT INTO meta (species_id, meta_key, meta_value)
+  VALUES (NULL, 'patch', 'patch_81_82_c.sql|seq_synonym_key');
+
 
 /**
 @table meta_coord
@@ -386,7 +391,7 @@ CREATE TABLE seq_region_synonym (
   external_db_id              INTEGER UNSIGNED,
 
   PRIMARY KEY (seq_region_synonym_id),
-  UNIQUE KEY syn_idx (synonym),
+  UNIQUE KEY syn_idx (synonym, seq_region_id),
   KEY seq_region_idx (seq_region_id)
 
 ) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
@@ -2337,8 +2342,8 @@ CREATE TABLE xref (
 
    xref_id                    INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
    external_db_id             INTEGER UNSIGNED NOT NULL,
-   dbprimary_acc              VARCHAR(50) NOT NULL,
-   display_label              VARCHAR(128) NOT NULL,
+   dbprimary_acc              VARCHAR(512) NOT NULL,
+   display_label              VARCHAR(512) NOT NULL,
    version                    VARCHAR(10) DEFAULT '0' NOT NULL,
    description                TEXT,
    info_type                  ENUM( 'NONE', 'PROJECTION', 'MISC', 'DEPENDENT',

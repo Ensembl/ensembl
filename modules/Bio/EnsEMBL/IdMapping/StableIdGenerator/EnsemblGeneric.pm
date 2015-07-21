@@ -289,18 +289,18 @@ sub calculate_version {
     if ( $s_obj->seq_md5_sum() ne $t_obj->seq_md5_sum() ) { $change = 1 }
 
     # Look for changes in exon version
-    my $s_e_ident = join(
-      ":",
-      map { $_->stable_id() . '.' . $_->version() } sort {
-        $a->stable_id() cmp $b->stable_id()
-        } @{ $s_obj->get_all_Exons() } );
-    my $t_e_ident = join(
-      ":",
-      map { $_->stable_id() . '.' . $_->version() } sort {
-        $a->stable_id() cmp $b->stable_id()
-        } @{ $t_obj->get_all_Exons() } );
+    my $source_exon_string;
+    my $target_exon_string;
+    foreach my $exon (@{ $s_obj->get_all_Exons() } ) {
+      $source_exon_string .= $exon->start();
+      $source_exon_string .= $exon->end();
+    }
+    foreach my $exon (@{ $t_obj->get_all_Exons() } ) {
+      $target_exon_string .= $exon->start();
+      $target_exon_string .= $exon->end();
+    }
 
-    if ( $s_e_ident ne $t_e_ident ) { $change = 1 }
+    if ($source_exon_string ne $target_exon_string) { $change = 1; }
 
     # Look for changes on the region
     if ( $s_obj->seq_region_name() ne $t_obj->seq_region_name() ) { $change = 1 }

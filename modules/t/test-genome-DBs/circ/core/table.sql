@@ -469,7 +469,7 @@ CREATE TABLE `meta` (
   PRIMARY KEY (`meta_id`),
   UNIQUE KEY `species_key_value_idx` (`species_id`,`meta_key`,`meta_value`),
   KEY `species_value_idx` (`species_id`,`meta_value`)
-) ENGINE=InnoDB AUTO_INCREMENT=88 DEFAULT CHARSET=latin1;
+) ENGINE=InnoDB AUTO_INCREMENT=92 DEFAULT CHARSET=latin1;
 
 CREATE TABLE `meta_coord` (
   `table_name` varchar(40) NOT NULL,
@@ -724,7 +724,7 @@ CREATE TABLE `seq_region_synonym` (
   `synonym` varchar(50) NOT NULL,
   `external_db_id` int(10) unsigned DEFAULT NULL,
   PRIMARY KEY (`seq_region_synonym_id`),
-  UNIQUE KEY `syn_idx` (`synonym`),
+  UNIQUE KEY `syn_idx` (`synonym`,`seq_region_id`),
   KEY `seq_region_idx` (`seq_region_id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=latin1;
 
@@ -874,8 +874,8 @@ CREATE TABLE `unmapped_reason` (
 CREATE TABLE `xref` (
   `xref_id` int(10) unsigned NOT NULL AUTO_INCREMENT,
   `external_db_id` int(10) unsigned NOT NULL,
-  `dbprimary_acc` varchar(50) NOT NULL,
-  `display_label` varchar(512) DEFAULT NULL,
+  `dbprimary_acc` varchar(512) NOT NULL,
+  `display_label` varchar(512) NOT NULL,
   `version` varchar(10) NOT NULL DEFAULT '0',
   `description` text,
   `info_type` enum('NONE','PROJECTION','MISC','DEPENDENT','DIRECT','SEQUENCE_MATCH','INFERRED_PAIR','PROBE','UNMAPPED','COORDINATE_OVERLAP','CHECKSUM') NOT NULL DEFAULT 'NONE',
