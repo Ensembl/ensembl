@@ -463,7 +463,7 @@ CREATE TABLE `meta` (
   PRIMARY KEY (`meta_id`),
   UNIQUE KEY `species_key_value_idx` (`species_id`,`meta_key`,`meta_value`),
   KEY `species_value_idx` (`species_id`,`meta_value`)
-) ENGINE=MyISAM AUTO_INCREMENT=2082 DEFAULT CHARSET=latin1;
+) ENGINE=MyISAM AUTO_INCREMENT=2083 DEFAULT CHARSET=latin1;
 
 CREATE TABLE `meta_coord` (
   `table_name` varchar(40) COLLATE latin1_bin NOT NULL DEFAULT '',
@@ -715,7 +715,7 @@ CREATE TABLE `seq_region_synonym` (
   `synonym` varchar(50) NOT NULL,
   `external_db_id` smallint(5) unsigned DEFAULT NULL,
   PRIMARY KEY (`seq_region_synonym_id`),
-  UNIQUE KEY `syn_idx` (`synonym`)
+  UNIQUE KEY `syn_idx` (`synonym`,`seq_region_id`)
 ) ENGINE=MyISAM AUTO_INCREMENT=177 DEFAULT CHARSET=latin1;
 
 CREATE TABLE `simple_feature` (

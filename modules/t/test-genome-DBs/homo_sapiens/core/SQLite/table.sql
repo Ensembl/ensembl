@@ -1,6 +1,6 @@
 -- 
 -- Created by SQL::Translator::Producer::SQLite
--- Created on Thu May 21 16:24:27 2015
+-- Created on Tue Jul 21 13:32:11 2015
 -- 
 
 BEGIN TRANSACTION;
@@ -797,7 +797,7 @@ CREATE TABLE seq_region_synonym (
   external_db_id integer
 );
 
-CREATE UNIQUE INDEX syn_idx ON seq_region_synonym (synonym);
+CREATE UNIQUE INDEX syn_idx ON seq_region_synonym (synonym, seq_region_id);
 
 --
 -- Table: simple_feature
@@ -959,8 +959,8 @@ CREATE TABLE unmapped_reason (
 CREATE TABLE xref (
   xref_id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
   external_db_id integer NOT NULL,
-  dbprimary_acc varchar(50) NOT NULL,
-  display_label varchar(128) NOT NULL,
+  dbprimary_acc varchar(512) NOT NULL,
+  display_label varchar(512) NOT NULL,
   version varchar(10) NOT NULL DEFAULT '0',
   description text,
   info_type enum NOT NULL DEFAULT 'NONE',

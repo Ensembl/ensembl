@@ -28,3 +28,4 @@
 121	\N	patch	patch_80_81_a.sql|schema_version
 122	\N	patch	patch_81_82_a.sql|schema_version
 123	\N	patch	patch_81_82_b.sql|xref_width
+124	\N	patch	patch_81_82_c.sql|seq_synonym_key
