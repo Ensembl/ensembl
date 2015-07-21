@@ -311,6 +311,8 @@ INSERT INTO meta (species_id, meta_key, meta_value)
   VALUES (NULL, 'patch', 'patch_81_82_a.sql|schema_version');
 INSERT INTO meta (species_id, meta_key, meta_value)
   VALUES (NULL, 'patch', 'patch_81_82_b.sql|xref_width');
+INSERT INTO meta (species_id, meta_key, meta_value)
+  VALUES (NULL, 'patch', 'patch_81_82_c.sql|seq_synonym_key');
 
 
 /**
@@ -389,7 +391,7 @@ CREATE TABLE seq_region_synonym (
   external_db_id              INTEGER UNSIGNED,
 
   PRIMARY KEY (seq_region_synonym_id),
-  UNIQUE KEY syn_idx (synonym),
+  UNIQUE KEY syn_idx (synonym, seq_region_id),
   KEY seq_region_idx (seq_region_id)
 
 ) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
