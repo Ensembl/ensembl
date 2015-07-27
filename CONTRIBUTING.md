@@ -42,6 +42,11 @@ We attempt to integrate as many pull requests into Ensembl as possible but do re
     - Do not repeat the same message in multiple commits
 * Excessive whitespace changes
     - Do not reformat someone else's code; it's just bad manners
+* The pull request modifies code without testing for regression
+    - Please provide simple unit tests to test the changes
+* The pull request fails unit testing
+    - Please ensure the test suite runs successfully and update the test data if necessary
+
 
 # License
 
@@ -150,3 +155,12 @@ This is to ensure that a newly created database is identical to an existing data
 The databases used for testing are in https://github.com/Ensembl/ensembl/tree/release/81/modules/t/test-genome-DBs
 These should be patched with the latest changes to ensure data consistency.
 This can be done using the patching script provided in https://github.com/Ensembl/ensembl-test/blob/master/scripts/patch_test_databases.pl
+
+# The test suite
+
+The Ensembl code comes with a series of unit tests that check methods behave as expected.
+This test suite is run as part of the TravisCi integration for each pull request.
+See https://travis-ci.org/Ensembl/ensembl
+This ensures that any change does not affect existing functionality.
+A pull request can only be integrated if the test suite passes successfully.
+If no tests are available for a new functionality, please provide some basic tests.
