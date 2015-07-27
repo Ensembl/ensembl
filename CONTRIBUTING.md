@@ -136,3 +136,17 @@ Now click "Start a discussion" and give a brief description of what your pull re
 
 Should you be told to perform some fixes for your pull request you should perform them on your local repo. To update the pull request run `git push -f origin hotfix/quickfixtoadaptor` but never do this on a branch you have shared with more than just us.
 
+
+# Updating the schema
+
+Any change that affects the underlying SQL schema needs to come with the following:
+- a patch file, patch_oldrelease_newrelease_version.sql
+See https://github.com/Ensembl/ensembl/blob/release/81/sql/patch_79_80_b.sql for an example
+This patch describes the actual schema change and updates the meta table to record the change
+- an update to the table.sql file
+The change from the patch should also be included in the table.sql file
+This is to ensure that a newly created database is identical to an existing database to which the patch was applied
+- an update to the test databases
+The databases used for testing are in https://github.com/Ensembl/ensembl/tree/release/81/modules/t/test-genome-DBs
+These should be patched with the latest changes to ensure data consistency.
+This can be done using the patching script provided in https://github.com/Ensembl/ensembl-test/blob/master/scripts/patch_test_databases.pl
