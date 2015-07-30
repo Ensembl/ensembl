@@ -134,7 +134,7 @@ SQL
   # Delete the existing ones           # 
   ######################################
   my ($count);
-  $sth = $self->xref->dbc->prepare('select s.name, count(*) from xref x, object_xref ox, source s where ox.xref_id = x.xref_id and x.source_id = s.source_id and ox_status = "DUMP_OUT"  group by s.name');
+  $sth = $self->xref->dbc->prepare('select s.name, count(*) from xref x, object_xref ox, source s where ox.xref_id = x.xref_id and x.source_id = s.source_id group by s.name');
   $sth->execute();
   $sth->bind_columns(\$name,\$count);
 
