@@ -193,7 +193,7 @@ sub create_xrefs {
 
     }
 
-    $species = lc $species;
+    $species = lc $species if $species;
     $species =~ s/ /_/;
 
     my $species_id_check = $name2species_id{$species};
