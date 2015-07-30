@@ -180,6 +180,9 @@ sub print_feature {
   my $sliceoffset = $slice->start - 1;
   my $idstr       = $slice->seq_region_name;
 
+  ## Seq edits are needed for sequence, not coordinates
+  $transcript->edits_enabled(0);
+
   # Create start codon features. Multiple due to outcomes of projection, but they will 
   # overlap the first exon
   my @startcodons = $self->_make_start_codon_features($transcript);
