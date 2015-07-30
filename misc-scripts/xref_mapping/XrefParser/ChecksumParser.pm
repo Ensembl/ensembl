@@ -65,7 +65,8 @@ sub run {
 
 sub _transfer_contents {
   my ($self, $input_fh, $output_fh, $source_id) = @_;
-  my $counter = 1;
+  my $dbh = $self->dbi();
+  my ($counter) = $dbh->selectrow_array('select max(checksum_xref_id) from '.$TABLE_NAME );
   while(my $line = <$input_fh>) {
     chomp $line;
     my ($upi, $checksum) = split(/\s+/, $line);
