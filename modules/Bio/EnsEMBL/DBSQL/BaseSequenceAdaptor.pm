@@ -211,7 +211,7 @@ sub _init_seq_instance {
 
 sub clear_cache {
   my ($self) = @_;
-  $self->{seq_cache}->clear();
+  %{$self->{seq_cache}} = ();
   return;
 }
 
