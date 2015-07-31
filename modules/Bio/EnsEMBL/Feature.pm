@@ -1615,6 +1615,7 @@ my $feature_tables =
    'Bio::EnsEMBL::AssemblyExceptionFeature' => 'assembly_exception',
    'Bio::EnsEMBL::DensityFeature' => 'density_feature',
    'Bio::EnsEMBL::Exon' => 'exon',
+   'Bio::EnsEMBL::ExonTranscript' => 'exon',
    'Bio::EnsEMBL::PredictionExon' => 'prediction_exon',
    'Bio::EnsEMBL::Gene' => 'gene',
    'Bio::EnsEMBL::IntronSupportingEvidence' => 'intron_supporting_evidence',
