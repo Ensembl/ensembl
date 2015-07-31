@@ -14,16 +14,13 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 
-=cut
-
-
 =head1 CONTACT
 
   Please email comments or questions to the public Ensembl
-  developers list at <http://lists.ensembl.org/mailman/listinfo/dev>.
+  developers list at <dev@ensembl.org>.
 
   Questions may also be sent to the Ensembl help desk at
-  <http://www.ensembl.org/Help/Contact>.
+  <helpdesk@ensembl.org>.
 
 =cut
 
@@ -48,29 +45,21 @@ An adaptor for the retrieval of DNA sequence from the EnsEMBL database
 
 package Bio::EnsEMBL::DBSQL::SequenceAdaptor;
 
-use vars qw(@ISA @EXPORT);
 use strict;
 use warnings;
 
-use Bio::EnsEMBL::DBSQL::BaseAdaptor;
 use Bio::EnsEMBL::Utils::Exception qw(throw deprecate);
 use Bio::EnsEMBL::Utils::Sequence  qw(reverse_comp);
-use Bio::EnsEMBL::Utils::Cache;
 use Bio::EnsEMBL::Utils::Scalar qw( assert_ref );
-
-@ISA = qw(Bio::EnsEMBL::DBSQL::BaseAdaptor);
-
-our $SEQ_CHUNK_PWR   = 18; # 2^18 = approx. 250KB
-our $SEQ_CACHE_SZ    = 5;
-our $SEQ_CACHE_MAX   = (2 ** $SEQ_CHUNK_PWR) * $SEQ_CACHE_SZ;
-
-@EXPORT = (@{$DBI::EXPORT_TAGS{'sql_types'}});
+use DBI qw/:sql_types/;
+use base qw(Bio::EnsEMBL::DBSQL::BaseAdaptor Bio::EnsEMBL::DBSQL::BaseSequenceAdaptor);
+our @EXPORT = (@{$DBI::EXPORT_TAGS{'sql_types'}});
 
 =head2 new
 
   Arg [1]    : none
   Example    : my $sa = $db_adaptor->get_SequenceAdaptor();
-  Description: Constructor.  Calls superclass constructor and initialises
+  Description: Constructor. Calls superclass constructor and initialises
                internal cache structure.
   Returntype : Bio::EnsEMBL::DBSQL::SequenceAdaptor
   Exceptions : none
@@ -80,63 +69,13 @@ our $SEQ_CACHE_MAX   = (2 ** $SEQ_CHUNK_PWR) * $SEQ_CACHE_SZ;
 =cut
 
 sub new {
-  my $caller = shift;
-
+  my ($caller, $db, $chunk_power, $cache_size) = shift;
   my $class = ref($caller) || $caller;
-
   my $self = $class->SUPER::new(@_);
-
-  # use an LRU cache to limit the size
-  my %seq_cache;
-  tie(%seq_cache, 'Bio::EnsEMBL::Utils::Cache', $SEQ_CACHE_SZ);
-
-  $self->{'seq_cache'} = \%seq_cache;
-
-
-#
-# See if this has any seq_region_attrib of type "_rna_edit_cache" if so store these
-# in a  hash.
-#
-  my $sth = $self->dbc->prepare('select sra.seq_region_id, sra.value from seq_region_attrib sra, attrib_type at where sra.attrib_type_id = at.attrib_type_id and code = "_rna_edit"');
-  
-  $sth->execute();
-  my ($seq_region_id, $value);
-  $sth->bind_columns(\$seq_region_id, \$value);
-  my %edits;
-  my $count = 0;
-  while($sth->fetch()){
-    $count++;
-    my ($start, $end, $substring) = split (/\s+/, $value);
-    my $edit_length = ($end - $start) + 1;
-    my $substring_length = length($substring);
-    if($edit_length != $substring_length) {
-      throw "seq_region_id $seq_region_id has an attrib of type '_rna_edit' (value '$value'). Edit length ${edit_length} is not the same as the replacement's length ${substring_length}. Please fix. We only support substitutions via this mechanism";
-    }
-    push @{$edits{$seq_region_id}}, $value;
-  }
-  $sth->finish;
-  if($count){
-    $self->{_rna_edits_cache} = \%edits;
-  }
-  
+  $self->_init_seq_instance($chunk_power, $cache_size);
+  $self->_populate_seq_region_edits();
   return $self;
 }
-
-=head2 clear_cache
-
-  Example			: $sa->clear_cache();
-  Description	: Removes all entries from the associcated sequence cache
-  Returntype 	: None
-  Exceptions 	: None
-
-=cut
-
-sub clear_cache {
-  my ($self) = @_;
-  %{$self->{seq_cache}} = ();
-  return;
-}
-
 
 =head2 fetch_by_Slice_start_end_strand
 
@@ -179,11 +118,11 @@ sub fetch_by_Slice_start_end_strand {
    if ( ( !defined($end) || $start > $end || $start < 0 || $end < 0 || $slice->start> $slice->end ) && $slice->is_circular ) {
          
        if ( !defined($end) || ($start > $end ) ) {
-	   return $self->_fetch_by_Slice_start_end_strand_circular( $slice, $start, $end, $strand );
+     return $self->_fetch_by_Slice_start_end_strand_circular( $slice, $start, $end, $strand );
        }
 
        if ( defined($end) && ($end < 0) ) {
-	   $end += $slice->seq_region_length;
+     $end += $slice->seq_region_length;
        }
        
        if ($start < 0) {
@@ -204,7 +143,6 @@ sub fetch_by_Slice_start_end_strand {
   }
 
    $strand ||= 1;
-
    #get a new slice that spans the exact region to retrieve dna from
    my $right_expand  = $end - $slice->length(); #negative is fine
    my $left_expand   = 1 - $start; #negative is fine
@@ -212,7 +150,7 @@ sub fetch_by_Slice_start_end_strand {
    if($right_expand || $left_expand) {
      $slice = $slice->expand($left_expand, $right_expand);
    }
-
+   
    #retrieve normalized 'non-symlinked' slices
    #this allows us to support haplotypes and PARs
    my $slice_adaptor = $slice->adaptor();
@@ -303,6 +241,15 @@ sub fetch_by_Slice_start_end_strand {
    return \$seq;
 }
 
+=head2 can_access_Slice
+
+  Description : Returns 1 since we can access any Slice's data
+
+=cut
+
+sub can_access_Slice {
+  return 1;
+}
 
 sub _fetch_by_Slice_start_end_strand_circular {
   my ( $self, $slice, $start, $end, $strand ) = @_;
@@ -331,8 +278,6 @@ sub _fetch_by_Slice_start_end_strand_circular {
 
     return \$seq;
   }
-
-
 
   # Get a new slice that spans the exact region to retrieve dna from
   my $right_expand = $end - $slice->length();    #negative is fine
@@ -440,7 +385,12 @@ sub _fetch_by_Slice_start_end_strand_circular {
 
 
 
+=head2 _rna_edit
 
+  Description : Performs within sequence region editting when 
+                the underlying sequence is incorrect. Used by LRGs.
+
+=cut
 
 sub _rna_edit {
   my $self  = shift;
@@ -460,84 +410,26 @@ sub _rna_edit {
   return;
 }
 
+=head2 _fetch_raw_seq
 
-sub _fetch_seq {
-  my $self          = shift;
-  my $seq_region_id = shift;
-  my $start         = shift;
-  my $length           = shift;
+  Description : Communicates with the database to fetch back sequence
 
-  my $cache = $self->{'seq_cache'};
+=cut
 
-  if($length < $SEQ_CACHE_MAX) {
-    my $chunk_min = ($start-1) >> $SEQ_CHUNK_PWR;
-    my $chunk_max = ($start + $length - 1) >> $SEQ_CHUNK_PWR;
-
-    # piece together sequence from cached component parts
-
-    my $entire_seq = undef;
-    for(my $i = $chunk_min; $i <= $chunk_max; $i++) {
-      if($cache->{"$seq_region_id:$i"}) {
-        $entire_seq .= $cache->{"$seq_region_id:$i"};
-      } else {
-        # retrieve uncached portions of the sequence
-
-        my $sth =
-          $self->prepare(   "SELECT SUBSTR(d.sequence, ?, ?) "
-                          . "FROM dna d "
-                          . "WHERE d.seq_region_id = ?" );
-
-        my $tmp_seq;
-
-        my $min = ($i << $SEQ_CHUNK_PWR) + 1;
-
-        $sth->bind_param( 1, $min,                SQL_INTEGER );
-        $sth->bind_param( 2, 1 << $SEQ_CHUNK_PWR, SQL_INTEGER );
-        $sth->bind_param( 3, $seq_region_id,      SQL_INTEGER );
-
-        $sth->execute();
-        $sth->bind_columns(\$tmp_seq);
-        $sth->fetch();
-        $sth->finish();
-
-        # always give back uppercased sequence so it can be properly softmasked
-        $entire_seq .= uc($tmp_seq);
-        $cache->{"$seq_region_id:$i"} = uc($tmp_seq);
-      }
-    }
-
-    # return only the requested portion of the entire sequence
-    my $min = ( $chunk_min << $SEQ_CHUNK_PWR ) + 1;
-    # my $max = ( $chunk_max + 1 ) << $SEQ_CHUNK_PWR;
-    my $seq = substr( $entire_seq, $start - $min, $length );
-
-    return \$seq;
-  } else {
-
-    # do not do any caching for requests of very large sequences
-    my $sth =
-      $self->prepare(   "SELECT SUBSTR(d.sequence, ?, ?) "
-                      . "FROM dna d "
-                      . "WHERE d.seq_region_id = ?" );
-
-    my $tmp_seq;
-
-    $sth->bind_param( 1, $start,         SQL_INTEGER );
-    $sth->bind_param( 2, $length,        SQL_INTEGER );
-    $sth->bind_param( 3, $seq_region_id, SQL_INTEGER );
-
-    $sth->execute();
-    $sth->bind_columns(\$tmp_seq);
-    $sth->fetch();
-    $sth->finish();
-
-    # always give back uppercased sequence so it can be properly softmasked
-    $tmp_seq = uc($tmp_seq);
-
-    return \$tmp_seq;
-  }
+sub _fetch_raw_seq {
+  my ($self, $id, $start, $length) = @_;
+  my $sql = <<'SQL';
+SELECT UPPER(SUBSTR(d.sequence, ?, ?))
+FROM dna d
+WHERE d.seq_region_id =?
+SQL
+  my $seq = $self->dbc()->sql_helper()->execute_single_result(
+    -SQL => $sql, 
+    -PARAMS => [[$start, SQL_INTEGER], [$length, SQL_INTEGER], [$id, SQL_INTEGER]],
+    -NO_ERROR => 1
+  );
+  return \$seq;
 }
-
 
 =head2 store
 
@@ -577,39 +469,36 @@ sub store {
   return;
 }
 
-=head2 remove
-
-  Arg [1]    : int $seq_region_id the id of the sequence region this dna
-               is associated with.
-  Example    : $seq_adaptor->remove(11);
-  Description: removes a dna sequence for a given seq_region_id
-  Returntype : none
-  Exceptions : throw if the database delete fails
-  Caller     : Internal
-  Status     : Stable
-
-=cut
-
-sub remove {
-  my ($self, $seq_region_id) = @_;
-
-  if(!$seq_region_id) {
-    throw('seq_region_id is required');
-  }
-
-  my $statement =
-    $self->prepare("DELETE FROM dna WHERE seq_region_id = ?");
-
-  $statement->bind_param(1,$seq_region_id,SQL_INTEGER);
-  $statement->execute();
-
-  $statement->finish();
-
-  return;
-}
-
-
-
+=head2 remove   
+   
+  Arg [1]    : int $seq_region_id the id of the sequence region this dna   
+               is associated with.   
+  Example    : $seq_adaptor->remove(11);   
+  Description: removes a dna sequence for a given seq_region_id    
+  Returntype : none    
+  Exceptions : throw if the database delete fails    
+  Caller     : Internal    
+  Status     : Stable    
+   
+=cut   
+   
+sub remove {   
+  my ($self, $seq_region_id) = @_;   
+   
+  if(!$seq_region_id) {    
+    throw('seq_region_id is required');    
+  }    
+   
+  my $statement =    
+    $self->prepare("DELETE FROM dna WHERE seq_region_id = ?");   
+   
+  $statement->bind_param(1,$seq_region_id,SQL_INTEGER);    
+  $statement->execute();   
+   
+  $statement->finish();    
+   
+  return;    
+}    
 
 
 =head2 fetch_by_assembly_location
@@ -647,7 +536,53 @@ sub fetch_by_RawContig_start_end_strand {
   fetch_by_Slice_start_end_strand(@_);
 }
 
+=head2 _populate_seq_region_edits
 
+  Description:  Query the database for any _rna_edit attributes attached to a seq region
 
+=cut
+
+sub _populate_seq_region_edits {
+  my ($self) = @_;
+  my $sql;
+  my @params = ('_rna_edit');
+  if($self->db()->is_multispecies()) {
+    $sql = <<'SQL';
+select sra.seq_region_id, sra.value 
+from seq_region_attrib sra join attrib_type using (attrib_type_id) 
+join coord_system cs using (coord_system_id)
+where code =?
+and species_id =?
+SQL
+    push(@params, $self->db()->species_id());
+  }
+  else {
+    $sql = <<'SQL';
+select sra.seq_region_id, sra.value 
+from seq_region_attrib sra join attrib_type using (attrib_type_id) 
+where code = ?
+SQL
+  }
+
+  my $mapper = sub {
+    my ($row, $array) = @_;
+    my ($seq_region_id, $value) = @{$row};
+    my ($start, $end, $substring) = split (/\s+/, $value);
+    my $edit_length = ($end - $start) + 1;
+    my $substring_length = length($substring);
+    if($edit_length != $substring_length) {
+      throw "seq_region_id $seq_region_id has an attrib of type '_rna_edit' (value '$value'). Edit length ${edit_length} is not the same as the replacement's length ${substring_length}. Please fix. We only support substitutions via this mechanism";
+    }
+    if(defined $array) {
+      push(@{$array}, $value);
+      return;
+    }
+    return [$value];
+  };
+
+  my $edits = $self->dbc()->sql_helper->execute_into_hash(-SQL => $sql, -PARAMS => ['_rna_edit'], -CALLBACK => $mapper);
+  $self->{_rna_edits_cache} = $edits if %{$edits};
+  return;
+}
 
 1;

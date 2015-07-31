@@ -23,6 +23,7 @@ use Bio::EnsEMBL::Test::MultiTestDB;
 use Bio::EnsEMBL::Slice;
 use Bio::EnsEMBL::ProjectionSegment;
 use Test::Exception;
+use Test::Differences;
 
 our $verbose = 0;
 
@@ -246,7 +247,7 @@ is(length($seq), $slice->length, "Sequence is correct length");
 $seq = reverse $seq;  #reverse complement seq
 $seq =~ tr/ACTG/TGAC/; 
 
-is($seq, $invert_seq, "revcom same as seq on inverted slice");
+eq_or_diff($seq, $invert_seq, "revcom same as seq on inverted slice");
 
 #
 # Test Slice::subseq
@@ -260,7 +261,7 @@ ok(length $sub_seq == (2*$SPAN) + 1 );
 $sub_seq = reverse $sub_seq;
 $sub_seq =~ tr/ACTG/TGAC/;
 
-ok($sub_seq eq $invert_sub_seq);
+eq_or_diff($sub_seq, $invert_sub_seq);
 
 #
 # Test Slice::get_all_PredictionTranscripts
