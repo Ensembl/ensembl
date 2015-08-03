@@ -191,12 +191,12 @@ sub _init_seq_instance {
   $cache_size ||= $SEQ_CACHE_SIZE;
   
   # use a LRU cache to limit the size
-  my $cache = Bio::EnsEMBL::Utils::Cache->TIEHASH($cache_size);
+  tie my %cache, 'Bio::EnsEMBL::Utils::Cache', $cache_size, {};
 
   $self->{cache_size} = $cache_size;
   $self->{chunk_power} = $chunk_power;
   $self->{seq_cache_max} = ((2 ** $chunk_power) * $cache_size);
-  $self->{seq_cache} = $cache;
+  $self->{seq_cache} = \%cache;
   return;
 }
 
@@ -211,7 +211,7 @@ sub _init_seq_instance {
 
 sub clear_cache {
   my ($self) = @_;
-  $self->{seq_cache}->clear();
+  %{$self->{seq_cache}} = ();
   return;
 }
 
@@ -297,7 +297,7 @@ sub _fetch_seq {
       my $key = "${id}:${i}";
       #If it exists within the cache then add to the string. We will trim
       #down to the requested region later on
-      my $cached_seq_ref = $cache->FETCH($key);
+      my $cached_seq_ref = $cache->{$key};
       if($cached_seq_ref) {
         $entire_seq .= ${$cached_seq_ref};
       } 
@@ -307,7 +307,7 @@ sub _fetch_seq {
         my $length = 1 << $seq_chunk_pwr;
         my $tmp_seq_ref = $self->_fetch_raw_seq($id, $min, $length);
         $entire_seq .= ${$tmp_seq_ref};
-        $cache->STORE($key, $tmp_seq_ref);
+        $cache->{$key} = $tmp_seq_ref;
       }
     }
 
