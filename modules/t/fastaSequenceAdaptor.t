@@ -72,9 +72,9 @@ my $SA = $dba->get_SliceAdaptor();
     dies_ok { $dba->get_SequenceAdaptor()->store() } 'Call should die due to FASTASequenceAdaptor being in place';
 
     # Drill into the object and look at the cache
-    my $cache_key = $sa->{seq_cache}->FIRSTKEY();
+    my ($cache_key) = keys %{$sa->{seq_cache}};
     my $expected_length = 1 << $power;
-    is(length(${$sa->{seq_cache}->FETCH($cache_key)}), $expected_length, 'Checking length of cached sequence');
+    is(length(${$sa->{seq_cache}->{$cache_key}}), $expected_length, 'Checking length of cached sequence');
   });
 }
 
