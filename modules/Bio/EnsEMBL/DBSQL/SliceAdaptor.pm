@@ -1838,6 +1838,45 @@ sub fetch_by_misc_feature_attribute {
   return $self->fetch_by_Feature($feat, $size);
 }
 
+=head2 fetch_by_misc_feature_set
+
+  Arg [1]    : string $attribute_type
+               The code of the attribute type
+  Arg [2]    : (optional) string $attribute_value
+               The value of the attribute to fetch by
+  Arg [3]    : (optional) the name of the set
+  Arg [4]    : (optional) int $size
+               The amount of flanking region around the misc feature desired.
+  Example    : $slice = $sa->fetch_by_misc_feature_set('clone',
+                                                        'RP11-411G9'
+                                                        'tilepath');
+  Description: Fetches a slice around a MiscFeature with a particular
+               attribute type, value and set. If no value is specified then
+               the feature with the particular attribute is used.
+               A size can be specified to include flanking region
+               If no size is specified then 0 is used.
+  Returntype : Bio::EnsEMBL::Slice
+  Exceptions : Throw if no feature with the specified attribute type, value and set
+               exists in the database
+               Warning if multiple features with the specified attribute type, set
+               and value exist in the database.
+  Caller     : webcode
+  Status     : Stable
+
+=cut
+
+sub fetch_by_misc_feature_set {
+  my ($self, $attrib_type_code, $attrib_value, $misc_set, $size) = @_;
+
+  my $mfa = $self->db()->get_MiscFeatureAdaptor();
+
+  my $feat = $mfa->fetch_by_attribute_set_value($attrib_type_code,
+                                                $attrib_value,
+                                                $misc_set);
+
+  return $self->fetch_by_Feature($feat, $size);
+}
+
 =head2 fetch_normalized_slice_projection
 
   Arg [1]    : Bio::EnsEMBL::Slice $slice

@@ -94,6 +94,23 @@ $features = $mfa->fetch_all_by_attribute_type_value('embl_acc');
 ok(@$features == 1);
 print_features($features);
 
+#
+# Test fetch_by_attribute_set_value method
+#
+my $feature = $mfa->fetch_by_attribute_set_value('embl_acc', 'AL000001', 'ntctgs');
+debug('--- fetch_by_attribute_set_value ---');
+ok($feature->dbID() == 2);
+print_features([$feature]);
+
+$feature = $mfa->fetch_by_attribute_set_value('embl_acc', 'rubbish', 'ntctgs');
+ok(!defined $feature);
+
+$feature = $mfa->fetch_by_attribute_set_value('embl_acc', 'AL000001', 'rubbish');
+ok(!defined $feature);
+
+$feature = $mfa->fetch_by_attribute_set_value('rubbish', 'AL000001', 'ntctgs');
+ok(!defined $feature);
+
 
 $multi->hide('core', 'misc_feature', 'misc_feature_misc_set', 'meta_coord',
             'misc_attrib', 'attrib_type', 'misc_set');

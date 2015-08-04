@@ -226,6 +226,90 @@ sub fetch_all_by_attribute_type_value {
 } ## end sub fetch_all_by_attribute_type_value
 
 
+=head2 fetch_by_attribute_set_value
+
+  Arg [1]    : string $attrib_type_code
+               The code of the attribute type to fetch features for
+  Arg [2]    : (optional) string $attrib_value
+               The value of the attribute to fetch features for
+  Arg [3]    : (optional) string $misc_set
+               The name of the set to which the feature belongs
+  Example    :
+         $feat = $mfa->fetch_by_attribute_set_value('clone', 'RP11-411G9', 'tilepath');
+         # Get the clone belonging to the tilepath
+  Description: Retrieves MiscFeatures which have a particular attribute.
+               If the attribute value argument is also provided only
+               features which have the attribute AND a particular value
+               are returned.  The features are returned in their native
+               coordinate system (i.e. the coordinate system that they
+               are stored in).
+  Returntype : listref of Bio::EnsEMBL::MiscFeatures
+  Exceptions : throw if attrib_type code arg is not provided
+  Caller     : general
+  Status     : Stable
+
+=cut
+
+sub fetch_by_attribute_set_value {
+  my $self             = shift;
+  my $attrib_type_code = shift;
+  my $attrib_value     = shift;
+  my $misc_set         = shift;
+
+  throw("Attrib type code argument is required.")
+    if ( !$attrib_type_code );
+
+  # Need to do 2 queries so that all of the ids come back with the
+  # features.  The problem with adding attrib constraints to filter the
+  # misc_features which come back is that not all of the attributes will
+  # come back
+
+  my $sql = qq(
+  SELECT DISTINCT
+        ma.misc_feature_id
+  FROM  misc_attrib ma,
+        attrib_type at,
+        misc_feature mf,
+        misc_feature_misc_set mfs,
+        misc_set ms,
+        seq_region sr,
+        coord_system cs
+  WHERE ma.attrib_type_id = at.attrib_type_id
+    AND at.code = ?
+    AND ma.misc_feature_id = mf.misc_feature_id
+    AND mf.misc_feature_id = mfs.misc_feature_id
+    AND mfs.misc_set_id = ms.misc_set_id
+    AND mf.seq_region_id = sr.seq_region_id
+    AND sr.coord_system_id = cs.coord_system_id
+    AND ma.value = ?
+    AND ms.code = ?
+    AND cs.species_id = ?);
+
+  my $sth = $self->prepare($sql);
+
+  $sth->bind_param( 1, $attrib_type_code,   SQL_VARCHAR );
+  $sth->bind_param( 2, $attrib_value, SQL_VARCHAR );
+  $sth->bind_param( 3, $misc_set, SQL_VARCHAR );
+  $sth->bind_param( 4, $self->species_id(), SQL_INTEGER );
+
+  $sth->execute();
+
+  my ($id) = $sth->fetchrow_array();
+
+  if (!$id) {
+    return;
+  }
+
+  $sth->finish();
+
+  my $constraint = "mf.misc_feature_id = $id";
+
+  my ($result) = @{$self->generic_fetch($constraint)};
+
+  return $result;
+} ## end sub fetch_by_attribute_set_value
+
+
 #_tables
 #
 #  Arg [1]    : none

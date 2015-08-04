@@ -169,6 +169,15 @@ ok($slice->seq_region_name eq '20');
 ok($slice->start == 59707812 - $flanking);
 ok($slice->end   == 60855021 + $flanking);
 
+# 
+# fetch_by_misc_feature_set
+#
+$slice = $slice_adaptor->fetch_by_misc_feature_set('superctg', 'NT_030871', 'tilepath');
+
+ok($slice->seq_region_name eq '20');
+ok($slice->start == 59707812);
+ok($slice->end   == 60855021);
+
 
 #
 # normalized projected slice
