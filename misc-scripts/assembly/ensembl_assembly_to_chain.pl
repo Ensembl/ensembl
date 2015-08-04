@@ -27,11 +27,6 @@ They can be used with liftover (http://genome.ucsc.edu/cgi-bin/hgLiftOver) and c
   size dt dq
   size
 
-Majority of fields are self explanatory expect for the declaration of target & query sequences. In a mapping of NCBI36 (hg18) to GRCh37 (hg19) the following roles are designated:
-
-  - target == NCBI36
-  - query  == GRCh37
-
 You can see this in the the example chain files for human mappings http://hgdownload.soe.ucsc.edu/goldenPath/hg19/liftOver/hg19ToHg18.over.chain.gz and http://hgdownload.soe.ucsc.edu/goldenPath/hg18/liftOver/hg18ToHg19.over.chain.gz.
 
 dt & dq are meant to be the differences between the end of this current block and the start of the next in the target and query. The final line is just a size to indicate no further offset.
@@ -58,7 +53,6 @@ my %ucsc_name_cache;
 
 sub get_options {
   my ($db_name, $db_host, $db_user, $db_pass, $db_port, $help, @species, $group, $release, $dir, $compress, $ucsc);
-  # my ($asm, $cmp) = ('GRCh37', 'NCBI36');
   $db_port = 3306;
   $group = 'core';
   $compress=0;
