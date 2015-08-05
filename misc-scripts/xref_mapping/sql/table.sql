@@ -39,7 +39,7 @@ CREATE TABLE xref (
                                     'UNMAPPED_NO_STABLE_ID', 'UNMAPPED_INTERPRO') DEFAULT null,
 
   PRIMARY KEY (xref_id),
-  UNIQUE acession_idx(accession,source_id,species_id)
+  UNIQUE acession_idx(accession,label,source_id,species_id)
 
 ) COLLATE=latin1_swedish_ci ENGINE=InnoDB;
 
