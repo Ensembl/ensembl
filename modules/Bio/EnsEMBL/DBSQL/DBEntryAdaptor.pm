@@ -714,6 +714,60 @@ sub store {
     
     return $xref_id;
 }
+
+
+=head2 update
+
+  Arg [1]    : Bio::EnsEMBL::DBEntry $dbentry
+               The dbentry to update
+  Example    : $dbentry_adaptor->update($dbentry);
+  Description: Updates the dbprimary_acc, display_label, version, description, info_type
+               and info_text of a dbentry in the database.
+  Returntype : None
+  Exceptions : thrown if the $dbentry is not a Bio::EnsEMBL::DBEntry
+  Caller     : general
+  Status     : Stable
+
+=cut
+
+sub update {
+  my ($self, $dbEntry) = @_;
+
+  if (!defined $dbEntry || !ref $dbEntry || !$dbEntry->isa('Bio::EnsEMBL::DBEntry')) {
+    throw("Must update a dbentry object, not a $dbEntry");
+  }
+
+  my $update_dbentry_sql = qq(
+     UPDATE xref
+        SET dbprimary_acc = ?,
+            display_label = ?,
+            version = ?,
+            description = ?,
+            external_db_id = ?,
+            info_type = ?,
+            info_text = ?
+      WHERE xref_id = ?
+  );
+
+  my $dbRef = $self->_check_external_db($dbEntry);
+  my $display_id = $dbEntry->display_id;
+  $display_id = '' unless defined $display_id; # SQLite doesn't ignore NOT NULL errors
+
+  my $sth = $self->prepare($update_dbentry_sql);
+
+  $sth->bind_param(1, $dbEntry->primary_id,SQL_VARCHAR);
+  $sth->bind_param(2, $display_id,SQL_VARCHAR);
+  $sth->bind_param(3, ($dbEntry->version || q{0}),SQL_VARCHAR);
+  $sth->bind_param(4, $dbEntry->description,SQL_VARCHAR);
+  $sth->bind_param(5, $dbRef,SQL_INTEGER);
+  $sth->bind_param(6, ($dbEntry->info_type || 'NONE'), SQL_VARCHAR);
+  $sth->bind_param(7, ($dbEntry->info_text || ''), SQL_VARCHAR);
+
+  $sth->bind_param(8, $dbEntry->dbID(), SQL_INTEGER);
+
+  $sth->execute();
+
+} ## end sub update
     
 sub _store_object_xref_mapping {
     my $self = shift;

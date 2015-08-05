@@ -291,6 +291,15 @@ my $xref_id = $dbEntryAdaptor->store($xref, undef, "Transcript");
 note("Xref_id from insert: ".$xref_id);
 is($xref_id, $expected_xref_id, "dbID for new DBEntry.");
 
+# Test update()
+
+is($xref->description(), undef, 'No description for xref');
+$xref->description('new_description');
+$xref->primary_id('2');
+$dbEntryAdaptor->update($xref);
+my $updated_xref = $dbEntryAdaptor->fetch_by_db_accession('Vega_gene', '2');
+is($updated_xref->description(), 'new_description', 'Xref with updated description');
+
 #
 # 12-14 Test that external synonyms and go evidence tags are retrieved
 #
