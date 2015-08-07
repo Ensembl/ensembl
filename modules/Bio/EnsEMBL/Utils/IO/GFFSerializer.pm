@@ -152,14 +152,6 @@ sub print_feature {
             # non-circular, but end still before start
             else {$summary{'end'} = $summary{'start'};}
         }
-        if ($feature->slice()) {
-          if ($summary{'start'} < $feature->slice->start()) {
-            $summary{'start'} = $feature->slice->start();
-          }
-          if ($summary{'end'} > $feature->slice->end()) {
-            $summary{'end'} = $feature->slice->end();
-          }
-        }
         $row .= $summary{'start'} . "\t";
 
 #    Column 5 - end, coordinates (absolute) for the end of this feature
