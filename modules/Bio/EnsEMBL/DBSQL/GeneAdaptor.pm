@@ -549,7 +549,7 @@ sub fetch_all_by_Slice_and_external_dbname_link {
   my ($self, $slice, $logic_name, $load_transcripts, $db_name) = @_;
 
   # Get the external_db_id(s) from the name.
-  my $dbentry_adaptor = $self->get_DBEntryAdaptor();
+  my $dbentry_adaptor = $self->db()->get_DBEntryAdaptor();
   my $external_db_ids = $dbentry_adaptor->get_external_db_ids($db_name, undef, 'ignore release');
 
   if (scalar(@{$external_db_ids}) == 0) {
@@ -560,11 +560,10 @@ sub fetch_all_by_Slice_and_external_dbname_link {
   }
 
   # Get the gene_ids for those with links.
-  my $dbe_adaptor = $self->db()->get_DBEntryAdaptor();
-
   my %linked_genes;
+
   foreach my $local_external_db_id (@{$external_db_ids}) {
-    my @linked_genes = $dbe_adaptor->list_gene_ids_by_external_db_id($local_external_db_id);
+    my @linked_genes = $dbentry_adaptor->list_gene_ids_by_external_db_id($local_external_db_id);
     foreach my $gene_id (@linked_genes) {
       $linked_genes{$gene_id} = 1;
     }
