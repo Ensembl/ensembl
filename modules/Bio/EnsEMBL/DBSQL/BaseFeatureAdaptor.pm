@@ -1135,7 +1135,7 @@ sub _remap {
       #slice of feature in different coord system, mapping required
       # $seq_region comes out as an integer not a string
       ($seq_region_id, $start, $end, $strand) =
-        $mapper->fastmap($fslice->seq_region_name(),$f->start(),$f->end(),$f->strand(),$fcs);
+        $mapper->fastmap($fseq_region_id,$f->start(),$f->end(),$f->strand(),$fcs);
 
       # undefined start means gap
       next if(!defined $start);
