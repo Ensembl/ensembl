@@ -115,7 +115,14 @@ sub run {
   my %fly;
   my $fly_set;
 
-  my $count  = 0;
+  my $refseq_count = 0;
+  my $uniprot_count = 0;
+  my $pomb_count = 0;
+  my $yeast_count = 0;
+  my $worm_count = 0;
+  my $mgi_count = 0;
+  my $zfish_count = 0;
+  my $flyb_count = 0;
 
 
 
@@ -162,7 +169,7 @@ sub run {
               linkage        => $array[6],
               source_id      => $source_id,
               species_id     => $species_id} );
-            $count++;
+            $refseq_count++;
           }
         }
         else{
@@ -180,7 +187,7 @@ sub run {
               linkage        => $array[6],
               source_id      => $source_id,
               species_id     => $species_id} );
-            $count++;
+            $uniprot_count++;
           }
         }
         else{
@@ -205,7 +212,7 @@ sub run {
                                         linkage        => $array[6],
                                         source_id      => $gene_source_id,
                                         species_id     => $species_id} );
-            $count++;
+            $worm_count++;
           }
 
         }
@@ -229,7 +236,7 @@ sub run {
                 linkage        => $array[6],
                 source_id      => $source_id,
                 species_id     => $species_id} );
-          $count++;
+          $zfish_count++;
         }
       }
 
@@ -253,7 +260,7 @@ sub run {
                 linkage        => $array[6],
                 source_id      => $source_id,
                 species_id     => $species_id} );
-            $count++;
+            $mgi_count++;
           }
         }
       }
@@ -289,7 +296,7 @@ sub run {
                       linkage        => $array[6],
                       source_id      => $source_id,
                       species_id     => $species_id} );
-              $count++;
+              $pomb_count++;
             }
           }
         }
@@ -311,7 +318,7 @@ sub run {
                                         linkage        => $array[6],
                                         source_id      => $gene_source_id,
                                         species_id     => $species_id} );
-            $count++;
+            $flyb_count++;
           }
         }
         else {
@@ -327,6 +334,7 @@ sub run {
     $go_io->close();
 
     print "\t$count GO dependent xrefs added $refseq_miss refseq not found and $swiss_miss Swissprot not found \n" if($verbose);
+    print "Added $refseq_count refseq, $uniprot_count uniprot\n";
   }
   if ( defined $release_file ) {
     # Parse and set release information from $release_file.
