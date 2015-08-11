@@ -115,9 +115,10 @@ sub run {
   my %fly;
   my $fly_set;
 
+  my $count = 0;
   my $refseq_count = 0;
   my $uniprot_count = 0;
-  my $pomb_count = 0;
+  my $sgd_count = 0;
   my $yeast_count = 0;
   my $worm_count = 0;
   my $mgi_count = 0;
@@ -170,6 +171,7 @@ sub run {
               source_id      => $source_id,
               species_id     => $species_id} );
             $refseq_count++;
+            $count++;
           }
         }
         else{
@@ -188,6 +190,7 @@ sub run {
               source_id      => $source_id,
               species_id     => $species_id} );
             $uniprot_count++;
+            $count++;
           }
         }
         else{
@@ -213,6 +216,7 @@ sub run {
                                         source_id      => $gene_source_id,
                                         species_id     => $species_id} );
             $worm_count++;
+            $count++;
           }
 
         }
@@ -237,6 +241,7 @@ sub run {
                 source_id      => $source_id,
                 species_id     => $species_id} );
           $zfish_count++;
+          $count++;
         }
       }
 
@@ -261,6 +266,7 @@ sub run {
                 source_id      => $source_id,
                 species_id     => $species_id} );
             $mgi_count++;
+            $count++;
           }
         }
       }
@@ -296,7 +302,8 @@ sub run {
                       linkage        => $array[6],
                       source_id      => $source_id,
                       species_id     => $species_id} );
-              $pomb_count++;
+              $sgd_count++;
+              $count++;
             }
           }
         }
@@ -319,6 +326,7 @@ sub run {
                                         source_id      => $gene_source_id,
                                         species_id     => $species_id} );
             $flyb_count++;
+            $count++;
           }
         }
         else {
