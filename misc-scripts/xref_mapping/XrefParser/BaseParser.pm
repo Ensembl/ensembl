@@ -1300,6 +1300,36 @@ GLS
   return \%hash1;
 }
 
+########################################################
+# Create a hash that uses the accession as a key
+# and the label as the value.
+#######################################################
+sub get_acc_to_label{
+  my ($self, $name, $species_id, $prio_desc) = @_;
+  my %hash1=();
+
+  my $sql =(<<"GLA");
+SELECT  xref.accession, xref.label
+  FROM xref, source
+    WHERE source.name LIKE '$name%' AND
+          xref.source_id = source.source_id
+GLA
+  if(defined $prio_desc){
+    $sql .= " and source.priority_description like '$prio_desc'";
+  }
+  if(defined $species_id){
+    $sql .= " and xref.species_id  = $species_id";
+  }
+  my $sub_sth = $self->dbi->prepare($sql);
+
+  $sub_sth->execute();
+  while(my @row = $sub_sth->fetchrow_array()) {
+    $hash1{$row[0]} = $row[1];
+  }
+
+  return \%hash1;
+}
+
 
 ########################################################
 # Create a hash that uses the label as a key

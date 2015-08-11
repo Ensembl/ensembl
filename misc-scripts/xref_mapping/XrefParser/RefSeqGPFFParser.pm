@@ -32,6 +32,9 @@ my $ncrna_source_id ;
 my $pred_peptide_source_id ;
 my $pred_mrna_source_id ;
 my $pred_ncrna_source_id ;
+my $entrez_source_id;
+my $wiki_source_id;
+my %entrez;
 
 sub run {
 
@@ -64,6 +67,9 @@ sub run {
   $pred_ncrna_source_id =
     $self->get_source_id_for_source_name('RefSeq_ncRNA_predicted');
 
+  $entrez_source_id = $self->get_source_id_for_source_name('EntrezGene');
+  $wiki_source_id = $self->get_source_id_for_source_name('WikiGene');
+
   if($verbose){
     print "RefSeq_peptide source ID = $peptide_source_id\n";
     print "RefSeq_mRNA source ID = $mrna_source_id\n";
@@ -73,6 +79,7 @@ sub run {
     print "RefSeq_ncRNA_predicted source ID = $pred_ncrna_source_id\n" ;
   }
 
+  (%entrez)     = %{$self->get_acc_to_label("EntrezGene",$species_id)};
 
     my @xrefs;
     foreach my $file (@files) {
@@ -271,18 +278,22 @@ sub create_xrefs {
 
       foreach my $ll (@EntrezGeneIDline) {
 	my %dep;
-	$dep{SOURCE_ID} = $dependent_sources{EntrezGene} 
-          || die( 'No source for EntrezGene!' );
-	$dep{LINKAGE_SOURCE_ID} = $source_id;
-	$dep{ACCESSION} = $ll;
-	push @{$xref->{DEPENDENT_XREFS}}, \%dep;
+        #my $entrez_source = $dependent_sources{EntrezGene} || die( 'No source for EntrezGene!' );
+        #my $wiki_source = $dependent_sources{WikiGene} || die( 'No source for WikiGene!' );
+        if (defined $entrez{$ll}) {
+          $dep{SOURCE_ID} = $entrez_source_id;
+	  $dep{LINKAGE_SOURCE_ID} = $source_id;
+	  $dep{ACCESSION} = $ll;
+          $dep{LABEL} = $entrez{$ll};
+	  push @{$xref->{DEPENDENT_XREFS}}, \%dep;
 
-	my %dep2;
-	$dep2{SOURCE_ID} = $dependent_sources{WikiGene} 
-          || die( 'No source for WikiGene!' );
-	$dep2{LINKAGE_SOURCE_ID} = $source_id;
-	$dep2{ACCESSION} = $ll;
-	push @{$xref->{DEPENDENT_XREFS}}, \%dep2;
+  	  my %dep2;
+	  $dep2{SOURCE_ID} = $wiki_source_id;
+	  $dep2{LINKAGE_SOURCE_ID} = $source_id;
+	  $dep2{ACCESSION} = $ll;
+          $dep2{LABEL} = $entrez{$ll};
+	  push @{$xref->{DEPENDENT_XREFS}}, \%dep2;
+        }
       }
 
       # Don't add SGD Xrefs, as they are mapped directly from SGD ftp site
