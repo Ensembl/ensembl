@@ -85,6 +85,7 @@ sub put {
   my ($self, $key, $object) = @_;
   my $old = $self->SUPER::put($key, $object);
   #Add to additional lookup
+  $self->remove_from_additional_lookup($key, $old) if $old;
   $self->add_to_additional_lookups($key, $object);
   return $old if $old;
   return;

@@ -119,6 +119,11 @@ sub BEGIN {
 
     dies_ok { $cache->get_by_additional_lookup('biotype', 'protein_coding') } 'Expect to die as the query will return more than one value';
 
+    # Add the same gene to the cache and check it's not there twice
+    $cache->put($individual_gene->dbID(), $individual_gene);
+    my $same_genes = $cache->get_all_by_additional_lookup('dbID', $gene_ids->[0]);
+    is(scalar(@$same_genes), 1, 'The gene is still in 1 copy in the lookup');
+
     #Clear the cache and make sure that we can still retrieve by additional values
     {
       $cache->clear_cache();
