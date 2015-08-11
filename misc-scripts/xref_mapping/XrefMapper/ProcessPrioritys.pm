@@ -276,6 +276,7 @@ sub process_dependents{
   my $insert_dep_ox_sth = $self->xref->dbc->prepare("insert ignore into object_xref(master_xref_id, ensembl_object_type, ensembl_id, linkage_type, ox_status, xref_id) values(?, ?, ?, 'DEPENDENT', 'DUMP_OUT', ?)");
   my $dep_ox_sth        = $self->xref->dbc->prepare("select object_xref_id from object_xref where master_xref_id = ? and ensembl_object_type = ? and ensembl_id = ? and linkage_type = 'DEPENDENT' AND ox_status = 'DUMP_OUT' and xref_id = ?");
   my $insert_dep_go_sth = $self->xref->dbc->prepare("insert ignore into go_xref values(?, ?, ?)");
+  my $insert_ix_sth     = $self->xref->dbc->prepare("insert ignore into identity_xref(object_xref_id, query_identity, target_identity) values(?, 100, 100)");
 
   my @master_xrefs;
   my @old_ensembl_ids;
@@ -315,6 +316,7 @@ sub process_dependents{
           $dep_ox_sth->bind_columns(\$new_object_xref_id);
           while ($dep_ox_sth->fetch()) {
             $insert_dep_go_sth->execute($new_object_xref_id, $linkage_type, $new_master_xref_id); 
+            $insert_ix_sth->execute($new_object_xref_id);
           }
         }
       }
