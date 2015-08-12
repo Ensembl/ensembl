@@ -852,4 +852,17 @@ SKIP: {
   dies_ok { $gene->get_all_homologous_Genes(); } 'No Compara DBAdaptor has been configured. No way to retrieve data';
 }
 
+# Checking for External DB fetching by Ontology linkage type
+{
+  my $genes = $ga->fetch_all_by_ontology_linkage_type('GO', 'IDA');
+  is(scalar(@{$genes}), 9, 'Expect 9 genes linked to IDAs'); 
+  foreach my $gene (@{$genes}) {
+    my %linkage_types = 
+      map { $_, 1 }
+      map { @{$_->get_all_linkage_types()} }
+      @{$gene->get_all_DBLinks('GO')};
+    ok($linkage_types{'IDA'}, $gene->stable_id().' was linked to an IDA term. Seaching thorough all links we find the IDA linkage');
+  }
+}
+
 done_testing();

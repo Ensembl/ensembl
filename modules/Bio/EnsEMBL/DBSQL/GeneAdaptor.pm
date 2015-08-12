@@ -956,6 +956,50 @@ sub fetch_all_by_GOTerm {
   return \@result;
 }
 
+=head2 fetch_all_by_ontology_linkage_type
+
+  Arg [1]   : (optional) string $db_name
+              The database name to search for. Defaults to GO
+  Arg [2]   : string $linkage_type
+              Linkage type to search for e.g. IMP
+
+  Example:    my $genes = $gene_adaptor->fetch_all_by_ontology_linkage_type('GO', 'IMP');
+              my $genes = $gene_adaptor->fetch_all_by_ontology_linkage_type(undef, 'IMP');
+
+  Description   : Retrieves a list of genes that are associated with
+                  the given ontology linkage type.  The genes returned 
+                  are in their native coordinate system, i.e. in the 
+                  coordinate system in which they are stored in the database.
+  Return type   : listref of Bio::EnsEMBL::Gene
+  Exceptions    : Throws if a linkage type is not given
+  Caller        : general
+  Status        : Stable
+
+=cut
+
+sub fetch_all_by_ontology_linkage_type {
+  my ($self, $db_name, $linkage_type) = @_;
+  $db_name = 'GO' if ! defined $db_name;
+  throw "No linkage type given" if ! defined $linkage_type;
+
+  my $dbentry_adaptor = $self->db->get_DBEntryAdaptor();
+  my $external_db_ids = $dbentry_adaptor->get_external_db_ids($db_name, undef, 'ignore release');
+  if (scalar(@{$external_db_ids}) == 0) {
+    warning sprintf("Could not find external database '%s' in the external_db table", $db_name);
+    return [];
+  }
+
+  # Get the gene_ids for those with links.
+  my %unique_dbIDs;
+  foreach my $local_external_db_id (@{$external_db_ids}) {
+    my @gene_ids = $dbentry_adaptor->list_gene_ids_by_external_db_id($local_external_db_id, $linkage_type);
+    $unique_dbIDs{$_} = 1 for @gene_ids;
+  }
+
+  # Get all the genes and return
+  return $self->fetch_all_by_dbID_list([keys %unique_dbIDs]);
+}
+
 =head2 fetch_all_by_GOTerm_accession
 
   Arg [1]   : String
