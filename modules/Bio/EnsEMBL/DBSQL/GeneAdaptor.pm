@@ -563,25 +563,14 @@ sub fetch_all_by_Slice_and_external_dbname_link {
   my %linked_genes;
 
   foreach my $local_external_db_id (@{$external_db_ids}) {
-    my @linked_genes = $dbentry_adaptor->list_gene_ids_by_external_db_id($local_external_db_id);
-    foreach my $gene_id (@linked_genes) {
-      $linked_genes{$gene_id} = 1;
-    }
+    my @linked_genes = $dbe_adaptor->list_gene_ids_by_external_db_id($local_external_db_id);
+    $linked_genes{$_} = 1 for @linked_genes;
   }
-
-  # Get all the genes on the slice.
-  my $genes = $self->SUPER::fetch_all_by_Slice_constraint($slice, 'g.is_current = 1', $logic_name);
-
-  # Create a list of those that are in the gene_ids list.
-  my @genes_passed;
-  foreach my $gene (@$genes) {
-    if (exists($linked_genes{$gene->dbID()})) {
-      push(@genes_passed, $gene);
-    }
-  }
-
-  # Return the list of those that passed.
-  return \@genes_passed;
+  
+  # Get all the genes on the slice and filter by the gene ids list
+  my $genes = $self->fetch_all_by_Slice($slice, $logic_name, $load_transcripts);
+  my $genes_passed = [ grep { exists $linked_genes{$_->dbID()} } @{$genes} ];
+  return $genes_passed;
 } ## end sub fetch_all_by_Slice_and_external_dbname_link
 
 =head2 fetch_all_by_Slice
