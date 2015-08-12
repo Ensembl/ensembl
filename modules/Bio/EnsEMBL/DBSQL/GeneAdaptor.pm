@@ -563,7 +563,7 @@ sub fetch_all_by_Slice_and_external_dbname_link {
   my %linked_genes;
 
   foreach my $local_external_db_id (@{$external_db_ids}) {
-    my @linked_genes = $dbe_adaptor->list_gene_ids_by_external_db_id($local_external_db_id);
+    my @linked_genes = $dbentry_adaptor->list_gene_ids_by_external_db_id($local_external_db_id);
     $linked_genes{$_} = 1 for @linked_genes;
   }
   
