@@ -70,6 +70,7 @@ use POSIX qw(strftime);
 use Bio::EnsEMBL::Utils::Argument qw(rearrange);
 use Bio::EnsEMBL::Utils::Exception qw(throw);
 use Bio::EnsEMBL::Utils::ScriptUtils qw(parse_bytes);
+use Carp;
 
 my %level_defs = (
   'error'     => 1,
@@ -195,7 +196,7 @@ sub error {
   $self->log_generic("\nExiting prematurely.\n\n");
   $self->log_generic("Runtime: ".$self->runtime." ".$self->date_and_mem."\n\n");
   
-  exit(1);
+  confess($txt);
 }
 
 
