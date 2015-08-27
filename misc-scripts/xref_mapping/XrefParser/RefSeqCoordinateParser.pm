@@ -214,6 +214,7 @@ sub run_script {
         my %transcript_result;
         my %tl_transcript_result;
         my $id = $transcript_of->stable_id();
+        if (!defined $id) { next; }
         if ($id =~ /^XM_/) { next; }
         my $exons_of = $transcript_of->get_all_Exons();
         my $rr1 = Bio::EnsEMBL::Mapper::RangeRegistry->new();
