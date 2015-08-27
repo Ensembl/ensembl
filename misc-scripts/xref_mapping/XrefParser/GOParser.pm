@@ -228,20 +228,20 @@ sub run {
         #ZFIN  ZDB-GENE-030131-5418  rfng  GO:0030902  ZFIN:ZDB-PUB-050125-4|PMID:15659486  IMP  ZFIN:ZDB-MRPHLNO-050308-5  radical fringe homolog (Drosophila)  gene  taxon:7955  20050310  ZFIN
         if(!defined($fishset)){
           $fishset = 1;
-          %fish = %{$self->get_valid_xrefs_for_dependencies
-                ('ZFIN_ID','Uniprot/SPTREMBL','RefSeq_peptide',
-                'Uniprot/SWISSPROT')};
+          %fish = %{$self->get_valid_codes("ZFIN_ID",$species_id)};
         }
-        if(defined($fish{$array[1]})){
-            $self->add_dependent_xref({ master_xref_id => $fish{$array[1]},
+        if($fish{$array[1]}){
+          foreach my $xref_id (@{$fish{$array[1]}}) {
+            $self->add_dependent_xref({ master_xref_id => $xref_id,
                 acc            => $array[4],
                 label          => $array[4],
                 desc           => $go_to_desc{$array[4]} || '',
                 linkage        => $array[6],
                 source_id      => $source_id,
                 species_id     => $species_id} );
-          $zfish_count++;
-          $count++;
+            $zfish_count++;
+            $count++;
+          }
         }
       }
 
@@ -342,7 +342,7 @@ sub run {
     $go_io->close();
 
     print "\t$count GO dependent xrefs added $refseq_miss refseq not found and $swiss_miss Swissprot not found \n" if($verbose);
-    print "Added $refseq_count refseq, $uniprot_count uniprot\n";
+    print "Added $refseq_count refseq, $uniprot_count uniprot and $zfish_count zfin\n";
   }
   if ( defined $release_file ) {
     # Parse and set release information from $release_file.
