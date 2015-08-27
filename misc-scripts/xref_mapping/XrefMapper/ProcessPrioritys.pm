@@ -272,7 +272,8 @@ sub process_dependents{
   my $insert_dep_x_sth  = $self->xref->dbc->prepare("insert into dependent_xref(master_xref_id, dependent_xref_id, linkage_annotation, linkage_source_id) values(?, ?, ?, ?)");
   my $remove_dep_ox_sth = $self->xref->dbc->prepare("delete ix, g from object_xref ox left join identity_xref ix on ix.object_xref_id = ox.object_xref_id left join go_xref g on g.object_xref_id = ox.object_xref_id where master_xref_id = ? and ensembl_object_type = ? and xref_id = ? and ensembl_id = ?");
   my $old_ens_id_sth    = $self->xref->dbc->prepare("select distinct ensembl_id from object_xref where xref_id = ?");
-  my $update_dep_ox_sth = $self->xref->dbc->prepare("update object_xref set ox_status = 'FAILED_PRIORITY' where master_xref_id = ? and ensembl_object_type = ? and xref_id = ? and ensembl_id = ? and ox_status = 'DUMP_OUT'");
+  my $update_dep_ox_sth = $self->xref->dbc->prepare("update ignore object_xref set ox_status = 'FAILED_PRIORITY' where master_xref_id = ? and ensembl_object_type = ? and xref_id = ? and ensembl_id = ? and ox_status = 'DUMP_OUT'");
+  my $clean_dep_ox_sth  = $self->xref->dbc->prepare("delete from object_xref where master_xref_id = ? and ensembl_object_type = ? and xref_id = ? and ensembl_id = ? and ox_status = 'DUMP_OUT'");
   my $insert_dep_ox_sth = $self->xref->dbc->prepare("insert ignore into object_xref(master_xref_id, ensembl_object_type, ensembl_id, linkage_type, ox_status, xref_id) values(?, ?, ?, 'DEPENDENT', 'DUMP_OUT', ?)");
   my $dep_ox_sth        = $self->xref->dbc->prepare("select object_xref_id from object_xref where master_xref_id = ? and ensembl_object_type = ? and ensembl_id = ? and linkage_type = 'DEPENDENT' AND ox_status = 'DUMP_OUT' and xref_id = ?");
   my $insert_dep_go_sth = $self->xref->dbc->prepare("insert ignore into go_xref values(?, ?, ?)");
@@ -281,10 +282,22 @@ sub process_dependents{
   my @master_xrefs;
   my @old_ensembl_ids;
   my $old_ensembl_id;
+  my $recursive = 0;
 
   $old_ens_id_sth->execute($old_master_xref_id);
   $old_ens_id_sth->bind_columns(\$old_ensembl_id);
+  my $skip = 0;
   while ($old_ens_id_sth->fetch()) {
+    $skip = 0;
+    foreach my $best_ensembl_id (@$best_ensembl_id) {
+      if ($old_ensembl_id eq $best_ensembl_id) {
+        $skip = 1;
+        last;
+      }
+    }
+    if ($skip) {
+      next;
+    }
     push @old_ensembl_ids, $old_ensembl_id;
   }
   $old_ens_id_sth->finish();
@@ -297,13 +310,21 @@ sub process_dependents{
     $dep_sth->bind_columns(\$dep_xref_id, \$linkage_type, \$linkage_source_id);
     ## Loop through all dependent xrefs
     while($dep_sth->fetch()){
-      ## Add dependent to priority xref
-      $insert_dep_x_sth->execute($new_master_xref_id, $dep_xref_id, $linkage_type, $linkage_source_id);
+      ## Add dependent to priority xref if it is the first master
+      if (!$recursive) {
+        $insert_dep_x_sth->execute($new_master_xref_id, $dep_xref_id, $linkage_type, $linkage_source_id);
+        foreach my $best_ensembl_id (@$best_ensembl_id) {
+          $remove_dep_ox_sth->execute($xref_id, $object_type, $dep_xref_id, $best_ensembl_id);
+          $update_dep_ox_sth->execute($xref_id, $object_type, $dep_xref_id, $best_ensembl_id);
+          $clean_dep_ox_sth->execute($xref_id, $object_type, $dep_xref_id, $best_ensembl_id);
+        }
+      }
       ## object_xref for dismissed xref set to FAILED_PRIORITY
       ## also delete any leftover identity or go xrefs
       foreach my $old_id (@old_ensembl_ids) {
         $remove_dep_ox_sth->execute($xref_id, $object_type, $dep_xref_id, $old_id);
         $update_dep_ox_sth->execute($xref_id, $object_type, $dep_xref_id, $old_id);
+        $clean_dep_ox_sth->execute($xref_id, $object_type, $dep_xref_id, $old_id);
       }
       ## Loop through all ensembl ids mapped to priority xref
       foreach my $best_ensembl_id (@$best_ensembl_id) {
@@ -321,12 +342,15 @@ sub process_dependents{
         }
       }
       push @master_xrefs, $dep_xref_id; # remember dependents dependents
+      $recursive = 1;
+      $new_master_xref_id = $dep_xref_id;
     }
   }
 
   $dep_sth->finish();
   $insert_dep_x_sth->finish();
   $remove_dep_ox_sth->finish();
+  $clean_dep_ox_sth->finish();
   $insert_dep_ox_sth->finish();
   $dep_ox_sth->finish();
   $insert_dep_go_sth->finish();
