@@ -681,6 +681,13 @@ sub biomart_fix{
     $from = "Translation";
     $from_id = "translation_id";
   }
+
+  if ($db_name eq 'GO' || $db_name eq 'goslim_goa') { 
+    $to = 'Translation';
+    $from = 'Transcript';
+    $to_id = 'translation_id';
+    $from_id = 'transcript_id';
+  }
   
   print "Therefore moving all associations from $from to ".$to."\n" if(defined($verbose));
   
@@ -699,7 +706,7 @@ EOF
   my $result =  $xref_dbc->do($sql) ;
 #  print "\n$sql\n";
 
-  if($db_name eq "GO"){
+  if($db_name eq "GO" || $db_name eq 'goslim_goa'){
     $sql =(<<"EOF2");
   DELETE object_xref, identity_xref, go_xref
     FROM object_xref, xref, source, identity_xref, go_xref
