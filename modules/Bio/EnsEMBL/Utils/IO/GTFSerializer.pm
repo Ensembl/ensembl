@@ -113,15 +113,28 @@ sub print_Gene {
     $biotype_display = $vegadb ? $gene->status . '_' . $gene->biotype : $gene->biotype;
   }
 
-  print $fh sprintf(qq{%s\t%s\tgene\t%d\t%d\t.\t%s\t.\t}, 
-        $idstr, $gene->source, 
-        ($gene->start()+$sliceoffset), ($gene->end()+$sliceoffset),
-        ($strand_conversion{$gene->strand}));
-  $self->_print_attribs($gene, $biotype_display, $gene, $biotype_display, 0, 'gene');
-  print $fh "\n";
+  # Skip all trans-splicing transcripts, they can't be dumped in GTF
+  # format.
+  my $single_trans_gene = scalar(@{$gene->get_all_Transcripts()});
+  my %trans_splicing_ids;
+  foreach my $t (@{$gene->get_all_Transcripts()}) {
+    if (map { $_->value } @{ $t->get_all_Attributes('trans_spliced') }) {
+      $trans_splicing_ids{$t->stable_id()} = 1;
+    }
+  }
+  if ((values (%trans_splicing_ids)) && $single_trans_gene == 1) {
+    return;
+  } else {
+    print $fh sprintf(qq{%s\t%s\tgene\t%d\t%d\t.\t%s\t.\t}, 
+      $idstr, $gene->source, 
+      ($gene->start()+$sliceoffset), ($gene->end()+$sliceoffset),
+      ($strand_conversion{$gene->strand}));
+    $self->_print_attribs($gene, $biotype_display, $gene, $biotype_display, 0, 'gene');
+    print $fh "\n";
 
   # Now print all transcripts
   foreach my $t (@{$gene->get_all_Transcripts()}) {
+    next if (exists ($trans_splicing_ids{$t->stable_id()}));
     $self->print_feature($t, $gene);
   }
   return;
