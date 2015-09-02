@@ -202,23 +202,39 @@ my %group2adaptor = (
                the database if not used properly.  If in doubt, do
                not use it or ask in the developer mailing list.
 
+  Arg [5]:     (optional) boolean
+               This option will make load_all() throw if the configuration file
+               is missing and cannot be guessed from the environment
+
   Example    : Bio::EnsEMBL::Registry->load_all();
   Returntype : Int count of the DBAdaptor instances which can be found in the 
                registry due to this method being called. Will never be negative
-  Exceptions : none
+  Exceptions : Throws if $throw_if_missing is set and ($config_file is missing
+               and cannot be guessed from the environment
   Status     : Stable
 
 =cut
 
 sub load_all {
-    my ($class, $config_file, $verbose, $no_clear, $no_cache ) = @_;
+    my ($class, $config_file, $verbose, $no_clear, $no_cache, $throw_if_missing ) = @_;
 
     if ( !defined($config_file) ) {
       if ( defined( $ENV{ENSEMBL_REGISTRY} ) ) {
-        $config_file = $ENV{ENSEMBL_REGISTRY};
+        if (-e $ENV{ENSEMBL_REGISTRY}) {
+          $config_file = $ENV{ENSEMBL_REGISTRY};
+        } else {
+          warning("\$ENV{ENSEMBL_REGISTRY} points to a file ('$ENV{ENSEMBL_REGISTRY}') that does not exist.\n");
+        }
       } elsif ( defined( $ENV{HOME} ) ) {
-        $config_file = $ENV{HOME} . "/.ensembl_init";
+        if (-e ($ENV{HOME} . "/.ensembl_init")) {
+          $config_file = $ENV{HOME} . "/.ensembl_init";
+        }
       }
+      if ($throw_if_missing and !defined($config_file) ) {
+        throw("No registry configuration to load, and no default could be guessed.\n");
+      }
+    } elsif ($throw_if_missing and !(-e $config_file)) {
+      throw(printf("Configuration file '%s' does not exist. Registry configuration not loaded.\n", $config_file ));
     }
 
     $verbose  ||= 0;
