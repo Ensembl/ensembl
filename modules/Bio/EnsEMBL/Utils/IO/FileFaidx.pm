@@ -117,7 +117,7 @@ sub file {
   return $self->{'file'};
 }
 
-=head2 store
+=head2 write_index_to_disk
   
   Arg [1]     : Boolean; $write_index_to_disk. Controls if we write the index back to disk
   Description : Controls if we can write back to disk. Only run to generate the indexes
