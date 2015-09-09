@@ -206,6 +206,11 @@ sub print_feature {
                     $value = 'gene:' . $value;
                   } elsif ($feature->isa('Bio::EnsEMBL::Exon')) {
                     $key = 'Name';
+                  } elsif ($feature->isa('Bio::EnsEMBL::CDS')) {
+                    my $trans_spliced = $feature->transcript->get_all_Attributes('trans_spliced');
+                    if (scalar(@$trans_spliced)) {
+                      $value = $so_term . ':' . join('_', $value, $feature->seq_region_name, $feature->seq_region_strand);
+                    }
                   } else {
                     $value = $so_term . ':' . $value;
                   }
