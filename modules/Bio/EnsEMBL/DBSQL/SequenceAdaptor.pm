@@ -71,7 +71,7 @@ our @EXPORT = (@{$DBI::EXPORT_TAGS{'sql_types'}});
 sub new {
   my ($caller, $db, $chunk_power, $cache_size) = @_;
   my $class = ref($caller) || $caller;
-  my $self = $class->SUPER::new(@_);
+  my $self = $class->SUPER::new($db);
   $self->_init_seq_instance($chunk_power, $cache_size);
   $self->_populate_seq_region_edits();
   return $self;
