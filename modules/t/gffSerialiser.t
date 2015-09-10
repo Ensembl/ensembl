@@ -56,6 +56,8 @@ use Test::Differences;
 
 my $db = Bio::EnsEMBL::Test::MultiTestDB->new();
 my $dba = $db->get_DBAdaptor('core');
+my $omulti = Bio::EnsEMBL::Test::MultiTestDB->new('ontology');
+my $odb = $omulti->get_DBAdaptor('ontology');
 
 my $id = 'ENSG00000131044';
 
@@ -132,6 +134,31 @@ OUT
   );
   $expected .= "\n";
   assert_gff3($gene->canonical_transcript(), $expected, 'Transcript with custom source serialises to GFF3 as expected. Source is wibble');
+
+  $expected = <<'OUT';
+##gff-version 3
+##sequence-region   20 30274334 30274425
+OUT
+  $expected .= join("\t",
+  qw/20      ensembl region  30274334        30274425        .       +       0/,
+  'ID=region:ENSP00000308980;Parent=transcript:ENST00000310998;protein_id=ENSP00000308980'
+  );
+  $expected .= "\n";
+  my $cds = $gene->canonical_transcript->get_all_CDS();
+  assert_gff3($cds->[0], $expected, 'CDS with custom source serialises to GFF3 as expected. Source is wibble');
+
+  $expected = <<'OUT';
+##gff-version 3
+##sequence-region   20 30274334 30274425
+OUT
+  $expected .= join("\t",
+  qw/20 .       region  30274334        30274425        .       +       ./,
+  'Name=ENSE00001155821;constitutive=0;ensembl_end_phase=2;ensembl_phase=0;exon_id=ENSE00001155821;version=1'
+  );
+  $expected .= "\n";
+  my $exon = $gene->canonical_transcript->get_all_Exons();
+  assert_gff3($exon->[0], $expected, 'Exon with custom source serialises to GFF3 as expected. Source is wibble');
+
 }
 
 {
