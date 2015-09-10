@@ -21,6 +21,7 @@ use Test::Exception;
 use Data::Dumper;
 use Bio::EnsEMBL::Registry;
 use Bio::EnsEMBL::Test::MultiTestDB;
+use Bio::EnsEMBL::DBSQL::OntologyDBAdaptor;
 use Bio::EnsEMBL::Test::TestUtils;
 use Bio::EnsEMBL::Exon;
 use Bio::EnsEMBL::FeaturePair;
@@ -41,6 +42,14 @@ my $db = $multi->get_DBAdaptor("core");
 
 debug("Test database instatiated");
 ok($db);
+
+my $ontology = Bio::EnsEMBL::Test::MultiTestDB->new('ontology');
+
+my $odb = $ontology->get_DBAdaptor("ontology");
+note("Ontology database instatiated");
+ok($odb);
+my $go_adaptor = $odb->get_OntologyTermAdaptor();
+
 
 my $gene;
 my $ga = $db->get_GeneAdaptor();
@@ -468,6 +477,58 @@ ok(($genes[0]->stable_id() eq 'ENSG00000174873') || ($genes[1]->stable_id() eq '
 ($gene) = @{$ga->fetch_all_by_external_name('MAE1_HUMAN')};
 debug($gene->stable_id);
 ok($gene->stable_id() eq 'ENSG00000101367');
+
+#
+# test GeneAdaptor::fetch_all_by_Slice
+#
+@genes = @{ $ga->fetch_all_by_Slice($slice) };
+is(scalar(@genes), 19, "Found 19 genes with fetch_all_by_Slice");
+is($genes[0]->stable_id(), 'ENSG00000131044', "First gene is ENSG00000131044");
+is($genes[1]->stable_id(), 'ENSG00000174873', "Second gene is ENSG00000174873");
+
+#
+# test GeneAdaptor::fetch_all_by_Slice_and_external_dbname_link
+#
+@genes = @{ $ga->fetch_all_by_Slice_and_external_dbname_link($slice, undef, 0, "Hugo") };
+is(scalar(@genes), 13, "Found 13 genes with fetch_all_by_Slice_and_external_dbname_link");
+is($genes[0]->stable_id(), 'ENSG00000131044', "First gene is ENSG00000131044");
+is($genes[1]->stable_id(), 'ENSG00000088356', "Second gene is ENSG00000088356");
+
+#
+# test GeneAdaptor::fetch_all_by_display_label
+#
+@genes = @{ $ga->fetch_all_by_display_label("C20orf125") };
+is(scalar(@genes), 1, "Found 1 genes with fetch_all_by_display_label");
+is($genes[0]->stable_id(), 'ENSG00000131044', "First gene is ENSG00000131044");
+
+#
+# test GeneAdaptor::fetch_all_by_transcript_supporting_evidence
+#
+@genes = @{ $ga->fetch_all_by_transcript_supporting_evidence('Q9VZ97', 'protein_align_feature') };
+is(scalar(@genes), 0, "Found 0 genes with fetch_all_by_transcript_supporting_evidence");
+
+
+#
+# test GeneAdaptor::fetch_all_by_exon_supporting_evidence
+#
+@genes = @{ $ga->fetch_all_by_exon_supporting_evidence('BF346221.1', 'dna_align_feature') };
+is(scalar(@genes), 1, "Found 1 genes with fetch_all_by_exon_supporting_evidence");
+
+
+#
+# test GeneAdaptor::fetch_all_by_GOTerm
+#
+my $go_term = $go_adaptor->fetch_by_accession('GO:0070363');
+@genes = @{ $ga->fetch_all_by_GOTerm($go_term) };
+is(scalar(@genes), 0, "Found 0 genes with fetch_all_by_GOTerm");
+
+
+#
+# test GeneAdaptor::fetch_all_by_GOTerm_accession
+#
+#@genes = @{ $ga->fetch_all_by_GOTerm_accession("GO:0004835") };
+#is(scalar(@genes), 13, "Found 13 genes with fetch_all_by_GOTerm_accession");
+#is($genes[0]->stable_id(), 'ENSG00000131044', "First gene is ENSG00000131044");
 
 #
 # test fetch_all_by_description
