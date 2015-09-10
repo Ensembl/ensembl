@@ -404,8 +404,8 @@ sub print_feature {
   push @$utrs, @{$transcript->get_all_three_prime_UTRs()};
   foreach my $utr (@{$utrs}) {
     my $strand = $strand_conversion{$utr->strand()};
-    print $fh sprintf(qq{%s\t%s\tUTR\t%d\t%d\t.\t%s\t.\t}, 
-        $idstr, $transcript->source, ($utr->start()+$sliceoffset), ($utr->end+$sliceoffset), $strand);
+    print $fh sprintf(qq{%s\t%s\t%s\t%d\t%d\t.\t%s\t.\t}, 
+        $idstr, $transcript->source, $utr->type, ($utr->start()+$sliceoffset), ($utr->end+$sliceoffset), $strand);
     $self->_print_attribs($gene, $biotype_display, $transcript, $transcript_biotype, 0, 'UTR', undef, undef, $has_selenocysteine);
     print $fh "\n";
   }
