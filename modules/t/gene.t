@@ -489,7 +489,7 @@ is($genes[1]->stable_id(), 'ENSG00000174873', "Second gene is ENSG00000174873");
 #
 # test GeneAdaptor::fetch_all_by_Slice_and_external_dbname_link
 #
-@genes = @{ $ga->fetch_all_by_Slice_and_external_dbname_link($slice, undef, 0, "Hugo") };
+@genes = @{ $ga->fetch_all_by_Slice_and_external_dbname_link($slice, undef, 0, "HUGO") };
 is(scalar(@genes), 13, "Found 13 genes with fetch_all_by_Slice_and_external_dbname_link");
 is($genes[0]->stable_id(), 'ENSG00000131044', "First gene is ENSG00000131044");
 is($genes[1]->stable_id(), 'ENSG00000088356', "Second gene is ENSG00000088356");
