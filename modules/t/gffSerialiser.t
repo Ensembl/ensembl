@@ -147,6 +147,8 @@ OUT
   my $cds = $gene->canonical_transcript->get_all_CDS();
   assert_gff3($cds->[0], $expected, 'CDS with custom source serialises to GFF3 as expected. Source is wibble');
 
+  my $cds_expected = $expected;
+
   $expected = <<'OUT';
 ##gff-version 3
 ##sequence-region   20 30274334 30274425
@@ -158,6 +160,17 @@ OUT
   $expected .= "\n";
   my $exon = $gene->canonical_transcript->get_all_ExonTranscripts();
   assert_gff3($exon->[0], $expected, 'Exon with custom source serialises to GFF3 as expected. Source is wibble');
+
+  $cds_expected .= join("\t",
+  qw/20 ensembl       region  30274334        30274425        .       +       ./,
+  'Name=ENSE00001155821;Parent=transcript:ENST00000310998;constitutive=0;ensembl_end_phase=2;ensembl_phase=0;exon_id=ENSE00001155821;rank=1;version=1'
+  );
+  $cds_expected .= "\n";
+  my @list;
+  push @list, $cds->[0];
+  push @list, $exon->[0];
+  assert_gff3_list(\@list, $cds_expected, "List of features serialises to GFF3 as expected");
+
 
 }
 
@@ -191,6 +204,16 @@ sub assert_gff3 {
   my $ser = Bio::EnsEMBL::Utils::IO::GFFSerializer->new($ota, $fh);
   $ser->print_main_header([$feature->feature_Slice()]);
   $ser->print_feature($feature);
+  eq_or_diff(${$fh->string_ref()}, $expected, $msg);
+}
+
+sub assert_gff3_list {
+  my ($features, $expected, $msg) = @_;
+  my $ota = Test::SO->new();
+  my $fh = IO::String->new();
+  my $ser = Bio::EnsEMBL::Utils::IO::GFFSerializer->new($ota, $fh);
+  $ser->print_main_header([$features->[0]->feature_Slice()]);
+  $ser->print_feature_list($features);
   eq_or_diff(${$fh->string_ref()}, $expected, $msg);
 }
 
