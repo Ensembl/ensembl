@@ -152,11 +152,11 @@ OUT
 ##sequence-region   20 30274334 30274425
 OUT
   $expected .= join("\t",
-  qw/20 .       region  30274334        30274425        .       +       ./,
-  'Name=ENSE00001155821;constitutive=0;ensembl_end_phase=2;ensembl_phase=0;exon_id=ENSE00001155821;version=1'
+  qw/20 ensembl       region  30274334        30274425        .       +       ./,
+  'Name=ENSE00001155821;Parent=transcript:ENST00000310998;constitutive=0;ensembl_end_phase=2;ensembl_phase=0;exon_id=ENSE00001155821;rank=1;version=1'
   );
   $expected .= "\n";
-  my $exon = $gene->canonical_transcript->get_all_Exons();
+  my $exon = $gene->canonical_transcript->get_all_ExonTranscripts();
   assert_gff3($exon->[0], $expected, 'Exon with custom source serialises to GFF3 as expected. Source is wibble');
 
 }
