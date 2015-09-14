@@ -174,14 +174,14 @@ is($alt_transcript_count, $genome->get_alt_transcript_count(), "Number of alt tr
 
 my $counts = $genome->fetch_all_statistics();
 is(scalar(@$counts), 16, "All separate statistics retrieved");
-my $genome_object = $counts->[0];
-is(ref($genome_object), 'Bio::EnsEMBL::Genome', "New Genome object");
-is($genome_object->statistic, "pseudogene_cnt", "Contains gene counts");
-is($genome_object->code, "pseudogene_cnt", "Code is gene_count");
-is($genome_object->name, "Pseudogene count", "Name is Gene count");
-is($genome_object->description, "Number of pseudogenes", "Description is gene count");
-is($genome_object->dbID, 67, "Correct dbID");
-is($genome_object->species_id, undef, "Correct species id");
+foreach my $genome_object (@$counts) {
+  debug($genome_object->statistic);
+  debug($genome_object->code);
+  debug($genome_object->name);
+  debug($genome_object->description);
+  debug($genome_object->dbID);
+  debug($genome_object->species_id);
+}
 
 #
 # Test region methods
