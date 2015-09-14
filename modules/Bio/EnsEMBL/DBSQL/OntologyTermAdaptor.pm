@@ -939,7 +939,7 @@ sub fetch_all_alt_ids {
   my ($this, $accession) = @_;
 
   my $statement = q(
-SELECT  alt_id.accession,
+SELECT  alt_id.accession
 FROM    term
   JOIN  alt_id USING (term_id)
  WHERE  term.accession = ?);
@@ -1054,7 +1054,7 @@ SELECT  term.term_id,
 FROM    ontology
   JOIN  term USING (ontology_id));
 
-  $statement .= " AND term.is_obsolete = 0" unless $include_obsolete;
+  $statement .= " WHERE term.is_obsolete = 0" unless $include_obsolete;
 
   my $sth = $this->prepare($statement);
   $sth->execute();
