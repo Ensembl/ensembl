@@ -106,6 +106,27 @@ ok($dnaf->end == 14);
 #
 ok( scalar($dnaf->ungapped_features) == 2);
 
+#
+# Test alignment strings
+#
+
+my $alignment_strings = $dnaf->alignment_strings('NO_HSEQ');
+is($alignment_strings->[0], 'AAATTAAGGG', 'Retrieved query sequence');
+is($alignment_strings->[1], '', 'No target sequence');
+$alignment_strings = $dnaf->alignment_strings('FIX_SEQ', 'NO_HSEQ');
+is($alignment_strings->[0], 'AAATTAAGGG', 'Retrieved fixed query sequence');
+
+#
+# Test restrict_between_positions
+#
+
+my $new_daf = $dnaf->restrict_between_positions($dnaf->start + 2, $dnaf->end, 'SEQ');
+is($new_daf->start, $dnaf->start + 2, 'New daf start');
+is($new_daf->end, $dnaf->end, 'End has not changed');
+$new_daf = $dnaf->restrict_between_positions(1, $dnaf->end - 2, 'SEQ');
+is($new_daf->start, $dnaf->start, 'No start change if beyond the start');
+is($new_daf->end, $dnaf->end - 2, 'New daf end');
+
 
 #
 # 12 Test retrieval from database
@@ -133,29 +154,6 @@ ok($f);
 #
 $f = $f->transfer($chr_slice->invert);
 ok($f);
-
-#
-# Test alignment strings
-#
-
-my $alignment_strings = $f->alignment_strings('NO_HSEQ');
-is($alignment_strings->[0], 'TACCTG', 'Retrieved query sequence');
-is($alignment_strings->[1], '', 'No target sequence');
-$alignment_strings = $f->alignment_strings('FIX_SEQ', 'NO_HSEQ');
-is($alignment_strings->[0], 'TACCTG', 'Retrieved fixed query sequence');
-
-#
-# Test restrict_between_positions
-#
-
-my $new_daf = $f->restrict_between_positions(104067, 104070, 'SEQ');
-is($new_daf->start, $f->start, 'Start has not changed');
-is($new_daf->end, $f->end - 2, 'New end');
-$new_daf = $f->restrict_between_positions(1, 104070, 'SEQ');
-is($new_daf->start, 104067, 'No start change if beyond the start');
-is($new_daf->end, 104070, 'New daf end');
-$new_daf = $f->restrict_between_positions(1, 5, 'SEQ');
-is($new_daf, undef, "Restriction out of bounds");
 
 
 
