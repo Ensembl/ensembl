@@ -96,13 +96,22 @@ is(@{$efo_roots}, 0, "Found no efo roots");
 $term = $go_adaptor->fetch_by_accession('GO:0000182',1); # unintentionally picked an obsolete term for testing on.
 my $term_list = $go_adaptor->fetch_all_by_descendant_term($term);
 my $inclusive_term_list = $go_adaptor->fetch_all_by_descendant_term($term,undef,undef,1);
+my $other_term_list = $term->ancestors();
 ok (scalar(@$term_list) == scalar(@$inclusive_term_list) - 1, "Zero_distance flag on fetch_all_by_descendant_term");
+is(scalar(@$term_list), scalar(@$other_term_list), "Fetching all by descendant is the same as fetching all ancestors for term");
+is($term_list->[0]->accession, $other_term_list->[0]->accession, "Fetching all by descendant is the same as fetching all ancestors for term");
 
 my $parent_list = $go_adaptor->fetch_all_by_parent_term($term);
+my $other_parent_list = $term->children();
 is(scalar(@$parent_list), 2, 'Term has 2 parent');
+is(scalar(@$parent_list), scalar(@$other_parent_list), "Fetching all by parent is the same as fetching all children for term");
+is($parent_list->[0], $other_parent_list->[0], "Same terms returned");
 
 my $child_list = $go_adaptor->fetch_all_by_child_term($term);
+my $other_child_list = $term->parents();
 is(scalar(@$child_list), 1, 'Term has 1 child');
+is(scalar(@$child_list), scalar(@$other_child_list), "Fetching all terms by child is the same as fetching all parents for term");
+is($child_list->[0], $other_child_list->[0], "Fetching all terms by child is the same as fetching all parents for term");
 
 my $chart = $go_adaptor->_fetch_ancestor_chart($term, 'GO');
 ok(%$chart, 'Can fetch ancestor chart');
