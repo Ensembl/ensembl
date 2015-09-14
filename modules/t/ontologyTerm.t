@@ -98,4 +98,31 @@ my $term_list = $go_adaptor->fetch_all_by_descendant_term($term);
 my $inclusive_term_list = $go_adaptor->fetch_all_by_descendant_term($term,undef,undef,1);
 ok (scalar(@$term_list) == scalar(@$inclusive_term_list) - 1, "Zero_distance flag on fetch_all_by_descendant_term");
 
+my $parent_list = $go_adaptor->fetch_all_by_parent_term($term);
+is(scalar(@$parent_list), 2, 'Term has 2 parent');
+
+my $child_list = $go_adaptor->fetch_all_by_child_term($term);
+is(scalar(@$child_list), 1, 'Term has 1 child');
+
+my $chart = $go_adaptor->_fetch_ancestor_chart($term, 'GO');
+ok(%$chart, 'Can fetch ancestor chart');
+
+my $new_term = $go_adaptor->fetch_by_dbID($term->dbID, 1);
+is($new_term->accession, $term->accession, "Fetched the same term using dbID");
+
+my @dbid_list = ($term->dbID, $term_list->[0]->dbID);
+my $list = $go_adaptor->fetch_all_by_dbID_list(\@dbid_list);
+is($list->[0]->accession, $term_list->[0]->accession, "Fetched the correct term using list of dbIDs");
+my $obsolete_list = $go_adaptor->fetch_all_by_dbID_list(\@dbid_list, 1);
+is($obsolete_list->[0]->accession, $term->accession, "First dbID is obsolete");
+is(scalar(@$list), scalar(@$obsolete_list) - 1, "One obsolete term found");
+
+my $alts = $go_adaptor->fetch_all_alt_ids('GO:0000182');
+is(scalar(@$alts), 0, "No alternative accessions for GO:0000182");
+
+my $all = $go_adaptor->fetch_all();
+my $all_obsolete = $go_adaptor->fetch_all(1);
+is(scalar(@$all), 160, "160 terms found");
+is(scalar(@$all_obsolete), 164, "164 terms found when including obsolete ones");
+
 done_testing();
