@@ -66,9 +66,12 @@ my $event = $asi->get_event("G2");
 
 is(ref($event), 'Bio::EnsEMBL::StableIdEvent', "A stable id event was fetched");
 is($event->score, 0.54, "Mapping score between G1 and G2");
+my $string = $event->ident_string();
 
 my $old_archive_stable_id = $event->old_ArchiveStableId;
 my $new_archive_stable_id = $event->new_ArchiveStableId;
+
+is($string, "G2.3 (3) -> G1.2 (4) [0.54]", "Event string");
 
 is($new_archive_stable_id, $asi, "Initial archive is new archive");
 is($old_archive_stable_id->stable_id, "G2", "Old stable id");
