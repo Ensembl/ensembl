@@ -166,6 +166,8 @@ my $se_count = scalar(@{$exon->get_all_supporting_features});
 
 debug("Got $se_count supporting feature after transform");
 ok($se_count == $count);
+$exon->flush_supporting_features;
+is(scalar(@{$exon->get_all_supporting_features}), 0, "All supporting features flushed");
 
 #make sure that supporting evidencewas stored correctly
 $se_count = scalar(@{$newexon->get_all_supporting_features});
@@ -316,6 +318,9 @@ ok( $exon->coding_region_end($transcript) == 30578038 );
 
 is ( $exon->rank($transcript), 2, "Second exon has rank 2");
 
+my $pep = $exon->peptide($transcript);
+is($pep->seq, 'MTTFFTSVPPWIQDAKQEEEVGWKLVPRPRGREAESQVKCQCEISGTPFSNGEKLRPHSLPQPEQRPYSCPQLHCGKAFASKYKLYR', 'Retrieved peptide sequence');
+
 SKIP: {
   skip 'No registry support for SQLite yet', 1 if $db->dbc->driver() eq 'SQLite';
 
@@ -390,16 +395,19 @@ SKIP: {
     -END_EXON => $end_exon,
     -SEQ_END => 1296
   ));
+
   
   is($start_exon->cdna_coding_start($base_transcript), 426, 'CDNA start equals SEQ_START');
   is($start_exon->cdna_coding_end($base_transcript), 1457, 'CDNA end equals SEQ_START plus exon length');
   is($start_exon->coding_region_start($base_transcript), 4205, 'Coding region start is start of first exon');
   is($start_exon->coding_region_end($base_transcript), 5236, 'Coding region end is start of first exon plus its length');
+  is($start_exon->frame, 2, 'Coding start has frame 2');
   
   is($end_exon->cdna_coding_start($base_transcript), 1458, 'CDNA coding start equals END of first Exon + 1');
   is($end_exon->cdna_coding_end($base_transcript), 2753, 'CDNA coding end equals start plus its length into the last exon');
   is($end_exon->coding_region_start($base_transcript), 2068, 'Start is the end of the last exon minus the coding length');
   is($end_exon->coding_region_end($base_transcript), 3363, 'End is the same as the end exon end');
+
 }
 
 done_testing();
