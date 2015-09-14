@@ -161,6 +161,20 @@ OUT
   my $exon = $gene->canonical_transcript->get_all_ExonTranscripts();
   assert_gff3($exon->[0], $expected, 'Exon with custom source serialises to GFF3 as expected. Source is wibble');
 
+  my $new_id = 'ENSG00000126003';
+  my $utr_gene = $ga->fetch_by_stable_id($new_id);
+  my $utrs = $utr_gene->canonical_transcript->get_all_five_prime_UTRs();
+  $expected = <<'OUT';
+##gff-version 3
+##sequence-region   20 30583501 30583588
+OUT
+  $expected .= join("\t",
+  qw/20 ensembl       region  30583501  30583588        .       -       ./,
+  'Parent=transcript:ENST00000246229'
+  );
+  $expected .= "\n";
+  assert_gff3($utrs->[0], $expected, 'UTR feature serialises to GFF3 as expected');
+
   $cds_expected .= join("\t",
   qw/20 ensembl       region  30274334        30274425        .       +       ./,
   'Name=ENSE00001155821;Parent=transcript:ENST00000310998;constitutive=0;ensembl_end_phase=2;ensembl_phase=0;exon_id=ENSE00001155821;rank=1;version=1'
