@@ -57,65 +57,203 @@ use Bio::EnsEMBL::Utils::Exception;
 
 my %gene_so_mapping = 
   (
-   'protein_coding' 		=> 'SO:0001217', # protein_coding_gene
-   'pseudogene' 			=> 'SO:0000336', # pseudogene
-   'processed_transcript' 	=> 'SO:0001503', # processed_transcript
-   'lincRNA' 				=> 'SO:0001641', # lincRNA_gene
-   'polymorphic_pseudogene'=> 'SO:0000336',		 # pseudogene
-   'Mt_tRNA' 				=> 'SO:0000088', # mt_gene
-   'IG_D_gene' 			=> 'SO:0000510',	 # D_gene
-   'snoRNA' 				=> 'SO:0001267', #snoRNA_gene
-   'misc_RNA' 				=> 'SO:0000356', #RNA
-   'miRNA' 				=> 'SO:0001265', #miRNA_gene
-   'rRNA' 					=> 'SO:0001637', #rRNA_gene
-   'snRNA'					=> 'SO:0001268', #snRNA_gene
-   'snRNA_pseudogene'		=> 'SO:0000336', # pseudogene
-   'tRNA_pseudogene'		=> 'SO:0000778', # pseudogenic_tRNA
-   'rRNA_pseudogene'		=> 'SO:0000777', # pseudogenic_rRNA
-   'TR_J_gene'				=> 'SO:0000470', # J_gene
-   'TR_V_gene'				=> 'SO:0000466', # V_gene
-   'TR_C_gene'				=> 'SO:0000478', # C_gene
-   'ncRNA'					=> 'SO:0001263', # ncRNA_gene
-   'tRNA'					=> 'SO:0001272', # tRNA_gene
-   'retrotransposed'		=> 'SO:0000569', # retrotransposed
-   ## heavily abbreviated
+# Protein coding gene biotype
+   'protein_coding' 		=> 'SO:0001217',
+   'IG_C_gene' 	  		=> 'SO:0001217',
+   'IG_D_gene' 	  		=> 'SO:0001217',
+   'IG_gene' 	  		=> 'SO:0001217',
+   'IG_J_gene' 	  		=> 'SO:0001217',
+   'IG_LV_gene'   		=> 'SO:0001217',
+   'IG_M_gene'   		=> 'SO:0001217',
+   'IG_V_gene' 	  		=> 'SO:0001217',
+   'IG_Z_gene' 	  		=> 'SO:0001217',
+   'mRNA' 	  		=> 'SO:0001217',
+   'nontranslating_CDS' 	=> 'SO:0001217',
+   'polymorphic'		=> 'SO:0001217',
+   'polymorphic_pseudogene'	=> 'SO:0001217',
+   'TR_C_gene' 	  		=> 'SO:0001217',
+   'TR_D_gene' 	  		=> 'SO:0001217',
+   'TR_gene' 	  		=> 'SO:0001217',
+   'TR_J_gene' 	  		=> 'SO:0001217',
+   'TR_V_gene' 	  		=> 'SO:0001217',
+   
+# Pseudogene biotype
+   'IG_C_pseudogene' 			=> 'SO:0000336',
+   'IG_D_pseudogene' 			=> 'SO:0000336',
+   'IG_J_pseudogene' 			=> 'SO:0000336',
+   'IG_pseudogene' 			=> 'SO:0000336',
+   'IG_V_pseudogene' 			=> 'SO:0000336',
+   'miRNA_pseudogene' 			=> 'SO:0000336',
+   'misc_RNA_pseudogene' 		=> 'SO:0000336',
+   'Mt_tRNA_pseudogene' 		=> 'SO:0000336',
+   'ncbi_pseudogene' 			=> 'SO:0000336',
+   'ncRNA_pseudogene' 			=> 'SO:0000336',
+   'processed_pseudogene' 		=> 'SO:0000336',
+   'pseudogene' 			=> 'SO:0000336',
+   'rRNA_pseudogene' 			=> 'SO:0000336',
+   'scRNA_pseudogene' 			=> 'SO:0000336',
+   'snoRNA_pseudogene' 			=> 'SO:0000336',
+   'snRNA_pseudogene' 			=> 'SO:0000336',
+   'transcribed_processed_pseudogene' 	=> 'SO:0000336',
+   'transcribed_unitary_pseudogene' 	=> 'SO:0000336',
+   'transcribed_unprocessed_pseudogene' => 'SO:0000336',
+   'translated_processed_pseudogene' 	=> 'SO:0000336',
+   'translated_unprocessed_pseudogene' 	=> 'SO:0000336',
+   'tRNA_pseudogene' 			=> 'SO:0000336',
+   'TR_J_pseudogene' 			=> 'SO:0000336',
+   'TR_pseudogene' 			=> 'SO:0000336',
+   'TR_V_pseudogene' 			=> 'SO:0000336',
+   'unitary_pseudogene' 		=> 'SO:0000336',
+   'unprocessed_pseudogene' 		=> 'SO:0000336',
+
+# ncRNA gene biotypes
+   '3prime_overlapping_ncrna' 		=> 'SO:0001263',
+   'ambiguous_orf' 			=> 'SO:0001263',
+   'antisense' 				=> 'SO:0001263',
+   'antisense_RNA' 			=> 'SO:0001263',
+   'antitoxin' 				=> 'SO:0001263',
+   'bidirectional_promoter_lncrna'	=> 'SO:0001263',
+   'class_II_RNA' 			=> 'SO:0001263',
+   'class_I_RNA' 			=> 'SO:0001263',
+   'CRISPR' 				=> 'SO:0001263',
+   'guide_RNA' 				=> 'SO:0001263',
+   'known_ncrna' 			=> 'SO:0001263',
+   'lincRNA' 				=> 'SO:0001263',
+   'lncRNA' 				=> 'SO:0001263',
+   'macro_lncRNA' 			=> 'SO:0001263',
+   'miRNA' 				=> 'SO:0001263',
+   'misc_RNA' 				=> 'SO:0001263',
+   'Mt_rRNA' 				=> 'SO:0001263',
+   'Mt_tRNA' 				=> 'SO:0001263',
+   'ncRNA' 				=> 'SO:0001263',
+   'ncrna_host' 			=> 'SO:0001263',
+   'non_coding' 			=> 'SO:0001263',
+   'piRNA' 				=> 'SO:0001263',
+   'pre_miRNA' 				=> 'SO:0001263',
+   'processed_transcript' 		=> 'SO:0001263',
+   'retained_intron' 			=> 'SO:0001263',
+   'ribozyme' 				=> 'SO:0001263',
+   'RNase_MRP_RNA' 			=> 'SO:0001263',
+   'RNase_P_RNA' 			=> 'SO:0001263',
+   'rRNA' 				=> 'SO:0001263',
+   'scaRNA' 				=> 'SO:0001263',
+   'scRNA' 				=> 'SO:0001263',
+   'sense_intronic' 			=> 'SO:0001263',
+   'sense_overlapping' 			=> 'SO:0001263',
+   'snlRNA' 				=> 'SO:0001263',
+   'snoRNA' 				=> 'SO:0001263',
+   'snRNA' 				=> 'SO:0001263',
+   'sRNA' 				=> 'SO:0001263',
+   'SRP_RNA' 				=> 'SO:0001263',
+   'telomerase_RNA' 			=> 'SO:0001263',
+   'tmRNA' 				=> 'SO:0001263',
+   'tRNA' 				=> 'SO:0001263',
+   'vaultRNA' 				=> 'SO:0001263',
+   'Y_RNA' 				=> 'SO:0001263'
   );
 
 my %transcript_so_mapping = 
   (
-   'processed_transcript' 				=> 'SO:0001503', # processed_transcript
-   'nonsense_mediated_decay' 			=> 'SO:0001621', # NMD_transcript_variant
-   'retained_intron' 					=> 'SO:0000681', # aberrant_processed_transcript
-   'transcribed_unprocessed_pseudogene'=> 'SO:0000516', # pseudogenic_transcript
-   'processed_pseudogene' 				=> 'SO:0000043', # processed_pseudogene
-   'unprocessed_pseudogene' 			=> 'SO:0000336', # pseudogene
-   'unitary_pseudogene'				=> 'SO:0000336',        # pseudogene
-   'pseudogene' 						=> 'SO:0000336', # pseudogene
-   'transcribed_processed_pseudogene'	=> 'SO:0000043',                # processed_pseudogene
-   'retrotransposed' 					=> 'SO:0000569', #retrotransposed
-   'ncrna_host' 						=> 'SO:0000483', # nc_primary_transcript
-   'polymorphic_pseudogene'			=> 'SO:0000336',        # pseudogene
-   'lincRNA'							=> 'SO:0001463', # lincRNA
-   'ncrna_host'						=> 'SO:0000483', # nc_primary_transcript
-   '3prime_overlapping_ncrna'			=> 'SO:0000483',         # nc_primary_transcript
-   'TR_V_gene'							=> 'SO:0000466', # V_gene_segment
-   'TR_V_pseudogene'					=> 'SO:0000336', # pseudogene
-   'TR_J_gene'							=> 'SO:0000470',
-   'IG_C_gene'							=> 'SO:0000478',
-   'IG_C_pseudogene'					=> 'SO:0000336', # pseudogene
-   'TR_C_gene'							=> 'SO:0000478', # C_gene_segment
-   'IG_J_pseudogene'					=> 'SO:0000336', # pseudogene
-   'miRNA'								=> 'SO:0000276', #miRNA
-   'protein_coding'                                     => 'SO:0000234', #mRNA
-   'miRNA_pseudogene'					=> 'SO:0000336', # pseudogene
-   'disrupted_domain' 					=> 'SO:0000681', # aberrant_processed_transcript
-   'rRNA' 								=> 'SO:0000252', #rRNA
-   'rRNA_pseudogene'					=> 'SO:0000777', # pseudogenic_rRNA
-   'scRNA_pseudogene'					=> 'SO:0000336', # pseudogene
-   'snoRNA' 							=> 'SO:0000275', # snoRNA
-   'snoRNA_pseudogene'					=> 'SO:0000336', # pseudogene
-   'snRNA'								=> 'SO:0000274', # snRNA
-   'snRNA_pseudogene'					=> 'SO:0000336',  # pseudogene
+
+# mRNA biotypes
+   'protein_coding'		=> 'SO:0000234',
+   'mRNA'			=> 'SO:0000234',
+   'nonsense_mediated_decay'	=> 'SO:0000234',
+   'nontranslating_CDS'		=> 'SO:0000234',
+   'non_stop_decay'		=> 'SO:0000234',
+   'polymorphic_pseudogene'	=> 'SO:0000234',
+   
+# IG biotypes (SO:3000000 gene_segment)
+   'IG_C_gene'			=> 'SO:0000478', # C_gene_segment
+   'TR_C_gene'			=> 'SO:0000478', # C_gene_segment
+   'IG_D_gene'			=> 'SO:0000458', # D_gene_segment
+   'TR_D_gene'			=> 'SO:0000458', # D_gene_segment
+   'IG_gene'			=> 'SO:3000000', # gene_segment
+   'TR_gene'			=> 'SO:3000000', # gene_segment
+   'IG_J_gene'			=> 'SO:0000470', # J_gene_segment
+   'TR_J_gene'			=> 'SO:0000470', # J_gene_segment
+   'IG_LV_gene'			=> 'SO:3000000', # gene_segment
+   'IG_M_gene'			=> 'SO:3000000', # gene_segment
+   'IG_V_gene'			=> 'SO:0000466', # V_gene_segment
+   'TR_V_gene'			=> 'SO:0000466', # V_gene_segment
+   'IG_Z_gene'			=> 'SO:3000000', # gene_segment
+
+# Pseudogene biotypes
+   'pseudogene' 			=> 'SO:0000336',
+   'disrupted_domain'			=> 'SO:0000336',
+   'IG_C_pseudogene'			=> 'SO:0000336',
+   'IG_D_pseudogene'			=> 'SO:0000336',
+   'IG_J_pseudogene'			=> 'SO:0000336',
+   'IG_pseudogene'			=> 'SO:0000336',
+   'IG_V_pseudogene'			=> 'SO:0000336',
+   'miRNA_pseudogene'			=> 'SO:0000336',
+   'misc_RNA_pseudogene'		=> 'SO:0000336',
+   'Mt_tRNA_pseudogene'			=> 'SO:0000336',
+   'ncbi_pseudogene'			=> 'SO:0000336',
+   'ncRNA_pseudogene'			=> 'SO:0000336',
+   'processed_pseudogene'		=> 'SO:0000336',
+   'rRNA_pseudogene'			=> 'SO:0000336',
+   'scRNA_pseudogene'			=> 'SO:0000336',
+   'snoRNA_pseudogene'			=> 'SO:0000336',
+   'snRNA_pseudogene'			=> 'SO:0000336',
+   'transcribed_processed_pseudogene'	=> 'SO:0000336',
+   'transcribed_unitary_pseudogene'	=> 'SO:0000336',
+   'transcribed_unprocessed_pseudogene'	=> 'SO:0000336',
+   'translated_processed_pseudogene'	=> 'SO:0000336',
+   'translated_unprocessed_pseudogene'	=> 'SO:0000336',
+   'tRNA_pseudogene'			=> 'SO:0000336',
+   'TR_J_pseudogene'			=> 'SO:0000336',
+   'TR_pseudogene'			=> 'SO:0000336',
+   'TR_V_pseudogene'			=> 'SO:0000336',
+   'unitary_pseudogene'			=> 'SO:0000336',
+   'unprocessed_pseudogene'		=> 'SO:0000336',
+
+# ncRNA transcript biotypes
+## Long non coding RNAs
+   '3prime_overlapping_ncrna'		=> 'SO:0001877',
+   'ambiguous_orf'			=> 'SO:0001877',
+   'antisense'				=> 'SO:0001877',
+   'antisense_RNA'			=> 'SO:0001877',
+   'antitoxin'				=> 'SO:0001877',
+   'bidirectional_promoter_lncrna'	=> 'SO:0001877',
+   'lincRNA'				=> 'SO:0001877',
+   'macro_lncRNA'			=> 'SO:0001877',
+   'ncrna_host' 			=> 'SO:0001877',
+   'non_coding'				=> 'SO:0001877',
+   'processed_transcript'		=> 'SO:0001877',
+   'retained_intron'			=> 'SO:0001877',
+   'ribozyme'				=> 'SO:0001877',
+   'sense_intronic'			=> 'SO:0001877',
+   'sense_overlapping'			=> 'SO:0001877',
+   
+## Short non coding RNAs
+   'class_II_RNA'			=> 'SO:0000989', # class_II_RNA
+   'class_I_RNA'			=> 'SO:0000990', # class_I_RNA
+   'guide_RNA'				=> 'SO:0000602', # guide_RNA
+   'miRNA'				=> 'SO:0000276', # miRNA
+   'known_ncRNA'			=> 'SO:0000655', # ncRNA
+   'misc_RNA'				=> 'SO:0000655', # ncRNA
+   'ncRNA'				=> 'SO:0000655', # ncRNA
+   'piRNA'				=> 'SO:0001035', # piRNA
+   'pre_miRNA'				=> 'SO:0001244', # pre_miRNA
+   'RNase_MRP_RNA'			=> 'SO:0000385', # RNase_MRP_RNA
+   'RNase_P_RNA'			=> 'SO:0000386', # RNase_P_RNA
+   'rRNA' 				=> 'SO:0000252', # rRNA
+   'Mt_rRNA' 				=> 'SO:0000252', # rRNA
+   'scaRNA'				=> 'SO:0000013', # scRNA
+   'scRNA'				=> 'SO:0000013', # scRNA
+   'snoRNA' 				=> 'SO:0000275', # snoRNA
+   'sRNA'				=> 'SO:0000274', # snRNA
+   'snlRNA'				=> 'SO:0000274', # snRNA
+   'snRNA'				=> 'SO:0000274', # snRNA
+   'SRP_RNA'				=> 'SO:0000590', # SRP_RNA
+   'telomerase_RNA'			=> 'SO:0000390', # telomerase_RNA
+   'tmRNA'				=> 'SO:0000584', # tmRNA
+   'tRNA'				=> 'SO:0000253', # tRNA
+   'Mt_tRNA'				=> 'SO:0000253', # tRNA
+   'vaultRNA'				=> 'SO:0002040', # vaultRNA_primary_transcript
+   'Y_RNA'				=> 'SO:0000405', # Y_RNA
+   
   );
 
 my %utr_so_mapping =
