@@ -505,8 +505,7 @@ sub fetch_and_dump_seq_via_toplevel{
     %{ $slice_adaptor->{'sr_id_cache'} }   = ();
 
     $ama->delete_cache();
-
-    %{ $seqa->{'seq_cache'} } = ();
+    $seqa->clear_cache();
   }
 
   close $dnah || die "unable to close dna file\n$!\n";
@@ -645,7 +644,7 @@ sub fetch_and_dump_seq_via_genes{
 
     $ama->delete_cache();
 
-    %{ $seqa->{'seq_cache'} } = ();
+    $seqa->clear_cache();
   }
   close $dnah || die "unable to close dna file\n$!\n";
   close $peph || die "unable to close peptide file\n$!\n"; 
