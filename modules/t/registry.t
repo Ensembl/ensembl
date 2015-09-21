@@ -17,6 +17,7 @@ use warnings;
 
 use Config;
 use Test::More;
+use Test::Exception;
 use File::Temp qw/tempfile/;
 use Bio::EnsEMBL::Registry;
 use Bio::EnsEMBL::Test::MultiTestDB;
@@ -123,5 +124,8 @@ TMPL
 my @species = $reg->get_all_species();
 ok(scalar(@species) == 1, "get_all_species");
 ok(scalar(@{ $reg->get_all_species('cahoona') }) == 0, "get_all_species with bogus data.");
+
+dies_ok { $reg->load_all('i really hope there is no file named this way', undef, undef, undef, 1) } 'Pointing to a non-existing file should throw an error (if the option is switched on)';
+is($reg->load_all('i really hope there is no file named this way'), 0, 'Pointing to a non-existing file does not throw an error if the option is switched off');
 
 done_testing();
