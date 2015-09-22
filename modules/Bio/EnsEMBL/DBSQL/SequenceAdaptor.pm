@@ -549,7 +549,9 @@ sub _populate_seq_region_edits {
   if($self->db()->is_multispecies()) {
     $sql = <<'SQL';
 select sra.seq_region_id, sra.value 
-from seq_region_attrib sra join attrib_type using (attrib_type_id) 
+from seq_region_attrib sra 
+join attrib_type using (attrib_type_id) 
+join seq_region s using (seq_region_id)
 join coord_system cs using (coord_system_id)
 where code =?
 and species_id =?
