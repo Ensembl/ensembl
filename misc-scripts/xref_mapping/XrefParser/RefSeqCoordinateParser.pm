@@ -43,6 +43,22 @@ sub run_script {
   my $mrna_source_id = $self->get_source_id_for_source_name('RefSeq_mRNA', 'otherfeatures');
   my $ncrna_source_id = $self->get_source_id_for_source_name('RefSeq_ncRNA', 'otherfeatures');
 
+  my $pred_peptide_source_id =
+    $self->get_source_id_for_source_name('RefSeq_peptide_predicted', 'otherfeatures');
+  my $pred_mrna_source_id =
+    $self->get_source_id_for_source_name('RefSeq_mRNA_predicted','otherfeatures');
+  my $pred_ncrna_source_id =
+    $self->get_source_id_for_source_name('RefSeq_ncRNA_predicted', 'otherfeatures');
+
+  if($verbose){
+    print "RefSeq_peptide source ID = $peptide_source_id\n";
+    print "RefSeq_mRNA source ID = $mrna_source_id\n";
+    print "RefSeq_ncRNA source ID = $ncrna_source_id\n";
+    print "RefSeq_peptide_predicted source ID = $pred_peptide_source_id\n";
+    print "RefSeq_mRNA_predicted source ID = $pred_mrna_source_id\n" ;
+    print "RefSeq_ncRNA_predicted source ID = $pred_ncrna_source_id\n" ;
+  }
+
   my $user = "ensro";
   my $host;
   my $port = 3306;
@@ -215,7 +231,6 @@ sub run_script {
         my %tl_transcript_result;
         my $id = $transcript_of->stable_id();
         if (!defined $id) { next; }
-        if ($id =~ /^XM_/) { next; }
         my $exons_of = $transcript_of->get_all_Exons();
         my $rr1 = Bio::EnsEMBL::Mapper::RangeRegistry->new();
         my $tl_exons_of = $transcript_of->get_all_translateable_Exons();
@@ -322,6 +337,8 @@ sub run_script {
           my ($acc, $version) = split(/\./, $id);
           my $source_id = $mrna_source_id;
           $source_id = $ncrna_source_id if $acc =~ /^NR_/;
+          $source_id = $pred_mrna_source_id if $acc =~ /^XM_/;
+          $source_id = $pred_ncrna_source_id if $acc =~ /^XR_/;
           my $xref_id = $self->add_xref({ acc => $acc,
                                           version => $version,
                                           label => $id,
@@ -341,11 +358,13 @@ sub run_script {
           if (defined $tl && defined $tl_of) {
             if ($tl_of->seq eq $tl->seq) {
               ($acc, $version) = split(/\./, $tl_of->stable_id());
+              $source_id = $peptide_source_id;
+              $source_id = $pred_peptide_source_id if $acc =~ /^XP_/;
               my $tl_xref_id = $self->add_xref({ acc => $acc,
                                               version => $version,
                                               label => $acc,
                                               desc => '',
-                                              source_id => $peptide_source_id,
+                                              source_id => $source_id,
                                               species_id => $species_id,
                                               info_type => 'DIRECT' });
               $self->add_direct_xref($tl_xref_id, $tl->stable_id(), "Translation", "");
