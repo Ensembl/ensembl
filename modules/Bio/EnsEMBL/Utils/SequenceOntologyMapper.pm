@@ -266,6 +266,47 @@ sub to_name {
   return $so_name;
 }
 
+=head2 gene_biotype_to_name
+
+    Arg [0]    : Biotype string
+    Description: translates a biotype into an SO term name
+    Returntype : String; the SO term name
+    Exceptions : if cannot map to an SO term
+
+=cut
+
+sub gene_biotype_to_name {
+  my $self = shift;
+  my $biotype = shift;
+
+  if (exists $gene_so_mapping{$biotype}) {
+    return $gene_so_mapping{$biotype};
+  } else {
+    throw "Biotype not found in gene SO mapping $biotype";
+  }
+}
+
+=head2 transcript_biotype_to_name
+
+    Arg [0]    : Biotype string
+    Description: translates a biotype into an SO term name
+    Returntype : String; the SO term name
+    Exceptions : if cannot map to an SO term
+
+=cut
+
+sub transcript_biotype_to_name {
+  my $self = shift;
+  my $biotype = shift;
+
+  if (exists $transcript_so_mapping{$biotype}) {
+    return $transcript_so_mapping{$biotype};
+  } else {
+    throw "Biotype not found in transcript SO mapping $biotype";
+  }
+}
+
+
 =head1 PRIVATE METHODS
 
 =head2 _fetch_SO_name_by_accession
