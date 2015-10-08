@@ -108,6 +108,7 @@ use Bio::EnsEMBL::Utils::Exception qw(throw deprecate warning);
   Arg [HSPECIES]  : string - The species the hit sequence is from (optional)
   Arg [COVERAGE]  : string - The % of the query that this feature pair covers
   Arg [HCOVERAGE] : string - The % of the target this this feature pair covers
+  Arg [EXTRA_DATA]: HashRef - Additional data, specified as name, value attribute pairs (optional)
   Arg [...]       : Named superclass constructor args (Bio::EnsEMBL::Feature)
   Example    : $feat = Bio::EnsEMBL::FeaturePair->new(-start    => 132_231,
                                               -end      => 132_321,
