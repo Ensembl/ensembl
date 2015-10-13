@@ -151,13 +151,30 @@ sub transcript_names_from_gene {
 }
 
 
+sub gene_description_sources {
+
+  return ("RFAM",
+          "RNAMMER",
+          "TRNASCAN_SE",
+	  "miRBase",
+          "HGNC",
+          "IMGT/GENE_DB",
+	  "Uniprot/SWISSPROT",
+	  "RefSeq_peptide",
+          "Uniprot/TREMBL",
+      );
+
+}
+
+
 sub gene_description_filter_regexps {
 
-  return ('[0-9A-Z]+\.\d*[A-Z]* PROTEIN[ \.]',
-	  '\(\d[A-Z]\d+\)\.',
-	  '\([0-9A-Z]+\.\d*[A-Z]* PROTEIN\)[ \.]',
-	  '^\(*HYPOTHETICAL\s+.*',
-	  '^\s*\(FRAGMENT\)\.?\s*$' );
+#  return ('[0-9A-Z]+\.\d*[A-Z]* PROTEIN[ \.]',
+#	  '\(\d[A-Z]\d+\)\.',
+#	  '\([0-9A-Z]+\.\d*[A-Z]* PROTEIN\)[ \.]',
+#	  '^\(*HYPOTHETICAL\s+.*',
+#	  '^\s*\(FRAGMENT\)\.?\s*$' );
+  return ();
 
 }
 
