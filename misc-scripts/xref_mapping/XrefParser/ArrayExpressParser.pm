@@ -90,6 +90,7 @@ sub run_script {
   if ($host) {
     my $db = Bio::EnsEMBL::DBSQL::DBAdaptor->new(
       '-host'     => $host,
+      '-port'     => $port,
       '-user'     => $user,
       '-pass'     => $pass,
       '-dbname'   => $dbname,

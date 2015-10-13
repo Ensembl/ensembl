@@ -67,6 +67,8 @@ sub run {
   my (%wbgene2seqid, %wbgene2loc, %tran2wbtran, %tran2wpep);
 
   while ( $_ = $pep_io->getline() ) {
+    next if /^\/\//;
+    
     my ($gseqid, $wbgeneid, $locus, $wbtranscript, $wormpep) = split(/\t/, $_);
 
     # Each WBGeneid should have only one sequence name and (optionally) one locus name
