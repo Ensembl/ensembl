@@ -685,7 +685,8 @@ sub validate_species {
 
   foreach my $sp (@$species) {
 
-    $sth->execute(lc($sp),  "^".lc($sp).",|[ ]".lc($sp)."[,]|^".lc($sp)."\$|[,] ".lc($sp)."\$" );
+    my $bind_arg = "^".lc($sp).",|^".lc($sp)."\$|,[ ]{0,1}".lc($sp)."[ ]{0,1},|,[ ]{0,1}".lc($sp)."\$";
+    $sth->execute(lc($sp), $bind_arg ); 
     $sth->bind_columns(\$species_id, \$species_name);
     if (my @row = $sth->fetchrow_array()) {
       print "Species $sp is valid (name = " . $species_name . ", ID = " . $species_id . ")\n" if($verbose);
