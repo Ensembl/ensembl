@@ -83,7 +83,7 @@ sub _load_table {
   my ($count) = $dbh->selectrow_array('select count(*) from '.$TABLE_NAME . ' WHERE source_id = ' . $source_id);
   if($count) {
     print "'$TABLE_NAME' has rows for $source_id; deleting\n" if $verbose;
-    $dbh->do('deleting from ' . $TABLE_NAME . ' WHERE source_id = ' . $source_id);
+    $dbh->do('delete from ' . $TABLE_NAME . ' WHERE source_id = ' . $source_id);
   }
   print "Loading data into '$TABLE_NAME' from '$file'\n" if $verbose;
   my $load = sprintf(q{LOAD DATA LOCAL INFILE '%s'INTO TABLE %s}, $file, $TABLE_NAME);
