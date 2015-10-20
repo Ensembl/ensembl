@@ -154,6 +154,7 @@ my %group2adaptor = (
       'core'       => 'Bio::EnsEMBL::DBSQL::DBAdaptor',
       'estgene'    => 'Bio::EnsEMBL::DBSQL::DBAdaptor',
       'funcgen'    => 'Bio::EnsEMBL::Funcgen::DBSQL::DBAdaptor',
+      'gene2phenotype' => 'Bio::EnsEMBL::G2P::DBSQL::DBAdaptor',
       'regulation' => 'Bio::EnsEMBL::Funcgen::DBSQL::DBAdaptor',
       'hive'      => 'Bio::EnsEMBL::Hive::DBSQL::DBAdaptor',
       'ontology'  => 'Bio::EnsEMBL::DBSQL::OntologyDBAdaptor',
