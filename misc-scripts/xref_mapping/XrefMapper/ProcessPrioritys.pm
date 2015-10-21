@@ -204,9 +204,9 @@ SEQCP
               $update_x_sth->execute($xref_id);
 # Copy synonyms across if they are missing
               $syn_copy_sth->execute($best_xref_id, $xref_id);
-	      $self->process_dependents($xref_id, $best_xref_id, $object_type, \@best_ensembl_id);
+              $self->process_dependents($xref_id, $best_xref_id, $object_type, \@best_ensembl_id);
             }
-	  }
+          }
 	  else{
 	    $update_x_sth->execute($xref_id);
 	  }
@@ -342,9 +342,9 @@ sub process_dependents{
         }
       }
       push @master_xrefs, $dep_xref_id; # remember dependents dependents
-      $recursive = 1;
-      $new_master_xref_id = $dep_xref_id;
     }
+    $recursive = 1;
+    $new_master_xref_id = $dep_xref_id;
   }
 
   $dep_sth->finish();
