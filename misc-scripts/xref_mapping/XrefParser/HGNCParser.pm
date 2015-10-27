@@ -175,30 +175,9 @@ sub run {
 
     #
     # Swissprot
+    # Skip, Uniprot is protein-centric
     #
     $type = 'swissprot_manual';
-    $id = $array[10];
-    $source_id = $name_to_source_id->{$type};
-    if ($id) {             # Swissprot
-      if(defined $swissprot{$id} ){
-	$seen = 1;
-	foreach my $xref_id (@{$swissprot{$id}}){
-	  $name_count{$type}++;
-	    $self->add_dependent_xref({ master_xref_id => $xref_id,
-					acc            => $acc,
-					label          => $symbol,
-					desc           => $name || '',
-					source_id      => $source_id,
-					species_id     => $species_id} );
-	}
-	  $self->add_synonyms_for_hgnc( {source_id  => $source_id,
-					 name       => $acc,
-					 species_id => $species_id,
-					 dead       => $previous_symbols,
-					 alias      => $synonyms});
-      }
-    }
-
 
     #
     # EntrezGene
