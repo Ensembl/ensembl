@@ -161,7 +161,7 @@ sub gene_description_sources {
           "IMGT/GENE_DB",
 	  "Uniprot/SWISSPROT",
 	  "RefSeq_peptide",
-          "Uniprot/TREMBL",
+          "Uniprot/SPTREMBL",
       );
 
 }
@@ -169,12 +169,11 @@ sub gene_description_sources {
 
 sub gene_description_filter_regexps {
 
-#  return ('[0-9A-Z]+\.\d*[A-Z]* PROTEIN[ \.]',
-#	  '\(\d[A-Z]\d+\)\.',
-#	  '\([0-9A-Z]+\.\d*[A-Z]* PROTEIN\)[ \.]',
-#	  '^\(*HYPOTHETICAL\s+.*',
-#	  '^\s*\(FRAGMENT\)\.?\s*$' );
-  return ();
+  return ( '^(Protein \S+\s*)+$',
+           '^Uncharacterized protein\s*$',
+           '^Putative uncharacterized protein\s*$',
+           '^Hypothetical protein\s*$',
+   );
 
 }
 
