@@ -1812,7 +1812,7 @@ sub delete_cache{
 sub register_region{
   my ($self, $assmapper, $type, $chr_name, $start, $end) = @_;
 
-  deprecate('Use register_assembled instead');
+  deprecate('register_region is deprecated and will be removed in e87. Use register_assembled instead');
 
   $self->register_assembled($assmapper, $chr_name, $start, $end);
 }
@@ -1827,7 +1827,7 @@ sub register_region{
 sub register_contig {
    my ($self, $assmapper, $type, $contig_id ) = @_;
 
-   deprecate('Use register_component instead');
+   deprecate('register_contig is deprecated and will be removed in e87. Use register_component instead');
 
    #not sure if the use is passing in a seq_region_name or a
    #seq_region_id...
@@ -1844,7 +1844,7 @@ sub register_contig {
 sub fetch_by_type{
   my ($self,$type) = @_;
 
-  deprecate('Use fetch_by_CoordSystems instead');
+  deprecate('fetch_by_type is deprecated and will be removed in e87. Use fetch_by_CoordSystems instead');
 
   #assume that what the user wanted was a mapper between the sequence coord
   #level and the top coord level

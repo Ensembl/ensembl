@@ -747,7 +747,7 @@ sub _objs_from_sth {
 sub get_stable_entry_info {
   my ($self,$exon) = @_;
 
-  deprecated( "This method call shouldnt be necessary" );
+  deprecate( "get_stable_entry_info is deprecated and will be removed in e87. Please use object->stable_id instead." );
 
   if( !$exon || !ref $exon || !$exon->isa('Bio::EnsEMBL::Exon') ) {
      $self->throw("Needs a exon object, not a $exon");
@@ -792,7 +792,7 @@ sub fetch_all_by_gene_id {
   my $hashRef;
   my ( $currentId, $currentTranscript );
 
-  deprecated( "Hopefully this method is not needed any more. Exons should be fetched by Transcript" );
+  deprecate("exon_adaptor->fetch_all_by_gene_id is deprecated and will be removed in e87. Please use transcript->get_all_Exons instead." );
 
   if( !$gene_id ) {
       $self->throw("Gene dbID not defined");

@@ -305,6 +305,7 @@ sub fetch_all_by_hit_name_unversioned {
 
 sub fetch_all_by_RawContig_and_pid {
   my($self, $contig, $pid, $logic_name) = @_;
+  deprecate('fetch_all_by_RawContig_and_pid is deprecated and will be removed in e87. Use fetch_all_by_Slice_and_pid instead.');
 
   my $constraint;
 

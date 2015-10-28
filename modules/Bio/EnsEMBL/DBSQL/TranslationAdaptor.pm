@@ -907,7 +907,7 @@ sub fetch_all_by_Transcript_list {
 
 sub fetch_all_by_DBEntry {
   my $self = shift;
-  deprecate("Use fetch_all_by_external_name instead.");
+  deprecate("fetch_all_by_DBEntry is deprecated and will be removed in e87. Use fetch_all_by_external_name instead.");
   return $self->fetch_all_by_external_name(@_);
 }
 
@@ -921,7 +921,7 @@ sub fetch_all_by_DBEntry {
 sub get_stable_entry_info {
   my ($self,$translation) = @_;
 
-  deprecate( "This method shouldnt be necessary any more" );
+  deprecate( "get_stable_entry_info is deprecated and will be removed in e87. Use $translation->stable_id instead." );
 
   unless(defined $translation && ref $translation && 
 	 $translation->isa('Bio::EnsEMBL::Translation') ) {

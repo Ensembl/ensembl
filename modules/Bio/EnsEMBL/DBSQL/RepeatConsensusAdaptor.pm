@@ -180,7 +180,7 @@ sub fetch_all_by_class_seq {
 
 
 sub fetch_by_class_seq {
-  deprecate('Use fetch_all_by_class_seq instead');
+  deprecate('fetch_by_class_seq is deprecated. Please use fetch_all_by_class_seq instead');
   fetch_all_by_class_seq(@_);
 }
 
