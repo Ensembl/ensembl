@@ -1,0 +1,6 @@
+1	1	contig	\N	3	default_version,sequence_level
+2	1	scaffold	GRCm38	2	default_version
+3	1	chromosome	GRCm38	1	default_version
+11	1	chromosome	NCBIM37	4	
+12	1	supercontig	NCBIM37	5	
+111	1	chromosome	NCBIM36	6	
