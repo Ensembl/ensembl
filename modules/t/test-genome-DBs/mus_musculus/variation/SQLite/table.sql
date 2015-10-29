@@ -53,8 +53,6 @@ CREATE TABLE attrib (
   value text NOT NULL
 );
 
-CREATE UNIQUE INDEX type_val_idx ON attrib (attrib_type_id);
-
 --
 -- Table: attrib_set
 --
