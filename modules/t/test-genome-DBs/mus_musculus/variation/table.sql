@@ -755,7 +755,7 @@ CREATE TABLE `tmp_sample_genotype_single_bp` (
   KEY `variation_idx` (`variation_id`),
   KEY `subsnp_idx` (`subsnp_id`),
   KEY `sample_idx` (`sample_id`)
-) ENGINE=MyISAM  MAX_ROWS=100000000;
+) ENGINE=MyISAM  ;
 
 CREATE TABLE `transcript_variation` (
   `transcript_variation_id` int(11) unsigned NOT NULL AUTO_INCREMENT,
