@@ -197,7 +197,7 @@ CREATE TABLE `dna` (
   `seq_region_id` int(10) unsigned NOT NULL,
   `sequence` longtext NOT NULL,
   PRIMARY KEY (`seq_region_id`)
-) ENGINE=MyISAM  MAX_ROWS=750000 AVG_ROW_LENGTH=19000;
+) ENGINE=MyISAM  ;
 
 CREATE TABLE `dna_align_feature` (
   `dna_align_feature_id` int(10) unsigned NOT NULL AUTO_INCREMENT,
@@ -223,7 +223,7 @@ CREATE TABLE `dna_align_feature` (
   KEY `hit_idx` (`hit_name`),
   KEY `analysis_idx` (`analysis_id`),
   KEY `external_db_idx` (`external_db_id`)
-) ENGINE=MyISAM   MAX_ROWS=100000000 AVG_ROW_LENGTH=80;
+) ENGINE=MyISAM   ;
 
 CREATE TABLE `exon` (
   `exon_id` int(10) unsigned NOT NULL AUTO_INCREMENT,
@@ -638,7 +638,7 @@ CREATE TABLE `protein_align_feature` (
   KEY `hit_idx` (`hit_name`),
   KEY `analysis_idx` (`analysis_id`),
   KEY `external_db_idx` (`external_db_id`)
-) ENGINE=MyISAM   MAX_ROWS=100000000 AVG_ROW_LENGTH=80;
+) ENGINE=MyISAM ;
 
 CREATE TABLE `protein_feature` (
   `protein_feature_id` int(10) unsigned NOT NULL AUTO_INCREMENT,
@@ -688,7 +688,7 @@ CREATE TABLE `repeat_feature` (
   KEY `seq_region_idx` (`seq_region_id`,`seq_region_start`),
   KEY `repeat_idx` (`repeat_consensus_id`),
   KEY `analysis_idx` (`analysis_id`)
-) ENGINE=MyISAM   MAX_ROWS=100000000 AVG_ROW_LENGTH=80;
+) ENGINE=MyISAM   ;
 
 CREATE TABLE `seq_region` (
   `seq_region_id` int(10) unsigned NOT NULL AUTO_INCREMENT,
@@ -761,7 +761,7 @@ CREATE TABLE `supporting_feature` (
   `feature_id` int(10) unsigned NOT NULL DEFAULT '0',
   UNIQUE KEY `all_idx` (`exon_id`,`feature_type`,`feature_id`),
   KEY `feature_idx` (`feature_type`,`feature_id`)
-) ENGINE=MyISAM  MAX_ROWS=100000000 AVG_ROW_LENGTH=80;
+) ENGINE=MyISAM  ;
 
 CREATE TABLE `transcript` (
   `transcript_id` int(10) unsigned NOT NULL AUTO_INCREMENT,
@@ -816,7 +816,7 @@ CREATE TABLE `transcript_supporting_feature` (
   `feature_id` int(10) unsigned NOT NULL DEFAULT '0',
   UNIQUE KEY `all_idx` (`transcript_id`,`feature_type`,`feature_id`),
   KEY `feature_idx` (`feature_type`,`feature_id`)
-) ENGINE=MyISAM  MAX_ROWS=100000000 AVG_ROW_LENGTH=80;
+) ENGINE=MyISAM  ;
 
 CREATE TABLE `translation` (
   `translation_id` int(10) unsigned NOT NULL AUTO_INCREMENT,
