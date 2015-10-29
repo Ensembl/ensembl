@@ -19,6 +19,7 @@ addons:
 
 before_install:
     - git clone --branch master --depth 1 https://github.com/Ensembl/ensembl-test.git
+    - git clone --branch master --depth 1 https://github.com/Ensembl/ensembl-variation.git
     - wget https://github.com/bioperl/bioperl-live/archive/bioperl-release-1-2-3.zip
     - unzip bioperl-release-1-2-3.zip
 
