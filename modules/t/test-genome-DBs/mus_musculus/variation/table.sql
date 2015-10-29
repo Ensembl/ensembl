@@ -15,9 +15,9 @@ CREATE TABLE `allele` (
 
 CREATE TABLE `allele_code` (
   `allele_code_id` int(11) NOT NULL AUTO_INCREMENT,
-  `allele` varchar(60000) DEFAULT NULL,
+  `allele` varchar(100) DEFAULT NULL,
   PRIMARY KEY (`allele_code_id`),
-  UNIQUE KEY `allele_idx` (`allele`(1000))
+  UNIQUE KEY `allele_idx` (`allele`)
 ) ENGINE=MyISAM  ;
 
 CREATE TABLE `associate_study` (
