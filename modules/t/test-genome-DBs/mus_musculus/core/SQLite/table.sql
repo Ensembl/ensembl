@@ -1,6 +1,6 @@
 -- 
 -- Created by SQL::Translator::Producer::SQLite
--- Created on Tue Oct 13 09:18:26 2015
+-- Created on Mon Nov  2 11:34:08 2015
 -- 
 
 BEGIN TRANSACTION;
@@ -172,7 +172,7 @@ CREATE TABLE density_feature (
   seq_region_id integer NOT NULL,
   seq_region_start integer NOT NULL,
   seq_region_end integer NOT NULL,
-  density_value float(8,2) NOT NULL
+  density_value float NOT NULL
 );
 
 --
@@ -202,8 +202,8 @@ CREATE TABLE dependent_xref (
 --
 CREATE TABLE ditag (
   ditag_id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
-  name varchar(30) NOT NULL,
-  type varchar(30) NOT NULL,
+  name varchar(30) NOT NULL DEFAULT '',
+  type varchar(30) NOT NULL DEFAULT '',
   tag_count smallint NOT NULL DEFAULT 1,
   sequence tinytext NOT NULL
 );
@@ -295,6 +295,8 @@ CREATE TABLE external_db (
   db_name varchar(100) NOT NULL,
   db_release varchar(255),
   status enum NOT NULL,
+  dbprimary_acc_linkable tinyint NOT NULL DEFAULT 1,
+  display_label_linkable tinyint NOT NULL DEFAULT 0,
   priority integer NOT NULL,
   db_display_name varchar(255),
   type enum,
@@ -302,8 +304,6 @@ CREATE TABLE external_db (
   secondary_db_table varchar(255),
   description text
 );
-
-CREATE UNIQUE INDEX db_name_db_release_idx ON external_db (db_name, db_release);
 
 --
 -- Table: external_synonym
@@ -359,8 +359,6 @@ CREATE TABLE gene_attrib (
   attrib_type_id smallint NOT NULL DEFAULT 0,
   value text NOT NULL
 );
-
-CREATE UNIQUE INDEX gene_attribx ON gene_attrib (gene_id, attrib_type_id, value);
 
 --
 -- Table: genome_statistics
@@ -547,8 +545,6 @@ CREATE TABLE misc_attrib (
   value text NOT NULL
 );
 
-CREATE UNIQUE INDEX misc_attribx ON misc_attrib (misc_feature_id, attrib_type_id, value);
-
 --
 -- Table: misc_feature
 --
@@ -601,8 +597,8 @@ CREATE UNIQUE INDEX xref_idx ON object_xref (xref_id, ensembl_object_type, ensem
 --
 CREATE TABLE ontology_xref (
   object_xref_id integer NOT NULL DEFAULT 0,
-  linkage_type varchar(3),
-  source_xref_id integer
+  source_xref_id integer,
+  linkage_type varchar(3)
 );
 
 CREATE UNIQUE INDEX object_source_type_idx ON ontology_xref (object_xref_id, source_xref_id, linkage_type);
@@ -721,7 +717,7 @@ CREATE TABLE protein_feature (
   hit_end integer NOT NULL,
   hit_name varchar(40) NOT NULL,
   analysis_id smallint NOT NULL,
-  score double precision(8,2),
+  score double precision,
   evalue double precision,
   perc_ident float,
   external_data text,
@@ -776,8 +772,6 @@ CREATE TABLE seq_region_attrib (
   value text NOT NULL
 );
 
-CREATE UNIQUE INDEX region_attribx ON seq_region_attrib (seq_region_id, attrib_type_id, value);
-
 --
 -- Table: seq_region_mapping
 --
@@ -797,7 +791,7 @@ CREATE TABLE seq_region_synonym (
   external_db_id integer
 );
 
-CREATE UNIQUE INDEX syn_idx ON seq_region_synonym (synonym, seq_region_id);
+CREATE UNIQUE INDEX syn_idx ON seq_region_synonym (synonym);
 
 --
 -- Table: simple_feature
@@ -874,8 +868,6 @@ CREATE TABLE transcript_attrib (
   value text NOT NULL
 );
 
-CREATE UNIQUE INDEX transcript_attribx ON transcript_attrib (transcript_id, attrib_type_id, value);
-
 --
 -- Table: transcript_intron_supporting_evidence
 --
@@ -923,8 +915,6 @@ CREATE TABLE translation_attrib (
   value text NOT NULL
 );
 
-CREATE UNIQUE INDEX translation_attribx ON translation_attrib (translation_id, attrib_type_id, value);
-
 --
 -- Table: unmapped_object
 --
@@ -942,8 +932,6 @@ CREATE TABLE unmapped_object (
   parent varchar(255)
 );
 
-CREATE UNIQUE INDEX unique_unmapped_obj_idx ON unmapped_object (ensembl_id, ensembl_object_type, identifier, unmapped_reason_id, parent, external_db_id);
-
 --
 -- Table: unmapped_reason
 --
@@ -958,9 +946,9 @@ CREATE TABLE unmapped_reason (
 --
 CREATE TABLE xref (
   xref_id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
-  external_db_id integer NOT NULL,
-  dbprimary_acc varchar(512) NOT NULL,
-  display_label varchar(512) NOT NULL,
+  external_db_id integer,
+  dbprimary_acc varchar(50) NOT NULL,
+  display_label varchar(128) NOT NULL,
   version varchar(10) NOT NULL DEFAULT '0',
   description text,
   info_type enum NOT NULL DEFAULT 'NONE',
