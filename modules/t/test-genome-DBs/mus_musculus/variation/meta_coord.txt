@@ -1,0 +1,8 @@
+variation_feature	3	500
+transcript_variation	1	0
+structural_variation_feature	3	13018700
+compressed_genotype_region	1	100001
+compressed_genotype_region	3	100001
+phenotype_feature	1	4563513
+phenotype_feature	3	4563513
+read_coverage	3	107158

@@ -1,0 +1,1 @@
+1	dbSNP	142	Variants (including SNPs and indels) imported from dbSNP	http://www.ncbi.nlm.nih.gov/projects/SNP/	\N	mixed	variation
