@@ -36,6 +36,7 @@ my $vf = $vfs->[0];
 
 my $A_J = $slice->get_by_strain('A/J');
 my $FVB_NJ = $slice->get_by_strain('FVB/NJ');
+my $with_coverage = 1;
 
 my $display_slice_name = $A_J->display_Slice_name;
 ok($display_slice_name eq 'A/J', 'display_slice_name');
@@ -48,6 +49,9 @@ ok($sample && $sample->isa('Bio::EnsEMBL::Variation::Sample'), 'isa Bio::EnsEMBL
 ok($sample->name eq 'A/J', 'sample name');
 
 my $seq = $A_J->seq;
+ok(length($seq) == 4002, 'seq length');
+
+$seq = $A_J->seq($with_coverage);
 ok(length($seq) == 4002, 'seq length');
 
 my $expanded_length = $A_J->expanded_length;
@@ -67,18 +71,17 @@ ok($af->ref_allele_string eq 'C', 'AF ref_allele_string');
 my $afs = $A_J->get_all_AlleleFeatures_Slice();
 ok(scalar @$afs == 46, 'get_all_AlleleFeatures_Slice');
 
-my $with_coverage = 1;
 $afs = $A_J->get_all_AlleleFeatures_Slice($with_coverage);
 ok(scalar @$afs == 46, 'get_all_AllelelFeatures_Slice with_coverage');
 
 $afs = $A_J->get_all_differences_StrainSlice($FVB_NJ);
 ok(scalar @$afs == 53, 'get_all_differences_StrainSlice');
 
-#my $sub_Slice = $A_J->sub_Slice(20380187, 20380197, 1);
-#print $sub_Slice->seq, "\n";
+my $sub_Slice = $A_J->sub_Slice(20380187, 20380197, 1);
+ok(length($sub_Slice->seq) == 11, 'sub_Slice length');
 
-#my $ref_subseq = $A_J->ref_subseq(20380187, 20380197, 1);
-#print $ref_subseq, "\n";
+my $ref_subseq = $A_J->ref_subseq(20380187, 20380197, 1);
+ok(length($ref_subseq) == 11, 'ref_subseq length');
 
 my $subseq = $A_J->subseq(1, 10, 1);
 ok($subseq eq 'CACTGTTCCC', 'subseq');
