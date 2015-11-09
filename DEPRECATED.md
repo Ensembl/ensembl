@@ -1,3 +1,6 @@
+Ensembl Deprecated Methods
+===================
+
 This file contains the list of methods deprecated in the Ensembl core API.
 A method is deprecated when it is not functional any more (schema/data change) or has been replaced by a better one.
 Backwards compatibility is provided whenever possible.
@@ -5,7 +8,8 @@ When a method is deprecated, a deprecation warning is thrown whenever the method
 The warning also contains instructions on replacing the deprecated method and when it will be removed.
 A year after deprecation (4 Ensembl releases), the method is removed from the API.
 
-Removed in e87
+### Removed in Ensembl Release 87 ###
+
 Bio::EnsEMBL::AssemblyMapper::in_assembly
 Bio::EnsEMBL::AssemblyMapper::map_coordinates_to_assembly
 Bio::EnsEMBL::AssemblyMapper::fast_to_assembly
@@ -65,7 +69,7 @@ Bio::EnsEMBL::DBSQL::GeneAdaptor::fetch_by_Peptide_id
 Bio::EnsEMBL::DBSQL::MetaContainer::get_Species
 
 
-Removed in e84
+### Removed in Ensembl Release 84 ###
 Bio::EnsEMBL::DBSQL::CoordSystemAdaptor::_fetch_by_attrib
 Bio::EnsEMBL::DBSQL::CoordSystemAdaptor::_fetch_all_by_attrib
 Bio::EnsEMBL::DBSQL::MetaContainer::get_short_name
