@@ -71,9 +71,98 @@ A year after deprecation (4 Ensembl releases), the method is removed from the AP
  - Bio::EnsEMBL::DBSQL::**ProteinFeatureAdaptor**::*fetch_by_translation_id()*
  - Bio::EnsEMBL::DBSQL::**ProteinFeatureAdaptor**::*fetch_all_by_feature_and_dbID()*
  - Bio::EnsEMBL::DBSQL::**RepeatConsensusAdaptor**::*fetch_by_class_seq()*
+ - Bio::EnsEMBL::DBSQL::**SliceAdaptor**::*fetch_by_mapfrag()*
+ - Bio::EnsEMBL::DBSQL::**SliceAdaptor**::*fetch_by_chr_start_end()*
+ - Bio::EnsEMBL::DBSQL::**SliceAdaptor**::*fetch_by_contig_name()*
+ - Bio::EnsEMBL::DBSQL::**SliceAdaptor**::*fetch_by_clone_accession()*
+ - Bio::EnsEMBL::DBSQL::**SliceAdaptor**::*fetch_by_supercontig_name()*
+ - Bio::EnsEMBL::DBSQL::**SliceAdaptor**::*list_overlapping_supercontigs()*
+ - Bio::EnsEMBL::DBSQL::**SliceAdaptor**::*fetch_by_chr_name()*
+ - Bio::EnsEMBL::DBSQL::**TranscriptAdaptor**::*get_display_xref()*
+ - Bio::EnsEMBL::DBSQL::**TranscriptAdaptor**::*get_stable_entry_info()*
+ - Bio::EnsEMBL::DBSQL::**TranscriptAdaptor**::*fetch_all_by_DBEntry()*
+ - Bio::EnsEMBL::DBSQL::**SequenceAdaptor**::*fetch_by_assembly_location()*
+ - Bio::EnsEMBL::DBSQL::**SequenceAdaptor**::*fetch_by_RawContig_start_end_strand()*
+ - Bio::EnsEMBL::**Exon**::*temporary_id()*
+ - Bio::EnsEMBL::**Exon**::*created()*
+ - Bio::EnsEMBL::**Exon**::*modified()*
+ - Bio::EnsEMBL::**Exon**::*type()*
+ - Bio::EnsEMBL::**FeaturePair**::*feature1()*
+ - Bio::EnsEMBL::**FeaturePair**::*feature2()*
+ - Bio::EnsEMBL::**FeaturePair**::*set_featurepair_fields()*
+ - Bio::EnsEMBL::**FeaturePair**::*gffstring()*
+ - Bio::EnsEMBL::**FeaturePair**::*hphase()*
+ - Bio::EnsEMBL::**FeaturePair**::*hend_phase()*
+ - Bio::EnsEMBL::**Feature**::*contig()*
+ - Bio::EnsEMBL::**Feature**::*id()*
+ - Bio::EnsEMBL::**Gene**::*add_DBLink()*
+ - Bio::EnsEMBL::**Gene**::*temporary_id()*
+ - Bio::EnsEMBL::**Gene**::*chr_name()*
+ - Bio::EnsEMBL::**Gene**::*type()*
+ - Bio::EnsEMBL::**Gene**::*confidence()*
+ - Bio::EnsEMBL::**IdentityXref**::*query_identity()*
+ - Bio::EnsEMBL::**IdentityXref**::*target_identity()*
+ - Bio::EnsEMBL::**IdentityXref**::*translation_start()*
+ - Bio::EnsEMBL::**IdentityXref**::*translation_end()*
+ - Bio::EnsEMBL::**IdentityXref**::*query_start()*
+ - Bio::EnsEMBL::**IdentityXref**::*query_end()*
+ - Bio::EnsEMBL::**KaryotypeBand**::*chr_name()*
+ - Bio::EnsEMBL::Map::DBSQL::**MarkerFeatureAdaptor**::fetch_all_by_RawContig_and_priority()*
+ - Bio::EnsEMBL::Map::**DitagFeature**::*fetch_ditag()*
+ - Bio::EnsEMBL::Map::**MapLocation**::*chromosome()*
+ - Bio::EnsEMBL::**OperonTranscript**::*add_gene()*
+ - Bio::EnsEMBL::**PredictionTranscript**::*get_exon_count()*
+ - Bio::EnsEMBL::**PredictionTranscript**::*set_exon_count()*
+ - Bio::EnsEMBL::**PredictionTranscript**::*get_cdna()*
+ - Bio::EnsEMBL::**Registry**::*load_registry_with_web_adaptors()*
+ - Bio::EnsEMBL::**Root**::*throw()*
+ - Bio::EnsEMBL::**Root**::*warn()*
+ - Bio::EnsEMBL::**Root**::*verbose()*
+ - Bio::EnsEMBL::**Root**::*stack_trace_dump()*
+ - Bio::EnsEMBL::**Root**::*stack_trace()*
+ - Bio::EnsEMBL::**Slice**::*get_all_SNPs()*
+ - Bio::EnsEMBL::**Slice**::*get_all_genotyped_SNPs()*
+ - Bio::EnsEMBL::**Slice**::*get_all_OligoFeatures_by_type()*
+ - Bio::EnsEMBL::**Slice**::*get_all_supercontig_Slices()*
+ - Bio::EnsEMBL::**Slice**::*get_Chromosome()*
+ - Bio::EnsEMBL::**Slice**::*chr_name()*
+ - Bio::EnsEMBL::**Slice**::*chr_start()*
+ - Bio::EnsEMBL::**Slice**::*chr_end()*
+ - Bio::EnsEMBL::**Slice**::*assembly_type()*
+ - Bio::EnsEMBL::**Slice**::*dbID()*
+ - Bio::EnsEMBL::**Slice**::*get_all_MapFrags()*
+ - Bio::EnsEMBL::**Slice**::*has_MapSet()*
+ - Bio::EnsEMBL::**StrainSlice**::*get_all_differences_Slice()*
+ - Bio::EnsEMBL::**Transcript**::*created()*
+ - Bio::EnsEMBL::**Transcript**::*modified()*
+ - Bio::EnsEMBL::**Transcript**::*temporary_id()*
+ - Bio::EnsEMBL::**Transcript**::*type()*
+ - Bio::EnsEMBL::**Transcript**::*confidence()*
+ - Bio::EnsEMBL::**Translation**::*temporary_id()*
+ - Bio::EnsEMBL::Utils::**ConversionSupport**::*user_confirm()*
+
  
 ### Removed in Ensembl Release 84 ###
  - Bio::EnsEMBL::DBSQL::**CoordSystemAdaptor**::*_fetch_by_attrib()*
  - Bio::EnsEMBL::DBSQL::**CoordSystemAdaptor**::*_fetch_all_by_attrib()*
  - Bio::EnsEMBL::DBSQL::**MetaContainer**::*get_short_name()*
  - Bio::EnsEMBL::DBSQL::**MetaContainer**::*get_max_assembly_contig()*
+ - Bio::EnsEMBL::**Exon**::*_get_stable_entry_info()*
+ - Bio::EnsEMBL::**FeaturePair**::*validate()*
+ - Bio::EnsEMBL::**FeaturePair**::*validate_prot_feature()*
+ - Bio::EnsEMBL::**Root**::*rearrange()*
+ - Bio::EnsEMBL::**SeqFeatureI**::*analysis()*
+ - Bio::EnsEMBL::**SeqFeatureI**::*validate()*
+ - Bio::EnsEMBL::**SeqFeatureI**::*id()*
+ - Bio::EnsEMBL::**SeqFeatureI**::*percent_id()*
+ - Bio::EnsEMBL::**SeqFeatureI**::*e_value()*
+ - Bio::EnsEMBL::**SeqFeatureI**::*phase()*
+ - Bio::EnsEMBL::**SeqFeatureI**::*end_phase()*
+ - Bio::EnsEMBL::**SeqFeatureI**::*location()*
+ - Bio::EnsEMBL::**Slice**::*get_all_SNPs_transcripts()*
+ - Bio::EnsEMBL::**Slice**::*get_all_AffyFeatures()*
+ - Bio::EnsEMBL::**Slice**::*get_all_OligoFeatures()*
+ - Bio::EnsEMBL::**Slice**::*get_all_OligoFeatures_by_type()*
+ - Bio::EnsEMBL::**Slice**::*get_tiling_path()*
+ - Bio::EnsEMBL::**Transcript**::*sort()*
+ - Bio::EnsEMBL::**Transcript**::*_translation_id()*

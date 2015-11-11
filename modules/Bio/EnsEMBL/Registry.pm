@@ -2649,7 +2649,7 @@ sub load_registry_from_multiple_dbs {
 sub load_registry_with_web_adaptors{
   my $class = shift;
 
-  deprecate('Use the load_registry_from_db instead'); 
+  deprecate('load_registry_with_web_adaptors is deprecated and will be removed in e87. Please use the load_registry_from_db instead'); 
   my $site_eval = eval{ require SiteDefs };
   if ($@ or (!defined($site_eval))){ die "Can't use SiteDefs.pm - $@\n"; }
     SiteDefs->import(qw(:ALL));

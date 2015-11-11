@@ -52,6 +52,7 @@ use Carp;
 
 # Object preamble - inherits from Bio::Root::Object
 
+use Bio::EnsEMBL::Utils::Exception qw(throw warning deprecate);
 use Bio::SeqFeatureI;
 use Bio::EnsEMBL::Root;
 
@@ -80,7 +81,7 @@ These methods must be implemented in all subclasses.
 sub analysis {
    my ($self,$value) = @_;
 
-   $self->throw("Have not implemeneted analysis");
+   deprecate('SeqFeatureI->analysis is deprecated and will be removed in e84');
 
 }
 
@@ -100,8 +101,7 @@ sub analysis {
 sub validate {
    my ($self,$value) = @_;
 
-   $self->throw("Have not implemeneted validate");
-
+   deprecate('SeqFeatureI->validate is deprecated and will be removed in e84');
 
 }
 
@@ -109,7 +109,7 @@ sub validate {
 sub id {
     my ($self,$value) = @_;
 
-    $self->throw("Have not implemented id");
+    deprecate('SeqFeatureI->id is deprecated and will be removed in e84');
 }
 
 =head2 percent_id
@@ -125,7 +125,8 @@ sub id {
 
 sub percent_id {
     my ($self) = @_;
-    $self->throw("percent_id() not yet implemented");
+
+    deprecate('SeqFeatureI->percent_id is deprecated and will be removed in e84');
 }
 
 =head2 e_value
@@ -141,7 +142,8 @@ sub percent_id {
 
 sub e_value {
     my ($self) = @_;
-    $self->throw("e value() not yet implemented");
+
+    deprecate('SeqFeatureI->percent_id is deprecated and will be removed in e84');
 }
 
 =head2 phase
@@ -157,7 +159,7 @@ sub e_value {
 
 sub phase {
     my ($self) = @_;
-    $self->throw("phase() not yet implemented");
+    deprecate('SeqFeatureI->phase is deprecated and will be removed in e84');
 }
 
 =head2 end_phase
@@ -173,13 +175,14 @@ sub phase {
 
 sub end_phase {
     my ($self) = @_;
-    $self->throw("end_phase() not yet implemented");
+    deprecate('SeqFeatureI->end_phase is deprecated and will be removed in e84');
 }
 
 
 # this is a bit too sneaky. 
 sub location {
     my ($self)= @_;
+    deprecate('SeqFeatureI->location is deprecated and will be removed in e84');
     return $self;
 }
 

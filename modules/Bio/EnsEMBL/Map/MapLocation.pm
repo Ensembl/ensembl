@@ -195,7 +195,7 @@ sub lod_score {
 
 sub chromosome {
   my $self = shift;
-  deprecate('use chromosome_name instead');
+  deprecate('chromosome is deprecated and will be removed in e87. Please use chromosome_name instead');
 
   if(@_) {
     my $chr = shift;

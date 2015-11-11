@@ -1502,7 +1502,7 @@ sub species {
  Use slice() instead
 =cut
 sub contig {
-  deprecate('Use slice() instead');
+  deprecate('contig is deprecated and will be removed in e87. Please use slice() instead');
   slice(@_);
 }
 
@@ -1603,7 +1603,7 @@ Use display_id, hseqname, dbID or stable_id instead
 
 sub id {
   my $self = shift;
-  deprecate("id method is not used - use display_id instead");
+  deprecate("id method is deprecated and will be removed in e87. Please use display_id instead");
   return $self->{'stable_id'} if($self->{'stable_id'});
   return $self->{'hseqname'} if($self->{'hseqname'});
   return $self->{'seqname'}  if($self->{'seqname'});

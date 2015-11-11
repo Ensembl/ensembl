@@ -2678,7 +2678,7 @@ sub get_all_genotyped_VariationFeatures{
 
 sub get_all_SNPs {
   my $self = shift;
-  deprecate('Use get_all_VariationFeatures() instead.');
+  deprecate('get_all_SNPs is deprecated and will be removed in e87. Please use get_all_VariationFeatures() instead.');
   my $snps;
   my $vf = $self->get_all_genotyped_VariationFeatures();
   if( $vf->[0] ) {
@@ -2699,7 +2699,7 @@ sub get_all_SNPs {
 
 sub get_all_genotyped_SNPs {
   my $self = shift;
-  deprecate("Use get_all_genotyped_VariationFeatures instead");
+  deprecate("get_all_genotypes_SNPs is deprecated and will be removed in e87. Please use get_all_genotyped_VariationFeatures instead");
   my $vf = $self->get_all_genotyped_VariationFeatures;
   my $snps;
   if ($vf->[0]){
@@ -2713,7 +2713,7 @@ sub get_all_genotyped_SNPs {
 
 sub get_all_SNPs_transcripts {
   my $self = shift;
-  deprecate("DEPRECATED");
+  deprecate("get_all_SNPs_transcripts is deprecated and will be removed in e84");
   return [];
 }
 
@@ -3855,8 +3855,7 @@ sub accession_number { name(@_); }
 =cut
 
 sub get_all_AffyFeatures {
-  deprecate( 'Use functionality provided by the Ensembl Functional Genomics API instead.' );
-  throw('Can not delegate deprecated functionality.');
+  deprecate( 'get_all_AffyFeatures is deprecated and will be removed in e84.' );
 }
 
 =head2 get_all_OligoFeatures
@@ -3867,8 +3866,7 @@ sub get_all_AffyFeatures {
 =cut
 
 sub get_all_OligoFeatures {
-  deprecate( 'Use functionality provided by the Ensembl Functional Genomics API instead.' );
-  throw('Can not delegate deprecated functionality.');
+  deprecate( 'get_all_OligoFeatures is deprecated and will be removed in e84.' );
 }
 
 =head2 get_all_OligoFeatures_by_type
@@ -3879,8 +3877,7 @@ sub get_all_OligoFeatures {
 =cut
 
 sub get_all_OligoFeatures_by_type {
-  deprecate( 'Use functionality provided by the Ensembl Functional Genomics API instead.');
-  throw('Can not delegate deprecated functionality.');
+  deprecate( 'get_all_OligoFeatures_by_type is deprecated and will be removed in e84.' );
 }
 
 =head2 get_all_supercontig_Slices
@@ -3892,7 +3889,7 @@ sub get_all_OligoFeatures_by_type {
 sub get_all_supercontig_Slices {
   my $self = shift;
 
-  deprecate("Use get_tiling_path('NTcontig') instead");
+  deprecate("get_all_supercontig_Slices is deprecated and will be removed in e87. Please use get_tiling_path('NTcontig') instead");
 
   my $result = [];
 
@@ -3928,8 +3925,7 @@ sub get_all_supercontig_Slices {
 sub get_Chromosome {
   my $self = shift @_;
 
-  deprecate("Use SliceAdaptor::fetch_by_region('chromosome'," .
-            '$slice->seq_region_name) instead');
+  deprecate("get_Chromosome is deprecated and will be removed in e87. Please use SliceAdaptor::fetch_by_region('chromosome',slice->seq_region_name) instead");
 
   my $csa = $self->adaptor->db->get_CoordSystemAdaptor();
   my ($top_cs) = @{$csa->fetch_all()};
@@ -3949,7 +3945,7 @@ sub get_Chromosome {
 =cut
 
 sub chr_name{
-  deprecate("Use seq_region_name() instead");
+  deprecate("chr_name is deprecated and will be removed in e87. Please use seq_region_name() instead");
   seq_region_name(@_);
 }
 
@@ -3962,7 +3958,7 @@ sub chr_name{
 =cut
 
 sub chr_start{
-  deprecate('Use start() instead');
+  deprecate('chr_start is deprecated and will be removed in e87. Please use start() instead');
   start(@_);
 }
 
@@ -3978,7 +3974,7 @@ sub chr_start{
 =cut
 
 sub chr_end{
-  deprecate('Use end() instead');
+  deprecate('chr_end is deprecated and will be removed in e87. Please use end() instead');
   end(@_);
 }
 
@@ -3991,7 +3987,7 @@ sub chr_end{
 
 sub assembly_type{
   my $self = shift;
-  deprecate('Use $slice->coord_system()->version() instead.');
+  deprecate('assembly_type is deprecated and will be removed in e87. Please use $slice->coord_system()->version() instead.');
   return $self->coord_system->version();
 }
 
@@ -4004,7 +4000,7 @@ sub assembly_type{
 
 sub get_tiling_path {
   my $self = shift;
-  deprecate('Use $slice->project("seqlevel") instead.');
+  deprecate('get_tiling_path is deprecated and will be removed in e84. Please use $slice->project("seqlevel") instead.');
   return [];
 }
 
@@ -4017,7 +4013,7 @@ sub get_tiling_path {
 
 sub dbID {
   my $self = shift;
-  deprecate('Use SliceAdaptor::get_seq_region_id instead.');
+  deprecate('dbID is deprecated and will be removed in e87. Please use SliceAdaptor::get_seq_region_id instead.');
   if(!$self->adaptor) {
     warning('Cannot retrieve seq_region_id without attached adaptor.');
     return 0;
@@ -4034,7 +4030,7 @@ sub dbID {
 
 sub get_all_MapFrags {
   my $self = shift;
-  deprecate('Use get_all_MiscFeatures instead');
+  deprecate('get_all_MapFrags is deprecated and will be removed in e87. Please use get_all_MiscFeatures instead');
   return $self->get_all_MiscFeatures(@_);
 }
 
@@ -4046,7 +4042,7 @@ sub get_all_MapFrags {
 
 sub has_MapSet {
   my( $self, $mapset_name ) = @_;
-  deprecate('Use get_all_MiscFeatures instead');
+  deprecate('has_MapSet is deprecated and will be removed in e87. Please use get_all_MiscFeatures instead');
   my $mfs = $self->get_all_MiscFeatures($mapset_name);
   return (@$mfs > 0);
 }

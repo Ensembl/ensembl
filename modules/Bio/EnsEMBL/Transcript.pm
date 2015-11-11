@@ -3162,7 +3162,7 @@ sub get_Gene {
 sub sort {
   my $self = shift;
 
-  deprecate( "Exons are kept sorted, you dont have to call sort any more" );
+  deprecate( "sort is deprecated and will be removed in e84. Exons are kept sorted, you dont have to call sort any more" );
   # Fetch all the features
   my @exons = @{$self->get_all_Exons()};
   
@@ -3189,7 +3189,7 @@ sub sort {
 
 sub _translation_id {
    my $self = shift;
-   deprecate( "This method shouldnt be necessary any more" );
+   deprecate( "_translation_id is deprecated and will be removed in e84." );
    if( @_ ) {
       my $value = shift;
       $self->{'_translation_id'} = $value;
@@ -3207,7 +3207,7 @@ sub _translation_id {
 
 sub created{
    my $obj = shift;
-   deprecate( "This attribute is no longer supported" );
+   deprecate( "created is deprecated and will be removed in e87." );
    if( @_ ) {
       my $value = shift;
       $obj->{'created'} = $value;
@@ -3224,7 +3224,7 @@ sub created{
 
 sub modified{
    my $obj = shift;
-   deprecate( "This attribute is no longer supported" );
+   deprecate( "modified is deprecated and will be removed in e87." );
    if( @_ ) {
       my $value = shift;
       $obj->{'modified'} = $value;
@@ -3241,8 +3241,7 @@ sub modified{
 
 sub temporary_id{
    my ($obj,$value) = @_;
-   deprecate( "I cant see what a temporary_id is good for, please use dbID" .
-               "or stableID or\ntry without an id." );
+   deprecate( "temporary_id is deprecated and will be removed in e87." );
    if( defined $value) {
       $obj->{'temporary_id'} = $value;
     }
@@ -3257,7 +3256,7 @@ sub temporary_id{
 =cut
 
 sub type {
-  deprecate("Use biotype() instead");
+  deprecate("type is deprecated and will be removed in e87. Please use biotype() instead");
   biotype(@_);
 }
 
@@ -3269,7 +3268,7 @@ sub type {
 =cut
 
 sub confidence {
-  deprecate("Use status() instead");
+  deprecate("confidence is deprecated and will be removed in e87. Please use status() instead");
   status(@_);
 }
 

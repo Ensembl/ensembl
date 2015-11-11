@@ -1612,7 +1612,7 @@ sub summary_as_hash {
 
 sub _get_stable_entry_info {
    my $self = shift;
-   deprecate( "This function shouldnt be called any more" );
+   deprecate( "_get_stable_entry_info is deprecated and will be removed in e84. Please use stable_id instead." );
    if( !defined $self->adaptor ) {
      return undef;
    }
@@ -1628,7 +1628,7 @@ sub _get_stable_entry_info {
 
 sub temporary_id {
   my $self = shift;
-  deprecate('It should not be necessary to use this method.');
+  deprecate('temporary_id is deprecated and will be removed in e87.');
   $self->{'tempID'} = shift if(@_);
   return $self->{'tempID'};
 }
@@ -1642,7 +1642,7 @@ sub temporary_id {
 
 sub created {
     my ($self,$value) = @_;
-    deprecate( "Created attribute not supported any more." );
+    deprecate( "created is deprecated and will be removed in e87." );
     if(defined $value ) {
       $self->{'_created'} = $value;
     }
@@ -1658,7 +1658,7 @@ sub created {
 
 sub modified {
     my ($self,$value) = @_;
-    deprecate( "Modified attribute not supported any more." );
+    deprecate( "Modified is deprecated and will be removed in e87." );
     if( defined $value ) {
       $self->{'_modified'} = $value;
     }
@@ -1674,7 +1674,7 @@ sub modified {
 
 sub type {
   my ($self,$value) = @_;
-  deprecate("Type attribute not supported anymore.");
+  deprecate("Type is deprecated and will be removed in e87.");
   if (defined($value)) {
     $self->{'type'} = $value;
   }

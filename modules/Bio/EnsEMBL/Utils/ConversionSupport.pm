@@ -67,7 +67,7 @@ no warnings 'uninitialized';
 
 use Getopt::Long;
 use Text::Wrap;
-use Bio::EnsEMBL::Utils::Exception qw(throw warning);
+use Bio::EnsEMBL::Utils::Exception qw(throw warning deprecate);
 use FindBin qw($Bin $Script);
 use POSIX qw(strftime);
 use Cwd qw(abs_path);
@@ -570,6 +570,7 @@ sub user_proceed {
 
 sub user_confirm {
   my $self = shift;
+  deprecate("user_confirm is deprecated and will be removed in e87.");
   exit unless $self->user_proceed("Continue?");
 }
 

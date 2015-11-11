@@ -511,7 +511,7 @@ sub fetch_by_assembly_location {
    my ( $self, $chrStart, $chrEnd, 
         $strand, $chrName, $assemblyType ) = @_;
 
-   deprecate('Use fetch_by_Slice_start_end_strand() instead');
+   deprecate('fetch_by_assembly_location is deprecated and will be removed in e87. Please use fetch_by_Slice_start_end_strand() instead');
 
    my $csa = $self->db->get_CoordSystem();
    my $top_cs = @{$csa->fetch_all};
@@ -532,7 +532,7 @@ sub fetch_by_assembly_location {
 =cut
 
 sub fetch_by_RawContig_start_end_strand {
-  deprecate('Use fetch_by_Slice_start_end_strand instead.');
+  deprecate('fetch_by_RawContig_start_end_strand is deprecated and will be removed in e87. Please use fetch_by_Slice_start_end_strand instead.');
   fetch_by_Slice_start_end_strand(@_);
 }
 

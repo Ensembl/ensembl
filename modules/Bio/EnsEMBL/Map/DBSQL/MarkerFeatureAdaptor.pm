@@ -151,7 +151,7 @@ sub fetch_all_by_Slice_and_priority {
 =cut
 
 sub fetch_all_by_RawContig_and_priority {
-  deprecate('Use fetch_all_by_Slice_and_priority() instead.');
+  deprecate('fetch_all_by_RawContig_and_priority is deprecated and will be removed in e87. Please use fetch_all_by_Slice_and_priority() instead.');
   fetch_all_by_Slice_and_priority(@_);
 }
 

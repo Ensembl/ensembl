@@ -274,7 +274,7 @@ sub add_Gene {
 =cut
 sub add_gene {
 	my ($self,$gene) = @_;
-	deprecate('Call is deprecated. Use $self->add_Gene()');
+	deprecate('add_gene is deprecated and will be removed in e87. Please use $self->add_Gene()');
 	return $self->add_Gene($gene);
 }
 =head2 add_DBEntry
