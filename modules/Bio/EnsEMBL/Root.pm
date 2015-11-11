@@ -92,7 +92,7 @@ sub new{
 sub throw{
    my ($self,$string) = @_;
 
-   deprecate('Root->throw has been deprecated and will be removed in e87. Please use Exception->throw instead');
+   deprecate('Root->throw is deprecated and will be removed in e87. Please use Exception->throw instead');
 
    Bio::EnsEMBL::Utils::Exception->throw($string);
 
@@ -108,7 +108,7 @@ sub throw{
 sub warn{
     my ($self,$string) = @_;
 
-    deprecate('Root->warn has been deprecated and will be removed in e87. Please use Exception->warning instead');
+    deprecate('Root->warn is deprecated and will be removed in e87. Please use Exception->warning instead');
 
     Bio::EnsEMBL::Utils::Exception->warning($string);
 
@@ -126,7 +126,7 @@ sub warn{
 sub verbose{
    my ($self,$value) = @_;
 
-   deprecate('Root->verbose has been deprecated and will be removed in e87. Please use Exception->verbose instead');
+   deprecate('Root->verbose is deprecated and will be removed in e87. Please use Exception->verbose instead');
 
    Bio::EnsEMBL::Utils::Exception->verbose($value);
    
@@ -141,7 +141,7 @@ sub verbose{
 sub stack_trace_dump{
    my ($self) = @_;
 
-   deprecate('Root->stack_trace_dump has been deprecated and will be removed in e87. Please use Exception->stack_trace_dump instead');
+   deprecate('Root->stack_trace_dump is deprecated and will be removed in e87. Please use Exception->stack_trace_dump instead');
 
    Bio::EnsEMBL::Utils::Exception->stack_trace_dump();
 
@@ -157,7 +157,7 @@ sub stack_trace_dump{
 sub stack_trace{
    my ($self) = @_;
 
-   deprecate('Root->stack_trace has been deprecated and will be removed in e87. Please use Exception->stack_trace instead');
+   deprecate('Root->stack_trace is deprecated and will be removed in e87. Please use Exception->stack_trace instead');
 
    Bio::EnsEMBL::Utils::Exception->stack_trace();
 
