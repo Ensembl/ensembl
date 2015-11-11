@@ -107,7 +107,7 @@ A year after deprecation (4 Ensembl releases), the method is removed from the AP
  - Bio::EnsEMBL::**IdentityXref**::*query_start()*
  - Bio::EnsEMBL::**IdentityXref**::*query_end()*
  - Bio::EnsEMBL::**KaryotypeBand**::*chr_name()*
- - Bio::EnsEMBL::Map::DBSQL::**MarkerFeatureAdaptor**::fetch_all_by_RawContig_and_priority()*
+ - Bio::EnsEMBL::Map::DBSQL::**MarkerFeatureAdaptor**::*fetch_all_by_RawContig_and_priority()*
  - Bio::EnsEMBL::Map::**DitagFeature**::*fetch_ditag()*
  - Bio::EnsEMBL::Map::**MapLocation**::*chromosome()*
  - Bio::EnsEMBL::**OperonTranscript**::*add_gene()*
