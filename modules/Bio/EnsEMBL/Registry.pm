@@ -162,6 +162,7 @@ my %group2adaptor = (
       'pipeline'      => 'Bio::EnsEMBL::Pipeline::DBSQL::DBAdaptor',
       'production' => 'Bio::EnsEMBL::Production::DBSQL::DBAdaptor',
       'stable_ids' => 'Bio::EnsEMBL::DBSQL::DBAdaptor',
+      'taxonomy'  => 'Bio::EnsEMBL::DBSQL::TaxonomyDBAdaptor',
       'variation' => 'Bio::EnsEMBL::Variation::DBSQL::DBAdaptor',
       'vega'      => 'Bio::EnsEMBL::DBSQL::DBAdaptor',
       'vega_update' => 'Bio::EnsEMBL::DBSQL::DBAdaptor',
@@ -374,7 +375,6 @@ sub load_all {
                     $adaptor_args{'-no_cache'} = 1;
                   }
                 }
-
                 if ($verbose) {
                     printf( "Configuring adaptor '%s' "
                               . "for configuration section '%s'...\n",
@@ -1734,6 +1734,8 @@ sub load_registry_from_db {
   my $ontology_db;
   my $ontology_version;
 
+  my $taxonomy_db;
+
   my $production_dba_ok = 
     eval { require Bio::EnsEMBL::Production::DBSQL::DBAdaptor; 1 };
   my $production_db;
@@ -1804,6 +1806,8 @@ sub load_registry_from_db {
         $ontology_db      = $db;
         $ontology_version = $1;
       }
+    } elsif ( $db =~ /^ncbi_taxonomy$/ ) {
+        $taxonomy_db      = $db;
     } elsif ( $production_dba_ok and $db =~ /^ensembl(?:genomes)?_production(_\d+)?/x ) {
       # production db can come with no version (i.e. that on ens-staging1),
       # but it's backed up with a release number
@@ -2303,6 +2307,28 @@ sub load_registry_from_db {
   }
   elsif ($verbose) {
     print("No ontology database found\n");
+  }
+
+  # Taxonomy
+
+  if ( defined $taxonomy_db) {
+    require Bio::EnsEMBL::DBSQL::TaxonomyDBAdaptor;
+    my $dba =
+      Bio::EnsEMBL::DBSQL::TaxonomyDBAdaptor->new(
+                                '-species' => 'multi' . $species_suffix,
+                                '-group'   => 'taxonomy',
+                                '-host'    => $host,
+                                '-port'    => $port,
+                                '-user'    => $user,
+                                '-pass'    => $pass,
+                                '-dbname'  => $taxonomy_db, );
+
+    if ($verbose) {
+      printf( "%s loaded\n", $taxonomy_db );
+    }
+  }
+  elsif ($verbose) {
+    print("No taxonomy database found\n");
   }
 
   # Production
