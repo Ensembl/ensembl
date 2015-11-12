@@ -16,6 +16,7 @@ use strict;
 use warnings;
 
 use Test::More;
+use Test::Warnings;
 
 use IO::String;
 use Bio::EnsEMBL::Slice;

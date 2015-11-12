@@ -16,6 +16,7 @@ use strict;
 use warnings;
 
 use Test::More;
+use Test::Warnings;
 
 use Bio::EnsEMBL::Test::TestUtils;
 use IO::String;
@@ -116,15 +117,10 @@ is($sub_slice->invert()->seq(), 'ATGCA', "Inverted sub slice seq is correct");
 
 # test that slice can be created without db, seq or coord system
 {
-  my $warnings = q{};
-  my $new_stderr = IO::String->new(\$warnings);
-  my $oldfh = select(STDERR);
-  local *STDERR = $new_stderr;
-  $test_slice = Bio::EnsEMBL::Slice->new('-seq_region_name' => 'test',
-                                         '-start'           => 1,
-                                         '-end'             => 3);
   my $check = qr/MSG: Slice without coordinate system/;
-  like($warnings, $check, 'Checking we are still warning about lack of coordinate system');
+  warns_like {
+  $test_slice = Bio::EnsEMBL::Slice->new('-seq_region_name' => 'test', '-start'           => 1, '-end'             => 3)
+  } qr/$check/, 'Checking we are still warning about lack of coordinate system';
 }
 
 ok($test_slice);

@@ -16,6 +16,7 @@ use strict;
 use warnings;
 
 use Test::More;
+use Test::Warnings;
 use Bio::EnsEMBL::Test::TestUtils;
 
 use Bio::EnsEMBL::Utils::Argument qw(rearrange);

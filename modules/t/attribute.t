@@ -23,6 +23,7 @@ use Bio::EnsEMBL::Test::TestUtils;
 our $verbose = 0; #set to 1 to turn on debug printouts
 
 use Test::More;
+use Test::Warnings;
 
 use Bio::EnsEMBL::Test::TestUtils;
 

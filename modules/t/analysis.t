@@ -16,6 +16,7 @@
 use strict;
 use warnings;
 use Test::More;
+use Test::Warnings;
 
 my $loaded = 0;
 END {print "not ok 1\n" unless $loaded;}

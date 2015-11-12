@@ -18,6 +18,7 @@ use Bio::EnsEMBL::Test::TestUtils;
 use Bio::EnsEMBL::RepeatConsensus;
 
 use Test::More;
+use Test::Warnings;
 my $verbose = 0;
 
 my $consensus = 'actg';

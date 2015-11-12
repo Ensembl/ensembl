@@ -16,6 +16,7 @@ use strict;
 use warnings;
 
 use Test::More;
+use Test::Warnings;
 use Data::Dumper;
 $|=1;
 

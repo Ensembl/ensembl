@@ -19,6 +19,7 @@ use Cwd;
 use File::Spec;
 use File::Basename qw/dirname/;
 use Test::More;
+use Test::Warnings;
 
 if ( not $ENV{TEST_AUTHOR} ) {
   my $msg = 'Author test. Set $ENV{TEST_AUTHOR} to a true value to run.';

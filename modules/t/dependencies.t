@@ -17,6 +17,7 @@ use strict;
 use warnings;
 
 use Test::More;
+use Test::Warnings;
 use File::Spec;
 
 my ($volume, $directory, $file) = File::Spec->splitpath(__FILE__);

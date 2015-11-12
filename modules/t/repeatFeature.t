@@ -22,6 +22,7 @@ use Bio::EnsEMBL::CoordSystem;
 use Bio::EnsEMBL::RepeatFeature;
 
 use Test::More;
+use Test::Warnings;
 use Bio::EnsEMBL::Test::TestUtils;
 
 our $verbose = 0;

@@ -15,6 +15,7 @@
 use strict;
 
 use Test::More;
+use Test::Warnings;
 
 use Bio::EnsEMBL::Test::MultiTestDB;
 use Bio::EnsEMBL::Test::TestUtils;
@@ -37,9 +38,9 @@ my $transcript =
   $transcript_adaptor->fetch_by_stable_id($stable_id);
 
 
-my @five_utrs = @{ $transcript->get_all_five_prime_utrs() };  
+my @five_utrs = @{ $transcript->get_all_five_prime_UTRs() };  
 my $five = scalar(@five_utrs);
-my @three_utrs = @{ $transcript->get_all_three_prime_utrs() };
+my @three_utrs = @{ $transcript->get_all_three_prime_UTRs() };
 my $three = scalar(@three_utrs);
 
 is($five_utrs[0]->start, $transcript->start, "Five prime starts at transcript start");

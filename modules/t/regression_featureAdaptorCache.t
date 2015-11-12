@@ -15,6 +15,7 @@
 use strict;
 use warnings;
 use Test::More;
+use Test::Warnings;
 use Bio::EnsEMBL::Test::MultiTestDB;
 
 my $multi = Bio::EnsEMBL::Test::MultiTestDB->new();

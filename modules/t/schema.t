@@ -17,6 +17,7 @@ use warnings;
 
 use FindBin qw/$Bin/;
 use Test::More;
+use Test::Warnings;
 use Bio::EnsEMBL::Test::MultiTestDB;
 use Bio::EnsEMBL::Utils::IO qw/slurp/;
 use File::Spec::Functions qw/updir catfile catdir/;

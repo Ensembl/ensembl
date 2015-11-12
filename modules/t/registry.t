@@ -17,6 +17,7 @@ use warnings;
 
 use Config;
 use Test::More;
+use Test::Warnings;
 use Test::Exception;
 use File::Temp qw/tempfile/;
 use Bio::EnsEMBL::Registry;

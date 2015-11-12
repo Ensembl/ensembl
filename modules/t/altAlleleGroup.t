@@ -21,6 +21,7 @@ use Bio::EnsEMBL::DBSQL::AltAlleleGroupAdaptor;
 use Test::More;
 use Test::Exception;
 use Test::Differences;
+use Test::Warnings;
 use Bio::EnsEMBL::Test::TestUtils;
 use Bio::EnsEMBL::Test::MultiTestDB;
 

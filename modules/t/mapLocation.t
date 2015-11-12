@@ -14,6 +14,7 @@
 
 use strict;
 use Test::More;
+use Test::Warnings;
 
 use Bio::EnsEMBL::Map::MapLocation;
 use Bio::EnsEMBL::Test::MultiTestDB;

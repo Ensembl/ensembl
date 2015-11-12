@@ -97,6 +97,7 @@ package main;
 use Bio::EnsEMBL::Test::TestUtils;
 
 use Test::More;
+use Test::Warnings;
 
 
 my $xff = ExternalFF1->new();

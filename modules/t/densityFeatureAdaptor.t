@@ -28,6 +28,7 @@ use Bio::EnsEMBL::Test::TestUtils;
 use Bio::EnsEMBL::Test::MultiTestDB;
 
 use Test::More;
+use Test::Warnings;
 our $verbose = 0;
 verbose('WARNING');
 

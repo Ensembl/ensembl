@@ -15,6 +15,7 @@
 use strict;
 
 use Test::More;
+use Test::Warnings;
 use Bio::EnsEMBL::Test::MultiTestDB;
 use Bio::EnsEMBL::Map::Marker;
 use Bio::EnsEMBL::Map::MarkerSynonym;

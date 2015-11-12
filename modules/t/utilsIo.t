@@ -16,6 +16,7 @@ use strict;
 use warnings;
 
 use Test::More;
+use Test::Warnings;
 use Test::Exception;
 use File::Temp;
 use Bio::EnsEMBL::Utils::IO qw/:all/;

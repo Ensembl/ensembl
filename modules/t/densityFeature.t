@@ -21,11 +21,10 @@ use Bio::EnsEMBL::DensityFeature;
 use Bio::EnsEMBL::Test::MultiTestDB;
 use Bio::EnsEMBL::Analysis;
 
-use Bio::EnsEMBL::Test::TestUtils;
-
 
 our $verbose = 0; #set to 1 to turn on debug printouts
 use Test::More;
+use Test::Warnings;
 use Bio::EnsEMBL::Test::TestUtils;
 
 my $multi = Bio::EnsEMBL::Test::MultiTestDB->new;

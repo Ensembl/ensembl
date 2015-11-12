@@ -47,6 +47,7 @@ package main;
 use strict;
 use warnings;
 use Test::More;
+use Test::Warnings;
 use Bio::EnsEMBL::Test::MultiTestDB;
 use Bio::EnsEMBL::Utils::IO::GFFSerializer;
 use Bio::EnsEMBL::Feature;

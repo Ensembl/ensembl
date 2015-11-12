@@ -22,6 +22,7 @@ use Bio::EnsEMBL::Test::TestUtils;
 our $verbose = 0;
 
 use Test::More;
+use Test::Warnings;
 
 my $name    = 'chromosome';
 my $version = 'NCBI33';

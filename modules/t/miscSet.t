@@ -15,6 +15,7 @@
 use strict;
 
 use Test::More;
+use Test::Warnings;
 
 use Bio::EnsEMBL::MiscSet;
 use Bio::EnsEMBL::Test::TestUtils;
