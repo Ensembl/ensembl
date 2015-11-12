@@ -1,6 +1,7 @@
 #!/bin/bash
 
 export PERL5LIB=$PWD/bioperl-live-bioperl-release-1-2-3:$PWD/ensembl-test/modules:$PWD/modules:$PWD/ensembl-variation/modules
+export TEST_AUTHOR=$USER
 
 if [ "$DB" = 'mysql' ]; then
     (cd modules/t && ln -sf MultiTestDB.conf.mysql MultiTestDB.conf)
