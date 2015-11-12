@@ -570,8 +570,8 @@ is($chr_one_slice->assembly_exception_type(), 'REF', 'Ensuring reference regions
 # Test slice attributes
 my $current_slice = $slice_adaptor->fetch_by_region('chromosome', $CHR, $START, $END);
 is($current_slice->is_chromosome, 1, "Slice is a chromosome");
-is($current_slice->has_karyotype, 0, "Slice has no karyotype attribute");
-is($current_slice->karyotype_rank, 0, "No karyotype rank could be found");
+is($current_slice->has_karyotype, 1, "Slice has a karyotype attribute");
+is($current_slice->karyotype_rank, 20, "Karyotype rank is 20 could be found");
 
 #
 # Test get_genome_component
