@@ -2341,7 +2341,7 @@ sub get_db_name_from_external_db_id{
 
 sub geneids_by_extids{
    my ($self,$name) = @_;
-   deprecate(" use 'list_gene_ids_by_extids instead");
+   deprecate("gene_ids_by_extids is deprecated and will be removed in e87. Please use 'list_gene_ids_by_extids instead");
    return $self->list_gene_ids_by_extids( $name );
 }
 
@@ -2354,7 +2354,7 @@ sub geneids_by_extids{
 
 sub translationids_by_extids{
   my ($self,$name) = @_;
-  deprecate("Use list_translation_ids_by_extids instead");
+  deprecate("translationids_by_extids is deprecated and will be removed in e87. Please use list_translation_ids_by_extids instead");
   return $self->list_translation_ids_by_extids( $name );
 }
 
@@ -2367,7 +2367,7 @@ sub translationids_by_extids{
 
 sub transcriptids_by_extids{
    my ($self,$name) = @_;
-   deprecate("Use list_transcript_ids_by_extids instead.");
+   deprecate("transcriptids_by_extids is deprecated and will be removed in e87. Please use list_transcript_ids_by_extids instead.");
    return $self->list_transcript_ids_by_extids( $name );
 }
 

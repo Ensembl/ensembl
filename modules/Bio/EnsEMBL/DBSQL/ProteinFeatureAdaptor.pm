@@ -263,7 +263,7 @@ sub store {
 } ## end sub store
 
 sub fetch_by_translation_id {
-  deprecate("Use fetch_all_by_translation_id instead.");
+  deprecate("fetch_by_translation_id is deprecated. Please use fetch_all_by_translation_id instead.");
   fetch_all_by_translation_id(@_);
 }
 
@@ -271,7 +271,7 @@ sub fetch_all_by_feature_and_dbID {
   my $self           = shift;
   my $feature        = shift;
   my $translation_id = shift;
-  deprecate("Use fetch_all_by_translation_id instead.");
+  deprecate("fetch_all_by_feature_and_dbID is deprecated. Please use fetch_all_by_translation_id instead.");
 
   print STDERR "translation_id = $translation_id feature = $feature\n";
 

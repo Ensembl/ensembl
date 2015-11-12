@@ -745,7 +745,7 @@ sub adaptor {
 sub in_assembly {
   my ( $self, $object ) = @_;
 
-  deprecate('Use map() or list_ids() instead.');
+  deprecate('in_assembly is deprecated and will be removed in e87. Use map() or list_ids() instead.');
 
   my $csa = $self->db->get_CoordSystemAdaptor();
 
@@ -772,7 +772,7 @@ sub in_assembly {
 sub map_coordinates_to_assembly {
   my ( $self, $contig_id, $start, $end, $strand ) = @_;
 
-  deprecate('Use map() instead.');
+  deprecate('map_coordinates_to_assembly is deprecated and will be removed in e87. Use map() instead.');
 
   # Not sure if contig_id is seq_region_id or name...
   return
@@ -790,7 +790,7 @@ sub map_coordinates_to_assembly {
 sub fast_to_assembly {
   my ( $self, $contig_id, $start, $end, $strand ) = @_;
 
-  deprecate('Use map() instead.');
+  deprecate('fast_to_assembly is deprecated and will be removed in e87. Use map() instead.');
 
   # Not sure if contig_id is seq_region_id or name...
   return
@@ -807,7 +807,7 @@ sub fast_to_assembly {
 sub map_coordinates_to_rawcontig {
   my ( $self, $chr_name, $start, $end, $strand ) = @_;
 
-  deprecate('Use map() instead.');
+  deprecate('map_coordinates_to_rawcontig is deprecated and will be removed in e87. Use map() instead.');
 
   return
     $self->map( $chr_name, $start, $end, $strand,
@@ -823,7 +823,7 @@ sub map_coordinates_to_rawcontig {
 sub list_contig_ids {
   my ( $self, $chr_name, $start, $end ) = @_;
 
-  deprecate('Use list_ids() instead.');
+  deprecate('list_contig_ids is deprecated and will be removed in e87. Use list_ids() instead.');
 
   return
     $self->list_ids( $chr_name, $start, $end,

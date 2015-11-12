@@ -1171,8 +1171,7 @@ sub load {
 
 sub temporary_id {
    my $self = shift;
-   deprecate( "I cant see what a temporary_id is good for, please use " .
-               "dbID or stableID or\n try without an id." );
+   deprecate( "temporary_id is deprecated and will be removed in e87.");
   $self->{'temporary_id'} = shift if( @_ );
   return $self->{'temporary_id'};
 }

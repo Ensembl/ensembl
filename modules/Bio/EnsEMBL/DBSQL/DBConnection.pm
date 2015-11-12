@@ -1089,7 +1089,7 @@ sub group {
   my ($self, $arg ) = @_;
   ( defined $arg ) &&
     ( $self->{_group} = $arg );
-  deprecate "group should not be called from DBConnection but from an adaptor\n";
+  deprecate("DBConnection->group is deprecated and will be removed in e87. Please use adaptor->group instead.");
   return $self->{_group};
 }
 
@@ -1104,7 +1104,7 @@ sub species {
   my ($self, $arg ) = @_;
   ( defined $arg ) &&
     ( $self->{_species} = $arg );
-  deprecate "species should not be called from DBConnection but from an adaptor\n";
+  deprecate("DBConnection->species is deprecated and will be removed in e87. Please use adaptor->species instead.");
   return $self->{_species};
 }
 

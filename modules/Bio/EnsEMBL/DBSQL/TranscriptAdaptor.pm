@@ -2069,7 +2069,7 @@ sub fetch_all_by_transcript_supporting_evidence {
 sub get_display_xref {
   my ($self, $transcript) = @_;
 	
-  deprecate("display_xref should be retrieved from Transcript object directly.");
+  deprecate("get_display_xref is deprecated and will be removed in e87. display_xref should be retrieved from Transcript object directly.");
   
   if ( !defined $transcript ) {
     throw("Must call with a Transcript object");
@@ -2119,7 +2119,7 @@ sub get_display_xref {
 sub get_stable_entry_info {
   my ($self, $transcript) = @_;
 
-  deprecate("Stable ids should be loaded directly now");
+  deprecate("get_stable_entry_info is deprecated and will be removed in e87. Stable ids should be loaded directly instead");
 
   unless ( defined $transcript && ref $transcript && 
 	  $transcript->isa('Bio::EnsEMBL::Transcript') ) {
@@ -2151,7 +2151,7 @@ sub get_stable_entry_info {
 
 sub fetch_all_by_DBEntry {
   my $self = shift;
-  deprecate('Use fetch_all_by_external_name instead.');
+  deprecate('fetch_all_by_DBEntry is deprecated and will be removed in e87. Please use fetch_all_by_external_name instead.');
   return $self->fetch_all_by_external_name(@_);
 }
 

@@ -274,7 +274,7 @@ sub fetch_all_by_chr_band {
 
 sub fetch_by_chr_band {
   my $self = shift;
-  deprecate('Use fetch_all_by_chr_band instead.');
+  deprecate('fetch_by_chr_band is deprecated and will be removed in e87. Use fetch_all_by_chr_band instead.');
 
   my ($band) = @{$self->fetch_all_by_chr_band(@_)};
   return $band;

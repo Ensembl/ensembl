@@ -2049,7 +2049,7 @@ sub fetch_nearest_Gene_by_Feature{
   #This had no prime spec and was returning all overlaps regardless of strand
   #else the first 10 from the stream with the first closest gene
 
-  deprecate( "use fetch_nearest_Genes_by_Feature instead");
+  deprecate( "fetch_neared_Gene_by_Feature is deprecated and will be removed in e87. Please use fetch_nearest_Genes_by_Feature instead");
   #need to change params order here to account for new prime arg
   return $_[0]->fetch_nearest_Genes_by_Feature($feat, undef, $stranded, $stream);
 }
@@ -2064,7 +2064,7 @@ sub fetch_nearest_Gene_by_Feature{
 sub fetch_by_maximum_DBLink {
   my ($self, $external_id) = @_;
 
-  deprecate("use fetch_all_by_external_name instead");
+  deprecate("fetch_by_maximum_DBLink is deprecated and will be removed in e87. Pleaseuse fetch_all_by_external_name instead");
 
   my $genes = $self->fetch_all_by_external_name($external_id);
 
@@ -2093,7 +2093,7 @@ sub fetch_by_maximum_DBLink {
 sub get_display_xref {
   my ($self, $gene) = @_;
 
-  deprecate("display xref should retrieved from Gene object directly");
+  deprecate("gene_adaptor->get_display_xref is deprecated and will be removed in e87. Please use gene->display_xref instead");
 
   if (!defined $gene) {
 	throw("Must call with a Gene object");
@@ -2137,7 +2137,7 @@ sub get_display_xref {
 sub get_description {
   my ($self, $dbID) = @_;
 
-  deprecate("Gene description should be loaded on gene retrieval. Use gene->get_description()");
+  deprecate("gene_adaptor->get_description is deprecated and will be removed in e87. Please use gene->get_description() instead");
 
   if (!defined $dbID) {
 	throw("must call with dbID");
@@ -2164,7 +2164,7 @@ sub get_description {
 sub fetch_by_Peptide_id {
   my ($self, $translation_stable_id) = @_;
 
-  deprecate("Please use better named fetch_by_translation_stable_id \n" . caller(2));
+  deprecate("fetch_by_Peptide_id is deprecated and will be removed in e87. Please use fetch_by_translation_stable_id instead");
 
   $self->fetch_by_translation_stable_id($translation_stable_id);
 }
@@ -2178,7 +2178,7 @@ sub fetch_by_Peptide_id {
 sub get_stable_entry_info {
   my ($self, $gene) = @_;
 
-  deprecated("stable id info is loaded on default, no lazy loading necessary");
+  deprecate("gene_adaptor->get_stable_entry_info is deprecated and will be removed in e87. Please use gene->stable_id instead.");
 
   if (!defined $gene || !ref $gene || !$gene->isa('Bio::EnsEMBL::Gene')) {
 	throw("Needs a gene object, not a $gene");
@@ -2210,7 +2210,7 @@ sub get_stable_entry_info {
 sub fetch_all_by_DBEntry {
   my $self = shift;
 
-  deprecate('Use fetch_all_by_external_name instead.');
+  deprecate('fetch_all_by_DBEntry is deprecated and will be removed in e87. Please use fetch_all_by_external_name instead.');
 
   return $self->fetch_all_by_external_name(@_);
 }

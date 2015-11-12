@@ -1119,12 +1119,12 @@ sub revert_adaptor {
 
 sub db{
   my ($self, $arg ) = @_;
- deprecate("db Should no longer be called from the DBAdaptor. DBConnection should now be used OR preferably the object adaptor itself\n");
+ deprecate("DBAdaptor->db is deprecated and will be removed in e87. Please use DBConnection->db instead.");
  return $self->dbc($arg);
 }
 
 
-sub source { deprecate('Do not use - this method does nothing'); }
+sub source { deprecate('source is deprecated and will be removed in e84.'); }
 
 
 =head2 assembly_type
@@ -1137,7 +1137,7 @@ sub source { deprecate('Do not use - this method does nothing'); }
 sub assembly_type{
   my $self = shift;
 
-  deprecate('Use CoordSystemAdaptor $csa->fetch_all->[0]->version() instead');
+  deprecate('assembly_type is deprecated and will be removed in e87. Please use CoordSystemAdaptor $csa->fetch_all->[0]->version() instead');
 
   my $csa = $self->get_CoordSystemAdaptor();
   my ($cs) = @{$csa->fetch_all()};
@@ -1155,7 +1155,7 @@ sub assembly_type{
 
 sub list_supported_assemblies {
   my($self) = @_;
-  deprecate('Use CoordSystemAdaptor::fetch_all instead');
+  deprecate('list_supported_assemblies is deprecated and will be removed in e87. Please use CoordSystemAdaptor::fetch_all instead');
 
   my $csa = $self->get_CoordSystemAdaptor();
   my %versions;
@@ -1170,28 +1170,28 @@ sub list_supported_assemblies {
 sub prepare{
   my ($self, @args) = @_;
 
- deprecate("prepare Should no longer be called from the DBAdaptor. DBConnection should now be used OR preferably the object adaptor itself\n");
+ deprecate("DBAdaptor->prepare is deprecated and will be removed in e87. Please use DBConnection->prepare instead.");
   $self->dbc->prepare(@args);
 }
 
 sub dbname{
   my ($self, @args) = @_;
 
- deprecate("dbname Should no longer be called from the DBAdaptor. DBConnection should now be used OR preferably the object adaptor itself\n");
+ deprecate("DBAdaptor->dbname is deprecated and will be removed in e87. Please use DBConnection->dbname instead.");
   $self->dbc->dbname(@args);
 } 
 
 sub disconnect_when_inactive{
   my ($self, @args) = @_;
 
- deprecate("disconnect_when_inactive Should no longer be called from the DBAdaptor. DBConnection should now be used OR preferably the object adaptor itself\n");
+ deprecate("DBAdaptor->disconnect_when_inactive is deprecated and will be removed in e87. Please use DBConnection->disconnect_when_inactive instead.");
   $self->dbc->disconnect_when_inactive(@args);
 }
 
 sub reconnect_when_lost{
   my ($self, @args) = @_;
 
- deprecate("reconnect_when_lost Should no longer be called from the DBAdaptor. DBConnection should now be used OR preferably the object adaptor itself\n");
+ deprecate("DBAdaptor->reconnect_when_lost is deprecated and will be removed in e87. Please use DBConnection->reconnect_when_lost instead.");
   $self->dbc->reconnect_when_lost(@args);
 }
 
@@ -1199,31 +1199,31 @@ sub reconnect_when_lost{
 sub host{
   my ($self, @args) = @_;
 
- deprecate("host Should no longer be called from the DBAdaptor. DBConnection should now be used OR preferably the object adaptor itself\n");
+ deprecate("DBAdaptor->host is deprecated and will be removed in e87. Please use DBConnection->host instead.");
   $self->dbc->host(@args);
 }
 sub username{
   my ($self, @args) = @_;
 
- deprecate("username Should no longer be called from the DBAdaptor. DBConnection should now be used OR preferably the object adaptor itself\n");
+ deprecate("DBAdaptor->username is deprecated and will be removed in e87. Please use DBConnection->username instead.");
   $self->dbc->username(@args);
 }
 sub password{
   my ($self, @args) = @_;
 
- deprecate("password Should no longer be called from the DBAdaptor. DBConnection should now be used OR preferably the object adaptor itself\n");
+ deprecate("DBAdaptor->password is deprecated and will be removed in e87. Please use DBConnection->password instead.");
   $self->dbc->password(@args);
 }
 sub driver{
   my ($self, @args) = @_;
 
- deprecate("driver Should no longer be called from the DBAdaptor. DBConnection should now be used OR preferably the object adaptor itself\n");
+ deprecate("DBAdaptor->driver is deprecated and will be removed in e87. Please use DBConnection->driver instead.");
   $self->dbc->driver(@args);
 }
 sub port{
   my ($self, @args) = @_;
 
- deprecate("port Should no longer be called from the DBAdaptor. DBConnection should now be used OR preferably the object adaptor itself\n");
+ deprecate("DBAdaptor->port is deprecated and will be removed in e87. Please use DBConnection->port instead.");
   $self->dbc->port(@args);
 }
 
@@ -1231,7 +1231,7 @@ sub db_handle{
   my ($self, @args) = @_;
 
 
- deprecate("db_handle Should no longer be called from the DBAdaptor. DBConnection should now be used OR preferably the object adaptor itself\n");
+ deprecate("DBAdaptor->db_handle is deprecated and will be removed in e87. Please use DBConnection->db_handle instead.");
   $self->dbc->db_handle(@args);
 }
 

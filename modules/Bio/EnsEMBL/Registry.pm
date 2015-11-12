@@ -2650,7 +2650,7 @@ sub load_registry_from_multiple_dbs {
 sub load_registry_with_web_adaptors{
   my $class = shift;
 
-  deprecate('Use the load_registry_from_db instead'); 
+  deprecate('load_registry_with_web_adaptors is deprecated and will be removed in e87. Please use the load_registry_from_db instead'); 
   my $site_eval = eval{ require SiteDefs };
   if ($@ or (!defined($site_eval))){ die "Can't use SiteDefs.pm - $@\n"; }
     SiteDefs->import(qw(:ALL));
@@ -3011,7 +3011,7 @@ sub get_species_and_object_type {
 
     my @dbas = 
       sort { $a->dbc->host cmp $b->dbc->host || $a->dbc->port <=> $b->dbc->port } 
-      grep { $_->dbname ne 'ncbi_taxonomy' }
+      grep { $_->dbc->dbname ne 'ncbi_taxonomy' }
       @{$self->get_all_DBAdaptors(%get_adaptors_args)};    
     
     foreach my $dba (@dbas) {

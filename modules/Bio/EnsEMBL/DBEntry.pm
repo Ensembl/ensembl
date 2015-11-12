@@ -707,7 +707,7 @@ sub ensembl_id{
 sub get_synonyms {
   my $self = shift;
 
-  deprecate("get_synonyms has been renamed get_all_synonyms.");
+  deprecate("get_synonyms is deprecated and will be removed in e87. Use get_all_synonyms instead.");
   return $self->get_all_synonyms;
 }
 

@@ -792,7 +792,7 @@ sub mapper{
 sub get_all_differences_Slice{
     my $self = shift;
     
-    deprecate('Use get_all_differences_Slice instead');
+    deprecate('get_all_differences_Slice is deprecated and will be removed in e87. Please use get_all_AlleleFeatures_Slice instead');
     return $self->get_all_AlleleFeatures_Slice(@_);
 }
 

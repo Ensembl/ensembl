@@ -2749,7 +2749,7 @@ sub _build_circular_slice_cache {
 
 sub fetch_by_mapfrag{
    my ($self,$mymapfrag,$flag,$size) = @_;
-   deprecate('Use fetch_by_misc_feature_attribute instead');
+   deprecate('fetch_by_mapfrag is deprecated and will be removed in e87. Please use fetch_by_misc_feature_attribute instead');
    $flag ||= 'fixed-width'; # alt.. 'context'
    $size ||= $flag eq 'fixed-width' ? 100000 : 0;
    return $self->fetch_by_misc_feature_attribute('synonym',$mymapfrag,$size);
@@ -2765,7 +2765,7 @@ sub fetch_by_mapfrag{
 
 sub fetch_by_chr_start_end {
   my ($self,$chr,$start,$end) = @_;
-  deprecate('Use fetch_by_region() instead');
+  deprecate('fetch_by_chr_start_end is deprecated and will be removed in e87. Please use fetch_by_region() instead');
 
   #assume that by chromosome the user actually meant top-level coord
   #system since this is the old behaviour of this deprecated method
@@ -2787,7 +2787,7 @@ sub fetch_by_chr_start_end {
 sub fetch_by_contig_name {
   my ($self, $name, $size) = @_;
 
-  deprecate('Use fetch_by_region(), Slice::project() and Slice::expand().');
+  deprecate('fetch_by_contig_name is deprecated and will be removed in e87. Please use fetch_by_region(), Slice::project() and Slice::expand().');
 
   #previously wanted chromosomal slice on a given contig.  Assume this means
   #a top-level slice on a given seq_region in the seq_level coord system
@@ -2820,7 +2820,7 @@ sub fetch_by_contig_name {
 sub fetch_by_clone_accession{
   my ($self,$name,$size) = @_;
 
-  deprecate('Use fetch_by_region(), Slice::project() and Slice::expand().');
+  deprecate('fetch_by_clone_accession is deprecated and will be removed in e87. Please use fetch_by_region(), Slice::project() and Slice::expand().');
 
   my $csa = $self->db()->get_CoordSystemAdaptor();
   my $clone_cs = $csa->fetch_by_name('clone');
@@ -2876,7 +2876,7 @@ sub fetch_by_clone_accession{
 sub fetch_by_supercontig_name {
   my ($self,$name, $size) = @_;
 
-  deprecate('Use fetch_by_region(), Slice::project() and Slice::expand().');
+  deprecate('fetch_by_supercontig_name is deprecated and will be removed in e87. Please use fetch_by_region(), Slice::project() and Slice::expand().');
 
   my $csa = $self->db()->get_CoordSystemAdaptor();
   my $sc_level = $csa->fetch_by_name('supercontig');
@@ -2911,7 +2911,7 @@ sub fetch_by_supercontig_name {
 sub list_overlapping_supercontigs {
    my ($self,$slice) = @_;
 
-   deprecate('Use Slice::project() instead.');
+   deprecate('list_overlapping_supercontigs is deprecated and will be removed in e87. Please use Slice::project() instead.');
 
    my $csa = $self->db()->get_CoordSystemAdaptor();
    my $sc_level = $csa->fetch_by_name('supercontig');
@@ -2939,7 +2939,7 @@ sub list_overlapping_supercontigs {
 
 sub fetch_by_chr_name{
    my ($self,$chr_name) = @_;
-   deprecate('Use fetch_by_region() instead.');
+   deprecate('fetch_by_chr_name is deprecated and will be removed in e87. Please use fetch_by_region() instead.');
 
    my $csa = $self->db->get_CoordSystemAdaptor();
 

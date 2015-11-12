@@ -217,7 +217,7 @@ SELECT DISTINCT analysis_id FROM %s |;
 =cut
 
 sub feature_classes{
-  deprecate("Deprecated. Hard-coded logic is not supported");
+  deprecate("feature_classes is deprecated and will be removed in e87. Hard-coded logic is not supported");
   # Can't think of a way to do this programatically, so hard-coded
   return qw(
             DensityFeature

@@ -1530,7 +1530,7 @@ sub havana_gene {
 sub add_DBLink{
   my ($self,$value) = @_;
 
-  throw("add_DBLink is deprecated.  You probably want add_DBEntry.");
+  throw("add_DBLink is deprecated and will be removed in e87. Please use add_DBEntry instead.");
 
   #  unless(defined $value && ref $value 
   #	 && $value->isa('Bio::Annotation::DBLink') ) {
@@ -1553,8 +1553,7 @@ sub add_DBLink{
 
 sub temporary_id {
    my ($obj,$value) = @_;
-   deprecate( "I cant see what a temporary_id is good for, please use " .
-               "dbID or stableID or\n try without an id." );
+   deprecate('temporary_id is deprecated and will be removed in e87.');
    if( defined $value) {
       $obj->{'temporary_id'} = $value;
     }
@@ -1574,7 +1573,7 @@ sub temporary_id {
 sub chr_name {
   my $self = shift;
 
-  deprecate( "Use project() to obtain other coordinate systems" );
+  deprecate( "chr_name is deprecated and will be removed in e87. Please use project() to obtain other coordinate systems" );
 
   my $gene_slice = $self->slice();
   if( $gene_slice->coord_system()->name eq "chromosome" ) {
@@ -1621,7 +1620,7 @@ sub fetch_coded_for_regulatory_factors {
 =cut
 
 sub type {
-  deprecate("Use biotype() instead");
+  deprecate("type is deprecated and will be removed in e87. Please use biotype() instead");
   biotype(@_);
 }
 
@@ -1633,7 +1632,7 @@ sub type {
 =cut
 
 sub confidence {
-  deprecate("Use status() instead");
+  deprecate("confidence is deprecated and will be removed in e87. Please use status() instead");
   status(@_);
 }
 

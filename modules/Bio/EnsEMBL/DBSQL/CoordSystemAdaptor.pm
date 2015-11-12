@@ -1080,8 +1080,7 @@ sub _fetch_by_attrib{
     my $attrib = shift;
     my $version = shift;
 
-    deprecate("You should be using the public method fetch_by_attrib ".
-	      "(without initial underscore) instead");
+    deprecate("_fetch_by_attrib is deprecated and will be removed in e84. Please use fetch_by_attrib instead.");
 
     return $self->fetch_by_attrib($attrib,$version);
 }
@@ -1115,8 +1114,7 @@ sub _fetch_all_by_attrib{
     my $self = shift;
     my $attrib = shift;
 
-    deprecate("You should be using the public method fetch_all_by_attrib ".
-	      "(without initial underscore) instead");
+    deprecate("_fetch_all_by_attrib is deprecated and will be removed in e84. Please use fetch_all_by_attrib instead.");
 
     return $self->fetch_all_by_attrib($attrib);
 }

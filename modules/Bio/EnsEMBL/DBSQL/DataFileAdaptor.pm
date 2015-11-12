@@ -121,7 +121,7 @@ sub get_base_path {
 
 sub DataFile_to_extension {
   my ($self, $df) = @_;
-  deprecate("Use DataFile_to_extensions() instead");
+  deprecate("DataFile_to_extension is deprecated and will be removed in e87. Please use DataFile_to_extensions() instead");
   my $extensions = $self->DataFile_to_extensions($df);
   return $extensions->[0];
 }

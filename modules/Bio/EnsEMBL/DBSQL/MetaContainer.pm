@@ -94,7 +94,7 @@ sub get_production_name {
 
 sub get_short_name {
   my ($self) = @_;
-  deprecate('Call is deprecated. short_name is not in use any more, use get_common_name instead');
+  deprecate('get_short_name is deprecated and will be removed in e84. Please use get_common_name instead');
   return $self->single_value_by_key('species.short_name');
 }
 
@@ -178,7 +178,7 @@ sub get_division {
 sub get_Species {
   my ($self) = @_;
 
-  deprecate('Call is deprecated. Use $self->get_common_name() / $self->get_classification() / $self->get_scientific_name() instead');
+  deprecate('get_Species is deprecated and will be removed in e87. Please use $self->get_common_name() / $self->get_classification() / $self->get_scientific_name() instead');
 
   my $common_name = $self->get_common_name();
   my $classification =
@@ -236,10 +236,7 @@ sub get_taxonomy_id {
 sub get_default_assembly {
   my $self = shift;
 
-  deprecate("Use version of coordinate system you are interested in instead.\n".
-            "Example:\n".
-            '  ($cs) = @{$coord_system_adaptor->fetch_all()};'."\n" .
-            '  $assembly = $cs->version();');
+  deprecate("get_default_assembly is deprecated and will be removed in e87. Please use cs_adaptor->get_default_version instead.");
 
   my ($cs) = @{$self->db->get_CoordSystemAdaptor->fetch_all()};
 
@@ -252,7 +249,7 @@ sub get_default_assembly {
 #
 sub get_max_assembly_contig {
   my $self = shift;
-  deprecate('This method should either be fixed or removed');
+  deprecate('get_max_assembly_contig is deprecated and will be removed in e84.');
   return $self->single_value_by_key('assembly.maxcontig');
 }
 
