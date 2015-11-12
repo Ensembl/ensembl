@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-package TemporaryGeneCache;
+package fullIdCaching;
 
 use base qw/Bio::EnsEMBL::DBSQL::Support::FullIdCache/;
 use strict;
@@ -59,7 +59,7 @@ sub BEGIN {
   no strict 'refs'; ## no critic
   *Bio::EnsEMBL::DBSQL::GeneAdaptor::_build_id_cache = sub {
     my ($self) = @_;
-    return TemporaryGeneCache->new($self);
+    return fullIdCaching->new($self);
   };
   no warnings 'redefine';
   my $original_store = \&Bio::EnsEMBL::DBSQL::GeneAdaptor::store; 
