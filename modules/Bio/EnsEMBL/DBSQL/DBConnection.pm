@@ -167,7 +167,7 @@ sub new {
   $self->driver($driver);
 
   my $driver_class = 'Bio::EnsEMBL::DBSQL::Driver::' . $driver;
-  eval "require $driver_class";
+  eval "require $driver_class"; ## no critic
   throw("Cannot load '$driver_class': $@") if $@;
   my $driver_object = $driver_class->new($self);
   $self->_driver_object($driver_object);
