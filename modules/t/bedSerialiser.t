@@ -52,20 +52,15 @@ my $ta = $dba->get_TranscriptAdaptor();
 }
 
 {
-  my $cs = $dba->get_CoordSystemAdaptor()->fetch_by_name('chromosome');
+  my $sa = $dba->get_SliceAdaptor();
+  my $slice = $sa->fetch_by_region('chromosome', 12, 1, 10);
   my $feature = Bio::EnsEMBL::Feature->new(
-    -SLICE => Bio::EnsEMBL::Slice->new(
-      -COORD_SYSTEM => $cs,
-      -SEQ => ('A'x10),
-      -SEQ_REGION_NAME => 'wibble',
-      -START => 1,
-      -END => 10
-    ),
+    -SLICE => $slice,
     -START => 1,
     -END => 10,
     -STRAND => 1,
   );
-  my $expected = qq{wibble\t0\t10\t\t1000\t+\n};
+  my $expected = qq{12\t0\t10\t\t1000\t+\n};
 
   assert_bed($feature, $expected, 'Default feature should seralise without attributes');
 }
