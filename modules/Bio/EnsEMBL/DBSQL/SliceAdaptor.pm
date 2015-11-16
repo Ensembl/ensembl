@@ -1487,34 +1487,14 @@ sub is_circular {
 
 =head2 fetch_by_band
 
- Title   : fetch_by_band
- Usage   :
- Function: Does not work please use fetch_by_chr_band
- Example :
- Returns : Bio::EnsEMBL::Slice
- Args    : the band name
- Status     : AT RISK
+ Description : DEPRECATED. Use fetch_by_chr_band instead
 
 =cut
 
 sub fetch_by_band {
   my ($self,$band) = @_;
 
-  my $sth = $self->dbc->prepare
-        ("select s.name,max(k.seq_region_id)-min(k.seq_region_id, min(k.seq_region_start), max(k.seq_region_id) " .
-         "from karyotype as k " .
-         "where k.band like ? and k.seq_region_id = s.seq_region_id");
-
-  $sth->bind_param(1,"$band%",SQL_VARCHAR);
-  $sth->execute();
-  my ( $seq_region_name, $discrepancy, $seq_region_start, $seq_region_end) = $sth->fetchrow_array;
-
-  if($seq_region_name && $discrepancy>0) {
-    throw("Band maps to multiple seq_regions");
-  } else {
-    return $self->fetch_by_region('toplevel',$seq_region_name,$seq_region_start,$seq_region_end);
-  }
-  throw("Band not recognised in database");
+  deprecate("fetch_by_band is deprecated and will be removed in e84. Please use fetch_by_chr_band instead.");
 }
 
 =head2 fetch_by_chr_band

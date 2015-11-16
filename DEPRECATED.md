@@ -145,6 +145,7 @@ A year after deprecation (4 Ensembl releases), the method is removed from the AP
 ### Removed in Ensembl Release 84 ###
  - Bio::EnsEMBL::DBSQL::**CoordSystemAdaptor**::*_fetch_by_attrib()*
  - Bio::EnsEMBL::DBSQL::**CoordSystemAdaptor**::*_fetch_all_by_attrib()*
+ - Bio::EnsEMBL::DBSQL::**SliceAdaptor**::*fetch_by_band()*
  - Bio::EnsEMBL::DBSQL::**MetaContainer**::*get_short_name()*
  - Bio::EnsEMBL::DBSQL::**MetaContainer**::*get_max_assembly_contig()*
  - Bio::EnsEMBL::**Exon**::*_get_stable_entry_info()*
