@@ -313,18 +313,13 @@ my @syns = grep {$_ eq 'syn1' || $_ eq 'syn2'} @{$xref->get_all_synonyms};
 ok(@syns == 2);
 
 #and also 2 evidence tags, and one source_xref
-if($xref && $xref->isa('Bio::EnsEMBL::OntologyXref')) {
-  my @evtags = 
-    grep {$_ eq 'IEA' || $_ eq 'IC'} @{$xref->get_all_linkage_types()};
-  ok(@evtags == 2);
-  my @source_xrefs = 
-    grep {UNIVERSAL::isa($_->[1],'Bio::EnsEMBL::DBEntry')}
+my @evtags = 
+  grep {$_ eq 'IEA' || $_ eq 'IC'} @{$xref->get_all_linkage_types()};
+ok(@evtags == 2);
+my @source_xrefs = 
+  grep {UNIVERSAL::isa($_->[1],'Bio::EnsEMBL::DBEntry')}
 	@{$xref->get_all_linkage_info};
-  ok(@source_xrefs == 1);
-} else {
-  ok(0);
-}
-
+ok(@source_xrefs == 1);
 
 $translation = $ta->fetch_by_dbID(21723)->translation;
 
@@ -568,6 +563,25 @@ $multi->restore();
   my $external_db_names = $dbEntryAdaptor->get_distinct_external_dbs();
   cmp_ok(scalar(@{$external_db_names}), '==', 111, 'Retriving all the unique External DB names');
 }
+
+
+# Test for dependent/master xrefs
+my $patch_db = $multi->get_DBAdaptor( "patch" );
+my $xref_adaptor = $patch_db->get_DBEntryAdaptor();
+my $go_xrefs = $xref_adaptor->fetch_all_by_name('GO:0005654');
+$xref = $go_xrefs->[0];
+my $mx = $xref->get_all_masters();
+is(scalar(@$mx), 1, "Found master");
+my $dx = $mx->[0]->get_all_dependents();
+is(scalar(@$dx), 6, "Found all dependents");
+
+# Test existence
+is($xref_adaptor->exists($xref), $xref->dbID(), "Xref exists");
+
+# Test fetching with descriptions
+$xrefs = $xref_adaptor->fetch_all_by_description('%nucleoplasm%');
+is(scalar(@$xrefs), 2, "Found dbentries for nucleoplasm");
+
 
 sub print_dbEntries {
   my $dbes = shift;
