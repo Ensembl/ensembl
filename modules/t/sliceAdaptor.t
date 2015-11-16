@@ -551,6 +551,8 @@ ok($slice->seq_region_name =~ /$clone_name\.\d+/);
   is($syn_slice->seq_region_name(), '20', 'Ensuring slice is Chr20 as expected');
   my $chr_syn_slice = $slice_adaptor->fetch_by_region('chromosome', 'anoth_20');
   is($chr_syn_slice->seq_region_name(), '20', 'Ensuring slice is Chr20 as expected');
+  $chr_syn_slice = $slice_adaptor->fetch_by_region('toplevel', 'chrx');
+  is($chr_syn_slice->seq_region_name(), 'X', 'Ensuring slice is ChrX as expected');
 }
 
 #{
