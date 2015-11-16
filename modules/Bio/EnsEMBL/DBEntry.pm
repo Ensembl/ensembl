@@ -649,49 +649,25 @@ sub status{
 
 =head2 ensembl_object_type
 
-  Arg [1]    : (optional) String $arg - value to set
-  Description: Getter/setter for attribute ensembl_object_type.
-               The object xref ensembl object type, one of 'Gene',
-               'Marker', 'Operon', 'OperonTranscript', 'RawContig',
-               'Transcript' or 'Translation'.
-  Returntype : String
-  Exceptions : none
-  Caller     : general
-  Status     : Stable
+  Description: DEPRECATED. Use the associated object type instead.
 
 =cut
 
 sub ensembl_object_type{
   my ( $self, $arg ) = @_;
-  if( defined $arg ) {
-     $self->{ensembl_object_type} = $arg;
-  } 
-  return $self->{ensembl_object_type};
+  deprecate("xref->ensembl_object_type is deprecated and will be removed in e84. Please access the object directly.");
 }
 
 =head2 ensembl_id
 
-  Arg [1]    : (optional) String $arg - value to set
-  Description: Getter/setter for attribute ensembl_id.
-               The ensembl_id is the internal identifier of the object
-               linked via object_xref. This should be used in
-               conjunction with ensembl_object_type to identify the
-               correct object type.
-  Returntype : String
-  Exceptions : none
-  Caller     : general
-  Status     : Stable
+  Description: DEPRECATED. Use the associated object id instead.
 
 =cut
 
 sub ensembl_id{
   my ( $self, $arg ) = @_;
-  if( defined $arg ) {
-     $self->{ensembl_id} = $arg;
-  } 
-  return $self->{ensembl_id};
+  deprecate("xref->ensembl_id is deprecated and will be removed in e84. Please access the object directly.");
 }
-
 
 
 =head1 DEPRECATED METHODS

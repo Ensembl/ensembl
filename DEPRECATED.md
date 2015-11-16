@@ -148,6 +148,8 @@ A year after deprecation (4 Ensembl releases), the method is removed from the AP
  - Bio::EnsEMBL::DBSQL::**SliceAdaptor**::*fetch_by_band()*
  - Bio::EnsEMBL::DBSQL::**MetaContainer**::*get_short_name()*
  - Bio::EnsEMBL::DBSQL::**MetaContainer**::*get_max_assembly_contig()*
+ - Bio::EnsEMBL::**DBEntry**::*ensembl_object_type()*
+ - Bio::EnsEMBL::**DBEntry**::*ensembl_object_id()*
  - Bio::EnsEMBL::**Exon**::*_get_stable_entry_info()*
  - Bio::EnsEMBL::**FeaturePair**::*validate()*
  - Bio::EnsEMBL::**FeaturePair**::*validate_prot_feature()*
