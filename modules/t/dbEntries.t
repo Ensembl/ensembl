@@ -569,11 +569,17 @@ $multi->restore();
 my $patch_db = $multi->get_DBAdaptor( "patch" );
 my $xref_adaptor = $patch_db->get_DBEntryAdaptor();
 my $go_xrefs = $xref_adaptor->fetch_all_by_name('GO:0005654');
+my $gene_adaptor = $patch_db->get_GeneAdaptor();
+$gene = $gene_adaptor->fetch_by_stable_id('ENSG00000167393');
 $xref = $go_xrefs->[0];
 my $mx = $xref->get_all_masters();
 is(scalar(@$mx), 1, "Found master");
+my $gene_mx = $xref->get_all_masters($gene);
+is(scalar(@$gene_mx), 0, "No master on gene");
 my $dx = $mx->[0]->get_all_dependents();
 is(scalar(@$dx), 6, "Found all dependents");
+$dx = $mx->[0]->get_all_dependents($gene);
+is(scalar(@$dx), 0, "No dependents on Gene");
 
 # Test existence
 is($xref_adaptor->exists($xref), $xref->dbID(), "Xref exists");
