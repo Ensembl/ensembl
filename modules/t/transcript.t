@@ -31,6 +31,8 @@ my $multi = Bio::EnsEMBL::Test::MultiTestDB->new();
 ok( $multi );
 
 my $db = $multi->get_DBAdaptor('core' );
+my $ontology = Bio::EnsEMBL::Test::MultiTestDB->new('ontology');
+my $odb = $ontology->get_DBAdaptor("ontology");
 
 my $sa = $db->get_SliceAdaptor();
 
@@ -292,6 +294,46 @@ note "Got ".scalar(@transcripts)." (havana, vega) transcripts\n";
 is(3, scalar(@transcripts));
 $transcriptCount = $ta->count_all_by_source(['havana', 'vega']);
 is(3, $transcriptCount);
+
+#
+# test TranscriptAdaptor::fetch_all
+#
+note("Test fetch_all");
+@transcripts = @{ $ta->fetch_all() };
+is(26, scalar(@transcripts), "Got 26 transcripts");
+
+#
+# test TranscriptAdaptor::fetch_all_by_GOTerm
+#
+note("Test fetch_all_by_GOTerm");
+my $go_adaptor = $odb->get_OntologyTermAdaptor();
+my $go_term = $go_adaptor->fetch_by_accession('GO:0070363');
+@transcripts = @{ $ta->fetch_all_by_GOTerm($go_term) };
+is(scalar(@transcripts), 0, "Found 0 genes with fetch_all_by_GOTerm");
+
+
+#
+# test TranscriptAdaptor::fetch_all_by_exon_supporting_evidence
+#
+note("Test fetch_all_by_exon_supporting_evidence");
+@transcripts = @{ $ta->fetch_all_by_exon_supporting_evidence('BRCA2', 'dna_align_feature') };
+is(scalar(@transcripts), 0, "No transcripts with BRCA2 daf");
+@transcripts = @{ $ta->fetch_all_by_exon_supporting_evidence('AK015740.1', 'dna_align_feature') };
+is(scalar(@transcripts), 1, "1 transcript with AK015740.1 daf");
+@transcripts = @{ $ta->fetch_all_by_exon_supporting_evidence('Q9NUG5', 'protein_align_feature') };
+is(scalar(@transcripts), 1, "1 transcript with Q9NUG5 paf");
+
+#
+# test TranscriptAdaptor::fetch_all_by_transcript_supporting_evidence
+#
+note("Test fetch_all_by_transcript_supporting_evidence");
+@transcripts = @{ $ta->fetch_all_by_transcript_supporting_evidence('BRCA2', 'dna_align_feature') };
+is(scalar(@transcripts), 0, "No transcripts with BRCA2 daf");
+@transcripts = @{ $ta->fetch_all_by_transcript_supporting_evidence('AK015740.1', 'dna_align_feature') };
+is(scalar(@transcripts), 0, "0 transcripts with AK015740.1 daf");
+@transcripts = @{ $ta->fetch_all_by_transcript_supporting_evidence('Q9NUG5', 'protein_align_feature') };
+is(scalar(@transcripts), 0, "No transcripts with Q9NUG5 paf");
+
 
 #
 # Test get_all_Introns by joining Exons and introns
