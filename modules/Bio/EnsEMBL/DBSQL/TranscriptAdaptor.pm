@@ -77,6 +77,7 @@ use Bio::EnsEMBL::Exon;
 use Bio::EnsEMBL::Transcript;
 use Bio::EnsEMBL::Translation;
 use Bio::EnsEMBL::Utils::Exception qw( deprecate throw warning );
+use Bio::EnsEMBL::Utils::Scalar qw( assert_ref );
 
 use vars qw(@ISA);
 @ISA = qw( Bio::EnsEMBL::DBSQL::BaseFeatureAdaptor );
