@@ -571,7 +571,12 @@ my $xref_adaptor = $patch_db->get_DBEntryAdaptor();
 my $go_xrefs = $xref_adaptor->fetch_all_by_name('GO:0005654');
 my $gene_adaptor = $patch_db->get_GeneAdaptor();
 $gene = $gene_adaptor->fetch_by_stable_id('ENSG00000167393');
-$xref = $go_xrefs->[0];
+foreach my $go_xref (@$go_xrefs) {
+  if ($go_xref->dbname eq 'goslim_goa') {
+    $xref = $go_xref;
+    last;
+  }
+}
 my $mx = $xref->get_all_masters();
 is(scalar(@$mx), 1, "Found master");
 my $gene_mx = $xref->get_all_masters($gene);
