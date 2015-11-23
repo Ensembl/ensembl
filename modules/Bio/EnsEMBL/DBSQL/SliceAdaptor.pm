@@ -294,7 +294,7 @@ sub fetch_by_region {
 
       # try synonyms
       my $syn_sql = "select s.name, cs.name, cs.version from seq_region s join seq_region_synonym ss using (seq_region_id) join coord_system cs using (coord_system_id) where ss.synonym = ? and cs.species_id =? ";
-      if (defined $coord_system_name) {
+      if (defined $coord_system_name && defined $cs) {
         $syn_sql .= "AND cs.name = '" . $coord_system_name . "' ";
       }
       if (defined $version) {
