@@ -16,7 +16,7 @@ use strict;
 use warnings;
 
 use Test::More;
-use Test::Warnings;
+use Test::Warnings qw(warning);
 use Test::Exception;
 use Data::Dumper;
 use Bio::EnsEMBL::Registry;
@@ -61,6 +61,10 @@ ok(@{$ids});
 debug("Gene->list_stable_ids");
 my $stable_ids = $ga->list_stable_ids();
 ok(@{$stable_ids});
+
+debug("Gene->list_seq_region_ids");
+my $region_ids = $ga->list_seq_region_ids();
+ok(@{$region_ids});
 
 $gene = $ga->fetch_by_display_label("T9S4_HUMAN");
 ok($gene && $gene->dbID() == 18262);
@@ -300,6 +304,9 @@ $gene_ad->store($gene);
 
 ok(1);
 
+# Cache all mappings needed for genes
+$gene_ad->cache_gene_seq_mappings();
+
 my $genes = $slice->get_all_Genes();
 
 ok(scalar(@$genes) == 1);
@@ -405,6 +412,9 @@ $geneCount = $ga->count_all_by_Slice($slice, 'banana');
 is($geneCount, 0, 'Gene count on Chr 20 subset with bogus biotype');
 $geneCount = $ga->count_all_by_Slice($slice, ['banana', 'protein_coding']);
 is($geneCount, scalar(@$genes), 'Protein coding gene count matches array size on Chr20 subset');
+$geneCount = $ga->count_all_by_Slice($slice, 'protein_coding', 'ensembl');
+my $vega_geneCount = $ga->count_all_by_Slice($slice, 'protein_coding', 'vega');
+is($geneCount, scalar(@$genes) - $vega_geneCount, "Almost all genes are of source ensembl");
 
 # Time to do more complex counts involving slice projections
 {
@@ -494,6 +504,9 @@ is(scalar(@genes), 13, "Found 13 genes with fetch_all_by_Slice_and_external_dbna
 is($genes[0]->stable_id(), 'ENSG00000131044', "First gene is ENSG00000131044");
 is($genes[1]->stable_id(), 'ENSG00000088356', "Second gene is ENSG00000088356");
 
+warning { @genes = @{ $ga->fetch_all_by_Slice_and_external_dbname_link($slice, undef, 0, "random") }; };
+is(scalar(@genes), 0, "No genes with db random");
+
 #
 # test GeneAdaptor::fetch_all_by_display_label
 #
@@ -504,7 +517,7 @@ is($genes[0]->stable_id(), 'ENSG00000131044', "First gene is ENSG00000131044");
 #
 # test GeneAdaptor::fetch_all_by_transcript_supporting_evidence
 #
-@genes = @{ $ga->fetch_all_by_transcript_supporting_evidence('Q9VZ97', 'protein_align_feature') };
+@genes = @{ $ga->fetch_all_by_transcript_supporting_evidence('Q9NUG5', 'protein_align_feature') };
 is(scalar(@genes), 0, "Found 0 genes with fetch_all_by_transcript_supporting_evidence");
 
 
@@ -513,14 +526,18 @@ is(scalar(@genes), 0, "Found 0 genes with fetch_all_by_transcript_supporting_evi
 #
 @genes = @{ $ga->fetch_all_by_exon_supporting_evidence('BF346221.1', 'dna_align_feature') };
 is(scalar(@genes), 1, "Found 1 genes with fetch_all_by_exon_supporting_evidence");
+my $aa = $db->get_AnalysisAdaptor();
+$analysis = $aa->fetch_by_logic_name('RepeatMask');
+@genes = @{ $ga->fetch_all_by_exon_supporting_evidence('BF346221.1', 'dna_align_feature', $analysis) };
+is(scalar(@genes), 0, "No genes for random analysis");
 
 
 #
 # test GeneAdaptor::fetch_all_by_GOTerm
 #
-my $go_term = $go_adaptor->fetch_by_accession('GO:0070363');
+my $go_term = $go_adaptor->fetch_by_accession('GO:0003677');
 @genes = @{ $ga->fetch_all_by_GOTerm($go_term) };
-is(scalar(@genes), 0, "Found 0 genes with fetch_all_by_GOTerm");
+is(scalar(@genes), 2, "Found 2 genes with fetch_all_by_GOTerm");
 
 
 #
@@ -657,6 +674,7 @@ foreach my $stable_id (qw(ENSG00000174873 ENSG00000101367)){ #test both strands
 # test Gene: get_all_alt_alleles
 #
 
+is($gene->is_reference, 1, "If no alt allele, gene is reference");
 $gene = $ga->fetch_by_dbID(18256);
 my $alt_genes = $gene->get_all_alt_alleles();
 
@@ -837,6 +855,10 @@ ok($gene->dbID == 18275);
 $gene = $ga->fetch_by_translation_stable_id('ENSP00000355555');
 debug("fetch_by_translation_stable_id");
 ok($gene->dbID == 18275);
+
+$gene = $ga->fetch_by_translation_stable_id('random_ENSP00000355555');
+debug("fetch_by_translation_stable_id");
+is($gene, undef, "No gene for random translation id");
 
 $gene = $ga->fetch_by_exon_stable_id('ENSE00001109603');
 debug("fetch_by_exon_stable_id");
