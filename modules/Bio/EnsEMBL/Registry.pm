@@ -162,7 +162,7 @@ my %group2adaptor = (
       'pipeline'      => 'Bio::EnsEMBL::Pipeline::DBSQL::DBAdaptor',
       'production' => 'Bio::EnsEMBL::Production::DBSQL::DBAdaptor',
       'stable_ids' => 'Bio::EnsEMBL::DBSQL::DBAdaptor',
-      'taxonomy'  => 'Bio::EnsEMBL::DBSQL::TaxonomyDBAdaptor',
+      'taxonomy'  => 'Bio::EnsEMBL::Taxonomy::DBSQL::TaxonomyDBAdaptor',
       'variation' => 'Bio::EnsEMBL::Variation::DBSQL::DBAdaptor',
       'vega'      => 'Bio::EnsEMBL::DBSQL::DBAdaptor',
       'vega_update' => 'Bio::EnsEMBL::DBSQL::DBAdaptor',
@@ -2312,9 +2312,9 @@ sub load_registry_from_db {
   # Taxonomy
 
   if ( defined $taxonomy_db) {
-    require Bio::EnsEMBL::DBSQL::TaxonomyDBAdaptor;
+    require Bio::EnsEMBL::Taxonomy::DBSQL::TaxonomyDBAdaptor;
     my $dba =
-      Bio::EnsEMBL::DBSQL::TaxonomyDBAdaptor->new(
+      Bio::EnsEMBL::Taxonomy::DBSQL::TaxonomyDBAdaptor->new(
                                 '-species' => 'multi' . $species_suffix,
                                 '-group'   => 'taxonomy',
                                 '-host'    => $host,
