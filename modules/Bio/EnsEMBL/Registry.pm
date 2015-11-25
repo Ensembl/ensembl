@@ -2312,9 +2312,14 @@ sub load_registry_from_db {
   # Taxonomy
 
   if ( defined $taxonomy_db) {
-    require Bio::EnsEMBL::Taxonomy::DBSQL::TaxonomyDBAdaptor;
-    my $dba =
-      Bio::EnsEMBL::Taxonomy::DBSQL::TaxonomyDBAdaptor->new(
+     
+    my $has_taxonomy = eval {require Bio::EnsEMBL::Taxonomy::DBSQL::TaxonomyDBAdaptor};
+    if($@ or (!defined $has_taxonomy)) {
+        if($verbose) {
+          print "ensembl_taxonomy API not found - ignoring $taxonomy_db\n";
+        }
+    } else {
+        my $dba = Bio::EnsEMBL::Taxonomy::DBSQL::TaxonomyDBAdaptor->new(
                                 '-species' => 'multi' . $species_suffix,
                                 '-group'   => 'taxonomy',
                                 '-host'    => $host,
@@ -2323,9 +2328,10 @@ sub load_registry_from_db {
                                 '-pass'    => $pass,
                                 '-dbname'  => $taxonomy_db, );
 
-    if ($verbose) {
-      printf( "%s loaded\n", $taxonomy_db );
-    }
+       if ($verbose) {
+         printf( "%s loaded\n", $taxonomy_db );
+       }
+     }
   }
   elsif ($verbose) {
     print("No taxonomy database found\n");
