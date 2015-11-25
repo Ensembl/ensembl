@@ -531,6 +531,12 @@ $analysis = $aa->fetch_by_logic_name('RepeatMask');
 @genes = @{ $ga->fetch_all_by_exon_supporting_evidence('BF346221.1', 'dna_align_feature', $analysis) };
 is(scalar(@genes), 0, "No genes for random analysis");
 
+#
+# test GeneAdaptor::fetch_all_by_logic_name
+#
+@genes = @{ $ga->fetch_all_by_logic_name('ensembl') };
+is(scalar(@genes), 21, "All genes of analysis ensembl");
+
 
 #
 # test GeneAdaptor::fetch_all_by_GOTerm
@@ -918,6 +924,11 @@ $gene->is_current(1);
 $ga->update($gene);
 $gene = $ga->fetch_by_stable_id('ENSG00000355555');
 ok($gene->is_current == 1);
+
+
+$ga->remove_by_Slice($slice);
+$geneCount = $ga->count_all_by_Slice($slice);
+is($geneCount, 0, "Genes have been removed");
 
 $multi->restore;
 
