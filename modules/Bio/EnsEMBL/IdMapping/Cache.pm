@@ -1296,21 +1296,13 @@ sub slice_names {
   else {
     # Fetch all slices that have genes on them.
     my $ga = $dba->get_GeneAdaptor;
+    my $sa = $dba->get_SliceAdaptor;
 
     foreach my $srid ( @{ $ga->list_seq_region_ids } ) {
       my $slice = $sa->fetch_by_seq_region_id($srid);
+      my $slices = $sa->fetch_by_region_unique( $slice->coord_system_name(), $slice->seq_region_name() );
 
-      if ( !$slice->is_reference() ) {
-        my $slices =
-          $slice->adaptor()
-          ->fetch_by_region_unique( $slice->coord_system_name(),
-                                    $slice->seq_region_name() );
-
-        push( @slice_names, map { $_->name() } @{$slices} );
-      }
-      else {
-        push @slice_names, $slice->name();
-      }
+      push( @slice_names, map { $_->name() } @{$slices} );
     }
   }
 
