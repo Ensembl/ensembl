@@ -534,8 +534,6 @@ sub create_xrefs {
             else{
                print "Not found $acc, ".$extra[0]."\n" if($verbose);
             }
-         } else{
-	   next;
 	  }
 
 #	  $dep{ACCESSION} = $acc;
