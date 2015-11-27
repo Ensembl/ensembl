@@ -361,10 +361,10 @@ sub checksum {
   my @files = sort { $a cmp $b } readdir($dh);
   closedir($dh) or die "Cannot close directory $dir";
 
-  my $checksum = $self->file('CHECKSUMS.gz');
+  my $checksum = $self->file('CHECKSUMS');
   unlink $checksum if -f $checksum;
 
-  my $fh = IO::Compress::Gzip->new($checksum) or croak "Cannot create gzip stream to $checksum: $GzipError";
+  open my $fh, '<', $checksum or croak "Cannot open filehandle to $checksum: $!";
   foreach my $file (@files) {
     next if $file =~ /^\./;         #hidden file or up/current dir
     next if $file =~ /^CHECKSUM/;
