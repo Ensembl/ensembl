@@ -364,7 +364,7 @@ sub checksum {
   my $checksum = $self->file('CHECKSUMS');
   unlink $checksum if -f $checksum;
 
-  open my $fh, '<', $checksum or croak "Cannot open filehandle to $checksum: $!";
+  open my $fh, '>', $checksum or croak "Cannot open filehandle to $checksum: $!";
   foreach my $file (@files) {
     next if $file =~ /^\./;         #hidden file or up/current dir
     next if $file =~ /^CHECKSUM/;
