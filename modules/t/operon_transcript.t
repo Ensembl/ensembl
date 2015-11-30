@@ -237,6 +237,18 @@ $operon_transcript = $ota->fetch_by_stable_id('T16152-16153-4840');
 debug( "OperonTranscript->fetch_by_stable_id()" );
 ok( $operon_transcript );
 
+$operon_transcript = $ota->fetch_by_stable_id('T16152-16153-4840.1');
+ok($operon_transcript->stable_id eq 'T16152-16153-4840', 'fetch_by_stable_id with version');
+
+$operon_transcript = $ota->fetch_by_stable_id('T16152-16153-4840.1a');
+ok(! defined($operon_transcript), 'fetch_by_stable_id with bad version');
+
+$operon_transcript = $ota->fetch_by_stable_id_version('T16152-16153-4840', 1);
+ok($operon_transcript->stable_id eq 'T16152-16153-4840', 'fetch_by_stable_id_version with version');
+
+$operon_transcript = $ota->fetch_by_stable_id_version('T16152-16153-4840', '1a');
+ok(! defined($operon_transcript), 'fetch_by_stable_id with bad version');
+
 #49
 @operon_transcripts = @{ $ota->fetch_all_versions_by_stable_id('T16152-16153-4840') };
 debug("fetch_all_versions_by_stable_id");

@@ -190,6 +190,13 @@ sub fetch_by_stable_id {
 	$self->bind_param_generic_fetch( $stable_id, SQL_VARCHAR );
 	my ($operon) = @{ $self->generic_fetch($constraint) };
 
+	# If we didn't get anything back, desperately try to see if there's
+	# a version number in the stable_id
+	if(!defined($operon) && (my $vindex = rindex($stable_id, '.'))) {
+	    $operon = $self->fetch_by_stable_id_version(substr($stable_id,0,$vindex),
+							substr($stable_id,$vindex+1));
+	}
+
 	return $operon;
 }
 
@@ -203,6 +210,40 @@ sub fetch_by_stable_id {
   Status      : At Risk
 
 =cut
+
+=head2 fetch_by_stable_id_version
+
+  Arg [1]    : String $id 
+               The stable ID of the operon to retrieve
+  Arg [2]    : Integer $version
+               The version of the stable_id to retrieve
+  Example    : $operon = $operon_adaptor->fetch_by_stable_id('16152-16153-4840', 2);
+  Description: Retrieves an operon object from the database via its stable id and version.
+               The operon will be retrieved in its native coordinate system (i.e.
+               in the coordinate system it is stored in the database). It may
+               be converted to a different coordinate system through a call to
+               transform() or transfer(). If the operon is not found
+               undef is returned instead.
+  Returntype : Bio::EnsEMBL::Operon or undef
+  Exceptions : if we cant get the operon in given coord system
+  Caller     : general
+  Status     : Stable
+
+=cut
+
+sub fetch_by_stable_id_version {
+    my ($self, $stable_id, $version) = @_;
+
+    # Enforce that version be numeric
+    return unless($version =~ /^\d+$/);
+
+    my $constraint = "o.stable_id = ? AND o.version = ?";
+    $self->bind_param_generic_fetch($stable_id, SQL_VARCHAR);
+    $self->bind_param_generic_fetch($version, SQL_INTEGER);
+    my ($operon) = @{$self->generic_fetch($constraint)};
+
+    return $operon;
+}
 
 sub fetch_all {
 	my ($self) = @_;

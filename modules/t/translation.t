@@ -107,6 +107,12 @@ ok($translation && $translation->stable_id() eq 'ENSP00000201961');
 $translation = $ta->fetch_by_stable_id('ENSP00000201961');
 ok($translation && $translation->dbID() == 21734);
 
+$translation = $ta->fetch_by_stable_id('ENSP00000201961.1');
+ok($translation && $translation->dbID() == 21734, 'fetch_by_stable_id with version');
+
+$translation = $ta->fetch_by_stable_id('ENSP00000201961.1a');
+ok(!defined($translation), 'fetch_by_stable_id with bad version');
+
 #
 # test fetch_by_external_name
 #

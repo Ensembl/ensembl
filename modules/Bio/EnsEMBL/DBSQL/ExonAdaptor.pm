@@ -156,9 +156,50 @@ sub fetch_by_stable_id {
   $self->bind_param_generic_fetch($stable_id,SQL_VARCHAR);
   my ($exon) = @{ $self->generic_fetch($constraint) };
 
+  # If we didn't get anything back, desperately try to see if there's
+  # a version number in the stable_id
+  if(!defined($exon) && (my $vindex = rindex($stable_id, '.'))) {
+      $exon = $self->fetch_by_stable_id_version(substr($stable_id,0,$vindex),
+						substr($stable_id,$vindex+1));
+  }
+
   return $exon;
 }
 
+
+=head2 fetch_by_stable_id_version
+
+  Arg [1]    : String $id 
+               The stable ID of the exon to retrieve
+  Arg [2]    : Integer $version
+               The version of the stable_id to retrieve
+  Example    : $exon = $exon_adaptor->fetch_by_stable_id('ENSE0000988221', 3);
+  Description: Retrieves an exon object from the database via its stable id and version.
+               The exon will be retrieved in its native coordinate system (i.e.
+               in the coordinate system it is stored in the database). It may
+               be converted to a different coordinate system through a call to
+               transform() or transfer(). If the exon is not found
+               undef is returned instead.
+  Returntype : Bio::EnsEMBL::Exon or undef
+  Exceptions : if we cant get the exon in given coord system
+  Caller     : general
+  Status     : Stable
+
+=cut
+
+sub fetch_by_stable_id_version {
+    my ($self, $stable_id, $version) = @_;
+
+    # Enforce that version be numeric
+    return unless($version =~ /^\d+$/);
+
+    my $constraint = "e.stable_id = ? AND e.version = ? AND e.is_current = 1";
+    $self->bind_param_generic_fetch($stable_id, SQL_VARCHAR);
+    $self->bind_param_generic_fetch($version, SQL_INTEGER);
+    my ($exon) = @{$self->generic_fetch($constraint)};
+
+    return $exon;
+}
 
 =head2 fetch_all_versions_by_stable_id 
 
