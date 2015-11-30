@@ -77,7 +77,7 @@ my $DUMP_HANDLERS =
 
 my @COMMENTS = 
   ('This sequence was annotated by the Ensembl system. Please visit ' .
-   'the Ensembl web site, http://www.ensembl.org/ for more information.',
+   'the Ensembl web site, http://www.ensembl.org/ or http://www.ensemblgenomes.org/ for more information.',
 
    'All feature locations are relative to the first (5\') base ' .
    'of the sequence in this file.  The sequence presented is '.
@@ -93,7 +93,6 @@ my @COMMENTS =
 
    'All the exons and transcripts in Ensembl are confirmed by ' .
    'similarity to either protein or cDNA sequences.');
-
 
 =head2 new
 
@@ -810,7 +809,9 @@ sub _dump_feature_table {
           $self->write(@ff,''   ,'/note="transcript_id='.$transcript->stable_id().'"');
 
           foreach my $dbl (@{$transcript->get_all_DBLinks}) {
-            $value = '/db_xref="'.$dbl->dbname().':'.$dbl->display_id().'"';
+            my $db_xref    = '/db_xref="'.$dbl->dbname().':'.$dbl->primary_id().'"';
+            my $go_db_xref = '/db_xref="'.$dbl->primary_id().'"';
+            $value  = ($dbl->dbname()=~/GO/) ? $go_db_xref : $db_xref; 
             $self->write(@ff, '', $value);
           }
 
@@ -1237,5 +1238,6 @@ sub print {
     die "Could not write to file handle";
   }
 }
+
 
 1;
