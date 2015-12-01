@@ -3152,53 +3152,6 @@ sub get_Gene {
 # DEPRECATED METHODS FOLLOW
 ###########################
 
-=head2 sort
-
-  Description: DEPRECATED.  This method is no longer needed.  Exons are sorted
-               automatically when added to the transcript.
-
-=cut
-
-sub sort {
-  my $self = shift;
-
-  deprecate( "sort is deprecated and will be removed in e84. Exons are kept sorted, you dont have to call sort any more" );
-  # Fetch all the features
-  my @exons = @{$self->get_all_Exons()};
-  
-  # Empty the feature table
-  $self->flush_Exons();
-
-  # Now sort the exons and put back in the feature table
-  my $strand = $exons[0]->strand;
-
-  if ($strand == 1) {
-    @exons = sort { $a->start <=> $b->start } @exons;
-  } elsif ($strand == -1) {
-    @exons = sort { $b->start <=> $a->start } @exons;
-  }
-
-  foreach my $e (@exons) {
-    $self->add_Exon($e);
-  }
-}
-
-
-# _translation_id
-# Usage   : DEPRECATED - not needed anymore
-
-sub _translation_id {
-   my $self = shift;
-   deprecate( "_translation_id is deprecated and will be removed in e84." );
-   if( @_ ) {
-      my $value = shift;
-      $self->{'_translation_id'} = $value;
-    }
-    return $self->{'_translation_id'};
-
-}
-
-
 =head2 created
 
  Description: DEPRECATED - this attribute is not part of transcript anymore

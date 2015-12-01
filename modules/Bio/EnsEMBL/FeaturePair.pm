@@ -828,30 +828,6 @@ sub invert {
   $self->{'slice'}  = $slice;
 } ## end sub invert
 
-=head2 validate
-
-  Description: DEPRECATED do not use
-
-=cut
-
-sub validate {
-  my ($self) = @_;
-
-  deprecate('validate is deprecated and will be removed in e84.');
-}
-
-=head2 validate_prot_feature
-
-  Description: DEPRECATED do not use
-
-=cut
-
-sub validate_prot_feature {
-  my ($self) = @_;
-
-  deprecate('validate is deprecated and will be removed in e84.');
-}
-
 =head2 set_featurepair_fields
 
   Description: DEPRECATED do not use

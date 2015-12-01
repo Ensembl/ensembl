@@ -1075,16 +1075,6 @@ sub fetch_by_attrib {
 }
 
 
-sub _fetch_by_attrib{
-    my $self = shift;
-    my $attrib = shift;
-    my $version = shift;
-
-    deprecate("_fetch_by_attrib is deprecated and will be removed in e84. Please use fetch_by_attrib instead.");
-
-    return $self->fetch_by_attrib($attrib,$version);
-}
-
 =head2 fetch_all_by_attrib
 
   Arg [1]    : string attrib
@@ -1108,15 +1098,6 @@ sub fetch_all_by_attrib {
   }
 
   return \@coord_systems;
-}
-
-sub _fetch_all_by_attrib{
-    my $self = shift;
-    my $attrib = shift;
-
-    deprecate("_fetch_all_by_attrib is deprecated and will be removed in e84. Please use fetch_all_by_attrib instead.");
-
-    return $self->fetch_all_by_attrib($attrib);
 }
 
 =head2 store

@@ -80,25 +80,6 @@ sub get_production_name {
   return $self->single_value_by_key('species.production_name');
 }
 
-=head2 get_short_name
-
-  Args          : none
-  Example       : $species = $meta_container->get_short_name();
-  Description   : Obtains the name of the species in a form usable as, for
-                  example, a short label in a GUI.
-  Returntype    : string
-  Exceptions    : none
-  Status        : Deprecated in release 74
-
-=cut
-
-sub get_short_name {
-  my ($self) = @_;
-  deprecate('get_short_name is deprecated and will be removed in e84. Please use get_common_name instead');
-  return $self->single_value_by_key('species.short_name');
-}
-
-
 =head2 get_display_name
 
   Args          : none
@@ -243,15 +224,6 @@ sub get_default_assembly {
   return $cs->version();
 }
 
-
-#
-# TBD This method should be removed/deprecated
-#
-sub get_max_assembly_contig {
-  my $self = shift;
-  deprecate('get_max_assembly_contig is deprecated and will be removed in e84.');
-  return $self->single_value_by_key('assembly.maxcontig');
-}
 
 =head2 get_genebuild
 

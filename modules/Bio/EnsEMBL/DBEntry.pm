@@ -647,29 +647,6 @@ sub status{
   return $self->{status};
 }
 
-=head2 ensembl_object_type
-
-  Description: DEPRECATED. Use the associated object type instead.
-
-=cut
-
-sub ensembl_object_type{
-  my ( $self, $arg ) = @_;
-  deprecate("xref->ensembl_object_type is deprecated and will be removed in e84. Please access the object directly.");
-}
-
-=head2 ensembl_id
-
-  Description: DEPRECATED. Use the associated object id instead.
-
-=cut
-
-sub ensembl_id{
-  my ( $self, $arg ) = @_;
-  deprecate("xref->ensembl_id is deprecated and will be removed in e84. Please access the object directly.");
-}
-
-
 =head1 DEPRECATED METHODS
 
 =cut

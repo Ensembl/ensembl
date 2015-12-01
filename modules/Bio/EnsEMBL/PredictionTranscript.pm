@@ -579,17 +579,6 @@ sub get_exon_count {
 }
 
 
-=head2 set_exon_count
-
-  Description: DEPRECATED - this method does nothing now
-
-=cut
-
-sub set_exon_count {
-  deprecate('set_exon_count is deprecated and will be removed in e84.');
-}
-
-
 
 =head2 get_cdna
 

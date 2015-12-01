@@ -164,21 +164,4 @@ sub stack_trace{
 }
 
 
-=head2 _rearrange
-
-  DEPRECATED
-
-=cut
-
-#----------------'
-sub _rearrange {
-#----------------
-    my($self,$order,@param) = @_;
-
-    deprecate('Root->_rearrange is deprecated and will be removed in e84. Please use Argument->rearrange instead');
-
-   return Bio::EnsEMBL::Utils::Argument->rearrange($order,@param);
-
-}
-
 1;

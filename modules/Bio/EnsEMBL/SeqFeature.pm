@@ -48,7 +48,6 @@ heirarchy that was present for Bio::EnsEMBL::DnaAlignFeature:
   Bio::EnsEMBL::BaseAlignFeature
   Bio::EnsEMBL::FeaturePair
   Bio::EnsEMBL::SeqFeature
-  Bio::EnsEMBL::SeqFeatureI
   Bio::SeqFeatureI
   Bio::RangeI
   Bio::Root::RootI
@@ -70,11 +69,10 @@ use vars qw(@ISA);
 use strict;
 
 
-use Bio::EnsEMBL::SeqFeatureI;
 use Bio::EnsEMBL::Analysis;
 use Bio::EnsEMBL::Root;
 
-@ISA = qw(Bio::EnsEMBL::Root Bio::EnsEMBL::SeqFeatureI);
+@ISA = qw(Bio::EnsEMBL::Root);
 
 use Bio::EnsEMBL::Utils::Argument qw(rearrange);
 

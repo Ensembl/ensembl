@@ -1604,21 +1604,6 @@ sub summary_as_hash {
 =cut
 
 
-=head2 _get_stable_entry_info 
-
-  Description: DEPRECATED.
-
-=cut
-
-sub _get_stable_entry_info {
-   my $self = shift;
-   deprecate( "_get_stable_entry_info is deprecated and will be removed in e84. Please use stable_id instead." );
-   if( !defined $self->adaptor ) {
-     return undef;
-   }
-   $self->adaptor->get_stable_entry_info($self);
-}
-
 
 =head2 temporary_id
 

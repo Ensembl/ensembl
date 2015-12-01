@@ -1124,9 +1124,6 @@ sub db{
 }
 
 
-sub source { deprecate('source is deprecated and will be removed in e84.'); }
-
-
 =head2 assembly_type
 
   Description: DEPRECATED - Use CoordSystemAdaptor to obtain default coordinate

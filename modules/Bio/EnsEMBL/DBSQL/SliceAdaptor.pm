@@ -1485,17 +1485,6 @@ sub is_circular {
   return (exists $self->{circular_sr_id_cache}->{$id}) ? 1 : 0;
 }
 
-=head2 fetch_by_band
-
- Description : DEPRECATED. Use fetch_by_chr_band instead
-
-=cut
-
-sub fetch_by_band {
-  my ($self,$band) = @_;
-
-  deprecate("fetch_by_band is deprecated and will be removed in e84. Please use fetch_by_chr_band instead.");
-}
 
 =head2 fetch_by_chr_band
 
