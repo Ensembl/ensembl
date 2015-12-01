@@ -939,7 +939,16 @@ SKIP: {
   #test the get_species_and_object_type method from the Registry
   my $registry = 'Bio::EnsEMBL::Registry';
   my ( $species, $object_type, $db_type ) = $registry->get_species_and_object_type('ENSG00000355555');
-  ok( $species eq 'homo_sapiens' && $object_type eq 'Gene');
+  is( $species, 'homo_sapiens', 'Test the get_species_and_object_type method from the Registry, species');
+  is( $object_type, 'Gene', 'Test the get_species_and_object_type method from the Registry, object_type');
+
+  ( $species, $object_type, $db_type ) = $registry->get_species_and_object_type('ENSG00000355555.1');
+  is( $species, 'homo_sapiens', 'Test the get_species_and_object_type method from the Registry with version, species');
+  is( $object_type, 'Gene', 'Test the get_species_and_object_type method from the Registry with version, object_type');
+
+  ( $species, $object_type, $db_type ) = $registry->get_species_and_object_type('ENSG00000355555.2');
+  ok( !defined($species), 'Test the get_species_and_object_type method from the Registry with wrong version, species');
+
 }
 
 # Testing compara dba retrieval
