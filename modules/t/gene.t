@@ -946,7 +946,7 @@ SKIP: {
   is( $species, 'homo_sapiens', 'Test the get_species_and_object_type method from the Registry with version, species');
   is( $object_type, 'Gene', 'Test the get_species_and_object_type method from the Registry with version, object_type');
 
-  ( $species, $object_type, $db_type ) = $registry->get_species_and_object_type('ENSG00000355555.2');
+  ( $species, $object_type, $db_type ) = $registry->get_species_and_object_type('ENSG00000355555.2a');
   ok( !defined($species), 'Test the get_species_and_object_type method from the Registry with wrong version, species');
 
 }

@@ -3171,7 +3171,8 @@ sub _core_get_species_and_object_type {
   if(@results) {
       return @results;
   } elsif(my $vindex = rindex($stable_id, '.')) {
-      return $self->_core_get_species_and_object_type_worker(substr($stable_id,0,$vindex), $known_type, $dba);
+      return $self->_core_get_species_and_object_type_worker(substr($stable_id,0,$vindex), $known_type, $dba)
+	  if(substr($stable_id,$vindex+1) =~ /^\d+$/);
   }
 
   return;
@@ -3213,7 +3214,8 @@ sub _compara_get_species_and_object_type {
   if(@results) {
       return @results;
   } elsif(my $vindex = rindex($stable_id, '.')) {
-      return $self->_compara_get_species_and_object_type_worker(substr($stable_id,0,$vindex), $known_type, $dba);
+      return $self->_compara_get_species_and_object_type_worker(substr($stable_id,0,$vindex), $known_type, $dba)
+	  if(substr($stable_id,$vindex+1) =~ /^\d+$/);
   }
 
   return;
