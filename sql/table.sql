@@ -309,6 +309,8 @@ INSERT INTO meta (species_id, meta_key, meta_value) VALUES
 # NOTE: Avoid line-breaks in values.
 INSERT INTO meta (species_id, meta_key, meta_value)
   VALUES (NULL, 'patch', 'patch_83_84_a.sql|schema_version');
+INSERT INTO meta (species_id, meta_key, meta_value)
+  VALUES (NULL, 'patch', 'patch_83_84_b.sql|xref.version_default');
 
 
 /**
@@ -2340,7 +2342,7 @@ CREATE TABLE xref (
    external_db_id             INTEGER UNSIGNED NOT NULL,
    dbprimary_acc              VARCHAR(512) NOT NULL,
    display_label              VARCHAR(512) NOT NULL,
-   version                    VARCHAR(10) DEFAULT '0' NOT NULL,
+   version                    VARCHAR(10) DEFAULT NULL,
    description                TEXT,
    info_type                  ENUM( 'NONE', 'PROJECTION', 'MISC', 'DEPENDENT',
                                     'DIRECT', 'SEQUENCE_MATCH',
