@@ -469,7 +469,7 @@ CREATE TABLE `meta` (
   PRIMARY KEY (`meta_id`),
   UNIQUE KEY `species_key_value_idx` (`species_id`,`meta_key`,`meta_value`),
   KEY `species_value_idx` (`species_id`,`meta_value`)
-) ENGINE=InnoDB AUTO_INCREMENT=188 DEFAULT CHARSET=latin1;
+) ENGINE=InnoDB AUTO_INCREMENT=191 DEFAULT CHARSET=latin1;
 
 CREATE TABLE `meta_coord` (
   `table_name` varchar(40) NOT NULL,
@@ -656,6 +656,7 @@ CREATE TABLE `protein_feature` (
   `external_data` text,
   `hit_description` text,
   PRIMARY KEY (`protein_feature_id`),
+  UNIQUE KEY `aln_idx` (`translation_id`,`hit_name`,`seq_start`,`seq_end`,`hit_start`,`hit_end`),
   KEY `translation_idx` (`translation_id`),
   KEY `hitname_idx` (`hit_name`),
   KEY `analysis_idx` (`analysis_id`)
@@ -876,7 +877,7 @@ CREATE TABLE `xref` (
   `external_db_id` int(10) unsigned NOT NULL,
   `dbprimary_acc` varchar(512) NOT NULL,
   `display_label` varchar(512) NOT NULL,
-  `version` varchar(10) NOT NULL DEFAULT '0',
+  `version` varchar(10) DEFAULT NULL,
   `description` text,
   `info_type` enum('NONE','PROJECTION','MISC','DEPENDENT','DIRECT','SEQUENCE_MATCH','INFERRED_PAIR','PROBE','UNMAPPED','COORDINATE_OVERLAP','CHECKSUM') NOT NULL DEFAULT 'NONE',
   `info_text` varchar(255) NOT NULL DEFAULT '',

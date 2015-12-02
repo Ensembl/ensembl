@@ -463,7 +463,7 @@ CREATE TABLE `meta` (
   PRIMARY KEY (`meta_id`),
   UNIQUE KEY `species_key_value_idx` (`species_id`,`meta_key`,`meta_value`),
   KEY `species_value_idx` (`species_id`,`meta_value`)
-) ENGINE=MyISAM AUTO_INCREMENT=2084 DEFAULT CHARSET=latin1;
+) ENGINE=MyISAM AUTO_INCREMENT=2087 DEFAULT CHARSET=latin1;
 
 CREATE TABLE `meta_coord` (
   `table_name` varchar(40) COLLATE latin1_bin NOT NULL DEFAULT '',
@@ -648,6 +648,7 @@ CREATE TABLE `protein_feature` (
   `external_data` text COLLATE latin1_bin,
   `hit_description` text COLLATE latin1_bin,
   PRIMARY KEY (`protein_feature_id`),
+  UNIQUE KEY `aln_idx` (`translation_id`,`hit_name`,`seq_start`,`seq_end`,`hit_start`,`hit_end`),
   KEY `translation_id` (`translation_id`),
   KEY `hitname_index` (`hit_name`),
   KEY `analysis_idx` (`analysis_id`)
@@ -863,7 +864,7 @@ CREATE TABLE `xref` (
   `external_db_id` int(11) NOT NULL,
   `dbprimary_acc` varchar(512) COLLATE latin1_bin NOT NULL,
   `display_label` varchar(512) COLLATE latin1_bin NOT NULL,
-  `version` varchar(10) COLLATE latin1_bin NOT NULL DEFAULT '0',
+  `version` varchar(10) COLLATE latin1_bin DEFAULT NULL,
   `description` text COLLATE latin1_bin,
   `info_type` enum('NONE','PROJECTION','MISC','DEPENDENT','DIRECT','SEQUENCE_MATCH','INFERRED_PAIR','PROBE','UNMAPPED','CHECKSUM') COLLATE latin1_bin NOT NULL DEFAULT 'NONE',
   `info_text` varchar(255) COLLATE latin1_bin NOT NULL DEFAULT '',
