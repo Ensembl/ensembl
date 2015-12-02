@@ -1154,6 +1154,8 @@ sub expand {
   my $sshift = $five_prime_shift;
   my $eshift = $three_prime_shift;
 
+  if ($sshift == 0 && $eshift == 0) { return $self; }
+
   if ( $self->{'strand'} != 1 ) {
     $eshift = $five_prime_shift;
     $sshift = $three_prime_shift;
