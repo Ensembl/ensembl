@@ -311,6 +311,8 @@ INSERT INTO meta (species_id, meta_key, meta_value)
   VALUES (NULL, 'patch', 'patch_83_84_a.sql|schema_version');
 INSERT INTO meta (species_id, meta_key, meta_value)
   VALUES (NULL, 'patch', 'patch_83_84_b.sql|xref.version_default');
+INSERT INTO meta (species_id, meta_key, meta_value)
+  VALUES (NULL, 'patch', 'patch_83_84_c.sql|protein_feature_unique');
 
 
 /**
@@ -910,6 +912,7 @@ CREATE TABLE protein_feature (
   external_data               TEXT,
   hit_description             TEXT,
 
+  UNIQUE KEY aln_idx (translation_id,hit_name,seq_start,seq_end,hit_start,hit_end),
   PRIMARY KEY (protein_feature_id),
   KEY translation_idx (translation_id),
   KEY hitname_idx (hit_name),
