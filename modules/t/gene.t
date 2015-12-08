@@ -840,6 +840,16 @@ $gene = $ga->fetch_by_stable_id('ENSG00000355555');
 debug("fetch_by_stable_id");
 ok($gene->dbID == 18275);
 
+$gene->stable_id_version('ENSG00000171455.4');
+is($gene->stable_id, 'ENSG00000171455', 'Stable id set with stable_id_version');
+is($gene->version, 4, 'Version set with stable_id_version');
+is($gene->stable_id_version, 'ENSG00000171455.4', 'Stable id and version from stable_id_version');
+
+$gene->stable_id_version('ENSG00000171456');
+is($gene->stable_id, 'ENSG00000171456', 'Stable id set with stable_id_version');
+is($gene->version, undef, 'Version undef from stable_id_version');
+is($gene->stable_id_version, 'ENSG00000171456', 'Stable id and no version from stable_id_version');
+
 $gene = $ga->fetch_by_stable_id("ENSG00000171456.1");
 ok($gene->stable_id eq 'ENSG00000171456', "Fetch by stable_id with version");
 

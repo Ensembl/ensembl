@@ -199,6 +199,35 @@ sub version {
   return $self->{'version'};
 }
 
+=head2 stable_id_version
+
+  Arg [1]    : (optional) String - the stable ID with version to set
+  Example    : $operon->stable_id("accR2A.3");
+  Description: Getter/setter for stable id with version.
+  Returntype : String
+  Exceptions : none
+  Caller     : general
+  Status     : Stable
+
+=cut
+
+sub stable_id_version {
+    my $self = shift;
+    if(my $stable_id = shift) {
+	# See if there's an embedded period, assume that's a
+	# version, might not work for some species but you
+	# should use ->stable_id() and version() if you're worried
+	# about ambiguity
+	my $vindex = rindex($stable_id, '.');
+	# Set the stable_id and version pair depending on if
+	# we found a version delimiter in the stable_id
+	($self->{stable_id}, $self->{version}) = ($vindex > 0 ?
+						  (substr($stable_id,0,$vindex), substr($stable_id,$vindex+1)) :
+						  $stable_id, undef);
+    }
+    return $self->{stable_id} . ($self->{version} ? ".$self->{version}" : '');
+}
+
 =head2 operon
 
   Example    : $operon = $ot->operon();
