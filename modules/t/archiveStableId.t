@@ -215,6 +215,16 @@ ok( scalar(@assoc) == 2 and
 $asi = $asia->fetch_by_stable_id_version("P2", 1);
 ok( $asi->get_peptide eq 'PTWOVERSIONONE*' );
 
+#
+# Test looking up active ids
+#
+my $archive_obj = $asia->fetch_by_stable_id('ENSG00000171456');
+is($archive_obj->stable_id, 'ENSG00000171456', 'fetch_by_stable_id with active stable_id');
+ok($archive_obj->is_current, 'Is the current stable_id');
+
+$archive_obj = $asia->fetch_by_stable_id('ENSG00000171456.1');
+is($archive_obj->stable_id, 'ENSG00000171456', 'fetch_by_stable_id with active stable_id with version');
+ok($archive_obj->is_latest, 'Is the latest stable_id');
 
 #
 # debug helper

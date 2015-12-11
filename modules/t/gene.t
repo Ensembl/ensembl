@@ -846,6 +846,18 @@ $gene = $ga->fetch_by_stable_id('ENSG00000355555');
 debug("fetch_by_stable_id");
 ok($gene->dbID == 18275);
 
+$gene = $ga->fetch_by_stable_id("ENSG00000171456.1");
+ok($gene->stable_id eq 'ENSG00000171456', "Fetch by stable_id with version");
+
+$gene = $ga->fetch_by_stable_id_version("ENSG00000171456", 1);
+ok($gene->stable_id eq 'ENSG00000171456', "fetch_by_stable_id_version");
+
+$gene = $ga->fetch_by_stable_id("ENSG00000171456.1a");
+ok(! defined($gene), "Fetch by stable_id with bad version");
+
+$gene = $ga->fetch_by_stable_id_version("ENSG00000171456", '1a');
+ok(! defined($gene), "fetch_by_stable_id_version, with bad version");
+
 @genes = @{$ga->fetch_all_versions_by_stable_id('ENSG00000355555')};
 debug("fetch_all_versions_by_stable_id");
 ok(scalar(@genes) == 1);
@@ -938,7 +950,16 @@ SKIP: {
   #test the get_species_and_object_type method from the Registry
   my $registry = 'Bio::EnsEMBL::Registry';
   my ( $species, $object_type, $db_type ) = $registry->get_species_and_object_type('ENSG00000355555');
-  ok( $species eq 'homo_sapiens' && $object_type eq 'Gene');
+  is( $species, 'homo_sapiens', 'Test the get_species_and_object_type method from the Registry, species');
+  is( $object_type, 'Gene', 'Test the get_species_and_object_type method from the Registry, object_type');
+
+  ( $species, $object_type, $db_type ) = $registry->get_species_and_object_type('ENSG00000355555.1');
+  is( $species, 'homo_sapiens', 'Test the get_species_and_object_type method from the Registry with version, species');
+  is( $object_type, 'Gene', 'Test the get_species_and_object_type method from the Registry with version, object_type');
+
+  ( $species, $object_type, $db_type ) = $registry->get_species_and_object_type('ENSG00000355555.2a');
+  ok( !defined($species), 'Test the get_species_and_object_type method from the Registry with wrong version, species');
+
 }
 
 # Testing compara dba retrieval
