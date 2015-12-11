@@ -946,4 +946,14 @@ SKIP: {
   dies_ok { $gene->get_all_homologous_Genes(); } 'No Compara DBAdaptor has been configured. No way to retrieve data';
 }
 
+# Fetching by slice and an external DB
+{
+  $ga->clear_cache(); # have to clear the cache because otherwise it gets the wrong values back!
+  my $local_slice = $sa->fetch_by_region("chromosome", "20", 30_249_935, 31_254_640);
+  my $genes = $ga->fetch_all_by_Slice_and_external_dbname_link($local_slice, undef, undef, 'HUGO'); # yes HUGO. Not HGNC. Old data
+  is(scalar(@{$genes}), 13, 'Expect 13 genes with HUGO/HGNC links');
+  # assume this will be the display xref
+  is($_->display_xref()->dbname(), 'HUGO', $_->stable_id().' has a display HUGO') for @{$genes};
+}
+
 done_testing();

@@ -1100,7 +1100,7 @@ sub seq_region_start {
   if ( defined($slice) ) {
 
     return $self->_seq_region_boundary_from_db('start')
-      if $slice->is_circular() and $self->adaptor->dbc;
+      if $slice->is_circular() and $self->adaptor() and $self->adaptor->dbc();
 
     my $start;
     if ( $slice->strand() == 1 ) {
@@ -1142,7 +1142,7 @@ sub seq_region_end {
   if ( defined($slice) ) {
 
     return $self->_seq_region_boundary_from_db('end')
-      if $slice->is_circular() and $self->adaptor->dbc;
+      if $slice->is_circular() and $self->adaptor() and $self->adaptor->dbc();
 
     my $end;
     if ( $slice->strand() == 1 ) {
