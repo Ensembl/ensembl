@@ -313,6 +313,8 @@ INSERT INTO meta (species_id, meta_key, meta_value)
   VALUES (NULL, 'patch', 'patch_83_84_b.sql|xref.version_default');
 INSERT INTO meta (species_id, meta_key, meta_value)
   VALUES (NULL, 'patch', 'patch_83_84_c.sql|protein_feature_unique');
+INSERT INTO meta (species_id, meta_key, meta_value)
+  VALUES (NULL, 'patch', 'patch_83_84_d.sql|longer_synonym');
 
 
 /**
@@ -387,7 +389,7 @@ CREATE TABLE seq_region_synonym (
 
   seq_region_synonym_id       INT UNSIGNED NOT NULL  AUTO_INCREMENT,
   seq_region_id               INT(10) UNSIGNED NOT NULL,
-  synonym                     VARCHAR(50) NOT NULL,
+  synonym                     VARCHAR(250) NOT NULL,
   external_db_id              INTEGER UNSIGNED,
 
   PRIMARY KEY (seq_region_synonym_id),

@@ -37,6 +37,7 @@
 188	\N	patch	patch_83_84_a.sql|schema_version
 189	\N	patch	patch_83_84_b.sql|xref.version_default
 190	\N	patch	patch_83_84_c.sql|protein_feature_unique
+191	\N	patch	patch_83_84_d.sql|longer_synonym
 1	\N	schema_type	core
 2	\N	schema_version	84
 8	1	assembly.accession	GCA_000292705.1

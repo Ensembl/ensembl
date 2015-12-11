@@ -1,6 +1,6 @@
 -- 
 -- Created by SQL::Translator::Producer::SQLite
--- Created on Wed Dec  2 08:58:13 2015
+-- Created on Fri Dec 11 17:18:10 2015
 -- 
 
 BEGIN TRANSACTION;
@@ -796,7 +796,7 @@ CREATE TABLE seq_region_mapping (
 CREATE TABLE seq_region_synonym (
   seq_region_synonym_id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
   seq_region_id integer NOT NULL,
-  synonym varchar(50) NOT NULL,
+  synonym varchar(250) NOT NULL,
   external_db_id integer
 );
 

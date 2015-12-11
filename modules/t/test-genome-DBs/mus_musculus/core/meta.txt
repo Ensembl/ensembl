@@ -150,3 +150,4 @@
 1662	\N	patch	patch_83_84_a.sql|schema_version
 1663	\N	patch	patch_83_84_b.sql|xref.version_default
 1664	\N	patch	patch_83_84_c.sql|protein_feature_unique
+1665	\N	patch	patch_83_84_d.sql|longer_synonym
