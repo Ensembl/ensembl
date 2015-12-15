@@ -285,7 +285,7 @@ DSS
 	  }
 	}
 	else{
-	  print "$file has already been ran with $parser and so will not be ran again\n" if($verbose);
+	  print "$file has already been run with $parser and so will not be run again\n" if($verbose);
 	}
 	next;
       }
