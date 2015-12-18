@@ -610,7 +610,7 @@ $tr = $ta->fetch_by_translation_stable_id('ENSP00000355555');
 is( $tr->dbID, 21740, 'Fetched transcript by translation stable id' );
 
 $tr->stable_id_version('ENSP00000171455.4');
-is($tr->stable_id, 'ENSp00000171455', 'Stable id set with stable_id_version');
+is($tr->stable_id, 'ENSP00000171455', 'Stable id set with stable_id_version');
 is($tr->version, 4, 'Version set with stable_id_version');
 is($tr->stable_id_version, 'ENSP00000171455.4', 'Stable id and version from stable_id_version');
 
