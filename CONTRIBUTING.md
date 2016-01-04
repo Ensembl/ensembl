@@ -3,6 +3,7 @@
 The Ensembl development team welcomes outside contributions, in fact we moved to Git to facilitate this. However, to ensure legibility for other users, we ask contributors to take a few moments to clean up their code, its comments, and its history before submitting a pull request. It takes a little bit of effort from everyone, but nobody likes to decipher cryptic comments, review commits overloaded with minor typesetting changes or re-trace the history of a file across fragmented commits. Together, let's keep Ensembl tidy! 
 
 This guide covers how to contribute changes to an Ensembl project. Please do not create a pull request without reading this guide first.
+We also invite you to read our code of conduct (http://www.ensembl.org/info/about/code_of_conduct.html) before continuing.
 
 ## Quick Guide - Using Forks & Pull Requests
 
