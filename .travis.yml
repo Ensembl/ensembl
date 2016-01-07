@@ -1,55 +1,44 @@
-language: "perl"
-
+language: perl
 perl:
-  - "5.14"
-  - "5.12"
-  - "5.10"
-
+- '5.14'
+- '5.12'
+- '5.10'
 env:
-  - COVERALLS=true  DB=mysql
-  - COVERALLS=false DB=mysql
-  - COVERALLS=false DB=sqlite
-  
+- COVERALLS=true  DB=mysql
+- COVERALLS=false DB=mysql
+- COVERALLS=false DB=sqlite
 sudo: false
-  
 addons:
   apt:
     packages:
     - unzip
-
 before_install:
-    - git clone --branch master --depth 1 https://github.com/Ensembl/ensembl-test.git
-    - git clone --branch master --depth 1 https://github.com/Ensembl/ensembl-variation.git
-    - wget https://github.com/bioperl/bioperl-live/archive/bioperl-release-1-2-3.zip
-    - unzip bioperl-release-1-2-3.zip
-
-
+- git clone --branch master --depth 1 https://github.com/Ensembl/ensembl-test.git
+- git clone --branch master --depth 1 https://github.com/Ensembl/ensembl-variation.git
+- wget https://github.com/bioperl/bioperl-live/archive/bioperl-release-1-2-3.zip
+- unzip bioperl-release-1-2-3.zip
 install:
-    - cpanm -v --installdeps --notest .
-    - cpanm -n Devel::Cover::Report::Coveralls
-    - cpanm -n DBD::SQLite
-    - cp travisci/MultiTestDB.conf.travisci.mysql  modules/t/MultiTestDB.conf.mysql
-    - cp travisci/MultiTestDB.conf.travisci.SQLite modules/t/MultiTestDB.conf.SQLite
-
-script: "./travisci/harness.sh"
-
-# Get the matrix to only build coveralls support when on 5.10
+- cpanm -v --installdeps --notest .
+- cpanm -n Devel::Cover::Report::Coveralls
+- cpanm -n DBD::SQLite
+- cp travisci/MultiTestDB.conf.travisci.mysql  modules/t/MultiTestDB.conf.mysql
+- cp travisci/MultiTestDB.conf.travisci.SQLite modules/t/MultiTestDB.conf.SQLite
+script: ./travisci/harness.sh
 matrix:
   exclude:
-    - perl: "5.10"
-      env: COVERALLS=false DB=mysql
-    - perl: "5.12"
-      env: COVERALLS=false DB=sqlite
-    - perl: "5.12"
-      env: COVERALLS=true  DB=mysql
-    - perl: "5.14"
-      env: COVERALLS=false DB=sqlite
-    - perl: "5.14"
-      env: COVERALLS=true  DB=mysql
-
+  - perl: '5.10'
+    env: COVERALLS=false DB=mysql
+  - perl: '5.12'
+    env: COVERALLS=false DB=sqlite
+  - perl: '5.12'
+    env: COVERALLS=true  DB=mysql
+  - perl: '5.14'
+    env: COVERALLS=false DB=sqlite
+  - perl: '5.14'
+    env: COVERALLS=true  DB=mysql
 notifications:
   email:
     on_success: always
     on_failure: always
   slack:
-    secure: "NEyaFA8Ie0KzKw9ZL4RtWpTVhCJh7330oV7iTp8eeqvnxsaNnwi2/OKLHNYARThsctoGgELxFm1u5TxqyNTe5ZYgJ/dv67XjX6OyTYQCuJuyzlYzlhVlrsQdkBzhAQxpOzgcOYMMSYguvyQtkCTC1o50qZw0gbGJA+JXgS/7Qxs="
+    secure: gTcWzQsVHKPxRJ1u0U2l2+QVujmG1uFW44kAO3l46V5Im5uLTOLeM20ykk6ox4kaPHLs5ky7NGzcJmTDLaHBKjI4Sa34l4tJd0lhkv+hKj9TSv5pDDCdUX8v869Nm8LqJKh26HqvVcN7eHFRatLD/tfYvvkaP1rLLhwLLdr7czQ=
