@@ -1,6 +1,6 @@
 -- 
 -- Created by SQL::Translator::Producer::SQLite
--- Created on Tue Oct 13 09:18:46 2015
+-- Created on Fri Dec 11 17:18:45 2015
 -- 
 
 BEGIN TRANSACTION;
@@ -724,6 +724,8 @@ CREATE TABLE protein_feature (
   hit_description text
 );
 
+CREATE UNIQUE INDEX aln_idx ON protein_feature (translation_id, hit_name, seq_start, seq_end, hit_start, hit_end);
+
 --
 -- Table: repeat_consensus
 --
@@ -789,7 +791,7 @@ CREATE TABLE seq_region_mapping (
 CREATE TABLE seq_region_synonym (
   seq_region_synonym_id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
   seq_region_id integer NOT NULL,
-  synonym varchar(50) NOT NULL,
+  synonym varchar(250) NOT NULL,
   external_db_id smallint
 );
 
@@ -955,7 +957,7 @@ CREATE TABLE xref (
   external_db_id integer NOT NULL,
   dbprimary_acc varchar(512) NOT NULL,
   display_label varchar(512) NOT NULL,
-  version varchar(10) NOT NULL DEFAULT '0',
+  version varchar(10),
   description text,
   info_type enum NOT NULL DEFAULT 'NONE',
   info_text varchar(255) NOT NULL DEFAULT ''

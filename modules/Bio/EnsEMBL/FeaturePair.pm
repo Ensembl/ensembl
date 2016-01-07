@@ -1,6 +1,6 @@
 =head1 LICENSE
 
-Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
+Copyright [1999-2016] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -827,30 +827,6 @@ sub invert {
   $self->{'hslice'} = $self->slice;
   $self->{'slice'}  = $slice;
 } ## end sub invert
-
-=head2 validate
-
-  Description: DEPRECATED do not use
-
-=cut
-
-sub validate {
-  my ($self) = @_;
-
-  deprecate('validate is deprecated and will be removed in e84.');
-}
-
-=head2 validate_prot_feature
-
-  Description: DEPRECATED do not use
-
-=cut
-
-sub validate_prot_feature {
-  my ($self) = @_;
-
-  deprecate('validate is deprecated and will be removed in e84.');
-}
 
 =head2 set_featurepair_fields
 

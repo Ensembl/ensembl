@@ -1,6 +1,6 @@
 =head1 LICENSE
 
-Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
+Copyright [1999-2016] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -3159,9 +3159,28 @@ sub archive_id_lookup {
 }
 
 
+# A level of abstraction because we need to test the stable_id as-is and then
+# try to chop off a version id if nothing is return, and try again
 
-# Loop over a known set of object types for a core DB until we find a hit 
 sub _core_get_species_and_object_type {
+  my ($self, $stable_id, $known_type, $dba) = @_;
+
+  # Try looking up the species with the stable_is, as-is
+  my @results = $self->_core_get_species_and_object_type_worker($stable_id, $known_type, $dba);
+
+  if(@results) {
+      return @results;
+  } elsif(my $vindex = rindex($stable_id, '.')) {
+      return $self->_core_get_species_and_object_type_worker(substr($stable_id,0,$vindex), $known_type, $dba)
+	  if(substr($stable_id,$vindex+1) =~ /^\d+$/);
+  }
+
+  return;
+
+}
+
+# Loop over a known set of object types for a core DB until we find a hit
+sub _core_get_species_and_object_type_worker {
   my ($self, $stable_id, $known_type, $dba) = @_;
   my @types = defined $known_type ? ($known_type) : ('Gene', 'Transcript', 'Translation', 'Exon', 'Operon', 'OperonTranscript');
   my ($species, $final_type, $final_db_type);
@@ -3183,8 +3202,28 @@ sub _core_get_species_and_object_type {
   return;
 }
 
-# Loop over a known set of object types for a compara DB until we find a hit
+# A level of abstraction because we need to test the stable_id as-is and then
+# try to chop off a version id if nothing is return, and try again
+
 sub _compara_get_species_and_object_type {
+  my ($self, $stable_id, $known_type, $dba) = @_;
+
+  # Try looking up the species with the stable_is, as-is
+  my @results = $self->_compara_get_species_and_object_type_worker($stable_id, $known_type, $dba);
+
+  if(@results) {
+      return @results;
+  } elsif(my $vindex = rindex($stable_id, '.')) {
+      return $self->_compara_get_species_and_object_type_worker(substr($stable_id,0,$vindex), $known_type, $dba)
+	  if(substr($stable_id,$vindex+1) =~ /^\d+$/);
+  }
+
+  return;
+
+}
+
+# Loop over a known set of object types for a compara DB until we find a hit
+sub _compara_get_species_and_object_type_worker {
   my ($self, $stable_id, $known_type, $dba) = @_;
   my @types = defined $known_type ? ($known_type) : ('GeneTree');
   my ($species, $final_type, $final_db_type);

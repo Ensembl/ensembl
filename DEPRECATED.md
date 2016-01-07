@@ -50,7 +50,6 @@ A year after deprecation (4 Ensembl releases), the method is removed from the AP
  - Bio::EnsEMBL::DBSQL::**DBAdaptor**::*list_supported_assemblies()*
  - Bio::EnsEMBL::DBSQL::**DBAdaptor**::*assembly_type()*
  - Bio::EnsEMBL::DBSQL::**DBAdaptor**::*db()*
- - Bio::EnsEMBL::DBSQL::**DBAdaptor**::*source()*
  - Bio::EnsEMBL::DBSQL::**DBConnection**::*group()*
  - Bio::EnsEMBL::DBSQL::**DBConnection**::*species()*
  - Bio::EnsEMBL::DBSQL::**DBEntryAdaptor**::*geneids_by_extids()*
@@ -112,7 +111,6 @@ A year after deprecation (4 Ensembl releases), the method is removed from the AP
  - Bio::EnsEMBL::Map::**MapLocation**::*chromosome()*
  - Bio::EnsEMBL::**OperonTranscript**::*add_gene()*
  - Bio::EnsEMBL::**PredictionTranscript**::*get_exon_count()*
- - Bio::EnsEMBL::**PredictionTranscript**::*set_exon_count()*
  - Bio::EnsEMBL::**PredictionTranscript**::*get_cdna()*
  - Bio::EnsEMBL::**Registry**::*load_registry_with_web_adaptors()*
  - Bio::EnsEMBL::**Root**::*throw()*
@@ -145,15 +143,17 @@ A year after deprecation (4 Ensembl releases), the method is removed from the AP
 ### Removed in Ensembl Release 84 ###
  - Bio::EnsEMBL::DBSQL::**CoordSystemAdaptor**::*_fetch_by_attrib()*
  - Bio::EnsEMBL::DBSQL::**CoordSystemAdaptor**::*_fetch_all_by_attrib()*
+ - Bio::EnsEMBL::DBSQL::**DBAdaptor**::*source()*
  - Bio::EnsEMBL::DBSQL::**SliceAdaptor**::*fetch_by_band()*
  - Bio::EnsEMBL::DBSQL::**MetaContainer**::*get_short_name()*
  - Bio::EnsEMBL::DBSQL::**MetaContainer**::*get_max_assembly_contig()*
  - Bio::EnsEMBL::**DBEntry**::*ensembl_object_type()*
- - Bio::EnsEMBL::**DBEntry**::*ensembl_object_id()*
+ - Bio::EnsEMBL::**DBEntry**::*ensembl_id()*
  - Bio::EnsEMBL::**Exon**::*_get_stable_entry_info()*
  - Bio::EnsEMBL::**FeaturePair**::*validate()*
  - Bio::EnsEMBL::**FeaturePair**::*validate_prot_feature()*
- - Bio::EnsEMBL::**Root**::*rearrange()*
+ - Bio::EnsEMBL::**PredictionTranscript**::*set_exon_count()*
+ - Bio::EnsEMBL::**Root**::*_rearrange()*
  - Bio::EnsEMBL::**SeqFeatureI**::*analysis()*
  - Bio::EnsEMBL::**SeqFeatureI**::*validate()*
  - Bio::EnsEMBL::**SeqFeatureI**::*id()*

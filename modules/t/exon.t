@@ -1,4 +1,4 @@
-# Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
+# Copyright [1999-2016] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
 # 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -241,6 +241,18 @@ $multi->restore();
 $exon = $exonad->fetch_by_stable_id('ENSE00001109603');
 debug("fetch_by_stable_id");
 ok( $exon->dbID == 162033 );
+
+$exon = $exonad->fetch_by_stable_id('ENSE00001109603.1');
+ok($exon->dbID == 162033, 'fetch_by_stable_id with version');
+
+$exon = $exonad->fetch_by_stable_id('ENSE00001109603.1a');
+ok(!defined($exon), 'fetch_by_stable_id with bad version');
+
+$exon = $exonad->fetch_by_stable_id_version('ENSE00001109603', 1);
+ok($exon->dbID == 162033, 'fetch_by_stable_id_version with version');
+
+$exon = $exonad->fetch_by_stable_id_version('ENSE00001109603', '1a');
+ok(!defined($exon), 'fetch_by_stable_id_version with bad version');
 
 my @exons = @{ $exonad->fetch_all_versions_by_stable_id('ENSE00001109603') };
 debug("fetch_all_versions_by_stable_id");

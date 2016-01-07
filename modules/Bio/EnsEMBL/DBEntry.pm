@@ -1,6 +1,6 @@
 =head1 LICENSE
 
-Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
+Copyright [1999-2016] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -646,29 +646,6 @@ sub status{
   } 
   return $self->{status};
 }
-
-=head2 ensembl_object_type
-
-  Description: DEPRECATED. Use the associated object type instead.
-
-=cut
-
-sub ensembl_object_type{
-  my ( $self, $arg ) = @_;
-  deprecate("xref->ensembl_object_type is deprecated and will be removed in e84. Please access the object directly.");
-}
-
-=head2 ensembl_id
-
-  Description: DEPRECATED. Use the associated object id instead.
-
-=cut
-
-sub ensembl_id{
-  my ( $self, $arg ) = @_;
-  deprecate("xref->ensembl_id is deprecated and will be removed in e84. Please access the object directly.");
-}
-
 
 =head1 DEPRECATED METHODS
 

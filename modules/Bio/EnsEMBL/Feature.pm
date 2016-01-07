@@ -1,6 +1,6 @@
 =head1 LICENSE
 
-Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
+Copyright [1999-2016] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -1100,7 +1100,7 @@ sub seq_region_start {
   if ( defined($slice) ) {
 
     return $self->_seq_region_boundary_from_db('start')
-      if $slice->is_circular() and $self->adaptor();
+      if $slice->is_circular() and $self->adaptor() and $self->adaptor->dbc();
 
     my $start;
     if ( $slice->strand() == 1 ) {
@@ -1142,7 +1142,7 @@ sub seq_region_end {
   if ( defined($slice) ) {
 
     return $self->_seq_region_boundary_from_db('end')
-      if $slice->is_circular() and $self->adaptor();
+      if $slice->is_circular() and $self->adaptor() and $self->adaptor->dbc();
 
     my $end;
     if ( $slice->strand() == 1 ) {

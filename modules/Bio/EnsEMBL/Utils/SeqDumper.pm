@@ -1,6 +1,6 @@
 =head1 LICENSE
 
-Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
+Copyright [1999-2016] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -76,8 +76,8 @@ my $DUMP_HANDLERS =
     'GENBANK'   => \&dump_genbank };
 
 my @COMMENTS = 
-  ('This sequence was annotated by the Ensembl system. Please visit ' .
-   'the Ensembl web site, http://www.ensembl.org/ for more information.',
+  ('This sequence was annotated by ###SOURCE###. Please visit ' .
+   'the Ensembl or EnsemblGenomes web site, http://www.ensembl.org/ or http://www.ensemblgenomes.org/ for more information.',
 
    'All feature locations are relative to the first (5\') base ' .
    'of the sequence in this file.  The sequence presented is '.
@@ -93,7 +93,6 @@ my @COMMENTS =
 
    'All the exons and transcripts in Ensembl are confirmed by ' .
    'similarity to either protein or cDNA sequences.');
-
 
 =head2 new
 
@@ -474,11 +473,22 @@ sub dump_embl {
   $self->print( $FH, "XX\n" );
   
   #References (we are not dumping refereneces)
-
   #Database References (we are not dumping these)
+
+  #Get annotation source 
+  my ($provider_name)   = @{$meta_container->list_value_by_key('provider.name')};
+  my ($provider_url)    = @{$meta_container->list_value_by_key('provider.url')};
+  my $annotation_source = q{};
+   
+  if($provider_name) {
+    $annotation_source .= $provider_name;
+    $annotation_source .= sprintf(q{(%s)}, $provider_url) if $provider_url;
+  }
+  else { $annotation_source .= 'Ensembl'; }
 
   #comments
   foreach my $comment (@COMMENTS) {
+    $comment =~ s/\#\#\#SOURCE\#\#\#/$annotation_source/;
     $self->write($FH, $EMBL_HEADER, 'CC', $comment);
     $self->print( $FH, "XX\n" );
   }
@@ -657,8 +667,20 @@ sub dump_genbank {
 
   #refereneces
 
+  #Get annotation source 
+  my ($provider_name)   = @{$meta_container->list_value_by_key('provider.name')};
+  my ($provider_url)    = @{$meta_container->list_value_by_key('provider.url')};
+  my $annotation_source = q{};
+  
+  if($provider_name) {
+     $annotation_source .= $provider_name;
+     $annotation_source .= sprintf(q{(%s)}, $provider_url) if $provider_url;
+  }
+  else { $annotation_source .= 'Ensembl'; }
+
   #comments
   foreach my $comment (@COMMENTS) {
+    $comment =~ s/\#\#\#SOURCE\#\#\#/$annotation_source/;
     $self->write($FH, $GENBANK_HEADER, 'COMMENT', $comment);
   }
 
@@ -810,7 +832,9 @@ sub _dump_feature_table {
           $self->write(@ff,''   ,'/note="transcript_id='.$transcript->stable_id().'"');
 
           foreach my $dbl (@{$transcript->get_all_DBLinks}) {
-            $value = '/db_xref="'.$dbl->dbname().':'.$dbl->display_id().'"';
+            my $db_xref    = '/db_xref="'.$dbl->dbname().':'.$dbl->primary_id().'"';
+            my $go_db_xref = '/db_xref="'.$dbl->primary_id().'"';
+            $value  = ($dbl->dbname()=~/GO/) ? $go_db_xref : $db_xref; 
             $self->write(@ff, '', $value);
           }
 
@@ -1237,5 +1261,6 @@ sub print {
     die "Could not write to file handle";
   }
 }
+
 
 1;

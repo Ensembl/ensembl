@@ -1,6 +1,6 @@
 =head1 LICENSE
 
-Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
+Copyright [1999-2016] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -576,17 +576,6 @@ sub get_exon_count {
    my $self = shift;
    deprecate('get_exon_count is deprecated and will be removed in e87. Please use scalar(@{$transcript->get_all_Exon()s}) instead');
    return scalar( @{$self->get_all_Exons} );
-}
-
-
-=head2 set_exon_count
-
-  Description: DEPRECATED - this method does nothing now
-
-=cut
-
-sub set_exon_count {
-  deprecate('set_exon_count is deprecated and will be removed in e84.');
 }
 
 

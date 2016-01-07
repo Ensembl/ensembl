@@ -1,6 +1,6 @@
 =head1 LICENSE
 
-Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
+Copyright [1999-2016] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -1153,6 +1153,8 @@ sub expand {
 
   my $sshift = $five_prime_shift;
   my $eshift = $three_prime_shift;
+
+  if ($sshift == 0 && $eshift == 0) { return $self; }
 
   if ( $self->{'strand'} != 1 ) {
     $eshift = $five_prime_shift;
@@ -2687,12 +2689,6 @@ sub get_all_genotyped_SNPs {
   return [];
 }
 
-sub get_all_SNPs_transcripts {
-  my $self = shift;
-  deprecate("get_all_SNPs_transcripts is deprecated and will be removed in e84");
-  return [];
-}
-
 =head2 get_all_Genes
 
   Arg [1]    : (optional) string $logic_name
@@ -3823,38 +3819,6 @@ sub accession_number { name(@_); }
 
 =head1 DEPRECATED METHODS
 
-=head2 get_all_AffyFeatures
-
-  Description:  DEPRECATED, use functionality provided by the Ensembl
-                Functional Genomics API instead.
-
-=cut
-
-sub get_all_AffyFeatures {
-  deprecate( 'get_all_AffyFeatures is deprecated and will be removed in e84.' );
-}
-
-=head2 get_all_OligoFeatures
-
-  Description:  DEPRECATED, use functionality provided by the Ensembl
-                Functional Genomics API instead.
-
-=cut
-
-sub get_all_OligoFeatures {
-  deprecate( 'get_all_OligoFeatures is deprecated and will be removed in e84.' );
-}
-
-=head2 get_all_OligoFeatures_by_type
-
-  Description:  DEPRECATED, use functionality provided by the Ensembl
-                Functional Genomics API instead.
-
-=cut
-
-sub get_all_OligoFeatures_by_type {
-  deprecate( 'get_all_OligoFeatures_by_type is deprecated and will be removed in e84.' );
-}
 
 =head2 get_all_supercontig_Slices
 
@@ -3965,19 +3929,6 @@ sub assembly_type{
   my $self = shift;
   deprecate('assembly_type is deprecated and will be removed in e87. Please use $slice->coord_system()->version() instead.');
   return $self->coord_system->version();
-}
-
-
-=head2 get_tiling_path
-
-  Description: DEPRECATED use project instead
-
-=cut
-
-sub get_tiling_path {
-  my $self = shift;
-  deprecate('get_tiling_path is deprecated and will be removed in e84. Please use $slice->project("seqlevel") instead.');
-  return [];
 }
 
 

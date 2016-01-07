@@ -1,6 +1,6 @@
 =head1 LICENSE
 
-Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
+Copyright [1999-2016] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -1485,17 +1485,6 @@ sub is_circular {
   return (exists $self->{circular_sr_id_cache}->{$id}) ? 1 : 0;
 }
 
-=head2 fetch_by_band
-
- Description : DEPRECATED. Use fetch_by_chr_band instead
-
-=cut
-
-sub fetch_by_band {
-  my ($self,$band) = @_;
-
-  deprecate("fetch_by_band is deprecated and will be removed in e84. Please use fetch_by_chr_band instead.");
-}
 
 =head2 fetch_by_chr_band
 

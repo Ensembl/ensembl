@@ -1,6 +1,6 @@
 =head1 LICENSE
 
-Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
+Copyright [1999-2016] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -1122,9 +1122,6 @@ sub db{
  deprecate("DBAdaptor->db is deprecated and will be removed in e87. Please use DBConnection->db instead.");
  return $self->dbc($arg);
 }
-
-
-sub source { deprecate('source is deprecated and will be removed in e84.'); }
 
 
 =head2 assembly_type

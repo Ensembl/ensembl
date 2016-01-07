@@ -1,6 +1,6 @@
 =head1 LICENSE
 
-Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
+Copyright [1999-2016] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -169,9 +169,51 @@ sub fetch_by_stable_id {
 
   my ($transcript) = @{ $self->generic_fetch($constraint) };
 
+  # If we didn't get anything back, desperately try to see if there's
+  # a version number in the stable_id
+  if(!defined($transcript) && (my $vindex = rindex($stable_id, '.'))) {
+      $transcript = $self->fetch_by_stable_id_version(substr($stable_id,0,$vindex),
+						substr($stable_id,$vindex+1));
+  }
+
   return $transcript;
 }
 
+
+=head2 fetch_by_stable_id_version
+
+  Arg [1]    : String $id 
+               The stable ID of the transcript to retrieve
+  Arg [2]    : Integer $version
+               The version of the stable_id to retrieve
+  Example    : $tr = $tr_adaptor->fetch_by_stable_id('ENST00000309301', 3);
+  Description: Retrieves a transcript object from the database via its 
+               stable id and version.
+               The transcript will be retrieved in its native coordinate system (i.e.
+               in the coordinate system it is stored in the database). It may
+               be converted to a different coordinate system through a call to
+               transform() or transfer(). If the transcript is not found
+               undef is returned instead.
+  Returntype : Bio::EnsEMBL::Transcript or undef
+  Exceptions : if we cant get the transcript in given coord system
+  Caller     : general
+  Status     : Stable
+
+=cut
+
+sub fetch_by_stable_id_version {
+    my ($self, $stable_id, $version) = @_;
+
+    # Enforce that version be numeric
+    return unless($version =~ /^\d+$/);
+
+    my $constraint = "t.stable_id = ? AND t.version = ? AND t.is_current = 1";
+    $self->bind_param_generic_fetch($stable_id, SQL_VARCHAR);
+    $self->bind_param_generic_fetch($version, SQL_INTEGER);
+    my ($transcript) = @{$self->generic_fetch($constraint)};
+
+    return $transcript;
+}
 
 sub fetch_all {
   my ($self) = @_;
@@ -216,7 +258,7 @@ sub fetch_all_versions_by_stable_id {
                   ('ENSP00000311007');
   Description: Retrieves a Transcript object using the stable identifier of
                its translation.
-  Returntype : Bio::EnsEMBL::Transcript
+  Returntype : Bio::EnsEMBL::Transcript or undef
   Exceptions : none
   Caller     : general
   Status     : Stable
@@ -242,11 +284,60 @@ sub fetch_by_translation_stable_id {
   $sth->finish;
   if ($id){
     return $self->fetch_by_dbID($id);
+  } elsif(my $vindex = rindex($transl_stable_id, '.')) {
+    return $self->fetch_by_translation_stable_id_version(substr($transl_stable_id,0,$vindex),
+							 substr($transl_stable_id,$vindex+1));
+  } else {
+      return undef;
+  }
+}
+
+=head2 fetch_by_translation_stable_id_version
+
+  Arg [1]    : String $transl_stable_id
+               The stable identifier of the translation of the transcript to 
+               retrieve
+  Arg [2]    : Integer $version
+               The version of the translation of the transcript to retrieve
+  Example    : my $tr = $tr_adaptor->fetch_by_translation_stable_id_version
+                  ('ENSP00000311007', 2);
+  Description: Retrieves a Transcript object using the stable identifier and
+               version of its translation.
+  Returntype : Bio::EnsEMBL::Transcript or undef
+  Exceptions : none
+  Caller     : general
+  Status     : Stable
+
+=cut
+
+sub fetch_by_translation_stable_id_version {
+  my ($self, $transl_stable_id, $transl_version ) = @_;
+
+  # Enforce that version be numeric
+  return unless($transl_version =~ /^\d+$/);
+
+  my $sth = $self->prepare(qq(
+      SELECT t.transcript_id
+      FROM   translation tl,
+             transcript t
+      WHERE  tl.stable_id = ?
+      AND    tl.version = ?
+      AND    tl.transcript_id = t.transcript_id
+      AND    t.is_current = 1
+  ));
+
+  $sth->bind_param(1, $transl_stable_id, SQL_VARCHAR);
+  $sth->bind_param(2, $transl_version, SQL_INTEGER);
+  $sth->execute();
+
+  my ($id) = $sth->fetchrow_array;
+  $sth->finish;
+  if ($id){
+    return $self->fetch_by_dbID($id);
   } else {
     return undef;
   }
 }
-
 
 =head2 fetch_by_translation_id
 

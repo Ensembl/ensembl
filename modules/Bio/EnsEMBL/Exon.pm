@@ -1,6 +1,6 @@
 =head1 LICENSE
 
-Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
+Copyright [1999-2016] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -1603,21 +1603,6 @@ sub summary_as_hash {
 
 =cut
 
-
-=head2 _get_stable_entry_info 
-
-  Description: DEPRECATED.
-
-=cut
-
-sub _get_stable_entry_info {
-   my $self = shift;
-   deprecate( "_get_stable_entry_info is deprecated and will be removed in e84. Please use stable_id instead." );
-   if( !defined $self->adaptor ) {
-     return undef;
-   }
-   $self->adaptor->get_stable_entry_info($self);
-}
 
 
 =head2 temporary_id

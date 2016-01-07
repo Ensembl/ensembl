@@ -1,4 +1,4 @@
--- Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
+-- Copyright [1999-2016] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
 -- 
 -- Licensed under the Apache License, Version 2.0 (the "License");
 -- you may not use this file except in compliance with the License.
@@ -302,13 +302,19 @@ CREATE TABLE IF NOT EXISTS meta (
 # Add schema type and schema version to the meta table.
 INSERT INTO meta (species_id, meta_key, meta_value) VALUES
   (NULL, 'schema_type',     'core'),
-  (NULL, 'schema_version',  '83');
+  (NULL, 'schema_version',  '84');
 
 # Patches included in this schema file:
 # NOTE: At start of release cycle, remove patch entries from last release.
 # NOTE: Avoid line-breaks in values.
 INSERT INTO meta (species_id, meta_key, meta_value)
-  VALUES (NULL, 'patch', 'patch_82_83_a.sql|schema_version');
+  VALUES (NULL, 'patch', 'patch_83_84_a.sql|schema_version');
+INSERT INTO meta (species_id, meta_key, meta_value)
+  VALUES (NULL, 'patch', 'patch_83_84_b.sql|xref.version_default');
+INSERT INTO meta (species_id, meta_key, meta_value)
+  VALUES (NULL, 'patch', 'patch_83_84_c.sql|protein_feature_unique');
+INSERT INTO meta (species_id, meta_key, meta_value)
+  VALUES (NULL, 'patch', 'patch_83_84_d.sql|longer_synonym');
 
 
 /**
@@ -383,7 +389,7 @@ CREATE TABLE seq_region_synonym (
 
   seq_region_synonym_id       INT UNSIGNED NOT NULL  AUTO_INCREMENT,
   seq_region_id               INT(10) UNSIGNED NOT NULL,
-  synonym                     VARCHAR(50) NOT NULL,
+  synonym                     VARCHAR(250) NOT NULL,
   external_db_id              INTEGER UNSIGNED,
 
   PRIMARY KEY (seq_region_synonym_id),
@@ -908,6 +914,7 @@ CREATE TABLE protein_feature (
   external_data               TEXT,
   hit_description             TEXT,
 
+  UNIQUE KEY aln_idx (translation_id,hit_name,seq_start,seq_end,hit_start,hit_end),
   PRIMARY KEY (protein_feature_id),
   KEY translation_idx (translation_id),
   KEY hitname_idx (hit_name),
@@ -2340,7 +2347,7 @@ CREATE TABLE xref (
    external_db_id             INTEGER UNSIGNED NOT NULL,
    dbprimary_acc              VARCHAR(512) NOT NULL,
    display_label              VARCHAR(512) NOT NULL,
-   version                    VARCHAR(10) DEFAULT '0' NOT NULL,
+   version                    VARCHAR(10) DEFAULT NULL,
    description                TEXT,
    info_type                  ENUM( 'NONE', 'PROJECTION', 'MISC', 'DEPENDENT',
                                     'DIRECT', 'SEQUENCE_MATCH',

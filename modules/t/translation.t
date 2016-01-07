@@ -1,4 +1,4 @@
-# Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
+# Copyright [1999-2016] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
 # 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -106,6 +106,18 @@ ok($translation && $translation->stable_id() eq 'ENSP00000201961');
 #
 $translation = $ta->fetch_by_stable_id('ENSP00000201961');
 ok($translation && $translation->dbID() == 21734);
+
+$translation = $ta->fetch_by_stable_id('ENSP00000201961.1');
+ok($translation && $translation->dbID() == 21734, 'fetch_by_stable_id with version');
+
+$translation = $ta->fetch_by_stable_id('ENSP00000201961.1a');
+ok(!defined($translation), 'fetch_by_stable_id with bad version');
+
+$translation = $ta->fetch_by_stable_id_version('ENSP00000201961', 1);
+ok($translation && $translation->dbID() == 21734, 'fetch_by_stable_id_version');
+
+$translation = $ta->fetch_by_stable_id_version('ENSP00000201961', '1a');
+ok(!defined($translation), 'fetch_by_stable_id_version with bad version');
 
 #
 # test fetch_by_external_name

@@ -1,6 +1,6 @@
 =head1 LICENSE
 
-Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
+Copyright [1999-2016] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -163,22 +163,5 @@ sub stack_trace{
 
 }
 
-
-=head2 _rearrange
-
-  DEPRECATED
-
-=cut
-
-#----------------'
-sub _rearrange {
-#----------------
-    my($self,$order,@param) = @_;
-
-    deprecate('Root->_rearrange is deprecated and will be removed in e84. Please use Argument->rearrange instead');
-
-   return Bio::EnsEMBL::Utils::Argument->rearrange($order,@param);
-
-}
 
 1;
