@@ -99,6 +99,16 @@ $operon = $operon_adaptor->fetch_by_stable_id('16152-16153-4840');
 debug( "Operon->fetch_by_stable_id()" );
 ok( $operon );
 
+$operon->stable_id_version('16152-16153-4841.4');
+is($operon->stable_id, '16152-16153-4841', 'Stable id set with stable_id_version');
+is($operon->version, 4, 'Version set with stable_id_version');
+is($operon->stable_id_version, '16152-16153-4841.4', 'Stable id and version from stable_id_version');
+
+$operon->stable_id_version('16152-16153-4842');
+is($operon->stable_id, '16152-16153-4842', 'Stable id set with stable_id_version');
+is($operon->version, undef, 'Version undef from stable_id_version');
+is($operon->stable_id_version, '16152-16153-4842', 'Stable id and no version from stable_id_version');
+
 $operon = $operon_adaptor->fetch_by_stable_id('16152-16153-4840.1');
 ok($operon->stable_id eq '16152-16153-4840', 'fetch_by_stable_id with version');
 

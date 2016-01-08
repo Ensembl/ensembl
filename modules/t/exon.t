@@ -242,6 +242,16 @@ $exon = $exonad->fetch_by_stable_id('ENSE00001109603');
 debug("fetch_by_stable_id");
 ok( $exon->dbID == 162033 );
 
+$exon->stable_id_version('ENSE00000171455.4');
+is($exon->stable_id, 'ENSE00000171455', 'Stable id set with stable_id_version');
+is($exon->version, 4, 'Version set with stable_id_version');
+is($exon->stable_id_version, 'ENSE00000171455.4', 'Stable id and version from stable_id_version');
+
+$exon->stable_id_version('ENSE00000171456');
+is($exon->stable_id, 'ENSE00000171456', 'Stable id set with stable_id_version');
+is($exon->version, undef, 'Version undef from stable_id_version');
+is($exon->stable_id_version, 'ENSE00000171456', 'Stable id and no version from stable_id_version');
+
 $exon = $exonad->fetch_by_stable_id('ENSE00001109603.1');
 ok($exon->dbID == 162033, 'fetch_by_stable_id with version');
 

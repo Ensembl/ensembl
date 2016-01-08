@@ -107,6 +107,16 @@ ok($translation && $translation->stable_id() eq 'ENSP00000201961');
 $translation = $ta->fetch_by_stable_id('ENSP00000201961');
 ok($translation && $translation->dbID() == 21734);
 
+$translation->stable_id_version('ENSP00000201962.4');
+is($translation->stable_id, 'ENSP00000201962', 'Stable id set with stable_id_version');
+is($translation->version, 4, 'Version set with stable_id_version');
+is($translation->stable_id_version, 'ENSP00000201962.4', 'Stable id and version from stable_id_version');
+
+$translation->stable_id_version('ENSP00000201963');
+is($translation->stable_id, 'ENSP00000201963', 'Stable id set with stable_id_version');
+is($translation->version, undef, 'Version undef from stable_id_version');
+is($translation->stable_id_version, 'ENSP00000201963', 'Stable id and no version from stable_id_version');
+
 $translation = $ta->fetch_by_stable_id('ENSP00000201961.1');
 ok($translation && $translation->dbID() == 21734, 'fetch_by_stable_id with version');
 

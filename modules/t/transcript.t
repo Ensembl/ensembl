@@ -609,6 +609,16 @@ is( scalar(@transcripts), 1, 'Fetched all transcripts by stable_id' );
 $tr = $ta->fetch_by_translation_stable_id('ENSP00000355555');
 is( $tr->dbID, 21740, 'Fetched transcript by translation stable id' );
 
+$tr->stable_id_version('ENSP00000171455.4');
+is($tr->stable_id, 'ENSP00000171455', 'Stable id set with stable_id_version');
+is($tr->version, 4, 'Version set with stable_id_version');
+is($tr->stable_id_version, 'ENSP00000171455.4', 'Stable id and version from stable_id_version');
+
+$tr->stable_id_version('ENSP00000171456');
+is($tr->stable_id, 'ENSP00000171456', 'Stable id set with stable_id_version');
+is($tr->version, undef, 'Version undef from stable_id_version');
+is($tr->stable_id_version, 'ENSP00000171456', 'Stable id and no version from stable_id_version');
+
 $tr = $ta->fetch_by_translation_stable_id('ENSP00000355555.1');
 is( $tr->dbID, 21740, 'Fetched transcript by translation stable id with version' );
 
@@ -680,18 +690,6 @@ $tr = $ta->fetch_by_stable_id('ENST00000355555');
 is($tr->is_current, 1, 'Transcript is now current');   # 151
 
 $multi->restore;
-
-$tr = $ta->fetch_by_stable_id('ENST00000310998.1');
-ok($tr->stable_id eq 'ENST00000310998', 'Fetch by stable_id with version');
-
-$tr = $ta->fetch_by_stable_id('ENST00000310998.1a');
-ok(! defined($tr), 'Fetch by stable_id with bad version');
-
-$tr = $ta->fetch_by_stable_id_version('ENST00000310998', 1);
-ok($tr->stable_id eq 'ENST00000310998', 'fetch_by_stable_id_version');
-
-$tr = $ta->fetch_by_stable_id_version('ENST00000310998', '1a');
-ok(! defined($tr), 'fetch_by_stable_id_version with bad version');
 
 # UTR Tests
 {
