@@ -795,7 +795,7 @@ sub _dump_feature_table {
     while(my $gene = shift @genes) {
       $value = $self->features2location( [$gene] );
       $self->write( @ff, 'gene', $value );
-      $self->write( @ff, "", '/gene='.$gene->stable_id() );
+      $self->write( @ff, "", '/gene='.$gene->stable_id_version() );
 
 
       if(defined($gene->display_xref)){
@@ -817,9 +817,9 @@ sub _dump_feature_table {
           #normal transcript
           $value = $self->features2location($transcript->get_all_Exons);
           $self->write(@ff, 'mRNA', $value);
-          $self->write(@ff,''   , '/gene="'.$gene->stable_id().'"');
+          $self->write(@ff,''   , '/gene="'.$gene->stable_id_version().'"');
           $self->write(@ff,''
-                       ,'/note="transcript_id='.$transcript->stable_id().'"');
+                       ,'/note="transcript_id='.$transcript->stable_id_version().'"');
 
           # ...and a CDS section
           $value = 
@@ -827,9 +827,9 @@ sub _dump_feature_table {
           $self->write(@ff,'CDS', $value);
           my $codon_start = $self->transcript_to_codon_start($transcript);
           $self->write(@ff,''   , qq{/codon_start="${codon_start}"}) if $codon_start > 1; 
-          $self->write(@ff,''   , '/gene="'.$gene->stable_id().'"'); 
-          $self->write(@ff,''   , '/protein_id="'.$translation->stable_id().'"');
-          $self->write(@ff,''   ,'/note="transcript_id='.$transcript->stable_id().'"');
+          $self->write(@ff,''   , '/gene="'.$gene->stable_id_version().'"'); 
+          $self->write(@ff,''   , '/protein_id="'.$translation->stable_id_version().'"');
+          $self->write(@ff,''   ,'/note="transcript_id='.$transcript->stable_id_version().'"');
 
           foreach my $dbl (@{$transcript->get_all_DBLinks}) {
             my $db_xref    = '/db_xref="'.$dbl->dbname().':'.$dbl->primary_id().'"';
@@ -844,14 +844,14 @@ sub _dump_feature_table {
           #pseudogene
           $value = $self->features2location($transcript->get_all_Exons);
           $self->write(@ff, 'misc_RNA', $value);
-          $self->write(@ff,''   , '/gene="'.$gene->stable_id().'"');
+          $self->write(@ff,''   , '/gene="'.$gene->stable_id_version().'"');
           foreach my $dbl (@{$transcript->get_all_DBLinks}) {
             $value = '/db_xref="'.$dbl->dbname().':'.$dbl->primary_id().'"';
             $self->write(@ff, '', $value);
           }
           $self->write(@ff,''   , '/note="'.$transcript->biotype().'"');
           $self->write(@ff,''
-                       ,'/note="transcript_id='.$transcript->stable_id().'"');
+                       ,'/note="transcript_id='.$transcript->stable_id_version().'"');
         }
       }
     }
@@ -860,7 +860,7 @@ sub _dump_feature_table {
     foreach my $gene (@{$gene_slice->get_all_Genes(undef,undef,1)}) {
       foreach my $exon (@{$gene->get_all_Exons}) {
         $self->write(@ff,'exon', $self->features2location([$exon]));
-        $self->write(@ff,''    , '/note="exon_id='.$exon->stable_id().'"');
+        $self->write(@ff,''    , '/note="exon_id='.$exon->stable_id_version().'"');
       }
     }
   }
@@ -876,7 +876,7 @@ sub _dump_feature_table {
       push @genscan_exons, @$exons;
       $self->write(@ff, 'mRNA', $self->features2location($exons));
       $self->write(@ff, '', '/product="'.$transcript->translate()->seq().'"');
-      $self->write(@ff, '', '/note="identifier='.$transcript->stable_id.'"');
+      $self->write(@ff, '', '/note="identifier='.$transcript->stable_id_version.'"');
       $self->write(@ff, '', '/note="Derived by automated computational' .
 		   ' analysis using gene prediction method:' .
 		   $transcript->analysis->logic_name . '"');
