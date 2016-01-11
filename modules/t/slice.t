@@ -128,6 +128,16 @@ is($test_slice->seq(), 'NNN', "Test slice seq is only N's");
 
 is($test_slice->name(), '::test:1:3:1', "Slice name is $test_slice->name");
 
+# Test we can make a Slice with a seq_region_name of 0, odd but legal
+$slice = new Bio::EnsEMBL::Slice
+    (-seq_region_name   => 0,
+     -seq_region_length => $SEQ_REGION_LENGTH,
+     -start             => $START,
+     -end               => $END,
+     -strand            => $STRAND,
+     -coord_system      => $coord_system);
+
+is($slice->seq_region_name(), 0, 'Create Slice with seq_region_name of 0, odd but legal');
 
 $slice = new Bio::EnsEMBL::Slice
   (-seq_region_name   => $CHR,
