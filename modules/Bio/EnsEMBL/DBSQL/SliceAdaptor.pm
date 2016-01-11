@@ -2121,7 +2121,7 @@ sub store {
   my $sr_len = $slice->length();
   my $sr_name  = $slice->seq_region_name();
 
-  if(defined($sr_name)) {
+  if($sr_name eq '') {
     throw("Slice must have valid seq region name.");
   }
 
