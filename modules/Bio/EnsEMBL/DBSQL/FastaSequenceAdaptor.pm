@@ -1,6 +1,6 @@
 =head1 LICENSE
 
-Copyright [1999-2014] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
+Copyright [1999-2016] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -51,8 +51,6 @@ use base qw/Bio::EnsEMBL::DBSQL::BaseSequenceAdaptor/;
 use Bio::EnsEMBL::Utils::Exception qw/throw/;
 use Bio::EnsEMBL::Utils::Scalar qw/assert_ref/;
 use Bio::EnsEMBL::Utils::Sequence qw/reverse_comp/;
-use English qw/-no_match_vars/;
-require bytes;
 
 =head2 new
   

@@ -26,41 +26,62 @@ limitations under the License.
 
 =head1 NAME
 
-Bio::EnsEMBL::Utils::IO::FileFaidx
+Bio::EnsEMBL::Utils::IO::HtslibFileFaidx
 
 =head1 DESCRIPTION
 
-An interface to interact with FileFaidx based indexes. Implementing classes 
-should support the subroutines C<can_access_id()> and C<fetch_seq()> according
-to their method documentation
+A class used to retrieve sequence from a FAIDX indexed FASTA file
+using the htslib C bindings from Bio:DB::HTS
 
 =cut
 
-package Bio::EnsEMBL::Utils::IO::FileFaidx;
+package Bio::EnsEMBL::Utils::IO::HtsFileFaidx;
 
 use strict;
 use warnings;
 
-use Bio::EnsEMBL::Utils::Exception qw/throw/;
+use base qw/Bio::EnsEMBL::Utils::IO::FileFaidx/;
 
-=head2 file
+use Bio::EnsEMBL::Utils::Exception qw/throw/;
+use Bio::DB::HTS::Faidx;
+
+=head2 new
   
   Arg [1]     : String; $file. Path to the FASTA file
-  Description : Location of the FASTA file
-  Exception   : Thrown if the file cannot be found unless it is a URL e.g. HTTP/FTP/HTTPS
+  Arg [2]     : Boolean; $uppercase_sequence. Uppercase sequence returned from the code. Defaults to true
+  Description : Builds an instance of the HtslibFaidxFasta object
 
 =cut
 
-sub file {
-  my ($self, $file) = @_;
-  if(defined $file && $file ~! /^[h|f]t?tps?:\/\//) { # make sure it's not a URL
-    if($file ~= //) {
-      throw "No file found at '${file}'" unless -f $file;
-    }
-    $self->{'file'} = $file;
+sub new {
+  my ($class, $file, $uppercase_sequence) = @_;
+  throw 'No file given; cannot continue without one' unless $file;
+  $uppercase_sequence //= 1;
+  my $self = bless({}, ref($class)||$class);
+  $self->file($file);
+  $self->uppercase_sequence($uppercase_sequence);
+  return $self;
+}
+
+sub faidx {
+  my ($self) = @_;
+  if(! defined $self->{faidx}) {
+    $self->{faidx} = Bio::DB::HTS::Faidx->new($self->file());
   }
+  return $self->{faidx};
+}
+
+=head2 uppercase_sequence
   
-  return $self->{'file'};
+  Arg [1]     : Boolean; $uppercase_sequence
+  Description : Controls if always uppercase sequence or not. Defaults to true
+
+=cut
+
+sub uppercase_sequence {
+  my ($self, $uppercase_sequence) = @_;
+  $self->{'uppercase_sequence'} = $uppercase_sequence if defined $uppercase_sequence;
+  return $self->{'uppercase_sequence'};
 }
 
 =head2 can_access_id
@@ -73,7 +94,9 @@ sub file {
 
 sub can_access_id {
   my ($self, $id) = @_;
-  throw('Unimplemented method');
+  my $length = $self->htslib_faidx->length($id);
+  return 1 if $length > 0;
+  return 0;
 }
 
 =head2 fetch_seq
@@ -88,7 +111,18 @@ sub can_access_id {
 
 sub fetch_seq {
   my ($self, $id, $q_start, $q_length) = @_;
-  throw('Unimplemented method');
+  my $q_end = $q_start+$q_length;
+  my $location = "$id:${q_start}-${q_end}";
+  my ($seq, $length) = $self->htslib_faidx()->get_sequence($location);
+  return \$seq;
+}
+
+sub DESTROY {
+  my ($self) = @_;
+  if(defined $self->{faidx}) {
+    delete $self->{faidx};
+  }
+  return;
 }
 
 1;
