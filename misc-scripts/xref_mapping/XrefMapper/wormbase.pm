@@ -1,6 +1,6 @@
 =head1 LICENSE
 
-Copyright [1999-2016] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
+Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -33,11 +33,11 @@ sub set_methods{
  
   my $default_method = 'ExonerateGappedBest1';
   my %override_method_for_source = (  
-           ExonerateGappedBest5 => ['RefSeq_mRNA',
-                                    'RefSeq_mRNA_predicted', 
-                                    'RefSeq_ncRNA', 
-                                    'RefSeq_ncRNA_predicted' ],
-         );
+    ExonerateGappedBest5_subtran => ['RefSeq_mRNA',
+                                     'RefSeq_mRNA_predicted', 
+                                     'RefSeq_ncRNA', 
+                                     'RefSeq_ncRNA_predicted' ],
+      );
 
   return $default_method, \%override_method_for_source;
 }
@@ -170,9 +170,9 @@ sub gene_description_sources {
 sub gene_description_filter_regexps {
 
   return ( '^(Protein \S+\s*)+$',
-           '^Uncharacterized protein\s*$',
-           '^Putative uncharacterized protein\s*$',
-           '^Hypothetical protein\s*$',
+           '^Uncharacterized protein\s*',
+           '^Putative uncharacterized protein\s*',
+           '^Hypothetical protein\s*',
    );
 
 }
