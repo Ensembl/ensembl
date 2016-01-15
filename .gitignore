@@ -35,3 +35,4 @@ MultiTestDB.conf
 *.frozen.conf
 bioperl*.zip
 /modules/t/CLEAN.t
+misc-scripts/xref_mapping/sql/populate_metadata.sql
