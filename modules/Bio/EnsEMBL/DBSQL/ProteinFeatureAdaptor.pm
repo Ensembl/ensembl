@@ -223,7 +223,7 @@ sub store {
   }
 
   my $sth = $self->prepare(q{
-    INSERT INTO protein_feature
+    INSERT IGNORE INTO protein_feature
                 ( translation_id,
                   seq_start,
                   seq_end,
