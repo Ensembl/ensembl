@@ -154,9 +154,10 @@ sub run_script {
               '-user'     => $ofuser,
               '-pass'     => $ofpass,
               '-dbname'   => $ofdbname,
-              '-species'  => $species_name.$ofhost,
+              '-species'  => $species_name,
               '-group'    => 'otherfeatures',
        );
+       $otherf_dba->dnadb($core_dba);
       } else {
 # Else database should be on staging
       $registry->load_registry_from_multiple_dbs( 
