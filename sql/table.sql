@@ -315,6 +315,8 @@ INSERT INTO meta (species_id, meta_key, meta_value)
   VALUES (NULL, 'patch', 'patch_83_84_c.sql|protein_feature_unique');
 INSERT INTO meta (species_id, meta_key, meta_value)
   VALUES (NULL, 'patch', 'patch_83_84_d.sql|longer_synonym');
+INSERT INTO meta (species_id, meta_key, meta_value)
+  VALUES (NULL, 'patch', 'patch_83_84_e.sql|nullable_versions');
 
 
 /**
@@ -699,7 +701,7 @@ CREATE TABLE exon (
   is_constitutive             BOOLEAN NOT NULL DEFAULT 0,
 
   stable_id                   VARCHAR(128) DEFAULT NULL,
-  version                     SMALLINT UNSIGNED NOT NULL DEFAULT 1,
+  version                     SMALLINT UNSIGNED DEFAULT NULL,
   created_date                DATETIME NOT NULL DEFAULT '0000-00-00 00:00:00',
   modified_date               DATETIME NOT NULL DEFAULT '0000-00-00 00:00:00',
 
@@ -780,7 +782,7 @@ CREATE TABLE gene (
   is_current                  BOOLEAN NOT NULL DEFAULT 1,
   canonical_transcript_id     INT(10) UNSIGNED NOT NULL,
   stable_id                   VARCHAR(128) DEFAULT NULL,
-  version                     SMALLINT UNSIGNED NOT NULL DEFAULT 1,
+  version                     SMALLINT UNSIGNED DEFAULT NULL,
   created_date                DATETIME NOT NULL DEFAULT '0000-00-00 00:00:00',
   modified_date               DATETIME NOT NULL DEFAULT '0000-00-00 00:00:00',
 
@@ -992,7 +994,7 @@ CREATE TABLE transcript (
   is_current                  BOOLEAN NOT NULL DEFAULT 1,
   canonical_translation_id    INT(10) UNSIGNED,
   stable_id                   VARCHAR(128) DEFAULT NULL,
-  version                     SMALLINT UNSIGNED NOT NULL DEFAULT 1,
+  version                     SMALLINT UNSIGNED DEFAULT NULL,
   created_date                DATETIME NOT NULL DEFAULT '0000-00-00 00:00:00',
   modified_date               DATETIME NOT NULL DEFAULT '0000-00-00 00:00:00',
 
@@ -1084,7 +1086,7 @@ CREATE TABLE translation (
   seq_end                     INT(10) NOT NULL,       # relative to exon start
   end_exon_id                 INT(10) UNSIGNED NOT NULL,
   stable_id                   VARCHAR(128) DEFAULT NULL,
-  version                     SMALLINT UNSIGNED NOT NULL DEFAULT 1,
+  version                     SMALLINT UNSIGNED DEFAULT NULL,
   created_date                DATETIME NOT NULL DEFAULT '0000-00-00 00:00:00',
   modified_date               DATETIME NOT NULL DEFAULT '0000-00-00 00:00:00',
 
@@ -2399,7 +2401,7 @@ CREATE TABLE operon (
   display_label             VARCHAR(255) DEFAULT NULL,
   analysis_id               SMALLINT UNSIGNED NOT NULL,
   stable_id                 VARCHAR(128) DEFAULT NULL,
-  version                   SMALLINT UNSIGNED NOT NULL DEFAULT 1,
+  version                   SMALLINT UNSIGNED DEFAULT NULL,
   created_date              DATETIME NOT NULL DEFAULT '0000-00-00 00:00:00',
   modified_date             DATETIME NOT NULL DEFAULT '0000-00-00 00:00:00',
 
@@ -2443,7 +2445,7 @@ CREATE TABLE operon_transcript (
   display_label             VARCHAR(255) DEFAULT NULL,
   analysis_id               SMALLINT UNSIGNED NOT NULL,
   stable_id                 VARCHAR(128) DEFAULT NULL,
-  version                   SMALLINT UNSIGNED NOT NULL DEFAULT 1,
+  version                   SMALLINT UNSIGNED DEFAULT NULL,
   created_date              DATETIME NOT NULL DEFAULT '0000-00-00 00:00:00',
   modified_date             DATETIME NOT NULL DEFAULT '0000-00-00 00:00:00',
 
