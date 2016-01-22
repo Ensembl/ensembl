@@ -1622,7 +1622,11 @@ $where_sql";
                                 ? $self->fetch_by_dbID($source_associated_xref_id)
                                 : undef );
             if ( defined($associated_xref) ) {
-              $exDB->add_linked_associated_xref( $associated_xref, $source_associated_xref, $condition_type || '', $associate_group_id, $associate_group_rank );
+              my $ct = '';
+              if ( defined $condition_type ) {
+                $ct = $condition_type;
+              }
+              $exDB->add_linked_associated_xref( $associated_xref, $source_associated_xref, $ct, $associate_group_id, $associate_group_rank );
             }
           }
 
@@ -1673,7 +1677,11 @@ $where_sql";
                                 ? $self->fetch_by_dbID($source_associated_xref_id)
                                 : undef );
         if ( defined($associated_xref) ) {
-          $seen{$refID}->add_linked_associated_xref( $associated_xref, $source_associated_xref, $condition_type || '', $associate_group_id, $associate_group_rank );
+          my $ct = '';
+          if ( defined $condition_type ) {
+            $ct = $condition_type;
+          }
+          $seen{$refID}->add_linked_associated_xref( $associated_xref, $source_associated_xref, $ct, $associate_group_id, $associate_group_rank );
         }
         
         $linkage_types{$refID}->{$linkage_key} = 1;
