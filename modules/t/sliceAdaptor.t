@@ -617,6 +617,9 @@ test_toplevel_location('1: 100', 'chromosome', '1', 100, 246874334);
 test_toplevel_location('1:100..2000000000', 'chromosome', '1', 100, 246874334);
 test_toplevel_location('1:100..2E9', 'chromosome', '1', 100, 246874334);
 
+# Try with optional g. addition
+test_toplevel_location('1:g.1_1000', 'chromosome', '1', 1, 1000);
+
 # Try chr
 my $ucsc = 1;
 test_toplevel_location('chr1: 1-1,000', 'chromosome', '1', 1, 1000, 1, $ucsc);
