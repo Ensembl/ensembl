@@ -222,8 +222,10 @@ sub store {
 	$db->get_AnalysisAdaptor->store($analysis);
   }
 
-  my $sth = $self->prepare(q{
-    INSERT INTO protein_feature
+  my $insert_ignore = $self->insert_ignore_clause();
+
+  my $sth = $self->prepare("
+    ${insert_ignore} INTO protein_feature
                 ( translation_id,
                   seq_start,
                   seq_end,
@@ -236,7 +238,7 @@ sub store {
                   perc_ident,
                   evalue     )
          VALUES ( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ? )
-  });
+  ");
 
   $sth->bind_param(1,  $translation_id,        SQL_INTEGER);
   $sth->bind_param(2,  $feature->start,        SQL_INTEGER);
