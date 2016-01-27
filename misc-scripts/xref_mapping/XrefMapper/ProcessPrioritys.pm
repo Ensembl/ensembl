@@ -259,12 +259,13 @@ SEQCP
 sub process_dependents{
   my ($self, $old_master_xref_id, $new_master_xref_id, $object_type, $best_ensembl_id) = @_;
 
+# $best_ensembl_id = list of e! IDs from highest priority xref for this accession
+# master xref IDs are entries for the current accession via different methods. We take dependent xrefs from the old and add to the new
+# possible that $object_type does not correspond to all of the $best_ensembl_id, only some
+# get $object_type from object_xref of new_master_xref instead of trusting calling code
+# cache object-type to id mapping
   my $dep_sth           = $self->xref->dbc->prepare("select distinct dependent_xref_id, dx.linkage_annotation, dx.linkage_source_id from dependent_xref dx where dx.master_xref_id = ?");
   my $insert_dep_x_sth  = $self->xref->dbc->prepare("insert into dependent_xref(master_xref_id, dependent_xref_id, linkage_annotation, linkage_source_id) values(?, ?, ?, ?)");
-  my $remove_dep_ox_sth = $self->xref->dbc->prepare("delete ix, g from object_xref ox left join identity_xref ix on ix.object_xref_id = ox.object_xref_id left join go_xref g on g.object_xref_id = ox.object_xref_id where master_xref_id = ? and ensembl_object_type = ? and xref_id = ? and ensembl_id = ?");
-  my $old_ens_id_sth    = $self->xref->dbc->prepare("select distinct ensembl_id from object_xref where xref_id = ?");
-  my $update_dep_ox_sth = $self->xref->dbc->prepare("update ignore object_xref set ox_status = 'FAILED_PRIORITY' where master_xref_id = ? and ensembl_object_type = ? and xref_id = ? and ensembl_id = ? and ox_status = 'DUMP_OUT'");
-  my $clean_dep_ox_sth  = $self->xref->dbc->prepare("delete from object_xref where master_xref_id = ? and ensembl_object_type = ? and xref_id = ? and ensembl_id = ? and ox_status = 'DUMP_OUT'");
   my $insert_dep_ox_sth = $self->xref->dbc->prepare("insert ignore into object_xref(master_xref_id, ensembl_object_type, ensembl_id, linkage_type, ox_status, xref_id) values(?, ?, ?, 'DEPENDENT', 'DUMP_OUT', ?)");
   my $dep_ox_sth        = $self->xref->dbc->prepare("select object_xref_id from object_xref where master_xref_id = ? and ensembl_object_type = ? and ensembl_id = ? and linkage_type = 'DEPENDENT' AND ox_status = 'DUMP_OUT' and xref_id = ?");
   my $insert_dep_go_sth = $self->xref->dbc->prepare("insert ignore into go_xref values(?, ?, ?)");
@@ -272,57 +273,33 @@ sub process_dependents{
 
   my @master_xrefs;
   my @old_ensembl_ids;
-  my $old_ensembl_id;
   my $recursive = 0;
 
-  $old_ens_id_sth->execute($old_master_xref_id);
-  $old_ens_id_sth->bind_columns(\$old_ensembl_id);
-  my $skip = 0;
-  while ($old_ens_id_sth->fetch()) {
-    $skip = 0;
-    foreach my $best_ensembl_id (@$best_ensembl_id) {
-      if ($old_ensembl_id eq $best_ensembl_id) {
-        $skip = 1;
-        last;
-      }
-    }
-    if ($skip) {
-      next;
-    }
-    push @old_ensembl_ids, $old_ensembl_id;
-  }
-  $old_ens_id_sth->finish();
+  my @old_ensembl_ids = _get_old_ensembl_ids_associated_with_xref($old_master_xref_id, $best_ensembl_id);
 
   push @master_xrefs, $old_master_xref_id;
 
   while(my $xref_id = pop(@master_xrefs)){
     my ($dep_xref_id, $linkage_type, $new_object_xref_id, $linkage_source_id);
+
+    ## Loop through all dependent xrefs of current master xref
     $dep_sth->execute($xref_id);
     $dep_sth->bind_columns(\$dep_xref_id, \$linkage_type, \$linkage_source_id);
-    ## Loop through all dependent xrefs
     while($dep_sth->fetch()){
-      ## Add dependent to priority xref if it is the first master
-      if (!$recursive) {
+      ## Add dependent to priority xref if it is the first in the chain.
+      unless ($recursive) {
         $insert_dep_x_sth->execute($new_master_xref_id, $dep_xref_id, $linkage_type, $linkage_source_id);
-        foreach my $best_ensembl_id (@$best_ensembl_id) {
-          $remove_dep_ox_sth->execute($xref_id, $object_type, $dep_xref_id, $best_ensembl_id);
-          $update_dep_ox_sth->execute($xref_id, $object_type, $dep_xref_id, $best_ensembl_id);
-          $clean_dep_ox_sth->execute($xref_id, $object_type, $dep_xref_id, $best_ensembl_id);
-        }
+        _detach_object_xref($xref_id, $object_type, $dep_xref_id, $best_ensembl_id);
       }
-      ## object_xref for dismissed xref set to FAILED_PRIORITY
+      ## object_xref for dismissed old xref set to FAILED_PRIORITY
       ## also delete any leftover identity or go xrefs
-      foreach my $old_id (@old_ensembl_ids) {
-        $remove_dep_ox_sth->execute($xref_id, $object_type, $dep_xref_id, $old_id);
-        $update_dep_ox_sth->execute($xref_id, $object_type, $dep_xref_id, $old_id);
-        $clean_dep_ox_sth->execute($xref_id, $object_type, $dep_xref_id, $old_id);
-      }
+      _detach_object_xref($xref_id, $object_type, $dep_xref_id, $@old_ensembl_ids);
       ## Loop through all ensembl ids mapped to priority xref
       foreach my $best_ensembl_id (@$best_ensembl_id) {
         ## new object_xref for each transfered mapping
         $insert_dep_ox_sth->execute($new_master_xref_id, $object_type, $best_ensembl_id, $dep_xref_id);
+        ## If there is a linkage_type, it is a go xref
         if ($linkage_type) {
-          ## If there is a linkage_type, it is a go xref
           ## Fetch the newly created object_xref to add them to go_xref
           $dep_ox_sth->execute($new_master_xref_id, $object_type, $best_ensembl_id, $dep_xref_id);
           $dep_ox_sth->bind_columns(\$new_object_xref_id);
@@ -340,12 +317,68 @@ sub process_dependents{
 
   $dep_sth->finish();
   $insert_dep_x_sth->finish();
-  $remove_dep_ox_sth->finish();
   $clean_dep_ox_sth->finish();
   $insert_dep_ox_sth->finish();
   $dep_ox_sth->finish();
   $insert_dep_go_sth->finish();
+  $insert_ix_sth->finish();
+}
+
+# broken out of process_dependents.
+# Get a list of IDs that are not associated with the new xref
+sub _get_old_ensembl_ids_associated_with_xref {
+  my $old_master_xref_id = shift;
+  my $new_ensembl_ids = shift;
+  my %new_id_lookup; 
+  map { $new_id_lookup{$_} = 1 } @$new_ensembl_ids;
+
+  my $old_ensembl_id;
+  my @old_ensembl_ids;
+  my $old_ens_id_sth = $self->xref->dbc->prepare("select distinct ensembl_id from object_xref where xref_id = ?");
+
+  $old_ens_id_sth->execute($old_master_xref_id);
+  $old_ens_id_sth->bind_columns(\$old_ensembl_id);
+  my $skip = 0;
+  while ($old_ens_id_sth->fetch()) {
+    unless (exists $new_id_lookup{$old_ensembl_id}) {
+      push @old_ensembl_ids, $old_ensembl_id;
+    }
+  }
+  $old_ens_id_sth->finish();
+  return @old_ensembl_ids;
+}
+
+sub _detach_object_xref {
+  my ($xref_id, $object_type, $dep_xref_id, $ids) = @_;
+
+  my $remove_dep_ox_sth = $self->xref->dbc->prepare(
+    "DELETE ix, g FROM object_xref ox \
+     LEFT JOIN identity_xref ix ON ix.object_xref_id = ox.object_xref_id \
+     LEFT JOIN go_xref g ON g.object_xref_id = ox.object_xref_id \
+     WHERE master_xref_id = ? AND ensembl_object_type = ? AND xref_id = ? AND ensembl_id = ?"
+  );
+  my $update_dep_ox_sth = $self->xref->dbc->prepare(
+    "UPDATE IGNORE object_xref SET ox_status = 'FAILED_PRIORITY' \
+    WHERE master_xref_id = ? AND ensembl_object_type = ? AND xref_id = ? AND ensembl_id = ? AND ox_status = 'DUMP_OUT'"
+  );
+  my $clean_dep_ox_sth  = $self->xref->dbc->prepare(
+    "DELETE FROM object_xref \
+    WHERE master_xref_id = ? AND ensembl_object_type = ? AND xref_id = ? AND ensembl_id = ? AND ox_status = 'DUMP_OUT'"
+  );
+
+  foreach my $id (@$ids) {
+    $remove_dep_ox_sth->execute($xref_id, $object_type, $dep_xref_id, $id);
+    # change status of object_xref to FAILED_PRIORITY for record keeping
+    $update_dep_ox_sth->execute($xref_id, $object_type, $dep_xref_id, $id);
+    # delete the duplicates.
+    $clean_dep_ox_sth->execute($xref_id, $object_type, $dep_xref_id, $id);
+  }
+
+  $remove_dep_ox_sth->finish();
+  $update_dep_ox_sth->finish();
+  $clean_dep_ox_sth->finish();
 
 }
+
 
 1;
