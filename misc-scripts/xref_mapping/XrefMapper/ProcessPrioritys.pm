@@ -40,7 +40,7 @@ use IPC::Open3;
 # 
 # 3) for each of the source names 
 #    set ox_status to 'FAILED_PRIORITY' for those not the best match
-#        Also do this fro its depenedents
+#        Also do this for its depenedents
 #
 
 sub new {
@@ -84,17 +84,13 @@ sub process {
 
   my @names = $self->get_priority_names();
 
-  print "The foillowing will be processed as priority xrefs\n" if($self->verbose);
+  print "The following will be processed as priority xrefs\n" if($self->verbose);
   foreach my $name (@names){
     print "\t$name\n" if($self->verbose);
   }
 
   my $update_ox_sth = $self->xref->dbc->prepare('update object_xref set ox_status = "FAILED_PRIORITY" where object_xref_id = ?');
   my $update_x_sth  = $self->xref->dbc->prepare("update xref set dumped = 'NO_DUMP_ANOTHER_PRIORITY' where xref_id = ?");
-
-  #
-  # Change of tact here to make the sql easier...
-  #
 
   # 1) Set to failed all those that have no object xrefs.
 
@@ -179,7 +175,7 @@ SEQCP
     my @gone;
     while($sth->fetch){
       if($last_acc eq $acc){
-	if($xref_id != $best_xref_id){
+        if($xref_id != $best_xref_id){
           if ($xref_id == $last_xref_id) {
             $seen = 1;
           } else {
@@ -197,7 +193,7 @@ SEQCP
             $best_ox_sth->fetch();
             $idx_copy_sth->execute($query_identity, $target_identity, $hit_start, $hit_end, $translation_start, $translation_end, $cigar_line, $score, $evalue, $best_object_xref_id);
           }
-	  if($status eq "DUMP_OUT"){
+          if($status eq "DUMP_OUT"){
             $update_ox_sth->execute($object_xref_id);
 ## If it is the first time processing this xref_id, also process dependents and update status
             if (!$seen) {
@@ -207,33 +203,33 @@ SEQCP
               $self->process_dependents($xref_id, $best_xref_id, $object_type, \@best_ensembl_id);
             }
           }
-	  else{
-	    $update_x_sth->execute($xref_id);
-	  }
-	} else {
+        else{
+          $update_x_sth->execute($xref_id);
+        }
+      } else {
           ## There might be several mappings for the best priority
           push @best_ensembl_id, $ensembl_id;
         }
-	if(@gone){ #best priority failed so anothre one now found so set dumped;
-	  if($last_name eq $acc){
-	    foreach my $d (@gone){
-	      $update_x_sth->execute($d);
-	    }
-	  }
-	}
+        if(@gone){ #best priority failed so another one now found so set dumped;
+          if($last_name eq $acc){
+            foreach my $d (@gone){
+              $update_x_sth->execute($d);
+            }
+          }
+        }
       }
       else{ # NEW
-	if($status eq "DUMP_OUT"){
-	  $last_acc = $acc;
-	  $best_xref_id = $xref_id;
-          @best_ensembl_id = ($ensembl_id);
-	  if(@gone and $last_name eq $acc){
-	    foreach my $d (@gone){
-	      $update_x_sth->execute($d);
-	    }
-	    @gone=();
-	  }
-	}
+        if($status eq "DUMP_OUT"){
+          $last_acc = $acc;
+          $best_xref_id = $xref_id;
+                @best_ensembl_id = ($ensembl_id);
+          if(@gone and $last_name eq $acc){
+            foreach my $d (@gone){
+              $update_x_sth->execute($d);
+            }
+            @gone=();
+          }
+        }
 	else{
 	  if($last_name eq $acc){
 	    push @gone, $xref_id;	  }
@@ -254,11 +250,6 @@ SEQCP
   $best_ox_sth->finish;
   $idx_copy_sth->finish;
   $syn_copy_sth->finish;
-
-
-# We want to make sure that if a priority xref is NOT MAPPEd then we only
-
-
 
   $sth = $self->xref->dbc->prepare("insert into process_status (status, date) values('prioritys_flagged',now())");
   $sth->execute();
