@@ -1,41 +1,52 @@
-language: perl
+language: "perl"
+
 perl:
-- '5.14'
-- '5.12'
-- '5.10'
+  - "5.14"
+  - "5.12"
+  - "5.10"
+
 env:
-- COVERALLS=true  DB=mysql
-- COVERALLS=false DB=mysql
-- COVERALLS=false DB=sqlite
+  - COVERALLS=true  DB=mysql
+  - COVERALLS=false DB=mysql
+  - COVERALLS=false DB=sqlite
+  
 sudo: false
+  
 addons:
   apt:
     packages:
     - unzip
+
 before_install:
-- git clone --branch master --depth 1 https://github.com/Ensembl/ensembl-test.git
-- git clone --branch master --depth 1 https://github.com/Ensembl/ensembl-variation.git
-- wget https://github.com/bioperl/bioperl-live/archive/bioperl-release-1-2-3.zip
-- unzip bioperl-release-1-2-3.zip
+    - git clone --branch master --depth 1 https://github.com/Ensembl/ensembl-test.git
+    - git clone --branch master --depth 1 https://github.com/Ensembl/ensembl-variation.git
+    - wget http://bioperl.org/DIST/BioPerl-1.6.1.tar.gz
+    - tar zxvf BioPerl-1.6.1.tar.gz
+
+
 install:
-- cpanm -v --installdeps --notest .
-- cpanm -n Devel::Cover::Report::Coveralls
-- cpanm -n DBD::SQLite
-- cp travisci/MultiTestDB.conf.travisci.mysql  modules/t/MultiTestDB.conf.mysql
-- cp travisci/MultiTestDB.conf.travisci.SQLite modules/t/MultiTestDB.conf.SQLite
-script: ./travisci/harness.sh
+    - cpanm -v --installdeps --notest .
+    - cpanm -n Devel::Cover::Report::Coveralls
+    - cpanm -n DBD::SQLite
+    - cp travisci/MultiTestDB.conf.travisci.mysql  modules/t/MultiTestDB.conf.mysql
+    - cp travisci/MultiTestDB.conf.travisci.SQLite modules/t/MultiTestDB.conf.SQLite
+
+script: "./travisci/harness.sh"
+
+# Get the matrix to only build coveralls support when on 5.10
 matrix:
   exclude:
-  - perl: '5.10'
-    env: COVERALLS=false DB=mysql
-  - perl: '5.12'
-    env: COVERALLS=false DB=sqlite
-  - perl: '5.12'
-    env: COVERALLS=true  DB=mysql
-  - perl: '5.14'
-    env: COVERALLS=false DB=sqlite
-  - perl: '5.14'
-    env: COVERALLS=true  DB=mysql
+    - perl: "5.10"
+      env: COVERALLS=false DB=mysql
+    - perl: "5.12"
+      env: COVERALLS=false DB=sqlite
+    - perl: "5.12"
+      env: COVERALLS=true  DB=mysql
+    - perl: "5.14"
+      env: COVERALLS=false DB=sqlite
+    - perl: "5.14"
+      env: COVERALLS=true  DB=mysql
+
 notifications:
   email:
     on_success: always
