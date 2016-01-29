@@ -21,7 +21,7 @@ before_install:
     - git clone --branch master --depth 1 https://github.com/Ensembl/ensembl-test.git
     - git clone --branch master --depth 1 https://github.com/Ensembl/ensembl-variation.git
     - wget http://bioperl.org/DIST/BioPerl-1.6.1.tar.gz
-    - tar zxvf BioPerl-1.6.1.tar.gz
+    - mkdir bioperl-live && tar zxvf BioPerl-1.6.1.tar.gz -C bioperl-live --strip-components 1
 
 
 install:
