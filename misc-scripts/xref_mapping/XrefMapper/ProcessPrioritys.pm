@@ -125,7 +125,7 @@ FSQL
         WHERE ox.object_xref_id = ix.object_xref_id 
           AND ox.xref_id = x.xref_id
           AND s.source_id = x.source_id
-          AND ox_status not in ('FAILED_CUTOFF')
+          AND ox_status != 'FAILED_CUTOFF'
           AND s.name = ?
          ORDER BY x.accession DESC, s.priority ASC , identity DESC, x.xref_id DESC
 NEWS
@@ -256,6 +256,7 @@ SEQCP
   $sth->finish;
 }
 
+my %ox_to_type; # Go go global!
 sub process_dependents{
   my ($self, $old_master_xref_id, $new_master_xref_id, $object_type, $best_ensembl_id) = @_;
 
@@ -270,18 +271,23 @@ sub process_dependents{
   my $dep_ox_sth        = $self->xref->dbc->prepare("select object_xref_id from object_xref where master_xref_id = ? and ensembl_object_type = ? and ensembl_id = ? and linkage_type = 'DEPENDENT' AND ox_status = 'DUMP_OUT' and xref_id = ?");
   my $insert_dep_go_sth = $self->xref->dbc->prepare("insert ignore into go_xref values(?, ?, ?)");
   my $insert_ix_sth     = $self->xref->dbc->prepare("insert ignore into identity_xref(object_xref_id, query_identity, target_identity) values(?, 100, 100)");
-  my $get_type_sth      = $self->xref->dbc->prepare("SELECT ensembl_object_type FROM object_xref WHERE object_xref_id = ?");
+  my $get_type_sth      = $self->xref->dbc->prepare("SELECT ensembl_object_type FROM object_xref WHERE xref_id = ?");
 
   my @master_xrefs = ($old_master_xref_id);
   my $recursive = 0;
 
   my @old_ensembl_ids = $self->_get_old_ensembl_ids_associated_with_xref($old_master_xref_id, $best_ensembl_id);
-
+  
   while(my $xref_id = pop(@master_xrefs)){
     my ($dep_xref_id, $linkage_type, $new_object_xref_id, $linkage_source_id);
     # determine object type of current master xref
-    $get_type_sth->execute($xref_id);
-    ($object_type) = $get_type_sth->fetchrow_array();
+    if (exists $ox_to_type{$xref_id}) {
+      $object_type = $ox_to_type{$xref_id};
+    } else {
+      $get_type_sth->execute($xref_id);
+      ($object_type) = $get_type_sth->fetchrow_array();
+      $ox_to_type{$xref_id} = $object_type;  
+    }
     ## Loop through all dependent xrefs of current master xref
     $dep_sth->execute($xref_id);
     $dep_sth->bind_columns(\$dep_xref_id, \$linkage_type, \$linkage_source_id);
