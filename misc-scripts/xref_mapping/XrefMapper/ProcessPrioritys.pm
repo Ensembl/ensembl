@@ -256,58 +256,65 @@ SEQCP
   $sth->finish;
 }
 
-my %ox_to_type; # Go go global!
 sub process_dependents{
-  my ($self, $old_master_xref_id, $new_master_xref_id, $object_type, $best_ensembl_id) = @_;
+  my ($self, $old_master_xref_id, $new_master_xref_id, $object_type, $best_ensembl_ids) = @_;
 
-# $best_ensembl_id = list of e! IDs from highest priority xref for this accession
-# master xref IDs are entries for the current accession via different methods. We take dependent xrefs from the old and add to the new
-# $object_type may not correspond to all of the $best_ensembl_id, only some. This is where the GO xref problem arises for Zebrafish
+# $best_ensembl_ids = list of e! IDs from highest priority xref for this accession
+# master xref IDs are entries for the current accession via various methods. We take dependent xrefs from the old and add to the new
+# $object_type may not correspond to all of the $best_ensembl_ids, only some. This is where the GO xref problem arises for Zebrafish
 # Get $object_type from object_xref of new_master_xref instead of trusting calling code
-# cache object-type to id mapping
+
   my $dep_sth           = $self->xref->dbc->prepare("select distinct dependent_xref_id, dx.linkage_annotation, dx.linkage_source_id from dependent_xref dx where dx.master_xref_id = ?");
   my $insert_dep_x_sth  = $self->xref->dbc->prepare("insert into dependent_xref(master_xref_id, dependent_xref_id, linkage_annotation, linkage_source_id) values(?, ?, ?, ?)");
   my $insert_dep_ox_sth = $self->xref->dbc->prepare("insert ignore into object_xref(master_xref_id, ensembl_object_type, ensembl_id, linkage_type, ox_status, xref_id) values(?, ?, ?, 'DEPENDENT', 'DUMP_OUT', ?)");
   my $dep_ox_sth        = $self->xref->dbc->prepare("select object_xref_id from object_xref where master_xref_id = ? and ensembl_object_type = ? and ensembl_id = ? and linkage_type = 'DEPENDENT' AND ox_status = 'DUMP_OUT' and xref_id = ?");
   my $insert_dep_go_sth = $self->xref->dbc->prepare("insert ignore into go_xref values(?, ?, ?)");
   my $insert_ix_sth     = $self->xref->dbc->prepare("insert ignore into identity_xref(object_xref_id, query_identity, target_identity) values(?, 100, 100)");
-  my $get_type_sth      = $self->xref->dbc->prepare("SELECT ensembl_object_type FROM object_xref WHERE xref_id = ?");
+  my $get_type_sth      = $self->xref->dbc->prepare("SELECT ensembl_object_type FROM object_xref WHERE ensembl_id = ? AND xref_id = ?");
 
   my @master_xrefs = ($old_master_xref_id);
   my $recursive = 0;
 
-  my @old_ensembl_ids = $self->_get_old_ensembl_ids_associated_with_xref($old_master_xref_id, $best_ensembl_id);
+  my @old_ensembl_ids = $self->_get_old_ensembl_ids_associated_with_xref($old_master_xref_id, $best_ensembl_ids);
   
-  while(my $xref_id = pop(@master_xrefs)){
+  # determine object type of best_ensembl_ids. This will be the only type left once we've deleted the other object_xrefs
+  my %splonk;
+  foreach my $ens_id (@$best_ensembl_ids) {
+    $get_type_sth->execute();
+    my ($type) = $get_type_sth->fetchall_array($ens_id,$new_master_xref_id);
+    $splonk{$ens_id} = $type;
+  }
+
+  ## Loop through all dependent xrefs of old master xref, and recurse
+  while(my $xref_id = pop(@master_xrefs)){ 
     my ($dep_xref_id, $linkage_type, $new_object_xref_id, $linkage_source_id);
-    # determine object type of current master xref
-    if (exists $ox_to_type{$xref_id}) {
-      $object_type = $ox_to_type{$xref_id};
-    } else {
-      $get_type_sth->execute($xref_id);
-      ($object_type) = $get_type_sth->fetchrow_array();
-      $ox_to_type{$xref_id} = $object_type;  
-    }
-    ## Loop through all dependent xrefs of current master xref
+    
+    # Get dependent xrefs, be they gene, transcript or translation
     $dep_sth->execute($xref_id);
     $dep_sth->bind_columns(\$dep_xref_id, \$linkage_type, \$linkage_source_id);
     while($dep_sth->fetch()){
-      ## Add dependent to priority xref if it is the first in the chain.
+      # Duplicate each dependent for the new master xref if it is the first in the chain, and detach from the original
+
       unless ($recursive) {
         $insert_dep_x_sth->execute($new_master_xref_id, $dep_xref_id, $linkage_type, $linkage_source_id);
-        $self->_detach_object_xref($xref_id, $object_type, $dep_xref_id, $best_ensembl_id);
+        # then remove any reference to master xref from the dependent xref where the new ensembl IDs are involved
+        # The object type here should be decided by the dependent xref.
+        $self->_detach_object_xref($xref_id, $object_type, $dep_xref_id, $best_ensembl_ids);
       }
-      ## object_xref for dismissed old xref set to FAILED_PRIORITY
-      ## also delete any leftover identity or go xrefs
+
+      # also set type of object_xref from old_master_xref to FAILED_PRIORITY
+      # Then delete any leftover identity or go xrefs of it
       $self->_detach_object_xref($xref_id, $object_type, $dep_xref_id, \@old_ensembl_ids);
-      ## Loop through all ensembl ids mapped to priority xref
-      foreach my $best_ensembl_id (@$best_ensembl_id) {
-        ## new object_xref for each transfered mapping
-        $insert_dep_ox_sth->execute($new_master_xref_id, $object_type, $best_ensembl_id, $dep_xref_id);
+      # Loop through all chosen (best) ensembl ids mapped to priority xref, and connect them with object_xrefs
+
+      foreach my $best_ensembl_id (@$best_ensembl_ids) {
+        my $e_type = $splonk{$best_ensembl_id};
+        # Add new object_xref for each best_ensembl_id. 
+        $insert_dep_ox_sth->execute($new_master_xref_id, $e_type, $best_ensembl_id, $dep_xref_id);
         ## If there is a linkage_type, it is a go xref
         if ($linkage_type) {
           ## Fetch the newly created object_xref to add them to go_xref
-          $dep_ox_sth->execute($new_master_xref_id, $object_type, $best_ensembl_id, $dep_xref_id);
+          $dep_ox_sth->execute($new_master_xref_id, $e_type, $best_ensembl_id, $dep_xref_id);
           $dep_ox_sth->bind_columns(\$new_object_xref_id);
           while ($dep_ox_sth->fetch()) {
             $insert_dep_go_sth->execute($new_object_xref_id, $linkage_type, $new_master_xref_id); 
