@@ -279,45 +279,45 @@ sub process_dependents{
   
   # determine object type of best_ensembl_ids. This will be the only type left once we've deleted the other object_xrefs
   my %splonk;
-  foreach my $ens_id (@$best_ensembl_ids) {
+  foreach my $ens_id (@$best_ensembl_ids,@old_ensembl_ids) {
     $get_type_sth->execute($ens_id,$new_master_xref_id);
-    my ($type) = $get_type_sth->fetchrow_array();
+    my ($type) = $c->fetchrow_array();
     $splonk{$ens_id} = $type;
   }
 
   ## Loop through all dependent xrefs of old master xref, and recurse
   while(my $xref_id = pop(@master_xrefs)){ 
-    my ($dep_xref_id, $linkage_type, $new_object_xref_id, $linkage_source_id);
+    my ($dep_xref_id, $linkage_annotation, $new_object_xref_id, $linkage_source_id);
     
     # Get dependent xrefs, be they gene, transcript or translation
     $dep_sth->execute($xref_id);
-    $dep_sth->bind_columns(\$dep_xref_id, \$linkage_type, \$linkage_source_id);
+    $dep_sth->bind_columns(\$dep_xref_id, \$linkage_annotation, \$linkage_source_id);
     while($dep_sth->fetch()){
       # Duplicate each dependent for the new master xref if it is the first in the chain, and detach from the original
 
       unless ($recursive) {
-        $insert_dep_x_sth->execute($new_master_xref_id, $dep_xref_id, $linkage_type, $linkage_source_id);
+        $insert_dep_x_sth->execute($new_master_xref_id, $dep_xref_id, $linkage_annotation, $linkage_source_id);
         # then remove any reference to master xref from the dependent xref where the new ensembl IDs are involved
         # The object type here should be decided by the dependent xref.
-        $self->_detach_object_xref($xref_id, $object_type, $dep_xref_id, $best_ensembl_ids);
+        $self->_detach_object_xref($xref_id, $dep_xref_id, $best_ensembl_ids,\%splonk);
       }
 
       # also set type of object_xref from old_master_xref to FAILED_PRIORITY
       # Then delete any leftover identity or go xrefs of it
-      $self->_detach_object_xref($xref_id, $object_type, $dep_xref_id, \@old_ensembl_ids);
+      $self->_detach_object_xref($xref_id, $dep_xref_id, \@old_ensembl_ids,\%splonk);
       # Loop through all chosen (best) ensembl ids mapped to priority xref, and connect them with object_xrefs
 
       foreach my $best_ensembl_id (@$best_ensembl_ids) {
         my $e_type = $splonk{$best_ensembl_id};
         # Add new object_xref for each best_ensembl_id. 
         $insert_dep_ox_sth->execute($new_master_xref_id, $e_type, $best_ensembl_id, $dep_xref_id);
-        ## If there is a linkage_type, it is a go xref
-        if ($linkage_type) {
+        ## If there is a linkage_annotation, it is a go xref
+        if ($linkage_annotation) {
           ## Fetch the newly created object_xref to add them to go_xref
           $dep_ox_sth->execute($new_master_xref_id, $e_type, $best_ensembl_id, $dep_xref_id);
           $dep_ox_sth->bind_columns(\$new_object_xref_id);
           while ($dep_ox_sth->fetch()) {
-            $insert_dep_go_sth->execute($new_object_xref_id, $linkage_type, $new_master_xref_id); 
+            $insert_dep_go_sth->execute($new_object_xref_id, $linkage_annotation, $new_master_xref_id); 
             $insert_ix_sth->execute($new_object_xref_id);
           }
         }
@@ -366,8 +366,8 @@ sub _get_old_ensembl_ids_associated_with_xref {
 # Set unimportant object_xrefs to FAILED_PRIORITY, and delete all those that remain
 sub _detach_object_xref {
   my $self = shift;
-  my ($xref_id, $object_type, $dep_xref_id, $ids) = @_;
-
+  my ($xref_id, $dep_xref_id, $ids, $splonk) = @_;
+  my %id_type_hash = %$plonk;
   my $remove_dep_ox_sth = $self->xref->dbc->prepare(
     "DELETE ix, g FROM object_xref ox \
      LEFT JOIN identity_xref ix ON ix.object_xref_id = ox.object_xref_id \
@@ -386,11 +386,11 @@ sub _detach_object_xref {
   );
 
   foreach my $id (@$ids) {
-    $remove_dep_ox_sth->execute($xref_id, $object_type, $dep_xref_id, $id);
+    $remove_dep_ox_sth->execute($xref_id, $id_type_hash{$id}, $dep_xref_id, $id);
     # change status of object_xref to FAILED_PRIORITY for record keeping
-    $update_dep_ox_sth->execute($xref_id, $object_type, $dep_xref_id, $id);
+    $update_dep_ox_sth->execute($xref_id, $id_type_hash{$id}, $dep_xref_id, $id);
     # delete the duplicates.
-    $clean_dep_ox_sth->execute($xref_id, $object_type, $dep_xref_id, $id);
+    $clean_dep_ox_sth->execute($xref_id, $id_type_hash{$id}, $dep_xref_id, $id);
   }
 
   $remove_dep_ox_sth->finish();
