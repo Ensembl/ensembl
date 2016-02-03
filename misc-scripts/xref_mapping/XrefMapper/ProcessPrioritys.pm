@@ -281,7 +281,7 @@ sub process_dependents{
   my %splonk;
   foreach my $ens_id (@$best_ensembl_ids,@old_ensembl_ids) {
     $get_type_sth->execute($ens_id,$new_master_xref_id);
-    my ($type) = $c->fetchrow_array();
+    my ($type) = $get_type_sth->fetchrow_array();
     $splonk{$ens_id} = $type;
   }
 
@@ -367,7 +367,7 @@ sub _get_old_ensembl_ids_associated_with_xref {
 sub _detach_object_xref {
   my $self = shift;
   my ($xref_id, $dep_xref_id, $ids, $splonk) = @_;
-  my %id_type_hash = %$plonk;
+  my %id_type_hash = %$splonk;
   my $remove_dep_ox_sth = $self->xref->dbc->prepare(
     "DELETE ix, g FROM object_xref ox \
      LEFT JOIN identity_xref ix ON ix.object_xref_id = ox.object_xref_id \
