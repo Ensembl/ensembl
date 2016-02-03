@@ -280,8 +280,8 @@ sub process_dependents{
   # determine object type of best_ensembl_ids. This will be the only type left once we've deleted the other object_xrefs
   my %splonk;
   foreach my $ens_id (@$best_ensembl_ids) {
-    $get_type_sth->execute();
-    my ($type) = $get_type_sth->fetchall_array($ens_id,$new_master_xref_id);
+    $get_type_sth->execute($ens_id,$new_master_xref_id);
+    my ($type) = $get_type_sth->fetchrow_array();
     $splonk{$ens_id} = $type;
   }
 
