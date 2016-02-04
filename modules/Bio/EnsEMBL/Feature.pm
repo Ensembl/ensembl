@@ -1430,7 +1430,7 @@ sub overlaps_local {
 
 sub get_overlapping_Genes{
   my ($self, $match_strands, $five_prime, $three_prime) = @_;
-  my $ga = Bio::EnsEMBL::Registry->get_adaptor($self->adaptor->db->species,'core','Gene');
+  my $ga = Bio::EnsEMBL::Registry->get_adaptor($self->species,'core','Gene');
   my $list = $ga->fetch_all_nearest_by_Feature(-FEATURE => $self, -RANGE => 0, -THREE_PRIME => $three_prime, -FIVE_PRIME => $five_prime, -MATCH_STRAND => $match_strands);
   return [ map { $_->[0] } @$list ];
 }
@@ -1448,7 +1448,7 @@ sub get_overlapping_Genes{
 
 sub get_nearest_Gene {
   my $self = shift; 
-  my $ga = Bio::EnsEMBL::Registry->get_adaptor($self->adaptor->db->species,'core','Gene');
+  my $ga = Bio::EnsEMBL::Registry->get_adaptor($self->species,'core','Gene');
   my $list = $ga->fetch_nearest_by_Feature($self);
   if ($list && @$list >0) {
     my ($gene, $distance) = @{ $list };
