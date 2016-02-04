@@ -277,13 +277,19 @@ sub process_dependents{
 
   my @old_ensembl_ids = $self->_get_old_ensembl_ids_associated_with_xref($old_master_xref_id, $best_ensembl_ids);
   
-  # determine object type of best_ensembl_ids. This will be the only type left once we've deleted the other object_xrefs
+  # determine object type of the ensembl_ids we are taking links from and connecting to.
   my %splonk;
-  foreach my $ens_id (@$best_ensembl_ids,@old_ensembl_ids) {
+  foreach my $ens_id (@$best_ensembl_ids) {
     $get_type_sth->execute($ens_id,$new_master_xref_id);
     my ($type) = $get_type_sth->fetchrow_array();
     $splonk{$ens_id} = $type;
   }
+  foreach my $ens_id (@old_ensembl_ids) {
+    $get_type_sth->execute($ens_id,$old_master_xref);
+    my ($type) = $get_type_sth->fetchrow_array();
+    $splonk{$ens_id} = $type;
+  }
+
 
   ## Loop through all dependent xrefs of old master xref, and recurse
   while(my $xref_id = pop(@master_xrefs)){ 
