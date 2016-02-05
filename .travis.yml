@@ -18,6 +18,7 @@ addons:
     - unzip
 
 before_install:
+    - cd ..
     - git clone --branch master --depth 1 https://github.com/Ensembl/ensembl-test.git
     - git clone --branch master --depth 1 https://github.com/Ensembl/ensembl-variation.git
     - wget http://bioperl.org/DIST/BioPerl-1.6.1.tar.gz
