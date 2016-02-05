@@ -285,7 +285,7 @@ sub process_dependents{
     $splonk{$ens_id} = $type;
   }
   foreach my $ens_id (@old_ensembl_ids) {
-    $get_type_sth->execute($ens_id,$old_master_xref);
+    $get_type_sth->execute($ens_id,$old_master_xref_id);
     my ($type) = $get_type_sth->fetchrow_array();
     $splonk{$ens_id} = $type;
   }
