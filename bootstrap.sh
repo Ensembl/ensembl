@@ -71,6 +71,7 @@ param_str=$(join_array ' ' ${params[@]})
 extra_repos_str=$(join_array ' ' ${extra_repos[@]})
 
 echo "Fetching Ensembl repositories"
+echo "git ensembl --clone $param_str $GROUP $extra_repos_str"
 git ensembl --clone $param_str $GROUP $extra_repos_str
 
 echo "Installing dependencies"
