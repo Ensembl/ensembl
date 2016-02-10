@@ -55,6 +55,10 @@ if [ ! -z "$TEST_MODULE" ]; then
     ENS_TEST="true"
 fi
 
+if [ -z "$DEEP_CLONE" ] || [ "$DEEP_CLONE" = 'false' ]; then
+    params+=("--depth 1")
+fi
+
 # If we're setting up a test environment, we'll need
 # the testing repo
 if [ ! -z "$ENS_TEST" ] && [ "$ENS_TEST" = 'true' ]; then
@@ -67,7 +71,7 @@ param_str=$(join_array ' ' ${params[@]})
 extra_repos_str=$(join_array ' ' ${extra_repos[@]})
 
 echo "Fetching Ensembl repositories"
-git ensembl --clone $param_str --depth 1 $GROUP $extra_repos_str
+git ensembl --clone $param_str $GROUP $extra_repos_str
 
 echo "Installing dependencies"
 git ensembl --cmd install-dep $GROUP $extra_repos_str
