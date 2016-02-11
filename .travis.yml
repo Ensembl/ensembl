@@ -23,7 +23,7 @@ addons:
 
 before_install:
     - pushd ..
-    - curl -L https://raw.githubusercontent.com/Ensembl/ensembl/experimental/travis_reorg/bootstrap.sh | TEST_MODULE=ensembl RELEASE=master bash
+    - curl -L https://raw.githubusercontent.com/Ensembl/ensembl/$TRAVIS_BRANCH/bootstrap.sh | TEST_MODULE=ensembl RELEASE=master bash
     - popd
 
 
