@@ -7,7 +7,7 @@ perl:
 
 env:
   global:
-    - SKIP_TESTS_mysql='dbConnection.t,schema.t,schemaPatches.t,strainSlice.t'
+    - SKIP_TESTS_sqlite='dbConnection.t,schema.t,schemaPatches.t,strainSlice.t'
     - PERL5OPT_COVERALLS_true='-MDevel::Cover=+ignore,bioperl,+ignore,ensembl-test,+ignore,ensembl-variation'
   matrix:
     - COVERALLS=true  DB=mysql
