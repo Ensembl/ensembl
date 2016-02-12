@@ -78,7 +78,7 @@ ok(scalar @$afs == 46, 'get_all_AllelelFeatures_Slice with_coverage');
 $afs = $A_J->get_all_differences_StrainSlice($FVB_NJ);
 ok(scalar @$afs == 53, 'get_all_differences_StrainSlice');
 
-my $sub_Slice = $A_J->sub_Slice(20380187, 20380197, 1);
+my $sub_Slice = $A_J->sub_Slice(2, 12, 1);
 ok(length($sub_Slice->seq) == 11, 'sub_Slice length');
 
 my $ref_subseq = $A_J->ref_subseq(20380187, 20380197, 1);

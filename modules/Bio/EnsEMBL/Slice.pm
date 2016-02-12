@@ -1272,12 +1272,14 @@ sub constrain_to_seq_region {
 sub sub_Slice {
   my ( $self, $start, $end, $strand ) = @_;
 
-  if( $start < 1 || $start > $self->{'end'} ) {
+  my $length = $self->length();
+
+  if( $start < 1 || $start > $length ) {
     # throw( "start argument not valid" );
     return undef;
   }
 
-  if( $end < $start || $end > $self->{'end'} ) {
+  if( $end < $start || $end > $length ) {
     # throw( "end argument not valid" )
     return undef;
   }
