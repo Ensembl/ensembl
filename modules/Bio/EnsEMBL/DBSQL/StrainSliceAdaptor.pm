@@ -100,7 +100,7 @@ our @ISA = qw(Bio::EnsEMBL::DBSQL::BaseAdaptor);
 
 sub new {
   my $caller = shift;
-
+  deprecate("new is deprecated and will be removed in e88. Please use Bio::EnsEMBL::Variation::DBSQL::StrainSliceAdaptor::new instead");
   my $class = ref($caller) || $caller;
   my $self = $class->SUPER::new(@_);
   
@@ -126,6 +126,7 @@ sub new {
 
 sub fetch_by_name {
   my $self = shift;
+  deprecate("fetch_by_name is deprecated and will be removed in e88. Please use Bio::EnsEMBL::Variation::DBSQL::StrainSliceAdaptor::fetch_by_name instead");
   my $container = shift;
   my $name = shift;
 
