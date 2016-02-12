@@ -1,0 +1,3 @@
+1	469283	30252800	30252800	1	1	\N	rs12345	1	genotyped	1	intergenic_variant	1	0	0	\N	\N	\N	\N	\N	\N	1
+2	469283	30252900	30252900	1	2	\N	rs67890	1	\N	1	intergenic_variant	1	0	0	\N	\N	\N	\N	\N	\N	1
+3	469283	30253900	30253900	1	3	\N	rs54321	1	\N	1	intergenic_variant		0	1	\N	\N	\N	\N	\N	\N	1
