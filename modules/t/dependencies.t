@@ -25,7 +25,7 @@ $directory = File::Spec->rel2abs($directory);
 my $modules_dir = File::Spec->catdir($directory, File::Spec->updir(), qw/Bio EnsEMBL/);
 
 #test for dependencies on Variation, Compara and Funcgen APIs
-my @result = `egrep -r "use Bio::EnsEMBL::(Variation|Compara|Funcgen){1}" $modules_dir`;
+my @result = `egrep -r "^use Bio::EnsEMBL::(Variation|Compara|Funcgen){1}" $modules_dir`;
 
 my %result = map{$_ => 1} @result;
 
