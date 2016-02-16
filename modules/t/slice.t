@@ -42,7 +42,7 @@ my $SEQ_REGION_LENGTH = 50e6;
 
 my $multi_db = Bio::EnsEMBL::Test::MultiTestDB->new;
 my $db = $multi_db->get_DBAdaptor('core');
-my $vdb = $multi_db->get_DBAdaptor('variation');
+
 #
 # TEST - Slice creation from adaptor
 #
@@ -610,69 +610,5 @@ isa_ok($slice, 'Bio::EnsEMBL::Slice');
 $genome_component = $slice->get_genome_component($slice);
 is($genome_component, 'D', "Genome component from slice");
 
-# tests for variation related methods
-$slice = $slice_adaptor->fetch_by_region('chromosome', 20, 30_252_000, 31_252_001);
-my $study_adaptor = $vdb->get_StudyAdaptor;
-my $variation_set_adaptor = $vdb->get_VariationSetAdaptor;
-my $population_adaptor = $vdb->get_PopulationAdaptor;
-
-my $vfs = $slice->get_all_VariationFeatures;
-is(scalar @$vfs, 2, 'get_all_VariationFeatures');
-
-$vfs = $slice->get_all_somatic_VariationFeatures;
-is(scalar @$vfs, 1, 'get_all_somatic_VariationFeatures');
-
-$vfs = $slice->get_all_somatic_VariationFeatures_by_source('dbSNP');
-is(scalar @$vfs, 1, 'get_all_somatic_VariationFeatures_by_source');
-
-$vfs = $slice->get_all_VariationFeatures_with_phenotype;
-is(scalar @$vfs, 1, 'get_all_VariationFeatures_with_phenotype');
-
-$vfs = $slice->get_all_somatic_VariationFeatures_with_phenotype;
-is(scalar @$vfs, 1, 'get_all_somatic_VariationFeatures_with_phenotype');
-
-my $svfs = $slice->get_all_StructuralVariationFeatures;
-is(scalar @$svfs, 1, 'get_all_StructuralVariationFeatures');
-
-$svfs = $slice->get_all_somatic_StructuralVariationFeatures;
-is(scalar @$svfs, 1, 'get_all_somatic_StructuralVariationFeatures');
-
-my $size_min         = 1;
-my $size_max         = 10000;
-my $include_evidence = 0;
-$svfs = $slice->get_all_StructuralVariationFeatures_by_size_range($size_min, $size_max, $include_evidence);
-is(scalar @$svfs, 1, 'get_all_StructuralVariationFeatures_by_size_range');
-
-$svfs = $slice->get_all_somatic_StructuralVariationFeatures_by_size_range($size_min, $size_max, $include_evidence);
-is(scalar @$svfs, 1, 'get_all_somatic_StructuralVariationFeatures_by_size_range');
-
-my $study = $study_adaptor->fetch_by_name('study_name');
-$svfs = $slice->get_all_StructuralVariationFeatures_by_Study($study);
-is(scalar @$svfs, 3, 'get_all_StructuralVariationFeatures_by_Study');
-
-$svfs = $slice->get_all_StructuralVariationFeatures_by_source('dbSNP');
-is(scalar @$svfs, 1, 'get_all_StructuralVariationFeatures_by_source');
-
-$svfs = $slice->get_all_somatic_StructuralVariationFeatures_by_source('dbSNP');
-is(scalar @$svfs, 1, 'get_all_somatic_StructuralVariationFeatures_by_source');
-
-my $variation_set = $variation_set_adaptor->fetch_by_name('variation_set');
-$vfs = $slice->get_all_VariationFeatures_by_VariationSet($variation_set);
-is(scalar @$vfs, 2, 'get_all_VariationFeatures_by_VariationSet');
-
-$svfs = $slice->get_all_StructuralVariationFeatures_by_VariationSet($variation_set);
-is(scalar @$svfs, 2, 'get_all_StructuralVariationFeatures_by_VariationSet');
-
-my $pfs = $slice->get_all_PhenotypeFeatures;
-is(scalar @$pfs, 2, 'get_all_PhenotypeFeatures');
-
-$svfs = $slice->get_all_CopyNumberVariantProbeFeatures;
-is(scalar @$svfs, 1, 'get_all_CopyNumberVariantProbeFeatures');
-
-$vfs = $slice->get_all_genotyped_VariationFeatures;
-is(scalar @$vfs, 1, 'get_all_genotyped_VariationFeatures');
-
-my $population = $population_adaptor->fetch_by_name('population');
-$vfs = $slice->get_all_VariationFeatures_by_Population($population);
-is(scalar @$vfs, 1, 'get_all_VariationFeatures_by_Population');
 done_testing();
+
