@@ -1,0 +1,1 @@
+1	dbSNP	\N	\N	\N	\N	germline	\N
