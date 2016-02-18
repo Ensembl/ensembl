@@ -907,9 +907,14 @@ sub _store_object_xref_mapping {
             my $associatedXid = undef;
             my $sourceXid = undef;
             
-            $ax[0]->is_stored( $self->dbc ) || $self->store($ax[0]);
+            if (!$ax[0]->dbID) {
+              $self->store($ax[0]);
+            }
             $associatedXid = $ax[0]->dbID;
-            $ax[1]->is_stored( $self->dbc ) || $self->store($ax[1]);
+
+            if (!$ax[1]->dbID) {
+              $self->store($ax[1]);
+            }
             $sourceXid = $ax[1]->dbID;
             
             if (!defined $associatedXid || !defined $sourceXid) {
