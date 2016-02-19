@@ -900,7 +900,7 @@ sub _store_object_xref_mapping {
                   VALUES ( ? )" );
           $gsth->bind_param( 1, $ax_group,     SQL_VARCHAR );
           $gsth->execute();
-          my $associatedGid = $self->last_insert_id();
+          my $associatedGid = $self->last_insert_id('associated_group_id', undef, 'associated_group');
           
           foreach my $ax_rank (sort keys %{ $group }) {
             my @ax = @{ $group->{$ax_rank} };
