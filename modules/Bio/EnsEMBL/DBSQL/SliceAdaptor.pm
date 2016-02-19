@@ -609,7 +609,7 @@ sub parse_location_to_values {
   my $number_seps_regex = qr/\s+|,/;
   my $separator_regex = qr/(?:-|[.]{2}|\:|_)?/; # support -, .., : and _ as separators
   my $hgvs_nomenclature_regex = qr/(?:g\.)?/; # check for HGVS looking locations e.g. X:g.1-100
-  my $number_regex = qr/[0-9, E]+/xms;
+  my $number_regex = qr/[0-9, EMKG]+/xmsi;
   my $strand_regex = qr/[+-1]|-1/xms;
   
   my $regex = qr/^((?:\w|\.|_|-)+) \s* :? \s* $hgvs_nomenclature_regex ($number_regex)? $separator_regex ($number_regex)? $separator_regex ($strand_regex)? $/xms;
