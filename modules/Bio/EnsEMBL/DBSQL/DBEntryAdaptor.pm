@@ -896,10 +896,11 @@ sub _store_object_xref_mapping {
           my $group = $annotext->{$ax_group};
           my $gsth = $self->prepare( " 
                   INSERT INTO associated_group 
-                    SET description = ?;" );
-          $sth->bind_param( 1, $ax_group,     SQL_INTEGER );
+                    ( description )
+                  VALUES ( ? )" );
+          $gsth->bind_param( 1, $ax_group,     SQL_VARCHAR );
           $gsth->execute();
-          my $associatedGid = $self->last_insert_id();
+          my $associatedGid = $self->last_insert_id('associated_group_id', undef, 'associated_group');
           
           foreach my $ax_rank (sort keys %{ $group }) {
             my @ax = @{ $group->{$ax_rank} };
@@ -907,9 +908,14 @@ sub _store_object_xref_mapping {
             my $associatedXid = undef;
             my $sourceXid = undef;
             
-            $ax[0]->is_stored( $self->dbc ) || $self->store($ax[0]);
+            if (!$ax[0]->dbID) {
+              $self->store($ax[0]);
+            }
             $associatedXid = $ax[0]->dbID;
-            $ax[1]->is_stored( $self->dbc ) || $self->store($ax[1]);
+
+            if (!$ax[1]->dbID) {
+              $self->store($ax[1]);
+            }
             $sourceXid = $ax[1]->dbID;
             
             if (!defined $associatedXid || !defined $sourceXid) {
@@ -1622,7 +1628,11 @@ $where_sql";
                                 ? $self->fetch_by_dbID($source_associated_xref_id)
                                 : undef );
             if ( defined($associated_xref) ) {
-              $exDB->add_linked_associated_xref( $associated_xref, $source_associated_xref, $condition_type || '', $associate_group_id, $associate_group_rank );
+              my $ct = '';
+              if ( defined $condition_type ) {
+                $ct = $condition_type;
+              }
+              $exDB->add_linked_associated_xref( $associated_xref, $source_associated_xref, $ct, $associate_group_id, $associate_group_rank );
             }
           }
 
@@ -1673,7 +1683,11 @@ $where_sql";
                                 ? $self->fetch_by_dbID($source_associated_xref_id)
                                 : undef );
         if ( defined($associated_xref) ) {
-          $seen{$refID}->add_linked_associated_xref( $associated_xref, $source_associated_xref, $condition_type || '', $associate_group_id, $associate_group_rank );
+          my $ct = '';
+          if ( defined $condition_type ) {
+            $ct = $condition_type;
+          }
+          $seen{$refID}->add_linked_associated_xref( $associated_xref, $source_associated_xref, $ct, $associate_group_id, $associate_group_rank );
         }
         
         $linkage_types{$refID}->{$linkage_key} = 1;
