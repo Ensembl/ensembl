@@ -40,8 +40,6 @@ note( "Test database instantiated" );
 #
 ok( $db );
 
-$multi->hide("core", "meta_coord", "gene", "transcript", "exon", "exon_transcript", "translation", "supporting_feature", "dna_align_feature", 'xref', 'object_xref', 'identity_xref');
-
 my $dbEntryAdaptor = $db->get_DBEntryAdaptor();
 
 #
@@ -51,6 +49,8 @@ my $ga  = $db->get_adaptor('Gene');
 my $gene = $ga->fetch_by_stable_id("ENSG00000171456");
 debug("Gene->fetch_by_stable_id()");
 ok($gene);
+
+$multi->hide("core", "meta_coord", "gene", "transcript", "exon", "exon_transcript", "translation", "supporting_feature", "dna_align_feature", 'xref', 'object_xref', 'identity_xref');
 
 #
 # 4 Loading ontology terms and adding associate_xrefs
