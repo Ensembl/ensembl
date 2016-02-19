@@ -896,8 +896,9 @@ sub _store_object_xref_mapping {
           my $group = $annotext->{$ax_group};
           my $gsth = $self->prepare( " 
                   INSERT INTO associated_group 
-                    SET description = ?;" );
-          $sth->bind_param( 1, $ax_group,     SQL_INTEGER );
+                    ( description )
+                  VALUES ( ? )" );
+          $gsth->bind_param( 1, $ax_group,     SQL_VARCHAR );
           $gsth->execute();
           my $associatedGid = $self->last_insert_id();
           
