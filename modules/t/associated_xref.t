@@ -163,4 +163,7 @@ foreach my $dbentry (@gene_DBentries) {
 is($ont_xref_retrieved, 1, "Ontology DBEntry has been retrieved");
 is($ont_xref_hasAssoc, 1, "Count of the number associated xrefs");
 
+
+$multi->hide("core", "meta_coord", "gene", "transcript", "exon", "exon_transcript", "translation", "supporting_feature", "dna_align_feature", 'xref', 'object_xref', 'identity_xref');
+
 done_testing();
