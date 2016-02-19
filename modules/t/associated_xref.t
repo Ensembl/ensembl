@@ -50,7 +50,7 @@ my $gene = $ga->fetch_by_stable_id("ENSG00000171456");
 debug("Gene->fetch_by_stable_id()");
 ok($gene);
 
-$multi->hide("core", "meta_coord", "gene", "transcript", "exon", "exon_transcript", "translation", "supporting_feature", "dna_align_feature", 'xref', 'object_xref', 'identity_xref');
+$multi->hide("core", 'xref', 'object_xref', 'associated_xref', 'associated_group');
 
 #
 # 4 Loading ontology terms and adding associate_xrefs
