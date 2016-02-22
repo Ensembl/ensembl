@@ -720,6 +720,22 @@ EOF
 EOF2
     
   $result = $xref_dbc->do($sql);  
+
+# Special tidying up for transcripts without translation
+# The resulting object_xref does not have an ensembl_id to map to
+
+    $sql=(<<"EOF4");
+  DELETE object_xref, identity_xref, go_xref
+    FROM object_xref, xref, source, identity_xref, go_xref
+      WHERE object_xref.ensembl_object_type = "$to" AND
+        identity_xref.object_xref_id = object_xref.object_xref_id AND
+        xref.xref_id = object_xref.xref_id AND
+          go_xref.object_xref_id = object_xref.object_xref_id AND
+          xref.source_id = source.source_id AND
+            object_xref.ensembl_id = 0 AND
+              object_xref.ox_status = "DUMP_OUT"  AND
+                source.name = "$db_name";
+EOF4
   }
   else{
     $sql =(<<"EOF3");
