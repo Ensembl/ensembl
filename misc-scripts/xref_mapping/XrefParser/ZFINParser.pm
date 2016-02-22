@@ -133,6 +133,8 @@ sub run {
   while ( $_ = $refseq_io->getline() ) {
     chomp;
     my ($zfin, $so, $label, $acc) = split (/\s+/,$_);
+    # Ignore mappings to predicted RefSeq
+    if ($acc =~ /^XP_/ || $acc =~ /^XM_/ || $acc =~ /^XR_/) { next; }
     if(defined($refseq{$acc})){
       foreach my $xref_id (@{$refseq{$acc}}){
 	$self->add_dependent_xref({ master_xref_id => $xref_id,
