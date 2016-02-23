@@ -83,7 +83,7 @@ use Bio::EnsEMBL::Registry;
 use Bio::EnsEMBL::Utils::Iterator;
 use Bio::EnsEMBL::DBSQL::MergedAdaptor;
 
-use Bio::EnsEMBL::Variation::StrainSlice;
+use Bio::EnsEMBL::StrainSlice;
 #use Bio::EnsEMBL::IndividualSlice;
 #use Bio::EnsEMBL::IndividualSliceFactory;
 use Bio::EnsEMBL::Mapper::RangeRegistry;
@@ -2448,8 +2448,8 @@ sub get_by_Individual{
 sub get_by_strain {
     my $self = shift;
     my $strain_name = shift;
-
-    return Bio::EnsEMBL::Variation::StrainSlice->new(
+    deprecate('get_by_strain is deprecated and will be removed in e88. Please use Bio::EnsEMBL::Variation::DBSQL::StrainSliceAdaptor::get_by_Strain_Slice instead.');
+    return Bio::EnsEMBL::StrainSlice->new(
 					  -START   => $self->{'start'},
 					  -END     => $self->{'end'},
 					  -STRAND  => $self->{'strand'},
