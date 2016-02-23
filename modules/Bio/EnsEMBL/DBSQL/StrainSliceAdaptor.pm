@@ -77,7 +77,7 @@ use warnings;
 no warnings 'uninitialized';
 
 use Bio::EnsEMBL::Utils::Argument qw(rearrange);
-use Bio::EnsEMBL::Utils::Exception qw(throw warning);
+use Bio::EnsEMBL::Utils::Exception qw(throw warning deprecate);
 use Bio::EnsEMBL::MappedSlice;
 use Bio::EnsEMBL::Mapper;
 use Bio::EnsEMBL::DBSQL::BaseAdaptor;
