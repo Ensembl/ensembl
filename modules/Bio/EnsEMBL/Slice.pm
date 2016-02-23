@@ -2448,7 +2448,7 @@ sub get_by_Individual{
 sub get_by_strain {
     my $self = shift;
     my $strain_name = shift;
-    deprecate('get_by_strain is deprecated and will be removed in e88. Please use Bio::EnsEMBL::Variation::DBSQL::StrainSliceAdaptor::get_by_Strain_Slice instead.');
+    deprecate('get_by_strain is deprecated and will be removed in e88. Please use Bio::EnsEMBL::Variation::DBSQL::StrainSliceAdaptor::get_by_strain_Slice instead.');
     return Bio::EnsEMBL::StrainSlice->new(
 					  -START   => $self->{'start'},
 					  -END     => $self->{'end'},
