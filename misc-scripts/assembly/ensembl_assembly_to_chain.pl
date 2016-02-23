@@ -161,17 +161,14 @@ sub get_liftover_mappings {
   my ($core_dba) = @_;
   my $mappings = $core_dba->get_MetaContainer()->list_value_by_key('liftover.mapping');
   my %unique_mappings;
-  for (@$mappings){
-      die "Can't parse mapping string for coord system version '$_'!\n"
-          unless /.+:(.+)#.+:(.+)/;
+  foreach my $mapping (@{$mappings}) {
+      die "Can't parse mapping string for coord system version '${mapping}'!\n"
+          unless $mapping =~ /.+:(.+)#.+:(.+)/;
       my $version_1 = $1;
       my $version_2 = $2;
-      $unique_mappings{$version_1. ":". $version_2}++;
+      $unique_mappings{$version_1. ":". $version_2} = [$version_1, $version_2];
   }
-  my @unique_mappings;
-  push @unique_mappings, [split(/:/, $_)]
-      for keys %unique_mappings;
-  return \@unique_mappings;
+  return [values %unique_mappings];
 }
 
 sub write_mappings {
