@@ -366,8 +366,8 @@ sub set_StrainSliceAdaptor {
   my $strain_slice_adaptor = shift;
 
   unless ($strain_slice_adaptor and ref($strain_slice_adaptor) and
-    $strain_slice_adaptor->isa('Bio::EnsEMBL::DBSQL::StrainSliceAdaptor')) {
-      throw("Need a Bio::EnsEMBL::StrainSliceAdaptor.");
+    $strain_slice_adaptor->isa('Bio::EnsEMBL::Variation::DBSQL::StrainSliceAdaptor')) {
+      throw("Need a Bio::EnsEMBL::Variation::DBSQL::StrainSliceAdaptor.");
   }
 
   $self->{'adaptors'}->{'StrainSlice'} = $strain_slice_adaptor;
