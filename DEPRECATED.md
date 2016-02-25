@@ -28,6 +28,7 @@ A year after deprecation (4 Ensembl releases), the method is removed from the AP
  - Bio::EnsEMBL::**Slice**::*get_all_CopyNumberVariantProbeFeatures()*
  - Bio::EnsEMBL::**Slice**::*get_all_genotyped_VariationFeatures()*
  - Bio::EnsEMBL::**Slice**::*get_all_VariationFeatures_by_Population()*
+ - Bio::EnsEMBL::**Slice**::*get_by_strain()*
  - Bio::EnsEMBL::**StrainSlice**::*remove_indels()*
  - Bio::EnsEMBL::**StrainSlice**::*get_original_seq_region_position()*
  - Bio::EnsEMBL::**StrainSlice**::*get_all_VariationFeatures()*
