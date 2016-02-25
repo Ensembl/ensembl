@@ -554,7 +554,7 @@ sub fetch_by_db_accession {
     LEFT JOIN external_synonym es ON
             es.xref_id = xref.xref_id
     WHERE  xref.dbprimary_acc = ?
-    AND    exDB.db_name = ?
+    AND    exDB.db_name like ?
     AND    xref.external_db_id = exDB.external_db_id" );
 
   $sth->bind_param( 1, $accession, SQL_VARCHAR );
@@ -665,7 +665,7 @@ sub fetch_by_db_accession {
 =cut
 
 sub store {
-  my ( $self, $dbEntry, $ensID, $ensType, $ignore_release ) = @_;
+  my ( $self, $dbEntry, $ensID, $ensType, $ignore_release, $master_xref ) = @_;
 
   my $dbJustInserted;
 
@@ -710,10 +710,15 @@ sub store {
     my $xref_id = $self->_store_or_fetch_xref($dbEntry,$dbRef);
     $dbEntry->dbID($xref_id); #keeps DBEntry in sync with database
     ### Attempt to create an object->xref mapping
-    if ($ensembl_id) {$self->_store_object_xref_mapping($ensembl_id,$dbEntry,$ensType, $ignore_release)};
+    my $object_xref_id;
+    if ($ensembl_id) { $object_xref_id = $self->_store_object_xref_mapping($ensembl_id,$dbEntry,$ensType, $ignore_release)};
+
+    if (defined $master_xref && defined $object_xref_id) { $self->_store_dependent_xref_mapping($object_xref_id, $dbEntry, $master_xref); }
     
     return $xref_id;
 }
+
+
 
 
 =head2 update
@@ -932,6 +937,29 @@ sub _store_object_xref_mapping {
         } #end foreach
       } #end elsif
     return $object_xref_id;
+}
+
+
+sub _store_dependent_xref_mapping {
+  my $self = shift;
+  my $object_xref_id = shift;
+  my $dbEntry = shift;
+  my $master_xref = shift;
+
+  my $insert_ignore = $self->insert_ignore_clause();
+
+  my $sth = $self->prepare( "
+    ${insert_ignore} INTO dependent_xref
+       ( object_xref_id,
+       master_xref_id,
+       dependent_xref_id )
+       VALUES ( ?, ?, ?)" );
+  $sth->bind_param( 1, $object_xref_id,       SQL_INTEGER );
+  $sth->bind_param( 2, $master_xref->dbID,    SQL_INTEGER );
+  $sth->bind_param( 3, $dbEntry->dbID,        SQL_INTEGER );
+
+  $sth->execute();
+
 }
 
 =head2 get_external_db_id
