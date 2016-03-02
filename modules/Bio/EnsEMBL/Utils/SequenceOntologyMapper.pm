@@ -150,6 +150,8 @@ my %feature_so_mapping =
    'Bio::EnsEMBL::Variation::StructuralVariationFeature' => 'SO:0001537', # structural variant
    'Bio::EnsEMBL::Compara::ConstrainedElement' => 'SO:0001009', #DNA_constraint_sequence ????
    'Bio::EnsEMBL::Funcgen::RegulatoryFeature' => 'SO:0005836', # regulatory_region
+   'Bio::EnsEMBL::DnaDnaAlignFeature' => 'SO:0000347', # nucleotide_match
+   'Bio::EnsEMBL::DnaPepAlignFeature' => 'SO:0000349', # protein_match
   );
 
 
