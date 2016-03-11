@@ -6,9 +6,13 @@ perl:
   - "5.10"
 
 env:
-  - COVERALLS=true  DB=mysql
-  - COVERALLS=false DB=mysql
-  - COVERALLS=false DB=sqlite
+  global:
+    - SKIP_TESTS_sqlite='dbConnection.t,schema.t,schemaPatches.t,strainSlice.t'
+    - PERL5OPT_COVERALLS_true='-MDevel::Cover=+ignore,bioperl,+ignore,ensembl-test,+ignore,ensembl-variation'
+  matrix:
+    - COVERALLS=true  DB=mysql
+    - COVERALLS=false DB=mysql
+    - COVERALLS=false DB=sqlite
   
 sudo: false
   
@@ -19,21 +23,17 @@ addons:
 
 before_install:
     - pushd ..
-    - git clone --branch master --depth 1 https://github.com/Ensembl/ensembl-test.git
-    - git clone --branch master --depth 1 https://github.com/Ensembl/ensembl-variation.git
-    - wget http://bioperl.org/DIST/BioPerl-1.6.1.tar.gz
-    - mkdir bioperl-live && tar zxvf BioPerl-1.6.1.tar.gz -C bioperl-live --strip-components 1
+    - curl -L https://raw.githubusercontent.com/Ensembl/ensembl/$TRAVIS_BRANCH/bootstrap.sh | TEST_MODULE=ensembl RELEASE=master bash
     - popd
 
 
 install:
-    - cpanm -v --installdeps --notest .
     - cpanm -n Devel::Cover::Report::Coveralls
     - cpanm -n DBD::SQLite
     - cp travisci/MultiTestDB.conf.travisci.mysql  modules/t/MultiTestDB.conf.mysql
-    - cp travisci/MultiTestDB.conf.travisci.SQLite modules/t/MultiTestDB.conf.SQLite
+    - cp travisci/MultiTestDB.conf.travisci.SQLite modules/t/MultiTestDB.conf.sqlite
 
-script: "./travisci/harness.sh"
+script: "../ensembl-test/scripts/harness.sh"
 
 # Get the matrix to only build coveralls support when on 5.10
 matrix:
