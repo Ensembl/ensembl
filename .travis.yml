@@ -28,8 +28,7 @@ before_install:
     - echo "TRAVIS_BRANCH=$TRAVIS_BRANCH, PR=$PR, BRANCH=$BRANCH"
     - pushd ..
     - echo "Staging branch $TRAVIS_BRANCH"
-    - echo "Running bootstrap: https://raw.githubusercontent.com/Ensembl/ensembl/$TRAVIS_BRANCH/bootstrap.sh"
-    - curl -L https://raw.githubusercontent.com/Ensembl/ensembl/$TRAVIS_BRANCH/bootstrap.sh | TEST_MODULE=ensembl RELEASE=master bash
+    - curl -L https://raw.githubusercontent.com/Ensembl/ensembl/$BRANCH/bootstrap.sh | TEST_MODULE=ensembl RELEASE=master bash
     - popd
 
 
