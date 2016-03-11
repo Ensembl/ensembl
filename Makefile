@@ -1,7 +1,10 @@
 DEP_FILE_PATHS := $(wildcard deps/*)
 DEP_FILES := $(notdir $(DEP_FILE_PATHS))
 
-all: perldeps
+all:
+	@echo "Not implemented, use target install-dep to install dependencies to PREFIX"
+
+install-dep: perldeps
 	for dep in $(DEP_FILES) ; do \
 		$(MAKE) -C deps -f $$dep ; \
 	done
