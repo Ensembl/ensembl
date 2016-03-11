@@ -75,4 +75,4 @@ echo "git ensembl --clone $param_str $GROUP $extra_repos_str"
 git ensembl --clone $param_str $GROUP $extra_repos_str
 
 echo "Installing dependencies"
-git ensembl --cmd make $GROUP $extra_repos_str
+git ensembl --cmd install-dep $GROUP $extra_repos_str
