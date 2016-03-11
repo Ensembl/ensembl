@@ -1,7 +1,3 @@
 #!/usr/bin/env bash
 
-cpanm -v --installdeps --notest .
-cpanm -n DBD::SQLite
-cp travisci/MultiTestDB.conf.travisci.mysql  modules/t/MultiTestDB.conf.mysql
-cp travisci/MultiTestDB.conf.travisci.SQLite modules/t/MultiTestDB.conf.SQLite
-
+make
