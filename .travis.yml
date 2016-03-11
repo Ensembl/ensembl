@@ -20,9 +20,11 @@ addons:
   apt:
     packages:
     - unzip
+    - curl
 
 before_install:
     - pushd ..
+    - echo "Staging branch $TRAVIS_BRANCH"
     - curl -L https://raw.githubusercontent.com/Ensembl/ensembl/$TRAVIS_BRANCH/bootstrap.sh | TEST_MODULE=ensembl RELEASE=master bash
     - popd
 
