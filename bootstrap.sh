@@ -75,28 +75,4 @@ echo "git ensembl --clone $param_str $GROUP $extra_repos_str"
 git ensembl --clone $param_str $GROUP $extra_repos_str
 
 echo "Installing dependencies"
-git ensembl --cmd install-dep $GROUP $extra_repos_str
-
-echo "Installing BioPerl"
-wget http://bioperl.org/DIST/BioPerl-1.6.1.tar.gz
-mkdir bioperl-live && tar zxvf BioPerl-1.6.1.tar.gz -C bioperl-live --strip-components 1
-
-echo "Installing common Ensembl dependencies"
-git clone --branch master --depth 1 https://github.com/samtools/tabix.git
-cd tabix
-make
-cd perl
-perl Makefile.PL
-make
-cd ..
-ln -sf perl/blib blib
-cd ../
-git clone --branch master --depth 1 https://github.com/samtools/htslib.git
-cd htslib
-make
-export HTSLIB_DIR=$(pwd -P)
-cd ../
-git clone --branch master --depth 1 https://github.com/Ensembl/Bio-HTS
-cd Bio-HTS
-perl Build.PL $HTSLIB_DIR
-./Build
+git ensembl --cmd make $GROUP $extra_repos_str

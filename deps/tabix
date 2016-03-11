@@ -1,0 +1,16 @@
+
+PREFIX ?= ../../
+
+all: | $(PREFIX)tabix
+
+$(PREFIX)tabix:
+	cd $(PREFIX) && \
+	git clone --branch master --depth 1 https://github.com/samtools/tabix.git && \
+	cd tabix && \
+	make && \
+	cd perl && \
+	perl Makefile.PL && \
+	make && \
+	cd .. && \
+	ln -sf perl/blib blib
+

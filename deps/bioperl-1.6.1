@@ -1,0 +1,8 @@
+PREFIX ?= ../../
+
+all: | $(PREFIX)bioperl-1.6.1
+
+$(PREFIX)bioperl-1.6.1:
+	cd $(PREFIX) && \
+	wget http://bioperl.org/DIST/BioPerl-1.6.1.tar.gz && \
+	mkdir bioperl-1.6.1 && tar zxvf BioPerl-1.6.1.tar.gz -C bioperl-1.6.1 --strip-components 1
