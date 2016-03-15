@@ -238,9 +238,11 @@ sub print_feature {
         #$row =~ s/;?$// if $row =~ /;$/; # Remove trailing ';' if there is any
         while(my $attribute = shift @keys) {
             my $data_written = 0;
-            if (ref $summary{$attribute} eq "ARRAY" && scalar(@{$summary{$attribute}}) > 0) {
-                $row .= $attribute."=".join (',',map { uri_escape($_,'\t\n\r;=%&,') } grep { defined $_ } @{$summary{$attribute}});
-                $data_written = 1;
+            if (ref $summary{$attribute} eq "ARRAY") {
+		if (scalar(@{$summary{$attribute}}) > 0) {
+		    $row .= $attribute."=".join (',',map { uri_escape($_,'\t\n\r;=%&,') } grep { defined $_ } @{$summary{$attribute}});
+		    $data_written = 1;
+		}
             }
             else {
                 if (defined $summary{$attribute}) { 
