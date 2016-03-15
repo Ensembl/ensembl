@@ -40,7 +40,7 @@ use IPC::Open3;
 # 
 # 3) for each of the source names 
 #    set ox_status to 'FAILED_PRIORITY' for those not the best match
-#        Also do this fro its depenedents
+#        Also do this for its depenedents
 #
 
 sub new {
@@ -84,17 +84,13 @@ sub process {
 
   my @names = $self->get_priority_names();
 
-  print "The foillowing will be processed as priority xrefs\n" if($self->verbose);
+  print "The following will be processed as priority xrefs\n" if($self->verbose);
   foreach my $name (@names){
     print "\t$name\n" if($self->verbose);
   }
 
   my $update_ox_sth = $self->xref->dbc->prepare('update object_xref set ox_status = "FAILED_PRIORITY" where object_xref_id = ?');
   my $update_x_sth  = $self->xref->dbc->prepare("update xref set dumped = 'NO_DUMP_ANOTHER_PRIORITY' where xref_id = ?");
-
-  #
-  # Change of tact here to make the sql easier...
-  #
 
   # 1) Set to failed all those that have no object xrefs.
 
@@ -129,11 +125,11 @@ FSQL
         WHERE ox.object_xref_id = ix.object_xref_id 
           AND ox.xref_id = x.xref_id
           AND s.source_id = x.source_id
-          AND ox_status not in ('FAILED_CUTOFF')
+          AND ox_status != 'FAILED_CUTOFF'
           AND s.name = ?
          ORDER BY x.accession DESC, s.priority ASC , identity DESC, x.xref_id DESC
 NEWS
-
+  my $new_sth = $self->xref->dbc->prepare($new_sql);
   #
   # Query to copy identity_xref values from one xref to another
   # This is to keep alignment information event if alignment was not the best match
@@ -165,28 +161,27 @@ SYNCP
 SEQCP
   my $seq_score_sth = $self->xref->dbc->prepare($seq_score_sql);
 
-  my $sth = $self->xref->dbc->prepare($new_sql);
+
   foreach my $name (@names){
-    $sth->execute($name);
+    $new_sth->execute($name);
     my ($object_xref_id, $acc, $xref_id, $identity, $status, $object_type, $ensembl_id, $info_type);
-    $sth->bind_columns(\$object_xref_id, \$acc, \$xref_id, \$identity, \$status, \$object_type, \$ensembl_id, \$info_type);
+    $new_sth->bind_columns(\$object_xref_id, \$acc, \$xref_id, \$identity, \$status, \$object_type, \$ensembl_id, \$info_type);
     my $last_acc = "";
     my $last_name = "";
     my $best_xref_id = undef;
     my @best_ensembl_id = undef;
     my $last_xref_id = 0;
     my $seen = 0;
-    my @gone;
-    while($sth->fetch){
+    my @gone; # list of xref_ids that we've already seen for this accession
+    while($new_sth->fetch){
       if($last_acc eq $acc){
-	if($xref_id != $best_xref_id){
-          if ($xref_id == $last_xref_id) {
-            $seen = 1;
-          } else {
-            $seen = 0;
-          }
+        if($xref_id != $best_xref_id){
+          # We've already seen this accession before, and this xref_id is not the best one
+
+          $seen = ($xref_id == $last_xref_id);
+          
           $last_xref_id = $xref_id;
-# If it is a sequence_match, we want to copy the alignment identity_xref to prioritised mappings to the same ensembl_id
+# If xref is a sequence_match, we want to copy the alignment identity_xref to prioritised mappings of the same ensembl_id
           if ($info_type eq 'SEQUENCE_MATCH') {
             my ($query_identity, $target_identity, $hit_start, $hit_end, $translation_start, $translation_end, $cigar_line, $score, $evalue, $best_object_xref_id);
             $seq_score_sth->execute($object_xref_id);
@@ -197,56 +192,53 @@ SEQCP
             $best_ox_sth->fetch();
             $idx_copy_sth->execute($query_identity, $target_identity, $hit_start, $hit_end, $translation_start, $translation_end, $cigar_line, $score, $evalue, $best_object_xref_id);
           }
-	  if($status eq "DUMP_OUT"){
+          # If the xref is marked DUMP_OUT, set it to FAILED_PRIORITY
+          if($status eq "DUMP_OUT"){
             $update_ox_sth->execute($object_xref_id);
 ## If it is the first time processing this xref_id, also process dependents and update status
             if (!$seen) {
               $update_x_sth->execute($xref_id);
 # Copy synonyms across if they are missing
               $syn_copy_sth->execute($best_xref_id, $xref_id);
-              $self->process_dependents($xref_id, $best_xref_id, $object_type, \@best_ensembl_id);
+              $self->process_dependents($xref_id, $best_xref_id);
             }
           }
-	  else{
-	    $update_x_sth->execute($xref_id);
-	  }
-	} else {
+          else{ # not DUMP_OUT
+            $update_x_sth->execute($xref_id);
+          }
+        } else {
           ## There might be several mappings for the best priority
           push @best_ensembl_id, $ensembl_id;
         }
-	if(@gone){ #best priority failed so anothre one now found so set dumped;
-	  if($last_name eq $acc){
-	    foreach my $d (@gone){
-	      $update_x_sth->execute($d);
-	    }
-	  }
-	}
+        if(@gone){ #best priority failed so another one now found so set dumped;
+          if($last_name eq $acc){
+            foreach my $d (@gone){
+              $update_x_sth->execute($d);
+            }
+          }
+        }
       }
-      else{ # NEW
-	if($status eq "DUMP_OUT"){
-	  $last_acc = $acc;
-	  $best_xref_id = $xref_id;
+      else{ # NEW xref_id
+        if($status eq "DUMP_OUT"){
+          $last_acc = $acc;
+          $best_xref_id = $xref_id;
           @best_ensembl_id = ($ensembl_id);
-	  if(@gone and $last_name eq $acc){
-	    foreach my $d (@gone){
-	      $update_x_sth->execute($d);
-	    }
-	    @gone=();
-	  }
-	}
-	else{
-	  if($last_name eq $acc){
-	    push @gone, $xref_id;	  }
-	  else{
-	    @gone = ();
-	    push @gone, $xref_id;
-	  }	
-	  $last_name = $acc;
-	}
+          if(@gone and $last_name eq $acc){
+            foreach my $d (@gone){
+              $update_x_sth->execute($d);
+            }
+            @gone=();
+          }
+        }
+        else{ # new xref_id not DUMP_OUT
+          if ($last_name ne $acc) { @gone = () } # new accession
+          push @gone, $xref_id;	
+          $last_name = $acc;
+        }
       }
     }
   }
-  $sth->finish;
+  $new_sth->finish;
 
   $update_ox_sth->finish;
   $update_x_sth->finish;
@@ -255,106 +247,122 @@ SEQCP
   $idx_copy_sth->finish;
   $syn_copy_sth->finish;
 
-
-# We want to make sure that if a priority xref is NOT MAPPEd then we only
-
-
-
-  $sth = $self->xref->dbc->prepare("insert into process_status (status, date) values('prioritys_flagged',now())");
+  my $sth = $self->xref->dbc->prepare("insert into process_status (status, date) values('prioritys_flagged',now())");
   $sth->execute();
   $sth->finish;
 }
 
 sub process_dependents{
-  my ($self, $old_master_xref_id, $new_master_xref_id, $object_type, $best_ensembl_id) = @_;
+# master xref IDs are entries for the current accession via various methods. We take dependent xrefs from the old and add to the new
+  my ($self, $old_master_xref_id, $new_master_xref_id) = @_;
 
-  my $dep_sth           = $self->xref->dbc->prepare("select distinct dependent_xref_id, dx.linkage_annotation, dx.linkage_source_id from dependent_xref dx where dx.master_xref_id = ?");
+
+  my $matching_ens_sth  = $self->xref->dbc->prepare("select distinct ensembl_object_type, ensembl_id from object_xref where ox_status not in ('FAILED_CUTOFF') and xref_id = ? order by ensembl_object_type");
+  my $dep_sth           = $self->xref->dbc->prepare("select distinct dx.dependent_xref_id, dx.linkage_annotation, dx.linkage_source_id, ox.ensembl_object_type from dependent_xref dx, object_xref ox where ox.xref_id = dx.dependent_xref_id and ox.master_xref_id = dx.master_xref_id and dx.master_xref_id = ? order by ox.ensembl_object_type");
   my $insert_dep_x_sth  = $self->xref->dbc->prepare("insert into dependent_xref(master_xref_id, dependent_xref_id, linkage_annotation, linkage_source_id) values(?, ?, ?, ?)");
-  my $remove_dep_ox_sth = $self->xref->dbc->prepare("delete ix, g from object_xref ox left join identity_xref ix on ix.object_xref_id = ox.object_xref_id left join go_xref g on g.object_xref_id = ox.object_xref_id where master_xref_id = ? and ensembl_object_type = ? and xref_id = ? and ensembl_id = ?");
-  my $old_ens_id_sth    = $self->xref->dbc->prepare("select distinct ensembl_id from object_xref where xref_id = ?");
-  my $update_dep_ox_sth = $self->xref->dbc->prepare("update ignore object_xref set ox_status = 'FAILED_PRIORITY' where master_xref_id = ? and ensembl_object_type = ? and xref_id = ? and ensembl_id = ? and ox_status = 'DUMP_OUT'");
-  my $clean_dep_ox_sth  = $self->xref->dbc->prepare("delete from object_xref where master_xref_id = ? and ensembl_object_type = ? and xref_id = ? and ensembl_id = ? and ox_status = 'DUMP_OUT'");
   my $insert_dep_ox_sth = $self->xref->dbc->prepare("insert ignore into object_xref(master_xref_id, ensembl_object_type, ensembl_id, linkage_type, ox_status, xref_id) values(?, ?, ?, 'DEPENDENT', 'DUMP_OUT', ?)");
   my $dep_ox_sth        = $self->xref->dbc->prepare("select object_xref_id from object_xref where master_xref_id = ? and ensembl_object_type = ? and ensembl_id = ? and linkage_type = 'DEPENDENT' AND ox_status = 'DUMP_OUT' and xref_id = ?");
   my $insert_dep_go_sth = $self->xref->dbc->prepare("insert ignore into go_xref values(?, ?, ?)");
   my $insert_ix_sth     = $self->xref->dbc->prepare("insert ignore into identity_xref(object_xref_id, query_identity, target_identity) values(?, 100, 100)");
 
-  my @master_xrefs;
-  my @old_ensembl_ids;
-  my $old_ensembl_id;
+  my @master_xrefs = ($old_master_xref_id);
   my $recursive = 0;
 
-  $old_ens_id_sth->execute($old_master_xref_id);
-  $old_ens_id_sth->bind_columns(\$old_ensembl_id);
-  my $skip = 0;
-  while ($old_ens_id_sth->fetch()) {
-    $skip = 0;
-    foreach my $best_ensembl_id (@$best_ensembl_id) {
-      if ($old_ensembl_id eq $best_ensembl_id) {
-        $skip = 1;
-        last;
-      }
-    }
-    if ($skip) {
-      next;
-    }
-    push @old_ensembl_ids, $old_ensembl_id;
+  my ($new_object_type, $new_ensembl_id);
+  my ($dep_xref_id, $linkage_annotation, $new_object_xref_id, $linkage_source_id, $object_type);
+
+
+  # Create a hash of all possible mappings for this accession
+  my %ensembl_ids;
+  $matching_ens_sth->execute($new_master_xref_id);
+  $matching_ens_sth->bind_columns(\$new_object_type, \$new_ensembl_id);
+  while ($matching_ens_sth->fetch()) {
+    push @{ $ensembl_ids{$new_object_type} }, $new_ensembl_id;
   }
-  $old_ens_id_sth->finish();
 
-  push @master_xrefs, $old_master_xref_id;
-
-  while(my $xref_id = pop(@master_xrefs)){
-    my ($dep_xref_id, $linkage_type, $new_object_xref_id, $linkage_source_id);
+  ## Loop through all dependent xrefs of old master xref, and recurse
+  while(my $xref_id = pop(@master_xrefs)){ 
+    
+    # Get dependent xrefs, be they gene, transcript or translation
     $dep_sth->execute($xref_id);
-    $dep_sth->bind_columns(\$dep_xref_id, \$linkage_type, \$linkage_source_id);
-    ## Loop through all dependent xrefs
+    $dep_sth->bind_columns(\$dep_xref_id, \$linkage_annotation, \$linkage_source_id, \$object_type);
     while($dep_sth->fetch()){
-      ## Add dependent to priority xref if it is the first master
-      if (!$recursive) {
-        $insert_dep_x_sth->execute($new_master_xref_id, $dep_xref_id, $linkage_type, $linkage_source_id);
-        foreach my $best_ensembl_id (@$best_ensembl_id) {
-          $remove_dep_ox_sth->execute($xref_id, $object_type, $dep_xref_id, $best_ensembl_id);
-          $update_dep_ox_sth->execute($xref_id, $object_type, $dep_xref_id, $best_ensembl_id);
-          $clean_dep_ox_sth->execute($xref_id, $object_type, $dep_xref_id, $best_ensembl_id);
-        }
+
+
+      # Remove all mappings to low priority xrefs
+      # Then delete any leftover identity or go xrefs of it
+      $self->_detach_object_xref($xref_id, $dep_xref_id, $object_type);
+
+      # Duplicate each dependent for the new master xref if it is the first in the chain
+      unless ($recursive) {
+        $insert_dep_x_sth->execute($new_master_xref_id, $dep_xref_id, $linkage_annotation, $linkage_source_id);
       }
-      ## object_xref for dismissed xref set to FAILED_PRIORITY
-      ## also delete any leftover identity or go xrefs
-      foreach my $old_id (@old_ensembl_ids) {
-        $remove_dep_ox_sth->execute($xref_id, $object_type, $dep_xref_id, $old_id);
-        $update_dep_ox_sth->execute($xref_id, $object_type, $dep_xref_id, $old_id);
-        $clean_dep_ox_sth->execute($xref_id, $object_type, $dep_xref_id, $old_id);
-      }
-      ## Loop through all ensembl ids mapped to priority xref
-      foreach my $best_ensembl_id (@$best_ensembl_id) {
-        ## new object_xref for each transfered mapping
-        $insert_dep_ox_sth->execute($new_master_xref_id, $object_type, $best_ensembl_id, $dep_xref_id);
-        if ($linkage_type) {
-          ## If there is a linkage_type, it is a go xref
+
+      # Loop through all chosen (best) ensembl ids mapped to priority xref, and connect them with object_xrefs
+      foreach my $ensembl_id (@{ $ensembl_ids{$object_type} }) {
+        # Add new object_xref for each best_ensembl_id. 
+        $insert_dep_ox_sth->execute($new_master_xref_id, $object_type, $ensembl_id, $dep_xref_id);
+        ## If there is a linkage_annotation, it is a go xref
+        if ($linkage_annotation) {
           ## Fetch the newly created object_xref to add them to go_xref
-          $dep_ox_sth->execute($new_master_xref_id, $object_type, $best_ensembl_id, $dep_xref_id);
+          $dep_ox_sth->execute($new_master_xref_id, $object_type, $ensembl_id, $dep_xref_id);
           $dep_ox_sth->bind_columns(\$new_object_xref_id);
           while ($dep_ox_sth->fetch()) {
-            $insert_dep_go_sth->execute($new_object_xref_id, $linkage_type, $new_master_xref_id); 
+            $insert_dep_go_sth->execute($new_object_xref_id, $linkage_annotation, $new_master_xref_id);
             $insert_ix_sth->execute($new_object_xref_id);
           }
         }
       }
-      push @master_xrefs, $dep_xref_id; # remember dependents dependents
+      push @master_xrefs, $dep_xref_id; # remember chained dependent xrefs
     }
     $recursive = 1;
     $new_master_xref_id = $dep_xref_id;
   }
 
+  $matching_ens_sth->finish();
   $dep_sth->finish();
   $insert_dep_x_sth->finish();
-  $remove_dep_ox_sth->finish();
-  $clean_dep_ox_sth->finish();
   $insert_dep_ox_sth->finish();
   $dep_ox_sth->finish();
   $insert_dep_go_sth->finish();
+  $insert_ix_sth->finish();
+}
+
+# Delete identity xrefs, go_xrefs for a given object xref
+# Set unimportant object_xrefs to FAILED_PRIORITY, and delete all those that remain
+sub _detach_object_xref {
+  my $self = shift;
+  my ($xref_id, $dep_xref_id, $object_type) = @_;
+  # Drop all the identity and go xrefs for the dependents of an xref
+  my $remove_dep_ox_sth = $self->xref->dbc->prepare(
+    "DELETE ix, g FROM object_xref ox \
+     LEFT JOIN identity_xref ix ON ix.object_xref_id = ox.object_xref_id \
+     LEFT JOIN go_xref g ON g.object_xref_id = ox.object_xref_id \
+     WHERE master_xref_id = ? AND ensembl_object_type = ? AND xref_id = ?"
+  );
+  # Fail the object_xrefs that did link to the deleted identity/go xrefs.
+  # This only updates one of potentially many, due to table contraints.
+  my $update_dep_ox_sth = $self->xref->dbc->prepare(
+    "UPDATE IGNORE object_xref SET ox_status = 'FAILED_PRIORITY' \
+    WHERE master_xref_id = ? AND ensembl_object_type = ? AND xref_id = ? AND ox_status = 'DUMP_OUT'"
+  );
+  # This deletes everything left behind by the previous query.
+  my $clean_dep_ox_sth  = $self->xref->dbc->prepare(
+    "DELETE FROM object_xref \
+    WHERE master_xref_id = ? AND ensembl_object_type = ? AND xref_id = ? AND ox_status = 'DUMP_OUT'"
+  );
+
+  $remove_dep_ox_sth->execute($xref_id, $object_type, $dep_xref_id);
+  # change status of object_xref to FAILED_PRIORITY for record keeping
+  $update_dep_ox_sth->execute($xref_id, $object_type, $dep_xref_id);
+  # delete the duplicates.
+  $clean_dep_ox_sth->execute($xref_id, $object_type, $dep_xref_id);
+
+  $remove_dep_ox_sth->finish();
+  $update_dep_ox_sth->finish();
+  $clean_dep_ox_sth->finish();
 
 }
+
 
 1;
