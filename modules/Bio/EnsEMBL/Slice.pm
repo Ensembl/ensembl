@@ -2822,11 +2822,67 @@ sub get_all_Genes_by_source {
 =cut
 
 sub get_all_Transcripts {
-  my ($self, $load_exons, $logic_name, $dbtype) = @_;
+  my ($self, $load_exons, $logic_name, $dbtype, $source, $biotype) = @_;
   if(my $adaptor = $self->_get_CoreAdaptor('Transcript', $dbtype)) {
-    return $adaptor->fetch_all_by_Slice($self, $load_exons, $logic_name);
+    return $adaptor->fetch_all_by_Slice($self, $load_exons, $logic_name, undef, $source, $biotype);
   }
   return [];
+}
+
+=head2 get_all_Transcripts_by_type
+
+  Arg [1]    : string $type
+               The biotype of transcripts wanted.
+  Arg [2]    : (optional) string $logic_name
+  Arg [3]    : (optional) boolean $load_exons
+               If set to true exons will not be lazy-loaded but will instead
+               be loaded right away.  This is faster if the exons are
+               actually going to be used right away.
+
+  Example    : @transcripts = @{$slice->get_all_Transcripts_by_type('protein_coding',
+               'ensembl')};
+  Description: Retrieves transcripts that overlap this slice of biotype $type.
+               This is primarily used by the genebuilding code when several
+               biotypes of transcripts are used.
+
+               The logic name is the analysis of the transcripts that are retrieved.
+               If not provided all transcripts will be retrieved instead. Both
+               positive and negative strand transcripts will be returned.
+
+  Returntype : listref of Bio::EnsEMBL::Transcripts
+  Exceptions : none
+  Caller     : genebuilder, general
+  Status     : Stable
+
+=cut
+
+sub get_all_Transcripts_by_type {
+  my ($self, $biotype, $logic_name, $load_exons) = @_;
+  return $self->get_all_Transcripts($load_exons, $logic_name, undef, undef, $biotype);
+}
+
+
+=head2 get_all_Transcripts_by_source
+
+  Arg [1]    : string source
+  Arg [2]    : (optional) boolean $load_exons
+               If set to true exons will not be lazy-loaded but will instead
+               be loaded right away.  This is faster if the exons are
+               actually going to be used right away.
+  Example    : @transcripts = @{$slice->get_all_Transcripts_by_source('ensembl')};
+  Description: Retrieves transcripts that overlap this slice of source $source.
+               Strand of the Slice does not affect the result.
+  Returntype : listref of Bio::EnsEMBL::Transcripts
+  Exceptions : none
+  Caller     : general
+  Status     : Stable
+
+=cut
+
+sub get_all_Transcripts_by_source {
+  my ($self, $source, $load_exons) = @_;
+  return $self->get_all_Transcripts($load_exons, undef, undef, $source);
+
 }
 
 

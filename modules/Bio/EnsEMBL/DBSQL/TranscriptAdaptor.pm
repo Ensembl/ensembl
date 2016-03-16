@@ -475,16 +475,22 @@ sub fetch_all_by_Gene {
 =cut
 
 sub fetch_all_by_Slice {
-  my ( $self, $slice, $load_exons, $logic_name, $constraint ) = @_;
+  my ( $self, $slice, $load_exons, $logic_name, $constraint, $source, $biotype ) = @_;
 
-  my $transcripts;
-  if ( defined($constraint) && $constraint ne '' ) {
-    $transcripts = $self->SUPER::fetch_all_by_Slice_constraint( $slice,
-      't.is_current = 1 AND ' . $constraint, $logic_name );
+  if (defined $constraint and $constraint ne '') {
+    $constraint .= ' AND t.is_current = 1';
   } else {
-    $transcripts = $self->SUPER::fetch_all_by_Slice_constraint( $slice,
-      't.is_current = 1', $logic_name );
+    $constraint .= 't.is_current = 1';
   }
+  if (defined($source)) {
+    $constraint .= " and t.source = '$source'";
+  }
+  if (defined($biotype)) {
+    my $inline_variables = 1;
+    $constraint .= " and ".$self->generate_in_constraint($biotype, 't.biotype', SQL_VARCHAR, $inline_variables);
+  }
+
+  my $transcripts = $self->SUPER::fetch_all_by_Slice_constraint( $slice, $constraint, $logic_name);
 
   # if there are 0 or 1 transcripts still do lazy-loading
   if ( !$load_exons || @$transcripts < 2 ) {

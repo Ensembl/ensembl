@@ -328,7 +328,17 @@ ok(scalar @{$slice->get_all_Genes_by_source('ensembl')});
 #
 #  Test Slice::get_all_Transcripts
 #
-ok(scalar @{$slice->get_all_Transcripts});
+is(scalar @{$slice->get_all_Transcripts}, 23, "Found 23 transcripts");
+
+#
+#  Test Slice::get_all_Transcripts_by_type
+#
+is(scalar @{$slice->get_all_Transcripts_by_type('protein_coding')}, 23, "Found 23 protein_coding transcripts");
+
+#
+#  Test Slice::get_all_Transcripts_by_source
+#
+is(scalar @{$slice->get_all_Transcripts_by_source('ensembl')}, 20, "Found 20 ensembl transcripts");
 
 #
 # Test Slice:get_all_Exons
