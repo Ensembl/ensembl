@@ -162,6 +162,24 @@ sub next_Exon {
   return $self->{'next'};
 }
 
+=head2 rank
+
+  Args       : none
+  Example    : $rank = $intron->rank
+  Description: Returns the rank of this Intron
+  Returntype : Integer
+  Exceptions : none
+  Caller     : general
+  Status     : Stable
+
+=cut
+
+sub rank {
+  my ($self, $transcript) = @_;
+
+  return $self->prev_Exon->rank($transcript);
+}
+
 =head2 is_splice_canonical
 
   Example     : my $canonical = $intron->is_splice_canonical(); 

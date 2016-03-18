@@ -42,8 +42,10 @@ my $transcript =
 my @exons = (@{$transcript->get_all_Exons()});  
 my @introns = (@{$transcript->get_all_Introns()});  
 
-my $i=0;
+my $rank=1;
 foreach my $intron (@introns){
+  is($intron->rank($transcript), $rank, "Checking intron rank");
+  $rank++;
   ok($intron->prev_Exon->end == $intron->start-1);
   ok($intron->next_Exon->start == $intron->end+1);
   ok($intron->is_splice_canonical(), 'Checking Intron is canonical in its splicing');
