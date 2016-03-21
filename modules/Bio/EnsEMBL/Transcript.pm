@@ -1644,6 +1644,37 @@ sub get_all_Introns {
    return \@introns;
 }
 
+=head2 get_all_CDS_Introns
+
+  Arg [1]    : none
+  Example    : my @introns = @{$transcript->get_all_CDS_Introns()};
+  Description: Returns an listref of the introns between coding exons in this transcript in order.
+  Returntype : listref to Bio::EnsEMBL::Intron objects
+  Exceptions : none
+  Caller     : general
+  Status     : Stable
+
+=cut
+
+sub get_all_CDS_Introns {
+   my ($self) = @_;
+   # return an empty list if there is no translation
+   my $translation = $self->translation or return [];
+   if( ! defined $self->{'_trans_exon_array'} && defined $self->adaptor() ) {
+     $self->{'_trans_exon_array'} = $self->adaptor()->db()->
+       get_ExonAdaptor()->fetch_all_by_Transcript( $self );
+   }
+
+   my @introns=();
+   my @exons = @{$self->{'_trans_exon_array'}};
+   for(my $i=0; $i < scalar(@exons)-1; $i++){
+     if (!$exons[$i]->is_coding($self)) { next; }
+     my $intron = new Bio::EnsEMBL::Intron($exons[$i],$exons[$i+1]);
+     push(@introns, $intron)
+   }
+   return \@introns;
+}
+
 
 =head2 length
 

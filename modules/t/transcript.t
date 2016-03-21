@@ -351,10 +351,18 @@ foreach my $stable_id (qw(ENST00000201961 ENST00000217347)){ #test both strands
   my @exons = (@{$transcript->get_all_Exons()});
   my @introns = (@{$transcript->get_all_Introns()});
 
+  my @cds = (@{$transcript->get_all_CDS()});
+  my @cds_introns = (@{$transcript->get_all_CDS_Introns()});
+
   my $orig_seq = $transcript->slice->subseq(
 					    $transcript->start(),
 					    $transcript->end(), 
 					    $transcript->strand());
+
+  my $cds_orig_seq = $transcript->slice->subseq(
+                                            $transcript->coding_region_start(),
+                                            $transcript->coding_region_end(),
+                                            $transcript->strand());
 
   my $idl=0;
   my $new_seq = $exons[0]->seq()->seq();
@@ -366,6 +374,17 @@ foreach my $stable_id (qw(ENST00000201961 ENST00000217347)){ #test both strands
   }
 
   is($orig_seq, $new_seq, 'Correct new origin seq');
+
+  my $cds_idl=0;
+  my $new_cds_seq = $cds[0]->seq();
+  foreach my $cds_intron (@cds_introns){
+    $new_cds_seq .= $cds_intron->seq;
+    $new_cds_seq .= $cds[$cds_idl+1]->seq();
+    $cds_idl++;
+
+  }
+
+  is($cds_orig_seq, $new_cds_seq, 'Correct new cds origin seq');
 
 }
 
