@@ -1281,6 +1281,28 @@ sub is_constitutive {
   return $self->{'is_constitutive'};
 }
 
+=head2 is_coding
+
+  Arg [1]    : Boolean $is_coding
+  Arg [2]    : Bio::EnsEMBL::Transcript
+  Example    : $exon->is_coding()
+  Description: Says if the exon is within the translation or not
+  Returntype : Int
+  Exceptions : none
+  Caller     : general
+  Status     : Stable
+
+=cut
+
+sub is_coding {
+  my ( $self, $transcript) = @_;
+
+  if (!$transcript->translate) { return 0; }
+  if ($transcript->coding_region_start < $self->start && $self->start < $transcript->coding_region_end) { return 1; }
+  if ($transcript->coding_region_end > $self->end && $self->end > $transcript->coding_region_start) { return 1; }
+  return 0;
+}
+
 
 =head2 adjust_start_end
 
