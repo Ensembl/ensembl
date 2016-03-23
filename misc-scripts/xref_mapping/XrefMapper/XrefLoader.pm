@@ -557,19 +557,21 @@ GCNTSQL
   # 1) make sure the reason exist/create them and get the ids for these.
   # 2) Process where dumped is null and type = DIRECT, DEPENDENT, SEQUENCE_MATCH, MISC seperately
   ########################################
-
-  # Get the cutoff values
-  $sth = $self->xref->dbc->prepare("select job_id, percent_query_cutoff, percent_target_cutoff from mapping limit 1");
-  $sth->execute();
-  my ($job_id, $q_cut, $t_cut);
-  $sth->bind_columns(\$job_id, \$q_cut, \$t_cut);
-  $sth->fetch;
-  $sth->finish;
-
-
   my %summary_failed;
   my %desc_failed;
   my %reason_id;
+
+  # Get the cutoff values
+  $sth = $self->xref->dbc->prepare("select distinct s.name, m.percent_query_cutoff, m.percent_target_cutoff from source s, source_mapping_method sm, mapping m where sm.source_id = s.source_id and sm.method = m.method");
+  $sth->execute();
+  my ($source_name, $q_cut, $t_cut);
+  $sth->bind_columns(\$source_name, \$q_cut, \$t_cut);
+
+  while ($sth->fetch) {
+    $summary_failed{$source_name} = "Failed to match at thresholds";
+    $desc_failed{$source_name}    = "Unable to match at the thresholds of $q_cut\% for the query or $t_cut\% for the target";
+  }
+  $sth->finish;
 
   $summary_failed{"NO_STABLE_ID"} = "Failed to find Stable ID";
   $desc_failed{"NO_STABLE_ID"}    = "Stable ID that this xref was linked to no longer exists";
@@ -579,9 +581,6 @@ GCNTSQL
 
   $summary_failed{"NO_MAPPING"} = "No mapping done";
   $desc_failed{"NO_MAPPING"}    = "No mapping done for this type of xref";
-
-  $summary_failed{"FAILED_THRESHOLD"} = "Failed to match at thresholds";
-  $desc_failed{"FAILED_THRESHOLD"}    = "Unable to match at the thresholds of $q_cut\% for the query or $t_cut\% for the target";
 
   $summary_failed{"MASTER_FAILED"} = "Master failed";
   $desc_failed{"MASTER_FAILED"}    = "The dependent xref was not matched due to the master xref not being mapped";
@@ -830,11 +829,12 @@ SEQ
   $seq_unmapped_sth->bind_columns(\$xref_id, \$acc, \$version, \$label, \$desc, \$type, \$info, \$dbname, \$seq_type, \$ensembl_object_type, \$ensembl_id, \$q_id, \$t_id,\$status);
 
   my $set_unmapped_no_sth     = $self->core->dbc->prepare("insert into unmapped_object (type, analysis_id, external_db_id, identifier, unmapped_reason_id, ensembl_object_type ) values ('xref', ?, ?, ?, '".$reason_id{"FAILED_MAP"}."', ?)");
-  my $set_unmapped_failed_sth = $self->core->dbc->prepare("insert into unmapped_object (type, analysis_id, external_db_id, identifier, unmapped_reason_id, query_score, target_score, ensembl_id, ensembl_object_type ) values ('xref', ?, ?, ?, '".$reason_id{"FAILED_THRESHOLD"}."',?,?,?,?)");
+  my $set_unmapped_failed_sth = $self->core->dbc->prepare("insert into unmapped_object (type, analysis_id, external_db_id, identifier, unmapped_reason_id, query_score, target_score, ensembl_id, ensembl_object_type ) values ('xref', ?, ?, ?, ?,?,?,?,?)");
 
 
   @xref_list = ();
   my $last_xref = 0;
+  my $unmapped_reason_id;
   while($seq_unmapped_sth->fetch()){
     my $ex_id = $name_to_external_db_id{$dbname};
     if(!defined($ex_id) or (defined($status) and $status eq "FAILED_PRIORITY") ){
@@ -846,7 +846,8 @@ SEQ
     $last_xref = $xref_id;
     if(defined($ensembl_id)){
       $analysis_id= $analysis_ids{$ensembl_object_type};
-      $set_unmapped_failed_sth->execute($analysis_id, $ex_id, $acc, $q_id, $t_id, $ensembl_id, $ensembl_object_type );
+      $unmapped_reason_id = $reason_id{$dbname};
+      $set_unmapped_failed_sth->execute($analysis_id, $ex_id, $acc, $unmapped_reason_id, $q_id, $t_id, $ensembl_id, $ensembl_object_type );
     }
     else{
       if($seq_type eq "dna"){
