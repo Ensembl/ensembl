@@ -157,6 +157,7 @@ my %group2adaptor = (
       'gene2phenotype' => 'Bio::EnsEMBL::G2P::DBSQL::DBAdaptor',
       'regulation' => 'Bio::EnsEMBL::Funcgen::DBSQL::DBAdaptor',
       'hive'      => 'Bio::EnsEMBL::Hive::DBSQL::DBAdaptor',
+      'metadata'  => 'Bio::EnsEMBL::MetaData::DBSQL::MetaDataDBAdaptor',
       'ontology'  => 'Bio::EnsEMBL::DBSQL::OntologyDBAdaptor',
       'otherfeatures' => 'Bio::EnsEMBL::DBSQL::DBAdaptor',
       'pipeline'      => 'Bio::EnsEMBL::Pipeline::DBSQL::DBAdaptor',
@@ -1735,6 +1736,7 @@ sub load_registry_from_db {
   my $ontology_version;
 
   my $taxonomy_db;
+  my $ensembl_metadata_db;
 
   my $production_dba_ok = 
     eval { require Bio::EnsEMBL::Production::DBSQL::DBAdaptor; 1 };
@@ -1808,6 +1810,8 @@ sub load_registry_from_db {
       }
     } elsif ( $db =~ /^ncbi_taxonomy$/ ) {
         $taxonomy_db      = $db;
+    } elsif ( $db =~ /^ensembl_metadata$/ ) {
+        $ensembl_metadata_db      = $db;
     } elsif ( $production_dba_ok and $db =~ /^ensembl(?:genomes)?_production(_\d+)?/x ) {
       # production db can come with no version (i.e. that on ens-staging1),
       # but it's backed up with a release number
@@ -2335,6 +2339,34 @@ sub load_registry_from_db {
   }
   elsif ($verbose) {
     print("No taxonomy database found\n");
+  }
+  
+  # ensembl_metadata
+
+  if ( defined $ensembl_metadata_db) {
+     
+    my $has_metadata = eval {require Bio::EnsEMBL::MetaData::DBSQL::MetaDataDBAdaptor};
+    if($@ or (!defined $has_metadata)) {
+        if($verbose) {
+          print "ensembl_metadata API not found - ignoring $ensembl_metadata_db\n";
+        }
+    } else {
+        my $dba = Bio::EnsEMBL::MetaData::DBSQL::MetaDataDBAdaptor->new(
+                                '-species' => 'multi' . $species_suffix,
+                                '-group'   => 'metadata',
+                                '-host'    => $host,
+                                '-port'    => $port,
+                                '-user'    => $user,
+                                '-pass'    => $pass,
+                                '-dbname'  => $ensembl_metadata_db, );
+
+       if ($verbose) {
+         printf( "%s loaded\n", $ensembl_metadata_db );
+       }
+     }
+  }
+  elsif ($verbose) {
+    print("No ensembl_metadata database found\n");
   }
 
   # Production
@@ -3043,7 +3075,7 @@ sub get_species_and_object_type {
 
     my @dbas = 
       sort { $a->dbc->host cmp $b->dbc->host || $a->dbc->port <=> $b->dbc->port } 
-      grep { $_->dbc->dbname ne 'ncbi_taxonomy' }
+      grep { $_->dbc->dbname ne 'ncbi_taxonomy' && $_->dbc->dbname ne 'ensembl_metadata' }
       @{$self->get_all_DBAdaptors(%get_adaptors_args)};    
     
     foreach my $dba (@dbas) {
