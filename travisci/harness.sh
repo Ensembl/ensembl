@@ -1,8 +1,9 @@
 #!/bin/bash
 
-ENSDIR="${ENSDIR:-$PWD}"
+PPWD="${PWD}/.."
+ENSDIR="${ENSDIR:-$PPWD}"
 
-export PERL5LIB=$ENSDIR/bioperl-live:$ENSDIR/ensembl-test/modules:$PWD/modules:$ENSDIR/ensembl-variation/modules
+export PERL5LIB=$PWD/modules:$ENSDIR/bioperl-live:$ENSDIR/ensembl-test/modules:$ENSDIR/ensembl-variation/modules
 export TEST_AUTHOR=$USER
 
 if [ "$DB" = 'mysql' ]; then

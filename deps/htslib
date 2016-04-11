@@ -1,0 +1,10 @@
+
+PREFIX ?= ../../
+
+all: | $(PREFIX)htslib
+
+$(PREFIX)htslib:
+	cd $(PREFIX) && \
+	git clone --branch master --depth 1 https://github.com/samtools/htslib.git && \
+	cd htslib && \
+	make

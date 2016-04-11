@@ -1,0 +1,17 @@
+
+PREFIX ?= ../../
+PERLVER=$(shell perl -e 'print $$] >= 5.014')
+
+all: | $(PREFIX)Bio-HTS
+
+$(PREFIX)Bio-HTS: | $(PREFIX)htslib
+ifeq ($(PERLVER),1)
+	export HTSLIB_DIR=$(PREFIX)htslib && \
+	cd $(PREFIX) && \
+	git clone --branch master --depth 1 https://github.com/Ensembl/Bio-HTS && \
+	cd Bio-HTS && \
+	perl Build.PL $(HTSLIB_DIR)
+endif
+
+$(PREFIX)htslib:
+	$(MAKE) -f htslib

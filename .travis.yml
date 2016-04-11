@@ -6,9 +6,13 @@ perl:
   - "5.10"
 
 env:
-  - COVERALLS=true  DB=mysql
-  - COVERALLS=false DB=mysql
-  - COVERALLS=false DB=sqlite
+  global:
+    - SKIP_TESTS_sqlite='dbConnection.t,schema.t,schemaPatches.t,strainSlice.t,sliceVariation.t'
+    - PERL5OPT_COVERALLS_true='-MDevel::Cover=+ignore,bioperl,+ignore,ensembl-test,+ignore,ensembl-variation'
+  matrix:
+    - COVERALLS=true  DB=mysql
+    - COVERALLS=false DB=mysql
+    - COVERALLS=false DB=sqlite
   
 sudo: false
   
@@ -16,22 +20,25 @@ addons:
   apt:
     packages:
     - unzip
+    - curl
 
 before_install:
-    - git clone --branch master --depth 1 https://github.com/Ensembl/ensembl-test.git
-    - git clone --branch master --depth 1 https://github.com/Ensembl/ensembl-variation.git
-    - wget http://bioperl.org/DIST/BioPerl-1.6.1.tar.gz
-    - mkdir bioperl-live && tar zxvf BioPerl-1.6.1.tar.gz -C bioperl-live --strip-components 1
+    - export PR=https://api.github.com/repos/$TRAVIS_REPO_SLUG/pulls/$TRAVIS_PULL_REQUEST
+    - export BRANCH=$(if [ "$TRAVIS_PULL_REQUEST" == "false" ]; then echo $TRAVIS_BRANCH; else echo `curl -s $PR | jq -r .head.ref`; fi)
+    - echo "TRAVIS_BRANCH=$TRAVIS_BRANCH, PR=$PR, BRANCH=$BRANCH"
+    - pushd ..
+    - echo "Staging branch $TRAVIS_BRANCH"
+    - curl -L https://raw.githubusercontent.com/Ensembl/ensembl/$BRANCH/bootstrap.sh | TEST_MODULE=ensembl RELEASE=master bash
+    - popd
 
 
 install:
-    - cpanm -v --installdeps --notest .
     - cpanm -n Devel::Cover::Report::Coveralls
     - cpanm -n DBD::SQLite
     - cp travisci/MultiTestDB.conf.travisci.mysql  modules/t/MultiTestDB.conf.mysql
-    - cp travisci/MultiTestDB.conf.travisci.SQLite modules/t/MultiTestDB.conf.SQLite
+    - cp travisci/MultiTestDB.conf.travisci.SQLite modules/t/MultiTestDB.conf.sqlite
 
-script: "./travisci/harness.sh"
+script: "../ensembl-test/scripts/harness.sh"
 
 # Get the matrix to only build coveralls support when on 5.10
 matrix:

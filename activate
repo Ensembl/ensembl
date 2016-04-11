@@ -1,0 +1,117 @@
+#!/bin/bash
+
+# Find perl libraries and binary/script paths
+# for a given path
+
+print_usage () {
+    echo "Usage: $0 [-vv] [-d dir] [path]" >&2
+    exit 1
+}
+
+pathremove () {
+        local IFS=':'
+        local NEWPATH
+        local DIR
+        local PATHVARIABLE=${2:-PATH}
+        for DIR in ${!PATHVARIABLE} ; do
+                if [ "$DIR" != "$1" ] ; then
+                  NEWPATH=${NEWPATH:+$NEWPATH:}$DIR
+                fi
+        done
+        export $PATHVARIABLE="$NEWPATH"
+}
+
+pathprepend () {
+        pathremove $1 $2
+        local PATHVARIABLE=${2:-PATH}
+        export $PATHVARIABLE="$1${!PATHVARIABLE:+:${!PATHVARIABLE}}"
+}
+
+pathappend () {
+        pathremove $1 $2
+        local PATHVARIABLE=${2:-PATH}
+        export $PATHVARIABLE="${!PATHVARIABLE:+${!PATHVARIABLE}:}$1"
+}
+
+# The the verbosity level
+v=0
+
+while getopts ":d:v" opt; do
+    case $opt in
+	v) 
+	    (( v=v+1 ))
+	    ;;
+	d)
+	    repos=($OPTARG)
+	    ;;
+        [?])
+	    print_usage
+	    ;;
+	\?)
+	    echo "Invalid option: -$OPTARG" >&2
+	    print_usage
+	    ;;
+    esac
+done
+
+# And shift to get the path argument
+shift $((OPTIND-1))
+
+# Reset the index so we can source this script again
+unset OPTIND
+
+# Use the current directory unless otherwise specified
+BASEDIR=${1:-$PWD}
+
+# If given a directory via -d, only check that, otherwise
+# scan the basedir
+if [ -z "$repos" ]; then
+    repos=(${BASEDIR}/*)
+fi
+
+for d in "${repos[@]}"; do
+
+    # Ensembl default style, module dir for perl libs
+    if [ -d "$d/modules" ]; then
+	(( "$v" >= "2" )) && echo "Found modules in $d"
+	pathprepend "$d/modules" PERL5LIB
+    fi
+
+    # CPAN default style, lib for perl libs
+    if [ -d "$d/lib" ]; then
+	(( "$v" >= "2" )) && echo "Found lib in $d"
+	pathprepend "$d/lib" PERL5LIB
+    fi
+
+    # Compiled modules that aren't installed system wide
+    if [ -d "$d/blib" ]; then
+	(( "$v" >= "2" )) && echo "Found blib in $d"
+	pathprepend "$d/blib/arch" PERL5LIB
+	pathprepend "$d/blib/lib" PERL5LIB
+    fi
+
+    # For some of our quirky setups, plus bioperl
+    files=(`find $d -maxdepth 1 -name "*.pm"`)
+    if [ ${#files[@]} -gt 0 ]; then
+	(( "$v" >= "2" )) && echo "Found .pm in $d"
+	pathprepend $d PERL5LIB
+    fi
+
+    if [ -d "$d/bin" ]; then
+	(( "$v" >= "2" )) && echo "Found bin in $d"
+	pathprepend "$d/bin"
+    fi
+
+    if [ -d "$d/scripts" ]; then
+	(( "$v" >= "2" )) && echo "Found scripts in $d"
+	pathprepend "$d/scripts"
+    fi
+    
+done
+
+(( "$v" >= "1" )) && echo "New PERL5LIB: $PERL5LIB"
+(( "$v" >= "1" )) && echo "New PATH: $PATH"
+
+# Clear so we can source the script again
+unset BASEDIR
+unset repos
