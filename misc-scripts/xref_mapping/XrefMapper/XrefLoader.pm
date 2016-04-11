@@ -606,77 +606,6 @@ GCNTSQL
     $reason_id{$key} = $failed_id;
   }
 
-
-  ## Dump interpro xrefs and interpro table
-  # use NO_MAPPING as unmapped_reason
-  
-  # remove the old set
-  # dump xrefs;
-  # dump unmapped reasons
-  # set xref status to dumped
-  
-  $transaction_start_sth->execute();
-
-  #delete old set
-  # 1 delete unmapped_object
-  # 2 delete xrefs
-
-  my $del_x_sth = $self->core->dbc->prepare('delete x from xref x, external_db e where x.external_db_id = e.external_db_id and e.db_name like "interpro"') || die "Could not prepare interpro xref deletion";
-  $del_x_sth->execute() || die "Problem executing deletion of interpro xrefs";
-
-  my $del_uo_sth = $self->core->dbc->prepare('delete x from unmapped_object x, external_db e where x.external_db_id = e.external_db_id and e.db_name like "interpro"') || die "Could not prepare interpro unmapped_object deletion";
-  $del_uo_sth->execute() || die "Problem executing deletion of interpro xrefs";
-
-  my $get_xref_interpro_sth  = $self->xref->dbc->prepare("select x.xref_id, x.accession, x.version, x.label, x.description, x.info_type, x.info_text from xref x ,source s where s.source_id = x.source_id and s.name like 'Interpro'");
-
-  my $get_interpro_sth       = $self->xref->dbc->prepare("select interpro, pfam from interpro");
-  my $add_interpro_sth       = $self->core->dbc->prepare("insert into interpro (interpro_ac, id) values (?, ?)");
-  my $set_unmapped_sth       =  $self->core->dbc->prepare("insert into unmapped_object (type, analysis_id, external_db_id, identifier, unmapped_reason_id ) values ('xref', ?, ?, ?, ?)");
-  my @xref_list =();
-  
-  
-  my $ex_id = $name_to_external_db_id{"Interpro"};
-  my $analysis_id = $analysis_ids{'Transcript'};   # No real analysis here but in table it is set to not NULL
- 
-  
-  $get_xref_interpro_sth->execute();
-  my ($xref_id, $acc, $version, $label, $desc, $info);
-  $get_xref_interpro_sth->bind_columns(\$xref_id, \$acc, \$version, \$label, \$desc, \$type, \$info);
-  
-  while($get_xref_interpro_sth->fetch){
-    $version||='0';
-    $xref_id = $self->add_xref($xref_offset, $xref_id, $ex_id, $acc, $label, $version, $desc, 'UNMAPPED', $info);
-    $set_unmapped_sth->execute($analysis_id, $ex_id, $acc, $reason_id{"NO_MAPPING"} );
-    push @xref_list, $xref_id;
-  }
-  $get_xref_interpro_sth->finish;
-  $set_unmapped_sth->finish;
-
-  if(@xref_list){
-    my $xref_dumped_sth = $self->xref->dbc->prepare("update xref set dumped = 'UNMAPPED_INTERPRO' where xref_id in (".join(", ",@xref_list).")");
-    $xref_dumped_sth->execute(); 
-    $xref_dumped_sth->finish;
-  }
-
-  # delete all entries in interpro table
-  my $del_sth = $self->core->dbc->prepare("delete from interpro");
-  $del_sth->execute;
-  $del_sth->finish;
-  
-  # add new entries to interpro table
-  $get_interpro_sth->execute();
-  my ($inter);
-  $get_interpro_sth->bind_columns(\$inter,\$id);
-  while($get_interpro_sth->fetch){
-    $add_interpro_sth->execute($inter, $id);
-  }
-  $get_interpro_sth->finish;
-  $add_interpro_sth->finish;
-
-  $transaction_end_sth->execute();
-
-
-#  foreach my $type (qw(MISC DEPENDENT DIRECT SEQUENCE_MATCH INFERRED_PAIR)){
   $transaction_start_sth->execute();
 
   ##########
@@ -695,11 +624,14 @@ GCNTSQL
 DIR
 
   my $direct_unmapped_sth = $self->xref->dbc->prepare($sql);
+  my ($xref_id, $acc, $version, $label, $desc, $info);
   $direct_unmapped_sth->execute();
   $direct_unmapped_sth->bind_columns(\$xref_id, \$acc, \$version, \$label, \$desc, \$type, \$info, \$dbname);
 
-  @xref_list = ();
-  $analysis_id = $analysis_ids{'Transcript'};   # No real analysis here but in table it is set to not NULL
+  my $set_unmapped_sth       =  $self->core->dbc->prepare("insert into unmapped_object (type, analysis_id, external_db_id, identifier, unmapped_reason_id ) values ('xref', ?, ?, ?, ?)");
+
+  my @xref_list = ();
+  my $analysis_id = $analysis_ids{'Transcript'};   # No real analysis here but in table it is set to not NULL
   while($direct_unmapped_sth->fetch()){
     my $ex_id = $name_to_external_db_id{$dbname};
     if(defined($name_to_external_db_id{$dbname})){

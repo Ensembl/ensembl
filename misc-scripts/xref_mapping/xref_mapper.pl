@@ -29,7 +29,6 @@ use XrefMapper::ProcessPaired;
 use XrefMapper::CoreInfo;
 use XrefMapper::TestMappings;
 use XrefMapper::XrefLoader;
-use XrefMapper::Interpro;
 use XrefMapper::DisplayXrefs;
 use XrefMapper::CoordinateMapper;
 use XrefMapper::UniParcMapper;
@@ -184,12 +183,10 @@ if($status eq "direct_xrefs_parsed"){  # process the priority xrefs.
 
 # pair data
 $status = $mapper->xref_latest_status();
-if($status eq "prioritys_flagged"){  # process the inferred pairs and interpro xrefs.
+if($status eq "prioritys_flagged"){  # process the inferred pairs
   my $pp = XrefMapper::ProcessPaired->new($mapper);
   $pp->process();
 
-  my $inter = XrefMapper::Interpro->new($mapper);
-  $inter->process();
 }
 
 
