@@ -104,7 +104,7 @@ sub select_canonical_transcript_for_Gene {
         @transcripts = @$transcript_array;
     } else {
         warning('No transcripts attached to gene '.$gene->stable_id);
-        return undef;
+        return;
     }
     my @encoded; # array of encoded transcripts
     
