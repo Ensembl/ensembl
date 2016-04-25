@@ -636,9 +636,6 @@ sub parse_location_to_values {
       }
     }
     
-    if(defined $start && defined $end && $start > $end) {
-      throw "Cannot request a slice whose start is greater than its end. Start: $start. End: $end" unless $no_errors;
-    }
   }
   
   return ($seq_region_name, $start, $end, $strand);
