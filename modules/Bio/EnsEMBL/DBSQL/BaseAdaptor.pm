@@ -1109,7 +1109,7 @@ sub get_dumped_data {
     my $self = shift;
     my $data = shift;
 
-    $data =~ s/\n|\r|\f|\\//g;
+    $data =~ s/\n|\r|\f|(\\\\)//g;
     return eval ($data); ## no critic
 }
 

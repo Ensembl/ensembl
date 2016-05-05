@@ -284,6 +284,13 @@ foreach my $tr (@{$gene->get_all_Transcripts()}) {
 ok($count == 5);
 ok($translates);
 
+# Verify Transcript cache is not leaky
+my $transcripts = $gene->get_all_Transcripts;
+$count = @$transcripts;
+pop @$transcripts;
+$transcripts = $gene->get_all_Transcripts;
+cmp_ok(scalar @$transcripts, '==', $count, "Gene's transcript cache is not modified by changing transcript lists in caller code");
+
 ok(scalar(@{$gene->get_all_Exons()}) == 3);
 
 $gene = $gene->transform("chromosome");

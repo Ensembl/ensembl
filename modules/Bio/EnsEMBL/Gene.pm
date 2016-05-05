@@ -1013,7 +1013,12 @@ sub get_all_Transcripts {
       $self->{'_transcript_array'} = $transcripts;
     }
   }
-  return $self->{'_transcript_array'};
+  my @array_copy;
+  if (defined $self->{'_transcript_array'}) {
+    @array_copy = @{ $self->{'_transcript_array'} } ;
+    return \@array_copy;
+  }
+  return;
 }
 
 
