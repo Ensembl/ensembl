@@ -437,7 +437,7 @@ is( count_rows( $db, "exon_transcript"), ($ex_tr_count - $ex_tr_minus), 'Row cou
 
 $tr = $ta->fetch_by_stable_id('ENST00000278995');
 my $gene = $tr->get_Gene;
-print $gene."\n\n";
+print $gene->stable_id."\n\n";
 note(join "\n",map { $_->stable_id } @{$gene->get_all_Transcripts});
 
 $ta->remove($tr,1);
@@ -841,9 +841,16 @@ done_testing();
 sub test_trans_mapper_edits {
   $tr->edits_enabled(1);
 
+  # We want to fetch the first exon, and edit it's coordinates
+  # to test the mapper and edits
+  my $exons = $tr->get_all_Exons();
+  ok(@{$exons}, 'We found at least one exon in the transcript');
+  my $first_exon = shift @{$exons};
 
-  my $start = ($tr->strand() == 1) ? 1  : $tr->end() - 11;
-  my $end   = ($tr->strand() == 1) ? 12 : $tr->end();
+  # Start and end for testing genomic to cda coordinates should be relative
+  # to the first exon, whichever direction transcription is occurring
+  my $start = ($tr->strand() == 1) ? $first_exon->seq_region_start() : $first_exon->seq_region_end() - 11;
+  my $end = ($tr->strand() == 1) ? $first_exon->seq_region_start() + 11 : $first_exon->seq_region_end();
 
   @coords = $tr->genomic2cdna($start, $end, $tr->strand());
 
