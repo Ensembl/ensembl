@@ -16,7 +16,7 @@ use strict;
 use warnings;
 
 use Test::More;
-use Test::Warnings;
+#use Test::Warnings;
 use Bio::EnsEMBL::Test::TestUtils;
 use Bio::EnsEMBL::Test::MultiTestDB;
 
