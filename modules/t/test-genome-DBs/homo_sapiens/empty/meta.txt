@@ -73,3 +73,4 @@
 122	\N	patch	patch_83_84_b.sql|xref.version_default
 123	\N	patch	patch_83_84_c.sql|protein_feature_unique
 124	\N	patch	patch_83_84_d.sql|longer_synonym
+125	\N	patch	patch_83_84_e.sql|nullable_versions

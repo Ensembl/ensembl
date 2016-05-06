@@ -11,7 +11,7 @@
 11	\N	patch	patch_74_75_d.sql|default_transcript_source
 12	\N	patch	patch_74_75_e.sql|unique_attrib_key
 13	\N	patch	patch_74_75_f.sql|longer_code
-107	0		\N
+107	0		
 108	\N	patch	patch_75_76_a.sql|schema_version
 109	\N	patch	patch_75_76_b.sql|allow_null_karyotype
 110	\N	patch	patch_75_76_c.sql|remove_alternative_splicing
@@ -34,3 +34,4 @@
 127	\N	patch	patch_83_84_b.sql|xref.version_default
 128	\N	patch	patch_83_84_c.sql|protein_feature_unique
 129	\N	patch	patch_83_84_d.sql|longer_synonym
+130	\N	patch	patch_83_84_e.sql|nullable_versions

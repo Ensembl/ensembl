@@ -1,6 +1,6 @@
 -- 
 -- Created by SQL::Translator::Producer::SQLite
--- Created on Fri Dec 11 17:18:34 2015
+-- Created on Fri May  6 15:44:14 2016
 -- 
 
 BEGIN TRANSACTION;
@@ -270,7 +270,7 @@ CREATE TABLE exon (
   is_current tinyint NOT NULL DEFAULT 1,
   is_constitutive tinyint NOT NULL DEFAULT 0,
   stable_id varchar(128),
-  version smallint NOT NULL DEFAULT 1,
+  version smallint,
   created_date datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
   modified_date datetime NOT NULL DEFAULT '0000-00-00 00:00:00'
 );
@@ -328,7 +328,7 @@ CREATE TABLE gene (
   is_current tinyint NOT NULL DEFAULT 1,
   canonical_transcript_id integer NOT NULL,
   stable_id varchar(128),
-  version smallint NOT NULL DEFAULT 1,
+  version smallint,
   created_date datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
   modified_date datetime NOT NULL DEFAULT '0000-00-00 00:00:00'
 );
@@ -584,7 +584,7 @@ CREATE UNIQUE INDEX c02 ON misc_set (code);
 CREATE TABLE object_xref (
   object_xref_id integer NOT NULL,
   ensembl_id integer NOT NULL DEFAULT 0,
-  ensembl_object_type enum NOT NULL,
+  ensembl_object_type enum NOT NULL DEFAULT 'RawContig',
   xref_id integer NOT NULL,
   linkage_annotation varchar(255),
   analysis_id smallint NOT NULL
@@ -615,7 +615,7 @@ CREATE TABLE operon (
   display_label varchar(255),
   analysis_id smallint NOT NULL,
   stable_id varchar(128),
-  version smallint NOT NULL DEFAULT 1,
+  version smallint,
   created_date datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
   modified_date datetime NOT NULL DEFAULT '0000-00-00 00:00:00'
 );
@@ -633,7 +633,7 @@ CREATE TABLE operon_transcript (
   display_label varchar(255),
   analysis_id smallint NOT NULL,
   stable_id varchar(128),
-  version smallint NOT NULL DEFAULT 1,
+  version smallint,
   created_date datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
   modified_date datetime NOT NULL DEFAULT '0000-00-00 00:00:00'
 );
@@ -856,7 +856,7 @@ CREATE TABLE transcript (
   is_current tinyint NOT NULL DEFAULT 1,
   canonical_translation_id integer,
   stable_id varchar(128),
-  version smallint NOT NULL DEFAULT 1,
+  version smallint,
   created_date datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
   modified_date datetime NOT NULL DEFAULT '0000-00-00 00:00:00'
 );
@@ -907,7 +907,7 @@ CREATE TABLE translation (
   seq_end integer NOT NULL,
   end_exon_id integer NOT NULL,
   stable_id varchar(128),
-  version smallint NOT NULL DEFAULT 1,
+  version smallint,
   created_date datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
   modified_date datetime NOT NULL DEFAULT '0000-00-00 00:00:00'
 );
@@ -936,7 +936,8 @@ CREATE TABLE unmapped_object (
   query_score double precision,
   target_score double precision,
   ensembl_id integer DEFAULT 0,
-  ensembl_object_type enum DEFAULT 'RawContig'
+  ensembl_object_type enum DEFAULT 'RawContig',
+  parent varchar(255)
 );
 
 --
@@ -953,7 +954,7 @@ CREATE TABLE unmapped_reason (
 --
 CREATE TABLE xref (
   xref_id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
-  external_db_id integer NOT NULL DEFAULT 0,
+  external_db_id integer NOT NULL,
   dbprimary_acc varchar(512) NOT NULL,
   display_label varchar(512) NOT NULL,
   version varchar(10),

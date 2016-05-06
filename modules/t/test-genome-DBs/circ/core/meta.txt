@@ -94,3 +94,4 @@
 40	1	species.taxonomy_id	1217737
 31	1	species.url	Bacillus_thuringiensis
 55	1	transcriptbuild.level	toplevel
+97	\N	patch	patch_83_84_e.sql|nullable_versions

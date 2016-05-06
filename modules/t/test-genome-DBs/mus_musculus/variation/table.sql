@@ -27,12 +27,12 @@ CREATE TABLE `associate_study` (
 ) ENGINE=MyISAM DEFAULT CHARSET=latin1;
 
 CREATE TABLE `attrib` (
-  `attrib_id` int(11) unsigned NOT NULL DEFAULT '0',
+  `attrib_id` int(11) unsigned NOT NULL AUTO_INCREMENT,
   `attrib_type_id` smallint(5) unsigned NOT NULL DEFAULT '0',
   `value` text NOT NULL,
   PRIMARY KEY (`attrib_id`),
   UNIQUE KEY `type_val_idx` (`attrib_type_id`,`value`(80))
-) ENGINE=MyISAM DEFAULT CHARSET=latin1;
+) ENGINE=MyISAM AUTO_INCREMENT=419 DEFAULT CHARSET=latin1;
 
 CREATE TABLE `attrib_set` (
   `attrib_set_id` int(11) unsigned NOT NULL DEFAULT '0',
@@ -168,7 +168,7 @@ CREATE TABLE `meta` (
   PRIMARY KEY (`meta_id`),
   UNIQUE KEY `species_key_value_idx` (`species_id`,`meta_key`,`meta_value`),
   KEY `species_value_idx` (`species_id`,`meta_value`)
-) ENGINE=MyISAM AUTO_INCREMENT=37 DEFAULT CHARSET=latin1;
+) ENGINE=MyISAM AUTO_INCREMENT=42 DEFAULT CHARSET=latin1;
 
 CREATE TABLE `meta_coord` (
   `table_name` varchar(40) NOT NULL,
@@ -364,6 +364,16 @@ CREATE TABLE `sample_population` (
   KEY `sample_idx` (`sample_id`)
 ) ENGINE=MyISAM DEFAULT CHARSET=latin1;
 
+CREATE TABLE `sample_synonym` (
+  `synonym_id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+  `sample_id` int(10) unsigned NOT NULL,
+  `source_id` int(10) unsigned NOT NULL,
+  `name` varchar(255) DEFAULT NULL,
+  PRIMARY KEY (`synonym_id`),
+  KEY `sample_idx` (`sample_id`),
+  KEY `name` (`name`,`source_id`)
+) ENGINE=MyISAM DEFAULT CHARSET=latin1;
+
 CREATE TABLE `seq_region` (
   `seq_region_id` int(10) unsigned NOT NULL,
   `name` varchar(40) NOT NULL,
@@ -480,15 +490,6 @@ CREATE TABLE `subsnp_map` (
   `variation_id` int(11) unsigned NOT NULL,
   `subsnp_id` int(11) unsigned DEFAULT NULL,
   KEY `variation_idx` (`variation_id`)
-) ENGINE=MyISAM DEFAULT CHARSET=latin1;
-
-CREATE TABLE `tagged_variation_feature` (
-  `variation_feature_id` int(10) unsigned NOT NULL,
-  `tagged_variation_feature_id` int(10) unsigned DEFAULT NULL,
-  `population_id` int(10) unsigned NOT NULL,
-  KEY `tag_idx` (`variation_feature_id`),
-  KEY `tagged_idx` (`tagged_variation_feature_id`),
-  KEY `population_idx` (`population_id`)
 ) ENGINE=MyISAM DEFAULT CHARSET=latin1;
 
 CREATE TABLE `tmp_sample_genotype_single_bp` (
@@ -650,7 +651,6 @@ CREATE TABLE `variation_synonym` (
   `subsnp_id` int(15) unsigned DEFAULT NULL,
   `source_id` int(10) unsigned NOT NULL,
   `name` varchar(255) DEFAULT NULL,
-  `moltype` varchar(50) DEFAULT NULL,
   PRIMARY KEY (`variation_synonym_id`),
   UNIQUE KEY `name` (`name`,`source_id`),
   KEY `variation_idx` (`variation_id`),

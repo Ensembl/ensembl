@@ -1,6 +1,6 @@
 -- 
 -- Created by SQL::Translator::Producer::SQLite
--- Created on Fri Dec 11 17:19:14 2015
+-- Created on Fri May  6 15:45:33 2016
 -- 
 
 BEGIN TRANSACTION;
@@ -42,7 +42,7 @@ CREATE TABLE associate_study (
 -- Table: attrib
 --
 CREATE TABLE attrib (
-  attrib_id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL DEFAULT 0,
+  attrib_id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
   attrib_type_id smallint NOT NULL DEFAULT 0,
   value text NOT NULL
 );
@@ -423,6 +423,16 @@ CREATE TABLE sample_population (
 );
 
 --
+-- Table: sample_synonym
+--
+CREATE TABLE sample_synonym (
+  synonym_id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+  sample_id integer NOT NULL,
+  source_id integer NOT NULL,
+  name varchar(255)
+);
+
+--
 -- Table: seq_region
 --
 CREATE TABLE seq_region (
@@ -547,15 +557,6 @@ CREATE TABLE subsnp_handle (
 CREATE TABLE subsnp_map (
   variation_id integer NOT NULL,
   subsnp_id integer
-);
-
---
--- Table: tagged_variation_feature
---
-CREATE TABLE tagged_variation_feature (
-  variation_feature_id integer NOT NULL,
-  tagged_variation_feature_id integer,
-  population_id integer NOT NULL
 );
 
 --
@@ -738,8 +739,7 @@ CREATE TABLE variation_synonym (
   variation_id integer NOT NULL,
   subsnp_id integer,
   source_id integer NOT NULL,
-  name varchar(255),
-  moltype varchar(50)
+  name varchar(255)
 );
 
 CREATE UNIQUE INDEX name02 ON variation_synonym (name, source_id);

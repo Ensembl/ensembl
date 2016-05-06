@@ -21,18 +21,18 @@ CREATE TABLE `alt_allele_group` (
 CREATE TABLE `analysis` (
   `analysis_id` int(10) unsigned NOT NULL AUTO_INCREMENT,
   `created` datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
-  `logic_name` varchar(40) NOT NULL DEFAULT '',
-  `db` varchar(120) DEFAULT NULL,
-  `db_version` varchar(40) DEFAULT NULL,
-  `db_file` varchar(120) DEFAULT NULL,
-  `program` varchar(80) DEFAULT NULL,
-  `program_version` varchar(40) DEFAULT NULL,
-  `program_file` varchar(80) DEFAULT NULL,
+  `logic_name` varchar(40) COLLATE latin1_bin NOT NULL DEFAULT '',
+  `db` varchar(120) COLLATE latin1_bin DEFAULT NULL,
+  `db_version` varchar(40) COLLATE latin1_bin DEFAULT NULL,
+  `db_file` varchar(120) COLLATE latin1_bin DEFAULT NULL,
+  `program` varchar(80) COLLATE latin1_bin DEFAULT NULL,
+  `program_version` varchar(40) COLLATE latin1_bin DEFAULT NULL,
+  `program_file` varchar(80) COLLATE latin1_bin DEFAULT NULL,
   `parameters` text COLLATE latin1_bin,
-  `module` varchar(80) DEFAULT NULL,
-  `module_version` varchar(40) DEFAULT NULL,
-  `gff_source` varchar(40) DEFAULT NULL,
-  `gff_feature` varchar(40) DEFAULT NULL,
+  `module` varchar(80) COLLATE latin1_bin DEFAULT NULL,
+  `module_version` varchar(40) COLLATE latin1_bin DEFAULT NULL,
+  `gff_source` varchar(40) COLLATE latin1_bin DEFAULT NULL,
+  `gff_feature` varchar(40) COLLATE latin1_bin DEFAULT NULL,
   PRIMARY KEY (`analysis_id`),
   UNIQUE KEY `logic_name` (`logic_name`),
   KEY `logic_name_idx` (`logic_name`)
@@ -41,7 +41,7 @@ CREATE TABLE `analysis` (
 CREATE TABLE `analysis_description` (
   `analysis_id` int(10) unsigned NOT NULL DEFAULT '0',
   `description` text COLLATE latin1_bin,
-  `display_label` varchar(255) DEFAULT NULL,
+  `display_label` varchar(255) COLLATE latin1_bin DEFAULT NULL,
   `displayable` tinyint(1) NOT NULL DEFAULT '1',
   `web_data` text COLLATE latin1_bin,
   KEY `analysis_idx` (`analysis_id`)
@@ -65,7 +65,7 @@ CREATE TABLE `assembly_exception` (
   `seq_region_id` int(11) NOT NULL DEFAULT '0',
   `seq_region_start` int(11) NOT NULL DEFAULT '0',
   `seq_region_end` int(11) NOT NULL DEFAULT '0',
-  `exc_type` enum('HAP','PAR','PATCH_NOVEL','PATCH_FIX') NOT NULL DEFAULT 'HAP',
+  `exc_type` enum('HAP','PAR','PATCH_NOVEL','PATCH_FIX') COLLATE latin1_bin NOT NULL DEFAULT 'HAP',
   `exc_seq_region_id` int(11) NOT NULL DEFAULT '0',
   `exc_seq_region_start` int(11) NOT NULL DEFAULT '0',
   `exc_seq_region_end` int(11) NOT NULL DEFAULT '0',
@@ -99,12 +99,12 @@ CREATE TABLE `associated_xref` (
 
 CREATE TABLE `attrib_type` (
   `attrib_type_id` smallint(5) unsigned NOT NULL AUTO_INCREMENT,
-  `code` varchar(20) NOT NULL DEFAULT '',
-  `name` varchar(255) NOT NULL DEFAULT '',
+  `code` varchar(20) COLLATE latin1_bin NOT NULL DEFAULT '',
+  `name` varchar(255) COLLATE latin1_bin NOT NULL DEFAULT '',
   `description` text COLLATE latin1_bin,
   PRIMARY KEY (`attrib_type_id`),
   UNIQUE KEY `c` (`code`)
-) ENGINE=MyISAM DEFAULT CHARSET=latin1 COLLATE=latin1_bin;
+) ENGINE=MyISAM AUTO_INCREMENT=508 DEFAULT CHARSET=latin1 COLLATE=latin1_bin;
 
 CREATE TABLE `coord_system` (
   `coord_system_id` int(10) unsigned NOT NULL AUTO_INCREMENT,
@@ -117,7 +117,7 @@ CREATE TABLE `coord_system` (
   UNIQUE KEY `rank_idx` (`rank`,`species_id`),
   UNIQUE KEY `name_idx` (`name`,`version`,`species_id`),
   KEY `species_idx` (`species_id`)
-) ENGINE=MyISAM DEFAULT CHARSET=latin1;
+) ENGINE=MyISAM AUTO_INCREMENT=112 DEFAULT CHARSET=latin1;
 
 CREATE TABLE `data_file` (
   `data_file_id` int(10) unsigned NOT NULL AUTO_INCREMENT,
@@ -151,7 +151,7 @@ CREATE TABLE `density_type` (
   `analysis_id` int(11) NOT NULL DEFAULT '0',
   `block_size` int(11) NOT NULL DEFAULT '0',
   `region_features` int(11) NOT NULL DEFAULT '0',
-  `value_type` enum('sum','ratio') NOT NULL DEFAULT 'sum',
+  `value_type` enum('sum','ratio') COLLATE latin1_bin NOT NULL DEFAULT 'sum',
   PRIMARY KEY (`density_type_id`),
   UNIQUE KEY `analysis_id` (`analysis_id`,`block_size`,`region_features`)
 ) ENGINE=MyISAM DEFAULT CHARSET=latin1 COLLATE=latin1_bin;
@@ -195,7 +195,7 @@ CREATE TABLE `ditag_feature` (
 
 CREATE TABLE `dna` (
   `seq_region_id` int(10) unsigned NOT NULL DEFAULT '0',
-  `sequence` mediumtext NOT NULL,
+  `sequence` mediumtext COLLATE latin1_bin NOT NULL,
   PRIMARY KEY (`seq_region_id`)
 ) ENGINE=MyISAM DEFAULT CHARSET=latin1 COLLATE=latin1_bin MAX_ROWS=750000 AVG_ROW_LENGTH=19000;
 
@@ -208,7 +208,7 @@ CREATE TABLE `dna_align_feature` (
   `hit_start` int(11) NOT NULL DEFAULT '0',
   `hit_end` int(11) NOT NULL DEFAULT '0',
   `hit_strand` tinyint(1) NOT NULL DEFAULT '0',
-  `hit_name` varchar(40) NOT NULL DEFAULT '',
+  `hit_name` varchar(40) COLLATE latin1_bin NOT NULL DEFAULT '',
   `analysis_id` int(10) unsigned NOT NULL DEFAULT '0',
   `score` double DEFAULT NULL,
   `evalue` double DEFAULT NULL,
@@ -236,7 +236,7 @@ CREATE TABLE `exon` (
   `is_current` tinyint(1) NOT NULL DEFAULT '1',
   `is_constitutive` tinyint(1) NOT NULL DEFAULT '0',
   `stable_id` varchar(128) DEFAULT NULL,
-  `version` smallint(5) unsigned NOT NULL DEFAULT '1',
+  `version` smallint(5) unsigned DEFAULT NULL,
   `created_date` datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
   `modified_date` datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
   PRIMARY KEY (`exon_id`),
@@ -255,21 +255,21 @@ CREATE TABLE `exon_transcript` (
 
 CREATE TABLE `external_db` (
   `external_db_id` int(11) NOT NULL DEFAULT '0',
-  `db_name` varchar(27) NOT NULL DEFAULT '',
-  `db_release` varchar(40) NOT NULL DEFAULT '',
-  `status` enum('KNOWNXREF','KNOWN','XREF','PRED','ORTH','PSEUDO') NOT NULL DEFAULT 'KNOWNXREF',
+  `db_name` varchar(27) COLLATE latin1_bin NOT NULL DEFAULT '',
+  `db_release` varchar(40) COLLATE latin1_bin NOT NULL DEFAULT '',
+  `status` enum('KNOWNXREF','KNOWN','XREF','PRED','ORTH','PSEUDO') COLLATE latin1_bin NOT NULL DEFAULT 'KNOWNXREF',
   `priority` int(11) NOT NULL DEFAULT '0',
-  `db_display_name` varchar(255) DEFAULT NULL,
-  `type` enum('ARRAY','ALT_TRANS','ALT_GENE','MISC','LIT','PRIMARY_DB_SYNONYM','ENSEMBL') DEFAULT NULL,
-  `secondary_db_name` varchar(255) DEFAULT NULL,
-  `secondary_db_table` varchar(255) DEFAULT NULL,
+  `db_display_name` varchar(255) COLLATE latin1_bin DEFAULT NULL,
+  `type` enum('ARRAY','ALT_TRANS','ALT_GENE','MISC','LIT','PRIMARY_DB_SYNONYM','ENSEMBL') COLLATE latin1_bin DEFAULT NULL,
+  `secondary_db_name` varchar(255) COLLATE latin1_bin DEFAULT NULL,
+  `secondary_db_table` varchar(255) COLLATE latin1_bin DEFAULT NULL,
   `description` text COLLATE latin1_bin,
   PRIMARY KEY (`external_db_id`)
 ) ENGINE=MyISAM DEFAULT CHARSET=latin1 COLLATE=latin1_bin;
 
 CREATE TABLE `external_synonym` (
   `xref_id` int(10) unsigned NOT NULL DEFAULT '0',
-  `synonym` varchar(40) NOT NULL DEFAULT '',
+  `synonym` varchar(40) COLLATE latin1_bin NOT NULL DEFAULT '',
   PRIMARY KEY (`xref_id`,`synonym`),
   KEY `name_index` (`synonym`)
 ) ENGINE=MyISAM DEFAULT CHARSET=latin1 COLLATE=latin1_bin;
@@ -289,7 +289,7 @@ CREATE TABLE `gene` (
   `is_current` tinyint(1) NOT NULL DEFAULT '1',
   `canonical_transcript_id` int(10) unsigned NOT NULL,
   `stable_id` varchar(128) DEFAULT NULL,
-  `version` smallint(5) unsigned NOT NULL DEFAULT '1',
+  `version` smallint(5) unsigned DEFAULT NULL,
   `created_date` datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
   `modified_date` datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
   PRIMARY KEY (`gene_id`),
@@ -300,11 +300,11 @@ CREATE TABLE `gene` (
 ) ENGINE=MyISAM DEFAULT CHARSET=latin1;
 
 CREATE TABLE `gene_archive` (
-  `gene_stable_id` varchar(128) NOT NULL DEFAULT '',
+  `gene_stable_id` varchar(128) COLLATE latin1_bin NOT NULL DEFAULT '',
   `gene_version` smallint(6) NOT NULL DEFAULT '0',
-  `transcript_stable_id` varchar(128) NOT NULL DEFAULT '',
+  `transcript_stable_id` varchar(128) COLLATE latin1_bin NOT NULL DEFAULT '',
   `transcript_version` smallint(6) NOT NULL DEFAULT '0',
-  `translation_stable_id` varchar(128) NOT NULL DEFAULT '',
+  `translation_stable_id` varchar(128) COLLATE latin1_bin NOT NULL DEFAULT '',
   `translation_version` smallint(6) NOT NULL DEFAULT '0',
   `peptide_archive_id` int(11) NOT NULL DEFAULT '0',
   `mapping_session_id` int(11) NOT NULL DEFAULT '0',
@@ -316,7 +316,7 @@ CREATE TABLE `gene_archive` (
 CREATE TABLE `gene_attrib` (
   `gene_id` int(10) unsigned NOT NULL DEFAULT '0',
   `attrib_type_id` smallint(5) unsigned NOT NULL DEFAULT '0',
-  `value` text NOT NULL,
+  `value` text COLLATE latin1_bin NOT NULL,
   UNIQUE KEY `gene_attribx` (`gene_id`,`attrib_type_id`,`value`(500)),
   KEY `type_val_idx` (`attrib_type_id`,`value`(40)),
   KEY `gene_idx` (`gene_id`)
@@ -349,8 +349,8 @@ CREATE TABLE `identity_xref` (
 ) ENGINE=MyISAM DEFAULT CHARSET=latin1 COLLATE=latin1_bin;
 
 CREATE TABLE `interpro` (
-  `interpro_ac` varchar(40) NOT NULL DEFAULT '',
-  `id` varchar(40) NOT NULL DEFAULT '',
+  `interpro_ac` varchar(40) COLLATE latin1_bin NOT NULL DEFAULT '',
+  `id` varchar(40) COLLATE latin1_bin NOT NULL DEFAULT '',
   UNIQUE KEY `interpro_ac` (`interpro_ac`,`id`),
   KEY `id` (`id`)
 ) ENGINE=MyISAM DEFAULT CHARSET=latin1 COLLATE=latin1_bin;
@@ -376,26 +376,26 @@ CREATE TABLE `karyotype` (
   `seq_region_id` int(10) unsigned NOT NULL DEFAULT '0',
   `seq_region_start` int(10) NOT NULL DEFAULT '0',
   `seq_region_end` int(10) NOT NULL DEFAULT '0',
-  `band` varchar(40) DEFAULT NULL,
-  `stain` varchar(40) DEFAULT NULL,
+  `band` varchar(40) COLLATE latin1_bin DEFAULT NULL,
+  `stain` varchar(40) COLLATE latin1_bin DEFAULT NULL,
   PRIMARY KEY (`karyotype_id`),
   KEY `region_band_idx` (`seq_region_id`,`band`)
 ) ENGINE=MyISAM DEFAULT CHARSET=latin1 COLLATE=latin1_bin;
 
 CREATE TABLE `map` (
   `map_id` int(10) unsigned NOT NULL AUTO_INCREMENT,
-  `map_name` varchar(30) NOT NULL DEFAULT '',
+  `map_name` varchar(30) COLLATE latin1_bin NOT NULL DEFAULT '',
   PRIMARY KEY (`map_id`)
 ) ENGINE=MyISAM DEFAULT CHARSET=latin1 COLLATE=latin1_bin;
 
 CREATE TABLE `mapping_session` (
   `mapping_session_id` int(11) NOT NULL AUTO_INCREMENT,
-  `old_db_name` varchar(80) NOT NULL DEFAULT '',
-  `new_db_name` varchar(80) NOT NULL DEFAULT '',
-  `old_release` varchar(5) NOT NULL DEFAULT '',
-  `new_release` varchar(5) NOT NULL DEFAULT '',
-  `old_assembly` varchar(20) NOT NULL DEFAULT '',
-  `new_assembly` varchar(20) NOT NULL DEFAULT '',
+  `old_db_name` varchar(80) COLLATE latin1_bin NOT NULL DEFAULT '',
+  `new_db_name` varchar(80) COLLATE latin1_bin NOT NULL DEFAULT '',
+  `old_release` varchar(5) COLLATE latin1_bin NOT NULL DEFAULT '',
+  `new_release` varchar(5) COLLATE latin1_bin NOT NULL DEFAULT '',
+  `old_assembly` varchar(20) COLLATE latin1_bin NOT NULL DEFAULT '',
+  `new_assembly` varchar(20) COLLATE latin1_bin NOT NULL DEFAULT '',
   `created` datetime NOT NULL,
   PRIMARY KEY (`mapping_session_id`)
 ) ENGINE=MyISAM DEFAULT CHARSET=latin1 COLLATE=latin1_bin;
@@ -411,12 +411,12 @@ CREATE TABLE `mapping_set` (
 CREATE TABLE `marker` (
   `marker_id` int(10) unsigned NOT NULL AUTO_INCREMENT,
   `display_marker_synonym_id` int(10) unsigned DEFAULT NULL,
-  `left_primer` varchar(100) NOT NULL DEFAULT '',
-  `right_primer` varchar(100) NOT NULL DEFAULT '',
+  `left_primer` varchar(100) COLLATE latin1_bin NOT NULL DEFAULT '',
+  `right_primer` varchar(100) COLLATE latin1_bin NOT NULL DEFAULT '',
   `min_primer_dist` int(10) unsigned NOT NULL DEFAULT '0',
   `max_primer_dist` int(10) unsigned NOT NULL DEFAULT '0',
   `priority` int(11) DEFAULT NULL,
-  `type` enum('est','microsatellite') DEFAULT NULL,
+  `type` enum('est','microsatellite') COLLATE latin1_bin DEFAULT NULL,
   PRIMARY KEY (`marker_id`),
   KEY `marker_idx` (`marker_id`,`priority`)
 ) ENGINE=MyISAM DEFAULT CHARSET=latin1 COLLATE=latin1_bin;
@@ -437,9 +437,9 @@ CREATE TABLE `marker_feature` (
 CREATE TABLE `marker_map_location` (
   `marker_id` int(10) unsigned NOT NULL DEFAULT '0',
   `map_id` int(10) unsigned NOT NULL DEFAULT '0',
-  `chromosome_name` varchar(15) NOT NULL DEFAULT '',
+  `chromosome_name` varchar(15) COLLATE latin1_bin NOT NULL DEFAULT '',
   `marker_synonym_id` int(10) unsigned NOT NULL DEFAULT '0',
-  `position` varchar(15) NOT NULL DEFAULT '',
+  `position` varchar(15) COLLATE latin1_bin NOT NULL DEFAULT '',
   `lod_score` double DEFAULT NULL,
   PRIMARY KEY (`marker_id`,`map_id`),
   KEY `map_idx` (`map_id`,`chromosome_name`,`position`)
@@ -448,8 +448,8 @@ CREATE TABLE `marker_map_location` (
 CREATE TABLE `marker_synonym` (
   `marker_synonym_id` int(10) unsigned NOT NULL AUTO_INCREMENT,
   `marker_id` int(10) unsigned NOT NULL DEFAULT '0',
-  `source` varchar(20) DEFAULT NULL,
-  `name` varchar(30) DEFAULT NULL,
+  `source` varchar(20) COLLATE latin1_bin DEFAULT NULL,
+  `name` varchar(30) COLLATE latin1_bin DEFAULT NULL,
   PRIMARY KEY (`marker_synonym_id`),
   KEY `marker_synonym_idx` (`marker_synonym_id`,`name`),
   KEY `marker_idx` (`marker_id`)
@@ -463,10 +463,10 @@ CREATE TABLE `meta` (
   PRIMARY KEY (`meta_id`),
   UNIQUE KEY `species_key_value_idx` (`species_id`,`meta_key`,`meta_value`),
   KEY `species_value_idx` (`species_id`,`meta_value`)
-) ENGINE=MyISAM DEFAULT CHARSET=latin1;
+) ENGINE=MyISAM AUTO_INCREMENT=1667 DEFAULT CHARSET=latin1;
 
 CREATE TABLE `meta_coord` (
-  `table_name` varchar(40) NOT NULL DEFAULT '',
+  `table_name` varchar(40) COLLATE latin1_bin NOT NULL DEFAULT '',
   `coord_system_id` int(11) NOT NULL DEFAULT '0',
   `max_length` int(11) DEFAULT NULL,
   UNIQUE KEY `table_name` (`table_name`,`coord_system_id`)
@@ -475,7 +475,7 @@ CREATE TABLE `meta_coord` (
 CREATE TABLE `misc_attrib` (
   `misc_feature_id` int(10) unsigned NOT NULL DEFAULT '0',
   `attrib_type_id` smallint(5) unsigned NOT NULL DEFAULT '0',
-  `value` text NOT NULL,
+  `value` text COLLATE latin1_bin NOT NULL,
   UNIQUE KEY `misc_attribx` (`misc_feature_id`,`attrib_type_id`,`value`(500)),
   KEY `type_val_idx` (`attrib_type_id`,`value`(40)),
   KEY `misc_feature_idx` (`misc_feature_id`)
@@ -500,9 +500,9 @@ CREATE TABLE `misc_feature_misc_set` (
 
 CREATE TABLE `misc_set` (
   `misc_set_id` smallint(5) unsigned NOT NULL AUTO_INCREMENT,
-  `code` varchar(25) NOT NULL DEFAULT '',
-  `name` varchar(255) NOT NULL DEFAULT '',
-  `description` text NOT NULL,
+  `code` varchar(25) COLLATE latin1_bin NOT NULL DEFAULT '',
+  `name` varchar(255) COLLATE latin1_bin NOT NULL DEFAULT '',
+  `description` text COLLATE latin1_bin NOT NULL,
   `max_length` int(10) unsigned NOT NULL DEFAULT '0',
   PRIMARY KEY (`misc_set_id`),
   UNIQUE KEY `c` (`code`)
@@ -511,9 +511,9 @@ CREATE TABLE `misc_set` (
 CREATE TABLE `object_xref` (
   `object_xref_id` int(11) NOT NULL AUTO_INCREMENT,
   `ensembl_id` int(10) unsigned NOT NULL DEFAULT '0',
-  `ensembl_object_type` enum('RawContig','Transcript','Gene','Translation','regulatory_factor','regulatory_feature','Marker') NOT NULL DEFAULT 'RawContig',
+  `ensembl_object_type` enum('RawContig','Transcript','Gene','Translation','regulatory_factor','regulatory_feature','Marker') COLLATE latin1_bin NOT NULL DEFAULT 'RawContig',
   `xref_id` int(10) unsigned NOT NULL,
-  `linkage_annotation` varchar(255) DEFAULT NULL,
+  `linkage_annotation` varchar(255) COLLATE latin1_bin DEFAULT NULL,
   `analysis_id` smallint(5) unsigned NOT NULL,
   UNIQUE KEY `ensembl_object_type` (`ensembl_object_type`,`ensembl_id`,`xref_id`),
   KEY `oxref_idx` (`object_xref_id`,`xref_id`,`ensembl_object_type`,`ensembl_id`),
@@ -538,7 +538,7 @@ CREATE TABLE `operon` (
   `display_label` varchar(255) DEFAULT NULL,
   `analysis_id` smallint(5) unsigned NOT NULL,
   `stable_id` varchar(128) DEFAULT NULL,
-  `version` smallint(5) unsigned NOT NULL DEFAULT '1',
+  `version` smallint(5) unsigned DEFAULT NULL,
   `created_date` datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
   `modified_date` datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
   PRIMARY KEY (`operon_id`),
@@ -557,7 +557,7 @@ CREATE TABLE `operon_transcript` (
   `display_label` varchar(255) DEFAULT NULL,
   `analysis_id` smallint(5) unsigned NOT NULL,
   `stable_id` varchar(128) DEFAULT NULL,
-  `version` smallint(5) unsigned NOT NULL DEFAULT '1',
+  `version` smallint(5) unsigned DEFAULT NULL,
   `created_date` datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
   `modified_date` datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
   PRIMARY KEY (`operon_transcript_id`),
@@ -574,8 +574,8 @@ CREATE TABLE `operon_transcript_gene` (
 
 CREATE TABLE `peptide_archive` (
   `peptide_archive_id` int(11) NOT NULL AUTO_INCREMENT,
-  `md5_checksum` varchar(32) DEFAULT NULL,
-  `peptide_seq` mediumtext NOT NULL,
+  `md5_checksum` varchar(32) COLLATE latin1_bin DEFAULT NULL,
+  `peptide_seq` mediumtext COLLATE latin1_bin NOT NULL,
   PRIMARY KEY (`peptide_archive_id`),
   KEY `checksum` (`md5_checksum`)
 ) ENGINE=MyISAM DEFAULT CHARSET=latin1 COLLATE=latin1_bin;
@@ -603,7 +603,7 @@ CREATE TABLE `prediction_transcript` (
   `seq_region_end` int(10) unsigned NOT NULL DEFAULT '0',
   `seq_region_strand` tinyint(4) NOT NULL DEFAULT '0',
   `analysis_id` int(11) DEFAULT NULL,
-  `display_label` varchar(255) DEFAULT NULL,
+  `display_label` varchar(255) COLLATE latin1_bin DEFAULT NULL,
   PRIMARY KEY (`prediction_transcript_id`),
   KEY `seq_region_id` (`seq_region_id`,`seq_region_start`),
   KEY `analysis_idx` (`analysis_id`)
@@ -617,7 +617,7 @@ CREATE TABLE `protein_align_feature` (
   `seq_region_strand` tinyint(1) NOT NULL DEFAULT '1',
   `hit_start` int(10) NOT NULL DEFAULT '0',
   `hit_end` int(10) NOT NULL DEFAULT '0',
-  `hit_name` varchar(40) NOT NULL DEFAULT '',
+  `hit_name` varchar(40) COLLATE latin1_bin NOT NULL DEFAULT '',
   `analysis_id` int(10) unsigned NOT NULL DEFAULT '0',
   `score` double DEFAULT NULL,
   `evalue` double DEFAULT NULL,
@@ -640,7 +640,7 @@ CREATE TABLE `protein_feature` (
   `seq_end` int(10) NOT NULL DEFAULT '0',
   `hit_start` int(10) NOT NULL DEFAULT '0',
   `hit_end` int(10) NOT NULL DEFAULT '0',
-  `hit_name` varchar(40) NOT NULL DEFAULT '',
+  `hit_name` varchar(40) COLLATE latin1_bin NOT NULL DEFAULT '',
   `analysis_id` int(10) unsigned NOT NULL DEFAULT '0',
   `score` double NOT NULL DEFAULT '0',
   `evalue` double DEFAULT NULL,
@@ -656,9 +656,9 @@ CREATE TABLE `protein_feature` (
 
 CREATE TABLE `repeat_consensus` (
   `repeat_consensus_id` int(10) unsigned NOT NULL AUTO_INCREMENT,
-  `repeat_name` varchar(255) NOT NULL DEFAULT '',
-  `repeat_class` varchar(100) NOT NULL DEFAULT '',
-  `repeat_type` varchar(40) NOT NULL DEFAULT '',
+  `repeat_name` varchar(255) COLLATE latin1_bin NOT NULL DEFAULT '',
+  `repeat_class` varchar(100) COLLATE latin1_bin NOT NULL DEFAULT '',
+  `repeat_type` varchar(40) COLLATE latin1_bin NOT NULL DEFAULT '',
   `repeat_consensus` text COLLATE latin1_bin,
   PRIMARY KEY (`repeat_consensus_id`),
   KEY `name` (`repeat_name`),
@@ -686,18 +686,18 @@ CREATE TABLE `repeat_feature` (
 
 CREATE TABLE `seq_region` (
   `seq_region_id` int(10) unsigned NOT NULL AUTO_INCREMENT,
-  `name` varchar(40) NOT NULL DEFAULT '',
+  `name` varchar(40) COLLATE latin1_bin NOT NULL DEFAULT '',
   `coord_system_id` int(10) NOT NULL DEFAULT '0',
   `length` int(10) NOT NULL DEFAULT '0',
   PRIMARY KEY (`seq_region_id`),
   UNIQUE KEY `coord_system_id` (`coord_system_id`,`name`),
   KEY `name_idx` (`name`)
-) ENGINE=MyISAM DEFAULT CHARSET=latin1 COLLATE=latin1_bin;
+) ENGINE=MyISAM AUTO_INCREMENT=20603 DEFAULT CHARSET=latin1 COLLATE=latin1_bin;
 
 CREATE TABLE `seq_region_attrib` (
   `seq_region_id` int(10) unsigned NOT NULL DEFAULT '0',
   `attrib_type_id` smallint(5) unsigned NOT NULL DEFAULT '0',
-  `value` text NOT NULL,
+  `value` text COLLATE latin1_bin NOT NULL,
   UNIQUE KEY `region_attribx` (`seq_region_id`,`attrib_type_id`,`value`(500)),
   KEY `type_val_idx` (`attrib_type_id`,`value`(40)),
   KEY `seq_region_idx` (`seq_region_id`)
@@ -725,7 +725,7 @@ CREATE TABLE `simple_feature` (
   `seq_region_start` int(10) unsigned NOT NULL DEFAULT '0',
   `seq_region_end` int(10) unsigned NOT NULL DEFAULT '0',
   `seq_region_strand` tinyint(1) NOT NULL DEFAULT '0',
-  `display_label` varchar(40) NOT NULL DEFAULT '',
+  `display_label` varchar(40) COLLATE latin1_bin NOT NULL DEFAULT '',
   `analysis_id` int(10) unsigned NOT NULL DEFAULT '0',
   `score` double DEFAULT NULL,
   PRIMARY KEY (`simple_feature_id`),
@@ -735,12 +735,12 @@ CREATE TABLE `simple_feature` (
 ) ENGINE=MyISAM DEFAULT CHARSET=latin1 COLLATE=latin1_bin MAX_ROWS=100000000 AVG_ROW_LENGTH=80;
 
 CREATE TABLE `stable_id_event` (
-  `old_stable_id` varchar(128) DEFAULT NULL,
+  `old_stable_id` varchar(128) COLLATE latin1_bin DEFAULT NULL,
   `old_version` smallint(6) DEFAULT NULL,
-  `new_stable_id` varchar(128) DEFAULT NULL,
+  `new_stable_id` varchar(128) COLLATE latin1_bin DEFAULT NULL,
   `new_version` smallint(6) DEFAULT NULL,
   `mapping_session_id` int(10) NOT NULL DEFAULT '0',
-  `type` enum('gene','transcript','translation') NOT NULL DEFAULT 'gene',
+  `type` enum('gene','transcript','translation') COLLATE latin1_bin NOT NULL DEFAULT 'gene',
   `score` float NOT NULL DEFAULT '0',
   UNIQUE KEY `uni_idx` (`mapping_session_id`,`old_stable_id`,`old_version`,`new_stable_id`,`new_version`,`type`),
   KEY `new_idx` (`new_stable_id`),
@@ -749,7 +749,7 @@ CREATE TABLE `stable_id_event` (
 
 CREATE TABLE `supporting_feature` (
   `exon_id` int(11) NOT NULL DEFAULT '0',
-  `feature_type` enum('dna_align_feature','protein_align_feature') DEFAULT NULL,
+  `feature_type` enum('dna_align_feature','protein_align_feature') COLLATE latin1_bin DEFAULT NULL,
   `feature_id` int(11) NOT NULL DEFAULT '0',
   UNIQUE KEY `all_idx` (`exon_id`,`feature_type`,`feature_id`),
   KEY `feature_idx` (`feature_type`,`feature_id`)
@@ -771,7 +771,7 @@ CREATE TABLE `transcript` (
   `is_current` tinyint(1) NOT NULL DEFAULT '1',
   `canonical_translation_id` int(10) unsigned DEFAULT NULL,
   `stable_id` varchar(128) DEFAULT NULL,
-  `version` smallint(5) unsigned NOT NULL DEFAULT '1',
+  `version` smallint(5) unsigned DEFAULT NULL,
   `created_date` datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
   `modified_date` datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
   PRIMARY KEY (`transcript_id`),
@@ -786,7 +786,7 @@ CREATE TABLE `transcript` (
 CREATE TABLE `transcript_attrib` (
   `transcript_id` int(10) unsigned NOT NULL DEFAULT '0',
   `attrib_type_id` smallint(5) unsigned NOT NULL DEFAULT '0',
-  `value` text NOT NULL,
+  `value` text COLLATE latin1_bin NOT NULL,
   UNIQUE KEY `transcript_attribx` (`transcript_id`,`attrib_type_id`,`value`(500)),
   KEY `type_val_idx` (`attrib_type_id`,`value`(40)),
   KEY `transcript_idx` (`transcript_id`)
@@ -803,7 +803,7 @@ CREATE TABLE `transcript_intron_supporting_evidence` (
 
 CREATE TABLE `transcript_supporting_feature` (
   `transcript_id` int(11) NOT NULL DEFAULT '0',
-  `feature_type` enum('dna_align_feature','protein_align_feature') DEFAULT NULL,
+  `feature_type` enum('dna_align_feature','protein_align_feature') COLLATE latin1_bin DEFAULT NULL,
   `feature_id` int(11) NOT NULL DEFAULT '0',
   UNIQUE KEY `all_idx` (`transcript_id`,`feature_type`,`feature_id`),
   KEY `feature_idx` (`feature_type`,`feature_id`)
@@ -817,7 +817,7 @@ CREATE TABLE `translation` (
   `seq_end` int(10) NOT NULL,
   `end_exon_id` int(10) unsigned NOT NULL,
   `stable_id` varchar(128) DEFAULT NULL,
-  `version` smallint(5) unsigned NOT NULL DEFAULT '1',
+  `version` smallint(5) unsigned DEFAULT NULL,
   `created_date` datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
   `modified_date` datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
   PRIMARY KEY (`translation_id`),
@@ -828,7 +828,7 @@ CREATE TABLE `translation` (
 CREATE TABLE `translation_attrib` (
   `translation_id` int(10) unsigned NOT NULL DEFAULT '0',
   `attrib_type_id` smallint(5) unsigned NOT NULL DEFAULT '0',
-  `value` text NOT NULL,
+  `value` text COLLATE latin1_bin NOT NULL,
   UNIQUE KEY `translation_attribx` (`translation_id`,`attrib_type_id`,`value`(500)),
   KEY `type_val_idx` (`attrib_type_id`,`value`(40)),
   KEY `translation_idx` (`translation_id`)
@@ -836,16 +836,16 @@ CREATE TABLE `translation_attrib` (
 
 CREATE TABLE `unmapped_object` (
   `unmapped_object_id` int(10) unsigned NOT NULL AUTO_INCREMENT,
-  `type` enum('xref','cDNA','Marker') NOT NULL,
+  `type` enum('xref','cDNA','Marker') COLLATE latin1_bin NOT NULL,
   `analysis_id` int(10) unsigned NOT NULL,
   `external_db_id` int(11) DEFAULT NULL,
-  `identifier` varchar(255) NOT NULL,
+  `identifier` varchar(255) COLLATE latin1_bin NOT NULL,
   `unmapped_reason_id` int(10) unsigned NOT NULL,
   `query_score` double DEFAULT NULL,
   `target_score` double DEFAULT NULL,
   `ensembl_id` int(10) unsigned DEFAULT '0',
-  `ensembl_object_type` enum('RawContig','Transcript','Gene','Translation') DEFAULT 'RawContig',
-  `parent` varchar(255) DEFAULT NULL,
+  `ensembl_object_type` enum('RawContig','Transcript','Gene','Translation') COLLATE latin1_bin DEFAULT 'RawContig',
+  `parent` varchar(255) COLLATE latin1_bin DEFAULT NULL,
   PRIMARY KEY (`unmapped_object_id`),
   KEY `id_idx` (`identifier`),
   KEY `anal_idx` (`analysis_id`),
@@ -854,20 +854,20 @@ CREATE TABLE `unmapped_object` (
 
 CREATE TABLE `unmapped_reason` (
   `unmapped_reason_id` int(10) unsigned NOT NULL AUTO_INCREMENT,
-  `summary_description` varchar(255) DEFAULT NULL,
-  `full_description` varchar(255) DEFAULT NULL,
+  `summary_description` varchar(255) COLLATE latin1_bin DEFAULT NULL,
+  `full_description` varchar(255) COLLATE latin1_bin DEFAULT NULL,
   PRIMARY KEY (`unmapped_reason_id`)
-) ENGINE=MyISAM DEFAULT CHARSET=latin1 COLLATE=latin1_bin;
+) ENGINE=MyISAM AUTO_INCREMENT=139 DEFAULT CHARSET=latin1 COLLATE=latin1_bin;
 
 CREATE TABLE `xref` (
   `xref_id` int(10) unsigned NOT NULL AUTO_INCREMENT,
   `external_db_id` int(11) NOT NULL,
-  `dbprimary_acc` varchar(512) NOT NULL,
-  `display_label` varchar(512) NOT NULL,
-  `version` varchar(10) DEFAULT NULL,
+  `dbprimary_acc` varchar(512) COLLATE latin1_bin NOT NULL,
+  `display_label` varchar(512) COLLATE latin1_bin NOT NULL,
+  `version` varchar(10) COLLATE latin1_bin DEFAULT NULL,
   `description` text COLLATE latin1_bin,
-  `info_type` enum('NONE','PROJECTION','MISC','DEPENDENT','DIRECT','SEQUENCE_MATCH','INFERRED_PAIR','PROBE','UNMAPPED','CHECKSUM') NOT NULL DEFAULT 'NONE',
-  `info_text` varchar(255) NOT NULL DEFAULT '',
+  `info_type` enum('NONE','PROJECTION','MISC','DEPENDENT','DIRECT','SEQUENCE_MATCH','INFERRED_PAIR','PROBE','UNMAPPED','CHECKSUM') COLLATE latin1_bin NOT NULL DEFAULT 'NONE',
+  `info_text` varchar(255) COLLATE latin1_bin NOT NULL DEFAULT '',
   PRIMARY KEY (`xref_id`),
   UNIQUE KEY `id_index` (`dbprimary_acc`,`external_db_id`,`info_type`,`info_text`,`version`),
   KEY `display_index` (`display_label`),

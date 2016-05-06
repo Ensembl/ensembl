@@ -1,5 +1,5 @@
 1	\N	schema_type	variation
-2	\N	schema_version	84
+2	\N	schema_version	85
 6	1	species.production_name	mus_musculus
 15	1	web_config	sv_study#Keane 2011 (DGVa study estd118)#Keane 2011#estd118
 14	1	web_config	set#All failed variants#All failed variants#variation_set_fail_all#failed
@@ -28,3 +28,8 @@
 34	\N	patch	patch_82_83_b.sql|Add the evidence ExAC in variation and variation_feature
 35	\N	patch	patch_82_83_c.sql|Drop the column validation_status in variation and variation_feature
 36	\N	patch	patch_83_84_a.sql|schema version
+37	\N	patch	patch_84_85_a.sql|schema version
+38	\N	patch	patch_84_85_b.sql|create sample_synonym
+39	\N	patch	patch_84_85_c.sql|drop column moltype from variation_synonym
+40	\N	patch	patch_85_86_d.sql|Making attrib_id auto_increment
+41	\N	patch	patch_85_86_e.sql|drop the table tagged_variation_feature
