@@ -112,7 +112,7 @@ sub new {
   }
 
   # Create a cdna <-> genomic mapper and load it with exon coords
-  my $mapper = _load_mapper($transcript,$start_phase);
+  my $mapper = _load_mapper($transcript);
 
   my $self = bless({'exon_coord_mapper' => $mapper,
                     'start_phase'       => $start_phase,
@@ -137,7 +137,6 @@ sub new {
 
 sub _load_mapper {
   my $transcript = shift;
-  my $start_phase = shift;
 
   my $mapper = Bio::EnsEMBL::Mapper->new( 'cdna', 'genomic');
 
