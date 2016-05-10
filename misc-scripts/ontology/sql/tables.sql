@@ -30,11 +30,15 @@ CREATE TABLE meta (
 # Add schema type and schema version to the meta table
 INSERT INTO meta (meta_key, meta_value) VALUES 
   ('schema_type', 'ontology'),
-  ('schema_version', '84');
+  ('schema_version', '85');
 
 # Patches included in this schema file
 INSERT INTO meta (meta_key, meta_value)
-  VALUES ('patch', 'patch_83_84_a.sql|schema_version');
+  VALUES ('patch', 'patch_84_85_a.sql|schema_version');
+INSERT INTO meta (meta_key, meta_value)
+  VALUES ('patch', 'patch_84_85_b.sql|confident_relationship');
+INSERT INTO meta (meta_key, meta_value)
+  VALUES ('patch', 'patch_84_85_c.sql| add synonym dbxref');
 
 
 CREATE TABLE ontology (
@@ -76,6 +80,7 @@ CREATE TABLE synonym (
   term_id       INT UNSIGNED NOT NULL,
   name          TEXT NOT NULL,
   type		ENUM('EXACT', 'BROAD', 'NARROW', 'RELATED'),
+  dbxref        VARCHAR(64)  NULL,
 
   PRIMARY KEY (synonym_id),
   UNIQUE INDEX term_synonym_idx (term_id, synonym_id),
@@ -121,6 +126,7 @@ CREATE TABLE closure (
   subparent_term_id INT UNSIGNED,
   distance          TINYINT UNSIGNED NOT NULL,
   ontology_id       INT UNSIGNED NOT NULL,
+  confident_relationship BOOL NOT NULL,
 
   PRIMARY KEY (closure_id),
   UNIQUE INDEX child_parent_idx
