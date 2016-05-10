@@ -1,5 +1,5 @@
 1	\N	schema_type	core
-2	\N	schema_version	84
+2	\N	schema_version	85
 3	\N	patch	patch_68_69_a.sql|schema_version
 4	1	species.taxonomy_id	4565
 6	1	species.alias	bread wheat
@@ -128,3 +128,5 @@
 208	\N	patch	patch_83_84_c.sql|protein_feature_unique
 209	\N	patch	patch_83_84_d.sql|longer_synonym
 210	\N	patch	patch_83_84_e.sql|nullable_versions
+211	\N	patch	patch_84_85_a.sql|schema_version
+212	\N	patch	patch_84_85_b.sql|remove_duplicated_key
