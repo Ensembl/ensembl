@@ -227,8 +227,7 @@ CREATE TABLE genome_statistics(
   timestamp                DATETIME NOT NULL DEFAULT '0000-00-00 00:00:00',
 
   PRIMARY KEY (genome_statistics_id),
-  UNIQUE KEY stats_uniq(statistic, attrib_type_id, species_id),
-  KEY stats_idx (statistic, attrib_type_id, species_id)
+  UNIQUE KEY stats_uniq(statistic, attrib_type_id, species_id)
 
 ) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
 
@@ -309,6 +308,8 @@ INSERT INTO meta (species_id, meta_key, meta_value) VALUES
 # NOTE: Avoid line-breaks in values.
 INSERT INTO meta (species_id, meta_key, meta_value)
   VALUES (NULL, 'patch', 'patch_84_85_a.sql|schema_version');
+INSERT INTO meta (species_id, meta_key, meta_value)
+  VALUES (NULL, 'patch', 'patch_84_85_b.sql|remove_duplicated_key');
 
 
 /**
