@@ -156,8 +156,8 @@ sub _load_mapper {
 
 
   foreach my $ex (@{$transcript->get_all_Exons}) {
-    my $gen_start = $ex->start();
-    my $gen_end   = $ex->end();
+    my $gen_start = $ex->seq_region_start();
+    my $gen_end   = $ex->seq_region_end();
 
     $cdna_start = $cdna_end + 1;
     $cdna_end   = $cdna_start + $ex->length() - 1;

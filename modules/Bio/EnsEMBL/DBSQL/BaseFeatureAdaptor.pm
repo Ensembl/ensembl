@@ -1166,54 +1166,6 @@ sub _remap {
 }
 
 
-#
-# Given a logic name and an existing constraint this will
-# add an analysis table constraint to the feature.  Note that if no
-# analysis_id exists in the columns of the primary table then no
-# constraint is added at all
-#
-sub _logic_name_to_constraint {
-  my $self = shift;
-  my $constraint = shift;
-  my $logic_name = shift;
-
-  return $constraint if(!$logic_name);
-
-  #make sure that an analysis_id exists in the primary table
-  my ($prim_tab) = $self->_tables();
-  my $prim_synonym = $prim_tab->[1];
-
-  my $found_analysis=0;
-  foreach my $col ($self->_columns) {
-    my ($syn,$col_name) = split(/\./,$col);
-    next if($syn ne $prim_synonym);
-    if($col_name eq 'analysis_id') {
-      $found_analysis = 1;
-      last;
-    }
-  }
-
-  if(!$found_analysis) {
-    warning("This feature is not associated with an analysis.\n" .
-            "Ignoring logic_name argument = [$logic_name].\n");
-    return $constraint;
-  }
-
-  my $aa = $self->db->get_AnalysisAdaptor();
-  my $an = $aa->fetch_by_logic_name($logic_name);
-
-  if ( !defined($an) ) {
-    return undef;
-  }
-
-  my $an_id = $an->dbID();
-
-  $constraint .= ' AND' if($constraint);
-  $constraint .= " ${prim_synonym}.analysis_id = $an_id";
-  return $constraint;
-}
-
-
 =head2 store
 
   Arg [1]    : list of Bio::EnsEMBL::SeqFeature

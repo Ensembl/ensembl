@@ -99,4 +99,10 @@ ok(scalar @pfs > 0);
 
 $multi->restore('core', 'protein_feature');
 
+$pfs = $pfa->fetch_all();
+is(@$pfs, 156, "Retrieved all protein features");
+
+$pfs = $pfa->fetch_all_by_logic_name('pfscan');
+is(@$pfs, 156, "Retrieved pfscan features");
+
 done_testing();

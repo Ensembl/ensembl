@@ -360,24 +360,25 @@ SKIP: {
   my $base_transcript = Bio::EnsEMBL::Transcript->new(
     -START => 99,
     -END => 1759,
+    -STRAND => 1,
     -SLICE => $base_slice
   );
   
-  my $start_exon = Bio::EnsEMBL::Exon->new(-START => 99, -END => 319, -STRAND => 1, -STABLE_ID => 'Exon1');
+  my $start_exon = Bio::EnsEMBL::Exon->new(-START => 99, -END => 319, -STRAND => 1, -STABLE_ID => 'Exon1', -SLICE => $base_slice);
   throws_ok { $start_exon->rank($base_transcript) } qr/does not have/, "No exons in transcript";
   $base_transcript->add_Exon($start_exon);
   is ($start_exon->rank($base_transcript), 1, "Start exon in position 1");
-  my $end_exon = Bio::EnsEMBL::Exon->new(-START => 1267, -END => 1759, -STRAND => 1, -STABLE_ID => 'Exon2');
+  my $end_exon = Bio::EnsEMBL::Exon->new(-START => 1267, -END => 1759, -STRAND => 1, -STABLE_ID => 'Exon2', -SLICE => $base_slice);
   throws_ok { $end_exon->rank($base_transcript) } qr/does not belong/, "Exon does not belong to transcript";
   $base_transcript->add_Exon($end_exon);
-  
+
   $base_transcript->translation(Bio::EnsEMBL::Translation->new(
     -START_EXON => $start_exon,
     -SEQ_START => 155,
     -END_EXON => $end_exon,
     -SEQ_END => 87
   ));
-  
+
   is($start_exon->cdna_coding_start($base_transcript), 155, 'Coding starts at 155bp into the first exon');
   is($start_exon->cdna_coding_end($base_transcript), 221, 'Coding ends at 221bp in the first exon (at the exon end)');
   is($start_exon->coding_region_start($base_transcript), (99+155)-1, 'Coding starts at an offset of 99bp plus coding start');
@@ -406,9 +407,9 @@ SKIP: {
   );
   
   
-  my $start_exon = Bio::EnsEMBL::Exon->new(-START => 4205, -END => 5661, -STRAND => -1);
+  my $start_exon = Bio::EnsEMBL::Exon->new(-START => 4205, -END => 5661, -STRAND => -1, -SLICE => $base_slice);
   $base_transcript->add_Exon($start_exon);
-  my $end_exon = Bio::EnsEMBL::Exon->new(-START => 672, -END => 3363, -STRAND => -1);
+  my $end_exon = Bio::EnsEMBL::Exon->new(-START => 672, -END => 3363, -STRAND => -1, -SLICE => $base_slice);
   $base_transcript->add_Exon($end_exon);
   
   $base_transcript->translation(Bio::EnsEMBL::Translation->new(
