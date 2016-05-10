@@ -302,21 +302,13 @@ CREATE TABLE IF NOT EXISTS meta (
 # Add schema type and schema version to the meta table.
 INSERT INTO meta (species_id, meta_key, meta_value) VALUES
   (NULL, 'schema_type',     'core'),
-  (NULL, 'schema_version',  '84');
+  (NULL, 'schema_version',  '85');
 
 # Patches included in this schema file:
 # NOTE: At start of release cycle, remove patch entries from last release.
 # NOTE: Avoid line-breaks in values.
 INSERT INTO meta (species_id, meta_key, meta_value)
-  VALUES (NULL, 'patch', 'patch_83_84_a.sql|schema_version');
-INSERT INTO meta (species_id, meta_key, meta_value)
-  VALUES (NULL, 'patch', 'patch_83_84_b.sql|xref.version_default');
-INSERT INTO meta (species_id, meta_key, meta_value)
-  VALUES (NULL, 'patch', 'patch_83_84_c.sql|protein_feature_unique');
-INSERT INTO meta (species_id, meta_key, meta_value)
-  VALUES (NULL, 'patch', 'patch_83_84_d.sql|longer_synonym');
-INSERT INTO meta (species_id, meta_key, meta_value)
-  VALUES (NULL, 'patch', 'patch_83_84_e.sql|nullable_versions');
+  VALUES (NULL, 'patch', 'patch_84_85_a.sql|schema_version');
 
 
 /**
