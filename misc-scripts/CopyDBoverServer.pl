@@ -37,6 +37,7 @@ sub short_usage {
   print <<SHORT_USAGE_END;
 Usage:
   $0 --pass=XXX \\
+  \t[--user=XXX] \\
   \t[--noflush] [--nocheck] [--notargetflush]\\
   \t[--noopt] [--noinnodb] [--skip_views] [--force] \\
   \t[ --only_tables=XXX,YYY | --skip_tables=XXX,YYY ] \\
@@ -68,8 +69,12 @@ Description:
 Command line switches:
 
   --pass=XXX        (Required)
-                    The password for the 'ensadmin' MySQL user to
-                    connect to the database.
+                    The password for the MySQL user to
+                    connect to the database server.
+
+  --user=XXX        (Optional)
+                    MySQL user to connect to the database server.
+                    Default will be 'ensadmin'.
 
   --noflush         (Optional)
                     Skips table flushing completely.  Use very
@@ -186,7 +191,7 @@ Input file format:
 
   Column 7 is used only when you need to copy the database to a location
   which is not the MySQL server's data directory.  The same rules
-  applies; the mysqlens user must have write access to this directory
+  applies; the mysqlens user at Sanger or other user at EBI must have write access to this directory
   and to the one above to create any temporary staging directory
   structures.  There is currently no way to specify this on the
   command-line.
@@ -196,7 +201,7 @@ Script restrictions:
 
   1. You must run the script on the destination server.
 
-  2. The script must be run as the 'mysqlens' Unix user.  Talk to a
+  2. The script must be run as the 'mysqlens' Unix user at Sanger. Talk to a
      recent release coordinator for access.
 
   3. The script will only copy MYISAM tables.  Databases with InnoDB
@@ -208,7 +213,7 @@ Script restrictions:
 LONG_USAGE_END
 } ## end sub long_usage
 
-my ( $opt_password, $opt_only_tables, $opt_skip_tables, $opt_help );
+my ( $opt_password, $opt_user, $opt_only_tables, $opt_skip_tables, $opt_help );
 
 my $opt_flush    = 1;    # Flush by default.
 my $opt_check    = 1;    # Check tables by default.
@@ -222,6 +227,7 @@ my $opt_routines = 0;
 my ( $opt_source, $opt_target );
 
 if ( !GetOptions( 'pass=s'        => \$opt_password,
+                  'user=s'        => \$opt_user,
                   'flush!'        => \$opt_flush,
                   'flushtarget!'  => \$opt_flushtarget,
                   'check!'        => \$opt_check,
@@ -273,7 +279,12 @@ if ( defined($opt_skip_tables) ) {
 }
 
 if ( scalar( getpwuid($<) ) ne 'mysqlens' ) {
-  die("You need to run this script as the 'mysqlens' user.\n");
+  warn("You are not running this script as the 'mysqlens' user.\n");
+}
+
+if (!defined($opt_user))
+{
+  $opt_user='ensadmin';
 }
 
 my $input_file;
@@ -472,7 +483,7 @@ foreach my $spec (@todo) {
                             $source_port );
 
   my $source_dbh = DBI->connect( $source_dsn,
-                                 'ensadmin',
+                                 $opt_user,
                                  $opt_password, {
                                    'PrintError' => 1,
                                    'AutoCommit' => 0
@@ -494,7 +505,7 @@ foreach my $spec (@todo) {
                             $target_hostaddr, $target_port );
 
   my $target_dbh = DBI->connect( $target_dsn,
-                                 'ensadmin',
+                                 $opt_user,
                                  $opt_password, {
                                    'PrintError' => 1,
                                    'AutoCommit' => 0
@@ -958,7 +969,7 @@ TABLE:
   if ($opt_flushtarget) {
     print("FLUSHING TABLES ON TARGET...\n");
     my $tdbh = DBI->connect( $target_dsn,
-                               'ensadmin',
+                               $opt_user,
                                $opt_password, {
                                  'PrintError' => 1,
                                  'AutoCommit' => 0
@@ -976,14 +987,14 @@ TABLE:
   if($opt_routines){
     print( '-' x 31, ' Procedures ', '-' x 31, "\n" );
     $target_dbh = DBI->connect( $target_dsn,
-                                'ensadmin',
+                                $opt_user,
                                 $opt_password, {
                                 'PrintError' => 1,
                                 'AutoCommit' => 0
                              } );
 
     $source_dbh = DBI->connect( $source_dsn,
-                                'ensadmin',
+                                $opt_user,
                                 $opt_password, {
                                 'PrintError' => 1,
                                 'AutoCommit' => 0
