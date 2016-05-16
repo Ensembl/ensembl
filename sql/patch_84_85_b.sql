@@ -14,14 +14,12 @@
 
 # patch_84_85_b.sql
 #
-# Title: Change xref.version default.
+# Title: Duplicate key in genome_statistics table
 #
 # Description:
 #   Remove duplicated keys
 
 ALTER TABLE genome_statistics DROP KEY stats_idx;
-ALTER TABLE xref MODIFY COLUMN version VARCHAR(10) DEFAULT NULL ;
-
 
 # Patch identifier
 INSERT INTO meta (species_id, meta_key, meta_value)
