@@ -57,6 +57,8 @@ $accession = "GO:0003698";
 $term = $go_adaptor->fetch_by_accession($accession);
 ok($term->name, "GO:0003698 alt_id was fetched");
 
+ok($term->ontology_version() eq 'releases/2016-03-30', "Found ontology version by accession");
+
 $accession = "GO:0003677";
 $term = $go_adaptor->fetch_by_accession($accession, 1);
 ok(!$term->is_obsolete, "GO:0003677 is not obsolete");
@@ -74,6 +76,8 @@ is(@{$terms}, 134, "Found binding terms");
 
 $terms = $go_adaptor->fetch_all_by_name($pattern, undef, 1);
 is(@{$terms}, 138, "Found binding terms, including obsolete ones");
+
+ok($term->ontology_version() eq 'releases/2016-03-30', "Found ontology version by name");
 
 my $roots = $go_adaptor->fetch_all_roots();
 is(@{$roots}, 2, "Found roots");
