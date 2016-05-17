@@ -168,7 +168,7 @@ CREATE TABLE `meta` (
   PRIMARY KEY (`meta_id`),
   UNIQUE KEY `species_key_value_idx` (`species_id`,`meta_key`,`meta_value`),
   KEY `species_value_idx` (`species_id`,`meta_value`)
-) ENGINE=MyISAM AUTO_INCREMENT=9 DEFAULT CHARSET=latin1;
+) ENGINE=MyISAM AUTO_INCREMENT=13 DEFAULT CHARSET=latin1;
 
 CREATE TABLE `meta_coord` (
   `table_name` varchar(40) NOT NULL,
@@ -233,6 +233,13 @@ CREATE TABLE `phenotype_feature_attrib` (
   `value` varchar(255) DEFAULT NULL,
   KEY `phenotype_feature_idx` (`phenotype_feature_id`),
   KEY `type_value_idx` (`attrib_type_id`,`value`)
+) ENGINE=MyISAM DEFAULT CHARSET=latin1;
+
+CREATE TABLE `phenotype_ontology_accession` (
+  `phenotype_id` int(11) unsigned NOT NULL,
+  `accession` varchar(255) NOT NULL,
+  `linked_by_attrib` set('437','438','439','440','441','442') DEFAULT NULL,
+  PRIMARY KEY (`phenotype_id`,`accession`)
 ) ENGINE=MyISAM DEFAULT CHARSET=latin1;
 
 CREATE TABLE `population` (
@@ -385,7 +392,7 @@ CREATE TABLE `source` (
   `source_id` int(10) unsigned NOT NULL AUTO_INCREMENT,
   `name` varchar(24) NOT NULL,
   `version` int(11) DEFAULT NULL,
-  `description` varchar(255) DEFAULT NULL,
+  `description` varchar(400) DEFAULT NULL,
   `url` varchar(255) DEFAULT NULL,
   `type` enum('chip','lsdb') DEFAULT NULL,
   `somatic_status` enum('germline','somatic','mixed') DEFAULT 'germline',

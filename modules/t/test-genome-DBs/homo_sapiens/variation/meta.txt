@@ -6,3 +6,7 @@
 6	\N	patch	patch_84_85_c.sql|drop column moltype from variation_synonym
 7	\N	patch	patch_85_86_d.sql|Making attrib_id auto_increment
 8	\N	patch	patch_85_86_e.sql|drop the table tagged_variation_feature
+9	\N	patch	patch_84_85_d.sql|Making attrib_id auto_increment
+10	\N	patch	patch_84_85_e.sql|drop the table tagged_variation_feature
+11	\N	patch	patch_84_85_f.sql|add phenotype_ontology_accession
+12	\N	patch	patch_84_85_g.sql|allow the column description to store more text in the source table
