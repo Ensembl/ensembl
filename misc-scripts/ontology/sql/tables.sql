@@ -45,6 +45,7 @@ CREATE TABLE ontology (
   ontology_id   INT UNSIGNED NOT NULL AUTO_INCREMENT,
   name          VARCHAR(64) NOT NULL,
   namespace     VARCHAR(64) NOT NULL,
+  data_version  VARCHAR(64) DEFAULT NULL,
 
   PRIMARY KEY (ontology_id),
   UNIQUE INDEX name_namespace_idx (name, namespace)

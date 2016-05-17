@@ -103,7 +103,8 @@ SELECT DISTINCT
         term.is_root,
         term.is_obsolete,
         ontology.name,
-        ontology.namespace
+        ontology.namespace,
+        ontology.data_version
 FROM    ontology
   JOIN  term USING (ontology_id)
   LEFT JOIN  synonym USING (term_id)
@@ -124,9 +125,9 @@ WHERE   ( term.name LIKE ? OR synonym.name LIKE ? ));
 
   $sth->execute();
 
-  my ( $dbid, $accession, $name, $definition, $subsets, $is_root, $is_obsolete, $namespace );
+  my ( $dbid, $accession, $name, $definition, $subsets, $is_root, $is_obsolete, $namespace, $ontology_version );
   $sth->bind_columns(
-     \( $dbid, $accession, $name, $definition, $subsets, $is_root, $is_obsolete, $ontology, $namespace ) );
+     \( $dbid, $accession, $name, $definition, $subsets, $is_root, $is_obsolete, $ontology, $namespace, $ontology_version ) );
 
   my @terms;
 
@@ -141,6 +142,7 @@ WHERE   ( term.name LIKE ? OR synonym.name LIKE ? ));
                                '-is_root'     => $is_root,
                                '-is_obsolete' => $is_obsolete,
                                '-ontology'    => $ontology,
+                               '-ontology_version' => $ontology_version,
                                '-namespace'   => $namespace,
                                '-subsets'     => [ split( /,/, $subsets ) ],
                                '-name'        => $name,
@@ -181,7 +183,8 @@ SELECT  term.term_id,
         term.is_root,
         term.is_obsolete,
         ontology.name,
-        ontology.namespace
+        ontology.namespace,
+        ontology.data_version
 FROM    ontology
   JOIN  term USING (ontology_id)
 WHERE   term.accession = ?);
@@ -193,9 +196,9 @@ WHERE   term.accession = ?);
 
   $sth->execute();
 
-  my ( $dbid, $name, $definition, $subsets, $is_root, $is_obsolete, $ontology, $namespace );
+  my ( $dbid, $name, $definition, $subsets, $is_root, $is_obsolete, $ontology, $namespace, $ontology_version );
   $sth->bind_columns(
-      \( $dbid, $accession, $name, $definition, $subsets, $is_root, $is_obsolete, $ontology, $namespace ) );
+      \( $dbid, $accession, $name, $definition, $subsets, $is_root, $is_obsolete, $ontology, $namespace, $ontology_version ) );
 
   $sth->fetch();
   $sth->finish();
@@ -214,6 +217,7 @@ WHERE   term.accession = ?);
                     '-is_root'    => $is_root,
                     '-is_obsolete'=> $is_obsolete,
                     '-ontology'   => $ontology,
+                    '-ontology_version' => $ontology_version,
                     '-namespace'  => $namespace,
                     '-subsets'    => [ split( /,/, $subsets ) ],
                     '-name'       => $name,
@@ -252,7 +256,8 @@ SELECT  term.term_id,
         term.is_root,
         term.is_obsolete,
         ontology.name,
-        ontology.namespace
+        ontology.namespace,
+        ontology.data_version
 FROM    ontology
   JOIN  term USING (ontology_id)
   JOIN  alt_id USING (term_id)
@@ -263,9 +268,9 @@ WHERE   alt_id.accession = ?);
 
   $sth->execute();
 
-  my ( $dbid, $name, $definition, $subsets, $is_root, $is_obsolete, $ontology, $namespace );
+  my ( $dbid, $name, $definition, $subsets, $is_root, $is_obsolete, $ontology, $namespace, $ontology_version );
   $sth->bind_columns(
-      \( $dbid, $accession, $name, $definition, $subsets, $is_root, $is_obsolete, $ontology, $namespace ) );
+      \( $dbid, $accession, $name, $definition, $subsets, $is_root, $is_obsolete, $ontology, $namespace, $ontology_version ) );
 
   $sth->fetch();
 
@@ -279,6 +284,7 @@ WHERE   alt_id.accession = ?);
                     '-adaptor'    => $this,
                     '-accession'  => $accession,
                     '-ontology'   => $ontology,
+                    '-ontology_version' => $ontology_version,
                     '-namespace'  => $namespace,
                     '-subsets'    => [ split( /,/, $subsets ) ],
                     '-name'       => $name,
@@ -325,7 +331,8 @@ SELECT  child_term.term_id,
         child_term.subsets,
         child_term.is_root,
         child_term.is_obsolete,
-        rt.name
+        rt.name,
+        ontology.data_version
 FROM    term child_term
   JOIN  relation ON (relation.child_term_id = child_term.term_id)
   JOIN  relation_type rt USING (relation_type_id)
@@ -346,9 +353,9 @@ WHERE   relation.parent_term_id = ?
 
     $sth->execute();
 
-    my ( $dbid, $accession, $name, $definition, $subsets, $is_root, $is_obsolete, $relation );
+    my ( $dbid, $accession, $name, $definition, $subsets, $is_root, $is_obsolete, $relation, $ontology_version );
     $sth->bind_columns(
-      \( $dbid, $accession, $name, $definition, $subsets, $is_root, $is_obsolete, $relation ) );
+      \( $dbid, $accession, $name, $definition, $subsets, $is_root, $is_obsolete, $relation, $ontology_version ) );
 
     while ( $sth->fetch() ) {
       $subsets ||= '';
@@ -361,6 +368,7 @@ WHERE   relation.parent_term_id = ?
                                '-is_root'     => $is_root,
                                '-is_obsolete' => $is_obsolete,
                                '-ontology'    => $term->{'ontology'},
+                               '-ontology_version' => $ontology_version,
                                '-namespace'   => $term->{'namespace'},
                                '-subsets'     => [ split( /,/, $subsets ) ],
                                '-name'        => $name,
@@ -414,7 +422,8 @@ SELECT DISTINCT
         child_term.definition,
         child_term.subsets,
         child_term.is_root,
-        child_term.is_obsolete
+        child_term.is_obsolete,
+        ontology.data_version
 FROM    term child_term
   JOIN  closure ON (closure.child_term_id = child_term.term_id)
   JOIN  ontology ON (closure.ontology_id = ontology.ontology_id)
@@ -432,9 +441,9 @@ ORDER BY closure.distance, child_term.accession);
   $sth->bind_param( 2, $ontology, SQL_VARCHAR );
   $sth->execute();
 
-  my ( $dbid, $accession, $name, $definition, $subsets, $is_root, $is_obsolete );
+  my ( $dbid, $accession, $name, $definition, $subsets, $is_root, $is_obsolete, $ontology_version );
   $sth->bind_columns(
-                 \( $dbid, $accession, $name, $definition, $subsets, $is_root, $is_obsolete ) );
+                 \( $dbid, $accession, $name, $definition, $subsets, $is_root, $is_obsolete, $ontology_version ) );
 
   my @terms;
 
@@ -449,6 +458,7 @@ ORDER BY closure.distance, child_term.accession);
                                '-is_root'     => $is_root,
                                '-is_obsolete' => $is_obsolete,
                                '-ontology'    => $term->{'ontology'},
+                               '-ontology_version' => $ontology_version,
                                '-namespace'   => $term->{'namespace'},
                                '-subsets'     => [ split( /,/, $subsets ) ],
                                '-name'        => $name,
@@ -492,7 +502,8 @@ SELECT  parent_term.term_id,
         parent_term.subsets,
         parent_term.is_root,
         parent_term.is_obsolete,
-        rt.name
+        rt.name,
+        ontology.data_version
 FROM    term parent_term
   JOIN  relation ON (relation.parent_term_id = parent_term.term_id)
   JOIN  relation_type rt USING (relation_type_id)
@@ -510,9 +521,9 @@ WHERE   relation.child_term_id = ?
 
     $sth->execute();
 
-    my ( $dbid, $accession, $name, $definition, $subsets, $is_root, $is_obsolete, $relation );
+    my ( $dbid, $accession, $name, $definition, $subsets, $is_root, $is_obsolete, $relation, $ontology_version );
     $sth->bind_columns(
-      \( $dbid, $accession, $name, $definition, $subsets, $is_root, $is_obsolete, $relation ) );
+      \( $dbid, $accession, $name, $definition, $subsets, $is_root, $is_obsolete, $relation, $ontology_version ) );
 
     while ( $sth->fetch() ) {
       $subsets ||= '';
@@ -525,6 +536,7 @@ WHERE   relation.child_term_id = ?
                                '-is_root'     => $is_root,
                                '-is_obsolete' => $is_obsolete,
                                '-ontology'    => $term->{'ontology'},
+                               '-ontology_version' => $ontology_version,
                                '-namespace'   => $term->{'namespace'},
                                '-subsets'     => [ split( /,/, $subsets ) ],
                                '-name'        => $name,
@@ -602,7 +614,8 @@ SELECT DISTINCT
         parent_term.subsets,
         parent_term.is_root,
         parent_term.is_obsolete,
-        closure.distance
+        closure.distance,
+        ontology.data_version
 FROM    term parent_term
   JOIN  closure ON (closure.parent_term_id = parent_term.term_id)
   JOIN  ontology ON (closure.ontology_id = ontology.ontology_id)
@@ -639,9 +652,9 @@ ORDER BY closure.distance, parent_term.accession);
 
   $sth->execute();
 
-  my ( $dbid, $accession, $name, $definition, $subsets, $is_root, $is_obsolete, $distance );
+  my ( $dbid, $accession, $name, $definition, $subsets, $is_root, $is_obsolete, $distance, $ontology_version );
   $sth->bind_columns(
-      \( $dbid, $accession, $name, $definition, $subsets, $is_root, $is_obsolete, $distance ) );
+      \( $dbid, $accession, $name, $definition, $subsets, $is_root, $is_obsolete, $distance, $ontology_version ) );
 
   my @terms;
   my $min_distance;
@@ -659,6 +672,7 @@ ORDER BY closure.distance, parent_term.accession);
                                '-is_root'     => $is_root,
                                '-is_obsolete' => $is_obsolete,
                                '-ontology'    => $term->{'ontology'},
+                               '-ontology_version' => $ontology_version,
                                '-namespace'   => $term->{'namespace'},
                                '-subsets'     => [ split( /,/, $subsets ) ],
                                '-name'        => $name,
@@ -815,7 +829,8 @@ SELECT  term.term_id,
         term.is_root,
         term.is_obsolete,
         ontology.name,
-        ontology.namespace
+        ontology.namespace,
+        ontology.data_version
 FROM    ontology
   JOIN  term USING (ontology_id)
 WHERE   term.term_id = ?);
@@ -828,9 +843,9 @@ WHERE   term.term_id = ?);
   $sth->execute();
 
   my ( $accession, $name, $definition, $subsets, $is_root, $is_obsolete, $ontology,
-       $namespace );
+       $namespace, $ontology_version );
   $sth->bind_columns(
-      \( $dbid, $accession, $name, $definition, $subsets, $is_root, $is_obsolete, $ontology, $namespace
+      \( $dbid, $accession, $name, $definition, $subsets, $is_root, $is_obsolete, $ontology, $namespace, $ontology_version
       ) );
 
   $sth->fetch();
@@ -847,6 +862,7 @@ WHERE   term.term_id = ?);
                     '-is_root'     => $is_root,
                     '-is_obsolete' => $is_obsolete,
                     '-ontology'    => $ontology,
+                    '-ontology_version' => $ontology_version,
                     '-namespace'   => $namespace,
                     '-subsets'     => [ split( /,/, $subsets ) ],
                     '-name'        => $name,
@@ -872,7 +888,8 @@ SELECT  term.term_id,
         term.is_root,
         term.is_obsolete,
         ontology.name,
-        ontology.namespace
+        ontology.namespace,
+        ontology.data_version
 FROM    ontology
   JOIN  term USING (ontology_id)
 WHERE   term.term_id IN (%s));
@@ -892,9 +909,9 @@ WHERE   term.term_id IN (%s));
   $sth->execute();
 
   my ( $dbid, $accession, $name, $definition, $subsets, $is_root, $is_obsolete, $ontology,
-       $namespace );
+       $namespace, $ontology_version );
   $sth->bind_columns( \( $dbid,    $accession, $name, $definition,
-                         $subsets, $is_root, $is_obsolete, $ontology,  $namespace ) );
+                         $subsets, $is_root, $is_obsolete, $ontology,  $namespace, $ontology_version ) );
 
   my @terms;
 
@@ -909,6 +926,7 @@ WHERE   term.term_id IN (%s));
                                '-is_root'     => $is_root,
                                '-is_obsolete' => $is_obsolete,
                                '-ontology'    => $ontology,
+                               '-ontology_version' => $ontology_version,
                                '-namespace'   => $namespace,
                                '-subsets'     => [ split( /,/, $subsets ) ],
                                '-name'        => $name,
@@ -992,7 +1010,8 @@ SELECT  term.term_id,
         term.is_root,
         term.is_obsolete,
         ontology.name,
-        ontology.namespace
+        ontology.namespace,
+        ontology.data_version
 FROM    ontology
   JOIN  term USING (ontology_id)
  WHERE  is_root = 1);
@@ -1008,9 +1027,9 @@ FROM    ontology
   $sth->execute();
 
   my ( $dbid, $accession, $name, $definition, $subsets, $is_root, $is_obsolete, $ontology,
-       $namespace );
+       $namespace, $ontology_version );
   $sth->bind_columns( \( $dbid,    $accession, $name, $definition,
-                         $subsets, $is_root, $is_obsolete, $ontology,  $namespace ) );
+                         $subsets, $is_root, $is_obsolete, $ontology,  $namespace, $ontology_version ) );
 
   my @terms;
 
@@ -1025,6 +1044,7 @@ FROM    ontology
                                '-is_root'     => $is_root,
                                '-is_obsolete' => $is_obsolete,
                                '-ontology'    => $ontology,
+                               '-ontology_version' => $ontology_version,
                                '-namespace'   => $namespace,
                                '-subsets'     => [ split( /,/, $subsets ) ],
                                '-name'        => $name,
@@ -1050,7 +1070,8 @@ SELECT  term.term_id,
         term.is_root,
         term.is_obsolete,
         ontology.name,
-        ontology.namespace
+        ontology.namespace,
+        ontology.data_version
 FROM    ontology
   JOIN  term USING (ontology_id));
 
@@ -1060,9 +1081,9 @@ FROM    ontology
   $sth->execute();
 
   my ( $dbid, $accession, $name, $definition, $subsets, $is_root, $is_obsolete, $ontology,
-       $namespace );
+       $namespace, $ontology_version );
   $sth->bind_columns( \( $dbid,    $accession, $name, $definition,
-                         $subsets, $is_root, $is_obsolete, $ontology,  $namespace ) );
+                         $subsets, $is_root, $is_obsolete, $ontology,  $namespace, $ontology_version ) );
 
   my @terms;
 
@@ -1077,6 +1098,7 @@ FROM    ontology
                                '-is_root'     => $is_root,
                                '-is_obsolete' => $is_obsolete,
                                '-ontology'    => $ontology,
+                               '-ontology_version' => $ontology_version,
                                '-namespace'   => $namespace,
                                '-subsets'     => [ split( /,/, $subsets ) ],
                                '-name'        => $name,

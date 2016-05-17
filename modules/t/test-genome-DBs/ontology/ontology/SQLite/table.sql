@@ -225,8 +225,9 @@ CREATE UNIQUE INDEX key_value_idx ON meta (meta_key, meta_value);
 CREATE TABLE ontology (
   ontology_id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
   name varchar(64) NOT NULL,
-  namespace varchar(64) NOT NULL
-);
+  namespace varchar(64) NOT NULL,
+  data_version VARCHAR(64)  NULL
+ );
 
 CREATE UNIQUE INDEX name_namespace_idx ON ontology (name, namespace);
 
