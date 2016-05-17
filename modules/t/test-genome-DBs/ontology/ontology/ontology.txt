@@ -1,6 +1,6 @@
 1	GO	biological_process	releases/2016-03-30
 2	GO	cellular_component	releases/2016-03-30
 3	GO	molecular_function	releases/2016-03-30
-5	SO	sequence		so-xp/releases/2015-11-24/so-xp.owl
+5	SO	sequence	so-xp/releases/2015-11-24/so-xp.owl
 6	EFO	BrendaTissueOBO		\N
 7	EFO	EFO	\N
