@@ -68,7 +68,7 @@ sub run {
   while ( $_ = $eg_io->getline() ) {
     $count++;
     chomp;
-    my ($omim_id, $type, $entrez_id, $other) = split;
+    my ($omim_id, $entrez_id, $type, $other) = split;
 
     if(!defined($entrez{$entrez_id})){
       $missed_entrez++;
