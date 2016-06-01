@@ -28,9 +28,9 @@ In a long-running process, it is possible to hit database server time limits for
 
 #### Strategies for avoiding timeouts
 
-1. Use the nearest database server to improve efficiency. Ensembl has mirrors in Asia and the USA as well as the main servers hosted in the UK. See the [Mirrors page](http://www.ensembl.org/info/about/mirrors.html) for specifics.
+1 - Use the nearest database server to improve efficiency. Ensembl has mirrors in Asia and the USA as well as the main servers hosted in the UK. See the [Mirrors page](http://www.ensembl.org/info/about/mirrors.html) for specifics.
 
-2. For intense database access and high frequency querying, choose a good time to disconnect manually
+2 - For intense database access and high frequency querying, choose a good time to disconnect manually
 
 ```perl
 ...
@@ -41,7 +41,7 @@ $gene_adaptor->dbc->disconnect_if_idle;
 $gene_adaptor->fetch_by_stable_id($stable_id);
 ```
 
-3. For scripts which occasionally consult Ensembl while working on a big problem for several hours
+3 - For scripts which occasionally consult Ensembl while working on a big problem for several hours
 
 ```perl
 ...
@@ -50,8 +50,9 @@ Bio::Ensembl::Registry->set_disconnect_when_inactive(1);
 # For just one adaptor
 $adaptor->dbc->disconnect_when_inactive(1);
 # For just one occasion
-$adaptor->dbc->disconnect_if_idle;
 # This causes the connection to close whenever it is not being used. This is costly if there are very frequent database requests
+$adaptor->dbc->disconnect_if_idle;
+
 
 # In combination with disconnecting after every request, you can hold the connection open for the duration of a code block
 my @gene_ids = ('ENSG0000001',...);
@@ -68,7 +69,7 @@ $gene_adaptor->dbc->prevent_disconnect(sub {
 # This will finish faster than if it continues to disconnect and reconnect all the time
 ```
 
-4. For scripts which access Ensembl a lot and have no easy opportunity to behave as in option 2 above.
+4 - For scripts which access Ensembl a lot and have no easy opportunity to behave as in option 2 above.
 
 ```perl
 # For all code using Ensembl
@@ -77,6 +78,7 @@ Bio::Ensembl::Registry->set_reconnect_when_lost(1);
 $adaptor->dbc->reconnect_when_lost(1);
 # This option adds an additional message to every call to the database, checking that the connection is still up
 # It increases network traffic and latency of each request, but can restore a broken connection
+# Not necessary if you call disconnect_if_idle
 ```
 
 Option 2 is both fastest and makes best use of Ensembl servers. Option 4 is next quickest, and option 3 is slow for heavy access, but suitable for occasional requests.
