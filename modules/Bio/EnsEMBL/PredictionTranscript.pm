@@ -331,7 +331,8 @@ sub translation {
 
 =head2 translate
 
-  Args      : none
+  Arg [1]   : Boolean, emulate the behavior of old bioperl versions where
+              an incomplete final codon of 2 characters is padded and guessed
   Function  : Give a peptide translation of all exons currently in
               the PT. Gives empty string when none is in.
   Returntype: a Bio::Seq as in transcript->translate()
@@ -343,7 +344,7 @@ sub translation {
 
 
 sub translate {
-  my ($self) = @_;
+  my ($self, $complete_codon) = @_;
 
   my $dna = $self->translateable_seq();
 
@@ -358,6 +359,11 @@ sub translate {
   }
   $codon_table_id ||= 1; #default will be vertebrates
 
+  # Remove the final stop codon from the mrna
+  # sequence produced if it is present, this is so any peptide produced
+  # won't have a terminal stop codon
+  # if you want to have a terminal stop codon either comment this line out
+  # or call translatable seq directly and produce a translation from it
   if( CORE::length( $dna ) % 3 == 0 ) {
    # $dna =~ s/TAG$|TGA$|TAA$//i;
       my $codon_table =  Bio::Tools::CodonTable->new( -id => $codon_table_id );
@@ -365,12 +371,21 @@ sub translate {
       if ( $codon_table->is_ter_codon( substr( $dna, -3, 3 ) ) ) {
 	  substr( $dna, -3, 3, '' );
       }
+  } elsif ( CORE::length($dna) % 3 == 2 ) {
+      # If we have a partial codon of 2 bp we need to decide if we
+      # trim it or not to fix some bad behaviour in older bioperl
+      # versions
+      if ( $complete_codon ) {
+	  # If we want to do the bad behavior of bioperl 1.6.1 and older
+	  # where we guess the last codon if inomplete, pad an N
+	  # to the mrna sequence
+	  $dna .= 'N';
+      } else {
+	  # Otherwise trim those last two bp off so the behavior is
+	  # consistent across bioperl versions
+	  substr( $dna, -2, 2, '' );
+      }
   }
-  # the above line will remove the final stop codon from the mrna
-  # sequence produced if it is present, this is so any peptide produced
-  # won't have a terminal stop codon
-  # if you want to have a terminal stop codon either comment this line out
-  # or call translatable seq directly and produce a translation from it
 
   my $bioseq = new Bio::Seq( -id       => $self->display_id,
                              -seq      => $dna,

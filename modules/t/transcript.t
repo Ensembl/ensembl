@@ -210,6 +210,12 @@ $tr->flush_Exons();
 
 is( scalar( @{$tr->get_all_Exons()} ), 0, 'No exons left after flushing' );
 
+# Fetch a fresh tr, check incomplete codon behavior
+$tr = $ta->fetch_by_stable_id( "ENST00000300425" );
+
+# By default the incomplete codon should be dropped
+is( $tr->translate()->seq() =~ /P$/, 1, "Incomplete codon is not translated");
+is( $tr->translate(1)->seq() =~ /PL$/, 1, "Incomplete codon is padded then translated");
 
 # get a fresh tr to check the update method
 $tr = $ta->fetch_by_stable_id( "ENST00000217347" );

@@ -2092,7 +2092,8 @@ sub get_all_translateable_Exons {
 
 =head2 translate
 
-  Args       : none
+  Arg [1]    : Boolean, emulate the behavior of old bioperl versions where
+               an incomplete final codon of 2 characters is padded and guessed
   Example    : none
   Description: Return the peptide (plus eventual stop codon) for
                this transcript.  Does N-padding of non-phase
@@ -2107,7 +2108,7 @@ sub get_all_translateable_Exons {
 =cut
 
 sub translate {
-  my ($self) = @_;
+  my ($self, $complete_codon) = @_;
 
   if ( !defined( $self->translation() ) ) { return undef }
 
@@ -2152,6 +2153,20 @@ sub translate {
     if ( $codon_table->is_ter_codon( substr( $mrna, -3, 3 ) ) ) {
       substr( $mrna, -3, 3, '' );
     }
+  } elsif ( CORE::length($mrna) % 3 == 2 ) {
+      # If we have a partial codon of 2 bp we need to decide if we
+      # trim it or not to fix some bad behaviour in older bioperl
+      # versions
+      if ( $complete_codon ) {
+	  # If we want to do the bad behavior of bioperl 1.6.1 and older
+	  # where we guess the last codon if inomplete, pad an N
+	  # to the mrna sequence
+	  $mrna .= 'N';
+      } else {
+	  # Otherwise trim those last two bp off so the behavior is
+	  # consistent across bioperl versions
+	  substr( $mrna, -2, 2, '' );
+      }
   }
 
   if ( CORE::length($mrna) < 1 ) { return undef }
