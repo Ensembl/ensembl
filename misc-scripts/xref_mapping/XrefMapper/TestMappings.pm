@@ -359,7 +359,7 @@ sub entry_number_check{
       }
     }
     else{
-      print "WARNING: xrefs $name are not in the new database but are in the old???\n" if($self->mapper->verbose);
+      print "WARNING: xrefs $name are not in the new database but $count are in the old???\n" if($self->mapper->verbose);
     }
   }
   $sth->finish;

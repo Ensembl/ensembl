@@ -59,7 +59,9 @@ sub run {
     return 1;
   }
 
-  my $name_to_source_id = $self->get_hgnc_sources();
+  my $source_name = $self->get_source_name_for_source_id($source_id);
+
+  my $name_to_source_id = $self->get_sources($source_name);
 
   # Skip header
   $hugo_io->getline();
@@ -259,15 +261,16 @@ sub run {
 
 
 
-sub get_hgnc_sources {
+sub get_sources {
   my $self = shift;
+  my $source_name = shift;
   my %name_to_source_id;
 
   my @sources = ('entrezgene_manual', 'refseq_manual', 'entrezgene_mapped', 'refseq_mapped', 'ensembl_manual', 'swissprot_manual', 'desc_only');
 
 
   foreach my $key (@sources) {
-  my $source_id = $self->get_source_id_for_source_name('HGNC', $key);
+  my $source_id = $self->get_source_id_for_source_name($source_name, $key);
     if(!(defined $source_id)){
       die 'Could not get source id for HGNC and '. $key ."\n";
     }
