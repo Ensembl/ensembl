@@ -48,6 +48,7 @@ sub gene_description_sources {
           "TRNASCAN_SE",
 	  "miRBase",
           "HGNC",
+          "VGNC",
           "IMGT/GENE_DB",
 	  "Uniprot/SWISSPROT",
 	  "RefSeq_peptide",
@@ -81,7 +82,8 @@ sub transcript_display_xref_sources {
 sub gene_display_xref_sources {
   my $self     = shift;
 	
-  my @list = qw(RFAM
+  my @list = qw(VGNC
+                RFAM
                 miRBase
                 Uniprot_gn
                 EntrezGene);
