@@ -128,7 +128,7 @@ sub run_script {
     warn($response->status_line);
     return 1;
   }
-  my @lines = split(/\n\n/, $response->decoded_content);
+  my @lines = split(/\n\n\n/, $response->decoded_content);
 
   my @xrefs;
   my $xref_count = 0;
