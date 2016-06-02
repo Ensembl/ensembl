@@ -142,6 +142,7 @@ my %source_priority = ('ccds' => 1,
 my %biotype_priority = ('protein_coding' => 1,
                         'nonsense_mediated_decay' => 2,
                         'non_stop_decay' => 2,
+                        'polymorphic_pseudogene' => 2,
                         'other' => 3,
 );
 
@@ -184,7 +185,8 @@ sub encode_transcript {
     my $biotype;
     if (   $transcript->biotype() ne 'protein_coding' 
         && $transcript->biotype() ne 'nonsense_mediated_decay'
-        && $transcript->biotype() ne 'non_stop_decay') {
+        && $transcript->biotype() ne 'non_stop_decay'
+        && $transcript->biotype() ne 'polymorphic_pseudogene' ) {
         $biotype = 'other';
     } else { $biotype = $transcript->biotype(); }
 
