@@ -207,8 +207,8 @@ sub fetch_by_region {
        $strand, $version, $no_fuzz )
     = @_;
 
-  assert_integer($start, 'start') if $start;
-  assert_integer($end, 'end') if $end;
+  assert_integer($start, 'start') if defined $start;
+  assert_integer($end, 'end') if defined $end;
 
   if ( !defined($start) )  { $start  = 1 }
   if ( !defined($strand) ) { $strand = 1 }

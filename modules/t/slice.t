@@ -621,5 +621,13 @@ isa_ok($slice, 'Bio::EnsEMBL::Slice');
 $genome_component = $slice->get_genome_component($slice);
 is($genome_component, 'D', "Genome component from slice");
 
+# Deal with rare user case of requesting a region with end = ''
+
+dies_ok(sub { $slice_adaptor->fetch_by_region('chromosome', 20, 1, '') },'Stringy null region end causes an exception');
+
+  
+
+
+
 done_testing();
 
