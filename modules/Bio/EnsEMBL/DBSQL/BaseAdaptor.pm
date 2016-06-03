@@ -674,7 +674,7 @@ sub _uncached_fetch_by_dbID{
   #Should only be one
   my ($feat) = @{$self->generic_fetch($constraint)};
 
-  return undef if(!$feat);
+  return if(!$feat);
 
   return $feat;
 }
@@ -1151,7 +1151,7 @@ sub _logic_name_to_constraint {
   my $an = $aa->fetch_by_logic_name($logic_name);
 
   if ( !defined($an) ) {
-    return undef;
+    return;
   }
 
   my $an_id = $an->dbID();

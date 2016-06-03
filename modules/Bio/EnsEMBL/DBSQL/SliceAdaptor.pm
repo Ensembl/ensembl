@@ -322,7 +322,7 @@ sub fetch_by_region {
       $syn_sql_sth->finish;
 
 
-      if ($no_fuzz) { return undef }
+      if ($no_fuzz) { return; }
 
       # Do fuzzy matching, assuming that we are just missing a version
       # on the end of the seq_region name.
@@ -398,7 +398,7 @@ sub fetch_by_region {
       $cs = $high_cs;
 
       # return if we did not find any appropriate match:
-      if ( !defined($high_ver) ) { return undef }
+      if ( !defined($high_ver) ) { return; }
 
     } else {
 
