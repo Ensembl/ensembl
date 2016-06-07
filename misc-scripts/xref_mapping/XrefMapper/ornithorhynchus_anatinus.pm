@@ -52,7 +52,8 @@ SELECT DISTINCT ox.object_xref_id
           xdep.source_id = sdep.source_id AND
           smas.name like "Refseq%predicted" AND
           sdep.name like "EntrezGene" AND
-          ox.ox_status = "DUMP_OUT" 	 
+          ox.ox_status = "DUMP_OUT" AND
+          ox.master_xref_id = dx.master_xref_id
 IEG
 
 
