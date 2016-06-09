@@ -282,6 +282,24 @@ sub version {
   return $self->{version};
 }
 
+=head2 db_version
+
+  Arg [1]    : (optional) String $arg - value to set
+  Example    : none
+  Description: Alias for release(). The release/version of the external DB
+  Returntype : String
+  Exceptions : none
+  Caller     : general
+  Status     : Stable
+
+=cut
+
+sub db_version {
+  my ( $self, $arg ) = @_;
+  return $self->release($arg);
+}
+
+
 
 =head2 description
 

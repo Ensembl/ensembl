@@ -300,6 +300,11 @@ $xref->primary_id('2');
 $dbEntryAdaptor->update($xref);
 my $updated_xref = $dbEntryAdaptor->fetch_by_db_accession('Vega_gene', '2');
 is($updated_xref->description(), 'new_description', 'Xref with updated description');
+is($updated_xref->db_version, '1','DBEntry release/version can be accessed');
+is($updated_xref->release, '1','DBEntry release/version can be accessed by both methods');
+
+$updated_xref->release(2);
+is($updated_xref->release, '2','DBEntry release can be changed');
 
 #
 # 12-14 Test that external synonyms and go evidence tags are retrieved
