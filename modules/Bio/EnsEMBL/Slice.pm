@@ -3728,8 +3728,9 @@ sub project_to_slice {
 
   Args [1]   : String external_db_name The name of the database to retrieve 
                the synonym for
-  Args [2]   : Integer external_db_version The version of the database to retrieve 
-               the synonym for. If not specified then we will ignore any versions
+  Args [2]   : (optional) Integer external_db_version Optionally restrict
+               results from external_db_name to a specific version of
+               the the specified external database
   Example    : my @alternative_names = @{$slice->get_all_synonyms()};
                @alternative_names = @{$slice->get_all_synonyms('EMBL')};
   Description: get a list of alternative names for this slice
