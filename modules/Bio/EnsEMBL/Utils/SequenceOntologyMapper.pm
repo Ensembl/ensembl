@@ -106,6 +106,7 @@ my %transcript_so_mapping =
    'TR_C_gene'							=> 'SO:0000478', # C_gene_segment
    'IG_J_pseudogene'					=> 'SO:0000336', # pseudogene
    'miRNA'								=> 'SO:0000276', #miRNA
+   'protein_coding'                                     => 'SO:0000276', #miRNA
    'miRNA_pseudogene'					=> 'SO:0000336', # pseudogene
    'disrupted_domain' 					=> 'SO:0000681', # aberrant_processed_transcript
    'rRNA' 								=> 'SO:0000252', #rRNA
