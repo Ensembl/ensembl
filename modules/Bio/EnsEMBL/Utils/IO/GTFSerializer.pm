@@ -362,8 +362,8 @@ sub print_feature {
       foreach my $startc (@startcodons) {
         # here we should check the start codon covers 3 bases
         print $fh $idstr . "\t" . $transcript->source . "\t" .
-          'start_codon' . "\t" . ( $startc->start + $sliceoffset ) .
-          "\t" . ( $startc->end + $sliceoffset ) .
+          'start_codon' . "\t" . ( $startc->start ) .
+          "\t" . ( $startc->end ) .
           "\t" . "." . "\t" . $strand . "\t" . $startc->phase . "\t";
 
         $self->_print_attribs( $gene, $biotype_display, $transcript, $transcript_biotype,
@@ -378,8 +378,8 @@ sub print_feature {
         foreach my $endc (@endcodons) {
           # here we should check the stop codon covers 3 bases
           print $fh $idstr . "\t" . $transcript->source . "\t" .
-            'stop_codon' . "\t" . ( $endc->start + $sliceoffset ) .
-            "\t" . ( $endc->end + $sliceoffset ) .
+            'stop_codon' . "\t" . ( $endc->start ) .
+            "\t" . ( $endc->end ) .
             "\t" . "." . "\t" . $strand . "\t" . $endc->phase . "\t";
 
           $self->_print_attribs( $gene, $biotype_display, $transcript, $transcript_biotype,
@@ -406,7 +406,7 @@ sub print_feature {
   foreach my $utr (@{$utrs}) {
     my $strand = $strand_conversion{$utr->strand()};
     print $fh sprintf(qq{%s\t%s\t%s\t%d\t%d\t.\t%s\t.\t}, 
-        $idstr, $transcript->source, $utr->type, ($utr->start()+$sliceoffset), ($utr->end+$sliceoffset), $strand);
+        $idstr, $transcript->source, $utr->type, ($utr->start()), ($utr->end), $strand);
     $self->_print_attribs($gene, $biotype_display, $transcript, $transcript_biotype, 0, 'UTR', undef, undef, $has_selenocysteine);
     print $fh "\n";
   }
