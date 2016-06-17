@@ -38,15 +38,59 @@ my $transcript_adaptor = $db->get_TranscriptAdaptor();
 my $transcript = 
   $transcript_adaptor->fetch_by_stable_id($stable_id);
 
+print "Testing UTRs on transcript fetched by stable_id\n";
+try_utrs($transcript);
 
-my @five_utrs = @{ $transcript->get_all_five_prime_UTRs() };  
-my $five = scalar(@five_utrs);
-my @three_utrs = @{ $transcript->get_all_three_prime_UTRs() };
-my $three = scalar(@three_utrs);
+my $slice_adaptor = $db->get_SliceAdaptor();
+my $slice = $slice_adaptor->fetch_by_location('20:31166507-31166507', 'chromosome');
+my $features = $transcript_adaptor->fetch_all_by_Slice($slice);
+$transcript = shift @{$features};
 
-is($five_utrs[0]->start, $transcript->start, "Five prime starts at transcript start");
-is($five_utrs[$five-1]->end + 1, $transcript->coding_region_start, "Five prime ends starts the coding region");
-is($three_utrs[0]->start - 1, $transcript->coding_region_end, "Three prime starts at end of coding region");
-is($three_utrs[$three-1]->end, $transcript->end, "Three prime ends at transcript end");
+print "Testing UTRs on transcript fetched by slice\n";
+try_utrs($transcript);
+
+$stable_id = 'ENST00000246229';
+$transcript = 
+  $transcript_adaptor->fetch_by_stable_id($stable_id);
+
+print "Testing UTRs on reverse strand transcript fetched by stable_id\n";
+try_utrs_reverse($transcript);
+
+my $slice = $slice_adaptor->fetch_by_location('20:30583588-30583588', 'chromosome');
+my $features = $transcript_adaptor->fetch_all_by_Slice($slice);
+my $transcript = shift @{$features};
+
+print "Testing UTRs on reverse strand transcript fetched by slice\n";
+try_utrs_reverse($transcript);
+
+sub try_utrs {
+    my $transcript = shift;
+
+    my @five_utrs = @{ $transcript->get_all_five_prime_UTRs() };  
+    my $five = scalar(@five_utrs);
+    my @three_utrs = @{ $transcript->get_all_three_prime_UTRs() };
+    my $three = scalar(@three_utrs);
+
+    is($five_utrs[0]->start, $transcript->start, "Five prime starts at transcript start");
+    is($five_utrs[$five-1]->end, $transcript->coding_region_start - 1, "Five prime ends starts the coding region");
+    is($three_utrs[0]->start, $transcript->coding_region_end + 1, "Three prime starts at end of coding region");
+    is($three_utrs[$three-1]->end, $transcript->end, "Three prime ends at transcript end");
+
+}
+
+sub try_utrs_reverse {
+    my $transcript = shift;
+
+    my @five_utrs = @{ $transcript->get_all_five_prime_UTRs() };  
+    my $five = scalar(@five_utrs);
+    my @three_utrs = @{ $transcript->get_all_three_prime_UTRs() };
+    my $three = scalar(@three_utrs);
+
+    is($five_utrs[$five-1]->start, $transcript->coding_region_end + 1, "Five prime starts at transcript start");
+    is($five_utrs[0]->end, $transcript->end, "Five prime ends starts the coding region");
+    is($three_utrs[0]->start, $transcript->start, "Three prime starts at end of coding region");
+    is($three_utrs[$three-1]->end, $transcript->coding_region_start - 1, "Three prime ends at transcript end");
+
+}
 
 done_testing();

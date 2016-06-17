@@ -1918,14 +1918,15 @@ sub get_all_five_prime_UTRs {
   my @utrs;
 
   my $cdna_coding_start = $self->cdna_coding_start();
+
   # if it is greater than 1 then it must have UTR
   if($cdna_coding_start > 1) {
     my @projections = $self->cdna2genomic(1, ($cdna_coding_start-1));
     foreach my $projection (@projections) {
       next if $projection->isa('Bio::EnsEMBL::Mapper::Gap');
       my $utr = Bio::EnsEMBL::UTR->new(
-        -START  => $projection->start,
-        -END    => $projection->end,
+        -START  => $projection->start - $self->slice->start + 1,
+        -END    => $projection->end - $self->slice->start + 1,
         -STRAND => $projection->strand,
         -SLICE  => $self->slice,
         -TRANSCRIPT => $self,
@@ -1961,8 +1962,8 @@ sub get_all_three_prime_UTRs {
     foreach my $projection (@projections) {
       next if $projection->isa('Bio::EnsEMBL::Mapper::Gap');
       my $utr = Bio::EnsEMBL::UTR->new(
-        -START  => $projection->start,
-        -END    => $projection->end,
+        -START  => $projection->start - $self->slice->start + 1,
+        -END    => $projection->end - $self->slice->start + 1,
         -STRAND => $projection->strand,
         -SLICE  => $self->slice,
         -TRANSCRIPT => $self,
