@@ -308,7 +308,7 @@ foreach my $thing ( [ 'ensembl',               'core',        'table.sql'   ],
   }
 
   while ( my $file_name = $dh->read() ) {
-    if ( $file_name =~ /^patch_\d+_(\d+)_?[a-z]?\.sql$/ ) {
+    if ( $file_name =~ /^patch_\d+_(\d+)_?[a-z]+?\.sql$/ ) {
       my $patch_release = $1;
 
       if ( !defined($latest_release) ||
@@ -429,7 +429,7 @@ while ( $sth->fetch() ) {
         warn "The patch value '$value' in database '$database' has line-breaks. Remove them to silence this message";
         $value =~ s/\n/ /g;
       } 
-      if($value =~ /^(patch_\d+_(\d+)_?[a-z]?\.sql)\|(.*)$/) {
+      if($value =~ /^(patch_\d+_(\d+)_?[a-z]+?\.sql)\|(.*)$/) {
         my $patch_ident   = $1;
         my $patch_release = $2;
         my $patch_info    = $3;
