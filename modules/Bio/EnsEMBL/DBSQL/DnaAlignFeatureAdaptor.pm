@@ -236,12 +236,68 @@ FEATURE:
     $sth->execute();
 
     my $dbId = $self->last_insert_id("${tablename}_id", undef, $tablename);
+
+    # store attributes if there are any
+    my $attr_adaptor = $db->get_AttributeAdaptor();
+    $attr_adaptor->store_on_DnaDnaAlignFeature($dbId, $feat->get_all_Attributes);
+
     $original->dbID( $dbId );
     $original->adaptor($self);
   } ## end foreach my $feat (@feats)
 
   $sth->finish();
 } ## end sub store
+
+
+=head2 remove
+
+  Arg [1]    : A feature $feature 
+  Example    : $feature_adaptor->remove($feature);
+  Description: This removes a feature from the database.  The table the
+               feature is removed from is defined by the abstract method
+               _tablename, and the primary key of the table is assumed
+               to be _tablename() . '_id'.  The feature argument must 
+               be an object implementing the dbID method, and for the
+               feature to be removed from the database a dbID value must
+               be returned.
+  Returntype : none
+  Exceptions : thrown if $feature arg does not implement dbID(), or if
+               $feature->dbID is not a true value
+  Caller     : general
+  Status     : Stable
+
+=cut
+
+
+sub remove {
+  my ($self, $feature) = @_;
+
+  if(!$feature || !ref($feature) || !$feature->isa('Bio::EnsEMBL::Feature')) {
+    throw('Feature argument is required');
+  }
+
+  if(!$feature->is_stored($self->db)) {
+    throw("This feature is not stored in this database");
+  }
+
+  my @tabs = $self->_tables;
+  my ($table) = @{$tabs[0]};
+
+  my $sth = $self->prepare("DELETE FROM $table WHERE ${table}_id = ?");
+  $sth->bind_param(1,$feature->dbID,SQL_INTEGER);
+  $sth->execute();
+
+  # remove the attributes associated with this feature
+  my $attrib_adaptor = $self->db->get_AttributeAdaptor;
+  $attrib_adaptor->remove_from_DnaDnaAlignFeature($feature);
+
+  #unset the feature dbID ad adaptor
+  $feature->dbID(undef);
+  $feature->adaptor(undef);
+
+  return;
+}
+
 
 
 sub save {
