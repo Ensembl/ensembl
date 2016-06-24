@@ -680,6 +680,31 @@ CREATE TABLE dna_align_feature_attrib (
 
 
 /**
+@table dna_align_feature_attrib
+@desc Enables storage of attributes that relate to DNA sequence alignments.
+
+@column dna_align_feature_id        Foreign key references to the @link dna_align_feature table.
+@column attrib_type_id              Foreign key references to the @link attrib_type table.
+@column value                       Attribute value.
+
+@see dna_align_feature
+*/
+
+CREATE TABLE dna_align_feature_attrib (
+
+  dna_align_feature_id        INT(10) UNSIGNED NOT NULL,
+  attrib_type_id              SMALLINT(5) UNSIGNED NOT NULL,
+  value                       TEXT NOT NULL,
+
+  UNIQUE KEY dna_align_feature_attribx (dna_align_feature_id, attrib_type_id, value(500)),
+  KEY dna_align_feature_idx (dna_align_feature_id),
+  KEY type_val_idx (attrib_type_id, value(40)),
+  KEY val_only_idx (value(40))
+
+) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
+
+
+/**
 @table exon
 @desc Stores data about exons. Associated with transcripts via exon_transcript. Allows access to contigs seq_regions.
 Note seq_region_start is always less that seq_region_end, i.e. when the exon is on the other strand the seq_region_start is specifying the 3prime end of the exon.
