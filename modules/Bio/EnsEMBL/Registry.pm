@@ -669,7 +669,10 @@ sub get_all_DBAdaptors {
 
   my ( $species, $group ) = rearrange( [qw(SPECIES GROUP)], @args );
 
-  if ( defined($species) ) { $species = $class->get_alias($species) }
+  if ( defined($species) ) {
+    $species = $class->get_alias($species);
+    return [] unless $species;
+  }
 
   my @ret;
   foreach my $dba ( @{ $registry_register{'_DBA'} } ) {
