@@ -382,4 +382,101 @@ sub get_SimpleAlign {
   return $sa;
 }
 
+
+=head2 get_all_Attributes
+
+  Arg [1]    : (optional) String $attrib_code
+               The code of the attribute type to retrieve values for
+  Example    : my ($description) = @{ $feature->get_all_Attributes('description') };
+               my @attributes = @{ $feature->get_all_Attributes };
+  Description: Gets a list of Attributes of this gene.
+               Optionally just get Attributes for given code.
+  Returntype : Listref of Bio::EnsEMBL::Attribute
+  Exceptions : 
+  Caller     : general
+  Status     : Stable
+
+=cut
+
+sub get_all_Attributes {
+  my $self = shift;
+  my $attrib_code = shift;
+
+  if ( ! exists $self->{'attributes' } ) {
+    if (!$self->adaptor() ) {
+      return [];
+    }
+
+    my $attribute_adaptor = $self->adaptor->db->get_AttributeAdaptor();
+    $self->{'attributes'} = $attribute_adaptor->fetch_all_by_DnaDnaAlignFeature($self);
+  }
+
+  if ( defined $attrib_code ) {
+    my @results = grep { uc($_->code()) eq uc($attrib_code) }
+    @{$self->{'attributes'}};
+    return \@results;
+  } else {
+    return $self->{'attributes'};
+  }
+}
+
+
+=head2 add_Attributes
+
+  Arg [1-N]  : list of Bio::EnsEMBL::Attribute's @attribs
+               Attribute(s) to add
+  Example    : my $attrib = Bio::EnsEMBL::Attribute->new(...);
+               $gene->add_Attributes($attrib);
+  Description: Adds an Attribute to the feature.
+  Returntype : none
+  Exceptions : throw on incorrect arguments
+  Caller     : general
+  Status     : Stable
+
+=cut
+
+sub add_Attributes {
+  my $self = shift;
+  my @attribs = @_;
+
+  if( ! exists $self->{'attributes'} ) {
+    $self->{'attributes'} = [];
+  }
+
+  for my $attrib ( @attribs ) {
+    if( ! $attrib->isa( "Bio::EnsEMBL::Attribute" )) {
+     throw( "Argument to add_Attribute has to be an Bio::EnsEMBL::Attribute" );
+    }
+    push( @{$self->{'attributes'}}, $attrib );
+  }
+
+  return;
+}
+=head2 transfer
+
+  Arg [1]    : Bio::EnsEMBL::Slice $destination_slice
+  Example    : my $new_feature = $feature->transfer($slice);
+  Description: Moves this feature to given target slice coordinates.
+               Returns a new feature.
+  Returntype : Bio::EnsEMBL::DnaDnaAlignFeature
+  Exceptions : none
+  Caller     : general
+  Status     : Stable
+
+=cut
+
+sub transfer {
+  my $self  = shift;
+  
+  my $new_feature = $self->SUPER::transfer( @_ );
+  return undef unless $new_feature;
+
+  if(exists $self->{attributes}) {
+    $new_feature->{attributes} = [@{$self->{attributes}}];
+  }
+  
+  return $new_feature;
+}
+
+
 1;
