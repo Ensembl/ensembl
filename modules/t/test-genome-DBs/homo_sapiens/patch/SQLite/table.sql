@@ -259,6 +259,17 @@ CREATE TABLE dna_align_feature (
 );
 
 --
+-- Table: dna_align_feature_attrib
+--
+CREATE TABLE dna_align_feature_attrib (
+  dna_align_feature_id integer NOT NULL,
+  attrib_type_id smallint NOT NULL,
+  value text NOT NULL
+);
+
+CREATE UNIQUE INDEX dna_align_feature_attribx ON dna_align_feature_attrib (dna_align_feature_id, attrib_type_id, value);
+
+--
 -- Table: exon
 --
 CREATE TABLE exon (
