@@ -171,9 +171,11 @@ sub gene_description_sources {
 sub gene_description_filter_regexps {
 
   return ( '^(Protein \S+\s*)+$',
+           '^Uncharacterized protein\s*\S+\s*',
            '^Uncharacterized protein\s*',
+           '^Putative uncharacterized protein\s*\S+\s*',
            '^Putative uncharacterized protein\s*',
-           '^Hypothetical protein\s*',
+           '^Hypothetical protein\s*\S+\s*',
    );
 
 }
