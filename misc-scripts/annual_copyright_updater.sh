@@ -35,8 +35,7 @@ for var in $dirs; do
   last_year=$(($year - 1))
 
   search="^\(.*\)\\[1999-[0-9]*\\] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute"
-  replacement="\1[1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute"
-  replacement="\1[2016] EMBL-European Bioinformatics Institute\n\1[2016] EMBL-European Bioinformatics Institute"
+  replacement="\1[1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute\n\1[2016] EMBL-European Bioinformatics Institute"
 
   echo "About to scan $(pwd) for files to replace '$search' with '$replacement'"
 
