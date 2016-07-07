@@ -384,7 +384,7 @@ sub cdna_start {
   }
   
   my $cdna_start;
-  my @coords = $transcript->genomic2cdna($self->start(), $self->end(), $self->strand());
+  my @coords = $transcript->genomic2cdna($self->seq_region_start(), $self->seq_region_end(), $self->strand());
   if(@coords && !$coords[0]->isa('Bio::EnsEMBL::Mapper::Gap')) {
     $cdna_start = $coords[0]->start();
   }
@@ -433,7 +433,7 @@ sub cdna_end {
   }
   
   my $cdna_end;
-  my @coords = $transcript->genomic2cdna($self->start(), $self->end(), $self->strand());
+  my @coords = $transcript->genomic2cdna($self->seq_region_start(), $self->seq_region_end(), $self->strand());
   if(@coords && !$coords[-1]->isa('Bio::EnsEMBL::Mapper::Gap')) {
     $cdna_end = $coords[-1]->end();
   }
