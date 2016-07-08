@@ -406,7 +406,7 @@ sub print_feature {
   foreach my $utr (@{$utrs}) {
     my $strand = $strand_conversion{$utr->strand()};
     print $fh sprintf(qq{%s\t%s\t%s\t%d\t%d\t.\t%s\t.\t}, 
-        $idstr, $transcript->source, $utr->type, ($utr->start()), ($utr->end), $strand);
+        $idstr, $transcript->source, $utr->type, ($utr->seq_region_start()), ($utr->seq_region_end()), $strand);
     $self->_print_attribs($gene, $biotype_display, $transcript, $transcript_biotype, 0, 'UTR', undef, undef, $has_selenocysteine);
     print $fh "\n";
   }
