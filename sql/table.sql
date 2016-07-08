@@ -726,8 +726,8 @@ CREATE TABLE exon_transcript (
   rank                        INT(10) NOT NULL,
 
   PRIMARY KEY (exon_id,transcript_id,rank),
-  KEY transcript (transcript_id),
-  KEY exon (exon_id)
+  KEY transcript_idx (transcript_id),
+  KEY exon_idx (exon_id)
 
 ) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
 
@@ -2040,8 +2040,8 @@ CREATE TABLE dependent_xref(
   dependent_xref_id      INT(10) UNSIGNED NOT NULL,
 
   PRIMARY KEY( object_xref_id ),
-  KEY dependent ( dependent_xref_id ),
-  KEY master_idx (master_xref_id)
+  KEY dependent_xref_idx ( dependent_xref_id ),
+  KEY master_xref_idx (master_xref_id)
 
 ) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
 
