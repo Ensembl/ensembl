@@ -70,8 +70,8 @@ my %gene_so_mapping =
    'rRNA' 					=> 'SO:0001637', #rRNA_gene
    'snRNA'					=> 'SO:0001268', #snRNA_gene
    'snRNA_pseudogene'		=> 'SO:0000336', # pseudogene
-   'tRNA_pseudogene'		=> 'SO:0000778', # pseudogenic_tRNA
-   'rRNA_pseudogene'		=> 'SO:0000777', # pseudogenic_rRNA
+   'tRNA_pseudogene'		=> 'SO:0000336', # pseudogene
+   'rRNA_pseudogene'		=> 'SO:0000336', # pseudogene
    'TR_J_gene'				=> 'SO:0000470', # J_gene
    'TR_V_gene'				=> 'SO:0000466', # V_gene
    'TR_C_gene'				=> 'SO:0000478', # C_gene
@@ -116,6 +116,8 @@ my %transcript_so_mapping =
    'snoRNA_pseudogene'					=> 'SO:0000336', # pseudogene
    'snRNA'								=> 'SO:0000274', # snRNA
    'snRNA_pseudogene'					=> 'SO:0000336',  # pseudogene
+   'tRNA'		         => 'SO:0000253', # tRNA
+   'tRNA_pseudogene' => 'SO:0000778', # pseudogenic_tRNA
   );
 
 my %utr_so_mapping =
