@@ -37,6 +37,8 @@ my $multi = Bio::EnsEMBL::Test::MultiTestDB->new('multi');
 my $core_db = $human->get_DBAdaptor('core');
 my $compara_db = $multi->get_DBAdaptor('compara');
 
+# Needed by the functions of the Core API we are testing
+Bio::EnsEMBL::Registry->add_alias('multi', 'compara');
 
 
 ## Gene::get_all_homologous_Genes()
@@ -82,5 +84,35 @@ subtest 'Dog triplet', sub {
 };
 
 
+## Slice::get_all_compara_Syntenies()
+
+my $human_chr1 = $core_db->get_SliceAdaptor->fetch_by_region('chromosome', '1');
+my $syntenies = $human_chr1->get_all_compara_Syntenies('mus_musculus');
+is(scalar(@$syntenies), 18, 'Got all the syntenies');
+
+my $slice_10mb = $core_db->get_SliceAdaptor->fetch_by_region('chromosome', '1', 70_000_000, 80_000_000);
+$syntenies = $slice_10mb->get_all_compara_Syntenies('mus_musculus');
+is(scalar(@$syntenies), 1, 'Only 1 synteny on this slice');
+
+subtest 'SyntenyRegion', sub {
+    my $this_synteny = $syntenies->[0];
+    isa_ok($this_synteny, 'Bio::EnsEMBL::Compara::SyntenyRegion');
+    is($this_synteny->dbID, 51476, 'dbID');
+    is($this_synteny->method_link_species_set_id, 10080, 'mlss_id');
+    my $dnafrag_regions = $this_synteny->get_all_DnaFragRegions();
+    is(scalar(@$dnafrag_regions), 2, '2 objects in the DnaFragRegion array');
+    my ($df1, $df2) = $dnafrag_regions->[0]->genome_db->name eq 'homo_sapiens' ?  @$dnafrag_regions : ($dnafrag_regions->[1], $dnafrag_regions->[0]);
+    isa_ok($df1, 'Bio::EnsEMBL::Compara::DnaFragRegion');
+    is($df1->dnafrag->name, '1', 'human chromosome 1');
+    is($df1->dnafrag_start, 68121446, 'human start');
+    is($df1->dnafrag_end, 89272452, 'human end');
+    is($df1->dnafrag_strand, 1, 'human strand');
+    isa_ok($df2, 'Bio::EnsEMBL::Compara::DnaFragRegion');
+    is($df2->genome_db->name, 'mus_musculus', 'Synteny with mouse');
+    is($df2->dnafrag->name, '3', 'mouse chromosome 3');
+    is($df2->dnafrag_start, 142496995, 'mouse start');
+    is($df2->dnafrag_end, 159939079, 'mouse end');
+    is($df2->dnafrag_strand, -1, 'mouse strand');
+};
 
 done_testing();

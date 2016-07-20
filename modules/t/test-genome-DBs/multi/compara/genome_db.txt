@@ -60,7 +60,7 @@
 147	9940	ovis_aries	Oar_v3.1	2012-12-Ensembl	1	1	\N	\N	74	\N
 148	7918	lepisosteus_oculatus	LepOcu1	2012-01-Ensembl	1	1	\N	\N	74	\N
 149	9361	dasypus_novemcinctus	Dasnov3.0	2013-06-Ensembl	0	1	\N	\N	74	\N
-150	9606	homo_sapiens	GRCh38	2014-01-Ensembl	1	1	\N	\N	76	\N
+150	9606	homo_sapiens	NCBI33	2014-01-Ensembl	1	1	\N	\N	76	\N
 151	9555	papio_anubis	PapAnu2.0	2013-01-Ensembl	1	1	\N	\N	76	\N
 152	48698	poecilia_formosa	PoeFor_5.1.2	2013-11-Ensembl	0	1	\N	\N	76	\N
 153	60711	chlorocebus_sabaeus	ChlSab1.1	2014-03-Ensembl	1	1	\N	\N	77	\N

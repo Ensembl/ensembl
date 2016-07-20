@@ -51,3 +51,4 @@
 51087	202	35957	C.sab paralogues	ensembl		77	\N
 50815	202	35732	H.sap paralogues	ensembl		76	\N
 50979	201	35723	H.sap-O.lat orthologues	ensembl		76	\N
+10080	101	35673	H.sap-M.mus synteny	ensembl		76	\N
