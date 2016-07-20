@@ -242,7 +242,7 @@ CREATE TABLE `exon` (
   PRIMARY KEY (`exon_id`),
   KEY `seq_region_idx` (`seq_region_id`,`seq_region_start`),
   KEY `stable_id_idx` (`stable_id`,`version`)
-) ENGINE=MyISAM AUTO_INCREMENT=6885 DEFAULT CHARSET=latin1;
+) ENGINE=MyISAM AUTO_INCREMENT=6894 DEFAULT CHARSET=latin1;
 
 CREATE TABLE `exon_transcript` (
   `exon_id` int(10) unsigned NOT NULL DEFAULT '0',
@@ -299,7 +299,7 @@ CREATE TABLE `gene` (
   KEY `analysis_idx` (`analysis_id`),
   KEY `stable_id_idx` (`stable_id`,`version`),
   KEY `canonical_transcript_id_idx` (`canonical_transcript_id`)
-) ENGINE=MyISAM AUTO_INCREMENT=6885 DEFAULT CHARSET=latin1;
+) ENGINE=MyISAM AUTO_INCREMENT=6886 DEFAULT CHARSET=latin1;
 
 CREATE TABLE `gene_archive` (
   `gene_stable_id` varchar(128) COLLATE latin1_bin NOT NULL DEFAULT '',
@@ -372,7 +372,7 @@ CREATE TABLE `intron_supporting_evidence` (
   PRIMARY KEY (`intron_supporting_evidence_id`),
   UNIQUE KEY `analysis_id` (`analysis_id`,`seq_region_id`,`seq_region_start`,`seq_region_end`,`seq_region_strand`,`hit_name`),
   KEY `seq_region_idx` (`seq_region_id`,`seq_region_start`)
-) ENGINE=MyISAM DEFAULT CHARSET=latin1;
+) ENGINE=MyISAM AUTO_INCREMENT=2 DEFAULT CHARSET=latin1;
 
 CREATE TABLE `karyotype` (
   `karyotype_id` int(10) unsigned NOT NULL AUTO_INCREMENT,
@@ -467,7 +467,7 @@ CREATE TABLE `meta` (
   PRIMARY KEY (`meta_id`),
   UNIQUE KEY `species_key_value_idx` (`species_id`,`meta_key`,`meta_value`),
   KEY `species_value_idx` (`species_id`,`meta_value`)
-) ENGINE=MyISAM AUTO_INCREMENT=128 DEFAULT CHARSET=latin1;
+) ENGINE=MyISAM AUTO_INCREMENT=129 DEFAULT CHARSET=latin1;
 
 CREATE TABLE `meta_coord` (
   `table_name` varchar(40) COLLATE latin1_bin NOT NULL DEFAULT '',
@@ -740,7 +740,7 @@ CREATE TABLE `simple_feature` (
   KEY `seq_region_idx` (`seq_region_id`,`seq_region_start`),
   KEY `analysis_idx` (`analysis_id`),
   KEY `hit_idx` (`display_label`)
-) ENGINE=MyISAM AUTO_INCREMENT=37 DEFAULT CHARSET=latin1 COLLATE=latin1_bin MAX_ROWS=100000000 AVG_ROW_LENGTH=80;
+) ENGINE=MyISAM AUTO_INCREMENT=51 DEFAULT CHARSET=latin1 COLLATE=latin1_bin MAX_ROWS=100000000 AVG_ROW_LENGTH=80;
 
 CREATE TABLE `stable_id_event` (
   `old_stable_id` varchar(128) COLLATE latin1_bin DEFAULT NULL,
@@ -789,7 +789,7 @@ CREATE TABLE `transcript` (
   KEY `xref_id_index` (`display_xref_id`),
   KEY `analysis_idx` (`analysis_id`),
   KEY `stable_id_idx` (`stable_id`,`version`)
-) ENGINE=MyISAM AUTO_INCREMENT=6885 DEFAULT CHARSET=latin1;
+) ENGINE=MyISAM AUTO_INCREMENT=6887 DEFAULT CHARSET=latin1;
 
 CREATE TABLE `transcript_attrib` (
   `transcript_id` int(10) unsigned NOT NULL DEFAULT '0',
