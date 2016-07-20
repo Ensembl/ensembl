@@ -115,4 +115,43 @@ subtest 'SyntenyRegion', sub {
     is($df2->dnafrag_strand, -1, 'mouse strand');
 };
 
+
+## Slice::get_all_compara_DnaAlignFeatures()
+
+my $smaller_human_slice = $core_db->get_SliceAdaptor->fetch_by_region('chromosome', '1', 100_000, 110_000);
+my $align_features = $smaller_human_slice->get_all_compara_DnaAlignFeatures('mus_musculus', undef, 'LASTZ_NET');
+is(scalar(@$align_features), 8, 'Got all the DnaDnaAlignFeatures');
+
+my $tiny_human_slice = $core_db->get_SliceAdaptor->fetch_by_region('chromosome', '1', 102_000, 103_000);
+$align_features = $tiny_human_slice->get_all_compara_DnaAlignFeatures('mus_musculus', undef, 'LASTZ_NET');
+is(scalar(@$align_features), 1, 'Only 1 DnaDnaAlignFeature on this slice');
+
+subtest 'Bio::EnsEMBL::DnaDnaAlignFeature', sub {
+    my $this_align_feature = $align_features->[0];
+    isa_ok($this_align_feature, 'Bio::EnsEMBL::DnaDnaAlignFeature');
+    is($this_align_feature->species, 'homo_sapiens', 'Alignment from human');
+    is($this_align_feature->start, 232, 'human start');
+    is($this_align_feature->end, 950, 'human end');
+    is($this_align_feature->strand, 1, 'human strand');
+    is($this_align_feature->slice->seq_region_name, '1', 'human chromosome');
+    is($this_align_feature->slice->start, 102000, 'human slice start');
+    is($this_align_feature->slice->end, 103000, 'human slice end');
+    is($this_align_feature->slice->strand, 1, 'human slice strand');
+    is($this_align_feature->slice->seq_region_length, 246874334, 'human slice length');
+    is($this_align_feature->hspecies, 'mus_musculus', 'Alignment to mouse');
+    is($this_align_feature->hseqname, '1', 'mouse hit chromosome');
+    is($this_align_feature->hstart, 176698281, 'mouse start');
+    is($this_align_feature->hend, 176698992, 'mouse end');
+    is($this_align_feature->hstrand, 1, 'mouse strand');
+    is($this_align_feature->hslice->seq_region_name, '1', 'mouse slice name');
+    is($this_align_feature->hslice->start, 1, 'mouse slice start');
+    is($this_align_feature->hslice->end, 195471971, 'mouse slice end');
+    is($this_align_feature->hslice->strand, 1, 'mouse slice strand');
+    is($this_align_feature->hslice->seq_region_length, 195471971, 'mouse slice length');
+    is($this_align_feature->cigar_string, '6MI93M2I47MI41M9I14M3D131MD50M7I8M4D11M36D81M3I117M5I32M22I21MI16M', 'cigar line');
+    is($this_align_feature->seqname, 'chromosome:NCBI33:1:102000:103000:1', 'human slice string');
+    is($this_align_feature->score, 126795, 'alignment score');
+};
+
+
 done_testing();

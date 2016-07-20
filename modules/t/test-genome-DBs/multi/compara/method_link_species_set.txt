@@ -52,3 +52,4 @@
 50815	202	35732	H.sap paralogues	ensembl		76	\N
 50979	201	35723	H.sap-O.lat orthologues	ensembl		76	\N
 10080	101	35673	H.sap-M.mus synteny	ensembl		76	\N
+677	16	35673	H.sap-M.mus lastz-net (on H.sap)	ensembl		76	NULL
