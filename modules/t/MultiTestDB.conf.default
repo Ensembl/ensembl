@@ -34,5 +34,8 @@
     'mapping' => {
       'core' => 'Bio::EnsEMBL::DBSQL::DBAdaptor',
     },
+    'multi' => {
+      'compara' => 'Bio::EnsEMBL::Compara::DBSQL::DBAdaptor',
+    },
   },
 }
