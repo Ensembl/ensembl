@@ -26,12 +26,12 @@ my $species = shift;
 if($species eq "mouse"){
   
   $reg->load_registry_from_db(
-			      -host => 'ens-staging2',
+			      -host => 'ens-staging3',
 			      -user => 'ensro');
 }
 else{
   $reg->load_registry_from_db(
-			      -host => 'ens-staging1',
+			      -host => 'ens-staging3',
 			      -user => "ensro");
 }
 
