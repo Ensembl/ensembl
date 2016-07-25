@@ -1,0 +1,6 @@
+401	PROTEIN_TREES	ProteinTree.protein_tree_node
+201	ENSEMBL_ORTHOLOGUES	Homology.homology
+202	ENSEMBL_PARALOGUES	Homology.homology
+402	NC_TREES	NCTree.nc_tree_node
+101	SYNTENY	SyntenyRegion.synteny
+16	LASTZ_NET	GenomicAlignBlock.pairwise_alignment
