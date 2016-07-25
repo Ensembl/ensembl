@@ -67,6 +67,7 @@ my %gene_so_mapping =
    'snoRNA' 				=> 'SO:0001267', #snoRNA_gene
    'misc_RNA' 				=> 'SO:0000356', #RNA
    'miRNA' 				=> 'SO:0001265', #miRNA_gene
+   'protein_coding'                     => 'SO:0000234', #mRNA
    'rRNA' 					=> 'SO:0001637', #rRNA_gene
    'snRNA'					=> 'SO:0001268', #snRNA_gene
    'snRNA_pseudogene'		=> 'SO:0000336', # pseudogene
