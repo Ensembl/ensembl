@@ -158,7 +158,7 @@
 41106	5	NULL	SO:0001537	structural_variant	"""A sequence variant that changes one or more sequence features."" [SO:ke]"	0	0
 41493	5	SOFA	SO:0005836	regulatory_region	"""A region of sequence that is involved in the control of a biological process."" [SO:ke]"	0	0
 40145	5	NULL	SO:0000569	retrotransposed	"""An attribute of a feature that occurred as the product of a reverse transcriptase mediated event."" [SO:ke]"	0	0
-40788	5	NULL	SO:0000234	protein_coding_gene	""""" []"	0	0
+40788	5	NULL	SO:0001217	protein_coding_gene	""""" []"	0	0
 40842	5	NULL	SO:0001272	tRNA_gene	""""" []"	0	0
 41072	5	NULL	SO:0001503	processed_transcript	"""A transcript for which no open reading frame has been identified and for which no other function has been determined."" [MGI:hdeen]"	0	0
 41494	5	SOFA	SO:0000340	chromosome	"Structural unit composed of a nucleic acid molecule which controls its own replication through the interaction of specific proteins at one or more origins of replication." [SO:ma]	0	0

@@ -69,7 +69,7 @@ my $mappings =
    { obj => Bio::EnsEMBL::Feature->new(), accession => 'SO:0000001', name => 'region' },
    # test various genes with/without biotypes
    { obj => Bio::EnsEMBL::Gene->new(-biotype => 'dummy'), accession => 'SO:0000704', name => 'gene' }, # if we don't pass a non empty biotype it will default to protein_coding hence it will fail
-   { obj => Bio::EnsEMBL::Gene->new(-biotype => 'protein_coding'), accession => 'SO:0000234', name => 'protein_coding_gene' },
+   { obj => Bio::EnsEMBL::Gene->new(-biotype => 'protein_coding'), accession => 'SO:0001217', name => 'protein_coding_gene' },
    { obj => Bio::EnsEMBL::Gene->new(-biotype => 'tRNA'), accession => 'SO:0001272', name => 'tRNA_gene' },
    # test various transcripts with/without biotypes
    { obj => Bio::EnsEMBL::Transcript->new(-biotype => 'dummy'), accession => 'SO:0000673', name => 'transcript' },
