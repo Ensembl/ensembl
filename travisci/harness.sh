@@ -2,7 +2,7 @@
 
 ENSDIR="${ENSDIR:-$PWD}"
 
-export PERL5LIB=$ENSDIR/bioperl-live:$ENSDIR/ensembl-test/modules:$PWD/modules:$ENSDIR/ensembl-variation/modules
+export PERL5LIB=$ENSDIR/bioperl-live:$ENSDIR/ensembl-test/modules:$PWD/modules:$ENSDIR/ensembl-variation/modules:$ENSDIR/ensembl-compara/modules
 export TEST_AUTHOR=$USER
 
 if [ "$DB" = 'mysql' ]; then
@@ -17,7 +17,7 @@ fi
 
 echo "Running test suite"
 if [ "$COVERALLS" = 'true' ]; then
-  PERL5OPT='-MDevel::Cover=+ignore,bioperl,+ignore,ensembl-test,+ignore,ensembl-variation' perl $ENSDIR/ensembl-test/scripts/runtests.pl -verbose modules/t $SKIP_TESTS
+  PERL5OPT='-MDevel::Cover=+ignore,bioperl,+ignore,ensembl-test,+ignore,ensembl-variation,ensembl-compara' perl $ENSDIR/ensembl-test/scripts/runtests.pl -verbose modules/t $SKIP_TESTS
 else
   perl $ENSDIR/ensembl-test/scripts/runtests.pl modules/t $SKIP_TESTS
 fi
