@@ -164,6 +164,7 @@ sub run_script {
 	  },
        );
       $otherf_dba = $registry->get_DBAdaptor($species_name, 'otherfeatures') if !defined($ofhost);
+      if (defined $otherf_dba) { $otherf_dba->dnadb($core_dba); }
     }
       
 
