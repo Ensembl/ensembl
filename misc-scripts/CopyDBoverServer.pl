@@ -154,7 +154,8 @@ Command line switches:
                     (Optional)
                     MySQL server database target directory if different
                     from /mysql/data_3306/databases/. This option will 
-                    also create symlinks from target dir to MySQL directory.
+                    also create a symlink for the database
+                    from target dir to MySQL directory.
 
   --help            (Optional)
                     Displays this text.
@@ -998,26 +999,37 @@ TABLE:
       sprintf( "SUCCESS: cleanup of '%s' may be needed", $staging_dir );
   }
 
-  # Create symlinks if target directory is not /mysql/data_3306/databases/
-  # If given target_dir is not the staging machine MySQL data directory, create symlinks for them.
+  ##------------------------------------------------------------------##
+  ## Symlinks                                                         ##
+  ##------------------------------------------------------------------##
+
+  print( '-' x 37, ' SYMLINK ', '-' x 37, "\n" );
+
+  # Create symlink if target directory is not /mysql/data_3306/databases/
+  # If given target_dir is not the staging machine MySQL data directory, create symlink for them.
   if ($target_dir ne $mysql_database_dir)
   {
     my $create_symlinks="ln -s ".$target_dir."/".$target_db." ".$mysql_database_dir;
-    print $create_symlinks."\n";
     if ( system($create_symlinks) != 0 ) {
 
-          warn( sprintf( "Failed to create symlinks from '%s' to '%s'.\n ",
-                         $target_dir,$mysql_database_dir
+          warn( sprintf( "Failed to create symlink from '%s' to '%s'/'%s'.\n ",
+                         $target_dir,$mysql_database_dir,$mysql_database_dir
                 ) );
 
           $spec->{'status'} =
-            sprintf( "FAILED: cannot create symlinks from '%s' to '%s'.\n ",
-                     $target_dir,$mysql_database_dir );
+            sprintf( "FAILED: cannot create symlink from '%s' to '%s'/'%s'.\n ",
+                     $target_dir,$mysql_database_dir,$mysql_database_dir );
     }
     else {
-      printf("Symlinks successfully created from '%s' to '%s' for the copied databases.\n",$target_dir,$mysql_database_dir);
+      printf("Symlink successfully created from '%s' to '%s'/'%s' for the copied databases.\n",$target_dir,$mysql_database_dir,$mysql_database_dir);
     }
   }
+
+  ##------------------------------------------------------------------##
+  ## Flush                                                            ##
+  ##------------------------------------------------------------------##
+ 
+  print( '-' x 37, ' FLUSH ', '-' x 37, "\n" );
 
   # Flush tables on target.
   if ($opt_flushtarget) {
