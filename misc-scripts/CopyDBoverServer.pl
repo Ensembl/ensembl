@@ -42,6 +42,7 @@ Usage:
   \t[--noflush] [--nocheck] [--notargetflush]\\
   \t[--noopt] [--noinnodb] [--skip_views] [--force] \\
   \t[ --only_tables=XXX,YYY | --skip_tables=XXX,YYY ] \\
+  \t[ --source_dir=/data/dir ] [ --target_dir=/data/dir ] \\
   \t[ input_file |
   \t  --source=db\@host[:port] \\
   \t  --target=db\@host[:port] ]
@@ -144,6 +145,17 @@ Command line switches:
   --routines        (Optional)
                     Also copies functions and procedures
 
+  --source_dir=/data/dir
+                    (Optional)
+                    MySQL server database source directory if different
+                    from /mysql/data_3306/databases/
+
+  --target_dir=/data/dir
+                    (Optional)
+                    MySQL server database target directory if different
+                    from /mysql/data_3306/databases/. This option will 
+                    also create symlinks from target dir to MySQL directory.
+
   --help            (Optional)
                     Displays this text.
 
@@ -225,7 +237,7 @@ my $opt_innodb     = 1;    # Don't skip InnoDB by default
 my $opt_flushtarget = 1;
 my $opt_tmpdir;
 my $opt_routines = 0;
-my ( $opt_source, $opt_target );
+my ( $opt_source, $opt_target, $opt_source_dir, $opt_target_dir);
 
 if ( !GetOptions( 'pass=s'        => \$opt_password,
                   'user=s'        => \$opt_user,
@@ -243,6 +255,8 @@ if ( !GetOptions( 'pass=s'        => \$opt_password,
                   'source=s'      => \$opt_source,
                   'target=s'      => \$opt_target,
                   'routines'      => \$opt_routines,
+                  'source_dir=s'  => \$opt_source_dir,
+                  'target_dir=s'  => \$opt_target_dir,
      ) ||
      ( !defined($opt_password) && !defined($opt_help) ) )
 {
@@ -443,7 +457,7 @@ while ( my $line = $in->getline() ) {
             'target_port'     => $target_port,
             'target_db'       => $target_db,
             'target_location' => $target_location,
-          } );
+         } );
   }
 } ## end while ( my $line = $in->getline...)
 
@@ -525,11 +539,29 @@ foreach my $spec (@todo) {
     next TODO;
   }
 
+  # Assigning Source and target directory.
+  my $source_dir;
+  my $target_dir;
+
   # Get source and target server data directories.
-  my $source_dir =
-    $source_dbh->selectall_arrayref("SHOW VARIABLES LIKE 'datadir'")
-    ->[0][1];
-  my $target_dir =
+  if ( defined($opt_source_dir) ) {
+    $source_dir = $opt_source_dir;
+  }
+  else {
+    $source_dir =
+      $source_dbh->selectall_arrayref("SHOW VARIABLES LIKE 'datadir'")
+      ->[0][1];
+  }
+  if ( defined($opt_target_dir) ) {
+    $target_dir = $opt_target_dir;
+  }
+  else {
+    $target_dir =
+      $target_dbh->selectall_arrayref("SHOW VARIABLES LIKE 'datadir'")
+      ->[0][1];
+  }
+  # Getting staging machine MySQL database directory.
+  my $mysql_database_dir =
     $target_dbh->selectall_arrayref("SHOW VARIABLES LIKE 'datadir'")
     ->[0][1];
 
@@ -964,6 +996,27 @@ TABLE:
 
     $spec->{'status'} =
       sprintf( "SUCCESS: cleanup of '%s' may be needed", $staging_dir );
+  }
+
+  # Create symlinks if target directory is not /mysql/data_3306/databases/
+  # If given target_dir is not the staging machine MySQL data directory, create symlinks for them.
+  if ($target_dir ne $mysql_database_dir)
+  {
+    my $create_symlinks="ln -s ".$target_dir."/".$target_db." ".$mysql_database_dir;
+    print $create_symlinks."\n";
+    if ( system($create_symlinks) != 0 ) {
+
+          warn( sprintf( "Failed to create symlinks from '%s' to '%s'.\n ",
+                         $target_dir,$mysql_database_dir
+                ) );
+
+          $spec->{'status'} =
+            sprintf( "FAILED: cannot create symlinks from '%s' to '%s'.\n ",
+                     $target_dir,$mysql_database_dir );
+    }
+    else {
+      printf("Symlinks successfully created from '%s' to '%s' for the copied databases.\n",$target_dir,$mysql_database_dir);
+    }
   }
 
   # Flush tables on target.
