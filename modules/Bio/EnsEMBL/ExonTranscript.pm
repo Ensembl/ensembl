@@ -132,6 +132,26 @@ sub transcript {
   return ( $self->{'transcript'} );
 }
 
+=head2 get_Gene
+
+  Description: Get the gene associated with the ExonTranscript,
+               if a transcript has been set
+  Returntype : Bio::EnsEMBL::Gene or undef
+  Exceptions : none
+  Caller     : general
+  Status     : Stable
+
+=cut
+
+sub get_Gene {
+    my $self = shift;
+
+    if($self->{'transcript'}) {
+	return $self->{'transcript'}->get_Gene();
+    }
+
+    return;
+}
 
 =head2 rank
 
