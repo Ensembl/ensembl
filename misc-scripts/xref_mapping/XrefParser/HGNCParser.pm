@@ -129,29 +129,10 @@ sub run {
 
     #
     # RefSeq
+    # Skip, these are not curated
     #
     $type = 'refseq_mapped';
     $id = $array[8];
-    $source_id = $name_to_source_id->{$type};
-    if ($id) {
-      if(defined $refseq{$id} ){
-        $seen = 1;
-	foreach my $xref_id (@{$refseq{$id}}){
-	  $name_count{$type}++;
-	  $self->add_dependent_xref({ master_xref_id => $xref_id,
-				      acc            => $acc,
-				      label          => $symbol,
-				      desc           => $name || '',
-				      source_id      => $source_id,
-				      species_id     => $species_id} );
-	}
-	$self->add_synonyms_for_hgnc( {source_id  => $source_id,
-				       name       => $acc,
-				       species_id => $species_id,
-				       dead       => $previous_symbols,
-				       alias      => $synonyms});
-      }
-    }
 
     $type = 'refseq_manual';
     $id = $array[6];
@@ -206,25 +187,11 @@ sub run {
       }
     }
 
+    # Skip entrezgene mapped
+    # these are NCBI provided mapping, not HGNC
+
     $type = 'entrezgene_mapped';
     $id = $array[7];
-    if(defined $id ){
-      if(defined $entrezgene{$id} ){
-        $seen = 1;
-        $self->add_dependent_xref({ master_xref_id => $entrezgene{$id},
-                                    acc            => $acc,
-                                    label          => $symbol,
-                                    desc           => $name || '',
-                                    source_id      => $source_id,
-                                    species_id     => $species_id} );
-        $name_count{$type}++;
-        $self->add_synonyms_for_hgnc( {source_id  => $source_id,
-                                       name       => $acc,
-                                       species_id => $species_id,
-                                       dead       => $previous_symbols,
-                                       alias      => $synonyms});
-      }
-    }
 
 
 
