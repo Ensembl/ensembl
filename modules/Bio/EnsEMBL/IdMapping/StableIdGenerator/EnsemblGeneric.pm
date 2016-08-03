@@ -303,6 +303,10 @@ sub calculate_version {
 
     if ($source_exon_string ne $target_exon_string) { $change = 1; }
 
+    # increment version if translation sequence changed
+    # Can happen if Havana move initiation start site or stop codon
+    if ($s_obj->translation->seq ne $t_obj->translation->seq) { $change = 1; }
+
     # Look for changes on the region
     if ( $s_obj->seq_region_name() ne $t_obj->seq_region_name() ) { $change = 1 }
 
