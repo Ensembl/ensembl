@@ -132,6 +132,22 @@ sub transcript {
   return ( $self->{'transcript'} );
 }
 
+=head2 translation
+
+    Description: Fetch the translation associated with
+                 this transcript, if it exists. Return undef
+                 if there is no translation, ie. a pseudogene
+    Returntype : Bio::EnsEMBL::Translation or undef
+    Caller     : general
+    Status     : Stable
+
+=cut
+
+sub translation {
+    my $self = shift;
+    return $self->transcript()->translation();
+}
+
 =head2 get_Gene
 
   Description: Get the gene associated with the ExonTranscript,
