@@ -554,7 +554,6 @@ sub create_xrefs {
 	      $dep2{LABEL} = $protein_id;
 	      my ($prot_acc, $prot_version) = $protein_id =~ /([^.]+)\.([^.]+)/;
 	      $dep2{ACCESSION} = $prot_acc;
-	      $dep2{VERSION} = $prot_acc;
 	      $dependent_xrefs{ $dep2{SOURCE_NAME} }++; # get count of dependent xrefs.
 	      $seen{$source.":".$protein_id} = 1;
 	      push @{$xref->{DEPENDENT_XREFS}}, \%dep2; # array of hashrefs
