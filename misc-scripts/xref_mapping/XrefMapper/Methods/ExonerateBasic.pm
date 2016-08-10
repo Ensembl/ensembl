@@ -28,7 +28,7 @@ use File::Basename;
 use IPC::Open3;
 
 # Path to exonerate executable
-my $exonerate_path = "/software/ensembl/exonerate-2.2.0/bin/exonerate";
+my $exonerate_path = `which exonerate`; $exonerate_path =~ s/\n//;
 
 sub new {
 
