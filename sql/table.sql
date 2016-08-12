@@ -310,6 +310,9 @@ INSERT INTO meta (species_id, meta_key, meta_value) VALUES
 INSERT INTO meta (species_id, meta_key, meta_value)
   VALUES (NULL, 'patch', 'patch_85_86_a.sql|schema_version');
 
+INSERT INTO meta (species_id, meta_key, meta_value)
+  VALUES (NULL, 'patch', 'patch_85_86_b.sql|add dna_align_feature_attrib table');
+
 
 /**
 @table meta_coord
@@ -652,6 +655,31 @@ CREATE TABLE dna_align_feature (
   KEY external_db_idx (external_db_id)
 
 ) COLLATE=latin1_swedish_ci ENGINE=MyISAM MAX_ROWS=100000000 AVG_ROW_LENGTH=80;
+
+
+/**
+@table dna_align_feature_attrib
+@desc Enables storage of attributes that relate to DNA sequence alignments.
+
+@column dna_align_feature_id        Foreign key references to the @link dna_align_feature table.
+@column attrib_type_id              Foreign key references to the @link attrib_type table.
+@column value                       Attribute value.
+
+@see dna_align_feature
+*/
+
+CREATE TABLE dna_align_feature_attrib (
+
+  dna_align_feature_id        INT(10) UNSIGNED NOT NULL,
+  attrib_type_id              SMALLINT(5) UNSIGNED NOT NULL,
+  value                       TEXT NOT NULL,
+
+  UNIQUE KEY dna_align_feature_attribx (dna_align_feature_id, attrib_type_id, value(500)),
+  KEY dna_align_feature_idx (dna_align_feature_id),
+  KEY type_val_idx (attrib_type_id, value(40)),
+  KEY val_only_idx (value(40))
+
+) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
 
 
 /**

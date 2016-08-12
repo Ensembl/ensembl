@@ -38,6 +38,11 @@ my $db = $multi->get_DBAdaptor($dbtype);
 my $slice_adaptor = $db->get_SliceAdaptor();
 my $mfa           = $db->get_MiscFeatureAdaptor();
 my $ga            = $db->get_GeneAdaptor();
+my $dafa          = $db->get_DnaAlignFeatureAdaptor();
+
+my $daf_ids  = $dafa->list_dbIDs();
+my $daf_dbid = $$daf_ids[0];
+my $feature  = $dafa->fetch_by_dbID($daf_dbid);
 
 #
 # Test get_AttributeAdaptor works
@@ -48,7 +53,7 @@ is(ref($aa), 'Bio::EnsEMBL::DBSQL::AttributeAdaptor', "We have an attribute adap
 
 # hide the contents of the attrib_type, misc_attrib, seq_region_attrib tables
 # so we can test storing etc. with a clean slate
-$multi->hide($dbtype, 'misc_attrib', 'seq_region_attrib', 'attrib_type', 'gene_attrib');
+$multi->hide($dbtype, 'misc_attrib', 'seq_region_attrib', 'attrib_type', 'gene_attrib', 'dna_align_feature');
 
 ##############
 # MiscFeature functionality tests
@@ -335,11 +340,113 @@ is_rows(0, $db, "gene_attrib", "where gene_id = ? ", [$gene_id]);
   is_rows(0, $db, "gene_attrib", "where gene_id = ? ", [$gene_id]);
 
 }
+#################
+# DNA align feature functionality tests
+#
+
+$attrib = Bio::EnsEMBL::Attribute->new(
+  -NAME        => 'test_name3',
+  -CODE        => 'test_code3',
+  -DESCRIPTION => 'test_desc3',
+  -VALUE       => 'test_value3');
+
+$aa->store_on_DnaDnaAlignFeature($feature, [$attrib]);
+
+#
+# make sure the dna_align_feature_attrib table was updated
+#
+is_rows(1, $db, "dna_align_feature_attrib", "where dna_align_feature_id = ? ", [$daf_dbid]);
+
+#
+# make sure the attrib_type table was updated
+#
+is_rows(1, $db, "attrib_type", "where code = ? ", ["test_code3"]);
+
+#
+# test that we can now retrieve this attribute
+#
+@attribs = @{$aa->fetch_all_by_DnaDnaAlignFeature($feature)};
+is(@attribs, 1, "Fetched one attribute for feature");
+
+@attribs = @{$aa->fetch_all_by_DnaDnaAlignFeature($feature, "rubbish")};
+is(@attribs, 0, "Fetched no attribute for code rubbish");
+
+@attribs = @{$aa->fetch_all_by_DnaDnaAlignFeature($feature, "test_code3")};
+is(@attribs, 1, "Fetched one attribute for code test_code3");
+
+@attribs = @{$aa->fetch_all_by_DnaDnaAlignFeature(undef, "test_code3")};
+is(@attribs, 1, "Fetch one attribute for features");
+
+$attrib = $attribs[0];
+
+is($attrib->name, 'test_name3', "Attrib name is test_name3");
+is($attrib->code, 'test_code3', "Attrib code is test_code3");
+is($attrib->description, 'test_desc3', "Attrib description is test_desc3");
+is($attrib->value, 'test_value3', "Attrib value is test_value3");
+
+#
+# test the (non)removal of this attribute with wrong attrib code
+#    remove_from_DnaDnaAlignFeature
+$aa->remove_from_DnaDnaAlignFeature($feature, "junk");
+is_rows(1, $db, "dna_align_feature_attrib", "where dna_align_feature_id = ? ", [$daf_dbid]);
+
+#
+# test the removal of this attribute with attrib code
+#
+$aa->remove_from_DnaDnaAlignFeature($feature, "test_code3");
+is_rows(0, $db, "dna_align_feature_attrib", "where dna_align_feature_id = ? ", [$daf_dbid]);
+
+#
+# make sure the attribute is no longer retrievable
+#
+@attribs = @{$aa->fetch_all_by_DnaDnaAlignFeature($feature)};
+is(@attribs, 0, "No attribs available for feature");
+
+#
+# try to add an attribute with an already existing code
+#
+$aa->store_on_DnaDnaAlignFeature($feature, [$attrib]);
+
+#
+# make sure the dna_align_feature_attrib table was updated
+#
+is_rows(1, $db, "dna_align_feature_attrib", "where dna_align_feature_id = ? ", [$daf_dbid]);
+
+#
+# make sure the attrib_type table is unchanged
+#
+is_rows(1, $db, "attrib_type", "where code = ? ", ["test_code3"]);
+
+@attribs = @{$aa->fetch_all_by_DnaDnaAlignFeature($feature)};
+is(@attribs, 1, "One attrib for feature");
+
+@attribs = @{$aa->fetch_all_by_DnaDnaAlignFeature(undef)};
+is(@attribs, 1, "One attrib for features");
+
+#
+# test the removal of this attribute
+#
+$aa->remove_from_DnaDnaAlignFeature($feature);
+is_rows(0, $db, "dna_align_feature_attrib", "where dna_align_feature_id = ? ", [$daf_dbid]);
+
+#
+# test the storage of empty attrib values
+#
+{
+  my %args = (-NAME => 'test_name3', -CODE => 'test_code3', -DESCRIPTION => 'test_desc3');
+  my $current_rows = count_rows($db, 'dna_align_feature_attrib');
+  $aa->store_on_DnaDnaAlignFeature($feature, [Bio::EnsEMBL::Attribute->new(%args, -VALUE => q{})]);
+  $aa->store_on_DnaDnaAlignFeature($feature, [Bio::EnsEMBL::Attribute->new(%args, -VALUE => 0)]);
+  my $new_rows = count_rows($db, 'dna_align_feature_attrib');
+  cmp_ok($new_rows, '>', $current_rows, 'Asserting the storage of undefined attributes will always store them');
+  # now remove again
+  $aa->remove_from_DnaDnaAlignFeature($feature);
+  is_rows(0, $db, "dna_align_feature_attrib", "where dna_align_feature_id = ? ", [$daf_dbid]);
+}
 
 #
 # Test batch storage
 #
-
 my $gene2 = $ga->fetch_by_stable_id($stable_id2);
 my $batch = {$gene->dbID()  => [Bio::EnsEMBL::Attribute->new(-NAME => 'test_name2', -CODE => 'test_code2', -DESCRIPTION => 'test_desc2', -VALUE => 'val1'), Bio::EnsEMBL::Attribute->new(-NAME => 'test_name2', -CODE => 'test_code2', -DESCRIPTION => 'test_desc2', -VALUE => 'val2')],
 			 $gene2->dbID() => [Bio::EnsEMBL::Attribute->new(-NAME => 'test_name2', -CODE => 'test_code2', -DESCRIPTION => 'test_desc2', -VALUE => 'val3'),]};
@@ -368,6 +475,6 @@ is(@attribs, 2, "Two attribs available for slice");
 @attribs = @{$aa->fetch_all_by_Slice($slice2)};
 is(@attribs, 1, "One attrib stored for slice2");
 
-$multi->restore($dbtype, 'misc_attrib', 'seq_region_attrib', 'attrib_type');
+$multi->restore($dbtype, 'misc_attrib', 'seq_region_attrib', 'attrib_type', 'dna_align_feature');
 
 done_testing();
