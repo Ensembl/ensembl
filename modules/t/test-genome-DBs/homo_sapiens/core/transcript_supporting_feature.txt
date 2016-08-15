@@ -1,0 +1,5 @@
+21741	dna_align_feature	1449321
+21741	dna_align_feature	11290104
+21741	protein_align_feature	813252
+21741	protein_align_feature	813424
+21741	protein_align_feature	813184
