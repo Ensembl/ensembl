@@ -251,6 +251,7 @@ sub summary_as_hash {
   delete $summary_ref->{'constitutive'};
   delete $summary_ref->{'ensembl_phase'};
   delete $summary_ref->{'ensembl_end_phase'};
+  $summary_ref->{'Parent'} = $self->transcript->display_id() if $self->transcript();
   $summary_ref->{'source'} = $self->prediction_transcript->analysis->gff_source() || 'ensembl';
   return $summary_ref;
 }

@@ -281,12 +281,16 @@ sub process_dependents{
     push @{ $ensembl_ids{$new_object_type} }, $new_ensembl_id;
   }
 
+
   ## Loop through all dependent xrefs of old master xref, and recurse
   while(my $xref_id = pop(@master_xrefs)){ 
     
     # Get dependent xrefs, be they gene, transcript or translation
     $dep_sth->execute($xref_id);
     $dep_sth->bind_columns(\$dep_xref_id, \$linkage_annotation, \$linkage_source_id, \$object_type);
+    if ($recursive) {
+      $new_master_xref_id = $xref_id;
+    }
     while($dep_sth->fetch()){
 
 
@@ -314,10 +318,11 @@ sub process_dependents{
           }
         }
       }
-      push @master_xrefs, $dep_xref_id; # remember chained dependent xrefs
+      unless ($dep_xref_id == $xref_id) {
+        push @master_xrefs, $dep_xref_id; # remember chained dependent xrefs
+      }
     }
     $recursive = 1;
-    $new_master_xref_id = $dep_xref_id;
   }
 
   $matching_ens_sth->finish();

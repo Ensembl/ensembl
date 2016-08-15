@@ -19,6 +19,7 @@ use Test::Warnings;
 use Bio::EnsEMBL::Test::MultiTestDB;
 
 use Bio::EnsEMBL::DnaDnaAlignFeature;
+use Bio::EnsEMBL::Attribute;
 use Bio::EnsEMBL::Test::TestUtils;
 
 our $verbose = 0;
@@ -93,7 +94,7 @@ ok(@$feats == 452);
 # Test store
 #
 
-$multi->save('core', 'dna_align_feature');
+$multi->save('core', 'dna_align_feature', 'attrib_type', 'dna_align_feature_attrib');
 
 my $analysis   = $feat->analysis;
 my $slice      =
@@ -129,6 +130,14 @@ $feat = Bio::EnsEMBL::DnaDnaAlignFeature->new
    -HCOVERAGE => $hcoverage,
    -EXTERNAL_DB_ID => $external_db_id);
 
+my $attrib = Bio::EnsEMBL::Attribute->new(
+  -NAME        => 'test_daf_name',
+  -CODE        => 'test_daf_code',
+  -DESCRIPTION => 'test_daf_desc',
+  -VALUE       => 'test_daf_value');
+
+$feat->add_Attributes($attrib);
+
 ok(!$feat->is_stored($db));
 
 $dafa->store($feat);
@@ -156,9 +165,19 @@ ok($feat->analysis->logic_name eq $analysis->logic_name);
 ok($feat->external_db_id == $external_db_id);
 ok($feat->hcoverage == $hcoverage);
 
-$multi->restore('core', 'dna_align_feature');
+my @attribs = @{$feat->get_all_Attributes};
+is(@attribs, 1, "Stored 1 attribute");
+
+my $attrib = $attribs[0];
+ok($attrib->code eq 'test_daf_code', 'Stored attribute');
+
+$dafa->remove($feat);
+
+is_rows(0, $db, "dna_align_feature", "where dna_align_feature_id = ? ", [$dbID]);
+is_rows(0, $db, "dna_align_feature_attrib", "where dna_align_feature_id = ? ", [$dbID]);
 
 
+$multi->restore('core', 'dna_align_feature', 'attrib_type', 'dna_align_feature_attrib');
 
 
 sub print_features {
