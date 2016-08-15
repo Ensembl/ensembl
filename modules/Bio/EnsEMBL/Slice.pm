@@ -291,7 +291,43 @@ sub seq_region_name {
   return $self->{'seq_region_name'};
 }
 
+=head2 seq_region_start
 
+  Example    : $seq_region_start = $slice->seq_region_start();
+  Description: Returns the start position of this slice relative to the
+               start of the sequence region that it was created on.
+               Since slices are always in genomic coordinates this is
+               an alias to start()
+  Returntype : int
+  Exceptions : none
+  Caller     : general
+  Status     : Stable
+
+=cut
+
+sub seq_region_start {
+    my $self = shift;
+    return $self->start();
+}
+
+=head2 seq_region_end
+
+  Example    : $seq_region_end = $slice->seq_region_end();
+  Description: Returns the end position of this slice relative to the
+               start of the sequence region that it was created on.
+               Since slices are always in genomic coordinates this is
+               an alias to end()
+  Returntype : int
+  Exceptions : none
+  Caller     : general
+  Status     : Stable
+
+=cut
+
+sub seq_region_end {
+    my $self = shift;
+    return $self->end();
+}
 
 =head2 seq_region_length
 

@@ -152,7 +152,9 @@ $slice = new Bio::EnsEMBL::Slice
 is($slice->seq_region_name, $CHR);
 
 is($slice->start, $START, "Slice start is $START");
+is($slice->seq_region_start, $START, "Slice seq_region_start is $START");
 is($slice->end, $END, "Slice end is $END");
+is($slice->seq_region_end, $END, "Slice seq_region_end is $END");
 is($slice->strand, $STRAND, "Slice strand is $STRAND");
 is($slice->seq_region_length, $SEQ_REGION_LENGTH, "Slice length is $SEQ_REGION_LENGTH");
 
