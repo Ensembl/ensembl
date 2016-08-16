@@ -63,8 +63,8 @@ use vars qw(@ISA);
 
   Arg [1]    : Bio::EnsEMBL::Transcript $transcript 
                The transcript to fetch supporting features for
-  Arg [2]	 : String (optional)
-  			   Feature type to filter upon (either 'dna_align_feature' or 'protein_align_feature')
+  Arg [2]    : String (optional)
+               Feature type to filter upon (either 'dna_align_feature' or 'protein_align_feature')
   Example    : @sfs = @{$supporting_feat_adaptor->fetch_all_by_Transcript($transcript)};
   			   @sfs = @{$supporting_feat_adaptor->fetch_all_by_Transcript($transcript, $feature_type)};	
   Description: Retrieves supporting features (evidence) for a given transcript. 
@@ -105,12 +105,13 @@ sub fetch_all_by_Transcript {
 
   my $feature;
   while(my ($type, $feature_id) = $sth->fetchrow){
-    if($type eq 'protein_align_feature'){
-      $feature = $prot_adp->fetch_by_dbID($feature_id);
-     } elsif($type eq 'dna_align_feature'){
-      $feature = $dna_adp->fetch_by_dbID($feature_id);
+   if ($type eq 'protein_align_feature') {
+        $feature = $prot_adp-> fetch_by_dbID($feature_id);
+    }
+    elsif($type eq 'dna_align_feature') {
+        $feature = $dna_adp-> fetch_by_dbID($feature_id);
     } else {
-      warning("Unknown feature type [$type]\n");
+        warning("Unknown feature type [$type]\n");
     }
     
     if(!$feature) {
