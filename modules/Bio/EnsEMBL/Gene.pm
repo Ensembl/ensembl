@@ -1514,7 +1514,7 @@ sub summary_as_hash {
   $summary_ref->{'description'} = $self->description;
   $summary_ref->{'biotype'} = $self->biotype;
   $summary_ref->{'Name'} = $self->external_name if $self->external_name;
-  $summary_ref->{'logic_name'} = $self->analysis->logic_name();
+  $summary_ref->{'logic_name'} = $self->analysis->logic_name() if defined $self->analysis();
   $summary_ref->{'source'} = $self->source();
   $summary_ref->{'gene_id'} = $summary_ref->{'id'};
 
