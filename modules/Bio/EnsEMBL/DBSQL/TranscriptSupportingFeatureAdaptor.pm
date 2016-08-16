@@ -63,12 +63,15 @@ use vars qw(@ISA);
 
   Arg [1]    : Bio::EnsEMBL::Transcript $transcript 
                The transcript to fetch supporting features for
+  Arg [2]	 : String (optional)
+  			   Feature type to filter upon (either 'dna_align_feature' or 'protein_align_feature')
   Example    : @sfs = @{$supporting_feat_adaptor->fetch_all_by_Transcript($transcript)};
+  			   @sfs = @{$supporting_feat_adaptor->fetch_all_by_Transcript($transcript, $feature_type)};	
   Description: Retrieves supporting features (evidence) for a given transcript. 
   Returntype : list of Bio::EnsEMBL::BaseAlignFeatures in the same coordinate
                system as the $transcript argument
   Exceptions : warning if $transcript is not in the database (i.e. dbID not defined)
-               throw if a retrieved supporting feature is of unknown type 
+               throw if a retrieved or requested supporting feature is of unknown type 
   Caller     : Bio::EnsEMBL::Transcript
   Status     : Stable
 
@@ -117,19 +120,18 @@ sub fetch_all_by_Transcript {
  
       push @{$out_feature_type->{$type}}, $new_feature if ($new_feature);
     }
-  }
-	  $sth->finish();
-
+    }
+	
+	$sth->finish();
    
-   if(defined $feature_type){
-   	return $out_feature_type->{$feature_type};
-   }else{
-   
-  	while(my ($feature_type, $new_features) = each(%$out_feature_type)){
-  		push @$out, @{$new_features};
+    if(defined $feature_type){
+      return $out_feature_type->{$feature_type};
+    }else{
+      while(my ($feature_type, $new_features) = each(%$out_feature_type)){
+      	push @$out, @{$new_features};
   	}
   	
-  }
+    }
   
    return $out;
 }

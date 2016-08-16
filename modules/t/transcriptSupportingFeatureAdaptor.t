@@ -15,12 +15,9 @@
 
 use strict;
 use Test::More;
+use Test::Exception;
 use Test::Warnings;
 use Bio::EnsEMBL::Test::MultiTestDB;
-
-use Bio::EnsEMBL::DnaDnaAlignFeature;
-use Bio::EnsEMBL::Test::TestUtils;
-use Data::Dumper;
 
 our $verbose = 0;
 
@@ -31,7 +28,7 @@ ok(1);
 #Fetch Transcript by stable_id and ensure it has a slice
 my $db = $multi->get_DBAdaptor('core');
 my $ta = $db->get_TranscriptAdaptor();
-my $tr = $ta->fetch_by_stable_id( "ENST00000111111" );
+my $tr = $ta->fetch_by_stable_id( "ENST00000222222" );
 ok($tr, "Fetched the Transcript by stable_id");
 ok($tr->slice(), "Transcript has slice");
 
@@ -65,6 +62,11 @@ ok(2 == scalar(@$supporting_features_dnas), "Fetched all transcript supporting f
 foreach my $supporting_feature(@$supporting_features_dnas){
 	ok('Bio::EnsEMBL::DnaDnaAlignFeature' eq ref $supporting_feature, "Got back the right ref type: Bio::EnsEMBL::DnaDnaAlignFeature");
 }
+
+#Test exceptions with unknown feature_types
+dies_ok { $tsf_adaptor->fetch_all_by_Transcript($tr, "unknown_feature_type") } 'fetch_all_by_Transcript dies with unknown feature_type';
+throws_ok {$tsf_adaptor->fetch_all_by_Transcript($tr, "unknown_feature_type") } qr/feature type must be dna_align_feature or protein_align_feature/, 
+           'feature type must be dna_align_feature or protein_align_feature';
 
 
 done_testing();
