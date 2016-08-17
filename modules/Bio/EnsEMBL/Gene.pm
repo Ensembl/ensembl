@@ -201,7 +201,7 @@ sub new {
 =head2 is_known
 
   Example    : print "Gene ".$gene->stable_id." is KNOWN\n" if $gene->is_known;
-  Description: Returns TRUE if this gene has a status of 'KNOWN'
+  Description: DEPRECATED. Returns TRUE if this gene has a status of 'KNOWN'
   Returntype : TRUE if known, FALSE otherwise
   Exceptions : none
   Caller     : general
@@ -212,6 +212,7 @@ sub new {
 
 sub is_known{
   my $self = shift;
+  deprecate("is_known is deprecated and will be removed in e90. Please consider checking supporting features instead");
   return ( $self->{'status'} eq "KNOWN" || $self->{'status'} eq "KNOWN_BY_PROJECTION" );
 }
 
@@ -251,7 +252,7 @@ sub external_name {
 
   Arg [1]    : (optional) String - status to set
   Example    : $gene->status('KNOWN');
-  Description: Getter/setter for attribute status
+  Description: DEPRECATED. Getter/setter for attribute status
   Returntype : String
   Exceptions : none
   Caller     : general
@@ -261,6 +262,7 @@ sub external_name {
 
 sub status {
    my $self = shift;
+  deprecate("status is deprecated and will be removed in e90. Please consider checking supporting features instead");
   $self->{'status'} = shift if( @_ );
   return $self->{'status'};
 }

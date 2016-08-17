@@ -598,7 +598,7 @@ sub external_name {
 
   Example    : print "Transcript ".$transcript->stable_id." is KNOWN\n" if
                   $transcript->is_known;
-  Description: Returns TRUE if this gene has a status of 'KNOWN'
+  Description: DEPRECATED. Returns TRUE if this gene has a status of 'KNOWN'
   Returntype : TRUE if known, FALSE otherwise
   Exceptions : none
   Caller     : general
@@ -608,6 +608,7 @@ sub external_name {
 
 sub is_known {
   my $self = shift;
+  deprecate("is_known is deprecated and will be removed in e90. Please consider checking supporting features instead");
   return ( $self->{'status'} eq "KNOWN" || $self->{'status'} eq "KNOWN_BY_PROJECTION" );
 }
 
@@ -615,7 +616,7 @@ sub is_known {
 =head2 status
 
   Arg [1]    : string $status
-  Description: get/set for attribute status
+  Description: DEPRECATED. get/set for attribute status
   Returntype : string
   Exceptions : none
   Caller     : general
@@ -625,6 +626,7 @@ sub is_known {
 
 sub status {
    my $self = shift;
+  deprecate("status is deprecated and will be removed in e90. Please consider checking supporting features instead");
   $self->{'status'} = shift if( @_ );
   return $self->{'status'};
 }
