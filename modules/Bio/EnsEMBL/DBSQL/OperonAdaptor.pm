@@ -589,8 +589,6 @@ sub store {
     INSERT INTO operon ( ${i_columns} ) VALUES ( $i_values )
   );
 
-        # column status is used from schema version 34 onwards (before it was
-	# confidence)
 	my $sth = $self->prepare($store_operon_sql);
 	$sth->bind_param( 1, $seq_region_id,           SQL_INTEGER );
 	$sth->bind_param( 2, $operon->start(),         SQL_INTEGER );
