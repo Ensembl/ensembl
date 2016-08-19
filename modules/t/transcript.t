@@ -839,6 +839,38 @@ SKIP: {
   ok( $species eq 'homo_sapiens' && $object_type eq 'Transcript');
 }
 
+
+## Relative vs absolute coordinates test
+print "Comparing relative and absolute coordinates\n";
+## Retrieve transcript by id
+my $tid = 21726;
+my $absolute_transcript = $db->get_TranscriptAdaptor()->fetch_by_dbID($tid);
+my @absolute_coords = sort { $a->end() <=> $b->end() } ( $absolute_transcript->genomic2pep($absolute_transcript->seq_region_start, $absolute_transcript->seq_region_end, $absolute_transcript->strand) );
+## Retrieve same transcript via feature slice
+my $relative_slice = $absolute_transcript->feature_Slice();
+my $relative_transcripts = $relative_slice->get_all_Transcripts();
+my $relative_transcript;
+foreach my $transcript (@$relative_transcripts) {
+  if ($transcript->stable_id eq $absolute_transcript->stable_id) {
+    $relative_transcript = $transcript;
+    last;
+  }
+}
+
+my @relative_coords = sort { $a->end() <=> $b->end() } ( $relative_transcript->genomic2pep($relative_transcript->seq_region_start, $relative_transcript->seq_region_end, $relative_transcript->strand) );
+is(scalar(@absolute_coords), scalar(@relative_coords), "Same number of results");
+
+## Compare coordinates of mappings
+for (my $i = 0; $i < scalar(@absolute_coords); $i++) {
+  if ($absolute_coords[$i]->isa('Bio::EnsEMBL::Mapper::Gap')) {
+    is(ref($relative_coords[$i]), 'Bio::EnsEMBL::Mapper::Gap', "Both are gaps");
+  } else {
+    is($absolute_coords[$i]->start, $relative_coords[$i]->start, "Starts match");
+    is($absolute_coords[$i]->end, $relative_coords[$i]->end, "Ends match");
+    is($absolute_coords[$i]->strand, $relative_coords[$i]->strand, "Strands match");
+  }
+}
+
 done_testing();
 
 #
