@@ -165,8 +165,8 @@ sub fetch_all_by_Slice {
 
   my $transcripts = $self->SUPER::fetch_all_by_Slice($slice,$logic_name);
 
-  # if there are 0 or 1 transcripts still do lazy-loading
-  if(!$load_exons || @$transcripts < 2) {
+  # if there are 0 transcripts still do lazy-loading
+  if(!$load_exons || @$transcripts < 1) {
     return $transcripts;
   }
 
