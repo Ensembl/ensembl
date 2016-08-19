@@ -63,25 +63,33 @@ use vars qw(@ISA);
 
   Arg [1]    : Bio::EnsEMBL::Transcript $transcript 
                The transcript to fetch supporting features for
+  Arg [2]    : String (optional)
+               Feature type to filter upon (either 'dna_align_feature' or 'protein_align_feature')
   Example    : @sfs = @{$supporting_feat_adaptor->fetch_all_by_Transcript($transcript)};
+  			   @sfs = @{$supporting_feat_adaptor->fetch_all_by_Transcript($transcript, $feature_type)};	
   Description: Retrieves supporting features (evidence) for a given transcript. 
   Returntype : list of Bio::EnsEMBL::BaseAlignFeatures in the same coordinate
                system as the $transcript argument
   Exceptions : warning if $transcript is not in the database (i.e. dbID not defined)
-               throw if a retrieved supporting feature is of unknown type 
+               throw if a retrieved or requested supporting feature is of unknown type 
   Caller     : Bio::EnsEMBL::Transcript
   Status     : Stable
 
 =cut
 
 sub fetch_all_by_Transcript {
-  my ( $self, $transcript )  = @_;
+  my ( $self, $transcript, $feature_type )  = @_;
 
   my $out = [];
+  my $out_feature_type = {};
 
   unless($transcript->dbID) {
     warning("Cannot retrieve evidence for transcript without dbID");
     return [];
+  }
+  
+  if(defined $feature_type && $feature_type !~ /(dna)|(protein)_align_feature/) {
+    throw("feature type must be dna_align_feature or protein_align_feature");
   }
 
   my $sth = $self->prepare("SELECT tsf.feature_type, tsf.feature_id
@@ -97,25 +105,36 @@ sub fetch_all_by_Transcript {
 
   my $feature;
   while(my ($type, $feature_id) = $sth->fetchrow){
-    if($type eq 'protein_align_feature'){
-      $feature = $prot_adp->fetch_by_dbID($feature_id);
-    } elsif($type eq 'dna_align_feature'){
-      $feature = $dna_adp->fetch_by_dbID($feature_id);
-    } else {
-      warning("Unknown feature type [$type]\n");
+   if ($type eq 'protein_align_feature') {
+        $feature = $prot_adp-> fetch_by_dbID($feature_id);
     }
-
+    elsif($type eq 'dna_align_feature') {
+        $feature = $dna_adp-> fetch_by_dbID($feature_id);
+    } else {
+        warning("Unknown feature type [$type]\n");
+    }
+    
     if(!$feature) {
       warning("Supporting feature $type $feature_id does not exist in DB");
     } else {
       my $new_feature = $feature->transfer($transcript->slice());
-      push @$out, $new_feature if( $new_feature );
+ 
+      push @{$out_feature_type->{$type}}, $new_feature if ($new_feature);
     }
-  }
-
-  $sth->finish();
-
-  return $out;
+    }
+	
+	$sth->finish();
+   
+    if(defined $feature_type){
+      return $out_feature_type->{$feature_type};
+    }else{
+      while(my ($feature_type, $new_features) = each(%$out_feature_type)){
+      	push @$out, @{$new_features};
+  	}
+  	
+    }
+  
+   return $out;
 }
 
 
