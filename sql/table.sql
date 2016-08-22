@@ -290,7 +290,7 @@ CREATE TABLE IF NOT EXISTS meta (
   meta_id                     INT NOT NULL AUTO_INCREMENT,
   species_id                  INT UNSIGNED DEFAULT 1,
   meta_key                    VARCHAR(40) NOT NULL,
-  meta_value                  VARCHAR(255) BINARY,
+  meta_value                  VARCHAR(255),
 
   PRIMARY   KEY (meta_id),
   UNIQUE    KEY species_key_value_idx (species_id, meta_key, meta_value),
@@ -312,6 +312,9 @@ INSERT INTO meta (species_id, meta_key, meta_value)
 
 INSERT INTO meta (species_id, meta_key, meta_value)
   VALUES (NULL, 'patch', 'patch_85_86_b.sql|add dna_align_feature_attrib table');
+
+INSERT INTO meta (species_id, meta_key, meta_value)
+  VALUES (NULL, 'patch', 'patch_85_86_c.sql|meta_case_insensitive');
 
 
 /**
