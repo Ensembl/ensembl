@@ -406,10 +406,7 @@ sub process_file {
 	$pr_user = $species_hash{'pr_user'};
 	$pr_dbname = $species_hash{'pr_dbname'};
 	if(defined($species_hash{'pr_port'})){
-	    $pr_port = $species_hash{'port'};
-	}
-	else{
-	    $pr_port = '';
+	    $pr_port = $species_hash{'pr_port'};
 	}
 
 	my $previous_core = new XrefMapper::db(-host => $pr_host,
