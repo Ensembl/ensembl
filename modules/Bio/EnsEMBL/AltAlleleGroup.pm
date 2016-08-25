@@ -53,14 +53,14 @@ limitations under the License.
   }
   
   # Creating and editing an AltAlleleGroup
-  
-  my $type_flags = [qw(IS_MOST_COMMON_ALLELE AUTOMATICALLY_ASSIGNED)];
+
+  my %type_flags = ('IS_MOST_COMMON_ALLELE' => '1','AUTOMATICALLY_ASSIGNED' => '1');
   
   $aag = Bio::EnsEMBL::AltAlleleGroup->new(
-     -MEMBERS => [ [$gene_id,$type_flags ] ],
+     -MEMBERS => [ [$gene_id,\%type_flags ] ],
   );
   $aag->remove_all_members;
-  $aag->add_member([$gene_id,$type_flags]);
+  $aag->add_member($gene_id,\%type_flags);
   
   my $dbID = $aag_adaptor->store($aag);
   
