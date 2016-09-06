@@ -107,7 +107,7 @@ sub new {
     $self->{'evalue'} = $evalue;
     $self->{'cigar_line'} = $cigar_line;
     $self->{'xref_start'} = $query_start || $xref_start;
-    $self->{'xref_end'} = $query_end || $xref_start;
+    $self->{'xref_end'} = $query_end || $xref_end;
     $self->{'ensembl_start'} = $translation_start || $ensembl_start;
     $self->{'ensembl_end'} = $translation_end || $ensembl_end;
     $self->{'analysis'} = $analysis;
