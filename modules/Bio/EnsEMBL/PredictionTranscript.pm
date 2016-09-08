@@ -222,7 +222,8 @@ sub display_label{
 sub summary_as_hash {
   my $self = shift;
   my %summary;
-  $summary{'id'} = $self->display_id;
+  $summary{'id'} = $self->dbID;
+  $summary{'Name'} = $self->display_id;
   $summary{'version'} = $self->version() if $self->version();
   $summary{'start'} = $self->seq_region_start;
   $summary{'end'} = $self->seq_region_end;
