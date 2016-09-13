@@ -570,14 +570,12 @@ $multi->restore();
   cmp_ok(scalar(@{$external_db_names}), '==', 111, 'Retriving all the unique External DB names');
 }
 
-<<<<<<< HEAD
 # Test for fetching ids by a linkage type and database name
 {
   my $go = $dbEntryAdaptor->get_external_db_id('GO', undef, 'no version');
   my @gene_ids = $dbEntryAdaptor->list_gene_ids_by_external_db_id($go, 'IDA');
   is(scalar(@gene_ids), 9, 'Expect 9 hits for genes to come back with IDAs');
 }
-=======
 
 # Test for dependent/master xrefs
 my $patch_db = $multi->get_DBAdaptor( "patch" );
