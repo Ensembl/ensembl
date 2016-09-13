@@ -1,6 +1,7 @@
 =head1 LICENSE
 
 Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
+Copyright [2016] EMBL-European Bioinformatics Institute
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -70,7 +71,8 @@ SELECT DISTINCT ox.object_xref_id
           xdep.source_id = sdep.source_id AND
           smas.name like "Refseq%predicted" AND
           sdep.name like "EntrezGene" AND
-          ox.ox_status = "DUMP_OUT" 	 
+          ox.ox_status = "DUMP_OUT" AND
+          ox.master_xref_id = dx.master_xref_id
 IEG
 
   #don't use labels starting with LOC

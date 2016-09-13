@@ -1,6 +1,7 @@
 =head1 LICENSE
 
 Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
+Copyright [2016] EMBL-European Bioinformatics Institute
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -63,7 +64,7 @@ sub process{
 
 
   #this query gives us transcript RefSeq_mRNA% object xrefs, and the paired RefSeq_peptide% accession as well as the translation id for the transcript 
-  my $transcr_obj_xrefs_sth = $self->xref->dbc->prepare("select gtt.translation_id, p.source_id, p.accession1, ix.query_identity, ix.target_identity from object_xref ox join xref x on (ox.xref_id = x.xref_id and ox.ox_status = 'DUMP_OUT') join source s on (x.source_id = s.source_id and s.name like 'RefSeq\_mRNA%') join pairs p on (x.accession = p.accession2) join gene_transcript_translation gtt on (gtt.transcript_id = ox.ensembl_id and ox.ensembl_object_type = 'Transcript') left join identity_xref ix using(object_xref_id)");
+  my $transcr_obj_xrefs_sth = $self->xref->dbc->prepare("select gtt.translation_id, p.source_id, p.accession1, ix.query_identity, ix.target_identity from object_xref ox join xref x on (ox.xref_id = x.xref_id and ox.ox_status = 'DUMP_OUT') join source s on (x.source_id = s.source_id and s.name like 'RefSeq\_mRNA%') join pairs p on (x.accession = p.accession2) join gene_transcript_translation gtt on (gtt.transcript_id = ox.ensembl_id) join identity_xref ix using(object_xref_id)");
 
   #this query is used to check if and object_xref exists for the related translation and paired RefSeq_peptide% with a status of 'DUMP_OUT'
   my $ox_translation_sth =  $self->xref->dbc->prepare("select ox.object_xref_id, ox.xref_id from object_xref ox join xref x using(xref_id) where ox.ox_status in ('DUMP_OUT', 'FAILED_PRIORITY') and ox.ensembl_object_type = 'Translation' and ox.ensembl_id = ? and x.source_id = ? and x.accession = ?");
@@ -192,19 +193,35 @@ sub process{
 sub process_dependents {
   my ($self, $translation_object_xref_id, $translation_id, $transcript_id) = @_;
 
-  my $dep_sth          = $self->xref->dbc->prepare("select distinct dependent_ox.object_xref_id from object_xref master_ox, object_xref dependent_ox, xref dependent, xref master, dependent_xref dx where dependent.xref_id = dx.dependent_xref_id and master.xref_id = dx.master_xref_id and dependent.xref_id = dependent_ox.xref_id and master.xref_id = master_ox.xref_id and master_ox.object_xref_id = ? and dependent_ox.master_xref_id = master.xref_id and ((dependent_ox.ensembl_id = ? and dependent_ox.ensembl_object_type = 'Translation') or (dependent_ox.ensembl_id = ? and dependent_ox.ensembl_object_type = 'Transcript')) and dependent_ox.ox_status = 'DUMP_OUT' ");
+  my $dep_tl_sth        = $self->xref->dbc->prepare("select distinct dependent_ox.object_xref_id from object_xref master_ox, object_xref dependent_ox, xref dependent, xref master, dependent_xref dx where dependent.xref_id = dx.dependent_xref_id and master.xref_id = dx.master_xref_id and dependent.xref_id = dependent_ox.xref_id and master.xref_id = master_ox.xref_id and master_ox.object_xref_id = ? and dependent_ox.master_xref_id = master.xref_id and dependent_ox.ensembl_id = ? and dependent_ox.ensembl_object_type = 'Translation' and dependent_ox.ox_status = 'DUMP_OUT' ");
+  my $dep_tr_sth       =  $self->xref->dbc->prepare("select distinct dependent_ox.object_xref_id from object_xref master_ox, object_xref dependent_ox, xref dependent, xref master, dependent_xref dx where dependent.xref_id = dx.dependent_xref_id and master.xref_id = dx.master_xref_id and dependent.xref_id = dependent_ox.xref_id and master.xref_id = master_ox.xref_id and master_ox.object_xref_id = ? and dependent_ox.master_xref_id = master.xref_id and dependent_ox.ensembl_id = ? and dependent_ox.ensembl_object_type = 'Transcript' and dependent_ox.ox_status = 'DUMP_OUT' ");
   my $ox_dx_delete_sth = $self->xref->dbc->prepare("update object_xref set ox_status = 'MULTI_DELETE' where object_xref_id = ?");
 
   my @master_object_xrefs;
+  my $new_master_object_xref_id;
   push @master_object_xrefs, $translation_object_xref_id;
+  my %master_object_xref_id;
+  $master_object_xref_id{$translation_object_xref_id} = 1;
 
   while (my $master_object_xref_id = pop(@master_object_xrefs)) {
     my $dependent_object_xref_id;
-    $dep_sth->execute($master_object_xref_id, $translation_id, $transcript_id);
-    $dep_sth->bind_columns(\$dependent_object_xref_id);
-    while ($dep_sth->fetch()) {
+    $dep_tl_sth->execute($master_object_xref_id, $translation_id);
+    $dep_tl_sth->bind_columns(\$dependent_object_xref_id);
+    while ($dep_tl_sth->fetch()) {
       $ox_dx_delete_sth->execute($dependent_object_xref_id);
-      push @master_object_xrefs, $dependent_object_xref_id;
+      if (!defined $master_object_xref_id{$dependent_object_xref_id}) {
+        $master_object_xref_id{$dependent_object_xref_id} = 1;
+        push @master_object_xrefs, $dependent_object_xref_id;
+      }
+    }
+    $dep_tr_sth->execute($master_object_xref_id, $transcript_id);
+    $dep_tr_sth->bind_columns(\$dependent_object_xref_id);
+    while ($dep_tr_sth->fetch()) {
+      $ox_dx_delete_sth->execute($dependent_object_xref_id);
+      if (!defined $master_object_xref_id{$dependent_object_xref_id}) {
+        $master_object_xref_id{$dependent_object_xref_id} = 1;
+        push @master_object_xrefs, $dependent_object_xref_id;
+      }
     }
   }
 }

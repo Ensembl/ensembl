@@ -1,5 +1,6 @@
 #!/usr/bin/env perl
 # Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
+# Copyright [2016] EMBL-European Bioinformatics Institute
 # 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -361,10 +362,10 @@ sub checksum {
   my @files = sort { $a cmp $b } readdir($dh);
   closedir($dh) or die "Cannot close directory $dir";
 
-  my $checksum = $self->file('CHECKSUMS.gz');
+  my $checksum = $self->file('CHECKSUMS');
   unlink $checksum if -f $checksum;
 
-  my $fh = IO::Compress::Gzip->new($checksum) or croak "Cannot create gzip stream to $checksum: $GzipError";
+  open my $fh, '>', $checksum or croak "Cannot open filehandle to $checksum: $!";
   foreach my $file (@files) {
     next if $file =~ /^\./;         #hidden file or up/current dir
     next if $file =~ /^CHECKSUM/;

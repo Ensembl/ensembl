@@ -1,6 +1,7 @@
 =head1 LICENSE
 
 Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
+Copyright [2016] EMBL-European Bioinformatics Institute
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -82,7 +83,7 @@ use DBI qw( :sql_types );
 
 sub fetch_all_Groups {
     my ($self, $type) = @_;
-    deprecate('Please use fetch_all()');
+    deprecate('fetch_all_Groups is deprecate and will be removed in e87. Please use fetch_all()');
     return $self->fetch_all($type);
 }
 
@@ -185,7 +186,7 @@ sub fetch_all {
 
 sub fetch_all_Groups_by_type {
     my ($self, $type) = @_;
-    deprecate('Please use fetch_all()');
+    deprecate('fetch_all_Groups_by_type is deprecated and will be removed in e87. Please use fetch_all()');
     my $group_list = $self->fetch_all($type);
     return $group_list;
 }
@@ -200,7 +201,7 @@ sub fetch_all_Groups_by_type {
 
 sub fetch_Group_by_id {
     my ($self, $group_id) = @_;
-    deprecate('Please use fetch_by_dbID()');
+    deprecate('fetch_Group_by_id is deprecated and will be removed in e87. Please use fetch_by_dbID()');
     return $self->fetch_by_dbID($group_id);
 }
 
@@ -272,7 +273,7 @@ sub fetch_by_dbID {
 
 sub fetch_Group_by_Gene_dbID {
     my ($self, $gene_id) = @_;
-    deprecate('Please use fetch_by_gene_id()');
+    deprecate('fetch_Group_by_Gene_dbID is deprecated and will be removed in e87. Please use fetch_by_gene_id()');
     return $self->fetch_by_gene_id($gene_id);
 }
 

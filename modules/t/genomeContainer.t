@@ -1,4 +1,5 @@
 # Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
+# Copyright [2016] EMBL-European Bioinformatics Institute
 # 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -95,6 +96,9 @@ is($pseudogene_count, $genome->get_pseudogene_count, "Pseudogene count is correc
 my $rpseudogene_count = $sql_helper->execute_single_result(-SQL => $sql, -PARAMS => ['pseudogene_rcnt'], -NO_ERROR => 1);
 is($rpseudogene_count, $genome->get_rpseudogene_count, "Readthrough pseudogene count is correct");
 
+my $alt_rpseudogene_count = $sql_helper->execute_single_result(-SQL => $sql, -PARAMS => ['pseudogene_racnt'], -NO_ERROR => 1);
+is($alt_rpseudogene_count, $genome->get_alt_rpseudogene_count, "Readthrough pseudogene count on alternate sequences is correct");
+
 my $alt_coding_count = $sql_helper->execute_single_result(-SQL => $sql, -PARAMS => ['coding_acnt']);
 is($alt_coding_count, $genome->get_alt_coding_count, "Coding count on alternate sequences is correct");
 
@@ -113,8 +117,17 @@ is($alt_snoncoding_count, $genome->get_alt_snoncoding_count, "Short non coding c
 my $alt_rsnoncoding_count = $sql_helper->execute_single_result(-SQL => $sql, -PARAMS => ['snoncoding_racnt'], -NO_ERROR => 1);
 is($alt_rsnoncoding_count, $genome->get_alt_rsnoncoding_count, "Readthrough short non coding count on alternate sequences is correct");
 
+my $alt_mnoncoding_count = $sql_helper->execute_single_result(-SQL => $sql, -PARAMS => ['mnoncoding_acnt'], -NO_ERROR => 1);
+is($alt_mnoncoding_count, $genome->get_alt_mnoncoding_count, "Short non coding count on alternate sequences is correct");
+
+my $alt_rmnoncoding_count = $sql_helper->execute_single_result(-SQL => $sql, -PARAMS => ['mnoncoding_racnt'], -NO_ERROR => 1);
+is($alt_rmnoncoding_count, $genome->get_alt_rmnoncoding_count, "Readthrough short non coding count on alternate sequences is correct");
+
 my $short_variation_count = $sql_helper->execute_single_result(-SQL => $sql, -PARAMS => ['SNPCount'], -NO_ERROR => 1);
 is($short_variation_count, $genome->get_short_variation_count, "Short variants count is correct");
+
+my $structural_variation_count = $sql_helper->execute_single_result(-SQL => $sql, -PARAMS => ['StructuralVariation'], -NO_ERROR => 1);
+is($structural_variation_count, $genome->get_structural_variation_count, "Structural variants count is correct");
 
 is_rows($genome->get_prediction_count, $db, "prediction_transcript");
 is_rows($genome->get_prediction_count('genscan'), $db, "prediction_transcript", "where analysis_id = ?", [8440]);
@@ -162,6 +175,38 @@ is($alt_transcript_count, $genome->get_alt_transcript_count(), "Number of alt tr
 
 my $counts = $genome->fetch_all_statistics();
 is(scalar(@$counts), 16, "All separate statistics retrieved");
+foreach my $genome_object (@$counts) {
+  debug($genome_object->statistic);
+  debug($genome_object->code);
+  debug($genome_object->name);
+  debug($genome_object->description);
+  debug($genome_object->dbID);
+  debug($genome_object->species_id);
+}
+
+#
+# Test region methods
+#
+
+my $toplevel = $genome->get_toplevel();
+is(scalar(@$toplevel), 2, "2 toplevel regions");
+my $karyotype = $genome->get_karyotype();
+is(scalar(@$karyotype), 2, "2 karyotype regions");
+my $coord_systems = $genome->get_coord_systems();
+is(scalar(@$coord_systems), 2, "2 coord systems");
+
+#
+# Test genebuild methods
+#
+
+my $gb_start = $genome->get_genebuild_start_date();
+is($gb_start, undef, 'Genebuild start date');
+my $gb_method = $genome->get_genebuild_method();
+is($gb_method, undef, 'Genebuild method');
+my $gb_release = $genome->get_genebuild_initial_release_date();
+is($gb_release, undef, 'Release date');
+my $gb_update = $genome->get_genebuild_last_geneset_update();
+is($gb_update, undef, 'Update date');
 
 
 #

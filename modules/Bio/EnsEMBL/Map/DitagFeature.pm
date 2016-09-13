@@ -1,6 +1,7 @@
 =head1 LICENSE
 
 Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
+Copyright [2016] EMBL-European Bioinformatics Institute
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -65,8 +66,9 @@ package Bio::EnsEMBL::Map::DitagFeature;
 use strict;
 use vars qw(@ISA);
 
+
 use Bio::EnsEMBL::Feature;
-use Bio::EnsEMBL::Utils::Exception qw( throw );
+use Bio::EnsEMBL::Utils::Exception qw( throw deprecate);
 use Bio::EnsEMBL::Utils::Argument  qw( rearrange );
 
 @ISA = qw(Bio::EnsEMBL::Feature);
@@ -170,7 +172,7 @@ sub new {
 =cut
 
 sub fetch_ditag {
-  throw("Deprecated method, please use ditag() instead.\n")
+  deprecate("fetch_ditag is deprecated and will be removed in e87. Please use ditag() instead.")
 }
 
 

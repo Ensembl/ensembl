@@ -1,5 +1,6 @@
 #!/usr/bin/env perl
 # Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
+# Copyright [2016] EMBL-European Bioinformatics Institute
 # 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -68,9 +69,9 @@ my $db = $mtdb->get_DBAdaptor("core");
 20\tensembl\texon\t30274331\t30274348\t.\t+\t.\tgene_id \"GENE\"; transcript_id \"TRANS\"; exon_number \"1\"; gene_source \"ensembl\"; gene_biotype \"protein_coding\"; transcript_source \"ensembl\"; transcript_biotype \"protein_coding\"; tag \"CCDS\"; ccds_id \"CCDS.1\"; exon_id \"e1\"; tag \"seleno\";
 20\tensembl\tCDS\t30274334\t30274345\t.\t+\t0\tgene_id \"GENE\"; transcript_id \"TRANS\"; exon_number \"1\"; gene_source \"ensembl\"; gene_biotype \"protein_coding\"; transcript_source \"ensembl\"; transcript_biotype \"protein_coding\"; tag \"CCDS\"; ccds_id \"CCDS.1\"; protein_id \"PEP\"; tag \"seleno\";
 20\tensembl\texon\t30274401\t30274404\t.\t+\t.\tgene_id \"GENE\"; transcript_id \"TRANS\"; exon_number \"2\"; gene_source \"ensembl\"; gene_biotype \"protein_coding\"; transcript_source \"ensembl\"; transcript_biotype \"protein_coding\"; tag \"CCDS\"; ccds_id \"CCDS.1\"; exon_id \"e2\"; tag \"seleno\";
-20\tensembl\tUTR\t30274331\t30274333\t.\t+\t.\tgene_id \"GENE\"; transcript_id \"TRANS\"; gene_source \"ensembl\"; gene_biotype \"protein_coding\"; transcript_source \"ensembl\"; transcript_biotype \"protein_coding\"; tag \"CCDS\"; ccds_id \"CCDS.1\"; tag \"seleno\";
-20\tensembl\tUTR\t30274346\t30274348\t.\t+\t.\tgene_id \"GENE\"; transcript_id \"TRANS\"; gene_source \"ensembl\"; gene_biotype \"protein_coding\"; transcript_source \"ensembl\"; transcript_biotype \"protein_coding\"; tag \"CCDS\"; ccds_id \"CCDS.1\"; tag \"seleno\";
-20\tensembl\tUTR\t30274401\t30274404\t.\t+\t.\tgene_id \"GENE\"; transcript_id \"TRANS\"; gene_source \"ensembl\"; gene_biotype \"protein_coding\"; transcript_source \"ensembl\"; transcript_biotype \"protein_coding\"; tag \"CCDS\"; ccds_id \"CCDS.1\"; tag \"seleno\";
+20\tensembl\tfive_prime_utr\t30274331\t30274333\t.\t+\t.\tgene_id \"GENE\"; transcript_id \"TRANS\"; gene_source \"ensembl\"; gene_biotype \"protein_coding\"; transcript_source \"ensembl\"; transcript_biotype \"protein_coding\"; tag \"CCDS\"; ccds_id \"CCDS.1\"; tag \"seleno\";
+20\tensembl\tthree_prime_utr\t30274346\t30274348\t.\t+\t.\tgene_id \"GENE\"; transcript_id \"TRANS\"; gene_source \"ensembl\"; gene_biotype \"protein_coding\"; transcript_source \"ensembl\"; transcript_biotype \"protein_coding\"; tag \"CCDS\"; ccds_id \"CCDS.1\"; tag \"seleno\";
+20\tensembl\tthree_prime_utr\t30274401\t30274404\t.\t+\t.\tgene_id \"GENE\"; transcript_id \"TRANS\"; gene_source \"ensembl\"; gene_biotype \"protein_coding\"; transcript_source \"ensembl\"; transcript_biotype \"protein_coding\"; tag \"CCDS\"; ccds_id \"CCDS.1\"; tag \"seleno\";
 GTF
   eq_or_diff(${$fh->string_ref}, $gtf, 'Checking custom Gene object dumps UTRs, Selenocysteine, seleno tag and CCDS');
 }
@@ -135,7 +136,7 @@ my $transcripts_gtf =
 20\tvega\tCDS\t30322356\t30322436\t.\t-\t2\tgene_id \"ENSG00000088356\"; gene_version \"1\"; transcript_id \"ENST00000202017\"; transcript_version \"1\"; exon_number \"4\"; gene_name \"C20orf126\"; gene_source \"vega\"; gene_biotype \"protein_coding\"; transcript_name \"C20orf126\"; transcript_source \"vega\"; transcript_biotype \"protein_coding\"; protein_id \"ENSP00000202017\"; protein_version \"1\";
 20\tvega\texon\t30320853\t30321749\t.\t-\t.\tgene_id \"ENSG00000088356\"; gene_version \"1\"; transcript_id \"ENST00000202017\"; transcript_version \"1\"; exon_number \"5\"; gene_name \"C20orf126\"; gene_source \"vega\"; gene_biotype \"protein_coding\"; transcript_name \"C20orf126\"; transcript_source \"vega\"; transcript_biotype \"protein_coding\"; exon_id \"ENSE00001109504\"; exon_version \"1\";
 20\tvega\tCDS\t30321670\t30321749\t.\t-\t2\tgene_id \"ENSG00000088356\"; gene_version \"1\"; transcript_id \"ENST00000202017\"; transcript_version \"1\"; exon_number \"5\"; gene_name \"C20orf126\"; gene_source \"vega\"; gene_biotype \"protein_coding\"; transcript_name \"C20orf126\"; transcript_source \"vega\"; transcript_biotype \"protein_coding\"; protein_id \"ENSP00000202017\"; protein_version \"1\";
-20\tvega\tUTR\t30320853\t30321669\t.\t-\t.\tgene_id \"ENSG00000088356\"; gene_version \"1\"; transcript_id \"ENST00000202017\"; transcript_version \"1\"; gene_name \"C20orf126\"; gene_source \"vega\"; gene_biotype \"protein_coding\"; transcript_name \"C20orf126\"; transcript_source \"vega\"; transcript_biotype \"protein_coding\";
+20\tvega\tthree_prime_utr\t30320853\t30321669\t.\t-\t.\tgene_id \"ENSG00000088356\"; gene_version \"1\"; transcript_id \"ENST00000202017\"; transcript_version \"1\"; gene_name \"C20orf126\"; gene_source \"vega\"; gene_biotype \"protein_coding\"; transcript_name \"C20orf126\"; transcript_source \"vega\"; transcript_biotype \"protein_coding\";
 ",
 
 

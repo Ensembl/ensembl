@@ -1,6 +1,7 @@
 =head1 LICENSE
 
 Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
+Copyright [2016] EMBL-European Bioinformatics Institute
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -92,11 +93,7 @@ sub new{
 sub throw{
    my ($self,$string) = @_;
 
-   Bio::EnsEMBL::Utils::Exception->warning("\n------------------ DEPRECATED ---------------------\n".
-                                        "Bio::EnsEMBL::Root::throw has been deprecated\n".
-					"use Bio::EnsEMBL::Utils::Exception qw(throw); \n".
-				        "throw('message'); #instead\n".
-					"\n---------------------------------------------------\n");
+   deprecate('Root->throw is deprecated and will be removed in e87. Please use Exception->throw instead');
 
    Bio::EnsEMBL::Utils::Exception->throw($string);
 
@@ -112,14 +109,8 @@ sub throw{
 sub warn{
     my ($self,$string) = @_;
 
+    deprecate('Root->warn is deprecated and will be removed in e87. Please use Exception->warning instead');
 
-
-    Bio::EnsEMBL::Utils::Exception->warning("\n------------------ DEPRECATED ---------------------\n".
-                                        "Bio::EnsEMBL::Root::warn has been deprecated\n".
-					 "use Bio::EnsEMBL::Utils::Exception qw(warning); \n".
-					 "warning('message'); #instead\n".
-					 "\n---------------------------------------------------\n");
-    
     Bio::EnsEMBL::Utils::Exception->warning($string);
 
 }
@@ -136,12 +127,8 @@ sub warn{
 sub verbose{
    my ($self,$value) = @_;
 
-    Bio::EnsEMBL::Utils::Exception->warning("\n------------------ DEPRECATED ---------------------\n".
-                                        "Bio::EnsEMBL::Root::verbose has been deprecated\n".
-					 "use Bio::EnsEMBL::Utils::Exception qw(verbose); \n".
-					 "verbose(value); #instead\n".
-					 "\n---------------------------------------------------\n");
-    
+   deprecate('Root->verbose is deprecated and will be removed in e87. Please use Exception->verbose instead');
+
    Bio::EnsEMBL::Utils::Exception->verbose($value);
    
  }
@@ -155,11 +142,7 @@ sub verbose{
 sub stack_trace_dump{
    my ($self) = @_;
 
-    Bio::EnsEMBL::Utils::Exception->warning("\n------------------ DEPRECATED ---------------------\n".
-                                        "Bio::EnsEMBL::Root::stack_trace_dump has been deprecated\n".
-					 "use Bio::EnsEMBL::Utils::Exception qw(stack_trace_dump); \n".
-					 "stack_trace_dump(); #instead\n".
-					 "\n---------------------------------------------------\n");
+   deprecate('Root->stack_trace_dump is deprecated and will be removed in e87. Please use Exception->stack_trace_dump instead');
 
    Bio::EnsEMBL::Utils::Exception->stack_trace_dump();
 
@@ -175,35 +158,11 @@ sub stack_trace_dump{
 sub stack_trace{
    my ($self) = @_;
 
-    Bio::EnsEMBL::Utils::Exception->warning("\n------------------ DEPRECATED ---------------------\n".
-                                        "Bio::EnsEMBL::Root::stack_trace has been deprecated\n".
-					 "use Bio::EnsEMBL::Utils::Exception qw(stack_trace); \n".
-					 "stack_trace(); #instead\n".
-					 "\n---------------------------------------------------\n");
+   deprecate('Root->stack_trace is deprecated and will be removed in e87. Please use Exception->stack_trace instead');
 
    Bio::EnsEMBL::Utils::Exception->stack_trace();
 
 }
 
-
-=head2 _rearrange
-
-  DEPRECATED
-
-=cut
-
-#----------------'
-sub _rearrange {
-#----------------
-    my($self,$order,@param) = @_;
-
-    my $mess = "use Bio::EnsEMBL::Utils::Argument qw(rearrange); \n";
-       $mess .= "rearrange(order, list); #instead\n";
-
-    Bio::EnsEMBL::Utils::Exception->deprecate($mess);
-
-   return Bio::EnsEMBL::Utils::Argument->rearrange($order,@param);
-
-}
 
 1;

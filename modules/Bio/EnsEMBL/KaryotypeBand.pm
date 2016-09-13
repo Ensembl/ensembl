@@ -1,6 +1,7 @@
 =head1 LICENSE
 
 Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
+Copyright [2016] EMBL-European Bioinformatics Institute
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -230,7 +231,7 @@ sub display_id {
 sub chr_name {
   my $self = shift;
 
-  deprecate('Use $kary_band->slice()->seq_region_name() instead.');
+  deprecate('chr_name is deprecated and will be removed in e87. Please use $kary_band->slice()->seq_region_name() instead.');
   if(!$self->slice) {
     warning('KaryotypeBand does not have Slice - cannot get seq_region_name.');
     return '';

@@ -1,6 +1,7 @@
 =head1 LICENSE
 
 Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
+Copyright [2016] EMBL-European Bioinformatics Institute
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -285,7 +286,7 @@ DSS
 	  }
 	}
 	else{
-	  print "$file has already been ran with $parser and so will not be ran again\n" if($verbose);
+	  print "$file has already been run with $parser and so will not be run again\n" if($verbose);
 	}
 	next;
       }
@@ -685,7 +686,8 @@ sub validate_species {
 
   foreach my $sp (@$species) {
 
-    $sth->execute(lc($sp),  "^".lc($sp).",|[ ]".lc($sp)."[,]|^".lc($sp)."\$|[,] ".lc($sp)."\$" );
+    my $bind_arg = "^".lc($sp).",|^".lc($sp)."\$|,[ ]{0,1}".lc($sp)."[ ]{0,1},|,[ ]{0,1}".lc($sp)."\$";
+    $sth->execute(lc($sp), $bind_arg ); 
     $sth->bind_columns(\$species_id, \$species_name);
     if (my @row = $sth->fetchrow_array()) {
       print "Species $sp is valid (name = " . $species_name . ", ID = " . $species_id . ")\n" if($verbose);

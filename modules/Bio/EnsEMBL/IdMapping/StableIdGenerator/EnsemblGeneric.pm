@@ -1,6 +1,7 @@
 =head1 LICENSE
 
 Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
+Copyright [2016] EMBL-European Bioinformatics Institute
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -301,6 +302,12 @@ sub calculate_version {
     }
 
     if ($source_exon_string ne $target_exon_string) { $change = 1; }
+
+    # increment version if translation sequence changed
+    # Can happen if Havana move initiation start site or stop codon
+    if ($s_obj->translation and $t_obj->translation) {
+         if ($s_obj->translation->seq ne $t_obj->translation->seq) { $change = 1; }
+    }
 
     # Look for changes on the region
     if ( $s_obj->seq_region_name() ne $t_obj->seq_region_name() ) { $change = 1 }

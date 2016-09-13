@@ -1,4 +1,5 @@
 # Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
+# Copyright [2016] EMBL-European Bioinformatics Institute
 # 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -17,8 +18,11 @@ use warnings;
 
 use Data::Dumper;
 use Test::More;
+use Test::Warnings;
+use Test::Exception;
+use Test::Differences;
 
-use Bio::EnsEMBL::Test::TestUtils qw/capture_std_streams/;
+use Bio::EnsEMBL::Test::TestUtils;
 use Bio::EnsEMBL::Test::MultiTestDB;
 use Bio::EnsEMBL::ProjectionSegment;
 use Bio::EnsEMBL::Utils::Exception qw(warning throw);
@@ -151,15 +155,10 @@ is($sub_slice->invert()->seq(), 'ATGCA',
 #
 # Slice can be created without db, seq or coord system
 #
-capture_std_streams(sub {
-  my ($std_out_ref, $std_err_ref) = @_;
-  $test_slice = Bio::EnsEMBL::CircularSlice->new(-SEQ_REGION_NAME => 'test', 
-						 -START           => 1, 
-						 -END             => 3);
-  my $check = qr/MSG: CircularSlice without coordinate system/;
-  like(${$std_err_ref}, $check, 'Checking we are still warning about lack of coordinate system');
-  return;
-});
+my $check = qr/MSG: CircularSlice without coordinate system/;
+warns_like{
+  $test_slice = Bio::EnsEMBL::CircularSlice->new(-SEQ_REGION_NAME => 'test', -START => 1, -END => 3)
+} qr/$check/, 'Checking we are still warning about lack of coordinate system'; 
 
 isa_ok($test_slice, 'Bio::EnsEMBL::CircularSlice');
 is($test_slice->seq(), 'NNN','sequence of created slice is NNN');

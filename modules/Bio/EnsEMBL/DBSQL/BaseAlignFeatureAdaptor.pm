@@ -1,6 +1,7 @@
 =head1 LICENSE
 
 Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
+Copyright [2016] EMBL-European Bioinformatics Institute
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -305,6 +306,7 @@ sub fetch_all_by_hit_name_unversioned {
 
 sub fetch_all_by_RawContig_and_pid {
   my($self, $contig, $pid, $logic_name) = @_;
+  deprecate('fetch_all_by_RawContig_and_pid is deprecated and will be removed in e87. Use fetch_all_by_Slice_and_pid instead.');
 
   my $constraint;
 

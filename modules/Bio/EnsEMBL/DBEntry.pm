@@ -1,6 +1,7 @@
 =head1 LICENSE
 
 Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
+Copyright [2016] EMBL-European Bioinformatics Institute
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -280,6 +281,24 @@ sub version {
   } 
   return $self->{version};
 }
+
+=head2 db_version
+
+  Arg [1]    : (optional) String $arg - value to set
+  Example    : none
+  Description: Alias for release(). The release/version of the external DB
+  Returntype : String
+  Exceptions : none
+  Caller     : general
+  Status     : Stable
+
+=cut
+
+sub db_version {
+  my ( $self, $arg ) = @_;
+  return $self->release($arg);
+}
+
 
 
 =head2 description
@@ -647,53 +666,6 @@ sub status{
   return $self->{status};
 }
 
-=head2 ensembl_object_type
-
-  Arg [1]    : (optional) String $arg - value to set
-  Description: Getter/setter for attribute ensembl_object_type.
-               The object xref ensembl object type, one of 'Gene',
-               'Marker', 'Operon', 'OperonTranscript', 'RawContig',
-               'Transcript' or 'Translation'.
-  Returntype : String
-  Exceptions : none
-  Caller     : general
-  Status     : Stable
-
-=cut
-
-sub ensembl_object_type{
-  my ( $self, $arg ) = @_;
-  if( defined $arg ) {
-     $self->{ensembl_object_type} = $arg;
-  } 
-  return $self->{ensembl_object_type};
-}
-
-=head2 ensembl_id
-
-  Arg [1]    : (optional) String $arg - value to set
-  Description: Getter/setter for attribute ensembl_id.
-               The ensembl_id is the internal identifier of the object
-               linked via object_xref. This should be used in
-               conjunction with ensembl_object_type to identify the
-               correct object type.
-  Returntype : String
-  Exceptions : none
-  Caller     : general
-  Status     : Stable
-
-=cut
-
-sub ensembl_id{
-  my ( $self, $arg ) = @_;
-  if( defined $arg ) {
-     $self->{ensembl_id} = $arg;
-  } 
-  return $self->{ensembl_id};
-}
-
-
-
 =head1 DEPRECATED METHODS
 
 =cut
@@ -707,7 +679,7 @@ sub ensembl_id{
 sub get_synonyms {
   my $self = shift;
 
-  deprecate("get_synonyms has been renamed get_all_synonyms.");
+  deprecate("get_synonyms is deprecated and will be removed in e87. Use get_all_synonyms instead.");
   return $self->get_all_synonyms;
 }
 

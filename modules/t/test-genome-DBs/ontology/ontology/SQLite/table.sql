@@ -1,6 +1,6 @@
 -- 
 -- Created by SQL::Translator::Producer::SQLite
--- Created on Tue Jul 21 13:33:01 2015
+-- Created on Fri May  6 15:45:55 2016
 -- 
 
 BEGIN TRANSACTION;
@@ -201,7 +201,8 @@ CREATE TABLE closure (
   parent_term_id integer NOT NULL,
   subparent_term_id integer,
   distance tinyint NOT NULL,
-  ontology_id integer NOT NULL
+  ontology_id integer NOT NULL,
+  confident_relationship tinyint NOT NULL
 );
 
 CREATE UNIQUE INDEX child_parent_idx ON closure (child_term_id, parent_term_id, subparent_term_id, ontology_id);
@@ -224,8 +225,9 @@ CREATE UNIQUE INDEX key_value_idx ON meta (meta_key, meta_value);
 CREATE TABLE ontology (
   ontology_id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
   name varchar(64) NOT NULL,
-  namespace varchar(64) NOT NULL
-);
+  namespace varchar(64) NOT NULL,
+  data_version VARCHAR(64)  NULL
+ );
 
 CREATE UNIQUE INDEX name_namespace_idx ON ontology (name, namespace);
 
@@ -271,7 +273,8 @@ CREATE TABLE synonym (
   synonym_id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
   term_id integer NOT NULL,
   name text NOT NULL,
-  type enum
+  type enum,
+  dbxref varchar(64)
 );
 
 CREATE UNIQUE INDEX term_synonym_idx ON synonym (term_id, synonym_id);

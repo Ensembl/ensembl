@@ -1,6 +1,7 @@
 =head1 LICENSE
 
 Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
+Copyright [2016] EMBL-European Bioinformatics Institute
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -160,6 +161,24 @@ sub next_Exon {
   my ($self) = shift;
 
   return $self->{'next'};
+}
+
+=head2 rank
+
+  Args       : none
+  Example    : $rank = $intron->rank
+  Description: Returns the rank of this Intron
+  Returntype : Integer
+  Exceptions : none
+  Caller     : general
+  Status     : Stable
+
+=cut
+
+sub rank {
+  my ($self, $transcript) = @_;
+
+  return $self->prev_Exon->rank($transcript);
 }
 
 =head2 is_splice_canonical

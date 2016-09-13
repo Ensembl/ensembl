@@ -1,6 +1,7 @@
 =head1 LICENSE
 
 Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
+Copyright [2016] EMBL-European Bioinformatics Institute
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -274,7 +275,7 @@ sub fetch_all_by_chr_band {
 
 sub fetch_by_chr_band {
   my $self = shift;
-  deprecate('Use fetch_all_by_chr_band instead.');
+  deprecate('fetch_by_chr_band is deprecated and will be removed in e87. Use fetch_all_by_chr_band instead.');
 
   my ($band) = @{$self->fetch_all_by_chr_band(@_)};
   return $band;

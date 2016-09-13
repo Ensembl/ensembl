@@ -1,4 +1,5 @@
 # Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
+# Copyright [2016] EMBL-European Bioinformatics Institute
 # 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -71,7 +72,8 @@ my $mappings =
    { obj => Bio::EnsEMBL::Gene->new(-biotype => 'protein_coding'), accession => 'SO:0001217', name => 'protein_coding_gene' },
    { obj => Bio::EnsEMBL::Gene->new(-biotype => 'tRNA'), accession => 'SO:0001272', name => 'tRNA_gene' },
    # test various transcripts with/without biotypes
-   { obj => Bio::EnsEMBL::Transcript->new(), accession => 'SO:0000673', name => 'transcript' },
+   { obj => Bio::EnsEMBL::Transcript->new(-biotype => 'dummy'), accession => 'SO:0000673', name => 'transcript' },
+   { obj => Bio::EnsEMBL::Transcript->new(), accession => 'SO:0000234', name => 'mRNA' },
    { obj => Bio::EnsEMBL::Transcript->new(-biotype => 'processed_transcript'), accession => 'SO:0001503', name => 'processed_transcript' },
    { obj => Bio::EnsEMBL::Transcript->new(-biotype => 'retrotransposed'), accession => 'SO:0000569', name => 'retrotransposed' },
    # exons

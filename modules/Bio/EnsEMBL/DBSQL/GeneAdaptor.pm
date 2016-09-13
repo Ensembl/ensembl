@@ -1,6 +1,7 @@
 =head1 LICENSE
 
 Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
+Copyright [2016] EMBL-European Bioinformatics Institute
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -248,7 +249,48 @@ sub fetch_by_stable_id {
   $self->bind_param_generic_fetch($stable_id, SQL_VARCHAR);
   my ($gene) = @{$self->generic_fetch($constraint)};
 
+  # If we didn't get anything back, desperately try to see if there's
+  # a version number in the stable_id
+  if(!defined($gene) && (my $vindex = rindex($stable_id, '.'))) {
+      $gene = $self->fetch_by_stable_id_version(substr($stable_id,0,$vindex),
+						substr($stable_id,$vindex+1));
+  }
+
   return $gene;
+}
+
+=head2 fetch_by_stable_id_version
+
+  Arg [1]    : String $id 
+               The stable ID of the gene to retrieve
+  Arg [2]    : Integer $version
+               The version of the stable_id to retrieve
+  Example    : $gene = $gene_adaptor->fetch_by_stable_id('ENSG00000148944', 14);
+  Description: Retrieves a gene object from the database via its stable id and version.
+               The gene will be retrieved in its native coordinate system (i.e.
+               in the coordinate system it is stored in the database). It may
+               be converted to a different coordinate system through a call to
+               transform() or transfer(). If the gene or exon is not found
+               undef is returned instead.
+  Returntype : Bio::EnsEMBL::Gene or undef
+  Exceptions : if we cant get the gene in given coord system
+  Caller     : general
+  Status     : Stable
+
+=cut
+
+sub fetch_by_stable_id_version {
+    my ($self, $stable_id, $version) = @_;
+
+    # Enforce that version be numeric
+    return unless($version =~ /^\d+$/);
+
+    my $constraint = "g.stable_id = ? AND g.version = ? AND g.is_current = 1";
+    $self->bind_param_generic_fetch($stable_id, SQL_VARCHAR);
+    $self->bind_param_generic_fetch($version, SQL_INTEGER);
+    my ($gene) = @{$self->generic_fetch($constraint)};
+
+    return $gene;
 }
 
 =head2 fetch_all_by_source
@@ -564,24 +606,13 @@ sub fetch_all_by_Slice_and_external_dbname_link {
 
   foreach my $local_external_db_id (@{$external_db_ids}) {
     my @linked_genes = $dbentry_adaptor->list_gene_ids_by_external_db_id($local_external_db_id);
-    foreach my $gene_id (@linked_genes) {
-      $linked_genes{$gene_id} = 1;
-    }
+    $linked_genes{$_} = 1 for @linked_genes;
   }
-
-  # Get all the genes on the slice.
-  my $genes = $self->SUPER::fetch_all_by_Slice_constraint($slice, 'g.is_current = 1', $logic_name);
-
-  # Create a list of those that are in the gene_ids list.
-  my @genes_passed;
-  foreach my $gene (@$genes) {
-    if (exists($linked_genes{$gene->dbID()})) {
-      push(@genes_passed, $gene);
-    }
-  }
-
-  # Return the list of those that passed.
-  return \@genes_passed;
+  
+  # Get all the genes on the slice and filter by the gene ids list
+  my $genes = $self->fetch_all_by_Slice($slice, $logic_name, $load_transcripts);
+  my $genes_passed = [ grep { exists $linked_genes{$_->dbID()} } @{$genes} ];
+  return $genes_passed;
 } ## end sub fetch_all_by_Slice_and_external_dbname_link
 
 =head2 fetch_all_by_Slice
@@ -624,8 +655,8 @@ sub fetch_all_by_Slice {
 
   my $genes = $self->SUPER::fetch_all_by_Slice_constraint($slice, $constraint, $logic_name);
 
-  # If there are less than two genes, still do lazy-loading.
-  if (!$load_transcripts || @$genes < 2) {
+  # If there are 0 genes, still do lazy-loading.
+  if (!$load_transcripts || @$genes < 1) {
     return $genes;
   }
 
@@ -2093,7 +2124,7 @@ sub fetch_nearest_Gene_by_Feature{
   #This had no prime spec and was returning all overlaps regardless of strand
   #else the first 10 from the stream with the first closest gene
 
-  deprecate( "use fetch_nearest_Genes_by_Feature instead");
+  deprecate( "fetch_neared_Gene_by_Feature is deprecated and will be removed in e87. Please use fetch_nearest_Genes_by_Feature instead");
   #need to change params order here to account for new prime arg
   return $_[0]->fetch_nearest_Genes_by_Feature($feat, undef, $stranded, $stream);
 }
@@ -2108,7 +2139,7 @@ sub fetch_nearest_Gene_by_Feature{
 sub fetch_by_maximum_DBLink {
   my ($self, $external_id) = @_;
 
-  deprecate("use fetch_all_by_external_name instead");
+  deprecate("fetch_by_maximum_DBLink is deprecated and will be removed in e87. Pleaseuse fetch_all_by_external_name instead");
 
   my $genes = $self->fetch_all_by_external_name($external_id);
 
@@ -2137,7 +2168,7 @@ sub fetch_by_maximum_DBLink {
 sub get_display_xref {
   my ($self, $gene) = @_;
 
-  deprecate("display xref should retrieved from Gene object directly");
+  deprecate("gene_adaptor->get_display_xref is deprecated and will be removed in e87. Please use gene->display_xref instead");
 
   if (!defined $gene) {
 	throw("Must call with a Gene object");
@@ -2181,7 +2212,7 @@ sub get_display_xref {
 sub get_description {
   my ($self, $dbID) = @_;
 
-  deprecate("Gene description should be loaded on gene retrieval. Use gene->get_description()");
+  deprecate("gene_adaptor->get_description is deprecated and will be removed in e87. Please use gene->get_description() instead");
 
   if (!defined $dbID) {
 	throw("must call with dbID");
@@ -2208,7 +2239,7 @@ sub get_description {
 sub fetch_by_Peptide_id {
   my ($self, $translation_stable_id) = @_;
 
-  deprecate("Please use better named fetch_by_translation_stable_id \n" . caller(2));
+  deprecate("fetch_by_Peptide_id is deprecated and will be removed in e87. Please use fetch_by_translation_stable_id instead");
 
   $self->fetch_by_translation_stable_id($translation_stable_id);
 }
@@ -2222,7 +2253,7 @@ sub fetch_by_Peptide_id {
 sub get_stable_entry_info {
   my ($self, $gene) = @_;
 
-  deprecated("stable id info is loaded on default, no lazy loading necessary");
+  deprecate("gene_adaptor->get_stable_entry_info is deprecated and will be removed in e87. Please use gene->stable_id instead.");
 
   if (!defined $gene || !ref $gene || !$gene->isa('Bio::EnsEMBL::Gene')) {
 	throw("Needs a gene object, not a $gene");
@@ -2254,7 +2285,7 @@ sub get_stable_entry_info {
 sub fetch_all_by_DBEntry {
   my $self = shift;
 
-  deprecate('Use fetch_all_by_external_name instead.');
+  deprecate('fetch_all_by_DBEntry is deprecated and will be removed in e87. Please use fetch_all_by_external_name instead.');
 
   return $self->fetch_all_by_external_name(@_);
 }

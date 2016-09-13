@@ -1,4 +1,5 @@
 # Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
+# Copyright [2016] EMBL-European Bioinformatics Institute
 # 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -31,6 +32,8 @@ my $multi = Bio::EnsEMBL::Test::MultiTestDB->new();
 ok( $multi );
 
 my $db = $multi->get_DBAdaptor('core' );
+my $ontology = Bio::EnsEMBL::Test::MultiTestDB->new('ontology');
+my $odb = $ontology->get_DBAdaptor("ontology");
 
 my $sa = $db->get_SliceAdaptor();
 
@@ -208,6 +211,12 @@ $tr->flush_Exons();
 
 is( scalar( @{$tr->get_all_Exons()} ), 0, 'No exons left after flushing' );
 
+# Fetch a fresh tr, check incomplete codon behavior
+$tr = $ta->fetch_by_stable_id( "ENST00000300425" );
+
+# By default the incomplete codon should be dropped
+is( $tr->translate()->seq() =~ /P$/, 1, "Incomplete codon is not translated");
+is( $tr->translate(1)->seq() =~ /PL$/, 1, "Incomplete codon is padded then translated");
 
 # get a fresh tr to check the update method
 $tr = $ta->fetch_by_stable_id( "ENST00000217347" );
@@ -261,13 +270,13 @@ is($tr->display_id(), $tr->stable_id(), 'Transcript stable id and display id are
 #
 note("Test fetch_all_by_biotype");
 my @transcripts = @{$ta->fetch_all_by_biotype('protein_coding')};
-is(@transcripts, 26, 'Fetching all protein coding transcript');
+is(@transcripts, 27, 'Fetching all protein coding transcript');
 my $transcriptCount = $ta->count_all_by_biotype('protein_coding');
-is($transcriptCount, 26, 'Counting all protein coding');
+is($transcriptCount, 27, 'Counting all protein coding');
 @transcripts = @{$ta->fetch_all_by_biotype(['protein_coding','pseudogene'])};
-is(@transcripts, 26, 'Got 25 transcript');
+is(@transcripts, 27, 'Got 27 transcript');
 $transcriptCount = $ta->count_all_by_biotype(['protein_coding', 'pseudogene']);
-is($transcriptCount, 26, 'Count by biotype is correct');
+is($transcriptCount, 27, 'Count by biotype is correct');
 
 
 #
@@ -284,14 +293,54 @@ is(@transcripts, $transcriptCount, "Counted as many transcripts as were fetched 
 note("Test fetch_all_by_source");
 @transcripts = @{$ta->fetch_all_by_source('ensembl')};
 note "Got ".scalar(@transcripts)." ensembl transcripts\n";
-is(23, scalar(@transcripts));
+is(24, scalar(@transcripts));
 $transcriptCount = $ta->count_all_by_source('ensembl');
-is(23, $transcriptCount);
+is(24, $transcriptCount);
 @transcripts = @{$ta->fetch_all_by_source(['havana','vega'])};
 note "Got ".scalar(@transcripts)." (havana, vega) transcripts\n";
 is(3, scalar(@transcripts));
 $transcriptCount = $ta->count_all_by_source(['havana', 'vega']);
 is(3, $transcriptCount);
+
+#
+# test TranscriptAdaptor::fetch_all
+#
+note("Test fetch_all");
+@transcripts = @{ $ta->fetch_all() };
+is(27, scalar(@transcripts), "Got 27 transcripts");
+
+#
+# test TranscriptAdaptor::fetch_all_by_GOTerm
+#
+note("Test fetch_all_by_GOTerm");
+my $go_adaptor = $odb->get_OntologyTermAdaptor();
+my $go_term = $go_adaptor->fetch_by_accession('GO:0070363');
+@transcripts = @{ $ta->fetch_all_by_GOTerm($go_term) };
+is(scalar(@transcripts), 0, "Found 0 genes with fetch_all_by_GOTerm");
+
+
+#
+# test TranscriptAdaptor::fetch_all_by_exon_supporting_evidence
+#
+note("Test fetch_all_by_exon_supporting_evidence");
+@transcripts = @{ $ta->fetch_all_by_exon_supporting_evidence('BRCA2', 'dna_align_feature') };
+is(scalar(@transcripts), 0, "No transcripts with BRCA2 daf");
+@transcripts = @{ $ta->fetch_all_by_exon_supporting_evidence('AK015740.1', 'dna_align_feature') };
+is(scalar(@transcripts), 1, "1 transcript with AK015740.1 daf");
+@transcripts = @{ $ta->fetch_all_by_exon_supporting_evidence('Q9NUG5', 'protein_align_feature') };
+is(scalar(@transcripts), 1, "1 transcript with Q9NUG5 paf");
+
+#
+# test TranscriptAdaptor::fetch_all_by_transcript_supporting_evidence
+#
+note("Test fetch_all_by_transcript_supporting_evidence");
+@transcripts = @{ $ta->fetch_all_by_transcript_supporting_evidence('BRCA2', 'dna_align_feature') };
+is(scalar(@transcripts), 0, "No transcripts with BRCA2 daf");
+@transcripts = @{ $ta->fetch_all_by_transcript_supporting_evidence('AK015740.1', 'dna_align_feature') };
+is(scalar(@transcripts), 0, "0 transcripts with AK015740.1 daf");
+@transcripts = @{ $ta->fetch_all_by_transcript_supporting_evidence('Q9NUG5', 'protein_align_feature') };
+is(scalar(@transcripts), 0, "No transcripts with Q9NUG5 paf");
+
 
 #
 # Test get_all_Introns by joining Exons and introns
@@ -309,10 +358,18 @@ foreach my $stable_id (qw(ENST00000201961 ENST00000217347)){ #test both strands
   my @exons = (@{$transcript->get_all_Exons()});
   my @introns = (@{$transcript->get_all_Introns()});
 
+  my @cds = (@{$transcript->get_all_CDS()});
+  my @cds_introns = (@{$transcript->get_all_CDS_Introns()});
+
   my $orig_seq = $transcript->slice->subseq(
 					    $transcript->start(),
 					    $transcript->end(), 
 					    $transcript->strand());
+
+  my $cds_orig_seq = $transcript->slice->subseq(
+                                            $transcript->coding_region_start(),
+                                            $transcript->coding_region_end(),
+                                            $transcript->strand());
 
   my $idl=0;
   my $new_seq = $exons[0]->seq()->seq();
@@ -324,6 +381,17 @@ foreach my $stable_id (qw(ENST00000201961 ENST00000217347)){ #test both strands
   }
 
   is($orig_seq, $new_seq, 'Correct new origin seq');
+
+  my $cds_idl=0;
+  my $new_cds_seq = $cds[0]->seq();
+  foreach my $cds_intron (@cds_introns){
+    $new_cds_seq .= $cds_intron->seq;
+    $new_cds_seq .= $cds[$cds_idl+1]->seq();
+    $cds_idl++;
+
+  }
+
+  is($cds_orig_seq, $new_cds_seq, 'Correct new cds origin seq');
 
 }
 
@@ -376,7 +444,7 @@ is( count_rows( $db, "exon_transcript"), ($ex_tr_count - $ex_tr_minus), 'Row cou
 
 $tr = $ta->fetch_by_stable_id('ENST00000278995');
 my $gene = $tr->get_Gene;
-print $gene."\n\n";
+print $gene->stable_id."\n\n";
 note(join "\n",map { $_->stable_id } @{$gene->get_all_Transcripts});
 
 $ta->remove($tr,1);
@@ -567,6 +635,28 @@ is( scalar(@transcripts), 1, 'Fetched all transcripts by stable_id' );
 $tr = $ta->fetch_by_translation_stable_id('ENSP00000355555');
 is( $tr->dbID, 21740, 'Fetched transcript by translation stable id' );
 
+$tr->stable_id_version('ENSP00000171455.4');
+is($tr->stable_id, 'ENSP00000171455', 'Stable id set with stable_id_version');
+is($tr->version, 4, 'Version set with stable_id_version');
+is($tr->stable_id_version, 'ENSP00000171455.4', 'Stable id and version from stable_id_version');
+
+$tr->stable_id_version('ENSP00000171456');
+is($tr->stable_id, 'ENSP00000171456', 'Stable id set with stable_id_version');
+is($tr->version, undef, 'Version undef from stable_id_version');
+is($tr->stable_id_version, 'ENSP00000171456', 'Stable id and no version from stable_id_version');
+
+$tr = $ta->fetch_by_translation_stable_id('ENSP00000355555.1');
+is( $tr->dbID, 21740, 'Fetched transcript by translation stable id with version' );
+
+$tr = $ta->fetch_by_translation_stable_id('ENSP00000355555.1a');
+ok( ! defined($tr), 'Fetched transcript by translation stable id with bad version' );
+
+$tr = $ta->fetch_by_translation_stable_id_version('ENSP00000355555', 1);
+is( $tr->dbID, 21740, 'Fetched transcript by translation stable id (version) with version' );
+
+$tr = $ta->fetch_by_translation_stable_id_version('ENSP00000355555', '1a');
+ok( ! defined($tr), 'Fetched transcript by translation stable id (version) with bad version' );
+
 @transcripts = @{ $ta->fetch_all_by_exon_stable_id('ENSE00001109603') };
 is( scalar(@transcripts), 1);
 is( $transcripts[0]->dbID, 21740, 'Fetched transcript by exon stable id' );
@@ -749,6 +839,38 @@ SKIP: {
   ok( $species eq 'homo_sapiens' && $object_type eq 'Transcript');
 }
 
+
+## Relative vs absolute coordinates test
+print "Comparing relative and absolute coordinates\n";
+## Retrieve transcript by id
+my $tid = 21726;
+my $absolute_transcript = $db->get_TranscriptAdaptor()->fetch_by_dbID($tid);
+my @absolute_coords = sort { $a->end() <=> $b->end() } ( $absolute_transcript->genomic2pep($absolute_transcript->seq_region_start, $absolute_transcript->seq_region_end, $absolute_transcript->strand) );
+## Retrieve same transcript via feature slice
+my $relative_slice = $absolute_transcript->feature_Slice();
+my $relative_transcripts = $relative_slice->get_all_Transcripts();
+my $relative_transcript;
+foreach my $transcript (@$relative_transcripts) {
+  if ($transcript->stable_id eq $absolute_transcript->stable_id) {
+    $relative_transcript = $transcript;
+    last;
+  }
+}
+
+my @relative_coords = sort { $a->end() <=> $b->end() } ( $relative_transcript->genomic2pep($relative_transcript->seq_region_start, $relative_transcript->seq_region_end, $relative_transcript->strand) );
+is(scalar(@absolute_coords), scalar(@relative_coords), "Same number of results");
+
+## Compare coordinates of mappings
+for (my $i = 0; $i < scalar(@absolute_coords); $i++) {
+  if ($absolute_coords[$i]->isa('Bio::EnsEMBL::Mapper::Gap')) {
+    is(ref($relative_coords[$i]), 'Bio::EnsEMBL::Mapper::Gap', "Both are gaps");
+  } else {
+    is($absolute_coords[$i]->start, $relative_coords[$i]->start, "Starts match");
+    is($absolute_coords[$i]->end, $relative_coords[$i]->end, "Ends match");
+    is($absolute_coords[$i]->strand, $relative_coords[$i]->strand, "Strands match");
+  }
+}
+
 done_testing();
 
 #
@@ -758,9 +880,16 @@ done_testing();
 sub test_trans_mapper_edits {
   $tr->edits_enabled(1);
 
+  # We want to fetch the first exon, and edit it's coordinates
+  # to test the mapper and edits
+  my $exons = $tr->get_all_Exons();
+  ok(@{$exons}, 'We found at least one exon in the transcript');
+  my $first_exon = shift @{$exons};
 
-  my $start = ($tr->strand() == 1) ? 1  : $tr->end() - 11;
-  my $end   = ($tr->strand() == 1) ? 12 : $tr->end();
+  # Start and end for testing genomic to cda coordinates should be relative
+  # to the first exon, whichever direction transcription is occurring
+  my $start = ($tr->strand() == 1) ? $first_exon->seq_region_start() : $first_exon->seq_region_end() - 11;
+  my $end = ($tr->strand() == 1) ? $first_exon->seq_region_start() + 11 : $first_exon->seq_region_end();
 
   @coords = $tr->genomic2cdna($start, $end, $tr->strand());
 

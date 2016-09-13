@@ -1,4 +1,5 @@
 # Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
+# Copyright [2016] EMBL-European Bioinformatics Institute
 # 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -166,6 +167,8 @@ my $se_count = scalar(@{$exon->get_all_supporting_features});
 
 debug("Got $se_count supporting feature after transform");
 ok($se_count == $count);
+$exon->flush_supporting_features;
+is(scalar(@{$exon->get_all_supporting_features}), 0, "All supporting features flushed");
 
 #make sure that supporting evidencewas stored correctly
 $se_count = scalar(@{$newexon->get_all_supporting_features});
@@ -239,6 +242,28 @@ $multi->restore();
 $exon = $exonad->fetch_by_stable_id('ENSE00001109603');
 debug("fetch_by_stable_id");
 ok( $exon->dbID == 162033 );
+
+$exon->stable_id_version('ENSE00000171455.4');
+is($exon->stable_id, 'ENSE00000171455', 'Stable id set with stable_id_version');
+is($exon->version, 4, 'Version set with stable_id_version');
+is($exon->stable_id_version, 'ENSE00000171455.4', 'Stable id and version from stable_id_version');
+
+$exon->stable_id_version('ENSE00000171456');
+is($exon->stable_id, 'ENSE00000171456', 'Stable id set with stable_id_version');
+is($exon->version, undef, 'Version undef from stable_id_version');
+is($exon->stable_id_version, 'ENSE00000171456', 'Stable id and no version from stable_id_version');
+
+$exon = $exonad->fetch_by_stable_id('ENSE00001109603.1');
+ok($exon->dbID == 162033, 'fetch_by_stable_id with version');
+
+$exon = $exonad->fetch_by_stable_id('ENSE00001109603.1a');
+ok(!defined($exon), 'fetch_by_stable_id with bad version');
+
+$exon = $exonad->fetch_by_stable_id_version('ENSE00001109603', 1);
+ok($exon->dbID == 162033, 'fetch_by_stable_id_version with version');
+
+$exon = $exonad->fetch_by_stable_id_version('ENSE00001109603', '1a');
+ok(!defined($exon), 'fetch_by_stable_id_version with bad version');
 
 my @exons = @{ $exonad->fetch_all_versions_by_stable_id('ENSE00001109603') };
 debug("fetch_all_versions_by_stable_id");
@@ -316,6 +341,9 @@ ok( $exon->coding_region_end($transcript) == 30578038 );
 
 is ( $exon->rank($transcript), 2, "Second exon has rank 2");
 
+my $pep = $exon->peptide($transcript);
+is($pep->seq, 'MTTFFTSVPPWIQDAKQEEEVGWKLVPRPRGREAESQVKCQCEISGTPFSNGEKLRPHSLPQPEQRPYSCPQLHCGKAFASKYKLYR', 'Retrieved peptide sequence');
+
 SKIP: {
   skip 'No registry support for SQLite yet', 1 if $db->dbc->driver() eq 'SQLite';
 
@@ -333,24 +361,25 @@ SKIP: {
   my $base_transcript = Bio::EnsEMBL::Transcript->new(
     -START => 99,
     -END => 1759,
+    -STRAND => 1,
     -SLICE => $base_slice
   );
   
-  my $start_exon = Bio::EnsEMBL::Exon->new(-START => 99, -END => 319, -STRAND => 1, -STABLE_ID => 'Exon1');
+  my $start_exon = Bio::EnsEMBL::Exon->new(-START => 99, -END => 319, -STRAND => 1, -STABLE_ID => 'Exon1', -SLICE => $base_slice);
   throws_ok { $start_exon->rank($base_transcript) } qr/does not have/, "No exons in transcript";
   $base_transcript->add_Exon($start_exon);
   is ($start_exon->rank($base_transcript), 1, "Start exon in position 1");
-  my $end_exon = Bio::EnsEMBL::Exon->new(-START => 1267, -END => 1759, -STRAND => 1, -STABLE_ID => 'Exon2');
+  my $end_exon = Bio::EnsEMBL::Exon->new(-START => 1267, -END => 1759, -STRAND => 1, -STABLE_ID => 'Exon2', -SLICE => $base_slice);
   throws_ok { $end_exon->rank($base_transcript) } qr/does not belong/, "Exon does not belong to transcript";
   $base_transcript->add_Exon($end_exon);
-  
+
   $base_transcript->translation(Bio::EnsEMBL::Translation->new(
     -START_EXON => $start_exon,
     -SEQ_START => 155,
     -END_EXON => $end_exon,
     -SEQ_END => 87
   ));
-  
+
   is($start_exon->cdna_coding_start($base_transcript), 155, 'Coding starts at 155bp into the first exon');
   is($start_exon->cdna_coding_end($base_transcript), 221, 'Coding ends at 221bp in the first exon (at the exon end)');
   is($start_exon->coding_region_start($base_transcript), (99+155)-1, 'Coding starts at an offset of 99bp plus coding start');
@@ -379,9 +408,9 @@ SKIP: {
   );
   
   
-  my $start_exon = Bio::EnsEMBL::Exon->new(-START => 4205, -END => 5661, -STRAND => -1);
+  my $start_exon = Bio::EnsEMBL::Exon->new(-START => 4205, -END => 5661, -STRAND => -1, -SLICE => $base_slice);
   $base_transcript->add_Exon($start_exon);
-  my $end_exon = Bio::EnsEMBL::Exon->new(-START => 672, -END => 3363, -STRAND => -1);
+  my $end_exon = Bio::EnsEMBL::Exon->new(-START => 672, -END => 3363, -STRAND => -1, -SLICE => $base_slice);
   $base_transcript->add_Exon($end_exon);
   
   $base_transcript->translation(Bio::EnsEMBL::Translation->new(
@@ -390,16 +419,19 @@ SKIP: {
     -END_EXON => $end_exon,
     -SEQ_END => 1296
   ));
+
   
   is($start_exon->cdna_coding_start($base_transcript), 426, 'CDNA start equals SEQ_START');
   is($start_exon->cdna_coding_end($base_transcript), 1457, 'CDNA end equals SEQ_START plus exon length');
   is($start_exon->coding_region_start($base_transcript), 4205, 'Coding region start is start of first exon');
   is($start_exon->coding_region_end($base_transcript), 5236, 'Coding region end is start of first exon plus its length');
+  is($start_exon->frame, 2, 'Coding start has frame 2');
   
   is($end_exon->cdna_coding_start($base_transcript), 1458, 'CDNA coding start equals END of first Exon + 1');
   is($end_exon->cdna_coding_end($base_transcript), 2753, 'CDNA coding end equals start plus its length into the last exon');
   is($end_exon->coding_region_start($base_transcript), 2068, 'Start is the end of the last exon minus the coding length');
   is($end_exon->coding_region_end($base_transcript), 3363, 'End is the same as the end exon end');
+
 }
 
 done_testing();

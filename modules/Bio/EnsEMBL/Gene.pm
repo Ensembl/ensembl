@@ -1,6 +1,7 @@
 =head1 LICENSE
 
 Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
+Copyright [2016] EMBL-European Bioinformatics Institute
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -200,7 +201,7 @@ sub new {
 =head2 is_known
 
   Example    : print "Gene ".$gene->stable_id." is KNOWN\n" if $gene->is_known;
-  Description: Returns TRUE if this gene has a status of 'KNOWN'
+  Description: DEPRECATED. Returns TRUE if this gene has a status of 'KNOWN'
   Returntype : TRUE if known, FALSE otherwise
   Exceptions : none
   Caller     : general
@@ -211,6 +212,7 @@ sub new {
 
 sub is_known{
   my $self = shift;
+  deprecate("is_known is deprecated and will be removed in e90. Please consider checking supporting features instead");
   return ( $self->{'status'} eq "KNOWN" || $self->{'status'} eq "KNOWN_BY_PROJECTION" );
 }
 
@@ -250,7 +252,7 @@ sub external_name {
 
   Arg [1]    : (optional) String - status to set
   Example    : $gene->status('KNOWN');
-  Description: Getter/setter for attribute status
+  Description: DEPRECATED. Getter/setter for attribute status
   Returntype : String
   Exceptions : none
   Caller     : general
@@ -260,6 +262,7 @@ sub external_name {
 
 sub status {
    my $self = shift;
+  deprecate("status is deprecated and will be removed in e90. Please consider checking supporting features instead");
   $self->{'status'} = shift if( @_ );
   return $self->{'status'};
 }
@@ -1013,7 +1016,12 @@ sub get_all_Transcripts {
       $self->{'_transcript_array'} = $transcripts;
     }
   }
-  return $self->{'_transcript_array'};
+  my @array_copy;
+  if (defined $self->{'_transcript_array'}) {
+    @array_copy = @{ $self->{'_transcript_array'} } ;
+    return \@array_copy;
+  }
+  return;
 }
 
 
@@ -1078,6 +1086,34 @@ sub stable_id {
   return $self->{'stable_id'};
 }
 
+=head2 stable_id_version
+
+  Arg [1]    : (optional) String - the stable ID with version to set
+  Example    : $gene->stable_id("ENSG0000000001.3");
+  Description: Getter/setter for stable id with version for this gene.
+  Returntype : String
+  Exceptions : none
+  Caller     : general
+  Status     : Stable
+
+=cut
+
+sub stable_id_version {
+    my $self = shift;
+    if(my $stable_id = shift) {
+	# See if there's an embedded period, assume that's a
+	# version, might not work for some species but you
+	# should use ->stable_id() and version() if you're worried
+	# about ambiguity
+	my $vindex = rindex($stable_id, '.');
+	# Set the stable_id and version pair depending on if
+	# we found a version delimiter in the stable_id
+	($self->{stable_id}, $self->{version}) = ($vindex > 0 ?
+						  (substr($stable_id,0,$vindex), substr($stable_id,$vindex+1)) :
+						  $stable_id, undef);
+    }
+    return $self->{stable_id} . ($self->{version} ? ".$self->{version}" : '');
+}
 
 =head2 is_current
 
@@ -1480,7 +1516,7 @@ sub summary_as_hash {
   $summary_ref->{'description'} = $self->description;
   $summary_ref->{'biotype'} = $self->biotype;
   $summary_ref->{'Name'} = $self->external_name if $self->external_name;
-  $summary_ref->{'logic_name'} = $self->analysis->logic_name();
+  $summary_ref->{'logic_name'} = $self->analysis->logic_name() if defined $self->analysis();
   $summary_ref->{'source'} = $self->source();
   $summary_ref->{'gene_id'} = $summary_ref->{'id'};
 
@@ -1530,7 +1566,7 @@ sub havana_gene {
 sub add_DBLink{
   my ($self,$value) = @_;
 
-  throw("add_DBLink is deprecated.  You probably want add_DBEntry.");
+  throw("add_DBLink is deprecated and will be removed in e87. Please use add_DBEntry instead.");
 
   #  unless(defined $value && ref $value 
   #	 && $value->isa('Bio::Annotation::DBLink') ) {
@@ -1553,8 +1589,7 @@ sub add_DBLink{
 
 sub temporary_id {
    my ($obj,$value) = @_;
-   deprecate( "I cant see what a temporary_id is good for, please use " .
-               "dbID or stableID or\n try without an id." );
+   deprecate('temporary_id is deprecated and will be removed in e87.');
    if( defined $value) {
       $obj->{'temporary_id'} = $value;
     }
@@ -1574,7 +1609,7 @@ sub temporary_id {
 sub chr_name {
   my $self = shift;
 
-  deprecate( "Use project() to obtain other coordinate systems" );
+  deprecate( "chr_name is deprecated and will be removed in e87. Please use project() to obtain other coordinate systems" );
 
   my $gene_slice = $self->slice();
   if( $gene_slice->coord_system()->name eq "chromosome" ) {
@@ -1621,7 +1656,7 @@ sub fetch_coded_for_regulatory_factors {
 =cut
 
 sub type {
-  deprecate("Use biotype() instead");
+  deprecate("type is deprecated and will be removed in e87. Please use biotype() instead");
   biotype(@_);
 }
 
@@ -1633,7 +1668,7 @@ sub type {
 =cut
 
 sub confidence {
-  deprecate("Use status() instead");
+  deprecate("confidence is deprecated and will be removed in e87. Please use status() instead");
   status(@_);
 }
 

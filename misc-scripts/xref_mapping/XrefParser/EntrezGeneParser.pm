@@ -1,6 +1,7 @@
 =head1 LICENSE
 
 Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
+Copyright [2016] EMBL-European Bioinformatics Institute
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -64,21 +65,22 @@ sub run {
   my $gene_tax_id_index = -2;
   my $gene_synonyms_index = -2;
   foreach (my $i=0; $i<= $#arr; $i++){
-    #-1 as first one is "#Format:"q
-    if($arr[$i] eq "tax_id"){
-      $gene_tax_id_index = $i-1;
+    # Format change by Entrez, first header
+    # element is #tax_id
+    if($arr[$i] eq "#tax_id"){
+      $gene_tax_id_index = $i;
     }
     elsif($arr[$i] eq "GeneID"){
-      $gene_id_index = $i-1;
+      $gene_id_index = $i;
     }
     elsif($arr[$i] eq "Symbol"){
-      $gene_symbol_index = $i-1;
+      $gene_symbol_index = $i;
     }
     elsif($arr[$i] eq "description"){
-      $gene_desc_index = $i-1;
+      $gene_desc_index = $i;
     }
     elsif($arr[$i] eq "Synonyms"){
-      $gene_synonyms_index = $i-1;
+      $gene_synonyms_index = $i;
     }
   }
   if( $gene_id_index       == -2 ||

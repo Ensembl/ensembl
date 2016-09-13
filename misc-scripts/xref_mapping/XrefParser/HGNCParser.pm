@@ -1,6 +1,7 @@
 =head1 LICENSE
 
 Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
+Copyright [2016] EMBL-European Bioinformatics Institute
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -59,7 +60,9 @@ sub run {
     return 1;
   }
 
-  my $name_to_source_id = $self->get_hgnc_sources();
+  my $source_name = $self->get_source_name_for_source_id($source_id);
+
+  my $name_to_source_id = $self->get_sources($source_name);
 
   # Skip header
   $hugo_io->getline();
@@ -126,29 +129,10 @@ sub run {
 
     #
     # RefSeq
+    # Skip, these are not curated
     #
     $type = 'refseq_mapped';
     $id = $array[8];
-    $source_id = $name_to_source_id->{$type};
-    if ($id) {
-      if(defined $refseq{$id} ){
-        $seen = 1;
-	foreach my $xref_id (@{$refseq{$id}}){
-	  $name_count{$type}++;
-	  $self->add_dependent_xref({ master_xref_id => $xref_id,
-				      acc            => $acc,
-				      label          => $symbol,
-				      desc           => $name || '',
-				      source_id      => $source_id,
-				      species_id     => $species_id} );
-	}
-	$self->add_synonyms_for_hgnc( {source_id  => $source_id,
-				       name       => $acc,
-				       species_id => $species_id,
-				       dead       => $previous_symbols,
-				       alias      => $synonyms});
-      }
-    }
 
     $type = 'refseq_manual';
     $id = $array[6];
@@ -175,30 +159,9 @@ sub run {
 
     #
     # Swissprot
+    # Skip, Uniprot is protein-centric
     #
     $type = 'swissprot_manual';
-    $id = $array[10];
-    $source_id = $name_to_source_id->{$type};
-    if ($id) {             # Swissprot
-      if(defined $swissprot{$id} ){
-	$seen = 1;
-	foreach my $xref_id (@{$swissprot{$id}}){
-	  $name_count{$type}++;
-	    $self->add_dependent_xref({ master_xref_id => $xref_id,
-					acc            => $acc,
-					label          => $symbol,
-					desc           => $name || '',
-					source_id      => $source_id,
-					species_id     => $species_id} );
-	}
-	  $self->add_synonyms_for_hgnc( {source_id  => $source_id,
-					 name       => $acc,
-					 species_id => $species_id,
-					 dead       => $previous_symbols,
-					 alias      => $synonyms});
-      }
-    }
-
 
     #
     # EntrezGene
@@ -224,25 +187,11 @@ sub run {
       }
     }
 
+    # Skip entrezgene mapped
+    # these are NCBI provided mapping, not HGNC
+
     $type = 'entrezgene_mapped';
     $id = $array[7];
-    if(defined $id ){
-      if(defined $entrezgene{$id} ){
-        $seen = 1;
-        $self->add_dependent_xref({ master_xref_id => $entrezgene{$id},
-                                    acc            => $acc,
-                                    label          => $symbol,
-                                    desc           => $name || '',
-                                    source_id      => $source_id,
-                                    species_id     => $species_id} );
-        $name_count{$type}++;
-        $self->add_synonyms_for_hgnc( {source_id  => $source_id,
-                                       name       => $acc,
-                                       species_id => $species_id,
-                                       dead       => $previous_symbols,
-                                       alias      => $synonyms});
-      }
-    }
 
 
 
@@ -280,15 +229,16 @@ sub run {
 
 
 
-sub get_hgnc_sources {
+sub get_sources {
   my $self = shift;
+  my $source_name = shift;
   my %name_to_source_id;
 
   my @sources = ('entrezgene_manual', 'refseq_manual', 'entrezgene_mapped', 'refseq_mapped', 'ensembl_manual', 'swissprot_manual', 'desc_only');
 
 
   foreach my $key (@sources) {
-  my $source_id = $self->get_source_id_for_source_name('HGNC', $key);
+  my $source_id = $self->get_source_id_for_source_name($source_name, $key);
     if(!(defined $source_id)){
       die 'Could not get source id for HGNC and '. $key ."\n";
     }

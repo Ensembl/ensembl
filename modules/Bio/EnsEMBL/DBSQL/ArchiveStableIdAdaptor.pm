@@ -1,6 +1,7 @@
 =head1 LICENSE
 
 Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
+Copyright [2016] EMBL-European Bioinformatics Institute
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -131,7 +132,9 @@ use constant NUM_HIGH_SCORERS => 20;
   Arg [2]     : (optional) string $type
   Example     : none
   Description : Retrives an ArchiveStableId that is the latest incarnation of
-                given stable_id.
+                given stable_id. If the lookup fails, attempts to check for a
+                version id delimited by a period (.) and lookup again using the
+                version id.
   Returntype  : Bio::EnsEMBL::ArchiveStableId or undef if not in database
   Exceptions  : none
   Caller      : general
@@ -141,6 +144,39 @@ use constant NUM_HIGH_SCORERS => 20;
 =cut
 
 sub fetch_by_stable_id {
+  my $self = shift;
+  my $stable_id = shift;
+
+  my $arch_id = $self->_fetch_by_stable_id($stable_id, @_);
+
+  # If we didn't get anything back, desperately try to see if there's
+  # a version number in the stable_id
+  if(!defined($arch_id) && (my $vindex = rindex($stable_id, '.'))) {
+      $arch_id = $self->fetch_by_stable_id_version(substr($stable_id,0,$vindex),
+						   substr($stable_id,$vindex+1),
+						   @_);
+  }
+
+  return $arch_id;
+}
+
+=head2 _fetch_by_stable_id
+
+  Arg [1]     : string $stable_id
+  Arg [2]     : (optional) string $type
+  Example     : none
+  Description : Retrives an ArchiveStableId that is the latest incarnation of
+                given stable_id. Helper function to fetch_by_stable_id, should
+                not be directly called.
+  Returntype  : Bio::EnsEMBL::ArchiveStableId or undef if not in database
+  Exceptions  : none
+  Caller      : general
+  Status      : At Risk
+              : under development
+
+=cut
+
+sub _fetch_by_stable_id {
   my $self = shift;
   my $stable_id = shift;
   
@@ -1598,13 +1634,13 @@ sub _resolve_type {
     }
 
   # standard Ensembl IDs
-  } elsif ($stable_id =~ /.*G\d+$/) {
+  } elsif ($stable_id =~ /.*G\d+(\.\d+)?$/) {
     $id_type = "Gene";
-  } elsif ($stable_id =~ /.*T\d+$/) { 
+  } elsif ($stable_id =~ /.*T\d+(\.\d+)?$/) { 
     $id_type = "Transcript";
-  } elsif ($stable_id =~ /.*P\d+$/) { 
+  } elsif ($stable_id =~ /.*P\d+(\.\d+)?$/) { 
     $id_type = "Translation";
-  } elsif ($stable_id =~ /.*E\d+$/) { 
+  } elsif ($stable_id =~ /.*E\d+(\.\d+)?$/) { 
     $id_type = "Exon";
 
   # if guessing fails, look in db

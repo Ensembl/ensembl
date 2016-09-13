@@ -1,4 +1,5 @@
 # Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
+# Copyright [2016] EMBL-European Bioinformatics Institute
 # 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -18,6 +19,7 @@ use Bio::EnsEMBL::Test::TestUtils;
 use Bio::EnsEMBL::RepeatConsensus;
 
 use Test::More;
+use Test::Warnings;
 my $verbose = 0;
 
 my $consensus = 'actg';

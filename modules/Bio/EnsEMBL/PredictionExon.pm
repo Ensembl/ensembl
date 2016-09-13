@@ -1,6 +1,7 @@
 =head1 LICENSE
 
 Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
+Copyright [2016] EMBL-European Bioinformatics Institute
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -250,6 +251,7 @@ sub summary_as_hash {
   delete $summary_ref->{'constitutive'};
   delete $summary_ref->{'ensembl_phase'};
   delete $summary_ref->{'ensembl_end_phase'};
+  $summary_ref->{'Parent'} = $self->transcript->dbID() if $self->transcript();
   $summary_ref->{'source'} = $self->prediction_transcript->analysis->gff_source() || 'ensembl';
   return $summary_ref;
 }

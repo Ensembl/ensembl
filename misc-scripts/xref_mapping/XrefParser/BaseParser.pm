@@ -1,6 +1,7 @@
 =head1 LICENSE
 
 Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
+Copyright [2016] EMBL-European Bioinformatics Institute
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -1170,11 +1171,11 @@ ADX
   # If the dependency has not already been set ( is already in hash xref_dependent_mapped)
   # then add it
   ########################################################################################
-  if(!(defined $xref_dependent_mapped{"$master_xref|$dependent_id"})){
+  if(!(defined $xref_dependent_mapped{"$master_xref|$dependent_id"}) || $xref_dependent_mapped{"$master_xref|$dependent_id"} ne $linkage){
     $add_dependent_xref_sth->execute( $master_xref, $dependent_id, $linkage,
 				      $source_id )
       or croak("$master_xref\t$dependent_id\t$linkage\t$source_id");
-    $xref_dependent_mapped{"$master_xref|$dependent_id"} = 1;
+    $xref_dependent_mapped{"$master_xref|$dependent_id"} = $linkage;
   }
 
   return $dependent_id;

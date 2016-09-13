@@ -1,4 +1,5 @@
 # Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
+# Copyright [2016] EMBL-European Bioinformatics Institute
 # 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -236,6 +237,28 @@ my $ota = $dba->get_OperonTranscriptAdaptor();
 $operon_transcript = $ota->fetch_by_stable_id('T16152-16153-4840');
 debug( "OperonTranscript->fetch_by_stable_id()" );
 ok( $operon_transcript );
+
+$operon_transcript->stable_id_version('T16152-16153-4841.4');
+is($operon_transcript->stable_id, 'T16152-16153-4841', 'Stable id set with stable_id_version');
+is($operon_transcript->version, 4, 'Version set with stable_id_version');
+is($operon_transcript->stable_id_version, 'T16152-16153-4841.4', 'Stable id and version from stable_id_version');
+
+$operon_transcript->stable_id_version('T16152-16153-4842');
+is($operon_transcript->stable_id, 'T16152-16153-4842', 'Stable id set with stable_id_version');
+is($operon_transcript->version, undef, 'Version undef from stable_id_version');
+is($operon_transcript->stable_id_version, 'T16152-16153-4842', 'Stable id and no version from stable_id_version');
+
+$operon_transcript = $ota->fetch_by_stable_id('T16152-16153-4840.1');
+ok($operon_transcript->stable_id eq 'T16152-16153-4840', 'fetch_by_stable_id with version');
+
+$operon_transcript = $ota->fetch_by_stable_id('T16152-16153-4840.1a');
+ok(! defined($operon_transcript), 'fetch_by_stable_id with bad version');
+
+$operon_transcript = $ota->fetch_by_stable_id_version('T16152-16153-4840', 1);
+ok($operon_transcript->stable_id eq 'T16152-16153-4840', 'fetch_by_stable_id_version with version');
+
+$operon_transcript = $ota->fetch_by_stable_id_version('T16152-16153-4840', '1a');
+ok(! defined($operon_transcript), 'fetch_by_stable_id with bad version');
 
 #49
 @operon_transcripts = @{ $ota->fetch_all_versions_by_stable_id('T16152-16153-4840') };

@@ -1,4 +1,5 @@
 # Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
+# Copyright [2016] EMBL-European Bioinformatics Institute
 # 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -16,6 +17,7 @@ use strict;
 use warnings;
 
 use Test::More;
+use Test::Warnings;
 
 use Bio::EnsEMBL::Test::TestUtils;
 use IO::String;
@@ -23,6 +25,7 @@ use Bio::EnsEMBL::Test::MultiTestDB;
 use Bio::EnsEMBL::Slice;
 use Bio::EnsEMBL::ProjectionSegment;
 use Test::Exception;
+use Test::Differences;
 
 our $verbose = 0;
 
@@ -115,15 +118,10 @@ is($sub_slice->invert()->seq(), 'ATGCA', "Inverted sub slice seq is correct");
 
 # test that slice can be created without db, seq or coord system
 {
-  my $warnings = q{};
-  my $new_stderr = IO::String->new(\$warnings);
-  my $oldfh = select(STDERR);
-  local *STDERR = $new_stderr;
-  $test_slice = Bio::EnsEMBL::Slice->new('-seq_region_name' => 'test',
-                                         '-start'           => 1,
-                                         '-end'             => 3);
   my $check = qr/MSG: Slice without coordinate system/;
-  like($warnings, $check, 'Checking we are still warning about lack of coordinate system');
+  warns_like {
+  $test_slice = Bio::EnsEMBL::Slice->new('-seq_region_name' => 'test', '-start'           => 1, '-end'             => 3)
+  } qr/$check/, 'Checking we are still warning about lack of coordinate system';
 }
 
 ok($test_slice);
@@ -131,6 +129,16 @@ is($test_slice->seq(), 'NNN', "Test slice seq is only N's");
 
 is($test_slice->name(), '::test:1:3:1', "Slice name is $test_slice->name");
 
+# Test we can make a Slice with a seq_region_name of 0, odd but legal
+$slice = new Bio::EnsEMBL::Slice
+    (-seq_region_name   => 0,
+     -seq_region_length => $SEQ_REGION_LENGTH,
+     -start             => $START,
+     -end               => $END,
+     -strand            => $STRAND,
+     -coord_system      => $coord_system);
+
+is($slice->seq_region_name(), 0, 'Create Slice with seq_region_name of 0, odd but legal');
 
 $slice = new Bio::EnsEMBL::Slice
   (-seq_region_name   => $CHR,
@@ -144,7 +152,9 @@ $slice = new Bio::EnsEMBL::Slice
 is($slice->seq_region_name, $CHR);
 
 is($slice->start, $START, "Slice start is $START");
+is($slice->seq_region_start, $START, "Slice seq_region_start is $START");
 is($slice->end, $END, "Slice end is $END");
+is($slice->seq_region_end, $END, "Slice seq_region_end is $END");
 is($slice->strand, $STRAND, "Slice strand is $STRAND");
 is($slice->seq_region_length, $SEQ_REGION_LENGTH, "Slice length is $SEQ_REGION_LENGTH");
 
@@ -246,7 +256,7 @@ is(length($seq), $slice->length, "Sequence is correct length");
 $seq = reverse $seq;  #reverse complement seq
 $seq =~ tr/ACTG/TGAC/; 
 
-is($seq, $invert_seq, "revcom same as seq on inverted slice");
+eq_or_diff($seq, $invert_seq, "revcom same as seq on inverted slice");
 
 #
 # Test Slice::subseq
@@ -260,7 +270,7 @@ ok(length $sub_seq == (2*$SPAN) + 1 );
 $sub_seq = reverse $sub_seq;
 $sub_seq =~ tr/ACTG/TGAC/;
 
-ok($sub_seq eq $invert_sub_seq);
+eq_or_diff($sub_seq, $invert_sub_seq);
 
 #
 # Test Slice::get_all_PredictionTranscripts
@@ -321,7 +331,17 @@ ok(scalar @{$slice->get_all_Genes_by_source('ensembl')});
 #
 #  Test Slice::get_all_Transcripts
 #
-ok(scalar @{$slice->get_all_Transcripts});
+is(scalar @{$slice->get_all_Transcripts}, 23, "Found 23 transcripts");
+
+#
+#  Test Slice::get_all_Transcripts_by_type
+#
+is(scalar @{$slice->get_all_Transcripts_by_type('protein_coding')}, 23, "Found 23 protein_coding transcripts");
+
+#
+#  Test Slice::get_all_Transcripts_by_source
+#
+is(scalar @{$slice->get_all_Transcripts_by_source('ensembl')}, 20, "Found 20 ensembl transcripts");
 
 #
 # Test Slice:get_all_Exons
@@ -569,8 +589,8 @@ is($chr_one_slice->assembly_exception_type(), 'REF', 'Ensuring reference regions
 # Test slice attributes
 my $current_slice = $slice_adaptor->fetch_by_region('chromosome', $CHR, $START, $END);
 is($current_slice->is_chromosome, 1, "Slice is a chromosome");
-is($current_slice->has_karyotype, 0, "Slice has no karyotype attribute");
-is($current_slice->karyotype_rank, 0, "No karyotype rank could be found");
+is($current_slice->has_karyotype, 1, "Slice has a karyotype attribute");
+is($current_slice->karyotype_rank, 20, "Karyotype rank is 20 could be found");
 
 #
 # Test get_genome_component
@@ -602,6 +622,14 @@ $slice = $wheat_slice_adaptor->fetch_by_region('scaffold', 'IWGSC_CSS_6DS_scaff_
 isa_ok($slice, 'Bio::EnsEMBL::Slice');
 $genome_component = $slice->get_genome_component($slice);
 is($genome_component, 'D', "Genome component from slice");
+
+# Deal with rare user case of requesting a region with end = ''
+
+dies_ok(sub { $slice_adaptor->fetch_by_region('chromosome', 20, 1, '') },'Stringy null region end causes an exception');
+
+  
+
+
 
 done_testing();
 

@@ -1,4 +1,5 @@
 # Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
+# Copyright [2016] EMBL-European Bioinformatics Institute
 # 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -16,6 +17,7 @@ use strict;
 use warnings;
 
 use Test::More;
+use Test::Warnings;
 
 use Bio::EnsEMBL::Test::MultiTestDB;
 use Bio::EnsEMBL::DBSQL::SliceAdaptor;
@@ -75,26 +77,6 @@ ok($seq1 eq $seq2);
 
 
 #
-# 12-13 fetch_by_fpc_name
-#
-#my $fpc_name = 'NT_011387';
-#$slice = $slice_adaptor->fetch_by_supercontig_name($fpc_name);
-#ok($new_slice->chr_start);
-#ok($new_slice->chr_end);
-
-
-
-#
-# 14 - 15 fetch_by_clone_accession
-#
-#my $clone_acc = 'AL031658';
-#$slice = $slice_adaptor->fetch_by_clone_accession($clone_acc);
-#$new_slice = $slice_adaptor->fetch_by_clone_accession($clone_acc, $FLANKING);
-#ok($new_slice->chr_start == $slice->chr_start - $FLANKING);
-#ok($new_slice->chr_end   == $slice->chr_end   + $FLANKING);
-
-
-#
 # 16-17 fetch by transcript_stable_id
 #
 my $t_stable_id = 'ENST00000217315';
@@ -102,6 +84,17 @@ $slice = $slice_adaptor->fetch_by_transcript_stable_id($t_stable_id);
 my $new_slice = $slice_adaptor->fetch_by_transcript_stable_id($t_stable_id,
                                                            $FLANKING);
 
+ok($new_slice->start == $slice->start - $FLANKING);
+ok($new_slice->end   == $slice->end   + $FLANKING);
+
+
+#
+# fetch_by_exon_stable_id
+#
+
+my $e_stable_id = 'ENSE00001048794';
+$slice = $slice_adaptor->fetch_by_exon_stable_id($e_stable_id);
+$new_slice = $slice_adaptor->fetch_by_exon_stable_id($e_stable_id, $FLANKING);
 ok($new_slice->start == $slice->start - $FLANKING);
 ok($new_slice->end   == $slice->end   + $FLANKING);
 
@@ -319,8 +312,10 @@ ok($updated_slice->seq_region_length() == $chr_len);
 ok($updated_slice->seq_region_name eq $name);
 
 
+
 #
 # Store an assembly between the slices
+# Retrieve and remove said assembly
 #
 my $asm_start = 9999;
 my $asm_slice = $chr_slice->sub_Slice( $asm_start, $asm_start + $ctg_len - 1 );
@@ -328,6 +323,14 @@ my $str = $slice_adaptor->store_assembly( $asm_slice, $ctg_slice );
 
 ok( $str eq "chromosome:NCBI33:testregion2:9999:10048:1<>".
             "contig::testregion:1:50:1" );
+
+my $new_mapper = $slice_adaptor->fetch_assembly($asm_slice, $ctg_slice);
+is($new_mapper->from->name, 'chromosome:NCBI33:testregion2:9999:10048:1', 'Mapping from chromosome');
+is($new_mapper->to->name, 'contig::testregion:1:50:1', 'Mapping to contig');
+
+$slice_adaptor->remove_assembly($asm_slice, $ctg_slice);
+my $empty_mapper = $slice_adaptor->fetch_assembly($asm_slice, $ctg_slice);
+is($empty_mapper, undef, 'Mapper has been removed');
 
 my $ctg_map = $chr_slice->project( $ctg_cs->name, $ctg_cs->version );
 # Test currently fails as assembly cached somewhere.
@@ -550,6 +553,8 @@ ok($slice->seq_region_name =~ /$clone_name\.\d+/);
   is($syn_slice->seq_region_name(), '20', 'Ensuring slice is Chr20 as expected');
   my $chr_syn_slice = $slice_adaptor->fetch_by_region('chromosome', 'anoth_20');
   is($chr_syn_slice->seq_region_name(), '20', 'Ensuring slice is Chr20 as expected');
+  $chr_syn_slice = $slice_adaptor->fetch_by_region('toplevel', 'chrx');
+  is($chr_syn_slice->seq_region_name(), 'X', 'Ensuring slice is ChrX as expected');
 }
 
 #{
@@ -613,6 +618,9 @@ test_toplevel_location('1: 100', 'chromosome', '1', 100, 246874334);
 test_toplevel_location('1:100..2000000000', 'chromosome', '1', 100, 246874334);
 test_toplevel_location('1:100..2E9', 'chromosome', '1', 100, 246874334);
 
+# Try with optional g. addition
+test_toplevel_location('1:g.1_1000', 'chromosome', '1', 1, 1000);
+
 # Try chr
 my $ucsc = 1;
 test_toplevel_location('chr1: 1-1,000', 'chromosome', '1', 1, 1000, 1, $ucsc);
@@ -659,6 +667,26 @@ ok(!defined $slice_adaptor->fetch_by_toplevel_location('1:-100--50', 1), 'Checki
   ok(!defined $end, 'End is undefined');
   ok(!defined $strand, 'Strand is undefined');
 }
+
+
+## Test patch data
+
+my $patch_db    = $multi->get_DBAdaptor('patch');
+$slice_adaptor = $patch_db->get_SliceAdaptor();
+
+my $unique_slices = $slice_adaptor->fetch_by_region_unique("chromosome", "HG1304_PATCH");
+my $unique_slice = $unique_slices->[0];
+my $initial_slice = $slice_adaptor->fetch_by_region("chromosome", "HG1304_PATCH");
+my $exceptions = $initial_slice->get_all_AssemblyExceptionFeatures();
+is($unique_slice->start, $exceptions->[0]->start, "Start of patch");
+is($unique_slice->end, $exceptions->[0]->end, "End of patch");
+
+
+## Test karyotype data
+
+my $band_slice = $slice_adaptor->fetch_by_chr_band('6', 'p21.33');
+is($band_slice->seq_region_name, '6', 'Fetched chromosome 6');
+
 
 ############# METHODS BELOW HERE 
 

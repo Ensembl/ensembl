@@ -1,4 +1,5 @@
 # Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
+# Copyright [2016] EMBL-European Bioinformatics Institute
 # 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -98,5 +99,11 @@ my @pfs = grep{$_->hdescription() eq $hdes} @$pfs;
 ok(scalar @pfs > 0);
 
 $multi->restore('core', 'protein_feature');
+
+$pfs = $pfa->fetch_all();
+is(@$pfs, 156, "Retrieved all protein features");
+
+$pfs = $pfa->fetch_all_by_logic_name('pfscan');
+is(@$pfs, 156, "Retrieved pfscan features");
 
 done_testing();

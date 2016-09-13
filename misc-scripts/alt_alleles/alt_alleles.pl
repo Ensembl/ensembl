@@ -1,5 +1,6 @@
 #!/usr/bin/env perl
 # Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
+# Copyright [2016] EMBL-European Bioinformatics Institute
 # 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -61,19 +62,21 @@ if(!defined($cdbname)){
 #
 
 my $core_dba = Bio::EnsEMBL::DBSQL::DBAdaptor->new(
-  -host => $chost||'ens-staging1',
+  -host => $chost||'ens-staging3',
   -user => $cuser||'ensadmin',
   -pass => $cpass,
   -group => 'core',
-  -dbname => $cdbname
+  -dbname => $cdbname,
+  -port => $cport
 );
 
 my $vega_dba = Bio::EnsEMBL::DBSQL::DBAdaptor->new(
-  -host => $vhost||'ens-staging1',
+  -host => $vhost||'ens-staging3',
   -user => $vuser||'ensadmin',
   -pass => $vpass,
   -group => 'vega',
-  -dbname => $vdbname
+  -dbname => $vdbname,
+  -port => $vport
 );
 
 

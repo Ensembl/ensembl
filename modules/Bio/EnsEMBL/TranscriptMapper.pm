@@ -1,6 +1,7 @@
 =head1 LICENSE
 
 Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
+Copyright [2016] EMBL-European Bioinformatics Institute
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -112,7 +113,7 @@ sub new {
   }
 
   # Create a cdna <-> genomic mapper and load it with exon coords
-  my $mapper = _load_mapper($transcript,$start_phase);
+  my $mapper = _load_mapper($transcript);
 
   my $self = bless({'exon_coord_mapper' => $mapper,
                     'start_phase'       => $start_phase,
@@ -137,7 +138,6 @@ sub new {
 
 sub _load_mapper {
   my $transcript = shift;
-  my $start_phase = shift;
 
   my $mapper = Bio::EnsEMBL::Mapper->new( 'cdna', 'genomic');
 
@@ -157,8 +157,8 @@ sub _load_mapper {
 
 
   foreach my $ex (@{$transcript->get_all_Exons}) {
-    my $gen_start = $ex->start();
-    my $gen_end   = $ex->end();
+    my $gen_start = $ex->seq_region_start();
+    my $gen_end   = $ex->seq_region_end();
 
     $cdna_start = $cdna_end + 1;
     $cdna_end   = $cdna_start + $ex->length() - 1;

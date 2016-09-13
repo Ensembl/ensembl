@@ -1,4 +1,5 @@
 # Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
+# Copyright [2016] EMBL-European Bioinformatics Institute
 # 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -17,6 +18,8 @@ use warnings;
 
 use Config;
 use Test::More;
+use Test::Warnings;
+use Test::Exception;
 use File::Temp qw/tempfile/;
 use Bio::EnsEMBL::Registry;
 use Bio::EnsEMBL::Test::MultiTestDB;
@@ -120,8 +123,18 @@ TMPL
 
 # Test get_all_species
 
-my @species = $reg->get_all_species();
+my @species = @{ $reg->get_all_species() };
 ok(scalar(@species) == 1, "get_all_species");
 ok(scalar(@{ $reg->get_all_species('cahoona') }) == 0, "get_all_species with bogus data.");
+
+ok(scalar(@{$reg->get_all_DBAdaptors(-SPECIES => $species[0])}), "get_all_DBAdaptors() on a valid species");
+warns_like(
+    sub { is(scalar(@{$reg->get_all_DBAdaptors(-SPECIES => 'cahoona')}), 0, "get_all_DBAdaptors() on a non-existing species"); },
+    qr/cahoona is not a valid species name/,
+    q{Warns that the species doesn't exist},
+);
+
+dies_ok { $reg->load_all('i really hope there is no file named this way', undef, undef, undef, 1) } 'Pointing to a non-existing file should throw an error (if the option is switched on)';
+is($reg->load_all('i really hope there is no file named this way'), 0, 'Pointing to a non-existing file does not throw an error if the option is switched off');
 
 done_testing();

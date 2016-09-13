@@ -2,6 +2,7 @@
 =head1 LICENSE
 
 Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
+Copyright [2016] EMBL-European Bioinformatics Institute
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -113,15 +114,30 @@ sub print_Gene {
     $biotype_display = $vegadb ? $gene->status . '_' . $gene->biotype : $gene->biotype;
   }
 
-  print $fh sprintf(qq{%s\t%s\tgene\t%d\t%d\t.\t%s\t.\t}, 
-        $idstr, $gene->source, 
-        ($gene->start()+$sliceoffset), ($gene->end()+$sliceoffset),
-        ($strand_conversion{$gene->strand}));
-  $self->_print_attribs($gene, $biotype_display, $gene, $biotype_display, 0, 'gene');
-  print $fh "\n";
+  # Skip all trans-splicing transcripts, they can't be dumped in GTF
+  # format.
+  my @transcripts = @{$gene->get_all_Transcripts()};
+  my $single_trans_gene = scalar(@transcripts);
+  my %trans_splicing_ids;
+  foreach my $t (@transcripts) {
+    if (map { $_->value } @{ $t->get_all_Attributes('trans_spliced') }) {
+      $trans_splicing_ids{$t->stable_id()} = 1;
+    }
+  }
+  if ((values (%trans_splicing_ids)) && $single_trans_gene == 1) {
+    return;
+  } else {
+    print $fh sprintf(qq{%s\t%s\tgene\t%d\t%d\t.\t%s\t.\t}, 
+      $idstr, $gene->source, 
+      ($gene->start()+$sliceoffset), ($gene->end()+$sliceoffset),
+      ($strand_conversion{$gene->strand}));
+    $self->_print_attribs($gene, $biotype_display, $gene, $biotype_display, 0, 'gene');
+    print $fh "\n";
+  }
 
   # Now print all transcripts
-  foreach my $t (@{$gene->get_all_Transcripts()}) {
+  foreach my $t (@transcripts) {
+    next if (exists ($trans_splicing_ids{$t->stable_id()}));
     $self->print_feature($t, $gene);
   }
   return;
@@ -303,18 +319,18 @@ sub print_feature {
 
       my $exon_start = $cdsexon->start;
       my $exon_end   = $cdsexon->end;
-      if ( $translation &&
-           $hasend &&
-           ( $exon->end >= $endcodons[0]->start &&
-             $exon->start <= $endcodons[0]->end ) )
-      {
-        # Only the first stop-codon feature is used to adjust the end of the exon
-        # This may not be sufficient all the time
-        if ( $cdsexon->strand == 1 ) {
-          $exon_end = $cdsexon->end - $endcodons[0]->length;
-        }
-        else {
-          $exon_start = $cdsexon->start + $endcodons[0]->length;
+      foreach my $endcodon (@endcodons) {
+        if ( $translation &&
+             $hasend &&
+             ( $exon->end >= $endcodon->start &&
+               $exon->start <= $endcodon->end ) )
+        {
+          if ( $cdsexon->strand == 1 ) {
+            $exon_end = $cdsexon->end - $endcodon->length;
+          }
+          else {
+            $exon_start = $cdsexon->start + $endcodon->length;
+          }
         }
       }
 
@@ -346,8 +362,8 @@ sub print_feature {
       foreach my $startc (@startcodons) {
         # here we should check the start codon covers 3 bases
         print $fh $idstr . "\t" . $transcript->source . "\t" .
-          'start_codon' . "\t" . ( $startc->start + $sliceoffset ) .
-          "\t" . ( $startc->end + $sliceoffset ) .
+          'start_codon' . "\t" . ( $startc->start ) .
+          "\t" . ( $startc->end ) .
           "\t" . "." . "\t" . $strand . "\t" . $startc->phase . "\t";
 
         $self->_print_attribs( $gene, $biotype_display, $transcript, $transcript_biotype,
@@ -362,8 +378,8 @@ sub print_feature {
         foreach my $endc (@endcodons) {
           # here we should check the stop codon covers 3 bases
           print $fh $idstr . "\t" . $transcript->source . "\t" .
-            'stop_codon' . "\t" . ( $endc->start + $sliceoffset ) .
-            "\t" . ( $endc->end + $sliceoffset ) .
+            'stop_codon' . "\t" . ( $endc->start ) .
+            "\t" . ( $endc->end ) .
             "\t" . "." . "\t" . $strand . "\t" . $endc->phase . "\t";
 
           $self->_print_attribs( $gene, $biotype_display, $transcript, $transcript_biotype,
@@ -389,8 +405,8 @@ sub print_feature {
   push @$utrs, @{$transcript->get_all_three_prime_UTRs()};
   foreach my $utr (@{$utrs}) {
     my $strand = $strand_conversion{$utr->strand()};
-    print $fh sprintf(qq{%s\t%s\tUTR\t%d\t%d\t.\t%s\t.\t}, 
-        $idstr, $transcript->source, ($utr->start()+$sliceoffset), ($utr->end+$sliceoffset), $strand);
+    print $fh sprintf(qq{%s\t%s\t%s\t%d\t%d\t.\t%s\t.\t}, 
+        $idstr, $transcript->source, $utr->type, ($utr->seq_region_start()), ($utr->seq_region_end()), $strand);
     $self->_print_attribs($gene, $biotype_display, $transcript, $transcript_biotype, 0, 'UTR', undef, undef, $has_selenocysteine);
     print $fh "\n";
   }

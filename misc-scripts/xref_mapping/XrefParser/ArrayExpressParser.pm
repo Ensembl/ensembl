@@ -1,6 +1,7 @@
 =head1 LICENSE
 
 Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
+Copyright [2016] EMBL-European Bioinformatics Institute
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -90,6 +91,7 @@ sub run_script {
   if ($host) {
     my $db = Bio::EnsEMBL::DBSQL::DBAdaptor->new(
       '-host'     => $host,
+      '-port'     => $port,
       '-user'     => $user,
       '-pass'     => $pass,
       '-dbname'   => $dbname,
@@ -101,12 +103,8 @@ sub run_script {
     print "Loading the Registry\n" if $verbose;
     $registry->load_registry_from_multiple_dbs( 
       {
-        '-host'    => 'ens-staging1',
+        '-host'    => 'ens-staging3',
         '-user'    => 'ensro',
-      },
-      {
-        '-host'     => 'ens-staging2',
-        '-user'     => 'ensro',
       }
         );
     $gene_adaptor = $registry->get_adaptor($species_name, 'core', 'Gene');

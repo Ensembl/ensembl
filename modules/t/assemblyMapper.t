@@ -1,4 +1,5 @@
 # Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
+# Copyright [2016] EMBL-European Bioinformatics Institute
 # 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,6 +16,7 @@
 use strict;
 
 use Test::More;
+use Test::Warnings qw(warning);
 
 use Bio::EnsEMBL::Test::MultiTestDB;
 use Bio::EnsEMBL::Test::TestUtils;
@@ -43,8 +45,14 @@ my $chr_cs = $csa->fetch_by_name('chromosome');
 my $cln_cs = $csa->fetch_by_name('clone');
 my $chnk_cs = $csa->fetch_by_name('chunk');
 
+my $sa = $db->get_SliceAdaptor();
+my $slice = $sa->fetch_by_region('chromosome', '1');
+
 my $asm_mapper =  $asma->fetch_by_CoordSystems($chnk_cs, $chr_cs);
 ok( $asm_mapper && $asm_mapper->isa( "Bio::EnsEMBL::ChainedAssemblyMapper" ));
+
+# Test full caching
+$asm_mapper->register_all();
 
 #
 # Test if the multi mapping works (meta_key=assembly.mapping entry with #)
@@ -56,6 +64,14 @@ ok( $coords[0]->id() == 965905);
 ok( $coords[0]->start() == 10 );
 ok( $coords[0]->end() == 59 );
 ok( $coords[0]->strand() == 1 );
+
+# Test seq_ids_to_regions with empty cache
+$asma->delete_cache();
+my @seq_ids = (965905);
+$asma->seq_ids_to_regions(\@seq_ids);
+
+@coords = $asm_mapper->map( '1', 1, 50, 1, $chr_cs, $slice );
+is(scalar(@coords), 5, "Chained mapping with target slice");
 
 @coords = $asm_mapper->map( "multimap_testregion", 100, 800, 1, $chnk_cs );
 
@@ -77,7 +93,14 @@ ok( $coords[4]->end() == 100 );
 ok( $coords[4]->strand() == -1 );
 
 
+# Test mapping with slice and identical coord system
+# will warn about using an implicit mapping
+warning { $asm_mapper = $asma->fetch_by_CoordSystems($chr_cs, $chr_cs); };
+@coords =  $asm_mapper->map( '1', 1, 50, 1, $chr_cs, 0, $slice );
+is( scalar(@coords), 1, "Found 1 mapping when specifying a slice");
+
 $asm_mapper = $asma->fetch_by_CoordSystems($ctg_cs, $chr_cs);
+$asm_mapper->register_all();
 
 ok($asm_mapper && $asm_mapper->isa('Bio::EnsEMBL::AssemblyMapper'));
 

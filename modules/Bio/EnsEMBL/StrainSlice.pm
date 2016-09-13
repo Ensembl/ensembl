@@ -1,6 +1,7 @@
 =head1 LICENSE
 
 Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
+Copyright [2016] EMBL-European Bioinformatics Institute
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -103,6 +104,7 @@ use Bio::EnsEMBL::Utils::Exception qw(throw deprecate warning);
 
 sub new{
   my $caller = shift;
+  deprecate("new is deprecated and will be removed in e88. Please use Bio::EnsEMBL::Variation::StrainSlice::new instead");
   my $class = ref($caller) || $caller;
 
   my ($strain_name) = rearrange(['STRAIN_NAME'],@_);
@@ -173,6 +175,7 @@ sub new{
 
 sub _filter_af_by_coverage{
   my $self = shift;
+  deprecate("_filter_af_by_coverage is deprecated and will be removed in e88. Please use Bio::EnsEMBL::Variation::StrainSlice::_filter_af_by_coverage instead");
   my $allele_features = shift;
   
   my $variation_db = $self->adaptor->db->get_db_adaptor('variation');
@@ -220,6 +223,7 @@ sub _filter_af_by_coverage{
 
 sub strain_name{
    my $self = shift;
+  deprecate("strain_name is deprecated and will be removed in e88. Please use Bio::EnsEMBL::Variation::StrainSlice::strain_name instead");
    if (@_){
        $self->{'strain_name'} = shift @_;
    }
@@ -238,6 +242,7 @@ sub strain_name{
 =cut
 
 sub sample {
+  deprecate("sample is deprecated and will be removed in e88. Please use Bio::EnsEMBL::Variation::StrainSlice::sample instead");
   return $_[0]->{_strain};
 }
 
@@ -255,7 +260,7 @@ sub sample {
 
 sub display_Slice_name{
     my $self = shift;
-
+  deprecate("display_Slice_name is deprecated and will be removed in e88. Please use Bio::EnsEMBL::Variation::StrainSlice::display_Slice_name instead");
     return $self->strain_name;
 }
 
@@ -274,6 +279,7 @@ sub display_Slice_name{
 
 sub seq {
   my $self = shift;
+  deprecate("seq is deprecated and will be removed in e88. Please use Bio::EnsEMBL::Variation::StrainSlice::seq instead");
   my $with_coverage = shift;
 
   $with_coverage ||= 0;
@@ -327,7 +333,7 @@ sub seq {
 
 sub expanded_length {
 	my $self = shift;
-	
+  deprecate("expanded_length is deprecated and will be removed in e88. Please use Bio::EnsEMBL::Variation::StrainSlice::expanded_length instead");
 	my $length = $self->SUPER::length();
 	
 	foreach my $af(@{$self->{'alleleFeatures'}}) {
@@ -341,6 +347,7 @@ sub expanded_length {
 
 sub _add_coverage_information{
   my $self = shift;
+  deprecate("_add_coverage_information is deprecated and will be removed in e88. Please use Bio::EnsEMBL::Variation::StrainSlice::_add_coverage_information instead");
   my $reference_sequence = shift;
   
   my $variation_db = $self->adaptor->db->get_db_adaptor('variation');
@@ -413,6 +420,7 @@ sub _add_coverage_information{
 
 sub get_AlleleFeature{
     my $self = shift;
+  deprecate("get_all_AlleleFeature is deprecated and will be removed in e88. Please use Bio::EnsEMBL::Variation::StrainSlice::get_all_AlleleFeature instead");
     my $vf = shift;
     
     my $af;
@@ -436,6 +444,7 @@ sub get_AlleleFeature{
 
 sub get_all_AlleleFeatures_Slice{
   my $self = shift;
+  deprecate("get_all_AlleleFeatures_Slice is deprecated and will be removed in e88. Please use Bio::EnsEMBL::Variation::StrainSlice::get_all_AlleleFeatures_Slice instead");
   my $with_coverage = shift;
 
   my $variation_db = $self->adaptor->db->get_db_adaptor('variation');
@@ -470,6 +479,8 @@ sub get_all_AlleleFeatures_Slice{
 
 sub get_all_differences_StrainSlice{
     my $self = shift;
+  deprecate("get_all_differences_StrainSlice is deprecated and will be removed in e88. Please use Bio::EnsEMBL::Variation::StrainSlice::get_all_differences_StrainSlice instead");
+
     my $strainSlice = shift;
 
     if (!ref($strainSlice) || !$strainSlice->isa('Bio::EnsEMBL::StrainSlice')){
@@ -553,6 +564,7 @@ sub get_all_differences_StrainSlice{
 #the converted VariationFeatures
 sub _convert_difference{
     my $self = shift;
+  deprecate("_convert_difference is deprecated and will be removed in e88. Please use Bio::EnsEMBL::Variation::StrainSlice::_convert_difference instead");
     my $difference = shift;
     my %new_vf = %$difference; #make a copy of the variationFeature
     #and change the allele with the one from the reference Slice
@@ -583,6 +595,7 @@ sub _convert_difference{
 
 sub sub_Slice {
   my ( $self, $start, $end, $strand ) = @_;
+  deprecate("sub_Slice is deprecated and will be removed in e88. Please use Bio::EnsEMBL::Variation::StrainSlice::sub_Slice instead");
   my $mapper = $self->mapper();
   #finally map from the Slice to the Strain
   my @results = $mapper->map_coordinates('StrainSlice',$start,$end,$strand,'StrainSlice');
@@ -646,6 +659,7 @@ sub sub_Slice {
 
 sub ref_subseq{
   my $self = shift;
+  deprecate("ref_subseq is deprecated and will be removed in e88. Please use Bio::EnsEMBL::Variation::StrainSlice::ref_subseq instead");
   my $start = shift;
   my $end = shift;
   my $strand = shift;
@@ -693,6 +707,7 @@ sub ref_subseq{
 
 sub subseq {
   my ( $self, $start, $end, $strand ) = @_;
+  deprecate("subseq is deprecated and will be removed in e88. Please use Bio::EnsEMBL::Variation::StrainSlice::subseq instead");
 
   if ( $end+1 < $start ) {
     throw("End coord + 1 is less than start coord");
@@ -736,7 +751,8 @@ sub subseq {
 
 sub mapper{
     my $self = shift;
-   
+  deprecate("mapper is deprecated and will be removed in e88. Please use Bio::EnsEMBL::Variation::StrainSlice::mapper instead");
+  
     if (@_) {
 	delete $self->{'mapper'};
     }
@@ -791,8 +807,7 @@ sub mapper{
 
 sub get_all_differences_Slice{
     my $self = shift;
-    
-    deprecate('Use get_all_differences_Slice instead');
+  deprecate('get_all_differences_Slice is deprecated and will be removed in e87. Please use get_all_AlleleFeatures_Slice instead');
     return $self->get_all_AlleleFeatures_Slice(@_);
 }
 
@@ -808,6 +823,7 @@ sub get_all_differences_Slice{
 
 sub get_all_VariationFeatures {
   my $self = shift;
+  deprecate("get_all_VariationFeatures is deprecated and will be removed in e88. Please use Bio::EnsEMBL::Variation::StrainSlice::get_all_VariationFeatures instead");
   my $with_coverage = shift;
   $with_coverage ||= 0;
   return $self->get_all_AlleleFeatures_Slice($with_coverage);
@@ -831,6 +847,7 @@ sub get_all_VariationFeatures {
 
 sub get_original_seq_region_position {
     my $self = shift;
+  deprecate("get_original_seq_region_position is deprecated and will be removed in e88. Please use Bio::EnsEMBL::Variation::StrainSlice::get_original_seq_region_position instead");
     my $position = shift;
     #coordinates in the AlignSlice and Slice are the same, so far will return the same Slice
     #and coordinate
@@ -852,7 +869,7 @@ sub get_original_seq_region_position {
 
 sub remove_indels {
 	my $self = shift;
-	
+  deprecate("remove_indels is deprecated and will be removed in e88. Please use Bio::EnsEMBL::Variation::StrainSlice::remove_indels instead");
 	my @new_afs = grep { $_->variation->var_class ne 'in-del' } @{$self->{'alleleFeatures'}};
 	
 	$self->{'alleleFeatures'} = \@new_afs;

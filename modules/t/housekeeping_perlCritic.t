@@ -1,4 +1,5 @@
 # Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
+# Copyright [2016] EMBL-European Bioinformatics Institute
 # 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -19,6 +20,7 @@ use Cwd;
 use File::Spec;
 use File::Basename qw/dirname/;
 use Test::More;
+use Test::Warnings;
 
 if ( not $ENV{TEST_AUTHOR} ) {
   my $msg = 'Author test. Set $ENV{TEST_AUTHOR} to a true value to run.';

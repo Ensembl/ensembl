@@ -1,6 +1,6 @@
 -- 
 -- Created by SQL::Translator::Producer::SQLite
--- Created on Tue Jul 21 13:32:32 2015
+-- Created on Tue May 10 12:29:49 2016
 -- 
 
 BEGIN TRANSACTION;
@@ -51,7 +51,7 @@ CREATE TABLE analysis (
   gff_feature varchar(40)
 );
 
-CREATE UNIQUE INDEX logic_name ON analysis (logic_name);
+CREATE UNIQUE INDEX logic_name_idx ON analysis (logic_name);
 
 --
 -- Table: analysis_description
@@ -63,6 +63,8 @@ CREATE TABLE analysis_description (
   displayable tinyint NOT NULL DEFAULT 1,
   web_data text
 );
+
+CREATE UNIQUE INDEX analysis_idx ON analysis_description (analysis_id);
 
 --
 -- Table: assembly
@@ -127,7 +129,7 @@ CREATE TABLE attrib_type (
   description text
 );
 
-CREATE UNIQUE INDEX c ON attrib_type (code);
+CREATE UNIQUE INDEX code_idx ON attrib_type (code);
 
 --
 -- Table: coord_system
@@ -257,6 +259,17 @@ CREATE TABLE dna_align_feature (
 );
 
 --
+-- Table: dna_align_feature_attrib
+--
+CREATE TABLE dna_align_feature_attrib (
+  dna_align_feature_id integer NOT NULL,
+  attrib_type_id smallint NOT NULL,
+  value text NOT NULL
+);
+
+CREATE UNIQUE INDEX dna_align_feature_attribx ON dna_align_feature_attrib (dna_align_feature_id, attrib_type_id, value);
+
+--
 -- Table: exon
 --
 CREATE TABLE exon (
@@ -270,7 +283,7 @@ CREATE TABLE exon (
   is_current tinyint NOT NULL DEFAULT 1,
   is_constitutive tinyint NOT NULL DEFAULT 0,
   stable_id varchar(128),
-  version smallint NOT NULL DEFAULT 1,
+  version smallint,
   created_date datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
   modified_date datetime NOT NULL DEFAULT '0000-00-00 00:00:00'
 );
@@ -301,6 +314,8 @@ CREATE TABLE external_db (
   description text
 );
 
+CREATE UNIQUE INDEX db_name_db_release_idx ON external_db (db_name, db_release);
+
 --
 -- Table: external_synonym
 --
@@ -328,7 +343,7 @@ CREATE TABLE gene (
   is_current tinyint NOT NULL DEFAULT 1,
   canonical_transcript_id integer NOT NULL,
   stable_id varchar(128),
-  version smallint NOT NULL DEFAULT 1,
+  version smallint,
   created_date datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
   modified_date datetime NOT NULL DEFAULT '0000-00-00 00:00:00'
 );
@@ -396,7 +411,7 @@ CREATE TABLE interpro (
   id varchar(40) NOT NULL DEFAULT ''
 );
 
-CREATE UNIQUE INDEX interpro_ac ON interpro (interpro_ac, id);
+CREATE UNIQUE INDEX accession_idx ON interpro (interpro_ac, id);
 
 --
 -- Table: intron_supporting_evidence
@@ -532,7 +547,7 @@ CREATE TABLE meta_coord (
   max_length integer
 );
 
-CREATE UNIQUE INDEX table_name ON meta_coord (table_name, coord_system_id);
+CREATE UNIQUE INDEX cs_table_name_idx ON meta_coord (coord_system_id, table_name);
 
 --
 -- Table: misc_attrib
@@ -576,13 +591,13 @@ CREATE TABLE misc_set (
   max_length integer NOT NULL DEFAULT 0
 );
 
-CREATE UNIQUE INDEX c02 ON misc_set (code);
+CREATE UNIQUE INDEX code_idx02 ON misc_set (code);
 
 --
 -- Table: object_xref
 --
 CREATE TABLE object_xref (
-  object_xref_id integer NOT NULL,
+  object_xref_id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
   ensembl_id integer NOT NULL DEFAULT 0,
   ensembl_object_type enum NOT NULL DEFAULT 'RawContig',
   xref_id integer NOT NULL,
@@ -590,7 +605,7 @@ CREATE TABLE object_xref (
   analysis_id smallint NOT NULL
 );
 
-CREATE UNIQUE INDEX ensembl_object_type ON object_xref (ensembl_object_type, ensembl_id, xref_id);
+CREATE UNIQUE INDEX xref_idx ON object_xref (xref_id, ensembl_object_type, ensembl_id, analysis_id);
 
 --
 -- Table: ontology_xref
@@ -601,7 +616,7 @@ CREATE TABLE ontology_xref (
   source_xref_id integer
 );
 
-CREATE UNIQUE INDEX object_xref_id_2 ON ontology_xref (object_xref_id, source_xref_id, linkage_type);
+CREATE UNIQUE INDEX object_source_type_idx ON ontology_xref (object_xref_id, source_xref_id, linkage_type);
 
 --
 -- Table: operon
@@ -615,7 +630,7 @@ CREATE TABLE operon (
   display_label varchar(255),
   analysis_id smallint NOT NULL,
   stable_id varchar(128),
-  version smallint NOT NULL DEFAULT 1,
+  version smallint,
   created_date datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
   modified_date datetime NOT NULL DEFAULT '0000-00-00 00:00:00'
 );
@@ -633,7 +648,7 @@ CREATE TABLE operon_transcript (
   display_label varchar(255),
   analysis_id smallint NOT NULL,
   stable_id varchar(128),
-  version smallint NOT NULL DEFAULT 1,
+  version smallint,
   created_date datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
   modified_date datetime NOT NULL DEFAULT '0000-00-00 00:00:00'
 );
@@ -724,6 +739,8 @@ CREATE TABLE protein_feature (
   hit_description text
 );
 
+CREATE UNIQUE INDEX aln_idx ON protein_feature (translation_id, hit_name, seq_start, seq_end, hit_start, hit_end);
+
 --
 -- Table: repeat_consensus
 --
@@ -761,7 +778,7 @@ CREATE TABLE seq_region (
   length integer NOT NULL DEFAULT 0
 );
 
-CREATE UNIQUE INDEX coord_system_id ON seq_region (coord_system_id, name);
+CREATE UNIQUE INDEX name_cs_idx ON seq_region (name, coord_system_id);
 
 --
 -- Table: seq_region_attrib
@@ -789,7 +806,7 @@ CREATE TABLE seq_region_mapping (
 CREATE TABLE seq_region_synonym (
   seq_region_synonym_id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
   seq_region_id integer NOT NULL,
-  synonym varchar(50) NOT NULL,
+  synonym varchar(250) NOT NULL,
   external_db_id smallint
 );
 
@@ -854,7 +871,7 @@ CREATE TABLE transcript (
   is_current tinyint NOT NULL DEFAULT 1,
   canonical_translation_id integer,
   stable_id varchar(128),
-  version smallint NOT NULL DEFAULT 1,
+  version smallint,
   created_date datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
   modified_date datetime NOT NULL DEFAULT '0000-00-00 00:00:00'
 );
@@ -905,7 +922,7 @@ CREATE TABLE translation (
   seq_end integer NOT NULL,
   end_exon_id integer NOT NULL,
   stable_id varchar(128),
-  version smallint NOT NULL DEFAULT 1,
+  version smallint,
   created_date datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
   modified_date datetime NOT NULL DEFAULT '0000-00-00 00:00:00'
 );
@@ -938,6 +955,8 @@ CREATE TABLE unmapped_object (
   parent varchar(255)
 );
 
+CREATE UNIQUE INDEX unique_unmapped_obj_idx ON unmapped_object (ensembl_id, ensembl_object_type, identifier, unmapped_reason_id, parent, external_db_id);
+
 --
 -- Table: unmapped_reason
 --
@@ -955,7 +974,7 @@ CREATE TABLE xref (
   external_db_id integer NOT NULL,
   dbprimary_acc varchar(512) NOT NULL,
   display_label varchar(512) NOT NULL,
-  version varchar(10) NOT NULL DEFAULT '0',
+  version varchar(10),
   description text,
   info_type enum NOT NULL DEFAULT 'NONE',
   info_text varchar(255) NOT NULL DEFAULT ''

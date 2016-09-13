@@ -1,6 +1,7 @@
 =head1 LICENSE
 
 Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
+Copyright [2016] EMBL-European Bioinformatics Institute
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -108,13 +109,14 @@ sub new {
 
   my $this = $proto->SUPER::new(@_);
 
-  my ( $accession, $ontology, $namespace, $name, $definition, $is_root, $is_obsolete, $subsets )
-    = rearrange( [ 'ACCESSION',  'ONTOLOGY', 'NAMESPACE', 'NAME',
+  my ( $accession, $ontology, $ontology_version,$namespace, $name, $definition, $is_root, $is_obsolete, $subsets )
+    = rearrange( [ 'ACCESSION',  'ONTOLOGY', 'ONTOLOGY_VERSION', 'NAMESPACE', 'NAME',
                    'DEFINITION', 'IS_ROOT', 'IS_OBSOLETE', 'SUBSETS' ],
                  @_ );
 
   $this->{'accession'}  = $accession;
   $this->{'ontology'}   = $ontology;
+  $this->{'ontology_version'} = $ontology_version;
   $this->{'namespace'}  = $namespace;
   $this->{'name'}       = $name;
   $this->{'definition'} = $definition;
@@ -389,6 +391,23 @@ sub parents {
 sub ancestors {
   my ($this) = @_;
   return $this->adaptor()->fetch_all_by_descendant_term($this);
+}
+
+=head2 ontology_version
+
+  Arg           : None
+
+  Description   : Returns the version of the ontology from which this term 
+                  originates. 
+
+  Example       : my $version =  $term->ontology_version() ;
+
+  Return type   : string
+
+=cut
+sub ontology_version{
+  my ($this) = @_;
+  return $this->{ontology_version};
 }
 
 1;

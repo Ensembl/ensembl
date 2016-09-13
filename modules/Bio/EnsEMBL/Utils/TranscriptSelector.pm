@@ -1,6 +1,7 @@
 =head1 LICENSE
 
 Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
+Copyright [2016] EMBL-European Bioinformatics Institute
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -104,7 +105,7 @@ sub select_canonical_transcript_for_Gene {
         @transcripts = @$transcript_array;
     } else {
         warning('No transcripts attached to gene '.$gene->stable_id);
-        return undef;
+        return;
     }
     my @encoded; # array of encoded transcripts
     
@@ -142,6 +143,7 @@ my %source_priority = ('ccds' => 1,
 my %biotype_priority = ('protein_coding' => 1,
                         'nonsense_mediated_decay' => 2,
                         'non_stop_decay' => 2,
+                        'polymorphic_pseudogene' => 2,
                         'other' => 3,
 );
 
@@ -184,7 +186,8 @@ sub encode_transcript {
     my $biotype;
     if (   $transcript->biotype() ne 'protein_coding' 
         && $transcript->biotype() ne 'nonsense_mediated_decay'
-        && $transcript->biotype() ne 'non_stop_decay') {
+        && $transcript->biotype() ne 'non_stop_decay'
+        && $transcript->biotype() ne 'polymorphic_pseudogene' ) {
         $biotype = 'other';
     } else { $biotype = $transcript->biotype(); }
 

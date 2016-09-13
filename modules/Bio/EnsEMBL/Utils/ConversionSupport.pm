@@ -1,6 +1,7 @@
 =head1 LICENSE
 
 Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
+Copyright [2016] EMBL-European Bioinformatics Institute
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -67,7 +68,7 @@ no warnings 'uninitialized';
 
 use Getopt::Long;
 use Text::Wrap;
-use Bio::EnsEMBL::Utils::Exception qw(throw warning);
+use Bio::EnsEMBL::Utils::Exception qw(throw warning deprecate);
 use FindBin qw($Bin $Script);
 use POSIX qw(strftime);
 use Cwd qw(abs_path);
@@ -570,6 +571,7 @@ sub user_proceed {
 
 sub user_confirm {
   my $self = shift;
+  deprecate("user_confirm is deprecated and will be removed in e87.");
   exit unless $self->user_proceed("Continue?");
 }
 
@@ -1571,7 +1573,8 @@ sub finish_log {
     $self->log($self->date_and_mem."\n\n");
   }
   if($self->param('joblog')) {
-    unless(open(JOB,'>',$self->param('joblog'))) {
+    my $fh;
+    unless(open($fh,'>',$self->param('joblog'))) {
       $self->log_warning("Could not log job to '".$self->param('joblog').
                          "': $!");
       return 1;
@@ -1586,9 +1589,9 @@ sub finish_log {
     push @keys,"END",time;
     while(@keys) {
       my ($k,$v) = splice(@keys,0,2);
-      print JOB "$k: $v\n"; 
+      print $fh "$k: $v\n"; 
     }
-    close JOB;
+    close $fh;
   }
   return(1);
 }
@@ -2156,9 +2159,9 @@ sub save_seq {
   my $self = shift;
   my $content = shift ;
   my $seq_file = $self->param('logpath') . '/SEQ_' . time() . int(rand()*100000000) . $$;
-  open (TMP,">$seq_file") or die("Cannot create working file.$!");
-  print TMP $content;
-  close TMP;
+  open (my $fh,">$seq_file", $seq_file) or die("Cannot create working file.$!");
+  print $fh $content;
+  close $fh;
   return ($seq_file);
 }
 
@@ -2201,10 +2204,11 @@ sub get_alignment {
   $out_file = $self->param('logpath').'/' . $out_file . '.out';
 
   my $command;
+  my $fh;
   if ($seq_type eq 'DNA') {
     $command = sprintf $dnaAlignExe, $int_seq_file, $ext_seq_file, $out_file;
     `$command`;
-    unless (open(OUT, "<$out_file")) {
+    unless (open($fh, "<", $out_file)) {
       $command = sprintf $dnaAlignExe, $int_seq_file, $ext_seq_file, $out_file;
       `$command`;
     }
@@ -2212,12 +2216,12 @@ sub get_alignment {
   elsif ($seq_type eq 'PEP') {
     $command = sprintf $pepAlignExe, $int_seq_file, $ext_seq_file, $label_width, $output_width, $out_file;
     `$command`;
-    unless (open(OUT, "<$out_file")) {
+    unless (open($fh, "<", $out_file)) {
       $self->log_warning("Cannot open alignment file\n");
     }
   }
   my $alignment ;
-  while (<OUT>) {
+  while (<$fh>) {
     next if $_ =~ 
     /\#Report_file
      |\#----.*

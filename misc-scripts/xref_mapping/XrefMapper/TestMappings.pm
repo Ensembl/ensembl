@@ -1,6 +1,7 @@
 =head1 LICENSE
 
 Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
+Copyright [2016] EMBL-European Bioinformatics Institute
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -289,7 +290,7 @@ sub unlinked_entries{
 
 
   $count_sql = "select count(1) from xref x, source s, object_xref o left join go_xref g on o.object_xref_id = g.object_xref_id where x.xref_id = o.xref_id and s.source_id = x.source_id and s.name like 'GO' and ox_status in ('DUMP_OUT') and g.object_xref_id is null";
-  $sql = "select distinct(o.object_xref_id) from xref x, source s, object_xref o left join go_xref g on o.object_xref_id = g.object_xref_id where x.xref_id = o.xref_id and s.source_id = x.source_id and s.name like 'GO' and g.object_xref_id is null limit 10";
+  $sql = "select distinct(o.object_xref_id) from xref x, source s, object_xref o left join go_xref g on o.object_xref_id = g.object_xref_id where x.xref_id = o.xref_id and s.source_id = x.source_id and s.name like 'GO' and ox_status in ('DUMP_OUT') and g.object_xref_id is null limit 10";
 
   $sth = $self->xref->dbc->prepare($count_sql);
   $sth->execute();
@@ -359,7 +360,7 @@ sub entry_number_check{
       }
     }
     else{
-      print "WARNING: xrefs $name are not in the new database but are in the old???\n" if($self->mapper->verbose);
+      print "WARNING: xrefs $name are not in the new database but $count are in the old???\n" if($self->mapper->verbose);
     }
   }
   $sth->finish;

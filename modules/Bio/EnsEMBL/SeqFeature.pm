@@ -1,6 +1,7 @@
 =head1 LICENSE
 
 Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
+Copyright [2016] EMBL-European Bioinformatics Institute
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -48,7 +49,6 @@ heirarchy that was present for Bio::EnsEMBL::DnaAlignFeature:
   Bio::EnsEMBL::BaseAlignFeature
   Bio::EnsEMBL::FeaturePair
   Bio::EnsEMBL::SeqFeature
-  Bio::EnsEMBL::SeqFeatureI
   Bio::SeqFeatureI
   Bio::RangeI
   Bio::Root::RootI
@@ -70,11 +70,10 @@ use vars qw(@ISA);
 use strict;
 
 
-use Bio::EnsEMBL::SeqFeatureI;
 use Bio::EnsEMBL::Analysis;
 use Bio::EnsEMBL::Root;
 
-@ISA = qw(Bio::EnsEMBL::Root Bio::EnsEMBL::SeqFeatureI);
+@ISA = qw(Bio::EnsEMBL::Root);
 
 use Bio::EnsEMBL::Utils::Argument qw(rearrange);
 

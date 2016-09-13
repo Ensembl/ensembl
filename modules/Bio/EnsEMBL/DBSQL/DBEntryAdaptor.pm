@@ -1,6 +1,7 @@
 =head1 LICENSE
 
 Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
+Copyright [2016] EMBL-European Bioinformatics Institute
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -554,7 +555,7 @@ sub fetch_by_db_accession {
     LEFT JOIN external_synonym es ON
             es.xref_id = xref.xref_id
     WHERE  xref.dbprimary_acc = ?
-    AND    exDB.db_name = ?
+    AND    exDB.db_name like ?
     AND    xref.external_db_id = exDB.external_db_id" );
 
   $sth->bind_param( 1, $accession, SQL_VARCHAR );
@@ -665,7 +666,7 @@ sub fetch_by_db_accession {
 =cut
 
 sub store {
-  my ( $self, $dbEntry, $ensID, $ensType, $ignore_release ) = @_;
+  my ( $self, $dbEntry, $ensID, $ensType, $ignore_release, $master_xref ) = @_;
 
   my $dbJustInserted;
 
@@ -710,10 +711,15 @@ sub store {
     my $xref_id = $self->_store_or_fetch_xref($dbEntry,$dbRef);
     $dbEntry->dbID($xref_id); #keeps DBEntry in sync with database
     ### Attempt to create an object->xref mapping
-    if ($ensembl_id) {$self->_store_object_xref_mapping($ensembl_id,$dbEntry,$ensType, $ignore_release)};
+    my $object_xref_id;
+    if ($ensembl_id) { $object_xref_id = $self->_store_object_xref_mapping($ensembl_id,$dbEntry,$ensType, $ignore_release)};
+
+    if (defined $master_xref && defined $object_xref_id) { $self->_store_dependent_xref_mapping($object_xref_id, $dbEntry, $master_xref); }
     
     return $xref_id;
 }
+
+
 
 
 =head2 update
@@ -896,10 +902,11 @@ sub _store_object_xref_mapping {
           my $group = $annotext->{$ax_group};
           my $gsth = $self->prepare( " 
                   INSERT INTO associated_group 
-                    SET description = ?;" );
-          $sth->bind_param( 1, $ax_group,     SQL_INTEGER );
+                    ( description )
+                  VALUES ( ? )" );
+          $gsth->bind_param( 1, $ax_group,     SQL_VARCHAR );
           $gsth->execute();
-          my $associatedGid = $self->last_insert_id();
+          my $associatedGid = $self->last_insert_id('associated_group_id', undef, 'associated_group');
           
           foreach my $ax_rank (sort keys %{ $group }) {
             my @ax = @{ $group->{$ax_rank} };
@@ -907,9 +914,14 @@ sub _store_object_xref_mapping {
             my $associatedXid = undef;
             my $sourceXid = undef;
             
-            $ax[0]->is_stored( $self->dbc ) || $self->store($ax[0]);
+            if (!$ax[0]->dbID) {
+              $self->store($ax[0]);
+            }
             $associatedXid = $ax[0]->dbID;
-            $ax[1]->is_stored( $self->dbc ) || $self->store($ax[1]);
+
+            if (!$ax[1]->dbID) {
+              $self->store($ax[1]);
+            }
             $sourceXid = $ax[1]->dbID;
             
             if (!defined $associatedXid || !defined $sourceXid) {
@@ -926,6 +938,29 @@ sub _store_object_xref_mapping {
         } #end foreach
       } #end elsif
     return $object_xref_id;
+}
+
+
+sub _store_dependent_xref_mapping {
+  my $self = shift;
+  my $object_xref_id = shift;
+  my $dbEntry = shift;
+  my $master_xref = shift;
+
+  my $insert_ignore = $self->insert_ignore_clause();
+
+  my $sth = $self->prepare( "
+    ${insert_ignore} INTO dependent_xref
+       ( object_xref_id,
+       master_xref_id,
+       dependent_xref_id )
+       VALUES ( ?, ?, ?)" );
+  $sth->bind_param( 1, $object_xref_id,       SQL_INTEGER );
+  $sth->bind_param( 2, $master_xref->dbID,    SQL_INTEGER );
+  $sth->bind_param( 3, $dbEntry->dbID,        SQL_INTEGER );
+
+  $sth->execute();
+
 }
 
 =head2 get_external_db_id
@@ -1622,7 +1657,11 @@ $where_sql";
                                 ? $self->fetch_by_dbID($source_associated_xref_id)
                                 : undef );
             if ( defined($associated_xref) ) {
-              $exDB->add_linked_associated_xref( $associated_xref, $source_associated_xref, $condition_type || '', $associate_group_id, $associate_group_rank );
+              my $ct = '';
+              if ( defined $condition_type ) {
+                $ct = $condition_type;
+              }
+              $exDB->add_linked_associated_xref( $associated_xref, $source_associated_xref, $ct, $associate_group_id, $associate_group_rank );
             }
           }
 
@@ -1673,7 +1712,11 @@ $where_sql";
                                 ? $self->fetch_by_dbID($source_associated_xref_id)
                                 : undef );
         if ( defined($associated_xref) ) {
-          $seen{$refID}->add_linked_associated_xref( $associated_xref, $source_associated_xref, $condition_type || '', $associate_group_id, $associate_group_rank );
+          my $ct = '';
+          if ( defined $condition_type ) {
+            $ct = $condition_type;
+          }
+          $seen{$refID}->add_linked_associated_xref( $associated_xref, $source_associated_xref, $ct, $associate_group_id, $associate_group_rank );
         }
         
         $linkage_types{$refID}->{$linkage_key} = 1;
@@ -2361,7 +2404,7 @@ sub get_db_name_from_external_db_id{
 
 sub geneids_by_extids{
    my ($self,$name) = @_;
-   deprecate(" use 'list_gene_ids_by_extids instead");
+   deprecate("gene_ids_by_extids is deprecated and will be removed in e87. Please use 'list_gene_ids_by_extids instead");
    return $self->list_gene_ids_by_extids( $name );
 }
 
@@ -2374,7 +2417,7 @@ sub geneids_by_extids{
 
 sub translationids_by_extids{
   my ($self,$name) = @_;
-  deprecate("Use list_translation_ids_by_extids instead");
+  deprecate("translationids_by_extids is deprecated and will be removed in e87. Please use list_translation_ids_by_extids instead");
   return $self->list_translation_ids_by_extids( $name );
 }
 
@@ -2387,7 +2430,7 @@ sub translationids_by_extids{
 
 sub transcriptids_by_extids{
    my ($self,$name) = @_;
-   deprecate("Use list_transcript_ids_by_extids instead.");
+   deprecate("transcriptids_by_extids is deprecated and will be removed in e87. Please use list_transcript_ids_by_extids instead.");
    return $self->list_transcript_ids_by_extids( $name );
 }
 

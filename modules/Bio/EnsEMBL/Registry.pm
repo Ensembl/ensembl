@@ -1,6 +1,7 @@
 =head1 LICENSE
 
 Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
+Copyright [2016] EMBL-European Bioinformatics Institute
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -154,13 +155,16 @@ my %group2adaptor = (
       'core'       => 'Bio::EnsEMBL::DBSQL::DBAdaptor',
       'estgene'    => 'Bio::EnsEMBL::DBSQL::DBAdaptor',
       'funcgen'    => 'Bio::EnsEMBL::Funcgen::DBSQL::DBAdaptor',
+      'gene2phenotype' => 'Bio::EnsEMBL::G2P::DBSQL::DBAdaptor',
       'regulation' => 'Bio::EnsEMBL::Funcgen::DBSQL::DBAdaptor',
       'hive'      => 'Bio::EnsEMBL::Hive::DBSQL::DBAdaptor',
+      'metadata'  => 'Bio::EnsEMBL::MetaData::DBSQL::MetaDataDBAdaptor',
       'ontology'  => 'Bio::EnsEMBL::DBSQL::OntologyDBAdaptor',
       'otherfeatures' => 'Bio::EnsEMBL::DBSQL::DBAdaptor',
       'pipeline'      => 'Bio::EnsEMBL::Pipeline::DBSQL::DBAdaptor',
       'production' => 'Bio::EnsEMBL::Production::DBSQL::DBAdaptor',
       'stable_ids' => 'Bio::EnsEMBL::DBSQL::DBAdaptor',
+      'taxonomy'  => 'Bio::EnsEMBL::Taxonomy::DBSQL::TaxonomyDBAdaptor',
       'variation' => 'Bio::EnsEMBL::Variation::DBSQL::DBAdaptor',
       'vega'      => 'Bio::EnsEMBL::DBSQL::DBAdaptor',
       'vega_update' => 'Bio::EnsEMBL::DBSQL::DBAdaptor',
@@ -202,23 +206,39 @@ my %group2adaptor = (
                the database if not used properly.  If in doubt, do
                not use it or ask in the developer mailing list.
 
+  Arg [5]:     (optional) boolean
+               This option will make load_all() throw if the configuration file
+               is missing and cannot be guessed from the environment
+
   Example    : Bio::EnsEMBL::Registry->load_all();
   Returntype : Int count of the DBAdaptor instances which can be found in the 
                registry due to this method being called. Will never be negative
-  Exceptions : none
+  Exceptions : Throws if $throw_if_missing is set and ($config_file is missing
+               and cannot be guessed from the environment
   Status     : Stable
 
 =cut
 
 sub load_all {
-    my ($class, $config_file, $verbose, $no_clear, $no_cache ) = @_;
+    my ($class, $config_file, $verbose, $no_clear, $no_cache, $throw_if_missing ) = @_;
 
     if ( !defined($config_file) ) {
       if ( defined( $ENV{ENSEMBL_REGISTRY} ) ) {
-        $config_file = $ENV{ENSEMBL_REGISTRY};
+        if (-e $ENV{ENSEMBL_REGISTRY}) {
+          $config_file = $ENV{ENSEMBL_REGISTRY};
+        } else {
+          warning("\$ENV{ENSEMBL_REGISTRY} points to a file ('$ENV{ENSEMBL_REGISTRY}') that does not exist.\n");
+        }
       } elsif ( defined( $ENV{HOME} ) ) {
-        $config_file = $ENV{HOME} . "/.ensembl_init";
+        if (-e ($ENV{HOME} . "/.ensembl_init")) {
+          $config_file = $ENV{HOME} . "/.ensembl_init";
+        }
       }
+      if ($throw_if_missing and !defined($config_file) ) {
+        throw("No registry configuration to load, and no default could be guessed.\n");
+      }
+    } elsif ($throw_if_missing and !(-e $config_file)) {
+      throw(printf("Configuration file '%s' does not exist. Registry configuration not loaded.\n", $config_file ));
     }
 
     $verbose  ||= 0;
@@ -357,7 +377,6 @@ sub load_all {
                     $adaptor_args{'-no_cache'} = 1;
                   }
                 }
-
                 if ($verbose) {
                     printf( "Configuring adaptor '%s' "
                               . "for configuration section '%s'...\n",
@@ -650,7 +669,10 @@ sub get_all_DBAdaptors {
 
   my ( $species, $group ) = rearrange( [qw(SPECIES GROUP)], @args );
 
-  if ( defined($species) ) { $species = $class->get_alias($species) }
+  if ( defined($species) ) {
+    $species = $class->get_alias($species);
+    return [] unless $species;
+  }
 
   my @ret;
   foreach my $dba ( @{ $registry_register{'_DBA'} } ) {
@@ -1717,6 +1739,9 @@ sub load_registry_from_db {
   my $ontology_db;
   my $ontology_version;
 
+  my $taxonomy_db;
+  my $ensembl_metadata_db;
+
   my $production_dba_ok = 
     eval { require Bio::EnsEMBL::Production::DBSQL::DBAdaptor; 1 };
   my $production_db;
@@ -1725,7 +1750,7 @@ sub load_registry_from_db {
   my $stable_ids_db;
   my $stable_ids_version;
 
-  $user ||= "ensro";
+  $user ||= "anonymous";
   if ( !defined($port) ) {
     $port = 3306;
     if ( $host eq "ensembldb.ensembl.org" && defined($db_version) && $db_version < 48 ) {
@@ -1787,6 +1812,10 @@ sub load_registry_from_db {
         $ontology_db      = $db;
         $ontology_version = $1;
       }
+    } elsif ( $db =~ /^ncbi_taxonomy$/ ) {
+        $taxonomy_db      = $db;
+    } elsif ( $db =~ /^ensembl_metadata$/ ) {
+        $ensembl_metadata_db      = $db;
     } elsif ( $production_dba_ok and $db =~ /^ensembl(?:genomes)?_production(_\d+)?/x ) {
       # production db can come with no version (i.e. that on ens-staging1),
       # but it's backed up with a release number
@@ -2288,6 +2317,62 @@ sub load_registry_from_db {
     print("No ontology database found\n");
   }
 
+  # Taxonomy
+
+  if ( defined $taxonomy_db) {
+     
+    my $has_taxonomy = eval {require Bio::EnsEMBL::Taxonomy::DBSQL::TaxonomyDBAdaptor};
+    if($@ or (!defined $has_taxonomy)) {
+        if($verbose) {
+          print "ensembl_taxonomy API not found - ignoring $taxonomy_db\n";
+        }
+    } else {
+        my $dba = Bio::EnsEMBL::Taxonomy::DBSQL::TaxonomyDBAdaptor->new(
+                                '-species' => 'multi' . $species_suffix,
+                                '-group'   => 'taxonomy',
+                                '-host'    => $host,
+                                '-port'    => $port,
+                                '-user'    => $user,
+                                '-pass'    => $pass,
+                                '-dbname'  => $taxonomy_db, );
+
+       if ($verbose) {
+         printf( "%s loaded\n", $taxonomy_db );
+       }
+     }
+  }
+  elsif ($verbose) {
+    print("No taxonomy database found\n");
+  }
+  
+  # ensembl_metadata
+
+  if ( defined $ensembl_metadata_db) {
+     
+    my $has_metadata = eval {require Bio::EnsEMBL::MetaData::DBSQL::MetaDataDBAdaptor};
+    if($@ or (!defined $has_metadata)) {
+        if($verbose) {
+          print "ensembl_metadata API not found - ignoring $ensembl_metadata_db\n";
+        }
+    } else {
+        my $dba = Bio::EnsEMBL::MetaData::DBSQL::MetaDataDBAdaptor->new(
+                                '-species' => 'multi' . $species_suffix,
+                                '-group'   => 'metadata',
+                                '-host'    => $host,
+                                '-port'    => $port,
+                                '-user'    => $user,
+                                '-pass'    => $pass,
+                                '-dbname'  => $ensembl_metadata_db, );
+
+       if ($verbose) {
+         printf( "%s loaded\n", $ensembl_metadata_db );
+       }
+     }
+  }
+  elsif ($verbose) {
+    print("No ensembl_metadata database found\n");
+  }
+
   # Production
 
   if ( $production_dba_ok and defined($production_db) && !$ignore_multi) {
@@ -2633,7 +2718,7 @@ sub load_registry_from_multiple_dbs {
 sub load_registry_with_web_adaptors{
   my $class = shift;
 
-  deprecate('Use the load_registry_from_db instead'); 
+  deprecate('load_registry_with_web_adaptors is deprecated and will be removed in e87. Please use the load_registry_from_db instead'); 
   my $site_eval = eval{ require SiteDefs };
   if ($@ or (!defined($site_eval))){ die "Can't use SiteDefs.pm - $@\n"; }
     SiteDefs->import(qw(:ALL));
@@ -2994,6 +3079,7 @@ sub get_species_and_object_type {
 
     my @dbas = 
       sort { $a->dbc->host cmp $b->dbc->host || $a->dbc->port <=> $b->dbc->port } 
+      grep { $_->dbc->dbname ne 'ncbi_taxonomy' && $_->dbc->dbname ne 'ensembl_metadata' }
       @{$self->get_all_DBAdaptors(%get_adaptors_args)};    
     
     foreach my $dba (@dbas) {
@@ -3109,9 +3195,28 @@ sub archive_id_lookup {
 }
 
 
+# A level of abstraction because we need to test the stable_id as-is and then
+# try to chop off a version id if nothing is return, and try again
 
-# Loop over a known set of object types for a core DB until we find a hit 
 sub _core_get_species_and_object_type {
+  my ($self, $stable_id, $known_type, $dba) = @_;
+
+  # Try looking up the species with the stable_is, as-is
+  my @results = $self->_core_get_species_and_object_type_worker($stable_id, $known_type, $dba);
+
+  if(@results) {
+      return @results;
+  } elsif(my $vindex = rindex($stable_id, '.')) {
+      return $self->_core_get_species_and_object_type_worker(substr($stable_id,0,$vindex), $known_type, $dba)
+	  if(substr($stable_id,$vindex+1) =~ /^\d+$/);
+  }
+
+  return;
+
+}
+
+# Loop over a known set of object types for a core DB until we find a hit
+sub _core_get_species_and_object_type_worker {
   my ($self, $stable_id, $known_type, $dba) = @_;
   my @types = defined $known_type ? ($known_type) : ('Gene', 'Transcript', 'Translation', 'Exon', 'Operon', 'OperonTranscript');
   my ($species, $final_type, $final_db_type);
@@ -3133,8 +3238,28 @@ sub _core_get_species_and_object_type {
   return;
 }
 
-# Loop over a known set of object types for a compara DB until we find a hit
+# A level of abstraction because we need to test the stable_id as-is and then
+# try to chop off a version id if nothing is return, and try again
+
 sub _compara_get_species_and_object_type {
+  my ($self, $stable_id, $known_type, $dba) = @_;
+
+  # Try looking up the species with the stable_is, as-is
+  my @results = $self->_compara_get_species_and_object_type_worker($stable_id, $known_type, $dba);
+
+  if(@results) {
+      return @results;
+  } elsif(my $vindex = rindex($stable_id, '.')) {
+      return $self->_compara_get_species_and_object_type_worker(substr($stable_id,0,$vindex), $known_type, $dba)
+	  if(substr($stable_id,$vindex+1) =~ /^\d+$/);
+  }
+
+  return;
+
+}
+
+# Loop over a known set of object types for a compara DB until we find a hit
+sub _compara_get_species_and_object_type_worker {
   my ($self, $stable_id, $known_type, $dba) = @_;
   my @types = defined $known_type ? ($known_type) : ('GeneTree');
   my ($species, $final_type, $final_db_type);

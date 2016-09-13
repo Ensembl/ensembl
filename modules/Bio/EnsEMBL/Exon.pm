@@ -1,6 +1,7 @@
 =head1 LICENSE
 
 Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
+Copyright [2016] EMBL-European Bioinformatics Institute
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -383,7 +384,7 @@ sub cdna_start {
   }
   
   my $cdna_start;
-  my @coords = $transcript->genomic2cdna($self->start(), $self->end(), $self->strand());
+  my @coords = $transcript->genomic2cdna($self->seq_region_start(), $self->seq_region_end(), $self->strand());
   if(@coords && !$coords[0]->isa('Bio::EnsEMBL::Mapper::Gap')) {
     $cdna_start = $coords[0]->start();
   }
@@ -432,7 +433,7 @@ sub cdna_end {
   }
   
   my $cdna_end;
-  my @coords = $transcript->genomic2cdna($self->start(), $self->end(), $self->strand());
+  my @coords = $transcript->genomic2cdna($self->seq_region_start(), $self->seq_region_end(), $self->strand());
   if(@coords && !$coords[-1]->isa('Bio::EnsEMBL::Mapper::Gap')) {
     $cdna_end = $coords[-1]->end();
   }
@@ -1210,6 +1211,34 @@ sub version {
   return $self->{'version'};
 }
 
+=head2 stable_id_version
+
+  Arg [1]    : (optional) String - the stable ID with version to set
+  Example    : $exon->stable_id("ENSE0000000001.3");
+  Description: Getter/setter for stable id with version for this exon.
+  Returntype : String
+  Exceptions : none
+  Caller     : general
+  Status     : Stable
+
+=cut
+
+sub stable_id_version {
+    my $self = shift;
+    if(my $stable_id = shift) {
+	# See if there's an embedded period, assume that's a
+	# version, might not work for some species but you
+	# should use ->stable_id() and version() if you're worried
+	# about ambiguity
+	my $vindex = rindex($stable_id, '.');
+	# Set the stable_id and version pair depending on if
+	# we found a version delimiter in the stable_id
+	($self->{stable_id}, $self->{version}) = ($vindex > 0 ?
+						  (substr($stable_id,0,$vindex), substr($stable_id,$vindex+1)) :
+						  $stable_id, undef);
+    }
+    return $self->{stable_id} . ($self->{version} ? ".$self->{version}" : '');
+}
 
 =head2 is_current
 
@@ -1251,6 +1280,28 @@ sub is_constitutive {
     $self->{'is_constitutive'} = $value;
   }
   return $self->{'is_constitutive'};
+}
+
+=head2 is_coding
+
+  Arg [1]    : Boolean $is_coding
+  Arg [2]    : Bio::EnsEMBL::Transcript
+  Example    : $exon->is_coding()
+  Description: Says if the exon is within the translation or not
+  Returntype : Int
+  Exceptions : none
+  Caller     : general
+  Status     : Stable
+
+=cut
+
+sub is_coding {
+  my ( $self, $transcript) = @_;
+
+  if (!$transcript->translate) { return 0; }
+  if ($transcript->coding_region_start < $self->start && $self->start < $transcript->coding_region_end) { return 1; }
+  if ($transcript->coding_region_end > $self->end && $self->end > $transcript->coding_region_start) { return 1; }
+  return 0;
 }
 
 
@@ -1604,21 +1655,6 @@ sub summary_as_hash {
 =cut
 
 
-=head2 _get_stable_entry_info 
-
-  Description: DEPRECATED.
-
-=cut
-
-sub _get_stable_entry_info {
-   my $self = shift;
-   deprecate( "This function shouldnt be called any more" );
-   if( !defined $self->adaptor ) {
-     return undef;
-   }
-   $self->adaptor->get_stable_entry_info($self);
-}
-
 
 =head2 temporary_id
 
@@ -1628,7 +1664,7 @@ sub _get_stable_entry_info {
 
 sub temporary_id {
   my $self = shift;
-  deprecate('It should not be necessary to use this method.');
+  deprecate('temporary_id is deprecated and will be removed in e87.');
   $self->{'tempID'} = shift if(@_);
   return $self->{'tempID'};
 }
@@ -1642,7 +1678,7 @@ sub temporary_id {
 
 sub created {
     my ($self,$value) = @_;
-    deprecate( "Created attribute not supported any more." );
+    deprecate( "created is deprecated and will be removed in e87." );
     if(defined $value ) {
       $self->{'_created'} = $value;
     }
@@ -1658,7 +1694,7 @@ sub created {
 
 sub modified {
     my ($self,$value) = @_;
-    deprecate( "Modified attribute not supported any more." );
+    deprecate( "Modified is deprecated and will be removed in e87." );
     if( defined $value ) {
       $self->{'_modified'} = $value;
     }
@@ -1674,7 +1710,7 @@ sub modified {
 
 sub type {
   my ($self,$value) = @_;
-  deprecate("Type attribute not supported anymore.");
+  deprecate("Type is deprecated and will be removed in e87.");
   if (defined($value)) {
     $self->{'type'} = $value;
   }

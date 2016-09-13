@@ -1,4 +1,4 @@
-1	\N	schema_version	82
+1	\N	schema_version	86
 2	1	assembly.default	MULTIMAP
 3	1	species.taxonomy_id	1
 4	1	assembly.mapping	chromosome:MULTIMAP#contig
@@ -11,7 +11,7 @@
 11	\N	patch	patch_74_75_d.sql|default_transcript_source
 12	\N	patch	patch_74_75_e.sql|unique_attrib_key
 13	\N	patch	patch_74_75_f.sql|longer_code
-107	0		\N
+107	0		
 108	\N	patch	patch_75_76_a.sql|schema_version
 109	\N	patch	patch_75_76_b.sql|allow_null_karyotype
 110	\N	patch	patch_75_76_c.sql|remove_alternative_splicing
@@ -29,3 +29,13 @@
 122	\N	patch	patch_81_82_a.sql|schema_version
 123	\N	patch	patch_81_82_b.sql|xref_width
 124	\N	patch	patch_81_82_c.sql|seq_synonym_key
+125	\N	patch	patch_82_83_a.sql|schema_version
+126	\N	patch	patch_83_84_a.sql|schema_version
+127	\N	patch	patch_83_84_b.sql|xref.version_default
+128	\N	patch	patch_83_84_c.sql|protein_feature_unique
+129	\N	patch	patch_83_84_d.sql|longer_synonym
+130	\N	patch	patch_83_84_e.sql|nullable_versions
+131	\N	patch	patch_84_85_a.sql|schema_version
+132	\N	patch	patch_84_85_b.sql|remove_duplicated_key
+133	\N	patch	patch_85_86_a.sql|schema_version
+134	\N	patch	patch_85_86_b.sql|add dna_align_feature_attrib table

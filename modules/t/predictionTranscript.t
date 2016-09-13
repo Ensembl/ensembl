@@ -1,4 +1,5 @@
 # Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
+# Copyright [2016] EMBL-European Bioinformatics Institute
 # 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -16,6 +17,7 @@ use strict;
 use warnings;
 
 use Test::More;
+use Test::Warnings;
 
 use Bio::EnsEMBL::Test::MultiTestDB;
 use Bio::EnsEMBL::Test::TestUtils;
@@ -108,21 +110,21 @@ ok(&Bio::EnsEMBL::Test::TestUtils::test_getter_setter($pt, 'adaptor', $pta));
 #
 $pt = new Bio::EnsEMBL::PredictionTranscript();
 
-my $exon = new Bio::EnsEMBL::Exon;
+my $exon = new Bio::EnsEMBL::PredictionExon;
 $exon->start(40);
 $exon->end(50);
 $exon->slice( $slice );
 $exon->strand( 1 );
 $pt->add_Exon($exon);
 
-$exon = new Bio::EnsEMBL::Exon;
+$exon = new Bio::EnsEMBL::PredictionExon;
 $exon->start(20);
 $exon->end(30);
 $exon->slice( $slice );
 $exon->strand( 1 );
 $pt->add_Exon($exon);
 
-$exon = new Bio::EnsEMBL::Exon;
+$exon = new Bio::EnsEMBL::PredictionExon;
 $exon->start( 1 );
 $exon->end(10);
 $exon->slice( $slice );
@@ -144,21 +146,21 @@ ok( $all_exons->[2]->end() == 50 );
 
 $pt = new Bio::EnsEMBL::PredictionTranscript();
 
-$exon = new Bio::EnsEMBL::Exon;
+$exon = new Bio::EnsEMBL::PredictionExon;
 $exon->start(40);
 $exon->end(50);
 $exon->slice( $slice );
 $exon->strand( -1 );
 $pt->add_Exon($exon);
 
-$exon = new Bio::EnsEMBL::Exon;
+$exon = new Bio::EnsEMBL::PredictionExon;
 $exon->start( 1 );
 $exon->end(10);
 $exon->slice( $slice );
 $exon->strand( -1 );
 $pt->add_Exon($exon);
 
-$exon = new Bio::EnsEMBL::Exon;
+$exon = new Bio::EnsEMBL::PredictionExon;
 $exon->start(20);
 $exon->end(30);
 $exon->slice( $slice );

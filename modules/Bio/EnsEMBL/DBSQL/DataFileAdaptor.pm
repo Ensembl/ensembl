@@ -1,6 +1,7 @@
 =head1 LICENSE
 
 Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
+Copyright [2016] EMBL-European Bioinformatics Institute
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -121,7 +122,7 @@ sub get_base_path {
 
 sub DataFile_to_extension {
   my ($self, $df) = @_;
-  deprecate("Use DataFile_to_extensions() instead");
+  deprecate("DataFile_to_extension is deprecated and will be removed in e87. Please use DataFile_to_extensions() instead");
   my $extensions = $self->DataFile_to_extensions($df);
   return $extensions->[0];
 }

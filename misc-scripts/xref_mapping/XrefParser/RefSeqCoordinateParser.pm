@@ -1,6 +1,7 @@
 =head1 LICENSE
 
 Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
+Copyright [2016] EMBL-European Bioinformatics Institute
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -42,6 +43,22 @@ sub run_script {
   my $peptide_source_id = $self->get_source_id_for_source_name('RefSeq_peptide', 'otherfeatures');
   my $mrna_source_id = $self->get_source_id_for_source_name('RefSeq_mRNA', 'otherfeatures');
   my $ncrna_source_id = $self->get_source_id_for_source_name('RefSeq_ncRNA', 'otherfeatures');
+
+  my $pred_peptide_source_id =
+    $self->get_source_id_for_source_name('RefSeq_peptide_predicted', 'otherfeatures');
+  my $pred_mrna_source_id =
+    $self->get_source_id_for_source_name('RefSeq_mRNA_predicted','otherfeatures');
+  my $pred_ncrna_source_id =
+    $self->get_source_id_for_source_name('RefSeq_ncRNA_predicted', 'otherfeatures');
+
+  if($verbose){
+    print "RefSeq_peptide source ID = $peptide_source_id\n";
+    print "RefSeq_mRNA source ID = $mrna_source_id\n";
+    print "RefSeq_ncRNA source ID = $ncrna_source_id\n";
+    print "RefSeq_peptide_predicted source ID = $pred_peptide_source_id\n";
+    print "RefSeq_mRNA_predicted source ID = $pred_mrna_source_id\n" ;
+    print "RefSeq_ncRNA_predicted source ID = $pred_ncrna_source_id\n" ;
+  }
 
   my $user = "ensro";
   my $host;
@@ -121,12 +138,8 @@ sub run_script {
 # Else, database should be on staging
       $registry->load_registry_from_multiple_dbs(
           {
-              -host    => 'ens-staging1',
+              -host    => 'ens-staging3',
               -user    => 'ensro',
-          },
-          {
-              -host     => 'ens-staging2',
-              -user     => 'ensro',
           },
        );
       $core_dba = $registry->get_DBAdaptor($species_name,'core');
@@ -138,22 +151,20 @@ sub run_script {
               '-user'     => $ofuser,
               '-pass'     => $ofpass,
               '-dbname'   => $ofdbname,
-              '-species'  => $species_name.$ofhost,
+              '-species'  => $species_name,
               '-group'    => 'otherfeatures',
        );
+       $otherf_dba->dnadb($core_dba);
       } else {
 # Else database should be on staging
       $registry->load_registry_from_multiple_dbs( 
 	  {
-	      -host    => 'ens-staging1',
+	      -host    => 'ens-staging3',
 	      -user    => 'ensro',
-	  },
-	  {
-	      -host     => 'ens-staging2',
-	      -user     => 'ensro',
 	  },
        );
       $otherf_dba = $registry->get_DBAdaptor($species_name, 'otherfeatures') if !defined($ofhost);
+      if (defined $otherf_dba) { $otherf_dba->dnadb($core_dba); }
     }
       
 
@@ -214,7 +225,7 @@ sub run_script {
         my %transcript_result;
         my %tl_transcript_result;
         my $id = $transcript_of->stable_id();
-        if ($id =~ /^XM_/) { next; }
+        if (!defined $id) { next; }
         my $exons_of = $transcript_of->get_all_Exons();
         my $rr1 = Bio::EnsEMBL::Mapper::RangeRegistry->new();
         my $tl_exons_of = $transcript_of->get_all_translateable_Exons();
@@ -321,6 +332,8 @@ sub run_script {
           my ($acc, $version) = split(/\./, $id);
           my $source_id = $mrna_source_id;
           $source_id = $ncrna_source_id if $acc =~ /^NR_/;
+          $source_id = $pred_mrna_source_id if $acc =~ /^XM_/;
+          $source_id = $pred_ncrna_source_id if $acc =~ /^XR_/;
           my $xref_id = $self->add_xref({ acc => $acc,
                                           version => $version,
                                           label => $id,
@@ -340,11 +353,13 @@ sub run_script {
           if (defined $tl && defined $tl_of) {
             if ($tl_of->seq eq $tl->seq) {
               ($acc, $version) = split(/\./, $tl_of->stable_id());
+              $source_id = $peptide_source_id;
+              $source_id = $pred_peptide_source_id if $acc =~ /^XP_/;
               my $tl_xref_id = $self->add_xref({ acc => $acc,
                                               version => $version,
                                               label => $acc,
                                               desc => '',
-                                              source_id => $peptide_source_id,
+                                              source_id => $source_id,
                                               species_id => $species_id,
                                               info_type => 'DIRECT' });
               $self->add_direct_xref($tl_xref_id, $tl->stable_id(), "Translation", "");

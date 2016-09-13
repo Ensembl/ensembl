@@ -1,4 +1,5 @@
 # Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
+# Copyright [2016] EMBL-European Bioinformatics Institute
 # 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -19,6 +20,7 @@ package main;
 use strict;
 use warnings;
 use Test::More;
+use Test::Warnings;
 use Test::Exception;
 use Bio::EnsEMBL::DBSQL::GeneAdaptor;
 use Bio::EnsEMBL::DBSQL::Support::LruIdCache;

@@ -1,6 +1,7 @@
 =head1 LICENSE
 
 Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
+Copyright [2016] EMBL-European Bioinformatics Institute
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -151,7 +152,7 @@ sub fetch_all_by_Slice_and_priority {
 =cut
 
 sub fetch_all_by_RawContig_and_priority {
-  deprecate('Use fetch_all_by_Slice_and_priority() instead.');
+  deprecate('fetch_all_by_RawContig_and_priority is deprecated and will be removed in e87. Please use fetch_all_by_Slice_and_priority() instead.');
   fetch_all_by_Slice_and_priority(@_);
 }
 

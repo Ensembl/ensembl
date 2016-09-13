@@ -1,4 +1,5 @@
 # Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
+# Copyright [2016] EMBL-European Bioinformatics Institute
 # 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -299,6 +300,11 @@ $xref->primary_id('2');
 $dbEntryAdaptor->update($xref);
 my $updated_xref = $dbEntryAdaptor->fetch_by_db_accession('Vega_gene', '2');
 is($updated_xref->description(), 'new_description', 'Xref with updated description');
+is($updated_xref->db_version, '1','DBEntry release/version can be accessed');
+is($updated_xref->release, '1','DBEntry release/version can be accessed by both methods');
+
+$updated_xref->release(2);
+is($updated_xref->release, '2','DBEntry release can be changed');
 
 #
 # 12-14 Test that external synonyms and go evidence tags are retrieved
@@ -313,18 +319,13 @@ my @syns = grep {$_ eq 'syn1' || $_ eq 'syn2'} @{$xref->get_all_synonyms};
 ok(@syns == 2);
 
 #and also 2 evidence tags, and one source_xref
-if($xref && $xref->isa('Bio::EnsEMBL::OntologyXref')) {
-  my @evtags = 
-    grep {$_ eq 'IEA' || $_ eq 'IC'} @{$xref->get_all_linkage_types()};
-  ok(@evtags == 2);
-  my @source_xrefs = 
-    grep {UNIVERSAL::isa($_->[1],'Bio::EnsEMBL::DBEntry')}
+my @evtags = 
+  grep {$_ eq 'IEA' || $_ eq 'IC'} @{$xref->get_all_linkage_types()};
+ok(@evtags == 2);
+my @source_xrefs = 
+  grep {UNIVERSAL::isa($_->[1],'Bio::EnsEMBL::DBEntry')}
 	@{$xref->get_all_linkage_info};
-  ok(@source_xrefs == 1);
-} else {
-  ok(0);
-}
-
+ok(@source_xrefs == 1);
 
 $translation = $ta->fetch_by_dbID(21723)->translation;
 
@@ -569,12 +570,42 @@ $multi->restore();
   cmp_ok(scalar(@{$external_db_names}), '==', 111, 'Retriving all the unique External DB names');
 }
 
+<<<<<<< HEAD
 # Test for fetching ids by a linkage type and database name
 {
   my $go = $dbEntryAdaptor->get_external_db_id('GO', undef, 'no version');
   my @gene_ids = $dbEntryAdaptor->list_gene_ids_by_external_db_id($go, 'IDA');
   is(scalar(@gene_ids), 9, 'Expect 9 hits for genes to come back with IDAs');
 }
+=======
+
+# Test for dependent/master xrefs
+my $patch_db = $multi->get_DBAdaptor( "patch" );
+my $xref_adaptor = $patch_db->get_DBEntryAdaptor();
+my $go_xrefs = $xref_adaptor->fetch_all_by_name('GO:0005654');
+my $gene_adaptor = $patch_db->get_GeneAdaptor();
+$gene = $gene_adaptor->fetch_by_stable_id('ENSG00000167393');
+foreach my $go_xref (@$go_xrefs) {
+  if ($go_xref->dbname eq 'goslim_goa') {
+    $xref = $go_xref;
+    last;
+  }
+}
+my $mx = $xref->get_all_masters();
+is(scalar(@$mx), 1, "Found master");
+my $gene_mx = $xref->get_all_masters($gene);
+is(scalar(@$gene_mx), 0, "No master on gene");
+my $dx = $mx->[0]->get_all_dependents();
+is(scalar(@$dx), 6, "Found all dependents");
+$dx = $mx->[0]->get_all_dependents($gene);
+is(scalar(@$dx), 0, "No dependents on Gene");
+
+# Test existence
+is($xref_adaptor->exists($xref), $xref->dbID(), "Xref exists");
+
+# Test fetching with descriptions
+$xrefs = $xref_adaptor->fetch_all_by_description('%nucleoplasm%');
+is(scalar(@$xrefs), 2, "Found dbentries for nucleoplasm");
 
 sub print_dbEntries {
   my $dbes = shift;

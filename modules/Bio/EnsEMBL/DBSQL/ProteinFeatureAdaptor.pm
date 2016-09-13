@@ -1,6 +1,7 @@
 =head1 LICENSE
 
 Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
+Copyright [2016] EMBL-European Bioinformatics Institute
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -85,51 +86,46 @@ use vars qw(@ISA);
 sub fetch_all_by_translation_id {
   my ($self, $translation_id) = @_;
 
-  if (!$translation_id) {
-	throw("translation_id argument is required\n");
+  my $constraint = "pf.translation_id = ?";
+  $self->bind_param_generic_fetch($translation_id, SQL_INTEGER);
+  my $features = $self->generic_fetch($constraint);
+
+  return $features;
+} ## end sub fetch_all_by_translation_id
+
+=head2 fetch_all_by_logic_name
+
+  Arg [1]    : string $logic_name
+               the logic name of the type of features to obtain
+  Example    : $fs = $a->fetch_all_by_logic_name('foobar');
+  Description: Returns a listref of features created from the database.
+               only features with an analysis of type $logic_name will
+               be returned.  If the logic name is invalid (not in the
+               analysis table), a reference to an empty list will be
+               returned.
+  Returntype : listref of Bio::EnsEMBL::ProteinFeatures
+  Exceptions : thrown if no $logic_name
+  Caller     : General
+  Status     : Stable
+
+=cut
+
+sub fetch_all_by_logic_name {
+  my ( $self, $logic_name ) = @_;
+
+  if ( !defined($logic_name) ) {
+    throw("Need a logic_name");
   }
 
-  my @features;
-  my $analysis_adaptor = $self->db()->get_AnalysisAdaptor();
+  my $constraint = $self->_logic_name_to_constraint( '', $logic_name );
 
-  my $sth = $self->prepare("SELECT protein_feature_id, p.seq_start, p.seq_end, p.analysis_id, " . "       p.score, p.perc_ident, p.evalue, p.hit_start, p.hit_end, " . "       p.hit_name, p.hit_description, x.description, x.display_label, i.interpro_ac " . "FROM   protein_feature p " . "LEFT JOIN interpro AS i ON p.hit_name = i.id " . "LEFT JOIN xref AS x ON x.dbprimary_acc = i.interpro_ac " . "WHERE p.translation_id = ?");
+  if ( !defined($constraint) ) {
+    warning("Invalid logic name: $logic_name");
+    return [];
+  }
 
-  $sth->bind_param(1, $translation_id, SQL_INTEGER);
-  $sth->execute();
-
-  while (my $row = $sth->fetchrow_arrayref) {
-	my ($dbID, $start, $end, $analysisid, $score, $perc_id, $evalue, $hstart, $hend, $hid, $hdesc, $desc, $ilabel, $interpro_ac) = @$row;
-
-	my $analysis = $analysis_adaptor->fetch_by_dbID($analysisid);
-
-	if (!$analysis) {
-	  warning("Analysis with dbID=$analysisid does not exist\n" . "but is referenced by ProteinFeature $dbID");
-	}
-
-	my $feat = Bio::EnsEMBL::ProteinFeature->new(-DBID         => $dbID,
-												 -ADAPTOR      => $self,
-												 -SEQNAME      => $translation_id,
-												 -START        => $start,
-												 -END          => $end,
-												 -ANALYSIS     => $analysis,
-												 -PERCENT_ID   => $perc_id,
-												 -P_VALUE      => $evalue,
-												 -SCORE        => $score,
-												 -HSTART       => $hstart,
-												 -HEND         => $hend,
-												 -HSEQNAME     => $hid,
-												 -HDESCRIPTION => $hdesc,
-												 -IDESC        => $desc,
-                                                                                                 -ILABEL       => $ilabel,
-												 -INTERPRO_AC  => $interpro_ac);
-
-	push(@features, $feat);
-  } ## end while (my $row = $sth->fetchrow_arrayref)
-
-  $sth->finish();
-
-  return \@features;
-} ## end sub fetch_all_by_translation_id
+  return $self->generic_fetch($constraint);
+}
 
 =head2 fetch_by_dbID
 
@@ -222,8 +218,10 @@ sub store {
 	$db->get_AnalysisAdaptor->store($analysis);
   }
 
-  my $sth = $self->prepare(q{
-    INSERT INTO protein_feature
+  my $insert_ignore = $self->insert_ignore_clause();
+
+  my $sth = $self->prepare("
+    ${insert_ignore} INTO protein_feature
                 ( translation_id,
                   seq_start,
                   seq_end,
@@ -236,7 +234,7 @@ sub store {
                   perc_ident,
                   evalue     )
          VALUES ( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ? )
-  });
+  ");
 
   $sth->bind_param(1,  $translation_id,        SQL_INTEGER);
   $sth->bind_param(2,  $feature->start,        SQL_INTEGER);
@@ -263,7 +261,7 @@ sub store {
 } ## end sub store
 
 sub fetch_by_translation_id {
-  deprecate("Use fetch_all_by_translation_id instead.");
+  deprecate("fetch_by_translation_id is deprecated. Please use fetch_all_by_translation_id instead.");
   fetch_all_by_translation_id(@_);
 }
 
@@ -271,7 +269,7 @@ sub fetch_all_by_feature_and_dbID {
   my $self           = shift;
   my $feature        = shift;
   my $translation_id = shift;
-  deprecate("Use fetch_all_by_translation_id instead.");
+  deprecate("fetch_all_by_feature_and_dbID is deprecated. Please use fetch_all_by_translation_id instead.");
 
   print STDERR "translation_id = $translation_id feature = $feature\n";
 
@@ -350,6 +348,79 @@ sub save {
 
   $sth->finish();
 } ## end sub save
+
+sub _tables {
+  my $self = shift;
+
+  return (['protein_feature', 'pf'], ['interpro', 'ip'], ['xref', 'x']);
+}
+
+sub _left_join {
+  return (['interpro', "pf.hit_name = ip.id"], ['xref', "x.dbprimary_acc = ip.interpro_ac"]);
+}
+
+sub _columns {
+  my $self = shift;
+
+  return qw( pf.protein_feature_id
+             pf.translation_id pf.seq_start pf.seq_end
+             pf.hit_start pf.hit_end pf.hit_name pf.hit_description
+             pf.analysis_id pf.score pf.evalue pf.perc_ident
+             x.description x.display_label ip.interpro_ac);
+}
+
+
+#  Arg [1]    : StatementHandle $sth
+#  Example    : none
+#  Description: PROTECTED implementation of abstract superclass method.
+#               responsible for the creation of ProteinFeatures
+#  Returntype : listref of Bio::EnsEMBL::ProteinFeatures
+#  Exceptions : none
+#  Caller     : internal
+#  Status     : At Risk
+
+sub _objs_from_sth {
+  my ($self, $sth) = @_;
+
+  my($dbID, $translation_id, $start, $end,
+     $hstart, $hend, $hid, $hdesc,
+     $analysis_id, $score, $evalue, $perc_id, 
+     $desc, $ilabel, $interpro_ac);
+
+  $sth->bind_columns(\$dbID, \$translation_id, \$start, \$end, 
+                     \$hstart, \$hend, \$hid, \$hdesc,
+                     \$analysis_id, \$score, \$evalue, \$perc_id,
+                     \$desc, \$ilabel, \$interpro_ac);
+
+  my $analysis_adaptor = $self->db->get_AnalysisAdaptor();
+
+  my @features;
+  while($sth->fetch()) {
+    my $analysis = $analysis_adaptor->fetch_by_dbID($analysis_id);
+
+    push( 
+      @features,
+        my $feat = Bio::EnsEMBL::ProteinFeature->new(
+           -DBID         => $dbID,
+           -ADAPTOR      => $self,
+           -SEQNAME      => $translation_id,
+           -START        => $start,
+           -END          => $end,
+           -ANALYSIS     => $analysis,
+           -PERCENT_ID   => $perc_id,
+           -P_VALUE      => $evalue,
+           -SCORE        => $score,
+           -HSTART       => $hstart,
+           -HEND         => $hend,
+           -HSEQNAME     => $hid,
+           -HDESCRIPTION => $hdesc,
+           -IDESC        => $desc,
+           -ILABEL       => $ilabel,
+           -INTERPRO_AC  => $interpro_ac));
+
+  }
+  return \@features;
+}
 
 1;
 

@@ -10,6 +10,11 @@
       'patch' => 'Bio::EnsEMBL::DBSQL::DBAdaptor',
       'empty' => 'Bio::EnsEMBL::DBSQL::DBAdaptor',
       'patch' => 'Bio::EnsEMBL::DBSQL::DBAdaptor',
+      'variation' => 'Bio::EnsEMBL::Variation::DBSQL::DBAdaptor',
+    },
+    'mus_musculus' => { 
+      'core' => 'Bio::EnsEMBL::DBSQL::DBAdaptor',
+      'variation' => 'Bio::EnsEMBL::Variation::DBSQL::DBAdaptor',
     },
     'circ' => {
       'core' => 'Bio::EnsEMBL::DBSQL::DBAdaptor',
@@ -28,6 +33,9 @@
     },
     'mapping' => {
       'core' => 'Bio::EnsEMBL::DBSQL::DBAdaptor',
+    },
+    'multi' => {
+      'compara' => 'Bio::EnsEMBL::Compara::DBSQL::DBAdaptor',
     },
   },
 }

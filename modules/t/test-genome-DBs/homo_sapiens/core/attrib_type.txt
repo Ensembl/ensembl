@@ -16,3 +16,4 @@
 16	_selenocysteine	Selenocysteine	\N
 17	codon_table	Codon Table	Alternate codon table
 18	non_ref	Non Reference	Non Reference Sequence Region
+19	karyotype_rank	Rank in the karyotype	For a given seq_region, if it is part of the species karyotype, will indicate its rank

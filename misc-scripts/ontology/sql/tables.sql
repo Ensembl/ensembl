@@ -1,4 +1,5 @@
 -- Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
+-- Copyright [2016] EMBL-European Bioinformatics Institute
 -- 
 -- Licensed under the Apache License, Version 2.0 (the "License");
 -- you may not use this file except in compliance with the License.
@@ -30,17 +31,18 @@ CREATE TABLE meta (
 # Add schema type and schema version to the meta table
 INSERT INTO meta (meta_key, meta_value) VALUES 
   ('schema_type', 'ontology'),
-  ('schema_version', '82');
+  ('schema_version', '86');
 
 # Patches included in this schema file
 INSERT INTO meta (meta_key, meta_value)
-  VALUES ('patch', 'patch_81_82_a.sql|schema_version');
+  VALUES ('patch', 'patch_85_86_a.sql|schema_version');
 
 
 CREATE TABLE ontology (
   ontology_id   INT UNSIGNED NOT NULL AUTO_INCREMENT,
   name          VARCHAR(64) NOT NULL,
   namespace     VARCHAR(64) NOT NULL,
+  data_version  VARCHAR(64) DEFAULT NULL,
 
   PRIMARY KEY (ontology_id),
   UNIQUE INDEX name_namespace_idx (name, namespace)
@@ -76,6 +78,7 @@ CREATE TABLE synonym (
   term_id       INT UNSIGNED NOT NULL,
   name          TEXT NOT NULL,
   type		ENUM('EXACT', 'BROAD', 'NARROW', 'RELATED'),
+  dbxref        VARCHAR(64)  NULL,
 
   PRIMARY KEY (synonym_id),
   UNIQUE INDEX term_synonym_idx (term_id, synonym_id),
@@ -121,6 +124,7 @@ CREATE TABLE closure (
   subparent_term_id INT UNSIGNED,
   distance          TINYINT UNSIGNED NOT NULL,
   ontology_id       INT UNSIGNED NOT NULL,
+  confident_relationship BOOL NOT NULL,
 
   PRIMARY KEY (closure_id),
   UNIQUE INDEX child_parent_idx

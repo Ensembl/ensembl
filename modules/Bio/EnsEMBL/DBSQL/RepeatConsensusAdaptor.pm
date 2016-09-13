@@ -1,6 +1,7 @@
 =head1 LICENSE
 
 Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
+Copyright [2016] EMBL-European Bioinformatics Institute
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -180,7 +181,7 @@ sub fetch_all_by_class_seq {
 
 
 sub fetch_by_class_seq {
-  deprecate('Use fetch_all_by_class_seq instead');
+  deprecate('fetch_by_class_seq is deprecated. Please use fetch_all_by_class_seq instead');
   fetch_all_by_class_seq(@_);
 }
 

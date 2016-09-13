@@ -1,6 +1,7 @@
 =head1 LICENSE
 
 Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
+Copyright [2016] EMBL-European Bioinformatics Institute
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -673,7 +674,7 @@ sub _uncached_fetch_by_dbID{
   #Should only be one
   my ($feat) = @{$self->generic_fetch($constraint)};
 
-  return undef if(!$feat);
+  return if(!$feat);
 
   return $feat;
 }
@@ -1109,8 +1110,55 @@ sub get_dumped_data {
     my $self = shift;
     my $data = shift;
 
-    $data =~ s/\n|\r|\f|\\//g;
+    $data =~ s/\n|\r|\f|(\\\\)//g;
     return eval ($data); ## no critic
+}
+
+#
+# Given a logic name and an existing constraint this will
+# add an analysis table constraint to the feature.  Note that if no
+# analysis_id exists in the columns of the primary table then no
+# constraint is added at all
+#
+sub _logic_name_to_constraint {
+  my $self = shift;
+  my $constraint = shift;
+  my $logic_name = shift;
+
+  return $constraint if(!$logic_name);
+
+  #make sure that an analysis_id exists in the primary table
+  my ($prim_tab) = $self->_tables();
+  my $prim_synonym = $prim_tab->[1];
+
+  my $found_analysis=0;
+  foreach my $col ($self->_columns) {
+    my ($syn,$col_name) = split(/\./,$col);
+    next if($syn ne $prim_synonym);
+    if($col_name eq 'analysis_id') {
+      $found_analysis = 1;
+      last;
+    }
+  }
+
+  if(!$found_analysis) {
+    warning("This feature is not associated with an analysis.\n" .
+            "Ignoring logic_name argument = [$logic_name].\n");
+    return $constraint;
+  }
+
+  my $aa = $self->db->get_AnalysisAdaptor();
+  my $an = $aa->fetch_by_logic_name($logic_name);
+
+  if ( !defined($an) ) {
+    return;
+  }
+
+  my $an_id = $an->dbID();
+
+  $constraint .= ' AND' if($constraint);
+  $constraint .= " ${prim_synonym}.analysis_id = $an_id";
+  return $constraint;
 }
 
 

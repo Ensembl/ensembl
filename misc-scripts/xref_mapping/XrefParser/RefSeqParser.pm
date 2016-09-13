@@ -1,6 +1,7 @@
 =head1 LICENSE
 
 Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
+Copyright [2016] EMBL-European Bioinformatics Institute
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -193,7 +194,9 @@ sub create_xrefs {
 
     }
 
-    $species = lc $species if $species;
+    if (!$species) { next; }
+
+    $species = lc $species;
     $species =~ s/ /_/;
 
     my $species_id_check = $name2species_id{$species};

@@ -1,4 +1,5 @@
 # Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
+# Copyright [2016] EMBL-European Bioinformatics Institute
 # 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -17,6 +18,7 @@ use warnings;
 no warnings qw(uninitialized);
 
 use Test::More;
+use Test::Warnings;
 
 use Bio::EnsEMBL::Test::MultiTestDB;
 use Bio::EnsEMBL::DBSQL::ArchiveStableIdAdaptor;
@@ -66,9 +68,12 @@ my $event = $asi->get_event("G2");
 
 is(ref($event), 'Bio::EnsEMBL::StableIdEvent', "A stable id event was fetched");
 is($event->score, 0.54, "Mapping score between G1 and G2");
+my $string = $event->ident_string();
 
 my $old_archive_stable_id = $event->old_ArchiveStableId;
 my $new_archive_stable_id = $event->new_ArchiveStableId;
+
+is($string, "G2.3 (3) -> G1.2 (4) [0.54]", "Event string");
 
 is($new_archive_stable_id, $asi, "Initial archive is new archive");
 is($old_archive_stable_id->stable_id, "G2", "Old stable id");
@@ -211,6 +216,16 @@ ok( scalar(@assoc) == 2 and
 $asi = $asia->fetch_by_stable_id_version("P2", 1);
 ok( $asi->get_peptide eq 'PTWOVERSIONONE*' );
 
+#
+# Test looking up active ids
+#
+my $archive_obj = $asia->fetch_by_stable_id('ENSG00000171456');
+is($archive_obj->stable_id, 'ENSG00000171456', 'fetch_by_stable_id with active stable_id');
+ok($archive_obj->is_current, 'Is the current stable_id');
+
+$archive_obj = $asia->fetch_by_stable_id('ENSG00000171456.1');
+is($archive_obj->stable_id, 'ENSG00000171456', 'fetch_by_stable_id with active stable_id with version');
+ok($archive_obj->is_latest, 'Is the latest stable_id');
 
 #
 # debug helper

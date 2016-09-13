@@ -1,4 +1,5 @@
 # Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
+# Copyright [2016] EMBL-European Bioinformatics Institute
 # 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-package TemporaryGeneCache;
+package fullIdCaching;
 
 use base qw/Bio::EnsEMBL::DBSQL::Support::FullIdCache/;
 use strict;
@@ -59,7 +60,7 @@ sub BEGIN {
   no strict 'refs'; ## no critic
   *Bio::EnsEMBL::DBSQL::GeneAdaptor::_build_id_cache = sub {
     my ($self) = @_;
-    return TemporaryGeneCache->new($self);
+    return fullIdCaching->new($self);
   };
   no warnings 'redefine';
   my $original_store = \&Bio::EnsEMBL::DBSQL::GeneAdaptor::store; 

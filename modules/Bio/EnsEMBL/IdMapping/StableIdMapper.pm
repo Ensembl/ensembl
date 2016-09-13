@@ -1,6 +1,7 @@
 =head1 LICENSE
 
 Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
+Copyright [2016] EMBL-European Bioinformatics Institute
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -233,14 +234,19 @@ sub map_stable_ids {
       $t_obj->created_date($s_obj->created_date);
 
       # calculate and set version
-      $t_obj->version($self->stable_id_generator->calculate_version(
-        $s_obj, $t_obj));
+      my $old_version = $s_obj->version();
+      my $new_version = $self->stable_id_generator->calculate_version($s_obj, $t_obj) ;
+      $t_obj->version($new_version);
 
       # change modified_date if version changed
-      if ($s_obj->version == $t_obj->version) {
+      if ($old_version == $new_version) {
         $t_obj->modified_date($s_obj->modified_date);
       } else {
         $t_obj->modified_date($self->mapping_session_date);
+        # If version changed, score cannot be 1
+        if ($scores_by_target{$tid} == 1) {
+          $scores_by_target{$tid} = 0.99;
+        }
       }
 
       # create a stable_id_event entry (not for exons)

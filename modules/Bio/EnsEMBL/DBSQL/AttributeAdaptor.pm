@@ -1,6 +1,7 @@
 =head1 LICENSE
 
 Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
+Copyright [2016] EMBL-European Bioinformatics Institute
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -178,6 +179,14 @@ sub store_batch_on_Translation {
   return;
 }
 
+sub store_batch_on_DnaDnaAlignFeature {
+  my ($self, $attributes, $batch_size) = @_;
+
+  $self->store_batch_on_Object('dna_align_feature', $attributes, $batch_size);
+
+  return;
+}
+
 
 ## Single store
 
@@ -298,6 +307,22 @@ sub store_on_Translation {
   return;
 }
 
+sub store_on_DnaDnaAlignFeature {
+  my ($self, $object, $attributes) = @_;
+
+  my $object_id;
+  if (!ref($object)){
+    $object_id = $object;
+  }
+  else {
+    $object_id = $object->dbID;
+  }
+
+  $self->store_on_Object($object_id, $attributes, 'dna_align_feature');
+
+  return;
+}
+
 
 ## Remove methods
 
@@ -399,6 +424,18 @@ sub remove_from_Translation {
 
   my $object_id = $object->dbID();
   $self->remove_from_Object($object_id, 'translation', $code);
+  
+  return;
+
+}
+
+sub remove_from_DnaDnaAlignFeature {
+  my ($self, $object, $code) = @_;
+
+  assert_ref($object, 'Bio::EnsEMBL::DnaDnaAlignFeature');
+
+  my $object_id = $object->dbID();
+  $self->remove_from_Object($object_id, 'dna_align_feature', $code);
   
   return;
 
@@ -538,6 +575,23 @@ sub fetch_all_by_Translation {
   return $results;
 
 }
+
+sub fetch_all_by_DnaDnaAlignFeature {
+  my ($self, $object, $code) = @_;
+
+  my $object_id;
+
+  if (defined($object)) {
+    assert_ref($object, 'Bio::EnsEMBL::DnaDnaAlignFeature');
+    $object_id = $object->dbID();
+  }
+
+  my $results = $self->fetch_all_by_Object($object_id, 'dna_align_feature', $code);
+  
+  return $results;
+
+}
+
 
 
 

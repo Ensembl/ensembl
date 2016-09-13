@@ -1,4 +1,5 @@
 # Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
+# Copyright [2016] EMBL-European Bioinformatics Institute
 # 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -57,6 +58,8 @@ $accession = "GO:0003698";
 $term = $go_adaptor->fetch_by_accession($accession);
 ok($term->name, "GO:0003698 alt_id was fetched");
 
+ok($term->ontology_version() eq 'releases/2016-03-30', "Found ontology version by accession");
+
 $accession = "GO:0003677";
 $term = $go_adaptor->fetch_by_accession($accession, 1);
 ok(!$term->is_obsolete, "GO:0003677 is not obsolete");
@@ -74,6 +77,8 @@ is(@{$terms}, 134, "Found binding terms");
 
 $terms = $go_adaptor->fetch_all_by_name($pattern, undef, 1);
 is(@{$terms}, 138, "Found binding terms, including obsolete ones");
+
+ok($term->ontology_version() eq 'releases/2016-03-30', "Found ontology version by name");
 
 my $roots = $go_adaptor->fetch_all_roots();
 is(@{$roots}, 2, "Found roots");
@@ -96,6 +101,42 @@ is(@{$efo_roots}, 0, "Found no efo roots");
 $term = $go_adaptor->fetch_by_accession('GO:0000182',1); # unintentionally picked an obsolete term for testing on.
 my $term_list = $go_adaptor->fetch_all_by_descendant_term($term);
 my $inclusive_term_list = $go_adaptor->fetch_all_by_descendant_term($term,undef,undef,1);
+my $other_term_list = $term->ancestors();
 ok (scalar(@$term_list) == scalar(@$inclusive_term_list) - 1, "Zero_distance flag on fetch_all_by_descendant_term");
+is(scalar(@$term_list), scalar(@$other_term_list), "Fetching all by descendant is the same as fetching all ancestors for term");
+is($term_list->[0]->accession, $other_term_list->[0]->accession, "Fetching all by descendant is the same as fetching all ancestors for term");
+
+my $parent_list = $go_adaptor->fetch_all_by_parent_term($term);
+my $other_parent_list = $term->children();
+is(scalar(@$parent_list), 2, 'Term has 2 parent');
+is(scalar(@$parent_list), scalar(@$other_parent_list), "Fetching all by parent is the same as fetching all children for term");
+is($parent_list->[0], $other_parent_list->[0], "Same terms returned");
+
+my $child_list = $go_adaptor->fetch_all_by_child_term($term);
+my $other_child_list = $term->parents();
+is(scalar(@$child_list), 1, 'Term has 1 child');
+is(scalar(@$child_list), scalar(@$other_child_list), "Fetching all terms by child is the same as fetching all parents for term");
+is($child_list->[0], $other_child_list->[0], "Fetching all terms by child is the same as fetching all parents for term");
+
+my $chart = $go_adaptor->_fetch_ancestor_chart($term, 'GO');
+ok(%$chart, 'Can fetch ancestor chart');
+
+my $new_term = $go_adaptor->fetch_by_dbID($term->dbID, 1);
+is($new_term->accession, $term->accession, "Fetched the same term using dbID");
+
+my @dbid_list = ($term->dbID, $term_list->[0]->dbID);
+my $list = $go_adaptor->fetch_all_by_dbID_list(\@dbid_list);
+is($list->[0]->accession, $term_list->[0]->accession, "Fetched the correct term using list of dbIDs");
+my $obsolete_list = $go_adaptor->fetch_all_by_dbID_list(\@dbid_list, 1);
+is($obsolete_list->[0]->accession, $term->accession, "First dbID is obsolete");
+is(scalar(@$list), scalar(@$obsolete_list) - 1, "One obsolete term found");
+
+my $alts = $go_adaptor->fetch_all_alt_ids('GO:0000182');
+is(scalar(@$alts), 0, "No alternative accessions for GO:0000182");
+
+my $all = $go_adaptor->fetch_all();
+my $all_obsolete = $go_adaptor->fetch_all(1);
+is(scalar(@$all), 161, "161 terms found");
+is(scalar(@$all_obsolete), 165, "165 terms found when including obsolete ones");
 
 done_testing();

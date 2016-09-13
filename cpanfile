@@ -15,6 +15,8 @@ test_requires 'Error';
 test_requires 'PadWalker';
 test_requires 'Test::Builder::Module';
 test_requires 'IO::String';
+test_requires 'Test::Perl::Critic';
+test_requires 'Perl::Critic::Utils';
 
 =cut
 feature 'assembly_mapping', 'Assembly mapper support' => sub {

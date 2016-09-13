@@ -1,6 +1,7 @@
 =head1 LICENSE
 
 Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
+Copyright [2016] EMBL-European Bioinformatics Institute
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -1075,17 +1076,6 @@ sub fetch_by_attrib {
 }
 
 
-sub _fetch_by_attrib{
-    my $self = shift;
-    my $attrib = shift;
-    my $version = shift;
-
-    deprecate("You should be using the public method fetch_by_attrib ".
-	      "(without initial underscore) instead");
-
-    return $self->fetch_by_attrib($attrib,$version);
-}
-
 =head2 fetch_all_by_attrib
 
   Arg [1]    : string attrib
@@ -1109,16 +1099,6 @@ sub fetch_all_by_attrib {
   }
 
   return \@coord_systems;
-}
-
-sub _fetch_all_by_attrib{
-    my $self = shift;
-    my $attrib = shift;
-
-    deprecate("You should be using the public method fetch_all_by_attrib ".
-	      "(without initial underscore) instead");
-
-    return $self->fetch_all_by_attrib($attrib);
 }
 
 =head2 store

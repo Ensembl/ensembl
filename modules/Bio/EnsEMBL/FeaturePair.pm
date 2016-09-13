@@ -1,6 +1,7 @@
 =head1 LICENSE
 
 Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
+Copyright [2016] EMBL-European Bioinformatics Institute
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -108,6 +109,7 @@ use Bio::EnsEMBL::Utils::Exception qw(throw deprecate warning);
   Arg [HSPECIES]  : string - The species the hit sequence is from (optional)
   Arg [COVERAGE]  : string - The % of the query that this feature pair covers
   Arg [HCOVERAGE] : string - The % of the target this this feature pair covers
+  Arg [EXTRA_DATA]: HashRef - Additional data, specified as name, value attribute pairs (optional)
   Arg [...]       : Named superclass constructor args (Bio::EnsEMBL::Feature)
   Example    : $feat = Bio::EnsEMBL::FeaturePair->new(-start    => 132_231,
                                               -end      => 132_321,
@@ -728,7 +730,7 @@ sub level_id {
 sub feature1 {
   my ($self, $arg) = @_;
 
-  deprecate('Use start(), end(), strand(), slice(), etc. methods instead.');
+  deprecate('feature1 is deprecated and will be removed in e87. Please use start(), end(), strand(), slice(), etc. methods instead.');
 
   if ($arg) {
 	$self->start($arg->start());
@@ -755,7 +757,7 @@ sub feature1 {
 sub feature2 {
   my ($self, $arg) = @_;
 
-  deprecate('Use hstart(),hend(),hstrand(),hseqname() methods instead.');
+  deprecate('feature2 is deprecated and will be removed in e87. Please use hstart(),hend(),hstrand(),hseqname() methods instead.');
 
   if (defined($arg)) {
 	$self->hstart($arg->start());
@@ -827,30 +829,6 @@ sub invert {
   $self->{'slice'}  = $slice;
 } ## end sub invert
 
-=head2 validate
-
-  Description: DEPRECATED do not use
-
-=cut
-
-sub validate {
-  my ($self) = @_;
-
-  deprecate('This method does nothing and should not be used.');
-}
-
-=head2 validate_prot_feature
-
-  Description: DEPRECATED do not use
-
-=cut
-
-sub validate_prot_feature {
-  my ($self) = @_;
-
-  deprecate('This method does nothing and should not be used.');
-}
-
 =head2 set_featurepair_fields
 
   Description: DEPRECATED do not use
@@ -860,7 +838,7 @@ sub validate_prot_feature {
 sub set_featurepair_fields {
   my ($self, $start, $end, $strand, $score, $seqname, $hstart, $hend, $hstrand, $hseqname, $analysis, $e_value, $perc_id, $phase, $end_phase) = @_;
 
-  deprecate("Use individual Getter/Setters or Constructor arguments " . " instead.\nThere is no advantage to using this method.");
+  deprecate("set_featurepair_fields is deprecated and will be removed in e87. Please use individual Getter/Setters or Constructor arguments instead.");
 
   throw('interface fault') if (@_ < 12 or @_ > 15);
 
@@ -889,7 +867,7 @@ sub set_featurepair_fields {
 sub gffstring {
   my ($self) = @_;
 
-  deprecate('Do not use');
+  deprecate('gffstring is deprecated and will be removed in e87.');
 
   my $str .= (defined $self->slice) ? $self->slice->name() . "\t" : "\t";
   $str .= "\t";                                                     #source tag
@@ -926,7 +904,7 @@ sub gffstring {
 sub hphase {
   my ($self, $value) = @_;
 
-  deprecate('This method does nothing useful.');
+  deprecate('hphase is deprecated and will be removed in e87.');
 
   if (defined($value)) {
 	$self->{_hphase} = $value;
@@ -944,7 +922,7 @@ sub hphase {
 sub hend_phase {
   my ($self, $value) = @_;
 
-  deprecate('This method does nothing useful.');
+  deprecate('hend_phase is deprecated and will be removed in e87.');
 
   if (defined($value)) {
 	$self->{_hend_phase} = $value;

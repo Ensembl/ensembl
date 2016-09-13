@@ -1,5 +1,6 @@
 #!/usr/bin/env perl
 # Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
+# Copyright [2016] EMBL-European Bioinformatics Institute
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -37,9 +38,11 @@ sub short_usage {
   print <<SHORT_USAGE_END;
 Usage:
   $0 --pass=XXX \\
+  \t[--user=XXX] \\
   \t[--noflush] [--nocheck] [--notargetflush]\\
   \t[--noopt] [--noinnodb] [--skip_views] [--force] \\
   \t[ --only_tables=XXX,YYY | --skip_tables=XXX,YYY ] \\
+  \t[ --source_dir=/data/dir ] [ --target_dir=/data/dir ] \\
   \t[ input_file |
   \t  --source=db\@host[:port] \\
   \t  --target=db\@host[:port] ]
@@ -68,8 +71,12 @@ Description:
 Command line switches:
 
   --pass=XXX        (Required)
-                    The password for the 'ensadmin' MySQL user to
-                    connect to the database.
+                    The password for the MySQL user to
+                    connect to the database server.
+
+  --user=XXX        (Optional)
+                    MySQL user to connect to the database server.
+                    Default will be 'ensadmin'.
 
   --noflush         (Optional)
                     Skips table flushing completely.  Use very
@@ -138,6 +145,18 @@ Command line switches:
   --routines        (Optional)
                     Also copies functions and procedures
 
+  --source_dir=/data/dir
+                    (Optional)
+                    MySQL server database source directory if different
+                    from /mysql/data_3306/databases/
+
+  --target_dir=/data/dir
+                    (Optional)
+                    MySQL server database target directory if different
+                    from /mysql/data_3306/databases/. This option will 
+                    also create a symlink for the database
+                    from target dir to MySQL directory.
+
   --help            (Optional)
                     Displays this text.
 
@@ -186,7 +205,7 @@ Input file format:
 
   Column 7 is used only when you need to copy the database to a location
   which is not the MySQL server's data directory.  The same rules
-  applies; the mysqlens user must have write access to this directory
+  applies; the mysqlens user at Sanger or other user at EBI must have write access to this directory
   and to the one above to create any temporary staging directory
   structures.  There is currently no way to specify this on the
   command-line.
@@ -196,7 +215,7 @@ Script restrictions:
 
   1. You must run the script on the destination server.
 
-  2. The script must be run as the 'mysqlens' Unix user.  Talk to a
+  2. The script must be run as the 'mysqlens' Unix user at Sanger. Talk to a
      recent release coordinator for access.
 
   3. The script will only copy MYISAM tables.  Databases with InnoDB
@@ -208,7 +227,7 @@ Script restrictions:
 LONG_USAGE_END
 } ## end sub long_usage
 
-my ( $opt_password, $opt_only_tables, $opt_skip_tables, $opt_help );
+my ( $opt_password, $opt_user, $opt_only_tables, $opt_skip_tables, $opt_help );
 
 my $opt_flush    = 1;    # Flush by default.
 my $opt_check    = 1;    # Check tables by default.
@@ -219,9 +238,10 @@ my $opt_innodb     = 1;    # Don't skip InnoDB by default
 my $opt_flushtarget = 1;
 my $opt_tmpdir;
 my $opt_routines = 0;
-my ( $opt_source, $opt_target );
+my ( $opt_source, $opt_target, $opt_source_dir, $opt_target_dir);
 
 if ( !GetOptions( 'pass=s'        => \$opt_password,
+                  'user=s'        => \$opt_user,
                   'flush!'        => \$opt_flush,
                   'flushtarget!'  => \$opt_flushtarget,
                   'check!'        => \$opt_check,
@@ -236,6 +256,8 @@ if ( !GetOptions( 'pass=s'        => \$opt_password,
                   'source=s'      => \$opt_source,
                   'target=s'      => \$opt_target,
                   'routines'      => \$opt_routines,
+                  'source_dir=s'  => \$opt_source_dir,
+                  'target_dir=s'  => \$opt_target_dir,
      ) ||
      ( !defined($opt_password) && !defined($opt_help) ) )
 {
@@ -273,7 +295,12 @@ if ( defined($opt_skip_tables) ) {
 }
 
 if ( scalar( getpwuid($<) ) ne 'mysqlens' ) {
-  die("You need to run this script as the 'mysqlens' user.\n");
+  warn("You are not running this script as the 'mysqlens' user.\n");
+}
+
+if (!defined($opt_user))
+{
+  $opt_user='ensadmin';
 }
 
 my $input_file;
@@ -431,7 +458,7 @@ while ( my $line = $in->getline() ) {
             'target_port'     => $target_port,
             'target_db'       => $target_db,
             'target_location' => $target_location,
-          } );
+         } );
   }
 } ## end while ( my $line = $in->getline...)
 
@@ -472,7 +499,7 @@ foreach my $spec (@todo) {
                             $source_port );
 
   my $source_dbh = DBI->connect( $source_dsn,
-                                 'ensadmin',
+                                 $opt_user,
                                  $opt_password, {
                                    'PrintError' => 1,
                                    'AutoCommit' => 0
@@ -494,7 +521,7 @@ foreach my $spec (@todo) {
                             $target_hostaddr, $target_port );
 
   my $target_dbh = DBI->connect( $target_dsn,
-                                 'ensadmin',
+                                 $opt_user,
                                  $opt_password, {
                                    'PrintError' => 1,
                                    'AutoCommit' => 0
@@ -513,11 +540,29 @@ foreach my $spec (@todo) {
     next TODO;
   }
 
+  # Assigning Source and target directory.
+  my $source_dir;
+  my $target_dir;
+
   # Get source and target server data directories.
-  my $source_dir =
-    $source_dbh->selectall_arrayref("SHOW VARIABLES LIKE 'datadir'")
-    ->[0][1];
-  my $target_dir =
+  if ( defined($opt_source_dir) ) {
+    $source_dir = $opt_source_dir;
+  }
+  else {
+    $source_dir =
+      $source_dbh->selectall_arrayref("SHOW VARIABLES LIKE 'datadir'")
+      ->[0][1];
+  }
+  if ( defined($opt_target_dir) ) {
+    $target_dir = $opt_target_dir;
+  }
+  else {
+    $target_dir =
+      $target_dbh->selectall_arrayref("SHOW VARIABLES LIKE 'datadir'")
+      ->[0][1];
+  }
+  # Getting staging machine MySQL database directory.
+  my $mysql_database_dir =
     $target_dbh->selectall_arrayref("SHOW VARIABLES LIKE 'datadir'")
     ->[0][1];
 
@@ -954,11 +999,43 @@ TABLE:
       sprintf( "SUCCESS: cleanup of '%s' may be needed", $staging_dir );
   }
 
+  ##------------------------------------------------------------------##
+  ## Symlinks                                                         ##
+  ##------------------------------------------------------------------##
+
+  print( '-' x 37, ' SYMLINK ', '-' x 37, "\n" );
+
+  # Create symlink if target directory is not /mysql/data_3306/databases/
+  # If given target_dir is not the staging machine MySQL data directory, create symlink for them.
+  if ($target_dir ne $mysql_database_dir)
+  {
+    my $create_symlinks="ln -s ".$target_dir."/".$target_db." ".$mysql_database_dir;
+    if ( system($create_symlinks) != 0 ) {
+
+          warn( sprintf( "Failed to create symlink from '%s' to '%s'/'%s'.\n ",
+                         $target_dir,$mysql_database_dir,$mysql_database_dir
+                ) );
+
+          $spec->{'status'} =
+            sprintf( "FAILED: cannot create symlink from '%s' to '%s'/'%s'.\n ",
+                     $target_dir,$mysql_database_dir,$mysql_database_dir );
+    }
+    else {
+      printf("Symlink successfully created from '%s' to '%s'/'%s' for the copied databases.\n",$target_dir,$mysql_database_dir,$mysql_database_dir);
+    }
+  }
+
+  ##------------------------------------------------------------------##
+  ## Flush                                                            ##
+  ##------------------------------------------------------------------##
+ 
+  print( '-' x 37, ' FLUSH ', '-' x 37, "\n" );
+
   # Flush tables on target.
   if ($opt_flushtarget) {
     print("FLUSHING TABLES ON TARGET...\n");
     my $tdbh = DBI->connect( $target_dsn,
-                               'ensadmin',
+                               $opt_user,
                                $opt_password, {
                                  'PrintError' => 1,
                                  'AutoCommit' => 0
@@ -976,14 +1053,14 @@ TABLE:
   if($opt_routines){
     print( '-' x 31, ' Procedures ', '-' x 31, "\n" );
     $target_dbh = DBI->connect( $target_dsn,
-                                'ensadmin',
+                                $opt_user,
                                 $opt_password, {
                                 'PrintError' => 1,
                                 'AutoCommit' => 0
                              } );
 
     $source_dbh = DBI->connect( $source_dsn,
-                                'ensadmin',
+                                $opt_user,
                                 $opt_password, {
                                 'PrintError' => 1,
                                 'AutoCommit' => 0

@@ -1,4 +1,5 @@
 # Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
+# Copyright [2016] EMBL-European Bioinformatics Institute
 # 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -47,6 +48,7 @@ package main;
 use strict;
 use warnings;
 use Test::More;
+use Test::Warnings;
 use Bio::EnsEMBL::Test::MultiTestDB;
 use Bio::EnsEMBL::Utils::IO::GFFSerializer;
 use Bio::EnsEMBL::Feature;
@@ -56,6 +58,8 @@ use Test::Differences;
 
 my $db = Bio::EnsEMBL::Test::MultiTestDB->new();
 my $dba = $db->get_DBAdaptor('core');
+my $omulti = Bio::EnsEMBL::Test::MultiTestDB->new('ontology');
+my $odb = $omulti->get_DBAdaptor('ontology');
 
 my $id = 'ENSG00000131044';
 
@@ -132,6 +136,58 @@ OUT
   );
   $expected .= "\n";
   assert_gff3($gene->canonical_transcript(), $expected, 'Transcript with custom source serialises to GFF3 as expected. Source is wibble');
+
+  $expected = <<'OUT';
+##gff-version 3
+##sequence-region   20 30274334 30274425
+OUT
+  $expected .= join("\t",
+  qw/20      ensembl region  30274334        30274425        .       +       0/,
+  'ID=region:ENSP00000308980;Parent=transcript:ENST00000310998;protein_id=ENSP00000308980'
+  );
+  $expected .= "\n";
+  my $cds = $gene->canonical_transcript->get_all_CDS();
+  assert_gff3($cds->[0], $expected, 'CDS with custom source serialises to GFF3 as expected. Source is wibble');
+
+  my $cds_expected = $expected;
+
+  $expected = <<'OUT';
+##gff-version 3
+##sequence-region   20 30274334 30274425
+OUT
+  $expected .= join("\t",
+  qw/20 ensembl       region  30274334        30274425        .       +       ./,
+  'Name=ENSE00001155821;Parent=transcript:ENST00000310998;constitutive=0;ensembl_end_phase=2;ensembl_phase=0;exon_id=ENSE00001155821;rank=1;version=1'
+  );
+  $expected .= "\n";
+  my $exon = $gene->canonical_transcript->get_all_ExonTranscripts();
+  assert_gff3($exon->[0], $expected, 'Exon with custom source serialises to GFF3 as expected. Source is wibble');
+
+  my $new_id = 'ENSG00000126003';
+  my $utr_gene = $ga->fetch_by_stable_id($new_id);
+  my $utrs = $utr_gene->canonical_transcript->get_all_five_prime_UTRs();
+  $expected = <<'OUT';
+##gff-version 3
+##sequence-region   20 30583501 30583588
+OUT
+  $expected .= join("\t",
+  qw/20 ensembl       region  30583501  30583588        .       -       ./,
+  'Parent=transcript:ENST00000246229'
+  );
+  $expected .= "\n";
+  assert_gff3($utrs->[0], $expected, 'UTR feature serialises to GFF3 as expected');
+
+  $cds_expected .= join("\t",
+  qw/20 ensembl       region  30274334        30274425        .       +       ./,
+  'Name=ENSE00001155821;Parent=transcript:ENST00000310998;constitutive=0;ensembl_end_phase=2;ensembl_phase=0;exon_id=ENSE00001155821;rank=1;version=1'
+  );
+  $cds_expected .= "\n";
+  my @list;
+  push @list, $cds->[0];
+  push @list, $exon->[0];
+  assert_gff3_list(\@list, $cds_expected, "List of features serialises to GFF3 as expected");
+
+
 }
 
 {
@@ -164,6 +220,16 @@ sub assert_gff3 {
   my $ser = Bio::EnsEMBL::Utils::IO::GFFSerializer->new($ota, $fh);
   $ser->print_main_header([$feature->feature_Slice()]);
   $ser->print_feature($feature);
+  eq_or_diff(${$fh->string_ref()}, $expected, $msg);
+}
+
+sub assert_gff3_list {
+  my ($features, $expected, $msg) = @_;
+  my $ota = Test::SO->new();
+  my $fh = IO::String->new();
+  my $ser = Bio::EnsEMBL::Utils::IO::GFFSerializer->new($ota, $fh);
+  $ser->print_main_header([$features->[0]->feature_Slice()]);
+  $ser->print_feature_list($features);
   eq_or_diff(${$fh->string_ref()}, $expected, $msg);
 }
 

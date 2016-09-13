@@ -1,6 +1,7 @@
 =head1 LICENSE
 
 Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
+Copyright [2016] EMBL-European Bioinformatics Institute
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -597,7 +598,7 @@ sub external_name {
 
   Example    : print "Transcript ".$transcript->stable_id." is KNOWN\n" if
                   $transcript->is_known;
-  Description: Returns TRUE if this gene has a status of 'KNOWN'
+  Description: DEPRECATED. Returns TRUE if this gene has a status of 'KNOWN'
   Returntype : TRUE if known, FALSE otherwise
   Exceptions : none
   Caller     : general
@@ -607,6 +608,7 @@ sub external_name {
 
 sub is_known {
   my $self = shift;
+  deprecate("is_known is deprecated and will be removed in e90. Please consider checking supporting features instead");
   return ( $self->{'status'} eq "KNOWN" || $self->{'status'} eq "KNOWN_BY_PROJECTION" );
 }
 
@@ -614,7 +616,7 @@ sub is_known {
 =head2 status
 
   Arg [1]    : string $status
-  Description: get/set for attribute status
+  Description: DEPRECATED. get/set for attribute status
   Returntype : string
   Exceptions : none
   Caller     : general
@@ -624,6 +626,7 @@ sub is_known {
 
 sub status {
    my $self = shift;
+  deprecate("status is deprecated and will be removed in e90. Please consider checking supporting features instead");
   $self->{'status'} = shift if( @_ );
   return $self->{'status'};
 }
@@ -1644,6 +1647,37 @@ sub get_all_Introns {
    return \@introns;
 }
 
+=head2 get_all_CDS_Introns
+
+  Arg [1]    : none
+  Example    : my @introns = @{$transcript->get_all_CDS_Introns()};
+  Description: Returns an listref of the introns between coding exons in this transcript in order.
+  Returntype : listref to Bio::EnsEMBL::Intron objects
+  Exceptions : none
+  Caller     : general
+  Status     : Stable
+
+=cut
+
+sub get_all_CDS_Introns {
+   my ($self) = @_;
+   # return an empty list if there is no translation
+   my $translation = $self->translation or return [];
+   if( ! defined $self->{'_trans_exon_array'} && defined $self->adaptor() ) {
+     $self->{'_trans_exon_array'} = $self->adaptor()->db()->
+       get_ExonAdaptor()->fetch_all_by_Transcript( $self );
+   }
+
+   my @introns=();
+   my @exons = @{$self->{'_trans_exon_array'}};
+   for(my $i=0; $i < scalar(@exons)-1; $i++){
+     if (!$exons[$i]->is_coding($self)) { next; }
+     my $intron = new Bio::EnsEMBL::Intron($exons[$i],$exons[$i+1]);
+     push(@introns, $intron)
+   }
+   return \@introns;
+}
+
 
 =head2 length
 
@@ -1886,14 +1920,15 @@ sub get_all_five_prime_UTRs {
   my @utrs;
 
   my $cdna_coding_start = $self->cdna_coding_start();
+
   # if it is greater than 1 then it must have UTR
   if($cdna_coding_start > 1) {
     my @projections = $self->cdna2genomic(1, ($cdna_coding_start-1));
     foreach my $projection (@projections) {
       next if $projection->isa('Bio::EnsEMBL::Mapper::Gap');
       my $utr = Bio::EnsEMBL::UTR->new(
-        -START  => $projection->start,
-        -END    => $projection->end,
+        -START  => $projection->start - $self->slice->start + 1,
+        -END    => $projection->end - $self->slice->start + 1,
         -STRAND => $projection->strand,
         -SLICE  => $self->slice,
         -TRANSCRIPT => $self,
@@ -1929,8 +1964,8 @@ sub get_all_three_prime_UTRs {
     foreach my $projection (@projections) {
       next if $projection->isa('Bio::EnsEMBL::Mapper::Gap');
       my $utr = Bio::EnsEMBL::UTR->new(
-        -START  => $projection->start,
-        -END    => $projection->end,
+        -START  => $projection->start - $self->slice->start + 1,
+        -END    => $projection->end - $self->slice->start + 1,
         -STRAND => $projection->strand,
         -SLICE  => $self->slice,
         -TRANSCRIPT => $self,
@@ -2028,7 +2063,7 @@ sub get_all_translateable_Exons {
     # Adjust to translation start if this is the start exon
     if ($ex == $start_exon ) {
       if ($t_start < 1 or $t_start > $length) {
-        warning("WARN: Translation start '$t_start' is outside exon $ex length=$length");
+        warning("WARN: Translation start '$t_start' is outside exon " . $ex->display_id . " length=$length");
   return [];
       }
       $adjust_start = $t_start - 1;
@@ -2061,7 +2096,8 @@ sub get_all_translateable_Exons {
 
 =head2 translate
 
-  Args       : none
+  Arg [1]    : Boolean, emulate the behavior of old bioperl versions where
+               an incomplete final codon of 2 characters is padded and guessed
   Example    : none
   Description: Return the peptide (plus eventual stop codon) for
                this transcript.  Does N-padding of non-phase
@@ -2076,7 +2112,7 @@ sub get_all_translateable_Exons {
 =cut
 
 sub translate {
-  my ($self) = @_;
+  my ($self, $complete_codon) = @_;
 
   if ( !defined( $self->translation() ) ) { return undef }
 
@@ -2121,6 +2157,20 @@ sub translate {
     if ( $codon_table->is_ter_codon( substr( $mrna, -3, 3 ) ) ) {
       substr( $mrna, -3, 3, '' );
     }
+  } elsif ( CORE::length($mrna) % 3 == 2 ) {
+      # If we have a partial codon of 2 bp we need to decide if we
+      # trim it or not to fix some bad behaviour in older bioperl
+      # versions
+      if ( $complete_codon ) {
+	  # If we want to do the bad behavior of bioperl 1.6.1 and older
+	  # where we guess the last codon if inomplete, pad an N
+	  # to the mrna sequence
+	  $mrna .= 'N';
+      } else {
+	  # Otherwise trim those last two bp off so the behavior is
+	  # consistent across bioperl versions
+	  substr( $mrna, -2, 2, '' );
+      }
   }
 
   if ( CORE::length($mrna) < 1 ) { return undef }
@@ -2310,7 +2360,6 @@ sub version {
   return $self->{'version'};
 }
 
-
 =head2 stable_id
 
  Title   : stable_id
@@ -2328,6 +2377,34 @@ sub stable_id {
   return $self->{'stable_id'};
 }
 
+=head2 stable_id_version
+
+  Arg [1]    : (optional) String - the stable ID with version to set
+  Example    : $transcript->stable_id("ENST0000000001.3");
+  Description: Getter/setter for stable id with version for this transcript.
+  Returntype : String
+  Exceptions : none
+  Caller     : general
+  Status     : Stable
+
+=cut
+
+sub stable_id_version {
+    my $self = shift;
+    if(my $stable_id = shift) {
+	# See if there's an embedded period, assume that's a
+	# version, might not work for some species but you
+	# should use ->stable_id() and version() if you're worried
+	# about ambiguity
+	my $vindex = rindex($stable_id, '.');
+	# Set the stable_id and version pair depending on if
+	# we found a version delimiter in the stable_id
+	($self->{stable_id}, $self->{version}) = ($vindex > 0 ?
+						  (substr($stable_id,0,$vindex), substr($stable_id,$vindex+1)) :
+						  $stable_id, undef);
+    }
+    return $self->{stable_id} . ($self->{version} ? ".$self->{version}" : '');
+}
 
 =head2 is_current
 
@@ -3048,10 +3125,10 @@ sub summary_as_hash {
   $summary_ref->{'description'} = $self->description;
   $summary_ref->{'Name'} = $self->external_name if $self->external_name;
   $summary_ref->{'biotype'} = $self->biotype;
-  $summary_ref->{'logic_name'} = $self->analysis->logic_name();
+  $summary_ref->{'logic_name'} = $self->analysis->logic_name() if defined $self->analysis();
   my $parent_gene = $self->get_Gene();
   $summary_ref->{'Parent'} = $parent_gene->stable_id;
-  $summary_ref->{'source'} = $parent_gene->source();
+  $summary_ref->{'source'} = $self->source();
   $summary_ref->{'transcript_id'} = $summary_ref->{'id'};
 
   ## Specific attributes for merged species
@@ -3152,53 +3229,6 @@ sub get_Gene {
 # DEPRECATED METHODS FOLLOW
 ###########################
 
-=head2 sort
-
-  Description: DEPRECATED.  This method is no longer needed.  Exons are sorted
-               automatically when added to the transcript.
-
-=cut
-
-sub sort {
-  my $self = shift;
-
-  deprecate( "Exons are kept sorted, you dont have to call sort any more" );
-  # Fetch all the features
-  my @exons = @{$self->get_all_Exons()};
-  
-  # Empty the feature table
-  $self->flush_Exons();
-
-  # Now sort the exons and put back in the feature table
-  my $strand = $exons[0]->strand;
-
-  if ($strand == 1) {
-    @exons = sort { $a->start <=> $b->start } @exons;
-  } elsif ($strand == -1) {
-    @exons = sort { $b->start <=> $a->start } @exons;
-  }
-
-  foreach my $e (@exons) {
-    $self->add_Exon($e);
-  }
-}
-
-
-# _translation_id
-# Usage   : DEPRECATED - not needed anymore
-
-sub _translation_id {
-   my $self = shift;
-   deprecate( "This method shouldnt be necessary any more" );
-   if( @_ ) {
-      my $value = shift;
-      $self->{'_translation_id'} = $value;
-    }
-    return $self->{'_translation_id'};
-
-}
-
-
 =head2 created
 
  Description: DEPRECATED - this attribute is not part of transcript anymore
@@ -3207,7 +3237,7 @@ sub _translation_id {
 
 sub created{
    my $obj = shift;
-   deprecate( "This attribute is no longer supported" );
+   deprecate( "created is deprecated and will be removed in e87." );
    if( @_ ) {
       my $value = shift;
       $obj->{'created'} = $value;
@@ -3224,7 +3254,7 @@ sub created{
 
 sub modified{
    my $obj = shift;
-   deprecate( "This attribute is no longer supported" );
+   deprecate( "modified is deprecated and will be removed in e87." );
    if( @_ ) {
       my $value = shift;
       $obj->{'modified'} = $value;
@@ -3241,8 +3271,7 @@ sub modified{
 
 sub temporary_id{
    my ($obj,$value) = @_;
-   deprecate( "I cant see what a temporary_id is good for, please use dbID" .
-               "or stableID or\ntry without an id." );
+   deprecate( "temporary_id is deprecated and will be removed in e87." );
    if( defined $value) {
       $obj->{'temporary_id'} = $value;
     }
@@ -3257,7 +3286,7 @@ sub temporary_id{
 =cut
 
 sub type {
-  deprecate("Use biotype() instead");
+  deprecate("type is deprecated and will be removed in e87. Please use biotype() instead");
   biotype(@_);
 }
 
@@ -3269,7 +3298,7 @@ sub type {
 =cut
 
 sub confidence {
-  deprecate("Use status() instead");
+  deprecate("confidence is deprecated and will be removed in e87. Please use status() instead");
   status(@_);
 }
 

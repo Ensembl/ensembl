@@ -1,6 +1,7 @@
 =head1 LICENSE
 
 Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
+Copyright [2016] EMBL-European Bioinformatics Institute
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -106,7 +107,7 @@ sub new {
     $self->{'evalue'} = $evalue;
     $self->{'cigar_line'} = $cigar_line;
     $self->{'xref_start'} = $query_start || $xref_start;
-    $self->{'xref_end'} = $query_end || $xref_start;
+    $self->{'xref_end'} = $query_end || $xref_end;
     $self->{'ensembl_start'} = $translation_start || $ensembl_start;
     $self->{'ensembl_end'} = $translation_end || $ensembl_end;
     $self->{'analysis'} = $analysis;
@@ -452,7 +453,7 @@ sub map_feature {
 =cut
 
 sub query_identity{
-  deprecate("Use xref_identity instead");
+  deprecate("query_identity is deprecated and will be removed in e87. Please use xref_identity instead");
   xref_identity(@_);
 }
 
@@ -465,7 +466,7 @@ sub query_identity{
 =cut
 
 sub target_identity{
-  deprecate("Use ensembl_identity instead");
+  deprecate("target_identity is deprecated and will be removed in e87. Please use ensembl_identity instead");
   ensembl_identity(@_);
 }
 
@@ -479,7 +480,7 @@ sub target_identity{
 =cut
 
 sub translation_start {
-  deprecate("Use ensembl_start instead");
+  deprecate("translation_start is deprecated and will be removed in e87. Please use ensembl_start instead");
   ensembl_start(@_);
 
 }
@@ -493,7 +494,7 @@ sub translation_start {
 =cut
 
 sub translation_end {
-  deprecate("Use ensembl_end instead");
+  deprecate("translation_end is deprecated and will be removed in e87. Please use ensembl_end instead");
   ensembl_end(@_);
 }
 
@@ -507,7 +508,7 @@ sub translation_end {
 =cut
 
 sub query_start {
-  deprecate("Use xref_start instead");
+  deprecate("query_start is deprecated and will be removed in e87. Please use xref_start instead");
   xref_start(@_);
 
 }
@@ -522,7 +523,7 @@ sub query_start {
 =cut
 
 sub query_end {
-  deprecate("Use xref_end instead");
+  deprecate("query_end is deprecated and will be removed in e87. Please use xref_end instead");
   xref_end(@_);
 
 }

@@ -1,6 +1,7 @@
 =head1 LICENSE
 
 Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
+Copyright [2016] EMBL-European Bioinformatics Institute
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -150,12 +151,12 @@ sub list_seq_region_ids {
 
   Arg [1]    : String $id 
                The stable ID of the operon_transcript to retrieve
-  Example    : $operon_transcript = $operon_transcript_adaptor->fetch_by_stable_id('ENSG00000148944');
+  Example    : $operon_transcript = $operon_transcript_adaptor->fetch_by_stable_id('T16152-16153-4840');
   Description: Retrieves a operon_transcript object from the database via its stable id.
                The operon_transcript will be retrieved in its native coordinate system (i.e.
                in the coordinate system it is stored in the database). It may
                be converted to a different coordinate system through a call to
-               transform() or transfer(). If the operon_transcript or exon is not found
+               transform() or transfer(). If the operon_transcript is not found
                undef is returned instead.
   Returntype : Bio::EnsEMBL::OperonTranscript or undef
   Exceptions : if we cant get the operon_transcript in given coord system
@@ -171,7 +172,48 @@ sub fetch_by_stable_id {
 	$self->bind_param_generic_fetch( $stable_id, SQL_VARCHAR );
 	my ($operon_transcript) = @{ $self->generic_fetch($constraint) };
 
+	# If we didn't get anything back, desperately try to see if there's
+	# a version number in the stable_id
+	if(!defined($operon_transcript) && (my $vindex = rindex($stable_id, '.'))) {
+	    $operon_transcript = $self->fetch_by_stable_id_version(substr($stable_id,0,$vindex),
+								   substr($stable_id,$vindex+1));
+	}
+
 	return $operon_transcript;
+}
+
+=head2 fetch_by_stable_id_version
+
+  Arg [1]    : String $id 
+               The stable ID of the operon_transcript to retrieve
+  Arg [2]    : Integer $version
+               The version of the stable_id to retrieve
+  Example    : $operon_transcript = $operon_transcript_adaptor->fetch_by_stable_id('T16152-16153-4840', 2);
+  Description: Retrieves an operon_transcript object from the database via its stable id and version.
+               The operon_transcript will be retrieved in its native coordinate system (i.e.
+               in the coordinate system it is stored in the database). It may
+               be converted to a different coordinate system through a call to
+               transform() or transfer(). If the operon_transcript is not found
+               undef is returned instead.
+  Returntype : Bio::EnsEMBL::OperonTranscript or undef
+  Exceptions : if we cant get the operon_transcript in given coord system
+  Caller     : general
+  Status     : Stable
+
+=cut
+
+sub fetch_by_stable_id_version {
+    my ($self, $stable_id, $version) = @_;
+
+    # Enforce that version be numeric
+    return unless($version =~ /^\d+$/);
+
+    my $constraint = "o.stable_id = ? AND o.version = ?";
+    $self->bind_param_generic_fetch($stable_id, SQL_VARCHAR);
+    $self->bind_param_generic_fetch($version, SQL_INTEGER);
+    my ($operon_transcript) = @{$self->generic_fetch($constraint)};
+
+    return $operon_transcript;
 }
 
 =head2 fetch_by_name
@@ -599,9 +641,6 @@ sub store {
   my $store_operon_transcript_sql = qq(
     INSERT INTO operon_transcript ( ${i_columns} ) VALUES ( $i_values )
   );
-
-	# column status is used from schema version 34 onwards (before it was
-	# confidence)
 
 	my $sth = $self->prepare($store_operon_transcript_sql);
 	$sth->bind_param( 1, $seq_region_id,                      SQL_INTEGER );

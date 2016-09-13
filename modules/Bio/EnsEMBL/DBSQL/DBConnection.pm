@@ -1,6 +1,7 @@
 =head1 LICENSE
 
 Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
+Copyright [2016] EMBL-European Bioinformatics Institute
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -167,7 +168,7 @@ sub new {
   $self->driver($driver);
 
   my $driver_class = 'Bio::EnsEMBL::DBSQL::Driver::' . $driver;
-  eval "require $driver_class";
+  eval "require $driver_class"; ## no critic
   throw("Cannot load '$driver_class': $@") if $@;
   my $driver_object = $driver_class->new($self);
   $self->_driver_object($driver_object);
@@ -1089,7 +1090,7 @@ sub group {
   my ($self, $arg ) = @_;
   ( defined $arg ) &&
     ( $self->{_group} = $arg );
-  deprecate "group should not be called from DBConnection but from an adaptor\n";
+  deprecate("DBConnection->group is deprecated and will be removed in e87. Please use adaptor->group instead.");
   return $self->{_group};
 }
 
@@ -1104,7 +1105,7 @@ sub species {
   my ($self, $arg ) = @_;
   ( defined $arg ) &&
     ( $self->{_species} = $arg );
-  deprecate "species should not be called from DBConnection but from an adaptor\n";
+  deprecate("DBConnection->species is deprecated and will be removed in e87. Please use adaptor->species instead.");
   return $self->{_species};
 }
 

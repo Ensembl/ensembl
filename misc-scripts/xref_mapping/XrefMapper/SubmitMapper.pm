@@ -1,6 +1,7 @@
 =head1 LICENSE
 
 Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
+Copyright [2016] EMBL-European Bioinformatics Institute
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -505,8 +506,7 @@ sub fetch_and_dump_seq_via_toplevel{
     %{ $slice_adaptor->{'sr_id_cache'} }   = ();
 
     $ama->delete_cache();
-
-    %{ $seqa->{'seq_cache'} } = ();
+    $seqa->clear_cache();
   }
 
   close $dnah || die "unable to close dna file\n$!\n";
@@ -645,7 +645,7 @@ sub fetch_and_dump_seq_via_genes{
 
     $ama->delete_cache();
 
-    %{ $seqa->{'seq_cache'} } = ();
+    $seqa->clear_cache();
   }
   close $dnah || die "unable to close dna file\n$!\n";
   close $peph || die "unable to close peptide file\n$!\n"; 

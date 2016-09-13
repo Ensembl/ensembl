@@ -1,5 +1,6 @@
 #!/usr/bin/env perl
 # Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
+# Copyright [2016] EMBL-European Bioinformatics Institute
 # 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -281,7 +282,7 @@ my %patches;
 
 foreach my $thing ( [ 'ensembl',               'core',        'table.sql'   ],
                     [ 'ensembl-compara',       'compara',     'table.sql'   ], 
-                    [ 'ensembl-funcgen',       'funcgen',     'efg.sql'     ],
+                    [ 'ensembl-funcgen',       'funcgen',     'table.sql'   ],
                     [ 'ensembl-variation',     'variation',   'table.sql'   ],
                     [ 'ensembl-production',    'production',  'tables.sql'  ],
                     [ 'ensembl',               'ontology',    'tables.sql'  ] )
@@ -307,7 +308,7 @@ foreach my $thing ( [ 'ensembl',               'core',        'table.sql'   ],
   }
 
   while ( my $file_name = $dh->read() ) {
-    if ( $file_name =~ /^patch_\d+_(\d+)_?[a-z]?\.sql$/ ) {
+    if ( $file_name =~ /^patch_\d+_(\d+)_?[a-z]+?\.sql$/ ) {
       my $patch_release = $1;
 
       if ( !defined($latest_release) ||
@@ -428,7 +429,7 @@ while ( $sth->fetch() ) {
         warn "The patch value '$value' in database '$database' has line-breaks. Remove them to silence this message";
         $value =~ s/\n/ /g;
       } 
-      if($value =~ /^(patch_\d+_(\d+)_?[a-z]?\.sql)\|(.*)$/) {
+      if($value =~ /^(patch_\d+_(\d+)_?[a-z]+?\.sql)\|(.*)$/) {
         my $patch_ident   = $1;
         my $patch_release = $2;
         my $patch_info    = $3;

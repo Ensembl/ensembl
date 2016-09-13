@@ -1,6 +1,7 @@
 =head1 LICENSE
 
 Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
+Copyright [2016] EMBL-European Bioinformatics Institute
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -164,8 +165,8 @@ sub fetch_all_by_Slice {
 
   my $transcripts = $self->SUPER::fetch_all_by_Slice($slice,$logic_name);
 
-  # if there are 0 or 1 transcripts still do lazy-loading
-  if(!$load_exons || @$transcripts < 2) {
+  # if there are 0 transcripts still do lazy-loading
+  if(!$load_exons || @$transcripts < 1) {
     return $transcripts;
   }
 

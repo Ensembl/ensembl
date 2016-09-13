@@ -1,6 +1,7 @@
 =head1 LICENSE
 
 Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
+Copyright [2016] EMBL-European Bioinformatics Institute
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -47,10 +48,9 @@ use base qw( XrefMapper::BasicMapper);
 #               i)   official domain name source (HGNC, MGI, ZFIN_ID, RGD)
 #               ii)  RFAM
 #               iii) miRBase
-#               iv)  Uniprot_gn
-#               v)   EntrezGene
-#               vi)  Vega clone name
-#               vii) Clone name
+#               iv)   EntrezGene
+#               v)  Vega clone name
+#               vi) Clone name
 #
 #      NOTE: for "i)" above, if more than one exists we find the "best" one if possible
 #            and remove the other ones. If there is more than one "best" we keep all and
@@ -298,7 +298,7 @@ IEG
 
     ####################################################
     # If not found look for other valid database sources
-    # These are RFAM and miRBase, as well as Uniprot_gn
+    # These are RFAM and miRBase, as well as EntrezGene
     ####################################################
     if(!defined($gene_symbol)){ 
       ($gene_symbol, $gene_symbol_xref_id) = 
@@ -870,7 +870,7 @@ sub get_ins_xref_sth{
   my $self= shift;
 
   if(!defined($self->{'_ins_xref_sth'})){
-    my $sql = "insert into xref (xref_id, source_id, accession, label, version, species_id, info_type, info_text, description) values (?, ?, ?, ?,  0, ".$self->species_id.", 'MISC', ?, ? )";
+    my $sql = "insert ignore into xref (xref_id, source_id, accession, label, version, species_id, info_type, info_text, description) values (?, ?, ?, ?,  0, ".$self->species_id.", 'MISC', ?, ? )";
     print "_ins_xref sql is:-\n$sql\n";
     $self->{'_ins_xref_sth'} = $self->xref->dbc->prepare($sql); 
   }
@@ -1114,7 +1114,7 @@ sub find_from_other_sources{
 
   my ($display, $xref_id, $object_xref_id, $level, $desc);
   my %found_gene;
-  foreach my $ext_db_name (qw(miRBase RFAM Uniprot_gn EntrezGene)){
+  foreach my $ext_db_name (qw(miRBase RFAM EntrezGene)){
     $dbentrie_sth->execute($ext_db_name, $gene_id, "Gene");
     $dbentrie_sth->bind_columns(\$display, \$xref_id, \$object_xref_id, \$level, \$desc);
     while($dbentrie_sth->fetch){
@@ -1379,12 +1379,10 @@ Clone_based_vega_gene
 Clone_based_ensembl_gene
 RFAM_gene_name
 miRBase_gene_name
-Uniprot_gn_gene_name
 Clone_based_ensembl_transcript
 Clone_based_vega_transcript
 RFAM_trans_name
 miRBase_trans_name
-Uniprot_gn_trans_name
 EntrezGene_trans_name);
 
   push @list, $dbname."_trans_name";

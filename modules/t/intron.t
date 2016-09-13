@@ -1,4 +1,5 @@
 # Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
+# Copyright [2016] EMBL-European Bioinformatics Institute
 # 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,6 +16,7 @@
 use strict;
 
 use Test::More;
+use Test::Warnings;
 
 use Bio::EnsEMBL::Test::MultiTestDB;
 use Bio::EnsEMBL::Test::TestUtils;
@@ -41,8 +43,10 @@ my $transcript =
 my @exons = (@{$transcript->get_all_Exons()});  
 my @introns = (@{$transcript->get_all_Introns()});  
 
-my $i=0;
+my $rank=1;
 foreach my $intron (@introns){
+  is($intron->rank($transcript), $rank, "Checking intron rank");
+  $rank++;
   ok($intron->prev_Exon->end == $intron->start-1);
   ok($intron->next_Exon->start == $intron->end+1);
   ok($intron->is_splice_canonical(), 'Checking Intron is canonical in its splicing');

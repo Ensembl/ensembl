@@ -1,6 +1,7 @@
 =head1 LICENSE
 
 Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
+Copyright [2016] EMBL-European Bioinformatics Institute
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -70,6 +71,7 @@ use POSIX qw(strftime);
 use Bio::EnsEMBL::Utils::Argument qw(rearrange);
 use Bio::EnsEMBL::Utils::Exception qw(throw);
 use Bio::EnsEMBL::Utils::ScriptUtils qw(parse_bytes);
+use Carp;
 
 my %level_defs = (
   'error'     => 1,
@@ -195,7 +197,7 @@ sub error {
   $self->log_generic("\nExiting prematurely.\n\n");
   $self->log_generic("Runtime: ".$self->runtime." ".$self->date_and_mem."\n\n");
   
-  exit(1);
+  confess($txt);
 }
 
 

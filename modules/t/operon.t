@@ -1,4 +1,5 @@
 # Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
+# Copyright [2016] EMBL-European Bioinformatics Institute
 # 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -98,6 +99,28 @@ ok (@{$stable_ids});
 $operon = $operon_adaptor->fetch_by_stable_id('16152-16153-4840');
 debug( "Operon->fetch_by_stable_id()" );
 ok( $operon );
+
+$operon->stable_id_version('16152-16153-4841.4');
+is($operon->stable_id, '16152-16153-4841', 'Stable id set with stable_id_version');
+is($operon->version, 4, 'Version set with stable_id_version');
+is($operon->stable_id_version, '16152-16153-4841.4', 'Stable id and version from stable_id_version');
+
+$operon->stable_id_version('16152-16153-4842');
+is($operon->stable_id, '16152-16153-4842', 'Stable id set with stable_id_version');
+is($operon->version, undef, 'Version undef from stable_id_version');
+is($operon->stable_id_version, '16152-16153-4842', 'Stable id and no version from stable_id_version');
+
+$operon = $operon_adaptor->fetch_by_stable_id('16152-16153-4840.1');
+ok($operon->stable_id eq '16152-16153-4840', 'fetch_by_stable_id with version');
+
+$operon = $operon_adaptor->fetch_by_stable_id('16152-16153-4840.1a');
+ok(! defined($operon), 'fetch_by_stable_id with bad version');
+
+$operon = $operon_adaptor->fetch_by_stable_id_version('16152-16153-4840', 1);
+ok($operon->stable_id eq '16152-16153-4840', 'fetch_by_stable_id_version with version');
+
+$operon = $operon_adaptor->fetch_by_stable_id_version('16152-16153-4840', '1a');
+ok(! defined($operon), 'fetch_by_stable_id_version with bad version');
 
 #19
 my @operons = @{ $operon_adaptor->fetch_all_versions_by_stable_id('16152-16153-4840') };

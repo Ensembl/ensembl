@@ -1,6 +1,7 @@
 =head1 LICENSE
 
 Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
+Copyright [2016] EMBL-European Bioinformatics Institute
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -133,6 +134,8 @@ sub run {
   while ( $_ = $refseq_io->getline() ) {
     chomp;
     my ($zfin, $so, $label, $acc) = split (/\s+/,$_);
+    # Ignore mappings to predicted RefSeq
+    if ($acc =~ /^XP_/ || $acc =~ /^XM_/ || $acc =~ /^XR_/) { next; }
     if(defined($refseq{$acc})){
       foreach my $xref_id (@{$refseq{$acc}}){
 	$self->add_dependent_xref({ master_xref_id => $xref_id,

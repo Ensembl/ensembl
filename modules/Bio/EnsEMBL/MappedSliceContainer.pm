@@ -1,6 +1,7 @@
 =head1 LICENSE
 
 Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
+Copyright [2016] EMBL-European Bioinformatics Institute
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -366,8 +367,8 @@ sub set_StrainSliceAdaptor {
   my $strain_slice_adaptor = shift;
 
   unless ($strain_slice_adaptor and ref($strain_slice_adaptor) and
-    $strain_slice_adaptor->isa('Bio::EnsEMBL::DBSQL::StrainSliceAdaptor')) {
-      throw("Need a Bio::EnsEMBL::StrainSliceAdaptor.");
+    $strain_slice_adaptor->isa('Bio::EnsEMBL::Variation::DBSQL::StrainSliceAdaptor')) {
+      throw("Need a Bio::EnsEMBL::Variation::DBSQL::StrainSliceAdaptor.");
   }
 
   $self->{'adaptors'}->{'StrainSlice'} = $strain_slice_adaptor;

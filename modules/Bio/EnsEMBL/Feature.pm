@@ -1,6 +1,7 @@
 =head1 LICENSE
 
 Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
+Copyright [2016] EMBL-European Bioinformatics Institute
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -1100,7 +1101,7 @@ sub seq_region_start {
   if ( defined($slice) ) {
 
     return $self->_seq_region_boundary_from_db('start')
-      if $slice->is_circular() and $self->adaptor();
+      if $slice->is_circular() and $self->adaptor() and $self->adaptor->dbc();
 
     my $start;
     if ( $slice->strand() == 1 ) {
@@ -1142,7 +1143,7 @@ sub seq_region_end {
   if ( defined($slice) ) {
 
     return $self->_seq_region_boundary_from_db('end')
-      if $slice->is_circular() and $self->adaptor();
+      if $slice->is_circular() and $self->adaptor() and $self->adaptor->dbc();
 
     my $end;
     if ( $slice->strand() == 1 ) {
@@ -1430,7 +1431,7 @@ sub overlaps_local {
 
 sub get_overlapping_Genes{
   my ($self, $match_strands, $five_prime, $three_prime) = @_;
-  my $ga = Bio::EnsEMBL::Registry->get_adaptor($self->adaptor->db->species,'core','Gene');
+  my $ga = Bio::EnsEMBL::Registry->get_adaptor($self->species,'core','Gene');
   my $list = $ga->fetch_all_nearest_by_Feature(-FEATURE => $self, -RANGE => 0, -THREE_PRIME => $three_prime, -FIVE_PRIME => $five_prime, -MATCH_STRAND => $match_strands);
   return [ map { $_->[0] } @$list ];
 }
@@ -1448,7 +1449,7 @@ sub get_overlapping_Genes{
 
 sub get_nearest_Gene {
   my $self = shift; 
-  my $ga = Bio::EnsEMBL::Registry->get_adaptor($self->adaptor->db->species,'core','Gene');
+  my $ga = Bio::EnsEMBL::Registry->get_adaptor($self->species,'core','Gene');
   my $list = $ga->fetch_nearest_by_Feature($self);
   if ($list && @$list >0) {
     my ($gene, $distance) = @{ $list };
@@ -1502,7 +1503,7 @@ sub species {
  Use slice() instead
 =cut
 sub contig {
-  deprecate('Use slice() instead');
+  deprecate('contig is deprecated and will be removed in e87. Please use slice() instead');
   slice(@_);
 }
 
@@ -1603,7 +1604,7 @@ Use display_id, hseqname, dbID or stable_id instead
 
 sub id {
   my $self = shift;
-  deprecate("id method is not used - use display_id instead");
+  deprecate("id method is deprecated and will be removed in e87. Please use display_id instead");
   return $self->{'stable_id'} if($self->{'stable_id'});
   return $self->{'hseqname'} if($self->{'hseqname'});
   return $self->{'seqname'}  if($self->{'seqname'});
@@ -1614,6 +1615,8 @@ my $feature_tables =
   {
    'Bio::EnsEMBL::AssemblyExceptionFeature' => 'assembly_exception',
    'Bio::EnsEMBL::DensityFeature' => 'density_feature',
+   'Bio::EnsEMBL::DnaDnaAlignFeature' => 'dna_align_feature',
+   'Bio::EnsEMBL::DnaPepAlignFeature' => 'protein_align_feature',
    'Bio::EnsEMBL::Exon' => 'exon',
    'Bio::EnsEMBL::ExonTranscript' => 'exon',
    'Bio::EnsEMBL::PredictionExon' => 'prediction_exon',

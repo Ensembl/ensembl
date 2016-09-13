@@ -1,4 +1,5 @@
 # Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
+# Copyright [2016] EMBL-European Bioinformatics Institute
 # 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -244,19 +245,10 @@ sub load_sql {
 # Get table.sql for a given Ensembl release
 sub get_table_sql {
   my $release = shift;
-  my ($fh, $fname) = tempfile();
-
-  my $git_cmd = sprintf "git show %s:sql/table.sql > $fname",
-    $release == software_version() ? 'master' : "release/${release}";
-
-  my $output = `$git_cmd`;
-  my $ec = ($? >> 8);
-  if($ec != 0) {
-    note($output);
-    die "MySQL command failed with error code '$ec'";
-  }
-
-  return slurp($fname);
+  $release = $release == software_version() ? 'master' : "release/${release}";
+  
+  my $url = "https://raw.githubusercontent.com/Ensembl/ensembl/${release}/sql/table.sql";
+  return get_url($url);
 }
 
 # Assume if ensembl.org is down then there is no point in continuing with the tests (1 shot)

@@ -1,6 +1,7 @@
 =head1 LICENSE
 
 Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
+Copyright [2016] EMBL-European Bioinformatics Institute
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -77,7 +78,7 @@ use warnings;
 no warnings 'uninitialized';
 
 use Bio::EnsEMBL::Utils::Argument qw(rearrange);
-use Bio::EnsEMBL::Utils::Exception qw(throw warning);
+use Bio::EnsEMBL::Utils::Exception qw(throw warning deprecate);
 use Bio::EnsEMBL::MappedSlice;
 use Bio::EnsEMBL::Mapper;
 use Bio::EnsEMBL::DBSQL::BaseAdaptor;
@@ -100,7 +101,7 @@ our @ISA = qw(Bio::EnsEMBL::DBSQL::BaseAdaptor);
 
 sub new {
   my $caller = shift;
-
+  deprecate("new is deprecated and will be removed in e88. Please use Bio::EnsEMBL::Variation::DBSQL::StrainSliceAdaptor::new instead");
   my $class = ref($caller) || $caller;
   my $self = $class->SUPER::new(@_);
   
@@ -126,6 +127,7 @@ sub new {
 
 sub fetch_by_name {
   my $self = shift;
+  deprecate("fetch_by_name is deprecated and will be removed in e88. Please use Bio::EnsEMBL::Variation::DBSQL::StrainSliceAdaptor::fetch_by_name instead");
   my $container = shift;
   my $name = shift;
 

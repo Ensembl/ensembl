@@ -1,6 +1,7 @@
 =head1 LICENSE
 
 Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
+Copyright [2016] EMBL-European Bioinformatics Institute
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -206,8 +207,8 @@ sub fetch_by_region {
        $strand, $version, $no_fuzz )
     = @_;
 
-  assert_integer($start, 'start') if $start;
-  assert_integer($end, 'end') if $end;
+  assert_integer($start, 'start') if defined $start;
+  assert_integer($end, 'end') if defined $end;
 
   if ( !defined($start) )  { $start  = 1 }
   if ( !defined($strand) ) { $strand = 1 }
@@ -294,7 +295,7 @@ sub fetch_by_region {
 
       # try synonyms
       my $syn_sql = "select s.name, cs.name, cs.version from seq_region s join seq_region_synonym ss using (seq_region_id) join coord_system cs using (coord_system_id) where ss.synonym = ? and cs.species_id =? ";
-      if (defined $coord_system_name) {
+      if (defined $coord_system_name && defined $cs) {
         $syn_sql .= "AND cs.name = '" . $coord_system_name . "' ";
       }
       if (defined $version) {
@@ -321,7 +322,7 @@ sub fetch_by_region {
       $syn_sql_sth->finish;
 
 
-      if ($no_fuzz) { return undef }
+      if ($no_fuzz) { return; }
 
       # Do fuzzy matching, assuming that we are just missing a version
       # on the end of the seq_region name.
@@ -397,7 +398,7 @@ sub fetch_by_region {
       $cs = $high_cs;
 
       # return if we did not find any appropriate match:
-      if ( !defined($high_ver) ) { return undef }
+      if ( !defined($high_ver) ) { return; }
 
     } else {
 
@@ -607,11 +608,12 @@ sub parse_location_to_values {
   
   #cleanup any nomenclature like 1 000 or 1,000
   my $number_seps_regex = qr/\s+|,/;
-  my $separator_regex = qr/(?:-|[.]{2}|\:|_)?/;
-  my $number_regex = qr/[0-9, E]+/xms;
+  my $separator_regex = qr/(?:-|[.]{2}|\:|_)?/; # support -, .., : and _ as separators
+  my $hgvs_nomenclature_regex = qr/(?:g\.)?/; # check for HGVS looking locations e.g. X:g.1-100
+  my $number_regex = qr/[0-9, EMKG]+/xmsi;
   my $strand_regex = qr/[+-1]|-1/xms;
   
-  my $regex = qr/^((?:\w|\.|_|-)+) \s* :? \s* ($number_regex)? $separator_regex ($number_regex)? $separator_regex ($strand_regex)? $/xms;
+  my $regex = qr/^((?:\w|\.|_|-)+) \s* :? \s* $hgvs_nomenclature_regex ($number_regex)? $separator_regex ($number_regex)? $separator_regex ($strand_regex)? $/xms;
   my ($seq_region_name, $start, $end, $strand);
   if(($seq_region_name, $start, $end, $strand) = $location =~ $regex) {
     
@@ -635,9 +637,6 @@ sub parse_location_to_values {
       }
     }
     
-    if(defined $start && defined $end && $start > $end) {
-      throw "Cannot request a slice whose start is greater than its end. Start: $start. End: $end" unless $no_errors;
-    }
   }
   
   return ($seq_region_name, $start, $end, $strand);
@@ -1485,37 +1484,6 @@ sub is_circular {
   return (exists $self->{circular_sr_id_cache}->{$id}) ? 1 : 0;
 }
 
-=head2 fetch_by_band
-
- Title   : fetch_by_band
- Usage   :
- Function: Does not work please use fetch_by_chr_band
- Example :
- Returns : Bio::EnsEMBL::Slice
- Args    : the band name
- Status     : AT RISK
-
-=cut
-
-sub fetch_by_band {
-  my ($self,$band) = @_;
-
-  my $sth = $self->dbc->prepare
-        ("select s.name,max(k.seq_region_id)-min(k.seq_region_id, min(k.seq_region_start), max(k.seq_region_id) " .
-         "from karyotype as k " .
-         "where k.band like ? and k.seq_region_id = s.seq_region_id");
-
-  $sth->bind_param(1,"$band%",SQL_VARCHAR);
-  $sth->execute();
-  my ( $seq_region_name, $discrepancy, $seq_region_start, $seq_region_end) = $sth->fetchrow_array;
-
-  if($seq_region_name && $discrepancy>0) {
-    throw("Band maps to multiple seq_regions");
-  } else {
-    return $self->fetch_by_region('toplevel',$seq_region_name,$seq_region_start,$seq_region_end);
-  }
-  throw("Band not recognised in database");
-}
 
 =head2 fetch_by_chr_band
 
@@ -2152,7 +2120,7 @@ sub store {
   my $sr_len = $slice->length();
   my $sr_name  = $slice->seq_region_name();
 
-  if(!$sr_name) {
+  if($sr_name eq '') {
     throw("Slice must have valid seq region name.");
   }
 
@@ -2749,7 +2717,7 @@ sub _build_circular_slice_cache {
 
 sub fetch_by_mapfrag{
    my ($self,$mymapfrag,$flag,$size) = @_;
-   deprecate('Use fetch_by_misc_feature_attribute instead');
+   deprecate('fetch_by_mapfrag is deprecated and will be removed in e87. Please use fetch_by_misc_feature_attribute instead');
    $flag ||= 'fixed-width'; # alt.. 'context'
    $size ||= $flag eq 'fixed-width' ? 100000 : 0;
    return $self->fetch_by_misc_feature_attribute('synonym',$mymapfrag,$size);
@@ -2765,7 +2733,7 @@ sub fetch_by_mapfrag{
 
 sub fetch_by_chr_start_end {
   my ($self,$chr,$start,$end) = @_;
-  deprecate('Use fetch_by_region() instead');
+  deprecate('fetch_by_chr_start_end is deprecated and will be removed in e87. Please use fetch_by_region() instead');
 
   #assume that by chromosome the user actually meant top-level coord
   #system since this is the old behaviour of this deprecated method
@@ -2787,7 +2755,7 @@ sub fetch_by_chr_start_end {
 sub fetch_by_contig_name {
   my ($self, $name, $size) = @_;
 
-  deprecate('Use fetch_by_region(), Slice::project() and Slice::expand().');
+  deprecate('fetch_by_contig_name is deprecated and will be removed in e87. Please use fetch_by_region(), Slice::project() and Slice::expand().');
 
   #previously wanted chromosomal slice on a given contig.  Assume this means
   #a top-level slice on a given seq_region in the seq_level coord system
@@ -2820,7 +2788,7 @@ sub fetch_by_contig_name {
 sub fetch_by_clone_accession{
   my ($self,$name,$size) = @_;
 
-  deprecate('Use fetch_by_region(), Slice::project() and Slice::expand().');
+  deprecate('fetch_by_clone_accession is deprecated and will be removed in e87. Please use fetch_by_region(), Slice::project() and Slice::expand().');
 
   my $csa = $self->db()->get_CoordSystemAdaptor();
   my $clone_cs = $csa->fetch_by_name('clone');
@@ -2876,7 +2844,7 @@ sub fetch_by_clone_accession{
 sub fetch_by_supercontig_name {
   my ($self,$name, $size) = @_;
 
-  deprecate('Use fetch_by_region(), Slice::project() and Slice::expand().');
+  deprecate('fetch_by_supercontig_name is deprecated and will be removed in e87. Please use fetch_by_region(), Slice::project() and Slice::expand().');
 
   my $csa = $self->db()->get_CoordSystemAdaptor();
   my $sc_level = $csa->fetch_by_name('supercontig');
@@ -2911,7 +2879,7 @@ sub fetch_by_supercontig_name {
 sub list_overlapping_supercontigs {
    my ($self,$slice) = @_;
 
-   deprecate('Use Slice::project() instead.');
+   deprecate('list_overlapping_supercontigs is deprecated and will be removed in e87. Please use Slice::project() instead.');
 
    my $csa = $self->db()->get_CoordSystemAdaptor();
    my $sc_level = $csa->fetch_by_name('supercontig');
@@ -2939,7 +2907,7 @@ sub list_overlapping_supercontigs {
 
 sub fetch_by_chr_name{
    my ($self,$chr_name) = @_;
-   deprecate('Use fetch_by_region() instead.');
+   deprecate('fetch_by_chr_name is deprecated and will be removed in e87. Please use fetch_by_region() instead.');
 
    my $csa = $self->db->get_CoordSystemAdaptor();
 

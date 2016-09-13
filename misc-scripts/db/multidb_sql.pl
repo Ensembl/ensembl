@@ -1,5 +1,6 @@
 #!/usr/bin/env perl
 # Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
+# Copyright [2016] EMBL-European Bioinformatics Institute
 # 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -35,7 +36,7 @@ my ( @hosts, $host, $user, $pass, $port, $expression, $dbpattern, $file, $result
 $user = 'ensro' ;  
 $pass = '' ;
 $port = 3306 ;  
-@hosts = qw ( ens-staging1 ens-staging2) ;
+@hosts = qw ( ens-staging3 ) ;
 
 GetOptions( "host|dbhost=s", \$host,
             "hosts|dbhosts=s", \@hosts,

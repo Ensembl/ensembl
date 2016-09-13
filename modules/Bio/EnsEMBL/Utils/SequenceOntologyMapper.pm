@@ -1,6 +1,7 @@
 =head1 LICENSE
 
 Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
+Copyright [2016] EMBL-European Bioinformatics Institute
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -105,6 +106,7 @@ my %transcript_so_mapping =
    'TR_C_gene'							=> 'SO:0000478', # C_gene_segment
    'IG_J_pseudogene'					=> 'SO:0000336', # pseudogene
    'miRNA'								=> 'SO:0000276', #miRNA
+   'protein_coding'                                     => 'SO:0000234', #mRNA
    'miRNA_pseudogene'					=> 'SO:0000336', # pseudogene
    'disrupted_domain' 					=> 'SO:0000681', # aberrant_processed_transcript
    'rRNA' 								=> 'SO:0000252', #rRNA
@@ -150,6 +152,8 @@ my %feature_so_mapping =
    'Bio::EnsEMBL::Variation::StructuralVariationFeature' => 'SO:0001537', # structural variant
    'Bio::EnsEMBL::Compara::ConstrainedElement' => 'SO:0001009', #DNA_constraint_sequence ????
    'Bio::EnsEMBL::Funcgen::RegulatoryFeature' => 'SO:0005836', # regulatory_region
+   'Bio::EnsEMBL::DnaDnaAlignFeature' => 'SO:0000347', # nucleotide_match
+   'Bio::EnsEMBL::DnaPepAlignFeature' => 'SO:0000349', # protein_match
   );
 
 
@@ -265,6 +269,47 @@ sub to_name {
 
   return $so_name;
 }
+
+=head2 gene_biotype_to_name
+
+    Arg [0]    : Biotype string
+    Description: translates a biotype into an SO term name
+    Returntype : String; the SO term name
+    Exceptions : if cannot map to an SO term
+
+=cut
+
+sub gene_biotype_to_name {
+  my $self = shift;
+  my $biotype = shift;
+
+  if (exists $gene_so_mapping{$biotype}) {
+    return $gene_so_mapping{$biotype};
+  } else {
+    throw "Biotype not found in gene SO mapping $biotype";
+  }
+}
+
+=head2 transcript_biotype_to_name
+
+    Arg [0]    : Biotype string
+    Description: translates a biotype into an SO term name
+    Returntype : String; the SO term name
+    Exceptions : if cannot map to an SO term
+
+=cut
+
+sub transcript_biotype_to_name {
+  my $self = shift;
+  my $biotype = shift;
+
+  if (exists $transcript_so_mapping{$biotype}) {
+    return $transcript_so_mapping{$biotype};
+  } else {
+    throw "Biotype not found in transcript SO mapping $biotype";
+  }
+}
+
 
 =head1 PRIVATE METHODS
 

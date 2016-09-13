@@ -1,6 +1,7 @@
 =head1 LICENSE
 
 Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
+Copyright [2016] EMBL-European Bioinformatics Institute
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -79,25 +80,6 @@ sub get_production_name {
   my ($self) = @_;
   return $self->single_value_by_key('species.production_name');
 }
-
-=head2 get_short_name
-
-  Args          : none
-  Example       : $species = $meta_container->get_short_name();
-  Description   : Obtains the name of the species in a form usable as, for
-                  example, a short label in a GUI.
-  Returntype    : string
-  Exceptions    : none
-  Status        : Deprecated in release 74
-
-=cut
-
-sub get_short_name {
-  my ($self) = @_;
-  deprecate('Call is deprecated. short_name is not in use any more, use get_common_name instead');
-  return $self->single_value_by_key('species.short_name');
-}
-
 
 =head2 get_display_name
 
@@ -178,7 +160,7 @@ sub get_division {
 sub get_Species {
   my ($self) = @_;
 
-  deprecate('Call is deprecated. Use $self->get_common_name() / $self->get_classification() / $self->get_scientific_name() instead');
+  deprecate('get_Species is deprecated and will be removed in e87. Please use $self->get_common_name() / $self->get_classification() / $self->get_scientific_name() instead');
 
   my $common_name = $self->get_common_name();
   my $classification =
@@ -236,25 +218,13 @@ sub get_taxonomy_id {
 sub get_default_assembly {
   my $self = shift;
 
-  deprecate("Use version of coordinate system you are interested in instead.\n".
-            "Example:\n".
-            '  ($cs) = @{$coord_system_adaptor->fetch_all()};'."\n" .
-            '  $assembly = $cs->version();');
+  deprecate("get_default_assembly is deprecated and will be removed in e87. Please use cs_adaptor->get_default_version instead.");
 
   my ($cs) = @{$self->db->get_CoordSystemAdaptor->fetch_all()};
 
   return $cs->version();
 }
 
-
-#
-# TBD This method should be removed/deprecated
-#
-sub get_max_assembly_contig {
-  my $self = shift;
-  deprecate('This method should either be fixed or removed');
-  return $self->single_value_by_key('assembly.maxcontig');
-}
 
 =head2 get_genebuild
 
