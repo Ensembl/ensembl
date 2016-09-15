@@ -994,8 +994,16 @@ SKIP: {
       map { $_, 1 }
       map { @{$_->get_all_linkage_types()} }
       @{$gene->get_all_DBLinks('GO')};
-    ok($linkage_types{'IDA'}, $gene->stable_id().' was linked to an IDA term. Seaching thorough all links we find the IDA linkage');
+    ok($linkage_types{'IDA'}, $gene->stable_id().' was linked to an IDA term. Searching through all the links until we find the IDA linkage');
+    
+    my %undef_linkage_types = 
+      map { $_, 1 }
+      map { @{$_->get_all_linkage_types()} }
+      grep { $_->can('get_all_linkage_types') } 
+      @{$gene->get_all_DBLinks(undef)};
+    ok($undef_linkage_types{'IDA'}, $gene->stable_id().' was linked to an IDA term found by using an undef external db. Searching through all the links until we find the IDA linkage');
   }
+  
 }
 
 # Fetching by slice and an external DB

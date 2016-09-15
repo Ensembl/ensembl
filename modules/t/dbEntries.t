@@ -575,6 +575,8 @@ $multi->restore();
   my $go = $dbEntryAdaptor->get_external_db_id('GO', undef, 'no version');
   my @gene_ids = $dbEntryAdaptor->list_gene_ids_by_external_db_id($go, 'IDA');
   is(scalar(@gene_ids), 9, 'Expect 9 hits for genes to come back with IDAs');
+  my @transcript_ids = $dbEntryAdaptor->list_transcript_ids_by_external_db_id($go, 'IDA');
+  is(scalar(@transcript_ids), 10, 'Expect 10 hits for transcripts to come back with IDAs');
 }
 
 # Test for dependent/master xrefs
