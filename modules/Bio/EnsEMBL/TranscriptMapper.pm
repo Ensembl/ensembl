@@ -248,15 +248,16 @@ sub _load_mapper {
 
 
 sub cdna2genomic {
-  my ($self,$start,$end) = @_;
+  my ($self,$start,$end, $include_original_region, $cdna_coding_start) = @_;
 
   if( !defined $end ) {
     throw("Must call with start/end");
   }
 
+  $cdna_coding_start = defined $cdna_coding_start ? $cdna_coding_start : 1;
   my $mapper = $self->{'exon_coord_mapper'};
 
-  return  $mapper->map_coordinates( 'cdna', $start, $end, 1, "cdna" );
+  return  $mapper->map_coordinates( 'cdna', $start, $end, 1, "cdna", $include_original_region, $cdna_coding_start);
 
 }
 
@@ -305,6 +306,8 @@ sub genomic2cdna {
                start position in cds coords
   Arg [2]    : int $end
                end position in cds coords
+  Arg [3]      boolean (0 or 1) $include_original_region
+               option to include original input coordinate region mappings in the result
   Example    : @genomic_coords = $transcript_mapper->cds2genomic(69, 306);
   Description: Converts cds coordinates into genomic coordinates.  The
                coordinates returned are relative to the same slice that the
@@ -318,7 +321,7 @@ sub genomic2cdna {
 =cut
 
 sub cds2genomic {
-  my ( $self, $start, $end ) = @_;
+  my ( $self, $start, $end, $include_original_region ) = @_;
 
   if ( !( defined($start) && defined($end) ) ) {
     throw("Must call with start and end");
@@ -327,8 +330,18 @@ sub cds2genomic {
   # Move start end into translate cDNA coordinates now.
   $start = $start +( $self->{'cdna_coding_start'} - 1 ) ;
   $end = $end + ( $self->{'cdna_coding_start'} - 1 );
-
-  return $self->cdna2genomic( $start, $end );
+  
+  #Check if the start exceeds the cdna_coding_end, if yes, return
+  if($start > $self->{'cdna_coding_end'}){
+  	return undef;
+  }
+  
+  #Check if the end exceeds the cdna_coding_end, if yes, truncate it otherwise we will be including gaps
+  if($end > $self->{'cdna_coding_end'}){
+  	$end = $self->{'cdna_coding_end'};
+  }
+    
+  return $self->cdna2genomic( $start, $end, $include_original_region, $self->{'cdna_coding_start'} );
 }
 
 =head2 pep2genomic

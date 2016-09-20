@@ -373,4 +373,272 @@ chr1	625359	1214016	1216330	1	2315	1
 #
 sub isgap { my ($obj) = @_; return !$obj->can ('strand') }
 
+
+# Test map_coordinates routine with optional boolean argument to include original region coordinates or not in the returned result array
+
+#=============For CDNA reverse
+#Chromosome 20: 32,192,503-32,207,791 reverse strand (ENST00000246229)
+# We know already what to expect of the mappings, so check if we are getting the right mappings back
+# Note that the last mappings will be truncated based on user query
+my @coords_mapped = (32207641,32207791,32201919,32202292,32197208,32197682);
+my @coords_ori = (1,151,152,525,526,1000);
+
+#TranscriptMapper while initializing loads the Mapper Pairs and is populated with from and to mappings
+my $trmapper_reverse_strand = bless( {
+                 'to_cs' => undef,
+                 '_is_sorted' => 1,
+                 'pair_count' => 3,
+                 'from_cs' => undef,
+                 '_pair_cdna' => {
+                                   'CDNA' => [
+                                               bless( {
+                                                        'ori' => -1,
+                                                        'to' => bless( {
+                                                                         'id' => 'genome',
+                                                                         'end' => 32207791,
+                                                                         'start' => 32207641
+                                                                       }, 'Bio::EnsEMBL::Mapper::Unit' ),
+                                                        'from' => bless( {
+                                                                           'id' => 'cdna',
+                                                                           'end' => 151,
+                                                                           'start' => 1
+                                                                         }, 'Bio::EnsEMBL::Mapper::Unit' )
+                                                      }, 'Bio::EnsEMBL::Mapper::Pair' ),
+                                               bless( {
+                                                        'ori' => -1,
+                                                        'to' => bless( {
+                                                                         'id' => 'genome',
+                                                                         'end' => 32202292,
+                                                                         'start' => 32201919
+                                                                       }, 'Bio::EnsEMBL::Mapper::Unit' ),
+                                                        'from' => bless( {
+                                                                           'id' => 'cdna',
+                                                                           'end' => 525,
+                                                                           'start' => 152
+                                                                         }, 'Bio::EnsEMBL::Mapper::Unit' )
+                                                      }, 'Bio::EnsEMBL::Mapper::Pair' ),
+                                               bless( {
+                                                        'ori' => -1,
+                                                        'to' => bless( {
+                                                                         'id' => 'genome',
+                                                                         'end' => 32197682,
+                                                                         'start' => 32192503
+                                                                       }, 'Bio::EnsEMBL::Mapper::Unit' ),
+                                                        'from' => bless( {
+                                                                           'id' => 'cdna',
+                                                                           'end' => 5705,
+                                                                           'start' => 526
+                                                                         }, 'Bio::EnsEMBL::Mapper::Unit' )
+                                                      }, 'Bio::EnsEMBL::Mapper::Pair' )
+                                             ]
+                                 },
+                 'to' => 'genomic',
+                 'from' => 'cdna'
+               }, 'Bio::EnsEMBL::Mapper' );
+
+my $pair_cdna = $trmapper_reverse_strand->{'_pair_cdna'};
+ok(defined($pair_cdna), "_pair_cdna defined");
+ok(defined($pair_cdna->{ 'CDNA' }), "CDNA defined" ); 
+
+
+# Check if the difference in base count between 'to' start and end and 'from' start and end is equal
+my $to_total = 0;
+my $from_total = 0;
+foreach my $mapper_pair(@{$pair_cdna->{ 'CDNA' }}){
+	my $to_start = $mapper_pair->{'to'}->{'start'};
+	my $to_end = $mapper_pair->{'to'}->{'end'};
+	
+	my $to_diff = $to_end - $to_start + 1;
+	$to_total += $to_diff;
+	
+	my $from_start = $mapper_pair->{'from'}->{'start'};
+	my $from_end = $mapper_pair->{'from'}->{'end'};
+	
+	my $from_diff = $from_end - $from_start + 1;
+	$from_total += $from_diff;
+
+	ok($to_diff == $from_diff , "to (genome) and from (cdna) diff is equal ");
+	
+}
+
+# Check if the total base count between to and from is equal
+ok($to_total == $from_total, "Base counts between to and from mapper units are equal");
+
+#id, start, end, strand, type, include_original_region (0)
+my @mappings =  $trmapper_reverse_strand->map_coordinates( "cdna", 1, 1000, 1, "cdna", 0 );
+is(3, scalar(@mappings), "Got back 3 regions mapped");
+
+#Test mappings without including the original for reverse strand
+test_mappings(\@mappings, \@coords_mapped);
+
+
+#id, start, end, strand, type, include_original_region (1)
+my @mappings_include_original =  $trmapper_reverse_strand->map_coordinates( "cdna", 1, 1000, 1, "cdna", 1, 1);
+is(3, scalar(@mappings_include_original), "Got back 3 regions mapped");
+my $mapper_coordinates = $mappings_include_original[0];
+isnt($mapper_coordinates, "Bio::EnsEMBL::Mapper::Coordinate",  "Not a Bio::EnsEMBL::Mapper::Coordinate");
+isa_ok($mapper_coordinates, "HASH",  "Got a HASH ref");
+ok(exists $mapper_coordinates->{'original'}, "original mappings exists");
+ok(exists $mapper_coordinates->{'mapped'}, "mapped mappings exists");
+
+#Test mappings including the originals for forward strand
+test_mappings_include_ori(\@mappings_include_original, \@coords_mapped, \@coords_ori);
+
+#Test for CDNA forward strand
+#Chromosome 8: 18,210,093-18,223,689 forward strand. (ENST00000307719)
+my @coords_mapped_forward = (18210093,18210180,18219411,18219489,18222042,18222874);
+my @coords_ori_forward = (1,88,89,167,168,1000);
+
+
+my $trmapper_positive_strand = bless( {
+                 'to_cs' => undef,
+                 '_is_sorted' => 1,
+                 'pair_count' => 3,
+                 'from_cs' => undef,
+                 '_pair_cdna' => {
+                                   'CDNA' => [
+                                               bless( {
+                                                        'ori' => 1,
+                                                        'to' => bless( {
+                                                                         'id' => 'genome',
+                                                                         'end' => 18210180,
+                                                                         'start' => 18210093
+                                                                       }, 'Bio::EnsEMBL::Mapper::Unit' ),
+                                                        'from' => bless( {
+                                                                           'id' => 'cdna',
+                                                                           'end' => 88,
+                                                                           'start' => 1
+                                                                         }, 'Bio::EnsEMBL::Mapper::Unit' )
+                                                      }, 'Bio::EnsEMBL::Mapper::Pair' ),
+                                               bless( {
+                                                        'ori' => 1,
+                                                        'to' => bless( {
+                                                                         'id' => 'genome',
+                                                                         'end' => 18219489,
+                                                                         'start' => 18219411
+                                                                       }, 'Bio::EnsEMBL::Mapper::Unit' ),
+                                                        'from' => bless( {
+                                                                           'id' => 'cdna',
+                                                                           'end' => 167,
+                                                                           'start' => 89
+                                                                         }, 'Bio::EnsEMBL::Mapper::Unit' )
+                                                      }, 'Bio::EnsEMBL::Mapper::Pair' ),
+                                               bless( {
+                                                        'ori' => 1,
+                                                        'to' => bless( {
+                                                                         'id' => 'genome',
+                                                                         'end' => 18223689,
+                                                                         'start' => 18222042
+                                                                       }, 'Bio::EnsEMBL::Mapper::Unit' ),
+                                                        'from' => bless( {
+                                                                           'id' => 'cdna',
+                                                                           'end' => 1815,
+                                                                           'start' => 168
+                                                                         }, 'Bio::EnsEMBL::Mapper::Unit' )
+                                                      }, 'Bio::EnsEMBL::Mapper::Pair' )
+                                             ]
+                                 },
+                 'to' => 'genomic',
+                  'from' => 'cdna'
+               }, 'Bio::EnsEMBL::Mapper' );
+
+
+$pair_cdna = $trmapper_positive_strand->{'_pair_cdna'};
+ok(defined($pair_cdna), "_pair_cdna defined");
+ok(defined($pair_cdna->{ 'CDNA' }), "CDNA defined" ); 
+
+#id, start, end, strand, type, include_original_region, cdna start
+@mappings =  $trmapper_positive_strand->map_coordinates( "cdna", 1, 1000, 1, "cdna", 0 , 1);
+is(3, scalar(@mappings), "Got back 3 regions mapped");
+
+#Test mappings without including the original for forward strand
+test_mappings(\@mappings, \@coords_mapped_forward);
+
+
+@mappings_include_original =  $trmapper_positive_strand->map_coordinates( "cdna", 1, 1000, 1, "cdna", 1 , 1);
+is(3, scalar(@mappings_include_original), "Got back 3 regions mapped");
+$mapper_coordinates = $mappings_include_original[0];
+isnt($mapper_coordinates, "Bio::EnsEMBL::Mapper::Coordinate",  "Not a Bio::EnsEMBL::Mapper::Coordinate");
+isa_ok($mapper_coordinates, "HASH",  "Got a HASH ref");
+ok(exists $mapper_coordinates->{'original'}, "original mappings exists");
+ok(exists $mapper_coordinates->{'mapped'}, "mapped mappings exists");
+
+test_mappings_include_ori(\@mappings_include_original, \@coords_mapped_forward, \@coords_ori_forward);
+
+#Tests for CDS reverse
+#Chromosome 20: 32,192,503-32,207,791 reverse strand (ENST00000246229)
+# We know already what to expect of the mappings, so check if we are getting the right mappings back
+# Note that the last mappings should be truncated based on user query
+# cdna coding start => 266, cdna coding end => 1756
+my @coords_mapped_cds = (32201919,32202178,32196943,32197682);
+my @coords_ori_cds = (1,260,261,1000);
+
+#id, start, end, strand, type, include_original_region
+@mappings =  $trmapper_reverse_strand->map_coordinates( "cdna", 266, 1265, 1, "cdna", 0 );
+is(2, scalar(@mappings), "Got back 2 regions mapped");
+
+#Test mappings without including the original for reverse strand
+#test_mappings(\@mappings, \@coords_mapped_cds);
+
+@mappings_include_original =  $trmapper_reverse_strand->map_coordinates( "cdna", 266, 1265, 1, "cdna", 1 );
+#test_mappings_include_ori(\@mappings_include_original, \@coords_mapped_cds, \@coords_ori_cds);
+
+#Tests for CDS forward
+#Check for forward strand
+#Chromosome 8: 18,210,093-18,223,689 forward strand. (ENST00000307719)
+my @coords_mapped_forward_cds = (18222048,18222920);
+my @coords_ori_forward_cds = (1,873);
+
+#id, start, end, strand, type, include_original_region
+@mappings =  $trmapper_positive_strand->map_coordinates( "cdna", 174, 1046, 1, "cdna", 0, 174 );
+is(1, scalar(@mappings), "Got back 1 regions mapped");
+
+#Test mappings without including the original for forward strand
+test_mappings(\@mappings, \@coords_mapped_forward_cds);
+
+@mappings_include_original =  $trmapper_positive_strand->map_coordinates( "cdna", 174, 1046, 1, "cdna", 1, 174 );
+test_mappings_include_ori(\@mappings_include_original, \@coords_mapped_forward_cds, \@coords_ori_forward_cds);
+
+
+
+#utility routines to check the expected and the actual returned mapping coordinates are the same
+sub test_mappings{
+  my($mappings, $coords_mapped) = @_;
+
+  my $i=0;
+  foreach my $mapping(@$mappings){
+    isa_ok($mapping, "Bio::EnsEMBL::Mapper::Coordinate",  "Got back Bio::EnsEMBL::Mapper::Coordinate");
+    ok(${$coords_mapped}[$i] == $mapping->{'start'}, "${$coords_mapped}[$i] == $mapping->{'start'}  => Expected and Actual mappings for start ok");
+    ok(${$coords_mapped}[$i+1] == $mapping->{'end'}, "${$coords_mapped}[$i+1] == $mapping->{'end'}  => Expected and Actual mappings for end ok");
+    $i += 2;
+  }
+	
+}
+
+#utility routines to check the actual returned mapping coordinates are the same with original coordinate mappings included
+sub test_mappings_include_ori{
+  my($mappings, $coords_mapped, $coords_ori) = @_;
+
+  #Test mapped
+  my $i=0;
+  foreach my $mapping(@$mappings){
+	my $mapped_unit =  $mapping->{'mapped'};
+    isa_ok($mapped_unit, "Bio::EnsEMBL::Mapper::Coordinate",  "Got back Bio::EnsEMBL::Mapper::Coordinate");
+    ok(${$coords_mapped}[$i] == $mapped_unit->{'start'}, "${$coords_mapped}[$i] == $mapped_unit->{'start'} => Expected and Actual mappings for start ok");
+    ok(${$coords_mapped}[$i+1] == $mapped_unit->{'end'}, "${$coords_mapped}[$i+1] == $mapped_unit->{'end'} => Expected and Actual mappings for end ok");
+    $i += 2;
+  }
+  
+  #Test original
+  $i=0;
+  foreach my $mapping(@$mappings){
+    my $mapped_unit =  $mapping->{'original'};
+    isa_ok($mapped_unit, "Bio::EnsEMBL::Mapper::Coordinate",  "Got back Bio::EnsEMBL::Mapper::Coordinate");
+    ok(${$coords_ori}[$i] == $mapped_unit->{'start'}, "${$coords_ori}[$i] == $mapped_unit->{'start'} => Expected and Actual ori for start ok");
+    ok(${$coords_ori}[$i+1] == $mapped_unit->{'end'}, "${$coords_ori}[$i+1] == $mapped_unit->{'end'} => Expected and Actual ori for end ok");
+    $i += 2;
+  }
+	
+}
+
 done_testing();
