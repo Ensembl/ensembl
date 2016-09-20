@@ -294,7 +294,7 @@ sub fetch_by_region {
     unless ( @row ) {
 
       # try synonyms
-      my $syn_sql = "select s.name, cs.name, cs.version from seq_region s join seq_region_synonym ss using (seq_region_id) join coord_system cs using (coord_system_id) where ss.synonym = ? and cs.species_id =? ";
+      my $syn_sql = "select s.name, cs.name, cs.version from seq_region s join seq_region_synonym ss using (seq_region_id) join coord_system cs using (coord_system_id) where ss.synonym like ? and cs.species_id =? ";
       if (defined $coord_system_name && defined $cs) {
         $syn_sql .= "AND cs.name = '" . $coord_system_name . "' ";
       }
@@ -302,7 +302,7 @@ sub fetch_by_region {
         $syn_sql .= "AND cs.version = '" . $version . "' ";
       }
       my $syn_sql_sth = $self->prepare($syn_sql);
-      $syn_sql_sth->bind_param(1, $seq_region_name, SQL_VARCHAR);
+      $syn_sql_sth->bind_param(1, "$seq_region_name%", SQL_VARCHAR);
       $syn_sql_sth->bind_param(2, $self->species_id(), SQL_INTEGER);
       $syn_sql_sth->execute();
       my ($new_name, $new_coord_system, $new_version);
