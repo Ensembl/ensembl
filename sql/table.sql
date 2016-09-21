@@ -290,7 +290,7 @@ CREATE TABLE IF NOT EXISTS meta (
   meta_id                     INT NOT NULL AUTO_INCREMENT,
   species_id                  INT UNSIGNED DEFAULT 1,
   meta_key                    VARCHAR(40) NOT NULL,
-  meta_value                  VARCHAR(255),
+  meta_value                  VARCHAR(255) NOT NULL,
 
   PRIMARY   KEY (meta_id),
   UNIQUE    KEY species_key_value_idx (species_id, meta_key, meta_value),
@@ -302,20 +302,16 @@ CREATE TABLE IF NOT EXISTS meta (
 # Add schema type and schema version to the meta table.
 INSERT INTO meta (species_id, meta_key, meta_value) VALUES
   (NULL, 'schema_type',     'core'),
-  (NULL, 'schema_version',  '86');
+  (NULL, 'schema_version',  '87');
 
 # Patches included in this schema file:
 # NOTE: At start of release cycle, remove patch entries from last release.
 # NOTE: Avoid line-breaks in values.
 INSERT INTO meta (species_id, meta_key, meta_value)
-  VALUES (NULL, 'patch', 'patch_85_86_a.sql|schema_version');
+  VALUES (NULL, 'patch', 'patch_86_87_a.sql|schema_version');
 
 INSERT INTO meta (species_id, meta_key, meta_value)
-  VALUES (NULL, 'patch', 'patch_85_86_b.sql|add dna_align_feature_attrib table');
-
-INSERT INTO meta (species_id, meta_key, meta_value)
-  VALUES (NULL, 'patch', 'patch_85_86_c.sql|meta_case_insensitive');
-
+  VALUES (NULL, 'patch', 'patch_86_87_b.sql|meta_value_NOT_NULL');
 
 /**
 @table meta_coord
