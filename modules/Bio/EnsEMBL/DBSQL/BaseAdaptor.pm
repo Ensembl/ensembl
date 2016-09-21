@@ -92,8 +92,6 @@ case the convention is to go list_XXXX, such as
 
 (note: this method is poorly named)
 
-=head1 METHODS
-
 =cut
 
 package Bio::EnsEMBL::DBSQL::BaseAdaptor;
@@ -101,7 +99,7 @@ require Exporter;
 use vars qw(@ISA @EXPORT);
 use strict;
 
-use Bio::EnsEMBL::Utils::Exception qw(throw);
+use Bio::EnsEMBL::Utils::Exception qw(throw deprecate);
 use Bio::EnsEMBL::Utils::Scalar qw(assert_ref assert_integer wrap_array);
 use DBI qw(:sql_types);
 use Data::Dumper;
@@ -1096,7 +1094,7 @@ sub _build_id_cache {
 sub dump_data {
   my $self = shift;
   my $data = shift;
-
+  deprecate('This method is deprecated and will be removed in e91. Please use the get_all_attributes() and add_attributes() methods of DnaDnaAlignFeature instead. In the more general case, many feature types allow attributes to be stored as well');
   my $dumper = Data::Dumper->new([$data]);
   $dumper->Indent(0);
   $dumper->Terse(1);
@@ -1109,7 +1107,7 @@ sub dump_data {
 sub get_dumped_data {
     my $self = shift;
     my $data = shift;
-
+    deprecate('This method is deprecated and will be removed in e91. Please use the get_all_attributes() and add_attributes() methods of DnaDnaAlignFeature instead. In the more general case, many feature types allow attributes to be stored as well');
     $data =~ s/\n|\r|\f|(\\\\)//g;
     return eval ($data); ## no critic
 }
