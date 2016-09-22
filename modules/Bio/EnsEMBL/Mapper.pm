@@ -149,9 +149,6 @@ use Bio::EnsEMBL::Mapper::IndelCoordinate;
 use Bio::EnsEMBL::Mapper::Gap;
 
 use Bio::EnsEMBL::Utils::Exception qw(throw);
-use Data::Dumper;
-
-# use Data::Dumper;
 
 =head2 new
 
@@ -251,7 +248,7 @@ sub map_coordinates {
            && defined($strand)
            && defined($type) )
   {
-    throw("Expecting atleast 5 arguments");
+    throw("Expecting at least 5 arguments");
   }
   
   $cdna_coding_start = defined $cdna_coding_start ? $cdna_coding_start : 1;
@@ -376,13 +373,12 @@ sub map_coordinates {
       $res = Bio::EnsEMBL::Mapper::IndelCoordinate->new( $gap, $coord );
       
     } else {
-        # start is somewhere inside the region
-        if ( $pair->{'ori'} == 1 ) {
-          $target_start = $target_coord->{'start'} + ( $start - $self_coord->{'start'} );
-        } else {
-          $target_end = $target_coord->{'end'} - ( $start - $self_coord->{'start'} );
-        }
-
+      # start is somewhere inside the region
+      if ( $pair->{'ori'} == 1 ) {
+        $target_start = $target_coord->{'start'} + ( $start - $self_coord->{'start'} );
+      } else {
+        $target_end = $target_coord->{'end'} - ( $start - $self_coord->{'start'} );
+      }
        
       # Either we are enveloping this map or not.  If yes, then end
       # point (self perspective) is determined solely by target.  If
