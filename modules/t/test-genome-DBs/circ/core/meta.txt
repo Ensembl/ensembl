@@ -99,3 +99,4 @@
 99	\N	patch	patch_84_85_b.sql|remove_duplicated_key
 100	\N	patch	patch_85_86_a.sql|schema_version
 101	\N	patch	patch_85_86_b.sql|add dna_align_feature_attrib table
+102	\N	patch	patch_85_86_c.sql|meta_case_insensitive

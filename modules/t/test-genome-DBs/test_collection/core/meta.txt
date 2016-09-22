@@ -151,3 +151,5 @@
 193	\N	patch	patch_84_85_a.sql|schema_version
 194	\N	patch	patch_84_85_b.sql|remove_duplicated_key
 195	\N	patch	patch_85_86_a.sql|schema_version
+196	\N	patch	patch_85_86_b.sql|add dna_align_feature_attrib table
+197	\N	patch	patch_85_86_c.sql|meta_case_insensitive

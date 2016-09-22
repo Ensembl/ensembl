@@ -655,8 +655,8 @@ sub fetch_all_by_Slice {
 
   my $genes = $self->SUPER::fetch_all_by_Slice_constraint($slice, $constraint, $logic_name);
 
-  # If there are less than two genes, still do lazy-loading.
-  if (!$load_transcripts || @$genes < 2) {
+  # If there are 0 genes, still do lazy-loading.
+  if (!$load_transcripts || @$genes < 1) {
     return $genes;
   }
 

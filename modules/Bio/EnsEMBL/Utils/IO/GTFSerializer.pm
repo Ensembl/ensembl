@@ -319,18 +319,18 @@ sub print_feature {
 
       my $exon_start = $cdsexon->start;
       my $exon_end   = $cdsexon->end;
-      if ( $translation &&
-           $hasend &&
-           ( $exon->end >= $endcodons[0]->start &&
-             $exon->start <= $endcodons[0]->end ) )
-      {
-        # Only the first stop-codon feature is used to adjust the end of the exon
-        # This may not be sufficient all the time
-        if ( $cdsexon->strand == 1 ) {
-          $exon_end = $cdsexon->end - $endcodons[0]->length;
-        }
-        else {
-          $exon_start = $cdsexon->start + $endcodons[0]->length;
+      foreach my $endcodon (@endcodons) {
+        if ( $translation &&
+             $hasend &&
+             ( $exon->end >= $endcodon->start &&
+               $exon->start <= $endcodon->end ) )
+        {
+          if ( $cdsexon->strand == 1 ) {
+            $exon_end = $cdsexon->end - $endcodon->length;
+          }
+          else {
+            $exon_start = $cdsexon->start + $endcodon->length;
+          }
         }
       }
 

@@ -83,3 +83,4 @@
 2090	\N	patch	patch_84_85_b.sql|remove_duplicated_key
 2091	\N	patch	patch_85_86_a.sql|schema_version
 2092	\N	patch	patch_85_86_b.sql|add dna_align_feature_attrib table
+2093	\N	patch	patch_85_86_c.sql|meta_case_insensitive

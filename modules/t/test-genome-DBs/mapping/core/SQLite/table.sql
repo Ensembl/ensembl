@@ -1,6 +1,6 @@
 -- 
 -- Created by SQL::Translator::Producer::SQLite
--- Created on Tue May 10 12:30:30 2016
+-- Created on Fri Sep 16 10:11:53 2016
 -- 
 
 BEGIN TRANSACTION;
@@ -257,6 +257,17 @@ CREATE TABLE dna_align_feature (
   hcoverage double precision,
   external_data text
 );
+
+--
+-- Table: dna_align_feature_attrib
+--
+CREATE TABLE dna_align_feature_attrib (
+  dna_align_feature_id integer NOT NULL,
+  attrib_type_id smallint NOT NULL,
+  value text NOT NULL
+);
+
+CREATE UNIQUE INDEX dna_align_feature_attribx ON dna_align_feature_attrib (dna_align_feature_id, attrib_type_id, value);
 
 --
 -- Table: exon

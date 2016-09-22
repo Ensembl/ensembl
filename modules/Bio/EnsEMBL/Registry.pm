@@ -1750,7 +1750,7 @@ sub load_registry_from_db {
   my $stable_ids_db;
   my $stable_ids_version;
 
-  $user ||= "ensro";
+  $user ||= "anonymous";
   if ( !defined($port) ) {
     $port = 3306;
     if ( $host eq "ensembldb.ensembl.org" && defined($db_version) && $db_version < 48 ) {
