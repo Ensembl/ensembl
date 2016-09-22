@@ -445,20 +445,17 @@ ok(defined($pair_cdna->{ 'CDNA' }), "CDNA defined" );
 my $to_total = 0;
 my $from_total = 0;
 foreach my $mapper_pair(@{$pair_cdna->{ 'CDNA' }}){
-	my $to_start = $mapper_pair->{'to'}->{'start'};
-	my $to_end = $mapper_pair->{'to'}->{'end'};
-	
-	my $to_diff = $to_end - $to_start + 1;
-	$to_total += $to_diff;
-	
-	my $from_start = $mapper_pair->{'from'}->{'start'};
-	my $from_end = $mapper_pair->{'from'}->{'end'};
-	
-	my $from_diff = $from_end - $from_start + 1;
-	$from_total += $from_diff;
-
-	ok($to_diff == $from_diff , "to (genome) and from (cdna) diff is equal ");
-	
+  my $to_start = $mapper_pair->{'to'}->{'start'};
+  my $to_end = $mapper_pair->{'to'}->{'end'};
+  
+  my $to_diff = $to_end - $to_start + 1;
+  $to_total += $to_diff;
+  my $from_start = $mapper_pair->{'from'}->{'start'};
+  my $from_end = $mapper_pair->{'from'}->{'end'};
+  
+  my $from_diff = $from_end - $from_start + 1;
+  $from_total += $from_diff;
+  ok($to_diff == $from_diff , "to (genome) and from (cdna) diff is equal ");
 }
 
 # Check if the total base count between to and from is equal
