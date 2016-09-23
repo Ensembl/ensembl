@@ -942,7 +942,7 @@ sub get_seq_region_id {
   Arg [3]    : bool $include_non_reference (optional)
                If this argument is not provided then only reference slices
                will be returned. If set, both reference and non reference
-               slices will be rerurned.
+               slices will be returned.
   Arg [4]    : int $include_duplicates (optional)
                If set duplicate regions will be returned.
                
