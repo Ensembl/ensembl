@@ -21,7 +21,6 @@ use Test::More;
 use Test::Warnings;
 
 use Bio::EnsEMBL::Test::MultiTestDB;
-use Test::Differences;
 
 our $verbose = 0;
 
