@@ -1,5 +1,4 @@
--- Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
--- Copyright [2016] EMBL-European Bioinformatics Institute
+-- Copyright [1999-2014] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
 -- 
 -- Licensed under the Apache License, Version 2.0 (the "License");
 -- you may not use this file except in compliance with the License.
@@ -27,12 +26,7 @@ CREATE TABLE stable_id_lookup (
  stable_id   	  VARCHAR(128) NOT NULL,	      
  species_id	  INTEGER UNSIGNED NOT NULL,
  db_type          VARCHAR(255) NOT NULL,
- object_type   	  VARCHAR(255) NOT NULL,
-
- UNIQUE INDEX stable_id_lookup_idx (stable_id,species_id,db_type,object_type),
- KEY stable_id_db_type (stable_id,db_type,object_type),
- KEY stable_id_object_type (stable_id,object_type)
-
+ object_type   	  VARCHAR(255) NOT NULL
 ) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
 
 

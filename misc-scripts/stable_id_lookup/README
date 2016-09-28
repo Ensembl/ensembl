@@ -1,33 +1,8 @@
-The stable_id database is used by the Registry method get_species_and_object_type().
-EnsEMBL REST API heavily relies on this method.
+#First run with -test flag (which limits the query to 10) - Takes arond 2 minutes to complete
+perl populate_stable_id_lookup_eg.pl -lhost mysql-gti-dev-1.ebi.ac.uk -luser gtirw -lpass xxxxx -lport 4484 -dbname prem_test_ensemblgenomes_stable_ids_85 -create -host mysql-eg-rest-rel  -user ensro -port 4392 -version 32_85 -test
 
-The database can be created on one of the staging servers once all the release databases, which contain
-stable_ids to be copied into the stable_id database, are ready.
+lhost,luser,lpass,lport,dbname are credentials for writeDB. Use your own write space.
+host,user,port are credentials for readDB
 
-Currently the following stable ids are copied:
-
-core	  Exon
-	  Gene
-	  Transcript
-	  Translation
-	  Operon
-	  OperonTranscript
-
-
-For Gene, Transcript and Translation, an archive_id_lookup is also created, containing all previously used ids
-
-
-
-Command to create the stable_id database on ens-staging1 and copy stable ids from databases on ens-staging1 and 2:
-
-RELEASE=70
-DIR=ensembl/misc-scripts/stable_id_lookup
-USR=''
-PASS=''
-
-cd $DIR
-bsub -q normal -M 700000 -R'select[mem>700] rusage[mem=700]' -o ./stable_ids_${RELEASE}.out -e ./stable_ids_${RELEASE}.err perl populate_stable_id_lookup.pl \
--lhost ens-staging1 -luser $USR -lpass $PASS -create -host ens-staging1 -host ens-staging2 -user ensro
-
-
-For release 74, the job consumed 584Mb of memory and took 1hr 53 minutes to run
+#Try now without test flag - Takes around 20 mins to finish
+perl populate_stable_id_lookup_eg.pl -lhost mysql-gti-dev-1.ebi.ac.uk -luser gtirw -lpass xxxx -lport 4484 -dbname prem_test_ensemblgenomes_stable_ids_85 -create -host mysql-eg-rest-rel  -user ensro -port 4392 -version 32_85
