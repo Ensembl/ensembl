@@ -248,7 +248,7 @@ sub _load_mapper {
 
 
 sub cdna2genomic {
-  my ($self,$start,$end, $include_original_region, $cdna_coding_start) = @_;
+  my ($self, $start, $end, $include_original_region, $cdna_coding_start) = @_;
 
   if( !defined $end ) {
     throw("Must call with start/end");
@@ -257,7 +257,7 @@ sub cdna2genomic {
   $cdna_coding_start = defined $cdna_coding_start ? $cdna_coding_start : 1;
   my $mapper = $self->{'exon_coord_mapper'};
 
-  return  $mapper->map_coordinates( 'cdna', $start, $end, 1, "cdna", $include_original_region, $cdna_coding_start);
+  return  $mapper->map_coordinates('cdna', $start, $end, 1, "cdna", $include_original_region, $cdna_coding_start);
 
 }
 

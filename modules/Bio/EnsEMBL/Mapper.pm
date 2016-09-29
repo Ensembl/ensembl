@@ -357,10 +357,10 @@ sub map_coordinates {
       # new mapping Coordinate, the IndelCoordinate.
       $target_start = $target_coord->{'start'};
       $target_end   = $target_coord->{'end'};
-		
+      
       #original coordinates
-	  $ori_start = 	$self_coord->{'start'};
-	  $ori_end = 	$self_coord->{'end'};
+      $ori_start = 	$self_coord->{'start'};
+      $ori_end = 	$self_coord->{'end'};
 	  
       #create a Gap object
       my $gap = Bio::EnsEMBL::Mapper::Gap->new( $start,
