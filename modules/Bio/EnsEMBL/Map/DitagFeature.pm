@@ -165,17 +165,6 @@ sub new {
 }
 
 
-=head2 fetch_ditag
-
-  Description: Deprecated, use ditag() instead
-
-=cut
-
-sub fetch_ditag {
-  deprecate("fetch_ditag is deprecated and will be removed in e87. Please use ditag() instead.")
-}
-
-
 =head2 ditag
 
   Arg [1]    : (optional) ditag object

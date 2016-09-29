@@ -2376,44 +2376,5 @@ sub get_db_name_from_external_db_id{
 
 }
 
-=head2 geneids_by_extids
-
-  Description: DEPRECATED use list_gene_ids_by_extids instead
-
-=cut
-
-sub geneids_by_extids{
-   my ($self,$name) = @_;
-   deprecate("gene_ids_by_extids is deprecated and will be removed in e87. Please use 'list_gene_ids_by_extids instead");
-   return $self->list_gene_ids_by_extids( $name );
-}
-
-
-=head2 translationids_by_extids
-
-  DEPRECATED use list_translation_ids_by_extids instead
-
-=cut
-
-sub translationids_by_extids{
-  my ($self,$name) = @_;
-  deprecate("translationids_by_extids is deprecated and will be removed in e87. Please use list_translation_ids_by_extids instead");
-  return $self->list_translation_ids_by_extids( $name );
-}
-
-
-=head2 transcriptids_by_extids
-
-  DEPRECATED use transcriptids_by_extids instead
-
-=cut
-
-sub transcriptids_by_extids{
-   my ($self,$name) = @_;
-   deprecate("transcriptids_by_extids is deprecated and will be removed in e87. Please use list_transcript_ids_by_extids instead.");
-   return $self->list_transcript_ids_by_extids( $name );
-}
-
-
 1;
 

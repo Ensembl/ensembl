@@ -168,7 +168,6 @@ A year after deprecation (4 Ensembl releases), the method is removed from the AP
  - Bio::EnsEMBL::**Root**::*stack_trace()*
  - Bio::EnsEMBL::**Slice**::*get_all_SNPs()*
  - Bio::EnsEMBL::**Slice**::*get_all_genotyped_SNPs()*
- - Bio::EnsEMBL::**Slice**::*get_all_OligoFeatures_by_type()*
  - Bio::EnsEMBL::**Slice**::*get_all_supercontig_Slices()*
  - Bio::EnsEMBL::**Slice**::*get_Chromosome()*
  - Bio::EnsEMBL::**Slice**::*chr_name()*

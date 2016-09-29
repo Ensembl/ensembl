@@ -222,23 +222,5 @@ sub display_id {
 }
 
 
-=head2 chr_name
-
-  Description: DEPRECATED - use $kary_band->slice()->seq_region_name() instead
-
-=cut
-
-sub chr_name {
-  my $self = shift;
-
-  deprecate('chr_name is deprecated and will be removed in e87. Please use $kary_band->slice()->seq_region_name() instead.');
-  if(!$self->slice) {
-    warning('KaryotypeBand does not have Slice - cannot get seq_region_name.');
-    return '';
-  }
-
-  return $self->slice->seq_region_name();
-}
-
 
 1;

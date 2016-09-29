@@ -172,10 +172,10 @@ sub _find_polyA{
       $count   = $chunk =~ tr/Aa//;
       $n_count = $chunk =~ tr/Nn//;
       if ( ($count + $n_count) >= 2*( $piece )/3 ){
-	$length_to_mask += 3;
+  $length_to_mask += 3;
       }
       else{
-	last;
+  last;
       }
     }
     
@@ -184,27 +184,27 @@ sub _find_polyA{
       my $last_base        = substr( $seq, ( $length - $length_to_mask    ), 1);
       my $previous_to_last = substr( $seq, ( $length - $length_to_mask - 1), 1);
       if ( !( $last_base eq 'A' || $last_base eq 'a') ){
-	$length_to_mask--;
+  $length_to_mask--;
       }
       elsif( $previous_to_last eq 'A' || $previous_to_last eq 'a' ){
-	$length_to_mask++;
+  $length_to_mask++;
       }
       my $clipped_seq = substr( $seq, 0, $length - $length_to_mask );
       my $mask;
       if ( $self->_clip ){
-	$mask = "";
+  $mask = "";
       }
       elsif( $self->_mask ){
-	$mask    = "N" x ($length_to_mask);
+  $mask    = "N" x ($length_to_mask);
       }
       elsif ( $self->_softmask ){
-	$mask = lc substr( $seq, ( $length - $length_to_mask ) );
+  $mask = lc substr( $seq, ( $length - $length_to_mask ) );
       }
       $new_seq =  $clipped_seq . $mask;
     }
     else{
       $new_seq = $seq;
-    }	
+    }  
   }
   #### polyT ####
   elsif( $t_count >=5 && $t_count > $a_count ){
@@ -226,11 +226,11 @@ sub _find_polyA{
       $count = $chunk =~ tr/Tt//;
       $n_count = $chunk =~ tr/Nn//;
       if ( ($count+$n_count)  >= 2*( $piece )/3 ){
-	$length_to_mask +=3;
+  $length_to_mask +=3;
       }
       else{
-	last;
-	
+  last;
+  
       }
     }
     if ( $length_to_mask >= 0 ){
@@ -239,21 +239,21 @@ sub _find_polyA{
       my $last_base        = substr( $seq, ( $length_to_mask + 3 - 1 ), 1 );
       my $previous_to_last = substr( $seq, ( $length_to_mask + 3     ), 1 );
       if ( !( $last_base eq 'T' || $last_base eq 't' ) ){
-	$length_to_mask--;
+  $length_to_mask--;
       }
       elsif( $previous_to_last eq 'T' || $previous_to_last eq 't' ){
-	$length_to_mask++;
+  $length_to_mask++;
       }
       my $clipped_seq = substr( $seq, $length_to_mask + 3);
       my $mask;
       if ( $self->_clip ){
-	$mask = "";
+  $mask = "";
       }
       elsif( $self->_mask ){
-	$mask        = "N" x ($length_to_mask+3);
+  $mask        = "N" x ($length_to_mask+3);
       }
       elsif ($self->_softmask){
-	$mask = lc substr( $seq, 0, ($length_to_mask + 3) );
+  $mask = lc substr( $seq, 0, ($length_to_mask + 3) );
       }
       $new_seq     = $mask.$clipped_seq;
     }
@@ -330,3 +330,4 @@ sub has_polyA_track{
 
 ################
 1;
+

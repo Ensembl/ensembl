@@ -145,24 +145,6 @@ sub fetch_all_by_Slice_and_priority {
 
 
 
-=head2 fetch_all_by_RawContig_and_priority
-
-  Description: DEPRECATED use fetch_all_by_Slice_and_priority instead
-
-=cut
-
-sub fetch_all_by_RawContig_and_priority {
-  deprecate('fetch_all_by_RawContig_and_priority is deprecated and will be removed in e87. Please use fetch_all_by_Slice_and_priority() instead.');
-  fetch_all_by_Slice_and_priority(@_);
-}
-
-
-sub fetch_all_by_Slice_and_score {
-  my $self = shift;
-  throw('fetch_all_by_Slice_and_score should not be' .
-        'used to fetch marker_features');
-}
-
 sub _columns {
   my $self = shift;
 

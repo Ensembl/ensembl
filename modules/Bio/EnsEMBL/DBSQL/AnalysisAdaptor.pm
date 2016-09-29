@@ -203,36 +203,6 @@ SELECT DISTINCT analysis_id FROM %s |;
   return [@analyses];
 }
 
-
-=head2 feature_classes
-
-  Arg [1]    : NONE
-  Example    : my @fclasses = $analysis_adaptor->feature_classes;
-  Description: Returns a list of the different classes of Ensembl feature 
-               object that have an analysis
-  Returntype : List of feature classes
-  Exceptions : none
-  Caller     : general
-  Status     : Stable
-
-=cut
-
-sub feature_classes{
-  deprecate("feature_classes is deprecated and will be removed in e87. Hard-coded logic is not supported");
-  # Can't think of a way to do this programatically, so hard-coded
-  return qw(
-            DensityFeature
-            DnaAlignFeature
-            Gene
-            MarkerFeature
-            PredictionTranscript
-            ProteinAlignFeature
-            ProteinFeature
-            RepeatFeature
-            SimpleFeature
-            );
-}
-
 =head2 fetch_by_dbID
 
   Arg [1]    : int $internal_analysis_id - the database id of the analysis 

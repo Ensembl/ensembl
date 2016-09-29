@@ -1075,40 +1075,6 @@ sub to_hash {
   return $hash;
 }
 
-####
-#deprecated functions
-####
-
-=head2 group
-
-   group is no longer available in DBConnection and should be accessed if needed
-   from an adaptor.
-
-=cut
-
-sub group {
-  my ($self, $arg ) = @_;
-  ( defined $arg ) &&
-    ( $self->{_group} = $arg );
-  deprecate("DBConnection->group is deprecated and will be removed in e87. Please use adaptor->group instead.");
-  return $self->{_group};
-}
-
-=head2 species
-
-   species is no longer available in DBConnection and should be accessed if needed
-   from an adaptor.
-
-=cut
-
-sub species {
-  my ($self, $arg ) = @_;
-  ( defined $arg ) &&
-    ( $self->{_species} = $arg );
-  deprecate("DBConnection->species is deprecated and will be removed in e87. Please use adaptor->species instead.");
-  return $self->{_species};
-}
-
 =head2 _driver_object
 =cut
 

@@ -144,47 +144,6 @@ sub get_division {
   return $self->single_value_by_key('species.division');
 }
 
-=head2 get_Species
-
-  Arg [1]    : none
-  Example    : $species = $meta_container->get_Species();
-  Description: Obtains the species from this databases meta table. Call is
-               deprecated; please use other subroutines in this package
-  Returntype : Bio::Species
-  Exceptions : none
-  Caller     : ?
-  Status     : Deprecated
-
-=cut
-
-sub get_Species {
-  my ($self) = @_;
-
-  deprecate('get_Species is deprecated and will be removed in e87. Please use $self->get_common_name() / $self->get_classification() / $self->get_scientific_name() instead');
-
-  my $common_name = $self->get_common_name();
-  my $classification =
-    $self->list_value_by_key('species.classification');
-  if ( !@$classification ) {
-    return undef;
-  }
-  
-  #Re-create the old classification data structure by adding the scientific
-  #name back onto the classification but with species before genus e.g.
-  # sapiens -> Homo -> Hominade
-  my $scientific_name = $self->get_scientific_name();
-  my ($genus, @sp) = split(/ /, $scientific_name);
-  unshift(@{$classification}, join(q{ }, @sp), $genus);
-  
-  my $species = Bio::Species->new();
-  $species->common_name($common_name);
-  
-  $species->classification($classification, 1); #always force it
-
-  return $species;
-}
-
-
 =head2 get_taxonomy_id
 
   Arg [1]    : none
@@ -201,30 +160,6 @@ sub get_taxonomy_id {
   my ($self) = @_;
   return $self->single_value_by_key('species.taxonomy_id', 1);
 }
-
-
-
-=head2 get_default_assembly
-
-  Description: DEPRECATED. Use the version of the coordinate system you are
-             interested in instead.
-
-  Example:     #use this instead
-               my ($highest_cs) = @{$db->get_CoordSystemAdaptor->fetch_all()};
-               my $assembly = $highest_cs->version();
-
-=cut
-
-sub get_default_assembly {
-  my $self = shift;
-
-  deprecate("get_default_assembly is deprecated and will be removed in e87. Please use cs_adaptor->get_default_version instead.");
-
-  my ($cs) = @{$self->db->get_CoordSystemAdaptor->fetch_all()};
-
-  return $cs->version();
-}
-
 
 =head2 get_genebuild
 

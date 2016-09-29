@@ -582,31 +582,4 @@ sub get_all_Attributes {
 }
 
 
-
-=head2 get_exon_count
-
-  Description: DEPRECATED - use get_all_Exons instead
-
-=cut
-
-sub get_exon_count {
-   my $self = shift;
-   deprecate('get_exon_count is deprecated and will be removed in e87. Please use scalar(@{$transcript->get_all_Exon()s}) instead');
-   return scalar( @{$self->get_all_Exons} );
-}
-
-
-
-=head2 get_cdna
-
-  Description : DEPRECATED - use spliced_seq() or translateable_seq instead
-
-=cut
-
-sub get_cdna {
-  my $self = shift;
-  deprecate('get_cdna is deprecated and will be removed in e87. Please use spliced_seq instead');
-  return $self->spliced_seq();
-}
-
 1;
