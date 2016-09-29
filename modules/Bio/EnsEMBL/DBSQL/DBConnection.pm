@@ -71,7 +71,6 @@ package Bio::EnsEMBL::DBSQL::DBConnection;
 use vars qw(@ISA);
 use strict;
 
-use Bio::EnsEMBL::Root;
 use DBI;
 
 use Bio::EnsEMBL::DBSQL::StatementHandle;
@@ -80,8 +79,6 @@ use Bio::EnsEMBL::Utils::Exception qw/deprecate throw info warning/;
 use Bio::EnsEMBL::Utils::Argument qw/rearrange/;
 use Bio::EnsEMBL::Utils::Scalar qw/assert_ref wrap_array/;
 use Bio::EnsEMBL::Utils::SqlHelper;
-
-@ISA = qw(Bio::EnsEMBL::Root); # for backwards compatibility
 
 =head2 new
 

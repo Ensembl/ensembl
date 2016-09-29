@@ -49,9 +49,7 @@ use Bio::EnsEMBL::DensityPlot::BinValue;
 
 # Object preamble - inheriets from Bio::Root::Object
 
-use Bio::EnsEMBL::Root;
-
-@ISA = qw(Bio::EnsEMBL::Root Exporter);
+@ISA = qw(Exporter);
 #@EXPORT_OK = qw();
 # new() is inherited from Bio::Root::Object
 

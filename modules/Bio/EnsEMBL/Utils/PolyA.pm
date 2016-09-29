@@ -59,13 +59,10 @@ Bio::EnsEMBL::Utils::PolyA
 
 package Bio::EnsEMBL::Utils::PolyA;
 
-use Bio::EnsEMBL::Root;
 use Bio::Seq;
 use vars qw(@ISA);
 
 use strict;
-
-@ISA = qw(Bio::EnsEMBL::Root);
 
 
 =head2 new
