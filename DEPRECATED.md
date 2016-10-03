@@ -8,6 +8,11 @@ When a method is deprecated, a deprecation warning is thrown whenever the method
 The warning also contains instructions on replacing the deprecated method and when it will be removed.
 A year after deprecation (4 Ensembl releases), the method is removed from the API.
 
+### Removed in Ensembl Release 91 ###
+
+ - Bio::EnsEMBL::DBSQL::**BaseAdaptor**::*dump_data()*
+ - Bio::EnsEMBL::DBSQL::**BaseAdaptor**::*get_dumped_data()*
+
 ### Removed in Ensembl Release 88 ###
 
  - Bio::EnsEMBL::**Slice**::*get_all_VariationFeatures()*
@@ -163,7 +168,6 @@ A year after deprecation (4 Ensembl releases), the method is removed from the AP
  - Bio::EnsEMBL::**Root**::*stack_trace()*
  - Bio::EnsEMBL::**Slice**::*get_all_SNPs()*
  - Bio::EnsEMBL::**Slice**::*get_all_genotyped_SNPs()*
- - Bio::EnsEMBL::**Slice**::*get_all_OligoFeatures_by_type()*
  - Bio::EnsEMBL::**Slice**::*get_all_supercontig_Slices()*
  - Bio::EnsEMBL::**Slice**::*get_Chromosome()*
  - Bio::EnsEMBL::**Slice**::*chr_name()*

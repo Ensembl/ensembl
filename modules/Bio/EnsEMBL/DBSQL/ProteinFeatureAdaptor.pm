@@ -143,13 +143,20 @@ sub fetch_all_by_logic_name {
 sub fetch_by_dbID {
   my ($self, $protfeat_id) = @_;
 
-  my $sth = $self->prepare("SELECT p.seq_start, p.seq_end, p.analysis_id, " . "       p.score, p.perc_ident, p.evalue, " . "       p.hit_start, p.hit_end, p.hit_name, " . "       x.description, x.display_label, i.interpro_ac " . "FROM   protein_feature p " . "LEFT JOIN interpro AS i ON p.hit_name = i.id " . "LEFT JOIN xref AS x ON x.dbprimary_acc = i.interpro_ac " . "WHERE  p.protein_feature_id = ?");
+  my $sth = $self->prepare("SELECT p.translation_id, p.seq_start, p.seq_end, p.analysis_id, "
+                            . "p.score, p.perc_ident, p.evalue, "
+                            . "p.hit_start, p.hit_end, p.hit_name, p.hit_description, "
+                            . "x.description, x.display_label, i.interpro_ac "
+                            . "FROM   protein_feature p "
+                            . "LEFT JOIN interpro AS i ON p.hit_name = i.id "
+                            . "LEFT JOIN xref AS x ON x.dbprimary_acc = i.interpro_ac "
+                            . "WHERE  p.protein_feature_id = ?");
 
   $sth->bind_param(1, $protfeat_id, SQL_INTEGER);
   my $res = $sth->execute();
    
-  my ($start, $end, $analysis_id, $score, $perc_ident, $pvalue, $hstart, 
-      $hend, $hseqname, $idesc, $ilabel, $interpro_ac) = $sth->fetchrow_array();
+  my ($translation_id, $start, $end, $analysis_id, $score, $perc_ident, $pvalue, $hstart,
+      $hend, $hseqname, $hdesc, $idesc, $ilabel, $interpro_ac) = $sth->fetchrow_array();
 
   if($sth->rows == 0) {
     $sth->finish();
@@ -168,13 +175,15 @@ sub fetch_by_dbID {
 									  -HSTART      => $hstart,
 									  -HEND        => $hend,
 									  -HSEQNAME    => $hseqname,
+									  -HDESCRIPTION => $hdesc,
 									  -ANALYSIS    => $analysis,
 									  -SCORE       => $score,
 									  -P_VALUE     => $pvalue,
 									  -PERCENT_ID  => $perc_ident,
 									  -IDESC       => $idesc,
-                                                                          -ILABEL      => $ilabel,
-									  -INTERPRO_AC => $interpro_ac);
+                                      -ILABEL      => $ilabel,
+									  -INTERPRO_AC => $interpro_ac,
+									  -TRANSLATION_ID  => $translation_id);
 } ## end sub fetch_by_dbID
 
 =head2 store
@@ -259,31 +268,6 @@ sub store {
 
   return $dbID;
 } ## end sub store
-
-sub fetch_by_translation_id {
-  deprecate("fetch_by_translation_id is deprecated. Please use fetch_all_by_translation_id instead.");
-  fetch_all_by_translation_id(@_);
-}
-
-sub fetch_all_by_feature_and_dbID {
-  my $self           = shift;
-  my $feature        = shift;
-  my $translation_id = shift;
-  deprecate("fetch_all_by_feature_and_dbID is deprecated. Please use fetch_all_by_translation_id instead.");
-
-  print STDERR "translation_id = $translation_id feature = $feature\n";
-
-  my $features = $self->fetch_all_by_translation_id($translation_id);
-
-  my @out;
-  foreach my $f (@$features) {
-	my $logic_name = lc($f->analysis->logic_name());
-	print STDERR "LOGIC_NAME = $logic_name | FEATURE = $feature\n";
-	push(@out, $f) if ($logic_name eq lc($feature));
-  }
-
-  return \@out;
-}
 
 sub save {
 

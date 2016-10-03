@@ -937,49 +937,6 @@ sub fetch_all_by_Transcript_list {
 }
 
 
-
-=head2 fetch_all_by_DBEntry
-
-  Description: DEPRECATED, this has been renames fetch_all_by_external_name
-
-=cut
-
-sub fetch_all_by_DBEntry {
-  my $self = shift;
-  deprecate("fetch_all_by_DBEntry is deprecated and will be removed in e87. Use fetch_all_by_external_name instead.");
-  return $self->fetch_all_by_external_name(@_);
-}
-
-=head2 get_stable_entry_info
-
- Description: DEPRECATED - This method should no longer be needed. Stable
-              id info is fetched when the transcript is.
-
-=cut
-
-sub get_stable_entry_info {
-  my ($self,$translation) = @_;
-
-  deprecate( "get_stable_entry_info is deprecated and will be removed in e87. Use $translation->stable_id instead." );
-
-  unless(defined $translation && ref $translation && 
-	 $translation->isa('Bio::EnsEMBL::Translation') ) {
-    throw("Needs a Translation object, not a [$translation]");
-  }
-
-  my $sth = $self->prepare("SELECT stable_id, version 
-                            FROM   translation
-                            WHERE  translation_id = ?");
-  $sth->bind_param(1,$translation->dbID,SQL_INTEGER);
-  $sth->execute();
-
-  my @array = $sth->fetchrow_array();
-  $translation->{'_stable_id'} = $array[0];
-  $translation->{'_version'}   = $array[1];
-
-  return 1;
-}
-
 =head2 fetch_all
 
   Example     : $translations = $translation_adaptor->fetch_all();

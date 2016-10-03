@@ -187,32 +187,4 @@ sub lod_score {
 }
 
 
-
-=head2 chromosome
-
-  Description: DEPRECATED use chromosome_name() instead
-
-=cut
-
-sub chromosome {
-  my $self = shift;
-  deprecate('chromosome is deprecated and will be removed in e87. Please use chromosome_name instead');
-
-  if(@_) {
-    my $chr = shift;
-    if(ref($chr)) {
-      $self->chromosome_name($chr->seq_region_name());
-    } else {
-      $self->chromosome_name($chr);
-    }
-  }
-
-  #this object has no way to talk to db and thus no way to
-  #get a chromosome object
-  return $self->chromosome_name();
-}
-
-
-
-
 1;

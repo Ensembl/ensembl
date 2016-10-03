@@ -292,21 +292,6 @@ sub add_Gene {
 	return;
 }
 
-=head2 add_gene
-
-  Arg [1]    : Bio::EnsEMBL::Gene - gene to attach to this polycistronic transcript
-  Example    : $operon->add_gene($gene);
-  Description: Attach a gene to this polycistronic transcript
-  Exceptions : if argument is not Bio::EnsEMBL::Gene
-  Caller     : general
-  Status     : DEPRECATED - use add_Gene
-
-=cut
-sub add_gene {
-	my ($self,$gene) = @_;
-	deprecate('add_gene is deprecated and will be removed in e87. Please use $self->add_Gene()');
-	return $self->add_Gene($gene);
-}
 =head2 add_DBEntry
 
   Arg [1]    : Bio::EnsEMBL::DBEntry $dbe

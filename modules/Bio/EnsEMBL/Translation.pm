@@ -1192,20 +1192,6 @@ sub load {
   }
 }
 
-=head2 temporary_id
-
-  Description: DEPRECATED This method should not be needed. Use dbID,
-               stable_id or something else.
-
-=cut
-
-sub temporary_id {
-   my $self = shift;
-   deprecate( "temporary_id is deprecated and will be removed in e87.");
-  $self->{'temporary_id'} = shift if( @_ );
-  return $self->{'temporary_id'};
-}
-
 
 =head2 get_all_DASFactories
 

@@ -71,7 +71,6 @@ package Bio::EnsEMBL::DBSQL::DBConnection;
 use vars qw(@ISA);
 use strict;
 
-use Bio::EnsEMBL::Root;
 use DBI;
 
 use Bio::EnsEMBL::DBSQL::StatementHandle;
@@ -80,8 +79,6 @@ use Bio::EnsEMBL::Utils::Exception qw/deprecate throw info warning/;
 use Bio::EnsEMBL::Utils::Argument qw/rearrange/;
 use Bio::EnsEMBL::Utils::Scalar qw/assert_ref wrap_array/;
 use Bio::EnsEMBL::Utils::SqlHelper;
-
-@ISA = qw(Bio::EnsEMBL::Root); # for backwards compatibility
 
 =head2 new
 
@@ -1073,40 +1070,6 @@ sub to_hash {
   $hash->{'-DBNAME'} = $self->dbname() if defined $self->dbname();
   $hash->{'-PASS'} = $self->password() if defined $self->password();
   return $hash;
-}
-
-####
-#deprecated functions
-####
-
-=head2 group
-
-   group is no longer available in DBConnection and should be accessed if needed
-   from an adaptor.
-
-=cut
-
-sub group {
-  my ($self, $arg ) = @_;
-  ( defined $arg ) &&
-    ( $self->{_group} = $arg );
-  deprecate("DBConnection->group is deprecated and will be removed in e87. Please use adaptor->group instead.");
-  return $self->{_group};
-}
-
-=head2 species
-
-   species is no longer available in DBConnection and should be accessed if needed
-   from an adaptor.
-
-=cut
-
-sub species {
-  my ($self, $arg ) = @_;
-  ( defined $arg ) &&
-    ( $self->{_species} = $arg );
-  deprecate("DBConnection->species is deprecated and will be removed in e87. Please use adaptor->species instead.");
-  return $self->{_species};
 }
 
 =head2 _driver_object

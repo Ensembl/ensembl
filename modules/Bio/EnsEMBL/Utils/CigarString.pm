@@ -76,9 +76,6 @@ package Bio::EnsEMBL::Utils::CigarString;
 
 use strict;
 use vars qw(@ISA);
-use Bio::EnsEMBL::Root;
-
-@ISA = qw(Bio::EnsEMBL::Root);
 
 =head2 split_hsp
 
