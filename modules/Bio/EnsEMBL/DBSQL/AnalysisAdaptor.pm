@@ -675,7 +675,16 @@ sub _objFromHashref {
   my $self = shift;
   my $h = shift;
 
-  my $web_data = $h->{web_data} ? $self->get_dumped_data($h->{web_data}) : '';
+  ### This code moved here under protest. Web formatting does not belong with data ###
+  ### Web requires "web_data" for track configuration, but only uses the accessor once
+  ### meaning this eval can retire once the view has been removed. The column has to stay
+  ### but content is mostly accessed by SQL in web-code, not via accessor.
+  my $data = $h->{web_data};
+  $data ||= '';
+  $data =~ s/\n|\r|\f|(\\\\)//g;
+  my $web_data;
+  $web_data = eval($data); # :X execute semi-trustworthy strings on server.
+  ### Deprecation of generic dump_data and get_dumped_data methods from base class means AnalysisAdaptor now needs to supply that by itself
 
   return Bio::EnsEMBL::Analysis->new_fast({
     dbID             => $h->{analysis_id},

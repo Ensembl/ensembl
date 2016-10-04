@@ -541,7 +541,7 @@ sub displayable {
   Status     : Stable
 
 =cut
-
+# See also _objFromHashref in AnalysisAdaptor for context.
 sub web_data {
     my ($self,$arg) = @_;
 
