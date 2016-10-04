@@ -242,7 +242,7 @@ sub fetch_by_dbID {
   $sth->execute();
   my $rowHashRef = $sth->fetchrow_hashref;
   if( ! defined $rowHashRef ) {
-    return undef;
+    return;
   }
 
   my $anal = $self->_objFromHashref( $rowHashRef );
@@ -306,7 +306,7 @@ WHERE  LOWER(logic_name) = ?)
   $sth->execute();
   my $rowHashRef = $sth->fetchrow_hashref();
 
-  if ( !defined($rowHashRef) ) { return undef }
+  if ( !defined($rowHashRef) ) { return }
 
   $analysis = $self->_objFromHashref($rowHashRef);
 
@@ -499,7 +499,7 @@ sub update {
   }
 
   if(!$a->is_stored($self->db())) {
-    return undef;
+    return;
   }
 
   my $sth = $self->prepare
@@ -590,7 +590,7 @@ sub remove {
   }
 
   if(!$analysis->is_stored($self->db())) {
-    return undef;
+    return;
   }
 
   my $sth = $self->prepare("DELETE FROM analysis WHERE analysis_id = ?");
@@ -655,7 +655,7 @@ sub exists {
   }
 
   #no analysis like this one exists in the database
-  return undef;
+  return;
 }
 
 
