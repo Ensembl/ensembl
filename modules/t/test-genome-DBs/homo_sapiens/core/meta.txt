@@ -1,4 +1,4 @@
-1	\N	schema_version	86
+1	\N	schema_version	87
 2	1	assembly.default	NCBI34
 3	1	species.taxonomy_id	9606
 26	1	species.classification	Homo sapiens
@@ -79,3 +79,6 @@
 146	\N	patch	patch_85_86_a.sql|schema_version
 147	\N	patch	patch_85_86_b.sql|add dna_align_feature_attrib table
 148	\N	patch	patch_85_86_c.sql|meta_case_insensitive
+149	\N	patch	patch_86_87_a.sql|schema_version
+150	\N	patch	patch_86_87_b.sql|meta_value_NOT_NULL
+151	\N	patch	patch_86_87_c.sql|datetime_default_NULL

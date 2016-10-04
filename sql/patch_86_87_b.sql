@@ -13,9 +13,9 @@
 -- See the License for the specific language governing permissions and
 -- limitations under the License.
 
-# patch_86_87_a.sql
+# patch_86_87_b.sql
 #
-# Title: Meta case insensitive
+# Title: Meta value NOT NULL
 #
 # Description:
 # Enfored meta_value in meta table to be NOT NULL
