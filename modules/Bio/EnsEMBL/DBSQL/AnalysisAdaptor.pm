@@ -683,7 +683,8 @@ sub _objFromHashref {
   $data ||= '';
   $data =~ s/\n|\r|\f|(\\\\)//g;
   my $web_data;
-  $web_data = eval($data); # :X execute semi-trustworthy strings on server.
+  # :X execute semi-trustworthy strings on server.
+  $web_data = eval($data); ## no critic  
   ### Deprecation of generic dump_data and get_dumped_data methods from base class means AnalysisAdaptor now needs to supply that by itself
 
   return Bio::EnsEMBL::Analysis->new_fast({
