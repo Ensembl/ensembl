@@ -62,7 +62,7 @@ if(!defined($cdbname)){
 #
 
 my $core_dba = Bio::EnsEMBL::DBSQL::DBAdaptor->new(
-  -host => $chost||'ens-staging3',
+  -host => $chost||'ens-staging1',
   -user => $cuser||'ensadmin',
   -pass => $cpass,
   -group => 'core',
@@ -71,7 +71,7 @@ my $core_dba = Bio::EnsEMBL::DBSQL::DBAdaptor->new(
 );
 
 my $vega_dba = Bio::EnsEMBL::DBSQL::DBAdaptor->new(
-  -host => $vhost||'ens-staging3',
+  -host => $vhost||'ens-staging1',
   -user => $vuser||'ensadmin',
   -pass => $vpass,
   -group => 'vega',

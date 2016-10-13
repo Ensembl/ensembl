@@ -71,8 +71,12 @@ sub run_script {
   if ($project eq 'ensembl') {
       $registry->load_registry_from_multiple_dbs( 
 	  {
-	      '-host'    => 'ens-staging3',
+	      '-host'    => 'ens-staging1',
 	      '-user'    => 'ensro',
+	  },
+	  {
+	      '-host'     => 'ens-staging2',
+	      '-user'     => 'ensro',
 	  },
        );
   } elsif ($project eq 'ensemblgenomes') {

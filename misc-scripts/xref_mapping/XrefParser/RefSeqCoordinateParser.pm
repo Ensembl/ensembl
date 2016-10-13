@@ -138,8 +138,12 @@ sub run_script {
 # Else, database should be on staging
       $registry->load_registry_from_multiple_dbs(
           {
-              -host    => 'ens-staging3',
+              -host    => 'ens-staging1',
               -user    => 'ensro',
+          },
+          {
+              -host     => 'ens-staging2',
+              -user     => 'ensro',
           },
        );
       $core_dba = $registry->get_DBAdaptor($species_name,'core');
@@ -159,8 +163,12 @@ sub run_script {
 # Else database should be on staging
       $registry->load_registry_from_multiple_dbs( 
 	  {
-	      -host    => 'ens-staging3',
+	      -host    => 'ens-staging1',
 	      -user    => 'ensro',
+	  },
+	  {
+	      -host     => 'ens-staging2',
+	      -user     => 'ensro',
 	  },
        );
       $otherf_dba = $registry->get_DBAdaptor($species_name, 'otherfeatures') if !defined($ofhost);
