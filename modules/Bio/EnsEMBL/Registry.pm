@@ -2903,7 +2903,7 @@ sub version_check {
           . "and the database release (%s). "
           . "You should update one of these to ensure that your script "
           . "does not crash.\n",
-        $dba->dbc()->dbname(),
+        $dba->dbc()->dbname()."@".$dba->dbc()->host,
         software_version(), $database_version
       ) );
     return 0;
