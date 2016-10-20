@@ -34,6 +34,20 @@ use strict;
 
 use base 'Bio::EnsEMBL::DBSQL::Driver';
 
+#
+# override parent's method to enable MySQL local load data in case DBD::mysql 
+# has been compiled against a C client library which has been built with
+# no support for this feature
+#
+sub connect_params {
+  my ($self, $conn) = @_;
+
+  my $params = $self->SUPER::connect_params($conn);
+  $params->{attributes}{mysql_local_infile} = 1;
+
+  return $params;
+}
+
 sub from_date_to_seconds {
     my ($self, $column) = @_;
     return "UNIX_TIMESTAMP($column)";
