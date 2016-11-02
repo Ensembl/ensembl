@@ -570,6 +570,14 @@ $multi->restore();
   cmp_ok(scalar(@{$external_db_names}), '==', 111, 'Retriving all the unique External DB names');
 }
 
+# Test for fetching ids by a linkage type and database name
+{
+  my $go = $dbEntryAdaptor->get_external_db_id('GO', undef, 'no version');
+  my @gene_ids = $dbEntryAdaptor->list_gene_ids_by_external_db_id($go, 'IDA');
+  is(scalar(@gene_ids), 9, 'Expect 9 hits for genes to come back with IDAs');
+  my @transcript_ids = $dbEntryAdaptor->list_transcript_ids_by_external_db_id($go, 'IDA');
+  is(scalar(@transcript_ids), 10, 'Expect 10 hits for transcripts to come back with IDAs');
+}
 
 # Test for dependent/master xrefs
 my $patch_db = $multi->get_DBAdaptor( "patch" );
@@ -598,7 +606,6 @@ is($xref_adaptor->exists($xref), $xref->dbID(), "Xref exists");
 # Test fetching with descriptions
 $xrefs = $xref_adaptor->fetch_all_by_description('%nucleoplasm%');
 is(scalar(@$xrefs), 2, "Found dbentries for nucleoplasm");
-
 
 sub print_dbEntries {
   my $dbes = shift;

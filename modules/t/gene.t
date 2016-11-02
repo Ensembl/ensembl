@@ -972,6 +972,27 @@ SKIP: {
   dies_ok { $gene->get_all_homologous_Genes(); } 'No Compara DBAdaptor has been configured. No way to retrieve data';
 }
 
+# Checking for External DB fetching by Ontology linkage type
+{
+  my $genes = $ga->fetch_all_by_ontology_linkage_type('GO', 'IDA');
+  is(scalar(@{$genes}), 9, 'Expect 9 genes linked to IDAs'); 
+  foreach my $gene (@{$genes}) {
+    my %linkage_types = 
+      map { $_, 1 }
+      map { @{$_->get_all_linkage_types()} }
+      @{$gene->get_all_DBLinks('GO')};
+    ok($linkage_types{'IDA'}, $gene->stable_id().' was linked to an IDA term. Searching through all the links until we find the IDA linkage');
+    
+    my %undef_linkage_types = 
+      map { $_, 1 }
+      map { @{$_->get_all_linkage_types()} }
+      grep { $_->can('get_all_linkage_types') } 
+      @{$gene->get_all_DBLinks(undef)};
+    ok($undef_linkage_types{'IDA'}, $gene->stable_id().' was linked to an IDA term found by using an undef external db. Searching through all the links until we find the IDA linkage');
+  }
+  
+}
+
 # Fetching by slice and an external DB
 {
   $ga->clear_cache(); # have to clear the cache because otherwise it gets the wrong values back!
