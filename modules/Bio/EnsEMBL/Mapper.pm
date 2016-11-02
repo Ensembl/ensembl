@@ -416,9 +416,7 @@ sub map_coordinates {
     } ## end else [ if ( exists $pair->{'indel'...})]
 
     push( @result, $res );
-    
-        
-	my $res_ori = Bio::EnsEMBL::Mapper::Coordinate->new( $self_coord->{'id'},
+    my $res_ori = Bio::EnsEMBL::Mapper::Coordinate->new( $self_coord->{'id'},
                     $ori_start, $ori_end, $pair->{'ori'}*$strand,$cs, $rank);
     push(@paired_result, { 'original' => $res_ori, 'mapped' => $res });
     
