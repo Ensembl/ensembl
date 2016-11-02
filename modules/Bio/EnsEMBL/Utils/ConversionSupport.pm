@@ -563,17 +563,6 @@ sub user_proceed {
   return(1);
 }
 
-=head2 user_confirm
-
-  Description : DEPRECATED - please use user_proceed() instead
-
-=cut
-
-sub user_confirm {
-  my $self = shift;
-  deprecate("user_confirm is deprecated and will be removed in e87.");
-  exit unless $self->user_proceed("Continue?");
-}
 
 =head2 read_user_input
 

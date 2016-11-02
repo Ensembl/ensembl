@@ -70,8 +70,6 @@ What the ready conversions are,
 package Bio::EnsEMBL::Utils::Converter;
 
 use strict;
-use Bio::EnsEMBL::Root;
-our @ISA =qw(Bio::EnsEMBL::Root);
 
 =head2 new
 

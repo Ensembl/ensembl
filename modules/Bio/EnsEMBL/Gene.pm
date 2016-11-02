@@ -1554,76 +1554,6 @@ sub havana_gene {
 # DEPRECATED METHODS FOLLOW
 ###########################
 
-=head2 DEPRECATED add_DBLink
-
-  Description: DEPRECATED This method has been deprecated in favour of the
-               add_DBEntry method.  Objects are responible for holding only
-               xrefs directly associated with themselves now.
-
-=cut
-
-
-sub add_DBLink{
-  my ($self,$value) = @_;
-
-  throw("add_DBLink is deprecated and will be removed in e87. Please use add_DBEntry instead.");
-
-  #  unless(defined $value && ref $value 
-  #	 && $value->isa('Bio::Annotation::DBLink') ) {
-  #    throw("This [$value] is not a DBLink");
-  #  }
-    
-  #  if( !defined $self->{'_db_link'} ) {
-  #    $self->{'_db_link'} = [];
-  #  }
-
-  #  push(@{$self->{'_db_link'}},$value);
-}
-
-
-=head2 temporary_id
-
- Function: DEPRECATED:  Use dbID or stable_id or something else instead
-
-=cut
-
-sub temporary_id {
-   my ($obj,$value) = @_;
-   deprecate('temporary_id is deprecated and will be removed in e87.');
-   if( defined $value) {
-      $obj->{'temporary_id'} = $value;
-    }
-    return $obj->{'temporary_id'};
-}
-
-
-=head2 chr_name
-
-  Description: DEPRECATED.  Use project, tranform, or transfer to obtain this
-               gene in another coord system.  Use $gene->slice->seq_region_name
-               to get the name of the underlying coord system. Or
-               $gene->slice->name().
-
-=cut
-
-sub chr_name {
-  my $self = shift;
-
-  deprecate( "chr_name is deprecated and will be removed in e87. Please use project() to obtain other coordinate systems" );
-
-  my $gene_slice = $self->slice();
-  if( $gene_slice->coord_system()->name eq "chromosome" ) {
-    return $gene_slice->seq_region_name();
-  }
-
-  my $coords = $self->project( "toplevel" );
-
-  if( @$coords ) {
-    return $coords->[0]->[2]->seq_region_name();
-  }
-}
-
-
 =head2 fetch_coded_for_regulatory_factors
 
   Arg [1]    : none
@@ -1646,30 +1576,6 @@ sub fetch_coded_for_regulatory_factors {
 
   return $rfa->fetch_factors_coded_for_by_gene($self);
 
-}
-
-
-=head2 type
-
-  Description: DEPRECATED. Use biotype() instead.
-
-=cut
-
-sub type {
-  deprecate("type is deprecated and will be removed in e87. Please use biotype() instead");
-  biotype(@_);
-}
-
-
-=head2 confidence
-
-  Description: DEPRECATED. Use status() instead.
-
-=cut
-
-sub confidence {
-  deprecate("confidence is deprecated and will be removed in e87. Please use status() instead");
-  status(@_);
 }
 
 

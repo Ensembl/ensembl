@@ -501,42 +501,6 @@ sub remove {
   return;    
 }    
 
-
-=head2 fetch_by_assembly_location
-
-  Description: DEPRECATED use fetch_by_Slice_start_end_strand() instead.
-
-=cut
-
-sub fetch_by_assembly_location {
-   my ( $self, $chrStart, $chrEnd, 
-        $strand, $chrName, $assemblyType ) = @_;
-
-   deprecate('fetch_by_assembly_location is deprecated and will be removed in e87. Please use fetch_by_Slice_start_end_strand() instead');
-
-   my $csa = $self->db->get_CoordSystem();
-   my $top_cs = @{$csa->fetch_all};
-
-   my $slice_adaptor = $self->db->get_SliceAdaptor();
-   my $slice = $slice_adaptor->fetch_by_region($top_cs->name(), $chrName,
-                                               $chrStart, $chrEnd,
-                                               $strand, $top_cs->version);
-
-   return $self->fetch_by_Slice_start_end_strand($slice,1, $slice->length,1);
-}
-
-
-=head2 fetch_by_RawContig_start_end_strand
-
-  Description: DEPRECATED use fetch_by_Slice_start_end_strand instead
-
-=cut
-
-sub fetch_by_RawContig_start_end_strand {
-  deprecate('fetch_by_RawContig_start_end_strand is deprecated and will be removed in e87. Please use fetch_by_Slice_start_end_strand instead.');
-  fetch_by_Slice_start_end_strand(@_);
-}
-
 =head2 _populate_seq_region_edits
 
   Description:  Query the database for any _rna_edit attributes attached to a seq region

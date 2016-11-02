@@ -203,36 +203,6 @@ SELECT DISTINCT analysis_id FROM %s |;
   return [@analyses];
 }
 
-
-=head2 feature_classes
-
-  Arg [1]    : NONE
-  Example    : my @fclasses = $analysis_adaptor->feature_classes;
-  Description: Returns a list of the different classes of Ensembl feature 
-               object that have an analysis
-  Returntype : List of feature classes
-  Exceptions : none
-  Caller     : general
-  Status     : Stable
-
-=cut
-
-sub feature_classes{
-  deprecate("feature_classes is deprecated and will be removed in e87. Hard-coded logic is not supported");
-  # Can't think of a way to do this programatically, so hard-coded
-  return qw(
-            DensityFeature
-            DnaAlignFeature
-            Gene
-            MarkerFeature
-            PredictionTranscript
-            ProteinAlignFeature
-            ProteinFeature
-            RepeatFeature
-            SimpleFeature
-            );
-}
-
 =head2 fetch_by_dbID
 
   Arg [1]    : int $internal_analysis_id - the database id of the analysis 
@@ -272,7 +242,7 @@ sub fetch_by_dbID {
   $sth->execute();
   my $rowHashRef = $sth->fetchrow_hashref;
   if( ! defined $rowHashRef ) {
-    return undef;
+    return;
   }
 
   my $anal = $self->_objFromHashref( $rowHashRef );
@@ -336,7 +306,7 @@ WHERE  LOWER(logic_name) = ?)
   $sth->execute();
   my $rowHashRef = $sth->fetchrow_hashref();
 
-  if ( !defined($rowHashRef) ) { return undef }
+  if ( !defined($rowHashRef) ) { return }
 
   $analysis = $self->_objFromHashref($rowHashRef);
 
@@ -529,7 +499,7 @@ sub update {
   }
 
   if(!$a->is_stored($self->db())) {
-    return undef;
+    return;
   }
 
   my $sth = $self->prepare
@@ -620,7 +590,7 @@ sub remove {
   }
 
   if(!$analysis->is_stored($self->db())) {
-    return undef;
+    return;
   }
 
   my $sth = $self->prepare("DELETE FROM analysis WHERE analysis_id = ?");
@@ -685,7 +655,7 @@ sub exists {
   }
 
   #no analysis like this one exists in the database
-  return undef;
+  return;
 }
 
 
@@ -705,7 +675,17 @@ sub _objFromHashref {
   my $self = shift;
   my $h = shift;
 
-  my $web_data = $h->{web_data} ? $self->get_dumped_data($h->{web_data}) : '';
+  ### This code moved here under protest. Web formatting does not belong with data ###
+  ### Web requires "web_data" for track configuration, but only uses the accessor once
+  ### meaning this eval can retire once the view has been removed. The column has to stay
+  ### but content is mostly accessed by SQL in web-code, not via accessor.
+  my $data = $h->{web_data};
+  $data ||= '';
+  $data =~ s/\n|\r|\f|(\\\\)//g;
+  my $web_data;
+  # :X execute semi-trustworthy strings on server.
+  $web_data = eval($data); ## no critic  
+  ### Deprecation of generic dump_data and get_dumped_data methods from base class means AnalysisAdaptor now needs to supply that by itself
 
   return Bio::EnsEMBL::Analysis->new_fast({
     dbID             => $h->{analysis_id},

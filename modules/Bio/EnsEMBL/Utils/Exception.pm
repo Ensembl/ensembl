@@ -80,7 +80,7 @@ Bio::EnsEMBL::Utils::Exception - Utility functions for error handling
 This is derived from the Bio::Root module in BioPerl.  Some formatting
 has been changed and the deprecate function has been added.  Most
 notably the object methods are now static class methods that can be
-called without inheriting from Bio::Root or Bio::EnsEMBL::Root.  This is
+called without inheriting from Bio::Root.  This is
 especially useful for throwing exceptions with stack traces outside of a
 blessed context.
 
@@ -88,7 +88,7 @@ The originaly implementations of these methods were by Steve Chervitz
 and refactored by Ewan Birney.
 
 It is recommended that these functions be used instead of inheriting
-unnecessarily from the Bio::EnsEMBL::Root or Bio::Root object.  The
+unnecessarily from the Bio::Root object.  The
 functions exported by this package provide a set of useful error
 handling methods.
 

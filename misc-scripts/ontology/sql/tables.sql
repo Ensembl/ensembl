@@ -31,11 +31,11 @@ CREATE TABLE meta (
 # Add schema type and schema version to the meta table
 INSERT INTO meta (meta_key, meta_value) VALUES 
   ('schema_type', 'ontology'),
-  ('schema_version', '86');
+  ('schema_version', '87');
 
 # Patches included in this schema file
 INSERT INTO meta (meta_key, meta_value)
-  VALUES ('patch', 'patch_85_86_a.sql|schema_version');
+  VALUES ('patch', 'patch_86_87_d.sql|default_value_confident_relationship');
 
 
 CREATE TABLE ontology (
@@ -78,12 +78,12 @@ CREATE TABLE synonym (
   term_id       INT UNSIGNED NOT NULL,
   name          TEXT NOT NULL,
   type		ENUM('EXACT', 'BROAD', 'NARROW', 'RELATED'),
-  dbxref        VARCHAR(64)  NULL,
+  dbxref        VARCHAR(258)  NULL,
 
   PRIMARY KEY (synonym_id),
   UNIQUE INDEX term_synonym_idx (term_id, synonym_id),
   INDEX name_idx (name(50))
-) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
+) COLLATE=utf8_swedish_ci ENGINE=MyISAM;
 
 CREATE TABLE alt_id (
   alt_id        INT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -124,7 +124,7 @@ CREATE TABLE closure (
   subparent_term_id INT UNSIGNED,
   distance          TINYINT UNSIGNED NOT NULL,
   ontology_id       INT UNSIGNED NOT NULL,
-  confident_relationship BOOL NOT NULL,
+  confident_relationship BOOL NOT NULL DEFAULT 0,
 
   PRIMARY KEY (closure_id),
   UNIQUE INDEX child_parent_idx

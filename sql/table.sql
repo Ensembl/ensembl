@@ -225,7 +225,7 @@ CREATE TABLE genome_statistics(
   value                    BIGINT(11) UNSIGNED DEFAULT '0' NOT NULL,
   species_id               INT UNSIGNED DEFAULT 1,
   attrib_type_id           INT(10) UNSIGNED DEFAULT NULL,
-  timestamp                DATETIME NOT NULL DEFAULT '0000-00-00 00:00:00',
+  timestamp                DATETIME DEFAULT NULL,
 
   PRIMARY KEY (genome_statistics_id),
   UNIQUE KEY stats_uniq(statistic, attrib_type_id, species_id)
@@ -290,7 +290,7 @@ CREATE TABLE IF NOT EXISTS meta (
   meta_id                     INT NOT NULL AUTO_INCREMENT,
   species_id                  INT UNSIGNED DEFAULT 1,
   meta_key                    VARCHAR(40) NOT NULL,
-  meta_value                  VARCHAR(255),
+  meta_value                  VARCHAR(255) NOT NULL,
 
   PRIMARY   KEY (meta_id),
   UNIQUE    KEY species_key_value_idx (species_id, meta_key, meta_value),
@@ -302,20 +302,19 @@ CREATE TABLE IF NOT EXISTS meta (
 # Add schema type and schema version to the meta table.
 INSERT INTO meta (species_id, meta_key, meta_value) VALUES
   (NULL, 'schema_type',     'core'),
-  (NULL, 'schema_version',  '86');
+  (NULL, 'schema_version',  '87');
 
 # Patches included in this schema file:
 # NOTE: At start of release cycle, remove patch entries from last release.
 # NOTE: Avoid line-breaks in values.
 INSERT INTO meta (species_id, meta_key, meta_value)
-  VALUES (NULL, 'patch', 'patch_85_86_a.sql|schema_version');
+  VALUES (NULL, 'patch', 'patch_86_87_a.sql|schema_version');
 
 INSERT INTO meta (species_id, meta_key, meta_value)
-  VALUES (NULL, 'patch', 'patch_85_86_b.sql|add dna_align_feature_attrib table');
+  VALUES (NULL, 'patch', 'patch_86_87_b.sql|meta_value_NOT_NULL');
 
 INSERT INTO meta (species_id, meta_key, meta_value)
-  VALUES (NULL, 'patch', 'patch_85_86_c.sql|meta_case_insensitive');
-
+  VALUES (NULL, 'patch', 'patch_86_87_c.sql|datetime_default_NULL');
 
 /**
 @table meta_coord
@@ -528,7 +527,7 @@ The module column tells the pipeline which Perl module does the whole analysis, 
 CREATE TABLE IF NOT EXISTS analysis (
 
   analysis_id                 SMALLINT UNSIGNED NOT NULL AUTO_INCREMENT,
-  created                     datetime DEFAULT '0000-00-00 00:00:00' NOT NULL,
+  created                     datetime DEFAULT NULL,
   logic_name                  VARCHAR(128) NOT NULL,
   db                          VARCHAR(120),
   db_version                  VARCHAR(40),
@@ -725,8 +724,8 @@ CREATE TABLE exon (
 
   stable_id                   VARCHAR(128) DEFAULT NULL,
   version                     SMALLINT UNSIGNED DEFAULT NULL,
-  created_date                DATETIME NOT NULL DEFAULT '0000-00-00 00:00:00',
-  modified_date               DATETIME NOT NULL DEFAULT '0000-00-00 00:00:00',
+  created_date                DATETIME DEFAULT NULL,
+  modified_date               DATETIME DEFAULT NULL,
 
   PRIMARY KEY (exon_id),
   KEY seq_region_idx (seq_region_id, seq_region_start),
@@ -806,8 +805,8 @@ CREATE TABLE gene (
   canonical_transcript_id     INT(10) UNSIGNED NOT NULL,
   stable_id                   VARCHAR(128) DEFAULT NULL,
   version                     SMALLINT UNSIGNED DEFAULT NULL,
-  created_date                DATETIME NOT NULL DEFAULT '0000-00-00 00:00:00',
-  modified_date               DATETIME NOT NULL DEFAULT '0000-00-00 00:00:00',
+  created_date                DATETIME DEFAULT NULL,
+  modified_date               DATETIME DEFAULT NULL,
 
   PRIMARY KEY (gene_id),
   KEY seq_region_idx (seq_region_id, seq_region_start),
@@ -1018,8 +1017,8 @@ CREATE TABLE transcript (
   canonical_translation_id    INT(10) UNSIGNED,
   stable_id                   VARCHAR(128) DEFAULT NULL,
   version                     SMALLINT UNSIGNED DEFAULT NULL,
-  created_date                DATETIME NOT NULL DEFAULT '0000-00-00 00:00:00',
-  modified_date               DATETIME NOT NULL DEFAULT '0000-00-00 00:00:00',
+  created_date                DATETIME DEFAULT NULL,
+  modified_date               DATETIME DEFAULT NULL,
 
   PRIMARY KEY (transcript_id),
   KEY seq_region_idx (seq_region_id, seq_region_start),
@@ -1110,8 +1109,8 @@ CREATE TABLE translation (
   end_exon_id                 INT(10) UNSIGNED NOT NULL,
   stable_id                   VARCHAR(128) DEFAULT NULL,
   version                     SMALLINT UNSIGNED DEFAULT NULL,
-  created_date                DATETIME NOT NULL DEFAULT '0000-00-00 00:00:00',
-  modified_date               DATETIME NOT NULL DEFAULT '0000-00-00 00:00:00',
+  created_date                DATETIME DEFAULT NULL,
+  modified_date               DATETIME DEFAULT NULL,
 
   PRIMARY KEY (translation_id),
   KEY transcript_idx (transcript_id),
@@ -2425,8 +2424,8 @@ CREATE TABLE operon (
   analysis_id               SMALLINT UNSIGNED NOT NULL,
   stable_id                 VARCHAR(128) DEFAULT NULL,
   version                   SMALLINT UNSIGNED DEFAULT NULL,
-  created_date              DATETIME NOT NULL DEFAULT '0000-00-00 00:00:00',
-  modified_date             DATETIME NOT NULL DEFAULT '0000-00-00 00:00:00',
+  created_date              DATETIME DEFAULT NULL,
+  modified_date             DATETIME DEFAULT NULL,
 
   PRIMARY KEY (operon_id),
   KEY seq_region_idx (seq_region_id, seq_region_start),
@@ -2469,8 +2468,8 @@ CREATE TABLE operon_transcript (
   analysis_id               SMALLINT UNSIGNED NOT NULL,
   stable_id                 VARCHAR(128) DEFAULT NULL,
   version                   SMALLINT UNSIGNED DEFAULT NULL,
-  created_date              DATETIME NOT NULL DEFAULT '0000-00-00 00:00:00',
-  modified_date             DATETIME NOT NULL DEFAULT '0000-00-00 00:00:00',
+  created_date              DATETIME DEFAULT NULL,
+  modified_date             DATETIME DEFAULT NULL,
 
   PRIMARY KEY (operon_transcript_id),
   KEY operon_idx (operon_id),

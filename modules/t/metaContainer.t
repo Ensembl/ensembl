@@ -85,17 +85,6 @@ ok($div eq $divname);
 my $classification = [ qw/Hominidae Catarrhini Primates Eutheria Mammalia Vertebrata Chordata Metazoa Eukaryota/ ];
 is_deeply($mc->get_classification(), $classification, 'Checking classification as expected');
 
-#
-# Testing get_Species()
-#
-
-capture_std_streams(sub {
-  my ($stdout_ref, $stderr_ref) = @_;
-  my $s = $mc->get_Species();
-  is($s->binomial(), 'Homo sapiens', 'Checking binomial from Bio::Species continues to work');
-  like(${$stderr_ref}, qr/.+ deprecated .+ get_scientific_name\(\)/xms, 'Make sure we warn about deprecation');
-});
-
 $mdb->restore('core', 'meta');
 
 done_testing();

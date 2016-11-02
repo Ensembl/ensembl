@@ -77,7 +77,7 @@ if ($support->param('prod_port')) { $prod_port = $support->param('prod_port');
 #
 use Bio::EnsEMBL::Production::DBSQL::DBAdaptor;
 my $prod_dba = Bio::EnsEMBL::Production::DBSQL::DBAdaptor->new(
-    -host => 'ens-staging3',
+    -host => 'ens-staging1',
     -user => 'ensro',
     -port => 3306,
     -dbname => 'ensembl_production',

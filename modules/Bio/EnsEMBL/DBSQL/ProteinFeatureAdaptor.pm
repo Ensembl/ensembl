@@ -269,31 +269,6 @@ sub store {
   return $dbID;
 } ## end sub store
 
-sub fetch_by_translation_id {
-  deprecate("fetch_by_translation_id is deprecated. Please use fetch_all_by_translation_id instead.");
-  fetch_all_by_translation_id(@_);
-}
-
-sub fetch_all_by_feature_and_dbID {
-  my $self           = shift;
-  my $feature        = shift;
-  my $translation_id = shift;
-  deprecate("fetch_all_by_feature_and_dbID is deprecated. Please use fetch_all_by_translation_id instead.");
-
-  print STDERR "translation_id = $translation_id feature = $feature\n";
-
-  my $features = $self->fetch_all_by_translation_id($translation_id);
-
-  my @out;
-  foreach my $f (@$features) {
-	my $logic_name = lc($f->analysis->logic_name());
-	print STDERR "LOGIC_NAME = $logic_name | FEATURE = $feature\n";
-	push(@out, $f) if ($logic_name eq lc($feature));
-  }
-
-  return \@out;
-}
-
 sub save {
 
   my ($self, $features) = @_;

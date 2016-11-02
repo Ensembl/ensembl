@@ -1331,60 +1331,6 @@ sub _list_seq_region_ids {
 }
 
 
-=head1 DEPRECATED METHODS
-
-=cut
-
-
-=head2 fetch_all_by_RawContig_constraint
-
-  Description: DEPRECATED use fetch_all_by_RawContig_constraint instead
-
-=cut
-
-sub fetch_all_by_RawContig_constraint {
-  my $self = shift;
-  deprecate('fetch_all_by_RawContig_constraint is deprecated and will be removed in e87. Use fetch_all_by_Slice_constraint() instead.');
-  return $self->fetch_all_by_slice_constraint(@_);
-}
-
-=head2 fetch_all_by_RawContig
-
-  Description: DEPRECATED use fetch_all_by_Slice instead
-
-=cut
-
-sub fetch_all_by_RawContig {
-  my $self = shift;
-  deprecate('fetch_all_by_RawContig is deprecated and will be removed in e87. Use fetch_all_by_Slice() instead.');
-  return $self->fetch_all_by_Slice(@_);
-}
-
-=head2 fetch_all_by_RawContig_and_score
-
-  Description: DEPRECATED use fetch_all_by_Slice_and_score instead
-
-=cut
-
-sub fetch_all_by_RawContig_and_score{
-  my $self = shift;
-  deprecate('fetch_all_by_RawContig_and_score is deprecated and will be removed in e87. Use fetch_all_by_Slice_and_score() instead.');
-  return $self->fetch_all_by_Slice_and_score(@_);
-}
-
-=head2 remove_by_RawContig
-
-  Description: DEPRECATED use remove_by_Slice instead
-
-=cut
-
-sub remove_by_RawContig {
-  my $self = shift;
-  deprecate("fetch_by_RawContig is deprecated and will be removed in e87. Use remove_by_Slice instead");
-  return $self->remove_by_Slice(@_);
-}
-
-
 sub remove_by_analysis_id {
   my ($self, $analysis_id) = @_;
 
