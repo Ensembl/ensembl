@@ -63,9 +63,6 @@ use strict;
 use warnings;
 no warnings qw(uninitialized);
 
-use Bio::EnsEMBL::Root;
-our @ISA = qw(Bio::EnsEMBL::Root);
-
 use Bio::EnsEMBL::Utils::Argument qw(rearrange);
 use Scalar::Util qw(weaken isweak);
 

@@ -1,4 +1,4 @@
-1	\N	schema_version	86
+1	\N	schema_version	87
 2014	1	species.classification	Haplorrhini
 40	1	assembly.default	GRCh37
 41	1	assembly.date	2009-02
@@ -83,3 +83,7 @@
 2090	\N	patch	patch_84_85_b.sql|remove_duplicated_key
 2091	\N	patch	patch_85_86_a.sql|schema_version
 2092	\N	patch	patch_85_86_b.sql|add dna_align_feature_attrib table
+2093	\N	patch	patch_85_86_c.sql|meta_case_insensitive
+2094	\N	patch	patch_86_87_a.sql|schema_version
+2095	\N	patch	patch_86_87_b.sql|meta_value_NOT_NULL
+2096	\N	patch	patch_86_87_c.sql|datetime_default_NULL

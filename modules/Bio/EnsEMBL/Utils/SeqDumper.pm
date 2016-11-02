@@ -901,7 +901,7 @@ sub _dump_feature_table {
       $self->write(@ff, ''         , '/replace="'.$snp->allele_string.'"'); 
       #$self->write(@ff, ''         , '/evidence="'.$snp->status.'"'); 
       my $rs_id = $snp->variation_name();
-      my $db = $snp->source();
+      my $db = $snp->source_name();
 #      foreach my $link ($snp->each_DBLink) {
 #        my $id = $link->primary_id;
 #        my $db = $link->database;

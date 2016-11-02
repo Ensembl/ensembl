@@ -71,9 +71,6 @@ use strict;
 
 
 use Bio::EnsEMBL::Analysis;
-use Bio::EnsEMBL::Root;
-
-@ISA = qw(Bio::EnsEMBL::Root);
 
 use Bio::EnsEMBL::Utils::Argument qw(rearrange);
 

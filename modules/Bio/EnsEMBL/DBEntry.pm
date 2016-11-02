@@ -666,22 +666,5 @@ sub status{
   return $self->{status};
 }
 
-=head1 DEPRECATED METHODS
-
-=cut
-
-=head2 get_synonyms
-
-  DEPRECATED use get_all_synonyms instead
-
-=cut
-
-sub get_synonyms {
-  my $self = shift;
-
-  deprecate("get_synonyms is deprecated and will be removed in e87. Use get_all_synonyms instead.");
-  return $self->get_all_synonyms;
-}
-
 1;
 

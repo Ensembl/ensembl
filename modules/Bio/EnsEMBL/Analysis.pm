@@ -73,7 +73,7 @@ use Bio::EnsEMBL::Storable;
 use Bio::EnsEMBL::Utils::Exception qw(throw);
 use Bio::EnsEMBL::Utils::Argument qw(rearrange);
 
-@ISA = qw(Bio::EnsEMBL::Storable);
+use base 'Bio::EnsEMBL::Storable';
 
 
 =head2 new
@@ -112,26 +112,26 @@ sub new {
       $parameters, $created, $logic_name, $description, $display_label,
       $displayable, $web_data) =
 
-	  rearrange([qw(ID
-	  			ADAPTOR
-				DB
-				DB_VERSION
-				DB_FILE
-				PROGRAM
-				PROGRAM_VERSION
-				PROGRAM_FILE
-				GFF_SOURCE
-				GFF_FEATURE
-				MODULE
-				MODULE_VERSION
-				PARAMETERS
-				CREATED
-				LOGIC_NAME
-			        DESCRIPTION
-                                DISPLAY_LABEL
-			        DISPLAYABLE
-                                WEB_DATA
-				)],@args);
+  rearrange([qw(ID
+    ADAPTOR
+    DB
+    DB_VERSION
+    DB_FILE
+    PROGRAM
+    PROGRAM_VERSION
+    PROGRAM_FILE
+    GFF_SOURCE
+    GFF_FEATURE
+    MODULE
+    MODULE_VERSION
+    PARAMETERS
+    CREATED
+    LOGIC_NAME
+    DESCRIPTION
+    DISPLAY_LABEL
+    DISPLAYABLE
+    WEB_DATA
+  )],@args);
 
   $displayable ||= 0;
 
@@ -173,7 +173,7 @@ sub db {
     my ($self,$arg) = @_;
 
     if (defined($arg)) {
-	$self->{_db} = $arg;
+      $self->{_db} = $arg;
     }
 
     return $self->{_db};
@@ -195,7 +195,7 @@ sub db_version {
     my ($self,$arg) = @_;
 
     if (defined($arg)) {
-	$self->{_db_version} = $arg;
+      $self->{_db_version} = $arg;
     }
 
     return $self->{_db_version};
@@ -217,7 +217,7 @@ sub db_file {
     my ($self,$arg) = @_;
 
     if (defined($arg)) {
-	$self->{_db_file} = $arg;
+      $self->{_db_file} = $arg;
     }
 
     return $self->{_db_file};
@@ -240,7 +240,7 @@ sub program {
     my ($self,$arg) = @_;
 
     if (defined($arg)) {
-	$self->{_program} = $arg;
+      $self->{_program} = $arg;
     }
 
     return $self->{_program};
@@ -262,7 +262,7 @@ sub program_version {
     my ($self,$arg) = @_;
 
     if (defined($arg)) {
-	$self->{_program_version} = $arg;
+      $self->{_program_version} = $arg;
     }
 
     return $self->{_program_version};
@@ -284,7 +284,7 @@ sub program_file {
     my ($self,$arg) = @_;
 
     if (defined($arg)) {
-	$self->{_program_file} = $arg;
+      $self->{_program_file} = $arg;
     }
 
     return $self->{_program_file};
@@ -307,7 +307,7 @@ sub module {
     my ($self,$arg) = @_;
 
     if (defined($arg)) {
-	$self->{_module} = $arg;
+      $self->{_module} = $arg;
     }
 
     return $self->{_module};
@@ -329,7 +329,7 @@ sub module_version {
     my ($self,$arg) = @_;
 
     if (defined($arg)) {
-	$self->{_module_version} = $arg;
+      $self->{_module_version} = $arg;
     }
 
     return $self->{_module_version};
@@ -351,7 +351,7 @@ sub gff_source {
     my ($self,$arg) = @_;
 
     if (defined($arg)) {
-	$self->{_gff_source} = $arg;
+      $self->{_gff_source} = $arg;
     }
 
     return $self->{_gff_source};
@@ -373,7 +373,7 @@ sub gff_feature {
     my ($self,$arg) = @_;
 
     if (defined($arg)) {
-	$self->{_gff_feature} = $arg;
+      $self->{_gff_feature} = $arg;
     }
 
     return $self->{_gff_feature};
@@ -396,7 +396,7 @@ sub parameters {
     my ($self,$arg) = @_;
 
     if (defined($arg)) {
-	$self->{_parameters} = $arg;
+      $self->{_parameters} = $arg;
     }
 
     return $self->{_parameters};
@@ -418,7 +418,7 @@ sub created {
     my ($self,$arg) = @_;
 
     if (defined($arg)) {
-	$self->{_created} = $arg;
+      $self->{_created} = $arg;
     }
 
     return $self->{_created};
@@ -481,7 +481,7 @@ sub description {
     my ($self,$arg) = @_;
 
     if (defined($arg)) {
-	$self->{_description} = $arg;
+      $self->{_description} = $arg;
     }
 
     return $self->{_description};
@@ -503,7 +503,7 @@ sub display_label {
     my ($self,$arg) = @_;
 
     if (defined($arg)) {
-	$self->{_display_label} = $arg;
+      $self->{_display_label} = $arg;
     }
 
     return $self->{_display_label};
@@ -524,7 +524,7 @@ sub displayable {
     my ($self,$arg) = @_;
 
     if (defined($arg)) {
-	$self->{_displayable} = $arg;
+      $self->{_displayable} = $arg;
     }
 
     return $self->{_displayable};
@@ -541,12 +541,12 @@ sub displayable {
   Status     : Stable
 
 =cut
-
+# See also _objFromHashref in AnalysisAdaptor for context.
 sub web_data {
     my ($self,$arg) = @_;
 
     if (defined($arg)) {
-	$self->{_web_data} = $arg;
+      $self->{_web_data} = $arg;
     }
 
     return $self->{_web_data};

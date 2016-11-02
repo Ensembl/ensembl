@@ -1,6 +1,6 @@
 -- 
 -- Created by SQL::Translator::Producer::SQLite
--- Created on Fri May  6 15:45:55 2016
+-- Created on Wed Oct  5 10:42:47 2016
 -- 
 
 BEGIN TRANSACTION;
@@ -226,8 +226,8 @@ CREATE TABLE ontology (
   ontology_id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
   name varchar(64) NOT NULL,
   namespace varchar(64) NOT NULL,
-  data_version VARCHAR(64)  NULL
- );
+  data_version varchar(64)
+);
 
 CREATE UNIQUE INDEX name_namespace_idx ON ontology (name, namespace);
 

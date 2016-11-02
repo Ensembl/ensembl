@@ -297,35 +297,6 @@ sub fetch_all_by_hit_name_unversioned {
 }
 
 
-
-=head2 fetch_all_by_RawContig_and_pid
-
-  Description: DEPRECATED use fetch_all_by_Slice_and_pid instead
-
-=cut
-
-sub fetch_all_by_RawContig_and_pid {
-  my($self, $contig, $pid, $logic_name) = @_;
-  deprecate('fetch_all_by_RawContig_and_pid is deprecated and will be removed in e87. Use fetch_all_by_Slice_and_pid instead.');
-
-  my $constraint;
-
-  #get the primary table alias
-  my @tabs = $self->_tables;
-  my $alias = $tabs[0]->[1];
-
-  if(defined $pid) {
-    $constraint = "${alias}.perc_ident > $pid";
-  }
-
-  return $self->fetch_all_by_RawContig_constraint($contig, 
-						  $constraint, 
-						  $logic_name);
-}
-
-
-
-
 ##implemented by subclasses:
 # store
 # _tables

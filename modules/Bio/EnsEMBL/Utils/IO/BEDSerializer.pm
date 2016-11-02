@@ -49,7 +49,7 @@ use base qw(Bio::EnsEMBL::Utils::IO::FeatureSerializer);
     Arg [2]    : Default source of the features. Defaults to .
     Arg [3]    : RGB colour to emit. Defaults to black (0,0,0)
 
-    Returntype : Bio::EnsEMBL::Utils::IO::GFFSerializer
+    Returntype : Bio::EnsEMBL::Utils::IO::BEDSerializer
 
 =cut
 

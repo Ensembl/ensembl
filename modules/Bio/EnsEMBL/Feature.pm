@@ -1497,17 +1497,6 @@ sub species {
 }
 
 
-=head2 contig
-
- Deprecated - Included for backwards compatibility only.
- Use slice() instead
-=cut
-sub contig {
-  deprecate('contig is deprecated and will be removed in e87. Please use slice() instead');
-  slice(@_);
-}
-
-
 
 =head2 sub_SeqFeature
 
@@ -1594,22 +1583,6 @@ sub _deprecated_transform {
   return $self;
 }
 
-
-=head2 id
-
-Deprecated - only included for backwards compatibility.
-Use display_id, hseqname, dbID or stable_id instead
-
-=cut
-
-sub id {
-  my $self = shift;
-  deprecate("id method is deprecated and will be removed in e87. Please use display_id instead");
-  return $self->{'stable_id'} if($self->{'stable_id'});
-  return $self->{'hseqname'} if($self->{'hseqname'});
-  return $self->{'seqname'}  if($self->{'seqname'});
-  return $self->{'dbID'};
-}
 
 my $feature_tables = 
   {

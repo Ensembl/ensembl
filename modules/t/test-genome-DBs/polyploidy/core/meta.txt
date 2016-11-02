@@ -1,5 +1,5 @@
 1	\N	schema_type	core
-2	\N	schema_version	86
+2	\N	schema_version	87
 3	\N	patch	patch_68_69_a.sql|schema_version
 4	1	species.taxonomy_id	4565
 6	1	species.alias	bread wheat
@@ -132,3 +132,7 @@
 212	\N	patch	patch_84_85_b.sql|remove_duplicated_key
 213	\N	patch	patch_85_86_a.sql|schema_version
 214	\N	patch	patch_85_86_b.sql|add dna_align_feature_attrib table
+215	\N	patch	patch_85_86_c.sql|meta_case_insensitive
+216	\N	patch	patch_86_87_a.sql|schema_version
+217	\N	patch	patch_86_87_b.sql|meta_value_NOT_NULL
+218	\N	patch	patch_86_87_c.sql|datetime_default_NULL

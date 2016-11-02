@@ -398,17 +398,7 @@ $multi->restore();
 
 $slice = $db->get_SliceAdaptor()->fetch_by_region("chromosome", "20", 30_252_000, 31_252_001);
 
-my $known   = 0;
-my $unknown = 0;
-
 $genes = $slice->get_all_Genes();
-for my $gene (@$genes) {
-  if ($gene->is_known()) {
-	$known++;
-  } else {
-	$unknown++;
-  }
-}
 
 # try and count the genes on the slice
 note 'Processing counts';
@@ -433,9 +423,6 @@ is($geneCount, scalar(@$genes) - $vega_geneCount, "Almost all genes are of sourc
   is($gene_count, 14, 'Counts should span slices when given patches/haps/pars');
 }
 
-debug("known: $known Unknown: $unknown\n");
-
-ok($known == 17);
 
 #save contents of gene table
 $multi->save('core', 'gene');

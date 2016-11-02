@@ -1,6 +1,6 @@
 -- 
 -- Created by SQL::Translator::Producer::SQLite
--- Created on Fri Jun 24 15:49:12 2016
+-- Created on Wed Oct  5 10:42:02 2016
 -- 
 
 BEGIN TRANSACTION;
@@ -36,7 +36,7 @@ CREATE TABLE alt_allele_group (
 --
 CREATE TABLE analysis (
   analysis_id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
-  created datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
+  created datetime,
   logic_name varchar(40) NOT NULL DEFAULT '',
   db varchar(120),
   db_version varchar(40),
@@ -284,8 +284,8 @@ CREATE TABLE exon (
   is_constitutive tinyint NOT NULL DEFAULT 0,
   stable_id varchar(128),
   version smallint,
-  created_date datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
-  modified_date datetime NOT NULL DEFAULT '0000-00-00 00:00:00'
+  created_date datetime,
+  modified_date datetime
 );
 
 --
@@ -344,8 +344,8 @@ CREATE TABLE gene (
   canonical_transcript_id integer NOT NULL,
   stable_id varchar(128),
   version smallint,
-  created_date datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
-  modified_date datetime NOT NULL DEFAULT '0000-00-00 00:00:00'
+  created_date datetime,
+  modified_date datetime
 );
 
 --
@@ -382,7 +382,7 @@ CREATE TABLE genome_statistics (
   value bigint NOT NULL DEFAULT 0,
   species_id integer DEFAULT 1,
   attrib_type_id integer,
-  timestamp datetime NOT NULL DEFAULT '0000-00-00 00:00:00'
+  timestamp datetime
 );
 
 CREATE UNIQUE INDEX stats_uniq ON genome_statistics (statistic, attrib_type_id, species_id);
@@ -462,7 +462,7 @@ CREATE TABLE mapping_session (
   new_release varchar(5) NOT NULL DEFAULT '',
   old_assembly varchar(20) NOT NULL DEFAULT '',
   new_assembly varchar(20) NOT NULL DEFAULT '',
-  created datetime NOT NULL
+  created datetime
 );
 
 --
@@ -631,8 +631,8 @@ CREATE TABLE operon (
   analysis_id smallint NOT NULL,
   stable_id varchar(128),
   version smallint,
-  created_date datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
-  modified_date datetime NOT NULL DEFAULT '0000-00-00 00:00:00'
+  created_date datetime,
+  modified_date datetime
 );
 
 --
@@ -649,8 +649,8 @@ CREATE TABLE operon_transcript (
   analysis_id smallint NOT NULL,
   stable_id varchar(128),
   version smallint,
-  created_date datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
-  modified_date datetime NOT NULL DEFAULT '0000-00-00 00:00:00'
+  created_date datetime,
+  modified_date datetime
 );
 
 --
@@ -872,8 +872,8 @@ CREATE TABLE transcript (
   canonical_translation_id integer,
   stable_id varchar(128),
   version smallint,
-  created_date datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
-  modified_date datetime NOT NULL DEFAULT '0000-00-00 00:00:00'
+  created_date datetime,
+  modified_date datetime
 );
 
 CREATE UNIQUE INDEX canonical_translation_idx ON transcript (canonical_translation_id);
@@ -923,8 +923,8 @@ CREATE TABLE translation (
   end_exon_id integer NOT NULL,
   stable_id varchar(128),
   version smallint,
-  created_date datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
-  modified_date datetime NOT NULL DEFAULT '0000-00-00 00:00:00'
+  created_date datetime,
+  modified_date datetime
 );
 
 --

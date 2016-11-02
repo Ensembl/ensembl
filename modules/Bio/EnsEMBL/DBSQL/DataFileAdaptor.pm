@@ -109,24 +109,6 @@ sub get_base_path {
   throw "No base path discovered. Either provide a path, set a global using global_base_path() or specify 'data_file.base_path' in meta";
 }
 
-=head2 DataFile_to_extension
-
-  Deprecated
-  Arg[1]      : Bio::EnsEMBL::DataFile
-  Example     : my $ext = $dfa->DataFile_to_extension($bam_df);
-  Description : Returns an expected extension for the given DataFile type
-  Returntype  : Scalar of the expected file extension
-  Exceptions  : Raised if the given file type is not understood
-
-=cut
-
-sub DataFile_to_extension {
-  my ($self, $df) = @_;
-  deprecate("DataFile_to_extension is deprecated and will be removed in e87. Please use DataFile_to_extensions() instead");
-  my $extensions = $self->DataFile_to_extensions($df);
-  return $extensions->[0];
-}
-
 =head2 DataFile_to_extensions
 
   Arg[1]      : Bio::EnsEMBL::DataFile

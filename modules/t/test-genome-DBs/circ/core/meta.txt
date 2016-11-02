@@ -39,7 +39,7 @@
 95	\N	patch	patch_83_84_c.sql|protein_feature_unique
 96	\N	patch	patch_83_84_d.sql|longer_synonym
 1	\N	schema_type	core
-2	\N	schema_version	86
+2	\N	schema_version	87
 8	1	assembly.accession	GCA_000292705.1
 10	1	assembly.date	2012-08
 7	1	assembly.default	GCA_000292705.1
@@ -99,3 +99,7 @@
 99	\N	patch	patch_84_85_b.sql|remove_duplicated_key
 100	\N	patch	patch_85_86_a.sql|schema_version
 101	\N	patch	patch_85_86_b.sql|add dna_align_feature_attrib table
+102	\N	patch	patch_85_86_c.sql|meta_case_insensitive
+103	\N	patch	patch_86_87_a.sql|schema_version
+104	\N	patch	patch_86_87_b.sql|meta_value_NOT_NULL
+105	\N	patch	patch_86_87_c.sql|datetime_default_NULL

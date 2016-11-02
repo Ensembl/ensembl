@@ -88,8 +88,12 @@ sub run_script {
   } else {
       $registry->load_registry_from_multiple_dbs( 
       {
-        '-host'    => 'ens-staging3',
+        '-host'    => 'ens-staging1',
         '-user'    => 'ensro',
+      },
+      {
+        '-host'     => 'ens-staging2',
+        '-user'     => 'ensro',
       },
       );
       $dba = $registry->get_DBAdaptor($species_name, 'core');

@@ -119,9 +119,9 @@ sub _columns {
             daf.score
             daf.external_db_id
             daf.hcoverage
-	    daf.external_data
-	    exdb.db_name
-	    exdb.db_display_name);
+            daf.external_data
+            exdb.db_name
+            exdb.db_display_name);
 }
 
 
@@ -162,23 +162,18 @@ sub store {
                              hit_start, hit_end, hit_strand, hit_name,
                              cigar_line, analysis_id, score, evalue,
                              perc_ident, external_db_id, hcoverage, external_data)
-     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"    # 16 arguments
+     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,NULL)"    # 16 arguments, external data is being removed
   );
 
 FEATURE:
   foreach my $feat (@feats) {
     if ( !ref $feat || !$feat->isa("Bio::EnsEMBL::DnaDnaAlignFeature") )
     {
-      throw("feature must be a Bio::EnsEMBL::DnaDnaAlignFeature,"
-          . " not a ["
-          . ref($feat)
-          . "]." );
+      throw("feature must be a Bio::EnsEMBL::DnaDnaAlignFeature, not a [". ref($feat). "]." );
     }
 
     if ( $feat->is_stored($db) ) {
-      warning( "DnaDnaAlignFeature ["
-          . $feat->dbID()
-          . "] is already stored in this database." );
+      warning( "DnaDnaAlignFeature [".$feat->dbID()."] is already stored in this database." );
       next FEATURE;
     }
 
@@ -228,11 +223,6 @@ FEATURE:
     $sth->bind_param( 13, $feat->percent_id,     SQL_FLOAT );
     $sth->bind_param( 14, $feat->external_db_id, SQL_INTEGER );
     $sth->bind_param( 15, $feat->hcoverage,      SQL_DOUBLE );
-    # Eagle change: also store the extra data, if available
-    my $extra_data;
-    $extra_data = $self->dump_data($feat->extra_data()) if ($feat->extra_data());
-    $sth->bind_param( 16, $extra_data,  SQL_LONGVARCHAR );
-
     $sth->execute();
 
     my $dbId = $self->last_insert_id("${tablename}_id", undef, $tablename);
@@ -312,7 +302,7 @@ sub save {
   my $db = $self->db();
   my $analysis_adaptor = $db->get_AnalysisAdaptor();
 
-  my $sql = qq{INSERT INTO $tablename (seq_region_id, seq_region_start, seq_region_end, seq_region_strand, hit_start, hit_end, hit_strand, hit_name, cigar_line, analysis_id, score, evalue, perc_ident, external_db_id, hcoverage, external_data) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)};
+  my $sql = qq{INSERT INTO $tablename (seq_region_id, seq_region_start, seq_region_end, seq_region_strand, hit_start, hit_end, hit_strand, hit_name, cigar_line, analysis_id, score, evalue, perc_ident, external_db_id, hcoverage, external_data) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL)};
 
   my %analyses = ();
 
@@ -365,8 +355,6 @@ sub save {
     my $seq_region_id;
     ($feat, $seq_region_id) = $self->_pre_store_userdata($feat);
 
-    my $extra_data = $feat->extra_data ? $self->dump_data($feat->extra_data) : '';
-
     $sth->bind_param(1,$seq_region_id,SQL_INTEGER);
     $sth->bind_param(2,$feat->start,SQL_INTEGER);
     $sth->bind_param(3,$feat->end,SQL_INTEGER);
@@ -383,8 +371,6 @@ sub save {
     $sth->bind_param(13,$feat->percent_id,SQL_FLOAT);
     $sth->bind_param(14,$feat->external_db_id,SQL_INTEGER);
     $sth->bind_param(15,$feat->hcoverage,SQL_DOUBLE);
-    $sth->bind_param(16,$extra_data,SQL_LONGVARCHAR);
-
 
     $sth->execute();
     $original->dbID($self->last_insert_id("${tablename}_id", undef, $tablename));
@@ -634,9 +620,6 @@ sub _objs_from_sth {
       $slice = $dest_slice;
     }
 
-    # Inlining the following in the hash causes major issues with 5.16 and messes up the hash 
-    my $evalled_extra_data = $extra_data ? $self->get_dumped_data($extra_data) : '';
-
     # Finally, create the new DnaAlignFeature.
     push( @features,
           $self->_create_feature_fast(
@@ -658,7 +641,7 @@ sub _objs_from_sth {
                'dbID'            => $dna_align_feature_id,
                'external_db_id'  => $external_db_id,
                'hcoverage'       => $hcoverage,
-               'extra_data'      => $evalled_extra_data,
+               'extra_data'      => undef,
                'dbname'          => $external_db_name,
                'db_display_name' => $external_display_db_name
              } ) );

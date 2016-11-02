@@ -2709,32 +2709,6 @@ sub load_registry_from_multiple_dbs {
 # Web specific routines
 #
 
-=head2 DEPRECATED load_registry_with_web_adaptors
-
-  DEPRECATED: Use load_registry_from_db instead.
-
-=cut
-
-sub load_registry_with_web_adaptors{
-  my $class = shift;
-
-  deprecate('load_registry_with_web_adaptors is deprecated and will be removed in e87. Please use the load_registry_from_db instead'); 
-  my $site_eval = eval{ require SiteDefs };
-  if ($@ or (!defined($site_eval))){ die "Can't use SiteDefs.pm - $@\n"; }
-    SiteDefs->import(qw(:ALL));
-
-  my $species_eval = eval{ require SpeciesDefs };
-  if ($@ or (!defined($species_eval))){ die "Can't use SpeciesDefs.pm - $@\n"; }
-  my $conf = new SpeciesDefs();
-  
-  my %species_alias = %{$SiteDefs::ENSEMBL_SPECIES_ALIASES};
-
-  foreach my $spec (keys %species_alias){
-    Bio::EnsEMBL::Registry->add_alias($species_alias{$spec},$spec);
-  }
-  return;
-}
-
 =head2 set_default_track
 
   Sets a flag to say that that this species/group are a default track and do not
@@ -2929,7 +2903,7 @@ sub version_check {
           . "and the database release (%s). "
           . "You should update one of these to ensure that your script "
           . "does not crash.\n",
-        $dba->dbc()->dbname(),
+        $dba->dbc()->dbname()."@".$dba->dbc()->host,
         software_version(), $database_version
       ) );
     return 0;
