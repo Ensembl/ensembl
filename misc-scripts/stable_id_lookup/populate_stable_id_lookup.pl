@@ -368,6 +368,7 @@ sub insert_ids {
           my $status = $tuple_status[$tuple];
           $status = [0, "Skipped"] unless defined $status;
           next unless ref $status;
+          next unless defined $ids[$type];
           printf STDERR "Failed to insert (%s, %s, %s, %s): %s\n",
           $ids[$tuple], $species_id[$tuple], $db_type[$tuple], $object_type[$tuple], $status->[1];
      }
