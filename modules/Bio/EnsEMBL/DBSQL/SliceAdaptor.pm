@@ -611,7 +611,7 @@ sub parse_location_to_values {
   my $separator_regex = qr/(?:-|[.]{2}|\:|_)?/; # support -, .., : and _ as separators
   my $hgvs_nomenclature_regex = qr/(?:g\.)?/; # check for HGVS looking locations e.g. X:g.1-100
   my $number_regex = qr/[0-9, EMKG]+/xmsi;
-  my $number_regex_signed = qr/-?[0-9, EMKG]+/xmsi;
+  my $number_regex_signed = qr/-?[0-9, EMKG]+/xmsi; # to capture negative locations as sometimes we end up in negative location if the location is padded
   my $strand_regex = qr/[+-1]|-1/xms;
   
   my $regex = qr/^((?:\w|\.|_|-)+) \s* :? \s* $hgvs_nomenclature_regex ($number_regex_signed)? $separator_regex ($number_regex)? $separator_regex ($strand_regex)? $/xms;
@@ -631,7 +631,7 @@ sub parse_location_to_values {
 
         unless(defined $end) {
           # We will reach here only when the location is given without start and '-' is used as seperator eg: 1:-10 (expected to return 1:1-10)
-           $end = abs($start);   	
+          $end = abs($start);   	
         }
           $start = 1;
       }
