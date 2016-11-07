@@ -150,8 +150,6 @@ use Bio::EnsEMBL::Mapper::Gap;
 
 use Bio::EnsEMBL::Utils::Exception qw(throw);
 
-# use Data::Dumper;
-
 =head2 new
 
   Arg [1]    : string $from
@@ -230,6 +228,10 @@ sub flush {
     Arg  5      string $type
                 nature of transform - gives the type of
                 coordinates to be transformed *from*
+    Arg  6      boolean (0 or 1) $include_original_region
+                option to include original input coordinate region mappings in the result
+    Arg  7      int  $cdna_coding_start
+                cdna coding start  
     Function    generic map method
     Returntype  array of Bio::EnsEMBL::Mapper::Coordinate
                 and/or   Bio::EnsEMBL::Mapper::Gap
@@ -239,16 +241,18 @@ sub flush {
 =cut
 
 sub map_coordinates {
-  my ( $self, $id, $start, $end, $strand, $type ) = @_;
+  my ( $self, $id, $start, $end, $strand, $type, $include_original_region, $cdna_coding_start ) = @_;
   unless (    defined($id)
            && defined($start)
            && defined($end)
            && defined($strand)
            && defined($type) )
   {
-    throw("Expecting 5 arguments");
+    throw("Expecting at least 5 arguments");
   }
-
+  
+  $cdna_coding_start = defined $cdna_coding_start ? $cdna_coding_start : 1;
+  
   # special case for handling inserts:
   if ( $start == $end + 1 ) {
     return $self->map_insert( $id, $start, $end, $strand, $type );
@@ -282,6 +286,7 @@ sub map_coordinates {
 
   my $last_used_pair;
   my @result;
+  my @paired_result;
 
   my ( $start_idx, $end_idx, $mid_idx, $pair, $self_coord );
   my $lr = $hash->{ uc($id) };
@@ -295,6 +300,7 @@ sub map_coordinates {
     $mid_idx    = ( $start_idx + $end_idx ) >> 1;
     $pair       = $lr->[$mid_idx];
     $self_coord = $pair->{$from};
+    
     if ( $self_coord->{'end'} < $start ) {
       $start_idx = $mid_idx;
     } else {
@@ -310,6 +316,7 @@ sub map_coordinates {
     my $self_coord   = $pair->{$from};
     my $target_coord = $pair->{$to};
 
+    
     #
     # But not the case for haplotypes!! need to test for this case???
     # so removing this till a better solution is found
@@ -341,14 +348,20 @@ sub map_coordinates {
       push( @result, $gap );
       $start = $gap->{'end'} + 1;
     }
-    my ( $target_start, $target_end, $target_ori );
+    my ( $target_start, $target_end);
+    my ( $ori_start, $ori_end);
+    
     my $res;
     if ( exists $pair->{'indel'} ) {
       # When next pair is an IndelPair and not a Coordinate, create the
       # new mapping Coordinate, the IndelCoordinate.
       $target_start = $target_coord->{'start'};
       $target_end   = $target_coord->{'end'};
-
+      
+      #original coordinates
+      $ori_start = 	$self_coord->{'start'};
+      $ori_end = 	$self_coord->{'end'};
+	  
       #create a Gap object
       my $gap = Bio::EnsEMBL::Mapper::Gap->new( $start,
         ( $self_coord->{'end'} < $end ? $self_coord->{'end'} : $end ) );
@@ -358,15 +371,15 @@ sub map_coordinates {
               $target_start, $target_end, $pair->{'ori'}*$strand, $cs );
       #and finally, the IndelCoordinate object with
       $res = Bio::EnsEMBL::Mapper::IndelCoordinate->new( $gap, $coord );
+      
     } else {
       # start is somewhere inside the region
       if ( $pair->{'ori'} == 1 ) {
         $target_start = $target_coord->{'start'} + ( $start - $self_coord->{'start'} );
       } else {
-        $target_end =
-          $target_coord->{'end'} - ( $start - $self_coord->{'start'} );
+        $target_end = $target_coord->{'end'} - ( $start - $self_coord->{'start'} );
       }
-
+       
       # Either we are enveloping this map or not.  If yes, then end
       # point (self perspective) is determined solely by target.  If
       # not we need to adjust.
@@ -385,16 +398,28 @@ sub map_coordinates {
             $target_coord->{'start'} +
             ( $end - $self_coord->{'start'} );
         } else {
+                  
           $target_start =
             $target_coord->{'end'} - ( $end - $self_coord->{'start'} );
         }
+         
       }
-
+	
       $res = Bio::EnsEMBL::Mapper::Coordinate->new( $target_coord->{'id'},
                $target_start, $target_end, $pair->{'ori'}*$strand,$cs, $rank );
+               
+     #save the ori coordinate info
+     $ori_start = ($start - $cdna_coding_start) + 1;
+     $ori_end =   $ori_start + ($target_end - $target_start);
+     
+ 
     } ## end else [ if ( exists $pair->{'indel'...})]
 
     push( @result, $res );
+    my $res_ori = Bio::EnsEMBL::Mapper::Coordinate->new( $self_coord->{'id'},
+                    $ori_start, $ori_end, $pair->{'ori'}*$strand,$cs, $rank);
+    push(@paired_result, { 'original' => $res_ori, 'mapped' => $res });
+    
 
     $last_used_pair = $pair;
     $start          = $self_coord->{'end'} + 1;
@@ -404,6 +429,8 @@ sub map_coordinates {
   if ( !defined $last_used_pair ) {
     my $gap = Bio::EnsEMBL::Mapper::Gap->new( $start, $end );
     push( @result, $gap );
+    push(@paired_result, { 'original' => $gap, 'mapped' => $gap });
+    
 
   } elsif ( $last_used_pair->{$from}->{'end'} < $end ) {
     # gap at the end
@@ -411,13 +438,21 @@ sub map_coordinates {
                                   $last_used_pair->{$from}->{'end'} + 1,
                                   $end, $rank );
     push( @result, $gap );
+    
+    push(@paired_result, { 'original' => $gap, 'mapped' => $gap });
   }
 
   if ( $strand == -1 ) {
     @result = reverse(@result);
+    @paired_result = reverse(@paired_result);
   }
 
-  return @result;
+  if ($include_original_region){
+    return @paired_result;
+  }else{
+    return @result;
+  }
+
 } ## end sub map_coordinates
 
 

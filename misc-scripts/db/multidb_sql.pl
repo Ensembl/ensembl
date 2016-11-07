@@ -36,7 +36,7 @@ my ( @hosts, $host, $user, $pass, $port, $expression, $dbpattern, $file, $result
 $user = 'ensro' ;  
 $pass = '' ;
 $port = 3306 ;  
-@hosts = qw ( ens-staging3 ) ;
+@hosts = qw ( ens-staging1 ens-staging2) ;
 
 GetOptions( "host|dbhost=s", \$host,
             "hosts|dbhosts=s", \@hosts,

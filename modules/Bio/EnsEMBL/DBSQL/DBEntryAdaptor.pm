@@ -1748,13 +1748,13 @@ $where_sql";
 
 =cut
 
-sub list_gene_ids_by_external_db_id{
-   my ($self,$external_db_id) = @_;
+sub list_gene_ids_by_external_db_id {
+   my ($self,$external_db_id, $linkage_type) = @_;
 
    my %T = map { ($_, 1) }
-       $self->_type_by_external_db_id( $external_db_id, 'Translation', 'gene' ),
-       $self->_type_by_external_db_id( $external_db_id, 'Transcript',  'gene' ),
-       $self->_type_by_external_db_id( $external_db_id, 'Gene' );
+       $self->_type_by_external_db_id( $external_db_id, 'Translation', 'gene', $linkage_type ),
+       $self->_type_by_external_db_id( $external_db_id, 'Transcript',  'gene', $linkage_type ),
+       $self->_type_by_external_db_id( $external_db_id, 'Gene', undef, $linkage_type );
    return keys %T;
 }
 
@@ -1819,10 +1819,10 @@ sub list_transcript_ids_by_extids {
 }
 
 sub list_transcript_ids_by_external_db_id {
-    my ( $self, $external_db_id) = @_;
+    my ( $self, $external_db_id, $linkage_type) = @_;
     my %T = map { ( $_, 1 ) }
-        $self->_type_by_external_db_id( $external_db_id, 'Translation', 'transcript' ),
-        $self->_type_by_external_db_id( $external_db_id, 'Transcript',  'transcript' );
+        $self->_type_by_external_db_id( $external_db_id, 'Translation', 'transcript', $linkage_type ),
+        $self->_type_by_external_db_id( $external_db_id, 'Transcript',  'transcript', $linkage_type );
     return keys %T;
 }
 
@@ -1846,6 +1846,11 @@ sub list_translation_ids_by_extids {
   return
     $self->_type_by_external_id( $external_name, 'Translation', undef,
                                  $external_db_name, $override );
+}
+
+sub list_translation_ids_by_external_db_id {
+    my ( $self, $external_db_id, $linkage_type) = @_;
+    return $self->_type_by_external_db_id( $external_db_id, 'Translation', undef, $linkage_type ),
 }
 
 =head2 _type_by_external_id
@@ -2056,6 +2061,8 @@ SQL
   	       other object type to be returned. This references the _id fields of
   	       the transcript table, and if left unset defaults to the translation_id
   	       from the translation table.
+  Arg [4]    : (optional) string $linkage_type
+               provides a link to ontology_xref and limits by an ontology linkage type
   Example    : $self->_type_by_external_db_id(1030, 'Translation');
   Description: Gets.
                NOTE:  In a multi-species database, this method will
@@ -2070,12 +2077,15 @@ SQL
 
 =cut
 
-sub _type_by_external_db_id{
-  my ($self, $external_db_id, $ensType, $extraType) = @_;
+sub _type_by_external_db_id {
+  my ($self, $external_db_id, $ensType, $extraType, $linkage_type) = @_;
+  throw "No external DB identifer given" unless defined $external_db_id;
+  throw "No Ensembl type given" unless defined $ensType;
 
   my $from_sql = '';
   my $where_sql = '';
   my $ID_sql = "oxr.ensembl_id";
+  my $lcEnsType = lc($ensType);
 
   if (defined $extraType) {
     if (lc($extraType) eq 'translation') {
@@ -2084,7 +2094,7 @@ sub _type_by_external_db_id{
       $ID_sql = "t.${extraType}_id";
     }
 
-    if (lc($ensType) eq 'translation') {
+    if ($lcEnsType eq 'translation') {
       $from_sql = 'transcript t, translation tl, ';
       $where_sql = qq(
           t.transcript_id = tl.transcript_id AND
@@ -2093,24 +2103,30 @@ sub _type_by_external_db_id{
       );
     } else {
       $from_sql = 'transcript t, ';
-      $where_sql = 't.'.lc($ensType).'_id = oxr.ensembl_id AND '.
+      $where_sql = 't.'.$lcEnsType.'_id = oxr.ensembl_id AND '.
           't.is_current = 1 AND ';
     }
   }
 
-  if (lc($ensType) eq 'gene') {
+  if ($lcEnsType eq 'gene') {
     $from_sql = 'gene g, ';
     $where_sql = 'g.gene_id = oxr.ensembl_id AND g.is_current = 1 AND ';
-  } elsif (lc($ensType) eq 'transcript') {
+  } elsif ($lcEnsType eq 'transcript') {
     $from_sql = 'transcript t, ';
     $where_sql = 't.transcript_id = oxr.ensembl_id AND t.is_current = 1 AND ';
-  } elsif (lc($ensType) eq 'translation') {
+  } elsif ($lcEnsType eq 'translation') {
     $from_sql = 'transcript t, translation tl, ';
     $where_sql = qq(
         t.transcript_id = tl.transcript_id AND
         tl.translation_id = oxr.ensembl_id AND
-        t.is_current = 1 AND
+        t.is_current = 1 AND 
     );
+  }
+
+  if($linkage_type) {
+    $from_sql .= 'ontology_xref ontx, ';
+    $where_sql .= 'oxr.object_xref_id = ontx.object_xref_id AND ';
+    $where_sql .= 'ontx.linkage_type =? AND';
   }
 
   my $query =
@@ -2119,18 +2135,22 @@ sub _type_by_external_db_id{
       WHERE $where_sql x.external_db_id = ? AND
   	     x.xref_id = oxr.xref_id AND oxr.ensembl_object_type= ?";
 
+  my @params;
+  push(@params, [$linkage_type, SQL_VARCHAR]) if $linkage_type;
+  push(@params,
+    [$external_db_id, SQL_INTEGER],
+    [$ensType, SQL_VARCHAR],
+  );
+
   my %result;
-
-  my $sth = $self->prepare($query);
-
-  $sth->bind_param( 1, "$external_db_id", SQL_VARCHAR );
-  $sth->bind_param( 2, $ensType,          SQL_VARCHAR );
-  $sth->execute();
-
-  while ( my $r = $sth->fetchrow_array() ) { $result{$r} = 1 }
+  $self->dbc()->sql_helper()->execute_no_return(-SQL => $query, -PARAMS => \@params, -CALLBACK => sub {
+     my ($row) = @_;
+     my ($id) = @{$row};
+    $result{$id} = 1;
+  });
 
   return keys(%result);
-}
+} ## end _type_by_external_db_id
 
 
 =head2 fetch_all_by_description
