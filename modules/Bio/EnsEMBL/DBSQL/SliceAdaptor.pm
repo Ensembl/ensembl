@@ -589,6 +589,9 @@ sub fetch_by_location {
                 
                 Location names must be separated by a C<:>. All others can be
                 separated by C<..>, C<:> C<_>, or C<->.
+
+                If the start is negative, start will be reset to 1 (e.g.: 1: -10-1,000')
+                If both start and end are negative, returns undef (e.g.: 1: -10--1,000')
   Arg[2]      : boolean $no_warnings
                 Suppress warnings from this method
   Arg[3]      : boolean $no_errors

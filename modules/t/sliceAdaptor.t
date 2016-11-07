@@ -632,6 +632,12 @@ test_toplevel_location('chr1: 100', 'chromosome', '1', 100, 246874334, 1, $ucsc)
 test_toplevel_location('chr1:100..2000000000', 'chromosome', '1', 100, 246874334, 1, $ucsc);
 test_toplevel_location('chr1:100..2E9', 'chromosome', '1', 100, 246874334, 1, $ucsc);
 
+# Try negative locations
+test_toplevel_location('chr1: -10-1,000', 'chromosome', '1', 1, 1000, 1, $ucsc);
+test_toplevel_location('chr1: -10..1,000', 'chromosome', '1', 1, 1000, 1, $ucsc);
+test_toplevel_location('chr1: -10_1,000', 'chromosome', '1', 1, 1000, 1, $ucsc);
+ok(!defined $slice_adaptor->fetch_by_toplevel_location('1:-1000--10', 1), 'Checking with a bogus region with negative coords returns undef');
+
 #Try strands
 test_toplevel_location('1:1-1000:1', 'chromosome', '1', 1, 1000, 1);
 test_toplevel_location('1:1-1000:-1', 'chromosome', '1', 1, 1000, -1);
