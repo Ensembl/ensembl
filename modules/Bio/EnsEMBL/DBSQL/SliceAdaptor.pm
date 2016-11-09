@@ -589,6 +589,9 @@ sub fetch_by_location {
                 
                 Location names must be separated by a C<:>. All others can be
                 separated by C<..>, C<:> C<_>, or C<->.
+
+                If the start is negative, start will be reset to 1 (e.g.: 1: -10-1,000')
+                If both start and end are negative, returns undef (e.g.: 1: -10--1,000')
   Arg[2]      : boolean $no_warnings
                 Suppress warnings from this method
   Arg[3]      : boolean $no_errors
@@ -611,9 +614,10 @@ sub parse_location_to_values {
   my $separator_regex = qr/(?:-|[.]{2}|\:|_)?/; # support -, .., : and _ as separators
   my $hgvs_nomenclature_regex = qr/(?:g\.)?/; # check for HGVS looking locations e.g. X:g.1-100
   my $number_regex = qr/[0-9, EMKG]+/xmsi;
+  my $number_regex_signed = qr/-?[0-9, EMKG]+/xmsi; # to capture negative locations as sometimes we end up in negative location if the location is padded
   my $strand_regex = qr/[+-1]|-1/xms;
   
-  my $regex = qr/^((?:\w|\.|_|-)+) \s* :? \s* $hgvs_nomenclature_regex ($number_regex)? $separator_regex ($number_regex)? $separator_regex ($strand_regex)? $/xms;
+  my $regex = qr/^((?:\w|\.|_|-)+) \s* :? \s* $hgvs_nomenclature_regex ($number_regex_signed)? $separator_regex ($number_regex)? $separator_regex ($strand_regex)? $/xms;
   my ($seq_region_name, $start, $end, $strand);
   if(($seq_region_name, $start, $end, $strand) = $location =~ $regex) {
     
@@ -627,7 +631,12 @@ sub parse_location_to_values {
       $start =~ s/$number_seps_regex//g; 
       if($start < 1) {
         warning "Start was less than 1 (${start}) which is not allowed. Resetting to 1"  if ! $no_warnings;
-        $start = 1;
+
+        unless(defined $end) {
+          # We will reach here only when the location is given without start and '-' is used as seperator eg: 1:-10 (expected to return 1:1-10)
+          $end = abs($start);   	
+        }
+          $start = 1;
       }
     }
     if(defined $end) {
