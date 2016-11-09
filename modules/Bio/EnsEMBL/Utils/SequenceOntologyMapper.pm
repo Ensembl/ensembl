@@ -154,7 +154,7 @@ my %feature_so_mapping =
    'Bio::EnsEMBL::Funcgen::RegulatoryFeature' => 'SO:0005836', # regulatory_region
    'Bio::EnsEMBL::DnaDnaAlignFeature' => 'SO:0000347', # nucleotide_match
    'Bio::EnsEMBL::DnaPepAlignFeature' => 'SO:0000349', # protein_match
-   'Bio::EnsEMBL::KaryotypeBand' => 'SO:0000450', # chromosome_band
+   'Bio::EnsEMBL::KaryotypeBand' => 'SO:0000341', # chromosome_band
   );
 
 
