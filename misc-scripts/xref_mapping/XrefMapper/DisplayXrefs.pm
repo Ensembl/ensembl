@@ -1020,12 +1020,12 @@ DXS
     next if(exists($ignore{$gene_id}) || exists($gene_desc_updated{$gene_id}));
     
     if(defined($desc) ){
-      my $filtered_description = $self->filter_by_regexp($desc, \@regexps);
-      if ($filtered_description ne "") {
+      my $filtered_desc = $self->filter_by_regexp($desc, \@regexps);
+      if ($filtered_desc ne "") {
 	if(!defined($no_source_name_in_desc{$source_id})){
-	  $desc .= " [Source:".$source_id_to_external_name{$source_id}.";Acc:".$label."]";
+	  $filtered_desc .= " [Source:".$source_id_to_external_name{$source_id}.";Acc:".$label."]";
 	}
-	$update_gene_desc_sth->execute($desc,$gene_id);
+	$update_gene_desc_sth->execute($filtered_desc,$gene_id);
 	$gene_desc_updated{$gene_id} = 1;
       }
     }
