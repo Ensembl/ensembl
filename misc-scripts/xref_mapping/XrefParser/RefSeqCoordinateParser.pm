@@ -65,8 +65,8 @@ sub run_script {
   my $port = 3306;
   my $dbname;
   my $pass;
-  my $transcript_score_threshold = 0.90;
-  my $tl_transcript_score_threshold = 0.90;
+  my $transcript_score_threshold = 0.75;
+  my $tl_transcript_score_threshold = 0.75;
   my $project;
 
 # Grep the project name, should be ensembl or ensemblgenomes
@@ -307,6 +307,9 @@ sub run_script {
           if ($transcript->biotype eq $transcript_of->biotype) {
             $transcript_result{$transcript->stable_id} = $score;
             $tl_transcript_result{$transcript->stable_id} = $tl_score;
+          } else {
+            $transcript_result{$transcript->stable_id} = $score * 0.90;
+            $tl_transcript_result{$transcript->stable_id} = $tl_score * 0.90;
           }
         }
 
@@ -331,6 +334,9 @@ sub run_script {
                   $best_score = $score;
                 }
               }
+            } elsif ($score >= $best_score) {
+              $best_id = $tid;
+              $best_score = $score;
             }
           }
         }
