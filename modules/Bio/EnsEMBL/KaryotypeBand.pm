@@ -221,6 +221,23 @@ sub display_id {
   return $self->{'name'} || '';
 }
 
+=head2 summary_as_hash
+
+  Example       : $karyotype_band_summary = $band->summary_as_hash();
+  Description   : Extends Feature::summary_as_hash
+                  Retrieves a summary of this Karyotype object.
+                    
+  Returns       : hashref of arrays of descriptive strings
+  Status        : Intended for internal use
+=cut
+
+sub summary_as_hash {
+  my $self = shift;
+  my $summary_ref = $self->SUPER::summary_as_hash;
+  $summary_ref->{'stain'} = $self->stain;
+  
+  return $summary_ref;
+}
 
 
 1;
