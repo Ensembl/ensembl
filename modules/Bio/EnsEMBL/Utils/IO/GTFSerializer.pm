@@ -457,6 +457,13 @@ sub _print_attribs {
     print $fh " havana_gene_version \"" . $gene->havana_gene->version() . "\";";
   }
 
+  #add projection parent
+  my $proj_parent_attributes = $transcript->get_all_Attributes("proj_parent_g");
+    if (@{$proj_parent_attributes}) {
+      my $value = $proj_parent_attributes->[0]->value;
+      print $fh qq{ projection_parent_gene "${value}";};
+    }
+
   if($type ne 'gene') {
     print $fh " transcript_name \"" . $trans_name . "\";"
       if ($trans_name);
@@ -508,6 +515,11 @@ sub _print_attribs {
       my $value = $attributes->[0]->value;
       $value =~ s/tsl//;
       print $fh qq{ transcript_support_level "${value}";};
+    }
+    my $proj_parent_attributes = $transcript->get_all_Attributes("proj_parent_t");
+    if (@{$proj_parent_attributes}) {
+      my $value = $proj_parent_attributes->[0]->value;
+      print $fh qq{ projection_parent_transcript "${value}";};
     }
   }
 
