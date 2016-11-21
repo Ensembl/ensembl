@@ -85,7 +85,7 @@ my $opts = $cli_helper->process_args( $optsd, \&usage );
 
 # use the command line options to get an array of database details
 # only process each database name once (to avoid duplication for multispecies dbs)
-for my $db_args ( @{ $cli_helper->get_dba_args_for_opts( $opts, 1 ) } ) {
+for my $db_args ( @{ $cli_helper->get_dba_args_for_opts( $opts, 0 ) } ) {
 
 	my $dba = new Bio::EnsEMBL::DBSQL::DBAdaptor(%$db_args);
 
@@ -119,17 +119,20 @@ for my $db_args ( @{ $cli_helper->get_dba_args_for_opts( $opts, 1 ) } ) {
 "DELETE mc.* FROM meta_coord mc, coord_system cs WHERE cs.coord_system_id=mc.coord_system_id AND table_name = ? AND cs.species_id=?",
 			-PARAMS => [ $table_name, $dba->species_id() ] );
 
-		$dba->dbc()->sql_helper()->execute_update(
-			-SQL => "INSERT INTO meta_coord "
+                my $sql = "INSERT INTO meta_coord "
 			  . "SELECT '$table_name', s.coord_system_id, "
 			  . "MAX( t.seq_region_end - t.seq_region_start + 1 ) "
 			  . "FROM $table_name t, seq_region s, coord_system c "
 			  . "WHERE t.seq_region_id = s.seq_region_id AND c.coord_system_id=s.coord_system_id AND c.species_id=?"
-			  . "GROUP BY s.coord_system_id",
+			  . "GROUP BY s.coord_system_id";
+
+		$dba->dbc()->sql_helper()->execute_update(
+			-SQL => $sql,
 			-PARAMS => [ $dba->species_id() ] );
 
 		print("done\n");
-	}
+        }
+     
 
 	print(   "==> Done with "
 		   . $dba->dbc->dbname() . "/"
