@@ -965,4 +965,18 @@ sub fetch_all {
   return \@translations;
 }
 
+
+# _tables
+#  Arg [1]    : none
+#  Description: PROTECTED implementation of superclass abstract method.
+#               Returns the names, aliases of the tables to use for queries.
+#  Returntype : list of listrefs of strings
+#  Exceptions : none
+#  Caller     : internal
+#  Status     : Stable
+
+sub _tables {
+  return (['translation', 'tl']);
+}
+
 1;
