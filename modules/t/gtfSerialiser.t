@@ -55,6 +55,14 @@ my $db = $mtdb->get_DBAdaptor("core");
   $transcript->translation($translation);
   my $gene = Bio::EnsEMBL::Gene->new(-TRANSCRIPTS => [$transcript], -STABLE_ID => 'GENE', -BIOTYPE => 'protein_coding');
   $transcript->add_DBEntry(Bio::EnsEMBL::DBEntry->new(-PRIMARY_ID => 'CCDS.1', -DBNAME => 'CCDS'));
+
+  #add a gene attribute
+  my $attrib_g = Bio::EnsEMBL::Attribute->new(-CODE => 'proj_parent_g', -NAME => 'projection parent gene', -DESCRIPTION => 'Stable identifier of the parent gene', -VALUE =>'ENSG_PARENT_GENE');
+  $gene->add_Attributes($attrib_g);
+
+  #add a transcript attribute
+  my $attrib_t = Bio::EnsEMBL::Attribute->new (-CODE => 'proj_parent_t', -NAME => 'projection parent transcript', -DESCRIPTION => 'Stable identifier of the parent transcript', -VALUE =>'ENST_PARENT_TRANSCRIPT');
+  $transcript->add_Attributes($attrib_t);
   
   # Stupid transcript code has a cache per DB if using it.
   $transcript->{dbentriesCCDS} = $transcript->{dbentries};
@@ -63,15 +71,15 @@ my $db = $mtdb->get_DBAdaptor("core");
   my $gtf_serializer = Bio::EnsEMBL::Utils::IO::GTFSerializer->new($fh);
   $gtf_serializer->print_Gene($gene);
   my $gtf = <<GTF;
-20\tensembl\tgene\t30274331\t30274404\t.\t+\t.\tgene_id \"GENE\"; gene_source \"ensembl\"; gene_biotype \"protein_coding\";
-20\tensembl\ttranscript\t30274331\t30274404\t.\t+\t.\tgene_id \"GENE\"; transcript_id \"TRANS\"; gene_source \"ensembl\"; gene_biotype \"protein_coding\"; transcript_source \"ensembl\"; transcript_biotype \"protein_coding\"; tag \"CCDS\"; ccds_id \"CCDS.1\"; tag \"seleno\";
-20\tensembl\tSelenocysteine\t30274337\t30274339\t.\t+\t.\tgene_id \"GENE\"; transcript_id \"TRANS\"; gene_source \"ensembl\"; gene_biotype \"protein_coding\"; transcript_source \"ensembl\"; transcript_biotype \"protein_coding\"; tag \"CCDS\"; ccds_id \"CCDS.1\"; tag \"seleno\";
-20\tensembl\texon\t30274331\t30274348\t.\t+\t.\tgene_id \"GENE\"; transcript_id \"TRANS\"; exon_number \"1\"; gene_source \"ensembl\"; gene_biotype \"protein_coding\"; transcript_source \"ensembl\"; transcript_biotype \"protein_coding\"; tag \"CCDS\"; ccds_id \"CCDS.1\"; exon_id \"e1\"; tag \"seleno\";
-20\tensembl\tCDS\t30274334\t30274345\t.\t+\t0\tgene_id \"GENE\"; transcript_id \"TRANS\"; exon_number \"1\"; gene_source \"ensembl\"; gene_biotype \"protein_coding\"; transcript_source \"ensembl\"; transcript_biotype \"protein_coding\"; tag \"CCDS\"; ccds_id \"CCDS.1\"; protein_id \"PEP\"; tag \"seleno\";
-20\tensembl\texon\t30274401\t30274404\t.\t+\t.\tgene_id \"GENE\"; transcript_id \"TRANS\"; exon_number \"2\"; gene_source \"ensembl\"; gene_biotype \"protein_coding\"; transcript_source \"ensembl\"; transcript_biotype \"protein_coding\"; tag \"CCDS\"; ccds_id \"CCDS.1\"; exon_id \"e2\"; tag \"seleno\";
-20\tensembl\tfive_prime_utr\t30274331\t30274333\t.\t+\t.\tgene_id \"GENE\"; transcript_id \"TRANS\"; gene_source \"ensembl\"; gene_biotype \"protein_coding\"; transcript_source \"ensembl\"; transcript_biotype \"protein_coding\"; tag \"CCDS\"; ccds_id \"CCDS.1\"; tag \"seleno\";
-20\tensembl\tthree_prime_utr\t30274346\t30274348\t.\t+\t.\tgene_id \"GENE\"; transcript_id \"TRANS\"; gene_source \"ensembl\"; gene_biotype \"protein_coding\"; transcript_source \"ensembl\"; transcript_biotype \"protein_coding\"; tag \"CCDS\"; ccds_id \"CCDS.1\"; tag \"seleno\";
-20\tensembl\tthree_prime_utr\t30274401\t30274404\t.\t+\t.\tgene_id \"GENE\"; transcript_id \"TRANS\"; gene_source \"ensembl\"; gene_biotype \"protein_coding\"; transcript_source \"ensembl\"; transcript_biotype \"protein_coding\"; tag \"CCDS\"; ccds_id \"CCDS.1\"; tag \"seleno\";
+20\tensembl\tgene\t30274331\t30274404\t.\t+\t.\tgene_id \"GENE\"; gene_source \"ensembl\"; gene_biotype \"protein_coding\"; projection_parent_gene \"ENSG_PARENT_GENE\";
+20\tensembl\ttranscript\t30274331\t30274404\t.\t+\t.\tgene_id \"GENE\"; transcript_id \"TRANS\"; gene_source \"ensembl\"; gene_biotype \"protein_coding\"; transcript_source \"ensembl\"; transcript_biotype \"protein_coding\"; tag \"CCDS\"; ccds_id \"CCDS.1\"; tag \"seleno\"; projection_parent_transcript "ENST_PARENT_TRANSCRIPT";
+20\tensembl\tSelenocysteine\t30274337\t30274339\t.\t+\t.\tgene_id \"GENE\"; transcript_id \"TRANS\"; gene_source \"ensembl\"; gene_biotype \"protein_coding\"; transcript_source \"ensembl\"; transcript_biotype \"protein_coding\"; tag \"CCDS\"; ccds_id \"CCDS.1\"; tag \"seleno\"; projection_parent_transcript "ENST_PARENT_TRANSCRIPT";
+20\tensembl\texon\t30274331\t30274348\t.\t+\t.\tgene_id \"GENE\"; transcript_id \"TRANS\"; exon_number \"1\"; gene_source \"ensembl\"; gene_biotype \"protein_coding\"; transcript_source \"ensembl\"; transcript_biotype \"protein_coding\"; tag \"CCDS\"; ccds_id \"CCDS.1\"; exon_id \"e1\"; tag \"seleno\"; projection_parent_transcript "ENST_PARENT_TRANSCRIPT";
+20\tensembl\tCDS\t30274334\t30274345\t.\t+\t0\tgene_id \"GENE\"; transcript_id \"TRANS\"; exon_number \"1\"; gene_source \"ensembl\"; gene_biotype \"protein_coding\"; transcript_source \"ensembl\"; transcript_biotype \"protein_coding\"; tag \"CCDS\"; ccds_id \"CCDS.1\"; protein_id \"PEP\"; tag \"seleno\"; projection_parent_transcript "ENST_PARENT_TRANSCRIPT";
+20\tensembl\texon\t30274401\t30274404\t.\t+\t.\tgene_id \"GENE\"; transcript_id \"TRANS\"; exon_number \"2\"; gene_source \"ensembl\"; gene_biotype \"protein_coding\"; transcript_source \"ensembl\"; transcript_biotype \"protein_coding\"; tag \"CCDS\"; ccds_id \"CCDS.1\"; exon_id \"e2\"; tag \"seleno\"; projection_parent_transcript "ENST_PARENT_TRANSCRIPT";
+20\tensembl\tfive_prime_utr\t30274331\t30274333\t.\t+\t.\tgene_id \"GENE\"; transcript_id \"TRANS\"; gene_source \"ensembl\"; gene_biotype \"protein_coding\"; transcript_source \"ensembl\"; transcript_biotype \"protein_coding\"; tag \"CCDS\"; ccds_id \"CCDS.1\"; tag \"seleno\"; projection_parent_transcript "ENST_PARENT_TRANSCRIPT";
+20\tensembl\tthree_prime_utr\t30274346\t30274348\t.\t+\t.\tgene_id \"GENE\"; transcript_id \"TRANS\"; gene_source \"ensembl\"; gene_biotype \"protein_coding\"; transcript_source \"ensembl\"; transcript_biotype \"protein_coding\"; tag \"CCDS\"; ccds_id \"CCDS.1\"; tag \"seleno\"; projection_parent_transcript "ENST_PARENT_TRANSCRIPT";
+20\tensembl\tthree_prime_utr\t30274401\t30274404\t.\t+\t.\tgene_id \"GENE\"; transcript_id \"TRANS\"; gene_source \"ensembl\"; gene_biotype \"protein_coding\"; transcript_source \"ensembl\"; transcript_biotype \"protein_coding\"; tag \"CCDS\"; ccds_id \"CCDS.1\"; tag \"seleno\"; projection_parent_transcript "ENST_PARENT_TRANSCRIPT";
 GTF
   eq_or_diff(${$fh->string_ref}, $gtf, 'Checking custom Gene object dumps UTRs, Selenocysteine, seleno tag and CCDS');
 }
