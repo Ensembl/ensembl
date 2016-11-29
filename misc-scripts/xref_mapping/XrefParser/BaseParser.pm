@@ -1124,6 +1124,7 @@ sub add_dependent_xref{
   my $label       = $arg_ref->{label}          || $acc;
   my $description = $arg_ref->{desc};
   my $linkage     = $arg_ref->{linkage};
+  my $info_text   = $arg_ref->{info_text};
 
   my $dbi = $self->dbi;
 
@@ -1133,8 +1134,8 @@ sub add_dependent_xref{
   if(!(defined $add_xref_sth)){
     my $sql = (<<'IXR');
 INSERT INTO xref
-  (accession,version,label,description,source_id,species_id, info_type)
-  VALUES (?,?,?,?,?,?,?)
+  (accession,version,label,description,source_id,species_id, info_type, info_text)
+  VALUES (?,?,?,?,?,?,?,?)
 IXR
     $add_xref_sth = $dbi->prepare($sql);
   }
@@ -1155,7 +1156,7 @@ ADX
   if(!(defined $dependent_id)){
     $add_xref_sth->execute(
         $acc, $version, $label,
-        $description, $source_id, $species_id, 'DEPENDENT'
+        $description, $source_id, $species_id, 'DEPENDENT', $info_text
     ) or croak("$acc\t$label\t\t$source_id\t$species_id\n");
   }
   $dependent_id = $self->get_xref($acc, $source_id, $species_id);
