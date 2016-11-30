@@ -1195,8 +1195,8 @@ sub store{
   Example    : $feature_adaptor->remove($feature);
   Description: This removes a feature from the database.  The table the
                feature is removed from is defined by the abstract method
-               _tablename, and the primary key of the table is assumed
-               to be _tablename() . '_id'.  The feature argument must 
+               _tablename, and the primary key of the table is defined
+               by the method _dbID_column().  The feature argument must
                be an object implementing the dbID method, and for the
                feature to be removed from the database a dbID value must
                be returned.
@@ -1222,8 +1222,9 @@ sub remove {
 
   my @tabs = $self->_tables;
   my ($table) = @{$tabs[0]};
+  my $col = $self->_dbID_column;
 
-  my $sth = $self->prepare("DELETE FROM $table WHERE ${table}_id = ?");
+  my $sth = $self->prepare("DELETE FROM $table WHERE ${col} = ?");
   $sth->bind_param(1,$feature->dbID,SQL_INTEGER);
   $sth->execute();
 
@@ -1354,8 +1355,9 @@ sub remove_by_feature_id {
 
   my @tabs = $self->_tables;
   my ($tablename) = @{$tabs[0]};
+  my $col = $self->_dbID_column;
 
-  my $sql = sprintf "DELETE FROM $tablename WHERE ${tablename}_id IN (%s)", join ', ', @feats;
+  my $sql = sprintf "DELETE FROM $tablename WHERE $col IN (%s)", join ', ', @feats;
 #  warn "SQL : $sql";
       
   my $sth = $self->prepare($sql);
