@@ -87,7 +87,7 @@ sub _load_table {
     $dbh->do('delete from ' . $TABLE_NAME . ' WHERE source_id = ' . $source_id);
   }
   print "Loading data into '$TABLE_NAME' from '$file'\n" if $verbose;
-  my $load = sprintf(q{LOAD DATA LOCAL INFILE '%s'INTO TABLE %s}, $file, $TABLE_NAME);
+  my $load = sprintf(q{LOAD DATA LOCAL INFILE '%s' INTO TABLE %s}, $file, $TABLE_NAME);
   $dbh->do($load);
   print "Finished loading data into '$TABLE_NAME'\n" if $verbose;
   return;
