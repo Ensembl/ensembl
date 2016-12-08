@@ -294,8 +294,8 @@ if ( defined($opt_skip_tables) ) {
   %skip_tables = map( { $_ => 1 } split( /,/, $opt_skip_tables ) );
 }
 
-if ( scalar( getpwuid($<) ) ne 'mysqlens' ) {
-  warn("You are not running this script as the 'mysqlens' user.\n");
+if ( scalar( getpwuid($<) ) ne 'ensmysql' and scalar( getpwuid($<) ) ne 'mysqlens' ) {
+  warn("You are not running this script as the 'ensmysql' user at the EBI or as the 'mysqlens' at Sanger.\n");
 }
 
 if (!defined($opt_user))
@@ -321,7 +321,11 @@ foreach my $key (@executables) {
   my $output = `which $key`;
   my $rc     = $? >> 8;
   
-  if($rc != 0) {
+  if ( !$opt_check && $key eq 'myisamchk' ) {
+      print( "Can not find 'myisamchk' " .
+      "but --nocheck was specified so skipping\n" ),;
+  }
+  elsif($rc != 0) {
     chomp $output;
     die(
       sprintf(
@@ -330,12 +334,6 @@ foreach my $key (@executables) {
       $key, $key
       ) );
   }
-  else {
-    if ( !$opt_check && $key eq 'myisamchk' ) {
-      print( "Can not find 'myisamchk' " .
-      "but --nocheck was specified so skipping\n" ),;
-    }
-  } 
 } ## end foreach my $key ( @executables...)
 
 my $run_hostaddr = hostname_to_ip(hostname());
@@ -603,7 +601,12 @@ foreach my $spec (@todo) {
   my $tmp_dir;
   if ( defined($opt_tmpdir) ) { $tmp_dir = $opt_tmpdir }
   else {
-    $tmp_dir = canonpath( catdir( $target_dir, updir(), 'tmp' ) );
+    if ((scalar( getpwuid($<) ) eq 'mysqlens')) {
+      $tmp_dir = canonpath( catdir( $target_dir, updir(), 'tmp' ));
+    }
+    elsif ((scalar( getpwuid($<) ) eq 'ensmysql')){
+       $tmp_dir = canonpath( catdir( $target_dir, updir(), 'temp' ));
+    }
   }
 
   printf( "SOURCE 'datadir' = '%s'\n", $source_dir );
