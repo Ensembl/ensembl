@@ -721,20 +721,34 @@ TABLE:
 
     push( @tables, $table );
   } ## end while ( $table_sth->fetch...)
-
-  # Lock tables with a read lock.
-  print("LOCKING TABLES...\n");
-  $source_dbh->do(
+  ## For MySQL version 5.6 and above,  FLUSH TABLES is not permitted when there is an active READ LOCK.
+  if ($source_dbh->{mysql_serverversion} >= "50600"){
+    if ($opt_flush) {
+      # Flush and Lock tables with a read lock.
+      print("FLUSHING AND LOCKING TABLES...\n");
+      $source_dbh->do(
+                  sprintf( "FLUSH TABLES %s WITH READ LOCK", join( ', ', @tables ) ) );
+    }
+    else {
+      warn( sprintf("You are running the script with --noflush and MySQL server version is $source_dbh->{mysql_serverversion}. " .
+                       "The database will not be locked during the copy. " .
+                       "This is not recomended!!!"));
+    }
+  }
+  else {
+    # Lock tables with a read lock.
+    print("LOCKING TABLES...\n");
+    $source_dbh->do(
          sprintf( "LOCK TABLES %s READ", join( ' READ, ', @tables ) ) );
 
-  if ($opt_flush) {
-    # Flush tables.
+    if ($opt_flush) {
+      # Flush tables.
 
-    print("FLUSHING TABLES...\n");
-    $source_dbh->do(
+      print("FLUSHING TABLES...\n");
+      $source_dbh->do(
                   sprintf( "FLUSH TABLES %s", join( ', ', @tables ) ) );
+    }
   }
-
   ##------------------------------------------------------------------##
   ## OPTIMIZE                                                         ##
   ##------------------------------------------------------------------##
