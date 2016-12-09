@@ -829,9 +829,9 @@ sub _dump_feature_table {
           my $codon_start = $self->transcript_to_codon_start($transcript);
           $self->write(@ff,''   , qq{/codon_start="${codon_start}"}) if $codon_start > 1;
 
-          my $codon_table = $self->_get_codon_table($slice);
-          if($codon_table > 1){
-            $self->write(@ff,''   , '/transl_table='.$codon_table);
+          my $codon_table_id = $self->_get_codon_table_id($slice);
+          if($codon_table_id > 1){
+            $self->write(@ff,''   , '/transl_table='.$codon_table_id);
           }
           $self->write(@ff,''   , '/gene="'.$gene->stable_id_version().'"'); 
           $self->write(@ff,''   , '/protein_id="'.$translation->stable_id_version().'"');
@@ -1009,7 +1009,7 @@ sub transcript_to_codon_start {
 }
 
 
-=head2 _get_codon_table
+=head2 _get_codon_table_id
 
   Arg [1]    : Bio::EnsEMBL::Slice slice
   Example    : none
@@ -1022,14 +1022,14 @@ sub transcript_to_codon_start {
 
 =cut
 
-sub _get_codon_table{
+sub _get_codon_table_id{
   my ($self, $slice) = @_;
-  my $codon_table = 1;
+  my $codon_table_id = 1;
   my $codon_table_attributes = $slice->get_all_Attributes("codon_table");
   if (@{$codon_table_attributes}) {
-    $codon_table = $codon_table_attributes->[0]->value;
+    $codon_table_id = $codon_table_attributes->[0]->value;
   }
-  return $codon_table;
+  return $codon_table_id;
 }
 
 =head2 dump_fasta
