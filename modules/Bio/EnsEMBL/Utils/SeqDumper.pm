@@ -827,7 +827,12 @@ sub _dump_feature_table {
             $self->features2location($transcript->get_all_translateable_Exons);
           $self->write(@ff,'CDS', $value);
           my $codon_start = $self->transcript_to_codon_start($transcript);
-          $self->write(@ff,''   , qq{/codon_start="${codon_start}"}) if $codon_start > 1; 
+          $self->write(@ff,''   , qq{/codon_start="${codon_start}"}) if $codon_start > 1;
+
+          my $codon_table = $self->_get_codon_table($slice);
+          if($codon_table > 1){
+            $self->write(@ff,''   , '/transl_table='.$codon_table);
+          }
           $self->write(@ff,''   , '/gene="'.$gene->stable_id_version().'"'); 
           $self->write(@ff,''   , '/protein_id="'.$translation->stable_id_version().'"');
           $self->write(@ff,''   ,'/note="transcript_id='.$transcript->stable_id_version().'"');
@@ -1003,6 +1008,29 @@ sub transcript_to_codon_start {
           -1;
 }
 
+
+=head2 _get_codon_table
+
+  Arg [1]    : Bio::EnsEMBL::Slice slice
+  Example    : none
+  Description: Helper method to get codon_table seq region attribute
+               codon_table defines the genetic code table used if other than the universal genetic code table (1)
+               By default it is 1 and is not shown in flat files.
+               If it is not equal to 1, then it is shown as a transl_table qualifier on the CDS feature.
+  Returntype : int
+  Caller     : internal
+
+=cut
+
+sub _get_codon_table{
+  my ($self, $slice) = @_;
+  my $codon_table = 1;
+  my $codon_table_attributes = $slice->get_all_Attributes("codon_table");
+  if (@{$codon_table_attributes}) {
+    $codon_table = $codon_table_attributes->[0]->value;
+  }
+  return $codon_table;
+}
 
 =head2 dump_fasta
 
