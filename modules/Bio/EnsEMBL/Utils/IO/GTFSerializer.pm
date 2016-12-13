@@ -458,7 +458,7 @@ sub _print_attribs {
   }
 
   #add projection parent
-  my $proj_parent_attributes = $transcript->get_all_Attributes("proj_parent_g");
+  my $proj_parent_attributes = $gene->get_all_Attributes("proj_parent_g");
     if (@{$proj_parent_attributes}) {
       my $value = $proj_parent_attributes->[0]->value;
       print $fh qq{ projection_parent_gene "${value}";};
