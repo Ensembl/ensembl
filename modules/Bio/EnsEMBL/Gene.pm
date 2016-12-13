@@ -1524,6 +1524,12 @@ sub summary_as_hash {
   my $havana_gene = $self->havana_gene();
   $summary_ref->{'havana_gene'} = $havana_gene->display_id() if defined $havana_gene;
   $summary_ref->{'havana_version'} = $havana_gene->version() if defined $havana_gene;
+
+  ## Stable identifier of the parent gene this gene was projected from
+   my $proj_parent_attributes = $self->get_all_Attributes("proj_parent_g");
+    if (@{$proj_parent_attributes}) {
+      $summary_ref->{'projection_parent_gene'} = $proj_parent_attributes->[0]->value;
+    }
   return $summary_ref;
 }
 

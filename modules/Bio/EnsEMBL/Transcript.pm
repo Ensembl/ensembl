@@ -3139,6 +3139,12 @@ sub summary_as_hash {
   $summary_ref->{'ccdsid'} = $self->ccds->display_id() if $self->ccds();
   $summary_ref->{'transcript_support_level'} = $self->tsl() if $self->tsl();
   $summary_ref->{'tag'} = 'basic' if $self->gencode_basic();
+
+  ## Stable identifier of the parent transcript this transcript was projected from
+  my $proj_parent_attributes = $self->get_all_Attributes("proj_parent_t");
+  if (@{$proj_parent_attributes}) {
+    $summary_ref->{'projection_parent_transcript'} = $proj_parent_attributes->[0]->value;
+  }
   return $summary_ref;
 }
 
