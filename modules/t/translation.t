@@ -338,4 +338,7 @@ ok(!scalar(@alt_tls));
   $ta->species_id(1);
 }
 
+# Test generic_count(), inherited method from BaseAdaptor
+is($ta->generic_count(), @{$ta->list_dbIDs()}, "Number of features from generic_count is equal to the number of dbIDs from list_dbIDs");
+
 done_testing();
