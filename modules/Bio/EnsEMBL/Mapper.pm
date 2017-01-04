@@ -233,8 +233,12 @@ sub flush {
     Arg  7      int  $cdna_coding_start
                 cdna coding start  
     Function    generic map method
-    Returntype  array of Bio::EnsEMBL::Mapper::Coordinate
-                and/or   Bio::EnsEMBL::Mapper::Gap
+    Returntype  if $include_original_region == 0
+                  array of mappped Bio::EnsEMBL::Mapper::Coordinate
+                  and/or   Bio::EnsEMBL::Mapper::Gap
+                if $include_original_region == 1
+                  hash of mapped and original Bio::EnsEMBL::Mapper::Coordinate
+                  and/or   Bio::EnsEMBL::Mapper::Gap
     Exceptions  none
     Caller      Bio::EnsEMBL::Mapper
 
