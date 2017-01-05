@@ -355,7 +355,7 @@ The relationship between contigs and clones is stored in the assembly table. The
 CREATE TABLE seq_region (
 
   seq_region_id               INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
-  name                        VARCHAR(40) NOT NULL,
+  name                        VARCHAR(255) NOT NULL,
   coord_system_id             INT(10) UNSIGNED NOT NULL,
   length                      INT(10) UNSIGNED NOT NULL,
 
