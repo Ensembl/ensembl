@@ -1,6 +1,6 @@
 -- 
 -- Created by SQL::Translator::Producer::SQLite
--- Created on Wed Oct  5 10:42:47 2016
+-- Created on Thu Jan  5 13:47:18 2017
 -- 
 
 BEGIN TRANSACTION;
@@ -202,7 +202,7 @@ CREATE TABLE closure (
   subparent_term_id integer,
   distance tinyint NOT NULL,
   ontology_id integer NOT NULL,
-  confident_relationship tinyint NOT NULL
+  confident_relationship tinyint NOT NULL DEFAULT 0
 );
 
 CREATE UNIQUE INDEX child_parent_idx ON closure (child_term_id, parent_term_id, subparent_term_id, ontology_id);
@@ -272,9 +272,9 @@ CREATE UNIQUE INDEX name_idx02 ON subset (name);
 CREATE TABLE synonym (
   synonym_id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
   term_id integer NOT NULL,
-  name text NOT NULL,
+  name mediumtext NOT NULL,
   type enum,
-  dbxref varchar(64)
+  dbxref varchar(256) NOT NULL
 );
 
 CREATE UNIQUE INDEX term_synonym_idx ON synonym (term_id, synonym_id);
