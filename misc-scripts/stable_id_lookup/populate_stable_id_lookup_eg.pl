@@ -110,8 +110,7 @@ print Dumper($dba_species);
 
 process_dbs($readDB);
 
-$create_index = 1 if ($create);
-#create_index($rdbname) if $create_index;
+create_index($rdbname) if $create_index;
 
 
 sub create_index {
