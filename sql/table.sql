@@ -309,6 +309,9 @@ INSERT INTO meta (species_id, meta_key, meta_value) VALUES
 # NOTE: Avoid line-breaks in values.
 INSERT INTO meta (species_id, meta_key, meta_value)
   VALUES (NULL, 'patch', 'patch_87_88_a.sql|schema_version');
+INSERT INTO meta (species_id, meta_key, meta_value)
+  VALUES (NULL, 'patch', 'patch_87_88_b.sql|seq_region_name_255');
+
 
 /**
 @table meta_coord
@@ -355,7 +358,7 @@ The relationship between contigs and clones is stored in the assembly table. The
 CREATE TABLE seq_region (
 
   seq_region_id               INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
-  name                        VARCHAR(40) NOT NULL,
+  name                        VARCHAR(255) NOT NULL,
   coord_system_id             INT(10) UNSIGNED NOT NULL,
   length                      INT(10) UNSIGNED NOT NULL,
 
