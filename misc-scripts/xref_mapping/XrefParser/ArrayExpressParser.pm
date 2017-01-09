@@ -103,8 +103,8 @@ sub run_script {
     print "Loading the Registry\n" if $verbose;
     $registry->load_registry_from_multiple_dbs( 
       {
-        '-host'    => 'mysql-ensembl-mirror.ebi.ac.uk',
-	'-port'    => 4240,
+        '-host'    => 'mysql-ens-sta-1',
+	'-port'    => 4519,
         '-user'    => 'ensro',
       },
         );
