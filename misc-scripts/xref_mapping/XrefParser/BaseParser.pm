@@ -902,6 +902,7 @@ sub add_xref {
   my $description = $arg_ref->{desc}       || '';
   my $version     = $arg_ref->{version}    || 0;
   my $info_type   = $arg_ref->{info_type}  || 'MISC';
+  my $info_text   = $arg_ref->{info_text}  || '';
 
 
   ##################################################################
@@ -920,8 +921,8 @@ sub add_xref {
   if (!(defined $add_xref_sth) ) {
     $add_xref_sth =
       $self->dbi->prepare( 'INSERT INTO xref '
-         . '(accession,version,label,description,source_id,species_id, info_type) '
-         . 'VALUES(?,?,?,?,?,?,?)' );
+         . '(accession,version,label,description,source_id,species_id, info_type, info_text) '
+         . 'VALUES(?,?,?,?,?,?,?,?)' );
   }
 
   ######################################################################
@@ -939,7 +940,7 @@ sub add_xref {
   # Add the xref and croak if it fails
   ####################################
   $add_xref_sth->execute( $acc, $version || 0, $label,
-                          $description, $source_id, $species_id, $info_type
+                          $description, $source_id, $species_id, $info_type, $info_text
   ) or croak("$acc\t$label\t\t$source_id\t$species_id\n");
 
   return $add_xref_sth->{'mysql_insertid'};
@@ -1036,6 +1037,7 @@ sub add_to_direct_xrefs{
   my $label       = $arg_ref->{label}       || $acc;
   my $description = $arg_ref->{desc};
   my $linkage     = $arg_ref->{linkage};
+  my $info_text   = $arg_ref->{info_text}  || '';
 
   my $dbi= $self->dbi();
 
@@ -1044,8 +1046,8 @@ sub add_to_direct_xrefs{
   ######################
   if(!(defined $add_xref_sth)){
     my $sql = (<<'AXX');
-  INSERT INTO xref (accession,version,label,description,source_id,species_id, info_type)
-          VALUES (?,?,?,?,?,?,?)
+  INSERT INTO xref (accession,version,label,description,source_id,species_id, info_type, info_text)
+          VALUES (?,?,?,?,?,?,?,?)
 AXX
     $add_xref_sth = $dbi->prepare($sql);
   }
@@ -1057,7 +1059,7 @@ AXX
   if(!(defined $direct_id)){
     $add_xref_sth->execute(
         $acc, $version || 0, $label,
-        $description, $source_id, $species_id, 'DIRECT'
+        $description, $source_id, $species_id, 'DIRECT', $info_text
     ) or croak("$acc\t$label\t\t$source_id\t$species_id\n");
   }
 
@@ -1124,7 +1126,7 @@ sub add_dependent_xref{
   my $label       = $arg_ref->{label}          || $acc;
   my $description = $arg_ref->{desc};
   my $linkage     = $arg_ref->{linkage};
-  my $info_text   = $arg_ref->{info_text};
+  my $info_text   = $arg_ref->{info_text} || '';
 
   my $dbi = $self->dbi;
 
