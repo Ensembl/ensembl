@@ -690,7 +690,9 @@ The script populates a stable_id lookup database with all stable ids found in da
 on a specified server for a specified db release.
 Stable ids are copied for objects listed in hash %group_objects
 
-Options -host -port -user -pass -version are mandatory and specify the credentials for the server on which a stable id lookup database exists or is to be created (if using option -create). If an argument for option -ldbname is not provided, the default name for the database wil be used: 'ensemblgenomes_stable_id_lookup_xx', where xx is the database release (option -version).
+Options -lhost -lport -luser -lpass -version are mandatory and specify the credentials for the server on which a stable id lookup database exists or is to be created (if using option -create). If an argument for option -ldbname is not provided, the default name for the database wil be used: 'ensemblgenomes_stable_id_lookup_xx', where xx is the database release (option -version).
+
+Options -host -user -port specify the credentials of the server(s) where stable ids are to be copied from.
 
 To run the script cd into the directory where the script lives eg:
 cd eg-web-common/utils/stable_id_lookup/
@@ -698,23 +700,31 @@ cd eg-web-common/utils/stable_id_lookup/
 
 This command will create database ensemblgenomes_stable_ids_lookup_24_77 on server ens-staging1 for release 24 databases found on ens-staging1:
 
-populate_stable_id_lookup.pl -host ens-staging1 -user ensadmin -port 5306 -pass xxxx -create -version 24_77
+populate_stable_id_lookup_eg.pl -lhost ens-staging1 -luser ensadmin -lport 5306 -lpass xxxx -create -version 24_77
 
 
 Usage:
 
-  $0 -host host_name -port port_number -user user_name -pass password -version db_version
+  $0 -lhost host_name -lport port_number -luser user_name -lpass password -version db_version
   $indent [-create] [-dbname database_name] 
   $indent [-help]  
   
+  -h|host              Database host where stable_ids are to be copied from (multiple hosts can be specified)
 
-  -h|host              Database host 
+  -u|user              Database user where stable_ids are to be copied from (each host needs a user specified, 
+                       if multiple -h|host options are given and fewer -u|user options are specified, 
+                       the first user name will be used for the hosts where no user name was given)
 
-  -u|user              Database user 
+  -port                Database port where stable_ids are to be copied from (if more than one host is specified 
+               multiple ports can be provided)
 
-  -P|port              Database port 
+  -lh|lhost            Database host where stable_id lookup database exists or is to be created
 
-  -p|pass              Database password 
+  -lu|luser            Database user where stable_id lookup database exists or is to be created
+
+  -lp|lpass            Database password where stable_id lookup database exists or is to be created
+
+  -lport               Database port where stable_id lookup database exists or is to be created
 
   -v|version           EG version to match, e.g 24_77
 
