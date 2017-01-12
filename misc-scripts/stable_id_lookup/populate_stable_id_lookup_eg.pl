@@ -101,6 +101,7 @@ my ($dba_species, $lastSpeciesID) = get_loaded_species($writeDB);
 print("lastSpeciesID  + $lastSpeciesID\n");
 print Dumper($dba_species);
 
+my $new_species = {};
 
 process_dbs($readDB);
 
@@ -212,18 +213,24 @@ if ($db =~ /([\w\_]+)_(core|otherfeatures)_([\d\_\w]+)/) { ####disable otherfeat
 		    }
 		}
 		#	    warn "* $species : $dbtype ($lastSpeciesID) \n";
+
+        my $speciesOffset = $lastSpeciesID;
+        if ( exists $new_species->{$species} ) {
+            $speciesOffset = $new_species->{$species} - 1; # this is the offset.
+        }
+
 		if ($species =~ /_collection/) {
 			print "Process db add_collection $db\n";
-		    add_collection_db($db, $lastSpeciesID);
+		    add_collection_db($db, $speciesOffset);
 		    
 		} else {
-			print "\t\tGoing to add species $db   las ssid $lastSpeciesID\n";
+			print "\t\tGoing to add species $db   offset $speciesOffset\n";
 			
-		    add_species_db($db, $lastSpeciesID);
+		    add_species_db($db, $speciesOffset);
 		}
 		
 	}
-	
+ 	
 } elsif ($db =~ /([\w\_]+)_(compare)_([\d\_\w]+)/) {
 	my ($division, $dbtype, $dbversion) = ($1, $2, $3);
 	if ($dbversion =~ /^$version/) {
@@ -269,8 +276,9 @@ sub add_species_db {
 	
 	load_ids($dba_read, $dba_write, $dbtype, $speciesOffset);
 	
-	if ($dbtype eq 'core') {
+	if ( not exists $new_species->{$species} ) {
 	    load_species($dba_read, $dba_write, $speciesOffset, $dbname);
+        $new_species->{$species} = $lastSpeciesID;
 	}
 
 	#$dba->disconnect(); ###CHANGED
@@ -284,7 +292,7 @@ sub add_species_db {
 sub add_collection_db {
     my ($dbname, $speciesOffset) = @_;
 
-    warn "- Adding collection $dbname (from Species ID $speciesOffset)\n";
+    warn "- Adding collection $dbname (from Species ID ", 1 + $speciesOffset, ")\n";
     
     if ($dbname =~ /([\w\_]+)_(core|otherfeatures)_([\d\_\w]+)/) {
 	my ($species, $dbtype, $dbversion) = ($1, $2, $3);
@@ -298,7 +306,11 @@ sub add_collection_db {
 	#load_species($dba, $speciesOffset, $dbname);
 
 	load_ids($dba_read, $dba_write, $dbtype, $speciesOffset);
-	load_species($dba_read, $dba_write, $speciesOffset, $dbname);
+
+    if ( not exists $new_species->{$species} ) {
+        load_species($dba_read, $dba_write, $speciesOffset, $dbname);
+        $new_species->{$species} = $lastSpeciesID;
+    }
 	
 	#$dba->disconnect(); ###CHANGED
 	$dba_read->disconnect();
