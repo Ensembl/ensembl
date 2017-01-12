@@ -12,12 +12,6 @@ my ($lhost, $lport, $luser, $lpass, $test);
 my $create = 0;
 my $create_index = 0;
 
-# from this id the species ids from collections will start 
-# they will follow this rule : $collectionOffset + $collectionIndex * $collectionSize
-my $collectionIndex = 0; # global counter incremented for each collection 
-my $collectionOffset = 1000; 
-my $collectionSize = 1000;
-
 my %group_objects = (
     core => {
 	Exon => 1,
@@ -102,9 +96,9 @@ sub init_db{
 ####create_db($rdbname, $writeDB) if $create;   CHANGED
 create_db($writeDB) if $create;
 
-####my ($dba_species, $lastSID) = get_loaded_species($rdbname); CHANGED
-my ($dba_species, $lastSID) = get_loaded_species($writeDB);
-print("lastSID  + $lastSID\n");
+####my ($dba_species, $lastSpeciesID) = get_loaded_species($rdbname); CHANGED
+my ($dba_species, $lastSpeciesID) = get_loaded_species($writeDB);
+print("lastSpeciesID  + $lastSpeciesID\n");
 print Dumper($dba_species);
 
 
@@ -217,15 +211,15 @@ if ($db =~ /([\w\_]+)_(core|otherfeatures)_([\d\_\w]+)/) { ####disable otherfeat
 		    	next;
 		    }
 		}
-		#	    warn "* $species : $dbtype ($lastSID) \n";
+		#	    warn "* $species : $dbtype ($lastSpeciesID) \n";
 		if ($species =~ /_collection/) {
 			print "Process db add_collection $db\n";
-		    add_collection_db($db);
+		    add_collection_db($db, $lastSpeciesID);
 		    
 		} else {
-			print "\t\tGoing to add species $db   las ssid $lastSID\n";
+			print "\t\tGoing to add species $db   las ssid $lastSpeciesID\n";
 			
-		    add_species_db($db, $lastSID);
+		    add_species_db($db, $lastSpeciesID);
 		}
 		
 	}
@@ -257,10 +251,10 @@ sub add_compara_db {
 }
 
 sub add_species_db {
-    my ($dbname, $offset) = @_;
+    my ($dbname, $speciesOffset) = @_;
 # 1 comes from species_id = 1 in meta table
     print "From add_species_db\n";
-    warn "- Adding species $dbname (Species ID: ", 1 + $offset, ")\n";
+    warn "- Adding species $dbname (Species ID: ", 1 + $speciesOffset, ")\n";
 
     if ($dbname =~ /([\w\_]+)_(core|otherfeatures)_([\d\_\w]+)/) {
 	my ($species, $dbtype, $dbversion) = ($1, $2, $3);
@@ -271,13 +265,12 @@ sub add_species_db {
 	my $dba_read = db_connect($dbname, $readDB) ;
 	my $dba_write = db_connect($writeDB->{"dbname"}, $writeDB) ;
 	
-	#load_ids($dba, $dbtype, $offset); ####CHANGED
+	#load_ids($dba, $dbtype, $speciesOffset); ####CHANGED
 	
-	load_ids($dba_read, $dba_write, $dbtype, $offset);
+	load_ids($dba_read, $dba_write, $dbtype, $speciesOffset);
 	
 	if ($dbtype eq 'core') {
-	    load_species($dba_read, $dba_write, $offset, $dbname);
-	    $lastSID++;
+	    load_species($dba_read, $dba_write, $speciesOffset, $dbname);
 	}
 
 	#$dba->disconnect(); ###CHANGED
@@ -289,12 +282,9 @@ sub add_species_db {
 }
 
 sub add_collection_db {
-    my ($dbname) = @_;
+    my ($dbname, $speciesOffset) = @_;
 
-    $collectionIndex ++;
-    my $offset = $collectionIndex * $collectionSize + $collectionOffset;
-
-    warn "- Adding collection $dbname (from Species ID $offset)\n";
+    warn "- Adding collection $dbname (from Species ID $speciesOffset)\n";
     
     if ($dbname =~ /([\w\_]+)_(core|otherfeatures)_([\d\_\w]+)/) {
 	my ($species, $dbtype, $dbversion) = ($1, $2, $3);
@@ -304,11 +294,11 @@ sub add_collection_db {
 	my $dba_read = db_connect($dbname, $readDB) ;
 	my $dba_write = db_connect($writeDB->{"dbname"}, $writeDB) ;
 	
-	#load_ids($dba, $dbtype, $offset);
-	#load_species($dba, $offset, $dbname);
+	#load_ids($dba, $dbtype, $speciesOffset);
+	#load_species($dba, $speciesOffset, $dbname);
 
-	load_ids($dba_read, $dba_write, $dbtype, $offset);
-	load_species($dba_read, $dba_write, $offset, $dbname);
+	load_ids($dba_read, $dba_write, $dbtype, $speciesOffset);
+	load_species($dba_read, $dba_write, $speciesOffset, $dbname);
 	
 	#$dba->disconnect(); ###CHANGED
 	$dba_read->disconnect();
@@ -323,11 +313,11 @@ sub add_collection_db {
 sub load_species {
     my $dbh_read = shift;
     my $dbh_write = shift;
-    my $offset = shift;
+    my $speciesOffset = shift;
     my $dbname = shift;
     
-    my $sqlName = qq{SELECT species_id + $offset, meta_value FROM meta WHERE meta_key = "species.production_name"};
-    my $sqlTaxon = qq{SELECT species_id + $offset, meta_value FROM meta WHERE meta_key = "species.taxonomy_id"};
+    my $sqlName = qq{SELECT species_id + $speciesOffset, meta_value FROM meta WHERE meta_key = "species.production_name"};
+    my $sqlTaxon = qq{SELECT species_id + $speciesOffset, meta_value FROM meta WHERE meta_key = "species.taxonomy_id"};
 
     my $shash = {};
 
@@ -335,6 +325,9 @@ sub load_species {
     $sthN->execute();
     while ( my ($sid, $name) = $sthN->fetchrow_array()) {
 	$shash->{$sid}->{Name} = $name;
+    if ( $lastSpeciesID < $sid ) {
+        $lastSpeciesID = $sid;
+    }
     }
     $sthN->finish();
 
@@ -356,7 +349,8 @@ sub load_species {
 # Add the collection as well so if restart the script it does not load this collection again
     if ($dbname =~ /([\w\_]+_collection)_(core|otherfeatures)_([\d\_\w]+)/) {
 	my ($species, $t, $v) = ($1, $2, $3);
-	push @tuples, sprintf(q{(%s, %s, 0)}, $offset, $dbh_write->quote($species)) ;
+	push @tuples, sprintf(q{(%s, %s, 0)}, $lastSpeciesID + 1, $dbh_write->quote($species)) ;
+    $lastSpeciesID++;
     }
 
     eval { 
@@ -373,9 +367,9 @@ sub load_species {
 
 sub load_ids{
 	
-	my ($dbh_read, $dbh_write, $dbtype, $offset) = @_;
+	my ($dbh_read, $dbh_write, $dbtype, $speciesOffset) = @_;
     
-    print "DbType : $dbtype     Offset : $offset\n";
+    print "DbType : $dbtype     speciesOffset : $speciesOffset\n";
     
     
     my @stable_id_objects = keys %{$group_objects{$dbtype} || {}};
@@ -394,7 +388,7 @@ sub load_ids{
     		#It is needed by ensembl. For the time being, we have to assume that the coord_system holds only one species with id of 1
     		#In future ensembl also might need to support multiple databases
     		my $species_id =1;
-    		$select_sql = "SELECT DISTINCT old_stable_id, $species_id + $offset, '$dbtype', '$object' \
+    		$select_sql = "SELECT DISTINCT old_stable_id, $species_id + $speciesOffset, '$dbtype', '$object' \
     					   FROM stable_id_event
                            WHERE old_stable_id IS NOT NULL
                            AND type = '$object'
@@ -419,7 +413,7 @@ sub load_ids{
     			
     			if($dbtype eq 'core'){
     				
-    				$select_sql =  "SELECT DISTINCT o.stable_id, cs.species_id + $offset, '$dbtype', '$object_name' \
+    				$select_sql =  "SELECT DISTINCT o.stable_id, cs.species_id + $speciesOffset, '$dbtype', '$object_name' \
     				FROM $object o \
     				LEFT JOIN transcript t USING (transcript_id) \
     				LEFT JOIN seq_region sr USING(seq_region_id) \
@@ -434,7 +428,7 @@ sub load_ids{
     				
     			}elsif ($dbtype eq 'otherfeatures'){
     				
-    				$select_sql = "SELECT DISTINCT tl.stable_id, cs.species_id + $offset, '$dbtype', '$object_name' \
+    				$select_sql = "SELECT DISTINCT tl.stable_id, cs.species_id + $speciesOffset, '$dbtype', '$object_name' \
     				FROM translation tl \
     				LEFT JOIN transcript t USING (transcript_id) \
     				LEFT JOIN analysis a USING (analysis_id) \
@@ -462,7 +456,7 @@ sub load_ids{
     		if($count){
     			
     			if($dbtype eq 'core'){
-    				$select_sql = "SELECT DISTINCT o.stable_id, cs.species_id + $offset, '$dbtype', '$object_name' \
+    				$select_sql = "SELECT DISTINCT o.stable_id, cs.species_id + $speciesOffset, '$dbtype', '$object_name' \
     				FROM $object o \
     				LEFT JOIN seq_region sr USING(seq_region_id) \
     				LEFT JOIN coord_system cs USING(coord_system_id) \
@@ -478,7 +472,7 @@ sub load_ids{
     			}elsif ($dbtype eq 'otherfeatures'){
     				
     				
-    				$select_sql = "SELECT DISTINCT o.stable_id, cs.species_id + $offset, '$dbtype', '$object_name' \
+    				$select_sql = "SELECT DISTINCT o.stable_id, cs.species_id + $speciesOffset, '$dbtype', '$object_name' \
     				FROM $object o \ 	
     				LEFT JOIN analysis a USING (analysis_id) \
     				LEFT JOIN seq_region sr USING(seq_region_id) \
@@ -667,7 +661,7 @@ sub get_loaded_species {
     $sth->execute();
     while ( my ($sid, $name) = $sth->fetchrow_array()) {
 	$shash->{$name}->{ID} = $sid;
-	if ($sid > $ssid && $sid < $collectionOffset) {
+	if ($sid > $ssid) {
 	    $ssid = $sid;
 	}
     }
