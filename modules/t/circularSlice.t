@@ -387,7 +387,9 @@ foreach my $sl (sort keys %{$slices}) {
           is($got->stable_id, $expected->{stable_id}, sprintf "%d: stable id", $got->dbID) if $table_in_stable_id_tables;
           is($got->start, $expected->{start}, sprintf "%d: start", $got->dbID);
           is($got->end, $expected->{end}, sprintf "%d: end", $got->dbID);
-          is($got->strand, $expected->{strand}, sprintf "%d: strand", $got->dbID); 
+          is($got->strand, $expected->{strand}, sprintf "%d: strand", $got->dbID);
+	  is($got->seq_region_start, $expected->{seq_region_start}, sprintf "%d: seq_region_start", $got->dbID);
+	  is($got->seq_region_end, $expected->{seq_region_end}, sprintf "%d: seq_region_end", $got->dbID);
         }
       }
     }
@@ -790,6 +792,8 @@ sub feature_slice_boundaries {
 	  stable_id => $attrs->{stable_id},
 	  start => $start,
 	  end => $end,
+	  seq_region_start => $srs,
+	  seq_region_end => $sre,
 	  strand => $attrs->{seq_region_strand} * $sstrand
 	 };
 
