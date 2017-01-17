@@ -1583,30 +1583,6 @@ sub _deprecated_transform {
   return $self;
 }
 
-
-my $feature_tables = 
-  {
-   'Bio::EnsEMBL::AssemblyExceptionFeature' => 'assembly_exception',
-   'Bio::EnsEMBL::DensityFeature' => 'density_feature',
-   'Bio::EnsEMBL::DnaDnaAlignFeature' => 'dna_align_feature',
-   'Bio::EnsEMBL::DnaPepAlignFeature' => 'protein_align_feature',
-   'Bio::EnsEMBL::Exon' => 'exon',
-   'Bio::EnsEMBL::ExonTranscript' => 'exon',
-   'Bio::EnsEMBL::PredictionExon' => 'prediction_exon',
-   'Bio::EnsEMBL::Gene' => 'gene',
-   'Bio::EnsEMBL::IntronSupportingEvidence' => 'intron_supporting_evidence',
-   'Bio::EnsEMBL::KaryotypeBand' => 'karyotype',
-   'Bio::EnsEMBL::Map::DitagFeature' => 'ditag_feature',
-   'Bio::EnsEMBL::Map::MarkerFeature' => 'marker_feature',
-   'Bio::EnsEMBL::MiscFeature' => 'misc_feature',
-   'Bio::EnsEMBL::Operon' => 'operon',
-   'Bio::EnsEMBL::OperonTranscript' => 'operon_transcript',
-   'Bio::EnsEMBL::RepeatFeature' => 'repeat_feature',
-   'Bio::EnsEMBL::SimpleFeature' => 'simple_feature',
-   'Bio::EnsEMBL::Transcript' => 'transcript',
-   'Bio::EnsEMBL::PredictionTranscript' => 'prediction_transcript'
-  };
-
 #
 # get seq region boundary (start|end) for a feature
 # the method attempts to retrieve the boundary directly from the db
@@ -1631,11 +1607,10 @@ sub _seq_region_boundary_from_db {
   throw "Unable to get SqlHelper instance"
     unless defined $sql_helper;
 
-  my $feature_table =
-    $feature_tables->{ref $self};
-
-  return undef unless defined $feature_table;
-
+  my $feature_table = ($self->adaptor->_tables)[0][0];
+  warning (sprintf "Unable to get %s for %s instance\nCould not find associated feature table, returning undef", $boundary, ref $self)
+    and return undef unless defined $feature_table;
+  
   my $db_id = $self->dbID;
   my $attrib_id = $feature_table . '_id';
   my $query = "SELECT ${boundary} from ${feature_table} WHERE ${attrib_id} = ${db_id}"; 
