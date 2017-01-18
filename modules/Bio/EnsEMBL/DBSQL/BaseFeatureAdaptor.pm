@@ -1189,7 +1189,7 @@ sub _seq_region_boundary_from_db {
   my $sql_helper = $self->dbc->sql_helper;
   throw "Unable to get SqlHelper instance" unless defined $sql_helper;
 
-  my $feature_table = ($self->_tables)[0][0];
+  my $feature_table = ($self->_tables)[0]->[0];
   warning (sprintf "Unable to get %s for %s instance\nCould not find associated feature table, returning undef", $boundary, ref $feature)
     and return undef unless defined $feature_table;
 
