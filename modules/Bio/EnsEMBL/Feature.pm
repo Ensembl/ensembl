@@ -1085,7 +1085,9 @@ sub seq_region_strand {
                feature on the seq_region, as opposed to the relative (slice) 
                position.
 
-               Returns undef if this feature is not on a slice.
+               Returns undef if this feature is not on a slice or slice is
+               circular and cannot determine the position of the feature from
+               the db.
   Returntype : int or undef
   Exceptions : none
   Caller     : general
@@ -1099,10 +1101,12 @@ sub seq_region_start {
   my $slice = $self->slice();
   
   if ( defined($slice) ) {
-
-    return $self->_seq_region_boundary_from_db('start')
-      if $slice->is_circular() and $self->adaptor() and $self->adaptor->dbc();
-
+    if ($slice->is_circular()) {
+      return $self->adaptor->_seq_region_boundary_from_db($self, 'start')
+	if $self->adaptor();
+      return undef;
+    }
+    
     my $start;
     if ( $slice->strand() == 1 ) {
       $start = $slice->start() + $self->start() - 1
@@ -1127,7 +1131,9 @@ sub seq_region_start {
                feature on the seq_region, as opposed to the relative (slice)
                position.
 
-               Returns undef if this feature is not on a slice.
+               Returns undef if this feature is not on a slice or slice is
+               circular and cannot determine the position of the feature from
+               the db.
   Returntype : int or undef
   Exceptions : none
   Caller     : general
@@ -1141,9 +1147,11 @@ sub seq_region_end {
   my $slice = $self->slice();
 
   if ( defined($slice) ) {
-
-    return $self->_seq_region_boundary_from_db('end')
-      if $slice->is_circular() and $self->adaptor() and $self->adaptor->dbc();
+    if ($slice->is_circular()) {
+      return $self->adaptor->_seq_region_boundary_from_db($self, 'end')
+	if $self->adaptor();
+      return undef;
+    }
 
     my $end;
     if ( $slice->strand() == 1 ) {
@@ -1581,42 +1589,6 @@ sub _deprecated_transform {
           "(or never was) supported.  Doing nothing instead.");
 
   return $self;
-}
-
-#
-# get seq region boundary (start|end) for a feature
-# the method attempts to retrieve the boundary directly from the db
-# if feature is not of class in the feature_table hash, it means the
-# feature it's not stored in the db or we don't know how to get the
-# region boundary from the db.
-# Return undef in these cases.
-#
-sub _seq_region_boundary_from_db {
-  my ($self, $boundary) = @_;
-
-  throw "Undefined boundary"
-    unless defined $boundary;
-
-  $boundary eq 'start' or $boundary eq 'end'
-    or throw "Wrong boundary: select start|end";
-
-  $boundary = 'seq_region_' . $boundary;
-    
-  my $sql_helper = 
-    $self->adaptor->dbc->sql_helper;
-  throw "Unable to get SqlHelper instance"
-    unless defined $sql_helper;
-
-  my $feature_table = ($self->adaptor->_tables)[0][0];
-  warning (sprintf "Unable to get %s for %s instance\nCould not find associated feature table, returning undef", $boundary, ref $self)
-    and return undef unless defined $feature_table;
-  
-  my $db_id = $self->dbID;
-  my $attrib_id = $feature_table . '_id';
-  my $query = "SELECT ${boundary} from ${feature_table} WHERE ${attrib_id} = ${db_id}"; 
-  
-  return $sql_helper->execute_single_result(-SQL => $query);
-
 }
 
 1;

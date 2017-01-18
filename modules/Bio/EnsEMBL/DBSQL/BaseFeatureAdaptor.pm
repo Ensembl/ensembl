@@ -1166,6 +1166,39 @@ sub _remap {
   return \@out;
 }
 
+#
+# get seq region boundary (start|end) for a feature
+# the method attempts to retrieve the boundary directly from the db
+# return undef if cannot determine the associated feature table
+#
+sub _seq_region_boundary_from_db {
+  my ($self, $feature, $boundary) = @_;
+
+  if(!ref($feature) || !$feature->isa('Bio::EnsEMBL::Feature')) {
+    throw('Expected Feature argument.');
+  }
+
+  throw "Undefined boundary"
+    unless defined $boundary;
+
+  $boundary eq 'start' or $boundary eq 'end'
+    or throw "Wrong boundary: select start|end";
+
+  $boundary = 'seq_region_' . $boundary;
+
+  my $sql_helper = $self->dbc->sql_helper;
+  throw "Unable to get SqlHelper instance" unless defined $sql_helper;
+
+  my $feature_table = ($self->_tables)[0][0];
+  warning (sprintf "Unable to get %s for %s instance\nCould not find associated feature table, returning undef", $boundary, ref $feature)
+    and return undef unless defined $feature_table;
+
+  my $db_id = $feature->dbID;
+  my $attrib_id = $feature_table . '_id';
+  my $query = "SELECT ${boundary} from ${feature_table} WHERE ${attrib_id} = ${db_id}"; 
+
+  return $sql_helper->execute_single_result(-SQL => $query);
+}
 
 =head2 store
 
