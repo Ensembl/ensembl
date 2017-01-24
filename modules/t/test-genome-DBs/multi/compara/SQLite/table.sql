@@ -1,6 +1,6 @@
 -- 
 -- Created by SQL::Translator::Producer::SQLite
--- Created on Thu Jan  5 13:47:00 2017
+-- Created on Tue Jan 24 12:49:38 2017
 -- 
 
 BEGIN TRANSACTION;
@@ -59,10 +59,12 @@ CREATE TABLE constrained_element (
 CREATE TABLE dnafrag (
   dnafrag_id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
   length integer NOT NULL DEFAULT 0,
-  name varchar(40) NOT NULL DEFAULT '',
+  name varchar(255) NOT NULL DEFAULT '',
   genome_db_id integer NOT NULL,
   coord_system_name varchar(40) NOT NULL DEFAULT '',
-  is_reference tinyint NOT NULL DEFAULT 1
+  cellular_component enum NOT NULL DEFAULT 'NUC',
+  is_reference tinyint NOT NULL DEFAULT 1,
+  codon_table_id tinyint NOT NULL DEFAULT 1
 );
 
 CREATE UNIQUE INDEX name ON dnafrag (genome_db_id, name);
@@ -76,6 +78,18 @@ CREATE TABLE dnafrag_region (
   dnafrag_start integer NOT NULL DEFAULT 0,
   dnafrag_end integer NOT NULL DEFAULT 0,
   dnafrag_strand tinyint NOT NULL DEFAULT 0
+);
+
+--
+-- Table: exon_boundaries
+--
+CREATE TABLE exon_boundaries (
+  gene_member_id integer NOT NULL,
+  seq_member_id integer NOT NULL,
+  dnafrag_start integer NOT NULL,
+  dnafrag_end integer NOT NULL,
+  sequence_length integer NOT NULL,
+  left_over tinyint NOT NULL DEFAULT 0
 );
 
 --
@@ -150,6 +164,7 @@ CREATE TABLE gene_member (
   source_name enum NOT NULL,
   taxon_id integer NOT NULL,
   genome_db_id integer,
+  biotype_group enum NOT NULL DEFAULT 'coding',
   canonical_member_id integer,
   description text,
   dnafrag_id bigint,
@@ -174,6 +189,19 @@ CREATE TABLE gene_member_hom_stats (
   paralogues integer NOT NULL DEFAULT 0,
   homoeologues integer NOT NULL DEFAULT 0,
   PRIMARY KEY (gene_member_id, collection)
+);
+
+--
+-- Table: gene_member_qc
+--
+CREATE TABLE gene_member_qc (
+  gene_member_stable_id varchar(128) NOT NULL,
+  genome_db_id integer NOT NULL,
+  seq_member_id integer,
+  n_species integer,
+  n_orth integer,
+  avg_cov float,
+  status varchar(50) NOT NULL
 );
 
 --
@@ -289,6 +317,8 @@ CREATE TABLE genome_db (
   has_karyotype tinyint NOT NULL DEFAULT 0,
   is_high_coverage tinyint NOT NULL DEFAULT 0,
   genome_component varchar(5),
+  strain_name varchar(40),
+  display_name varchar(255),
   locator varchar(400),
   first_release smallint,
   last_release smallint
@@ -567,6 +597,8 @@ CREATE TABLE seq_member (
   genome_db_id integer,
   sequence_id integer,
   gene_member_id integer,
+  has_transcript_edits tinyint NOT NULL DEFAULT 0,
+  has_translation_edits tinyint NOT NULL DEFAULT 0,
   description text,
   dnafrag_id bigint,
   dnafrag_start integer,
