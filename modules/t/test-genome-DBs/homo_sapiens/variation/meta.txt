@@ -1,12 +1,18 @@
 1	\N	schema_type	variation
-2	\N	schema_version	85
-3	\N	patch	patch_83_84_a.sql|schema version
-4	\N	patch	patch_84_85_a.sql|schema version
-5	\N	patch	patch_84_85_b.sql|create sample_synonym
-6	\N	patch	patch_84_85_c.sql|drop column moltype from variation_synonym
-7	\N	patch	patch_85_86_d.sql|Making attrib_id auto_increment
-8	\N	patch	patch_85_86_e.sql|drop the table tagged_variation_feature
-9	\N	patch	patch_84_85_d.sql|Making attrib_id auto_increment
+2	\N	schema_version	88
+3	\N	patch	patch_84_85_a.sql|schema version
+4	\N	patch	patch_84_85_b.sql|create sample_synonym
+5	\N	patch	patch_84_85_c.sql|drop column moltype from variation_synonym
+6	\N	patch	patch_84_85_d.sql|Making attrib_id auto_increment
+7	\N	patch	patch_84_85_e.sql|drop the table tagged_variation_feature
+8	\N	patch	patch_84_85_f.sql|add phenotype_ontology_accession
+9	\N	patch	patch_84_85_g.sql|allow the column description to store more text in the source table
 10	\N	patch	patch_84_85_e.sql|drop the table tagged_variation_feature
 11	\N	patch	patch_84_85_f.sql|add phenotype_ontology_accession
 12	\N	patch	patch_84_85_g.sql|allow the column description to store more text in the source table
+13	\N	patch	patch_85_86_a.sql|schema version
+14	\N	patch	patch_85_86_b.sql|add qualifier & index to phenotype_onology_accession
+15	\N	patch	patch_85_86_c.sql|add index on study.external_reference
+16	\N	patch	patch_86_87_a.sql|schema version
+17	\N	patch	patch_87_88_a.sql|schema version
+18	\N	patch	patch_87_88_b.sql|seq_region_name_255
