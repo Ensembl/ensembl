@@ -1,6 +1,6 @@
 -- 
 -- Created by SQL::Translator::Producer::SQLite
--- Created on Thu Jan  5 13:47:07 2017
+-- Created on Tue Jan 24 12:54:37 2017
 -- 
 
 BEGIN TRANSACTION;
@@ -773,7 +773,7 @@ CREATE TABLE repeat_feature (
 --
 CREATE TABLE seq_region (
   seq_region_id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
-  name varchar(40) NOT NULL DEFAULT '',
+  name varchar(255) NOT NULL,
   coord_system_id integer NOT NULL DEFAULT 0,
   length integer NOT NULL DEFAULT 0
 );
