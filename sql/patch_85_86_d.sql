@@ -23,3 +23,7 @@
 ALTER TABLE protein_feature 
 	DROP INDEX aln_idx,
         ADD UNIQUE KEY aln_idx (translation_id,hit_name,seq_start,seq_end,hit_start,hit_end,analysis_id);
+
+# Patch identifier
+INSERT INTO meta (species_id, meta_key, meta_value)
+  VALUES (NULL, 'patch', 'patch_85_86_d.sql|protein_featue_uniqueness);
