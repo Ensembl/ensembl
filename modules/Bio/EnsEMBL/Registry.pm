@@ -141,6 +141,7 @@ use Bio::EnsEMBL::Utils::Argument qw(rearrange);
 use Bio::EnsEMBL::Utils::ConfigRegistry;
 use Bio::EnsEMBL::ApiVersion;
 use Bio::EnsEMBL::Utils::URI qw/parse_uri/;
+
 use DBI qw(:sql_types);
 
 use Scalar::Util qw/blessed/;
@@ -1102,6 +1103,7 @@ sub remove_switchable_adaptor {
 
 sub get_adaptor {
   my ( $class, $species, $group, $type ) = @_;
+
   my $ispecies = $class->get_alias($species);
 
   if ( !defined($ispecies) ) {
@@ -1115,6 +1117,7 @@ sub get_adaptor {
   $group = lc($group);
   my $lc_type = lc($type);
   
+
   if($type =~ /Adaptor$/i) {
     warning("Detected additional Adaptor string in given the type '$type'. Removing it to avoid possible issues. Alter your type to stop this message");
     $type =~ s/Adaptor$//i;
@@ -1185,6 +1188,7 @@ sub get_adaptor {
   Bio::EnsEMBL::Registry->add_adaptor( $species, $group, $type, $adap,
                                        'reset' );
   $ret = $adap;
+
   return $ret;
 } ## end sub get_adaptor
 
@@ -1208,6 +1212,7 @@ sub get_all_adaptors{
   my ($species, $group, $type);
   my @ret=();
   my (%species_hash, %group_hash, %type_hash);
+
 
   if(@args == 1){ # Old species only one parameter
     warn("-SPECIES argument should now be used to get species adaptors");
@@ -1261,6 +1266,7 @@ sub get_all_adaptors{
       }
     }
   }
+
   return (\@ret);
 }
 
@@ -3026,9 +3032,11 @@ my %compara_stable_id_stmts = (
 
 sub get_species_and_object_type {
   my ($self, $stable_id, $known_type, $known_species, $known_db_type, $force_long_lookup, $use_archive) = @_;
+
   #get the stable_id lookup database adaptor
 
   my $stable_ids_dba = $self->get_DBAdaptor("multi", "stable_ids", 1);
+
   if ($stable_ids_dba && ! $force_long_lookup) {
     return $self->_lookup_db_get_species_and_object_type($stable_id, $known_type, $known_species, $known_db_type, $use_archive);
   } 
@@ -3068,9 +3076,12 @@ sub get_species_and_object_type {
 
 sub _lookup_db_get_species_and_object_type {
   my ($self, $stable_id, $known_type, $known_species, $known_db_type, $use_archive) = @_;
+
   my $retired;
   my $stable_ids_dba = $self->get_DBAdaptor("multi", "stable_ids", 1);
+
   my ($species, $type, $db_type) = $self->stable_id_lookup($stable_id, $known_type, $known_species, $known_db_type);
+
   if (!$species && $use_archive) {
     ($species, $type, $db_type) = $self->archive_id_lookup($stable_id, $known_type, $known_species, $known_db_type);
     $retired = 1 if $species;
@@ -3095,6 +3106,7 @@ sub stable_id_lookup {
   if ($known_type) {
     $statement .= ' AND object_type = ?';
   }
+
   my $sth = $stable_ids_dba->dbc()->prepare($statement);
   $sth->bind_param(1, $stable_id, SQL_VARCHAR);
   my $param_count = 1;
@@ -3207,6 +3219,7 @@ sub _core_get_species_and_object_type_worker {
 
 sub _compara_get_species_and_object_type {
   my ($self, $stable_id, $known_type, $dba) = @_;
+
   # Try looking up the species with the stable_is, as-is
   my @results = $self->_compara_get_species_and_object_type_worker($stable_id, $known_type, $dba);
 
