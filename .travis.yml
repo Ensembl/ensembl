@@ -4,8 +4,8 @@ perl:
   - "5.14"
   - "5.12"
   - "5.10"
-  - "5.22"
-  - "5.24"
+#  - "5.22"
+#  - "5.24"
 
 env:
   - COVERALLS=true  DB=mysql
@@ -48,6 +48,14 @@ matrix:
       env: COVERALLS=false DB=sqlite
     - perl: "5.14"
       env: COVERALLS=true  DB=mysql
+#    - perl: "5.22"
+#      env: COVERALLS=false DB=sqlite
+#    - perl: "5.22"
+#      env: COVERALLS=true  DB=mysql
+#    - perl: "5.24"
+#      env: COVERALLS=false DB=sqlite
+#    - perl: "5.24"
+#      env: COVERALLS=true  DB=mysql
 
 notifications:
   email:
