@@ -26,4 +26,4 @@ ALTER TABLE protein_feature
 
 # Patch identifier
 INSERT INTO meta (species_id, meta_key, meta_value)
-  VALUES (NULL, 'patch', 'patch_85_86_d.sql|protein_featue_uniqueness);
+  VALUES (NULL, 'patch', 'patch_85_86_d.sql|protein_featue_uniqueness');
