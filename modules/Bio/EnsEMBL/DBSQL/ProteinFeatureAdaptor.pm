@@ -259,6 +259,17 @@ sub store {
 
   $sth->execute();
 
+  if (defined($sth->err)){ # is defined if server sends a message
+    if ($sth->err eq 0){
+      warning('SQL warning : ' . $sth->errstr ."\n");
+    }
+    elsif ($sth->err){ # not an empty string or zero
+      warning('SQL error : ' . $sth->errstr ."\n");
+    }
+    elsif ($sth->err eq ''){ # SQL info messages 
+    }
+  }
+ 
   my $dbID = $self->last_insert_id('protein_feature_id', undef, 'protein_feature');
 
   $feature->adaptor($self);

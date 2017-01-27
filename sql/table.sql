@@ -935,7 +935,7 @@ CREATE TABLE protein_feature (
   external_data               TEXT,
   hit_description             TEXT,
 
-  UNIQUE KEY aln_idx (translation_id,hit_name,seq_start,seq_end,hit_start,hit_end),
+  UNIQUE KEY aln_idx (translation_id,hit_name,seq_start,seq_end,hit_start,hit_end,analysis_id),
   PRIMARY KEY (protein_feature_id),
   KEY translation_idx (translation_id),
   KEY hitname_idx (hit_name),
