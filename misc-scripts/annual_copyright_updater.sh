@@ -1,6 +1,6 @@
 #!/bin/bash
 # Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
-# Copyright [2016] EMBL-European Bioinformatics Institute
+# Copyright [2016-2017] EMBL-European Bioinformatics Institute
 # 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -34,8 +34,8 @@ for var in $dirs; do
   year=$(date "+%Y")
   last_year=$(($year - 1))
 
-  search="^\(.*\)\\[2016\(-*[0-9]*\)\\] EMBL-European Bioinformatics Institute"
-  replacement="\1[2016-$year] EMBL-European Bioinformatics Institute"
+  search="^\(.*\)\\[\([0-9]*\)\(-*[0-9]*\)\\] EMBL-European Bioinformatics Institute"
+  replacement="\1[\2-$year] EMBL-European Bioinformatics Institute"
 
   echo "About to scan $(pwd) for files to replace '$search' with '$replacement'"
 

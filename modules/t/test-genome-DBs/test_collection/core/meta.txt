@@ -157,3 +157,4 @@
 199	\N	patch	patch_86_87_b.sql|meta_value_NOT_NULL
 200	\N	patch	patch_86_87_c.sql|datetime_default_NULL
 201	\N	patch	patch_87_88_a.sql|schema_version
+202	\N	patch	patch_87_88_b.sql|seq_region_name_255

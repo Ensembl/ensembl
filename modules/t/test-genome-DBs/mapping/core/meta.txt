@@ -44,3 +44,4 @@
 137	\N	patch	patch_86_87_b.sql|meta_value_NOT_NULL
 138	\N	patch	patch_86_87_c.sql|datetime_default_NULL
 139	\N	patch	patch_87_88_a.sql|schema_version
+140	\N	patch	patch_87_88_b.sql|seq_region_name_255
