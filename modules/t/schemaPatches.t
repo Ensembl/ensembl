@@ -43,7 +43,7 @@ SKIP: {
   my $sql_dir = catdir($project_dir, 'sql');
   my @patches;
   find(sub {
-    if($_ =~ /^patch_${last_release}_${current_release}_\w+\.sql$/) {
+    if($_ =~ /^patch_${last_release}_${current_release}[_-]?\w+\.sql$/) {
       push(@patches, $File::Find::name);
     }
   }, $sql_dir);
