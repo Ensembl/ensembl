@@ -469,7 +469,7 @@ sub create_xrefs {
       	if($source =~ "ArrayExpress"){
       	    next;
       	}
-        if($source =~ "GenomeRNAi"){
+        if($source =~ "GenomeRNAi" || $source =~ "EPD"){
             next;
         }
         if($source =~ "Xenbase"){
