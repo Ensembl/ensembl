@@ -376,7 +376,7 @@ DSS
       }
 	
       # update AFTER processing in case of crash.
-      my $total_checksum = md5sum($file_cs);
+      my $total_checksum = md5_hex($file_cs);
       $self->update_source( $source_url_id,
 		     $total_checksum, $files_to_parse[0] );
 	
