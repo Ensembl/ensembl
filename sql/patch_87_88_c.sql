@@ -13,15 +13,18 @@
 -- See the License for the specific language governing permissions and
 -- limitations under the License.
 
-# patch_87_88_b.sql
+# patch_87_88_c.sql
 #
-# Title: Allow seq_region name to be longer
+# Title: protein feature uniqueness
 #
 # Description:
-# Name in seq_region table will be enlarged to VARCHAR(255)
+#   change unique key aln_idx to be analysis specific
 
-ALTER TABLE seq_region MODIFY COLUMN name VARCHAR(255) NOT NULL;
+ALTER TABLE protein_feature 
+	DROP INDEX aln_idx,
+        ADD UNIQUE KEY aln_idx (translation_id,hit_name,seq_start,seq_end,hit_start,hit_end,analysis_id);
 
 # Patch identifier
 INSERT INTO meta (species_id, meta_key, meta_value)
-  VALUES (NULL, 'patch', 'patch_87_88_b.sql|seq_region_name_255');
+  VALUES (NULL, 'patch', 'patch_87_88_c.sql|protein_featue_uniqueness');
+
