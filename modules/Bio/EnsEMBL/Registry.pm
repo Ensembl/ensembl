@@ -1117,7 +1117,7 @@ sub get_adaptor {
   $group = lc($group);
   my $lc_type = lc($type);
   
-  
+
   if($type =~ /Adaptor$/i) {
     warning("Detected additional Adaptor string in given the type '$type'. Removing it to avoid possible issues. Alter your type to stop this message");
     $type =~ s/Adaptor$//i;
@@ -3026,7 +3026,9 @@ my %stable_id_stmts = (
 
 my %compara_stable_id_stmts = (
   genetree => 'SELECT 1 FROM %1$s.gene_tree_root WHERE stable_id =?',
+  family  => 'SELECT 1 from %1$s.family where stable_id = ?',
 );
+
 
 sub get_species_and_object_type {
   my ($self, $stable_id, $known_type, $known_species, $known_db_type, $force_long_lookup, $use_archive) = @_;
@@ -3034,7 +3036,7 @@ sub get_species_and_object_type {
   #get the stable_id lookup database adaptor
 
   my $stable_ids_dba = $self->get_DBAdaptor("multi", "stable_ids", 1);
-  
+
   if ($stable_ids_dba && ! $force_long_lookup) {
     return $self->_lookup_db_get_species_and_object_type($stable_id, $known_type, $known_species, $known_db_type, $use_archive);
   } 
@@ -3045,7 +3047,7 @@ sub get_species_and_object_type {
         return;
       }
     }
-        
+       
     $known_db_type = 'core' if ! $known_db_type;
       
     my %get_adaptors_args = ('-GROUP' => $known_db_type);
@@ -3252,7 +3254,7 @@ sub _compara_get_species_and_object_type_worker {
     }
   }
   $dba->dbc->disconnect_if_idle(); # always disconnect after lookup
-  return ($species, $final_type, $final_db_type);
+  return ($species, $final_type, $final_db_type) if defined $species;
   return;
 }
 
