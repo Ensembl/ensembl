@@ -311,7 +311,8 @@ INSERT INTO meta (species_id, meta_key, meta_value)
   VALUES (NULL, 'patch', 'patch_87_88_a.sql|schema_version');
 INSERT INTO meta (species_id, meta_key, meta_value)
   VALUES (NULL, 'patch', 'patch_87_88_b.sql|seq_region_name_255');
-
+INSERT INTO meta (species_id, meta_key, meta_value)
+  VALUES (NULL, 'patch', 'patch_87_88_c.sql|protein_featue_uniqueness');
 
 /**
 @table meta_coord
@@ -935,7 +936,7 @@ CREATE TABLE protein_feature (
   external_data               TEXT,
   hit_description             TEXT,
 
-  UNIQUE KEY aln_idx (translation_id,hit_name,seq_start,seq_end,hit_start,hit_end),
+  UNIQUE KEY aln_idx (translation_id,hit_name,seq_start,seq_end,hit_start,hit_end,analysis_id),
   PRIMARY KEY (protein_feature_id),
   KEY translation_idx (translation_id),
   KEY hitname_idx (hit_name),

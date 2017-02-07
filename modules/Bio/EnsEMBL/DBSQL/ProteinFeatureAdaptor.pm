@@ -259,6 +259,10 @@ sub store {
 
   $sth->execute();
 
+  if (defined($sth->err) && $sth->err eq 0){ # is a warning if 0 and defined
+      warning('SQL warning : ' . $sth->errstr ."\n");
+  }
+ 
   my $dbID = $self->last_insert_id('protein_feature_id', undef, 'protein_feature');
 
   $feature->adaptor($self);
