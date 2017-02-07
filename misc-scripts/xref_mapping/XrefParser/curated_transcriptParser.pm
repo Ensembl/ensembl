@@ -127,6 +127,7 @@ sub run_script {
     $reg->load_registry_from_db(
                                 -host => $host,
                                 -user => $user,
+                                -port => 4519,
                                 -species => $species_name);
 
     $vega_dbc = $reg->get_adaptor($species_name,"vega","slice");
@@ -152,6 +153,7 @@ sub run_script {
     $reg->load_registry_from_db(
                                 -host => $host,
                                 -user => $user,
+                                -port => 4519,
 			        -species => $species_name);
 
     $core_dbc = $reg->get_adaptor($species_name,"core","slice");
