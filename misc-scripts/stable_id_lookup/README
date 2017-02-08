@@ -16,18 +16,24 @@ core	  Exon
 
 For Gene, Transcript and Translation, an archive_id_lookup is also created, containing all previously used ids
 
+For help/usage try:
+perl populate_stable_id_lookup.pl --help
 
 
-Command to create the stable_id database on ens-staging1 and copy stable ids from databases on ens-staging1 and 2:
+This command will create database ensembl_stable_ids_88 on server mysql-xxx-dev.ebi.ac.uk for release 88 databases found on mysql-ens-xxx.ebi.ac.uk:
 
-RELEASE=70
+eg: 
+(with -test flag create a small subset database)
+perl populate_stable_id_lookup.pl -lhost mysql-xxx-dev.ebi.ac.uk -luser xxxrw -lpass xxxx -lport 4484 -dbname ensembl_stable_ids_88 -create -host mysql-ens-xxx.ebi.ac.uk  -user ensro -port 4519 -version 88 -test
+
+(without -test flag creates a full version)
+perl populate_stable_id_lookup.pl -lhost mysql-xxx-dev.ebi.ac.uk -luser xxxrw -lpass xxxx -lport 4484 -dbname ensembl_stable_ids_88 -create -host mysql-ens-xxx.ebi.ac.uk  -user ensro -port 4519 -version 88
+
+RELEASE=88
 DIR=ensembl/misc-scripts/stable_id_lookup
-USR=''
-PASS=''
 
 cd $DIR
-bsub -q normal -M 700000 -R'select[mem>700] rusage[mem=700]' -o ./stable_ids_${RELEASE}.out -e ./stable_ids_${RELEASE}.err perl populate_stable_id_lookup.pl \
--lhost ens-staging1 -luser $USR -lpass $PASS -create -host ens-staging1 -host ens-staging2 -user ensro
+bsub -q production-rh7 -M 700000 -R'select[mem>700] rusage[mem=700]' -o stable_id_lookup.out -e stable_id_lookup.err perl populate_stable_id_lookup.pl \
+-lhost mysql-xxx-dev-x.ebi.ac.uk -luser xxxx -lpass xxxx -lport 4484 -dbname ensembl_stable_ids_88 -create -host mysql-ens-xxx-1.ebi.ac.uk  -user xxx -port 4519 -version 88
 
-
-For release 74, the job consumed 584Mb of memory and took 1hr 53 minutes to run
+For release 88, the job consumed 133Mb of memory and took around 6 mins to run for ensembl
