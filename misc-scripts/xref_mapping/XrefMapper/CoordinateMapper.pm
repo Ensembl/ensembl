@@ -680,7 +680,7 @@ sub dump_xref {
                 $version,
                 '\N',
                 'COORDINATE_OVERLAP',
-                '\N'                                  # FIXME (possibly)
+                ''                                  # FIXME (possibly)
     );
   }
   $fh->close();
@@ -708,12 +708,13 @@ sub dump_object_xref {
       # Assign 'object_xref_id' to this Object Xref.
       $object_xref->{'object_xref_id'} = ++$object_xref_id;
 
-      $fh->printf( "%d\t%d\t%s\t%d\t%s\n",
+      $fh->printf( "%d\t%d\t%s\t%d\t%s\t%s\n",
                    $object_xref->{'object_xref_id'},
                    $object_xref->{'ensembl_id'},
                    $object_xref->{'ensembl_object_type'},
                    $xref->{'xref_id'},
-                   '\N' );
+                   '\N',
+                   '0' );
     }
   }
   $fh->close();

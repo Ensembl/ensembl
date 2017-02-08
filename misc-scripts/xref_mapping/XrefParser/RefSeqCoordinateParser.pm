@@ -224,6 +224,7 @@ sub run_script {
 
 # Create a range registry for all the exons of the refseq transcript
       foreach my $transcript_of (sort { $a->start() <=> $b->start() } @$transcripts_of) {
+        if ($transcript_of->stable_id =~ /H3.X/ || $transcript_of->stable_id =~ /H3.Y/ || $transcript_of->stable_id =~ /^3.8/) { next; }
         my %transcript_result;
         my %tl_transcript_result;
         my $id = $transcript_of->stable_id();

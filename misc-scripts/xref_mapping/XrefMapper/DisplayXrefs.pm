@@ -311,6 +311,16 @@ sub set_display_xrefs_from_stable_table{
       }
     }
   }	
+
+  #
+  # Clean up synonyms linked to xrefs which are not the display xref
+  # Synonyms are only used as alternative gene names, so should be synonyms of the gene symbol chosen
+  #
+
+  my $syn_clean_sth = $self->core->dbc->prepare("DELETE es FROM external_synonym es, xref x LEFT JOIN gene g ON g.display_xref_id = x.xref_id WHERE es.xref_id = x.xref_id AND isnull(g.display_xref_id)");
+  $syn_clean_sth->execute();
+  $syn_clean_sth->finish();
+
 }
 
 

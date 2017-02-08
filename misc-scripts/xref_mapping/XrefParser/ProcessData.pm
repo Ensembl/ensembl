@@ -309,7 +309,7 @@ DSS
 	printf( "Download '%s'\n", $file ) if($verbose);
 	++$summary{$name}->{$parser};
       } else {
-	$file_cs .= ':' . $cs;
+	$file_cs = md5_hex($file_cs.$cs);
 	if ( !defined $checksum
 	     || index( $checksum, $file_cs ) == -1 )
 	  {
@@ -376,9 +376,8 @@ DSS
       }
 	
       # update AFTER processing in case of crash.
-      my $total_checksum = md5_hex($file_cs);
       $self->update_source( $source_url_id,
-		     $total_checksum, $files_to_parse[0] );
+		     $file_cs, $files_to_parse[0] );
 	
       # Set release if specified
       if ( defined $release ) {
