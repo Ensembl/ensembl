@@ -27,13 +27,13 @@ eg:
 perl populate_stable_id_lookup.pl -lhost mysql-xxx-dev.ebi.ac.uk -luser xxxrw -lpass xxxx -lport 4484 -dbname ensembl_stable_ids_88 -create -host mysql-ens-xxx.ebi.ac.uk  -user ensro -port 4519 -version 88 -test
 
 (without -test flag creates a full version)
-perl populate_stable_id_lookup.pl -lhost mysql-xxx-dev.ebi.ac.uk -luser xxxrw -lpass xxxx -lport 4484 -dbname ensembl_stable_ids_88 -create -host mysql-ens-xxx.ebi.ac.uk  -user ensro -port 4519 -version 88
+perl populate_stable_id_lookup.pl -lhost mysql-xxx-dev.ebi.ac.uk -luser xxxrw -lpass xxxx -lport 4484 -dbname ensembl_stable_ids_88 -create -host mysql-ens-xxx.ebi.ac.uk  -user ensro -port 4519 -version 88 -create_index
 
 RELEASE=88
 DIR=ensembl/misc-scripts/stable_id_lookup
 
 cd $DIR
 bsub -q production-rh7 -M 700000 -R'select[mem>700] rusage[mem=700]' -o stable_id_lookup.out -e stable_id_lookup.err perl populate_stable_id_lookup.pl \
--lhost mysql-xxx-dev-x.ebi.ac.uk -luser xxxx -lpass xxxx -lport 4484 -dbname ensembl_stable_ids_88 -create -host mysql-ens-xxx-1.ebi.ac.uk  -user xxx -port 4519 -version 88
+-lhost mysql-xxx-dev-x.ebi.ac.uk -luser xxxx -lpass xxxx -lport 4484 -dbname ensembl_stable_ids_88 -create -host mysql-ens-xxx-1.ebi.ac.uk  -user xxx -port 4519 -version 88 -create_index
 
 For release 88, the job consumed 133Mb of memory and took around 6 mins to run for ensembl
