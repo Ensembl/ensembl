@@ -131,6 +131,7 @@ sub run_script {
               '-user'     => $user,
               '-pass'     => $pass,
               '-dbname'   => $dbname,
+              '-port'     => $port,
               '-species'  => $species_name.$host,
               '-group'    => 'core',
        );
@@ -151,6 +152,7 @@ sub run_script {
               '-host'     => $ofhost,
               '-user'     => $ofuser,
               '-pass'     => $ofpass,
+              '-port'     => $ofport,
               '-dbname'   => $ofdbname,
               '-species'  => $species_name,
               '-group'    => 'otherfeatures',
