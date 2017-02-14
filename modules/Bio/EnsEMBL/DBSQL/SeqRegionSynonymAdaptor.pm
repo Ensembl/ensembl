@@ -40,29 +40,10 @@ use Bio::EnsEMBL::SeqRegionSynonym;
 @ISA = ('Bio::EnsEMBL::DBSQL::BaseAdaptor');
 
 
-sub get_synonyms{
-  my $self = shift;
-  my $seq_id = shift;
-  
-  my @results;
-
-  my $sth = $self->prepare("select seq_region_synonym_id, synonym, external_db_id from seq_region_synonym where seq_region_id = ?");
-  $sth->bind_param(1, $seq_id, SQL_INTEGER);
-  $sth->execute();
-  my $dbid;
-  my $alt_name;
-  my $ex_db;
-  $sth->bind_columns(\$dbid, \$alt_name, \$ex_db);
-  while($sth->fetch()){
-    push @results, Bio::EnsEMBL::SeqRegionSynonym->new(-adaptor => $self,
-                                                       -synonym => $alt_name,
-						       -dbID => $dbid,
-                                                       -external_db_id => $ex_db,
-                                                       -seq_region_id => $seq_id);
-  }
-  $sth->finish;
-
-  return \@results;
+sub get_synonyms {
+  my ($self, $seq_id) = @_;
+  $self->bind_param_generic_fetch($seq_id, SQL_INTEGER);
+  return $self->generic_fetch(qq{srs.seq_region_id = ?});
 }
 
 sub store {
@@ -85,6 +66,33 @@ sub store {
   $sth->finish;
 }
 
+sub _tables {
+  return (['seq_region_synonym', 'srs']);
+}
+
+sub _columns {
+  return qw(srs.seq_region_synonym_id srs.seq_region_id srs.synonym srs.external_db_id);
+}
+
+sub _objs_from_sth {
+  my ($self, $sth) = @_;
+
+  my @results;
+  my ($seq_id, $dbid, $alt_name, $ex_db);
+  $sth->bind_columns(\$dbid, \$seq_id, \$alt_name, \$ex_db);
+
+  push @results, Bio::EnsEMBL::SeqRegionSynonym->new(
+    -adaptor        => $self,
+    -synonym        => $alt_name,
+    -dbID           => $dbid,
+    -external_db_id => $ex_db,
+    -seq_region_id  => $seq_id
+  ) while $sth->fetch();
+
+  $sth->finish;
+
+  return \@results;
+}
 
 
 1;
