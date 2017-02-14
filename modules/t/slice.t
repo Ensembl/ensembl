@@ -508,6 +508,10 @@ $multi->restore();
   is($syn->name(), 'anoth_20', 'We have the right synonym');
 }
 
+# test fetch_all on synonym adaptor
+my $all_synonyms = $syn_adap->fetch_all();
+is(@$all_synonyms, 3, 'fetch_all on synonym adaptor');
+
 
 #Test assembly exception type on HAP
 my $hap_slice = $slice_adaptor->fetch_by_region(undef, '20_HAP1');
