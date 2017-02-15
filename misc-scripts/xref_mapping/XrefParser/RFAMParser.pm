@@ -82,6 +82,7 @@ sub run_script {
          '-user'     => $user,
          '-pass'     => $pass,
          '-dbname'   => $dbname,
+         '-port'     => $port,
          '-species'  => $species_name,
          '-group'    => 'core',
        );
