@@ -1929,6 +1929,8 @@ sub get_all_five_prime_UTRs {
       my $utr = Bio::EnsEMBL::UTR->new(
         -START  => $projection->start - $self->slice->start + 1,
         -END    => $projection->end - $self->slice->start + 1,
+        -SEQ_REGION_START => $projection->start,
+        -SEQ_REGION_END   => $projection->end,
         -STRAND => $projection->strand,
         -SLICE  => $self->slice,
         -TRANSCRIPT => $self,
@@ -1966,6 +1968,8 @@ sub get_all_three_prime_UTRs {
       my $utr = Bio::EnsEMBL::UTR->new(
         -START  => $projection->start - $self->slice->start + 1,
         -END    => $projection->end - $self->slice->start + 1,
+        -SEQ_REGION_START => $projection->start,
+        -SEQ_REGION_END   => $projection->end,
         -STRAND => $projection->strand,
         -SLICE  => $self->slice,
         -TRANSCRIPT => $self,
@@ -2004,6 +2008,8 @@ sub get_all_CDS {
         -START           => $exon->start,
         -END             => $exon->end,
         -STRAND          => $exon->strand,
+        -SEQ_REGION_START => $exon->seq_region_start,
+        -SEQ_REGION_END   => $exon->seq_region_end,
         -TRANSLATION_ID  => $translation_id,
         -SLICE           => $self->slice,
         -TRANSCRIPT      => $self,

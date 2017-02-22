@@ -93,11 +93,13 @@ sub new {
   my $class = ref($caller) || $caller;
   my $self = $class->SUPER::new(@_);
 
-  my ($transcript, $phase, $translation_id) = rearrange(['TRANSCRIPT','PHASE', 'TRANSLATION_ID'],@_);
+  my ($transcript, $phase, $translation_id, $seq_region_start, $seq_region_end) = rearrange(['TRANSCRIPT','PHASE', 'TRANSLATION_ID', 'SEQ_REGION_START', 'SEQ_REGION_END'],@_);
 
   $self->{'transcript'} = $transcript;
   $self->{'phase'} = $phase;
   $self->{'translation_id'} = $translation_id;
+  $self->{'seq_region_start'} = $seq_region_start;
+  $self->{'seq_region_end'} = $seq_region_end;
 
   return $self;
 }
@@ -136,6 +138,46 @@ sub transcript {
 sub translation {
     my $self = shift;
     return $self->transcript()->translation();
+}
+
+=head2 seq_region_start
+
+  Arg [1]    : (optional) string $seq_region_start
+  Example    : $seq_region_start = $cds->seq_region_start();
+  Description: Getter/Setter for the seq_region_start for this CDS.
+               Overwrite default method from Feature as CDS does not have
+               a table
+  Returntype : String
+  Exceptions : none
+  Caller     : general
+  Status     : Stable
+
+=cut
+
+sub seq_region_start {
+  my $self = shift;
+  $self->{'seq_region_start'} = shift if(@_);
+  return $self->{'seq_region_start'};
+}
+
+=head2 seq_region_end
+
+  Arg [1]    : (optional) string $seq_region_end
+  Example    : $seq_region_end = $cds->seq_region_end();
+  Description: Getter/Setter for the seq_region_end for this CDS.
+               Overwrite default method from Feature as CDS does not have
+               a table
+  Returntype : String
+  Exceptions : none
+  Caller     : general
+  Status     : Stable
+
+=cut
+
+sub seq_region_end {
+  my $self = shift;
+  $self->{'seq_region_end'} = shift if(@_);
+  return $self->{'seq_region_end'};
 }
 
 =head2 get_Gene

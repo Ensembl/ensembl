@@ -75,6 +75,9 @@ sub try_utrs {
     is($five_utrs[$five-1]->end, $transcript->coding_region_start - 1, "Five prime ends starts the coding region");
     is($three_utrs[0]->start, $transcript->coding_region_end + 1, "Three prime starts at end of coding region");
     is($three_utrs[$three-1]->end, $transcript->end, "Three prime ends at transcript end");
+    is($five_utrs[0]->seq_region_start, $transcript->seq_region_start, "Five prime seq_region_starts at transcript seq_region_start");
+    is($three_utrs[$three-1]->seq_region_end, $transcript->seq_region_end, "Three prime seq_region_ends at transcript seq_region_end");
+
 
 }
 
