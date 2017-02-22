@@ -144,7 +144,10 @@ sub print_feature {
 
 #    Column 4 - start, the start coordinate of the feature, here shifted to chromosomal coordinates
 #    Start and end must be in ascending order for GFF. Circular genomes require the length of 
-#   the circuit to be added on.
+#    the circuit to be added on.
+        if (!defined $summary{'start'} || !defined $summary{'end'}) {
+          throw sprintf "Coordinates not defined for %s.\n", $summary{id};
+        }
         if ($summary{'start'} > $summary{'end'}) {
             #assumes this is not a Compara circular sequence and can treat is as a Feature
             if ($feature->slice() && $feature->slice()->is_circular() ) {
