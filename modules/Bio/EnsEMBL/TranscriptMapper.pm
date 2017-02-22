@@ -206,10 +206,15 @@ sub _load_mapper {
 
           $cdna_end  += $len_diff;
 
-          if($strand == 1) {
-            $gen_start  -= $len_diff;
-          } else {
-            $gen_end    += $len_diff;
+          if($len_diff > 0) {
+            $cdna_start += $len_diff;
+          }
+          else {
+            if($strand == 1) {
+              $gen_start  -= $len_diff;
+            } else {
+              $gen_end    += $len_diff;
+            }
           }
 
           $edit_shift += $len_diff;

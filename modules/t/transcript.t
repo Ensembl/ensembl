@@ -620,7 +620,53 @@ $ta->store($tr, $g->dbID());
 
 is(count_rows($db, 'transcript_attrib'), 2, '2 rows for transcript_attrib');
 
+
+#
+# specifically test genomic2cdna given coords either side of an insertion
+#
+
+$tr = $ta->fetch_by_stable_id( "ENST00000217347" );
+
+my $tmp_coding_start = $tr->coding_region_start;
+
+$tr->add_Attributes(
+  Bio::EnsEMBL::Attribute->new(
+    -code => '_rna_edit',
+    -value => "68 67 NNN",
+    -name => "RNA editing"
+  )
+);
+
+$tr->edits_enabled(1);
+
+is(substr($tr->translateable_seq, 0, 6), 'ATGNNN', 'insertion mapper test - edit applied');
+
+is_deeply(
+  [$tr->get_TranscriptMapper->genomic2cdna($tmp_coding_start, $tmp_coding_start + 4, 1)],
+  [
+    bless( {
+      'coord_system' => undef,
+      'strand' => 1,
+      'id' => 'cdna',
+      'rank' => 0,
+      'end' => 67,
+      'start' => 65
+    }, 'Bio::EnsEMBL::Mapper::Coordinate' ),
+    bless( {
+      'coord_system' => undef,
+      'strand' => 1,
+      'id' => 'cdna',
+      'rank' => 0,
+      'end' => 72,
+      'start' => 71
+    }, 'Bio::EnsEMBL::Mapper::Coordinate' )
+  ],
+  'insertion mapper test - coords either side of inserted block'
+);
+
+
 $multi->restore('core');
+
 
 #
 # tests for multiple versions of transcripts in a database
