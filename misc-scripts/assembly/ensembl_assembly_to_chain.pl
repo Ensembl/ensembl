@@ -256,27 +256,25 @@ sub build_chain_mappings {
       $t_end = $current->{asm_end};
       $q_end = ($ori == 1) ? $current->{cmp_end} : $current->{cmp_start};
 
-      if ($i != 0) {
-        #If strand was negative we need to represent all data as reverse complemented regions
-        if($q_strand == -1) {
-          # $t_start = ($t_size - $t_start)+1;
-          # $t_end = ($t_size - $t_end)+1;
-          $q_start = ($q_size - $q_start)+1;
-          $q_end = ($q_size - $q_end)+1;
-        }
-        # Convert to UCSC formats (0-based half-open intervals and +/- strands)
-        $t_start--;
-        $q_start--;
-        $t_strand = ($t_strand == 1) ? '+' : '-';
-        $q_strand = ($q_strand == 1) ? '+' : '-';
-
-        #Store the chain
-        my $chain_score = 1;
-        push(@chain_mappings, {
-          header => ['chain', $chain_score, $t_name, $t_size, $t_strand, $t_start, $t_end, $q_name, $q_size, $q_strand, $q_start, $q_end, $chain_id],
-          gaps => [@chain_gaps]
-        });
+      #If strand was negative we need to represent all data as reverse complemented regions
+      if($q_strand == -1) {
+        # $t_start = ($t_size - $t_start)+1;
+        # $t_end = ($t_size - $t_end)+1;
+        $q_start = ($q_size - $q_start)+1;
+        $q_end = ($q_size - $q_end)+1;
       }
+      # Convert to UCSC formats (0-based half-open intervals and +/- strands)
+      $t_start--;
+      $q_start--;
+      $t_strand = ($t_strand == 1) ? '+' : '-';
+      $q_strand = ($q_strand == 1) ? '+' : '-';
+
+      #Store the chain
+      my $chain_score = 1;
+      push(@chain_mappings, {
+        header => ['chain', $chain_score, $t_name, $t_size, $t_strand, $t_start, $t_end, $q_name, $q_size, $q_strand, $q_start, $q_end, $chain_id],
+        gaps => [@chain_gaps]
+      });
 
       if(! defined $next) {
         last;
@@ -390,4 +388,3 @@ sub ensembl_to_ucsc_name {
   }
   return $ucsc_name_cache{$prod_name}{$ensembl_name} = $ucsc_name;  
 }
-
