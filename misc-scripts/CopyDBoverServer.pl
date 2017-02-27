@@ -72,11 +72,20 @@ Command line switches:
 
   --pass=XXX        (Required)
                     The password for the MySQL user to
-                    connect to the database server.
+                    connect to the source database server.
 
   --user=XXX        (Optional)
-                    MySQL user to connect to the database server.
+                    MySQL user to connect to the source database server.
                     Default will be 'ensadmin'.
+
+  --target_pass=XXX (Required)
+                    The password for the MySQL user to
+                    connect to the target database server.
+                    If not specified, will be the same as --pass
+
+  --target_user=XXX (Optional)
+                    MySQL user to connect to the target database server.
+                    If not specified, will be the same as --user
 
   --noflush         (Optional)
                     Skips table flushing completely.  Use very
@@ -227,7 +236,7 @@ Script restrictions:
 LONG_USAGE_END
 } ## end sub long_usage
 
-my ( $opt_password, $opt_user, $opt_only_tables, $opt_skip_tables, $opt_help );
+my ( $opt_password, $opt_user, $opt_password_tgt, $opt_user_tgt, $opt_only_tables, $opt_skip_tables, $opt_help );
 
 my $opt_flush    = 1;    # Flush by default.
 my $opt_check    = 1;    # Check tables by default.
@@ -240,8 +249,11 @@ my $opt_tmpdir;
 my $opt_routines = 0;
 my ( $opt_source, $opt_target, $opt_source_dir, $opt_target_dir);
 
-if ( !GetOptions( 'pass=s'        => \$opt_password,
+if ( !GetOptions( 
+                  'pass=s'        => \$opt_password,
                   'user=s'        => \$opt_user,
+                  'target_pass=s' => \$opt_password_tgt,
+                  'target_user=s' => \$opt_user_tgt,
                   'flush!'        => \$opt_flush,
                   'flushtarget!'  => \$opt_flushtarget,
                   'check!'        => \$opt_check,
@@ -302,6 +314,9 @@ if (!defined($opt_user))
 {
   $opt_user='ensadmin';
 }
+
+$opt_user_tgt ||= $opt_user;
+$opt_password_tgt ||= $opt_password;
 
 my $input_file;
 
@@ -519,8 +534,8 @@ foreach my $spec (@todo) {
                             $target_hostaddr, $target_port );
 
   my $target_dbh = DBI->connect( $target_dsn,
-                                 $opt_user,
-                                 $opt_password, {
+                                 $opt_user_tgt,
+                                 $opt_password_tgt, {
                                    'PrintError' => 1,
                                    'AutoCommit' => 0
                                  } );
@@ -1052,8 +1067,8 @@ TABLE:
   if ($opt_flushtarget) {
     print("FLUSHING TABLES ON TARGET...\n");
     my $tdbh = DBI->connect( $target_dsn,
-                               $opt_user,
-                               $opt_password, {
+                               $opt_user_tgt,
+                               $opt_password_tgt, {
                                  'PrintError' => 1,
                                  'AutoCommit' => 0
                                } );
@@ -1070,8 +1085,8 @@ TABLE:
   if($opt_routines){
     print( '-' x 31, ' Procedures ', '-' x 31, "\n" );
     $target_dbh = DBI->connect( $target_dsn,
-                                $opt_user,
-                                $opt_password, {
+                                $opt_user_tgt,
+                                $opt_password_tgt, {
                                 'PrintError' => 1,
                                 'AutoCommit' => 0
                              } );
