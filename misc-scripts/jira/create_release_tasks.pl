@@ -547,8 +547,13 @@ sub check_for_duplicate {
 
 sub usage {
     print <<EOF;
-=head1
-create_JIRA_tickets.pl -relco <string> -password <string> -release <integer> -tickets <file> -config <file> 
+=head1 NAME
+
+create_release_tasks.pl
+
+=head1 SYNOPSIS
+
+create_release_tasks.pl -relco <string> -password <string> -release <integer> -tickets <file> -config <file> 
 
 -relco               JIRA username. Optional, will be inferred from current system user if not supplied.
 -password | -p       JIRA password. Will need to be typed in standard input if not supplied.
@@ -561,7 +566,12 @@ create_JIRA_tickets.pl -relco <string> -password <string> -release <integer> -ti
                      in the same directory as the executable.
 -help | -h           Prints this help text.
 
-Reads the -tickets input file and creates JIRA tickets
+=head1 DESCRIPTION
+
+Creates tickets for various core release tasks on JIRA at EBI.
+
+=cut
+}
 EOF
     exit 0;
 }
