@@ -294,12 +294,7 @@ sub fetch_by_region {
     unless ( @row ) {
 
       # try synonyms
-      my $escape_char = '\\';
-      # MySQL and apparently PostgreSQL need two backslashs in the ESCAPE keyword...
-      if ($self->dbc->driver ne 'sqlite') {
-        $escape_char .= '\\';
-      }
-      my $syn_sql = "select s.name, cs.name, cs.version from seq_region s join seq_region_synonym ss using (seq_region_id) join coord_system cs using (coord_system_id) where ss.synonym like ? ESCAPE '$escape_char' and cs.species_id =? ";
+      my $syn_sql = "select s.name, cs.name, cs.version from seq_region s join seq_region_synonym ss using (seq_region_id) join coord_system cs using (coord_system_id) where ss.synonym like ? and cs.species_id =? ";
       if (defined $coord_system_name && defined $cs) {
         $syn_sql .= "AND cs.name = '" . $coord_system_name . "' ";
       }
@@ -308,7 +303,8 @@ sub fetch_by_region {
       }
       my $syn_sql_sth = $self->prepare($syn_sql);
       my $escaped_seq_region_name = $seq_region_name;
-      $escaped_seq_region_name =~ s/_/\\_/g;
+      my $escape_char = $self->dbc->db_handle->get_info(14);
+      $escaped_seq_region_name =~ s/([_%])/$escape_char$1/g;
       $syn_sql_sth->bind_param(1, "$escaped_seq_region_name%", SQL_VARCHAR);
       $syn_sql_sth->bind_param(2, $self->species_id(), SQL_INTEGER);
       $syn_sql_sth->execute();
