@@ -302,7 +302,9 @@ sub fetch_by_region {
         $syn_sql .= "AND cs.version = '" . $version . "' ";
       }
       my $syn_sql_sth = $self->prepare($syn_sql);
-      $syn_sql_sth->bind_param(1, "$seq_region_name%", SQL_VARCHAR);
+      my $escaped_seq_region_name = $seq_region_name;
+      $escaped_seq_region_name =~ s/_/\\_/g;
+      $syn_sql_sth->bind_param(1, "$escaped_seq_region_name%", SQL_VARCHAR);
       $syn_sql_sth->bind_param(2, $self->species_id(), SQL_INTEGER);
       $syn_sql_sth->execute();
       my ($new_name, $new_coord_system, $new_version);
