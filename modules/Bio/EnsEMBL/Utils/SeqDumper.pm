@@ -820,7 +820,7 @@ sub _dump_feature_table {
           $self->write(@ff, 'mRNA', $value);
           $self->write(@ff,''   , '/gene="'.$gene->stable_id_version().'"');
           $self->write(@ff,''
-                       ,'/note="transcript_id='.$transcript->stable_id_version().'"');
+                       ,'/standard_name="'.$transcript->stable_id_version().'"');
 
           # ...and a CDS section
           $value = 
@@ -857,7 +857,7 @@ sub _dump_feature_table {
           }
           $self->write(@ff,''   , '/note="'.$transcript->biotype().'"');
           $self->write(@ff,''
-                       ,'/note="transcript_id='.$transcript->stable_id_version().'"');
+                       ,'/standard_name="'.$transcript->stable_id_version().'"');
         }
       }
     }
