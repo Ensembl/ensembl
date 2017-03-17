@@ -126,12 +126,19 @@ my $new_species = {};
 
 process_dbs($readDB);
 
-create_index($rdbname) if $create_index;
+create_index($writeDB) if $create_index;
 
 sub create_index {
-  my $dbname = shift;
+  my ($writeDB) = @_;
+
+  my $dbname = $writeDB->{'dbname'};
   print "Creating index for $dbname\n";
 
+  my $host = $writeDB->{'host'};
+  my $port = $writeDB->{'port'};
+  my $user = $writeDB->{'user'};
+  my $pass = $writeDB->{'pass'};
+  
   my $startAt = time;
   eval {
     my $cmd = "mysql -h $host";
@@ -161,6 +168,11 @@ sub create_db {
   my $dbh = db_connect( 'test', $writeDB );
   print "Creating database $dbname\n";
 
+  my $host = $writeDB->{'host'};
+  my $port = $writeDB->{'port'};
+  my $user = $writeDB->{'user'};
+  my $pass = $writeDB->{'pass'};
+  
   eval {
 
   $dbh->do("drop database if exists $dbname");
@@ -191,10 +203,10 @@ sub create_db {
 sub process_dbs {
   my ($connectDB) = @_;
 
-  $host = $connectDB->{'host'};
-  $user = $connectDB->{'user'};
-  $pass = $connectDB->{'pass'};
-  $port = $connectDB->{'port'};
+  my $host = $connectDB->{'host'};
+  my $user = $connectDB->{'user'};
+  my $pass = $connectDB->{'pass'};
+  my $port = $connectDB->{'port'};
 
   my $counter_core  = 1;
   my $counter_other = 1;
