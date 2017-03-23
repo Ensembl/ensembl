@@ -398,14 +398,10 @@ sub key_value_exists {
   $sth->bind_param( 2, $value, SQL_VARCHAR );
   $sth->execute();
 
-  while ( my $arrRef = $sth->fetchrow_arrayref() ) {
-    if ( $arrRef->[0] eq $value ) {
-      $sth->finish();
-      return 1;
-    }
-  }
+  return 0 unless $sth->fetchrow_arrayref();
 
-  return 0;
+  return 1;
+
 } ## end sub key_value_exists
 
 # This utility method determines whether the key is a species-specific
