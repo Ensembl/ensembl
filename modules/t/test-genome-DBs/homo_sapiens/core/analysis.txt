@@ -15,21 +15,21 @@
 1282	2002-08-12 14:52:26	ensembl		1		ensembl	1			Gene_Builder		ensembl	gene
 1290	2002-08-12 14:52:26	refseq_cdna	human_mRNA	1		exonerate_e2g	1			FilterESTs_and_E2G		exonerate	gene
 1291	2002-08-12 14:52:26	embl_vertrna	human_mRNA	1		exonerate_e2g	1			FilterESTs_and_E2G		exonerate	gene
-49	0000-00-00 00:00:00	Pfam	Pfam	1	/data/blastdb/Ensembl/Pfam_ls;/data/blastdb/Ensembl/Pfam_fs	/nfs/farm/Worms/bin/hmmpfam	1	/nfs/farm/Worms/bin/hmmpfam		Pfam	1	PFAM	domain
-40	0000-00-00 00:00:00	prints	prints	NULL	/acari/analysis/iprscan/data/prints.pval	/acari/analysis/iprscan/bin/OSF1/FingerPRINTScan	NULL	/acari/analysis/iprscan/bin/OSF1/FingerPRINTScan	NULL	Prints	NULL	PRINTS	domain
-41	0000-00-00 00:00:00	pfscan	pfscan	NULL	/acari/analysis/iprscan/data/prosite_prerelease.prf	/acari/analysis/iprscan/bin/OSF1/pfscan	NULL	/acari/analysis/iprscan/bin/OSF1/pfscan	NULL	Profile	NULL	PROFILE	domain
-43	0000-00-00 00:00:00	Signalp	signal_peptide	NULL	NULL	/usr/local/ensembl/bin/signalp	NULL	/usr/local/ensembl/bin/signalp	NULL	Signalp	NULL	Signalp	annot
-46	0000-00-00 00:00:00	tmhmm	transmembrane	NULL	NULL	/acari/work1/mongin/src/pipeline4anopheles/scripts/protein_pipeline/run_tmhmm	NULL	/acari/work1/mongin/src/pipeline4anopheles/scripts/protein_pipeline/run_tmhmm	NULL	Tmhmm	NULL	Tmhmm	annot
-45	0000-00-00 00:00:00	ncoils	coiled_coil	NULL	NULL	/usr/local/ensembl/bin/ncoils	NULL	/usr/local/ensembl/bin/ncoils	NULL	ncoils	NULL	ncoils	annot
-44	0000-00-00 00:00:00	Seg	low_complexity	NULL	NULL	/usr/local/ensembl/bin/seg	NULL	/usr/local/ensembl/bin/seg	NULL	Seg	NULL	Seg	annot
-42	0000-00-00 00:00:00	scanprosite	prosite	NULL	/acari/analysis/iprscan/data/prosite.patterns	/acari/analysis/iprscan/bin/scanregexpf.pl	/acari/analysis/iprscan/data/confirm.pat	/acari/analysis/iprscan/bin/scanregexpf.pl		Prosite	NULL	PROSITE	domain
-71	0000-00-00 00:00:00	Superfamily	Superfamily	1	/data/blastdb/Ensembl/sam/superfamily	/acari/work1/mongin/superfamily/superfamily.pl	1	/acari/work1/mongin/superfamily/superfamily.pl		Superfamily	1	Superfamily	annot
-1292	0000-00-00 00:00:00	SNPDensity	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N
-1293	0000-00-00 00:00:00	RepeatCoverage	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N
-1500	0000-00-00 00:00:00	miRanda	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N
-1501	0000-00-00 00:00:00	cisred	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N
-1502	0000-00-00 00:00:00	cisred_search	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N
-1503	0000-00-00 00:00:00	DitagAlign	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N
+49	\N	Pfam	Pfam	1	/data/blastdb/Ensembl/Pfam_ls;/data/blastdb/Ensembl/Pfam_fs	/nfs/farm/Worms/bin/hmmpfam	1	/nfs/farm/Worms/bin/hmmpfam		Pfam	1	PFAM	domain
+40	\N	prints	prints	NULL	/acari/analysis/iprscan/data/prints.pval	/acari/analysis/iprscan/bin/OSF1/FingerPRINTScan	NULL	/acari/analysis/iprscan/bin/OSF1/FingerPRINTScan	NULL	Prints	NULL	PRINTS	domain
+41	\N	pfscan	pfscan	NULL	/acari/analysis/iprscan/data/prosite_prerelease.prf	/acari/analysis/iprscan/bin/OSF1/pfscan	NULL	/acari/analysis/iprscan/bin/OSF1/pfscan	NULL	Profile	NULL	PROFILE	domain
+43	\N	Signalp	signal_peptide	NULL	NULL	/usr/local/ensembl/bin/signalp	NULL	/usr/local/ensembl/bin/signalp	NULL	Signalp	NULL	Signalp	annot
+46	\N	tmhmm	transmembrane	NULL	NULL	/acari/work1/mongin/src/pipeline4anopheles/scripts/protein_pipeline/run_tmhmm	NULL	/acari/work1/mongin/src/pipeline4anopheles/scripts/protein_pipeline/run_tmhmm	NULL	Tmhmm	NULL	Tmhmm	annot
+45	\N	ncoils	coiled_coil	NULL	NULL	/usr/local/ensembl/bin/ncoils	NULL	/usr/local/ensembl/bin/ncoils	NULL	ncoils	NULL	ncoils	annot
+44	\N	Seg	low_complexity	NULL	NULL	/usr/local/ensembl/bin/seg	NULL	/usr/local/ensembl/bin/seg	NULL	Seg	NULL	Seg	annot
+42	\N	scanprosite	prosite	NULL	/acari/analysis/iprscan/data/prosite.patterns	/acari/analysis/iprscan/bin/scanregexpf.pl	/acari/analysis/iprscan/data/confirm.pat	/acari/analysis/iprscan/bin/scanregexpf.pl		Prosite	NULL	PROSITE	domain
+71	\N	Superfamily	Superfamily	1	/data/blastdb/Ensembl/sam/superfamily	/acari/work1/mongin/superfamily/superfamily.pl	1	/acari/work1/mongin/superfamily/superfamily.pl		Superfamily	1	Superfamily	annot
+1292	\N	SNPDensity	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N
+1293	\N	RepeatCoverage	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N
+1500	\N	miRanda	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N
+1501	\N	cisred	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N
+1502	\N	cisred_search	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N
+1503	\N	DitagAlign	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N
 8405	2009-05-14 15:43:42	havana	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL
 8406	2009-06-01 09:01:22	xrefexoneratedna	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL
 8407	2007-09-07 12:01:22	est2genome_human_havana	NULL	10-Nov-10 (105)	NULL	NULL	NULL	NULL	ori_analysis => Est2genome_human_raw, mode => single	ClusterDepthFilter	NULL	EST_Human	similarity
