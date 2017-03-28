@@ -1,6 +1,6 @@
 -- 
 -- Created by SQL::Translator::Producer::SQLite
--- Created on Tue Jan 24 12:55:03 2017
+-- Created on Tue Mar 28 11:01:18 2017
 -- 
 
 BEGIN TRANSACTION;
@@ -728,7 +728,7 @@ CREATE TABLE protein_feature (
   hit_description text
 );
 
-CREATE UNIQUE INDEX aln_idx ON protein_feature (translation_id, hit_name, seq_start, seq_end, hit_start, hit_end);
+CREATE UNIQUE INDEX aln_idx ON protein_feature (translation_id, hit_name, seq_start, seq_end, hit_start, hit_end, analysis_id);
 
 --
 -- Table: repeat_consensus
