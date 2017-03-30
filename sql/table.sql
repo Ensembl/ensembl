@@ -309,6 +309,9 @@ INSERT INTO meta (species_id, meta_key, meta_value) VALUES
 # NOTE: Avoid line-breaks in values.
 INSERT INTO meta (species_id, meta_key, meta_value)
   VALUES (NULL, 'patch', 'patch_88_89_a.sql|schema_version');
+  
+INSERT INTO meta (species_id, meta_key, meta_value)
+  VALUES (NULL, 'patch', 'patch_88_89_b.sql|pf_hit_name_case_sensitive');
 
 /**
 @table meta_coord
