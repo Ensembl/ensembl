@@ -15,7 +15,7 @@
 
 # patch_88_89_b.sql
 #
-# Title: Update schema version.
+# Title: Protein_feature hit_name case sensitive.
 #
 # Description:
 #   Make hit_name in protein_feature table case sensitive.
