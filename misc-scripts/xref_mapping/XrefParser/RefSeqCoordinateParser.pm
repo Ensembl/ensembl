@@ -341,6 +341,7 @@ sub run_script {
 # If a best match was defined for the refseq transcript, store it as direct xref for ensembl transcript
         if ($best_id) {
           my ($acc, $version) = split(/\./, $id);
+	  $version =~ s/\D//g;
           my $source_id = $mrna_source_id;
           $source_id = $ncrna_source_id if $acc =~ /^NR_/;
           $source_id = $pred_mrna_source_id if $acc =~ /^XM_/;
