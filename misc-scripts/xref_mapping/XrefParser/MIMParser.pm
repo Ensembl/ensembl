@@ -141,6 +141,7 @@ sub run {
 	}
 	elsif($type eq "^"){
 	  if(/\*FIELD\*\sTI\n[\^]\d+ MOVED TO (\d+)/){
+            if ($1 eq $number) { next; }
 	    $old_to_new{$number} = $1;
 	  }
 	  else{
