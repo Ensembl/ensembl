@@ -50,7 +50,8 @@ Bio::EnsEMBL::Utils::IO::FASTASerializer
   Replacement for SeqDumper, making better use of shared code. Outputs FASTA
   format with optional custom header and formatting parameters. Set line_width
   and chunk_factor to dictate buffer size depending on application. A 60kb
-  buffer is used by default with a line width of 60 characters.
+  buffer is used by default with a line width of 60 characters (with a maximum of 
+  32766).
 
   Custom headers are set by supplying an anonymous subroutine to new(). Custom
   header code must accept a Slice or Bio::PrimarySeqI compliant object as
