@@ -1020,7 +1020,7 @@ sub from_seconds_to_date {
     if ($seconds) {
         return $self->_driver_object->from_seconds_to_date($seconds);
     }
-    return '"0000-00-00 00:00:00"'; # should this use DBI's quote() ?
+    return;
 }
 
 =head2 sql_helper
