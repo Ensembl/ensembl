@@ -43,6 +43,7 @@ Usage:
   \t[--noopt] [--noinnodb] [--skip_views] [--force] \\
   \t[ --only_tables=XXX,YYY | --skip_tables=XXX,YYY ] \\
   \t[ --source_dir=/data/dir ] [ --target_dir=/data/dir ] \\
+  \t[ --update] \\
   \t[ input_file |
   \t  --source=db\@host[:port] \\
   \t  --target=db\@host[:port] ]
@@ -134,6 +135,14 @@ Command line switches:
 
                     NOTE: Using --force will bypass the table
                     optimization step.
+
+  --update          (Optional)
+                    Only sync tables that have changed on source database. This option
+                    uses rsync with update and checksum to find the changes.
+                    This will not replace any newer tables on target database.
+
+  --drop            (Optional)
+                     Drop the database on the target server before the copy.
 
   --only_tables=XXX,YYY
                     (Optional)
@@ -242,9 +251,11 @@ my $opt_flush    = 1;    # Flush by default.
 my $opt_check    = 1;    # Check tables by default.
 my $opt_optimize = 1;    # Optimize the tables by default.
 my $opt_force = 0; # Do not reuse existing staging directory by default.
+my $opt_update = 0; # Only copy tables that have changed
 my $opt_skip_views = 0;    # Process views by default
 my $opt_innodb     = 1;    # Don't skip InnoDB by default
 my $opt_flushtarget = 1;
+my $opt_drop =0 ;          # We don't drop database on target server by default
 my $opt_tmpdir;
 my $opt_routines = 0;
 my ( $opt_source, $opt_target, $opt_source_dir, $opt_target_dir);
@@ -259,6 +270,8 @@ if ( !GetOptions(
                   'check!'        => \$opt_check,
                   'opt!'          => \$opt_optimize,
                   'force!'        => \$opt_force,
+                  'update!'       => \$opt_update,
+                  'drop!'         => \$opt_drop,
                   'only_tables=s' => \$opt_only_tables,
                   'skip_tables=s' => \$opt_skip_tables,
                   'innodb!'       => \$opt_innodb,
@@ -295,6 +308,10 @@ if ( defined($opt_skip_tables) && defined($opt_only_tables) ) {
 if ( $opt_force && $opt_optimize ) {
   print("Note: Using --force will bypass optimization.\n");
   $opt_optimize = 0;
+}
+
+if ( $opt_force && $opt_update ) {
+  die("Can't use both --force and --opt_update\n");
 }
 
 my %only_tables;
@@ -530,8 +547,16 @@ foreach my $spec (@todo) {
     next TODO;
   }
 
-  my $target_dsn = sprintf( "DBI:mysql:host=%s;port=%d",
-                            $target_hostaddr, $target_port );
+  my $target_dsn;
+  # If using the update option, connect to the target database  
+  if ($opt_update){
+     $target_dsn = sprintf( "DBI:mysql:database=%s;host=%s;port=%d",
+                            $target_db, $target_hostaddr, $target_port );
+  }
+  else{
+    $target_dsn = sprintf( "DBI:mysql:host=%s;port=%d",
+                             $target_hostaddr, $target_port );
+  }
 
   my $target_dbh = DBI->connect( $target_dsn,
                                  $opt_user_tgt,
@@ -578,9 +603,7 @@ foreach my $spec (@todo) {
   my $mysql_database_dir =
     $target_dbh->selectall_arrayref("SHOW VARIABLES LIKE 'datadir'")
     ->[0][1];
-
-  $target_dbh->disconnect();
-
+  
   if ( !defined($source_dir) ) {
     warn(
       sprintf(
@@ -613,72 +636,96 @@ foreach my $spec (@todo) {
     next TODO;
   }
 
-  my $tmp_dir;
-  if ( defined($opt_tmpdir) ) { $tmp_dir = $opt_tmpdir }
-  else {
-    if ((scalar( getpwuid($<) ) eq 'mysqlens')) {
-      $tmp_dir = canonpath( catdir( $target_dir, updir(), 'tmp' ));
-    }
-    elsif ((scalar( getpwuid($<) ) eq 'ensmysql')){
-       $tmp_dir = canonpath( catdir( $target_dir, updir(), 'temp' ));
-    }
-  }
-
   printf( "SOURCE 'datadir' = '%s'\n", $source_dir );
   printf( "TARGET 'datadir' = '%s'\n", $target_dir );
-  printf( "TMPDIR = %s\n",             $tmp_dir );
 
-  my $staging_dir = catdir( $tmp_dir, sprintf( "tmp.%s", $target_db ) );
   my $destination_dir = catdir( $target_dir, $target_db );
+  my $staging_dir;
+  my $tmp_dir;
 
-  $spec->{'status'} = 'SUCCESS';    # Assume success until failure.
+  # If we update the database, we don't need a tmp dir
+  # We will use the dest dir instead of staging dir.
+  if (!$opt_update) {
+    if ( defined($opt_tmpdir) ) { $tmp_dir = $opt_tmpdir }
+    else {
+      if ((scalar( getpwuid($<) ) eq 'mysqlens')) {
+        $tmp_dir = canonpath( catdir( $target_dir, updir(), 'tmp' ));
+      }
+      elsif ((scalar( getpwuid($<) ) eq 'ensmysql')){
+       $tmp_dir = canonpath( catdir( $target_dir, updir(), 'temp' ));
+      }
+    }
 
-  # Try to make sure the temporary directory and the final destination
-  # directory actually exists, and that the staging directory within the
-  # temporary directory does *not* exist.  Allow the staging directory
-  # to be reused when the --force switch is used.
+    if ( !-d $tmp_dir ) {
+      die(sprintf( "Can not find the temporary directory '%s'", $tmp_dir )
+      );
+    }
 
-  if ( !-d $tmp_dir ) {
-    die(sprintf( "Can not find the temporary directory '%s'", $tmp_dir )
-    );
-  }
+    printf( "TMPDIR = %s\n",             $tmp_dir );
 
-  if ( -d $destination_dir ) {
-    warn( sprintf( "Destination directory '%s' already exists.\n",
+    $staging_dir = catdir( $tmp_dir, sprintf( "tmp.%s", $target_db ) );
+
+    # Try to make sure the temporary directory and the final destination
+    # directory actually exists, and that the staging directory within the
+    # temporary directory does *not* exist.  Allow the staging directory
+    # to be reused when the --force switch is used.
+
+
+
+    if ( !$opt_drop && -d $destination_dir ) {
+      warn( sprintf( "Destination directory '%s' already exists.\n",
                    $destination_dir ) );
 
-    $spec->{'status'} =
-      sprintf( "FAILED: database destination directory '%s' exists.",
-               $destination_dir );
-
-    $source_dbh->disconnect();
-    next TODO;
-  }
-
-  if ( !$opt_force && -d $staging_dir ) {
-    warn( sprintf( "Staging directory '%s' already exists.\n",
-                   $staging_dir ) );
-
-    $spec->{'status'} =
-      sprintf( "FAILED: staging directory '%s' exists.", $staging_dir );
-
-    $source_dbh->disconnect();
-    next TODO;
-  }
-
-  if ( !mkdir($staging_dir) ) {
-    if ( !$opt_force || !-d $staging_dir ) {
-      warn( sprintf( "Failed to create staging directory '%s'.\n",
-                     $staging_dir ) );
-
       $spec->{'status'} =
-        sprintf( "FAILED: can not create staging directory '%s'.",
-                 $staging_dir );
+        sprintf( "FAILED: database destination directory '%s' exists.".
+                 " You can use the --drop option to drop the database".
+                 " on the target server" ,
+               $destination_dir );
 
       $source_dbh->disconnect();
       next TODO;
     }
+
+    if ($opt_drop){
+      printf ("Dropping database %s on %s \n", $target_db, $target_server);
+      $target_dbh->do("DROP DATABASE $target_db;");
+      $target_dbh->disconnect();
+    }
+    else{
+      $target_dbh->disconnect();
+    }
+
+    if ( !$opt_force && -d $staging_dir ) {
+      warn( sprintf( "Staging directory '%s' already exists.\n",
+                   $staging_dir ) );
+
+      $spec->{'status'} =
+        sprintf( "FAILED: staging directory '%s' exists.".
+          " You can use the --force option to overwrite database in staging dir", $staging_dir);
+
+      $source_dbh->disconnect();
+      next TODO;
+    }
+
+    if ( !mkdir($staging_dir) ) {
+      if ( !$opt_force || !-d $staging_dir || !$opt_update) {
+        warn( sprintf( "Failed to create staging directory '%s'.\n",
+                     $staging_dir ) );
+
+        $spec->{'status'} =
+          sprintf( "FAILED: can not create staging directory '%s'.",
+                 $staging_dir );
+
+        $source_dbh->disconnect();
+        next TODO;
+      }
+    }
   }
+  else{
+    $staging_dir=$destination_dir;
+  }
+
+  $spec->{'status'} = 'SUCCESS';    # Assume success until failure.
 
   my @tables;
   my @views;
@@ -740,12 +787,12 @@ TABLE:
   if ($source_dbh->{mysql_serverversion} >= "50600"){
     if ($opt_flush) {
       # Flush and Lock tables with a read lock.
-      print("FLUSHING AND LOCKING TABLES...\n");
+      print("FLUSHING AND LOCKING TABLES SOURCE...\n");
       $source_dbh->do(
                   sprintf( "FLUSH TABLES %s WITH READ LOCK", join( ', ', @tables ) ) );
     }
     else {
-      warn( sprintf("You are running the script with --noflush and MySQL server version is $source_dbh->{mysql_serverversion}. " .
+      warn( sprintf("You are running the script with --noflush and MySQL source server version is $source_dbh->{mysql_serverversion}. " .
                        "The database will not be locked during the copy. " .
                        "This is not recomended!!!"));
     }
@@ -761,20 +808,44 @@ TABLE:
 
       print("FLUSHING TABLES...\n");
       $source_dbh->do(
-                  sprintf( "FLUSH TABLES %s", join( ', ', @tables ) ) );
+                  sprintf( "FLUSH TABLES SOURCE %s", join( ', ', @tables ) ) );
     }
   }
+
+  # If we use the update option, also flush and lock target server
+    if ($opt_update and ($target_dbh->{mysql_serverversion} >= "50600")){
+      if ($opt_flush) {
+        print("FLUSHING AND LOCKING TABLES TARGET...\n");
+        $target_dbh->do(
+                  sprintf( "FLUSH TABLES %s WITH READ LOCK", join( ', ', @tables ) ) );
+      }
+      else {
+      warn( sprintf("You are running the script with --noflush and MySQL target server version is $target_dbh->{mysql_serverversion}. " .
+                       "The database will not be locked during the copy. " .
+                       "This is not recomended!!!"));
+      }
+    }
+  # If update, also flush target server
+    elsif ($opt_update and ($target_dbh->{mysql_serverversion} < "50600")){
+          # Lock tables with a read lock.
+      print("LOCKING TABLES...\n");
+      $target_dbh->do(
+         sprintf( "LOCK TABLES %s READ", join( ' READ, ', @tables ) ) );
+      if ($opt_flush) {
+        print("FLUSHING TABLES...\n");
+        $target_dbh->do(
+                  sprintf( "FLUSH TABLES TARGET %s", join( ', ', @tables ) ) );
+      }
+    }
   ##------------------------------------------------------------------##
   ## OPTIMIZE                                                         ##
   ##------------------------------------------------------------------##
 
   if ($opt_optimize) {
     print( '-' x 35, ' OPTIMIZE ', '-' x 35, "\n" );
-
+    print 'OPTIMIZING TABLES...', "\n";
     foreach my $table (@tables) {
-      printf( "Optimizing table '%s'...", $table );
       $source_dbh->do( sprintf( "OPTIMIZE TABLE %s", $table ) );
-      print("\tok\n");
     }
   }
 
@@ -797,6 +868,15 @@ TABLE:
 
   if ($opt_force) {
     push( @copy_cmd, '--delete', '--delete-excluded' );
+  }
+  
+  # If we use the update option, we want to make sure that
+  # We don't overwrite newer tables on the target db
+  # We want to use checksum to find the changes
+  # We want to exclude the index files MYI as we will do an 
+  # optimize on the target database after copy.
+  if ($opt_update) {
+    push( @copy_cmd, '--update', '--checksum', '--exclude=*.MYI' );
   }
 
   # Set files permission to 755 (rwxr-xr-x)
@@ -865,10 +945,16 @@ TABLE:
   }
 
   # Unlock tables.
-  print("UNLOCKING TABLES...\n");
+  print("UNLOCKING TABLES SOURCE...\n");
   $source_dbh->do('UNLOCK TABLES');
 
   $source_dbh->disconnect();
+
+  if ($opt_update){
+    print("UNLOCKING TABLES TARGET...\n");
+    $target_dbh->do('UNLOCK TABLES');
+    $target_dbh->disconnect();
+  }
 
   if ($copy_failed) {
     $spec->{'status'} =
@@ -925,6 +1011,28 @@ TABLE:
     } ## end else [ if ( $source_db eq $target_db)]
   } ## end else [ if ($opt_skip_views) ]
 
+  # if we use the update option, optimize the target database
+  if ($opt_update) {
+    ##------------------------------------------------------------------##
+    ## OPTIMIZE TARGET                                                  ##
+    ##------------------------------------------------------------------##
+
+    $target_dbh = DBI->connect( $target_dsn,
+                                $opt_user_tgt,
+                                $opt_password_tgt, {
+                                'PrintError' => 1,
+                                'AutoCommit' => 0
+                             } );
+    if ($opt_optimize) {
+      print( '-' x 35, ' OPTIMIZE TARGET ', '-' x 35, "\n" );
+      print 'OPTIMIZING TABLES...', "\n";
+      foreach my $table (@tables) {
+        $target_dbh->do( sprintf( "OPTIMIZE TABLE %s", $table ) );
+      }
+    }
+    $target_dbh->disconnect;
+  }
+
   ##------------------------------------------------------------------##
   ## CHECK                                                            ##
   ##------------------------------------------------------------------##
@@ -973,62 +1081,66 @@ TABLE:
   ##------------------------------------------------------------------##
   ## MOVE                                                             ##
   ##------------------------------------------------------------------##
+  
+  # Only move the database from the temp directory to live directory if
+  # we are not using the update option
+  if (!$opt_update) {
+    print( '-' x 37, ' MOVE ', '-' x 37, "\n" );
 
-  print( '-' x 37, ' MOVE ', '-' x 37, "\n" );
+    # Move table files into place in $destination_dir using
+    # File::Copy::move(), and remove the staging directory.  We already
+    # know that the destination directory does not exist.
 
-  # Move table files into place in $destination_dir using
-  # File::Copy::move(), and remove the staging directory.  We already
-  # know that the destination directory does not exist.
+    printf( "MOVING '%s' TO '%s'...\n", $staging_dir, $destination_dir );
 
-  printf( "MOVING '%s' TO '%s'...\n", $staging_dir, $destination_dir );
-
-  if ( !mkdir($destination_dir) ) {
-    warn( sprintf( "Failed to create destination directory '%s'.\n" .
+    if ( !mkdir($destination_dir) ) {
+      warn( sprintf( "Failed to create destination directory '%s'.\n" .
                      "Please clean up '%s'.\n",
                    $destination_dir, $staging_dir
           ) );
 
-    $spec->{'status'} =
-      sprintf( "FAILED: can not create destination directory '%s' " .
+      $spec->{'status'} =
+        sprintf( "FAILED: can not create destination directory '%s' " .
                    "(cleanup of '%s' may be needed)",
                $destination_dir, $staging_dir );
-    next TODO;
-  }
+      next TODO;
+    }
 
-  move( catfile( $staging_dir, 'db.opt' ), $destination_dir );
+    move( catfile( $staging_dir, 'db.opt' ), $destination_dir );
 
-  foreach my $table (@tables, @views) {
-    my @files =
-      glob( catfile( $staging_dir, sprintf( "%s*", $table ) ) );
+    foreach my $table (@tables, @views) {
+      my @files =
+        glob( catfile( $staging_dir, sprintf( "%s*", $table ) ) );
 
-    printf( "Moving %s...\n", $table );
+      printf( "Moving %s...\n", $table );
 
-  FILE:
-    foreach my $file (@files) {
-      if ( !move( $file, $destination_dir ) ) {
-        warn( sprintf( "Failed to move database.\n" .
+    FILE:
+      foreach my $file (@files) {
+        if ( !move( $file, $destination_dir ) ) {
+          warn( sprintf( "Failed to move database.\n" .
                          "Please clean up '%s' and '%s'.\n",
                        $staging_dir, $destination_dir
               ) );
 
-        $spec->{'status'} =
-          sprintf( "FAILED: can not move '%s' from staging directory " .
+          $spec->{'status'} =
+            sprintf( "FAILED: can not move '%s' from staging directory " .
                      "(cleanup of '%s' and '%s' may be needed)",
                    $file, $staging_dir, $destination_dir );
-        next FILE;
+          next FILE;
+        }
       }
     }
-  }
 
-  # Remove the now empty staging directory.
-  if ( !rmdir($staging_dir) ) {
-    warn( sprintf( "Failed to unlink the staging directory '%s'.\n" .
+    # Remove the now empty staging directory.
+    if ( !rmdir($staging_dir) ) {
+      warn( sprintf( "Failed to unlink the staging directory '%s'.\n" .
                      "Clean this up manually.\n",
                    $staging_dir
           ) );
 
-    $spec->{'status'} =
-      sprintf( "SUCCESS: cleanup of '%s' may be needed", $staging_dir );
+      $spec->{'status'} =
+        sprintf( "SUCCESS: cleanup of '%s' may be needed", $staging_dir );
+    }
   }
 
   ##------------------------------------------------------------------##
