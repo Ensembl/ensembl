@@ -632,9 +632,16 @@ sub store {
       version
     );
 		my $created = $self->db->dbc->from_seconds_to_date($operon_transcript->created_date());
-	  my $modified = $self->db->dbc->from_seconds_to_date($operon_transcript->modified_date());
-		push @canned_columns, 'created_date', 'modified_date';
-    push @canned_values,  $created,       $modified;
+		my $modified = $self->db->dbc->from_seconds_to_date($operon_transcript->modified_date());
+
+		if ($created) {
+		  push @canned_columns, 'created_date';
+		  push @canned_values,  $created;
+		}
+		if ($modified) {
+		  push @canned_columns, 'modified_date';
+		  push @canned_values,  $modified;
+		}
 	}
 	my $i_columns = join(', ', @columns, @canned_columns);
   my $i_values  = join(', ', (('?') x scalar(@columns)), @canned_values);
