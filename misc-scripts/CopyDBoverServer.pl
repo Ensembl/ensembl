@@ -873,10 +873,9 @@ TABLE:
   # If we use the update option, we want to make sure that
   # We don't overwrite newer tables on the target db
   # We want to use checksum to find the changes
-  # We want to exclude the index files MYI as we will do an 
-  # optimize on the target database after copy.
+
   if ($opt_update) {
-    push( @copy_cmd, '--update', '--checksum', '--exclude=*.MYI' );
+    push( @copy_cmd, '--update', '--checksum');
   }
 
   # Set files permission to 755 (rwxr-xr-x)
