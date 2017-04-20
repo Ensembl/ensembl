@@ -234,7 +234,7 @@ sub create_xrefs {
     # set accession (and synonyms if more than one)
     # AC line may have primary accession and possibly several ; separated synonyms
     # May also be more than one AC line
-    my ($acc) = $_ =~ /(AC\s+.+)/s; # will match first AC line and everything else
+    my ($acc) = $_ =~ /(\nAC\s+.+)/s; # will match first AC line and everything else
 
     my @all_lines = split /\n/, $acc;
 
