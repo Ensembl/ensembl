@@ -1300,8 +1300,15 @@ sub store {
       my $created  = $self->db->dbc->from_seconds_to_date($gene->created_date());
       my $modified = $self->db->dbc->from_seconds_to_date($gene->modified_date());
 
-      push @canned_columns, 'created_date', 'modified_date';
-      push @canned_values,  $created,       $modified;
+      if ($created) {
+	push @canned_columns, 'created_date';
+	push @canned_values,  $created;
+      }
+      if ($modified) {
+	push @canned_columns, 'modified_date';
+	push @canned_values,  $modified;
+      }
+      
   }
 
   my $columns = join(', ', @columns, @canned_columns);
