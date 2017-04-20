@@ -353,7 +353,8 @@ sub store {
   if ( defined($exon->stable_id) ) {
       my $created = $self->db->dbc->from_seconds_to_date($exon->created_date());
       my $modified = $self->db->dbc->from_seconds_to_date($exon->modified_date());
-      $exon_sql .= ", stable_id, version, created_date, modified_date) VALUES ( ?,?,?,?,?,?,?,?,?,?,". $created . ",". $modified ." )";
+
+      $exon_sql .= sprintf ", stable_id, version%s%s) VALUES ( ?,?,?,?,?,?,?,?,?,?%s%s)", $created?", created_date":'', $modified?", modified_date":'', $created?",$created":'', $modified?",$modified":'';
      
   } else {
       $exon_sql .= q{
