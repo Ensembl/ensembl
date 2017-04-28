@@ -20,7 +20,6 @@
 # Description:
 #   Remove status column in gene and transcript tables.
 
-UPDATE meta SET meta_value='90' WHERE meta_key='schema_version';
 ALTER TABLE gene DROP COLUMN status;
 ALTER TABLE transcript DROP COLUMN status;
 
