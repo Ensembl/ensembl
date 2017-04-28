@@ -111,7 +111,7 @@ sub _columns {
   my $created_date  = $self->db()->dbc()->from_date_to_seconds("g.created_date");
   my $modified_date = $self->db()->dbc()->from_date_to_seconds("g.modified_date");
 
-  return ('g.gene_id', 'g.seq_region_id', 'g.seq_region_start', 'g.seq_region_end', 'g.seq_region_strand', 'g.analysis_id', 'g.biotype', 'g.display_xref_id', 'g.description', 'g.status', 'g.source', 'g.is_current', 'g.canonical_transcript_id', 'g.stable_id', 'g.version', $created_date, $modified_date, 'x.display_label', 'x.dbprimary_acc', 'x.description', 'x.version', 'exdb.db_name', 'exdb.status', 'exdb.db_release', 'exdb.db_display_name', 'x.info_type', 'x.info_text');
+  return ('g.gene_id', 'g.seq_region_id', 'g.seq_region_start', 'g.seq_region_end', 'g.seq_region_strand', 'g.analysis_id', 'g.biotype', 'g.display_xref_id', 'g.description', 'g.source', 'g.is_current', 'g.canonical_transcript_id', 'g.stable_id', 'g.version', $created_date, $modified_date, 'x.display_label', 'x.dbprimary_acc', 'x.description', 'x.version', 'exdb.db_name', 'exdb.status', 'exdb.db_release', 'exdb.db_display_name', 'x.info_type', 'x.info_text');
 }
 
 sub _left_join {
@@ -1286,7 +1286,6 @@ sub store {
                seq_region_strand
                description
                source
-               status
                is_current
                canonical_transcript_id
   );
@@ -1317,9 +1316,6 @@ sub store {
         INSERT INTO gene ( $columns ) VALUES ( $values )
   );
 
-  # column status is used from schema version 34 onwards (before it was
-  # confidence)
-
   my $sth = $self->prepare($store_gene_sql);
   $sth->bind_param(1,  $type,                SQL_VARCHAR);
   $sth->bind_param(2,  $analysis_id,         SQL_INTEGER);
@@ -1329,18 +1325,17 @@ sub store {
   $sth->bind_param(6,  $gene->strand(),      SQL_TINYINT);
   $sth->bind_param(7,  $gene->description(), SQL_LONGVARCHAR);
   $sth->bind_param(8,  $gene->source(),      SQL_VARCHAR);
-  $sth->bind_param(9,  $gene->status(),      SQL_VARCHAR);
-  $sth->bind_param(10, $is_current,          SQL_TINYINT);
+  $sth->bind_param(9,  $is_current,          SQL_TINYINT);
 
   # Canonical transcript ID will be updated later.
   # Set it to zero for now.
-  $sth->bind_param(11, 0, SQL_TINYINT);
+  $sth->bind_param(10, 0, SQL_TINYINT);
 
 
   if (defined($gene->stable_id)) {
 
-    $sth->bind_param(12, $gene->stable_id, SQL_VARCHAR);
-    $sth->bind_param(13, $gene->version,   SQL_INTEGER);
+    $sth->bind_param(11, $gene->stable_id, SQL_VARCHAR);
+    $sth->bind_param(12, $gene->version,   SQL_INTEGER);
   }
 
   $sth->execute();
@@ -1579,7 +1574,7 @@ sub get_Interpro_by_geneid {
   Arg [1]    : Bio::EnsEMBL::Gene $gene
                The gene to update
   Example    : $gene_adaptor->update($gene);
-  Description: Updates the type, analysis, display_xref, status, is_current and
+  Description: Updates the type, analysis, display_xref, is_current and
                description of a gene in the database.
   Returntype : None
   Exceptions : thrown if the $gene is not a Bio::EnsEMBL::Gene
@@ -1601,7 +1596,6 @@ sub update {
           SET biotype = ?,
               analysis_id = ?,
               display_xref_id = ?,
-              status = ?,
               description = ?,
               is_current = ?,
               canonical_transcript_id = ?
@@ -1622,17 +1616,16 @@ sub update {
   $sth->bind_param(1, $gene->biotype(),        SQL_VARCHAR);
   $sth->bind_param(2, $gene->analysis->dbID(), SQL_INTEGER);
   $sth->bind_param(3, $display_xref_id,        SQL_INTEGER);
-  $sth->bind_param(4, $gene->status(),         SQL_VARCHAR);
-  $sth->bind_param(5, $gene->description(),    SQL_VARCHAR);
-  $sth->bind_param(6, $gene->is_current(),     SQL_TINYINT);
+  $sth->bind_param(4, $gene->description(),    SQL_VARCHAR);
+  $sth->bind_param(5, $gene->is_current(),     SQL_TINYINT);
 
   if (defined($gene->canonical_transcript())) {
-    $sth->bind_param(7, $gene->canonical_transcript()->dbID(), SQL_INTEGER);
+    $sth->bind_param(6, $gene->canonical_transcript()->dbID(), SQL_INTEGER);
   } else {
-    $sth->bind_param(7, 0, SQL_INTEGER);
+    $sth->bind_param(6, 0, SQL_INTEGER);
   }
 
-  $sth->bind_param(8, $gene->dbID(), SQL_INTEGER);
+  $sth->bind_param(7, $gene->dbID(), SQL_INTEGER);
 
   $sth->execute();
 
@@ -1706,7 +1699,7 @@ sub _objs_from_sth {
     $gene_id,                 $seq_region_id,     $seq_region_start,
     $seq_region_end,          $seq_region_strand, $analysis_id,
     $biotype,                 $display_xref_id,   $gene_description,
-    $status,                  $source,            $is_current,
+    $source,                  $is_current,
     $canonical_transcript_id, $stable_id,         $version,
     $created_date,            $modified_date,     $xref_display_label,
     $xref_primary_acc,        $xref_description,  $xref_version,
@@ -1718,7 +1711,7 @@ sub _objs_from_sth {
                       $gene_id,                 $seq_region_id,     $seq_region_start,
                       $seq_region_end,          $seq_region_strand, $analysis_id,
                       $biotype,                 $display_xref_id,   $gene_description,
-                      $status,                  $source,            $is_current,
+                      $source,                  $is_current,
                       $canonical_transcript_id, $stable_id,         $version,
                       $created_date,            $modified_date,     $xref_display_label,
                       $xref_primary_acc,        $xref_description,  $xref_version,
@@ -1926,7 +1919,6 @@ sub _objs_from_sth {
        'external_db'             => $external_db,
        'external_status'         => $external_status,
        'display_xref'            => $display_xref,
-       'status'                  => $status,
        'source'                  => $source,
        'is_current'              => $is_current,
        'canonical_transcript_id' => $canonical_transcript_id}));

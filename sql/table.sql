@@ -309,6 +309,8 @@ INSERT INTO meta (species_id, meta_key, meta_value) VALUES
 # NOTE: Avoid line-breaks in values.
 INSERT INTO meta (species_id, meta_key, meta_value)
   VALUES (NULL, 'patch', 'patch_89_90_a.sql|schema_version');
+INSERT INTO meta (species_id, meta_key, meta_value)
+  VALUES (NULL, 'patch', 'patch_89_90_b.sql|remove_status');
 
 /**
 @table meta_coord
@@ -768,7 +770,6 @@ CREATE TABLE exon_transcript (
 @column seq_region_strand           Sequence region strand: 1 - forward; -1 - reverse.
 @column display_xref_id             External reference for EnsEMBL web site. Foreign key references to the @link xref table.
 @column source                      e.g ensembl, havana etc.
-@column status                      Status, e.g.'KNOWN', 'NOVEL', 'PUTATIVE', 'PREDICTED', 'KNOWN_BY_PROJECTION', 'UNKNOWN'.
 @column description                 Gene description
 @column is_current                  1 - gene is current. Always set to 1 in ensembl dbs, but needed for otterlace dbs
 @column canonical_transcript_id     Foreign key references to the @link transcript table.
@@ -793,7 +794,6 @@ CREATE TABLE gene (
   seq_region_strand           TINYINT(2) NOT NULL,
   display_xref_id             INT(10) UNSIGNED,
   source                      VARCHAR(40) NOT NULL,
-  status                      ENUM('KNOWN', 'NOVEL', 'PUTATIVE', 'PREDICTED', 'KNOWN_BY_PROJECTION', 'UNKNOWN', 'ANNOTATED'),
   description                 TEXT,
   is_current                  BOOLEAN NOT NULL DEFAULT 1,
   canonical_transcript_id     INT(10) UNSIGNED NOT NULL,
@@ -981,7 +981,6 @@ Note that a transcript is usually associated with a translation, but may not be,
 @column display_xref_id             External reference for EnsEMBL web site. Foreign key references to the @link xref table.
 @column source                      e.g ensembl, havana etc.
 @column biotype                     Biotype, e.g. protein_coding.
-@column status                      Status, e.g.'KNOWN', 'NOVEL', 'PUTATIVE', 'PREDICTED', 'KNOWN_BY_PROJECTION', 'UNKNOWN'.
 @column description                 Transcript description.
 @column is_current                  Indicates a current transcript. Always set to 1 in ensembl dbs, but needed for otterlace dbs
 @column canonical_translation_id    Foreign key references to the @link translation table.
@@ -1005,7 +1004,6 @@ CREATE TABLE transcript (
   display_xref_id             INT(10) UNSIGNED,
   source                      VARCHAR(40) NOT NULL default 'ensembl',
   biotype                     VARCHAR(40) NOT NULL,
-  status                      ENUM('KNOWN', 'NOVEL', 'PUTATIVE', 'PREDICTED', 'KNOWN_BY_PROJECTION', 'UNKNOWN', 'ANNOTATED'),
   description                 TEXT,
   is_current                  BOOLEAN NOT NULL DEFAULT 1,
   canonical_translation_id    INT(10) UNSIGNED,

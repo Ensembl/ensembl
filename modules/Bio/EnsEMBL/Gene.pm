@@ -107,8 +107,6 @@ use vars qw(@ISA);
         string - the genes description
   Arg [-BIOTYPE]:
         string - the biotype e.g. "protein_coding"
-  Arg [-STATUS]:
-        string - the gene status i.e. "KNOWN","NOVEL"
   Arg [-SOURCE]:
         string - the genes source, e.g. "ensembl"
   Arg [-IS_CURRENT]:
@@ -141,7 +139,7 @@ sub new {
     $transcripts,             $created_date,
     $modified_date,           $confidence,
     $biotype,                 $source,
-    $status,                  $is_current,
+    $is_current,
     $canonical_transcript_id, $canonical_transcript
     )
     = rearrange( [
@@ -152,7 +150,7 @@ sub new {
       'TRANSCRIPTS',             'CREATED_DATE',
       'MODIFIED_DATE',           'CONFIDENCE',
       'BIOTYPE',                 'SOURCE',
-      'STATUS',                  'IS_CURRENT',
+      'IS_CURRENT',
       'CANONICAL_TRANSCRIPT_ID', 'CANONICAL_TRANSCRIPT'
     ],
     @_
@@ -176,9 +174,6 @@ sub new {
   $self->biotype($type)              if ( defined $type );
   $self->biotype($biotype)           if ( defined $biotype );
   $self->description($description);
-  $self->status($confidence);    # incase old naming is used.
-      # kept to ensure routine is backwards compatible.
-  $self->status($status);    # add new naming
   $self->source($source);
 
   # Default version
@@ -200,24 +195,6 @@ sub new {
   return $self;
 }
 
-
-=head2 is_known
-
-  Example    : print "Gene ".$gene->stable_id." is KNOWN\n" if $gene->is_known;
-  Description: DEPRECATED. Returns TRUE if this gene has a status of 'KNOWN'
-  Returntype : TRUE if known, FALSE otherwise
-  Exceptions : none
-  Caller     : general
-  Status     : Stable
-
-=cut
-
-
-sub is_known{
-  my $self = shift;
-  deprecate("is_known is deprecated and will be removed in e90. Please consider checking supporting features instead");
-  return ( $self->{'status'} eq "KNOWN" || $self->{'status'} eq "KNOWN_BY_PROJECTION" );
-}
 
 
 =head2 external_name
@@ -250,25 +227,6 @@ sub external_name {
   }
 }
 
-
-=head2 status
-
-  Arg [1]    : (optional) String - status to set
-  Example    : $gene->status('KNOWN');
-  Description: DEPRECATED. Getter/setter for attribute status
-  Returntype : String
-  Exceptions : none
-  Caller     : general
-  Status     : Medium Risk
-
-=cut
-
-sub status {
-   my $self = shift;
-  deprecate("status is deprecated and will be removed in e90. Please consider checking supporting features instead");
-  $self->{'status'} = shift if( @_ );
-  return $self->{'status'};
-}
 
 
 =head2 source

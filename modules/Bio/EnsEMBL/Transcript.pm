@@ -105,8 +105,6 @@ use vars qw(@ISA);
         string - the transcripts description
   Arg [-BIOTYPE]: 
         string - the biotype e.g. "protein_coding"
-  Arg [-STATUS]:
-        string - the transcripts status i.e. "KNOWN","NOVEL"
   Arg [-IS_CURRENT]:
         Boolean - specifies if this is the current version of the transcript
   Arg [-SOURCE]:
@@ -133,7 +131,7 @@ sub new {
     $external_name,    $external_db,  $external_status,
     $display_xref,     $created_date, $modified_date,
     $description,      $biotype,      $confidence,
-    $external_db_name, $status,       $is_current,
+    $external_db_name, $is_current,
     $source
   );
 
@@ -149,7 +147,7 @@ sub new {
       $external_name,    $external_db,  $external_status,
       $display_xref,     $created_date, $modified_date,
       $description,      $biotype,      $confidence,
-      $external_db_name, $status,       $is_current,
+      $external_db_name, $is_current,
       $source
       )
       = rearrange( [
@@ -159,7 +157,7 @@ sub new {
         'DISPLAY_XREF',     'CREATED_DATE',
         'MODIFIED_DATE',    'DESCRIPTION',
         'BIOTYPE',          'CONFIDENCE',
-        'EXTERNAL_DB_NAME', 'STATUS',
+        'EXTERNAL_DB_NAME',
         'IS_CURRENT',       'SOURCE'
       ],
       @_
@@ -182,8 +180,6 @@ sub new {
   $self->edits_enabled(1);
 
   $self->description($description);
-  $self->status($confidence);    # old style name
-  $self->status($status);        # new style name
   $self->biotype($biotype);
   $self->source($source);
 
@@ -596,43 +592,6 @@ sub external_name {
   }
 }
 
-
-=head2 is_known
-
-  Example    : print "Transcript ".$transcript->stable_id." is KNOWN\n" if
-                  $transcript->is_known;
-  Description: DEPRECATED. Returns TRUE if this gene has a status of 'KNOWN'
-  Returntype : TRUE if known, FALSE otherwise
-  Exceptions : none
-  Caller     : general
-  Status     : Stable
-
-=cut
-
-sub is_known {
-  my $self = shift;
-  deprecate("is_known is deprecated and will be removed in e90. Please consider checking supporting features instead");
-  return ( $self->{'status'} eq "KNOWN" || $self->{'status'} eq "KNOWN_BY_PROJECTION" );
-}
-
-
-=head2 status
-
-  Arg [1]    : string $status
-  Description: DEPRECATED. get/set for attribute status
-  Returntype : string
-  Exceptions : none
-  Caller     : general
-  Status     : Medium Risk
-
-=cut
-
-sub status {
-   my $self = shift;
-  deprecate("status is deprecated and will be removed in e90. Please consider checking supporting features instead");
-  $self->{'status'} = shift if( @_ );
-  return $self->{'status'};
-}
 
 =head2 biotype
 

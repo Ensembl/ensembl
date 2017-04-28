@@ -39,7 +39,7 @@ my $expected_keys = {
   'gene' => [sort @generic_keys, @location_keys, qw/
     analysis
     attributes
-    is_current biotype status source
+    is_current biotype source
     description
     canonical_transcript canonical_transcript_id _transcript_array
     dbentries display_xref external_name external_db external_status
@@ -54,7 +54,7 @@ my $expected_keys = {
     cdna_coding_start cdna_coding_end
     alternative_translations translation edits_enabled
     
-    is_current biotype status description source
+    is_current biotype description source
     
     dbentries display_xref external_name external_db external_status external_display_name
   /],

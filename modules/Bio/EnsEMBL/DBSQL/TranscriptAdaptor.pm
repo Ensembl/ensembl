@@ -127,7 +127,7 @@ sub _columns {
      't.stable_id',         't.version',
      $created_date,         $modified_date,
      't.description',       't.biotype',
-     't.status',            'exdb.db_name',
+     'exdb.db_name',
      'exdb.status',         'exdb.db_display_name',
      'x.xref_id',           'x.display_label',
      'x.dbprimary_acc',     'x.version',
@@ -1104,7 +1104,7 @@ sub store {
   #
 
 #  my $store_transcript_sql = 
-#    sprintf "INSERT INTO transcript SET gene_id = ?, analysis_id = ?, seq_region_id = ?, seq_region_start = ?, seq_region_end = ?, seq_region_strand = ?,%s biotype = ?, status = ?, description = ?, is_current = ?, canonical_translation_id = ?", ($self->schema_version > 74)?" source = ?,":'';
+#    sprintf "INSERT INTO transcript SET gene_id = ?, analysis_id = ?, seq_region_id = ?, seq_region_start = ?, seq_region_end = ?, seq_region_strand = ?,%s biotype = ?, description = ?, is_current = ?, canonical_translation_id = ?", ($self->schema_version > 74)?" source = ?,":'';
 
   my @columns = qw(
             gene_id
@@ -1119,7 +1119,6 @@ sub store {
 
   push @columns, qw(
             biotype
-            status
             description
             is_current
             canonical_translation_id
@@ -1164,7 +1163,6 @@ sub store {
     $tst->bind_param( ++$i,  $transcript->source(),      SQL_VARCHAR );
 
   $tst->bind_param( ++$i,  $transcript->biotype(),     SQL_VARCHAR );
-  $tst->bind_param( ++$i,  $transcript->status(),      SQL_VARCHAR );
   $tst->bind_param( ++$i,  $transcript->description(), SQL_LONGVARCHAR );
   $tst->bind_param( ++$i, $is_current,                SQL_TINYINT );
 
@@ -1669,7 +1667,7 @@ sub update {
   }
 
   my $update_transcript_sql = 
-    sprintf "UPDATE transcript SET analysis_id = ?, display_xref_id = ?, description = ?,%s biotype = ?, status = ?, is_current = ?, canonical_translation_id = ? WHERE transcript_id = ?", ($self->schema_version > 74)?" source = ?,":'';
+    sprintf "UPDATE transcript SET analysis_id = ?, display_xref_id = ?, description = ?,%s biotype = ?, is_current = ?, canonical_translation_id = ? WHERE transcript_id = ?", ($self->schema_version > 74)?" source = ?,":'';
 
   my $display_xref = $transcript->display_xref();
   my $display_xref_id;
@@ -1690,7 +1688,6 @@ sub update {
     $sth->bind_param( ++$i,  $transcript->source(),      SQL_VARCHAR );
 
   $sth->bind_param( ++$i, $transcript->biotype(),     SQL_VARCHAR );
-  $sth->bind_param( ++$i, $transcript->status(),      SQL_VARCHAR );
   $sth->bind_param( ++$i, $transcript->is_current(),  SQL_TINYINT );
   $sth->bind_param( ++$i, (
                       defined( $transcript->translation() )
@@ -1776,7 +1773,7 @@ sub _objs_from_sth {
     $seq_region_end,  $seq_region_strand,  $analysis_id,
     $gene_id,         $is_current,         $stable_id,
     $version,         $created_date,       $modified_date,
-    $description,     $biotype,            $status,
+    $description,     $biotype,
     $external_db,     $external_status,    $external_db_name,
     $display_xref_id, $xref_display_label, $xref_primary_acc,
     $xref_version,    $xref_description,   $xref_info_type,
@@ -1790,7 +1787,7 @@ sub _objs_from_sth {
        $seq_region_end,  $seq_region_strand,  $analysis_id,
        $gene_id,         $is_current,         $stable_id,
        $version,         $created_date,       $modified_date,
-       $description,     $biotype,            $status,
+       $description,     $biotype,
        $external_db,     $external_status,    $external_db_name,
        $display_xref_id, $xref_display_label, $xref_primary_acc,
        $xref_version,    $xref_description,   $xref_info_type,
@@ -1803,7 +1800,7 @@ sub _objs_from_sth {
        $seq_region_end,  $seq_region_strand,  $analysis_id,
        $gene_id,         $is_current,         $stable_id,
        $version,         $created_date,       $modified_date,
-       $description,     $biotype,            $status,
+       $description,     $biotype,
        $external_db,     $external_status,    $external_db_name,
        $display_xref_id, $xref_display_label, $xref_primary_acc,
        $xref_version,    $xref_description,   $xref_info_type,
@@ -2009,9 +2006,7 @@ sub _objs_from_sth {
        'external_status'       => $external_status,
        'external_display_name' => $external_db_name,
        'external_db'           => $external_db,
-       'external_status'       => $external_status,
        'display_xref'          => $display_xref,
-       'status'                => $status,
        'is_current'            => $is_current,
        'edits_enabled'         => 1
       };
