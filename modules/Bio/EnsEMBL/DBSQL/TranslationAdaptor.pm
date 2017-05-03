@@ -522,8 +522,7 @@ sub store {
   if (defined($translation->stable_id)) {
  
     $sth->bind_param(6, $translation->stable_id,SQL_VARCHAR);
-    my $version = ($translation->version()) ? $translation->version() : 1;
-    $sth->bind_param(7, $version,SQL_VARCHAR);
+    $sth->bind_param(7, $translation->version,SQL_VARCHAR);
   }
 
   $sth->execute();

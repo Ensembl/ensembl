@@ -383,9 +383,8 @@ sub store {
 
   if ( defined($exon->stable_id) ) {
 
-     $exonst->bind_param( 9, $exon->stable_id, SQL_VARCHAR );
-     my $version = ($exon->version()) ? $exon->version() : 1;
-     $exonst->bind_param( 10, $version, SQL_INTEGER ); 
+     $exonst->bind_param(  9, $exon->stable_id, SQL_VARCHAR );
+     $exonst->bind_param( 10, $exon->version,   SQL_INTEGER ); 
   }
 
   $exonst->execute();

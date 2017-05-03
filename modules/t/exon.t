@@ -281,8 +281,7 @@ my $e1 = Bio::EnsEMBL::Exon->new(
   -slice => $slice,
   -phase => 0,
   -end_phase => 0,
-  -stable_id => 'ENSE0001',
-  -version => 1
+  -stable_id => 'ENSE0001'
 );
 
 my $e2 = Bio::EnsEMBL::Exon->new(
@@ -297,17 +296,40 @@ my $e2 = Bio::EnsEMBL::Exon->new(
   -is_current => 0
 );
 
+my $e3 = Bio::EnsEMBL::Exon->new(
+  -start => 10,
+  -end => 1000,
+  -strand => 1,
+  -slice => $slice,
+  -phase => 0,
+  -end_phase => 0,
+  -stable_id => 'ENSE0001',
+  -is_current => 0
+);
+$e3->version(undef);
+
 $exonad->store($e1);
 $exonad->store($e2);
+$exonad->store($e3);
 
 $exon = $exonad->fetch_by_stable_id('ENSE0001');
 ok( $exon->is_current == 1);
+ok( $exon->version == 1);
 
 @exons = @{ $exonad->fetch_all_versions_by_stable_id('ENSE0001') };
 foreach my $e (@exons) {
-  next unless ($e->version == 2);
-  ok($e->is_current == 0);
+  if (defined $e->version && $e->version == 2) {
+    ok($e->is_current == 0);
+  }
 }
+
+my $null_versions = 0;
+foreach my $e (@exons) {
+  if (! defined $e->version) {
+    $null_versions++;
+  }
+}
+is ( $null_versions, 1, "Null/undef version stored and retrieved");
 
 $multi->restore();
 

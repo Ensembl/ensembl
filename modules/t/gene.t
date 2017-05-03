@@ -140,6 +140,11 @@ my $translation2 = Bio::EnsEMBL::Translation->new();
 
 ok($gene);
 
+is($gene->version,         1, 'Default gene version = 1');
+is($transcript1->version,  1, 'Default transcript version = 1');
+is($ex1->version,          1, 'Default exon version = 1');
+is($translation1->version, 1, 'Default translation version = 1');
+
 $ex1->start(13586);
 $ex1->end(13735);
 $ex1->phase(0);
@@ -323,6 +328,9 @@ my $gene_out = $genes->[0];
 
 #make sure the stable_id was stored
 ok($gene_out->stable_id eq $stable_id);
+
+#make sure the version was stored
+ok($gene_out->version == 1);
 
 #make sure the description was stored
 ok($gene_out->description eq $desc);
@@ -923,13 +931,20 @@ $gene->dbID(undef);
 $gene->adaptor(undef);
 $ga->store($gene);
 
+$gene->version(undef);
+$gene->is_current(0);
+$gene->dbID(undef);
+$gene->adaptor(undef);
+$ga->store($gene);
+
 $gene = $ga->fetch_by_stable_id('ENSG00000355555');
 ok($gene->is_current == 1);
 
 @genes = @{$ga->fetch_all_versions_by_stable_id('ENSG00000355555')};
 foreach my $g (@genes) {
-  next unless ($g->version == 4);
-  ok($g->is_current == 0);
+  if (defined $g->version && $g->version == 4) {
+    ok($g->is_current == 0);
+  }
 }
 
 $gene->is_current(0);
@@ -942,6 +957,13 @@ $ga->update($gene);
 $gene = $ga->fetch_by_stable_id('ENSG00000355555');
 ok($gene->is_current == 1);
 
+my $null_versions = 0;
+foreach my $g (@genes) {
+  if (! defined $g->version) {
+    $null_versions++;
+  }
+}
+is ( $null_versions, 1, "Null/undef version stored and retrieved");
 
 $ga->remove_by_Slice($slice);
 $geneCount = $ga->count_all_by_Slice($slice);

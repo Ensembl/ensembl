@@ -113,6 +113,9 @@ sub new {
 	   rearrange( [ "START_EXON", "END_EXON", "SEQ_START", "SEQ_END",
 			"STABLE_ID", "VERSION", "DBID", "ADAPTOR",
 			"SEQ", "CREATED_DATE", "MODIFIED_DATE" ], @_ );
+      
+  # Default version
+  if ( !defined($version) ) { $version = 1 }
 
   my $self = bless {
 		    'start_exon' => $start_exon,
