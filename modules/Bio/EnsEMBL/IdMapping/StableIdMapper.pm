@@ -201,7 +201,7 @@ sub map_stable_ids {
   }
 
   my %stats = map { $_ => 0 }
-    qw(mapped_known mapped_novel new lost_known lost_novel);
+    qw(mapped new lost);
 
   # create some lookup hashes from the mappings
   my %sources_mapped = ();
@@ -269,11 +269,7 @@ sub map_stable_ids {
       push @{ $debug_mappings{$type} }, [ $sid, $tid, $t_obj->stable_id ];
 
       # stats
-      if ($s_obj->is_known) {
-        $stats{'mapped_known'}++;
-      } else {
-        $stats{'mapped_novel'}++;
-      }
+      $stats{'mapped'}++;
 
     # no mapping was found, assign a new stable ID
     } else {
@@ -337,13 +333,7 @@ sub map_stable_ids {
 
       # stats
       my $status;
-      if ($s_obj->is_known) {
-        $stats{'lost_known'}++;
-        $status = 'known';
-      } else {
-        $stats{'lost_novel'}++;
-        $status = 'novel';
-      }
+      $stats{'lost'}++;
 
       # log lost genes and transcripts (for debug purposes)
       #
@@ -609,30 +599,11 @@ sub generate_mapping_stats {
   $result .= sprintf($fmt1, qw(TYPE MAPPED LOST PERCENTAGE));
   $result .= ('-'x40)."\n";
 
-  my $mapped_total = $stats->{'mapped_known'} + $stats->{'mapped_novel'};
-  my $lost_total = $stats->{'lost_known'} + $stats->{'lost_novel'};
-  my $known_total = $stats->{'mapped_known'} + $stats->{'lost_known'};
-  my $novel_total = $stats->{'mapped_novel'} + $stats->{'lost_novel'};
-
-  # no split into known and novel for exons
-  unless ( $type eq 'exon' ) {
-    $result .= sprintf( $fmt2,
-	'known',
-	$stats->{'mapped_known'},
-	$stats->{'lost_known'},
-	($known_total ? $stats->{'mapped_known'}/$known_total*100 : 0)
-    );
-
-    $result .= sprintf( $fmt2,
-	'novel',
-	$stats->{'mapped_novel'},
-	$stats->{'lost_novel'},
-	($novel_total ? $stats->{'mapped_novel'}/$novel_total*100 : 0)
-    );
-  } ## end unless ( $type eq 'exon' )
+  my $mapped_total = $stats->{'mapped'};
+  my $lost_total = $stats->{'lost'};
 
   $result .= sprintf($fmt2, 'total', $mapped_total, $lost_total,
-    $mapped_total/($known_total + $novel_total)*100);
+    $mapped_total/($mapped_total+$lost_total)*100);
 
   # log result
   $self->logger->info($result."\n");

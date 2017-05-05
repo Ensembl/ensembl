@@ -127,7 +127,7 @@ sub analyse {
     throw("Need a list of similarity events.");
   }
 
-  # classify source genes by type (status-logic_name-biotype)
+  # classify source genes by type (logic_name-biotype)
   $self->classify_source_genes_by_type;
 
   # classify source genes by mapping status
@@ -196,7 +196,7 @@ sub classify_genes_by_mapping_simple {
   foreach my $t_gene (values %{ $self->cache->get_by_name('genes_by_id', 'target') }) {
   
     # check if target gene has all required properties set
-    unless ($t_gene->status and $t_gene->logic_name and $t_gene->biotype) {
+    unless ($t_gene->logic_name and $t_gene->biotype) {
       $self->logger->warning("Missing data for target gene: ".
         $t_gene->to_string."\n", 1);
     }
@@ -493,7 +493,7 @@ sub get_all_classes {
   Arg[1]      : Bio::EnsEMBL::IdMapping::TinyGene $gene - a gene object
   Example     : my $class = $analyser->class_key($gene);
   Description : Generates a key identifying a gene class. This identifier is 
-                composed from the gene's status, logic naame, and biotye.
+                composed from the gene's logic naame, and biotye.
   Return type : String
   Exceptions  : none
   Caller      : internal
@@ -504,7 +504,7 @@ sub get_all_classes {
 
 sub class_key {
   my ($self, $gene) = @_;
-  return join('-', map { $gene->$_ } qw(status logic_name biotype));
+  return join('-', map { $gene->$_ } qw(logic_name biotype));
 }
 
 

@@ -44,7 +44,6 @@ Bio::EnsEMBL::IdMapping::TinyTranscript - lightweight transcript object
       $tr->modified_date, $tr->start,
       $tr->end,           $tr->strand,
       $tr->length,        md5_hex( $tr->spliced_seq ),
-      ( $tr->is_known ? 1 : 0 ),
     ] );
 
 =head1 DESCRIPTION
@@ -60,7 +59,6 @@ design.
   strand
   length
   seq_md5_sum
-  is_known
   add_Translation
   translation
   add_Exon
@@ -78,11 +76,10 @@ package Bio::EnsEMBL::IdMapping::TinyTranscript;
 #  7  strand
 #  8  length
 #  9  seq_md5_sum
-# 10  is_known
-# 11  translation
-# 12  [exons]
-# 13  biotype
-# 14  slice
+# 10  translation
+# 11  [exons]
+# 12  biotype
+# 13  slice
 
 
 use strict;
@@ -195,24 +192,6 @@ sub seq_md5_sum {
 }
 
 
-=head2 is_known
-
-  Arg[1]      : (optional) Boolean - the transcript's "known" status
-  Description : Getter/setter for the transcript's "known" status.
-  Return type : Boolean
-  Exceptions  : none
-  Caller      : general
-  Status      : At Risk
-              : under development
-
-=cut
-
-sub is_known {
-  my $self = shift;
-  $self->[10] = shift if (@_);
-  return $self->[10];
-}
-
 
 =head2 add_Translation
 
@@ -236,7 +215,7 @@ sub add_Translation {
     throw('Need a Bio::EnsEMBL::IdMapping::TinyTranslation.');
   }
 
-  $self->[11] = $tl;
+  $self->[10] = $tl;
 }
 
 
@@ -252,7 +231,7 @@ sub add_Translation {
 =cut
 
 sub translation {
-  return $_[0]->[11];
+  return $_[0]->[10];
 }
 
 
@@ -277,7 +256,7 @@ sub add_Exon {
     throw('Need a Bio::EnsEMBL::IdMapping::TinyExon.');
   }
 
-  push @{ $self->[12] }, $exon;
+  push @{ $self->[11] }, $exon;
 }
 
 
@@ -296,7 +275,7 @@ sub add_Exon {
 =cut
 
 sub get_all_Exons {
-  return $_[0]->[12] || [];
+  return $_[0]->[11] || [];
 }
 
 =head2 biotype
@@ -313,8 +292,8 @@ sub get_all_Exons {
 
 sub biotype {
   my $self = shift;
-  $self->[13] = shift if (@_);
-  return $self->[13];
+  $self->[12] = shift if (@_);
+  return $self->[12];
 }
 
 =head2 seq_region_name
@@ -332,8 +311,8 @@ sub biotype {
 
 sub seq_region_name {
   my $self = shift;
-  $self->[14] = shift if (@_);
-  return $self->[14];
+  $self->[13] = shift if (@_);
+  return $self->[13];
 }
 
 
