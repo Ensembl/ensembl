@@ -160,8 +160,7 @@ sub mapper{
 
 
 sub genes_and_transcripts_attributes_set{
-  # Runs build_transcript_and_gene_display_xrefs,
-  # build_gene_transcript_status and
+  # Runs build_transcript_and_gene_display_xrefs and
   # build_meta_timestamp, and, if "-upload" is set, uses the SQL files
   # produced to update the core database.
 
@@ -189,7 +188,6 @@ sub genes_and_transcripts_attributes_set{
   else{
       $self->set_gene_descriptions();
   }	
-  $self->set_status(); # set KNOWN,NOVEL etc 
 
   $self->build_meta_timestamp;
 
@@ -324,110 +322,6 @@ sub set_display_xrefs_from_stable_table{
 }
 
 
-
-sub set_status{
-  my $self = shift;
-
-# set all genes to NOVEL
-
-  
-  my $reset_sth = $self->core->dbc->prepare('UPDATE gene SET status = "NOVEL"');
-  $reset_sth->execute();
-  $reset_sth->finish;
-
-  $reset_sth = $self->core->dbc->prepare('UPDATE transcript SET status = "NOVEL"');
-  $reset_sth->execute();
-  $reset_sth->finish;
-  
-  my $update_gene_sth = $self->core->dbc->prepare('UPDATE gene SET status = ? where gene_id = ?');
-  my $update_tran_sth = $self->core->dbc->prepare('UPDATE transcript SET status = ? where transcript_id = ?');
-
-  
-my $known_xref_sql =(<<DXS);
-select  distinct 
-        IF (ox.ensembl_object_type = 'Gene',        gtt_gene.gene_id,
-        IF (ox.ensembl_object_type = 'Transcript',  gtt_transcript.gene_id,
-                                                    gtt_translation.gene_id)) AS gene_id,
-
-        IF (ox.ensembl_object_type = 'Gene',        gtt_gene.transcript_id,
-        IF (ox.ensembl_object_type = 'Transcript',  gtt_transcript.transcript_id,
-                                                    gtt_translation.transcript_id)) AS transcript_id
-from    (   source s
-      join    (   xref x
-        join      (   object_xref ox
-                  ) using (xref_id)
-              ) using (source_id)
-          )
-  left join gene_transcript_translation gtt_gene
-    on (gtt_gene.gene_id = ox.ensembl_id)
-  left join gene_transcript_translation gtt_transcript
-    on (gtt_transcript.transcript_id = ox.ensembl_id)
-  left join gene_transcript_translation gtt_translation
-    on (gtt_translation.translation_id = ox.ensembl_id)
-where   ox.ox_status = 'DUMP_OUT'
-        AND s.status like 'KNOWN%'
-        AND ox.linkage_type <> 'DEPENDENT'
-        ORDER BY gene_id DESC, transcript_id DESC
-DXS
-
-  # 1) load list of stable_gene_id from xref database and covert to internal id in
-  #    new core database table.
-  #    Use this table to reset havana gene/transcript status.
-
-  if(!scalar(keys %genes_to_transcripts)){
-    $self->build_genes_to_transcripts();
-  }
-
-  #
-  # Reset status for those from vega
-  #
-
-  my $gene_status_sth = $self->xref->dbc->prepare("SELECT gsi.internal_id, hs.status FROM gene_stable_id gsi, havana_status hs WHERE hs.stable_id = gsi.stable_id") 
-    || die "Could not prepare gene_status_sth";
-
-  $gene_status_sth->execute();
-  my ($internal_id, $status);
-  $gene_status_sth->bind_columns(\$internal_id,\$status);
-  while($gene_status_sth->fetch()){
-    $update_gene_sth->execute($status, $internal_id);
-  }
-  $gene_status_sth->finish();
-
-  my $transcript_status_sth = $self->xref->dbc->prepare("SELECT tsi.internal_id, hs.status FROM transcript_stable_id tsi, havana_status hs WHERE hs.stable_id = tsi.stable_id") 
-    || die "Could not prepare transcript_status_sth";
-
-  $transcript_status_sth->execute();
-  $transcript_status_sth->bind_columns(\$internal_id,\$status);
-  while($transcript_status_sth->fetch()){
-    $update_tran_sth->execute($status,$internal_id);  
-  }
-  $transcript_status_sth->finish();
-
-  # Set known status after Havana status
-
-  my $last_gene = 0;
-
-  my $known_xref_sth = $self->xref->dbc->prepare($known_xref_sql);
-
-  $known_xref_sth->execute();
-  my ($gene_id, $transcript_id);  # remove labvel after testig it is not needed
-  $known_xref_sth->bind_columns(\$gene_id, \$transcript_id);
-  while($known_xref_sth->fetch()){
-    if($gene_id != $last_gene){
-      $update_gene_sth->execute("KNOWN",$gene_id);
-      $last_gene = $gene_id;
-    }
-    $update_tran_sth->execute("KNOWN",$transcript_id);
-  }
-
-
-  $known_xref_sth->finish;
-  $update_gene_sth->finish;
-  $update_tran_sth->finish;
-
-}
-
-
 sub load_translation_to_transcript{
   my ($self) = @_;
 
@@ -463,69 +357,6 @@ sub build_genes_to_transcripts {
   $sth->finish
 }
 
-sub build_gene_transcript_status{
-  # Creates the files that contain the SQL needed to (re)set the
-  # gene.status and transcript.status values
-  my $self = shift;
-  
-  my $reset_sth = $self->core->dbc->prepare('UPDATE gene SET status = "NOVEL"');
-  $reset_sth->execute();
-  $reset_sth->finish;
-
-  $reset_sth = $self->core->dbc->prepare('UPDATE transcript SET status = "NOVEL"');
-  $reset_sth->execute();
-  $reset_sth->finish;
-  
-  my $update_gene_sth = $self->core->dbc->prepare('UPDATE gene SET status = "KNOWN" where gene_id = ?');
-  my $update_tran_sth = $self->core->dbc->prepare('UPDATE transcript SET status = "KNOWN" where transcript_id = ?');
-
-  #create a hash known which ONLY has databases names of those that are KNOWN and KNOWNXREF
-  my %known;
-  my $sth = $self->core->dbc->prepare("select db_name from external_db where status in ('KNOWNXREF','KNOWN')");
-  $sth->execute();
-  my ($name);
-  $sth->bind_columns(\$name);
-  while($sth->fetch){
-    $known{$name} = 1;
-  }
-  $sth->finish;
-  
-  
-  # loop throught the gene and all transcript until you find KNOWN/KNOWNXREF as a status
-  my $ensembl = $self->core;
-  my $db = new Bio::EnsEMBL::DBSQL::DBAdaptor(-dbconn => $ensembl->dbc);
-  my $gene_adaptor = $db->get_GeneAdaptor();
-
-  my @genes = @{$gene_adaptor->fetch_all()};
-
-  while (my $gene = shift @genes){
-    my $gene_found = 0;
-    my @dbentries = @{$gene->get_all_DBEntries()};
-    foreach my $dbe (@dbentries){
-      if(defined($known{$dbe->dbname})){
-	$gene_found =1;
-      }
-    }
-    my $one_tran_found = 0;
-    foreach my $tr (@{$gene->get_all_Transcripts}){
-      my $tran_found = 0;
-      foreach my $dbe (@{$tr->get_all_DBLinks}){
-	if(defined($known{$dbe->dbname})){
-	  $tran_found = 1;
-	  $one_tran_found = 1;
-	}
-      }
-      if($tran_found or $gene_found){
-	$update_tran_sth->execute($tr->dbID);
-      }
-    }
-    if($gene_found or $one_tran_found){
-      $update_gene_sth->execute($gene->dbID);
-    }
-  }
-
-  return;
-}
 
 sub build_meta_timestamp{
   # Creates a file that contains the SQL needed to (re)set the 

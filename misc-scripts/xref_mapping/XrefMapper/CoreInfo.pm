@@ -63,8 +63,6 @@ sub get_core_data {
   # translation_stable_id
 
 
-  $self->set_status_for_source_from_core();
-
   # load table gene_transcript_translation 
 
   $self->load_gene_transcript_translation();
@@ -79,40 +77,6 @@ sub get_core_data {
   $sth->finish;
 
 
-  return;
-}
-
-
-sub set_status_for_source_from_core{
-  my ($self) = shift;
-
-  # Get the status for the sources from the core database to work out status's later
-  
-  my %external_name_to_status;
-  
-  my $sth = $self->core->dbc->prepare('select db_name, status from external_db where status like ?');
-  $sth->execute('KNOWN%');
-  my  ($name, $status, $id);
-  $sth->bind_columns(\$name,\$status); 
-  while($sth->fetch()){
-    $external_name_to_status{$name} = $status;
-  }
-  $sth->finish;
-
-  my $sth_up = $self->xref->dbc->prepare("update source set status = ? where source_id = ?");
-
-  my $sql = 'select s.source_id, s.name from source s, xref x where x.source_id = s.source_id and s.status =? group by s.source_id'; # only get those of interest
-  $sth = $self->xref->dbc->prepare($sql);
-  $sth->execute('NOIDEA');
-  $sth->bind_columns(\$id, \$name);
-  while($sth->fetch()){
-    if(defined($external_name_to_status{$name})){
-      # set status
-      $sth_up->execute('KNOWN', $id);
-    }
-  }
-  $sth->finish;
-  $sth_up->finish;
   return;
 }
 
