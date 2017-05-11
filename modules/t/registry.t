@@ -18,6 +18,7 @@ use warnings;
 
 use Config;
 use Test::More;
+use Test::Deep;
 use Test::Warnings;
 use Test::Exception;
 use File::Temp qw/tempfile/;
@@ -127,6 +128,10 @@ my @species = @{ $reg->get_all_species() };
 ok(scalar(@species) == 1, "get_all_species");
 ok(scalar(@{ $reg->get_all_species('cahoona') }) == 0, "get_all_species with bogus data.");
 
+# Test get_all_DBAdaptors
+my $registry_register_dba = $Bio::EnsEMBL::Registry::registry_register{'_DBA'};
+is( scalar(@{$reg->get_all_DBAdaptors()}), scalar(@{$registry_register_dba}), "get_all_DBAdaptors() on all species and groups" );
+cmp_deeply( $reg->get_all_DBAdaptors(), shallow($registry_register_dba), "get_all_DBAdaptors() on all species and groups: comparing references" );
 ok(scalar(@{$reg->get_all_DBAdaptors(-SPECIES => $species[0])}), "get_all_DBAdaptors() on a valid species");
 warns_like(
     sub { is(scalar(@{$reg->get_all_DBAdaptors(-SPECIES => 'cahoona')}), 0, "get_all_DBAdaptors() on a non-existing species"); },
