@@ -980,12 +980,6 @@ sub add_adaptor {
     push( @{ $registry_register{_SPECIES}{$species}{'list'} }, $type );
   }
 
-  if ( !defined( $registry_register{_TYPE}{ $lc_type }{$species} ) ) {
-    $registry_register{_TYPE}{ $lc_type }{$species} = [$adap];
-  } 
-  else {
-    push( @{ $registry_register{_TYPE}{ $lc_type }{$species} }, $adap );
-  }
   return;
 } ## end sub add_adaptor
 
