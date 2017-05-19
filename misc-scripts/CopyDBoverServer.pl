@@ -870,12 +870,10 @@ TABLE:
     push( @copy_cmd, '--delete', '--delete-excluded' );
   }
   
-  # If we use the update option, we want to make sure that
-  # We don't overwrite newer tables on the target db
-  # We want to use checksum to find the changes
+  # Update will copy updated tables from source db to target db
 
   if ($opt_update) {
-    push( @copy_cmd, '--update', '--checksum');
+    push( @copy_cmd, '--update');
   }
 
   # Set files permission to 755 (rwxr-xr-x)
