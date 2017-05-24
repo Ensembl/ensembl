@@ -138,9 +138,12 @@ sub new {
 
   $self->{'end_phase'}     = $end_phase;
   $self->{'stable_id'}     = $stable_id;
-  $self->{'version'}       = $version;
   $self->{'created_date'}  = $created_date;
   $self->{'modified_date'} = $modified_date;
+
+  # Default version
+  if ( !defined($version) ) { $version = 1 }
+  $self->{'version'} = $version;
 
   # Default is_current
   if ( !defined($is_current) ) { $is_current = 1 }

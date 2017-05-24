@@ -165,7 +165,6 @@ sub new {
   }
 
   $self->stable_id($stable_id);
-  $self->version($version);
   $self->{'created_date'}  = $created_date;
   $self->{'modified_date'} = $modified_date;
 
@@ -181,6 +180,10 @@ sub new {
       # kept to ensure routine is backwards compatible.
   $self->status($status);    # add new naming
   $self->source($source);
+
+  # Default version
+  if ( !defined($version) ) { $version = 1 }
+  $self->{'version'} = $version;
 
   # default to is_current
   $is_current = 1 unless (defined($is_current));

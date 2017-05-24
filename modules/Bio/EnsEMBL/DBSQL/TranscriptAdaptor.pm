@@ -1174,8 +1174,7 @@ sub store {
   if ( defined( $transcript->stable_id() ) ) {
 
     $tst->bind_param( ++$i, $transcript->stable_id(), SQL_VARCHAR );
-    my $version = ($transcript->version()) ? $transcript->version() : 1;
-    $tst->bind_param( ++$i, $version,                 SQL_INTEGER );
+    $tst->bind_param( ++$i, $transcript->version(),   SQL_INTEGER );
   }
 
   $tst->execute();

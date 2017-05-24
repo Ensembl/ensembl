@@ -1340,8 +1340,7 @@ sub store {
   if (defined($gene->stable_id)) {
 
     $sth->bind_param(12, $gene->stable_id, SQL_VARCHAR);
-    my $version = ($gene->version()) ? $gene->version() : 1;
-    $sth->bind_param(13, $version, SQL_INTEGER);
+    $sth->bind_param(13, $gene->version,   SQL_INTEGER);
   }
 
   $sth->execute();

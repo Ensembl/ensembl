@@ -52,6 +52,8 @@ ok(test_getter_setter($t, 'dbID', 3));
 ok(test_getter_setter($t, 'start', 42));
 ok(test_getter_setter($t, 'end',   50));
 
+is($t->version, 1, 'Default translation version = 1');
+
 my $exon = Bio::EnsEMBL::Exon->new();
 $exon->start(10);
 $exon->end(20);

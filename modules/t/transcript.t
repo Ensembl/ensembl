@@ -729,8 +729,9 @@ $tr = $ta->fetch_by_stable_id('ENST00000355555');
 $g = $db->get_GeneAdaptor->fetch_by_transcript_id($tr->dbID);
 $tr->get_all_Exons;
 
-$multi->hide( "core", "gene", "transcript", "exon", 'xref', 'object_xref',
-              "exon_transcript", "translation", 'meta_coord' );
+my $tl = $tr->translation;
+
+$multi->hide( "core", "gene", "transcript", "translation", "meta_coord" );
 
 $tr->version(3);
 $tr->dbID(undef);
@@ -742,13 +743,23 @@ $tr->is_current(0);
 $tr->dbID(undef);
 $tr->adaptor(undef);
 $ta->store($tr, $g->dbID);
+
+$tr->version(undef);
+$tr->is_current(0);
+$tr->dbID(undef);
+$tr->adaptor(undef);
+$tl->version(undef);
+$tr->translation($tl);
+$ta->store($tr, $g->dbID);
+
 $tr = $ta->fetch_by_stable_id('ENST00000355555');
 is($tr->is_current, 1, 'Transcript is current');   # 148
 
 @transcripts = @{ $ta->fetch_all_versions_by_stable_id('ENST00000355555') };
 foreach my $t (@transcripts) {
-  next unless ($t->version == 4);
-  is($t->is_current, 0, 'Transcript is not current');  # 149
+  if (defined $t->version && $t->version == 4) {
+    is($t->is_current, 0, 'Transcript is not current');  # 149
+  }
 }
 
 $tr->is_current(0);
@@ -760,6 +771,15 @@ $tr->is_current(1);
 $ta->update($tr);
 $tr = $ta->fetch_by_stable_id('ENST00000355555');
 is($tr->is_current, 1, 'Transcript is now current');   # 151
+
+my $null_versions = 0;
+foreach my $t (@transcripts) {
+  if (! defined $t->version) {
+    ok(! defined $t->translation->version);
+    $null_versions++;
+  }
+}
+is ( $null_versions, 1, "Null/undef version stored and retrieved");
 
 $multi->restore;
 

@@ -172,7 +172,6 @@ sub new {
   }
 
   $self->stable_id($stable_id);
-  $self->version($version);
   $self->{'created_date'}  = $created_date;
   $self->{'modified_date'} = $modified_date;
   $self->external_name($external_name) if ( defined $external_name );
@@ -187,6 +186,10 @@ sub new {
   $self->status($status);        # new style name
   $self->biotype($biotype);
   $self->source($source);
+
+  # Default version
+  if ( !defined($version) ) { $version = 1 }
+  $self->{'version'} = $version;
 
   # default is_current
   $is_current = 1 unless ( defined($is_current) );
