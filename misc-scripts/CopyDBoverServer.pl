@@ -784,7 +784,7 @@ TABLE:
     push( @tables, $table );
   } ## end while ( $table_sth->fetch...)
   ## Checking MySQL version on the server. For MySQL version 5.6 and above,  FLUSH TABLES is not permitted when there is an active READ LOCK.
-  if ($source_dbh->{mysql_serverversion} < "50600"){
+  if ($source_dbh->selectall_arrayref("SHOW VARIABLES LIKE 'version'")->[0][1] lt "5.6"){
         # Lock tables with a read lock.
     print("LOCKING TABLES...\n");
     $source_dbh->do(
@@ -806,13 +806,13 @@ TABLE:
                   sprintf( "FLUSH TABLES %s WITH READ LOCK", join( ', ', @tables ) ) );
     }
     else {
-      warn( sprintf("You are running the script with --noflush and MySQL source server version is $source_dbh->{mysql_serverversion}. " .
+      warn( sprintf("You are running the script with --noflush and MySQL source server version is $source_dbh->selectall_arrayref(\"SHOW VARIABLES LIKE 'version'\")->[0][1]. " .
                        "The database will not be locked during the copy. " .
                        "This is not recomended!!!"));
     }
   }
   # If update, also flush target server and MySQL version < 5.6
-  if ($opt_update and ($target_dbh->{mysql_serverversion} < "50600")){
+  if ($opt_update and ($target_dbh->selectall_arrayref("SHOW VARIABLES LIKE 'version'")->[0][1] lt "5.6")){
            # Lock tables with a read lock.
       print("LOCKING TABLES...\n");
       $target_dbh->do(
@@ -831,7 +831,7 @@ TABLE:
                   sprintf( "FLUSH TABLES %s WITH READ LOCK", join( ', ', @tables ) ) );
     }
     else {
-      warn( sprintf("You are running the script with --noflush and MySQL target server version is $target_dbh->{mysql_serverversion}. " .
+      warn( sprintf("You are running the script with --noflush and MySQL target server version is $target_dbh->selectall_arrayref(\"SHOW VARIABLES LIKE 'version'\")->[0][1]. " .
                        "The database will not be locked during the copy. " .
                        "This is not recomended!!!"));
       }
