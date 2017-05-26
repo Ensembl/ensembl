@@ -322,8 +322,8 @@ sub print_feature {
       foreach my $endcodon (@endcodons) {
         if ( $translation &&
              $hasend &&
-             ( $exon->end >= $endcodon->start &&
-               $exon->start <= $endcodon->end ) )
+             ( $cdsexon->end + $sliceoffset >= $endcodon->start &&
+               $cdsexon->start + $sliceoffset <= $endcodon->end ) )
         {
           if ( $cdsexon->strand == 1 ) {
             $exon_end = $cdsexon->end - $endcodon->length;
