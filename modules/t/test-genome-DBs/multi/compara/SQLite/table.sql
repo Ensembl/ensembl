@@ -1,6 +1,6 @@
 -- 
 -- Created by SQL::Translator::Producer::SQLite
--- Created on Wed May 31 14:52:48 2017
+-- Created on Wed May 31 17:44:12 2017
 -- 
 
 BEGIN TRANSACTION;
@@ -360,7 +360,7 @@ CREATE TABLE genomic_align_block (
 --
 CREATE TABLE genomic_align_tree (
   node_id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
-  parent_id bigint NOT NULL DEFAULT 0,
+  parent_id bigint,
   root_id bigint NOT NULL DEFAULT 0,
   left_index integer NOT NULL DEFAULT 0,
   right_index integer NOT NULL DEFAULT 0,

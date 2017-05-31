@@ -1,5 +1,5 @@
 1	\N	schema_type	variation
-2	\N	schema_version	88
+2	\N	schema_version	89
 3	\N	patch	patch_84_85_a.sql|schema version
 4	\N	patch	patch_84_85_b.sql|create sample_synonym
 5	\N	patch	patch_84_85_c.sql|drop column moltype from variation_synonym
@@ -16,3 +16,5 @@
 16	\N	patch	patch_86_87_a.sql|schema version
 17	\N	patch	patch_87_88_a.sql|schema version
 18	\N	patch	patch_87_88_b.sql|seq_region_name_255
+19	\N	patch	patch_88_89_a.sql|schema version
+20	\N	patch	patch_88_89_b.sql|Drop strain_gtype_poly table
