@@ -108,3 +108,4 @@
 108	\N	patch	patch_87_88_c.sql|protein_featue_uniqueness
 109	\N	patch	patch_88_89_a.sql|schema_version
 110	\N	patch	patch_89_90_a.sql|schema_version
+111	\N	patch	patch_89_90_b.sql|remove_status

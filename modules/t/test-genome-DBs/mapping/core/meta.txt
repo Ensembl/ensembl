@@ -48,3 +48,4 @@
 141	\N	patch	patch_87_88_c.sql|protein_featue_uniqueness
 142	\N	patch	patch_88_89_a.sql|schema_version
 143	\N	patch	patch_89_90_a.sql|schema_version
+144	\N	patch	patch_89_90_b.sql|remove_status

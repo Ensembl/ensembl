@@ -1,6 +1,6 @@
 -- 
 -- Created by SQL::Translator::Producer::SQLite
--- Created on Wed May 31 17:43:50 2017
+-- Created on Thu Jun  1 11:16:06 2017
 -- 
 
 BEGIN TRANSACTION;
@@ -338,7 +338,6 @@ CREATE TABLE gene (
   seq_region_strand tinyint NOT NULL,
   display_xref_id integer,
   source varchar(40) NOT NULL,
-  status enum,
   description text,
   is_current tinyint NOT NULL DEFAULT 1,
   canonical_transcript_id integer NOT NULL,
@@ -866,7 +865,6 @@ CREATE TABLE transcript (
   display_xref_id integer,
   source varchar(40) NOT NULL DEFAULT 'ensembl',
   biotype varchar(40) NOT NULL,
-  status enum,
   description text,
   is_current tinyint NOT NULL DEFAULT 1,
   canonical_translation_id integer,
