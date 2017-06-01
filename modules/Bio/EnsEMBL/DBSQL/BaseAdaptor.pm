@@ -666,8 +666,9 @@ sub _uncached_fetch_by_dbID{
   #construct a constraint like 't1.table1_id = 123'
   my @tabs = $self->_tables;
   my ($name, $syn) = @{$tabs[0]};
+  my $col = $self->_dbID_column;
   $self->bind_param_generic_fetch($id,SQL_INTEGER);
-  my $constraint = "${syn}.${name}_id = ?";
+  my $constraint = "${syn}.${col} = ?";
 
   #Should only be one
   my ($feat) = @{$self->generic_fetch($constraint)};
@@ -781,7 +782,7 @@ sub _uncached_fetch_all_by_id_list {
   # is the field/column name
   my $field_name;
   if($id_type eq 'dbID') {
-    $field_name = $name.'_id';
+    $field_name = $self->_dbID_column();
     # If numeric was not set default it to 1 since this is an int
     $numeric = 1 if ! defined $numeric;
   }
@@ -1008,6 +1009,26 @@ sub _tables {
 sub _columns {
   throw(   "abstract method _columns not defined "
          . "by implementing subclass of BaseAdaptor" );
+}
+
+
+# _dbID_column
+#
+#  Arg [1]    : none
+#  Example    : none
+#  Description: May be overridden to provide the name of the column
+#               that represents the dbID of this object. Defaults
+#               to _tablename() . '_id'
+#  Returntype : string
+#  Exceptions : none
+#  Caller     : generic_fetch and alike
+#
+
+sub _dbID_column {
+  my $self = shift;
+  my @tabs = $self->_tables;
+  my ($table) = @{$tabs[0]};
+  return $table.'_id';
 }
 
 
