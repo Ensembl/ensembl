@@ -1,5 +1,5 @@
 1	\N	schema_type	variation
-2	\N	schema_version	88
+2	\N	schema_version	89
 6	1	species.production_name	mus_musculus
 15	1	web_config	sv_study#Keane 2011 (DGVa study estd118)#Keane 2011#estd118
 14	1	web_config	set#All failed variants#All failed variants#variation_set_fail_all#failed
@@ -43,3 +43,5 @@
 49	\N	patch	patch_86_87_a.sql|schema version
 50	\N	patch	patch_87_88_a.sql|schema version
 51	\N	patch	patch_87_88_b.sql|seq_region_name_255
+52	\N	patch	patch_88_89_a.sql|schema version
+53	\N	patch	patch_88_89_b.sql|Drop strain_gtype_poly table
