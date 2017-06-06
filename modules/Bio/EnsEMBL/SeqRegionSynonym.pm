@@ -78,14 +78,16 @@ sub new {
   
   my $self = bless {},$class;
 
-  my ( $adaptor, $synonym, $ex_db, $seq_region_id, $dbid) =
-    rearrange ( ['ADAPTOR','SYNONYM','EXTERNAL_DB_ID','SEQ_REGION_ID','DBID'], @args );
+  my ( $adaptor, $synonym, $ex_db, $seq_region_id, $dbid, $dbname, $db_display_name) =
+    rearrange ( ['ADAPTOR','SYNONYM','EXTERNAL_DB_ID','SEQ_REGION_ID','DBID', 'DBNAME', 'DB_DISPLAY_NAME'], @args );
 
   $self->adaptor($adaptor);
 
-  if( defined $ex_db ) { $self->external_db_id( $ex_db ) }
-  if( defined $seq_region_id ) { $self->seq_region_id( $seq_region_id ) }
-  if (defined $dbid) { $self->{'dbID'} = $dbid}
+  if( defined $ex_db ) { $self->external_db_id( $ex_db ) } ;
+  if( defined $seq_region_id ) { $self->seq_region_id( $seq_region_id ) } ;
+  if (defined $dbid) { $self->{'dbID'} = $dbid} ;
+  if (defined $dbname) { $self->{'dbname'} = $dbname };
+  if (defined $db_display_name) { $self->{'db_display_name'} = $db_display_name };
 
   if( defined $synonym ) { 
     $self->name( $synonym ) ;
@@ -113,6 +115,27 @@ sub seq_region_id{
   my $self = shift;
   $self->{'seq_region_id'} = shift if(@_);
   return $self->{'seq_region_id'};
+}
+
+sub dbname {
+  my $self = shift;
+  $self->{'dbname'} = shift if(@_);
+  return $self->{'dbname'};
+}
+
+sub db_display_name {
+  my $self = shift;
+  $self->{'db_display_name'} = shift if(@_);
+  return $self->{'db_display_name'};
+}
+
+sub summary_as_hash {
+  my $self = shift;
+  my %summary;
+  $summary{name} = $self->name;
+  $summary{dbname} = $self->dbname;
+
+  return \%summary;
 }
 
 1;

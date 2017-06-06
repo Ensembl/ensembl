@@ -452,6 +452,9 @@ $slice->add_synonym("20ish");
 
 is(@alt_names, 3, "Got 3 alt names");
 
+is($alt_names[1]->name, 'anoth_20', 'Correctly retrieved synonym name');
+is($alt_names[1]->dbname, 'RFAM', 'Correctly retrieved synonym external db');
+
 
 #slcie aleady stored so need to store syns
 my $syn_adap =  $db->get_SeqRegionSynonymAdaptor; 
