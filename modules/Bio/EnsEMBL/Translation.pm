@@ -209,6 +209,9 @@ sub start{
       my $value = shift;
       
       $obj->{'start'} = $value;
+      if (!defined($obj->adaptor())) {
+        $obj->{seq} = undef;
+      }
     }
     return $obj->{'start'};
 
@@ -237,6 +240,9 @@ sub end {
       my $value = shift;
       
       $self->{'end'} = $value;
+      if (!defined($self->adaptor())) {
+        $self->{seq} = undef;
+      }
     }
     return $self->{'end'};
 
