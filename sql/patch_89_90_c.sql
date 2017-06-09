@@ -18,9 +18,10 @@
 # Title: Add species_id field
 #
 # Description:
-#    Add species_id column in the mapping_session table is a possible solution to help identifying the strain with the multiSpecies database mapping sessions.
+# Add species_id column in the mapping_session table is a possible solution to help identifying the strain with the multiSpecies database mapping sessions.
 
 ALTER TABLE mapping_session ADD COLUMN species_id INT(10) UNSIGNED NOT NULL DEFAULT 1 ,ADD KEY ( species_id );
 										  							  
 # Patch identifier
+
 INSERT INTO meta (species_id, meta_key, meta_value) VALUES (NULL, 'patch', 'patch_89_90_c.sql|add_species_id');	
