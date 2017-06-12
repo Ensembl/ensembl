@@ -1853,8 +1853,7 @@ CREATE TABLE gene_archive (
 
 */
 
-
- CREATE TABLE mapping_session (
+CREATE TABLE mapping_session (
 
   mapping_session_id          INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
   species_id                  INT(10) UNSIGNED NOT NULL DEFAULT 1,
@@ -1869,7 +1868,7 @@ CREATE TABLE gene_archive (
   PRIMARY KEY (mapping_session_id),
   KEY species_idx (species_id)
 
-) COLLATE=latin1_swedish_ci ENGINE=MyISAM;		
+) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
 
 
 /**
