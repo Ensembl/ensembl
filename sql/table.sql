@@ -1839,6 +1839,7 @@ CREATE TABLE gene_archive (
 @desc Stores details of ID mapping sessions - a mapping session represents the session when stable IDs where mapped from one database to another. Details of the "old" and "new" databases are stored.
 
 @column mapping_session_id          Primary key, internal identifier.
+@column species_id                  Indentifies the species for multi-species databases.
 @column old_db_name                 Old Ensembl database name.
 @column new_db_name                 New Ensembl database name.
 @column old_release                 Old Ensembl database release.
@@ -1852,10 +1853,10 @@ CREATE TABLE gene_archive (
 
 */
 
-
 CREATE TABLE mapping_session (
 
   mapping_session_id          INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
+  species_id                  INT(10) UNSIGNED NOT NULL DEFAULT 1,
   old_db_name                 VARCHAR(80) NOT NULL DEFAULT '',
   new_db_name                 VARCHAR(80) NOT NULL DEFAULT '',
   old_release                 VARCHAR(5) NOT NULL DEFAULT '',
@@ -1864,7 +1865,8 @@ CREATE TABLE mapping_session (
   new_assembly                VARCHAR(20) NOT NULL DEFAULT '',
   created                     DATETIME NOT NULL,
 
-  PRIMARY KEY (mapping_session_id)
+  PRIMARY KEY (mapping_session_id),
+  KEY species_idx (species_id)
 
 ) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
 
