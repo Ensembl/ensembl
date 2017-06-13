@@ -342,10 +342,13 @@ sub run_script {
         if ($best_id) {
           my ($acc, $version) = split(/\./, $id);
 	  $version =~ s/\D//g if $version;
-          my $source_id = $mrna_source_id;
+          my $source_id;
+          $source_id = $mrna_source_id if $acc =~ /^NM_/;
           $source_id = $ncrna_source_id if $acc =~ /^NR_/;
           $source_id = $pred_mrna_source_id if $acc =~ /^XM_/;
           $source_id = $pred_ncrna_source_id if $acc =~ /^XR_/;
+          # Accession should be of format NM_/XM_/NR_/XR_ otherwise it is not valid
+          if (!defined $source_id) { next; }
           my $xref_id = $self->add_xref({ acc => $acc,
                                           version => $version,
                                           label => $id,
