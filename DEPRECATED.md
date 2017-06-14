@@ -13,6 +13,13 @@ A year after deprecation (4 Ensembl releases), the method is removed from the AP
  - Bio::EnsEMBL::DBSQL::**BaseAdaptor**::*dump_data()*
  - Bio::EnsEMBL::DBSQL::**BaseAdaptor**::*get_dumped_data()*
 
+### Removed in Ensembl Release 90 ###
+
+ - Bio::EnsEMBL::**Gene**::*is_known()*
+ - Bio::EnsEMBL::**Gene**::*status()*
+ - Bio::EnsEMBL::**Transcript**::*is_known()*
+ - Bio::EnsEMBL::**Transcript**::*status()*
+
 ### Removed in Ensembl Release 88 ###
 
  - Bio::EnsEMBL::**Slice**::*get_all_VariationFeatures()*
