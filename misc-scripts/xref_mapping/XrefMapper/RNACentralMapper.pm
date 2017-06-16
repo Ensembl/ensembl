@@ -35,7 +35,7 @@ sub target {
 
 sub external_db_name {
   my ($self) = @_;
-  return 'RNACentral';
+  return 'RNAcentral';
 }
 
 # RNACentral xrefs are mapped on a transcript level
