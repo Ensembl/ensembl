@@ -162,8 +162,8 @@ sub run_script {
 # Else database should be on staging
       $registry->load_registry_from_multiple_dbs( 
 	  {
-	      -host    => 'mysql-ensembl-mirror.ebi.ac.uk',
-	      '-port'    => 4240,
+	      -host    => 'mysql-ens-sta-1',
+	      '-port'    => 4519,
 	      -user    => 'ensro',
 	  },
        );
