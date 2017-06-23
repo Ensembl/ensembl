@@ -549,7 +549,7 @@ foreach my $spec (@todo) {
 
   my $target_dsn;
   # If using the update option, connect to the target database  
-  if ($opt_update){
+  if ($opt_update || $opt_only_tables){
      $target_dsn = sprintf( "DBI:mysql:database=%s;host=%s;port=%d",
                             $target_db, $target_hostaddr, $target_port );
   }
@@ -645,7 +645,10 @@ foreach my $spec (@todo) {
 
   # If we update the database, we don't need a tmp dir
   # We will use the dest dir instead of staging dir.
-  if (!$opt_update) {
+  if ($opt_update || $opt_only_tables) {
+    $staging_dir=$destination_dir;
+  }
+  else {
     if ( defined($opt_tmpdir) ) { $tmp_dir = $opt_tmpdir }
     else {
       if ((scalar( getpwuid($<) ) eq 'mysqlens')) {
@@ -708,7 +711,7 @@ foreach my $spec (@todo) {
     }
 
     if ( !mkdir($staging_dir) ) {
-      if ( !$opt_force || !-d $staging_dir || !$opt_update) {
+      if ( !$opt_force || !-d $staging_dir || !$opt_update || !$opt_only_tables) {
         warn( sprintf( "Failed to create staging directory '%s'.\n",
                      $staging_dir ) );
 
@@ -720,9 +723,6 @@ foreach my $spec (@todo) {
         next TODO;
       }
     }
-  }
-  else{
-    $staging_dir=$destination_dir;
   }
 
   $spec->{'status'} = 'SUCCESS';    # Assume success until failure.
@@ -812,7 +812,7 @@ TABLE:
     }
   }
   # If update, also flush target server and MySQL version < 5.6
-  if ($opt_update and ($target_dbh->selectall_arrayref("SHOW VARIABLES LIKE 'version'")->[0][1] lt "5.6")){
+  if (($opt_update || $opt_only_tables) and ($target_dbh->selectall_arrayref("SHOW VARIABLES LIKE 'version'")->[0][1] lt "5.6")){
            # Lock tables with a read lock.
       print("LOCKING TABLES...\n");
       $target_dbh->do(
@@ -824,7 +824,7 @@ TABLE:
       }
   }
   # If we use the update option, also flush and lock target server for MySQL version >= 5.6
-  elsif ($opt_update){
+  elsif ($opt_update || $opt_only_tables){
            if ($opt_flush) {
         print("FLUSHING AND LOCKING TABLES TARGET...\n");
         $target_dbh->do(
@@ -882,7 +882,7 @@ TABLE:
   push(@copy_cmd, '-e', q{ssh -c arcfour} );
 
   if ( defined($opt_only_tables) ) {
-    push( @copy_cmd, '--include=db.opt' );
+    push( @copy_cmd, '--ignore-times' );
 
     push( @copy_cmd,
           map { sprintf( '--include=%s.*', $_ ) } keys(%only_tables) );
@@ -946,7 +946,7 @@ TABLE:
 
   $source_dbh->disconnect();
 
-  if ($opt_update){
+  if ($opt_update || $opt_only_tables){
     print("UNLOCKING TABLES TARGET...\n");
     $target_dbh->do('UNLOCK TABLES');
     $target_dbh->disconnect();
@@ -1008,7 +1008,7 @@ TABLE:
   } ## end else [ if ($opt_skip_views) ]
 
   # if we use the update option, optimize the target database
-  if ($opt_update) {
+  if ($opt_update || $opt_only_tables) {
     ##------------------------------------------------------------------##
     ## OPTIMIZE TARGET                                                  ##
     ##------------------------------------------------------------------##
@@ -1081,61 +1081,63 @@ TABLE:
   # Only move the database from the temp directory to live directory if
   # we are not using the update option
   if (!$opt_update) {
-    print( '-' x 37, ' MOVE ', '-' x 37, "\n" );
+    if (!$opt_only_tables) {
+      print( '-' x 37, ' MOVE ', '-' x 37, "\n" );
 
-    # Move table files into place in $destination_dir using
-    # File::Copy::move(), and remove the staging directory.  We already
-    # know that the destination directory does not exist.
+      # Move table files into place in $destination_dir using
+      # File::Copy::move(), and remove the staging directory.  We already
+      # know that the destination directory does not exist.
 
-    printf( "MOVING '%s' TO '%s'...\n", $staging_dir, $destination_dir );
+      printf( "MOVING '%s' TO '%s'...\n", $staging_dir, $destination_dir );
 
-    if ( !mkdir($destination_dir) ) {
-      warn( sprintf( "Failed to create destination directory '%s'.\n" .
+      if ( !mkdir($destination_dir) ) {
+        warn( sprintf( "Failed to create destination directory '%s'.\n" .
                      "Please clean up '%s'.\n",
                    $destination_dir, $staging_dir
           ) );
 
-      $spec->{'status'} =
-        sprintf( "FAILED: can not create destination directory '%s' " .
+        $spec->{'status'} =
+          sprintf( "FAILED: can not create destination directory '%s' " .
                    "(cleanup of '%s' may be needed)",
                $destination_dir, $staging_dir );
-      next TODO;
-    }
+        next TODO;
+      }
 
-    move( catfile( $staging_dir, 'db.opt' ), $destination_dir );
+      move( catfile( $staging_dir, 'db.opt' ), $destination_dir );
 
-    foreach my $table (@tables, @views) {
-      my @files =
-        glob( catfile( $staging_dir, sprintf( "%s*", $table ) ) );
+      foreach my $table (@tables, @views) {
+        my @files =
+          glob( catfile( $staging_dir, sprintf( "%s*", $table ) ) );
 
-      printf( "Moving %s...\n", $table );
+        printf( "Moving %s...\n", $table );
 
-    FILE:
-      foreach my $file (@files) {
-        if ( !move( $file, $destination_dir ) ) {
-          warn( sprintf( "Failed to move database.\n" .
+      FILE:
+        foreach my $file (@files) {
+          if ( !move( $file, $destination_dir ) ) {
+            warn( sprintf( "Failed to move database.\n" .
                          "Please clean up '%s' and '%s'.\n",
                        $staging_dir, $destination_dir
               ) );
 
-          $spec->{'status'} =
-            sprintf( "FAILED: can not move '%s' from staging directory " .
+            $spec->{'status'} =
+              sprintf( "FAILED: can not move '%s' from staging directory " .
                      "(cleanup of '%s' and '%s' may be needed)",
                    $file, $staging_dir, $destination_dir );
-          next FILE;
+            next FILE;
+          }
         }
       }
-    }
 
-    # Remove the now empty staging directory.
-    if ( !rmdir($staging_dir) ) {
-      warn( sprintf( "Failed to unlink the staging directory '%s'.\n" .
+      # Remove the now empty staging directory.
+      if ( !rmdir($staging_dir) ) {
+        warn( sprintf( "Failed to unlink the staging directory '%s'.\n" .
                      "Clean this up manually.\n",
                    $staging_dir
           ) );
 
-      $spec->{'status'} =
-        sprintf( "SUCCESS: cleanup of '%s' may be needed", $staging_dir );
+        $spec->{'status'} =
+          sprintf( "SUCCESS: cleanup of '%s' may be needed", $staging_dir );
+      }
     }
   }
 
