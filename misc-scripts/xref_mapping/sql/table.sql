@@ -55,7 +55,7 @@ CREATE TABLE primary_xref (
 
   PRIMARY KEY (xref_id)
 
-) COLLATE=latin1_swedish_ci ENGINE=InnoDB;
+) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
 
 ################################################################################
 
