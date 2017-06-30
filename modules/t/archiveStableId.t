@@ -235,9 +235,6 @@ is($archive_obj->stable_id, "T7", "fetch_by_stable_id with active stable_id foun
 is($archive_obj->species_id, 2, "expected species_id == 2 is true");
 is($archive_obj->meta_value, "house mouse", "expected meta_value == \"house mouse\" is true");
 
-
-
-
 #
 # debug helper
 #
