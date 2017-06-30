@@ -45,6 +45,8 @@ Attributes:
   release: e.g. 35
   assembly: e.g. NCBI35
   successors: listref of Bio::EnsEMBL::ArchiveStableIds
+  meta_value: e.g. "house mouse"
+  species_id: e.g. 2
   adaptor: Bio::EnsEMBL::DBSQL::ArchiveStableIdAdaptor
 
 Status: At Risk. This module is in development.
@@ -103,6 +105,8 @@ sub new {
   $self->{'release'} = $release;
   $self->{'assembly'} = $assembly;
   $self->{'type'} = $type;
+  $self->{'meta_value'} = "";
+  $self->{'species_id'} = ""; 
   $self->adaptor($adaptor);
 
   return $self;
@@ -527,6 +531,18 @@ sub successors {
   my $self = shift;
   $self->{'successors'} = \@_;
   return $self->{'successors'};
+}
+
+sub meta_value {
+  my $self = shift;
+  $self->{'meta_value'} = shift if (@_);
+  return $self->{'meta_value'};
+}
+
+sub species_id {
+  my $self = shift;
+  $self->{'species_id'} = shift if (@_);
+  return $self->{'species_id'};
 }
 
 1;

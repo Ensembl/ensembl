@@ -209,6 +209,8 @@ sub _fetch_by_stable_id {
       $arch_id->release($r->{'new_release'});
       $arch_id->assembly($r->{'new_assembly'});
       $arch_id->db_name($r->{'new_db_name'});
+      $arch_id->meta_value($r->{'meta_value'});
+      $arch_id->species_id($r->{'species_id'});
     } else {
       # latest event is a deletion event (or mapping to other ID; this clause
       # is only used to cope with buggy data where deletion events are
@@ -217,6 +219,8 @@ sub _fetch_by_stable_id {
       $arch_id->release($r->{'old_release'});
       $arch_id->assembly($r->{'old_assembly'});
       $arch_id->db_name($r->{'old_db_name'});
+      $arch_id->meta_value($r->{'meta_value'});
+      $arch_id->species_id($r->{'species_id'});
     }
 
     $arch_id->type(ucfirst(lc($r->{'type'})));
@@ -386,13 +390,15 @@ sub _fetch_archive_id {
   # using a UNION is much faster in this query than somthing like
   # "... AND (sie.old_stable_id = ? OR sie.new_stable_id = ?)"
   my $sql = qq(
-    SELECT * FROM stable_id_event sie, mapping_session ms
+    SELECT * FROM stable_id_event sie, mapping_session ms, meta m
     WHERE sie.mapping_session_id = ms.mapping_session_id
-    AND sie.old_stable_id = ?
+    AND	ms.species_id = m.species_id
+    AND sie.old_stable_id = ?   
     $extra_sql1
     UNION
-    SELECT * FROM stable_id_event sie, mapping_session ms
+    SELECT * FROM stable_id_event sie, mapping_session ms, meta m
     WHERE sie.mapping_session_id = ms.mapping_session_id
+    AND	ms.species_id = m.species_id
     AND sie.new_stable_id = ?
     $extra_sql2
     ORDER BY created DESC, score DESC
