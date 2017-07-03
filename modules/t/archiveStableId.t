@@ -231,9 +231,9 @@ ok($archive_obj->is_latest, 'Is the latest stable_id');
 # Modified SQL statement in function _fetch_archive_id() from file ArchiveStableIdAdaptor.pm
 
 $archive_obj = $asia->fetch_by_stable_id("T7");
-is($archive_obj->stable_id, "T7", "fetch_by_stable_id with active stable_id found for a new species");
-is($archive_obj->species_id, 2, "expected species_id == 2 is true");
-is($archive_obj->meta_value, "house mouse", "expected meta_value == \"house mouse\" is true");
+is($archive_obj->stable_id, 'T7', 'fetch_by_stable_id with active stable_id found for a new species');
+is($archive_obj->species_id, 2, 'expected species_id == 2 is true');
+is($archive_obj->meta_value, 'house mouse', 'expected meta_value == "house mouse" is true');
 
 #
 # debug helper

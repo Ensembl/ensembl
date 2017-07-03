@@ -105,8 +105,10 @@ sub new {
   $self->{'release'} = $release;
   $self->{'assembly'} = $assembly;
   $self->{'type'} = $type;
-  $self->{'meta_value'} = "";
-  $self->{'species_id'} = ""; 
+
+# meta_value and species_id member attributes added to support multiSpecies species_id tests on archiveStable.t
+  $self->{meta_value} = "";
+  $self->{species_id} = ""; 
   $self->adaptor($adaptor);
 
   return $self;
