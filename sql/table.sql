@@ -311,6 +311,8 @@ INSERT INTO meta (species_id, meta_key, meta_value)
   VALUES (NULL, 'patch', 'patch_89_90_a.sql|schema_version');
 INSERT INTO meta (species_id, meta_key, meta_value)
   VALUES (NULL, 'patch', 'patch_89_90_b.sql|remove_status');
+INSERT INTO meta (species_id, meta_key, meta_value) 
+  VALUES (NULL, 'patch', 'patch_89_90_c.sql|add_species_id');
 
 /**
 @table meta_coord
@@ -1839,6 +1841,7 @@ CREATE TABLE gene_archive (
 @desc Stores details of ID mapping sessions - a mapping session represents the session when stable IDs where mapped from one database to another. Details of the "old" and "new" databases are stored.
 
 @column mapping_session_id          Primary key, internal identifier.
+@column species_id                  Indentifies the species for multi-species databases.
 @column old_db_name                 Old Ensembl database name.
 @column new_db_name                 New Ensembl database name.
 @column old_release                 Old Ensembl database release.
@@ -1852,7 +1855,6 @@ CREATE TABLE gene_archive (
 
 */
 
-
 CREATE TABLE mapping_session (
 
   mapping_session_id          INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -1863,8 +1865,10 @@ CREATE TABLE mapping_session (
   old_assembly                VARCHAR(20) NOT NULL DEFAULT '',
   new_assembly                VARCHAR(20) NOT NULL DEFAULT '',
   created                     DATETIME NOT NULL,
+  species_id                  INT(10) UNSIGNED NOT NULL DEFAULT 1,
 
-  PRIMARY KEY (mapping_session_id)
+  PRIMARY KEY (mapping_session_id),
+  KEY species_id (species_id)
 
 ) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
 
@@ -2488,5 +2492,4 @@ CREATE TABLE operon_transcript_gene (
 
   KEY operon_transcript_gene_idx (operon_transcript_id,gene_id)
 ) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
-
 
