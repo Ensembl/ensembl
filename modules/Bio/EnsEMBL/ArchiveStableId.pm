@@ -537,13 +537,13 @@ sub successors {
 
 sub meta_value {
   my $self = shift;
-  $self->{'meta_value'} = shift if (@_);
+  $self->{meta_value} = shift if (@_);
   return $self->{'meta_value'};
 }
 
 sub species_id {
   my $self = shift;
-  $self->{'species_id'} = shift if (@_);
+  $self->{species_id} = shift if (@_);
   return $self->{'species_id'};
 }
 

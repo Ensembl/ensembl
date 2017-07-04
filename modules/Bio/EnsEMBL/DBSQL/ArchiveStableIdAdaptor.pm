@@ -209,8 +209,8 @@ sub _fetch_by_stable_id {
       $arch_id->release($r->{'new_release'});
       $arch_id->assembly($r->{'new_assembly'});
       $arch_id->db_name($r->{'new_db_name'});
-      $arch_id->meta_value($r->{'meta_value'});
-      $arch_id->species_id($r->{'species_id'});
+      $arch_id->meta_value($r->{meta_value});
+      $arch_id->species_id($r->{species_id});
     } else {
       # latest event is a deletion event (or mapping to other ID; this clause
       # is only used to cope with buggy data where deletion events are
@@ -219,8 +219,8 @@ sub _fetch_by_stable_id {
       $arch_id->release($r->{'old_release'});
       $arch_id->assembly($r->{'old_assembly'});
       $arch_id->db_name($r->{'old_db_name'});
-      $arch_id->meta_value($r->{'meta_value'});
-      $arch_id->species_id($r->{'species_id'});
+      $arch_id->meta_value($r->{meta_value});
+      $arch_id->species_id($r->{species_id});
     }
 
     $arch_id->type(ucfirst(lc($r->{'type'})));
