@@ -311,6 +311,8 @@ INSERT INTO meta (species_id, meta_key, meta_value)
   VALUES (NULL, 'patch', 'patch_89_90_a.sql|schema_version');
 INSERT INTO meta (species_id, meta_key, meta_value)
   VALUES (NULL, 'patch', 'patch_89_90_b.sql|remove_status');
+INSERT INTO meta (species_id, meta_key, meta_value)
+  VALUES (NULL, 'patch', 'patch_89_90_c.sql|pf_hit_name_case_sensitive');
 
 /**
 @table meta_coord
@@ -924,7 +926,7 @@ CREATE TABLE protein_feature (
   seq_end                     INT(10) NOT NULL,
   hit_start                   INT(10) NOT NULL,
   hit_end                     INT(10) NOT NULL,
-  hit_name                    VARCHAR(40) NOT NULL,
+  hit_name                    VARCHAR(40) CHARACTER SET latin1 COLLATE latin1_bin NOT NULL,
   analysis_id                 SMALLINT UNSIGNED NOT NULL,
   score                       DOUBLE,
   evalue                      DOUBLE,
