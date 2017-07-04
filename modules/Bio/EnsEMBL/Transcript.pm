@@ -833,7 +833,6 @@ sub spliced_seq {
   my $seq_string = "";
   for my $ex ( @{$self->get_all_Exons()} ) {
     my $seq = $ex->seq();
-
     if(!$seq) {
       warning("Could not obtain seq for exon.  Transcript sequence may not " .
               "be correct.");
@@ -850,7 +849,7 @@ sub spliced_seq {
           if ($ex->strand == 1) {
             $exon_seq = lc (substr($exon_seq, 0, $forward_length)) . substr($exon_seq, $forward_length); 
           } else {
-            $exon_seq = substr($exon_seq, 0, $reverse_length) . lc(substr($exon_seq, $reverse_length));
+            $exon_seq = substr($exon_seq, 0, $reverse_length+1) . lc(substr($exon_seq, $reverse_length+1));
           }
         } elsif ($ex->coding_region_end($self) < $ex->end()) {
           my $forward_length = $ex->coding_region_end($self) - $ex->start();
