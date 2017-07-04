@@ -109,3 +109,4 @@
 109	\N	patch	patch_88_89_a.sql|schema_version
 110	\N	patch	patch_89_90_a.sql|schema_version
 111	\N	patch	patch_89_90_b.sql|remove_status
+112	\N	patch	patch_89_90_c.sql|pf_hit_name_case_sensitive

@@ -1,5 +1,5 @@
 1	\N	schema_type	variation
-2	\N	schema_version	89
+2	\N	schema_version	90
 6	1	species.production_name	mus_musculus
 15	1	web_config	sv_study#Keane 2011 (DGVa study estd118)#Keane 2011#estd118
 14	1	web_config	set#All failed variants#All failed variants#variation_set_fail_all#failed
@@ -45,3 +45,6 @@
 51	\N	patch	patch_87_88_b.sql|seq_region_name_255
 52	\N	patch	patch_88_89_a.sql|schema version
 53	\N	patch	patch_88_89_b.sql|Drop strain_gtype_poly table
+54	\N	patch	patch_89_90_a.sql|schema version
+55	\N	patch	patch_89_90_b.sql|add start_retained_variant to consequence_types in variation_feature and transcript_variation
+56	\N	patch	patch_89_90_c.sql|remove regulatory and TFBS consequences from consequence_types in  transcript_variation

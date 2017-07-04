@@ -1,5 +1,5 @@
 1	\N	schema_type	variation
-2	\N	schema_version	89
+2	\N	schema_version	90
 3	\N	patch	patch_84_85_a.sql|schema version
 4	\N	patch	patch_84_85_b.sql|create sample_synonym
 5	\N	patch	patch_84_85_c.sql|drop column moltype from variation_synonym
@@ -18,3 +18,6 @@
 18	\N	patch	patch_87_88_b.sql|seq_region_name_255
 19	\N	patch	patch_88_89_a.sql|schema version
 20	\N	patch	patch_88_89_b.sql|Drop strain_gtype_poly table
+21	\N	patch	patch_89_90_a.sql|schema version
+22	\N	patch	patch_89_90_b.sql|add start_retained_variant to consequence_types in variation_feature and transcript_variation
+23	\N	patch	patch_89_90_c.sql|remove regulatory and TFBS consequences from consequence_types in  transcript_variation
