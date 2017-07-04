@@ -88,3 +88,4 @@
 137	\N	patch	patch_88_89_a.sql|schema_version
 138	\N	patch	patch_89_90_a.sql|schema_version
 139	\N	patch	patch_89_90_b.sql|remove_status
+140	\N	patch	patch_89_90_c.sql|add_species_id
