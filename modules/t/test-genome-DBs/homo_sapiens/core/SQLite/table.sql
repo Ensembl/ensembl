@@ -461,7 +461,7 @@ CREATE TABLE mapping_session (
   new_release varchar(5) NOT NULL DEFAULT '',
   old_assembly varchar(20) NOT NULL DEFAULT '',
   new_assembly varchar(20) NOT NULL DEFAULT '',
-  created datetime
+  created datetime,
   species_id INTEGER DEFAULT 1 NOT NULL,
 
   PRIMARY KEY (mapping_session_id)
