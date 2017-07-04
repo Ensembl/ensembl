@@ -464,8 +464,7 @@ CREATE TABLE mapping_session (
   created datetime
   species_id INTEGER DEFAULT 1 NOT NULL,
 
-  PRIMARY KEY (mapping_session_id),
-  KEY species_id (species_id)
+  PRIMARY KEY (mapping_session_id)
 );
 
 --
