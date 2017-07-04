@@ -462,9 +462,10 @@ CREATE TABLE mapping_session (
   old_assembly varchar(20) NOT NULL DEFAULT '',
   new_assembly varchar(20) NOT NULL DEFAULT '',
   created datetime
-  species_id INTEGER PRIMARY KEY DEFAULT 1 NOT NULL,
+  species_id INTEGER DEFAULT 1 NOT NULL,
 
-  PRIMARY KEY (mapping_session_id)
+  PRIMARY KEY (mapping_session_id),
+  KEY species_id (species_id)
 );
 
 --
