@@ -872,7 +872,7 @@ TABLE:
   # Update will copy updated tables from source db to target db
 
   if ($opt_update) {
-    push( @copy_cmd, '--update');
+    push( @copy_cmd, '--update', '--checksum');
   }
 
   # Set files permission to 755 (rwxr-xr-x)
