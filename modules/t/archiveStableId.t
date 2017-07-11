@@ -36,8 +36,8 @@ ok(1);
 my $multi = Bio::EnsEMBL::Test::MultiTestDB->new;
 my $db    = $multi->get_DBAdaptor('core');
 
-my $asia = $db->get_ArchiveStableIdAdaptor();
-
+# New way of instantiating
+my $asia = Bio::EnsEMBL::DBSQL::ArchiveStableIdAdaptor->new($db);
 
 #
 # 2-4 ArchiveStableId retrieval

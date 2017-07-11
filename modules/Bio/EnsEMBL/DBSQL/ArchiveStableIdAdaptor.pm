@@ -125,6 +125,25 @@ use Bio::EnsEMBL::Utils::Exception qw(deprecate warning throw);
 use constant MAX_ROWS => 30;
 use constant NUM_HIGH_SCORERS => 20;
 
+@ISA = ('Bio::EnsEMBL::DBSQL::BaseAdaptor');
+
+# added "constructor" to the ArchiveStableIdAdaptor.pm
+sub new {
+  my $caller = shift;
+
+  my $class = ref($caller) || $caller;
+
+  my $self = $class->SUPER::new(@_);
+
+  # use a cache which is shared and also used by the assembly
+  # mapper adaptor
+
+  my $seq_region_cache = $self->db->get_SeqRegionCache();
+  $self->{'sr_name_cache'} = $seq_region_cache->{'name_cache'};
+
+  return $self;
+}
+
 
 =head2 fetch_by_stable_id
 
@@ -186,6 +205,24 @@ sub _fetch_by_stable_id {
   );
 
   @_ ? $arch_id->type(shift) : $self->_resolve_type($arch_id);
+  
+# check the cache so we only go to the db if necessary
+
+	my $arr;
+	if ( defined($stable_id) ) { 
+		
+		$arr = $self->{'sr_name_cache'}->{$stable_id};
+	}
+
+	  if ( defined($arr) ) {
+    
+          $arch_id->version($arr->[0]);
+	      $arch_id->release($arr->[1]);
+	      $arch_id->assembly($arr->[2]);
+	      $arch_id->db_name($arr->[3]);
+	      $arch_id->meta_value($arr->[4]);
+	      $arch_id->species_id($arr->[5]);
+	}else {
 
   if ($self->lookup_current($arch_id)) {
 
@@ -194,15 +231,14 @@ sub _fetch_by_stable_id {
     $arch_id->db_name($self->dbc->dbname);
     $arch_id->release($self->get_current_release);
     $arch_id->assembly($self->get_current_assembly);
-  
+	$self->{'sr_name_cache'} = $arch_id;
   } else {
-
+  	
     # look for latest version of this stable id
     my $extra_sql = defined($arch_id->{'type'}) ?
       " AND sie.type = '@{[lc($arch_id->{'type'})]}'" : '';
 
     my $r = $self->_fetch_archive_id($stable_id, $extra_sql, $extra_sql);
-
     if ($r->{'new_stable_id'} and $r->{'new_stable_id'} eq $stable_id) {
       # latest event is a self event, use new_* data
       $arch_id->version($r->{'new_version'});
@@ -225,15 +261,19 @@ sub _fetch_by_stable_id {
 
     $arch_id->type(ucfirst(lc($r->{'type'})));
   }
-  
-  if (! defined $arch_id->db_name) {
-    # couldn't find stable ID in archive or current db
-    return undef;
-  }
 
-  $arch_id->is_latest(1);
+	my $arr = [$arch_id->version, $arch_id->release, $arch_id->assembly, $arch_id->db_name, $arch_id->meta_value, $arch_id->species_id];
+	$self->{'sr_name_cache'}->{"$stable_id"} = $arr;
+	
+  	if (! defined $arch_id->db_name) {
+  		# couldn't find stable ID in archive or current db
+	    return undef;
+	}
 
-  return $arch_id;
+	$arch_id->is_latest(1);
+	} # End of cache decision block 
+
+	return $arch_id;
 }
 
 
