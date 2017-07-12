@@ -142,4 +142,6 @@ warns_like(
 dies_ok { $reg->load_all('i really hope there is no file named this way', undef, undef, undef, 1) } 'Pointing to a non-existing file should throw an error (if the option is switched on)';
 is($reg->load_all('i really hope there is no file named this way'), 0, 'Pointing to a non-existing file does not throw an error if the option is switched off');
 
+dies_ok { $reg->add_DBAdaptor() } 'add_DBAdaptor() must get a valid species';
+
 done_testing();
