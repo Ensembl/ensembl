@@ -121,11 +121,11 @@ use Bio::EnsEMBL::ArchiveStableId;
 use Bio::EnsEMBL::StableIdEvent;
 use Bio::EnsEMBL::StableIdHistoryTree;
 use Bio::EnsEMBL::Utils::Exception qw(deprecate warning throw);
+use Bio::EnsEMBL::DBSQL::BaseAdaptor;
 
 use constant MAX_ROWS => 30;
 use constant NUM_HIGH_SCORERS => 20;
 
-@ISA = ('Bio::EnsEMBL::DBSQL::BaseAdaptor');
 
 # added "constructor" to the ArchiveStableIdAdaptor.pm
 sub new {
@@ -208,21 +208,21 @@ sub _fetch_by_stable_id {
   
 # check the cache so we only go to the db if necessary
 
-	my $arr;
-	if ( defined($stable_id) ) { 
-		
-		$arr = $self->{'sr_name_cache'}->{$stable_id};
-	}
+  my $arr;
+  if ( defined($stable_id) ) { 
 
-	  if ( defined($arr) ) {
-    
-          $arch_id->version($arr->[0]);
-	      $arch_id->release($arr->[1]);
-	      $arch_id->assembly($arr->[2]);
-	      $arch_id->db_name($arr->[3]);
-	      $arch_id->meta_value($arr->[4]);
-	      $arch_id->species_id($arr->[5]);
-	}else {
+    $arr = $self->{'sr_name_cache'}->{$stable_id};
+  }
+
+  if ( defined($arr) ) {
+
+    $arch_id->version($arr->[0]);
+    $arch_id->release($arr->[1]);
+	$arch_id->assembly($arr->[2]);
+	$arch_id->db_name($arr->[3]);
+	$arch_id->meta_value($arr->[4]);
+	$arch_id->species_id($arr->[5]);
+  }else {
 
   if ($self->lookup_current($arch_id)) {
 
@@ -233,7 +233,7 @@ sub _fetch_by_stable_id {
     $arch_id->assembly($self->get_current_assembly);
 	$self->{'sr_name_cache'} = $arch_id;
   } else {
-  	
+
     # look for latest version of this stable id
     my $extra_sql = defined($arch_id->{'type'}) ?
       " AND sie.type = '@{[lc($arch_id->{'type'})]}'" : '';
@@ -267,7 +267,7 @@ sub _fetch_by_stable_id {
 	
   	if (! defined $arch_id->db_name) {
   		# couldn't find stable ID in archive or current db
-	    return undef;
+	    return;
 	}
 
 	$arch_id->is_latest(1);
@@ -335,7 +335,7 @@ sub fetch_by_stable_id_version {
 
     $arch_id->type(ucfirst(lc($r->{'type'})));
   }
-  
+
   if (! defined $arch_id->db_name) {
     # couldn't find stable ID version in archive or current release
     return undef;

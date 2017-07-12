@@ -255,8 +255,6 @@ my $get_value = sub {
   is_deeply($new_count_hash, $meta_count_hash, 'Counts of meta keys should be the same');
 }
 
-#---------------------------Error here
-
 
 #Testing transactional retry
 {
