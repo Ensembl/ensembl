@@ -121,7 +121,7 @@ use Bio::EnsEMBL::ArchiveStableId;
 use Bio::EnsEMBL::StableIdEvent;
 use Bio::EnsEMBL::StableIdHistoryTree;
 use Bio::EnsEMBL::Utils::Exception qw(deprecate warning throw);
-use Bio::EnsEMBL::DBSQL::BaseAdaptor;
+use parent "Bio::EnsEMBL::DBSQL::BaseAdaptor";
 
 use constant MAX_ROWS => 30;
 use constant NUM_HIGH_SCORERS => 20;
