@@ -185,13 +185,12 @@ sub fetch_by_stable_id {
   Arg [2]     : (optional) string $type
   Example     : none
   Description : Retrives an ArchiveStableId that is the latest incarnation of
-                given stable_id. Helper function to fetch_by_stable_id, should
-                not be directly called.
+                given stable_id.
+                Attempt to try an emulate cache design pattern as seen implemented in sliceAdaptor.pm.
+                Helper function to fetch_by_stable_id, should not be directly called.
   Returntype  : Bio::EnsEMBL::ArchiveStableId or undef if not in database
-  Exceptions  : none
-  Caller      : general
-  Status      : At Risk
-              : under development
+  Exceptions  : thrown on missing argument
+  Caller      : fetch_by_stable_id
 
 =cut
 
@@ -211,7 +210,12 @@ sub _fetch_by_stable_id {
   my $arr;
   if ( defined($stable_id) ) { 
 
-    $arr = $self->{'sr_name_cache'}->{$stable_id};
+    $arr = $self->{'arch_id_cache'}->{$stable_id};
+    return $arr if defined $arr;
+
+  }else{
+
+    throw( sprintf( "stable_id cannot be undefined:\n") );
   }
 
   if ( defined($arr) ) {
@@ -263,7 +267,7 @@ sub _fetch_by_stable_id {
   }
 
 	my $arr = [$arch_id->version, $arch_id->release, $arch_id->assembly, $arch_id->db_name, $arch_id->meta_value, $arch_id->species_id];
-	$self->{'sr_name_cache'}->{"$stable_id"} = $arr;
+	$self->{'arch_id_cache'}->{"$stable_id"} = $arr;
 	
   	if (! defined $arch_id->db_name) {
   		# couldn't find stable ID in archive or current db

@@ -327,7 +327,7 @@ my $get_value = sub {
     } qr /Throwing an error 4/, 'Correct error thrown';
     is($counter, 3, 'Counter should be set to 3 as we had 2 fake deadlocks & 1 real error even though we allowed more retries');
   }
-  
+
   #Fith says we sleep for at least the amount we say
   {
     my $counter = 0;
@@ -349,7 +349,7 @@ my $get_value = sub {
       ), 0, 
     'Commit will have deleted the meta_key row '.$meta_key);
   }
-  
+
   #Sixth says you cannot repeat the transaction if it worked
   {
     my $counter = 0;
@@ -359,7 +359,7 @@ my $get_value = sub {
     });
     is($counter, 1, 'Counter should be set to 1 as our transaction was good');
   }
-  
+
   #Reset
   $helper->transaction( -CALLBACK => sub {
     $helper->execute_update(-SQL => 'delete from meta');
