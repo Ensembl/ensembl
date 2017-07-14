@@ -152,6 +152,8 @@ is ( substr( $tr->spliced_seq(), 0, 10 ), "ACGAGACGAA", 'Start of spliced seq is
 is ( substr( $tr->spliced_seq(1), 0, 10 ), "acgagacgaa", 'Spliced seq with utr lower casing is correct');
 is ( length($tr->spliced_seq()), length($tr->spliced_seq(1)), "Spliced seq with or without utr lower casing has the same length");
 is ( $tr->spliced_seq(), uc($tr->spliced_seq(1)), "Spliced seq is identical to upper case utr masked spliced seq");
+is ( substr($tr->spliced_seq(1), 61, 6), 'aagATG', 'Start mask boundary on forward stand transcript is correct' );
+is ( substr($tr->spliced_seq(1), 865, 6), 'TATtaa', 'End mask boundary on forward stand transcript is correct' );
 
 is ( substr( $tr->translateable_seq(),0,10 ), "ATGGCAGTGA", 'Start of translateable sequence is correct' );
 
@@ -239,6 +241,18 @@ is ( $up_tr->display_xref->dbID(), 614, 'Fetched the correct display xref id');
 
 $multi->restore('core', 'transcript', 'meta_coord');
 
+#
+# Test spliced_seq on a reverse strand transcript
+#
+
+$tr = $ta->fetch_by_stable_id( "ENST00000246229" );
+
+is ( substr( $tr->spliced_seq(), 0, 10 ), "ATGGCCCGAC", 'Start of spliced seq is correct, rev strand' );
+is ( substr( $tr->spliced_seq(1), 0, 10 ), "atggcccgac", 'Spliced seq with utr lower casing is correct, rev strand');
+is ( length($tr->spliced_seq()), length($tr->spliced_seq(1)), "Spliced seq with or without utr lower casing has the same length, rev strand");
+is ( $tr->spliced_seq(), uc($tr->spliced_seq(1)), "Spliced seq is identical to upper case utr masked spliced seq, rev strand");
+is ( substr($tr->spliced_seq(1), 199, 6), 'gccATG', 'Start mask boundary on forward stand transcript is correct, rev strand' );
+is ( substr($tr->spliced_seq(1), 1687, 6), 'CAGtag', 'End mask boundary on forward stand transcript is correct, rev strand' );
 
 
 my $interpro = $ta->get_Interpro_by_transid("ENST00000252021");
@@ -277,7 +291,6 @@ is($transcriptCount, 27, 'Counting all protein coding');
 is(@transcripts, 27, 'Got 27 transcript');
 $transcriptCount = $ta->count_all_by_biotype(['protein_coding', 'pseudogene']);
 is($transcriptCount, 27, 'Count by biotype is correct');
-
 
 #
 # test TranscriptAdaptor::fetch_all_by_Slice

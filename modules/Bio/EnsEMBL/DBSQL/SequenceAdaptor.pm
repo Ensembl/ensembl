@@ -398,15 +398,48 @@ sub _rna_edit {
   my $slice = shift;
   my $seq   = shift; #reference to string
 
-  my $s_start = $slice->start;   #substr start at 0 , but seq starts at 1 (so no -1 here)
-  my $s_end = $s_start+length($$seq);
+  my $s_start = $slice->start;   # substr start at 0 , but seq starts at 1 (so no -1 here)
+  my $s_end = $s_start+length($$seq) - 1; # But we do need -1 here to keep the coords closed
 
   foreach my $edit (@{$self->{_rna_edits_cache}->{$slice->get_seq_region_id}}){
+    # seq_region_attrib for an exit looks like
+    # <start> <end> <edit>
+    # 2568 2569 GT
     my ($start, $end, $txt) = split (/\s+/, $edit);
-# check that RNA edit is not outside the requested region : happens quite often with LRG regions
+
+    # check that RNA edit is not outside the requested region : happens quite often with LRG regions
     next if ($end < $s_start);
     next if ($s_end < $start);
-    substr($$seq,$start-$s_start, ($end-$start)+1, $txt);
+    # Length of the edit ($txt)
+    my $edit_length = length($txt);
+
+    # If the edit isn't fully encompassed by the slice, we need to extract the
+    # edit's sub-sequence that we're patching on to the sequence
+    if($start < $s_start || $end > $s_end) {
+	my $edit_offset;
+	# Find the offset for the start of the edit, eg.
+	#      seq slice:   TC
+	#      LRG edit :  CG
+	# Offset should be 1 to extract starting at the G
+	# Formula: offset = max(s_start - start, 0)
+	$edit_offset = ($s_start - $start) < 0 ? 0 : $s_start - $start;
+
+	# Find the length of the overlapping piece of the edit.
+	# This needs to take in to account the offset
+	#      seq slice:   TC
+	#      LRG edit :    GA
+	# Where we're want the length to be 1 from an existing offset of 1 to
+	# extract just G
+	# Forumla: length = length(edit) - offset - max(end - s_end, 0)
+	$edit_length = length($txt) - $edit_offset - ($end - $s_end < 0 ? 0 : $end - $s_end);
+
+	# Extract the overlapping edit
+	$txt = substr($txt, $edit_offset, $edit_length);
+    }
+
+    # Apply the patch, we don't want negative offsets as that's totally wrong.
+    # Do a max(start - s_start, 0) to prevent this
+    substr($$seq,($start-$s_start < 0 ? 0 : $start-$s_start),$edit_length, $txt);
   }
   return;
 }
