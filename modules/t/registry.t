@@ -36,11 +36,14 @@ else {
   note 'Using non-threaded tests';
 }
 
+my $reg = 'Bio::EnsEMBL::Registry';
+
+# Check whilst the Registry is empty
+is_deeply($reg->get_all_DBAdaptors(), [], 'get_all_DBAdaptors() returns an array-ref even when the Registry is empty');
+
 my $multi_db = Bio::EnsEMBL::Test::MultiTestDB->new();
 my $db = $multi_db->get_DBAdaptor('core');
 my $dbc = $db->dbc();
-
-my $reg = 'Bio::EnsEMBL::Registry';
 
 my $registry_template = <<'TMPL';
 {

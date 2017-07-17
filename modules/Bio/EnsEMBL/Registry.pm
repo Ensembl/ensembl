@@ -670,7 +670,7 @@ sub get_all_DBAdaptors {
   my ( $species, $group ) = rearrange( [qw(SPECIES GROUP)], @args );
 
   if ( !defined($species) && !defined($group) ) {
-    return $registry_register{'_DBA'};
+    return $registry_register{'_DBA'} || [];
   }
 
   if ( defined($species) ) {
