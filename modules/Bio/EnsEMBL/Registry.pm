@@ -590,6 +590,10 @@ sub get_all_db_adaptors {
 sub add_DBAdaptor {
   my ( $class, $species, $group, $adap ) = @_;
 
+  if ( !defined($species) ) {
+    throw('Species not defined.');
+  }
+
   if ( !( $class->alias_exists($species) ) ) {
     $class->add_alias( $species, $species );
   }
