@@ -105,9 +105,7 @@ sub new {
   $self->{'release'} = $release;
   $self->{'assembly'} = $assembly;
   $self->{'type'} = $type;
-
-# meta_value and species_id member attributes added to support multiSpecies species_id tests on archiveStable.t
-  $self->{meta_value} = "";
+# species_id member attribute added to support multiSpecies species_id tests on archiveStable.t
   $self->{species_id} = ""; 
   $self->adaptor($adaptor);
 
@@ -533,12 +531,6 @@ sub successors {
   my $self = shift;
   $self->{'successors'} = \@_;
   return $self->{'successors'};
-}
-
-sub meta_value {
-  my $self = shift;
-  $self->{meta_value} = shift if (@_);
-  return $self->{'meta_value'};
 }
 
 sub species_id {

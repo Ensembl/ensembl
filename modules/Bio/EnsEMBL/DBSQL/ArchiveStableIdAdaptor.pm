@@ -121,7 +121,7 @@ use Bio::EnsEMBL::ArchiveStableId;
 use Bio::EnsEMBL::StableIdEvent;
 use Bio::EnsEMBL::StableIdHistoryTree;
 use Bio::EnsEMBL::Utils::Exception qw(deprecate warning throw);
-use parent "Bio::EnsEMBL::DBSQL::BaseAdaptor";
+use parent qw(Bio::EnsEMBL::DBSQL::BaseAdaptor);
 
 use constant MAX_ROWS => 30;
 use constant NUM_HIGH_SCORERS => 20;
@@ -212,10 +212,10 @@ sub _fetch_by_stable_id {
 
     $arr = $self->{'arch_id_cache'}->{$stable_id};
     return $arr if defined $arr;
-
   }else{
 
-    throw( sprintf( "stable_id cannot be undefined:\n") );
+# inherited from BaseAdaptor following the pattern being used in SliceAdaptor.pm
+    $arr = $self->{'arch_id_cache'}->$self->species_id();
   }
 
   if ( defined($arr) ) {
@@ -249,7 +249,6 @@ sub _fetch_by_stable_id {
       $arch_id->release($r->{'new_release'});
       $arch_id->assembly($r->{'new_assembly'});
       $arch_id->db_name($r->{'new_db_name'});
-      $arch_id->meta_value($r->{meta_value});
       $arch_id->species_id($r->{species_id});
     } else {
       # latest event is a deletion event (or mapping to other ID; this clause
@@ -259,25 +258,24 @@ sub _fetch_by_stable_id {
       $arch_id->release($r->{'old_release'});
       $arch_id->assembly($r->{'old_assembly'});
       $arch_id->db_name($r->{'old_db_name'});
-      $arch_id->meta_value($r->{meta_value});
       $arch_id->species_id($r->{species_id});
     }
 
     $arch_id->type(ucfirst(lc($r->{'type'})));
   }
 
-	my $arr = [$arch_id->version, $arch_id->release, $arch_id->assembly, $arch_id->db_name, $arch_id->meta_value, $arch_id->species_id];
-	$self->{'arch_id_cache'}->{"$stable_id"} = $arr;
+      my $arr = [$arch_id->version, $arch_id->release, $arch_id->assembly, $arch_id->db_name, $arch_id->species_id];
+      $self->{'arch_id_cache'}->{"$stable_id"} = $arr;
 	
   	if (! defined $arch_id->db_name) {
-  		# couldn't find stable ID in archive or current db
-	    return;
-	}
+      # couldn't find stable ID in archive or current db
+      return;
+    }
 
 	$arch_id->is_latest(1);
-	} # End of cache decision block 
+    } # End of cache decision block
 
-	return $arch_id;
+      return $arch_id;
 }
 
 
@@ -434,15 +432,13 @@ sub _fetch_archive_id {
   # using a UNION is much faster in this query than somthing like
   # "... AND (sie.old_stable_id = ? OR sie.new_stable_id = ?)"
   my $sql = qq(
-    SELECT * FROM stable_id_event sie, mapping_session ms, meta m
+    SELECT * FROM stable_id_event sie, mapping_session ms
     WHERE sie.mapping_session_id = ms.mapping_session_id
-    AND	ms.species_id = m.species_id
     AND sie.old_stable_id = ?   
     $extra_sql1
     UNION
-    SELECT * FROM stable_id_event sie, mapping_session ms, meta m
+    SELECT * FROM stable_id_event sie, mapping_session ms
     WHERE sie.mapping_session_id = ms.mapping_session_id
-    AND	ms.species_id = m.species_id
     AND sie.new_stable_id = ?
     $extra_sql2
     ORDER BY created DESC, score DESC
