@@ -252,6 +252,7 @@ my %transcript_so_mapping =
    'tRNA'				=> 'SO:0000253', # tRNA
    'Mt_tRNA'				=> 'SO:0000253', # tRNA
    'vaultRNA'				=> 'SO:0002040', # vaultRNA_primary_transcript
+   'vault_RNA'                          => 'SO:0002040', # vaultRNA_primary_transcript
    'Y_RNA'				=> 'SO:0000405', # Y_RNA
    
   );
