@@ -316,7 +316,7 @@ sub run_script {
         my ($score, $tl_score);
 # Comparing the scores based on coding exon overlap
 # If there is a stale mate, chose best exon overlap score
-        foreach my $tid (keys(%transcript_result)) {
+        foreach my $tid (sort { $transcript_result{$b} <=> $transcript_result{$a} } keys(%transcript_result)) {
           $score = $transcript_result{$tid};
           $tl_score = $tl_transcript_result{$tid};
           if ($score > $transcript_score_threshold || $tl_score > $tl_transcript_score_threshold) {
