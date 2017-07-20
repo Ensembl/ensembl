@@ -1013,13 +1013,20 @@ sub cdna_coding_start {
     # adjust cdna coords if sequence edits are enabled
     if($self->edits_enabled()) {
       my @seqeds = @{$self->get_all_SeqEdits()};
-      # sort in reverse order to avoid adjustment of downstream edits
-      @seqeds = sort {$b->start() <=> $a->start()} @seqeds;
+      if (scalar @seqeds) {
+        my $transl_start = $self->get_all_Attributes('_transl_start');
+        if (@{$transl_start}) {
+          $start = $transl_start->[0]->value;
+        } else {
+          # sort in reverse order to avoid adjustment of downstream edits
+          @seqeds = sort {$b->start() <=> $a->start()} @seqeds;
 
-      foreach my $se (@seqeds) {
-        # use less than start so that start of CDS can be extended
-        if($se->start() < $start) {
-          $start += $se->length_diff();
+          foreach my $se (@seqeds) {
+            # use less than start so that start of CDS can be extended
+            if($se->start() < $start) {
+              $start += $se->length_diff();
+            }
+          }
         }
       }
     }
@@ -1073,13 +1080,20 @@ sub cdna_coding_end {
     # adjust cdna coords if sequence edits are enabled
     if($self->edits_enabled()) {
       my @seqeds = @{$self->get_all_SeqEdits()};
-      # sort in reverse order to avoid adjustment of downstream edits
-      @seqeds = sort {$b->start() <=> $a->start()} @seqeds;
+      if (scalar @seqeds) {
+        my $transl_end = $self->get_all_Attributes('_transl_end');
+        if (@{$transl_end}) {
+          $end = $transl_end->[0]->value;
+        } else {
+          # sort in reverse order to avoid adjustment of downstream edits
+          @seqeds = sort {$b->start() <=> $a->start()} @seqeds;
 
-      foreach my $se (@seqeds) {
-        # use less than or equal to end+1 so end of the CDS can be extended
-        if($se->start() <= $end + 1) {
-          $end += $se->length_diff();
+          foreach my $se (@seqeds) {
+            # use less than or equal to end+1 so end of the CDS can be extended
+            if($se->start() <= $end + 1) {
+              $end += $se->length_diff();
+            }
+          }
         }
       }
     }
