@@ -167,3 +167,4 @@
 1679	\N	patch	patch_89_90_a.sql|schema_version
 1680	\N	patch	patch_89_90_b.sql|remove_status
 1681	\N	patch	patch_89_90_c.sql|pf_hit_name_case_sensitive
+1682	\N	patch	patch_89_90_d.sql|add_species_id

@@ -121,9 +121,28 @@ use Bio::EnsEMBL::ArchiveStableId;
 use Bio::EnsEMBL::StableIdEvent;
 use Bio::EnsEMBL::StableIdHistoryTree;
 use Bio::EnsEMBL::Utils::Exception qw(deprecate warning throw);
+use parent qw(Bio::EnsEMBL::DBSQL::BaseAdaptor);
 
 use constant MAX_ROWS => 30;
 use constant NUM_HIGH_SCORERS => 20;
+
+
+# added "constructor" to the ArchiveStableIdAdaptor.pm
+sub new {
+  my $caller = shift;
+
+  my $class = ref($caller) || $caller;
+
+  my $self = $class->SUPER::new(@_);
+
+  # use a cache which is shared and also used by the assembly
+  # mapper adaptor
+
+  my $seq_region_cache = $self->db->get_SeqRegionCache();
+  $self->{'sr_name_cache'} = $seq_region_cache->{'name_cache'};
+
+  return $self;
+}
 
 
 =head2 fetch_by_stable_id
@@ -166,13 +185,12 @@ sub fetch_by_stable_id {
   Arg [2]     : (optional) string $type
   Example     : none
   Description : Retrives an ArchiveStableId that is the latest incarnation of
-                given stable_id. Helper function to fetch_by_stable_id, should
-                not be directly called.
+                given stable_id.
+                Attempt to try an emulate cache design pattern as seen implemented in sliceAdaptor.pm.
+                Helper function to fetch_by_stable_id, should not be directly called.
   Returntype  : Bio::EnsEMBL::ArchiveStableId or undef if not in database
-  Exceptions  : none
-  Caller      : general
-  Status      : At Risk
-              : under development
+  Exceptions  : thrown on missing argument
+  Caller      : fetch_by_stable_id
 
 =cut
 
@@ -186,6 +204,29 @@ sub _fetch_by_stable_id {
   );
 
   @_ ? $arch_id->type(shift) : $self->_resolve_type($arch_id);
+  
+# check the cache so we only go to the db if necessary
+
+  my $arr;
+  if ( defined($stable_id) ) { 
+
+    $arr = $self->{'arch_id_cache'}->{$stable_id};
+    return $arr if defined $arr;
+  }else{
+
+# inherited from BaseAdaptor following the pattern being used in SliceAdaptor.pm
+    $arr = $self->{'arch_id_cache'}->$self->species_id();
+  }
+
+  if ( defined($arr) ) {
+
+    $arch_id->version($arr->[0]);
+    $arch_id->release($arr->[1]);
+	$arch_id->assembly($arr->[2]);
+	$arch_id->db_name($arr->[3]);
+	$arch_id->meta_value($arr->[4]);
+	$arch_id->species_id($arr->[5]);
+  }else {
 
   if ($self->lookup_current($arch_id)) {
 
@@ -194,7 +235,7 @@ sub _fetch_by_stable_id {
     $arch_id->db_name($self->dbc->dbname);
     $arch_id->release($self->get_current_release);
     $arch_id->assembly($self->get_current_assembly);
-  
+	$self->{'sr_name_cache'} = $arch_id;
   } else {
 
     # look for latest version of this stable id
@@ -202,13 +243,13 @@ sub _fetch_by_stable_id {
       " AND sie.type = '@{[lc($arch_id->{'type'})]}'" : '';
 
     my $r = $self->_fetch_archive_id($stable_id, $extra_sql, $extra_sql);
-
     if ($r->{'new_stable_id'} and $r->{'new_stable_id'} eq $stable_id) {
       # latest event is a self event, use new_* data
       $arch_id->version($r->{'new_version'});
       $arch_id->release($r->{'new_release'});
       $arch_id->assembly($r->{'new_assembly'});
       $arch_id->db_name($r->{'new_db_name'});
+      $arch_id->species_id($r->{species_id});
     } else {
       # latest event is a deletion event (or mapping to other ID; this clause
       # is only used to cope with buggy data where deletion events are
@@ -217,19 +258,24 @@ sub _fetch_by_stable_id {
       $arch_id->release($r->{'old_release'});
       $arch_id->assembly($r->{'old_assembly'});
       $arch_id->db_name($r->{'old_db_name'});
+      $arch_id->species_id($r->{species_id});
     }
 
     $arch_id->type(ucfirst(lc($r->{'type'})));
   }
-  
-  if (! defined $arch_id->db_name) {
-    # couldn't find stable ID in archive or current db
-    return undef;
-  }
 
-  $arch_id->is_latest(1);
+      my $arr = [$arch_id->version, $arch_id->release, $arch_id->assembly, $arch_id->db_name, $arch_id->species_id];
+      $self->{'arch_id_cache'}->{"$stable_id"} = $arr;
+	
+  	if (! defined $arch_id->db_name) {
+      # couldn't find stable ID in archive or current db
+      return;
+    }
 
-  return $arch_id;
+	$arch_id->is_latest(1);
+    } # End of cache decision block
+
+      return $arch_id;
 }
 
 
@@ -291,7 +337,7 @@ sub fetch_by_stable_id_version {
 
     $arch_id->type(ucfirst(lc($r->{'type'})));
   }
-  
+
   if (! defined $arch_id->db_name) {
     # couldn't find stable ID version in archive or current release
     return undef;
@@ -388,7 +434,7 @@ sub _fetch_archive_id {
   my $sql = qq(
     SELECT * FROM stable_id_event sie, mapping_session ms
     WHERE sie.mapping_session_id = ms.mapping_session_id
-    AND sie.old_stable_id = ?
+    AND sie.old_stable_id = ?   
     $extra_sql1
     UNION
     SELECT * FROM stable_id_event sie, mapping_session ms

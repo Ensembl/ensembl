@@ -52,15 +52,17 @@ ok ( $helper, 'SqlHelper instance was created' );
 my $meta_key = 'species.common_name';
 note("Meta key queries working with ${meta_key}. If the tests fail then check for it in the DB dumps");
 
+# count was changed from 1 to 2, because of the inclusion of house mouse as species.common_name mock test entry
 is( 
   $helper->execute_single_result(-SQL => qq{select count(*) from meta where meta_key = '$meta_key'}),
-  1,
+  2,
   'Checking count of meta key is right with no params'
 );
 
+# count was changed from 1 to 2, because of the inclusion of house mouse as species.common_name mock test entry
 is( 
   $helper->execute_single_result(-SQL => 'select count(*) from meta where meta_key =?', -PARAMS => [$meta_key]),
-  1,
+  2,
   'Checking count of meta key is right with params'
 );
 
@@ -80,9 +82,10 @@ is(
   'Checking if we less than row we will not error if we ask to ignore it'
 );
 
+# count was changed from [1,3]to [2,3], because of the inclusion of house mouse as species.common_name mock test entry
 is_deeply( 
   $helper->execute(-SQL => 'select count(*), 3 from meta where meta_key =?', -PARAMS => [$meta_key])->[0],
-  [1,3],
+  [2,3],
   'Checking 2D mapping of meta key count works'
 );
 
@@ -92,12 +95,18 @@ my $meta_count_hash = $helper->execute_into_hash(
   -SQL => 'select meta_key, count(*) from meta group by meta_key'
 );
 
-is($meta_count_hash->{$meta_key}, 1, 'Checking hash comes back correctly');
+# Count was changed from 1 to 2, because of the inclusion of house mouse as species.common_name mock test entry. 
+# Expected test result forced to match with the output of execute_into_hash() function.
+
+is($meta_count_hash->{$meta_key}, 2, 'Checking hash comes back correctly');
 
 {
   my $count = 0;
+  
+# Added species_id condition to further differentiate support for multiSpecies in the meta table.
+
   my %args = (
-    -SQL => 'select meta_key, meta_value from meta where meta_key =? order by meta_id',
+    -SQL => 'select meta_key, meta_value from meta where meta_key =? and species_id = 1 order by meta_id',
     -PARAMS => ['species.classification']
   );
   my $expected_hash = {
@@ -174,8 +183,10 @@ $dba->dbc()->do('alter table meta engine=InnoDB') if $dba->dbc->driver() eq 'mys
 
 ok($helper->_perform_transaction_code(), 'This level should do all transaction work');
 
+# species_id = 1 added to differentiate support for multiSpecies in the meta table. This will avoid the update statement failing
+
 my $get_value = sub {
-  return $helper->execute_single_result(-SQL => 'select meta_value from meta where meta_key =?', -PARAMS => [$meta_key]);
+  return $helper->execute_single_result(-SQL => 'select meta_value from meta where meta_key =? and species_id = 1', -PARAMS => [$meta_key]);
 };
 
 {
@@ -191,28 +202,38 @@ my $get_value = sub {
         -SQL => $sql,
         -PARAMS => [2, 'm', '2']
       );
+
+# Count was changed from 2 to 4, because of the inclusion of house mouse as species.common_name mock test entry. 
       
       my $count = $helper->execute_single_result(-SQL => 'select count(*) from meta where species_id =?', -PARAMS => [2]);
-      is($count, 2, 'Count should be 2');
+      is($count, 4, 'Count should be 4');
       die 'Dead now';
     });
   }qr/Dead now/, 'Died as expected';
+  
+ 
+# Count was changed from 0 to 2, because of the inclusion of house mouse as species.common_name mock test entry. 
+ 
   my $count = $helper->execute_single_result(-SQL => 'select count(*) from meta where species_id =?', -PARAMS => [2]);
-  is($count, 0, 'Count should be 0 as we reset the transaction');
+  is($count, 2, 'Count should be 2');
 }
 
 #Testing multiple level isolation (or more that the framework ignores them)
 {
   my $new_meta_value = 'test';
+  
   throws_ok {
   $helper->transaction( -CALLBACK => sub {
-    $helper->execute_update(-SQL => 'update meta set meta_value =? where meta_key =?', -PARAMS => [$new_meta_value, $meta_key]);
+  	
+# species_id = 1 added to differentiate support for multiSpecies in the meta table. This will avoid the update statement failing
+    $helper->execute_update(-SQL => 'update meta set meta_value =? where meta_key =? and species_id = 1', -PARAMS => [$new_meta_value, $meta_key]);
     eval {
       $helper->transaction(-CALLBACK => sub {
         ok(!$helper->_perform_transaction_code(), 'This level should not be doing any transaction work');
         die 'This will not cause the transaction to be aborted';
       });
     };
+    
     is($get_value->(), $new_meta_value, 'The die from the prior transaction should not have triggered a rollback');
     die('Dead now');
   });
@@ -245,11 +266,13 @@ my $get_value = sub {
     $helper->transaction( -RETRY => 3, -PAUSE => 0.1, -CALLBACK => sub {
       #Die for the first 3 times (so we will succeed on the final attempt)
       $counter++;
+      
       if($counter != 4) {
         die 'Throwing an error to be ignored';
       }
-      
-      $helper->execute_update(-SQL => 'update meta set meta_value =? where meta_key =?', -PARAMS => [$new_meta_value, $meta_key]);
+
+# species_id = 1 added to differentiate support for multiSpecies in the meta table
+      $helper->execute_update(-SQL => 'update meta set meta_value =? where meta_key =? and species_id = 1', -PARAMS => [$new_meta_value, $meta_key]);
     });
     is($counter, 4, 'Counter should be set to 4 as we tried 4 attempts at writing (one go & 3 retries)');
     is($get_value->(), $new_meta_value, 'Commit should have gone through after retries');
@@ -304,7 +327,7 @@ my $get_value = sub {
     } qr /Throwing an error 4/, 'Correct error thrown';
     is($counter, 3, 'Counter should be set to 3 as we had 2 fake deadlocks & 1 real error even though we allowed more retries');
   }
-  
+
   #Fith says we sleep for at least the amount we say
   {
     my $counter = 0;
@@ -326,7 +349,7 @@ my $get_value = sub {
       ), 0, 
     'Commit will have deleted the meta_key row '.$meta_key);
   }
-  
+
   #Sixth says you cannot repeat the transaction if it worked
   {
     my $counter = 0;
@@ -336,7 +359,7 @@ my $get_value = sub {
     });
     is($counter, 1, 'Counter should be set to 1 as our transaction was good');
   }
-  
+
   #Reset
   $helper->transaction( -CALLBACK => sub {
     $helper->execute_update(-SQL => 'delete from meta');
@@ -346,7 +369,8 @@ my $get_value = sub {
 
 #Doing hashref checks
 {
-  my $sql = 'select meta_key, meta_value from meta where meta_key =?';
+# species_id = 1 added to differentiate support for multiSpecies in the meta table
+  my $sql = 'select meta_key, meta_value from meta where meta_key =? and species_id = 1';
   my $params = ['species.common_name'];
   {
     my $array_of_hashes = $helper->execute(
@@ -358,6 +382,7 @@ my $get_value = sub {
       -USE_HASHREFS => 1,
       -PARAMS => $params
     );
+    
     is_deeply($array_of_hashes, [ { name => 'Human' } ], 'HashRefs in a callback works');
   }
   {

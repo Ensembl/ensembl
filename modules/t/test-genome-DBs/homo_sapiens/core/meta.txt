@@ -2,6 +2,7 @@
 2	1	assembly.default	NCBI34
 3	1	species.taxonomy_id	9606
 26	1	species.classification	Homo sapiens
+200	2	species.classification	Mus musculus
 27	1	species.classification	Hominidae
 28	1	species.classification	Catarrhini
 29	1	species.classification	Primates
@@ -12,6 +13,7 @@
 34	1	species.classification	Metazoa
 35	1	species.classification	Eukaryota
 36	1	species.common_name	Human
+37	2	species.common_name	house mouse
 55	1	assembly.mapping	chromosome:NCBI33|contig
 56	1	assembly.mapping	clone|contig
 57	1	assembly.mapping	supercontig|contig
@@ -89,3 +91,4 @@
 156	\N	patch	patch_89_90_a.sql|schema_version
 157	\N	patch	patch_89_90_b.sql|remove_status
 158	\N	patch	patch_89_90_c.sql|pf_hit_name_case_sensitive
+201	\N	patch	patch_89_90_d.sql|add_species_id
