@@ -680,6 +680,72 @@ is_deeply(
 
 $multi->restore('core');
 
+#
+# tests for translation start/end within a seq_edit
+#
+$tr = $ta->fetch_by_stable_id( "ENST00000217347" );
+$tr->edits_enabled(1);
+
+$tr->add_Attributes(
+  Bio::EnsEMBL::Attribute->new(
+    -code => '_rna_edit',
+    -value => "1 0 CGTCGATGTTG",
+  )
+);
+is(substr($tr->translateable_seq, 0, 6), 'ATGGCA', 'translation start in a seq_edit - seq before');
+is(length($tr->translateable_seq),       804,      'translation start in a seq_edit - length before');
+
+$tr->add_Attributes(
+  Bio::EnsEMBL::Attribute->new(
+    -code => '_transl_start',
+    -value => "6",
+  )
+);
+is(substr($tr->translateable_seq, 0, 6), 'ATGTTG', 'translation start in a seq_edit - seq after');
+is(length($tr->translateable_seq),       874,      'translation start in a seq_edit - length after');
+
+$tr->add_Attributes(
+  Bio::EnsEMBL::Attribute->new(
+    -code => '_rna_edit',
+    -value => "869 868 CGTCGTGATTG",
+  )
+);
+is(substr(reverse($tr->translateable_seq), 0, 11), reverse('CGTCGTGATTG'), 'translation end in a seq_edit - seq before');
+is(length($tr->translateable_seq),                 885,                    'translation end in a seq_edit - length before');
+
+$tr->add_Attributes(
+  Bio::EnsEMBL::Attribute->new(
+    -code => '_transl_end',
+    -value => "884",
+  )
+);
+is(substr(reverse($tr->translateable_seq), 0, 11), reverse('GAGTATCGTCG'), 'translation end in a seq_edit - seq after');
+is(length($tr->translateable_seq),                 879,                    'translation end in a seq_edit - length after');
+
+$multi->restore('core');
+
+$tr = $ta->fetch_by_stable_id( "ENST00000217347" );
+$tr->edits_enabled(1);
+
+is(length($tr->translateable_seq), 804, 'explicit translation end with no seq_edit - length before');
+
+$tr->add_Attributes(
+  Bio::EnsEMBL::Attribute->new(
+    -code => '_transl_end',
+    -value => "873",
+  )
+);
+is(length($tr->translateable_seq), 804, 'explicit translation end with no seq_edit - length after');
+
+$tr->add_Attributes(
+  Bio::EnsEMBL::Attribute->new(
+    -code => '_rna_edit',
+    -value => "869 868 CGTCGTGATTG",
+  )
+);
+is(length($tr->translateable_seq), 809, 'explicit translation end with seq_edit - length after');
+
+$multi->restore('core');
 
 #
 # tests for multiple versions of transcripts in a database
