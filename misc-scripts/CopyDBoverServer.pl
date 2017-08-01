@@ -818,17 +818,21 @@ TABLE:
       $target_dbh->do(
          sprintf( "LOCK TABLES %s READ", join( ' READ, ', @tables ) ) );
       if ($opt_flush) {
-        print("FLUSHING TABLES...\n");
-        $target_dbh->do(
+        if ($opt_flushtarget){
+          print("FLUSHING TABLES...\n");
+          $target_dbh->do(
                   sprintf( "FLUSH TABLES TARGET %s", join( ', ', @tables ) ) );
+        }
       }
   }
   # If we use the update option, also flush and lock target server for MySQL version >= 5.6
   elsif ($opt_update || $opt_only_tables){
-           if ($opt_flush) {
+    if ($opt_flush) {
+      if ($opt_flushtarget){
         print("FLUSHING AND LOCKING TABLES TARGET...\n");
-        $target_dbh->do(
-                  sprintf( "FLUSH TABLES %s WITH READ LOCK", join( ', ', @tables ) ) );
+          $target_dbh->do(
+          sprintf( "FLUSH TABLES %s WITH READ LOCK", join( ', ', @tables ) ) );
+      }
     }
     else {
       warn( sprintf("You are running the script with --noflush and MySQL target server version is $target_dbh->selectall_arrayref(\"SHOW VARIABLES LIKE 'version'\")->[0][1]. " .
@@ -1174,18 +1178,20 @@ TABLE:
   print( '-' x 37, ' FLUSH ', '-' x 37, "\n" );
 
   # Flush tables on target.
-  if ($opt_flushtarget) {
-    print("FLUSHING TABLES ON TARGET...\n");
-    my $tdbh = DBI->connect( $target_dsn,
+  if ($opt_flush) {
+    if ($opt_flushtarget){
+      print("FLUSHING TABLES ON TARGET...\n");
+      my $tdbh = DBI->connect( $target_dsn,
                                $opt_user_tgt,
                                $opt_password_tgt, {
                                  'PrintError' => 1,
                                  'AutoCommit' => 0
                                } );
-    $tdbh->do("use $target_db");
-    my $ddl = sprintf('FLUSH TABLES %s', join(q{, }, @tables));
-    $tdbh->do($ddl);
-    $tdbh->disconnect();
+      $tdbh->do("use $target_db");
+      my $ddl = sprintf('FLUSH TABLES %s', join(q{, }, @tables));
+      $tdbh->do($ddl);
+      $tdbh->disconnect();
+    }
   }
   #------------------------------------------------------------------##
   ## COPYING FUNCTIONS AND PROCEDURES                                ##
