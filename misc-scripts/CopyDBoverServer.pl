@@ -836,7 +836,7 @@ TABLE:
       }
     }
     else {
-      my $target_server_version = ($target_dbh->selectall_arrayref("SHOW VARIABLES LIKE 'version'")->[0][1];
+      my $target_server_version = $target_dbh->selectall_arrayref("SHOW VARIABLES LIKE 'version'")->[0][1];
       warn( sprintf("You are running the script with --noflush and MySQL target server version is %s. " .
                        "The database will not be locked during the copy. " .
                        "This is not recomended!!!",$target_server_version));
