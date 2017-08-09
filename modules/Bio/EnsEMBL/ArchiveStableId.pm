@@ -94,7 +94,7 @@ sub new {
   my $self = bless {}, $class;
 
   my ($stable_id, $version, $current_version, $db_name, $release, $assembly,
-    $type, $adaptor, $species_id) = rearrange([qw( STABLE_ID VERSION CURRENT_VERSION DB_NAME
+    $type, $adaptor) = rearrange([qw( STABLE_ID VERSION CURRENT_VERSION DB_NAME
     RELEASE ASSEMBLY TYPE ADAPTOR)], @_ );
 
   $self->{'stable_id'} = $stable_id;

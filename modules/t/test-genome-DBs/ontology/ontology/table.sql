@@ -139,7 +139,7 @@ CREATE TABLE `meta` (
   `species_id` int(1) unsigned DEFAULT NULL,
   PRIMARY KEY (`meta_id`),
   UNIQUE KEY `key_value_idx` (`meta_key`,`meta_value`)
-) ENGINE=MyISAM AUTO_INCREMENT=38 DEFAULT CHARSET=latin1;
+) ENGINE=MyISAM AUTO_INCREMENT=39 DEFAULT CHARSET=latin1;
 
 CREATE TABLE `ontology` (
   `ontology_id` int(10) unsigned NOT NULL AUTO_INCREMENT,
@@ -201,5 +201,5 @@ CREATE TABLE `term` (
   UNIQUE KEY `accession_idx` (`accession`),
   UNIQUE KEY `ontology_acc_idx` (`ontology_id`,`accession`),
   KEY `name_idx` (`name`)
-) ENGINE=MyISAM AUTO_INCREMENT=44356 DEFAULT CHARSET=latin1;
+) ENGINE=MyISAM AUTO_INCREMENT=45001 DEFAULT CHARSET=latin1;
 
