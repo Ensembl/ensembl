@@ -45,6 +45,7 @@ Attributes:
   release: e.g. 35
   assembly: e.g. NCBI35
   successors: listref of Bio::EnsEMBL::ArchiveStableIds
+  species_id: e.g. 1
   adaptor: Bio::EnsEMBL::DBSQL::ArchiveStableIdAdaptor
 
 Status: At Risk. This module is in development.
