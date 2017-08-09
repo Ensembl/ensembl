@@ -106,7 +106,6 @@ sub new {
   $self->{'type'} = $type;
   $self->adaptor($adaptor);
 
-
   return $self;
 }
 
