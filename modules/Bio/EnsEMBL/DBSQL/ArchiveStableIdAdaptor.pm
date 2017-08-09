@@ -193,7 +193,6 @@ sub _fetch_by_stable_id {
     $arch_id->db_name($self->dbc->dbname);
     $arch_id->release($self->get_current_release);
     $arch_id->assembly($self->get_current_assembly);
-
   } else {
 
     # look for latest version of this stable id
@@ -220,7 +219,6 @@ sub _fetch_by_stable_id {
 
     $arch_id->type(ucfirst(lc($r->{'type'})));
   }
-
   if (! defined $arch_id->db_name) {
     # couldn't find stable ID in archive or current db
     return undef;
