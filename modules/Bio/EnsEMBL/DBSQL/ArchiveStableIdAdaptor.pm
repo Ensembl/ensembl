@@ -115,16 +115,15 @@ use warnings;
 no warnings qw(uninitialized);
 
 use Bio::EnsEMBL::DBSQL::BaseAdaptor;
-our @ISA = qw(Bio::EnsEMBL::DBSQL::BaseAdaptor);
 
 use Bio::EnsEMBL::ArchiveStableId;
 use Bio::EnsEMBL::StableIdEvent;
 use Bio::EnsEMBL::StableIdHistoryTree;
 use Bio::EnsEMBL::Utils::Exception qw(deprecate warning throw);
+use parent qw(Bio::EnsEMBL::DBSQL::BaseAdaptor);
 
 use constant MAX_ROWS => 30;
 use constant NUM_HIGH_SCORERS => 20;
-
 
 =head2 fetch_by_stable_id
 
@@ -194,7 +193,7 @@ sub _fetch_by_stable_id {
     $arch_id->db_name($self->dbc->dbname);
     $arch_id->release($self->get_current_release);
     $arch_id->assembly($self->get_current_assembly);
-  
+
   } else {
 
     # look for latest version of this stable id
@@ -221,7 +220,7 @@ sub _fetch_by_stable_id {
 
     $arch_id->type(ucfirst(lc($r->{'type'})));
   }
-  
+
   if (! defined $arch_id->db_name) {
     # couldn't find stable ID in archive or current db
     return undef;
@@ -291,7 +290,7 @@ sub fetch_by_stable_id_version {
 
     $arch_id->type(ucfirst(lc($r->{'type'})));
   }
-  
+
   if (! defined $arch_id->db_name) {
     # couldn't find stable ID version in archive or current release
     return undef;
@@ -383,16 +382,21 @@ sub _fetch_archive_id {
   my $extra_sql1 = shift;
   my $extra_sql2 = shift;
 
+# Retrieve species_id value from parent "adaptor" class
+  my $species_id = $self->species_id();
+
   # using a UNION is much faster in this query than somthing like
   # "... AND (sie.old_stable_id = ? OR sie.new_stable_id = ?)"
   my $sql = qq(
     SELECT * FROM stable_id_event sie, mapping_session ms
     WHERE sie.mapping_session_id = ms.mapping_session_id
+    AND ms.species_id = ?
     AND sie.old_stable_id = ?
     $extra_sql1
     UNION
     SELECT * FROM stable_id_event sie, mapping_session ms
     WHERE sie.mapping_session_id = ms.mapping_session_id
+    AND ms.species_id = ?
     AND sie.new_stable_id = ?
     $extra_sql2
     ORDER BY created DESC, score DESC
@@ -400,7 +404,7 @@ sub _fetch_archive_id {
   );
 
   my $sth = $self->prepare($sql);
-  $sth->execute($stable_id,$stable_id);
+  $sth->execute($species_id, $stable_id,$species_id, $stable_id);
   my $r = $sth->fetchrow_hashref;
   $sth->finish;
 
@@ -450,11 +454,13 @@ sub fetch_all_by_archive_id {
     WHERE ga.${lc_self_type}_stable_id = ?
     AND   ga.${lc_self_type}_version = ?
     AND   ga.mapping_session_id = m.mapping_session_id
+    AND   m.species_id = ?
   );
   
   my $sth = $self->prepare($sql);
   $sth->bind_param(1, $archive_id->stable_id, SQL_VARCHAR);
   $sth->bind_param(2, $archive_id->version, SQL_SMALLINT);
+  $sth->bind_param(3, $self->species_id(), SQL_INTEGER);
   $sth->execute;
   
   my ($stable_id, $version, $db_name, $release, $assembly);
@@ -532,11 +538,13 @@ sub fetch_associated_archived {
     WHERE ga.mapping_session_id = ms.mapping_session_id
     AND ga.${type}_stable_id = ?
     AND ga.${type}_version = ?
+    AND ms.species_id = ?
   );
 
   my $sth = $self->prepare($sql);
   $sth->bind_param(1, $arch_id->stable_id, SQL_VARCHAR);
   $sth->bind_param(2, $arch_id->version, SQL_SMALLINT);
+  $sth->bind_param(3, $self->species_id(), SQL_INTEGER);
   $sth->execute;
 
   my @result = ();
@@ -608,7 +616,7 @@ sub fetch_associated_archived {
 sub fetch_predecessors_by_archive_id {
   my $self = shift;
   my $arch_id = shift;
-  
+
   my @result;
   
   if( ! ( defined $arch_id->stable_id() &&
@@ -628,11 +636,13 @@ sub fetch_predecessors_by_archive_id {
     WHERE sie.mapping_session_id = m.mapping_session_id
     AND   sie.new_stable_id = ?
     AND   m.new_db_name = ?	
+    AND   m.species_id = ?
   );
 
   my $sth = $self->prepare($sql);
   $sth->bind_param(1, $arch_id->stable_id, SQL_VARCHAR);
   $sth->bind_param(2, $arch_id->db_name, SQL_VARCHAR);
+  $sth->bind_param(3, $self->species_id(), SQL_INTEGER);
   $sth->execute();
   
   my ($old_stable_id, $old_version, $type, $old_db_name, $old_release, $old_assembly);
@@ -671,7 +681,8 @@ sub fetch_predecessors_by_archive_id {
       FROM  mapping_session m, stable_id_event sie
       WHERE sie.mapping_session_id = m.mapping_session_id
       AND   sie.new_stable_id = ?
-      AND   m.new_db_name = ?	
+      AND   m.new_db_name = ?
+      AND   m.species_id = ?
     );
 
     $sth = $self->prepare($sql);
@@ -683,6 +694,7 @@ sub fetch_predecessors_by_archive_id {
     
       $sth->bind_param(1,$arch_id->stable_id, SQL_VARCHAR);
       $sth->bind_param(2,$prev_dbname, SQL_VARCHAR);
+      $sth->bind_param(3, $self->species_id(), SQL_INTEGER);
       $sth->execute();
       
       $sth->bind_columns(\$old_stable_id, \$old_version, \$type, \$old_db_name, \$old_release, \$old_assembly);
@@ -736,9 +748,11 @@ sub fetch_successors_by_archive_id {
   my $self = shift;
   my $arch_id = shift;
   my @result;
-
   
-  if( ! ( defined $arch_id->stable_id() &&
+  if ( !defined($arch_id) ) {
+  	
+    throw("Can't deduce ArchiveStableId type.");
+  }elsif( ! ( defined $arch_id->stable_id() &&
 	  defined $arch_id->db_name() )) {
     throw( "Need db_name for successor retrieval" );
   }
@@ -755,11 +769,13 @@ sub fetch_successors_by_archive_id {
     WHERE sie.mapping_session_id = m.mapping_session_id
     AND   sie.old_stable_id = ?
     AND   m.old_db_name = ?	
+    AND   m.species_id = ?
   );
 
   my $sth = $self->prepare( $sql );
   $sth->bind_param(1,$arch_id->stable_id,SQL_VARCHAR);
   $sth->bind_param(2,$arch_id->db_name,SQL_VARCHAR);
+  $sth->bind_param(3,$self->species_id(),SQL_INTEGER);
   $sth->execute();
   
   my ($new_stable_id, $new_version, $type, $new_db_name, $new_release, $new_assembly);
@@ -800,6 +816,7 @@ sub fetch_successors_by_archive_id {
       WHERE sie.mapping_session_id = m.mapping_session_id
       AND   sie.old_stable_id = ?
       AND   m.old_db_name = ?	
+      AND   m.species_id = ?
     );
 
     $sth = $self->prepare($sql);
@@ -811,6 +828,7 @@ sub fetch_successors_by_archive_id {
 
       $sth->bind_param(1, $arch_id->stable_id, SQL_VARCHAR);
       $sth->bind_param(2, $next_dbname, SQL_VARCHAR);
+      $sth->bind_param(3, $self->species_id(),SQL_INTEGER);
       $sth->execute();
       
       $sth->bind_columns(\$new_stable_id, \$new_version, \$type, \$new_db_name, \$new_release, \$new_assembly);
@@ -878,6 +896,9 @@ sub fetch_successors_by_archive_id {
 sub fetch_history_tree_by_stable_id {
   my ($self, $stable_id, $num_high_scorers, $max_rows, $time_limit) = @_;
 
+  # Retrieve species_id value from parent "adaptor" class
+  my $species_id = $self->species_id();
+
   throw("Expecting a stable ID argument.") unless $stable_id;
 
   $num_high_scorers ||= NUM_HIGH_SCORERS;
@@ -898,6 +919,7 @@ sub fetch_history_tree_by_stable_id {
     FROM stable_id_event sie, mapping_session ms
     WHERE sie.mapping_session_id = ms.mapping_session_id
     AND sie.old_stable_id = ?
+    AND ms.species_id = ?
     UNION
     SELECT old_stable_id, old_version,
            old_db_name, old_release, old_assembly,
@@ -907,6 +929,7 @@ sub fetch_history_tree_by_stable_id {
     FROM stable_id_event sie, mapping_session ms
     WHERE sie.mapping_session_id = ms.mapping_session_id
     AND sie.new_stable_id = ?
+    AND ms.species_id = ?
   );
   
   my $sth = $self->prepare($sql);
@@ -940,7 +963,9 @@ sub fetch_history_tree_by_stable_id {
 
     # fetch all stable IDs related to this one from the database
     $sth->bind_param(1, $id, SQL_VARCHAR);
-    $sth->bind_param(2, $id, SQL_VARCHAR);
+    $sth->bind_param(2, $species_id, SQL_INTEGER);
+    $sth->bind_param(3, $id, SQL_VARCHAR);
+    $sth->bind_param(4, $species_id, SQL_INTEGER);
     $sth->execute;
 
     my @events;
@@ -1279,8 +1304,8 @@ sub fetch_stable_id_event {
            ms.old_db_name, ms.new_db_name, ms.old_release, ms.new_release, ms.old_assembly, ms.new_assembly
     FROM stable_id_event sie, mapping_session ms
     WHERE ms.mapping_session_id = sie.mapping_session_id
-    AND (old_stable_id = ? AND ms.old_db_name = ? AND old_release = ? AND old_assembly = ? AND new_stable_id = ?)
-    OR (new_stable_id = ? AND ms.new_db_name = ? AND new_release = ? AND new_assembly = ? AND old_stable_id = ?)
+    AND (old_stable_id = ? AND ms.old_db_name = ? AND old_release = ? AND old_assembly = ? AND new_stable_id = ? AND ms.species_id = ?)
+    OR (new_stable_id = ? AND ms.new_db_name = ? AND new_release = ? AND new_assembly = ? AND old_stable_id = ? AND ms.species_id = ?)
   );
 
   my $sth = $self->prepare($sql);
@@ -1289,11 +1314,13 @@ sub fetch_stable_id_event {
   $sth->bind_param(3, $arch_id->release, SQL_INTEGER);
   $sth->bind_param(4, $arch_id->assembly, SQL_VARCHAR);
   $sth->bind_param(5, $stable_id, SQL_VARCHAR);
-  $sth->bind_param(6, $arch_id->stable_id, SQL_VARCHAR);
-  $sth->bind_param(7, $arch_id->db_name, SQL_VARCHAR);
-  $sth->bind_param(8, $arch_id->release, SQL_INTEGER);
-  $sth->bind_param(9, $arch_id->assembly, SQL_VARCHAR);
-  $sth->bind_param(10, $stable_id, SQL_VARCHAR);
+  $sth->bind_param(6, $self->species_id(), SQL_INTEGER);
+  $sth->bind_param(7, $arch_id->stable_id, SQL_VARCHAR);
+  $sth->bind_param(8, $arch_id->db_name, SQL_VARCHAR);
+  $sth->bind_param(9, $arch_id->release, SQL_INTEGER);
+  $sth->bind_param(10, $arch_id->assembly, SQL_VARCHAR);
+  $sth->bind_param(11, $stable_id, SQL_VARCHAR);
+  $sth->bind_param(12, $self->species_id(), SQL_INTEGER);
   $sth->execute();
 
   my ($old_stable_id, $old_version, $new_stable_id, $new_version, $type, $score);
@@ -1368,9 +1395,11 @@ sub list_dbnames {
     my $sql = qq(
       SELECT old_db_name, new_db_name
       FROM mapping_session
+      WHERE species_id = ?
       ORDER BY created DESC
     );
     my $sth = $self->prepare( $sql );
+    $sth->bind_param(1, $self->species_id(), SQL_INTEGER);
     $sth->execute();
     my ( $old_db_name, $new_db_name );
     
@@ -1564,7 +1593,6 @@ sub get_current_assembly {
   return $self->{'current_assembly'};
 }
 
-
 =head2 lookup_current
 
   Arg[1]      : Bio::EnsEMBL::ArchiveStableId $arch_id -
@@ -1663,4 +1691,3 @@ sub _resolve_type {
 
 
 1;
-

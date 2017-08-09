@@ -409,6 +409,7 @@ CREATE TABLE `mapping_session` (
   `old_assembly` varchar(20) COLLATE latin1_bin NOT NULL DEFAULT '',
   `new_assembly` varchar(20) COLLATE latin1_bin NOT NULL DEFAULT '',
   `created` datetime DEFAULT NULL,
+  `species_id` int(10) unsigned NOT NULL DEFAULT '1',
   PRIMARY KEY (`mapping_session_id`)
 ) ENGINE=MyISAM DEFAULT CHARSET=latin1 COLLATE=latin1_bin;
 
@@ -476,7 +477,7 @@ CREATE TABLE `meta` (
   PRIMARY KEY (`meta_id`),
   UNIQUE KEY `species_key_value_idx` (`species_id`,`meta_key`,`meta_value`),
   KEY `species_value_idx` (`species_id`,`meta_value`)
-) ENGINE=MyISAM AUTO_INCREMENT=226 DEFAULT CHARSET=latin1;
+) ENGINE=MyISAM AUTO_INCREMENT=228 DEFAULT CHARSET=latin1;
 
 CREATE TABLE `meta_coord` (
   `table_name` varchar(40) COLLATE latin1_bin NOT NULL DEFAULT '',
