@@ -52,7 +52,7 @@ my $chr_slice = $db->get_SliceAdaptor->fetch_by_region('chromosome','20',
 $feats = $pafa->fetch_all_by_Slice($chr_slice);
 debug('---fetching by chromosomal slice---');
 debug("Got " . scalar(@$feats) . " features back");
-ok(@$feats == 2429);
+is(@$feats, 2429, "Found 2429 features");
 print_features($feats);
 
 my $ctg_slice;
@@ -63,7 +63,7 @@ $ctg_slice  = $db->get_SliceAdaptor->fetch_by_region('contig',
 $feats = $pafa->fetch_all_by_Slice($ctg_slice);
 debug('--- contig AL031658.11.1.162976 (1-50000) features ---');
 debug("Got " . scalar(@$feats));
-ok(@$feats == 357);
+is(@$feats, 357, "Found 357 features");
       print_features($feats);
 
 
@@ -74,8 +74,8 @@ my $feat = $pafa->fetch_by_dbID(5339568);
 debug('--- fetching by dbID ---');
 ok($feat);
 print_features([$feat]);
-ok($feat->db_name eq 'EMBL');
-ok($feat->db_display_name eq 'EMBL');
+is($feat->db_name, 'EMBL', "Correct feature db_name");
+is($feat->db_display_name, 'EMBL', "Correct feature db_display_name");
 
 $feat = $feat->transform('supercontig');
 debug('--- transforming to supercontig coords ---');
@@ -89,7 +89,7 @@ print_features([$feat]);
 $feats = $pafa->fetch_all_by_Slice_and_pid($chr_slice, '90');
 debug('--- fetching by chr Slice and pid (90) ---');
 debug("Got " . scalar(@$feats));
-ok(@$feats == 64);
+is(@$feats, 64, "Found 64 features");
 print_features($feats);
 
 #
@@ -142,21 +142,21 @@ my $dbID = $feat->dbID();
 
 $feat = $pafa->fetch_by_dbID($dbID);
 
-ok($feat->dbID == $dbID);
-ok($feat->start == $start);
-ok($feat->end  == $end);
-ok($feat->strand == $strand);
-ok($feat->slice->name eq $slice->name);
-ok($feat->hstart == $hstart);
-ok($feat->hend   == $hend);
-ok($feat->hseqname eq $hseqname);
-ok($feat->cigar_string eq $cigar_string);
-ok($feat->percent_id == $percent_id);
-ok($feat->score == $score);
-ok($feat->p_value == $evalue);
-ok($feat->analysis->logic_name eq $analysis->logic_name);
-ok($feat->external_db_id == $external_db_id);
-ok($feat->hcoverage == $hcoverage);
+is($feat->dbID, $dbID, "Correct dbID");
+is($feat->start, $start, "Correct start");
+is($feat->end, $end, "Correct end");
+is($feat->strand, $strand, "Correct strand");
+is($feat->slice->name, $slice->name, "Correct name");
+is($feat->hstart, $hstart, "Correct hstart");
+is($feat->hend, $hend, "Correct hend");
+is($feat->hseqname, $hseqname, "Correct hseqname");
+is($feat->cigar_string, $cigar_string, "Correct cigar string");
+is($feat->percent_id, $percent_id, "Correct percent id");
+is($feat->score, $score, "Correct score");
+is(sprintf("%.6f", $feat->p_value), sprintf("%.6f", $evalue), "Correct evalue");
+is($feat->analysis->logic_name, $analysis->logic_name, "Correct logic_name");
+is($feat->external_db_id, $external_db_id, "Correct external_db_id");
+is($feat->hcoverage, $hcoverage, "Correct hcoverage");
 
 $multi->restore('core', 'protein_align_feature');
 

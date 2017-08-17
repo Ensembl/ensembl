@@ -48,7 +48,7 @@ my $chr_slice = $db->get_SliceAdaptor->fetch_by_region('chromosome','20',
 $feats = $dafa->fetch_all_by_Slice($chr_slice);
 debug('---fetching by chromosomal slice---');
 debug("Got " . scalar(@$feats) . " features back");
-ok(@$feats == 6188);
+is(@$feats, 6188, "Found 6188 features");
 print_features($feats);
 
 
@@ -60,7 +60,7 @@ $ctg_slice  = $db->get_SliceAdaptor->fetch_by_region('contig',
 $feats = $dafa->fetch_all_by_Slice($ctg_slice);
 debug('--- contig AL031658.11.1.162976 (1-50000) features ---');
 debug("Got " . scalar(@$feats));
-ok(@$feats == 709);
+is(@$feats, 709, "found 709 features");
 print_features($feats);
 
 
@@ -71,9 +71,8 @@ my $feat = $dafa->fetch_by_dbID(22171863);
 debug('--- fetching by dbID ---');
 ok($feat);
 print_features([$feat]);
-ok($feat->db_name eq 'EMBL');
-ok($feat->db_display_name eq 'EMBL');
-
+is($feat->db_name, 'EMBL', "Correct feature db_name");
+is($feat->db_display_name, 'EMBL', "Correct feature db_display_name");
 
 $feat = $feat->transform('supercontig');
 debug('--- transform to supercontig coords ---');
@@ -87,7 +86,7 @@ print_features([$feat]);
 $feats = $dafa->fetch_all_by_Slice_and_pid($chr_slice, '90');
 debug('--- fetching by chr Slice and pid (90) ---');
 debug("Got " . scalar(@$feats));
-ok(@$feats == 452);
+is(@$feats, 452, "Found 452 features");
 #print_features($feats);
 
 #
@@ -148,22 +147,21 @@ my $dbID = $feat->dbID();
 
 $feat = $dafa->fetch_by_dbID($dbID, 'contig');
 
-ok($feat->dbID == $dbID);
-ok($feat->start == $start);
-ok($feat->end  == $end);
-ok($feat->strand == $strand);
-ok($feat->slice->name eq $slice->name);
-ok($feat->hstart == $hstart);
-ok($feat->hend   == $hend);
-ok($feat->hstrand == $hstrand);
-ok($feat->hseqname eq $hseqname);
-ok($feat->cigar_string eq $cigar_string);
-ok($feat->percent_id == $percent_id);
-ok($feat->score == $score);
-ok($feat->p_value == $evalue);
-ok($feat->analysis->logic_name eq $analysis->logic_name);
-ok($feat->external_db_id == $external_db_id);
-ok($feat->hcoverage == $hcoverage);
+is($feat->dbID, $dbID, "Correct dbID");
+is($feat->start, $start, "Correct start");
+is($feat->end, $end, "Correct end");
+is($feat->strand, $strand, "Correct strand");
+is($feat->slice->name, $slice->name, "Correct name");
+is($feat->hstart, $hstart, "Correct hstart");
+is($feat->hend, $hend, "Correct hend");
+is($feat->hseqname, $hseqname, "Correct hseqname");
+is($feat->cigar_string, $cigar_string, "Correct cigar string");
+is($feat->percent_id, $percent_id, "Correct percent id");
+is($feat->score, $score, "Correct score");
+is(sprintf("%.6f", $feat->p_value), sprintf("%.6f", $evalue), "Correct evalue");
+is($feat->analysis->logic_name, $analysis->logic_name, "Correct logic_name");
+is($feat->external_db_id, $external_db_id, "Correct external_db_id");
+is($feat->hcoverage, $hcoverage, "Correct hcoverage");
 
 my @attribs = @{$feat->get_all_Attributes};
 is(@attribs, 1, "Stored 1 attribute");

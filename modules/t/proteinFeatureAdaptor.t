@@ -40,7 +40,7 @@ my $pfs = $pfa->fetch_all_by_translation_id(21724);
 
 print_features($pfs);
 
-ok(@$pfs == 15);
+is(@$pfs, 15, "Found 15 features");
 
 sub print_features {
   my $features = shift;
@@ -106,13 +106,13 @@ is($f_by_dbID->hend, $hend);
 is($f_by_dbID->hseqname, $hseqname);
 is($f_by_dbID->hdescription, $hdes);
 is($f_by_dbID->score, $score);
-is($f_by_dbID->percent_id, $percent_id);
-is($f_by_dbID->p_value, $p_value);
+is(sprintf("%.6f", $f_by_dbID->percent_id), sprintf("%.6f", $percent_id), "Correct percent_id");
+is(sprintf("%.6f", $f_by_dbID->p_value), sprintf("%.6f", $p_value), "Correct p_value");
 
 
 $pfs = $pfa->fetch_all_by_translation_id(21724);
 
-ok(@$pfs == 16);
+is(@$pfs, 16, "Found 16 features");
 
 my @pfs = grep{$_->hdescription() eq $hdes} @$pfs;
 
