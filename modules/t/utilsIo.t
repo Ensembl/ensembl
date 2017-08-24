@@ -77,6 +77,15 @@ my $expected_array = [qw/>X AAAAGGGTTCCC TTGGCCAAAAAA ATTC/];
   
   dies_ok { slurp($file) } 'File no longer exists so die';
 
+  spurt($file, $contents);
+  my $rewritten_contents = slurp($file);
+  is($contents, $rewritten_contents, 'Contents should still be the same');
+
+  spurt($file, $contents, 'append');
+  $rewritten_contents = slurp($file);
+  is($contents.$contents, $rewritten_contents, 'Contents should be doubled');
+  unlink $file;
+
 }
 
 {

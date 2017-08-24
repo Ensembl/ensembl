@@ -131,10 +131,11 @@ our $GZIP_OK = 0;
 our $BZIP2_OK = 0;
 our $ZIP_OK = 0;
 
-our @EXPORT_OK = qw/slurp slurp_to_array fh_to_array process_to_array work_with_file gz_slurp gz_slurp_to_array gz_work_with_file bz_slurp bz_slurp_to_array bz_work_with_file zip_slurp zip_slurp_to_array zip_work_with_file filter_dir iterate_file iterate_lines move_data/;
+our @EXPORT_OK = qw/slurp slurp_to_array fh_to_array process_to_array work_with_file gz_slurp gz_slurp_to_array gz_work_with_file bz_slurp bz_slurp_to_array bz_work_with_file zip_slurp zip_slurp_to_array zip_work_with_file spurt filter_dir iterate_file iterate_lines move_data/;
 our %EXPORT_TAGS = (
   all     => [@EXPORT_OK],
   slurp   => [qw/slurp slurp_to_array gz_slurp gz_slurp_to_array/],
+  spurt   => [qw/spurt/],
   array   => [qw/fh_to_array process_to_array slurp_to_array gz_slurp_to_array/],
   gz      => [qw/gz_slurp gz_slurp_to_array gz_work_with_file/],
   bz      => [qw/bz_slurp bz_slurp_to_array bz_work_with_file/],
@@ -199,6 +200,34 @@ sub slurp {
 	  return;
 	});
 	return ($want_ref) ? \$contents : $contents;
+}
+
+=head2 spurt()
+
+  Arg [1]     : string $file
+  Arg [2]     : string $contents
+  Arg [3]     : boolean; $append
+  Arg [4]     : boolean; $binary
+  Description : Convenient method to safely open a file and dump some content into it.
+                $append can be set to append to the file instead of resetting it first.
+                $binary can be set if the content you are printing is not plain-text.
+  Returntype  : None
+  Example     : spurt('/tmp/file.txt', $contents);
+  Exceptions  : If the file could not be created or was not writable
+  Status      : Stable
+
+=cut
+
+sub spurt {
+  my ( $file, $contents, $append, $binary ) = @_;
+  work_with_file(
+    $file,
+    $append ? 'a' : 'w',
+    sub {
+      my ($fh) = @_;
+      binmode($fh) if $binary;
+      syswrite( $fh, $contents );
+    } );
 }
 
 =head2 gz_slurp
