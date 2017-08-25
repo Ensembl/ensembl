@@ -309,6 +309,8 @@ INSERT INTO meta (species_id, meta_key, meta_value) VALUES
 # NOTE: Avoid line-breaks in values.
 INSERT INTO meta (species_id, meta_key, meta_value)
   VALUES (NULL, 'patch', 'patch_90_91_a.sql|schema_version');
+INSERT INTO meta (species_id, meta_key, meta_value)
+  VALUES (NULL, 'patch', 'patch_90_91_b.sql|add_species_id');
 
 /**
 @table meta_coord
@@ -1854,6 +1856,7 @@ CREATE TABLE gene_archive (
 CREATE TABLE mapping_session (
 
   mapping_session_id          INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
+  species_id                  INT(10) UNSIGNED NOT NULL DEFAULT 1,
   old_db_name                 VARCHAR(80) NOT NULL DEFAULT '',
   new_db_name                 VARCHAR(80) NOT NULL DEFAULT '',
   old_release                 VARCHAR(5) NOT NULL DEFAULT '',
@@ -2486,4 +2489,3 @@ CREATE TABLE operon_transcript_gene (
 
   KEY operon_transcript_gene_idx (operon_transcript_id,gene_id)
 ) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
-

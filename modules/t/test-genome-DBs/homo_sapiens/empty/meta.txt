@@ -90,3 +90,4 @@
 139	\N	patch	patch_89_90_b.sql|remove_status
 140	\N	patch	patch_89_90_c.sql|pf_hit_name_case_sensitive
 141	\N	patch	patch_90_91_a.sql|schema_version
+142	\N	patch	patch_90_91_b.sql|add_species_id

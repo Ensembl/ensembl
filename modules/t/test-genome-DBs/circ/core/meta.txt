@@ -111,3 +111,4 @@
 111	\N	patch	patch_89_90_b.sql|remove_status
 112	\N	patch	patch_89_90_c.sql|pf_hit_name_case_sensitive
 113	\N	patch	patch_90_91_a.sql|schema_version
+114	\N	patch	patch_90_91_b.sql|add_species_id

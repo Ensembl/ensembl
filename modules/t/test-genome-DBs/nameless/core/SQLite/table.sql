@@ -444,6 +444,7 @@ CREATE TABLE map (
 --
 CREATE TABLE mapping_session (
   mapping_session_id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+  species_id integer NOT NULL DEFAULT 1,
   old_db_name varchar(80) NOT NULL DEFAULT '',
   new_db_name varchar(80) NOT NULL DEFAULT '',
   old_release varchar(5) NOT NULL DEFAULT '',
