@@ -287,11 +287,10 @@ sub fetch_Iterator_by_Slice_method{
 		  my $feat_end  = $feat_cache[$#feat_cache]->seq_region_end;
 		  my $slice_end = $sub_slice->end;
 		  $num_overlaps = 0;
-		  
 		  for ($i = $#feat_cache; $i >=0; $i--) {
+                        $feat_end  = $feat_cache[$i]->seq_region_end;
 			
 			if ($feat_end > $slice_end) {
-			  $feat_end  = $feat_cache[$i]->seq_region_end;
 			  $num_overlaps ++;
 			} else {
 			  last;
