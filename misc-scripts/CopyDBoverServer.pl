@@ -1058,7 +1058,7 @@ TABLE:
       {
         my @check_cmd = (
           'myisamchk', '--check', '--check-only-changed',
-          '--update-state', '--silent', '--silent',    # Yes, twice.
+          '--update-state', '--force', '--silent', '--silent',    # Yes, twice.
           $index );
 
         if ( system(@check_cmd) != 0 ) {
