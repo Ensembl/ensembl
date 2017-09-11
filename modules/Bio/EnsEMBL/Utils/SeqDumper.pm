@@ -844,8 +844,11 @@ sub _dump_feature_table {
             $self->write(@ff, '', $value);
           }
 
-          $value = '/translation="'.$transcript->translate()->seq().'"';
-          $self->write(@ff, '', $value);
+	  my $pep = $transcript->translate();
+          if ($pep) {
+	    $value = '/translation="'.$pep->seq().'"';
+	    $self->write(@ff, '', $value);
+	  }
         } else {
           #pseudogene
           $value = $self->features2location($transcript->get_all_Exons);
