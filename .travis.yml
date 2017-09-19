@@ -1,4 +1,4 @@
-language: perl
+language: "perl"
 
 perl:
   - '5.14'
@@ -30,7 +30,7 @@ install:
     - cp travisci/MultiTestDB.conf.travisci.mysql  modules/t/MultiTestDB.conf.mysql
     - cp travisci/MultiTestDB.conf.travisci.SQLite modules/t/MultiTestDB.conf.SQLite
     - mysql -u root -h localhost -e 'GRANT ALL PRIVILEGES ON *.* TO "travis"@"%"'
-    
+
 script: "./travisci/harness.sh"
 
 # Add build stage to trigger dependent builds, run sequentially after all test jobs
