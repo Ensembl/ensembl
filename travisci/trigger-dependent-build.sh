@@ -72,7 +72,8 @@ if [ "${TRAVIS_BRANCH}" != "master" ] || [ "${TRAVIS_PULL_REQUEST}" != "false" ]
 fi
 
 # The list of downstream dependent repos
-dep_repos=("avullo%2Fensembl%2Drest")
+dep_repos=("Ensembl%2Fensembl%2Dcompara"
+	   "Ensembl%2Fensembl%2Drest")
 
 for dep_repo in "${dep_repos[@]}"; do
     # Get the ID of the dependent repo
