@@ -65,7 +65,7 @@ if [ "${TRAVIS_BRANCH}" != "master" ] || [ "${TRAVIS_PULL_REQUEST}" != "false" ]
 fi
 
 # The list of downstream dependent repos with their authorisation tokens
-declare -A dep_repos=( ["Ensembl%2Fensembl%2Dcompara"]=7yKmzwxTDvkx44YbRqAx ["Ensembl%2Fensembl%2Drest"]=MdFujR8JsfCR9uJdw7jrPg )
+declare -A dep_repos=( ["Ensembl%2Fensembl%2Dcompara"]=q-NlBCZgdZlpqUH6-4YJ8g ["Ensembl%2Fensembl%2Drest"]=MdFujR8JsfCR9uJdw7jrPg )
 
 for dep_repo in "${!dep_repos[@]}"; do
     auth_token=${dep_repos[$dep_repo]}
