@@ -1,62 +1,56 @@
-language: "perl"
-
+language: perl
 perl:
-  - "5.14"
-  - "5.12"
-  - "5.10"
-#  - "5.22"
-#  - "5.24"
-
+  - '5.14'
+  - '5.12'
+  - '5.10'
 env:
+  matrix:
   - COVERALLS=true  DB=mysql
   - COVERALLS=false DB=mysql
   - COVERALLS=false DB=sqlite
-  
+  global:
+    secure: Wug6JJvng48ebwr6vWVSrT6eZefOBPYlJ33p+ggTonMYZxYCYuKoNl7b23etORrfEqeg0N0yAfgAwfwzhISq/hLUUCGDQZcx5W0BTa6rjjNqohfsJoSHhR3hAfigc+KTmyB+EB/EvdwvT6jxQAwRrvfFMgrfgextdYvcWstOzXKHhjwZKihJzNQpdnuTmygUTVeNhHd9pvJ8V2y3Vadi7UbbKLeZJYZOO2c0H+3jCtXZtE+4u+fPygPGnzbZ5EfVSBfeipCE2MY1uR0mG/v7GQb9Nqc4qeNggyctnwKv+T4PI/nSc/BWdzfMOFZNHQmM3IFbNUNsmCud8sfpzajZWIRjCVbJQkk9BF3QI9bnq8GZoeWOb+yEIWugf/+dbJCdt2mm6181nHiVzro8pdpGxF34kMEQvwkXepOEFC0cWuorhl6Z8VlSYoQqjUEtM+IavumUOnTmAbxHAW2Zx/iBozOLsr4s/wiAZTTRmEXLKxFexwKiPA9VJAgl17mUklsyr8heRNwJbQNQGUm8Q+hwHR7WIut4Y/YF5/yn38j7U8R+redXSwDcGL2ThxFr+KYx4EM8SNngtWsKfthbZdUNSRV+SdJMkTdOmkXkQRpVxrLgFgcKurRtLVA5UZicbN+QqQTLIAbriJo7UyLccRe3xznUaDsggRhgWvEPvDDZ6xM=
+
 sudo: false
-  
+
 addons:
   apt:
     packages:
     - unzip
 
 before_install:
-    - git clone --branch master --depth 1 https://github.com/Ensembl/ensembl-test.git
-    - git clone --branch master --depth 1 https://github.com/Ensembl/ensembl-variation.git
-    - git clone --branch master --depth 1 https://github.com/Ensembl/ensembl-compara.git
-    - git clone -b bioperl-release-1-6-1 --depth 1 https://github.com/bioperl/bioperl-live.git
-
+  - git clone --branch master --depth 1 https://github.com/Ensembl/ensembl-test.git
+  - git clone --branch master --depth 1 https://github.com/Ensembl/ensembl-variation.git
+  - git clone --branch master --depth 1 https://github.com/Ensembl/ensembl-compara.git
+  - git clone -b bioperl-release-1-6-1 --depth 1 https://github.com/bioperl/bioperl-live.git
 
 install:
-    - cpanm -v --installdeps --notest .
-    - cpanm -n Devel::Cover::Report::Coveralls
-    - cpanm -n DBD::SQLite
-    - cp travisci/MultiTestDB.conf.travisci.mysql  modules/t/MultiTestDB.conf.mysql
-    - cp travisci/MultiTestDB.conf.travisci.SQLite modules/t/MultiTestDB.conf.SQLite
-    - mysql -u root -h localhost -e 'GRANT ALL PRIVILEGES ON *.* TO "travis"@"%"'
+  - cpanm -v --installdeps --notest .
+  - cpanm -n Devel::Cover::Report::Coveralls
+  - cpanm -n DBD::SQLite
+  - cp travisci/MultiTestDB.conf.travisci.mysql  modules/t/MultiTestDB.conf.mysql
+  - cp travisci/MultiTestDB.conf.travisci.SQLite modules/t/MultiTestDB.conf.SQLite
+  - mysql -u root -h localhost -e 'GRANT ALL PRIVILEGES ON *.* TO "travis"@"%"'
 
 script: "./travisci/harness.sh"
 
-# Get the matrix to only build coveralls support when on 5.10
+jobs:
+  include:
+  - stage: trigger_dependent_builds
+    script: "./travisci/trigger-dependent-build.sh"
+
 matrix:
   exclude:
-    - perl: "5.10"
-      env: COVERALLS=false DB=mysql
-    - perl: "5.12"
-      env: COVERALLS=false DB=sqlite
-    - perl: "5.12"
-      env: COVERALLS=true  DB=mysql
-    - perl: "5.14"
-      env: COVERALLS=false DB=sqlite
-    - perl: "5.14"
-      env: COVERALLS=true  DB=mysql
-#    - perl: "5.22"
-#      env: COVERALLS=false DB=sqlite
-#    - perl: "5.22"
-#      env: COVERALLS=true  DB=mysql
-#    - perl: "5.24"
-#      env: COVERALLS=false DB=sqlite
-#    - perl: "5.24"
-#      env: COVERALLS=true  DB=mysql
+  - perl: '5.10'
+    env: COVERALLS=false DB=mysql
+  - perl: '5.12'
+    env: COVERALLS=false DB=sqlite
+  - perl: '5.12'
+    env: COVERALLS=true  DB=mysql
+  - perl: '5.14'
+    env: COVERALLS=false DB=sqlite
+  - perl: '5.14'
+    env: COVERALLS=true  DB=mysql
 
 notifications:
   email:
