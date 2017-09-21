@@ -19,6 +19,7 @@ no warnings qw(uninitialized);
 
 use Test::More;
 use Test::Warnings;
+use Test::Exception;
 
 use Bio::EnsEMBL::Test::MultiTestDB;
 use Bio::EnsEMBL::DBSQL::ArchiveStableIdAdaptor;
@@ -226,6 +227,102 @@ ok($archive_obj->is_current, 'Is the current stable_id');
 $archive_obj = $asia->fetch_by_stable_id('ENSG00000171456.1');
 is($archive_obj->stable_id, 'ENSG00000171456', 'fetch_by_stable_id with active stable_id with version');
 ok($archive_obj->is_latest, 'Is the latest stable_id');
+
+# Test querying with a multispecies DBA
+
+{
+  $asia->species_id(2);
+
+# Now assuming a new species_id == 2, $asia->fetch_by_stable_id() is expected to fail.
+  warns_like {$asia->fetch_by_stable_id("T1")} qr/Couldn't resolve stable ID type./;
+
+# Reverting mocked species_id to its original value. Now the same functions within this block should work again.
+  $asia->species_id(1);
+
+  $asi= $asia->fetch_by_stable_id("T1");
+  is( $asi->release, 2, "T1 is from release 2");
+}
+
+{
+  $asia->species_id(2);
+
+# $asia->fetch_associated_archived($asi) will be throwing an exception.
+  dies_ok { $asia->fetch_associated_archived($asia->fetch_by_stable_id_version( "G2", "2" )) };
+
+# Reverting mocked species_id to its original value. Now the same functions within this block should work again.
+  $asia->species_id(1);
+
+  my @assoc = @{ $asia->fetch_associated_archived($asia->fetch_by_stable_id_version( "G2", "2" )) };
+  ok( scalar(@assoc) == 2 and $assoc[0]->[0]->type eq 'Gene');
+}
+
+{
+  $asia->species_id(2);
+
+# $asia->fetch_predecessors_by_archive_id($asi) will be throwing an exception.
+  dies_ok { $asia->fetch_predecessors_by_archive_id($asia->fetch_by_stable_id_version( "G2", "2" )) };
+
+# Reverting mocked species_id to its original value. Now the same functions within this block should work again.
+  $asia->species_id(1);
+
+  my $aRef = $asia->fetch_predecessors_by_archive_id($asia->fetch_by_stable_id_version( "G2", "2" ));
+  is( scalar( @$aRef ), 1, "G2 has 1 predecessors" );
+}
+
+{
+  $asia->species_id(2);
+
+# $asia->fetch_successors_by_archive_id($asi) will be throwing an exception.
+  dies_ok { $asia->fetch_successors_by_archive_id($asia->fetch_by_stable_id_dbname( "G4", "release_1" )) };
+
+# Reverting mocked species_id to its original value. Now the same functions within this block should work again.
+  $asia->species_id(1);
+
+  my $aRef = $asia->fetch_successors_by_archive_id($asia->fetch_by_stable_id_dbname( "G4", "release_1" ));
+  is( scalar( @$aRef ), 1, "G4 has 1 successors" );
+}
+
+{
+  $asia->species_id(2);
+
+# $asia->fetch_history_tree_by_stable_id() is expected to fail.
+  warns_like {$asia->fetch_history_tree_by_stable_id("G1")} qr/Couldn't resolve stable ID type./;
+
+# Reverting mocked species_id to its original value. Now the same functions within this block should work again.
+  $asia->species_id(1);
+
+  my $aRef = $asia->fetch_history_tree_by_stable_id("G1");
+  @asis = @{$aRef->get_all_ArchiveStableIds};
+  ok( scalar(@asis) == 9 and $aRef->{current_assembly} eq 'NCBI34');
+}
+
+{
+  $asia->species_id(2);
+
+# $asia->fetch_stable_id_event() is expected to fail.
+  is($asia->fetch_stable_id_event($asi,"G1"), undef, "returning undef since no event was found for species_id = 2");
+
+# Reverting mocked species_id to its original value. Now the same functions within this block should work again.
+  $asia->species_id(1);
+
+  $asia->fetch_stable_id_event($asi, "G1");
+  is(ref($event), 'Bio::EnsEMBL::StableIdEvent', "A stable id event was fetched");
+  is($event->score, 0.54, "Mapping score between G1 and G2");
+}
+
+{
+  $asia->species_id(2);
+
+# $asia->list_dbnames() is expected to find no information if we erase dbnames previous entries (assuming species_id = 2).
+  $asia->{'dbnames'} = undef;
+  is($asia->list_dbnames(), undef, "returning undef since no old_db_name || new_db_name was found for species_id 2");
+
+# Reverting mocked species_id to its original value. Now the same functions within this block should work again.
+  $asia->species_id(1);
+
+  my $aRef = $asia->list_dbnames();
+  is( scalar( @$aRef ), 4, "4 Strings found" );
+}
 
 #
 # debug helper

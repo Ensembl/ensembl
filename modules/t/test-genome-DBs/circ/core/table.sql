@@ -402,6 +402,7 @@ CREATE TABLE `map` (
 
 CREATE TABLE `mapping_session` (
   `mapping_session_id` int(11) NOT NULL AUTO_INCREMENT,
+  `species_id` int(10) unsigned NOT NULL DEFAULT '1',
   `old_db_name` varchar(80) COLLATE latin1_bin NOT NULL DEFAULT '',
   `new_db_name` varchar(80) COLLATE latin1_bin NOT NULL DEFAULT '',
   `old_release` varchar(5) COLLATE latin1_bin NOT NULL DEFAULT '',
@@ -476,7 +477,7 @@ CREATE TABLE `meta` (
   PRIMARY KEY (`meta_id`),
   UNIQUE KEY `species_key_value_idx` (`species_id`,`meta_key`,`meta_value`),
   KEY `species_value_idx` (`species_id`,`meta_value`)
-) ENGINE=MyISAM AUTO_INCREMENT=113 DEFAULT CHARSET=latin1;
+) ENGINE=MyISAM AUTO_INCREMENT=115 DEFAULT CHARSET=latin1;
 
 CREATE TABLE `meta_coord` (
   `table_name` varchar(40) COLLATE latin1_bin NOT NULL DEFAULT '',
@@ -734,7 +735,7 @@ CREATE TABLE `seq_region_synonym` (
   PRIMARY KEY (`seq_region_synonym_id`),
   UNIQUE KEY `syn_idx` (`synonym`,`seq_region_id`),
   KEY `seq_region_idx` (`seq_region_id`)
-) ENGINE=MyISAM AUTO_INCREMENT=7 DEFAULT CHARSET=latin1;
+) ENGINE=MyISAM AUTO_INCREMENT=9 DEFAULT CHARSET=latin1;
 
 CREATE TABLE `simple_feature` (
   `simple_feature_id` int(10) unsigned NOT NULL AUTO_INCREMENT,
