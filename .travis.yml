@@ -1,15 +1,17 @@
 language: perl
+
 perl:
   - '5.14'
   - '5.12'
   - '5.10'
+
 env:
   matrix:
   - COVERALLS=true  DB=mysql
   - COVERALLS=false DB=mysql
   - COVERALLS=false DB=sqlite
   global:
-    secure: Wug6JJvng48ebwr6vWVSrT6eZefOBPYlJ33p+ggTonMYZxYCYuKoNl7b23etORrfEqeg0N0yAfgAwfwzhISq/hLUUCGDQZcx5W0BTa6rjjNqohfsJoSHhR3hAfigc+KTmyB+EB/EvdwvT6jxQAwRrvfFMgrfgextdYvcWstOzXKHhjwZKihJzNQpdnuTmygUTVeNhHd9pvJ8V2y3Vadi7UbbKLeZJYZOO2c0H+3jCtXZtE+4u+fPygPGnzbZ5EfVSBfeipCE2MY1uR0mG/v7GQb9Nqc4qeNggyctnwKv+T4PI/nSc/BWdzfMOFZNHQmM3IFbNUNsmCud8sfpzajZWIRjCVbJQkk9BF3QI9bnq8GZoeWOb+yEIWugf/+dbJCdt2mm6181nHiVzro8pdpGxF34kMEQvwkXepOEFC0cWuorhl6Z8VlSYoQqjUEtM+IavumUOnTmAbxHAW2Zx/iBozOLsr4s/wiAZTTRmEXLKxFexwKiPA9VJAgl17mUklsyr8heRNwJbQNQGUm8Q+hwHR7WIut4Y/YF5/yn38j7U8R+redXSwDcGL2ThxFr+KYx4EM8SNngtWsKfthbZdUNSRV+SdJMkTdOmkXkQRpVxrLgFgcKurRtLVA5UZicbN+QqQTLIAbriJo7UyLccRe3xznUaDsggRhgWvEPvDDZ6xM=
+  - secure: Ju069PzB8QZG3302emIhyCEEQfVfVsiXy0nGcR6hue+vW9nE82NnOEZHbZIwUCXEjUaZRMVQ31Em70Ky22OrLK4D59bs2ClH21u8URDGD/cn7JNPGWFrgxuaXQKMQrw72doeB0+w1+ShURtqM41vITjinyU3y34RZ1NcbDwYSZI=
 
 sudo: false
 
