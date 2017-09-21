@@ -154,15 +154,14 @@ sub create_xrefs {
 
     my $entry = $_;
     chomp $entry;
-    # If entry misformated, skip now
-    if ($entry !~ /^>/) { next; }
     my ($header, $sequence) = split (/\n/, $entry, 2);
     $sequence =~ s/^>//;
     # remove newlines
     my @seq_lines = split (/\n/, $sequence);
     $sequence = join("", @seq_lines);
 
-    (my $gi, my $n, my $ref, my $acc, my $description) = split(/\|/, $header);
+    (my $acc, my $description) = split(/\s/, $header, 2);
+    $acc =~ s/^>//;
     my ($species, $mrna);
     if ($file =~ /\.faa(\.gz|\.Z)?$/) {
 
