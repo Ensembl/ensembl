@@ -172,7 +172,7 @@ CREATE TABLE `gene_member_hom_stats` (
 CREATE TABLE `gene_member_qc` (
   `gene_member_stable_id` varchar(128) NOT NULL,
   `genome_db_id` int(10) unsigned NOT NULL,
-  `seq_member_id` int(10) DEFAULT NULL,
+  `seq_member_id` int(10) unsigned DEFAULT NULL,
   `n_species` int(11) DEFAULT NULL,
   `n_orth` int(11) DEFAULT NULL,
   `avg_cov` float DEFAULT NULL,
@@ -434,7 +434,7 @@ CREATE TABLE `meta` (
   PRIMARY KEY (`meta_id`),
   UNIQUE KEY `species_key_value_idx` (`species_id`,`meta_key`,`meta_value`(255)),
   KEY `species_value_idx` (`species_id`,`meta_value`(255))
-) ENGINE=MyISAM AUTO_INCREMENT=43 DEFAULT CHARSET=latin1;
+) ENGINE=MyISAM AUTO_INCREMENT=44 DEFAULT CHARSET=latin1;
 
 CREATE TABLE `method_link` (
   `method_link_id` int(10) unsigned NOT NULL AUTO_INCREMENT,

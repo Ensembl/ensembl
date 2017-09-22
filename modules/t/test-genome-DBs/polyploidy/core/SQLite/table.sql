@@ -1,6 +1,6 @@
 -- 
 -- Created by SQL::Translator::Producer::SQLite
--- Created on Thu Jun  1 11:18:27 2017
+-- Created on Fri Sep 22 15:52:36 2017
 -- 
 
 BEGIN TRANSACTION;
@@ -729,7 +729,7 @@ CREATE TABLE protein_feature (
   seq_end integer NOT NULL DEFAULT 0,
   hit_start integer NOT NULL DEFAULT 0,
   hit_end integer NOT NULL DEFAULT 0,
-  hit_name varchar(40) NOT NULL DEFAULT '',
+  hit_name varchar(40) NOT NULL,
   analysis_id integer NOT NULL DEFAULT 0,
   score double precision NOT NULL DEFAULT 0,
   evalue double precision,

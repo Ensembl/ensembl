@@ -35,3 +35,4 @@
 40	\N	patch	patch_89_90_d.sql|genomic_align_tree_left_node_id_null
 41	\N	patch	patch_89_90_e.sql|seq_member_projection
 42	\N	patch	patch_89_90_f.sql|gene_member_missing_biotype_groups
+43	\N	patch	patch_90_91_b.sql|gene_member_qc.seq_member_id.unsigned

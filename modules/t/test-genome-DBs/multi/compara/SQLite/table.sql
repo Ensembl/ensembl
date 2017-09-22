@@ -1,6 +1,6 @@
 -- 
 -- Created by SQL::Translator::Producer::SQLite
--- Created on Thu Jun  1 11:17:43 2017
+-- Created on Fri Sep 22 15:52:04 2017
 -- 
 
 BEGIN TRANSACTION;
@@ -49,7 +49,7 @@ CREATE TABLE constrained_element (
   dnafrag_end integer NOT NULL,
   dnafrag_strand integer NOT NULL,
   method_link_species_set_id integer NOT NULL,
-  p_value double precision,
+  p_value double precision NOT NULL DEFAULT 0,
   score double precision NOT NULL DEFAULT 0
 );
 
@@ -364,8 +364,8 @@ CREATE TABLE genomic_align_tree (
   root_id bigint NOT NULL DEFAULT 0,
   left_index integer NOT NULL DEFAULT 0,
   right_index integer NOT NULL DEFAULT 0,
-  left_node_id bigint NOT NULL DEFAULT 0,
-  right_node_id bigint NOT NULL DEFAULT 0,
+  left_node_id bigint,
+  right_node_id bigint,
   distance_to_parent double precision NOT NULL DEFAULT 1
 );
 
@@ -608,6 +608,23 @@ CREATE TABLE seq_member (
 );
 
 CREATE UNIQUE INDEX stable_id04 ON seq_member (stable_id);
+
+--
+-- Table: seq_member_projection
+--
+CREATE TABLE seq_member_projection (
+  target_seq_member_id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+  source_seq_member_id integer NOT NULL,
+  identity float(5,2) NOT NULL
+);
+
+--
+-- Table: seq_member_projection_stable_id
+--
+CREATE TABLE seq_member_projection_stable_id (
+  target_seq_member_id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+  source_stable_id varchar(128) NOT NULL
+);
 
 --
 -- Table: sequence

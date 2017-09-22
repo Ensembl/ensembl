@@ -48,3 +48,4 @@
 54	\N	patch	patch_89_90_a.sql|schema version
 55	\N	patch	patch_89_90_b.sql|add start_retained_variant to consequence_types in variation_feature and transcript_variation
 56	\N	patch	patch_89_90_c.sql|remove regulatory and TFBS consequences from consequence_types in  transcript_variation
+57	\N	patch	patch_90_91_b.sql|extend the characters supported in the publication.authors column
