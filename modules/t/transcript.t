@@ -17,7 +17,7 @@ use strict;
 use warnings;
 
 use Test::More;
-use Test::Warnings;
+use Test::Warnings qw(warning);
 
 use Bio::EnsEMBL::Test::MultiTestDB;
 use Bio::EnsEMBL::Test::TestUtils;
@@ -33,7 +33,8 @@ ok( $multi );
 
 my $db = $multi->get_DBAdaptor('core' );
 my $ontology = Bio::EnsEMBL::Test::MultiTestDB->new('ontology');
-my $odb = $ontology->get_DBAdaptor("ontology");
+my $odb;
+warning { $odb = $ontology->get_DBAdaptor("ontology"); };
 
 my $sa = $db->get_SliceAdaptor();
 
@@ -326,7 +327,8 @@ is(27, scalar(@transcripts), "Got 27 transcripts");
 # test TranscriptAdaptor::fetch_all_by_GOTerm
 #
 note("Test fetch_all_by_GOTerm");
-my $go_adaptor = $odb->get_OntologyTermAdaptor();
+my $go_adaptor;
+warning { $go_adaptor = $odb->get_OntologyTermAdaptor(); };
 my $go_term = $go_adaptor->fetch_by_accession('GO:0070363');
 @transcripts = @{ $ta->fetch_all_by_GOTerm($go_term) };
 is(scalar(@transcripts), 0, "Found 0 genes with fetch_all_by_GOTerm");

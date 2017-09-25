@@ -119,7 +119,7 @@ sub _columns {
             daf.score
             daf.external_db_id
             daf.hcoverage
-            daf.external_data
+            daf.align_type
             exdb.db_name
             exdb.db_display_name);
 }
@@ -161,8 +161,8 @@ sub store {
                              seq_region_end, seq_region_strand,
                              hit_start, hit_end, hit_strand, hit_name,
                              cigar_line, analysis_id, score, evalue,
-                             perc_ident, external_db_id, hcoverage, external_data)
-     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,NULL)"    # 16 arguments, external data is being removed
+                             perc_ident, external_db_id, hcoverage, align_type)
+     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"    # 16 arguments, external_data removed and align_type added
   );
 
 FEATURE:
@@ -188,6 +188,7 @@ FEATURE:
       warning( "DnaDnaAlignFeature does not define a cigar_string.\n"
           . "Assuming ungapped block with cigar_line=$cigar_string ." );
     }
+    my $align_type = $feat->align_type();
 
     my $hseqname = $feat->hseqname();
     if ( !$hseqname ) {
@@ -223,6 +224,7 @@ FEATURE:
     $sth->bind_param( 13, $feat->percent_id,     SQL_FLOAT );
     $sth->bind_param( 14, $feat->external_db_id, SQL_INTEGER );
     $sth->bind_param( 15, $feat->hcoverage,      SQL_DOUBLE );
+    $sth->bind_param( 16, $feat->align_type,     SQL_VARCHAR);
     $sth->execute();
 
     my $dbId = $self->last_insert_id("${tablename}_id", undef, $tablename);
@@ -335,7 +337,7 @@ sub _objs_from_sth {
        $cigar_line,           $evalue,
        $perc_ident,           $score,
        $external_db_id,       $hcoverage,
-       $extra_data,
+       $align_type,
        $external_db_name,     $external_display_db_name );
 
   $sth->bind_columns( \( $dna_align_feature_id, $seq_region_id,
@@ -346,7 +348,7 @@ sub _objs_from_sth {
                          $cigar_line,           $evalue,
                          $perc_ident,           $score,
                          $external_db_id,       $hcoverage,
-                         $extra_data,
+                         $align_type,
                          $external_db_name, $external_display_db_name )
   );
 
@@ -529,7 +531,7 @@ sub _objs_from_sth {
                'dbID'            => $dna_align_feature_id,
                'external_db_id'  => $external_db_id,
                'hcoverage'       => $hcoverage,
-               'extra_data'      => undef,
+               'align_type'      => $align_type,
                'dbname'          => $external_db_name,
                'db_display_name' => $external_display_db_name
              } ) );

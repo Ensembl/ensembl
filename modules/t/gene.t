@@ -49,8 +49,8 @@ my $ontology = Bio::EnsEMBL::Test::MultiTestDB->new('ontology');
 my $odb = $ontology->get_DBAdaptor("ontology");
 note("Ontology database instatiated");
 ok($odb);
-my $go_adaptor = $odb->get_OntologyTermAdaptor();
-
+my $go_adaptor;
+warning { $go_adaptor = $odb->get_OntologyTermAdaptor(); };
 
 my $gene;
 my $ga = $db->get_GeneAdaptor();
@@ -185,7 +185,8 @@ push(@feats, $fp);
 #
 # 2 Test DnaDnaAlignFeature::new(-features)
 #
-my $dnaf = Bio::EnsEMBL::DnaDnaAlignFeature->new(-features => \@feats);
+my $dnaf;
+warning { $dnaf = Bio::EnsEMBL::DnaDnaAlignFeature->new(-features => \@feats); };
 $dnaf->analysis($f_analysis);
 
 $ex1->add_supporting_features($dnaf);
@@ -230,7 +231,7 @@ push(@feats, $fp);
 #
 # 2 Test DnaDnaAlignFeature::new(-features)
 #
-$dnaf = Bio::EnsEMBL::DnaDnaAlignFeature->new(-features => \@feats);
+warning { $dnaf = Bio::EnsEMBL::DnaDnaAlignFeature->new(-features => \@feats); };
 $dnaf->analysis($f_analysis);
 
 $ex2->add_supporting_features($dnaf);
@@ -726,7 +727,7 @@ is(scalar(@{$gene->get_all_alt_alleles()}), 0, 'Checking we have no alleles retr
 # Gene remove test
 #
 
-$multi->save("core", "gene", "transcript", "translation", "protein_feature", "exon", "exon_transcript", "supporting_feature", "object_xref", "ontology_xref", "identity_xref", "dna_align_feature", "protein_align_feature", 'meta_coord');
+warning { $multi->save("core", "gene", "transcript", "translation", "protein_feature", "exon", "exon_transcript", "supporting_feature", "object_xref", "ontology_xref", "identity_xref", "dna_align_feature", "protein_align_feature", 'meta_coord'); };
 
 $gene = $ga->fetch_by_stable_id("ENSG00000171456");
 

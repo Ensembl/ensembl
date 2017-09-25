@@ -309,6 +309,13 @@ INSERT INTO meta (species_id, meta_key, meta_value) VALUES
 # NOTE: Avoid line-breaks in values.
 INSERT INTO meta (species_id, meta_key, meta_value)
   VALUES (NULL, 'patch', 'patch_90_91_a.sql|schema_version');
+INSERT INTO meta (species_id, meta_key, meta_value)
+  VALUES (NULL, 'patch', 'patch_90_91_b.sql|align_type');
+INSERT INTO meta (species_id, meta_key, meta_value)
+  VALUES (NULL, 'patch', 'patch_90_91_c.sql|protein_align_type');
+INSERT INTO meta (species_id, meta_key, meta_value)
+  VALUES (NULL, 'patch', 'patch_90_91_d.sql|remove_external_data');
+
 
 /**
 @table meta_coord
@@ -616,8 +623,7 @@ CREATE TABLE attrib_type (
 @column cigar_line                  Used to encode gapped alignments.
 @column external_db_id              Foreign key references to the @link external_db table.
 @column hcoverage                   Hit coverage.
-@column external_data               External data.
-
+@column align_type                  Alignment string type used
 
 @see cigar_line
 
@@ -641,7 +647,7 @@ CREATE TABLE dna_align_feature (
   cigar_line                  TEXT,
   external_db_id              INTEGER UNSIGNED,
   hcoverage                   DOUBLE,
-  external_data               TEXT,
+  align_type                  ENUM('ensembl', 'cigar', 'vulgar', 'mdtag') DEFAULT 'ensembl',
 
   PRIMARY KEY (dna_align_feature_id),
   KEY seq_region_idx (seq_region_id, analysis_id, seq_region_start, score),
@@ -855,7 +861,9 @@ CREATE TABLE gene_attrib (
 @column perc_ident                  Alignment percentage identity.
 @column cigar_line                  Used to encode gapped alignments.
 @column external_db_id              Foreign key references to the @link external_db table.
-@column hcoverage		    Alignment hit coverage.
+@column hcoverage                   Alignment hit coverage.
+@column align_type                  Alignment string type used
+
 
 @see cigar_line
 
@@ -880,6 +888,7 @@ CREATE TABLE protein_align_feature (
   cigar_line                  TEXT,
   external_db_id              INTEGER UNSIGNED,
   hcoverage                   DOUBLE,
+  align_type                  ENUM('ensembl', 'cigar', 'vulgar', 'mdtag') DEFAULT 'ensembl',
 
   PRIMARY KEY (protein_align_feature_id),
   KEY seq_region_idx (seq_region_id, analysis_id, seq_region_start, score),

@@ -93,8 +93,8 @@ sub store{
      "INSERT INTO $tablename (seq_region_id, seq_region_start, seq_region_end,
                              seq_region_strand, hit_start, hit_end,
                              hit_name, cigar_line,
-                             analysis_id, score, evalue, perc_ident, external_db_id, hcoverage)
-     VALUES (?,?,?,?,?,?,?,?,?,?, ?, ?, ?, ?)");
+                             analysis_id, score, evalue, perc_ident, external_db_id, hcoverage, align_type)
+     VALUES (?,?,?,?,?,?,?,?,?,?, ?, ?, ?, ?,?)");
 
  FEATURE: foreach my $feat ( @feats ) {
    if( !ref $feat || !$feat->isa("Bio::EnsEMBL::DnaPepAlignFeature") ) {
@@ -157,6 +157,7 @@ sub store{
    $sth->bind_param(12,$feat->percent_id,SQL_REAL);
    $sth->bind_param(13,$feat->external_db_id,SQL_INTEGER);
    $sth->bind_param(14,$feat->hcoverage,SQL_DOUBLE);
+   $sth->bind_param(15,$feat->align_type,SQL_VARCHAR);
 
    $sth->execute();
    my $dbId = $self->last_insert_id("${tablename}_id", undef, $tablename);
@@ -207,7 +208,7 @@ sub _objs_from_sth {
     $seq_region_end,           $analysis_id,    $seq_region_strand,
     $hit_start,                $hit_end,        $hit_name,
     $cigar_line,               $evalue,         $perc_ident,
-    $score,                    $external_db_id, $hcoverage,
+    $score,                    $external_db_id, $hcoverage, $align_type,
     $external_db_name,         $external_display_db_name );
 
   $sth->bind_columns(\(
@@ -215,7 +216,7 @@ sub _objs_from_sth {
            $seq_region_end,           $analysis_id,    $seq_region_strand,
            $hit_start,                $hit_end,        $hit_name,
            $cigar_line,               $evalue,         $perc_ident,
-           $score,                    $external_db_id, $hcoverage,
+           $score,                    $external_db_id, $hcoverage, $align_type,
            $external_db_name,         $external_display_db_name ));
 
   my $dest_slice_start;
@@ -399,6 +400,7 @@ sub _objs_from_sth {
           'dbID'           => $protein_align_feature_id,
           'external_db_id' => $external_db_id,
           'hcoverage'      => $hcoverage,
+          'align_type'     => $align_type,
           'dbname'         => $external_db_name,
           'db_display_name' => $external_display_db_name
         } ) );
@@ -436,6 +438,7 @@ sub _columns {
              paf.score
              paf.external_db_id
              paf.hcoverage
+             paf.align_type
 	     exdb.db_name
 	     exdb.db_display_name);
 }

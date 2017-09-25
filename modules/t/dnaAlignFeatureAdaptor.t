@@ -15,7 +15,7 @@
 
 use strict;
 use Test::More;
-use Test::Warnings;
+use Test::Warnings qw(warning);
 use Bio::EnsEMBL::Test::MultiTestDB;
 
 use Bio::EnsEMBL::DnaDnaAlignFeature;
@@ -92,7 +92,6 @@ is(@$feats, 452, "Found 452 features");
 #
 # Test store
 #
-
 $multi->save('core', 'dna_align_feature', 'attrib_type', 'dna_align_feature_attrib');
 
 my $analysis   = $feat->analysis;
@@ -109,9 +108,11 @@ my $score      = 80;
 my $percent_id = 90;
 my $evalue     = 23.2;
 my $cigar_string = '100M';
+my $align_type = 'ensembl';
 my $hcoverage  = 99.5;
 my $external_db_id = 2200;
 
+warning {
 $feat = Bio::EnsEMBL::DnaDnaAlignFeature->new
   (-START  => $start,
    -END    => $end,
@@ -128,6 +129,7 @@ $feat = Bio::EnsEMBL::DnaDnaAlignFeature->new
    -ANALYSIS => $analysis,
    -HCOVERAGE => $hcoverage,
    -EXTERNAL_DB_ID => $external_db_id);
+};
 
 my $attrib = Bio::EnsEMBL::Attribute->new(
   -NAME        => 'test_daf_name',
@@ -194,5 +196,4 @@ sub print_features {
     }
   }
 }
-
 done_testing();

@@ -15,7 +15,7 @@
 
 use strict;
 use Test::More;
-use Test::Warnings;
+use Test::Warnings qw(warning);
 use Bio::EnsEMBL::Test::MultiTestDB;
 use Bio::EnsEMBL::DnaDnaAlignFeature;
 use Bio::EnsEMBL::FeaturePair;
@@ -68,7 +68,8 @@ push @feats, Bio::EnsEMBL::FeaturePair->new
 #
 # Test DnaDnaAlignFeature::new(-features)
 #
-my $dnaf = Bio::EnsEMBL::DnaDnaAlignFeature->new( -features => \@feats );
+my $dnaf;
+warning { $dnaf = Bio::EnsEMBL::DnaDnaAlignFeature->new( -features => \@feats ); };
 ok(ref($dnaf) && $dnaf->isa('Bio::EnsEMBL::DnaDnaAlignFeature'));
 
 #
@@ -111,7 +112,6 @@ ok( scalar($dnaf->ungapped_features) == 2);
 #
 # Test alignment strings
 #
-
 my $alignment_strings = $dnaf->alignment_strings('NO_HSEQ');
 is($alignment_strings->[0], 'AAATTAAGGG', 'Retrieved query sequence');
 is($alignment_strings->[1], '', 'No target sequence');
@@ -121,11 +121,11 @@ is($alignment_strings->[0], 'AAATTAAGGG', 'Retrieved fixed query sequence');
 #
 # Test restrict_between_positions
 #
-
-my $new_daf = $dnaf->restrict_between_positions($dnaf->start + 2, $dnaf->end, 'SEQ');
+my $new_daf;
+warning { $new_daf = $dnaf->restrict_between_positions($dnaf->start + 2, $dnaf->end, 'SEQ'); };
 is($new_daf->start, $dnaf->start + 2, 'New daf start');
 is($new_daf->end, $dnaf->end, 'End has not changed');
-$new_daf = $dnaf->restrict_between_positions(1, $dnaf->end - 2, 'SEQ');
+warning { $new_daf = $dnaf->restrict_between_positions(1, $dnaf->end - 2, 'SEQ'); };
 is($new_daf->start, $dnaf->start, 'No start change if beyond the start');
 is($new_daf->end, $dnaf->end - 2, 'New daf end');
 

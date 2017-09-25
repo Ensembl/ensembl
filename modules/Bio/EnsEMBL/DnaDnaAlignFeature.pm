@@ -255,6 +255,30 @@ sub restrict_between_positions {
 
 
 sub alignment_strings {
+  my ($self, @flags) = @_;
+  if ($self->align_type eq 'ensembl') {
+    return $self->_ensembl_alignment_strings(@flags);
+  } else {
+    throw("alignment_strings method not implemented for " . $self->align_type);
+  }
+}
+
+=head2 _ensembl_alignment_strings
+
+  Arg [1]    : list of string $flags
+  Description: Allows to rebuild the alignment string of both the seq and hseq sequence
+               using the cigar_string information for ensembl cigar strings
+  Returntype : array reference containing 2 strings
+               the first corresponds to seq
+               the second corresponds to hseq
+  Exceptions :
+  Caller     :
+  Status     : Stable
+
+=cut
+
+
+sub _ensembl_alignment_strings {
   my ( $self, @flags ) = @_;
 
   # set the flags
@@ -331,6 +355,29 @@ sub alignment_strings {
 =cut
 
 sub get_SimpleAlign {
+  my ( $self, @flags ) = @_;
+
+  if ($self->align_type eq 'ensembl') {
+    return $self->_ensembl_SimpleAlign();
+  } else {
+    throw("No get_SimpleAlign method implemented for " . $self->align_type);
+  }
+}
+
+=head2 _ensembl_SimpleAlign
+
+  Arg [1]    : list of string $flags
+  Description: Internal method to build alignment string
+               for ensembl type cigar strings
+               using the cigar_string information and the slice and hslice objects
+  Returntype : a Bio::SimpleAlign object
+  Exceptions :
+  Caller     :
+  Status     : Stable
+
+=cut
+
+sub _ensembl_SimpleAlign {
   my ( $self, @flags ) = @_;
 
   # setting the flags

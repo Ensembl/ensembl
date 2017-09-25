@@ -44,7 +44,8 @@ implmentation for alignment features
     -hstart       => 200,
     -hend         => 220,
     -analysis     => $analysis,
-    -cigar_string => '10M3D5M2I'
+    -cigar_string => '10M3D5M2I',
+    -align_type   => 'ensembl'
   );
 
   where $analysis is a Bio::EnsEMBL::Analysis object.
@@ -154,11 +155,11 @@ use strict;
 
 =head2 new
 
-  Arg [..]   : List of named arguments. (-cigar_string , -features) defined
+  Arg [..]   : List of named arguments. (-cigar_string , -features, -align_type) defined
                in this constructor, others defined in FeaturePair and 
                SeqFeature superclasses.  Either cigar_string or a list
                of ungapped features should be provided - not both.
-  Example    : $baf = new BaseAlignFeatureSubclass(-cigar_string => '3M3I12M');
+  Example    : $baf = new BaseAlignFeatureSubclass(-cigar_string => '3M3I12M', -align_type => 'ensembl');
   Description: Creates a new BaseAlignFeature using either a cigar string or
                a list of ungapped features.  BaseAlignFeature is an abstract
                baseclass and should not actually be instantiated - rather its
@@ -166,6 +167,7 @@ use strict;
   Returntype : Bio::EnsEMBL::BaseAlignFeature
   Exceptions : thrown if both feature and cigar string args are provided
                thrown if neither feature nor cigar string args are provided
+               warn if cigar string is provided without cigar type
   Caller     : general
   Status     : Stable
 
@@ -179,7 +181,14 @@ sub new {
 
   my $self = $class->SUPER::new(@_);
 
-  my ($cigar_string,$features) = rearrange([qw(CIGAR_STRING FEATURES)], @_);
+  my ($cigar_string,$align_type,$features) = rearrange([qw(CIGAR_STRING ALIGN_TYPE FEATURES)], @_);
+
+  if (defined($align_type)) {
+    $self->{'align_type'} = $align_type;
+  } else {
+    warning("No align_type provided, using ensembl as default");
+    $self->{'align_type'} = 'ensembl';
+  }
 
   if (defined($cigar_string) && defined($features)) {
     throw("CIGAR_STRING or FEATURES argument is required - not both.");
@@ -191,7 +200,7 @@ sub new {
   } else {
     throw("CIGAR_STRING or FEATURES argument is required");
   }
-  
+
   return $self;
 }
 
@@ -223,6 +232,28 @@ sub cigar_string {
 }
 
 
+=head2 align_type
+
+  Arg [1]    : type $align_type
+  Example    : $feature->align_type( "ensembl" );
+  Description: get/set for attribute align_type.
+               align_type specifies which cigar string 
+               is used to describe the alignment:
+               The default is 'ensembl'
+  Returntype : string
+  Exceptions : none
+  Caller     : general
+  Status     : Stable
+
+=cut
+
+sub align_type {
+  my $self = shift;
+  $self->{'align_type'} = shift if(@_);
+  return $self->{'align_type'};
+}
+
+
 =head2 alignment_length
 
   Arg [1]    : None
@@ -237,8 +268,31 @@ sub cigar_string {
 sub alignment_length {
   my $self = shift;
 
+  if ($self->{'align_type'} eq 'ensembl') {
+    return $self->_ensembl_cigar_alignment_length();
+  } else {
+    throw("No alignment_length method available for " . $self->{'align_type'});
+  }
+
+}
+
+
+=head2 _ensembl_cigar_alignment_length
+
+  Arg [1]    : None
+  Description: return the alignment length (including indels) based on the cigar_string
+  Returntype : int
+  Exceptions :
+  Caller     :
+  Status     : Stable
+
+=cut
+
+sub _ensembl_cigar_alignment_length {
+  my $self = shift;
+
   if (! defined $self->{'_alignment_length'} && defined $self->cigar_string) {
-    
+
     my @pieces = ( $self->cigar_string =~ /(\d*[MDI])/g );
     unless (@pieces) {
       print STDERR "Error parsing cigar_string\n";
@@ -308,10 +362,11 @@ sub strands_reversed {
    return $self->{'strands_reversed'};
 }
 
+
 =head2 reverse_complement
 
   Args       : none
-  Description: reverse complement the FeaturePair,
+  Description: reverse complement the FeaturePair based on the cigar type
                modifing strand, hstrand and cigar_string in consequence
   Returntype : none
   Exceptions : none
@@ -320,7 +375,30 @@ sub strands_reversed {
 
 =cut
 
+
 sub reverse_complement {
+  my ($self) = @_;
+
+  if ($self->{'align_type'} eq 'ensembl') {
+    return $self->_ensembl_reverse_complement();
+  } else {
+    throw("no reverse_complement method implemented for " . $self->{'align_type'});
+  }
+}
+
+=head2 _ensembl_reverse_complement
+
+  Args       : none
+  Description: reverse complement the FeaturePair for ensembl cigar string,
+               modifing strand, hstrand and cigar_string in consequence
+  Returntype : none
+  Exceptions : none
+  Caller     : general
+  Status     : Stable
+
+=cut
+
+sub _ensembl_reverse_complement {
   my ($self) = @_;
 
   # reverse strand in both sequences
@@ -385,7 +463,7 @@ sub transform {
     my @segments = @{ $self->project(@_) };
 
     if ( !@segments ) {
-      return;
+      return undef;
     }
 
     my @ungapped;
@@ -396,7 +474,7 @@ sub transform {
       } else {
         warning( "Failed to transform alignment feature; "
             . "ungapped component could not be transformed" );
-        return;
+        return undef;
       }
     }
 
@@ -404,7 +482,7 @@ sub transform {
 
     if ($@) {
       warning($@);
-      return;
+      return undef;
     }
   } ## end if ( !defined($new_feature...))
 
@@ -412,11 +490,11 @@ sub transform {
 }
 
 
-=head2 _parse_cigar
+=head2 _parse_ensembl_cigar
 
   Args       : none
   Description: PRIVATE (internal) method - creates ungapped features from 
-               internally stored cigar line
+               internally stored cigar line in ensembl format
   Returntype : list of Bio::EnsEMBL::FeaturePair
   Exceptions : none
   Caller     : ungapped_features
@@ -424,7 +502,7 @@ sub transform {
 
 =cut
 
-sub _parse_cigar {
+sub _parse_ensembl_cigar {
   my ( $self ) = @_;
 
   my $query_unit = $self->_query_unit();
@@ -559,6 +637,16 @@ sub _parse_cigar {
 }
 
 
+sub _parse_cigar {
+  my $self = shift;
+  if ($self->{'align_type'} eq 'ensembl') {
+    return $self->_parse_ensembl_cigar();
+  } else {
+    throw("No parsing method implemented for " . $self->{'align_type'});
+  }
+}
+
+
 
 
 =head2 _parse_features
@@ -574,9 +662,18 @@ sub _parse_cigar {
 
 =cut
 
+sub _parse_features {
+  my ($self, $features) = @_;
+  if ($self->{'align_type'} eq 'ensembl') {
+    $self->_parse_ensembl_features($features);
+  } else {
+    throw("No _parse_features method implemented for " . $self->{'align_type'});
+  }
+}
+
 my $message_only_once = 1;
 
-sub _parse_features {
+sub _parse_ensembl_features {
   my ($self,$features ) = @_;
 
   my $query_unit = $self->_query_unit();
@@ -604,7 +701,7 @@ sub _parse_features {
 
   my $hstrand     = $f[0]->hstrand;
   my $slice       = $f[0]->slice();
-  my $hslice      = $f[0]->hslice();
+  my $hslice       = $f[0]->hslice();
   my $name        = $slice ? $slice->name() : undef;
   my $hname       = $f[0]->hseqname;
   my $score       = $f[0]->score;

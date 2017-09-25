@@ -14,7 +14,7 @@
 # limitations under the License.
 
 use Test::More;
-use Test::Warnings;
+use Test::Warnings qw(warning);
 
 use strict;
 use warnings;
@@ -30,7 +30,8 @@ my $multi = Bio::EnsEMBL::Test::MultiTestDB->new();
 ok(1);
 
 my $db = $multi->get_DBAdaptor('core');
-my $pafa = $db->get_ProteinAlignFeatureAdaptor();
+my $pafa;
+warning { $pafa = $db->get_ProteinAlignFeatureAdaptor(); };
 
 # list_dbIDs
 debug("ProteinAlignFeatureAdaptor->list_dbIDs");
@@ -96,7 +97,7 @@ print_features($feats);
 # Test store
 #
 
-$multi->save('core', 'protein_align_feature', 'meta_coord');
+warning { $multi->save('core', 'protein_align_feature', 'meta_coord'); };
 
 my $analysis   = $feat->analysis;
 my $slice      =
@@ -115,6 +116,7 @@ my $cigar_string = '100M';
 my $hcoverage  = 99.5;
 my $external_db_id = 2200;
 
+warning {
 $feat = Bio::EnsEMBL::DnaPepAlignFeature->new
   (-START  => $start,
    -END    => $end,
@@ -131,6 +133,7 @@ $feat = Bio::EnsEMBL::DnaPepAlignFeature->new
    -ANALYSIS => $analysis,
    -HCOVERAGE => $hcoverage,
    -EXTERNAL_DB_ID => $external_db_id );
+};
 
 ok(!$feat->is_stored($db));
 

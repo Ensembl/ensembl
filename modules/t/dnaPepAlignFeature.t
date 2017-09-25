@@ -15,7 +15,7 @@
 
 use strict;
 use Test::More;
-use Test::Warnings;
+use Test::Warnings qw(warning);
 use Bio::EnsEMBL::Test::MultiTestDB;
 use Bio::EnsEMBL::DnaPepAlignFeature;
 
@@ -73,7 +73,8 @@ push @feats, Bio::EnsEMBL::FeaturePair->new
 #
 # Test DnaPepAlignFeature::new(-features)
 #
-my $dnaf = Bio::EnsEMBL::DnaPepAlignFeature->new( -features => \@feats );
+my $dnaf;
+warning { $dnaf = Bio::EnsEMBL::DnaPepAlignFeature->new( -features => \@feats ); };
 ok(ref($dnaf) && $dnaf->isa('Bio::EnsEMBL::DnaPepAlignFeature'));
 
 #
