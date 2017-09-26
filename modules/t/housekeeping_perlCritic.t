@@ -50,6 +50,7 @@ Test::Perl::Critic->import(-profile => File::Spec->catfile($root, 'perlcriticrc'
 
 #Find all files & run
 my @perl_files = Perl::Critic::Utils::all_perl_files(
+  File::Spec->catdir($root, 'misc-scripts'),
   File::Spec->catdir($root, 'modules')
 );
 foreach my $perl (@perl_files) {
