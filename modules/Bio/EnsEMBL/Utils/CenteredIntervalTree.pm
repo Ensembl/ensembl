@@ -70,43 +70,194 @@ sub new {
   return $self;
 }
 
-sub search {
-  my ($self, $start, $end) = @_;
-  defined $start or throw 'Undefined point or interval';
-
-  # interval search
-  if (defined $end) {
-    my $result = [];
-    for my $i ($start .. $end + 1) {
-      push @{$result}, @{$self->search($i)};
-    }
-
-    return sort_by_begin(uniq($result));
-  } 
-
-  # point search 
-  return $self->_search($self->{top_node}, $start, []);
+sub root {
+  return shift->{top_node};
 }
 
-sub _search {
-  my ($self, $node, $point, $result) = @_;
+# sub search {
+#   my ($self, $start, $end) = @_;
+#   defined $start or throw 'Undefined point or interval';
 
-  # can be optimized, see https://en.wikipedia.org/wiki/Interval_tree
-  for my $i (@{$node->scenter}) {
-    push @{$result}, $i if $i->start <= $point and $i->end >= $point;
+#   # interval search
+#   if (defined $end) {
+#     my $result = [];
+#     for my $i ($start .. $end + 1) {
+#       push @{$result}, @{$self->search($i)};
+#     }
+
+#     return sort_by_begin(uniq($result));
+#   } 
+
+#   # point search 
+#   return $self->_search($self->{top_node}, $start, []);
+# }
+
+# sub _search {
+#   my ($self, $node, $point, $result) = @_;
+
+#   # can be optimized, see https://en.wikipedia.org/wiki/Interval_tree
+#   for my $i (@{$node->scenter}) {
+#     push @{$result}, $i if $i->start <= $point and $i->end >= $point;
+#   }
+
+#   if ($point < $node->x_center and $node->left_child) {
+#     my $left_results = $self->_search($node->left_child, $point, []);
+#     push @{$result}, @{$left_results} if $left_results;
+#   }
+
+#   if ($point > $node->x_center and $node->right_child) {
+#     my $right_results = $self->_search($node->right_child, $point, []);
+#     push @{$result}, @{$right_results} if $right_results;
+#   } 
+
+#   return uniq($result);
+# }
+
+sub query {
+  my ($self, $interval) = @_;
+
+  return $self->_query_point($self->root, $interval->start, []) if $interval->is_point;
+
+  my $result = [];
+  return $result unless $self->root or $interval->is_empty;
+
+  my $node = $self->root;
+  while ($node) {
+    if ($interval->contains($node->x_center)) {
+      push @{$result}, @{$node->s_center_beg};
+      $self->_range_query_left($node->left, $interval, $result);
+      $self->_range_query_right($node->right, $interval, $result);
+      last;
+    }
+    if ($interval->is_left_of($node->x_center)) {
+      foreach my $s_beg (@{$node->s_center_beg}) {
+	last unless $interval->intersects($s_beg);
+	push @{$result}, $s_beg;
+      }
+      $node = $node->left;
+    } else {
+      foreach my $s_end (@{$node->s_center_end}) {
+	last unless $interval->intersects($s_end);
+	push @{$result}, $s_end;
+      }
+      $node = $node->right;
+    }
   }
-
-  if ($point < $node->xcenter and $node->left_child) {
-    my $left_results = $self->_search($node->left_child, $point, []);
-    push @{$result}, @{$left_results} if $left_results;
-  }
-
-  if ($point > $node->xcenter and $node->right_child) {
-    my $right_results = $self->_search($node->right_child, $point, []);
-    push @{$result}, @{$right_results} if $right_results;
-  } 
 
   return uniq($result);
+}
+
+sub _query_point {
+  my ($self, $node, $point, $result) = @_;
+
+  return $result unless $node;
+
+  # if x is less than x_center, the leftmost set of intervals, S_left, is considered
+  if ($point <= $node->x_center) {
+    # From Wikipedia
+    # if x is less than x_center, we know that all intervals in S_center end after x,
+    # or they could not also overlap x_center. Therefore, we need only find those intervals
+    # in S_center that begin before x. We can consult the lists of S_center that have already
+    # been constructed. Since we only care about the interval beginnings in this scenario,
+    # we can consult the list sorted by beginnings.
+    # Suppose we find the closest number no greater than x in this list. All ranges from the
+    # beginning of the list to that found point overlap x because they begin before x and end
+    # after x (as we know because they overlap x_center which is larger than x).
+    # Thus, we can simply start enumerating intervals in the list until the startpoint value exceeds x.
+    foreach my $s_beg (@{$node->s_center_beg}) {
+      last if $s_beg->is_right_of($point);
+      push @{$result}, $s_beg;
+    }
+
+    # since x < x_center, we also consider the leftmost set of intervals
+    return $self->_query_point($node->left, $point, $result);
+  } else {
+    # if x is greater than x_center, we know that all intervals in S_center must begin before x,
+    # so we find those intervals that end after x using the list sorted by interval endings.
+    foreach my $s_end (@{$node->s_center_end}) {
+      last if $s_end->is_left_of($point);
+      push @{$result}, $s_end;
+    }
+    
+    # since x > x_center, we also consider the rightmost set of intervals
+    return $self->_query_point($node->right, $point, $result);
+  }
+  
+  return uniq($result);
+}
+
+# This corresponds to the left branch of the range search, once we find a node, whose
+# midpoint is contained in the query interval. All intervals in the left subtree of that node
+# are guaranteed to intersect with the query, if they have an endpoint greater or equal than
+# the start of the query interval. Basically, this means that every time we branch to the left
+# in the binary search, we need to add the whole right subtree to the result set.
+
+sub _range_query_left {
+  my ($self, $node, $interval, $result) = @_;
+  
+  while ($node) {
+    if ($interval->contains($node->x_center)) {
+      push @{$result}, @{$node->s_center_beg};
+      if ($node->right) {
+	# in-order traversal of the right subtree to add all its intervals
+	$self->_in_order_traversal($node->right, $result);
+      }
+      $node = $node->left;
+    } else {
+      foreach my $seg_end (@{$node->s_center_end}) {
+	last if $seg_end->is_left_of($interval);
+	push @{$result}, $seg_end;
+      }
+      $node = $node->right;
+    }
+  }
+}
+
+# This corresponds to the right branch of the range search, once we find a node, whose
+# midpoint is contained in the query interval. All intervals in the right subtree of that node
+# are guaranteed to intersect with the query, if they have an endpoint smaller or equal than
+# the end of the query interval. Basically, this means that every time we branch to the right
+# in the binary search, we need to add the whole left subtree to the result set.
+
+sub _range_query_right {
+  my ($self, $node, $interval, $result) = @_;
+
+  while ($node) {
+    if ($interval->contains($node->x_center)) {
+      push @{$result}, @{$node->s_center_beg};
+      if ($node->left) {
+	# in-order traversal of the left subtree to add all its intervals
+	$self->_in_order_traversal($node->left, $result);
+      }
+      $node = $node->right;
+    } else {
+      foreach my $seg_beg (@{$node->s_center_beg}) {
+	last if $seg_beg->is_right_of($interval);
+	push @{$result}, $seg_beg;
+      }
+      $node = $node->left;
+    }
+  }
+}
+
+sub in_order_traversal {
+  my ($self) = @_;
+
+  my $result = [];
+  $self->_in_order_traversal($self->root, $result);
+
+  return $result;
+}
+
+sub _in_order_traversal {
+  my ($self, $node, $result) = @_;
+
+  return unless $node;
+  $result ||= [];
+
+  $self->_in_order_traversal($node->left, $result);
+  push @{$result}, @{$node->s_center_beg};
+  $self->_in_order_traversal($node->right, $result);
 }
 
 sub _divide_intervals {
