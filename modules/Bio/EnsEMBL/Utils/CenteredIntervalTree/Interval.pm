@@ -45,6 +45,8 @@ package Bio::EnsEMBL::Utils::CenteredIntervalTree::Interval;
 
 use strict;
 
+use Scalar::Util qw(looks_like_number);
+use Bio::EnsEMBL::Utils::Scalar qw(assert_ref);
 use Bio::EnsEMBL::Utils::Exception qw(throw);
 
 =head2 new
@@ -56,9 +58,9 @@ sub new {
   my $class = ref($caller) || $caller;
 
   my ($start, $end, $data) = @_;
-  throw 'Must specify interval boundaries [start, end)'
+  throw 'Must specify interval boundaries [start, end]'
     unless $start and $end;
-  throw 'start must be < end' if $start >= $end;
+  throw 'start must be <= end' if $start > $end;
   
   my $self = bless({ start => $start, end => $end, data => $data }, $class);
   return $self;
@@ -90,6 +92,86 @@ sub end {
 
 sub data {
   return shift->{data};
+}
+
+=head2 is_empty
+
+=cut
+
+sub is_empty {
+  my $self = shift;
+
+  return $self->start >= $self->end;
+}
+
+=head2 is_point
+
+Determines if the current interval is a single point.
+
+=cut
+
+sub is_point {
+  my $self = shift;
+
+  return $self->start == $self->end;
+}
+
+=head2 contains
+
+Determines if the current instance contains the query point
+
+=cut
+
+sub contains {
+  my ($self, $point) = @_;
+
+  return 0 if $self->is_empty or not defined $point;
+  throw 'point must be a number' unless looks_like_number($point);
+  
+  return ($point >= $self->start and $point <= $self->end);
+}
+
+=head2 intersects
+
+=cut
+
+sub intersects {
+  my ($self, $interval) = @_;
+  assert_ref($interval, 'Bio::EnsEMBL::Utils::CenteredIntervalTree::Interval');
+    
+  return ($self->start <= $interval->end and $interval->start <= $self->end);
+}
+
+=head2 is_right_of
+
+Checks if this current interval is entirely to the right of a point. More formally,
+the method will return true, if for every point x from the current interval the inequality
+x > point holds.
+
+=cut
+
+sub is_right_of {
+  my ($self, $other) = @_;
+
+  return 0 unless defined $other;
+  return $self->start > $other if looks_like_number($other);
+  return $self->start > $other->end;
+}
+
+=head2 is_left_of
+
+Checks if this current interval is entirely to the left of another interval. More formally,
+the method will return true, if for every point x from the current interval the inequality
+x < point holds.
+
+=cut
+
+sub is_left_of {
+  my ($self, $other) = @_;
+
+  return 0 unless defined $other;
+  return $self->end < $other if looks_like_number($other);
+  return $self->end < $other->start;
 }
 
 1;
