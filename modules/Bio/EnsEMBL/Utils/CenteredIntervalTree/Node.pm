@@ -67,25 +67,30 @@ sub new {
   $right && assert_ref($right, 'Bio::EnsEMBL::Utils::CenteredIntervalTree::Node');
 
   my $self = bless({ 'x_center' => $x_center,
-		     's_center' => [ map { $_->[1] } sort { $a->[0] <=> $b->[0] } map { [ $_->start, $_ ] } @{$s_center} ],
+		     's_center_beg' => [ map { $_->[1] } sort { $a->[0] <=> $b->[0] } map { [ $_->start, $_ ] } @{$s_center} ],
+		     's_center_end' => [ map { $_->[1] } sort { $b->[0] <=> $a->[0] } map { [ $_->end, $_ ] } @{$s_center} ],
 		     'lchild'   => $left,
 		     'rchild'   => $right }, $class);
   return $self;
 }
 
-sub xcenter {
+sub x_center {
   return shift->{x_center};
 }
 
-sub scenter {
-  return shift->{s_center};
+sub s_center_beg {
+  return shift->{s_center_beg};
 }
 
-sub left_child {
+sub s_center_end {
+  return shift->{s_center_end};
+}
+
+sub left {
   return shift->{lchild};
 }
 
-sub right_child {
+sub right {
   return shift->{rchild};
 }
 
