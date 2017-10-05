@@ -1134,7 +1134,7 @@ sub get_adaptor {
     'assemblymapper'           => 1,
     'karyotypeband'            => 1,
     'repeatfeature'            => 1,
-    'coordsystem'              => (($group ne 'funcgen') ? 1 : undef),
+    'coordsystem'              => 1,
     'assemblyexceptionfeature' => 1
   );
 
