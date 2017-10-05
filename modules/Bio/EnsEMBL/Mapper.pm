@@ -312,11 +312,30 @@ sub map_coordinates {
     }
   }
 
+  ###################################################
+  # create set of intervals to be checked to overlap 
+  use Bio::EnsEMBL::Utils::CenteredIntervalTree::Interval;
+  my $from_intervals;
+  foreach my $pair (@{$lr}) {
+    push @{$from_intervals},
+      Bio::EnsEMBL::Utils::CenteredIntervalTree::Interval->new($pair->{$from}{start},
+  							       $pair->{$from}{end}, $pair);
+  }
+
+  # create and query the interval tree defined on
+  # the above set of intervals
+  use Bio::EnsEMBL::Utils::CenteredIntervalTree;
+  my $itree = Bio::EnsEMBL::Utils::CenteredIntervalTree->new($from_intervals);
+  my $overlap = $itree->query(Bio::EnsEMBL::Utils::CenteredIntervalTree::Interval->new($start, $end));
+  ###################################################
+  
   my $rank              = 0;
   my $orig_start        = $start;
   my $last_target_coord = undef;
-  for ( my $i = $start_idx; $i <= $#{$lr}; $i++ ) {
-    $pair = $lr->[$i];
+  # for ( my $i = $start_idx; $i <= $#{$lr}; $i++ ) {
+  #   $pair = $lr->[$i];
+  foreach my $i (@{$overlap}) {
+    $pair = $i->data;
     my $self_coord   = $pair->{$from};
     my $target_coord = $pair->{$to};
 
