@@ -313,7 +313,8 @@ sub map_coordinates {
   }
 
   ###################################################
-  # create set of intervals to be checked to overlap 
+  # create set of intervals to be checked to overlap
+  use Data::Dumper;
   use Bio::EnsEMBL::Utils::CenteredIntervalTree::Interval;
   my $from_intervals;
   foreach my $pair (@{$lr}) {
@@ -321,13 +322,17 @@ sub map_coordinates {
       Bio::EnsEMBL::Utils::CenteredIntervalTree::Interval->new($pair->{$from}{start},
   							       $pair->{$from}{end}, $pair);
   }
-
+  
   # create and query the interval tree defined on
   # the above set of intervals
   use Bio::EnsEMBL::Utils::CenteredIntervalTree;
   my $itree = Bio::EnsEMBL::Utils::CenteredIntervalTree->new($from_intervals);
-  my $overlap = $itree->query(Bio::EnsEMBL::Utils::CenteredIntervalTree::Interval->new($start, $end));
+  my $overlap = $itree->query((defined $start && defined $end)?Bio::EnsEMBL::Utils::CenteredIntervalTree::Interval->new($start, $end):undef);
   ###################################################
+
+  # print Dumper $lr, "\n";
+  # print Dumper $itree, "\n";
+  # print Dumper $overlap, "\n";
   
   my $rank              = 0;
   my $orig_start        = $start;
