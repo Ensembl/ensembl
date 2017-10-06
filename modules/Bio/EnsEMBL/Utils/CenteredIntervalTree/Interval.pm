@@ -59,7 +59,7 @@ sub new {
 
   my ($start, $end, $data) = @_;
   throw 'Must specify interval boundaries [start, end]'
-    unless $start and $end;
+    unless defined $start and defined $end;
   throw 'start must be <= end' if $start > $end;
   
   my $self = bless({ start => $start, end => $end, data => $data }, $class);
