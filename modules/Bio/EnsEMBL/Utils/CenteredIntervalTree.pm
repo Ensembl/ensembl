@@ -116,6 +116,7 @@ sub root {
 sub query {
   my ($self, $interval) = @_;
 
+  return [] unless $interval;
   return $self->_query_point($self->root, $interval->start, []) if $interval->is_point;
 
   my $result = [];
@@ -144,7 +145,7 @@ sub query {
     }
   }
 
-  return uniq($result);
+  return sort_by_begin(uniq($result));
 }
 
 sub _query_point {
@@ -183,7 +184,7 @@ sub _query_point {
     return $self->_query_point($node->right, $point, $result);
   }
   
-  return uniq($result);
+  return sort_by_begin(uniq($result));
 }
 
 # This corresponds to the left branch of the range search, once we find a node, whose
