@@ -17,10 +17,9 @@ use strict;
 use warnings;
 
 use Test::More;
+use Test::Deep;
 use Test::Exception;
 use Test::Warnings qw(warning);
-
-use Data::Dumper;
 
 use_ok 'Bio::EnsEMBL::Utils::CenteredIntervalTree::Interval';
 
@@ -84,20 +83,22 @@ isa_ok($tree, 'Bio::EnsEMBL::Utils::CenteredIntervalTree');
 isa_ok($tree->root, 'Bio::EnsEMBL::Utils::CenteredIntervalTree::Node');
 
 # check in-order traversal
-# print Dumper $tree;
 my $in_order_results = $tree->in_order_traversal;
-is(scalar @{$in_order_results}, 3);
+is(scalar @{$in_order_results}, 3, 'Number of in-order traversal results');
 ok($in_order_results->[0]->start == 121626874 && $in_order_results->[0]->end == 122092717, 'in-order traversal result');
 ok($in_order_results->[1]->start == 121637917 && $in_order_results->[1]->end == 121658918, 'in-order traversal result');
 ok($in_order_results->[2]->start == 122096077 && $in_order_results->[2]->end == 124088369, 'in-order traversal result');
 
-my $result = $tree->query(Bio::EnsEMBL::Utils::CenteredIntervalTree::Interval->new(121779004, 121779004));
-is(scalar @{$result}, 1, 'number of query results');
-isa_ok($result->[0], 'Bio::EnsEMBL::Utils::CenteredIntervalTree::Interval');
-ok($result->[0]->start == 121626874 && $result->[0]->end == 122092717, 'query result interval boundaries');
-
-# $it->insert(121626874, 122092717, 'a');
-# $it->insert(121637917, 121658918, 'b');
-# $it->insert(122096077, 124088369, 'c');
+my ($start, $end, $result);
+$result = $tree->query($start, $end);
+cmp_deeply($result, [], 'empty query');
+$result = $tree->query(undef, $end);
+cmp_deeply($result, [], 'empty query');
+my $result1 = $tree->query(121779004);
+my $result2 = $tree->query(121779004, 121779004);
+is(scalar @{$result1}, 1, 'number of query results');
+isa_ok($result1->[0], 'Bio::EnsEMBL::Utils::CenteredIntervalTree::Interval');
+ok($result1->[0]->start == 121626874 && $result1->[0]->end == 122092717, 'query result interval boundaries');
+cmp_deeply($result1, $result2, 'same result, different query interface');
 
 done_testing();
