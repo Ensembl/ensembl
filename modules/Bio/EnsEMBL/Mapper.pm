@@ -782,27 +782,19 @@ sub map_indel {
   }
   my @indel_coordinates;
 
-  my ( $start_idx, $end_idx, $mid_idx, $pair, $self_coord );
   my $lr = $hash->{ uc($id) };
 
-  $start_idx = 0;
-  $end_idx   = $#{$lr};
+  # create set of intervals to be checked for overlap
+  my $from_intervals;
+  map { push @{$from_intervals},
+	  Bio::EnsEMBL::Utils::CenteredIntervalTree::Interval->new($_->{$from}{start}, $_->{$from}{end}, $_) } @{$lr};
+  
+  # create and query the interval tree defined on the above set of intervals
+  my $itree = Bio::EnsEMBL::Utils::CenteredIntervalTree->new($from_intervals);
+  my $overlap = $itree->query($start, $end);
 
-  # binary search the relevant pairs
-  # helps if the list is big
-  while ( ( $end_idx - $start_idx ) > 1 ) {
-    $mid_idx    = ( $start_idx + $end_idx ) >> 1;
-    $pair       = $lr->[$mid_idx];
-    $self_coord = $pair->{$from};
-    if ( $self_coord->{'end'} <= $start ) {
-      $start_idx = $mid_idx;
-    } else {
-      $end_idx = $mid_idx;
-    }
-  }
-
-  for ( my $i = $start_idx; $i <= $#{$lr}; $i++ ) {
-    $pair = $lr->[$i];
+  foreach my $i (@{$overlap}) {
+    my $pair = $i->data;
     my $self_coord   = $pair->{$from};
     my $target_coord = $pair->{$to};
 
