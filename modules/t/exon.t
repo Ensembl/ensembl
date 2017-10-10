@@ -456,4 +456,74 @@ SKIP: {
 
 }
 
+# Testing exon is_coding
+{
+  # Create a transcript with start and end same as exon and the coding regions falls within their boundries - POSITIVE STRAND
+  my $sa = $db->get_SliceAdaptor();
+  my $local_slice = $sa->fetch_by_region('chromosome', "20");
+  #create a transcript instance
+  my $tr = Bio::EnsEMBL::Transcript->new(-SLICE => $local_slice, -START => 2000, -END => 3000, -STRAND => 1); 
+  #create an exon instance
+  my $start_exon = Bio::EnsEMBL::Exon->new(-START => 2000, -END => 3000, -STRAND => 1, -SLICE => $local_slice);
+  $tr->add_Exon($start_exon);
+  $tr->translation(Bio::EnsEMBL::Translation->new(
+      -SEQ_START => 100,
+      -SEQ_END => 500,
+      -START_EXON => $start_exon,
+      -END_EXON => $start_exon,
+    ));
+
+
+  my $exon_one = $tr->get_all_Exons()->[0];
+
+  ok($tr->translate, "Transcript can translate");
+  is($exon_one->start, $tr->start, 'Exon start equals Transcript start');
+  is($exon_one->end, $tr->end, 'Exon end equals Transcript end');
+
+  is($exon_one->cdna_coding_start($tr), 100, 'CDNA coding start equals SEQ_START');
+  is($exon_one->cdna_coding_end($tr), 500, 'CDNA coding end equals SEQ_END');
+
+  is($exon_one->coding_region_start($tr), $tr->coding_region_start, 'coding_region_start is 2099'); # $exon_one->start + 100 -1 = 2099
+  is($exon_one->coding_region_end($tr), $tr->coding_region_end, 'coding_region_end is 2499'); # $tr->coding_region_start + 500 -100 = 2499
+
+  ok($tr->coding_region_start > $exon_one->start,  'coding_region_start > exon_start');
+  ok($tr->coding_region_end < $exon_one->end,  'coding_region_end < exon_end');
+
+  my $is_coding = $exon_one->is_coding($tr);
+  is($is_coding, 1, "Exon is coding");
+
+  # REPEAT WITH NEGATIVE STRAND
+  #create a transcript instance
+  $tr = Bio::EnsEMBL::Transcript->new(-SLICE => $local_slice, -START => 2000, -END => 3000, -STRAND => -1); 
+  #create an exon instance
+  $start_exon = Bio::EnsEMBL::Exon->new(-START => 2000, -END => 3000, -STRAND => -1, -SLICE => $local_slice);
+  $tr->add_Exon($start_exon);
+  $tr->translation(Bio::EnsEMBL::Translation->new(
+      -SEQ_START => 100,
+      -SEQ_END => 500,
+      -START_EXON => $start_exon,
+      -END_EXON => $start_exon,
+    ));
+
+
+  $exon_one = $tr->get_all_Exons()->[0];
+
+  ok($tr->translate, "Transcript can translate");
+  is($exon_one->start, $tr->start, 'Exon start equals Transcript start');
+  is($exon_one->end, $tr->end, 'Exon end equals Transcript end');
+
+  is($exon_one->cdna_coding_start($tr), 100, 'CDNA coding start equals SEQ_START');
+  is($exon_one->cdna_coding_end($tr), 500, 'CDNA coding end equals SEQ_END');
+
+  is($exon_one->coding_region_start($tr), $tr->coding_region_start, 'coding_region_start is 2099');
+  is($exon_one->coding_region_end($tr), $tr->coding_region_end, 'coding_region_end is 2499');
+
+  ok($tr->coding_region_start > $exon_one->start,  'coding_region_start > exon_start');
+  ok($tr->coding_region_end < $exon_one->end,  'coding_region_end < exon_end');
+
+  $is_coding = $exon_one->is_coding($tr);
+  is($is_coding, 1, "Exon is coding");
+
+}
+
 done_testing();
