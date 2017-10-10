@@ -149,6 +149,8 @@ use Bio::EnsEMBL::Mapper::IndelCoordinate;
 use Bio::EnsEMBL::Mapper::Gap;
 
 use Bio::EnsEMBL::Utils::Exception qw(throw);
+use Bio::EnsEMBL::Utils::CenteredIntervalTree;
+use Bio::EnsEMBL::Utils::CenteredIntervalTree::Interval;
 
 =head2 new
 
@@ -292,63 +294,24 @@ sub map_coordinates {
   my @result;
   my @paired_result;
 
-  my ( $start_idx, $end_idx, $mid_idx, $pair, $self_coord );
   my $lr = $hash->{ uc($id) };
 
-  $start_idx = 0;
-  $end_idx   = $#{$lr};
-
-  # binary search the relevant pairs
-  # helps if the list is big
-  while ( ( $end_idx - $start_idx ) > 1 ) {
-    $mid_idx    = ( $start_idx + $end_idx ) >> 1;
-    $pair       = $lr->[$mid_idx];
-    $self_coord = $pair->{$from};
-    
-    if ( $self_coord->{'end'} < $start ) {
-      $start_idx = $mid_idx;
-    } else {
-      $end_idx = $mid_idx;
-    }
-  }
-
-  ###################################################
-  # create set of intervals to be checked to overlap
-  use Data::Dumper;
-  use Bio::EnsEMBL::Utils::CenteredIntervalTree::Interval;
+  # create set of intervals to be checked for overlap
   my $from_intervals;
-  foreach my $pair (@{$lr}) {
-    push @{$from_intervals},
-      Bio::EnsEMBL::Utils::CenteredIntervalTree::Interval->new($pair->{$from}{start},
-  							       $pair->{$from}{end}, $pair);
-  }
+  map { push @{$from_intervals},
+	  Bio::EnsEMBL::Utils::CenteredIntervalTree::Interval->new($_->{$from}{start}, $_->{$from}{end}, $_) } @{$lr};
   
-  # create and query the interval tree defined on
-  # the above set of intervals
-  use Bio::EnsEMBL::Utils::CenteredIntervalTree;
+  # create and query the interval tree defined on the above set of intervals
   my $itree = Bio::EnsEMBL::Utils::CenteredIntervalTree->new($from_intervals);
-  my $overlap = $itree->query((defined $start && defined $end)?Bio::EnsEMBL::Utils::CenteredIntervalTree::Interval->new($start, $end):undef);
-  ###################################################
-
-  # print Dumper $lr, "\n";
-  # print Dumper $itree, "\n";
-  # print Dumper $overlap, "\n";
+  my $overlap = $itree->query($start, $end);
   
   my $rank              = 0;
   my $orig_start        = $start;
   my $last_target_coord = undef;
-  # for ( my $i = $start_idx; $i <= $#{$lr}; $i++ ) {
-  #   $pair = $lr->[$i];
   foreach my $i (@{$overlap}) {
-    $pair = $i->data;
+    my $pair = $i->data;
     my $self_coord   = $pair->{$from};
     my $target_coord = $pair->{$to};
-
-    # if we haven't even reached the start, move on
-    if ( $self_coord->{'end'} < $orig_start ) { next;}
-
-    # if we have over run, break
-    if ( $self_coord->{'start'} > $end ) { last;}
 
     #
     # But not the case for haplotypes!! need to test for this case???
