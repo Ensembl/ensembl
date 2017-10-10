@@ -52,6 +52,7 @@ use Data::Dumper;
 use Bio::EnsEMBL::Utils::Scalar qw(assert_ref);
 use Bio::EnsEMBL::Utils::Exception qw(throw);
 use Bio::EnsEMBL::Utils::CenteredIntervalTree::Node;
+use Bio::EnsEMBL::Utils::CenteredIntervalTree::Interval;
 
 =head2 new
 
@@ -114,8 +115,14 @@ sub root {
 # }
 
 sub query {
-  my ($self, $interval) = @_;
-
+  my ($self, $start, $end) = @_;
+  
+  my $interval;
+  if (defined $start) {
+    $end = $start unless defined $end;
+    $interval = Bio::EnsEMBL::Utils::CenteredIntervalTree::Interval->new($start, $end);
+  }
+  
   return [] unless $interval;
   return $self->_query_point($self->root, $interval->start, []) if $interval->is_point;
 
