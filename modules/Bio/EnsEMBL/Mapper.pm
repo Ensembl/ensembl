@@ -295,11 +295,13 @@ sub map_coordinates {
   my @paired_result;
 
   my $lr = $hash->{ uc($id) };
-
+  
   # create set of intervals to be checked for overlap
   my $from_intervals;
   map { push @{$from_intervals},
-	  Bio::EnsEMBL::Utils::CenteredIntervalTree::Interval->new($_->{$from}{start}, $_->{$from}{end}, $_) } @{$lr};
+	  Bio::EnsEMBL::Utils::CenteredIntervalTree::Interval->new($_->{$from}{start}<=$_->{$from}{end}?$_->{$from}{start}:$_->{$from}{end},
+								   $_->{$from}{start}<=$_->{$from}{end}?$_->{$from}{end}:$_->{$from}{start},
+								   $_) } @{$lr};
   
   # create and query the interval tree defined on the above set of intervals
   my $itree = Bio::EnsEMBL::Utils::CenteredIntervalTree->new($from_intervals);
