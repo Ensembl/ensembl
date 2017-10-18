@@ -224,7 +224,7 @@ sub map {
   throw('Incorrect number of arguments.') if (!( @_ >= 6));
 
   my ( $self, $frm_seq_region_name, $frm_start, $frm_end, $frm_strand,
-       $frm_cs, $to_slice )
+       $frm_cs, $to_slice, $dummy, $include_org_coord )
     = @_;
 
   my $mapper  = $self->{'mapper'};
@@ -271,16 +271,7 @@ sub map {
 
   my @coords = 
     $mapper->map_coordinates( $seq_region_id, $frm_start, $frm_end,
-                              $frm_strand, $frm );
-  
-  # decorate (org,)mapped coordinates with their corresponding region names
-  map {
-    check_ref($_, 'Bio::EnsEMBL::Mapper::Coordinate') && # exclude gap
-      $_->name($adaptor->seq_ids_to_regions([$_->id])->[0])
-    } @coords;
-
-  return @coords;
-  
+                              $frm_strand, $frm, $include_org_coord );
 } ## end sub map
 
 
