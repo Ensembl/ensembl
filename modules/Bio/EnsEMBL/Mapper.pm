@@ -284,15 +284,22 @@ sub map_coordinates {
     throw("Type $type is neither to or from coordinate systems");
   }
 
+  my @result;
+  my @paired_result;
+
   if ( !defined $hash->{ uc($id) } ) {
     # one big gap!
     my $gap = Bio::EnsEMBL::Mapper::Gap->new( $start, $end );
-    return $gap;
+    if ($include_original_region) {
+      push @paired_result, { 'original' => $gap, 'mapped' => $gap };
+      return @paired_result;
+    } else {
+      push @result, $gap;
+      return @result;
+    }
   }
 
   my $last_used_pair;
-  my @result;
-  my @paired_result;
 
   my $lr = $hash->{ uc($id) };
   
@@ -338,6 +345,8 @@ sub map_coordinates {
       # gap detected
       my $gap = Bio::EnsEMBL::Mapper::Gap->new( $start, $self_coord->{'start'} - 1, $rank );
       push( @result, $gap );
+      push(@paired_result, { 'original' => $gap, 'mapped' => $gap });
+
       $start = $gap->{'end'} + 1;
     }
     my ( $target_start, $target_end);
