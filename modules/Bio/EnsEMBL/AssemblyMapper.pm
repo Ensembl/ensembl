@@ -223,7 +223,7 @@ sub map {
   throw('Incorrect number of arguments.') if (!( @_ >= 6));
 
   my ( $self, $frm_seq_region_name, $frm_start, $frm_end, $frm_strand,
-       $frm_cs, $to_slice, $dummy, $include_org_coord )
+       $frm_cs, $dummy, $to_slice, $include_org_coord )
     = @_;
 
   my $mapper  = $self->{'mapper'};
