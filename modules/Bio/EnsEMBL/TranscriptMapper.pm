@@ -242,7 +242,9 @@ sub _load_mapper {
                The end position in cdna coordinates
   Example    : @cdna_coords = $transcript_mapper->cdna2genomic($start, $end);
   Description: Converts cdna coordinates to genomic coordinates.  The
-               return value is a list of coordinates and gaps.
+               return value is a list of coordinates and gaps, where the coordinates
+               are relative to the sequence region that the transcript used to construct
+               this mapper was on.
   Returntype : list of Bio::EnsEMBL::Mapper::Coordinate and
                Bio::EnsEMBL::Mapper::Gap objects
   Exceptions : throws if no start or end
@@ -314,9 +316,9 @@ sub genomic2cdna {
   Arg [3]      boolean (0 or 1) $include_original_region
                option to include original input coordinate region mappings in the result
   Example    : @genomic_coords = $transcript_mapper->cds2genomic(69, 306);
-  Description: Converts cds coordinates into genomic coordinates.  The
-               coordinates returned are relative to the same slice that the
-               transcript used to construct this TranscriptMapper was on.
+  Description: Converts cds coordinates into genomic coordinates. Coordinates returned
+               are relative to sequence region that the transcript used to construct
+               this mapper was on.
   Returntype : list of Bio::EnsEMBL::Mapper::Gap and
                Bio::EnsEMBL::Mapper::Coordinate objects
   Exceptions : throws if no end
@@ -357,7 +359,7 @@ sub cds2genomic {
                end position in peptide coords
   Example    : @genomic_coords = $transcript_mapper->pep2genomic(23, 102);
   Description: Converts peptide coordinates into genomic coordinates.  The
-               coordinates returned are relative to the same slice that the
+               coordinates returned are relative to the sequence region that the
                transcript used to construct this TranscriptMapper was on.
   Returntype : list of Bio::EnsEMBL::Mapper::Gap and
                Bio::EnsEMBL::Mapper::Coordinate objects
