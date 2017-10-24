@@ -47,7 +47,9 @@ my $ilabel = 'interpro label';
 my $interpro_ac = 'interpro accession';
 my $translation_id = 1234;
 
-my $analysis = Bio::EnsEMBL::Analysis->new(-LOGIC_NAME => 'test');
+my $analysis_db = 'test_db';
+
+my $analysis = Bio::EnsEMBL::Analysis->new(-LOGIC_NAME => 'test', -DB => $analysis_db);
 
 
 my $f = Bio::EnsEMBL::ProteinFeature->new
@@ -93,6 +95,17 @@ ok($f->interpro_ac eq $interpro_ac);
 
 # check that the strand is 0
 ok($f->strand == 0);
+
+# Test summary_as_hash
+my $summary = $f->summary_as_hash();
+ok($summary->{'type'} = $analysis_db);
+ok($summary->{'id'} = $hseqname);
+ok($summary->{'start'} = $start);
+ok($summary->{'end'} = $end);
+ok($summary->{'interpro'} = $interpro_ac);
+ok($summary->{'description'} = $idesc);
+ok($summary->{'hit_start'} = $hstart);
+ok($summary->{'hit_end'} = $hend);
 
 #
 # Test setters
