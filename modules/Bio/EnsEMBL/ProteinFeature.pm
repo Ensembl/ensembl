@@ -207,10 +207,13 @@ sub summary_as_hash {
   my %summary;
   $summary{'type'} = $self->analysis->db;
   $summary{'id'} = $self->display_id;
-  $summary{'start'} = $self->start,
-  $summary{'end'} = $self->end,
+  $summary{'start'} = $self->start;
+  $summary{'end'} = $self->end;
   $summary{'interpro'} = $self->interpro_ac;
   $summary{'description'} = $self->idesc;
+  $summary{'hit_start'} = $self->hstart;
+  $summary{'hit_end'} = $self->hend;
+  
   return \%summary;
 }
 
