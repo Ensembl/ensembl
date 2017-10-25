@@ -161,10 +161,10 @@ sub adaptor {
 
 
 sub map {
-  throw('Incorrect number of arguments.') if(@_ != 6 && @_ != 7);
+  throw('Incorrect number of arguments.') if @_ < 6;
 
   my($self, $frm_seq_region_name, $frm_start, $frm_end, $frm_strand, $frm_cs,
-    $fastmap) = @_;
+    $fastmap, $dummy, $include_org_coord) = @_;
 
   if($frm_cs->is_top_level()) {
     throw("The toplevel CoordSystem can only be mapped TO, not FROM.");
@@ -211,11 +211,15 @@ sub map {
         return @result if(@result);
       } else {
         my @coords = $mapper->map($frm_seq_region_name, $frm_start, $frm_end,
-                                  $frm_strand, $frm_cs);
+                                  $frm_strand, $frm_cs, undef, undef, $include_org_coord);
 
-        if(@coords > 1 || !$coords[0]->isa('Bio::EnsEMBL::Mapper::Gap')) {
-          return @coords;
-        }
+        if(@coords > 1) {
+	  return @coords;
+	} elsif ($include_org_coord) {
+	  return @coords unless $coords[0]{mapped}->isa('Bio::EnsEMBL::Mapper::Gap');
+	} else {
+	  return @coords unless $coords[0]->isa('Bio::EnsEMBL::Mapper::Gap');
+	}
       }
     }
   }

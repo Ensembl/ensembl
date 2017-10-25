@@ -149,6 +149,8 @@ use Bio::EnsEMBL::Mapper::IndelCoordinate;
 use Bio::EnsEMBL::Mapper::Gap;
 
 use Bio::EnsEMBL::Utils::Exception qw(throw);
+use Bio::EnsEMBL::Utils::CenteredIntervalTree;
+use Bio::EnsEMBL::Utils::CenteredIntervalTree::Interval;
 
 =head2 new
 
@@ -282,44 +284,43 @@ sub map_coordinates {
     throw("Type $type is neither to or from coordinate systems");
   }
 
-  if ( !defined $hash->{ uc($id) } ) {
-    # one big gap!
-    my $gap = Bio::EnsEMBL::Mapper::Gap->new( $start, $end );
-    return $gap;
-  }
-
-  my $last_used_pair;
   my @result;
   my @paired_result;
 
-  my ( $start_idx, $end_idx, $mid_idx, $pair, $self_coord );
-  my $lr = $hash->{ uc($id) };
-
-  $start_idx = 0;
-  $end_idx   = $#{$lr};
-
-  # binary search the relevant pairs
-  # helps if the list is big
-  while ( ( $end_idx - $start_idx ) > 1 ) {
-    $mid_idx    = ( $start_idx + $end_idx ) >> 1;
-    $pair       = $lr->[$mid_idx];
-    $self_coord = $pair->{$from};
-    
-    if ( $self_coord->{'end'} < $start ) {
-      $start_idx = $mid_idx;
+  if ( !defined $hash->{ uc($id) } ) {
+    # one big gap!
+    my $gap = Bio::EnsEMBL::Mapper::Gap->new( $start, $end );
+    if ($include_original_region) {
+      push @paired_result, { 'original' => $gap, 'mapped' => $gap };
+      return @paired_result;
     } else {
-      $end_idx = $mid_idx;
+      push @result, $gap;
+      return @result;
     }
   }
 
+  my $last_used_pair;
+
+  my $lr = $hash->{ uc($id) };
+  
+  # create set of intervals to be checked for overlap
+  my $from_intervals;
+  map { push @{$from_intervals},
+	  Bio::EnsEMBL::Utils::CenteredIntervalTree::Interval->new($_->{$from}{start}<=$_->{$from}{end}?$_->{$from}{start}:$_->{$from}{end},
+								   $_->{$from}{start}<=$_->{$from}{end}?$_->{$from}{end}:$_->{$from}{start},
+								   $_) } @{$lr};
+  
+  # create and query the interval tree defined on the above set of intervals
+  my $itree = Bio::EnsEMBL::Utils::CenteredIntervalTree->new($from_intervals);
+  my $overlap = $itree->query($start, $end);
+  
   my $rank              = 0;
   my $orig_start        = $start;
   my $last_target_coord = undef;
-  for ( my $i = $start_idx; $i <= $#{$lr}; $i++ ) {
-    $pair = $lr->[$i];
+  foreach my $i (@{$overlap}) {
+    my $pair = $i->data;
     my $self_coord   = $pair->{$from};
     my $target_coord = $pair->{$to};
-
     
     #
     # But not the case for haplotypes!! need to test for this case???
@@ -350,6 +351,8 @@ sub map_coordinates {
       # gap detected
       my $gap = Bio::EnsEMBL::Mapper::Gap->new( $start, $self_coord->{'start'} - 1, $rank );
       push( @result, $gap );
+      push(@paired_result, { 'original' => $gap, 'mapped' => $gap });
+
       $start = $gap->{'end'} + 1;
     }
     my ( $target_start, $target_end);
@@ -790,27 +793,19 @@ sub map_indel {
   }
   my @indel_coordinates;
 
-  my ( $start_idx, $end_idx, $mid_idx, $pair, $self_coord );
   my $lr = $hash->{ uc($id) };
 
-  $start_idx = 0;
-  $end_idx   = $#{$lr};
+  # create set of intervals to be checked for overlap
+  my $from_intervals;
+  map { push @{$from_intervals},
+	  Bio::EnsEMBL::Utils::CenteredIntervalTree::Interval->new($_->{$from}{start}, $_->{$from}{end}, $_) } @{$lr};
+  
+  # create and query the interval tree defined on the above set of intervals
+  my $itree = Bio::EnsEMBL::Utils::CenteredIntervalTree->new($from_intervals);
+  my $overlap = $itree->query($start, $end);
 
-  # binary search the relevant pairs
-  # helps if the list is big
-  while ( ( $end_idx - $start_idx ) > 1 ) {
-    $mid_idx    = ( $start_idx + $end_idx ) >> 1;
-    $pair       = $lr->[$mid_idx];
-    $self_coord = $pair->{$from};
-    if ( $self_coord->{'end'} <= $start ) {
-      $start_idx = $mid_idx;
-    } else {
-      $end_idx = $mid_idx;
-    }
-  }
-
-  for ( my $i = $start_idx; $i <= $#{$lr}; $i++ ) {
-    $pair = $lr->[$i];
+  foreach my $i (@{$overlap}) {
+    my $pair = $i->data;
     my $self_coord   = $pair->{$from};
     my $target_coord = $pair->{$to};
 
