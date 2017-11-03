@@ -106,16 +106,6 @@ sub process{
 
 	  if (!$transl_object_xref_id) {
 
-	      #check if an object xref exists with status other than 'DUMP_OUT'
-	      $ox_translation_other_status_sth->execute($translation_id, $pep_source_id, $pep_accession);
-	      ($transl_object_xref_id, $xref_id) = $ox_translation_other_status_sth->fetchrow_array();
-
-	      if ($transl_object_xref_id) {
-		  #update the object xref
-		  $ox_update_sth->execute($transl_object_xref_id)|| die "Could not update object_xref $transl_object_xref_id";
-		  $xref_update_sth->execute($xref_id)|| die "Could not update xref $xref_id";
-		  $change{'translation object_xrefs updated'}++;
-	      } else {
 		  #add a new object xref 
 		  $xref_sth->execute($pep_accession, $pep_source_id);
 		  ($xref_id) = $xref_sth->fetchrow_array();
@@ -132,7 +122,6 @@ sub process{
 		  $change{'translation object xrefs added'}++;
 		  $object_xref_id++;
 		  $transl_object_xref_id = $object_xref_id;
-	      }
 	      
 	  }
 
