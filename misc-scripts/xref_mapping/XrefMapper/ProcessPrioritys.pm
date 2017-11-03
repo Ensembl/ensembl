@@ -126,7 +126,6 @@ FSQL
         WHERE ox.object_xref_id = ix.object_xref_id 
           AND ox.xref_id = x.xref_id
           AND s.source_id = x.source_id
-          AND ox_status != 'FAILED_CUTOFF'
           AND s.name = ?
          ORDER BY x.accession DESC, s.priority ASC , identity DESC, x.xref_id DESC
 NEWS
@@ -208,6 +207,10 @@ SEQCP
             $update_x_sth->execute($xref_id);
           }
         } else {
+# Alignment did not pass, dismiss
+          if ($status eq 'FAILED_CUTOFF') {
+            next;
+          }
           ## There might be several mappings for the best priority
           push @best_ensembl_id, $ensembl_id;
         }
