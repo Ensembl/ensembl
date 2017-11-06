@@ -40,7 +40,7 @@ my $pfs = $pfa->fetch_all_by_translation_id(21724);
 
 print_features($pfs);
 
-is(@$pfs, 15, "Found 15 features");
+ok(@$pfs == 15);
 
 sub print_features {
   my $features = shift;
@@ -68,7 +68,9 @@ my $hdes = "Hit description";
 my $idesc = 'interpro description';
 my $interpro_ac = 'interpro accession';
 
-my $analysis = Bio::EnsEMBL::Analysis->new(-LOGIC_NAME => 'test');
+my $analysis_db = 'test_db';
+
+my $analysis = Bio::EnsEMBL::Analysis->new(-LOGIC_NAME => 'test', -DB => $analysis_db);
 $multi->save('core', 'protein_feature', 'meta_coord');
 
 
@@ -88,6 +90,17 @@ my $f = Bio::EnsEMBL::ProteinFeature->new
    -IDESC       => $idesc,
    -INTERPRO_AC => $interpro_ac);
    
+
+my $summary = $f->summary_as_hash();
+is($summary->{'type'}, $analysis_db);
+is($summary->{'id'}, $hseqname);
+is($summary->{'start'}, $start);
+is($summary->{'end'}, $end);
+is($summary->{'interpro'}, $interpro_ac);
+is($summary->{'description'}, $idesc);
+is($summary->{'hit_start'}, $hstart);
+is($summary->{'hit_end'}, $hend);   
+   
 my $dbID = $pfa->store($f,21724);
 
 ok($dbID, "New object created has dbID");
@@ -106,13 +119,13 @@ is($f_by_dbID->hend, $hend);
 is($f_by_dbID->hseqname, $hseqname);
 is($f_by_dbID->hdescription, $hdes);
 is($f_by_dbID->score, $score);
-is(sprintf("%.6f", $f_by_dbID->percent_id), sprintf("%.6f", $percent_id), "Correct percent_id");
-is(sprintf("%.6f", $f_by_dbID->p_value), sprintf("%.6f", $p_value), "Correct p_value");
+is($f_by_dbID->percent_id, $percent_id);
+is($f_by_dbID->p_value, $p_value);
 
 
 $pfs = $pfa->fetch_all_by_translation_id(21724);
 
-is(@$pfs, 16, "Found 16 features");
+ok(@$pfs == 16);
 
 my @pfs = grep{$_->hdescription() eq $hdes} @$pfs;
 

@@ -320,7 +320,12 @@ sub map_coordinates {
     my $self_coord   = $pair->{$from};
     my $target_coord = $pair->{$to};
 
-    
+    # if we haven't even reached the start, move on
+    if ( $self_coord->{'end'} < $orig_start ) { next;}
+
+    # if we have over run, break
+    if ( $self_coord->{'start'} > $end ) { last;}
+
     #
     # But not the case for haplotypes!! need to test for this case???
     # so removing this till a better solution is found
@@ -339,12 +344,6 @@ sub map_coordinates {
     } else {
       $last_target_coord = $target_coord->{'id'};
     }
-
-    # if we haven't even reached the start, move on
-    if ( $self_coord->{'end'} < $orig_start ) { next;}
-
-    # if we have over run, break
-    if ( $self_coord->{'start'} > $end ) { last;}
 
     if ( $start < $self_coord->{'start'} ) {
       # gap detected

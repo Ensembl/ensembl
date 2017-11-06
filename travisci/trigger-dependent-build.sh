@@ -55,7 +55,9 @@ fi
 
 # The list of downstream dependent repos
 dep_repos=("Ensembl%2Fensembl%2Dcompara"
+	   "Ensembl%2Fensembl%2Dvariation"
 	   "Ensembl%2Fensembl%2Dfuncgen"
+	   "Ensembl%2Fensembl%2Dvep"
 	   "Ensembl%2Fensembl%2Drest")
 
 for dep_repo in "${dep_repos[@]}"; do
