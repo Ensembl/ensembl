@@ -126,7 +126,6 @@ FSQL
         WHERE ox.object_xref_id = ix.object_xref_id 
           AND ox.xref_id = x.xref_id
           AND s.source_id = x.source_id
-          AND ox_status != 'FAILED_CUTOFF'
           AND s.name = ?
          ORDER BY x.accession DESC, s.priority ASC , identity DESC, x.xref_id DESC
 NEWS
@@ -208,6 +207,10 @@ SEQCP
             $update_x_sth->execute($xref_id);
           }
         } else {
+# Alignment did not pass, dismiss
+          if ($status eq 'FAILED_CUTOFF') {
+            next;
+          }
           ## There might be several mappings for the best priority
           push @best_ensembl_id, $ensembl_id;
         }
@@ -269,7 +272,7 @@ sub process_dependents{
   my @master_xrefs = ($old_master_xref_id);
   my $recursive = 0;
 
-  my ($new_object_type, $new_ensembl_id);
+  my ($new_object_type, $new_ensembl_id, $old_object_type, $old_ensembl_id);
   my ($dep_xref_id, $linkage_annotation, $new_object_xref_id, $linkage_source_id, $object_type);
 
 
@@ -279,6 +282,12 @@ sub process_dependents{
   $matching_ens_sth->bind_columns(\$new_object_type, \$new_ensembl_id);
   while ($matching_ens_sth->fetch()) {
     push @{ $ensembl_ids{$new_object_type} }, $new_ensembl_id;
+  }
+  my %old_ensembl_ids;
+  $matching_ens_sth->execute($old_master_xref_id);
+  $matching_ens_sth->bind_columns(\$old_object_type, \$old_ensembl_id);
+  while ($matching_ens_sth->fetch()) {
+    push @{ $old_ensembl_ids{$old_object_type} }, $old_ensembl_id;
   }
 
 
@@ -296,7 +305,9 @@ sub process_dependents{
 
       # Remove all mappings to low priority xrefs
       # Then delete any leftover identity or go xrefs of it
-      $self->_detach_object_xref($xref_id, $dep_xref_id, $object_type);
+      foreach my $ensembl_id (@{ $old_ensembl_ids{$object_type}} ) {
+        $self->_detach_object_xref($xref_id, $dep_xref_id, $object_type, $ensembl_id);
+      }
 
       # Duplicate each dependent for the new master xref if it is the first in the chain
       unless ($recursive) {
@@ -338,31 +349,31 @@ sub process_dependents{
 # Set unimportant object_xrefs to FAILED_PRIORITY, and delete all those that remain
 sub _detach_object_xref {
   my $self = shift;
-  my ($xref_id, $dep_xref_id, $object_type) = @_;
+  my ($xref_id, $dep_xref_id, $object_type, $ensembl_id) = @_;
   # Drop all the identity and go xrefs for the dependents of an xref
   my $remove_dep_ox_sth = $self->xref->dbc->prepare(
     "DELETE ix, g FROM object_xref ox \
      LEFT JOIN identity_xref ix ON ix.object_xref_id = ox.object_xref_id \
      LEFT JOIN go_xref g ON g.object_xref_id = ox.object_xref_id \
-     WHERE master_xref_id = ? AND ensembl_object_type = ? AND xref_id = ?"
+     WHERE master_xref_id = ? AND ensembl_object_type = ? AND xref_id = ? AND ensembl_id = ?"
   );
   # Fail the object_xrefs that did link to the deleted identity/go xrefs.
   # This only updates one of potentially many, due to table contraints.
   my $update_dep_ox_sth = $self->xref->dbc->prepare(
     "UPDATE IGNORE object_xref SET ox_status = 'FAILED_PRIORITY' \
-    WHERE master_xref_id = ? AND ensembl_object_type = ? AND xref_id = ? AND ox_status = 'DUMP_OUT'"
+    WHERE master_xref_id = ? AND ensembl_object_type = ? AND xref_id = ? AND ox_status = 'DUMP_OUT' AND ensembl_id = ?"
   );
   # This deletes everything left behind by the previous query.
   my $clean_dep_ox_sth  = $self->xref->dbc->prepare(
     "DELETE FROM object_xref \
-    WHERE master_xref_id = ? AND ensembl_object_type = ? AND xref_id = ? AND ox_status = 'DUMP_OUT'"
+    WHERE master_xref_id = ? AND ensembl_object_type = ? AND xref_id = ? AND ox_status = 'DUMP_OUT' AND ensembl_id = ?"
   );
 
-  $remove_dep_ox_sth->execute($xref_id, $object_type, $dep_xref_id);
+  $remove_dep_ox_sth->execute($xref_id, $object_type, $dep_xref_id, $ensembl_id);
   # change status of object_xref to FAILED_PRIORITY for record keeping
-  $update_dep_ox_sth->execute($xref_id, $object_type, $dep_xref_id);
+  $update_dep_ox_sth->execute($xref_id, $object_type, $dep_xref_id, $ensembl_id);
   # delete the duplicates.
-  $clean_dep_ox_sth->execute($xref_id, $object_type, $dep_xref_id);
+  $clean_dep_ox_sth->execute($xref_id, $object_type, $dep_xref_id, $ensembl_id);
 
   $remove_dep_ox_sth->finish();
   $update_dep_ox_sth->finish();

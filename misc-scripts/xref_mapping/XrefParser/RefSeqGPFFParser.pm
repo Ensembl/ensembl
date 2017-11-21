@@ -202,6 +202,7 @@ sub create_xrefs {
     {
       my ($acc) = $entry =~ /ACCESSION\s+(\S+)/;
       my ($ver) = $entry =~ /VERSION\s+(\S+)/;
+      my ($refseq_pair) = $entry =~ /DBSOURCE\s+REFSEQ: accession (\S+)/;
 
       # get the right source ID based on $type and whether this is predicted (X*) or not
       my $source_id;
@@ -271,6 +272,9 @@ sub create_xrefs {
 
       foreach my $cb (@coded_by){
 	$xref->{PAIR} = $cb;
+      }
+      if (!defined $xref->{PAIR}) {
+        $xref->{PAIR} = $refseq_pair;
       }
 
       foreach my $pi (@protein_id){
