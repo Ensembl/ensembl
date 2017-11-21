@@ -43,7 +43,7 @@ pseudo coordinate system.
   my $toplevel = $cs_adaptor->fetch_by_name('toplevel');
   my $ctg_cs   = $cs_adaptor->fetch_by_name('contig');
 
-  $asm_mapper = $map_adaptor->fetch_by_CoordSystems( $cs1, $cs2 );
+  $asm_mapper = $map_adaptor->fetch_by_CoordSystems( $toplevel, $ctg_cs );
 
   # map to toplevel coord system for this region
   @chr_coords =
