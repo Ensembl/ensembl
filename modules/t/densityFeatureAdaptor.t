@@ -198,6 +198,7 @@ ok( $stored_features[0]->length() == 1000 );
 
 # Check for fetching all features
 @stored_features = @{$dfa->fetch_all()};
+print "\n";
 is( @stored_features, 318, 'Number of stored features');
 @stored_features = @{$dfa->fetch_all('GeneDensityTest')};
 ok( $stored_features[0]->length() > 1000 );
