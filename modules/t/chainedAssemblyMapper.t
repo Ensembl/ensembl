@@ -20,7 +20,7 @@ use Test::Warnings;
 use Bio::EnsEMBL::Test::MultiTestDB;
 use Bio::EnsEMBL::Test::TestUtils;
 
-our $verbose = 1; #set to 1 to turn on debug printouts
+our $verbose = 0; # set to 1 to turn on debug printouts
 
 my $multi = Bio::EnsEMBL::Test::MultiTestDB->new();
 my $db = $multi->get_DBAdaptor( 'core' );
