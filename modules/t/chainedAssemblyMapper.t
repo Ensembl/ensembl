@@ -66,6 +66,12 @@ my @coords = $asm_mapper->map('20', 500_001, 60_000_000, 1, $chr_cs);
 ok(@coords);
 debug("MAP 20->clone\n");
 print_coords(@coords);
+# [ENSCORESW-844]. Test mapped coordinate names
+my @coord_names = qw ( AL359765.6 AL031658.11 AL353092.6 AL049539.21 AL121897.32 AL354800.4 AL121583.25 AL034550.31 AL133343.23 AL132653.22 AL035071.17 AL390298.13);
+for my $coord (@coords) {
+  next if $coord->isa('Bio::EnsEMBL::Mapper::Gap');
+  is($coord->name(), shift @coord_names);
+}
 
 debug("MAP 'AL359765.6'->chromosome\n");
 @coords = $asm_mapper->map('AL359765.6', 1, 13780, 1, $cln_cs);
