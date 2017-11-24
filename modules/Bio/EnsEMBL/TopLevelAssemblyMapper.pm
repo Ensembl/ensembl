@@ -118,8 +118,8 @@ sub new {
   my $coord_systems = $cs_adaptor->fetch_all();
 
   my $self = bless {'coord_systems' => $coord_systems,
-                'toplevel_cs'   => $toplevel_cs,
-                'other_cs'      => $other_cs}, $class;
+		    'toplevel_cs'   => $toplevel_cs,
+		    'other_cs'      => $other_cs}, $class;
 
   $self->adaptor($adaptor);
   return $self;
