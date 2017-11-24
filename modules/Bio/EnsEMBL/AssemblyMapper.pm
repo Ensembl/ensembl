@@ -272,6 +272,22 @@ sub map {
   my @coords = 
     $mapper->map_coordinates( $seq_region_id, $frm_start, $frm_end,
                               $frm_strand, $frm, $include_org_coord );
+  
+  # decorate (org,)mapped coordinates with their corresponding region names
+  if ($include_org_coord) {
+    map {
+      check_ref($_, 'Bio::EnsEMBL::Mapper::Coordinate') && # exclude gap
+      $_->{original}->name($adaptor->seq_ids_to_regions([$_->{original}->id])->[0]) &&
+      $_->{mapped}->name($adaptor->seq_ids_to_regions([$_->{mapped}->id])->[0])
+    } @coords;
+  } else {
+    map {
+      check_ref($_, 'Bio::EnsEMBL::Mapper::Coordinate') && # exclude gap
+      $_->name($adaptor->seq_ids_to_regions([$_->id])->[0])
+    } @coords;
+  }
+
+  return @coords;
 } ## end sub map
 
 
