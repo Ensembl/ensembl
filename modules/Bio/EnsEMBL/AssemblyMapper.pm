@@ -86,6 +86,7 @@ use warnings;
 use Bio::EnsEMBL::Mapper;
 use Bio::EnsEMBL::Utils::Exception qw(throw deprecate);
 use Scalar::Util qw(weaken);
+use Bio::EnsEMBL::Utils::Scalar qw( check_ref);
 
 my $ASSEMBLED = 'assembled';
 my $COMPONENT = 'component';
@@ -268,9 +269,18 @@ sub map {
 
   }
 
-  return
+  my @coords = 
     $mapper->map_coordinates( $seq_region_id, $frm_start, $frm_end,
                               $frm_strand, $frm );
+  
+  # decorate (org,)mapped coordinates with their corresponding region names
+  map {
+    check_ref($_, 'Bio::EnsEMBL::Mapper::Coordinate') && # exclude gap
+      $_->name($adaptor->seq_ids_to_regions([$_->id])->[0])
+    } @coords;
+
+  return @coords;
+  
 } ## end sub map
 
 
