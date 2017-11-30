@@ -50,6 +50,7 @@ use vars qw(@ISA);
 use Bio::SimpleAlign;
 use Bio::LocatableSeq;
 use Bio::EnsEMBL::Utils::Argument qw(rearrange);
+use Bio::EnsEMBL::Utils::Exception qw(throw);
 
 @ISA = qw( Bio::EnsEMBL::BaseAlignFeature );
 
