@@ -678,7 +678,7 @@ sub _parse_ensembl_features {
 
   if (ref($features) ne "ARRAY") {
     throw("features must be an array reference not a [".ref($features)."]");
-  } elsif (scalar(@$features) <= 0) {
+  } elsif (scalar(@$features) == 0) {
     throw("features array must not be empty");
   }
 
