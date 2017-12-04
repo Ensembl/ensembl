@@ -255,6 +255,7 @@ sub run_script {
 
 # Create a range registry for all the exons of the ensembl transcript
         foreach my $transcript(@$transcripts) {
+          if ($transcript->strand != $transcript_of->strand) { next; }
           my $exons = $transcript->get_all_Exons();
           my $rr2 = Bio::EnsEMBL::Mapper::RangeRegistry->new();
           my $rr4 = Bio::EnsEMBL::Mapper::RangeRegistry->new();
