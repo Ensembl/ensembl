@@ -200,8 +200,14 @@ sub new {
                SQL wildcard characters (_ and %) can be used to
                specify patterns.
 
+  Arg [2]    : (optional) String, external database type, can be one of
+               ('ARRAY','ALT_TRANS','ALT_GENE','MISC','LIT','PRIMARY_DB_SYNONYM','ENSEMBL'),
+               SQL wildcard characters (_ and %) can be used to
+               specify patterns.
+
   Example    : my @dblinks = @{ $transcript->get_all_DBLinks() };
-               my @dblinks = @{ $transcript->get_all_DBLinks('Uniprot%') };
+               @dblinks = @{ $transcript->get_all_DBLinks('Uniprot%') };}
+               @dblinks = @{ $transcript->get_all_DBLinks('%', 'ENSEMBL') };
 
   Description: Retrieves *all* related DBEntries for this
                transcript.  This includes all DBEntries that are
@@ -283,11 +289,18 @@ sub get_all_xrefs {
 
 =head2 get_all_DBEntries
 
-  Arg [1]    : (optional) String, external database name
+  Arg [1]    : (optional) String, external database name,
+               SQL wildcard characters (_ and %) can be used to
+               specify patterns.
 
-  Arg [2]    : (optional) String, external database type
+  Arg [2]    : (optional) String, external database type, can be one of
+               ('ARRAY','ALT_TRANS','ALT_GENE','MISC','LIT','PRIMARY_DB_SYNONYM','ENSEMBL'),
+               SQL wildcard characters (_ and %) can be used to
+               specify patterns.
 
   Example    : my @dbentries = @{ $transcript->get_all_DBEntries() };
+               @dbentries = @{ $transcript->get_all_DBEntries('Uniprot%') };}
+               @dbentries = @{ $transcript->get_all_DBEntries('%', 'ENSEMBL') };}
 
   Description: Retrieves DBEntries (xrefs) for this transcript.
                This does *not* include the corresponding

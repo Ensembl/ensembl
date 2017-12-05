@@ -582,11 +582,18 @@ sub transform {
 
 =head2 get_all_DBEntries
 
-  Arg [1]    : (optional) String, external database name
+  Arg [1]    : (optional) String, external database name,
+               SQL wildcard characters (_ and %) can be used to
+               specify patterns.
 
-  Arg [2]    : (optional) String, external_db type
+  Arg [2]    : (optional) String, external_db type,
+               ('ARRAY','ALT_TRANS','ALT_GENE','MISC','LIT','PRIMARY_DB_SYNONYM','ENSEMBL'),
+               SQL wildcard characters (_ and %) can be used to
+               specify patterns.
 
-  Example    : @dbentries = @{ $translation->get_all_DBEntries() };
+  Example    : my @dbentries = @{ $translation->get_all_DBEntries() };
+               @dbentries = @{ $translation->get_all_DBEntries('Uniprot%') };
+               @dbentries = @{ $translation->get_all_DBEntries('%', 'ENSEMBL') };
 
   Description: Retrieves DBEntries (xrefs) for this translation.
 
@@ -691,8 +698,14 @@ sub add_DBEntry {
                SQL wildcard characters (_ and %) can be used to
                specify patterns.
 
+  Arg [2]    : (optional) String, external database type, can be one of
+               ('ARRAY','ALT_TRANS','ALT_GENE','MISC','LIT','PRIMARY_DB_SYNONYM','ENSEMBL'),
+               SQL wildcard characters (_ and %) can be used to
+               specify patterns.
+
   Example    :  my @dblinks = @{ $translation->get_all_DBLinks() };
-                my @dblinks = @{ $translation->get_all_DBLinks('Uniprot%') };
+                @dblinks = @{ $translation->get_all_DBLinks('Uniprot%') };
+                @dblinks = @{ $translation->get_all_DBLinks('%', 'ENSEMBL') };
 
   Description: This is here for consistancy with the Transcript
                and Gene classes.  It is a synonym for the

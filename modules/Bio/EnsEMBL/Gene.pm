@@ -567,11 +567,18 @@ sub add_DBEntry {
 
 =head2 get_all_DBEntries
 
-  Arg [1]    : (optional) String, external database name
+  Arg [1]    : (optional) String, external database name,
+               SQL wildcard characters (_ and %) can be used to
+               specify patterns.
 
-  Arg [2]    : (optional) String, external_db type
+  Arg [2]    : (optional) String, external_db type, can be one of
+               ('ARRAY','ALT_TRANS','ALT_GENE','MISC','LIT','PRIMARY_DB_SYNONYM','ENSEMBL'),
+               SQL wildcard characters (_ and %) can be used to
+               specify patterns.
 
-  Example    : @dbentries = @{ $gene->get_all_DBEntries() };
+  Example    : my @dbentries = @{ $gene->get_all_DBEntries() };
+               @dbentries = @{ $gene->get_all_DBEntries('Uniprot%') };
+               @dbentries = @{ $gene->get_all_DBEntries('%', 'ENSEMBL') };}
 
   Description: Retrieves DBEntries (xrefs) for this gene.  This does
                *not* include DBEntries that are associated with the
@@ -654,8 +661,14 @@ sub get_all_object_xrefs {
                SQL wildcard characters (_ and %) can be used to
                specify patterns.
 
+  Arg [2]    : (optional) String, external database type, can be one of
+               ('ARRAY','ALT_TRANS','ALT_GENE','MISC','LIT','PRIMARY_DB_SYNONYM','ENSEMBL'),
+               SQL wildcard characters (_ and %) can be used to
+               specify patterns.
+
   Example    : @dblinks = @{ $gene->get_all_DBLinks() };
                @dblinks = @{ $gene->get_all_DBLinks('Uniprot%') };
+               @dblinks = @{ $gene->get_all_DBLinks('%', 'ENSEMBL') };}
 
   Description: Retrieves *all* related DBEntries for this gene. This
                includes all DBEntries that are associated with the
