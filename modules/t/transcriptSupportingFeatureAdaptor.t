@@ -69,7 +69,7 @@ throws_ok {$tsf_adaptor->fetch_all_by_Transcript($tr, "unknown_feature_type") } 
            'feature type must be dna_align_feature or protein_align_feature';
 
 #Test exception with empty features array
-throws_ok { Bio::EnsEMBL::DnaPepAlignFeature->new(-features => []) } qr/features array must not be empty/, 
+throws_ok { Bio::EnsEMBL::DnaPepAlignFeature->new(-features => [], -align_type => 'ensembl') } qr/features array must not be empty/, 
            'features array must not be empty';
 
 done_testing();
