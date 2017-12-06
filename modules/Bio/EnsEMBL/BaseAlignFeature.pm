@@ -676,12 +676,14 @@ my $message_only_once = 1;
 sub _parse_ensembl_features {
   my ($self,$features ) = @_;
 
-  my $query_unit = $self->_query_unit();
-  my $hit_unit = $self->_hit_unit();
-
   if (ref($features) ne "ARRAY") {
     throw("features must be an array reference not a [".ref($features)."]");
+  } elsif (scalar(@$features) == 0) {
+    throw("features array must not be empty");
   }
+
+  my $query_unit = $self->_query_unit();
+  my $hit_unit = $self->_hit_unit();
 
   my $strand  = $features->[0]->strand;
 
