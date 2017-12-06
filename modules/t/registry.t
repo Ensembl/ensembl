@@ -150,7 +150,7 @@ dies_ok { $reg->add_DBAdaptor() } 'add_DBAdaptor() must get a valid species';
 
 # [ENSCORESW-2509]. Test correct handling of multi-species databases
 SKIP: {
-  skip 'Tests for collection DBs are done on MySQL engine' unless $dbc->driver eq 'mysql';
+  skip 'Tests for collection DBs are done on MySQL engine', 5 unless $dbc->driver eq 'mysql';
   my @collection_dbs = create_collection_dbs();
 
   my %params = (-HOST => $dbc->host(), -PORT => $dbc->port(), -USER => $dbc->username());
