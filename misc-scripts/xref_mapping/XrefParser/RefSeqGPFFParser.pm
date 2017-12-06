@@ -142,7 +142,16 @@ sub create_xrefs {
   my %name2species_id     = map{ $_=>$species_id } @names;
   my %taxonomy2species_id = map{ $_=>$species_id } @tax_ids;
 
+  # Retrieve existing RefSeq mRNA
+  my (%refseq_ids) = (%{ $self->get_valid_codes("RefSeq_mRNA", $species_id) }, %{ $self->get_valid_codes("RefSeq_mRNA_predicted", $species_id) });
+  my (%entrez_ids) = %{ $self->get_valid_codes("EntrezGene", $species_id) };
+  my (%wiki_ids) = %{ $self->get_valid_codes("WikiGene", $species_id) };
+
+
   my %dependent_sources =  $self->get_xref_sources();
+
+  my $dbi = $self->dbi();
+  my $add_dependent_xref_sth = $self->dbi->prepare("INSERT INTO dependent_xref  (master_xref_id,dependent_xref_id, linkage_source_id) VALUES (?,?, $entrez_source_id)");
 
   my $refseq_io = $self->get_filehandle($file);
 
@@ -298,6 +307,21 @@ sub create_xrefs {
 	  $dep2{ACCESSION} = $ll;
           $dep2{LABEL} = $entrez{$ll};
 	  push @{$xref->{DEPENDENT_XREFS}}, \%dep2;
+
+          # Add xrefs for RefSeq mRNA as well where available
+          $refseq_pair =~ s/\.[0-9]*//;
+          if (defined $refseq_pair) {
+            if ($refseq_ids{$refseq_pair}) {
+              foreach my $refseq_id (@{ $refseq_ids{$refseq_pair} }) {
+                foreach my $entrez_id (@{ $entrez_ids{$ll} }) {
+                  $add_dependent_xref_sth->execute($refseq_id, $entrez_id);
+                }
+                foreach my $wiki_id (@{ $wiki_ids{$ll} }) {
+                  $add_dependent_xref_sth->execute($refseq_id, $wiki_id);
+                }
+              }
+            }
+          }
         }
       }
 
