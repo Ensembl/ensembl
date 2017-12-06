@@ -69,13 +69,7 @@ sub process{
   #this query is used to check if and object_xref exists for the related translation and paired RefSeq_peptide% with a status of 'DUMP_OUT'
   my $ox_translation_sth =  $self->xref->dbc->prepare("select ox.object_xref_id, ox.xref_id from object_xref ox join xref x using(xref_id) where ox.ox_status in ('DUMP_OUT', 'FAILED_PRIORITY') and ox.ensembl_object_type = 'Translation' and ox.ensembl_id = ? and x.source_id = ? and x.accession = ?");
  
-  #this query is used to check if and object_xref exists for the related translation and paired RefSeq_peptide% with any status
-  my $ox_translation_other_status_sth = $self->xref->dbc->prepare("select ox.object_xref_id, ox.xref_id from object_xref ox join xref x using(xref_id) where ox.ensembl_object_type = 'Translation' and ox.ensembl_id = ? and x.source_id = ? and x.accession = ?");
- 
- 
   my $ox_insert_sth = $self->xref->dbc->prepare("insert into object_xref (object_xref_id, xref_id, ensembl_id, ensembl_object_type, linkage_type, ox_status) values(?, ?, ?, ?, 'INFERRED_PAIR', 'DUMP_OUT')");
-
-  my $ox_update_sth =  $self->xref->dbc->prepare("update object_xref set ox_status = 'DUMP_OUT', linkage_type = 'INFERRED_PAIR' where object_xref_id = ?");
 
   my $xref_sth =  $self->xref->dbc->prepare("select xref_id from xref where accession = ? and source_id = ?");
 
@@ -135,11 +129,10 @@ sub process{
 
   $transcr_obj_xrefs_sth->finish();
   $ox_translation_sth->finish();
-  $ox_translation_other_status_sth->finish();
   $ox_insert_sth->finish();
-  $ox_update_sth->finish();
   $xref_update_sth->finish();
   $identity_update_sth->finish();
+  $xref_sth->finish();
 
   #go through RefSeq_peptide% object_xrefs 
   $transl_object_xrefs_sth->execute();
