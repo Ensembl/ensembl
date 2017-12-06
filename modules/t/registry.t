@@ -23,6 +23,7 @@ use Test::Warnings;
 use Test::Exception;
 use File::Temp qw/tempfile/;
 use Bio::EnsEMBL::Registry;
+use Bio::EnsEMBL::ApiVersion qw( software_version );
 use Bio::EnsEMBL::Test::MultiTestDB;
 use Bio::EnsEMBL::Test::TestUtils qw/warns_like/;
 
@@ -146,5 +147,73 @@ dies_ok { $reg->load_all('i really hope there is no file named this way', undef,
 is($reg->load_all('i really hope there is no file named this way'), 0, 'Pointing to a non-existing file does not throw an error if the option is switched off');
 
 dies_ok { $reg->add_DBAdaptor() } 'add_DBAdaptor() must get a valid species';
+
+# [ENSCORESW-2509]. Test correct handling of multi-species databases
+my @collection_dbs = create_collection_dbs();
+
+my %params = (-HOST => $dbc->host(), -PORT => $dbc->port(), -USER => $dbc->username());
+$params{-PASS} = $dbc->password() if $dbc->password();
+$reg->load_registry_from_db(%params);
+
+@species = grep { !/new/ } @{$reg->get_all_species()};
+is(scalar @species, 4, "Number of species loaded from collection DBs");
+ok(grep(/escherichia_coli_dh1/, @species), "Loaded ensembl genomes species from collection DB");
+ok(grep(/mus_musculus_aj/, @species), "Loaded ensembl species from collection DB");
+ok($reg->get_DBAdaptor("lactobacillus_iners_lactinv_01v1_a", "core"), "get_DBAdaptor on ensembl genomes species");
+ok($reg->get_DBAdaptor("mus_musculus_balbcj", "core"), "get_DBAdaptor on ensembl species");
+  
+destroy_collection_dbs(\@collection_dbs);
+
+sub create_collection_dbs {
+  my $collection_dbs = 
+  [
+   {
+    name => sprintf("bacteria_9_collection_core_37_%d_1", software_version()),
+    species => [[39,2,"species.db_name","escherichia_coli_dh1"],[154,5,"species.db_name","lactobacillus_iners_lactinv_01v1_a"]]
+   },
+   {
+    name => sprintf("mouse_5_collection_core_%d_1", software_version()),
+    species => [[27,1,"species.db_name","mus_musculus_aj"],[91,2,"species.db_name","mus_musculus_balbcj"]]
+   }
+  ];
+
+
+  # to create meta table 
+  my $create_meta_table = <<META;
+CREATE TABLE IF NOT EXISTS meta ( 
+  meta_id int(11) NOT NULL AUTO_INCREMENT, 
+  species_id int(10) unsigned DEFAULT '1', 
+  meta_key varchar(40) NOT NULL, 
+  meta_value varchar(255) NOT NULL, 
+  PRIMARY KEY (meta_id) 
+);
+META
+
+  my $insert_into_meta_table_prefix = "INSERT INTO meta VALUES";
+  
+  foreach my $db (@{$collection_dbs}) {
+    $dbc->do(sprintf "create database if not exists %s", $db->{name});
+    $dbc->do(sprintf "use %s", $db->{name});
+    $dbc->do($create_meta_table);
+
+    my $insert_into_meta_table = $insert_into_meta_table_prefix;
+    foreach my $meta_value (@{$db->{species}}) {
+      $insert_into_meta_table .=
+	sprintf " (%d,%d,'%s','%s'),", $meta_value->[0], $meta_value->[1], $meta_value->[2], $meta_value->[3];
+    }
+    $insert_into_meta_table =~ s/.$//;
+    
+    $dbc->do($insert_into_meta_table);
+  }
+
+  return map { $_->{name} } @{$collection_dbs};
+}
+
+sub destroy_collection_dbs {
+  my $collection_dbs = shift;
+  map { $dbc->do(sprintf "drop database if exists %s", $_) } @{$collection_dbs};
+}
+
+
 
 done_testing();
