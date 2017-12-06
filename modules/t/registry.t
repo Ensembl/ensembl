@@ -149,20 +149,23 @@ is($reg->load_all('i really hope there is no file named this way'), 0, 'Pointing
 dies_ok { $reg->add_DBAdaptor() } 'add_DBAdaptor() must get a valid species';
 
 # [ENSCORESW-2509]. Test correct handling of multi-species databases
-my @collection_dbs = create_collection_dbs();
+SKIP: {
+  skip 'Tests for collection DBs are done on MySQL engine' unless $dbc->driver eq 'mysql';
+  my @collection_dbs = create_collection_dbs();
 
-my %params = (-HOST => $dbc->host(), -PORT => $dbc->port(), -USER => $dbc->username());
-$params{-PASS} = $dbc->password() if $dbc->password();
-$reg->load_registry_from_db(%params);
+  my %params = (-HOST => $dbc->host(), -PORT => $dbc->port(), -USER => $dbc->username());
+  $params{-PASS} = $dbc->password() if $dbc->password();
+  $reg->load_registry_from_db(%params);
 
-@species = grep { !/new/ } @{$reg->get_all_species()};
-is(scalar @species, 4, "Number of species loaded from collection DBs");
-ok(grep(/escherichia_coli_dh1/, @species), "Loaded ensembl genomes species from collection DB");
-ok(grep(/mus_musculus_aj/, @species), "Loaded ensembl species from collection DB");
-ok($reg->get_DBAdaptor("lactobacillus_iners_lactinv_01v1_a", "core"), "get_DBAdaptor on ensembl genomes species");
-ok($reg->get_DBAdaptor("mus_musculus_balbcj", "core"), "get_DBAdaptor on ensembl species");
+  @species = grep { !/new/ } @{$reg->get_all_species()};
+  is(scalar @species, 4, "Number of species loaded from collection DBs");
+  ok(grep(/escherichia_coli_dh1/, @species), "Loaded ensembl genomes species from collection DB");
+  ok(grep(/mus_musculus_aj/, @species), "Loaded ensembl species from collection DB");
+  ok($reg->get_DBAdaptor("lactobacillus_iners_lactinv_01v1_a", "core"), "get_DBAdaptor on ensembl genomes species");
+  ok($reg->get_DBAdaptor("mus_musculus_balbcj", "core"), "get_DBAdaptor on ensembl species");
   
-destroy_collection_dbs(\@collection_dbs);
+  destroy_collection_dbs(\@collection_dbs);
+}
 
 sub create_collection_dbs {
   my $collection_dbs = 
