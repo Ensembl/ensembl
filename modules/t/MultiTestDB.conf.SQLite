@@ -1,5 +1,0 @@
-{
-  'driver' => 'SQLite',
-  'dbdir'  => '/var/tmp/MultiTestDB',
-  'user'   => 'travis',
-}
