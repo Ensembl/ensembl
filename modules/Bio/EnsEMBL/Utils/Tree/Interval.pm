@@ -39,6 +39,12 @@ Bio::EnsEMBL::Utils::Tree::Interval
 
 Class representing a dynamic, i.e. mutable, interval tree implemented as an augmented AVL balanced binary tree.
 
+This module is a wrapper around two possible implementations: one using the Perl extension (XS) mechanisms, and
+a pure Perl (PP) one. 
+
+The module is capable of detecting whether the XS module is available and it loads it in that
+case; it falls back to the PP implementation otherwise.
+ 
 =head1 METHODS
 
 =cut
@@ -57,7 +63,7 @@ use Bio::EnsEMBL::Utils::Exception qw(throw warning info);
 my $XS = 'Bio::EnsEMBL::XS::Utils::Tree::Interval';
 my $PP = 'Bio::EnsEMBL::Utils::Tree::Interval::PP';
 
-# if XS is used, version at least 1.3.1 is required
+# if XS is used, version at least 1.3.1 is required (provides the interval tree library)
 my $VERSION_XS = '1.3.1';
 
 my @public_methods = qw/ insert find /;
