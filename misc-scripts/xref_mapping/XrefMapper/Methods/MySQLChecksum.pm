@@ -34,11 +34,28 @@ and source_id=?
 SQL
 
 sub perform_mapping {
-  my ($self, $sequences, $source_id, $object_type) = @_;
+  my ($self, $sequences, $source_id, $object_type, $db_url) = @_;
   
   my @final_results;
+  my $dbc;
+  if (defined $db_url) {
+    my $parsed_url = Bio::EnsEMBL::Hive::Utils::URL::parse($db_url);
+    my $user      = $parsed_url->{'user'};
+    my $pass      = $parsed_url->{'pass'};
+    my $host      = $parsed_url->{'host'};
+    my $port      = $parsed_url->{'port'};
+    my $dbname    = $parsed_url->{'dbname'};
+    $dbc = Bio::EnSEMBL::DBSQL::DBConnection->new(
+      -dbname => $dbname,
+      -user => $user,
+      -pass => $pass,
+      -host => $host,
+      -port => $port);
+  } else {
+    $dbc = $self->mapper()->xref()->dbc();
+  }
   
-  $self->mapper()->xref()->dbc()->sql_helper()->batch(-SQL => $CHECKSUM_SQL, -CALLBACK => sub {
+  $dbc->sql_helper()->batch(-SQL => $CHECKSUM_SQL, -CALLBACK => sub {
     my ($sth) = @_;
     foreach my $sequence (@{$sequences}) {
       my $checksum = uc($self->md5_checksum($sequence));

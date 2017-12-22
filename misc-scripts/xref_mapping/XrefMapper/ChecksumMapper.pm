@@ -70,7 +70,7 @@ sub target {
 }
 
 sub process {
-  my ($self) = @_;
+  my ($self, $db_url) = @_;
 
   $self->_update_status('checksum_xrefs_started');
   my $source_id = $self->source_id();
@@ -79,7 +79,7 @@ sub process {
 
   if($self->_map_checksums()) {
     my $method = $self->get_method();
-    my $results = $method->run($target, $source_id, $object_type);
+    my $results = $method->run($target, $source_id, $object_type, $db_url);
     $self->log_progress('Starting upload');
     $self->upload($results);
   }
