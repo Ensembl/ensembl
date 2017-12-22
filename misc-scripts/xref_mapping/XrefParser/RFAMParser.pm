@@ -42,7 +42,7 @@ sub run_script {
   }
   $verbose |=0;
 
-  my $wget = "";
+  my $wget;
   my $user = "ensro";
   my $host;
   my $port = 3306;
@@ -120,17 +120,29 @@ sub run_script {
   }
   $sth->finish;     
 
-  my $ua = LWP::UserAgent->new();
-  $ua->timeout(10);
-  $ua->env_proxy();
-  my $request = HTTP::Request->new(GET => $wget);
-  my $response = $ua->request($request);
+  my @lines;
+  if (defined $wget) {
+    my $ua = LWP::UserAgent->new();
+    $ua->timeout(10);
+    $ua->env_proxy();
+    my $request = HTTP::Request->new(GET => $wget);
+    my $response = $ua->request($request);
 
-  if ( !$response->is_success() ) {
-    warn($response->status_line);
-    return 1;
+    if ( !$response->is_success() ) {
+      warn($response->status_line);
+      return 1;
+    }
+    @lines = split(/\n\n\n/, $response->decoded_content);
+  } else {
+    my $file_io = $self->get_filehandle($file);
+    if ( !defined $file_io ) {
+      print "ERROR: Can't open HGNC file $file\n";
+      return 1;
+    }
+    while (my $line = $file_io->getline()) {
+      push(@lines, $line); 
+    }
   }
-  my @lines = split(/\n\n\n/, $response->decoded_content);
 
   my @xrefs;
   my $xref_count = 0;
