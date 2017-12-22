@@ -40,6 +40,7 @@ sub run_script {
   my $species_id   = $ref_arg->{species_id};
   my $file         = $ref_arg->{file};
   my $verbose      = $ref_arg->{verbose};
+  my $db           = $ref_arg->{dba};
 
   if((!defined $source_id) or (!defined $species_id) or (!defined $file) ){
     croak "Need to pass source_id, species_id and file as pairs";
@@ -123,6 +124,8 @@ sub run_script {
       },
         );
     $gene_adaptor = $registry->get_adaptor($species_name, 'core', 'Gene');
+  } elsif (defined $db) {
+    $gene_adaptor = $db->get_GeneAdaptor();
   } else {
       die("Missing or unsupported project value. Supported values: ensembl, ensemblgenomes");
   }

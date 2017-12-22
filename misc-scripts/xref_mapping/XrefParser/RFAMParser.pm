@@ -33,8 +33,9 @@ sub run_script {
   my ($self, $ref_arg) = @_;
   my $source_id    = $ref_arg->{source_id};
   my $species_id   = $ref_arg->{species_id};
-  my $file        = $ref_arg->{file};
+  my $file         = $ref_arg->{file};
   my $verbose      = $ref_arg->{verbose};
+  my $core_db      = $ref_arg->{db};
 
   if((!defined $source_id) or (!defined $species_id) or (!defined $file) ){
     croak "Need to pass source_id, species_id and file as pairs";
@@ -86,6 +87,8 @@ sub run_script {
          '-species'  => $species_name,
          '-group'    => 'core',
        );
+  } elsif (defined $core_db) {
+    $dba = $core_db;
   } else {
       $registry->load_registry_from_multiple_dbs( 
       {

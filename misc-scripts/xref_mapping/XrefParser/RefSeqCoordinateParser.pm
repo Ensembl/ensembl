@@ -34,6 +34,7 @@ sub run_script {
   my $species_id   = $ref_arg->{species_id};
   my $file         = $ref_arg->{file};
   my $verbose      = $ref_arg->{verbose};
+  my $db           = $ref_arg->{dba};
 
   if((!defined $source_id) or (!defined $species_id) or (!defined $file) ){
     croak "Need to pass source_id, species_id and file as pairs";
@@ -189,6 +190,9 @@ sub run_script {
       $core_dba = $registry->get_DBAdaptor($species_name,'core');
       $otherf_dba = $registry->get_DBAdaptor($species_name, 'otherfeatures');     
 
+  } elsif (defined $db) {
+    $otherf_dba = $db;
+    $core_dba = $db->dnadb();
   } else {
       die("Missing or unsupported project value. Supported values: ensembl, ensemblgenomes");
   }
