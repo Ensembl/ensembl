@@ -46,7 +46,7 @@ sub run {
   my $release_file = $ref_arg->{rel_file};
   my $verbose      = $ref_arg->{verbose};
 
-  if((!defined $source_id) or (!defined $species_id) or (!defined $files) or (!defined $release_file)){
+  if((!defined $source_id) or (!defined $species_id) or (!defined $files)){
     croak "Need to pass source_id, species_id, files and rel_file as pairs";
   }
   $verbose |=0;
@@ -309,7 +309,7 @@ sub create_xrefs {
 	  push @{$xref->{DEPENDENT_XREFS}}, \%dep2;
 
           # Add xrefs for RefSeq mRNA as well where available
-          $refseq_pair =~ s/\.[0-9]*//;
+          $refseq_pair =~ s/\.[0-9]*// if $refseq_pair;
           if (defined $refseq_pair) {
             if ($refseq_ids{$refseq_pair}) {
               foreach my $refseq_id (@{ $refseq_ids{$refseq_pair} }) {
