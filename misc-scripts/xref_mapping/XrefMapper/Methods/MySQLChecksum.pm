@@ -21,6 +21,7 @@ package XrefMapper::Methods::MySQLChecksum;
 
 use strict;
 use warnings;
+use Bio::EnsEMBL::DBSQL::DBConnection;
 
 use base qw/XrefMapper::Methods::ChecksumBasic/;
 
@@ -39,13 +40,10 @@ sub perform_mapping {
   my @final_results;
   my $dbc;
   if (defined $db_url) {
-    my $parsed_url = Bio::EnsEMBL::Hive::Utils::URL::parse($db_url);
-    my $user      = $parsed_url->{'user'};
-    my $pass      = $parsed_url->{'pass'};
-    my $host      = $parsed_url->{'host'};
-    my $port      = $parsed_url->{'port'};
-    my $dbname    = $parsed_url->{'dbname'};
-    $dbc = Bio::EnSEMBL::DBSQL::DBConnection->new(
+    $source_id = 1;
+    my ($dbconn_part, $driver, $user, $pass, $host, $port, $dbname, $table_name, $tparam_name, $tparam_value, $conn_param_string) =
+            $db_url =~ m{^((\w*)://(?:(\w+)(?:\:([^/\@]*))?\@)?(?:([\w\-\.]+)(?:\:(\d*))?)?/([\w\-\.]*))(?:/(\w+)(?:\?(\w+)=([\w\[\]\{\}]*))?)?((?:;(\w+)=(\w+))*)$};
+    $dbc = Bio::EnsEMBL::DBSQL::DBConnection->new(
       -dbname => $dbname,
       -user => $user,
       -pass => $pass,
