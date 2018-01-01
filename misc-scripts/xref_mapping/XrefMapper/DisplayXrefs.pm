@@ -408,7 +408,7 @@ sub set_display_xrefs{
   $update_ignore_sth->finish;
 
 
-  my $ins_p_sth = $self->xref->dbc->prepare("INSERT into display_xref_priority (ensembl_object_type,source_id, priority) values(?, ?, ?)");
+  my $ins_p_sth = $self->xref->dbc->prepare("INSERT ignore into display_xref_priority (ensembl_object_type,source_id, priority) values(?, ?, ?)");
   my $get_source_id_sth = $self->xref->dbc->prepare("select source_id from source where name like ? order by priority");
   my $list_sources_sth = $self->xref->dbc->prepare("select distinct name from display_xref_priority d join source using(source_id) where ensembl_object_type = ? order by d.priority");
 

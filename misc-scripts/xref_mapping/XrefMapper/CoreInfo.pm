@@ -84,7 +84,7 @@ sub get_core_data {
 sub load_gene_transcript_translation{
   my ($self) = shift;
   
-  my $ins_sth =  $self->xref->dbc->prepare("insert into gene_transcript_translation (gene_id, transcript_id, translation_id) values (?, ?, ?)"); 
+  my $ins_sth =  $self->xref->dbc->prepare("insert ignore into gene_transcript_translation (gene_id, transcript_id, translation_id) values (?, ?, ?)"); 
 
   my $sql = "select tn.gene_id, tn.transcript_id, tl.translation_id from transcript tn left join translation tl on tl.transcript_id = tn.transcript_id";
   my $sth = $self->core->dbc->prepare($sql);
@@ -106,7 +106,7 @@ sub load_stable_ids{
   foreach my $table (qw(gene translation)){
  
     my $sth = $self->core->dbc->prepare("select ".$table."_id, stable_id from ".$table);
-    my $ins_sth = $self->xref->dbc->prepare("insert into ".$table."_stable_id (internal_id, stable_id) values(?, ?)");
+    my $ins_sth = $self->xref->dbc->prepare("insert ignore into ".$table."_stable_id (internal_id, stable_id) values(?, ?)");
     $sth->execute();
     $sth->bind_columns(\$id, \$stable_id);
     while($sth->fetch){
@@ -119,7 +119,7 @@ sub load_stable_ids{
   #populate transcript_stable_id table incuding the biotype column
   my $table = "transcript";
   my $sth = $self->core->dbc->prepare("select ".$table."_id, stable_id, biotype from ".$table);
-  my $ins_sth = $self->xref->dbc->prepare("insert into ".$table."_stable_id (internal_id, stable_id, biotype) values(?, ?, ?)");
+  my $ins_sth = $self->xref->dbc->prepare("insert ignore into ".$table."_stable_id (internal_id, stable_id, biotype) values(?, ?, ?)");
   $sth->execute();
   $sth->bind_columns(\$id, \$stable_id, \$biotype);
   while($sth->fetch){
