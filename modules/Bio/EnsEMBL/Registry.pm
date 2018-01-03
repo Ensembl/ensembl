@@ -1874,7 +1874,7 @@ sub load_registry_from_db {
 
   # Register Core like databases
   my $core_like_dbs_found = 0;
-  foreach my $type (qw(core cdna vega vega_update otherfeatures rnaseq)) {
+  foreach my $type (qw(core cdna vega vega_update otherfeatures rnaseq ccds)) {
 
     my @dbs = grep { /^(?:$db_prefix)[a-z]+_[a-z0-9]+(?:_[a-z0-9]+)?  # species name
                        _
