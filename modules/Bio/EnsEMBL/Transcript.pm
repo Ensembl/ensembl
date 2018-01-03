@@ -856,7 +856,9 @@ sub spliced_seq {
         my $padstr;
         if (!defined ($ex->coding_region_start($self))) {
           $exon_seq = lc($exon_seq);
-        } elsif ($ex->coding_region_start($self) > $ex->start()) {
+        }
+
+        if ($ex->coding_region_start($self) > $ex->start()) {
           my $forward_length = $ex->coding_region_start($self) - $ex->start();
           my $reverse_length = $ex->end() - $ex->coding_region_start($self);
           if ($ex->strand == 1) {
@@ -864,7 +866,9 @@ sub spliced_seq {
           } else {
             $exon_seq = substr($exon_seq, 0, $reverse_length+1) . lc(substr($exon_seq, $reverse_length+1));
           }
-        } elsif ($ex->coding_region_end($self) < $ex->end()) {
+        }
+
+        if ($ex->coding_region_end($self) < $ex->end()) {
           my $forward_length = $ex->coding_region_end($self) - $ex->start();
           my $reverse_length = $ex->end() - $ex->coding_region_end($self);
           if ($ex->strand == 1) {
