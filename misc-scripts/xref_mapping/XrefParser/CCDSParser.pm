@@ -36,6 +36,7 @@ sub run_script {
   my $species_id   = $ref_arg->{species_id};
   my $file         = $ref_arg->{file};
   my $verbose      = $ref_arg->{verbose};
+  my $db           = $ref_arg->{dba};
 
   if((!defined $source_id) or (!defined $species_id) or (!defined $file) ){
     croak "Need to pass source_id, species_id and file  as pairs";
@@ -61,14 +62,17 @@ sub run_script {
     $pass = $1;
   }
 
-  my $ccds_db =  XrefParser::Database->new({ host   => $host,
+  my ($ccds_db, $dbi2);
+  if (defined $host) {
+    $ccds_db =  XrefParser::Database->new({ host   => $host,
 					     port   => $port,
 					     user   => $user,
 					     dbname => $dbname,
 					     pass   => $pass});
-
-  my $dbi2 = $ccds_db->dbi();
-
+    $dbi2 = $ccds_db->dbi();
+  } elsif (defined $db) {
+    $dbi2 = $db->dbc();
+  }
   if(!defined($dbi2)){
     return 1;
   }
