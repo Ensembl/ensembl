@@ -40,12 +40,11 @@ sub run {
 
   my $file = @{$files}[0];
 
-  my $mismatch = 0;
   my $count = 0;
 
-  my $hugo_io = $self->get_filehandle($file);
+  my $file_io = $self->get_filehandle($file);
 
-  if ( !defined $hugo_io ) {
+  if ( !defined $file_io ) {
     print "ERROR: Can't open VGNC file $file\n";
     return 1;
   }
@@ -53,13 +52,11 @@ sub run {
   my $source_name = $self->get_source_name_for_source_id($source_id);
 
   # Skip header
-  $hugo_io->getline();
+  $file_io->getline();
 
-  while ( $_ = $hugo_io->getline() ) {
+  while ( $_ = $file_io->getline() ) {
     chomp;
     my @array = split /\t/x, $_;
-
-    my $seen = 0;
 
     my $acc              = $array[0];
     my $symbol           = $array[1];
@@ -69,9 +66,8 @@ sub run {
     #
     # Direct Ensembl mappings
     #
-    my $id = $array[19];
+    my $id = $array[9];
     if ($id){              # Ensembl direct xref
-      $seen = 1;
       $self->add_to_direct_xrefs({ stable_id  => $id,
 				   type       => 'gene',
 				   acc        => $acc,
@@ -82,26 +78,13 @@ sub run {
 
       $count++;
     }
-
-
-    if(!$seen){ # Store to keep descriptions etc
-      $self->add_xref({ acc        => $acc,
-			label      => $symbol,
-			desc       => $name,
-			source_id  => $source_id,
-			species_id => $species_id,
-			info_type  => "MISC"} );
-
-      $mismatch++;
-    }
   }
 
 
-  $hugo_io->close();
+  $file_io->close();
 
   if($verbose){
     print "Loaded a total of $count xrefs\n";
-    print "$mismatch xrefs could not be associated via ensembl\n";
   }
   return 0; # successful
 }
