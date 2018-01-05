@@ -23,7 +23,7 @@ use strict;
 use warnings;
 use File::Basename;
 use Carp;
-use base qw( XrefParser::BaseParser );
+use base qw( XrefParser::HGNCParser);
 
 sub run {
 
@@ -50,6 +50,10 @@ sub run {
   }
 
   my $source_name = $self->get_source_name_for_source_id($source_id);
+  # Create a hash of all valid taxon_ids for this species
+  my %species2tax = $self->species_id2taxonomy();
+  my @tax_ids = @{$species2tax{$species_id}};
+  my %taxonomy2species_id = map{ $_=>$species_id } @tax_ids;
 
   # Skip header
   $file_io->getline();
@@ -58,15 +62,19 @@ sub run {
     chomp;
     my @array = split /\t/x, $_;
 
-    my $acc              = $array[0];
-    my $symbol           = $array[1];
-    my $name             = $array[2];
+    my $taxon_id         = $array[0];
+    my $acc              = $array[1];
+    my $symbol           = $array[2];
+    my $name             = $array[3];
+    my $id               = $array[20];
+    my $previous_symbols = $array[9];
+    my $synonyms         = $array[11];
 
+    $previous_symbols =~ s/"//g;
+    $synonyms =~ s/"//g;
 
-    #
-    # Direct Ensembl mappings
-    #
-    my $id = $array[9];
+    unless (exists ($taxonomy2species_id{$taxon_id})) { next; }
+
     if ($id){              # Ensembl direct xref
       $self->add_to_direct_xrefs({ stable_id  => $id,
 				   type       => 'gene',
@@ -75,6 +83,12 @@ sub run {
 				   desc       => $name,,
 				   source_id  => $source_id,
 				   species_id => $species_id} );
+
+      $self->add_synonyms_for_hgnc( {source_id  => $source_id,
+                                     name       => $acc,
+                                     species_id => $species_id,
+                                     dead       => $previous_symbols,
+                                     alias      => $synonyms});
 
       $count++;
     }
