@@ -203,9 +203,9 @@ sub process_map_file{
   local $object_xref_sth2->{RaiseError}; #catch duplicates
   local $object_xref_sth2->{PrintError}; # cut down on error messages
 
-  my $identity_xref_sth = $self->xref->dbc->prepare("insert into identity_xref (object_xref_id, query_identity, target_identity, hit_start, hit_end, translation_start, translation_end, cigar_line, score ) values (?, ?, ?, ?, ?, ?, ?, ?, ?)");
+  my $identity_xref_sth = $self->xref->dbc->prepare("insert ignore into identity_xref (object_xref_id, query_identity, target_identity, hit_start, hit_end, translation_start, translation_end, cigar_line, score ) values (?, ?, ?, ?, ?, ?, ?, ?, ?)");
 
-  my $ins_dep_ix_sth = $self->xref->dbc->prepare("insert into identity_xref (object_xref_id, query_identity, target_identity) values(?, ?, ?)");
+  my $ins_dep_ix_sth = $self->xref->dbc->prepare("insert ignore into identity_xref (object_xref_id, query_identity, target_identity) values(?, ?, ?)");
 
   my $source_name_sth = $self->xref->dbc->prepare("select s.name from xref x join source s using(source_id) where x.xref_id = ?");
   my $biotype_sth = $self->xref->dbc->prepare("select biotype from transcript_stable_id where internal_id = ?");

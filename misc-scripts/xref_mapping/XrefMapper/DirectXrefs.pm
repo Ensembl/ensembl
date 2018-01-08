@@ -48,7 +48,7 @@ sub get_ins_ix_sth {
 
   if(!defined($self->{'_ins_ix_sth'})){
     my $sql = (<<"IIX");
-INSERT INTO identity_xref (object_xref_id, query_identity, target_identity)
+INSERT IGNORE INTO identity_xref (object_xref_id, query_identity, target_identity)
   VALUES (?, 100, 100)
 IIX
     $self->{'_ins_ix_sth'} = $self->xref->dbc->prepare($sql);

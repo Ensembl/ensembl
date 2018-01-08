@@ -924,7 +924,7 @@ sub add_object_xref {
   my ($self, $offset, $object_xref_id, $ensembl_id, $ensembl_object_type, $xref_id, $analysis_id) = @_;
   my $dbc = $self->core->dbc();
   my $select_sth = $dbc->prepare("select object_xref_id from object_xref where xref_id = ? and ensembl_object_type = ? and ensembl_id = ? and analysis_id = ?");
-  my $insert_sth = $dbc->prepare("insert into object_xref (object_xref_id, ensembl_id, ensembl_object_type, xref_id, analysis_id) values (?, ?, ?, ?, ?)");
+  my $insert_sth = $dbc->prepare("insert ignore into object_xref (object_xref_id, ensembl_id, ensembl_object_type, xref_id, analysis_id) values (?, ?, ?, ?, ?)");
   my $new_object_xref_id;
   $select_sth->execute($xref_id, $ensembl_object_type, $ensembl_id, $analysis_id);
   $select_sth->bind_columns(\$new_object_xref_id);
