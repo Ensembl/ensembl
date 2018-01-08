@@ -32,7 +32,7 @@ sub run_script {
   my $species_id   = $ref_arg->{species_id};
   my $file         = $ref_arg->{file};
   my $verbose      = $ref_arg->{verbose};
-  my $db           = $ref_arg->{db};
+  my $db           = $ref_arg->{dba};
 
   if((!defined $source_id) or (!defined $species_id) or (!defined $file) ){
     croak "Need to pass source_id, species_id, file as pairs";
@@ -44,7 +44,7 @@ sub run_script {
   my $port;
   my $dbname;
   my $pass;
-  my $wget = "";
+  my $wget;
 
   if($file =~ /host[=][>](\S+?)[,]/){
     $host = $1;
