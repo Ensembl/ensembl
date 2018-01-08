@@ -90,12 +90,7 @@ sub run {
         if ( !defined( $xrefs ) ) {
             return 1;    #error
         }
-
-        push @xrefs, @{$xrefs};
-    }
-
-    if ( !defined( $self->upload_xref_object_graphs( \@xrefs ) ) ) {
-        return 1;    # error
+        $self->upload_xref_object_graphs( $xrefs )
     }
 
     if ( defined $release_file ) {
