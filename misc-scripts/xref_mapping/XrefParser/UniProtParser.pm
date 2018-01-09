@@ -73,26 +73,8 @@ sub run {
   print "SwissProt direct source id for $file: $sp_direct_source_id\n" if ($verbose);
   print "SpTREMBL direct source id for $file: $sptr_direct_source_id\n" if ($verbose);
  
-
-  my @xrefs =
-    $self->create_xrefs( $sp_source_id, $sptr_source_id, $sptr_non_display_source_id, $species_id,
+  $self->create_xrefs( $sp_source_id, $sptr_source_id, $sptr_non_display_source_id, $species_id,
       $file, $verbose, $sp_direct_source_id, $sptr_direct_source_id );
-
-  if ( !@xrefs ) {
-      return 1;    # 1 error
-  }
-
-#  # delete previous if running directly rather than via BaseParser
-#  if (!defined(caller(1))) {
-#    print "Deleting previous xrefs for these sources\n" if($verbose);
-#    $self->delete_by_source(\@xrefs);
-#  }
-
-  # upload
-  if(!defined($self->upload_xref_object_graphs(@xrefs))){
-    return 1; 
-  }
-
 
     if ( defined $release_file ) {
         # Parse Swiss-Prot and SpTrEMBL release info from
@@ -202,8 +184,11 @@ sub create_xrefs {
   my %dependent_xrefs;
   my $ensembl_derived_protein_count = 0;
 
+  # Counter to process file in batches
+  my $count = 0;
+
   while ( $_ = $uniprot_io->getline() ) {
-     
+
     # if an OX line exists, only store the xref if the taxonomy ID that the OX
     # line refers to is in the species table
     # due to some records having more than one tax_id, we need to check them 
@@ -224,6 +209,7 @@ sub create_xrefs {
           $taxon_id_from_file =~ s/\s//;
           if ( exists $taxonomy2species_id{$taxon_id_from_file} ){
             $found = 1;
+            $count++;
           }
         }
     }
@@ -565,7 +551,15 @@ sub create_xrefs {
 
     push @xrefs, $xref;
 
+    if ($count > 1000) {
+      $self->upload_xref_object_graphs(\@xrefs);
+      $count = 0;
+      undef @xrefs;
+    }
+
   }
+
+  $self->upload_xref_object_graphs(\@xrefs) if scalar(@xrefs) > 0;
 
   $uniprot_io->close();
 
@@ -582,9 +576,6 @@ sub create_xrefs {
     print $key."\t".$dependent_xrefs{$key}."\n" if($verbose);
   }
   print "End.\n" if ($verbose);
-
-
-  return \@xrefs;
 
   #TODO - currently include records from other species - filter on OX line??
 }
