@@ -124,7 +124,7 @@ sub run_script {
   my $core_dba;
   my $otherf_dba;
 
-  if ($project eq 'ensembl') {
+  if (defined $project && $project eq 'ensembl') {
 # Can use user-defined database
       if (defined $host) {
           $core_dba = Bio::EnsEMBL::DBSQL::DBAdaptor->new(
@@ -173,7 +173,7 @@ sub run_script {
     }
       
 
-  } elsif ($project eq 'ensemblgenomes') {
+  } elsif (defined $project && $project eq 'ensemblgenomes') {
       $registry->load_registry_from_multiple_dbs( 
 	  {
 	      -host     => 'mysql-eg-staging-1.ebi.ac.uk',

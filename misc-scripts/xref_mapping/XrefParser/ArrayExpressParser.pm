@@ -100,7 +100,7 @@ sub run_script {
       '-group'    => 'core',
         );
     $gene_adaptor = $db->get_GeneAdaptor();
-  } elsif ($project eq 'ensembl') {
+  } elsif (defined $project && $project eq 'ensembl') {
     print "Loading the Registry\n" if $verbose;
     $registry->load_registry_from_multiple_dbs( 
       {
@@ -110,7 +110,7 @@ sub run_script {
       },
         );
     $gene_adaptor = $registry->get_adaptor($species_name, 'core', 'Gene');
-  } elsif ($project eq 'ensemblgenomes') {
+  } elsif (defined $project && $project eq 'ensemblgenomes') {
     $registry->load_registry_from_multiple_dbs( 
       {
         '-host'     => 'mysql-eg-staging-1.ebi.ac.uk',
