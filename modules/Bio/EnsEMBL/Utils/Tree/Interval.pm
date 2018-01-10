@@ -109,7 +109,7 @@ sub _load {
   $version ||= '';
 
   eval qq| use $module $version |;
-  info(sprintf("Cannot load %s interval tree implementation, will fall back to PP", $module eq $XS?'XS':'PP'), 2000)
+  info(sprintf("Cannot load %s interval tree implementation", $module eq $XS?'XS':'PP'), 2000)
     and return if $@;
 
   push @Bio::EnsEMBL::Utils::Tree::Interval::ISA, $module;
