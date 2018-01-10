@@ -510,7 +510,7 @@ sub upload_xref_object_graphs {
                              $direct_xref->{LINKAGE_TYPE});
          $xref_id_sth->execute(
                    $xref->{ACCESSION},
-                   $xref->{SOURCE_ID},
+                   $direct_xref->{SOURCE_ID},
                    $xref->{SPECIES_ID} );
          $direct_xref_id = ($xref_id_sth->fetchrow_array())[0];
          $self->add_direct_xref($direct_xref_id, $direct_xref->{STABLE_ID}, $direct_xref->{ENSEMBL_TYPE},$direct_xref->{LINKAGE_TYPE}, $dbi);
@@ -576,8 +576,8 @@ sub upload_xref_object_graphs {
 	 # find the xref_id for dependent xref
 	 #####################################
 	 $xref_id_sth->execute(
-                   $xref->{ACCESSION},
-                   $xref->{SOURCE_ID},
+                   $dep{ACCESSION},
+                   $dep{SOURCE_ID},
                    $xref->{SPECIES_ID} );
          my $dep_xref_id = ($xref_id_sth->fetchrow_array())[0];
 
