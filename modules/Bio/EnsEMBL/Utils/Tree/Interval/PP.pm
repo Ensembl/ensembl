@@ -57,12 +57,25 @@ sub new {
   my $class = ref($caller) || $caller;
 
   # mmhh, should probably return just the hash ref
-  return bless({}, $class);
+  return bless({ _root => undef }, $class);
+}
+
+sub root {
+  my $self = shift;
+  $self->{_root} = shift if( @_ );
+  
+  return $self->{_root};
 }
 
 sub insert {
-  my $self = shift;
-  return "Bio::EnsEMBL::Utils::Tree::Interval::PP::insert";
+  my ($self, $i) = @_;
+
+  # base case: empty tree, assign new node to root
+  unless (defined $self->root) {
+    $self->root(Bio::EnsEMBL::Utils::Tree::Interval::Node->new($self, $i));
+    
+    return 1;
+  }
 }
 
 sub find {
