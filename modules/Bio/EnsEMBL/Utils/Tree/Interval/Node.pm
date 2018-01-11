@@ -165,6 +165,37 @@ sub insert {
   $self->_rebalance;
 }
 
+=head2 search
+
+=cut
+
+sub search {
+  my ($self, $i) = @_;
+
+  # if interval is to the right of the rightmost point of any interval in this node and
+  # all its children, there won't be any matches
+  return if $i->start > $self->{max};
+
+  my $results = [];
+  
+  # search left subtree
+  if ($self->left and $self->left->{max} >= $i->start) {
+    push @{$results}, $self->left->search($i);
+  }
+
+  # search this node
+  push @{$results}, $self->_overlapping_intervals($i);
+
+  # if interval is to the left of the start of this interval, then
+  # it can't be in any child to the right
+  return $results if $i->end < $self->key;
+
+  # search right subtree
+  push @{$results}, $self->right->search($i) if $self->right;
+
+  return $results;
+}
+
 =head1 PRIVATE METHODS
 
 =head2 _highest_end
@@ -397,6 +428,22 @@ sub _update_max_right_rotate { # handles Left-Left case and Left-Right case afte
   
   # update max of parent (y in first case, x in second)
   $parent->{max} = max $parent->left->{max}, $parent->right->{max}, $parent->_highest_end;
+}
+
+=head2 _overlapping_intervals
+
+=cut
+
+sub _overlapping_intervals {
+  my ($self, $i) = @_;
+
+  my $results = [];
+  if ($self->key <= $i->end and $i->start <= $self->_highest_end) {
+    my $results = [];
+    map { push @{$results}, $_ if $i->start <= $_->end } @{$self->{intervals}}
+  }
+  
+  return $results;
 }
 
 1;
