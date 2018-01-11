@@ -188,12 +188,15 @@ sub search {
 
   # if interval is to the left of the start of this interval, then
   # it can't be in any child to the right
-  return $results if $i->end < $self->key;
+  if ($i->end < $self->key) {
+    return $results if scalar @{$results};
+    return;
+  }
 
   # search right subtree
   push @{$results}, $self->right->search($i) if $self->right;
 
-  return $results;
+  return $results if scalar @{$results};
 }
 
 =head1 PRIVATE METHODS
