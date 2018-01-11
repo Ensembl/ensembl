@@ -89,7 +89,10 @@ sub tree {
 =cut
 
 sub key {
-  return shift->{key};
+  my $self = shift;
+  $self->{key} = shift if( @_ );
+  
+  return $self->{key};
 }
 
 =head2 parent
@@ -130,6 +133,40 @@ sub right {
   return shift->{right};
 }
 
+=head2 search
+
+=cut
+
+sub search {
+  my ($self, $i) = @_;
+
+  # if interval is to the right of the rightmost point of any interval in this node and
+  # all its children, there won't be any matches
+  return if $i->start > $self->{max};
+
+  my $results = [];
+  
+  # search left subtree
+  if ($self->left and $self->left->{max} >= $i->start) {
+    push @{$results}, $self->left->search($i);
+  }
+
+  # search this node
+  push @{$results}, $self->_overlapping_intervals($i);
+
+  # if interval is to the left of the start of this interval, then
+  # it can't be in any child to the right
+  if ($i->end < $self->key) {
+    return $results if scalar @{$results};
+    return;
+  }
+
+  # search right subtree
+  push @{$results}, $self->right->search($i) if $self->right;
+
+  return $results if scalar @{$results};
+}
+
 =head2 insert
 
 =cut
@@ -165,41 +202,77 @@ sub insert {
   $self->_rebalance;
 }
 
-=head2 search
+=head2 remove
 
 =cut
 
-sub search {
-  my ($self, $i) = @_;
+sub remove {
+  my ($self, $node) = @_;
 
-  # if interval is to the right of the rightmost point of any interval in this node and
-  # all its children, there won't be any matches
-  return if $i->start > $self->{max};
+  return unless $node;
 
-  my $results = [];
-  
-  # search left subtree
-  if ($self->left and $self->left->{max} >= $i->start) {
-    push @{$results}, $self->left->search($i);
-  }
+  my $parent = $self->parent;
 
-  # search this node
-  push @{$results}, $self->_overlapping_intervals($i);
-
-  # if interval is to the left of the start of this interval, then
-  # it can't be in any child to the right
-  if ($i->end < $self->key) {
-    return $results if scalar @{$results};
+  if ($node->key < $self->key) {
+    # node to be removed in in left subtree
+    return $self->left->remove($node) if $self->left;
     return;
+  } elsif ($node->key > $self->key) {
+    # node to be removed is in right subtree
+    return $self->right->remove($node) if $self->right;
+    return;
+  } else {
+    if ($self->left and $self->right) {
+      # node has two children
+      my $lowest = $self->right->_lowest;
+      $self->key($lowest->key);
+      $self->{intervals} = $lowest->{intervals};
+      return $self->right->remove($self);
+    } elsif ($parent->left == $self) {
+      # one child or no child case on left side
+      if ($self->right) {
+	$parent->left = $self->right;
+	$self->right->parent($parent);
+      } else {
+	$parent->left = $self->left;
+	$self->left->parent($parent) if $self->left
+      }
+      $parent->_update_parents_max;
+      $parent->_update_height;
+      $parent->_rebalance;
+
+      return $self;
+      
+    } elsif ($parent->right == $self) {
+      # one child or no child case on right side
+      if ($self->right) {
+	$parent->right = $self->right;
+	$self->right->parent($parent);
+      } else {
+	$parent->right = $self->left;
+	$self->left->parent($parent) if $self->left;
+      }
+      $parent->_update_parents_max;
+      $parent->_update_height;
+      $parent->_rebalance;
+
+      return $self;
+    }
   }
-
-  # search right subtree
-  push @{$results}, $self->right->search($i) if $self->right;
-
-  return $results if scalar @{$results};
 }
 
 =head1 PRIVATE METHODS
+
+=head2 _lowest 
+
+=cut
+
+sub _lowest {
+  my $self = shift;
+
+  return $self unless $self->left;
+  return $self->left->_lowest;
+}
 
 =head2 _highest_end
 
@@ -222,6 +295,29 @@ sub _update_height {
   my $self = shift;
 
   $self->height(List::Util::max $self->left->height, $self->right->height + 1);
+}
+
+=head2 _update_parents_max 
+
+=cut
+
+sub _update_parents_max {
+  my $self = shift;
+  # updates the max value of all the parents after inserting into already existing node, as well as
+  # removing the node completely or removing the record of an already existing node. Starts with
+  # the parent of an affected node and bubbles up to root
+  my $high = $self->_highest_end;
+  if ($self->left and $self->right) {
+    $self->{max} = max $self->left->{max}, $self->right-{max}, $high;
+  } elsif ($self->left and !$self->right) {
+    $self->{max} = max $self->left->{max}, $high;
+  } elsif (!$self->left and $self->right) {
+    $self->{max} = max $self->right->{max}, $high;
+  } else {
+    $self->{max} = $high;
+  }
+
+  $self->parent->_update_parents_max if $self->parent;
 }
 
 =head2 _rebalance
@@ -442,11 +538,12 @@ sub _overlapping_intervals {
 
   my $results = [];
   if ($self->key <= $i->end and $i->start <= $self->_highest_end) {
-    my $results = [];
     map { push @{$results}, $_ if $i->start <= $_->end } @{$self->{intervals}}
   }
   
-  return $results;
+  return $results if scalar @{$results};
+
+  return;
 }
 
 1;
