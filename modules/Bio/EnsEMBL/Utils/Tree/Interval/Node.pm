@@ -298,8 +298,38 @@ sub _left_rotate {
 
 =cut
 
-sub _update_max_left_rotate {
+sub _update_max_left_rotate { # handles Right-Right case and Right-Left case in rebalancing AVL tree
   my $self = shift;
+
+  # update max of left sibling (x in first case, y in second)
+  my $parent = $self->parent;
+  my $parent_right = $parent->right;
+  my $parent_right_high = $parent_right->_highest_end;
+  if (!$parent_right->left and $parent_right->right) {
+    $parent_right->{max} = max $parent_right_high, $parent_right->right->{max};
+  } elsif ($parent_right->left and !$parent_right->right) {
+    $parent_right->{max} = max $parent_right_high, $parent_right->left->{max};
+  } elsif (!$parent_right->left and !$parent_right->right) {
+    $parent_right->{max} = $parent_right_high;
+  } else {
+    $parent_right->{max} = max $parent_right_high, $parent_right->left->{max}, $parent_right->right->{max};
+  }
+  
+  # update max of itself (z)
+  my $high = $self->_highest_end;
+  if (!$self->left and $self->right) {
+    $self->{max} = max $high, $self->right->{max};
+  } elsif ($self->left and !$self->right) {
+    $self->{max} = max $high, $self->left->{max};
+  } elsif (!$self->left and !$self->right) {
+    $self->{max} = $high;
+  } else {
+    $self->{max} = max $high, $self->left->{max}, $self->right->{max};
+  }
+  
+  # update max of parent (y in first case, x in second)
+  $parent->{max} = max $parent->left->{max}, $parent->right->{max}, $parent->_highest_end;
+
 }
 
 =head2 _right_rotate
@@ -336,8 +366,37 @@ sub _right_rotate {
 
 =cut
 
-sub _update_max_right_rotate {
+sub _update_max_right_rotate { # handles Left-Left case and Left-Right case after rebalancing AVL tree
   my $self = shift;
+
+  # update max of left sibling (x in first case, y in second)
+  my $parent = $self->parent;
+  my $parent_left = $parent->left;
+  my $parent_left_high = $parent_left->_highest_end;
+  if (!$parent_left->left and $parent_left->right) {
+    $parent_left->{max} = max $parent_left_high, $parent_left->right->{max};
+  } elsif ($parent_left->left and !$parent_left->right) {
+    $parent_left->{max} = max $parent_left_high, $parent_left->left->{max};
+  } elsif (!$parent_left->left and !$parent_left->right) {
+    $parent_left->{max} = $parent_left_high;
+  } else {
+    $parent_left->{max} = max $parent_left_high, $parent_left->left->{max}, $parent_left->right->{max};
+  }
+  
+  # update max of itself (z)
+  my $high = $self->_highest_end;
+  if (!$self->left and $self->right) {
+    $self->{max} = max $high, $self->right->{max};
+  } elsif ($self->left and !$self->right) {
+    $self->{max} = max $high, $self->left->{max};
+  } elsif (!$self->left and !$self->right) {
+    $self->{max} = $high;
+  } else {
+    $self->{max} = max $high, $self->left->{max}, $self->right->{max};
+  }
+  
+  # update max of parent (y in first case, x in second)
+  $parent->{max} = max $parent->left->{max}, $parent->right->{max}, $parent->_highest_end;
 }
 
 1;
