@@ -64,14 +64,14 @@ sub new {
   throw 'Node constructor takes (tree, interval) as arguments'
     unless $tree and $interval;
 
-  my $self = bless({ tree     => $tree,
-		     interval => $interval,
-		     key      => $interval->start,
-		     max      => $interval->end,
-		     parent => undef,
-		     height => 0,
-		     left   => undef,
-		     right  => undef }, $class);
+  my $self = bless({ tree      => $tree,
+		     intervals => [ $interval ],
+		     key       => $interval->start,
+		     max       => $interval->end,
+		     parent    => undef,
+		     height    => 0,
+		     left      => undef,
+		     right     => undef }, $class);
   
   return $self;
 }
