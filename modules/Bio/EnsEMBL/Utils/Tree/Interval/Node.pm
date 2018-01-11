@@ -167,6 +167,19 @@ sub insert {
 
 =head1 PRIVATE METHODS
 
+=head2 _highest_end
+
+=cut
+
+sub _highest_end {
+  my $self = shift;
+
+  my $high = $self->{intervals}[0]->end;
+  map { $high = $_->end if $high < $_->end } @{$self->{intervals}};
+
+  return $high;
+}
+
 =head2 _update_height
 
 =cut
