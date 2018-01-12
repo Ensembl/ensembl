@@ -15,9 +15,15 @@ use JSON;
 use HTTP::Request;
 use LWP::UserAgent;
 use Term::ReadKey;
+use iCal::Parser;
 
 use Bio::EnsEMBL::Utils::Logger;
 use Bio::EnsEMBL::ApiVersion;
+
+# ----------------
+# global variables
+# ----------------
+my ( $dryrun, $xref_species );
 
 main();
 
@@ -33,7 +39,7 @@ sub main {
   # ----------------------------
   # read command line parameters
   # ----------------------------
-  my ( $relco, $release, $password, $help, $tickets_tsv, $config );
+  my ( $relco, $release, $password, $help, $tickets_tsv, $ical_url, $config );
 
   GetOptions(
 	     'relco=s'    => \$relco,
@@ -43,6 +49,9 @@ sub main {
 	     'tickets=s'  => \$tickets_tsv,
 	     'config=s'   => \$config,
 	     'c=s'        => \$config,
+             'ical=s'     => \$ical_url,
+             'species=s'  => \$xref_species,
+             'dryrun'     => \$dryrun,
 	     'help'       => \$help,
 	     'h'          => \$help,
 	    );
@@ -68,9 +77,18 @@ sub main {
   # check_dates($parameters);
 
   # integrate command line parameters to parameters object
-  $parameters->{relco}    = $relco;
-  $parameters->{password} = $password;
-  $parameters->{release}  = $release;
+  $parameters->{relco}       = $relco;
+  $parameters->{password}    = $password;
+  $parameters->{release}     = $release;
+  $parameters->{tickets_tsv} = $tickets_tsv;
+  $parameters->{config}      = $config;
+
+  # If we have an ical url, try and fetch dates from there
+  if($ical_url) {
+      fetch_dates($ical_url, $parameters);
+  }
+
+  validate_parameters( $parameters, $logger );
 
   # ------------------
   # parse tickets file
@@ -191,14 +209,14 @@ sub set_parameters {
 
     printf( "\trelco: %s\n\trelease: %i\n\ttickets: %s\n\tconfig: %s\n",
         $relco, $release, $tickets_tsv, $config );
-    print "Are the above parameters correct? (y,N) : ";
-    my $response = readline();
-    chomp $response;
-    if ( $response ne 'y' ) {
-        $logger->error(
-            'Aborted by user. Please rerun with correct parameters.',
-            0, 0 );
-    }
+#    print "Are the above parameters correct? (y,N) : ";
+#    my $response = readline();
+#    chomp $response;
+#    if ( $response ne 'y' ) {
+#        $logger->error(
+#            'Aborted by user. Please rerun with correct parameters.',
+#            0, 0 );
+#    }
 
     if ( !$password ) {
         print 'Please type your JIRA password:';
@@ -211,6 +229,86 @@ sub set_parameters {
     }
 
     return ( $relco, $release, $password, $tickets_tsv, $config );
+}
+
+=head2 validate_parameters
+
+  Arg[1]      : Hashref $parameters - the configuration parameters
+  Arg[2]      : Bio::EnsEMBL::Utils::Logger $logger - object used for logging
+  Example     : validate_parameters( $parameters )
+  Description : Asks the user to look over the settings before proceeding
+  Return type : none
+  Exceptions  : Dies if the user rejects the settings
+
+=cut
+
+sub validate_parameters {
+  my ( $parameters, $logger ) = @_;
+
+  print "Configuration:\n";
+  printf( "\trelco: %s\n\trelease: %i\n\ttickets: %s\n\tconfig: %s\n",
+	  $parameters->{relco},
+	  $parameters->{release},
+	  $parameters->{tickets_tsv},
+	  $parameters->{config} );
+
+  print "Dates:\n";
+  foreach my $date_label (keys $parameters->{dates}) {
+      printf( "%33s: %s\n",
+	      $date_label,
+	      $parameters->{dates}->{$date_label} );
+  }
+
+  if($xref_species) {
+      my @species_list = split /,/, $xref_species;
+
+      print "Xref species:\n";
+
+      foreach my $species (@species_list) {
+	  my $valid = validate_species($species, $parameters);
+
+	  if(! $valid ) {
+	      die "Species $species doesn't seem to be valid in the metadata registry";
+	  }
+
+	  print "\t$species\n"
+      }
+  }
+
+  if($dryrun) {
+      print "DRY RUN.\n";
+  }
+
+  print "Are the above parameters correct? (y,N) : ";
+  my $response = readline();
+  chomp $response;
+  if ( $response ne 'y' ) {
+      $logger->error(
+	  'Aborted by user. Please rerun with correct parameters.',
+	  0, 0 );
+  }
+
+}
+
+=head2 validate_species
+
+  Arg[1]      : String $species - a latin species name
+  Example     : my $valid = validate_species($species)
+  Description : Validate a species via the metadata registry
+  Return type : Boolean
+  Exceptions  : none
+
+=cut
+
+sub validate_species {
+  my ($species, $parameters) = @_;
+
+  my $content = fetch_url($parameters->{_}->{metadata_registry_url} . $species,
+			  'application/json');
+
+  my $count = decode_json( $content )->{'count'};
+
+  return ($count > 0);
 }
 
 =head2 validate_user_name
@@ -314,7 +412,14 @@ sub parse_tickets_file {
     my %ticket;
     
     # Xrefs is a task with its own sub-tasks, one for each species
+
+    # If we have a global xref_species, ie we've been given the species on the command
+    # line, override the one in the ticket config
     if ($summary =~ /xrefs/i) {
+      if($xref_species) {
+	$species_list = $xref_species;
+      }
+
       $species_list or $logger->error("Empty list of xref species", 0, 0);
       my @species = split /,/, $species_list;
 
@@ -399,15 +504,22 @@ sub parse_tickets_file {
 sub replace_placeholders {
   my ( $line, $parameters ) = @_;
 
-  $line =~ s/<RelCo>/$parameters->{relco}/g;
-  $line =~ s/<version>/$parameters->{release}/g;
-  $line =~ s/<declaration_of_intentions>/$parameters->{dates}->{declaration_of_intentions}/g;
-  $line =~ s/<core_handover_xrefs>/$parameters->{dates}->{core_handover_xrefs}/g;
-  $line =~ s/<compara_final_handover>/$parameters->{dates}->{compara_final_handover}/g;
-  $line =~ s/<code_branching>/$parameters->{dates}->{code_branching}/g;
-  $line =~ s/<release>/$parameters->{dates}->{release}/g;
+  for my $param (keys %$parameters) {
+      next if(ref($parameters->{$param}) eq 'HASH');
+
+      if($line =~ /<$param>/) {
+	  $line =~ s/<$param>/$parameters->{$param}/eg;
+      }
+  }
+
+  for my $param (keys $parameters->{dates}) {
+      if($line =~ /<$param>/) {
+	  $line =~ s/<$param>/$parameters->{dates}->{$param}/eg;
+      }
+  }
 
   return $line;
+
 }
 
 =head2 get_parent_key
@@ -458,10 +570,48 @@ sub create_ticket {
   my ( $ticket, $parameters, $logger ) = @_;
   my $endpoint = 'rest/api/latest/issue';
 
+  # If we're in dry run mode, don't actually post the ticket to jira
+  if($dryrun) {
+      use Data::Dumper;
+      print "DRY RUN, ticket:\n";
+      print Dumper($ticket);
+      print "\n";
+      return "DRYRUN";
+  }
+
   my $content = { 'fields' => $ticket };
   my $response = post_request( $endpoint, $content, $parameters, $logger );
 
   return decode_json( $response->content() )->{'key'};
+}
+
+=head2 fetch_url
+
+  Arg[1]      : String $url - the url to request
+  Arg[2]      : String $accept - the accept time (optional)
+  Example     : my $response_body = fetch_url( $url );
+  Description : Fetch a url's content and return as a string
+  Return type : String
+  Exceptions  : Dies upon fetch error
+
+=cut
+
+sub fetch_url {
+  my ( $url, $accept ) = @_;
+
+  my $ua = LWP::UserAgent->new;
+
+  if($accept) {
+      $ua->default_header('Accept' => $accept);
+  }
+
+  my $response = $ua->get($url);
+
+  if($response->is_success) {
+      return $response->decoded_content;
+  }
+
+  die $response->status_line;
 }
 
 =head2 post_request
@@ -516,6 +666,83 @@ sub post_request {
     return $response;
 }
 
+=head2 fetch_dates
+
+  Arg[1]      : String $ical_url - Hold the url to fetch the ical release
+                calendar
+  Arg[2]      : Hashref $parameters - parameters from config file
+  Example     : fetch_dates($ical_url, $parameters);
+  Description : Attempts to fetch an ical calendar containing the dates
+                of the release cycle
+  Return type : void
+  Exceptions  : none
+
+=cut
+
+sub fetch_dates {
+  my ( $ical_url, $parameters ) = @_;
+
+  print "Fetching ical...\n";
+  my $ical_str = fetch_url( $ical_url );
+
+  print "\n";
+  my $parser=iCal::Parser->new();
+
+  my $hash = $parser->parse_strings($ical_str);
+
+  my $events = $hash->{events};
+
+  foreach my $milestone_name (keys $parameters->{ical}) {
+      my $calendar_label = $parameters->{ical}->{$milestone_name};
+      $calendar_label = replace_placeholders($calendar_label, $parameters);
+      print "Looking for '$calendar_label' in ical...";
+      my $event = find_event_by_name($calendar_label, $events);
+
+      # We've found the event, extract the start date and substitute it
+      # in our dates configuration section
+      if($event) {
+	  $parameters->{dates}->{$milestone_name} = sprintf("%04s-%02s-%02s",
+						       $event->{DTSTART}->year(),
+						       $event->{DTSTART}->month(),
+						       $event->{DTSTART}->day());
+	  print "found.\n";
+      } else {
+	  print "not found.\n";
+      }
+  }
+
+  print "\n";
+}
+
+=head2 find_event_by_name
+
+  Arg[1]      : String $label - label to find in the calendar
+  Arg[2]      : Hashref $events - the hash of events from the calendar
+  Example     : my $event = find_event_by_name($label, $events);
+  Description : Tries to find the event matching the label
+  Return type : Hashref or undef
+  Exceptions  : none
+
+=cut
+
+sub find_event_by_name {
+  my ( $label, $events ) = @_;
+
+  foreach my $year (keys %$events) {
+      foreach my $month (keys $events->{$year}) {
+	  foreach my $day (keys $events->{$year}->{$month}) {
+	      foreach my $event (keys $events->{$year}->{$month}->{$day} ) {
+		  if($events->{$year}->{$month}->{$day}->{$event}->{SUMMARY} eq $label) {
+		      return $events->{$year}->{$month}->{$day}->{$event};
+		  }
+	      }
+	  }
+      }
+  }
+
+  return;
+}
+
 =head2 check_for_duplicate
 
   Arg[1]      : Hashref $ticket - holds the data for the ticket which is about
@@ -564,6 +791,10 @@ create_release_tasks.pl -relco <string> -password <string> -release <integer> -t
 -config              Configuration parameters file, currently holds the handover deadlines, may be expanded
                      in the future. If not supplied, the script is looking for the default one 'jira.conf'
                      in the same directory as the executable.
+-ical                The URL to fetch the Release calendar from Google in iCal format
+-species             A comma separated list of species to make xref tickets for, this overrides the
+                     species in the jira_recurrent_tickets.tsv file.
+-dryrun              Dry run, do not actually create the tickets
 -help | -h           Prints this help text.
 
 =head1 DESCRIPTION
