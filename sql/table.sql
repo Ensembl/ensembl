@@ -302,20 +302,15 @@ CREATE TABLE IF NOT EXISTS meta (
 # Add schema type and schema version to the meta table.
 INSERT INTO meta (species_id, meta_key, meta_value) VALUES
   (NULL, 'schema_type',     'core'),
-  (NULL, 'schema_version',  '91');
+  (NULL, 'schema_version',  '92');
 
 # Patches included in this schema file:
 # NOTE: At start of release cycle, remove patch entries from last release.
 # NOTE: Avoid line-breaks in values.
 INSERT INTO meta (species_id, meta_key, meta_value)
-  VALUES (NULL, 'patch', 'patch_90_91_a.sql|schema_version');
+  VALUES (NULL, 'patch', 'patch_91_92_a.sql|schema_version');
 INSERT INTO meta (species_id, meta_key, meta_value)
-  VALUES (NULL, 'patch', 'patch_90_91_b.sql|align_type');
-INSERT INTO meta (species_id, meta_key, meta_value)
-  VALUES (NULL, 'patch', 'patch_90_91_c.sql|protein_align_type');
-INSERT INTO meta (species_id, meta_key, meta_value)
-  VALUES (NULL, 'patch', 'patch_90_91_d.sql|remove_external_data');
-
+  VALUES (NULL, 'patch', 'patch_91_92_b.sql|add_cigar_line_align_type');
 
 /**
 @table meta_coord
@@ -938,6 +933,8 @@ CREATE TABLE protein_feature (
   perc_ident                  FLOAT,
   external_data               TEXT,
   hit_description             TEXT,
+  cigar_line                  TEXT,
+  align_type                  ENUM('ensembl', 'cigar', 'cigarplus', 'vulgar', 'mdtag'),
 
   UNIQUE KEY aln_idx (translation_id,hit_name,seq_start,seq_end,hit_start,hit_end,analysis_id),
   PRIMARY KEY (protein_feature_id),
