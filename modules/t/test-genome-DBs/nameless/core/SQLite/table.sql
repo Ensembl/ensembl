@@ -1,6 +1,6 @@
 -- 
 -- Created by SQL::Translator::Producer::SQLite
--- Created on Mon Sep 25 13:14:46 2017
+-- Created on Fri Jan 12 13:38:33 2018
 -- 
 
 BEGIN TRANSACTION;
@@ -725,7 +725,9 @@ CREATE TABLE protein_feature (
   evalue double precision,
   perc_ident float,
   external_data text,
-  hit_description text
+  hit_description text,
+  cigar_line text,
+  align_type enum
 );
 
 CREATE UNIQUE INDEX aln_idx ON protein_feature (translation_id, hit_name, seq_start, seq_end, hit_start, hit_end, analysis_id);
