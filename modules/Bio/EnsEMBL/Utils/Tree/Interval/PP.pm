@@ -48,6 +48,8 @@ package Bio::EnsEMBL::Utils::Tree::Interval::PP;
 
 use strict;
 
+use Bio::EnsEMBL::Utils::Tree::Interval::Node;
+
 =head2 new
 
 =cut
