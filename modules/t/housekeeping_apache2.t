@@ -47,7 +47,7 @@ foreach my $f (@source_files) {
     next if $f =~ /\/blib\//;
     next if $f =~ /\/HALXS\.c$/;
     next if $f =~ /\.conf\b/;
-    next if $f =~ /\CLEAN\b/;
+    next if $f =~ /CLEAN\b/;
     next if $f =~ /\.(tmpl|hash|nw|ctl|txt|html|textile)$/;
     has_apache2_licence($f);
 }
