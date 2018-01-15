@@ -45,10 +45,18 @@ sub new {
 sub connect_params {
     my ($self, $conn) = @_;
 
+    my $host = $conn->host();
     my $dbname = $conn->dbname();
+    my ($dsn, $username);
 
-    my $dsn      = "DBI:Oracle:";
-    my $username = sprintf("%s@%s", $conn->username(), $dbname );
+    if (defined $host) {
+      my $port = $conn->port() || 1521;
+      $dsn = sprintf("DBI:Oracle://%s:%s/%s", $host, $port, $dbname);
+      $username = $conn->username();
+    } else {
+      $dsn      = "DBI:Oracle:";
+      $username = sprintf("%s@%s", $conn->username(), $dbname );
+    }
 
     return {
         dsn        => $dsn,
