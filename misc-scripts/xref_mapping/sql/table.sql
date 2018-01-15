@@ -446,6 +446,7 @@ CREATE TABLE object_xref (
   unused_priority             INT UNSIGNED,
   master_xref_id              INT UNSIGNED DEFAULT NULL,
 
+  PRIMARY KEY (object_xref_id),
   UNIQUE (ensembl_object_type, ensembl_id, xref_id, ox_status, master_xref_id),
   KEY oxref_idx (object_xref_id, xref_id, ensembl_object_type, ensembl_id),
   KEY xref_idx (xref_id, ensembl_object_type)
