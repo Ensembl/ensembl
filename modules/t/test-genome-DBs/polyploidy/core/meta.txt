@@ -1,5 +1,5 @@
 1	\N	schema_type	core
-2	\N	schema_version	91
+2	\N	schema_version	92
 3	\N	patch	patch_68_69_a.sql|schema_version
 4	1	species.taxonomy_id	4565
 6	1	species.alias	bread wheat
@@ -147,3 +147,5 @@
 227	\N	patch	patch_90_91_b.sql|align_type
 228	\N	patch	patch_90_91_c.sql|protein_align_type
 229	\N	patch	patch_90_91_d.sql|remove_external_data
+230	\N	patch	patch_91_92_a.sql|schema_version
+231	\N	patch	patch_91_92_b.sql|add_cigar_line_align_type

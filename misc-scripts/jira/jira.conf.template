@@ -1,6 +1,19 @@
+metadata_registry_url=http://test-metadata.ensembl.org/genome/?organism_name=
+
 [dates]
 declaration_of_intentions=YYYY-MM-DD
 core_handover_xrefs=YYYY-MM-DD
 compara_final_handover=YYYY-MM-DD
 code_branching=YYYY-MM-DD
+vm_handover=YYYY-MM-DD
+test_site_completion=YYYY-MM-DD
 release=YYYY-MM-DD
+
+[ical]
+declaration_of_intentions=Request intentions (production) (<release>)
+core_handover_xrefs=Core database handover (core) (<release>)
+compara_final_handover=Compara database and datafile handover (compara) (<relase>)
+code_branching=Code branching (<release>)
+vm_handover=VM handover (core) (<release>)
+test_site_completion=Test site completion (web) (<release>)
+release=Release (<release>)
