@@ -42,9 +42,12 @@ sub run {
   my ($self, $ref_arg) = @_;
   my $source_id    = $ref_arg->{source_id};
   my $species_id   = $ref_arg->{species_id};
+  my $species_name = $ref_arg->{species};
   my $files        = $ref_arg->{files};
   my $release_file = $ref_arg->{rel_file};
   my $verbose      = $ref_arg->{verbose};
+  my $dbi          = $ref_arg->{dbi};
+  $dbi = $self->dbi unless defined $dbi;
 
   if((!defined $source_id) or (!defined $species_id) or (!defined $files)){
     croak "Need to pass source_id, species_id, files and rel_file as pairs";
@@ -55,21 +58,21 @@ sub run {
 
 
   $peptide_source_id =
-    $self->get_source_id_for_source_name('RefSeq_peptide');
+    $self->get_source_id_for_source_name('RefSeq_peptide', undef, $dbi);
   $mrna_source_id =
-    $self->get_source_id_for_source_name('RefSeq_mRNA','refseq');
+    $self->get_source_id_for_source_name('RefSeq_mRNA','refseq', $dbi);
   $ncrna_source_id =
-    $self->get_source_id_for_source_name('RefSeq_ncRNA');
+    $self->get_source_id_for_source_name('RefSeq_ncRNA', undef, $dbi);
 
   $pred_peptide_source_id =
-    $self->get_source_id_for_source_name('RefSeq_peptide_predicted');
+    $self->get_source_id_for_source_name('RefSeq_peptide_predicted', undef, $dbi);
   $pred_mrna_source_id =
-    $self->get_source_id_for_source_name('RefSeq_mRNA_predicted','refseq');
+    $self->get_source_id_for_source_name('RefSeq_mRNA_predicted','refseq', $dbi);
   $pred_ncrna_source_id =
-    $self->get_source_id_for_source_name('RefSeq_ncRNA_predicted');
+    $self->get_source_id_for_source_name('RefSeq_ncRNA_predicted', undef, $dbi);
 
-  $entrez_source_id = $self->get_source_id_for_source_name('EntrezGene');
-  $wiki_source_id = $self->get_source_id_for_source_name('WikiGene');
+  $entrez_source_id = $self->get_source_id_for_source_name('EntrezGene', undef, $dbi);
+  $wiki_source_id = $self->get_source_id_for_source_name('WikiGene', undef, $dbi);
 
   if($verbose){
     print "RefSeq_peptide source ID = $peptide_source_id\n";
@@ -80,17 +83,17 @@ sub run {
     print "RefSeq_ncRNA_predicted source ID = $pred_ncrna_source_id\n" ;
   }
 
-  (%entrez)     = %{$self->get_acc_to_label("EntrezGene",$species_id)};
+  (%entrez)     = %{$self->get_acc_to_label("EntrezGene",$species_id, undef, $dbi)};
 
     my @xrefs;
     foreach my $file (@files) {
         my $xrefs =
-          $self->create_xrefs( $file, $species_id, $verbose );
+          $self->create_xrefs( $file, $species_id, $verbose, $dbi, $species_name );
 
         if ( !defined( $xrefs ) ) {
             return 1;    #error
         }
-        $self->upload_xref_object_graphs( $xrefs )
+        $self->upload_xref_object_graphs( $xrefs, $dbi )
     }
 
     if ( defined $release_file ) {
@@ -107,13 +110,13 @@ sub run {
 
         print "RefSeq release: '$release'\n" if($verbose);
 
-        $self->set_release( $source_id,              $release );
-        $self->set_release( $peptide_source_id,      $release );
-        $self->set_release( $mrna_source_id,         $release );
-        $self->set_release( $ncrna_source_id,        $release );
-        $self->set_release( $pred_mrna_source_id,    $release );
-        $self->set_release( $pred_ncrna_source_id,   $release );
-        $self->set_release( $pred_peptide_source_id, $release );
+        $self->set_release( $source_id,              $release, $dbi );
+        $self->set_release( $peptide_source_id,      $release, $dbi );
+        $self->set_release( $mrna_source_id,         $release, $dbi );
+        $self->set_release( $ncrna_source_id,        $release, $dbi );
+        $self->set_release( $pred_mrna_source_id,    $release, $dbi );
+        $self->set_release( $pred_ncrna_source_id,   $release, $dbi );
+        $self->set_release( $pred_peptide_source_id, $release, $dbi );
     }
 
   return 0; # successful
@@ -127,26 +130,28 @@ sub run {
 # Slightly different formats
 
 sub create_xrefs {
-  my ($self, $file,$species_id, $verbose ) = @_;
+  my ($self, $file,$species_id, $verbose, $dbi, $species_name ) = @_;
 
   # Create a hash of all valid names and taxon_ids for this species
-  my %species2name = $self->species_id2name();
-  my %species2tax  = $self->species_id2taxonomy();
+  my %species2name = $self->species_id2name($dbi);
+  if (defined $species_name) { push @{$species2name{$species_id}}, $species_name; }
+  if (!defined $species2name{$species_id}) { next; }
+  my %species2tax  = $self->species_id2taxonomy($dbi);
+  push @{$species2tax{$species_id}}, $species_id;
   my @names   = @{$species2name{$species_id}};
   my @tax_ids = @{$species2tax{$species_id}};
   my %name2species_id     = map{ $_=>$species_id } @names;
   my %taxonomy2species_id = map{ $_=>$species_id } @tax_ids;
 
   # Retrieve existing RefSeq mRNA
-  my (%refseq_ids) = (%{ $self->get_valid_codes("RefSeq_mRNA", $species_id) }, %{ $self->get_valid_codes("RefSeq_mRNA_predicted", $species_id) });
-  my (%entrez_ids) = %{ $self->get_valid_codes("EntrezGene", $species_id) };
-  my (%wiki_ids) = %{ $self->get_valid_codes("WikiGene", $species_id) };
+  my (%refseq_ids) = (%{ $self->get_valid_codes("RefSeq_mRNA", $species_id, $dbi) }, %{ $self->get_valid_codes("RefSeq_mRNA_predicted", $species_id, $dbi) });
+  my (%entrez_ids) = %{ $self->get_valid_codes("EntrezGene", $species_id, $dbi) };
+  my (%wiki_ids) = %{ $self->get_valid_codes("WikiGene", $species_id, $dbi) };
 
 
-  my %dependent_sources =  $self->get_xref_sources();
+  my %dependent_sources =  $self->get_xref_sources($dbi);
 
-  my $dbi = $self->dbi();
-  my $add_dependent_xref_sth = $self->dbi->prepare("INSERT INTO dependent_xref  (master_xref_id,dependent_xref_id, linkage_source_id) VALUES (?,?, $entrez_source_id)");
+  my $add_dependent_xref_sth = $dbi->prepare("INSERT INTO dependent_xref  (master_xref_id,dependent_xref_id, linkage_source_id) VALUES (?,?, $entrez_source_id)");
 
   my $refseq_io = $self->get_filehandle($file);
 

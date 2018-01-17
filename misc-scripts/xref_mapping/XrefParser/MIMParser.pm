@@ -34,6 +34,8 @@ sub run {
   my $species_id   = $ref_arg->{species_id};
   my $files        = $ref_arg->{files};
   my $verbose      = $ref_arg->{verbose};
+  my $dbi          = $ref_arg->{dbi};
+  $dbi = $self->dbi unless defined $dbi;
 
   if((!defined $general_source_id) or (!defined $species_id) or (!defined $files) ){
     croak "Need to pass source_id, species_id and files as pairs";
@@ -50,9 +52,9 @@ sub run {
 
   push @sources, $general_source_id;
 
-  my $gene_source_id = $self->get_source_id_for_source_name("MIM_GENE");
+  my $gene_source_id = $self->get_source_id_for_source_name("MIM_GENE", undef, $dbi);
   push @sources, $gene_source_id;
-  my $morbid_source_id =  $self->get_source_id_for_source_name("MIM_MORBID");
+  my $morbid_source_id =  $self->get_source_id_for_source_name("MIM_MORBID", undef, $dbi);
   push @sources, $morbid_source_id;
 
   print "sources are:- ".join(", ",@sources)."\n" if($verbose);
@@ -111,6 +113,7 @@ sub run {
 			    desc       => $long_desc,
 			    source_id  => $gene_source_id,
 			    species_id => $species_id,
+                            dbi        => $dbi,
 			    info_type  => "DEPENDENT"} );
 	}
 	elsif((!defined $type) or ($type eq "") or ($type eq "#") or ($type eq "%")){ #phenotype only
@@ -120,6 +123,7 @@ sub run {
 			    desc       => $long_desc,
 			    source_id  => $morbid_source_id,
 			    species_id => $species_id,
+                            dbi        => $dbi,
 			    info_type  => "DEPENDENT"} );
 	}
 	elsif($type eq "+"){ # both
@@ -130,6 +134,7 @@ sub run {
 			    desc       => $long_desc,
 			    source_id  => $gene_source_id,
 			    species_id => $species_id,
+                            dbi        => $dbi,
 			    info_type  => "DEPENDENT"} );
 
 	  $self->add_xref({ acc        => $number,
@@ -137,6 +142,7 @@ sub run {
 			    desc       => $long_desc,
 			    source_id  => $morbid_source_id,
 			    species_id => $species_id,
+                            dbi        => $dbi,
 			    info_type  => "DEPENDENT"} );
 	}
 	elsif($type eq "^"){
@@ -164,7 +170,7 @@ sub run {
       $new = $old_to_new{$new};
     }
     if(!defined($removed{$new})){
-      $self->add_to_syn_for_mult_sources($new, \@sources, $old, $species_id);
+      $self->add_to_syn_for_mult_sources($new, \@sources, $old, $species_id, $dbi);
       $syn_count++;
     }
   }

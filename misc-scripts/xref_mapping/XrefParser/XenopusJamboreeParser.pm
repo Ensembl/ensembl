@@ -36,6 +36,8 @@ sub run {
   my $species_id   = $ref_arg->{species_id};
   my $files        = $ref_arg->{files};
   my $verbose      = $ref_arg->{verbose};
+  my $dbi          = $ref_arg->{dbi};
+  $dbi = $self->dbi unless defined $dbi;
 
   if((!defined $source_id) or (!defined $species_id) or (!defined $files) ){
     croak "Need to pass source_id, species_id and files as pairs";
@@ -64,6 +66,7 @@ sub run {
 				 acc        => $acc,
 				 label      => $label,
 				 desc       => $desc,
+                                 dbi        => $dbi,
 				 source_id  => $source_id,
 				 species_id => $species_id });
     $count++;

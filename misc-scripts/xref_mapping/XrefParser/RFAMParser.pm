@@ -33,9 +33,12 @@ sub run_script {
   my ($self, $ref_arg) = @_;
   my $source_id    = $ref_arg->{source_id};
   my $species_id   = $ref_arg->{species_id};
+  my $species_name = $ref_arg->{species};
   my $file         = $ref_arg->{file};
   my $verbose      = $ref_arg->{verbose};
-  my $core_db      = $ref_arg->{db};
+  my $core_db      = $ref_arg->{dba};
+  my $dbi          = $ref_arg->{dbi};
+  $dbi = $self->dbi unless defined $dbi;
 
   if((!defined $source_id) or (!defined $species_id) or (!defined $file) ){
     croak "Need to pass source_id, species_id and file as pairs";
@@ -74,8 +77,10 @@ sub run_script {
   my $dba;
 
   #get the species name
-  my %id2name = $self->species_id2name;
-  my $species_name = $id2name{$species_id}[0];
+  my %id2name = $self->species_id2name($dbi);
+  if (defined $species_name) { push @{$id2name{$species_id}}, $species_name; }
+  if (!defined $id2name{$species_id}) { next; }
+  $species_name = $id2name{$species_id}[0];
 
   if ($host) {
       $dba = Bio::EnsEMBL::DBSQL::DBAdaptor->new(
@@ -166,11 +171,12 @@ sub run_script {
 				      desc       => $description,
 				      source_id  => $source_id,
 				      species_id => $species_id,
+                                      dbi        => $dbi,
 				      info_type  => "DIRECT"} );
 
         my @transcript_stable_ids = @{$rfam_transcript_stable_ids{$accession}};
         foreach my $stable_id (@transcript_stable_ids){
-           $self->add_direct_xref($xref_id, $stable_id, "Transcript", "");
+           $self->add_direct_xref($xref_id, $stable_id, "Transcript", "", $dbi);
            $direct_count++;
          }	
          $xref_count++;

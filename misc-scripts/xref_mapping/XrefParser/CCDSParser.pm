@@ -37,6 +37,8 @@ sub run_script {
   my $file         = $ref_arg->{file};
   my $verbose      = $ref_arg->{verbose};
   my $db           = $ref_arg->{dba};
+  my $dbi          = $ref_arg->{dbi};
+  $dbi = $self->dbi unless defined $dbi;
 
   if((!defined $source_id) or (!defined $species_id) or (!defined $file) ){
     croak "Need to pass source_id, species_id and file  as pairs";
@@ -106,6 +108,7 @@ SCD
 				   label      => $display_label,
 				   source_id  => $source_id,
 				   species_id => $species_id,
+                                   dbi        => $dbi,
 				   info_type  => "DIRECT"} );
       $xref_count++;
       $seen{$display_label} = $xref_id;
@@ -114,7 +117,7 @@ SCD
       $xref_id = $seen{$display_label};
     }
 
-    $self->add_direct_xref($xref_id, $stable_id, "Transcript", "");
+    $self->add_direct_xref($xref_id, $stable_id, "Transcript", "", $dbi);
     $direct_count++;
   }
 

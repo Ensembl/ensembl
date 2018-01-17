@@ -37,6 +37,8 @@ sub run {
   my $species_id   = $ref_arg->{species_id};
   my $files        = $ref_arg->{files};
   my $verbose      = $ref_arg->{verbose};
+  my $dbi          = $ref_arg->{dbi};
+  $dbi = $self->dbi unless defined $dbi;
 
   if((!defined $source_id) or (!defined $species_id) or (!defined $files) ){
     croak "Need to pass source_id, species_id and files as pairs";
@@ -45,8 +47,8 @@ sub run {
 
   my $file = @{$files}[0];
 
-  my $gene_source_id = $self->get_source_id_for_source_name("PomBase_GENE");
-  my $transcript_source_id = $self->get_source_id_for_source_name("PomBase_TRANSCRIPT");
+  my $gene_source_id = $self->get_source_id_for_source_name("PomBase_GENE", undef, $dbi);
+  my $transcript_source_id = $self->get_source_id_for_source_name("PomBase_TRANSCRIPT", undef, $dbi);
 
   my $pombase_io = $self->get_filehandle($file);
 
@@ -88,18 +90,20 @@ sub run {
 							desc       => $desc,
 							source_id  => $gene_source_id,
 							species_id => $species_id,
+                                                        dbi        => $dbi,
 							info_type  => $info_type} );
 
-	        $self->add_direct_xref($ensembl_xref_id, $pombase_id, $ensembl_object_type, $info_type);
+	        $self->add_direct_xref($ensembl_xref_id, $pombase_id, $ensembl_object_type, $info_type, $dbi);
 	    } elsif ($ensembl_object_type eq 'Transcript') {
 	        my $ensembl_xref_id = $self->add_xref({ acc        => $pombase_id,
 							label      => $name,
 							desc       => $desc,
+                                                        dbi        => $dbi,
 							source_id  => $transcript_source_id,
 							species_id => $species_id,
 							info_type  => $info_type} );
 
-	        $self->add_direct_xref($ensembl_xref_id, $pombase_id, $ensembl_object_type, $info_type);
+	        $self->add_direct_xref($ensembl_xref_id, $pombase_id, $ensembl_object_type, $info_type, $dbi);
 	    }
 
 	    $xref_count++;
@@ -109,7 +113,7 @@ sub run {
 			    if ($verbose) {
 			        print STDERR "adding synonym, $synonym\n";
 			    }
-			    $self->add_to_syn($pombase_id, $gene_source_id, $synonym, $species_id);
+			    $self->add_to_syn($pombase_id, $gene_source_id, $synonym, $species_id, $dbi);
 			    $syn_count++;
 		    }
 	    }

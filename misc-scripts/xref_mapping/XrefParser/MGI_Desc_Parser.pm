@@ -36,6 +36,8 @@ sub run {
   my $species_id   = $ref_arg->{species_id};
   my $files        = $ref_arg->{files};
   my $verbose      = $ref_arg->{verbose};
+  my $dbi          = $ref_arg->{dbi};
+  $dbi = $self->dbi unless defined $dbi;
 
   if((!defined $source_id) or (!defined $species_id) or (!defined $files) ){
     croak "Need to pass source_id, species_id and files as pairs";
@@ -84,6 +86,7 @@ sub run {
     					                             desc       => $desc,
     					                             source_id  => $source_id,
     					                             species_id => $species_id,
+                                                                     dbi        => $dbi,
     					                             info_type  => "MISC"} );
         if($verbose and !$desc){
     	   print "$accession has no description\n";
@@ -93,7 +96,7 @@ sub run {
         if(defined($acc_to_xref{$accession})){
            
             foreach my $syn (@synonyms) {
-                $self->add_synonym($acc_to_xref{$accession}, $syn);
+                $self->add_synonym($acc_to_xref{$accession}, $syn, $dbi);
                 $syn_count++;
             }
             

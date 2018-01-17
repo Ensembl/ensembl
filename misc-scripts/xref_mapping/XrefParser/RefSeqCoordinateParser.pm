@@ -32,25 +32,28 @@ sub run_script {
   my ($self, $ref_arg) = @_;
   my $source_id    = $ref_arg->{source_id};
   my $species_id   = $ref_arg->{species_id};
+  my $species_name = $ref_arg->{species};
   my $file         = $ref_arg->{file};
   my $verbose      = $ref_arg->{verbose};
   my $db           = $ref_arg->{dba};
+  my $dbi          = $ref_arg->{dbi};
+  $dbi = $self->dbi unless defined $dbi;
 
   if((!defined $source_id) or (!defined $species_id) or (!defined $file) ){
     croak "Need to pass source_id, species_id and file as pairs";
   }
   $verbose |=0;
 
-  my $peptide_source_id = $self->get_source_id_for_source_name('RefSeq_peptide', 'otherfeatures');
-  my $mrna_source_id = $self->get_source_id_for_source_name('RefSeq_mRNA', 'otherfeatures');
-  my $ncrna_source_id = $self->get_source_id_for_source_name('RefSeq_ncRNA', 'otherfeatures');
+  my $peptide_source_id = $self->get_source_id_for_source_name('RefSeq_peptide', 'otherfeatures', $dbi);
+  my $mrna_source_id = $self->get_source_id_for_source_name('RefSeq_mRNA', 'otherfeatures', $dbi);
+  my $ncrna_source_id = $self->get_source_id_for_source_name('RefSeq_ncRNA', 'otherfeatures', $dbi);
 
   my $pred_peptide_source_id =
-    $self->get_source_id_for_source_name('RefSeq_peptide_predicted', 'otherfeatures');
+    $self->get_source_id_for_source_name('RefSeq_peptide_predicted', 'otherfeatures', $dbi);
   my $pred_mrna_source_id =
-    $self->get_source_id_for_source_name('RefSeq_mRNA_predicted','otherfeatures');
+    $self->get_source_id_for_source_name('RefSeq_mRNA_predicted','otherfeatures', $dbi);
   my $pred_ncrna_source_id =
-    $self->get_source_id_for_source_name('RefSeq_ncRNA_predicted', 'otherfeatures');
+    $self->get_source_id_for_source_name('RefSeq_ncRNA_predicted', 'otherfeatures', $dbi);
 
   if($verbose){
     print "RefSeq_peptide source ID = $peptide_source_id\n";
@@ -118,8 +121,10 @@ sub run_script {
   my $registry = "Bio::EnsEMBL::Registry";
 
   #get the species name
-  my %id2name = $self->species_id2name;
-  my $species_name = $id2name{$species_id}[0];
+  my %id2name = $self->species_id2name($dbi);
+  if (defined $species_name) { push @{$id2name{$species_id}}, $species_name; }
+  if (!defined $id2name{$species_id}) { next; }
+  $species_name = $id2name{$species_id}[0];
 
   my $core_dba;
   my $otherf_dba;
@@ -362,8 +367,9 @@ sub run_script {
                                           desc => '',
                                           source_id => $source_id,
                                           species_id => $species_id,
+                                          dbi => $dbi,
                                           info_type => 'DIRECT' });
-          $self->add_direct_xref($xref_id, $best_id, "Transcript", "");
+          $self->add_direct_xref($xref_id, $best_id, "Transcript", "", $dbi);
 
 # Also store refseq protein as direct xref for ensembl translation, if translation exists
           my $ta_of = $otherf_dba->get_TranscriptAdaptor();
@@ -383,8 +389,9 @@ sub run_script {
                                               desc => '',
                                               source_id => $source_id,
                                               species_id => $species_id,
+                                              dbi => $dbi,
                                               info_type => 'DIRECT' });
-              $self->add_direct_xref($tl_xref_id, $tl->stable_id(), "Translation", "");
+              $self->add_direct_xref($tl_xref_id, $tl->stable_id(), "Translation", "", $dbi);
             }
           }
         }

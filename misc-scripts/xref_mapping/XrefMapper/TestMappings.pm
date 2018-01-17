@@ -97,14 +97,15 @@ sub unlinked_entries{
 
   my $xref_id;
   my $count;
+  my $dbi = $self->xref->dbc;
 
-  my $sth_stat = $self->xref->dbc->prepare("insert into process_status (status, date) values('tests_started',now())");
+  my $sth_stat = $dbi->prepare("insert into process_status (status, date) values('tests_started',now())");
   $sth_stat->execute();
 
   #    dependent_xref            and xref
   my $count_sql = "select count(1) from dependent_xref d left join xref x on d.master_xref_id = x.xref_id where x.xref_id is null";
   my $sql = "select distinct(d.master_xref_id) from dependent_xref d left join xref x on d.master_xref_id = x.xref_id where x.xref_id is null limit 10";
-  my $sth = $self->xref->dbc->prepare($count_sql);
+  my $sth = $dbi->prepare($count_sql);
   $sth->execute();
   $sth->bind_columns(\$count);
   $sth->fetch();
@@ -112,7 +113,7 @@ sub unlinked_entries{
   
   if($count){
     $failed = 1;
-    $sth = $self->xref->dbc->prepare($sql);
+    $sth = $dbi->prepare($sql);
     $sth->execute();
     $sth->bind_columns(\$xref_id);
     print STDERR "SQL QUERY: $sql\n";
@@ -129,7 +130,7 @@ sub unlinked_entries{
 
   $sql = "select distinct(d.dependent_xref_id) from dependent_xref d left join xref x on d.dependent_xref_id = x.xref_id where x.xref_id is null limit 10";
 
-  $sth = $self->xref->dbc->prepare($count_sql);
+  $sth = $dbi->prepare($count_sql);
   $sth->execute();
   $sth->bind_columns(\$count);
   $sth->fetch();
@@ -137,7 +138,7 @@ sub unlinked_entries{
   
   if($count){
     $failed = 1;
-    $sth = $self->xref->dbc->prepare($sql);
+    $sth = $dbi->prepare($sql);
     $sth->execute();
     $sth->bind_columns(\$xref_id);
     print STDERR "SQL QUERY: $sql\n";
@@ -151,7 +152,7 @@ sub unlinked_entries{
 
   $sql = "select distinct(d.xref_id) from primary_xref d left join xref x on d.xref_id = x.xref_id where x.xref_id is null limit 10";
 
-  $sth = $self->xref->dbc->prepare($count_sql);
+  $sth = $dbi->prepare($count_sql);
   $sth->execute();
   $sth->bind_columns(\$count);
   $sth->fetch();
@@ -159,7 +160,7 @@ sub unlinked_entries{
   
   if($count){
     $failed = 1;
-    $sth = $self->xref->dbc->prepare($sql);
+    $sth = $dbi->prepare($sql);
     $sth->execute();
     $sth->bind_columns(\$xref_id);
     print STDERR "SQL QUERY: $sql\n";
@@ -174,7 +175,7 @@ sub unlinked_entries{
     
     $sql = "select distinct(d.general_xref_id) from ".$type."_direct_xref d left join xref x on d.general_xref_id = x.xref_id where x.xref_id is null limit 10";
     
-    $sth = $self->xref->dbc->prepare($count_sql);
+    $sth = $dbi->prepare($count_sql);
     $sth->execute();
     $sth->bind_columns(\$count);
     $sth->fetch();
@@ -182,7 +183,7 @@ sub unlinked_entries{
     
     if($count){
       $failed = 1;
-      $sth = $self->xref->dbc->prepare($sql);
+      $sth = $dbi->prepare($sql);
       $sth->execute();
       $sth->bind_columns(\$xref_id);
       print STDERR "SQL QUERY: $sql\n";
@@ -199,7 +200,7 @@ sub unlinked_entries{
 
   $sql = "select distinct(d.xref_id) from synonym d left join xref x on d.xref_id = x.xref_id where x.xref_id is null limit 10";
 
-  $sth = $self->xref->dbc->prepare($count_sql);
+  $sth = $dbi->prepare($count_sql);
   $sth->execute();
   $sth->bind_columns(\$count);
   $sth->fetch();
@@ -207,7 +208,7 @@ sub unlinked_entries{
   
   if($count){
     $failed = 1;
-    $sth = $self->xref->dbc->prepare($sql);
+    $sth = $dbi->prepare($sql);
     $sth->execute();
     $sth->bind_columns(\$xref_id);
     print STDERR "SQL QUERY: $sql\n";
@@ -222,7 +223,7 @@ sub unlinked_entries{
 
   $sql = "select distinct(d.object_xref_id) from identity_xref d left join object_xref o on d.object_xref_id = o.object_xref_id where o.object_xref_id is null limit 10";
 
-  $sth = $self->xref->dbc->prepare($count_sql);
+  $sth = $dbi->prepare($count_sql);
   $sth->execute();
   $sth->bind_columns(\$count);
   $sth->fetch();
@@ -230,7 +231,7 @@ sub unlinked_entries{
   
   if($count){
     $failed = 1;
-    $sth = $self->xref->dbc->prepare($sql);
+    $sth = $dbi->prepare($sql);
     $sth->execute();
     $sth->bind_columns(\$xref_id);
     print STDERR "SQL QUERY: $sql\n";
@@ -244,7 +245,7 @@ sub unlinked_entries{
 
   $sql = "select distinct(d.object_xref_id) from go_xref d left join object_xref o on d.object_xref_id = o.object_xref_id where o.object_xref_id is null limit 10";
 
-  $sth = $self->xref->dbc->prepare($count_sql);
+  $sth = $dbi->prepare($count_sql);
   $sth->execute();
   $sth->bind_columns(\$count);
   $sth->fetch();
@@ -252,7 +253,7 @@ sub unlinked_entries{
   
   if($count){
     $failed = 1;
-    $sth = $self->xref->dbc->prepare($sql);
+    $sth = $dbi->prepare($sql);
     $sth->execute();
     $sth->bind_columns(\$xref_id);
     print STDERR "SQL QUERY: $sql\n";
@@ -268,7 +269,7 @@ sub unlinked_entries{
     
     $sql = "select distinct(d.".$type."_id) from gene_transcript_translation d left join  ".$type."_stable_id x on d.".$type."_id = x.internal_id where x.internal_id is null and d.".$type."_id is not null limit 10";
     
-    $sth = $self->xref->dbc->prepare($count_sql);
+    $sth = $dbi->prepare($count_sql);
     $sth->execute();
     $sth->bind_columns(\$count);
     $sth->fetch();
@@ -276,7 +277,7 @@ sub unlinked_entries{
     
     if($count){
       $failed = 1;
-      $sth = $self->xref->dbc->prepare($sql);
+      $sth = $dbi->prepare($sql);
       $sth->execute();
       $sth->bind_columns(\$xref_id);
       print STDERR "SQL QUERY: $sql\n";
@@ -292,7 +293,7 @@ sub unlinked_entries{
   $count_sql = "select count(1) from xref x, source s, object_xref o left join go_xref g on o.object_xref_id = g.object_xref_id where x.xref_id = o.xref_id and s.source_id = x.source_id and s.name like 'GO' and ox_status in ('DUMP_OUT') and g.object_xref_id is null";
   $sql = "select distinct(o.object_xref_id) from xref x, source s, object_xref o left join go_xref g on o.object_xref_id = g.object_xref_id where x.xref_id = o.xref_id and s.source_id = x.source_id and s.name like 'GO' and ox_status in ('DUMP_OUT') and g.object_xref_id is null limit 10";
 
-  $sth = $self->xref->dbc->prepare($count_sql);
+  $sth = $dbi->prepare($count_sql);
   $sth->execute();
   $sth->bind_columns(\$count);
   $sth->fetch();
@@ -300,7 +301,7 @@ sub unlinked_entries{
   
   if($count){
     $failed = 1;
-    $sth = $self->xref->dbc->prepare($sql);
+    $sth = $dbi->prepare($sql);
     $sth->execute();
     $sth->bind_columns(\$xref_id);
     print STDERR "SQL QUERY: $sql\n";
@@ -311,11 +312,11 @@ sub unlinked_entries{
   }
 
   if(!$failed){
-    $sth_stat = $self->xref->dbc->prepare("insert into process_status (status, date) values('tests_finished',now())");
+    $sth_stat = $dbi->prepare("insert into process_status (status, date) values('tests_finished',now())");
     $sth_stat->execute();
   }
   else{
-    $sth_stat = $self->xref->dbc->prepare("insert into process_status (status, date) values('tests_failed',now())");
+    $sth_stat = $dbi->prepare("insert into process_status (status, date) values('tests_failed',now())");
     $sth_stat->execute();
   }
   $sth_stat->finish;
@@ -332,8 +333,9 @@ sub entry_number_check{
 
   my %old_object_xref_count;
   my %new_object_xref_count;
+  my $dbi = $self->xref->dbc;
 
-  my $sth = $self->xref->dbc->prepare('select s.name, count(distinct x.xref_id, ensembl_id) from xref x, object_xref ox, source s where ox.xref_id = x.xref_id  and x.source_id = s.source_id and ox_status = "DUMP_OUT" and s.name not like "AFFY%"   group by s.name');
+  my $sth = $dbi->prepare('select s.name, count(distinct x.xref_id, ensembl_id) from xref x, object_xref ox, source s where ox.xref_id = x.xref_id  and x.source_id = s.source_id and ox_status = "DUMP_OUT" and s.name not like "AFFY%"   group by s.name');
   $sth->execute();
   my ($name, $count);
   $sth->bind_columns(\$name,\$count);
@@ -380,6 +382,7 @@ sub name_change_check{
 
   my %new_name; # $old_name{$gene_id} = HGNC_%name
   my %id_to_stable_id;
+  my $dbi = $self->xref->dbc;
 
   my $official_name = $self->mapper->get_official_name;
   if(!defined($official_name)){
@@ -389,7 +392,7 @@ sub name_change_check{
 
   my $sql = 'select x.label, gsi.internal_id, gsi.stable_id from object_xref ox, xref x, gene_stable_id gsi, source s  where x.xref_id = ox.xref_id and ox.ensembl_object_type = "Gene" and gsi.internal_id = ox.ensembl_id and x.source_id = s.source_id and s.name like "'.$official_name.'_%"';
 
-  my $sth = $self->xref->dbc->prepare($sql);
+  my $sth = $dbi->prepare($sql);
   $sth->execute();
   my ($name, $gene_id, $stable_id);
   $sth->bind_columns(\$name,\$gene_id, \$stable_id);
@@ -408,7 +411,7 @@ sub name_change_check{
   # Use synonyms as well.
   my %alias;
   $sql = 'select x.label, sy.synonym from xref x, synonym sy, source so where x.xref_id = sy.xref_id and so.source_id = x.source_id and so.name like "'.$official_name.'_%" ';
-  $sth = $self->xref->dbc->prepare($sql);
+  $sth = $dbi->prepare($sql);
   $sth->execute();
   my ($syn);
   $sth->bind_columns(\$name,\$syn);
@@ -419,7 +422,7 @@ sub name_change_check{
   $sth->finish;  
 
   $sql = 'select x.label, sy.synonym from xref x, synonym sy, source so where x.xref_id = sy.xref_id and so.source_id = x.source_id and so.name like "EntrezGene"';
-  $sth = $self->xref->dbc->prepare($sql);
+  $sth = $dbi->prepare($sql);
   $sth->execute();
   $sth->bind_columns(\$name,\$syn);
   while($sth->fetch()){
@@ -457,12 +460,13 @@ sub name_change_check{
 sub direct_stable_id_check{
   my ($self) = @_;
 
+  my $dbi = $self->xref->dbc;
 
   foreach my $type (qw(gene transcript translation)){
     
     my $sql = "select s.name, count(*) from source s, xref x, ".$type."_direct_xref gdx left join ".$type."_stable_id gsi on gdx.ensembl_stable_id = gsi.stable_id where s.source_id = x.source_id and x.xref_id = gdx.general_xref_id and gsi.stable_id is null group by s.name";
     
-    my $sth = $self->xref->dbc->prepare($sql);
+    my $sth = $dbi->prepare($sql);
     $sth->execute();
     my ($name, $count);
     $sth->bind_columns(\$name,\$count);

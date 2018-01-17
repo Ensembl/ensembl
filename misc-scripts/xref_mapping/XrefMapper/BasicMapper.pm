@@ -490,7 +490,6 @@ sub get_id_from_species_name {
    while(my @row2 = $sth->fetchrow_array()){
      print STDERR $row2[0]."\n";
    }
-   croak("Please try again :-)\n");
  }
  $sth->finish();
  
@@ -651,8 +650,8 @@ sub get_official_name {
 # i.e. move all HGNC from transcripts to Genes.
 #
 sub biomart_fix{
-  my ($self, $db_name, $type1, $type2, $verbose) = @_;
-  my $xref_dbc = $self->xref->dbc;
+  my ($self, $db_name, $type1, $type2, $verbose, $xref_dbc) = @_;
+  $xref_dbc = $self->xref->dbc unless defined $xref_dbc;
 
   print "$db_name is associated with both $type1 and $type2 object types\n" if(defined($verbose));
   print "$db_name moved to Gene level.\n" if(!defined($verbose));
@@ -702,7 +701,6 @@ sub biomart_fix{
 		  source.name = "$db_name";
 EOF
   my $result =  $xref_dbc->do($sql) ;
-#  print "\n$sql\n";
 
   if($db_name eq "GO" || $db_name eq 'goslim_goa'){
     $sql =(<<"EOF2");
@@ -867,7 +865,6 @@ sub get_species_id_from_species_name{
     while(my @row2 = $sth->fetchrow_array()){
       print STDERR $row2[0]."\n";
     }
-    croak("Please try again :-)\n");
   }
   $sth->finish();
 
@@ -1031,6 +1028,8 @@ sub get_alt_allele_hashes{
 
 sub process_alt_alleles{
   my $self = shift;
+  my $dbc = shift;
+  $dbc = $self->xref->dbc unless defined $dbc;
 
   # ALL are on the Gene level now. This may change but for now it is okay.
   my ($alt_to_ref, $ref_to_alts) = $self->get_alt_allele_hashes();
@@ -1086,9 +1085,9 @@ DELETE ox
 DEL
 $del_sql .= "'".join("', '",$self->get_gene_specific_list()) . "')";
 
-  my $move_sth = $self->xref->dbc->prepare($move_sql)  || croak "$move_sql cannot be prepared";
-  my $del_ix_sth = $self->xref->dbc->prepare($del_ix_sql)    || croak "$del_ix_sql cannot be prepared";
-  my $del_sth = $self->xref->dbc->prepare($del_sql)    || croak "$del_sql cannot be prepared";
+  my $move_sth = $dbc->prepare($move_sql)  || croak "$move_sql cannot be prepared";
+  my $del_ix_sth = $dbc->prepare($del_ix_sql)    || croak "$del_ix_sql cannot be prepared";
+  my $del_sth = $dbc->prepare($del_sql)    || croak "$del_sql cannot be prepared";
 
   my $move_count = 0;
   my $del_ix_count = 0;
@@ -1229,14 +1228,15 @@ sub get_gene_specific_list {
 #
 sub source_defined_move{
   my $self = shift;
+  my $dbi = shift;
 
   my $tester = XrefMapper::TestMappings->new($self);
   if($tester->unlinked_entries){
     croak "Problems found before source_defined_move\n";
   }
   foreach my $source ($self->get_gene_specific_list()){
-    $self->biomart_fix($source,"Translation","Gene");
-    $self->biomart_fix($source,"Transcript","Gene");
+    $self->biomart_fix($source,"Translation","Gene", undef, undef, $dbi);
+    $self->biomart_fix($source,"Transcript","Gene", undef, undef, $dbi);
   }
   if($tester->unlinked_entries){
     croak "Problems found after source_defined_move\n";

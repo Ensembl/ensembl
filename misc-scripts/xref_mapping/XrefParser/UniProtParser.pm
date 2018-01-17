@@ -43,9 +43,12 @@ sub run {
   my ($self, $ref_arg) = @_;
   my $source_id    = $ref_arg->{source_id};
   my $species_id   = $ref_arg->{species_id};
+  my $species_name = $ref_arg->{species};
   my $files        = $ref_arg->{files};
   my $release_file = $ref_arg->{rel_file};
   my $verbose      = $ref_arg->{verbose};
+  my $dbi          = $ref_arg->{dbi};
+  $dbi = $self->dbi unless defined $dbi;
 
   if((!defined $source_id) or (!defined $species_id) or (!defined $files)){
     croak "Need to pass source_id, species_id, files and rel_file as pairs";
@@ -57,15 +60,15 @@ sub run {
   my ( $sp_source_id, $sptr_source_id, $sp_release, $sptr_release, $sptr_non_display_source_id, $sp_direct_source_id, $sptr_direct_source_id );
 
   $sp_source_id =
-    $self->get_source_id_for_source_name('Uniprot/SWISSPROT','sequence_mapped');
+    $self->get_source_id_for_source_name('Uniprot/SWISSPROT','sequence_mapped', $dbi);
   $sptr_source_id =
-    $self->get_source_id_for_source_name('Uniprot/SPTREMBL', 'sequence_mapped');
+    $self->get_source_id_for_source_name('Uniprot/SPTREMBL', 'sequence_mapped', $dbi);
 
   $sptr_non_display_source_id =
-    $self->get_source_id_for_source_name('Uniprot/SPTREMBL', 'protein_evidence_gt_2');
+    $self->get_source_id_for_source_name('Uniprot/SPTREMBL', 'protein_evidence_gt_2', $dbi);
 
-  $sp_direct_source_id = $self->get_source_id_for_source_name('Uniprot/SWISSPROT', 'direct');
-  $sptr_direct_source_id = $self->get_source_id_for_source_name('Uniprot/SPTREMBL', 'direct');
+  $sp_direct_source_id = $self->get_source_id_for_source_name('Uniprot/SWISSPROT', 'direct', $dbi);
+  $sptr_direct_source_id = $self->get_source_id_for_source_name('Uniprot/SPTREMBL', 'direct', $dbi);
 
   print "SwissProt source id for $file: $sp_source_id\n" if ($verbose);
   print "SpTREMBL source id for $file: $sptr_source_id\n" if ($verbose);
@@ -74,7 +77,7 @@ sub run {
   print "SpTREMBL direct source id for $file: $sptr_direct_source_id\n" if ($verbose);
  
   $self->create_xrefs( $sp_source_id, $sptr_source_id, $sptr_non_display_source_id, $species_id,
-      $file, $verbose, $sp_direct_source_id, $sptr_direct_source_id );
+      $file, $verbose, $sp_direct_source_id, $sptr_direct_source_id, $dbi );
 
     if ( defined $release_file ) {
         # Parse Swiss-Prot and SpTrEMBL release info from
@@ -92,11 +95,11 @@ sub run {
         $release_io->close();
 
         # Set releases
-        $self->set_release( $sp_source_id,        $sp_release );
-        $self->set_release( $sptr_source_id,      $sptr_release );
-	$self->set_release( $sptr_non_display_source_id, $sptr_release );
-        $self->set_release( $sp_direct_source_id, $sp_release );
-        $self->set_release( $sptr_direct_source_id,$sptr_release );
+        $self->set_release( $sp_source_id,        $sp_release, $dbi );
+        $self->set_release( $sptr_source_id,      $sptr_release, $dbi );
+	$self->set_release( $sptr_non_display_source_id, $sptr_release, $dbi );
+        $self->set_release( $sp_direct_source_id, $sp_release, $dbi );
+        $self->set_release( $sptr_direct_source_id,$sptr_release, $dbi );
     }
 
 
@@ -108,7 +111,7 @@ sub run {
 # Parse file into array of xref objects
 
 sub create_xrefs {
-  my ($self, $sp_source_id, $sptr_source_id, $sptr_non_display_source_id, $species_id, $file, $verbose, $sp_direct_source_id, $sptr_direct_source_id ) = @_;
+  my ($self, $sp_source_id, $sptr_source_id, $sptr_non_display_source_id, $species_id, $file, $verbose, $sp_direct_source_id, $sptr_direct_source_id, $dbi ) = @_;
 
   my $num_sp = 0;
   my $num_sptr = 0;
@@ -118,16 +121,16 @@ sub create_xrefs {
   my $num_direct_sp = 0;
   my $num_direct_sptr = 0;
 
-  my %dependent_sources = $self->get_xref_sources();
+  my %dependent_sources = $self->get_xref_sources($dbi);
 
   if(defined($dependent_sources{'MGI'})){
-    $dependent_sources{'MGI'} = $self->get_source_id_for_source_name("MGI","uniprot");
+    $dependent_sources{'MGI'} = $self->get_source_id_for_source_name("MGI","uniprot", $dbi);
   }
 
     my (%genemap) =
-      %{ $self->get_valid_codes( "mim_gene", $species_id ) };
+      %{ $self->get_valid_codes( "mim_gene", $species_id, $dbi ) };
     my (%morbidmap) =
-      %{ $self->get_valid_codes( "mim_morbid", $species_id ) };
+      %{ $self->get_valid_codes( "mim_morbid", $species_id, $dbi ) };
 
     my $uniprot_io = $self->get_filehandle($file);
     if ( !defined $uniprot_io ) { return }
@@ -137,7 +140,8 @@ sub create_xrefs {
   local $/ = "//\n";
 
   # Create a hash of all valid taxon_ids for this species
-  my %species2tax = $self->species_id2taxonomy();
+  my %species2tax = $self->species_id2taxonomy($dbi);
+  push @{$species2tax{$species_id}}, $species_id;
   my @tax_ids = @{$species2tax{$species_id}};
   my %taxonomy2species_id = map{ $_=>$species_id } @tax_ids;
 
@@ -150,7 +154,6 @@ sub create_xrefs {
   my %mgi_label_to_desc;
   my %mgi_label_to_acc;
 
-  my $dbi = $self->dbi();
   my $sth = $dbi->prepare("SELECT x.accession, x.label, x.description from xref x, source s where x.source_id = s.source_id and s.name like 'MGI' and s.priority_description like 'descriptions'");
   
   $sth->execute() or croak( $dbi->errstr() );
@@ -552,14 +555,14 @@ sub create_xrefs {
     push @xrefs, $xref;
 
     if ($count > 1000) {
-      $self->upload_xref_object_graphs(\@xrefs);
+      $self->upload_xref_object_graphs(\@xrefs, $dbi);
       $count = 0;
       undef @xrefs;
     }
 
   }
 
-  $self->upload_xref_object_graphs(\@xrefs) if scalar(@xrefs) > 0;
+  $self->upload_xref_object_graphs(\@xrefs, $dbi) if scalar(@xrefs) > 0;
 
   $uniprot_io->close();
 

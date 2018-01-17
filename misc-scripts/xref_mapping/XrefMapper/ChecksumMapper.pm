@@ -71,7 +71,7 @@ sub target {
 }
 
 sub process {
-  my ($self, $db_url) = @_;
+  my ($self, $db_url, $species_id) = @_;
 
   $self->_update_status('checksum_xrefs_started');
   my $source_id = $self->source_id();
@@ -82,7 +82,7 @@ sub process {
     my $method = $self->get_method();
     my $results = $method->run($target, $source_id, $object_type, $db_url);
     $self->log_progress('Starting upload');
-    $self->upload($results);
+    $self->upload($results, $species_id);
   }
 
   $self->_update_status('checksum_xrefs_finished');
@@ -90,7 +90,7 @@ sub process {
 }
 
 sub upload {
-  my ($self, $results) = @_;
+  my ($self, $results, $species_id) = @_;
   #The elements come in as an array looking like
   #  [ { id => 1, upi => 'UPI00000A', object_type => 'Translation' } ]
   
@@ -105,7 +105,8 @@ SQL
   
   my $h = $self->_xref_helper();
   my $source_id = $self->source_id();
-  my $species_id = $self->species_id();
+  $species_id = $self->species_id() unless defined $species_id;
+  if (!defined $species_id) { return; }
    
   $h->transaction(-CALLBACK => sub {
     

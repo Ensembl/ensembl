@@ -35,6 +35,8 @@ sub run_script {
   my $species_id   = $ref_arg->{species_id};
   my $file         = $ref_arg->{file};
   my $verbose      = $ref_arg->{verbose};
+  my $dbi          = $ref_arg->{dbi};
+  $dbi = $self->dbi unless defined $dbi;
 
   if((!defined $source_id) or (!defined $species_id) or (!defined $file) ){
     croak "Need to pass source_id, species_id and file as pairs";
@@ -61,9 +63,9 @@ sub run_script {
   }
 
   my $mrna_source_id =
-    $self->get_source_id_for_source_name('RefSeq_mRNA','ccds');
+    $self->get_source_id_for_source_name('RefSeq_mRNA','ccds', $dbi);
   my $pred_mrna_source_id =
-    $self->get_source_id_for_source_name('RefSeq_mRNA_predicted','ccds');
+    $self->get_source_id_for_source_name('RefSeq_mRNA_predicted','ccds', $dbi);
 
   if($verbose){
      print "RefSeq_mRNA source ID = $mrna_source_id\n";
@@ -76,8 +78,6 @@ sub run_script {
   my %label;
   my %version;
   my %description;
-
-  my $dbi = $self->dbi();
 
   my $sql =(<<'RSS');
 SELECT xref.accession, xref.label, xref.version,  xref.description 
@@ -221,11 +221,12 @@ CCDS
 				      desc       => $description{$refseq},
 				      source_id  => $new_source_id,
 				      species_id => $species_id,
+                                      dbi        => $dbi,
 				      info_type  => "DIRECT"} );
 
 
       foreach my $stable_id (@{$internal_to_stable_id{$internal_id}}){
-	$self->add_direct_xref($xref_id, $stable_id, "Transcript", "");
+	$self->add_direct_xref($xref_id, $stable_id, "Transcript", "", $dbi);
 	$direct_count++;
       }
 

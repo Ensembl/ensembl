@@ -33,6 +33,8 @@ sub run {
   my $species_id   = $ref_arg->{species_id};
   my $files        = $ref_arg->{files};
   my $verbose      = $ref_arg->{verbose};
+  my $dbi          = $ref_arg->{dbi};
+  $dbi = $self->dbi unless defined $dbi;
 
   if((!defined $source_id) or (!defined $species_id) or (!defined $files) ){
     croak "Need to pass source_id, species_id and files as pairs";
@@ -42,7 +44,7 @@ sub run {
   my $data_file = @{$files}[0];
 
   # Get the $source_id for the "UCSC" source.
-  $source_id = $self->get_source_id_for_source_name('UCSC');
+  $source_id = $self->get_source_id_for_source_name('UCSC', undef, $dbi);
 
   my $data_io = $self->get_filehandle($data_file);
 
@@ -104,6 +106,7 @@ sub run {
                  'cdsStart'   => $cdsStart,
                  'cdsEnd'     => $cdsEnd,
                  'exonStarts' => $exonStarts,
+                 'dbi'        => $dbi,
                  'exonEnds'   => $exonEnds );
 
     $self->add_xref( $source_id, $species_id, \%xref );

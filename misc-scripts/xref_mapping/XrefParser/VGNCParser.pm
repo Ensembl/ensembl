@@ -32,6 +32,8 @@ sub run {
   my $species_id   = $ref_arg->{species_id};
   my $files        = $ref_arg->{files};
   my $verbose      = $ref_arg->{verbose};
+  my $dbi          = $ref_arg->{dbi};
+  $dbi = $self->dbi unless defined $dbi;
 
   if((!defined $source_id) or (!defined $species_id) or (!defined $files) ){
     croak "Need to pass source_id, species_id, files and rel_file as pairs";
@@ -49,9 +51,9 @@ sub run {
     return 1;
   }
 
-  my $source_name = $self->get_source_name_for_source_id($source_id);
+  my $source_name = $self->get_source_name_for_source_id($source_id, $dbi);
   # Create a hash of all valid taxon_ids for this species
-  my %species2tax = $self->species_id2taxonomy();
+  my %species2tax = $self->species_id2taxonomy($dbi);
   my @tax_ids = @{$species2tax{$species_id}};
   my %taxonomy2species_id = map{ $_=>$species_id } @tax_ids;
 
@@ -80,13 +82,15 @@ sub run {
 				   type       => 'gene',
 				   acc        => $acc,
 				   label      => $symbol,
-				   desc       => $name,,
+				   desc       => $name,
+                                   dbi        => $dbi,
 				   source_id  => $source_id,
 				   species_id => $species_id} );
 
       $self->add_synonyms_for_hgnc( {source_id  => $source_id,
                                      name       => $acc,
                                      species_id => $species_id,
+                                     dbi        => $dbi,
                                      dead       => $previous_symbols,
                                      alias      => $synonyms});
 

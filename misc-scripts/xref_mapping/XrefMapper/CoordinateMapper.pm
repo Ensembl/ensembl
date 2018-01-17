@@ -86,6 +86,7 @@ sub run_coordinatemapping {
   my $species = $core_db->species();
 #  my $species_id = $self->mapper->core->species;
   my $species_id = XrefMapper::BasicMapper::get_species_id_from_species_name( $xref_db, $species );
+  if (!defined $species_id) { return; }
 
 
   # We only do coordinate mapping for mouse and human for now.

@@ -40,6 +40,8 @@ sub run_script {
   my $species_id   = $ref_arg->{species_id};
   my $file         = $ref_arg->{file};
   my $verbose      = $ref_arg->{verbose};
+  my $dbi          = $ref_arg->{dbi};
+  $dbi = $self->dbi unless $dbi;
 
   if((!defined $source_id) or (!defined $species_id) or (!defined $file) ){
     croak "Need to pass source_id, species_id and file as pairs";
@@ -111,9 +113,8 @@ sub run_script {
       push @{$prot2ensembl{$prot}}, $ens;
    }
   }
-  my $dbi = $self->dbi();
 
-  my $sw_source_id =  $self->get_source_id_for_source_name("uniprot/swissprot","sequence_mapped");
+  my $sw_source_id =  $self->get_source_id_for_source_name("uniprot/swissprot","sequence_mapped", $dbi);
   if($sw_source_id < 1){
     die "Could not find source id for uniprot/swissprot ???\n";
   }
@@ -174,6 +175,7 @@ sub run_script {
 				    desc       => $description,
 				    source_id  => $source_id,
 				    species_id => $species_id,
+                                    dbi        => $dbi,
 				    info_type  => "DIRECT"} );
 
 
@@ -193,7 +195,7 @@ sub run_script {
       #add the direct xref entry
       #
 
-      $self->add_direct_xref( $xref_id, $trans, "Translation", '');
+      $self->add_direct_xref( $xref_id, $trans, "Translation", '', $dbi);
 #      print ":".$trans;
 
       #

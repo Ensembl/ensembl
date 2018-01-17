@@ -37,6 +37,8 @@ sub run {
   my $files        = $ref_arg->{files};
   my $release_file = $ref_arg->{rel_file};
   my $verbose      = $ref_arg->{verbose};
+  my $dbi          = $ref_arg->{dbi};
+  $dbi = $self->dbi unless defined $dbi;
 
   if((!defined $source_id) or (!defined $species_id) or (!defined $files) ){
     croak "Need to pass source_id, species_id and files as pairs";
@@ -47,18 +49,18 @@ sub run {
 
 
   my $peptide_source_id =
-    $self->get_source_id_for_source_name('RefSeq_peptide');
+    $self->get_source_id_for_source_name('RefSeq_peptide', undef, $dbi);
   my $mrna_source_id =
-    $self->get_source_id_for_source_name('RefSeq_mRNA','refseq');
+    $self->get_source_id_for_source_name('RefSeq_mRNA', undef, $dbi);
   my $ncrna_source_id =
-    $self->get_source_id_for_source_name('RefSeq_ncRNA');
+    $self->get_source_id_for_source_name('RefSeq_ncRNA', undef, $dbi);
 
   my $pred_peptide_source_id =
-    $self->get_source_id_for_source_name('RefSeq_peptide_predicted');
+    $self->get_source_id_for_source_name('RefSeq_peptide_predicted', undef, $dbi);
   my $pred_mrna_source_id =
-    $self->get_source_id_for_source_name('RefSeq_mRNA_predicted','refseq');
+    $self->get_source_id_for_source_name('RefSeq_mRNA_predicted','refseq', $dbi);
   my $pred_ncrna_source_id =
-    $self->get_source_id_for_source_name('RefSeq_ncRNA_predicted');
+    $self->get_source_id_for_source_name('RefSeq_ncRNA_predicted', undef, $dbi);
 
   if($verbose){
     print "RefSeq_peptide source ID = $peptide_source_id\n";
@@ -78,7 +80,7 @@ sub run {
 			       $mrna_source_id, $ncrna_source_id,
 			       $pred_mrna_source_id, $pred_ncrna_source_id,
                                $file,
-                               $species_id );
+                               $species_id, $dbi );
 
         if ( !defined($xrefs) ) {
             return 1;    #error
@@ -88,7 +90,7 @@ sub run {
         push @xrefs, @{$xrefs};
     }
 
-    if ( !defined( $self->upload_xref_object_graphs( \@xrefs ) ) ) {
+    if ( !defined( $self->upload_xref_object_graphs( \@xrefs, $dbi ) ) ) {
         return 1;    # error
     }
 
@@ -107,13 +109,13 @@ sub run {
 
         print "RefSeq release: '$release'\n";
 
-        $self->set_release( $source_id,              $release );
-        $self->set_release( $peptide_source_id,      $release );
-        $self->set_release( $mrna_source_id,         $release );
-        $self->set_release( $ncrna_source_id,        $release );
-        $self->set_release( $pred_peptide_source_id, $release );
-        $self->set_release( $pred_mrna_source_id,    $release );
-        $self->set_release( $pred_ncrna_source_id,   $release );
+        $self->set_release( $source_id,              $release, $dbi );
+        $self->set_release( $peptide_source_id,      $release, $dbi );
+        $self->set_release( $mrna_source_id,         $release, $dbi );
+        $self->set_release( $ncrna_source_id,        $release, $dbi );
+        $self->set_release( $pred_peptide_source_id, $release, $dbi );
+        $self->set_release( $pred_mrna_source_id,    $release, $dbi );
+        $self->set_release( $pred_ncrna_source_id,   $release, $dbi );
     }
 
   return 0; # successfull
@@ -130,10 +132,10 @@ sub run {
 sub create_xrefs {
   my ($self, $peptide_source_id, $pred_peptide_source_id,
       $mrna_source_id, $ncrna_source_id, 
-      $pred_mrna_source_id, $pred_ncrna_source_id, $file, $species_id ) = @_;
+      $pred_mrna_source_id, $pred_ncrna_source_id, $file, $species_id, $dbi ) = @_;
 
   # Create a hash of all valid names for this species
-  my %species2name = $self->species_id2name();
+  my %species2name = $self->species_id2name($dbi);
   my @names   = @{$species2name{$species_id}};
   my %name2species_id     = map{ $_=>$species_id } @names;
   # my %name2species_id = $self->name2species_id();

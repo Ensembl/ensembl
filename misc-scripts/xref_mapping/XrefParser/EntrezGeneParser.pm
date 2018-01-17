@@ -32,6 +32,8 @@ sub run {
   my $species_id   = $ref_arg->{species_id};
   my $files        = $ref_arg->{files};
   my $verbose      = $ref_arg->{verbose};
+  my $dbi          = $ref_arg->{dbi};
+  $dbi = $self->dbi unless defined $dbi;
 
   if((!defined $source_id) or (!defined $species_id) or (!defined $files) ){
     croak "Need to pass source_id, species_id, files and rel_file as pairs";
@@ -40,9 +42,9 @@ sub run {
 
   my $file = @{$files}[0];
 
-  my $wiki_source_id = $self->get_source_id_for_source_name("WikiGene");
+  my $wiki_source_id = $self->get_source_id_for_source_name("WikiGene", undef, $dbi);
 
-  my %species_tax_id = %{$self->get_taxonomy_from_species_id($species_id)};
+  my %species_tax_id = %{$self->get_taxonomy_from_species_id($species_id, $dbi)};
   
 
   my $eg_io = $self->get_filehandle($file);
@@ -120,6 +122,7 @@ sub run {
 		      desc       => $desc,
 		      source_id  => $source_id,
 		      species_id => $species_id,
+                      dbi        => $dbi,
 		      info_type  =>"DEPENDENT"} );
 
     $self->add_xref({ acc        => $acc,
@@ -127,13 +130,14 @@ sub run {
 		      desc       => $desc,
 		      source_id  => $wiki_source_id,
 		      species_id => $species_id,
+                      dbi        => $dbi,
 		      info_type  => "DEPENDENT" } ); #,"From EntrezGene $acc");
     $xref_count++;
 
     my (@syn) = split(/\|/ ,$arr[$gene_synonyms_index]);
     foreach my $synonym (@syn){
       if($synonym ne "-"){
-	$self->add_to_syn($acc, $source_id, $synonym, $species_id);
+	$self->add_to_syn($acc, $source_id, $synonym, $species_id, $dbi);
 	$syn_count++;
       }
     }

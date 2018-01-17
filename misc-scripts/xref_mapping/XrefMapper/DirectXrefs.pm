@@ -45,15 +45,14 @@ sub new {
 
 sub get_ins_ix_sth {
   my $self = shift;
+  my $dbi = shift;
 
-  if(!defined($self->{'_ins_ix_sth'})){
-    my $sql = (<<"IIX");
+  my $sql = (<<"IIX");
 INSERT IGNORE INTO identity_xref (object_xref_id, query_identity, target_identity)
   VALUES (?, 100, 100)
 IIX
-    $self->{'_ins_ix_sth'} = $self->xref->dbc->prepare($sql);
-  }
-  return $self->{'_ins_ix_sth'};
+  my $sth = $dbi->prepare($sql);
+  return $sth;
 }
 
 
@@ -63,22 +62,19 @@ sub process {
   # Now process the direct xrefs and add data to the object xrefs remember dependent xrefs.
 
   my $object_xref_id;
-  my $ox_sth = $self->xref->dbc->prepare("select max(object_xref_id) from object_xref");
-  $ox_sth->execute();
-  $ox_sth->bind_columns(\$object_xref_id);
-  $ox_sth->fetch();
-  $ox_sth->finish;
+  my $dbi = $self->xref->dbc;
 
   # First get the sths needed for the processing of the direct xrefs;
   my $ins_ox_sql = (<<"IOS");
-INSERT INTO object_xref (object_xref_id, ensembl_id, xref_id, ensembl_object_type, linkage_type) 
-  VALUES (?, ?, ?, ?, ?)
+INSERT INTO object_xref (ensembl_id, xref_id, ensembl_object_type, linkage_type) 
+  VALUES (?, ?, ?, ?)
 IOS
-  my $ins_ox_sth = $self->xref->dbc->prepare($ins_ox_sql);
+  my $ins_ox_sth = $dbi->prepare($ins_ox_sql);
+  my $get_object_xref_id_sth = $self->get_ox_id_sth($dbi);
 
   # Direct xrefs can be considered to be 100% matching
 
-  my $ins_ix_sth = $self->get_ins_ix_sth();
+  my $ins_ix_sth = $self->get_ins_ix_sth($dbi);
 
 my $stable_sql=(<<"SQL");
   SELECT so.name, dx.general_xref_id, s.internal_id, dx.ensembl_stable_id , dx.linkage_xref
@@ -101,7 +97,7 @@ SQL
    my ($dbname, $xref_id, $internal_id, $stable_id, $linkage_type);
    my $sql = $stable_sql;
    $sql =~ s/TYPE/$table/g;
-   my $sth = $self->xref->dbc->prepare($sql);
+   my $sth = $dbi->prepare($sql);
    $sth->execute();
    $sth->bind_columns(\$dbname, \$xref_id, \$internal_id, \$stable_id, \$linkage_type);
    my $count =0;
@@ -126,7 +122,9 @@ SQL
      if($internal_id == 0){
        die "Problem could not find stable id $stable_id and got past the first check for $dbname\n";
      }
-     $ins_ox_sth->execute($object_xref_id, $internal_id, $xref_id, $table, 'DIRECT');
+     $ins_ox_sth->execute($internal_id, $xref_id, $table, 'DIRECT');
+     $get_object_xref_id_sth->execute($internal_id, $xref_id, $table, 'DIRECT');
+     $object_xref_id = ($get_object_xref_id_sth->fetchrow_array())[0];
      if($ins_ox_sth->err){
        $duplicate_direct_count++;
        next; #duplicate
@@ -136,10 +134,10 @@ SQL
        push  @master_xref_ids, $xref_id;
      }
      $self->process_dependents({master_xrefs        => \@master_xref_ids,
-				max_object_xref_id => \$object_xref_id,
 				dup_count          => \$duplicate_dependent_count,
 				table              => $table,
-				internal_id        => $internal_id
+				internal_id        => $internal_id,
+                                dbi                => $dbi,
 			       });
  
    }
@@ -152,7 +150,7 @@ SQL
    print STDERR "*WARNING*: ".$err_count{$key}." direct xrefs for database ".$key." could not be added as their stable_ids could not be found\n";
  }
 
- my $sth = $self->xref->dbc->prepare("insert into process_status (status, date) values('direct_xrefs_parsed',now())");
+ my $sth = $dbi->prepare("insert into process_status (status, date) values('direct_xrefs_parsed',now())");
  $sth->execute();
  $sth->finish;
 
@@ -162,72 +160,94 @@ SQL
 
 sub get_dep_sth {
   my $self = shift;
+  my $dbi = shift;
 
-  if(!defined($self->{'_dep_sth'})){
-    my $dep_sql = (<<"DSS");
+  my $dep_sql = (<<"DSS");
 SELECT dependent_xref_id, linkage_annotation
   FROM dependent_xref
     WHERE master_xref_id = ?
 DSS
-   $self->{'_dep_sth'} = $self->xref->dbc->prepare($dep_sql);
-  }
-  return $self->{'_dep_sth'};
+  my $sth = $dbi->prepare($dep_sql);
+  return $sth;
 }
 
 
 sub get_dep_go_sth {
   my $self = shift;
+  my $dbi = shift;
 
-  if(!defined($self->{'_dep_go_sth'})){
-    my $sql = (<<"IGO");
+  my $sql = (<<"IGO");
 INSERT INTO go_xref (object_xref_id, linkage_type, source_xref_id) 
   VALUES (?,?,?)
 IGO
-    $self->{'_dep_go_sth'} = $self->xref->dbc->prepare($sql);
-  }
-  return $self->{'_dep_go_sth'};
+  my $sth = $dbi->prepare($sql);
+  return $sth;
 }
 
 
 sub get_add_dep_ox {
   my $self = shift;
+  my $dbi = shift;
 
-  if(!defined($self->{'_add_dep_ox_sth'})){
-    my $sql = (<<"IO2");
-INSERT INTO object_xref (object_xref_id, ensembl_id, xref_id, ensembl_object_type, linkage_type, master_xref_id)
-   VALUES (?, ?, ?, ?, ?, ?)
+  my $sql = (<<"IO2");
+INSERT INTO object_xref (ensembl_id, xref_id, ensembl_object_type, linkage_type, master_xref_id)
+   VALUES (?, ?, ?, ?, ?)
 IO2
-    $self->{'_add_dep_ox_sth'} = $self->xref->dbc->prepare($sql);
-  }
-  return $self->{'_add_dep_ox_sth'};
+  my $sth = $dbi->prepare($sql);
+  return $sth;
+}
+
+sub get_ox_id_sth {
+  my $self = shift;
+  my $dbi = shift;
+
+  my $sql = (<<"IO2");
+select object_xref_id from object_xref where ensembl_id = ? and xref_id = ? and ensembl_object_type = ? and linkage_type = ?
+IO2
+  my $sth = $dbi->prepare($sql);
+  return $sth;
+}
+
+sub get_ox_id_master_sth {
+  my $self = shift;
+  my $dbi = shift;
+
+  my $sql = (<<"IO2");
+select object_xref_id from object_xref where ensembl_id = ? and xref_id = ? and ensembl_object_type = ? and linkage_type = ? and master_xref_id = ?
+IO2
+  my $sth = $dbi->prepare($sql);
+  return $sth;
 }
 
 
 sub process_dependents {
   my ($self, $arg_ref) = @_;
 
+  my $dbi                 = $arg_ref->{dbi};
   my $master_xref_ids     = $arg_ref->{master_xrefs};
-  my $object_xref_id      = $arg_ref->{max_object_xref_id};
   my $duplicate_dep_count = $arg_ref->{dup_count};
   my $table               = $arg_ref->{table};
   my $internal_id         = $arg_ref->{internal_id};
 
-  my $dep_sth         = $self->get_dep_sth();
-  my $ins_go_dep_sth  = $self->get_dep_go_sth();
-  my $ins_ox_sth2     = $self->get_add_dep_ox();
-  my $ins_ix_sth      = $self->get_ins_ix_sth();
+  my $dep_sth         = $self->get_dep_sth($dbi);
+  my $ins_go_dep_sth  = $self->get_dep_go_sth($dbi);
+  my $ins_ox_sth2     = $self->get_add_dep_ox($dbi);
+  my $ins_ix_sth      = $self->get_ins_ix_sth($dbi);
+  my $get_object_xref_id_sth = $self->get_ox_id_master_sth($dbi);
 
 
   local $ins_ox_sth2->{RaiseError} = 0;  # want to see duplicates and not die automatically
   local $ins_ox_sth2->{PrintError} = 0;
 
+  my $object_xref_id;
   while(my $master_xref_id = pop(@$master_xref_ids)){
     my ($dep_xref_id, $link);
     $dep_sth->execute($master_xref_id);
     $dep_sth->bind_columns(\$dep_xref_id, \$link);
     while($dep_sth->fetch){
-      $$object_xref_id++;
-      $ins_ox_sth2->execute($$object_xref_id, $internal_id, $dep_xref_id, $table, 'DEPENDENT', $master_xref_id);
+      $ins_ox_sth2->execute($internal_id, $dep_xref_id, $table, 'DEPENDENT', $master_xref_id);
+      $get_object_xref_id_sth->execute($internal_id, $dep_xref_id, $table, 'DEPENDENT', $master_xref_id);
+      $object_xref_id = ($get_object_xref_id_sth->fetchrow_array())[0];
       if($ins_ox_sth2->err){
 	my $err = $ins_ox_sth2->errstr;
 	if($err =~ /Duplicate/){
@@ -238,7 +258,7 @@ sub process_dependents {
 	  die "Problem loading error is $err\n";
 	} 
       }
-      $ins_ix_sth->execute($$object_xref_id);
+      $ins_ix_sth->execute($object_xref_id);
       push @$master_xref_ids, $dep_xref_id; # get the dependent, dependents just in case
 
       if(defined($link) and $link ne ""){ # we have a go term linkage type

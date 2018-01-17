@@ -33,6 +33,8 @@ sub run_script {
   my $file         = $ref_arg->{file};
   my $verbose      = $ref_arg->{verbose};
   my $db           = $ref_arg->{dba};
+  my $dbi          = $ref_arg->{dbi};
+  $dbi = $self->dbi unless defined $dbi;
 
   if((!defined $source_id) or (!defined $species_id) or (!defined $file) ){
     croak "Need to pass source_id, species_id, file as pairs";
@@ -87,14 +89,14 @@ sub run_script {
   }
 
 
-  my (%swissprot)  =  %{$self->get_valid_codes('Uniprot/SWISSPROT',$species_id)};
-  my (%refseq) =  %{$self->get_valid_codes('refseq',$species_id)};
+  my (%swissprot)  =  %{$self->get_valid_codes('Uniprot/SWISSPROT',$species_id, $dbi)};
+  my (%refseq) =  %{$self->get_valid_codes('refseq',$species_id, $dbi)};
   my @list;
   push @list, 'refseq_peptide';
   push @list, 'refseq_mRNA';
-  my (%entrezgene) = %{$self->get_valid_xrefs_for_dependencies('EntrezGene',@list)};
-  my $source_name = $self->get_source_name_for_source_id($source_id);
-  my $name_to_source_id = $self->get_sources($source_name);
+  my (%entrezgene) = %{$self->get_valid_xrefs_for_dependencies('EntrezGene', $dbi, @list)};
+  my $source_name = $self->get_source_name_for_source_id($source_id, $dbi);
+  my $name_to_source_id = $self->get_sources($source_name, $dbi);
 
 
   my %name_count;
@@ -157,11 +159,13 @@ sub run_script {
 				   label       => $symbol,
 				   desc        => $name,
 				   source_id   => $source_id,
+                                   dbi         => $dbi,
 				   species_id  => $species_id} );
 
       $self->add_synonyms_for_hgnc( {source_id  => $source_id,
 				     name       => $acc,
 				     species_id => $species_id,
+                                     dbi        => $dbi,
 				     dead       => $previous_symbols,
 				     alias      => $synonyms} );
       $name_count{$type}++;
@@ -187,11 +191,13 @@ sub run_script {
                                    label       => $symbol,
                                    desc        => $name,
                                    source_id   => $source_id,
+                                   dbi         => $dbi,
                                    species_id  => $species_id} );
 
       $self->add_synonyms_for_hgnc( {source_id  => $source_id,
                                      name       => $acc,
                                      species_id => $species_id,
+                                     dbi        => $dbi,
                                      dead       => $previous_symbols,
                                      alias      => $synonyms} );
       $name_count{$type}++;
@@ -211,7 +217,8 @@ sub run_script {
 				   type       => 'gene',
 				   acc        => $acc,
 				   label      => $symbol,
-				   desc       => $name,,
+				   desc       => $name,
+                                   dbi        => $dbi,
 				   source_id  => $source_id,
 				   species_id => $species_id} );
 
@@ -219,6 +226,7 @@ sub run_script {
 				     name       => $acc,
 				     species_id => $species_id,
 				     dead       => $previous_symbols,
+                                     dbi        => $dbi,
 				     alias      => $synonyms});
 
     }
@@ -236,11 +244,13 @@ sub run_script {
                                       label          => $symbol,
                                       desc           => $name || '',
                                       source_id      => $source_id,
+                                      dbi            => $dbi,
                                       species_id     => $species_id} );
         }
         $self->add_synonyms_for_hgnc( {source_id  => $source_id,
                                        name       => $acc,
                                        species_id => $species_id,
+                                       dbi        => $dbi,
                                        dead       => $previous_symbols,
                                        alias      => $synonyms});
       }
@@ -260,12 +270,14 @@ sub run_script {
 				    label          => $symbol,
 				    desc           => $name || '',
 				    source_id      => $source_id,
+                                    dbi            => $dbi,
 				    species_id     => $species_id} );
         $name_count{$type}++;
         $self->add_synonyms_for_hgnc( {source_id  => $source_id,
 				       name       => $acc,
 				       species_id => $species_id,
 				       dead       => $previous_symbols,
+                                       dbi        => $dbi,
 				       alias      => $synonyms});
       }
     }
@@ -278,11 +290,13 @@ sub run_script {
 			desc       => $name,
 			source_id  => $source_id,
 			species_id => $species_id,
+                        dbi        => $dbi,
 			info_type  => "MISC"} );
 
       $self->add_synonyms_for_hgnc( {source_id  => $source_id,
 				     name       => $acc,
 				     species_id => $species_id,
+                                     dbi        => $dbi,
 				     dead       => $previous_symbols,
 				     alias      => $synonyms});
       $mismatch++;
@@ -305,20 +319,21 @@ sub run_script {
 sub get_sources {
   my $self = shift;
   my $source_name = shift;
+  my $dbi = shift;
   my %name_to_source_id;
 
   my @sources = ('entrezgene_manual', 'refseq_manual', 'entrezgene_mapped', 'refseq_mapped', 'ensembl_manual', 'swissprot_manual', 'desc_only', 'ccds');
 
 
   foreach my $key (@sources) {
-  my $source_id = $self->get_source_id_for_source_name($source_name, $key);
+  my $source_id = $self->get_source_id_for_source_name($source_name, $key, $dbi);
     if(!(defined $source_id)){
       die 'Could not get source id for HGNC and '. $key ."\n";
     }
     $name_to_source_id{ $key } = $source_id;
   }
 
-  my $source_id = $self->get_source_id_for_source_name('LRG_HGNC_notransfer');
+  my $source_id = $self->get_source_id_for_source_name('LRG_HGNC_notransfer', undef, $dbi);
   if(!(defined $source_id) ){
     die 'Could not get source id for LRG_HGNC_notransfer\n';
   }
@@ -335,18 +350,19 @@ sub add_synonyms_for_hgnc{
   my $species_id = $ref_arg->{species_id};
   my $dead_name  = $ref_arg->{dead};
   my $alias      = $ref_arg->{alias};
+  my $dbi        = $ref_arg->{dbi};
 
   if (defined $dead_name ) {     # dead name, add to synonym
     my @array2 = split ',\s*', $dead_name ;
     foreach my $arr (@array2){
-      $self->add_to_syn($name, $source_id, $arr, $species_id);
+      $self->add_to_syn($name, $source_id, $arr, $species_id, $dbi);
     }
   }
 
   if (defined $alias ) {     # alias, add to synonym
     my @array2 = split ',\s*', $alias;
     foreach my $arr (@array2){
-      $self->add_to_syn($name, $source_id, $arr, $species_id);
+      $self->add_to_syn($name, $source_id, $arr, $species_id, $dbi);
     }
   }
   return;

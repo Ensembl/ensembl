@@ -44,6 +44,8 @@ sub run {
   my $species_id   = $ref_arg->{species_id};
   my $files        = $ref_arg->{files};
   my $verbose      = $ref_arg->{verbose};
+  my $dbi          = $ref_arg->{dbi};
+  $dbi = $self->dbi unless defined $dbi;
 
   if((!defined $source_id) or (!defined $species_id) or (!defined $files) ){
     croak "Need to pass source_id, species_id and files as pairs";
@@ -101,7 +103,7 @@ sub run {
 
         ++$parsed_count;
 
-        my $xref_id = $self->get_xref( $dbass_gene_id, $source_id, $species_id );
+        my $xref_id = $self->get_xref( $dbass_gene_id, $source_id, $species_id, $dbi );
 
         if ( !defined($xref_id) || $xref_id eq '' ) {
             $xref_id = $self->add_xref({ acc        => $dbass_gene_id,
@@ -109,14 +111,15 @@ sub run {
 					 label      => $label,
 					 desc       => $description,
 					 source_id  => $source_id,
+                                         dbi        => $dbi,
 					 species_id => $species_id,
 					 info_type => "DIRECT"} );
         }
 	
-	$self->add_direct_xref( $xref_id, $ensembl_id, $type, '');
+	$self->add_direct_xref( $xref_id, $ensembl_id, $type, '', $dbi);
 	
 	if (defined ($synonym)) {
-		$self->add_synonym($xref_id, $synonym);
+		$self->add_synonym($xref_id, $synonym, $dbi);
 	}
 	elsif ($synonym =~ /^\s/){
 		print "There is white space! \n" if($verbose);	

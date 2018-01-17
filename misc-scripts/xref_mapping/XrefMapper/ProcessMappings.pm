@@ -71,9 +71,11 @@ sub process_mappings {
   my %query_cutoff;
   my %target_cutoff;
   my ($job_id, $percent_query_cutoff, $percent_target_cutoff);
-  my $sth = $self->xref->dbc->prepare("select job_id, percent_query_cutoff, percent_target_cutoff from mapping");
+  my $dbi = $self->xref->dbc();
+  my $sth = $dbi->prepare("select job_id, percent_query_cutoff, percent_target_cutoff from mapping");
   $sth->execute();
   $sth->bind_columns(\$job_id, \$percent_query_cutoff, \$percent_target_cutoff);
+  my $object_xref_id;
 
   while($sth->fetch){
     $query_cutoff{$job_id} = $percent_query_cutoff;    
@@ -83,7 +85,7 @@ sub process_mappings {
 
   my ($root_dir, $map, $status, $out, $err, $array_number); 
   my ($map_file, $out_file, $err_file);
-  my $map_sth = $self->xref->dbc->prepare("select root_dir, map_file, status, out_file, err_file, array_number, job_id from mapping_jobs");
+  my $map_sth = $dbi->prepare("select root_dir, map_file, status, out_file, err_file, array_number, job_id from mapping_jobs");
   $map_sth->execute();
   $map_sth->bind_columns(\$root_dir, \$map, \$status, \$out, \$err, \$array_number, \$job_id);
   my $already_processed_count = 0;
@@ -91,7 +93,7 @@ sub process_mappings {
   my $error_count = 0;
   my $empty_count = 0;
 
-  my $stat_sth = $self->xref->dbc->prepare("update mapping_jobs set status = ? where job_id = ? and array_number = ?");
+  my $stat_sth = $dbi->prepare("update mapping_jobs set status = ? where job_id = ? and array_number = ?");
 
   while($map_sth->fetch()){
     my $err_file = $root_dir."/".$err;
@@ -119,7 +121,7 @@ sub process_mappings {
       }
       else{ #err file checks out so process the mapping file.
 	if(-e $map_file){
-	  my $count = $self->process_map_file($map_file, $query_cutoff{$job_id}, $target_cutoff{$job_id}, $job_id, $array_number);
+	  my $count = $self->process_map_file($map_file, $query_cutoff{$job_id}, $target_cutoff{$job_id}, $job_id, $array_number, $dbi);
 	  if( $count > 0){
 	    $processed_count++;
 	    $stat_sth->execute('SUCCESS',$job_id, $array_number);
@@ -149,7 +151,7 @@ sub process_mappings {
   print "already processed = $already_processed_count, processed = $processed_count, errors = $error_count, empty = $empty_count\n" if($self->verbose); 
 
   if(!$error_count){
-    my $sth = $self->xref->dbc->prepare("insert into process_status (status, date) values('mapping_processed',now())");
+    my $sth = $dbi->prepare("insert into process_status (status, date) values('mapping_processed',now())");
     $sth->execute();
     $sth->finish;
   }
@@ -160,13 +162,13 @@ sub process_mappings {
 
 #return number of lines parsed if succesfull. -1 for fail
 sub process_map_file{
-  my ($self, $map_file, $query_cutoff, $target_cutoff, $job_id, $array_number) = @_;
+  my ($self, $map_file, $query_cutoff, $target_cutoff, $job_id, $array_number, $dbi) = @_;
   my $ret = 1;
 
 
  
   my $ensembl_type = "Translation";
-  if($map_file =~ /_dna_/){
+  if($map_file =~ /dna_/){
     $ensembl_type = "Transcript";
   }
 
@@ -179,14 +181,14 @@ sub process_map_file{
   my $total_lines = 0;
   my $root_dir = $self->core->dir;
 
-  my $ins_go_sth = $self->xref->dbc->prepare("insert ignore into go_xref (object_xref_id, linkage_type, source_xref_id) values(?,?,?)");
-  my $dep_sth    = $self->xref->dbc->prepare("select dependent_xref_id, linkage_annotation from dependent_xref where master_xref_id = ?");
-  my $start_sth  = $self->xref->dbc->prepare("update mapping_jobs set object_xref_start = ? where job_id = ? and array_number = ?");
-  my $end_sth    = $self->xref->dbc->prepare("update mapping_jobs set object_xref_end = ? where job_id = ? and array_number = ?");
-#  my $update_dependent_xref_sth = $self->xref->dbc->prepare("update dependent_xref set object_xref_id = ? where master_xref_id = ? and dependent_xref_id =?");
+  my $ins_go_sth = $dbi->prepare("insert ignore into go_xref (object_xref_id, linkage_type, source_xref_id) values(?,?,?)");
+  my $dep_sth    = $dbi->prepare("select dependent_xref_id, linkage_annotation from dependent_xref where master_xref_id = ?");
+  my $start_sth  = $dbi->prepare("update mapping_jobs set object_xref_start = ? where job_id = ? and array_number = ?");
+  my $end_sth    = $dbi->prepare("update mapping_jobs set object_xref_end = ? where job_id = ? and array_number = ?");
+#  my $update_dependent_xref_sth = $dbi->prepare("update dependent_xref set object_xref_id = ? where master_xref_id = ? and dependent_xref_id =?");
 
   my $object_xref_id;
-  my $sth = $self->xref->dbc->prepare("select max(object_xref_id) from object_xref");
+  my $sth = $dbi->prepare("select max(object_xref_id) from object_xref");
   $sth->execute();
   $sth->bind_columns(\$object_xref_id);
   $sth->fetch();
@@ -196,19 +198,21 @@ sub process_map_file{
   }
   
 
-  my $object_xref_sth = $self->xref->dbc->prepare("insert into object_xref (object_xref_id, ensembl_id,ensembl_object_type, xref_id, linkage_type, ox_status ) values (?, ?, ?, ?, ?, ?)");
-  my $object_xref_sth2 = $self->xref->dbc->prepare("insert into object_xref (object_xref_id, ensembl_id,ensembl_object_type, xref_id, linkage_type, ox_status, master_xref_id ) values (?, ?, ?, ?, ?, ?, ?)");
+  my $object_xref_sth = $dbi->prepare("insert into object_xref (ensembl_id,ensembl_object_type, xref_id, linkage_type, ox_status ) values (?, ?, ?, ?, ?)");
+  my $object_xref_sth2 = $dbi->prepare("insert into object_xref (ensembl_id,ensembl_object_type, xref_id, linkage_type, ox_status, master_xref_id ) values (?, ?, ?, ?, ?, ?)");
+  my $get_object_xref_id_sth = $dbi->prepare("select object_xref_id from object_xref where ensembl_id = ? and ensembl_object_type = ? and xref_id = ? and linkage_type = ? and ox_status = ?");
+  my $get_object_xref_id_master_sth = $dbi->prepare("select object_xref_id from object_xref where ensembl_id = ? and ensembl_object_type = ? and xref_id = ? and linkage_type = ? and ox_status = ? and master_xref_id = ?");
   local $object_xref_sth->{RaiseError}; #catch duplicates
   local $object_xref_sth->{PrintError}; # cut down on error messages
   local $object_xref_sth2->{RaiseError}; #catch duplicates
   local $object_xref_sth2->{PrintError}; # cut down on error messages
 
-  my $identity_xref_sth = $self->xref->dbc->prepare("insert ignore into identity_xref (object_xref_id, query_identity, target_identity, hit_start, hit_end, translation_start, translation_end, cigar_line, score ) values (?, ?, ?, ?, ?, ?, ?, ?, ?)");
+  my $identity_xref_sth = $dbi->prepare("insert ignore into identity_xref (object_xref_id, query_identity, target_identity, hit_start, hit_end, translation_start, translation_end, cigar_line, score ) values (?, ?, ?, ?, ?, ?, ?, ?, ?)");
 
-  my $ins_dep_ix_sth = $self->xref->dbc->prepare("insert ignore into identity_xref (object_xref_id, query_identity, target_identity) values(?, ?, ?)");
+  my $ins_dep_ix_sth = $dbi->prepare("insert ignore into identity_xref (object_xref_id, query_identity, target_identity) values(?, ?, ?)");
 
-  my $source_name_sth = $self->xref->dbc->prepare("select s.name from xref x join source s using(source_id) where x.xref_id = ?");
-  my $biotype_sth = $self->xref->dbc->prepare("select biotype from transcript_stable_id where internal_id = ?");
+  my $source_name_sth = $dbi->prepare("select s.name from xref x join source s using(source_id) where x.xref_id = ?");
+  my $biotype_sth = $dbi->prepare("select biotype from transcript_stable_id where internal_id = ?");
 
   my $last_query_id = 0;
   my $best_match_found = 0;
@@ -300,8 +304,9 @@ sub process_map_file{
       $status = "FAILED_CUTOFF";
     }		
 
-    $object_xref_id++;
-    $object_xref_sth->execute($object_xref_id, $target_id, $ensembl_type, $query_id, 'SEQUENCE_MATCH', $status) ;
+    $object_xref_sth->execute($target_id, $ensembl_type, $query_id, 'SEQUENCE_MATCH', $status) ;
+    $get_object_xref_id_sth->execute($target_id, $ensembl_type, $query_id, 'SEQUENCE_MATCH', $status);
+    $object_xref_id = ($get_object_xref_id_sth->fetchrow_array())[0];
     if($object_xref_sth->err){
       my $err = $object_xref_sth->errstr;
       if($err =~ /Duplicate/){
@@ -338,8 +343,9 @@ sub process_map_file{
        $dep_sth->execute($master_xref_id);
        $dep_sth->bind_columns(\$dep_xref_id, \$link);
        while($dep_sth->fetch){
-         $object_xref_id++;
-         $object_xref_sth2->execute($object_xref_id, $target_id, $ensembl_type, $dep_xref_id, 'DEPENDENT', $status, $master_xref_id);
+         $object_xref_sth2->execute($target_id, $ensembl_type, $dep_xref_id, 'DEPENDENT', $status, $master_xref_id);
+         $get_object_xref_id_master_sth->execute($target_id, $ensembl_type, $dep_xref_id, 'DEPENDENT', $status, $master_xref_id);
+         $object_xref_id = ($get_object_xref_id_master_sth->fetchrow_array())[0];
 	 if($object_xref_sth2->err){
 	   my $err = $object_xref_sth->errstr;
 	   if($err =~ /Duplicate/){

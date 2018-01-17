@@ -34,6 +34,8 @@ sub run_script {
   my $species_id   = $ref_arg->{species_id};
   my $file         = $ref_arg->{file};
   my $verbose      = $ref_arg->{verbose};
+  my $dbi          = $ref_arg->{dbi};
+  $dbi = $self->dbi unless defined $dbi;
 
   if((!defined $source_id) or (!defined $species_id) or (!defined $file) ){
     croak "Need to pass source_id, species_id and file as pairs";
@@ -51,8 +53,6 @@ sub run_script {
   my %version;
   my %description;
   my %accession;
-
-  my $dbi = $self->dbi();
 
   my $sql = 'select source_id, priority_description from source where name like "MGI"';
   my $sth = $dbi->prepare($sql);
@@ -135,6 +135,7 @@ sub run_script {
 				      label          => $label{$acc},
 				      desc           => $description{$acc},
 				      source_id      => $source_id,
+                                      dbi            => $dbi,
 				      species_id     => $species_id });
 
 	  $count++;

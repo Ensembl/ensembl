@@ -34,6 +34,8 @@ sub run {
   my $species_id   = $ref_arg->{species_id};
   my $files        = $ref_arg->{files};
   my $verbose      = $ref_arg->{verbose};
+  my $dbi          = $ref_arg->{dbi};
+  $dbi = $self->dbi unless defined $dbi;
 
   if((!defined $general_source_id) or (!defined $species_id) or (!defined $files) ){
     croak "Need to pass source_id, species_id and files as pairs";
@@ -51,14 +53,13 @@ sub run {
 
   my $entrez_source_id =
       $self->get_source_id_for_source_name(
-        'EntrezGene');
+        'EntrezGene', undef, $dbi);
 
-  my (%mim_gene)   = %{$self->get_valid_codes("MIM_GENE",$species_id)};
-  my (%mim_morbid) = %{$self->get_valid_codes("MIM_MORBID",$species_id)};
-  my (%entrez)     = %{$self->get_valid_codes("EntrezGene",$species_id)};
+  my (%mim_gene)   = %{$self->get_valid_codes("MIM_GENE",$species_id, $dbi)};
+  my (%mim_morbid) = %{$self->get_valid_codes("MIM_MORBID",$species_id, $dbi)};
+  my (%entrez)     = %{$self->get_valid_codes("EntrezGene",$species_id, $dbi)};
  
-  my $dbi = $self->dbi();
-  my $add_dependent_xref_sth = $self->dbi->prepare("INSERT INTO dependent_xref  (master_xref_id,dependent_xref_id, linkage_source_id) VALUES (?,?, $entrez_source_id)");
+  my $add_dependent_xref_sth = $dbi->prepare("INSERT INTO dependent_xref  (master_xref_id,dependent_xref_id, linkage_source_id) VALUES (?,?, $entrez_source_id)");
 
   my $missed_entrez = 0;
   my $missed_omim   = 0;

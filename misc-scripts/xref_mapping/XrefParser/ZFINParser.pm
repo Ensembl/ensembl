@@ -34,6 +34,8 @@ sub run {
   my $species_id   = $ref_arg->{species_id};
   my $files        = $ref_arg->{files};
   my $verbose      = $ref_arg->{verbose};
+  my $dbi          = $ref_arg->{dbi};
+  $dbi = $self->dbi unless defined $dbi;
 
   if((!defined $source_id) or (!defined $species_id) or (!defined $files) ){
     croak "Need to pass source_id, species_id and files as pairs";
@@ -43,8 +45,8 @@ sub run {
   my $file = @{$files}[0];
   my $dir = dirname($file);
 
-  my (%swiss) = %{$self->get_valid_codes("uniprot/",$species_id)};
-  my (%refseq) = %{$self->get_valid_codes("refseq",$species_id)};
+  my (%swiss) = %{$self->get_valid_codes("uniprot/",$species_id, $dbi)};
+  my (%refseq) = %{$self->get_valid_codes("refseq",$species_id, $dbi)};
 
   my $swissprot_io =
     $self->get_filehandle( catfile( $dir, 'uniprot.txt' ) );
@@ -61,9 +63,6 @@ sub run {
 
 
   my %description;
-
-  my $dbi = $self->dbi();
-
 
   my $sql = "insert ignore into synonym (xref_id, synonym) values (?, ?)";
   my $add_syn_sth = $dbi->prepare($sql);    
@@ -109,6 +108,7 @@ sub run {
 			      label          => $label,
 			      desc           => $description{$zfin},
 			      source_id      => $source_id,
+                              dbi            => $dbi,
 			      species_id     => $species_id} );
 	$spcount++;
       }
@@ -143,6 +143,7 @@ sub run {
 				    label          => $label,
 				    desc           => $description{$zfin},
 				    source_id      => $source_id,
+                                    dbi            => $dbi,
 				    species_id     => $species_id} );
 	$rscount++;
       }
@@ -154,7 +155,7 @@ sub run {
 
   $refseq_io->close();
 
-  my (%zfin) = %{$self->get_valid_codes("zfin",$species_id)};
+  my (%zfin) = %{$self->get_valid_codes("zfin",$species_id, $dbi)};
 
   my $zfin_io = $self->get_filehandle( catfile( $dir, 'aliases.txt' ) );
 
@@ -183,7 +184,7 @@ sub run {
     chomp;
     my ($acc, undef, undef, $syn) = split (/\t/,$_);
     if(defined($zfin{$acc})){
-      $self->add_to_syn_for_mult_sources($acc, $sources, $syn, $species_id);
+      $self->add_to_syn_for_mult_sources($acc, $sources, $syn, $species_id, $dbi);
       $syncount++;
     }
   }

@@ -40,6 +40,8 @@ sub run {
   my $species_id   = $ref_arg->{species_id};
   my $files        = $ref_arg->{files};
   my $verbose      = $ref_arg->{verbose};
+  my $dbi          = $ref_arg->{dbi};
+  $dbi = $self->dbi unless defined $dbi;
 
   if((!defined $source_id) or (!defined $species_id) or (!defined $files) ){
     croak "Need to pass source_id, species_id, files and rel_file as pairs";
@@ -78,7 +80,7 @@ sub run {
 
     ++$parsed_count;
 
-    my $xref_id = $self->get_xref( $antibody_id, $source_id, $species_id );
+    my $xref_id = $self->get_xref( $antibody_id, $source_id, $species_id, $dbi );
 
     if ( !defined($xref_id) || $xref_id eq '' ) {
       $xref_id = $self->add_xref({ acc        => $antibody_id,
@@ -87,11 +89,12 @@ sub run {
 				   desc       => $description,
 				   source_id  => $source_id,
 				   species_id => $species_id,
+                                   dbi        => $dbi,
 				   info_type  => "DIRECT"} );
     }
 	
 	
-    $self->add_direct_xref( $xref_id, $ensembl_peptide_id, $type, '');
+    $self->add_direct_xref( $xref_id, $ensembl_peptide_id, $type, '', $dbi);
 	
   } ## end while ( defined( my $line...
 

@@ -33,6 +33,8 @@ sub run {
   my $species_id   = $ref_arg->{species_id};
   my $files        = $ref_arg->{files};
   my $verbose      = $ref_arg->{verbose};
+  my $dbi          = $ref_arg->{dbi};
+  $dbi = $self->dbi unless defined $dbi;
 
   if((!defined $source_id) or (!defined $species_id) or (!defined $files) ){
     croak "Need to pass source_id, species_id and files as pairs";
@@ -50,9 +52,6 @@ sub run {
   my %version;
   my %description;
   my %accession;
-
-
-  my $dbi = $self->dbi();  
 
   my $sql = 'select source_id, priority_description from source where name like "MGI"';
   my $sth = $dbi->prepare($sql);
@@ -86,7 +85,7 @@ sub run {
   $sql = "insert ignore into synonym (xref_id, synonym) values (?, ?)";
   my $add_syn_sth = $dbi->prepare($sql);    
 
-  my $syn_hash = $self->get_ext_synonyms("MGI");
+  my $syn_hash = $self->get_ext_synonyms("MGI", $dbi);
 
   my $count = 0;
   my $syn_count = 0;
@@ -101,10 +100,11 @@ sub run {
 				      label      => $label{$acc},
 				      desc       => $description{$acc},
 				      source_id  => $source_id,
+                                      dbi        => $dbi,
 				      species_id => $species_id,
 				      info_type  => "DIRECT"} );
 
-      $self->add_direct_xref( $xref_id, $ensid, "Gene", '');
+      $self->add_direct_xref( $xref_id, $ensid, "Gene", '', $dbi);
       if(defined($syn_hash->{$acc})){
 	foreach my $syn (@{$syn_hash->{$acc}}){
 	  $add_syn_sth->execute($xref_id, $syn);
