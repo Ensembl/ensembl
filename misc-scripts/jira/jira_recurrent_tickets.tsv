@@ -7,4 +7,4 @@ Stable ID Lookup	<relco>	<relco>	<compara_final_handover>	Infrastructure	https:/
 Code branching <release>	<relco>	<relco>	<code_branching>	API,Git	https://www.ebi.ac.uk/seqdb/confluence/display/ENSCORE/Core+release+coordination#Corereleasecoordination-GITbranching
 EBeye Indexing <release>	<relco>	<relco>	<release>	Dumps	https://www.ebi.ac.uk/seqdb/confluence/display/ENSCORE/Core+release+coordination#Corereleasecoordination-EBeyeindexing
 Ensembl VM Build <release>	<relco>	<relco>	<vm_handover>	Dumps	https://www.ebi.ac.uk/seqdb/confluence/display/ENSCORE/Core+release+coordination#Corereleasecoordination-EnsemblVMbuild
-REST server changelog and branching <relase>	<relco>	<relco>	<code_branching>	REST	https://www.ebi.ac.uk/seqdb/confluence/display/ENSCORE/Core+release+coordination#Corereleasecoordination-RESTserver
+REST server changelog and branching <release>	<relco>	<relco>	<code_branching>	REST	https://www.ebi.ac.uk/seqdb/confluence/display/ENSCORE/Core+release+coordination#Corereleasecoordination-RESTserver
