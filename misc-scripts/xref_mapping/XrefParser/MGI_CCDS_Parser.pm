@@ -27,27 +27,22 @@ use DBI;
 use base qw( XrefParser::BaseParser );
 
 
-sub run_script {
+sub run {
 
   my ($self, $ref_arg) = @_;
   my $source_id    = $ref_arg->{source_id};
   my $species_id   = $ref_arg->{species_id};
-  my $file         = $ref_arg->{file};
+  my $files        = $ref_arg->{files};
   my $verbose      = $ref_arg->{verbose};
   my $dbi          = $ref_arg->{dbi};
   $dbi = $self->dbi unless defined $dbi;
 
-  if((!defined $source_id) or (!defined $species_id) or (!defined $file) ){
+  if((!defined $source_id) or (!defined $species_id) or (!defined $files) ){
     croak "Need to pass source_id, species_id and file as pairs";
   }
   $verbose |=0;
 
-  my $wget = "";
-
-  if($file =~ /wget[=][>](\S+?)[,]/){
-    $wget = $1;
-  }
-
+  my $file = @{$files}[0];
 
   my %label;
   my %version;
@@ -111,19 +106,18 @@ sub run_script {
   my $ccds_missing = 0;
   my $entrezgene_missing = 0;
 
-  my $response = $ua->get($wget);
-  
-  if ( !$response->is_success() ) {
-    die $response->status_line;
+  my $mgi_io = $self->get_filehandle($file);
+  if ( !defined $mgi_io ) {
+    print STDERR "ERROR: Could not open $file\n";
+    return 1;    # 1 is an error
   }
-  else{
+
     #
     #
     ##chromosome	g_accession	gene	gene_id	ccds_id	ccds_status	cds_strand	cds_from	cds_to	cds_locations	match_type
     #1	NC_000067.5	Xkr4	497097	CCDS14803.1	Public	-	3206102	3661428	[3206102-3207048, 3411782-3411981, 3660632-3661428]	Identical
     #1	NC_000067.5	Rp1h	19888	CCDS14804.1	Public	-	4334680	4342905	[4334680-4340171, 4341990-4342161, 4342282-4342905]	Identical
-    my @lines = split(/\n/,$response->content);
-    foreach my $line (@lines){
+    while (my $line = $mgi_io->getline()) {
       my($chrom, $g_acc, $gene_name, $entrez_id, $ccds, @junk) = split(/\t/,$line);
       if(defined($ccds_label_to_xref_id{$ccds})){ 
 	if(defined($accession{$gene_name}) and
@@ -148,7 +142,6 @@ sub run_script {
 	$ccds_missing++;
       }
     }
-  }
   print "$ccds_missing ccds not resolved, $entrezgene_missing mgi not found. Added $count MGI xrefs via CCDS\n" if($verbose);
   return 0;
 }
