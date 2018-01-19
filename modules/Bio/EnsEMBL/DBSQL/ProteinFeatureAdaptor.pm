@@ -59,10 +59,11 @@ use strict;
 
 use Bio::EnsEMBL::DBSQL::BaseAdaptor;
 use Bio::EnsEMBL::ProteinFeature;
+use Bio::EnsEMBL::DBSQL::BaseAlignFeatureAdaptor;
 use Bio::EnsEMBL::Utils::Exception qw(throw deprecate warning);
 
 use vars qw(@ISA);
-@ISA = qw(Bio::EnsEMBL::DBSQL::BaseAdaptor);
+@ISA = qw(Bio::EnsEMBL::DBSQL::BaseAlignFeatureAdaptor);
 
 =head2 fetch_all_by_translation_id
 
@@ -84,9 +85,14 @@ use vars qw(@ISA);
 =cut
 
 sub fetch_all_by_translation_id {
-  my ($self, $translation_id) = @_;
+  my ($self, $translation_id, $logic_name) = @_;
 
   my $constraint = "pf.translation_id = ?";
+
+  if(defined $logic_name){
+    my $logic_constraint = $self->_logic_name_to_constraint( '', $logic_name );
+    $constraint .= " AND ".$logic_constraint if defined $logic_constraint;
+  }
   $self->bind_param_generic_fetch($translation_id, SQL_INTEGER);
   my $features = $self->generic_fetch($constraint);
 
@@ -146,6 +152,7 @@ sub fetch_by_dbID {
   my $sth = $self->prepare("SELECT p.translation_id, p.seq_start, p.seq_end, p.analysis_id, "
                             . "p.score, p.perc_ident, p.evalue, "
                             . "p.hit_start, p.hit_end, p.hit_name, p.hit_description, "
+                            . "p.cigar_line, p.align_type, "
                             . "x.description, x.display_label, i.interpro_ac "
                             . "FROM   protein_feature p "
                             . "LEFT JOIN interpro AS i ON p.hit_name = i.id "
@@ -154,9 +161,9 @@ sub fetch_by_dbID {
 
   $sth->bind_param(1, $protfeat_id, SQL_INTEGER);
   my $res = $sth->execute();
-   
+
   my ($translation_id, $start, $end, $analysis_id, $score, $perc_ident, $pvalue, $hstart,
-      $hend, $hseqname, $hdesc, $idesc, $ilabel, $interpro_ac) = $sth->fetchrow_array();
+      $hend, $hseqname, $hdesc, $cigar_line, $align_type, $idesc, $ilabel, $interpro_ac) = $sth->fetchrow_array();
 
   if($sth->rows == 0) {
     $sth->finish();
@@ -183,7 +190,10 @@ sub fetch_by_dbID {
 									  -IDESC       => $idesc,
                                       -ILABEL      => $ilabel,
 									  -INTERPRO_AC => $interpro_ac,
-									  -TRANSLATION_ID  => $translation_id);
+									  -TRANSLATION_ID  => $translation_id,
+									  -CIGAR_STRING => $cigar_line,
+									  -ALIGN_TYPE => $align_type
+									  );
 } ## end sub fetch_by_dbID
 
 =head2 store
@@ -241,9 +251,13 @@ sub store {
                   hit_description,
                   score,
                   perc_ident,
-                  evalue     )
-         VALUES ( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ? )
+                  evalue,
+                  external_data,
+                  cigar_line,
+                  align_type     )
+         VALUES ( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ? )
   ");
+
 
   $sth->bind_param(1,  $translation_id,        SQL_INTEGER);
   $sth->bind_param(2,  $feature->start,        SQL_INTEGER);
@@ -256,6 +270,9 @@ sub store {
   $sth->bind_param(9,  $feature->score,        SQL_DOUBLE);
   $sth->bind_param(10, $feature->percent_id,   SQL_FLOAT);
   $sth->bind_param(11, $feature->p_value,      SQL_DOUBLE);
+  $sth->bind_param(12, $feature->external_data,      SQL_VARCHAR);
+  $sth->bind_param(13, $feature->cigar_string,      SQL_VARCHAR);
+  $sth->bind_param(14, $feature->align_type,      SQL_VARCHAR);
 
   $sth->execute();
 
@@ -275,12 +292,13 @@ sub store {
 
 sub _tables {
   my $self = shift;
+  my ( $package, $filename, $line ) = caller;
 
-  return (['protein_feature', 'pf'], ['interpro', 'ip'], ['xref', 'x']);
+  return (['protein_feature', 'pf'], ['interpro', 'ip'], ['xref', 'x'], ['translation', 'tl']);
 }
 
 sub _left_join {
-  return (['interpro', "pf.hit_name = ip.id"], ['xref', "x.dbprimary_acc = ip.interpro_ac"]);
+  return (['interpro', "pf.hit_name = ip.id"], ['xref', "x.dbprimary_acc = ip.interpro_ac"], ['translation', "tl.translation_id = pf.translation_id"]);
 }
 
 sub _columns {
@@ -290,7 +308,9 @@ sub _columns {
              pf.translation_id pf.seq_start pf.seq_end
              pf.hit_start pf.hit_end pf.hit_name pf.hit_description
              pf.analysis_id pf.score pf.evalue pf.perc_ident
-             x.description x.display_label ip.interpro_ac);
+             pf.cigar_line pf.align_type
+             x.description x.display_label ip.interpro_ac
+             tl.seq_start tl.seq_end);
 }
 
 
@@ -308,19 +328,30 @@ sub _objs_from_sth {
 
   my($dbID, $translation_id, $start, $end,
      $hstart, $hend, $hid, $hdesc,
-     $analysis_id, $score, $evalue, $perc_id, 
-     $desc, $ilabel, $interpro_ac);
+     $analysis_id, $score, $evalue, $perc_id,
+     $cigar_line, $align_type,
+     $desc, $ilabel, $interpro_ac,
+     $seq_start, $seq_end);
 
   $sth->bind_columns(\$dbID, \$translation_id, \$start, \$end, 
                      \$hstart, \$hend, \$hid, \$hdesc,
                      \$analysis_id, \$score, \$evalue, \$perc_id,
-                     \$desc, \$ilabel, \$interpro_ac);
+                     \$cigar_line, \$align_type,
+                     \$desc, \$ilabel, \$interpro_ac,
+                     \$seq_start, \$seq_end);
 
   my $analysis_adaptor = $self->db->get_AnalysisAdaptor();
+  my $translation_adaptor = $self->db->get_TranslationAdaptor();
 
   my @features;
   while($sth->fetch()) {
+
     my $analysis = $analysis_adaptor->fetch_by_dbID($analysis_id);
+        
+    # For ProteinFeatures, the translation is the slice
+    # Excepttion MSG: -SLICE argument must be a Bio::EnsEMBL::Slice not Bio::EnsEMBL::Translation
+    # my $translation = $translation_adaptor->fetch_by_dbID($translation_id);
+    # $my $slice = $translation;
 
     push( 
       @features,
@@ -340,11 +371,118 @@ sub _objs_from_sth {
            -HDESCRIPTION => $hdesc,
            -IDESC        => $desc,
            -ILABEL       => $ilabel,
-           -INTERPRO_AC  => $interpro_ac));
+           -INTERPRO_AC  => $interpro_ac,
+           -TRANSLATION_ID => $translation_id,
+           -CIGAR_STRING => $cigar_line,
+           -ALIGN_TYPE => $align_type,
+           # -SLICE => $slice
+           ));
 
   }
   return \@features;
 }
+
+#wrapper method
+=head2 fetch_all_by_uniprot_acc
+
+  Arg [1]    : string uniprot accession
+               The uniprot accession of the features to obtain
+  Arg [2]    : (optional) string $logic_name
+               The analysis logic name of the type of features to
+               obtain. Default is 'gifts_import'
+  Example    : @feats =
+                 @{ $adaptor->fetch_all_by_uniprot_acc( 'P20366',
+                   'gifts_import' ); }
+  Description: Returns a listref of features created from the
+               database which correspond to the given uniprot accession.  If
+               logic name is defined, only features with an analysis
+               of type $logic_name will be returned. Defaults to 'gifts_import'
+  Returntype : listref of Bio::EnsEMBL::BaseAlignFeatures
+  Exceptions : thrown if uniprot_acc is not defined
+  Caller     : general
+  Status     : Stable
+
+=cut
+
+sub fetch_all_by_uniprot_acc {
+  my ( $self, $uniprot_acc, $logic_name ) = @_;
+  $logic_name = defined $logic_name ? $logic_name : "gifts_import";
+  return $self->fetch_all_by_hit_name($uniprot_acc, $logic_name);
+}
+
+#inherited methods from BaseAlignFeatureAdaptor
+sub fetch_all_by_Slice_and_hcoverage {
+  my ( $self ) = @_;
+  $self->throw( "ProteinFeatures can't be fetched by slice as".
+  " they are not on EnsEMBL coord system. Try fetch_all_by_translation_id instead" );
+}
+
+sub fetch_all_by_Slice_and_external_db {
+  my ( $self ) = @_;
+  $self->throw( "ProteinFeatures can't be fetched by slice as".
+  " they are not on EnsEMBL coord system. Try fetch_all_by_translation_id instead" );
+}
+
+sub fetch_all_by_Slice_and_pid {
+  my ( $self ) = @_;
+  $self->throw( "ProteinFeatures can't be fetched by slice as".
+  " they are not on EnsEMBL coord system. Try fetch_all_by_translation_id instead" );
+}
+
+sub fetch_all_by_Slice {
+  my ( $self ) = @_;
+  $self->throw( "ProteinFeatures can't be fetched by slice as".
+  " they are not on EnsEMBL coord system. Try fetch_all_by_translation_id instead" );
+}
+
+sub fetch_Iterator_by_Slice_method {
+  my ( $self ) = @_;
+  $self->throw( "ProteinFeatures can't be fetched by slice as".
+  " they are not on EnsEMBL coord system. Try fetch_all_by_translation_id instead" );
+}
+
+sub fetch_Iterator_by_Slice {
+  my ( $self ) = @_;
+  $self->throw( "ProteinFeatures can't be fetched by slice as".
+  " they are not on EnsEMBL coord system. Try fetch_all_by_translation_id instead" );
+}
+
+sub fetch_all_by_Slice_and_score {
+  my ( $self ) = @_;
+  $self->throw( "ProteinFeatures can't be fetched by slice as".
+  " they are not on EnsEMBL coord system. Try fetch_all_by_translation_id instead" );
+}
+
+sub fetch_all_by_Slice_constraint {
+  my ( $self ) = @_;
+  $self->throw( "ProteinFeatures can't be fetched by slice as".
+  " they are not on EnsEMBL coord system. Try fetch_all_by_translation_id instead" );
+}
+
+sub fetch_all_by_stable_id_list {
+  my ( $self, $id_list_ref, $slice ) = @_;
+  $self->throw( "ProteinFeatures can't be fetched by slice as".
+  " they are not on EnsEMBL coord system. Try fetch_all_by_translation_id instead" );
+}
+
+sub count_by_Slice_constraint {
+  my ( $self ) = @_;
+  $self->throw( "ProteinFeatures cant be count by slice as".
+  " they are not on EnsEMBL coord system." );
+}
+
+sub remove_by_Slice {
+  my ( $self ) = @_;
+  $self->throw( "ProteinFeatures cant be removed by slice as".
+  " they are not on EnsEMBL coord system." );
+}
+
+sub get_seq_region_id_internal{
+  my ( $self ) = @_;
+    $self->throw( "Not supported routine called." );
+
+}
+
 
 1;
 

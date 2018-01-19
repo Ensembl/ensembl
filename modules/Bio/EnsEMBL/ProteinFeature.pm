@@ -56,10 +56,11 @@ package Bio::EnsEMBL::ProteinFeature;
 use strict;
 
 use Bio::EnsEMBL::FeaturePair;
+use Bio::EnsEMBL::BaseAlignFeature;
 use Bio::EnsEMBL::Utils::Argument qw(rearrange);
 
 use vars qw(@ISA);
-@ISA = qw(Bio::EnsEMBL::FeaturePair);
+@ISA = qw(Bio::EnsEMBL::BaseAlignFeature);
 
 =head2 new
 
@@ -82,14 +83,22 @@ use vars qw(@ISA);
 
 =cut
 
+
 sub new {
   my $proto = shift;
 
   my $class = ref($proto) || $proto;
 
-  my ($idesc, $ilabel, $interpro_ac, $translation_id) = rearrange(['IDESC', 'ILABEL', 'INTERPRO_AC', 'TRANSLATION_ID'], @_);
+  my $self;
+  my ($idesc, $ilabel, $interpro_ac, $translation_id, $external_data, $hit_description, $cigar_string, $align_type, $slice) = rearrange(['IDESC', 'ILABEL', 'INTERPRO_AC', 'TRANSLATION_ID', 'EXTERNAL_DATA', 'HDESCRIPTION', 'CIGAR_STRING', 'ALIGN_TYPE', 'SLICE'], @_);
 
-  my $self = $class->SUPER::new(@_);
+# BaseAlignFeature expects cigar_line or features
+  if($cigar_string && $align_type){
+    $self = $class->SUPER::new(@_);
+  }else{
+  #call the grand parent directly
+    $self = $class->Bio::EnsEMBL::FeaturePair::new(@_);
+  }
 
   # the strand of protein features is always 0
   $self->{'strand'}         = 0;
@@ -97,6 +106,10 @@ sub new {
   $self->{'ilabel'}         = $ilabel || '';
   $self->{'interpro_ac'}    = $interpro_ac || '';
   $self->{'translation_id'} = $translation_id || '';
+  $self->{'external_data'} = $external_data || '';
+  $self->{'hit_description'} = $hit_description || '';
+  $self->{'cigar_string'} = $cigar_string || '';
+  $self->{'align_type'} = $align_type || '';
 
   return $self;
 }
@@ -193,6 +206,13 @@ sub translation_id {
   return $self->{'translation_id'};
 }
 
+sub external_data {
+  my $self = shift;
+  $self->{'external_data'} = shift if (@_);
+  return $self->{'external_data'};
+}
+
+
 =head2 summary_as_hash
 
   Example       : $protein_feature_summary = $protein_feature->summary_as_hash();
@@ -213,9 +233,59 @@ sub summary_as_hash {
   $summary{'description'} = $self->idesc;
   $summary{'hit_start'} = $self->hstart;
   $summary{'hit_end'} = $self->hend;
+  $summary{'cigar_string'} = $self->cigar_string;
+  $summary{'align_type'} = $self->align_type;
+  $summary{'hseqname'} = $self->hseqname;
+  $summary{'translation_id'} = $self->translation_id;
   
   return \%summary;
 }
+
+sub transform {
+  my $self = shift;
+
+  $self->throw( "ProteinFeature cant be transformed directly as".
+		" they are not on EnsEMBL coord system" );
+}
+
+
+=head2 _hit_unit
+
+  Arg [1]    : none
+  Description: PRIVATE implementation of abstract superclass method.  Returns
+               1 as the 'unit' used for the hit sequence.
+  Returntype : int
+  Exceptions : none
+  Caller     : Bio::EnsEMBL::BaseAlignFeature
+  Status     : Stable
+
+
+=cut
+
+sub _hit_unit {
+  return 3;
+}
+
+
+=head2 _query_unit
+
+  Arg [1]    : none
+  Description: PRIVATE implementation of abstract superclass method.  Returns
+               3 as the 'unit' used for the query sequence.
+  Returntype : int
+  Exceptions : none
+  Caller     : Bio::EnsEMBL::BaseAlignFeature
+  Status     : Stable
+
+
+=cut
+
+sub _query_unit {
+  return 3;
+}
+
+
+
 
 
 1;

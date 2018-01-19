@@ -270,6 +270,8 @@ sub alignment_length {
 
   if ($self->{'align_type'} eq 'ensembl') {
     return $self->_ensembl_cigar_alignment_length();
+  } elsif ($self->{'align_type'} eq 'mdtag') {
+    return $self->_mdtag_alignment_length();
   } else {
     throw("No alignment_length method available for " . $self->{'align_type'});
   }
@@ -513,7 +515,6 @@ sub _parse_ensembl_cigar {
   throw("No cigar string defined in object") if(!defined($string));
 
   my @pieces = ( $string =~ /(\d*[MDI])/g );
-  #print "cigar: ",join ( ",", @pieces ),"\n";
 
   my @features;
   my $strand1 = $self->{'strand'} || 1;
@@ -603,7 +604,7 @@ sub _parse_ensembl_cigar {
          -PERCENT_ID => $self->{'percent_id'},
          -ANALYSIS   => $self->{'analysis'},
          -P_VALUE    => $self->{'p_value'},
-         -EXTERNAL_DB_ID => $self->{'external_db_id'}, 
+         -EXTERNAL_DB_ID => $self->{'external_db_id'},
          -HCOVERAGE   => $self->{'hcoverage'},
          -GROUP_ID    => $self->{'group_id'},
          -LEVEL_ID    => $self->{'level_id'});
@@ -639,9 +640,11 @@ sub _parse_ensembl_cigar {
 
 sub _parse_cigar {
   my $self = shift;
+
   if ($self->{'align_type'} eq 'ensembl') {
     return $self->_parse_ensembl_cigar();
-  } else {
+  }
+   else {
     throw("No parsing method implemented for " . $self->{'align_type'});
   }
 }
@@ -1009,7 +1012,303 @@ sub _query_unit {
   throw( "Abstract method call!" );
 }
 
+=head2 _mdtag_alignment_length
 
+  Arg [1]    : None
+  Description: return the alignment length (including indels) based on the mdtag (mdz) string
+  Returntype : int
+  Exceptions : none
+  Caller     : internal
+  Status     : Stable
+
+=cut
+
+sub _mdtag_alignment_length {
+  my $self = shift;
+
+  if (! defined $self->{'_alignment_length'} && defined $self->cigar_string) {
+    my $mdz_string =  $self->cigar_string;
+    my $chunks = $self->_get_mdz_chunks($mdz_string);
+    my $alignment_length = 0;
+    $alignment_length = $self->_get_mdz_alignment_length($chunks);
+    $self->{'_alignment_length'} = $alignment_length;
+  }
+  return $self->{'_alignment_length'};
+}
+
+=head2 _get_mdz_chunks
+
+  Arg [1]    : mdz string
+  Description: parses the mdz string and group it according the type
+  Returntype : array of strings
+  Exceptions : none
+  Caller     : internal
+  Status     : Stable
+
+=cut
+
+sub _get_mdz_chunks {
+  my $self = shift;
+
+  my $mdz_string = shift;
+  my $alignment_length = 0;
+  my @chunks;
+    if ( $mdz_string =~ /^MD:Z:(.*)/ ){
+      my $mdtag = $1;
+
+      #if start to end is a number then all match return as it is
+      if($mdtag =~/^\d+$/){
+        return [$mdtag];
+      }else{
+        my @char_arr = split('',$mdtag);
+        for(my $i=0; $i< scalar(@char_arr); $i++){
+        my $char = $char_arr[$i];
+
+        #determine the type and next type
+        my $type = $self->_get_mdz_chunk_type($char);
+        my $next_char = $char_arr[++$i];
+        my $next_type = $self->_get_mdz_chunk_type( $next_char);
+
+        my $chunk = $char;
+
+        #group chars in mdz based on the type, break if it differenc and push to chunks
+        while($type eq $next_type and $i <= $#char_arr){
+            $chunk = $chunk . $next_char;
+            $next_char = $char_arr[++$i];
+            $next_type = $self->_get_mdz_chunk_type($next_char);
+           }
+
+        if($i == $#char_arr){
+          if($type eq $next_type){
+           $chunk = $chunk . $next_char;
+           push(@chunks, $chunk);
+          }else{
+           push(@chunks, $chunk);
+          }
+        }else{
+          push(@chunks, $chunk);
+        }
+        --$i;
+        }
+      }
+
+    }
+
+  return \@chunks;
+}
+
+=head2 _get_mdz_alignment_length
+
+  Arg [1]    : array of strings
+  Description: calculate the alignment length from the given chunks
+  Returntype : array of strings
+  Exceptions : none
+  Caller     : internal
+  Status     : Stable
+
+=cut
+
+sub _get_mdz_alignment_length{
+  my $self = shift;
+
+  my $chunks = shift;
+  my $length = 0;
+   for(my $i=0; $i< scalar(@$chunks); $i++){
+     my $chunk = $$chunks[$i];
+     my $type = $self->_get_mdz_chunk_type($chunk);
+
+    if($type eq 'num'){
+      $length = $length + $chunk;
+    }elsif($type eq 'alpha'){
+      $length = $length + length($chunk);
+    }elsif($type eq 'del'){
+      #skip next chunk
+      $i++;
+    }
+
+  }
+  return $length;
+}
+
+=head2 _get_mdz_chunk_type
+
+  Arg [1]    : char
+  Description: get the chunk type
+  Returntype : string
+  Exceptions : none
+  Caller     : internal
+  Status     : Stable
+
+=cut
+
+sub _get_mdz_chunk_type{
+  my $self = shift;
+  my $char = shift;
+
+  my $type;
+  if($char eq '^'){
+    $type = "del";
+  } elsif($char =~ /\d+/){
+    $type = 'num';
+  } elsif($char =~ /\w+/){
+    $type = 'alpha';
+  }
+  return $type;
+}
+
+
+
+=head2 alignment_strings
+
+  Arg [1]    : list of string $flags
+  Example    : $pf->alignment_strings or
+  Description: Allows to rebuild the alignment string of both the seq and hseq sequence
+               using the mdz_string information and the translation object
+  Returntype : array reference containing 2 strings
+               the first corresponds to seq
+               the second corresponds to hseq
+  Exceptions : none
+  Caller     : general
+  Status     : Stable
+
+=cut
+
+
+sub alignment_strings {
+  my $self = shift;
+
+  #Translations
+  my $transl_adaptor = $self->adaptor->db->get_TranslationAdaptor();
+  my $transl_object = $transl_adaptor->fetch_by_dbID($self->translation_id);
+  my $seq;
+  if(defined $transl_object && $transl_object->isa('Bio::EnsEMBL::Translation')) {
+    $seq = $transl_object->transcript()->translate()->seq();
+  }
+
+  if ($self->align_type eq 'mdtag') {
+    if(defined $seq && defined $self->cigar_string){
+      return $self->_mdz_alignment_string($seq,$self->cigar_string);
+    }else{
+      warn "sequence or cigar_line not found for  " .  $self->translation_id;
+    }
+  } else {
+    throw("alignment_strings method not implemented for " . $self->align_type);
+  }
+  return undef;
+}
+
+=head2 _mdz_alignment_string
+
+  Arg [1]    : input sequence
+  Arg [2]    : mdz cigar string
+  Example    : $pf->alignment_strings or
+  Description: Allows to rebuild the alignment string of both the seq and hseq sequence
+  Returntype : array reference containing 2 strings
+               the first corresponds to seq
+               the second corresponds to hseq
+  Exceptions : none
+  Caller     : general
+  Status     : Stable
+
+=cut
+
+# Try to get the sequence from translation object
+# mdz_string from current object
+sub _mdz_alignment_string {
+  my ($self, $input_seq, $mdz_string) = @_;
+
+  my $chunks = $self->_get_mdz_chunks($mdz_string);
+
+  my $target_seq = "";
+  my $query_seq = "";
+
+   #Handle first chunk, which is always a num
+   my $first_chunk = $$chunks[0];
+   my $first_chunk_type = $self->_get_mdz_chunk_type($first_chunk);
+
+   my $offset = 0;
+   if($first_chunk_type eq 'num'){
+     if($first_chunk > 0){
+       $target_seq = substr($input_seq, $offset, $first_chunk);
+
+       #query and target are same at this point
+       $query_seq = $target_seq;
+       $offset = length($target_seq);
+     }
+   }else{
+     die "First chunk should always be a num...something wrong\n";
+   }
+
+  for(my $i=1; $i < scalar(@$chunks); $i++){
+
+    my $chunk = $$chunks[$i];
+    my $chunk_type = $self->_get_mdz_chunk_type($chunk);
+
+    if($chunk_type eq 'num'){
+      #if 0, what follows next is a INSERT
+      if($chunk == 0){
+        my $insert_chunk = $$chunks[++$i];
+        my $insert_chunk_type = $self->_get_mdz_chunk_type($insert_chunk);
+
+        #insert_chunk_type is always alpha
+        die if $insert_chunk_type eq "num";
+        if($insert_chunk_type eq 'del'){
+          $i--;
+          next;
+        }
+        $target_seq = $target_seq . substr($input_seq, $offset, length($insert_chunk));
+        $query_seq = $query_seq . $insert_chunk;
+
+        $offset = $offset + length($insert_chunk);
+
+      }else{
+       #if non-0, then it is a match
+        my $match_chunk = $$chunks[$i];
+        my $match_chunk_type = $self->_get_mdz_chunk_type($match_chunk);
+
+         #$match_chunk_type is always num
+        die if $match_chunk_type ne "num";
+
+        my $match_target_string = substr($input_seq, $offset, $match_chunk);
+
+        $target_seq = $target_seq . $match_target_string;
+        $query_seq = $query_seq . $match_target_string;
+
+        $offset = $offset + $match_chunk;
+      }
+
+    }elsif($chunk_type eq 'alpha'){
+        my $insert_chunk = $chunk;
+        my $insert_chunk_type = $self->_get_mdz_chunk_type($insert_chunk);
+        die if $insert_chunk_type ne "alpha";
+
+        $target_seq = $target_seq . substr($input_seq, $offset, length($insert_chunk));
+        $query_seq = $query_seq . $insert_chunk;
+
+        $offset = $offset + length($insert_chunk);
+
+    }elsif($chunk_type eq 'del'){
+      #get next chunk which contains the deleted sequence
+      my $del_chunk = $$chunks[++$i];
+      my $del_chunk_type = $self->_get_mdz_chunk_type($del_chunk);
+
+      #del_chunk_type is always alpha
+      die if $del_chunk_type ne 'alpha';
+
+      $target_seq = $target_seq . "-" x length($del_chunk);
+      $query_seq = $query_seq . $del_chunk;
+
+      #no change in offset
+      $offset = $offset;
+
+
+    }
+
+  }
+
+  return [$target_seq, $query_seq];
+
+}
 
 
 1;
