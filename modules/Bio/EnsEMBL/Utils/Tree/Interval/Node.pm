@@ -65,7 +65,7 @@ sub new {
     unless $tree and $interval;
 
   my $self = bless({ tree      => $tree,
-		     intervals => [ $interval ],
+		     intervals => [ $interval ], # the array of all records with the same key
 		     key       => $interval->start,
 		     max       => $interval->end,
 		     parent    => undef,
@@ -93,6 +93,22 @@ sub key {
   $self->{key} = shift if( @_ );
   
   return $self->{key};
+}
+
+=head2 intervals
+
+=cut
+
+sub intervals {
+  return shift->{intervals};
+}
+
+=head add_interval 
+
+=cut
+
+sub add_interval {
+  push @{shift->{intervals}}, shift;
 }
 
 =head2 parent
@@ -167,6 +183,25 @@ sub search {
   return $results if scalar @{$results};
 }
 
+=head2 search_by_key
+
+Searches for a node by a 'key' value
+
+=cut
+
+sub search_by_key {
+  my ($self, $key) = @_;
+
+  if ($self->key == $key) {
+    return $self;
+  } elsif ($key < $self->key) {
+    return $self->left->search_by_key($key) if $self->left;
+  } else {
+    return $self->right->search_by_key($key) if $self->right;
+  }
+
+}
+
 =head2 insert
 
 =cut
@@ -201,7 +236,7 @@ sub insert {
   # rebalance to ensure O(logn) time operations
   $self->_rebalance;
 }
-
+ 
 =head2 remove
 
 =cut
@@ -264,6 +299,8 @@ sub remove {
 =head1 PRIVATE METHODS
 
 =head2 _lowest 
+
+Returns the 'smallest' node in the tree
 
 =cut
 
@@ -538,6 +575,7 @@ sub _overlapping_intervals {
 
   my $results = [];
   if ($self->key <= $i->end and $i->start <= $self->_highest_end) {
+    # node's interval overlap: check individual intervals
     map { push @{$results}, $_ if $i->start <= $_->end } @{$self->{intervals}}
   }
   
