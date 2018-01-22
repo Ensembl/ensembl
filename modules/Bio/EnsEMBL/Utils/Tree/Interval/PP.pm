@@ -50,6 +50,7 @@ use strict;
 use Carp;
 
 use Bio::EnsEMBL::Utils::Tree::Interval::Node;
+use Bio::EnsEMBL::Utils::Tree::Interval::Interval;
 
 =head2 new
 
