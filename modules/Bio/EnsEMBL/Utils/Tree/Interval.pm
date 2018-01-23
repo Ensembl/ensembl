@@ -85,7 +85,7 @@ sub new {
   my $class = ref($caller) || $caller;
 
   # for ($XS|$PP)::new(0);
-  return eval qq| $Bio::EnsEMBL::Utils::Tree::Interval::IMPL\::new( \$caller ) | unless $caller;
+  return eval qq| $Bio::EnsEMBL::Utils::Tree::Interval::IMPL\::new( \$caller ) | unless $caller; ## no critic
 
   if (my $self = $Bio::EnsEMBL::Utils::Tree::Interval::IMPL->new(@_)) {
     $self->{_IMPL} = $Bio::EnsEMBL::Utils::Tree::Interval::IMPL;
@@ -108,7 +108,7 @@ sub _load {
   my ($module, $version) = @_;
   $version ||= '';
 
-  eval qq| use $module $version |;
+  eval qq| use $module $version |; ## no critic
   info(sprintf("Cannot load %s interval tree implementation", $module eq $XS?'XS':'PP'), 2000)
     and return if $@;
 
@@ -116,7 +116,7 @@ sub _load {
   $Bio::EnsEMBL::Utils::Tree::Interval::IMPL = $module;
 
   local $^W;
-  no strict qw(refs);
+  no strict qw(refs); ## no critic
 
   for my $method (@public_methods) {
     *{"Bio::EnsEMBL::Utils::Tree::Interval::$method"} = \&{"$module\::$method"};
