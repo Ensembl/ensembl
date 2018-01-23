@@ -138,7 +138,10 @@ sub height {
 =cut
 
 sub left {
-  return shift->{left};
+  my $self = shift;
+  $self->{left} = shift if( @_ );
+  
+  return $self->{left};
 }
 
 =head2 right
@@ -146,7 +149,10 @@ sub left {
 =cut
 
 sub right {
-  return shift->{right};
+  my $self = shift;
+  $self->{right} = shift if( @_ );
+  
+  return $self->{right};
 }
 
 =head2 search
@@ -212,7 +218,7 @@ sub insert {
   if ($i->start < $self->key) {
     # insert into left subtree
     unless (defined $self->left) {
-      $self->left = Bio::EnsEMBL::Utils::Tree::Interval::Node->new($self->tree, $i);
+      $self->left(Bio::EnsEMBL::Utils::Tree::Interval::Node->new($self->tree, $i));
       $self->left->parent($self);
     } else {
       $self->left->insert($i);
@@ -220,7 +226,7 @@ sub insert {
   } else {
     # insert into right subtree
     unless (defined $self->right) {
-      $self->right = Bio::EnsEMBL::Utils::Tree::Interval::Node->new($self->tree, $i);
+      $self->right(Bio::EnsEMBL::Utils::Tree::Interval::Node->new($self->tree, $i));
       $self->right->parent($self);
     } else {
       $self->right->insert($i);
@@ -331,7 +337,7 @@ sub _highest_end {
 sub _update_height {
   my $self = shift;
 
-  $self->height(List::Util::max $self->left->height, $self->right->height + 1);
+  $self->height(List::Util::max $self->left?$self->left->height:0, $self->right?$self->right->height:0 + 1);
 }
 
 =head2 _update_parents_max 
