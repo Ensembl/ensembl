@@ -57,12 +57,12 @@ is($search_result->[0]->data, 'data1', 'Correct insertion into node with same ke
 
 $tree = Bio::EnsEMBL::Utils::Tree::Interval->new();
 $tree->insert(make_interval(50, 150, 'data1'));
-# $tree->insert(make_interval(25, 100, 'data2'));
+$tree->insert(make_interval(25, 100, 'data2'));
 
-# $search_result = $tree->search(make_interval(75, 100));
-# is(scalar @{$search_result}, 2, 'Number of search results');
-# is($search_result->[0]->data, 'data2', 'Correct insertion into left subtree');
-# is($search_result->[1]->data, 'data1', 'Correct insertion into left subtree');
+$search_result = $tree->search(make_interval(75, 100));
+is(scalar @{$search_result}, 2, 'Number of search results');
+is($search_result->[0]->data, 'data2', 'Correct insertion into left subtree');
+is($search_result->[1]->data, 'data1', 'Correct insertion into left subtree');
 
 # note Dumper $search_result;
 
