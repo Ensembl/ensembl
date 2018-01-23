@@ -304,6 +304,19 @@ sub remove {
 
 =head1 PRIVATE METHODS
 
+=head2 _height
+
+Not a method since code could invoke method on undefined instances, e.g. _rebalance
+
+=cut
+
+sub _height {
+  my $node = shift;
+
+  return -1 unless $node;
+  return $node->height;
+}
+
 =head2 _lowest 
 
 Returns the 'smallest' node in the tree
@@ -411,8 +424,8 @@ sub _rebalance {
 
   my ($left, $right) = ($self->left, $self->right);
   
-  if ($left->height - $right->height >= 2) {
-    if ($left->left->height >= $left->right->height) {
+  if (_height($left) - _height($right) >= 2) {
+    if (_height($left->left) >= _height($left->right)) {
       # Left-Left case
       $self->_right_rotate;
       $self->_update_max_right_rotate;
@@ -422,8 +435,8 @@ sub _rebalance {
       $self->_right_rotate;
       $self->_update_max_right_rotate;
     }
-  } elsif ($right->height - $left->height >= 2) {
-    if ($right->right->height >= $right->left->height) {
+  } elsif (_height($right) - _height($left) >= 2) {
+    if (_height($right->right) >= _height($right->left)) {
       # Right-Right case
       $self->_left_rotate;
       $self->_update_max_left_rotate;
