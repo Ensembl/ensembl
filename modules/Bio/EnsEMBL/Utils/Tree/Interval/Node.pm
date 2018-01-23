@@ -164,11 +164,11 @@ sub search {
   
   # search left subtree
   if ($self->left and $self->left->{max} >= $i->start) {
-    push @{$results}, $self->left->search($i);
+    push @{$results}, @{$self->left->search($i)};
   }
 
   # search this node
-  push @{$results}, $self->_overlapping_intervals($i);
+  push @{$results}, @{$self->_overlapping_intervals($i)};
 
   # if interval is to the left of the start of this interval, then
   # it can't be in any child to the right
@@ -178,7 +178,7 @@ sub search {
   }
 
   # search right subtree
-  push @{$results}, $self->right->search($i) if $self->right;
+  push @{$results}, @{$self->right->search($i)} if $self->right;
 
   return $results if scalar @{$results};
 }
@@ -580,8 +580,6 @@ sub _overlapping_intervals {
   }
   
   return $results if scalar @{$results};
-
-  return;
 }
 
 1;
