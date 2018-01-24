@@ -269,10 +269,10 @@ sub remove {
     } elsif ($parent->left == $self) {
       # one child or no child case on left side
       if ($self->right) {
-	$parent->left = $self->right;
+	$parent->left($self->right);
 	$self->right->parent($parent);
       } else {
-	$parent->left = $self->left;
+	$parent->left($self->left);
 	$self->left->parent($parent) if $self->left
       }
       $parent->_update_parents_max;
@@ -284,10 +284,10 @@ sub remove {
     } elsif ($parent->right == $self) {
       # one child or no child case on right side
       if ($self->right) {
-	$parent->right = $self->right;
+	$parent->right($self->right);
 	$self->right->parent($parent);
       } else {
-	$parent->right = $self->left;
+	$parent->right($self->left);
 	$self->left->parent($parent) if $self->left;
       }
       $parent->_update_parents_max;
