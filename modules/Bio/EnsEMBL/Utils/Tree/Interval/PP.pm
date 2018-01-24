@@ -142,9 +142,9 @@ sub remove {
   if (scalar @{$node_intervals} > 1) {
     # node with this key has more than this interval. Find it and remove
     my $removed = 0;
-    foreach my $i (0 .. $#{$node_intervals}) {
-      if ($node_intervals->[$i]->start == $i->start and $node_intervals->[$i]->end == $i->end) {
-	splice @{$node_intervals}, $i, 1;
+    foreach my $j (0 .. $#{$node_intervals}) {
+      if ($node_intervals->[$j]->start == $i->start and $node_intervals->[$j]->end == $i->end) {
+	splice @{$node_intervals}, $j, 1;
 	$removed = 1;
 	last;
       }
