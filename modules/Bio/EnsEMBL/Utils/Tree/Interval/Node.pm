@@ -178,15 +178,12 @@ sub search {
 
   # if interval is to the left of the start of this interval, then
   # it can't be in any child to the right
-  if ($i->end < $self->key) {
-    return $results if scalar @{$results};
-    return;
-  }
+  return $results if $i->end < $self->key;
 
   # search right subtree
   push @{$results}, @{$self->right->search($i)} if $self->right;
 
-  return $results if scalar @{$results};
+  return $results;
 }
 
 =head2 search_by_key
@@ -598,7 +595,7 @@ sub _overlapping_intervals {
     map { push @{$results}, $_ if $i->start <= $_->end } @{$self->{intervals}}
   }
   
-  return $results if scalar @{$results};
+  return $results;
 }
 
 1;
