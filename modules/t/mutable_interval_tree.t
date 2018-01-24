@@ -58,11 +58,32 @@ is($search_result->[0]->data, 'data1', 'Correct insertion into node with same ke
 $tree = Bio::EnsEMBL::Utils::Tree::Interval->new();
 $tree->insert(make_interval(50, 150, 'data1'));
 $tree->insert(make_interval(25, 100, 'data2'));
-
 $search_result = $tree->search(make_interval(75, 100));
 is(scalar @{$search_result}, 2, 'Number of search results');
 is($search_result->[0]->data, 'data2', 'Correct insertion into left subtree');
 is($search_result->[1]->data, 'data1', 'Correct insertion into left subtree');
+
+$tree = Bio::EnsEMBL::Utils::Tree::Interval->new();
+$tree->insert(make_interval(50, 150, 'data1'));
+$tree->insert(make_interval(75, 100, 'data2'));
+$search_result = $tree->search(make_interval(85, 100));
+is(scalar @{$search_result}, 2, 'Number of search results');
+is($search_result->[0]->data, 'data1', 'Correct insertion into right subtree');
+is($search_result->[1]->data, 'data2', 'Correct insertion into right subtree');
+
+$tree = Bio::EnsEMBL::Utils::Tree::Interval->new();
+$tree->insert(make_interval(50, 150, 'data1'));
+$tree->insert(make_interval(75, 200, 'data2'));
+$search_result = $tree->search(make_interval(50, 100));
+is(scalar @{$search_result}, 2, 'Number of search results');
+is($search_result->[0]->data, 'data1', 'Correct inclusion');
+is($search_result->[1]->data, 'data2', 'Correct inclusion');
+$search_result = $tree->search(make_interval(0, 50));
+is(scalar @{$search_result}, 1, 'Number of search results');
+is($search_result->[0]->data, 'data1', 'Correct inclusion');
+$search_result = $tree->search(make_interval(200, 300));
+is(scalar @{$search_result}, 1, 'Number of search results');
+is($search_result->[0]->data, 'data2', 'Correct inclusion');
 
 # note Dumper $search_result;
 
