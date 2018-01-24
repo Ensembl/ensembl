@@ -30,7 +30,7 @@ limitations under the License.
 
 =head1 NAME
 
-Bio::EnsEMBL::XS::Utils::Tree::Interval::PP
+Bio::EnsEMBL::Utils::Tree::Interval::PP
 
 =head1 SYNOPSIS
 
@@ -184,7 +184,7 @@ sub remove {
 	my $root_parent =
 	  Bio::EnsEMBL::Utils::Tree::Interval::Node->new($self,
 							 Bio::EnsEMBL::Utils::Tree::Interval::Interval->new($i->start, $i->end));
-	$root_parent->left = $self->root;
+	$root_parent->left($self->root);
 	$self->root->parent($root_parent);
 	
 	my $removed_node = $self->root->remove($node);
