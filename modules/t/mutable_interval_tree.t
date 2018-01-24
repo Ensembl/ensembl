@@ -85,6 +85,37 @@ $search_result = $tree->search(make_interval(200, 300));
 is(scalar @{$search_result}, 1, 'Number of search results');
 is($search_result->[0]->data, 'data2', 'Correct inclusion');
 
+$tree = Bio::EnsEMBL::Utils::Tree::Interval->new();
+ok(!$tree->remove(make_interval(50, 100)), 'Delete from empty tree');
+
+$tree = Bio::EnsEMBL::Utils::Tree::Interval->new();
+$tree->insert(make_interval(75, 150, 'data'));
+ok($tree->remove(make_interval(75, 150)), 'Delete from non-empty tree');
+ok(!$tree->root, 'Root deleted');
+
+$tree = Bio::EnsEMBL::Utils::Tree::Interval->new();
+$tree->insert(make_interval(50, 120, 'data1'));
+$tree->insert(make_interval(75, 100, 'data2'));
+$tree->insert(make_interval(75, 200, 'First data to remove'));
+$tree->insert(make_interval(75, 150, 'Second data to remove'));
+$search_result = $tree->search(make_interval(50, 200));
+is(scalar @{$search_result}, 4, 'Number of search results');
+is($search_result->[0]->data, 'data1', 'Search result');
+is($search_result->[1]->data, 'data2', 'Search result');
+is($search_result->[2]->data, 'First data to remove', 'Search result');
+is($search_result->[3]->data, 'Second data to remove', 'Search result');
+ok($tree->remove(make_interval(75, 200)), 'Delete from node with multiple data');
+$search_result = $tree->search(make_interval(50, 200));
+is(scalar @{$search_result}, 3, 'Number of search results');
+is($search_result->[0]->data, 'data1', 'Search result');
+is($search_result->[1]->data, 'data2', 'Search result');
+is($search_result->[2]->data, 'Second data to remove', 'Search result');
+ok($tree->remove(make_interval(75, 150)), 'Delete from node with multiple data');
+$search_result = $tree->search(make_interval(50, 200));
+is(scalar @{$search_result}, 2, 'Number of search results');
+is($search_result->[0]->data, 'data1', 'Search result');
+is($search_result->[1]->data, 'data2', 'Search result');
+
 # note Dumper $search_result;
 
 # # check in-order traversal
