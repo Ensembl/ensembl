@@ -116,38 +116,11 @@ is(scalar @{$search_result}, 2, 'Number of search results');
 is($search_result->[0]->data, 'data1', 'Search result');
 is($search_result->[1]->data, 'data2', 'Search result');
 
-# note Dumper $search_result;
-
-# # check in-order traversal
-# my $in_order_results = $tree->in_order_traversal;
-# is(scalar @{$in_order_results}, 3, 'Number of in-order traversal results');
-# ok($in_order_results->[0]->start == 121626874 && $in_order_results->[0]->end == 122092717, 'in-order traversal result');
-# ok($in_order_results->[1]->start == 121637917 && $in_order_results->[1]->end == 121658918, 'in-order traversal result');
-# ok($in_order_results->[2]->start == 122096077 && $in_order_results->[2]->end == 124088369, 'in-order traversal result');
-
-# my ($start, $end, $result);
-# $result = $tree->query($start, $end);
-# cmp_deeply($result, [], 'empty query');
-# $result = $tree->query(undef, $end);
-# cmp_deeply($result, [], 'empty query');
-# my $result1 = $tree->query(121779004);
-# my $result2 = $tree->query(121779004, 121779004);
-# is(scalar @{$result1}, 1, 'number of query results');
-# isa_ok($result1->[0], 'Bio::EnsEMBL::Utils::CenteredIntervalTree::Interval');
-# ok($result1->[0]->start == 121626874 && $result1->[0]->end == 122092717, 'query result interval boundaries');
-# cmp_deeply($result1, $result2, 'same result, different query interface');
-
-# for my $i (1 .. 100) {
-#   my ($start, $end) = (make_random_int(0, 100), make_random_int(0, 100));
-  
-#   if ($start > $end) {
-#     my $tmp = $end;
-#     $end = $start;
-#     $start = $tmp;
-#   }
-
-#   $random_tree->insert(make_interval($start, $end, $data));
-# }
+$tree = Bio::EnsEMBL::Utils::Tree::Interval->new();
+map { $tree->insert($_) } @{$intervals};
+$search_result = $tree->search(make_interval(121779004, 121779004));
+is(scalar @{$search_result}, 1, 'Number of search results');
+ok($search_result->[0]->start == 121626874 && $search_result->[0]->end == 122092717, 'Query result interval boundaries');
 
 sub make_interval {
   my ($start, $end, $data) = @_;
