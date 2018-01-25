@@ -32,7 +32,7 @@ my $intervals = [ Bio::EnsEMBL::Utils::Interval->new(121626874, 122092717),
 		  Bio::EnsEMBL::Utils::Interval->new(121637917, 121658918),
 		  Bio::EnsEMBL::Utils::Interval->new(122096077, 124088369) ];
 
-my $tree = Bio::EnsEMBL::Utils::Interval::Mutable->new();
+my $tree = Bio::EnsEMBL::Utils::Tree::Interval::Mutable->new();
 isa_ok($tree, 'Bio::EnsEMBL::Utils::Tree::Interval::Mutable');
 ok(!$tree->root, 'Empty tree');
 ok(!$tree->search($intervals->[0]), 'Empty tree search');
