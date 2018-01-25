@@ -30,7 +30,7 @@ limitations under the License.
 
 =head1 NAME
 
-Bio::EnsEMBL::Utils::Tree::Interval
+Bio::EnsEMBL::Utils::Tree::Interval::Mutable
 
 =head1 SYNOPSIS
 
@@ -49,7 +49,7 @@ case; it falls back to the PP implementation otherwise.
 
 =cut
 
-package Bio::EnsEMBL::Utils::Tree::Interval;
+package Bio::EnsEMBL::Utils::Tree::Interval::Mutable;
 
 use strict;
 
@@ -60,8 +60,8 @@ use Bio::EnsEMBL::Utils::Exception qw(throw warning info);
 
 # the modules providing the underlying implementation,
 # either XS or pure perl fallback
-my $XS = 'Bio::EnsEMBL::XS::Utils::Tree::Interval';
-my $PP = 'Bio::EnsEMBL::Utils::Tree::Interval::PP';
+my $XS = 'Bio::EnsEMBL::XS::Utils::Tree::Interval::Mutable';
+my $PP = 'Bio::EnsEMBL::Utils::Tree::Interval::Mutable::PP';
 
 # if XS is used, version at least 1.3.1 is required (provides the interval tree library)
 my $VERSION_XS = '1.3.1';
@@ -69,7 +69,7 @@ my $VERSION_XS = '1.3.1';
 my @public_methods = qw/ insert search remove /;
 
 # import either XS or PP methods into namespace
-unless ($Bio::EnsEMBL::Utils::Tree::Interval::IMPL) {
+unless ($Bio::EnsEMBL::Utils::Tree::Interval::Mutable::IMPL) {
   # first check if XS is available and try to load it,
   # otherwise fall back to PP implementation
   _load_xs() or _load_pp() or throw "Couldn't load implementation: $@";
@@ -85,10 +85,10 @@ sub new {
   my $class = ref($caller) || $caller;
 
   # for ($XS|$PP)::new(0);
-  return eval qq| $Bio::EnsEMBL::Utils::Tree::Interval::IMPL\::new( \$caller ) | unless $caller; ## no critic
+  return eval qq| $Bio::EnsEMBL::Utils::Tree::Interval::Mutable::IMPL\::new( \$caller ) | unless $caller; ## no critic
 
-  if (my $self = $Bio::EnsEMBL::Utils::Tree::Interval::IMPL->new(@_)) {
-    $self->{_IMPL} = $Bio::EnsEMBL::Utils::Tree::Interval::IMPL;
+  if (my $self = $Bio::EnsEMBL::Utils::Tree::Interval::Mutable::IMPL->new(@_)) {
+    $self->{_IMPL} = $Bio::EnsEMBL::Utils::Tree::Interval::Mutable::IMPL;
     bless($self, $class);
     return $self
   }
@@ -112,14 +112,14 @@ sub _load {
   info(sprintf("Cannot load %s interval tree implementation", $module eq $XS?'XS':'PP'), 2000)
     and return if $@;
 
-  push @Bio::EnsEMBL::Utils::Tree::Interval::ISA, $module;
-  $Bio::EnsEMBL::Utils::Tree::Interval::IMPL = $module;
+  push @Bio::EnsEMBL::Utils::Tree::Interval::Mutable::ISA, $module;
+  $Bio::EnsEMBL::Utils::Tree::Interval::Mutable::IMPL = $module;
 
   local $^W;
   no strict qw(refs); ## no critic
 
   for my $method (@public_methods) {
-    *{"Bio::EnsEMBL::Utils::Tree::Interval::$method"} = \&{"$module\::$method"};
+    *{"Bio::EnsEMBL::Utils::Tree::Interval::Mutable::$method"} = \&{"$module\::$method"};
   }
   
   return 1;
