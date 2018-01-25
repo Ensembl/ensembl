@@ -30,7 +30,7 @@ limitations under the License.
 
 =head1 NAME
 
-Bio::EnsEMBL::Utils::Tree::Interval::PP
+Bio::EnsEMBL::Utils::Tree::Interval::Mutable::PP
 
 =head1 SYNOPSIS
 
@@ -44,13 +44,13 @@ augmented AVL binary balanced trees.
 
 =cut
 
-package Bio::EnsEMBL::Utils::Tree::Interval::PP;
+package Bio::EnsEMBL::Utils::Tree::Interval::Mutable::PP;
 
 use strict;
 use Carp;
 
-use Bio::EnsEMBL::Utils::Tree::Interval::Node;
-use Bio::EnsEMBL::Utils::Tree::Interval::Interval;
+use Bio::EnsEMBL::Utils::Tree::Interval::Mutable::Node;
+use Bio::EnsEMBL::Utils::Interval;
 
 =head2 new
 
@@ -81,7 +81,7 @@ sub insert {
   
   # base case: empty tree, assign new node to root
   unless (defined $self->root) {
-    $self->root(Bio::EnsEMBL::Utils::Tree::Interval::Node->new($self, $i));
+    $self->root(Bio::EnsEMBL::Utils::Tree::Interval::Mutable::Node->new($self, $i));
     
     return 1;
   }
@@ -182,8 +182,8 @@ sub remove {
 	# we're removing the root node
 	# create dummy node temporarily taking root's parent node
 	my $root_parent =
-	  Bio::EnsEMBL::Utils::Tree::Interval::Node->new($self,
-							 Bio::EnsEMBL::Utils::Tree::Interval::Interval->new($i->start, $i->end));
+	  Bio::EnsEMBL::Utils::Tree::Interval::Mutable::Node->new($self,
+								  Bio::EnsEMBL::Utils::Interval->new($i->start, $i->end));
 	$root_parent->left($self->root);
 	$self->root->parent($root_parent);
 	

@@ -23,17 +23,17 @@ use Test::Warnings qw(warning);
 
 use Data::Dumper;
 
-use_ok 'Bio::EnsEMBL::Utils::Tree::Interval::Interval';
-use_ok 'Bio::EnsEMBL::Utils::Tree::Interval';
+use_ok 'Bio::EnsEMBL::Utils::Interval';
+use_ok 'Bio::EnsEMBL::Utils::Tree::Interval::Mutable';
 
 srand(2791);
 
-my $intervals = [ Bio::EnsEMBL::Utils::Tree::Interval::Interval->new(121626874, 122092717),
-		  Bio::EnsEMBL::Utils::Tree::Interval::Interval->new(121637917, 121658918),
-		  Bio::EnsEMBL::Utils::Tree::Interval::Interval->new(122096077, 124088369) ];
+my $intervals = [ Bio::EnsEMBL::Utils::Interval->new(121626874, 122092717),
+		  Bio::EnsEMBL::Utils::Interval->new(121637917, 121658918),
+		  Bio::EnsEMBL::Utils::Interval->new(122096077, 124088369) ];
 
-my $tree = Bio::EnsEMBL::Utils::Tree::Interval->new();
-isa_ok($tree, 'Bio::EnsEMBL::Utils::Tree::Interval');
+my $tree = Bio::EnsEMBL::Utils::Interval::Mutable->new();
+isa_ok($tree, 'Bio::EnsEMBL::Utils::Tree::Interval::Mutable');
 ok(!$tree->root, 'Empty tree');
 ok(!$tree->search($intervals->[0]), 'Empty tree search');
 ok(!$tree->remove($intervals->[0]), 'Empty tree removal');
@@ -44,7 +44,7 @@ my $search_result = $tree->search($query);
 is(scalar @{$search_result}, 1, 'Number of search results');
 is($search_result->[0]->data, 'data', 'Correctly insert into empty tree');
 
-$tree = Bio::EnsEMBL::Utils::Tree::Interval->new();
+$tree = Bio::EnsEMBL::Utils::Tree::Interval::Mutable->new();
 $tree->insert(make_interval(50, 150, 'data1'));
 $tree->insert(make_interval(50, 100, 'data2'));
 $search_result = $tree->search(make_interval(75, 100));
@@ -55,7 +55,7 @@ $search_result = $tree->search(make_interval(125, 150));
 is(scalar @{$search_result}, 1, 'Number of search results');
 is($search_result->[0]->data, 'data1', 'Correct insertion into node with same key');
 
-$tree = Bio::EnsEMBL::Utils::Tree::Interval->new();
+$tree = Bio::EnsEMBL::Utils::Tree::Interval::Mutable->new();
 $tree->insert(make_interval(50, 150, 'data1'));
 $tree->insert(make_interval(25, 100, 'data2'));
 $search_result = $tree->search(make_interval(75, 100));
@@ -63,7 +63,7 @@ is(scalar @{$search_result}, 2, 'Number of search results');
 is($search_result->[0]->data, 'data2', 'Correct insertion into left subtree');
 is($search_result->[1]->data, 'data1', 'Correct insertion into left subtree');
 
-$tree = Bio::EnsEMBL::Utils::Tree::Interval->new();
+$tree = Bio::EnsEMBL::Utils::Tree::Interval::Mutable->new();
 $tree->insert(make_interval(50, 150, 'data1'));
 $tree->insert(make_interval(75, 100, 'data2'));
 $search_result = $tree->search(make_interval(85, 100));
@@ -71,7 +71,7 @@ is(scalar @{$search_result}, 2, 'Number of search results');
 is($search_result->[0]->data, 'data1', 'Correct insertion into right subtree');
 is($search_result->[1]->data, 'data2', 'Correct insertion into right subtree');
 
-$tree = Bio::EnsEMBL::Utils::Tree::Interval->new();
+$tree = Bio::EnsEMBL::Utils::Tree::Interval::Mutable->new();
 $tree->insert(make_interval(50, 150, 'data1'));
 $tree->insert(make_interval(75, 200, 'data2'));
 $search_result = $tree->search(make_interval(50, 100));
@@ -85,15 +85,15 @@ $search_result = $tree->search(make_interval(200, 300));
 is(scalar @{$search_result}, 1, 'Number of search results');
 is($search_result->[0]->data, 'data2', 'Correct inclusion');
 
-$tree = Bio::EnsEMBL::Utils::Tree::Interval->new();
+$tree = Bio::EnsEMBL::Utils::Tree::Interval::Mutable->new();
 ok(!$tree->remove(make_interval(50, 100)), 'Delete from empty tree');
 
-$tree = Bio::EnsEMBL::Utils::Tree::Interval->new();
+$tree = Bio::EnsEMBL::Utils::Tree::Interval::Mutable->new();
 $tree->insert(make_interval(75, 150, 'data'));
 ok($tree->remove(make_interval(75, 150)), 'Delete from non-empty tree');
 ok(!$tree->root, 'Root deleted');
 
-$tree = Bio::EnsEMBL::Utils::Tree::Interval->new();
+$tree = Bio::EnsEMBL::Utils::Tree::Interval::Mutable->new();
 $tree->insert(make_interval(50, 120, 'data1'));
 $tree->insert(make_interval(75, 100, 'data2'));
 $tree->insert(make_interval(75, 200, 'First data to remove'));
@@ -116,7 +116,7 @@ is(scalar @{$search_result}, 2, 'Number of search results');
 is($search_result->[0]->data, 'data1', 'Search result');
 is($search_result->[1]->data, 'data2', 'Search result');
 
-$tree = Bio::EnsEMBL::Utils::Tree::Interval->new();
+$tree = Bio::EnsEMBL::Utils::Tree::Interval::Mutable->new();
 map { $tree->insert($_) } @{$intervals};
 $search_result = $tree->search(make_interval(121779004, 121779004));
 is(scalar @{$search_result}, 1, 'Number of search results');
@@ -125,7 +125,7 @@ ok($search_result->[0]->start == 121626874 && $search_result->[0]->end == 122092
 sub make_interval {
   my ($start, $end, $data) = @_;
 
-  return Bio::EnsEMBL::Utils::Tree::Interval::Interval->new($start, $end, $data);
+  return Bio::EnsEMBL::Utils::Interval->new($start, $end, $data);
 }
 
 sub make_random_int {

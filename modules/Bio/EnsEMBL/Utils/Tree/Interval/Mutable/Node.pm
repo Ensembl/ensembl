@@ -30,7 +30,7 @@ limitations under the License.
 
 =head1 NAME
 
-Bio::EnsEMBL::Utils::Tree::Interval::Node
+Bio::EnsEMBL::Utils::Tree::Interval::Mutable::Node
 
 =head1 SYNOPSIS
 
@@ -41,7 +41,7 @@ Bio::EnsEMBL::Utils::Tree::Interval::Node
 
 =cut
 
-package Bio::EnsEMBL::Utils::Tree::Interval::Node;
+package Bio::EnsEMBL::Utils::Tree::Interval::Mutable::Node;
 
 use strict;
 
@@ -215,7 +215,7 @@ sub insert {
   if ($i->start < $self->key) {
     # insert into left subtree
     unless (defined $self->left) {
-      $self->left(Bio::EnsEMBL::Utils::Tree::Interval::Node->new($self->tree, $i));
+      $self->left(Bio::EnsEMBL::Utils::Tree::Interval::Mutable::Node->new($self->tree, $i));
       $self->left->parent($self);
     } else {
       $self->left->insert($i);
@@ -223,7 +223,7 @@ sub insert {
   } else {
     # insert into right subtree
     unless (defined $self->right) {
-      $self->right(Bio::EnsEMBL::Utils::Tree::Interval::Node->new($self->tree, $i));
+      $self->right(Bio::EnsEMBL::Utils::Tree::Interval::Mutable::Node->new($self->tree, $i));
       $self->right->parent($self);
     } else {
       $self->right->insert($i);
