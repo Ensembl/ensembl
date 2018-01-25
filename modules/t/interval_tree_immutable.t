@@ -21,22 +21,22 @@ use Test::Deep;
 use Test::Exception;
 use Test::Warnings qw(warning);
 
-use_ok 'Bio::EnsEMBL::Utils::CenteredIntervalTree::Interval';
+use_ok 'Bio::EnsEMBL::Utils::Interval';
 
-throws_ok { Bio::EnsEMBL::Utils::CenteredIntervalTree::Interval->new() } qr/specify.+?boundaries/, 'Throws with no arguments';
-throws_ok { Bio::EnsEMBL::Utils::CenteredIntervalTree::Interval->new(1) } qr/specify.+?boundaries/, 'Throws with an undefined argument';
-throws_ok { Bio::EnsEMBL::Utils::CenteredIntervalTree::Interval->new(10, 1) } qr/start.+?end/, 'Throws with invalid arguments';
-throws_ok { Bio::EnsEMBL::Utils::CenteredIntervalTree::Interval->new(100, 10) } qr/start.+?end/, 'Throws with invalid arguments';
+throws_ok { Bio::EnsEMBL::Utils::Interval->new() } qr/specify.+?boundaries/, 'Throws with no arguments';
+throws_ok { Bio::EnsEMBL::Utils::Interval->new(1) } qr/specify.+?boundaries/, 'Throws with an undefined argument';
+throws_ok { Bio::EnsEMBL::Utils::Interval->new(10, 1) } qr/start.+?end/, 'Throws with invalid arguments';
+throws_ok { Bio::EnsEMBL::Utils::Interval->new(100, 10) } qr/start.+?end/, 'Throws with invalid arguments';
 
 # degenerate (point) case
-my $i = Bio::EnsEMBL::Utils::CenteredIntervalTree::Interval->new(10, 10);
-isa_ok($i, 'Bio::EnsEMBL::Utils::CenteredIntervalTree::Interval');
+my $i = Bio::EnsEMBL::Utils::Interval->new(10, 10);
+isa_ok($i, 'Bio::EnsEMBL::Utils::Interval');
 ok($i->is_empty, 'empty interval');
 ok($i->is_point, 'interval is point');
 
 # a normal interval, start < end
-$i = Bio::EnsEMBL::Utils::CenteredIntervalTree::Interval->new(100, 200);
-isa_ok($i, 'Bio::EnsEMBL::Utils::CenteredIntervalTree::Interval');
+$i = Bio::EnsEMBL::Utils::Interval->new(100, 200);
+isa_ok($i, 'Bio::EnsEMBL::Utils::Interval');
 is($i->start, 100, 'start position');
 is($i->end, 200, 'end position');
 ok(!$i->is_empty, 'interval not empty');
@@ -49,38 +49,38 @@ ok($i->is_right_of(99), 'interval right of point');
 ok(!$i->is_right_of(100) && !$i->is_right_of(150) && !$i->is_right_of(201), 'interval not right of point');
 ok($i->is_left_of(201), 'interval left of point');
 ok(!$i->is_left_of(99) && !$i->is_left_of(150) && !$i->is_left_of(200), 'interval not left of point');
-my $j = Bio::EnsEMBL::Utils::CenteredIntervalTree::Interval->new(50, 99);
-my $k = Bio::EnsEMBL::Utils::CenteredIntervalTree::Interval->new(50, 150);
-my $l = Bio::EnsEMBL::Utils::CenteredIntervalTree::Interval->new(201, 250);
+my $j = Bio::EnsEMBL::Utils::Interval->new(50, 99);
+my $k = Bio::EnsEMBL::Utils::Interval->new(50, 150);
+my $l = Bio::EnsEMBL::Utils::Interval->new(201, 250);
 ok($i->is_right_of($j), 'interval right of another');
 ok(!$i->is_right_of($k) && !$i->is_right_of($l), 'interval not right of others');
 ok($i->is_left_of($l), 'interval left of another');
 ok(!$i->is_left_of($j) && !$i->is_left_of($k), 'interval not left of others');
 
 # check interval data
-$j = Bio::EnsEMBL::Utils::CenteredIntervalTree::Interval->new(100, 200, [100, 200]);
+$j = Bio::EnsEMBL::Utils::Interval->new(100, 200, [100, 200]);
 is_deeply($j->data, [100, 200], 'interval data');
 
 # check intersection with other intervals
-$k = Bio::EnsEMBL::Utils::CenteredIntervalTree::Interval->new(50, 150);
+$k = Bio::EnsEMBL::Utils::Interval->new(50, 150);
 ok($i->intersects($k), 'intervals intersect');
-$k = Bio::EnsEMBL::Utils::CenteredIntervalTree::Interval->new(150, 250);
+$k = Bio::EnsEMBL::Utils::Interval->new(150, 250);
 ok($i->intersects($k), 'intervals intersect');
-$k = Bio::EnsEMBL::Utils::CenteredIntervalTree::Interval->new(50, 99);
+$k = Bio::EnsEMBL::Utils::Interval->new(50, 99);
 ok(!$i->intersects($k), 'intervals do not intersect');
-$k = Bio::EnsEMBL::Utils::CenteredIntervalTree::Interval->new(201, 250);
+$k = Bio::EnsEMBL::Utils::Interval->new(201, 250);
 ok(!$i->intersects($k), 'intervals do not intersect');
 
-use_ok 'Bio::EnsEMBL::Utils::CenteredIntervalTree::Node';
+use_ok 'Bio::EnsEMBL::Utils::Tree::Interval::Immutable::Node';
 
-use_ok 'Bio::EnsEMBL::Utils::CenteredIntervalTree';
+use_ok 'Bio::EnsEMBL::Utils::Tree::Interval::Immutable';
 
-my $intervals = [ Bio::EnsEMBL::Utils::CenteredIntervalTree::Interval->new(121626874, 122092717),
-		  Bio::EnsEMBL::Utils::CenteredIntervalTree::Interval->new(121637917, 121658918),
-		  Bio::EnsEMBL::Utils::CenteredIntervalTree::Interval->new(122096077, 124088369) ];
-my $tree = Bio::EnsEMBL::Utils::CenteredIntervalTree->new($intervals);
-isa_ok($tree, 'Bio::EnsEMBL::Utils::CenteredIntervalTree');
-isa_ok($tree->root, 'Bio::EnsEMBL::Utils::CenteredIntervalTree::Node');
+my $intervals = [ Bio::EnsEMBL::Utils::Interval->new(121626874, 122092717),
+		  Bio::EnsEMBL::Utils::Interval->new(121637917, 121658918),
+		  Bio::EnsEMBL::Utils::Interval->new(122096077, 124088369) ];
+my $tree = Bio::EnsEMBL::Utils::Tree::Interval::Immutable->new($intervals);
+isa_ok($tree, 'Bio::EnsEMBL::Utils::Tree::Interval::Immutable');
+isa_ok($tree->root, 'Bio::EnsEMBL::Utils::Tree::Interval::Immutable::Node');
 
 # check in-order traversal
 my $in_order_results = $tree->in_order_traversal;
@@ -97,7 +97,7 @@ cmp_deeply($result, [], 'empty query');
 my $result1 = $tree->query(121779004);
 my $result2 = $tree->query(121779004, 121779004);
 is(scalar @{$result1}, 1, 'number of query results');
-isa_ok($result1->[0], 'Bio::EnsEMBL::Utils::CenteredIntervalTree::Interval');
+isa_ok($result1->[0], 'Bio::EnsEMBL::Utils::Interval');
 ok($result1->[0]->start == 121626874 && $result1->[0]->end == 122092717, 'query result interval boundaries');
 cmp_deeply($result1, $result2, 'same result, different query interface');
 

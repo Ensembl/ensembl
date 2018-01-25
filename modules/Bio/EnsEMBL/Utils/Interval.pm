@@ -30,7 +30,7 @@ limitations under the License.
 
 =head1 NAME
 
-Bio::EnsEMBL::Utils::CenteredIntervalTree::Interval
+Bio::EnsEMBL::Utils::Interval
 
 =head1 SYNOPSIS
 
@@ -41,7 +41,7 @@ Bio::EnsEMBL::Utils::CenteredIntervalTree::Interval
 
 =cut
 
-package Bio::EnsEMBL::Utils::CenteredIntervalTree::Interval;
+package Bio::EnsEMBL::Utils::Interval;
 
 use strict;
 
@@ -137,7 +137,7 @@ sub contains {
 
 sub intersects {
   my ($self, $interval) = @_;
-  assert_ref($interval, 'Bio::EnsEMBL::Utils::CenteredIntervalTree::Interval');
+  assert_ref($interval, 'Bio::EnsEMBL::Utils::Interval');
     
   return ($self->start <= $interval->end and $interval->start <= $self->end);
 }

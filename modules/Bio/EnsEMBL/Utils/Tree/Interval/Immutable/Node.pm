@@ -41,7 +41,7 @@ Bio::EnsEMBL::Utils::CenteredIntervalTree::Node
 
 =cut
 
-package Bio::EnsEMBL::Utils::CenteredIntervalTree::Node;
+package Bio::EnsEMBL::Utils::Tree::Interval::Immutable::Node;
 
 use strict;
 
@@ -63,8 +63,8 @@ sub new {
 
   throw 'x_center must be a number' unless looks_like_number($x_center);
   assert_ref($s_center, 'ARRAY');
-  $left && assert_ref($left, 'Bio::EnsEMBL::Utils::CenteredIntervalTree::Node');
-  $right && assert_ref($right, 'Bio::EnsEMBL::Utils::CenteredIntervalTree::Node');
+  $left && assert_ref($left, 'Bio::EnsEMBL::Utils::Tree::Interval::Immutable::Node');
+  $right && assert_ref($right, 'Bio::EnsEMBL::Utils::Tree::Interval::Immutable::Node');
 
   my $self = bless({ 'x_center' => $x_center,
 		     's_center_beg' => [ map { $_->[1] } sort { $a->[0] <=> $b->[0] } map { [ $_->start, $_ ] } @{$s_center} ],
