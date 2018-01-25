@@ -149,8 +149,8 @@ use Bio::EnsEMBL::Mapper::IndelCoordinate;
 use Bio::EnsEMBL::Mapper::Gap;
 
 use Bio::EnsEMBL::Utils::Exception qw(throw);
-use Bio::EnsEMBL::Utils::CenteredIntervalTree;
-use Bio::EnsEMBL::Utils::CenteredIntervalTree::Interval;
+use Bio::EnsEMBL::Utils::Interval;
+use Bio::EnsEMBL::Utils::Tree::Interval::Immutable;
 
 =head2 new
 
@@ -305,14 +305,26 @@ sub map_coordinates {
   
   # create set of intervals to be checked for overlap
   my $from_intervals;
+
+  ###
+  #
   map { push @{$from_intervals},
-	  Bio::EnsEMBL::Utils::CenteredIntervalTree::Interval->new($_->{$from}{start}<=$_->{$from}{end}?$_->{$from}{start}:$_->{$from}{end},
-								   $_->{$from}{start}<=$_->{$from}{end}?$_->{$from}{end}:$_->{$from}{start},
-								   $_) } @{$lr};
+  	  Bio::EnsEMBL::Utils::Interval->new($_->{$from}{start}<=$_->{$from}{end}?$_->{$from}{start}:$_->{$from}{end},
+					     $_->{$from}{start}<=$_->{$from}{end}?$_->{$from}{end}:$_->{$from}{start},
+					     $_) } @{$lr};
   
   # create and query the interval tree defined on the above set of intervals
-  my $itree = Bio::EnsEMBL::Utils::CenteredIntervalTree->new($from_intervals);
+  my $itree = Bio::EnsEMBL::Utils::Tree::Interval::Immutable->new($from_intervals);
   my $overlap = $itree->query($start, $end);
+  #
+  # use Bio::EnsEMBL::Utils::Tree::Interval;
+  # my $itree = Bio::EnsEMBL::Utils::Tree::Interval->new();
+  # map { $itree->insert(Bio::EnsEMBL::Utils::Tree::Interval::Interval->new($_->{$from}{start}<=$_->{$from}{end}?$_->{$from}{start}:$_->{$from}{end},
+  # 									 $_->{$from}{start}<=$_->{$from}{end}?$_->{$from}{end}:$_->{$from}{start},
+  # 									 $_)) } @{$lr};
+  # my $overlap = $itree->search(Bio::EnsEMBL::Utils::Tree::Interval::Interval->new($start, $end));
+  #
+  ###
   
   my $rank              = 0;
   my $orig_start        = $start;

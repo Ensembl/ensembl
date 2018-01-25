@@ -30,7 +30,7 @@ limitations under the License.
 
 =head1 NAME
 
-Bio::EnsEMBL::Utils::CenteredIntervalTree
+Bio::EnsEMBL::Utils::Tree::Interval::Immutable
 
 =head1 SYNOPSIS
 
@@ -43,7 +43,7 @@ Heavily inspired by https://github.com/tylerkahn/intervaltree-python
 
 =cut
 
-package Bio::EnsEMBL::Utils::CenteredIntervalTree;
+package Bio::EnsEMBL::Utils::Tree::Interval::Immutable;
 
 use strict;
 
@@ -51,8 +51,8 @@ use Data::Dumper;
 
 use Bio::EnsEMBL::Utils::Scalar qw(assert_ref);
 use Bio::EnsEMBL::Utils::Exception qw(throw);
-use Bio::EnsEMBL::Utils::CenteredIntervalTree::Node;
-use Bio::EnsEMBL::Utils::CenteredIntervalTree::Interval;
+use Bio::EnsEMBL::Utils::Tree::Interval::Immutable::Node;
+use Bio::EnsEMBL::Utils::Interval;
 
 =head2 new
 
@@ -120,7 +120,7 @@ sub query {
   my $interval;
   if (defined $start) {
     $end = $start unless defined $end;
-    $interval = Bio::EnsEMBL::Utils::CenteredIntervalTree::Interval->new($start, $end);
+    $interval = Bio::EnsEMBL::Utils::Interval->new($start, $end);
   }
   
   return [] unless $interval;
@@ -286,10 +286,10 @@ sub _divide_intervals {
     }
   }
 
-  my $node = Bio::EnsEMBL::Utils::CenteredIntervalTree::Node->new($x_center,
-								  $s_center,
-								  $self->_divide_intervals($s_left),
-								  $self->_divide_intervals($s_right));
+  my $node = Bio::EnsEMBL::Utils::Tree::Interval::Immutable::Node->new($x_center,
+								       $s_center,
+								       $self->_divide_intervals($s_left),
+								       $self->_divide_intervals($s_right));
 }
 
 sub _center {
