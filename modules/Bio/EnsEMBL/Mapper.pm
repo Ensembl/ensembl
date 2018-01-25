@@ -151,6 +151,7 @@ use Bio::EnsEMBL::Mapper::Gap;
 use Bio::EnsEMBL::Utils::Exception qw(throw);
 use Bio::EnsEMBL::Utils::Interval;
 use Bio::EnsEMBL::Utils::Tree::Interval::Immutable;
+# use Bio::EnsEMBL::Utils::Tree::Interval::Mutable;
 
 =head2 new
 
@@ -312,19 +313,28 @@ sub map_coordinates {
   	  Bio::EnsEMBL::Utils::Interval->new($_->{$from}{start}<=$_->{$from}{end}?$_->{$from}{start}:$_->{$from}{end},
 					     $_->{$from}{start}<=$_->{$from}{end}?$_->{$from}{end}:$_->{$from}{start},
 					     $_) } @{$lr};
-  
-  # create and query the interval tree defined on the above set of intervals
+
+  ############################################################################
+  #
+  # Create and query the interval tree defined on the above set of intervals
+  #
+  # Two options:
+  #
+  # 1. Use immutable interval tree implementation
+  #
   my $itree = Bio::EnsEMBL::Utils::Tree::Interval::Immutable->new($from_intervals);
   my $overlap = $itree->query($start, $end);
   #
-  # use Bio::EnsEMBL::Utils::Tree::Interval;
-  # my $itree = Bio::EnsEMBL::Utils::Tree::Interval->new();
-  # map { $itree->insert(Bio::EnsEMBL::Utils::Tree::Interval::Interval->new($_->{$from}{start}<=$_->{$from}{end}?$_->{$from}{start}:$_->{$from}{end},
-  # 									 $_->{$from}{start}<=$_->{$from}{end}?$_->{$from}{end}:$_->{$from}{start},
-  # 									 $_)) } @{$lr};
-  # my $overlap = $itree->search(Bio::EnsEMBL::Utils::Tree::Interval::Interval->new($start, $end));
+  # 2. Use mutable interval tree implementation
   #
-  ###
+  # Enable this as some preliminary experiments show this is slightly faster
+  # on the test suite.
+  #
+  # my $itree = Bio::EnsEMBL::Utils::Tree::Interval::Mutable->new();
+  # map { $itree->insert($_) } @{$from_intervals};
+  # my $overlap = $itree->search(Bio::EnsEMBL::Utils::Interval->new($start, $end));
+  #
+  ############################################################################
   
   my $rank              = 0;
   my $orig_start        = $start;
