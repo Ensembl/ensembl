@@ -61,14 +61,26 @@ sub new {
   my $class = ref($caller) || $caller;
 
   # mmhh, should probably return just the hash ref
-  return bless({ _root => undef }, $class);
+  return bless({ _root => undef, _size => 0 }, $class);
 }
+
+=head2 root
+
+=cut
 
 sub root {
   my $self = shift;
   $self->{_root} = shift if( @_ );
   
   return $self->{_root};
+}
+
+=head2 size
+
+=cut
+
+sub size {
+  return shift->{_size};
 }
 
 =head2 insert
@@ -82,6 +94,7 @@ sub insert {
   # base case: empty tree, assign new node to root
   unless (defined $self->root) {
     $self->root(Bio::EnsEMBL::Utils::Tree::Interval::Mutable::Node->new($self, $i));
+    $self->{_size}++;
     
     return 1;
   }
@@ -102,12 +115,15 @@ sub insert {
       $node->_update_parents_max if $node->parent;
     }
 
+    $self->{_size}++;
+    
     return 1;
   } else {
     # node with the interval's key doesn't exist
     # insert from root node
     $self->root->insert($i);
-
+    $self->{_size}++;
+    
     return 1;
   }
 
@@ -168,6 +184,8 @@ sub remove {
 
 	$node->parent->_update_parents_max if $node->parent;
       }
+
+      $self->{_size}--;
       
       return 1;
     } else {
@@ -193,6 +211,8 @@ sub remove {
 	$self->root->parent(undef) if $self->root;
 	if ($removed_node) {
 	  $removed_node = undef;
+	  $self->{_size}--;
+	  
 	  return 1;
 	} else {
 	  return 0;
