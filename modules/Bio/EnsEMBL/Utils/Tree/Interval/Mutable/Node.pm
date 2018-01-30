@@ -460,16 +460,16 @@ sub _left_rotate {
     $self->tree->root($right);
   } else {
     if ($right->parent->left == $self) {
-      $right->parent->left = $right
+      $right->parent->left($right);
     } elsif ($right->parent->right == $self) {
-      $right->parent->right = $right;
+      $right->parent->right($right);
     }
   }
   
-  $self->right = $right->left;
+  $self->right($right->left);
   $self->right->parent($self) if $self->right;
   
-  $right->left = $self;
+  $right->left($self);
   $self->parent($right);
 
   $self->_update_height;
@@ -487,15 +487,17 @@ sub _update_max_left_rotate { # handles Right-Right case and Right-Left case in 
   # update max of left sibling (x in first case, y in second)
   my $parent = $self->parent;
   my $parent_right = $parent->right;
-  my $parent_right_high = $parent_right->_highest_end;
-  if (!$parent_right->left and $parent_right->right) {
-    $parent_right->{max} = max $parent_right_high, $parent_right->right->{max};
-  } elsif ($parent_right->left and !$parent_right->right) {
-    $parent_right->{max} = max $parent_right_high, $parent_right->left->{max};
-  } elsif (!$parent_right->left and !$parent_right->right) {
-    $parent_right->{max} = $parent_right_high;
-  } else {
-    $parent_right->{max} = max $parent_right_high, $parent_right->left->{max}, $parent_right->right->{max};
+  if ($parent_right) {
+    my $parent_right_high = $parent_right->_highest_end;
+    if (!$parent_right->left and $parent_right->right) {
+      $parent_right->{max} = max $parent_right_high, $parent_right->right->{max};
+    } elsif ($parent_right->left and !$parent_right->right) {
+      $parent_right->{max} = max $parent_right_high, $parent_right->left->{max};
+    } elsif (!$parent_right->left and !$parent_right->right) {
+      $parent_right->{max} = $parent_right_high;
+    } else {
+      $parent_right->{max} = max $parent_right_high, $parent_right->left->{max}, $parent_right->right->{max};
+    }
   }
   
   # update max of itself (z)
@@ -511,7 +513,8 @@ sub _update_max_left_rotate { # handles Right-Right case and Right-Left case in 
   }
   
   # update max of parent (y in first case, x in second)
-  $parent->{max} = max $parent->left->{max}, $parent->right->{max}, $parent->_highest_end;
+  $parent->{max} = max $parent->left->{max}, $parent->right->{max}, $parent->_highest_end
+    if $parent;
 
 }
 
@@ -529,16 +532,16 @@ sub _right_rotate {
     $self->tree->root($left);
   } else {
     if ($left->parent->left == $self) {
-      $left->parent->left = $left;
+      $left->parent->left($left);
     } elsif ($left->parent->right == $self) {
-      $left->parent->right = $left;
+      $left->parent->right($left);
     }
   }
   
-  $self->left = $left->right;
+  $self->left($left->right);
   $self->left->parent($self) if $self->left;
   
-  $left->right = $self;
+  $left->right($self);
   $self->parent($left);
 
   $self->_update_height;
@@ -555,15 +558,17 @@ sub _update_max_right_rotate { # handles Left-Left case and Left-Right case afte
   # update max of left sibling (x in first case, y in second)
   my $parent = $self->parent;
   my $parent_left = $parent->left;
-  my $parent_left_high = $parent_left->_highest_end;
-  if (!$parent_left->left and $parent_left->right) {
-    $parent_left->{max} = max $parent_left_high, $parent_left->right->{max};
-  } elsif ($parent_left->left and !$parent_left->right) {
-    $parent_left->{max} = max $parent_left_high, $parent_left->left->{max};
-  } elsif (!$parent_left->left and !$parent_left->right) {
-    $parent_left->{max} = $parent_left_high;
-  } else {
-    $parent_left->{max} = max $parent_left_high, $parent_left->left->{max}, $parent_left->right->{max};
+  if ($parent_left) {
+    my $parent_left_high = $parent_left->_highest_end;
+    if (!$parent_left->left and $parent_left->right) {
+      $parent_left->{max} = max $parent_left_high, $parent_left->right->{max};
+    } elsif ($parent_left->left and !$parent_left->right) {
+      $parent_left->{max} = max $parent_left_high, $parent_left->left->{max};
+    } elsif (!$parent_left->left and !$parent_left->right) {
+      $parent_left->{max} = $parent_left_high;
+    } else {
+      $parent_left->{max} = max $parent_left_high, $parent_left->left->{max}, $parent_left->right->{max};
+    }
   }
   
   # update max of itself (z)
@@ -579,7 +584,8 @@ sub _update_max_right_rotate { # handles Left-Left case and Left-Right case afte
   }
   
   # update max of parent (y in first case, x in second)
-  $parent->{max} = max $parent->left->{max}, $parent->right->{max}, $parent->_highest_end;
+  $parent->{max} = max $parent->left->{max}, $parent->right->{max}, $parent->_highest_end
+    if $parent;
 }
 
 =head2 _overlapping_intervals
