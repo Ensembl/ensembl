@@ -513,7 +513,7 @@ sub _update_max_left_rotate { # handles Right-Right case and Right-Left case in 
   }
   
   # update max of parent (y in first case, x in second)
-  $parent->{max} = max $parent->left->{max}, $parent->right->{max}, $parent->_highest_end
+  $parent->{max} = max $parent->left?$parent->left->{max}:0, $parent->right?$parent->right->{max}:0, $parent->_highest_end
     if $parent;
 
 }
@@ -584,7 +584,7 @@ sub _update_max_right_rotate { # handles Left-Left case and Left-Right case afte
   }
   
   # update max of parent (y in first case, x in second)
-  $parent->{max} = max $parent->left->{max}, $parent->right->{max}, $parent->_highest_end
+  $parent->{max} = max $parent->left?$parent->left->{max}:0, $parent->right?$parent->right->{max}:0, $parent->_highest_end
     if $parent;
 }
 
