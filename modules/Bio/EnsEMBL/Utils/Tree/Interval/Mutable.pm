@@ -66,7 +66,7 @@ my $PP = 'Bio::EnsEMBL::Utils::Tree::Interval::Mutable::PP';
 # if XS is used, version at least 1.3.1 is required (provides the interval tree library)
 my $VERSION_XS = '1.3.1';
 
-my @public_methods = qw/ insert search remove /;
+my @public_methods = qw/ insert search remove size /;
 
 # import either XS or PP methods into namespace
 unless ($Bio::EnsEMBL::Utils::Tree::Interval::Mutable::IMPL) {
