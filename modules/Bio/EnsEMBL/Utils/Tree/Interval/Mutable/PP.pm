@@ -219,8 +219,14 @@ sub remove {
 	}
       } else {
 	my $removed_node = $self->root->remove($node);
-	$removed_node = undef and return 1 if $removed_node;
-	return 0;
+	if ($removed_node) {
+	  $removed_node = undef;
+	  $self->{_size}--;
+	  
+	  return 1;
+	} else {
+	  return 0;
+	}
       }
     } else {
       # the remaining record is not the one we want to remove
