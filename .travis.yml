@@ -3,12 +3,13 @@ language: perl
 perl:
   - '5.14'
   - '5.16'
-  - '5.24'
-  - '5.26'
+  - '5.18'
+  - '5.24-shrplib'
+  - '5.26-shrplib'
 
 env:
   matrix:
-  - COVERALLS=true  DB=mysql
+  # - COVERALLS=true  DB=mysql
   - COVERALLS=false DB=mysql
   - COVERALLS=false DB=sqlite
   global:
@@ -46,12 +47,12 @@ matrix:
   exclude:
   - perl: '5.14'
     env: COVERALLS=false DB=mysql
-  - perl: '5.14'
-    env: COVERALLS=true  DB=mysql
-  - perl: '5.26'
+  # - perl: '5.14'
+  #   env: COVERALLS=true  DB=mysql
+  - perl: '5.26-shrplib'
     env: COVERALLS=false DB=sqlite
-  - perl: '5.26'
-    env: COVERALLS=true  DB=mysql
+  # - perl: '5.26'
+  #   env: COVERALLS=true  DB=mysql
 
 notifications:
   email:
