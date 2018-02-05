@@ -227,6 +227,8 @@ dies_ok { $pfa->remove_by_Slice() } 'remove_by_Slice() dies ok with no features'
 
 dies_ok { $pfa->get_seq_region_id_internal() } 'get_seq_region_id_internal() dies ok with no features';
 
+dies_ok { $pfa->get_seq_region_id_external() } 'get_seq_region_id_external() dies ok with no features';
+
 
 
 

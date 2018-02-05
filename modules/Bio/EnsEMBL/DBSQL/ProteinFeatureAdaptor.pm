@@ -479,10 +479,13 @@ sub remove_by_Slice {
 
 sub get_seq_region_id_internal{
   my ( $self ) = @_;
-    $self->throw( "Not supported routine called." );
-
+    $self->throw( "No seq_region_id as ProteinFeatures are not on EnsEMBL coord system." );
 }
 
+sub get_seq_region_id_external{
+  my ( $self ) = @_;
+    $self->throw( "No seq_region_id as ProteinFeatures are not on EnsEMBL coord system." );
+}
 
 1;
 
