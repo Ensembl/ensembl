@@ -71,7 +71,7 @@ sub mapper{
 
 
 sub run_coordinatemapping {
-  my ( $self, $do_upload) = @_;
+  my ( $self, $do_upload, $species_id) = @_;
 
 
   my $sth_stat = $self->xref->dbc->prepare(
@@ -85,7 +85,7 @@ sub run_coordinatemapping {
 
   my $species = $core_db->species();
 #  my $species_id = $self->mapper->core->species;
-  my $species_id = XrefMapper::BasicMapper::get_species_id_from_species_name( $xref_db, $species );
+  $species_id = XrefMapper::BasicMapper::get_species_id_from_species_name( $xref_db, $species ) unless defined $species_id;
   if (!defined $species_id) { return; }
 
 

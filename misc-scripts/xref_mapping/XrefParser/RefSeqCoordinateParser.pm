@@ -208,6 +208,11 @@ sub run_script {
     return;
   }
 
+## Add link to EntrezGene IDs where available
+  my (%entrez_ids) = %{ $self->get_valid_codes("EntrezGene", $species_id, $dbi) };
+  my $entrez_source_id = $self->get_source_id_for_source_name('EntrezGene', undef, $dbi);
+  my $add_dependent_xref_sth = $dbi->prepare("INSERT INTO dependent_xref  (master_xref_id,dependent_xref_id, linkage_source_id) VALUES (?,?, $entrez_source_id)");
+
   my $sa = $core_dba->get_SliceAdaptor();
   my $sa_of = $otherf_dba->get_SliceAdaptor();
   my $chromosomes_of = $sa_of->fetch_all('toplevel', undef, 1);
@@ -371,13 +376,23 @@ sub run_script {
                                           info_type => 'DIRECT' });
           $self->add_direct_xref($xref_id, $best_id, "Transcript", "", $dbi);
 
-# Also store refseq protein as direct xref for ensembl translation, if translation exists
           my $ta_of = $otherf_dba->get_TranscriptAdaptor();
           my $t_of = $ta_of->fetch_by_stable_id($id);
+          my $g_of = $t_of->get_Gene();
+          my $entrez_id = $g_of->stable_id();
           my $tl_of = $t_of->translation();
           my $ta = $core_dba->get_TranscriptAdaptor();
           my $t = $ta->fetch_by_stable_id($best_id);
           my $tl = $t->translation();
+
+# Add link between Ensembl gene and EntrezGene
+          if (defined $entrez_ids{$entrez_id} ) {
+            foreach my $dependent_xref_id (@{$entrez_ids{$entrez_id}}) {
+              $add_dependent_xref_sth->execute($xref_id, $dependent_xref_id);
+            }
+          }
+
+# Also store refseq protein as direct xref for ensembl translation, if translation exists
           if (defined $tl && defined $tl_of) {
             if ($tl_of->seq eq $tl->seq) {
               ($acc, $version) = split(/\./, $tl_of->stable_id());

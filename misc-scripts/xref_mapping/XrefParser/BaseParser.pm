@@ -153,6 +153,7 @@ sub get_source_id_for_source_name {
 
     $source_id = '-1';
   }
+  $sth->finish();
   return $source_id;
 }
 
@@ -208,6 +209,7 @@ sub get_source_name_for_source_id {
     carp "Couldn't get source name for source ID $source_id\n";
     $source_name = '-1';
   }
+  $sth->finish;
   return $source_name;
 }
 
@@ -258,6 +260,7 @@ DSS
        }
      }
   }
+  $sth->finish;
   return \%dependent_2_xref;
 }
 
@@ -280,6 +283,7 @@ sub get_valid_xrefs_for_direct_xrefs{
   while(my @row = $sth->fetchrow_array()){
     push @direct_sources,$row[0];
   }
+  $sth->finish;
 
   my $gen_sql =(<<"GDS");
 SELECT d.general_xref_id, d.ensembl_stable_id, 'TYPE', d.linkage_xref, x1.accession
@@ -305,6 +309,7 @@ GDS
       while(my ($gen_xref_id, $stable_id, $type, $link, $acc) = $sth[$ii]->fetchrow_array()){
 	$direct_2_xref{$acc} = $gen_xref_id.$separator.$stable_id.$separator.$type.$separator.$link;
       }
+      $sth[$ii]->finish();
     }
   }
 
@@ -333,6 +338,7 @@ sub label_to_acc{
     push @{$synonyms{$xref_id}}, $synonym;
 
   }
+  $syn_sth->finish;
 
   my %valid_codes;
   my @sources;
@@ -358,6 +364,7 @@ sub label_to_acc{
       }
     }
   }
+  $sth->finish;
   return \%valid_codes;
 }
 
@@ -395,6 +402,7 @@ sub get_valid_codes{
       push @{$valid_codes{$row[0]}}, $row[1];
     }
   }
+  $sth->finish();
   return \%valid_codes;
 }
 
@@ -717,6 +725,7 @@ sub species_id2taxonomy {
       $species_id2taxonomy{$species_id} = [$taxonomy_id];
     }
   }
+  $sth->finish();
   return %species_id2taxonomy;
 }
 
@@ -739,6 +748,7 @@ sub species_id2name {
     my $name       = $row[1];
     $species_id2name{$species_id} = [ $name ];
   }
+  $sth->finish();
 
   ##############################################
   # Also populate the hash with all the aliases.
@@ -752,6 +762,7 @@ sub species_id2name {
       push @{$species_id2name{$species_id}}, $name;
     }
   }
+  $sth->finish();
 
   return %species_id2name;
 } ## end sub species_id2name
@@ -791,6 +802,7 @@ sub primary_xref_id_exists {
   my @row = $sth->fetchrow_array();
   my $result = $row[0];
   if (defined $result) {$exists = 1; }
+  $sth->finish();
 
   return $exists;
 
@@ -831,6 +843,7 @@ sub get_direct_xref{
  if(my @row = $direct_sth->fetchrow_array()) {
    return $row[0];
  }
+ $direct_sth->finish();
  return;
 }
 
@@ -856,6 +869,7 @@ sub get_xref{
   if(my @row = $get_xref_sth->fetchrow_array()) {
     return $row[0];
   }
+  $get_xref_sth->finish();
   return;
 }
 
@@ -877,6 +891,7 @@ sub get_object_xref {
   if(my @row = $get_object_xref_sth->fetchrow_array()) {
     return $row[0];
   }
+  $get_object_xref_sth->finish();
   return;
 }
 
@@ -932,6 +947,7 @@ sub add_xref {
                           $description, $source_id, $species_id, $info_type, $info_text
   ) or croak("$acc\t$label\t\t$source_id\t$species_id\n");
 
+  $add_xref_sth->finish();
   return $add_xref_sth->{'mysql_insertid'};
 } ## end sub add_xref
 
@@ -972,6 +988,7 @@ sub add_object_xref {
   $add_object_xref_sth->execute($ensembl_id, $object_type, $xref_id
   ) or croak("$ensembl_id\t$object_type\t\t$xref_id\n");
 
+  $add_object_xref_sth->finish();
   return $add_object_xref_sth->{'mysql_insertid'};
 }
 
@@ -1000,7 +1017,7 @@ sub add_identity_xref {
   ####################################
   $add_identity_xref_sth->execute($object_xref_id, $score, $query_identity, $target_identity
   ) or croak("$object_xref_id\t$score\t\t$query_identity\t$target_identity\n");
-
+  $add_identity_xref_sth->finish();
   return;
 }
 
@@ -1041,6 +1058,7 @@ AXX
         $description, $source_id, $species_id, 'DIRECT', $info_text
     ) or croak("$acc\t$label\t\t$source_id\t$species_id\n");
   }
+  $add_xref_sth->finish();
 
   $direct_id = $self->get_xref($acc, $source_id, $species_id, $dbi);
 
@@ -1066,6 +1084,7 @@ sub add_direct_xref {
   my $add_direct_xref_sth = $dbi->prepare($sql);
 
   $add_direct_xref_sth->execute($general_xref_id, $ensembl_stable_id, $linkage_type);
+  $add_direct_xref_sth->finish();
   return;
 }
 
@@ -1113,6 +1132,7 @@ ADX
         $description, $source_id, $species_id, 'DEPENDENT', $info_text
     ) or croak("$acc\t$label\t\t$source_id\t$species_id\n");
   }
+  $add_xref_sth->finish();
   $dependent_id = $self->get_xref($acc, $source_id, $species_id, $dbi);
 
   ################################################
@@ -1132,6 +1152,7 @@ ADX
       or croak("$master_xref\t$dependent_id\t$linkage\t$source_id");
     $xref_dependent_mapped{"$master_xref|$dependent_id"} = $linkage;
   }
+  $add_dependent_xref_sth->finish();
 
   return $dependent_id;
 }
@@ -1154,6 +1175,7 @@ sub add_to_syn_for_mult_sources{
         or croak( $dbi->errstr() . "\n $xref_id\n $syn\n" );
     }
   }
+  $add_synonym_sth->finish();
   return;
 }
 
@@ -1175,6 +1197,7 @@ sub add_to_syn{
       carp (  "Could not find acc $acc in "
             . "xref table source = $source_id of species $species_id\n" );
   }
+  $add_synonym_sth->finish();
   return;
 }
 
@@ -1190,6 +1213,7 @@ sub add_synonym{
   $add_synonym_sth->execute( $xref_id, $syn ) 
     or croak( $dbi->errstr()."\n $xref_id\n $syn\n\n" );
 
+  $add_synonym_sth->finish();
   return;
 }
 
@@ -1248,6 +1272,7 @@ GLS
   while(my @row = $sub_sth->fetchrow_array()) {
     $hash1{$row[1]} = $row[0];
   }
+  $sub_sth->finish();
 
   return \%hash1;
 }
@@ -1280,6 +1305,7 @@ GLA
   while(my @row = $sub_sth->fetchrow_array()) {
     $hash1{$row[0]} = $row[1];
   }
+  $sub_sth->finish();
 
   return \%hash1;
 }
@@ -1339,6 +1365,7 @@ GDS
   while(my @row = $sub_sth->fetchrow_array()) {
     $hash1{$row[1]} = $row[0];
   }
+  $sub_sth->finish();
 
   return \%hash1;
 }
@@ -1358,6 +1385,7 @@ sub set_release{
     if($verbose) { print "Setting release to '$s_release' for source ID '$source_id'\n"; }
 
     $sth->execute( $s_release, $source_id );
+    $sth->finish();
     return;
 }
 

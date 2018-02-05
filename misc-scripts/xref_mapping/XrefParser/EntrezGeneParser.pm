@@ -30,6 +30,7 @@ sub run {
   my ($self, $ref_arg) = @_;
   my $source_id    = $ref_arg->{source_id};
   my $species_id   = $ref_arg->{species_id};
+  my $species_name = $ref_arg->{species};
   my $files        = $ref_arg->{files};
   my $verbose      = $ref_arg->{verbose};
   my $dbi          = $ref_arg->{dbi};
@@ -45,6 +46,7 @@ sub run {
   my $wiki_source_id = $self->get_source_id_for_source_name("WikiGene", undef, $dbi);
 
   my %species_tax_id = %{$self->get_taxonomy_from_species_id($species_id, $dbi)};
+  $species_tax_id{$species_id} = $species_id if defined $species_name;
   
 
   my $eg_io = $self->get_filehandle($file);

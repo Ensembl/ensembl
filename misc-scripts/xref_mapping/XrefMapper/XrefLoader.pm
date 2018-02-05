@@ -70,10 +70,12 @@ sub update{
   my $affected_rows = $sth->execute();
   print "\tDeleted $affected_rows PROJECTED external_synonym row(s)\n" if $verbose;
 
+  # Delete all ontologies, as they are done by a separate pipeline
   $sql = <<SQL;
-DELETE ontology_xref 
+DELETE ontology_xref, object_xref, xref, dependent_xref
 FROM ontology_xref, object_xref, xref 
-WHERE ontology_xref.object_xref_id = object_xref.object_xref_id AND object_xref.xref_id = xref.xref_id AND xref.info_type = 'PROJECTION'
+LEFT JOIN dependent_xref on xref_id = dependent_xref_id
+WHERE ontology_xref.object_xref_id = object_xref.object_xref_id AND object_xref.xref_id = xref.xref_id
 SQL
   $sth = $core_dbi->prepare($sql);
   $affected_rows = $sth->execute();

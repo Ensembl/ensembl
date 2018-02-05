@@ -56,6 +56,10 @@ sub run {
   while ( $_ = $file_io->getline() ) {
     chomp;
     my ($acc, $label, $desc, $stable_id) = split /\t/;
+    # Remove some provenance information encoded in the description
+    $desc =~ s/\[.*\]//;
+    # Remove labels of type 5 of 14 from the description
+    $desc =~ s/ , [0-9]+ of [0-9]+//;
 
     if($label eq "unnamed"){
       $label = $acc;
