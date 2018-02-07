@@ -21,14 +21,14 @@
 #   Added new table biotype
 
 CREATE TABLE biotype (
-  biotype_id                     INTEGER UNSIGNED NOT NULL AUTO_INCREMENT,
-  name                           VARCHAR(64) NOT NULL,
-  object_type                    ENUM('gene','transcript') NOT NULL DEFAULT 'gene',
-  db_type                        set('cdna','core','coreexpressionatlas','coreexpressionest','coreexpressiongnf','funcgen','otherfeatures','rnaseq','variation','vega','presite','sangervega') NOT NULL DEFAULT 'core',
-  attrib_type_id                 INTEGER DEFAULT NULL,
-  description                    TEXT,
-  biotype_group                  ENUM('coding','pseudogene','snoncoding','lnoncoding','mnoncoding','LRG','undefined','no_group') DEFAULT NULL,
-  so_acc                         VARCHAR(64),
+  biotype_id      INTEGER UNSIGNED NOT NULL AUTO_INCREMENT,
+  name            VARCHAR(64) NOT NULL,
+  object_type     ENUM('gene','transcript') NOT NULL DEFAULT 'gene',
+  db_type         set('cdna','core','coreexpressionatlas','coreexpressionest','coreexpressiongnf','funcgen','otherfeatures','rnaseq','variation','vega','presite','sangervega') NOT NULL DEFAULT 'core',
+  attrib_type_id  INTEGER DEFAULT NULL,
+  description     TEXT,
+  biotype_group   ENUM('coding','pseudogene','snoncoding','lnoncoding','mnoncoding','LRG','undefined','no_group') DEFAULT NULL,
+  so_acc          VARCHAR(64),
   PRIMARY KEY (biotype_id),
   UNIQUE KEY name_type_idx (name, object_type)
 ) ENGINE=MyISAM DEFAULT CHARSET=latin1;
