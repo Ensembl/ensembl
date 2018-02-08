@@ -53,12 +53,12 @@ sub run {
   my %description;
   my %accession;
 
-  my $sql = 'select source_id, priority_description from source where name like "MGI"';
+  my $sql = 'select source_id from source where name like "MGI" and priority_description like "descriptions"';
   my $sth = $dbi->prepare($sql);
   
   $sth->execute();
-  my ($mgi_source_id, $desc);
-  $sth->bind_columns(\$mgi_source_id, \$desc);
+  my ($mgi_source_id);
+  $sth->bind_columns(\$mgi_source_id);
   my @arr;
   while($sth->fetch()){
     push @arr, $mgi_source_id;
@@ -69,7 +69,7 @@ sub run {
 
   $sth = $dbi->prepare($sql);
   $sth->execute();
-  my ($acc, $lab, $ver);
+  my ($acc, $lab, $ver, $desc);
   $sth->bind_columns(\$acc, \$lab, \$ver, \$desc);
   while (my @row = $sth->fetchrow_array()) {
     if(defined($desc)){

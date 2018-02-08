@@ -34,17 +34,6 @@ sub gene_description_filter_regexps {
 
 }
 
-sub gene_description_sources {
-
-  return ("Xenbase",	  
-	  "RFAM",
-	  "miRBase",
-	  "Uniprot/SWISSPROT",
-	  "RefSeq_peptide",
-	  "RefSeq_mRNA",
-	  "Uniprot/Varsplic");
-}
-
 
 sub gene_display_xref_sources {
   my $self     = shift;

@@ -85,21 +85,6 @@ JSQL
 
 }
 
-sub gene_description_sources {
-
-  return ("miRBase",
-	  "RFAM", 
-          "IMGT/GENE_DB",
-	  "MGI_curated_gene",
-	  "MGI_curated_transcript",
-	  "MGI",
-	  "Uniprot/SWISSPROT", 
-	  "Uniprot/Varsplic", 
-	  "RefSeq_peptide", 
-	  "RefSeq_mRNA");
-
-}
-
 sub special_filter {
 
   return ('\(?[0-9A-Z]{10}RIK PROTEIN\)?[ \.]',

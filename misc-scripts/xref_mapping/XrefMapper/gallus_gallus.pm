@@ -50,17 +50,5 @@ LOCP
 }
 
 
-sub gene_description_sources {
-
-  return ("miRBase",
-	  "RFAM", 
-	  "CGNC",
-	  "Uniprot/SWISSPROT", 
-	  "Uniprot/Varsplic", 
-	  "RefSeq_peptide", 
-	  "RefSeq_mRNA");
-
-}
-
 
 1;
