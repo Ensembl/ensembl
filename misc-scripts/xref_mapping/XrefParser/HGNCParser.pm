@@ -142,14 +142,11 @@ sub run_script {
     my $acc              = $array[0];
     my $symbol           = $array[1];
     my $name             = $array[2];
-    my $status           = $array[5];
-    my $previous_symbols = $array[8];
-    my $synonyms         = $array[10];
-
-    if ($status ne 'Approved') { next; }
+    my $previous_symbols = $array[3];
+    my $synonyms         = $array[4];
 
     my $type = 'lrg';
-    my $id = $array[29];
+    my $id = $array[9];
     my $source_id = $name_to_source_id->{$type};
     if($id and $id =~ m/http:\/\/www.lrg-sequence.org\/LRG\/(LRG_\d+)/x){
       my $lrg_stable_id = $1;
@@ -178,9 +175,9 @@ sub run_script {
     $type = 'ccds';
     $source_id = $name_to_source_id->{$type};
 
-    my $ccds = $array[24];
+    my $ccds = $array[8];
     $ccds =~ s/"//g if defined $ccds;
-    my @ccds_list = split(/\|/,$ccds) if defined $ccds;
+    my @ccds_list = split(/,\s/,$ccds) if defined $ccds;
 
     foreach my $ccds (@ccds_list) {
       $id = $ccds_to_ens{$ccds};
@@ -208,7 +205,7 @@ sub run_script {
     # Direct Ensembl mappings
     #
     $type = 'ensembl_manual';
-    $id = $array[19];
+    $id = $array[6];
     $source_id = $name_to_source_id->{$type};
     if ($id){              # Ensembl direct xref
       $seen = 1;
@@ -232,7 +229,7 @@ sub run_script {
     }
 
     $type = 'refseq_manual';
-    $id = $array[23];
+    $id = $array[7];
     $source_id = $name_to_source_id->{$type};
     if ($id) {
       if(defined $refseq{$id} ){
@@ -260,7 +257,7 @@ sub run_script {
     # EntrezGene
     #
     $type = 'entrezgene_manual';
-    $id = $array[18];
+    $id = $array[5];
     $source_id = $name_to_source_id->{$type};
     if(defined $id ){
       if(defined $entrezgene{$id} ){
@@ -353,7 +350,7 @@ sub add_synonyms_for_hgnc{
   my $dbi        = $ref_arg->{dbi};
 
   if (defined $dead_name ) {     # dead name, add to synonym
-    my @array2 = split '\|', $dead_name ;
+    my @array2 = split ',\s', $dead_name ;
     foreach my $arr (@array2){
       $arr =~ s/"//g;
       $self->add_to_syn($name, $source_id, $arr, $species_id, $dbi);
@@ -361,7 +358,7 @@ sub add_synonyms_for_hgnc{
   }
 
   if (defined $alias ) {     # alias, add to synonym
-    my @array2 = split '\|', $alias;
+    my @array2 = split ',\s', $alias;
     foreach my $arr (@array2){
       $arr =~ s/"//g;
       $self->add_to_syn($name, $source_id, $arr, $species_id, $dbi);
