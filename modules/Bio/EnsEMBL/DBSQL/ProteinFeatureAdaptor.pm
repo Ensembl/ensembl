@@ -347,11 +347,6 @@ sub _objs_from_sth {
   while($sth->fetch()) {
 
     my $analysis = $analysis_adaptor->fetch_by_dbID($analysis_id);
-        
-    # For ProteinFeatures, the translation is the slice
-    # Excepttion MSG: -SLICE argument must be a Bio::EnsEMBL::Slice not Bio::EnsEMBL::Translation
-    # my $translation = $translation_adaptor->fetch_by_dbID($translation_id);
-    # $my $slice = $translation;
 
     push( 
       @features,
@@ -375,7 +370,6 @@ sub _objs_from_sth {
            -TRANSLATION_ID => $translation_id,
            -CIGAR_STRING => $cigar_line,
            -ALIGN_TYPE => $align_type,
-           # -SLICE => $slice
            ));
 
   }

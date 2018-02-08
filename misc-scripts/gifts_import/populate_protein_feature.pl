@@ -29,7 +29,6 @@ my ( $pfhost, $pfport, $pfuser, $pfpass, $pfdb );
 
 my $create_index = 0;
 my $dryrun = 0;
-#my $limit = 10;
 my $limit = 0;
 
 
@@ -46,6 +45,7 @@ GetOptions(
   "pfpass=s"        => \$pfpass,
   "pfdb=s"   => \$pfdb,
 
+  "limit=i"  => \$limit,
   "dryrun!"         => \$dryrun,
   "help", \&usage,
 
@@ -53,7 +53,6 @@ GetOptions(
 
 usage() if ( !defined $gfhost || !defined $gfport || !defined $gfuser || !defined $gfdb );
 usage() if ( !defined $pfhost  || !defined $pfport || !defined $pfuser || !defined $pfpass );
-
 
 my ( $giftsDB, $protfeatureDB ) = init_db();
 die unless defined($giftsDB) and defined($protfeatureDB);
@@ -64,10 +63,11 @@ print Dumper($giftsDB);
 print "protfeatureDB credentials:\n";
 print Dumper($protfeatureDB);
 
-
 my $registry = get_registry();
 my $translation_adaptor = $registry->get_adaptor( 'human', 'core', 'translation' );
 
+# Main method call
+populate_protein_feature_db();
 
 sub init_db {
 
@@ -93,8 +93,6 @@ sub init_db {
   return ( $giftsDB, $protfeatureDB );
 }
 
-
-populate_protein_feature_db();
 
 sub get_analysis_id {
   my ($logic_name) = @_;
@@ -124,46 +122,61 @@ sub populate_protein_feature_db {
   
   my $insert_container = build_insert_sql($gifts_dbh, $protfeature_dbh);
 
-  
   my $rows_inserted = 0;
-  my @failed_stmts = [];
+  my $rows_failed = 0;
+  my @failed_stmts = undef;
+  
   unless($dryrun){
 
-  foreach my $insert_stmt (@$insert_container) {
-    eval{
-    my $affected = $protfeature_dbh->do($insert_stmt);
-    $rows_inserted += $affected;
-    };
-    if($@){
-      print "$@\n";
-      push(@failed_stmts, $@);
-    }
+    foreach my $insert_stmt (@$insert_container) {
+      eval{
+        my $affected = $protfeature_dbh->do($insert_stmt);
+        $rows_inserted += $affected;
+        print "Affeced $affected Rows inserted $rows_inserted\n";
+      };
+      if($@){
+        print "$@\n";
+        $rows_failed++;
+        push(@failed_stmts, $@);
+      }
     
-  }
-  print Dumper(\@failed_stmts);
-  print "INSERT END\n";
+    }
+    print "FAILED STATEMENTS\n";
+    print Dumper(\@failed_stmts);
+    print "INSERT END\n";
   }
 
   print "Number of rows inserted into protein_feature $protfeatureDB->{'dbname'}.protein_feature ", $rows_inserted, "\n";
-  return $rows_inserted;
+  print "Number of rows with insertion failed into protein_feature $protfeatureDB->{'dbname'}.protein_feature ", $rows_failed, "\n";
   
   $gifts_dbh->disconnect();
   $protfeature_dbh->disconnect();
   
 }
 
+
 sub annotate_ref{
   my $ref = shift;
+  
+  #make a copy
+  my $protein_feature = undef;
   my $ensp_id = $ref->[0];
   my $ensp = $translation_adaptor->fetch_by_stable_id( $ensp_id ) ;
+  my $analysis_id = get_analysis_id("gifts_import");
+
   if($ensp){
-  $ref->[0] = $ensp->dbID;
-  $ref->[1] = 1;
-  $ref->[2] = $ensp->length()-1;
-  
+    $protein_feature->{'translation_id'} = $ensp->dbID;  # ENSP dbID
+    $protein_feature->{'seq_start'} = 1;
+    $protein_feature->{'seq_end'} = $ensp->length() - 1;
+    $protein_feature->{'hit_start'} = 1;
+    $protein_feature->{'hit_end'} = $ensp->length() - 1;
+    $protein_feature->{'hit_name'} = $ref->[3];
+    $protein_feature->{'analysis_id'} = $analysis_id;
+    $protein_feature->{'cigar_line'} = $ref->[5];
+    $protein_feature->{'align_type'} = 'mdtag';   
   }
-  
-  return $ref;
+
+  return $protein_feature;
 }
 
 sub build_insert_sql {
@@ -173,11 +186,10 @@ sub build_insert_sql {
   my $analysis_id = get_analysis_id("gifts_import");
   print("Analysis id $analysis_id \n");
   
-  my $select_sql = qq{SELECT DISTINCT ensp_id, 0, 0, uniprot_acc, $analysis_id as analysis_id, mdz, 'mdtag' FROM ensp_u_cigar};
-  $select_sql = $limit ? $select_sql . " limit 10" : $select_sql;
+  my $select_sql = qq{SELECT DISTINCT ensp_id, 0, 0, concat_ws('.',uniprot_acc, uniprot_seq_version), $analysis_id as analysis_id, mdz, 'mdtag' FROM ensp_u_cigar};
+  $select_sql = $limit ? $select_sql . " limit $limit" : $select_sql;
   
-  my $insert_sql = qq{INSERT INTO $protfeatureDB->{'dbname'}.protein_feature(translation_id, seq_start, seq_end, hit_name, analysis_id, cigar_line, align_type) VALUES };
-
+  my $insert_sql = qq{INSERT INTO $protfeatureDB->{'dbname'}.protein_feature(translation_id, seq_start, seq_end, hit_start, hit_end, hit_name, analysis_id, cigar_line, align_type) VALUES };
 
   my $import_sth = $gifts_dbh->prepare($select_sql);
   $import_sth->execute;
@@ -185,34 +197,55 @@ sub build_insert_sql {
 
   my $start = 0;
   my $insert_values;
-  my $max_rows_in_insert = 9999;    #Batch size of 10,000
-  # my $max_rows_in_insert = 10;    #Batch size of 10
+  my $max_rows_in_insert = 999;    #Batch size of 1000
   my $rows_in_insert     = 0;
 
   my @insert_container = ();
-  my $miss = 1;
+  my $miss = 0;
+  my $not_ensp =0;
   while ( my $ref = $import_sth->fetchrow_arrayref ) {
-     my $not_ensp =1;
-     if($ref->[0] !~ /^ENSP.*/){
-      warn "\t\t$not_ensp ensp id not in right format for ", $ref->[0], " Uniprot id ", $ref->[3], "\n";
+
+    if($ref->[0] !~ /^ENSP.*/){
+      warn "\t\t ensp id not in right format for ", $ref->[0], " Uniprot id ", $ref->[3], "\n";
       $not_ensp++;
       next;
     }
-    $ref = annotate_ref($ref);
-    if($ref->[0] =~ /^ENSP.*/){
-      warn "$miss No translation record found in core translation for ", $ref->[0], " Uniprot id ", $ref->[3], "\n";
+    
+    #add additinal protein_feture annotations to the ref object
+    my $protein_feature = annotate_ref($ref);
+    
+    unless($protein_feature){
+      warn "No translation record found in core translation for ", $ref->[0], " Uniprot id ", $ref->[3], "\n";
       $miss++;
       next;
     }
     
+    #multi-row insertions limited by the batch size
     if ( $rows_in_insert < $max_rows_in_insert ) {
       $insert_values .= ',' if $start++;
-      $insert_values .= '(' . ( join( ",", map { $gifts_dbh->quote($_) } @{$ref} ) ) . ')';
+      $insert_values .= '(' . $gifts_dbh->quote($protein_feature->{'translation_id'}) . ',' .
+                              $gifts_dbh->quote($protein_feature->{'seq_start'}) . ',' .
+                              $gifts_dbh->quote($protein_feature->{'seq_end'}) . ',' .
+                              $gifts_dbh->quote($protein_feature->{'hit_start'}) . ',' .
+                              $gifts_dbh->quote($protein_feature->{'hit_end'}) . ',' .
+                              $gifts_dbh->quote($protein_feature->{'hit_name'}) . ',' .
+                              $gifts_dbh->quote($protein_feature->{'analysis_id'}) . ',' .
+                              $gifts_dbh->quote($protein_feature->{'cigar_line'}) . ',' .
+                              $gifts_dbh->quote($protein_feature->{'align_type'}) . ')';
       $rows_in_insert++;
     }
     else {
       $insert_values .= ',' if $start++;
-      $insert_values .= '(' . ( join( ",", map { $gifts_dbh->quote($_) } @{$ref} ) ) . ')';
+      $insert_values .= '(' . $gifts_dbh->quote($protein_feature->{'translation_id'}) . ',' .
+                              $gifts_dbh->quote($protein_feature->{'seq_start'}) . ',' .
+                              $gifts_dbh->quote($protein_feature->{'seq_end'}) . ',' .
+                              $gifts_dbh->quote($protein_feature->{'hit_start'}) . ',' .
+                              $gifts_dbh->quote($protein_feature->{'hit_end'}) . ',' .
+                              $gifts_dbh->quote($protein_feature->{'hit_name'}) . ',' .
+                              $gifts_dbh->quote($protein_feature->{'analysis_id'}) . ',' .
+                              $gifts_dbh->quote($protein_feature->{'cigar_line'}) . ',' .
+                              $gifts_dbh->quote($protein_feature->{'align_type'}) . ')';
+      
       my $insert_sql_with_values = $insert_sql . $insert_values;
       push( @insert_container, $insert_sql_with_values );
 
@@ -222,20 +255,24 @@ sub build_insert_sql {
   }
 }
 
+  #if the total number of rows is less than the batch size, you will reach here
   if ($insert_values) {
     my $insert_sql_with_values = $insert_sql . $insert_values;
     push( @insert_container, $insert_sql_with_values );
   }
   
   print "Number of rows fetched from GIFTS $rows \n";
+  print "Number of rows missed from GIFTS $miss \n";
+  print "Number of rows with wrong ENSP assignment from GIFTS $not_ensp \n";
+
   return \@insert_container;
- 
 
 }
 
 #===========DB Connection routines=============
 sub db_connect {
   my ($connectDB) = @_;
+  
   my $dbname = $connectDB->{'dbname'};
   my $host = $connectDB->{'host'};
   my $user = $connectDB->{'user'};
@@ -339,6 +376,8 @@ Usage:
   -pfpass              core database pass
 
   -pfdb                core database name
+
+  -limit               limit the number of rows to inserts - used only while testing
 
   -dryrun              dryrun, no insert
 

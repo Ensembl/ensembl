@@ -241,6 +241,49 @@ sub summary_as_hash {
   return \%summary;
 }
 
+
+=head2 alignment_strings
+
+  Arg [1]    : list of string $flags
+  Example    : $pf->alignment_strings
+  Description: Allows to rebuild the alignment string of both the query and target sequence
+               using the sequence from translation object and
+               MD Z String for mismatching positions. Regex : [0-9]+(([A-Z]|\^[A-Z]+)[0-9]+)* (Refer:  SAM/BAM specification)
+               eg: MD:Z:96^RHKTDSFVGLMGKRALNS0V14
+  Returntype : array reference containing 2 strings
+               the first corresponds to seq
+               the second corresponds to hseq
+  Exceptions : none
+  Caller     : general
+  Status     : Stable
+
+=cut
+
+
+sub alignment_strings {
+  my $self = shift;
+
+  #Translations
+  my $transl_adaptor = $self->adaptor->db->get_TranslationAdaptor();
+  my $transl_object = $transl_adaptor->fetch_by_dbID($self->translation_id);
+  my $seq;
+  if(defined $transl_object && $transl_object->isa('Bio::EnsEMBL::Translation')) {
+    $seq = $transl_object->transcript()->translate()->seq();
+  }
+
+  if ($self->align_type eq 'mdtag') {
+    if(defined $seq && defined $self->cigar_string){
+      return $self->_mdz_alignment_string($seq,$self->cigar_string);
+    }else{
+      warn "sequence or cigar_line not found for  " .  $self->translation_id;
+    }
+  } else {
+    throw("alignment_strings method not implemented for " . $self->align_type);
+  }
+  return undef;
+}
+
+
 sub transform {
   my $self = shift;
 

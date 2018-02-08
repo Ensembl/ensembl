@@ -15,6 +15,7 @@
 
 use strict;
 use Test::More;
+use Test::Deep;
 use Test::Warnings qw(warning);
 use Bio::EnsEMBL::Test::MultiTestDB;
 use Bio::EnsEMBL::BaseAlignFeature;
@@ -113,6 +114,7 @@ my $mdz_alignment_test = {
     ]
 };
 
+
 while(my ($mdz_string, $expected_results) = each %$mdz_alignment_test){
   my $alignment_strs = $paf->_mdz_alignment_string($$expected_results[0],$mdz_string);
   my $qc_status = qc_check_sequence($$expected_results[0], $$alignment_strs[0]);
@@ -121,6 +123,19 @@ while(my ($mdz_string, $expected_results) = each %$mdz_alignment_test){
   ok($$expected_results[2] eq $$alignment_strs[1], "Got the right query seq");
 
 }
+
+  my $chunks = $paf->_get_mdz_chunks("MD:Z:0G105");
+  my $expected = ['0', 'G', '105'];
+  cmp_deeply($chunks, $expected, "Got the right chunks ['0', 'G', '105']");
+
+  $chunks = $paf->_get_mdz_chunks("MD:Z:96^RHKTDSFVGLMGKRALNS0V14");
+  $expected = ['96', '^', 'RHKTDSFVGLMGKRALNS', '0', 'V', '14'];
+  cmp_deeply($chunks, $expected, "Got the right chunks ['96', '^', 'RHKTDSFVGLMGKRALNS', '0', 'V', '14']");
+
+  $chunks = $paf->_get_mdz_chunks("MD:Z:35^VIVALE31^GRPLIQPRRKKAYQLEHTFQGLLGKRSLFTE10");
+  $expected = ['35', '^', 'VIVALE', '31', '^', 'GRPLIQPRRKKAYQLEHTFQGLLGKRSLFTE', '10'];
+  cmp_deeply($chunks, $expected, "Got the right chunks  ['35', '^', 'VIVALE', '31', '^', 'GRPLIQPRRKKAYQLEHTFQGLLGKRSLFTE', '10']");
+
 
 sub qc_check_sequence{
   my ($input_seq, $target_seq) = @_;

@@ -257,7 +257,7 @@ sub align_type {
 =head2 alignment_length
 
   Arg [1]    : None
-  Description: return the alignment length (including indels) based on the cigar_string
+  Description: return the alignment length (including indels) based on the alignment_type ('ensembl', 'mdtag')
   Returntype : int
   Exceptions : 
   Caller     : 
@@ -267,9 +267,11 @@ sub align_type {
 
 sub alignment_length {
   my $self = shift;
-
+  
+  # ensembl: Internal CIGAR format
   if ($self->{'align_type'} eq 'ensembl') {
     return $self->_ensembl_cigar_alignment_length();
+  # mdtag: MD Z String for mismatching positions. Regex : [0-9]+(([A-Z]|\^[A-Z]+)[0-9]+)* (Refer:  SAM/BAM specification)
   } elsif ($self->{'align_type'} eq 'mdtag') {
     return $self->_mdtag_alignment_length();
   } else {
@@ -648,8 +650,6 @@ sub _parse_cigar {
     throw("No parsing method implemented for " . $self->{'align_type'});
   }
 }
-
-
 
 
 =head2 _parse_features
@@ -1038,15 +1038,15 @@ sub _mdtag_alignment_length {
 
 =head2 _get_mdz_chunks
 
-  Arg [1]    : mdz string
-  Description: parses the mdz string and group it according the type
+  Arg [1]    : mdtag string - MD Z String for mismatching positions. Regex : [0-9]+(([A-Z]|\^[A-Z]+)[0-9]+)* (Refer:  SAM/BAM specification)
+  Description: parses the mdtag string and group it according the type
+               eg: MD:Z:35^VIVALE31^GRPLIQPRRKKAYQLEHTFQGLLGKRSLFTE10 returns ['35', '^', 'VIVALE', '31', '^', 'GRPLIQPRRKKAYQLEHTFQGLLGKRSLFTE', '10']
   Returntype : array of strings
   Exceptions : none
   Caller     : internal
   Status     : Stable
 
 =cut
-
 sub _get_mdz_chunks {
   my $self = shift;
 
@@ -1060,40 +1060,42 @@ sub _get_mdz_chunks {
       if($mdtag =~/^\d+$/){
         return [$mdtag];
       }else{
-        my @char_arr = split('',$mdtag);
-        for(my $i=0; $i< scalar(@char_arr); $i++){
-        my $char = $char_arr[$i];
+         my @char_arr = split('',$mdtag);
+         my $cur_char = undef;
 
-        #determine the type and next type
-        my $type = $self->_get_mdz_chunk_type($char);
-        my $next_char = $char_arr[++$i];
-        my $next_type = $self->_get_mdz_chunk_type( $next_char);
+         while(defined($cur_char = shift @char_arr)){
+           my $cur_type = $self->_get_mdz_chunk_type( $cur_char);
+           my $next_char = shift @char_arr;
+           my $next_type = $self->_get_mdz_chunk_type( $next_char);
+           my $chunk_char = $cur_char;
 
-        my $chunk = $char;
-
-        #group chars in mdz based on the type, break if it differenc and push to chunks
-        while($type eq $next_type and $i <= $#char_arr){
-            $chunk = $chunk . $next_char;
-            $next_char = $char_arr[++$i];
-            $next_type = $self->_get_mdz_chunk_type($next_char);
+           #append the chars until they are of same type
+           while($cur_type eq $next_type){
+             $chunk_char .= $next_char;
+             $next_char = shift @char_arr;
+             $cur_type = $self->_get_mdz_chunk_type( $chunk_char);
+             $next_type = $self->_get_mdz_chunk_type( $next_char);
            }
 
-        if($i == $#char_arr){
-          if($type eq $next_type){
-           $chunk = $chunk . $next_char;
-           push(@chunks, $chunk);
-          }else{
-           push(@chunks, $chunk);
-          }
-        }else{
-          push(@chunks, $chunk);
+         #if $next_char is undef then we have reached the last char
+         if(defined $chunk_char && defined $next_char){
+           push(@chunks, $chunk_char);
+           unshift(@char_arr, $next_char) if(scalar(@char_arr) > 0);
+         }
+         else{
+           #pop the last insert and check if it is of the same type as last char
+           my $last_insert = pop @chunks;
+           unless($self->_get_mdz_chunk_type($last_insert) eq $self->_get_mdz_chunk_type($chunk_char)){
+           push(@chunks, $last_insert);
+           push(@chunks, $chunk_char);
+           }
+         }
+
         }
-        --$i;
-        }
+
       }
 
     }
-
   return \@chunks;
 }
 
@@ -1157,51 +1159,12 @@ sub _get_mdz_chunk_type{
 }
 
 
-
-=head2 alignment_strings
-
-  Arg [1]    : list of string $flags
-  Example    : $pf->alignment_strings or
-  Description: Allows to rebuild the alignment string of both the seq and hseq sequence
-               using the mdz_string information and the translation object
-  Returntype : array reference containing 2 strings
-               the first corresponds to seq
-               the second corresponds to hseq
-  Exceptions : none
-  Caller     : general
-  Status     : Stable
-
-=cut
-
-
-sub alignment_strings {
-  my $self = shift;
-
-  #Translations
-  my $transl_adaptor = $self->adaptor->db->get_TranslationAdaptor();
-  my $transl_object = $transl_adaptor->fetch_by_dbID($self->translation_id);
-  my $seq;
-  if(defined $transl_object && $transl_object->isa('Bio::EnsEMBL::Translation')) {
-    $seq = $transl_object->transcript()->translate()->seq();
-  }
-
-  if ($self->align_type eq 'mdtag') {
-    if(defined $seq && defined $self->cigar_string){
-      return $self->_mdz_alignment_string($seq,$self->cigar_string);
-    }else{
-      warn "sequence or cigar_line not found for  " .  $self->translation_id;
-    }
-  } else {
-    throw("alignment_strings method not implemented for " . $self->align_type);
-  }
-  return undef;
-}
-
 =head2 _mdz_alignment_string
 
   Arg [1]    : input sequence
-  Arg [2]    : mdz cigar string
-  Example    : $pf->alignment_strings or
+  Arg [2]    : MD Z String for mismatching positions. Regex : [0-9]+(([A-Z]|\^[A-Z]+)[0-9]+)* (Refer:  SAM/BAM specification)
+               eg: MD:Z:96^RHKTDSFVGLMGKRALNS0V14
+  Example    : $pf->alignment_strings
   Description: Allows to rebuild the alignment string of both the seq and hseq sequence
   Returntype : array reference containing 2 strings
                the first corresponds to seq
