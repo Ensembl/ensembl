@@ -133,7 +133,7 @@ sub new {
   my $self = $class->SUPER::new(@_);
   my (
     $stable_id,               $version,
-    $external_name,           $type,
+    $external_name,
     $external_db,             $external_status,
     $display_xref,            $description,
     $transcripts,             $created_date,
@@ -144,7 +144,7 @@ sub new {
     )
     = rearrange( [
       'STABLE_ID',               'VERSION',
-      'EXTERNAL_NAME',           'TYPE',
+      'EXTERNAL_NAME',
       'EXTERNAL_DB',             'EXTERNAL_STATUS',
       'DISPLAY_XREF',            'DESCRIPTION',
       'TRANSCRIPTS',             'CREATED_DATE',
@@ -171,8 +171,7 @@ sub new {
   $self->external_status($external_status)
     if ( defined $external_status );
   $self->display_xref($display_xref) if ( defined $display_xref );
-  $self->biotype($type)              if ( defined $type );
-  $self->biotype($biotype)           if ( defined $biotype );
+  if ( defined $biotype ) { $self->{'biotype_id'} = $biotype };
   $self->description($description);
   $self->source($source);
 
@@ -897,24 +896,24 @@ sub _clear_homologues {
 }
 
 
-=head2 biotype
+# =head2 biotype
 
-  Arg [1]    : (optional) String - the biotype to set
-  Example    : $gene->biotype("protein_coding");
-  Description: Getter/setter for the attribute biotype
-  Returntype : String
-  Exceptions : none
-  Caller     : general
-  Status     : Stable
+#   Arg [1]    : (optional) String - the biotype to set
+#   Example    : $gene->biotype("protein_coding");
+#   Description: Getter/setter for the attribute biotype
+#   Returntype : String
+#   Exceptions : none
+#   Caller     : general
+#   Status     : Stable
 
-=cut
+# =cut
 
-sub biotype {
-  my $self = shift;
+# sub biotype {
+#   my $self = shift;
 
-  $self->{'biotype'} = shift if( @_ );
-  return ( $self->{'biotype'} || "protein_coding" );
-}
+#   $self->{'biotype'} = shift if( @_ );
+#   return ( $self->{'biotype'} || "protein_coding" );
+# }
 
 
 =head2 add_Transcript
@@ -1527,9 +1526,9 @@ sub havana_gene {
   return $ott;
 }
 
-=head2 get_Biotype
+=head2 biotype
 
-  Example    : my $biotype = $gene->get_Biotype;
+  Example    : my $biotype = $gene->biotype;
   Description: Returns the Biotype of this gene.
   Returntype : Bio::EnsEMBL::Biotype object
   Warning    : If no Biotype can be found undef is returned
@@ -1539,14 +1538,14 @@ sub havana_gene {
 
 =cut
 
-sub get_Biotype {
-  my $self = shift;
+sub biotype {
+  my ( $self ) = @_;
 
   my $biotype;
 
   if( defined $self->adaptor() ) {
     my $ba = $self->adaptor()->db()->get_BiotypeAdaptor();
-    $biotype = $ba->fetch_by_name_object_type( $self->biotype, 'gene' );
+    $biotype = $ba->fetch_by_name_object_type( $self->{'biotype_id'}, 'gene' );
   }
 
   return $biotype;

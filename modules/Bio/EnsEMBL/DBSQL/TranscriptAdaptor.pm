@@ -118,7 +118,7 @@ sub _columns {
   my $modified_date =
     $self->db()->dbc()->from_date_to_seconds("modified_date");
 
-  my @columns = 
+  my @columns =
     (
      't.transcript_id',     't.seq_region_id',
      't.seq_region_start',  't.seq_region_end',
@@ -150,7 +150,7 @@ sub _left_join {
 
 =head2 fetch_by_stable_id
 
-  Arg [1]    : String $stable_id 
+  Arg [1]    : String $stable_id
                The stable id of the transcript to retrieve
   Example    : my $tr = $tr_adaptor->fetch_by_stable_id('ENST00000309301');
   Description: Retrieves a transcript via its stable id.
@@ -183,12 +183,12 @@ sub fetch_by_stable_id {
 
 =head2 fetch_by_stable_id_version
 
-  Arg [1]    : String $id 
+  Arg [1]    : String $id
                The stable ID of the transcript to retrieve
   Arg [2]    : Integer $version
                The version of the stable_id to retrieve
   Example    : $tr = $tr_adaptor->fetch_by_stable_id('ENST00000309301', 3);
-  Description: Retrieves a transcript object from the database via its 
+  Description: Retrieves a transcript object from the database via its
                stable id and version.
                The transcript will be retrieved in its native coordinate system (i.e.
                in the coordinate system it is stored in the database). It may
@@ -224,9 +224,9 @@ sub fetch_all {
   return \@trans ;
 }
 
-=head2 fetch_all_versions_by_stable_id 
+=head2 fetch_all_versions_by_stable_id
 
-  Arg [1]     : String $stable_id 
+  Arg [1]     : String $stable_id
                 The stable ID of the transcript to retrieve
   Example     : my $tr = $tr_adaptor->fetch_all_version_by_stable_id
                   ('ENST00000309301');
@@ -253,7 +253,7 @@ sub fetch_all_versions_by_stable_id {
 =head2 fetch_by_translation_stable_id
 
   Arg [1]    : String $transl_stable_id
-               The stable identifier of the translation of the transcript to 
+               The stable identifier of the translation of the transcript to
                retrieve
   Example    : my $tr = $tr_adaptor->fetch_by_translation_stable_id
                   ('ENSP00000311007');
@@ -296,7 +296,7 @@ sub fetch_by_translation_stable_id {
 =head2 fetch_by_translation_stable_id_version
 
   Arg [1]    : String $transl_stable_id
-               The stable identifier of the translation of the transcript to 
+               The stable identifier of the translation of the transcript to
                retrieve
   Arg [2]    : Integer $version
                The version of the translation of the transcript to retrieve
@@ -346,7 +346,7 @@ sub fetch_by_translation_stable_id_version {
                The internal identifier of the translation whose transcript
                is to be retrieved
   Example    : my $tr = $tr_adaptor->fetch_by_translation_id($transl->dbID);
-  Description: Given the internal identifier of a translation this method 
+  Description: Given the internal identifier of a translation this method
                retrieves the transcript associated with that translation.
                If the transcript cannot be found undef is returned instead.
   Returntype : Bio::EnsEMBL::Transcript or undef
@@ -388,7 +388,7 @@ sub fetch_by_translation_id {
   Example    : my $gene = $gene_adaptor->fetch_by_stable_id('ENSG0000123');
                my @transcripts = { $tr_adaptor->fetch_all_by_Gene($gene) };
   Description: Retrieves Transcript objects for given gene. Puts Genes slice
-               in each Transcript. 
+               in each Transcript.
   Returntype : Listref of Bio::EnsEMBL::Transcript objects
   Exceptions : none
   Caller     : Gene->get_all_Transcripts()
@@ -543,19 +543,19 @@ sub fetch_all_by_Slice {
   	$max_end_feature = $t;
       }
     }
-    
+
     # now we can reassign min_start|end to seq_region_start|end of
     # the feature which spans the largest region
     $min_start = $min_start_feature->seq_region_start();
     $max_end = $max_end_feature->seq_region_end();
 
     my $sa = $self->db()->get_SliceAdaptor();
-    $ext_slice = 
-      $sa->fetch_by_region($slice->coord_system->name(), 
-  			   $slice->seq_region_name(), 
-  			   $min_start, 
-  			   $max_end, 
-  			   $slice->strand(), 
+    $ext_slice =
+      $sa->fetch_by_region($slice->coord_system->name(),
+  			   $slice->seq_region_name(),
+  			   $min_start,
+  			   $max_end,
+  			   $slice->strand(),
   			   $slice->coord_system->version());
   }
 
@@ -629,7 +629,7 @@ sub fetch_all_by_Slice {
                who really do want to find all 'NM%'
   Example    : my @transcripts =
                   @{ $tr_adaptor->fetch_all_by_external_name( 'NP_065811.1') };
-               my @more_transcripts = 
+               my @more_transcripts =
                   @{$tr_adaptor->fetch_all_by_external_name( 'NP_0658__._')};
   Description: Retrieves all transcripts which are associated with
                an external identifier such as a GO term, Swissprot
@@ -794,7 +794,7 @@ sub fetch_by_display_label {
 
 =head2 fetch_all_by_exon_stable_id
 
-  Arg [1]    : String $stable_id 
+  Arg [1]    : String $stable_id
                The stable id of an exon in a transcript
   Example    : my $tr = $tr_adaptor->fetch_all_by_exon_stable_id
                   ('ENSE00000309301');
@@ -812,14 +812,14 @@ sub fetch_all_by_exon_stable_id {
   my @trans ;
 
   my $sth = $self->prepare(qq(
-      SELECT t.transcript_id 
+      SELECT t.transcript_id
       FROM exon_transcript et, exon e, transcript t
       WHERE e.exon_id = et.exon_id
       AND et.transcript_id = t.transcript_id
       AND e.stable_id = ?
       AND t.is_current = 1
   ));
-  
+
   $sth->bind_param(1, $stable_id, SQL_VARCHAR);
   $sth->execute();
 
@@ -841,7 +841,7 @@ sub fetch_all_by_exon_stable_id {
                listref of $sources
                The source of the transcript to retrieve. You can have as an argument a reference
                to a list of sources
-  Example    : $transcripts = $transcript_adaptor->fetch_all_by_source('havana'); 
+  Example    : $transcripts = $transcript_adaptor->fetch_all_by_source('havana');
                $transcripts = $transcript_adaptor->fetch_all_by_source(['ensembl', 'vega']);
   Description: Retrieves an array reference of transcript objects from the database via its source or sources.
                The transcript will be retrieved in its native coordinate system (i.e.
@@ -862,7 +862,7 @@ sub fetch_all_by_source {
   return \@transcripts;
 }
 
-=head2 source_constraint 
+=head2 source_constraint
 
   Arg [1]    : String $source
                listref of $sources
@@ -890,7 +890,7 @@ sub source_constraint {
                 listref of $source
                 The source of the transcript to retrieve. You can have as an argument a reference
                 to a list of sources
-  Example     : $cnt = $transcript_adaptor->count_all_by_source('ensembl'); 
+  Example     : $cnt = $transcript_adaptor->count_all_by_source('ensembl');
                 $cnt = $transcript_adaptor->count_all_by_source(['havana', 'vega']);
   Description : Retrieves count of transcript objects from the database via its source or sources.
   Returntype  : integer
@@ -934,13 +934,13 @@ sub count_all_by_Slice {
   return $self->count_by_Slice_constraint($slice, $constraint);
 }
 
-=head2 fetch_all_by_biotype 
+=head2 fetch_all_by_biotype
 
-  Arg [1]    : String $biotype 
+  Arg [1]    : String $biotype
                listref of $biotypes
                The biotype of the transcript to retrieve. You can have as an argument a reference
                to a list of biotypes
-  Example    : $gene = $transcript_adaptor->fetch_all_by_biotype('protein_coding'); 
+  Example    : $gene = $transcript_adaptor->fetch_all_by_biotype('protein_coding');
                $gene = $transcript_adaptor->fetch_all_by_biotypes(['protein_coding', 'sRNA', 'miRNA']);
   Description: Retrieves an array reference of transcript objects from the database via its biotype or biotypes.
                The transcript will be retrieved in its native coordinate system (i.e.
@@ -961,9 +961,9 @@ sub fetch_all_by_biotype {
   return \@transcripts;
 }
 
-=head2 biotype_constraint 
+=head2 biotype_constraint
 
-  Arg [1]    : String $biotypes 
+  Arg [1]    : String $biotypes
                listref of $biotypes
                The biotype of the transcript to retrieve. You can have as an argument a reference
                to a list of biotypes
@@ -983,13 +983,13 @@ sub biotype_constraint {
   return $constraint;
 }
 
-=head2 count_all_by_biotype 
+=head2 count_all_by_biotype
 
-  Arg [1]     : String $biotype 
+  Arg [1]     : String $biotype
                 listref of $biotypes
                 The biotype of the transcript to retrieve. You can have as an argument a reference
                 to a list of biotypes
-  Example     : $cnt = $transcript_adaptor->count_all_by_biotype('protein_coding'); 
+  Example     : $cnt = $transcript_adaptor->count_all_by_biotype('protein_coding');
                 $cnt = $transcript_adaptor->count_all_by_biotypes(['protein_coding', 'sRNA', 'miRNA']);
   Description : Retrieves count of transcript objects from the database via its biotype or biotypes.
   Returntype  : integer
@@ -1008,19 +1008,19 @@ sub count_all_by_biotype {
   Arg [1]    : Bio::EnsEMBL::Transcript $transcript
                The transcript to be written to the database
   Arg [2]    : Int $gene_dbID
-               The identifier of the gene that this transcript is associated 
+               The identifier of the gene that this transcript is associated
                with
   Arg [3]    : DEPRECATED (optional) Int $analysis_id
-               The analysis_id to use when storing this gene. This is for 
+               The analysis_id to use when storing this gene. This is for
                backward compatibility only and used to fall back to the gene
                analysis_id if no analysis object is attached to the transcript
                (which you should do for new code).
-  Arg [4]    : prevent coordinate recalculation if you are persisting 
+  Arg [4]    : prevent coordinate recalculation if you are persisting
                transcripts with this gene
   Example    : $transID = $tr_adaptor->store($transcript, $gene->dbID);
   Description: Stores a transcript in the database and returns the new
                internal identifier for the stored transcript.
-  Returntype : Int 
+  Returntype : Int
   Exceptions : none
   Caller     : general
   Status     : Stable
@@ -1103,7 +1103,7 @@ sub store {
   # Store transcript
   #
 
-#  my $store_transcript_sql = 
+#  my $store_transcript_sql =
 #    sprintf "INSERT INTO transcript SET gene_id = ?, analysis_id = ?, seq_region_id = ?, seq_region_start = ?, seq_region_end = ?, seq_region_strand = ?,%s biotype = ?, description = ?, is_current = ?, canonical_translation_id = ?", ($self->schema_version > 74)?" source = ?,":'';
 
   my @columns = qw(
@@ -1141,7 +1141,7 @@ sub store {
 	push @canned_columns, 'modified_date';
 	push @canned_values,  $modified;
       }
-      
+
   }
 
   my $columns = join(', ', @columns, @canned_columns);
@@ -1159,7 +1159,7 @@ sub store {
   $tst->bind_param( ++$i,  $transcript->end(),         SQL_INTEGER );
   $tst->bind_param( ++$i,  $transcript->strand(),      SQL_TINYINT );
 
-  $self->schema_version > 74 and 
+  $self->schema_version > 74 and
     $tst->bind_param( ++$i,  $transcript->source(),      SQL_VARCHAR );
 
   $tst->bind_param( ++$i,  $transcript->biotype(),     SQL_VARCHAR );
@@ -1391,12 +1391,12 @@ sub store {
 
   Arg [1]    : String $trans_stable_id
                The stable if of the transcript to obtain
-  Example    : @i = $tr_adaptor->get_Interpro_by_transid($trans->stable_id()); 
+  Example    : @i = $tr_adaptor->get_Interpro_by_transid($trans->stable_id());
   Description: Gets interpro accession numbers by transcript stable id.
-               A hack really - we should have a much more structured 
+               A hack really - we should have a much more structured
                system than this.
   Returntype : listref of strings (Interpro_acc:description)
-  Exceptions : none 
+  Exceptions : none
   Caller     : domainview? , GeneView
   Status     : Stable
 
@@ -1447,14 +1447,14 @@ sub get_Interpro_by_transid {
   Exceptions  : None
   Caller      : Bio::EnsEMBL::Transcript
   Status      : Beta
-  
+
 
 =cut
 
 sub is_Transcript_canonical {
   my ($self, $transcript) = @_;
   return $self->dbc()->sql_helper()->execute_single_result(
-    -SQL => 'select count(*) from gene where canonical_transcript_id =?', 
+    -SQL => 'select count(*) from gene where canonical_transcript_id =?',
     -PARAMS => [$transcript->dbID()]
   );
 }
@@ -1464,7 +1464,7 @@ sub is_Transcript_canonical {
 
   Arg [1]    : Bio::EnsEMBL::Transcript $transcript
                The transcript to remove from the database
-  Arg [2]    : Boolean, update Gene coordinates after removal. WARNING: this does not alter any other copies of the 
+  Arg [2]    : Boolean, update Gene coordinates after removal. WARNING: this does not alter any other copies of the
                gene currently in memory. Other copies will retain their original coordinates. Either refetch them
                or go directly through Gene->remove_Transcript first, then remove the Transcript here.
   Example    : $tr_adaptor->remove($transcript);
@@ -1525,7 +1525,7 @@ sub remove {
 
   SUPPORTING_FEATURE:
   while(my ($type, $feature_id) = $sfsth->fetchrow()){
-    
+
     # only remove align_feature if this is the last reference to it
     $sth1->bind_param(1, $type, SQL_VARCHAR);
     $sth1->bind_param(2, $feature_id, SQL_INTEGER);
@@ -1539,9 +1539,9 @@ sub remove {
       #warn "transcript: shared feature, not removing $type|$feature_id\n";
       next SUPPORTING_FEATURE;
     }
-    
+
     #warn "transcript: removing $type|$feature_id\n";
-  
+
     if($type eq 'protein_align_feature'){
       my $f = $prot_adp->fetch_by_dbID($feature_id);
       $prot_adp->remove($f);
@@ -1564,7 +1564,7 @@ sub remove {
   $sfsth->bind_param(1, $transcript->dbID, SQL_INTEGER);
   $sfsth->execute();
   $sfsth->finish();
-  
+
   # delete the associated IntronSupportingEvidence and if the ISE had no more
   # linked transcripts remove it
   my $ise_adaptor = $self->db->get_IntronSupportingEvidenceAdaptor();
@@ -1583,7 +1583,7 @@ sub remove {
   }
 
   # remove the attributes associated with this transcript
-  my $attrib_adp = $self->db->get_AttributeAdaptor;  
+  my $attrib_adp = $self->db->get_AttributeAdaptor;
   $attrib_adp->remove_from_Transcript($transcript);
 
   # remove the translation associated with this transcript
@@ -1647,7 +1647,7 @@ sub remove {
   Description: Updates a transcript in the database.
   Returntype : None
   Exceptions : thrown if the $transcript is not a Bio::EnsEMBL::Transcript.
-               warn if the method is called on a transcript that does not exist 
+               warn if the method is called on a transcript that does not exist
                in the database.
                Should warn if trying to update the number of attached exons, but
                this is a far more complex process and is not yet implemented.
@@ -1666,7 +1666,7 @@ sub update {
     throw("Must update a transcript object, not a $transcript");
   }
 
-  my $update_transcript_sql = 
+  my $update_transcript_sql =
     sprintf "UPDATE transcript SET analysis_id = ?, display_xref_id = ?, description = ?,%s biotype = ?, is_current = ?, canonical_translation_id = ? WHERE transcript_id = ?", ($self->schema_version > 74)?" source = ?,":'';
 
   my $display_xref = $transcript->display_xref();
@@ -1684,7 +1684,7 @@ sub update {
   $sth->bind_param( ++$i, $display_xref_id, SQL_INTEGER );
   $sth->bind_param( ++$i, $transcript->description(), SQL_LONGVARCHAR );
 
-  $self->schema_version > 74 and 
+  $self->schema_version > 74 and
     $sth->bind_param( ++$i,  $transcript->source(),      SQL_VARCHAR );
 
   $sth->bind_param( ++$i, $transcript->biotype(),     SQL_VARCHAR );
@@ -1805,7 +1805,7 @@ sub _objs_from_sth {
        $display_xref_id, $xref_display_label, $xref_primary_acc,
        $xref_version,    $xref_description,   $xref_info_type,
        $xref_info_text,  $external_release
-      ) );    
+      ) );
   }
 
   my $dest_slice_start;
@@ -1986,10 +1986,10 @@ sub _objs_from_sth {
     }
 
     # Finally, create the new Transcript.
-    my $params = 
+    my $params =
       {
        'analysis'              => $analysis,
-       'biotype'               => $biotype,
+       'biotype_id'            => $biotype,
        'start'                 => $seq_region_start,
        'end'                   => $seq_region_end,
        'strand'                => $seq_region_strand,
@@ -2010,9 +2010,9 @@ sub _objs_from_sth {
        'is_current'            => $is_current,
        'edits_enabled'         => 1
       };
-    
+
     $self->schema_version > 74 and $params->{'source'} = $source;
-    push( @transcripts, 
+    push( @transcripts,
     $self->_create_feature_fast(
           'Bio::EnsEMBL::Transcript',$params) );
 
@@ -2026,7 +2026,7 @@ sub _objs_from_sth {
 
   Arg [1]    : String $hit_name
                Name of supporting feature
-  Arg [2]    : String $feature_type 
+  Arg [2]    : String $feature_type
                one of "dna_align_feature" or "protein_align_feature"
   Arg [3]    : (optional) Bio::Ensembl::Analysis
   Example    : $tr = $tr_adaptor->fetch_all_by_exon_supporting_evidence
@@ -2092,12 +2092,12 @@ sub fetch_all_by_exon_supporting_evidence {
 
   Arg [1]    : String $hit_name
                Name of supporting feature
-  Arg [2]    : String $feature_type 
+  Arg [2]    : String $feature_type
                one of "dna_align_feature" or "protein_align_feature"
   Arg [3]    : (optional) Bio::Ensembl::Analysis
   Example    : $transcripts = $transcript_adaptor->fetch_all_by_transcript_supporting_evidence('XYZ', 'dna_align_feature');
-  Description: Gets all the transcripts with evidence from a specified hit_name on a particular type of feature, stored in the  
-               transcript_supporting_feature table. Optionally filter by analysis.  For hits stored in the supporting_feature 
+  Description: Gets all the transcripts with evidence from a specified hit_name on a particular type of feature, stored in the
+               transcript_supporting_feature table. Optionally filter by analysis.  For hits stored in the supporting_feature
                table (linked to exons) use fetch_all_by_exon_supporting_evidence instead.
   Returntype : Listref of Bio::EnsEMBL::Transcript objects
   Exceptions : If feature_type is not of correct type.
@@ -2107,7 +2107,7 @@ sub fetch_all_by_exon_supporting_evidence {
 =cut
 
 sub fetch_all_by_transcript_supporting_evidence {
-  
+
   my ($self, $hit_name, $feature_type, $analysis) = @_;
 
   if($feature_type !~ /(dna)|(protein)_align_feature/) {

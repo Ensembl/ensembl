@@ -180,7 +180,7 @@ sub new {
   $self->edits_enabled(1);
 
   $self->description($description);
-  $self->biotype($biotype);
+  if ( defined $biotype ) { $self->{'biotype_id'} = $biotype };
   $self->source($source);
 
   # Default version
@@ -606,22 +606,22 @@ sub external_name {
 }
 
 
-=head2 biotype
+# =head2 biotype
 
-  Arg [1]    : string $biotype
-  Description: get/set for attribute biotype
-  Returntype : string
-  Exceptions : none
-  Caller     : general
-  Status     : Stable
+#   Arg [1]    : string $biotype
+#   Description: get/set for attribute biotype
+#   Returntype : string
+#   Exceptions : none
+#   Caller     : general
+#   Status     : Stable
 
-=cut
+# =cut
 
-sub biotype {
-   my $self = shift;
-  $self->{'biotype'} = shift if( @_ );
-  return ( $self->{'biotype'} || "protein_coding" );
-}
+# sub biotype {
+#    my $self = shift;
+#   $self->{'biotype'} = shift if( @_ );
+#   return ( $self->{'biotype'} || "protein_coding" );
+# }
 
 =head2 source
 
@@ -3229,10 +3229,10 @@ sub get_Gene {
   return $parent_gene;
 }
 
-=head2 get_Biotype
+=head2 biotype
 
-  Example    : my $biotype = $gene->get_Biotype;
-  Description: Returns the Biotype of this gene.
+  Example    : my $biotype = $gene->biotype;
+  Description: Returns the Biotype of this transcript.
   Returntype : Bio::EnsEMBL::Biotype object
   Warning    : If no Biotype can be found undef is returned
   Exceptions : none
@@ -3241,14 +3241,14 @@ sub get_Gene {
 
 =cut
 
-sub get_Biotype {
+sub biotype {
   my $self = shift;
 
   my $biotype;
 
   if( defined $self->adaptor() ) {
     my $ba = $self->adaptor()->db()->get_BiotypeAdaptor();
-    $biotype = $ba->fetch_by_name_object_type( $self->biotype, 'transcript' );
+    $biotype = $ba->fetch_by_name_object_type( $self->{'biotype_id'}, 'transcript' );
   }
 
   return $biotype;

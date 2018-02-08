@@ -106,7 +106,6 @@ sub new {
   my($dbID, $name, $object_type, $biotype_group, $so_acc, $description, $db_type, $attrib_type_id) =
     rearrange([qw(BIOTYPE_ID NAME OBJECT_TYPE BIOTYPE_GROUP SO_ACC DESCRIPTION DB_TYPE ATTRIB_TYPE_ID)], @_);
 
-
   $self->{'dbID'} = $dbID;
   $self->{'name'} = $name;
   $self->{'object_type'} = $object_type;
@@ -118,7 +117,6 @@ sub new {
 
   return $self;
 }
-
 
 =head2 name
 
@@ -143,8 +141,6 @@ sub name {
   return $self->{'name'};
 }
 
-
-
 =head2 biotype_group
 
   Arg [1]    : (optional) string $biotype_group
@@ -167,9 +163,6 @@ sub biotype_group {
   return $self->{'biotype_group'};
 }
 
-
-
-
 =head2 so_acc
 
   Arg [1]    : (optional) string $so_acc
@@ -190,13 +183,73 @@ sub so_acc {
 
   if ( defined($so_acc) ) {
     # throw an error if setting something that does not look like an SO acc
-    throw('so_acc must be a Sequence Ontology accession')
-      unless ( $so_acc =~ m/^SO:\d+/ );
+    throw("so_acc must be a Sequence Ontology accession. '$so_acc' does not look like one.")
+      unless ( $so_acc =~ m/\ASO:\d+\z/ );
 
     $self->{'so_acc'} = $so_acc;
   }
 
   return $self->{'so_acc'};
+}
+
+=head2 object_type
+
+  Arg [1]    : (optional) string $object_type
+  Example    : $object_type = $biotype->object_type();
+  Description: Getter/Setter for the object_type of this biotype.
+  Returntype : string
+  Exceptions : none
+  Caller     : general
+  Status     : Stable
+
+=cut
+
+sub object_type {
+  my ( $self, $value ) = @_;
+
+  if ( defined($value) ) {
+    $self->{'object_type'} = $value;
+  }
+
+  return $self->{'object_type'};
+}
+
+=head2 as_hash
+
+  Example       : $biotype_hash = $biotype->as_hash();
+  Description   : Retrieves this Biotype as a hash.
+  Returns       : hashref of descriptive strings
+  Status        : Intended for internal use
+=cut
+
+sub as_hash {
+  my ( $self ) = @_;
+
+  return {
+    name          => $self->name,
+    biotype_group => $self->biotype_group,
+    so_acc        => $self->so_acc,
+    object_type   => $self->object_type,
+  };
+}
+
+
+use overload '""' => \&as_string;
+
+=head2 as_string
+
+  Example       : $biotype_str = $biotype->as_string();
+                  $biotype_str = $biotype();
+  Description   : Retrieves a printable string of the biotype object.
+                  At the moment this is the biotype ensembl name.
+                  If Biotype object is called this is what is returned to maintain compatibility
+                  with legacy biotype() methods in Gene and Transcript objects.
+  Returns       : string for the biotype.
+  Status        : Intended for internal use
+=cut
+
+sub as_string {
+  return shift->name;
 }
 
 1;

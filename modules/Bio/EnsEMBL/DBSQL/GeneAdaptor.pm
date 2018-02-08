@@ -164,7 +164,7 @@ sub list_seq_region_ids {
   Arg [1]    : String $label - display label of gene to fetch
   Example    : my $gene = $geneAdaptor->fetch_by_display_label("BRCA2");
   Description: Returns the gene which has the given display label or undef if
-               there is none. If there are more than 1, the gene on the 
+               there is none. If there are more than 1, the gene on the
                reference slice is reported or if none are on the reference,
                the first one is reported.
   Returntype : Bio::EnsEMBL::Gene
@@ -205,7 +205,7 @@ sub fetch_by_display_label {
   Arg [1]    : String $label - display label of genes to fetch
   Example    : my @genes = @{$geneAdaptor->fetch_all_by_display_label("PPP1R2P1")};
   Description: Returns all genes which have the given display label or undef if
-               there are none. 
+               there are none.
   Returntype : listref of Bio::EnsEMBL::Gene objects
   Exceptions : none
   Caller     : general
@@ -226,7 +226,7 @@ sub fetch_all_by_display_label {
 
 =head2 fetch_by_stable_id
 
-  Arg [1]    : String $id 
+  Arg [1]    : String $id
                The stable ID of the gene to retrieve
   Example    : $gene = $gene_adaptor->fetch_by_stable_id('ENSG00000148944');
   Description: Retrieves a gene object from the database via its stable id.
@@ -261,7 +261,7 @@ sub fetch_by_stable_id {
 
 =head2 fetch_by_stable_id_version
 
-  Arg [1]    : String $id 
+  Arg [1]    : String $id
                The stable ID of the gene to retrieve
   Arg [2]    : Integer $version
                The version of the stable_id to retrieve
@@ -299,7 +299,7 @@ sub fetch_by_stable_id_version {
                listref of $sources
                The source of the gene to retrieve. You can have as an argument a reference
                to a list of sources
-  Example    : $genes = $gene_adaptor->fetch_all_by_source('havana'); 
+  Example    : $genes = $gene_adaptor->fetch_all_by_source('havana');
                $genes = $gene_adaptor->fetch_all_by_source(['ensembl', 'vega']);
   Description: Retrieves an array reference of gene objects from the database via its source or sources.
                The gene will be retrieved in its native coordinate system (i.e.
@@ -320,7 +320,7 @@ sub fetch_all_by_source {
   return \@genes;
 }
 
-=head2 source_constraint 
+=head2 source_constraint
 
   Arg [1]    : String $source
                listref of $sources
@@ -348,7 +348,7 @@ sub source_constraint {
                 listref of $source
                 The source of the gene to retrieve. You can have as an argument a reference
                 to a list of sources
-  Example     : $cnt = $gene_adaptor->count_all_by_source('ensembl'); 
+  Example     : $cnt = $gene_adaptor->count_all_by_source('ensembl');
                 $cnt = $gene_adaptor->count_all_by_source(['havana', 'vega']);
   Description : Retrieves count of gene objects from the database via its source or sources.
   Returntype  : integer
@@ -362,13 +362,13 @@ sub count_all_by_source {
   return $self->generic_count($self->source_constraint($source));
 }
 
-=head2 fetch_all_by_biotype 
+=head2 fetch_all_by_biotype
 
-  Arg [1]    : String $biotype 
+  Arg [1]    : String $biotype
                listref of $biotypes
                The biotype of the gene to retrieve. You can have as an argument a reference
                to a list of biotypes
-  Example    : $gene = $gene_adaptor->fetch_all_by_biotype('protein_coding'); 
+  Example    : $gene = $gene_adaptor->fetch_all_by_biotype('protein_coding');
                $gene = $gene_adaptor->fetch_all_by_biotypes(['protein_coding', 'sRNA', 'miRNA']);
   Description: Retrieves an array reference of gene objects from the database via its biotype or biotypes.
                The genes will be retrieved in its native coordinate system (i.e.
@@ -389,9 +389,9 @@ sub fetch_all_by_biotype {
   return \@genes;
 }
 
-=head2 biotype_constraint 
+=head2 biotype_constraint
 
-  Arg [1]    : String $biotypes 
+  Arg [1]    : String $biotypes
                listref of $biotypes
                The biotype of the gene to retrieve. You can have as an argument a reference
                to a list of biotypes
@@ -411,13 +411,13 @@ sub biotype_constraint {
   return $constraint;
 }
 
-=head2 count_all_by_biotype 
+=head2 count_all_by_biotype
 
-  Arg [1]     : String $biotype 
+  Arg [1]     : String $biotype
                 listref of $biotypes
                 The biotype of the gene to retrieve. You can have as an argument a reference
                 to a list of biotypes
-  Example     : $cnt = $gene_adaptor->count_all_by_biotype('protein_coding'); 
+  Example     : $cnt = $gene_adaptor->count_all_by_biotype('protein_coding');
                 $cnt = $gene_adaptor->count_all_by_biotypes(['protein_coding', 'sRNA', 'miRNA']);
   Description : Retrieves count of gene objects from the database via its biotype or biotypes.
   Returntype  : integer
@@ -438,9 +438,9 @@ sub fetch_all {
   return \@genes;
 }
 
-=head2 fetch_all_versions_by_stable_id 
+=head2 fetch_all_versions_by_stable_id
 
-  Arg [1]     : String $stable_id 
+  Arg [1]     : String $stable_id
                 The stable ID of the gene to retrieve
   Example     : $gene = $gene_adaptor->fetch_all_versions_by_stable_id
                   ('ENSG00000148944');
@@ -487,7 +487,7 @@ sub fetch_by_exon_stable_id {
         FROM transcript as t,
              exon_transcript as et,
              exon as e
-       WHERE t.transcript_id = et.transcript_id 
+       WHERE t.transcript_id = et.transcript_id
          AND et.exon_id = e.exon_id
          AND e.stable_id = ?
          AND e.is_current = 1
@@ -582,7 +582,7 @@ sub fetch_all_by_domain {
                external database links of the type specified
   Returntype : reference to list of genes
   Exceptions : thrown if exon cannot be placed on transcript slice
-  Caller     : 
+  Caller     :
   Status     : Stable
 
 =cut
@@ -608,7 +608,7 @@ sub fetch_all_by_Slice_and_external_dbname_link {
     my @linked_genes = $dbentry_adaptor->list_gene_ids_by_external_db_id($local_external_db_id);
     $linked_genes{$_} = 1 for @linked_genes;
   }
-  
+
   # Get all the genes on the slice and filter by the gene ids list
   my $genes = $self->fetch_all_by_Slice($slice, $logic_name, $load_transcripts);
   my $genes_passed = [ grep { exists $linked_genes{$_->dbID()} } @{$genes} ];
@@ -633,7 +633,7 @@ sub fetch_all_by_Slice_and_external_dbname_link {
                immediately rather than lazy-loading them later.  This
                is more efficient when there are a lot of genes whose
                transcripts are going to be used.
-  Returntype : reference to list of genes 
+  Returntype : reference to list of genes
   Exceptions : thrown if exon cannot be placed on transcript slice
   Caller     : Slice::get_all_Genes
   Status     : Stable
@@ -735,7 +735,7 @@ sub fetch_all_by_Slice {
 
   Arg [1]    : Bio::EnsEMBL::Slice $slice
                The slice to count genes on.
-  Arg [2]    : (optional) biotype(s) string or arrayref of strings 
+  Arg [2]    : (optional) biotype(s) string or arrayref of strings
                 the biotype of the features to count.
   Arg [1]    : (optional) string $source
                the source name of the features to count.
@@ -935,7 +935,7 @@ sub fetch_all_by_external_name {
 
 sub fetch_all_by_description {
     my ($self,$description) = @_;
-    
+
     my $constraint = "g.description LIKE ?";
     $self->bind_param_generic_fetch($description, SQL_VARCHAR);
     return $self->generic_fetch($constraint);
@@ -998,8 +998,8 @@ sub fetch_all_by_GOTerm {
               my $genes = $gene_adaptor->fetch_all_by_ontology_linkage_type(undef, 'IMP');
 
   Description   : Retrieves a list of genes that are associated with
-                  the given ontology linkage type.  The genes returned 
-                  are in their native coordinate system, i.e. in the 
+                  the given ontology linkage type.  The genes returned
+                  are in their native coordinate system, i.e. in the
                   coordinate system in which they are stored in the database.
   Return type   : listref of Bio::EnsEMBL::Gene
   Exceptions    : Throws if a linkage type is not given
@@ -1078,7 +1078,7 @@ sub fetch_all_by_GOTerm_accession {
   Arg [1]    : Bio::EnsEMBL::Gene $gene
                The gene to fetch alternative alleles for
   Arg [2]    : Boolean (optional)
-               Ask the method to warn about any gene without an alt allele 
+               Ask the method to warn about any gene without an alt allele
                group. Defaults to false
   Example    : my @alt_genes = @{ $gene_adaptor->fetch_all_alt_alleles($gene) };
                foreach my $alt_gene (@alt_genes) {
@@ -1086,8 +1086,8 @@ sub fetch_all_by_GOTerm_accession {
                }
   Description: Retrieves genes which are alternate alleles to a provided gene.
                Alternate alleles in Ensembl are genes which are similar and are
-               on an alternative haplotype of the same region. There are not 
-               currently very many of these. This method will return a 
+               on an alternative haplotype of the same region. There are not
+               currently very many of these. This method will return a
                reference to an empty list if no alternative alleles are found.
   Returntype : ArrayRef of Bio::EnsEMBL::Gene objects
   Exceptions : throw if incorrect arg provided
@@ -1118,11 +1118,11 @@ sub fetch_all_alt_alleles {
   my $aag = $aaga->fetch_by_gene_id($gene->dbID);
   unless ($aag) {
     if ($warn) {
-      warning("Supplied gene has no alternative alleles"); 
+      warning("Supplied gene has no alternative alleles");
     }
     return [];
   }
-  # query for all alternative genes. do not filter 
+  # query for all alternative genes. do not filter
   # the representative but do filter this gene out
   return $aag->get_all_Genes(undef, [$gene]);
 } ## end sub fetch_all_alt_alleles
@@ -1130,11 +1130,11 @@ sub fetch_all_alt_alleles {
 =head2 is_ref
 
   Arg [1]    : Gene dbID
-  Description: Used to determine whether a given Gene is the representative 
+  Description: Used to determine whether a given Gene is the representative
                Gene of an alt allele group. If it does not have an alternative
                allele that is more representative, then this ID will be said to
                be representative.
-  Returntype : Boolean - True for yes or no alternatives  
+  Returntype : Boolean - True for yes or no alternatives
 
 =cut
 
@@ -1158,7 +1158,7 @@ sub is_ref {
 
   Arg [1]    : reference to list of Bio::EnsEMBL::Genes $genes
   Example    : $gene_adaptor->store_alt_alleles([$gene1, $gene2, $gene3]);
-  Description: DEPRECATED. Switch to using AltAlleleGroup and the 
+  Description: DEPRECATED. Switch to using AltAlleleGroup and the
                AltAlleleGroupAdaptor which supports more complex queries
 
                This method creates a group of alternative alleles (i.e. locus)
@@ -1166,7 +1166,7 @@ sub is_ref {
                haplotypes which are similar. The genes must already be stored
                in this database. WARNING - now that more fine-grained support
                for alt_alleles has been implemented, this method is rather coarse.
-               Consider working directly with AltAlleleGroup and 
+               Consider working directly with AltAlleleGroup and
                AltAlleleGroupAdaptor.
   Returntype : int alt_allele_group_id or undef if no alt_alleles were stored
   Exceptions : throw on incorrect arguments
@@ -1200,7 +1200,7 @@ sub store_alt_alleles {
       if ($gene->slice->is_reference()) {
           $type{'IS_REPRESENTATIVE'} = 1;
       }
-      push @$aa_record, \%type; 
+      push @$aa_record, \%type;
       push @$allele_list, $aa_record;
   }
 
@@ -1211,7 +1211,7 @@ sub store_alt_alleles {
     warning('Inappropriate number of alternative alleles on the reference sequence. Ignoring.');
     return;
   }
-  
+
   my $aaga = $self->db->get_adaptor('AltAlleleGroup');
   return $aaga->store($aag);
 } ## end sub store_alt_alleles
@@ -1220,16 +1220,16 @@ sub store_alt_alleles {
 
   Arg [1]    : Bio::EnsEMBL::Gene $gene
                The gene to store in the database
-  Arg [2]    : ignore_release in xrefs [default 1] set to 0 to use release info 
+  Arg [2]    : ignore_release in xrefs [default 1] set to 0 to use release info
                in external database references
-  Arg [3]    : prevent coordinate recalculation if you are persisting 
+  Arg [3]    : prevent coordinate recalculation if you are persisting
                transcripts with this gene
   Arg [4]    : prevent copying supporting features across exons
                increased speed for lost accuracy
   Example    : $gene_adaptor->store($gene);
   Description: Stores a gene in the database.
   Returntype : the database identifier (dbID) of the newly stored gene
-  Exceptions : thrown if the $gene is not a Bio::EnsEMBL::Gene or if 
+  Exceptions : thrown if the $gene is not a Bio::EnsEMBL::Gene or if
                $gene does not have an analysis object
   Caller     : general
   Status     : Stable
@@ -1307,7 +1307,7 @@ sub store {
 	push @canned_columns, 'modified_date';
 	push @canned_values,  $modified;
       }
-      
+
   }
 
   my $columns = join(', ', @columns, @canned_columns);
@@ -1457,7 +1457,7 @@ sub store {
                transcripts, exons, stable_identifiers, descriptions, etc.
                are removed as well. Use with caution!
   Returntype : none
-  Exceptions : throw on incorrect arguments 
+  Exceptions : throw on incorrect arguments
                warning if gene is not stored in this database
   Caller     : general
   Status     : Stable
@@ -1525,7 +1525,7 @@ sub remove {
   Description: Gets interpro accession numbers by gene stable id. A hack really
                - we should have a much more structured system than this.
   Returntype : listref of strings (Interpro_acc:description)
-  Exceptions : none 
+  Exceptions : none
   Caller     : domainview
   Status     : Stable
 
@@ -1639,7 +1639,7 @@ sub update {
                The gene to update
   Example    : $gene_adaptor->update_coords($gene);
   Description: In the event of a transcript being removed, coordinates for the Gene
-               need to be reset, but update() does not do this. update_coords 
+               need to be reset, but update() does not do this. update_coords
                fills this niche
   Returntype : None
   Exceptions : thrown if the $gene is not supplied
@@ -1902,7 +1902,7 @@ sub _objs_from_sth {
       $self->_create_feature_fast(
       'Bio::EnsEMBL::Gene', {
        'analysis'                => $analysis,
-       'biotype'                 => $biotype,
+       'biotype_id'              => $biotype,
        'start'                   => $seq_region_start,
        'end'                     => $seq_region_end,
        'strand'                  => $seq_region_strand,
@@ -1976,7 +1976,7 @@ sub cache_gene_seq_mappings {
 
   Arg [1]    : String $hit_name
                Name of supporting feature
-  Arg [2]    : String $feature_type 
+  Arg [2]    : String $feature_type
                one of "dna_align_feature" or "protein_align_feature"
   Arg [3]    : (optional) Bio::Ensembl::Analysis
   Example    : $genes = $gene_adaptor->fetch_all_by_exon_supporting_evidence(
@@ -2044,7 +2044,7 @@ sub fetch_all_by_exon_supporting_evidence {
 
   Arg [1]    : String $hit_name
                Name of supporting feature
-  Arg [2]    : String $feature_type 
+  Arg [2]    : String $feature_type
                one of "dna_align_feature" or "protein_align_feature"
   Arg [3]    : (optional) Bio::Ensembl::Analysis
   Example    : $genes = $gene_adaptor->fetch_all_by_transcript_supporting_evidence('XYZ', 'dna_align_feature');
