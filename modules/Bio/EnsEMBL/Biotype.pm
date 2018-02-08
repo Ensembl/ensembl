@@ -90,9 +90,6 @@ use base qw(Bio::EnsEMBL::Storable);
   Description: Creates a new biotype object
   Returntype : Bio::EnsEMBL::Biotype
   Exceptions : none
-  Caller     : general
-  Status     : Stable
-
 
 =cut
 
@@ -126,8 +123,6 @@ sub new {
   Description: Getter/Setter for the name of this biotype.
   Returntype : string
   Exceptions : none
-  Caller     : general
-  Status     : Stable
 
 =cut
 
@@ -146,6 +141,8 @@ sub name {
   Arg [1]    : (optional) string $biotype_group
   Example    : $biotype_group = $biotype->biotype_group();
   Description: Getter/Setter for the biotype_group of this biotype.
+               Biotype groups are used internally at ensembl pipelines
+               and consist on few defined categories.
   Returntype : string
   Exceptions : none
   Caller     : general
@@ -167,14 +164,10 @@ sub biotype_group {
 
   Arg [1]    : (optional) string $so_acc
   Example    : $feat->so_acc();
-  Description: Getter/Setter for the so_acc of this biotype.
-               It must be a Sequence Ontology like accession (SO:\d*)
-               -1 is the reverse (negative) so_acc and 1 is the forward
-               (positive) so_acc.  No other values are permitted.
+  Description: Getter/Setter for the Sequence Ontology accession of this biotype.
+               It must be a SO like accession.
   Returntype : string
   Exceptions : thrown if an invalid so_acc argument is passed
-  Caller     : general
-  Status     : Stable
 
 =cut
 
@@ -197,10 +190,10 @@ sub so_acc {
   Arg [1]    : (optional) string $object_type
   Example    : $object_type = $biotype->object_type();
   Description: Getter/Setter for the object_type of this biotype.
+               Biotypes can be assigned to either genes or transcripts,
+               object_type refers to which of them.
   Returntype : string
-  Exceptions : none
-  Caller     : general
-  Status     : Stable
+  Exceptions : thrown if an invalid object_type argument is passed (not gene or transcript)
 
 =cut
 
@@ -208,29 +201,14 @@ sub object_type {
   my ( $self, $value ) = @_;
 
   if ( defined($value) ) {
+    $value = lc $value;
+    throw("object_type must be gene or transcript. Got '$value'.")
+      unless ( $value eq 'gene' || $value eq 'transcript' );
+
     $self->{'object_type'} = $value;
   }
 
   return $self->{'object_type'};
-}
-
-=head2 as_hash
-
-  Example       : $biotype_hash = $biotype->as_hash();
-  Description   : Retrieves this Biotype as a hash.
-  Returns       : hashref of descriptive strings
-  Status        : Intended for internal use
-=cut
-
-sub as_hash {
-  my ( $self ) = @_;
-
-  return {
-    name          => $self->name,
-    biotype_group => $self->biotype_group,
-    so_acc        => $self->so_acc,
-    object_type   => $self->object_type,
-  };
 }
 
 
@@ -245,7 +223,7 @@ use overload '""' => \&as_string;
                   If Biotype object is called this is what is returned to maintain compatibility
                   with legacy biotype() methods in Gene and Transcript objects.
   Returns       : string for the biotype.
-  Status        : Intended for internal use
+
 =cut
 
 sub as_string {

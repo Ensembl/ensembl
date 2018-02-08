@@ -30,19 +30,20 @@ limitations under the License.
 
 =head1 NAME
 
-Bio::EnsEMBL::DBSQL::BiotypeAdaptor - Encapsulates all generic access
-to database meta information
+  Bio::EnsEMBL::DBSQL::BiotypeAdaptor - An adaptor which performs database
+  interaction relating to the storage and retrieval of Biotypes
 
 =head1 SYNOPSIS
 
-  my $meta_container = $db_adaptor->get_MetaContainer();
-
-  my @mapping_info =
-    @{ $meta_container->list_value_by_key('assembly.mapping') };
+  my $biotype = $db_adaptor->fetch_by_name_object_type('protein_coding', 'gene');
 
 =head1 DESCRIPTION
 
-  An object that encapsulates access to db meta data
+    This adaptor provides a means to retrieve and store information related
+    to Biotypes.  Primarily this involves the retrieval or storage of
+    Bio::EnsEMBL::Biotype objects from a database.
+
+    See Bio::EnsEMBL::Biotype for details of the Biotype class.
 
 =head1 METHODS
 
@@ -66,8 +67,6 @@ use base qw(Bio::EnsEMBL::DBSQL::BaseAdaptor);
                Returns the names, aliases of the tables to use for queries.
   Returntype : list of listrefs of strings
   Exceptions : none
-  Caller     : internal
-  Status     : Stable
 
 =cut
 
@@ -85,8 +84,6 @@ sub _tables {
                Returns a list of columns to use for queries.
   Returntype : list of strings
   Exceptions : none
-  Caller     : internal
-  Status     : Stable
 
 =cut
 
@@ -102,10 +99,8 @@ sub _columns {
   Example    : none
   Description: PROTECTED implementation of abstract superclass method.
                responsible for the creation of ProteinFeatures
-  Returntype : listref of Bio::EnsEMBL::Biotype
+  Returntype : listref of Bio::EnsEMBL::Biotype objects
   Exceptions : none
-  Caller     : internal
-  Status     : At Risk
 
 =cut
 
@@ -149,8 +144,6 @@ sub _objs_from_sth {
                created with the provided name and object_type to be returned.
   Returntype : Bio::EnsEMBL::Biotype
   Exceptions : none
-  Caller     : general
-  Status     : Stable
 
 =cut
 
@@ -179,10 +172,8 @@ sub fetch_by_name_object_type {
                The object_type of the biotypes to retrieve (gene or transcript).
   Example    : $biotypes = $biotype_adaptor->fetch_all_by_object_type('gene');
   Description: Retrieves an array reference of biotype objects from the database.
-  Returntype : listref of Bio::EnsEMBL::Biotype objects or undef
+  Returntype : listref of Bio::EnsEMBL::Biotype objects or empty list
   Exceptions : none
-  Caller     : general
-  Status     : Stable
 
 =cut
 
