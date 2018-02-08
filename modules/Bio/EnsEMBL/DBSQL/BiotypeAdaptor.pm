@@ -145,7 +145,9 @@ sub _objs_from_sth {
                The object type of the biotype to retrieve (gene or transcript)
   Example    : $biotype = $biotype_adaptor->fetch_by_name_object_type('gene', 'protein_coding');
   Description: Retrieves a biotype object from the database via its combined key (name, object_type).
-  Returntype : Bio::EnsEMBL::Biotype or undef
+               If the Biotype requested does not exist in the database, a new Biotype object is
+               created with the provided name and object_type to be returned.
+  Returntype : Bio::EnsEMBL::Biotype
   Exceptions : none
   Caller     : general
   Status     : Stable
@@ -159,6 +161,13 @@ sub fetch_by_name_object_type {
   $self->bind_param_generic_fetch($name, SQL_VARCHAR);
   $self->bind_param_generic_fetch($object_type, SQL_VARCHAR);
   my ($biotype) = @{$self->generic_fetch($constraint)};
+
+  if (!defined $biotype) {
+    $biotype = Bio::EnsEMBL::Biotype->new(
+          -NAME          => $name,
+          -OBJECT_TYPE   => $object_type,
+      )
+  }
 
   return $biotype;
 }

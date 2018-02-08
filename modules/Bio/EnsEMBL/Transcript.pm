@@ -180,7 +180,10 @@ sub new {
   $self->edits_enabled(1);
 
   $self->description($description);
-  if ( defined $biotype ) { $self->{'biotype_id'} = $biotype };
+
+  # keep legacy behaviour of defaulting to 'protein_coding' biotype
+  $self->{'biotype_id'} = $biotype // 'protein_coding';
+
   $self->source($source);
 
   # Default version
@@ -604,24 +607,6 @@ sub external_name {
     return undef;
   }
 }
-
-
-# =head2 biotype
-
-#   Arg [1]    : string $biotype
-#   Description: get/set for attribute biotype
-#   Returntype : string
-#   Exceptions : none
-#   Caller     : general
-#   Status     : Stable
-
-# =cut
-
-# sub biotype {
-#    my $self = shift;
-#   $self->{'biotype'} = shift if( @_ );
-#   return ( $self->{'biotype'} || "protein_coding" );
-# }
 
 =head2 source
 
@@ -3231,10 +3216,12 @@ sub get_Gene {
 
 =head2 biotype
 
-  Example    : my $biotype = $gene->biotype;
+  Arg [1]    : Arg [1] : (optional) String - the biotype to set
+  Example    : my $biotype = $transcript->biotype;
+               my $biotype = $transcript->biotype('protin_coding');
   Description: Returns the Biotype of this transcript.
-  Returntype : Bio::EnsEMBL::Biotype object
-  Warning    : If no Biotype can be found undef is returned
+  Returntype : Bio::EnsEMBL::Biotype
+  Warning    : If no matching Biotype can be found,
   Exceptions : none
   Caller     : general
   Status     : Stable
@@ -3242,8 +3229,9 @@ sub get_Gene {
 =cut
 
 sub biotype {
-  my $self = shift;
+  my ( $self, $new_value) = @_;
 
+  $self->{'biotype_id'} = $new_value if ( defined $new_value );
   my $biotype;
 
   if( defined $self->adaptor() ) {
@@ -3254,5 +3242,5 @@ sub biotype {
   return $biotype;
 }
 
-1;
 
+1;

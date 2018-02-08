@@ -171,7 +171,10 @@ sub new {
   $self->external_status($external_status)
     if ( defined $external_status );
   $self->display_xref($display_xref) if ( defined $display_xref );
-  if ( defined $biotype ) { $self->{'biotype_id'} = $biotype };
+
+  # keep legacy behaviour of defaulting to 'protein_coding' biotype
+  $self->{'biotype_id'} = $biotype // 'protein_coding';
+
   $self->description($description);
   $self->source($source);
 
@@ -895,27 +898,6 @@ sub _clear_homologues {
   delete $self->{homologues};
 }
 
-
-# =head2 biotype
-
-#   Arg [1]    : (optional) String - the biotype to set
-#   Example    : $gene->biotype("protein_coding");
-#   Description: Getter/setter for the attribute biotype
-#   Returntype : String
-#   Exceptions : none
-#   Caller     : general
-#   Status     : Stable
-
-# =cut
-
-# sub biotype {
-#   my $self = shift;
-
-#   $self->{'biotype'} = shift if( @_ );
-#   return ( $self->{'biotype'} || "protein_coding" );
-# }
-
-
 =head2 add_Transcript
 
   Arg [1]    : Bio::EnsEMBL::Transcript $trans
@@ -1528,10 +1510,12 @@ sub havana_gene {
 
 =head2 biotype
 
+  Arg [1]    : Arg [1] : (optional) String - the biotype to set
   Example    : my $biotype = $gene->biotype;
+               my $biotype = $gene->biotype('protin_coding');
   Description: Returns the Biotype of this gene.
-  Returntype : Bio::EnsEMBL::Biotype object
-  Warning    : If no Biotype can be found undef is returned
+  Returntype : Bio::EnsEMBL::Biotype
+  Warning    : If no matching Biotype can be found,
   Exceptions : none
   Caller     : general
   Status     : Stable
@@ -1539,8 +1523,9 @@ sub havana_gene {
 =cut
 
 sub biotype {
-  my ( $self ) = @_;
+  my ( $self, $new_value) = @_;
 
+  $self->{'biotype_id'} = $new_value if ( defined $new_value );
   my $biotype;
 
   if( defined $self->adaptor() ) {
@@ -1583,4 +1568,3 @@ sub fetch_coded_for_regulatory_factors {
 
 
 1;
-
