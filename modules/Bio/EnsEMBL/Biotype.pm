@@ -64,6 +64,7 @@ use Bio::EnsEMBL::Storable;
 use Bio::EnsEMBL::Utils::Exception qw(throw deprecate warning);
 use Bio::EnsEMBL::Utils::Scalar qw(check_ref assert_ref);
 use Bio::EnsEMBL::Utils::Argument qw(rearrange);
+use Scalar::Util qw(weaken isweak);
 
 use base qw(Bio::EnsEMBL::Storable);
 
@@ -111,6 +112,25 @@ sub new {
   $self->{'description'} = $description;
   $self->{'db_type'} = $db_type;
   $self->{'attrib_type_id'} = $attrib_type_id;
+
+  return $self;
+}
+
+=head2 new_fast
+
+  Arg [1]    : hashref to be blessed
+  Description: Construct a new Bio::EnsEMBL::Biotype using the hashref.
+  Exceptions : none
+  Returntype : Bio::EnsEMBL::Biotype
+
+=cut
+
+
+sub new_fast {
+  my ( $class, $hashref ) = @_;
+
+  my $self = bless $hashref, $class;
+  weaken($self->{adaptor})  if ( ! isweak($self->{adaptor}) );
 
   return $self;
 }

@@ -115,16 +115,16 @@ sub _objs_from_sth {
 
   while($sth->fetch()) {
     push( @biotypes,
-      my $feat = Bio::EnsEMBL::Biotype->new(
-          -BIOTYPE_ID    => $dbID,
-          -NAME          => $name,
-          -OBJECT_TYPE   => $object_type,
-          -DB_TYPE       => $db_type,
-          -ATTRIB_TYPE_ID => $attrib_type_id,
-          -DESCRIPTION   => $description,
-          -BIOTYPE_GROUP => $biotype_group,
-          -SO_ACC        => $so_acc,
-      )
+      my $feat = Bio::EnsEMBL::Biotype->new_fast( {
+         'dbID'           => $dbID,
+         'name'           => $name,
+         'object_type'    => $object_type,
+         'db_type'        => $db_type,
+         'attrib_type_id' => $attrib_type_id,
+         'description'    => $description,
+         'biotype_group'  => $biotype_group,
+         'so_acc'         => $so_acc,
+      } )
     );
   }
 
