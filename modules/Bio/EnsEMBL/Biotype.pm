@@ -66,7 +66,7 @@ use Bio::EnsEMBL::Utils::Scalar qw(check_ref assert_ref);
 use Bio::EnsEMBL::Utils::Argument qw(rearrange);
 use Scalar::Util qw(weaken isweak);
 
-use base qw(Bio::EnsEMBL::Storable);
+use parent qw(Bio::EnsEMBL::Storable);
 
 =head2 new
 

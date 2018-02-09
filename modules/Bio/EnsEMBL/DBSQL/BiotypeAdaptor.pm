@@ -58,7 +58,7 @@ use Bio::EnsEMBL::Biotype;
 use strict;
 use warnings;
 
-use base qw(Bio::EnsEMBL::DBSQL::BaseAdaptor);
+use parent qw(Bio::EnsEMBL::DBSQL::BaseAdaptor);
 
 =head2 _tables
 
