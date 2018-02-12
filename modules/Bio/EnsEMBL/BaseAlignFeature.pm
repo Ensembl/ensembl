@@ -1059,42 +1059,35 @@ sub _get_mdz_chunks {
       #if start to end is a number then all match return as it is
       if($mdtag =~/^\d+$/){
         return [$mdtag];
-      }else{
-         my @char_arr = split('',$mdtag);
-         my $cur_char = undef;
-
-         while(defined($cur_char = shift @char_arr)){
-           my $cur_type = $self->_get_mdz_chunk_type( $cur_char);
-           my $next_char = shift @char_arr;
-           my $next_type = $self->_get_mdz_chunk_type( $next_char);
-           my $chunk_char = $cur_char;
-
-           #append the chars until they are of same type
-           while($cur_type eq $next_type){
-             $chunk_char .= $next_char;
-             $next_char = shift @char_arr;
-             $cur_type = $self->_get_mdz_chunk_type( $chunk_char);
-             $next_type = $self->_get_mdz_chunk_type( $next_char);
+      } else{
+        my @char_arr = split('',$mdtag);
+        # Set up for the first loop, this also will handle
+        # if the array is size one, as we'll have a character
+        # in the current_chunk to push on the pile at the end.
+        my $prev_type = $self->_get_mdz_chunk_type( $char_arr[0]);
+        my $current_chunk = $char_arr[0];
+        for(my $i = 1; $i <= $#char_arr; $i++) {
+          my $cur_type = $self->_get_mdz_chunk_type( $char_arr[$i] );
+          if($cur_type ne $prev_type) {
+            # We've found a new character class, push the
+            # current chunk on to the list
+            push @chunks, $current_chunk;
+            # Restart the current pile
+            $current_chunk = $char_arr[$i];
+           } else {
+             # Same character class, put it on the current pile
+             $current_chunk .= $char_arr[$i];
            }
+           # Shift current type in to the prior slot
+           $prev_type = $cur_type;
+          }
 
-         #if $next_char is undef then we have reached the last char
-         if(defined $chunk_char && defined $next_char){
-           push(@chunks, $chunk_char);
-           unshift(@char_arr, $next_char) if(scalar(@char_arr) > 0);
-         }
-         else{
-           #pop the last insert and check if it is of the same type as last char
-           my $last_insert = pop @chunks;
-           unless($self->_get_mdz_chunk_type($last_insert) eq $self->_get_mdz_chunk_type($chunk_char)){
-           push(@chunks, $last_insert);
-           push(@chunks, $chunk_char);
-           }
-         }
-
-        }
-
+        # Post loop cleanup of the last piece
+        # This also handles an array of size one where
+        # we never entered the loop, that one element
+        # now gets pushed on the pile.
+        push @chunks, $current_chunk;
       }
-
     }
   return \@chunks;
 }
