@@ -232,7 +232,9 @@ sub object_type {
 }
 
 
-use overload '""' => \&as_string;
+use overload
+  'fallback' => 1,
+  '""' => \&as_string;
 
 =head2 as_string
 
