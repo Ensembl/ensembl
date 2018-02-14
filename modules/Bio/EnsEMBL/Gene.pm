@@ -61,7 +61,6 @@ more alternative transcripts.
 
 package Bio::EnsEMBL::Gene;
 
-use warnings;
 use strict;
 
 use POSIX;
@@ -71,7 +70,7 @@ use Bio::EnsEMBL::Utils::Argument qw(rearrange);
 use Bio::EnsEMBL::Utils::Exception qw(throw warning deprecate);
 use Bio::EnsEMBL::Utils::Scalar qw(assert_ref);
 
-use base qw(Bio::EnsEMBL::Feature);
+use parent qw(Bio::EnsEMBL::Feature);
 
 
 =head2 new
@@ -173,7 +172,7 @@ sub new {
   $self->display_xref($display_xref) if ( defined $display_xref );
 
   # keep legacy behaviour of defaulting to 'protein_coding' biotype
-  $self->{'biotype'} = $biotype // 'protein_coding';
+  $self->{'biotype'} = $biotype;
 
   $self->description($description);
   $self->source($source);
@@ -1525,15 +1524,24 @@ sub havana_gene {
 sub biotype {
   my ( $self, $new_value) = @_;
 
-  $self->{'biotype'} = $new_value if ( defined $new_value );
-  my $biotype;
+  # was a term to set given?
+  if ( defined $new_value ) {
+    $self->{'biotype'} = $new_value;
+  }
 
+  # is there no biotype? default to 'protein_coding'
+  # this is legacy behaviour and should probably be revisited
+  if ( ! defined $self->{'biotype'}) {
+    $self->{'biotype'} = 'protein_coding';
+  }
+
+  my $biotype;
   if( defined $self->adaptor() ) {
     my $ba = $self->adaptor()->db()->get_BiotypeAdaptor();
     $biotype = $ba->fetch_by_name_object_type( $self->{'biotype'}, 'gene' );
   }
 
-  return $biotype;
+  return ( $biotype || $self->{'biotype'} );
 }
 
 
