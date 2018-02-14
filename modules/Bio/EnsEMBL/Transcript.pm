@@ -182,7 +182,7 @@ sub new {
   $self->description($description);
 
   # keep legacy behaviour of defaulting to 'protein_coding' biotype
-  $self->{'biotype_id'} = $biotype // 'protein_coding';
+  $self->{'biotype'} = $biotype // 'protein_coding';
 
   $self->source($source);
 
@@ -3231,12 +3231,12 @@ sub get_Gene {
 sub biotype {
   my ( $self, $new_value) = @_;
 
-  $self->{'biotype_id'} = $new_value if ( defined $new_value );
+  $self->{'biotype'} = $new_value if ( defined $new_value );
   my $biotype;
 
   if( defined $self->adaptor() ) {
     my $ba = $self->adaptor()->db()->get_BiotypeAdaptor();
-    $biotype = $ba->fetch_by_name_object_type( $self->{'biotype_id'}, 'transcript' );
+    $biotype = $ba->fetch_by_name_object_type( $self->{'biotype'}, 'transcript' );
   }
 
   return $biotype;

@@ -1902,7 +1902,7 @@ sub _objs_from_sth {
       $self->_create_feature_fast(
       'Bio::EnsEMBL::Gene', {
        'analysis'                => $analysis,
-       'biotype_id'              => $biotype,
+       'biotype'                 => $biotype,
        'start'                   => $seq_region_start,
        'end'                     => $seq_region_end,
        'strand'                  => $seq_region_strand,
