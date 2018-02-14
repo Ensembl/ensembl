@@ -1512,9 +1512,9 @@ sub havana_gene {
   Arg [1]    : Arg [1] : (optional) String - the biotype to set
   Example    : my $biotype = $gene->biotype;
                my $biotype = $gene->biotype('protin_coding');
-  Description: Returns the Biotype of this gene.
+  Description: Returns the Biotype object of this gene.
+               When no biotype exists, defaults to 'protein_coding'.
   Returntype : Bio::EnsEMBL::Biotype
-  Warning    : If no matching Biotype can be found,
   Exceptions : none
   Caller     : general
   Status     : Stable

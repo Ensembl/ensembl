@@ -3218,9 +3218,9 @@ sub get_Gene {
   Arg [1]    : Arg [1] : (optional) String - the biotype to set
   Example    : my $biotype = $transcript->biotype;
                my $biotype = $transcript->biotype('protin_coding');
-  Description: Returns the Biotype of this transcript.
+  Description: Returns the Biotype object of this transcript.
+               When no biotype exists, defaults to 'protein_coding'.
   Returntype : Bio::EnsEMBL::Biotype
-  Warning    : If no matching Biotype can be found,
   Exceptions : none
   Caller     : general
   Status     : Stable

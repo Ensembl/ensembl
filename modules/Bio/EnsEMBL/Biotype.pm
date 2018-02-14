@@ -48,7 +48,13 @@ Bio::EnsEMBL::Biotype
 
 =head1 DESCRIPTION
 
-This is the Biotype object class.
+  This is the Biotype object class.
+  Gene and Transcript objects used to have a biotype() method that returned the biotype name
+  (the biotype field in the gene and transcript tables).
+  From e93 a new biotype table was added. However because of legacy code using direct sql
+  queries on the biotype column of gene and transcript tables, that column that contains the
+  biotype name was not replaced by biotype_id containing a foreign key to the new biotype table.
+  Gene and Transcripts can still link to a Biotype through the key (name, object_type).
 
 =head1 METHODS
 
@@ -231,6 +237,15 @@ sub object_type {
   return $self->{'object_type'};
 }
 
+=for Rationale:
+
+  Gene and Transcript objects used to have a biotype() method that returned the string biotype name.
+  From e93 those methods were replaced and a Biotype object is now returned.
+  To maintain legacy code functioning, overload was used to return the string biotype name when
+  the object is not used as such.
+  New code should explicitly call biotype->name() if the string biotype name is what is required.
+
+=cut
 
 use overload
   'fallback' => 1,

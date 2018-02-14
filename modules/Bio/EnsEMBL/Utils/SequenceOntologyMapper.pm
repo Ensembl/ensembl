@@ -43,6 +43,11 @@ print $mapper->to_name($feature), "\n";
 Basic mapper from Ensembl feature or related objects to Sequence Ontology
 (http://www.sequenceontology.org) terms.
 
+Gene and Transcript objects contain a biotype() that will return a Biotype object.
+This object contains several methods, including so_acc() that provides the
+corresponding SO accession. It is thus recommended to use the Biotype object
+if dealing with Gene or Transcript objects.
+
 The interface allows to map to SO accessions and names.
 
 =cut
