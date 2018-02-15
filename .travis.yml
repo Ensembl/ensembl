@@ -1,12 +1,16 @@
 language: perl
 
+os:
+  - linux
+
+
 perl:
   - '5.14'
   - '5.26'
 
 env:
   matrix:
-  # - COVERALLS=true  DB=mysql
+  - COVERALLS=true  DB=mysql
   - COVERALLS=false DB=mysql
   - COVERALLS=false DB=sqlite
   global:
@@ -44,12 +48,12 @@ matrix:
   exclude:
   # - perl: '5.14'
     # env: COVERALLS=false DB=mysql
-  # - perl: '5.14'
-    # env: COVERALLS=true  DB=mysql
+  - perl: '5.14'
+    env: COVERALLS=true DB=mysql
   - perl: '5.26'
     env: COVERALLS=false DB=sqlite
-  # - perl: '5.26'
-    # env: COVERALLS=true  DB=mysql
+  - perl: '5.26'
+    env: COVERALLS=false DB=mysql
 
 notifications:
   email:
