@@ -46,8 +46,8 @@ jobs:
 
 matrix:
   exclude:
-  # - perl: '5.14'
-    # env: COVERALLS=false DB=mysql
+  - perl: '5.14'
+    env: COVERALLS=false DB=mysql
   - perl: '5.14'
     env: COVERALLS=true DB=mysql
   - perl: '5.26'
