@@ -34,6 +34,5 @@ CREATE TABLE biotype (
 ) ENGINE=MyISAM DEFAULT CHARSET=latin1;
 
 # patch identifier
-INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_92_93_b.sql|biotype_table');
-
-
+INSERT INTO meta (species_id, meta_key, meta_value)
+  VALUES (NULL, 'patch', 'patch_92_93_b.sql|biotype_table');

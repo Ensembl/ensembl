@@ -310,6 +310,9 @@ INSERT INTO meta (species_id, meta_key, meta_value) VALUES
 INSERT INTO meta (species_id, meta_key, meta_value)
   VALUES (NULL, 'patch', 'patch_92_93_a.sql|schema_version');
 
+INSERT INTO meta (species_id, meta_key, meta_value)
+  VALUES (NULL, 'patch', 'patch_92_93_b.sql|biotype_table');
+
 /**
 @table meta_coord
 @desc Describes which co-ordinate systems the different feature tables use.
@@ -2108,6 +2111,39 @@ CREATE TABLE external_db (
   PRIMARY KEY (external_db_id),
   UNIQUE INDEX db_name_db_release_idx (db_name,db_release)
 ) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
+
+
+/**
+@table biotype
+@desc Stores data about the biotypes and mappings to Sequence Ontology.
+
+@column biotype_id              Primary key, internal identifier.
+@column name                    Ensembl biotype name.
+@column object_type             Ensembl object type: 'gene' or 'transcript'.
+@column db_type                 Type, e.g. 'cdna', 'core', 'coreexpressionatlas', 'coreexpressionest', 'coreexpressiongnf', 'funcgen', 'otherfeatures', 'rnaseq', 'variation', 'vega', 'presite', 'sangervega'
+@column attrib_type_id          Foreign key references to the @link attrib_type table.
+@column description             Description.
+@column biotype_group           Group, e.g. 'coding', 'pseudogene', 'snoncoding', 'lnoncoding', 'mnoncoding', 'LRG', 'undefined', 'no_group'
+@column so_acc                  Sequence Ontology accession of the biotype.
+
+
+@see attrib_type
+
+*/
+
+
+CREATE TABLE biotype (
+  biotype_id      INTEGER UNSIGNED NOT NULL AUTO_INCREMENT,
+  name            VARCHAR(64) NOT NULL,
+  object_type     ENUM('gene','transcript') NOT NULL DEFAULT 'gene',
+  db_type         set('cdna','core','coreexpressionatlas','coreexpressionest','coreexpressiongnf','funcgen','otherfeatures','rnaseq','variation','vega','presite','sangervega') NOT NULL DEFAULT 'core',
+  attrib_type_id  INTEGER DEFAULT NULL,
+  description     TEXT,
+  biotype_group   ENUM('coding','pseudogene','snoncoding','lnoncoding','mnoncoding','LRG','undefined','no_group') DEFAULT NULL,
+  so_acc          VARCHAR(64),
+  PRIMARY KEY (biotype_id),
+  UNIQUE KEY name_type_idx (name, object_type)
+) ENGINE=MyISAM DEFAULT CHARSET=latin1;
 
 
 /**
