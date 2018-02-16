@@ -44,16 +44,21 @@ my %transcript_length;
 
 sub gene_description_sources {
 
-  return ("RFAM",
+  return ("VGNC",
+          "HGNC",
+          "MGI",
+          "ZFIN_ID",
+          "Xenbase",
+          "RFAM",
+          "miRBase",
+          "EntrezGene",
+          "RefSeq_peptide",
+          "RefSeq_mRNA",
+          "Uniprot_gn",
+          "Uniprot/SWISSPROT",
           "RNAMMER",
           "TRNASCAN_SE",
-	  "miRBase",
-          "HGNC",
-          "VGNC",
-          "IMGT/GENE_DB",
-	  "Uniprot/SWISSPROT",
-	  "RefSeq_peptide",
-	  "RefSeq_mRNA");
+          "IMGT/GENE_DB");
 
 }
 
@@ -86,8 +91,8 @@ sub gene_display_xref_sources {
   my @list = qw(VGNC
                 RFAM
                 miRBase
-                Uniprot_gn
-                EntrezGene);
+                EntrezGene
+                Uniprot_gn);
 
   my %ignore;
 

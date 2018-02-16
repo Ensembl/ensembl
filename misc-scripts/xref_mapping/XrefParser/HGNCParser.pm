@@ -179,8 +179,8 @@ sub run_script {
     $source_id = $name_to_source_id->{$type};
 
     my $ccds = $array[24];
-    $ccds =~ s/"//g;
-    my @ccds_list = split(/\|/,$ccds);
+    $ccds =~ s/"//g if defined $ccds;
+    my @ccds_list = split(/\|/,$ccds) if defined $ccds;
 
     foreach my $ccds (@ccds_list) {
       $id = $ccds_to_ens{$ccds};
@@ -353,15 +353,17 @@ sub add_synonyms_for_hgnc{
   my $dbi        = $ref_arg->{dbi};
 
   if (defined $dead_name ) {     # dead name, add to synonym
-    my @array2 = split ',\s*', $dead_name ;
+    my @array2 = split '\|', $dead_name ;
     foreach my $arr (@array2){
+      $arr =~ s/"//g;
       $self->add_to_syn($name, $source_id, $arr, $species_id, $dbi);
     }
   }
 
   if (defined $alias ) {     # alias, add to synonym
-    my @array2 = split ',\s*', $alias;
+    my @array2 = split '\|', $alias;
     foreach my $arr (@array2){
+      $arr =~ s/"//g;
       $self->add_to_syn($name, $source_id, $arr, $species_id, $dbi);
     }
   }
