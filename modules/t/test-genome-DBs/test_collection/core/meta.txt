@@ -170,3 +170,4 @@
 212	\N	patch	patch_91_92_a.sql|schema_version
 213	\N	patch	patch_91_92_b.sql|add_cigar_line_align_type
 214	\N	patch	patch_92_93_a.sql|schema_version
+215	\N	patch	patch_92_93_b.sql|biotype_table
