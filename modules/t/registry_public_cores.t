@@ -22,8 +22,11 @@ use Test::Exception;
 use Bio::EnsEMBL::Registry;
 use Bio::EnsEMBL::ApiVersion;
 
-my $version = software_version()-1;
-Bio::EnsEMBL::Registry->load_registry_from_url('mysql://anonymous@ensembldb.ensembl.org:5306/'.$version);
+# [ENSCORESW-2475]. With the new branching policy, next release DBs are unavailable
+# when adding a version upgrade to the following one.
+my $version = software_version()-2;
+
+Bio::EnsEMBL::Registry->load_registry_from_url('mysql://anonymous@ensembldb.ensembl.org/'.$version);
 
 my $dbas = Bio::EnsEMBL::Registry->get_all_DBAdaptors(-GROUP=>'core');
 my $min = 10;
