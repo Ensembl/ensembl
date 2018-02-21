@@ -157,6 +157,7 @@ sub fetch_by_name_object_type {
 
   # If request biotype does not exist in the table
   # create a new biotype object containing name and object_type only
+  # this is required by genebuild in pipelines
   if (!defined $biotype) {
     $biotype = Bio::EnsEMBL::Biotype->new(
           -NAME          => $name,
