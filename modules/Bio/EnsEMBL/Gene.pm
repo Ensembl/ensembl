@@ -1516,6 +1516,9 @@ sub havana_gene {
                my $biotype = $gene->biotype('protin_coding');
   Description: Returns the Biotype object of this gene.
                When no biotype exists, defaults to 'protein_coding'.
+               When used to set to a biotype that does not exist in
+               the biotype table, a biotype object is created with
+               the provided argument as name and object_type gene.
   Returntype : Bio::EnsEMBL::Biotype
   Exceptions : none
 
