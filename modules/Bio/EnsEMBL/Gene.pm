@@ -1547,7 +1547,6 @@ sub biotype {
   }
   # if $self->adaptor is unavailable, create a new biotype object containing name and object_type only
   else {
-    warning("Could not obtain biotype adaptor. Creating new biotype object.");
     $biotype = Bio::EnsEMBL::Biotype->new(
             -NAME          => $self->{'biotype'},
             -OBJECT_TYPE   => 'gene',

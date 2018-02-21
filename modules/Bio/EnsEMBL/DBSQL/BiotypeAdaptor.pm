@@ -171,11 +171,11 @@ sub fetch_by_name_object_type {
 =head2 fetch_all_by_object_type
 
   Arg [1]    : String $object_type
-               listref of $sources
                The object_type of the biotypes to retrieve (gene or transcript).
   Example    : $biotypes = $biotype_adaptor->fetch_all_by_object_type('gene');
   Description: Retrieves an array reference of biotype objects from the database.
-  Returntype : listref of Bio::EnsEMBL::Biotype objects or empty list
+  Returntype : arrayref of Bio::EnsEMBL::Biotype objects or empty array
+  Warning    : If empty array is to be returned
   Exceptions : none
 
 =cut
@@ -186,6 +186,10 @@ sub fetch_all_by_object_type {
   my $constraint = "b.object_type = ?";
   $self->bind_param_generic_fetch($object_type, SQL_VARCHAR);
   my @biotypes = @{$self->generic_fetch($constraint)};
+
+  if ( !@biotypes ) {
+    warning("No objects retrieved. Check if object_type '$object_type' is correct.")
+  }
 
   return \@biotypes;
 }

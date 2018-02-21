@@ -3239,7 +3239,6 @@ sub biotype {
   # is there is no biotype in the transcript object, default to 'protein_coding'
   # this is legacy behaviour and should probably be revisited
   if ( ! defined $self->{'biotype'}) {
-    warning("biotype not defined. Defaulting to 'protein_coding'.");
     $self->{'biotype'} = 'protein_coding';
   }
 
@@ -3251,7 +3250,6 @@ sub biotype {
   }
   # if $self->adaptor is unavailable, create a new biotype object containing name and object_type only
   else {
-    warning("Could not obtain biotype adaptor. Creating new biotype object.");
     $biotype = Bio::EnsEMBL::Biotype->new(
             -NAME          => $self->{'biotype'},
             -OBJECT_TYPE   => 'transcript',
