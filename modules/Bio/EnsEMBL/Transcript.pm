@@ -3222,8 +3222,6 @@ sub get_Gene {
                When no biotype exists, defaults to 'protein_coding'.
   Returntype : Bio::EnsEMBL::Biotype
   Exceptions : none
-  Caller     : general
-  Status     : Stable
 
 =cut
 
