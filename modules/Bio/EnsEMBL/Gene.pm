@@ -1535,7 +1535,6 @@ sub biotype {
   # is there is no biotype in the gene object, default to 'protein_coding'
   # this is legacy behaviour and should probably be revisited
   if ( ! defined $self->{'biotype'}) {
-    warning("biotype not defined. Defaulting to 'protein_coding'.");
     $self->{'biotype'} = 'protein_coding';
   }
 
