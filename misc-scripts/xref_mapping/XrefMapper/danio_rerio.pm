@@ -84,17 +84,6 @@ JSQL
 
 }
 
-sub gene_description_sources {
-
-  return ("RFAM",
-	  "miRBase",
-          "ZFIN_ID",
-          "IMGT/GENE_DB",
-	  "Uniprot/SWISSPROT",
-	  "RefSeq_peptide",
-	  "RefSeq_mRNA");
-
-}
 
 
 1;

@@ -201,7 +201,7 @@ sub fetch_files {
     if (!@processed_files) { printf ("No files found matching $uri") ; }
 
 
-    } elsif ( $uri->scheme() eq 'http' ) {
+    } elsif ( $uri->scheme() eq 'http' || $uri->scheme eq 'https') {
       # Deal with HTTP files.
 
       my $filename = basename ($uri->path() );
