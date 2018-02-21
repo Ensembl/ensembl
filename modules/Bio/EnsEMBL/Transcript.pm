@@ -70,7 +70,7 @@ use Bio::EnsEMBL::ExonTranscript;
 use Bio::EnsEMBL::CDS;
 use Bio::EnsEMBL::TranscriptMapper;
 use Bio::EnsEMBL::SeqEdit;
-
+use Bio::EnsEMBL::Biotype;
 use Bio::EnsEMBL::Utils::Argument qw( rearrange );
 use Bio::EnsEMBL::Utils::Exception qw( deprecate warning throw );
 use Bio::EnsEMBL::Utils::Scalar qw( assert_ref );
@@ -3228,24 +3228,34 @@ sub get_Gene {
 sub biotype {
   my ( $self, $new_value) = @_;
 
-  # was a term to set given?
+  # set new biotype for the object
   if ( defined $new_value ) {
     $self->{'biotype'} = $new_value;
   }
 
-  # is there no biotype? default to 'protein_coding'
+  # is there is no biotype in the transcript object, default to 'protein_coding'
   # this is legacy behaviour and should probably be revisited
   if ( ! defined $self->{'biotype'}) {
+    warning("biotype not defined. Defaulting to 'protein_coding'.");
     $self->{'biotype'} = 'protein_coding';
   }
 
   my $biotype;
+  # retrieve biotype object from the biotype adaptor
   if( defined $self->adaptor() ) {
     my $ba = $self->adaptor()->db()->get_BiotypeAdaptor();
     $biotype = $ba->fetch_by_name_object_type( $self->{'biotype'}, 'transcript' );
   }
+  # if $self->adaptor is unavailable, create a new biotype object containing name and object_type only
+  else {
+    warning("Could not obtain biotype adaptor. Creating new biotype object.");
+    $biotype = Bio::EnsEMBL::Biotype->new(
+            -NAME          => $self->{'biotype'},
+            -OBJECT_TYPE   => 'transcript',
+    )
+  }
 
-  return ( $biotype || $self->{'biotype'} );
+  return $biotype;
 }
 
 

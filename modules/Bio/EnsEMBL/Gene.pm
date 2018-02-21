@@ -66,6 +66,7 @@ use strict;
 use POSIX;
 use Bio::EnsEMBL::Feature;
 use Bio::EnsEMBL::Intron;
+use Bio::EnsEMBL::Biotype;
 use Bio::EnsEMBL::Utils::Argument qw(rearrange);
 use Bio::EnsEMBL::Utils::Exception qw(throw warning deprecate);
 use Bio::EnsEMBL::Utils::Scalar qw(assert_ref);
@@ -132,7 +133,7 @@ sub new {
   my $self = $class->SUPER::new(@_);
   my (
     $stable_id,               $version,
-    $external_name,
+    $external_name,           $type,
     $external_db,             $external_status,
     $display_xref,            $description,
     $transcripts,             $created_date,
@@ -143,7 +144,7 @@ sub new {
     )
     = rearrange( [
       'STABLE_ID',               'VERSION',
-      'EXTERNAL_NAME',
+      'EXTERNAL_NAME',           'TYPE',
       'EXTERNAL_DB',             'EXTERNAL_STATUS',
       'DISPLAY_XREF',            'DESCRIPTION',
       'TRANSCRIPTS',             'CREATED_DATE',
@@ -170,6 +171,7 @@ sub new {
   $self->external_status($external_status)
     if ( defined $external_status );
   $self->display_xref($display_xref) if ( defined $display_xref );
+  $self->biotype($type)              if ( defined $type );
 
   # keep legacy behaviour of defaulting to 'protein_coding' biotype
   $self->{'biotype'} = $biotype;
@@ -1522,24 +1524,34 @@ sub havana_gene {
 sub biotype {
   my ( $self, $new_value) = @_;
 
-  # was a term to set given?
+  # set new biotype for the object
   if ( defined $new_value ) {
     $self->{'biotype'} = $new_value;
   }
 
-  # is there no biotype? default to 'protein_coding'
+  # is there is no biotype in the gene object, default to 'protein_coding'
   # this is legacy behaviour and should probably be revisited
   if ( ! defined $self->{'biotype'}) {
+    warning("biotype not defined. Defaulting to 'protein_coding'.");
     $self->{'biotype'} = 'protein_coding';
   }
 
   my $biotype;
+  # retrieve biotype object from the biotype adaptor
   if( defined $self->adaptor() ) {
     my $ba = $self->adaptor()->db()->get_BiotypeAdaptor();
     $biotype = $ba->fetch_by_name_object_type( $self->{'biotype'}, 'gene' );
   }
+  # if $self->adaptor is unavailable, create a new biotype object containing name and object_type only
+  else {
+    warning("Could not obtain biotype adaptor. Creating new biotype object.");
+    $biotype = Bio::EnsEMBL::Biotype->new(
+            -NAME          => $self->{'biotype'},
+            -OBJECT_TYPE   => 'gene',
+    )
+  }
 
-  return ( $biotype || $self->{'biotype'} );
+  return $biotype;
 }
 
 

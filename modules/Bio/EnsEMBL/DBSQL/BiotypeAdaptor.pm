@@ -155,6 +155,8 @@ sub fetch_by_name_object_type {
   $self->bind_param_generic_fetch($object_type, SQL_VARCHAR);
   my ($biotype) = @{$self->generic_fetch($constraint)};
 
+  # If request biotype does not exist in the table
+  # create a new biotype object containing name and object_type only
   if (!defined $biotype) {
     $biotype = Bio::EnsEMBL::Biotype->new(
           -NAME          => $name,
