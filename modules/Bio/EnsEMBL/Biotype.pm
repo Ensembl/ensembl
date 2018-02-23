@@ -101,14 +101,14 @@ use parent qw(Bio::EnsEMBL::Storable);
 =cut
 
 sub new {
-  my $caller = shift;
+  my ( $caller, @args ) = @_;
 
   my $class = ref($caller) || $caller;
 
   my $self = $class->SUPER::new();
 
   my($dbID, $name, $object_type, $biotype_group, $so_acc, $description, $db_type, $attrib_type_id) =
-    rearrange([qw(BIOTYPE_ID NAME OBJECT_TYPE BIOTYPE_GROUP SO_ACC DESCRIPTION DB_TYPE ATTRIB_TYPE_ID)], @_);
+    rearrange([qw(BIOTYPE_ID NAME OBJECT_TYPE BIOTYPE_GROUP SO_ACC DESCRIPTION DB_TYPE ATTRIB_TYPE_ID)], @args);
 
   $self->{'dbID'} = $dbID;
   $self->{'name'} = $name;
@@ -136,7 +136,10 @@ sub new_fast {
   my ( $class, $hashref ) = @_;
 
   my $self = bless $hashref, $class;
-  weaken($self->{adaptor})  if ( ! isweak($self->{adaptor}) );
+
+  if ( !isweak($self->{adaptor}) ) {
+    weaken($self->{adaptor})
+  }
 
   return $self;
 }
@@ -153,10 +156,10 @@ sub new_fast {
 =cut
 
 sub name {
-  my ( $self, $value ) = @_;
+  my ( $self, $name ) = @_;
 
-  if ( defined($value) ) {
-    $self->{'name'} = $value;
+  if ( defined($name) ) {
+    $self->{'name'} = $name;
   }
 
   return $self->{'name'};
@@ -177,10 +180,10 @@ sub name {
 =cut
 
 sub biotype_group {
-  my ( $self, $value ) = @_;
+  my ( $self, $biotype_group ) = @_;
 
-  if ( defined($value) ) {
-    $self->{'biotype_group'} = $value;
+  if ( defined($biotype_group) ) {
+    $self->{'biotype_group'} = $biotype_group;
   }
 
   return $self->{'biotype_group'};
@@ -202,8 +205,9 @@ sub so_acc {
 
   if ( defined($so_acc) ) {
     # throw an error if setting something that does not look like an SO acc
-    throw("so_acc must be a Sequence Ontology accession. '$so_acc' does not look like one.")
-      unless ( $so_acc =~ m/\ASO:\d+\z/ );
+    unless ( $so_acc =~ m/\ASO:\d+\z/x ) {
+      throw("so_acc must be a Sequence Ontology accession. '$so_acc' does not look like one.")
+    }
 
     $self->{'so_acc'} = $so_acc;
   }
@@ -224,14 +228,16 @@ sub so_acc {
 =cut
 
 sub object_type {
-  my ( $self, $value ) = @_;
+  my ( $self, $object_type ) = @_;
 
-  if ( defined($value) ) {
-    $value = lc $value;
-    throw("object_type must be gene or transcript. Got '$value'.")
-      unless ( $value eq 'gene' || $value eq 'transcript' );
+  if ( defined($object_type) ) {
+    $object_type = lc $object_type;
+    # throw an error if setting something that does not look like an SO acc
+    unless ( $object_type eq 'gene' || $object_type eq 'transcript' ) {
+      throw("object_type must be gene or transcript. Got '$object_type'.")
+    }
 
-    $self->{'object_type'} = $value;
+    $self->{'object_type'} = $object_type;
   }
 
   return $self->{'object_type'};
