@@ -65,7 +65,7 @@ use parent qw(Bio::EnsEMBL::DBSQL::BaseAdaptor);
   Arg [1]    : none
   Description: PROTECTED implementation of superclass abstract method.
                Returns the names, aliases of the tables to use for queries.
-  Returntype : list of listrefs of strings
+  Returntype : list of arrays of strings
   Exceptions : none
 
 =cut
@@ -99,7 +99,7 @@ sub _columns {
   Example    : none
   Description: PROTECTED implementation of abstract superclass method.
                responsible for the creation of ProteinFeatures
-  Returntype : listref of Bio::EnsEMBL::Biotype objects
+  Returntype : arrayref of Bio::EnsEMBL::Biotype objects
   Exceptions : none
 
 =cut
@@ -174,8 +174,8 @@ sub fetch_by_name_object_type {
                The object_type of the biotypes to retrieve (gene or transcript).
   Example    : $biotypes = $biotype_adaptor->fetch_all_by_object_type('gene');
   Description: Retrieves an array reference of biotype objects from the database.
-  Returntype : arrayref of Bio::EnsEMBL::Biotype objects or empty array
-  Warning    : If empty array is to be returned
+  Returntype : arrayref of Bio::EnsEMBL::Biotype objects or empty arrayref
+  Warning    : If empty arrayref is to be returned
   Exceptions : none
 
 =cut

@@ -52,8 +52,8 @@ is($biotype1->object_type, 'gene', 'Biotype is from Gene object');
 is($biotype1->name, 'protein_coding', 'Biotype name is protein_coding');
 is($biotype1->biotype_group, 'coding', 'Biotype group is coding');
 is($biotype1->so_acc, 'SO:0001217', 'Biotype protein_coding refers to SO:0001217');
-throws_ok { $biotype1->so_acc('test') } qr/so_acc must be a Sequence Ontology accession/,  'so_acc() requires a SO acc like string';
-throws_ok { $biotype1->object_type('test') } qr/object_type must be gene or transcript/,  'object_type() must be gene or transcript';
+throws_ok { $biotype1->so_acc('test') } qr/so_acc must be a Sequence Ontology accession/, 'so_acc() requires a SO acc like string';
+throws_ok { $biotype1->object_type('test') } qr/object_type must be gene or transcript/, 'object_type() must be gene or transcript';
 
 # test transcript biotype object
 my $transcript = $gene->canonical_transcript;
