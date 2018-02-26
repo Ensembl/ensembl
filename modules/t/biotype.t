@@ -17,14 +17,13 @@ use strict;
 use warnings;
 
 use Test::More;
-use Test::Warnings qw( allow_warnings );
+use Test::Warnings qw( warning );
 use Test::Exception;
 
 use Bio::EnsEMBL::Test::MultiTestDB;
 use Bio::EnsEMBL::Test::TestUtils;
 
 our $verbose = 0; #set to 1 to turn on debug printouts
-
 
 
 # Get a DBAdaptor to from the test system
@@ -93,5 +92,13 @@ my $biotypes = $biotype_adaptor->fetch_all_by_object_type('gene');
 is(ref $biotypes, 'ARRAY', 'Got an array');
 is(scalar @{$biotypes}, '2', 'of size 2');
 is_deeply($biotypes, [$biotype1, $biotype3], 'with the correct objects');
+my $warning = warning { $biotypes = $biotype_adaptor->fetch_all_by_object_type('none') };
+like( $warning,
+    qr/No objects retrieved. Check if object_type 'none' is correct./,
+    "Got a warning from fetch_all_by_object_type('none') ",
+) or diag 'Got warning: ', explain($warning);
+is(ref $biotypes, 'ARRAY', 'Got an array');
+is(scalar @{$biotypes}, '0', 'of size 0');
+is_deeply($biotypes, [], 'totally empty');
 
 done_testing();
