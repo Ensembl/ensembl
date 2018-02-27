@@ -524,6 +524,77 @@ SKIP: {
   $is_coding = $exon_one->is_coding($tr);
   is($is_coding, 1, "Exon is coding");
 
+  # Create a single-exon transcript that is entirely coding
+  $tr = Bio::EnsEMBL::Transcript->new(-SLICE => $local_slice, -START => 2000, -END => 2998, -STRAND => -1);
+  $start_exon = Bio::EnsEMBL::Exon->new(-START => 2000, -END => 2998, -STRAND => -1, -SLICE => $local_slice);
+  $tr->add_Exon($start_exon);
+  $tr->translation(Bio::EnsEMBL::Translation->new(
+      -SEQ_START => 1,
+      -SEQ_END => 999,
+      -START_EXON => $start_exon,
+      -END_EXON => $start_exon,
+    ));
+
+
+  $exon_one = $tr->get_all_Exons()->[0];
+
+  $is_coding = $exon_one->is_coding($tr);
+  is($is_coding, 1, "Exon exactly matching translation is coding");
+
+  # Create this transcript structure (- = noncoding, # = coding, ^ = intron)
+  # 5'------^---###^######3'
+  $tr = Bio::EnsEMBL::Transcript->new(-SLICE => $local_slice, -START => 2000, -END => 3000, -STRAND => 1);
+  my @exons = ( Bio::EnsEMBL::Exon->new(-START => 2000, -END => 2100, -STRAND => 1, -SLICE => $local_slice),
+                Bio::EnsEMBL::Exon->new(-START => 2200, -END => 2600, -STRAND => 1, -SLICE => $local_slice),
+                Bio::EnsEMBL::Exon->new(-START => 2800, -END => 3000, -STRAND => 1, -SLICE => $local_slice) );
+  foreach my $component_exon (@exons) {
+      $tr->add_Exon($component_exon);
+  }
+  $tr->translation(Bio::EnsEMBL::Translation->new(
+      -SEQ_START => 201,
+      -SEQ_END   => 201,
+      -START_EXON => $exons[1],
+      -END_EXON => $exons[2],
+    ));
+
+  $exon_one = $tr->get_all_Exons()->[0];
+  $is_coding = $exon_one->is_coding($tr);
+  is($is_coding, 0, "is_coding returns zero for noncoding exon one");
+
+  my $exon_two = $tr->get_all_Exons()->[1];
+  $is_coding = $exon_two->is_coding($tr);
+  is($is_coding, 1, "is_coding returns one for partially coding exon two");
+
+  my $exon_three = $tr->get_all_Exons()->[2];
+  $is_coding = $exon_three->is_coding($tr);
+  is($is_coding, 1, "is_coding returns one for fully coding exon three");
+
+  # Repeat the above transcript structure on the reverse strand
+  $tr = Bio::EnsEMBL::Transcript->new(-SLICE => $local_slice, -START => 2000, -END => 3000, -STRAND => -1);
+  @exons = ( Bio::EnsEMBL::Exon->new(-START => 2000, -END => 2100, -STRAND => -1, -SLICE => $local_slice),
+             Bio::EnsEMBL::Exon->new(-START => 2200, -END => 2600, -STRAND => -1, -SLICE => $local_slice),
+             Bio::EnsEMBL::Exon->new(-START => 2800, -END => 3000, -STRAND => -1, -SLICE => $local_slice) );
+  foreach my $component_exon (@exons) {
+      $tr->add_Exon($component_exon);
+  }
+  $tr->translation(Bio::EnsEMBL::Translation->new(
+      -SEQ_START => 200,
+      -SEQ_END   => 101,
+      -START_EXON => $exons[1],
+      -END_EXON => $exons[0],
+    ));
+
+  $exon_one = $tr->get_all_Exons()->[2];
+  $is_coding = $exon_one->is_coding($tr);
+  is($is_coding, 1, "is_coding returns one for fully coding reverse exon one");
+
+  $exon_two = $tr->get_all_Exons()->[1];
+  $is_coding = $exon_two->is_coding($tr);
+  is($is_coding, 1, "is_coding returns one for partially coding reverse exon two");
+
+  $exon_three = $tr->get_all_Exons()->[0];
+  $is_coding = $exon_three->is_coding($tr);
+  is($is_coding, 0, "is_coding returns zero for noncoding reverse exon three");
 }
 
 done_testing();

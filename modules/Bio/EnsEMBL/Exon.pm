@@ -1302,11 +1302,15 @@ sub is_coding {
   my ( $self, $transcript) = @_;
 
   if (!$transcript->translate) { return 0; }
-  if ($transcript->coding_region_start < $self->start && $self->start < $transcript->coding_region_end) { return 1; }
-  if ($transcript->coding_region_end > $self->end && $self->end > $transcript->coding_region_start) { return 1; }
+
+  # coding region overlaps start of exon
+  if ($transcript->coding_region_start <= $self->start && $self->start <= $transcript->coding_region_end) { return 1; }
+
+  # coding region overlaps end of exon
+  if ($transcript->coding_region_end >= $self->end && $self->end >= $transcript->coding_region_start) { return 1; }
 
   # to handle cases where transcript coding region can fall within the exon start and exon end, eg: if it is one exon transcript
-  if ($transcript->coding_region_start > $self->start &&  $transcript->coding_region_end < $self->end ) { return 1; }
+  if ($transcript->coding_region_start >= $self->start &&  $transcript->coding_region_end <= $self->end ) { return 1; }
   return 0;
 }
 
