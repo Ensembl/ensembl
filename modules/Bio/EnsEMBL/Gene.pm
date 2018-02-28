@@ -1527,14 +1527,14 @@ sub biotype {
   my ( $self, $new_value) = @_;
 
   # have a biotype object and not setting new one, return it
-  if ( defined $self->{'biotype'} && $self->{'biotype'}->isa("Bio::EnsEMBL::Biotype") && !defined $new_value ) {
+  if ( ref $self->{'biotype'} eq 'Bio::EnsEMBL::Biotype' && !defined $new_value ) {
     return $self->{'biotype'};
   }
 
   # biotype is first set as a string retrieved from the gene table
   # there is no biotype object in the gene object, retrieve it using the biotype string
   # if no string, default to protein_coding. this is legacy behaviour and should probably be revisited
-  if ( defined $self->{'biotype'} && !$self->{'biotype'}->isa("Bio::EnsEMBL::Biotype") && !defined $new_value) {
+  if ( ref $self->{'biotype'} ne 'Bio::EnsEMBL::Biotype' && !defined $new_value) {
     $new_value = $self->{'biotype'} // 'protein_coding';
   }
 
