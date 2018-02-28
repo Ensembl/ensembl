@@ -173,7 +173,6 @@ sub new {
   $self->display_xref($display_xref) if ( defined $display_xref );
   $self->biotype($type)              if ( defined $type );
 
-  # keep legacy behaviour of defaulting to 'protein_coding' biotype
   $self->{'biotype'} = $biotype;
 
   $self->description($description);
@@ -1527,32 +1526,32 @@ sub havana_gene {
 sub biotype {
   my ( $self, $new_value) = @_;
 
-  # set new biotype for the object
-  if ( defined $new_value ) {
-    $self->{'biotype'} = $new_value;
+  # have a biotype object and not setting new one, return it
+  if ( defined $self->{'biotype'} && $self->{'biotype'}->isa("Bio::EnsEMBL::Biotype") && !defined $new_value ) {
+    return $self->{'biotype'};
   }
 
-  # is there is no biotype in the gene object, default to 'protein_coding'
-  # this is legacy behaviour and should probably be revisited
-  if ( ! defined $self->{'biotype'}) {
-    $self->{'biotype'} = 'protein_coding';
+  # biotype is first set as a string retrieved from the gene table
+  # there is no biotype object in the gene object, retrieve it using the biotype string
+  # if no string, default to protein_coding. this is legacy behaviour and should probably be revisited
+  if ( defined $self->{'biotype'} && !$self->{'biotype'}->isa("Bio::EnsEMBL::Biotype") && !defined $new_value) {
+    $new_value = $self->{'biotype'} // 'protein_coding';
   }
 
-  my $biotype;
   # retrieve biotype object from the biotype adaptor
   if( defined $self->adaptor() ) {
     my $ba = $self->adaptor()->db()->get_BiotypeAdaptor();
-    $biotype = $ba->fetch_by_name_object_type( $self->{'biotype'}, 'gene' );
+    $self->{'biotype'} = $ba->fetch_by_name_object_type( $new_value, 'gene' );
   }
   # if $self->adaptor is unavailable, create a new biotype object containing name and object_type only
   else {
-    $biotype = Bio::EnsEMBL::Biotype->new(
-            -NAME          => $self->{'biotype'},
+    $self->{'biotype'} = Bio::EnsEMBL::Biotype->new(
+            -NAME          => $new_value,
             -OBJECT_TYPE   => 'gene',
     )
   }
 
-  return $biotype;
+  return $self->{'biotype'} ;
 }
 
 
