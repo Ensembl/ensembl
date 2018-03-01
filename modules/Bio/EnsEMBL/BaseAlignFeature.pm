@@ -1053,7 +1053,7 @@ sub _get_mdz_chunks {
   my $mdz_string = shift;
   my $alignment_length = 0;
   my @chunks;
-    if ( $mdz_string =~ /^MD:Z:(.*)/ ){
+    if ( $mdz_string =~ /^MD:Z:(.+)/ ){
       my $mdtag = $1;
 
       #if start to end is a number then all match return as it is

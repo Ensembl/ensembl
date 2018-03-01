@@ -93,7 +93,7 @@ sub init_db {
   return ( $giftsDB, $protfeatureDB );
 }
 
-
+#get the analysis_id for gifts_import
 sub get_analysis_id {
   my ($logic_name) = @_;
   my $analysis_id;
@@ -120,6 +120,7 @@ sub populate_protein_feature_db {
     print "Got connection to ProtfeatureDB \n";
   }
   
+  #container to hold the sql statements in batches (default: 1000)
   my $insert_container = build_insert_sql($gifts_dbh, $protfeature_dbh);
 
   my $rows_inserted = 0;
@@ -154,7 +155,7 @@ sub populate_protein_feature_db {
   
 }
 
-
+#annotate the protein feature object with translation dbID, align_type along with other info fetched from giftsdb
 sub annotate_ref{
   my $ref = shift;
   
@@ -179,6 +180,7 @@ sub annotate_ref{
   return $protein_feature;
 }
 
+#builds the multi-row insert statements in batch mode
 sub build_insert_sql {
   my ($gifts_dbh, $protfeature_dbh) = @_;
   

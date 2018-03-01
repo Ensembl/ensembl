@@ -152,8 +152,7 @@ my $transl_id = 21739;
 ok($pfa && $pfa->isa('Bio::EnsEMBL::DBSQL::ProteinFeatureAdaptor'));
 my $trl_features = $pfa->fetch_all_by_translation_id($transl_id);
 
-my $trl_feature;
-do{ $trl_feature = shift @$trl_features} until($trl_feature->analysis()->logic_name eq $test_logic_name);
+my $trl_feature = shift [grep { $_->analysis()->logic_name eq $test_logic_name } @$trl_features];
 ok($trl_feature && $trl_feature->isa('Bio::EnsEMBL::ProteinFeature'));
 ok($trl_feature->analysis()->logic_name eq $test_logic_name, 'Got the right logic name ' .$test_logic_name);
 
@@ -163,7 +162,8 @@ ok($trl_feature->align_type eq $test_align_type, 'Got the right align type ' . $
 # fetch_all_by_translation_id and logic_name
 $trl_features = $pfa->fetch_all_by_translation_id($transl_id, "gifts_import");
 
-do{ $trl_feature = shift @$trl_features} until($trl_feature->analysis()->logic_name eq $test_logic_name);
+$trl_feature = shift [grep { $_->analysis()->logic_name eq $test_logic_name } @$trl_features];
+
 ok($trl_feature && $trl_feature->isa('Bio::EnsEMBL::ProteinFeature'));
 ok($trl_feature->analysis()->logic_name eq $test_logic_name, 'Got the right logic name ' .$test_logic_name);
 
@@ -189,7 +189,6 @@ $dbid_feature = $pfa->fetch_by_dbID($test_dbID);
 ok($dbid_feature->cigar_string eq $test_cigar_string);
 ok($dbid_feature->align_type eq $test_align_type);
 ok($dbid_feature->analysis()->logic_name eq $test_logic_name);
-
 
 
 # fetch_all_by_hit_name. Test with uniprot accession

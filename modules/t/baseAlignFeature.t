@@ -17,6 +17,7 @@ use strict;
 use Test::More;
 use Test::Deep;
 use Test::Warnings qw(warning);
+use Test::Exception;
 use Bio::EnsEMBL::Test::MultiTestDB;
 use Bio::EnsEMBL::BaseAlignFeature;
 use Bio::EnsEMBL::FeaturePair;
@@ -123,6 +124,11 @@ while(my ($mdz_string, $expected_results) = each %$mdz_alignment_test){
   ok($$expected_results[2] eq $$alignment_strs[1], "Got the right query seq");
 
 }
+
+#dummy test
+
+  dies_ok { $paf->_mdz_alignment_string("dummy","MD:Z:") } '_mdz_alignment_string() dies ok with dummy sequence';
+
 
   my $chunks = $paf->_get_mdz_chunks("MD:Z:0G105");
   my $expected = ['0', 'G', '105'];
