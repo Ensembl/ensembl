@@ -152,7 +152,9 @@ my $transl_id = 21739;
 ok($pfa && $pfa->isa('Bio::EnsEMBL::DBSQL::ProteinFeatureAdaptor'));
 my $trl_features = $pfa->fetch_all_by_translation_id($transl_id);
 
-my $trl_feature = shift [grep { $_->analysis()->logic_name eq $test_logic_name } @$trl_features];
+my @trl_gift_features = grep { $_->analysis()->logic_name eq $test_logic_name } @$trl_features;
+my $trl_feature = shift @trl_gift_features;
+
 ok($trl_feature && $trl_feature->isa('Bio::EnsEMBL::ProteinFeature'));
 ok($trl_feature->analysis()->logic_name eq $test_logic_name, 'Got the right logic name ' .$test_logic_name);
 
@@ -162,7 +164,8 @@ ok($trl_feature->align_type eq $test_align_type, 'Got the right align type ' . $
 # fetch_all_by_translation_id and logic_name
 $trl_features = $pfa->fetch_all_by_translation_id($transl_id, "gifts_import");
 
-$trl_feature = shift [grep { $_->analysis()->logic_name eq $test_logic_name } @$trl_features];
+@trl_gift_features = grep { $_->analysis()->logic_name eq $test_logic_name } @$trl_features;
+$trl_feature = shift @trl_gift_features;
 
 ok($trl_feature && $trl_feature->isa('Bio::EnsEMBL::ProteinFeature'));
 ok($trl_feature->analysis()->logic_name eq $test_logic_name, 'Got the right logic name ' .$test_logic_name);
