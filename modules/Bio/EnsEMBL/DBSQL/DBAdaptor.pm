@@ -80,7 +80,7 @@ require Bio::EnsEMBL::Registry;
 
 =head2 new
 
-  Arg [-DNADB]: (optional) Bio::EnsEMBL::DBSQL::DBAdaptor DNADB
+  Arg [-DNADB]: (optional) Bio::EnsEMBL::DBSQL::DBAdaptor DNADB 
                All sequence, assembly, contig information etc, will
                be retrieved from this database instead.
 
@@ -95,7 +95,7 @@ require Bio::EnsEMBL::Registry;
                not use it or ask in the developer mailing list.
 
   Arg [-ADD_ALIASES]: (optional) boolean
-                      Used to automatically load aliases for this
+                      Used to automatically load aliases for this 
                       species into the Registry upon loading.
 
   Arg [-ADD_SPECIES_ID]: (optional) boolean
@@ -162,7 +162,7 @@ sub new {
     $self->dbc( new Bio::EnsEMBL::DBSQL::DBConnection(@args) );
   }
 
-  if ( defined($species) ) { $self->species($species); }
+  if ( defined($species) ) { $self->species($species); } 
   if ( defined($group) )   { $self->group($group) }
 
   $self = Bio::EnsEMBL::Utils::ConfigRegistry::gen_load($self);
@@ -188,10 +188,10 @@ sub new {
 =head2 clear_caches
 
   Example			: $dba->clear_caches();
-  Description	: Loops through all linked adaptors and clears their
+  Description	: Loops through all linked adaptors and clears their 
                 caches if C<clear_cache()> is implemented. Not all caches
                 are cleared & the DBAdaptor instance should be removed from
-                the registry to clear these remaining essential caches.
+                the registry to clear these remaining essential caches. 
   Returntype 	: None
   Exceptions 	: None
 
@@ -213,8 +213,8 @@ sub clear_caches {
 
   Example     : $dba->find_and_add_aliases();
   Description : When executed we delegate to the find_and_add_aliases
-                method in Bio::EnsEMBL::Registry which scans the
-                database's MetaContainer for species.alias entries
+                method in Bio::EnsEMBL::Registry which scans the 
+                database's MetaContainer for species.alias entries 
                 indicating alternative names for this species. This
                 is best executed on a core DBAdaptor instance.
   Returntype  : None
@@ -230,7 +230,7 @@ sub find_and_add_aliases {
 
 =head2 find_and_add_species_id
 
-  Description :
+  Description : 
   Returntype  : None
   Exceptions  : None
 
@@ -243,7 +243,7 @@ sub find_and_add_species_id {
 
   my $dbc = $self->dbc;
   my $sth = $dbc->prepare(sprintf "SELECT DISTINCT species_id FROM %s.meta " .
-			  "WHERE meta_key='species.alias' AND meta_value LIKE '%%s%'",
+			  "WHERE meta_key='species.alias' AND meta_value LIKE '%%s%'", 
 			  $dbc->db_handle->quote_identifier($dbc->dbname), $species);
   $sth->execute() or
     throw "Error querying for species_id: perhaps the DB doesn't have a meta table?\n" .
@@ -276,7 +276,7 @@ sub find_and_add_species_id {
 
 sub dbc{
   my $self  = shift;
-
+  
   if(@_){
     my $arg = shift;
     if(defined($arg)){
@@ -296,7 +296,7 @@ sub dbc{
   Arg [2]    : Bio::EnsEMBL::DBSQL::DBConnection
                the db adaptor to attach to this database
   Example    : $db->add_db_adaptor('lite', $lite_db_adaptor);
-  Description: Attaches another database instance to this database so
+  Description: Attaches another database instance to this database so 
                that it can be used in instances where it is required.
   Returntype : none
   Exceptions : none
@@ -329,7 +329,7 @@ sub add_db_adaptor {
   Exceptions : none
   Caller     : ?
   Status     : At Risk
-             : mey get deprecated, use remove_db instead from the Registry
+             : may get deprecated, use remove_db instead from the Registry
 
 =cut
 
@@ -343,9 +343,9 @@ sub remove_db_adaptor {
 
   Arg [1]    : none
   Example    : @attached_dbs = values %{$db->get_all_db_adaptors()};
-  Description: returns all of the attached databases as
+  Description: returns all of the attached databases as 
                a hash reference of key/value pairs where the keys are
-               database names and the values are the attached databases
+               database names and the values are the attached databases  
   Returntype : hash reference with Bio::EnsEMBL::DBSQL::DBConnection values
   Exceptions : none
   Caller     : Bio::EnsEMBL::DBSQL::ProxyAdaptor
@@ -393,7 +393,7 @@ sub get_db_adaptor {
   Caller     : Bio::EnsEMBL::Utils::ConfigRegistry
   Status     : Stable
 
-=cut
+=cut 
 
 sub get_available_adaptors {
   my $adaptors = {
@@ -460,9 +460,9 @@ sub get_available_adaptors {
 
 =head2 add_DASFeatureFactory
 
-  Arg [1]    : Bio::EnsEMBL::ExternalFeatureFactory $value
+  Arg [1]    : Bio::EnsEMBL::ExternalFeatureFactory $value 
   Example    : none
-  Description: Attaches a DAS Feature Factory to this method.
+  Description: Attaches a DAS Feature Factory to this method.  
                ExternalFeatureFactory objects are not really used right now.
                They may be reintroduced or taken out completely.  The fate
                of this function is unknown (although it is presently needed).
@@ -475,9 +475,9 @@ sub get_available_adaptors {
 =cut
 
 sub add_DASFeatureFactory{
-
+ 
  my ($self,$value) = @_;
-
+  
   push(@{$self->{'_das_ff'}},$value);
 }
 
@@ -489,7 +489,7 @@ sub remove_all_DASFeatureFactories {
 
   Args       : none
   Example    : none
-  Description: Not sure if this is used, or if it should be removed.  It
+  Description: Not sure if this is used, or if it should be removed.  It 
                does not seem to be used at the moment
   Returntype : Bio::EnsEMBL::ExternalFeatureFactory
   Exceptions : none
@@ -506,10 +506,10 @@ sub _each_DASFeatureFactory{
 }
 
 
-##################################################################
-#
-# SUPPORT FOR EXTERNAL FEATURE FACTORIES
-#
+################################################################## 
+# 
+# SUPPORT FOR EXTERNAL FEATURE FACTORIES 
+# 
 ##################################################################
 
 
@@ -523,31 +523,31 @@ sub _each_DASFeatureFactory{
                features to be obtained from Slices and from RawContigs.
 
                The external feature adaptor which is passed to this method
-               will have its db attribute set to this DBAdaptor object via
-               the db accessor method.
+               will have its db attribute set to this DBAdaptor object via 
+               the db accessor method. 
 
-               ExternalFeatureAdaptors passed to this method are stored
-               internally in a hash keyed on the string returned by the
+               ExternalFeatureAdaptors passed to this method are stored 
+               internally in a hash keyed on the string returned by the 
                ExternalFeatureAdaptors track_name method.
-
-               If the track name method is not implemented then the
+               
+               If the track name method is not implemented then the 
                a default key named 'External features' is assigned.  In the
                event of duplicate key names, a number is appended to the
                key name, and incremented for each subsequent adaptor with the
-               same track name.  For example, if no track_names are specified
+               same track name.  For example, if no track_names are specified 
                then the the external feature adaptors will be stored under the
-               keys 'External features', 'External features2'
+               keys 'External features', 'External features2' 
                'External features3' etc.
   Returntype : none
   Exceptions : none
   Caller     : general
-
+  
 =cut
 
 sub add_ExternalFeatureAdaptor {
   my ($self, $adaptor) = @_;
 
-  unless($adaptor && ref $adaptor &&
+  unless($adaptor && ref $adaptor && 
 	 $adaptor->isa('Bio::EnsEMBL::External::ExternalFeatureAdaptor')) {
      throw("[$adaptor] is not a " .
            "Bio::EnsEMBL::External::ExternalFeatureAdaptor");
@@ -584,12 +584,12 @@ sub add_ExternalFeatureAdaptor {
 =head2 get_ExternalFeatureAdaptors
 
   Arg [1]    : none
-  Example    : @xfas = values %{$db_adaptor->get_ExternalFeatureAdaptors};
+  Example    : @xfas = values %{$db_adaptor->get_ExternalFeatureAdaptors}; 
   Description: Retrieves all of the ExternalFeatureAdaptors which have been
-               added to this DBAdaptor.  The ExternalFeatureAdaptors are
+               added to this DBAdaptor.  The ExternalFeatureAdaptors are 
                returned in a reference to a hash keyed on the track names
                of the external adaptors
-  Returntype : Reference to a hash of ExternalFeatureAdaptors keyed on
+  Returntype : Reference to a hash of ExternalFeatureAdaptors keyed on 
                their track names.
   Exceptions : none
   Caller     : general
@@ -607,12 +607,12 @@ sub get_ExternalFeatureAdaptors {
 
   Arg [1]    : Bio::EnsEMBL::DB::ExternalFeatureFactoryI $value
   Example    : $db_adaptor->add_ExternalFeatureFactory
-  Description: It is recommended that add_ExternalFeatureAdaptor be used
-               instead.  See documentation for
+  Description: It is recommended that add_ExternalFeatureAdaptor be used 
+               instead.  See documentation for 
                Bio::EnsEMBL::External::ExternalFeatureAdaptor
 
                Adds an external feature factory to the core database
-               so that features from external sources can be displayed in
+               so that features from external sources can be displayed in 
                ensembl. This method is still available mainly for legacy
                support for external EnsEMBL installations.
   Returntype : none
@@ -641,8 +641,8 @@ sub add_ExternalFeatureFactory{
   Caller     : external
   Status     : Medium Risk
              : please use the Registry method, as at some time this
-             : may no longer be supprted.
-
+             : may no longer be supported.
+ 
 =cut
 
 sub get_adaptor {
@@ -666,7 +666,7 @@ sub get_adaptor {
   Status     : Medium Risk
              : please use the Registry method, as at some time this
              : may no longer be supported.
-
+ 
 =cut
 
 sub set_adaptor {
@@ -733,8 +733,8 @@ sub get_GenericFeatureAdaptors {
 
 sub add_GenericFeatureAdaptor {
   my ($self, $name, $adaptor_obj) = @_;
-
-  # check that $adaptor is an object that subclasses BaseFeatureAdaptor
+	
+  # check that $adaptor is an object that subclasses BaseFeatureAdaptor	
   if (!$adaptor_obj->isa("Bio::EnsEMBL::DBSQL::BaseFeatureAdaptor")) {
     throw("$name is a " . ref($adaptor_obj) . "which is not a " .
           "subclass of Bio::EnsEMBL::DBSQL::BaseFeatureAdaptor" );
@@ -746,11 +746,11 @@ sub add_GenericFeatureAdaptor {
 =head2 species
 
   Arg [1]    : (optional) string $arg
-               The new value of the species used by this DBAdaptor.
+               The new value of the species used by this DBAdaptor. 
   Example    : $species = $dba->species()
-  Description: Getter/Setter for the species of to use for
-               this connection.  There is currently no point in setting
-               this value after the connection has already been established
+  Description: Getter/Setter for the species of to use for 
+               this connection.  There is currently no point in setting 
+               this value after the connection has already been established 
                by the constructor.
   Returntype : string
   Exceptions : none
@@ -849,11 +849,11 @@ sub species_id {
 =head2 no_cache
 
   Arg [1]    : (optional) int $arg
-               The new value of the no cache attribute used by this DBAdaptor.
+               The new value of the no cache attribute used by this DBAdaptor. 
   Example    : $no_cache = $dba->no_cache();
-  Description: Getter/Setter for the no_cache to use for
-               this connection.  There is currently no point in setting
-               this value after the connection has already been established
+  Description: Getter/Setter for the no_cache to use for 
+               this connection.  There is currently no point in setting 
+               this value after the connection has already been established 
                by the constructor.
   Returntype : int
   Exceptions : none
@@ -878,11 +878,11 @@ sub no_cache {
 =head2 group
 
   Arg [1]    : (optional) string $arg
-               The new value of the group used by this DBAdaptor.
+               The new value of the group used by this DBAdaptor. 
   Example    : $group = $dba->group()
-  Description: Getter/Setter for the group of to use for
-               this connection.  There is currently no point in setting
-               this value after the connection has already been established
+  Description: Getter/Setter for the group of to use for 
+               this connection.  There is currently no point in setting 
+               this value after the connection has already been established 
                by the constructor.
   Returntype : string
   Exceptions : none
@@ -933,7 +933,7 @@ sub _get_schema_build{
   my ($self) = @_;
 
   #avoided using dnadb by default to avoid obfuscation of behaviour
-
+  
   my @dbname = split/_/, $self->dbc->dbname();
 
   #warn "dbname is $schema_build";
@@ -986,15 +986,15 @@ sub AUTOLOAD {
   } else {
     throw( sprintf( "Could not work out type for %s\n", $AUTOLOAD ) );
   }
-
+  
   my $ret = $REGISTRY->get_adaptor( $self->species(), $self->group(), $type );
   return $ret if $ret;
-
+  
   warning( sprintf(
     "Could not find %s adaptor in the registry for %s %s\n",
     $type, $self->species(), $self->group() ) );
 
-  throw( sprintf(
+  throw( sprintf( 
     "Could not get adaptor %s for %s %s\n",
     $type, $self->species(), $self->group() ) );
 
@@ -1006,13 +1006,13 @@ sub DESTROY { }    # required due to AUTOLOAD
 
   Example    : my $hash = $dba->to_hash();
                my $new_dba = $dba->new(%{$hash});
-  Description: Provides a hash which is compatible with the
+  Description: Provides a hash which is compatible with the 
                parameters for DBAdaptor's new() method. This can be
                useful during serialisation but be aware that Registry
   Returntype : Hash
   Exceptions : none
   Caller     : general
-  Status     : New
+  Status     : New  
 
 =cut
 
@@ -1035,7 +1035,7 @@ sub to_hash {
   Arg [1]     : String name of the adaptor type to switch out
   Arg [2]     : Reference The switchable adaptor implementation
   Arg [3]     : (optional) CodeRef Provide a subroutine reference as a callback. The
-                adaptor will be switched before your codeblock is executed and
+                adaptor will be switched before your codeblock is executed and 
                 the adaptor switched back to the original once your code has finished running
   Arg [4]     : (optional) Boolean override any existing switchable adaptor
   Example     : $dba->switch_adaptor("sequence", $my_replacement_sequence_adaptor);

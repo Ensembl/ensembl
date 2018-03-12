@@ -81,7 +81,7 @@ use parent qw(Bio::EnsEMBL::Feature);
 =head2 new
 
   Arg [-EXONS] :
-        reference to list of Bio::EnsEMBL::Exon objects - exons which make up
+        reference to list of Bio::EnsEMBL::Exon objects - exons which make up 
         this transcript
   Arg [-STABLE_ID] :
         string - the stable identifier of this transcript
@@ -102,7 +102,7 @@ use parent qw(Bio::EnsEMBL::Feature);
         string - the date the transcript was last modified
   Arg [-DESCRIPTION]:
         string - the transcripts description
-  Arg [-BIOTYPE]:
+  Arg [-BIOTYPE]: 
         string - the biotype e.g. "protein_coding"
   Arg [-IS_CURRENT]:
         Boolean - specifies if this is the current version of the transcript
@@ -409,7 +409,7 @@ sub add_DBEntry {
 =head2 get_all_supporting_features
 
   Example    : my @evidence = @{ $transcript->get_all_supporting_features };
-  Description: Retrieves any supporting features added manually by
+  Description: Retrieves any supporting features added manually by 
                calls to add_supporting_features.
   Returntype : Listref of Bio::EnsEMBL::FeaturePair objects
   Exceptions : none
@@ -427,7 +427,7 @@ sub get_all_supporting_features {
       $self->{_supporting_evidence} = $tsfa->fetch_all_by_Transcript($self);
     }
   }
-
+  
   return $self->{_supporting_evidence} || [];
 }
 
@@ -446,16 +446,16 @@ sub get_all_supporting_features {
                system as the Transcript
   Caller     : general
   Status     : Stable
-
+ 
 =cut
-
+ 
 sub add_supporting_features {
   my ($self, @features) = @_;
 
   return unless @features;
-
+ 
   $self->{_supporting_evidence} ||= [];
-
+  
   # check whether this feature object has been added already
   FEATURE: foreach my $feature (@features) {
 
@@ -466,8 +466,8 @@ sub add_supporting_features {
       print "feature = " . $feature . "\n";
       throw("Supporting feat [$feature] not a " .
             "Bio::EnsEMBL::FeaturePair");
-    }
-
+    } 
+    
     if ((defined $self->slice() && defined $feature->slice())&&
       ( $self->slice()->name() ne $feature->slice()->name())){
       throw("Supporting feat not in same coord system as transcript\n" .
@@ -482,7 +482,7 @@ sub add_supporting_features {
   next FEATURE;
       }
     }
-
+    
     #no duplicate was found, add the feature
     push(@{$self->{_supporting_evidence}}, $feature);
   }
@@ -510,8 +510,8 @@ sub flush_supporting_features {
 
   Arg [1]    : (optional) String - name of external db to set
   Example    : $transcript->external_db('HGNC');
-  Description: Getter/setter for attribute external_db. The db is the one that
-               belongs to the external_name.
+  Description: Getter/setter for attribute external_db. The db is the one that 
+               belongs to the external_name.  
   Returntype : String
   Exceptions : none
   Caller     : general
@@ -522,7 +522,7 @@ sub flush_supporting_features {
 sub external_db {
   my ( $self, $ext_dbname ) = @_;
 
-  if(defined $ext_dbname) {
+  if(defined $ext_dbname) { 
     return ( $self->{'external_db'} = $ext_dbname );
   }
 
@@ -553,7 +553,7 @@ sub external_db {
 
 =cut
 
-sub external_status {
+sub external_status { 
   my ( $self, $ext_status ) = @_;
 
   if(defined $ext_status) {
@@ -589,7 +589,7 @@ sub external_status {
 sub external_name {
   my ($self, $ext_name) = @_;
 
-  if(defined $ext_name) {
+  if(defined $ext_name) { 
     return ( $self->{'external_name'} = $ext_name );
   }
 
@@ -663,10 +663,10 @@ sub display_xref {
 
 sub is_canonical {
   my ( $self, $value ) = @_;
-
+  
   #Shortcut call
   return $self->{is_canonical} if defined $self->{is_canonical};
-
+  
   if ( defined($value) ) {
     $self->{is_canonical} = ( $value ? 1 : 0 );
   }
@@ -845,7 +845,7 @@ sub spliced_seq {
           my $forward_length = $ex->coding_region_start($self) - $ex->start();
           my $reverse_length = $ex->end() - $ex->coding_region_start($self);
           if ($ex->strand == 1) {
-            $exon_seq = lc (substr($exon_seq, 0, $forward_length)) . substr($exon_seq, $forward_length);
+            $exon_seq = lc (substr($exon_seq, 0, $forward_length)) . substr($exon_seq, $forward_length); 
           } else {
             $exon_seq = substr($exon_seq, 0, $reverse_length+1) . lc(substr($exon_seq, $reverse_length+1));
           }
@@ -1225,7 +1225,7 @@ sub get_all_SeqEdits {
   Description: Gets a list of Attributes of this transcript.
                Optionally just get Attrubutes for given code.
   Returntype : listref Bio::EnsEMBL::Attribute
-  Exceptions : warning if transcript does not have attached adaptor and
+  Exceptions : warning if transcript does not have attached adaptor and 
                attempts lazy load.
   Caller     : general
   Status     : Stable
@@ -1261,7 +1261,7 @@ sub get_all_Attributes {
                You can have more Attributes as arguments, all will be added.
   Example    : $transcript->add_Attributes($rna_edit_attribute);
   Description: Adds an Attribute to the Transcript. Usefull to do _rna_edits.
-               If you add an attribute before you retrieve any from database,
+               If you add an attribute before you retrieve any from database, 
                lazy load will be disabled.
   Returntype : none
   Exceptions : throw on incorrect arguments
@@ -1547,7 +1547,7 @@ sub get_all_constitutive_Exons {
 
   Example     : $ise->get_all_IntronSupportingEvidence();
   Description : Fetches all ISE instances linked to this Transript
-  Returntype  : ArrayRef[Bio::EnsEMBL::IntronSupportEvidence] retrieved from
+  Returntype  : ArrayRef[Bio::EnsEMBL::IntronSupportEvidence] retrieved from 
                 the DB or from those added via C<add_IntronSupportingEvidence>
   Exceptions  : None
 
@@ -1569,7 +1569,7 @@ sub get_all_IntronSupportingEvidence {
   Example     : $ise->add_IntronSupportingEvidence($ise);
   Description : Adds the IntronSupportEvidence instance to this Transcript. The
                 code checks to see if it is a unique ISE instance
-  Returntype  : Boolean; true means it was added. False means it was not
+  Returntype  : Boolean; true means it was added. False means it was not 
                 as this ISE was already attached
   Exceptions  : None
 
@@ -1597,7 +1597,7 @@ sub add_IntronSupportingEvidence {
   Arg [1]    : none
   Example    : my @introns = @{$transcript->get_all_Introns()};
   Description: Returns an listref of the introns in this transcript in order.
-               i.e. the first intron in the listref is the 5prime most exon in
+               i.e. the first intron in the listref is the 5prime most exon in 
                the transcript.
   Returntype : listref to Bio::EnsEMBL::Intron objects
   Exceptions : none
@@ -1806,7 +1806,7 @@ sub three_prime_utr {
   Description: Returns the genomic coordinates of the start and end of the
                5' UTR of this transcript. Note that if you want the sequence
                of the 5' UTR use C<five_prime_utr> as this will return the
-               sequence from the spliced transcript.
+               sequence from the spliced transcript. 
   Returntype : Bio::EnsEMBL::Feature or undef if there is no UTR
   Exceptions : none
 
@@ -1846,7 +1846,7 @@ sub five_prime_utr_Feature {
   Description: Returns the genomic coordinates of the start and end of the
                3' UTR of this transcript. Note that if you want the sequence
                of the 3' UTR use C<three_prime_utr> as this will return the
-               sequence from the spliced transcript.
+               sequence from the spliced transcript. 
   Returntype : Bio::EnsEMBL::Feature or undef if there is no UTR
   Exceptions : none
 
@@ -1988,7 +1988,7 @@ sub get_all_CDS {
         -TRANSLATION_ID  => $translation_id,
         -SLICE           => $self->slice,
         -TRANSCRIPT      => $self,
-        -PHASE           => $phase
+        -PHASE           => $phase 
     );
     push(@cds, $cds);
   }
@@ -2310,7 +2310,7 @@ sub end_Exon {
 
  Title   : description
  Usage   : $obj->description($newval)
- Function:
+ Function: 
  Returns : String
  Args    : newvalue (optional)
  Status  : Stable
@@ -2328,9 +2328,9 @@ sub description {
 
  Title   : version
  Usage   : $obj->version()
- Function:
+ Function: 
  Returns : String
- Args    :
+ Args    : 
  Status  : Stable
 
 =cut
@@ -2345,9 +2345,9 @@ sub version {
 
  Title   : stable_id
  Usage   : $obj->stable_id
- Function:
+ Function: 
  Returns : String
- Args    :
+ Args    : 
  Status  : Stable
 
 =cut
@@ -2463,7 +2463,7 @@ sub modified_date {
 
 sub swap_exons {
   my ( $self, $old_exon, $new_exon, $skip_exon_sf) = @_;
-
+  
   my $arref = $self->{'_trans_exon_array'};
   for(my $i = 0; $i < @$arref; $i++) {
     if($arref->[$i] == $old_exon ) {
@@ -2656,29 +2656,29 @@ sub transform {
     # we want to check whether the transform preserved 5prime 3prime
     # ordering. This assumes 5->3 order. No complaints on transsplicing.
 
-    my ( $last_new_start, $last_old_strand,
+    my ( $last_new_start, $last_old_strand, 
    $last_new_strand, $start_exon, $end_exon,
   $last_seq_region_name );
     my $first = 1;
     my $ignore_order = 0;
     my $order_broken = 0;
 
-    for my $old_exon ( @{$self->{'_trans_exon_array'}} ) {
+    for my $old_exon ( @{$self->{'_trans_exon_array'}} ) {      
       my $new_exon = $old_exon->transform( @_ );
       return undef if( !defined $new_exon );
       if( ! defined $new_transcript ) {
   if( !$first ) {
     if( $old_exon->strand() != $last_old_strand ) {
       # transsplicing, ignore ordering
-      $ignore_order = 1;
+      $ignore_order = 1;  
     }
 
-    if( $new_exon->slice()->seq_region_name() ne
+    if( $new_exon->slice()->seq_region_name() ne 
         $last_seq_region_name ) {
       return undef;
     }
 
-    if( $last_new_strand == 1 and
+    if( $last_new_strand == 1 and 
         $new_exon->start() < $last_new_start ) {
       $order_broken = 1;
     }
@@ -2723,7 +2723,7 @@ sub transform {
     }
 
     if( $order_broken && !$ignore_order ) {
-      warning( "Order of exons broken in transform of ".$self->dbID() );
+      warning( "Order of exons broken in transform of ".$self->dbID() ); 
       return undef;
     }
 
@@ -2755,13 +2755,13 @@ sub transform {
     my @new_features;
     for my $old_feature ( @{$self->{'_supporting_evidence'}} ) {
       my $new_feature = $old_feature->transform( @_ );
-      if (defined $new_feature) {
+      if (defined $new_feature) { 
         push @new_features, $new_feature;
       }
     }
     $new_transcript->{'_supporting_evidence'} = \@new_features;
   }
-
+  
   if(exists $self->{_ise_array}) {
     my @new_features;
     foreach my $old_feature ( @{$self->{_ise_array}} ) {
@@ -2839,7 +2839,7 @@ sub transfer {
     }
     $new_transcript->{'_supporting_evidence'} = \@new_features;
   }
-
+  
   if(exists $self->{_ise_array}) {
     my @new_features;
     foreach my $old_feature ( @{$self->{_ise_array}} ) {
@@ -3010,7 +3010,7 @@ sub get_all_DAS_Features {
 
   my $db = $self->adaptor->db;
   my $GeneAdaptor = $db->get_GeneAdaptor;
-  my $Gene = $GeneAdaptor->fetch_by_transcript_stable_id($self->stable_id);
+  my $Gene = $GeneAdaptor->fetch_by_transcript_stable_id($self->stable_id); 
   my $slice = $Gene->feature_Slice;
   return $self->SUPER::get_all_DAS_Features($slice);
 }
@@ -3198,7 +3198,7 @@ sub ccds {
 
 
 =head2 get_Gene
-
+  
   Example     : $gene = $transcript->get_Gene;
   Description : Locates the parent Gene using a transcript dbID
   Returns     : Bio::EnsEMBL::Gene
@@ -3260,3 +3260,4 @@ sub biotype {
 
 
 1;
+

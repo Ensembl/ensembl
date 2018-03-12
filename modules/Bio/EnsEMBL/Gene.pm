@@ -76,13 +76,13 @@ use parent qw(Bio::EnsEMBL::Feature);
 
 =head2 new
 
-  Arg [-START]  :
+  Arg [-START]  : 
        int - start postion of the gene
-  Arg [-END]    :
+  Arg [-END]    : 
        int - end position of the gene
-  Arg [-STRAND] :
+  Arg [-STRAND] : 
        int - 1,-1 tehe strand the gene is on
-  Arg [-SLICE]  :
+  Arg [-SLICE]  : 
        Bio::EnsEMBL::Slice - the slice the gene is on
   Arg [-STABLE_ID] :
         string - the stable identifier of this gene
@@ -171,9 +171,8 @@ sub new {
   $self->external_status($external_status)
     if ( defined $external_status );
   $self->display_xref($display_xref) if ( defined $display_xref );
-  $self->biotype($type)              if ( defined $type );
 
-  $self->{'biotype'} = $biotype;
+  $self->{'biotype'} = $biotype || $type;
 
   $self->description($description);
   $self->source($source);
@@ -250,12 +249,12 @@ sub source {
 }
 
 
-=head2 external_db
+=head2 external_db	
 
   Arg [1]    : (optional) String - name of external db to set
   Example    : $gene->external_db('HGNC');
-  Description: Getter/setter for attribute external_db. The db is the one that
-               belongs to the external_name.
+  Description: Getter/setter for attribute external_db. The db is the one that 
+               belongs to the external_name.  
   Returntype : String
   Exceptions : none
   Caller     : general
@@ -828,7 +827,7 @@ sub get_all_Introns {
   Returntype : listref [
                         Bio::EnsEMBL::Gene,
                         Bio::EnsEMBL::Compara::Homology,
-                        string $species # needed as cannot get spp from Gene
+                        string $species # needed as cannot get spp from Gene 
                        ]
   Exceptions : none
   Caller     : general
@@ -839,8 +838,8 @@ sub get_all_Introns {
 sub get_all_homologous_Genes {
   my ($self, $db_synonym) = @_;
 
-  #Look for DBAdaptors which have a group of compara; these are compara DBAs.
-  #If given a synonym
+  #Look for DBAdaptors which have a group of compara; these are compara DBAs. 
+  #If given a synonym 
   my %args = (-GROUP => 'compara');
   $args{-SPECIES} = $db_synonym if $db_synonym;
   my ($compara_dba) = @{Bio::EnsEMBL::Registry->get_all_DBAdaptors(%args)};
@@ -867,7 +866,7 @@ sub get_all_homologous_Genes {
   foreach my $homolo( @homolos ){
     foreach my $member( @{$homolo->get_all_GeneMembers} ){
       my $hstable_id = $member->stable_id;
-      next if ($hstable_id eq $query_member->stable_id); # Ignore self
+      next if ($hstable_id eq $query_member->stable_id); # Ignore self     
       my $hgene = undef;
       eval { $hgene = $member->get_Gene;} ;
       unless( $hgene ){
@@ -905,7 +904,7 @@ sub _clear_homologues {
   Example    : my $transcript = Bio::EnsEMBL::Transcript->new(...);
                $gene->add_Transcript($transcript);
   Description: Adds another Transcript to the set of alternatively
-               spliced Transcripts of this gene. If it shares exons
+               spliced Transcripts of this gene. If it shares exons 
                with another Transcript, these should be object-identical.
   Returntype : none
   Exceptions : none
@@ -947,9 +946,9 @@ sub remove_Transcript {
   Example    : my @transcripts = @{ $gene->get_all_Transcripts };
   Description: Returns the Transcripts in this gene.
   Returntype : Listref of Bio::EnsEMBL::Transcript objects
-  Warning    : This method returns the internal transcript array
+  Warning    : This method returns the internal transcript array 
                used by this object. Avoid any modification
-               of this array. We class use of shift and
+               of this array. We class use of shift and 
                reassignment of the loop variable when iterating
                this array as modification.
 
@@ -1176,8 +1175,8 @@ sub transform {
     my $hi_end = POSIX::INT_MIN;
     for my $old_transcript ( @{$self->{'_transcript_array'}} ) {
       my $new_transcript = $old_transcript->transform( @_ );
-      # this can fail if gene transform failed
-
+      # this can fail if gene transform failed  
+      
       return undef unless $new_transcript;
 
       if( ! defined $new_gene ) {
@@ -1229,7 +1228,7 @@ sub transform {
 
 sub transfer {
   my $self  = shift;
-
+  
   my $new_gene = $self->SUPER::transfer( @_ );
   return undef unless $new_gene;
 
@@ -1245,7 +1244,7 @@ sub transfer {
   if(exists $self->{attributes}) {
     $new_gene->{attributes} = [@{$self->{attributes}}];
   }
-
+  
   return $new_gene;
 }
 
@@ -1396,7 +1395,7 @@ sub get_all_DAS_Features{
                   loads the parts of the object that are usually
                   lazy-loaded.  It will also call the equivalent
                   method on all the transcripts of the gene.
-  Returns       :
+  Returns       : 
 
 =cut
 
@@ -1451,7 +1450,7 @@ sub is_reference{
   }
   else{
     $self->{'is_ref'} = $self->adaptor->is_ref($self->dbID);
-  }
+  }	
   return $self->{'is_ref'};
 }
 
@@ -1460,7 +1459,7 @@ sub is_reference{
   Example       : $gene_summary = $gene->summary_as_hash();
   Description   : Extends Feature::summary_as_hash
                   Retrieves a summary of this Gene object.
-
+	                  
   Returns       : hashref of arrays of descriptive strings
   Status        : Intended for internal use
 =cut
