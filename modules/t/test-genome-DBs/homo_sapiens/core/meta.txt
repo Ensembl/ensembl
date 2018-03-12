@@ -96,3 +96,4 @@
 163	\N	patch	patch_91_92_a.sql|schema_version
 164	\N	patch	patch_91_92_b.sql|add_cigar_line_align_type
 165	\N	patch	patch_92_93_a.sql|schema_version
+166	\N	patch	patch_92_93_b.sql|biotype_table

@@ -402,6 +402,7 @@ sub get_available_adaptors {
     AssemblyMapper                      => 'Bio::EnsEMBL::DBSQL::AssemblyMapperAdaptor',
     AssemblySlice                       => 'Bio::EnsEMBL::DBSQL::AssemblySliceAdaptor',
     Attribute                           => 'Bio::EnsEMBL::DBSQL::AttributeAdaptor',
+    Biotype                             => 'Bio::EnsEMBL::DBSQL::BiotypeAdaptor',
     CoordSystem                         => 'Bio::EnsEMBL::DBSQL::CoordSystemAdaptor',
     DataFile                            => 'Bio::EnsEMBL::DBSQL::DataFileAdaptor',
     DBEntry                             => 'Bio::EnsEMBL::DBSQL::DBEntryAdaptor',
@@ -518,7 +519,7 @@ sub _each_DASFeatureFactory{
                features to be obtained from Slices and from RawContigs.
 
                The external feature adaptor which is passed to this method
-               will have its db attribuite set to this DBAdaptor object via 
+               will have its db attribute set to this DBAdaptor object via 
                the db accessor method. 
 
                ExternalFeatureAdaptors passed to this method are stored 
@@ -636,7 +637,7 @@ sub add_ExternalFeatureFactory{
   Caller     : external
   Status     : Medium Risk
              : please use the Registry method, as at some time this
-             : may no longer be supprted.
+             : may no longer be supported.
  
 =cut
 
@@ -660,7 +661,7 @@ sub get_adaptor {
   Caller     : external
   Status     : Medium Risk
              : please use the Registry method, as at some time this
-             : may no longer be supprted.
+             : may no longer be supported.
  
 =cut
 
@@ -1068,7 +1069,7 @@ sub switch_adaptor {
 
   Arg [1]     : String name of the adaptor type to switch back in
   Example     : $dba->has_switchable_adaptor("sequence"); #explicit switching back
-  Returntype  : Boolean indicating if the given adaptor is being activly switched
+  Returntype  : Boolean indicating if the given adaptor is being actively switched
   Description : Provides a wrapper around the Registry has_switchable_adaptor() method
                 defaulting both species and group to the current DBAdaptor. This will
                 inform if the specified adaptor is being switched out

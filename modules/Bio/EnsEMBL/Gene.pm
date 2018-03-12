@@ -66,12 +66,12 @@ use strict;
 use POSIX;
 use Bio::EnsEMBL::Feature;
 use Bio::EnsEMBL::Intron;
+use Bio::EnsEMBL::Biotype;
 use Bio::EnsEMBL::Utils::Argument qw(rearrange);
 use Bio::EnsEMBL::Utils::Exception qw(throw warning);
 use Bio::EnsEMBL::Utils::Scalar qw(assert_ref);
 
-use vars qw(@ISA);
-@ISA = qw(Bio::EnsEMBL::Feature);
+use parent qw(Bio::EnsEMBL::Feature);
 
 
 =head2 new
@@ -171,8 +171,9 @@ sub new {
   $self->external_status($external_status)
     if ( defined $external_status );
   $self->display_xref($display_xref) if ( defined $display_xref );
-  $self->biotype($type)              if ( defined $type );
-  $self->biotype($biotype)           if ( defined $biotype );
+
+  $self->{'biotype'} = $biotype || $type;
+
   $self->description($description);
   $self->source($source);
 
@@ -896,27 +897,6 @@ sub _clear_homologues {
   delete $self->{homologues};
 }
 
-
-=head2 biotype
-
-  Arg [1]    : (optional) String - the biotype to set
-  Example    : $gene->biotype("protein_coding");
-  Description: Getter/setter for the attribute biotype
-  Returntype : String
-  Exceptions : none
-  Caller     : general
-  Status     : Stable
-
-=cut
-
-sub biotype {
-  my $self = shift;
-
-  $self->{'biotype'} = shift if( @_ );
-  return ( $self->{'biotype'} || "protein_coding" );
-}
-
-
 =head2 add_Transcript
 
   Arg [1]    : Bio::EnsEMBL::Transcript $trans
@@ -1521,6 +1501,50 @@ sub havana_gene {
   return $ott;
 }
 
+=head2 biotype
+
+  Arg [1]    : Arg [1] : (optional) String - the biotype to set
+  Example    : my $biotype = $gene->biotype;
+               my $biotype = $gene->biotype('protin_coding');
+  Description: Returns the Biotype object of this gene.
+               When no biotype exists, defaults to 'protein_coding'.
+               When used to set to a biotype that does not exist in
+               the biotype table, a biotype object is created with
+               the provided argument as name and object_type gene.
+  Returntype : Bio::EnsEMBL::Biotype
+  Exceptions : none
+
+=cut
+
+sub biotype {
+  my ( $self, $new_value) = @_;
+
+  # have a biotype object and not setting new one, return it
+  if ( ref $self->{'biotype'} eq 'Bio::EnsEMBL::Biotype' && !defined $new_value ) {
+    return $self->{'biotype'};
+  }
+
+  # biotype is first set as a string retrieved from the gene table
+  # there is no biotype object in the gene object, retrieve it using the biotype string
+  # if no string, default to protein_coding. this is legacy behaviour and should probably be revisited
+  if ( ref $self->{'biotype'} ne 'Bio::EnsEMBL::Biotype' && !defined $new_value) {
+    $new_value = $self->{'biotype'} // 'protein_coding';
+  }
+
+  # retrieve biotype object from the biotype adaptor
+  if( defined $self->adaptor() ) {
+    my $ba = $self->adaptor()->db()->get_BiotypeAdaptor();
+    $self->{'biotype'} = $ba->fetch_by_name_object_type( $new_value, 'gene' );
+  }
+  # if $self->adaptor is unavailable, create a new biotype object containing name and object_type only
+  else {
+    $self->{'biotype'} = Bio::EnsEMBL::Biotype->new(
+            -NAME          => $new_value,
+            -OBJECT_TYPE   => 'gene',
+    )
+  }
+
+  return $self->{'biotype'} ;
+}
 
 1;
-
