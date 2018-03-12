@@ -94,7 +94,6 @@ is($analysis_updated->logic_name(), "new_dummy", "Logic name is correct");
 is($analysis_updated->description(), "new description", "Description is correct");
 is($analysis_updated->display_label(), "new label", "Label is correct");
 is($analysis_updated->displayable(), 0, "Displayable is correct");
-is($analysis_updated->web_data(), "blahblah", "Web data is correct"); # Note this does not test the eval output, just the set value.
 
 # now try updating analysis that has no existing description
 $analysis = Bio::EnsEMBL::Analysis->new();
