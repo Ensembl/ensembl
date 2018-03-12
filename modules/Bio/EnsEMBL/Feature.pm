@@ -79,7 +79,7 @@ use warnings;
 
 use Bio::EnsEMBL::Storable;
 use Bio::EnsEMBL::Utils::Argument qw(rearrange);
-use Bio::EnsEMBL::Utils::Exception qw(throw deprecate warning);
+use Bio::EnsEMBL::Utils::Exception qw(throw warning);
 use Bio::EnsEMBL::Utils::Scalar qw(check_ref assert_ref);
 use Bio::EnsEMBL::Slice;
 use Bio::EnsEMBL::StrainSlice;
@@ -513,14 +513,6 @@ sub transform {
   my $cs_name = shift;
   my $cs_version = shift;
   my $to_slice = shift;
-
-  #
-  # For backwards compatibility check if the arguments are old style args
-  #
-  if(!$cs_name || ref($cs_name)) {
-    deprecate('Calling transform without a coord system name is deprecated.');
-    return $self->_deprecated_transform($cs_name);
-  }
 
   my $slice = $self->{'slice'};
 
@@ -1560,35 +1552,5 @@ sub flush_sub_SeqFeature {
   $self->{'_gsf_sub_array'} = [];
 }
 
-
-sub _deprecated_transform {
-  my $self = shift;
-  my $arg = shift;
-
-  if(!$arg) {
-    warning("Calling transform() with no arguments is deprecated.\n".
-          "A coordinate system name argument should be used instead.\n".
-          "You probably wanted transform('seqlevel') or transform('contig').");
-    return $self->transform('seqlevel');
-  }
-
-  if(ref($arg) eq 'Bio::EnsEMBL::Slice') {
-    if($arg->{'empty'}) {
-      warning("Calling transform with an empty slice is deprecated.\n" .
-                "A coordinate system name argument should be used instead.\n".
-                "You probably wanted transform('chromosome') or " .
-                "transform('toplevel')");
-      return $self->transform('toplevel');
-    }
-    warning("Calling transform with a slice is deprecated.\n" .
-              "Use the transfer method instead");
-    return $self->transfer($arg);
-  }
-
-  warning("Calling transform with a [".ref($arg)."] arg is no longer " .
-          "(or never was) supported.  Doing nothing instead.");
-
-  return $self;
-}
 
 1;

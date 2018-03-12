@@ -72,7 +72,7 @@ use strict;
 use Bio::EnsEMBL::Feature;
 use Bio::Seq; # exons have to have sequences...
 
-use Bio::EnsEMBL::Utils::Exception qw( warning throw deprecate );
+use Bio::EnsEMBL::Utils::Exception qw( warning throw);
 use Bio::EnsEMBL::Utils::Argument qw( rearrange );
 use Bio::EnsEMBL::Utils::Scalar qw( assert_ref );
 use Bio::EnsEMBL::DBSQL::SupportingFeatureAdaptor;
@@ -924,14 +924,6 @@ sub move {
 
 sub transform {
   my $self = shift;
-
-  # catch for old style transform calls
-  if( !@_  || ( ref $_[0] && 
-         ($_[0]->isa( "Bio::EnsEMBL::Slice" ) or $_[0]->isa( "Bio::EnsEMBL::LRGSlice" ))
-        )) {
-    deprecate('Calling transform without a coord system name is deprecated.');
-    return $self->_deprecated_transform(@_);
-  }
 
   my $new_exon = $self->SUPER::transform( @_ );
   if (not defined $new_exon or

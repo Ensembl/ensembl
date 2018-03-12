@@ -72,7 +72,7 @@ package Bio::EnsEMBL::DBSQL::GeneAdaptor;
 
 use strict;
 
-use Bio::EnsEMBL::Utils::Exception qw( deprecate throw warning );
+use Bio::EnsEMBL::Utils::Exception qw( throw warning );
 use Bio::EnsEMBL::Utils::Scalar qw( assert_ref );
 use Bio::EnsEMBL::DBSQL::SliceAdaptor;
 use Bio::EnsEMBL::DBSQL::BaseFeatureAdaptor;
@@ -1158,10 +1158,7 @@ sub is_ref {
 
   Arg [1]    : reference to list of Bio::EnsEMBL::Genes $genes
   Example    : $gene_adaptor->store_alt_alleles([$gene1, $gene2, $gene3]);
-  Description: DEPRECATED. Switch to using AltAlleleGroup and the 
-               AltAlleleGroupAdaptor which supports more complex queries
-
-               This method creates a group of alternative alleles (i.e. locus)
+  Description: This method creates a group of alternative alleles (i.e. locus)
                from a set of genes. The genes should be genes from alternate
                haplotypes which are similar. The genes must already be stored
                in this database. WARNING - now that more fine-grained support

@@ -324,13 +324,6 @@ sub frame {
 sub primary_tag{
   my ($self,$arg) = @_;
   
-  if (defined($arg)) {
-    # throw warnings about setting primary tag
-    my ($p,$f,$l) = caller;
-    $self->warn("$f:$l setting primary_tag now deprecated." .
-		"Primary tag is delegated to analysis object");
-  }
-
   unless($self->analysis) {
     return '';
   }
@@ -353,13 +346,6 @@ sub primary_tag{
 
 sub source_tag{
     my ($self,$arg) = @_;
-
-    if (defined($arg)) {
-        # throw warnings about setting primary tag
-        my ($p,$f,$l) = caller;
-        $self->warn("$f:$l setting source_tag now deprecated. " .
-		    "Source tag is delegated to analysis object");
-    }
 
     unless($self->analysis) {
       return "";

@@ -49,8 +49,6 @@ package Bio::EnsEMBL::Map::MapLocation;
 use strict;
 use vars qw(@ISA);
 
-use Bio::EnsEMBL::Utils::Exception qw(deprecate);
-
 =head2 new
 
   Arg [1]    : (optional) string $name

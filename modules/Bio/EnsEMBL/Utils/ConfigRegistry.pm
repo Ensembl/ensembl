@@ -58,7 +58,7 @@ use Bio::EnsEMBL::Utils::Argument qw(rearrange);
 use Bio::EnsEMBL::DBSQL::DBConnection;
 use Bio::EnsEMBL::DBSQL::DBAdaptor;
 
-use Bio::EnsEMBL::Utils::Exception qw(warning throw  deprecate stack_trace_dump);
+use Bio::EnsEMBL::Utils::Exception qw(warning throw);
 
 
 

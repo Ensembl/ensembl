@@ -140,7 +140,7 @@ package Bio::EnsEMBL::Mapper;
 use strict;
 use integer;
 
-use Bio::EnsEMBL::Utils::Exception qw(throw deprecate warning stack_trace_dump);
+use Bio::EnsEMBL::Utils::Exception qw(throw warning);
 use Bio::EnsEMBL::Mapper::Pair;
 use Bio::EnsEMBL::Mapper::IndelPair;
 use Bio::EnsEMBL::Mapper::Unit;

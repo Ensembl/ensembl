@@ -73,7 +73,7 @@ use Bio::EnsEMBL::Feature;
 use Bio::EnsEMBL::Transcript;
 use Bio::EnsEMBL::Translation;
 
-use Bio::EnsEMBL::Utils::Exception qw( deprecate throw warning );
+use Bio::EnsEMBL::Utils::Exception qw( throw warning );
 use Bio::EnsEMBL::Utils::Argument qw( rearrange );
 
 @ISA = qw(Bio::EnsEMBL::Transcript);

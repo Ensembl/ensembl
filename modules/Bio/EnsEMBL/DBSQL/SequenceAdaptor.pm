@@ -49,7 +49,7 @@ package Bio::EnsEMBL::DBSQL::SequenceAdaptor;
 use strict;
 use warnings;
 
-use Bio::EnsEMBL::Utils::Exception qw(throw deprecate);
+use Bio::EnsEMBL::Utils::Exception qw(throw);
 use Bio::EnsEMBL::Utils::Sequence  qw(reverse_comp);
 use Bio::EnsEMBL::Utils::Scalar qw( assert_ref );
 use DBI qw/:sql_types/;

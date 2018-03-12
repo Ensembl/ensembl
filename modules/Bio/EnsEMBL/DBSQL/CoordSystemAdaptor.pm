@@ -123,7 +123,7 @@ use strict;
 use warnings;
 
 use Bio::EnsEMBL::DBSQL::BaseAdaptor;
-use Bio::EnsEMBL::Utils::Exception qw(throw warning deprecate);
+use Bio::EnsEMBL::Utils::Exception qw(throw warning);
 use Bio::EnsEMBL::CoordSystem;
 
 use vars qw(@ISA);

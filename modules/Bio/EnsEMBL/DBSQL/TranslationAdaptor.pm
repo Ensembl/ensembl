@@ -83,7 +83,7 @@ use strict;
 
 use Bio::EnsEMBL::DBSQL::BaseAdaptor;
 use Bio::EnsEMBL::Translation;
-use Bio::EnsEMBL::Utils::Exception qw( throw warning deprecate );
+use Bio::EnsEMBL::Utils::Exception qw( throw warning );
 use Bio::EnsEMBL::Utils::Scalar qw( assert_ref );
 
 
@@ -308,8 +308,6 @@ sub fetch_by_Transcript {
   Exceptions : none
   Caller     : general
   Status     : Medium Risk
-             :   At some time may be deprecated to instead use 
-             :   TranscriptAdaptor::fetch_all_by_external_name 
 
 =cut
 
@@ -712,12 +710,6 @@ SQL
 
 sub fetch_by_dbID {
   my ( $self, $dbID, $transcript ) = @_;
-
-  if ($transcript) {
-    deprecate(   "Use of fetch_by_dbID "
-               . "with a Transcript argument is deprecated."
-               . "Use fetch_by_Transcript instead." );
-  }
 
   if ( !defined($dbID) ) {
     throw("dbID argument is required");

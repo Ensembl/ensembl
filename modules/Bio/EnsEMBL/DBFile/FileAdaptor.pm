@@ -50,7 +50,7 @@ here and BaseFeatureAdaptor.
 
 package Bio::EnsEMBL::DBFile::FileAdaptor;
 
-use Bio::EnsEMBL::Utils::Exception qw(throw warning deprecate);
+use Bio::EnsEMBL::Utils::Exception qw(throw warning);
 use strict;
 use warnings;
 

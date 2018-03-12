@@ -55,7 +55,7 @@ use strict;
 
 use Bio::EnsEMBL::DBSQL::BaseFeatureAdaptor;
 use Bio::EnsEMBL::PredictionExon;
-use Bio::EnsEMBL::Utils::Exception qw( warning throw deprecate );
+use Bio::EnsEMBL::Utils::Exception qw( warning throw );
 
 
 @ISA = qw( Bio::EnsEMBL::DBSQL::BaseFeatureAdaptor );

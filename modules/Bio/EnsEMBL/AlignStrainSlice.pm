@@ -76,7 +76,7 @@ use strict;
 use Bio::EnsEMBL::Utils::Argument qw(rearrange);
 use Bio::EnsEMBL::Mapper;
 use Bio::EnsEMBL::Mapper::RangeRegistry;
-use Bio::EnsEMBL::Utils::Exception qw(throw deprecate warning);
+use Bio::EnsEMBL::Utils::Exception qw(throw warning);
 
 =head2 new
 
