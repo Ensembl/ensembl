@@ -53,7 +53,7 @@ package Bio::EnsEMBL::DBSQL::OperonAdaptor;
 
 use strict;
 
-use Bio::EnsEMBL::Utils::Exception qw( deprecate throw warning );
+use Bio::EnsEMBL::Utils::Exception qw( throw warning );
 use Bio::EnsEMBL::Utils::Scalar qw( assert_ref );
 use Bio::EnsEMBL::DBSQL::SliceAdaptor;
 use Bio::EnsEMBL::DBSQL::BaseFeatureAdaptor;

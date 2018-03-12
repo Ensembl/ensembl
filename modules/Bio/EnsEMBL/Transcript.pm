@@ -72,7 +72,7 @@ use Bio::EnsEMBL::TranscriptMapper;
 use Bio::EnsEMBL::SeqEdit;
 
 use Bio::EnsEMBL::Utils::Argument qw( rearrange );
-use Bio::EnsEMBL::Utils::Exception qw( deprecate warning throw );
+use Bio::EnsEMBL::Utils::Exception qw(warning throw );
 use Bio::EnsEMBL::Utils::Scalar qw( assert_ref );
 
 use vars qw(@ISA);
@@ -135,13 +135,6 @@ sub new {
     $source
   );
 
-  # Catch for old style constructor calling:
-  if ( ( @_ > 0 ) && ref( $_[0] ) ) {
-    $exons = [@_];
-    deprecate( "Transcript constructor should use named arguments.\n"
-        . "Use Bio::EnsEMBL::Transcript->new(-EXONS => \@exons);\n"
-        . "instead of Bio::EnsEMBL::Transcript->new(\@exons);" );
-  } else {
     (
       $exons,            $stable_id,    $version,
       $external_name,    $external_db,  $external_status,
@@ -162,7 +155,6 @@ sub new {
       ],
       @_
       );
-  }
 
   if ($exons) {
     $self->{'_trans_exon_array'} = $exons;
@@ -2645,15 +2637,6 @@ sub equals {
 
 sub transform {
   my $self = shift;
-
-  # catch for old style transform calls
-  if( ref $_[0] eq 'HASH') {
-    deprecate("Calling transform with a hashref is deprecate.\n" .
-              'Use $trans->transfer($slice) or ' .
-              '$trans->transform("coordsysname") instead.');
-    my (undef, $new_ex) = each(%{$_[0]});
-    return $self->transfer($new_ex->slice);
-  }
 
   my $new_transcript = $self->SUPER::transform(@_);
   if ( !defined($new_transcript) ) {

@@ -88,7 +88,7 @@ use integer; #use proper arithmetic bitshifts
 
 use Bio::EnsEMBL::Mapper;
 use Bio::EnsEMBL::Mapper::RangeRegistry;
-use Bio::EnsEMBL::Utils::Exception qw(throw deprecate);
+use Bio::EnsEMBL::Utils::Exception qw(throw);
 use Scalar::Util qw(weaken);
 use Bio::EnsEMBL::Utils::Scalar qw( check_ref);
 

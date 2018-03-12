@@ -54,7 +54,6 @@ use Bio::EnsEMBL::Storable;
 use Bio::Annotation::DBLink;
 
 use Bio::EnsEMBL::Utils::Argument qw(rearrange);
-use Bio::EnsEMBL::Utils::Exception qw(deprecate);
 
 our @ISA = qw(Bio::EnsEMBL::Storable);
 

@@ -64,7 +64,7 @@ use base qw/Bio::EnsEMBL::DBSQL::BaseAdaptor/;
 
 use Bio::EnsEMBL::DataFile;
 use Bio::EnsEMBL::DBSQL::BaseAdaptor;
-use Bio::EnsEMBL::Utils::Exception qw/throw warning deprecate/;
+use Bio::EnsEMBL::Utils::Exception qw/throw/;
 use Bio::EnsEMBL::Utils::Scalar qw/:assert/;
 
 my $GLOBAL_BASE_PATH;

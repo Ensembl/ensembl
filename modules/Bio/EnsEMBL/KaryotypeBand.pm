@@ -78,7 +78,7 @@ use vars qw(@ISA);
 
 use Bio::EnsEMBL::Feature;
 use Bio::EnsEMBL::Utils::Argument qw(rearrange);
-use Bio::EnsEMBL::Utils::Exception qw(deprecate warning);
+use Bio::EnsEMBL::Utils::Exception qw(warning);
 
 @ISA = qw(Bio::EnsEMBL::Feature);
 

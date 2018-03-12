@@ -88,7 +88,7 @@ use strict;
 use warnings;
 
 use Bio::EnsEMBL::DBFile::FileAdaptor;
-use Bio::EnsEMBL::Utils::Exception qw(throw warning deprecate);
+use Bio::EnsEMBL::Utils::Exception qw(throw warning);
 use vars qw(@ISA);
 @ISA = qw(Bio::EnsEMBL::DBFile::FileAdaptor);
 

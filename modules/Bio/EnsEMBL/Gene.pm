@@ -67,7 +67,7 @@ use POSIX;
 use Bio::EnsEMBL::Feature;
 use Bio::EnsEMBL::Intron;
 use Bio::EnsEMBL::Utils::Argument qw(rearrange);
-use Bio::EnsEMBL::Utils::Exception qw(throw warning deprecate);
+use Bio::EnsEMBL::Utils::Exception qw(throw warning);
 use Bio::EnsEMBL::Utils::Scalar qw(assert_ref);
 
 use vars qw(@ISA);
@@ -1163,12 +1163,6 @@ sub modified_date {
 sub transform {
   my $self = shift;
 
-  # catch for old style transform calls
-  if( !@_  || ( ref $_[0] && ($_[0]->isa( "Bio::EnsEMBL::Slice" ) or $_[0]->isa( "Bio::EnsEMBL::LRGSlice" )) )) {
-    deprecate('Calling transform without a coord system name is deprecated.');
-    return $self->_deprecated_transform(@_);
-  }
-
   my $new_gene = $self->SUPER::transform(@_);
 
   if ( !defined($new_gene) ) {
@@ -1525,37 +1519,6 @@ sub havana_gene {
     }
   }
   return $ott;
-}
-
-
-
-
-###########################
-# DEPRECATED METHODS FOLLOW
-###########################
-
-=head2 fetch_coded_for_regulatory_factors
-
-  Arg [1]    : none
-  Example    : $gene->fetch_coded_for_regulatory_factors()
-  Description: DEPRECATED: Fetches any regulatory_factors that are coded for by
-               this gene.
-  Returntype : Listref of Bio::Ensembl::RegulatoryFactor
-  Exceptions :
-  Caller     : ?
-  Status     : At Risk
-             : under development
-
-=cut
-
-sub fetch_coded_for_regulatory_factors {
-
-  my ($self) = @_;
-
-  my $rfa = $self->adaptor->db->get_RegulatoryFactorAdaptor();
-
-  return $rfa->fetch_factors_coded_for_by_gene($self);
-
 }
 
 

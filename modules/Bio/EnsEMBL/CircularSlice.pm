@@ -73,7 +73,7 @@ use Bio::PrimarySeqI;
 
 use Bio::EnsEMBL::Utils::Argument qw(rearrange);
 use Bio::EnsEMBL::Utils::Exception
-  qw(throw deprecate warning stack_trace_dump);
+  qw(throw warning);
 use Bio::EnsEMBL::RepeatMaskedSlice;
 use Bio::EnsEMBL::Utils::Sequence qw(reverse_comp);
 use Bio::EnsEMBL::Utils::Scalar qw( assert_ref );
@@ -150,15 +150,6 @@ sub new {
       qw(SEQ COORD_SYSTEM SEQ_REGION_NAME SEQ_REGION_LENGTH
         START END STRAND ADAPTOR EMPTY) ],
     @_ );
-
-  #empty is only for backwards compatibility
-  if ($empty) {
-    deprecate(   "Creation of empty slices is no longer needed "
-               . "and is deprecated" );
-    my $self = bless( { 'empty' => 1 }, $class );
-    $self->adaptor($adaptor);
-    return $self;
-  }
 
   if ( !defined($seq_region_name) ) {
     throw('SEQ_REGION_NAME argument is required');

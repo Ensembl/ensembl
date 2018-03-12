@@ -34,7 +34,7 @@ use strict;
 
 
 use Bio::EnsEMBL::DBSQL::BaseAdaptor;
-use Bio::EnsEMBL::Utils::Exception qw(throw deprecate warning stack_trace_dump);
+use Bio::EnsEMBL::Utils::Exception qw(throw);
 use Bio::EnsEMBL::SeqRegionSynonym;
 
 @ISA = ('Bio::EnsEMBL::DBSQL::BaseAdaptor');

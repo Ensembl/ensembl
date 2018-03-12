@@ -75,7 +75,6 @@ for a MappedSlice to do, or they are too complicated.
 
 Not supported Bio::EnsEMBL::Slice methods:
 
-  All deprecated methods
   All Bio::PrimarySeqI compliance methods
   expand
   get_generic_features

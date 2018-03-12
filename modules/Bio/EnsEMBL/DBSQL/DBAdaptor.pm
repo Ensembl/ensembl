@@ -69,7 +69,7 @@ use strict;
 use Bio::EnsEMBL::DBSQL::DBConnection;
 use Bio::EnsEMBL::DBSQL::BaseFeatureAdaptor;
 use Bio::EnsEMBL::Utils::SeqRegionCache;
-use Bio::EnsEMBL::Utils::Exception qw(throw warning deprecate);
+use Bio::EnsEMBL::Utils::Exception qw(throw warning);
 use Bio::EnsEMBL::Utils::Argument qw(rearrange);
 use Bio::EnsEMBL::Utils::Scalar qw(check_ref scope_guard);
 use Bio::EnsEMBL::Utils::ConfigRegistry;
@@ -302,7 +302,6 @@ sub dbc{
   Exceptions : none
   Caller     : EnsWeb
   Status     : At Risk
-             : may get deprecated, please use add_db from the registry instead
 
 =cut
 
@@ -329,7 +328,6 @@ sub add_db_adaptor {
   Exceptions : none
   Caller     : ?
   Status     : At Risk
-             : mey get deprecated, use remove_db instead from the Registry
 
 =cut
 
@@ -350,7 +348,6 @@ sub remove_db_adaptor {
   Exceptions : none
   Caller     : Bio::EnsEMBL::DBSQL::ProxyAdaptor
   Status     : At Risk
-             : may get deprecated soon
              : please use  Bio::EnsEMBL::Registry->get_all_db_adaptors
 
 =cut
@@ -373,7 +370,6 @@ sub get_all_db_adaptors {
   Exceptions : none
   Caller     : ?
   Status     : At Risk
-             : may get deprecated soon
              : please use  Bio::EnsEMBL::Registry->get_db_adaptors
 
 =cut

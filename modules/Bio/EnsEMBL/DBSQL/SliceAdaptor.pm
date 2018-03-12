@@ -110,7 +110,7 @@ use Bio::EnsEMBL::Slice;
 use Bio::EnsEMBL::CircularSlice;
 use Bio::EnsEMBL::Mapper;
 use Bio::EnsEMBL::LRGSlice;
-use Bio::EnsEMBL::Utils::Exception qw(throw deprecate warning stack_trace_dump);
+use Bio::EnsEMBL::Utils::Exception qw(throw warning);
 use Bio::EnsEMBL::ProjectionSegment;
 use Scalar::Util qw/looks_like_number/;
 use Bio::EnsEMBL::Utils::Scalar qw/assert_integer/;

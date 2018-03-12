@@ -57,7 +57,6 @@ package Bio::EnsEMBL::IdentityXref;
 use vars qw(@ISA $AUTOLOAD);
 use strict;
 use Bio::EnsEMBL::Utils::Argument qw( rearrange );
-use Bio::EnsEMBL::Utils::Exception qw( deprecate );
 
 @ISA = qw( Bio::EnsEMBL::DBEntry );
 

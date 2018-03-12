@@ -59,7 +59,7 @@ use strict;
 
 use Bio::EnsEMBL::DBSQL::BaseAdaptor;
 use Bio::EnsEMBL::ProteinFeature;
-use Bio::EnsEMBL::Utils::Exception qw(throw deprecate warning);
+use Bio::EnsEMBL::Utils::Exception qw(throw warning);
 
 use vars qw(@ISA);
 @ISA = qw(Bio::EnsEMBL::DBSQL::BaseAdaptor);
@@ -206,11 +206,6 @@ sub store {
 
   if (!ref($feature) || !$feature->isa('Bio::EnsEMBL::ProteinFeature')) {
 	throw("ProteinFeature argument is required");
-  }
-
-  if (!$translation_id) {
-	deprecate("Calling ProteinFeatureAdaptor without a translation_id is " . "deprecated.  Pass a translation_id argument rather than " . "setting the ProteinFeature seqname to be the translation " . "id");
-	$translation_id = $feature->seqname();
   }
 
   my $db = $self->db();

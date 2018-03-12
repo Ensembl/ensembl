@@ -71,7 +71,7 @@ use strict;
 
 use Bio::EnsEMBL::Feature;
 use Bio::EnsEMBL::Exon;
-use Bio::EnsEMBL::Utils::Exception qw( warning throw deprecate );
+use Bio::EnsEMBL::Utils::Exception qw( warning throw );
 use Bio::EnsEMBL::Utils::Argument qw( rearrange );
 
 
