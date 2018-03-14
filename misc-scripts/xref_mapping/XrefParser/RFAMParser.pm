@@ -160,8 +160,8 @@ sub run_script {
     next if (!$entry);
 
     my ($accession) = $entry =~ /#=GF\sAC\s+(\w+)/ ;
-    my ($label) = $entry =~ /\n#=GF\sID\s+([^\n]+)/; 
-    my ($description) = $entry =~ /\n#=GF\sDE\s+([^\n]+)/;
+    my ($label) = $entry =~ /#=GF\sID\s+([^\n]+)/;
+    my ($description) = $entry =~ /#=GF\sDE\s+([^\n]+)/;
     if ($accession) {
       if (exists($rfam_transcript_stable_ids{$accession})){
       #add xref
