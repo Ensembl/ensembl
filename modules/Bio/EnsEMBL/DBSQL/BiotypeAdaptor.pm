@@ -202,7 +202,7 @@ sub fetch_all_by_object_type {
                The object type of the biotypes to retrieve (gene or transcript)
   Arg [3]    : (optional) String $db_type
                The db_type of the biotypes to retrieve. If not provided defaults to 'core'.
-  Example    : $biotype = $biotype_adaptor->fetch_all_by_group_object_db_type('gene', 'protein_coding');
+  Example    : $biotype = $biotype_adaptor->fetch_all_by_group_object_db_type('coding', 'gene');
   Description: Retrieves an array reference of biotype objects from the database of the provided
                biotype_group and object_type and core db_type.
   Returntype : arrayref of Bio::EnsEMBL::Biotype objects or empty arrayref
