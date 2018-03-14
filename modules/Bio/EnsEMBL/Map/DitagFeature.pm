@@ -68,7 +68,7 @@ use vars qw(@ISA);
 
 
 use Bio::EnsEMBL::Feature;
-use Bio::EnsEMBL::Utils::Exception qw( throw deprecate);
+use Bio::EnsEMBL::Utils::Exception qw( throw );
 use Bio::EnsEMBL::Utils::Argument  qw( rearrange );
 
 @ISA = qw(Bio::EnsEMBL::Feature);

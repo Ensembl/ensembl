@@ -17,6 +17,7 @@ use strict;
 use warnings;
 use Test::More;
 use Test::Warnings;
+use Test::Deep;
 use Bio::EnsEMBL::Test::MultiTestDB;
 use Bio::EnsEMBL::SubSlicedFeature;
 
@@ -56,8 +57,13 @@ foreach (@$exon_list) {
     note($_->start);
     note($_->end);
 }
+
 ok(scalar(@$exon_list) == 4, "Correct Exons for subsliced Gene");
-is($exon_list->[0]->stable_id,'ENSE00001048819', "Correct Exon returned for subsliced Gene");
+
+cmp_bag([map { $_->stable_id} @$exon_list] ,['ENSE00000661210',
+          'ENSE00001048819',
+          'ENSE00000859928',
+          'ENSE00000859927'],'Correct Exon IDs returned');
 
 $fake_gene = Bio::EnsEMBL::SubSlicedFeature->new(-feature => $gene, -start => 1, -end => 2);
 $transcript_list = $fake_gene->get_all_Transcripts;

@@ -99,8 +99,8 @@ require Exporter;
 use vars qw(@ISA @EXPORT);
 use strict;
 
-use Bio::EnsEMBL::Utils::Exception qw(throw deprecate);
-use Bio::EnsEMBL::Utils::Scalar qw(assert_ref assert_integer wrap_array);
+use Bio::EnsEMBL::Utils::Exception qw(throw);
+use Bio::EnsEMBL::Utils::Scalar qw(wrap_array);
 use DBI qw(:sql_types);
 use Data::Dumper;
 use Scalar::Util qw/looks_like_number/;
@@ -1089,27 +1089,6 @@ sub _objs_from_sth {
 #  Caller     : BaseAdaptor::_id_cache
 sub _build_id_cache {
   return;
-}
-
-sub dump_data {
-  my $self = shift;
-  my $data = shift;
-  deprecate('This method is deprecated and will be removed in e91. Please use the get_all_attributes() and add_attributes() methods of DnaDnaAlignFeature instead. In the more general case, many feature types allow attributes to be stored as well');
-  my $dumper = Data::Dumper->new([$data]);
-  $dumper->Indent(0);
-  $dumper->Terse(1);
-   my $dump = $dumper->Dump();
-# $dump =~ s/'/\\'/g; 
- # $dump =~ s/^\$VAR1 = //;
-  return $dump;
-}
-
-sub get_dumped_data {
-    my $self = shift;
-    my $data = shift;
-    deprecate('This method is deprecated and will be removed in e91. Please use the get_all_attributes() and add_attributes() methods of DnaDnaAlignFeature instead. In the more general case, many feature types allow attributes to be stored as well');
-    $data =~ s/\n|\r|\f|(\\\\)//g;
-    return eval ($data); ## no critic
 }
 
 #

@@ -70,13 +70,12 @@ use Bio::EnsEMBL::ExonTranscript;
 use Bio::EnsEMBL::CDS;
 use Bio::EnsEMBL::TranscriptMapper;
 use Bio::EnsEMBL::SeqEdit;
-
+use Bio::EnsEMBL::Biotype;
 use Bio::EnsEMBL::Utils::Argument qw( rearrange );
-use Bio::EnsEMBL::Utils::Exception qw( deprecate warning throw );
+use Bio::EnsEMBL::Utils::Exception qw(warning throw );
 use Bio::EnsEMBL::Utils::Scalar qw( assert_ref );
 
-use vars qw(@ISA);
-@ISA = qw(Bio::EnsEMBL::Feature);
+use parent qw(Bio::EnsEMBL::Feature);
 
 
 =head2 new
@@ -135,13 +134,6 @@ sub new {
     $source
   );
 
-  # Catch for old style constructor calling:
-  if ( ( @_ > 0 ) && ref( $_[0] ) ) {
-    $exons = [@_];
-    deprecate( "Transcript constructor should use named arguments.\n"
-        . "Use Bio::EnsEMBL::Transcript->new(-EXONS => \@exons);\n"
-        . "instead of Bio::EnsEMBL::Transcript->new(\@exons);" );
-  } else {
     (
       $exons,            $stable_id,    $version,
       $external_name,    $external_db,  $external_status,
@@ -162,7 +154,6 @@ sub new {
       ],
       @_
       );
-  }
 
   if ($exons) {
     $self->{'_trans_exon_array'} = $exons;
@@ -180,7 +171,9 @@ sub new {
   $self->edits_enabled(1);
 
   $self->description($description);
-  $self->biotype($biotype);
+
+  $self->{'biotype'} = $biotype;
+
   $self->source($source);
 
   # Default version
@@ -603,24 +596,6 @@ sub external_name {
   } else {
     return undef;
   }
-}
-
-
-=head2 biotype
-
-  Arg [1]    : string $biotype
-  Description: get/set for attribute biotype
-  Returntype : string
-  Exceptions : none
-  Caller     : general
-  Status     : Stable
-
-=cut
-
-sub biotype {
-   my $self = shift;
-  $self->{'biotype'} = shift if( @_ );
-  return ( $self->{'biotype'} || "protein_coding" );
 }
 
 =head2 source
@@ -2646,15 +2621,6 @@ sub equals {
 sub transform {
   my $self = shift;
 
-  # catch for old style transform calls
-  if( ref $_[0] eq 'HASH') {
-    deprecate("Calling transform with a hashref is deprecate.\n" .
-              'Use $trans->transfer($slice) or ' .
-              '$trans->transform("coordsysname") instead.');
-    my (undef, $new_ex) = each(%{$_[0]});
-    return $self->transfer($new_ex->slice);
-  }
-
   my $new_transcript = $self->SUPER::transform(@_);
   if ( !defined($new_transcript) ) {
     my @segments = @{ $self->project(@_) };
@@ -3227,6 +3193,52 @@ sub get_Gene {
   my $gene_adaptor = $self->adaptor->db->get_GeneAdaptor();
   my $parent_gene = $gene_adaptor->fetch_by_transcript_id($self->dbID);
   return $parent_gene;
+}
+
+=head2 biotype
+
+  Arg [1]    : Arg [1] : (optional) String - the biotype to set
+  Example    : my $biotype = $transcript->biotype;
+               my $biotype = $transcript->biotype('protin_coding');
+  Description: Returns the Biotype object of this transcript.
+               When no biotype exists, defaults to 'protein_coding'.
+               When used to set to a biotype that does not exist in
+               the biotype table, a biotype object is created with
+               the provided argument as name and object_type transcript.
+  Returntype : Bio::EnsEMBL::Biotype
+  Exceptions : none
+
+=cut
+
+sub biotype {
+  my ( $self, $new_value) = @_;
+
+  # have a biotype object and not setting new one, return it
+  if ( ref $self->{'biotype'} eq 'Bio::EnsEMBL::Biotype' && !defined $new_value ) {
+    return $self->{'biotype'};
+  }
+
+  # biotype is first set as a string retrieved from the transcript table
+  # there is no biotype object in the transcript object, retrieve it using the biotype string
+  # if no string, default to protein_coding. this is legacy behaviour and should probably be revisited
+  if ( ref $self->{'biotype'} ne 'Bio::EnsEMBL::Biotype' && !defined $new_value) {
+    $new_value = $self->{'biotype'} // 'protein_coding';
+  }
+
+  # retrieve biotype object from the biotype adaptor
+  if( defined $self->adaptor() ) {
+    my $ba = $self->adaptor()->db()->get_BiotypeAdaptor();
+    $self->{'biotype'} = $ba->fetch_by_name_object_type( $new_value, 'transcript' );
+  }
+  # if $self->adaptor is unavailable, create a new biotype object containing name and object_type only
+  else {
+    $self->{'biotype'} = Bio::EnsEMBL::Biotype->new(
+            -NAME          => $new_value,
+            -OBJECT_TYPE   => 'transcript',
+    )
+  }
+
+  return $self->{'biotype'} ;
 }
 
 

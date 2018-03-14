@@ -75,7 +75,7 @@ use DBI;
 
 use Bio::EnsEMBL::DBSQL::StatementHandle;
 
-use Bio::EnsEMBL::Utils::Exception qw/deprecate throw info warning/;
+use Bio::EnsEMBL::Utils::Exception qw/deprecate throw warning/;
 use Bio::EnsEMBL::Utils::Argument qw/rearrange/;
 use Bio::EnsEMBL::Utils::Scalar qw/assert_ref wrap_array/;
 use Bio::EnsEMBL::Utils::SqlHelper;
@@ -159,7 +159,7 @@ sub new {
   my $driver = $dbconn ? $dbconn->driver() : $driver_arg;
   $driver ||= 'mysql';
   if ($driver eq 'pgsql') {
-      warning("Using 'pgsql' as an alias for the 'Pg' driver is deprecated.");
+      deprecate("Using 'pgsql' as an alias for the 'Pg' driver is deprecated.");
       $driver = 'Pg';
   }
   $self->driver($driver);

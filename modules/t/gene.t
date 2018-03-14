@@ -974,6 +974,15 @@ $multi->restore;
 
 SKIP: {
   skip 'No registry support for SQLite yet', 1 if $db->dbc->driver() eq 'SQLite';
+  
+  # Time to get dirty: ENSCORESW-2595
+  # With specific compiled Perls, run under specific circumstances, disconnect_if_idle() gives rise
+  # to a seg fault. This is out of the scope of Perl, and not obviously the fault disconnect_if_idle()
+  # For the purposes of unit tests only, we can disable that behaviour by short-circuiting disconnect_if_idle()
+  # Unfortunately the problem manifests through TravisCI and the Perl they deploy, so we are forced to
+  # implement a workaround for the sake of testing harmony.
+  no warnings 'redefine';
+  local *Bio::EnsEMBL::DBSQL::DBConnection::disconnect_if_idle = sub { return 1};
 
   #test the get_species_and_object_type method from the Registry
   my $registry = 'Bio::EnsEMBL::Registry';

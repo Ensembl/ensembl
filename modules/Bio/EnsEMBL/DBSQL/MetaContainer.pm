@@ -56,7 +56,6 @@ package Bio::EnsEMBL::DBSQL::MetaContainer;
 use strict;
 use warnings;
 
-use Bio::EnsEMBL::Utils::Exception qw/deprecate/;
 use Bio::Species;
 
 

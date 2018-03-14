@@ -77,7 +77,7 @@ use Bio::EnsEMBL::Gene;
 use Bio::EnsEMBL::Exon;
 use Bio::EnsEMBL::Transcript;
 use Bio::EnsEMBL::Translation;
-use Bio::EnsEMBL::Utils::Exception qw( deprecate throw warning );
+use Bio::EnsEMBL::Utils::Exception qw( throw warning );
 use Bio::EnsEMBL::Utils::Scalar qw( assert_ref );
 
 use vars qw(@ISA);
@@ -1064,15 +1064,6 @@ sub store {
     } else {
       $new_analysis_id = $db->get_AnalysisAdaptor->store($analysis);
     }
-  } elsif ($analysis_id) {
-    # Fall back to analysis passed in (usually from gene) if analysis
-    # wasn't set explicitely for the transcript. This is deprectated
-    # though.
-    warning(   "You should explicitely attach "
-             . "an analysis object to the Transcript. "
-             . "Will fall back to Gene analysis, "
-             . "but this behaviour is deprecated." );
-    $new_analysis_id = $analysis_id;
   } else {
     throw("Need an analysis_id to store the Transcript.");
   }

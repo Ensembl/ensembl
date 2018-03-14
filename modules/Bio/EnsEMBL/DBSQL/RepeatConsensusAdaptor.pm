@@ -56,7 +56,7 @@ use strict;
 use warnings;
 use Bio::EnsEMBL::DBSQL::BaseAdaptor;
 use Bio::EnsEMBL::RepeatConsensus;
-use Bio::EnsEMBL::Utils::Exception qw(throw deprecate);
+use Bio::EnsEMBL::Utils::Exception qw(throw);
 
 use base qw(Bio::EnsEMBL::DBSQL::BaseAdaptor);
 

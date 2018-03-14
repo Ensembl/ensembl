@@ -1,12 +1,12 @@
 -- Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
 -- Copyright [2016-2018] EMBL-European Bioinformatics Institute
--- 
+--
 -- Licensed under the Apache License, Version 2.0 (the "License");
 -- you may not use this file except in compliance with the License.
 -- You may obtain a copy of the License at
--- 
+--
 --      http://www.apache.org/licenses/LICENSE-2.0
--- 
+--
 -- Unless required by applicable law or agreed to in writing, software
 -- distributed under the License is distributed on an "AS IS" BASIS,
 -- WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -301,16 +301,17 @@ CREATE TABLE IF NOT EXISTS meta (
 
 # Add schema type and schema version to the meta table.
 INSERT INTO meta (species_id, meta_key, meta_value) VALUES
-  (NULL, 'schema_type',     'core'),
-  (NULL, 'schema_version',  '92');
+  (NULL, 'schema_type', 'core'),
+  (NULL, 'schema_version', '93');
 
 # Patches included in this schema file:
 # NOTE: At start of release cycle, remove patch entries from last release.
 # NOTE: Avoid line-breaks in values.
 INSERT INTO meta (species_id, meta_key, meta_value)
-  VALUES (NULL, 'patch', 'patch_91_92_a.sql|schema_version');
+  VALUES (NULL, 'patch', 'patch_92_93_a.sql|schema_version');
+
 INSERT INTO meta (species_id, meta_key, meta_value)
-  VALUES (NULL, 'patch', 'patch_91_92_b.sql|add_cigar_line_align_type');
+  VALUES (NULL, 'patch', 'patch_92_93_b.sql|biotype_table');
 
 /**
 @table meta_coord
@@ -438,8 +439,8 @@ CREATE TABLE seq_region_attrib (
 */
 
 CREATE TABLE alt_allele (
-        alt_allele_id INT UNSIGNED AUTO_INCREMENT, 
-        alt_allele_group_id INT UNSIGNED NOT NULL, 
+        alt_allele_id INT UNSIGNED AUTO_INCREMENT,
+        alt_allele_group_id INT UNSIGNED NOT NULL,
         gene_id INT UNSIGNED NOT NULL,
 
         PRIMARY KEY (alt_allele_id),
@@ -1116,7 +1117,7 @@ CREATE TABLE translation (
 
 
 /**
-@table translation_attrib 
+@table translation_attrib
 @desc Enables storage of attributes that relate to translations.
 
 @column translation_id      Foreign key references to the @link transcript table.
@@ -1184,13 +1185,13 @@ CREATE TABLE density_feature (
 @table density_type
 @desc Describes type representing a density, or percentage
 coverage etc. in a given region.
-  
+
 @column density_type_id         Primary key, internal identifier.
 @column analysis_id             Foreign key references to the @link analysis table.
 @column block_size              Block size.
 @column region_features         The number of features per sequence region inside this density type.
 @column value_type              Value type, e.g. 'sum', 'ratio'.
-  
+
 
 @see density_feature
 
@@ -1299,7 +1300,7 @@ CREATE TABLE ditag_feature (
 @column seq_region_end                Sequence end position.
 @column seq_region_strand             Sequence region strand: 1 - forward; -1 - reverse.
 @column hit_name                      External entity name/identifier.
-@column score                         Score supporting the intron 
+@column score                         Score supporting the intron
 @column score_type                    The type of score e.g. NONE
 @column is_splice_canonical           Indicates if the splice junction can be considered canonical i.e. behaves according to accepted rules
 
@@ -2113,6 +2114,39 @@ CREATE TABLE external_db (
 
 
 /**
+@table biotype
+@desc Stores data about the biotypes and mappings to Sequence Ontology.
+
+@column biotype_id              Primary key, internal identifier.
+@column name                    Ensembl biotype name.
+@column object_type             Ensembl object type: 'gene' or 'transcript'.
+@column db_type                 Type, e.g. 'cdna', 'core', 'coreexpressionatlas', 'coreexpressionest', 'coreexpressiongnf', 'funcgen', 'otherfeatures', 'rnaseq', 'variation', 'vega', 'presite', 'sangervega'
+@column attrib_type_id          Foreign key references to the @link attrib_type table.
+@column description             Description.
+@column biotype_group           Group, e.g. 'coding', 'pseudogene', 'snoncoding', 'lnoncoding', 'mnoncoding', 'LRG', 'undefined', 'no_group'
+@column so_acc                  Sequence Ontology accession of the biotype.
+
+
+@see attrib_type
+
+*/
+
+
+CREATE TABLE biotype (
+  biotype_id      INTEGER UNSIGNED NOT NULL AUTO_INCREMENT,
+  name            VARCHAR(64) NOT NULL,
+  object_type     ENUM('gene','transcript') NOT NULL DEFAULT 'gene',
+  db_type         set('cdna','core','coreexpressionatlas','coreexpressionest','coreexpressiongnf','funcgen','otherfeatures','rnaseq','variation','vega','presite','sangervega') NOT NULL DEFAULT 'core',
+  attrib_type_id  INTEGER DEFAULT NULL,
+  description     TEXT,
+  biotype_group   ENUM('coding','pseudogene','snoncoding','lnoncoding','mnoncoding','LRG','undefined','no_group') DEFAULT NULL,
+  so_acc          VARCHAR(64),
+  PRIMARY KEY (biotype_id),
+  UNIQUE KEY name_type_idx (name, object_type)
+) ENGINE=MyISAM DEFAULT CHARSET=latin1;
+
+
+/**
 @table external_synonym
 @desc Some xref objects can be referred to by more than one name. This table relates names to xref IDs.
 
@@ -2372,7 +2406,7 @@ CREATE TABLE xref (
    info_type                  ENUM( 'NONE', 'PROJECTION', 'MISC', 'DEPENDENT',
                                     'DIRECT', 'SEQUENCE_MATCH',
                                     'INFERRED_PAIR', 'PROBE',
-                                    'UNMAPPED', 'COORDINATE_OVERLAP', 
+                                    'UNMAPPED', 'COORDINATE_OVERLAP',
                                     'CHECKSUM' ) DEFAULT 'NONE' NOT NULL,
    info_text                  VARCHAR(255) DEFAULT '' NOT NULL,
 

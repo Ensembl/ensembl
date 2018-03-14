@@ -444,21 +444,11 @@ sub _ensembl_reverse_complement {
   Exceptions : wrong parameters
   Caller     : general
   Status     : Medium Risk
-             : deprecation needs to be removed at some time
 
 =cut
 
 sub transform {
   my $self = shift;
-
-  # catch for old style transform calls
-  if( ref $_[0] eq 'HASH') {
-    deprecate("Calling transform with a hashref is deprecate.\n" .
-              'Use $feat->transfer($slice) or ' .
-              '$feat->transform("coordsysname") instead.');
-    my (undef, $new_feat) = each(%{$_[0]});
-    return $self->transfer($new_feat->slice);
-  }
 
   my $new_feature = $self->SUPER::transform(@_);
   if ( !defined($new_feature)

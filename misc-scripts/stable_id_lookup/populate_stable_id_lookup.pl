@@ -165,7 +165,7 @@ sub create_db {
   my ($writeDB) = @_;
 
   my $dbname = $writeDB->{'dbname'};
-  my $dbh = db_connect( 'test', $writeDB );
+  my $dbh = db_connect( undef, $writeDB );
   print "Creating database $dbname\n";
 
   my $host = $writeDB->{'host'};
@@ -568,7 +568,7 @@ sub db_connect {
     if ($port) {
       $dsn .= "port=$port;";
     }
-    $dsn .= "database=$dbname";
+    $dsn .= "database=$dbname" if $dbname;
 
     my $dbh = DBI->connect( $dsn, $user, $pass,
     { 'PrintError' => 1, 'RaiseError' => 1 } );

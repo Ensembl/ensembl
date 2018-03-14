@@ -61,7 +61,7 @@ use strict;
 use vars qw(@ISA);
 
 use Bio::EnsEMBL::KaryotypeBand;
-use Bio::EnsEMBL::Utils::Exception qw(throw warning deprecate);
+use Bio::EnsEMBL::Utils::Exception qw(throw warning);
 use Bio::EnsEMBL::DBSQL::BaseFeatureAdaptor;
 
 @ISA = qw(Bio::EnsEMBL::DBSQL::BaseFeatureAdaptor);

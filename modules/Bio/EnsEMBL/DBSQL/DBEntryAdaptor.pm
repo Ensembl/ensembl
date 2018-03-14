@@ -59,7 +59,7 @@ use Bio::EnsEMBL::DBEntry;
 use Bio::EnsEMBL::IdentityXref;
 use Bio::EnsEMBL::OntologyXref;
 
-use Bio::EnsEMBL::Utils::Exception qw(deprecate throw warning);
+use Bio::EnsEMBL::Utils::Exception qw(throw warning);
 
 use vars qw(@ISA);
 use strict;

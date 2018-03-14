@@ -54,7 +54,7 @@ use strict;
 
 use Bio::EnsEMBL::DBSQL::BaseAdaptor;
 use Bio::EnsEMBL::Utils::Cache;
-use Bio::EnsEMBL::Utils::Exception qw(warning throw deprecate stack_trace_dump);
+use Bio::EnsEMBL::Utils::Exception qw(warning throw);
 use Bio::EnsEMBL::Utils::Argument qw(rearrange);
 use Bio::EnsEMBL::Utils::Iterator;
 use Bio::EnsEMBL::Utils::Scalar qw/assert_ref/;
