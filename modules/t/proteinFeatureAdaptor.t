@@ -39,8 +39,6 @@ ok($pfa && ref($pfa) && $pfa->isa('Bio::EnsEMBL::DBSQL::ProteinFeatureAdaptor'))
 
 my $pfs = $pfa->fetch_all_by_translation_id(21724);
 
-print_features($pfs);
-
 ok(@$pfs == 15);
 
 sub print_features {
@@ -231,8 +229,17 @@ dies_ok { $pfa->get_seq_region_id_internal() } 'get_seq_region_id_internal() die
 
 dies_ok { $pfa->get_seq_region_id_external() } 'get_seq_region_id_external() dies ok with no features';
 
+# Test if it works for previous schema versions
+$pfa->{_schema_version} = 92;
+ok($pfa->schema_version == 92, "set schema version to 92");
+$dbid_feature = $pfa->fetch_by_dbID($test_dbID);
+ok($dbid_feature->cigar_string eq '');
+ok($dbid_feature->align_type eq '');
 
-
-
+$pfa->{_schema_version} = 93;
+ok($pfa->schema_version == 93, "set schema version to 93");
+$dbid_feature = $pfa->fetch_by_dbID($test_dbID);
+ok($dbid_feature->cigar_string eq $test_cigar_string);
+ok($dbid_feature->align_type eq $test_align_type);
 
 done_testing();

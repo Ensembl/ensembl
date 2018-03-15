@@ -149,21 +149,22 @@ sub fetch_all_by_logic_name {
 sub fetch_by_dbID {
   my ($self, $protfeat_id) = @_;
 
-  my $sth = $self->prepare("SELECT p.translation_id, p.seq_start, p.seq_end, p.analysis_id, "
-                            . "p.score, p.perc_ident, p.evalue, "
-                            . "p.hit_start, p.hit_end, p.hit_name, p.hit_description, "
-                            . "p.cigar_line, p.align_type, "
-                            . "x.description, x.display_label, i.interpro_ac "
-                            . "FROM   protein_feature p "
-                            . "LEFT JOIN interpro AS i ON p.hit_name = i.id "
+  my @select_cols = $self->_tbl_columns(1); # skip pk - protein_feature_id
+  my @select_cols_alias = map { 'pf.'.$_ } @select_cols;
+  my $select_sql = "SELECT ". (join ',', @select_cols_alias);
+
+  $select_sql .=              ", x.description, x.display_label, i.interpro_ac "
+                            . "FROM   protein_feature pf "
+                            . "LEFT JOIN interpro AS i ON pf.hit_name = i.id "
                             . "LEFT JOIN xref AS x ON x.dbprimary_acc = i.interpro_ac "
-                            . "WHERE  p.protein_feature_id = ?");
+                            . "WHERE  pf.protein_feature_id = ?";
+
+  my $sth = $self->prepare($select_sql);
 
   $sth->bind_param(1, $protfeat_id, SQL_INTEGER);
   my $res = $sth->execute();
 
-  my ($translation_id, $start, $end, $analysis_id, $score, $perc_ident, $pvalue, $hstart,
-      $hend, $hseqname, $hdesc, $cigar_line, $align_type, $idesc, $ilabel, $interpro_ac) = $sth->fetchrow_array();
+  my $pf_hash_ref = $sth->fetchrow_hashref();
 
   if($sth->rows == 0) {
     $sth->finish();
@@ -172,26 +173,31 @@ sub fetch_by_dbID {
 
   $sth->finish();
 
-  my $analysis = $self->db->get_AnalysisAdaptor->fetch_by_dbID($analysis_id);
+  my $analysis = $self->db->get_AnalysisAdaptor->fetch_by_dbID($pf_hash_ref->{analysis_id});
+
+  my( $cigar_string, $align_type);
+  $cigar_string = $pf_hash_ref->{cigar_line} if exists $pf_hash_ref->{cigar_line}; # available > e92
+  $align_type = $pf_hash_ref->{align_type} if exists $pf_hash_ref->{align_type}; # available > e92
+
 
   return
 	Bio::EnsEMBL::ProteinFeature->new(-ADAPTOR     => $self,
 									  -DBID        => $protfeat_id,
-									  -START       => $start,
-									  -END         => $end,
-									  -HSTART      => $hstart,
-									  -HEND        => $hend,
-									  -HSEQNAME    => $hseqname,
-									  -HDESCRIPTION => $hdesc,
+									  -START       => $pf_hash_ref->{seq_start},
+									  -END         => $pf_hash_ref->{seq_end},
+									  -HSTART      => $pf_hash_ref->{hit_start},
+									  -HEND        => $pf_hash_ref->{hit_end},
+									  -HSEQNAME    => $pf_hash_ref->{hit_name},
+									  -HDESCRIPTION => $pf_hash_ref->{hit_description},
 									  -ANALYSIS    => $analysis,
-									  -SCORE       => $score,
-									  -P_VALUE     => $pvalue,
-									  -PERCENT_ID  => $perc_ident,
-									  -IDESC       => $idesc,
-                                      -ILABEL      => $ilabel,
-									  -INTERPRO_AC => $interpro_ac,
-									  -TRANSLATION_ID  => $translation_id,
-									  -CIGAR_STRING => $cigar_line,
+									  -SCORE       => $pf_hash_ref->{score},
+									  -P_VALUE     => $pf_hash_ref->{evalue},
+									  -PERCENT_ID  => $pf_hash_ref->{perc_ident},
+									  -IDESC       => $pf_hash_ref->{description},
+                                      -ILABEL      => $pf_hash_ref->{display_label},
+									  -INTERPRO_AC => $pf_hash_ref->{interpro_ac},
+									  -TRANSLATION_ID  => $pf_hash_ref->{translation_id},
+									  -CIGAR_STRING => $cigar_string,
 									  -ALIGN_TYPE => $align_type
 									  );
 } ## end sub fetch_by_dbID
@@ -215,59 +221,49 @@ sub store {
   my ($self, $feature, $translation_id) = @_;
 
   if (!ref($feature) || !$feature->isa('Bio::EnsEMBL::ProteinFeature')) {
-	throw("ProteinFeature argument is required");
+    throw("ProteinFeature argument is required");
   }
 
   my $db = $self->db();
 
   if ($feature->is_stored($db)) {
-	warning("ProteinFeature " . $feature->dbID() . " is already stored in " . "this database - not storing again");
+    warning("ProteinFeature " . $feature->dbID() . " is already stored in " . "this database - not storing again");
   }
 
   my $analysis = $feature->analysis();
   if (!defined($analysis)) {
-	throw("Feature doesn't have analysis. Can't write to database");
+    throw("Feature doesn't have analysis. Can't write to database");
   }
   if (!$analysis->is_stored($db)) {
-	$db->get_AnalysisAdaptor->store($analysis);
+    $db->get_AnalysisAdaptor->store($analysis);
   }
 
   my $insert_ignore = $self->insert_ignore_clause();
+  my @insert_cols = $self->_tbl_columns(1);  # skip pk - protein_feature_id
 
-  my $sth = $self->prepare("
-    ${insert_ignore} INTO protein_feature
-                ( translation_id,
-                  seq_start,
-                  seq_end,
-                  analysis_id,
-                  hit_start,
-                  hit_end,
-                  hit_name,
-                  hit_description,
-                  score,
-                  perc_ident,
-                  evalue,
-                  external_data,
-                  cigar_line,
-                  align_type     )
-         VALUES ( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ? )
-  ");
+  my @insert_values = map { '?' } @insert_cols;
+  my $insert_stmt = "${insert_ignore} INTO protein_feature (". (join ',', @insert_cols) .  ') VALUES (' . (join ',',  @insert_values) . ')';
 
+  my $sth = $self->prepare($insert_stmt);
 
-  $sth->bind_param(1,  $translation_id,        SQL_INTEGER);
-  $sth->bind_param(2,  $feature->start,        SQL_INTEGER);
-  $sth->bind_param(3,  $feature->end,          SQL_INTEGER);
-  $sth->bind_param(4,  $analysis->dbID,        SQL_INTEGER);
-  $sth->bind_param(5,  $feature->hstart,       SQL_INTEGER);
-  $sth->bind_param(6,  $feature->hend,         SQL_INTEGER);
-  $sth->bind_param(7,  $feature->hseqname,     SQL_VARCHAR);
-  $sth->bind_param(8,  $feature->hdescription, SQL_LONGVARCHAR);
-  $sth->bind_param(9,  $feature->score,        SQL_DOUBLE);
-  $sth->bind_param(10, $feature->percent_id,   SQL_FLOAT);
-  $sth->bind_param(11, $feature->p_value,      SQL_DOUBLE);
-  $sth->bind_param(12, $feature->external_data,      SQL_VARCHAR);
-  $sth->bind_param(13, $feature->cigar_string,      SQL_VARCHAR);
-  $sth->bind_param(14, $feature->align_type,      SQL_VARCHAR);
+  my $i = 0;
+  $sth->bind_param(++$i, $translation_id,        SQL_INTEGER);
+  $sth->bind_param(++$i, $feature->start,        SQL_INTEGER);
+  $sth->bind_param(++$i, $feature->end,          SQL_INTEGER);
+  $sth->bind_param(++$i, $feature->hstart,       SQL_INTEGER);
+  $sth->bind_param(++$i, $feature->hend,         SQL_INTEGER);
+  $sth->bind_param(++$i, $feature->hseqname,     SQL_VARCHAR);
+  $sth->bind_param(++$i, $analysis->dbID,        SQL_INTEGER);
+  $sth->bind_param(++$i, $feature->score,        SQL_DOUBLE);
+  $sth->bind_param(++$i, $feature->p_value,      SQL_DOUBLE);
+  $sth->bind_param(++$i, $feature->percent_id,   SQL_FLOAT);
+  $sth->bind_param(++$i, $feature->external_data,      SQL_VARCHAR);
+  $sth->bind_param(++$i, $feature->hdescription, SQL_LONGVARCHAR);
+
+  if ($self->schema_version > 92) {
+    $sth->bind_param(++$i, $feature->cigar_string,      SQL_VARCHAR);
+    $sth->bind_param(++$i, $feature->align_type,      SQL_VARCHAR);
+  }
 
   $sth->execute();
 
@@ -287,25 +283,50 @@ sub store {
 
 sub _tables {
   my $self = shift;
-  my ( $package, $filename, $line ) = caller;
 
-  return (['protein_feature', 'pf'], ['interpro', 'ip'], ['xref', 'x'], ['translation', 'tl']);
+  return (['protein_feature', 'pf'], ['interpro', 'ip'], ['xref', 'x']);
 }
 
 sub _left_join {
-  return (['interpro', "pf.hit_name = ip.id"], ['xref', "x.dbprimary_acc = ip.interpro_ac"], ['translation', "tl.translation_id = pf.translation_id"]);
+  return (['interpro', "pf.hit_name = ip.id"], ['xref', "x.dbprimary_acc = ip.interpro_ac"]);
 }
 
+# return columns from protein_feature table
+sub _tbl_columns {
+  my ($self, $skip_pk) = @_;
+  $skip_pk = defined $skip_pk ? $skip_pk : 0;
+
+  my @columns = qw(
+                  protein_feature_id
+                  translation_id
+                  seq_start
+                  seq_end
+                  hit_start
+                  hit_end
+                  hit_name
+                  analysis_id
+                  score
+                  evalue
+                  perc_ident
+                  external_data
+                  hit_description
+  );
+
+  $self->schema_version > 92 and push @columns, ('cigar_line', 'align_type');
+  shift @columns if $skip_pk;
+  return @columns;
+}
+
+# return columns from joined tables (xref and interpro) prefixed with alias
 sub _columns {
   my $self = shift;
 
-  return qw( pf.protein_feature_id
-             pf.translation_id pf.seq_start pf.seq_end
-             pf.hit_start pf.hit_end pf.hit_name pf.hit_description
-             pf.analysis_id pf.score pf.evalue pf.perc_ident
-             pf.cigar_line pf.align_type
-             x.description x.display_label ip.interpro_ac
-             tl.seq_start tl.seq_end);
+  my @columns = map{ "pf.".$_} $self->_tbl_columns();
+
+  push @columns, qw(x.description x.display_label ip.interpro_ac);
+
+  return @columns
+
 }
 
 
@@ -322,21 +343,37 @@ sub _objs_from_sth {
   my ($self, $sth) = @_;
 
   my($dbID, $translation_id, $start, $end,
-     $hstart, $hend, $hid, $hdesc,
-     $analysis_id, $score, $evalue, $perc_id,
+     $hstart, $hend, $hid, $analysis_id,
+     $score, $evalue, $perc_id, $external_data,$hdesc,
      $cigar_line, $align_type,
-     $desc, $ilabel, $interpro_ac,
-     $seq_start, $seq_end);
+     $desc, $ilabel, $interpro_ac);
 
-  $sth->bind_columns(\$dbID, \$translation_id, \$start, \$end, 
-                     \$hstart, \$hend, \$hid, \$hdesc,
-                     \$analysis_id, \$score, \$evalue, \$perc_id,
-                     \$cigar_line, \$align_type,
-                     \$desc, \$ilabel, \$interpro_ac,
-                     \$seq_start, \$seq_end);
+  my $i = 0;
+  $sth->bind_col(++$i, \$dbID);
+  $sth->bind_col(++$i, \$translation_id);
+  $sth->bind_col(++$i, \$start);
+  $sth->bind_col(++$i, \$end);
+  $sth->bind_col(++$i, \$hstart);
+  $sth->bind_col(++$i, \$hend);
+  $sth->bind_col(++$i, \$hid);
+  $sth->bind_col(++$i, \$analysis_id);
+  $sth->bind_col(++$i, \$score);
+  $sth->bind_col(++$i, \$evalue);
+  $sth->bind_col(++$i, \$perc_id);
+  $sth->bind_col(++$i, \$external_data);
+  $sth->bind_col(++$i, \$hdesc);
+
+
+  if ($self->schema_version > 92) {
+    $sth->bind_col(++$i, \$cigar_line);
+    $sth->bind_col(++$i, \$align_type);
+  }
+
+  $sth->bind_col(++$i, \$desc);
+  $sth->bind_col(++$i, \$ilabel);
+  $sth->bind_col(++$i, \$interpro_ac);
 
   my $analysis_adaptor = $self->db->get_AnalysisAdaptor();
-  my $translation_adaptor = $self->db->get_TranslationAdaptor();
 
   my @features;
   while($sth->fetch()) {
