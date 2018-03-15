@@ -1099,7 +1099,7 @@ sub _get_mdz_alignment_length{
   my $chunks = shift;
   my $length = 0;
    for(my $i=0; $i< scalar(@$chunks); $i++){
-     my $chunk = $$chunks[$i];
+     my $chunk = $chunks->[$i];
      my $type = $self->_get_mdz_chunk_type($chunk);
 
     if($type eq 'num'){
@@ -1169,7 +1169,7 @@ sub _mdz_alignment_string {
   my $query_seq = "";
 
    #Handle first chunk, which is always a num
-   my $first_chunk = $$chunks[0];
+   my $first_chunk = $chunks->[0];
    my $first_chunk_type = $self->_get_mdz_chunk_type($first_chunk);
 
    my $offset = 0;
@@ -1187,13 +1187,13 @@ sub _mdz_alignment_string {
 
   for(my $i=1; $i < scalar(@$chunks); $i++){
 
-    my $chunk = $$chunks[$i];
+    my $chunk = $chunks->[$i];
     my $chunk_type = $self->_get_mdz_chunk_type($chunk);
 
     if($chunk_type eq 'num'){
       #if 0, what follows next is a INSERT
       if($chunk == 0){
-        my $insert_chunk = $$chunks[++$i];
+        my $insert_chunk = $chunks->[++$i];
         my $insert_chunk_type = $self->_get_mdz_chunk_type($insert_chunk);
 
         #insert_chunk_type is always alpha
@@ -1209,7 +1209,7 @@ sub _mdz_alignment_string {
 
       }else{
        #if non-0, then it is a match
-        my $match_chunk = $$chunks[$i];
+        my $match_chunk = $chunks->[$i];
         my $match_chunk_type = $self->_get_mdz_chunk_type($match_chunk);
 
          #$match_chunk_type is always num
@@ -1235,7 +1235,7 @@ sub _mdz_alignment_string {
 
     }elsif($chunk_type eq 'del'){
       #get next chunk which contains the deleted sequence
-      my $del_chunk = $$chunks[++$i];
+      my $del_chunk = $chunks->[++$i];
       my $del_chunk_type = $self->_get_mdz_chunk_type($del_chunk);
 
       #del_chunk_type is always alpha

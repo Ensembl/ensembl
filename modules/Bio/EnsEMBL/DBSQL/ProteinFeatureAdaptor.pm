@@ -62,8 +62,7 @@ use Bio::EnsEMBL::ProteinFeature;
 use Bio::EnsEMBL::DBSQL::BaseAlignFeatureAdaptor;
 use Bio::EnsEMBL::Utils::Exception qw(throw deprecate warning);
 
-use vars qw(@ISA);
-@ISA = qw(Bio::EnsEMBL::DBSQL::BaseAlignFeatureAdaptor);
+use parent qw(Bio::EnsEMBL::DBSQL::BaseAlignFeatureAdaptor);
 
 =head2 fetch_all_by_translation_id
 

@@ -59,8 +59,7 @@ use Bio::EnsEMBL::FeaturePair;
 use Bio::EnsEMBL::BaseAlignFeature;
 use Bio::EnsEMBL::Utils::Argument qw(rearrange);
 
-use vars qw(@ISA);
-@ISA = qw(Bio::EnsEMBL::BaseAlignFeature);
+use parent qw(Bio::EnsEMBL::BaseAlignFeature);
 
 =head2 new
 
@@ -85,19 +84,19 @@ use vars qw(@ISA);
 
 
 sub new {
-  my $proto = shift;
+  my ($proto, @args) = @_;
 
   my $class = ref($proto) || $proto;
 
   my $self;
-  my ($idesc, $ilabel, $interpro_ac, $translation_id, $external_data, $hit_description, $cigar_string, $align_type, $slice) = rearrange(['IDESC', 'ILABEL', 'INTERPRO_AC', 'TRANSLATION_ID', 'EXTERNAL_DATA', 'HDESCRIPTION', 'CIGAR_STRING', 'ALIGN_TYPE', 'SLICE'], @_);
+  my ($idesc, $ilabel, $interpro_ac, $translation_id, $external_data, $hit_description, $cigar_string, $align_type, $slice) = rearrange(['IDESC', 'ILABEL', 'INTERPRO_AC', 'TRANSLATION_ID', 'EXTERNAL_DATA', 'HDESCRIPTION', 'CIGAR_STRING', 'ALIGN_TYPE', 'SLICE'], @args);
 
 # BaseAlignFeature expects cigar_line or features
   if($cigar_string && $align_type){
-    $self = $class->SUPER::new(@_);
+    $self = $class->SUPER::new(@args);
   }else{
   #call the grand parent directly
-    $self = $class->Bio::EnsEMBL::FeaturePair::new(@_);
+    $self = $class->Bio::EnsEMBL::FeaturePair::new(@args);
   }
 
   # the strand of protein features is always 0
@@ -280,7 +279,7 @@ sub alignment_strings {
   } else {
     throw("alignment_strings method not implemented for " . $self->align_type);
   }
-  return undef;
+  return;
 }
 
 
@@ -288,7 +287,8 @@ sub transform {
   my $self = shift;
 
   $self->throw( "ProteinFeature cant be transformed directly as".
-		" they are not on EnsEMBL coord system" );
+    " they are not on EnsEMBL coord system" );
+  return;
 }
 
 

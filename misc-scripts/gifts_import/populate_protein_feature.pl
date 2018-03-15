@@ -153,6 +153,7 @@ sub populate_protein_feature_db {
   $gifts_dbh->disconnect();
   $protfeature_dbh->disconnect();
   
+  return;
 }
 
 #annotate the protein feature object with translation dbID, align_type along with other info fetched from giftsdb
@@ -334,7 +335,7 @@ sub get_registry {
 
 sub usage {
   my $indent = ' ' x length($0);
-  print <<EOF; exit(0);
+  print << 'EOF'; exit(0);
 
 The script populates the CORE db's protein_feature table with all the uniprot mappings found in GIFTS db's ensp_u_cigar table.
 
