@@ -215,7 +215,7 @@ sub fetch_all_by_group_object_db_type {
   my ($self, $biotype_group, $object_type, $db_type) = @_;
 
   $db_type //= 'core';
-  $db_type = "%${db_type}%";
+  $db_type = '%' . $db_type . '%';
 
   my $constraint = "b.biotype_group = ? AND b.object_type = ? AND b.db_type LIKE ? ";
   $self->bind_param_generic_fetch($biotype_group, SQL_VARCHAR);
