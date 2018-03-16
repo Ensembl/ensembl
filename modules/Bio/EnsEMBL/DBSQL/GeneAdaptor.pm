@@ -1261,7 +1261,7 @@ sub store {
     $analysis_id = $db->get_AnalysisAdaptor->store($analysis);
   }
 
-  my $type = $gene->biotype || "";
+  my $type = $gene->get_Biotype->name;
 
   # default to is_current = 1 if this attribute is not set
   my $is_current = $gene->is_current;
@@ -1610,7 +1610,7 @@ sub update {
 
   my $sth = $self->prepare($update_gene_sql);
 
-  $sth->bind_param(1, $gene->biotype(),        SQL_VARCHAR);
+  $sth->bind_param(1, $gene->get_Biotype->name, SQL_VARCHAR);
   $sth->bind_param(2, $gene->analysis->dbID(), SQL_INTEGER);
   $sth->bind_param(3, $display_xref_id,        SQL_INTEGER);
   $sth->bind_param(4, $gene->description(),    SQL_VARCHAR);

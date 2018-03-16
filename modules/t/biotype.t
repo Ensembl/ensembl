@@ -46,7 +46,7 @@ ok($gene, "Gene object loaded successfully");
 # test gene biotype object
 debug("gene biotype");
 is($gene->biotype, 'protein_coding', "Gene biotype is protein_coding");
-my $biotype1 = $gene->biotype;
+my $biotype1 = $gene->get_Biotype;
 ok($biotype1->isa("Bio::EnsEMBL::Biotype"), "Biotype object retrieved successfully");
 is($biotype1->object_type, 'gene', 'Biotype is from Gene object');
 is($biotype1->name, 'protein_coding', 'Biotype name is protein_coding');
@@ -59,17 +59,19 @@ throws_ok { $biotype1->object_type('test') } qr/object_type must be gene or tran
 my $transcript = $gene->canonical_transcript;
 debug("transcript biotype");
 is($transcript->biotype, 'protein_coding', "Trancript biotype is protein_coding");
-my $biotype2 = $transcript->biotype;
+my $biotype2 = $transcript->get_Biotype;
 ok($biotype2->isa("Bio::EnsEMBL::Biotype"), "Biotype object retrieved successfully");
 is($biotype2->object_type, 'transcript', 'Biotype is from Transcript object');
 is($biotype2->name, 'protein_coding', 'Biotype name is protein_coding');
 is($biotype2->biotype_group, 'coding', 'Biotype group is coding');
 is($biotype2->so_acc, 'SO:0000234', 'Biotype protein_coding refers to SO:0000234');
+ok($transcript->set_Biotype('new_biotype'), "Can successfully set new_biotype");
+throws_ok { $gene->set_Biotype() } qr/No argument provided/, 'set_Biotype() requires an argument';
 
 # set biotype with database term
 debug("set biotype with db term");
-ok($gene->biotype('tRNA'), "Can successfully set biotype to tRNA");
-my $biotype3 = $gene->biotype;
+ok($gene->set_Biotype('tRNA'), "Can successfully set biotype to tRNA");
+my $biotype3 = $gene->get_Biotype;
 ok($biotype3->isa("Bio::EnsEMBL::Biotype"), "Biotype object retrieved successfully");
 is($biotype3->object_type, 'gene', 'Biotype is from Gene object');
 is($biotype3->name, 'tRNA', 'Biotype name is tRNA');
@@ -78,13 +80,14 @@ is($biotype3->so_acc, 'SO:0001263', 'Biotype tRNA refers to SO:0001263');
 
 # set biotype with term not in database
 debug("set biotype with term not in db");
-ok($gene->biotype('dummy'), "Can successfully set biotype to dummy");
-my $biotype4 = $gene->biotype;
+ok($gene->set_Biotype('dummy'), "Can successfully set biotype to dummy");
+my $biotype4 = $gene->get_Biotype;
 ok($biotype4->isa("Bio::EnsEMBL::Biotype"), "Biotype object retrieved successfully");
 is($biotype4->object_type, 'gene', 'Biotype is from Gene object');
 is($biotype4->name, 'dummy', 'Biotype name is dummy');
 is($biotype4->biotype_group, undef, 'Biotype group is not set');
 is($biotype4->so_acc, undef, 'Biotype SO acc is not set');
+throws_ok { $gene->set_Biotype() } qr/No argument provided/, 'set_Biotype() requires an argument';
 
 # test fetch biotypes of object_type gene
 debug("fetch biotypes by object_type");
