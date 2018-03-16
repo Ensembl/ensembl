@@ -908,10 +908,10 @@ sub add_xref {
   my $source_id   = $arg_ref->{source_id}  || croak 'add_xref needs a source_id';
   my $species_id  = $arg_ref->{species_id} || croak 'add_xref needs a species_id';
   my $label       = $arg_ref->{label}      || $acc;
-  my $description = $arg_ref->{desc}       || '';
+  my $description = $arg_ref->{desc};
   my $version     = $arg_ref->{version}    || 0;
   my $info_type   = $arg_ref->{info_type}  || 'MISC';
-  my $info_text   = $arg_ref->{info_text}  || '';
+  my $info_text   = $arg_ref->{info_text};
   my $dbi         = $arg_ref->{dbi};
 
   $dbi = $self->dbi unless defined $dbi;

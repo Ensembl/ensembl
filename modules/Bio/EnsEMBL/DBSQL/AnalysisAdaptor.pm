@@ -464,7 +464,6 @@ sub _store_description {
   $display_label = '' unless defined $display_label; # SQLite doesn't ignore NOT NULL errors
 
   my $web_data;
-  $web_data = $self->dump_data($analysis->web_data()) if ($analysis->web_data());
 
   $sth->bind_param(1,$dbID,SQL_INTEGER);
   $sth->bind_param(2,$display_label,SQL_VARCHAR);
@@ -537,7 +536,6 @@ sub update {
   $sth->execute($a->dbID);
   my $web_data; #this is an anonymous reference to a hash, will have to be dumped into string before writing to db
   if ($sth->fetchrow_hashref) { # update if exists
-      $web_data = $self->dump_data($a->web_data()) if ($a->web_data());
       $sth = $self->prepare
       ("UPDATE analysis_description SET description = ?, display_label = ?, displayable = ?, web_data = ? WHERE analysis_id = ?");
       $sth->bind_param(1,$a->description,SQL_LONGVARCHAR);     
@@ -685,7 +683,6 @@ sub _objFromHashref {
   my $web_data;
   # :X execute semi-trustworthy strings on server.
   $web_data = eval($data); ## no critic  
-  ### Deprecation of generic dump_data and get_dumped_data methods from base class means AnalysisAdaptor now needs to supply that by itself
 
   return Bio::EnsEMBL::Analysis->new_fast({
     dbID             => $h->{analysis_id},
