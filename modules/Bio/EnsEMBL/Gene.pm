@@ -367,7 +367,7 @@ sub equals {
     return 0;
   }
 
-  if ( $self->biotype() ne $gene->biotype() ) {
+  if ( $self->get_Biotype->name ne $self->get_Biotype->name ) {
     return 0;
   }
 
@@ -1462,7 +1462,7 @@ sub summary_as_hash {
   my $self = shift;
   my $summary_ref = $self->SUPER::summary_as_hash;
   $summary_ref->{'description'} = $self->description;
-  $summary_ref->{'biotype'} = $self->biotype;
+  $summary_ref->{'biotype'} = $self->get_Biotype->name;
   $summary_ref->{'Name'} = $self->external_name if $self->external_name;
   $summary_ref->{'logic_name'} = $self->analysis->logic_name() if defined $self->analysis();
   $summary_ref->{'source'} = $self->source();
@@ -1501,11 +1501,9 @@ sub havana_gene {
   return $ott;
 }
 
-=head2 biotype
+=head2 get_Biotype
 
-  Arg [1]    : Arg [1] : (optional) String - the biotype to set
-  Example    : my $biotype = $gene->biotype;
-               my $biotype = $gene->biotype('protin_coding');
+  Example    : my $biotype = $gene->get_Biotype;
   Description: Returns the Biotype object of this gene.
                When no biotype exists, defaults to 'protein_coding'.
                When used to set to a biotype that does not exist in
@@ -1516,35 +1514,85 @@ sub havana_gene {
 
 =cut
 
-sub biotype {
-  my ( $self, $new_value) = @_;
+sub get_Biotype {
+  my ( $self ) = @_;
 
-  # have a biotype object and not setting new one, return it
-  if ( ref $self->{'biotype'} eq 'Bio::EnsEMBL::Biotype' && !defined $new_value ) {
+  # have a biotype object, return it
+  if ( ref $self->{'biotype'} eq 'Bio::EnsEMBL::Biotype' ) {
     return $self->{'biotype'};
   }
 
   # biotype is first set as a string retrieved from the gene table
   # there is no biotype object in the gene object, retrieve it using the biotype string
   # if no string, default to protein_coding. this is legacy behaviour and should probably be revisited
-  if ( ref $self->{'biotype'} ne 'Bio::EnsEMBL::Biotype' && !defined $new_value) {
-    $new_value = $self->{'biotype'} // 'protein_coding';
-  }
+  my $biotype_name = $self->{'biotype'} // 'protein_coding';
+
+  return $self->set_Biotype( $biotype_name );
+}
+
+=head2 set_Biotype
+
+  Arg [1]    : Arg [1] : String - the biotype name to set
+  Example    : my $biotype = $gene->set_Biotype('protin_coding');
+  Description: Sets the Biotype of this gene to the provided biotype name.
+               Returns the Biotype object of this gene.
+               When no biotype exists, defaults to 'protein_coding' name.
+               When setting a biotype that does not exist in
+               the biotype table, a biotype object is created with
+               the provided argument as name and object_type gene.
+  Returntype : Bio::EnsEMBL::Biotype
+  Exceptions : If no argument provided
+
+=cut
+
+sub set_Biotype {
+  my ( $self, $name ) = @_;
+
+  throw('No argument provided') unless defined $name;
 
   # retrieve biotype object from the biotype adaptor
   if( defined $self->adaptor() ) {
     my $ba = $self->adaptor()->db()->get_BiotypeAdaptor();
-    $self->{'biotype'} = $ba->fetch_by_name_object_type( $new_value, 'gene' );
+    $self->{'biotype'} = $ba->fetch_by_name_object_type( $name, 'gene' );
   }
   # if $self->adaptor is unavailable, create a new biotype object containing name and object_type only
   else {
     $self->{'biotype'} = Bio::EnsEMBL::Biotype->new(
-            -NAME          => $new_value,
+            -NAME          => $name,
             -OBJECT_TYPE   => 'gene',
     )
   }
 
   return $self->{'biotype'} ;
+}
+
+=head2 biotype
+  Arg [1]    : (optional) String - the biotype to set
+  Example    : $gene->biotype("protein_coding");
+  Description: Getter/setter for the attribute biotype name.
+               Recommended to use instead for a getter:
+                 $biotype = $gene->get_Biotype;
+               and for a setter:
+                 $biotype = $gene->set_Biotype("protein_coding");
+               The String biotype name can then be retrieved by
+               calling name on the Biotype object:
+                 $biotype_name = $biotype->name;
+  Returntype : String
+  Exceptions : none
+  Caller     : general
+  Status     : Stable
+=cut
+
+sub biotype {
+  my ( $self, $biotype_name) = @_;
+
+  # Setter? set_Biotype()
+  if (defined $biotype_name) {
+    return $self->set_Biotype($biotype_name)->name;
+  }
+
+  # Getter? get_Biotype()
+  return $self->get_Biotype->name;
 }
 
 1;

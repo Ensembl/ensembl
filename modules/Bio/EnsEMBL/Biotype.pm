@@ -243,34 +243,4 @@ sub object_type {
   return $self->{'object_type'};
 }
 
-=for Rationale:
-
-  Gene and Transcript objects used to have a biotype() method that returned the string biotype name.
-  From e93 those methods were replaced and a Biotype object is now returned.
-  To maintain legacy code functioning, overload was used to return the string biotype name when
-  the object is not used as such.
-  New code should explicitly call biotype->name() if the string biotype name is what is required.
-
-=cut
-
-use overload
-  'fallback' => 1,
-  '""' => \&as_string;
-
-=head2 as_string
-
-  Example       : $biotype_str = $biotype->as_string();
-                  $biotype_str = $biotype();
-  Description   : Retrieves a printable string of the biotype object.
-                  At the moment this is the biotype ensembl name.
-                  If Biotype object is called this is what is returned to maintain compatibility
-                  with legacy biotype() methods in Gene and Transcript objects.
-  Returns       : string for the biotype.
-
-=cut
-
-sub as_string {
-  return shift->name;
-}
-
 1;

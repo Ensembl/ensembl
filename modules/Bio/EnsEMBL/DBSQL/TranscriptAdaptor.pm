@@ -1153,7 +1153,7 @@ sub store {
   $self->schema_version > 74 and 
     $tst->bind_param( ++$i,  $transcript->source(),      SQL_VARCHAR );
 
-  $tst->bind_param( ++$i,  $transcript->biotype(),     SQL_VARCHAR );
+  $tst->bind_param( ++$i, $transcript->get_Biotype->name, SQL_VARCHAR );
   $tst->bind_param( ++$i,  $transcript->description(), SQL_LONGVARCHAR );
   $tst->bind_param( ++$i, $is_current,                SQL_TINYINT );
 
@@ -1678,7 +1678,7 @@ sub update {
   $self->schema_version > 74 and 
     $sth->bind_param( ++$i,  $transcript->source(),      SQL_VARCHAR );
 
-  $sth->bind_param( ++$i, $transcript->biotype(),     SQL_VARCHAR );
+  $sth->bind_param( ++$i, $transcript->get_Biotype->name, SQL_VARCHAR );
   $sth->bind_param( ++$i, $transcript->is_current(),  SQL_TINYINT );
   $sth->bind_param( ++$i, (
                       defined( $transcript->translation() )
