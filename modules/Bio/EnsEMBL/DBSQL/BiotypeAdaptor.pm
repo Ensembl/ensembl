@@ -150,10 +150,15 @@ sub _objs_from_sth {
 sub fetch_by_name_object_type {
   my ($self, $name, $object_type) = @_;
 
-  my $constraint = "b.name = ? AND b.object_type = ?";
-  $self->bind_param_generic_fetch($name, SQL_VARCHAR);
-  $self->bind_param_generic_fetch($object_type, SQL_VARCHAR);
-  my ($biotype) = @{$self->generic_fetch($constraint)};
+  my $biotype;
+
+  # biotype table implemented on schema_version 93
+  if ($self->schema_version > 92) {
+    my $constraint = "b.name = ? AND b.object_type = ?";
+    $self->bind_param_generic_fetch($name, SQL_VARCHAR);
+    $self->bind_param_generic_fetch($object_type, SQL_VARCHAR);
+    $biotype = shift @{$self->generic_fetch($constraint)};
+  }
 
   # If request biotype does not exist in the table
   # create a new biotype object containing name and object_type only
