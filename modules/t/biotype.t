@@ -88,17 +88,25 @@ is($biotype4->so_acc, undef, 'Biotype SO acc is not set');
 
 # test fetch biotypes of object_type gene
 debug("fetch biotypes by object_type");
-my $biotypes = $biotype_adaptor->fetch_all_by_object_type('gene');
-is(ref $biotypes, 'ARRAY', 'Got an array');
-is(scalar @{$biotypes}, '2', 'of size 2');
-is_deeply($biotypes, [$biotype1, $biotype3], 'with the correct objects');
-my $warning = warning { $biotypes = $biotype_adaptor->fetch_all_by_object_type('none') };
-like( $warning,
+my $biotypes1 = $biotype_adaptor->fetch_all_by_object_type('gene');
+is(ref $biotypes1, 'ARRAY', 'Got an array');
+is(scalar @{$biotypes1}, '2', 'of size 2');
+is_deeply($biotypes1, [$biotype1, $biotype3], 'with the correct objects');
+my $warning1 = warning { 
+  $biotypes1 = $biotype_adaptor->fetch_all_by_object_type('none') };
+like( $warning1,
     qr/No objects retrieved. Check if object_type 'none' is correct./,
-    "Got a warning from fetch_all_by_object_type('none') ",
-) or diag 'Got warning: ', explain($warning);
-is(ref $biotypes, 'ARRAY', 'Got an array');
-is(scalar @{$biotypes}, '0', 'of size 0');
-is_deeply($biotypes, [], 'totally empty');
+    "Got a warning from fetch_all_by_object_type",
+) or diag 'Got warning: ', explain($warning1);
+is(ref $biotypes1, 'ARRAY', 'Got an array');
+is(scalar @{$biotypes1}, '0', 'of size 0');
+is_deeply($biotypes1, [], 'totally empty');
+my $biotypes2 = $biotype_adaptor->fetch_all_by_group_object_db_type('coding', 'gene');
+is_deeply($biotypes2, [$biotype1], 'fetch_all_by_group_object_db_type retrieves correct data');
+my $warning2 = warning { $biotypes2 = $biotype_adaptor->fetch_all_by_group_object_db_type('coding', 'none', 'core') };
+like( $warning2,
+    qr/No objects retrieved. Check if object_type 'none' is correct./,
+    "Got a warning from fetch_all_by_group_object_db_type",
+) or diag 'Got warning: ', explain($warning2);
 
 done_testing();

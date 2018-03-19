@@ -138,7 +138,7 @@ sub _objs_from_sth {
                The name of the biotype to retrieve
   Arg [2]    : String $object_type
                The object type of the biotype to retrieve (gene or transcript)
-  Example    : $biotype = $biotype_adaptor->fetch_by_name_object_type('gene', 'protein_coding');
+  Example    : $biotype = $biotype_adaptor->fetch_by_name_object_type('mRNA', 'gene');
   Description: Retrieves a biotype object from the database via its combined key (name, object_type).
                If the Biotype requested does not exist in the database, a new Biotype object is
                created with the provided name and object_type to be returned.
@@ -185,6 +185,42 @@ sub fetch_all_by_object_type {
 
   my $constraint = "b.object_type = ?";
   $self->bind_param_generic_fetch($object_type, SQL_VARCHAR);
+  my @biotypes = @{$self->generic_fetch($constraint)};
+
+  if ( !@biotypes ) {
+    warning("No objects retrieved. Check if object_type '$object_type' is correct.")
+  }
+
+  return \@biotypes;
+}
+
+=head2 fetch_all_by_group_object_db_type
+
+  Arg [1]    : String $biotype_group
+               The group of the biotypes to retrieve
+  Arg [2]    : String $object_type
+               The object type of the biotypes to retrieve (gene or transcript)
+  Arg [3]    : (optional) String $db_type
+               The db_type of the biotypes to retrieve. If not provided defaults to 'core'.
+  Example    : $biotype = $biotype_adaptor->fetch_all_by_group_object_db_type('coding', 'gene');
+  Description: Retrieves an array reference of biotype objects from the database of the provided
+               biotype_group and object_type and core db_type.
+  Returntype : arrayref of Bio::EnsEMBL::Biotype objects or empty arrayref
+  Warning    : If empty arrayref is to be returned
+  Exceptions : none
+
+=cut
+
+sub fetch_all_by_group_object_db_type {
+  my ($self, $biotype_group, $object_type, $db_type) = @_;
+
+  $db_type //= 'core';
+  $db_type = '%' . $db_type . '%';
+
+  my $constraint = "b.biotype_group = ? AND b.object_type = ? AND b.db_type LIKE ? ";
+  $self->bind_param_generic_fetch($biotype_group, SQL_VARCHAR);
+  $self->bind_param_generic_fetch($object_type, SQL_VARCHAR);
+  $self->bind_param_generic_fetch($db_type, SQL_VARCHAR);
   my @biotypes = @{$self->generic_fetch($constraint)};
 
   if ( !@biotypes ) {
