@@ -654,6 +654,7 @@ foreach my $g (@$o_genes) {
   debug('Overlapping: '.$g->stable_id);
 }
 is($o_genes->[0]->stable_id,'ENSG00000171456','Check overlap with a fake feature on top of an existing gene');
+
 # Note, doesn't find itself as it isn't in the test database.
 sub print_locations {
   my $f = shift;
@@ -666,5 +667,34 @@ sub print_locations {
         $af->seq_region_start. "-". $af->seq_region_end(). "\n");
   }
 }
+
+$multi_db = Bio::EnsEMBL::Test::MultiTestDB->new('mus_musculus');
+my $vdba = $multi_db->get_DBAdaptor('variation');
+my $cdba = $multi_db->get_DBAdaptor('core');
+$vdba->dnadb($cdba);
+$slice_adaptor = $cdba->get_SliceAdaptor;
+$slice = $slice_adaptor->fetch_by_region('chromosome', 19, 20380186, 20384187);
+my $strain_name = 'A/J';
+my $strain_slice = Bio::EnsEMBL::Variation::StrainSlice->new(
+  -START   => $slice->{'start'},
+  -END     => $slice->{'end'},
+  -STRAND  => $slice->{'strand'},
+  -ADAPTOR => $slice->adaptor(),
+  -SEQ     => $slice->{'seq'},
+  -SEQ_REGION_NAME => $slice->{'seq_region_name'},
+  -SEQ_REGION_LENGTH => $slice->{'seq_region_length'},
+  -COORD_SYSTEM    => $slice->{'coord_system'},
+  -STRAIN_NAME     => $strain_name);
+
+my $vf_adaptor = $vdba->get_VariationFeatureAdaptor;
+
+my $features = $vf_adaptor->fetch_all_by_Slice($strain_slice);
+ok(scalar @$features == 189, 'Count VariationFeatures on StrainSlice');
+
+$feature = $features->[0];
+ok($feature && $feature->isa('Bio::EnsEMBL::Variation::VariationFeature'), 'Feature is a VariationFeature');
+
+my $feature_slice = $feature->feature_Slice;
+ok($feature_slice && $feature_slice->isa('Bio::EnsEMBL::Variation::StrainSlice'), 'Feature slice is a StrainSlice');
 
 done_testing();

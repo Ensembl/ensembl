@@ -206,12 +206,28 @@ is( @stored_features, 306, "Number of stored gene densities");
 @stored_features = @{$dfa->fetch_all('rubbish')};
 ok( @stored_features == 0);
 
-
-
-
-
 $multi->restore('core', 'analysis');
 $multi->restore('core', 'density_type');
 $multi->restore('core', 'density_feature');
+
+my $multi_db = Bio::EnsEMBL::Test::MultiTestDB->new('mus_musculus');
+my $vdba = $multi_db->get_DBAdaptor('variation');
+my $cdba = $multi_db->get_DBAdaptor('core');
+$vdba->dnadb($cdba);
+$slice_adaptor = $cdba->get_SliceAdaptor;
+$slice = $slice_adaptor->fetch_by_region('chromosome', 19, 20380186, 20384187);
+my $strain_name = 'A/J';
+my $strain_slice = Bio::EnsEMBL::Variation::StrainSlice->new(
+  -START   => $slice->{'start'},
+  -END     => $slice->{'end'},
+  -STRAND  => $slice->{'strand'},
+  -ADAPTOR => $slice->adaptor(),
+  -SEQ     => $slice->{'seq'},
+  -SEQ_REGION_NAME => $slice->{'seq_region_name'},
+  -SEQ_REGION_LENGTH => $slice->{'seq_region_length'},
+  -COORD_SYSTEM    => $slice->{'coord_system'},
+  -STRAIN_NAME     => $strain_name);
+my $features = $dfa->fetch_all_by_Slice($strain_slice, 'SNPDensity', 10, 1);
+is( @$features, 10, "Number of stored SNP densities");
 
 done_testing();
