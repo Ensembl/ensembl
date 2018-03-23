@@ -82,7 +82,7 @@ use Bio::EnsEMBL::Utils::Argument qw(rearrange);
 use Bio::EnsEMBL::Utils::Exception qw(throw warning);
 use Bio::EnsEMBL::Utils::Scalar qw(check_ref assert_ref);
 use Bio::EnsEMBL::Slice;
-use Bio::EnsEMBL::StrainSlice;
+use Bio::EnsEMBL::Variation::StrainSlice;
 use vars qw(@ISA);
 
 use Scalar::Util qw(weaken);
@@ -979,8 +979,8 @@ sub feature_Slice {
     return undef;
   }
 
-  if($slice->isa("Bio::EnsEMBL::StrainSlice")){
-    return Bio::EnsEMBL::StrainSlice->new
+  if($slice->isa("Bio::EnsEMBL::Variation::StrainSlice")){
+    return Bio::EnsEMBL::Variation::StrainSlice->new
       (-seq_region_name   => $slice->seq_region_name,
        -seq_region_length => $slice->seq_region_length,
        -coord_system      => $slice->coord_system,
