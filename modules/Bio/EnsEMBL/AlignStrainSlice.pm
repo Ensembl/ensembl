@@ -81,7 +81,7 @@ use Bio::EnsEMBL::Utils::Exception qw(throw warning);
 =head2 new
 
     Arg[1]      : Bio::EnsEMBL::Slice $Slice
-    Arg[2]      : listref of Bio::EnsEMBL::StrainSlice $strainSlice
+    Arg[2]      : listref of Bio::EnsEMBL::Variation::StrainSlice $strainSlice
     Example     : push @strainSlices, $strainSlice1;
                   push @strainSlices, $strainSlice2;
                   .....
@@ -117,7 +117,7 @@ sub new{
 =head2 alignFeature
 
     Arg[1]      : Bio::EnsEMBL::Feature $feature
-    Arg[2]      : Bio::EnsEMBL::StrainSlice $strainSlice
+    Arg[2]      : Bio::EnsEMBL::Variation::StrainSlice $strainSlice
     Example     : $new_feature = $alignSlice->alignFeature($feature, $strainSlice);
     Description : Creates a new Bio::EnsEMBL::Feature object that aligned to 
                   the AlignStrainSlice object.
@@ -280,10 +280,10 @@ sub _get_indels{
 =head2 get_all_Slices
 
   Args       : none
-  Description: This Slice is made of several Bio::EnsEMBL::StrainSlices
+  Description: This Slice is made of several Bio::EnsEMBL::Variation::StrainSlices
                sequence. This method returns these StrainSlices (or part of
                them) with the original coordinates 
-  Returntype : listref of Bio::EnsEMBL::StrainSlice objects
+  Returntype : listref of Bio::EnsEMBL::Variation::StrainSlice objects
   Exceptions : end should be at least as big as start
   Caller     : general
 
@@ -302,7 +302,7 @@ sub get_all_Slices {
     }
   my $indAdaptor = $dbVar->get_IndividualAdaptor();
   my $ref_name =  $indAdaptor->get_reference_strain_name;
-  my $ref_strain = Bio::EnsEMBL::StrainSlice->new(
+  my $ref_strain = Bio::EnsEMBL::Variation::StrainSlice->new(
 					  -START   => $self->Slice->{'start'},
 					  -END     => $self->Slice->{'end'},
 					  -STRAND  => $self->Slice->{'strand'},
