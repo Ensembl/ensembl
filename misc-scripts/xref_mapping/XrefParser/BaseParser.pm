@@ -911,7 +911,7 @@ sub add_xref {
   my $description = $arg_ref->{desc};
   my $version     = $arg_ref->{version}    || 0;
   my $info_type   = $arg_ref->{info_type}  || 'MISC';
-  my $info_text   = $arg_ref->{info_text};
+  my $info_text   = $arg_ref->{info_text}  || '';
   my $dbi         = $arg_ref->{dbi};
 
   $dbi = $self->dbi unless defined $dbi;
