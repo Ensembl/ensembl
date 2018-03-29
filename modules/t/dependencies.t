@@ -31,7 +31,12 @@ my @result = `egrep -r "^use Bio::EnsEMBL::(Variation|Compara|Funcgen){1}" $modu
 my %result = map{$_ => 1} @result;
 
 my @exceptions = ('/Bio/EnsEMBL/Utils/TranscriptAlleles.pm', 
-   	       	 '/Bio/EnsEMBL/Utils/ensembl_init.example');
+   	       	 '/Bio/EnsEMBL/Utils/ensembl_init.example',
+             '/Bio/EnsEMBL/AlignStrainSlice',
+             '/Bio/EnsEMBL/Feature',
+             '/Bio/EnsEMBL/DBSQL/BaseFeatureAdaptor.pm',
+             '/Bio/EnsEMBL/DBSQL/DensityFeatureAdaptor.pm',
+);
 
 my $exceptions = join("|",@exceptions);
 $exceptions =~ s/\//\\\//g;
