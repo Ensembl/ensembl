@@ -66,7 +66,7 @@ container slice coordinate system.
   Bio::EnsEMBL::Compara::AlignSlice
   Bio::EnsEMBL::Compara::AlignSlice::Slice
   Bio::EnsEMBL::AlignStrainSlice
-  Bio::EnsEMBL::StrainSlice
+  Bio::EnsEMBL::Variation::StrainSlice
 
 =cut
 
