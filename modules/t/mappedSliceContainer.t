@@ -40,6 +40,21 @@ my @mapped_slices = @{$msc->get_all_MappedSlices};
 ok(scalar(@mapped_slices) == 1, 'Return 1 MappedSlice'); 
 
 my $mapped_slice = $mapped_slices[0];
+
+my $name = $mapped_slice->name;
+ok($name eq 'chromosome:GRCm38:19:20380186:20384187:1#strain_A/J', 'mapped_slice name');
+
+my $seq_region_name =  $mapped_slice->seq_region_name;
+ok($seq_region_name eq '19', 'mapped_slice seq_region_name');
+
+my $centrepoint =  $mapped_slice->centrepoint;
+ok($centrepoint == 2001.5, 'centrepoint');
+ok($mapped_slice->seq_region_length == 61431566, 'mapped_slice seq_region_length');
+ok($mapped_slice->length == 4002, 'mapped_slice length');
+ok($mapped_slice->strand == 1, 'strand');
+ok($mapped_slice->end == 4002, 'end');
+ok($mapped_slice->start == 1, 'start');
+
 my $container = $mapped_slice->container;
 ok($container && $container->isa('Bio::EnsEMBL::MappedSliceContainer'), 'isa Bio::EnsEMBL::MappedSliceContainer');
 
