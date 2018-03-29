@@ -84,7 +84,6 @@ use Bio::EnsEMBL::Registry;
 use Bio::EnsEMBL::Utils::Iterator;
 use Bio::EnsEMBL::DBSQL::MergedAdaptor;
 
-use Bio::EnsEMBL::StrainSlice;
 #use Bio::EnsEMBL::IndividualSlice;
 #use Bio::EnsEMBL::IndividualSliceFactory;
 use Bio::EnsEMBL::Mapper::RangeRegistry;
@@ -2461,33 +2460,6 @@ sub get_by_Individual{
 
 }
 
-=head2 get_by_strain
-
-    Arg[1]      : string $strain
-    Example     : my $strainSlice = $slice->get_by_strain($strain);
-    Description : Gets the specific Slice for the strain
-    ReturnType  : Bio::EnsEMB::StrainSlice
-    Exceptions  : none
-    Caller      : general
-
-=cut
-
-sub get_by_strain {
-    my $self = shift;
-    my $strain_name = shift;
-    deprecate('get_by_strain is deprecated and will be removed in e88. Please use Bio::EnsEMBL::Variation::DBSQL::StrainSliceAdaptor::get_by_strain_Slice instead.');
-    return Bio::EnsEMBL::StrainSlice->new(
-					  -START   => $self->{'start'},
-					  -END     => $self->{'end'},
-					  -STRAND  => $self->{'strand'},
-					  -ADAPTOR => $self->adaptor(),
-					  -SEQ     => $self->{'seq'},
-					  -SEQ_REGION_NAME => $self->{'seq_region_name'},
-					  -SEQ_REGION_LENGTH => $self->{'seq_region_length'},
-					  -COORD_SYSTEM    => $self->{'coord_system'},
-					  -STRAIN_NAME     => $strain_name);
-
-}
 
 sub calculate_theta {
     my $self = shift;
