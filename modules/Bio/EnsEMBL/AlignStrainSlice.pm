@@ -76,7 +76,7 @@ use strict;
 use Bio::EnsEMBL::Utils::Argument qw(rearrange);
 use Bio::EnsEMBL::Mapper;
 use Bio::EnsEMBL::Mapper::RangeRegistry;
-use Bio::EnsEMBL::Utils::Exception qw(throw warning);
+use Bio::EnsEMBL::Utils::Exception qw(throw deprecate warning);
 
 =head2 new
 
@@ -98,6 +98,7 @@ use Bio::EnsEMBL::Utils::Exception qw(throw warning);
 
 sub new{
     my $caller = shift;
+    deprecate("new is deprecated and will be removed in e95.")
     my $class = ref($caller) || $caller;
 
     my ($slice, $strainSlices) = rearrange([qw(SLICE STRAINS)],@_);
@@ -130,6 +131,7 @@ sub new{
 sub alignFeature{
     my $self = shift;
     my $feature = shift;
+    deprecate("alignFeature is deprecated and will be removed in e95.")
 
     #check that the object is a Feature
     if (!ref($feature) || !$feature->isa('Bio::EnsEMBL::Feature')){	
@@ -164,7 +166,8 @@ sub alignFeature{
 #getter for the mapper between the Slice and the different StrainSlice objects
 sub mapper{
     my $self = shift;
-    
+    deprecate("mapper is deprecated and will be removed in e95.")
+   
     if (!defined $self->{'mapper'}){
 	#get the alleleFeatures in all the strains
 	if (!defined $self->{'indels'}){
@@ -206,6 +209,8 @@ sub mapper{
 #returns the length of the AlignSlice: length of the Slice plus the gaps
 sub length{
     my $self = shift;
+    deprecate("length is deprecated and will be removed in e95.")
+
     my $length;
     if (!defined $self->{'indels'}){
 	#when the list of indels is not defined, get them
@@ -229,6 +234,7 @@ sub length{
 
 sub strains{
     my $self = shift;
+    deprecate("strains is deprecated and will be removed in e95.")
 
     return $self->{'strains'};
 }
@@ -246,12 +252,15 @@ sub strains{
 
 sub Slice{
     my $self = shift;
+    deprecate("Slice is deprecated and will be removed in e95.")
+
     return $self->{'slice'};
 }
 #method to retrieve, in order, a list with all the indels in the different strains
 sub _get_indels{
     my $self = shift;
-    
+    deprecate("_get_indels is deprecated and will be removed in e95.")
+   
     #go throuh all the strains getting ONLY the indels (length_diff <> 0)
     my @indels;
     foreach my $strainSlice (@{$self->strains}){
@@ -291,6 +300,8 @@ sub _get_indels{
 
 sub get_all_Slices {
   my $self = shift;
+
+  deprecate("get_all_Slices is deprecated and will be removed in e95.")
 
   my @strains;
   #add the reference strain

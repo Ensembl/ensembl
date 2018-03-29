@@ -2419,6 +2419,7 @@ sub get_all_PhenotypeFeatures {
 
 sub get_all_IndividualSlice{
     my $self = shift;
+    deprecate("get_all_IndividualSlice is deprecated and will be removed in e95.")
 
     my $individualSliceFactory = Bio::EnsEMBL::IndividualSliceFactory->new(
 									   -START   => $self->{'start'},
@@ -2446,6 +2447,7 @@ sub get_all_IndividualSlice{
 sub get_by_Individual{
     my $self = shift;
     my $individual = shift;
+    deprecate("get_by_Individual is deprecated and will be removed in e95.")
 
     return Bio::EnsEMBL::IndividualSlice->new(
 					  -START   => $self->{'start'},
@@ -2465,6 +2467,8 @@ sub calculate_theta {
     my $self = shift;
     my $strains = shift;
     my $feature = shift; #optional parameter. Name of the feature in the Slice you want to calculate
+
+    deprecate("calculate_theta is deprecated and will be removed in e95.")
 
     if(!$self->adaptor()) {
 	warning('Cannot get variation features without attached adaptor');
@@ -2539,6 +2543,7 @@ sub calculate_theta {
 
 sub _calculate_a {
     my $max_level = shift;
+    deprecate("_calculate_a is deprecated and will be removed in e95.")
 
     my $a = 0;
     for (my $i = 2; $i <= $max_level+1;$i++){
@@ -2551,6 +2556,7 @@ sub calculate_pi {
     my $self = shift;
     my $strains = shift;
     my $feature = shift;
+    deprecate("calculate_pi is deprecated and will be removed in e95.")
 
     if(!$self->adaptor()) {
 	warning('Cannot get variation features without attached adaptor');

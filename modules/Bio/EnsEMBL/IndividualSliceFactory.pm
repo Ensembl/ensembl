@@ -35,7 +35,7 @@ use Bio::EnsEMBL::Utils::Argument qw(rearrange);
 use Bio::EnsEMBL::Utils::Sequence qw(reverse_comp);
 use Bio::EnsEMBL::Slice;
 use Bio::EnsEMBL::Mapper;
-use Bio::EnsEMBL::Utils::Exception qw(throw warning);
+use Bio::EnsEMBL::Utils::Exception qw(throw deprecate warning);
 use Scalar::Util qw(weaken);
 
 =head2 new
@@ -43,6 +43,7 @@ use Scalar::Util qw(weaken);
 
 sub new{
     my $caller = shift;
+    deprecate("new is deprecated and will be removed in e95.")
     my $class = ref($caller) || $caller;
 
     #creates many IndividualSlice objects from the Population
@@ -64,6 +65,7 @@ sub new{
 
 sub adaptor {
   my $self = shift;
+  deprecate("adaptor is deprecated and will be removed in e95.")
 
   if(@_) {
     my $ad = shift;
@@ -78,6 +80,7 @@ sub adaptor {
 
 sub get_all_IndividualSlice{
     my $self = shift;
+    deprecate("get_all_IndividualSlice is deprecated and will be removed in e95.")
 
     my $slice;
     if(!$self->adaptor) {
@@ -138,6 +141,8 @@ sub get_all_IndividualSlice{
 
 sub _rearrange_Individuals_Alleles{
     my $self = shift;
+    deprecate("_rearrange_Individuals_Alleles is deprecated and will be removed in e95.")
+
     my $individuals = shift;
     my $allele_features;
     my $individual_slice;
