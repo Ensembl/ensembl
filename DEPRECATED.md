@@ -8,6 +8,41 @@ When a method is deprecated, a deprecation warning is thrown whenever the method
 The warning also contains instructions on replacing the deprecated method and when it will be removed.
 A year after deprecation (4 Ensembl releases), the method is removed from the API.
 
+### Removed in Ensembl Release 95 ###
+
+ - Bio::EnsEMBL::**AlignStrainSlice**::*alignFeature()*
+ - Bio::EnsEMBL::**AlignStrainSlice**::*get_all_Slices()*
+ - Bio::EnsEMBL::**AlignStrainSlice**::*length()*
+ - Bio::EnsEMBL::**AlignStrainSlice**::*mapper()*
+ - Bio::EnsEMBL::**AlignStrainSlice**::*new()*
+ - Bio::EnsEMBL::**AlignStrainSlice**::*Slice()*
+ - Bio::EnsEMBL::**AlignStrainSlice**::*strains()*
+ - Bio::EnsEMBL::**AlignStrainSlice**::*_get_indels()*
+ - Bio::EnsEMBL::**IndividualSlice**::*add_AlleleFeature()*
+ - Bio::EnsEMBL::**IndividualSlice**::*alleleFeatures()*
+ - Bio::EnsEMBL::**IndividualSlice**::*get_all_differences_IndividualSlice()*
+ - Bio::EnsEMBL::**IndividualSlice**::*get_all_differences_Slice()*
+ - Bio::EnsEMBL::**IndividualSlice**::*get_all_Exons()*
+ - Bio::EnsEMBL::**IndividualSlice**::*get_all_Genes()*
+ - Bio::EnsEMBL::**IndividualSlice**::*get_all_Transcripts()*
+ - Bio::EnsEMBL::**IndividualSlice**::*individual_name()*
+ - Bio::EnsEMBL::**IndividualSlice**::*map_to_Individual()*
+ - Bio::EnsEMBL::**IndividualSlice**::*mapper()*
+ - Bio::EnsEMBL::**IndividualSlice**::*new()*
+ - Bio::EnsEMBL::**IndividualSlice**::*seq()*
+ - Bio::EnsEMBL::**IndividualSlice**::*sub_Slice()*
+ - Bio::EnsEMBL::**IndividualSlice**::*subseq()*
+ - Bio::EnsEMBL::**IndividualSlice**::*_convert_difference()*
+ - Bio::EnsEMBL::**IndividualSliceFactory**::*adaptor()*
+ - Bio::EnsEMBL::**IndividualSliceFactory**::*get_all_IndividualSlice()*
+ - Bio::EnsEMBL::**IndividualSliceFactory**::*new()*
+ - Bio::EnsEMBL::**IndividualSliceFactory**::*_rearrange_Individuals_Alleles()*
+ - Bio::EnsEMBL::**Slice**::*calculate_pi()*
+ - Bio::EnsEMBL::**Slice**::*calculate_theta()*
+ - Bio::EnsEMBL::**Slice**::*get_all_IndividualSlice()*
+ - Bio::EnsEMBL::**Slice**::*get_by_Individual()*
+ - Bio::EnsEMBL::**Slice**::*_calculate_a*
+
 ### Removed in Ensembl Release 91 ###
 
  - Bio::EnsEMBL::DBSQL::**BaseAdaptor**::*dump_data()*
