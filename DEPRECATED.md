@@ -14,6 +14,7 @@ A year after deprecation (4 Ensembl releases), the method is removed from the AP
  - Bio::EnsEMBL::**AlignStrainSlice**::*get_all_Slices()*
  - Bio::EnsEMBL::**AlignStrainSlice**::*length()*
  - Bio::EnsEMBL::**AlignStrainSlice**::*mapper()*
+ - Bio::EnsEMBL::**AlignStrainSlice**::*new()*
  - Bio::EnsEMBL::**AlignStrainSlice**::*Slice()*
  - Bio::EnsEMBL::**AlignStrainSlice**::*strains()*
  - Bio::EnsEMBL::**AlignStrainSlice**::*_get_indels()*
@@ -27,6 +28,7 @@ A year after deprecation (4 Ensembl releases), the method is removed from the AP
  - Bio::EnsEMBL::**IndividualSlice**::*individual_name()*
  - Bio::EnsEMBL::**IndividualSlice**::*map_to_Individual()*
  - Bio::EnsEMBL::**IndividualSlice**::*mapper()*
+ - Bio::EnsEMBL::**IndividualSlice**::*new()*
  - Bio::EnsEMBL::**IndividualSlice**::*seq()*
  - Bio::EnsEMBL::**IndividualSlice**::*sub_Slice()*
  - Bio::EnsEMBL::**IndividualSlice**::*subseq()*
