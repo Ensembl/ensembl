@@ -43,15 +43,6 @@ my $strain_slice = Bio::EnsEMBL::Variation::StrainSlice->new(
 
 my $vf_adaptor = $vdba->get_VariationFeatureAdaptor;
 
-my $features = $vf_adaptor->fetch_all_by_Slice($strain_slice);
-ok(scalar @$features == 189, 'Count VariationFeatures on StrainSlice');
-
-my $feature = $features->[0];
-ok($feature && $feature->isa('Bio::EnsEMBL::Variation::VariationFeature'), 'Feature is a VariationFeature');
-
-my $feature_slice = $feature->feature_Slice;
-ok($feature_slice && $feature_slice->isa('Bio::EnsEMBL::Variation::StrainSlice'), 'Feature slice is a StrainSlice');
-
 $multi_db->save('core', 'analysis');
 $multi_db->save('core', 'density_type');
 $multi_db->save('core', 'density_feature');
@@ -80,7 +71,7 @@ my $df = Bio::EnsEMBL::DensityFeature->new(
 my $dfa = $cdba->get_DensityFeatureAdaptor();
 $dfa->store(($df));
 
-$features = $dfa->fetch_all_by_Slice($strain_slice, 'SNPDensity', 10, 1);
+my $features = $dfa->fetch_all_by_Slice($strain_slice, 'SNPDensity', 10, 1);
 is( @$features, 10, "Number of stored SNP densities");
 
 $multi_db->restore('core', 'analysis');
