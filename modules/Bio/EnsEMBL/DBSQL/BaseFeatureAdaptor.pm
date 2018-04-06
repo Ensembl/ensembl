@@ -434,7 +434,7 @@ sub fetch_all_by_Slice_constraint {
   {
 
     #strain test and add to constraint if so to stop caching.
-    if ( $slice->isa('Bio::EnsEMBL::StrainSlice') ) {
+    if ( $slice->isa('Bio::EnsEMBL::Variation::StrainSlice') ) {
       my $string =
         $self->dbc()->db_handle()->quote( $slice->strain_name() );
 

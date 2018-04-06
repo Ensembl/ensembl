@@ -84,7 +84,7 @@ use Bio::EnsEMBL::Utils::Argument qw(rearrange);
 use Bio::EnsEMBL::Utils::Sequence qw(reverse_comp);
 use Bio::EnsEMBL::Slice;
 use Bio::EnsEMBL::Mapper;
-use Bio::EnsEMBL::Utils::Exception qw(throw warning);
+use Bio::EnsEMBL::Utils::Exception qw(throw deprecate warning);
 
 @ISA = qw(Bio::EnsEMBL::Slice);
 
@@ -119,6 +119,7 @@ use Bio::EnsEMBL::Utils::Exception qw(throw warning);
 
 sub new{
     my $caller = shift;
+    deprecate("new is deprecated and will be removed in e95.");
     my $class = ref($caller) || $caller;
 
     #create the IndividualSlice object as the Slice, plus the individual attribute
@@ -146,6 +147,8 @@ sub new{
 
 sub individual_name{
    my $self = shift;
+   deprecate("individual_name is deprecated and will be removed in e95.");
+
    if (@_){
        $self->{'individual_name'} = shift @_;
    }
@@ -166,6 +169,7 @@ sub individual_name{
 
 sub seq {
   my $self = shift;
+  deprecate("seq is deprecated and will be removed in e95.");
 
   # special case for in-between (insert) coordinates
   return '' if($self->start() == $self->end() + 1);
@@ -206,6 +210,8 @@ sub seq {
 
 sub get_all_differences_Slice{
     my $self = shift;
+    deprecate("get_all_differences_Slice is deprecated and will be removed in e95.");
+
     my $differences; #reference to the array with the differences between Slice and StrainSlice
     my $ref_allele;
     foreach my $difference (@{$self->{'alleleFeatures'}}){
@@ -240,6 +246,8 @@ sub get_all_differences_Slice{
 
 sub get_all_differences_IndividualSlice{
     my $self = shift;
+    deprecate("get_all_differences_IndividualSlice is deprecated and will be removed in e95.");
+
     my $individualSlice = shift;
 
     if (!ref($individualSlice) || !$individualSlice->isa('Bio::EnsEMBL::IndividualSlice')){
@@ -324,6 +332,8 @@ sub get_all_differences_IndividualSlice{
 
 sub _convert_difference{
     my $self = shift;
+    deprecate("_convert_difference is deprecated and will be removed in e95.");
+
     my $difference = shift;
     my %new_af = %$difference; #make a copy of the alleleFeature
     #and change the allele with the one from the reference Slice
@@ -344,7 +354,8 @@ sub _convert_difference{
 
 sub mapper{
     my $self = shift;
-   
+    deprecate("mapper is deprecated and will be removed in e95.");
+  
     if (@_) {
 	#allow to create again the mapper
 	delete $self->{'mapper'};
@@ -423,6 +434,8 @@ sub mapper{
 
 sub sub_Slice {
   my ( $self, $start, $end, $strand ) = @_;
+  deprecate("sub_Slice is deprecated and will be removed in e95.");
+
   my $mapper = $self->mapper();
   #map from the Individual to the Slice to get the sub_Slice, and then, apply the differences in the subSlice
   my @results = $mapper->map_coordinates('IndividualSlice',$start,$end,$strand,'IndividualSlice');
@@ -475,6 +488,7 @@ sub sub_Slice {
 
 sub subseq {
   my ( $self, $start, $end, $strand ) = @_;
+  deprecate("subseq is deprecated and will be removed in e95.");
 
   if ( $end+1 < $start ) {
     throw("End coord + 1 is less than start coord");
@@ -550,6 +564,7 @@ sub subseq {
 
 sub get_all_Transcripts {
   my $self = shift;
+  deprecate("get_all_Transcripts is deprecated and will be removed in e95.");
 
   my $transcripts = $self->SUPER::get_all_Transcripts(1);
   $self->map_to_Individual($transcripts);
@@ -578,6 +593,8 @@ sub get_all_Exons {
   my $self = shift;
   my $dbtype = shift;
 
+  deprecate("get_all_Exons is deprecated and will be removed in e95.");
+
   my $exons = $self->SUPER::get_all_Exons($dbtype);
   $self->map_to_Individual($exons); #map the exons to the Individual
 
@@ -602,6 +619,7 @@ sub get_all_Exons {
 
 sub get_all_Genes{
   my ($self, $logic_name, $dbtype) = @_;
+  deprecate("get_all_Genes is deprecated and will be removed in e95.");
 
   my $genes = $self->SUPER::get_all_Genes($logic_name, $dbtype, 1);
 
@@ -630,6 +648,7 @@ sub get_all_Genes{
 sub map_to_Individual{
     my $self = shift;
     my $features = shift;
+    deprecate("map_to_Individual is deprecated and will be removed in e95.");
 
     my $mapper = $self->mapper();
     my (@results, @results_ordered, $new_start, $new_end, $new_strand);
@@ -651,11 +670,14 @@ sub map_to_Individual{
 
 sub alleleFeatures{
     my $self = shift;
+    deprecate("alleleFeatures is deprecated and will be removed in e95.");
+
     return $self->{'alleleFeatures'};
 }
 
 sub add_AlleleFeature{
     my $self = shift;
+    deprecate("add_AlleleFeatures is deprecated and will be removed in e95.");
 
     if (@_){
 	if(!ref($_[0]) || !$_[0]->isa('Bio::EnsEMBL::Variation::AlleleFeature')) {
