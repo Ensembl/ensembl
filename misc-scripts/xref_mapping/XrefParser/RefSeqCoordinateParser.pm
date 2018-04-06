@@ -240,12 +240,23 @@ sub run_script {
 
 # Create a range registry for all the exons of the refseq transcript
       foreach my $transcript_of (sort { $a->start() <=> $b->start() } @$transcripts_of) {
-        # Skip non conventional accessions
-        next unless defined $transcript_of->stable_id;
-        if ($transcript_of->stable_id !~ /^[NXMR]{2}_[0-9]+/)  { next; }
+	my $id;
+	# We're moving to RefSeq accessions being stored as xrefs rather than
+	# stable ids. But we also need to maintain backwards compatbility.
+	# If it's the new kind, where there's a display_xref use that,
+	# otherwise fall back to using the stable_id. But also check if we
+	# have neither, then skip the record.
+	if (defined $transcript_of->display_xref ) {
+	  $id = $transcript_of->display_xref->display_id;
+	} elsif (defined $transcript_of->stable_id) {
+	  $id = $transcript_of->stable_id;
+	} else {
+	  # Skip non conventional accessions
+	  next;
+	}
+        if ($id !~ /^[NXMR]{2}_[0-9]+/)  { next; }
         my %transcript_result;
         my %tl_transcript_result;
-        my $id = $transcript_of->stable_id();
         if (!defined $id) { next; }
         my $exons_of = $transcript_of->get_all_Exons();
         my $rr1 = Bio::EnsEMBL::Mapper::RangeRegistry->new();
@@ -376,8 +387,7 @@ sub run_script {
                                           info_type => 'DIRECT' });
           $self->add_direct_xref($xref_id, $best_id, "Transcript", "", $dbi);
 
-          my $ta_of = $otherf_dba->get_TranscriptAdaptor();
-          my $t_of = $ta_of->fetch_by_stable_id($id);
+	  my $t_of = $transcript_of;
           my $g_of = $t_of->get_Gene();
           my $entrez_id = $g_of->stable_id();
           my $tl_of = $t_of->translation();
