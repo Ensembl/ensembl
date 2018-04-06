@@ -319,6 +319,9 @@ INSERT INTO meta (species_id, meta_key, meta_value)
 INSERT INTO meta (species_id, meta_key, meta_value)
   VALUES (NULL, 'patch', 'patch_92_93_b.sql|biotype_table');
 
+INSERT INTO meta (species_id, meta_key, meta_value)
+  VALUES (NULL, 'patch', 'patch_92_93_c.sql|collate_index_interpro');
+
 /**
 @table meta_coord
 @colour #C70C09
@@ -2283,7 +2286,7 @@ CREATE TABLE identity_xref (
 
 CREATE TABLE interpro (
   interpro_ac               VARCHAR(40) NOT NULL,
-  id                        VARCHAR(40) NOT NULL,
+  id                        VARCHAR(40) CHARACTER SET latin1 COLLATE latin1_bin NOT NULL,
 
   UNIQUE KEY accession_idx (interpro_ac, id),
   KEY id_idx (id)
