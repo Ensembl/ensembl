@@ -1,6 +1,6 @@
 -- 
 -- Created by SQL::Translator::Producer::SQLite
--- Created on Fri Feb 16 15:28:38 2018
+-- Created on Fri Apr  6 15:16:25 2018
 -- 
 
 BEGIN TRANSACTION;
@@ -423,7 +423,7 @@ CREATE TABLE identity_xref (
 --
 CREATE TABLE interpro (
   interpro_ac varchar(40) NOT NULL DEFAULT '',
-  id varchar(40) NOT NULL DEFAULT ''
+  id varchar(40) NOT NULL
 );
 
 CREATE UNIQUE INDEX accession_idx ON interpro (interpro_ac, id);
