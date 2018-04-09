@@ -332,6 +332,7 @@ sub validate_user_name {
      'ktaylor' => 1,
      'lairdm' => 1,
      'prem' => 1,
+     'tgrego' => 1,
      'killm9m1' => 1
     );
 
@@ -373,7 +374,7 @@ sub parse_tickets_file {
      'assignee'    => { 'name' => $parameters->{relco} },
      'priority'    => { 'name' => $priority },
      'fixVersions' => [ { 'name' => sprintf("%d", $parameters->{release}) } ],
-     'duedate'     => $parameters->{dates}{release},
+     'duedate'     => $parameters->{dates}{release_date},
      # 'components'  => \@components,
      'description' => sprintf "Core activities for release %s", $parameters->{release},
     };
@@ -417,10 +418,10 @@ sub parse_tickets_file {
     # line, override the one in the ticket config
     if ($summary =~ /xrefs/i) {
       if($xref_species) {
-	$species_list = $xref_species;
+        $species_list = $xref_species;
+        $species_list or $logger->error("Empty list of xref species", 0, 0);
       }
 
-      $species_list or $logger->error("Empty list of xref species", 0, 0);
       my @species = split /,/, $species_list;
 
       # this is the main Xref issue
