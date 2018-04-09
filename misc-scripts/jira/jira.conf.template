@@ -7,7 +7,7 @@ compara_final_handover=YYYY-MM-DD
 code_branching=YYYY-MM-DD
 vm_handover=YYYY-MM-DD
 test_site_completion=YYYY-MM-DD
-release=YYYY-MM-DD
+release_date=YYYY-MM-DD
 
 [ical]
 declaration_of_intentions=Request intentions (production) (<release>)
