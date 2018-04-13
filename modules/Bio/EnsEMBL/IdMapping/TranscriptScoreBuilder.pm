@@ -523,18 +523,11 @@ sub non_mapped_gene_rescore {
 
 sub get_biotype_group {
   my ($self, $biotype) = @_;
-  my $dba = $self->cache->get_production_DBAdaptor();
-  my $helper   = $self->cache->get_production_DBAdaptor()->dbc()->sql_helper();
-
-  my $sql      = q{
-     SELECT biotype_group
-     FROM biotype
-     WHERE object_type = 'transcript'
-     AND is_current = 1
-     AND name = ?
-     AND db_type like '%core%' };
-  my $result = $helper->execute_simple(-SQL => $sql, -PARAMS => [$biotype]);
-  return $result->[0];
+  my $dba = $self->cache->get_DBAdaptor('target');
+  my $biotype_adaptor = $dba->get_BiotypeAdaptor();
+  my $biotype_object = $biotype_adaptor->fetch_by_name_object_type($biotype, 'transcript');
+  return $biotype_object->biotype_group();
+  
 }
 
   
