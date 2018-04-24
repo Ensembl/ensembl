@@ -308,19 +308,14 @@ CREATE TABLE IF NOT EXISTS meta (
 # Add schema type and schema version to the meta table.
 INSERT INTO meta (species_id, meta_key, meta_value) VALUES
   (NULL, 'schema_type', 'core'),
-  (NULL, 'schema_version', '93');
+  (NULL, 'schema_version', '94');
 
 # Patches included in this schema file:
 # NOTE: At start of release cycle, remove patch entries from last release.
 # NOTE: Avoid line-breaks in values.
 INSERT INTO meta (species_id, meta_key, meta_value)
-  VALUES (NULL, 'patch', 'patch_92_93_a.sql|schema_version');
+  VALUES (NULL, 'patch', 'patch_93_94_a.sql|schema_version');
 
-INSERT INTO meta (species_id, meta_key, meta_value)
-  VALUES (NULL, 'patch', 'patch_92_93_b.sql|biotype_table');
-
-INSERT INTO meta (species_id, meta_key, meta_value)
-  VALUES (NULL, 'patch', 'patch_92_93_c.sql|collate_index_interpro');
 
 /**
 @table meta_coord
