@@ -120,3 +120,4 @@
 120	\N	patch	patch_92_93_b.sql|biotype_table
 121	\N	patch	patch_92_93_c.sql|collate_index_interpro
 122	\N	patch	patch_93_94_a.sql|schema_version
+123	\N	patch	patch_93_94_c.sql|nullable_ox_analysis

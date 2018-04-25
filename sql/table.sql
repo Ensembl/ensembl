@@ -315,6 +315,8 @@ INSERT INTO meta (species_id, meta_key, meta_value) VALUES
 # NOTE: Avoid line-breaks in values.
 INSERT INTO meta (species_id, meta_key, meta_value)
   VALUES (NULL, 'patch', 'patch_93_94_a.sql|schema_version');
+INSERT INTO meta (species_id, meta_key, meta_value)
+  VALUES (NULL, 'patch', 'patch_93_94_c.sql|nullable_ox_analysis');
 
 
 /**
@@ -2318,7 +2320,7 @@ CREATE TABLE object_xref (
                                    'Translation', 'Operon', 'OperonTranscript', 'Marker') NOT NULL,
   xref_id                     INT(10) UNSIGNED NOT NULL,
   linkage_annotation          VARCHAR(255) DEFAULT NULL,
-  analysis_id                 SMALLINT UNSIGNED DEFAULT 0 NOT NULL,
+  analysis_id                 SMALLINT UNSIGNED,
 
   PRIMARY KEY (object_xref_id),
 

@@ -1,6 +1,6 @@
 -- 
 -- Created by SQL::Translator::Producer::SQLite
--- Created on Tue Apr 24 11:42:43 2018
+-- Created on Wed Apr 25 09:29:04 2018
 -- 
 
 BEGIN TRANSACTION;
@@ -617,7 +617,7 @@ CREATE TABLE object_xref (
   ensembl_object_type enum NOT NULL DEFAULT 'RawContig',
   xref_id integer NOT NULL,
   linkage_annotation varchar(255),
-  analysis_id smallint NOT NULL
+  analysis_id smallint
 );
 
 CREATE UNIQUE INDEX xref_idx ON object_xref (xref_id, ensembl_object_type, ensembl_id, analysis_id);

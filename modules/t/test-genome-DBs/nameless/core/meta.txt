@@ -98,3 +98,4 @@
 152	\N	patch	patch_92_93_b.sql|biotype_table
 153	\N	patch	patch_92_93_c.sql|collate_index_interpro
 154	\N	patch	patch_93_94_a.sql|schema_version
+155	\N	patch	patch_93_94_c.sql|nullable_ox_analysis
