@@ -1876,7 +1876,7 @@ sub _objs_from_sth {
 
     my $display_xref;
 
-    if ($display_xref_id) {
+    if (defined $xref_display_label) {
       $display_xref = Bio::EnsEMBL::DBEntry->new_fast({
         'dbID'            => $display_xref_id,
         'adaptor'         => $dbEntryAdaptor,
