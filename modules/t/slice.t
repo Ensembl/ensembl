@@ -474,14 +474,14 @@ $multi->restore();
 
 $multi->save("core", 'seq_region_synonym');
 
-$slice = $slice_adaptor->fetch_by_region('chromosome', 1, 1, 10);
+$slice = $slice_adaptor->fetch_by_region('chromosome', 5, 1, 10);
 
 @alt_names = @{$slice->get_all_synonyms()};
 
 is(@alt_names, 0, "No altnames returned");
 
 
-$slice->add_synonym("1ish");
+$slice->add_synonym("5ish");
 
 @alt_names = @{$slice->get_all_synonyms()};
 
@@ -492,7 +492,7 @@ foreach my $syn (@alt_names){
 }
 
 
-$slice = $slice_adaptor->fetch_by_region('chromosome', 1, 1, 10);
+$slice = $slice_adaptor->fetch_by_region('chromosome', 5, 1, 10);
 
 @alt_names = @{$slice->get_all_synonyms()};
 
@@ -513,7 +513,7 @@ $multi->restore();
 
 # test fetch_all on synonym adaptor
 my $all_synonyms = $syn_adap->fetch_all();
-is(@$all_synonyms, 3, 'fetch_all on synonym adaptor');
+is(@$all_synonyms, 5, 'fetch_all on synonym adaptor');
 
 
 #Test assembly exception type on HAP

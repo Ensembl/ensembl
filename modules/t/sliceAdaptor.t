@@ -555,6 +555,9 @@ ok($slice->seq_region_name =~ /$clone_name\.\d+/);
   is($chr_syn_slice->seq_region_name(), '20', 'Ensuring slice is Chr20 as expected');
   $chr_syn_slice = $slice_adaptor->fetch_by_region('toplevel', 'chrx');
   is($chr_syn_slice->seq_region_name(), 'X', 'Ensuring slice is ChrX as expected');
+
+  $syn_slice = $slice_adaptor->fetch_by_region('toplevel', 'chr1');
+  is($syn_slice->seq_region_name(), '1', 'Ensuring chr1 is 1, and not 10');
 }
 
 #{

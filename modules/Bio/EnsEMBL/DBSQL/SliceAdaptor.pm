@@ -302,25 +302,36 @@ sub fetch_by_region {
         $syn_sql .= "AND cs.version = '" . $version . "' ";
       }
       my $syn_sql_sth = $self->prepare($syn_sql);
-      my $escaped_seq_region_name = $seq_region_name;
-      my $escape_char = $self->dbc->db_handle->get_info(14);
-      $escaped_seq_region_name =~ s/([_%])/$escape_char$1/g;
-      $syn_sql_sth->bind_param(1, "$escaped_seq_region_name%", SQL_VARCHAR);
+      $syn_sql_sth->bind_param(1, $seq_region_name, SQL_VARCHAR);
       $syn_sql_sth->bind_param(2, $self->species_id(), SQL_INTEGER);
       $syn_sql_sth->execute();
       my ($new_name, $new_coord_system, $new_version);
       $syn_sql_sth->bind_columns( \$new_name, \$new_coord_system, \$new_version);
-            
       if($syn_sql_sth->fetch){
-        $syn_sql_sth->finish;
         if ((not defined($cs)) || ($cs->name eq $new_coord_system && $cs->version eq $new_version)) {
             return $self->fetch_by_region($new_coord_system, $new_name, $start, $end, $strand, $new_version, $no_fuzz);
-        } elsif ($cs->name ne $new_coord_system) {
-            warning("Searched for a known feature on coordinate system: ".$cs->dbID." but found it on: ".$new_coord_system.
-            "\n No result returned, consider searching without coordinate system or use toplevel.");
-            return;
         }
-        
+      } else {
+        # Try wildcard searching if no exact synonym was found
+        $syn_sql_sth = $self->prepare($syn_sql);
+        my $escaped_seq_region_name = $seq_region_name;
+        my $escape_char = $self->dbc->db_handle->get_info(14);
+        $escaped_seq_region_name =~ s/([_%])/$escape_char$1/g;
+        $syn_sql_sth->bind_param(1, "$escaped_seq_region_name%", SQL_VARCHAR);
+        $syn_sql_sth->bind_param(2, $self->species_id(), SQL_INTEGER); 
+        $syn_sql_sth->execute();
+        $syn_sql_sth->bind_columns( \$new_name, \$new_coord_system, \$new_version);
+
+        if($syn_sql_sth->fetch){
+          if ((not defined($cs)) || ($cs->name eq $new_coord_system && $cs->version eq $new_version)) {
+              return $self->fetch_by_region($new_coord_system, $new_name, $start, $end, $strand, $new_version, $no_fuzz);
+          } elsif ($cs->name ne $new_coord_system) {
+              warning("Searched for a known feature on coordinate system: ".$cs->dbID." but found it on: ".$new_coord_system.
+              "\n No result returned, consider searching without coordinate system or use toplevel.");
+              return;
+          }
+          
+        }
       }
       $syn_sql_sth->finish;
 
