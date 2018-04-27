@@ -151,13 +151,17 @@ dies_ok { $reg->add_DBAdaptor() } 'add_DBAdaptor() must get a valid species';
 # [ENSCORESW-2509]. Test correct handling of multi-species databases
 SKIP: {
   skip 'Tests for collection DBs are done on MySQL engine', 5 unless $dbc->driver eq 'mysql';
-  my @collection_dbs = create_collection_dbs();
+  my $version = 15;
+  $reg->clear();
+  my @collection_dbs = create_collection_dbs($version);
 
   my %params = (-HOST => $dbc->host(), -PORT => $dbc->port(), -USER => $dbc->username());
   $params{-PASS} = $dbc->password() if $dbc->password();
+  $params{-DB_VERSION} = $version;
+  $params{-VERBOSE} = 1;
   $reg->load_registry_from_db(%params);
 
-  @species = grep { !/new/ } @{$reg->get_all_species()};
+  @species = grep { !/multi/ } @{$reg->get_all_species()};
   is(scalar @species, 4, "Number of species loaded from collection DBs");
   ok(grep(/escherichia_coli_dh1/, @species), "Loaded ensembl genomes species from collection DB");
   ok(grep(/mus_musculus_aj/, @species), "Loaded ensembl species from collection DB");
@@ -168,14 +172,15 @@ SKIP: {
 }
 
 sub create_collection_dbs {
+  my $version = shift;
   my $collection_dbs = 
   [
    {
-    name => sprintf("bacteria_9_collection_core_37_%d_1", software_version()),
+    name => sprintf("bacteria_9_collection_core_37_%d_1", $version),
     species => [[39,2,"species.db_name","escherichia_coli_dh1"],[154,5,"species.db_name","lactobacillus_iners_lactinv_01v1_a"]]
    },
    {
-    name => sprintf("mouse_5_collection_core_%d_1", software_version()),
+    name => sprintf("mouse_5_collection_core_%d_1", $version),
     species => [[27,1,"species.db_name","mus_musculus_aj"],[91,2,"species.db_name","mus_musculus_balbcj"]]
    }
   ];
