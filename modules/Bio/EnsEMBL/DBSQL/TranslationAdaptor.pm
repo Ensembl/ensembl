@@ -921,6 +921,8 @@ sub fetch_all_by_Transcript_list {
          -version => $version,
 	 -created_date => $created_date || undef,
 	 -modified_date => $modified_date || undef);
+
+      $tl->{version} = undef unless defined $version;
       
       $tl->adaptor($self);
       my $canonical_translation_id = $canonical_lookup->{$transcript_id};
