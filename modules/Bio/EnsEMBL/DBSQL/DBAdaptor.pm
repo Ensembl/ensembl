@@ -421,6 +421,7 @@ sub get_available_adaptors {
     PredictionTranscript                => 'Bio::EnsEMBL::DBSQL::PredictionTranscriptAdaptor',
     ProteinAlignFeature                 => 'Bio::EnsEMBL::DBSQL::ProteinAlignFeatureAdaptor',
     ProteinFeature                      => 'Bio::EnsEMBL::DBSQL::ProteinFeatureAdaptor',
+    RNAProduct                          => 'Bio::EnsEMBL::DBSQL::RNAProductAdaptor',
     RepeatConsensus                     => 'Bio::EnsEMBL::DBSQL::RepeatConsensusAdaptor',
     RepeatFeature                       => 'Bio::EnsEMBL::DBSQL::RepeatFeatureAdaptor',
     SeqRegionSynonym                    => 'Bio::EnsEMBL::DBSQL::SeqRegionSynonymAdaptor',
