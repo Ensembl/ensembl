@@ -53,6 +53,8 @@ $test_adaptor = $db->get_TranscriptAdaptor();
 ok($test_adaptor->isa("Bio::EnsEMBL::DBSQL::TranscriptAdaptor"));
 $test_adaptor = $db->get_TranslationAdaptor();
 ok($test_adaptor->isa("Bio::EnsEMBL::DBSQL::TranslationAdaptor"));
+$test_adaptor = $db->get_RNAProductAdaptor();
+ok($test_adaptor->isa("Bio::EnsEMBL::DBSQL::RNAProductAdaptor"));
 $test_adaptor = $db->get_SliceAdaptor();
 ok($test_adaptor->isa("Bio::EnsEMBL::DBSQL::SliceAdaptor"));
 $test_adaptor = $db->get_AnalysisAdaptor();
