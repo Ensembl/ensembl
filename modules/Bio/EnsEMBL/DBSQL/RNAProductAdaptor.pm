@@ -75,6 +75,60 @@ use parent qw( Bio::EnsEMBL::DBSQL::BaseAdaptor );
 
 
 
+=head2 list_dbIDs
+
+  Arg [1]    : none
+  Example    : @rnaproduct_ids = @{$rnaproduct_adaptor->list_dbIDs()};
+  Description: Gets an array of internal ids for all rnaproducts in the current db
+  Returntype : list of ints
+  Exceptions : none
+  Caller     : ?
+  Status     : Stable
+
+=cut
+
+sub list_dbIDs {
+   my ($self) = @_;
+
+   return $self->_list_dbIDs("rnaproduct");
+}
+
+
+=head2 _list_dbIDs
+
+  Arg[1]      : String $table
+  Arg[2]      : String $column
+  Example     : $rnaproduct_adaptor->_list_dbIDs('rnaproduct', 'rnaproduct_id');
+  Description : Local reimplementation to ensure multi-species rnaproducts
+                are limited to their species alone
+  Returntype  : ArrayRef of specified IDs
+  Caller      : Internal
+  Status      : Unstable
+=cut
+
+sub _list_dbIDs {
+  my ($self, $table, $column) = @_;
+  my $ids;
+  if($self->is_multispecies()) {
+    # FIXME: test this, it might not have been fully converted from TranslationAdaptor yet
+    $column ||= "${table}_id";
+    my $sql = <<SQL;
+select `rp`.`${column}`
+from rnaproduct rp
+join transcript t using (transcript_id)
+join seq_region sr using (seq_region_id)
+join coord_system cs using (coord_system_id)
+where cs.species_id =?
+SQL
+    return $self->dbc()->sql_helper()->execute_simple(-SQL => $sql, -PARAMS => [$self->species_id()]);
+  }
+  else {
+    $ids = $self->SUPER::_list_dbIDs($table, $column);
+  }
+  return $ids;
+}
+
+
 # _tables
 #  Arg [1]    : none
 #  Description: PROTECTED implementation of superclass abstract method.
