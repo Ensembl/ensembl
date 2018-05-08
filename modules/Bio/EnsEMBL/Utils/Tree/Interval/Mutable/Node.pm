@@ -164,7 +164,7 @@ sub search {
 
   # if interval is to the right of the rightmost point of any interval in this node and
   # all its children, there won't be any matches
-  return if $i->start > $self->{max};
+  return [] if $i->start > $self->{max};
 
   my $results = [];
   
