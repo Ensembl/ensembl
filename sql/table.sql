@@ -319,6 +319,16 @@ INSERT INTO meta (species_id, meta_key, meta_value)
 INSERT INTO meta (species_id, meta_key, meta_value)
   VALUES (NULL, 'patch', 'patch_96_97_b.sql|biotype_so_term');
 
+INSERT INTO meta (species_id, meta_key, meta_value)
+  VALUES (NULL, 'patch', 'patch_96_97_c.sql|rnaproduct_tables');
+
+INSERT INTO meta (species_id, meta_key, meta_value)
+  VALUES (NULL, 'patch', 'patch_96_97_d.sql|add_object_type_rnaproduct');
+
+INSERT INTO meta (species_id, meta_key, meta_value)
+  VALUES (NULL, 'patch', 'patch_96_97_e.sql|add_stable_id_event_type_rnaproduct');
+
+
 /**
 @table meta_coord
 @colour #C70C09
@@ -1999,7 +2009,7 @@ CREATE TABLE stable_id_event (
   new_stable_id             VARCHAR(128),
   new_version               SMALLINT,
   mapping_session_id        INT(10) UNSIGNED NOT NULL DEFAULT '0',
-  type                      ENUM('gene', 'transcript', 'translation') NOT NULL,
+  type                      ENUM('gene', 'transcript', 'translation', 'rnaproduct') NOT NULL,
   score                     FLOAT NOT NULL DEFAULT 0,
 
   UNIQUE KEY uni_idx (mapping_session_id, old_stable_id, new_stable_id, type),
@@ -2303,7 +2313,7 @@ Each EnsEMBL object can be associated with zero or more xrefs. An xref object ca
 
 @column object_xref_id            Primary key, internal identifier.
 @column ensembl_id                Foreign key references to the @link seq_region, @link transcript, @link gene, @translation tables depending on ensembl_object_type.
-@column ensembl_object_type       Ensembl object type: 'RawContig', 'Transcript', 'Gene','Translation'.
+@column ensembl_object_type       Ensembl object type: 'RawContig', 'Transcript', 'Gene', 'Translation', ..., 'RNAProduct'
 @column xref_id                   Foreign key references to the @link xref table.
 @column linkage_annotation        Additional annotation on the linkage.
 @column analysis_id               Foreign key references to the @link analysis table.
@@ -2319,7 +2329,8 @@ CREATE TABLE object_xref (
   object_xref_id              INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
   ensembl_id                  INT(10) UNSIGNED NOT NULL,
   ensembl_object_type         ENUM('RawContig', 'Transcript', 'Gene',
-                                   'Translation', 'Operon', 'OperonTranscript', 'Marker') NOT NULL,
+                                   'Translation', 'Operon', 'OperonTranscript',
+                                   'Marker', 'RNAProduct') NOT NULL,
   xref_id                     INT(10) UNSIGNED NOT NULL,
   linkage_annotation          VARCHAR(255) DEFAULT NULL,
   analysis_id                 SMALLINT UNSIGNED,
@@ -2608,3 +2619,97 @@ CREATE TABLE operon_transcript_gene (
 ) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
 
 
+/**
+@table rnaproduct
+@colour   #808000
+@desc Describes which parts of which precursor transcript are used in rnaproduct. The seq_start and seq_end columns are 1-based offsets into the relative coordinate system of transcript_id. i.e, if the rnaproduct starts at the first base of the transcript, seq_start would be 1. Transcripts are related to rnaproducts by the transcript_id key in this table.
+
+@column rnaproduct_id               Primary key, internal identifier.
+@column rnaproduct_type_id          Foreign key references to the @link rnaproduct_type table.
+@column transcript_id               Foreign key references to the @link transcript table.
+@column seq_start                   1-based offset into the relative coordinate system of transcript_id.
+@column start_exon_id               Foreign key references to the @link exon table.
+@column seq_end                     1-based offset into the relative coordinate system of transcript_id.
+@column end_exon_id                 Foreign key references to the @link exon table.
+@column stable_id                   Release-independent stable identifier.
+@column version                     Stable identifier version number.
+@column created_date                Date created.
+@column modified_date               Date modified.
+*/
+
+
+CREATE TABLE rnaproduct (
+
+  rnaproduct_id               INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
+  rnaproduct_type_id          SMALLINT(5) UNSIGNED NOT NULL,
+  transcript_id               INT(10) UNSIGNED NOT NULL,
+  seq_start                   INT(10) NOT NULL,       # relative to transcript start
+  start_exon_id               INT(10) UNSIGNED,
+  seq_end                     INT(10) NOT NULL,       # relative to transcript start
+  end_exon_id                 INT(10) UNSIGNED,
+  stable_id                   VARCHAR(128) DEFAULT NULL,
+  version                     SMALLINT UNSIGNED DEFAULT NULL,
+  created_date                DATETIME DEFAULT NULL,
+  modified_date               DATETIME DEFAULT NULL,
+
+  PRIMARY KEY (rnaproduct_id),
+  KEY transcript_idx (transcript_id),
+  KEY stable_id_idx (stable_id, version)
+
+) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
+
+
+/**
+@table rnaproduct_attrib
+@colour   #808000
+@desc Enables storage of attributes that relate to rnaproducts.
+
+@column rnaproduct_id       Foreign key references to the @link transcript table.
+@column attrib_type_id      Foreign key references to the @link attrib_type table.
+@column value               Attribute value.
+
+@see rnaproduct
+
+*/
+
+
+CREATE TABLE rnaproduct_attrib (
+
+  rnaproduct_id               INT(10) UNSIGNED NOT NULL DEFAULT '0',
+  attrib_type_id              SMALLINT(5) UNSIGNED NOT NULL DEFAULT '0',
+  value                       TEXT NOT NULL,
+
+  KEY type_val_idx (attrib_type_id, value(40)),
+  KEY val_only_idx (value(40)),
+  KEY rnaproduct_idx (rnaproduct_id),
+  UNIQUE KEY rnaproduct_attribx (rnaproduct_id, attrib_type_id, value(500))
+
+) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
+
+
+/**
+@table rnaproduct_type
+@colour   #808000
+@desc Provides codes, names and desctriptions of rnaproduct types.
+
+@column rnaproduct_type_id   Primary key, internal identifier.
+@column code                 Attribute code, e.g. 'miRNA'.
+@column name                 Attribute name, e.g. 'microRNA'.
+@column description          Attribute description, e.g. 'mature microRNA'.
+
+@see seq_region_rnaproduct
+
+*/
+
+
+CREATE TABLE rnaproduct_type (
+
+  rnaproduct_type_id          SMALLINT(5) UNSIGNED NOT NULL AUTO_INCREMENT,
+  code                        VARCHAR(20) NOT NULL DEFAULT '',
+  name                        VARCHAR(255) NOT NULL DEFAULT '',
+  description                 TEXT,
+
+  PRIMARY KEY (rnaproduct_type_id),
+  UNIQUE KEY code_idx (code)
+
+) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
