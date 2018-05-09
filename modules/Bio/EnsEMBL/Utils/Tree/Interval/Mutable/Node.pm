@@ -45,7 +45,7 @@ package Bio::EnsEMBL::Utils::Tree::Interval::Mutable::Node;
 
 use strict;
 
-use Scalar::Util qw(looks_like_number);
+use Scalar::Util qw(looks_like_number weaken);
 use List::Util qw(max);
 use Bio::EnsEMBL::Utils::Scalar qw(assert_ref);
 use Bio::EnsEMBL::Utils::Exception qw(throw);
@@ -117,7 +117,10 @@ sub add_interval {
 
 sub parent {
   my $self = shift;
-  $self->{parent} = shift if( @_ );
+  if (@_) {
+    $self->{parent} = shift;
+    weaken($self->{parent});
+  } 
   
   return $self->{parent};
 }
