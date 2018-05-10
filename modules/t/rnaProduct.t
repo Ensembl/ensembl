@@ -39,7 +39,7 @@ my $db = $multi->get_DBAdaptor('core');
 
 my $rp = Bio::EnsEMBL::RNAProduct->new();
 
-ok($rp);
+ok($rp, 'RNAProduct constructor works without arguments');
 
 
 # TODO: More RNAProduct tests
@@ -51,7 +51,7 @@ ok($rp);
 
 my $rp_a  = $db->get_RNAProductAdaptor();
 
-ok($rp_a);
+ok($rp_a, 'Can get RNAProductAdaptor from core DBAdaptor');
 
 
 # TODO: More RNAProductAdaptor tests
