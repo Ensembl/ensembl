@@ -125,5 +125,119 @@ sub new {
 }
 
 
+=head2 created_date
+
+  Arg [1]    : (optional) string $created_date - created date to set
+  Example    : $rnaproduct->created_date('2007-01-10 20:52:00');
+  Description: Getter/setter for attribute created_date
+  Returntype : string
+  Exceptions : none
+  Caller     : general
+  Status     : Stable
+
+=cut
+
+sub created_date {
+  my $self = shift;
+  $self->{'created_date'} = shift if (@_);
+  return $self->{'created_date'};
+}
+
+
+=head2 end
+
+  Arg [1]    : (optional) int $end - end position to set
+  Example    : $rnaproduct->end(39);
+  Description: Getter/setter for the value of end, which is a position within
+               the precursor Transcript.
+  Returntype : int
+  Exceptions : none
+  Caller     : general
+  Status     : Stable
+
+=cut
+
+sub end {
+  my $self = shift;
+  $self->{'end'} = shift if (@_);
+  return $self->{'end'};
+}
+
+
+=head2 modified_date
+
+  Arg [1]    : (optional) string $modified_date - modification date to set
+  Example    : $rnaproduct->modified_date('2007-01-10 20:52:00');
+  Description: Getter/setter for attribute modified_date
+  Returntype : string
+  Exceptions : none
+  Caller     : general
+  Status     : Stable
+
+=cut
+
+sub modified_date {
+  my $self = shift;
+  $self->{'modified_date'} = shift if (@_);
+  return $self->{'modified_date'};
+}
+
+
+=head2 stable_id
+
+  Arg [1]    : (optional) string $stable_id - stable ID to set
+  Example    : $rnaproduct->stable_id('ENSM00090210');
+  Description: Getter/setter for attribute stable_id
+  Returntype : string
+  Exceptions : none
+  Caller     : general
+  Status     : Stable
+
+=cut
+
+sub stable_id {
+  my $self = shift;
+  $self->{'stable_id'} = shift if (@_);
+  return $self->{'stable_id'};
+}
+
+
+=head2 start
+
+  Arg [1]    : (optional) int $start - start position to set
+  Example    : $rnaproduct->start(17);
+  Description: Getter/setter for the value of start, which is a position within
+               the precursor Transcript.
+  Returntype : int
+  Exceptions : none
+  Caller     : general
+  Status     : Stable
+
+=cut
+
+sub start {
+  my $obj = shift;
+  $obj->{'start'} = shift if (@_);
+  return $obj->{'start'};
+}
+
+
+=head2 version
+
+  Arg [1]    : (optional) string $version - version to set
+  Example    : $rnaproduct->version(2);
+  Description: Getter/setter for attribute version
+  Returntype : string
+  Exceptions : none
+  Caller     : general
+  Status     : Stable
+
+=cut
+
+sub version {
+  my $self = shift;
+  $self->{'version'} = shift if (@_);
+  return $self->{'version'};
+}
 
 1;
