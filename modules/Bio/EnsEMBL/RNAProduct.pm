@@ -38,9 +38,17 @@ TODO
 
 =head1 SYNOPSIS
 
-  my $translation = Bio::EnsEMBL::RNAProduct->new(
-    ...
+  my $rnaproduct = Bio::EnsEMBL::RNAProduct->new(
+    -SEQ_START => 36,
+    -SEQ_END   => 58
   );
+
+  # Stable-ID setter
+  $rnaproduct->stable_id('ENSM00090210');
+
+  # Get start and end position in the precursor transcript
+  my $start = $rnaproduct->start();
+  my $end = $rnaproduct->end();
 
 =cut
 
@@ -62,7 +70,23 @@ use parent qw(Bio::EnsEMBL::Storable);
 
 =head2 new
 
-  ...
+  Arg [-SEQ_START]    : The offset in the Translation indicating the start
+                        position of the product sequence.
+  Arg [-SEQ_END]      : The offset in the Translation indicating the end
+                        position of the product sequence.
+  Arg [-STABLE_ID]    : The stable identifier for this RNAPRoduct
+  Arg [-VERSION]      : The version of the stable identifier
+  Arg [-DBID]         : The internal identifier of this RNAProduct
+  Arg [-ADAPTOR]      : The TranslationAdaptor for this RNAProduct
+  Arg [-SEQ]          : Manually sets the nucleotide sequence of this
+                        rnaproduct. May be useful if this rnaproduct is not
+                        stored in a database.
+  Arg [-CREATED_DATE] : the date the rnaproduct was created
+  Arg [-MODIFIED_DATE]: the date the rnaproduct was modified
+  Example    : my $rp = Bio::EnsEMBL::RNAProduct->new(
+                 -SEQ_START => 36,
+                 -SEQ_END   => 58
+               );
   Description: Constructor.  Creates a new RNAProduct object
   Returntype : Bio::EnsEMBL::RNAProduct
   Exceptions : none
@@ -76,8 +100,26 @@ sub new {
 
   my $class = ref($caller) || $caller;
 
+  my ($seq_start, $seq_end, $stable_id, $version, $dbID, $adaptor, $seq,
+      $created_date, $modified_date ) =
+	rearrange(["SEQ_START", "SEQ_END", "STABLE_ID", "VERSION", "DBID",
+		   "ADAPTOR", "SEQ", "CREATED_DATE", "MODIFIED_DATE"], @_);
+
+  # Default version
+  $version //= 1;
+
   my $self = bless {
-		   }, $class;
+    'start'      => $seq_start,
+    'end'        => $seq_end,
+    'stable_id'  => $stable_id,
+    'version'    => $version,
+    'dbID'       => $dbID,
+    'seq'        => $seq,
+    'created_date' => $created_date,
+    'modified_date' => $modified_date
+  }, $class;
+
+  $self->adaptor($adaptor);
 
   return $self;
 }
