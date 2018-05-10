@@ -42,6 +42,45 @@ my $rp = Bio::EnsEMBL::RNAProduct->new();
 ok($rp, 'RNAProduct constructor works without arguments');
 
 
+# We will use the minimally constructed object from above for further
+# testing so let us get rid of this one as soon as we are done with it.
+{
+  my %cta = (
+    start => 123,
+    end => 456,
+    stable_id => 'ENSM00012345',
+    version => 1337,
+    dbID => 314,
+    seq => 'ACGTACGT',
+    created_date => time(),
+    modified_date => time()
+  );
+  my $rp_with_args = Bio::EnsEMBL::RNAProduct->new(
+    -SEQ_START => $cta{start},
+    -SEQ_END => $cta{end},
+    -STABLE_ID => $cta{stable_id},
+    -VERSION => $cta{version},
+    -DBID => $cta{dbID},
+    -SEQ => $cta{seq},
+    -CREATED_DATE => $cta{created_date},
+    -MODIFIED_DATE => $cta{modified_date}
+  );
+  foreach my $member (sort keys %cta) {
+    is($rp_with_args->{$member}, $cta{$member}, "RNAProduct constructor sets $member correctly");
+  }
+}
+
+is($rp->version(), 1, 'Default rnaproduct version == 1');
+
+ok(test_getter_setter($rp, 'start', 42), 'Test getter/setter start()');
+ok(test_getter_setter($rp, 'end', 64), 'Test getter/setter end()');
+ok(test_getter_setter($rp, 'stable_id', 1), 'Test getter/setter stable_id()');
+ok(test_getter_setter($rp, 'dbID', 3), 'Test getter/setter dbID()');
+ok(test_getter_setter($rp, 'version', 13), 'Test getter/setter version()');
+ok(test_getter_setter($rp, 'created_date', time()), 'Test getter/setter created_date()');
+ok(test_getter_setter($rp, 'modified_date', time()), 'Test getter/setter modified_date()');
+
+
 # TODO: More RNAProduct tests
 
 
