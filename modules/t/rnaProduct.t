@@ -80,6 +80,39 @@ ok(test_getter_setter($rp, 'version', 13), 'Test getter/setter version()');
 ok(test_getter_setter($rp, 'created_date', time()), 'Test getter/setter created_date()');
 ok(test_getter_setter($rp, 'modified_date', time()), 'Test getter/setter modified_date()');
 
+subtest 'Test stable_id_version() functionality' =>  sub {
+  ok(test_getter_setter($rp, 'stable_id_version', 3.14),
+     'getter/setter with \'stable_id.version\' as input');
+  ok(test_getter_setter($rp, 'stable_id_version', 'aqq'),
+     'getter/setter with \'stable_id\' as input');
+
+  # Let's be paranoid and assume test_getter_setter() cleans up after itself
+  $rp->stable_id_version('ENSfoo.1');
+  is($rp->stable_id_version(), $rp->stable_id() . '.' . $rp->version(),
+     'set by stable_id_version(), get by stable_id() + version()');
+
+  $rp->stable_id('ENSbar');
+  $rp->version(9);
+  is($rp->stable_id_version(), $rp->stable_id() . '.' . $rp->version(),
+     'set by stable_id() + version(), get by stable_id_version()');
+};
+
+subtest 'display_id() functionality' =>  sub {
+  # Start with a minimal object and gradually add missing data
+  my $rp_blank = Bio::EnsEMBL::RNAProduct->new();
+
+  is($rp_blank->display_id(), '',
+     'return empty string if neither stable_id nor dbID exist');
+
+  $rp_blank->dbID(12345);
+  is($rp_blank->display_id(), $rp_blank->dbID(),
+     'return dbID if no stable_id exists');
+
+  $rp_blank->stable_id(54321);
+  is($rp_blank->display_id(), $rp_blank->stable_id(),
+     'return stable_id if it exists');
+};
+
 
 # TODO: More RNAProduct tests
 
