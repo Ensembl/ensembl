@@ -135,10 +135,10 @@ sub insert {
 =cut
 
 sub search {
-  my ($self, $i) = @_;
+  my ($self, $start, $end) = @_;
   
   return unless $self->root; # empty tree
-  return $self->root->search($i);
+  return $self->root->search(Bio::EnsEMBL::Utils::Interval->new($start, $end));
   
 }
 
@@ -237,6 +237,26 @@ sub remove {
     # no records at all in this node, shouldn't happen
     croak "This should not happen";
   }
+}
+
+sub _in_order_traversal_delete {
+  my ($self, $node) = @_;
+
+  return unless $node;
+
+  $self->_in_order_traversal_delete($node->left);
+  $node->left(undef);
+  $self->_in_order_traversal_delete($node->right);
+  $node->right(undef);
+
+  $node->parent(undef);
+
+}
+
+sub DESTROY {
+  my $self = shift;
+
+  $self->_in_order_traversal_delete($self->root);
 }
 
 1;

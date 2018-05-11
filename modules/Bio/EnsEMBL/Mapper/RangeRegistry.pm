@@ -206,7 +206,7 @@ sub check_and_register {
   # the existing range does not cover part of the requested range
   #
 
-  my $overlap = $tree->search(Bio::EnsEMBL::Utils::Interval->new($rstart-1, $rend+1));
+  my $overlap = $tree->search($rstart-1, $rend+1);
   
   my ( $gap_start, $gap_end, $r_idx, $rstart_idx, $rend_idx );
   $gap_start = $rstart;
@@ -316,7 +316,7 @@ sub overlap_size {
   # the existing range does not cover part of the requested range
   #
 
-  my $overlap = $tree->search(Bio::EnsEMBL::Utils::Interval->new($start, $end));
+  my $overlap = $tree->search($start, $end);
 
   for ( my $CUR = 0; $CUR <= $#$overlap ; $CUR++ ) {
     my ( $pstart, $pend ) = ($overlap->[$CUR]->start, $overlap->[$CUR]->end);
