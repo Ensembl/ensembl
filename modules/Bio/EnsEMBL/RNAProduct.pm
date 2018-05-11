@@ -216,9 +216,9 @@ sub stable_id {
 =cut
 
 sub start {
-  my $obj = shift;
-  $obj->{'start'} = shift if (@_);
-  return $obj->{'start'};
+  my $self = shift;
+  $self->{'start'} = shift if (@_);
+  return $self->{'start'};
 }
 
 
