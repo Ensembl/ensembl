@@ -144,6 +144,26 @@ sub created_date {
 }
 
 
+=head2 display_id
+
+  Example    : print $rnaproduct->display_id();
+  Description: This method returns a string that is considered to be
+               the 'display' identifier. For rnaproducts this is (depending on
+               availability and in this order) the stable ID, the dbID or an
+               empty string.
+  Returntype : string
+  Exceptions : none
+  Caller     : web drawing code
+  Status     : Stable
+
+=cut
+
+sub display_id {
+  my $self = shift;
+  return $self->stable_id() || $self->dbID() || '';
+}
+
+
 =head2 end
 
   Arg [1]    : (optional) int $end - end position to set
@@ -187,7 +207,9 @@ sub modified_date {
 
   Arg [1]    : (optional) string $stable_id - stable ID to set
   Example    : $rnaproduct->stable_id('ENSM00090210');
-  Description: Getter/setter for attribute stable_id
+  Description: Getter/setter for attribute stable_id.
+               Unlike stable_id_version(), setting a new stable ID does NOT
+               reset the version number.
   Returntype : string
   Exceptions : none
   Caller     : general
@@ -199,6 +221,41 @@ sub stable_id {
   my $self = shift;
   $self->{'stable_id'} = shift if (@_);
   return $self->{'stable_id'};
+}
+
+
+=head2 stable_id_version
+
+  Arg [1]    : (optional) String - the stable ID with version to set
+  Example    : $rnaproduct->stable_id("ENSM0059890.3");
+  Description: Getter/setter for stable id with version for this rnaproduct.
+               If the input string omits the version part, the version gets reset
+               to undef; use stable_id() if you want to avoid this.
+  Returntype : String
+  Exceptions : none
+  Caller     : general
+  Status     : Stable
+
+=cut
+
+sub stable_id_version {
+  my $self = shift;
+
+  if (my $stable_id = shift) {
+    # If there is at least one embedded period assume everything
+    # beyond the last one is the version number. This may not work for
+    # some species, if you are worried about ambiguity use stable_id() +
+    # version() explicitly.
+    my $vindex = rindex($stable_id, '.');
+    ($self->{stable_id},
+     $self->{version}) = ($vindex > 0 ?
+			  (substr($stable_id, 0, $vindex),
+			   substr($stable_id, $vindex + 1)) :
+			  $stable_id, undef
+			 );
+  }
+
+  return $self->{stable_id} . ($self->{version} ? ".$self->{version}" : '');
 }
 
 
