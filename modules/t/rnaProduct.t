@@ -79,6 +79,7 @@ ok(test_getter_setter($rp, 'dbID', 3), 'Test getter/setter dbID()');
 ok(test_getter_setter($rp, 'version', 13), 'Test getter/setter version()');
 ok(test_getter_setter($rp, 'created_date', time()), 'Test getter/setter created_date()');
 ok(test_getter_setter($rp, 'modified_date', time()), 'Test getter/setter modified_date()');
+ok(test_getter_setter($rp, 'seq', 'AATTGGCC'), 'Test getter/setter seq()');
 
 subtest 'Test stable_id_version() functionality' =>  sub {
   ok(test_getter_setter($rp, 'stable_id_version', 3.14),
@@ -113,6 +114,12 @@ subtest 'display_id() functionality' =>  sub {
      'return stable_id if it exists');
 };
 
+{
+  # Again, assume test_getter_setter() cleans up after itself
+  my $dummy_sequence = 'CGATCCGGAAAA';
+  $rp->seq($dummy_sequence);
+  is($rp->length(), length($dummy_sequence), 'Check if length() returns correct value');
+}
 
 # TODO: More RNAProduct tests
 
