@@ -333,6 +333,45 @@ sub start {
 }
 
 
+=head2 transcript
+
+  Arg [1]       : Transcript object (optional)
+  Description   : Sets or retrieves the transcript object associated
+                  with this rnaproduct object.
+  Exceptions    : Throws if there is no adaptor or no dbID defined for
+                  the rnaproduct object.
+  Returntype    : Bio::EnsEMBL::Transcript
+
+=cut
+
+sub transcript {
+  my ($self, $transcript) = @_;
+
+  if (defined($transcript)) {
+
+    # Normal setter
+    assert_ref($transcript, 'Bio::EnsEMBL::Transcript');
+    $self->{'transcript'} = $transcript;
+    weaken($self->{'transcript'});    # Avoid circular references.
+
+  } elsif (@_ > 1) {
+
+    # User has explicitly passed undef. Break connection to transcript.
+    delete( $self->{'transcript'} );
+
+  } elsif (!defined($self->{'transcript'})) {
+
+    warn("Cannot retrieve transcript from DB yet");
+
+    # Do not weaken the reference if we had to get the transcript from the
+    # database. The user is probably working on rnaproducts directly,
+    # not going through transcripts.
+  }
+
+  return $self->{'transcript'};
+}
+
+
 =head2 version
 
   Arg [1]    : (optional) string $version - version to set
