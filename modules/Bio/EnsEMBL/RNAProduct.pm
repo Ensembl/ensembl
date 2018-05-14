@@ -203,6 +203,60 @@ sub modified_date {
 }
 
 
+=head2 length
+
+  Example    : print "RNA length =", $rnaproduct->length();
+  Description: Retrieves the length of the nucleotide sequence represented
+               by this RNAProduct object.
+  Returntype : int
+  Exceptions : none
+  Caller     : webcode (protview etc.)
+  Status     : Stable
+
+=cut
+
+sub length {
+  my $self = shift;
+  my $seq = $self->seq();
+
+  return ($seq) ? CORE::length($seq) : 0;
+}
+
+
+=head2 seq
+
+  Example    : print $rnaproduct->seq();
+  Description: Retrieves a string representation of the nucleotide sequence
+               of this RNAProduct.  This retrieves the transcript from the
+               database and gets its sequence, or retrieves the sequence which
+               was set via the constructor/setter.
+  Returntype : string
+  Exceptions : warning if the sequence is not set and cannot be retrieved from
+               the database.
+  Caller     : webcode (protview etc.)
+  Status     : Stable
+
+=cut
+
+sub seq {
+  my ($self, $sequence) = @_;
+
+  if (defined($sequence)) {
+
+    $self->{'seq'} = $sequence;
+
+  } elsif (!defined($self->{'seq'})) {
+
+    # FIXME: implement database retrieval
+    warn('Cannot retrieve sequence from DB yet');
+
+  }
+
+  return '' unless defined($self->{'seq'});
+  return $self->{'seq'};
+}
+
+
 =head2 stable_id
 
   Arg [1]    : (optional) string $stable_id - stable ID to set
