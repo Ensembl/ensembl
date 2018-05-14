@@ -17,9 +17,11 @@ use warnings;
 
 use Bio::EnsEMBL::Test::TestUtils;
 use Bio::EnsEMBL::RNAProduct;
+use Bio::EnsEMBL::Transcript;
 
 use Test::More;
 use Test::Warnings;
+use Test::Exception;
 
 my $loaded = 0;
 END { print "not ok 1\n" unless $loaded; }
@@ -120,6 +122,13 @@ subtest 'display_id() functionality' =>  sub {
   $rp->seq($dummy_sequence);
   is($rp->length(), length($dummy_sequence), 'Check if length() returns correct value');
 }
+
+{
+  my $dummy_transcript = Bio::EnsEMBL::Transcript->new();
+  dies_ok(sub { $rp->transcript({ }) }, 'Transcript setter dies on incorrect argument type');
+  ok(test_getter_setter($rp, 'transcript'), 'Test getter/setter transcript()');
+}
+
 
 # TODO: More RNAProduct tests
 
