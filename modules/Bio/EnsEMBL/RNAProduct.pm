@@ -125,6 +125,46 @@ sub new {
 }
 
 
+=head2 cdna_end
+
+    Example     : $rnaproduct_cdna_end = $rnaproduct->cdna_end();
+    Description : Returns the end position of the rnaproduct in cDNA
+                  coordinates.
+                  Since rnaproducts do not span multiple exons, this is
+                  simply an alias for end().
+    Return type : Integer
+    Caller      : General
+    Status      : Stable
+
+=cut
+
+sub cdna_end {
+  my $self = shift;
+
+  return $self->end();
+}
+
+
+=head2 cdna_start
+
+    Example     : $rnaproduct_cdna_start = $rnaproduct->cdna_start();
+    Description : Returns the start position of the rnaproduct in cDNA
+                  coordinates.
+                  Since rnaproducts do not span multiple exons, this is
+                  simply an alias for start().
+    Return type : Integer
+    Caller      : General
+    Status      : Stable
+
+=cut
+
+sub cdna_start {
+  my $self = shift;
+
+  return $self->start();
+}
+
+
 =head2 created_date
 
   Arg [1]    : (optional) string $created_date - created date to set
