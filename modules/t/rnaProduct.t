@@ -129,6 +129,11 @@ subtest 'display_id() functionality' =>  sub {
   ok(test_getter_setter($rp, 'transcript'), 'Test getter/setter transcript()');
 }
 
+is($rp->cdna_start(), $rp->start(),
+   'Test if cdna_start() returns the same value as start()');
+is($rp->cdna_end(), $rp->end(),
+   'Test if cdna_end() returns the same value as end()');
+
 
 # TODO: More RNAProduct tests
 
