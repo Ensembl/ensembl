@@ -146,6 +146,44 @@ my $rp_a  = $db->get_RNAProductAdaptor();
 
 ok($rp_a, 'Can get RNAProductAdaptor from core DBAdaptor');
 
+is($rp_a->fetch_by_dbID(0), undef, 'Adaptor returns undef for nonexistent dbID');
+is($rp_a->fetch_by_stable_id('fnord'), undef, 'Adaptor returns undef for nonexistent stable ID');
+
+subtest 'fetch_all_by_Transcript() functionality' => sub {
+  my $t_a = $db->get_TranscriptAdaptor();
+  my $rps;
+  my $t;
+
+  $t = Bio::EnsEMBL::Transcript->new();
+  $rps = $rp_a->fetch_all_by_Transcript($t);
+  isa_ok($rps, 'ARRAY', 'fetch_all_by_Transcript() return value');
+  is(scalar @{$rps}, 0, 'Adaptor returns empty list for invalid Transcript');
+
+  $rps = undef;
+  $t = $t_a->fetch_by_dbID(21716);
+  $rps = $rp_a->fetch_all_by_Transcript($t);
+  is(scalar @{$rps}, 0, 'Adaptor returns empty list for Transcript with no RNA products');
+
+  $rps = undef;
+  $t = $t_a->fetch_by_dbID(21717);
+  $rps = $rp_a->fetch_all_by_Transcript($t);
+  # Do not bother checking if elements of the returned array are defined,
+  # we are testing the method and not database consistency.
+  cmp_ok(scalar @{$rps}, '>', 0, 'Non-empty list for Transcript with RNA products');
+};
+
+$rp = undef;
+$rp = $rp_a->fetch_by_dbID(1);
+ok($rp, 'Can fetch RNAProduct by dbID');
+
+$rp = undef;
+$rp = $rp_a->fetch_by_stable_id('ENSM00000000001');
+ok($rp, 'Can fetch RNAProduct by stable ID');
+
+# FIXME: perform an in-depth inspection of one of the fetched RNAProducts,
+# to make sure new_fast() call all of these fetch methods use does what it
+# is supposed to do.
+
 
 # TODO: More RNAProductAdaptor tests
 
