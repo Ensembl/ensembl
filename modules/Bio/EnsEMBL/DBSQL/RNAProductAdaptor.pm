@@ -75,6 +75,75 @@ use parent qw( Bio::EnsEMBL::DBSQL::BaseAdaptor );
 
 
 
+=head2 fetch_all_by_Transcript
+
+  Arg [1]    : Bio::EnsEMBL::Transcript $transcript
+  Example    : $rps = $rnaproduct_adaptor->fetch_by_Transcript($transcript);
+  Description: Retrieves RNAProducts via their associated transcript.
+               If no RNAProducts are found, an empty list is returned.
+  Returntype : arrayref of Bio::EnsEMBL::RNAProducts
+  Exceptions : throw on incorrect argument
+  Caller     : Transcript
+  Status     : Stable
+
+=cut
+
+sub fetch_all_by_Transcript {
+  my ($self, $transcript) = @_;
+
+  assert_ref($transcript, 'Bio::EnsEMBL::Transcript');
+
+  return $self->_fetch_direct_query(['transcript_id', $transcript->dbID(), SQL_INTEGER]);
+}
+
+
+=head2 fetch_by_dbID
+
+  Arg [1]    : int $dbID
+               The internal identifier of the RNAProduct to obtain
+  Example    : $rnaproduct = $rnaproduct_adaptor->fetch_by_dbID(1234);
+  Description: This fetches a RNAProduct object via its internal id.
+               This is only debatably useful since rnaproducts do
+               not make much sense outside of the context of their
+               Transcript.  Consider using fetch_by_Transcript instead.
+  Returntype : Bio::EnsEMBL::RNAProduct, or undef if the rnaproduct is not
+               found.
+  Caller     : ?
+  Status     : Stable
+
+=cut
+
+sub fetch_by_dbID {
+  my ($self, $dbID) = @_;
+
+  throw("dbID argument is required") unless defined($dbID);
+
+  return ($self->_fetch_direct_query(['rnaproduct_id', $dbID, SQL_INTEGER]))->[0];
+}
+
+
+=head2 fetch_by_stable_id
+
+  Arg [1]    : string $stable_id
+               The stable identifier of the RNAProduct to obtain
+  Example    : $rnaproduct = $rnaproduct_adaptor->fetch_by_stable_id("ENSM00001");
+  Description: This fetches a RNAProduct object via its stable id.
+  Returntype : Bio::EnsEMBL::RNAProduct, or undef if the rnaproduct is not
+               found.
+  Caller     : ?
+  Status     : Stable
+
+=cut
+
+sub fetch_by_stable_id {
+  my ($self, $stable_id) = @_;
+
+  throw("stable id argument is required") unless $stable_id;
+
+  return ($self->_fetch_direct_query(['stable_id', $stable_id, SQL_VARCHAR]))->[0];
+}
+
+
 =head2 list_dbIDs
 
   Arg [1]    : none
@@ -126,6 +195,74 @@ SQL
     $ids = $self->SUPER::_list_dbIDs($table, $column);
   }
   return $ids;
+}
+
+
+# _fetch_direct_query
+#  Arg [1]    : reference to an array consisting of:
+#                - the name of the column to use in the WHERE clause,
+#                - the value fields from that column are to be equal to,
+#                - the data type of that column (e.g. SQL_INTEGER)
+#  Description: PRIVATE internal method shared between public fetch methods
+#               in order to avoid duplication of SQL-query logic. NOT SAFE
+#               to be handed directly to users because in its current form
+#               it can be trivially exploited to inject arbitrary SQL.
+#  Returntype : ArrayRef of either Bio::EnsEMBL::RNAProducts or undefs
+#  Exceptions : none
+#  Caller     : internal
+#  Status     : At Risk (In Development)
+
+sub _fetch_direct_query {
+  my ($self, $where_args) = @_;
+  my @return_data;
+
+  my $rp_created_date =
+    $self->db()->dbc()->from_date_to_seconds('created_date');
+  my $rp_modified_date =
+    $self->db()->dbc()->from_date_to_seconds('modified_date');
+
+  my $sql =
+    sprintf("SELECT rnaproduct_id, transcript_id, seq_start, seq_end, "
+	    . "stable_id, version, %s, %s "
+	    . "FROM rnaproduct "
+	    . "WHERE %s = ?",
+	    $rp_created_date, $rp_modified_date, $where_args->[0]);
+  my $sth = $self->prepare($sql);
+  $sth->bind_param(1, $where_args->[1], $where_args->[2]);
+  $sth->execute();
+
+  my $sql_data = $sth->fetchall_arrayref();
+  my $transcript_adaptor = $self->db()->get_TranscriptAdaptor();
+  while (my $row_ref = shift @{$sql_data}) {
+    my ($rnaproduct_id, $transcript_id, $seq_start, $seq_end, $stable_id,
+	$version, $created_date, $modified_date) = @{$row_ref};
+
+    if (!defined($rnaproduct_id)) {
+      push @return_data, undef;
+      next;
+    }
+
+    my $rnaproduct =
+      Bio::EnsEMBL::RNAProduct->new_fast( {
+                             'dbID'          => $rnaproduct_id,
+                             'adaptor'       => $self,
+                             'start'         => $seq_start,
+                             'end'           => $seq_end,
+                             'stable_id'     => $stable_id,
+                             'version'       => $version,
+                             'created_date'  => $created_date || undef,
+                             'modified_date' => $modified_date || undef,
+                           } );
+
+    my $transcript = $transcript_adaptor->fetch_by_dbID($transcript_id);
+    $rnaproduct->transcript($transcript);
+
+    push @return_data, $rnaproduct;
+  }
+
+  $sth->finish();
+
+  return \@return_data;
 }
 
 
