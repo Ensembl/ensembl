@@ -57,6 +57,7 @@ package Bio::EnsEMBL::RNAProduct;
 
 use vars qw($AUTOLOAD);
 use strict;
+use warnings;
 
 use Bio::EnsEMBL::Utils::Exception qw(throw warning );
 use Bio::EnsEMBL::Utils::Argument qw( rearrange );

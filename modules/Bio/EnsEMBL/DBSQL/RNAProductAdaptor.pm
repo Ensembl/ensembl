@@ -64,6 +64,7 @@ RNAProduct.
 package Bio::EnsEMBL::DBSQL::RNAProductAdaptor;
 
 use strict;
+use warnings;
 
 use Bio::EnsEMBL::DBSQL::BaseAdaptor;
 use Bio::EnsEMBL::RNAProduct;
