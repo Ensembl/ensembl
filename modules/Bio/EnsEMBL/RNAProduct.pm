@@ -96,7 +96,7 @@ use parent qw(Bio::EnsEMBL::Storable);
 
 =cut
 
-sub new {
+sub new { ## no critic (Subroutines::RequireArgUnpacking)
   my $caller = shift;
 
   my $class = ref($caller) || $caller;
