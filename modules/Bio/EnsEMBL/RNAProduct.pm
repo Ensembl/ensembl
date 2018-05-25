@@ -106,6 +106,9 @@ sub new {
 	rearrange(["SEQ_START", "SEQ_END", "STABLE_ID", "VERSION", "DBID",
 		   "ADAPTOR", "SEQ", "CREATED_DATE", "MODIFIED_DATE"], @_);
 
+  # For consistency between stable_id() and stable_id_version()
+  $stable_id //= '';
+
   # Default version
   $version //= 1;
 
