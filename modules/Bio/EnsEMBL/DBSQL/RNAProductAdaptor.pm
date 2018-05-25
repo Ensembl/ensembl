@@ -276,7 +276,7 @@ sub _fetch_direct_query {
 #  Caller     : internal
 #  Status     : Stable
 
-sub _tables {
+sub _tables { ## no critic (Subroutines::ProhibitUnusedPrivateSubroutines)
   return (['rnaproduct', 'rp']);
 }
 
