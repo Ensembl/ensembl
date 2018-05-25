@@ -26,9 +26,6 @@ use Test::Exception;
 my $loaded = 0;
 END { print "not ok 1\n" unless $loaded; }
 
-#turn on/off debug prints:
-our $verbose = 0;
-
 use Bio::EnsEMBL::Test::MultiTestDB;
 
 my $multi = Bio::EnsEMBL::Test::MultiTestDB->new();
