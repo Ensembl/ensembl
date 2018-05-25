@@ -24,7 +24,7 @@ use Test::Warnings;
 use Test::Exception;
 
 my $loaded = 0;
-END { print "not ok 1\n" unless $loaded; }
+END { print "not ok 1 - Test set-up completed\n" unless $loaded; }
 
 use Bio::EnsEMBL::Test::MultiTestDB;
 
@@ -32,7 +32,7 @@ my $multi = Bio::EnsEMBL::Test::MultiTestDB->new();
 
 $loaded = 1;
 
-ok(1);
+ok(1, 'Test set-up completed');
 
 my $db = $multi->get_DBAdaptor('core');
 
