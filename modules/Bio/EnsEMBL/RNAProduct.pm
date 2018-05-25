@@ -259,7 +259,7 @@ sub modified_date {
 
 =cut
 
-sub length {
+sub length { ## no critic (Subroutines::ProhibitBuiltinHomonyms)
   my $self = shift;
   my $seq = $self->seq();
 
