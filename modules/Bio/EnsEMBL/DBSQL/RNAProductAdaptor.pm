@@ -182,7 +182,7 @@ sub _list_dbIDs {
   if($self->is_multispecies()) {
     # FIXME: test this, it might not have been fully converted from TranslationAdaptor yet
     $column ||= "${table}_id";
-    my $sql = <<SQL;
+    my $sql = <<"SQL";
 select `rp`.`${column}`
 from rnaproduct rp
 join transcript t using (transcript_id)
