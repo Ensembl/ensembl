@@ -192,3 +192,5 @@ ok($rp, 'Can fetch RNAProduct by stable ID');
 is($rp_a->generic_count(), @{$rp_a->list_dbIDs()}, "Number of features from generic_count is equal to the number of dbIDs from list_dbIDs");
 
 done_testing();
+
+1;
