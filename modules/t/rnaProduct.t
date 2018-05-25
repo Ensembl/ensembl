@@ -12,6 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+## no critic (RequireFilenameMatchesPackage)
+
+package RNAProductTests;
+
 use strict;
 use warnings;
 
