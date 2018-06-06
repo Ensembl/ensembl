@@ -1445,6 +1445,44 @@ sub get_nearest_Gene {
   }
 }
 
+=head2 feature_so_acc
+
+  Description: This method returns a string containing the SO accession number of the feature
+  Returntype : String (Sequence Ontology accession number)
+
+=cut
+
+sub feature_so_acc {
+  my ($self) = @_;
+
+  # Classes that inherit Feature will inherit this method
+  # Slice and UTR override this method for better SO accs based on type
+  my %feature_so_mapping = (
+    'Bio::EnsEMBL::Feature'                               => 'SO:0000001', # region
+    'Bio::EnsEMBL::Gene'                                  => 'SO:0000704', # gene
+    'Bio::EnsEMBL::Transcript'                            => 'SO:0000673', # transcript
+    'Bio::EnsEMBL::PredictionTranscript'                  => 'SO:0000673', # transcript
+    'Bio::EnsEMBL::Exon'                                  => 'SO:0000147', # exon
+    'Bio::EnsEMBL::PredictionExon'                        => 'SO:0000147', # exon
+    'Bio::EnsEMBL::UTR'                                   => 'SO:0000203', # UTR
+    'Bio::EnsEMBL::ExonTranscript'                        => 'SO:0000147', # Exon
+    'Bio::EnsEMBL::CDS'                                   => 'SO:0000316', # CDS
+    'Bio::EnsEMBL::Slice'                                 => 'SO:0000001', # region
+    'Bio::EnsEMBL::SimpleFeature'                         => 'SO:0001411', # biological_region
+    'Bio::EnsEMBL::MiscFeature'                           => 'SO:0001411', # biological_region
+    'Bio::EnsEMBL::RepeatFeature'                         => 'SO:0000657', # repeat region
+    'Bio::EnsEMBL::Variation::VariationFeature'           => 'SO:0001060', # sequence variant
+    'Bio::EnsEMBL::Variation::StructuralVariationFeature' => 'SO:0001537', # structural variant
+    'Bio::EnsEMBL::Compara::ConstrainedElement'           => 'SO:0001009', # DNA_constraint_sequence ????
+    'Bio::EnsEMBL::Funcgen::RegulatoryFeature'            => 'SO:0005836', # regulatory_region
+    'Bio::EnsEMBL::DnaDnaAlignFeature'                    => 'SO:0000347', # nucleotide_match
+    'Bio::EnsEMBL::DnaPepAlignFeature'                    => 'SO:0000349', # protein_match
+    'Bio::EnsEMBL::KaryotypeBand'                         => 'SO:0000341', # chromosome_band
+  );
+
+  return %feature_so_mapping{ ref $self };
+}
+
 =head2 summary_as_hash
 
   Example       : $feature_summary = $feature->summary_as_hash();
