@@ -3777,7 +3777,9 @@ sub feature_so_acc {
   );
 
   # return the region SO acc, or Slice acc
-  return %region_so_mapping{$self->coord_system_name} // 'SO:0000001';
+  my $so_acc = %region_so_mapping{$self->coord_system_name} // 'SO:0000001';
+
+  return $so_acc;
 }
 
 =head2 summary_as_hash
