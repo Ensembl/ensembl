@@ -1,5 +1,0 @@
-{
-  'driver' => 'SQLite',
-  'dbdir'  => '/home/tgrego/temp/',
-  'user'   => 'test_user',
-}
