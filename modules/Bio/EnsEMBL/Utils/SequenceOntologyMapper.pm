@@ -305,6 +305,7 @@ my %feature_so_mapping =
 
 =head2 new
 
+    Deprecated. Please use $feature->feature_so_acc and $gene->get_Biotype instead.
     Constructor
     Arg [1]    : OntologyTermAdaptor from the EnsEMBL registry
     Returntype : Bio::EnsEMBL::SequenceOntologyMapper
@@ -314,6 +315,9 @@ my %feature_so_mapping =
 
 sub new {
   my ($class, $oa) = @_;
+
+  deprecate("new is deprecated and will be removed in e99.");
+
   defined $oa or throw "No ontology term adaptor specified";
 
   my $self =
@@ -338,6 +342,7 @@ sub new {
 
 =head2 to_accession
 
+    Deprecated. Please use $feature->feature_so_acc and $gene->get_Biotype->so_acc instead.
     Arg [0]    : Instance of Bio::EnsEMBL::Feature, subclass or
                  related Storable
     Description: translates a Feature type into an SO term accession
@@ -349,6 +354,8 @@ sub new {
 sub to_accession {
   my $self = shift;
   my $feature = shift;
+
+  deprecate("to_accession is deprecated and will be removed in e99.");
 
   my $so_accession;
   my $ref = ref($feature);
@@ -385,6 +392,10 @@ sub to_accession {
 
 =head2 to_name
 
+    Deprecated. Please use $feature->feature_so_acc and $gene->get_Biotype->so_acc instead to get the SO accession number.
+                Then initialize an Ontology adaptor to fetch the SO term name for that acc, as in the following example:
+                my $oa = Bio::EnsEMBL::Registry->get_adaptor('multi','ontology','OntologyTerm');
+                my $feat_so_name = $oa->fetch_by_accession($feature->feature_so_acc)->name;
     Arg [0]    : Instance of Bio::EnsEMBL::Feature, subclass or
                  related Storable
     Description: translates a Feature type into an SO term name
@@ -396,6 +407,8 @@ sub to_accession {
 sub to_name {
   my $self = shift;
   my $feature = shift;
+
+  deprecate("to_name is deprecated and will be removed in e99.");
 
   my $so_name;
   my $so_accession = eval {
@@ -416,6 +429,10 @@ sub to_name {
 
 =head2 gene_biotype_to_name
 
+    Deprecated. Please use $gene->get_Biotype->so_acc instead to get the SO accession number.
+                Then initialize an Ontology adaptor to fetch the SO term name for that acc, as in the following example:
+                my $oa = Bio::EnsEMBL::Registry->get_adaptor('multi','ontology','OntologyTerm');
+                my $biotype_so_name = $oa->fetch_by_accession($gene->get_Biotype->so_acc)->name;
     Arg [0]    : Biotype string
     Description: translates a biotype into an SO term name
     Returntype : String; the SO term name
@@ -427,6 +444,8 @@ sub gene_biotype_to_name {
   my $self = shift;
   my $biotype = shift;
 
+  deprecate("gene_biotype_to_name is deprecated and will be removed in e99.");
+
   if (exists $gene_so_mapping{$biotype}) {
     return $gene_so_mapping{$biotype};
   } else {
@@ -436,6 +455,10 @@ sub gene_biotype_to_name {
 
 =head2 transcript_biotype_to_name
 
+    Deprecated. Please use $transcript->get_Biotype->so_acc instead to get the SO accession number.
+                Then initialize an Ontology adaptor to fetch the SO term name for that acc, as in the following example:
+                my $oa = Bio::EnsEMBL::Registry->get_adaptor('multi','ontology','OntologyTerm');
+                my $biotype_so_name = $oa->fetch_by_accession($transcript->get_Biotype->so_acc)->name;
     Arg [0]    : Biotype string
     Description: translates a biotype into an SO term name
     Returntype : String; the SO term name
@@ -446,6 +469,8 @@ sub gene_biotype_to_name {
 sub transcript_biotype_to_name {
   my $self = shift;
   my $biotype = shift;
+
+  deprecate("transcript_biotype_to_name is deprecated and will be removed in e99.");
 
   if (exists $transcript_so_mapping{$biotype}) {
     return $transcript_so_mapping{$biotype};
@@ -459,6 +484,7 @@ sub transcript_biotype_to_name {
 
 =head2 _fetch_SO_name_by_accession
 
+  Deprecated. Please instantiate an ontology_adaptor and use $oa->fetch_by_accession($so_accession) directly
   Arg [0]    : String; Sequence Ontology accession
   Description: Returns the name linked to the given accession. These are
                internally cached for speed.
@@ -469,6 +495,9 @@ sub transcript_biotype_to_name {
 
 sub _fetch_SO_name_by_accession {
   my ($self, $so_accession) = @_;
+
+  deprecate("_fetch_SO_name_by_accession is deprecated and will be removed in e99.");
+
   my $so_name = $self->{cache}->{$so_accession};
 
   if(!$so_name) {
