@@ -56,7 +56,7 @@ is($slice->start, $START, "Slice start is $START");
 is($slice->end, $END, "Slice end is $END");
 is($slice->seq_region_length, 62842997, "Slice length is correct");
 is($slice->adaptor, $slice_adaptor, "Slice has adaptor $slice_adaptor");
-
+is($slice->feature_so_acc, 'SO:0000340', 'Slice feature SO acc is correct (chromosome)');
 
 #
 #TEST - Slice::new
@@ -219,6 +219,8 @@ is($clone->end(), $len + 1000, "Clone end matches $len + 1000");
 $clone = $clone->expand(-1000, 0, 1);
 is($clone->start, 1001, "Expanded clone start is correct if forced");
 is($clone->end(), $len + 1000, "Expanded clone end is correct if forced");
+
+is($clone->feature_so_acc, 'SO:0000001', 'Clone feature SO acc is correct (region)');
 
 #
 # Test constrain_to_seq_region
