@@ -316,7 +316,7 @@ my %feature_so_mapping =
 sub new {
   my ($class, $oa) = @_;
 
-  deprecate("new is deprecated and will be removed in e99.");
+  deprecate("new is deprecated and will be removed in e98.");
 
   defined $oa or throw "No ontology term adaptor specified";
 
@@ -355,7 +355,7 @@ sub to_accession {
   my $self = shift;
   my $feature = shift;
 
-  deprecate("to_accession is deprecated and will be removed in e99.");
+  deprecate("to_accession is deprecated and will be removed in e98.");
 
   my $so_accession;
   my $ref = ref($feature);
@@ -408,7 +408,7 @@ sub to_name {
   my $self = shift;
   my $feature = shift;
 
-  deprecate("to_name is deprecated and will be removed in e99.");
+  deprecate("to_name is deprecated and will be removed in e98.");
 
   my $so_name;
   my $so_accession = eval {
@@ -444,7 +444,7 @@ sub gene_biotype_to_name {
   my $self = shift;
   my $biotype = shift;
 
-  deprecate("gene_biotype_to_name is deprecated and will be removed in e99.");
+  deprecate("gene_biotype_to_name is deprecated and will be removed in e98.");
 
   if (exists $gene_so_mapping{$biotype}) {
     return $gene_so_mapping{$biotype};
@@ -470,7 +470,7 @@ sub transcript_biotype_to_name {
   my $self = shift;
   my $biotype = shift;
 
-  deprecate("transcript_biotype_to_name is deprecated and will be removed in e99.");
+  deprecate("transcript_biotype_to_name is deprecated and will be removed in e98.");
 
   if (exists $transcript_so_mapping{$biotype}) {
     return $transcript_so_mapping{$biotype};
@@ -496,7 +496,7 @@ sub transcript_biotype_to_name {
 sub _fetch_SO_name_by_accession {
   my ($self, $so_accession) = @_;
 
-  deprecate("_fetch_SO_name_by_accession is deprecated and will be removed in e99.");
+  deprecate("_fetch_SO_name_by_accession is deprecated and will be removed in e98.");
 
   my $so_name = $self->{cache}->{$so_accession};
 
