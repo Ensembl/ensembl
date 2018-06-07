@@ -238,9 +238,7 @@ sub feature_so_acc {
   );
 
   # return UTR type SO acc, or UTR acc
-  my $so_acc = %utr_type_so_mapping{$self->type} // 'SO:0000203';
-
-  return $so_acc;
+  return %utr_type_so_mapping{$self->type} // 'SO:0000203';
 }
 
 =head2 summary_as_hash
