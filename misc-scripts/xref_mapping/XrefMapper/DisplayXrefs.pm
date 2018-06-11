@@ -231,11 +231,6 @@ sub set_display_xrefs_from_stable_table{
   $reset_sth->execute();
   $reset_sth->finish;
 
-  $reset_sth = $core_dbi->prepare("UPDATE gene SET description = null");
-  $reset_sth->execute();
-  $reset_sth->finish;
-
-
   my %name_to_external_name;
   my $sql = "select external_db_id, db_name, db_display_name from external_db";
   my $sth = $core_dbi->prepare($sql);
