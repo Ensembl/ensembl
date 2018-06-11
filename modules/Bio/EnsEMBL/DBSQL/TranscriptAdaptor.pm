@@ -250,6 +250,43 @@ sub fetch_all_versions_by_stable_id {
 }
 
 
+=head2 fetch_by_rnaproduct_id
+
+  Arg [1]    : Int $id
+               The internal identifier of the rnaproduct whose transcript
+               is to be retrieved
+  Example    : my $tr = $tr_adaptor->fetch_by_rnaproduct_id($rnap->dbID);
+  Description: Given the internal identifier of a rnaproduct this method
+               retrieves the transcript associated with that rnaproduct.
+               If the transcript cannot be found undef is returned instead.
+  Returntype : Bio::EnsEMBL::Transcript or undef
+  Exceptions : none
+  Caller     : general
+  Status     : Stable
+
+=cut
+
+sub fetch_by_rnaproduct_id {
+  my ($self, $p_dbID) = @_;
+
+  throw("dbID argument is required") unless defined($p_dbID);
+
+  my $sth =
+    $self->prepare("SELECT transcript_id FROM rnaproduct WHERE rnaproduct_id = ?");
+  $sth->bind_param(1, $p_dbID, SQL_INTEGER);
+  $sth->execute();
+
+  my ($dbID) = $sth->fetchrow_array();
+  $sth->finish();
+
+  if ($dbID) {
+    return $self->fetch_by_dbID($dbID);
+  }
+
+  return undef;
+}
+
+
 =head2 fetch_by_translation_stable_id
 
   Arg [1]    : String $transl_stable_id

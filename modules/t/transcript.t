@@ -274,6 +274,13 @@ ok(@$interpro == 1);
 is($tr->stable_id, 'ENST00000246229', 'Fetched correct transcript by external name');
 
 #
+# test fetch_by_rnaproduct_id
+#
+
+$tr = $ta->fetch_by_rnaproduct_id(1);
+is($tr->stable_id, 'ENST00000362147', 'Fetched correct transcript by rnaproduct id');
+
+#
 # test fetch_by_translation_id
 #
 
