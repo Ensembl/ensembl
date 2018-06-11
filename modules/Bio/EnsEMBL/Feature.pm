@@ -1449,6 +1449,7 @@ sub get_nearest_Gene {
 
   Description: This method returns a string containing the SO accession number of the feature
   Returntype : String (Sequence Ontology accession number)
+  Exceptions : Thrown if no SO accession can be returned for caller object type
 
 =cut
 
@@ -1480,7 +1481,11 @@ sub feature_so_acc {
     'Bio::EnsEMBL::KaryotypeBand'                         => 'SO:0000341', # chromosome_band
   );
 
-  return $feature_so_mapping{ ref $self };
+  my $ref = ref $self;
+
+  return $feature_so_mapping{ $ref } //
+    throw( "Bio::EnsEMBL::Feature::feature_so_acc is not defined for $ref objects. " .
+      "Please update Bio::EnsEMBL::Feature::feature_so_acc or implement ${ref}::feature_so_acc");
 }
 
 =head2 summary_as_hash
