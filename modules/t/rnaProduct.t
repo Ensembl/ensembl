@@ -125,9 +125,22 @@ subtest 'display_id() functionality' =>  sub {
 }
 
 {
-  my $dummy_transcript = Bio::EnsEMBL::Transcript->new();
   dies_ok(sub { $rp->transcript({ }) }, 'Transcript setter dies on incorrect argument type');
-  ok(test_getter_setter($rp, 'transcript'), 'Test getter/setter transcript()');
+  # The first step of test_getter_setter() is to preserve the existing value
+  # of the property being tested. This is normally fine but in case of
+  # transcript() invoking it as getter with no transcript previously having
+  # been set causes it to attempt a database lookup, which:
+  #  - is not desired because we are testing local functionality now, and
+  #  - will fail because no adaptor has been set either.
+  # Therefore, set a dummy transcript first. Then use a *different* dummy
+  # transcript in the test to make sure the setter really works.
+  # Nb. it is necessary to assign the first dummy transcript to a variable
+  # because the setter uses a weak reference. If you simply use the return
+  # value of the Transcript constructor as an argument to transcript(), the
+  # former will get garbage-collected and the transcript will remain unset.
+  my $dummy_transcript = Bio::EnsEMBL::Transcript->new();
+  $rp->transcript($dummy_transcript);
+  ok(test_getter_setter($rp, 'transcript', Bio::EnsEMBL::Transcript->new()), 'Test getter/setter transcript()');
 }
 
 is($rp->cdna_start(), $rp->start(),
