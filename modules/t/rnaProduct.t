@@ -198,6 +198,13 @@ ok($rp, 'Can fetch RNAProduct by stable ID');
 # to make sure new_fast() call all of these fetch methods use does what it
 # is supposed to do.
 
+# Do not check any data inside the Transcript object, it is not our job to
+# check database consistency. Just check that we do get something back.
+isnt($rp->transcript(), undef, 'Can retrieve associated Transcript object');
+
+# And now, force the Transcript association to be built on the fly.
+$rp->transcript(undef);
+isnt($rp->transcript(), undef, 'Transcript association can be built on demand for valid dbID');
 
 # TODO: More RNAProductAdaptor tests
 
