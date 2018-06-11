@@ -404,8 +404,19 @@ sub transcript {
     delete( $self->{'transcript'} );
 
   } elsif (!defined($self->{'transcript'})) {
+    my $adaptor = $self->{'adaptor'};
+    if (!defined($adaptor)) {
+      throw("Adaptor not set for rnaproduct, cannot fetch its transcript");
+    }
 
-    warn("Cannot retrieve transcript from DB yet");
+    my $dbID = $self->{'dbID'};
+    if (!defined($dbID)) {
+      throw("dbID not set for rnaproduct, cannot fetch its transcript.");
+    }
+
+    $self->{'transcript'} =
+      $adaptor->db()->get_TranscriptAdaptor()
+      ->fetch_by_rnaproduct_id($dbID);
 
     # Do not weaken the reference if we had to get the transcript from the
     # database. The user is probably working on rnaproducts directly,
