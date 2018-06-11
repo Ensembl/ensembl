@@ -1480,7 +1480,7 @@ sub feature_so_acc {
     'Bio::EnsEMBL::KaryotypeBand'                         => 'SO:0000341', # chromosome_band
   );
 
-  return %feature_so_mapping{ ref $self };
+  return $feature_so_mapping{ ref $self };
 }
 
 =head2 summary_as_hash
