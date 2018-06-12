@@ -82,7 +82,6 @@ ok(test_getter_setter($rp, 'dbID', 3), 'Test getter/setter dbID()');
 ok(test_getter_setter($rp, 'version', 13), 'Test getter/setter version()');
 ok(test_getter_setter($rp, 'created_date', time()), 'Test getter/setter created_date()');
 ok(test_getter_setter($rp, 'modified_date', time()), 'Test getter/setter modified_date()');
-ok(test_getter_setter($rp, 'seq', 'AATTGGCC'), 'Test getter/setter seq()');
 
 subtest 'Test stable_id_version() functionality' =>  sub {
   ok(test_getter_setter($rp, 'stable_id_version', 3.14),
@@ -118,10 +117,12 @@ subtest 'display_id() functionality' =>  sub {
 };
 
 {
+  dies_ok(sub { $rp->seq() }, 'Sequence getter dies if neither local nor DB data is available');
   # Again, assume test_getter_setter() cleans up after itself
   my $dummy_sequence = 'CGATCCGGAAAA';
   $rp->seq($dummy_sequence);
   is($rp->length(), length($dummy_sequence), 'Check if length() returns correct value');
+  ok(test_getter_setter($rp, 'seq', 'AACCGGTT'), 'Test getter/setter seq()');
 }
 
 {
@@ -197,6 +198,8 @@ ok($rp, 'Can fetch RNAProduct by stable ID');
 # FIXME: perform an in-depth inspection of one of the fetched RNAProducts,
 # to make sure new_fast() call all of these fetch methods use does what it
 # is supposed to do.
+
+is($rp->seq(), 'AAAAACCCAGGAATCACCTGGA', 'Can retrieve associated sequence');
 
 # Do not check any data inside the Transcript object, it is not our job to
 # check database consistency. Just check that we do get something back.
