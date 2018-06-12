@@ -291,8 +291,11 @@ sub seq {
 
   } elsif (!defined($self->{'seq'})) {
 
-    # FIXME: implement database retrieval
-    warn('Cannot retrieve sequence from DB yet');
+    my $tr_seq = $self->transcript()->seq();
+    if ($tr_seq->length() <= 0) {
+      throw('Got no or empty sequence from the database');
+    }
+    $self->{'seq'} = $tr_seq->subseq($self->{'start'}, $self->{'end'});
 
   }
 
