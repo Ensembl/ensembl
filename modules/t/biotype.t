@@ -112,4 +112,24 @@ like( $warning2,
     "Got a warning from fetch_all_by_group_object_db_type",
 ) or diag 'Got warning: ', explain($warning2);
 
+# Test fetching by biotype name
+debug("fetch biotypes by name");
+my $biotypes3 = $biotype_adaptor->fetch_all_by_name('protein_coding');
+is(ref $biotypes3, 'ARRAY', 'Got an array');
+cmp_ok(scalar(@$biotypes3), ">", "0", 'Array is not empty');
+is_deeply($biotypes3, [$biotype1, $biotype2], 'with the correct objects');
+my $warning3 = warning {
+  $biotypes3 = $biotype_adaptor->fetch_all_by_name('none') };
+like( $warning3,
+    qr/No objects retrieved. Check if name 'none' is correct./,
+    "Got a warning from fetch_all_by_name",
+) or diag 'Got warning: ', explain($warning3);
+is(ref $biotypes3, 'ARRAY', 'Got an array');
+is(scalar @{$biotypes3}, '0', 'of size 0');
+is_deeply($biotypes3, [], 'totally empty');
+
+my $biotypes4 = $biotype_adaptor->fetch_all_by_name('protein_coding', 'gene');
+my $biotypes5 = $biotype_adaptor->fetch_by_name_object_type('protein_coding', 'gene');
+is_deeply($biotypes4->[0], $biotypes5, "fetch_all_by_name with an object type is identical to fetch_by_name_object_type");
+
 done_testing();
