@@ -113,6 +113,7 @@ sub run {
     while (my $line = $reactome_io->getline() ) {
       chomp $line;
       my ($ensembl_stable_id, $reactome_id, $url, $description, $evidence, $species) = split /\t+/,$line;
+      if ($description!~ /^[A-Za-z0-9_,\(\)\/\-\.:\+'&;>\s]+$/) { next; }
   
       $species =~ s/\s//;
       $species = lc($species);
