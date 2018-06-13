@@ -209,6 +209,12 @@ isnt($rp->transcript(), undef, 'Can retrieve associated Transcript object');
 $rp->transcript(undef);
 isnt($rp->transcript(), undef, 'Transcript association can be built on demand for valid dbID');
 
+# FIXME: might want to add tests for the reverse strand as well
+is($rp->genomic_start(), $rp->transcript()->start() + $rp->start() - 1,
+   'genomic_start() gives correct values (forward strand)');
+is($rp->genomic_end(), $rp->transcript()->start() + $rp->end() - 1,
+   'genomic_end() gives correct values (forward strand)');
+
 # TODO: More RNAProductAdaptor tests
 
 
