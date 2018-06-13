@@ -228,6 +228,70 @@ sub end {
 }
 
 
+=head2 genomic_end
+
+    Args        : None
+    Example     : $rnaproduct_genomic_end = $rnaproduct->genomic_end();
+    Description : Returns the end position of the rnaproduct in genomic
+                  coordinates on the forward strand.
+    Return type : Integer
+    Exceptions  : None
+    Caller      : General
+    Status      : At Risk (Under Development)
+
+=cut
+
+sub genomic_end {
+  my $self = shift;
+
+  if (!exists $self->{'genomic_end'}) {
+    my $transcript = $self->transcript();
+
+    if ($transcript->strand() >= 0) {
+      $self->{'genomic_end'} =
+	$transcript->start() + ($self->end() - 1);
+    } else {
+      $self->{'genomic_end'} =
+	$transcript->end() - ($self->start() - 1);
+    }
+  }
+
+  return $self->{'genomic_end'};
+}
+
+
+=head2 genomic_start
+
+    Args        : None
+    Example     : $rnaproduct_genomic_start = $rnaproduct->genomic_start();
+    Description : Returns the start position of the rnaproduct in
+                  genomic coordinates on the forward strand.
+    Return type : Integer
+    Exceptions  : None
+    Caller      : General
+    Status      : At Risk (Under Development)
+
+=cut
+
+sub genomic_start {
+  my $self = shift;
+
+  if (!exists $self->{'genomic_start'}) {
+    my $transcript = $self->transcript();
+
+    if ($transcript->strand() >= 0) {
+      $self->{'genomic_start'} =
+	$transcript->start() + ($self->start() - 1);
+    } else {
+      $self->{'genomic_start'} =
+	$transcript->end() - ($self->end() - 1);
+    }
+  }
+
+  return $self->{'genomic_start'};
+}
+
+
 =head2 modified_date
 
   Arg [1]    : (optional) string $modified_date - modification date to set
