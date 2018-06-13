@@ -444,6 +444,34 @@ sub start {
 }
 
 
+=head2 summary_as_hash
+
+  Example       : $rnaproduct_summary = $rnaproduct->summary_as_hash();
+  Description   : Retrieves a textual summary of this RNAProduct.
+                  Not inherited from Feature.
+  Returns       : hashref of arrays of descriptive strings
+  Status        : Intended for internal use
+
+=cut
+
+sub summary_as_hash {
+  my $self = shift;
+  my %summary;
+  my $id = $self->display_id;
+  if ($self->version) {
+    $id .= "." . $self->version;
+  }
+  $summary{'id'} = $id;
+  $summary{'rnaproduct_id'} = $id;
+  $summary{'genomic_start'} = $self->genomic_start;
+  $summary{'genomic_end'} = $self->genomic_end;
+  $summary{'length'} = $self->length;
+  my $transcript = $self->transcript;
+  $summary{'Parent'} = $transcript->display_id;
+  return \%summary;
+}
+
+
 =head2 transcript
 
   Arg [1]       : Transcript object (optional)
