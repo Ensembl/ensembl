@@ -215,6 +215,39 @@ is($rp->genomic_start(), $rp->transcript()->start() + $rp->start() - 1,
 is($rp->genomic_end(), $rp->transcript()->start() + $rp->end() - 1,
    'genomic_end() gives correct values (forward strand)');
 
+subtest 'Attribute functionality' => sub {
+  my $rp_all_attrs = $rp->get_all_Attributes();
+  cmp_ok(scalar @$rp_all_attrs, '>', 0, 'Get a non-empty list of attributes');
+
+  my $rp_notes = $rp->get_all_Attributes('note');
+  cmp_ok(scalar @$rp_notes, '>', 0, 'Get a non-empty list of \'note\' attributes');
+
+  my $rp_nonsense = $rp->get_all_Attributes('xyzzy');
+  is(scalar @$rp_nonsense, 0, 'Get empty attribute list for nonsense code');
+
+  dies_ok(sub { $rp->add_Attributes({}) },
+	  'add_Attributes() dies on invalid argument type');
+
+  my $n_attrs_before = scalar @$rp_all_attrs;
+  my $extra_attr1 = Bio::EnsEMBL::Attribute->new(
+    -CODE => 'note',
+    -NAME => 'Note',
+    -VALUE => 'and another thing'
+  );
+  my $extra_attr2 = Bio::EnsEMBL::Attribute->new(
+    -CODE => '_rna_edit',
+    -VALUE => '1 6 GATTACA',
+    -NAME => 'RNA editing'
+  );
+  $rp->add_Attributes($extra_attr1, $extra_attr2);
+  is(scalar @{$rp->get_all_Attributes()}, scalar $n_attrs_before + 2, 'Added two new attributes');
+
+  # FIXME: Add SeqEdit tests once we have got some meaningful data for this
+  # in the test database. The way this is done in Transcript tests ought to
+  # be a good reference.
+};
+
+
 # TODO: More RNAProductAdaptor tests
 
 
