@@ -576,6 +576,22 @@ sub fetch_all_by_Translation {
 
 }
 
+sub fetch_all_by_RNAProduct {
+  my ($self, $object, $code) = @_;
+
+  my $object_id;
+
+  if (defined($object)) {
+    assert_ref($object, 'Bio::EnsEMBL::RNAProduct');
+    $object_id = $object->dbID();
+  }
+
+  my $results = $self->fetch_all_by_Object($object_id, 'rnaproduct', $code);
+
+  return $results;
+
+}
+
 sub fetch_all_by_DnaDnaAlignFeature {
   my ($self, $object, $code) = @_;
 
