@@ -129,6 +129,41 @@ sub new { ## no critic (Subroutines::RequireArgUnpacking)
 }
 
 
+=head2 add_Attributes
+
+  Arg [1..N] : Bio::EnsEMBL::Attribute $attribute
+               Attributes to add.
+  Example    : $rnaproduct->add_Attributes($selenocysteine_attribute);
+  Description: Adds an Attribute to the RNAProduct.
+               If you add an attribute before you retrieve any from database,
+               lazy load will be disabled.
+  Returntype : none
+  Exceptions : throw on incorrect arguments
+  Caller     : general
+  Status     : Stable
+
+=cut
+
+sub add_Attributes {
+  my ($self, @attribs) = @_;
+
+  if (! exists $self->{'attributes'}) {
+    $self->{'attributes'} = [];
+  }
+
+  for my $attrib (@attribs) {
+    if (! $attrib->isa("Bio::EnsEMBL::Attribute")) {
+      throw("Argument to add_Attribute must be a Bio::EnsEMBL::Attribute");
+    }
+    push (@{$self->{'attributes'}}, $attrib);
+    # FIXME: why is this here???
+    $self->{seq}=undef;
+  }
+
+  return;
+}
+
+
 =head2 cdna_end
 
     Example     : $rnaproduct_cdna_end = $rnaproduct->cdna_end();
@@ -289,6 +324,44 @@ sub genomic_start {
   }
 
   return $self->{'genomic_start'};
+}
+
+
+=head2 get_all_Attributes
+
+  Arg [1]    : optional string $attrib_code
+               The code of the attribute type to retrieve values for.
+  Example    : ($n_attr) = @{$tl->get_all_Attributes('note')};
+               @rp_attributes = @{$rnaproduct->get_all_Attributes()};
+  Description: Gets a list of Attributes of this rnaproduct.
+               Optionally just get Attributes for given code.
+  Returntype : listref Bio::EnsEMBL::Attribute
+  Exceptions : Throws if there is no adaptor or defined for the rnaproduct
+               object.
+  Caller     : general
+  Status     : Stable
+
+=cut
+
+sub get_all_Attributes {
+  my ($self, $attrib_code) = @_;
+
+  if (! exists $self->{'attributes'}) {
+    if (!$self->adaptor()) {
+      throw("Adaptor not set for rnaproduct, cannot fetch its attributes");
+    }
+
+    my $aa = $self->adaptor->db->get_AttributeAdaptor();
+    $self->{'attributes'} = $aa->fetch_all_by_RNAProduct($self);
+  }
+
+  if (defined $attrib_code) {
+    my @results = grep { uc($_->code()) eq uc($attrib_code) }
+      @{$self->{'attributes'}};
+    return \@results;
+  } else {
+    return $self->{'attributes'};
+  }
 }
 
 
