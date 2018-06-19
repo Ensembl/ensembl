@@ -164,6 +164,33 @@ sub add_Attributes {
 }
 
 
+=head2 add_DBEntry
+
+  Arg [1]    : Bio::EnsEMBL::DBEntry $dbe
+               The dbEntry to be added
+  Example    : $rnaproduct->add_DBEntry($xref);
+  Description: Associates a DBEntry with this rnaproduct. Note that adding
+               DBEntries will prevent future lazy-loading of DBEntries for this
+               rnaproduct (see get_all_DBEntries).
+  Returntype : none
+  Exceptions : thrown on incorrect argument type
+  Caller     : general
+  Status     : Stable
+
+=cut
+
+sub add_DBEntry {
+  my ($self, $dbe) = @_;
+
+  if (!$dbe || !ref($dbe) || !$dbe->isa('Bio::EnsEMBL::DBEntry')) {
+    throw('Expected DBEntry argument');
+  }
+
+  $self->{'dbentries'} ||= [];
+  push @{$self->{'dbentries'}}, $dbe;
+}
+
+
 =head2 cdna_end
 
     Example     : $rnaproduct_cdna_end = $rnaproduct->cdna_end();
@@ -362,6 +389,151 @@ sub get_all_Attributes {
   } else {
     return $self->{'attributes'};
   }
+}
+
+
+=head2 get_all_DBEntries
+
+  Arg [1]    : (optional) String, external database name,
+               SQL wildcard characters (_ and %) can be used to
+               specify patterns.
+
+  Arg [2]    : (optional) String, external_db type,
+               ('ARRAY','ALT_TRANS','ALT_GENE','MISC','LIT','PRIMARY_DB_SYNONYM','ENSEMBL'),
+               SQL wildcard characters (_ and %) can be used to
+               specify patterns.
+
+  Example    : my @dbentries = @{ $rnaproduct->get_all_DBEntries() };
+               @dbentries = @{ $rnaproduct->get_all_DBEntries('Uniprot%') };
+               @dbentries = @{ $rnaproduct->get_all_DBEntries('%', 'ENSEMBL') };
+
+  Description: Retrieves DBEntries (xrefs) for this rnaproduct.
+
+               This method will attempt to lazy-load DBEntries
+               from a database if an adaptor is available and no
+               DBEntries are present on the rnaproduct (i.e. they
+               have not already been added or loaded).
+
+  Returntype : Listref to Bio::EnsEMBL::DBEntry objects
+  Exceptions : none
+  Caller     : ?
+  Status     : Stable
+
+=cut
+
+sub get_all_DBEntries {
+  my ($self, $ex_db_exp, $ex_db_type) = @_;
+
+  my $cache_name = 'dbentries';
+
+  if (defined($ex_db_exp)) {
+    $cache_name .= $ex_db_exp;
+  }
+
+  if (defined($ex_db_type)) {
+    $cache_name .= $ex_db_type;
+  }
+
+  # if not cached, retrieve all of the xrefs for this rnaproduct
+  if (!defined($self->{$cache_name}) && defined($self->adaptor())) {
+    $self->{$cache_name} = $self->adaptor()->db()->get_DBEntryAdaptor()->
+      fetch_all_by_RNAProduct( $self, $ex_db_exp, $ex_db_type );
+  }
+
+  $self->{$cache_name} ||= [];
+
+  return $self->{$cache_name};
+}
+
+
+
+
+
+=head2 get_all_DBLinks
+
+  Arg [1]    : (optional) String, database name
+               SQL wildcard characters (_ and %) can be used to
+               specify patterns.
+
+  Arg [2]    : (optional) String, external database type, can be one of
+               ('ARRAY','ALT_TRANS','ALT_GENE','MISC','LIT','PRIMARY_DB_SYNONYM','ENSEMBL'),
+               SQL wildcard characters (_ and %) can be used to
+               specify patterns.
+
+  Example    :  my @dblinks = @{ $rnaproduct->get_all_DBLinks() };
+                @dblinks = @{ $rnaproduct->get_all_DBLinks('mirbase%') };
+                @dblinks = @{ $rnaproduct->get_all_DBLinks('%', 'ENSEMBL') };
+
+  Description: This is here for consistancy with the Transcript
+               and Gene classes.  It is a synonym for the
+               get_all_DBEntries() method.
+
+  Return type: Listref to Bio::EnsEMBL::DBEntry objects
+  Exceptions : none
+  Caller     : general
+  Status     : Stable
+
+=cut
+
+sub get_all_DBLinks {
+  my $self = shift;
+  return $self->get_all_DBEntries(@_);
+}
+
+
+=head2 get_all_object_xrefs
+
+  Arg [1]    : (optional) String, external database name
+
+  Arg [2]    : (optional) String, external_db type
+
+  Example    : @oxrefs = @{ $rnaproduct->get_all_object_xrefs() };
+
+  Description: Retrieves xrefs for this rnaproduct.
+
+               This method will attempt to lazy-load xrefs from a
+               database if an adaptor is available and no xrefs
+               are present on the rnaproduct (i.e. they have not
+               already been added or loaded).
+
+                NB: This method is an alias for the
+                    get_all_DBentries() method.
+
+  Return type: Listref of Bio::EnsEMBL::DBEntry objects
+
+  Status     : Stable
+
+=cut
+
+sub get_all_object_xrefs {
+  my $self = shift;
+  return $self->get_all_DBEntries(@_);
+}
+
+
+=head2 get_all_xrefs
+
+  Arg [1]    : String database name (optional)
+               SQL wildcard characters (_ and %) can be used to
+               specify patterns.
+
+  Example    : @xrefs = @{ $rnaproduct->get_all_xrefs() };
+               @xrefs = @{ $rnaproduct->get_all_xrefs('mirbase%') };
+
+  Description: This method is here for consistancy with the Gene
+               and Transcript classes.  It is an alias for the
+               get_all_DBLinks() method, which in turn directly
+               calls get_all_DBEntries().
+
+  Return type: Listref of Bio::EnsEMBL::DBEntry objects
+
+  Status     : Stable
+
+=cut
+
+sub get_all_xrefs {
+  my $self = shift;
+  return $self->get_all_DBLinks(@_);
 }
 
 
