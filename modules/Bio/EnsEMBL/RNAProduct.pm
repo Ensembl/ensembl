@@ -576,6 +576,39 @@ sub length { ## no critic (Subroutines::ProhibitBuiltinHomonyms)
 }
 
 
+=head2 load
+
+  Arg [1]       : Boolean $load_xrefs
+                  Load (or don't load) xrefs.  Default is to load xrefs.
+  Example       : $rnaproduct->load();
+  Description   : The Ensembl API makes extensive use of
+                  lazy-loading.  Under some circumstances (e.g.,
+                  when copying genes between databases), all data of
+                  an object needs to be fully loaded.  This method
+                  loads the parts of the object that are usually
+                  lazy-loaded.
+  Returns       : none
+
+=cut
+
+sub load {
+  my ($self, $load_xrefs) = @_;
+
+  $load_xrefs = 1 unless defined($load_xrefs);
+
+  $self->seq();
+
+  $self->stable_id();
+  $self->get_all_Attributes();
+
+  if ($load_xrefs) {
+    $self->get_all_DBEntries();
+  }
+
+  return;
+}
+
+
 =head2 seq
 
   Example    : print $rnaproduct->seq();
