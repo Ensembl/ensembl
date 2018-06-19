@@ -1329,6 +1329,37 @@ sub fetch_all_by_Translation {
 }
 
 
+=head2 fetch_all_by_RNAProduct
+
+  Arg [1]    : Bio::EnsEMBL::RNAProduct $rp
+               (The rnaproduct to fetch database entries for)
+  Arg [2]    : optional external database name. SQL wildcards are accepted
+  Arg [3]    : optional externaldb type. SQL wildcards are accepted
+  Example    : @db_entries = @{$db_entry_adptr->fetch_all_by_RNAProduct($rp)};
+  Description: Retrieves external database entries for an EnsEMBL rnaproduct
+  Returntype : listref of Bio::EnsEMBL::DBEntries; may be of type IdentityXref if
+               there is mapping data, or OntologyXref if there is linkage data.
+  Exceptions : throws if rnaproduct object not passed
+  Caller     : general
+  Status     : Stable
+
+=cut
+
+sub fetch_all_by_RNAProduct {
+  my ($self, $rp, $ex_db_reg, $ex_db_type) = @_;
+
+  if (!ref($rp) || !$rp->isa('Bio::EnsEMBL::RNAProduct')) {
+    throw('Bio::EnsEMBL::RNAProduct argument expected.');
+  }
+  if (!$rp->dbID()){
+    warning("Cannot fetch_all_by_RNAProduct without a dbID");
+    return [];
+  }
+
+  return $self->_fetch_by_object_type($rp->dbID(), 'RNAProduct', $ex_db_reg, $ex_db_type);
+}
+
+
 
 =head2 remove_from_object
 
