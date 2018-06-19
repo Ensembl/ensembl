@@ -98,6 +98,67 @@ sub fetch_all_by_Transcript {
 }
 
 
+=head2 fetch_all_by_external_name
+
+  Arg [1]    : String $external_name
+               An external identifier of the rnaproduct to be obtained
+  Arg [2]    : (optional) String $external_db_name
+               The name of the external database from which the
+               identifier originates.
+  Arg [3]    : Boolean override. Force SQL regex matching for users
+               who really do want to find all 'NM%'
+  Example    : my @rnaproducts =
+                  @{ $rp_a->fetch_all_by_external_name('MIMAT0000416') };
+               my @more_rnaproducts =
+                  @{ $rp_a->fetch_all_by_external_name('hsa-miR-1-__') };
+  Description: Retrieves all rnaproducts which are associated with
+               an external identifier such as a GO term, miRBase
+               identifer, etc. Usually there will only be a single
+               rnaproduct returned in the list reference, but not
+               always. If no rnaproducts with the external identifier
+               are found, a reference to an empty list is returned.
+               SQL wildcards % and _ are supported in the $external_name
+               but their use is somewhat restricted for performance reasons.
+               Users that really do want % and _ in the first three characters
+               should use argument 3 to prevent optimisations
+  Returntype : listref of Bio::EnsEMBL::RNAProduct
+  Exceptions : none
+  Caller     : general
+  Status     : Stable
+
+=cut
+
+sub fetch_all_by_external_name {
+  my ($self, $external_name, $external_db_name, $override) = @_;
+
+  my $entry_adaptor = $self->db->get_DBEntryAdaptor();
+
+  my @ids = $entry_adaptor->list_rnaproduct_ids_by_extids($external_name,
+							  $external_db_name,
+							  $override);
+
+  my $transcript_adaptor = $self->db()->get_TranscriptAdaptor();
+
+  my @reference;
+  my @non_reference;
+  foreach my $id (@ids) {
+    my $transcript = $transcript_adaptor->fetch_by_rnaproduct_id($id);
+
+    if (defined($transcript)) {
+      my $rnaproduct = $self->fetch_by_dbID($id);
+      if($transcript->slice()->is_reference()) {
+        push(@reference, $rnaproduct);
+      }
+      else {
+        push(@non_reference, $rnaproduct);
+      }
+    }
+  }
+
+  return [@reference, @non_reference];
+}
+
+
 =head2 fetch_by_dbID
 
   Arg [1]    : int $dbID
