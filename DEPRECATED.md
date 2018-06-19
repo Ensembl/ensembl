@@ -57,7 +57,6 @@ A year after deprecation (4 Ensembl releases), the method is removed from the AP
 
 ### Removed in Ensembl Release 88 ###
 
- - Bio::EnsEMBL::**Slice**::*get_all_VariationFeatures()*
  - Bio::EnsEMBL::**Slice**::*get_all_somatic_VariationFeatures()*
  - Bio::EnsEMBL::**Slice**::*get_all_somatic_VariationFeatures_by_source()*
  - Bio::EnsEMBL::**Slice**::*get_all_VariationFeatures_with_phenotype()*
