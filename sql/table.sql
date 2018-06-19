@@ -316,7 +316,7 @@ INSERT INTO meta (species_id, meta_key, meta_value) VALUES
 INSERT INTO meta (species_id, meta_key, meta_value)
   VALUES (NULL, 'patch', 'patch_93_94_a.sql|schema_version');
 INSERT INTO meta (species_id, meta_key, meta_value)
-  VALUES (NULL, 'patch', 'patch_93_94_c.sql|nullable_ox_analysis');
+  VALUES (NULL, 'patch', 'patch_93_94_b.sql|nullable_ox_analysis');
 
 
 /**
