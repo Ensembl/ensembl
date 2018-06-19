@@ -249,9 +249,7 @@ subtest 'Attribute functionality' => sub {
 
 subtest 'xref functionality' => sub {
   my $xrefs = $rp->get_all_DBEntries();
-  # FIXME: it will be better to have an initial entry in the test database,
-  # an empty array can come from anywhere
-  is(scalar @$xrefs, 0, 'Initial list of DBEntries is empty');
+  cmp_ok(scalar @$xrefs, '>', 0, 'Got a non-empty list of DBEntries');
 
   dies_ok(sub { $rp->add_DBEntry({}) },
 	  'add_DBEntry() dies on invalid argument type');
