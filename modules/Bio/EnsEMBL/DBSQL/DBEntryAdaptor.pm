@@ -1881,6 +1881,29 @@ sub list_translation_ids_by_external_db_id {
     return $self->_type_by_external_db_id( $external_db_id, 'Translation', undef, $linkage_type ),
 }
 
+
+=head2 list_rnaproduct_ids_by_extids
+
+  Arg [1]    : string $external_name
+  Arg [2]    : (optional) string $external_db_name
+  Arg [3]    : Boolean override, see _type_by_external_id
+  Example    : @rp_ids = $dbea->list_rnaproduct_ids_by_extids('GO:0004835');
+  Description: Gets a list of rnaproduct IDs by external display IDs
+  Returntype : list of Ints
+  Exceptions : none
+  Caller     : unknown
+  Status     : Stable
+
+=cut
+
+sub list_rnaproduct_ids_by_extids {
+  my ($self, $external_name, $external_db_name, $override) = @_;
+
+  return $self->_type_by_external_id($external_name, 'RNAProduct', undef,
+				     $external_db_name, $override);
+}
+
+
 =head2 _type_by_external_id
 
   Arg [1]    : string $name - dbprimary_acc
