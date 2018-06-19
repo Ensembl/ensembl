@@ -276,6 +276,9 @@ subtest 'xref functionality' => sub {
      'get_all_xrefs() is a alias of get_all_DBEntries()');
 };
 
+my $rp_exts = $rp_a->fetch_all_by_external_name('hsa-miR-1-3p');
+cmp_ok(scalar @$rp_exts, '>', 0, 'Can fetch RNAProduct by external ID');
+
 # TODO: More RNAProductAdaptor tests
 
 
