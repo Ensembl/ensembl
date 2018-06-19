@@ -41,6 +41,10 @@ A year after deprecation (4 Ensembl releases), the method is removed from the AP
  - Bio::EnsEMBL::**Slice**::*calculate_theta()*
  - Bio::EnsEMBL::**Slice**::*get_all_IndividualSlice()*
  - Bio::EnsEMBL::**Slice**::*get_by_Individual()*
+ - Bio::EnsEMBL::**Slice**::*get_all_somatic_VariationFeatures()*
+ - Bio::EnsEMBL::**Slice**::*get_all_somatic_VariationFeatures_by_source()*
+ - Bio::EnsEMBL::**Slice**::*get_all_somatic_VariationFeatures_with_phenotype()*
+ - Bio::EnsEMBL::**Slice**::*get_all_VariationFeatures_by_Population()*
  - Bio::EnsEMBL::**Slice**::*get_by_strain()*
  - Bio::EnsEMBL::**Slice**::*_calculate_a*
 
@@ -58,10 +62,7 @@ A year after deprecation (4 Ensembl releases), the method is removed from the AP
 
 ### Removed in Ensembl Release 88 ###
 
- - Bio::EnsEMBL::**Slice**::*get_all_somatic_VariationFeatures()*
- - Bio::EnsEMBL::**Slice**::*get_all_somatic_VariationFeatures_by_source()*
  - Bio::EnsEMBL::**Slice**::*get_all_VariationFeatures_with_phenotype()*
- - Bio::EnsEMBL::**Slice**::*get_all_somatic_VariationFeatures_with_phenotype()*
  - Bio::EnsEMBL::**Slice**::*get_all_StructuralVariationFeatures()*
  - Bio::EnsEMBL::**Slice**::*get_all_somatic_StructuralVariationFeatures()*
  - Bio::EnsEMBL::**Slice**::*get_all_StructuralVariationFeatures_by_size_range()*
@@ -74,7 +75,6 @@ A year after deprecation (4 Ensembl releases), the method is removed from the AP
  - Bio::EnsEMBL::**Slice**::*get_all_PhenotypeFeatures()*
  - Bio::EnsEMBL::**Slice**::*get_all_CopyNumberVariantProbeFeatures()*
  - Bio::EnsEMBL::**Slice**::*get_all_genotyped_VariationFeatures()*
- - Bio::EnsEMBL::**Slice**::*get_all_VariationFeatures_by_Population()*
  - Bio::EnsEMBL::**StrainSlice**::*remove_indels()*
  - Bio::EnsEMBL::**StrainSlice**::*get_original_seq_region_position()*
  - Bio::EnsEMBL::**StrainSlice**::*get_all_VariationFeatures()*
