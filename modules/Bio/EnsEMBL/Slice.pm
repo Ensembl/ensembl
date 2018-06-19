@@ -1896,7 +1896,7 @@ sub get_all_VariationFeatures{
 
 sub get_all_somatic_VariationFeatures {
   my ($self, $so_terms, $without_children, $included_so, $dbtype) = @_;
-  deprecate('get_all_somatic_VariationFeatures is deprecated and will be removed in e88. Please use Bio::EnsEMBL::Variation::DBSQL::VariationFeatureAdaptor::fetch_all_somatic_by_Slice_SO_terms instead.');
+  deprecate('get_all_somatic_VariationFeatures is deprecated and will be removed in e95. Please use Bio::EnsEMBL::Variation::DBSQL::VariationFeatureAdaptor::fetch_all_somatic_by_Slice_SO_terms instead.');
   if (my $vf_adaptor = $self->_get_VariationFeatureAdaptor($dbtype)) {
     return $vf_adaptor->fetch_all_somatic_by_Slice_SO_terms($self, $so_terms, $without_children, $included_so);
   }
@@ -1922,7 +1922,7 @@ sub get_all_somatic_VariationFeatures {
 
 sub get_all_somatic_VariationFeatures_by_source {
   my ($self, $source, $dbtype) = @_;
-  deprecate('get_all_somatic_VariationFeatures_by_source is deprecated and will be removed in e88. Please use Bio::EnsEMBL::Variation::DBSQL::VariationFeatureAdaptor::fetch_all_somatic_by_Slice_Source instead.');
+  deprecate('get_all_somatic_VariationFeatures_by_source is deprecated and will be removed in e95. Please use Bio::EnsEMBL::Variation::DBSQL::VariationFeatureAdaptor::fetch_all_somatic_by_Slice_Source instead.');
   my $constraint = (defined($source)) ? " s.name='$source' " : undef;
   if (my $vf_adaptor = $self->_get_VariationFeatureAdaptor($dbtype)) {
     return $vf_adaptor->fetch_all_somatic_by_Slice_constraint($self, $constraint);
@@ -1949,7 +1949,7 @@ sub get_all_somatic_VariationFeatures_by_source {
 
 sub get_all_somatic_VariationFeatures_with_phenotype {
   my ($self, $source, $p_source, $phenotype, $dbtype) = @_;
-  deprecate('get_all_somatic_VariationFeatures_with_phenotype is deprecated and will be removed in e88. Please use Bio::EnsEMBL::Variation::DBSQL::VariationFeatureAdaptor::fetch_all_somatic_with_phenotype_by_Slice instead.');
+  deprecate('get_all_somatic_VariationFeatures_with_phenotype is deprecated and will be removed in e95. Please use Bio::EnsEMBL::Variation::DBSQL::VariationFeatureAdaptor::fetch_all_somatic_with_phenotype_by_Slice instead.');
   if (my $vf_adaptor = $self->_get_VariationFeatureAdaptor($dbtype)) {
     return $vf_adaptor->fetch_all_somatic_with_phenotype_by_Slice($self, $source, $p_source, $phenotype);
   }
@@ -1980,7 +1980,7 @@ sub get_all_somatic_VariationFeatures_with_phenotype {
 
 sub get_all_VariationFeatures_by_Population {
   my ($self, $minimum_frequency, $dbtype) = @_;
-  deprecate('get_all_VariationFeatures_by_Population is deprecated and will be removed in e88. Please use Bio::EnsEMBL::Variation::DBSQL::VariationFeatureAdaptor::fetch_all_by_Slice_Population instead.');
+  deprecate('get_all_VariationFeatures_by_Population is deprecated and will be removed in e95. Please use Bio::EnsEMBL::Variation::DBSQL::VariationFeatureAdaptor::fetch_all_by_Slice_Population instead.');
   if (my $vf_adaptor = $self->_get_VariationFeatureAdaptor($dbtype)) {
     return $vf_adaptor->fetch_all_by_Slice_Population($self, $minimum_frequency);
   }
