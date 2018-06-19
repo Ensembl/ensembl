@@ -247,6 +247,34 @@ subtest 'Attribute functionality' => sub {
   # be a good reference.
 };
 
+subtest 'xref functionality' => sub {
+  my $xrefs = $rp->get_all_DBEntries();
+  # FIXME: it will be better to have an initial entry in the test database,
+  # an empty array can come from anywhere
+  is(scalar @$xrefs, 0, 'Initial list of DBEntries is empty');
+
+  dies_ok(sub { $rp->add_DBEntry({}) },
+	  'add_DBEntry() dies on invalid argument type');
+
+  my $n_xrefs_before = scalar @$xrefs;
+  my $dbe = Bio::EnsEMBL::DBEntry->new(
+    -primary_id => 'test_id',
+    -version    => 1,
+    -dbname     => 'miRBase',
+    -display_id => 'test_id'
+  );
+  $rp->add_DBEntry($dbe);
+  is(scalar @{$rp->get_all_DBEntries()}, scalar $n_xrefs_before + 1, 'Added one new xref');
+
+  # No need for deep comparisons here, these four methods are supposed
+  # to return literally the same reference
+  is($xrefs, $rp->get_all_object_xrefs(),
+     'get_all_object_xrefs() is a alias of get_all_DBEntries()');
+  is($xrefs, $rp->get_all_DBLinks(),
+     'get_all_DBLinks() is a alias of get_all_DBEntries()');
+  is($xrefs, $rp->get_all_xrefs(),
+     'get_all_xrefs() is a alias of get_all_DBEntries()');
+};
 
 # TODO: More RNAProductAdaptor tests
 
