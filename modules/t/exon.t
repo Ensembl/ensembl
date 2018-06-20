@@ -110,6 +110,8 @@ allow_warnings(0) if $db->dbc->driver() eq 'SQLite';
 
 ok($exon->dbID() && $exon->adaptor == $exonad);
 
+is($exon->feature_so_acc, 'SO:0000147', 'Exon feature SO acc is correct (exon)');
+
 # now test fetch_by_dbID
 
 my $newexon = $exonad->fetch_by_dbID($exon->dbID);

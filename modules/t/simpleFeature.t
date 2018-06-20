@@ -150,6 +150,7 @@ print_features([$feat]);
 my $ids = $sfa->list_dbIDs();
 ok (@{$ids});
 
+is($feat->feature_so_acc, 'SO:0001411', 'SimpleFeature feature SO acc is correct (biological_region)');
 
 ok($feat->display_id eq $feat->display_label);
 

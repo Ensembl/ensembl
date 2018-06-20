@@ -1595,4 +1595,18 @@ sub biotype {
   return $self->get_Biotype->name;
 }
 
+=head2 feature_so_acc
+
+  Example    : print $gene->feature_so_acc;
+  Description: This method returns a string containing the SO accession number of Gene.
+               Overrides Bio::EnsEMBL::Feature::feature_so_acc
+  Returntype : string (Sequence Ontology accession number)
+
+=cut
+
+sub feature_so_acc {
+
+  return 'SO:0000704';
+}
+
 1;

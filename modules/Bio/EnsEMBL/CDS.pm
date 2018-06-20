@@ -241,6 +241,21 @@ sub phase {
 }
 
 
+=head2 feature_so_acc
+
+  Example    : print $cds->feature_so_acc;
+  Description: This method returns a string containing the SO accession number of CDS.
+               Overrides Bio::EnsEMBL::Feature::feature_so_acc
+  Returntype : string (Sequence Ontology accession number)
+
+=cut
+
+sub feature_so_acc {
+
+  return 'SO:0000316';
+}
+
+
 =head2 summary_as_hash
 
   Example    : my $hash = $cds->summary_as_hash();

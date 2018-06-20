@@ -221,6 +221,22 @@ sub display_id {
   return $self->{'name'} || '';
 }
 
+
+=head2 feature_so_acc
+
+  Example    : print $feat->feature_so_acc;
+  Description: This method returns a string containing the SO accession number of chromosome_band.
+               Overrides Bio::EnsEMBL::Feature::feature_so_acc
+  Returntype : string (Sequence Ontology accession number)
+
+=cut
+
+sub feature_so_acc {
+
+  return 'SO:0000341';
+}
+
+
 =head2 summary_as_hash
 
   Example       : $karyotype_band_summary = $band->summary_as_hash();

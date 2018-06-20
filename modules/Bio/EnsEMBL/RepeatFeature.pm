@@ -267,6 +267,20 @@ sub display_id {
   return $id;
 }
 
+=head2 feature_so_acc
+
+  Example    : print $feat->feature_so_acc;
+  Description: This method returns a string containing the SO accession number of repeat_region.
+               Overrides Bio::EnsEMBL::Feature::feature_so_acc
+  Returntype : string (Sequence Ontology accession number)
+
+=cut
+
+sub feature_so_acc {
+
+  return 'SO:0000657';
+}
+
 
 =head2 summary_as_hash
 

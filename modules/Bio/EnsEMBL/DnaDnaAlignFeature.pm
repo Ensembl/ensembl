@@ -526,5 +526,18 @@ sub transfer {
   return $new_feature;
 }
 
+=head2 feature_so_acc
+
+  Example    : print $feat->feature_so_acc;
+  Description: This method returns a string containing the SO accession number of nucleotide_match.
+               Overrides Bio::EnsEMBL::Feature::feature_so_acc
+  Returntype : string (Sequence Ontology accession number)
+
+=cut
+
+sub feature_so_acc {
+
+  return 'SO:0000347';
+}
 
 1;

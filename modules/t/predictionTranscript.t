@@ -131,6 +131,7 @@ $exon->slice( $slice );
 $exon->strand( 1 );
 $pt->add_Exon($exon);
 
+is($exon->feature_so_acc, 'SO:0000147', 'PredictionExon feature SO acc is correct (exon)');
 
 #check that transcript start + end updated
 ok( $pt->end() == 50 );
@@ -174,7 +175,7 @@ $all_exons = $pt->get_all_Exons();
 ok( $all_exons->[0]->start() == 40 );
 ok( $all_exons->[2]->end() == 10 );
 
-
+is($pt->feature_so_acc, 'SO:0000673', 'PredictionTranscript feature SO acc is correct (transcript)');
 
 
 
