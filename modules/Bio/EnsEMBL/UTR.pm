@@ -220,6 +220,13 @@ sub type {
   return ( $self->{'type'} || 'UTR' );
 }
 
+
+# package variable to minimize duplication
+my %utr_type_so_mapping = (
+ 'five_prime_utr'  => 'SO:0000204',
+ 'three_prime_utr' => 'SO:0000205'
+);
+
 =head2 feature_so_acc
 
   Example    : print $utr->feature_so_acc;
@@ -231,11 +238,6 @@ sub type {
 
 sub feature_so_acc {
   my $self = shift;
-
-  my %utr_type_so_mapping = (
-   'five_prime_utr'  => 'SO:0000204',
-   'three_prime_utr' => 'SO:0000205'
-  );
 
   # return UTR type SO acc, or UTR acc
   return $utr_type_so_mapping{$self->type} // 'SO:0000203';

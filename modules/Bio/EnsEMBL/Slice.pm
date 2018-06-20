@@ -3759,6 +3759,15 @@ sub add_synonym{
   return;
 }
 
+
+# package variable to minimize duplication
+my %region_so_mapping = (
+ 'chromosome'  => 'SO:0000340',
+ 'supercontig' => 'SO:0000148',
+ 'scaffold'    => 'SO:0000148',
+ 'contig'      => 'SO:0000149'
+);
+
 =head2 feature_so_acc
 
   Example     : $slice_so_acc = $slice->feature_so_acc;
@@ -3768,13 +3777,6 @@ sub add_synonym{
 
 sub feature_so_acc {
   my $self = shift;
-
-  my %region_so_mapping = (
-   'chromosome'  => 'SO:0000340',
-   'supercontig' => 'SO:0000148',
-   'scaffold'    => 'SO:0000148',
-   'contig'      => 'SO:0000149'
-  );
 
   # return the region SO acc, or Slice acc
   return $region_so_mapping{$self->coord_system_name} // 'SO:0000001';
