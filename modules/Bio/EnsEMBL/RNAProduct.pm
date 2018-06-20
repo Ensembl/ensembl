@@ -188,6 +188,8 @@ sub add_DBEntry {
 
   $self->{'dbentries'} ||= [];
   push @{$self->{'dbentries'}}, $dbe;
+
+  return;
 }
 
 
