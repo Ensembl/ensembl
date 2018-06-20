@@ -477,7 +477,7 @@ sub get_all_DBEntries {
 
 =cut
 
-sub get_all_DBLinks {
+sub get_all_DBLinks {  ## no critic (Subroutines::RequireArgUnpacking)
   my $self = shift;
   return $self->get_all_DBEntries(@_);
 }
@@ -507,7 +507,7 @@ sub get_all_DBLinks {
 
 =cut
 
-sub get_all_object_xrefs {
+sub get_all_object_xrefs {  ## no critic (Subroutines::RequireArgUnpacking)
   my $self = shift;
   return $self->get_all_DBEntries(@_);
 }
@@ -533,7 +533,7 @@ sub get_all_object_xrefs {
 
 =cut
 
-sub get_all_xrefs {
+sub get_all_xrefs {  ## no critic (Subroutines::RequireArgUnpacking)
   my $self = shift;
   return $self->get_all_DBLinks(@_);
 }
