@@ -190,6 +190,18 @@ subtest 'fetch_all_by_Transcript() functionality' => sub {
   cmp_ok(scalar @{$rps}, '>', 0, 'Non-empty list for Transcript with RNA products');
 };
 
+subtest 'fetch_all_by_type_id() functionality' => sub {
+  my $n_rps;
+
+  # At the moment we have only got miRNA in the homo_sapiens test database
+
+  # FIXME: compare this to the total number of RNAProducts?
+  $n_rps = scalar @{$rp_a->fetch_all_by_type_id(1)};
+  cmp_ok($n_rps, '>', 0, 'Got non-empty list of type_id==1 rnaproducts');
+  $n_rps = scalar @{$rp_a->fetch_all_by_type_id(2)};
+  cmp_ok($n_rps, '==', 0, 'Got empty list of type_id==2 rnaproducts');
+};
+
 $rp = undef;
 $rp = $rp_a->fetch_by_dbID(1);
 ok($rp, 'Can fetch RNAProduct by dbID');
