@@ -101,6 +101,12 @@ sub new { ## no critic (Subroutines::RequireArgUnpacking)
 
   my $class = ref($caller) || $caller;
 
+  # For an unspecialised rnaproduct object, set the type to "generic mature
+  # RNA". Ideally we would look the corresponding ID up in rnaproduct_type,
+  # then again that would make this dependent on the database connection...
+  # Maybe we should just store a string code instead? Either way, FIXME.
+  my $type_id = 0;
+
   my ($seq_start, $seq_end, $stable_id, $version, $dbID, $adaptor, $seq,
       $created_date, $modified_date ) =
 	rearrange(["SEQ_START", "SEQ_END", "STABLE_ID", "VERSION", "DBID",
@@ -120,7 +126,8 @@ sub new { ## no critic (Subroutines::RequireArgUnpacking)
     'dbID'       => $dbID,
     'seq'        => $seq,
     'created_date' => $created_date,
-    'modified_date' => $modified_date
+    'modified_date' => $modified_date,
+    'type_id'    => $type_id
   }, $class;
 
   $self->adaptor($adaptor);
@@ -799,6 +806,27 @@ sub transcript {
   }
 
   return $self->{'transcript'};
+}
+
+
+=head2 type_id
+
+  Example    : my $rp_type_id = $rnaproduct->type();
+  Description: Getter for the RNAProduct type (e.g. miRNA, circRNA, ...).
+               The type is expressed as a numerical ID and it is up to the
+               user to look the details up in rnaproduct_type; it has been
+               implemented this way because at this point it hasn't been
+               decided whether we need to expose this to users at all.
+  Returntype : int
+  Exceptions : none
+  Caller     : ?
+  Status     : In Development
+
+=cut
+
+sub type_id {
+  my $self = shift;
+  return $self->{'type_id'};
 }
 
 
