@@ -227,7 +227,14 @@ sub set_display_xrefs_from_stable_table{
   $reset_sth->execute();
   $reset_sth->finish;
  
-  $reset_sth = $core_dbi->prepare("UPDATE transcript SET display_xref_id = null WHERE biotype NOT IN ('LRG_gene')");
+  # Remove any leftover transcript description, as it is not used anywhere
+  $reset_sth = $core_dbi->prepare("UPDATE transcript SET display_xref_id = null");
+  $reset_sth->execute();
+  $reset_sth->finish;
+
+  # Remove descriptions assigned through the xref pipeline, recognisable by the 'Source' field
+  # This will maintain any manually added descriptions
+  $reset_sth = $core_dbi->prepare("UPDATE gene SET description = null WHERE description like '%Source%'");
   $reset_sth->execute();
   $reset_sth->finish;
 
