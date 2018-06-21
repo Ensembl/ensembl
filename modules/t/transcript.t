@@ -278,7 +278,7 @@ is($tr->stable_id, 'ENST00000246229', 'Fetched correct transcript by external na
 #
 
 $tr = $ta->fetch_by_rnaproduct_id(1);
-is($tr->stable_id, 'ENST00000362147', 'Fetched correct transcript by rnaproduct id');
+is($tr->stable_id, 'ENST00000278995', 'Fetched correct transcript by rnaproduct id');
 
 #
 # test fetch_by_translation_id
