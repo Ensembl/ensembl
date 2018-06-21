@@ -67,6 +67,7 @@ use strict;
 use warnings;
 
 use Bio::EnsEMBL::DBSQL::BaseAdaptor;
+use Bio::EnsEMBL::MicroRNA;
 use Bio::EnsEMBL::RNAProduct;
 use Bio::EnsEMBL::Utils::Exception qw( throw warning );
 use Bio::EnsEMBL::Utils::Scalar qw( assert_ref );
@@ -294,7 +295,7 @@ SQL
 #               to be handed directly to users because in its current form
 #               it can be trivially exploited to inject arbitrary SQL.
 #  Returntype : ArrayRef of either Bio::EnsEMBL::RNAProducts or undefs
-#  Exceptions : none
+#  Exceptions : throws if rnaproduct type is absent or unknown
 #  Caller     : internal
 #  Status     : At Risk (In Development)
 
@@ -329,8 +330,16 @@ sub _fetch_direct_query {
       next;
     }
 
-    my $rnaproduct =
-      Bio::EnsEMBL::RNAProduct->new_fast( {
+    my $class_name;
+    # FIXME: the usual thing about using type_id directly
+    if ($rnaproduct_type_id == 0) {
+      $class_name = 'Bio::EnsEMBL::RNAProduct';
+    } elsif ($rnaproduct_type_id == 1) {
+      $class_name = 'Bio::EnsEMBL::MicroRNA';
+    } else {
+      throw("Unknown rnaproduct type");
+    }
+    my $rnaproduct = $class_name->new_fast( {
                              'dbID'          => $rnaproduct_id,
                              'type_id'       => $rnaproduct_type_id,
                              'adaptor'       => $self,
