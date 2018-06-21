@@ -1028,6 +1028,18 @@ for (my $i = 0; $i < scalar(@absolute_coords); $i++) {
   }
 }
 
+## Test retrieval of mature RNA products
+{
+  $tr = $ta->fetch_by_stable_id('ENST00000278995');
+  my $rps_all = $tr->get_all_RNAProducts();
+  my $rps_micro = $tr->get_all_RNAProducts(1);
+  my $rps_circ = $tr->get_all_RNAProducts(2);
+
+  cmp_ok(scalar @{$rps_all}, '>', 0, 'Have RNA products');
+  is_deeply($rps_all, $rps_micro, 'All RNA products are microRNAs');
+  cmp_ok(scalar @{$rps_circ}, '==', 0, 'Have no circRNAs');
+}
+
 done_testing();
 
 #
