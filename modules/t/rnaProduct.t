@@ -20,6 +20,7 @@ use strict;
 use warnings;
 
 use Bio::EnsEMBL::Test::TestUtils;
+use Bio::EnsEMBL::MicroRNA;
 use Bio::EnsEMBL::RNAProduct;
 use Bio::EnsEMBL::Transcript;
 
@@ -297,9 +298,34 @@ cmp_ok(scalar @$rp_exts, '>', 0, 'Can fetch RNAProduct by external ID');
 
 # TODO: More RNAProductAdaptor tests
 
-
 # Test generic_count(), inherited method from BaseAdaptor
 is($rp_a->generic_count(), @{$rp_a->list_dbIDs()}, "Number of features from generic_count is equal to the number of dbIDs from list_dbIDs");
+
+#
+# MicroRNA-specific tests
+#
+
+subtest 'MicroRNA tests' => sub {
+  my $mirna;
+
+  $mirna = Bio::EnsEMBL::MicroRNA->new();
+  ok($mirna, 'MicroRNA constructor works without arguments');
+  isa_ok($mirna, 'Bio::EnsEMBL::MicroRNA', 'miRNA object from new()');
+
+  $mirna = Bio::EnsEMBL::MicroRNA->new(
+    -SEQ_START => 314,
+    -ARM => 3
+  );
+  ok($mirna, 'MicroRNA constructor works with arguments');
+  is($mirna->arm(), 3, 'MicroRNA-specific parameters set OK');
+  is($mirna->start(), 314, 'Generic RNAProduct parameters set OK');
+
+  $mirna = $rp_a->fetch_by_dbID(1);
+  ok($mirna, 'Can fetch MicroRNA from RNAProductAdaptor');
+  isa_ok($mirna, 'Bio::EnsEMBL::MicroRNA', 'miRNA object from RNAProductAdaptor');
+  isnt($mirna->arm(), undef, 'Can retrieve miRNA arm value from DB');
+};
+
 
 done_testing();
 
