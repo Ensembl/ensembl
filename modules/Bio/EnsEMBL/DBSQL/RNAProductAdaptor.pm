@@ -159,6 +159,29 @@ sub fetch_all_by_external_name {
 }
 
 
+=head2 fetch_all_by_type_id
+
+  Arg [1]    : int
+  Example    : $rps = $rnaproduct_adaptor->fetch_by_type_id(1);
+  Description: Retrieves RNAProducts via their type (e.g. miRNA, circRNA).
+               The type is presently expressed as numerical ID, which is
+               of limited usefulness; support for human-readable forms
+               will follow (FIXME).
+               If no RNAProducts are found, an empty list is returned.
+  Returntype : arrayref of Bio::EnsEMBL::RNAProducts
+  Exceptions : none
+  Caller     : ?
+  Status     : In Development
+
+=cut
+
+sub fetch_all_by_type_id {
+  my ($self, $type_id) = @_;
+
+  return $self->_fetch_direct_query(['rnaproduct_type_id', $type_id, SQL_INTEGER]);
+}
+
+
 =head2 fetch_by_dbID
 
   Arg [1]    : int $dbID
