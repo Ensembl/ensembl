@@ -284,8 +284,8 @@ sub _fetch_direct_query {
     $self->db()->dbc()->from_date_to_seconds('modified_date');
 
   my $sql =
-    sprintf("SELECT rnaproduct_id, transcript_id, seq_start, seq_end, "
-	    . "stable_id, version, %s, %s "
+    sprintf("SELECT rnaproduct_id, rnaproduct_type_id, transcript_id, "
+	    . "seq_start, seq_end, stable_id, version, %s, %s "
 	    . "FROM rnaproduct "
 	    . "WHERE %s = ?",
 	    $rp_created_date, $rp_modified_date, $where_args->[0]);
@@ -296,8 +296,9 @@ sub _fetch_direct_query {
   my $sql_data = $sth->fetchall_arrayref();
   my $transcript_adaptor = $self->db()->get_TranscriptAdaptor();
   while (my $row_ref = shift @{$sql_data}) {
-    my ($rnaproduct_id, $transcript_id, $seq_start, $seq_end, $stable_id,
-	$version, $created_date, $modified_date) = @{$row_ref};
+    my ($rnaproduct_id, $rnaproduct_type_id, $transcript_id, $seq_start,
+	$seq_end, $stable_id, $version, $created_date, $modified_date) =
+	  @{$row_ref};
 
     if (!defined($rnaproduct_id)) {
       push @return_data, undef;
@@ -307,6 +308,7 @@ sub _fetch_direct_query {
     my $rnaproduct =
       Bio::EnsEMBL::RNAProduct->new_fast( {
                              'dbID'          => $rnaproduct_id,
+                             'type_id'       => $rnaproduct_type_id,
                              'adaptor'       => $self,
                              'start'         => $seq_start,
                              'end'           => $seq_end,
