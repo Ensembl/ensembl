@@ -83,6 +83,9 @@ ok(test_getter_setter($rp, 'version', 13), 'Test getter/setter version()');
 ok(test_getter_setter($rp, 'created_date', time()), 'Test getter/setter created_date()');
 ok(test_getter_setter($rp, 'modified_date', time()), 'Test getter/setter modified_date()');
 
+# FIXME: temporary, at least this way
+is($rp->type_id(), 0, 'type_id is zero (i.e. generic mature RNA)');
+
 subtest 'Test stable_id_version() functionality' =>  sub {
   ok(test_getter_setter($rp, 'stable_id_version', 3.14),
      'getter/setter with \'stable_id.version\' as input');
@@ -194,6 +197,9 @@ ok($rp, 'Can fetch RNAProduct by dbID');
 $rp = undef;
 $rp = $rp_a->fetch_by_stable_id('ENSM00000000001');
 ok($rp, 'Can fetch RNAProduct by stable ID');
+
+# FIXME: temporary, at least this way
+is($rp->type_id(), 1, 'type_id is 1 (i.e. miRNA)');
 
 # FIXME: perform an in-depth inspection of one of the fetched RNAProducts,
 # to make sure new_fast() call all of these fetch methods use does what it
