@@ -234,7 +234,7 @@ sub set_display_xrefs_from_stable_table{
 
   # Remove descriptions assigned through the xref pipeline, recognisable by the 'Source' field
   # This will maintain any manually added descriptions
-  $reset_sth = $core_dbi->prepare("UPDATE gene SET description = null WHERE description like '%Source%'");
+  $reset_sth = $core_dbi->prepare("UPDATE gene SET description = null WHERE description like '%[Source:%]%'");
   $reset_sth->execute();
   $reset_sth->finish;
 
