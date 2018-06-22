@@ -78,7 +78,7 @@ use parent qw(Bio::EnsEMBL::Storable);
   Arg [-STABLE_ID]    : The stable identifier for this RNAPRoduct
   Arg [-VERSION]      : The version of the stable identifier
   Arg [-DBID]         : The internal identifier of this RNAProduct
-  Arg [-ADAPTOR]      : The TranslationAdaptor for this RNAProduct
+  Arg [-ADAPTOR]      : The RNAProductAdaptor for this RNAProduct
   Arg [-SEQ]          : Manually sets the nucleotide sequence of this
                         rnaproduct. May be useful if this rnaproduct is not
                         stored in a database.
