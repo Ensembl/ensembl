@@ -13,16 +13,16 @@
 -- See the License for the specific language governing permissions and
 -- limitations under the License.
 
-# patch_93_94_b.sql
+# patch_93_94_c.sql
 #
-# Title: Allow NULL analysis_id in object_xref table
+# Title: Default align_type is 'ensembl'
 #
 # Description:
-#   Allow analysis_id to not be set in the object_xref table, as not all entries will have an analysis
+#   Ensure default align_type in align_feature tables is 'ensembl'
 
-ALTER TABLE object_xref MODIFY COLUMN analysis_id SMALLINT UNSIGNED;
-UPDATE object_xref SET analysis_id = NULL WHERE analysis_id = 0;
+ALTER TABLE protein_feature MODIFY COLUMN align_type ENUM('ensembl', 'cigar', 'cigarplus', 'vulgar', 'mdtag') DEFAULT NULL;
+UPDATE protein_feature SET align_type = NULL WHERE align_type = '';
 
 # patch identifier
 INSERT INTO meta (species_id, meta_key, meta_value)
-  VALUES (NULL, 'patch', 'patch_93_94_b.sql|nullable_ox_analysis');
+  VALUES (NULL, 'patch', 'patch_93_94_c.sql|default_aln_type');
