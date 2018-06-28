@@ -105,3 +105,4 @@
 2112	\N	patch	patch_92_93_c.sql|collate_index_interpro
 2113	\N	patch	patch_93_94_a.sql|schema_version
 2114	\N	patch	patch_93_94_b.sql|nullable_ox_analysis
+2115	\N	patch	patch_93_94_c.sql|default_aln_type
