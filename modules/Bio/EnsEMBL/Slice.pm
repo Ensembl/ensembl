@@ -1869,7 +1869,7 @@ sub get_all_VariationFeatures{
 }
 
 =head2 get_all_somatic_VariationFeatures
-
+    Deprecated. Please use Bio::EnsEMBL::Variation::DBSQL::VariationFeatureAdaptor::fetch_all_somatic_by_Slice_SO_terms instead.
     Args [1]    : (optional) ArrayRef $so_terms
                   SequenceOntology terms to limit the fetch to
     Args [2]    : (optional) boolean $without_children
@@ -1904,7 +1904,7 @@ sub get_all_somatic_VariationFeatures {
 }
 
 =head2 get_all_somatic_VariationFeatures_by_source
-
+    Deprecated. Please use Bio::EnsEMBL::Variation::DBSQL::VariationFeatureAdaptor::fetch_all_somatic_by_Slice_Source instead.
     Arg [1]     : string $source [optional]
                   The name of the source to query for
     Arg [2]     : string $dbtype [optional]
@@ -1931,7 +1931,7 @@ sub get_all_somatic_VariationFeatures_by_source {
 }
 
 =head2 get_all_somatic_VariationFeatures_with_phenotype
-
+    Deprecated. Please use Bio::EnsEMBL::Variation::DBSQL::VariationFeatureAdaptor::fetch_all_somatic_with_phenotype_by_Slice instead.
     Arg [1]     : $variation_feature_source [optional]
     Arg [2]     : $phenotype_source [optional]
     Arg [3]     : $phenotype_name [optional]
@@ -1958,7 +1958,7 @@ sub get_all_somatic_VariationFeatures_with_phenotype {
 
 
 =head2 get_all_VariationFeatures_by_Population
-
+    Deprecated. Please use Bio::EnsEMBL::Variation::DBSQL::VariationFeatureAdaptor::fetch_all_by_Slice_Population instead.
     Arg [1]     : Bio::EnsEMBL::Variation::Population
     Arg [2]     : $minimum_frequency [optional]
     Arg [3]     : string $dbtype [optional]
@@ -1988,7 +1988,7 @@ sub get_all_VariationFeatures_by_Population {
 }
 
 =head2 get_all_IndividualSlice
-
+    Deprecated. The method will be removed in e95.
     Args        : none
     Example     : my $individualSlice = $slice->get_by_Population($population);
     Description : Gets the specific Slice for all the individuls in the population
@@ -2015,7 +2015,7 @@ sub get_all_IndividualSlice{
 }
 
 =head2 get_by_Individual
-
+    Deprecated. The method will be removed in e95.
     Arg[1]      : Bio::EnsEMBL::Variation::Individual $individual
     Example     : my $individualSlice = $slice->get_by_Individual($individual);
     Description : Gets the specific Slice for the individual
