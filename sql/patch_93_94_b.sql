@@ -25,4 +25,4 @@ UPDATE object_xref SET analysis_id = NULL WHERE analysis_id = 0;
 
 # patch identifier
 INSERT INTO meta (species_id, meta_key, meta_value)
-  VALUES (NULL, 'patch', 'patch_93_94_c.sql|nullable_ox_analysis');
+  VALUES (NULL, 'patch', 'patch_93_94_b.sql|nullable_ox_analysis');
