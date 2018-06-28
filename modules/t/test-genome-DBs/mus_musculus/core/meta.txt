@@ -177,4 +177,4 @@
 1689	\N	patch	patch_92_93_b.sql|biotype_table
 1690	\N	patch	patch_92_93_c.sql|collate_index_interpro
 1691	\N	patch	patch_93_94_a.sql|schema_version
-1692	\N	patch	patch_93_94_c.sql|nullable_ox_analysis
+1692	\N	patch	patch_93_94_b.sql|nullable_ox_analysis
