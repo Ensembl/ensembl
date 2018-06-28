@@ -108,7 +108,7 @@ sub new {
   $self->{'external_data'} = $external_data || '';
   $self->{'hit_description'} = $hit_description || '';
   $self->{'cigar_string'} = $cigar_string || '';
-  $self->{'align_type'} = $align_type || '';
+  $self->{'align_type'} = $align_type;
 
   return $self;
 }
