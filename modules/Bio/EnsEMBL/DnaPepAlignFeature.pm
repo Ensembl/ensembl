@@ -51,6 +51,7 @@ use vars qw(@ISA);
 
 @ISA = qw( Bio::EnsEMBL::BaseAlignFeature );
 
+use constant SO_ACC => 'SO:0000349';
 
 =head2 _hit_unit
 
@@ -85,21 +86,6 @@ sub _hit_unit {
 
 sub _query_unit {
   return 3;
-}
-
-
-=head2 feature_so_acc
-
-  Example    : print $feat->feature_so_acc;
-  Description: This method returns a string containing the SO accession number of protein_match.
-               Overrides Bio::EnsEMBL::Feature::feature_so_acc
-  Returntype : string (Sequence Ontology accession number)
-
-=cut
-
-sub feature_so_acc {
-
-  return 'SO:0000349';
 }
 
 

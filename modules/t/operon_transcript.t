@@ -56,7 +56,7 @@ my $operon = Bio::EnsEMBL::Operon->new( -START         => $start,
 										-SLICE         => $slice,
 										-DISPLAY_LABEL => $display_label, -STABLE_ID=>"op1", -ANALYSIS=>$analysis );
 	is( $analysis,        $operon->analysis());
-throws_ok { $operon->feature_so_acc } qr/not implemented/, 'Operon feature_so_acc is not implemented';
+throws_ok { $operon->feature_so_acc } qr/not defined/, 'Operon feature_so_acc is not implemented';
 
 my $gene_name    = "accB";
 my $gene_start   = 31225346;
@@ -138,7 +138,7 @@ my $operon_transcript =
 									   -SLICE  => $slice, -STABLE_ID=>"opt1", -ANALYSIS=>$analysis  );
 $operon_transcript->add_Gene($gene);
 $operon_transcript->add_Gene($gene2);
-throws_ok { $operon_transcript->feature_so_acc } qr/not implemented/, 'OperonTranscript feature_so_acc is not implemented';
+throws_ok { $operon_transcript->feature_so_acc } qr/not defined/, 'OperonTranscript feature_so_acc is not implemented';
 
 $operon->add_OperonTranscript($operon_transcript);
 is( $analysis,        $operon_transcript->analysis(), "Analysis" );

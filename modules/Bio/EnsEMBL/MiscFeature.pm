@@ -125,6 +125,8 @@ use vars qw(@ISA);
 
 @ISA = qw(Bio::EnsEMBL::Feature);
 
+use constant SO_ACC => 'SO:0001411';
+
 =head2 new
 
   Arg [-SLICE]: Bio::EnsEMBL::SLice - Represents the sequence that this
@@ -358,21 +360,6 @@ sub display_id {
   } else {
     return '';
   }
-}
-
-
-=head2 feature_so_acc
-
-  Example    : print $feat->feature_so_acc;
-  Description: This method returns a string containing the SO accession number of biological_region.
-               Overrides Bio::EnsEMBL::Feature::feature_so_acc
-  Returntype : string (Sequence Ontology accession number)
-
-=cut
-
-sub feature_so_acc {
-
-  return 'SO:0001411';
 }
 
 

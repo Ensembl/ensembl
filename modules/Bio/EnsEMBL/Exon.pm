@@ -80,6 +80,8 @@ use Bio::EnsEMBL::DBSQL::SupportingFeatureAdaptor;
 use vars qw(@ISA);
 @ISA = qw(Bio::EnsEMBL::Feature);
 
+use constant SO_ACC => 'SO:0000147';
+
 
 =head2 new
 
@@ -1631,21 +1633,6 @@ sub load {
   $self->analysis();
   $self->stable_id();
   $self->get_all_supporting_features();
-}
-
-
-=head2 feature_so_acc
-
-  Example    : print $exon->feature_so_acc;
-  Description: This method returns a string containing the SO accession number of Exon.
-               Overrides Bio::EnsEMBL::Feature::feature_so_acc
-  Returntype : string (Sequence Ontology accession number)
-
-=cut
-
-sub feature_so_acc {
-
-  return 'SO:0000147';
 }
 
 

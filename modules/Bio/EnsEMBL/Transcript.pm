@@ -77,6 +77,7 @@ use Bio::EnsEMBL::Utils::Scalar qw( assert_ref );
 
 use parent qw(Bio::EnsEMBL::Feature);
 
+use constant SO_ACC => 'SO:0000673';
 
 =head2 new
 
@@ -3289,19 +3290,4 @@ sub biotype {
   return $self->get_Biotype->name;
 }
 
-=head2 feature_so_acc
-
-  Example    : print $transcript->feature_so_acc;
-  Description: This method returns a string containing the SO accession number of Transcript.
-               Overrides Bio::EnsEMBL::Feature::feature_so_acc
-  Returntype : string (Sequence Ontology accession number)
-
-=cut
-
-sub feature_so_acc {
-
-  return 'SO:0000673';
-}
-
 1;
-
