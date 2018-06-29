@@ -125,6 +125,8 @@ use vars qw(@ISA);
 
 @ISA = qw(Bio::EnsEMBL::Feature);
 
+use constant SO_ACC => 'SO:0001411';
+
 =head2 new
 
   Arg [-SLICE]: Bio::EnsEMBL::SLice - Represents the sequence that this
@@ -359,6 +361,7 @@ sub display_id {
     return '';
   }
 }
+
 
 =head2 summary_as_hash
 

@@ -82,6 +82,7 @@ use Bio::EnsEMBL::Utils::Exception qw(warning);
 
 @ISA = qw(Bio::EnsEMBL::Feature);
 
+use constant SO_ACC => 'SO:0000341';
 
 =head2 new
 
@@ -220,6 +221,7 @@ sub display_id {
   my $self = shift;
   return $self->{'name'} || '';
 }
+
 
 =head2 summary_as_hash
 

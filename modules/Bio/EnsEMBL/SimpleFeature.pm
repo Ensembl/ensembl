@@ -69,6 +69,7 @@ use Scalar::Util qw(weaken isweak);
 
 @ISA = qw(Bio::EnsEMBL::Feature);
 
+use constant SO_ACC => 'SO:0001411';
 
 =head2 new
 
@@ -171,6 +172,7 @@ sub score {
   $self->{'score'} = shift if(@_);
   return $self->{'score'};
 }
+
 
 =head2 summary_as_hash
 

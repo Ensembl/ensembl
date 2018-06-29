@@ -98,6 +98,8 @@ ok($gene->external_db eq "Uniprot/SPTREMBL");
 debug("Gene display xref id: " . $gene->display_xref->dbID);
 ok($gene->display_xref->dbID() == 128324);
 
+is($gene->feature_so_acc, 'SO:0000704', 'Gene feature SO acc is correct (gene)');
+
 # test the getters and setters
 ok(test_getter_setter($gene, "external_name", "banana"));
 ok(test_getter_setter($gene, "external_db",   "dummy"));

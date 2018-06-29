@@ -50,5 +50,6 @@ for (my $i = 0; $i < $n; $i++) {
 
 is($cds[0]->start, $transcript->coding_region_start, "First cds is coding start");
 is($cds[$n-1]->end, $transcript->coding_region_end, "Last cds is coding end");
+is($cds[0]->feature_so_acc, 'SO:0000316', 'CDS feature SO acc is correct (CDS)');;
 
 done_testing();
