@@ -199,6 +199,38 @@ sub fetch_all_by_object_type {
   return \@biotypes;
 }
 
+=head2 fetch_all_by_name
+
+  Arg [1]    : String $name
+               The name of the biotype to retrieve
+  Arg [2]    : (optional) String $object_type
+               The object_type of the biotypes to retrieve (gene or transcript).
+  Example    : $biotypes = $biotype_adaptor->fetch_all_by_name('lincRNA');
+  Description: Retrieves an array reference of biotype objects from the database.
+  Returntype : arrayref of Bio::EnsEMBL::Biotype objects or empty arrayref
+  Warning    : If empty arrayref is to be returned
+  Exceptions : none
+
+=cut
+
+sub fetch_all_by_name{
+  my ($self, $name, $object_type) = @_;
+
+  my $constraint = "b.name = ?";
+  $self->bind_param_generic_fetch($name, SQL_VARCHAR);
+  if (defined $object_type) {
+    $constraint .= "AND b.object_type = ?";
+    $self->bind_param_generic_fetch($object_type, SQL_VARCHAR);
+  }
+  my @biotypes = @{$self->generic_fetch($constraint)};
+
+  if ( !@biotypes ) {
+    warning("No objects retrieved. Check if name '$name' is correct.")
+  }
+
+  return \@biotypes;
+}
+
 =head2 fetch_all_by_group_object_db_type
 
   Arg [1]    : String $biotype_group
@@ -222,10 +254,13 @@ sub fetch_all_by_group_object_db_type {
   $db_type //= 'core';
   $db_type = '%' . $db_type . '%';
 
-  my $constraint = "b.biotype_group = ? AND b.object_type = ? AND b.db_type LIKE ? ";
+  my $constraint = "b.biotype_group = ? AND b.db_type LIKE ? ";
   $self->bind_param_generic_fetch($biotype_group, SQL_VARCHAR);
-  $self->bind_param_generic_fetch($object_type, SQL_VARCHAR);
   $self->bind_param_generic_fetch($db_type, SQL_VARCHAR);
+  if (defined $object_type) {
+    $constraint .= " AND b.object_type = ?";
+    $self->bind_param_generic_fetch($object_type, SQL_VARCHAR);
+  }
   my @biotypes = @{$self->generic_fetch($constraint)};
 
   if ( !@biotypes ) {
