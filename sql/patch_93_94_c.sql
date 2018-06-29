@@ -15,7 +15,7 @@
 
 # patch_93_94_c.sql
 #
-# Title: Default align_type is 'ensembl'
+# Title: Default align_type is NULL
 #
 # Description:
 #   Ensure default align_type in align_feature tables is 'ensembl'
