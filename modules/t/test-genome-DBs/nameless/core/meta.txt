@@ -99,3 +99,4 @@
 153	\N	patch	patch_92_93_c.sql|collate_index_interpro
 154	\N	patch	patch_93_94_a.sql|schema_version
 155	\N	patch	patch_93_94_b.sql|nullable_ox_analysis
+156	\N	patch	patch_93_94_c.sql|default_aln_type
