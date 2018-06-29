@@ -1862,7 +1862,6 @@ sub _get_Adaptor {
 
 sub get_all_VariationFeatures{
   my ($self, $so_terms, $without_children, $included_so, $dbtype) = @_;
-  deprecate('get_all_VariationFeatures is deprecated and will be removed in e88. Please use Bio::EnsEMBL::Variation::DBSQL::VariationFeatureAdaptor::fetch_all_by_Slice_SO_terms instead.');
   if (my $vf_adaptor = $self->_get_VariationFeatureAdaptor($dbtype)) {
     return $vf_adaptor->fetch_all_by_Slice_SO_terms($self, $so_terms, $without_children, $included_so);
   }
@@ -1870,7 +1869,7 @@ sub get_all_VariationFeatures{
 }
 
 =head2 get_all_somatic_VariationFeatures
-
+    Deprecated. Please use Bio::EnsEMBL::Variation::DBSQL::VariationFeatureAdaptor::fetch_all_somatic_by_Slice_SO_terms instead.
     Args [1]    : (optional) ArrayRef $so_terms
                   SequenceOntology terms to limit the fetch to
     Args [2]    : (optional) boolean $without_children
@@ -1897,7 +1896,7 @@ sub get_all_VariationFeatures{
 
 sub get_all_somatic_VariationFeatures {
   my ($self, $so_terms, $without_children, $included_so, $dbtype) = @_;
-  deprecate('get_all_somatic_VariationFeatures is deprecated and will be removed in e88. Please use Bio::EnsEMBL::Variation::DBSQL::VariationFeatureAdaptor::fetch_all_somatic_by_Slice_SO_terms instead.');
+  deprecate('get_all_somatic_VariationFeatures is deprecated and will be removed in e95. Please use Bio::EnsEMBL::Variation::DBSQL::VariationFeatureAdaptor::fetch_all_somatic_by_Slice_SO_terms instead.');
   if (my $vf_adaptor = $self->_get_VariationFeatureAdaptor($dbtype)) {
     return $vf_adaptor->fetch_all_somatic_by_Slice_SO_terms($self, $so_terms, $without_children, $included_so);
   }
@@ -1905,7 +1904,7 @@ sub get_all_somatic_VariationFeatures {
 }
 
 =head2 get_all_somatic_VariationFeatures_by_source
-
+    Deprecated. Please use Bio::EnsEMBL::Variation::DBSQL::VariationFeatureAdaptor::fetch_all_somatic_by_Slice_Source instead.
     Arg [1]     : string $source [optional]
                   The name of the source to query for
     Arg [2]     : string $dbtype [optional]
@@ -1923,7 +1922,7 @@ sub get_all_somatic_VariationFeatures {
 
 sub get_all_somatic_VariationFeatures_by_source {
   my ($self, $source, $dbtype) = @_;
-  deprecate('get_all_somatic_VariationFeatures_by_source is deprecated and will be removed in e88. Please use Bio::EnsEMBL::Variation::DBSQL::VariationFeatureAdaptor::fetch_all_somatic_by_Slice_Source instead.');
+  deprecate('get_all_somatic_VariationFeatures_by_source is deprecated and will be removed in e95. Please use Bio::EnsEMBL::Variation::DBSQL::VariationFeatureAdaptor::fetch_all_somatic_by_Slice_Source instead.');
   my $constraint = (defined($source)) ? " s.name='$source' " : undef;
   if (my $vf_adaptor = $self->_get_VariationFeatureAdaptor($dbtype)) {
     return $vf_adaptor->fetch_all_somatic_by_Slice_constraint($self, $constraint);
@@ -1931,43 +1930,8 @@ sub get_all_somatic_VariationFeatures_by_source {
   return [];
 }
 
-
-=head2 get_all_VariationFeatures_with_phenotype
-
-    Arg [1]     : $variation_feature_source [optional]
-    Arg [2]     : $phenotype_source [optional]
-    Arg [3]     : $phenotype_name [optional]
-    Arg [4]     : string $dbtype [optional]
-                  The dbtype of variation to obtain (i.e. can be different from the "variation" type).
-                  This assumes that the extra db has been added to the DBAdaptor under this name (using the
-                  DBConnection::add_db_adaptor method).
-    Description : returns all germline variation features on this slice associated with a phenotype.
-                  This function will only work correctly if the variation database has been
-                  attached to the core database.
-                  If $variation_feature_source is set only variations from that source
-                  are retrieved.
-                  If $phenotype_source is set only variations whose annotations come from
-                  $annotation_source will be retrieved.
-                  If $phenotype_name is set only variations with that annotation will be retrieved.
-                  $phenotype_name can be a phenotype internal dbID.
-    ReturnType  : ArrayRef of Bio::EnsEMBL::Variation::VariationFeature
-    Exceptions  : none
-    Caller      : contigview, snpview
-    Status      : Stable
-
-=cut
-
-sub get_all_VariationFeatures_with_phenotype {
-  my ($self, $source, $p_source, $phenotype, $dbtype) = @_;
-  deprecate('get_all_VariationFeatures_with_phenotype is deprecated and will be removed in e88. Please use Bio::EnsEMBL::Variation::DBSQL::VariationFeatureAdaptor::fetch_all_with_phenotype_by_Slice instead.');
-  if (my $vf_adaptor = $self->_get_VariationFeatureAdaptor($dbtype)) {
-    return $vf_adaptor->fetch_all_with_phenotype_by_Slice($self, $source, $p_source, $phenotype);
-  }
-  return [];
-}
-
 =head2 get_all_somatic_VariationFeatures_with_phenotype
-
+    Deprecated. Please use Bio::EnsEMBL::Variation::DBSQL::VariationFeatureAdaptor::fetch_all_somatic_with_phenotype_by_Slice instead.
     Arg [1]     : $variation_feature_source [optional]
     Arg [2]     : $phenotype_source [optional]
     Arg [3]     : $phenotype_name [optional]
@@ -1985,362 +1949,16 @@ sub get_all_VariationFeatures_with_phenotype {
 
 sub get_all_somatic_VariationFeatures_with_phenotype {
   my ($self, $source, $p_source, $phenotype, $dbtype) = @_;
-  deprecate('get_all_somatic_VariationFeatures_with_phenotype is deprecated and will be removed in e88. Please use Bio::EnsEMBL::Variation::DBSQL::VariationFeatureAdaptor::fetch_all_somatic_with_phenotype_by_Slice instead.');
+  deprecate('get_all_somatic_VariationFeatures_with_phenotype is deprecated and will be removed in e95. Please use Bio::EnsEMBL::Variation::DBSQL::VariationFeatureAdaptor::fetch_all_somatic_with_phenotype_by_Slice instead.');
   if (my $vf_adaptor = $self->_get_VariationFeatureAdaptor($dbtype)) {
     return $vf_adaptor->fetch_all_somatic_with_phenotype_by_Slice($self, $source, $p_source, $phenotype);
   }
   return [];
 }
 
-=head2 get_all_VariationFeatures_by_VariationSet
-
-    Arg [1]     : Bio::EnsEMBL:Variation::VariationSet $set
-    Arg [2]     : string $dbtype [optional]
-                  The dbtype of variation to obtain (i.e. can be different from the "variation" type).
-                  This assumes that the extra db has been added to the DBAdaptor under this name (using the
-                  DBConnection::add_db_adaptor method).
-    Description :returns all variation features on this slice associated with a given set.
-                 This function will only work correctly if the variation database has been
-                 attached to the core database. 
-    ReturnType : listref of Bio::EnsEMBL::Variation::VariationFeature
-    Exceptions : none
-    Caller     : contigview, snpview
-    Status     : Stable
-
-=cut
-
-sub get_all_VariationFeatures_by_VariationSet {
-  my ($self, $set, $dbtype) = @_;
-  deprecate('get_all_VariationFeatures_by_VariationSet is deprecated and will be removed in e88. Please use Bio::EnsEMBL::Variation::DBSQL::VariationFeatureAdaptor::fetch_all_by_Slice_VariationSet instead.');
-  if (my $vf_adaptor = $self->_get_VariationFeatureAdaptor($dbtype)) {
-    return $vf_adaptor->fetch_all_by_Slice_VariationSet($self, $set);  
-  }
-  return [];
-}
-
-=head2 get_all_StructuralVariationFeatures
-
-    Arg [1]     : int $include_evidence [optional]
-    Arg [2]     : (optional) string $dbtype
-                  The dbtype of structural variation to obtain (i.e. can be different from the "variation" type).
-                  This assumes that the extra db has been added to the DBAdaptor under this name (using the
-                  DBConnection::add_db_adaptor method).
-    Description : returns all structural variation features on this slice. This function will only work
-                  correctly if the variation database has been attached to the core database.
-                  By default, it only returns structural variant features which are not labelled 
-                  as "CNV_PROBE".
-                  If $include_evidence is set (i.e. $include_evidence=1), structural variation features from 
-                  both structural variation (SV) and their supporting structural variations (SSV) will be 
-                  returned. By default, it only returns features from structural variations (SV).
-    ReturnType  : listref of Bio::EnsEMBL::Variation::StructuralVariationFeature
-    Exceptions  : none
-    Caller      : contigview, snpview, structural_variation_features
-    Status      : Stable
-
-=cut
-
-sub get_all_StructuralVariationFeatures {
-  my $self             = shift;
-  deprecate('get_all_StructuralVariationFeatures is deprecated and will be removed in e88. Please use Bio::EnsEMBL::Variation::DBSQL::StructuralVariationFeatureAdaptor::fetch_all_by_Slice_constraint instead.');
-  my $include_evidence = shift;
-  my $dbtype           = shift;
-  
-  if (my $svf_adaptor = $self->_get_StructuralVariationFeatureAdaptor($dbtype)) {
-    return $svf_adaptor->fetch_all_by_Slice_constraint($self,undef,$include_evidence);
-  }
-  return [];
-}
-
-=head2 get_all_StructuralVariationFeatures_by_size_range
-    Arg [1]     : int $size_min (minimum size of the structural variant)
-    Arg [2]     : int $size_max (maximum size of the structural variant) [optional]
-    Arg [3]     : int $include_evidence [optional]
-    Arg [4]     : (optional) string $dbtype
-                  The dbtype of structural variation to obtain (i.e. can be different from the "variation" type).
-                  This assumes that the extra db has been added to the DBAdaptor under this name (using the
-                  DBConnection::add_db_adaptor method).
-    Description : returns all structural variation features overlapping this slice with a size greater than the minimum size 
-                  defined in the first argument, and (optional) lesser than the maximun size defined in the second argument. 
-                  This function will only work correctly if the variation database has been attached to the core database.
-                  By default, it only returns structural variant features which are not labelled 
-                  as "CNV_PROBE".
-                  If $include_evidence is set (i.e. $include_evidence=1), structural variation features from 
-                  both structural variation (SV) and their supporting structural variations (SSV) will be 
-                  returned. By default, it only returns features from structural variations (SV).
-    ReturnType  : listref of Bio::EnsEMBL::Variation::StructuralVariationFeature
-    Exceptions  : none
-    Caller      : contigview, snpview, structural_variation_features
-    Status      : Stable
-
-=cut
-
-sub get_all_StructuralVariationFeatures_by_size_range {
-  my $self             = shift;
-  deprecate('get_all_StructuralVariationFeatures_by_size_range is deprecated and will be removed in e88. Please use Bio::EnsEMBL::Variation::DBSQL::StructuralVariationFeatureAdaptor::fetch_all_by_Slice_size_range instead.');
-  my $size_min         = shift;
-  my $size_max         = shift;
-  my $include_evidence = shift;
-  my $dbtype           = shift;
-  
-  my $constraint = qq{svf.seq_region_end-svf.seq_region_start>=$size_min};
-     $constraint .= qq{ AND svf.seq_region_end-svf.seq_region_start<$size_max } if (defined $size_max);
-  
-  if (my $svf_adaptor = $self->_get_StructuralVariationFeatureAdaptor($dbtype)) {
-    return $svf_adaptor->fetch_all_by_Slice_constraint($self,$constraint,$include_evidence);
-  }
-  return [];
-}
-
-
-=head2 get_all_somatic_StructuralVariationFeatures_by_size_range
-    Arg [1]     : int $size_min (minimum size of the structural variant)
-    Arg [2]     : int $size_max (maximum size of the structural variant) [optional]
-    Arg [3]     : int $include_evidence [optional]  
-    Arg [4]     : (optional) string $dbtype
-                  The dbtype of structural variation to obtain (i.e. can be different from the "variation" type).
-                  This assumes that the extra db has been added to the DBAdaptor under this name (using the
-                  DBConnection::add_db_adaptor method).
-    Description : returns all the somatic structural variation features overlapping this slice with a size greater than the minimum 
-                  size defined in the first argument, and (optional) lesser than the maximun size defined in the second argument. 
-                  This function will only work correctly if the variation database has been attached to the core database.
-                  By default, it only returns structural variant features which are not labelled 
-                  as "CNV_PROBE".
-                  If $include_evidence is set (i.e. $include_evidence=1), structural variation features from 
-                  both structural variation (SV) and their supporting structural variations (SSV) will be 
-                  returned. By default, it only returns features from structural variations (SV).
-    ReturnType  : listref of Bio::EnsEMBL::Variation::StructuralVariationFeature
-    Exceptions  : none
-    Caller      : contigview, snpview, structural_variation_features
-    Status      : Stable
-
-=cut
-
-sub get_all_somatic_StructuralVariationFeatures_by_size_range {
-  my $self             = shift;
-  deprecate('get_all_somatic_StructuralVariationFeatures_by_size_range is deprecated and will be removed in e88. Please use Bio::EnsEMBL::Variation::DBSQL::StructuralVariationFeatureAdaptor::fetch_all_somatic_by_Slice_size_range instead.');
-  my $size_min         = shift;
-  my $size_max         = shift;
-  my $include_evidence = shift;
-  my $dbtype           = shift;
-    
-  my $constraint = qq{svf.seq_region_end-svf.seq_region_start>=$size_min};
-     $constraint .= qq{ AND svf.seq_region_end-svf.seq_region_start<$size_max } if (defined $size_max);
-  
-   if (my $svf_adaptor = $self->_get_StructuralVariationFeatureAdaptor($dbtype)) {
-    return $svf_adaptor->fetch_all_somatic_by_Slice_constraint($self,$constraint,$include_evidence);
-  }
-  return [];
-}
-=cut
-
-
-=head2 get_all_StructuralVariationFeatures_by_VariationSet
-
-    Arg [1]     : Bio::EnsEMBL:Variation::VariationSet $set
-    Arg [2]     : (optional) string $dbtype
-                  The dbtype of structural variation to obtain (i.e. can be different from the "variation" type).
-                  This assumes that the extra db has been added to the DBAdaptor under this name (using the
-                  DBConnection::add_db_adaptor method).
-    Description : returns all structural variation features on this slice associated with a 
-                  given set.
-                  This function will only work correctly if the variation database has been
-                  attached to the core database. 
-    ReturnType : listref of Bio::EnsEMBL::Variation::StructuralVariationFeature
-    Exceptions : none
-    Caller     : contigview, snpview
-    Status     : Stable
-
-=cut
-
-sub get_all_StructuralVariationFeatures_by_VariationSet {
-  my $self   = shift;
-  deprecate('get_all_StructuralVariationFeatures_by_VariationSet is deprecated and will be removed in e88. Please use Bio::EnsEMBL::Variation::DBSQL::StructuralVariationFeatureAdaptor::fetch_all_by_Slice_VariationSet instead.');
-  my $set    = shift;
-  my $dbtype = shift;
-  
-  if (my $svf_adaptor = $self->_get_StructuralVariationFeatureAdaptor($dbtype)) {
-    return $svf_adaptor->fetch_all_by_Slice_VariationSet($self, $set);  
-  }
-  return [];
-}
-
-=head2 get_all_StructuralVariationFeatures_by_Study
-
-    Arg [1]     : Bio::EnsEMBL:Variation::Study $study
-    Arg [2]     : (optional) int $include_evidence
-    Arg [3]     : (optional) string $dbtype
-                  The dbtype of structural variation to obtain (i.e. can be different from the "variation" type).
-                  This assumes that the extra db has been added to the DBAdaptor under this name (using the
-                  DBConnection::add_db_adaptor method).    
-    Description : returns all structural variation features on this slice associated with a 
-                  given study.
-                  If $include_evidence is set (i.e. $include_evidence=1), structural variation features from 
-                  both structural variation (SV) and their supporting structural variations (SSV) will be 
-                  returned. By default, it only returns features from structural variations (SV).
-                  This function will only work correctly if the variation database has been
-                  attached to the core database. 
-    ReturnType  : listref of Bio::EnsEMBL::Variation::StructuralVariationFeature
-    Exceptions  : none
-    Caller      : contigview, snpview
-    Status      : Stable
-
-=cut
-
-sub get_all_StructuralVariationFeatures_by_Study {
-  my $self  = shift;
-  deprecate('get_all_StructuralVariationFeatures_by_Study is deprecated and will be removed in e88. Please use Bio::EnsEMBL::Variation::DBSQL::StructuralVariationFeatureAdaptor::fetch_all_by_Slice_Study instead.');
-  my $study = shift;
-  my $include_evidence = shift;
-  my $dbtype = shift;
-  
-  if (my $svf_adaptor = $self->_get_StructuralVariationFeatureAdaptor($dbtype)) {
-    return $svf_adaptor->fetch_all_by_Slice_Study($self, $study, $include_evidence);  
-  }
-  return [];
-}
-
-=head2 get_all_StructuralVariationFeatures_by_source
-
-    Arg [1]     : string $source
-    Arg [2]     : int $include_evidence [optional]
-    Arg [3]     : (optional) string $dbtype
-                  The dbtype of structural variation to obtain (i.e. can be different from the "variation" type).
-                  This assumes that the extra db has been added to the DBAdaptor under this name (using the
-                  DBConnection::add_db_adaptor method).    
-    Description : returns all structural variation features on this slice associated with a 
-                  given source name (e.g. DGVa).
-                  If $include_evidence is set (i.e. $include_evidence=1), structural variation features from 
-                  both structural variation (SV) and their supporting structural variations (SSV) will be 
-                  returned. By default, it only returns features from structural variations (SV).
-                  This function will only work correctly if the variation database has been
-                  attached to the core database. 
-    ReturnType  : listref of Bio::EnsEMBL::Variation::StructuralVariationFeature
-    Exceptions  : none
-    Caller      : contigview, snpview
-    Status      : Stable
-
-=cut
-
-sub get_all_StructuralVariationFeatures_by_source {
-  my $self             = shift;
-  deprecate('get_all_StructuralVariationFeatures_by_source is deprecated and will be removed in e88. Please use Bio::EnsEMBL::Variation::DBSQL::StructuralVariationFeatureAdaptor::fetch_all_by_Slice_Source instead.');
-  my $source           = shift;
-  my $include_evidence = shift;
-  my $dbtype           = shift;
-    
-  my $constraint = (defined($source)) ? " s.name='$source' " : undef;
-  
-  if (my $svf_adaptor = $self->_get_StructuralVariationFeatureAdaptor($dbtype)) {
-    return $svf_adaptor->fetch_all_by_Slice_constraint($self,$constraint,$include_evidence);  
-  }
-  return [];
-}
-
-=head2 get_all_somatic_StructuralVariationFeatures_by_source
-
-    Arg [1]     : string $source
-    Arg [2]     : int $include_evidence [optional]
-    Arg [3]     : (optional) string $dbtype
-                  The dbtype of structural variation to obtain (i.e. can be different from the "variation" type).
-                  This assumes that the extra db has been added to the DBAdaptor under this name (using the
-                  DBConnection::add_db_adaptor method).      
-    Description : returns all somatic structural variation features on this slice associated with a 
-                  given source name (e.g. DGVa).
-                  If $include_evidence is set (i.e. $include_evidence=1), structural variation features from 
-                  both structural variation (SV) and their supporting structural variations (SSV) will be 
-                  returned. By default, it only returns features from structural variations (SV).
-                  This function will only work correctly if the variation database has been
-                  attached to the core database. 
-    ReturnType  : listref of Bio::EnsEMBL::Variation::StructuralVariationFeature
-    Exceptions  : none
-    Caller      : contigview, snpview
-    Status      : Stable
-
-=cut
-
-sub get_all_somatic_StructuralVariationFeatures_by_source {
-  my $self             = shift;
-  deprecate('get_all_somatic_StructuralVariationFeatures_by_source is deprecated and will be removed in e88. Please use Bio::EnsEMBL::Variation::DBSQL::StructuralVariationFeatureAdaptor::fetch_all_somatic_by_Slice_Source instead.');
-  my $source           = shift;
-  my $include_evidence = shift;
-  my $dbtype           = shift;
-    
-  my $constraint = (defined($source)) ? " s.name='$source' " : undef;
-  
-  if (my $svf_adaptor = $self->_get_StructuralVariationFeatureAdaptor($dbtype)) {
-    return $svf_adaptor->fetch_all_somatic_by_Slice_constraint($self,$constraint,$include_evidence);  
-  }
-  return [];
-}
-
-
-
-=head2 get_all_somatic_StructuralVariationFeatures
-
-    Arg [1]     : int $include_evidence [optional]
-    Arg [2]     : (optional) string $dbtype
-                  The dbtype of structural variation to obtain (i.e. can be different from the "variation" type).
-                  This assumes that the extra db has been added to the DBAdaptor under this name (using the
-                  DBConnection::add_db_adaptor method).  
-    Description : returns all somatic structural variation features on this slice. This function will only work
-                  correctly if the variation database has been attached to the core database.
-                  By default, it only returns somatic structural variant features which are not labelled 
-                  as "CNV_PROBE".
-                  If $include_evidence is set (i.e. $include_evidence=1), structural variation features from 
-                  both structural variation (SV) and their supporting structural variations (SSV) will be 
-                  returned. By default, it only returns features from structural variations (SV).
-    ReturnType  : listref of Bio::EnsEMBL::Variation::StructuralVariationFeature
-    Exceptions  : none
-    Caller      : contigview, snpview, structural_variation_features
-    Status      : Stable
-
-=cut
-
-sub get_all_somatic_StructuralVariationFeatures {
-  my $self             = shift;
-  deprecate('get_all_somatic_StructuralVariationFeatures is deprecated and will be removed in e88. Please use Bio::EnsEMBL::Variation::DBSQL::StructuralVariationFeatureAdaptor::fetch_all_somatic_by_Slice_constraint instead.');
-  my $include_evidence = shift;
-  my $dbtype           = shift;
-    
-  if (my $svf_adaptor = $self->_get_StructuralVariationFeatureAdaptor($dbtype)) {
-    return $svf_adaptor->fetch_all_somatic_by_Slice_constraint($self,undef,$include_evidence);
-  }
-  return [];
-}
-
-
-=head2 get_all_CopyNumberVariantProbeFeatures
-
-    Arg[1]      : string $source [optional]
-    Arg [2]     : (optional) string $dbtype
-                  The dbtype of structural variation to obtain (i.e. can be different from the "variation" type).
-                  This assumes that the extra db has been added to the DBAdaptor under this name (using the
-                  DBConnection::add_db_adaptor method).  
-    Description : returns all copy number variant probes on this slice. This function will only work
-                  correctly if the variation database has been attached to the core database.
-                  If $source is set, only CNV probes with that source name will be returned.
-                  If $study is set, only CNV probes of that study will be returned.
-    ReturnType  : listref of Bio::EnsEMBL::Variation::StructuralVariationFeature
-    Exceptions  : none
-    Caller      : contigview, snpview, structural_variation_feature
-    Status      : At Risk
-
-=cut
-
-sub get_all_CopyNumberVariantProbeFeatures {
-  my $self   = shift;
-  deprecate('get_all_CopyNumberVariantProbeFeatures is deprecated and will be removed in e88. Please use Bio::EnsEMBL::Variation::DBSQL::StructuralVariationFeatureAdaptor::fetch_all_cnv_probe_by_Slice instead.');
-  my $dbtype = shift;
-  
-  if (my $svf_adaptor = $self->_get_StructuralVariationFeatureAdaptor($dbtype)) {
-    return $svf_adaptor->fetch_all_cnv_probe_by_Slice($self, @_);
-  }
-  return [];
-}
-
 
 =head2 get_all_VariationFeatures_by_Population
-
+    Deprecated. Please use Bio::EnsEMBL::Variation::DBSQL::VariationFeatureAdaptor::fetch_all_by_Slice_Population instead.
     Arg [1]     : Bio::EnsEMBL::Variation::Population
     Arg [2]     : $minimum_frequency [optional]
     Arg [3]     : string $dbtype [optional]
@@ -2362,52 +1980,15 @@ sub get_all_CopyNumberVariantProbeFeatures {
 
 sub get_all_VariationFeatures_by_Population {
   my ($self, $minimum_frequency, $dbtype) = @_;
-  deprecate('get_all_VariationFeatures_by_Population is deprecated and will be removed in e88. Please use Bio::EnsEMBL::Variation::DBSQL::VariationFeatureAdaptor::fetch_all_by_Slice_Population instead.');
+  deprecate('get_all_VariationFeatures_by_Population is deprecated and will be removed in e95. Please use Bio::EnsEMBL::Variation::DBSQL::VariationFeatureAdaptor::fetch_all_by_Slice_Population instead.');
   if (my $vf_adaptor = $self->_get_VariationFeatureAdaptor($dbtype)) {
     return $vf_adaptor->fetch_all_by_Slice_Population($self, $minimum_frequency);
   }
   return [];
 }
 
-
-=head2 get_all_PhenotypeFeatures
-    Arg [1]     : string $type [optional]
-    Arg [2]     : string $dbtype [optional]
-                  The dbtype of variation to obtain (i.e. can be different from the "variation" type).
-                  This assumes that the extra db has been added to the DBAdaptor under this name (using the
-                  DBConnection::add_db_adaptor method).
-    Description : Returns all phenotype features on this slice. This function will 
-                  only work correctly if the variation database has been attached to the core 
-                  database.
-                  If $type is specified, only phenotypes annotated on the given
-                  object type will be returned
-    ReturnType  : listref of Bio::EnsEMBL::Variation::PhenotypeFeature
-    Exceptions  : none
-    Caller      : web
-    Status      : Stable
-
-=cut
-
-sub get_all_PhenotypeFeatures {
-  my $self   = shift;
-  deprecate('get_all_PhenotypeFeatures is deprecated and will be removed in e88. Please use Bio::EnsEMBL::Variation::DBSQL::PhenotypeFeatureAdaptor::fetch_all_by_Slice instead.');
-  my $type   = shift;
-  my $dbtype = shift;
-  
-  
-  if(my $pf_adaptor = $self->_get_VariationAdaptor('PhenotypeFeature',$dbtype)) {
-    if(defined($type)) {
-      return $pf_adaptor->fetch_all_by_Slice_type($self, $type);
-    }
-    else {
-      return $pf_adaptor->fetch_all_by_Slice($self);
-    }
-  }
-  return [];
-}
-
 =head2 get_all_IndividualSlice
-
+    Deprecated. The method will be removed in e95.
     Args        : none
     Example     : my $individualSlice = $slice->get_by_Population($population);
     Description : Gets the specific Slice for all the individuls in the population
@@ -2434,7 +2015,7 @@ sub get_all_IndividualSlice{
 }
 
 =head2 get_by_Individual
-
+    Deprecated. The method will be removed in e95.
     Arg[1]      : Bio::EnsEMBL::Variation::Individual $individual
     Example     : my $individualSlice = $slice->get_by_Individual($individual);
     Description : Gets the specific Slice for the individual
@@ -2647,28 +2228,6 @@ sub calculate_pi {
 	return 0;
     }
 
-}
-
-=head2 get_all_genotyped_VariationFeatures
-
-    Args       : none
-    Function   : returns all variation features on this slice that have been genotyped. This function will only work
-                correctly if the variation database has been attached to the core database.
-    ReturnType : listref of Bio::EnsEMBL::Variation::VariationFeature
-    Exceptions : none
-    Caller     : contigview, snpview, ldview
-    Status     : At Risk
-               : Variation database is under development.
-
-=cut
-
-sub get_all_genotyped_VariationFeatures{
-  my $self = shift;
-  deprecate('get_all_genotyped_VariationFeatures is deprecated and will be removed in e88. Please use Bio::EnsEMBL::Variation::DBSQL::VariationFeatureAdaptor::fetch_all_genotyped_by_Slice instead.');
-  if( my $vf_adaptor = $self->_get_VariationFeatureAdaptor) {
-    return $vf_adaptor->fetch_all_genotyped_by_Slice($self);
-  } 
-  return [];
 }
 
 
