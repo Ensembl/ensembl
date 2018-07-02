@@ -2834,7 +2834,6 @@ sub get_all_compara_Syntenies {
   }
   my $gdba = $compara_db->get_GenomeDBAdaptor();
   my $mlssa = $compara_db->get_MethodLinkSpeciesSetAdaptor();
-  my $dfa = $compara_db->get_DnaFragAdaptor();
   my $sra = $compara_db->get_SyntenyRegionAdaptor();
 
   my $this_gdb = $gdba->fetch_by_core_DBAdaptor($self->adaptor()->db());
@@ -2846,10 +2845,7 @@ sub get_all_compara_Syntenies {
     $mlss = $mlssa->fetch_by_method_link_type_GenomeDBs($method_link_type, [$this_gdb, $query_gdb]);
   }
 
-  my $cs = $self->coord_system()->name();
-  my $sr = $self->seq_region_name();
-  my ($dnafrag) = @{$dfa->fetch_all_by_GenomeDB_region($this_gdb, $cs, $sr)};
-  return $sra->fetch_all_by_MethodLinkSpeciesSet_DnaFrag($mlss, $dnafrag, $self->start, $self->end);
+  return $sra->fetch_all_by_MethodLinkSpeciesSet_Slice($mlss, $self);
 }
 
 =head2 get_all_Haplotypes
