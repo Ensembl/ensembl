@@ -239,7 +239,7 @@ sub run_script {
           $self->add_dependent_xref({ master_xref_id => $xref_id,
                                       acc            => $acc,
                                       label          => $symbol,
-                                      desc           => $name || '',
+                                      desc           => $name,
                                       source_id      => $source_id,
                                       dbi            => $dbi,
                                       species_id     => $species_id} );
@@ -265,7 +265,7 @@ sub run_script {
         $self->add_dependent_xref({ master_xref_id => $entrezgene{$id},
            			    acc            => $acc,
 				    label          => $symbol,
-				    desc           => $name || '',
+				    desc           => $name,
 				    source_id      => $source_id,
                                     dbi            => $dbi,
 				    species_id     => $species_id} );

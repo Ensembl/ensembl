@@ -567,7 +567,7 @@ sub upload_xref_object_graphs {
 	 $xref_sth->execute($dep{ACCESSION},
 			   $dep{VERSION} || 0,
 			   $dep{LABEL} || $dep{ACCESSION},
-			   $dep{DESCRIPTION} || '',
+			   $dep{DESCRIPTION},
 			   $dep{SOURCE_ID},
 			   $xref->{SPECIES_ID},
                            'DEPENDENT');
