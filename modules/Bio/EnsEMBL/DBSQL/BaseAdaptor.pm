@@ -543,11 +543,12 @@ sub _generate_sql {
     }
 
     $extra_default_where = sprintf(
-                      '%s.seq_region_id = %s.seq_region_id '
-                        . 'AND %s.coord_system_id = %s.coord_system_id '
-                        . 'AND %s.species_id = ?',
-                      $tabs[0]->[1], $sr_alias, $sr_alias,
-                      $cs_alias,     $cs_alias );
+				   'transcript.seq_region_id = %s.seq_region_id '
+				   . 'AND transcript.transcript_id = translation.transcript_id'
+				   . 'AND translation.translation_id = %s.translation_id'
+				   . 'AND %s.coord_system_id = %s.coord_system_id '
+				   . 'AND %s.species_id = ?',
+				   $sr_alias, $tabs[0]->[1], $sr_alias, $cs_alias, $cs_alias );
 
     $self->bind_param_generic_fetch( $self->species_id(), SQL_INTEGER );
   } ## end if ( $self->is_multispecies...)
