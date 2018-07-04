@@ -469,6 +469,7 @@ sub generate_in_constraint {
 sub generic_fetch {
   my ($self, $constraint, $mapper, $slice) = @_;
   my $sql = $self->_generate_sql($constraint);
+  print "#####\n\n$sql\n\n####\n\n";
   my $params = $self->bind_param_generic_fetch();
   $params ||= [];
   $self->{_bind_param_generic_fetch} = undef;
@@ -520,8 +521,9 @@ sub _generate_sql {
 
   # Hack for feature types that needs to be restricted to species_id (in
   # coord_system).
-  if (    $self->is_multispecies()
+  if ( $self->is_multispecies()
        && $self->isa('Bio::EnsEMBL::DBSQL::BaseFeatureAdaptor')
+       && !$self->isa('Bio::EnsEMBL::DBSQL::BaseAlignFeatureAdaptor')
        && !$self->isa('Bio::EnsEMBL::DBSQL::UnmappedObjectAdaptor') )
   {
     # We do a check to see if there is already seq_region
@@ -542,19 +544,12 @@ sub _generate_sql {
       push( @tabs, [ 'coord_system', $cs_alias ] );
     }
 
-    
-    $extra_default_where =
-      $self->isa('Bio::EnsEMBL::DBSQL::ProteinFeatureAdaptor')?sprintf('transcript.seq_region_id = %s.seq_region_id '
-								       . 'AND transcript.transcript_id = translation.transcript_id '
-								       . 'AND translation.translation_id = %s.translation_id '
-								       . 'AND %s.coord_system_id = %s.coord_system_id '
-								       . 'AND %s.species_id = ?',
-								       $sr_alias, $tabs[0]->[1], $sr_alias, $cs_alias, $cs_alias ):
-									 sprintf('%s.seq_region_id = %s.seq_region_id '
-										 . 'AND %s.coord_system_id = %s.coord_system_id '
-										 . 'AND %s.species_id = ?',
-										 $tabs[0]->[1], $sr_alias, $sr_alias,
-										 $cs_alias,     $cs_alias );
+    $extra_default_where = sprintf(
+				   '%s.seq_region_id = %s.seq_region_id '
+				   . 'AND %s.coord_system_id = %s.coord_system_id '
+				   . 'AND %s.species_id = ?',
+				   $tabs[0]->[1], $sr_alias, $sr_alias,
+				   $cs_alias,     $cs_alias );
 
     $self->bind_param_generic_fetch( $self->species_id(), SQL_INTEGER );
   } ## end if ( $self->is_multispecies...)
