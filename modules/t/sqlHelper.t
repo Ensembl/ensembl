@@ -152,6 +152,17 @@ my $null_count_hash = $helper->execute_into_hash(
 
 ok(!exists $null_count_hash->{1}, 'Checking hash doesnt contain key for NULL value');
 
+my $iterator = $helper->execute(
+  -SQL => 'SELECT 1',
+  -ITERATOR => 1,
+);
+
+ok($iterator->has_next, 'The iterator is not empty');
+ok($iterator->has_next, 'The iterator is still not empty');
+is_deeply($iterator->to_arrayref, [[1]], 'The iterator returns all the data');
+ok(!$iterator->has_next, 'The iterator is now empty');
+ok(!$iterator->has_next, 'The iterator is still empty');
+
 ##### CHECKING WORKING WITH A STH DIRECTLY
 {
   my $v = $helper->execute_with_sth(-SQL => 'select count(*) from meta', -CALLBACK => sub {
