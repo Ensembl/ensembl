@@ -522,6 +522,7 @@ sub _generate_sql {
   # coord_system).
   if (    $self->is_multispecies()
        && $self->isa('Bio::EnsEMBL::DBSQL::BaseFeatureAdaptor')
+       && !$self->isa('Bio::EnsEMBL::DBSQL::BaseAlignFeatureAdaptor')
        && !$self->isa('Bio::EnsEMBL::DBSQL::UnmappedObjectAdaptor') )
   {
     # We do a check to see if there is already seq_region
