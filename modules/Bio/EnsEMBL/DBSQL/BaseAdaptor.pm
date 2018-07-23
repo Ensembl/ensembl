@@ -469,7 +469,6 @@ sub generate_in_constraint {
 sub generic_fetch {
   my ($self, $constraint, $mapper, $slice) = @_;
   my $sql = $self->_generate_sql($constraint);
-  print "#####\n\n$sql\n\n####\n\n";
   my $params = $self->bind_param_generic_fetch();
   $params ||= [];
   $self->{_bind_param_generic_fetch} = undef;
