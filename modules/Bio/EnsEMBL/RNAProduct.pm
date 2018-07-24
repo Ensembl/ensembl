@@ -71,9 +71,9 @@ use parent qw(Bio::EnsEMBL::Storable);
 
 =head2 new
 
-  Arg [-SEQ_START]    : The offset in the Translation indicating the start
+  Arg [-SEQ_START]    : The offset in the Transcript indicating the start
                         position of the product sequence.
-  Arg [-SEQ_END]      : The offset in the Translation indicating the end
+  Arg [-SEQ_END]      : The offset in the Transcript indicating the end
                         position of the product sequence.
   Arg [-STABLE_ID]    : The stable identifier for this RNAPRoduct
   Arg [-VERSION]      : The version of the stable identifier
