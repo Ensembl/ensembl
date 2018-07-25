@@ -27,6 +27,8 @@ use Bio::EnsEMBL::Test::MultiTestDB;
 use Bio::EnsEMBL::Test::TestUtils;
 use Bio::EnsEMBL::Utils::SqlHelper;
 
+use Bio::EnsEMBL::Hive::DBSQL::DBConnection;
+
 #Redefine the WARN sig to note the errors (most are just from transaction retry)
 $SIG{__WARN__} = sub {
   note @_;
@@ -64,6 +66,12 @@ is(
   'Checking count of meta key is right with params'
 );
 
+my $hive_dbc = Bio::EnsEMBL::Hive::DBSQL::DBConnection->new(-dbconn => $dba->dbc);
+is(
+  $hive_dbc->sql_helper->execute_single_result(-SQL => qq{select count(*) from meta where meta_key = '$meta_key'}),
+  1,
+  'SqlHelper::_execute works with eHive DBConnections',
+);
 
 throws_ok { $helper->execute_single_result(-SQL => 'select * from meta') } qr/Too many results/, 'More than 1 row causes an error';
 throws_ok { $helper->execute_single_result(-SQL => 'select * from meta where species_id =?', -PARAMS => [-1]) } qr/No results/, 'Less than 1 row causes an error';
