@@ -38,8 +38,21 @@ my $pfa = $dba->get_ProteinFeatureAdaptor();
 ok($pfa && ref($pfa) && $pfa->isa('Bio::EnsEMBL::DBSQL::ProteinFeatureAdaptor'));
 
 my $pfs = $pfa->fetch_all_by_translation_id(21724);
-
 ok(@$pfs == 15);
+
+#check if the pfa is multispecies
+isnt($pfa->is_multispecies(), 0, "Adaptor is not multispecies");
+
+#set it to multispecies mode to test if it works for collection dbs
+$pfa->is_multispecies(1);
+
+#check if the pfa is multispecies
+is($pfa->is_multispecies(), 1, "Adaptor is multispecies");
+$pfs = $pfa->fetch_all_by_translation_id(21724);
+ok(@$pfs == 15);
+
+#set it back to single species mode
+$pfa->is_multispecies(0);
 
 sub print_features {
   my $features = shift;
