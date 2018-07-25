@@ -948,7 +948,7 @@ sub _execute {
   my $sth_processor;
   if($use_hashrefs) {
     $sth_processor = sub {
-      return unless $sth->{Active};
+      return unless ($sth->can('dbi_sth') ? $sth->dbi_sth : $sth)->{Active};
       while( my $row = $sth->fetchrow_hashref() ) {
         my $v = $callback->($row, $sth);
         return $v if $has_return;
@@ -959,7 +959,7 @@ sub _execute {
   }
   else {
     $sth_processor = sub {
-      return unless $sth->{Active};
+      return unless ($sth->can('dbi_sth') ? $sth->dbi_sth : $sth)->{Active};
       while( my $row = $sth->fetchrow_arrayref() ) {
         my $v = $callback->($row, $sth);
         return $v if $has_return;

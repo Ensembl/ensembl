@@ -1462,7 +1462,9 @@ sub register_all_chained {
          sr_asm.seq_region_id = asm.asm_seq_region_id AND
          sr_cmp.seq_region_id = asm.cmp_seq_region_id AND
          sr_asm.coord_system_id = ? AND
-         sr_cmp.coord_system_id = ?');
+         sr_cmp.coord_system_id = ?',
+      { 'mysql_use_result' => 1 }
+     );
 
   my $csa = $self->db()->get_CoordSystemAdaptor();
 
@@ -1497,7 +1499,6 @@ sub register_all_chained {
 
   my ($asm_cs,$cmp_cs) = @path;
 
-  $sth->{mysql_use_result} = 1;
   $sth->bind_param(1,$asm_cs->dbID,SQL_INTEGER);
   $sth->bind_param(2,$cmp_cs->dbID,SQL_INTEGER);
   $sth->execute();
