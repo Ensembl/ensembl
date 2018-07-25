@@ -85,7 +85,7 @@ ok(test_getter_setter($rp, 'created_date', time()), 'Test getter/setter created_
 ok(test_getter_setter($rp, 'modified_date', time()), 'Test getter/setter modified_date()');
 
 # FIXME: temporary, at least this way
-is($rp->type_id(), 0, 'type_id is zero (i.e. generic mature RNA)');
+is($rp->type_id(), 1, 'type_id is 1 (i.e. generic mature RNA)');
 
 subtest 'Test stable_id_version() functionality' =>  sub {
   ok(test_getter_setter($rp, 'stable_id_version', 3.14),
@@ -197,10 +197,10 @@ subtest 'fetch_all_by_type_id() functionality' => sub {
   # At the moment we have only got miRNA in the homo_sapiens test database
 
   # FIXME: compare this to the total number of RNAProducts?
-  $n_rps = scalar @{$rp_a->fetch_all_by_type_id(1)};
-  cmp_ok($n_rps, '>', 0, 'Got non-empty list of type_id==1 rnaproducts');
   $n_rps = scalar @{$rp_a->fetch_all_by_type_id(2)};
-  cmp_ok($n_rps, '==', 0, 'Got empty list of type_id==2 rnaproducts');
+  cmp_ok($n_rps, '>', 0, 'Got non-empty list of type_id==2 rnaproducts');
+  $n_rps = scalar @{$rp_a->fetch_all_by_type_id(3)};
+  cmp_ok($n_rps, '==', 0, 'Got empty list of type_id==3 rnaproducts');
 };
 
 $rp = undef;
@@ -212,7 +212,7 @@ $rp = $rp_a->fetch_by_stable_id('ENSM00000000001');
 ok($rp, 'Can fetch RNAProduct by stable ID');
 
 # FIXME: temporary, at least this way
-is($rp->type_id(), 1, 'type_id is 1 (i.e. miRNA)');
+is($rp->type_id(), 2, 'type_id is 2 (i.e. miRNA)');
 
 # FIXME: perform an in-depth inspection of one of the fetched RNAProducts,
 # to make sure new_fast() call all of these fetch methods use does what it

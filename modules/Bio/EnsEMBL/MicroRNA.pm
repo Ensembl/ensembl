@@ -109,7 +109,7 @@ sub new { ## no critic (Subroutines::RequireArgUnpacking)
   my $self = $class->SUPER::new(@_);
 
   # FIXME: see the comment about same in RNAProduct::new()
-  my $type_id = 1;
+  my $type_id = 2;
 
   my ($arm) = rearrange(["ARM"], @_);
   $self->{'arm'} = $arm;

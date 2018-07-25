@@ -332,9 +332,9 @@ sub _fetch_direct_query {
 
     my $class_name;
     # FIXME: the usual thing about using type_id directly
-    if ($rnaproduct_type_id == 0) {
+    if ($rnaproduct_type_id == 1) {
       $class_name = 'Bio::EnsEMBL::RNAProduct';
-    } elsif ($rnaproduct_type_id == 1) {
+    } elsif ($rnaproduct_type_id == 2) {
       $class_name = 'Bio::EnsEMBL::MicroRNA';
     } else {
       throw("Unknown rnaproduct type");
