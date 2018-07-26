@@ -37,6 +37,7 @@ my %group_objects = (
     Transcript  => 1,
     Translation => 1,
     Operon      => 1,
+    RNAProduct  => 1,
 
 # OperonTranscript => 1, # these are in transcript table anyway
     GeneArchive        => 1,
@@ -417,7 +418,7 @@ sub load_ids {
 
       my $rows_inserted = build_insert_sql( $select_sql, $dbh_read, $dbh_write, $is_archive );
     }
-    elsif ( $object_name =~ /Translation/ ) {
+    elsif ( $object_name =~ / RNAProduct | Translation /x ) {
       my $sth = $dbh_read->prepare("SELECT COUNT(*) FROM $object");
       $sth->execute();
       my ($count) = $sth->fetchrow_array;
