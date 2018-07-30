@@ -61,6 +61,7 @@ use warnings;
 
 use Bio::EnsEMBL::Utils::Exception qw(throw warning );
 use Bio::EnsEMBL::Utils::Argument qw( rearrange );
+use Bio::EnsEMBL::Utils::RNAProductTypeMapper;
 use Bio::EnsEMBL::Utils::Scalar qw( assert_ref wrap_array );
 use Scalar::Util qw(weaken);
 
@@ -101,11 +102,8 @@ sub new { ## no critic (Subroutines::RequireArgUnpacking)
 
   my $class = ref($caller) || $caller;
 
-  # For an unspecialised rnaproduct object, set the type to "generic mature
-  # RNA". Ideally we would look the corresponding ID up in rnaproduct_type,
-  # then again that would make this dependent on the database connection...
-  # Maybe we should just store a string code instead? Either way, FIXME.
-  my $type_id = 1;
+  my $type_id = Bio::EnsEMBL::Utils::RNAProductTypeMapper::mapper()
+    ->class_to_type_id($class);
 
   my ($seq_start, $seq_end, $stable_id, $version, $dbID, $adaptor, $seq,
       $created_date, $modified_date ) =

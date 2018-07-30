@@ -95,9 +95,6 @@ sub new { ## no critic (Subroutines::RequireArgUnpacking)
 
   my $self = $class->SUPER::new(@_);
 
-  # FIXME: see the comment about same in RNAProduct::new()
-  my $type_id = 2;
-
   my ($arm) = rearrange(["ARM"], @_);
   if (defined($arm)) {
     _validate_arm_value($arm);

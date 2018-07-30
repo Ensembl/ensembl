@@ -327,6 +327,28 @@ subtest 'MicroRNA tests' => sub {
 };
 
 
+#
+# Tests for the RNAProduct-type adaptor
+#######################################
+
+subtest 'RNAProductTypeMapper tests' => sub {
+  my $rpt_mapper = Bio::EnsEMBL::Utils::RNAProductTypeMapper->mapper();
+
+  my $rpt_mapper2 = Bio::EnsEMBL::Utils::RNAProductTypeMapper->mapper();
+  is($rpt_mapper, $rpt_mapper2, 'mapper() reuses existing instance if present');
+
+  is($rpt_mapper->type_id_to_class(2), 'Bio::EnsEMBL::MicroRNA',
+     'Can map existing type ID to class');
+  dies_ok(sub { $rpt_mapper->type_id_to_class(34356); },
+	  'Exception thrown on unknown type ID');
+
+  is($rpt_mapper->class_to_type_id('Bio::EnsEMBL::RNAProduct'), 1,
+     'Can map existing class to type ID');
+  dies_ok(sub { $rpt_mapper->class_to_type_id('Bio::EnsEMBL::Storable'); },
+	  'Exception thrown on unknown rnaproduct class name');
+};
+
+
 done_testing();
 
 1;

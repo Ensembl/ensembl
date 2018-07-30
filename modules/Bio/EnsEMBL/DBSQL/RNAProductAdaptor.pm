@@ -330,15 +330,8 @@ sub _fetch_direct_query {
       next;
     }
 
-    my $class_name;
-    # FIXME: the usual thing about using type_id directly
-    if ($rnaproduct_type_id == 1) {
-      $class_name = 'Bio::EnsEMBL::RNAProduct';
-    } elsif ($rnaproduct_type_id == 2) {
-      $class_name = 'Bio::EnsEMBL::MicroRNA';
-    } else {
-      throw("Unknown rnaproduct type");
-    }
+    my $class_name = Bio::EnsEMBL::Utils::RNAProductTypeMapper::mapper()
+      ->type_id_to_class($rnaproduct_type_id);
     my $rnaproduct = $class_name->new_fast( {
                              'dbID'          => $rnaproduct_id,
                              'type_id'       => $rnaproduct_type_id,
