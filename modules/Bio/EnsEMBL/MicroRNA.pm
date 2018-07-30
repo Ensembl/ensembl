@@ -59,7 +59,7 @@ use vars qw($AUTOLOAD);
 use strict;
 use warnings;
 
-use Bio::EnsEMBL::Utils::Exception qw(throw warning );
+use Bio::EnsEMBL::Utils::Exception qw( throw warning );
 use Bio::EnsEMBL::Utils::Argument qw( rearrange );
 use Bio::EnsEMBL::Utils::Scalar qw( assert_ref wrap_array );
 use Scalar::Util qw(weaken);
@@ -141,8 +141,8 @@ sub arm {
     my $n_arms = scalar @{$arm_attrs};
     if ($n_arms > 0) {
       if ($n_arms > 1) {
-	carp("MicroRNA " . $self->display_id() .
-	     " has multiple arm attributes, using first");
+	warning("MicroRNA " . $self->display_id() .
+	        " has multiple arm attributes, using first");
       }
       $self->{'arm'} = $arm_attrs->[0]->value();
     }
