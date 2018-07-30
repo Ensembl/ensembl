@@ -71,31 +71,18 @@ use parent qw(Bio::EnsEMBL::RNAProduct);
 
 =head2 new
 
-  Arg [-SEQ_START]    : The offset in the Translation indicating the start
-                        position of the product sequence.
-  Arg [-SEQ_END]      : The offset in the Translation indicating the end
-                        position of the product sequence.
-  Arg [-STABLE_ID]    : The stable identifier for this RNAPRoduct
-  Arg [-VERSION]      : The version of the stable identifier
-  Arg [-DBID]         : The internal identifier of this MicroRNA
-  Arg [-ADAPTOR]      : The TranslationAdaptor for this MicroRNA
-  Arg [-SEQ]          : Manually sets the nucleotide sequence of this
-                        rnaproduct. May be useful if this rnaproduct is not
-                        stored in a database.
-  Arg [-CREATED_DATE] : the date the rnaproduct was created
-  Arg [-MODIFIED_DATE]: the date the rnaproduct was modified
-  # FIXME: does all of the above have to be repeated here or can we somehow pull this from the superclass?
   Arg: [-ARM]         : which arm of the hairpin precursor this miRNA comes
-                        from. Negative values indicate 3', positive ones - 5'.
-                        FIXME: is this right?
+                        from. Returns 3 and 5 for 3' and 5', respectively.
+  Arg [...]           : Named arguments to superclass constructor
+                        (see Bio::EnsEMBL::RNAProduct)
   Example    : my $miR = Bio::EnsEMBL::MicroRNA->new(
                  -SEQ_START => 36,
                  -SEQ_END   => 58,
-                 -ARM       => -1
+                 -ARM       => 3
                );
   Description: Constructor.  Creates a new MicroRNA object
   Returntype : Bio::EnsEMBL::MicroRNA
-  Exceptions : none
+  Exceptions : throw if ARM value is out of bounds
   Caller     : general
   Status     : In Development
 
@@ -123,12 +110,16 @@ sub new { ## no critic (Subroutines::RequireArgUnpacking)
 
 =head2 arm
 
+    Arg [1]     : (optional) int $arm which arm of the hairpin precursor
+                  this miRNA comes from
     Example     : $mirna_arm = $mirna->arm();
-    Description : Returns the arm of the hairpin this miRNA comes from.
-                  Negative values indicate the 3' end, positive ones
-                  - the 5' one. FIXME: is this right?
+                  $mirna->arm(3);
+    Description : Sets or returns the arm of the hairpin this miRNA comes
+                  from. Accepted values are 3 and 5 for 3' and 5',
+                  respectively.
     Return type : Integer
-    Exceptions  : warn if multiple 'mirna_arm' attributes exist
+    Exceptions  : throw if setter is passed an incorrect value;
+                  warn if multiple 'mirna_arm' attributes exist.
     Caller      : General
     Status      : Stable
 
