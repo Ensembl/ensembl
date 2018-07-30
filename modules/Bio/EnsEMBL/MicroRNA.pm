@@ -112,6 +112,9 @@ sub new { ## no critic (Subroutines::RequireArgUnpacking)
   my $type_id = 2;
 
   my ($arm) = rearrange(["ARM"], @_);
+  if (defined($arm)) {
+    _validate_arm_value($arm);
+  }
   $self->{'arm'} = $arm;
 
   return $self;
@@ -135,6 +138,7 @@ sub arm {
   my ($self, $arm) = @_;
 
   if (defined $arm) {
+    _validate_arm_value($arm);
     $self->{'arm'} = $arm;
   } elsif (!defined($self->{'arm'})) {
     my $arm_attrs = $self->get_all_Attributes('mirna_arm');
@@ -169,6 +173,27 @@ sub summary_as_hash {
   $summary->{'arm'} = $self->arm();
 
   return $summary;
+}
+
+
+# _validate_arm_value
+#  Arg [1]    : int $arm which arm of the hairpin precursor this miRNA
+#               comes from
+#  Description: PRIVATE validates if its argument has one of the accepted
+#               values for specifying the miRNA hairpin arm.
+#  Returntype : none
+#  Exceptions : throw if the argument is out of bounds
+#  Caller     : internal
+#  Status     : Stable
+
+sub _validate_arm_value {
+  my ($arm) = @_;
+
+  if (($arm != 3) && ($arm != 5)) {
+    throw("'$arm' is not a valid miRNA hairpin-arm specification");
+  }
+
+  return;
 }
 
 1;
