@@ -921,6 +921,11 @@ sub fetch_all_by_Transcript_list {
          -version => $version,
 	 -created_date => $created_date || undef,
 	 -modified_date => $modified_date || undef);
+
+      # Calling the new method will set $tl->version to '1' if $version is not defined.
+      # But if the version in the database is NULL, $version will be undef; and so we
+      # need to override the default version of '1', and set it back to undef.
+      $tl->{version} = undef unless defined $version;
       
       $tl->adaptor($self);
       my $canonical_translation_id = $canonical_lookup->{$transcript_id};
