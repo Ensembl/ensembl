@@ -16,21 +16,20 @@
 use strict;
 use warnings;
 
-use Config;
 use Test::More;
-use Test::Exception;
-use Bio::EnsEMBL::Registry;
-use Bio::EnsEMBL::ApiVersion;
 
-# [ENSCORESW-2475]. With the new branching policy, next release DBs are unavailable
-# when adding a version upgrade to the following one.
-my $version = software_version()-2;
+use Bio::EnsEMBL::Test::MultiTestDB;
 
-Bio::EnsEMBL::Registry->load_registry_from_url('mysql://anonymous@ensembldb.ensembl.org/'.$version);
+my $multi = Bio::EnsEMBL::Test::MultiTestDB->new();
+
+my $db = $multi->get_DBAdaptor('core');
+if ($db->dbc->driver() eq 'SQLite') {
+	plan skip_all => 'No registry support for SQLite yet';
+}
 
 my $dbas = Bio::EnsEMBL::Registry->get_all_DBAdaptors(-GROUP=>'core');
-my $min = 10;
-ok(defined $dbas && scalar(@$dbas)>$min,'More than '.$min.' DBAs found');
+isnt($dbas, undef, 'Can retrieve list of DBAs from Registry');
+cmp_ok(scalar @{$dbas}, '>', 0, 'DBA list is not empty');
 ok($dbas->[0]->isa('Bio::EnsEMBL::DBSQL::DBAdaptor'),'First DBA is core');
 
 my $species = 'homo_sapiens';
