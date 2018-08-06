@@ -22,10 +22,24 @@ use Bio::EnsEMBL::Test::MultiTestDB;
 
 my $multi = Bio::EnsEMBL::Test::MultiTestDB->new();
 
-my $db = $multi->get_DBAdaptor('core');
-if ($db->dbc->driver() eq 'SQLite') {
-	plan skip_all => 'No registry support for SQLite yet';
+my $multi_config = $multi->db_conf();
+if (lc($multi_config->{'driver'}) ne 'mysql') {
+  plan skip_all => 'Registry only supports MySQL for now';
 }
+
+my $mysql_connect_string = "$multi_config->{'driver'}://";
+if (exists $multi_config->{'user'}) {
+  $mysql_connect_string .= "$multi_config->{'user'}";
+  if (exists $multi_config->{'pass'}) {
+    $mysql_connect_string .= ":$multi_config->{'pass'}";
+  }
+  $mysql_connect_string .= '@';
+}
+$mysql_connect_string .= $multi_config->{'host'};
+if (exists $multi_config->{'port'}) {
+  $mysql_connect_string .= ":$multi_config->{'port'}";
+}
+Bio::EnsEMBL::Registry->load_registry_from_url($mysql_connect_string);
 
 my $dbas = Bio::EnsEMBL::Registry->get_all_DBAdaptors(-GROUP=>'core');
 isnt($dbas, undef, 'Can retrieve list of DBAs from Registry');
