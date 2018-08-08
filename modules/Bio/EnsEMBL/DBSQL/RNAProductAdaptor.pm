@@ -160,26 +160,26 @@ sub fetch_all_by_external_name {
 }
 
 
-=head2 fetch_all_by_type_id
+=head2 fetch_all_by_type
 
-  Arg [1]    : int
-  Example    : $rps = $rnaproduct_adaptor->fetch_by_type_id(1);
+  Arg [1]    : string $type_code
+  Example    : $rps = $rp_a->fetch_all_by_type('miRNA');
   Description: Retrieves RNAProducts via their type (e.g. miRNA, circRNA).
-               The type is presently expressed as numerical ID, which is
-               of limited usefulness; support for human-readable forms
-               will follow (FIXME).
-               If no RNAProducts are found, an empty list is returned.
+               If no matching RNAProducts are found, an empty list is
+               returned.
   Returntype : arrayref of Bio::EnsEMBL::RNAProducts
-  Exceptions : none
+  Exceptions : throws if type code is undefined
   Caller     : ?
   Status     : In Development
 
 =cut
 
-sub fetch_all_by_type_id {
-  my ($self, $type_id) = @_;
+sub fetch_all_by_type {
+  my ($self, $type_code) = @_;
 
-  return $self->_fetch_direct_query(['rnaproduct_type_id', $type_id, SQL_INTEGER]);
+  throw("type code argument is required") unless $type_code;
+
+  return ($self->_fetch_direct_query(['pt.code', $type_code, SQL_VARCHAR]));
 }
 
 
