@@ -55,16 +55,16 @@ use base qw( XrefMapper::BasicMapper);
 #            and remove the other ones. If there is more than one "best" we keep all and
 #            just choose the first one for the name
 #
-#            To find the "best" one we use the prioritys. 
-#            Priorities should be set correctly in the xref_config.ini file to use
+#            To find the "best" one we use the priority. 
+#            Priority should be set correctly in the xref_config.ini file to use
 #            first any names coming from the official naming source
 #
 #      Set this as the display_xref for the gene.
 #
 #  2) Foreach Transcript of that gene 
 #
-#     we assign a transcript extention (splice number?)
-#     This comes is just counter starting at 201 which is incremented each time
+#     we assign a transcript extension (splice number?)
+#     This is just a counter starting at 201 which is incremented each time
 #     We add this to the name to get a "XXX_trans_name"xref  where XXX is the 
 #     type of source used to get the name. This is then added as an xref and 
 #     is set to the display_xref for that transcript.
@@ -126,7 +126,7 @@ sub run {
 
   ###########################################################
   # If there are any official names on transcripts or translations
-  # moved them onto gene level
+  # move them onto gene level
   #
   # This is done for 2 reasons
   #  1) to make the code the same as HGNC is on a gene
@@ -368,7 +368,7 @@ IEG
 # Find the "best" one
 # Remove the lesser ones (set status to MULTI_DELETE for object_xref)
 #
-# returns the gene_symbol and xref_id of the best one
+# return the gene_symbol and xref_id of the best one
 ######################################################################
 
 sub get_official_domain_name{
