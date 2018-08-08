@@ -301,7 +301,6 @@ SQL
 
 sub _fetch_direct_query {
   my ($self, $where_args) = @_;
-  my @return_data;
 
   my $rp_created_date =
     $self->db()->dbc()->from_date_to_seconds('created_date');
@@ -317,6 +316,25 @@ sub _fetch_direct_query {
   my $sth = $self->prepare($sql);
   $sth->bind_param(1, $where_args->[1], $where_args->[2]);
   $sth->execute();
+  my $results = $self->_obj_from_sth($sth);
+  $sth->finish();
+
+  return $results;
+}
+
+
+# _obj_from_sth
+#  Arg [1]    : DBI statement handle
+#  Description: PRIVATE internal method shared between public SQL-query
+#               methods in order to avoid duplication of object-creation
+#               logic.
+#  Returntype : ArrayRef of either Bio::EnsEMBL::RNAProducts or undefs
+#  Exceptions : throws if rnaproduct type is absent or unknown
+#  Caller     : internal
+#  Status     : At Risk (In Development)
+sub _obj_from_sth {
+  my ($self, $sth) = @_;
+  my @return_data;
 
   my $sql_data = $sth->fetchall_arrayref();
   my $transcript_adaptor = $self->db()->get_TranscriptAdaptor();
@@ -349,8 +367,6 @@ sub _fetch_direct_query {
 
     push @return_data, $rnaproduct;
   }
-
-  $sth->finish();
 
   return \@return_data;
 }
