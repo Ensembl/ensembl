@@ -647,9 +647,9 @@ sub set_transcript_display_xrefs{
     $$max_object_xref_id++;
     $ins_object_xref_sth->execute($$max_object_xref_id, $tran_id, 'Transcript', $xref_added->{$id.":".$source_id},undef);
     $ins_dep_ix_sth->execute($$max_object_xref_id, 100, 100);
+    $ext++;
   }
   $seen_gene->{$gene_symbol} = $ext;
-  $ext++;
   return;
 }
 
