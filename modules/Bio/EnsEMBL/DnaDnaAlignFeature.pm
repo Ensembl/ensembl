@@ -54,6 +54,7 @@ use Bio::EnsEMBL::Utils::Exception qw(throw);
 
 @ISA = qw( Bio::EnsEMBL::BaseAlignFeature );
 
+use constant SO_ACC => 'SO:0000347';
 
 =head2 new
 
@@ -525,6 +526,5 @@ sub transfer {
   
   return $new_feature;
 }
-
 
 1;

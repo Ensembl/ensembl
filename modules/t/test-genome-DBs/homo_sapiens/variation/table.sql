@@ -168,7 +168,7 @@ CREATE TABLE `meta` (
   PRIMARY KEY (`meta_id`),
   UNIQUE KEY `species_key_value_idx` (`species_id`,`meta_key`,`meta_value`),
   KEY `species_value_idx` (`species_id`,`meta_value`)
-) ENGINE=MyISAM AUTO_INCREMENT=25 DEFAULT CHARSET=latin1;
+) ENGINE=MyISAM AUTO_INCREMENT=35 DEFAULT CHARSET=latin1;
 
 CREATE TABLE `meta_coord` (
   `table_name` varchar(40) NOT NULL,
@@ -193,7 +193,8 @@ CREATE TABLE `motif_feature_variation` (
   PRIMARY KEY (`motif_feature_variation_id`),
   KEY `variation_feature_idx` (`variation_feature_id`),
   KEY `consequence_type_idx` (`consequence_types`),
-  KEY `somatic_feature_idx` (`feature_stable_id`,`somatic`)
+  KEY `somatic_feature_idx` (`feature_stable_id`,`somatic`),
+  KEY `feature_stable_idx` (`feature_stable_id`)
 ) ENGINE=MyISAM DEFAULT CHARSET=latin1;
 
 CREATE TABLE `phenotype` (
@@ -238,7 +239,7 @@ CREATE TABLE `phenotype_feature_attrib` (
 CREATE TABLE `phenotype_ontology_accession` (
   `phenotype_id` int(11) unsigned NOT NULL,
   `accession` varchar(255) NOT NULL,
-  `mapped_by_attrib` set('437','438','439','440','441','442','443','444') DEFAULT NULL,
+  `mapped_by_attrib` set('437','438','439','440','441','442','443','444','588','589','590','591','592','593','594') DEFAULT NULL,
   `mapping_type` enum('is','involves') DEFAULT NULL,
   PRIMARY KEY (`phenotype_id`,`accession`),
   KEY `accession_idx` (`accession`)
@@ -338,7 +339,8 @@ CREATE TABLE `regulatory_feature_variation` (
   PRIMARY KEY (`regulatory_feature_variation_id`),
   KEY `variation_feature_idx` (`variation_feature_id`),
   KEY `consequence_type_idx` (`consequence_types`),
-  KEY `somatic_feature_idx` (`feature_stable_id`,`somatic`)
+  KEY `somatic_feature_idx` (`feature_stable_id`,`somatic`),
+  KEY `feature_stable_idx` (`feature_stable_id`)
 ) ENGINE=MyISAM DEFAULT CHARSET=latin1;
 
 CREATE TABLE `sample` (
@@ -465,6 +467,7 @@ CREATE TABLE `structural_variation_sample` (
   `structural_variation_sample_id` int(10) unsigned NOT NULL AUTO_INCREMENT,
   `structural_variation_id` int(10) unsigned NOT NULL,
   `sample_id` int(10) unsigned DEFAULT NULL,
+  `zygosity` tinyint(1) DEFAULT NULL,
   PRIMARY KEY (`structural_variation_sample_id`),
   KEY `structural_variation_idx` (`structural_variation_id`),
   KEY `sample_idx` (`sample_id`)
@@ -482,6 +485,12 @@ CREATE TABLE `study` (
   KEY `source_idx` (`source_id`),
   KEY `external_reference_idx` (`external_reference`)
 ) ENGINE=MyISAM AUTO_INCREMENT=2 DEFAULT CHARSET=latin1;
+
+CREATE TABLE `submitter` (
+  `submitter_id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+  `description` varchar(255) DEFAULT NULL,
+  PRIMARY KEY (`submitter_id`)
+) ENGINE=MyISAM DEFAULT CHARSET=latin1;
 
 CREATE TABLE `submitter_handle` (
   `handle_id` int(10) unsigned NOT NULL AUTO_INCREMENT,
@@ -556,7 +565,7 @@ CREATE TABLE `variation` (
   `minor_allele_freq` float DEFAULT NULL,
   `minor_allele_count` int(10) unsigned DEFAULT NULL,
   `clinical_significance` set('uncertain significance','not provided','benign','likely benign','likely pathogenic','pathogenic','drug response','histocompatibility','other','confers sensitivity','risk factor','association','protective') DEFAULT NULL,
-  `evidence_attribs` set('367','368','369','370','371','372','418','421') DEFAULT NULL,
+  `evidence_attribs` set('367','368','369','370','371','372','418','421','573','585') DEFAULT NULL,
   `display` int(1) DEFAULT '1',
   PRIMARY KEY (`variation_id`),
   UNIQUE KEY `name` (`name`),
@@ -597,7 +606,7 @@ CREATE TABLE `variation_feature` (
   `minor_allele_freq` float DEFAULT NULL,
   `minor_allele_count` int(10) unsigned DEFAULT NULL,
   `alignment_quality` double DEFAULT NULL,
-  `evidence_attribs` set('367','368','369','370','371','372','418','421') DEFAULT NULL,
+  `evidence_attribs` set('367','368','369','370','371','372','418','421','573','585') DEFAULT NULL,
   `clinical_significance` set('uncertain significance','not provided','benign','likely benign','likely pathogenic','pathogenic','drug response','histocompatibility','other','confers sensitivity','risk factor','association','protective') DEFAULT NULL,
   `display` int(1) DEFAULT '1',
   PRIMARY KEY (`variation_feature_id`),

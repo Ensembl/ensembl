@@ -82,6 +82,8 @@ use Bio::EnsEMBL::Utils::Argument qw(rearrange);
 
 use base qw/Bio::EnsEMBL::Feature/;
 
+use constant SO_ACC => 'SO:0000657';
+
 =head2 new
 
   Arg [REPEAT_CONSENSUS] : Bio::EnsEMBL::RepeatConsensus (optional)

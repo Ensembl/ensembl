@@ -185,9 +185,6 @@ sub run_script {
   }
 
   print "Added $xref_count RFAM xrefs and $direct_count direct xrefs\n" if($verbose);
-  if ( !$xref_count ) {
-      return 1;    # 1 error
-  }
 
   return 0; # successfull
  

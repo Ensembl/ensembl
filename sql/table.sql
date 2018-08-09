@@ -316,7 +316,9 @@ INSERT INTO meta (species_id, meta_key, meta_value) VALUES
 INSERT INTO meta (species_id, meta_key, meta_value)
   VALUES (NULL, 'patch', 'patch_93_94_a.sql|schema_version');
 INSERT INTO meta (species_id, meta_key, meta_value)
-  VALUES (NULL, 'patch', 'patch_93_94_c.sql|nullable_ox_analysis');
+  VALUES (NULL, 'patch', 'patch_93_94_b.sql|nullable_ox_analysis');
+INSERT INTO meta (species_id, meta_key, meta_value)
+  VALUES (NULL, 'patch', 'patch_93_94_c.sql|default_aln_type');
 
 
 /**
@@ -962,7 +964,7 @@ CREATE TABLE protein_feature (
   external_data               TEXT,
   hit_description             TEXT,
   cigar_line                  TEXT,
-  align_type                  ENUM('ensembl', 'cigar', 'cigarplus', 'vulgar', 'mdtag'),
+  align_type                  ENUM('ensembl', 'cigar', 'cigarplus', 'vulgar', 'mdtag') DEFAULT NULL,
 
   UNIQUE KEY aln_idx (translation_id,hit_name,seq_start,seq_end,hit_start,hit_end,analysis_id),
   PRIMARY KEY (protein_feature_id),

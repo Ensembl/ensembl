@@ -16,21 +16,34 @@
 use strict;
 use warnings;
 
-use Config;
 use Test::More;
-use Test::Exception;
-use Bio::EnsEMBL::Registry;
-use Bio::EnsEMBL::ApiVersion;
 
-# [ENSCORESW-2475]. With the new branching policy, next release DBs are unavailable
-# when adding a version upgrade to the following one.
-my $version = software_version()-2;
+use Bio::EnsEMBL::Test::MultiTestDB;
 
-Bio::EnsEMBL::Registry->load_registry_from_url('mysql://anonymous@ensembldb.ensembl.org/'.$version);
+my $multi = Bio::EnsEMBL::Test::MultiTestDB->new();
+
+my $multi_config = $multi->db_conf();
+if (lc($multi_config->{'driver'}) ne 'mysql') {
+  plan skip_all => 'Registry only supports MySQL for now';
+}
+
+my $mysql_connect_string = "$multi_config->{'driver'}://";
+if (exists $multi_config->{'user'}) {
+  $mysql_connect_string .= "$multi_config->{'user'}";
+  if (exists $multi_config->{'pass'}) {
+    $mysql_connect_string .= ":$multi_config->{'pass'}";
+  }
+  $mysql_connect_string .= '@';
+}
+$mysql_connect_string .= $multi_config->{'host'};
+if (exists $multi_config->{'port'}) {
+  $mysql_connect_string .= ":$multi_config->{'port'}";
+}
+Bio::EnsEMBL::Registry->load_registry_from_url($mysql_connect_string);
 
 my $dbas = Bio::EnsEMBL::Registry->get_all_DBAdaptors(-GROUP=>'core');
-my $min = 10;
-ok(defined $dbas && scalar(@$dbas)>$min,'More than '.$min.' DBAs found');
+isnt($dbas, undef, 'Can retrieve list of DBAs from Registry');
+cmp_ok(scalar @{$dbas}, '>', 0, 'DBA list is not empty');
 ok($dbas->[0]->isa('Bio::EnsEMBL::DBSQL::DBAdaptor'),'First DBA is core');
 
 my $species = 'homo_sapiens';

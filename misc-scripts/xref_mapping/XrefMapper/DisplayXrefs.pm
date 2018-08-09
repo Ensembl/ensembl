@@ -227,14 +227,16 @@ sub set_display_xrefs_from_stable_table{
   $reset_sth->execute();
   $reset_sth->finish;
  
-  $reset_sth = $core_dbi->prepare("UPDATE transcript SET display_xref_id = null WHERE biotype NOT IN ('LRG_gene')");
+  # Remove any leftover transcript description, as it is not used anywhere
+  $reset_sth = $core_dbi->prepare("UPDATE transcript SET display_xref_id = null");
   $reset_sth->execute();
   $reset_sth->finish;
 
-  $reset_sth = $core_dbi->prepare("UPDATE gene SET description = null");
+  # Remove descriptions assigned through the xref pipeline, recognisable by the 'Source' field
+  # This will maintain any manually added descriptions
+  $reset_sth = $core_dbi->prepare("UPDATE gene SET description = null WHERE description like '%[Source:%]%'");
   $reset_sth->execute();
   $reset_sth->finish;
-
 
   my %name_to_external_name;
   my $sql = "select external_db_id, db_name, db_display_name from external_db";
@@ -595,7 +597,7 @@ sub transcript_names_from_gene {
   my $xref_id_sth = $core_dbi->prepare("SELECT max(xref_id) FROM xref");
   my $ox_id_sth = $core_dbi->prepare("SELECT max(object_xref_id) FROM object_xref");
   my $del_xref_sth = $core_dbi->prepare("DELETE x FROM xref x, object_xref ox WHERE x.xref_id = ox.xref_id AND ensembl_object_type = 'Transcript' AND display_label REGEXP '-2[0-9]{2}\$'");
-  my $reuse_xref_sth = $core_dbi->prepare("SELECT xref_id FROM xref x WHERE external_db_id = ? AND display_label = ? AND description = ? AND info_type = 'MISC'");
+  my $reuse_xref_sth = $core_dbi->prepare("SELECT xref_id FROM xref x WHERE external_db_id = ? AND display_label = ? AND info_type = 'MISC'");
   my $del_ox_sth = $core_dbi->prepare("DELETE ox FROM object_xref ox LEFT JOIN xref x ON x.xref_id = ox.xref_id WHERE isnull(x.xref_id)");
   my $ins_xref_sth = $core_dbi->prepare("INSERT IGNORE into xref (xref_id, external_db_id, dbprimary_acc, display_label, version, description, info_type, info_text) values(?, ?, ?, ?, 0, ?, 'MISC', ?)");
   my $ins_ox_sth = $core_dbi->prepare("INSERT into object_xref (object_xref_id, ensembl_id, ensembl_object_type, xref_id) values(?, ?, 'Transcript', ?)");
@@ -625,7 +627,7 @@ sub transcript_names_from_gene {
     while ($get_transcripts->fetch) {
       $xref_id++;
       $ox_id++;
-      $reuse_xref_sth->execute($external_db_id, $label . '-' . $ext, $description);
+      $reuse_xref_sth->execute($external_db_id, $label . '-' . $ext);
       $reuse_xref_sth->bind_columns(\$reuse_xref_id);
       if ($reuse_xref_sth->fetch()) {
         $ins_ox_sth->execute($ox_id, $transcript_id, $reuse_xref_id);

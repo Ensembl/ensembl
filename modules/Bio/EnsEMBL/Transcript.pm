@@ -77,6 +77,7 @@ use Bio::EnsEMBL::Utils::Scalar qw( assert_ref );
 
 use parent qw(Bio::EnsEMBL::Feature);
 
+use constant SO_ACC => 'SO:0000673';
 
 =head2 new
 
@@ -3289,7 +3290,4 @@ sub biotype {
   return $self->get_Biotype->name;
 }
 
-
-
 1;
-

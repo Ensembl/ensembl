@@ -51,6 +51,7 @@ use vars qw(@ISA);
 
 @ISA = qw( Bio::EnsEMBL::BaseAlignFeature );
 
+use constant SO_ACC => 'SO:0000349';
 
 =head2 _hit_unit
 
@@ -86,8 +87,6 @@ sub _hit_unit {
 sub _query_unit {
   return 3;
 }
-
-
 
 
 1;

@@ -82,6 +82,7 @@ use Bio::EnsEMBL::Utils::Argument qw(rearrange);
 use Bio::EnsEMBL::Utils::Exception qw(throw warning);
 use Bio::EnsEMBL::Utils::Scalar qw(check_ref assert_ref);
 use Bio::EnsEMBL::Slice;
+use Try::Tiny;
 use vars qw(@ISA);
 
 use Scalar::Util qw(weaken);
@@ -1443,6 +1444,33 @@ sub get_nearest_Gene {
   } else {
     return;
   }
+}
+
+=head2 feature_so_acc
+
+  Description: This method returns a string containing the SO accession number of the feature
+               Define constant SO_ACC in classes that require it, or override it for multiple possible values for a class.
+  Returntype : String (Sequence Ontology accession number)
+  Exceptions : Thrown if caller SO_ACC is undefined and is not a Bio::EnsEMBL::Feature
+
+=cut
+
+sub feature_so_acc {
+  my ($self) = @_;
+
+  my $ref = ref $self;
+  my $so_acc;
+
+  # Get the caller class SO acc
+  try {
+    $so_acc = $ref->SO_ACC;
+  };
+ 
+  unless ($so_acc || $ref eq 'Bio::EnsEMBL::Feature' ) {
+    throw( "constant SO_ACC in ${ref} is not defined");
+  }
+
+  return $so_acc // 'SO:0000001';
 }
 
 =head2 summary_as_hash

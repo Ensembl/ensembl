@@ -1,6 +1,6 @@
 -- 
 -- Created by SQL::Translator::Producer::SQLite
--- Created on Wed Apr 25 09:28:53 2018
+-- Created on Tue Jul  3 16:05:34 2018
 -- 
 
 BEGIN TRANSACTION;
@@ -301,7 +301,7 @@ CREATE TABLE gene_tree_root_attr (
 --
 CREATE TABLE gene_tree_root_tag (
   root_id integer NOT NULL,
-  tag varchar(50) NOT NULL,
+  tag varchar(255),
   value mediumtext NOT NULL
 );
 
@@ -408,7 +408,7 @@ CREATE TABLE hmm_profile (
 CREATE TABLE homology (
   homology_id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
   method_link_species_set_id integer NOT NULL,
-  description enum,
+  description enum NOT NULL,
   is_tree_compliant tinyint NOT NULL DEFAULT 0,
   dn float(10,5),
   ds float(10,5),
@@ -479,7 +479,8 @@ CREATE UNIQUE INDEX species_key_value_idx ON meta (species_id, meta_key, meta_va
 CREATE TABLE method_link (
   method_link_id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
   type varchar(50) NOT NULL DEFAULT '',
-  class varchar(50) NOT NULL DEFAULT ''
+  class varchar(50) NOT NULL DEFAULT '',
+  display_name varchar(255) NOT NULL DEFAULT ''
 );
 
 CREATE UNIQUE INDEX type02 ON method_link (type);

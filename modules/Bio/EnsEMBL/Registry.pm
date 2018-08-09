@@ -2875,6 +2875,9 @@ sub version_check {
     if ( $dba->dbc()->dbname() =~ /^_test_db_/x ) {
       return 1;
     }
+    if ( $dba->dbc()->dbname() =~ /ensembl_metadata/x ) {
+      return 1;
+    }
     if ( $dba->dbc()->dbname() =~ /(\d+)_\S+$/x ) {
       $database_version = $1;
     } elsif ( $dba->dbc()->dbname() =~ /ensembl_compara_(\d+)/x ) {

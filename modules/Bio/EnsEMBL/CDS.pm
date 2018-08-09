@@ -66,6 +66,7 @@ use Scalar::Util qw(weaken isweak);
 
 @ISA = qw(Bio::EnsEMBL::Feature);
 
+use constant SO_ACC => 'SO:0000316';
 
 =head2 new
 

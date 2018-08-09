@@ -80,6 +80,8 @@ use Bio::EnsEMBL::DBSQL::SupportingFeatureAdaptor;
 use vars qw(@ISA);
 @ISA = qw(Bio::EnsEMBL::Feature);
 
+use constant SO_ACC => 'SO:0000147';
+
 
 =head2 new
 
@@ -1632,6 +1634,7 @@ sub load {
   $self->stable_id();
   $self->get_all_supporting_features();
 }
+
 
 =head2 summary_as_hash
 
