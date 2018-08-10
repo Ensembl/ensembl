@@ -102,8 +102,8 @@ sub new { ## no critic (Subroutines::RequireArgUnpacking)
 
   my $class = ref($caller) || $caller;
 
-  my $type_id = Bio::EnsEMBL::Utils::RNAProductTypeMapper::mapper()
-    ->class_to_type_id($class);
+  my $type_code = Bio::EnsEMBL::Utils::RNAProductTypeMapper::mapper()
+    ->class_to_type_code($class);
 
   my ($seq_start, $seq_end, $stable_id, $version, $dbID, $adaptor, $seq,
       $created_date, $modified_date ) =
@@ -125,7 +125,7 @@ sub new { ## no critic (Subroutines::RequireArgUnpacking)
     'seq'        => $seq,
     'created_date' => $created_date,
     'modified_date' => $modified_date,
-    'type_id'    => $type_id
+    'type_code'  => $type_code,
   }, $class;
 
   $self->adaptor($adaptor);
@@ -807,24 +807,26 @@ sub transcript {
 }
 
 
-=head2 type_id
+=head2 type_code
 
-  Example    : my $rp_type_id = $rnaproduct->type_id();
+  Example    : my $rp_type_code = $rnaproduct->type_code();
   Description: Getter for the RNAProduct type (e.g. miRNA, circRNA, ...).
-               The type is expressed as a numerical ID and it is up to the
-               user to look the details up in rnaproduct_type; it has been
-               implemented this way because at this point it hasn't been
-               decided whether we need to expose this to users at all.
-  Returntype : int
+               The type is expressed as human-readable code.
+               This is somewhat redundant because similar information can
+               be obtained simply by looking at the class of the object,
+               indeed type_code is not meant to be modified independently
+               of the class. However, there are certain use cases when the
+               latter are more convenient than the former.
+  Returntype : string
   Exceptions : none
   Caller     : ?
   Status     : In Development
 
 =cut
 
-sub type_id {
+sub type_code {
   my $self = shift;
-  return $self->{'type_id'};
+  return $self->{'type_code'};
 }
 
 

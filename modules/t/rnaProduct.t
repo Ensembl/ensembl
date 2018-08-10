@@ -84,8 +84,8 @@ ok(test_getter_setter($rp, 'version', 13), 'Test getter/setter version()');
 ok(test_getter_setter($rp, 'created_date', time()), 'Test getter/setter created_date()');
 ok(test_getter_setter($rp, 'modified_date', time()), 'Test getter/setter modified_date()');
 
-# FIXME: temporary, at least this way
-is($rp->type_id(), 1, 'type_id is 1 (i.e. generic mature RNA)');
+# FIXME: use RNAProductTypeMapper instead of hardcoded type code
+is($rp->type_code(), 'generic', 'RNAProduct object has expected type code');
 
 subtest 'Test stable_id_version() functionality' =>  sub {
   ok(test_getter_setter($rp, 'stable_id_version', 3.14),
@@ -211,8 +211,9 @@ $rp = undef;
 $rp = $rp_a->fetch_by_stable_id('ENSM00000000001');
 ok($rp, 'Can fetch RNAProduct by stable ID');
 
-# FIXME: temporary, at least this way
-is($rp->type_id(), 2, 'type_id is 2 (i.e. miRNA)');
+# FIXME: use RNAProductTypeMapper instead of hardcodings
+isa_ok($rp, 'Bio::EnsEMBL::MicroRNA', 'miRNA object from database');
+is($rp->type_code(), 'miRNA', 'type_code is miRNA');
 
 # FIXME: perform an in-depth inspection of one of the fetched RNAProducts,
 # to make sure new_fast() call all of these fetch methods use does what it
@@ -337,14 +338,14 @@ subtest 'RNAProductTypeMapper tests' => sub {
   my $rpt_mapper2 = Bio::EnsEMBL::Utils::RNAProductTypeMapper->mapper();
   is($rpt_mapper, $rpt_mapper2, 'mapper() reuses existing instance if present');
 
-  is($rpt_mapper->type_id_to_class(2), 'Bio::EnsEMBL::MicroRNA',
+  is($rpt_mapper->type_code_to_class('miRNA'), 'Bio::EnsEMBL::MicroRNA',
      'Can map existing type ID to class');
-  dies_ok(sub { $rpt_mapper->type_id_to_class(34356); },
+  dies_ok(sub { $rpt_mapper->type_code_to_class('semprini'); },
 	  'Exception thrown on unknown type ID');
 
-  is($rpt_mapper->class_to_type_id('Bio::EnsEMBL::RNAProduct'), 1,
+  is($rpt_mapper->class_to_type_code('Bio::EnsEMBL::RNAProduct'), 'generic',
      'Can map existing class to type ID');
-  dies_ok(sub { $rpt_mapper->class_to_type_id('Bio::EnsEMBL::Storable'); },
+  dies_ok(sub { $rpt_mapper->class_to_type_code('Bio::EnsEMBL::Storable'); },
 	  'Exception thrown on unknown rnaproduct class name');
 };
 

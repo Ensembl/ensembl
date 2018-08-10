@@ -43,7 +43,7 @@ users to call the mapper directly; it is invoked internally whenever
 such mappings are needed (e.g. in RNAProduct constructor or in
 RNAProductAdaptor).
 
-Note that the type_id<->class_name mappings are hardcoded here,
+Note that the type_code<->class_name mappings are hardcoded here,
 specifically in the constructor, instead of being fetched from the
 database. This is so that it is not possible for someone to trigger
 construction of arbitrary objects by having modified class names
@@ -53,8 +53,8 @@ stored in the database.
 
   my $rpt_mapper = Bio::EnsEMBL::Utils::RNAProductTypeMapper->new();
 
-  my $class = $rpt_mapper->type_id_to_class( 1 );
-  my $type_id = $rpt_mapper->class_to_type_id( 'Bio::EnsEMBL::MicroRNA' );
+  my $class_name = $rpt_mapper->type_code_to_class( 'generic' );
+  my $type_code = $rpt_mapper->class_to_type_code( 'Bio::EnsEMBL::MicroRNA' );
 
 =cut
 
@@ -111,43 +111,43 @@ sub new {
   # Declare this here rather than in the package scope so that the map
   # cannot be modified (we do not presently use Readonly in the Core
   # API code), accidentally or otherwise.
-  my $id_to_class_map = {
-    1 => 'Bio::EnsEMBL::RNAProduct',
-    2 => 'Bio::EnsEMBL::MicroRNA',
+  my $type_to_class_map = {
+    'generic' => 'Bio::EnsEMBL::RNAProduct',
+    'miRNA' => 'Bio::EnsEMBL::MicroRNA',
   };
 
   my $self = bless {
-    'id_to_class_map' => $id_to_class_map,
-    'class_to_id_map' => undef,
+    'type_to_class_map' => $type_to_class_map,
+    'class_to_type_map' => undef,
   }, $class;
 
   return $self;
 }
 
 
-=head2 class_to_type_id
+=head2 class_to_type_code
 
   Arg [1]    : string $class_name - fully qualified rnaproduct class name
-  Example    : my $type_id
-                 = $mapper->class_to_type_id( 'Bio::EnsEMBL::MicroRNA' );
+  Example    : my $type_code
+                 = $mapper->class_to_type_code( 'Bio::EnsEMBL::MicroRNA' );
   Description: For the given name of a class representing a mature RNA
-               product, returns the type ID used to reference it in the
+               product, returns the type code used to represent it in the
                Ensembl database.
-  Returntype : int
+  Returntype : string
   Exceptions : throw if the class does not represent known RNA-product type
   Caller     : internal
   Status     : Stable
 
 =cut
 
-sub class_to_type_id {
+sub class_to_type_code {
   my ( $self, $class_name ) = @_;
 
-  if ( !defined( $self->{'class_to_id_map'} ) ) {
+  if ( !defined( $self->{'class_to_type_map'} ) ) {
     $self->_generate_reverse_map();
   }
 
-  my %map = %{ $self->{'class_to_id_map'} };
+  my %map = %{ $self->{'class_to_type_map'} };
   if ( !exists $map{$class_name} ) {
     throw( "Unknown RNA-product class name " . $class_name );
   }
@@ -156,34 +156,34 @@ sub class_to_type_id {
 }
 
 
-=head2 type_id_to_class
+=head2 type_code_to_class
 
-  Arg [1]    : int $type_id - internal type identified of rnaproduct
-  Example    : my $class_name = $mapper->class_to_type_id( 1 );
-  Description: For the type ID referencing a mature RNA product in the
+  Arg [1]    : string $type_code - type code of rnaproduct
+  Example    : my $class_name = $mapper->class_to_type_code( 1 );
+  Description: For the type code representing a mature RNA product in the
                Ensembl database, return its API class name
   Returntype : string
-  Exceptions : throw if the ID does not represent known RNA-product type
+  Exceptions : throw if the code does not represent known RNA-product type
   Caller     : internal
   Status     : Stable
 
 =cut
 
-sub type_id_to_class {
-  my ( $self, $type_id ) = @_;
+sub type_code_to_class {
+  my ( $self, $type_code ) = @_;
 
-  my %map = %{ $self->{'id_to_class_map'} };
-  if ( !exists $map{$type_id} ) {
-    throw( "Unknown RNA-product type ID " . $type_id );
+  my %map = %{ $self->{'type_to_class_map'} };
+  if ( !exists $map{$type_code} ) {
+    throw( "Unknown RNA-product type ID " . $type_code );
   }
 
-  return $map{$type_id};
+  return $map{$type_code};
 }
 
 # _generate_reverse_map
 
-#  Description: PRIVATE generates class_name->type_id map from the
-#               type_id->class_name one.
+#  Description: PRIVATE generates class_name->type_code map from the
+#               type_code->class_name one.
 #  Returntype : none
 #  Exceptions : none
 #  Caller     : internal
@@ -193,8 +193,8 @@ sub _generate_reverse_map {
   my ($self) = @_;
 
   # Safe to use reverse because both keys and values are unique
-  my %reversed_map = reverse %{$self->{'id_to_class_map'}};
-  $self->{'class_to_id_map'} = \%reversed_map;
+  my %reversed_map = reverse %{$self->{'type_to_class_map'}};
+  $self->{'class_to_type_map'} = \%reversed_map;
 
   return;
 }

@@ -95,7 +95,7 @@ sub fetch_all_by_Transcript {
 
   assert_ref($transcript, 'Bio::EnsEMBL::Transcript');
 
-  return $self->_fetch_direct_query(['transcript_id', $transcript->dbID(), SQL_INTEGER]);
+  return $self->_fetch_direct_query(['rp.transcript_id', $transcript->dbID(), SQL_INTEGER]);
 }
 
 
@@ -204,7 +204,7 @@ sub fetch_by_dbID {
 
   throw("dbID argument is required") unless defined($dbID);
 
-  return ($self->_fetch_direct_query(['rnaproduct_id', $dbID, SQL_INTEGER]))->[0];
+  return ($self->_fetch_direct_query(['rp.rnaproduct_id', $dbID, SQL_INTEGER]))->[0];
 }
 
 
@@ -226,7 +226,7 @@ sub fetch_by_stable_id {
 
   throw("stable id argument is required") unless $stable_id;
 
-  return ($self->_fetch_direct_query(['stable_id', $stable_id, SQL_VARCHAR]))->[0];
+  return ($self->_fetch_direct_query(['rp.stable_id', $stable_id, SQL_VARCHAR]))->[0];
 }
 
 
@@ -308,9 +308,10 @@ sub _fetch_direct_query {
     $self->db()->dbc()->from_date_to_seconds('modified_date');
 
   my $sql =
-    sprintf("SELECT rnaproduct_id, rnaproduct_type_id, transcript_id, "
-	    . "seq_start, seq_end, stable_id, version, %s, %s "
-	    . "FROM rnaproduct "
+    sprintf("SELECT rp.rnaproduct_id, pt.code, rp.transcript_id, "
+	    . "rp.seq_start, rp.seq_end, rp.stable_id, rp.version, %s, %s "
+	    . "FROM rnaproduct rp JOIN rnaproduct_type pt "
+            . "ON rp.rnaproduct_type_id = pt.rnaproduct_type_id "
 	    . "WHERE %s = ?",
 	    $rp_created_date, $rp_modified_date, $where_args->[0]);
   my $sth = $self->prepare($sql);
@@ -339,7 +340,7 @@ sub _obj_from_sth {
   my $sql_data = $sth->fetchall_arrayref();
   my $transcript_adaptor = $self->db()->get_TranscriptAdaptor();
   while (my $row_ref = shift @{$sql_data}) {
-    my ($rnaproduct_id, $rnaproduct_type_id, $transcript_id, $seq_start,
+    my ($rnaproduct_id, $type_code, $transcript_id, $seq_start,
 	$seq_end, $stable_id, $version, $created_date, $modified_date) =
 	  @{$row_ref};
 
@@ -349,10 +350,10 @@ sub _obj_from_sth {
     }
 
     my $class_name = Bio::EnsEMBL::Utils::RNAProductTypeMapper::mapper()
-      ->type_id_to_class($rnaproduct_type_id);
+      ->type_code_to_class($type_code);
     my $rnaproduct = $class_name->new_fast( {
                              'dbID'          => $rnaproduct_id,
-                             'type_id'       => $rnaproduct_type_id,
+                             'type_code'     => $type_code,
                              'adaptor'       => $self,
                              'start'         => $seq_start,
                              'end'           => $seq_end,
