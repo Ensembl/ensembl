@@ -56,6 +56,8 @@ sub run {
   my $stats      = $ref_arg->{stats};
   my $cleanup    = $ref_arg->{cleanup};
   my $rspecies   = $ref_arg->{speciesr};
+  my $taxon_id   = $ref_arg->{taxon};
+  my $division   = $ref_arg->{division};
   my $sources    = $ref_arg->{sourcesr};
   my $notsources = $ref_arg->{notsourcesr};
 
@@ -99,7 +101,9 @@ DSS
   my $dep_sth = $dbi->prepare($sql);
 
   # validate species names
+  if (defined $division) { push @$rspecies, $division; }
   my @species_ids = $self->validate_species($rspecies, $verbose);
+  if (defined $taxon_id) { push @species_ids, $taxon_id; }
 
   # validate source names
   exit(1) if ( !$self->validate_sources(\@species_ids,$sources, $verbose) );
@@ -254,6 +258,7 @@ DSS
 	    $new->run( { dsn        => $dsn,
 			 source_id  => $source_id,
 			 species_id => $species_id,
+                         taxon_id   => $taxon_id,
 			 name       => $name,
 			 verbose    => $verbose }) )
 	  {
@@ -276,6 +281,7 @@ DSS
 	      $new->run_script( {file       => $file,
 				 source_id  => $source_id, 
 				 species_id => $species_id, 
+                                 taxon_id   => $taxon_id,
 				 verbose    => $verbose }) )
 	    {
 	      ++$summary{$name}->{$parser};
@@ -357,6 +363,7 @@ DSS
 	if (
 	    $new->run( { source_id  => $source_id,
 			 species_id => $species_id,
+                         taxon_id   => $taxon_id,
 			 files      => [@files_to_parse],
 			 rel_file   => $release_url,
 			 verbose    => $verbose } ) )
@@ -368,6 +375,7 @@ DSS
 	if (
 	    $new->run(  { source_id  => $source_id,
 			  species_id => $species_id,
+                          taxon_id   => $taxon_id,
 			  files      => [@files_to_parse],
 			  verbose    => $verbose } ))
 	  {
@@ -695,7 +703,6 @@ sub validate_species {
     } else {
       print STDERR "Species $sp is not valid; valid species are:\n";
       $self->show_valid_species();
-      exit(1);
     }
   }
   return @species_ids;
