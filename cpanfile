@@ -3,6 +3,7 @@ requires 'DBD::mysql';
 requires 'HTTP::Tiny';
 requires 'IO::Compress::Gzip';
 requires 'URI::Escape';
+requires 'Config::IniFiles';
 
 test_requires 'Test::Warnings';
 test_requires 'Test::Differences';
