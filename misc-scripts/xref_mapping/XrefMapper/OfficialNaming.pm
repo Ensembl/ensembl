@@ -631,7 +631,6 @@ sub set_transcript_display_xrefs{
   }
 
   foreach my $tran_id ( @{$gene_to_transcripts->{$gene_id}} ){
-    $ext = 201;
     my $id = $gene_symbol."-".$ext;
     if(!defined($source_id)){
       croak "id = $id\n but NO source_id for this entry for $tran_source???\n";
