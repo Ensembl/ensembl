@@ -791,6 +791,11 @@ sub biomart_testing{
     $sth->finish;  
   }
 
+  my $tester = XrefMapper::TestMappings->new($self);
+  if($tester->unlinked_entries){
+    croak "Problems found before source_defined_move\n";
+  }
+
   $self->update_process_status('biomart_test_finished');
   return;
 }
@@ -1035,9 +1040,6 @@ sub process_alt_alleles{
   my ($alt_to_ref, $ref_to_alts) = $self->get_alt_allele_hashes();
 
   my $tester = XrefMapper::TestMappings->new($self);
-  if($tester->unlinked_entries){
-    croak "Problems found before process_alt_alleles\n";
-  }
   #
   # Move the xrefs on to the reference Gene.
   # NOTE: Igonore used as the xref might already be on this Gene already and we do not want it to crash
@@ -1107,9 +1109,6 @@ $del_sql .= "'".join("', '",$self->get_gene_specific_list()) . "')";
   $del_ix_sth->finish;
 
   print "Number of rows:- moved = $move_count, identitys deleted = $del_ix_count, object_xrefs deleted = $del_ox_count\n";
-  if($tester->unlinked_entries){
-    croak "Problems found mid process_alt_alleles\n";
-  }
   #
   # Now we have all the data on the reference Gene we want to copy all the data
   # onto the alt alleles.
@@ -1216,11 +1215,29 @@ INI
 #
 sub get_gene_specific_list {
   my $self = shift;
+  my $dbi = shift;
+
+  $dbi = $self->xref->dbc unless defined $dbi;
 
   my @list = qw(DBASS3 DBASS5 EntrezGene miRBase RFAM TRNASCAN_SE RNAMMER UniGene Uniprot_gn WikiGene MIM_GENE MIM_MORBID HGNC MGI ZFIN_ID FlyBaseName_gene RGD SGD_GENE VGNC wormbase_gseqname wormbase_locus Xenbase);
 
-  return @list;
+  # Check the sources are used in the database considered
+  my (@used_list, $sql, $sth, $count);
+  foreach my $source (@list) {
+    $sql = "SELECT COUNT(*) FROM xref x, source s WHERE s.source_id = x.source_id AND s.name = '$source';";
+    $sth = $dbi->prepare($sql);
+    $sth->execute();
+    $sth->bind_columns(\$count);
+    $sth->fetch(); 
+    $sth->finish();
+    if ($count > 0) {
+      push @used_list, $source;
+    }
+  }
+
+  return @used_list;
 }
+
 
 
 #
@@ -1230,14 +1247,11 @@ sub source_defined_move{
   my $self = shift;
   my $dbi = shift;
 
-  my $tester = XrefMapper::TestMappings->new($self);
-  if($tester->unlinked_entries){
-    croak "Problems found before source_defined_move\n";
-  }
-  foreach my $source ($self->get_gene_specific_list()){
+  foreach my $source ($self->get_gene_specific_list($dbi)){
     $self->biomart_fix($source,"Translation","Gene", undef, undef, $dbi);
     $self->biomart_fix($source,"Transcript","Gene", undef, undef, $dbi);
   }
+  my $tester = XrefMapper::TestMappings->new($self);
   if($tester->unlinked_entries){
     croak "Problems found after source_defined_move\n";
   }
