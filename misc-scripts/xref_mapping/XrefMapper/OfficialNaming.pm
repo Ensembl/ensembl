@@ -538,28 +538,27 @@ sub set_transcript_and_gene_display_xref_via_clone_name{
   my $g_source_id;
   my $desc;
   my $name;
-      if (defined($ens_clone_names->{$gene_id})) {
-	  if(defined($clone_name)){
-	      $name = $clone_name;
-	      $t_source_id = $dbname_to_source_id->{"Clone_based_ensembl_transcript"};
-	      $g_source_id = $dbname_to_source_id->{"Clone_based_ensembl_gene"};
-	      $desc = "via ensembl clone name";
-	  }
-	  else{
-	      croak "No name";
-	  }
-	  my $num = 1;
-	  my $unique_name = $name.".".$num;
-	  while(defined($xref_added->{$unique_name.":".$g_source_id})){
-	      $num++;
-	      $unique_name = $name.".".$num;
-	  }
-	  $name = $unique_name;
-      } else {	  
-	  $ens_clone_names->{$gene_id} = 1;
-	  $keep_gene = 1;
-	  return $keep_gene;
-      }
+  if (defined($ens_clone_names->{$gene_id})) {
+    if(defined($clone_name)){
+      $name = $clone_name;
+      $t_source_id = $dbname_to_source_id->{"Clone_based_ensembl_transcript"};
+      $g_source_id = $dbname_to_source_id->{"Clone_based_ensembl_gene"};
+      $desc = "via ensembl clone name";
+    } else{
+      croak "No name";
+    }
+    my $num = 1;
+    my $unique_name = $name.".".$num;
+    while(defined($xref_added->{$unique_name.":".$g_source_id})){
+      $num++;
+      $unique_name = $name.".".$num;
+    }
+    $name = $unique_name;
+  } else {
+    $ens_clone_names->{$gene_id} = 1;
+    $keep_gene = 1;
+    return $keep_gene;
+  }
   
   # first add the gene xref and set display_xref_id
   # store the data
@@ -588,7 +587,6 @@ sub set_transcript_and_gene_display_xref_via_clone_name{
     $xref_added->{$id.":".$t_source_id} = $$max_xref_id;
     
     $$max_object_xref_id++;
-    #	  print "$id\t$t_source_id\t".$xref_added->{$id.":".$t_source_id}."\n";
     $ins_object_xref_sth->execute($$max_object_xref_id, $tran_id, 'Transcript', $xref_added->{$id.":".$t_source_id}, undef);
     $ins_dep_ix_sth->execute($$max_object_xref_id, 100, 100);
     $set_tran_display_xref_sth->execute($$max_xref_id, $tran_id);
