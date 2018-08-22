@@ -1131,8 +1131,6 @@ sub get_new_dbname_sources{
 
   my @list = qw(
 Clone_based_ensembl_gene
-RFAM_gene_name
-miRBase_gene_name
 Clone_based_ensembl_transcript
 RFAM_trans_name
 miRBase_trans_name
@@ -1170,8 +1168,6 @@ sub delete_old_data{
 
  my @sources = qw(
 Clone_based_ensembl_gene
-RFAM_gene_name
-miRBase_gene_name
 Clone_based_ensembl_transcript
 RFAM_trans_name
 miRBase_trans_name);
