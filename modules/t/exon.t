@@ -76,6 +76,9 @@ ok(&test_getter_setter($exon, 'end_phase', 1));
 ok( test_getter_setter( $exon, "created_date", time() ));
 ok( test_getter_setter( $exon, "modified_date", time() ));
 
+# Test that no parameter to is_coding() throws an exception
+throws_ok { $exon->is_coding() } qr/parameter is required/, "Transcript parameter required for is_coding()";
+
 #
 # find supporting evidence for the exon
 #
