@@ -1145,7 +1145,7 @@ sub fetch_all {
 
   my @out;
   while($sth->fetch()) {
-    if(!defined($bad_vals{$seq_region_id}) && (!%good_vals || $good_vals{$seq_region_id})){
+    if(!defined($bad_vals{$seq_region_id}) && (!$only_protein_coding || $good_vals{$seq_region_id})){
       my $cs = $csa->fetch_by_dbID($cs_id);
 
       if(!$cs) {
