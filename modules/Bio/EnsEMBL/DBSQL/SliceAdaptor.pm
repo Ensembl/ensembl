@@ -977,6 +977,9 @@ sub get_seq_region_id {
   Arg[5]     : bool $include_lrg (optional)  (default 0)
                If set lrg regions will be returned aswell.
 
+  Arg[6]     : bool $only_protein_coding (optional)  (default 0)
+               If set, regions, having proteing coding genes (coding_cnt attrib > 0), will be returned.
+
 
   Example    : @chromos = @{$slice_adaptor->fetch_all('chromosome','NCBI33')};
                @contigs = @{$slice_adaptor->fetch_all('contig')};
@@ -1013,7 +1016,7 @@ sub fetch_all {
   my $cs_name = shift;
   my $cs_version = shift || '';
 
-  my ($include_non_reference, $include_duplicates, $include_lrg) = @_;
+  my ($include_non_reference, $include_duplicates, $include_lrg, $only_protein_coding) = @_;
 
   #
   # verify existance of requested coord system and get its id
@@ -1023,6 +1026,7 @@ sub fetch_all {
 
   return [] if ( !$orig_cs );
 
+  my %good_vals=();
   my %bad_vals=();
 
 
@@ -1077,6 +1081,34 @@ sub fetch_all {
   }
 
   #
+  # if we want only regions, with protein_coding genes then add them to the good list;
+  #
+  if ( $only_protein_coding ) {
+    my $sth =
+      $self->prepare(   'SELECT sr.seq_region_id '
+                      . 'FROM seq_region sr, seq_region_attrib sra, '
+                      . 'attrib_type at, coord_system cs '
+                      . 'WHERE at.code = "coding_cnt" '
+                      . 'AND sra.value > 0 '
+                      . 'AND sra.seq_region_id = sr.seq_region_id '
+                      . 'AND at.attrib_type_id = sra.attrib_type_id '
+                      . 'AND sr.coord_system_id = cs.coord_system_id '
+                      . 'AND cs.species_id = ?' );
+
+    $sth->bind_param( 1, $self->species_id(), SQL_INTEGER );
+    $sth->execute();
+
+    my ($seq_region_id);
+    $sth->bind_columns( \$seq_region_id );
+
+    while ( $sth->fetch() ) {
+      $good_vals{$seq_region_id} = 1;
+    }
+  }
+
+
+
+  #
   # Retrieve the seq_regions from the database
   #
 
@@ -1113,7 +1145,7 @@ sub fetch_all {
 
   my @out;
   while($sth->fetch()) {
-    if(!defined($bad_vals{$seq_region_id})){
+    if(!defined($bad_vals{$seq_region_id}) && (!%good_vals || $good_vals{$seq_region_id})){
       my $cs = $csa->fetch_by_dbID($cs_id);
 
       if(!$cs) {
