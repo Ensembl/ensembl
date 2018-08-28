@@ -1281,8 +1281,7 @@ sub is_constitutive {
 
 =head2 is_coding
 
-  Arg [1]    : Boolean $is_coding
-  Arg [2]    : Bio::EnsEMBL::Transcript
+  Arg [1]    : Bio::EnsEMBL::Transcript
   Example    : $exon->is_coding()
   Description: Says if the exon is within the translation or not
   Returntype : Int
@@ -1294,6 +1293,8 @@ sub is_constitutive {
 
 sub is_coding {
   my ( $self, $transcript) = @_;
+
+  if (!$transcript) { throw("Transcript parameter is required for " . __PACKAGE__ . "->is_coding()."); }
 
   if (!$transcript->translate) { return 0; }
 
