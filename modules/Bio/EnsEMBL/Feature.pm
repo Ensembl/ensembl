@@ -1466,7 +1466,7 @@ sub feature_so_acc {
     $so_acc = $ref->SO_ACC;
   };
  
-  unless ($so_acc || $ref eq 'Bio::EnsEMBL::Feature' ) {
+  unless ($so_acc || $ref->isa('Bio::EnsEMBL::Feature') ) {
     throw( "constant SO_ACC in ${ref} is not defined");
   }
 
