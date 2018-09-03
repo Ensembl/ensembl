@@ -32,7 +32,6 @@ my %result = map{$_ => 1} @result;
 
 my @exceptions = ('/Bio/EnsEMBL/Utils/TranscriptAlleles.pm', 
    	       	 '/Bio/EnsEMBL/Utils/ensembl_init.example',
-             '/Bio/EnsEMBL/AlignStrainSlice',
              '/Bio/EnsEMBL/Feature',
              '/Bio/EnsEMBL/DBSQL/BaseFeatureAdaptor.pm',
              '/Bio/EnsEMBL/DBSQL/DensityFeatureAdaptor.pm',

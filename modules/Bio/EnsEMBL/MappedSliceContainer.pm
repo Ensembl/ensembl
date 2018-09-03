@@ -110,7 +110,6 @@ mapper on the existing MappedSlices.
   Bio::EnsEMBL::DBSQL::AssemblySliceAdaptor
   Bio::EnsEMBL::Compara::AlignSlice
   Bio::EnsEMBL::Compara::AlignSlice::Slice
-  Bio::EnsEMBL::AlignStrainSlice
   Bio::EnsEMBL::StrainSlice
 
 =cut
