@@ -127,7 +127,6 @@ by an adaptor/factory.
   Bio::EnsEMBL::DBSQL::AssemblySliceAdaptor
   Bio::EnsEMBL::Compara::AlignSlice
   Bio::EnsEMBL::Compara::AlignSlice::Slice
-  Bio::EnsEMBL::AlignStrainSlice
   Bio::EnsEMBL::StrainSlice
 
 =cut
