@@ -23,9 +23,10 @@ use strict;
 use warnings;
 use Carp;
 use DBI;
-
+use Bio::EnsEMBL::DBSQL::DBConnection;
 use File::Spec::Functions;
 use IO::File;
+use English;
 
 sub new
 {
@@ -33,12 +34,15 @@ sub new
 
   my $class = ref $proto || $proto;
   my $self =  bless {}, $class;
-
-  $self->host($arg_ref->{host});
-  $self->dbname($arg_ref->{dbname});
-  $self->user($arg_ref->{user});
-  $self->pass($arg_ref->{pass} || '');
-  $self->port($arg_ref->{port} || '3306');
+  
+  $self->dbc(ref $arg_ref eq 'Bio::EnsEMBL::DBSQL::DBConnection' 
+    ? $arg_ref : Bio::EnsEMBL::DBSQL::DBConnection->new(
+    -HOST => $arg_ref->{host},
+    -DBNAME => $arg_ref->{dbname},
+    -USER => $arg_ref->{user},
+    -PASS => $arg_ref->{pass} || '',
+    -PORT => $arg_ref->{port} || '3306'
+  ));
   $self->verbose($arg_ref->{verbose});
 
   return $self;
@@ -52,44 +56,40 @@ sub verbose {
   return $self->{_verbose};
 }
 
+sub dbc {
+  my ($self, $arg) = @_;
+  (defined $arg) &&
+    ($self->{_dbc} = $arg );
+  return $self->{_dbc};
+}
 sub host {
   my ($self, $arg) = @_;
-
-  (defined $arg) &&
-    ($self->{_host} = $arg );
-  return $self->{_host};
+  $self->dbc->host($arg) if defined $arg;
+  return $self->dbc->host;
 }
 
 sub dbname {
   my ($self, $arg) = @_;
-
-  (defined $arg) &&
-    ($self->{_dbname} = $arg );
-  return $self->{_dbname};
+  $self->dbc->dbname($arg) if defined $arg;
+  return $self->dbc->dbname;
 }
 
 sub user {
   my ($self, $arg) = @_;
-
-  (defined $arg) &&
-    ($self->{_user} = $arg );
-  return $self->{_user};
+  $self->dbc->user($arg) if defined $arg;
+  return $self->dbc->user;
 }
 
 sub pass {
   my ($self, $arg) = @_;
-
-  (defined $arg) &&
-    ($self->{_pass} = $arg );
-  return $self->{_pass};
+  $self->dbc->pass($arg) if defined $arg;
+  return $self->dbc->pass;
 }
 
 sub port {
   my ($self, $arg) = @_;
-
-  (defined $arg) &&
-    ($self->{_port} = $arg );
-  return $self->{_port};
+  $self->dbc->port($arg) if defined $arg;
+  return $self->dbc->port;
 }
 
 sub dbi
@@ -117,16 +117,18 @@ sub dbi
 
 sub create {
   my ($self, $sql_dir, $force, $drop_db) = @_;
-
-  my $user   = $self->user;
-  my $dbname = $self->dbname;
-  my $host   = $self->host;
-  my $pass   = $self->pass;
-  my $port = $self->port;
-
-  my $dbh = DBI->connect( "DBI:mysql:host=$host:port=$port", $user, $pass,
-                          {'RaiseError' => 1});
-
+  $self->recreate_database($force,$drop_db);
+  $self->populate($sql_dir, $force);
+}
+sub populate {
+  my ($self, $sql_dir, $force) = @_;
+  my $table_file = catfile( $sql_dir, 'sql', 'table.sql' );
+  my $metadata_file = $self->prepare_metadata_file($sql_dir, $force);
+  $self->populate_with_file($table_file);
+  $self->populate_with_file($metadata_file);
+}
+sub prepare_metadata_file {
+  my ($self, $sql_dir, $force) = @_;
   my $metadata_file =
     catfile( $sql_dir, 'sql', 'populate_metadata.sql' );
   my $ini_file = catfile( $sql_dir, 'xref_config.ini' );
@@ -174,7 +176,17 @@ sub create {
 
     }
   } ## end if ( !defined($meta_tm...
-
+  return $metadata_file;
+}
+sub recreate_database {
+  my ($self,$force, $drop_db) = @_;
+  my $user   = $self->user;
+  my $dbname = $self->dbname;
+  my $host   = $self->host;
+  my $pass   = $self->pass;
+  my $port = $self->port;
+  my $dbh = DBI->connect( "DBI:mysql:host=$host:port=$port", $user, $pass,
+                          {'RaiseError' => 1});
   # check to see if the database already exists
   my %dbs = map {$_->[0] => 1} @{$dbh->selectall_arrayref('SHOW DATABASES')};
 
@@ -206,30 +218,18 @@ sub create {
   }
 
   $dbh->do( 'CREATE DATABASE ' . $dbname );
-
-  my $table_file = catfile( $sql_dir, 'sql', 'table.sql' );
-
-  printf( "Creating %s from %s\n", $dbname, $table_file ) if($self->verbose);
-  if ( !-e $table_file ) {
-    croak( "Cannot open  " . $table_file );
-  }
-
-  my $cmd =
-    "mysql -u $user -p'$pass' -P $port -h $host $dbname < $table_file";
-  system($cmd) == 0
-    or croak("Cannot execute the following command (exit $?):\n$cmd\n");
-
-  printf( "Populating metadata in %s from %s\n",
-          $dbname, $metadata_file ) if($self->verbose);
-  if ( !-e $metadata_file ) {
-    croak( "Cannot open " . $metadata_file );
-  }
-
-  $cmd = "mysql -u $user -p'$pass' -P $port -h $host "
-    . "$dbname < $metadata_file";
-  system($cmd) == 0
-    or croak("Cannot execute the following command (exit $?):\n$cmd\n");
-  return;
 }
 
+sub populate_with_file {
+  my ($self, $sql_file) = @_;
+  my $previous_input_record_separator = $INPUT_RECORD_SEPARATOR;
+  $INPUT_RECORD_SEPARATOR = ";";
+  open(my $sql_fh, "<", $sql_file) or die $sql_file;
+  while(<$sql_fh>){
+    s/#(.*?)\n//g;
+    next if /^\s+$/;
+    $self->dbc->do($_);
+  }
+  $INPUT_RECORD_SEPARATOR = $previous_input_record_separator;
+}
 1;
