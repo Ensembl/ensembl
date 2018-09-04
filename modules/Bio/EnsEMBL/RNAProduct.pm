@@ -306,7 +306,7 @@ sub end {
     Return type : Integer
     Exceptions  : None
     Caller      : General
-    Status      : At Risk (Under Development)
+    Status      : Stable
 
 =cut
 
@@ -338,7 +338,7 @@ sub genomic_end {
     Return type : Integer
     Exceptions  : None
     Caller      : General
-    Status      : At Risk (Under Development)
+    Status      : Stable
 
 =cut
 
