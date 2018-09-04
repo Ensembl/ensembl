@@ -2,7 +2,7 @@
 
 ENSDIR="${ENSDIR:-$PWD}"
 
-export PERL5LIB=$ENSDIR/bioperl-live:$ENSDIR/ensembl-test/modules:$PWD/modules:$ENSDIR/ensembl-variation/modules:$ENSDIR/ensembl-compara/modules
+export PERL5LIB=$ENSDIR/bioperl-live:$ENSDIR/ensembl-test/modules:$PWD/modules:$ENSDIR/ensembl-variation/modules:$ENSDIR/ensembl-compara/modules:$PWD/misc-scripts/xref_mapping
 export TEST_AUTHOR=$USER
 
 if [ "$DB" = 'mysql' ]; then
