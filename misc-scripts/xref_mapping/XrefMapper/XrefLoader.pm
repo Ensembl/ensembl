@@ -147,6 +147,7 @@ SQL
   my $go_sth       =  $core_dbi->prepare('DELETE ontology_xref.* FROM ontology_xref, object_xref, xref WHERE ontology_xref.object_xref_id = object_xref.object_xref_id AND object_xref.xref_id = xref.xref_id  AND xref.external_db_id = ?');
   my $identity_sth =  $core_dbi->prepare('DELETE identity_xref FROM identity_xref, object_xref, xref WHERE identity_xref.object_xref_id = object_xref.object_xref_id AND object_xref.xref_id = xref.xref_id AND xref.external_db_id = ?');
   my $object_sth   =  $core_dbi->prepare('DELETE object_xref FROM object_xref, xref WHERE object_xref.xref_id = xref.xref_id AND xref.external_db_id = ?');
+  my $master_sth    = $core_dbi->prepare('DELETE ox, d FROM xref mx, xref x, dependent_xref d LEFT JOIN object_xref ox ON ox.object_xref_id = d.object_xref_id WHERE mx.xref_id = d.master_xref_id AND dependent_xref_id = x.xref_id AND mx.external_db_id = ?');
   my $dependent_sth = $core_dbi->prepare('DELETE d FROM dependent_xref d, xref x WHERE d.dependent_xref_id = x.xref_id and x.external_db_id = ?');
   my $xref_sth     =  $core_dbi->prepare('DELETE FROM xref WHERE xref.external_db_id = ?');
   my $unmapped_sth =  $core_dbi->prepare('DELETE FROM unmapped_object WHERE type="xref" and external_db_id = ?');
@@ -181,6 +182,8 @@ SQL
     print "\tDeleted $affected_rows identity_xref row(s)\n" if $verbose;
     $affected_rows = $object_sth->execute($ex_id);  
     print "\tDeleted $affected_rows object_xref row(s)\n" if $verbose;
+    $affected_rows = $master_sth->execute($ex_id);
+    print "\tDeleted $affected_rows xref, object_xref and dependent_xref row(s)\n" if $verbose;
     $affected_rows = $dependent_sth->execute($ex_id);
     print "\tDeleted $affected_rows dependent_xref row(s)\n" if $verbose;
     $affected_rows = $xref_sth->execute($ex_id);
