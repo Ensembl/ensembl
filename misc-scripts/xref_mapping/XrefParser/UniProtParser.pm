@@ -451,6 +451,10 @@ sub create_xrefs {
       	if($source =~ "HGNC"){
       	  next;
       	}
+        # Nomenclature data is imported directly from the source
+        if($source =~ "VGNC"){
+          next;
+        }
       	if($source =~ "Orphanet"){
       	  #we don't want to parse Orphanet xrefs via Uniprot, we get them from Orphanet with descriptions
       	  next;
