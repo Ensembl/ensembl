@@ -115,7 +115,7 @@ sub run {
       my ($ensembl_stable_id, $reactome_id, $url, $description, $evidence, $species) = split /\t+/,$line;
       if ($description!~ /^[A-Za-z0-9_,\(\)\/\-\.:\+'&;"\/\?%>\s\[\]]+$/) { next; }
   
-      $species =~ s/\s//;
+      $species =~ s/\s/_/;
       $species = lc($species);
       if ( $alias2species_id{$species} ){
         $parsed_count++;
