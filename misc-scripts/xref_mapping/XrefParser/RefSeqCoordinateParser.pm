@@ -240,7 +240,7 @@ sub run_script {
 
 # Create a range registry for all the exons of the refseq transcript
       foreach my $transcript_of (sort { $a->start() <=> $b->start() } @$transcripts_of) {
-	my $id;
+	my ($id, $tl_id);
 	# We're moving to RefSeq accessions being stored as xrefs rather than
 	# stable ids. But we also need to maintain backwards compatbility.
 	# If it's the new kind, where there's a display_xref use that,
@@ -405,12 +405,17 @@ sub run_script {
 # Also store refseq protein as direct xref for ensembl translation, if translation exists
           if (defined $tl && defined $tl_of) {
             if ($tl_of->seq eq $tl->seq) {
-              ($acc, $version) = split(/\./, $tl_of->stable_id());
+              $tl_id = $tl_of->stable_id();
+              my @xrefs = grep {$_->{dbname} eq 'GenBank'} @{$tl_of->get_all_DBEntries};
+              if(scalar @xrefs == 1) {
+                $tl_id = $xrefs[0]->primary_id();
+              }
+              ($acc, $version) = split(/\./, $tl_id);
               $source_id = $peptide_source_id;
               $source_id = $pred_peptide_source_id if $acc =~ /^XP_/;
               my $tl_xref_id = $self->add_xref({ acc => $acc,
                                               version => $version,
-                                              label => $acc,
+                                              label => $tl_id,
                                               desc => undef,
                                               source_id => $source_id,
                                               species_id => $species_id,
