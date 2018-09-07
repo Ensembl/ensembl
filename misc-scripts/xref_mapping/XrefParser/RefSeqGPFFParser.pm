@@ -185,9 +185,40 @@ sub create_xrefs {
 
   while ( $_ = $refseq_io->getline() ) {
 
-    my $xref;
+    my $xref = $self->xref_from_record(
+      $_,
+      \%name2species_id, \%taxonomy2species_id, 
+      $pred_mrna_source_id, $pred_ncrna_source_id,
+      $mrna_source_id, $ncrna_source_id,
+      $pred_peptide_source_id, $peptide_source_id,
+      $entrez_source_id, $wiki_source_id, $add_dependent_xref_sth,
+      $species_id, $type, \%refseq_ids,\%entrez_ids,\%wiki_ids
+     );
 
-    my $entry = $_;
+      push @xrefs, $xref if $xref;
+
+  } # while <REFSEQ>
+
+  $refseq_io->close();
+
+  print "Read " . scalar(@xrefs) ." xrefs from $file\n" if($verbose);
+
+  return \@xrefs;
+
+}
+sub xref_from_record {
+    my ( $self, $entry, $name2species_id, $taxonomy2species_id,
+      $pred_mrna_source_id, $pred_ncrna_source_id,
+      $mrna_source_id, $ncrna_source_id,
+      $pred_peptide_source_id, $peptide_source_id,
+      $entrez_source_id, $wiki_source_id, $add_dependent_xref_sth,
+      $species_id, $type, $refseq_ids,$entrez_ids,$wiki_ids
+) = @_;
+    my %name2species_id = %$name2species_id;
+    my %taxonomy2species_id = %$taxonomy2species_id;
+    my %refseq_ids = %$refseq_ids;
+    my %entrez_ids = %$entrez_ids;
+    my %wiki_ids = %$wiki_ids;
     chomp $entry;
 
     my ($species) = $entry =~ /\s+ORGANISM\s+(.*)\n/;
@@ -209,6 +240,7 @@ sub create_xrefs {
         && defined $species_id_check
         && $species_id == $species_id_check )
     {
+      my $xref = {};
       my ($acc) = $entry =~ /ACCESSION\s+(\S+)/;
       my ($ver) = $entry =~ /VERSION\s+(\S+)/;
       my ($refseq_pair) = $entry =~ /DBSOURCE\s+REFSEQ: accession (\S+)/;
@@ -328,19 +360,8 @@ sub create_xrefs {
       # Don't add SGD Xrefs, as they are mapped directly from SGD ftp site
 
       # Refseq's do not tell whether the mim is for the gene of morbid so ignore for now.
-
-      push @xrefs, $xref;
-
-    }# if defined species
-
-  } # while <REFSEQ>
-
-  $refseq_io->close();
-
-  print "Read " . scalar(@xrefs) ." xrefs from $file\n" if($verbose);
-
-  return \@xrefs;
-
+      return $xref;
+  }
 }
 
 # --------------------------------------------------------------------------------
