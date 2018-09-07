@@ -101,8 +101,8 @@ DSS
   my $dep_sth = $dbi->prepare($sql);
 
   # validate species names
-  my $species_id = $self->validate_species($species, $verbose);
-  my $division_id = $self->validate_species($division, $verbose);
+  my $species_id = $self->validate_species($species, $verbose) if defined $species;
+  my $division_id = $self->validate_species($division, $verbose) if defined $division;
   my @species_sources = ($species_id);
   push @species_sources, $division_id if defined $division_id;
   push @species_sources, $taxon_id if defined $taxon_id;
@@ -112,7 +112,7 @@ DSS
   exit(1) if ( !$self->validate_sources(\@species_sources,$notsources, $verbose) );
 
   # build SQL
-  my $species_sql = "";
+  my $species_sql;
   if (@species_sources) {
     $species_sql .= " AND su.species_id IN (";
     for ( my $i = 0 ; $i < @species_sources; $i++ ) {
