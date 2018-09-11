@@ -167,6 +167,14 @@ sub usage {
                     Specifying an unknown species will cause a list
                     of valid species to be printed.
 
+  -taxon            Which taxon to import.
+                    Can be used as an alternative to species.
+
+  -division         Which division the species belongs to.
+                    This defines which sources will be parsed and does
+                    not necessarily imply taxonomic relationship
+                    (e.g. ciona intestinalis is a vertebrate in this context)
+
   -source           Which sources to import. Multiple -source arguments
                     and/or comma, separated lists of sources are
                     allowed.  Specifying an unknown source will cause a
