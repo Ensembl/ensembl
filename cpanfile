@@ -1,3 +1,4 @@
+requires 'Devel::CheckLib';
 requires 'DBI';
 requires 'DBD::mysql';
 requires 'HTTP::Tiny';
