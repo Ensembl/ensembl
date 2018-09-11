@@ -1,10 +1,10 @@
+requires 'Devel::CheckLib';
 requires 'DBI';
 requires 'DBD::mysql';
 requires 'HTTP::Tiny';
 requires 'IO::Compress::Gzip';
 requires 'URI::Escape';
 requires 'Config::IniFiles';
-requires 'Devel::CheckLib';
 
 test_requires 'Test::Warnings';
 test_requires 'Test::Differences';
