@@ -370,8 +370,7 @@ sub genomic_start {
   Description: Gets a list of Attributes of this rnaproduct.
                Optionally just get Attributes for given code.
   Returntype : listref Bio::EnsEMBL::Attribute
-  Exceptions : Throws if there is no adaptor or defined for the rnaproduct
-               object.
+  Exceptions : none
   Caller     : general
   Status     : Stable
 
@@ -380,11 +379,8 @@ sub genomic_start {
 sub get_all_Attributes {
   my ($self, $attrib_code) = @_;
 
-  if (! exists $self->{'attributes'}) {
-    if (!$self->adaptor()) {
-      throw("Adaptor not set for rnaproduct, cannot fetch its attributes");
-    }
-
+  # if not cached, retrieve all of the attributes for this rnaproduct
+  if (!defined($self->{'attributes'}) && defined($self->adaptor())) {
     my $aa = $self->adaptor->db->get_AttributeAdaptor();
     $self->{'attributes'} = $aa->fetch_all_by_RNAProduct($self);
   }
