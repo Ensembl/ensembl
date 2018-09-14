@@ -249,6 +249,154 @@ sub list_dbIDs {
 }
 
 
+=head2 remove
+
+  Arg [1]    : Bio::EnsEMBL::RNAProduct $rnaproduct
+               The rnaproduct to be removed from the database
+  Example    : $rpID = $rp_adaptor->remove($rnaproduct, $transcript->dbID());
+  Description: Removes a rnaproduct, along with all associated information
+               from the database.
+  Returntype : none
+  Exceptions : throw on incorrect arguments
+  Caller     : ?
+  Status     : Stable
+
+=cut
+
+sub remove {
+  my ($self, $rnaproduct) = @_;
+
+  if (!ref($rnaproduct) || !$rnaproduct->isa('Bio::EnsEMBL::RNAProduct')) {
+    throw("$rnaproduct is not a EnsEMBL rnaproduct");
+  }
+
+  my $db = $self->db();
+
+  # Do nothing if the object is not stored to begin with
+  if (!$rnaproduct->is_stored($db)) {
+    return;
+  }
+
+  # Remove xrefs
+  my $dbe_adaptor = $db->get_DBEntryAdaptor();
+  for my $dbe (@{ $rnaproduct->get_all_DBEntries() }) {
+    $dbe_adaptor->remove_from_object($dbe, $rnaproduct, 'RNAProduct');
+  }
+
+  # Remove attributes
+  my $attr_adaptor = $db->get_AttributeAdaptor();
+  $attr_adaptor->remove_from_RNAProduct($rnaproduct);
+
+  # Remove rnaproduct itself
+  my $sth = $self->prepare("DELETE FROM rnaproduct WHERE rnaproduct_id = ?");
+  $sth->bind_param(1, $rnaproduct->dbID(), SQL_INTEGER);
+  $sth->execute();
+  $sth->finish();
+
+  # Mark the object as local
+  $rnaproduct->dbID(undef);
+  $rnaproduct->adaptor(undef);
+
+  return;
+}
+
+
+=head2 store
+
+  Arg [1]    : Bio::EnsEMBL::RNAProduct $rnaproduct
+               The rnaproduct to be written to the database
+  Arg [2]    : Int $transcript_dbID
+               The identifier of the transcript that this rnaproduct is
+               associated with
+  Example    : $rpID = $rp_adaptor->store($rnaproduct, $transcript->dbID());
+  Description: Stores a rnaproduct in the database and returns the new
+               internal identifier for the stored rnaproduct.
+  Returntype : Int
+  Exceptions : throw on incorrect arguments
+  Caller     : general
+  Status     : Stable
+
+=cut
+
+sub store {
+  my ($self, $rnaproduct, $transcript_dbID) = @_;
+
+  if (!ref($rnaproduct) || !$rnaproduct->isa('Bio::EnsEMBL::RNAProduct')) {
+    throw("$rnaproduct is not a EnsEMBL rnaproduct - not storing");
+  }
+
+  my $db = $self->db();
+
+  # Avoid creating duplicate entries
+  if ($rnaproduct->is_stored($db)) {
+    return $rnaproduct->dbID();
+  }
+
+  # Store rnaproduct
+
+  my @columns = qw{ transcript_id seq_start seq_end };
+
+  # FIXME: maybe we do need a separate adaptor for this after all
+  my @canned_columns = ( 'rnaproduct_type_id' );
+  my @canned_values
+    = ( '(SELECT rnaproduct_type_id FROM rnaproduct_type WHERE code=?)' );
+
+  if (defined($rnaproduct->stable_id())) {
+    push @columns, 'stable_id', 'version';
+
+    my $created = $db->dbc->from_seconds_to_date($rnaproduct->created_date());
+    if ($created) {
+      push @canned_columns, 'created_date';
+      push @canned_values,  $created;
+    }
+
+    my $modified = $db->dbc->from_seconds_to_date($rnaproduct->modified_date());
+    if ($modified) {
+      push @canned_columns, 'modified_date';
+      push @canned_values,  $modified;
+    }
+  }
+
+  my $column_string = join(', ', @columns, @canned_columns);
+  my $value_string  = join(', ', ('?') x @columns, @canned_values);
+  my $store_rnaproduct_sql
+    = "INSERT INTO rnaproduct ( $column_string ) VALUES ( $value_string )";
+  my $rp_st = $self->prepare($store_rnaproduct_sql);
+
+  $rp_st->bind_param(  1, $transcript_dbID,         SQL_INTEGER);
+  $rp_st->bind_param(  2, $rnaproduct->start(),     SQL_INTEGER);
+  $rp_st->bind_param(  3, $rnaproduct->end(),       SQL_INTEGER);
+  if (defined($rnaproduct->stable_id())) {
+    $rp_st->bind_param(4, $rnaproduct->stable_id(), SQL_VARCHAR);
+    $rp_st->bind_param(5, $rnaproduct->version(),   SQL_INTEGER);
+  }
+  $rp_st->bind_param(  6, $rnaproduct->type_code(), SQL_VARCHAR);
+  $rp_st->execute();
+  $rp_st->finish();
+
+  # Retrieve the newly assigned dbID
+  my $rp_dbID = $self->last_insert_id('rnaproduct_id', undef, 'rnaproduct');
+
+  # Store attributes
+  $rnaproduct->synchronise_attributes();
+  my $attr_adaptor = $db->get_AttributeAdaptor();
+  $attr_adaptor->store_on_RNAProduct($rp_dbID,
+                                     $rnaproduct->get_all_Attributes());
+
+  # Store xrefs
+  my $dbe_adaptor = $db->get_DBEntryAdaptor();
+  for my $dbe (@{ $rnaproduct->get_all_DBEntries() }) {
+    $dbe_adaptor->store($dbe, $rp_dbID, 'RNAProduct', 1);
+  }
+
+  # Link the rnaproduct object to its data row
+  $rnaproduct->dbID($rp_dbID);
+  $rnaproduct->adaptor($self);
+
+  return $rp_dbID;
+}
+
+
 =head2 _list_dbIDs
 
   Arg[1]      : String $table
