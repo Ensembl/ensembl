@@ -115,8 +115,8 @@ sub new { ## no critic (Subroutines::RequireArgUnpacking)
                   from. Accepted values are 3 and 5 for 3' and 5',
                   respectively.
     Return type : Integer
-    Exceptions  : throw if setter is passed an incorrect value;
-                  warn if multiple 'mirna_arm' attributes exist.
+    Exceptions  : throw if setter is passed an incorrect value
+                  or if multiple 'mirna_arm' attributes exist.
     Caller      : General
     Status      : Stable
 
@@ -133,8 +133,8 @@ sub arm {
     my $n_arms = scalar @{$arm_attrs};
     if ($n_arms > 0) {
       if ($n_arms > 1) {
-	warning("MicroRNA " . $self->display_id() .
-	        " has multiple arm attributes, using first");
+	throw("MicroRNA " . $self->display_id() .
+	      " has multiple arm attributes");
       }
       $self->{'arm'} = $arm_attrs->[0]->value();
     }
