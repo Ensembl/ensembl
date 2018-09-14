@@ -278,7 +278,7 @@ subtest 'xref functionality' => sub {
   my $dbe = Bio::EnsEMBL::DBEntry->new(
     -primary_id => 'test_id',
     -version    => 1,
-    -dbname     => 'miRBase',
+    -dbname     => 'miRNA_Registry',
     -display_id => 'test_id'
   );
   $rp->add_DBEntry($dbe);
