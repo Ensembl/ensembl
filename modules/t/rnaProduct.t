@@ -40,6 +40,7 @@ $loaded = 1;
 ok(1, 'Test set-up completed');
 
 my $db = $multi->get_DBAdaptor('core');
+my $type_mapper = Bio::EnsEMBL::Utils::RNAProductTypeMapper::mapper();
 
 my $rp = Bio::EnsEMBL::RNAProduct->new();
 
@@ -84,8 +85,8 @@ ok(test_getter_setter($rp, 'version', 13), 'Test getter/setter version()');
 ok(test_getter_setter($rp, 'created_date', time()), 'Test getter/setter created_date()');
 ok(test_getter_setter($rp, 'modified_date', time()), 'Test getter/setter modified_date()');
 
-# FIXME: use RNAProductTypeMapper instead of hardcoded type code
-is($rp->type_code(), 'generic', 'RNAProduct object has expected type code');
+is($rp->type_code(), $type_mapper->class_to_type_code(ref($rp)),
+   'RNAProduct object has expected type code');
 
 subtest 'Test stable_id_version() functionality' =>  sub {
   ok(test_getter_setter($rp, 'stable_id_version', 3.14),
@@ -211,9 +212,9 @@ $rp = undef;
 $rp = $rp_a->fetch_by_stable_id('ENSM00000000001');
 ok($rp, 'Can fetch RNAProduct by stable ID');
 
-# FIXME: use RNAProductTypeMapper instead of hardcodings
 isa_ok($rp, 'Bio::EnsEMBL::MicroRNA', 'miRNA object from database');
-is($rp->type_code(), 'miRNA', 'type_code is miRNA');
+is($rp->type_code(), $type_mapper->class_to_type_code(ref($rp)),
+   'MicroRNA object has expected type code');
 
 # FIXME: perform an in-depth inspection of one of the fetched RNAProducts,
 # to make sure new_fast() call all of these fetch methods use does what it
