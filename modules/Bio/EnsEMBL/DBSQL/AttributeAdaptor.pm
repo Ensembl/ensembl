@@ -291,6 +291,22 @@ sub store_on_Transcript {
   return;
 }
 
+sub store_on_RNAProduct {
+  my ($self, $object, $attributes) = @_;
+
+  my $object_id;
+  if (!ref($object)) {
+    $object_id = $object;
+  }
+  else {
+    $object_id = $object->dbID();
+  }
+
+  $self->store_on_Object($object_id, $attributes, 'rnaproduct');
+
+  return;
+}
+
 sub store_on_Translation {
   my ($self, $object, $attributes) = @_;
 
@@ -413,6 +429,18 @@ sub remove_from_Transcript {
   my $object_id = $object->dbID();
   $self->remove_from_Object($object_id, 'transcript', $code);
   
+  return;
+
+}
+
+sub remove_from_RNAProduct {
+  my ($self, $object, $code) = @_;
+
+  assert_ref($object, 'Bio::EnsEMBL::RNAProduct');
+
+  my $object_id = $object->dbID();
+  $self->remove_from_Object($object_id, 'rnaproduct', $code);
+
   return;
 
 }
