@@ -42,10 +42,36 @@ ok(1, 'Test set-up completed');
 my $db = $multi->get_DBAdaptor('core');
 my $type_mapper = Bio::EnsEMBL::Utils::RNAProductTypeMapper::mapper();
 
+
+#
+# Tests for the RNAProductTypeMapper
+#
+
+subtest 'RNAProductTypeMapper tests' => sub {
+  my $rpt_mapper = Bio::EnsEMBL::Utils::RNAProductTypeMapper->mapper();
+
+  my $rpt_mapper2 = Bio::EnsEMBL::Utils::RNAProductTypeMapper->mapper();
+  is($rpt_mapper, $rpt_mapper2, 'mapper() reuses existing instance if present');
+
+  is($rpt_mapper->type_code_to_class('miRNA'), 'Bio::EnsEMBL::MicroRNA',
+     'Can map existing type ID to class');
+  dies_ok(sub { $rpt_mapper->type_code_to_class('semprini'); },
+	  'Exception thrown on unknown type ID');
+
+  is($rpt_mapper->class_to_type_code('Bio::EnsEMBL::RNAProduct'), 'generic',
+     'Can map existing class to type ID');
+  dies_ok(sub { $rpt_mapper->class_to_type_code('Bio::EnsEMBL::Storable'); },
+	  'Exception thrown on unknown rnaproduct class name');
+};
+
+
+#
+# Tests for offline RNAProduct objects
+#
+
 my $rp = Bio::EnsEMBL::RNAProduct->new();
 
 ok($rp, 'RNAProduct constructor works without arguments');
-
 
 # We will use the minimally constructed object from above for further
 # testing so let us get rid of this one as soon as we are done with it.
@@ -155,12 +181,9 @@ is($rp->cdna_end(), $rp->end(),
    'Test if cdna_end() returns the same value as end()');
 
 
-# TODO: More RNAProduct tests
-
-
 #
 # Tests for the mature-RNA adaptor
-##################################
+#
 
 my $rp_a  = $db->get_RNAProductAdaptor();
 
@@ -236,6 +259,7 @@ is($rp->genomic_start(), $rp->transcript()->start() + $rp->start() - 1,
 is($rp->genomic_end(), $rp->transcript()->start() + $rp->end() - 1,
    'genomic_end() gives correct values (forward strand)');
 
+
 subtest 'Attribute functionality' => sub {
   my $rp_all_attrs = $rp->get_all_Attributes();
   cmp_ok(scalar @$rp_all_attrs, '>', 0, 'Get a non-empty list of attributes');
@@ -268,6 +292,7 @@ subtest 'Attribute functionality' => sub {
   # be a good reference.
 };
 
+
 subtest 'xref functionality' => sub {
   my $xrefs = $rp->get_all_DBEntries();
   cmp_ok(scalar @$xrefs, '>', 0, 'Got a non-empty list of DBEntries');
@@ -298,10 +323,9 @@ subtest 'xref functionality' => sub {
 my $rp_exts = $rp_a->fetch_all_by_external_name('hsa-miR-1-3p');
 cmp_ok(scalar @$rp_exts, '>', 0, 'Can fetch RNAProduct by external ID');
 
-# TODO: More RNAProductAdaptor tests
-
 # Test generic_count(), inherited method from BaseAdaptor
 is($rp_a->generic_count(), @{$rp_a->list_dbIDs()}, "Number of features from generic_count is equal to the number of dbIDs from list_dbIDs");
+
 
 #
 # MicroRNA-specific tests
@@ -330,24 +354,89 @@ subtest 'MicroRNA tests' => sub {
 
 
 #
-# Tests for the RNAProduct-type adaptor
-#######################################
+# Operations which modify database entries
+#
 
-subtest 'RNAProductTypeMapper tests' => sub {
-  my $rpt_mapper = Bio::EnsEMBL::Utils::RNAProductTypeMapper->mapper();
+subtest 'Write operations' => sub {
+  my $rp_count = count_rows($db, 'rnaproduct');
+  my $rp_attr_count = count_rows($db, 'rnaproduct_attrib');
+  my $object_xref_count = count_rows($db, 'object_xref');
+  my $xref_count = count_rows($db, 'xref');
+  $multi->save('core', 'rnaproduct', 'rnaproduct_attrib', 'object_xref', 'xref');
 
-  my $rpt_mapper2 = Bio::EnsEMBL::Utils::RNAProductTypeMapper->mapper();
-  is($rpt_mapper, $rpt_mapper2, 'mapper() reuses existing instance if present');
+  my $t_a = $db->get_TranscriptAdaptor();
+  my $ins_parent = $t_a->fetch_by_dbID(21728);
 
-  is($rpt_mapper->type_code_to_class('miRNA'), 'Bio::EnsEMBL::MicroRNA',
-     'Can map existing type ID to class');
-  dies_ok(sub { $rpt_mapper->type_code_to_class('semprini'); },
-	  'Exception thrown on unknown type ID');
+  my %insert_args = (
+    start         => 6,
+    end           => 27,
+    stable_id     => 'ENSM00000000099',
+    version       => 1,
+    created_date  => time(),
+    modified_date => time(),
+    arm           => 5,
+  );
+  my $ins_rp = Bio::EnsEMBL::MicroRNA->new(
+    -SEQ_START     => $insert_args{start},
+    -SEQ_END       => $insert_args{end},
+    -STABLE_ID     => $insert_args{stable_id},
+    -VERSION       => $insert_args{version},
+    -CREATED_DATE  => $insert_args{created_date},
+    -MODIFIED_DATE => $insert_args{modified_date},
+    -ARM           => $insert_args{arm},
+  );
+  my $ins_dbe = Bio::EnsEMBL::DBEntry->new(
+    -primary_id => 'MIMAT0000062',
+    -version    => 1,
+    -dbname     => 'miRNA_Registry',
+    -display_id => 'hsa-let-7a-5p',
+  );
+  is($ins_rp->dbID(), undef, 'MicroRNA dbID not defined before storing');
+  $ins_rp->add_DBEntry($ins_dbe);
+  $rp_a->store($ins_rp, $ins_parent->dbID());
+  isnt($ins_rp->dbID(), undef, 'MicroRNA dbID defined after storing');
+  is($ins_rp->adaptor(), $rp_a,
+     'MicroRNA linked to RNAPRoductAdaptor after storing');
+  is(count_rows($db, 'rnaproduct'), $rp_count + 1,
+     'Post-store rnaproduct row count correct');
+  is(count_rows($db, 'rnaproduct_attrib'), $rp_attr_count + 1,
+     'Post-store rnaproduct_attrib row count correct');
+  is(count_rows($db, 'object_xref'), $object_xref_count + 1,
+     'Post-store object_xref row count correct');
+  is(count_rows($db, 'xref'), $xref_count + 1,
+     'Post-store xref row count correct');
 
-  is($rpt_mapper->class_to_type_code('Bio::EnsEMBL::RNAProduct'), 'generic',
-     'Can map existing class to type ID');
-  dies_ok(sub { $rpt_mapper->class_to_type_code('Bio::EnsEMBL::Storable'); },
-	  'Exception thrown on unknown rnaproduct class name');
+  my $fetched_rp = $rp_a->fetch_by_dbID($ins_rp->dbID());
+  for my $method (keys %insert_args) {
+    is($fetched_rp->$method(), $insert_args{$method},
+       "RNAProduct from database has correct $method value");
+  }
+  is(scalar @{ $fetched_rp->get_all_Attributes() }, 1,
+     'Fetched MicroRNA has correct number of attributes');
+  is(scalar @{ $fetched_rp->get_all_DBEntries() }, 1,
+     'Fetched MicroRNA has correct number of xrefs');
+  isnt($fetched_rp->transcript(), undef,
+       'Fetched MicroRNA has a parent transcript');
+
+  my $del_rp = $rp_a->fetch_by_dbID(1);
+  $rp_a->remove($del_rp);
+  is($del_rp->dbID(), undef, 'Removed MicroRNA has no dbID');
+  is($del_rp->adaptor(), undef, 'Removed MicroRNA not linked to adaptor');
+  is(count_rows($db, 'rnaproduct'), $rp_count,
+     'Post-remove rnaproduct row count correct');
+  is(count_rows($db, 'rnaproduct_attrib'), $rp_attr_count - 1,
+     'Post-remove rnaproduct_attrib row count correct');
+  is(count_rows($db, 'object_xref'), $object_xref_count,
+     'Post-remove object_xref row count correct');
+  # Not a mistake, actual xrefs do NOT get removed by
+  # DBEntryAdaptor::remove_from_object(). See e.g. Doxygen docs
+  # for that method.
+  is(count_rows($db, 'xref'), $xref_count + 1,
+     'Post-remove xref row count correct');
+  is ($rp_a->fetch_by_dbID(1), undef,
+      'Fetching removed MicroRNA returns undef');
+
+  $multi->restore('core', 'rnaproduct', 'rnaproduct_attrib', 'object_xref', 'xref');
 };
 
 
