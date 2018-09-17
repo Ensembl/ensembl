@@ -753,6 +753,65 @@ sub summary_as_hash {
 }
 
 
+=head2 synchronise_attributes
+
+  Example       : $rnaproduct->synchronise_attributes();
+  Description   : Some RNAProduct attributes, e.g. stem-loop arm in case
+                  of MicroRNA, use a local cache of their value for
+                  convenience. Unless the corresponding setters update both
+                  the cache value and the attribute (which would defeat
+                  the convenience thing), we have to make sure the former
+                  get propagated to the latter before storing the object
+                  in the database:
+                   - if no corresponding attribute exists, create one;
+                   - if there is one, update its value.
+                  Class-specific maps of attributes to synchronise are
+                  provided by
+                  RNAProductTypeMapper::class_attribute_cache_map() .
+  Returntype    : none
+  Exceptions    : throws if the object contains multiple attributes with the
+                  given code and the choice which one to update is
+                  ambiguous.
+  Caller        : RNAProductAdaptor
+  Status        : At Risk (In Development)
+
+=cut
+
+sub synchronise_attributes {
+  my ($self) = @_;
+
+  my $attribute_cache_map = Bio::EnsEMBL::Utils::RNAProductTypeMapper::mapper()
+    ->class_attribute_cache_map(ref($self));
+
+  while (my ($cache_key, $attr_code) = each %{$attribute_cache_map}) {
+    my $existing_attributes = $self->get_all_Attributes($attr_code);
+    my $n_existing_attrs = scalar @{$existing_attributes};
+    if ($n_existing_attrs > 0) {
+      # At the moment we do not support multiple occurrences of target
+      # attributes at all
+      if ($n_existing_attrs > 1) {
+        throw("Object has multiple '$attr_code' attributes and we do not know"
+              . " which one to update");
+      }
+      else {
+        $existing_attributes->[0]->value($self->{$cache_key});
+      }
+    }
+    else {
+      # No corresponding attribute exists, most likely because we are
+      # dealing with a newly created object which has never been pushed
+      # to the database.
+      $self->add_Attributes(Bio::EnsEMBL::Attribute->new(
+        -CODE  => $attr_code,
+        -VALUE => $self->{$cache_key},
+      ));
+    }
+  }
+
+  return;
+}
+
+
 =head2 transcript
 
   Arg [1]       : Transcript object (optional)

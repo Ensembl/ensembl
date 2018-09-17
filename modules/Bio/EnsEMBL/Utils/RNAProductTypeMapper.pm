@@ -111,19 +111,51 @@ sub new {
   # Declare this here rather than in the package scope so that the map
   # cannot be modified (we do not presently use Readonly in the Core
   # API code), accidentally or otherwise.
+  my $class_attribute_cache_map = {
+    'Bio::EnsEMBL::RNAProduct' => { },
+    'Bio::EnsEMBL::MicroRNA'   => {
+      'arm' => 'mirna_arm',
+    },
+  };
   my $type_to_class_map = {
     'generic' => 'Bio::EnsEMBL::RNAProduct',
-    'miRNA' => 'Bio::EnsEMBL::MicroRNA',
+    'miRNA'   => 'Bio::EnsEMBL::MicroRNA',
   };
 
   my $self = bless {
-    'type_to_class_map' => $type_to_class_map,
-    'class_to_type_map' => undef,
+    'class_attribute_cache_map' => $class_attribute_cache_map,
+    'type_to_class_map'         => $type_to_class_map,
+    'class_to_type_map'         => undef,
   }, $class;
 
   return $self;
 }
 
+=head2 class_attribute_cache_map
+
+  Arg [1]    : string $class_name - fully qualified rnaproduct class name
+  Example    : my $attr_cache_map
+                 = $mapper->class_attribute_cache_map( 'Bio::EnsEMBL::MicroRNA' );
+  Description: For the given name of a class representing a mature RNA
+               product, returns the map indicating which local members variables
+               should be synchronised with which Attributes.
+  Returntype : hashref
+  Exceptions : throw if the class does not represent known RNA-product type
+  Caller     : internal
+  Status     : Stable
+
+=cut
+
+sub class_attribute_cache_map {
+  my ( $self, $class_name ) = @_;
+
+  my %map = %{ $self->{'class_attribute_cache_map'} };
+  if ( !exists $map{$class_name} ) {
+    throw( "Unknown RNA-product class name " . $class_name );
+  }
+
+  return $map{$class_name};
+}
 
 =head2 class_to_type_code
 
