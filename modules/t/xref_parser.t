@@ -69,7 +69,7 @@ sub test_parser {
   my ($parser, $content, $expected, $test_name, %opts) = @_;
   require_ok($parser);
   $parser->new($database)->run({
-   files => [store_in_temporary_file($content, %opts)],
+   files =>[store_in_temporary_file($content, %opts)],
    source_id => "Source id (unused but sometimes required)",
    species_id => $SPECIES_ID,
    species => $SPECIES_NAME,
@@ -104,17 +104,18 @@ my $wormbase_celegans_xrefs_head= <<EOF;
 // Missing or not applicable data (e.g. protein identifiers for non-coding RNAs) is denoted by a "."
 //
 2L52.1	WBGene00007063	.	2L52.1b	CE50569	BX284602	CELE_2L52.1	CTQ86426	A0A0K3AWR5
-2L52.1	WBGene00007063	.	2L52.1a	CE32090	BX284602	CELE_2L52.1	CCD61130	A4F336
+2L52.1	WBGene00007063	.	2L52.1a.1	CE32090	BX284602	CELE_2L52.1	CCD61130	A4F336
+2L52.1	WBGene00007063	.	2L52.1a.2	CE32090	BX284602	CELE_2L52.1	CCD61130	A4F336
 2L52.2	WBGene00200402	.	2L52.2	.	BX284602	CELE_2L52.2	.	.
 EOF
 my $wormbase_celegans_xrefs_expected_count = {
-xref=>11,
+xref=>14,
 gene_direct_xref => 4,
-transcript_direct_xref => 3,
-translation_direct_xref => 4,
+transcript_direct_xref => 7,
+translation_direct_xref => 6,
 };
 test_parser("XrefParser::WormbaseDirectParser", $wormbase_celegans_xrefs_head,  
-   $wormbase_celegans_xrefs_expected_count, "Direct xrefs: genes: columns 1,2,3, transcripts: column 4, translations: column 5 and 7. xrefs: sum of these "
+   $wormbase_celegans_xrefs_expected_count, "Direct xrefs: genes: columns 1,2,3, transcripts: column 4 once as transcript and also once as CDS for coding genes, translations: column 5 and 7. xrefs: sum of these minus one reused CDS and two reused proteins"
 );
 
 my $uniprot_elegans_record = <<EOF;
@@ -185,32 +186,47 @@ for my $l (@recognised_sources) {
     primary_xref => 1,
     dependent_xref => 3,
   }, "Pick up as extra xref + dependent xref: $l" );
-} 
-test_parser("XrefParser::WormbaseCElegansUniProtParser", $uniprot_elegans_record,  {
-}, "No UniProt entries without corresponding INSDC entries");
-
-test_parser("XrefParser::WormbaseDirectParser", $wormbase_celegans_xrefs_head,  
-  $wormbase_celegans_xrefs_expected_count, "Test again to set up the next test",
-skip_clean => 1);
+}
+sub test_elegans_uniprot {
+  my ($expected_count, $extra_line) = @_;
+  my $uniprot_elegans_record_here = $uniprot_elegans_record;
+  $uniprot_elegans_record_here =~ s/DR(.*?)\n/DR$1\nDR  $extra_line/ if $extra_line;
+  test_parser("XrefParser::WormbaseCElegansUniProtParser", 
+      $uniprot_elegans_record_here,
+     {}, 
+     "No UniProt entries without corresponding INSDC entries $extra_line"
+  );
+  test_parser("XrefParser::WormbaseDirectParser",
+    $wormbase_celegans_xrefs_head,
+    $wormbase_celegans_xrefs_expected_count,
+    "Test again to set up the next test",
+    skip_clean => 1,
+  );
+  test_parser("XrefParser::WormbaseCElegansUniProtParser",
+    $uniprot_elegans_record_here,
+    $expected_count,
+    "Correct xrefs and dependent xrefs $extra_line",
+  );
+}
 my $wormbase_and_uniprot_expected_count = {
   %$wormbase_celegans_xrefs_expected_count,
-  xref => $wormbase_celegans_xrefs_expected_count->{xref}+1, 
-  dependent_xref => 1 #protein id still there, no parent sequence ID 
+  xref => $wormbase_celegans_xrefs_expected_count->{xref}+1,
+  dependent_xref => 1 #protein id still there, no parent sequence ID
 };
-test_parser("XrefParser::WormbaseCElegansUniProtParser", $uniprot_elegans_record, 
-  $wormbase_and_uniprot_expected_count, "Get counts");
-
+test_elegans_uniprot($wormbase_and_uniprot_expected_count, "");
 for my $l (@recognised_sources) {
-  (my $uniprot_elegans_record_extra_line = $uniprot_elegans_record) =~ s/DR(.*?)\n/DR$1\nDR  $l/;
-  test_parser("XrefParser::WormbaseDirectParser", $wormbase_celegans_xrefs_head,  
-    $wormbase_celegans_xrefs_expected_count, "Test again to set up the next test",
-  skip_clean => 1);
-  test_parser("XrefParser::WormbaseCElegansUniProtParser", $uniprot_elegans_record_extra_line,  {
+  test_elegans_uniprot({
     %$wormbase_and_uniprot_expected_count,
     xref => $wormbase_and_uniprot_expected_count->{xref}+1,
     dependent_xref => $wormbase_and_uniprot_expected_count->{dependent_xref}+1,
-  }, "Pick up as extra xref + dependent xref: $l"  );
+  },$l);
 }
+test_elegans_uniprot({
+  %$wormbase_and_uniprot_expected_count,
+  dependent_xref => $wormbase_and_uniprot_expected_count->{dependent_xref}+1,
+  }, "EMBL; BX284602; CCD61130.1; -; Genomic_DNA",
+);
+
 my $refseq_protein_elegans_record = <<EOF;
 LOCUS       NP_493629                427 aa            linear   INV 19-AUG-2018
 DEFINITION  Uncharacterized protein CELE_2L52.1 [Caenorhabditis elegans].
@@ -261,21 +277,91 @@ ORIGIN
       421 fdveigy
 //
 EOF
-test_parser("XrefParser::RefSeqGPFFParser",$refseq_protein_elegans_record, {
-  xref =>1,
-  primary_xref => 1,
-}, "Example RefSeq protein record" , tmp_file_name => "something_that_says_protein");
-test_parser("XrefParser::WormbaseCElegansRefSeqGPFFParser",$refseq_protein_elegans_record, {
-}, "No entries without WormBase records" , tmp_file_name => "something_that_says_protein");
 
-test_parser("XrefParser::WormbaseDirectParser", $wormbase_celegans_xrefs_head,  
-    $wormbase_celegans_xrefs_expected_count, "Test again to set up the next test",
-skip_clean => 1);
-test_parser("XrefParser::WormbaseCElegansRefSeqGPFFParser",$refseq_protein_elegans_record,  {
-  %$wormbase_celegans_xrefs_expected_count,
-  xref => $wormbase_celegans_xrefs_expected_count->{xref}+1,
-  dependent_xref => 1,
-}, "RefSeq entries hang off INSDC entries", tmp_file_name => "something_that_says_protein");
+my $refseq_mrna_elegans_record = <<EOF;
+LOCUS       NM_001313558             663 bp    mRNA    linear   INV 19-AUG-2018
+DEFINITION  Caenorhabditis elegans Uncharacterized protein (2L52.1), partial
+            mRNA.
+ACCESSION   NM_001313558
+VERSION     NM_001313558.1
+DBLINK      BioProject: PRJNA158
+            BioSample: SAMEA3138177
+KEYWORDS    RefSeq.
+SOURCE      Caenorhabditis elegans
+  ORGANISM  Caenorhabditis elegans
+            Eukaryota; Metazoa; Ecdysozoa; Nematoda; Chromadorea; Rhabditida;
+            Rhabditoidea; Rhabditidae; Peloderinae; Caenorhabditis.
+REFERENCE   1  (bases 1 to 663)
+  <snipped>
+COMMENT     REVIEWED REFSEQ: This record has been curated by WormBase. This
+            record is derived from an annotated genomic sequence (NC_003280).
+            COMPLETENESS: incomplete on both ends.
+FEATURES             Location/Qualifiers
+     source          1..663
+                     /organism="Caenorhabditis elegans"
+                     /mol_type="mRNA"
+                     /strain="Bristol N2"
+                     /db_xref="taxon:$SPECIES_ID"
+                     /chromosome="II"
+     gene            <1..>663
+                     /gene="2L52.1"
+                     /locus_tag="CELE_2L52.1"
+                     /db_xref="GeneID:181792"
+                     /db_xref="WormBase:WBGene00007063"
+     CDS             1..663
+                     /gene="2L52.1"
+                     /locus_tag="CELE_2L52.1"
+                     /standard_name="2L52.1a"
+                     /note="Confirmed by transcript evidence"
+                     /codon_start=1
+                     /product="hypothetical protein"
+                     /protein_id="NP_001300487.1"
+                     /db_xref="EnsemblGenomes-Gn:WBGene00007063"
+                     /db_xref="EnsemblGenomes-Tr:2L52.1b"
+                     /db_xref="GeneID:181792"
+                     /db_xref="UniProtKB/TrEMBL:A0A0K3AWR5"
+                     /db_xref="WormBase:WBGene00007063"
+                     /translation="MSDNEEVYVNFRGMNCISTGKSASMVPSKRRNWPKRVKKRLSTQ
+                     RNNQKTIRPPELNKNNIEIKDMNSNNLEERNREECIQPVSVEKNILHFEKFKSNQICI
+                     VRENNKFREGTRRRRKNSGESEDLKIHENFTEKRRPIRSCKQNISFYEMDGDIEEFEV
+                     FFDTPTKSKKVLLDIYSAKKMPKIEVEDSLVNKFHSKRPSRACRVLGSMEEVPFDVEI
+                     GY"
+ORIGIN      
+        1 atgtcagata atgaagaagt atatgtgaac ttccgtggaa tgaactgtat ctcaacagga
+       61 aagtcggcca gtatggtccc gagcaaacga agaaattggc caaaaagagt gaagaaaagg
+      121 ctatcgacac aaagaaacaa tcagaaaact attcgaccac cagagctgaa taaaaataat
+      181 atagagataa aagatatgaa ctcaaataac cttgaagaac gcaacagaga agaatgcatt
+      241 cagcctgttt ctgttgaaaa gaacatcctg cattttgaaa aattcaaatc aaatcaaatt
+      301 tgcattgttc gggaaaacaa taaatttaga gaaggaacga gaagacgcag aaagaattct
+      361 ggtgaatcgg aagacttgaa aattcatgaa aactttactg aaaaacgaag acccattcga
+      421 tcatgcaaac aaaatataag tttctatgaa atggacgggg atatagaaga atttgaagtg
+      481 tttttcgata ctcccacaaa aagcaaaaaa gtacttctgg atatctacag tgcgaagaaa
+      541 atgccaaaaa ttgaggttga agattcatta gttaataagt ttcattcaaa acgtccatca
+      601 agagcatgtc gagttcttgg aagtatggaa gaagtaccat ttgatgtgga aataggatat
+      661 tga
+//
+EOF
+sub test_refseq {
+  my ($record, $type) = @_;
+  my $file = "something_that_says_$type";
+  test_parser("XrefParser::RefSeqGPFFParser",$record, {
+    xref =>1,
+    primary_xref => 1,
+  }, "$type: Example record" , tmp_file_name => $file);
+  test_parser("XrefParser::WormbaseCElegansRefSeqGPFFParser",$record, {
+  }, "$type no entries without WormBase records" , tmp_file_name => $file);
+
+  test_parser("XrefParser::WormbaseDirectParser", $wormbase_celegans_xrefs_head,  
+      $wormbase_celegans_xrefs_expected_count, "$type test again to set up the next test",
+  skip_clean => 1);
+  test_parser("XrefParser::WormbaseCElegansRefSeqGPFFParser",$record,  {
+    %$wormbase_celegans_xrefs_expected_count,
+    xref => $wormbase_celegans_xrefs_expected_count->{xref}+1,
+    dependent_xref => 1,
+  }, "$type RefSeq entries hang off INSDC entries", tmp_file_name => $file);
+}
+test_refseq($refseq_protein_elegans_record, "protein");
+test_refseq($refseq_mrna_elegans_record, "mrna");
 done_testing();
 
 

@@ -164,24 +164,8 @@ sub create_xrefs {
 
   local $/ = "\/\/\n";
 
-  my $type;
-  if ($file =~ /protein/) {
-
-    $type = 'peptide';
-
-  } elsif ($file =~ /rna/) {
-
-    $type = 'dna';
-
-  } elsif($file =~ /RefSeq_protein/){
-
-    $type = 'peptide';
-
-  }else{
-    print STDERR "Could not work out sequence type for $file\n";
-    return;
-  }
-
+  my $type = $self->type_from_file($file);
+  return unless $type;
 
   while ( $_ = $refseq_io->getline() ) {
 
@@ -205,6 +189,14 @@ sub create_xrefs {
 
   return \@xrefs;
 
+}
+sub type_from_file {
+    my ($self, $file) = @_;
+    return 'peptide' if $file =~ /RefSeq_protein/;
+    return 'dna' if $file =~ /rna/;
+    return 'peptide' if $file =~ /protein/;
+    print STDERR "Could not work out sequence type for $file\n";
+    return undef;
 }
 sub xref_from_record {
     my ( $self, $entry, $name2species_id, $taxonomy2species_id,

@@ -19,13 +19,14 @@ limitations under the License.
 package XrefParser::WormbaseCElegansBase;
 
 sub swap_dependency {
-  my ($self, $source_id, $dbi, $xref, @source_ids_skip) = @_;
+  my ($self, $source_ids, $dbi, $xref, @source_ids_skip) = @_;
+  $source_ids = [$source_ids] unless ref $source_ids eq 'ARRAY';
 
   my @matching_source_id_dependents;
   my @other_dependents;
   for my $dependent_xref (@{$xref->{DEPENDENT_XREFS} || []}){
      my $source_id_here = $dependent_xref->{SOURCE_ID};
-     if($source_id_here eq $source_id
+     if(grep {$_ == $source_id_here } @$source_ids
          and $self->get_xref($dependent_xref->{ACCESSION}, $dependent_xref->{SOURCE_ID}, $xref->{SPECIES_ID})){
          $dependent_xref->{SPECIES_ID} = $xref->{SPECIES_ID};
          push @matching_source_id_dependents, $dependent_xref;
@@ -35,10 +36,22 @@ sub swap_dependency {
          push @other_dependents, $dependent_xref;
      }
   }
-  return map {{%$_, LABEL=>undef, INFO_TYPE => "MISC", DEPENDENT_XREFS => [{
-        %$xref,
-        INFO_TYPE => "DEPENDENT",
-        LINKAGE_SOURCE_ID => $source_id,
-     }, map {{%$_,INFO_TYPE => "DEPENDENT", LINKAGE_SOURCE_ID => $source_id}} @other_dependents]}} @matching_source_id_dependents;
+  my @result;
+  for my $matching_source_id_dependent (@matching_source_id_dependents) {
+    my $source_id = $matching_source_id_dependent->{SOURCE_ID};
+    my $xref_as_dependent_here = {
+      %$xref, INFO_TYPE => "DEPENDENT",
+      LINKAGE_SOURCE_ID => $source_id,
+      DEPENDENT_XREFS => undef,
+    };
+    my @other_dependents_as_dependents_here = map {{%$_,INFO_TYPE => "DEPENDENT", LINKAGE_SOURCE_ID => $source_id}} @other_dependents;
+    push @result, {
+       %$matching_source_id_dependent,
+       LABEL=>undef, INFO_TYPE => "MISC",
+       DEPENDENT_XREFS => [$xref_as_dependent_here, @other_dependents_as_dependents_here] 
+    };
+  }
+
+  return @result;
 }
 1;

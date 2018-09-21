@@ -17,33 +17,51 @@ limitations under the License.
 =cut
 
 package XrefParser::WormbaseCElegansRefSeqGPFFParser;
-
-use parent XrefParser::WormbaseCElegansBase, XrefParser::RefSeqGPFFParser;
-
-my $source_id;
-
+use strict;
+use parent qw/XrefParser::WormbaseCElegansBase XrefParser::RefSeqGPFFParser/;
+my $SOURCE_IDS;
+my $PATTERN;
+sub run {
+  my ($self, $arg_ref) = @_;
+  my $type = $self->type_from_file(@{$arg_ref->{files}});
+  if($type eq 'peptide'){
+    $SOURCE_IDS = [ $self->get_source_id_for_source_name('protein_id') ];
+    $PATTERN =  qr/This record has been curated by WormBase. The\s+reference sequence is identical to (.*?)\./;
+  } elsif ($type eq 'dna'){
+    $SOURCE_IDS = [
+       $self->get_source_id_for_source_name('wormbase_cds'),
+       $self->get_source_id_for_source_name('wormbase_transcript'),
+    ];
+    $PATTERN = qr/standard_name="(.*?)"/;
+  }
+  die %$arg_ref unless @$SOURCE_IDS;
+  return $self->SUPER::run($arg_ref);
+}
 sub upload_xref_object_graphs {
   my ($self, $xrefs, $dbi) = @_;
-  $source_id //= $self->get_source_id_for_source_name('protein_id'); 
   my @adapted_xrefs;
   for my $xref ( @$xrefs) {
-    push @adapted_xrefs, $self->swap_dependency($source_id, $dbi, $xref);
+    push @adapted_xrefs, $self->swap_dependency($SOURCE_IDS, $dbi, $xref, @$SOURCE_IDS);
   }  
   return $self->SUPER::upload_xref_object_graphs(\@adapted_xrefs, $dbi);
 }
+
 sub xref_from_record {
    my ($self, $entry, @args) = @_;
-   
-   my $xref = $self->SUPER::xref_from_record($entry, @args);
-   $source_id //= $self->get_source_id_for_source_name('protein_id'); 
-   $entry =~ /This record has been curated by WormBase. The\s+reference sequence is identical to (.*?)\./;
-   my $insdc_protein_id = $1;
-   if($insdc_protein_id) {
-     $xref->{DEPENDENT_XREFS} //= [];
-     push @{$xref->{DEPENDENT_XREFS}}, {ACCESSION => $insdc_protein_id, SOURCE_ID=>$source_id};
-     return $xref;
-   } else {
-     return undef;
-   }
+   return &modify_xref_with_dependent(
+      $SOURCE_IDS, $entry,
+      $self->SUPER::xref_from_record($entry, @args),
+      $PATTERN,
+   );
+}
+
+sub modify_xref_with_dependent {
+   my ($source_ids, $entry, $xref, $pattern) = @_;
+   return unless $xref;
+   return unless $entry =~ $pattern;
+   return unless $1;
+   $xref->{DEPENDENT_XREFS} //= [];
+   push @{$xref->{DEPENDENT_XREFS}}, map {{ACCESSION => $1, SOURCE_ID=>$_}} @$source_ids;
+   return $xref;
 }
 1;

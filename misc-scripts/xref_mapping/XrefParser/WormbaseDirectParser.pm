@@ -40,7 +40,7 @@ sub run {
   }
 
   my $file = @{$files}[0];
-  my @fields = qw/wormbase_gene wormbase_gseqname wormbase_locus wormbase_transcript wormpep_id protein_id/;
+  my @fields = qw/wormbase_gene wormbase_gseqname wormbase_locus wormbase_transcript wormbase_cds wormpep_id protein_id/;
   my %src_ids;
   my $sth = $self->dbi()->prepare("SELECT xref_id FROM xref WHERE accession=? AND source_id=? AND species_id=$species_id");
   for my $field (@fields){
@@ -64,6 +64,10 @@ sub run {
       $self->add_xref_and_direct_xref(
         $sth, $species_id, "transcript", $src_ids{wormbase_transcript}, 
         $transcript->{transcript_id}, $transcript->{transcript_id}
+      );
+      $self->add_xref_and_direct_xref(
+        $sth, $species_id, "transcript", $src_ids{wormbase_cds},
+        $transcript->{wormbase_cds}, $transcript->{wormbase_cds}, $transcript->{transcript_id}
       );
       $self->add_xref_and_direct_xref(
         $sth, $species_id, "translation", $src_ids{wormpep_id}, 
@@ -90,11 +94,13 @@ sub get_data {
   while ( $_ = $pep_io->getline() ) {
     next if /^\/\//;
     my ($gseqid, $wbgeneid, $locus, $wbtranscript, $wormpep, $insdc_parent, $insdc_locus_tag, $protein_id, $uniprot_id) = split(/\t/, $_);
+
     $data->{$wbgeneid}->{transcripts} //=[];
     push @{$data->{$wbgeneid}->{transcripts}}, {
       transcript_id => $wbtranscript,
-      ($wormpep eq '.' ? () : (wormpep_id => $wormpep)),
-      ($protein_id eq '.' ? () : (protein_id => $protein_id)),
+      ($wormpep ne '.' && $wbtranscript =~ /^(.*?)(\.\d+)?$/ ? (wormbase_cds => $1 ) : ()),
+      ($wormpep ne '.' ? (wormpep_id => $wormpep) : ()),
+      ($protein_id ne '.' ? (protein_id => $protein_id) : ()),
     };
     $data->{$wbgeneid}->{wormbase_gseqname} = $gseqid;
     $data->{$wbgeneid}->{wormbase_locus} =  $locus if $locus ne '.'; 
