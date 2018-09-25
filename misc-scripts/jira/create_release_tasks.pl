@@ -39,11 +39,12 @@ sub main {
   # ----------------------------
   # read command line parameters
   # ----------------------------
-  my ( $relco, $release, $password, $help, $tickets_tsv, $ical_url, $config );
+  my ( $relco, $release, $jira_user, $password, $help, $tickets_tsv, $ical_url, $config );
 
   GetOptions(
 	     'relco=s'    => \$relco,
 	     'release=i'  => \$release,
+	     'user=s'     => \$jira_user,
 	     'password=s' => \$password,
 	     'p=s'        => \$password,
 	     'tickets=s'  => \$tickets_tsv,
@@ -66,8 +67,8 @@ sub main {
   # ---------------------------------
   # deal with command line parameters
   # ---------------------------------
-  ( $relco, $release, $password, $tickets_tsv, $config )
-    = set_parameters( $relco, $release, $password, $tickets_tsv, $config, $logger );
+  ( $relco, $release, $jira_user, $password, $tickets_tsv, $config )
+    = set_parameters( $relco, $release, $jira_user, $password, $tickets_tsv, $config, $logger );
 
   # ---------------------------
   # read config file parameters
@@ -78,6 +79,7 @@ sub main {
 
   # integrate command line parameters to parameters object
   $parameters->{relco}       = $relco;
+  $parameters->{jira_user}   = $jira_user;
   $parameters->{password}    = $password;
   $parameters->{release}     = $release;
   $parameters->{tickets_tsv} = $tickets_tsv;
@@ -162,12 +164,13 @@ sub main {
 
 =head2 set_parameters
 
-  Arg[1]      : String $relco - a Regulation team member name or JIRA username
+  Arg[1]      : String $relco - a Core team member JIRA username
   Arg[2]      : Integer $release - the EnsEMBL release version
-  Arg[3]      : String $password - user's JIRA password
-  Arg[4]      : String $tickets_tsv - path to the tsv file that holds the input
-  Arg[5]      : String $config - path to the config file holding handover dates
-  Arg[6]      : Bio::EnsEMBL::Utils::Logger $logger - object used for logging
+  Arg[3]      : String $jira_user - JIRA name of the user to use to create tickets
+  Arg[4]      : String $password - user's JIRA password
+  Arg[5]      : String $tickets_tsv - path to the tsv file that holds the input
+  Arg[6]      : String $config - path to the config file holding handover dates
+  Arg[7]      : Bio::EnsEMBL::Utils::Logger $logger - object used for logging
   Description : Makes sure that the parameters provided through the command line
                 are valid and assigns default values to the ones which where not 
                 supplied
@@ -177,10 +180,12 @@ sub main {
 =cut
 
 sub set_parameters {
-    my ( $relco, $release, $password, $tickets_tsv, $config, $logger ) = @_;
+    my ( $relco, $release, $jira_user, $password, $tickets_tsv, $config, $logger ) = @_;
 
     $relco = $ENV{'USER'} unless $relco; 
     validate_user_name( $relco, $logger );
+
+    $jira_user = $relco unless $jira_user;
 
     $release = Bio::EnsEMBL::ApiVersion->software_version() if !$release;
 
@@ -207,8 +212,8 @@ sub set_parameters {
         );
     }
 
-    printf( "\trelco: %s\n\trelease: %i\n\ttickets: %s\n\tconfig: %s\n",
-        $relco, $release, $tickets_tsv, $config );
+    printf( "\tsubmitter: %s\n\trelco: %s\n\trelease: %i\n\ttickets: %s\n\tconfig: %s\n",
+        $jira_user, $relco, $release, $tickets_tsv, $config );
 #    print "Are the above parameters correct? (y,N) : ";
 #    my $response = readline();
 #    chomp $response;
@@ -219,7 +224,7 @@ sub set_parameters {
 #    }
 
     if ( !$password ) {
-        print 'Please type your JIRA password:';
+        print "Please type the JIRA password of user '${jira_user}':";
 
         ReadMode('noecho');    # make password invisible on terminal
         $password = ReadLine(0);
@@ -228,7 +233,7 @@ sub set_parameters {
         print "\n";
     }
 
-    return ( $relco, $release, $password, $tickets_tsv, $config );
+    return ( $relco, $release, $jira_user, $password, $tickets_tsv, $config );
 }
 
 =head2 validate_parameters
@@ -638,7 +643,7 @@ sub post_request {
 
     my $request = HTTP::Request->new( 'POST', $url );
 
-    $request->authorization_basic( $parameters->{relco},
+    $request->authorization_basic( $parameters->{jira_user},
         $parameters->{password} );
     $request->header( 'Content-Type' => 'application/json' );
     $request->content($json_content);
@@ -783,7 +788,8 @@ create_release_tasks.pl
 
 create_release_tasks.pl -relco <string> -password <string> -release <integer> -tickets <file> -config <file> 
 
--relco               JIRA username. Optional, will be inferred from current system user if not supplied.
+-relco               JIRA username of the RelCo. Optional, will be inferred from current system user if not supplied.
+-user                user name to use to connecto to JIRA. Defaults to the RelCo username if not supplied.
 -password | -p       JIRA password. Will need to be typed in standard input if not supplied.
 -release             EnsEMBL Release. Optional, will be inferred from EnsEMBL API if not supplied.
 -tickets             File that holds the input data for creating the JIRA tickets in tab separated format.
