@@ -74,7 +74,7 @@ ok($taxid == 9606);
 my $div = $mc->get_division();
 ok(!defined $div);
 
-my $divname = 'EnsemblVertebrate';
+my $divname = 'EnsemblVertebrates';
 $mc->store_key_value('species.division',$divname);
 $div = $mc->get_division();
 ok($div eq $divname);
