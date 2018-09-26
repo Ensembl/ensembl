@@ -583,7 +583,7 @@ CREATE TABLE peptide_align_feature (
   perc_pos integer NOT NULL,
   hit_rank integer NOT NULL,
   cigar_line mediumtext,
-  is_good_for_alignment TINYINT(1) NOT NULL DEFAULT 0 AFTER has_karyotype
+  is_good_for_alignment TINYINT(1) NOT NULL DEFAULT 0
 );
 
 --
