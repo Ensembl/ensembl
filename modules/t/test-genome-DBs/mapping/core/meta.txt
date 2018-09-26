@@ -63,3 +63,4 @@
 156	\N	patch	patch_93_94_b.sql|nullable_ox_analysis
 157	\N	patch	patch_93_94_c.sql|default_aln_type
 158	\N	patch	patch_94_95_a.sql|schema_version
+159	\N	patch	patch_94_95_b.sql|vertebrate_division_rename
