@@ -315,7 +315,6 @@ CREATE TABLE genome_db (
   assembly varchar(100) NOT NULL DEFAULT '',
   genebuild varchar(100) NOT NULL DEFAULT '',
   has_karyotype tinyint NOT NULL DEFAULT 0,
-  is_high_coverage tinyint NOT NULL DEFAULT 0,
   genome_component varchar(5),
   strain_name varchar(40),
   display_name varchar(255),
@@ -583,7 +582,8 @@ CREATE TABLE peptide_align_feature (
   positive_matches integer NOT NULL,
   perc_pos integer NOT NULL,
   hit_rank integer NOT NULL,
-  cigar_line mediumtext
+  cigar_line mediumtext,
+  is_good_for_alignment TINYINT(1) NOT NULL DEFAULT 0 AFTER has_karyotype
 );
 
 --
