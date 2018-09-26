@@ -103,4 +103,3 @@
 170	\N	patch	patch_93_94_c.sql|default_aln_type
 171	\N	patch	patch_94_95_a.sql|schema_version
 173	\N	patch	patch_94_95_b.sql|vertebrate_division_rename
-174	1	species.division	EnsemblVertebrates
