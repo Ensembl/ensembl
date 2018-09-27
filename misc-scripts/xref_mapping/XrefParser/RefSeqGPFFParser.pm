@@ -135,7 +135,7 @@ sub create_xrefs {
   # Create a hash of all valid names and taxon_ids for this species
   my %species2name = $self->species_id2name($dbi);
   if (defined $species_name) { push @{$species2name{$species_id}}, $species_name; }
-  if (!defined $species2name{$species_id}) { next; }
+  if (!defined $species2name{$species_id}) { return; }
   my %species2tax  = $self->species_id2taxonomy($dbi);
   push @{$species2tax{$species_id}}, $species_id;
   my @names   = @{$species2name{$species_id}};
