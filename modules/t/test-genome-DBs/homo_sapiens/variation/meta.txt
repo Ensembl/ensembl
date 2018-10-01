@@ -1,5 +1,5 @@
 1	\N	schema_type	variation
-2	\N	schema_version	94
+2	\N	schema_version	95
 3	\N	patch	patch_84_85_a.sql|schema version
 4	\N	patch	patch_84_85_b.sql|create sample_synonym
 5	\N	patch	patch_84_85_c.sql|drop column moltype from variation_synonym
@@ -32,3 +32,5 @@
 32	\N	patch	patch_92_93_b.sql|Extend phenotype_ontology_accession mapped_by_attrib predefined set
 33	\N	patch	patch_92_93_c.sql|Add new evidence attribs to the variation and variation_feature tables
 34	\N	patch	patch_93_94_a.sql|schema version
+35	\N	patch	patch_94_95_a.sql|schema version
+36	\N	patch	patch_94_95_b.sql|create table to store allele synonyms
