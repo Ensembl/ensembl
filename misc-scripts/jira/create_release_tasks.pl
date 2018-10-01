@@ -258,7 +258,7 @@ sub validate_parameters {
 	  $parameters->{config} );
 
   print "Dates:\n";
-  foreach my $date_label (keys $parameters->{dates}) {
+  foreach my $date_label (keys %{$parameters->{dates}}) {
       printf( "%33s: %s\n",
 	      $date_label,
 	      $parameters->{dates}->{$date_label} );
@@ -518,7 +518,7 @@ sub replace_placeholders {
       }
   }
 
-  for my $param (keys $parameters->{dates}) {
+  for my $param (keys %{$parameters->{dates}}) {
       if($line =~ /<$param>/) {
 	  $line =~ s/<$param>/$parameters->{dates}->{$param}/eg;
       }
@@ -698,7 +698,7 @@ sub fetch_dates {
 
   my $events = $hash->{events};
 
-  foreach my $milestone_name (keys $parameters->{ical}) {
+  foreach my $milestone_name (keys %{$parameters->{ical}}) {
       my $calendar_label = $parameters->{ical}->{$milestone_name};
       $calendar_label = replace_placeholders($calendar_label, $parameters);
       print "Looking for '$calendar_label' in ical...";
@@ -735,9 +735,9 @@ sub find_event_by_name {
   my ( $label, $events ) = @_;
 
   foreach my $year (keys %$events) {
-      foreach my $month (keys $events->{$year}) {
-	  foreach my $day (keys $events->{$year}->{$month}) {
-	      foreach my $event (keys $events->{$year}->{$month}->{$day} ) {
+      foreach my $month (keys %{$events->{$year}}) {
+	  foreach my $day (keys %{$events->{$year}->{$month}}) {
+	      foreach my $event (keys %{$events->{$year}->{$month}->{$day}} ) {
 		  if($events->{$year}->{$month}->{$day}->{$event}->{SUMMARY} eq $label) {
 		      return $events->{$year}->{$month}->{$day}->{$event};
 		  }
