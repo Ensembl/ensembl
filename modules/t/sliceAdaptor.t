@@ -690,6 +690,13 @@ my $exceptions = $initial_slice->get_all_AssemblyExceptionFeatures();
 is($unique_slice->start, $exceptions->[0]->start, "Start of patch");
 is($unique_slice->end, $exceptions->[0]->end, "End of patch");
 
+## Test fetch_all with only_protein_coding after patch
+$slices = $slice_adaptor->fetch_all("chromosome", undef, undef, undef, undef, 0);
+is(scalar(@$slices), 4, 'Fetched chromosomes number');
+
+$slices = $slice_adaptor->fetch_all("chromosome", undef, undef, undef, undef, 1);
+is(scalar(@$slices), 2, 'Fetched chromosomes number, only_protein_coding ');
+
 
 ## Test karyotype data
 
