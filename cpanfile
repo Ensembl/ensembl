@@ -31,6 +31,5 @@ feature 'xref_mapping', 'Xref mapping pipeline' => sub {
   requires 'Digest::MD5';
   requires 'Text::Glob';
   requires 'XML::LibXML';
-  requires 'XML::Simple';
 };
 =cut
