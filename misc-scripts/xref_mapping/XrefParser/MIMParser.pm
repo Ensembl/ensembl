@@ -105,12 +105,12 @@ sub run {
           return 1;
         }
         $long_desc =~ s/^\s//;    # Remove white space at the start
-        my @fields = split( ";;", $long_desc );
+        my @fields = split( qr{;;}msx, $long_desc );
 
         # Use the first block of text as description
         my $label = $fields[0] . " [" . $type . $number . "]";
 
-        if ( $type eq "*" ) {     # gene only
+        if ( $type eq q{*} ) {     # gene only
           $gene++;
           $self->add_xref(
                            { acc        => $number,
@@ -122,9 +122,9 @@ sub run {
                              info_type  => "DEPENDENT" } );
         }
         elsif ( ( !defined $type ) or
-                ( $type eq "" )  or
-                ( $type eq "#" ) or
-                ( $type eq "%" ) )
+                ( $type eq q{} )  or
+                ( $type eq q{#} ) or
+                ( $type eq q{%} ) )
         {    #phenotype only
           $phenotype++;
           $self->add_xref(
@@ -136,7 +136,7 @@ sub run {
                              dbi        => $dbi,
                              info_type  => "DEPENDENT" } );
         }
-        elsif ( $type eq "+" ) {    # both
+        elsif ( $type eq q{+} ) {    # both
           $gene++;
           $phenotype++;
           $self->add_xref(
@@ -157,7 +157,7 @@ sub run {
                              dbi        => $dbi,
                              info_type  => "DEPENDENT" } );
         }
-        elsif ( $type eq "^" ) {
+        elsif ( $type eq q{^} ) {
           if (/[*]FIELD[*]\sTI\n\N{CARET}\d+ MOVED TO (\d+)/) {
             if ( $1 eq $number ) { next; }
             $old_to_new{$number} = $1;
