@@ -20,6 +20,7 @@ limitations under the License.
 package XrefParser::DBASSParser;
 
 use strict;
+use warnings;
 
 use base qw( XrefParser::BaseParser);
 use DBI;
