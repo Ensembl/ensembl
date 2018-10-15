@@ -95,7 +95,6 @@ sub run {
 
     my $label       = $first_gene_name;
     my $type        = 'gene';
-    my $description = '';
     my $version     = '1';
     my $synonym     = $second_gene_name;
 
@@ -109,14 +108,14 @@ sub run {
                                   { acc        => $dbass_gene_id,
                                     version    => $version,
                                     label      => $label,
-                                    desc       => $description,
+                                    desc       => undef,
                                     source_id  => $source_id,
                                     dbi        => $dbi,
                                     species_id => $species_id,
                                     info_type  => "DIRECT" } );
     }
 
-    $self->add_direct_xref( $xref_id, $ensembl_id, $type, '', $dbi );
+    $self->add_direct_xref( $xref_id, $ensembl_id, $type, undef, $dbi );
 
     if ( defined($synonym) ) {
       $self->add_synonym( $xref_id, $synonym, $dbi );
