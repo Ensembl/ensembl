@@ -94,14 +94,20 @@ sub run {
     #  1. gene has only one name;
     #  2. synonyms are slash-separated;
     #  3. the second name follows the first one in brackets.
+    # FIXME: .* is seriously inefficient because here it results in massive
+    # amounts of backtracking. Could we be more specific, i.e. assume
+    # some specific format of DBASS names?
     my ( $first_gene_name, $second_gene_name );
-    if ( $dbass_gene_name =~ /.\/./x ) {
-      # FIXME: feels wasteful to do a regex match AND a split
-      ( $first_gene_name, $second_gene_name ) =
-        split( /\//x, $dbass_gene_name );
-    }
-    elsif ( $dbass_gene_name =~ /(.*)\((.*)\)/x ) {
-      # FIXME: this may add a trailing space to the first name. Incorrect?
+    if ( ( $dbass_gene_name =~ m{
+                                  (.*)
+                                  \s?\/\s?  # typically no ws here but just in case
+                                  (.*)
+                                }x ) ||
+         ( $dbass_gene_name =~ m{
+                                  (.*)
+                                  \s?  # typically there IS a space before the ( here
+                                  [(] (.*) [)]
+                                }x ) ) {
       $first_gene_name  = $1;
       $second_gene_name = $2;
     }
