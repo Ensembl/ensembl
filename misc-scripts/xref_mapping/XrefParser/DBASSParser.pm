@@ -27,12 +27,15 @@ use Carp;
 
 use parent qw( XrefParser::BaseParser );
 
-# This parser will read direct xrefs from a simple comma-delimited file downloaded from the DBASS database.
+# This parser will read direct xrefs from a comma-delimited file downloaded from the DBASS Web site.
 # The columns of the file should be the following:
 #
 # 1)    DBASS Gene ID
 # 2)    DBASS Gene Name
 # 3)    Ensembl Gene ID
+#
+# where 2) can be either a single name, a 'name/synonym' pair, or a 'name (synonym)' pair.
+# Column values, including empty strings, can be surrounded by pairs of double quotes.
 
 
 sub run {
@@ -90,10 +93,6 @@ sub run {
       return 1;
     }
 
-    # Three options here:
-    #  1. gene has only one name;
-    #  2. synonyms are slash-separated;
-    #  3. the second name follows the first one in brackets.
     # FIXME: .* is seriously inefficient because here it results in massive
     # amounts of backtracking. Could we be more specific, i.e. assume
     # some specific format of DBASS names?
