@@ -34,9 +34,6 @@ use parent qw( XrefParser::BaseParser );
 # 2)    DBASS Gene Name
 # 3)    Ensembl Gene ID
 
-my $dbi;
-my $xref_id;
-my $source_id;
 
 sub run {
   my ( $self, $ref_arg ) = @_;
