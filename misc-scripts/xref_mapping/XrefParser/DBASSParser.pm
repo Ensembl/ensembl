@@ -73,7 +73,7 @@ sub run {
       split( /,/x, $line );
 
     if ( !defined($dbass_gene_id) || !defined($ensembl_id) ) {
-      printf STDERR ( "Line %d contains  has less than two columns.\n",
+      printf STDERR ( "Line %d has fewer than three columns.\n",
                       1 + $parsed_count );
       print STDERR ("The parsing failed\n");
       return 1;
