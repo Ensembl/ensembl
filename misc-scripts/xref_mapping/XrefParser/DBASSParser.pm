@@ -78,15 +78,15 @@ sub run {
       split( /,/x, $line );
 
     if ( !defined($dbass_gene_id) || !defined($ensembl_id) ) {
-      printf STDERR ( "Line %d has fewer than three columns.\n",
+      printf {*STDERR} ( "Line %d has fewer than three columns.\n",
                       1 + $parsed_count );
-      print STDERR ("The parsing failed\n");
+      print {*STDERR} ("The parsing failed\n");
       return 1;
     }
     elsif ( scalar @split_overflow > 0 ) {
-      printf STDERR ( "Line %d has more than three columns.\n",
+      printf {*STDERR} ( "Line %d has more than three columns.\n",
                       1 + $parsed_count );
-      print STDERR ("The parsing failed\n");
+      print {*STDERR} ("The parsing failed\n");
       return 1;
     }
 
