@@ -22,9 +22,10 @@ package XrefParser::DBASSParser;
 use strict;
 use warnings;
 
-use base qw( XrefParser::BaseParser);
 use DBI;
 use Carp;
+
+use parent qw( XrefParser::BaseParser );
 
 # This parser will read direct xrefs from a simple comma-delimited file downloaded from the DBASS database.
 # The columns of the file should be the following:
