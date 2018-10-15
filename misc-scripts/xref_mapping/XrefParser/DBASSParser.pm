@@ -116,32 +116,35 @@ sub run {
       $second_gene_name = undef;
     }
 
-    my $label       = $first_gene_name;
-    my $type        = 'gene';
-    my $version     = '1';
-    my $synonym     = $second_gene_name;
-
     ++$parsed_count;
 
-    my $xref_id =
-      $self->get_xref( $dbass_gene_id, $source_id, $species_id, $dbi );
+    # Do not attempt to create unmapped xrefs
+    if ( $ensembl_id ne '' ) {
+      my $label       = $first_gene_name;
+      my $synonym     = $second_gene_name;
+      my $type        = 'gene';
+      my $version     = '1';
 
-    if ( !defined($xref_id) || $xref_id eq '' ) {
-      $xref_id = $self->add_xref(
-                                  { acc        => $dbass_gene_id,
-                                    version    => $version,
-                                    label      => $label,
-                                    desc       => undef,
-                                    source_id  => $source_id,
-                                    dbi        => $dbi,
-                                    species_id => $species_id,
-                                    info_type  => "DIRECT" } );
-    }
+      my $xref_id =
+        $self->get_xref( $dbass_gene_id, $source_id, $species_id, $dbi );
 
-    $self->add_direct_xref( $xref_id, $ensembl_id, $type, undef, $dbi );
+      if ( !defined($xref_id) || $xref_id eq '' ) {
+        $xref_id = $self->add_xref(
+                                   { acc        => $dbass_gene_id,
+                                     version    => $version,
+                                     label      => $label,
+                                     desc       => undef,
+                                     source_id  => $source_id,
+                                     dbi        => $dbi,
+                                     species_id => $species_id,
+                                     info_type  => "DIRECT" } );
+      }
 
-    if ( defined($synonym) ) {
-      $self->add_synonym( $xref_id, $synonym, $dbi );
+      if ( defined($synonym) ) {
+        $self->add_synonym( $xref_id, $synonym, $dbi );
+      }
+
+      $self->add_direct_xref( $xref_id, $ensembl_id, $type, undef, $dbi );
     }
 
   } ## end while ( defined( my $line...))
