@@ -65,12 +65,12 @@ sub run {
 
   while ( defined( my $line = $file_io->getline() ) ) {
 
-    $line =~ s/\s*$//;
+    $line =~ s/\s*$//x;
     # csv format can come with quoted columns, remove them
-    $line =~ s/"//g;
+    $line =~ s/"//gx;
 
     my ( $dbass_gene_id, $dbass_gene_name, $ensembl_id ) =
-      split( /,/, $line );
+      split( /,/x, $line );
 
     if ( !defined($dbass_gene_id) || !defined($ensembl_id) ) {
       printf STDERR ( "Line %d contains  has less than two columns.\n",
@@ -82,12 +82,12 @@ sub run {
     my $first_gene_name = $dbass_gene_name;
     my $second_gene_name;
 
-    if ( $dbass_gene_name =~ /.\/./ ) {
+    if ( $dbass_gene_name =~ /.\/./x ) {
       ( $first_gene_name, $second_gene_name ) =
-        split( /\//, $dbass_gene_name );
+        split( /\//x, $dbass_gene_name );
     }
 
-    if ( $dbass_gene_name =~ /(.*)\((.*)\)/ ) {
+    if ( $dbass_gene_name =~ /(.*)\((.*)\)/x ) {
       $first_gene_name  = $1;
       $second_gene_name = $2;
 #      print $first_gene_name, "\n", $second_gene_name, "\n" if($verbose);
@@ -120,7 +120,7 @@ sub run {
     if ( defined($synonym) ) {
       $self->add_synonym( $xref_id, $synonym, $dbi );
     }
-    elsif ( $synonym =~ /^\s/ ) {
+    elsif ( $synonym =~ /^\s/x ) {
       print "There is white space! \n" if ($verbose);
     }
     else {
