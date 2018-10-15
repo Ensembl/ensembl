@@ -87,22 +87,22 @@ sub run {
     my $long_desc;
     my $is_morbid = 0;
     my $type      = undef;
-    if (/\*FIELD\*\s+NO\n(\d+)/) {
+    if (/[*]FIELD[*]\s+NO\n(\d+)/) {
       $number    = $1;
       $source_id = $gene_source_id;
-      # if(/\*FIELD\*\sTI\n([\^\#\%\+\*]*)\d+(.*)\n(.*)\n\*/){
+      # if(/[*]FIELD[*]\sTI\n([#%+*^]*)\d+(.*)\n(.*)\n[*]/){
       # 	$label =$2; # taken from description as acc is meaning less
       # 	$long_desc = $2;
       # 	$long_desc .= $3 if defined $3;
       # 	$type = $1;
-      # 	$label =~ s/\;\s[A-Z0-9]+$//; # strip gene name at end
+      # 	$label =~ s/;\s[A-Z0-9]+$//; # strip gene name at end
       # 	$label = substr($label,0,35)." [".$type.$number."]";
 
-      if (/\*FIELD\*\sTI(.+)\*FIELD\*\sTX/s) { # grab the whole TI field
+      if (/[*]FIELD[*]\sTI(.+)[*]FIELD[*]\sTX/s) { # grab the whole TI field
         my $ti = $1;
         $ti =~ s/\n//g;   # Remove return carriages
                           # extract the 'type' and the whole description
-        $ti =~ /([\^\#\%\+\*]*)\d+(.+)/s;
+        $ti =~ /([#%+*^]*)\d+(.+)/s;
         my $type      = $1;
         my $long_desc = $2;
         $long_desc =~ s/^\s//;    # Remove white space at the start
@@ -159,7 +159,7 @@ sub run {
                              info_type  => "DEPENDENT" } );
         }
         elsif ( $type eq "^" ) {
-          if (/\*FIELD\*\sTI\n[\^]\d+ MOVED TO (\d+)/) {
+          if (/[*]FIELD[*]\sTI\n\N{CARET}\d+ MOVED TO (\d+)/) {
             if ( $1 eq $number ) { next; }
             $old_to_new{$number} = $1;
           }
@@ -169,8 +169,8 @@ sub run {
           }
 
         }
-      } ## end if (/\*FIELD\*\sTI(.+)\*FIELD\*\sTX/s)
-    } ## end if (/\*FIELD\*\s+NO\n(\d+)/)
+      } ## end if (/[*]FIELD[*]\sTI(.+)[*]FIELD[*]\sTX/s)
+    } ## end if (/[*]FIELD[*]\s+NO\n(\d+)/)
   } ## end while ( $_ = $mim_io->getline...)
 
   $mim_io->close();
