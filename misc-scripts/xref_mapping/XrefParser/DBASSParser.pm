@@ -72,14 +72,19 @@ sub run {
     # assumes actual column values will never contain commas, which while
     # true at present brings into question why bother quoting them in the
     # first place.
-    # FIXME: add a sanity check for that
     $line =~ s/"//gx;
 
-    my ( $dbass_gene_id, $dbass_gene_name, $ensembl_id ) =
+    my ( $dbass_gene_id, $dbass_gene_name, $ensembl_id, @split_overflow ) =
       split( /,/x, $line );
 
     if ( !defined($dbass_gene_id) || !defined($ensembl_id) ) {
       printf STDERR ( "Line %d has fewer than three columns.\n",
+                      1 + $parsed_count );
+      print STDERR ("The parsing failed\n");
+      return 1;
+    }
+    elsif ( scalar @split_overflow > 0 ) {
+      printf STDERR ( "Line %d has more than three columns.\n",
                       1 + $parsed_count );
       print STDERR ("The parsing failed\n");
       return 1;
