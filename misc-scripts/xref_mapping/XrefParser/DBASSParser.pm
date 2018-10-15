@@ -61,12 +61,18 @@ sub run {
 
   my $parsed_count = 0;
 
+  # Skip the header line
   $file_io->getline();
 
   while ( defined( my $line = $file_io->getline() ) ) {
 
+    # strip trailing whitespace
     $line =~ s/\s*$//x;
-    # csv format can come with quoted columns, remove them
+    # csv format can come with quoted columns, remove them. Note that this
+    # assumes actual column values will never contain commas, which while
+    # true at present brings into question why bother quoting them in the
+    # first place.
+    # FIXME: add a sanity check for that
     $line =~ s/"//gx;
 
     my ( $dbass_gene_id, $dbass_gene_name, $ensembl_id ) =
@@ -79,18 +85,24 @@ sub run {
       return 1;
     }
 
-    my $first_gene_name = $dbass_gene_name;
-    my $second_gene_name;
-
+    # Three options here:
+    #  1. gene has only one name;
+    #  2. synonyms are slash-separated;
+    #  3. the second name follows the first one in brackets.
+    my ( $first_gene_name, $second_gene_name );
     if ( $dbass_gene_name =~ /.\/./x ) {
+      # FIXME: feels wasteful to do a regex match AND a split
       ( $first_gene_name, $second_gene_name ) =
         split( /\//x, $dbass_gene_name );
     }
-
-    if ( $dbass_gene_name =~ /(.*)\((.*)\)/x ) {
+    elsif ( $dbass_gene_name =~ /(.*)\((.*)\)/x ) {
+      # FIXME: this may add a trailing space to the first name. Incorrect?
       $first_gene_name  = $1;
       $second_gene_name = $2;
-#      print $first_gene_name, "\n", $second_gene_name, "\n" if($verbose);
+    }
+    else {
+      $first_gene_name = $dbass_gene_name;
+      $second_gene_name = undef;
     }
 
     my $label       = $first_gene_name;
