@@ -97,11 +97,13 @@ sub run {
 
       if (/[*]FIELD[*]\sTI(.+)[*]FIELD[*]\sTX/s) { # grab the whole TI field
         my $ti = $1;
-        $ti =~ s/\n//g;   # Remove return carriages
-                          # extract the 'type' and the whole description
-        $ti =~ /([#%+*^]*)\d+(.+)/s;
-        my $type      = $1;
-        my $long_desc = $2;
+        $ti =~ s/\n//g;   # Remove line feeds
+        # Extract the 'type' and the whole description
+        my ($type, $long_desc) = ( $ti =~ /([#%+*^]*)\d+(.+)/s );
+        if ( !defined( $type ) ) {
+          print {*STDERR} 'Failed to extract record type and description from TI field';
+          return 1;
+        }
         $long_desc =~ s/^\s//;    # Remove white space at the start
         my @fields = split( ";;", $long_desc );
 
