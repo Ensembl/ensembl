@@ -25,7 +25,8 @@ use Carp;
 use POSIX qw(strftime);
 use File::Basename;
 
-use base qw( XrefParser::BaseParser );
+use parent qw( XrefParser::BaseParser );
+
 
 sub run {
 
