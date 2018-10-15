@@ -83,10 +83,7 @@ sub run {
   while ( $_ = $mim_io->getline() ) {
     #get the MIM number
     my $number = 0;
-    my $label  = undef;
-    my $long_desc;
     my $is_morbid = 0;
-    my $type      = undef;
     if (/[*]FIELD[*]\s+NO\n(\d+)/) {
       $number    = $1;
       $source_id = $gene_source_id;
