@@ -29,7 +29,6 @@ use base qw( XrefParser::BaseParser );
 
 sub run {
 
-
   my ($self, $ref_arg) = @_;
   my $source_id    = $ref_arg->{source_id};
   my $species_id   = $ref_arg->{species_id};
@@ -53,7 +52,8 @@ sub run {
 
   my $file = @{$files}[0];
 
-  my (%refseq) = %{$self->get_valid_codes("refseq",$species_id, $dbi)};
+  # Used to assign dbIDs for when RGD Xrefs are dependent on RefSeq xrefs
+  my (%preloaded_refseq) = %{$self->get_valid_codes("refseq",$species_id, $dbi)};
 
   my $rgd_io = $self->get_filehandle($file);
 
@@ -71,27 +71,19 @@ sub run {
   chomp $line;
   my @linearr = split(/\t/,$line);
 
-  #
-  #warn if sanity check fails
-  #
-
-  if($linearr[0] =~ /GENE_RDB_ID/){
-   die ($linearr[0]."!= GENE_RDB_ID is not the first element in the header\n$line\n");
-  }
-  if($linearr[1] ne "SYMBOL"){
-    die ("SYMBOL is not the second element in the header\n$line\n");
-  }
-  if($linearr[2] ne "NAME"){
-    die ("NAME is not the third element in the header\n$line\n");
-  }
-  if($linearr[23] ne "GENBANK_NUCLEOTIDE"){
-    die ("GENBANK_NUCLEOTIDE is not the twentysixth element in the header but ".$linearr[23]." is.\\n");
-  }
-  if($linearr[29] ne "OLD_SYMBOL"){
-    die ("OLD_SYMBOL is not the 30th element in the header\n$line\n");
-  }  
-  if($linearr[37] ne "ENSEMBL_ID"){
-    die ("ENSEMBL_ID is not the 38th element in the header\n$line\n");
+  my %columns = (
+    GENE_RDB_ID => 0,
+    SYMBOL => 1,
+    NAME => 2,
+    GENBANK_NUCLEOTIDE => 23,
+    OLD_SYMBOL => 29,
+    ENSEMBL_ID => 37
+  );
+  # Detect format deviations
+  foreach my $name (keys %columns) {
+    if($linearr[$columns{$name}] ne $name) {
+      die "$name is not element $columns{$name} in the RGD header:\n$line\n";
+    }
   }
 
   my $sql = "insert ignore into synonym (xref_id, synonym) values (?, ?)";
@@ -103,31 +95,41 @@ sub run {
   my $syn_count = 0;
   while ( $line = $rgd_io->getline() ) {
     chomp $line;
-    my ($rgd, $symbol, $name, $refseq,$old_name, $ensembl_id) = (split (/\t/,$line))[0,1,2,23,29, 37];
-    my @nucs = split(/\;/,$refseq);
+    my ($rgd, $symbol, $name, $refseq ,$old_name, $ensembl_id) = 
+      (split (/\t/,$line))
+      [ $columns{GENE_RDB_ID},
+        $columns{SYMBOL},
+        $columns{NAME},
+        $columns{GENBANK_NUCLEOTIDE},
+        $columns{OLD_SYMBOL},
+        $columns{ENSEMBL_ID}
+      ];
+    my @nucs = split(/\;/,$refseq); # nucs = nucleotides
     my $done = 0;
-    my $failed_list ="";
+
+    # @nucs are sorted in the file in alphabetical order. Reverse order might be
+    # an efficiency hack for getting the better accessions done first, e.g. XM_, NM_
     foreach my $nuc (reverse @nucs){
       if(!$done){
-	my $xref=undef; 
-	if(defined($refseq{$nuc})){
-	  foreach my $xref (@{$refseq{$nuc}}){
-	    $done = 1;
-	    my $xref_id = $self->add_dependent_xref({ master_xref_id => $xref,
-						      acc            => $rgd,
-						      label          => $symbol,
-						      desc           => $name,
-						      source_id      => $source_id,
-                                                      dbi            => $dbi,
-						      species_id     => $species_id} );
-	    $count++;
-	    my @syns  = split(/\;/,$old_name);
-	    foreach my $syn(@syns){
-	      $add_syn_sth->execute($xref_id, $syn);
-	      $syn_count++;
-	    }
-	  }
-	}
+        if(exists $preloaded_refseq{$nuc}){
+          foreach my $xref (@{$preloaded_refseq{$nuc}}){
+            $done = 1;
+            my $xref_id = $self->add_dependent_xref({ 
+                        master_xref_id => $xref,
+                        acc            => $rgd,
+                        label          => $symbol,
+                        desc           => $name,
+                        source_id      => $source_id,
+                        dbi            => $dbi,
+                        species_id     => $species_id} );
+            $count++;
+            my @syns  = split(/\;/,$old_name);
+            foreach my $syn(@syns){
+              $add_syn_sth->execute($xref_id, $syn);
+              $syn_count++;
+            }
+          }
+        }
         if ($ensembl_id) {
           my @ensembl_ids = split(/\;/, $ensembl_id);
           $done = 1;
@@ -148,20 +150,18 @@ sub run {
             }
           }
         }
-	else{
-	  $failed_list .= " $nuc";
-	}
       }
     }
 
     if(!$done){
-      $self->add_xref({ acc        => $rgd,
-			label      => $symbol,
-			desc       => $name,
-			source_id  => $source_id,
-			species_id => $species_id,
-                        dbi        => $dbi,
-			info_type  => "MISC"} );
+      $self->add_xref({ 
+        acc        => $rgd,
+        label      => $symbol,
+        desc       => $name,
+        source_id  => $source_id,
+        species_id => $species_id,
+        dbi        => $dbi,
+        info_type  => "MISC"} );
       $mismatch++;
     }
 
