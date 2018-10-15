@@ -372,10 +372,14 @@ sub label_to_acc{
 ####################################################
 # get_valid_codes
 #
-# hash of accession to array of xrefs.
+# hash of accessions to array of xref dbIDs.
 # This is an array becouse more than one entry can
 # exist. i.e. for uniprot and refseq we have direct
 # and sequence match sets and we need to give both.
+#
+# This list is a cache of acceptable IDs in order to
+# reduce querying when attaching external accessions
+# to xrefs.
 ####################################################
 sub get_valid_codes{
 
