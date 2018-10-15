@@ -120,12 +120,6 @@ sub run {
     if ( defined($synonym) ) {
       $self->add_synonym( $xref_id, $synonym, $dbi );
     }
-    elsif ( $synonym =~ /^\s/x ) {
-      print "There is white space! \n" if ($verbose);
-    }
-    else {
-      next;
-    }
 
   } ## end while ( defined( my $line...))
 
