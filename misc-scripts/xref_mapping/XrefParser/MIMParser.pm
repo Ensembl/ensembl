@@ -64,7 +64,7 @@ sub run {
 
   print "sources are:- " . join( ", ", @sources ) . "\n" if ($verbose);
 
-  local $/ = "*RECORD*";
+  IO::Handle->input_record_separator('*RECORD*');
 
   my $mim_io = $self->get_filehandle($file);
 
