@@ -48,7 +48,7 @@ sub run {
        ( !defined $species_id ) or
        ( !defined $files ) )
   {
-    croak "Need to pass source_id, species_id and files as pairs";
+    croak 'Need to pass source_id, species_id and files as pairs';
   }
   $verbose |= 0;
 
@@ -119,7 +119,7 @@ sub run {
     ++$parsed_count;
 
     # Do not attempt to create unmapped xrefs
-    if ( $ensembl_id ne '' ) {
+    if ( $ensembl_id ne q{} ) {
       my $label       = $first_gene_name;
       my $synonym     = $second_gene_name;
       my $type        = 'gene';
@@ -128,7 +128,7 @@ sub run {
       my $xref_id =
         $self->get_xref( $dbass_gene_id, $source_id, $species_id, $dbi );
 
-      if ( !defined($xref_id) || $xref_id eq '' ) {
+      if ( !defined($xref_id) || $xref_id eq q{} ) {
         $xref_id = $self->add_xref(
                                    { acc        => $dbass_gene_id,
                                      version    => $version,
