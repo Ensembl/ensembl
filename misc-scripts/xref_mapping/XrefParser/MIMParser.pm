@@ -69,7 +69,7 @@ sub run {
   my $mim_io = $self->get_filehandle($file);
 
   if ( !defined $mim_io ) {
-    print "ERROR: Could not open $file\n";
+    print {*STDERR} "ERROR: Could not open $file\n";
     return 1;    # 1 is an error
   }
 
