@@ -91,6 +91,9 @@ sub run {
   my $morbid_source_id =
     $self->get_source_id_for_source_name( "MIM_MORBID", undef, $dbi );
   push @sources, $morbid_source_id;
+  if ( ( $gene_source_id == -1 ) || ( $morbid_source_id == -1 ) ) {
+    croak 'Failed to retrieve MIM source IDs';
+  }
 
   print "sources are:- " . join( ", ", @sources ) . "\n" if ($verbose);
 
