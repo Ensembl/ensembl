@@ -53,13 +53,13 @@ sub run {
   }
 
   my $count = 0;
-  while ( $_ = $file_io->getline() ) {
-    chomp;
-    my ($acc, $label, $desc, $stable_id) = split /\t/;
-    # Remove some provenance information encoded in the description
-    $desc =~ s/\[.*\]//;
-    # Remove labels of type 5 of 14 from the description
-    $desc =~ s/ , [0-9]+ of [0-9]+//;
+  while ( my $line = $file_io->getline() ) {
+    chomp $line;
+    my ($acc, $label, $desc, $stable_id) = split /\t/, $line;
+
+    if(defined $desc){
+      $desc = $self->parse_description($desc);
+    }
 
     if($label eq "unnamed"){
       $label = $acc;
@@ -82,5 +82,25 @@ sub run {
 
   return 0;
 }
+
+
+=begin comment
+Regex handles lines in the following desc formats
+
+XB-GENE-940410	unnamed	Putative ortholog of g2/mitotic-specific cyclin B3, 3 of 14	ENSXETG00000007206
+XB-GENE-956173	hba4	alpha-T4 globin, Putative ortholog of hemoglobin alpha chain. [Source:Uniprot/SWISSPROT;Acc:P01922], 2 of 3	ENSXETG00000001141
+
+=end comment
+=cut
+sub parse_description{
+  my ($self, $desc) = @_;
+
+  # Remove some provenance information encoded in the description
+  $desc =~ s/\[.*\]//;
+  # Remove labels of type 5 of 14 from the description
+  $desc =~ s/ , [0-9]+ of [0-9]+//;
+  return $desc;
+}
+
 
 1;
