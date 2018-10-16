@@ -157,8 +157,9 @@ sub run {
 
   } ## end while ( defined( my $line...))
 
-  printf( "%d direct xrefs succesfully parsed\n", $parsed_count )
-    if ($verbose);
+  if ($verbose) {
+    printf( "%d direct xrefs succesfully parsed\n", $parsed_count );
+  }
 
   $file_io->close();
 
