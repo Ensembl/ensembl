@@ -194,12 +194,10 @@ sub run {
                              info_type  => "DEPENDENT" } );
         }
         elsif ( $type eq q{^} ) {
-          if ( $_ =~ m{
-                        [*]FIELD[*]\sTI\n
-                        \N{CARET}
-                        \d+\sMOVED\sTO\s
-                        (\d+)
-                    }msx ) {
+          if ( $long_desc =~ m{
+                                MOVED\sTO\s
+                                (\d+)
+                            }msx ) {
             if ( $1 eq $number ) { next; }
             $old_to_new{$number} = $1;
           }
