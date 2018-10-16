@@ -27,6 +27,37 @@ use File::Basename;
 
 use parent qw( XrefParser::BaseParser );
 
+# This parser will read xrefs from a record file downloaded from the
+# OMIM Web site. They should be assigned to two different xref
+# sources: MIM_GENE and MIM_MORBID. MIM xrefs are linked to EntrezGene
+# entries so the parser does not match them to Ensembl; this will be
+# taken care of when EntrezGene antries are matched.
+#
+# OMIM records are multiline. Each record begins with a specific tag
+# line and consists of a number of fields. Each field starts with its
+# own start-tag line (i.e. the data proper only appears after a
+# newline) and continues until the beginning of either the next field
+# in the same record, the next record, or the end-of-input tag. The
+# fields are expected to appear IN FIXED, SPECIFIC ORDER. The overall
+# structure looks as follows:
+#
+#   *RECORD*
+#   *FIELD* NO
+#   *FIELD* TI
+#   *FIELD* TX
+#   *FIELD* RF
+#   *FIELD* CD
+#   *FIELD* ED
+#   *RECORD*
+#   *FIELD* NO
+#   *FIELD* TI
+#   ...
+#   *FIELD* CD
+#   *FIELD* ED
+#   *THEEND*
+#
+# All the data relevant to the parser can be found in the TI field.
+
 
 sub run {
 
