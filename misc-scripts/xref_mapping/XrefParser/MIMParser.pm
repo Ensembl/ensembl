@@ -113,22 +113,23 @@ sub run {
 
   while ( $_ = $mim_io->getline() ) {
     #get the MIM number
-    my $number = 0;
     my $is_morbid = 0;
-    if ( $_ =~ m{
-                  [*]FIELD[*]\s+NO\n
-                  (\d+)
-              }msx ) {
-      $number    = $1;
+    my ( $number ) = ( $_ =~ m{
+                                [*]FIELD[*]\s+NO\n
+                                (\d+)
+                            }msx );
+    if ( defined $number ) {
       $source_id = $gene_source_id;
 
-      if ( $_ =~ m{
-                    [*]FIELD[*]\sTI\n
-                    (.+)\n             # Grab the whole TI field
-                    [*]FIELD[*]\sTX
-          }msx ) {
-        my $ti = $1;
-        $ti =~ s{\n}{}gmsx;   # Remove line feeds. FIXME: in some places it will result in words being concatenated
+      my ( $ti ) = ( $_ =~ m{
+                              [*]FIELD[*]\sTI\n
+                              (.+)\n             # Grab the whole TI field
+                              [*]FIELD[*]\sTX
+                          }msx );
+      if ( defined $ti ) {
+        # Remove line breaks. FIXME: in some places it will result in words being concatenated
+        $ti =~ s{\n}{}gmsx;
+
         # Extract the 'type' and the whole description
         my ( $type, $long_desc ) =
           ( $ti =~ m{
@@ -141,9 +142,9 @@ sub run {
           print {*STDERR} 'Failed to extract record type and description from TI field';
           return 1;
         }
-        my @fields = split( qr{;;}msx, $long_desc );
 
         # Use the first block of text as description
+        my @fields = split( qr{;;}msx, $long_desc );
         my $label = $fields[0] . " [" . $type . $number . "]";
 
         if ( $type eq q{*} ) {     # gene only
@@ -194,12 +195,14 @@ sub run {
                              info_type  => "DEPENDENT" } );
         }
         elsif ( $type eq q{^} ) {
-          if ( $long_desc =~ m{
-                                MOVED\sTO\s
-                                (\d+)
-                            }msx ) {
-            if ( $1 eq $number ) { next; }
-            $old_to_new{$number} = $1;
+          my ( $new_number ) = ( $long_desc =~ m{
+                                                  MOVED\sTO\s
+                                                  (\d+)
+                                              }msx );
+          if ( defined $new_number ) {
+            if ( $new_number ne $number ) {
+              $old_to_new{$number} = $new_number;
+            }
           }
           else {
             $removed{$number} = 1;
@@ -207,9 +210,9 @@ sub run {
           }
 
         }
-      } ## end if (/[*]FIELD[*]\sTI(.+)[*]FIELD[*]\sTX/s)
-    } ## end if (/[*]FIELD[*]\s+NO\n(\d+)/)
-  } ## end while ( $_ = $mim_io->getline...)
+      } ## end if (defined $ti)
+    } ## end if (defined $number)
+  } ## record loop
 
   $mim_io->close();
 
