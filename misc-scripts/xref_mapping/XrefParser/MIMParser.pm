@@ -84,27 +84,32 @@ sub run {
     #get the MIM number
     my $number = 0;
     my $is_morbid = 0;
-    if (/[*]FIELD[*]\s+NO\n(\d+)/) {
+    if ( $_ =~ m{
+                  [*]FIELD[*]\s+NO\n
+                  (\d+)
+              }msx ) {
       $number    = $1;
       $source_id = $gene_source_id;
-      # if(/[*]FIELD[*]\sTI\n([#%+*^]*)\d+(.*)\n(.*)\n[*]/){
-      # 	$label =$2; # taken from description as acc is meaning less
-      # 	$long_desc = $2;
-      # 	$long_desc .= $3 if defined $3;
-      # 	$type = $1;
-      # 	$label =~ s/;\s[A-Z0-9]+$//; # strip gene name at end
-      # 	$label = substr($label,0,35)." [".$type.$number."]";
 
-      if (/[*]FIELD[*]\sTI(.+)[*]FIELD[*]\sTX/s) { # grab the whole TI field
+      if ( $_ =~ m{
+                    [*]FIELD[*]\sTI\n
+                    (.+)\n             # Grab the whole TI field
+                    [*]FIELD[*]\sTX
+          }msx ) {
         my $ti = $1;
-        $ti =~ s/\n//g;   # Remove line feeds
+        $ti =~ s{\n}{}gmsx;   # Remove line feeds. FIXME: in some places it will result in words being concatenated
         # Extract the 'type' and the whole description
-        my ($type, $long_desc) = ( $ti =~ /([#%+*^]*)\d+(.+)/s );
+        my ( $type, $long_desc ) =
+          ( $ti =~ m{
+                      ([#%+*^]*)  # type of entry
+                      \d+         # number (should be the same as from NO)
+                      \s+         # normally just one space
+                      (.+)        # description of entry
+                  }msx );
         if ( !defined( $type ) ) {
           print {*STDERR} 'Failed to extract record type and description from TI field';
           return 1;
         }
-        $long_desc =~ s/^\s//;    # Remove white space at the start
         my @fields = split( qr{;;}msx, $long_desc );
 
         # Use the first block of text as description
@@ -158,7 +163,12 @@ sub run {
                              info_type  => "DEPENDENT" } );
         }
         elsif ( $type eq q{^} ) {
-          if (/[*]FIELD[*]\sTI\n\N{CARET}\d+ MOVED TO (\d+)/) {
+          if ( $_ =~ m{
+                        [*]FIELD[*]\sTI\n
+                        \N{CARET}
+                        \d+\sMOVED\sTO\s
+                        (\d+)
+                    }msx ) {
             if ( $1 eq $number ) { next; }
             $old_to_new{$number} = $1;
           }
