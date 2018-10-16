@@ -81,7 +81,6 @@ sub run {
 
   my %old_to_new;
   my %removed;
-  my $source_id;
   my @sources;
 
   push @sources, $general_source_id;
@@ -113,13 +112,11 @@ sub run {
 
   while ( $_ = $mim_io->getline() ) {
     #get the MIM number
-    my $is_morbid = 0;
     my ( $number ) = ( $_ =~ m{
                                 [*]FIELD[*]\s+NO\n
                                 (\d+)
                             }msx );
     if ( defined $number ) {
-      $source_id = $gene_source_id;
 
       my ( $ti ) = ( $_ =~ m{
                               [*]FIELD[*]\sTI\n
