@@ -204,9 +204,15 @@ sub run {
               $old_to_new{$number} = $new_number;
             }
           }
-          else {
+          # Both leading and trailing whitespace has been removed
+          # so don't bother with another regex match, just compare.
+          elsif ( $long_desc eq 'REMOVED FROM DATABASE' ) {
             $removed{$number} = 1;
             $removed_count++;
+          }
+          else {
+            print {*STDERR} "Unsupported type of a '^' record: '${long_desc}'\n";
+            return 1;
           }
 
         }
