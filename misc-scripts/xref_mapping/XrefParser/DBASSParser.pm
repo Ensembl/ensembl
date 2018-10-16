@@ -70,15 +70,15 @@ sub run {
   while ( defined( my $line = $file_io->getline() ) ) {
 
     # strip trailing whitespace
-    $line =~ s/\s*$//x;
+    $line =~ s{\s*\z}{}msx;
     # csv format can come with quoted columns, remove them. Note that this
     # assumes actual column values will never contain commas, which while
     # true at present brings into question why bother quoting them in the
     # first place.
-    $line =~ s/"//gx;
+    $line =~ s{"}{}gmsx;
 
     my ( $dbass_gene_id, $dbass_gene_name, $ensembl_id, @split_overflow ) =
-      split( /,/x, $line );
+      split( qr{,}msx, $line );
 
     # If Ensembl ID is the last column and quotation marks have already
     # been stripped, split() will leave $ensembl_id undefined for unmapped
@@ -112,12 +112,12 @@ sub run {
                                     (.*)
                                     \s?\/\s?  # typically no ws here but just in case
                                     (.*)
-                                  }x ) ||
+                                  }msx ) ||
            ( $dbass_gene_name =~ m{
                                     (.*)
                                     \s?  # typically there IS a space before the ( here
                                     [(] (.*) [)]
-                                  }x ) ) {
+                                  }msx ) ) {
         $first_gene_name  = $1;
         $second_gene_name = $2;
       }
