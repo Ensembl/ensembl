@@ -80,8 +80,14 @@ sub run {
     my ( $dbass_gene_id, $dbass_gene_name, $ensembl_id, @split_overflow ) =
       split( /,/x, $line );
 
-    if ( !defined($dbass_gene_id) || !defined($ensembl_id) ) {
-      printf {*STDERR} ( "Line %d has fewer than three columns.\n",
+    # If Ensembl ID is the last column and quotation marks have already
+    # been stripped, split() will leave $ensembl_id undefined for unmapped
+    # entries. Therefore, only check the first two columns.
+    # Conversely, if Ensembl ID is *not* the last column split() will set
+    # $ensembl_id to an empty string for unmapped entries and correctly
+    # assigns further tokens to the overflow array.
+    if ( !defined($dbass_gene_id) || !defined($dbass_gene_name) ) {
+      printf {*STDERR} ( "Line %d has fewer than two columns.\n",
                       1 + $parsed_count );
       print {*STDERR} ("The parsing failed\n");
       return 1;
@@ -93,8 +99,10 @@ sub run {
       return 1;
     }
 
-    # Do not attempt to create unmapped xrefs
-    if ( $ensembl_id ne q{} ) {
+    # Do not attempt to create unmapped xrefs. Checking truthiness is good
+    # enough here because the only non-empty string evaluating as false is
+    # not a valid Ensembl stable ID.
+    if ( $ensembl_id ) {
 
       # FIXME: .* is seriously inefficient because here it results in massive
       # amounts of backtracking. Could we be more specific, i.e. assume
