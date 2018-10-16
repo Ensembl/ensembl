@@ -72,7 +72,7 @@ sub run {
   my @linearr = split(/\t/,$line);
 
   my %columns = (
-    GENE_RDB_ID => 0,
+    GENE_RGD_ID => 0,
     SYMBOL => 1,
     NAME => 2,
     GENBANK_NUCLEOTIDE => 23,
@@ -97,7 +97,7 @@ sub run {
     chomp $line;
     my ($rgd, $symbol, $name, $refseq ,$old_name, $ensembl_id) = 
       (split (/\t/,$line))
-      [ $columns{GENE_RDB_ID},
+      [ $columns{GENE_RGD_ID},
         $columns{SYMBOL},
         $columns{NAME},
         $columns{GENBANK_NUCLEOTIDE},
