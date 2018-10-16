@@ -58,8 +58,8 @@ sub run {
   my $rgd_io = $self->get_filehandle($file);
 
   if ( !defined $rgd_io ) {
-    print "ERROR: Could not open $file\n";
-    return 1;
+    print STDERR "ERROR: Could not open $file\n";
+    croak "Could not open $file when trying to parse RGD";
   }
   my $line;
   my $found =0;
@@ -82,7 +82,7 @@ sub run {
   # Detect format deviations
   foreach my $name (keys %columns) {
     if($linearr[$columns{$name}] ne $name) {
-      die "$name is not element $columns{$name} in the RGD header:\n$line\n";
+      croak "$name is not element $columns{$name} in the RGD header:\n$line\n";
     }
   }
 
