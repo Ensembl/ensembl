@@ -93,32 +93,33 @@ sub run {
       return 1;
     }
 
-    # FIXME: .* is seriously inefficient because here it results in massive
-    # amounts of backtracking. Could we be more specific, i.e. assume
-    # some specific format of DBASS names?
-    my ( $first_gene_name, $second_gene_name );
-    if ( ( $dbass_gene_name =~ m{
-                                  (.*)
-                                  \s?\/\s?  # typically no ws here but just in case
-                                  (.*)
-                                }x ) ||
-         ( $dbass_gene_name =~ m{
-                                  (.*)
-                                  \s?  # typically there IS a space before the ( here
-                                  [(] (.*) [)]
-                                }x ) ) {
-      $first_gene_name  = $1;
-      $second_gene_name = $2;
-    }
-    else {
-      $first_gene_name = $dbass_gene_name;
-      $second_gene_name = undef;
-    }
-
-    ++$parsed_count;
-
     # Do not attempt to create unmapped xrefs
     if ( $ensembl_id ne q{} ) {
+
+      # FIXME: .* is seriously inefficient because here it results in massive
+      # amounts of backtracking. Could we be more specific, i.e. assume
+      # some specific format of DBASS names?
+      my ( $first_gene_name, $second_gene_name );
+      if ( ( $dbass_gene_name =~ m{
+                                    (.*)
+                                    \s?\/\s?  # typically no ws here but just in case
+                                    (.*)
+                                  }x ) ||
+           ( $dbass_gene_name =~ m{
+                                    (.*)
+                                    \s?  # typically there IS a space before the ( here
+                                    [(] (.*) [)]
+                                  }x ) ) {
+        $first_gene_name  = $1;
+        $second_gene_name = $2;
+      }
+      else {
+        $first_gene_name = $dbass_gene_name;
+        $second_gene_name = undef;
+      }
+
+      ++$parsed_count;
+
       my $label       = $first_gene_name;
       my $synonym     = $second_gene_name;
       my $type        = 'gene';
