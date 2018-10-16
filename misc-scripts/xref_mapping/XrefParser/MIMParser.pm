@@ -110,19 +110,21 @@ sub run {
   $mim_io->getline();    # first record is empty with *RECORD* as the
                          # record seperator
 
-  while ( $_ = $mim_io->getline() ) {
-    #get the MIM number
-    my ( $number ) = ( $_ =~ m{
-                                [*]FIELD[*]\s+NO\n
-                                (\d+)
-                            }msx );
+  while ( my $input_record = $mim_io->getline() ) {
+
+    my ( $number )
+      = ( $input_record =~ m{
+                              [*]FIELD[*]\s+NO\n
+                              (\d+)
+                          }msx );
     if ( defined $number ) {
 
-      my ( $ti ) = ( $_ =~ m{
-                              [*]FIELD[*]\sTI\n
-                              (.+)\n             # Grab the whole TI field
-                              [*]FIELD[*]\sTX
-                          }msx );
+      my ( $ti )
+        = ( $input_record =~ m{
+                                [*]FIELD[*]\sTI\n
+                                (.+)\n             # Grab the whole TI field
+                                [*]FIELD[*]\sTX
+                            }msx );
       if ( defined $ti ) {
         # Remove line breaks. FIXME: in some places it will result in words being concatenated
         $ti =~ s{\n}{}gmsx;
