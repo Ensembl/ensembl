@@ -70,38 +70,27 @@ sub run {
         chomp($line);
         my ($accession, $chromosome, $position, $start, $end, $strand,$label, 
             $status, $marker, $marker_type, $feature_type, $synonym_field) = split(/\t/,$line);
-            
-        $position =~ s/^\s+// if ($position);
-
-        my @synonyms = split(/\|/,$synonym_field) if ($synonym_field);
-        
 	
-        my $desc;
-	if ($marker) {
-	    $desc = $marker;
-	}
-        
         $acc_to_xref{$accession} = $self->add_xref({ acc        => $accession,
     	                           		             label      => $label,
-    					                             desc       => $desc,
+                                                                     desc       => defined($marker) ? $marker : undef,
     					                             source_id  => $source_id,
     					                             species_id => $species_id,
                                                                      dbi        => $dbi,
     					                             info_type  => "MISC"} );
-        if($verbose and !$desc){
+        if($verbose and !$marker){
     	   print "$accession has no description\n";
         }
         $xref_count++;
-            
+
+        my @synonyms;
         if(defined($acc_to_xref{$accession})){
-           
+            @synonyms = split(/\|/,$synonym_field) if ($synonym_field);
             foreach my $syn (@synonyms) {
                 $self->add_synonym($acc_to_xref{$accession}, $syn, $dbi);
                 $syn_count++;
             }
-            
         }
-        
     }
       
     $mgi_io->close();
