@@ -62,7 +62,8 @@ sub run {
     croak "Failed to acquire a file handle for '${filename}'";
   }
 
-  my $parsed_count = 0;
+  my $processed_count = 0;
+  my $unmapped_count = 0;
 
   # Skip the header line
   $file_io->getline();
@@ -87,10 +88,12 @@ sub run {
     # $ensembl_id to an empty string for unmapped entries and correctly
     # assigns further tokens to the overflow array.
     if ( !defined($dbass_gene_id) || !defined($dbass_gene_name) ) {
-      croak 'Line ' . (1 + $parsed_count) . ' has fewer than two columns';
+      croak 'Line ' . (2 + $processed_count + $unmapped_count)
+        . " of input file '${filename}' has fewer than two columns";
     }
     elsif ( scalar @split_overflow > 0 ) {
-      croak 'Line ' . (1 + $parsed_count) . ' has more than three columns';
+      croak 'Line ' . (2 + $processed_count + $unmapped_count)
+        . " of input file '${filename}' has fewer than two columns";
     }
 
     # Do not attempt to create unmapped xrefs. Checking truthiness is good
@@ -120,8 +123,6 @@ sub run {
         $second_gene_name = undef;
       }
 
-      ++$parsed_count;
-
       my $label       = $first_gene_name;
       my $synonym     = $second_gene_name;
       my $type        = 'gene';
@@ -147,12 +148,18 @@ sub run {
       }
 
       $self->add_direct_xref( $xref_id, $ensembl_id, $type, undef, $dbi );
+
+      ++$processed_count;
+    }
+    else {
+      ++$unmapped_count;
     }
 
   } ## end while ( defined( my $line...))
 
   if ($verbose) {
-    printf( "%d direct xrefs succesfully parsed\n", $parsed_count );
+    printf( "%d direct xrefs succesfully processed\n", $processed_count );
+    printf( "Skipped %d unmapped xrefs\n", $unmapped_count );
   }
 
   $file_io->close();
