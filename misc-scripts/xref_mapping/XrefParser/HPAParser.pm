@@ -43,62 +43,45 @@ sub run {
   my $dbi          = $ref_arg->{dbi};
   $dbi = $self->dbi unless defined $dbi;
 
-  if((!defined $source_id) or (!defined $species_id) or (!defined $files) ){
-    croak "Need to pass source_id, species_id, files and rel_file as pairs";
-  }
-  $verbose |=0;
+  croak "Need to pass source_id, species_id, files and rel_file as pairs"
+    unless defined $source_id and defined $species_id and defined $files;
 
-  my $filename = @{$files}[0];
+  $verbose |= 0;
+  my $file = @{$files}[0];
 
-  my $file_io = $self->get_filehandle($filename);
-  if ( !defined($file_io) ) {
-    return 1;
-  }
+  my $file_io = $self->get_filehandle($file);
+  croak "ERROR: Could not open $file\n" unless defined $file_io;
 
   my $parsed_count = 0;
-
-  $file_io->getline();
+  $file_io->getline(); # skip header # Antibody,antibody_id,ensembl_peptide_id,link
 
   while ( defined( my $line = $file_io->getline() ) ) {
-
     $line =~ s/\s*$//;
 		
+    my ( $antibody, $antibody_id, $ensembl_peptide_id, $link ) = split( /,/, $line );
 
-    my ( $antibody, $antibody_id, $ensembl_peptide_id, $link) = split( /,/, $line );
-
-    if ( !defined($antibody) || !defined($ensembl_peptide_id) ) {
-      printf( "Line %d contains  has less than two columns.\n",
-	      1 + $parsed_count );
-      print ("The parsing failed\n");
-      return 1;
-    }
+    croak sprintf("Line %d contains has less than two columns.\nParsing failed", 1 + $parsed_count)
+      unless defined $antibody and defined $ensembl_peptide_id;
 	
     my $label       = $antibody;
     my $type        = 'translation';
-    my $description = '';
     my $version     = '1';
 
     ++$parsed_count;
 
     my $xref_id = $self->get_xref( $antibody_id, $source_id, $species_id, $dbi );
+    $xref_id = $self->add_xref({ acc        => $antibody_id,
+				 version    => $version,
+				 label      => $label,
+				 source_id  => $source_id,
+				 species_id => $species_id,
+				 dbi        => $dbi,
+				 info_type  => "DIRECT"} ) unless defined $xref_id or $xref_id ne '';
 
-    if ( !defined($xref_id) || $xref_id eq '' ) {
-      $xref_id = $self->add_xref({ acc        => $antibody_id,
-				   version    => $version,
-				   label      => $label,
-				   desc       => $description,
-				   source_id  => $source_id,
-				   species_id => $species_id,
-                                   dbi        => $dbi,
-				   info_type  => "DIRECT"} );
-    }
-	
-	
-    $self->add_direct_xref( $xref_id, $ensembl_peptide_id, $type, '', $dbi);
-	
+    $self->add_direct_xref( $xref_id, $ensembl_peptide_id, $type, undef, $dbi);
   } ## end while ( defined( my $line...
 
-  printf( "%d direct xrefs succesfully parsed\n", $parsed_count ) if($verbose);
+  printf( "%d direct xrefs succesfully parsed\n", $parsed_count ) if $verbose;
 
   $file_io->close();
 
