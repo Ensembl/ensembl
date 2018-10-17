@@ -59,7 +59,7 @@ sub run {
 
   my $file_io = $self->get_filehandle($filename);
   if ( !defined($file_io) ) {
-    return 1;
+    croak "Failed to acquire a file handle for '${filename}'";
   }
 
   my $parsed_count = 0;
@@ -87,16 +87,10 @@ sub run {
     # $ensembl_id to an empty string for unmapped entries and correctly
     # assigns further tokens to the overflow array.
     if ( !defined($dbass_gene_id) || !defined($dbass_gene_name) ) {
-      printf {*STDERR} ( "Line %d has fewer than two columns.\n",
-                      1 + $parsed_count );
-      print {*STDERR} ("The parsing failed\n");
-      return 1;
+      croak 'Line ' . (1 + $parsed_count) . ' has fewer than two columns';
     }
     elsif ( scalar @split_overflow > 0 ) {
-      printf {*STDERR} ( "Line %d has more than three columns.\n",
-                      1 + $parsed_count );
-      print {*STDERR} ("The parsing failed\n");
-      return 1;
+      croak 'Line ' . (1 + $parsed_count) . ' has more than three columns';
     }
 
     # Do not attempt to create unmapped xrefs. Checking truthiness is good
