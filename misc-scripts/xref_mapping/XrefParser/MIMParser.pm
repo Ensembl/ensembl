@@ -38,19 +38,19 @@ use parent qw( XrefParser::BaseParser );
 # own start-tag line (i.e. the data proper only appears after a
 # newline) and continues until the beginning of either the next field
 # in the same record, the next record, or the end-of-input tag. The
-# fields are expected to appear IN FIXED, SPECIFIC ORDER. The overall
-# structure looks as follows:
+# overall structure looks as follows:
 #
 #   *RECORD*
 #   *FIELD* NO
 #   *FIELD* TI
 #   *FIELD* TX
-#   *FIELD* RF
-#   *FIELD* CD
-#   *FIELD* ED
+#   ...
 #   *RECORD*
 #   *FIELD* NO
 #   *FIELD* TI
+#   ...
+#   *RECORD*
+#   *FIELD* NO
 #   ...
 #   *FIELD* CD
 #   *FIELD* ED
@@ -124,9 +124,13 @@ sub run {
 
       my ( $ti )
         = ( $input_record =~ m{
-                                [*]FIELD[*]\sTI\n
-                                (.+)\n             # Grab the whole TI field
-                                [*]FIELD[*]\sTX
+                                [*]FIELD[*]\sTI\n  # The TI field spans from this tag until:
+                                (.+?)              # (important: NON-greedy match)
+                                \n?
+                                (?: [*]FIELD[*]    #  - the next field in same record, or
+                                  | [*]THEEND[*]   #  - the end of input file, or
+                                  | \z             #  - the end of current record
+                                )
                             }msx );
       if ( defined $ti ) {
         # Remove line breaks. FIXME: in some places it will result in words being concatenated
