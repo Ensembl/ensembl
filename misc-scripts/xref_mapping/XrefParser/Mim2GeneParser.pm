@@ -130,8 +130,7 @@ sub run {
       }
     }
     else {
-      print "WARNING unknown type $type\n";
-      next;
+      croak "Unknown type $type";
     }
 
   } ## end while ( $_ = $eg_io->getline...)
