@@ -109,7 +109,7 @@ sub run {
 
     # @nucs are sorted in the file in alphabetical order. Reverse order might be
     # an efficiency hack for getting the better accessions done first, e.g. XM_, NM_
-    foreach my $nuc (reverse @nucs){
+    foreach my $nuc ($self->sort_refseq_accessions(@nucs)){
       if(!$done){
         if(exists $preloaded_refseq{$nuc}){
           foreach my $xref (@{$preloaded_refseq{$nuc}}){
@@ -176,6 +176,26 @@ sub run {
     print "added $syn_count synonyms\n";
   }
   return 0;
+}
+
+# Predefined importance levels for the most valued RefSeq accession types
+my %refseq_priorities = (
+  NM => 1,
+  NP => 1,
+  NR => 1,
+  XM => 2,
+  XP => 2,
+  XR => 2,
+);
+
+# Filter out any accessions which are not in the "normal" set of genomic features
+# The column in question contains EMBL accessions as well as other things, and we don't 
+# have the ability to make Xrefs to those. It wouldn't be useful to do so in any case
+sub sort_refseq_accessions {
+  my ($self,@accessions) = @_;
+  @accessions = sort { $refseq_priorities{substr $a, 0,2} <=> $refseq_priorities{substr $b, 0,2} } 
+                grep { exists $refseq_priorities{substr $_, 0,2} } @accessions;
+  return @accessions;
 }
 
 1;
