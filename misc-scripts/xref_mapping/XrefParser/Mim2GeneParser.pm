@@ -136,9 +136,11 @@ sub run {
   } ## end while ( $_ = $eg_io->getline...)
   $add_dependent_xref_sth->finish;
 
-  print $missed_entrez. " EntrezGene entries could not be found.\n";
-  print $missed_omim. " Omim entries could not be found.\n";
-  print $diff_type. " had different types out of $count Entries.\n";
+  if ( $verbose ) {
+    print $missed_entrez . " EntrezGene entries could not be found.\n"
+      . $missed_omim . " Omim entries could not be found.\n"
+      . $diff_type . " had different types out of $count Entries.\n";
+  }
 
   return 0;
 } ## end sub run
