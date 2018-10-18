@@ -124,103 +124,89 @@ sub run {
   $mim_io->getline();    # first record is empty with *RECORD* as the
                          # record seperator
 
+ RECORD:
   while ( my $input_record = $mim_io->getline() ) {
 
-    my ( $number )
-      = ( $input_record =~ m{
-                              [*]FIELD[*]\s+NO\n
-                              (\d+)
-                          }msx );
-    if ( defined $number ) {
+    my ( $number, $ti ) = extract_number_and_ti( $input_record );
+    if ( ( ! defined $number ) || ( ! defined $ti ) ) {
+      next RECORD;
+    }
 
-      my ( $ti )
-        = ( $input_record =~ m{
-                                [*]FIELD[*]\sTI\n  # The TI field spans from this tag until:
-                                (.+?)              # (important: NON-greedy match)
-                                \n?
-                                (?: [*]FIELD[*]    #  - the next field in same record, or
-                                  | [*]THEEND[*]   #  - the end of input file, or
-                                  | \z             #  - the end of current record
-                                )
-                            }msx );
-      if ( defined $ti ) {
-        # Remove line breaks, making sure we do not accidentally concatenate words
-        $ti =~ s{
-                  (?:
-                    ;;\n
-                  | \n;;
-                  )
-              }{;;}gmsx;
-        $ti =~ s{\n}{ }gmsx;
+    # Remove line breaks, making sure we do not accidentally concatenate words
+    $ti =~ s{
+              (?:
+                ;;\n
+              | \n;;
+              )
+          }{;;}gmsx;
+    $ti =~ s{\n}{ }gmsx;
 
-        # Extract the 'type' and the whole description
-        my ( $type, $long_desc ) =
-          ( $ti =~ m{
-                      ([#%+*^]*)  # type of entry
-                      \d+         # number (should be the same as from NO)
-                      \s+         # normally just one space
-                      (.+)        # description of entry
-                  }msx );
-        if ( !defined( $type ) ) {
-          croak 'Failed to extract record type and description from TI field';
+    # Extract the 'type' and the whole description
+    my ( $type, $long_desc ) =
+      ( $ti =~ m{
+                  ([#%+*^]*)  # type of entry
+                  \d+         # number (should be the same as from NO)
+                  \s+         # normally just one space
+                  (.+)        # description of entry
+              }msx );
+    if ( !defined( $type ) ) {
+      croak 'Failed to extract record type and description from TI field';
+    }
+
+    # Use the first block of text as description
+    my @fields = split( qr{;;}msx, $long_desc );
+    my $label = $fields[0] . " [" . $type . $number . "]";
+
+    my $xref_object = {
+                       acc        => $number,
+                       label      => $label,
+                       desc       => $long_desc,
+                       species_id => $species_id,
+                       dbi        => $dbi,
+                       info_type  => "DEPENDENT",
+                     };
+
+    if ( exists $TYPE_SINGLE_SOURCES{$type} ) {
+      my $type_source = $TYPE_SINGLE_SOURCES{$type};
+
+      $xref_object->{'source_id'} = $type_source;
+      $counters{ $type_source }++;
+      $self->add_xref($xref_object);
+
+    }
+    elsif ( $type eq q{+} ) {    # both gene and phenotype
+
+      $xref_object->{'source_id'} = $gene_source_id;
+      $counters{ $gene_source_id }++;
+      $self->add_xref($xref_object);
+
+      $xref_object->{'source_id'} = $morbid_source_id;
+      $counters{ $morbid_source_id }++;
+      $self->add_xref($xref_object);
+
+    }
+    elsif ( $type eq q{^} ) {
+      my ( $new_number ) = ( $long_desc =~ m{
+                                              MOVED\sTO\s
+                                              (\d+)
+                                          }msx );
+      if ( defined $new_number ) {
+        if ( $new_number ne $number ) {
+          $old_to_new{$number} = $new_number;
         }
+      }
+      # Both leading and trailing whitespace has been removed
+      # so don't bother with another regex match, just compare.
+      elsif ( $long_desc eq 'REMOVED FROM DATABASE' ) {
+        $removed{$number} = 1;
+        $counters{ 'removed' }++;
+      }
+      else {
+        croak "Unsupported type of a '^' record: '${long_desc}'\n";
+      }
 
-        # Use the first block of text as description
-        my @fields = split( qr{;;}msx, $long_desc );
-        my $label = $fields[0] . " [" . $type . $number . "]";
+    }
 
-        my $xref_object = {
-                           acc        => $number,
-                           label      => $label,
-                           desc       => $long_desc,
-                           species_id => $species_id,
-                           dbi        => $dbi,
-                           info_type  => "DEPENDENT",
-                         };
-
-        if ( exists $TYPE_SINGLE_SOURCES{$type} ) {
-          my $type_source = $TYPE_SINGLE_SOURCES{$type};
-
-          $xref_object->{'source_id'} = $type_source;
-          $counters{ $type_source }++;
-          $self->add_xref($xref_object);
-
-        }
-        elsif ( $type eq q{+} ) {    # both gene and phenotype
-
-          $xref_object->{'source_id'} = $gene_source_id;
-          $counters{ $gene_source_id }++;
-          $self->add_xref($xref_object);
-
-          $xref_object->{'source_id'} = $morbid_source_id;
-          $counters{ $morbid_source_id }++;
-          $self->add_xref($xref_object);
-
-        }
-        elsif ( $type eq q{^} ) {
-          my ( $new_number ) = ( $long_desc =~ m{
-                                                  MOVED\sTO\s
-                                                  (\d+)
-                                              }msx );
-          if ( defined $new_number ) {
-            if ( $new_number ne $number ) {
-              $old_to_new{$number} = $new_number;
-            }
-          }
-          # Both leading and trailing whitespace has been removed
-          # so don't bother with another regex match, just compare.
-          elsif ( $long_desc eq 'REMOVED FROM DATABASE' ) {
-            $removed{$number} = 1;
-            $counters{ 'removed' }++;
-          }
-          else {
-            croak "Unsupported type of a '^' record: '${long_desc}'\n";
-          }
-
-        }
-
-      } ## end if (defined $ti)
-    } ## end if (defined $number)
   } ## record loop
 
   $mim_io->close();
@@ -247,6 +233,31 @@ sub run {
 
   return 0;
 } ## end sub run
+
+
+sub extract_number_and_ti {
+  my ( $input_record ) = @_;
+
+  my ( $number )
+    = ( $input_record =~ m{
+                            [*]FIELD[*]\s+NO\n
+                            (\d+)
+                        }msx );
+
+  my ( $ti )
+    = ( $input_record =~ m{
+                            [*]FIELD[*]\sTI\n  # The TI field spans from this tag until:
+                            (.+?)              # (important: NON-greedy match)
+                            \n?
+                            (?: [*]FIELD[*]    #  - the next field in same record, or
+                            | [*]THEEND[*]   #  - the end of input file, or
+                            | \z             #  - the end of current record
+                            )
+                        }msx );
+
+  return ( $number, $ti );
+}
+
 
 
 1;
