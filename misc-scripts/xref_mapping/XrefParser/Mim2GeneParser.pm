@@ -37,7 +37,6 @@ sub run {
   my $files             = $ref_arg->{files};
   my $verbose           = $ref_arg->{verbose};
   my $dbi               = $ref_arg->{dbi};
-  $dbi = $self->dbi unless defined $dbi;
 
   if ( ( !defined $general_source_id ) or
        ( !defined $species_id ) or
@@ -45,7 +44,8 @@ sub run {
   {
     croak "Need to pass source_id, species_id and files as pairs";
   }
-  $verbose |= 0;
+  $dbi //= $self->dbi;
+  $verbose //= 0;
 
   my $filename = @{$files}[0];
 
