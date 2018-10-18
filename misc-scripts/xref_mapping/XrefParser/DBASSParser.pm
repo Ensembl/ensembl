@@ -61,12 +61,12 @@ sub run {
   if ( !defined($file_io) ) {
     croak "Failed to acquire a file handle for '${filename}'";
   }
+  if ( ! is_file_header_valid( $file_io->getline() ) ) {
+    croak "Malformed or unexpected header in DBASS file '${filename}'";
+  }
 
   my $processed_count = 0;
   my $unmapped_count = 0;
-
-  # Skip the header line
-  $file_io->getline();
 
   while ( defined( my $line = $file_io->getline() ) ) {
 
@@ -166,6 +166,48 @@ sub run {
 
   return 0;
 } ## end sub run
+
+
+=head2 is_file_header_valid
+
+  Arg [1]    : String file header line
+  Example    : if (!is_file_header_valid($header_line)) {
+                 croak 'Bad header';
+               }
+  Description: Verifies if the header of a DBASS file follows expected
+               syntax and contains expected column names.
+  Return type: boolean
+  Exceptions : none
+  Caller     : internal
+  Status     : Stable
+
+=cut
+
+sub is_file_header_valid {
+  my ( $header ) = @_;
+
+  # Note that yes, we DO have to use backslashed numeric
+  # backreferences below - both @_ and %+ only get populated upon a
+  # successful match. Therefore, do take care the numbers stay correct
+  # in the event of having to modify the regex.
+  if ( ! ( $header
+           =~ m{
+                 \A                          # no extra leading columns
+                 ("?) DBASS (3|5) GeneID \1  # make sure quotes match;
+                                             # same in the other two
+                 \s?,\s?
+                 ("?) DBASS \2 GeneName \3   # prevent mixing splice sites
+                                             # in ID and name
+                 \s?,\s?
+                 ("?) EnsemblGeneNumber \4
+                 \n?                         # most likely there will be one
+                 \z                          # no extra trailing columns
+             }msx ) ) {
+    return false;
+  }
+
+  return true;
+}
 
 
 1;
