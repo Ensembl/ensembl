@@ -87,6 +87,7 @@ sub run {
 
   my %old_to_new;
   my %removed;
+  my %counters;
   my @sources;
 
   push @sources, $general_source_id;
@@ -102,6 +103,13 @@ sub run {
     croak 'Failed to retrieve MIM source IDs';
   }
 
+  Readonly my %TYPE_SINGLE_SOURCES => (
+                                       q{*} => $gene_source_id,
+                                       q{} => $morbid_source_id,
+                                       q{#} => $morbid_source_id,
+                                       q{%} => $morbid_source_id,
+                                     );
+
   if ($verbose) {
     print "sources are:- " . join( ", ", @sources ) . "\n";
   }
@@ -112,10 +120,6 @@ sub run {
   if ( !defined $mim_io ) {
     croak "Failed to acquire a file handle for '${filename}'";
   }
-
-  my $gene          = 0;
-  my $phenotype     = 0;
-  my $removed_count = 0;
 
   $mim_io->getline();    # first record is empty with *RECORD* as the
                          # record seperator
@@ -165,52 +169,33 @@ sub run {
         my @fields = split( qr{;;}msx, $long_desc );
         my $label = $fields[0] . " [" . $type . $number . "]";
 
-        if ( $type eq q{*} ) {     # gene only
-          $gene++;
-          $self->add_xref(
-                           { acc        => $number,
-                             label      => $label,
-                             desc       => $long_desc,
-                             source_id  => $gene_source_id,
-                             species_id => $species_id,
-                             dbi        => $dbi,
-                             info_type  => "DEPENDENT" } );
-        }
-        elsif ( ( !defined $type ) or
-                ( $type eq q{} )  or
-                ( $type eq q{#} ) or
-                ( $type eq q{%} ) )
-        {    #phenotype only
-          $phenotype++;
-          $self->add_xref(
-                           { acc        => $number,
-                             label      => $label,
-                             desc       => $long_desc,
-                             source_id  => $morbid_source_id,
-                             species_id => $species_id,
-                             dbi        => $dbi,
-                             info_type  => "DEPENDENT" } );
-        }
-        elsif ( $type eq q{+} ) {    # both
-          $gene++;
-          $phenotype++;
-          $self->add_xref(
-                           { acc        => $number,
-                             label      => $label,
-                             desc       => $long_desc,
-                             source_id  => $gene_source_id,
-                             species_id => $species_id,
-                             dbi        => $dbi,
-                             info_type  => "DEPENDENT" } );
+        my $xref_object = {
+                           acc        => $number,
+                           label      => $label,
+                           desc       => $long_desc,
+                           species_id => $species_id,
+                           dbi        => $dbi,
+                           info_type  => "DEPENDENT",
+                         };
 
-          $self->add_xref(
-                           { acc        => $number,
-                             label      => $label,
-                             desc       => $long_desc,
-                             source_id  => $morbid_source_id,
-                             species_id => $species_id,
-                             dbi        => $dbi,
-                             info_type  => "DEPENDENT" } );
+        if ( exists $TYPE_SINGLE_SOURCES{$type} ) {
+          my $type_source = $TYPE_SINGLE_SOURCES{$type};
+
+          $xref_object->{'source_id'} = $type_source;
+          $counters{ $type_source }++;
+          $self->add_xref($xref_object);
+
+        }
+        elsif ( $type eq q{+} ) {    # both gene and phenotype
+
+          $xref_object->{'source_id'} = $gene_source_id;
+          $counters{ $gene_source_id }++;
+          $self->add_xref($xref_object);
+
+          $xref_object->{'source_id'} = $morbid_source_id;
+          $counters{ $morbid_source_id }++;
+          $self->add_xref($xref_object);
+
         }
         elsif ( $type eq q{^} ) {
           my ( $new_number ) = ( $long_desc =~ m{
@@ -226,20 +211,20 @@ sub run {
           # so don't bother with another regex match, just compare.
           elsif ( $long_desc eq 'REMOVED FROM DATABASE' ) {
             $removed{$number} = 1;
-            $removed_count++;
+            $counters{ 'removed' }++;
           }
           else {
             croak "Unsupported type of a '^' record: '${long_desc}'\n";
           }
 
         }
+
       } ## end if (defined $ti)
     } ## end if (defined $number)
   } ## record loop
 
   $mim_io->close();
 
-  my $syn_count = 0;
   foreach my $mim ( keys %old_to_new ) {
     my $old = $mim;
     my $new = $old_to_new{$old};
@@ -249,14 +234,15 @@ sub run {
     if ( !defined( $removed{$new} ) ) {
       $self->add_to_syn_for_mult_sources( $new, \@sources, $old,
                                           $species_id, $dbi );
-      $syn_count++;
+      $counters{ 'synonyms' }++;
     }
   }
 
   if ($verbose) {
-    print "$gene genemap and $phenotype phenotype MIM xrefs added\n"
-      . "added $syn_count synonyms (defined by MOVED TO)\n"
-      . "$removed_count entries removed\n";
+    print $counters{ $gene_source_id } . ' genemap and '
+      . $counters{ $morbid_source_id } . " phenotype MIM xrefs added\n"
+      . $counters{ 'synonyms' } . " synonyms (defined by MOVED TO) added\n"
+      . $counters{ 'removed' } . " entries removed\n";
   }
 
   return 0;
