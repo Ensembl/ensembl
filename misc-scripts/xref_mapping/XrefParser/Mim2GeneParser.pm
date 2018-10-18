@@ -47,12 +47,11 @@ sub run {
   }
   $verbose |= 0;
 
-  my $file = @{$files}[0];
+  my $filename = @{$files}[0];
 
-  my $eg_io = $self->get_filehandle($file);
+  my $eg_io = $self->get_filehandle($filename);
   if ( !defined $eg_io ) {
-    print STDERR "ERROR: Could not open $file\n";
-    return 1;    # 1 is an error
+    croak "Could not open file '${filename}'";
   }
 
   my $entrez_source_id =
