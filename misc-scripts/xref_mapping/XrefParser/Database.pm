@@ -28,8 +28,7 @@ use File::Spec::Functions;
 use IO::File;
 use English;
 
-sub new
-{
+sub new {
   my ($proto, $arg_ref) = @_;
 
   my $class = ref $proto || $proto;
@@ -57,11 +56,21 @@ sub verbose {
 }
 
 sub dbc {
-  my ($self, $arg) = @_;
-  (defined $arg) &&
-    ($self->{_dbc} = $arg );
+  my $self = shift;
+
+  if(@_) {
+    my $arg = shift;
+
+    if(defined($arg)) {
+      croak "$arg is not a DBConnection" 
+	unless $arg->isa('Bio::EnsEMBL::DBSQL::DBConnection');
+      $self->{_dbc} = $arg;
+    }
+  }
+
   return $self->{_dbc};
 }
+
 sub host {
   my ($self, $arg) = @_;
   $self->dbc->host($arg) if defined $arg;
@@ -92,8 +101,7 @@ sub port {
   return $self->dbc->port;
 }
 
-sub dbi
-{
+sub dbi {
     my $self = shift;
     my $dbi;
 
@@ -111,15 +119,14 @@ sub dbi
     return $dbi;
 }
 
-
-# Create database if required. Assumes sql/table.sql and sql/populate_metadata.sql
-# are present.
-
+# Create database if required. 
+# Assumes sql/table.sql and sql/populate_metadata.sql are present.
 sub create {
   my ($self, $sql_dir, $force, $drop_db) = @_;
   $self->recreate_database($force,$drop_db);
   $self->populate($sql_dir, $force);
 }
+
 sub populate {
   my ($self, $sql_dir, $force) = @_;
   my $table_file = catfile( $sql_dir, 'sql', 'table.sql' );
@@ -127,6 +134,7 @@ sub populate {
   $self->populate_with_file($table_file);
   $self->populate_with_file($metadata_file);
 }
+
 sub prepare_metadata_file {
   my ($self, $sql_dir, $force) = @_;
   my $metadata_file =
@@ -178,6 +186,7 @@ sub prepare_metadata_file {
   } ## end if ( !defined($meta_tm...
   return $metadata_file;
 }
+
 sub recreate_database {
   my ($self,$force, $drop_db) = @_;
   my $user   = $self->user;
@@ -232,4 +241,5 @@ sub populate_with_file {
   }
   $INPUT_RECORD_SEPARATOR = $previous_input_record_separator;
 }
+
 1;
