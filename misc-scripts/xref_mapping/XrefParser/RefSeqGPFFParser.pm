@@ -206,11 +206,6 @@ sub xref_from_record {
       $entrez_source_id, $wiki_source_id, $add_dependent_xref_sth,
       $species_id, $type, $refseq_ids,$entrez_ids,$wiki_ids
 ) = @_;
-    my %name2species_id = %$name2species_id;
-    my %taxonomy2species_id = %$taxonomy2species_id;
-    my %refseq_ids = %$refseq_ids;
-    my %entrez_ids = %$entrez_ids;
-    my %wiki_ids = %$wiki_ids;
     chomp $entry;
 
     my ($species) = $entry =~ /\s+ORGANISM\s+(.*)\n/;
@@ -219,12 +214,12 @@ sub xref_from_record {
     $species =~ s/\s*\(.+\)//; # Ditch anything in parens
     $species =~ s/\s+/_/g;
     $species =~ s/\n//g;
-    my $species_id_check = $name2species_id{$species};
+    my $species_id_check = $name2species_id->{$species};
 
     # Try going through the taxon ID if species check didn't work.
     if ( !defined $species_id_check ) {
         my ($taxon_id) = $entry =~ /db_xref="taxon:(\d+)"/;
-        $species_id_check = $taxonomy2species_id{$taxon_id};
+        $species_id_check = $taxonomy2species_id->{$taxon_id};
     }
 
     # skip xrefs for species that aren't in the species table
@@ -335,12 +330,12 @@ sub xref_from_record {
           # Add xrefs for RefSeq mRNA as well where available
           $refseq_pair =~ s/\.[0-9]*// if $refseq_pair;
           if (defined $refseq_pair) {
-            if ($refseq_ids{$refseq_pair}) {
-              foreach my $refseq_id (@{ $refseq_ids{$refseq_pair} }) {
-                foreach my $entrez_id (@{ $entrez_ids{$ll} }) {
+            if ($refseq_ids->{$refseq_pair}) {
+              foreach my $refseq_id (@{ $refseq_ids->{$refseq_pair} }) {
+                foreach my $entrez_id (@{ $entrez_ids->{$ll} }) {
                   $add_dependent_xref_sth->execute($refseq_id, $entrez_id);
                 }
-                foreach my $wiki_id (@{ $wiki_ids{$ll} }) {
+                foreach my $wiki_id (@{ $wiki_ids->{$ll} }) {
                   $add_dependent_xref_sth->execute($refseq_id, $wiki_id);
                 }
               }
