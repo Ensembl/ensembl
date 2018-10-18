@@ -127,8 +127,8 @@ sub run {
  RECORD:
   while ( my $input_record = $mim_io->getline() ) {
 
-    my ( $number, $ti ) = extract_number_and_ti( $input_record );
-    if ( ( ! defined $number ) || ( ! defined $ti ) ) {
+    my $ti = extract_ti( $input_record );
+    if ( ! defined $ti ) {
       next RECORD;
     }
 
@@ -142,10 +142,10 @@ sub run {
     $ti =~ s{\n}{ }gmsx;
 
     # Extract the 'type' and the whole description
-    my ( $type, $long_desc ) =
+    my ( $type, $number, $long_desc ) =
       ( $ti =~ m{
                   ([#%+*^]*)  # type of entry
-                  \d+         # number (should be the same as from NO)
+                  (\d+)       # accession number, same as in NO
                   \s+         # normally just one space
                   (.+)        # description of entry
               }msx );
@@ -235,14 +235,8 @@ sub run {
 } ## end sub run
 
 
-sub extract_number_and_ti {
+sub extract_ti {
   my ( $input_record ) = @_;
-
-  my ( $number )
-    = ( $input_record =~ m{
-                            [*]FIELD[*]\s+NO\n
-                            (\d+)
-                        }msx );
 
   my ( $ti )
     = ( $input_record =~ m{
@@ -255,7 +249,7 @@ sub extract_number_and_ti {
                             )
                         }msx );
 
-  return ( $number, $ti );
+  return $ti;
 }
 
 
