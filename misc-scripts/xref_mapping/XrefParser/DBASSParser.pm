@@ -22,6 +22,9 @@ package XrefParser::DBASSParser;
 use strict;
 use warnings;
 
+# For non-destructive substitutions in regexps (/r flag)
+require 5.014_000;
+
 use Carp;
 use List::Util;
 use Readonly;
@@ -84,10 +87,9 @@ sub run {
         . " of input file '${filename}' has an incorrect number of columns";
     }
 
-    # strip trailing whitespace
-    map { s{\s+\z}{}msx } @{ $line };
-
-    my ( $dbass_gene_id, $dbass_gene_name, $ensembl_id ) = @{ $line };
+    # Do not modify the contents of @{$line}, only the output - hence the /r.
+    my ( $dbass_gene_id, $dbass_gene_name, $ensembl_id )
+      = map { s{\s+\z}{}rmsx } @{ $line };
 
     # Do not attempt to create unmapped xrefs. Checking truthiness is good
     # enough here because the only non-empty string evaluating as false is
