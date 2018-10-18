@@ -24,6 +24,7 @@ use warnings;
 
 use Carp;
 use File::Basename;
+use Readonly;
 use POSIX qw(strftime);
 
 use parent qw( XrefParser::BaseParser );
@@ -60,6 +61,10 @@ use parent qw( XrefParser::BaseParser );
 # All the data relevant to the parser can be found in the TI field.
 
 
+# FIXME: this belongs in BaseParser
+Readonly my $ERR_SOURCE_ID_NOT_FOUND => -1;
+
+
 sub run {
 
   my ( $self, $ref_arg ) = @_;
@@ -92,7 +97,8 @@ sub run {
   my $morbid_source_id =
     $self->get_source_id_for_source_name( "MIM_MORBID", undef, $dbi );
   push @sources, $morbid_source_id;
-  if ( ( $gene_source_id == -1 ) || ( $morbid_source_id == -1 ) ) {
+  if ( ( $gene_source_id == $ERR_SOURCE_ID_NOT_FOUND )
+       || ( $morbid_source_id == $ERR_SOURCE_ID_NOT_FOUND ) ) {
     croak 'Failed to retrieve MIM source IDs';
   }
 
