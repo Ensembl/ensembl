@@ -21,9 +21,10 @@ package XrefParser::MIMParser;
 
 use strict;
 use warnings;
+
 use Carp;
-use POSIX qw(strftime);
 use File::Basename;
+use POSIX qw(strftime);
 
 use parent qw( XrefParser::BaseParser );
 
@@ -77,7 +78,7 @@ sub run {
   }
   $verbose |= 0;
 
-  my $file = @{$files}[0];
+  my $filename = @{$files}[0];
 
   my %old_to_new;
   my %removed;
@@ -99,11 +100,9 @@ sub run {
 
   IO::Handle->input_record_separator('*RECORD*');
 
-  my $mim_io = $self->get_filehandle($file);
-
+  my $mim_io = $self->get_filehandle($filename);
   if ( !defined $mim_io ) {
-    print {*STDERR} "ERROR: Could not open $file\n";
-    return 1;    # 1 is an error
+    croak "Failed to acquire a file handle for '${filename}'";
   }
 
   my $gene          = 0;
@@ -145,8 +144,7 @@ sub run {
                       (.+)        # description of entry
                   }msx );
         if ( !defined( $type ) ) {
-          print {*STDERR} 'Failed to extract record type and description from TI field';
-          return 1;
+          croak 'Failed to extract record type and description from TI field';
         }
 
         # Use the first block of text as description
@@ -217,8 +215,7 @@ sub run {
             $removed_count++;
           }
           else {
-            print {*STDERR} "Unsupported type of a '^' record: '${long_desc}'\n";
-            return 1;
+            croak "Unsupported type of a '^' record: '${long_desc}'\n";
           }
 
         }
@@ -241,11 +238,13 @@ sub run {
       $syn_count++;
     }
   }
+
   print "$gene genemap and $phenotype phenotype MIM xrefs added\n"
     if ($verbose);
   print "added $syn_count synonyms (defined by MOVED TO)\n"
     if ($verbose);
-  return 0;    #successful
+
+  return 0;
 } ## end sub run
 
 
