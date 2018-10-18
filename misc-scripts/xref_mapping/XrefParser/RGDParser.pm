@@ -107,8 +107,8 @@ sub run {
     my @nucs = split(/\;/,$refseq); # nucs = nucleotides
     my $done = 0;
 
-    # @nucs are sorted in the file in alphabetical order. Reverse order might be
-    # an efficiency hack for getting the better accessions done first, e.g. XM_, NM_
+    # @nucs are sorted in the file in alphabetical order. Filter them to down
+    # to a higher quality subset, then add dependent Xrefs where possible
     foreach my $nuc ($self->sort_refseq_accessions(@nucs)){
       if(!$done){
         if(exists $preloaded_refseq{$nuc}){
