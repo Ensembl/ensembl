@@ -24,6 +24,7 @@ use warnings;
 
 use Carp;
 use List::Util;
+use Readonly;
 use Text::CSV;
 
 use parent qw( XrefParser::BaseParser );
@@ -37,6 +38,9 @@ use parent qw( XrefParser::BaseParser );
 #
 # where 2) can be either a single name, a 'name/synonym' pair, or a 'name (synonym)' pair.
 # Column values, including empty strings, can be surrounded by pairs of double quotes.
+
+
+Readonly my $EXPECTED_NUMBER_OF_COLUMNS => 3;
 
 
 sub run {
@@ -75,7 +79,7 @@ sub run {
 
   while ( defined( my $line = $csv->getline ( $file_io ) ) ) {
 
-    if ( scalar @{ $line } != 3 ) {
+    if ( scalar @{ $line } != $EXPECTED_NUMBER_OF_COLUMNS ) {
       croak 'Line ' . (2 + $processed_count + $unmapped_count)
         . " of input file '${filename}' has an incorrect number of columns";
     }
@@ -175,7 +179,7 @@ sub is_file_header_valid {
 
   # Don't bother with parsing column names if their number does not
   # match to begin with
-  if ( scalar @{ $header } != 3 ) {
+  if ( scalar @{ $header } != $EXPECTED_NUMBER_OF_COLUMNS ) {
     return 0;
   }
 
