@@ -132,23 +132,7 @@ sub run {
       croak 'Failed to extract TI field from record';
     }
 
-    # Remove line breaks, making sure we do not accidentally concatenate words
-    $ti =~ s{
-              (?:
-                ;;\n
-              | \n;;
-              )
-          }{;;}gmsx;
-    $ti =~ s{\n}{ }gmsx;
-
-    # Extract the 'type' and the whole description
-    my ( $type, $number, $long_desc ) =
-      ( $ti =~ m{
-                  ([#%+*^]*)  # type of entry
-                  (\d+)       # accession number, same as in NO
-                  \s+         # normally just one space
-                  (.+)        # description of entry
-              }msx );
+    my ( $type, $number, $long_desc ) = parse_ti( $ti );
     if ( !defined( $type ) ) {
       croak 'Failed to extract record type and description from TI field';
     }
@@ -250,6 +234,30 @@ sub extract_ti {
                         }msx );
 
   return $ti;
+}
+
+
+sub parse_ti {
+  my ( $ti ) = @_;
+
+  # Remove line breaks, making sure we do not accidentally concatenate words
+  $ti =~ s{
+            (?:
+              ;;\n
+            | \n;;
+            )
+        }{;;}gmsx;
+  $ti =~ s{\n}{ }gmsx;
+
+  # Extract the 'type' and the whole description
+  my @captures = ( $ti =~ m{
+                             ([#%+*^]*)  # type of entry
+                             (\d+)       # accession number, same as in NO
+                             \s+         # normally just one space
+                             (.+)        # description of entry
+                         }msx );
+
+  return @captures;
 }
 
 
