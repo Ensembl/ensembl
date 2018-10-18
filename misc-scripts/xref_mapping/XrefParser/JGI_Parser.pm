@@ -28,7 +28,6 @@ use base qw( XrefParser::BaseParser );
 
 # JGI protein file with gene predictons  - FASTA FORMAT
 #
-#
 # This is the parser that provides most functionality, subclasses
 # (JGI_ProteinParser) just set sequence type)
 
@@ -80,8 +79,7 @@ sub run {
   my $file_io = $self->get_filehandle($file);
 
   if ( !defined $file_io ) {
-    print STDERR "ERROR: Could not open $file\n";
-    return 1;    # 1 is an error
+    croak "ERROR: Could not open $file\n";
   }
 
   $file_io->input_record_separator( "\n>");
@@ -92,36 +90,25 @@ sub run {
 
     my $xref;
 
-    my ($header, $sequence) = $record =~ /^>?(.+?)\n([^>]*)/s or warn("Can't parse FASTA entry: $record\n");
-
-    my @attr = split/\|/, $header;
+    my ($header, $sequence) = $record =~ /^>?(.+?)\n([^>]*)/s or croak("Can't parse FASTA entry: $record\n");
     my $accession = $header;
 
     # split header in different ways according to source name : 
-    my ( $version,$label );
+
     if ($source_name=~m/cint_jgi_v1/) {
       # header format is  >ci0100146277
-      # we want  146277
-      ($accession = $header)  =~s/\w{6}//;
-      $version = "JGI 1.0" ;
+      # JGI 1.0
+      # we want accession 146277 from above
+      ($accession = $header) =~s/\w{6}//;
 
     } elsif ($source_name=~m/cint_aniseed_.*v1/) {
       # header format is  >ci0100146277, we want this 
-      $version = "JGI 1.0" ;
+      # JGI 1.0
 
-    } elsif ($source_name=~m/cint_jgi_v2/) {
-      $accession = $attr[2]  ;
-      $version = "JGI 2.0" ;
-      $label = $attr[3] ;
-    } elsif ($source_name=~m/cint_aniseed_.*v2/) {
-      my $aniseed_prefix = "ci0200" ; 
-      $accession = $aniseed_prefix . $attr[2]  ; 
-      $version = "JGI 2.0" ;  
     } else {
-      print STDERR "WARNING : The source-name specified ($source_name) in the populate_metatable.sql file is\n" .
-        "WARNING : not matching the different cases specified in JGI_Parser.pm - please\n".
-          "WARNING : edit the parser \n" ;
-      return 1;
+      croak "WARNING : The source-name specified ($source_name) in the populate_metatable.sql file is\n" .
+            "WARNING : not matching the different cases specified in JGI_Parser.pm - please\n".
+            "WARNING : edit the parser \n" ;
     }
 
     # make sequence into one long string
@@ -134,7 +121,6 @@ sub run {
     $xref->{SOURCE_ID}     = $source_id;
     $xref->{SPECIES_ID}    = $species_id;
     $xref->{SEQUENCE_TYPE} = $self->get_sequence_type();
-    $xref->{STATUS}        = 'experimental';
 
     push @xrefs, $xref;
 
