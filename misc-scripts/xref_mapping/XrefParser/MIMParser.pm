@@ -129,7 +129,7 @@ sub run {
 
     my $ti = extract_ti( $input_record );
     if ( ! defined $ti ) {
-      next RECORD;
+      croak 'Failed to extract TI field from record';
     }
 
     # Remove line breaks, making sure we do not accidentally concatenate words
