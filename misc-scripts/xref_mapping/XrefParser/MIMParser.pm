@@ -255,7 +255,8 @@ sub run {
 
   if ($verbose) {
     print "$gene genemap and $phenotype phenotype MIM xrefs added\n"
-      . "added $syn_count synonyms (defined by MOVED TO)\n";
+      . "added $syn_count synonyms (defined by MOVED TO)\n"
+      . "$removed_count entries removed\n";
   }
 
   return 0;
