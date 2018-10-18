@@ -22,8 +22,10 @@ package XrefParser::DBASSParser;
 use strict;
 use warnings;
 
-use DBI;
 use Carp;
+use DBI;
+use List::Util;
+use Text::CSV;
 
 use parent qw( XrefParser::BaseParser );
 
@@ -55,55 +57,40 @@ sub run {
   $verbose //= 0;
   $dbi //= $self->dbi;
 
+  my $csv = Text::CSV->new()
+    || croak 'Failed to initialise CSV parser: ' . Text::CSV->error_diag();
+
   my $filename = @{$files}[0];
 
   my $file_io = $self->get_filehandle($filename);
   if ( !defined($file_io) ) {
     croak "Failed to acquire a file handle for '${filename}'";
   }
-  if ( ! is_file_header_valid( $file_io->getline() ) ) {
+
+  if ( ! is_file_header_valid( $csv->getline( $file_io ) ) ) {
     croak "Malformed or unexpected header in DBASS file '${filename}'";
   }
 
   my $processed_count = 0;
   my $unmapped_count = 0;
 
-  while ( defined( my $line = $file_io->getline() ) ) {
+  while ( defined( my $line = $csv->getline ( $file_io ) ) ) {
+
+    if ( scalar @{ $line } != 3 ) {
+      croak 'Line ' . (2 + $processed_count + $unmapped_count)
+        . " of input file '${filename}' has an incorrect number of columns";
+    }
 
     # strip trailing whitespace
-    $line =~ s{\s*\z}{}msx;
-    # csv format can come with quoted columns, remove them. Note that this
-    # assumes actual column values will never contain commas, which while
-    # true at present brings into question why bother quoting them in the
-    # first place.
-    $line =~ s{"}{}gmsx;
+    map { s{\s+\z}{}msx } @{ $line };
 
-    my ( $dbass_gene_id, $dbass_gene_name, $ensembl_id, @split_overflow ) =
-      split( qr{,}msx, $line );
-
-    # If Ensembl ID is the last column and quotation marks have already
-    # been stripped, split() will leave $ensembl_id undefined for unmapped
-    # entries. Therefore, only check the first two columns.
-    # Conversely, if Ensembl ID is *not* the last column split() will set
-    # $ensembl_id to an empty string for unmapped entries and correctly
-    # assigns further tokens to the overflow array.
-    if ( !defined($dbass_gene_id) || !defined($dbass_gene_name) ) {
-      croak 'Line ' . (2 + $processed_count + $unmapped_count)
-        . " of input file '${filename}' has fewer than two columns";
-    }
-    elsif ( scalar @split_overflow > 0 ) {
-      croak 'Line ' . (2 + $processed_count + $unmapped_count)
-        . " of input file '${filename}' has fewer than two columns";
-    }
+    my ( $dbass_gene_id, $dbass_gene_name, $ensembl_id ) = @{ $line };
 
     # Do not attempt to create unmapped xrefs. Checking truthiness is good
     # enough here because the only non-empty string evaluating as false is
     # not a valid Ensembl stable ID.
     if ( $ensembl_id ) {
 
-      # FIXME: .* is seriously inefficient because here it results in massive
-      # amounts of backtracking. Could we be more specific, i.e. assume
-      # some specific format of DBASS names?
       my ( $first_gene_name, $second_gene_name );
       if ( ( $dbass_gene_name =~ m{
                                     (.*)
@@ -157,12 +144,13 @@ sub run {
 
   } ## end while ( defined( my $line...))
 
+  $csv->eof || croak 'Error parsing CSV: ' . $csv->error_diag();
+  $file_io->close();
+
   if ($verbose) {
     printf( "%d direct xrefs succesfully processed\n", $processed_count );
     printf( "Skipped %d unmapped xrefs\n", $unmapped_count );
   }
-
-  $file_io->close();
 
   return 0;
 } ## end sub run
@@ -186,27 +174,25 @@ sub run {
 sub is_file_header_valid {
   my ( $header ) = @_;
 
-  # Note that yes, we DO have to use backslashed numeric
-  # backreferences below - both @_ and %+ only get populated upon a
-  # successful match. Therefore, do take care the numbers stay correct
-  # in the event of having to modify the regex.
-  if ( ! ( $header
-           =~ m{
-                 \A                          # no extra leading columns
-                 ("?) DBASS (3|5) GeneID \1  # make sure quotes match;
-                                             # same in the other two
-                 \s?,\s?
-                 ("?) DBASS \2 GeneName \3   # prevent mixing splice sites
-                                             # in ID and name
-                 \s?,\s?
-                 ("?) EnsemblGeneNumber \4
-                 \n?                         # most likely there will be one
-                 \z                          # no extra trailing columns
-             }msx ) ) {
-    return false;
+  # Don't bother with parsing column names if their number does not
+  # match to begin with
+  if ( scalar @{ $header } != 3 ) {
+    return 0;
   }
 
-  return true;
+  my @fields_ok;
+
+  my ( $dbass_end ) = ( $header->[0] =~ m{ DBASS (3|5) GeneID }msx );
+  push @fields_ok, defined $dbass_end;
+
+  my $dbass_name_ok = ( $header->[1] =~ m{ DBASS ${dbass_end} GeneName }msx );
+  push @fields_ok, $dbass_name_ok;
+
+  my $ensembl_id_ok = ( $header->[2] eq 'EnsemblGeneNumber' );
+  push @fields_ok, $ensembl_id_ok;
+
+  # All fields must be in order
+  return List::Util::all { $_ } @fields_ok;
 }
 
 
