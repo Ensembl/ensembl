@@ -29,6 +29,8 @@ feature 'assembly_mapping', 'Assembly mapper support' => sub {
 feature 'xref_mapping', 'Xref mapping pipeline' => sub {
   requires 'Config::IniFiles';
   requires 'Digest::MD5';
+  requires 'Text::CSV';
+  recommends 'Text::CSV_XS';
   requires 'Text::Glob';
   requires 'XML::LibXML';
 };
