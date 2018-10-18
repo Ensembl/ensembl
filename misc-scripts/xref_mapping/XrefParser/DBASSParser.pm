@@ -23,7 +23,6 @@ use strict;
 use warnings;
 
 use Carp;
-use DBI;
 use List::Util;
 use Text::CSV;
 
