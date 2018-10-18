@@ -96,7 +96,9 @@ sub run {
     croak 'Failed to retrieve MIM source IDs';
   }
 
-  print "sources are:- " . join( ", ", @sources ) . "\n" if ($verbose);
+  if ($verbose) {
+    print "sources are:- " . join( ", ", @sources ) . "\n";
+  }
 
   IO::Handle->input_record_separator('*RECORD*');
 
@@ -239,10 +241,10 @@ sub run {
     }
   }
 
-  print "$gene genemap and $phenotype phenotype MIM xrefs added\n"
-    if ($verbose);
-  print "added $syn_count synonyms (defined by MOVED TO)\n"
-    if ($verbose);
+  if ($verbose) {
+    print "$gene genemap and $phenotype phenotype MIM xrefs added\n"
+      . "added $syn_count synonyms (defined by MOVED TO)\n";
+  }
 
   return 0;
 } ## end sub run
