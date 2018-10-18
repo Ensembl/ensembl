@@ -134,8 +134,14 @@ sub run {
                                 )
                             }msx );
       if ( defined $ti ) {
-        # Remove line breaks. FIXME: in some places it will result in words being concatenated
-        $ti =~ s{\n}{}gmsx;
+        # Remove line breaks, making sure we do not accidentally concatenate words
+        $ti =~ s{
+                  (?:
+                    ;;\n
+                  | \n;;
+                  )
+              }{;;}gmsx;
+        $ti =~ s{\n}{ }gmsx;
 
         # Extract the 'type' and the whole description
         my ( $type, $long_desc ) =
