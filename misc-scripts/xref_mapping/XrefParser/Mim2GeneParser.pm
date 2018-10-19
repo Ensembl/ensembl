@@ -72,11 +72,21 @@ sub run {
     croak "Could not open file '${filename}'";
   }
 
+  my $mim_gene_source_id =
+    $self->get_source_id_for_source_name( 'MIM_GENE', undef, $dbi );
+  my $mim_morbid_source_id =
+    $self->get_source_id_for_source_name( 'MIM_MORBID', undef, $dbi );
   my $entrez_source_id =
     $self->get_source_id_for_source_name( 'EntrezGene', undef, $dbi );
-  if ( $entrez_source_id == $ERR_SOURCE_ID_NOT_FOUND ) {
-    croak 'Failed to retrieve EntrezGene source ID';
+  if ( ( $mim_gene_source_id == $ERR_SOURCE_ID_NOT_FOUND )
+       || ( $mim_morbid_source_id == $ERR_SOURCE_ID_NOT_FOUND )
+       || ( $entrez_source_id == $ERR_SOURCE_ID_NOT_FOUND ) ) {
+    croak 'Failed to retrieve all source IDs';
   }
+
+  # This will be used to prevent insertion of duplicates
+  $self->get_dependent_mappings( $mim_gene_source_id, $dbi );
+  $self->get_dependent_mappings( $mim_morbid_source_id, $dbi );
 
   # FIXME: should we abort if any of these comes back empty?
   my (%mim_gene) =
@@ -85,10 +95,6 @@ sub run {
     %{ $self->get_valid_codes( "MIM_MORBID", $species_id, $dbi ) };
   my (%entrez) =
     %{ $self->get_valid_codes( "EntrezGene", $species_id, $dbi ) };
-
-  my $add_dependent_xref_sth = $dbi->prepare(
-"INSERT INTO dependent_xref (master_xref_id,dependent_xref_id, linkage_source_id) VALUES (?,?, $entrez_source_id)"
-  );
 
   my $missed_entrez = 0;
   my $missed_omim   = 0;
@@ -145,7 +151,13 @@ sub run {
       if ( defined( $mim_gene{$omim_id} ) ) {
         foreach my $ent_id ( @{ $entrez{$entrez_id} } ) {
           foreach my $mim_id ( @{ $mim_gene{$omim_id} } ) {
-            $add_dependent_xref_sth->execute( $ent_id, $mim_id );
+            $self->add_dependent_xref({
+                                       'master_xref_id' => $ent_id,
+                                       'acc'            => $mim_id,
+                                       'source_id'      => $mim_gene_source_id,
+                                       'species_id'     => $species_id,
+                                       'linkage'        => $entrez_source_id,
+                                     });
           }
         }
       }
@@ -153,7 +165,13 @@ sub run {
         $diff_type++;
         foreach my $ent_id ( @{ $entrez{$entrez_id} } ) {
           foreach my $mim_id ( @{ $mim_morbid{$omim_id} } ) {
-            $add_dependent_xref_sth->execute( $ent_id, $mim_id );
+            $self->add_dependent_xref({
+                                       'master_xref_id' => $ent_id,
+                                       'acc'            => $mim_id,
+                                       'source_id'      => $mim_morbid_source_id,
+                                       'species_id'     => $species_id,
+                                       'linkage'        => $entrez_source_id,
+                                     });
           }
         }
       }
@@ -162,7 +180,13 @@ sub run {
       if ( defined( $mim_morbid{$omim_id} ) ) {
         foreach my $ent_id ( @{ $entrez{$entrez_id} } ) {
           foreach my $mim_id ( @{ $mim_morbid{$omim_id} } ) {
-            $add_dependent_xref_sth->execute( $ent_id, $mim_id );
+            $self->add_dependent_xref({
+                                       'master_xref_id' => $ent_id,
+                                       'acc'            => $mim_id,
+                                       'source_id'      => $mim_morbid_source_id,
+                                       'species_id'     => $species_id,
+                                       'linkage'        => $entrez_source_id,
+                                     });
           }
         }
       }
@@ -170,7 +194,13 @@ sub run {
         $diff_type++;
         foreach my $ent_id ( @{ $entrez{$entrez_id} } ) {
           foreach my $mim_id ( @{ $mim_gene{$omim_id} } ) {
-            $add_dependent_xref_sth->execute( $ent_id, $mim_id );
+            $self->add_dependent_xref({
+                                       'master_xref_id' => $ent_id,
+                                       'acc'            => $mim_id,
+                                       'source_id'      => $mim_gene_source_id,
+                                       'species_id'     => $species_id,
+                                       'linkage'        => $entrez_source_id,
+                                     });
           }
         }
       }
@@ -180,7 +210,6 @@ sub run {
     }
 
   } ## end record loop
-  $add_dependent_xref_sth->finish;
 
   $csv->eof || croak 'Error parsing CSV: ' . $csv->error_diag();
   $eg_io->close();
