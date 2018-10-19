@@ -145,6 +145,8 @@ sub run {
   } ## end while ( $_ = $eg_io->getline...)
   $add_dependent_xref_sth->finish;
 
+  $eg_io->close();
+
   if ( $verbose ) {
     print $missed_entrez . " EntrezGene entries could not be found.\n"
       . $missed_omim . " Omim entries could not be found.\n"
