@@ -21,8 +21,11 @@ package XrefParser::HPAParser;
 
 use strict;
 use warnings;
+
 use Carp;
-use base qw( XrefParser::BaseParser);
+use Text::CSV;
+
+use parent qw( XrefParser::BaseParser);
 
 # This parser will read direct xrefs from a simple comma-delimited file downloaded from the Human Protein Atlas (HPA) database.
 # The database contains two types of antibody, their own HPA antibodies and Collaborator antibody (CAB) commercial antibodies. 
@@ -39,35 +42,34 @@ sub run {
   my $source_id    = $ref_arg->{source_id};
   my $species_id   = $ref_arg->{species_id};
   my $files        = $ref_arg->{files};
-  my $verbose      = $ref_arg->{verbose};
-  my $dbi          = $ref_arg->{dbi};
-  $dbi = $self->dbi unless defined $dbi;
+  my $verbose      = $ref_arg->{verbose} || 0;
+  my $dbi          = $ref_arg->{dbi} || $self->dbi;
 
   croak "Need to pass source_id, species_id, files and rel_file as pairs"
     unless defined $source_id and defined $species_id and defined $files;
 
-  $verbose |= 0;
   my $file = @{$files}[0];
 
   my $file_io = $self->get_filehandle($file);
   croak "ERROR: Could not open $file\n" unless defined $file_io;
 
-  my $parsed_count = 0;
+  my $input_file = Text::CSV->new({ sep_char           => ",",
+				    empty_is_undef     => 1
+				  }) or croak "Cannot use file $file: ".Text::CSV->error_diag ();
+  
   $file_io->getline(); # skip header # Antibody,antibody_id,ensembl_peptide_id,link
 
-  while ( defined( my $line = $file_io->getline() ) ) {
-    $line =~ s/\s*$//;
-		
-    my ( $antibody, $antibody_id, $ensembl_peptide_id, $link ) = split( /,/, $line );
+  my $parsed_count = 0;
+  while ( my $row = $input_file->getline( $file_io ) ) {
+    map { $_ =~ s/\s*$// } @{$row};
+    my ( $antibody, $antibody_id, $ensembl_peptide_id, $link ) = @{$row};
 
     croak sprintf("Line %d contains has less than two columns.\nParsing failed", 1 + $parsed_count)
       unless defined $antibody and defined $ensembl_peptide_id;
 	
-    my $label       = $antibody;
-    my $type        = 'translation';
-    my $version     = '1';
-
-    ++$parsed_count;
+    my $label   = $antibody;
+    my $type    = 'translation';
+    my $version = '1';
 
     my $xref_id = $self->get_xref( $antibody_id, $source_id, $species_id, $dbi );
     $xref_id = $self->add_xref({ acc        => $antibody_id,
@@ -79,13 +81,16 @@ sub run {
 				 info_type  => "DIRECT"} ) unless defined $xref_id or $xref_id ne '';
 
     $self->add_direct_xref( $xref_id, $ensembl_peptide_id, $type, undef, $dbi);
-  } ## end while ( defined( my $line...
+
+    ++$parsed_count;
+  }
+
+  $input_file->eof or croak "Error parsing file $file: " . $input_file->error_diag();
+  $file_io->close();
 
   printf( "%d direct xrefs succesfully parsed\n", $parsed_count ) if $verbose;
 
-  $file_io->close();
-
-  return 0;
-} ## end sub run
+  return 0; # success
+}
 
 1;
