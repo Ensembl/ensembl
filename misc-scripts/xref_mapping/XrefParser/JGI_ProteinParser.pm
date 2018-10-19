@@ -22,7 +22,7 @@ package XrefParser::JGI_ProteinParser;
 
 use strict;
 
-use base qw( XrefParser::JGI_Parser );
+use parent qw( XrefParser::JGI_Parser );
 
 # See JGI_Parser for details
 
