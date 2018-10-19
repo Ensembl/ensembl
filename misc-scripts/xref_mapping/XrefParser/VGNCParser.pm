@@ -66,7 +66,8 @@ sub run {
   my @required_columns = qw(
     taxon_id
     ensembl_gene_id
-    vgnc_id symbol
+    vgnc_id
+    symbol
     name
     alias_symbol
     prev_symbol
