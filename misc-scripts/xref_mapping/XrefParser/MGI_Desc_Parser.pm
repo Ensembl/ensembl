@@ -23,8 +23,9 @@ use strict;
 use warnings;
 use Carp;
 use File::Basename;
+use Text::CSV;
 
-use base qw( XrefParser::BaseParser );
+use parent qw( XrefParser::BaseParser );
 
 use Bio::EnsEMBL::DBSQL::DBAdaptor;
 
@@ -35,16 +36,14 @@ sub run {
   my $source_id    = $ref_arg->{source_id};
   my $species_id   = $ref_arg->{species_id};
   my $files        = $ref_arg->{files};
-  my $verbose      = $ref_arg->{verbose};
-  my $dbi          = $ref_arg->{dbi};
-  $dbi = $self->dbi unless defined $dbi;
+  my $verbose      = $ref_arg->{verbose} || 0;
+  my $dbi          = $ref_arg->{dbi} || $self->dbi;
 
   if((!defined $source_id) or (!defined $species_id) or (!defined $files) ){
     croak "Need to pass source_id, species_id and files as pairs";
   }
-  $verbose |=0;
 
-  my $file = @{$files}[0];
+  my $file = shift @{$files};
 
   my $mgi_io = $self->get_filehandle($file);
 
@@ -57,42 +56,41 @@ sub run {
   my $syn_count = 0;
   my %acc_to_xref;
 
+  my $input_file = Text::CSV->new({
+                                    sep_char           => "\t",
+				    empty_is_undef     => 1,
+                                    strict => 1,
+                                    auto_diag => 1,
+                                    allow_loose_quotes => 1,
+				   }) or croak "Cannot use file $file: ".Text::CSV->error_diag ();
 
-    my $header = $mgi_io->getline(); #discard header line
-
-    chomp($header);
-    # crude emergency check for potentially altered file format.
-    my $header_template = qq(MGI Accession ID\tChr\tcM Position\tgenome coordinate start\tgenome coordinate end\tstrand\tMarker Symbol\tStatus\tMarker Name\tMarker Type\tFeature Type\tMarker Synonyms (pipe-separated));
-    if ($header ne $header_template) {die "File header has altered from format parser expects. Check MGI "};
-      
-    while ( my $line = $mgi_io->getline() ) {
-
-        chomp($line);
-        my ($accession, $chromosome, $position, $start, $end, $strand,$label, 
-            $status, $marker, $marker_type, $feature_type, $synonym_field) = split(/\t/,$line);
-	
+  # skip header
+  $input_file->getline($mgi_io);
+  $input_file->column_names([qw(accession chromosome position start end strand label status marker marker_type feature_type synonym_field)] );
+  while ( my $data = $input_file->getline_hr( $mgi_io ) ) {
+        my $accession = $data->{'accession'};
+        my $marker = defined($data->{'marker'}) ? $data->{'marker'} : undef;
         $acc_to_xref{$accession} = $self->add_xref({ acc        => $accession,
-    	                           		             label      => $label,
-                                                                     desc       => defined($marker) ? $marker : undef,
-    					                             source_id  => $source_id,
-    					                             species_id => $species_id,
-                                                                     dbi        => $dbi,
-    					                             info_type  => "MISC"} );
+                                                     label      => $data->{'label'},
+                                                     desc       => $marker,
+                                                     source_id  => $source_id,
+                                                     species_id => $species_id,
+                                                     dbi        => $dbi,
+                                                     info_type  => "MISC"} );
         if($verbose and !$marker){
     	   print "$accession has no description\n";
         }
         $xref_count++;
-
         my @synonyms;
         if(defined($acc_to_xref{$accession})){
-            @synonyms = split(/\|/,$synonym_field) if ($synonym_field);
+            @synonyms = split(/\|/,$data->{'synonym_field'}) if ($data->{'synonym_field'});
             foreach my $syn (@synonyms) {
                 $self->add_synonym($acc_to_xref{$accession}, $syn, $dbi);
                 $syn_count++;
             }
         }
     }
-      
+    $mgi_io->eof or croak "Error parsing file $file: " . $input_file->error_diag();
     $mgi_io->close();
       
     print $xref_count." MGI Description Xrefs added\n" if($verbose);
