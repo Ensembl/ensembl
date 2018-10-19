@@ -83,10 +83,10 @@ sub run {
   my $count;
 
   $eg_io->getline();    # do not need header
-  while ( $_ = $eg_io->getline() ) {
+  while ( my $line = $eg_io->getline() ) {
     $count++;
-    chomp;
-    my ( $omim_id, $entrez_id, $type, $other ) = split;
+    chomp $line;
+    my ( $omim_id, $entrez_id, $type, $other ) = split qr{\t}msx, $line;
 
     if ( !defined( $entrez{$entrez_id} ) ) {
       $missed_entrez++;
