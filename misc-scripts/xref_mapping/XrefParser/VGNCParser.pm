@@ -62,7 +62,27 @@ sub run {
     empty_is_undef => 1
   }) or croak "Cannot use file $file: ".Text::CSV->error_diag ();
 
-  $input_file->column_names( @{ $input_file->getline( $file_io ) } );
+  # header must contain these columns
+  my @required_columns = qw(
+    taxon_id
+    ensembl_gene_id
+    vgnc_id symbol
+    name
+    alias_symbol
+    prev_symbol
+  );
+
+  # get header columns
+  my @columns = @{ $input_file->getline( $file_io ) };
+
+  # die if some required_column is not in columns
+  foreach my $colname (@required_columns) {
+    if ( !grep { /$colname/xms } @columns ) {
+      croak "ERROR: Can't find required column \"$colname\" in VGNC file $file\n";
+    }
+  }
+
+  $input_file->column_names( @columns );
 
   while ( my $data = $input_file->getline_hr( $file_io ) ) {
 
