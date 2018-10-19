@@ -25,8 +25,13 @@ use warnings;
 use Carp;
 use File::Basename;
 use POSIX qw(strftime);
+use Readonly;
 
 use parent qw( XrefParser::BaseParser );
+
+
+# FIXME: this belongs in BaseParser
+Readonly my $ERR_SOURCE_ID_NOT_FOUND => -1;
 
 
 sub run {
@@ -56,7 +61,11 @@ sub run {
 
   my $entrez_source_id =
     $self->get_source_id_for_source_name( 'EntrezGene', undef, $dbi );
+  if ( $entrez_source_id == $ERR_SOURCE_ID_NOT_FOUND ) {
+    croak 'Failed to retrieve EntrezGene source ID';
+  }
 
+  # FIXME: should we abort if any of these comes back empty?
   my (%mim_gene) =
     %{ $self->get_valid_codes( "MIM_GENE", $species_id, $dbi ) };
   my (%mim_morbid) =
