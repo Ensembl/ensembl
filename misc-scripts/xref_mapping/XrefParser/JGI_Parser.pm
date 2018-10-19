@@ -24,7 +24,7 @@ use warnings;
 use Carp;
 use File::Basename;
 
-use base qw( XrefParser::BaseParser );
+use parent qw( XrefParser::BaseParser );
 
 # JGI protein file with gene predictons  - FASTA FORMAT
 #
@@ -82,7 +82,7 @@ sub run {
     croak "ERROR: Could not open $file\n";
   }
 
-  $file_io->input_record_separator( "\n>");
+  IO::Handle->input_record_separator( "\n>");
   
   while ( my $record = $file_io->getline() ) {
 
@@ -127,7 +127,7 @@ sub run {
   }
 
   $file_io->close();
-  $file_io->input_record_separator( "\n");
+  IO::Handle->input_record_separator( "\n");
   print scalar(@xrefs) . " JGI_ xrefs succesfully parsed\n" if($verbose);
 
   $self->upload_xref_object_graphs(\@xrefs, $dbi);
