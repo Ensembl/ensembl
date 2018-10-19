@@ -24,8 +24,9 @@ use warnings;
 use Carp;
 use POSIX qw(strftime);
 use File::Basename;
+use Text::CSV;
 
-use base qw( XrefParser::BaseParser );
+use parent qw( XrefParser::BaseParser );
 
 sub run {
 
@@ -54,110 +55,84 @@ sub run {
 
   # Used to assign dbIDs for when RGD Xrefs are dependent on RefSeq xrefs
   my (%preloaded_refseq) = %{$self->get_valid_codes("refseq",$species_id, $dbi)};
-
+  
   my $rgd_io = $self->get_filehandle($file);
 
   if ( !defined $rgd_io ) {
     print STDERR "ERROR: Could not open $file\n";
     croak "Could not open $file when trying to parse RGD";
   }
-  my $line;
-  my $found =0;
-  while((!$found) and ($line = $rgd_io->getline())){ # ignore comments
-    if(!($line =~ /^#/)){
-      $found = 1;
-    }
-  };
-  chomp $line;
-  my @linearr = split(/\t/,$line);
+  my $csv = Text::CSV->new({ sep => "\t", blank_is_undef => 1, auto_diag => 1, strict => 1,binary => 1})
+    or die "Cannot use CSV: ".Text::CSV->error_diag ();
+  # WARNING - Text::CSV does not like the GENES-RAT.txt file. It is improperly formatted and contains a non-ASCII character
+  # Make sure binary is turned on or it silently fails and you get 1/3rd of the records.
 
-  my %columns = (
-    GENE_RGD_ID => 0,
-    SYMBOL => 1,
-    NAME => 2,
-    GENBANK_NUCLEOTIDE => 23,
-    OLD_SYMBOL => 29,
-    ENSEMBL_ID => 37
-  );
-  # Detect format deviations
-  foreach my $name (keys %columns) {
-    if($linearr[$columns{$name}] ne $name) {
-      croak "$name is not element $columns{$name} in the RGD header:\n$line\n";
-    }
+  my $line = '#';
+  until (substr($line,0,1) ne '#') {
+    $line = $rgd_io->getline;
   }
-
-  my $sql = "insert ignore into synonym (xref_id, synonym) values (?, ?)";
-  my $add_syn_sth = $dbi->prepare($sql);    
-  
+  $csv->parse($line);
+  $csv->column_names($csv->fields);
+  # Columns we want
+  #  GENE_RGD_ID => 0,
+  #  SYMBOL => 1,
+  #  NAME => 2,
+  #  GENBANK_NUCLEOTIDE => 23,
+  #  OLD_SYMBOL => 29,
+  #  ENSEMBL_ID => 37
+  my $line_track = 0;
   my $count= 0;
   my $ensembl_count = 0;
   my $mismatch = 0;
   my $syn_count = 0;
-  while ( $line = $rgd_io->getline() ) {
-    chomp $line;
-    my ($rgd, $symbol, $name, $refseq ,$old_name, $ensembl_id) = 
-      (split (/\t/,$line))
-      [ $columns{GENE_RGD_ID},
-        $columns{SYMBOL},
-        $columns{NAME},
-        $columns{GENBANK_NUCLEOTIDE},
-        $columns{OLD_SYMBOL},
-        $columns{ENSEMBL_ID}
-      ];
-    my @nucs = split(/\;/,$refseq); # nucs = nucleotides
+  my $cols; # Digested columns from CSV
+  while ( $cols = $csv->getline_hr($rgd_io) ) {
+    $line_track++;
+    my @nucs;
+    @nucs = split(/\;/,$cols->{GENBANK_NUCLEOTIDE}) if defined $cols->{GENBANK_NUCLEOTIDE};
     my $done = 0;
-
     # @nucs are sorted in the file in alphabetical order. Filter them to down
     # to a higher quality subset, then add dependent Xrefs where possible
     foreach my $nuc ($self->sort_refseq_accessions(@nucs)){
-      if(!$done){
-        if(exists $preloaded_refseq{$nuc}){
-          foreach my $xref (@{$preloaded_refseq{$nuc}}){
-            $done = 1;
-            my $xref_id = $self->add_dependent_xref({ 
-                        master_xref_id => $xref,
-                        acc            => $rgd,
-                        label          => $symbol,
-                        desc           => $name,
-                        source_id      => $source_id,
-                        dbi            => $dbi,
-                        species_id     => $species_id} );
-            $count++;
-            my @syns  = split(/\;/,$old_name);
-            foreach my $syn(@syns){
-              $add_syn_sth->execute($xref_id, $syn);
-              $syn_count++;
-            }
-          }
-        }
-        if ($ensembl_id) {
-          my @ensembl_ids = split(/\;/, $ensembl_id);
+      if(!$done && exists $preloaded_refseq{$nuc}){
+        foreach my $xref (@{$preloaded_refseq{$nuc}}){
+          my $xref_id = $self->add_dependent_xref({ 
+                      master_xref_id => $xref,
+                      acc            => $cols->{GENE_RGD_ID},
+                      label          => $cols->{SYMBOL},
+                      desc           => $cols->{NAME},
+                      source_id      => $source_id,
+                      dbi            => $dbi,
+                      species_id     => $species_id} );
+          $count++;
+          $syn_count += $self->add_synonyms($cols->{OLD_SYMBOL},$xref_id,$dbi);
           $done = 1;
-          foreach my $id (@ensembl_ids) {
-            $ensembl_count++;
-            $self->add_to_direct_xrefs({ stable_id => $id,
-                                         type => 'gene',
-                                         acc => $rgd,
-                                         label => $symbol,
-                                         desc => $name,
-                                         dbi  => $dbi,
-                                         source_id => $direct_source_id,
-                                         species_id => $species_id} );
-            my $xref_id = $self->get_xref($rgd, $direct_source_id, $species_id, $dbi);
-            my @syns = split(/\;/, $old_name);
-            foreach my $syn(@syns) {
-              $add_syn_sth->execute($xref_id, $syn);
-            }
-          }
         }
       }
     }
 
+    if (defined $cols->{ENSEMBL_ID}) {
+      my @ensembl_ids = split(/\;/, $cols->{ENSEMBL_ID});
+      foreach my $id (@ensembl_ids) {
+        $ensembl_count++;
+        $self->add_to_direct_xrefs({ stable_id => $id,
+                                     type => 'gene',
+                                     acc => $cols->{GENE_RGD_ID},
+                                     label => $cols->{SYMBOL},
+                                     desc => $cols->{NAME},
+                                     dbi  => $dbi,
+                                     source_id => $direct_source_id,
+                                     species_id => $species_id} );
+        my $xref_id = $self->get_xref($cols->{GENE_RGD_ID}, $direct_source_id, $species_id, $dbi);
+        $syn_count += $self->add_synonyms($cols->{OLD_SYMBOL},$xref_id,$dbi);
+        $done = 1;
+      }
+    }
     if(!$done){
       $self->add_xref({ 
-        acc        => $rgd,
-        label      => $symbol,
-        desc       => $name,
+        acc        => $cols->{GENE_RGD_ID},
+        label      => $cols->{SYMBOL},
+        desc       => $cols->{NAME},
         source_id  => $source_id,
         species_id => $species_id,
         dbi        => $dbi,
@@ -173,7 +148,8 @@ sub run {
     print "\t$count xrefs succesfully loaded and dependent on refseq\n";
     print "\t$mismatch xrefs added but with NO dependencies\n";
     print "\t$ensembl_count direct xrefs successfully loaded\n";
-    print "added $syn_count synonyms\n";
+    print "\tTried to add $syn_count synonyms, including duplicates\n";
+    print "\tTotal lines read $line_track\n";
   }
   return 0;
 }
@@ -196,6 +172,29 @@ sub sort_refseq_accessions {
   @accessions = sort { $refseq_priorities{substr $a, 0,2} <=> $refseq_priorities{substr $b, 0,2} } 
                 grep { exists $refseq_priorities{substr $_, 0,2} } @accessions;
   return @accessions;
+}
+
+
+sub add_synonyms {
+  my ($self,$synonym_string,$xref_id,$dbi) = @_;
+  my $syn_count = 0;
+  return $syn_count if (!defined $synonym_string || !defined $xref_id || !defined $dbi);
+  my $add_syn_sth;
+
+  if (! $self->{_syn_dbh_cache}) {
+    my $sql = "insert ignore into synonym (xref_id, synonym) values (?, ?)";
+    $add_syn_sth = $dbi->prepare($sql);
+    $self->{_syn_dbh_cache} = $add_syn_sth;
+  }
+  $add_syn_sth = $self->{_syn_dbh_cache};
+
+  my @syns;
+  @syns = split(/\;/,$synonym_string);
+  foreach my $syn(@syns){
+    $add_syn_sth->execute($xref_id, $syn);
+    $syn_count++;
+  }
+  return $syn_count;
 }
 
 1;
