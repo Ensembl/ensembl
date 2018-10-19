@@ -25,8 +25,9 @@ use strict;
 use warnings;
 use Carp;
 use File::Basename;
+use Text::CSV;
 
-use base qw( XrefParser::BaseParser );
+use parent qw( XrefParser::BaseParser );
 
 
 
@@ -35,15 +36,14 @@ sub run {
   my $source_id    = $ref_arg->{source_id};
   my $species_id   = $ref_arg->{species_id};
   my $files        = $ref_arg->{files};
-  my $verbose      = $ref_arg->{verbose};
-  my $dbi          = $ref_arg->{dbi};
-  $dbi = $self->dbi unless defined $dbi;
+  my $verbose      = $ref_arg->{verbose} || 0;
+  my $dbi          = $ref_arg->{dbi} || $self->dbi;
 
   if((!defined $source_id) or (!defined $species_id) or (!defined $files) ){
     croak "Need to pass source_id, species_id and files as pairs";
   }
-  $verbose |=0;
-  my $file = @{$files}[0];
+
+  my $file = shift @{$files};
 
   my $file_io = $self->get_filehandle($file);
 
@@ -52,23 +52,28 @@ sub run {
     return 1;    # 1 error
   }
 
+  my $input_file = Text::CSV->new({
+                                    sep_char           => "\t",
+				    empty_is_undef     => 1,
+				   }) or croak "Cannot use file $file: ".Text::CSV->error_diag ();
+
+  $input_file->column_names([qw(acc label desc stable_id)] );
   my $count = 0;
-  while ( my $line = $file_io->getline() ) {
-    chomp $line;
-    my ($acc, $label, $desc, $stable_id) = split /\t/, $line;
+  while ( my $data = $input_file->getline_hr( $file_io ) ) {
 
-    if(defined $desc){
-      $desc = $self->parse_description($desc);
+    my $desc;
+    if(defined $data->{'desc'}){
+      $desc = $self->parse_description($data->{'desc'});
     }
 
-    if($label eq "unnamed"){
-      $label = $acc;
+    if($data->{'label'} eq "unnamed"){
+      $data->{'label'} = $data->{'acc'};
     }
 
-    $self->add_to_direct_xrefs({ stable_id  => $stable_id,
+    $self->add_to_direct_xrefs({ stable_id  => $data->{'stable_id'},
 				 type       => 'gene',
-				 acc        => $acc,
-				 label      => $label,
+				 acc        => $data->{'acc'},
+				 label      => $data->{'label'},
 				 desc       => $desc,
                                  dbi        => $dbi,
 				 source_id  => $source_id,
