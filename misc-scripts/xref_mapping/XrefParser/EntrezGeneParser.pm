@@ -20,10 +20,13 @@ limitations under the License.
 package XrefParser::EntrezGeneParser;
 
 use strict;
+
+use Carp;
 use POSIX qw(strftime);
 use File::Basename;
-use Carp;
-use base qw( XrefParser::BaseParser );
+use Text::CSV;
+
+use parent qw( XrefParser::BaseParser );
 
 sub run {
 
@@ -32,14 +35,11 @@ sub run {
   my $species_id   = $ref_arg->{species_id};
   my $species_name = $ref_arg->{species};
   my $files        = $ref_arg->{files};
-  my $verbose      = $ref_arg->{verbose};
-  my $dbi          = $ref_arg->{dbi};
-  $dbi = $self->dbi unless defined $dbi;
+  my $verbose      = $ref_arg->{verbose} || 0;
+  my $dbi          = $ref_arg->{dbi} || $self->dbi;
 
   croak "Need to pass source_id, species_id, files and rel_file as pairs"
     unless defined $source_id and defined $species_id and defined $files;
-
-  $verbose |=0;
 
   my $file = @{$files}[0];
 
@@ -52,60 +52,27 @@ sub run {
   my $eg_io = $self->get_filehandle($file);
   croak "ERROR: Could not open $file\n" unless defined $eg_io;
 
-  my $head = $eg_io->getline(); # first record are the headers
-  chomp $head;
+  my $input_file = Text::CSV->new({ sep_char           => "\t",
+				    empty_is_undef     => 1,
+				    allow_loose_quotes => 1 # turns out file has unescaped quotes
+				  }) or croak "Cannot use file $file: ".Text::CSV->error_diag ();
 
-  # process header to figure out correct indexes to use, in case they change
-  my (@arr) = split(/\s+/, $head);
+  # process header
+  $input_file->column_names( @{ $input_file->getline( $eg_io ) } );
 
-  my $gene_id_index = -2;
-  my $gene_symbol_index = -2;
-  my $gene_desc_index = -2;
-  my $gene_tax_id_index = -2;
-  my $gene_synonyms_index = -2;
-
-  foreach (my $i=0; $i<= $#arr; $i++){
-    # Format change by Entrez, first header element is #tax_id
-    if($arr[$i] eq "#tax_id") {
-      $gene_tax_id_index = $i;
-    } elsif($arr[$i] eq "GeneID") {
-      $gene_id_index = $i;
-    } elsif($arr[$i] eq "Symbol") {
-      $gene_symbol_index = $i;
-    } elsif($arr[$i] eq "description") {
-      $gene_desc_index = $i;
-    } elsif($arr[$i] eq "Synonyms") {
-      $gene_synonyms_index = $i;
-    }
-  }
-  if( $gene_id_index       == -2 ||
-      $gene_symbol_index   == -2 ||
-      $gene_desc_index     == -2 ||
-      $gene_synonyms_index == -2 ||
-      $gene_tax_id_index == -2) {
-    croak "HEADER\n$head\n\n" .
-	"Unable to get all the indexes needed\n" .
-	"gene_id = $gene_id_index\n" .
-	"tax_id = $gene_tax_id_index\n" .
-	"symbol = $gene_symbol_index\n" .
-	"desc = $gene_desc_index\n" .
-	"synonyms = $gene_synonyms_index";
-  }
-
+  # read data and load xrefs
   my $xref_count = 0;
   my $syn_count  = 0;
   my %seen; # record already processed xrefs
 
-  while ( $_ = $eg_io->getline() ) {
-    chomp;
-    my (@arr) = split(/\t/, $_);
-    next unless defined $species_tax_id{$arr[$gene_tax_id_index]};
+  while ( my $data = $input_file->getline_hr( $eg_io ) ) {
+    next unless exists $species_tax_id{$data->{'#tax_id'}};
 
-    my $acc = $arr[$gene_id_index];
+    my $acc = $data->{'GeneID'};
     next if $seen{$acc};
 
-    my $symbol = $arr[$gene_symbol_index];
-    my $desc   = $arr[$gene_desc_index];
+    my $symbol = $data->{'Symbol'};
+    my $desc   = $data->{'description'};
 
     $self->add_xref({ acc        => $acc,
 		      label      => $symbol,
@@ -124,7 +91,7 @@ sub run {
 		      info_type  => "DEPENDENT" } ); #,"From EntrezGene $acc");
     $xref_count++;
 
-    my (@syn) = split(/\|/ ,$arr[$gene_synonyms_index]);
+    my (@syn) = split(/\|/, $data->{'Synonyms'});
     foreach my $synonym (@syn){
       if($synonym ne "-"){
 	$self->add_to_syn($acc, $source_id, $synonym, $species_id, $dbi);
@@ -135,11 +102,12 @@ sub run {
     $seen{$acc} = 1;
   }
 
+  $input_file->eof or croak "Error parsing file $file: " . $input_file->error_diag();
   $eg_io->close();
 
   print $xref_count." EntrezGene Xrefs added with $syn_count synonyms\n" if $verbose;
 
-  return 0; #successful
+  return 0; # success
 }
 
  
