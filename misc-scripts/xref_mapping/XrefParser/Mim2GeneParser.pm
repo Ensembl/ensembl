@@ -139,7 +139,9 @@ sub run {
       next RECORD;
     }
 
-    if ( $type eq "gene" || $type eq 'gene/phenotype' ) {
+    if ( $type eq "gene"
+         || $type eq 'gene/phenotype'
+         || $type eq 'predominantly phenotypes' ) {
       if ( defined( $mim_gene{$omim_id} ) ) {
         foreach my $ent_id ( @{ $entrez{$entrez_id} } ) {
           foreach my $mim_id ( @{ $mim_gene{$omim_id} } ) {
