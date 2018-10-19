@@ -19,6 +19,9 @@ limitations under the License.
 
 package XrefParser::Mim2GeneParser;
 
+# For non-destructive substitutions in regexps (/r flag)
+require 5.014_000;
+
 use strict;
 use warnings;
 
@@ -26,12 +29,15 @@ use Carp;
 use File::Basename;
 use POSIX qw(strftime);
 use Readonly;
+use Text::CSV;
 
 use parent qw( XrefParser::BaseParser );
 
 
 # FIXME: this belongs in BaseParser
 Readonly my $ERR_SOURCE_ID_NOT_FOUND => -1;
+
+Readonly my $EXPECTED_NUMBER_OF_COLUMNS => 5;
 
 
 sub run {
@@ -51,6 +57,12 @@ sub run {
   }
   $dbi //= $self->dbi;
   $verbose //= 0;
+
+
+  my $csv = Text::CSV->new({
+                            sep_char => "\t",
+                          })
+    || croak 'Failed to initialise CSV parser: ' . Text::CSV->error_diag();
 
   my $filename = @{$files}[0];
 
@@ -82,22 +94,48 @@ sub run {
   my $diff_type     = 0;
   my $count;
 
-  $eg_io->getline();    # do not need header
-  while ( my $line = $eg_io->getline() ) {
+ RECORD:
+  while ( my $line = $csv->getline( $eg_io ) ) {
+
+    my ( $is_comment, $is_header )
+      = ( $line->[0] =~ m{
+                           \A
+                           ([#])?
+                           \s*
+                           (MIM[ ]Number)?  # FIXME: this is an assumption regarding header contents.
+                                            # See if $line has split to the right number of columns instead?
+                       }msx );
+    if ( $is_comment ) {
+      if ( ( scalar @{ $line } == $EXPECTED_NUMBER_OF_COLUMNS )
+           && ( ! is_header_file_valid( $line ) ) ) {
+        croak "Malformed or unexpected header in Mim2Gene file '${filename}'";
+      }
+      next RECORD;
+    }
+
     $count++;
-    chomp $line;
-    my ( $omim_id, $entrez_id, $type, $other ) = split qr{\t}msx, $line;
+
+    if ( scalar @{ $line } != $EXPECTED_NUMBER_OF_COLUMNS ) {
+      croak ' Line ' . $csv->record_number()
+        . " of input file '${filename}' has an incorrect number of columns";
+    }
+
+    # Do not modify the contents of @{$line}, only the output - hence the /r.
+    my ( $omim_id, $type, $entrez_id, $hgnc_symbol, $ensembl_id )
+      = map { s{\s+\z}{}rmsx } @{ $line };
+
+    # FIXME: add support for direct xrefs!!!
 
     if ( !defined( $entrez{$entrez_id} ) ) {
       $missed_entrez++;
-      next;
+      next RECORD;
     }
 
     if ( ( !defined $mim_gene{$omim_id} ) and
          ( !defined $mim_morbid{$omim_id} ) )
     {
       $missed_omim++;
-      next;
+      next RECORD;
     }
 
     if ( $type eq "gene" || $type eq 'gene/phenotype' ) {
@@ -107,7 +145,6 @@ sub run {
             $add_dependent_xref_sth->execute( $ent_id, $mim_id );
           }
         }
-#        $add_dependent_xref_sth->execute($entrez{$entrez_id}, $mim_gene{$omim_id});
       }
       else {
         $diff_type++;
@@ -116,7 +153,6 @@ sub run {
             $add_dependent_xref_sth->execute( $ent_id, $mim_id );
           }
         }
-#        $add_dependent_xref_sth->execute($entrez{$entrez_id}, $mim_morbid{$omim_id});
       }
     }
     elsif ( $type eq "phenotype" ) {
@@ -126,7 +162,6 @@ sub run {
             $add_dependent_xref_sth->execute( $ent_id, $mim_id );
           }
         }
-#        $add_dependent_xref_sth->execute($entrez{$entrez_id}, $mim_morbid{$omim_id});
       }
       else {
         $diff_type++;
@@ -135,26 +170,49 @@ sub run {
             $add_dependent_xref_sth->execute( $ent_id, $mim_id );
           }
         }
-#        $add_dependent_xref_sth->execute($entrez{$entrez_id}, $mim_gene{$omim_id});
       }
     }
     else {
       croak "Unknown type $type";
     }
 
-  } ## end while ( $_ = $eg_io->getline...)
+  } ## end record loop
   $add_dependent_xref_sth->finish;
 
+  $csv->eof || croak 'Error parsing CSV: ' . $csv->error_diag();
   $eg_io->close();
 
   if ( $verbose ) {
-    print $missed_entrez . " EntrezGene entries could not be found.\n"
-      . $missed_omim . " Omim entries could not be found.\n"
-      . $diff_type . " had different types out of $count Entries.\n";
+    print $missed_entrez . " EntrezGene entries could not be found,\n"
+      . $missed_omim . " Omim entries could not be found,\n"
+      . $diff_type . " had different types - out of $count entries.\n";
   }
 
   return 0;
 } ## end sub run
 
+
+=head2 is_file_header_valid
+  Arg [1]    : String file header line
+  Example    : if (!is_file_header_valid($header_line)) {
+                 croak 'Bad header';
+               }
+  Description: Verifies if the header of a Mim2Gene file follows expected
+               syntax.
+               We do not check the number of columns because that is what
+               we use to *detect* the header in the first place.
+  Return type: boolean
+  Exceptions : none
+  Caller     : internal
+  Status     : Stable
+
+=cut
+
+sub is_header_file_valid {
+  my ( $header ) = @_;
+
+  # FIXME: actually validate the header
+  return 1;
+}
 
 1;
