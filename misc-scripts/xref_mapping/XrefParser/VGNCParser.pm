@@ -37,7 +37,7 @@ sub run {
 
 
   if ( (!defined $source_id) or (!defined $species_id) or (!defined $files) ) {
-    croak 'Need to pass source_id, species_id and files';
+    croak "Need to pass source_id, species_id and files as pairs";
   }
 
   my $file = shift @{$files};
@@ -47,7 +47,7 @@ sub run {
   my $file_io = $self->get_filehandle($file);
 
   if ( !defined $file_io ) {
-    croak "ERROR: Can't open VGNC file $file\n";
+    croak "Can't open VGNC file $file\n";
   }
 
   my $source_name = $self->get_source_name_for_source_id($source_id, $dbi);
@@ -79,7 +79,7 @@ sub run {
   # die if some required_column is not in columns
   foreach my $colname (@required_columns) {
     if ( !grep { /$colname/xms } @columns ) {
-      croak "ERROR: Can't find required column \"$colname\" in VGNC file $file\n";
+      croak "Can't find required column $colname in VGNC file $file\n";
     }
   }
 
