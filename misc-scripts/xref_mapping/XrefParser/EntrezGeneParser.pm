@@ -50,12 +50,10 @@ sub run {
   
 
   my $eg_io = $self->get_filehandle($file);
-  croak "ERROR: Could not open $file\n" unless defined $eg_io;
+  croak "Could not open $file\n" unless defined $eg_io;
 
-  my $input_file = Text::CSV->new({ sep_char           => "\t",
-				    empty_is_undef     => 1,
-				    allow_loose_quotes => 1 # turns out file has unescaped quotes
-				  }) or croak "Cannot use file $file: ".Text::CSV->error_diag ();
+  my $input_file = Text::CSV->new({ sep_char => "\t", empty_is_undef => 1, allow_loose_quotes => 1 }) 
+    or croak "Cannot use file $file: " . Text::CSV->error_diag ();
 
   # process header
   $input_file->column_names( @{ $input_file->getline( $eg_io ) } );
