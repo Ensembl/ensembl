@@ -68,35 +68,37 @@ sub run {
   $input_file->getline($mgi_io);
   $input_file->column_names([qw(accession chromosome position start end strand label status marker marker_type feature_type synonym_field)] );
   while ( my $data = $input_file->getline_hr( $mgi_io ) ) {
-        my $accession = $data->{'accession'};
-        my $marker = defined($data->{'marker'}) ? $data->{'marker'} : undef;
-        $acc_to_xref{$accession} = $self->add_xref({ acc        => $accession,
-                                                     label      => $data->{'label'},
-                                                     desc       => $marker,
-                                                     source_id  => $source_id,
-                                                     species_id => $species_id,
-                                                     dbi        => $dbi,
-                                                     info_type  => "MISC"} );
-        if($verbose and !$marker){
-    	   print "$accession has no description\n";
-        }
-        $xref_count++;
-        my @synonyms;
-        if(defined($acc_to_xref{$accession})){
-            @synonyms = split(/\|/,$data->{'synonym_field'}) if ($data->{'synonym_field'});
-            foreach my $syn (@synonyms) {
-                $self->add_synonym($acc_to_xref{$accession}, $syn, $dbi);
-                $syn_count++;
-            }
-        }
+    my $accession = $data->{'accession'};
+    my $marker = defined($data->{'marker'}) ? $data->{'marker'} : undef;
+    $acc_to_xref{$accession} = $self->add_xref({ acc        => $accession,
+                                                 label      => $data->{'label'},
+                                                 desc       => $marker,
+                                                 source_id  => $source_id,
+                                                 species_id => $species_id,
+                                                 dbi        => $dbi,
+                                                 info_type  => "MISC"} );
+    if($verbose and !$marker){
+      print "$accession has no description\n";
     }
-    $mgi_io->eof or croak "Error parsing file $file: " . $input_file->error_diag();
-    $mgi_io->close();
-      
-    print $xref_count." MGI Description Xrefs added\n" if($verbose);
-    print $syn_count." synonyms added\n" if($verbose);
+    $xref_count++;
+    my @synonyms;
+    if(defined($acc_to_xref{$accession})){
+      @synonyms = split(/\|/,$data->{'synonym_field'}) if ($data->{'synonym_field'});
+      foreach my $syn (@synonyms) {
+        $self->add_synonym($acc_to_xref{$accession}, $syn, $dbi);
+        $syn_count++;
+      }
+    }
+  }
+  $mgi_io->eof or croak "Error parsing file $file: " . $input_file->error_diag();
+  $mgi_io->close();
 
-    return 0; #successful
+  if ($verbose) {
+    print "$xref_count MGI Description Xrefs added\n";
+    print "$syn_count synonyms added\n";
+  }
+
+  return 0; #successful
 }
 	
 
