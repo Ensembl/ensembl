@@ -39,7 +39,7 @@ sub run {
   $dbi = $self->dbi unless defined $dbi;
 
   if((!defined $source_id) or (!defined $species_id) or (!defined $files) ){
-    croak "Need to pass source_id, species_id and files as pairs";
+    confess "Need to pass source_id, species_id and files as pairs";
   }
   $verbose |=0;
 
@@ -59,10 +59,10 @@ sub run {
   my $rgd_io = $self->get_filehandle($file);
 
   if ( !defined $rgd_io ) {
-    carp "Could not open $file when trying to parse RGD";
+    confess "Could not open $file when trying to parse RGD";
   }
   my $csv = Text::CSV->new({ sep => "\t", blank_is_undef => 1, strict => 0, auto_diag => 1, binary => 1, allow_loose_quotes => 1})
-    or carp "Cannot use CSV: ".Text::CSV->error_diag ();
+    or confess "Cannot use CSV: ".Text::CSV->error_diag ();
   # WARNING - Text::CSV does not like the GENES-RAT.txt file. It is improperly formatted and contains a non-ASCII character
   # Make sure binary is turned on or it silently fails and you get 1/3rd of the records.
   # strict is turned off to prevent failure on a blank line at the end
