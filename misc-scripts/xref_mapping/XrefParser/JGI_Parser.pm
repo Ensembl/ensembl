@@ -79,7 +79,7 @@ sub run {
   my $file_io = $self->get_filehandle($file);
 
   if ( !defined $file_io ) {
-    croak "ERROR: Could not open $file\n";
+    confess "Could not open $file\n";
   }
 
   IO::Handle->input_record_separator( "\n>");
@@ -104,11 +104,11 @@ sub run {
     } elsif ($source_name=~m/cint_aniseed_.*v1/) {
       # header format is  >ci0100146277, we want this 
       # JGI 1.0
-
+      ($accession = $header) =~s/\w{6}//;
     } else {
-      croak "WARNING : The source-name specified ($source_name) in the populate_metatable.sql file is\n" .
-            "WARNING : not matching the different cases specified in JGI_Parser.pm - please\n".
-            "WARNING : edit the parser \n" ;
+      confess "The source-name specified ($source_name) in the populate_metatable.sql file is\n" .
+              "not matching the different cases specified in JGI_Parser.pm - please\n".
+              "edit the parser \n" ;
     }
 
     # make sequence into one long string
