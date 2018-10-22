@@ -62,8 +62,7 @@ sub dbc {
     my $arg = shift;
 
     if(defined($arg)) {
-      croak "$arg is not a DBConnection" 
-	unless $arg->isa('Bio::EnsEMBL::DBSQL::DBConnection');
+      croak "$arg is not a DBConnection" unless $arg->isa('Bio::EnsEMBL::DBSQL::DBConnection');
       $self->{_dbc} = $arg;
     }
   }
