@@ -59,13 +59,13 @@ sub run {
   my $rgd_io = $self->get_filehandle($file);
 
   if ( !defined $rgd_io ) {
-    print STDERR "ERROR: Could not open $file\n";
-    croak "Could not open $file when trying to parse RGD";
+    carp "Could not open $file when trying to parse RGD";
   }
-  my $csv = Text::CSV->new({ sep => "\t", blank_is_undef => 1, auto_diag => 1, strict => 1,binary => 1})
-    or die "Cannot use CSV: ".Text::CSV->error_diag ();
+  my $csv = Text::CSV->new({ sep => "\t", blank_is_undef => 1, strict => 0, auto_diag => 1, binary => 1, allow_loose_quotes => 1})
+    or carp "Cannot use CSV: ".Text::CSV->error_diag ();
   # WARNING - Text::CSV does not like the GENES-RAT.txt file. It is improperly formatted and contains a non-ASCII character
   # Make sure binary is turned on or it silently fails and you get 1/3rd of the records.
+  # strict is turned off to prevent failure on a blank line at the end
 
   my $line = '#';
   until (substr($line,0,1) ne '#') {
@@ -80,14 +80,15 @@ sub run {
   #  GENBANK_NUCLEOTIDE => 23,
   #  OLD_SYMBOL => 29,
   #  ENSEMBL_ID => 37
-  my $line_track = 0;
+
   my $count= 0;
   my $ensembl_count = 0;
   my $mismatch = 0;
   my $syn_count = 0;
   my $cols; # Digested columns from CSV
   while ( $cols = $csv->getline_hr($rgd_io) ) {
-    $line_track++;
+    next if $csv->is_missing (0) || (exists $cols->{GENE_RGD_ID} && $cols->{GENE_RGD_ID} eq '' || !defined $cols->{GENE_RGD_ID});
+
     my @nucs;
     @nucs = split(/\;/,$cols->{GENBANK_NUCLEOTIDE}) if defined $cols->{GENBANK_NUCLEOTIDE};
     my $done = 0;
@@ -141,7 +142,9 @@ sub run {
     }
 
   }
-
+  if (! $csv->eof) {
+    confess 'Failed to finish parsing RGD file: '.$csv->error_diag();
+  }
   $rgd_io->close();
 
   if($verbose){
@@ -149,7 +152,6 @@ sub run {
     print "\t$mismatch xrefs added but with NO dependencies\n";
     print "\t$ensembl_count direct xrefs successfully loaded\n";
     print "\tTried to add $syn_count synonyms, including duplicates\n";
-    print "\tTotal lines read $line_track\n";
   }
   return 0;
 }
