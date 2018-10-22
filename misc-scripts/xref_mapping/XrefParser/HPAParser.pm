@@ -51,7 +51,7 @@ sub run {
   my $file = @{$files}[0];
 
   my $file_io = $self->get_filehandle($file);
-  croak "ERROR: Could not open $file\n" unless defined $file_io;
+  croak "Could not open $file\n" unless defined $file_io;
 
   my $input_file = Text::CSV->new({ sep_char           => ",",
 				    empty_is_undef     => 1
@@ -61,8 +61,11 @@ sub run {
 
   my $parsed_count = 0;
   while ( my $row = $input_file->getline( $file_io ) ) {
-    map { $_ =~ s/\s*$// } @{$row};
-    my ( $antibody, $antibody_id, $ensembl_peptide_id, $link ) = @{$row};
+    my ( $antibody, $antibody_id, $ensembl_peptide_id, $link );
+    ( $antibody = $row->[0] ) =~ s/\s*$//;
+    ( $antibody_id = $row->[1] ) =~ s/\s*$//;
+    ( $ensembl_peptide_id = $row->[2] ) =~ s/\s*$//;
+    ( $link = $row->[3] ) =~ s/\s*$//;
 
     croak sprintf("Line %d contains has less than two columns.\nParsing failed", 1 + $parsed_count)
       unless defined $antibody and defined $ensembl_peptide_id;
@@ -72,13 +75,16 @@ sub run {
     my $version = '1';
 
     my $xref_id = $self->get_xref( $antibody_id, $source_id, $species_id, $dbi );
-    $xref_id = $self->add_xref({ acc        => $antibody_id,
-				 version    => $version,
-				 label      => $label,
-				 source_id  => $source_id,
-				 species_id => $species_id,
-				 dbi        => $dbi,
-				 info_type  => "DIRECT"} ) unless defined $xref_id or $xref_id ne '';
+
+    unless(defined $xref_id or $xref_id ne '') {
+	$xref_id = $self->add_xref({ acc        => $antibody_id,
+				     version    => $version,
+				     label      => $label,
+				     source_id  => $source_id,
+				     species_id => $species_id,
+				     dbi        => $dbi,
+				     info_type  => "DIRECT"} )
+    }
 
     $self->add_direct_xref( $xref_id, $ensembl_peptide_id, $type, undef, $dbi);
 
