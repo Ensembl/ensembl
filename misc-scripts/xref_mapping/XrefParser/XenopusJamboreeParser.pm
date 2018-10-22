@@ -81,6 +81,7 @@ sub run {
     $count++;
   }
 
+  $input_file->eof or croak "Error parsing file $file: " . $input_file->error_diag();
   $file_io->close();
 
   print $count . " XenopusJamboreeParser xrefs succesfully parsed\n" if($verbose);
