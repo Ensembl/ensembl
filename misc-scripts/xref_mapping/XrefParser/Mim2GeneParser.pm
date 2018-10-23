@@ -230,8 +230,8 @@ sub run {
         # The only type with a different source order
 
         if ( defined( $mim_morbid{$omim_id} ) ) {
-          foreach my $ent_id ( @{ $entrez{$entrez_id} } ) {
-            foreach my $mim_id ( @{ $mim_morbid{$omim_id} } ) {
+          foreach my $mim_id ( @{ $mim_morbid{$omim_id} } ) {
+            foreach my $ent_id ( @{ $entrez{$entrez_id} } ) {
               $self->add_dependent_xref({
                                          'master_xref_id' => $ent_id,
                                          'acc'            => $mim_id,
@@ -245,8 +245,8 @@ sub run {
         }
         else {
           $counters{'expected_in_mim_morbid_but_not_there'}++;
-          foreach my $ent_id ( @{ $entrez{$entrez_id} } ) {
-            foreach my $mim_id ( @{ $mim_gene{$omim_id} } ) {
+          foreach my $mim_id ( @{ $mim_gene{$omim_id} } ) {
+            foreach my $ent_id ( @{ $entrez{$entrez_id} } ) {
               $self->add_dependent_xref({
                                          'master_xref_id' => $ent_id,
                                          'acc'            => $mim_id,
@@ -261,8 +261,8 @@ sub run {
       }
       else {
         if ( defined( $mim_gene{$omim_id} ) ) {
-          foreach my $ent_id ( @{ $entrez{$entrez_id} } ) {
-            foreach my $mim_id ( @{ $mim_gene{$omim_id} } ) {
+          foreach my $mim_id ( @{ $mim_gene{$omim_id} } ) {
+            foreach my $ent_id ( @{ $entrez{$entrez_id} } ) {
               $self->add_dependent_xref({
                                          'master_xref_id' => $ent_id,
                                          'acc'            => $mim_id,
@@ -276,8 +276,8 @@ sub run {
         }
         else {
           $counters{'expected_in_mim_gene_but_not_there'}++;
-          foreach my $ent_id ( @{ $entrez{$entrez_id} } ) {
-            foreach my $mim_id ( @{ $mim_morbid{$omim_id} } ) {
+          foreach my $mim_id ( @{ $mim_morbid{$omim_id} } ) {
+            foreach my $ent_id ( @{ $entrez{$entrez_id} } ) {
               $self->add_dependent_xref({
                                          'master_xref_id' => $ent_id,
                                          'acc'            => $mim_id,
