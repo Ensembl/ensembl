@@ -33,7 +33,7 @@ use parent qw( XrefParser::BaseParser );
 # OMIM Web site. They should be assigned to two different xref
 # sources: MIM_GENE and MIM_MORBID. MIM xrefs are linked to EntrezGene
 # entries so the parser does not match them to Ensembl; this will be
-# taken care of when EntrezGene antries are matched.
+# taken care of when EntrezGene entries are matched.
 #
 # OMIM records are multiline. Each record begins with a specific tag
 # line and consists of a number of fields. Each field starts with its
