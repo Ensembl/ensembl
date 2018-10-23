@@ -276,26 +276,23 @@ sub is_header_file_valid {
 
   my @fields_ok;
 
-  # FIXME: we should probably use a loop + a lookup list for the code
-  # below to avoid using hard-coded field indices
+  Readonly my @field_patterns
+    => (
+        qr{ \A [#]? \s* MIM[ ]Number }msx,
+        qr{ MIM[ ]Entry[ ]Type }msx,
+        qr{ Entrez[ ]Gene[ ]ID }msx,
+        qr{ Approved[ ]Gene[ ]Symbol }msx,
+        qr{ Ensembl[ ]Gene[ ]ID }msx,
+      );
 
-  # This one will likely have a hash prepended to it
-  my $mim_number_ok = ( $header->[0] =~ m{ \A [#]? \s* MIM[ ]Number }msx );
-  push @fields_ok, $mim_number_ok;
+  my $header_field;
+  foreach my $pattern (@field_patterns) {
+    $header_field = shift @{ $header };
+    # Make sure we run the regex match in scalar context
+    push @fields_ok, scalar ( $header_field =~ m{ $pattern }msx );
+  }
 
-  my $mim_type_ok = ( $header->[1] =~ m{ MIM[ ]Entry[ ]Type }msx );
-  push @fields_ok, $mim_type_ok;
-
-  my $entrez_id_ok = ( $header->[2] =~ m{ Entrez[ ]Gene[ ]ID }msx );
-  push @fields_ok, $entrez_id_ok;
-
-  my $hgnc_id_ok = ( $header->[3] =~ m{ Approved[ ]Gene[ ]Symbol }msx );
-  push @fields_ok, $hgnc_id_ok;
-
-  my $ensembl_id_ok = ( $header->[4] =~ m{ Ensembl[ ]Gene[ ]ID }msx );
-  push @fields_ok, $ensembl_id_ok;
-
-  # All fields must be in order
+  # All fields must have matched
   return List::Util::all { $_ } @fields_ok;
 }
 
