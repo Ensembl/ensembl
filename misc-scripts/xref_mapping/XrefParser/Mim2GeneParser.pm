@@ -172,118 +172,62 @@ sub run {
 
       if ( defined( $mim_morbid{$omim_id} ) ) {
         foreach my $mim_id ( @{ $mim_morbid{$omim_id} } ) {
-          if ( $ensembl_id ) {
-            $counters{'direct_ensembl'}++;
-            $self->add_to_direct_xrefs({
-                                        'stable_id'  => $ensembl_id,
-                                        'type'       => 'gene',
-                                        'acc'        => $mim_id,
-                                        'source_id'  => $mim_morbid_source_id,
-                                        'species_id' => $species_id,
-                                        'dbi'        => $dbi,
-                                      });
-          }
-          else {
-            foreach my $ent_id ( @{ $entrez{$entrez_id} } ) {
-            $counters{'dependent_on_entrez'}++;
-            $self->add_dependent_xref({
-                                         'master_xref_id' => $ent_id,
-                                         'acc'            => $mim_id,
-                                         'source_id'      => $mim_morbid_source_id,
-                                         'species_id'     => $species_id,
-                                         'linkage'        => $entrez_source_id,
-                                         'dbi'            => $dbi,
-                                       });
-            }
-          }
+          $self->process_xref_entry({
+            'mim_id'           => $mim_id,
+            'mim_source_id'    => $mim_morbid_source_id,
+            'species_id'       => $species_id,
+            'ensembl_id'       => $ensembl_id,
+            'entrez_xrefs'     => $entrez{$entrez_id},
+            'entrez_source_id' => $entrez_source_id,
+            'dbi'              => $dbi,
+            'counters'         => \%counters
+          });
         }
       }
       else {
         $counters{'expected_in_mim_morbid_but_not_there'}++;
         foreach my $mim_id ( @{ $mim_gene{$omim_id} } ) {
-          if ( $ensembl_id ) {
-            $counters{'direct_ensembl'}++;
-            $self->add_to_direct_xrefs({
-                                        'stable_id'  => $ensembl_id,
-                                        'type'       => 'gene',
-                                        'acc'        => $mim_id,
-                                        'source_id'  => $mim_gene_source_id,
-                                        'species_id' => $species_id,
-                                        'dbi'        => $dbi,
-                                      });
-          }
-          else {
-            foreach my $ent_id ( @{ $entrez{$entrez_id} } ) {
-              $counters{'dependent_on_entrez'}++;
-              $self->add_dependent_xref({
-                                         'master_xref_id' => $ent_id,
-                                         'acc'            => $mim_id,
-                                         'source_id'      => $mim_gene_source_id,
-                                         'species_id'     => $species_id,
-                                         'linkage'        => $entrez_source_id,
-                                         'dbi'            => $dbi,
-                                       });
-            }
-          }
+          $self->process_xref_entry({
+            'mim_id'           => $mim_id,
+            'mim_source_id'    => $mim_gene_source_id,
+            'species_id'       => $species_id,
+            'ensembl_id'       => $ensembl_id,
+            'entrez_xrefs'     => $entrez{$entrez_id},
+            'entrez_source_id' => $entrez_source_id,
+            'dbi'              => $dbi,
+            'counters'         => \%counters
+          });
         }
       }
     }
     else {
       if ( defined( $mim_gene{$omim_id} ) ) {
         foreach my $mim_id ( @{ $mim_gene{$omim_id} } ) {
-          if ( $ensembl_id ) {
-            $counters{'direct_ensembl'}++;
-            $self->add_to_direct_xrefs({
-                                        'stable_id'  => $ensembl_id,
-                                        'type'       => 'gene',
-                                        'acc'        => $mim_id,
-                                        'source_id'  => $mim_gene_source_id,
-                                        'species_id' => $species_id,
-                                        'dbi'        => $dbi,
-                                      });
-          }
-          else {
-            foreach my $ent_id ( @{ $entrez{$entrez_id} } ) {
-              $counters{'dependent_on_entrez'}++;
-              $self->add_dependent_xref({
-                                         'master_xref_id' => $ent_id,
-                                         'acc'            => $mim_id,
-                                         'source_id'      => $mim_gene_source_id,
-                                         'species_id'     => $species_id,
-                                         'linkage'        => $entrez_source_id,
-                                         'dbi'            => $dbi,
-                                       });
-            }
-          }
+          $self->process_xref_entry({
+            'mim_id'           => $mim_id,
+            'mim_source_id'    => $mim_gene_source_id,
+            'species_id'       => $species_id,
+            'ensembl_id'       => $ensembl_id,
+            'entrez_xrefs'     => $entrez{$entrez_id},
+            'entrez_source_id' => $entrez_source_id,
+            'dbi'              => $dbi,
+            'counters'         => \%counters
+          });
         }
       }
       else {
         $counters{'expected_in_mim_gene_but_not_there'}++;
         foreach my $mim_id ( @{ $mim_morbid{$omim_id} } ) {
-          if ( $ensembl_id ) {
-            $counters{'direct_ensembl'}++;
-            $self->add_to_direct_xrefs({
-                                        'stable_id'  => $ensembl_id,
-                                        'type'       => 'gene',
-                                        'acc'        => $mim_id,
-                                        'source_id'  => $mim_morbid_source_id,
-                                        'species_id' => $species_id,
-                                        'dbi'        => $dbi,
-                                      });
-          }
-          else {
-            foreach my $ent_id ( @{ $entrez{$entrez_id} } ) {
-              $counters{'dependent_on_entrez'}++;
-              $self->add_dependent_xref({
-                                         'master_xref_id' => $ent_id,
-                                         'acc'            => $mim_id,
-                                         'source_id'      => $mim_morbid_source_id,
-                                         'species_id'     => $species_id,
-                                         'linkage'        => $entrez_source_id,
-                                         'dbi'            => $dbi,
-                                       });
-            }
-          }
+          $self->process_xref_entry({
+            'mim_id'           => $mim_id,
+            'mim_source_id'    => $mim_morbid_source_id,
+            'species_id'       => $species_id,
+            'ensembl_id'       => $ensembl_id,
+            'entrez_xrefs'     => $entrez{$entrez_id},
+            'entrez_source_id' => $entrez_source_id,
+            'dbi'              => $dbi,
+            'counters'         => \%counters
+          });
         }
       }
     }
@@ -311,6 +255,7 @@ sub run {
 
 
 =head2 is_file_header_valid
+
   Arg [1]    : String file header line
   Example    : if (!is_file_header_valid($header_line)) {
                  croak 'Bad header';
@@ -353,5 +298,54 @@ sub is_header_file_valid {
   # All fields must be in order
   return List::Util::all { $_ } @fields_ok;
 }
+
+
+=head2 process_xref_entry
+
+  Arg [1]    : HashRef list of named arguments: FIXME
+  Example    : $self->process_xref_entry({...});
+  Description: Wrapper around the most frequently repeated bit of
+               run(): if $ensembl_id is defined insert a direct MIM
+               xref, otherwise loop over the list of matching
+               EntrezGene xrefs and insert dependent MIM xrefs.
+               In either case increment the correct counter.
+  Return type: none
+  Exceptions : none
+  Caller     : internal
+  Status     : Stable
+
+=cut
+
+sub process_xref_entry {
+  my ( $self, $arg_ref ) = @_;
+
+  if ( $arg_ref->{'ensembl_id'} ) {
+    $arg_ref->{'counters'}->{'direct_ensembl'}++;
+    $self->add_to_direct_xrefs({
+      'stable_id'  => $arg_ref->{'ensembl_id'},
+      'type'       => 'gene',
+      'acc'        => $arg_ref->{'mim_id'},
+      'source_id'  => $arg_ref->{'mim_source_id'},
+      'species_id' => $arg_ref->{'species_id'},
+      'dbi'        => $arg_ref->{'dbi'},
+    });
+  }
+  else {
+    foreach my $ent_id ( @{ $arg_ref->{'entrez_xrefs'} } ) {
+      $arg_ref->{'counters'}->{'dependent_on_entrez'}++;
+      $self->add_dependent_xref({
+        'master_xref_id' => $ent_id,
+        'acc'            => $arg_ref->{'mim_id'},
+        'source_id'      => $arg_ref->{'mim_source_id'},
+        'species_id'     => $arg_ref->{'species_id'},
+        'linkage'        => $arg_ref->{'entrez_source_id'},
+        'dbi'            => $arg_ref->{'dbi'},
+      });
+    }
+  }
+
+  return;
+}
+
 
 1;
