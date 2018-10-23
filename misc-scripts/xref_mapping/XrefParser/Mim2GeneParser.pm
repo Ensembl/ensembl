@@ -172,6 +172,7 @@ sub run {
                                        'source_id'      => $mim_gene_source_id,
                                        'species_id'     => $species_id,
                                        'linkage'        => $entrez_source_id,
+                                       'dbi'            => $dbi,
                                      });
           }
         }
@@ -186,6 +187,7 @@ sub run {
                                        'source_id'      => $mim_morbid_source_id,
                                        'species_id'     => $species_id,
                                        'linkage'        => $entrez_source_id,
+                                       'dbi'            => $dbi,
                                      });
           }
         }
@@ -201,6 +203,7 @@ sub run {
                                        'source_id'      => $mim_morbid_source_id,
                                        'species_id'     => $species_id,
                                        'linkage'        => $entrez_source_id,
+                                       'dbi'            => $dbi,
                                      });
           }
         }
@@ -215,6 +218,7 @@ sub run {
                                        'source_id'      => $mim_gene_source_id,
                                        'species_id'     => $species_id,
                                        'linkage'        => $entrez_source_id,
+                                       'dbi'            => $dbi,
                                      });
           }
         }
