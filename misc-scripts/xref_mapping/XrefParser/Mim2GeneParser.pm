@@ -96,10 +96,17 @@ sub run {
   my (%entrez) =
     %{ $self->get_valid_codes( "EntrezGene", $species_id, $dbi ) };
 
-  my $missed_entrez = 0;
-  my $missed_omim   = 0;
-  my $diff_type     = 0;
-  my $count;
+  # Initialise all counters to 0 so that we needn't handle possible undefs
+  # while printing the summary
+  my %counters = (
+                  'all_entries'                          => 0,
+                  'dependent_on_entrez'                  => 0,
+                  'direct_ensembl'                       => 0,
+                  'expected_in_mim_gene_but_not_there'   => 0,
+                  'expected_in_mim_morbid_but_not_there' => 0,
+                  'missed_master'                        => 0,
+                  'missed_omim'                          => 0,
+                );
 
  RECORD:
   while ( my $line = $csv->getline( $eg_io ) ) {
@@ -120,8 +127,6 @@ sub run {
       next RECORD;
     }
 
-    $count++;
-
     if ( scalar @{ $line } != $EXPECTED_NUMBER_OF_COLUMNS ) {
       croak ' Line ' . $csv->record_number()
         . " of input file '${filename}' has an incorrect number of columns";
@@ -131,20 +136,30 @@ sub run {
     my ( $omim_id, $type, $entrez_id, $hgnc_symbol, $ensembl_id )
       = map { s{\s+\z}{}rmsx } @{ $line };
 
-    # FIXME: add support for direct xrefs!!!
+    $counters{'all_entries'}++;
 
-    if ( !defined( $entrez{$entrez_id} ) ) {
-      $missed_entrez++;
-      next RECORD;
-    }
-
+    # No point in doing anything if we have no matching MIM xref...
     if ( ( !defined $mim_gene{$omim_id} ) and
          ( !defined $mim_morbid{$omim_id} ) )
     {
-      $missed_omim++;
+      $counters{'missed_omim'}++;
       next RECORD;
     }
 
+    if ( $ensembl_id ) {
+      $counters{'direct_ensembl'}++;
+      # FIXME: add actual support for direct xrefs!!!
+    }
+    elsif ( defined $entrez{$entrez_id} ) {
+      $counters{'dependent_on_entrez'}++;
+    }
+    else {
+      $counters{'missed_master'}++;
+      next RECORD;
+    }
+
+    # FIXME: once direct xrefs have been implemented, only invoke this
+    # for dependent ones
     if ( $type eq "gene"
          || $type eq 'gene/phenotype'
          || $type eq 'predominantly phenotypes' ) {
@@ -162,7 +177,7 @@ sub run {
         }
       }
       else {
-        $diff_type++;
+        $counters{'expected_in_mim_gene_but_not_there'}++;
         foreach my $ent_id ( @{ $entrez{$entrez_id} } ) {
           foreach my $mim_id ( @{ $mim_morbid{$omim_id} } ) {
             $self->add_dependent_xref({
@@ -191,7 +206,7 @@ sub run {
         }
       }
       else {
-        $diff_type++;
+        $counters{'expected_in_mim_morbid_but_not_there'}++;
         foreach my $ent_id ( @{ $entrez{$entrez_id} } ) {
           foreach my $mim_id ( @{ $mim_gene{$omim_id} } ) {
             $self->add_dependent_xref({
@@ -215,9 +230,16 @@ sub run {
   $eg_io->close();
 
   if ( $verbose ) {
-    print $missed_entrez . " EntrezGene entries could not be found,\n"
-      . $missed_omim . " Omim entries could not be found,\n"
-      . $diff_type . " had different types - out of $count entries.\n";
+    print 'Processed ' . $counters{'all_entries'} . " entries. Out of those\n"
+      . "\t" . $counters{'missed_omim'} . " had missing OMIM entries,\n"
+      . "\t" . $counters{'direct_ensembl'} . " would be parsed as direct xrefs,\n"
+      . "\t" . $counters{'dependent_on_entrez'} . " were dependent EntrezGene xrefs,\n"
+      . "\t" . $counters{'missed_master'} . " had missing master entries.\n"
+      . "\t * * *\n"
+      . "\t" . $counters{'expected_in_mim_gene_but_not_there'}
+      . " were expected in MIM_GENE but were not found there,\n"
+      . "\t" . $counters{'expected_in_mim_morbid_but_not_there'}
+      . " were expected in MIM_MORBID but were not found there.\n";
   }
 
   return 0;
