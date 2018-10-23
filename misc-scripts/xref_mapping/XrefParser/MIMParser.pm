@@ -195,12 +195,41 @@ sub run {
 
   $mim_io->close();
 
+  # Generate synonyms from "MOVED TO" entries
   foreach my $mim ( keys %old_to_new ) {
     my $old = $mim;
     my $new = $old_to_new{$old};
+
+    # Some entries in the MIM database have been moved multiple times,
+    # and we want each of the synonyms created this way to point to
+    # the *current* accession instead of one another. Keep traversing
+    # the chain of renames until we have reached the end, i.e. until
+    # $new is no longer a valid key in %old_to_new.
+    # FIXME: this is not entirely efficient, especially for long
+    # rename chains, because the foreach loop processes every single
+    # key of %old_to_new (i.e. every single "MOVED TO" entry) from
+    # scratch - even though some of them might have already been
+    # encountered in the process of traversing the change chains of
+    # previously encountered keys. Some sort of a cache pointing each
+    # of previously encountered keys to their respective final values,
+    # might be in order here.
+    # FIXME: If we do implement such a cache, compare performance for
+    # retrieving original keys in random order vs in descending
+    # numerical order. On the one hand starting with high accessions
+    # will likely allow us to process rename chains from shorter to
+    # longer ones, thus, maximising the use of the cache; on the other
+    # there is the O(n log n) cost of sorting to take into account.
     while ( defined( $old_to_new{$new} ) ) {
       $new = $old_to_new{$new};
     }
+
+    # With the latest value of $new no longer pointing to anything in
+    # %old_to_new, we have got two options: either we have finally
+    # reached an up-to-date entry number or the entry has ultimately
+    # been removed from the database. See if we have logged the
+    # removal, if we haven't add the synonyms - letting Ensembl figure
+    # out by itself to which of the three (two???) sources the
+    # relevant xrefs belong.
     if ( !defined( $removed{$new} ) ) {
       $self->add_to_syn_for_mult_sources( $new, \@sources, $old,
                                           $species_id, $dbi );
