@@ -146,40 +146,26 @@ sub run {
       next RECORD;
     }
 
+    # An unknown type might indicate the change of input format,
+    # therefore make sure the user notices it. That said, do not
+    # bother we do not have an xref this entry would operate on anyway
+    # - which is why we only check this AFTER the missed_omim block
+    # above.
+    if ( ( $type ne 'gene')
+         && ( $type ne 'gene/phenotype' )
+         && ( $type ne 'predominantly phenotypes' )
+         && ( $type ne 'phenotype' ) ) {
+      croak "Unknown type $type";
+    }
+
     if ( $ensembl_id ) {
       $counters{'direct_ensembl'}++;
 
       # FIXME: *lots* of duplication wrt dependent xrefs
-      if ( $type eq "gene"
-           || $type eq 'gene/phenotype'
-           || $type eq 'predominantly phenotypes' ) {
-        if ( defined( $mim_gene{$omim_id} ) ) {
-          foreach my $mim_id ( @{ $mim_gene{$omim_id} } ) {
-            $self->add_to_direct_xrefs({
-                                        'stable_id'  => $ensembl_id,
-                                        'type'       => 'gene',
-                                        'acc'        => $mim_id,
-                                        'source_id'  => $mim_gene_source_id,
-                                        'species_id' => $species_id,
-                                        'dbi'        => $dbi,
-                                      });
-          }
-        }
-        else {
-          $counters{'expected_in_mim_gene_but_not_there'}++;
-          foreach my $mim_id ( @{ $mim_morbid{$omim_id} } ) {
-            $self->add_to_direct_xrefs({
-                                        'stable_id'  => $ensembl_id,
-                                        'type'       => 'gene',
-                                        'acc'        => $mim_id,
-                                        'source_id'  => $mim_morbid_source_id,
-                                        'species_id' => $species_id,
-                                        'dbi'        => $dbi,
-                                      });
-          }
-        }
-      }
-      elsif ( $type eq "phenotype" ) {
+
+      if ( $type eq 'phenotype' ) {
+        # The only type with a different source order
+
         if ( defined( $mim_morbid{$omim_id} ) ) {
           foreach my $mim_id ( @{ $mim_morbid{$omim_id} } ) {
             $self->add_to_direct_xrefs({
@@ -207,7 +193,31 @@ sub run {
         }
       }
       else {
-        croak "Unknown type $type";
+        if ( defined( $mim_gene{$omim_id} ) ) {
+          foreach my $mim_id ( @{ $mim_gene{$omim_id} } ) {
+            $self->add_to_direct_xrefs({
+                                        'stable_id'  => $ensembl_id,
+                                        'type'       => 'gene',
+                                        'acc'        => $mim_id,
+                                        'source_id'  => $mim_gene_source_id,
+                                        'species_id' => $species_id,
+                                        'dbi'        => $dbi,
+                                      });
+          }
+        }
+        else {
+          $counters{'expected_in_mim_gene_but_not_there'}++;
+          foreach my $mim_id ( @{ $mim_morbid{$omim_id} } ) {
+            $self->add_to_direct_xrefs({
+                                        'stable_id'  => $ensembl_id,
+                                        'type'       => 'gene',
+                                        'acc'        => $mim_id,
+                                        'source_id'  => $mim_morbid_source_id,
+                                        'species_id' => $species_id,
+                                        'dbi'        => $dbi,
+                                      });
+          }
+        }
       }
 
     }
@@ -215,40 +225,10 @@ sub run {
       $counters{'dependent_on_entrez'}++;
 
       # FIXME: *lots* of duplication wrt direct xrefs
-      if ( $type eq "gene"
-           || $type eq 'gene/phenotype'
-           || $type eq 'predominantly phenotypes' ) {
-        if ( defined( $mim_gene{$omim_id} ) ) {
-          foreach my $ent_id ( @{ $entrez{$entrez_id} } ) {
-            foreach my $mim_id ( @{ $mim_gene{$omim_id} } ) {
-              $self->add_dependent_xref({
-                                         'master_xref_id' => $ent_id,
-                                         'acc'            => $mim_id,
-                                         'source_id'      => $mim_gene_source_id,
-                                         'species_id'     => $species_id,
-                                         'linkage'        => $entrez_source_id,
-                                         'dbi'            => $dbi,
-                                       });
-            }
-          }
-        }
-        else {
-          $counters{'expected_in_mim_gene_but_not_there'}++;
-          foreach my $ent_id ( @{ $entrez{$entrez_id} } ) {
-            foreach my $mim_id ( @{ $mim_morbid{$omim_id} } ) {
-              $self->add_dependent_xref({
-                                         'master_xref_id' => $ent_id,
-                                         'acc'            => $mim_id,
-                                         'source_id'      => $mim_morbid_source_id,
-                                         'species_id'     => $species_id,
-                                         'linkage'        => $entrez_source_id,
-                                         'dbi'            => $dbi,
-                                       });
-            }
-          }
-        }
-      }
-      elsif ( $type eq "phenotype" ) {
+
+      if ( $type eq 'phenotype' ) {
+        # The only type with a different source order
+
         if ( defined( $mim_morbid{$omim_id} ) ) {
           foreach my $ent_id ( @{ $entrez{$entrez_id} } ) {
             foreach my $mim_id ( @{ $mim_morbid{$omim_id} } ) {
@@ -280,7 +260,35 @@ sub run {
         }
       }
       else {
-        croak "Unknown type $type";
+        if ( defined( $mim_gene{$omim_id} ) ) {
+          foreach my $ent_id ( @{ $entrez{$entrez_id} } ) {
+            foreach my $mim_id ( @{ $mim_gene{$omim_id} } ) {
+              $self->add_dependent_xref({
+                                         'master_xref_id' => $ent_id,
+                                         'acc'            => $mim_id,
+                                         'source_id'      => $mim_gene_source_id,
+                                         'species_id'     => $species_id,
+                                         'linkage'        => $entrez_source_id,
+                                         'dbi'            => $dbi,
+                                       });
+            }
+          }
+        }
+        else {
+          $counters{'expected_in_mim_gene_but_not_there'}++;
+          foreach my $ent_id ( @{ $entrez{$entrez_id} } ) {
+            foreach my $mim_id ( @{ $mim_morbid{$omim_id} } ) {
+              $self->add_dependent_xref({
+                                         'master_xref_id' => $ent_id,
+                                         'acc'            => $mim_id,
+                                         'source_id'      => $mim_morbid_source_id,
+                                         'species_id'     => $species_id,
+                                         'linkage'        => $entrez_source_id,
+                                         'dbi'            => $dbi,
+                                       });
+            }
+          }
+        }
       }
 
     }
