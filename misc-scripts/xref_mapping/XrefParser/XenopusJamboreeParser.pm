@@ -1,3 +1,4 @@
+
 =head1 LICENSE
 
 Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
@@ -24,22 +25,22 @@ package XrefParser::XenopusJamboreeParser;
 use strict;
 use warnings;
 use Carp;
-use File::Basename;
 use Text::CSV;
 
 use parent qw( XrefParser::BaseParser );
 
-
-
 sub run {
- my ($self, $ref_arg) = @_;
-  my $source_id    = $ref_arg->{source_id};
-  my $species_id   = $ref_arg->{species_id};
-  my $files        = $ref_arg->{files};
-  my $verbose      = $ref_arg->{verbose} || 0;
-  my $dbi          = $ref_arg->{dbi} || $self->dbi;
+  my ( $self, $ref_arg ) = @_;
+  my $source_id  = $ref_arg->{source_id};
+  my $species_id = $ref_arg->{species_id};
+  my $files      = $ref_arg->{files};
+  my $verbose    = $ref_arg->{verbose} // 0;
+  my $dbi        = $ref_arg->{dbi} // $self->dbi;
 
-  if((!defined $source_id) or (!defined $species_id) or (!defined $files) ){
+  if ( ( !defined $source_id )
+    or ( !defined $species_id )
+    or ( !defined $files ) )
+  {
     croak "Need to pass source_id, species_id and files as pairs";
   }
 
@@ -48,47 +49,53 @@ sub run {
   my $file_io = $self->get_filehandle($file);
 
   if ( !defined $file_io ) {
-    print STDERR "ERROR: Could not open $file\n";
-    return 1;    # 1 error
+    croak "ERROR: Could not open $file\n";
   }
 
-  my $input_file = Text::CSV->new({
-                                    sep_char           => "\t",
-				    empty_is_undef     => 1,
-				   }) or croak "Cannot use file $file: ".Text::CSV->error_diag ();
+  my $input_file = Text::CSV->new(
+    {
+      sep_char       => "\t",
+      empty_is_undef => 1,
+    }
+  ) or croak "Cannot use file $file: " . Text::CSV->error_diag();
 
-  $input_file->column_names([qw(acc label desc stable_id)] );
+  $input_file->column_names( [qw(acc label desc stable_id)] );
   my $count = 0;
-  while ( my $data = $input_file->getline_hr( $file_io ) ) {
+  while ( my $data = $input_file->getline_hr($file_io) ) {
 
     my $desc;
-    if(defined $data->{'desc'}){
-      $desc = $self->parse_description($data->{'desc'});
+    if ( defined $data->{'desc'} ) {
+      $desc = $self->parse_description( $data->{'desc'} );
     }
 
-    if($data->{'label'} eq "unnamed"){
+    if ( $data->{'label'} eq "unnamed" ) {
       $data->{'label'} = $data->{'acc'};
     }
 
-    $self->add_to_direct_xrefs({ stable_id  => $data->{'stable_id'},
-				 type       => 'gene',
-				 acc        => $data->{'acc'},
-				 label      => $data->{'label'},
-				 desc       => $desc,
-                                 dbi        => $dbi,
-				 source_id  => $source_id,
-				 species_id => $species_id });
+    $self->add_to_direct_xrefs(
+      {
+        stable_id  => $data->{'stable_id'},
+        type       => 'gene',
+        acc        => $data->{'acc'},
+        label      => $data->{'label'},
+        desc       => $desc,
+        dbi        => $dbi,
+        source_id  => $source_id,
+        species_id => $species_id
+      }
+    );
     $count++;
   }
 
-  $input_file->eof or croak "Error parsing file $file: " . $input_file->error_diag();
+  $input_file->eof
+    or croak "Error parsing file $file: " . $input_file->error_diag();
   $file_io->close();
 
-  print $count . " XenopusJamboreeParser xrefs succesfully parsed\n" if($verbose);
+  print $count . " XenopusJamboreeParser xrefs succesfully parsed\n"
+    if ($verbose);
 
   return 0;
 }
-
 
 =begin comment
 Regex handles lines in the following desc formats
@@ -98,15 +105,16 @@ XB-GENE-956173	hba4	alpha-T4 globin, Putative ortholog of hemoglobin alpha chain
 
 =end comment
 =cut
-sub parse_description{
-  my ($self, $desc) = @_;
+
+sub parse_description {
+  my ( $self, $desc ) = @_;
 
   # Remove some provenance information encoded in the description
-  $desc =~ s/\[.*\]//;
+  $desc =~ s/\[.*\]//xms;
+
   # Remove labels of type 5 of 14 from the description
-  $desc =~ s/ , [0-9]+ of [0-9]+//;
+  $desc =~ s/,\s+[0-9]+\s+of\s+[0-9]+//xms;
   return $desc;
 }
-
 
 1;
