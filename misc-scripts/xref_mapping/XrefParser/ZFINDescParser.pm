@@ -36,7 +36,7 @@ sub run {
   my $verbose      = $ref_arg->{verbose} // 0;
 
   if ( (!defined $source_id) or (!defined $species_id) or (!defined $files) ) {
-    croak 'Need to pass source_id, species_id and files';
+    croak "Need to pass source_id, species_id and files as pairs";
   }
 
   my $file = shift @{$files};
@@ -53,7 +53,7 @@ sub run {
   my $file_io = $self->get_filehandle($file);
 
   if ( !defined $file_io ) {
-    croak "ERROR: Can't open ZFIN file $file\n";
+    croak "Can't open ZFIN file $file\n";
   }
 
   my $input_file = Text::CSV->new({
@@ -90,6 +90,7 @@ sub run {
   if($verbose){
     print "$count ZFIN xrefs added, $withdrawn withdrawn entries ignored\n";
   }
+
   return 0;
 }
 
