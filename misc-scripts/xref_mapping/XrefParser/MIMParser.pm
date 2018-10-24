@@ -23,9 +23,7 @@ use strict;
 use warnings;
 
 use Carp;
-use File::Basename;
 use Readonly;
-use POSIX qw(strftime);
 
 use parent qw( XrefParser::BaseParser );
 
