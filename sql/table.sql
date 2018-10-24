@@ -396,7 +396,7 @@ CREATE TABLE seq_region_synonym (
   seq_region_synonym_id       INT UNSIGNED NOT NULL  AUTO_INCREMENT,
   seq_region_id               INT(10) UNSIGNED NOT NULL,
   synonym                     VARCHAR(250) NOT NULL,
-  external_db_id              INTEGER UNSIGNED,
+  external_db_id              INT UNSIGNED,
 
   PRIMARY KEY (seq_region_synonym_id),
   UNIQUE KEY syn_idx (synonym, seq_region_id),
@@ -660,7 +660,7 @@ CREATE TABLE dna_align_feature (
   evalue                      DOUBLE,
   perc_ident                  FLOAT,
   cigar_line                  TEXT,
-  external_db_id              INTEGER UNSIGNED,
+  external_db_id              INT UNSIGNED,
   hcoverage                   DOUBLE,
   align_type                  ENUM('ensembl', 'cigar', 'vulgar', 'mdtag') DEFAULT 'ensembl',
 
@@ -907,7 +907,7 @@ CREATE TABLE protein_align_feature (
   evalue                      DOUBLE,
   perc_ident                  FLOAT,
   cigar_line                  TEXT,
-  external_db_id              INTEGER UNSIGNED,
+  external_db_id              INT UNSIGNED,
   hcoverage                   DOUBLE,
   align_type                  ENUM('ensembl', 'cigar', 'vulgar', 'mdtag') DEFAULT 'ensembl',
 
@@ -2156,7 +2156,7 @@ CREATE TABLE dependent_xref(
 
 CREATE TABLE external_db (
 
-  external_db_id              INTEGER UNSIGNED NOT NULL AUTO_INCREMENT,
+  external_db_id              INT UNSIGNED NOT NULL AUTO_INCREMENT,
   db_name                     VARCHAR(100) NOT NULL,
   db_release                  VARCHAR(255),
   status                      ENUM('KNOWNXREF','KNOWN','XREF','PRED','ORTH', 'PSEUDO') NOT NULL,
@@ -2192,11 +2192,11 @@ CREATE TABLE external_db (
 
 
 CREATE TABLE biotype (
-  biotype_id      INTEGER UNSIGNED NOT NULL AUTO_INCREMENT,
+  biotype_id      INT UNSIGNED NOT NULL AUTO_INCREMENT,
   name            VARCHAR(64) NOT NULL,
   object_type     ENUM('gene','transcript') NOT NULL DEFAULT 'gene',
   db_type         set('cdna','core','coreexpressionatlas','coreexpressionest','coreexpressiongnf','funcgen','otherfeatures','rnaseq','variation','vega','presite','sangervega') NOT NULL DEFAULT 'core',
-  attrib_type_id  INTEGER DEFAULT NULL,
+  attrib_type_id  INT DEFAULT NULL,
   description     TEXT,
   biotype_group   ENUM('coding','pseudogene','snoncoding','lnoncoding','mnoncoding','LRG','undefined','no_group') DEFAULT NULL,
   so_acc          VARCHAR(64),
@@ -2401,7 +2401,7 @@ CREATE TABLE unmapped_object (
   unmapped_object_id    INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
   type                  ENUM('xref', 'cDNA', 'Marker') NOT NULL,
   analysis_id           SMALLINT UNSIGNED NOT NULL,
-  external_db_id        INTEGER UNSIGNED,
+  external_db_id        INT UNSIGNED,
   identifier            VARCHAR(255) NOT NULL,
   unmapped_reason_id    INT(10) UNSIGNED NOT NULL,
   query_score           DOUBLE,
@@ -2473,7 +2473,7 @@ Information about the database that the external object is stored in is held in 
 CREATE TABLE xref (
 
    xref_id                    INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
-   external_db_id             INTEGER UNSIGNED NOT NULL,
+   external_db_id             INT UNSIGNED NOT NULL,
    dbprimary_acc              VARCHAR(512) NOT NULL,
    display_label              VARCHAR(512) NOT NULL,
    version                    VARCHAR(10) DEFAULT NULL,
