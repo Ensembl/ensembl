@@ -581,7 +581,7 @@ CREATE TABLE IF NOT EXISTS analysis_description (
   analysis_id                  SMALLINT UNSIGNED NOT NULL,
   description                  TEXT,
   display_label                VARCHAR(255) NOT NULL,
-  displayable                  BOOLEAN NOT NULL DEFAULT 1,
+  displayable                  TINYINT NOT NULL DEFAULT 1,
   web_data                     TEXT,
 
   UNIQUE KEY analysis_idx (analysis_id)
@@ -736,8 +736,8 @@ CREATE TABLE exon (
   phase                       TINYINT(2) NOT NULL,
   end_phase                   TINYINT(2) NOT NULL,
 
-  is_current                  BOOLEAN NOT NULL DEFAULT 1,
-  is_constitutive             BOOLEAN NOT NULL DEFAULT 0,
+  is_current                  TINYINT NOT NULL DEFAULT 1,
+  is_constitutive             TINYINT NOT NULL DEFAULT 0,
 
   stable_id                   VARCHAR(128) DEFAULT NULL,
   version                     SMALLINT UNSIGNED DEFAULT NULL,
@@ -818,7 +818,7 @@ CREATE TABLE gene (
   display_xref_id             INT(10) UNSIGNED,
   source                      VARCHAR(40) NOT NULL,
   description                 TEXT,
-  is_current                  BOOLEAN NOT NULL DEFAULT 1,
+  is_current                  TINYINT NOT NULL DEFAULT 1,
   canonical_transcript_id     INT(10) UNSIGNED NOT NULL,
   stable_id                   VARCHAR(128) DEFAULT NULL,
   version                     SMALLINT UNSIGNED DEFAULT NULL,
@@ -1040,7 +1040,7 @@ CREATE TABLE transcript (
   source                      VARCHAR(40) NOT NULL default 'ensembl',
   biotype                     VARCHAR(40) NOT NULL,
   description                 TEXT,
-  is_current                  BOOLEAN NOT NULL DEFAULT 1,
+  is_current                  TINYINT NOT NULL DEFAULT 1,
   canonical_translation_id    INT(10) UNSIGNED,
   stable_id                   VARCHAR(128) DEFAULT NULL,
   version                     SMALLINT UNSIGNED DEFAULT NULL,
@@ -1358,7 +1358,7 @@ CREATE TABLE intron_supporting_evidence (
         hit_name                      VARCHAR(100) NOT NULL,
         score                         DECIMAL(10,3),
         score_type                    ENUM('NONE', 'DEPTH') DEFAULT 'NONE',
-        is_splice_canonical           BOOLEAN NOT NULL DEFAULT 0,
+        is_splice_canonical           TINYINT NOT NULL DEFAULT 0,
 
         PRIMARY KEY (intron_supporting_evidence_id),
 
