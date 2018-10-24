@@ -222,7 +222,7 @@ CREATE TABLE dna (
 */
 
 
-CREATE TABLE genome_statistics(
+CREATE TABLE genome_statistics (
 
   genome_statistics_id     INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
   statistic                VARCHAR(128) NOT NULL,
@@ -1968,7 +1968,7 @@ CREATE TABLE mapping_set (
         internal_schema_build    VARCHAR(20) NOT NULL,
         external_schema_build    VARCHAR(20) NOT NULL,
 
-        PRIMARY KEY(mapping_set_id),
+        PRIMARY KEY (mapping_set_id),
         UNIQUE KEY mapping_idx (internal_schema_build, external_schema_build)
 
 ) ENGINE=MyISAM DEFAULT CHARSET=latin1;
@@ -2117,7 +2117,7 @@ They are linked to primary external references instead.
 */
 
 
-CREATE TABLE dependent_xref(
+CREATE TABLE dependent_xref (
 
   object_xref_id         INT(10) UNSIGNED NOT NULL,
   master_xref_id         INT(10) UNSIGNED NOT NULL,
