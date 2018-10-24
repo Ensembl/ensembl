@@ -34,8 +34,8 @@ sub run {
   my $source_id  = $ref_arg->{source_id};
   my $species_id = $ref_arg->{species_id};
   my $files      = $ref_arg->{files};
-  my $verbose    = $ref_arg->{verbose} || 0;
-  my $dbi        = $ref_arg->{dbi} || $self->dbi;
+  my $verbose    = $ref_arg->{verbose} // 0;
+  my $dbi        = $ref_arg->{dbi} // $self->dbi;
 
   if ( ( !defined $source_id )
     or ( !defined $species_id )
@@ -118,7 +118,6 @@ sub run {
       sep_char           => "\t",
       empty_is_undef     => 1,
       strict             => 1,
-      auto_diag          => 1,
       allow_loose_quotes => 1,
     }
   ) or croak "Cannot use file $file: " . Text::CSV->error_diag();
