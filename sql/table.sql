@@ -178,8 +178,8 @@ CREATE TABLE data_file (
 
   PRIMARY KEY (data_file_id),
   UNIQUE KEY df_unq_idx(coord_system_id, analysis_id, name, file_type),
-  INDEX df_name_idx(name),
-  INDEX df_analysis_idx(analysis_id)
+  KEY df_name_idx(name),
+  KEY df_analysis_idx(analysis_id)
 ) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
 
 
@@ -1052,7 +1052,7 @@ CREATE TABLE transcript (
   KEY gene_index (gene_id),
   KEY xref_id_index (display_xref_id),
   KEY analysis_idx (analysis_id),
-  UNIQUE INDEX canonical_translation_idx (canonical_translation_id),
+  UNIQUE KEY canonical_translation_idx (canonical_translation_id),
   KEY stable_id_idx (stable_id, version)
 
 ) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
@@ -2168,7 +2168,7 @@ CREATE TABLE external_db (
   description                 TEXT,
 
   PRIMARY KEY (external_db_id),
-  UNIQUE INDEX db_name_db_release_idx (db_name,db_release)
+  UNIQUE KEY db_name_db_release_idx (db_name,db_release)
 ) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
 
 
