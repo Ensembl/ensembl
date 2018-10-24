@@ -51,8 +51,8 @@ sub run {
   my $source_id  = $ref_arg->{source_id};
   my $species_id = $ref_arg->{species_id};
   my $files      = $ref_arg->{files};
-  my $verbose    = $ref_arg->{verbose};
-  my $dbi        = $ref_arg->{dbi};
+  my $verbose    = $ref_arg->{verbose} // 0;
+  my $dbi        = $ref_arg->{dbi} // $self->dbi;
 
   if ( ( !defined $source_id ) or
        ( !defined $species_id ) or
@@ -60,9 +60,6 @@ sub run {
   {
     croak 'Need to pass source_id, species_id and files as pairs';
   }
-  $verbose //= 0;
-  $dbi //= $self->dbi;
-
   my $csv = Text::CSV->new()
     || croak 'Failed to initialise CSV parser: ' . Text::CSV->error_diag();
 
