@@ -177,9 +177,9 @@ CREATE TABLE data_file (
   file_type         ENUM('BAM','BAMCOV','BIGBED','BIGWIG','VCF'),
 
   PRIMARY KEY (data_file_id),
-  UNIQUE KEY df_unq_idx(coord_system_id, analysis_id, name, file_type),
-  KEY df_name_idx(name),
-  KEY df_analysis_idx(analysis_id)
+  UNIQUE KEY df_unq_idx (coord_system_id, analysis_id, name, file_type),
+  KEY df_name_idx (name),
+  KEY df_analysis_idx (analysis_id)
 ) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
 
 
@@ -232,7 +232,7 @@ CREATE TABLE genome_statistics (
   timestamp                DATETIME DEFAULT NULL,
 
   PRIMARY KEY (genome_statistics_id),
-  UNIQUE KEY stats_uniq(statistic, attrib_type_id, species_id)
+  UNIQUE KEY stats_uniq (statistic, attrib_type_id, species_id)
 
 ) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
 
