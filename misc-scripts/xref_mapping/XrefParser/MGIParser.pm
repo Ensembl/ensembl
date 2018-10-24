@@ -58,7 +58,6 @@ sub run {
                                     sep_char           => "\t",
 				    empty_is_undef     => 1,
                                     strict => 1,
-                                    auto_diag => 1,
                                     allow_loose_quotes => 1,
 				   }) or croak "Cannot use file $file: ".Text::CSV->error_diag ();
 
