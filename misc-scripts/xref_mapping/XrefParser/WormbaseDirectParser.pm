@@ -82,12 +82,7 @@ sub run {
 }
 sub get_data {
   my ($self, $file) = @_;
-  my $pep_io = $self->get_filehandle($file);
-
-  if ( !defined $pep_io ) {
-    print STDERR "ERROR: Could not open $file\n";
-    return 1;    # 1 error
-  }
+  my $pep_io = $self->get_filehandle($file) or croak "Could not open: $file";
 
   my $data = {};
 

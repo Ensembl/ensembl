@@ -15,7 +15,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 
 =cut
-
+use strict;
+use warnings;
 package XrefParser::WormbaseCElegansBase;
 
 sub swap_dependency {
@@ -44,11 +45,20 @@ sub swap_dependency {
       LINKAGE_SOURCE_ID => $source_id,
       DEPENDENT_XREFS => undef,
     };
-    my @other_dependents_as_dependents_here = map {{%$_,INFO_TYPE => "DEPENDENT", LINKAGE_SOURCE_ID => $source_id}} @other_dependents;
+    my @dependents_here = ({
+      %$xref, INFO_TYPE => "DEPENDENT",
+      LINKAGE_SOURCE_ID => $source_id,
+      DEPENDENT_XREFS => undef,
+    });
+    for my $d (@other_dependents){
+       push @dependents_here, {
+          %$d, INFO_TYPE => "DEPENDENT", LINKAGE_SOURCE_ID => $source_id,
+       };
+    }
     push @result, {
        %$matching_source_id_dependent,
        LABEL=>undef, INFO_TYPE => "MISC",
-       DEPENDENT_XREFS => [$xref_as_dependent_here, @other_dependents_as_dependents_here] 
+       DEPENDENT_XREFS =>\@dependents_here, 
     };
   }
 

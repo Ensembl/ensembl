@@ -15,7 +15,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 
 =cut
-
+use strict;
+use warnings;
 package XrefParser::WormbaseCElegansUniProtParser;
 
 # UniProt xrefs are sometimes - really - dependent xrefs of
@@ -28,7 +29,7 @@ package XrefParser::WormbaseCElegansUniProtParser;
 # INSDC entries have coordinates, and UniProt entries don't.
 # So for perfect homologs, there can be many INSDC entries per UniProt.
 
-use parent XrefParser::WormbaseCElegansBase, XrefParser::UniProtParser;
+use parent qw/XrefParser::WormbaseCElegansBase XrefParser::UniProtParser/;
 
 sub upload_xref_object_graphs {
   my ($self, $xrefs, $dbi) = @_;

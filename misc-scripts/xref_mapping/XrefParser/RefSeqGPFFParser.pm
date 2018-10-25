@@ -167,10 +167,10 @@ sub create_xrefs {
   my $type = $self->type_from_file($file);
   return unless $type;
 
-  while ( $_ = $refseq_io->getline() ) {
+  while ( my $entry = $refseq_io->getline() ) {
 
     my $xref = $self->xref_from_record(
-      $_,
+      $entry,
       \%name2species_id, \%taxonomy2species_id, 
       $pred_mrna_source_id, $pred_ncrna_source_id,
       $mrna_source_id, $ncrna_source_id,
@@ -196,7 +196,7 @@ sub type_from_file {
     return 'dna' if $file =~ /rna/;
     return 'peptide' if $file =~ /protein/;
     print STDERR "Could not work out sequence type for $file\n";
-    return undef;
+    return;
 }
 sub xref_from_record {
     my ( $self, $entry, $name2species_id, $taxonomy2species_id,
@@ -262,7 +262,7 @@ sub xref_from_record {
       $description =~ s/\s+/ /g;
       $description = substr($description, 0, 255) if (length($description) > 255);
 
-      my ($seq) = $_ =~ /^\s*ORIGIN\s+(.+)/ms; # /s allows . to match newline
+      my ($seq) = $entry =~ /^\s*ORIGIN\s+(.+)/ms; # /s allows . to match newline
       my @seq_lines = split /\n/, $seq;
       my $parsed_seq = "";
       foreach my $x (@seq_lines) {
