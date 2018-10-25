@@ -177,9 +177,9 @@ CREATE TABLE data_file (
   file_type         ENUM('BAM','BAMCOV','BIGBED','BIGWIG','VCF'),
 
   PRIMARY KEY (data_file_id),
-  UNIQUE KEY df_unq_idx(coord_system_id, analysis_id, name, file_type),
-  INDEX df_name_idx(name),
-  INDEX df_analysis_idx(analysis_id)
+  UNIQUE KEY df_unq_idx (coord_system_id, analysis_id, name, file_type),
+  KEY df_name_idx (name),
+  KEY df_analysis_idx (analysis_id)
 ) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
 
 
@@ -222,7 +222,7 @@ CREATE TABLE dna (
 */
 
 
-CREATE TABLE genome_statistics(
+CREATE TABLE genome_statistics (
 
   genome_statistics_id     INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
   statistic                VARCHAR(128) NOT NULL,
@@ -232,7 +232,7 @@ CREATE TABLE genome_statistics(
   timestamp                DATETIME DEFAULT NULL,
 
   PRIMARY KEY (genome_statistics_id),
-  UNIQUE KEY stats_uniq(statistic, attrib_type_id, species_id)
+  UNIQUE KEY stats_uniq (statistic, attrib_type_id, species_id)
 
 ) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
 
@@ -396,7 +396,7 @@ CREATE TABLE seq_region_synonym (
   seq_region_synonym_id       INT UNSIGNED NOT NULL  AUTO_INCREMENT,
   seq_region_id               INT(10) UNSIGNED NOT NULL,
   synonym                     VARCHAR(250) NOT NULL,
-  external_db_id              INTEGER UNSIGNED,
+  external_db_id              INT UNSIGNED,
 
   PRIMARY KEY (seq_region_synonym_id),
   UNIQUE KEY syn_idx (synonym, seq_region_id),
@@ -581,7 +581,7 @@ CREATE TABLE IF NOT EXISTS analysis_description (
   analysis_id                  SMALLINT UNSIGNED NOT NULL,
   description                  TEXT,
   display_label                VARCHAR(255) NOT NULL,
-  displayable                  BOOLEAN NOT NULL DEFAULT 1,
+  displayable                  TINYINT(1) NOT NULL DEFAULT 1,
   web_data                     TEXT,
 
   UNIQUE KEY analysis_idx (analysis_id)
@@ -660,7 +660,7 @@ CREATE TABLE dna_align_feature (
   evalue                      DOUBLE,
   perc_ident                  FLOAT,
   cigar_line                  TEXT,
-  external_db_id              INTEGER UNSIGNED,
+  external_db_id              INT UNSIGNED,
   hcoverage                   DOUBLE,
   align_type                  ENUM('ensembl', 'cigar', 'vulgar', 'mdtag') DEFAULT 'ensembl',
 
@@ -736,8 +736,8 @@ CREATE TABLE exon (
   phase                       TINYINT(2) NOT NULL,
   end_phase                   TINYINT(2) NOT NULL,
 
-  is_current                  BOOLEAN NOT NULL DEFAULT 1,
-  is_constitutive             BOOLEAN NOT NULL DEFAULT 0,
+  is_current                  TINYINT(1) NOT NULL DEFAULT 1,
+  is_constitutive             TINYINT(1) NOT NULL DEFAULT 0,
 
   stable_id                   VARCHAR(128) DEFAULT NULL,
   version                     SMALLINT UNSIGNED DEFAULT NULL,
@@ -818,7 +818,7 @@ CREATE TABLE gene (
   display_xref_id             INT(10) UNSIGNED,
   source                      VARCHAR(40) NOT NULL,
   description                 TEXT,
-  is_current                  BOOLEAN NOT NULL DEFAULT 1,
+  is_current                  TINYINT(1) NOT NULL DEFAULT 1,
   canonical_transcript_id     INT(10) UNSIGNED NOT NULL,
   stable_id                   VARCHAR(128) DEFAULT NULL,
   version                     SMALLINT UNSIGNED DEFAULT NULL,
@@ -907,7 +907,7 @@ CREATE TABLE protein_align_feature (
   evalue                      DOUBLE,
   perc_ident                  FLOAT,
   cigar_line                  TEXT,
-  external_db_id              INTEGER UNSIGNED,
+  external_db_id              INT UNSIGNED,
   hcoverage                   DOUBLE,
   align_type                  ENUM('ensembl', 'cigar', 'vulgar', 'mdtag') DEFAULT 'ensembl',
 
@@ -1040,7 +1040,7 @@ CREATE TABLE transcript (
   source                      VARCHAR(40) NOT NULL default 'ensembl',
   biotype                     VARCHAR(40) NOT NULL,
   description                 TEXT,
-  is_current                  BOOLEAN NOT NULL DEFAULT 1,
+  is_current                  TINYINT(1) NOT NULL DEFAULT 1,
   canonical_translation_id    INT(10) UNSIGNED,
   stable_id                   VARCHAR(128) DEFAULT NULL,
   version                     SMALLINT UNSIGNED DEFAULT NULL,
@@ -1052,7 +1052,7 @@ CREATE TABLE transcript (
   KEY gene_index (gene_id),
   KEY xref_id_index (display_xref_id),
   KEY analysis_idx (analysis_id),
-  UNIQUE INDEX canonical_translation_idx (canonical_translation_id),
+  UNIQUE KEY canonical_translation_idx (canonical_translation_id),
   KEY stable_id_idx (stable_id, version)
 
 ) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
@@ -1358,7 +1358,7 @@ CREATE TABLE intron_supporting_evidence (
         hit_name                      VARCHAR(100) NOT NULL,
         score                         DECIMAL(10,3),
         score_type                    ENUM('NONE', 'DEPTH') DEFAULT 'NONE',
-        is_splice_canonical           BOOLEAN NOT NULL DEFAULT 0,
+        is_splice_canonical           TINYINT(1) NOT NULL DEFAULT 0,
 
         PRIMARY KEY (intron_supporting_evidence_id),
 
@@ -1968,7 +1968,7 @@ CREATE TABLE mapping_set (
         internal_schema_build    VARCHAR(20) NOT NULL,
         external_schema_build    VARCHAR(20) NOT NULL,
 
-        PRIMARY KEY(mapping_set_id),
+        PRIMARY KEY (mapping_set_id),
         UNIQUE KEY mapping_idx (internal_schema_build, external_schema_build)
 
 ) ENGINE=MyISAM DEFAULT CHARSET=latin1;
@@ -2117,7 +2117,7 @@ They are linked to primary external references instead.
 */
 
 
-CREATE TABLE dependent_xref(
+CREATE TABLE dependent_xref (
 
   object_xref_id         INT(10) UNSIGNED NOT NULL,
   master_xref_id         INT(10) UNSIGNED NOT NULL,
@@ -2156,7 +2156,7 @@ CREATE TABLE dependent_xref(
 
 CREATE TABLE external_db (
 
-  external_db_id              INTEGER UNSIGNED NOT NULL AUTO_INCREMENT,
+  external_db_id              INT UNSIGNED NOT NULL AUTO_INCREMENT,
   db_name                     VARCHAR(100) NOT NULL,
   db_release                  VARCHAR(255),
   status                      ENUM('KNOWNXREF','KNOWN','XREF','PRED','ORTH', 'PSEUDO') NOT NULL,
@@ -2168,7 +2168,7 @@ CREATE TABLE external_db (
   description                 TEXT,
 
   PRIMARY KEY (external_db_id),
-  UNIQUE INDEX db_name_db_release_idx (db_name,db_release)
+  UNIQUE KEY db_name_db_release_idx (db_name,db_release)
 ) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
 
 
@@ -2192,11 +2192,11 @@ CREATE TABLE external_db (
 
 
 CREATE TABLE biotype (
-  biotype_id      INTEGER UNSIGNED NOT NULL AUTO_INCREMENT,
+  biotype_id      INT UNSIGNED NOT NULL AUTO_INCREMENT,
   name            VARCHAR(64) NOT NULL,
   object_type     ENUM('gene','transcript') NOT NULL DEFAULT 'gene',
   db_type         set('cdna','core','coreexpressionatlas','coreexpressionest','coreexpressiongnf','funcgen','otherfeatures','rnaseq','variation','vega','presite','sangervega') NOT NULL DEFAULT 'core',
-  attrib_type_id  INTEGER DEFAULT NULL,
+  attrib_type_id  INT DEFAULT NULL,
   description     TEXT,
   biotype_group   ENUM('coding','pseudogene','snoncoding','lnoncoding','mnoncoding','LRG','undefined','no_group') DEFAULT NULL,
   so_acc          VARCHAR(64),
@@ -2401,7 +2401,7 @@ CREATE TABLE unmapped_object (
   unmapped_object_id    INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
   type                  ENUM('xref', 'cDNA', 'Marker') NOT NULL,
   analysis_id           SMALLINT UNSIGNED NOT NULL,
-  external_db_id        INTEGER UNSIGNED,
+  external_db_id        INT UNSIGNED,
   identifier            VARCHAR(255) NOT NULL,
   unmapped_reason_id    INT(10) UNSIGNED NOT NULL,
   query_score           DOUBLE,
@@ -2473,7 +2473,7 @@ Information about the database that the external object is stored in is held in 
 CREATE TABLE xref (
 
    xref_id                    INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
-   external_db_id             INTEGER UNSIGNED NOT NULL,
+   external_db_id             INT UNSIGNED NOT NULL,
    dbprimary_acc              VARCHAR(512) NOT NULL,
    display_label              VARCHAR(512) NOT NULL,
    version                    VARCHAR(10) DEFAULT NULL,
