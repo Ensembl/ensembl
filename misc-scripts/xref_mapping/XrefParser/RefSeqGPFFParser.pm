@@ -135,7 +135,7 @@ sub create_xrefs {
   # Create a hash of all valid names and taxon_ids for this species
   my %species2name = $self->species_id2name($dbi);
   if (defined $species_name) { push @{$species2name{$species_id}}, $species_name; }
-  if (!defined $species2name{$species_id}) { next; }
+  if (!defined $species2name{$species_id}) { return; }
   my %species2tax  = $self->species_id2taxonomy($dbi);
   push @{$species2tax{$species_id}}, $species_id;
   my @names   = @{$species2name{$species_id}};
@@ -164,30 +164,48 @@ sub create_xrefs {
 
   local $/ = "\/\/\n";
 
-  my $type;
-  if ($file =~ /protein/) {
+  my $type = $self->type_from_file($file);
+  return unless $type;
 
-    $type = 'peptide';
+  while ( my $entry = $refseq_io->getline() ) {
 
-  } elsif ($file =~ /rna/) {
+    my $xref = $self->xref_from_record(
+      $entry,
+      \%name2species_id, \%taxonomy2species_id, 
+      $pred_mrna_source_id, $pred_ncrna_source_id,
+      $mrna_source_id, $ncrna_source_id,
+      $pred_peptide_source_id, $peptide_source_id,
+      $entrez_source_id, $wiki_source_id, $add_dependent_xref_sth,
+      $species_id, $type, \%refseq_ids,\%entrez_ids,\%wiki_ids
+     );
 
-    $type = 'dna';
+      push @xrefs, $xref if $xref;
 
-  } elsif($file =~ /RefSeq_protein/){
+  } # while <REFSEQ>
 
-    $type = 'peptide';
+  $refseq_io->close();
 
-  }else{
+  print "Read " . scalar(@xrefs) ." xrefs from $file\n" if($verbose);
+
+  return \@xrefs;
+
+}
+sub type_from_file {
+    my ($self, $file) = @_;
+    return 'peptide' if $file =~ /RefSeq_protein/;
+    return 'dna' if $file =~ /rna/;
+    return 'peptide' if $file =~ /protein/;
     print STDERR "Could not work out sequence type for $file\n";
     return;
-  }
-
-
-  while ( $_ = $refseq_io->getline() ) {
-
-    my $xref;
-
-    my $entry = $_;
+}
+sub xref_from_record {
+    my ( $self, $entry, $name2species_id, $taxonomy2species_id,
+      $pred_mrna_source_id, $pred_ncrna_source_id,
+      $mrna_source_id, $ncrna_source_id,
+      $pred_peptide_source_id, $peptide_source_id,
+      $entrez_source_id, $wiki_source_id, $add_dependent_xref_sth,
+      $species_id, $type, $refseq_ids,$entrez_ids,$wiki_ids
+) = @_;
     chomp $entry;
 
     my ($species) = $entry =~ /\s+ORGANISM\s+(.*)\n/;
@@ -196,12 +214,12 @@ sub create_xrefs {
     $species =~ s/\s*\(.+\)//; # Ditch anything in parens
     $species =~ s/\s+/_/g;
     $species =~ s/\n//g;
-    my $species_id_check = $name2species_id{$species};
+    my $species_id_check = $name2species_id->{$species};
 
     # Try going through the taxon ID if species check didn't work.
     if ( !defined $species_id_check ) {
         my ($taxon_id) = $entry =~ /db_xref="taxon:(\d+)"/;
-        $species_id_check = $taxonomy2species_id{$taxon_id};
+        $species_id_check = $taxonomy2species_id->{$taxon_id};
     }
 
     # skip xrefs for species that aren't in the species table
@@ -209,6 +227,7 @@ sub create_xrefs {
         && defined $species_id_check
         && $species_id == $species_id_check )
     {
+      my $xref = {};
       my ($acc) = $entry =~ /ACCESSION\s+(\S+)/;
       my ($ver) = $entry =~ /VERSION\s+(\S+)/;
       my ($refseq_pair) = $entry =~ /DBSOURCE\s+REFSEQ: accession (\S+)/;
@@ -243,7 +262,7 @@ sub create_xrefs {
       $description =~ s/\s+/ /g;
       $description = substr($description, 0, 255) if (length($description) > 255);
 
-      my ($seq) = $_ =~ /^\s*ORIGIN\s+(.+)/ms; # /s allows . to match newline
+      my ($seq) = $entry =~ /^\s*ORIGIN\s+(.+)/ms; # /s allows . to match newline
       my @seq_lines = split /\n/, $seq;
       my $parsed_seq = "";
       foreach my $x (@seq_lines) {
@@ -311,12 +330,12 @@ sub create_xrefs {
           # Add xrefs for RefSeq mRNA as well where available
           $refseq_pair =~ s/\.[0-9]*// if $refseq_pair;
           if (defined $refseq_pair) {
-            if ($refseq_ids{$refseq_pair}) {
-              foreach my $refseq_id (@{ $refseq_ids{$refseq_pair} }) {
-                foreach my $entrez_id (@{ $entrez_ids{$ll} }) {
+            if ($refseq_ids->{$refseq_pair}) {
+              foreach my $refseq_id (@{ $refseq_ids->{$refseq_pair} }) {
+                foreach my $entrez_id (@{ $entrez_ids->{$ll} }) {
                   $add_dependent_xref_sth->execute($refseq_id, $entrez_id);
                 }
-                foreach my $wiki_id (@{ $wiki_ids{$ll} }) {
+                foreach my $wiki_id (@{ $wiki_ids->{$ll} }) {
                   $add_dependent_xref_sth->execute($refseq_id, $wiki_id);
                 }
               }
@@ -328,19 +347,8 @@ sub create_xrefs {
       # Don't add SGD Xrefs, as they are mapped directly from SGD ftp site
 
       # Refseq's do not tell whether the mim is for the gene of morbid so ignore for now.
-
-      push @xrefs, $xref;
-
-    }# if defined species
-
-  } # while <REFSEQ>
-
-  $refseq_io->close();
-
-  print "Read " . scalar(@xrefs) ." xrefs from $file\n" if($verbose);
-
-  return \@xrefs;
-
+      return $xref;
+  }
 }
 
 # --------------------------------------------------------------------------------
