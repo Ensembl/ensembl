@@ -87,7 +87,7 @@ sub run {
   my $syn_count = 0;
   my $cols; # Digested columns from CSV
   while ( $cols = $csv->getline_hr($rgd_io) ) {
-    next if $csv->is_missing (0) || (exists $cols->{GENE_RGD_ID} && $cols->{GENE_RGD_ID} eq '' || !defined $cols->{GENE_RGD_ID});
+    next if exists $cols->{GENE_RGD_ID} && ($cols->{GENE_RGD_ID} eq '' || !defined $cols->{GENE_RGD_ID});
 
     my @nucs;
     @nucs = split(/\;/,$cols->{GENBANK_NUCLEOTIDE}) if defined $cols->{GENBANK_NUCLEOTIDE};
