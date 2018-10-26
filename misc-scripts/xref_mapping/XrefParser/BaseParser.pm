@@ -1402,7 +1402,7 @@ sub get_dependent_mappings {
   $dbi = $self->dbi unless defined $dbi;
 
   my $sql =(<<"GDM");
-  SELECT  d.master_xref_id, d.dependent_xref_id
+  SELECT  d.master_xref_id, d.dependent_xref_id, d.linkage_annotation
     FROM dependent_xref d, xref x
       WHERE x.xref_id = d.dependent_xref_id AND
             x.source_id = $source_id
@@ -1411,9 +1411,10 @@ GDM
   $sth->execute();
   my $master_xref;
   my $dependent_xref;
-  $sth->bind_columns(\$master_xref,\$dependent_xref);
+  my $linkage;
+  $sth->bind_columns(\$master_xref, \$dependent_xref, \$linkage);
   while($sth->fetch){
-    $xref_dependent_mapped{"$master_xref|$dependent_xref"}=1;
+    $xref_dependent_mapped{"$master_xref|$dependent_xref"} = $linkage;
   }
   $sth->finish;
   return;
