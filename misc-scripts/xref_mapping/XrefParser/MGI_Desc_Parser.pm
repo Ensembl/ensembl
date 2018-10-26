@@ -1,3 +1,4 @@
+
 =head1 LICENSE
 
 Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
@@ -27,19 +28,19 @@ use Text::CSV;
 
 use parent qw( XrefParser::BaseParser );
 
-use Bio::EnsEMBL::DBSQL::DBAdaptor;
-
-
 sub run {
 
-  my ($self, $ref_arg) = @_;
-  my $source_id    = $ref_arg->{source_id};
-  my $species_id   = $ref_arg->{species_id};
-  my $files        = $ref_arg->{files};
-  my $verbose      = $ref_arg->{verbose} || 0;
-  my $dbi          = $ref_arg->{dbi} || $self->dbi;
+  my ( $self, $ref_arg ) = @_;
+  my $source_id  = $ref_arg->{source_id};
+  my $species_id = $ref_arg->{species_id};
+  my $files      = $ref_arg->{files};
+  my $verbose    = $ref_arg->{verbose} // 0;
+  my $dbi        = $ref_arg->{dbi} // $self->dbi;
 
-  if((!defined $source_id) or (!defined $species_id) or (!defined $files) ){
+  if ( ( !defined $source_id )
+    or ( !defined $species_id )
+    or ( !defined $files ) )
+  {
     croak "Need to pass source_id, species_id and files as pairs";
   }
 
@@ -48,49 +49,63 @@ sub run {
   my $mgi_io = $self->get_filehandle($file);
 
   if ( !defined $mgi_io ) {
-    print STDERR "ERROR: Could not open $file\n";
-    return 1;    # 1 is an error
+    croak "ERROR: Could not open $file\n";
   }
 
-  my $xref_count =0;
-  my $syn_count = 0;
+  my $xref_count = 0;
+  my $syn_count  = 0;
   my %acc_to_xref;
 
-  my $input_file = Text::CSV->new({
-                                    sep_char           => "\t",
-				    empty_is_undef     => 1,
-                                    strict => 1,
-                                    auto_diag => 1,
-                                    allow_loose_quotes => 1,
-				   }) or croak "Cannot use file $file: ".Text::CSV->error_diag ();
+  my $input_file = Text::CSV->new(
+    {
+      sep_char           => "\t",
+      empty_is_undef     => 1,
+      strict             => 1,
+      allow_loose_quotes => 1,
+    }
+  ) or croak "Cannot use file $file: " . Text::CSV->error_diag();
 
-  # skip header
-  $input_file->getline($mgi_io);
-  $input_file->column_names([qw(accession chromosome position start end strand label status marker marker_type feature_type synonym_field)] );
-  while ( my $data = $input_file->getline_hr( $mgi_io ) ) {
+  # expected columns
+  my @expected_columns =
+    qw(accession chromosome position start end strand label status marker marker_type feature_type synonym_field);
+
+  # read header
+  my $header = $input_file->getline($mgi_io);
+  if ( scalar @{$header} != scalar @expected_columns ) {
+    croak "input file $file has an incorrect number of columns";
+  }
+  $input_file->column_names( \@expected_columns );
+
+  while ( my $data = $input_file->getline_hr($mgi_io) ) {
     my $accession = $data->{'accession'};
-    my $marker = defined($data->{'marker'}) ? $data->{'marker'} : undef;
-    $acc_to_xref{$accession} = $self->add_xref({ acc        => $accession,
-                                                 label      => $data->{'label'},
-                                                 desc       => $marker,
-                                                 source_id  => $source_id,
-                                                 species_id => $species_id,
-                                                 dbi        => $dbi,
-                                                 info_type  => "MISC"} );
-    if($verbose and !$marker){
+    my $marker = defined( $data->{'marker'} ) ? $data->{'marker'} : undef;
+    $acc_to_xref{$accession} = $self->add_xref(
+      {
+        acc        => $accession,
+        label      => $data->{'label'},
+        desc       => $marker,
+        source_id  => $source_id,
+        species_id => $species_id,
+        dbi        => $dbi,
+        info_type  => "MISC"
+      }
+    );
+    if ( $verbose && !$marker ) {
       print "$accession has no description\n";
     }
     $xref_count++;
     my @synonyms;
-    if(defined($acc_to_xref{$accession})){
-      @synonyms = split(/\|/,$data->{'synonym_field'}) if ($data->{'synonym_field'});
+    if ( defined( $acc_to_xref{$accession} ) ) {
+      @synonyms = split( /\|/, $data->{'synonym_field'} )
+        if ( $data->{'synonym_field'} );
       foreach my $syn (@synonyms) {
-        $self->add_synonym($acc_to_xref{$accession}, $syn, $dbi);
+        $self->add_synonym( $acc_to_xref{$accession}, $syn, $dbi );
         $syn_count++;
       }
     }
   }
-  $mgi_io->eof or croak "Error parsing file $file: " . $input_file->error_diag();
+  $mgi_io->eof
+    or croak "Error parsing file $file: " . $input_file->error_diag();
   $mgi_io->close();
 
   if ($verbose) {
@@ -98,11 +113,8 @@ sub run {
     print "$syn_count synonyms added\n";
   }
 
-  return 0; #successful
+  return 0;    #successful
 }
-	
-
-
 
 1;
 
