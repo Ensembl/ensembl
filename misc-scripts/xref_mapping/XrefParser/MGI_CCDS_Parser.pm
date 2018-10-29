@@ -131,14 +131,14 @@ sub run {
       if (  defined( $accession{$gene_name} )
         and defined( $label{ $accession{$gene_name} } ) )
       {
-        my $acc = $accession{$gene_name};
+        my $mgi_acc = $accession{$gene_name};
         $self->add_dependent_xref(
           {
             master_xref_id => $ccds_label_to_xref_id{$ccds},
-            acc            => $acc,
-            version        => $version{$acc},
-            label          => $label{$acc},
-            desc           => $description{$acc},
+            acc            => $mgi_acc,
+            version        => $version{$mgi_acc},
+            label          => $label{$mgi_acc},
+            desc           => $description{$mgi_acc},
             source_id      => $source_id,
             dbi            => $dbi,
             species_id     => $species_id
