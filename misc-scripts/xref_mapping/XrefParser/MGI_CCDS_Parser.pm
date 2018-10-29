@@ -57,21 +57,21 @@ sub run {
   $sth->execute();
   my ($mgi_source_id);
   $sth->bind_columns( \$mgi_source_id );
-  my @arr;
+  my @source_ids;
   while ( $sth->fetch() ) {
-    push @arr, $mgi_source_id;
+    push @source_ids, $mgi_source_id;
   }
   $sth->finish;
 
   $sql =
 "select accession, label, version,  description from xref where source_id in ("
-    . join( ", ", @arr ) . ")";
+    . join( ", ", @source_ids ) . ")";
 
   $sth = $dbi->prepare($sql);
   $sth->execute();
   my ( $acc, $lab, $ver, $desc );
   $sth->bind_columns( \$acc, \$lab, \$ver, \$desc );
-  while ( my @row = $sth->fetchrow_array() ) {
+  while ( $sth->fetch() ) {
     if ( defined($desc) ) {
       $accession{$lab}   = $acc;
       $label{$acc}       = $lab;
@@ -91,11 +91,11 @@ sub run {
   my %ccds_label_to_xref_id;
   $sth = $dbi->prepare($sql);
   $sth->execute();
-  my ($xref_id);
-  $sth->bind_columns( \$lab, \$xref_id );
+  my ($xref_label, $xref_id);
+  $sth->bind_columns( \$xref_label, \$xref_id );
 
-  while ( my @row = $sth->fetchrow_array() ) {
-    $ccds_label_to_xref_id{ $row[0] } = $row[1];
+  while ( $sth->fetch() ) {
+    $ccds_label_to_xref_id{ $xref_label } = $xref_id;
   }
   $sth->finish;
 
@@ -105,7 +105,7 @@ sub run {
 
   my $mgi_io = $self->get_filehandle($file);
   if ( !defined $mgi_io ) {
-    croak "ERROR: Could not open $file\n";
+    croak "Could not open $file\n";
   }
 
   #
@@ -122,9 +122,7 @@ sub run {
     }
   ) or croak "Cannot use file $file: " . Text::CSV->error_diag();
 
-  $input_file->column_names(
-    [qw( chromosome g_accession gene gene_id ccds_id)] )
-    ;    #ignore the rest of the columns
+  $input_file->column_names( [qw( chromosome g_accession gene gene_id ccds_id)] );    #ignore the rest of the columns
 
   while ( my $data = $input_file->getline_hr($mgi_io) ) {
     my $ccds      = $data->{'ccds_id'};
