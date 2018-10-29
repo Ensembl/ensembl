@@ -790,8 +790,6 @@ sub _store_object_xref_mapping {
     my $analysis_id;
     if ( $dbEntry->analysis() ) {
         $analysis_id = $self->db()->get_AnalysisAdaptor->store( $dbEntry->analysis() );
-    } else {
-        $analysis_id = 0; ## This used to be undef, but uniqueness in mysql requires a value
     }
     
     my $insert_ignore = $self->insert_ignore_clause();

@@ -589,10 +589,13 @@ ok(scalar(@genes) == 4);
 debug("Wildcard test:" . $genes[0]->stable_id);
 ok($genes[0]->stable_id() eq 'ENSG00000101367');
 
-@genes = @{$ga->fetch_all_by_external_name('M_%')};
-debug("Wildcard test:" . $genes[0]->stable_id());
-debug(scalar @genes . " genes found");
-ok(scalar @genes == 2);
+SKIP: {
+  skip 'Wildcard behaviour different for SQLite', 1 if $db->dbc->driver() eq 'SQLite';
+  @genes = @{$ga->fetch_all_by_external_name('M_%')};
+  debug("Wildcard test:" . $genes[0]->stable_id());
+  debug(scalar @genes . " genes found");
+  ok(scalar @genes == 2);
+}
 
 # Test performance protection (very vague queries return no hits)
 debug("Testing vague query protection");

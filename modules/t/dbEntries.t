@@ -554,11 +554,17 @@ $multi->restore();
   my $no_desc_id_again = $dbEntryAdaptor->store($entry_no_desc, $gene->dbID(), 'Gene');
   is($no_desc_id_again, $no_desc_id, 'Checking the ID is consistent between store() invocations');
   is_rows(1, $db, 'xref', 'where description = ?', [q{}]);
-  is_rows(1, $db, 'object_xref');
+  is_rows(2, $db, 'object_xref');
   is_rows(0, $db, 'object_xref', 'where xref_id =?', [0]);
   
   $multi->restore('core', 'xref', 'object_xref');
 }
+
+# Test storing with no analysis
+
+my $dbentry = Bio::EnsEMBL::DBEntry->new(-PRIMARY_ID => 'my_id', -DBNAME => 'EntrezGene', -RELEASE => 1);
+$xref_id = $dbEntryAdaptor->store($dbentry, $gene->dbID(), 'Gene');
+is_rows("1", $db, "object_xref", "where xref_id = $xref_id and analysis_id is null");
 
 # Test for external DB ids
 {
