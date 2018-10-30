@@ -1066,7 +1066,7 @@ AXX
   #########################
   # Now add the direct info
   #########################
-  $self->add_direct_xref($direct_id, $stable_id, $type, '', $dbi);
+  $self->add_direct_xref($direct_id, $stable_id, $type, $linkage, $dbi);
   return;
 }
 
