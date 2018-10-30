@@ -165,34 +165,26 @@ sub run {
     # With all the checks taken care of, insert the mappings. We check
     # both MIM_GENE and MIM_MORBID every time because some MIM entries
     # can appear in both.
-    # FIXME: the underlying BaseParser code does NOT support having
-    # multiple xref_ids matching a single accession - and to make
-    # things worse, instead of failing should that be the case it
-    # quietly assigns such mappings to whichever xref for the given
-    # accession the database returns as first. Fortunately this
-    # doesn't seem to ever happen for current MIM input.
     foreach my $mim_xref_id ( @{ $mim_gene{$omim_acc} } ) {
       $self->process_xref_entry({
-        'mim_acc'          => $omim_acc,
+        'mim_xref_id'      => $mim_xref_id,
         'mim_source_id'    => $mim_gene_source_id,
-        'species_id'       => $species_id,
         'ensembl_id'       => $ensembl_id,
         'entrez_xrefs'     => $entrez{$entrez_id},
         'entrez_source_id' => $entrez_source_id,
+        'counters'         => \%counters,
         'dbi'              => $dbi,
-        'counters'         => \%counters
       });
     }
     foreach my $mim_xref_id ( @{ $mim_morbid{$omim_acc} } ) {
       $self->process_xref_entry({
-        'mim_acc'          => $omim_acc,
+        'mim_xref_id'      => $mim_xref_id,
         'mim_source_id'    => $mim_morbid_source_id,
-        'species_id'       => $species_id,
         'ensembl_id'       => $ensembl_id,
         'entrez_xrefs'     => $entrez{$entrez_id},
         'entrez_source_id' => $entrez_source_id,
+        'counters'         => \%counters,
         'dbi'              => $dbi,
-        'counters'         => \%counters
       });
     }
 
@@ -277,28 +269,24 @@ sub process_xref_entry {
 
   if ( $arg_ref->{'ensembl_id'} ) {
     $arg_ref->{'counters'}->{'direct_ensembl'}++;
-    $self->add_to_direct_xrefs({
-      'stable_id'  => $arg_ref->{'ensembl_id'},
-      'type'       => 'gene',
-      'acc'        => $arg_ref->{'mim_acc'},
-      'source_id'  => $arg_ref->{'mim_source_id'},
-      'species_id' => $arg_ref->{'species_id'},
-      'dbi'        => $arg_ref->{'dbi'},
-    });
+    $self->add_direct_xref( $arg_ref->{'mim_xref_id'},
+                            $arg_ref->{'ensembl_id'},
+                            'gene',
+                            undef,
+                            $arg_ref->{'dbi'}
+                         );
     # FIXME: update info_type in the xref from DEPENDENT to DIRECT as
     # well, unless MIMParser starts inserting something else.
   }
   else {
     foreach my $ent_id ( @{ $arg_ref->{'entrez_xrefs'} } ) {
       $arg_ref->{'counters'}->{'dependent_on_entrez'}++;
-      $self->add_dependent_xref({
-        'master_xref_id' => $ent_id,
-        'acc'            => $arg_ref->{'mim_acc'},
-        'source_id'      => $arg_ref->{'mim_source_id'},
-        'species_id'     => $arg_ref->{'species_id'},
-        'linkage'        => $arg_ref->{'entrez_source_id'},
-        'dbi'            => $arg_ref->{'dbi'},
-      });
+      $self->add_dependent_xref_maponly( $arg_ref->{'mim_xref_id'},
+                                         $arg_ref->{'mim_source_id'},
+                                         $ent_id,
+                                         $arg_ref->{'entrez_source_id'},
+                                         $arg_ref->{'dbi'}
+                                      );
     }
   }
 
