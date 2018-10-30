@@ -128,14 +128,14 @@ sub run {
     }
 
     # Do not modify the contents of @{$line}, only the output - hence the /r.
-    my ( $omim_id, $type, $entrez_id, $hgnc_symbol, $ensembl_id )
+    my ( $omim_acc, $type, $entrez_id, $hgnc_symbol, $ensembl_id )
       = map { s{\s+\z}{}rmsx } @{ $line };
 
     $counters{'all_entries'}++;
 
     # No point in doing anything if we have no matching MIM xref...
-    if ( ( !defined $mim_gene{$omim_id} ) and
-         ( !defined $mim_morbid{$omim_id} ) )
+    if ( ( !defined $mim_gene{$omim_acc} ) &&
+         ( !defined $mim_morbid{$omim_acc} ) )
     {
       $counters{'missed_omim'}++;
       next RECORD;
@@ -165,9 +165,9 @@ sub run {
     # With all the checks taken care of, insert the mappings. We check
     # both MIM_GENE and MIM_MORBID every time because some MIM entries
     # can appear in both.
-    foreach my $mim_id ( @{ $mim_gene{$omim_id} } ) {
+    foreach my $mim_xref_id ( @{ $mim_gene{$omim_acc} } ) {
       $self->process_xref_entry({
-        'mim_id'           => $omim_id,
+        'mim_acc'          => $omim_acc,
         'mim_source_id'    => $mim_gene_source_id,
         'species_id'       => $species_id,
         'ensembl_id'       => $ensembl_id,
@@ -177,9 +177,9 @@ sub run {
         'counters'         => \%counters
       });
     }
-    foreach my $mim_id ( @{ $mim_morbid{$omim_id} } ) {
+    foreach my $mim_xref_id ( @{ $mim_morbid{$omim_acc} } ) {
       $self->process_xref_entry({
-        'mim_id'           => $omim_id,
+        'mim_acc'          => $omim_acc,
         'mim_source_id'    => $mim_morbid_source_id,
         'species_id'       => $species_id,
         'ensembl_id'       => $ensembl_id,
@@ -274,7 +274,7 @@ sub process_xref_entry {
     $self->add_to_direct_xrefs({
       'stable_id'  => $arg_ref->{'ensembl_id'},
       'type'       => 'gene',
-      'acc'        => $arg_ref->{'mim_id'},
+      'acc'        => $arg_ref->{'mim_acc'},
       'source_id'  => $arg_ref->{'mim_source_id'},
       'species_id' => $arg_ref->{'species_id'},
       'dbi'        => $arg_ref->{'dbi'},
@@ -285,7 +285,7 @@ sub process_xref_entry {
       $arg_ref->{'counters'}->{'dependent_on_entrez'}++;
       $self->add_dependent_xref({
         'master_xref_id' => $ent_id,
-        'acc'            => $arg_ref->{'mim_id'},
+        'acc'            => $arg_ref->{'mim_acc'},
         'source_id'      => $arg_ref->{'mim_source_id'},
         'species_id'     => $arg_ref->{'species_id'},
         'linkage'        => $arg_ref->{'entrez_source_id'},
