@@ -21,162 +21,270 @@ package XrefParser::MIMParser;
 
 use strict;
 use warnings;
-use Carp;
-use POSIX qw(strftime);
-use File::Basename;
 
-use base qw( XrefParser::BaseParser );
+use Carp;
+use Readonly;
+
+use parent qw( XrefParser::BaseParser );
+
+# This parser will read xrefs from a record file downloaded from the
+# OMIM Web site. They should be assigned to two different xref
+# sources: MIM_GENE and MIM_MORBID. MIM xrefs are linked to EntrezGene
+# entries so the parser does not match them to Ensembl; this will be
+# taken care of when EntrezGene entries are matched.
+#
+# OMIM records are multiline. Each record begins with a specific tag
+# line and consists of a number of fields. Each field starts with its
+# own start-tag line (i.e. the data proper only appears after a
+# newline) and continues until the beginning of either the next field
+# in the same record, the next record, or the end-of-input tag. The
+# overall structure looks as follows:
+#
+#   *RECORD*
+#   *FIELD* NO
+#   *FIELD* TI
+#   *FIELD* TX
+#   ...
+#   *RECORD*
+#   *FIELD* NO
+#   *FIELD* TI
+#   ...
+#   *RECORD*
+#   *FIELD* NO
+#   ...
+#   *FIELD* CD
+#   *FIELD* ED
+#   *THEEND*
+#
+# All the data relevant to the parser can be found in the TI field.
+
+
+# FIXME: this belongs in BaseParser
+Readonly my $ERR_SOURCE_ID_NOT_FOUND => -1;
+
 
 sub run {
 
-  my ($self, $ref_arg) = @_;
-  my $general_source_id    = $ref_arg->{source_id};
-  my $species_id   = $ref_arg->{species_id};
-  my $files        = $ref_arg->{files};
-  my $verbose      = $ref_arg->{verbose};
-  my $dbi          = $ref_arg->{dbi};
-  $dbi = $self->dbi unless defined $dbi;
+  my ( $self, $ref_arg ) = @_;
+  my $general_source_id = $ref_arg->{source_id};
+  my $species_id        = $ref_arg->{species_id};
+  my $files             = $ref_arg->{files};
+  my $verbose           = $ref_arg->{verbose} // 0;
+  my $dbi               = $ref_arg->{dbi} // $self->dbi;
 
-  if((!defined $general_source_id) or (!defined $species_id) or (!defined $files) ){
+  if ( ( !defined $general_source_id ) or
+       ( !defined $species_id ) or
+       ( !defined $files ) )
+  {
     croak "Need to pass source_id, species_id and files as pairs";
   }
-  $verbose |=0;
 
-  my $file = @{$files}[0];
-
+  my $filename = @{$files}[0];
 
   my %old_to_new;
   my %removed;
-  my $source_id;
+  my %counters;
   my @sources;
 
   push @sources, $general_source_id;
 
-  my $gene_source_id = $self->get_source_id_for_source_name("MIM_GENE", undef, $dbi);
+  my $gene_source_id =
+    $self->get_source_id_for_source_name( "MIM_GENE", undef, $dbi );
   push @sources, $gene_source_id;
-  my $morbid_source_id =  $self->get_source_id_for_source_name("MIM_MORBID", undef, $dbi);
+  my $morbid_source_id =
+    $self->get_source_id_for_source_name( "MIM_MORBID", undef, $dbi );
   push @sources, $morbid_source_id;
-
-  print "sources are:- ".join(", ",@sources)."\n" if($verbose);
-
-  local $/ = "*RECORD*";
-
-  my $mim_io = $self->get_filehandle($file);
-
-  if ( !defined $mim_io ) {
-    print "ERROR: Could not open $file\n";
-    return 1;    # 1 is an error
+  if ( ( $gene_source_id == $ERR_SOURCE_ID_NOT_FOUND )
+       || ( $morbid_source_id == $ERR_SOURCE_ID_NOT_FOUND ) ) {
+    croak 'Failed to retrieve MIM source IDs';
   }
 
-  my $gene = 0;
-  my $phenotype = 0;
-  my $removed_count =0;
+  Readonly my %TYPE_SINGLE_SOURCES => (
+                                       q{*} => $gene_source_id,
+                                       q{} => $morbid_source_id,
+                                       q{#} => $morbid_source_id,
+                                       q{%} => $morbid_source_id,
+                                     );
+
+  if ($verbose) {
+    print "sources are:- " . join( ", ", @sources ) . "\n";
+  }
+
+  IO::Handle->input_record_separator('*RECORD*');
+
+  my $mim_io = $self->get_filehandle($filename);
+  if ( !defined $mim_io ) {
+    croak "Failed to acquire a file handle for '${filename}'";
+  }
 
   $mim_io->getline();    # first record is empty with *RECORD* as the
                          # record seperator
 
-  while ( $_ = $mim_io->getline() ) {
-    #get the MIM number
-    my $number = 0;
-    my $label = undef;
-    my $long_desc;
-    my $is_morbid = 0;
-    my $type =undef;
-    if(/\*FIELD\*\s+NO\n(\d+)/){
-      $number = $1;
-      $source_id = $gene_source_id;      
-      # if(/\*FIELD\*\sTI\n([\^\#\%\+\*]*)\d+(.*)\n(.*)\n\*/){
-      # 	$label =$2; # taken from description as acc is meaning less
-      # 	$long_desc = $2;
-      # 	$long_desc .= $3 if defined $3;
-      # 	$type = $1;
-      # 	$label =~ s/\;\s[A-Z0-9]+$//; # strip gene name at end
-      # 	$label = substr($label,0,35)." [".$type.$number."]";
+ RECORD:
+  while ( my $input_record = $mim_io->getline() ) {
 
-      if(/\*FIELD\*\sTI(.+)\*FIELD\*\sTX/s) { # grab the whole TI field
-	my $ti = $1;
-        $ti =~ s/\n//g; # Remove return carriages
-        # extract the 'type' and the whole description
-	$ti =~ /([\^\#\%\+\*]*)\d+(.+)/s;
-	my $type = $1;
-	my $long_desc = $2;
-        $long_desc =~ s/^\s//; # Remove white space at the start
-        my @fields = split(";;", $long_desc);
-
-        # Use the first block of text as description
-	my $label = $fields[0] . " [" . $type . $number . "]";
-
-	if($type eq "*"){ # gene only
-	  $gene++;
-	  $self->add_xref({ acc        => $number,
-			    label      => $label,
-			    desc       => $long_desc,
-			    source_id  => $gene_source_id,
-			    species_id => $species_id,
-                            dbi        => $dbi,
-			    info_type  => "DEPENDENT"} );
-	}
-	elsif((!defined $type) or ($type eq "") or ($type eq "#") or ($type eq "%")){ #phenotype only
-	  $phenotype++;
-	  $self->add_xref({ acc        => $number,
-			    label      => $label,
-			    desc       => $long_desc,
-			    source_id  => $morbid_source_id,
-			    species_id => $species_id,
-                            dbi        => $dbi,
-			    info_type  => "DEPENDENT"} );
-	}
-	elsif($type eq "+"){ # both
-	  $gene++;
- 	  $phenotype++;
-	  $self->add_xref({ acc        => $number,
-			    label      => $label,
-			    desc       => $long_desc,
-			    source_id  => $gene_source_id,
-			    species_id => $species_id,
-                            dbi        => $dbi,
-			    info_type  => "DEPENDENT"} );
-
-	  $self->add_xref({ acc        => $number,
-			    label      => $label,
-			    desc       => $long_desc,
-			    source_id  => $morbid_source_id,
-			    species_id => $species_id,
-                            dbi        => $dbi,
-			    info_type  => "DEPENDENT"} );
-	}
-	elsif($type eq "^"){
-	  if(/\*FIELD\*\sTI\n[\^]\d+ MOVED TO (\d+)/){
-            if ($1 eq $number) { next; }
-	    $old_to_new{$number} = $1;
-	  }
-	  else{
-	    $removed{$number} = 1;
-	    $removed_count++;
-	  }
-	
-	}
-      }
+    my $ti = extract_ti( $input_record );
+    if ( ! defined $ti ) {
+      croak 'Failed to extract TI field from record';
     }
-  }
+
+    my ( $type, $number, $long_desc ) = parse_ti( $ti );
+    if ( !defined( $type ) ) {
+      croak 'Failed to extract record type and description from TI field';
+    }
+
+    # Use the first block of text as description
+    my @fields = split( qr{;;}msx, $long_desc );
+    my $label = $fields[0] . " [" . $type . $number . "]";
+
+    my $xref_object = {
+                       acc        => $number,
+                       label      => $label,
+                       desc       => $long_desc,
+                       species_id => $species_id,
+                       dbi        => $dbi,
+                       info_type  => "DEPENDENT",
+                     };
+
+    if ( exists $TYPE_SINGLE_SOURCES{$type} ) {
+      my $type_source = $TYPE_SINGLE_SOURCES{$type};
+
+      $xref_object->{'source_id'} = $type_source;
+      $counters{ $type_source }++;
+      $self->add_xref($xref_object);
+
+    }
+    elsif ( $type eq q{+} ) {    # both gene and phenotype
+
+      $xref_object->{'source_id'} = $gene_source_id;
+      $counters{ $gene_source_id }++;
+      $self->add_xref($xref_object);
+
+      $xref_object->{'source_id'} = $morbid_source_id;
+      $counters{ $morbid_source_id }++;
+      $self->add_xref($xref_object);
+
+    }
+    elsif ( $type eq q{^} ) {
+      my ( $new_number ) = ( $long_desc =~ m{
+                                              MOVED\sTO\s
+                                              (\d+)
+                                          }msx );
+      if ( defined $new_number ) {
+        if ( $new_number ne $number ) {
+          $old_to_new{$number} = $new_number;
+        }
+      }
+      # Both leading and trailing whitespace has been removed
+      # so don't bother with another regex match, just compare.
+      elsif ( $long_desc eq 'REMOVED FROM DATABASE' ) {
+        $removed{$number} = 1;
+        $counters{ 'removed' }++;
+      }
+      else {
+        croak "Unsupported type of a '^' record: '${long_desc}'\n";
+      }
+
+    }
+
+  } ## record loop
 
   $mim_io->close();
 
-  my $syn_count =0;
-  foreach my $mim (keys %old_to_new){
-    my $old= $mim;
-    my $new= $old_to_new{$old};
-    while(defined($old_to_new{$new})){
+  # Generate synonyms from "MOVED TO" entries
+  foreach my $mim ( keys %old_to_new ) {
+    my $old = $mim;
+    my $new = $old_to_new{$old};
+
+    # Some entries in the MIM database have been moved multiple times,
+    # and we want each of the synonyms created this way to point to
+    # the *current* accession instead of one another. Keep traversing
+    # the chain of renames until we have reached the end, i.e. until
+    # $new is no longer a valid key in %old_to_new.
+    # FIXME: this is not entirely efficient, especially for long
+    # rename chains, because the foreach loop processes every single
+    # key of %old_to_new (i.e. every single "MOVED TO" entry) from
+    # scratch - even though some of them might have already been
+    # encountered in the process of traversing the change chains of
+    # previously encountered keys. Some sort of a cache pointing each
+    # of previously encountered keys to their respective final values,
+    # might be in order here.
+    # FIXME: If we do implement such a cache, compare performance for
+    # retrieving original keys in random order vs in descending
+    # numerical order. On the one hand starting with high accessions
+    # will likely allow us to process rename chains from shorter to
+    # longer ones, thus, maximising the use of the cache; on the other
+    # there is the O(n log n) cost of sorting to take into account.
+    while ( defined( $old_to_new{$new} ) ) {
       $new = $old_to_new{$new};
     }
-    if(!defined($removed{$new})){
-      $self->add_to_syn_for_mult_sources($new, \@sources, $old, $species_id, $dbi);
-      $syn_count++;
+
+    # With the latest value of $new no longer pointing to anything in
+    # %old_to_new, we have got two options: either we have finally
+    # reached an up-to-date entry number or the entry has ultimately
+    # been removed from the database. See if we have logged the
+    # removal, if we haven't add the synonyms - letting Ensembl figure
+    # out by itself to which of the three (two???) sources the
+    # relevant xrefs belong.
+    if ( !defined( $removed{$new} ) ) {
+      $self->add_to_syn_for_mult_sources( $new, \@sources, $old,
+                                          $species_id, $dbi );
+      $counters{ 'synonyms' }++;
     }
   }
-  print "$gene genemap and $phenotype phenotype MIM xrefs added\n" if($verbose);
-  print "added $syn_count synonyms (defined by MOVED TO)\n" if($verbose);
-  return 0; #successful
+
+  if ($verbose) {
+    print $counters{ $gene_source_id } . ' genemap and '
+      . $counters{ $morbid_source_id } . " phenotype MIM xrefs added\n"
+      . $counters{ 'synonyms' } . " synonyms (defined by MOVED TO) added\n"
+      . $counters{ 'removed' } . " entries removed\n";
+  }
+
+  return 0;
+} ## end sub run
+
+
+sub extract_ti {
+  my ( $input_record ) = @_;
+
+  my ( $ti )
+    = ( $input_record =~ m{
+                            [*]FIELD[*]\sTI\n  # The TI field spans from this tag until:
+                            (.+?)              # (important: NON-greedy match)
+                            \n?
+                            (?: [*]FIELD[*]    #  - the next field in same record, or
+                            | [*]THEEND[*]   #  - the end of input file, or
+                            | \z             #  - the end of current record
+                            )
+                        }msx );
+
+  return $ti;
 }
+
+
+sub parse_ti {
+  my ( $ti ) = @_;
+
+  # Remove line breaks, making sure we do not accidentally concatenate words
+  $ti =~ s{
+            (?:
+              ;;\n
+            | \n;;
+            )
+        }{;;}gmsx;
+  $ti =~ s{\n}{ }gmsx;
+
+  # Extract the 'type' and the whole description
+  my @captures = ( $ti =~ m{
+                             ([#%+*^]*)  # type of entry
+                             (\d+)       # accession number, same as in NO
+                             \s+         # normally just one space
+                             (.+)        # description of entry
+                         }msx );
+
+  return @captures;
+}
+
+
 
 1;
