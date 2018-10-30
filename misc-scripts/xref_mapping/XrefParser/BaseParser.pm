@@ -836,10 +836,18 @@ sub get_direct_xref{
 
  $type = lc $type;
 
- my $sql = "select general_xref_id from ${type}_direct_xref d where ensembl_stable_id = ?  and linkage_xref= ?";
+ my $sql = "select general_xref_id from ${type}_direct_xref d where ensembl_stable_id = ? and linkage_xref ";
+ my @sql_params = ( $stable_id );
+ if ( defined $link ) {
+   $sql .= '= ?';
+   push @sql_params, $link;
+ }
+ else {
+   $sql .= 'is null';
+ }
  my  $direct_sth = $dbi->prepare($sql);
 
- $direct_sth->execute( $stable_id, $link ) or croak( $dbi->errstr() );
+ $direct_sth->execute( @sql_params ) || croak( $dbi->errstr() );
  if(my @row = $direct_sth->fetchrow_array()) {
    return $row[0];
  }
