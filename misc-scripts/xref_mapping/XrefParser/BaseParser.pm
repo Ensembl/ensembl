@@ -1105,6 +1105,20 @@ sub add_direct_xref {
 
   $dbi = $self->dbi unless defined $dbi;
 
+  # Check if such a mapping exists yet. Make sure get_direct_xref() is
+  # invoked in list context, otherwise it will fall back to legacy
+  # behaviour of returning a single xref_id even when multiple ones
+  # match.
+  # Note: get_direct_xref() does not currently cache its output,
+  # consider changing this should performance become an issue
+  my @existing_xref_ids = $self->get_direct_xref($ensembl_stable_id,
+                                                 $ensembl_type,
+                                                 $linkage_type,
+                                                 $dbi);
+  if ( scalar grep { $_ == $general_xref_id } @existing_xref_ids ) {
+    return;
+  }
+
   $ensembl_type = lc($ensembl_type);
   my $sql = "INSERT INTO " . $ensembl_type . "_direct_xref VALUES (?,?,?)";
   my $add_direct_xref_sth = $dbi->prepare($sql);
