@@ -826,10 +826,9 @@ sub get_taxonomy_from_species_id{
 }
 
 
-################################################
-# xref_id for a given stable id and linkage_xref
-# Only used in GOParser at the moment
-################################################
+#################################################
+# xref_ids for a given stable id and linkage_xref
+#################################################
 sub get_direct_xref{
  my ($self,$stable_id,$type,$link, $dbi) = @_;
  $dbi = $self->dbi unless defined $dbi;
@@ -848,8 +847,25 @@ sub get_direct_xref{
  my  $direct_sth = $dbi->prepare($sql);
 
  $direct_sth->execute( @sql_params ) || croak( $dbi->errstr() );
- if(my @row = $direct_sth->fetchrow_array()) {
-   return $row[0];
+ if ( wantarray () ) {
+   # Generic behaviour
+
+   my @results;
+
+   my $all_rows = $direct_sth->fetchall_arrayref();
+   foreach my $row_ref ( @{ $all_rows } ) {
+     push @results, $row_ref->[0];
+   }
+
+   return @results;
+ }
+ else {
+   # Backwards-compatible behaviour. FIXME: can we get rid of it?
+   # There seem to be no parsers present relying on the old behaviour
+   # any more
+   if ( my @row = $direct_sth->fetchrow_array() ) {
+     return $row[0];
+   }
  }
  $direct_sth->finish();
  return;
