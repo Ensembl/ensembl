@@ -123,10 +123,6 @@ sub create_xrefs {
 
   my %dependent_sources = $self->get_xref_sources($dbi);
 
-  if(defined($dependent_sources{'MGI'})){
-    $dependent_sources{'MGI'} = $self->get_source_id_for_source_name("MGI","uniprot", $dbi);
-  }
-
     my (%genemap) =
       %{ $self->get_valid_codes( "mim_gene", $species_id, $dbi ) };
     my (%morbidmap) =
