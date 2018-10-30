@@ -167,7 +167,7 @@ sub run {
     # can appear in both.
     foreach my $mim_id ( @{ $mim_gene{$omim_id} } ) {
       $self->process_xref_entry({
-        'mim_id'           => $mim_id,
+        'mim_id'           => $omim_id,
         'mim_source_id'    => $mim_gene_source_id,
         'species_id'       => $species_id,
         'ensembl_id'       => $ensembl_id,
@@ -179,7 +179,7 @@ sub run {
     }
     foreach my $mim_id ( @{ $mim_morbid{$omim_id} } ) {
       $self->process_xref_entry({
-        'mim_id'           => $mim_id,
+        'mim_id'           => $omim_id,
         'mim_source_id'    => $mim_morbid_source_id,
         'species_id'       => $species_id,
         'ensembl_id'       => $ensembl_id,
