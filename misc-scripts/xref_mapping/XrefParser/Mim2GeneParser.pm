@@ -99,8 +99,6 @@ sub run {
                   'all_entries'                          => 0,
                   'dependent_on_entrez'                  => 0,
                   'direct_ensembl'                       => 0,
-                  'expected_in_mim_gene_but_not_there'   => 0,
-                  'expected_in_mim_morbid_but_not_there' => 0,
                   'missed_master'                        => 0,
                   'missed_omim'                          => 0,
                 );
@@ -164,69 +162,32 @@ sub run {
       croak "Unknown type $type";
     }
 
-    if ( $type eq 'phenotype' ) {
-      # The only type with a different source order
-
-      if ( defined( $mim_morbid{$omim_id} ) ) {
-        foreach my $mim_id ( @{ $mim_morbid{$omim_id} } ) {
-          $self->process_xref_entry({
-            'mim_id'           => $mim_id,
-            'mim_source_id'    => $mim_morbid_source_id,
-            'species_id'       => $species_id,
-            'ensembl_id'       => $ensembl_id,
-            'entrez_xrefs'     => $entrez{$entrez_id},
-            'entrez_source_id' => $entrez_source_id,
-            'dbi'              => $dbi,
-            'counters'         => \%counters
-          });
-        }
-      }
-      else {
-        $counters{'expected_in_mim_morbid_but_not_there'}++;
-        foreach my $mim_id ( @{ $mim_gene{$omim_id} } ) {
-          $self->process_xref_entry({
-            'mim_id'           => $mim_id,
-            'mim_source_id'    => $mim_gene_source_id,
-            'species_id'       => $species_id,
-            'ensembl_id'       => $ensembl_id,
-            'entrez_xrefs'     => $entrez{$entrez_id},
-            'entrez_source_id' => $entrez_source_id,
-            'dbi'              => $dbi,
-            'counters'         => \%counters
-          });
-        }
-      }
+    # With all the checks taken care of, insert the mappings. We check
+    # both MIM_GENE and MIM_MORBID every time because some MIM entries
+    # can appear in both.
+    foreach my $mim_id ( @{ $mim_gene{$omim_id} } ) {
+      $self->process_xref_entry({
+        'mim_id'           => $mim_id,
+        'mim_source_id'    => $mim_gene_source_id,
+        'species_id'       => $species_id,
+        'ensembl_id'       => $ensembl_id,
+        'entrez_xrefs'     => $entrez{$entrez_id},
+        'entrez_source_id' => $entrez_source_id,
+        'dbi'              => $dbi,
+        'counters'         => \%counters
+      });
     }
-    else {
-      if ( defined( $mim_gene{$omim_id} ) ) {
-        foreach my $mim_id ( @{ $mim_gene{$omim_id} } ) {
-          $self->process_xref_entry({
-            'mim_id'           => $mim_id,
-            'mim_source_id'    => $mim_gene_source_id,
-            'species_id'       => $species_id,
-            'ensembl_id'       => $ensembl_id,
-            'entrez_xrefs'     => $entrez{$entrez_id},
-            'entrez_source_id' => $entrez_source_id,
-            'dbi'              => $dbi,
-            'counters'         => \%counters
-          });
-        }
-      }
-      else {
-        $counters{'expected_in_mim_gene_but_not_there'}++;
-        foreach my $mim_id ( @{ $mim_morbid{$omim_id} } ) {
-          $self->process_xref_entry({
-            'mim_id'           => $mim_id,
-            'mim_source_id'    => $mim_morbid_source_id,
-            'species_id'       => $species_id,
-            'ensembl_id'       => $ensembl_id,
-            'entrez_xrefs'     => $entrez{$entrez_id},
-            'entrez_source_id' => $entrez_source_id,
-            'dbi'              => $dbi,
-            'counters'         => \%counters
-          });
-        }
-      }
+    foreach my $mim_id ( @{ $mim_morbid{$omim_id} } ) {
+      $self->process_xref_entry({
+        'mim_id'           => $mim_id,
+        'mim_source_id'    => $mim_morbid_source_id,
+        'species_id'       => $species_id,
+        'ensembl_id'       => $ensembl_id,
+        'entrez_xrefs'     => $entrez{$entrez_id},
+        'entrez_source_id' => $entrez_source_id,
+        'dbi'              => $dbi,
+        'counters'         => \%counters
+      });
     }
 
   } ## end record loop
@@ -239,12 +200,7 @@ sub run {
       . "\t" . $counters{'missed_omim'} . " had missing OMIM entries,\n"
       . "\t" . $counters{'direct_ensembl'} . " were direct gene xrefs,\n"
       . "\t" . $counters{'dependent_on_entrez'} . " were dependent EntrezGene xrefs,\n"
-      . "\t" . $counters{'missed_master'} . " had missing master entries.\n"
-      . "\t * * *\n"
-      . "\t" . $counters{'expected_in_mim_gene_but_not_there'}
-      . " were expected in MIM_GENE but were not found there,\n"
-      . "\t" . $counters{'expected_in_mim_morbid_but_not_there'}
-      . " were expected in MIM_MORBID but were not found there.\n";
+      . "\t" . $counters{'missed_master'} . " had missing master entries.\n";
   }
 
   return 0;
