@@ -1024,6 +1024,7 @@ sub add_identity_xref {
 
 ###################################################################
 # Create new xref if needed and add as a direct xref to a stable_id
+# Note that a corresponding method for dependent xrefs is called add_dependent_xref()
 ###################################################################
 sub add_to_direct_xrefs{
   my ($self, $arg_ref) = @_;
@@ -1073,6 +1074,7 @@ AXX
 ##################################################################
 # Add a single record to the direct_xref table.
 # Note that an xref must already have been added to the xref table
+# Note that a corresponding method for dependent xrefs is called add_dependent_xref_maponly()
 ##################################################################
 sub add_direct_xref {
   my ($self, $general_xref_id, $ensembl_stable_id, $ensembl_type, $linkage_type, $dbi) = @_;
@@ -1091,6 +1093,7 @@ sub add_direct_xref {
 
 ##########################################################
 # Create/Add xref and add it as a dependency of the master
+# Note that a corresponding method for direct xrefs is called add_to_direct_xrefs()
 ##########################################################
 sub add_dependent_xref{
   my ($self, $arg_ref) = @_;
@@ -1114,12 +1117,6 @@ INSERT INTO xref
   VALUES (?,?,?,?,?,?,?,?)
 IXR
   my $add_xref_sth = $dbi->prepare($sql);
-  $sql = (<<'ADX');
-INSERT INTO dependent_xref 
-  (master_xref_id,dependent_xref_id,linkage_annotation,linkage_source_id)
-  VALUES (?,?,?,?)
-ADX
-  my $add_dependent_xref_sth = $dbi->prepare($sql);
 
   ####################################################
   # Does the xref already exist. If so get its xref_id
@@ -1133,29 +1130,60 @@ ADX
     ) or croak("$acc\t$label\t\t$source_id\t$species_id\n");
   }
   $add_xref_sth->finish();
-  $dependent_id = $self->get_xref($acc, $source_id, $species_id, $dbi);
 
   ################################################
-  # Croak if we have failed to create.get the xref
+  # Croak if we have failed to create/get the xref
   ################################################
-  if(!(defined $dependent_id)){
+  $dependent_id = $self->get_xref($acc, $source_id, $species_id, $dbi);
+  if ( !(defined $dependent_id) ) {
     croak("$acc\t$label\t\t$source_id\t$species_id\n");
   }
 
-  ########################################################################################
-  # If the dependency has not already been set ( is already in hash xref_dependent_mapped)
-  # then add it
-  ########################################################################################
-  if(!(defined $xref_dependent_mapped{"$master_xref|$dependent_id"}) || $xref_dependent_mapped{"$master_xref|$dependent_id"} ne $linkage){
-    $add_dependent_xref_sth->execute( $master_xref, $dependent_id, $linkage,
-				      $source_id )
-      or croak("$master_xref\t$dependent_id\t$linkage\t$source_id");
-    $xref_dependent_mapped{"$master_xref|$dependent_id"} = $linkage;
-  }
-  $add_dependent_xref_sth->finish();
+  ################################
+  # Now add the dependency mapping
+  ################################
+  $self->add_dependent_xref_maponly( $dependent_id, $source_id,
+                                     $master_xref, $linkage,
+                                     $dbi );
 
   return $dependent_id;
 }
+
+
+##################################################################
+# Add a single record to the dependent_xref table.
+# Note that an xref must already have been added to the xref table
+# Note that a corresponding method for direct xrefs is called add_direct_xref()
+##################################################################
+
+sub add_dependent_xref_maponly {
+  my ( $self, $dependent_id, $dependent_source_id, $master_id, $master_source_id, $dbi ) = @_;
+
+  $dbi //= $self->dbi;
+
+  my $sql = (<<'ADX');
+INSERT INTO dependent_xref 
+  (master_xref_id,dependent_xref_id,linkage_annotation,linkage_source_id)
+  VALUES (?,?,?,?)
+ADX
+  my $add_dependent_xref_sth = $dbi->prepare($sql);
+
+  # If the dependency cannot be found in %xref_dependent_mapped,
+  # i.e. has not been set yet, add it
+  if ( ( ! defined $xref_dependent_mapped{"$master_id|$dependent_id"} )
+       || $xref_dependent_mapped{"$master_id|$dependent_id"} ne $master_source_id ) {
+
+    $add_dependent_xref_sth->execute( $master_id, $dependent_id,
+                                      $master_source_id, $dependent_source_id )
+      || croak("$master_id\t$dependent_id\t$master_source_id\t$dependent_source_id");
+
+    $xref_dependent_mapped{"$master_id|$dependent_id"} = $master_source_id;
+  }
+
+  $add_dependent_xref_sth->finish();
+  return;
+}
+
 
 ##################################################################
 # Add synonyms for a particular accession for one or more sources.
