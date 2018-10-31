@@ -76,12 +76,12 @@ __PACKAGE__->add_columns(
 
 =cut
 
-__PACKAGE__->set_primary_key("stable_id");
+__PACKAGE__->set_primary_key("internal_id");
 
 
 # Created by DBIx::Class::Schema::Loader v0.07042 @ 2018-10-23 11:58:10
 # DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:hHbwL9aEj+45G8LgWPwscw
 
-# __PACKAGE__->has_one('display_xref', 'Xref::Schema::Result::Xref', {'foreign.xref_id' => 'self.display_xref_id'} );
+# __PACKAGE__->might_have('display_xref', 'Xref::Schema::Result::Xref', {'foreign.xref_id' => 'self.display_xref_id'} );
 
 1;

@@ -90,7 +90,7 @@ __PACKAGE__->add_unique_constraint("allele_idx", ["alt_allele_id", "gene_id"]);
 
 =cut
 
-__PACKAGE__->add_unique_constraint("gene_idx", ["gene_id"]);
+# __PACKAGE__->add_unique_constraint("gene_idx", ["gene_id"]);
 
 
 # Created by DBIx::Class::Schema::Loader v0.07042 @ 2018-10-23 11:58:10
