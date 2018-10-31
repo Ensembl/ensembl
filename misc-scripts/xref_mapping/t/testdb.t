@@ -8,8 +8,6 @@ use Xref::Test::TestDB;
 
 my $db = Xref::Test::TestDB->new();
 
-throws_ok { $db->config() } qr/No config or config_file/,'TestDB grumbles about missing parameters when not given any';
-
 $db = Xref::Test::TestDB->new(config_file => 'not_here');
 throws_ok { $db->config } qr/does not exist!/,'TestDB grumbles differently when an invalid config file is offered';
 
