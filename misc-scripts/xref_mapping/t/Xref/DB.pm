@@ -87,6 +87,12 @@ sub _validate_config {
   }
 }
 
+# Shortcut for accessing a database handle directly. I get the impression we might be doing this a lot.
+sub dbh {
+  my $self = shift;
+  return $self->schema->storage->dbh;
+}
+
 __PACKAGE__->meta->make_immutable;
 
 1;
