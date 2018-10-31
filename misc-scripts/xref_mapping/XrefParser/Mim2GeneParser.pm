@@ -273,10 +273,9 @@ sub process_xref_entry {
                             $arg_ref->{'ensembl_id'},
                             'gene',
                             undef,
-                            $arg_ref->{'dbi'}
+                            $arg_ref->{'dbi'},
+                            1
                          );
-    # FIXME: update info_type in the xref from DEPENDENT to DIRECT as
-    # well, unless MIMParser starts inserting something else.
   }
   else {
     foreach my $ent_id ( @{ $arg_ref->{'entrez_xrefs'} } ) {
@@ -285,7 +284,8 @@ sub process_xref_entry {
                                          $arg_ref->{'mim_source_id'},
                                          $ent_id,
                                          $arg_ref->{'entrez_source_id'},
-                                         $arg_ref->{'dbi'}
+                                         $arg_ref->{'dbi'},
+                                         1
                                       );
     }
   }
