@@ -159,7 +159,8 @@ sub run {
          && ( $type ne 'gene/phenotype' )
          && ( $type ne 'predominantly phenotypes' )
          && ( $type ne 'phenotype' ) ) {
-      croak "Unknown type $type";
+      croak "Unknown type $type for MIM Number '${omim_acc}' "
+        . "(${filename}:" . $csv->record_number() . ")";
     }
 
     # With all the checks taken care of, insert the mappings. We check
