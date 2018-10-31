@@ -1099,7 +1099,7 @@ AXX
 # Note that an xref must already have been added to the xref table
 ##################################################################
 sub add_direct_xref {
-  my ($self, $general_xref_id, $ensembl_stable_id, $ensembl_type, $linkage_type, $dbi) = @_;
+  my ($self, $general_xref_id, $ensembl_stable_id, $ensembl_type, $linkage_type, $dbi, $update_info_type) = @_;
 
   $dbi = $self->dbi unless defined $dbi;
 
@@ -1123,6 +1123,11 @@ sub add_direct_xref {
 
   $add_direct_xref_sth->execute($general_xref_id, $ensembl_stable_id, $linkage_type);
   $add_direct_xref_sth->finish();
+
+  if ( $update_info_type ) {
+    $self->_update_xref_info_type( $general_xref_id, 'DIRECT', $dbi );
+  }
+
   return;
 }
 
