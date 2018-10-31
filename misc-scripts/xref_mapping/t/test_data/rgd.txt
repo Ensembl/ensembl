@@ -1,0 +1,56 @@
+# RGD-PIPELINE: ftp-file-extracts
+### As of Apr 1, 2011 RATMAP_IDs and RHDB_IDs are discontinued.
+#COLUMN INFORMATION:
+# (First 38 columns are in common between all species)
+#
+#1   GENE_RGD_ID	      the RGD_ID of the gene
+#2   SYMBOL             official gene symbol
+#3   NAME    	          gene name
+#4   GENE_DESC          gene description (if available)
+#5   CHROMOSOME_CELERA  chromosome for Celera assembly
+#6   CHROMOSOME_3.1 chromosome for reference assembly build 3.1
+#7   CHROMOSOME_3.4 chromosome for reference assembly build 3.4
+#8   FISH_BAND          fish band information
+#9   START_POS_CELERA   start position for Celera assembly
+#10  STOP_POS_CELERA    stop position for Celera assembly
+#11  STRAND_CELERA      strand information for Celera assembly
+#12  START_POS_3.1   start position for reference assembly build 3.1
+#13  STOP_POS_3.1    stop position for reference assembly build 3.1
+#14  STRAND_3.1      strand information for reference assembly build 3.1
+#15  START_POS_3.4   start position for reference assembly build 3.4
+#16  STOP_POS_3.4    stop position for reference assembly build 3.4
+#17  STRAND_3.4      strand information for reference assembly build 3.4
+#18  CURATED_REF_RGD_ID     RGD_ID of paper(s) used to curate gene
+#19  CURATED_REF_PUBMED_ID  PUBMED_ID of paper(s) used to curate gene
+#20  UNCURATED_PUBMED_ID    PUBMED ids of papers associated with the gene at NCBI but not used for curation
+#21  NCBI_GENE_ID           NCBI Gene ID
+#22  UNIPROT_ID             UniProtKB id(s)
+#23  GENE_REFSEQ_STATUS     gene RefSeq Status (from NCBI)
+#24  GENBANK_NUCLEOTIDE     GenBank Nucleotide ID(s)
+#25  TIGR_ID                TIGR ID(s)
+#26  GENBANK_PROTEIN        GenBank Protein ID(s)
+#27  UNIGENE_ID             UniGene ID(s)
+#28  SSLP_RGD_ID            RGD_ID(s) of SSLPS associated with given gene
+#29  SSLP_SYMBOL            SSLP symbol
+#30  OLD_SYMBOL             old symbol alias(es)
+#31  OLD_NAME               old name alias(es)
+#32  QTL_RGD_ID             RGD_ID(s) of QTLs associated with given gene
+#33  QTL_SYMBOL             QTL symbol
+#34  NOMENCLATURE_STATUS    nomenclature status
+#35  SPLICE_RGD_ID          RGD_IDs for gene splices
+#36  SPLICE_SYMBOL          symbol for gene 
+#37  GENE_TYPE              gene type
+#38  ENSEMBL_ID             Ensembl Gene ID
+#39  GENE_REFSEQ_STATUS_LEGACY legacy column -- use column 23 instead -- it will be discontinued in the future
+#40  CHROMOSOME_5.0         chromosome for Rnor_5.0 reference assembly
+#41  START_POS_5.0          start position for Rnor_5.0 reference assembly
+#42  STOP_POS_5.0           stop position for Rnor_5.0 reference assembly
+#43  STRAND_5.0             strand information for Rnor_5.0 reference assembly
+#44  CHROMOSOME_6.0         chromosome for Rnor_6.0 reference assembly
+#45  START_POS_6.0          start position for Rnor_6.0 reference assembly
+#46  STOP_POS_6.0           stop position for Rnor_6.0 reference assembly
+#47  STRAND_6.0             strand information for Rnor_6.0 reference assembly
+#
+GENE_RGD_ID	SYMBOL	NAME	GENE_DESC	CHROMOSOME_CELERA	CHROMOSOME_3.1	CHROMOSOME_3.4	FISH_BAND	START_POS_CELERA	STOP_POS_CELERA	STRAND_CELERA	START_POS_3.1	STOP_POS_3.1	STRAND_3.1	START_POS_3.4	STOP_POS_3.4	STRAND_3.4	CURATED_REF_RGD_ID	CURATED_REF_PUBMED_ID	UNCURATED_PUBMED_ID	NCBI_GENE_ID	UNIPROT_ID	GENE_REFSEQ_STATUS	GENBANK_NUCLEOTIDE	TIGR_ID	GENBANK_PROTEIN	UNIGENE_ID	SSLP_RGD_ID	SSLP_SYMBOL	OLD_SYMBOL	OLD_NAME	QTL_RGD_ID	QTL_SYMBOL	NOMENCLATURE_STATUS	SPLICE_RGD_ID	SPLICE_SYMBOL	GENE_TYPE	ENSEMBL_ID	GENE_REFSEQ_STATUS	CHROMOSOME_5.0	START_POS_5.0	STOP_POS_5.0	STRAND_5.0	CHROMOSOME_6.0	START_POS_6.0	STOP_POS_6.0	STRAND_6.0
+1594427	2331ex4-5	class I gene fragment 2331		20		20	p12	150959	151483	-				2869836	2870560	-			15060004	415058		INFERRED	AABR07044364;AAHX01099425;BX883048;NG_004595				5029743;5046034	BI284484;RH131520					PROVISIONAL			pseudo		INFERRED	20	5330480	5331004	-	20	3232314	3232838	-
+1594428	2310ex4-5	class I gene fragment 2310		20		20	p12	171896	172245	-				2890989	2891538	-			15060004	415055		INFERRED	AABR07044364;AAHX01099426;BX883048;NG_004594				5046076	RH131544					PROVISIONAL			pseudo		INFERRED	20	5351633	5351982	-	20	3253467	3253816	-
