@@ -1157,7 +1157,7 @@ IXR
 ##################################################################
 
 sub add_dependent_xref_maponly {
-  my ( $self, $dependent_id, $dependent_source_id, $master_id, $master_source_id, $dbi ) = @_;
+  my ( $self, $dependent_id, $dependent_source_id, $master_id, $master_source_id, $dbi, $update_info_type ) = @_;
 
   $dbi //= $self->dbi;
 
@@ -1181,6 +1181,11 @@ ADX
   }
 
   $add_dependent_xref_sth->finish();
+
+  if ( $update_info_type ) {
+    $self->_update_xref_info_type( $dependent_id, 'DEPENDENT', $dbi );
+  }
+
   return;
 }
 
