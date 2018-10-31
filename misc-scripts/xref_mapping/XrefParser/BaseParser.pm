@@ -45,16 +45,21 @@ my $verbose;
 sub new
 {
   my ($proto, $database, $is_verbose) = @_;
-
-  if((!defined $database)){# or (!$database->isa(XrefPArserDatabase)))
-    croak 'No database specfied';
+  my $dbh;
+  if(!defined $database){
+    croak 'No database specified';
+  } elsif ( $database->isa('XrefParser::Database') ) {
+    $dbh = $database->dbi;
+  } elsif ( $database->isa('DBI::db') ) {
+    $dbh = $database;
+  } else {
+    croak sprintf 'I do not recognise your %s class. It must be XrefParser::Database or a DBI $dbh instance'."\n",ref $database;
   }
   $verbose = $is_verbose;
-  my $dbi = $database->dbi;
 
   my $class = ref $proto || $proto;
   my $self =  bless {}, $class;
-  $self->dbi($dbi);
+  $self->dbi($dbh);
   return $self;
 }
 

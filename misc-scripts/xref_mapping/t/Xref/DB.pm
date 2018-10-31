@@ -5,6 +5,7 @@ use Config::General;
 use Carp;
 use File::Temp qw/tempdir/;
 use Xref::Schema;
+use DBI;
 
 has schema => (
   isa => 'Xref::Schema',
@@ -27,23 +28,30 @@ has config => (
 
 sub _init_db {
   my $self = shift;
+  $self->_validate_config($self->config);
   my %conf = %{ $self->config };
-  $self->_validate_config(\%conf);
   my %opts;
   $opts{mysql_enable_utf8} = 1 if ($conf{driver} eq 'mysql');
+  $opts{mysql_auto_reconnect} = 1 if ($conf{driver} eq 'mysql');
   $opts{sqlite_unicode} = 1 if($conf{driver} eq 'SQLite');
   my $dsn; 
   if ($conf{driver} eq 'SQLite') { 
     $dsn = sprintf("dbi:%s:database=%s",$conf{driver},$conf{file}); 
   } else {
-    $dsn = sprintf("dbi:%s:database=%s;host=%s;port=%s",$conf{driver},$conf{db},$conf{host},$conf{port}); 
+    $dsn = sprintf("dbi:%s:database=%s;host=%s;port=%s",$conf{driver},$conf{db},$conf{host},$conf{port});
   }
-  print STDERR 'Connecting: '.$dsn."\n";
-
-  my $schema = Xref::Schema->connect($dsn, $conf{user},$conf{pass}, \%opts);
+  
   my %deploy_opts = ();
-  $deploy_opts{add_drop_table} = 1 if $conf{driver} eq 'mysql';
-  $schema->deploy(%deploy_opts);
+  # Example deploy option $deploy_opts{add_drop_table} = 1;
+  print STDERR 'Connecting: '.$dsn."\n";
+  my $schema = Xref::Schema->connect($dsn, $conf{user},$conf{pass}, \%opts);
+  
+  if ($conf{create} == 1 && $conf{driver} eq 'mysql') {
+    my $dbh = DBI->connect(sprintf("DBI:%s:database=;host=%s;port=%s",$conf{driver},$conf{host},$conf{port}),$conf{user},$conf{pass}, \%opts);
+    $dbh->do('CREATE DATABASE '.$conf{db}.';');
+    $dbh->disconnect;
+  }
+  $schema->deploy(\%deploy_opts) if $conf{create} == 1;
 
   return $schema;
 }
