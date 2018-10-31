@@ -143,7 +143,7 @@ sub run {
                        desc       => $long_desc,
                        species_id => $species_id,
                        dbi        => $dbi,
-                       info_type  => "DEPENDENT",
+                       info_type  => 'UNMAPPED',
                      };
 
     if ( exists $TYPE_SINGLE_SOURCES{$type} ) {
