@@ -1515,6 +1515,23 @@ sub get_meta_value {
 }
 
 
+######################################
+# Update info_type of an existing xref
+######################################
+sub _update_xref_info_type {
+  my ($self, $xref_id, $info_type, $dbi) = @_;
+
+  $dbi //= $self->dbi;
+
+  my $sth =  $dbi->prepare('UPDATE xref SET info_type=? where xref_id=?');
+  if ( ! $sth->execute( $info_type, $xref_id ) ) {
+    croak $dbi->errstr() . "\n $xref_id\n $info_type\n\n";
+  }
+
+  $sth->finish();
+  return;
+}
+
 
 1;
 
