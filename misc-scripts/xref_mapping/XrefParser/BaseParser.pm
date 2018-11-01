@@ -826,22 +826,46 @@ sub get_taxonomy_from_species_id{
 }
 
 
-################################################
-# xref_id for a given stable id and linkage_xref
-# Only used in GOParser at the moment
-################################################
+#################################################
+# xref_ids for a given stable id and linkage_xref
+#################################################
 sub get_direct_xref{
  my ($self,$stable_id,$type,$link, $dbi) = @_;
  $dbi = $self->dbi unless defined $dbi;
 
  $type = lc $type;
 
- my $sql = "select general_xref_id from ${type}_direct_xref d where ensembl_stable_id = ?  and linkage_xref= ?";
+ my $sql = "select general_xref_id from ${type}_direct_xref d where ensembl_stable_id = ? and linkage_xref ";
+ my @sql_params = ( $stable_id );
+ if ( defined $link ) {
+   $sql .= '= ?';
+   push @sql_params, $link;
+ }
+ else {
+   $sql .= 'is null';
+ }
  my  $direct_sth = $dbi->prepare($sql);
 
- $direct_sth->execute( $stable_id, $link ) or croak( $dbi->errstr() );
- if(my @row = $direct_sth->fetchrow_array()) {
-   return $row[0];
+ $direct_sth->execute( @sql_params ) || croak( $dbi->errstr() );
+ if ( wantarray () ) {
+   # Generic behaviour
+
+   my @results;
+
+   my $all_rows = $direct_sth->fetchall_arrayref();
+   foreach my $row_ref ( @{ $all_rows } ) {
+     push @results, $row_ref->[0];
+   }
+
+   return @results;
+ }
+ else {
+   # Backwards-compatible behaviour. FIXME: can we get rid of it?
+   # There seem to be no parsers present relying on the old behaviour
+   # any more
+   if ( my @row = $direct_sth->fetchrow_array() ) {
+     return $row[0];
+   }
  }
  $direct_sth->finish();
  return;
@@ -1066,7 +1090,7 @@ AXX
   #########################
   # Now add the direct info
   #########################
-  $self->add_direct_xref($direct_id, $stable_id, $type, '', $dbi);
+  $self->add_direct_xref($direct_id, $stable_id, $type, $linkage, $dbi);
   return;
 }
 
@@ -1077,9 +1101,23 @@ AXX
 # Note that a corresponding method for dependent xrefs is called add_dependent_xref_maponly()
 ##################################################################
 sub add_direct_xref {
-  my ($self, $general_xref_id, $ensembl_stable_id, $ensembl_type, $linkage_type, $dbi) = @_;
+  my ($self, $general_xref_id, $ensembl_stable_id, $ensembl_type, $linkage_type, $dbi, $update_info_type) = @_;
 
   $dbi = $self->dbi unless defined $dbi;
+
+  # Check if such a mapping exists yet. Make sure get_direct_xref() is
+  # invoked in list context, otherwise it will fall back to legacy
+  # behaviour of returning a single xref_id even when multiple ones
+  # match.
+  # Note: get_direct_xref() does not currently cache its output,
+  # consider changing this should performance become an issue
+  my @existing_xref_ids = $self->get_direct_xref($ensembl_stable_id,
+                                                 $ensembl_type,
+                                                 $linkage_type,
+                                                 $dbi);
+  if ( scalar grep { $_ == $general_xref_id } @existing_xref_ids ) {
+    return;
+  }
 
   $ensembl_type = lc($ensembl_type);
   my $sql = "INSERT INTO " . $ensembl_type . "_direct_xref VALUES (?,?,?)";
@@ -1087,6 +1125,11 @@ sub add_direct_xref {
 
   $add_direct_xref_sth->execute($general_xref_id, $ensembl_stable_id, $linkage_type);
   $add_direct_xref_sth->finish();
+
+  if ( $update_info_type ) {
+    $self->_update_xref_info_type( $general_xref_id, 'DIRECT', $dbi );
+  }
+
   return;
 }
 
