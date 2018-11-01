@@ -123,10 +123,6 @@ sub create_xrefs {
 
   my %dependent_sources = $self->get_xref_sources($dbi);
 
-  if(defined($dependent_sources{'MGI'})){
-    $dependent_sources{'MGI'} = $self->get_source_id_for_source_name("MGI","uniprot", $dbi);
-  }
-
     my (%genemap) =
       %{ $self->get_valid_codes( "mim_gene", $species_id, $dbi ) };
     my (%morbidmap) =
@@ -144,45 +140,6 @@ sub create_xrefs {
   push @{$species2tax{$species_id}}, $species_id;
   my @tax_ids = @{$species2tax{$species_id}};
   my %taxonomy2species_id = map{ $_=>$species_id } @tax_ids;
-
-
-#
-# MGI data needed---------------------------------------------------------
-#
-  my %mgi_acc_to_desc;
-  my %mgi_acc_to_label;
-  my %mgi_label_to_desc;
-  my %mgi_label_to_acc;
-
-  my $sth = $dbi->prepare("SELECT x.accession, x.label, x.description from xref x, source s where x.source_id = s.source_id and s.name like 'MGI' and s.priority_description like 'descriptions'");
-  
-  $sth->execute() or croak( $dbi->errstr() );
-  while ( my @row = $sth->fetchrow_array() ) {
-    $mgi_acc_to_desc{$row[0]}   = $row[2];
-    $mgi_acc_to_label{$row[0]}  = $row[1];
-    $mgi_label_to_desc{$row[1]} = $row[2];
-    $mgi_label_to_acc{$row[1]}  = $row[0];
-  }
-  $sth->finish;
-
-
-  #
-  # Get the MGI synonyms
-  #
-
-  $sth = $dbi->prepare("SELECT sy.synonym, x.accession, x.description from xref x, source s, synonym sy where sy.xref_id = x.xref_id and x.source_id = s.source_id and s.name like 'MGI' and s.priority_description like 'descriptions'");
-  
-  $sth->execute() or croak( $dbi->errstr() );
-  while ( my @row = $sth->fetchrow_array() ) {
-    $mgi_label_to_desc{$row[0]} = $row[2];
-    $mgi_label_to_acc{$row[0]}  = $row[1];
-  }
-  $sth->finish;
-
-  #
-  # end MGI data needed -------------------------------------------------
-  #
-
 
   my %dependent_xrefs;
   my $ensembl_derived_protein_count = 0;
@@ -451,6 +408,10 @@ sub create_xrefs {
       	if($source =~ "HGNC"){
       	  next;
       	}
+        # We get the mappings directly from the source
+        if($source =~ "MGI"){
+          next;
+        }
         # Nomenclature data is imported directly from the source
         if($source =~ "VGNC"){
           next;
@@ -508,27 +469,6 @@ sub create_xrefs {
 	    $dep{LABEL} = $extra[0];
 	  }
 	  $dep{ACCESSION} = $acc;
-
-	  if($source =~ /MGI/){
-	    $extra[0] =~ s/[.]$//;
-            if($extra[0] =~ /ENSMUSG/ or $extra[0] =~ /OTTMUSG/ ){
-               next;  # no extra info gained and it could now link to different MGI
-            }
-	    $dep{LABEL} = $extra[0];
-	    if(defined($mgi_acc_to_label{$acc})){
-	      $dep{LABEL} = $mgi_acc_to_label{$acc};
-	    }
-	    if(defined($mgi_acc_to_desc{$acc})){
-	      $dep{DESCRIPTION} = $mgi_acc_to_desc{$acc};
-	    }
-	    elsif(defined($mgi_label_to_desc{$dep{LABEL}})){ # old mgi number ?? use label 
-              $dep{DESCRIPTION} = $mgi_label_to_desc{$dep{LABEL}};
-              $dep{ACCESSION}   = $mgi_label_to_acc{$dep{LABEL}};
-	    }
-            else{
-               print "Not found $acc, ".$extra[0]."\n" if($verbose);
-            }
-	  }
 
 #	  $dep{ACCESSION} = $acc;
 	  $dependent_xrefs{ $dep{SOURCE_NAME} }++; # get count of depenent xrefs.
