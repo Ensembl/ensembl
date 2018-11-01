@@ -93,6 +93,15 @@ sub dbh {
   return $self->schema->storage->dbh;
 }
 
+# Shortcut for creating things on the fly
+sub create_db_row {
+  my ($self,$model, $params) = @_;
+  my $source = $self->schema->resultset($model)->create(
+    $params
+  );
+  return $source;
+}
+
 __PACKAGE__->meta->make_immutable;
 
 1;
