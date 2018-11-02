@@ -46,7 +46,7 @@ sub run {
   my $file = @{$files}[0];
   my $dir = dirname($file);
 
-  my (%swiss) = %{$self->get_valid_codes("uniprot/",$species_id, $dbi)};
+  my (%swiss) = %{$self->get_valid_codes("uniprot/swissprot",$species_id, $dbi)};
   my (%refseq) = %{$self->get_valid_codes("refseq",$species_id, $dbi)};
 
   my $swissprot_io =
@@ -75,18 +75,18 @@ sub run {
   my $sql = "insert ignore into synonym (xref_id, synonym) values (?, ?)";
   my $add_syn_sth = $dbi->prepare($sql);    
 
-  #get the source ids for HGNC refseq, entrezgene and unitprot
+  #get the source ids for ZFIN refseq, entrezgene and unitprot
   $sql = 'select source_id, priority_description from source where name like "ZFIN_ID"';
   my $sth = $dbi->prepare($sql);
 
   $sth->execute();
 
 
-  my ($hgnc_source_id, $desc);
-  $sth->bind_columns(\$hgnc_source_id, \$desc);
+  my ($zfin_source_id, $desc);
+  $sth->bind_columns(\$zfin_source_id, \$desc);
   my @arr;
   while($sth->fetch()){
-    push @arr, $hgnc_source_id;
+    push @arr, $zfin_source_id;
   }
   $sth->finish;
 
@@ -94,11 +94,11 @@ sub run {
   $sth = $dbi->prepare($sql);
   $sth->execute();
   my ($acc, $lab, $ver);
-  my $hgnc_loaded_count = 0;
+  my $zfin_loaded_count = 0;
   $sth->bind_columns(\$acc, \$lab, \$ver, \$desc);
   while (my @row = $sth->fetchrow_array()) {
     $description{$acc} = $desc if(defined($desc));
-    $hgnc_loaded_count++;
+    $zfin_loaded_count++;
   }
   $sth->finish;
 
@@ -112,7 +112,7 @@ sub run {
 #ZDB-GENE-000125-4       SO:0000704      dlc     B3DFM3
 
   while ( my $swissprot_line = $swissprot_csv->getline_hr( $swissprot_io ) ) {
-    if(defined($swiss{$swissprot_line->{ 'acc '}})){
+    if(defined($swiss{$swissprot_line->{ 'acc' }})){
       foreach my $xref_id (@{$swiss{$swissprot_line->{ 'acc' }}}){
 	$self->add_dependent_xref({ master_xref_id => $xref_id,
 			      acc            => $swissprot_line->{ 'zfin' },
@@ -139,7 +139,7 @@ sub run {
   }
 
   my $refseq_csv = Text::CSV->new({
-      sep_char       => '\t',
+      sep_char       => "\t",
       empty_is_undef => 1,
       strict         => 1,
   }) or croak "could not use refseq file $file: " . Text::CSV->error_diag();
