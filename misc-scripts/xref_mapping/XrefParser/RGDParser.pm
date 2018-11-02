@@ -15,6 +15,15 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 
+=head1 DESCRIPTION
+
+Designed to parse the Rat Genome Database download file, historically hosted at
+ftp://ftp.rgd.mcw.edu/pub/data_release/GENES_RAT.txt . It comprises 40+ columns in a 
+tab-separated format
+
+It contains RGD IDs (which are numeric), and associates them either with Ensembl genes or
+RefSeq records (mainly transcripts).
+
 =cut
 
 package XrefParser::RGDParser;
@@ -92,7 +101,7 @@ sub run {
     my @nucs;
     @nucs = split(/\;/,$cols->{GENBANK_NUCLEOTIDE}) if defined $cols->{GENBANK_NUCLEOTIDE};
     my $done = 0;
-    # @nucs are sorted in the file in alphabetical order. Filter them to down
+    # @nucs are sorted in the file in alphabetical order. Filter them down
     # to a higher quality subset, then add dependent Xrefs where possible
     foreach my $nuc ($self->sort_refseq_accessions(@nucs)){
       if(!$done && exists $preloaded_refseq{$nuc}){
@@ -177,6 +186,7 @@ sub sort_refseq_accessions {
 }
 
 
+# Process the synonym column into potentially many items, add them to the synonym table
 sub add_synonyms {
   my ($self,$synonym_string,$xref_id,$dbi) = @_;
   my $syn_count = 0;
