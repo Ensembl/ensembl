@@ -1294,7 +1294,8 @@ sub add_synonym{
   my ($self, $xref_id, $syn, $dbi) = @_;
 
   $dbi = $self->dbi unless defined $dbi;
-  my $add_synonym_sth =  $dbi->prepare('INSERT IGNORE INTO synonym VALUES(?,?)');
+  my $add_synonym_sth = $dbi->prepare_cached('INSERT IGNORE INTO synonym VALUES(?,?)');
+  
   $add_synonym_sth->execute( $xref_id, $syn ) 
     or croak( $dbi->errstr()."\n $xref_id\n $syn\n\n" );
 
