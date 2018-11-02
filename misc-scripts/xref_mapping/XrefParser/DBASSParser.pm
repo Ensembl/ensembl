@@ -93,6 +93,8 @@ sub run {
     # not a valid Ensembl stable ID.
     if ( $ensembl_id ) {
 
+      # DBASS files list synonyms in two ways: either "FOO (BAR)" (with or
+      # without space) or "FOO/BAR". Both forms are relevant to us.
       my ( $first_gene_name, $second_gene_name );
       if ( ( $dbass_gene_name =~ m{
                                     (.*)
@@ -101,7 +103,7 @@ sub run {
                                   }msx ) ||
            ( $dbass_gene_name =~ m{
                                     (.*)
-                                    \s?  # typically there IS a space before the ( here
+                                    \s?  # there are entries both with and without ws
                                     [(] (.*) [)]
                                   }msx ) ) {
         $first_gene_name  = $1;
