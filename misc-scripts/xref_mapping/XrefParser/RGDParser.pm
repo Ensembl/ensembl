@@ -31,8 +31,6 @@ package XrefParser::RGDParser;
 use strict;
 use warnings;
 use Carp;
-use POSIX qw(strftime);
-use File::Basename;
 use Text::CSV;
 
 use parent qw( XrefParser::BaseParser );
