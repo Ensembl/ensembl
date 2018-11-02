@@ -185,25 +185,15 @@ sub sort_refseq_accessions {
   return @accessions;
 }
 
-
 # Process the synonym column into potentially many items, add them to the synonym table
 sub add_synonyms {
   my ($self,$synonym_string,$xref_id,$dbi) = @_;
   my $syn_count = 0;
   return $syn_count if (!defined $synonym_string || !defined $xref_id || !defined $dbi);
-  my $add_syn_sth;
 
-  if (! $self->{_syn_dbh_cache}) {
-    my $sql = "insert ignore into synonym (xref_id, synonym) values (?, ?)";
-    $add_syn_sth = $dbi->prepare($sql);
-    $self->{_syn_dbh_cache} = $add_syn_sth;
-  }
-  $add_syn_sth = $self->{_syn_dbh_cache};
-
-  my @syns;
-  @syns = split(/\;/,$synonym_string);
+  my @syns = split(/\;/,$synonym_string);
   foreach my $syn(@syns){
-    $add_syn_sth->execute($xref_id, $syn);
+    $self->add_synonym($xref_id,$syn,$dbi);
     $syn_count++;
   }
   return $syn_count;
