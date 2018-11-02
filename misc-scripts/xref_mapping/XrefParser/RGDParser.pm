@@ -75,7 +75,7 @@ sub run {
   # strict is turned off to prevent failure on a blank line at the end
 
   my $line = '#';
-  until (substr($line,0,1) ne '#') {
+  while (substr($line,0,1) eq '#') {
     $line = $rgd_io->getline;
   }
   $csv->parse($line);
