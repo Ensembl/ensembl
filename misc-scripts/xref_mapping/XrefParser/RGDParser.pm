@@ -48,7 +48,7 @@ sub run {
   if((!defined $source_id) or (!defined $species_id) or (!defined $files) ){
     confess "Need to pass source_id, species_id and files as pairs";
   }
-  $verbose |=0;
+  $verbose //= 0;
 
   my $source_sql = "select source_id from source where name = 'RGD' and priority_description = 'direct_xref'";
   my $sth = $dbi->prepare($source_sql);
