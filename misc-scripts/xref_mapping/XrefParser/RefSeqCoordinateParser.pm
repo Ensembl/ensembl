@@ -73,7 +73,9 @@ sub run_script {
   ) );
 
   my $source_ids; 
-  map { $source_ids->{$_} = $self->get_source_id_for_source_name( $_, 'otherfeatures', $dbi ) } @source_names;
+  for my $source_name (@source_names) {
+    $source_ids->{$source_name} = $self->get_source_id_for_source_name( $source_name, 'otherfeatures', $dbi )
+  }
 
   if($verbose){
     for my $source (@source_names) {
