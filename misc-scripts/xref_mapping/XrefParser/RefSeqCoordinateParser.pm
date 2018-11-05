@@ -141,9 +141,8 @@ sub run_script {
     croak "No otherfeatures database found for $species_name\n";
   }
 
-  # Add link to EntrezGene IDs where available
+  # Cache EntrezGene IDs and source ID where available
   my $entrez_ids = $self->get_valid_codes("EntrezGene", $species_id, $dbi);
-
   my $entrez_source_id = $self->get_source_id_for_source_name('EntrezGene', undef, $dbi);
 
   my $sa = $core_dba->get_SliceAdaptor();
