@@ -44,6 +44,16 @@ sub run_script {
   my $dbi          = $ref_arg->{dbi} // $self->dbi;
   my $verbose      = $ref_arg->{verbose} // 0;
 
+  # initial param validation step
+  if((!defined $source_id) or (!defined $species_id) or (!defined $file) ){
+    croak "Need to pass source_id, species_id and file as pairs";
+  }
+
+  # project or db param validation
+  if ( $file_params->{project} ne ('ensembl' || 'ensemblgenomes') && !defined $db ) {
+    croak "Missing or unsupported project value (supported values: ensembl, ensemblgenomes), or missing db value.";
+  }
+
   # set the list of source names
   my @source_names = ( qw(
     RefSeq_peptide
@@ -56,11 +66,6 @@ sub run_script {
 
   my $source_ids; 
   map { $source_ids->{$_} = $self->get_source_id_for_source_name( $_, 'otherfeatures', $dbi ) } @source_names;
-
-  # initial param validation step
-  if((!defined $source_id) or (!defined $species_id) or (!defined $file) ){
-    croak "Need to pass source_id, species_id and file as pairs";
-  }
 
   if($verbose){
     for my $source (@source_names) {
@@ -84,11 +89,6 @@ sub run_script {
   foreach my $pair ( @param_pairs ) {
     my ($key, $value) = split( /=>/mxs, $pair );
     $file_params->{$key} = $value;
-  }
-
-  # project or db param validation
-  if ( $file_params->{project} ne ('ensembl' || 'ensemblgenomes') && !defined $db ) {
-    croak "Missing or unsupported project value (supported values: ensembl, ensemblgenomes), or missing db value.";
   }
 
   # get the species name
