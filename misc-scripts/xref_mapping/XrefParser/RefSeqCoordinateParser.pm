@@ -64,23 +64,23 @@ sub run_script {
   $file_params->{ofport} //= '3306';
 
   # set the list of source names
-  my @source_names = ( qw(
-    RefSeq_peptide
-    RefSeq_mRNA
-    RefSeq_ncRNA
-    RefSeq_peptide_predicted
-    RefSeq_mRNA_predicted
-    RefSeq_ncRNA_predicted
-  ) );
+  my $source_names = {
+    NM => 'RefSeq_mRNA',
+    NR => 'RefSeq_ncRNA',
+    XM => 'RefSeq_mRNA_predicted',
+    XR => 'RefSeq_ncRNA_predicted',
+    NP => 'RefSeq_peptide',
+    XP => 'RefSeq_peptide_predicted',
+  };
 
   my $source_ids; 
-  for my $source_name (@source_names) {
-    $source_ids->{$source_name} = $self->get_source_id_for_source_name( $source_name, 'otherfeatures', $dbi )
+  while (my ($source_prefix, $source_name) = each %{$source_names}) {
+    $source_ids->{$source_prefix} = $self->get_source_id_for_source_name( $source_name, 'otherfeatures', $dbi )
   }
 
-  if($verbose){
-    for my $source (@source_names) {
-      print "$source source ID = $source_ids->{$source}\n";
+  if ($verbose) {
+    while (my ($source_prefix, $source_name) = each %{$source_names}) {
+      print "$source_name source ID = $source_ids->{$source_prefix}\n";
     }
   }
 
@@ -262,7 +262,7 @@ sub run_script {
         if ($best_id) {
           my ($acc, $version) = split(/\./xms, $id);
 
-          my $source = $self->source_id_for_acc($acc, $source_ids) // next;
+          my $source = $source_ids->{substr $acc, 0, 2} // next;
 
           my $xref_id = $self->add_xref({
             acc        => $acc,
@@ -306,7 +306,7 @@ sub run_script {
               }
               my ($tl_acc, $tl_version) = split(/\./xms, $tl_id);
 
-              my $tl_source = $self->source_id_for_acc($tl_acc, $source_ids) // next;
+              my $tl_source = $source_ids->{substr $tl_acc, 0, 2} // next;
 
               my $tl_xref_id = $self->add_xref({
                 acc        => $tl_acc,
@@ -407,26 +407,6 @@ sub compute_best_scores {
   }
 
   return ($best_id, $best_score, $best_tl_score);
-}
-
-# gets the source id for a given refseq acc.
-# requires as args the refseq acc and a hash mapping source names to ids
-# Needs to be moved elsewhere because other parsers benefit from using it
-sub source_id_for_acc {
-  my ($self, $acc, $source_ids) = @_;
-
-  my $source = {
-    NM => $source_ids->{'RefSeq_mRNA'},
-    NR => $source_ids->{'RefSeq_ncRNA'},
-    XM => $source_ids->{'RefSeq_mRNA_predicted'},
-    XR => $source_ids->{'RefSeq_ncRNA_predicted'},
-    NP => $source_ids->{'RefSeq_peptide'},
-    XP => $source_ids->{'RefSeq_peptide_predicted'}
-  };
-
-  my $prefix = substr $acc, 0, 2;
-
-  return $source->{$prefix};
 }
 
 1;
