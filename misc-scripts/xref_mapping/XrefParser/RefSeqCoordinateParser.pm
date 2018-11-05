@@ -58,8 +58,8 @@ sub run_script {
   }
 
   # set default values
-  $file_params->{user} //= 'ensro';
-  $file_params->{port} //= '3306';
+  $file_params->{user}   //= 'ensro';
+  $file_params->{port}   //= '3306';
   $file_params->{ofuser} //= 'ensro';
   $file_params->{ofport} //= '3306';
 
@@ -192,16 +192,16 @@ sub run_script {
         my $rr_tl_exons_of = Bio::EnsEMBL::Mapper::RangeRegistry->new();
 
         # register $exons_of on $rr_exons_of
-        $self->compute_exons( {
-          exons => $exons_of,
+        $self->compute_exons({
+          exons              => $exons_of,
           check_and_register => $rr_exons_of
-        } );
+        });
 
         # register $tl_exons_of on $rr_tl_exons_of
-        $self->compute_exons( {
-          exons => $tl_exons_of,
+        $self->compute_exons({
+          exons              => $tl_exons_of,
           check_and_register => $rr_tl_exons_of
-        } );
+        });
 
         # Fetch slice in core database which overlaps refseq transcript
         my $chromosome = $sa->fetch_by_region('toplevel', $chr_name, $transcript_of->seq_region_start, $transcript_of->seq_region_end);
@@ -216,30 +216,30 @@ sub run_script {
           my $rr_tl_exons = Bio::EnsEMBL::Mapper::RangeRegistry->new();
 
           # register $exons on $rr_exons, overlap with $rr_exons_of
-          my $exon_match = $self->compute_exons( {
-            exons => $exons,
+          my $exon_match = $self->compute_exons({
+            exons              => $exons,
             check_and_register => $rr_exons,
-            overlap => $rr_exons_of
-          } );
+            overlap            => $rr_exons_of
+          });
 
           # register $tl_exons on $rr_tl_exons, overlap with $rr_tl_exons_of
-          my $tl_exon_match = $self->compute_exons( {
-            exons => $tl_exons,
+          my $tl_exon_match = $self->compute_exons({
+            exons              => $tl_exons,
             check_and_register => $rr_tl_exons,
-            overlap => $rr_tl_exons_of
-          } );
+            overlap            => $rr_tl_exons_of
+          });
 
           # $exons_of overlap with $rr_exons
-          my $exon_match_of = $self->compute_exons( {
-            exons => $exons_of,
+          my $exon_match_of = $self->compute_exons({
+            exons   => $exons_of,
             overlap => $rr_exons
-          } );
+          });
 
           # $tl_exons_of overlap with $rr_tl_exons
-          my $tl_exon_match_of = $self->compute_exons( {
-            exons => $tl_exons_of,
+          my $tl_exon_match_of = $self->compute_exons({
+            exons   => $tl_exons_of,
             overlap => $rr_tl_exons
-          } );
+          });
 
           # Comparing exon matching with number of exons to give a score
           my $score = ( ($exon_match_of + $exon_match)) / (scalar(@{$exons_of}) + scalar(@{$exons}) );
