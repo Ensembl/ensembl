@@ -135,9 +135,9 @@ sub run_script {
     $core_dba = $db->dnadb();
   }
 
-  # Not all species have an otherfeatures database, skip if not found
+  # Not all species have an otherfeatures database, error if not found
   if (!$otherf_dba) {
-    croak "No otherfeatures database for $species_name, skipping import for refseq_import data\n";
+    croak "No otherfeatures database found for $species_name\n";
   }
 
   # Add link to EntrezGene IDs where available
