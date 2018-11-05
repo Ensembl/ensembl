@@ -390,16 +390,14 @@ sub compute_best_scores {
     my $score = $transcript_result->{$tid};
     my $tl_score = $tl_transcript_result->{$tid};
     if ($score > $TRANSCRIPT_SCORE_THRESHOLD || $tl_score > $TL_TRANSCRIPT_SCORE_THRESHOLD) {
-      if ($tl_score >= $best_tl_score) {
-        if ($tl_score > $best_tl_score) {
+      if ($tl_score > $best_tl_score) {
+        $best_id = $tid;
+        $best_score = $score;
+        $best_tl_score = $tl_score;
+      } elsif ($tl_score == $best_tl_score) {
+        if ($score > $best_score) {
           $best_id = $tid;
           $best_score = $score;
-          $best_tl_score = $tl_score;
-        } elsif ($tl_score == $best_tl_score) {
-          if ($score > $best_score) {
-            $best_id = $tid;
-            $best_score = $score;
-          }
         }
       } elsif ($score >= $best_score) {
         $best_id = $tid;
