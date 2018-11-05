@@ -424,7 +424,7 @@ sub source_id_for_acc {
     XP => $source_ids->{'RefSeq_peptide_predicted'}
   };
 
-  my ($prefix) = $acc =~ /\A(\w\w)_/xms;
+  my $prefix = substr $acc, 0, 2;
 
   return $source->{$prefix};
 }
