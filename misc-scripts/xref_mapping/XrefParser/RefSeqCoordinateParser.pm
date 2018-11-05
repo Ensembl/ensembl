@@ -157,11 +157,12 @@ sub run_script {
     croak "No data found for RefSeq_import\n";
   }
 
-  # start main loop
+  # Iterate over chromosomes in otherfeatures database
   foreach my $chromosome_of (@{$chromosomes_of}) {
     my $chr_name = $chromosome_of->seq_region_name();
     my $genes_of = $chromosome_of->get_all_Genes('refseq_import', undef, 1);
 
+    # For each gene in that chromosome in otherfeatures database
     foreach my $gene_of (@{$genes_of}) {
       my $transcripts_of = $gene_of->get_all_Transcripts();
 
