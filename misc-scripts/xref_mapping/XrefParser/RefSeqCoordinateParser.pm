@@ -49,6 +49,14 @@ sub run_script {
     croak "Need to pass source_id, species_id and file as pairs";
   }
 
+  my $file_params = $self->parse_file_string($file);
+
+  # set default values
+  $file_params->{user} //= 'ensro';
+  $file_params->{port} //= '3306';
+  $file_params->{ofuser} //= 'ensro';
+  $file_params->{ofport} //= '3306';
+
   # project or db param validation
   if ( $file_params->{project} ne ('ensembl' || 'ensemblgenomes') && !defined $db ) {
     croak "Missing or unsupported project value (supported values: ensembl, ensemblgenomes), or missing db value.";
@@ -71,24 +79,6 @@ sub run_script {
     for my $source (@source_names) {
       print "$source source ID = $source_ids->{$source}\n";
     }
-  }
-
-  $file =~ s/\A\w+://xms;
-
-  my @param_pairs = split( /,/xms, $file );
-
-  # set default values
-  my $file_params = {
-    user   => 'ensro',
-    port   => 3306,
-    ofuser => 'ensro',
-    ofport => 3306,
-  };
-
-  # set provided values
-  foreach my $pair ( @param_pairs ) {
-    my ($key, $value) = split( /=>/mxs, $pair );
-    $file_params->{$key} = $value;
   }
 
   # get the species name
@@ -337,6 +327,28 @@ sub run_script {
 }
 
 
+
+# parses the input string $file into an hash
+# string $file is in the format as the example:
+# script:project=>ensembl,host=>ens-staging1,dbname=>homo_sapiens_core_70_37,ofhost=>ens-staging1,...
+# string until : is ignored, hash is built with keys=>values provided
+sub parse_file_string {
+  my ($self, $file_string) = @_;
+
+  $file_string =~ s/\A\w+://xms;
+
+  my @param_pairs = split( /,/xms, $file_string );
+
+  my $params;
+
+  # set provided values
+  foreach my $pair ( @param_pairs ) {
+    my ($key, $value) = split( /=>/mxs, $pair );
+    $params->{$key} = $value;
+  }
+
+  return $params;
+}
 
 # params hash can provide 3 keyed params: exons, check_and_register and overlap
 # exons is the array ref of the exons to process
