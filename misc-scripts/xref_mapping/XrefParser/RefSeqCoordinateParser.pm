@@ -51,16 +51,16 @@ sub run_script {
 
   my $file_params = $self->parse_file_string($file);
 
+  # project or db param validation
+  if ( $file_params->{project} ne ('ensembl' || 'ensemblgenomes') && !defined $db ) {
+    croak "Missing or unsupported project value (supported values: ensembl, ensemblgenomes), or missing db value.";
+  }
+
   # set default values
   $file_params->{user} //= 'ensro';
   $file_params->{port} //= '3306';
   $file_params->{ofuser} //= 'ensro';
   $file_params->{ofport} //= '3306';
-
-  # project or db param validation
-  if ( $file_params->{project} ne ('ensembl' || 'ensemblgenomes') && !defined $db ) {
-    croak "Missing or unsupported project value (supported values: ensembl, ensemblgenomes), or missing db value.";
-  }
 
   # set the list of source names
   my @source_names = ( qw(
