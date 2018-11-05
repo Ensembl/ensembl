@@ -26,7 +26,7 @@ use DBI;
 use Readonly;
 use Bio::EnsEMBL::Registry;
 
-use base qw( XrefParser::BaseParser );
+use parent qw( XrefParser::BaseParser );
 
 # set the score thresholds
 Readonly my $TRANSCRIPT_SCORE_THRESHOLD => 0.75;
