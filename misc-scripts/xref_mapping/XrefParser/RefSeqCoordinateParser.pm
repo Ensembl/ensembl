@@ -152,9 +152,9 @@ sub run_script {
   # Fetch analysis object for refseq
   my $aa_of = $otherf_dba->get_AnalysisAdaptor();
 
-  # Not all species have refseq_import data, skip if not found
+  # Not all species have refseq_import data, exit if not found
   if (!defined $aa_of->fetch_by_logic_name('refseq_import')->logic_name) {
-    croak "No data found for RefSeq_import, skipping import\n";
+    croak "No data found for RefSeq_import\n";
   }
 
   # start main loop
