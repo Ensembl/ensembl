@@ -211,34 +211,34 @@ sub run_script {
         foreach my $transcript(@{$transcripts}) {
           if ($transcript->strand != $transcript_of->strand) { next; }
           my $exons = $transcript->get_all_Exons();
-          my $rr2 = Bio::EnsEMBL::Mapper::RangeRegistry->new();
+          my $rr_exons = Bio::EnsEMBL::Mapper::RangeRegistry->new();
           my $tl_exons = $transcript->get_all_translateable_Exons();
-          my $rr4 = Bio::EnsEMBL::Mapper::RangeRegistry->new();
+          my $rr_tl_exons = Bio::EnsEMBL::Mapper::RangeRegistry->new();
 
-          # register $exons on $rr2, overlap with $rr_exons_of
+          # register $exons on $rr_exons, overlap with $rr_exons_of
           my $exon_match = $self->compute_exons( {
             exons => $exons,
-            check_and_register => $rr2,
+            check_and_register => $rr_exons,
             overlap => $rr_exons_of
           } );
 
-          # register $tl_exons on $rr4, overlap with $rr_tl_exons_of
+          # register $tl_exons on $rr_tl_exons, overlap with $rr_tl_exons_of
           my $tl_exon_match = $self->compute_exons( {
             exons => $tl_exons,
-            check_and_register => $rr4,
+            check_and_register => $rr_tl_exons,
             overlap => $rr_tl_exons_of
           } );
 
-          # $exons_of overlap with $rr2
+          # $exons_of overlap with $rr_exons
           my $exon_match_of = $self->compute_exons( {
             exons => $exons_of,
-            overlap => $rr2
+            overlap => $rr_exons
           } );
 
-          # $tl_exons_of overlap with $rr4
+          # $tl_exons_of overlap with $rr_tl_exons
           my $tl_exon_match_of = $self->compute_exons( {
             exons => $tl_exons_of,
-            overlap => $rr4
+            overlap => $rr_tl_exons
           } );
 
           # Comparing exon matching with number of exons to give a score
@@ -339,13 +339,13 @@ sub parse_file_string {
 
   $file_string =~ s/\A\w+://xms;
 
-  my @param_pairs = split( /,/xms, $file_string );
+  my @param_pairs = split( /,/x, $file_string );
 
   my $params;
 
   # set provided values
   foreach my $pair ( @param_pairs ) {
-    my ($key, $value) = split( /=>/mxs, $pair );
+    my ($key, $value) = split( /=>/x, $pair );
     $params->{$key} = $value;
   }
 
