@@ -28,9 +28,10 @@ use Bio::EnsEMBL::Registry;
 
 use parent qw( XrefParser::BaseParser );
 
-# set the score thresholds
+# Only scores higher than the threshold will be stored for both transcripts and translateable transcripts
 Readonly my $TRANSCRIPT_SCORE_THRESHOLD => 0.75;
 Readonly my $TL_TRANSCRIPT_SCORE_THRESHOLD => 0.75;
+# If Biotypes do not match, score will be multiplied with the penalty
 Readonly my $PENALTY => 0.9;
 
 sub run_script {
