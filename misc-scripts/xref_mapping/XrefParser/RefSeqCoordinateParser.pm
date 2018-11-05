@@ -187,20 +187,20 @@ sub run_script {
         my $tl_transcript_result;
 
         my $exons_of = $transcript_of->get_all_Exons();
-        my $rr1 = Bio::EnsEMBL::Mapper::RangeRegistry->new();
+        my $rr_exons_of = Bio::EnsEMBL::Mapper::RangeRegistry->new();
         my $tl_exons_of = $transcript_of->get_all_translateable_Exons();
-        my $rr3 = Bio::EnsEMBL::Mapper::RangeRegistry->new();
+        my $rr_tl_exons_of = Bio::EnsEMBL::Mapper::RangeRegistry->new();
 
-        # register $exons_of on $rr1
+        # register $exons_of on $rr_exons_of
         $self->compute_exons( {
           exons => $exons_of,
-          check_and_register => $rr1
+          check_and_register => $rr_exons_of
         } );
 
-        # register $tl_exons_of on $rr3
+        # register $tl_exons_of on $rr_tl_exons_of
         $self->compute_exons( {
           exons => $tl_exons_of,
-          check_and_register => $rr3
+          check_and_register => $rr_tl_exons_of
         } );
 
         # Fetch slice in core database which overlaps refseq transcript
@@ -215,18 +215,18 @@ sub run_script {
           my $tl_exons = $transcript->get_all_translateable_Exons();
           my $rr4 = Bio::EnsEMBL::Mapper::RangeRegistry->new();
 
-          # register $exons on $rr2, overlap with $rr1
+          # register $exons on $rr2, overlap with $rr_exons_of
           my $exon_match = $self->compute_exons( {
             exons => $exons,
             check_and_register => $rr2,
-            overlap => $rr1
+            overlap => $rr_exons_of
           } );
 
-          # register $tl_exons on $rr4, overlap with $rr3
+          # register $tl_exons on $rr4, overlap with $rr_tl_exons_of
           my $tl_exon_match = $self->compute_exons( {
             exons => $tl_exons,
             check_and_register => $rr4,
-            overlap => $rr3
+            overlap => $rr_tl_exons_of
           } );
 
           # $exons_of overlap with $rr2
