@@ -169,17 +169,16 @@ sub run_script {
       # Create a range registry for all the exons of the refseq transcript
       foreach my $transcript_of (sort { $a->start <=> $b->start } @{$transcripts_of}) {
         my $id;
-        # We're moving to RefSeq accessions being stored as xrefs rather than
-        # stable ids. But we also need to maintain backwards compatbility.
-        # If it's the new kind, where there's a display_xref use that,
-        # otherwise fall back to using the stable_id. But also check if we
-        # have neither, then skip the record.
+        # RefSeq accessions are now stored as xrefs rather than
+        # stable ids as it used to be in the past. This means 
+        # priority is given to the display_id, and fall back to stable_id
+        # for backwards compatibility.
         if (defined $transcript_of->display_xref ) {
           $id = $transcript_of->display_xref->display_id;
         } elsif (defined $transcript_of->stable_id) {
           $id = $transcript_of->stable_id;
         }
-        # Skip non conventional accessions
+        # Skip non conventional and missing accessions
         unless ( $id =~ /\A[NXMR]{2}_\d+\.?\d+\z/xms ) {
           next;
         }
