@@ -473,6 +473,20 @@ my $new_gene = $ga->fetch_by_stable_id("ENSG00000171456");
 cmp_ok($new_gene->start(), '==', 30735607, 'Updated gene start');
 cmp_ok($new_gene->end(), '==', 30815178, 'Updated gene end');
 
+# test update_coords method when working on sub Slice
+my $update_slice = $db->get_SliceAdaptor()->fetch_by_region('chromosome', '20', 30730000, 30815178);
+my $update_genes = $update_slice->get_all_Genes();
+cmp_ok(scalar(@$update_genes), '>=', 1, 'Check the region has at least one gene');
+foreach my $gene_to_update (@$update_genes) {
+  if ($gene_to_update->stable_id() eq 'ENSG00000171456') {
+    $ga->update_coords($gene_to_update);
+  }
+}
+
+my $updated_gene = $ga->fetch_by_stable_id("ENSG00000171456");
+cmp_ok($updated_gene->start(), '==', 30735607, 'Updated gene start');
+cmp_ok($updated_gene->end(), '==', 30815178, 'Updated gene end');
+
 #
 # test GeneAdaptor::fetch_all_by_domain
 #
