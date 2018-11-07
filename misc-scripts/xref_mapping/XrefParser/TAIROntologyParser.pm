@@ -102,7 +102,6 @@ use Data::Dumper;
 use File::Basename 'basename';
 use Readonly;
 use List::MoreUtils 'uniq';
-use XML::Simple 'XMLin';
 
 use base qw( XrefParser::BaseParser );
 
