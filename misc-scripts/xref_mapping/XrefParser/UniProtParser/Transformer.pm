@@ -31,6 +31,9 @@ use Readonly;
 use Data::Dumper;
 
 
+# FIXME: this belongs in BaseParser
+Readonly my $ERR_SOURCE_ID_NOT_FOUND => -1;
+
 # FIXME: this should probably be combined with
 # Extractor::%supported_taxon_database_qualifiers to make sure
 # database qualifiers stay in sync
@@ -148,7 +151,11 @@ sub _load_maps {
   my $taxonomy_ids_for_species
     = $baseParserInstance->get_taxonomy_from_species_id( $self->{'species_id'},
                                                          $self->{'dbh'} );
-  # FIXME: check return status (should have at least one entry)
+  # If the map is empty, something is wrong
+  if ( scalar keys %{ $taxonomy_ids_for_species } == 0 ) {
+    croak "Got zero taxonomy_ids for species_id '"
+      . $self->{'species_id'} . q{'};
+  }
   $self->{'maps'}->{'taxonomy_ids_for_species'}
     = $taxonomy_ids_for_species;
 
@@ -172,13 +179,13 @@ sub _load_maps {
         = $baseParserInstance->get_source_id_for_source_name( $source_name,
                                                               $priority,
                                                               $self->{'dbh'} );
-      # FIXME: check return status
+      if ( $pri_ref->{$priority} == $ERR_SOURCE_ID_NOT_FOUND ) {
+        croak "No source ID found for source $source_name, priority $priority";
+      }
     }
   }
   $self->{'maps'}->{'named_source_ids'}
     = $source_id_map;
-
-  # FIXME: either abort on any loading failure or implement lazy loading
 
   return;
 }
