@@ -64,13 +64,16 @@ sub run {
   }
 
   my $extractor = XrefParser::UniProtParser::Extractor->new({
+    'baseParser' => $self,
     'file_names' => $files,
   });
   my $transformer = XrefParser::UniProtParser::Transformer->new({
+    'baseParser' => $self,
     'dbh'        => $dbh,
     'species_id' => $species_id,
   });
   my $loader = XrefParser::UniProtParser::Loader->new({
+    'baseParser' => $self,
     'batch_size' => $loader_batch_size,
     'dbh'        => $dbh,
   });
