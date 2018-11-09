@@ -53,7 +53,6 @@ sub load {
     return;
   }
 
-  # FIXME: pass $count from Transformer
   $self->_add_to_send_buffer( $transformed_data );
 
   if ( $self->{'send_backlog'} >= $self->{'batch_size'} ) {
@@ -80,9 +79,17 @@ sub flush {
 sub _add_to_send_buffer {
   my ( $self, $entry ) = @_;
 
+  # Play it safe and assume that parser-private fields *could* pollute
+  # the output unless removed from it
+  my ( $multiplicity ) = delete $entry->{'_multiplicity'};
+
+  # Transformer should always set this, to 1 or more
+  if ( ( ! defined $multiplicity ) || ( $multiplicity < 1 ) ) {
+    croak 'Missing or incorrect _multiplicity in entry';
+  }
+
   push @{ $self->{'send_buffer'} }, $entry;
-  # FIXME: update the counter CORRECTLY
-  $self->{'send_backlog'}++;
+  $self->{'send_backlog'} += $multiplicity;
 
   return;
 }

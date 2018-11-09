@@ -92,7 +92,8 @@ sub transform {
 
   # Only proceed if at least one taxon code in the entry maps
   # to a valid Ensembl species ID
-  if ( ! $self->_recognised_taxon_ids() ) {
+  my $xref_multiplicity = $self->_recognised_taxon_ids();
+  if ( ! $xref_multiplicity ) {
     return;
   }
 
@@ -116,6 +117,7 @@ sub transform {
        'SPECIES_ID'    => $self->{'species_id'},
        'STATUS'        => 'experimental',     # FIXME: seems at least some TrEMBL entries should be 'predicted' instead
        'SYNONYMS'      => \@synonyms,
+       '_multiplicity' => $xref_multiplicity, # hint for Loader
      };
   # FIXME: still to be defined: DIRECT_XREFS, DEPENDENT_XREFS
   # Remember not to add UniProt Gene Name dependent xrefs for proteins
