@@ -28,7 +28,6 @@ use warnings;
 require 5.014_000;
 
 use Carp;
-use IO::File;
 use List::Util;
 use Readonly;
 use charnames ':full';
@@ -72,11 +71,13 @@ Readonly my %supported_taxon_database_qualifiers
 sub new {
   my ( $proto, $arg_ref ) = @_;
   my $file_names = $arg_ref->{'file_names'};
+  my $baseParserInstance = $arg_ref->{'baseParser'};
 
   my $filename = $file_names->[0];
-  # FIXME: should use baseParserInstance::get_filehandle() instead, as
-  # it is this e.g. won't work on compressed files
-  my $filehandle = IO::File->new($filename, '<') || croak 'fopen failed';
+  my $filehandle = $baseParserInstance->get_filehandle( $filename );
+  if ( !defined $filehandle ) {
+    croak "Failed to acquire a file handle for '${filename}'";
+  }
 
   # Keep the file name for possible debugging purposes, unless we can
   # somehow retrieve it from _io_handle
