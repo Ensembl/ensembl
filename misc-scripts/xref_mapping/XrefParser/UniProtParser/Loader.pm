@@ -26,10 +26,6 @@ use warnings;
 
 use Carp;
 
-# FIXME: for testing
-use Data::Dumper;
-
-
 
 sub new {
   my ( $proto, $arg_ref ) = @_;
@@ -37,6 +33,7 @@ sub new {
   my $self = {
               'batch_size'  => $arg_ref->{'batch_size'} // 1,
               'dbh'         => $arg_ref->{'dbh'},
+              '_baseParser' => $arg_ref->{'baseParser'},
             };
   my $class = ref $proto || $proto;
   bless $self, $class;
@@ -66,14 +63,17 @@ sub load {
 sub flush {
   my ( $self ) = @_;
 
-  # FIXME: call BaseParser::upload_xref_object_graphs($buffer, $dbh)
-  print "SENDING: " . Dumper( $self->{'send_buffer'} );
+  my $bp = $self->{'_baseParser'};
+
+  if ( ! $bp->upload_xref_object_graphs($self->{'send_buffer'},
+                                        $self->{'dbh'}) ) {
+    croak 'Failed to upload xref object graphs. Check for errors on STDOUT)';
+  }
 
   $self->_clear_send_buffer();
 
   return;
 }
-
 
 
 sub _add_to_send_buffer {
@@ -93,6 +93,7 @@ sub _add_to_send_buffer {
 
   return;
 }
+
 
 sub _clear_send_buffer {
   my ( $self ) = @_;
