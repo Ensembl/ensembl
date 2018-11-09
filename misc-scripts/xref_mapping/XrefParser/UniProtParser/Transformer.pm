@@ -77,7 +77,7 @@ sub new {
   my $class = ref $proto || $proto;
   bless $self, $class;
 
-  $self->_load_maps();
+  $self->_load_maps( $arg_ref->{'baseParser'} );
 
   return $self;
 }
@@ -142,35 +142,41 @@ sub get_source_id_map {
 }
 
 
-# FIXME: at present these are ALL mock entries
 sub _load_maps {
-  my ( $self ) = @_;
+  my ( $self, $baseParserInstance ) = @_;
 
-  # FIXME: $self->baseParserInstance->get_taxonomy_from_species_id( $species_id, $dbh );
-  my $mock_taxonomy_ids_for_species
-    = {
-       9606 => 1, ## no critic(ProhibitMagicNumbers)
-     };
+  my $taxonomy_ids_for_species
+    = $baseParserInstance->get_taxonomy_from_species_id( $self->{'species_id'},
+                                                         $self->{'dbh'} );
+  # FIXME: check return status (should have at least one entry)
   $self->{'maps'}->{'taxonomy_ids_for_species'}
-    = $mock_taxonomy_ids_for_species;
+    = $taxonomy_ids_for_species;
 
-  # FIXME: $self->baseParserInstance->get_source_id_for_source_name( $name, $priority, $dbh );
-  my $mock_source_id_map
+  my $source_id_map
     = {
        'Uniprot/SWISSPROT'
        => {
-           'direct'          => 138,
-           'sequence_mapped' => 139,
+           'direct'          => undef,
+           'sequence_mapped' => undef,
          },
        'Uniprot/SPTREMBL'
        => {
-           'direct'            => 134,
-           "protein_evidence_gt_$MAX_TREMBL_EVIDENCE_LEVEL_FOR_STANDARD" => 136,
-           'sequence_mapped'   => 135,
+           'direct'            => undef,
+           "protein_evidence_gt_$MAX_TREMBL_EVIDENCE_LEVEL_FOR_STANDARD" => undef,
+           'sequence_mapped'   => undef,
          },
      };
+  while ( my ( $source_name, $pri_ref ) = each %{ $source_id_map } ) {
+    foreach my $priority ( keys %{ $pri_ref } ) {
+      $pri_ref->{$priority}
+        = $baseParserInstance->get_source_id_for_source_name( $source_name,
+                                                              $priority,
+                                                              $self->{'dbh'} );
+      # FIXME: check return status
+    }
+  }
   $self->{'maps'}->{'named_source_ids'}
-    = $mock_source_id_map;
+    = $source_id_map;
 
   # FIXME: either abort on any loading failure or implement lazy loading
 
