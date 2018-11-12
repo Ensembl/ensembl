@@ -34,6 +34,8 @@ use Data::Dumper;
 # FIXME: this belongs in BaseParser
 Readonly my $ERR_SOURCE_ID_NOT_FOUND => -1;
 
+Readonly my $PROTEIN_ID_SOURCE_NAME => 'protein_id';
+
 # FIXME: this should probably be combined with
 # Extractor::%supported_taxon_database_qualifiers to make sure
 # database qualifiers stay in sync
@@ -45,11 +47,12 @@ Readonly my %taxonomy_ids_from_taxdb_codes
 
 Readonly my %whitelisted_crossreference_sources
   => (
-      'ChEMBL'  => 1,
-      'EMBL'    => 1,
-      'Ensembl' => 1,
-      'MEROPS'  => 1,
-      'PDB'     => 1,
+      'ChEMBL'                => 1,
+      'EMBL'                  => 1,
+      'Ensembl'               => 1,
+      'MEROPS'                => 1,
+      'PDB'                   => 1,
+      $PROTEIN_ID_SOURCE_NAME => 1,
     );
 
 Readonly my $MAX_TREMBL_EVIDENCE_LEVEL_FOR_STANDARD => 2;
@@ -66,6 +69,42 @@ Readonly my %source_selection_criteria_for_status
                             "protein_evidence_gt_$MAX_TREMBL_EVIDENCE_LEVEL_FOR_STANDARD";
                         }, ],
     );
+
+Readonly my %protein_id_extraction_recipe_for_database
+  => (
+      'ChEMBL' => \&_get_protein_id_xref_from_embldb_xref,
+      'EMBL'   => \&_get_protein_id_xref_from_embldb_xref,
+    );
+sub _get_protein_id_xref_from_embldb_xref {
+  my ( $protein_id, $linkage_source_id, $source_id ) = @_;
+
+  # Strip the version number, if any, from the protein ID. At the same
+  # time, filter out entries with no ID - in which case the ID is a
+  # lone hyphen.
+  # FIXME:
+  #  - are versioned primary IDs still a thing? There are no such
+  #    entries in the Swiss-Prot file
+  #  - ditto primary ID being absent
+  my ( $unversioned_protein_id )
+    = ( $protein_id =~ m{
+                          \A
+                          # Allow hyphens if they are not
+                          # the first character
+                          ( [^-.] [^.]+ )
+                      }msx );
+
+  if ( ! defined $unversioned_protein_id ) {
+    return;
+  }
+
+  my $xref_link = {
+                   'ACCESSION'         => $unversioned_protein_id,
+                   'LABEL'             => $protein_id,
+                   'LINKAGE_SOURCE_ID' => $linkage_source_id,
+                   'SOURCE_ID'         => $source_id,
+              };
+  return $xref_link;
+}
 
 
 
@@ -303,11 +342,26 @@ sub _make_links_from_crossreferences {
              'LINKAGE_SOURCE_ID' => $xref_source_id,
              'SOURCE_ID'         => $dependent_sources->{$source},
            };
-
-        # FIXME: secondary dependent_xref for EMBL/ChEMBL (but try
-        # making it generic)
-
         push @dependent_xrefs, $xref_link;
+
+        my $protein_id_xref_maker
+          = $protein_id_extraction_recipe_for_database{ $source };
+        if ( $whitelisted_crossreference_sources{ $PROTEIN_ID_SOURCE_NAME }
+             && ( defined $protein_id_xref_maker ) ) {
+
+          # Entries for the source 'protein_id' are constructed from
+          # crossreferences to other databases
+          my $protein_id_xref
+            = $protein_id_xref_maker->( $dependent_ref->{'id'},
+                                        $xref_source_id,
+                                        $dependent_sources->{$PROTEIN_ID_SOURCE_NAME}
+                                     );
+          if ( defined $protein_id_xref ) {
+            push @dependent_xrefs, $protein_id_xref;
+          }
+
+        }
+
       }
 
     }
