@@ -473,6 +473,23 @@ my $new_gene = $ga->fetch_by_stable_id("ENSG00000171456");
 cmp_ok($new_gene->start(), '==', 30735607, 'Updated gene start');
 cmp_ok($new_gene->end(), '==', 30815178, 'Updated gene end');
 
+# test update_coords method when working on sub Slice
+# to avoid setting the start and end relative to a sub Slice
+# correct coords: 30735607 - 30815178
+# wrong coords: 1 - 79572
+my $update_slice = $db->get_SliceAdaptor()->fetch_by_gene_stable_id('ENSG00000171456');
+# Make sure that the slice of the gene is a sub Slice
+my $update_genes = $update_slice->get_all_Genes();
+# Update the coordinates of the gene in the database
+foreach my $gene_to_update (@$update_genes) {
+  $ga->update_coords($gene_to_update);
+}
+
+# Fetch the gene again to check the coordinates
+my $updated_gene = $ga->fetch_by_stable_id("ENSG00000171456");
+cmp_ok($updated_gene->start(), '==', 30735607, 'Updated gene start');
+cmp_ok($updated_gene->end(), '==', 30815178, 'Updated gene end');
+
 #
 # test GeneAdaptor::fetch_all_by_domain
 #

@@ -1655,8 +1655,8 @@ sub update_coords {
        WHERE gene_id = ?
     );
   my $sth = $self->prepare($update_sql);
-  $sth->bind_param(1, $gene->start);
-  $sth->bind_param(2, $gene->end);
+  $sth->bind_param(1, $gene->seq_region_start);
+  $sth->bind_param(2, $gene->seq_region_end);
   $sth->bind_param(3, $gene->dbID);
   $sth->execute();
 }
