@@ -107,6 +107,7 @@ sub transform {
 
   my ( $accession, @synonyms )
     = @{ $extracted_record->{'accession_numbers'} };
+  my $source_id = $self->_get_source_id();
 
   my $xref_graph_node
     = {
@@ -116,14 +117,18 @@ sub transform {
        'LABEL'         => $accession,
        'SEQUENCE'      => $extracted_record->{'sequence'},
        'SEQUENCE_TYPE' => 'peptide',
-       'SOURCE_ID'     => $self->_get_source_id(),
+       'SOURCE_ID'     => $source_id,
        'SPECIES_ID'    => $self->{'species_id'},
        'STATUS'        => 'experimental',     # FIXME: seems at least some TrEMBL entries should be 'predicted' instead
        'SYNONYMS'      => \@synonyms,
        '_multiplicity' => $xref_multiplicity, # hint for Loader
      };
 
-  my ( $direct_xrefs, $dependent_xrefs ) = $self->_make_links_from_crossreferences();
+  # FIXME: make dependent xrefs from gene_names
+
+  # All other xref links come from crossreferences
+  my ( $direct_xrefs, $dependent_xrefs )
+    = $self->_make_links_from_crossreferences( $accession, $source_id );
   # Do not assign empty arrays to FOO_XREFS, current insertion code
   # doesn't like them.
   if ( scalar @{ $direct_xrefs } > 0 ) {
@@ -194,6 +199,11 @@ sub _load_maps {
   $self->{'maps'}->{'named_source_ids'}
     = $source_id_map;
 
+  my %dependent_source_map
+    = $baseParserInstance->get_xref_sources( $self->{'dbh'} );
+  $self->{'maps'}->{'dependent_sources'}
+    = \%dependent_source_map;
+
   return;
 }
 
@@ -253,9 +263,10 @@ sub _get_source_id {
 
 # FIXME: description
 sub _make_links_from_crossreferences {
-  my ( $self ) = @_;
+  my ( $self, $xref_accession, $xref_source_id ) = @_;
 
   my $crossreferences = $self->{'extracted_record'}->{'crossreferences'};
+  my $dependent_sources = $self->{'maps'}->{'dependent_sources'};
 
   my @direct_xrefs;
   my @dependent_xrefs;
@@ -276,13 +287,28 @@ sub _make_links_from_crossreferences {
              'STABLE_ID'    => $direct_ref->{'id'},
              'ENSEMBL_TYPE' => 'Translation',
              'LINKAGE_TYPE' => 'DIRECT',
-             'SOURCE_ID'    => $self->_get_source_id('direct'),
+             'SOURCE_ID'    => $self->_get_source_id( 'direct' ),
            };
         push @direct_xrefs, $xref_link;
       }
 
     }
-  }
+    elsif ( exists $dependent_sources->{$source} ) {
+
+    DEPENDENT_XREF:
+      foreach my $dependent_ref ( @{ $entries } ) {
+        my $xref_link
+          = {
+             'ACCESSION'         => $xref_accession,
+             'LINKAGE_SOURCE_ID' => $xref_source_id,
+             'SOURCE_ID'         => $dependent_sources->{$source},
+           };
+
+        # FIXME: secondary dependent_xref for EMBL/ChEMBL (but try
+        # making it generic)
+
+        push @dependent_xrefs, $xref_link;
+      }
 
     }
   }
