@@ -78,13 +78,23 @@ sub run {
     'dbh'        => $dbh,
   });
 
+  # Generate a map of existing dependent-xref links, which will be
+  # used to prevent insertion of duplicates
   my $source_id_map = $transformer->get_source_id_map();
-  if ( $verbose ) {
-    while ( my ( $section, $pri_ref ) = each %{ $source_id_map } ) {
-      while ( my ( $priority, $source_id ) = each %{ $pri_ref } ) {
-        # FIXME: do we really care about the file name here?
+  while ( my ( $section, $pri_ref ) = each %{ $source_id_map } ) {
+    while ( my ( $priority, $source_id ) = each %{ $pri_ref } ) {
+
+      if ( $priority ne 'direct' ) {
+        # Ugly but hopefully temporary
+        $loader->baseParserInstance()->get_dependent_mappings( $source_id, $dbh );
+      }
+
+      # Seeing as we are already looping over all sources.
+      # FIXME: do we really care about the file name here?
+      if ( $verbose ) {
         print "$section $priority source id for $files->[0]: $source_id\n";
       }
+
     }
   }
 

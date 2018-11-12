@@ -43,6 +43,12 @@ sub new {
 }
 
 
+sub baseParserInstance {
+  my ( $self ) = @_;
+  return $self->{'_baseParser'};
+}
+
+
 sub load {
   my ( $self, $transformed_data ) = @_;
 
@@ -63,7 +69,7 @@ sub load {
 sub flush {
   my ( $self ) = @_;
 
-  my $bp = $self->{'_baseParser'};
+  my $bp = $self->baseParserInstance();
 
   if ( ! $bp->upload_xref_object_graphs($self->{'send_buffer'},
                                         $self->{'dbh'}) ) {
