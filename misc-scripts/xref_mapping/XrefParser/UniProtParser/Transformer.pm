@@ -122,9 +122,16 @@ sub transform {
        'SYNONYMS'      => \@synonyms,
        '_multiplicity' => $xref_multiplicity, # hint for Loader
      };
-  # FIXME: still to be defined: DIRECT_XREFS, DEPENDENT_XREFS
-  # Remember not to add UniProt Gene Name dependent xrefs for proteins
-  # derived from Ensembl.
+
+  my ( $direct_xrefs, $dependent_xrefs ) = $self->_make_links_from_crossreferences();
+  # Do not assign empty arrays to FOO_XREFS, current insertion code
+  # doesn't like them.
+  if ( scalar @{ $direct_xrefs } > 0 ) {
+    push @{ $xref_graph_node->{'DIRECT_XREFS'} }, @{ $direct_xrefs };
+  }
+  if ( scalar @{ $dependent_xrefs } > 0 ) {
+    push @{ $xref_graph_node->{'DEPENDENT_XREFS'} }, @{ $dependent_xrefs };
+  }
 
   return $xref_graph_node;
 }
@@ -241,6 +248,46 @@ sub _get_source_id {
     // $priority_mapper->( $entry_quality->{'evidence_level'} );
 
   return $source_id_map->{$source_name}->{$priority};
+}
+
+
+# FIXME: description
+sub _make_links_from_crossreferences {
+  my ( $self ) = @_;
+
+  my $crossreferences = $self->{'extracted_record'}->{'crossreferences'};
+
+  my @direct_xrefs;
+  my @dependent_xrefs;
+
+ REF_SOURCE:
+  while ( my ( $source, $entries ) = each %{ $crossreferences } ) {
+
+    if ( ! $whitelisted_crossreference_sources{ $source } ) {
+      next REF_SOURCE;
+    }
+
+    if ( $source eq 'Ensembl' ) {
+
+    DIRECT_XREF:
+      foreach my $direct_ref ( @{ $entries } ) {
+        my $xref_link
+          = {
+             'STABLE_ID'    => $direct_ref->{'id'},
+             'ENSEMBL_TYPE' => 'Translation',
+             'LINKAGE_TYPE' => 'DIRECT',
+             'SOURCE_ID'    => $self->_get_source_id('direct'),
+           };
+        push @direct_xrefs, $xref_link;
+      }
+
+    }
+  }
+
+    }
+  }
+
+  return ( \@direct_xrefs, \@dependent_xrefs );
 }
 
 
