@@ -226,9 +226,9 @@ sub _entry_is_unreviewed {
 
 
 # Translate quality of the extracted entry into the matching Ensembl
-# source_id.
+# source_id, optionally with an override of priority.
 sub _get_source_id {
-  my ( $self ) = @_;
+  my ( $self, $priority_override ) = @_;
 
   my $source_id_map = $self->{'maps'}->{'named_source_ids'};
 
@@ -236,11 +236,9 @@ sub _get_source_id {
   my $criteria = $source_selection_criteria_for_status{ $entry_quality->{'status'} };
   my $priority_mapper = $criteria->[1];
 
-  my ( $source_name, $priority )
-    = (
-       $criteria->[0],
-       $priority_mapper->( $entry_quality->{'evidence_level'} ),
-     );
+  my $source_name = $criteria->[0];
+  my $priority = $priority_override
+    // $priority_mapper->( $entry_quality->{'evidence_level'} );
 
   return $source_id_map->{$source_name}->{$priority};
 }
