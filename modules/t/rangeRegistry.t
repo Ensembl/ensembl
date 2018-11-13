@@ -18,9 +18,9 @@ use warnings;
 
 use Test::More;
 use Test::Warnings;
-use Data::Dumper;
 
 use Bio::EnsEMBL::Test::TestUtils;
+
 use Bio::EnsEMBL::Mapper::RangeRegistry;
 
 our $verbose= 0;
@@ -69,32 +69,29 @@ print_ranges($range);
 #make sure that the interal list has been merged into 2 ranges
 #we have to do this to make sure that it is efficient
 my $internal_list = $rr->{'registry'}->{$id};
-ok($internal_list->size() == 2);
+ok(@$internal_list == 2);
 
 #check that creating adjacent regions merges the list correctly
 $range = $rr->check_and_register($id, 40,45,30,49);
-ok($internal_list->size() == 2);
+ok(@$internal_list == 2);
 ok(@$range==1 && $range->[0]->[0] == 30 && $range->[0]->[1] == 49);
 print_ranges($range);
 
 $range = $rr->check_and_register($id, 951, 999);
-# ok(@$internal_list == 1);
-ok($internal_list->size() == 1);
+ok(@$internal_list == 1);
 ok($range && $range->[0]->[0] == 951 && $range->[0]->[1] == 999);
 print_ranges($range);
 
 
 # Check that a single range can be added to the beginning
 $range = $rr->check_and_register($id, 1, 10, 1,20);
-# ok(@$internal_list == 2);
-ok($internal_list->size() == 2);
+ok(@$internal_list == 2);
 ok(@$range==1 && $range->[0]->[0] == 1 && $range->[0]->[1] == 20);
 print_ranges($range);
 
 #check range that spans entire existing ranges
 $range = $rr->check_and_register($id, 1, 1200);
-# ok(@$internal_list == 1);
-ok($internal_list->size() == 1);
+ok(@$internal_list == 1);
 ok(@$range==1 && $range->[0]->[0] == 21 && $range->[0]->[1] == 29);
 print_ranges($range);
 
@@ -124,7 +121,6 @@ $range = $rr->check_and_register( "rr_bug", 15,20 );
 $range = $rr->check_and_register( "rr_bug", 25,30 );
 
 my $overlap = $rr->overlap_size(  "rr_bug", 3, 40 );
-note $overlap;
 ok( $overlap == 20 );
 
 $range = $rr->check_and_register( "rr_bug", 28, 35, 3, 40 );
