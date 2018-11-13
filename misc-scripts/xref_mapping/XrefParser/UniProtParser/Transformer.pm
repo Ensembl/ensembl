@@ -27,14 +27,12 @@ use warnings;
 use Carp;
 use Readonly;
 
-# FIXME: for testing
-use Data::Dumper;
-
 
 # FIXME: this belongs in BaseParser
 Readonly my $ERR_SOURCE_ID_NOT_FOUND => -1;
 
 Readonly my $PROTEIN_ID_SOURCE_NAME => 'protein_id';
+Readonly my $UNIPROT_GN_SOURCE_NAME => 'Uniprot_gn';
 
 # FIXME: this should probably be combined with
 # Extractor::%supported_taxon_database_qualifiers to make sure
@@ -53,6 +51,7 @@ Readonly my %whitelisted_crossreference_sources
       'MEROPS'                => 1,
       'PDB'                   => 1,
       $PROTEIN_ID_SOURCE_NAME => 1,
+      $UNIPROT_GN_SOURCE_NAME => 1,
     );
 
 Readonly my $MAX_TREMBL_EVIDENCE_LEVEL_FOR_STANDARD => 2;
@@ -152,18 +151,28 @@ sub transform {
     = {
        'ACCESSION'     => $accession,
        'DESCRIPTION'   => $extracted_record->{'description'},
-       'INFO_TYPE'     => 'SEQUENCE_MATCH',  # FIXME: is this always right?
+       'INFO_TYPE'     => 'SEQUENCE_MATCH',
        'LABEL'         => $accession,
        'SEQUENCE'      => $extracted_record->{'sequence'},
        'SEQUENCE_TYPE' => 'peptide',
        'SOURCE_ID'     => $source_id,
        'SPECIES_ID'    => $self->{'species_id'},
-       'STATUS'        => 'experimental',     # FIXME: seems at least some TrEMBL entries should be 'predicted' instead
+       'STATUS'        => 'experimental',
        'SYNONYMS'      => \@synonyms,
        '_multiplicity' => $xref_multiplicity, # hint for Loader
      };
 
-  # FIXME: make dependent xrefs from gene_names
+  # UniProt Gene Names links come from the 'gene_names' fields
+  my $genename_dependent_xrefs
+    = $self->_make_links_from_gene_names( $accession, $source_id );
+  # Do not assign an empty array to DEPENDENT_XREFS, current insertion code
+  # doesn't like them.
+  if ( scalar @{ $genename_dependent_xrefs } > 0 ) {
+    push @{ $xref_graph_node->{'DEPENDENT_XREFS'} }, @{ $genename_dependent_xrefs };
+  }
+  # FIXME: if this outputs multiple dependent xrefs, all their links
+  # will point to the first xref object created. This is due to a bug
+  # in BaseParser.
 
   # All other xref links come from crossreferences
   my ( $direct_xrefs, $dependent_xrefs )
@@ -176,6 +185,8 @@ sub transform {
   if ( scalar @{ $dependent_xrefs } > 0 ) {
     push @{ $xref_graph_node->{'DEPENDENT_XREFS'} }, @{ $dependent_xrefs };
   }
+
+  # FIXME: fix BaseParser to make dep-xref insertion via the graph replay-safe!!!
 
   return $xref_graph_node;
 }
@@ -300,7 +311,12 @@ sub _get_source_id {
 }
 
 
-# FIXME: description
+# Make xrefs from 'crossreferences' entries in the extracted record,
+# in a form suitable to attaching to the main xref's graph node as
+# consumed by upload_xref_object_graphs(). Ensembl crossreferences
+# become direct xrefs, everything else - dependent ones. If requested
+# we additionally generate protein_id dependent xrefs from appropriate
+# sources, i.e. EMBL and ChEMBL at present.
 sub _make_links_from_crossreferences {
   my ( $self, $xref_accession, $xref_source_id ) = @_;
 
@@ -368,6 +384,55 @@ sub _make_links_from_crossreferences {
   }
 
   return ( \@direct_xrefs, \@dependent_xrefs );
+}
+
+
+# Make Uniprot_gn dependent xrefs from 'gene_names' entries in the
+# extracted record, in a form suitable to attaching to the main xref's
+# graph node as consumed by upload_xref_object_graphs().
+sub _make_links_from_gene_names {
+  my ( $self, $xref_accession, $xref_source_id ) = @_;
+
+  my @genename_xrefs;
+
+  # Are we supposed to process this xref source to begin with?
+  if ( ! $whitelisted_crossreference_sources{ 'Uniprot_gn' } ) {
+    return [];
+  }
+
+  # UniProt Gene Name xrefs are dependent so in order to avoid
+  # circular dependencies, do not generate them for proteins derived
+  # from Ensembl.
+  if ( $self->_entry_is_from_ensembl() ) {
+    return [];
+  }
+
+  my $gene_names = $self->{'extracted_record'}->{'gene_names'};
+  my $dependent_sources = $self->{'maps'}->{'dependent_sources'};
+
+ GN_ENTRY:
+  foreach my $gn_entry ( @{ $gene_names } ) {
+    if ( ! exists $gn_entry->{'Name'} ) {
+      next GN_ENTRY;
+    }
+
+    my $name = $gn_entry->{'Name'};
+    my $xref = {
+                'ACCESSION'         => $xref_accession,
+                'LABEL'             => $name,
+                'SOURCE_ID'         => $dependent_sources->{'Uniprot_gn'},
+                'LINKAGE_SOURCE_ID' => $xref_source_id,
+              };
+
+    my $synonyms = $gn_entry->{'Synonyms'};
+    if ( defined $synonyms ) {
+      push @{ $xref->{'SYNONYMS'} }, @{ $synonyms };
+    }
+
+    push @genename_xrefs, $xref;
+  }
+
+  return \@genename_xrefs;
 }
 
 
