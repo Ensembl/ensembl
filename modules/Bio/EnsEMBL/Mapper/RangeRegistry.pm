@@ -83,9 +83,6 @@ package Bio::EnsEMBL::Mapper::RangeRegistry;
 use strict;
 
 use Bio::EnsEMBL::Utils::Exception qw(throw);
-use Bio::EnsEMBL::Utils::Interval;
-use Bio::EnsEMBL::Utils::Tree::Interval::Mutable;
-
 use integer;
 
 =head2 new
@@ -189,31 +186,47 @@ sub check_and_register {
   }
 
   my $reg = $self->{'registry'};
-  my $tree = $reg->{$id} ||= Bio::EnsEMBL::Utils::Tree::Interval::Mutable->new();
+  my $list = $reg->{$id} ||= [];
 
   my @gap_pairs;
 
-  unless ($tree->size()) {
+  my $len = scalar(@$list);
+
+  if ( $len == 0 ) {
     # this is the first request for this id, return a gap pair for the
     # entire range and register it as seen
-
-    $tree->insert(Bio::EnsEMBL::Utils::Interval->new($rstart, $rend));
+    $list->[0] = [ $rstart, $rend ];
     return [ [ $rstart, $rend ] ];
   }
-  
+
   #####
-  # loop through the list of existing overlapping ranges recording any "gaps" where
+  # loop through the list of existing ranges recording any "gaps" where
   # the existing range does not cover part of the requested range
   #
 
-  my $overlap = $tree->search($rstart-1, $rend+1);
-  
+  my $start_idx = 0;
+  my $end_idx   = $#$list;
+  my ( $mid_idx, $range );
+
+  # binary search the relevant pairs
+  # helps if the list is big
+  while ( ( $end_idx - $start_idx ) > 1 ) {
+    $mid_idx = ( $start_idx + $end_idx ) >> 1;
+    $range   = $list->[$mid_idx];
+
+    if ( $range->[1] < $rstart ) {
+      $start_idx = $mid_idx;
+    } else {
+      $end_idx = $mid_idx;
+    }
+  }
+
   my ( $gap_start, $gap_end, $r_idx, $rstart_idx, $rend_idx );
   $gap_start = $rstart;
 
-  for ( my $CUR = 0 ; $CUR <= $#$overlap; $CUR++ ) {
-    my ( $pstart, $pend ) = ($overlap->[$CUR]->start, $overlap->[$CUR]->end);
-    
+  for ( my $CUR = $start_idx ; $CUR < $len ; $CUR++ ) {
+    my ( $pstart, $pend ) = @{ $list->[$CUR] };
+
     # no work needs to be done at all if we find a range pair that
     # entirely overlaps the requested region
     if ( $pstart <= $start && $pend >= $end ) {
@@ -240,7 +253,7 @@ sub check_and_register {
       $r_idx = $CUR;
       last;
     }
-  } ## end for ( my $CUR = ...
+  } ## end for ( my $CUR = $start_idx...
 
   # do we have to make another gap?
   if ( $gap_start <= $rend ) {
@@ -253,27 +266,26 @@ sub check_and_register {
   if ( defined($rstart_idx) ) {
     my ( $new_start, $new_end );
 
-    if ( $rstart < $overlap->[$rstart_idx]->start ) {
+    if ( $rstart < $list->[$rstart_idx]->[0] ) {
       $new_start = $rstart;
     } else {
-      $new_start = $overlap->[$rstart_idx]->start;
+      $new_start = $list->[$rstart_idx]->[0];
     }
 
-    if ( $rend > $overlap->[$rend_idx]->end ) {
+    if ( $rend > $list->[$rend_idx]->[1] ) {
       $new_end = $rend;
     } else {
-      $new_end = $overlap->[$rend_idx]->end;
+      $new_end = $list->[$rend_idx]->[1];
     }
 
-    for (my $i=$rstart_idx; $i<=$rend_idx-$rstart_idx; $i++) {
-      $tree->remove($overlap->[$i]);
-    }
-    $tree->insert(Bio::EnsEMBL::Utils::Interval->new($new_start, $new_end));
-    
+    splice( @$list, $rstart_idx,
+            $rend_idx - $rstart_idx + 1,
+            [ $new_start, $new_end ] );
+
   } elsif ( defined($r_idx) ) {
-    $tree->insert(Bio::EnsEMBL::Utils::Interval->new($rstart, $rend));
+    splice( @$list, $r_idx, 0, [ $rstart, $rend ] );
   } else {
-    $tree->insert(Bio::EnsEMBL::Utils::Interval->new($rstart, $rend));
+    push( @$list, [ $rstart, $rend ] );
   }
 
   return \@gap_pairs;
@@ -298,29 +310,45 @@ sub check_and_register {
 sub overlap_size {
   my ( $self, $id, $start, $end ) = @_;
 
-  my $size = 0;
+  my $overlap = 0;
 
   if ( $start > $end ) { return 0 }
 
   my $reg = $self->{'registry'};
-  my $tree = $reg->{$id} ||= Bio::EnsEMBL::Utils::Tree::Interval::Mutable->new();
+  my $list = $reg->{$id} ||= [];
 
-  unless ($tree->size()) {
+  my $len = scalar(@$list);
+
+  if ( $len == 0 ) {
     # this is the first request for this id, return a gap pair for the
     # entire range and register it as seen
     return 0;
   }
 
   #####
-  # loop through the list of existing overlapping ranges recording any "gaps" where
+  # loop through the list of existing ranges recording any "gaps" where
   # the existing range does not cover part of the requested range
   #
 
-  my $overlap = $tree->search($start, $end);
+  my $start_idx = 0;
+  my $end_idx   = $#$list;
+  my ( $mid_idx, $range );
 
-  for ( my $CUR = 0; $CUR <= $#$overlap ; $CUR++ ) {
-    my ( $pstart, $pend ) = ($overlap->[$CUR]->start, $overlap->[$CUR]->end);
-    
+  # binary search the relevant pairs
+  # helps if the list is big
+  while ( ( $end_idx - $start_idx ) > 1 ) {
+    $mid_idx = ( $start_idx + $end_idx ) >> 1;
+    $range   = $list->[$mid_idx];
+    if ( $range->[1] < $start ) {
+      $start_idx = $mid_idx;
+    } else {
+      $end_idx = $mid_idx;
+    }
+  }
+
+  for ( my $CUR = $start_idx ; $CUR < $len ; $CUR++ ) {
+    my ( $pstart, $pend ) = @{ $list->[$CUR] };
+
     if ( $pstart > $end ) {
       # No more interesting ranges here.
       last;
@@ -329,7 +357,7 @@ sub overlap_size {
     # no work needs to be done at all if we find a range pair that
     # entirely overlaps the requested region
     if ( $pstart <= $start && $pend >= $end ) {
-      $size = $end - $start + 1;
+      $overlap = $end - $start + 1;
       last;
     }
 
@@ -337,12 +365,22 @@ sub overlap_size {
     my $mend   = ( $end < $pend     ? $end    : $pend );
 
     if ( $mend - $mstart >= 0 ) {
-      $size += ( $mend - $mstart + 1 );
+      $overlap += ( $mend - $mstart + 1 );
     }
   }
 
-  return $size;
+  return $overlap;
 } ## end sub overlap_size
+
+
+# low level function to access the ranges
+# only use for read access
+
+sub get_ranges {
+  my ( $self, $id ) = @_;
+
+  return $self->{'registry'}->{$id};
+}
 
 1;
 
