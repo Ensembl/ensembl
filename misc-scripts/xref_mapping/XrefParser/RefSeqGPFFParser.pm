@@ -25,10 +25,8 @@ use Carp;
 use List::MoreUtils qw(uniq);
 use Bio::EnsEMBL::IO::Parser::Genbank;
 
-# use Smart::Comments;
-
-
 use parent qw( XrefParser::BaseParser );
+
 
 
 sub run {
@@ -41,8 +39,6 @@ sub run {
   my $release_file = $ref_arg->{rel_file};
   my $dbi          = $ref_arg->{dbi} // $self->dbi;
   my $verbose      = $ref_arg->{verbose} // 0;
-
-### $ref_arg
 
   if((!defined $source_id) or (!defined $species_id) or (!defined $files)){
     croak "Need to pass source_id, species_id, files and rel_file as pairs";
@@ -83,18 +79,16 @@ sub run {
   # populate entrez gene id => label hash
   my $entrez = $self->get_acc_to_label("EntrezGene", $species_id, undef, $dbi);
 
+  # get the species name, prepare species related data checks
+  my %species2name = $self->species_id2name($dbi);
+  $species_name //= shift @{$species2name{$species_id}};
 
-  # get the species name
-  my %id2name = $self->species_id2name($dbi);
-  $species_name //= shift @{$id2name{$species_id}};
-
-
-  # my %species2name = $self->species_id2name($dbi);
-
+  my %name2species_id = map{ $_=>$species_id } @{$species2name{$species_id}};
+  my %species2tax  = $self->species_id2taxonomy($dbi);
+  my %taxonomy2species_id = map{ $_=>$species_id } @{$species2tax{$species_id}};
 
   # process the source files
   foreach my $file (@{$files}) {
-    ### $file
 
     # type from the file (peptide or dna)
     my $type = $self->type_from_file($file);
@@ -120,14 +114,16 @@ sub run {
       my $record_species = lc $parser->get_organism;
       $record_species =~ s/\s+/_/xg;
 
+      my $record_taxon = $parser->get_taxon_id;
+
+      # get the record species id from the record name, if not found try from the record taxon_id
+      my $record_species_id = $name2species_id{$record_species} // $taxonomy2species_id{$record_taxon};
+
       # skip if species is not the required
-      next unless ( $species_name eq $record_species);
+      next unless ( defined $record_species_id && ($record_species_id eq $species_id) );
 
       # get the acc
       my $acc = $parser->get_accession;
-
-      my $taxon = $parser->get_taxon_id;
-### $taxon
 
       # get description and remove the [species] at the end
       my $description = $parser->get_description;
@@ -215,7 +211,6 @@ sub run {
 
       }
 
-### $xref
       push @{$xrefs}, $xref;
 
     }
