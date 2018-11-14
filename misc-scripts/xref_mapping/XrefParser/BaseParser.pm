@@ -565,35 +565,26 @@ sub upload_xref_object_graphs {
        #######################################################################
        # if there are dependent xrefs, add xrefs and dependent xrefs for them
        #######################################################################
+     DEPENDENT_XREF:
        foreach my $depref (@{$xref->{DEPENDENT_XREFS}}) {
-	 my %dep = %{$depref};
+         my %dep = %{$depref};
 
-	 #################
-	 # Insert the xref
-	 #################
-	 # print "inserting $dep{ACCESSION},$dep{VERSION},$dep{LABEL},$dep{DESCRIPTION},$dep{SOURCE_ID},${\$xref->{SPECIES_ID}}\n";
-	 $xref_sth->execute($dep{ACCESSION},
-			   $dep{VERSION} || 0,
-			   $dep{LABEL} || $dep{ACCESSION},
-			   $dep{DESCRIPTION} || '',
-			   $dep{SOURCE_ID},
-			   $xref->{SPECIES_ID},
-                           'DEPENDENT');
-
-	 #####################################
-	 # find the xref_id for dependent xref. FIXME: wrong!!!
-	 # doesn't support returning multiple rows, which might be the
-	 # case e.g. for Unitprot_gn xrefs from UniProtParser
-	 #####################################
-	 $xref_id_sth->execute(
-                   $dep{ACCESSION},
-                   $dep{SOURCE_ID},
-                   $xref->{SPECIES_ID} );
-         my $dep_xref_id = ($xref_id_sth->fetchrow_array())[0];
-
-	 if(!(defined $dep_xref_id) || $dep_xref_id ==0 ){
-	   print STDERR "acc = $dep{ACCESSION} \nlink = $dep{LINKAGE_SOURCE_ID} \n".$dbi->err."\n";
-	   print STDERR "source = $dep{SOURCE_ID}\n";
+         #####################################
+         # Insert the xref and get its xref_id
+         #####################################
+         # print "inserting $dep{ACCESSION},$dep{VERSION},$dep{LABEL},$dep{DESCRIPTION},$dep{SOURCE_ID},${\$xref->{SPECIES_ID}}\n";
+         my $dep_xref_id = $self->add_xref({
+                                            'acc'        => $dep{ACCESSION},
+                                            'source_id'  => $dep{SOURCE_ID},
+                                            'species_id' => $xref->{SPECIES_ID},
+                                            'label'      => $dep{LABEL},
+                                            'desc'       => $dep{DESCRIPTION},
+                                            'version'    => $dep{VERSION},
+                                            'info_type'  => 'DEPENDENT',
+                                            'dbi'        => $dbi,
+                                          });
+         if( ! $dep_xref_id ) {
+           next DEPENDENT_XREF;
 	 }
 
 	 #
