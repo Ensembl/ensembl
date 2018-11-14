@@ -445,7 +445,6 @@ sub upload_xref_object_graphs {
     my $pri_insert_sth = $dbi->prepare('INSERT INTO primary_xref VALUES(?,?,?,?)');
     my $pri_update_sth = $dbi->prepare('UPDATE primary_xref SET sequence=? WHERE xref_id=?');
     my $syn_sth = $dbi->prepare('INSERT IGNORE INTO synonym VALUES(?,?)');
-    my $dep_sth = $dbi->prepare('INSERT INTO dependent_xref (master_xref_id, dependent_xref_id, linkage_annotation, linkage_source_id) VALUES(?,?,?,?)');
     my $xref_update_label_sth = $dbi->prepare('UPDATE xref SET label=? WHERE xref_id=?');
     my $xref_update_descr_sth = $dbi->prepare('UPDATE xref SET description=? WHERE xref_id=?');
     my $pair_sth = $dbi->prepare('INSERT INTO pairs VALUES(?,?,?)');
@@ -582,7 +581,9 @@ sub upload_xref_object_graphs {
                            'DEPENDENT');
 
 	 #####################################
-	 # find the xref_id for dependent xref
+	 # find the xref_id for dependent xref. FIXME: wrong!!!
+	 # doesn't support returning multiple rows, which might be the
+	 # case e.g. for Unitprot_gn xrefs from UniProtParser
 	 #####################################
 	 $xref_id_sth->execute(
                    $dep{ACCESSION},
@@ -598,10 +599,10 @@ sub upload_xref_object_graphs {
 	 #
 	 # Add the linkage_annotation and source id it came from
 	 #
-	 $dep_sth->execute( $xref_id, $dep_xref_id,
-			    $dep{LINKAGE_ANNOTATION},
-			    $dep{LINKAGE_SOURCE_ID} )
-	   or croak( $dbi->errstr() );
+         $self->add_dependent_xref_maponly( $dep_xref_id,
+                                            $dep{LINKAGE_SOURCE_ID},
+                                            $xref_id,
+                                            $dep{LINKAGE_ANNOTATION} // $dep{SOURCE_ID} );
 
 	 #########################################################
 	 # if there are synonyms, add entries in the synonym table
@@ -628,7 +629,6 @@ sub upload_xref_object_graphs {
        if(defined $pri_insert_sth) {$pri_insert_sth->finish()} ;
        if(defined $pri_update_sth) {$pri_update_sth->finish()};
        if(defined $syn_sth) { $syn_sth->finish()};
-       if(defined $dep_sth) { $dep_sth->finish()};
        if(defined $xref_update_label_sth) { $xref_update_label_sth->finish()};
        if(defined $xref_update_descr_sth) { $xref_update_descr_sth->finish()};
        if(defined $pair_sth) { $pair_sth->finish()};
