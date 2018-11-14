@@ -89,7 +89,7 @@ sub run {
   $species_name //= shift @{$id2name{$species_id}};
 
 
-  my %species2name = $self->species_id2name($dbi);
+  # my %species2name = $self->species_id2name($dbi);
 
 
   # process the source files
@@ -136,8 +136,13 @@ sub run {
       # get refseq pair if available
       my $refseq_pair = $parser->get_dbsource_acc;
 
-      # get the source_id for this acc type
-      my $acc_source_id = $source_ids->{$refseq_sources->{substr $acc, 0, 2}};
+      # get the source_id for this acc type, warning and skip if not found
+      my $prefix = substr($acc, 0, 2);
+      if (!exists $refseq_sources->{$prefix}) {
+        warn "WARNING: can't get source ID for $type $acc. Skipping\n";
+        next;
+      }
+      my $acc_source_id = $source_ids->{$refseq_sources->{$prefix}};
 
       # the "pair" is the id from coded_by, or the dbsource_acc if that does not exist
       my $pair = pop @{$parser->get_coded_by_list};
@@ -193,7 +198,7 @@ sub run {
                 $entrez_id,
                 $source_ids->{'EntrezGene'},
                 $refseq_id,
-                $source_ids->{$refseq_sources->{substr $refseq_id, 0, 2}},
+                $source_ids->{$refseq_sources->{substr($refseq_id, 0, 2)}},
                 $dbi
             );
           }
@@ -202,7 +207,7 @@ sub run {
                 $wiki_id,
                 $source_ids->{'WikiGene'},
                 $refseq_id,
-                $source_ids->{$refseq_sources->{substr $refseq_id, 0, 2}},
+                $source_ids->{$refseq_sources->{substr($refseq_id, 0, 2)}},
                 $dbi
             );
           }
@@ -235,20 +240,26 @@ sub run {
 
     # get file header
     my $release = do { local $/ = "\n*"; <$release_io> };
-
-    # extract release string
     $release =~ s/\s+/ /xg;
-    $release =~ s/.*(NCBI Reference.*\s\d+)(\s.*)\sDistribution.*/$1,$2/x;
 
-    if ($verbose) {
-      print "RefSeq release: '$release'\n";
+    if ( $release =~ m/(NCBI.*Release\s\d+)\s(.*)\sDistribution/x ) {
+      my ($rel_number, $rel_date) = ($1, $2);
+      my $release_string = "$rel_number, $rel_date";
+ 
+      # set release info
+      $self->set_release( $source_id, $release_string, $dbi );
+      for my $source_name (sort values %{$refseq_sources}) {
+        $self->set_release( $source_ids->{$source_name}, $release_string, $dbi );
+      }
+      if ($verbose) {
+        print "RefSeq release: '$release_string'\n";
+      }
+    } else {
+      warn "WARNING: Could not set release info from release file '$release_file'\n";
     }
 
-    # set release info
-    $self->set_release( $source_id, $release, $dbi );
-    for my $source_name (sort values %{$refseq_sources}) {
-      $self->set_release( $source_ids->{$source_name}, $release, $dbi );
-    }
+  } else {
+    warn "WARNING: No release_file available\n";
   }
 
   return 0;
@@ -262,7 +273,7 @@ sub type_from_file {
 
   my ($type) = $file =~ /RefSeq_(\w+)\//x;
 
-  warn "Could not work out sequence type for $file\n" unless $type;
+  warn "WARNING: Could not work out sequence type for $file\n" unless $type;
 
   return $type;
 }
