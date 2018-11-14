@@ -290,7 +290,7 @@ sub _get_database_crossreferences {
                           \z
                       }msx );
     if ( ! defined $last_opt ) {
-      croak "Mailformed final-option match in:\n\t$dr_line";
+      croak "Malformed final-option match in:\n\t$dr_line";
     }
 
     # At the very least, strips the trailing dot
