@@ -931,11 +931,11 @@ sub add_xref {
   my $acc         = $arg_ref->{acc}        || croak 'add_xref needs aa acc';
   my $source_id   = $arg_ref->{source_id}  || croak 'add_xref needs a source_id';
   my $species_id  = $arg_ref->{species_id} || croak 'add_xref needs a species_id';
-  my $label       = $arg_ref->{label}      || $acc;
+  my $label       = $arg_ref->{label}      // $acc;
   my $description = $arg_ref->{desc};
-  my $version     = $arg_ref->{version}    || 0;
-  my $info_type   = $arg_ref->{info_type}  || 'MISC';
-  my $info_text   = $arg_ref->{info_text}  || '';
+  my $version     = $arg_ref->{version}    // 0;
+  my $info_type   = $arg_ref->{info_type}  // 'MISC';
+  my $info_text   = $arg_ref->{info_text}  // q{};
   my $dbi         = $arg_ref->{dbi};
 
   $dbi = $self->dbi unless defined $dbi;
@@ -1058,11 +1058,11 @@ sub add_to_direct_xrefs{
   my $acc         = $arg_ref->{acc}         || croak ('Need an accession of this direct xref' );
   my $source_id   = $arg_ref->{source_id}   || croak ('Need a source_id for this direct xref' );
   my $species_id  = $arg_ref->{species_id}  || croak ('Need a species_id for this direct xref' );
-  my $version     = $arg_ref->{version}     || 0;
-  my $label       = $arg_ref->{label}       || $acc;
+  my $version     = $arg_ref->{version}     // 0;
+  my $label       = $arg_ref->{label}       // $acc;
   my $description = $arg_ref->{desc};
   my $linkage     = $arg_ref->{linkage};
-  my $info_text   = $arg_ref->{info_text}  || '';
+  my $info_text   = $arg_ref->{info_text}   // q{};
   my $dbi         = $arg_ref->{dbi};
 
   $dbi = $self->dbi unless defined $dbi;
@@ -1145,11 +1145,11 @@ sub add_dependent_xref{
   my $acc         = $arg_ref->{acc}            || croak( 'Need an accession of this dependent xref' );
   my $source_id   = $arg_ref->{source_id}      || croak( 'Need a source_id for this dependent xref' );
   my $species_id  = $arg_ref->{species_id}     || croak( 'Need a species_id for this dependent xref' );
-  my $version     = $arg_ref->{version}        ||  0;
-  my $label       = $arg_ref->{label}          || $acc;
+  my $version     = $arg_ref->{version}        // 0;
+  my $label       = $arg_ref->{label}          // $acc;
   my $description = $arg_ref->{desc};
   my $linkage     = $arg_ref->{linkage};
-  my $info_text   = $arg_ref->{info_text} || '';
+  my $info_text   = $arg_ref->{info_text}      // q{};
   my $dbi         = $arg_ref->{dbi};
 
   $dbi = $self->dbi unless defined $dbi;
