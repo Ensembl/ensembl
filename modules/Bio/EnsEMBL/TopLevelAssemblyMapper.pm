@@ -224,18 +224,19 @@ sub map {
     }
   }
 
-  # the toplevel coordinate system for the region requested *is* the
-  # requested region.
-  if($fastmap) {
-    return ($seq_region_id,$frm_start, $frm_end, $frm_strand, $other_cs);
+  #
+  # the toplevel coordinate system for the region requested *is* the requested region.
+  #
+  return ($seq_region_id,$frm_start, $frm_end, $frm_strand, $other_cs) if $fastmap;
+
+  my $coord = Bio::EnsEMBL::Mapper::Coordinate->new($seq_region_id, $frm_start,$frm_end, $frm_strand, $other_cs);
+  if ($include_org_coord) {
+    return { 'original' => $coord, 'mapped' => $coord };
+  } else {
+    return $coord;
   }
-  return Bio::EnsEMBL::Mapper::Coordinate->new
-    ($seq_region_id,$frm_start,$frm_end, $frm_strand, $other_cs);
 }
 
-#
-# for polymorphism with AssemblyMapper
-#
 =head2 flush
 
   Args       : none
