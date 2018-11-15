@@ -635,7 +635,8 @@ sub _record_has_all_needed_fields {
   my ( $self ) = @_;
 
   # Only check mandatory fields
-  my @needed_fields = grep { $prefixes_of_interest{$_} } %prefixes_of_interest;
+  my @needed_fields
+    = grep { $prefixes_of_interest{$_} } keys %prefixes_of_interest;
 
   my $has_all
     = List::Util::all { exists $self->{'record'}->{$_} } @needed_fields;
