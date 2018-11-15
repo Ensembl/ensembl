@@ -585,23 +585,23 @@ sub upload_xref_object_graphs {
                                           });
          if( ! $dep_xref_id ) {
            next DEPENDENT_XREF;
-	 }
+         }
 
-	 #
-	 # Add the linkage_annotation and source id it came from
-	 #
+         #
+         # Add the linkage_annotation and source id it came from
+         #
          $self->add_dependent_xref_maponly( $dep_xref_id,
                                             $dep{LINKAGE_SOURCE_ID},
                                             $xref_id,
                                             $dep{LINKAGE_ANNOTATION} // $dep{SOURCE_ID} );
 
-	 #########################################################
-	 # if there are synonyms, add entries in the synonym table
-	 #########################################################
-	 foreach my $syn ( @{ $dep{SYNONYMS} } ) {
-	   $syn_sth->execute( $dep_xref_id, $syn )
-	     or croak( $dbi->errstr() . "\n $xref_id\n $syn\n" );
-	 } # foreach syn
+         #########################################################
+         # if there are synonyms, add entries in the synonym table
+         #########################################################
+         foreach my $syn ( @{ $dep{SYNONYMS} } ) {
+           $syn_sth->execute( $dep_xref_id, $syn )
+             or croak( $dbi->errstr() . "\n $xref_id\n $syn\n" );
+         } # foreach syn
 
        } # foreach dep
 
