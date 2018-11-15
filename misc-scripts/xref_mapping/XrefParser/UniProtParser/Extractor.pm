@@ -514,7 +514,7 @@ sub _get_gene_names {
 sub _get_quality {
   my ( $self ) = @_;
 
-  # These is only one ID line
+  # There is only one ID line
   my $id_line = $self->{'record'}->{'ID'}->[0];
   my ( $entry_status )
     = ( $id_line =~ m{
@@ -533,7 +533,7 @@ sub _get_quality {
     croak "Invalid entry status in:\n\t$id_line";
   }
 
-  # Likewise, these is only one PE line
+  # Likewise, there is only one PE line
   my $pe_line = $self->{'record'}->{'PE'}->[0];
   my ( $evidence_level )
     = ( $pe_line =~ m{
