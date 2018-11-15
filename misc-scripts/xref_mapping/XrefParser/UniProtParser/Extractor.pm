@@ -33,6 +33,62 @@ use Readonly;
 use charnames ':full';
 
 
+# Use named sequences for square brackets to avoid excessive
+# escaping as well as for better readability.
+Readonly my $QR_DR_ISOFORM_FIELD_PATTERN
+  => qr{
+         \s*
+         \N{LEFT SQUARE BRACKET}
+         \s*
+         ( [^\N{RIGHT SQUARE BRACKET}]+ )
+         \s*
+         \N{RIGHT SQUARE BRACKET}
+         \s*
+     }msx;
+
+Readonly my $QR_DE_DESCRIPTION_NAME_VALUE
+  => qr{
+         ( [^;\N{LEFT CURLY BRACKET}]+ )
+         # FIXME: the match will fail if there is no
+         # whitespace before the left curly bracket
+         (?: ; | \s+\N{LEFT CURLY BRACKET} )
+     }msx;
+
+Readonly my $QR_ID_STATUS_FIELD
+  => qr{
+         (?: Unreviewed )
+       | (?: Reviewed )
+     }msx;
+
+Readonly my $QR_OX_TAXON_DB_ENTRY
+  => qr{
+         # Database qualifier. Chances are the list of
+         # allowed characters will change should DBs
+         # other than NCBI ever become supported here.
+         ( [A-Za-z_]+ )
+
+         \s*  # just in case
+         =
+         \s*  # same
+
+         # Taxon ID. This is almost certainly NCBI-specific.
+         ( [0-9]+ )
+     }msx;
+
+Readonly my $QR_OX_EVIDENCE_CODE_LIST
+  => qr{
+         # As of October 2018, this syntax is not declared in
+         # UniProt-KB User Manual yet frequently encountered in data
+         # files.  Use named sequences for curly brackets to avoid
+         # excessive escaping as well as for better readability.
+         \N{LEFT CURLY BRACKET}
+         \s*
+         [^\N{RIGHT CURLY BRACKET}]+
+         \s*
+         \N{RIGHT CURLY BRACKET}
+         \s*
+     }msx;
+
 # Note that care must be taken when adding new prefixes to this list
 # because some of them - for instance the Rx family of fields,
 # describing publications - are not compatible with the current way of
@@ -258,19 +314,6 @@ sub _get_comments {
 sub _get_database_crossreferences {
   my ( $self ) = @_;
 
-  # Use named sequences for square brackets to avoid excessive
-  # escaping as well as for better readability.
-  Readonly my $isoform_field_pattern
-    => qr{
-           \s*
-           \N{LEFT SQUARE BRACKET}
-           \s*
-           ( [^\N{RIGHT SQUARE BRACKET}]+ )
-           \s*
-           \N{RIGHT SQUARE BRACKET}
-           \s*
-       }msx;
-
   my $dr_fields = $self->{'record'}->{'DR'};
 
   # FIXME: we should probably make this persist until a new record has
@@ -285,7 +328,7 @@ sub _get_database_crossreferences {
                           ( .+ )  # will grab all dots but the last one
                           [.]
                           (?:
-                            $isoform_field_pattern
+                            $QR_DR_ISOFORM_FIELD_PATTERN
                           )?
                           \z
                       }msx );
@@ -337,14 +380,6 @@ sub _get_description {
 
   my $de_fields = $self->{'record'}->{'DE'};
 
-  Readonly my $description_name_value
-    => qr{
-           ( [^;\N{LEFT CURLY BRACKET}]+ )
-           # FIXME: the match will fail if there is no
-           # whitespace before the left curly bracket
-           (?: ; | \s+\N{LEFT CURLY BRACKET} )
-       }msx;
-
   my @names;
   my @subdescs;
 
@@ -359,7 +394,7 @@ sub _get_description {
                       :
                       \s*
                       Full=
-                      $description_name_value
+                      $QR_DE_DESCRIPTION_NAME_VALUE
                   }msx );
     if ( defined $indent ) {
       if ( $indent eq q{} ) {
@@ -456,12 +491,6 @@ sub _get_gene_names {
 sub _get_quality {
   my ( $self ) = @_;
 
-  Readonly my $id_status_field
-    => qr{
-           (?: Unreviewed )
-         | (?: Reviewed )
-       }msx;
-
   # These is only one ID line
   my $id_line = $self->{'record'}->{'ID'}->[0];
   my ( $entry_status )
@@ -473,7 +502,7 @@ sub _get_quality {
 
                        \s+
 
-                       ( $id_status_field )
+                       ( $QR_ID_STATUS_FIELD )
                        \s*
                        ;
                    }msx );
@@ -545,36 +574,9 @@ sub _get_taxon_codes {
   # you want to force it to only ever look for one simply drop the /g
   # modifier from the regex match.
 
-  Readonly my $taxon_db_entry
-    => qr{
-           # Database qualifier. Chances are the list of
-           # allowed characters will change should DBs
-           # other than NCBI ever become supported here.
-           ( [A-Za-z_]+ )
-
-           \s*  # just in case
-           =
-           \s*  # same
-
-           # Taxon ID. This is almost certainly NCBI-specific.
-           ( [0-9]+ )
-       }msx;
-  Readonly my $evidence_code_list
-    => qr{
-           # As of October 2018, this syntax is not declared in
-           # UniProt-KB User Manual yet frequently encountered in data
-           # files.  Use named sequences for curly brackets to avoid
-           # excessive escaping as well as for better readability.
-           \N{LEFT CURLY BRACKET}
-           \s*
-           [^\N{RIGHT CURLY BRACKET}]+
-           \s*
-           \N{RIGHT CURLY BRACKET}
-           \s*
-       }msx;
   my @ox_captures
     = ( $ox_line =~ m{
-                       $taxon_db_entry
+                       $QR_OX_TAXON_DB_ENTRY
                        \s*
 
                        # Optional things (e.g. evidence codes) we do
@@ -583,7 +585,7 @@ sub _get_taxon_codes {
                        # constitute quotes so it is okay to have a
                        # semicolon between them
                        (?:
-                         $evidence_code_list
+                         $QR_OX_EVIDENCE_CODE_LIST
                          | [^;]+
                        )?
 
