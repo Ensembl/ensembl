@@ -430,6 +430,19 @@ sub _make_links_from_gene_names {
     }
 
     push @genename_xrefs, $xref;
+
+    # Regardless of how many gene-name entries a protein might have in
+    # UniProt, we only want at most *one* such xref - there are bits
+    # of Ensembl code which implicitly assume there can only be one
+    # xref per unique (accerssion,source_id,species_id) triplet and
+    # Uniprot_gn is essentially a last-resort source for when nothing
+    # else works. At least we should be able to consistently output
+    # the first encountered gene name (and synonyms), the old parser
+    # happily ignored the fact there can be multiple gene names and
+    # clobbered old names and synonyms every time a new one was
+    # encountered - potentially resulting in xrefs with the last
+    # encountered name but synonyms from an earlier one.
+    last GN_ENTRY;
   }
 
   return \@genename_xrefs;
