@@ -412,7 +412,10 @@ sub _get_description {
                    @subdescs
                  ) );
   # Make sure we do not return an empty string
-  return ( length( $description ) > 0 ) ? $description : undef;
+  if ( length( $description ) > 0 ) {
+    return $description;
+  }
+  return;
 }
 
 
