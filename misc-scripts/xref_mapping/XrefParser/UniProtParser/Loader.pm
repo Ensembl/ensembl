@@ -43,6 +43,14 @@ sub new {
 }
 
 
+sub DESTROY {
+  my ( $self ) = @_;
+
+  $self->flush();
+  return;
+}
+
+
 sub baseParserInstance {
   my ( $self ) = @_;
   return $self->{'_baseParser'};
