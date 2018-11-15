@@ -33,6 +33,9 @@ use Readonly;
 use charnames ':full';
 
 
+# While processing DR fields i.e. crossreferences, used to match the
+# syntax attaching a crossreference to a specific isoform. Declares
+# ONE capture group, the isoform identifier.
 # Use named sequences for square brackets to avoid excessive
 # escaping as well as for better readability.
 Readonly my $QR_DR_ISOFORM_FIELD_PATTERN
@@ -46,6 +49,12 @@ Readonly my $QR_DR_ISOFORM_FIELD_PATTERN
          \s*
      }msx;
 
+# While processing DE fields i.e. descriptions, used to separate the
+# value part of key-value pairs those fields contain from evidence
+# codes, PubMed references etc. which might optionally
+# follow. Declares ONE capture group, the value.
+# Use named sequences for curly brackets to avoid excessive
+# escaping as well as for better readability.
 Readonly my $QR_DE_DESCRIPTION_NAME_VALUE
   => qr{
          ( [^;\N{LEFT CURLY BRACKET}]+ )
@@ -54,12 +63,17 @@ Readonly my $QR_DE_DESCRIPTION_NAME_VALUE
          (?: ; | \s+\N{LEFT CURLY BRACKET} )
      }msx;
 
+# While processing ID fields, used to confirm that the status of an
+# entry matches an expected value. Declares NO capture groups.
 Readonly my $QR_ID_STATUS_FIELD
   => qr{
          (?: Unreviewed )
        | (?: Reviewed )
      }msx;
 
+# While processing OX fields i.e. taxonomy cross-references, used to
+# extract both the taxon code and the database qualifier. Declares TWO
+# capture groups: the database qualifier, and the taxonomic code.
 Readonly my $QR_OX_TAXON_DB_ENTRY
   => qr{
          # Database qualifier. Chances are the list of
@@ -75,12 +89,14 @@ Readonly my $QR_OX_TAXON_DB_ENTRY
          ( [0-9]+ )
      }msx;
 
+# While processing OX fields i.e. taxonomy cross-references, allows
+# accounting for the fact some cross-references might be followed by
+# evidence codes. As of October 2018, this syntax is not declared in
+# UniProt-KB User Manual yet frequently encountered in data files.
+# Use named sequences for curly brackets to avoid excessive escaping
+# as well as for better readability.
 Readonly my $QR_OX_EVIDENCE_CODE_LIST
   => qr{
-         # As of October 2018, this syntax is not declared in
-         # UniProt-KB User Manual yet frequently encountered in data
-         # files.  Use named sequences for curly brackets to avoid
-         # excessive escaping as well as for better readability.
          \N{LEFT CURLY BRACKET}
          \s*
          [^\N{RIGHT CURLY BRACKET}]+
@@ -89,6 +105,10 @@ Readonly my $QR_OX_EVIDENCE_CODE_LIST
          \s*
      }msx;
 
+# To save memory and processing time, when we process a record we only
+# load into memory the fields we need. Conversely, the same list can
+# later on be used that we have indeed encountered all the mandatory
+# fields.
 # Note that care must be taken when adding new prefixes to this list
 # because some of them - for instance the Rx family of fields,
 # describing publications - are not compatible with the current way of
