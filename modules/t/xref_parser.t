@@ -184,7 +184,7 @@ my @recognised_sources = (
  "MEROPS; C26.956; -.",
 );
 for my $l (@recognised_sources) {
-  (my $uniprot_elegans_record_extra_line = $uniprot_elegans_record) =~ s/DR(.*?)\n/DR$1\nDR  $l/;
+  (my $uniprot_elegans_record_extra_line = $uniprot_elegans_record) =~ s/DR(.*?)\n/DR$1\nDR   $l/;
   test_parser("XrefParser::UniProtParser", $uniprot_elegans_record_extra_line,  {
     xref => 4,
     primary_xref => 1,
