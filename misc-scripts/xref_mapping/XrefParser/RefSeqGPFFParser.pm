@@ -23,10 +23,19 @@ use strict;
 use warnings;
 use Carp;
 use List::MoreUtils qw(uniq);
-use Bio::EnsEMBL::IO::Parser::Genbank;
+use Readonly;
 
 use parent qw( XrefParser::BaseParser );
 
+# Refseq sources to consider. Prefixes not in this list will be ignored
+Readonly my $refseq_sources => {
+    NM => 'RefSeq_mRNA',
+    NR => 'RefSeq_ncRNA',
+    XM => 'RefSeq_mRNA_predicted',
+    XR => 'RefSeq_ncRNA_predicted',
+    NP => 'RefSeq_peptide',
+    XP => 'RefSeq_peptide_predicted',
+};
 
 
 sub run {
@@ -44,48 +53,40 @@ sub run {
     croak "Need to pass source_id, species_id, files and rel_file as pairs";
   }
 
-  # set the list of RefSeq source names
-  my $refseq_sources = {
-    NM => 'RefSeq_mRNA',
-    NR => 'RefSeq_ncRNA',
-    XM => 'RefSeq_mRNA_predicted',
-    XR => 'RefSeq_ncRNA_predicted',
-    NP => 'RefSeq_peptide',
-    XP => 'RefSeq_peptide_predicted',
-  };
+  $self->{species_id} = $species_id;
+  $self->{verbose} = $verbose;
 
   # get RefSeq source ids
-  my $source_ids = {};
   while (my ($source_prefix, $source_name) = each %{$refseq_sources}) {
-    $source_ids->{$source_name} = $self->get_source_id_for_source_name( $source_name, undef, $dbi )
+    $self->{source_ids}->{$source_name} = $self->get_source_id_for_source_name( $source_name, undef, $dbi )
   }
 
   # get extra source ids
-  $source_ids->{EntrezGene} = $self->get_source_id_for_source_name('EntrezGene', undef, $dbi);
-  $source_ids->{WikiGene} = $self->get_source_id_for_source_name('WikiGene', undef, $dbi);
+  $self->{source_ids}->{EntrezGene} = $self->get_source_id_for_source_name('EntrezGene', undef, $dbi);
+  $self->{source_ids}->{WikiGene} = $self->get_source_id_for_source_name('WikiGene', undef, $dbi);
 
   # Retrieve existing RefSeq mRNA
-  my $refseq_ids = { %{$self->get_valid_codes('RefSeq_mRNA', $species_id, $dbi)},
+  $self->{refseq_ids} = { %{$self->get_valid_codes('RefSeq_mRNA', $species_id, $dbi)},
       %{$self->get_valid_codes('RefSeq_mRNA_predicted', $species_id, $dbi)} };
-  my $entrez_ids = $self->get_valid_codes('EntrezGene', $species_id, $dbi);
-  my $wiki_ids = $self->get_valid_codes('WikiGene', $species_id, $dbi);
+  $self->{entrez_ids} = $self->get_valid_codes('EntrezGene', $species_id, $dbi);
+  $self->{wiki_ids} = $self->get_valid_codes('WikiGene', $species_id, $dbi);
 
   if ($verbose) {
     for my $source_name (sort values %{$refseq_sources}) {
-      print "$source_name source ID = $source_ids->{$source_name}\n";
+      print "$source_name source ID = $self->{source_ids}->{$source_name}\n";
     }
   }
 
   # populate entrez gene id => label hash
-  my $entrez = $self->get_acc_to_label("EntrezGene", $species_id, undef, $dbi);
+  $self->{entrez} = $self->get_acc_to_label('EntrezGene', $species_id, undef, $dbi);
 
   # get the species name, prepare species related data checks
   my %species2name = $self->species_id2name($dbi);
   $species_name //= shift @{$species2name{$species_id}};
 
-  my %name2species_id = map{ $_=>$species_id } @{$species2name{$species_id}};
+  $self->{name2species_id} = { map{ $_=>$species_id } @{$species2name{$species_id}} };
   my %species2tax  = $self->species_id2taxonomy($dbi);
-  my %taxonomy2species_id = map{ $_=>$species_id } @{$species2tax{$species_id}};
+  $self->{taxonomy2species_id} = { map{ $_=>$species_id } @{$species2tax{$species_id}} };
 
   # process the source files
   foreach my $file (@{$files}) {
@@ -101,119 +102,22 @@ sub run {
       return;
     }
 
-    # instantiate ensembl-io genbank parser
-    my $parser = Bio::EnsEMBL::IO::Parser::Genbank->open($refseq_fh);
-
     # this will hold the array of xrefs to bulk insert
     my $xrefs;
 
-    # For each record in the file
-    while ( $parser->next ) {
+    do {
+      local $/ = "\/\/\n";
+      while ( my $item = $refseq_fh->getline() ) {
+        my $xref = $self->get_xref_from_record({
+          record => $item,
+          type   => $type
+        });
 
-      # Get the record species
-      my $record_species = lc $parser->get_organism;
-      $record_species =~ s/\s+/_/xg;
-
-      my $record_taxon = $parser->get_taxon_id;
-
-      # get the record species id from the record name, if not found try from the record taxon_id
-      my $record_species_id = $name2species_id{$record_species} // $taxonomy2species_id{$record_taxon};
-
-      # skip if species is not the required
-      next unless ( defined $record_species_id && ($record_species_id eq $species_id) );
-
-      # get the acc
-      my $acc = $parser->get_accession;
-
-      # get description and remove the [species] at the end
-      my $description = $parser->get_description;
-      $description =~ s/\s*\[[^]]*\]\.?\z//x;
-
-      # get refseq pair if available
-      my $refseq_pair = $parser->get_dbsource_acc;
-
-      # get the source_id for this acc type, warning and skip if not found
-      my $prefix = substr($acc, 0, 2);
-      if (!exists $refseq_sources->{$prefix}) {
-        warn "WARNING: can't get source ID for $type $acc. Skipping\n";
-        next;
-      }
-      my $acc_source_id = $source_ids->{$refseq_sources->{$prefix}};
-
-      # the "pair" is the id from coded_by, or the dbsource_acc if that does not exist
-      my $pair = pop @{$parser->get_coded_by_list};
-      $pair //= $parser->get_dbsource_acc;
-
-      # set up the direct xref
-      my $xref = {
-        ACCESSION     => $acc,
-        LABEL         => $parser->get_sequence_name,
-        VERSION       => $parser->get_sequence_version,
-        DESCRIPTION   => $description,
-        INFO_TYPE     => 'SEQUENCE_MATCH',
-        PAIR          => $pair,
-        SEQUENCE      => $parser->get_sequence,
-        SEQUENCE_TYPE => $type,
-        SOURCE_ID     => $acc_source_id,
-        SPECIES_ID    => $species_id,
-        PROTEIN       => pop @{$parser->get_protein_id_list},
-      };
-
-      # retrieve and remove duplicates from referenced entrez GeneID
-      my $entrez_gene_ids = $parser->get_db_xref_list_for_type('GeneID');
-      my @gene_ids = uniq( @{$entrez_gene_ids}); 
-
-      # process existing entrez_gene_ids as dependent xrefs
-      foreach my $gene_id (@gene_ids) {
-
-        next unless (defined $entrez->{$gene_id});
-
-        push @{$xref->{DEPENDENT_XREFS}}, {
-            SOURCE_ID         => $source_ids->{'EntrezGene'},
-            LINKAGE_SOURCE_ID => $acc_source_id,
-            ACCESSION         => $gene_id,
-            LABEL             => $entrez->{$gene_id}
-        };
-
-        push @{$xref->{DEPENDENT_XREFS}}, {
-            SOURCE_ID         => $source_ids->{'WikiGene'},
-            LINKAGE_SOURCE_ID => $acc_source_id,
-            ACCESSION         => $gene_id,
-            LABEL             => $entrez->{$gene_id}
-        };
-
-        next unless (defined $refseq_pair);
-
-        # discard the version number
-        $refseq_pair =~ s/\.\d+//x;
-
-        # Add xrefs for RefSeq mRNA as well where available
-        foreach my $refseq_id (@{ $refseq_ids->{$refseq_pair} }) {
-          foreach my $entrez_id (@{ $entrez_ids->{$gene_id} }) {
-            $self->add_dependent_xref_maponly(
-                $entrez_id,
-                $source_ids->{'EntrezGene'},
-                $refseq_id,
-                $source_ids->{$refseq_sources->{substr($refseq_id, 0, 2)}},
-                $dbi
-            );
-          }
-          foreach my $wiki_id (@{ $wiki_ids->{$gene_id} }) {
-            $self->add_dependent_xref_maponly(
-                $wiki_id,
-                $source_ids->{'WikiGene'},
-                $refseq_id,
-                $source_ids->{$refseq_sources->{substr($refseq_id, 0, 2)}},
-                $dbi
-            );
-          }
+        if (defined $xref) {
+          push @{$xrefs}, $xref;
         }
-
       }
-
-      push @{$xrefs}, $xref;
-
-    }
+    };
 
     $refseq_fh->close();
 
@@ -244,7 +148,7 @@ sub run {
       # set release info
       $self->set_release( $source_id, $release_string, $dbi );
       for my $source_name (sort values %{$refseq_sources}) {
-        $self->set_release( $source_ids->{$source_name}, $release_string, $dbi );
+        $self->set_release( $self->{source_ids}->{$source_name}, $release_string, $dbi );
       }
       if ($verbose) {
         print "RefSeq release: '$release_string'\n";
@@ -262,13 +166,189 @@ sub run {
 
 
 
+
+sub get_xref_from_record {
+  my ($self, $params) = @_;
+
+
+  my $genbank_rec = $params->{record};
+
+  # Get the record species
+  my ($record_species) = $genbank_rec =~ /ORGANISM\s*(.*)\n/x;
+  $record_species = lc $record_species;
+  $record_species =~ s/\s+/_/xg;
+
+  # get the record species id from the record name
+  my $record_species_id = $self->{name2species_id}->{$record_species};
+
+  # if not found try from the record taxon_id
+  if ( !defined $record_species_id ) {
+    my ($record_taxon) = $genbank_rec =~ /db_xref="taxon:(\d+)/x;
+    $record_species_id = $self->{taxonomy2species_id}->{$record_taxon};
+  }
+
+  # skip if species is not the required
+  return unless ( defined $record_species_id && ($record_species_id eq $self->{species_id}) );
+
+
+  my ($acc) = $genbank_rec =~ /ACCESSION\s+(\S+)/x;
+
+  my $acc_source_id = $self->source_id_from_acc($acc);
+
+  my $xref = {
+    ACCESSION     => $acc,
+    SPECIES_ID    => $self->{species_id},
+    SOURCE_ID     => $acc_source_id,
+    SEQUENCE_TYPE => $params->{type},
+    INFO_TYPE     => 'SEQUENCE_MATCH'
+  };
+
+  my ($ver_acc, $ver_num) = $genbank_rec =~ /VERSION\s+(\w+)\.(\d+)/x;
+
+  if ($acc eq $ver_acc) {
+    $xref->{LABEL} = "${acc}.${ver_num}";
+    $xref->{VERSION} = $ver_num;
+  } else {
+    warn "WARNING: accession $acc mismatch with version ${acc}.${ver_num}\n" if $self->{verbose};
+  }
+
+  my ($description) = $genbank_rec =~ /DEFINITION\s+  # Find the field identifier
+                                  (.*)                # get the description
+                                  \s+ACCESSION/xms;   # until the next field
+
+  # remove any newlines and spaces, and make sure is within mysql limits
+  $description =~ s/\n//xg;
+  $description =~ s/\s+/ /xg;
+  $description = substr($description, 0, 255) if (length($description) > 255);
+
+  $xref->{DESCRIPTION} = $description;
+
+  # sequence is multiline, each line starts with base number and has spaces all over. ends with //
+  my ($seq) = $genbank_rec =~ /\s*ORIGIN\s+ # Find the field identifier
+                          (.+)         # get all sequence lines
+                          \/\//xms;    # until the end of the field (//)
+
+  # get rid of the base number and the whitespace for a sequence string
+  $seq =~ s/[\d\s]+//xg;
+
+  $xref->{SEQUENCE} = $seq;
+
+
+  my @protein_ids = $genbank_rec =~ /\/protein_id=\"(.+?)\"/xg;
+
+  my $protein_id = pop @protein_ids;
+
+  $xref->{PROTEIN} = $protein_id if defined $protein_id;
+
+
+  my @coded_by_list = $genbank_rec =~ /\/coded_by=\"(.*?):/xg;
+
+  my $coded_by = pop @coded_by_list;
+
+  $xref->{PAIR} = $coded_by if defined $coded_by;
+
+  my ($refseq_pair) = $genbank_rec =~ /DBSOURCE\s+REFSEQ: accession (\S+)/x;
+  if (!exists $xref->{PAIR}) {
+    $xref->{PAIR} = $refseq_pair if defined $refseq_pair;
+  }
+
+
+  my @gene_ids = $genbank_rec =~ /db_xref=\"GeneID:(.+?)\"/xg;
+  @gene_ids = uniq( @gene_ids );
+
+  # process existing entrez_gene_ids as dependent xrefs
+  GENEID:
+  foreach my $gene_id (@gene_ids) {
+
+    next GENEID unless (defined $self->{entrez}->{$gene_id});
+
+    push @{$xref->{DEPENDENT_XREFS}}, {
+        SOURCE_ID         => $self->source_id_from_name('EntrezGene'),
+        LINKAGE_SOURCE_ID => $acc_source_id,
+        ACCESSION         => $gene_id,
+        LABEL             => $self->{entrez}->{$gene_id}
+    };
+
+    push @{$xref->{DEPENDENT_XREFS}}, {
+        SOURCE_ID         => $self->source_id_from_name('WikiGene'),
+        LINKAGE_SOURCE_ID => $acc_source_id,
+        ACCESSION         => $gene_id,
+        LABEL             => $self->{entrez}->{$gene_id}
+    };
+
+    next GENEID unless (defined $refseq_pair);
+
+    # discard the version number
+    $refseq_pair =~ s/\.\d+//x;
+
+    # Add xrefs for RefSeq mRNA as well where available
+    foreach my $refseq_id (@{ $self->{refseq_ids}->{$refseq_pair} }) {
+      foreach my $entrez_id (@{ $self->{entrez_ids}->{$gene_id} }) {
+        $self->add_dependent_xref_maponly(
+            $entrez_id,
+            $self->source_id_from_name('EntrezGene'),
+            $refseq_id,
+            $self->source_id_from_acc($refseq_id),
+            $self->{_dbi}
+        );
+      }
+      foreach my $wiki_id (@{ $self->{wiki_ids}->{$gene_id} }) {
+        $self->add_dependent_xref_maponly(
+            $wiki_id,
+            $self->source_id_from_name('WikiGene'),
+            $refseq_id,
+            $self->source_id_from_acc($refseq_id),
+            $self->{_dbi}
+        );
+      }
+    }
+  }
+
+  return $xref;
+
+}
+
+
+
+sub source_id_from_name {
+  my ($self, $name) = @_;
+
+  my $source_id;
+
+  if ( exists $self->{source_ids}->{$name} ) {
+    $source_id = $self->{source_ids}->{$name};
+  } elsif ( $self->{verbose} ) {
+    warn "WARNING: can't get source ID for name '$name'\n";
+  }
+
+  return $source_id;
+}
+
+sub source_id_from_acc {
+  my ($self, $acc) = @_;
+
+  my $source_id;
+  my $prefix = substr($acc, 0, 2);
+
+  if ( exists $refseq_sources->{$prefix} ) {
+    $source_id = $self->source_id_from_name( $refseq_sources->{$prefix} );
+  } elsif ( $self->{verbose} ) {
+    warn "WARNING: can't get source ID for accession '$acc'\n";
+  }
+
+  return $source_id;
+}
+
+
+
+
 # get type from filename path. this includes the source name and that's enough to extract it
 sub type_from_file {
   my ($self, $file) = @_;
 
   my ($type) = $file =~ /RefSeq_(\w+)\//x;
 
-  warn "WARNING: Could not work out sequence type for $file\n" unless $type;
+  warn "WARNING: Could not work out sequence type for '$file'\n" unless $type;
 
   return $type;
 }
