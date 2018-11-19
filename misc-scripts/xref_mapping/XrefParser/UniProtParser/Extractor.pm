@@ -121,7 +121,7 @@ Readonly my %prefixes_of_interest
       'DE'  => 1,
       'GN'  => 0,
       'OX'  => 1,
-      'DR'  => 1,
+      'DR'  => 0,
       'PE'  => 1,
       'RG'  => 0,
       'SQ'  => 1,
@@ -364,6 +364,11 @@ sub _get_database_crossreferences {
   my ( $self ) = @_;
 
   my $dr_fields = $self->{'record'}->{'DR'};
+
+  # DR is an optional field
+  if ( ! defined $dr_fields ) {
+    return [];
+  }
 
   # FIXME: we should probably make this persist until a new record has
   # been loaded
