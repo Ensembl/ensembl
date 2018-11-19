@@ -445,7 +445,6 @@ sub upload_xref_object_graphs {
     my $pri_insert_sth = $dbi->prepare('INSERT INTO primary_xref VALUES(?,?,?,?)');
     my $pri_update_sth = $dbi->prepare('UPDATE primary_xref SET sequence=? WHERE xref_id=?');
     my $syn_sth = $dbi->prepare('INSERT IGNORE INTO synonym VALUES(?,?)');
-    my $dep_sth = $dbi->prepare('INSERT INTO dependent_xref (master_xref_id, dependent_xref_id, linkage_annotation, linkage_source_id) VALUES(?,?,?,?)');
     my $xref_update_label_sth = $dbi->prepare('UPDATE xref SET label=? WHERE xref_id=?');
     my $xref_update_descr_sth = $dbi->prepare('UPDATE xref SET description=? WHERE xref_id=?');
     my $pair_sth = $dbi->prepare('INSERT INTO pairs VALUES(?,?,?)');
@@ -566,50 +565,43 @@ sub upload_xref_object_graphs {
        #######################################################################
        # if there are dependent xrefs, add xrefs and dependent xrefs for them
        #######################################################################
+     DEPENDENT_XREF:
        foreach my $depref (@{$xref->{DEPENDENT_XREFS}}) {
-	 my %dep = %{$depref};
+         my %dep = %{$depref};
 
-	 #################
-	 # Insert the xref
-	 #################
-	 # print "inserting $dep{ACCESSION},$dep{VERSION},$dep{LABEL},$dep{DESCRIPTION},$dep{SOURCE_ID},${\$xref->{SPECIES_ID}}\n";
-	 $xref_sth->execute($dep{ACCESSION},
-			   $dep{VERSION} || 0,
-			   $dep{LABEL} || $dep{ACCESSION},
-			   $dep{DESCRIPTION} || '',
-			   $dep{SOURCE_ID},
-			   $xref->{SPECIES_ID},
-                           'DEPENDENT');
+         #####################################
+         # Insert the xref and get its xref_id
+         #####################################
+         # print "inserting $dep{ACCESSION},$dep{VERSION},$dep{LABEL},$dep{DESCRIPTION},$dep{SOURCE_ID},${\$xref->{SPECIES_ID}}\n";
+         my $dep_xref_id = $self->add_xref({
+                                            'acc'        => $dep{ACCESSION},
+                                            'source_id'  => $dep{SOURCE_ID},
+                                            'species_id' => $xref->{SPECIES_ID},
+                                            'label'      => $dep{LABEL},
+                                            'desc'       => $dep{DESCRIPTION},
+                                            'version'    => $dep{VERSION},
+                                            'info_type'  => 'DEPENDENT',
+                                            'dbi'        => $dbi,
+                                          });
+         if( ! $dep_xref_id ) {
+           next DEPENDENT_XREF;
+         }
 
-	 #####################################
-	 # find the xref_id for dependent xref
-	 #####################################
-	 $xref_id_sth->execute(
-                   $dep{ACCESSION},
-                   $dep{SOURCE_ID},
-                   $xref->{SPECIES_ID} );
-         my $dep_xref_id = ($xref_id_sth->fetchrow_array())[0];
+         #
+         # Add the linkage_annotation and source id it came from
+         #
+         $self->add_dependent_xref_maponly( $dep_xref_id,
+                                            $dep{LINKAGE_SOURCE_ID},
+                                            $xref_id,
+                                            $dep{LINKAGE_ANNOTATION} // $dep{SOURCE_ID} );
 
-	 if(!(defined $dep_xref_id) || $dep_xref_id ==0 ){
-	   print STDERR "acc = $dep{ACCESSION} \nlink = $dep{LINKAGE_SOURCE_ID} \n".$dbi->err."\n";
-	   print STDERR "source = $dep{SOURCE_ID}\n";
-	 }
-
-	 #
-	 # Add the linkage_annotation and source id it came from
-	 #
-	 $dep_sth->execute( $xref_id, $dep_xref_id,
-			    $dep{LINKAGE_ANNOTATION},
-			    $dep{LINKAGE_SOURCE_ID} )
-	   or croak( $dbi->errstr() );
-
-	 #########################################################
-	 # if there are synonyms, add entries in the synonym table
-	 #########################################################
-	 foreach my $syn ( @{ $dep{SYNONYMS} } ) {
-	   $syn_sth->execute( $dep_xref_id, $syn )
-	     or croak( $dbi->errstr() . "\n $xref_id\n $syn\n" );
-	 } # foreach syn
+         #########################################################
+         # if there are synonyms, add entries in the synonym table
+         #########################################################
+         foreach my $syn ( @{ $dep{SYNONYMS} } ) {
+           $syn_sth->execute( $dep_xref_id, $syn )
+             or croak( $dbi->errstr() . "\n $xref_id\n $syn\n" );
+         } # foreach syn
 
        } # foreach dep
 
@@ -628,7 +620,6 @@ sub upload_xref_object_graphs {
        if(defined $pri_insert_sth) {$pri_insert_sth->finish()} ;
        if(defined $pri_update_sth) {$pri_update_sth->finish()};
        if(defined $syn_sth) { $syn_sth->finish()};
-       if(defined $dep_sth) { $dep_sth->finish()};
        if(defined $xref_update_label_sth) { $xref_update_label_sth->finish()};
        if(defined $xref_update_descr_sth) { $xref_update_descr_sth->finish()};
        if(defined $pair_sth) { $pair_sth->finish()};
@@ -940,11 +931,11 @@ sub add_xref {
   my $acc         = $arg_ref->{acc}        || croak 'add_xref needs aa acc';
   my $source_id   = $arg_ref->{source_id}  || croak 'add_xref needs a source_id';
   my $species_id  = $arg_ref->{species_id} || croak 'add_xref needs a species_id';
-  my $label       = $arg_ref->{label}      || $acc;
+  my $label       = $arg_ref->{label}      // $acc;
   my $description = $arg_ref->{desc};
-  my $version     = $arg_ref->{version}    || 0;
-  my $info_type   = $arg_ref->{info_type}  || 'MISC';
-  my $info_text   = $arg_ref->{info_text}  || '';
+  my $version     = $arg_ref->{version}    // 0;
+  my $info_type   = $arg_ref->{info_type}  // 'MISC';
+  my $info_text   = $arg_ref->{info_text}  // q{};
   my $dbi         = $arg_ref->{dbi};
 
   $dbi = $self->dbi unless defined $dbi;
@@ -1067,11 +1058,11 @@ sub add_to_direct_xrefs{
   my $acc         = $arg_ref->{acc}         || croak ('Need an accession of this direct xref' );
   my $source_id   = $arg_ref->{source_id}   || croak ('Need a source_id for this direct xref' );
   my $species_id  = $arg_ref->{species_id}  || croak ('Need a species_id for this direct xref' );
-  my $version     = $arg_ref->{version}     || 0;
-  my $label       = $arg_ref->{label}       || $acc;
+  my $version     = $arg_ref->{version}     // 0;
+  my $label       = $arg_ref->{label}       // $acc;
   my $description = $arg_ref->{desc};
   my $linkage     = $arg_ref->{linkage};
-  my $info_text   = $arg_ref->{info_text}  || '';
+  my $info_text   = $arg_ref->{info_text}   // q{};
   my $dbi         = $arg_ref->{dbi};
 
   $dbi = $self->dbi unless defined $dbi;
@@ -1154,11 +1145,11 @@ sub add_dependent_xref{
   my $acc         = $arg_ref->{acc}            || croak( 'Need an accession of this dependent xref' );
   my $source_id   = $arg_ref->{source_id}      || croak( 'Need a source_id for this dependent xref' );
   my $species_id  = $arg_ref->{species_id}     || croak( 'Need a species_id for this dependent xref' );
-  my $version     = $arg_ref->{version}        ||  0;
-  my $label       = $arg_ref->{label}          || $acc;
+  my $version     = $arg_ref->{version}        // 0;
+  my $label       = $arg_ref->{label}          // $acc;
   my $description = $arg_ref->{desc};
   my $linkage     = $arg_ref->{linkage};
-  my $info_text   = $arg_ref->{info_text} || '';
+  my $info_text   = $arg_ref->{info_text}      // q{};
   my $dbi         = $arg_ref->{dbi};
 
   $dbi = $self->dbi unless defined $dbi;
