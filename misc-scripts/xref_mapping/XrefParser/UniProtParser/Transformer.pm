@@ -263,14 +263,24 @@ sub _load_maps {
 sub _entry_is_from_ensembl {
   my ( $self ) = @_;
 
-  # As of end of October 2018, the old parser's way of identifying
-  # proteins derived from Ensembl by searching for a comment topic
-  # "CAUTION" stating "The sequence shown here is derived from an
-  # Ensembl" no longer works because there seem to be no entries
-  # containing this string any more. Therefore, for the time being
-  # this test always returns false.
+  # The old parser's way of identifying proteins derived from Ensembl
+  # was to search for a comment topic "CAUTION" stating "The sequence
+  # shown here is derived from an Ensembl". It was confirmed with
+  # UniProt in November 2018 that this hadn't been done since late
+  # 2017, therefore we no longer check this.
 
-  return 0;
+  # As of November 2018, the official way of identifying proteins
+  # derived from Ensembl is to look for a special citation identifying
+  # the record as such. There are several ways in which such special
+  # citations could be identified, it seems the simplest to look at
+  # "reference group name" fields to see if any of them says
+  # 'Ensembl'.
+  my $citation_groups
+    = $self->{'extracted_record'}->{'citation_groups'};
+  my $from_group_names
+    = List::Util::any { $_ eq 'Ensembl' } @{ $citation_groups };
+
+  return $from_group_names;
 }
 
 
