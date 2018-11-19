@@ -138,7 +138,8 @@ sub run_script {
 
   # Not all species have an otherfeatures database, error if not found
   if (!$otherf_dba) {
-    croak "No otherfeatures database found for $species_name\n";
+    warn "No otherfeatures database found for species '$species_name'. Skipping\n";
+    return;
   }
 
   # Cache EntrezGene IDs and source ID where available
@@ -154,7 +155,8 @@ sub run_script {
 
   # Not all species have refseq_import data, exit if not found
   if (!defined $aa_of->fetch_by_logic_name('refseq_import')->logic_name) {
-    croak "No data found for RefSeq_import\n";
+    warn "No data found for RefSeq_import. Skipping\n";
+    return;
   }
 
   # Iterate over chromosomes in otherfeatures database
