@@ -121,7 +121,6 @@ Readonly my %prefixes_of_interest
       'DE'  => 1,
       'GN'  => 0,
       'OX'  => 1,
-      'CC'  => 0,
       'DR'  => 1,
       'PE'  => 1,
       'RG'  => 0,
@@ -186,7 +185,6 @@ sub extract {
     = {
        'accession_numbers' => $self->_get_accession_numbers(),
        'citation_groups'   => $self->_get_citation_groups(),
-       'comments'          => $self->_get_comments(),
        'crossreferences'   => $self->_get_database_crossreferences(),
        'description'       => $self->_get_description(),
        'gene_names'        => $self->_get_gene_names(),
@@ -299,6 +297,9 @@ sub _get_citation_groups {
 # Parse the CC fields of the current record and produce a hash mapping
 # comments to their respective topics. Optionally, the returned data
 # can be restricted to specific topics.
+# FIXME: not used at present, which could result in it no longer
+# working by the time it has been reenabled. Either ensure it is
+# tested or remove it.
 sub _get_comments {
   my ( $self, @topics_to_return ) = @_;
 
