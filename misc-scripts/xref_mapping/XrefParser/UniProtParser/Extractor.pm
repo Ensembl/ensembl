@@ -124,6 +124,7 @@ Readonly my %prefixes_of_interest
       'CC'  => 0,
       'DR'  => 1,
       'PE'  => 1,
+      'RG'  => 0,
       'SQ'  => 1,
       q{  } => 1,
     );
@@ -184,6 +185,7 @@ sub extract {
   my $entry_object
     = {
        'accession_numbers' => $self->_get_accession_numbers(),
+       'citation_groups'   => $self->_get_citation_groups(),
        'comments'          => $self->_get_comments(),
        'crossreferences'   => $self->_get_database_crossreferences(),
        'description'       => $self->_get_description(),
@@ -265,6 +267,32 @@ sub _get_accession_numbers {
   # been loaded
 
   return \@numbers;
+}
+
+
+# Parse the RG fields of the current record, if any, and produce a
+# list of names of groups which cite this protein.
+# Warning: this is intentionally simplistic (for example it makes no
+# attempt to associate group names for specific reference numbers) and
+# will NOT work properly if more detailed citation information is
+# required! If you need that, you will have to implement comprehensive
+# processing of different Rx lines.
+sub _get_citation_groups {
+  my ( $self ) = @_;
+
+  my $rg_fields = $self->{'record'}->{'RG'};
+
+  # RG is an optional field
+  if ( ! defined $rg_fields ) {
+    return [];
+  }
+
+  # FIXME: we should probably make this persist until a new record has
+  # been loaded
+  my @citation_groups = split( qr{ \s*;\s* }msx,
+                               join( q{}, @{ $rg_fields } ) );
+
+  return \@citation_groups;
 }
 
 
