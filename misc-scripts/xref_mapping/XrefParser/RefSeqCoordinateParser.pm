@@ -53,7 +53,7 @@ sub run_script {
   my $file_params = $self->parse_file_string($file);
 
   # project or db param validation
-  if ( $file_params->{project} ne ('ensembl' || 'ensemblgenomes') && !defined $db ) {
+  if ( !defined $db && ( ($file_params->{project} ne 'ensembl') || ($file_params->{project} ne 'ensemblgenomes') ) {
     croak "Missing or unsupported project value (supported values: ensembl, ensemblgenomes), or missing db value.";
   }
 
@@ -73,7 +73,7 @@ sub run_script {
     XP => 'RefSeq_peptide_predicted',
   };
 
-  my $source_ids; 
+  my $source_ids;
   while (my ($source_prefix, $source_name) = each %{$source_names}) {
     $source_ids->{$source_prefix} = $self->get_source_id_for_source_name( $source_name, 'otherfeatures', $dbi )
   }
@@ -93,7 +93,7 @@ sub run_script {
   my ($core_dba, $otherf_dba);
 
   # for ensembl project, use provided connection details or default to staging
-  if ( $file_params->{project} eq ('ensembl') ) {
+  if ( $file_params->{project} eq 'ensembl' ) {
     if (!defined $file_params->{host}) {
       $file_params->{host} = 'mysql-ens-sta-1';
       $file_params->{port} = '4519';
@@ -118,7 +118,7 @@ sub run_script {
     $otherf_dba = $registry->get_DBAdaptor($species_name, 'otherfeatures');
     $otherf_dba->dnadb($core_dba);
   # for ensemblgenomes project, use staging and ignore any connection details provided
-  } elsif ( $file_params->{project} eq ('ensemblgenomes') ) {
+  } elsif ( $file_params->{project} eq 'ensemblgenomes' ) {
     $registry->load_registry_from_multiple_dbs( {
       '-host' => 'mysql-eg-staging-1.ebi.ac.uk',
       '-port' => '4160',
@@ -172,7 +172,7 @@ sub run_script {
       foreach my $transcript_of (sort { $a->start <=> $b->start } @{$transcripts_of}) {
         my $id;
         # RefSeq accessions are now stored as xrefs rather than
-        # stable ids as it used to be in the past. This means 
+        # stable ids as it used to be in the past. This means
         # priority is given to the display_id, and fall back to stable_id
         # for backwards compatibility.
         if (defined $transcript_of->display_xref ) {
