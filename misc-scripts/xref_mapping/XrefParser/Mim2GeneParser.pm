@@ -19,120 +19,280 @@ limitations under the License.
 
 package XrefParser::Mim2GeneParser;
 
+# For non-destructive substitutions in regexps (/r flag)
+require 5.014_000;
+
 use strict;
 use warnings;
-use Carp;
-use POSIX qw(strftime);
-use File::Basename;
 
-use base qw( XrefParser::BaseParser );
+use Carp;
+use File::Basename;
+use List::Util;
+use POSIX qw(strftime);
+use Readonly;
+use Text::CSV;
+
+use parent qw( XrefParser::BaseParser );
+
+
+# FIXME: this belongs in BaseParser
+Readonly my $ERR_SOURCE_ID_NOT_FOUND => -1;
+
+Readonly my $EXPECTED_NUMBER_OF_COLUMNS => 5;
+
 
 sub run {
 
- my ($self, $ref_arg) = @_;
-  my $general_source_id    = $ref_arg->{source_id};
-  my $species_id   = $ref_arg->{species_id};
-  my $files        = $ref_arg->{files};
-  my $verbose      = $ref_arg->{verbose};
-  my $dbi          = $ref_arg->{dbi};
-  $dbi = $self->dbi unless defined $dbi;
+  my ( $self, $ref_arg ) = @_;
+  my $general_source_id = $ref_arg->{source_id};
+  my $species_id        = $ref_arg->{species_id};
+  my $files             = $ref_arg->{files};
+  my $verbose           = $ref_arg->{verbose} // 0;
+  my $dbi               = $ref_arg->{dbi} // $self->dbi;
 
-  if((!defined $general_source_id) or (!defined $species_id) or (!defined $files) ){
+  if ( ( !defined $general_source_id ) or
+       ( !defined $species_id ) or
+       ( !defined $files ) )
+  {
     croak "Need to pass source_id, species_id and files as pairs";
   }
-  $verbose |=0;
 
+  my $csv = Text::CSV->new({
+                            sep_char => "\t",
+                          })
+    || croak 'Failed to initialise CSV parser: ' . Text::CSV->error_diag();
 
-  my $file = @{$files}[0];
+  my $filename = @{$files}[0];
 
-  my $eg_io = $self->get_filehandle($file);
+  my $eg_io = $self->get_filehandle($filename);
   if ( !defined $eg_io ) {
-    print STDERR "ERROR: Could not open $file\n";
-    return 1;    # 1 is an error
+    croak "Could not open file '${filename}'";
   }
 
+  my $mim_gene_source_id =
+    $self->get_source_id_for_source_name( 'MIM_GENE', undef, $dbi );
+  my $mim_morbid_source_id =
+    $self->get_source_id_for_source_name( 'MIM_MORBID', undef, $dbi );
   my $entrez_source_id =
-      $self->get_source_id_for_source_name(
-        'EntrezGene', undef, $dbi);
-
-  my (%mim_gene)   = %{$self->get_valid_codes("MIM_GENE",$species_id, $dbi)};
-  my (%mim_morbid) = %{$self->get_valid_codes("MIM_MORBID",$species_id, $dbi)};
-  my (%entrez)     = %{$self->get_valid_codes("EntrezGene",$species_id, $dbi)};
- 
-  my $add_dependent_xref_sth = $dbi->prepare("INSERT INTO dependent_xref  (master_xref_id,dependent_xref_id, linkage_source_id) VALUES (?,?, $entrez_source_id)");
-
-  my $missed_entrez = 0;
-  my $missed_omim   = 0;
-  my $diff_type     = 0;
-  my $count;
-
-  $eg_io->getline(); # do not need header
-  while ( $_ = $eg_io->getline() ) {
-    $count++;
-    chomp;
-    my ($omim_id, $entrez_id, $type, $other) = split;
-
-    if(!defined($entrez{$entrez_id})){
-      $missed_entrez++;
-      next;
-    }
-    
-    if((!defined $mim_gene{$omim_id} ) and (!defined $mim_morbid{$omim_id} ) ){
-      $missed_omim++;
-      next;
-    }
-
-    if($type eq "gene" || $type eq 'gene/phenotype'){
-      if(defined($mim_gene{$omim_id})){
-	foreach my $ent_id (@{$entrez{$entrez_id}}){
-	  foreach my $mim_id (@{$mim_gene{$omim_id}}){
-	    $add_dependent_xref_sth->execute($ent_id, $mim_id);
-	  }
-	}
-	# $add_dependent_xref_sth->execute($entrez{$entrez_id}, $mim_gene{$omim_id});
-      }
-      else{
-	$diff_type++;
-	foreach my $ent_id (@{$entrez{$entrez_id}}){
-	  foreach my $mim_id (@{$mim_morbid{$omim_id}}){
-	    $add_dependent_xref_sth->execute($ent_id, $mim_id);
-	  }
-	}
-	# $add_dependent_xref_sth->execute($entrez{$entrez_id}, $mim_morbid{$omim_id});	
-      }
-    }
-    elsif($type eq "phenotype"){
-      if(defined($mim_morbid{$omim_id})){
-	foreach my $ent_id (@{$entrez{$entrez_id}}){
-	  foreach my $mim_id (@{$mim_morbid{$omim_id}}){
-	    $add_dependent_xref_sth->execute($ent_id, $mim_id);
-	  }
-	}
-	#	$add_dependent_xref_sth->execute($entrez{$entrez_id}, $mim_morbid{$omim_id});
-      }
-      else{
-	$diff_type++;
-	foreach my $ent_id (@{$entrez{$entrez_id}}){
-	  foreach my $mim_id (@{$mim_gene{$omim_id}}){
-	    $add_dependent_xref_sth->execute($ent_id, $mim_id);
-	  }
-	}
-	#	$add_dependent_xref_sth->execute($entrez{$entrez_id}, $mim_gene{$omim_id});	
-      }
-    }
-    else{
-      print "WARNING unknown type $type\n";
-      next;
-    }
-
+    $self->get_source_id_for_source_name( 'EntrezGene', undef, $dbi );
+  if ( ( $mim_gene_source_id == $ERR_SOURCE_ID_NOT_FOUND )
+       || ( $mim_morbid_source_id == $ERR_SOURCE_ID_NOT_FOUND )
+       || ( $entrez_source_id == $ERR_SOURCE_ID_NOT_FOUND ) ) {
+    croak 'Failed to retrieve all source IDs';
   }
-  $add_dependent_xref_sth->finish;
 
-  print $missed_entrez." EntrezGene entries could not be found.\n";
-  print $missed_omim." Omim entries could not be found.\n";
-  print $diff_type." had different types out of $count Entries.\n";
+  # This will be used to prevent insertion of duplicates
+  $self->get_dependent_mappings( $mim_gene_source_id, $dbi );
+  $self->get_dependent_mappings( $mim_morbid_source_id, $dbi );
+
+  # FIXME: should we abort if any of these comes back empty?
+  my (%mim_gene) =
+    %{ $self->get_valid_codes( "MIM_GENE", $species_id, $dbi ) };
+  my (%mim_morbid) =
+    %{ $self->get_valid_codes( "MIM_MORBID", $species_id, $dbi ) };
+  my (%entrez) =
+    %{ $self->get_valid_codes( "EntrezGene", $species_id, $dbi ) };
+
+  # Initialise all counters to 0 so that we needn't handle possible undefs
+  # while printing the summary
+  my %counters = (
+                  'all_entries'                          => 0,
+                  'dependent_on_entrez'                  => 0,
+                  'direct_ensembl'                       => 0,
+                  'missed_master'                        => 0,
+                  'missed_omim'                          => 0,
+                );
+
+ RECORD:
+  while ( my $line = $csv->getline( $eg_io ) ) {
+
+    my ( $is_comment, $is_header )
+      = ( $line->[0] =~ m{
+                           \A
+                           ([#])?
+                           \s*
+                           (MIM[ ]Number)?  # FIXME: this is an assumption regarding header contents.
+                                            # See if $line has split to the right number of columns instead?
+                       }msx );
+    if ( $is_comment ) {
+      if ( ( scalar @{ $line } == $EXPECTED_NUMBER_OF_COLUMNS )
+           && ( ! is_header_file_valid( $line ) ) ) {
+        croak "Malformed or unexpected header in Mim2Gene file '${filename}'";
+      }
+      next RECORD;
+    }
+
+    if ( scalar @{ $line } != $EXPECTED_NUMBER_OF_COLUMNS ) {
+      croak ' Line ' . $csv->record_number()
+        . " of input file '${filename}' has an incorrect number of columns";
+    }
+
+    # Do not modify the contents of @{$line}, only the output - hence the /r.
+    my ( $omim_acc, $type, $entrez_id, $hgnc_symbol, $ensembl_id )
+      = map { s{\s+\z}{}rmsx } @{ $line };
+
+    $counters{'all_entries'}++;
+
+    # No point in doing anything if we have no matching MIM xref...
+    if ( ( !defined $mim_gene{$omim_acc} ) &&
+         ( !defined $mim_morbid{$omim_acc} ) )
+    {
+      $counters{'missed_omim'}++;
+      next RECORD;
+    }
+
+    # ...or no Ensembl ID or EntrezGene xref to match it to
+    # FIXME: this number might be underestimated because it doesn't
+    # check if Ensembl IDs from the input file actually exist
+    if ( ( ! $ensembl_id )
+         && ( ( ! $entrez_id ) || ( ! defined $entrez{$entrez_id} ) ) ) {
+      $counters{'missed_master'}++;
+      next RECORD;
+    }
+
+    # An unknown type might indicate the change of input format,
+    # therefore make sure the user notices it. That said, do not
+    # bother we do not have an xref this entry would operate on anyway
+    # - which is why we only check this after the preceding two
+    # presence checks.
+    if ( ( $type ne 'gene')
+         && ( $type ne 'gene/phenotype' )
+         && ( $type ne 'predominantly phenotypes' )
+         && ( $type ne 'phenotype' ) ) {
+      croak "Unknown type $type for MIM Number '${omim_acc}' "
+        . "(${filename}:" . $csv->record_number() . ")";
+    }
+
+    # With all the checks taken care of, insert the mappings. We check
+    # both MIM_GENE and MIM_MORBID every time because some MIM entries
+    # can appear in both.
+    foreach my $mim_xref_id ( @{ $mim_gene{$omim_acc} } ) {
+      $self->process_xref_entry({
+        'mim_xref_id'      => $mim_xref_id,
+        'mim_source_id'    => $mim_gene_source_id,
+        'ensembl_id'       => $ensembl_id,
+        'entrez_xrefs'     => $entrez{$entrez_id},
+        'entrez_source_id' => $entrez_source_id,
+        'counters'         => \%counters,
+        'dbi'              => $dbi,
+      });
+    }
+    foreach my $mim_xref_id ( @{ $mim_morbid{$omim_acc} } ) {
+      $self->process_xref_entry({
+        'mim_xref_id'      => $mim_xref_id,
+        'mim_source_id'    => $mim_morbid_source_id,
+        'ensembl_id'       => $ensembl_id,
+        'entrez_xrefs'     => $entrez{$entrez_id},
+        'entrez_source_id' => $entrez_source_id,
+        'counters'         => \%counters,
+        'dbi'              => $dbi,
+      });
+    }
+
+  } ## end record loop
+
+  $csv->eof || croak 'Error parsing CSV: ' . $csv->error_diag();
+  $eg_io->close();
+
+  if ( $verbose ) {
+    print 'Processed ' . $counters{'all_entries'} . " entries. Out of those\n"
+      . "\t" . $counters{'missed_omim'} . " had missing OMIM entries,\n"
+      . "\t" . $counters{'direct_ensembl'} . " were direct gene xrefs,\n"
+      . "\t" . $counters{'dependent_on_entrez'} . " were dependent EntrezGene xrefs,\n"
+      . "\t" . $counters{'missed_master'} . " had missing master entries.\n";
+  }
 
   return 0;
+} ## end sub run
+
+
+=head2 is_file_header_valid
+
+  Arg [1]    : String file header line
+  Example    : if (!is_file_header_valid($header_line)) {
+                 croak 'Bad header';
+               }
+  Description: Verifies if the header of a Mim2Gene file follows expected
+               syntax.
+               We do not check the number of columns because that is what
+               we use to *detect* the header in the first place.
+  Return type: boolean
+  Exceptions : none
+  Caller     : internal
+  Status     : Stable
+
+=cut
+
+sub is_header_file_valid {
+  my ( $header ) = @_;
+
+  my @fields_ok;
+
+  Readonly my @field_patterns
+    => (
+        qr{ \A [#]? \s* MIM[ ]Number }msx,
+        qr{ MIM[ ]Entry[ ]Type }msx,
+        qr{ Entrez[ ]Gene[ ]ID }msx,
+        qr{ Approved[ ]Gene[ ]Symbol }msx,
+        qr{ Ensembl[ ]Gene[ ]ID }msx,
+      );
+
+  my $header_field;
+  foreach my $pattern (@field_patterns) {
+    $header_field = shift @{ $header };
+    # Make sure we run the regex match in scalar context
+    push @fields_ok, scalar ( $header_field =~ m{ $pattern }msx );
+  }
+
+  # All fields must have matched
+  return List::Util::all { $_ } @fields_ok;
 }
+
+
+=head2 process_xref_entry
+
+  Arg [1]    : HashRef list of named arguments: FIXME
+  Example    : $self->process_xref_entry({...});
+  Description: Wrapper around the most frequently repeated bit of
+               run(): if $ensembl_id is defined insert a direct MIM
+               xref, otherwise loop over the list of matching
+               EntrezGene xrefs and insert dependent MIM xrefs.
+               In either case increment the correct counter.
+  Return type: none
+  Exceptions : none
+  Caller     : internal
+  Status     : Stable
+
+=cut
+
+sub process_xref_entry {
+  my ( $self, $arg_ref ) = @_;
+
+  if ( $arg_ref->{'ensembl_id'} ) {
+    $arg_ref->{'counters'}->{'direct_ensembl'}++;
+    $self->add_direct_xref( $arg_ref->{'mim_xref_id'},
+                            $arg_ref->{'ensembl_id'},
+                            'gene',
+                            undef,
+                            $arg_ref->{'dbi'},
+                            1
+                         );
+  }
+  else {
+    foreach my $ent_id ( @{ $arg_ref->{'entrez_xrefs'} } ) {
+      $arg_ref->{'counters'}->{'dependent_on_entrez'}++;
+      $self->add_dependent_xref_maponly( $arg_ref->{'mim_xref_id'},
+                                         $arg_ref->{'mim_source_id'},
+                                         $ent_id,
+                                         $arg_ref->{'entrez_source_id'},
+                                         $arg_ref->{'dbi'},
+                                         1
+                                      );
+    }
+  }
+
+  return;
+}
+
 
 1;
