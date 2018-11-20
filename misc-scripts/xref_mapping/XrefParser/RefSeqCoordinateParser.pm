@@ -27,16 +27,32 @@ use Readonly;
 use Bio::EnsEMBL::Registry;
 
 use parent qw( XrefParser::BaseParser );
+use Smart::Comments;
 
-# Only scores higher than the threshold will be stored for both transcripts and translateable transcripts
+
+# Refseq sources to consider. Prefixes not in this list will be ignored
+Readonly my $REFSEQ_SOURCES => {
+    NM => 'RefSeq_mRNA',
+    NR => 'RefSeq_ncRNA',
+    XM => 'RefSeq_mRNA_predicted',
+    XR => 'RefSeq_ncRNA_predicted',
+    NP => 'RefSeq_peptide',
+    XP => 'RefSeq_peptide_predicted',
+};
+
+# Only scores higher than the threshold will be stored for transcripts
 Readonly my $TRANSCRIPT_SCORE_THRESHOLD => 0.75;
+
+# Only scores higher than the threshold will be stored translateable transcripts
 Readonly my $TL_TRANSCRIPT_SCORE_THRESHOLD => 0.75;
+
 # If Biotypes do not match, score will be multiplied with the penalty
 Readonly my $PENALTY => 0.9;
 
 sub run_script {
   my ($self, $ref_arg) = @_;
-
+### $self
+### $ref_arg
   my $source_id    = $ref_arg->{source_id};
   my $species_id   = $ref_arg->{species_id};
   my $species_name = $ref_arg->{species};
@@ -53,7 +69,7 @@ sub run_script {
   my $file_params = $self->parse_file_string($file);
 
   # project or db param validation
-  if ( !defined $db && ( ($file_params->{project} ne 'ensembl') || ($file_params->{project} ne 'ensemblgenomes') ) {
+  unless ( defined $db || ( ($file_params->{project} eq 'ensembl') || ($file_params->{project} eq 'ensemblgenomes') ) ) {
     croak "Missing or unsupported project value (supported values: ensembl, ensemblgenomes), or missing db value.";
   }
 
@@ -63,24 +79,14 @@ sub run_script {
   $file_params->{ofuser} //= 'ensro';
   $file_params->{ofport} //= '3306';
 
-  # set the list of source names
-  my $source_names = {
-    NM => 'RefSeq_mRNA',
-    NR => 'RefSeq_ncRNA',
-    XM => 'RefSeq_mRNA_predicted',
-    XR => 'RefSeq_ncRNA_predicted',
-    NP => 'RefSeq_peptide',
-    XP => 'RefSeq_peptide_predicted',
-  };
-
-  my $source_ids;
-  while (my ($source_prefix, $source_name) = each %{$source_names}) {
-    $source_ids->{$source_prefix} = $self->get_source_id_for_source_name( $source_name, 'otherfeatures', $dbi )
+  # get RefSeq source ids
+  while (my ($source_prefix, $source_name) = each %{$REFSEQ_SOURCES}) {
+    $self->{source_ids}->{$source_name} = $self->get_source_id_for_source_name( $source_name, 'otherfeatures' , $dbi )
   }
 
   if ($verbose) {
-    while (my ($source_prefix, $source_name) = each %{$source_names}) {
-      print "$source_name source ID = $source_ids->{$source_prefix}\n";
+    for my $source_name (sort values %{$REFSEQ_SOURCES}) {
+      print "$source_name source ID = $self->{source_ids}->{$source_name}\n";
     }
   }
 
@@ -144,6 +150,7 @@ sub run_script {
 
   # Cache EntrezGene IDs and source ID where available
   my $entrez_ids = $self->get_valid_codes("EntrezGene", $species_id, $dbi);
+  $self->{source_ids}->{EntrezGene} = $self->get_source_id_for_source_name('EntrezGene', undef, $dbi);
   my $entrez_source_id = $self->get_source_id_for_source_name('EntrezGene', undef, $dbi);
 
   my $sa = $core_dba->get_SliceAdaptor();
@@ -181,7 +188,8 @@ sub run_script {
           $id = $transcript_of->stable_id;
         }
         # Skip non conventional and missing accessions
-        unless ( $id =~ /\A[NXMR]{2}_\d+\.?\d+\z/xms ) {
+        unless ( exists $REFSEQ_SOURCES->{substr($id, 0, 2)} ) {
+          print ">>> HERE!!!! $id\n";
           next;
         }
 
@@ -211,7 +219,10 @@ sub run_script {
 
         # Create a range registry for all the exons of the ensembl transcript
         foreach my $transcript(@{$transcripts}) {
-          if ($transcript->strand != $transcript_of->strand) { next; }
+          # make sure it's the same strand
+          if ($transcript->strand != $transcript_of->strand) {
+            next;
+          }
           my $exons = $transcript->get_all_Exons();
           my $rr_exons = Bio::EnsEMBL::Mapper::RangeRegistry->new();
           my $tl_exons = $transcript->get_all_translateable_Exons();
@@ -262,9 +273,11 @@ sub run_script {
 
         # If a best match was defined for the refseq transcript, store it as direct xref for ensembl transcript
         if ($best_id) {
-          my ($acc, $version) = split(/\./xms, $id);
+          my ($acc, $version) = split(/\./x, $id);
 
-          my $source = $source_ids->{substr $acc, 0, 2} // next;
+          my $source = $self->source_id_from_acc($acc);
+
+          next unless defined $source;
 
           my $xref_id = $self->add_xref({
             acc        => $acc,
@@ -287,14 +300,21 @@ sub run_script {
           # Add link between Ensembl gene and EntrezGene
           if (defined $entrez_ids->{$entrez_id} ) {
             foreach my $dependent_xref_id (@{$entrez_ids->{$entrez_id}}) {
-              $self->add_dependent_xref({
-                master_xref_id => $xref_id,
-                acc            => $dependent_xref_id,
-                version        => $version,
-                source_id      => $entrez_source_id,
-                species_id     => $species_id,
-                dbi            => $dbi
-              });
+              $self->add_dependent_xref_maponly(
+                $dependent_xref_id,
+                $self->source_id_from_name('EntrezGene'),
+                $xref_id,
+                $source,
+                $dbi
+              );
+              # $self->add_dependent_xref({
+              #   master_xref_id => $xref_id,
+              #   acc            => $dependent_xref_id,
+              #   version        => $version,
+              #   source_id      => $self->source_id_from_name('EntrezGene'),
+              #   species_id     => $species_id,
+              #   dbi            => $dbi
+              # });
             }
           }
 
@@ -308,7 +328,9 @@ sub run_script {
               }
               my ($tl_acc, $tl_version) = split(/\./xms, $tl_id);
 
-              my $tl_source = $source_ids->{substr $tl_acc, 0, 2} // next;
+              my $tl_source = $self->source_id_from_acc($tl_acc);
+
+              next unless defined $tl_source;
 
               my $tl_xref_id = $self->add_xref({
                 acc        => $tl_acc,
@@ -339,7 +361,7 @@ sub run_script {
 sub parse_file_string {
   my ($self, $file_string) = @_;
 
-  $file_string =~ s/\A\w+://xms;
+  $file_string =~ s/\A\w+://x;
 
   my @param_pairs = split( /,/x, $file_string );
 
@@ -409,6 +431,37 @@ sub compute_best_scores {
   }
 
   return ($best_id, $best_score, $best_tl_score);
+}
+
+# returns the source id for a source name, requires $self->{source_ids} to have been populated
+sub source_id_from_name {
+  my ($self, $name) = @_;
+
+  my $source_id;
+
+  if ( exists $self->{source_ids}->{$name} ) {
+    $source_id = $self->{source_ids}->{$name};
+  } elsif ( $self->{verbose} ) {
+    warn "WARNING: can't get source ID for name '$name'\n";
+  }
+
+  return $source_id;
+}
+
+# returns the source id for a RefSeq accession, requires $self->{source_ids} to have been populated
+sub source_id_from_acc {
+  my ($self, $acc) = @_;
+
+  my $source_id;
+  my $prefix = substr($acc, 0, 2);
+
+  if ( exists $REFSEQ_SOURCES->{$prefix} ) {
+    $source_id = $self->source_id_from_name( $REFSEQ_SOURCES->{$prefix} );
+  } elsif ( $self->{verbose} ) {
+    warn "WARNING: can't get source ID for accession '$acc'\n";
+  }
+
+  return $source_id;
 }
 
 1;
