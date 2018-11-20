@@ -40,6 +40,11 @@ $database->populate(
   "with force please",
 );
 
+
+# UniProt species taxon codes happen to match species ids of the core database
+my $SPECIES_ID = 6239;
+my $SPECIES_NAME = "Caenorhabditis elegans";
+
 my %xref_tables_expected_empty_by_default = (
   checksum_xref=>0,
   coordinate_xref=>0,
@@ -53,6 +58,7 @@ my %xref_tables_expected_empty_by_default = (
   translation_direct_xref=>0,
   xref=>0,
 );
+
 my $tmp_dir = tempdir(CLEANUP=>1);
 sub store_in_temporary_file {
   my ($content, %opts) = @_;
@@ -62,9 +68,7 @@ sub store_in_temporary_file {
   close($fh);
   return $path;
 }
-# Happens to match the species id of the core database
-my $SPECIES_ID = 1;
-my $SPECIES_NAME = "Homo sapiens";
+
 sub test_parser {
   my ($parser, $content, $expected, $test_name, %opts) = @_;
   require_ok($parser);
@@ -180,7 +184,7 @@ my @recognised_sources = (
  "MEROPS; C26.956; -.",
 );
 for my $l (@recognised_sources) {
-  (my $uniprot_elegans_record_extra_line = $uniprot_elegans_record) =~ s/DR(.*?)\n/DR$1\nDR  $l/;
+  (my $uniprot_elegans_record_extra_line = $uniprot_elegans_record) =~ s/DR(.*?)\n/DR$1\nDR   $l/;
   test_parser("XrefParser::UniProtParser", $uniprot_elegans_record_extra_line,  {
     xref => 4,
     primary_xref => 1,
