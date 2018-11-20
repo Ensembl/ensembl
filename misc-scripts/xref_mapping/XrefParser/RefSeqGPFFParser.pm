@@ -28,7 +28,7 @@ use Readonly;
 use parent qw( XrefParser::BaseParser );
 
 # Refseq sources to consider. Prefixes not in this list will be ignored
-Readonly my $refseq_sources => {
+Readonly my $REFSEQ_SOURCES => {
     NM => 'RefSeq_mRNA',
     NR => 'RefSeq_ncRNA',
     XM => 'RefSeq_mRNA_predicted',
@@ -58,7 +58,7 @@ sub run {
   $self->{verbose} = $verbose;
 
   # get RefSeq source ids
-  while (my ($source_prefix, $source_name) = each %{$refseq_sources}) {
+  while (my ($source_prefix, $source_name) = each %{$REFSEQ_SOURCES}) {
     $self->{source_ids}->{$source_name} = $self->get_source_id_for_source_name( $source_name, undef, $dbi )
   }
 
@@ -73,7 +73,7 @@ sub run {
   $self->{wiki_ids} = $self->get_valid_codes('WikiGene', $species_id, $dbi);
 
   if ($verbose) {
-    for my $source_name (sort values %{$refseq_sources}) {
+    for my $source_name (sort values %{$REFSEQ_SOURCES}) {
       print "$source_name source ID = $self->{source_ids}->{$source_name}\n";
     }
   }
@@ -148,7 +148,7 @@ sub run {
 
       # set release info
       $self->set_release( $source_id, $release_string, $dbi );
-      for my $source_name (sort values %{$refseq_sources}) {
+      for my $source_name (sort values %{$REFSEQ_SOURCES}) {
         $self->set_release( $self->{source_ids}->{$source_name}, $release_string, $dbi );
       }
       if ($verbose) {
@@ -167,7 +167,7 @@ sub run {
 
 
 
-
+# provided a params hash containing record and type, returns xref for bulk insert and creates related dependent_xrefs
 sub xref_from_record {
   my ($self, $params) = @_;
 
@@ -334,8 +334,8 @@ sub source_id_from_acc {
   my $source_id;
   my $prefix = substr($acc, 0, 2);
 
-  if ( exists $refseq_sources->{$prefix} ) {
-    $source_id = $self->source_id_from_name( $refseq_sources->{$prefix} );
+  if ( exists $REFSEQ_SOURCES->{$prefix} ) {
+    $source_id = $self->source_id_from_name( $REFSEQ_SOURCES->{$prefix} );
   } elsif ( $self->{verbose} ) {
     warn "WARNING: can't get source ID for accession '$acc'\n";
   }
