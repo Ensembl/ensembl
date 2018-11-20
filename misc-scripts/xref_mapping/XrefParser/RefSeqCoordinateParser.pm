@@ -27,7 +27,6 @@ use Readonly;
 use Bio::EnsEMBL::Registry;
 
 use parent qw( XrefParser::BaseParser );
-use Smart::Comments;
 
 
 # Refseq sources to consider. Prefixes not in this list will be ignored
@@ -43,16 +42,16 @@ Readonly my $REFSEQ_SOURCES => {
 # Only scores higher than the threshold will be stored for transcripts
 Readonly my $TRANSCRIPT_SCORE_THRESHOLD => 0.75;
 
-# Only scores higher than the threshold will be stored translateable transcripts
+# Only scores higher than the threshold will be stored translatable transcripts
 Readonly my $TL_TRANSCRIPT_SCORE_THRESHOLD => 0.75;
 
 # If Biotypes do not match, score will be multiplied with the penalty
 Readonly my $PENALTY => 0.9;
 
+
 sub run_script {
   my ($self, $ref_arg) = @_;
-### $self
-### $ref_arg
+
   my $source_id    = $ref_arg->{source_id};
   my $species_id   = $ref_arg->{species_id};
   my $species_name = $ref_arg->{species};
@@ -149,7 +148,7 @@ sub run_script {
   }
 
   # Cache EntrezGene IDs and source ID where available
-  my $entrez_ids = $self->get_valid_codes("EntrezGene", $species_id, $dbi);
+  my $entrez_ids = $self->get_valid_codes('EntrezGene', $species_id, $dbi);
   $self->{source_ids}->{EntrezGene} = $self->get_source_id_for_source_name('EntrezGene', undef, $dbi);
   my $entrez_source_id = $self->get_source_id_for_source_name('EntrezGene', undef, $dbi);
 
@@ -176,6 +175,7 @@ sub run_script {
       my $transcripts_of = $gene_of->get_all_Transcripts();
 
       # Create a range registry for all the exons of the refseq transcript
+      TRANSCRIPT_OF:
       foreach my $transcript_of (sort { $a->start <=> $b->start } @{$transcripts_of}) {
         my $id;
         # RefSeq accessions are now stored as xrefs rather than
@@ -187,9 +187,10 @@ sub run_script {
         } elsif (defined $transcript_of->stable_id) {
           $id = $transcript_of->stable_id;
         }
+
         # Skip non supported and missing accessions
         unless ( exists $REFSEQ_SOURCES->{substr($id, 0, 2)} ) {
-          next;
+          next TRANSCRIPT_OF;
         }
 
         my $transcript_result;
@@ -217,10 +218,11 @@ sub run_script {
         my $transcripts = $chromosome->get_all_Transcripts(1);
 
         # Create a range registry for all the exons of the ensembl transcript
+        TRANSCRIPT:
         foreach my $transcript(@{$transcripts}) {
           # make sure it's the same strand
           if ($transcript->strand != $transcript_of->strand) {
-            next;
+            next TRANSCRIPT;
           }
           my $exons = $transcript->get_all_Exons();
           my $rr_exons = Bio::EnsEMBL::Mapper::RangeRegistry->new();
@@ -276,7 +278,7 @@ sub run_script {
 
           my $source = $self->source_id_from_acc($acc);
 
-          next unless defined $source;
+          next TRANSCRIPT unless defined $source;
 
           my $xref_id = $self->add_xref({
             acc        => $acc,
@@ -288,7 +290,7 @@ sub run_script {
             dbi        => $dbi,
             info_type  => 'DIRECT'
           });
-          $self->add_direct_xref($xref_id, $best_id, "Transcript", undef, $dbi);
+          $self->add_direct_xref($xref_id, $best_id, 'Transcript', undef, $dbi);
 
           my $entrez_id = $gene_of->stable_id;
           my $tl_of = $transcript_of->translation();
@@ -299,21 +301,14 @@ sub run_script {
           # Add link between Ensembl gene and EntrezGene
           if (defined $entrez_ids->{$entrez_id} ) {
             foreach my $dependent_xref_id (@{$entrez_ids->{$entrez_id}}) {
-              $self->add_dependent_xref_maponly(
-                $dependent_xref_id,
-                $self->source_id_from_name('EntrezGene'),
-                $xref_id,
-                $source,
-                $dbi
-              );
-              # $self->add_dependent_xref({
-              #   master_xref_id => $xref_id,
-              #   acc            => $dependent_xref_id,
-              #   version        => $version,
-              #   source_id      => $self->source_id_from_name('EntrezGene'),
-              #   species_id     => $species_id,
-              #   dbi            => $dbi
-              # });
+              $self->add_dependent_xref({
+                master_xref_id => $xref_id,
+                acc            => $dependent_xref_id,
+                version        => $version,
+                source_id      => $self->source_id_from_name('EntrezGene'),
+                species_id     => $species_id,
+                dbi            => $dbi
+              });
             }
           }
 
@@ -329,7 +324,7 @@ sub run_script {
 
               my $tl_source = $self->source_id_from_acc($tl_acc);
 
-              next unless defined $tl_source;
+              next TRANSCRIPT unless defined $tl_source;
 
               my $tl_xref_id = $self->add_xref({
                 acc        => $tl_acc,
@@ -341,7 +336,7 @@ sub run_script {
                 dbi        => $dbi,
                 info_type  => 'DIRECT'
               });
-              $self->add_direct_xref($tl_xref_id, $tl->stable_id(), "Translation", undef, $dbi);
+              $self->add_direct_xref($tl_xref_id, $tl->stable_id(), 'Translation', undef, $dbi);
             }
           }
         }
