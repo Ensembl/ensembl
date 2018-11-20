@@ -39,8 +39,8 @@ Readonly my $refseq_sources => {
 
 
 sub run {
-
   my ($self, $ref_arg) = @_;
+
   my $source_id    = $ref_arg->{source_id};
   my $species_id   = $ref_arg->{species_id};
   my $species_name = $ref_arg->{species};
@@ -54,6 +54,7 @@ sub run {
   }
 
   $self->{species_id} = $species_id;
+  $self->{dbi} = $dbi;
   $self->{verbose} = $verbose;
 
   # get RefSeq source ids
@@ -108,7 +109,7 @@ sub run {
     do {
       local $/ = "\/\/\n";
       while ( my $item = $refseq_fh->getline() ) {
-        my $xref = $self->get_xref_from_record({
+        my $xref = $self->xref_from_record({
           record => $item,
           type   => $type
         });
@@ -144,7 +145,7 @@ sub run {
     if ( $release =~ m/(NCBI.*Release\s\d+)\s(.*)\sDistribution/x ) {
       my ($rel_number, $rel_date) = ($1, $2);
       my $release_string = "$rel_number, $rel_date";
- 
+
       # set release info
       $self->set_release( $source_id, $release_string, $dbi );
       for my $source_name (sort values %{$refseq_sources}) {
@@ -167,7 +168,7 @@ sub run {
 
 
 
-sub get_xref_from_record {
+sub xref_from_record {
   my ($self, $params) = @_;
 
 
@@ -278,28 +279,30 @@ sub get_xref_from_record {
 
     next GENEID unless (defined $refseq_pair);
 
-    # discard the version number
-    $refseq_pair =~ s/\.\d+//x;
+    # split the version number
+    my ($pair_acc, $pair_version) = split(/\./x, $refseq_pair);
 
     # Add xrefs for RefSeq mRNA as well where available
-    foreach my $refseq_id (@{ $self->{refseq_ids}->{$refseq_pair} }) {
+    foreach my $refseq_acc (@{ $self->{refseq_accs}->{$pair_acc} }) {
       foreach my $entrez_id (@{ $self->{entrez_ids}->{$gene_id} }) {
-        $self->add_dependent_xref_maponly(
-            $entrez_id,
-            $self->source_id_from_name('EntrezGene'),
-            $refseq_id,
-            $self->source_id_from_acc($refseq_id),
-            $self->{_dbi}
-        );
+        $self->add_dependent_xref({
+          master_xref_id => $refseq_acc,
+          acc            => $entrez_id,
+          version        => $pair_version,
+          source_id      => $self->source_id_from_name('EntrezGene'),
+          species_id     => $self->{species_id},
+          dbi            => $self->{dbi}
+        });
       }
       foreach my $wiki_id (@{ $self->{wiki_ids}->{$gene_id} }) {
-        $self->add_dependent_xref_maponly(
-            $wiki_id,
-            $self->source_id_from_name('WikiGene'),
-            $refseq_id,
-            $self->source_id_from_acc($refseq_id),
-            $self->{_dbi}
-        );
+        $self->add_dependent_xref({
+          master_xref_id => $refseq_acc,
+          acc            => $wiki_id,
+          version        => $pair_version,
+          source_id      => $self->source_id_from_name('WikiGene'),
+          species_id     => $self->{species_id},
+          dbi            => $self->{dbi}
+        });
       }
     }
   }
@@ -309,7 +312,7 @@ sub get_xref_from_record {
 }
 
 
-
+# returns the source id for a source name, requires $self->{source_ids} to have been populated
 sub source_id_from_name {
   my ($self, $name) = @_;
 
@@ -324,6 +327,7 @@ sub source_id_from_name {
   return $source_id;
 }
 
+# returns the source id for a RefSeq accession, requires $self->{source_ids} to have been populated
 sub source_id_from_acc {
   my ($self, $acc) = @_;
 
@@ -338,9 +342,6 @@ sub source_id_from_acc {
 
   return $source_id;
 }
-
-
-
 
 # get type from filename path. this includes the source name and that's enough to extract it
 sub type_from_file {
