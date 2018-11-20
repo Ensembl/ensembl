@@ -187,9 +187,8 @@ sub run_script {
         } elsif (defined $transcript_of->stable_id) {
           $id = $transcript_of->stable_id;
         }
-        # Skip non conventional and missing accessions
+        # Skip non supported and missing accessions
         unless ( exists $REFSEQ_SOURCES->{substr($id, 0, 2)} ) {
-          print ">>> HERE!!!! $id\n";
           next;
         }
 
