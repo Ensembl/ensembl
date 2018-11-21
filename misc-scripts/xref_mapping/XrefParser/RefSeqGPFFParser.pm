@@ -136,10 +136,12 @@ sub run {
   # process the release file
   if ( defined $release_file ) {
     # get filehandle
-    my $release_io = $self->get_filehandle($release_file);
+    my $release_fh = $self->get_filehandle($release_file);
 
     # get file header
-    my $release = do { local $/ = "\n*"; <$release_io> };
+    my $release = do { local $/ = "\n*"; <$release_fh> };
+    $release_fh->close();
+
     $release =~ s/\s+/ /xg;
 
     if ( $release =~ m/(NCBI.*Release\s\d+)\s(.*)\sDistribution/x ) {
