@@ -90,6 +90,7 @@ sub run {
   $self->{taxonomy2species_id} = { map{ $_=>$species_id } @{$species2tax{$species_id}} };
 
   # process the source files
+  GENBANK:
   foreach my $file (@{$files}) {
 
     # type from the file (peptide or dna)
@@ -122,9 +123,9 @@ sub run {
 
     $refseq_fh->close();
 
-    # no xrefs in this record...
+    # no xrefs in this file...
     if ( !defined( $xrefs ) ) {
-      next;
+      next GENBANK;
     }
 
     # upload the xrefs
