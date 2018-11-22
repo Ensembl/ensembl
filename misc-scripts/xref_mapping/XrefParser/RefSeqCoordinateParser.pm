@@ -22,7 +22,6 @@ package XrefParser::RefSeqCoordinateParser;
 use strict;
 use warnings;
 use Carp;
-use DBI;
 use Readonly;
 use Bio::EnsEMBL::Registry;
 
