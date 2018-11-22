@@ -154,15 +154,15 @@ sub run {
       for my $source_name (sort values %{$REFSEQ_SOURCES}) {
         $self->set_release( $self->{source_ids}->{$source_name}, $release_string, $dbi );
       }
-      if ($verbose) {
-        print "RefSeq release: '$release_string'\n";
-      }
+
+      print "RefSeq release: '$release_string'\n" if $verbose;
+
     } else {
-      warn "WARNING: Could not set release info from release file '$release_file'\n";
+      warn "WARNING: Could not set release info from release file '$release_file'\n" if $verbose;
     }
 
   } else {
-    warn "WARNING: No release_file available\n";
+    warn "WARNING: No release_file available\n" if $verbose;
   }
 
   return 0;
@@ -353,7 +353,9 @@ sub type_from_file {
 
   my ($type) = $file =~ /RefSeq_(peptide|dna)/x;
 
-  warn "WARNING: Could not work out sequence type for '$file'\n" unless $type;
+  if ( $self->{verbose} ) {
+    warn "WARNING: Could not work out sequence type for '$file'\n" unless $type;
+  }
 
   return $type;
 }
