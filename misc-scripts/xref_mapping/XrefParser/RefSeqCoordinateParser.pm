@@ -384,7 +384,7 @@ sub compute_exons {
     }
     if (defined $params->{overlap}) {
       my $overlap = $params->{overlap}->overlap_size('exon', $exon->seq_region_start, $exon->seq_region_end);
-      $exon_match += $overlap/($exon->seq_region_end - $exon->seq_region_start + 1);
+      $exon_match += $overlap / ($exon->seq_region_end - $exon->seq_region_start + 1);
     }
   }
 
