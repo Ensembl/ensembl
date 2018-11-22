@@ -347,10 +347,11 @@ sub source_id_from_acc {
 }
 
 # get type from filename path. this includes the source name and that's enough to extract it
+# type can be either peptide or dna
 sub type_from_file {
   my ($self, $file) = @_;
 
-  my ($type) = $file =~ /RefSeq_(\w+)\//x;
+  my ($type) = $file =~ /RefSeq_(peptide|dna)/x;
 
   warn "WARNING: Could not work out sequence type for '$file'\n" unless $type;
 
