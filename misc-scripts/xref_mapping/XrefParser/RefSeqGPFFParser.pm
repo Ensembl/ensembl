@@ -283,7 +283,6 @@ sub xref_from_record {
         $self->add_dependent_xref({
           master_xref_id => $refseq_acc,
           acc            => $entrez_id,
-          version        => $pair_version,
           source_id      => $self->source_id_from_name('EntrezGene'),
           species_id     => $self->{species_id},
           dbi            => $self->{dbi}
@@ -293,7 +292,6 @@ sub xref_from_record {
         $self->add_dependent_xref({
           master_xref_id => $refseq_acc,
           acc            => $wiki_id,
-          version        => $pair_version,
           source_id      => $self->source_id_from_name('WikiGene'),
           species_id     => $self->{species_id},
           dbi            => $self->{dbi}
