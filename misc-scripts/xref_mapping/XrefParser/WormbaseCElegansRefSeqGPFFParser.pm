@@ -48,10 +48,10 @@ sub upload_xref_object_graphs {
 }
 
 sub xref_from_record {
-   my ($self, $entry, @args) = @_;
+   my ($self, $entry, $type) = @_;
    return &modify_xref_with_dependent(
       $SOURCE_IDS, $entry,
-      $self->SUPER::xref_from_record($entry, @args),
+      $self->SUPER::xref_from_record($entry, $type),
       $ACCESSION_FROM_ENTRY_PATTERN,
    );
 }

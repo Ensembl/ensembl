@@ -108,12 +108,8 @@ sub run {
 
     do {
       local $/ = "\/\/\n";
-      while ( my $item = $refseq_fh->getline() ) {
-        my $xref = $self->xref_from_record({
-          record => $item,
-          type   => $type
-        });
-
+      while ( my $genbank_rec = $refseq_fh->getline() ) {
+        my $xref = $self->xref_from_record( $genbank_rec, $type );
         push @{$xrefs}, $xref if $xref;
       }
     };
@@ -164,10 +160,7 @@ sub run {
 
 # provided a params hash containing record and type, returns xref for bulk insert and creates related dependent_xrefs
 sub xref_from_record {
-  my ($self, $params) = @_;
-
-
-  my $genbank_rec = $params->{record};
+  my ($self, $genbank_rec, $type) = @_;
 
   # Get the record species
   my ($record_species) = $genbank_rec =~ /ORGANISM\s*(.*)\n/x;
@@ -195,7 +188,7 @@ sub xref_from_record {
     ACCESSION     => $acc,
     SPECIES_ID    => $self->{species_id},
     SOURCE_ID     => $acc_source_id,
-    SEQUENCE_TYPE => $params->{type},
+    SEQUENCE_TYPE => $type,
     INFO_TYPE     => 'SEQUENCE_MATCH'
   };
 
