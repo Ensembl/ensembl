@@ -22,12 +22,11 @@ package XrefParser::ZFINParser;
 use strict;
 use warnings;
 use Carp;
-use POSIX qw(strftime);
-use File::Basename;
+use File::Basename; # provides dirname
 use File::Spec::Functions;
 use Text::CSV;
 
-use base qw( XrefParser::BaseParser );
+use parent qw( XrefParser::BaseParser );
 
 sub run {
   my ($self, $ref_arg) = @_;
@@ -54,7 +53,6 @@ sub run {
 
   if ( !defined $swissprot_io ) {
     croak "ERROR: Could not open " . catfile( $dir, 'uniprot.txt' ). "\n" ;
-    return 1;    # 1 error
   }
 
 
@@ -72,28 +70,13 @@ sub run {
 
   my %description;
 
-  my $sql = "insert ignore into synonym (xref_id, synonym) values (?, ?)";
-  my $add_syn_sth = $dbi->prepare($sql);    
+  #get the source ids for ZFIN refseq, entrezgene and uniprot
+  my @source_ids = $self->get_source_ids_for_source_name_pattern("ZFIN_ID");
 
-  #get the source ids for ZFIN refseq, entrezgene and unitprot
-  $sql = 'select source_id, priority_description from source where name like "ZFIN_ID"';
+  my $sql = "select accession, label, version,  description from xref where source_id in (".join(", ",@source_ids).")";
   my $sth = $dbi->prepare($sql);
-
   $sth->execute();
-
-
-  my ($zfin_source_id, $desc);
-  $sth->bind_columns(\$zfin_source_id, \$desc);
-  my @arr;
-  while($sth->fetch()){
-    push @arr, $zfin_source_id;
-  }
-  $sth->finish;
-
-  $sql = "select accession, label, version,  description from xref where source_id in (".join(", ",@arr).")";
-  $sth = $dbi->prepare($sql);
-  $sth->execute();
-  my ($acc, $lab, $ver);
+  my ($acc, $lab, $ver, $desc);
   my $zfin_loaded_count = 0;
   $sth->bind_columns(\$acc, \$lab, \$ver, \$desc);
   while (my @row = $sth->fetchrow_array()) {
@@ -135,7 +118,6 @@ sub run {
 
   if ( !defined $refseq_io ) {
     croak "ERROR: Could not open " . catfile( $dir, 'refseq.txt' ),"\n" ;
-    return 1;
   }
 
   my $refseq_csv = Text::CSV->new({
@@ -184,7 +166,6 @@ sub run {
 
   if ( !defined $zfin_io ) {
     croak "ERROR: Could not open " . catfile( $dir, 'aliases.txt' ), "\n" ;
-    return 1;
   }
 
   my $zfin_csv = Text::CSV->new({
