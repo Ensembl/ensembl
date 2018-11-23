@@ -302,7 +302,6 @@ sub run_script {
               $self->add_dependent_xref({
                 master_xref_id => $xref_id,
                 acc            => $dependent_xref_id,
-                version        => $version,
                 source_id      => $self->source_id_from_name('EntrezGene'),
                 species_id     => $species_id,
                 dbi            => $dbi
