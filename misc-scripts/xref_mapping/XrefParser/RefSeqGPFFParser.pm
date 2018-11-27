@@ -49,8 +49,8 @@ sub run {
   my $dbi          = $ref_arg->{dbi} // $self->dbi;
   my $verbose      = $ref_arg->{verbose} // 0;
 
-  if((!defined $source_id) or (!defined $species_id) or (!defined $files)){
-    croak "Need to pass source_id, species_id, files and rel_file as pairs";
+  if ( (!defined $source_id) or (!defined $species_id) or (!defined $files) or (!defined $release_file) ){
+    confess "Need to pass source_id, species_id, files and rel_file as pairs";
   }
 
   $self->{species_id} = $species_id;
@@ -99,20 +99,19 @@ sub run {
     my $refseq_fh = $self->get_filehandle($file);
 
     if ( !defined $refseq_fh ) {
-      warn "WARNING: Can't open RefSeqGPFF file $file\n";
-      return;
+      confess "Can't open RefSeqGPFF file '$file'\n";
     }
 
     # this will hold the array of xrefs to bulk insert
     my $xrefs;
 
-    do {
+    {
       local $/ = "\/\/\n";
       while ( my $genbank_rec = $refseq_fh->getline() ) {
         my $xref = $self->xref_from_record( $genbank_rec, $type );
         push @{$xrefs}, $xref if $xref;
       }
-    };
+    }
 
     $refseq_fh->close();
 
@@ -122,35 +121,29 @@ sub run {
   }
 
 
-  # process the release file
-  if ( defined $release_file ) {
-    # get filehandle
-    my $release_fh = $self->get_filehandle($release_file);
+  # get the release file handle
+  my $release_fh = $self->get_filehandle($release_file);
 
-    # get file header
-    my $release = do { local $/ = "\n*"; <$release_fh> };
-    $release_fh->close();
+  # get file header
+  my $release = do { local $/ = "\n*"; <$release_fh> };
+  $release_fh->close();
 
-    $release =~ s/\s+/ /xg;
+  $release =~ s/\s+/ /xg;
 
-    if ( $release =~ m/(NCBI.*Release\s\d+)\s(.*)\sDistribution/x ) {
-      my ($rel_number, $rel_date) = ($1, $2);
-      my $release_string = "$rel_number, $rel_date";
+  if ( $release =~ m/(NCBI.*Release\s\d+)\s(.*)\sDistribution/x ) {
+    my ($rel_number, $rel_date) = ($1, $2);
+    my $release_string = "$rel_number, $rel_date";
 
-      # set release info
-      $self->set_release( $source_id, $release_string, $dbi );
-      for my $source_name (sort values %{$REFSEQ_SOURCES}) {
-        $self->set_release( $self->{source_ids}->{$source_name}, $release_string, $dbi );
-      }
-
-      print "RefSeq release: '$release_string'\n" if $verbose;
-
-    } else {
-      warn "WARNING: Could not set release info from release file '$release_file'\n" if $verbose;
+    # set release info
+    $self->set_release( $source_id, $release_string, $dbi );
+    for my $source_name (sort values %{$REFSEQ_SOURCES}) {
+      $self->set_release( $self->{source_ids}->{$source_name}, $release_string, $dbi );
     }
 
+    print "RefSeq release: '$release_string'\n" if $verbose;
+
   } else {
-    warn "WARNING: No release_file available\n" if $verbose;
+    warn "WARNING: Could not set release info from release file '$release_file'\n" if $verbose;
   }
 
   return 0;
@@ -205,6 +198,7 @@ sub xref_from_record {
                                   (.*)                # get the description
                                   \s+ACCESSION/xms;   # until the next field
 
+  # TODO remove when upload_xref_object_graphs() in BaseParser is updated to do this automatically
   # remove any newlines and spaces, and make sure is within mysql limits
   $description =~ s/\n//xg;
   $description =~ s/\s+/ /xg;
@@ -237,13 +231,14 @@ sub xref_from_record {
   $xref->{PAIR} = $coded_by if defined $coded_by;
 
   my ($refseq_pair) = $genbank_rec =~ /DBSOURCE\s+REFSEQ: accession (\S+)/x;
-  if (!exists $xref->{PAIR}) {
-    $xref->{PAIR} = $refseq_pair if defined $refseq_pair;
+
+  if (defined $refseq_pair && !exists $xref->{PAIR}) {
+    $xref->{PAIR} = $refseq_pair;
   }
 
 
   my @gene_ids = $genbank_rec =~ /db_xref=\"GeneID:(.+?)\"/xg;
-  @gene_ids = uniq( @gene_ids );
+  @gene_ids = uniq @gene_ids;
 
   # process existing entrez_gene_ids as dependent xrefs
   GENEID:
@@ -267,11 +262,11 @@ sub xref_from_record {
 
     next GENEID unless (defined $refseq_pair);
 
-    # split the version number
-    my ($pair_acc, $pair_version) = split(/\./x, $refseq_pair);
+    # remove the version number
+    $refseq_pair =~ s/\.\d*//;
 
     # Add xrefs for RefSeq mRNA as well where available
-    foreach my $refseq_acc (@{ $self->{refseq_accs}->{$pair_acc} }) {
+    foreach my $refseq_acc (@{ $self->{refseq_accs}->{$refseq_pair} }) {
       foreach my $entrez_id (@{ $self->{entrez_ids}->{$gene_id} }) {
         $self->add_dependent_xref({
           master_xref_id => $refseq_acc,
