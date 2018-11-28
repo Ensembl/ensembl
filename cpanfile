@@ -4,6 +4,7 @@ requires 'HTTP::Tiny';
 requires 'IO::Compress::Gzip';
 requires 'URI::Escape';
 requires 'Config::IniFiles';
+requires 'List::Util', '>= 1.45';
 
 test_requires 'Test::Warnings';
 test_requires 'Test::Differences';
