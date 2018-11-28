@@ -290,7 +290,17 @@ sub run_script {
           });
           $self->add_direct_xref($xref_id, $best_id, 'Transcript', undef, $dbi);
 
-          my $entrez_id = $gene_of->stable_id;
+          my $entrez_id;
+          # RefSeq accessions are now stored as xrefs rather than
+          # stable ids as it used to be in the past. This means
+          # priority is given to the display_id, and fall back to stable_id
+          # for backwards compatibility.
+          if (defined $gene_of->display_xref) {
+            $entrez_id = $gene_of->display_xref->display_id;
+          } elsif (defined $gene_of->stable_id) {
+            $entrez_id = $gene_of->stable_id;
+          }
+
           my $tl_of = $transcript_of->translation();
           my $ta = $core_dba->get_TranscriptAdaptor();
           my $t = $ta->fetch_by_stable_id($best_id);
