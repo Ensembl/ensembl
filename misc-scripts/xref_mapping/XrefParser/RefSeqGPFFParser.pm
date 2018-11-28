@@ -22,7 +22,7 @@ package XrefParser::RefSeqGPFFParser;
 use strict;
 use warnings;
 use Carp;
-use List::MoreUtils qw(uniq);
+use List::Util 1.45 qw(uniq);
 use Readonly;
 
 use parent qw( XrefParser::BaseParser );
