@@ -49,8 +49,8 @@ sub run {
   my $dbi          = $ref_arg->{dbi} // $self->dbi;
   my $verbose      = $ref_arg->{verbose} // 0;
 
-  if ( (!defined $source_id) or (!defined $species_id) or (!defined $files) or (!defined $release_file) ){
-    confess "Need to pass source_id, species_id, files and rel_file as pairs";
+  if ( (!defined $source_id) or (!defined $species_id) or (!defined $files) ){
+    confess "Need to pass source_id, species_id, and files as pairs";
   }
 
   $self->{species_id} = $species_id;
@@ -120,30 +120,33 @@ sub run {
 
   }
 
+  if (defined $release_file) {
+    # get the release file handle
+    my $release_fh = $self->get_filehandle($release_file);
 
-  # get the release file handle
-  my $release_fh = $self->get_filehandle($release_file);
+    # get file header
+    my $release = do { local $/ = "\n*"; <$release_fh> };
+    $release_fh->close();
 
-  # get file header
-  my $release = do { local $/ = "\n*"; <$release_fh> };
-  $release_fh->close();
+    $release =~ s/\s+/ /xg;
 
-  $release =~ s/\s+/ /xg;
+    if ( $release =~ m/(NCBI.*Release\s\d+)\s(.*)\sDistribution/x ) {
+      my ($rel_number, $rel_date) = ($1, $2);
+      my $release_string = "$rel_number, $rel_date";
 
-  if ( $release =~ m/(NCBI.*Release\s\d+)\s(.*)\sDistribution/x ) {
-    my ($rel_number, $rel_date) = ($1, $2);
-    my $release_string = "$rel_number, $rel_date";
+      # set release info
+      $self->set_release( $source_id, $release_string, $dbi );
+      for my $source_name (sort values %{$REFSEQ_SOURCES}) {
+        $self->set_release( $self->{source_ids}->{$source_name}, $release_string, $dbi );
+      }
 
-    # set release info
-    $self->set_release( $source_id, $release_string, $dbi );
-    for my $source_name (sort values %{$REFSEQ_SOURCES}) {
-      $self->set_release( $self->{source_ids}->{$source_name}, $release_string, $dbi );
+      print "RefSeq release: '$release_string'\n" if $verbose;
+
+    } elsif ($verbose) {
+      warn "WARNING: Could not set release info from release file '$release_file'\n";
     }
-
-    print "RefSeq release: '$release_string'\n" if $verbose;
-
-  } else {
-    warn "WARNING: Could not set release info from release file '$release_file'\n" if $verbose;
+  } elsif ($verbose) {
+    warn "WARNING: No release_file available\n";
   }
 
   return 0;
