@@ -106,7 +106,7 @@ sub run {
     my $xrefs;
 
     {
-      local $/ = "\/\/\n";
+      local $/ = "//\n";
       while ( my $genbank_rec = $refseq_fh->getline() ) {
         my $xref = $self->xref_from_record( $genbank_rec, $type );
         push @{$xrefs}, $xref if $xref;
