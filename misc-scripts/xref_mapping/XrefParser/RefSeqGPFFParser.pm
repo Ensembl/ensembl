@@ -304,8 +304,8 @@ sub source_id_from_name {
 
   if ( exists $self->{source_ids}->{$name} ) {
     $source_id = $self->{source_ids}->{$name};
-  } elsif ( $self->{verbose} ) {
-    warn "WARNING: can't get source ID for name '$name'\n";
+  } else {
+    confess "Can't get source ID for name '$name'\n";
   }
 
   return $source_id;
@@ -320,8 +320,8 @@ sub source_id_from_acc {
 
   if ( exists $REFSEQ_SOURCES->{$prefix} ) {
     $source_id = $self->source_id_from_name( $REFSEQ_SOURCES->{$prefix} );
-  } elsif ( $self->{verbose} ) {
-    warn "WARNING: can't get source ID for accession '$acc'\n";
+  } else {
+    confess "Can't get source ID for accession '$acc'\n";
   }
 
   return $source_id;
@@ -334,8 +334,8 @@ sub type_from_file {
 
   my ($type) = $file =~ /RefSeq_(peptide|dna)/x;
 
-  if ( $self->{verbose} ) {
-    warn "WARNING: Could not work out sequence type for '$file'\n" unless $type;
+  if ( !defined $type ) {
+    confess "Could not work out sequence type for file '$file'\n";
   }
 
   return $type;
