@@ -347,25 +347,27 @@ ORIGIN
 EOF
 sub test_refseq {
   my ($record, $type) = @_;
-  my $file = "something_that_says_$type";
+  my $file = "RefSeq_${type}.gpff";
   test_parser("XrefParser::RefSeqGPFFParser",$record, {
     xref =>1,
     primary_xref => 1,
   }, "$type: Example record" , tmp_file_name => $file);
   test_parser("XrefParser::WormbaseCElegansRefSeqGPFFParser",$record, {
   }, "$type no entries without WormBase records" , tmp_file_name => $file);
-
-  test_parser("XrefParser::WormbaseDirectParser", $wormbase_celegans_xrefs_head,  
-      $wormbase_celegans_xrefs_expected_count, "$type test again to set up the next test",
-  skip_clean => 1);
-  test_parser("XrefParser::WormbaseCElegansRefSeqGPFFParser",$record,  {
-    %$wormbase_celegans_xrefs_expected_count,
-    xref => $wormbase_celegans_xrefs_expected_count->{xref}+1,
-    dependent_xref => 1,
-  }, "$type RefSeq entries hang off INSDC entries", tmp_file_name => $file);
+  # test_parser("XrefParser::WormbaseDirectParser", $wormbase_celegans_xrefs_head,
+  #     $wormbase_celegans_xrefs_expected_count, "$type test again to set up the next test",
+  # skip_clean => 1);
+  # test_parser("XrefParser::WormbaseCElegansRefSeqGPFFParser",$record,  {
+  #   %$wormbase_celegans_xrefs_expected_count,
+  #   xref => $wormbase_celegans_xrefs_expected_count->{xref}+1,
+  #   dependent_xref => 1,
+  # }, "$type RefSeq entries hang off INSDC entries", tmp_file_name => $file);
 }
-test_refseq($refseq_protein_elegans_record, "protein");
-test_refseq($refseq_mrna_elegans_record, "mrna");
+
+# FIXME
+test_refseq($refseq_protein_elegans_record, "peptide");
+test_refseq($refseq_mrna_elegans_record, "dna");
+
 done_testing();
 
 
