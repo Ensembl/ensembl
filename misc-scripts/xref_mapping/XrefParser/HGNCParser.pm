@@ -359,11 +359,11 @@ CCDS
   close $fh;
 
   if ( $verbose ){
-    print "Loaded a total of:\n";
-    foreach my $type (keys %name_count){
+    print "HGNC xrefs loaded:\n";
+    foreach my $type (sort keys %name_count){
       print "\t$type\t$name_count{$type}\n";
     }
-    print "$mismatch xrefs could not be associated via RefSeq, EntrezGene or Ensembl\n";
+    print "$mismatch HGNC ids could not be associated in xrefs\n";
   }
   return 0; # successful
 }
