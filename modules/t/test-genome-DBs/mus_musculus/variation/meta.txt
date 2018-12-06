@@ -1,5 +1,5 @@
 1	\N	schema_type	variation
-2	\N	schema_version	95
+2	\N	schema_version	96
 6	1	species.production_name	mus_musculus
 15	1	web_config	sv_study#Keane 2011 (DGVa study estd118)#Keane 2011#estd118
 14	1	web_config	set#All failed variants#All failed variants#variation_set_fail_all#failed
@@ -61,3 +61,4 @@
 67	\N	patch	patch_93_94_a.sql|schema version
 68	\N	patch	patch_94_95_a.sql|schema version
 69	\N	patch	patch_94_95_b.sql|create table to store allele synonyms
+70	\N	patch	patch_95_96_a.sql|schema_version

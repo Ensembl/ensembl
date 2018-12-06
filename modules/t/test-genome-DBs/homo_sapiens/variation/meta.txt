@@ -1,5 +1,5 @@
 1	\N	schema_type	variation
-2	\N	schema_version	95
+2	\N	schema_version	96
 3	\N	patch	patch_84_85_a.sql|schema version
 4	\N	patch	patch_84_85_b.sql|create sample_synonym
 5	\N	patch	patch_84_85_c.sql|drop column moltype from variation_synonym
@@ -34,3 +34,4 @@
 34	\N	patch	patch_93_94_a.sql|schema version
 35	\N	patch	patch_94_95_a.sql|schema version
 36	\N	patch	patch_94_95_b.sql|create table to store allele synonyms
+37	\N	patch	patch_95_96_a.sql|schema_version

@@ -1,6 +1,6 @@
 -- 
 -- Created by SQL::Translator::Producer::SQLite
--- Created on Wed Sep 26 16:18:52 2018
+-- Created on Thu Dec  6 13:49:54 2018
 -- 
 
 BEGIN TRANSACTION;
@@ -620,7 +620,7 @@ CREATE TABLE "object_xref" (
   "analysis_id" smallint
 );
 
-CREATE UNIQUE INDEX "xref_idx" ON "object_xref" ("xref_id", "ensembl_object_type", "ensembl_id", "analysis_id");
+CREATE UNIQUE INDEX "xref_idx" ON "object_xref" ("xref_id", "ensembl_object_type", "ensembl_id");
 
 --
 -- Table: "ontology_xref"
