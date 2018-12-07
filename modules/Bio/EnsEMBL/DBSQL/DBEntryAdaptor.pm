@@ -825,12 +825,11 @@ sub _store_object_xref_mapping {
         $object_xref_id = $self->last_insert_id('object_xref_id', undef, 'object_xref');
       }
       else {
-        my $sql = 'select object_xref_id from object_xref where xref_id =? and ensembl_object_type =? and ensembl_id =? and analysis_id =?';
+        my $sql = 'select object_xref_id from object_xref where xref_id =? and ensembl_object_type =? and ensembl_id =?';
         my $params = [
           [$dbEntry->dbID(),  SQL_INTEGER],
           [$ensembl_type,     SQL_VARCHAR],
           [$ensembl_id,       SQL_INTEGER],
-          [$analysis_id,      SQL_INTEGER],
         ];
         $object_xref_id = $sql_helper->execute_single_result(-SQL => $sql, -PARAMS => $params);
       }
