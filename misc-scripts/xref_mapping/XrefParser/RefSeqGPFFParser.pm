@@ -178,6 +178,14 @@ sub xref_from_record {
 
   my ($acc) = $genbank_rec =~ /ACCESSION\s+(\S+)/x;
 
+  my $prefix = substr($acc, 0, 2);
+
+  # skip if acc is not of known type
+  return unless ( exists $REFSEQ_SOURCES->{$prefix} );
+
+
+  my $acc_source_id = $self->source_id_from_acc($acc);
+
   my $acc_source_id = $self->source_id_from_acc($acc);
 
   my $xref = {
