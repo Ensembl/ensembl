@@ -186,8 +186,6 @@ sub xref_from_record {
 
   my $acc_source_id = $self->source_id_from_acc($acc);
 
-  my $acc_source_id = $self->source_id_from_acc($acc);
-
   my $xref = {
     ACCESSION     => $acc,
     SPECIES_ID    => $self->{species_id},
