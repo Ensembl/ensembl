@@ -23,13 +23,14 @@ use strict;
 use warnings;
 use Carp;
 use Text::CSV;
+use Readonly;
 use utf8;
 
 use parent qw( XrefParser::BaseParser );
 
 
 # HGNC sources to be processed
-my @SOURCES = (
+Readonly my @SOURCES => (
   'ccds',
   'entrezgene_manual',
   'refseq_manual',
