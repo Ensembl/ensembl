@@ -194,10 +194,14 @@ CCDS
       @ccds_list = split( /,\s/x, $ccds );
     }
 
+    CCDS:
     foreach my $ccds (@ccds_list) {
       my $enst_id = $ccds_to_ens{$ccds};
 
-      if (!defined $enst_id) { next; }
+      if (!defined $enst_id) {
+        next CCDS;
+      }
+
       $self->add_to_direct_xrefs({
           stable_id  => $enst_id,
           type       => 'gene',
