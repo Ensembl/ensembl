@@ -275,7 +275,7 @@ sub xref_from_record {
     $refseq_pair =~ s/\.\d*//;
 
     # Add xrefs for RefSeq mRNA as well where available
-    foreach my $refseq_acc (@{ $self->{refseq_accs}->{$refseq_pair} }) {
+    foreach my $refseq_acc (@{ $self->{refseq_ids}->{$refseq_pair} }) {
       foreach my $entrez_id (@{ $self->{entrez_ids}->{$gene_id} }) {
         $self->add_dependent_xref({
           master_xref_id => $refseq_acc,
