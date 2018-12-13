@@ -23,12 +23,11 @@ use strict;
 use warnings;
 use Carp;
 use List::Util 1.45 qw(uniq);
-use Readonly;
 
 use parent qw( XrefParser::BaseParser );
 
 # Refseq sources to consider. Prefixes not in this list will be ignored
-Readonly my $REFSEQ_SOURCES => {
+my $REFSEQ_SOURCES = {
     NM => 'RefSeq_mRNA',
     NR => 'RefSeq_ncRNA',
     XM => 'RefSeq_mRNA_predicted',
