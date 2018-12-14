@@ -298,9 +298,9 @@ CCDS
         }
 
         $self->add_synonyms_for_hgnc({
-            source_id  => $source_id,
+            source_id  => $self->{source_ids}->{'refseq_manual'},
             name       => $acc,
-            species_id => $self->{source_ids}->{'refseq_manual'},
+            species_id => $species_id,
             dbi        => $dbi,
             dead       => $previous_symbols,
             alias      => $synonyms
