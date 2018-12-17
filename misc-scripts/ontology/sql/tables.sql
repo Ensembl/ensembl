@@ -43,7 +43,7 @@ CREATE TABLE ontology (
   name          VARCHAR(64) NOT NULL,
   namespace     VARCHAR(64) NOT NULL,
   data_version  VARCHAR(64) DEFAULT NULL,
-
+  `title` varchar(255) NULL,
   PRIMARY KEY (ontology_id),
   UNIQUE INDEX name_namespace_idx (name, namespace)
 ) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
@@ -66,7 +66,7 @@ CREATE TABLE term (
   definition    TEXT,
   is_root       INT NOT NULL DEFAULT 0,
   is_obsolete   INT NOT NULL DEFAULT 0,
-
+  `iri` varchar(1000) NULL,
   PRIMARY KEY (term_id),
   UNIQUE INDEX accession_idx (accession),
   UNIQUE INDEX ontology_acc_idx (ontology_id, accession),

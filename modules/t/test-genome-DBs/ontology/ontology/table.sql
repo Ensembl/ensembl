@@ -146,6 +146,7 @@ CREATE TABLE `ontology` (
   `name` varchar(64) NOT NULL,
   `namespace` varchar(64) NOT NULL,
   `data_version` varchar(64) DEFAULT NULL,
+  `title` varchar(255) DEFAULT NULL,
   PRIMARY KEY (`ontology_id`),
   UNIQUE KEY `name_namespace_idx` (`name`,`namespace`)
 ) ENGINE=MyISAM AUTO_INCREMENT=8 DEFAULT CHARSET=latin1;
@@ -197,6 +198,7 @@ CREATE TABLE `term` (
   `definition` text,
   `is_root` int(11) DEFAULT NULL,
   `is_obsolete` int(11) DEFAULT NULL,
+  `iri` varchar(1000) DEFAULT NULL,
   PRIMARY KEY (`term_id`),
   UNIQUE KEY `accession_idx` (`accession`),
   UNIQUE KEY `ontology_acc_idx` (`ontology_id`,`accession`),
