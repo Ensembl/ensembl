@@ -319,9 +319,6 @@ INSERT INTO meta (species_id, meta_key, meta_value)
 INSERT INTO meta (species_id, meta_key, meta_value)
   VALUES (NULL, 'patch', 'patch_94_95_b.sql|vertebrate_division_rename');
 
-INSERT INTO meta (species_id, meta_key, meta_value)
-  VALUES (NULL, 'patch', 'patch_94_95_c.sql|ox_key_update');
-
 
 /**
 @table meta_coord
@@ -2328,7 +2325,7 @@ CREATE TABLE object_xref (
 
   PRIMARY KEY (object_xref_id),
 
-  UNIQUE KEY xref_idx (xref_id, ensembl_object_type, ensembl_id),
+  UNIQUE KEY xref_idx (xref_id, ensembl_object_type, ensembl_id, analysis_id),
 
   KEY ensembl_idx (ensembl_object_type, ensembl_id),
   KEY analysis_idx (analysis_id)
