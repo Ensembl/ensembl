@@ -21,6 +21,19 @@
 --  Added fields to Term and Ontology tables
 
 -- Added columns
-ALTER TABLE ontology ADD COLUMN `title` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL;
+ALTER TABLE `ontology` ADD COLUMN `title` varchar(255) DEFAULT NULL;
 
-ALTER TABLE term ADD COLUMN `iri` text NULL;
+ALTER TABLE `term` ADD COLUMN `iri` text NULL;
+
+ALTER TABLE `meta` DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+
+ALTER TABLE `ontology` DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+
+ALTER TABLE `subset` DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+
+ALTER TABLE `term` DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+
+ALTER TABLE `synonym` DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+
+
+
