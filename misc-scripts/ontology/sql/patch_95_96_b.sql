@@ -21,6 +21,6 @@
 --  Added fields to Term and Ontology tables
 
 -- Added columns
-ALTER TABLE ontology ADD COLUMN `title` varchar(255) NULL;
+ALTER TABLE ontology ADD COLUMN `title` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL;
 
-ALTER TABLE term ADD COLUMN `iri` varchar(1000) NULL;
+ALTER TABLE term ADD COLUMN `iri` text NULL;
