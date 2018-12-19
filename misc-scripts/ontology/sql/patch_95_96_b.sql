@@ -35,5 +35,7 @@ ALTER TABLE `term` DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
 ALTER TABLE `synonym` DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
+CREATE INDEX ix_closure_subparent_term_id USING BTREE ON closure (`subparent_term_id`);
+CREATE INDEX ix_closure_ontology_id USING BTREE ON closure (`ontology_id`);
 
 
