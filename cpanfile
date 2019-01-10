@@ -1,5 +1,5 @@
 requires 'DBI';
-requires 'DBD::mysql';
+requires 'DBD::mysql', '< 4.050';
 requires 'HTTP::Tiny';
 requires 'IO::Compress::Gzip';
 requires 'URI::Escape';
