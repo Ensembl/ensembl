@@ -713,6 +713,47 @@ sub prepare {
    return $sth;
 }
 
+
+=head2 prepare_cached
+
+  Arg [1]    : string $string
+               the SQL statement to prepare
+  Example    : $sth = $db_connection->prepare_cached("SELECT column FROM table");
+  Description: Prepares a SQL statement using the internal DBI database handle
+               and returns the DBI statement handle. The prepared statement is
+               cached so that it does not have to be prepared again.
+  Returntype : DBI statement handle
+  Exceptions : thrown if the SQL statement is empty, or if the internal
+               database handle is not present
+  Caller     : Adaptor modules
+  Status     : Experimental
+
+=cut
+
+sub prepare_cached {
+   my ($self,@args) = @_;
+
+   if( ! $args[0] ) {
+     throw("Attempting to prepare_cached an empty SQL query.");
+   }
+
+   #warn "SQL(".$self->dbname."):" . join(' ', @args) . "\n";
+   if ( ($self->reconnect_when_lost()) and (!$self->db_handle()->ping()) ) {
+       $self->reconnect();
+   }
+   my $sth = $self->db_handle->prepare_cached(@args);
+
+   # return an overridden statement handle that provides us with
+   # the means to disconnect inactive statement handles automatically
+   bless $sth, "Bio::EnsEMBL::DBSQL::StatementHandle";
+   $sth->dbc($self);
+   $sth->sql($args[0]);
+
+   $self->query_count($self->query_count()+1);
+   return $sth;
+}
+
+
 =head2 reconnect
 
   Example    : $dbcon->reconnect()
