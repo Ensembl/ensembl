@@ -110,7 +110,8 @@ TMPL
 }
 
 #Testing auto-correction of arguments for common 1st line methods
-{
+SKIP: {
+  skip 'Tests for load_registry_from_db are done on MySQL engine', 4 unless $dbc->driver eq 'mysql';
   my $tester = sub {
     my ($misspelling) = @_;
     my %params = (-HOST => $dbc->host(), -PORT => $dbc->port(), -USER => $dbc->username());
