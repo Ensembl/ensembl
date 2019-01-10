@@ -136,10 +136,10 @@ ok( test_getter_setter( $tr, "created_date", time() ));
 ok( test_getter_setter( $tr, "modified_date", time() ));
 
 
-my @date_time = localtime( $tr->created_date());
+my @date_time = gmtime( $tr->created_date());
 ok( $date_time[3] == 6 && $date_time[4] == 11 && $date_time[5] == 104 );
 
-@date_time = localtime( $tr->modified_date());
+@date_time = gmtime( $tr->modified_date());
 ok( $date_time[3] == 6 && $date_time[4] == 11 && $date_time[5] == 104 );
 
 

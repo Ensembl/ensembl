@@ -74,10 +74,10 @@ $gene = $ga->fetch_by_stable_id("ENSG00000171456");
 debug("Gene->fetch_by_stable_id()");
 ok($gene);
 
-my @date_time = localtime($gene->created_date());
+my @date_time = gmtime($gene->created_date());
 ok($date_time[3] == 6 && $date_time[4] == 11 && $date_time[5] == 104);
 
-@date_time = localtime($gene->modified_date());
+@date_time = gmtime($gene->modified_date());
 ok($date_time[3] == 6 && $date_time[4] == 11 && $date_time[5] == 104);
 
 debug("Gene dbID: " . $gene->dbID());
