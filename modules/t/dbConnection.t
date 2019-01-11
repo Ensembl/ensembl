@@ -162,13 +162,11 @@ $dbh = $dbc->db_handle();
   $sth1->finish;
 }
 
-
 ok( !$dbh->{Active}, 'DB handle has deactivated after previous tests' );
 
 $dbc->disconnect_when_inactive(0);
 
-ok($dbc->db_handle->ping());
-
+$dbh = $dbc->db_handle();
 {
   my $sth1 = $dbc->prepare('SELECT * from gene limit 1');
   $sth1->execute();
@@ -176,9 +174,9 @@ ok($dbc->db_handle->ping());
   ok($sth1->rows());
   $sth1->finish();
 }
-
 #should not have disconnected this time
-ok($dbc->db_handle->ping());
+ok( $dbh->{Active}, 'DB handle stays active post-query with disconnect_when_inactive() disabled' );
+
 $dbc->disconnect_when_inactive(1);
 
 # construct a second database handle using a first one:
