@@ -744,7 +744,6 @@ sub prepare_cached {
      throw("Attempting to prepare_cached an empty SQL query.");
    }
 
-   #warn "SQL(".$self->dbname."):" . join(' ', @args) . "\n";
    if ( ( $self->reconnect_when_lost() ) and ( !$self->db_handle()->{Active} ) ) {
       $self->reconnect();
    }
