@@ -722,6 +722,13 @@ sub prepare {
   Description: Prepares a SQL statement using the internal DBI database handle
                and returns the DBI statement handle. The prepared statement is
                cached so that it does not have to be prepared again.
+
+               When using this function it is important to ensure either
+               completel retrieval of all information from the request when
+               performing execute() or call finish(). An Active error will be
+               raised if there are currently active handles
+
+               For further information please consult https://metacpan.org/pod/DBI#prepare_cached
   Returntype : DBI statement handle
   Exceptions : thrown if the SQL statement is empty, or if the internal
                database handle is not present
@@ -731,25 +738,25 @@ sub prepare {
 =cut
 
 sub prepare_cached {
-   my ($self,@args) = @_;
+   my ($self, @args) = @_;
 
    if( ! $args[0] ) {
      throw("Attempting to prepare_cached an empty SQL query.");
    }
 
    #warn "SQL(".$self->dbname."):" . join(' ', @args) . "\n";
-   if ( ($self->reconnect_when_lost()) and (!$self->db_handle()->ping()) ) {
-       $self->reconnect();
+   if ( ( $self->reconnect_when_lost() ) and ( !$self->db_handle()->{Active} ) ) {
+      $self->reconnect();
    }
-   my $sth = $self->db_handle->prepare_cached(@args);
+   my $sth = $self->db_handle->prepare_cached( @args );
 
    # return an overridden statement handle that provides us with
    # the means to disconnect inactive statement handles automatically
    bless $sth, "Bio::EnsEMBL::DBSQL::StatementHandle";
-   $sth->dbc($self);
-   $sth->sql($args[0]);
+   $sth->dbc( $self );
+   $sth->sql( $args[0] );
 
-   $self->query_count($self->query_count()+1);
+   $self->query_count( $self->query_count() + 1 );
    return $sth;
 }
 
