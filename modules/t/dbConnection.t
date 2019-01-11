@@ -120,9 +120,11 @@ is_deeply($dbc->to_hash(), \%dbc_args, 'Checking to_hash() can roundtrip a DBCon
 #
 my $dbh = $dbc->db_handle();
 
+ok( $dbh->{Active}, 'DB handle is active before enabling disconnect_when_inactive()' );
+
 $dbc->disconnect_when_inactive(1);
 
-ok(!$dbh->ping());
+ok( !$dbh->{Active}, 'DB handle has deactivated after enabling disconnect_when_inactive()' );
 
 {
   # reconnect should happen now
@@ -135,7 +137,7 @@ ok(!$dbh->ping());
   # disconnect should occur now
 }
 
-ok(!$dbh->ping());
+ok( !$dbh->{Active}, 'DB handle has deactivated after previous test' );
 
 $dbh = $dbc->db_handle();
 
@@ -161,7 +163,7 @@ $dbh = $dbc->db_handle();
 }
 
 
-ok(!$dbh->ping());
+ok( !$dbh->{Active}, 'DB handle has deactivated after previous tests' );
 
 $dbc->disconnect_when_inactive(0);
 
