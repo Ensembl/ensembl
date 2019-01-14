@@ -85,10 +85,10 @@ use Bio::EnsEMBL::Utils::SqlHelper;
   Arg [DBNAME] : (optional) string
                  The name of the database to connect to.
   Arg [HOST] : (optional) string
-               The domain name of the database host to connect to.  
-               'localhost' by default. 
+               The domain name of the database host to connect to.
+               'localhost' by default.
   Arg [USER] : string
-               The name of the database user to connect with 
+               The name of the database user to connect with
   Arg [PASS] : (optional) string
                The password to be used to connect to the database
   Arg [PORT] : (optional) int
@@ -111,16 +111,16 @@ use Bio::EnsEMBL::Utils::SqlHelper;
   Arg [WAIT_TIMEOUT]: (optional) integer
                  Time in seconds for the wait timeout to happen. Time after which
                  the connection is deleted if not used. By default this is 28800 (8 hours)
-                 on most systems. 
+                 on most systems.
                  So set this to greater than this if your connection are getting deleted.
                  Only set this if you are having problems and know what you are doing.
   Arg [RECONNECT_WHEN_CONNECTION_LOST]: (optional) boolean
-                 In case you're reusing the same database connection, i.e. DISCONNECT_WHEN_INACTIVE is 
-                 set to false and running a job which takes a long time to process (over 8hrs), 
-                 which means that the db connection may be lost, set this option to true. 
-                 On each prepare or do statement the db handle will be pinged and the database 
+                 In case you're reusing the same database connection, i.e. DISCONNECT_WHEN_INACTIVE is
+                 set to false and running a job which takes a long time to process (over 8hrs),
+                 which means that the db connection may be lost, set this option to true.
+                 On each prepare or do statement the db handle will be pinged and the database
                  connection will be reconnected if it's lost.
-                
+
   Example    : $dbc = Bio::EnsEMBL::DBSQL::DBConnection->new
                   (-user   => 'anonymous',
                    -dbname => 'homo_sapiens_core_20_34c',
@@ -232,7 +232,7 @@ sub new {
 =head2 connect
 
   Example    : $dbcon->connect()
-  Description: Connects to the database using the connection attribute 
+  Description: Connects to the database using the connection attribute
                information.
   Returntype : none
   Exceptions : none
@@ -347,7 +347,7 @@ sub query_count {
 
 =cut
 
-  
+
 sub equals {
   my ( $self, $dbc ) = @_;
   return 0 if ! defined $dbc;
@@ -355,14 +355,14 @@ sub equals {
   my $undef_str = q{!-undef-!};
   my $undef_num = -1;
 
-  $return = 1 if  ( 
+  $return = 1 if  (
     (($self->host() || $undef_str)      eq ($dbc->host() || $undef_str)) &&
     (($self->dbname() || $undef_str)    eq ($dbc->dbname() || $undef_str)) &&
     (($self->port() || $undef_num)      == ($dbc->port() || $undef_num)) &&
     (($self->username() || $undef_str)  eq ($dbc->username() || $undef_str)) &&
     ($self->driver() eq $dbc->driver())
   );
-  
+
   return $return;
 }
 
@@ -396,8 +396,8 @@ sub driver {
                the TCP or UDP port to use to connect to the database
   Example    : $port = $db_connection->port();
   Description: Getter / Setter for the port this connection uses to communicate
-               to the database daemon.  There currently is no point in 
-               setting this value after the connection has already been 
+               to the database daemon.  There currently is no point in
+               setting this value after the connection has already been
                established by the constructor.
   Returntype : string
   Exceptions : none
@@ -420,11 +420,11 @@ sub port {
 =head2 dbname
 
   Arg [1]    : (optional) string $arg
-               The new value of the database name used by this connection. 
+               The new value of the database name used by this connection.
   Example    : $dbname = $db_connection->dbname()
-  Description: Getter/Setter for the name of the database used by this 
+  Description: Getter/Setter for the name of the database used by this
                connection.  There is currently no point in setting this value
-               after the connection has already been established by the 
+               after the connection has already been established by the
                constructor.
   Returntype : string
   Exceptions : none
@@ -444,11 +444,11 @@ sub dbname {
 =head2 username
 
   Arg [1]    : (optional) string $arg
-               The new value of the username used by this connection. 
+               The new value of the username used by this connection.
   Example    : $username = $db_connection->username()
-  Description: Getter/Setter for the username used by this 
+  Description: Getter/Setter for the username used by this
                connection.  There is currently no point in setting this value
-               after the connection has already been established by the 
+               after the connection has already been established by the
                constructor.
   Returntype : string
   Exceptions : none
@@ -467,7 +467,7 @@ sub username {
 =head2 user
 
   Arg [1]    : (optional) string $arg
-               The new value of the username used by this connection. 
+               The new value of the username used by this connection.
   Example    : $user = $db_connection->user()
   Description: Convenience alias for the username method
   Returntype : String
@@ -483,11 +483,11 @@ sub user {
 =head2 host
 
   Arg [1]    : (optional) string $arg
-               The new value of the host used by this connection. 
+               The new value of the host used by this connection.
   Example    : $host = $db_connection->host()
-  Description: Getter/Setter for the domain name of the database host use by 
-               this connection.  There is currently no point in setting 
-               this value after the connection has already been established 
+  Description: Getter/Setter for the domain name of the database host use by
+               this connection.  There is currently no point in setting
+               this value after the connection has already been established
                by the constructor.
   Returntype : string
   Exceptions : none
@@ -506,7 +506,7 @@ sub host {
 =head2 hostname
 
   Arg [1]    : (optional) string $arg
-               The new value of the host used by this connection. 
+               The new value of the host used by this connection.
   Example    : $hostname = $db_connection->hostname()
   Description: Convenience alias for the host method
   Returntype : String
@@ -553,7 +553,7 @@ sub password {
 =head2 pass
 
   Arg [1]    : (optional) string $arg
-               The new value of the password used by this connection. 
+               The new value of the password used by this connection.
   Example    : $pass = $db_connection->pass()
   Description: Convenience alias for the password method
   Returntype : String
@@ -600,9 +600,9 @@ sub disconnect_when_inactive {
   Arg [1]    : (optional) boolean $newval
   Example    : $db->reconnect_when_lost(1);
   Description: Getter/Setter for the reconnect_when_lost flag.  If set
-               to true the db handle will be pinged on each prepare or do statement 
+               to true the db handle will be pinged on each prepare or do statement
                and the connection will be reestablished in case it's lost.
-               Useful for long running jobs (over 8hrs), which means that the db 
+               Useful for long running jobs (over 8hrs), which means that the db
                connection may be lost.
   Returntype : boolean
   Exceptions : none
@@ -650,7 +650,7 @@ sub locator {
 =head2 db_handle
 
   Arg [1]    : DBI Database Handle $value
-  Example    : $dbh = $db_connection->db_handle() 
+  Example    : $dbh = $db_connection->db_handle()
   Description: Getter / Setter for the Database handle used by this
                database connection.
   Returntype : DBI Database Handle
@@ -698,7 +698,7 @@ sub prepare {
    }
 
    #warn "SQL(".$self->dbname."):" . join(' ', @args) . "\n";
-   if ( ($self->reconnect_when_lost()) and (!$self->db_handle()->ping()) ) { 
+   if ( ($self->reconnect_when_lost()) and (!$self->db_handle()->ping()) ) {
        $self->reconnect();
    }
    my $sth = $self->db_handle->prepare(@args);
@@ -723,10 +723,8 @@ sub prepare {
                and returns the DBI statement handle. The prepared statement is
                cached so that it does not have to be prepared again.
 
-               When using this function it is important to ensure either
-               completel retrieval of all information from the request when
-               performing execute() or call finish(). An Active error will be
-               raised if there are currently active handles
+               If only a subset of rows are required, finish() should be called
+               on the object to free up the statement handle.
 
                For further information please consult https://metacpan.org/pod/DBI#prepare_cached
   Returntype : DBI statement handle
@@ -763,7 +761,7 @@ sub prepare_cached {
 =head2 reconnect
 
   Example    : $dbcon->reconnect()
-  Description: Reconnects to the database using the connection attribute 
+  Description: Reconnects to the database using the connection attribute
                information if db_handle no longer pingable.
   Returntype : none
   Exceptions : none
@@ -804,16 +802,16 @@ sub do {
 
    # warn "SQL(".$self->dbname."): $string";
    my $error;
-   
+
    my $do_result = $self->work_with_db_handle(sub {
      my ($dbh) = @_;
      my $result = eval { $dbh->do($string, $attr, @bind_values) };
      $error = $@ if $@;
      return $result;
    });
-   
+
    throw "Detected an error whilst executing statement '$string': $error" if $error;
- 
+
    return $do_result;
 }
 
@@ -824,7 +822,7 @@ sub do {
   Description: Gives access to the DBI handle to execute methods not normally
                provided by the DBConnection interface
   Returntype : Any from callback
-  Exceptions : If the callback paramater is not a CodeRef; all other 
+  Exceptions : If the callback paramater is not a CodeRef; all other
                errors are re-thrown after cleanup.
   Caller     : Adaptor modules
   Status     : Stable
@@ -835,12 +833,12 @@ sub work_with_db_handle {
   my ($self, $callback) = @_;
   my $wantarray = wantarray;
   assert_ref($callback, 'CODE', 'callback');
-  if( $self->reconnect_when_lost() && !$self->db_handle()->ping()) { 
+  if( $self->reconnect_when_lost() && !$self->db_handle()->ping()) {
     $self->reconnect();
   }
   my @results;
   eval {
-    if($wantarray) { 
+    if($wantarray) {
       @results = $callback->($self->db_handle())
     }
     elsif(defined $wantarray) {
@@ -851,7 +849,7 @@ sub work_with_db_handle {
     }
   };
   my $original_error = $@;
-  
+
   $self->query_count($self->query_count()+1);
   eval {
     if($self->disconnect_when_inactive()) {
@@ -864,7 +862,7 @@ sub work_with_db_handle {
   if($original_error) {
     throw "Detected an error when running DBI wrapper callback:\n$original_error";
   }
-  
+
   if(defined $wantarray) {
     return ($wantarray) ? @results : $results[0];
   }
@@ -879,11 +877,11 @@ sub work_with_db_handle {
                 duration of the callback. This is very useful if you need
                 to make multiple database calls avoiding excessive database
                 connection creation/destruction but still want the API
-                to disconnect after the body of work. 
-                
+                to disconnect after the body of work.
+
                 The value of C<disconnect_when_inactive()> is set to 0 no
                 matter what the original value was & after $callback has
-                been executed. If C<disconnect_when_inactive()> was 
+                been executed. If C<disconnect_when_inactive()> was
                 already set to 0 then this method will be an effective no-op.
   Returntype  : None
   Exceptions  : Raised if there are issues with reverting the connection to its
@@ -901,7 +899,7 @@ sub prevent_disconnect {
   eval { $callback->(); };
   my $original_error = $@;
   eval {
-    $self->disconnect_when_inactive($original_dwi);    
+    $self->disconnect_when_inactive($original_dwi);
   };
   if($@) {
     warning "Detected an error whilst attempting to reset disconnect_when_idle: $@";
@@ -944,7 +942,7 @@ sub quote_identifier {
   Arg [1]    : none
   Example    : $dbc->disconnect_if_idle();
   Description: Disconnects from the database if there are no currently active
-               statement handles. 
+               statement handles.
                It is called automatically by the DESTROY method of the
                Bio::EnsEMBL::DBSQL::SQL::StatementHandle if the
                disconect_when_inactive flag is set.
@@ -982,7 +980,7 @@ sub disconnect_if_idle {
             " activekids=",$db_handle->{ActiveKids},"\n");
      return 1;
   }
-  
+
   $db_handle->disconnect();
   $self->connected(undef);
   $self->disconnect_count($self->disconnect_count()+1);
@@ -997,9 +995,9 @@ sub disconnect_if_idle {
   Arg [1]    : string $sql
   Arg [2]    : int $max_number
   Example    : my $new_sql = $dbc->add_limit_clause($sql,$max_number);
-  Description: Giving an SQL statement, it adds a limit clause, dependent on the database 
-               (in MySQL, should add a LIMIT at the end, MSSQL uses a TOP clause)									 
-  Returntype : String containing the new valid SQL statement        
+  Description: Giving an SQL statement, it adds a limit clause, dependent on the database
+               (in MySQL, should add a LIMIT at the end, MSSQL uses a TOP clause)
+  Returntype : String containing the new valid SQL statement
   Exceptions : none
   Caller     : general
   Status     : at risk
@@ -1033,7 +1031,7 @@ sub add_limit_clause{
 
   Arg [1]    : date $date
   Example    : my $string = $dbc->from_date_to_seconds($date);
-  Description: Giving a string representing a column of type date 
+  Description: Giving a string representing a column of type date
                 applies the database function to convert to the number of seconds from 01-01-1970
   Returntype : string
   Exceptions : none
@@ -1052,7 +1050,7 @@ sub from_date_to_seconds{
   Arg [1]    : int $seconds
   Example    : my $string = $dbc->from_seconds_to_date($seconds);
   Description: Giving an int representing number of seconds
-                applies the database function to convert to a date 
+                applies the database function to convert to a date
   Returntype : string
   Exceptions : none
   Caller     : general
@@ -1096,13 +1094,13 @@ sub sql_helper {
 
   Example    : my $hash = $dbc->to_hash();
                my $new_dbc = $dbc->new(%{$hash});
-  Description: Provides a hash which is compatible with the 
+  Description: Provides a hash which is compatible with the
                parameters for DBConnection's new() method. This can be
                useful during serialisation
   Returntype : Hash
   Exceptions : none
   Caller     : general
-  Status     : New  
+  Status     : New
 
 =cut
 
