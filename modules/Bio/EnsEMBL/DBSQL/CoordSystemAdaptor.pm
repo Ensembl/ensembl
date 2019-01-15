@@ -1284,6 +1284,10 @@ sub remove {
 
   delete $self->{'_dbID_cache'}->{$dbID};
   delete $self->{'_rank_cache'}->{$rank};
+  delete $self->{'_is_sequence_level'}->{$dbID};
+  delete $self->{'_is_default_version'}->{$dbID};
+  $cs->dbID(undef);
+  $cs->adaptor(undef);
 
   return $cs;
 }
