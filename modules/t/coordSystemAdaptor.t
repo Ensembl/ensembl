@@ -235,7 +235,7 @@ my $old_dbID = $cs->dbID;
 is($csa->remove($cs), $cs, 'Adaptor remove() returns the same coordinate system object');
 is_deeply($csa->{_is_sequence_level}, {}, 'Adaptor sequence_level cache updated to reflect the removal');
 is($csa->{_is_default_version}{$old_dbID}, undef, 'Adaptor default_version cache updated to reflect removal');
-lives_ok({ $csa->store($cs); }, 'Adaptor store() successful. Coordinate system did not have dbID() or adaptor()');
+lives_ok(sub { $csa->store($cs); }, 'Adaptor store() successful. Coordinate system did not have dbID() or adaptor()');
 
 $multi->restore('core', 'coord_system');
 $multi->restore('core', 'meta');
