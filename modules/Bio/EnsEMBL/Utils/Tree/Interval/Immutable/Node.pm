@@ -30,12 +30,11 @@ limitations under the License.
 
 =head1 NAME
 
-Bio::EnsEMBL::Utils::CenteredIntervalTree::Node
-
-=head1 SYNOPSIS
-
+Bio::EnsEMBL::Utils::Tree::Interval::Immutable::Node
 
 =head1 DESCRIPTION
+
+Instances of this class represent nodes in a centered immutable interval tree.
 
 =head1 METHODS
 
@@ -50,6 +49,20 @@ use Bio::EnsEMBL::Utils::Scalar qw(assert_ref);
 use Bio::EnsEMBL::Utils::Exception qw(throw);
 
 =head2 new
+
+  Arg [1]     : scalar, $x_center
+                The mid point of the intervals represented by the node
+  Arg [2]     : Arrayref of Bio::EnsEMBL::Utils::Interval instances
+                Represents the set of intervals overlapping $x_center
+  Arg [3]     : Bio::EnsEMBL::Utils::Tree::Interval::Immutable::Node
+                The left subtree
+  Arg [4]     : Bio::EnsEMBL::Utils::Tree::Interval::Immutable::Node
+                The right subtree
+  Description : Constructor. Creates a new centered immutable interval tree node instance
+  Returntype  : Bio::EnsEMBL::Utils::Tree::Interval::Immutable::Node
+  Exceptions  : if $x_center is not a number or the remaining args are not of the
+                correct type
+  Caller      : general
 
 =cut
 
@@ -74,21 +87,71 @@ sub new {
   return $self;
 }
 
+=head2 x_center
+
+  Arg []      : none
+  Description : Return the center point of the intervals represented by the node
+  Returntype  : scalar
+  Exceptions  : none
+  Caller      : general
+
+=cut
+
 sub x_center {
   return shift->{x_center};
 }
+
+=head2 s_center_beg
+
+  Arg []      : none
+  Description : Returns the set of intervals containing the center point sorted by their start point
+  Returntype  : Arrayref of Bio::EnsEMBL::Utils::Interval
+  Exceptions  : none
+  Caller      : general
+
+=cut
 
 sub s_center_beg {
   return shift->{s_center_beg};
 }
 
+=head2 s_center_end
+
+  Arg []      : none
+  Description : Returns the set of intervals containing the center point sorted by their end point
+  Returntype  : Arrayref of Bio::EnsEMBL::Utils::Interval
+  Exceptions  : none
+  Caller      : general
+
+=cut
+
 sub s_center_end {
   return shift->{s_center_end};
 }
 
+=head2 left
+
+  Arg []      : none
+  Description : Returns the node's left child
+  Returntype  : Bio::EnsEMBL::Utils::Tree::Interval::Immutable::Node
+  Exceptions  : none
+  Caller      : general
+
+=cut
+
 sub left {
   return shift->{lchild};
 }
+
+=head2 right
+
+  Arg []      : none
+  Description : Returns the node's right child
+  Returntype  : Bio::EnsEMBL::Utils::Tree::Interval::Immutable::Node
+  Exceptions  : none
+  Caller      : general
+
+=cut
 
 sub right {
   return shift->{rchild};

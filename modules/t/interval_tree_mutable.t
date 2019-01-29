@@ -21,8 +21,6 @@ use Test::Deep;
 use Test::Exception;
 use Test::Warnings qw(warning);
 
-use Data::Dumper;
-
 use_ok 'Bio::EnsEMBL::Utils::Interval';
 use_ok 'Bio::EnsEMBL::Utils::Tree::Interval::Mutable';
 
