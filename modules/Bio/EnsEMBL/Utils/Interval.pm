@@ -230,7 +230,11 @@ sub is_right_of {
   my ($self, $other) = @_;
 
   return 0 unless defined $other;
-  return $self->start > $other if looks_like_number($other);
+
+  if ( looks_like_number($other) ) {
+    return $self->start > $other;
+  }
+
   return $self->start > $other->end;
 }
 
@@ -250,7 +254,11 @@ sub is_left_of {
   my ($self, $other) = @_;
 
   return 0 unless defined $other;
-  return $self->end < $other if looks_like_number($other);
+
+  if ( looks_like_number($other) ) {
+    return $self->end < $other;
+  }
+
   return $self->end < $other->start;
 }
 
