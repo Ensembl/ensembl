@@ -231,7 +231,9 @@ sub map {
   #
   # the toplevel coordinate system for the region requested *is* the requested region.
   #
-  return ($seq_region_id,$frm_start, $frm_end, $frm_strand, $other_cs) if $fastmap;
+  if ($fastmap) {
+    return ($seq_region_id, $frm_start, $frm_end, $frm_strand, $other_cs);
+  }
 
   my $coord = Bio::EnsEMBL::Mapper::Coordinate->new($seq_region_id, $frm_start,$frm_end, $frm_strand, $other_cs);
   if ($include_org_coord) {
