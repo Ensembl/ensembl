@@ -17,7 +17,6 @@ limitations under the License.
 
 =cut
 
-
 =head1 CONTACT
 
   Please email comments or questions to the public Ensembl
@@ -32,10 +31,9 @@ limitations under the License.
 
 Bio::EnsEMBL::Utils::Tree::Interval::Mutable::Node
 
-=head1 SYNOPSIS
-
-
 =head1 DESCRIPTION
+
+Represents a node in the mutable interval tree pure perl implementation.
 
 =head1 METHODS
 
@@ -53,6 +51,15 @@ use Bio::EnsEMBL::Utils::Exception qw(throw);
 =head1 METHODS 
 
 =head2 new
+
+  Arg [1]     : Bio::EnsEMBL::Utils::Tree::Interval::Mutable::PP
+                The tree to which the node belongs
+  Arg [2]     : Bio::EnsEMBL::Utils::Interval
+  Description : Constructor. Creates a new mutable tree instance node
+                associated with the given interval
+  Returntype  : Bio::EnsEMBL::Utils::Tree::Interval::Mutable::Node
+  Exceptions  : none
+  Caller      : general
 
 =cut
 
@@ -78,6 +85,13 @@ sub new {
 
 =head2 tree
 
+  Arg []      : none
+  Example     : my $tree = $node->root;
+  Description : Returns the tree to which the node belongs
+  Returntype  : Bio::EnsEMBL::Utils::Tree::Interval::Mutable::PP
+  Exceptions  : none
+  Caller      : general
+
 =cut
 
 sub tree {
@@ -85,6 +99,13 @@ sub tree {
 }
 
 =head2 key
+
+  Arg []      : none
+  Example     : my $key = $node->key;
+  Description : Returns the key associated with the node
+  Returntype  : scalar
+  Exceptions  : none
+  Caller      : general
 
 =cut
 
@@ -97,6 +118,13 @@ sub key {
 
 =head2 intervals
 
+  Arg []      : none
+  Example     : my $intervals = $node->intervals;
+  Description : Returns the intervals associated with the node
+  Returntype  : Arrayref of Bio::EnsEMBL::Utils::Interval
+  Exceptions  : none
+  Caller      : general
+
 =cut
 
 sub intervals {
@@ -105,6 +133,12 @@ sub intervals {
 
 =head add_interval 
 
+  Arg []      : none
+  Description : Add an interval to the node's set of intervals
+  Returntype  : none
+  Exceptions  : none
+  Caller      : general
+
 =cut
 
 sub add_interval {
@@ -112,6 +146,12 @@ sub add_interval {
 }
 
 =head2 parent
+
+  Arg []      : none
+  Description : Return the parent of the node in the tree
+  Returntype  : none
+  Exceptions  : none
+  Caller      : general
 
 =cut
 
@@ -127,6 +167,12 @@ sub parent {
 
 =head2 height
 
+  Arg []      : none
+  Description : Return the height of the node
+  Returntype  : scalar, positive or 0
+  Exceptions  : none
+  Caller      : general
+
 =cut
 
 sub height {
@@ -137,6 +183,12 @@ sub height {
 }
 
 =head2 left
+
+  Arg []      : none
+  Description : Return the node's left child
+  Returntype  : Bio::EnsEMBL::Utils::Tree::Interval::Mutable::Node
+  Exceptions  : none
+  Caller      : general
 
 =cut
 
@@ -149,6 +201,12 @@ sub left {
 
 =head2 right
 
+  Arg []      : none
+  Description : Return the node's right child
+  Returntype  : Bio::EnsEMBL::Utils::Tree::Interval::Mutable::Node
+  Exceptions  : none
+  Caller      : general
+
 =cut
 
 sub right {
@@ -159,6 +217,14 @@ sub right {
 }
 
 =head2 search
+
+  Arg [1]     : Bio::EnsEMBL::Utils::Interval
+                The interval to search for overlaps in the tree
+  Description : Search the node and its successors for overlapping
+                intervals with the query
+  Returntype  : Arrayref of Bio::EnsEMBL::Utils::Interval
+  Exceptions  : none
+  Caller      : general
 
 =cut
 
@@ -191,7 +257,12 @@ sub search {
 
 =head2 search_by_key
 
-Searches for a node by a 'key' value
+  Arg [1]     : scalar, $key
+                The key to search the node for
+  Description : Searches for a node by a 'key' value
+  Returntype  : Bio::EnsEMBL::Utils::Tree::Interval::Mutable::Node
+  Exceptions  : none
+  Caller      : general
 
 =cut
 
@@ -209,6 +280,13 @@ sub search_by_key {
 }
 
 =head2 insert
+
+  Arg [1]     : Bio::EnsEMBL::Utils::Interval
+                The interval to insert
+  Description : Insert an interval in the node or in its successors
+  Returntype  : none
+  Exceptions  : none
+  Caller      : general
 
 =cut
 
@@ -242,8 +320,15 @@ sub insert {
   # rebalance to ensure O(logn) time operations
   $self->_rebalance;
 }
- 
+
 =head2 remove
+
+  Arg [1]     : Bio::EnsEMBL::Utils::Tree::Interval::Mutable::Node
+                The node to remove from the tree
+  Description : Remove a node from the tree
+  Returntype  : none
+  Exceptions  : none
+  Caller      : general
 
 =cut
 
@@ -255,7 +340,7 @@ sub remove {
   my $parent = $self->parent;
 
   if ($node->key < $self->key) {
-    # node to be removed in in left subtree
+    # node to be removed is in left subtree
     return $self->left->remove($node) if $self->left;
     return;
   } elsif ($node->key > $self->key) {
@@ -330,10 +415,6 @@ sub _lowest {
   return $self->left->_lowest;
 }
 
-=head2 _highest_end
-
-=cut
-
 sub _highest_end {
   my $self = shift;
 
@@ -343,19 +424,11 @@ sub _highest_end {
   return $high;
 }
 
-=head2 _update_height
-
-=cut
-
 sub _update_height {
   my $self = shift;
 
   $self->height(List::Util::max $self->left?$self->left->height:0, $self->right?$self->right->height:0 + 1);
 }
-
-=head2 _update_parents_max 
-
-=cut
 
 sub _update_parents_max {
   my $self = shift;
@@ -449,10 +522,6 @@ sub _rebalance {
   }
 }
 
-=head2 _left_rotate
-
-=cut
-
 sub _left_rotate {
   my $self = shift;
 
@@ -479,10 +548,6 @@ sub _left_rotate {
   $right->_update_height;
   
 }
-
-=head2 _update_max_left_rotate
-
-=cut
 
 sub _update_max_left_rotate { # handles Right-Right case and Right-Left case in rebalancing AVL tree
   my $self = shift;
@@ -521,10 +586,6 @@ sub _update_max_left_rotate { # handles Right-Right case and Right-Left case in 
 
 }
 
-=head2 _right_rotate
-
-=cut
-
 sub _right_rotate {
   my $self = shift;
 
@@ -550,10 +611,6 @@ sub _right_rotate {
   $self->_update_height;
   $left->_update_height;
 }
-
-=head2 _update_max_right_rotate
-
-=cut
 
 sub _update_max_right_rotate { # handles Left-Left case and Left-Right case after rebalancing AVL tree
   my $self = shift;
@@ -590,10 +647,6 @@ sub _update_max_right_rotate { # handles Left-Left case and Left-Right case afte
   $parent->{max} = max $parent->left?$parent->left->{max}:0, $parent->right?$parent->right->{max}:0, $parent->_highest_end
     if $parent;
 }
-
-=head2 _overlapping_intervals
-
-=cut
 
 sub _overlapping_intervals {
   my ($self, $i) = @_;

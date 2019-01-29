@@ -34,6 +34,19 @@ Bio::EnsEMBL::Utils::Tree::Interval::Mutable
 
 =head1 SYNOPSIS
 
+  # start with an empty tree
+  my $tree = Bio::EnsEMBL::Utils::Tree::Interval::Mutable->new();
+
+  # add a few intervals (i.e. Bio::EnsEMBL::Utils::Interval)
+  $tree->insert($i1);
+  $tree->insert($i2);
+  $tree->insert($i3);
+
+  # query the tree
+  my $result = $tree->search(85, 100);
+  if (scalar @{$result}) {
+    print "Found overlapping interval: [", $result->[0]->start, ', ', $result->[0]->end, "\n";
+  }
 
 =head1 DESCRIPTION
 
@@ -52,8 +65,6 @@ case; it falls back to the PP implementation otherwise.
 package Bio::EnsEMBL::Utils::Tree::Interval::Mutable;
 
 use strict;
-
-use Data::Dumper;
 
 use Bio::EnsEMBL::Utils::Scalar qw(assert_ref);
 use Bio::EnsEMBL::Utils::Exception qw(throw warning info);
@@ -77,6 +88,13 @@ unless ($Bio::EnsEMBL::Utils::Tree::Interval::Mutable::IMPL) {
 
 
 =head2 new
+
+  Arg []      : none
+  Example     : my $tree = Bio::EnsEMBL::Utils::Tree::Mutable();
+  Description : Constructor. Creates a new mutable tree instance
+  Returntype  : Bio::EnsEMBL::Utils::Tree::Interval::Mutable
+  Exceptions  : none
+  Caller      : general
 
 =cut
 

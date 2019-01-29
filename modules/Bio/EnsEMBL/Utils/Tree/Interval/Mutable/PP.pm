@@ -32,9 +32,6 @@ limitations under the License.
 
 Bio::EnsEMBL::Utils::Tree::Interval::Mutable::PP
 
-=head1 SYNOPSIS
-
-
 =head1 DESCRIPTION
 
 Pure Perl fall back implementation of a mutable interval tree, uses
@@ -54,6 +51,13 @@ use Bio::EnsEMBL::Utils::Interval;
 
 =head2 new
 
+  Arg []      : none
+  Example     : my $tree = Bio::EnsEMBL::Utils::Tree::Mutable();
+  Description : Constructor. Creates a new mutable tree instance
+  Returntype  : Bio::EnsEMBL::Utils::Tree::Interval::Mutable::PP
+  Exceptions  : none
+  Caller      : general
+
 =cut
 
 sub new {
@@ -66,6 +70,13 @@ sub new {
 
 =head2 root
 
+  Arg []      : none
+  Example     : my $root = $tree->root;
+  Description : Returns the tree top node
+  Returntype  : Bio::EnsEMBL::Utils::Tree::Interval::Mutable::Node
+  Exceptions  : none
+  Caller      : general
+
 =cut
 
 sub root {
@@ -77,6 +88,13 @@ sub root {
 
 =head2 size
 
+  Arg []      : none
+  Example     : print "Tree size is ", $tree->size, "\n";
+  Description : Return the size of the tree, i.e. the number of nodes
+  Returntype  : scalar
+  Exceptions  : none
+  Caller      : general
+
 =cut
 
 sub size {
@@ -85,6 +103,13 @@ sub size {
 
 =head2 insert
 
+  Arg [1]     : Bio::EnsEMBL::Utils::Interval
+                Interval to insert
+  Example     : $tree->insert(Bio::EnsEMBL::Utils::Interval->new(10, 20, 'data'));
+  Description : Insert an interval in the tree
+  Returntype  : scalar (1), upon success
+  Exceptions  : none
+  Caller      : general
 
 =cut
 
@@ -132,6 +157,16 @@ sub insert {
 
 =head2 search
 
+  Arg [1]     : scalar, $start
+                the starting point of the interval to search
+  Arg [2]     : scalar, $end
+                the end point of the interval to search
+  Example     : my $result = $tree->search(85, 100);
+  Description : Search the intervals in the tree overlapping the query
+  Returntype  : Arrayref of Bio::EnsEMBL::Utils::Interval instances
+  Exceptions  : none
+  Caller      : general
+
 =cut
 
 sub search {
@@ -143,6 +178,14 @@ sub search {
 }
 
 =head2 remove
+
+  Arg [1]     : Bio::EnsEMBL::Utils::Interval
+                The interval to remove from the tree
+  Example     : $tree->remove($i);
+  Description : Remove an interval from the tree
+  Returntype  : scalar, 1 if removal is successful, 0 otherwise
+  Exceptions  : none
+  Caller      : general
 
 =cut
 
