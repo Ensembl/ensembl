@@ -146,6 +146,10 @@ sub adaptor {
   Arg [5]    : Bio::EnsEMBL::CoordSystem
                The coordinate system to transform FROM
   Arg [6]    : if set will do a fastmap
+  Arg [7]    : (optional) dummy placeholder to keep the interface
+               consistent across different mappers
+  Arg [8]    : (optional) boolean
+               Whether or not to include the original coordinates
   Example    : @coords = $mapper->map('X', 1_000_000, 2_000_000,
                                             1, $chr_cs);
   Description: Transforms coordinates from one coordinate system

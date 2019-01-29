@@ -205,6 +205,12 @@ sub register_all {
                The strand of the region to transform FROM.
   Arg [5]    : Bio::EnsEMBL::CoordSystem
                The coordinate system to transform FROM
+  Arg [6]    : Dummy placeholder to keep the interface consistent
+               across different mappers
+  Arg [7]    : Bio::EnsEMBL::Slice
+               Target slice
+  Arg [8]    : (optional) boolean
+               Whether to include the original coordinates or not
   Example    : @coords =
                 $asm_mapper->map( 'X', 1_000_000, 2_000_000, 1,
                                   $chr_cs );

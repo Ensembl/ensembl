@@ -260,6 +260,8 @@ sub size {
   Arg [6]    : (optional) fastmap
   Arg [7]    : (optional) Bio::Ensembl::Slice
                The slice to transform TO
+  Arg [8]    : (optional) boolean
+               Whether to include the original coordinates or not
   Example    : @coords = $asm_mapper->map('X', 1_000_000, 2_000_000,
                                             1, $chr_cs);
   Description: Transforms coordinates from one coordinate system
