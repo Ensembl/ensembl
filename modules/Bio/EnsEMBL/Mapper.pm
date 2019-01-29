@@ -151,7 +151,6 @@ use Bio::EnsEMBL::Mapper::Gap;
 use Bio::EnsEMBL::Utils::Exception qw(throw);
 use Bio::EnsEMBL::Utils::Interval;
 use Bio::EnsEMBL::Utils::Tree::Interval::Immutable;
-# use Bio::EnsEMBL::Utils::Tree::Interval::Mutable;
 
 =head2 new
 
