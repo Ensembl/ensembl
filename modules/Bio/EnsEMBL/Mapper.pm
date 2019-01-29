@@ -307,12 +307,12 @@ sub map_coordinates {
   # create set of intervals to be checked for overlap
   my $from_intervals;
 
-  ###
-  #
-  map { push @{$from_intervals},
-  	  Bio::EnsEMBL::Utils::Interval->new($_->{$from}{start}<=$_->{$from}{end}?$_->{$from}{start}:$_->{$from}{end},
-					     $_->{$from}{start}<=$_->{$from}{end}?$_->{$from}{end}:$_->{$from}{start},
-					     $_) } @{$lr};
+  foreach my $i (@{$lr}) {
+    my $start = $i->{$from}{start}<=$i->{$from}{end}?$i->{$from}{start}:$i->{$from}{end};
+    my $end = $i->{$from}{start}<=$i->{$from}{end}?$i->{$from}{end}:$i->{$from}{start};
+
+    push @{$from_intervals}, Bio::EnsEMBL::Utils::Interval->new($start, $end, $i);
+  }
 
   #
   # Create and query the interval tree defined on the above set of intervals
@@ -803,11 +803,13 @@ sub map_indel {
 
   # create set of intervals to be checked for overlap
   my $from_intervals;
-  map { push @{$from_intervals},
-  	  Bio::EnsEMBL::Utils::Interval->new($_->{$from}{start}<=$_->{$from}{end}?$_->{$from}{start}:$_->{$from}{end},
-					     $_->{$from}{start}<=$_->{$from}{end}?$_->{$from}{end}:$_->{$from}{start},
-					     $_) } @{$lr};
-  
+  foreach my $i (@{$lr}) {
+    my $start = $i->{$from}{start}<=$i->{$from}{end}?$i->{$from}{start}:$i->{$from}{end};
+    my $end = $i->{$from}{start}<=$i->{$from}{end}?$i->{$from}{end}:$i->{$from}{start};
+
+    push @{$from_intervals}, Bio::EnsEMBL::Utils::Interval->new($start, $end, $i);
+  }
+
   # create and query the interval tree defined on the above set of intervals
   my $itree = Bio::EnsEMBL::Utils::Tree::Interval::Immutable->new($from_intervals);
   my $overlap = $itree->query($start, $end);
