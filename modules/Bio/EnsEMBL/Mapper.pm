@@ -314,28 +314,18 @@ sub map_coordinates {
 					     $_->{$from}{start}<=$_->{$from}{end}?$_->{$from}{end}:$_->{$from}{start},
 					     $_) } @{$lr};
 
-  ############################################################################
   #
   # Create and query the interval tree defined on the above set of intervals
   #
   # Two options:
   #
   # 1. Use immutable interval tree implementation
-  #
-  my $itree = Bio::EnsEMBL::Utils::Tree::Interval::Immutable->new($from_intervals);
-  my $overlap = $itree->query($start, $end);
-  #
   # 2. Use mutable interval tree implementation
   #
-  # Enable this as some preliminary experiments show this is slightly faster
-  # on the test suite.
-  #
-  # my $itree = Bio::EnsEMBL::Utils::Tree::Interval::Mutable->new();
-  # map { $itree->insert($_) } @{$from_intervals};
-  # my $overlap = $itree->search(Bio::EnsEMBL::Utils::Interval->new($start, $end));
-  #
-  ############################################################################
-  
+  # Opt for the first one as the interval set's not supposed to change
+  my $itree = Bio::EnsEMBL::Utils::Tree::Interval::Immutable->new($from_intervals);
+  my $overlap = $itree->query($start, $end);
+
   my $rank              = 0;
   my $orig_start        = $start;
   my $last_target_coord = undef;
