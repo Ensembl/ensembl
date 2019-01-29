@@ -34,10 +34,33 @@ Bio::EnsEMBL::Utils::Tree::Interval::Immutable
 
 =head1 SYNOPSIS
 
+  # define a set of intervals to be added to the tree
+  my $intervals = [ Bio::EnsEMBL::Utils::Interval->new(121626874, 122092717),
+		    Bio::EnsEMBL::Utils::Interval->new(121637917, 121658918),
+		    Bio::EnsEMBL::Utils::Interval->new(122096077, 124088369) ];
+
+  # initialise the tree with the above intervals
+  my $tree = Bio::EnsEMBL::Utils::Tree::Interval::Immutable->new($intervals);
+
+  # point query
+  my $results = $tree->query(121779004);
+  if (scalar @$results) {
+    print "Intervals contain 121779004\n";
+  }
+
+  # same query, but use interval query
+  my $results = $tree->query(121779004, 121779004);
+  if (scalar @$results) {
+    print "Found containing interval: [", $result->[0]->start, ', ', $result->[0]->end, "\n";
+  }
 
 =head1 DESCRIPTION
 
-Heavily inspired by https://github.com/tylerkahn/intervaltree-python
+An implementation of an immutable interval tree. Immutable means the tree is
+initialised with a fixed set of intervals at creation time. Intervals cannot
+be added to or removed from the tree during its life cycle.
+
+Implementation heavily inspired by https://github.com/tylerkahn/intervaltree-python
 
 =head1 METHODS
 
@@ -47,7 +70,7 @@ package Bio::EnsEMBL::Utils::Tree::Interval::Immutable;
 
 use strict;
 
-use Data::Dumper;
+use Tie::RefHash;
 
 use Bio::EnsEMBL::Utils::Scalar qw(assert_ref);
 use Bio::EnsEMBL::Utils::Exception qw(throw);
@@ -56,6 +79,13 @@ use Bio::EnsEMBL::Utils::Interval;
 
 =head2 new
 
+  Arg [1]     : Arrayref of Bio::EnsEMBL::Utils::Interval instances
+  Example     : my $tree = Bio::EnsEMBL::Utils::Tree::Immutable([ $i1, $i2, $i3 ]);
+  Description : Constructor. Creates a new immutable tree instance
+  Returntype  : Bio::EnsEMBL::Utils::Tree::Interval::Immutable
+  Exceptions  : none
+  Caller      : general
+
 =cut
 
 sub new {
@@ -63,7 +93,9 @@ sub new {
   my $class = ref($caller) || $caller;
 
   my $intervals = shift;
-  $intervals && assert_ref($intervals, 'ARRAY');
+  if (defined $intervals ) {
+    assert_ref($intervals, 'ARRAY');
+  }
   
   my $self = bless({}, $class);
 
@@ -71,48 +103,37 @@ sub new {
   return $self;
 }
 
+=head2 root
+
+  Arg []      : none
+  Example     : my $root = $tree->root();
+  Description : Return the tree top node
+  Returntype  : Bio::EnsEMBL::Utils::Tree::Interval::Immutable::Node
+  Exceptions  : none
+  Caller      : general
+
+=cut
+
 sub root {
   return shift->{top_node};
 }
 
-# sub search {
-#   my ($self, $start, $end) = @_;
-#   defined $start or throw 'Undefined point or interval';
+=head2 query
 
-#   # interval search
-#   if (defined $end) {
-#     my $result = [];
-#     for my $i ($start .. $end + 1) {
-#       push @{$result}, @{$self->search($i)};
-#     }
+  Arg [1]     : scalar, $start
+                Where the query interval begins
+  Arg [2]     : (optional) scalar, $end
+                Where the query interval ends
+  Example     : my $results = $tree->query(121626874, 122092717);
+  Description : Query the tree if its intervals overlap the interval whose start
+                and end points are specified by the argument list.
+                If end is not specified, it is assumed to be the same as start
+                so effectively making a point query.
+  Returntype  : An arrayref of Bio::EnsEMBL::Utils::Interval instances
+  Exceptions  : none
+  Caller      : general
 
-#     return sort_by_begin(uniq($result));
-#   } 
-
-#   # point search 
-#   return $self->_search($self->{top_node}, $start, []);
-# }
-
-# sub _search {
-#   my ($self, $node, $point, $result) = @_;
-
-#   # can be optimized, see https://en.wikipedia.org/wiki/Interval_tree
-#   for my $i (@{$node->scenter}) {
-#     push @{$result}, $i if $i->start <= $point and $i->end >= $point;
-#   }
-
-#   if ($point < $node->x_center and $node->left_child) {
-#     my $left_results = $self->_search($node->left_child, $point, []);
-#     push @{$result}, @{$left_results} if $left_results;
-#   }
-
-#   if ($point > $node->x_center and $node->right_child) {
-#     my $right_results = $self->_search($node->right_child, $point, []);
-#     push @{$result}, @{$right_results} if $right_results;
-#   } 
-
-#   return uniq($result);
-# }
+=cut
 
 sub query {
   my ($self, $start, $end) = @_;
@@ -162,7 +183,6 @@ sub _query_point {
 
   # if x is less than x_center, the leftmost set of intervals, S_left, is considered
   if ($point <= $node->x_center) {
-    # From Wikipedia
     # if x is less than x_center, we know that all intervals in S_center end after x,
     # or they could not also overlap x_center. Therefore, we need only find those intervals
     # in S_center that begin before x. We can consult the lists of S_center that have already
@@ -310,7 +330,6 @@ sub sort_by_begin {
 sub uniq {
   my $intervals = shift;
 
-  use Tie::RefHash;
   tie my %seen, 'Tie::RefHash';
   
   return [ grep { ! $seen{ $_ }++ } @{$intervals} ];
