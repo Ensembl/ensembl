@@ -1,5 +1,5 @@
 -- Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
--- Copyright [2016-2018] EMBL-European Bioinformatics Institute
+-- Copyright [2016-2019] EMBL-European Bioinformatics Institute
 --
 -- Licensed under the Apache License, Version 2.0 (the "License");
 -- you may not use this file except in compliance with the License.
@@ -308,19 +308,13 @@ CREATE TABLE IF NOT EXISTS meta (
 # Add schema type and schema version to the meta table.
 INSERT INTO meta (species_id, meta_key, meta_value) VALUES
   (NULL, 'schema_type', 'core'),
-  (NULL, 'schema_version', '95');
+  (NULL, 'schema_version', '96');
 
 # Patches included in this schema file:
 # NOTE: At start of release cycle, remove patch entries from last release.
 # NOTE: Avoid line-breaks in values.
 INSERT INTO meta (species_id, meta_key, meta_value)
-  VALUES (NULL, 'patch', 'patch_94_95_a.sql|schema_version');
-
-INSERT INTO meta (species_id, meta_key, meta_value)
-  VALUES (NULL, 'patch', 'patch_94_95_b.sql|vertebrate_division_rename');
-
-INSERT INTO meta (species_id, meta_key, meta_value)
-  VALUES (NULL, 'patch', 'patch_94_95_c.sql|ox_key_update');
+  VALUES (NULL, 'patch', 'patch_95_96_a.sql|schema_version');
 
 
 /**
@@ -2328,7 +2322,7 @@ CREATE TABLE object_xref (
 
   PRIMARY KEY (object_xref_id),
 
-  UNIQUE KEY xref_idx (xref_id, ensembl_object_type, ensembl_id),
+  UNIQUE KEY xref_idx (xref_id, ensembl_object_type, ensembl_id, analysis_id),
 
   KEY ensembl_idx (ensembl_object_type, ensembl_id),
   KEY analysis_idx (analysis_id)

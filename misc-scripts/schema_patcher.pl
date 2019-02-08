@@ -1,6 +1,6 @@
 #!/usr/bin/env perl
 # Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
-# Copyright [2016-2018] EMBL-European Bioinformatics Institute
+# Copyright [2016-2019] EMBL-European Bioinformatics Institute
 # 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -284,7 +284,7 @@ foreach my $thing ( [ 'ensembl',               'core',        'table.sql'   ],
                     [ 'ensembl-compara',       'compara',     'table.sql'   ], 
                     [ 'ensembl-funcgen',       'funcgen',     'table.sql'   ],
                     [ 'ensembl-variation',     'variation',   'table.sql'   ],
-                    [ 'ensembl-production',    'production',  'tables.sql'  ],
+                    [ 'ensembl-production',    'production',  'table.sql'  ],
                     [ 'ensembl',               'ontology',    'tables.sql'  ] )
 {
   my ($git_repo, $schema_type, $schema_file) = @{$thing};

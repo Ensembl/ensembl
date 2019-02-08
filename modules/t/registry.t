@@ -1,5 +1,5 @@
 # Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
-# Copyright [2016-2018] EMBL-European Bioinformatics Institute
+# Copyright [2016-2019] EMBL-European Bioinformatics Institute
 # 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -110,7 +110,8 @@ TMPL
 }
 
 #Testing auto-correction of arguments for common 1st line methods
-{
+SKIP: {
+  skip 'Tests for load_registry_from_db are done on MySQL engine', 4 unless $dbc->driver eq 'mysql';
   my $tester = sub {
     my ($misspelling) = @_;
     my %params = (-HOST => $dbc->host(), -PORT => $dbc->port(), -USER => $dbc->username());

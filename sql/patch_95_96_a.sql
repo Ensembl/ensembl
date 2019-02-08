@@ -1,5 +1,5 @@
 -- Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
--- Copyright [2016-2018] EMBL-European Bioinformatics Institute
+-- Copyright [2016-2019] EMBL-European Bioinformatics Institute
 --
 -- Licensed under the Apache License, Version 2.0 (the "License");
 -- you may not use this file except in compliance with the License.
@@ -13,17 +13,15 @@
 -- See the License for the specific language governing permissions and
 -- limitations under the License.
 
-# patch_94_95_c.sql
+# patch_95_96_a.sql
 #
-# Title: Remove analysis_id from unique key constraint 
+# Title: Update schema version.
 #
 # Description:
-#   Not all object_xref have an analysis, remove analysis_id from unique key constraint
+#   Update schema_version in meta table to 96.
 
-ALTER TABLE object_xref
-        DROP INDEX xref_idx,
-        ADD UNIQUE KEY xref_idx (xref_id, ensembl_object_type, ensembl_id);
+UPDATE meta SET meta_value='96' WHERE meta_key='schema_version';
 
 # Patch identifier
 INSERT INTO meta (species_id, meta_key, meta_value)
-  VALUES (NULL, 'patch', 'patch_94_95_c.sql|ox_key_update');
+  VALUES (NULL, 'patch', 'patch_95_96_a.sql|schema_version');

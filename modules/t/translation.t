@@ -1,5 +1,5 @@
 # Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
-# Copyright [2016-2018] EMBL-European Bioinformatics Institute
+# Copyright [2016-2019] EMBL-European Bioinformatics Institute
 # 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -89,10 +89,10 @@ my $translation = $ta->fetch_by_Transcript($transcript);
 
 ok($translation && $translation->stable_id eq 'ENSP00000201961');
 
-my @date_time = localtime($translation->created_date());
+my @date_time = gmtime($translation->created_date());
 ok($date_time[3] == 6 && $date_time[4] == 11 && $date_time[5] == 104);
 
-@date_time = localtime($translation->modified_date());
+@date_time = gmtime($translation->modified_date());
 ok($date_time[3] == 6 && $date_time[4] == 11 && $date_time[5] == 104);
 
 ok($translation && $translation->start_Exon->stable_id eq 'ENSE00000661216');

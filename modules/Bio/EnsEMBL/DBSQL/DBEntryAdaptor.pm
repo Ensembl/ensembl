@@ -1,7 +1,7 @@
 =head1 LICENSE
 
 Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
-Copyright [2016-2018] EMBL-European Bioinformatics Institute
+Copyright [2016-2019] EMBL-European Bioinformatics Institute
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -825,12 +825,11 @@ sub _store_object_xref_mapping {
         $object_xref_id = $self->last_insert_id('object_xref_id', undef, 'object_xref');
       }
       else {
-        my $sql = 'select object_xref_id from object_xref where xref_id =? and ensembl_object_type =? and ensembl_id =? and analysis_id =?';
+        my $sql = 'select object_xref_id from object_xref where xref_id =? and ensembl_object_type =? and ensembl_id =?';
         my $params = [
           [$dbEntry->dbID(),  SQL_INTEGER],
           [$ensembl_type,     SQL_VARCHAR],
           [$ensembl_id,       SQL_INTEGER],
-          [$analysis_id,      SQL_INTEGER],
         ];
         $object_xref_id = $sql_helper->execute_single_result(-SQL => $sql, -PARAMS => $params);
       }

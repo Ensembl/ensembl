@@ -1,5 +1,5 @@
 # Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
-# Copyright [2016-2018] EMBL-European Bioinformatics Institute
+# Copyright [2016-2019] EMBL-European Bioinformatics Institute
 # 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -94,6 +94,7 @@ is($analysis_updated->logic_name(), "new_dummy", "Logic name is correct");
 is($analysis_updated->description(), "new description", "Description is correct");
 is($analysis_updated->display_label(), "new label", "Label is correct");
 is($analysis_updated->displayable(), 0, "Displayable is correct");
+is($analysis_updated->web_data(), undef, "web_data is wiped on update");
 
 # now try updating analysis that has no existing description
 $analysis = Bio::EnsEMBL::Analysis->new();
