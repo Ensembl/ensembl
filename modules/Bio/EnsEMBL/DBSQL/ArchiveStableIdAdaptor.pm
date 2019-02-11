@@ -1,7 +1,7 @@
 =head1 LICENSE
 
 Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
-Copyright [2016-2017] EMBL-European Bioinformatics Institute
+Copyright [2016-2019] EMBL-European Bioinformatics Institute
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -120,7 +120,7 @@ our @ISA = qw(Bio::EnsEMBL::DBSQL::BaseAdaptor);
 use Bio::EnsEMBL::ArchiveStableId;
 use Bio::EnsEMBL::StableIdEvent;
 use Bio::EnsEMBL::StableIdHistoryTree;
-use Bio::EnsEMBL::Utils::Exception qw(deprecate warning throw);
+use Bio::EnsEMBL::Utils::Exception qw(warning throw);
 
 use constant MAX_ROWS => 30;
 use constant NUM_HIGH_SCORERS => 20;
@@ -1134,7 +1134,7 @@ sub add_all_current_to_history {
                 the stable_id_event tree of the given stable_id. Might well be
                 empty.
                 
-                This method isn't deprecated, but in most cases you will rather
+                This method is valid, but in most cases you will rather
                 want to use fetch_history_tree_by_stable_id().
   Returntype  : listref Bio::EnsEMBL::ArchiveStableId
                 Since every ArchiveStableId knows about it's successors, this is
@@ -1195,7 +1195,7 @@ sub fetch_successor_history {
                 in the stable_id_event tree of the given stable_id. Might well
                 be empty.
                 
-                This method isn't deprecated, but in most cases you will rather
+                This method is valid, but in most cases you will rather
                 want to use fetch_history_tree_by_stable_id().
   Returntype  : listref Bio::EnsEMBL::ArchiveStableId
                 Since every ArchiveStableId knows about it's successors, this is

@@ -1,5 +1,5 @@
 # Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
-# Copyright [2016-2017] EMBL-European Bioinformatics Institute
+# Copyright [2016-2019] EMBL-European Bioinformatics Institute
 # 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -74,7 +74,7 @@ ok($taxid == 9606);
 my $div = $mc->get_division();
 ok(!defined $div);
 
-my $divname = 'EnsemblVertebrate';
+my $divname = 'EnsemblVertebrates';
 $mc->store_key_value('species.division',$divname);
 $div = $mc->get_division();
 ok($div eq $divname);

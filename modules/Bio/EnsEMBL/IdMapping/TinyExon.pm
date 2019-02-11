@@ -1,7 +1,7 @@
 =head1 LICENSE
 
 Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
-Copyright [2016-2017] EMBL-European Bioinformatics Institute
+Copyright [2016-2019] EMBL-European Bioinformatics Institute
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -76,7 +76,6 @@ design.
   common_strand
   common_sr_name
   length
-  is_known
 
 =cut
 
@@ -454,22 +453,6 @@ sub length {
   return ($self->end - $self->start + 1);
 }
 
-
-=head2 is_known
-
-  Description : Determine whether an exon is known. In the context of stable Id
-                mapping, this is true for all exons.
-  Return type : Boolean
-  Exceptions  : none
-  Caller      : general
-  Status      : At Risk
-              : under development
-
-=cut
-
-sub is_known {
-  return 1;
-}
 
 
 1;

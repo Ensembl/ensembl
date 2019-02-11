@@ -1,7 +1,7 @@
 =head1 LICENSE
 
 Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
-Copyright [2016-2017] EMBL-European Bioinformatics Institute
+Copyright [2016-2019] EMBL-European Bioinformatics Institute
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -35,6 +35,8 @@ sub run {
   my $species_id   = $ref_arg->{species_id};
   my $files        = $ref_arg->{files};
   my $verbose      = $ref_arg->{verbose};
+  my $dbi          = $ref_arg->{dbi};
+  $dbi = $self->dbi unless defined $dbi;
 
   if((!defined $source_id) or (!defined $species_id) or (!defined $files) ){
     croak "Need to pass source_id, species_id and files as pairs";
@@ -42,7 +44,7 @@ sub run {
   $verbose |=0;
 
   my $source_sql = "select source_id from source where name = 'RGD' and priority_description = 'direct_xref'";
-  my $sth = $self->dbi->prepare($source_sql);
+  my $sth = $dbi->prepare($source_sql);
   $sth->execute();
   my ($direct_source_id);
   $sth->bind_columns(\$direct_source_id);
@@ -51,9 +53,7 @@ sub run {
 
   my $file = @{$files}[0];
 
-  my $dbi = $self->dbi();
-
-  my (%refseq) = %{$self->get_valid_codes("refseq",$species_id)};
+  my (%refseq) = %{$self->get_valid_codes("refseq",$species_id, $dbi)};
 
   my $rgd_io = $self->get_filehandle($file);
 
@@ -118,6 +118,7 @@ sub run {
 						      label          => $symbol,
 						      desc           => $name,
 						      source_id      => $source_id,
+                                                      dbi            => $dbi,
 						      species_id     => $species_id} );
 	    $count++;
 	    my @syns  = split(/\;/,$old_name);
@@ -137,9 +138,10 @@ sub run {
                                          acc => $rgd,
                                          label => $symbol,
                                          desc => $name,
+                                         dbi  => $dbi,
                                          source_id => $direct_source_id,
                                          species_id => $species_id} );
-            my $xref_id = $self->get_xref($rgd, $direct_source_id, $species_id);
+            my $xref_id = $self->get_xref($rgd, $direct_source_id, $species_id, $dbi);
             my @syns = split(/\;/, $old_name);
             foreach my $syn(@syns) {
               $add_syn_sth->execute($xref_id, $syn);
@@ -158,6 +160,7 @@ sub run {
 			desc       => $name,
 			source_id  => $source_id,
 			species_id => $species_id,
+                        dbi        => $dbi,
 			info_type  => "MISC"} );
       $mismatch++;
     }

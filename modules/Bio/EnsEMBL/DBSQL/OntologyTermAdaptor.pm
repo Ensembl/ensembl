@@ -1,7 +1,7 @@
 =head1 LICENSE
 
 Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
-Copyright [2016-2017] EMBL-European Bioinformatics Institute
+Copyright [2016-2019] EMBL-European Bioinformatics Institute
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -424,7 +424,8 @@ SELECT DISTINCT
         child_term.subsets,
         child_term.is_root,
         child_term.is_obsolete,
-        ontology.data_version
+        ontology.data_version,
+        closure.distance
 FROM    term child_term
   JOIN  closure ON (closure.child_term_id = child_term.term_id)
   JOIN  ontology ON (closure.ontology_id = ontology.ontology_id)
@@ -442,9 +443,9 @@ ORDER BY closure.distance, child_term.accession);
   $sth->bind_param( 2, $ontology, SQL_VARCHAR );
   $sth->execute();
 
-  my ( $dbid, $accession, $name, $definition, $subsets, $is_root, $is_obsolete, $ontology_version );
+  my ( $dbid, $accession, $name, $definition, $subsets, $is_root, $is_obsolete, $ontology_version, $closure_distance );
   $sth->bind_columns(
-                 \( $dbid, $accession, $name, $definition, $subsets, $is_root, $is_obsolete, $ontology_version ) );
+                 \( $dbid, $accession, $name, $definition, $subsets, $is_root, $is_obsolete, $ontology_version, $closure_distance ) );
 
   my @terms;
 

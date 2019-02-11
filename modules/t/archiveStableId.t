@@ -1,5 +1,5 @@
 # Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
-# Copyright [2016-2017] EMBL-European Bioinformatics Institute
+# Copyright [2016-2019] EMBL-European Bioinformatics Institute
 # 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -67,13 +67,13 @@ ok( $asi );
 my $event = $asi->get_event("G2");
 
 is(ref($event), 'Bio::EnsEMBL::StableIdEvent', "A stable id event was fetched");
-is($event->score, 0.54, "Mapping score between G1 and G2");
+is(sprintf("%.6f", $event->score), sprintf("%.6f", 0.54), "Mapping score between G1 and G2");
 my $string = $event->ident_string();
 
 my $old_archive_stable_id = $event->old_ArchiveStableId;
 my $new_archive_stable_id = $event->new_ArchiveStableId;
 
-is($string, "G2.3 (3) -> G1.2 (4) [0.54]", "Event string");
+like($string, qr/G2.3 \(3\) -> G1.2 \(4\) \[0.54/, "Event string");
 
 is($new_archive_stable_id, $asi, "Initial archive is new archive");
 is($old_archive_stable_id->stable_id, "G2", "Old stable id");
@@ -81,7 +81,7 @@ is($new_archive_stable_id->stable_id, "G1", "New stable id");
 
 $event = $old_archive_stable_id->get_event("G1");
 
-is($event->score, 0.54, "Mapping score between G1 and G2");
+is(sprintf("%.6f", $event->score), sprintf("%.6f", 0.54), "Mapping score between G1 and G2");
 
 $old_archive_stable_id = $event->old_ArchiveStableId;
 $new_archive_stable_id = $event->new_ArchiveStableId;

@@ -1,11 +1,10 @@
 Summary	Reporter	Assignee	DueDate	Component	Description	Species (only for Xrefs)
-Software/Schema Release Version Update	<RelCo>	<RelCo>	<declaration_of_intentions>	API,SQL	https://www.ebi.ac.uk/seqdb/confluence/display/ENSCORE/Core+release+coordination#Corereleasecoordination-Releaseversionchange
-Xrefs for release <version>	<RelCo>	<RelCo>	<core_handover_xrefs>	Xrefs	https://www.ebi.ac.uk/seqdb/confluence/display/ENSCORE/Core+release+coordination#Corereleasecoordination-XrefsandLRGs	homo_sapiens,mus_musculus,rattus_novergicus
-Import LRGs	<RelCo>	<RelCo>	<core_handover_xrefs>	LRG	https://www.ebi.ac.uk/seqdb/confluence/display/ENSCORE/Core+release+coordination#Corereleasecoordination-XrefsandLRGs
-Update Schema Diagrams	<RelCo>	<RelCo>	<code_branching>	Documentation	https://www.ebi.ac.uk/seqdb/confluence/display/ENSCORE/Core+release+coordination#Corereleasecoordination-Schemadiagrams
-Stable ID Lookup	<RelCo>	<RelCo>	<compara_final_handover>	Infrastructure	https://www.ebi.ac.uk/seqdb/confluence/display/ENSCORE/Core+release+coordination#Corereleasecoordination-StableIDlookup
-Code branching <version>	<RelCo>	<RelCo>	<code_branching>	API,Git	https://www.ebi.ac.uk/seqdb/confluence/display/ENSCORE/Core+release+coordination#Corereleasecoordination-GITbranching
-EBeye Indexing <version>	<RelCo>	<RelCo>	<release>	Dumps	https://www.ebi.ac.uk/seqdb/confluence/display/ENSCORE/Core+release+coordination#Corereleasecoordination-EBeyeindexing
-Ensembl VM Build <version>	<RelCo>	<RelCo>	<release>	Dumps	https://www.ebi.ac.uk/seqdb/confluence/display/ENSCORE/Core+release+coordination#Corereleasecoordination-EnsemblVMbuild
-REST server (GRCh37) update <version>	<RelCo>	<RelCo>	<release>	REST	https://www.ebi.ac.uk/seqdb/confluence/display/ENSCORE/Core+release+coordination#Corereleasecoordination-RESTserver
-REST server update <version>	<RelCo>	<RelCo>	<release>	REST	https://www.ebi.ac.uk/seqdb/confluence/display/ENSCORE/Core+release+coordination#Corereleasecoordination-RESTserver
+Software/Schema Release Version Update	<relco>	<relco>	<declaration_of_intentions>	API,SQL	https://www.ebi.ac.uk/seqdb/confluence/display/ENSCORE/Core+release+coordination#Corereleasecoordination-Releaseversionchange
+Xrefs for release <release>	<relco>	<relco>	<core_handover_xrefs>	Xrefs	https://www.ebi.ac.uk/seqdb/confluence/display/ENSCORE/Core+release+coordination#Corereleasecoordination-XrefsandLRGs
+Import LRGs	<relco>	<relco>	<core_handover_xrefs>	LRG	https://www.ebi.ac.uk/seqdb/confluence/display/ENSCORE/Core+release+coordination#Corereleasecoordination-XrefsandLRGs
+Update Schema Diagrams	<relco>	<relco>	<code_branching>	Documentation	https://www.ebi.ac.uk/seqdb/confluence/display/ENSCORE/Core+release+coordination#Corereleasecoordination-Schemadiagrams
+Stable ID Lookup	<relco>	<relco>	<compara_final_handover>	Infrastructure	https://www.ebi.ac.uk/seqdb/confluence/display/ENSCORE/Core+release+coordination#Corereleasecoordination-StableIDlookup
+Code branching <release>	<relco>	<relco>	<code_branching>	API,Git	https://www.ebi.ac.uk/seqdb/confluence/display/ENSCORE/Core+release+coordination#Corereleasecoordination-GITbranching
+EBeye Indexing <release>	<relco>	<relco>	<release_date>	Dumps	https://www.ebi.ac.uk/seqdb/confluence/display/ENSCORE/Core+release+coordination#Corereleasecoordination-EBeyeindexing
+Ensembl VM Build <release>	<relco>	<relco>	<vm_handover>	Dumps	https://www.ebi.ac.uk/seqdb/confluence/display/ENSCORE/Core+release+coordination#Corereleasecoordination-EnsemblVMbuild
+REST server changelog and branching <release>	<relco>	<relco>	<code_branching>	REST	https://www.ebi.ac.uk/seqdb/confluence/display/ENSCORE/Core+release+coordination#Corereleasecoordination-RESTserver

@@ -1,7 +1,7 @@
 =head1 LICENSE
 
 Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
-Copyright [2016-2017] EMBL-European Bioinformatics Institute
+Copyright [2016-2019] EMBL-European Bioinformatics Institute
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -316,8 +316,8 @@ sub build_cache_from_genes {
                           $gene->modified_date, $gene->start,
                           $gene->end,           $gene->strand,
                           $gene->slice->seq_region_name, $gene->biotype,
-                          $gene->status, $gene->analysis->logic_name,
-                          ( $gene->is_known ? 1 : 0 ), ] );
+                          $gene->analysis->logic_name,
+                          ] );
 
     # build gene caches
     $self->add( 'genes_by_id', $type, $gene->dbID, $lgene );
@@ -331,7 +331,7 @@ sub build_cache_from_genes {
                                $tr->modified_date, $tr->start,
                                $tr->end,           $tr->strand,
                                $tr->length, md5_hex( $tr->spliced_seq ),
-                               ( $tr->is_known ? 1 : 0 ) ] );
+                                ] );
 
       $ltr->biotype( $tr->biotype() );
       $ltr->seq_region_name( $tr->slice->seq_region_name() );
@@ -348,7 +348,7 @@ sub build_cache_from_genes {
                          $tl->dbID,          $tl->stable_id,
                          $tl->version,       $tl->created_date,
                          $tl->modified_date, $tr->dbID,
-                         $tr->translate->seq, ( $tr->is_known ? 1 : 0 ),
+                         $tr->translate->seq,
                        ] );
 
         $ltr->add_Translation($ltl);

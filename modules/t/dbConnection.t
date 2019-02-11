@@ -1,5 +1,5 @@
 # Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
-# Copyright [2016-2017] EMBL-European Bioinformatics Institute
+# Copyright [2016-2019] EMBL-European Bioinformatics Institute
 # 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -114,15 +114,28 @@ is_deeply($dbc->to_hash(), \%dbc_args, 'Checking to_hash() can roundtrip a DBCon
   $sth->finish;
 }
 
+{
+  #
+  # 12 prepare_cached
+  #
+  my $sth = $dbc->prepare_cached('SELECT gene_id, biotype FROM gene LIMIT 1');
+  $sth->execute;
+  my @row = $sth->fetchrow_array;
+  ok($sth->rows, "prepare_cached");
+  $sth->finish;
+}
+
 #
 # try the database with the disconnect_when_inactive flag set.
 # this should automatically disconnect from the db
 #
 my $dbh = $dbc->db_handle();
 
+ok( $dbh->{Active}, 'DB handle is active before enabling disconnect_when_inactive()' );
+
 $dbc->disconnect_when_inactive(1);
 
-ok(!$dbh->ping());
+ok( !$dbh->{Active}, 'DB handle has deactivated after enabling disconnect_when_inactive()' );
 
 {
   # reconnect should happen now
@@ -135,7 +148,7 @@ ok(!$dbh->ping());
   # disconnect should occur now
 }
 
-ok(!$dbh->ping());
+ok( !$dbh->{Active}, 'DB handle has deactivated after previous test' );
 
 $dbh = $dbc->db_handle();
 
@@ -160,13 +173,11 @@ $dbh = $dbc->db_handle();
   $sth1->finish;
 }
 
-
-ok(!$dbh->ping());
+ok( !$dbh->{Active}, 'DB handle has deactivated after previous tests' );
 
 $dbc->disconnect_when_inactive(0);
 
-ok($dbc->db_handle->ping());
-
+$dbh = $dbc->db_handle();
 {
   my $sth1 = $dbc->prepare('SELECT * from gene limit 1');
   $sth1->execute();
@@ -174,9 +185,9 @@ ok($dbc->db_handle->ping());
   ok($sth1->rows());
   $sth1->finish();
 }
-
 #should not have disconnected this time
-ok($dbc->db_handle->ping());
+ok( $dbh->{Active}, 'DB handle stays active post-query with disconnect_when_inactive() disabled' );
+
 $dbc->disconnect_when_inactive(1);
 
 # construct a second database handle using a first one:

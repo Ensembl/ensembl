@@ -1,5 +1,5 @@
 1	\N	schema_type	variation
-2	\N	schema_version	88
+2	\N	schema_version	96
 6	1	species.production_name	mus_musculus
 15	1	web_config	sv_study#Keane 2011 (DGVa study estd118)#Keane 2011#estd118
 14	1	web_config	set#All failed variants#All failed variants#variation_set_fail_all#failed
@@ -43,3 +43,22 @@
 49	\N	patch	patch_86_87_a.sql|schema version
 50	\N	patch	patch_87_88_a.sql|schema version
 51	\N	patch	patch_87_88_b.sql|seq_region_name_255
+52	\N	patch	patch_88_89_a.sql|schema version
+53	\N	patch	patch_88_89_b.sql|Drop strain_gtype_poly table
+54	\N	patch	patch_89_90_a.sql|schema version
+55	\N	patch	patch_89_90_b.sql|add start_retained_variant to consequence_types in variation_feature and transcript_variation
+56	\N	patch	patch_89_90_c.sql|remove regulatory and TFBS consequences from consequence_types in  transcript_variation
+57	\N	patch	patch_90_91_b.sql|extend the characters supported in the publication.authors column
+58	\N	patch	patch_90_91_a.sql|schema version
+59	\N	patch	patch_90_91_c.sql|Add new column zygosity in the table structural_variation_sample
+60	\N	patch	patch_91_92_a.sql|schema version
+61	\N	patch	patch_91_92_b.sql|Add index on feature_stable_id in regulatory_feature_variation and motif_feature_variation
+62	\N	patch	patch_91_92_c.sql|Change the column zygosity in the table structural_variation_sample
+63	\N	patch	patch_91_92_d.sql|create table to store names of submitters to ClinVar etc
+64	\N	patch	patch_92_93_a.sql|schema version
+65	\N	patch	patch_92_93_b.sql|Extend phenotype_ontology_accession mapped_by_attrib predefined set
+66	\N	patch	patch_92_93_c.sql|Add new evidence attribs to the variation and variation_feature tables
+67	\N	patch	patch_93_94_a.sql|schema version
+68	\N	patch	patch_94_95_a.sql|schema version
+69	\N	patch	patch_94_95_b.sql|create table to store allele synonyms
+70	\N	patch	patch_95_96_a.sql|schema_version

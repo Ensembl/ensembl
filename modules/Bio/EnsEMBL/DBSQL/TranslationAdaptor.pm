@@ -1,7 +1,7 @@
 =head1 LICENSE
 
 Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
-Copyright [2016-2017] EMBL-European Bioinformatics Institute
+Copyright [2016-2019] EMBL-European Bioinformatics Institute
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -83,7 +83,7 @@ use strict;
 
 use Bio::EnsEMBL::DBSQL::BaseAdaptor;
 use Bio::EnsEMBL::Translation;
-use Bio::EnsEMBL::Utils::Exception qw( throw warning deprecate );
+use Bio::EnsEMBL::Utils::Exception qw( throw warning );
 use Bio::EnsEMBL::Utils::Scalar qw( assert_ref );
 
 
@@ -308,8 +308,6 @@ sub fetch_by_Transcript {
   Exceptions : none
   Caller     : general
   Status     : Medium Risk
-             :   At some time may be deprecated to instead use 
-             :   TranscriptAdaptor::fetch_all_by_external_name 
 
 =cut
 
@@ -495,8 +493,14 @@ sub store {
       my $created = $self->db->dbc->from_seconds_to_date($translation->created_date());
       my $modified = $self->db->dbc->from_seconds_to_date($translation->modified_date());
 
-      push @canned_columns, 'created_date', 'modified_date';
-      push @canned_values,  $created,       $modified;
+      if ($created) {
+	push @canned_columns, 'created_date';
+	push @canned_values,  $created;
+      }
+      if ($modified) {
+	push @canned_columns, 'modified_date';
+	push @canned_values,  $modified;
+      }
   }
 
   my $columns = join(', ', @columns, @canned_columns);
@@ -516,8 +520,7 @@ sub store {
   if (defined($translation->stable_id)) {
  
     $sth->bind_param(6, $translation->stable_id,SQL_VARCHAR);
-    my $version = ($translation->version()) ? $translation->version() : 1;
-    $sth->bind_param(7, $version,SQL_VARCHAR);
+    $sth->bind_param(7, $translation->version,SQL_VARCHAR);
   }
 
   $sth->execute();
@@ -707,12 +710,6 @@ SQL
 
 sub fetch_by_dbID {
   my ( $self, $dbID, $transcript ) = @_;
-
-  if ($transcript) {
-    deprecate(   "Use of fetch_by_dbID "
-               . "with a Transcript argument is deprecated."
-               . "Use fetch_by_Transcript instead." );
-  }
 
   if ( !defined($dbID) ) {
     throw("dbID argument is required");
@@ -924,6 +921,11 @@ sub fetch_all_by_Transcript_list {
          -version => $version,
 	 -created_date => $created_date || undef,
 	 -modified_date => $modified_date || undef);
+
+      # Calling the new method will set $tl->version to '1' if $version is not defined.
+      # But if the version in the database is NULL, $version will be undef; and so we
+      # need to override the default version of '1', and set it back to undef.
+      $tl->{version} = undef unless defined $version;
       
       $tl->adaptor($self);
       my $canonical_translation_id = $canonical_lookup->{$transcript_id};

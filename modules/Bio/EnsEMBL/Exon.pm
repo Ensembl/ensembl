@@ -1,7 +1,7 @@
 =head1 LICENSE
 
 Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
-Copyright [2016-2017] EMBL-European Bioinformatics Institute
+Copyright [2016-2019] EMBL-European Bioinformatics Institute
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -72,13 +72,15 @@ use strict;
 use Bio::EnsEMBL::Feature;
 use Bio::Seq; # exons have to have sequences...
 
-use Bio::EnsEMBL::Utils::Exception qw( warning throw deprecate );
+use Bio::EnsEMBL::Utils::Exception qw( warning throw);
 use Bio::EnsEMBL::Utils::Argument qw( rearrange );
 use Bio::EnsEMBL::Utils::Scalar qw( assert_ref );
 use Bio::EnsEMBL::DBSQL::SupportingFeatureAdaptor;
 
 use vars qw(@ISA);
 @ISA = qw(Bio::EnsEMBL::Feature);
+
+use constant SO_ACC => 'SO:0000147';
 
 
 =head2 new
@@ -138,9 +140,12 @@ sub new {
 
   $self->{'end_phase'}     = $end_phase;
   $self->{'stable_id'}     = $stable_id;
-  $self->{'version'}       = $version;
   $self->{'created_date'}  = $created_date;
   $self->{'modified_date'} = $modified_date;
+
+  # Default version
+  if ( !defined($version) ) { $version = 1 }
+  $self->{'version'} = $version;
 
   # Default is_current
   if ( !defined($is_current) ) { $is_current = 1 }
@@ -922,14 +927,6 @@ sub move {
 sub transform {
   my $self = shift;
 
-  # catch for old style transform calls
-  if( !@_  || ( ref $_[0] && 
-         ($_[0]->isa( "Bio::EnsEMBL::Slice" ) or $_[0]->isa( "Bio::EnsEMBL::LRGSlice" ))
-        )) {
-    deprecate('Calling transform without a coord system name is deprecated.');
-    return $self->_deprecated_transform(@_);
-  }
-
   my $new_exon = $self->SUPER::transform( @_ );
   if (not defined $new_exon or
       $new_exon->length != $self->length) {
@@ -1284,8 +1281,7 @@ sub is_constitutive {
 
 =head2 is_coding
 
-  Arg [1]    : Boolean $is_coding
-  Arg [2]    : Bio::EnsEMBL::Transcript
+  Arg [1]    : Bio::EnsEMBL::Transcript
   Example    : $exon->is_coding()
   Description: Says if the exon is within the translation or not
   Returntype : Int
@@ -1298,9 +1294,18 @@ sub is_constitutive {
 sub is_coding {
   my ( $self, $transcript) = @_;
 
+  if (!$transcript) { throw("Transcript parameter is required for " . __PACKAGE__ . "->is_coding()."); }
+
   if (!$transcript->translate) { return 0; }
-  if ($transcript->coding_region_start < $self->start && $self->start < $transcript->coding_region_end) { return 1; }
-  if ($transcript->coding_region_end > $self->end && $self->end > $transcript->coding_region_start) { return 1; }
+
+  # coding region overlaps start of exon
+  if ($transcript->coding_region_start <= $self->start && $self->start <= $transcript->coding_region_end) { return 1; }
+
+  # coding region overlaps end of exon
+  if ($transcript->coding_region_end >= $self->end && $self->end >= $transcript->coding_region_start) { return 1; }
+
+  # to handle cases where transcript coding region can fall within the exon start and exon end, eg: if it is one exon transcript
+  if ($transcript->coding_region_start >= $self->start &&  $transcript->coding_region_end <= $self->end ) { return 1; }
   return 0;
 }
 
@@ -1630,6 +1635,7 @@ sub load {
   $self->stable_id();
   $self->get_all_supporting_features();
 }
+
 
 =head2 summary_as_hash
 

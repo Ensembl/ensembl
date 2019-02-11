@@ -1,7 +1,7 @@
 =head1 LICENSE
 
 Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
-Copyright [2016-2017] EMBL-European Bioinformatics Institute
+Copyright [2016-2019] EMBL-European Bioinformatics Institute
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -32,8 +32,11 @@ sub run {
   my ($self, $ref_arg) = @_;
   my $source_id    = $ref_arg->{source_id};
   my $species_id   = $ref_arg->{species_id};
+  my $species_name = $ref_arg->{species};
   my $files        = $ref_arg->{files};
   my $verbose      = $ref_arg->{verbose};
+  my $dbi          = $ref_arg->{dbi};
+  $dbi = $self->dbi unless defined $dbi;
 
   if((!defined $source_id) or (!defined $species_id) or (!defined $files) ){
     croak "Need to pass source_id, species_id and files as pairs";
@@ -46,12 +49,12 @@ sub run {
     $species_id = $self->get_species_id_for_filename($file);
   }
 
-  my $xrefs = $self->create_xrefs($source_id, $file, $species_id);
+  my $xrefs = $self->create_xrefs($source_id, $file, $species_id, $dbi, $species_name);
   if(!defined($xrefs)){
     return 1; #error
   }
   # upload
-  if(!defined($self->upload_xref_object_graphs($xrefs))){
+  if(!defined($self->upload_xref_object_graphs($xrefs, $dbi))){
     return 1; 
   }
   return 0; # successfull
@@ -63,9 +66,11 @@ sub run {
 
 sub create_xrefs {
 
-  my ($self, $source_id, $file, $species_id) = @_;
+  my ($self, $source_id, $file, $species_id, $dbi, $species_name) = @_;
 
-  my %species2name = $self->species_id2name();
+  my %species2name = $self->species_id2name($dbi);
+  if (defined $species_name) { push @{$species2name{$species_id}}, $species_name; }
+  if (!defined $species2name{$species_id}) { next; }
   my @names   = @{$species2name{$species_id}};
 
   my %name2species_id     = map{ $_=>$species_id } @names;

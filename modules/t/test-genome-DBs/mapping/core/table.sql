@@ -105,6 +105,19 @@ CREATE TABLE `attrib_type` (
   UNIQUE KEY `code_idx` (`code`)
 ) ENGINE=MyISAM AUTO_INCREMENT=391 DEFAULT CHARSET=latin1 COLLATE=latin1_bin;
 
+CREATE TABLE `biotype` (
+  `biotype_id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+  `name` varchar(64) NOT NULL,
+  `object_type` enum('gene','transcript') NOT NULL DEFAULT 'gene',
+  `db_type` set('cdna','core','coreexpressionatlas','coreexpressionest','coreexpressiongnf','funcgen','otherfeatures','rnaseq','variation','vega','presite','sangervega') NOT NULL DEFAULT 'core',
+  `attrib_type_id` int(11) DEFAULT NULL,
+  `description` text,
+  `biotype_group` enum('coding','pseudogene','snoncoding','lnoncoding','mnoncoding','LRG','undefined','no_group') DEFAULT NULL,
+  `so_acc` varchar(64) DEFAULT NULL,
+  PRIMARY KEY (`biotype_id`),
+  UNIQUE KEY `name_type_idx` (`name`,`object_type`)
+) ENGINE=MyISAM DEFAULT CHARSET=latin1;
+
 CREATE TABLE `coord_system` (
   `coord_system_id` int(10) unsigned NOT NULL AUTO_INCREMENT,
   `species_id` int(10) unsigned NOT NULL DEFAULT '1',
@@ -216,7 +229,7 @@ CREATE TABLE `dna_align_feature` (
   `cigar_line` text COLLATE latin1_bin,
   `external_db_id` smallint(5) unsigned DEFAULT NULL,
   `hcoverage` double DEFAULT NULL,
-  `external_data` text COLLATE latin1_bin,
+  `align_type` enum('ensembl','cigar','vulgar','mdtag') COLLATE latin1_bin DEFAULT 'ensembl',
   PRIMARY KEY (`dna_align_feature_id`),
   KEY `seq_region_idx` (`seq_region_id`,`analysis_id`,`seq_region_start`,`score`),
   KEY `seq_region_idx_2` (`seq_region_id`,`seq_region_start`),
@@ -295,7 +308,6 @@ CREATE TABLE `gene` (
   `seq_region_strand` tinyint(2) NOT NULL,
   `display_xref_id` int(10) unsigned DEFAULT NULL,
   `source` varchar(40) NOT NULL,
-  `status` enum('KNOWN','NOVEL','PUTATIVE','PREDICTED','KNOWN_BY_PROJECTION','UNKNOWN','ANNOTATED') DEFAULT NULL,
   `description` text,
   `is_current` tinyint(1) NOT NULL DEFAULT '1',
   `canonical_transcript_id` int(10) unsigned NOT NULL,
@@ -363,7 +375,7 @@ CREATE TABLE `identity_xref` (
 
 CREATE TABLE `interpro` (
   `interpro_ac` varchar(40) COLLATE latin1_bin NOT NULL DEFAULT '',
-  `id` varchar(40) COLLATE latin1_bin NOT NULL DEFAULT '',
+  `id` varchar(40) COLLATE latin1_bin NOT NULL,
   UNIQUE KEY `accession_idx` (`interpro_ac`,`id`),
   KEY `id_idx` (`id`)
 ) ENGINE=MyISAM DEFAULT CHARSET=latin1 COLLATE=latin1_bin;
@@ -477,7 +489,7 @@ CREATE TABLE `meta` (
   PRIMARY KEY (`meta_id`),
   UNIQUE KEY `species_key_value_idx` (`species_id`,`meta_key`,`meta_value`),
   KEY `species_value_idx` (`species_id`,`meta_value`)
-) ENGINE=MyISAM AUTO_INCREMENT=141 DEFAULT CHARSET=latin1;
+) ENGINE=MyISAM AUTO_INCREMENT=162 DEFAULT CHARSET=latin1;
 
 CREATE TABLE `meta_coord` (
   `table_name` varchar(40) COLLATE latin1_bin NOT NULL DEFAULT '',
@@ -529,9 +541,9 @@ CREATE TABLE `object_xref` (
   `ensembl_object_type` enum('RawContig','Transcript','Gene','Translation','regulatory_factor','regulatory_feature','Marker') COLLATE latin1_bin NOT NULL DEFAULT 'RawContig',
   `xref_id` int(10) unsigned NOT NULL,
   `linkage_annotation` varchar(255) COLLATE latin1_bin DEFAULT NULL,
-  `analysis_id` smallint(5) unsigned NOT NULL,
+  `analysis_id` smallint(5) unsigned DEFAULT NULL,
   PRIMARY KEY (`object_xref_id`),
-  UNIQUE KEY `xref_idx` (`xref_id`,`ensembl_object_type`,`ensembl_id`,`analysis_id`),
+  UNIQUE KEY `xref_idx` (`xref_id`,`ensembl_object_type`,`ensembl_id`),
   KEY `ensembl_idx` (`ensembl_object_type`,`ensembl_id`),
   KEY `analysis_idx` (`analysis_id`)
 ) ENGINE=MyISAM AUTO_INCREMENT=81424 DEFAULT CHARSET=latin1 COLLATE=latin1_bin;
@@ -641,6 +653,7 @@ CREATE TABLE `protein_align_feature` (
   `cigar_line` text COLLATE latin1_bin,
   `external_db_id` smallint(5) unsigned DEFAULT NULL,
   `hcoverage` double DEFAULT NULL,
+  `align_type` enum('ensembl','cigar','vulgar','mdtag') COLLATE latin1_bin DEFAULT 'ensembl',
   PRIMARY KEY (`protein_align_feature_id`),
   KEY `seq_region_idx` (`seq_region_id`,`analysis_id`,`seq_region_start`,`score`),
   KEY `seq_region_idx_2` (`seq_region_id`,`seq_region_start`),
@@ -656,15 +669,17 @@ CREATE TABLE `protein_feature` (
   `seq_end` int(10) NOT NULL DEFAULT '0',
   `hit_start` int(10) NOT NULL DEFAULT '0',
   `hit_end` int(10) NOT NULL DEFAULT '0',
-  `hit_name` varchar(40) COLLATE latin1_bin NOT NULL DEFAULT '',
+  `hit_name` varchar(40) COLLATE latin1_bin NOT NULL,
   `analysis_id` int(10) unsigned NOT NULL DEFAULT '0',
   `score` double NOT NULL DEFAULT '0',
   `evalue` double DEFAULT NULL,
   `perc_ident` float DEFAULT NULL,
   `external_data` text COLLATE latin1_bin,
   `hit_description` text COLLATE latin1_bin,
+  `cigar_line` text COLLATE latin1_bin,
+  `align_type` enum('ensembl','cigar','cigarplus','vulgar','mdtag') COLLATE latin1_bin DEFAULT NULL,
   PRIMARY KEY (`protein_feature_id`),
-  UNIQUE KEY `aln_idx` (`translation_id`,`hit_name`,`seq_start`,`seq_end`,`hit_start`,`hit_end`),
+  UNIQUE KEY `aln_idx` (`translation_id`,`hit_name`,`seq_start`,`seq_end`,`hit_start`,`hit_end`,`analysis_id`),
   KEY `translation_idx` (`translation_id`),
   KEY `hitname_idx` (`hit_name`),
   KEY `analysis_idx` (`analysis_id`)
@@ -784,7 +799,6 @@ CREATE TABLE `transcript` (
   `display_xref_id` int(10) unsigned DEFAULT NULL,
   `source` varchar(40) NOT NULL DEFAULT 'ensembl',
   `biotype` varchar(40) NOT NULL,
-  `status` enum('KNOWN','NOVEL','PUTATIVE','PREDICTED','KNOWN_BY_PROJECTION','UNKNOWN','ANNOTATED') DEFAULT NULL,
   `description` text,
   `is_current` tinyint(1) NOT NULL DEFAULT '1',
   `canonical_translation_id` int(10) unsigned DEFAULT NULL,

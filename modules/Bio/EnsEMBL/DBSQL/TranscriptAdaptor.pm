@@ -1,7 +1,7 @@
 =head1 LICENSE
 
 Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
-Copyright [2016-2017] EMBL-European Bioinformatics Institute
+Copyright [2016-2019] EMBL-European Bioinformatics Institute
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -77,7 +77,7 @@ use Bio::EnsEMBL::Gene;
 use Bio::EnsEMBL::Exon;
 use Bio::EnsEMBL::Transcript;
 use Bio::EnsEMBL::Translation;
-use Bio::EnsEMBL::Utils::Exception qw( deprecate throw warning );
+use Bio::EnsEMBL::Utils::Exception qw( throw warning );
 use Bio::EnsEMBL::Utils::Scalar qw( assert_ref );
 
 use vars qw(@ISA);
@@ -127,7 +127,7 @@ sub _columns {
      't.stable_id',         't.version',
      $created_date,         $modified_date,
      't.description',       't.biotype',
-     't.status',            'exdb.db_name',
+     'exdb.db_name',
      'exdb.status',         'exdb.db_display_name',
      'x.xref_id',           'x.display_label',
      'x.dbprimary_acc',     'x.version',
@@ -1064,15 +1064,6 @@ sub store {
     } else {
       $new_analysis_id = $db->get_AnalysisAdaptor->store($analysis);
     }
-  } elsif ($analysis_id) {
-    # Fall back to analysis passed in (usually from gene) if analysis
-    # wasn't set explicitely for the transcript. This is deprectated
-    # though.
-    warning(   "You should explicitely attach "
-             . "an analysis object to the Transcript. "
-             . "Will fall back to Gene analysis, "
-             . "but this behaviour is deprecated." );
-    $new_analysis_id = $analysis_id;
   } else {
     throw("Need an analysis_id to store the Transcript.");
   }
@@ -1104,7 +1095,7 @@ sub store {
   #
 
 #  my $store_transcript_sql = 
-#    sprintf "INSERT INTO transcript SET gene_id = ?, analysis_id = ?, seq_region_id = ?, seq_region_start = ?, seq_region_end = ?, seq_region_strand = ?,%s biotype = ?, status = ?, description = ?, is_current = ?, canonical_translation_id = ?", ($self->schema_version > 74)?" source = ?,":'';
+#    sprintf "INSERT INTO transcript SET gene_id = ?, analysis_id = ?, seq_region_id = ?, seq_region_start = ?, seq_region_end = ?, seq_region_strand = ?,%s biotype = ?, description = ?, is_current = ?, canonical_translation_id = ?", ($self->schema_version > 74)?" source = ?,":'';
 
   my @columns = qw(
             gene_id
@@ -1119,7 +1110,6 @@ sub store {
 
   push @columns, qw(
             biotype
-            status
             description
             is_current
             canonical_translation_id
@@ -1134,8 +1124,15 @@ sub store {
       my $created = $self->db->dbc->from_seconds_to_date($transcript->created_date());
       my $modified = $self->db->dbc->from_seconds_to_date($transcript->modified_date());
 
-      push @canned_columns, 'created_date', 'modified_date';
-      push @canned_values,  $created,       $modified;
+      if ($created) {
+	push @canned_columns, 'created_date';
+	push @canned_values,  $created;
+      }
+      if ($modified) {
+	push @canned_columns, 'modified_date';
+	push @canned_values,  $modified;
+      }
+      
   }
 
   my $columns = join(', ', @columns, @canned_columns);
@@ -1156,8 +1153,7 @@ sub store {
   $self->schema_version > 74 and 
     $tst->bind_param( ++$i,  $transcript->source(),      SQL_VARCHAR );
 
-  $tst->bind_param( ++$i,  $transcript->biotype(),     SQL_VARCHAR );
-  $tst->bind_param( ++$i,  $transcript->status(),      SQL_VARCHAR );
+  $tst->bind_param( ++$i, $transcript->get_Biotype->name, SQL_VARCHAR );
   $tst->bind_param( ++$i,  $transcript->description(), SQL_LONGVARCHAR );
   $tst->bind_param( ++$i, $is_current,                SQL_TINYINT );
 
@@ -1167,8 +1163,7 @@ sub store {
   if ( defined( $transcript->stable_id() ) ) {
 
     $tst->bind_param( ++$i, $transcript->stable_id(), SQL_VARCHAR );
-    my $version = ($transcript->version()) ? $transcript->version() : 1;
-    $tst->bind_param( ++$i, $version,                 SQL_INTEGER );
+    $tst->bind_param( ++$i, $transcript->version(),   SQL_INTEGER );
   }
 
   $tst->execute();
@@ -1663,7 +1658,7 @@ sub update {
   }
 
   my $update_transcript_sql = 
-    sprintf "UPDATE transcript SET analysis_id = ?, display_xref_id = ?, description = ?,%s biotype = ?, status = ?, is_current = ?, canonical_translation_id = ? WHERE transcript_id = ?", ($self->schema_version > 74)?" source = ?,":'';
+    sprintf "UPDATE transcript SET analysis_id = ?, display_xref_id = ?, description = ?,%s biotype = ?, is_current = ?, canonical_translation_id = ? WHERE transcript_id = ?", ($self->schema_version > 74)?" source = ?,":'';
 
   my $display_xref = $transcript->display_xref();
   my $display_xref_id;
@@ -1683,8 +1678,7 @@ sub update {
   $self->schema_version > 74 and 
     $sth->bind_param( ++$i,  $transcript->source(),      SQL_VARCHAR );
 
-  $sth->bind_param( ++$i, $transcript->biotype(),     SQL_VARCHAR );
-  $sth->bind_param( ++$i, $transcript->status(),      SQL_VARCHAR );
+  $sth->bind_param( ++$i, $transcript->get_Biotype->name, SQL_VARCHAR );
   $sth->bind_param( ++$i, $transcript->is_current(),  SQL_TINYINT );
   $sth->bind_param( ++$i, (
                       defined( $transcript->translation() )
@@ -1770,7 +1764,7 @@ sub _objs_from_sth {
     $seq_region_end,  $seq_region_strand,  $analysis_id,
     $gene_id,         $is_current,         $stable_id,
     $version,         $created_date,       $modified_date,
-    $description,     $biotype,            $status,
+    $description,     $biotype,
     $external_db,     $external_status,    $external_db_name,
     $display_xref_id, $xref_display_label, $xref_primary_acc,
     $xref_version,    $xref_description,   $xref_info_type,
@@ -1784,7 +1778,7 @@ sub _objs_from_sth {
        $seq_region_end,  $seq_region_strand,  $analysis_id,
        $gene_id,         $is_current,         $stable_id,
        $version,         $created_date,       $modified_date,
-       $description,     $biotype,            $status,
+       $description,     $biotype,
        $external_db,     $external_status,    $external_db_name,
        $display_xref_id, $xref_display_label, $xref_primary_acc,
        $xref_version,    $xref_description,   $xref_info_type,
@@ -1797,7 +1791,7 @@ sub _objs_from_sth {
        $seq_region_end,  $seq_region_strand,  $analysis_id,
        $gene_id,         $is_current,         $stable_id,
        $version,         $created_date,       $modified_date,
-       $description,     $biotype,            $status,
+       $description,     $biotype,
        $external_db,     $external_status,    $external_db_name,
        $display_xref_id, $xref_display_label, $xref_primary_acc,
        $xref_version,    $xref_description,   $xref_info_type,
@@ -2003,9 +1997,7 @@ sub _objs_from_sth {
        'external_status'       => $external_status,
        'external_display_name' => $external_db_name,
        'external_db'           => $external_db,
-       'external_status'       => $external_status,
        'display_xref'          => $display_xref,
-       'status'                => $status,
        'is_current'            => $is_current,
        'edits_enabled'         => 1
       };

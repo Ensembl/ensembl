@@ -4,7 +4,7 @@
 8408	2007-09-07 12:01:22	est2genome_human_havana	\N	10-Nov-10 (105)	\N	\N	\N	\N	ori_analysis => Est2genome_human_raw, mode => single	ClusterDepthFilter	\N	EST_Human	similarity
 8409	2007-09-07 12:01:22	vertrna_havana	\N	10-Nov-10 (105)	\N	\N	\N	\N	ori_analysis => vertrna_raw, mode => single, no_filter => 9606	ClusterDepthFilter	\N	vertebrate_mRNA	similarity
 8410	2010-09-30 09:17:16	human_cdna2genome	\N	\N	\N	\N	\N	/nfs/users/nfs_j/jhv/bin/exonerate.hacked.cdna2genome	\N	Exonerate2Genes	\N	\N	\N
-8411	0000-00-00 00:00:00	human_cdna	\N	\N	\N	exonerate	0.9.0	/usr/local/ensembl/bin/exonerate-0.9.0	\N	Exonerate2Genes	\N	Exonerate	similarity
+8411	\N	human_cdna	\N	\N	\N	exonerate	0.9.0	/usr/local/ensembl/bin/exonerate-0.9.0	\N	Exonerate2Genes	\N	Exonerate	similarity
 8412	2007-09-07 12:01:22	uniprot_sw_havana	\N	2010_11	\N	\N	\N	\N	percentid_cutoff => 40, ori_analysis => Uniprot_raw, hit_db => Swissprot, mode => single	DepthFilter	\N	SwissProt	\N
 8413	2009-03-11 17:25:55	human_protein	\N	refseq_40,uniprot_2010_07	\N	\N	\N	\N	\N	BestTargetted	\N	\N	\N
 8414	2007-09-07 12:01:22	uniprot_tr_havana	\N	2010_11	\N	\N	\N	\N	percentid_cutoff => 40, ori_analysis => Uniprot_raw, hit_db => TrEMBL, mode => single	DepthFilter	\N	TrEMBL	\N

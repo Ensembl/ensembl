@@ -1,7 +1,7 @@
 =head1 LICENSE
 
 Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
-Copyright [2016-2017] EMBL-European Bioinformatics Institute
+Copyright [2016-2019] EMBL-European Bioinformatics Institute
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -84,8 +84,9 @@ use strict;
 use warnings;
 
 use Bio::EnsEMBL::Mapper;
-use Bio::EnsEMBL::Utils::Exception qw(throw deprecate);
+use Bio::EnsEMBL::Utils::Exception qw(throw);
 use Scalar::Util qw(weaken);
+use Bio::EnsEMBL::Utils::Scalar qw( check_ref);
 
 my $ASSEMBLED = 'assembled';
 my $COMPONENT = 'component';
@@ -268,9 +269,18 @@ sub map {
 
   }
 
-  return
+  my @coords = 
     $mapper->map_coordinates( $seq_region_id, $frm_start, $frm_end,
                               $frm_strand, $frm );
+  
+  # decorate (org,)mapped coordinates with their corresponding region names
+  map {
+    check_ref($_, 'Bio::EnsEMBL::Mapper::Coordinate') && # exclude gap
+      $_->name($adaptor->seq_ids_to_regions([$_->id])->[0])
+    } @coords;
+
+  return @coords;
+  
 } ## end sub map
 
 

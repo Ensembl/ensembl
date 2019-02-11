@@ -1,0 +1,2 @@
+requires 'iCal::Parser';
+requires 'Term::ReadKey';

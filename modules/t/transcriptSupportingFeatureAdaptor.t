@@ -1,5 +1,5 @@
 # Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
-# Copyright [2016-2017] EMBL-European Bioinformatics Institute
+# Copyright [2016-2019] EMBL-European Bioinformatics Institute
 # 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -68,5 +68,8 @@ dies_ok { $tsf_adaptor->fetch_all_by_Transcript($tr, "unknown_feature_type") } '
 throws_ok {$tsf_adaptor->fetch_all_by_Transcript($tr, "unknown_feature_type") } qr/feature type must be dna_align_feature or protein_align_feature/, 
            'feature type must be dna_align_feature or protein_align_feature';
 
+#Test exception with empty features array
+throws_ok { Bio::EnsEMBL::DnaPepAlignFeature->new(-features => [], -align_type => 'ensembl') } qr/features array must not be empty/, 
+           'features array must not be empty';
 
 done_testing();

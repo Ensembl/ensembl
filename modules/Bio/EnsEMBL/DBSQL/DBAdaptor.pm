@@ -1,7 +1,7 @@
 =head1 LICENSE
 
 Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
-Copyright [2016-2017] EMBL-European Bioinformatics Institute
+Copyright [2016-2019] EMBL-European Bioinformatics Institute
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -69,7 +69,7 @@ use strict;
 use Bio::EnsEMBL::DBSQL::DBConnection;
 use Bio::EnsEMBL::DBSQL::BaseFeatureAdaptor;
 use Bio::EnsEMBL::Utils::SeqRegionCache;
-use Bio::EnsEMBL::Utils::Exception qw(throw warning deprecate);
+use Bio::EnsEMBL::Utils::Exception qw(throw warning);
 use Bio::EnsEMBL::Utils::Argument qw(rearrange);
 use Bio::EnsEMBL::Utils::Scalar qw(check_ref scope_guard);
 use Bio::EnsEMBL::Utils::ConfigRegistry;
@@ -302,7 +302,6 @@ sub dbc{
   Exceptions : none
   Caller     : EnsWeb
   Status     : At Risk
-             : may get deprecated, please use add_db from the registry instead
 
 =cut
 
@@ -329,7 +328,6 @@ sub add_db_adaptor {
   Exceptions : none
   Caller     : ?
   Status     : At Risk
-             : mey get deprecated, use remove_db instead from the Registry
 
 =cut
 
@@ -350,7 +348,6 @@ sub remove_db_adaptor {
   Exceptions : none
   Caller     : Bio::EnsEMBL::DBSQL::ProxyAdaptor
   Status     : At Risk
-             : may get deprecated soon
              : please use  Bio::EnsEMBL::Registry->get_all_db_adaptors
 
 =cut
@@ -373,7 +370,6 @@ sub get_all_db_adaptors {
   Exceptions : none
   Caller     : ?
   Status     : At Risk
-             : may get deprecated soon
              : please use  Bio::EnsEMBL::Registry->get_db_adaptors
 
 =cut
@@ -406,6 +402,7 @@ sub get_available_adaptors {
     AssemblyMapper                      => 'Bio::EnsEMBL::DBSQL::AssemblyMapperAdaptor',
     AssemblySlice                       => 'Bio::EnsEMBL::DBSQL::AssemblySliceAdaptor',
     Attribute                           => 'Bio::EnsEMBL::DBSQL::AttributeAdaptor',
+    Biotype                             => 'Bio::EnsEMBL::DBSQL::BiotypeAdaptor',
     CoordSystem                         => 'Bio::EnsEMBL::DBSQL::CoordSystemAdaptor',
     DataFile                            => 'Bio::EnsEMBL::DBSQL::DataFileAdaptor',
     DBEntry                             => 'Bio::EnsEMBL::DBSQL::DBEntryAdaptor',
@@ -522,7 +519,7 @@ sub _each_DASFeatureFactory{
                features to be obtained from Slices and from RawContigs.
 
                The external feature adaptor which is passed to this method
-               will have its db attribuite set to this DBAdaptor object via 
+               will have its db attribute set to this DBAdaptor object via 
                the db accessor method. 
 
                ExternalFeatureAdaptors passed to this method are stored 
@@ -640,7 +637,7 @@ sub add_ExternalFeatureFactory{
   Caller     : external
   Status     : Medium Risk
              : please use the Registry method, as at some time this
-             : may no longer be supprted.
+             : may no longer be supported.
  
 =cut
 
@@ -664,7 +661,7 @@ sub get_adaptor {
   Caller     : external
   Status     : Medium Risk
              : please use the Registry method, as at some time this
-             : may no longer be supprted.
+             : may no longer be supported.
  
 =cut
 
@@ -1072,7 +1069,7 @@ sub switch_adaptor {
 
   Arg [1]     : String name of the adaptor type to switch back in
   Example     : $dba->has_switchable_adaptor("sequence"); #explicit switching back
-  Returntype  : Boolean indicating if the given adaptor is being activly switched
+  Returntype  : Boolean indicating if the given adaptor is being actively switched
   Description : Provides a wrapper around the Registry has_switchable_adaptor() method
                 defaulting both species and group to the current DBAdaptor. This will
                 inform if the specified adaptor is being switched out

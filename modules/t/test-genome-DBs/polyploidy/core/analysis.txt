@@ -10,8 +10,8 @@
 200	2014-11-26 14:54:06	interpro2pathway	InterPro2Pathway	\N	\N	interpro2pathway	\N	\N	\N	\N	\N	\N	\N
 196	2014-11-26 14:54:03	signalp	SignalP	\N	\N	signalp	\N	\N	\N	\N	\N	\N	\N
 191	2014-11-26 14:53:59	scanprosite	Prosite_patterns	20.105	\N	scanprosite	\N	\N	\N	\N	\N	\N	\N
-45	0000-00-00 00:00:00	wheat_snp_a	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N
-46	0000-00-00 00:00:00	wheat_snp_b	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N
+45	\N	wheat_snp_a	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N
+46	\N	wheat_snp_b	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N
 136	2013-11-16 16:36:35	xrefexoneratedna	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N
 137	2013-11-16 16:36:35	xrefexonerateprotein	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N
 138	2013-11-16 16:49:20	xrefchecksum	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N

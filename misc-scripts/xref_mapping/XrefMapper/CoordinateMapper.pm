@@ -1,7 +1,7 @@
 =head1 LICENSE
 
 Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
-Copyright [2016-2017] EMBL-European Bioinformatics Institute
+Copyright [2016-2019] EMBL-European Bioinformatics Institute
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -71,7 +71,7 @@ sub mapper{
 
 
 sub run_coordinatemapping {
-  my ( $self, $do_upload) = @_;
+  my ( $self, $do_upload, $species_id) = @_;
 
 
   my $sth_stat = $self->xref->dbc->prepare(
@@ -85,7 +85,8 @@ sub run_coordinatemapping {
 
   my $species = $core_db->species();
 #  my $species_id = $self->mapper->core->species;
-  my $species_id = XrefMapper::BasicMapper::get_species_id_from_species_name( $xref_db, $species );
+  $species_id = XrefMapper::BasicMapper::get_species_id_from_species_name( $xref_db, $species ) unless defined $species_id;
+  if (!defined $species_id) { return; }
 
 
   # We only do coordinate mapping for mouse and human for now.

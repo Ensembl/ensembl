@@ -1,7 +1,7 @@
 =head1 LICENSE
 
 Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
-Copyright [2016-2017] EMBL-European Bioinformatics Institute
+Copyright [2016-2019] EMBL-European Bioinformatics Institute
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -287,7 +287,7 @@ sub make_image {
     foreach my $i (@$existing_images) {
         if ( $i->{description} eq $tag ) {
             $self->log->warn( "Image " . $i->{image_id} . " already exists for " . $tag );
-            return undef;
+            return;
         }
     }
     my $create_image = $self->ec2->register_image(
@@ -573,7 +573,7 @@ sub build_queue {
         my ( $db_species, $db_release, $db_type );
         if ( ( $db_species, $db_type, $db_release ) = $db_name =~ /^([a-z]+_[a-z]+)_([a-z]+)_(\d+)_\w+$/ ) {
             next unless $db_species =~ /$species_filter/;
-            next unless $db_type ~~ @$wanted_dbs;
+            next unless grep {$_ eq $db_type} @$wanted_dbs;
             push @{ $db_hash->{$db_species} }, [ $db_size, $db_path, $db_type, $db_release, $db_name ];
         }
         elsif ( $db_name =~ /ensembl_compara_(\d+)/ && 'compara' ~~ @$wanted_dbs ) {

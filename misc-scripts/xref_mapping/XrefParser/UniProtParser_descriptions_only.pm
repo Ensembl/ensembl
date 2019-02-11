@@ -1,7 +1,7 @@
 =head1 LICENSE
 
 Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
-Copyright [2016-2017] EMBL-European Bioinformatics Institute
+Copyright [2016-2019] EMBL-European Bioinformatics Institute
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -48,6 +48,8 @@ sub run {
   my $files        = $ref_arg->{files};
   my $release_file = $ref_arg->{rel_file};
   my $verbose      = $ref_arg->{verbose};
+  my $dbi          = $ref_arg->{dbi};
+  $dbi = $self->dbi unless defined $dbi;
 
   if((!defined $source_id) or (!defined $species_id) or (!defined $files) or (!defined $release_file)){
     croak "Need to pass source_id, species_id, files and rel_file as pairs";
@@ -59,16 +61,16 @@ sub run {
   my ( $sp_source_id, $sptr_source_id, $sp_release, $sptr_release );
 
   $sp_source_id =
-    $self->get_source_id_for_source_name('Uniprot/SWISSPROT',"sequence_mapped");
+    $self->get_source_id_for_source_name('Uniprot/SWISSPROT',"sequence_mapped", $dbi);
   $sptr_source_id =
-    $self->get_source_id_for_source_name('Uniprot/SPTREMBL');
+    $self->get_source_id_for_source_name('Uniprot/SPTREMBL', undef, $dbi);
 
   print "SwissProt source id for $file: $sp_source_id\n" if($verbose);
   print "SpTREMBL source id for $file: $sptr_source_id\n" if($verbose);
  
 
   my @xrefs =
-    $self->create_xrefs( $sp_source_id, $sptr_source_id, $species_id, $file, $verbose );
+    $self->create_xrefs( $sp_source_id, $sptr_source_id, $species_id, $file, $verbose, $dbi );
 
   if ( !@xrefs ) {
       return 1;    # 1 error
@@ -81,7 +83,7 @@ sub run {
 #  }
 
   # upload
-  if(!defined($self->upload_xref_object_graphs(@xrefs))){
+  if(!defined($self->upload_xref_object_graphs(@xrefs, $dbi))){
     return 1; 
   }
 
@@ -90,10 +92,10 @@ sub run {
         # below...
         my $sp_pred_source_id =
           $self->get_source_id_for_source_name(
-            'Uniprot/SWISSPROT_predicted');
+            'Uniprot/SWISSPROT_predicted', undef, $dbi);
         my $sptr_pred_source_id =
           $self->get_source_id_for_source_name(
-            'Uniprot/SPTREMBL_predicted');
+            'Uniprot/SPTREMBL_predicted', undef, $dbi);
 
         # Parse Swiss-Prot and SpTrEMBL release info from
         # $release_file.
@@ -110,10 +112,10 @@ sub run {
         $release_io->close();
 
         # Set releases
-        $self->set_release( $sp_source_id,        $sp_release );
-        $self->set_release( $sptr_source_id,      $sptr_release );
-        $self->set_release( $sp_pred_source_id,   $sp_release );
-        $self->set_release( $sptr_pred_source_id, $sptr_release );
+        $self->set_release( $sp_source_id,        $sp_release, $dbi );
+        $self->set_release( $sptr_source_id,      $sptr_release, $dbi );
+        $self->set_release( $sp_pred_source_id,   $sp_release, $dbi );
+        $self->set_release( $sptr_pred_source_id, $sptr_release, $dbi );
     }
 
 
@@ -125,7 +127,7 @@ sub run {
 # Parse file into array of xref objects
 
 sub create_xrefs {
-  my ($self, $sp_source_id, $sptr_source_id, $species_id, $file, $verbose ) = @_;
+  my ($self, $sp_source_id, $sptr_source_id, $species_id, $file, $verbose, $dbi ) = @_;
 
   my $num_sp = 0;
   my $num_sptr = 0;
@@ -135,9 +137,9 @@ sub create_xrefs {
 
   # Get predicted equivalents of various sources used here
   my $sp_pred_source_id =
-    $self->get_source_id_for_source_name('Uniprot/SWISSPROT_predicted');
+    $self->get_source_id_for_source_name('Uniprot/SWISSPROT_predicted', undef, $dbi);
   my $sptr_pred_source_id =
-    $self->get_source_id_for_source_name('Uniprot/SPTREMBL_predicted');
+    $self->get_source_id_for_source_name('Uniprot/SPTREMBL_predicted', undef, $dbi);
 
   print "Predicted SwissProt source id for $file: $sp_pred_source_id\n" if($verbose);
   print "Predicted SpTREMBL source id for $file: $sptr_pred_source_id\n" if($verbose);
@@ -150,7 +152,7 @@ sub create_xrefs {
   local $/ = "//\n";
 
   # Create a hash of all valid taxon_ids for this species
-  my %species2tax = $self->species_id2taxonomy();
+  my %species2tax = $self->species_id2taxonomy($dbi);
   my @tax_ids = @{$species2tax{$species_id}};
   my %taxonomy2species_id = map{ $_=>$species_id } @tax_ids;
 

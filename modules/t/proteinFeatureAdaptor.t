@@ -1,5 +1,5 @@
 # Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
-# Copyright [2016-2017] EMBL-European Bioinformatics Institute
+# Copyright [2016-2019] EMBL-European Bioinformatics Institute
 # 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@ use Test::More;
 use Test::Warnings;
 
 use Bio::EnsEMBL::Test::MultiTestDB;
+use Test::Exception;
 
 our $verbose = 0;
 
@@ -37,10 +38,21 @@ my $pfa = $dba->get_ProteinFeatureAdaptor();
 ok($pfa && ref($pfa) && $pfa->isa('Bio::EnsEMBL::DBSQL::ProteinFeatureAdaptor'));
 
 my $pfs = $pfa->fetch_all_by_translation_id(21724);
-
-print_features($pfs);
-
 ok(@$pfs == 15);
+
+#check if the pfa is multispecies
+isnt($pfa->is_multispecies(), 0, "Adaptor is not multispecies");
+
+#set it to multispecies mode to test if it works for collection dbs
+$pfa->is_multispecies(1);
+
+#check if the pfa is multispecies
+is($pfa->is_multispecies(), 1, "Adaptor is multispecies");
+$pfs = $pfa->fetch_all_by_translation_id(21724);
+ok(@$pfs == 15);
+
+#set it back to single species mode
+$pfa->is_multispecies(0);
 
 sub print_features {
   my $features = shift;
@@ -68,7 +80,9 @@ my $hdes = "Hit description";
 my $idesc = 'interpro description';
 my $interpro_ac = 'interpro accession';
 
-my $analysis = Bio::EnsEMBL::Analysis->new(-LOGIC_NAME => 'test');
+my $analysis_db = 'test_db';
+
+my $analysis = Bio::EnsEMBL::Analysis->new(-LOGIC_NAME => 'test', -DB => $analysis_db);
 $multi->save('core', 'protein_feature', 'meta_coord');
 
 
@@ -87,6 +101,17 @@ my $f = Bio::EnsEMBL::ProteinFeature->new
    -HDESCRIPTION=> $hdes,
    -IDESC       => $idesc,
    -INTERPRO_AC => $interpro_ac);
+   
+
+my $summary = $f->summary_as_hash();
+is($summary->{'type'}, $analysis_db);
+is($summary->{'id'}, $hseqname);
+is($summary->{'start'}, $start);
+is($summary->{'end'}, $end);
+is($summary->{'interpro'}, $interpro_ac);
+is($summary->{'description'}, $idesc);
+is($summary->{'hit_start'}, $hstart);
+is($summary->{'hit_end'}, $hend);   
    
 my $dbID = $pfa->store($f,21724);
 
@@ -121,9 +146,113 @@ ok(scalar @pfs > 0);
 $multi->restore('core', 'protein_feature');
 
 $pfs = $pfa->fetch_all();
-is(@$pfs, 156, "Retrieved all protein features");
+is(@$pfs, 157, "Retrieved all protein features");
 
 $pfs = $pfa->fetch_all_by_logic_name('pfscan');
 is(@$pfs, 156, "Retrieved pfscan features");
+
+
+my $test_logic_name = 'gifts_import';
+my $test_align_type = 'mdtag';
+my $test_cigar_string = 'MD:Z:35^VIVALE31^GRPLIQPRRKKAYQLEHTFQGLLGKRSLFTE10';
+my $test_dbID = 242847;
+my $test_hitname = 'Q86UU9';
+my $transl_id = 21739;
+
+# fetch_all_by_translation_id
+ok($pfa && $pfa->isa('Bio::EnsEMBL::DBSQL::ProteinFeatureAdaptor'));
+my $trl_features = $pfa->fetch_all_by_translation_id($transl_id);
+
+my @trl_gift_features = grep { $_->analysis()->logic_name eq $test_logic_name } @$trl_features;
+my $trl_feature = shift @trl_gift_features;
+
+ok($trl_feature && $trl_feature->isa('Bio::EnsEMBL::ProteinFeature'));
+ok($trl_feature->analysis()->logic_name eq $test_logic_name, 'Got the right logic name ' .$test_logic_name);
+
+ok($trl_feature->cigar_string eq $test_cigar_string, 'Got the right cigar string ' . $test_cigar_string);
+ok($trl_feature->align_type eq $test_align_type, 'Got the right align type ' . $test_align_type );
+
+# fetch_all_by_translation_id and logic_name
+$trl_features = $pfa->fetch_all_by_translation_id($transl_id, "gifts_import");
+
+@trl_gift_features = grep { $_->analysis()->logic_name eq $test_logic_name } @$trl_features;
+$trl_feature = shift @trl_gift_features;
+
+ok($trl_feature && $trl_feature->isa('Bio::EnsEMBL::ProteinFeature'));
+ok($trl_feature->analysis()->logic_name eq $test_logic_name, 'Got the right logic name ' .$test_logic_name);
+
+ok($trl_feature->cigar_string eq $test_cigar_string, 'Got the right cigar string ' . $test_cigar_string);
+ok($trl_feature->align_type eq $test_align_type, 'Got the right align type ' . $test_align_type );
+
+
+# fetch_all_by_logic_name
+my $logic_name_features = $pfa->fetch_all_by_logic_name('gifts_import');
+my $logic_name_feature = shift @$logic_name_features;
+ok($logic_name_feature->cigar_string eq $test_cigar_string);
+ok($logic_name_feature->align_type eq $test_align_type);
+ok($logic_name_feature->analysis()->logic_name eq $test_logic_name);
+
+# fetch_all_by_dbID_list
+my $dbid_features = $pfa->fetch_all_by_dbID_list ([$test_dbID]);
+my $dbid_feature = shift @$dbid_features;
+ok($dbid_feature->cigar_string eq $test_cigar_string);
+ok($dbid_feature->align_type eq $test_align_type);
+ok($dbid_feature->analysis()->logic_name eq $test_logic_name);
+
+$dbid_feature = $pfa->fetch_by_dbID($test_dbID);
+ok($dbid_feature->cigar_string eq $test_cigar_string);
+ok($dbid_feature->align_type eq $test_align_type);
+ok($dbid_feature->analysis()->logic_name eq $test_logic_name);
+
+
+# fetch_all_by_hit_name. Test with uniprot accession
+my $hitname_features = $pfa->fetch_all_by_hit_name($test_hitname, $test_logic_name);
+my $hitname_feature = shift @$hitname_features;
+ok($hitname_feature->cigar_string eq $test_cigar_string);
+ok($hitname_feature->align_type eq $test_align_type);
+ok($hitname_feature->analysis()->logic_name eq $test_logic_name, "Got the right logicname " . $test_logic_name );
+ok($hitname_feature->translation_id eq $transl_id, "Got the right transl_id " . $transl_id );
+
+# fetch_all_by_uniprot_acc. Test with uniprot accession
+my $hitname_uniprot_features = $pfa->fetch_all_by_uniprot_acc($test_hitname);
+my $hitname_uniprot_feature = shift @$hitname_uniprot_features;
+ok($hitname_uniprot_feature->cigar_string eq $test_cigar_string);
+ok($hitname_uniprot_feature->align_type eq $test_align_type);
+ok($hitname_uniprot_feature->analysis()->logic_name eq $test_logic_name, "Got the right logicname " . $test_logic_name );
+ok($hitname_uniprot_feature->translation_id eq $transl_id, "Got the right transl_id " . $transl_id );
+
+# Test inherited methods from BaseAlignFeatureAdaptor
+dies_ok { $pfa->fetch_all_by_Slice_and_hcoverage() } 'fetch_all_by_Slice_and_hcoverage() dies ok with no features';
+
+dies_ok { $pfa->fetch_all_by_Slice_and_external_db() } 'fetch_all_by_Slice_and_hcoverage() dies ok with no features';
+
+dies_ok { $pfa->fetch_all_by_Slice() } 'fetch_all_by_Slice() dies ok with no features';
+
+dies_ok { $pfa->fetch_all_by_Slice_and_score() } 'fetch_all_by_Slice_and_score() dies ok with no features';
+
+dies_ok { $pfa->fetch_all_by_Slice_constraint() } 'fetch_all_by_Slice_constraint() dies ok with no features';
+
+dies_ok { $pfa->fetch_all_by_stable_id_list() } 'fetch_all_by_stable_id_list() dies ok with no features';
+
+dies_ok { $pfa->count_by_Slice_constraint() } 'count_by_Slice_constraint() dies ok with no features';
+
+dies_ok { $pfa->remove_by_Slice() } 'remove_by_Slice() dies ok with no features';
+
+dies_ok { $pfa->get_seq_region_id_internal() } 'get_seq_region_id_internal() dies ok with no features';
+
+dies_ok { $pfa->get_seq_region_id_external() } 'get_seq_region_id_external() dies ok with no features';
+
+# Test if it works for previous schema versions
+$pfa->{_schema_version} = 92;
+ok($pfa->schema_version == 92, "set schema version to 92");
+$dbid_feature = $pfa->fetch_by_dbID($test_dbID);
+ok($dbid_feature->cigar_string eq '');
+ok($dbid_feature->align_type eq '');
+
+$pfa->{_schema_version} = 93;
+ok($pfa->schema_version == 93, "set schema version to 93");
+$dbid_feature = $pfa->fetch_by_dbID($test_dbID);
+ok($dbid_feature->cigar_string eq $test_cigar_string);
+ok($dbid_feature->align_type eq $test_align_type);
 
 done_testing();

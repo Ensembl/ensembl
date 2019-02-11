@@ -20,6 +20,16 @@ CREATE TABLE `allele_code` (
   UNIQUE KEY `allele_idx` (`allele`)
 ) ENGINE=MyISAM AUTO_INCREMENT=685956 DEFAULT CHARSET=latin1;
 
+CREATE TABLE `allele_synonym` (
+  `allele_synonym_id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+  `variation_id` int(10) unsigned NOT NULL,
+  `hgvs_genomic` varchar(600) NOT NULL,
+  `name` varchar(255) NOT NULL,
+  PRIMARY KEY (`allele_synonym_id`),
+  UNIQUE KEY `variation_name_idx` (`variation_id`,`name`),
+  KEY `name_idx` (`name`)
+) ENGINE=MyISAM DEFAULT CHARSET=latin1;
+
 CREATE TABLE `associate_study` (
   `study1_id` int(10) unsigned NOT NULL,
   `study2_id` int(10) unsigned NOT NULL,
@@ -168,7 +178,7 @@ CREATE TABLE `meta` (
   PRIMARY KEY (`meta_id`),
   UNIQUE KEY `species_key_value_idx` (`species_id`,`meta_key`,`meta_value`),
   KEY `species_value_idx` (`species_id`,`meta_value`)
-) ENGINE=MyISAM AUTO_INCREMENT=52 DEFAULT CHARSET=latin1;
+) ENGINE=MyISAM AUTO_INCREMENT=71 DEFAULT CHARSET=latin1;
 
 CREATE TABLE `meta_coord` (
   `table_name` varchar(40) NOT NULL,
@@ -193,7 +203,8 @@ CREATE TABLE `motif_feature_variation` (
   PRIMARY KEY (`motif_feature_variation_id`),
   KEY `variation_feature_idx` (`variation_feature_id`),
   KEY `consequence_type_idx` (`consequence_types`),
-  KEY `somatic_feature_idx` (`feature_stable_id`,`somatic`)
+  KEY `somatic_feature_idx` (`feature_stable_id`,`somatic`),
+  KEY `feature_stable_idx` (`feature_stable_id`)
 ) ENGINE=MyISAM DEFAULT CHARSET=latin1;
 
 CREATE TABLE `phenotype` (
@@ -238,7 +249,7 @@ CREATE TABLE `phenotype_feature_attrib` (
 CREATE TABLE `phenotype_ontology_accession` (
   `phenotype_id` int(11) unsigned NOT NULL,
   `accession` varchar(255) NOT NULL,
-  `mapped_by_attrib` set('437','438','439','440','441','442','443','444') DEFAULT NULL,
+  `mapped_by_attrib` set('437','438','439','440','441','442','443','444','588','589','590','591','592','593','594') DEFAULT NULL,
   `mapping_type` enum('is','involves') DEFAULT NULL,
   PRIMARY KEY (`phenotype_id`,`accession`),
   KEY `accession_idx` (`accession`)
@@ -306,7 +317,7 @@ CREATE TABLE `protein_function_predictions_attrib` (
 CREATE TABLE `publication` (
   `publication_id` int(10) unsigned NOT NULL AUTO_INCREMENT,
   `title` varchar(255) DEFAULT NULL,
-  `authors` varchar(255) DEFAULT NULL,
+  `authors` varchar(255) CHARACTER SET latin2 DEFAULT NULL,
   `pmid` int(10) DEFAULT NULL,
   `pmcid` varchar(255) DEFAULT NULL,
   `year` int(10) unsigned DEFAULT NULL,
@@ -338,7 +349,8 @@ CREATE TABLE `regulatory_feature_variation` (
   PRIMARY KEY (`regulatory_feature_variation_id`),
   KEY `variation_feature_idx` (`variation_feature_id`),
   KEY `consequence_type_idx` (`consequence_types`),
-  KEY `somatic_feature_idx` (`feature_stable_id`,`somatic`)
+  KEY `somatic_feature_idx` (`feature_stable_id`,`somatic`),
+  KEY `feature_stable_idx` (`feature_stable_id`)
 ) ENGINE=MyISAM DEFAULT CHARSET=latin1;
 
 CREATE TABLE `sample` (
@@ -465,6 +477,7 @@ CREATE TABLE `structural_variation_sample` (
   `structural_variation_sample_id` int(10) unsigned NOT NULL AUTO_INCREMENT,
   `structural_variation_id` int(10) unsigned NOT NULL,
   `sample_id` int(10) unsigned DEFAULT NULL,
+  `zygosity` tinyint(1) DEFAULT NULL,
   PRIMARY KEY (`structural_variation_sample_id`),
   KEY `structural_variation_idx` (`structural_variation_id`),
   KEY `sample_idx` (`sample_id`)
@@ -481,6 +494,12 @@ CREATE TABLE `study` (
   PRIMARY KEY (`study_id`),
   KEY `source_idx` (`source_id`),
   KEY `external_reference_idx` (`external_reference`)
+) ENGINE=MyISAM DEFAULT CHARSET=latin1;
+
+CREATE TABLE `submitter` (
+  `submitter_id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+  `description` varchar(255) DEFAULT NULL,
+  PRIMARY KEY (`submitter_id`)
 ) ENGINE=MyISAM DEFAULT CHARSET=latin1;
 
 CREATE TABLE `submitter_handle` (
@@ -519,7 +538,7 @@ CREATE TABLE `transcript_variation` (
   `feature_stable_id` varchar(128) DEFAULT NULL,
   `allele_string` text,
   `somatic` tinyint(1) NOT NULL DEFAULT '0',
-  `consequence_types` set('splice_acceptor_variant','splice_donor_variant','stop_lost','coding_sequence_variant','missense_variant','stop_gained','synonymous_variant','frameshift_variant','non_coding_transcript_variant','non_coding_transcript_exon_variant','mature_miRNA_variant','NMD_transcript_variant','5_prime_UTR_variant','3_prime_UTR_variant','incomplete_terminal_codon_variant','intron_variant','splice_region_variant','downstream_gene_variant','upstream_gene_variant','start_lost','stop_retained_variant','inframe_insertion','inframe_deletion','transcript_ablation','transcript_fusion','transcript_amplification','transcript_translocation','TFBS_ablation','TFBS_fusion','TFBS_amplification','TFBS_translocation','regulatory_region_ablation','regulatory_region_fusion','regulatory_region_amplification','regulatory_region_translocation','feature_elongation','feature_truncation','protein_altering_variant') DEFAULT NULL,
+  `consequence_types` set('splice_acceptor_variant','splice_donor_variant','stop_lost','coding_sequence_variant','missense_variant','stop_gained','synonymous_variant','frameshift_variant','non_coding_transcript_variant','non_coding_transcript_exon_variant','mature_miRNA_variant','NMD_transcript_variant','5_prime_UTR_variant','3_prime_UTR_variant','incomplete_terminal_codon_variant','intron_variant','splice_region_variant','downstream_gene_variant','upstream_gene_variant','start_lost','stop_retained_variant','inframe_insertion','inframe_deletion','transcript_ablation','transcript_fusion','transcript_amplification','transcript_translocation','feature_elongation','feature_truncation','protein_altering_variant','start_retained_variant') DEFAULT NULL,
   `cds_start` int(11) unsigned DEFAULT NULL,
   `cds_end` int(11) unsigned DEFAULT NULL,
   `cdna_start` int(11) unsigned DEFAULT NULL,
@@ -562,7 +581,7 @@ CREATE TABLE `variation` (
   `minor_allele_freq` float DEFAULT NULL,
   `minor_allele_count` int(10) unsigned DEFAULT NULL,
   `clinical_significance` set('uncertain significance','not provided','benign','likely benign','likely pathogenic','pathogenic','drug response','histocompatibility','other','confers sensitivity','risk factor','association','protective') DEFAULT NULL,
-  `evidence_attribs` set('367','368','369','370','371','372','418','421') DEFAULT NULL,
+  `evidence_attribs` set('367','368','369','370','371','372','418','421','573','585') DEFAULT NULL,
   `display` int(1) DEFAULT '1',
   PRIMARY KEY (`variation_id`),
   UNIQUE KEY `name` (`name`),
@@ -595,7 +614,7 @@ CREATE TABLE `variation_feature` (
   `map_weight` int(11) NOT NULL,
   `flags` set('genotyped') DEFAULT NULL,
   `source_id` int(10) unsigned NOT NULL,
-  `consequence_types` set('intergenic_variant','splice_acceptor_variant','splice_donor_variant','stop_lost','coding_sequence_variant','missense_variant','stop_gained','synonymous_variant','frameshift_variant','non_coding_transcript_variant','non_coding_transcript_exon_variant','mature_miRNA_variant','NMD_transcript_variant','5_prime_UTR_variant','3_prime_UTR_variant','incomplete_terminal_codon_variant','intron_variant','splice_region_variant','downstream_gene_variant','upstream_gene_variant','start_lost','stop_retained_variant','inframe_insertion','inframe_deletion','transcript_ablation','transcript_fusion','transcript_amplification','transcript_translocation','TFBS_ablation','TFBS_fusion','TFBS_amplification','TFBS_translocation','regulatory_region_ablation','regulatory_region_fusion','regulatory_region_amplification','regulatory_region_translocation','feature_elongation','feature_truncation','regulatory_region_variant','TF_binding_site_variant','protein_altering_variant') NOT NULL DEFAULT 'intergenic_variant',
+  `consequence_types` set('intergenic_variant','splice_acceptor_variant','splice_donor_variant','stop_lost','coding_sequence_variant','missense_variant','stop_gained','synonymous_variant','frameshift_variant','non_coding_transcript_variant','non_coding_transcript_exon_variant','mature_miRNA_variant','NMD_transcript_variant','5_prime_UTR_variant','3_prime_UTR_variant','incomplete_terminal_codon_variant','intron_variant','splice_region_variant','downstream_gene_variant','upstream_gene_variant','start_lost','stop_retained_variant','inframe_insertion','inframe_deletion','transcript_ablation','transcript_fusion','transcript_amplification','transcript_translocation','TFBS_ablation','TFBS_fusion','TFBS_amplification','TFBS_translocation','regulatory_region_ablation','regulatory_region_fusion','regulatory_region_amplification','regulatory_region_translocation','feature_elongation','feature_truncation','regulatory_region_variant','TF_binding_site_variant','protein_altering_variant','start_retained_variant') NOT NULL DEFAULT 'intergenic_variant',
   `variation_set_id` set('1','2','3','4','5','6','7','8','9','10','11','12','13','14','15','16','17','18','19','20','21','22','23','24','25','26','27','28','29','30','31','32','33','34','35','36','37','38','39','40','41','42','43','44','45','46','47','48','49','50','51','52','53','54','55','56','57','58','59','60','61','62','63','64') NOT NULL DEFAULT '',
   `class_attrib_id` int(10) unsigned DEFAULT '0',
   `somatic` tinyint(1) NOT NULL DEFAULT '0',
@@ -603,7 +622,7 @@ CREATE TABLE `variation_feature` (
   `minor_allele_freq` float DEFAULT NULL,
   `minor_allele_count` int(10) unsigned DEFAULT NULL,
   `alignment_quality` double DEFAULT NULL,
-  `evidence_attribs` set('367','368','369','370','371','372','418','421') DEFAULT NULL,
+  `evidence_attribs` set('367','368','369','370','371','372','418','421','573','585') DEFAULT NULL,
   `clinical_significance` set('uncertain significance','not provided','benign','likely benign','likely pathogenic','pathogenic','drug response','histocompatibility','other','confers sensitivity','risk factor','association','protective') DEFAULT NULL,
   `display` int(1) DEFAULT '1',
   PRIMARY KEY (`variation_feature_id`),

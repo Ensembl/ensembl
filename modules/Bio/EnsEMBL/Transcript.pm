@@ -1,7 +1,7 @@
 =head1 LICENSE
 
 Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
-Copyright [2016-2017] EMBL-European Bioinformatics Institute
+Copyright [2016-2019] EMBL-European Bioinformatics Institute
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -70,14 +70,14 @@ use Bio::EnsEMBL::ExonTranscript;
 use Bio::EnsEMBL::CDS;
 use Bio::EnsEMBL::TranscriptMapper;
 use Bio::EnsEMBL::SeqEdit;
-
+use Bio::EnsEMBL::Biotype;
 use Bio::EnsEMBL::Utils::Argument qw( rearrange );
-use Bio::EnsEMBL::Utils::Exception qw( deprecate warning throw );
+use Bio::EnsEMBL::Utils::Exception qw(warning throw );
 use Bio::EnsEMBL::Utils::Scalar qw( assert_ref );
 
-use vars qw(@ISA);
-@ISA = qw(Bio::EnsEMBL::Feature);
+use parent qw(Bio::EnsEMBL::Feature);
 
+use constant SO_ACC => 'SO:0000673';
 
 =head2 new
 
@@ -105,8 +105,6 @@ use vars qw(@ISA);
         string - the transcripts description
   Arg [-BIOTYPE]: 
         string - the biotype e.g. "protein_coding"
-  Arg [-STATUS]:
-        string - the transcripts status i.e. "KNOWN","NOVEL"
   Arg [-IS_CURRENT]:
         Boolean - specifies if this is the current version of the transcript
   Arg [-SOURCE]:
@@ -133,23 +131,16 @@ sub new {
     $external_name,    $external_db,  $external_status,
     $display_xref,     $created_date, $modified_date,
     $description,      $biotype,      $confidence,
-    $external_db_name, $status,       $is_current,
+    $external_db_name, $is_current,
     $source
   );
 
-  # Catch for old style constructor calling:
-  if ( ( @_ > 0 ) && ref( $_[0] ) ) {
-    $exons = [@_];
-    deprecate( "Transcript constructor should use named arguments.\n"
-        . "Use Bio::EnsEMBL::Transcript->new(-EXONS => \@exons);\n"
-        . "instead of Bio::EnsEMBL::Transcript->new(\@exons);" );
-  } else {
     (
       $exons,            $stable_id,    $version,
       $external_name,    $external_db,  $external_status,
       $display_xref,     $created_date, $modified_date,
       $description,      $biotype,      $confidence,
-      $external_db_name, $status,       $is_current,
+      $external_db_name, $is_current,
       $source
       )
       = rearrange( [
@@ -159,12 +150,11 @@ sub new {
         'DISPLAY_XREF',     'CREATED_DATE',
         'MODIFIED_DATE',    'DESCRIPTION',
         'BIOTYPE',          'CONFIDENCE',
-        'EXTERNAL_DB_NAME', 'STATUS',
+        'EXTERNAL_DB_NAME',
         'IS_CURRENT',       'SOURCE'
       ],
       @_
       );
-  }
 
   if ($exons) {
     $self->{'_trans_exon_array'} = $exons;
@@ -172,7 +162,6 @@ sub new {
   }
 
   $self->stable_id($stable_id);
-  $self->version($version);
   $self->{'created_date'}  = $created_date;
   $self->{'modified_date'} = $modified_date;
   $self->external_name($external_name) if ( defined $external_name );
@@ -183,10 +172,14 @@ sub new {
   $self->edits_enabled(1);
 
   $self->description($description);
-  $self->status($confidence);    # old style name
-  $self->status($status);        # new style name
-  $self->biotype($biotype);
+
+  $self->{'biotype'} = $biotype;
+
   $self->source($source);
+
+  # Default version
+  if ( !defined($version) ) { $version = 1 }
+  $self->{'version'} = $version;
 
   # default is_current
   $is_current = 1 unless ( defined($is_current) );
@@ -201,8 +194,14 @@ sub new {
                SQL wildcard characters (_ and %) can be used to
                specify patterns.
 
+  Arg [2]    : (optional) String, external database type, can be one of
+               ('ARRAY','ALT_TRANS','ALT_GENE','MISC','LIT','PRIMARY_DB_SYNONYM','ENSEMBL'),
+               SQL wildcard characters (_ and %) can be used to
+               specify patterns.
+
   Example    : my @dblinks = @{ $transcript->get_all_DBLinks() };
-               my @dblinks = @{ $transcript->get_all_DBLinks('Uniprot%') };
+               @dblinks = @{ $transcript->get_all_DBLinks('Uniprot%') };}
+               @dblinks = @{ $transcript->get_all_DBLinks('%', 'ENSEMBL') };
 
   Description: Retrieves *all* related DBEntries for this
                transcript.  This includes all DBEntries that are
@@ -284,11 +283,18 @@ sub get_all_xrefs {
 
 =head2 get_all_DBEntries
 
-  Arg [1]    : (optional) String, external database name
+  Arg [1]    : (optional) String, external database name,
+               SQL wildcard characters (_ and %) can be used to
+               specify patterns.
 
-  Arg [2]    : (optional) String, external database type
+  Arg [2]    : (optional) String, external database type, can be one of
+               ('ARRAY','ALT_TRANS','ALT_GENE','MISC','LIT','PRIMARY_DB_SYNONYM','ENSEMBL'),
+               SQL wildcard characters (_ and %) can be used to
+               specify patterns.
 
   Example    : my @dbentries = @{ $transcript->get_all_DBEntries() };
+               @dbentries = @{ $transcript->get_all_DBEntries('Uniprot%') };}
+               @dbentries = @{ $transcript->get_all_DBEntries('%', 'ENSEMBL') };}
 
   Description: Retrieves DBEntries (xrefs) for this transcript.
                This does *not* include the corresponding
@@ -593,61 +599,6 @@ sub external_name {
   }
 }
 
-
-=head2 is_known
-
-  Example    : print "Transcript ".$transcript->stable_id." is KNOWN\n" if
-                  $transcript->is_known;
-  Description: DEPRECATED. Returns TRUE if this gene has a status of 'KNOWN'
-  Returntype : TRUE if known, FALSE otherwise
-  Exceptions : none
-  Caller     : general
-  Status     : Stable
-
-=cut
-
-sub is_known {
-  my $self = shift;
-  deprecate("is_known is deprecated and will be removed in e90. Please consider checking supporting features instead");
-  return ( $self->{'status'} eq "KNOWN" || $self->{'status'} eq "KNOWN_BY_PROJECTION" );
-}
-
-
-=head2 status
-
-  Arg [1]    : string $status
-  Description: DEPRECATED. get/set for attribute status
-  Returntype : string
-  Exceptions : none
-  Caller     : general
-  Status     : Medium Risk
-
-=cut
-
-sub status {
-   my $self = shift;
-  deprecate("status is deprecated and will be removed in e90. Please consider checking supporting features instead");
-  $self->{'status'} = shift if( @_ );
-  return $self->{'status'};
-}
-
-=head2 biotype
-
-  Arg [1]    : string $biotype
-  Description: get/set for attribute biotype
-  Returntype : string
-  Exceptions : none
-  Caller     : general
-  Status     : Stable
-
-=cut
-
-sub biotype {
-   my $self = shift;
-  $self->{'biotype'} = shift if( @_ );
-  return ( $self->{'biotype'} || "protein_coding" );
-}
-
 =head2 source
 
   Arg [1]    : (optional) String - the source to set
@@ -871,7 +822,6 @@ sub spliced_seq {
   my $seq_string = "";
   for my $ex ( @{$self->get_all_Exons()} ) {
     my $seq = $ex->seq();
-
     if(!$seq) {
       warning("Could not obtain seq for exon.  Transcript sequence may not " .
               "be correct.");
@@ -882,15 +832,19 @@ sub spliced_seq {
         my $padstr;
         if (!defined ($ex->coding_region_start($self))) {
           $exon_seq = lc($exon_seq);
-        } elsif ($ex->coding_region_start($self) > $ex->start()) {
+        }
+
+        if ($ex->coding_region_start($self) > $ex->start()) {
           my $forward_length = $ex->coding_region_start($self) - $ex->start();
           my $reverse_length = $ex->end() - $ex->coding_region_start($self);
           if ($ex->strand == 1) {
             $exon_seq = lc (substr($exon_seq, 0, $forward_length)) . substr($exon_seq, $forward_length); 
           } else {
-            $exon_seq = substr($exon_seq, 0, $reverse_length) . lc(substr($exon_seq, $reverse_length));
+            $exon_seq = substr($exon_seq, 0, $reverse_length+1) . lc(substr($exon_seq, $reverse_length+1));
           }
-        } elsif ($ex->coding_region_end($self) < $ex->end()) {
+        }
+
+        if ($ex->coding_region_end($self) < $ex->end()) {
           my $forward_length = $ex->coding_region_end($self) - $ex->start();
           my $reverse_length = $ex->end() - $ex->coding_region_end($self);
           if ($ex->strand == 1) {
@@ -1013,13 +967,20 @@ sub cdna_coding_start {
     # adjust cdna coords if sequence edits are enabled
     if($self->edits_enabled()) {
       my @seqeds = @{$self->get_all_SeqEdits()};
-      # sort in reverse order to avoid adjustment of downstream edits
-      @seqeds = sort {$b->start() <=> $a->start()} @seqeds;
+      if (scalar @seqeds) {
+        my $transl_start = $self->get_all_Attributes('_transl_start');
+        if (@{$transl_start}) {
+          $start = $transl_start->[0]->value;
+        } else {
+          # sort in reverse order to avoid adjustment of downstream edits
+          @seqeds = sort {$b->start() <=> $a->start()} @seqeds;
 
-      foreach my $se (@seqeds) {
-        # use less than start so that start of CDS can be extended
-        if($se->start() < $start) {
-          $start += $se->length_diff();
+          foreach my $se (@seqeds) {
+            # use less than start so that start of CDS can be extended
+            if($se->start() < $start) {
+              $start += $se->length_diff();
+            }
+          }
         }
       }
     }
@@ -1073,13 +1034,20 @@ sub cdna_coding_end {
     # adjust cdna coords if sequence edits are enabled
     if($self->edits_enabled()) {
       my @seqeds = @{$self->get_all_SeqEdits()};
-      # sort in reverse order to avoid adjustment of downstream edits
-      @seqeds = sort {$b->start() <=> $a->start()} @seqeds;
+      if (scalar @seqeds) {
+        my $transl_end = $self->get_all_Attributes('_transl_end');
+        if (@{$transl_end}) {
+          $end = $transl_end->[0]->value;
+        } else {
+          # sort in reverse order to avoid adjustment of downstream edits
+          @seqeds = sort {$b->start() <=> $a->start()} @seqeds;
 
-      foreach my $se (@seqeds) {
-        # use less than or equal to end+1 so end of the CDS can be extended
-        if($se->start() <= $end + 1) {
-          $end += $se->length_diff();
+          foreach my $se (@seqeds) {
+            # use less than or equal to end+1 so end of the CDS can be extended
+            if($se->start() <= $end + 1) {
+              $end += $se->length_diff();
+            }
+          }
         }
       }
     }
@@ -2591,7 +2559,7 @@ sub equals {
     return 0;
   }
 
-  if ( $self->biotype() ne $transcript->biotype() ) {
+  if ( $self->get_Biotype->name ne $transcript->get_Biotype->name ) {
     return 0;
   }
 
@@ -2653,15 +2621,6 @@ sub equals {
 
 sub transform {
   my $self = shift;
-
-  # catch for old style transform calls
-  if( ref $_[0] eq 'HASH') {
-    deprecate("Calling transform with a hashref is deprecate.\n" .
-              'Use $trans->transfer($slice) or ' .
-              '$trans->transform("coordsysname") instead.');
-    my (undef, $new_ex) = each(%{$_[0]});
-    return $self->transfer($new_ex->slice);
-  }
 
   my $new_transcript = $self->SUPER::transform(@_);
   if ( !defined($new_transcript) ) {
@@ -3130,7 +3089,7 @@ sub summary_as_hash {
   my $summary_ref = $self->SUPER::summary_as_hash;
   $summary_ref->{'description'} = $self->description;
   $summary_ref->{'Name'} = $self->external_name if $self->external_name;
-  $summary_ref->{'biotype'} = $self->biotype;
+  $summary_ref->{'biotype'} = $self->get_Biotype->name;
   $summary_ref->{'logic_name'} = $self->analysis->logic_name() if defined $self->analysis();
   my $parent_gene = $self->get_Gene();
   $summary_ref->{'Parent'} = $parent_gene->stable_id;
@@ -3237,6 +3196,98 @@ sub get_Gene {
   return $parent_gene;
 }
 
+=head2 get_Biotype
+
+  Example    : my $biotype = $transcript->get_Biotype;
+  Description: Returns the Biotype object of this transcript.
+               When no biotype exists, defaults to 'protein_coding'.
+               When used to set to a biotype that does not exist in
+               the biotype table, a biotype object is created with
+               the provided argument as name and object_type transcript.
+  Returntype : Bio::EnsEMBL::Biotype
+  Exceptions : none
+
+=cut
+
+sub get_Biotype {
+  my ( $self ) = @_;
+
+  # have a biotype object, return it
+  if ( ref $self->{'biotype'} eq 'Bio::EnsEMBL::Biotype' ) {
+    return $self->{'biotype'};
+  }
+
+  # biotype is first set as a string retrieved from the transcript table
+  # there is no biotype object in the transcript object, retrieve it using the biotype string
+  # if no string, default to protein_coding. this is legacy behaviour and should probably be revisited
+  my $biotype_name = $self->{'biotype'} // 'protein_coding';
+
+  return $self->set_Biotype( $biotype_name );
+}
+
+=head2 set_Biotype
+
+  Arg [1]    : Arg [1] : String - the biotype name to set
+  Example    : my $biotype = $transcript->set_Biotype('protin_coding');
+  Description: Sets the Biotype of this transcript to the provided biotype name.
+               Returns the Biotype object of this transcript.
+               When no biotype exists, defaults to 'protein_coding' name.
+               When setting a biotype that does not exist in
+               the biotype table, a biotype object is created with
+               the provided argument as name and object_type transcript.
+  Returntype : Bio::EnsEMBL::Biotype
+  Exceptions : If no argument provided
+
+=cut
+
+sub set_Biotype {
+  my ( $self, $name ) = @_;
+
+  throw('No argument provided') unless defined $name;
+
+  # retrieve biotype object from the biotype adaptor
+  if( defined $self->adaptor() ) {
+    my $ba = $self->adaptor()->db()->get_BiotypeAdaptor();
+    $self->{'biotype'} = $ba->fetch_by_name_object_type( $name, 'transcript' );
+  }
+  # if $self->adaptor is unavailable, create a new biotype object containing name and object_type only
+  else {
+    $self->{'biotype'} = Bio::EnsEMBL::Biotype->new(
+            -NAME          => $name,
+            -OBJECT_TYPE   => 'transcript',
+    )
+  }
+
+  return $self->{'biotype'} ;
+}
+
+=head2 biotype
+  Arg [1]    : (optional) String - the biotype to set
+  Example    : $transcript->biotype("protein_coding");
+  Description: Getter/setter for the attribute biotype name.
+               Recommended to use instead for a getter:
+                 $biotype = $transcript->get_Biotype;
+               and for a setter:
+                 $biotype = $transcript->set_Biotype("protein_coding");
+               The String biotype name can then be retrieved by
+               calling name on the Biotype object:
+                 $biotype_name = $biotype->name;
+  Returntype : String
+  Exceptions : none
+  Caller     : general
+  Status     : Stable
+=cut
+
+sub biotype {
+  my ( $self, $biotype_name) = @_;
+
+  # Setter? set_Biotype()
+  if (defined $biotype_name) {
+    return $self->set_Biotype($biotype_name)->name;
+  }
+
+  # Getter? get_Biotype()
+  return $self->get_Biotype->name;
+}
 
 1;
-

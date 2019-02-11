@@ -1,6 +1,6 @@
 #!/usr/bin/env perl
 # Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
-# Copyright [2016-2017] EMBL-European Bioinformatics Institute
+# Copyright [2016-2019] EMBL-European Bioinformatics Institute
 # 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -225,9 +225,9 @@ if($status eq "alt_alleles_processed"){
 $status = $mapper->xref_latest_status();
 if($status eq 'official_naming_done') {
   my $checksum_mapper = XrefMapper::UniParcMapper->new($mapper);
-  $checksum_mapper->process($upload);
+  $checksum_mapper->process();
   $checksum_mapper = XrefMapper::RNACentralMapper->new($mapper);
-  $checksum_mapper->process($upload);
+  $checksum_mapper->process();
 }
 
 # Coordinate xrefs

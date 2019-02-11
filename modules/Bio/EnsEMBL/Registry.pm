@@ -1,7 +1,7 @@
 =head1 LICENSE
 
 Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
-Copyright [2016-2017] EMBL-European Bioinformatics Institute
+Copyright [2016-2019] EMBL-European Bioinformatics Institute
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -590,6 +590,10 @@ sub get_all_db_adaptors {
 sub add_DBAdaptor {
   my ( $class, $species, $group, $adap ) = @_;
 
+  if ( !defined($species) ) {
+    throw('Species not defined.');
+  }
+
   if ( !( $class->alias_exists($species) ) ) {
     $class->add_alias( $species, $species );
   }
@@ -668,6 +672,10 @@ sub get_all_DBAdaptors {
   my ( $class, @args ) = @_;
 
   my ( $species, $group ) = rearrange( [qw(SPECIES GROUP)], @args );
+
+  if ( !defined($species) && !defined($group) ) {
+    return $registry_register{'_DBA'} || [];
+  }
 
   if ( defined($species) ) {
     $species = $class->get_alias($species);
@@ -976,12 +984,6 @@ sub add_adaptor {
     push( @{ $registry_register{_SPECIES}{$species}{'list'} }, $type );
   }
 
-  if ( !defined( $registry_register{_TYPE}{ $lc_type }{$species} ) ) {
-    $registry_register{_TYPE}{ $lc_type }{$species} = [$adap];
-  } 
-  else {
-    push( @{ $registry_register{_TYPE}{ $lc_type }{$species} }, $adap );
-  }
   return;
 } ## end sub add_adaptor
 
@@ -1132,7 +1134,7 @@ sub get_adaptor {
     'assemblymapper'           => 1,
     'karyotypeband'            => 1,
     'repeatfeature'            => 1,
-    'coordsystem'              => (($group ne 'funcgen') ? 1 : undef),
+    'coordsystem'              => 1,
     'assemblyexceptionfeature' => 1
   );
 
@@ -1872,7 +1874,7 @@ sub load_registry_from_db {
 
   # Register Core like databases
   my $core_like_dbs_found = 0;
-  foreach my $type (qw(core cdna vega vega_update otherfeatures rnaseq)) {
+  foreach my $type (qw(core cdna vega vega_update otherfeatures rnaseq ccds)) {
 
     my @dbs = grep { /^(?:$db_prefix)[a-z]+_[a-z0-9]+(?:_[a-z0-9]+)?  # species name
                        _
@@ -2871,6 +2873,9 @@ sub version_check {
   if ( $database_version == 0 ) {
     # Try to work out the version
     if ( $dba->dbc()->dbname() =~ /^_test_db_/x ) {
+      return 1;
+    }
+    if ( $dba->dbc()->dbname() =~ /ensembl_metadata/x ) {
       return 1;
     }
     if ( $dba->dbc()->dbname() =~ /(\d+)_\S+$/x ) {

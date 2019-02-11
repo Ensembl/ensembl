@@ -1,5 +1,5 @@
 # Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
-# Copyright [2016-2017] EMBL-European Bioinformatics Institute
+# Copyright [2016-2019] EMBL-European Bioinformatics Institute
 # 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -559,6 +559,12 @@ $multi->restore();
   
   $multi->restore('core', 'xref', 'object_xref');
 }
+
+# Test storing with no analysis
+
+my $dbentry = Bio::EnsEMBL::DBEntry->new(-PRIMARY_ID => 'my_id', -DBNAME => 'EntrezGene', -RELEASE => 1);
+$xref_id = $dbEntryAdaptor->store($dbentry, $gene->dbID(), 'Gene');
+is_rows("1", $db, "object_xref", "where xref_id = $xref_id and analysis_id is null");
 
 # Test for external DB ids
 {

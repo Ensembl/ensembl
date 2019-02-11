@@ -1,6 +1,6 @@
 #!/usr/bin/env perl
 # Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
-# Copyright [2016-2017] EMBL-European Bioinformatics Institute
+# Copyright [2016-2019] EMBL-European Bioinformatics Institute
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -126,12 +126,19 @@ my $new_species = {};
 
 process_dbs($readDB);
 
-create_index($rdbname) if $create_index;
+create_index($writeDB) if $create_index;
 
 sub create_index {
-  my $dbname = shift;
+  my ($writeDB) = @_;
+
+  my $dbname = $writeDB->{'dbname'};
   print "Creating index for $dbname\n";
 
+  my $host = $writeDB->{'host'};
+  my $port = $writeDB->{'port'};
+  my $user = $writeDB->{'user'};
+  my $pass = $writeDB->{'pass'};
+  
   my $startAt = time;
   eval {
     my $cmd = "mysql -h $host";
@@ -158,9 +165,14 @@ sub create_db {
   my ($writeDB) = @_;
 
   my $dbname = $writeDB->{'dbname'};
-  my $dbh = db_connect( 'test', $writeDB );
+  my $dbh = db_connect( undef, $writeDB );
   print "Creating database $dbname\n";
 
+  my $host = $writeDB->{'host'};
+  my $port = $writeDB->{'port'};
+  my $user = $writeDB->{'user'};
+  my $pass = $writeDB->{'pass'};
+  
   eval {
 
   $dbh->do("drop database if exists $dbname");
@@ -191,10 +203,10 @@ sub create_db {
 sub process_dbs {
   my ($connectDB) = @_;
 
-  $host = $connectDB->{'host'};
-  $user = $connectDB->{'user'};
-  $pass = $connectDB->{'pass'};
-  $port = $connectDB->{'port'};
+  my $host = $connectDB->{'host'};
+  my $user = $connectDB->{'user'};
+  my $pass = $connectDB->{'pass'};
+  my $port = $connectDB->{'port'};
 
   my $counter_core  = 1;
   my $counter_other = 1;
@@ -556,7 +568,7 @@ sub db_connect {
     if ($port) {
       $dsn .= "port=$port;";
     }
-    $dsn .= "database=$dbname";
+    $dsn .= "database=$dbname" if $dbname;
 
     my $dbh = DBI->connect( $dsn, $user, $pass,
     { 'PrintError' => 1, 'RaiseError' => 1 } );

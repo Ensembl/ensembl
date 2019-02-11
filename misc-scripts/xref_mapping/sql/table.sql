@@ -1,5 +1,5 @@
 -- Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
--- Copyright [2016-2017] EMBL-European Bioinformatics Institute
+-- Copyright [2016-2019] EMBL-European Bioinformatics Institute
 -- 
 -- Licensed under the Apache License, Version 2.0 (the "License");
 -- you may not use this file except in compliance with the License.
@@ -42,7 +42,7 @@ CREATE TABLE xref (
   PRIMARY KEY (xref_id),
   UNIQUE acession_idx(accession,label,source_id,species_id)
 
-) COLLATE=latin1_swedish_ci ENGINE=InnoDB;
+) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
 
 ################################################################################
 
@@ -55,7 +55,7 @@ CREATE TABLE primary_xref (
 
   PRIMARY KEY (xref_id)
 
-) COLLATE=latin1_swedish_ci ENGINE=InnoDB;
+) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
 
 ################################################################################
 
@@ -71,7 +71,7 @@ CREATE TABLE dependent_xref (
   KEY dependent_idx(dependent_xref_id),
   KEY object_id(object_xref_id)
 
-) COLLATE=latin1_swedish_ci ENGINE=InnoDB;
+) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
 
 
 
@@ -88,7 +88,7 @@ CREATE TABLE synonym (
   KEY xref_idx(xref_id),
   KEY synonym_idx(synonym)
 
-) COLLATE=latin1_swedish_ci ENGINE=InnoDB;
+) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
 
 ################################################################################
 
@@ -97,7 +97,7 @@ CREATE TABLE dependent_source (
   dependent_name             varchar(255) not null,
 
   PRIMARY KEY (master_source_id, dependent_name)
-) COLLATE=latin1_swedish_ci ENGINE=InnoDB;
+) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
 
 ################################################################################
 
@@ -115,7 +115,7 @@ CREATE TABLE source (
   PRIMARY KEY (source_id),
   KEY name_idx(name) 
 
-) COLLATE=latin1_swedish_ci ENGINE=InnoDB;
+) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
 
 ################################################################################
 
@@ -134,7 +134,7 @@ CREATE TABLE source_url (
   PRIMARY KEY (source_url_id),
   KEY source_idx(source_id)
 
-) COLLATE=latin1_swedish_ci ENGINE=InnoDB;
+) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
 
 ################################################################################
 
@@ -146,7 +146,7 @@ CREATE TABLE source_mapping_method (
 
        UNIQUE KEY (source_id, method)
 
-) COLLATE=latin1_swedish_ci ENGINE=InnoDB;
+) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
 
 
 CREATE TABLE gene_direct_xref (
@@ -158,7 +158,7 @@ CREATE TABLE gene_direct_xref (
   KEY primary_idx(general_xref_id),
   KEY ensembl_idx(ensembl_stable_id)
 
-) COLLATE=latin1_swedish_ci ENGINE=InnoDB;
+) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
 
 
 CREATE TABLE transcript_direct_xref (
@@ -170,7 +170,7 @@ CREATE TABLE transcript_direct_xref (
   KEY primary_idx(general_xref_id),
   KEY ensembl_idx(ensembl_stable_id)
 
-) COLLATE=latin1_swedish_ci ENGINE=InnoDB;
+) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
 
 CREATE TABLE translation_direct_xref (
 
@@ -181,7 +181,7 @@ CREATE TABLE translation_direct_xref (
   KEY primary_idx(general_xref_id),
   KEY ensembl_idx(ensembl_stable_id)
 
-) COLLATE=latin1_swedish_ci ENGINE=InnoDB;
+) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
 
 ################################################################################
 
@@ -197,7 +197,7 @@ CREATE TABLE species (
   UNIQUE KEY species_taxonomy_idx(species_id,taxonomy_id),
   KEY name_idx(name)
 
-) COLLATE=latin1_swedish_ci ENGINE=InnoDB;
+) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
 
 ################################################################################
 
@@ -207,7 +207,7 @@ CREATE TABLE interpro (
   pfam                   varchar(255) not null,
   dbtype                 enum ('PROSITE','PFAM','PREFILE','PROFILE','TIGRFAMs','PRINTS','PIRSF','SMART','SSF')  not null
 
-) COLLATE=latin1_swedish_ci ENGINE=InnoDB;
+) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
 
 ################################################################################
 
@@ -219,7 +219,7 @@ CREATE TABLE pairs (
 
   KEY ac2_idx(accession2)
 
-) COLLATE=latin1_swedish_ci ENGINE=InnoDB;
+) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
 ################################################################################
 
 -- Table for coordinate-based Xrefs, based
@@ -242,13 +242,13 @@ CREATE TABLE coordinate_xref (
   UNIQUE KEY coord_xref_idx(coord_xref_id),
   INDEX start_pos_idx(species_id, chromosome, strand, txStart),
   INDEX end_pos_idx(species_id, chromosome, strand, txEnd)
-) COLLATE=latin1_swedish_ci ENGINE=InnoDB;
+) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
 
 ################################################################################
 
 -- Table for checksum-based Xrefs, based
 -- on the input format from UniProt/UniParc. This is MyISAM because
--- we do a LOAD DATA INFILE & the InnoDB engine does not handle this too
+-- we do a LOAD DATA INFILE & the MyISAM engine does not handle this too
 -- well (especially since there is no need for transactions for this table)
 
 CREATE TABLE checksum_xref (
@@ -277,7 +277,7 @@ CREATE TABLE mapping (
   method         VARCHAR(255),
   array_size     INT UNSIGNED
 
-) COLLATE=latin1_swedish_ci ENGINE=InnoDB;
+) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
 
 CREATE TABLE mapping_jobs (
   root_dir          text,
@@ -291,7 +291,7 @@ CREATE TABLE mapping_jobs (
   object_xref_start INT UNSIGNED,
   object_xref_end   INT UNSIGNED
 
-) COLLATE=latin1_swedish_ci ENGINE=InnoDB;
+) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
 
 CREATE TABLE gene_transcript_translation (
 
@@ -302,7 +302,7 @@ CREATE TABLE gene_transcript_translation (
   INDEX gene_idx (gene_id),
   INDEX translation_idx (translation_id)
 
-) COLLATE=latin1_swedish_ci ENGINE=InnoDB;
+) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
 
 CREATE TABLE core_database (
   port		INT UNSIGNED,
@@ -312,7 +312,7 @@ CREATE TABLE core_database (
   xref_dir      text,
   core_dir      text
 
-) COLLATE=latin1_swedish_ci ENGINE=InnoDB;
+) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
   
 
 
@@ -322,7 +322,7 @@ CREATE TABLE havana_status (
   status       enum('KNOWN','NOVEL','PUTATIVE','PREDICTED','KNOWN_BY_PROJECTION','UNKNOWN'),
   UNIQUE KEY status_idx(stable_id)
 
-) COLLATE=latin1_swedish_ci ENGINE=InnoDB;
+) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
 
 
 -- Try to keep the status in the correct order
@@ -344,7 +344,7 @@ CREATE TABLE process_status (
                      'core_loaded','display_xref_done','gene_description_done'),
   date          DATETIME NOT NULL,
   PRIMARY KEY (id)
-) COLLATE=latin1_swedish_ci ENGINE=InnoDB;
+) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
 
 
 -- This table is populated in DisplayXrefs.pm and is used to set the best xrefs as 
@@ -358,7 +358,7 @@ CREATE TABLE display_xref_priority(
     priority  SMALLINT UNSIGNED NOT NULL,
 
     PRIMARY KEY (ensembl_object_type, source_id)
-) COLLATE=latin1_swedish_ci ENGINE=InnoDB;
+) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
 
 
 -- This table is populated in DisplayXrefs.pm and is used to set
@@ -369,7 +369,7 @@ CREATE TABLE gene_desc_priority(
     priority       SMALLINT UNSIGNED NOT NULL,
 
     PRIMARY KEY (source_id)
-) COLLATE=latin1_swedish_ci ENGINE=InnoDB;
+) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
                      
 
 ################################################################################
@@ -400,7 +400,7 @@ CREATE TABLE gene_stable_id (
   PRIMARY KEY (stable_id),
   INDEX internal_idx (internal_id)
 
-) COLLATE=latin1_swedish_ci ENGINE=InnoDB;
+) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
 
 CREATE TABLE transcript_stable_id (
 
@@ -412,7 +412,7 @@ CREATE TABLE transcript_stable_id (
   PRIMARY KEY (stable_id),
   INDEX internal_idx (internal_id)
 
-) COLLATE=latin1_swedish_ci ENGINE=InnoDB;
+) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
 
 CREATE TABLE translation_stable_id (
 
@@ -422,7 +422,7 @@ CREATE TABLE translation_stable_id (
   PRIMARY KEY (internal_id),
   INDEX stable_idx (stable_id)
 
-) COLLATE=latin1_swedish_ci ENGINE=InnoDB;
+) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
 
 
 
@@ -446,11 +446,12 @@ CREATE TABLE object_xref (
   unused_priority             INT UNSIGNED,
   master_xref_id              INT UNSIGNED DEFAULT NULL,
 
+  PRIMARY KEY (object_xref_id),
   UNIQUE (ensembl_object_type, ensembl_id, xref_id, ox_status, master_xref_id),
   KEY oxref_idx (object_xref_id, xref_id, ensembl_object_type, ensembl_id),
   KEY xref_idx (xref_id, ensembl_object_type)
 
-) COLLATE=latin1_swedish_ci ENGINE=InnoDB;
+) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
 
 
 CREATE TABLE identity_xref (
@@ -472,7 +473,7 @@ CREATE TABLE identity_xref (
   PRIMARY KEY (object_xref_id)
 --  KEY analysis_idx (analysis_id)
 
-) COLLATE=latin1_swedish_ci ENGINE=InnoDB;
+) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
 
 CREATE TABLE go_xref (
 
@@ -483,7 +484,7 @@ CREATE TABLE go_xref (
   KEY (source_xref_id),
   UNIQUE (object_xref_id, source_xref_id, linkage_type)
 
-) COLLATE=latin1_swedish_ci ENGINE=InnoDB;
+) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
 
 
 CREATE TABLE meta (
@@ -498,7 +499,7 @@ CREATE TABLE meta (
   UNIQUE    KEY species_key_value_idx (meta_id, species_id, meta_key, meta_value),
             KEY species_value_idx (species_id, meta_value)
 
-) COLLATE=latin1_swedish_ci ENGINE=InnoDB;
+) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
 
 
 

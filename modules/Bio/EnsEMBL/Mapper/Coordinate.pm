@@ -1,7 +1,7 @@
 =head1 LICENSE
 
 Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
-Copyright [2016-2017] EMBL-European Bioinformatics Institute
+Copyright [2016-2019] EMBL-European Bioinformatics Institute
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -149,7 +149,7 @@ sub strand {
 
   Arg  1      char|int $id
               id of object in mapped region
-	      e.g. seq_region_id / seq_region_name
+	      e.g. seq_region_id
   Function    getter/setter method
   Returntype  char|int
   Exceptions  none
@@ -166,6 +166,29 @@ sub id {
   }
 
   return $self->{'id'};
+}
+
+=head2 name
+
+  Arg  1      char name
+              name of object in mapped region
+	      e.g. seq_region_name
+  Function    getter/setter method
+  Returntype  char
+  Exceptions  none
+  Caller      Bio::EnsEMBL::Mapper::Coordinate
+  Status      Stable
+
+=cut
+
+sub name {
+  my ( $self, $value ) = @_;
+
+  if ( defined($value) ) {
+    $self->{'name'} = $value;
+  }
+
+  return $self->{'name'};
 }
 
 =head2 coord_system

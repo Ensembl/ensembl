@@ -1,7 +1,7 @@
 =head1 LICENSE
 
 Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
-Copyright [2016-2017] EMBL-European Bioinformatics Institute
+Copyright [2016-2019] EMBL-European Bioinformatics Institute
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -89,8 +89,7 @@ use Bio::EnsEMBL::ChainedAssemblyMapper;
 use Bio::EnsEMBL::TopLevelAssemblyMapper;
 
 use Bio::EnsEMBL::Utils::Cache; #CPAN LRU cache
-use Bio::EnsEMBL::Utils::Exception qw(throw deprecate warning stack_trace_dump);
-#use Bio::EnsEMBL::Utils::Exception qw(deprecate throw);
+use Bio::EnsEMBL::Utils::Exception qw(throw);
 use Bio::EnsEMBL::Utils::SeqRegionCache;
 
 use integer; #do proper arithmetic bitshifts
@@ -233,14 +232,6 @@ sub fetch_by_CoordSystems {
 
   if(!@mapping_path) {
 
-    # It is perfectly fine not to have a mapping. No warning needed really
-    # Just check the return code!!
-
-#    warning(
-#      "There is no mapping defined between these coord systems:\n" .
-#      $cs1->name() . " " . $cs1->version() . " and " . $cs2->name() . " " .
-#      $cs2->version()
-#    );
     return undef;
   }
 

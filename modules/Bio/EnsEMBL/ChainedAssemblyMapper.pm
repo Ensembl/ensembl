@@ -1,7 +1,7 @@
 =head1 LICENSE
 
 Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
-Copyright [2016-2017] EMBL-European Bioinformatics Institute
+Copyright [2016-2019] EMBL-European Bioinformatics Institute
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -88,8 +88,9 @@ use integer; #use proper arithmetic bitshifts
 
 use Bio::EnsEMBL::Mapper;
 use Bio::EnsEMBL::Mapper::RangeRegistry;
-use Bio::EnsEMBL::Utils::Exception qw(throw deprecate);
+use Bio::EnsEMBL::Utils::Exception qw(throw);
 use Scalar::Util qw(weaken);
+use Bio::EnsEMBL::Utils::Scalar qw( check_ref);
 
 my $FIRST = 'first';
 my $MIDDLE = 'middle';
@@ -360,8 +361,16 @@ sub map {
                             $frm_strand, $frm);
   }
 
-  return $mapper->map_coordinates($seq_region_id, $frm_start, $frm_end,
-                                  $frm_strand, $frm);
+  my @coords = $mapper->map_coordinates($seq_region_id, $frm_start, $frm_end,
+					$frm_strand, $frm);
+
+  # decorate (org,)mapped coordinates with their corresponding region names
+  map {
+    check_ref($_, 'Bio::EnsEMBL::Mapper::Coordinate') && # exclude gap
+      $_->name($self->adaptor->seq_ids_to_regions([$_->id])->[0])
+    } @coords;
+
+  return @coords;
 }
 
 

@@ -1,6 +1,6 @@
 #!/usr/bin/env perl
 # Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
-# Copyright [2016-2017] EMBL-European Bioinformatics Institute
+# Copyright [2016-2019] EMBL-European Bioinformatics Institute
 # 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -112,6 +112,8 @@ foreach my $source_section ( sort( $config->GroupMembers('source') ) ) {
 
   $source_ids{$source_section} = ++$source_id;
 
+  my $priority_description = defined $config->val( $source_section, 'prio_descr') ? $config->val ( $source_section, 'prio_descr') : '';
+
   printf( "# Source '%s' (id = %d)\n", $source_name, $source_id );
 
   print(   "INSERT INTO source "
@@ -123,7 +125,7 @@ foreach my $source_section ( sort( $config->GroupMembers('source') ) ) {
           $config->val( $source_section, 'download' ),
           $config->val( $source_section, 'order' ),
           $config->val( $source_section, 'priority' ),
-          $config->val( $source_section, 'prio_descr' ),
+          $priority_description,
           $config->val($source_section, 'status', 'NOIDEA') );
 
   print("\n");

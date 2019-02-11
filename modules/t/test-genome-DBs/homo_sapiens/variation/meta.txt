@@ -1,5 +1,5 @@
 1	\N	schema_type	variation
-2	\N	schema_version	88
+2	\N	schema_version	96
 3	\N	patch	patch_84_85_a.sql|schema version
 4	\N	patch	patch_84_85_b.sql|create sample_synonym
 5	\N	patch	patch_84_85_c.sql|drop column moltype from variation_synonym
@@ -16,3 +16,22 @@
 16	\N	patch	patch_86_87_a.sql|schema version
 17	\N	patch	patch_87_88_a.sql|schema version
 18	\N	patch	patch_87_88_b.sql|seq_region_name_255
+19	\N	patch	patch_88_89_a.sql|schema version
+20	\N	patch	patch_88_89_b.sql|Drop strain_gtype_poly table
+21	\N	patch	patch_89_90_a.sql|schema version
+22	\N	patch	patch_89_90_b.sql|add start_retained_variant to consequence_types in variation_feature and transcript_variation
+23	\N	patch	patch_89_90_c.sql|remove regulatory and TFBS consequences from consequence_types in  transcript_variation
+24	\N	patch	patch_90_91_b.sql|extend the characters supported in the publication.authors column
+25	\N	patch	patch_90_91_a.sql|schema version
+26	\N	patch	patch_90_91_c.sql|Add new column zygosity in the table structural_variation_sample
+27	\N	patch	patch_91_92_a.sql|schema version
+28	\N	patch	patch_91_92_b.sql|Add index on feature_stable_id in regulatory_feature_variation and motif_feature_variation
+29	\N	patch	patch_91_92_c.sql|Change the column zygosity in the table structural_variation_sample
+30	\N	patch	patch_91_92_d.sql|create table to store names of submitters to ClinVar etc
+31	\N	patch	patch_92_93_a.sql|schema version
+32	\N	patch	patch_92_93_b.sql|Extend phenotype_ontology_accession mapped_by_attrib predefined set
+33	\N	patch	patch_92_93_c.sql|Add new evidence attribs to the variation and variation_feature tables
+34	\N	patch	patch_93_94_a.sql|schema version
+35	\N	patch	patch_94_95_a.sql|schema version
+36	\N	patch	patch_94_95_b.sql|create table to store allele synonyms
+37	\N	patch	patch_95_96_a.sql|schema_version

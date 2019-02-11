@@ -1,5 +1,5 @@
 # Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
-# Copyright [2016-2017] EMBL-European Bioinformatics Institute
+# Copyright [2016-2019] EMBL-European Bioinformatics Institute
 # 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -224,6 +224,18 @@ is_deeply(
   [$csa->fetch_by_name('chromosome')], 
   'Retrieval by name should return the same as version for NCBI33');
 is_deeply($csa->fetch_all_by_version('thisdoesnotexist'), [], 'Bogus coordinate system results in no results');
+
+#
+# Test remove() and store() sequence level
+#
+$cs = $csa->fetch_sequence_level();
+ok($cs, 'There is a sequence level coord system - fetched ok');
+ok($cs->is_default, 'sequence level is the default coord system');
+my $old_dbID = $cs->dbID;
+is($csa->remove($cs), $cs, 'Adaptor remove() returns the same coordinate system object');
+is_deeply($csa->{_is_sequence_level}, {}, 'Adaptor sequence_level cache updated to reflect the removal');
+is($csa->{_is_default_version}{$old_dbID}, undef, 'Adaptor default_version cache updated to reflect removal');
+lives_ok(sub { $csa->store($cs); }, 'Adaptor store() successful. Coordinate system did not have dbID() or adaptor()');
 
 $multi->restore('core', 'coord_system');
 $multi->restore('core', 'meta');

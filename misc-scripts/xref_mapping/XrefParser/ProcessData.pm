@@ -1,7 +1,7 @@
 =head1 LICENSE
 
 Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
-Copyright [2016-2017] EMBL-European Bioinformatics Institute
+Copyright [2016-2019] EMBL-European Bioinformatics Institute
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -55,7 +55,9 @@ sub run {
   my $unzip      = $ref_arg->{unzip};
   my $stats      = $ref_arg->{stats};
   my $cleanup    = $ref_arg->{cleanup};
-  my $rspecies   = $ref_arg->{speciesr};
+  my $species    = $ref_arg->{species};
+  my $taxon_id   = $ref_arg->{taxon};
+  my $division   = $ref_arg->{division};
   my $sources    = $ref_arg->{sourcesr};
   my $notsources = $ref_arg->{notsourcesr};
 
@@ -99,19 +101,23 @@ DSS
   my $dep_sth = $dbi->prepare($sql);
 
   # validate species names
-  my @species_ids = $self->validate_species($rspecies, $verbose);
+  my $species_id = $self->validate_species($species, $verbose) if defined $species;
+  my $division_id = $self->validate_species($division, $verbose) if defined $division;
+  my @species_sources = ($species_id);
+  push @species_sources, $division_id if defined $division_id;
+  push @species_sources, $taxon_id if defined $taxon_id;
 
   # validate source names
-  exit(1) if ( !$self->validate_sources(\@species_ids,$sources, $verbose) );
-  exit(1) if ( !$self->validate_sources(\@species_ids,$notsources, $verbose) );
+  exit(1) if ( !$self->validate_sources(\@species_sources,$sources, $verbose) );
+  exit(1) if ( !$self->validate_sources(\@species_sources,$notsources, $verbose) );
 
   # build SQL
-  my $species_sql = "";
-  if (@species_ids) {
+  my $species_sql;
+  if (@species_sources) {
     $species_sql .= " AND su.species_id IN (";
-    for ( my $i = 0 ; $i < @species_ids ; $i++ ) {
+    for ( my $i = 0 ; $i < @species_sources; $i++ ) {
       $species_sql .= "," if ( $i != 0 );
-      $species_sql .= $species_ids[$i];
+      $species_sql .= $species_sources[$i];
     }
     $species_sql .= ") ";
   }
@@ -152,12 +158,12 @@ DSS
   $sth->execute();
 
   my ( $source_id, $source_url_id, $name, $url, $release_url,
-       $checksum, $parser, $species_id );
+       $checksum, $parser, $species_source_id );
 
     $sth->bind_columns( \$source_id,   \$source_url_id,
                         \$name,        \$url,
                         \$release_url, \$checksum,
-                        \$parser,      \$species_id );
+                        \$parser,      \$species_source_id );
 
   my $dir;
   my %summary = ();
@@ -237,7 +243,7 @@ DSS
     foreach my $file (@files) {
 	
       # check dependencies are loaded all ready
-      if(!($self->all_dependencies_loaded($source_id, $species_id, $name, $dep_sth))){
+      if(!($self->all_dependencies_loaded($source_id, $species_source_id, $name, $dep_sth))){
 	++$summary{$name}->{$parser};
 	next;
       }
@@ -678,27 +684,21 @@ sub dbi {
 ###########################################################
 sub validate_species {
   my ($self, $species, $verbose) = @_;
-  my @species_ids;
 
   my $dbi = $self->dbi();
   my $sth = $dbi->prepare("SELECT species_id, name FROM species WHERE LOWER(name)=? OR LOWER(aliases) REGEXP ?");
   my ($species_id, $species_name);
 
-  foreach my $sp (@$species) {
-
-    my $bind_arg = "^".lc($sp).",|^".lc($sp)."\$|,[ ]{0,1}".lc($sp)."[ ]{0,1},|,[ ]{0,1}".lc($sp)."\$";
-    $sth->execute(lc($sp), $bind_arg ); 
-    $sth->bind_columns(\$species_id, \$species_name);
-    if (my @row = $sth->fetchrow_array()) {
-      print "Species $sp is valid (name = " . $species_name . ", ID = " . $species_id . ")\n" if($verbose);
-      push @species_ids, $species_id;
-    } else {
-      print STDERR "Species $sp is not valid; valid species are:\n";
-      $self->show_valid_species();
-      exit(1);
-    }
+  my $bind_arg = "^".lc($species).",|^".lc($species)."\$|,[ ]{0,1}".lc($species)."[ ]{0,1},|,[ ]{0,1}".lc($species)."\$";
+  $sth->execute(lc($species), $bind_arg ); 
+  $sth->bind_columns(\$species_id, \$species_name);
+  if (my @row = $sth->fetchrow_array()) {
+    print "Species $species is valid (name = " . $species_name . ", ID = " . $species_id . ")\n" if($verbose);
+  } else {
+    print STDERR "Species $species is not valid; valid species are:\n";
+    $self->show_valid_species();
   }
-  return @species_ids;
+  return $species_id;
 }
 
 ############################################################

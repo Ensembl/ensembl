@@ -1,7 +1,7 @@
 =head1 LICENSE
 
 Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
-Copyright [2016-2017] EMBL-European Bioinformatics Institute
+Copyright [2016-2019] EMBL-European Bioinformatics Institute
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -32,24 +32,28 @@ sub run_script {
   my ($self, $ref_arg) = @_;
   my $source_id    = $ref_arg->{source_id};
   my $species_id   = $ref_arg->{species_id};
+  my $species_name = $ref_arg->{species};
   my $file         = $ref_arg->{file};
   my $verbose      = $ref_arg->{verbose};
+  my $db           = $ref_arg->{dba};
+  my $dbi          = $ref_arg->{dbi};
+  $dbi = $self->dbi unless defined $dbi;
 
   if((!defined $source_id) or (!defined $species_id) or (!defined $file) ){
     croak "Need to pass source_id, species_id and file as pairs";
   }
   $verbose |=0;
 
-  my $peptide_source_id = $self->get_source_id_for_source_name('RefSeq_peptide', 'otherfeatures');
-  my $mrna_source_id = $self->get_source_id_for_source_name('RefSeq_mRNA', 'otherfeatures');
-  my $ncrna_source_id = $self->get_source_id_for_source_name('RefSeq_ncRNA', 'otherfeatures');
+  my $peptide_source_id = $self->get_source_id_for_source_name('RefSeq_peptide', 'otherfeatures', $dbi);
+  my $mrna_source_id = $self->get_source_id_for_source_name('RefSeq_mRNA', 'otherfeatures', $dbi);
+  my $ncrna_source_id = $self->get_source_id_for_source_name('RefSeq_ncRNA', 'otherfeatures', $dbi);
 
   my $pred_peptide_source_id =
-    $self->get_source_id_for_source_name('RefSeq_peptide_predicted', 'otherfeatures');
+    $self->get_source_id_for_source_name('RefSeq_peptide_predicted', 'otherfeatures', $dbi);
   my $pred_mrna_source_id =
-    $self->get_source_id_for_source_name('RefSeq_mRNA_predicted','otherfeatures');
+    $self->get_source_id_for_source_name('RefSeq_mRNA_predicted','otherfeatures', $dbi);
   my $pred_ncrna_source_id =
-    $self->get_source_id_for_source_name('RefSeq_ncRNA_predicted', 'otherfeatures');
+    $self->get_source_id_for_source_name('RefSeq_ncRNA_predicted', 'otherfeatures', $dbi);
 
   if($verbose){
     print "RefSeq_peptide source ID = $peptide_source_id\n";
@@ -117,13 +121,15 @@ sub run_script {
   my $registry = "Bio::EnsEMBL::Registry";
 
   #get the species name
-  my %id2name = $self->species_id2name;
-  my $species_name = $id2name{$species_id}[0];
+  my %id2name = $self->species_id2name($dbi);
+  if (defined $species_name) { push @{$id2name{$species_id}}, $species_name; }
+  if (!defined $id2name{$species_id}) { next; }
+  $species_name = $id2name{$species_id}[0];
 
   my $core_dba;
   my $otherf_dba;
 
-  if ($project eq 'ensembl') {
+  if (defined $project && $project eq 'ensembl') {
 # Can use user-defined database
       if (defined $host) {
           $core_dba = Bio::EnsEMBL::DBSQL::DBAdaptor->new(
@@ -162,8 +168,8 @@ sub run_script {
 # Else database should be on staging
       $registry->load_registry_from_multiple_dbs( 
 	  {
-	      -host    => 'mysql-ensembl-mirror.ebi.ac.uk',
-	      '-port'    => 4240,
+	      -host    => 'mysql-ens-sta-1',
+	      '-port'    => 4519,
 	      -user    => 'ensro',
 	  },
        );
@@ -172,7 +178,7 @@ sub run_script {
     }
       
 
-  } elsif ($project eq 'ensemblgenomes') {
+  } elsif (defined $project && $project eq 'ensemblgenomes') {
       $registry->load_registry_from_multiple_dbs( 
 	  {
 	      -host     => 'mysql-eg-staging-1.ebi.ac.uk',
@@ -189,6 +195,9 @@ sub run_script {
       $core_dba = $registry->get_DBAdaptor($species_name,'core');
       $otherf_dba = $registry->get_DBAdaptor($species_name, 'otherfeatures');     
 
+  } elsif (defined $db) {
+    $otherf_dba = $db;
+    $core_dba = $db->dnadb();
   } else {
       die("Missing or unsupported project value. Supported values: ensembl, ensemblgenomes");
   }
@@ -199,9 +208,14 @@ sub run_script {
     return;
   }
 
+## Add link to EntrezGene IDs where available
+  my (%entrez_ids) = %{ $self->get_valid_codes("EntrezGene", $species_id, $dbi) };
+  my $entrez_source_id = $self->get_source_id_for_source_name('EntrezGene', undef, $dbi);
+  my $add_dependent_xref_sth = $dbi->prepare("INSERT INTO dependent_xref  (master_xref_id,dependent_xref_id, linkage_source_id) VALUES (?,?, $entrez_source_id)");
+
   my $sa = $core_dba->get_SliceAdaptor();
   my $sa_of = $otherf_dba->get_SliceAdaptor();
-  my $chromosomes_of = $sa_of->fetch_all('chromosome', undef, 1);
+  my $chromosomes_of = $sa_of->fetch_all('toplevel', undef, 1);
 
 # Fetch analysis object for refseq
   my $aa_of = $otherf_dba->get_AnalysisAdaptor();
@@ -226,10 +240,23 @@ sub run_script {
 
 # Create a range registry for all the exons of the refseq transcript
       foreach my $transcript_of (sort { $a->start() <=> $b->start() } @$transcripts_of) {
-        if ($transcript_of->stable_id =~ /H3.X/ || $transcript_of->stable_id =~ /H3.Y/ || $transcript_of->stable_id =~ /^3.8/) { next; }
+	my ($id, $tl_id);
+	# We're moving to RefSeq accessions being stored as xrefs rather than
+	# stable ids. But we also need to maintain backwards compatbility.
+	# If it's the new kind, where there's a display_xref use that,
+	# otherwise fall back to using the stable_id. But also check if we
+	# have neither, then skip the record.
+	if (defined $transcript_of->display_xref ) {
+	  $id = $transcript_of->display_xref->display_id;
+	} elsif (defined $transcript_of->stable_id) {
+	  $id = $transcript_of->stable_id;
+	} else {
+	  # Skip non conventional accessions
+	  next;
+	}
+        if ($id !~ /^[NXMR]{2}_[0-9]+/)  { next; }
         my %transcript_result;
         my %tl_transcript_result;
-        my $id = $transcript_of->stable_id();
         if (!defined $id) { next; }
         my $exons_of = $transcript_of->get_all_Exons();
         my $rr1 = Bio::EnsEMBL::Mapper::RangeRegistry->new();
@@ -249,11 +276,12 @@ sub run_script {
         }
 
 # Fetch slice in core database which overlaps refseq transcript
-        my $chromosome = $sa->fetch_by_region('chromosome', $chr_name, $transcript_of->seq_region_start, $transcript_of->seq_region_end);
+        my $chromosome = $sa->fetch_by_region('toplevel', $chr_name, $transcript_of->seq_region_start, $transcript_of->seq_region_end);
         my $transcripts = $chromosome->get_all_Transcripts(1);
 
 # Create a range registry for all the exons of the ensembl transcript
         foreach my $transcript(@$transcripts) {
+          if ($transcript->strand != $transcript_of->strand) { next; }
           my $exons = $transcript->get_all_Exons();
           my $rr2 = Bio::EnsEMBL::Mapper::RangeRegistry->new();
           my $rr4 = Bio::EnsEMBL::Mapper::RangeRegistry->new();
@@ -316,7 +344,7 @@ sub run_script {
         my ($score, $tl_score);
 # Comparing the scores based on coding exon overlap
 # If there is a stale mate, chose best exon overlap score
-        foreach my $tid (keys(%transcript_result)) {
+        foreach my $tid (sort { $transcript_result{$b} <=> $transcript_result{$a} } keys(%transcript_result)) {
           $score = $transcript_result{$tid};
           $tl_score = $tl_transcript_result{$tid};
           if ($score > $transcript_score_threshold || $tl_score > $tl_transcript_score_threshold) {
@@ -341,39 +369,59 @@ sub run_script {
 # If a best match was defined for the refseq transcript, store it as direct xref for ensembl transcript
         if ($best_id) {
           my ($acc, $version) = split(/\./, $id);
-          my $source_id = $mrna_source_id;
+	  $version =~ s/\D//g if $version;
+          my $source_id;
+          $source_id = $mrna_source_id if $acc =~ /^NM_/;
           $source_id = $ncrna_source_id if $acc =~ /^NR_/;
           $source_id = $pred_mrna_source_id if $acc =~ /^XM_/;
           $source_id = $pred_ncrna_source_id if $acc =~ /^XR_/;
+          # Accession should be of format NM_/XM_/NR_/XR_ otherwise it is not valid
+          if (!defined $source_id) { next; }
           my $xref_id = $self->add_xref({ acc => $acc,
                                           version => $version,
                                           label => $id,
-                                          desc => '',
+                                          desc => undef,
                                           source_id => $source_id,
                                           species_id => $species_id,
+                                          dbi => $dbi,
                                           info_type => 'DIRECT' });
-          $self->add_direct_xref($xref_id, $best_id, "Transcript", "");
+          $self->add_direct_xref($xref_id, $best_id, "Transcript", "", $dbi);
 
-# Also store refseq protein as direct xref for ensembl translation, if translation exists
-          my $ta_of = $otherf_dba->get_TranscriptAdaptor();
-          my $t_of = $ta_of->fetch_by_stable_id($id);
+	  my $t_of = $transcript_of;
+          my $g_of = $t_of->get_Gene();
+          my $entrez_id = $g_of->stable_id();
           my $tl_of = $t_of->translation();
           my $ta = $core_dba->get_TranscriptAdaptor();
           my $t = $ta->fetch_by_stable_id($best_id);
           my $tl = $t->translation();
+
+# Add link between Ensembl gene and EntrezGene
+          if (defined $entrez_ids{$entrez_id} ) {
+            foreach my $dependent_xref_id (@{$entrez_ids{$entrez_id}}) {
+              $add_dependent_xref_sth->execute($xref_id, $dependent_xref_id);
+            }
+          }
+
+# Also store refseq protein as direct xref for ensembl translation, if translation exists
           if (defined $tl && defined $tl_of) {
             if ($tl_of->seq eq $tl->seq) {
-              ($acc, $version) = split(/\./, $tl_of->stable_id());
+              $tl_id = $tl_of->stable_id();
+              my @xrefs = grep {$_->{dbname} eq 'GenBank'} @{$tl_of->get_all_DBEntries};
+              if(scalar @xrefs == 1) {
+                $tl_id = $xrefs[0]->primary_id();
+              }
+              ($acc, $version) = split(/\./, $tl_id);
               $source_id = $peptide_source_id;
               $source_id = $pred_peptide_source_id if $acc =~ /^XP_/;
               my $tl_xref_id = $self->add_xref({ acc => $acc,
                                               version => $version,
-                                              label => $acc,
-                                              desc => '',
+                                              label => $tl_id,
+                                              desc => undef,
                                               source_id => $source_id,
                                               species_id => $species_id,
+                                              dbi => $dbi,
                                               info_type => 'DIRECT' });
-              $self->add_direct_xref($tl_xref_id, $tl->stable_id(), "Translation", "");
+              $self->add_direct_xref($tl_xref_id, $tl->stable_id(), "Translation", "", $dbi);
             }
           }
         }

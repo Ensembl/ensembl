@@ -1,6 +1,6 @@
 #!/usr/bin/env perl
 # Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
-# Copyright [2016-2017] EMBL-European Bioinformatics Institute
+# Copyright [2016-2019] EMBL-European Bioinformatics Institute
 # 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -42,8 +42,6 @@ my $port = "3306";
 push(@options, "port=s", \$port);
 
 die "Couldn't parse options" if !GetOptions(@options);
-
-die "Must give -password\n" if !defined($pw);
 
 my $cmd = mysql_cmd("show databases");
 open(CMD, $cmd) or die "Couldn't $cmd: $!\n";
@@ -157,6 +155,7 @@ foreach my $size (sort {$b<=>$a} keys %top_tables) {
 sub mysql_cmd {
   my $mysql_cmd = shift;
 
-  return "mysql -uroot -h$host -u$user -p$pw -P$port -e '$mysql_cmd'|";
+  my $pw_args = $pw ? "-p$pw" : '';
+  return "mysql -uroot -h$host -u$user $pw_args -P$port -e '$mysql_cmd'|";
 }
 

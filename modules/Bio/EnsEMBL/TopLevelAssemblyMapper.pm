@@ -1,7 +1,7 @@
 =head1 LICENSE
 
 Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
-Copyright [2016-2017] EMBL-European Bioinformatics Institute
+Copyright [2016-2019] EMBL-European Bioinformatics Institute
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -43,7 +43,7 @@ pseudo coordinate system.
   my $toplevel = $cs_adaptor->fetch_by_name('toplevel');
   my $ctg_cs   = $cs_adaptor->fetch_by_name('contig');
 
-  $asm_mapper = $map_adaptor->fetch_by_CoordSystems( $cs1, $cs2 );
+  $asm_mapper = $map_adaptor->fetch_by_CoordSystems( $toplevel, $ctg_cs );
 
   # map to toplevel coord system for this region
   @chr_coords =
@@ -118,8 +118,8 @@ sub new {
   my $coord_systems = $cs_adaptor->fetch_all();
 
   my $self = bless {'coord_systems' => $coord_systems,
-                'toplevel_cs'   => $toplevel_cs,
-                'other_cs'      => $other_cs}, $class;
+		    'toplevel_cs'   => $toplevel_cs,
+		    'other_cs'      => $other_cs}, $class;
 
   $self->adaptor($adaptor);
   return $self;

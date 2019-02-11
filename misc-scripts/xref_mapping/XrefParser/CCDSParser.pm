@@ -1,7 +1,7 @@
 =head1 LICENSE
 
 Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
-Copyright [2016-2017] EMBL-European Bioinformatics Institute
+Copyright [2016-2019] EMBL-European Bioinformatics Institute
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -36,6 +36,9 @@ sub run_script {
   my $species_id   = $ref_arg->{species_id};
   my $file         = $ref_arg->{file};
   my $verbose      = $ref_arg->{verbose};
+  my $db           = $ref_arg->{dba};
+  my $dbi          = $ref_arg->{dbi};
+  $dbi = $self->dbi unless defined $dbi;
 
   if((!defined $source_id) or (!defined $species_id) or (!defined $file) ){
     croak "Need to pass source_id, species_id and file  as pairs";
@@ -61,14 +64,17 @@ sub run_script {
     $pass = $1;
   }
 
-  my $ccds_db =  XrefParser::Database->new({ host   => $host,
+  my ($ccds_db, $dbi2);
+  if (defined $host) {
+    $ccds_db =  XrefParser::Database->new({ host   => $host,
 					     port   => $port,
 					     user   => $user,
 					     dbname => $dbname,
 					     pass   => $pass});
-
-  my $dbi2 = $ccds_db->dbi();
-
+    $dbi2 = $ccds_db->dbi();
+  } elsif (defined $db) {
+    $dbi2 = $db->dbc();
+  }
   if(!defined($dbi2)){
     return 1;
   }
@@ -102,6 +108,7 @@ SCD
 				   label      => $display_label,
 				   source_id  => $source_id,
 				   species_id => $species_id,
+                                   dbi        => $dbi,
 				   info_type  => "DIRECT"} );
       $xref_count++;
       $seen{$display_label} = $xref_id;
@@ -110,7 +117,7 @@ SCD
       $xref_id = $seen{$display_label};
     }
 
-    $self->add_direct_xref($xref_id, $stable_id, "Transcript", "");
+    $self->add_direct_xref($xref_id, $stable_id, "Transcript", "", $dbi);
     $direct_count++;
   }
 

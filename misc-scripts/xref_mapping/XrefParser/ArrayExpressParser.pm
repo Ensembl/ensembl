@@ -1,7 +1,7 @@
 =head1 LICENSE
 
 Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
-Copyright [2016-2017] EMBL-European Bioinformatics Institute
+Copyright [2016-2019] EMBL-European Bioinformatics Institute
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -38,8 +38,12 @@ sub run_script {
   my ($self, $ref_arg) = @_;
   my $source_id    = $ref_arg->{source_id};
   my $species_id   = $ref_arg->{species_id};
+  my $species_name = $ref_arg->{species};
   my $file         = $ref_arg->{file};
   my $verbose      = $ref_arg->{verbose};
+  my $db           = $ref_arg->{dba};
+  my $dbi          = $ref_arg->{dbi};
+  $dbi = $self->dbi unless defined $dbi;
 
   if((!defined $source_id) or (!defined $species_id) or (!defined $file) ){
     croak "Need to pass source_id, species_id and file as pairs";
@@ -72,7 +76,9 @@ sub run_script {
     $user = $1;
   }
 
-  my %species_id_to_names = $self->species_id2name();
+  my %species_id_to_names = $self->species_id2name($dbi);
+  if (defined $species_name) { push @{$species_id_to_names{$species_id}}, $species_name; }
+  if (!defined $species_id_to_names{$species_id}) { next; }
   my $species_id_to_names = \%species_id_to_names;
   my $names = $species_id_to_names->{$species_id};
   my $species_lookup = $self->_get_species($verbose);
@@ -82,7 +88,7 @@ sub run_script {
       return;
   }
 
-  my $species_name = $species_id_to_names{$species_id}[0];
+  $species_name = $species_id_to_names{$species_id}[0];
 
   #get stable_ids from core and create xrefs 
 
@@ -99,7 +105,7 @@ sub run_script {
       '-group'    => 'core',
         );
     $gene_adaptor = $db->get_GeneAdaptor();
-  } elsif ($project eq 'ensembl') {
+  } elsif (defined $project && $project eq 'ensembl') {
     print "Loading the Registry\n" if $verbose;
     $registry->load_registry_from_multiple_dbs( 
       {
@@ -109,7 +115,7 @@ sub run_script {
       },
         );
     $gene_adaptor = $registry->get_adaptor($species_name, 'core', 'Gene');
-  } elsif ($project eq 'ensemblgenomes') {
+  } elsif (defined $project && $project eq 'ensemblgenomes') {
     $registry->load_registry_from_multiple_dbs( 
       {
         '-host'     => 'mysql-eg-staging-1.ebi.ac.uk',
@@ -123,6 +129,8 @@ sub run_script {
       },
         );
     $gene_adaptor = $registry->get_adaptor($species_name, 'core', 'Gene');
+  } elsif (defined $db) {
+    $gene_adaptor = $db->get_GeneAdaptor();
   } else {
       die("Missing or unsupported project value. Supported values: ensembl, ensemblgenomes");
   }
@@ -137,9 +145,10 @@ sub run_script {
 					 label      => $gene_stable_id,
 					 source_id  => $source_id,
 					 species_id => $species_id,
+                                         dbi       => $dbi,
 					 info_type => "DIRECT"} );
 	
-      $self->add_direct_xref( $xref_id, $gene_stable_id, 'gene', '');
+      $self->add_direct_xref( $xref_id, $gene_stable_id, 'gene', '', $dbi);
       if ($xref_id) {
 	 $xref_count++;
       }

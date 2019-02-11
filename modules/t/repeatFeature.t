@@ -1,5 +1,5 @@
 # Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
-# Copyright [2016-2017] EMBL-European Bioinformatics Institute
+# Copyright [2016-2019] EMBL-European Bioinformatics Institute
 # 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -86,6 +86,7 @@ ok($rf->hend == $hend);
 ok($rf->score == $score);
 ok($rf->repeat_consensus == $repeat_consensus);
 
+is($rf->feature_so_acc, 'SO:0000657', 'RepeatFeature feature SO acc is correct (repeat_region)');
 
 #
 # Test Getter/Setters

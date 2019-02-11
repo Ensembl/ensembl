@@ -1,7 +1,7 @@
 =head1 LICENSE
 
 Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
-Copyright [2016-2017] EMBL-European Bioinformatics Institute
+Copyright [2016-2019] EMBL-European Bioinformatics Institute
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -324,13 +324,6 @@ sub frame {
 sub primary_tag{
   my ($self,$arg) = @_;
   
-  if (defined($arg)) {
-    # throw warnings about setting primary tag
-    my ($p,$f,$l) = caller;
-    $self->warn("$f:$l setting primary_tag now deprecated." .
-		"Primary tag is delegated to analysis object");
-  }
-
   unless($self->analysis) {
     return '';
   }
@@ -353,13 +346,6 @@ sub primary_tag{
 
 sub source_tag{
     my ($self,$arg) = @_;
-
-    if (defined($arg)) {
-        # throw warnings about setting primary tag
-        my ($p,$f,$l) = caller;
-        $self->warn("$f:$l setting source_tag now deprecated. " .
-		    "Source tag is delegated to analysis object");
-    }
 
     unless($self->analysis) {
       return "";

@@ -1,7 +1,7 @@
 =head1 LICENSE
 
 Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
-Copyright [2016-2017] EMBL-European Bioinformatics Institute
+Copyright [2016-2019] EMBL-European Bioinformatics Institute
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -40,7 +40,7 @@ Bio::EnsEMBL::IdMapping::TinyTranslation - lightweight translation object
         $tl->dbID,          $tl->stable_id,
         $tl->version,       $tl->created_date,
         $tl->modified_date, $tr->dbID,
-        $tr->translate->seq, ( $tr->is_known ? 1 : 0 ),
+        $tr->translate->seq,
       ] );
   }
 
@@ -54,7 +54,6 @@ design.
 
   transcript_id
   seq
-  is_known
 
 =cut
 
@@ -65,7 +64,6 @@ package Bio::EnsEMBL::IdMapping::TinyTranslation;
 #  0-4 see TinyFeature
 #  5  transcript_id
 #  6  seq
-#  7  is_known
 
 
 use strict;
@@ -116,24 +114,6 @@ sub seq {
   return $self->[6];
 }
 
-
-=head2 is_known
-
-  Arg[1]      : (optional) Boolean - the translation's "known" status
-  Description : Getter/setter for the translation's "known" status.
-  Return type : Boolean
-  Exceptions  : none
-  Caller      : general
-  Status      : At Risk
-              : under development
-
-=cut
-
-sub is_known {
-  my $self = shift;
-  $self->[7] = shift if (@_);
-  return $self->[7];
-}
 
 
 1;

@@ -1,7 +1,7 @@
 =head1 LICENSE
 
 Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
-Copyright [2016-2017] EMBL-European Bioinformatics Institute
+Copyright [2016-2019] EMBL-European Bioinformatics Institute
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -36,6 +36,8 @@ sub run {
   my $species_id   = $ref_arg->{species_id};
   my $files        = $ref_arg->{files};
   my $verbose      = $ref_arg->{verbose};
+  my $dbi          = $ref_arg->{dbi};
+  $dbi = $self->dbi unless defined $dbi;
 
   if((!defined $source_id) or (!defined $species_id) or (!defined $files) ){
     croak "Need to pass source_id, species_id and files as pairs";
@@ -54,6 +56,10 @@ sub run {
   while ( $_ = $file_io->getline() ) {
     chomp;
     my ($acc, $label, $desc, $stable_id) = split /\t/;
+    # Remove some provenance information encoded in the description
+    $desc =~ s/\[.*\]//;
+    # Remove labels of type 5 of 14 from the description
+    $desc =~ s/ , [0-9]+ of [0-9]+//;
 
     if($label eq "unnamed"){
       $label = $acc;
@@ -64,6 +70,7 @@ sub run {
 				 acc        => $acc,
 				 label      => $label,
 				 desc       => $desc,
+                                 dbi        => $dbi,
 				 source_id  => $source_id,
 				 species_id => $species_id });
     $count++;

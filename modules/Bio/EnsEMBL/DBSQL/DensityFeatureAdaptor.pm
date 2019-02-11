@@ -1,7 +1,7 @@
 =head1 LICENSE
 
 Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
-Copyright [2016-2017] EMBL-European Bioinformatics Institute
+Copyright [2016-2019] EMBL-European Bioinformatics Institute
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -410,7 +410,7 @@ sub fetch_all_by_Slice_constraint {
   {
 
     #strain test and add to constraint if so to stop caching.
-    if ( $slice->isa('Bio::EnsEMBL::StrainSlice') ) {
+    if ( $slice->isa('Bio::EnsEMBL::Variation::StrainSlice') ) {
       my $string =
         $self->dbc()->db_handle()->quote( $slice->strain_name() );
 

@@ -1,5 +1,5 @@
 # Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
-# Copyright [2016-2017] EMBL-European Bioinformatics Institute
+# Copyright [2016-2019] EMBL-European Bioinformatics Institute
 # 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -21,7 +21,7 @@ use Test::Warnings;
 use Bio::EnsEMBL::Test::MultiTestDB;
 use Bio::EnsEMBL::Test::TestUtils;
 
-our $verbose = 0; #set to 1 to turn on debug printouts
+our $verbose = 0; # set to 1 to turn on debug printouts
 
 my $multi = Bio::EnsEMBL::Test::MultiTestDB->new();
 my $db = $multi->get_DBAdaptor( 'core' );
@@ -59,7 +59,8 @@ debug("MAP 'AL359765.6'->toplevel");
 my @coords = $cln_toplevel_mapper->map('AL359765.6', 1, 13780, 1, $cln_cs);
 print_coords(@coords);
 ok(@coords);
-
+# [ENSCORESW-844]. Test mapped coordinate names
+is($coords[1]->name(), "20");
 
 debug("MAP NT_028392->toplevel");
 @coords = $superctg_toplevel_mapper->map('NT_028392', 600_000, 1e6, 1, 

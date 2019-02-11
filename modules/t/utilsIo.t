@@ -1,5 +1,5 @@
 # Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
-# Copyright [2016-2017] EMBL-European Bioinformatics Institute
+# Copyright [2016-2019] EMBL-European Bioinformatics Institute
 # 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -76,6 +76,15 @@ my $expected_array = [qw/>X AAAAGGGTTCCC TTGGCCAAAAAA ATTC/];
   unlink $file;
   
   dies_ok { slurp($file) } 'File no longer exists so die';
+
+  spurt($file, $contents);
+  my $rewritten_contents = slurp($file);
+  is($contents, $rewritten_contents, 'Contents should still be the same');
+
+  spurt($file, $contents, 'append');
+  $rewritten_contents = slurp($file);
+  is($contents.$contents, $rewritten_contents, 'Contents should be doubled');
+  unlink $file;
 
 }
 

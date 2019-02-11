@@ -1,7 +1,7 @@
 =head1 LICENSE
 
 Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
-Copyright [2016-2017] EMBL-European Bioinformatics Institute
+Copyright [2016-2019] EMBL-European Bioinformatics Institute
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -34,6 +34,8 @@ sub run_script {
   my $species_id   = $ref_arg->{species_id};
   my $file         = $ref_arg->{file};
   my $verbose      = $ref_arg->{verbose};
+  my $dbi          = $ref_arg->{dbi};
+  $dbi = $self->dbi unless defined $dbi;
 
   if((!defined $source_id) or (!defined $species_id) or (!defined $file) ){
     croak "Need to pass source_id, species_id and file as pairs";
@@ -62,7 +64,7 @@ sub run_script {
     $copy_description_from_object = $1;
   }
 
-  my $external_db_name = $self->get_source_name_for_source_id($source_id);
+  my $external_db_name = $self->get_source_name_for_source_id($source_id, $dbi);
 
   #copy object xrefs from core
 
@@ -96,7 +98,7 @@ sub run_script {
   }
 
   #get the species name
-  my %id2name = $self->species_id2name;
+  my %id2name = $self->species_id2name($dbi);
   my $species_name = $id2name{$species_id}[0];
 
   if (!$object_type) {
@@ -173,7 +175,7 @@ sub run_script {
 	  # but we need to attach them specifcally
 	  # to RNAmmer, tRNAScan or RFAM
 	  # so get the source based on the db_name from the core db
-	  my $external_source_id = $self->get_source_id_for_source_name($db_name);
+	  my $external_source_id = $self->get_source_id_for_source_name($db_name, undef, $dbi);
 	  
 	  if (! defined $external_source_id) {
 	      warn ("can't get a source_id for external_db, $db_name!\n");
@@ -200,6 +202,7 @@ sub run_script {
 				      desc       => $description,
 				      source_id  => $external_source_id,
 				      species_id => $species_id,
+                                      dbi        => $dbi,
 				      info_type  => "DIRECT"} );
 
 
@@ -210,7 +213,7 @@ sub run_script {
 	      $xref_id = $added_xref{$xref->primary_id()};
 	  }
 	  
-	  $self->add_direct_xref($xref_id, $object->stable_id(), $valid_object_types{$object_type}, "");
+	  $self->add_direct_xref($xref_id, $object->stable_id(), $valid_object_types{$object_type}, "", $dbi);
 	  $direct_count++;
       }
   }

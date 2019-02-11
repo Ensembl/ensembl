@@ -1,7 +1,7 @@
 =head1 LICENSE
 
 Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
-Copyright [2016-2017] EMBL-European Bioinformatics Institute
+Copyright [2016-2019] EMBL-European Bioinformatics Institute
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -79,10 +79,10 @@ use warnings;
 
 use Bio::EnsEMBL::Storable;
 use Bio::EnsEMBL::Utils::Argument qw(rearrange);
-use Bio::EnsEMBL::Utils::Exception qw(throw deprecate warning);
+use Bio::EnsEMBL::Utils::Exception qw(throw warning);
 use Bio::EnsEMBL::Utils::Scalar qw(check_ref assert_ref);
 use Bio::EnsEMBL::Slice;
-use Bio::EnsEMBL::StrainSlice;
+use Try::Tiny;
 use vars qw(@ISA);
 
 use Scalar::Util qw(weaken);
@@ -150,9 +150,9 @@ sub new {
 
   if(defined($start) && defined($end)) {
       if (($start =~ /\d+/) && ($end =~ /\d+/)) {
-	  if($end+1 < $start and !$slice->is_circular()) {
-	      throw(sprintf('Start (%d) must be less than or equal to end+1 (%d)', $start, ($end+1)));
-	  }
+        if($end+1 < $start and $slice and !$slice->is_circular()) {
+          throw(sprintf('Start (%d) must be less than or equal to end+1 (%d)', $start, ($end+1)));
+        }
       } else {
 	      throw('Start and end must be integers');
       }
@@ -513,14 +513,6 @@ sub transform {
   my $cs_name = shift;
   my $cs_version = shift;
   my $to_slice = shift;
-
-  #
-  # For backwards compatibility check if the arguments are old style args
-  #
-  if(!$cs_name || ref($cs_name)) {
-    deprecate('Calling transform without a coord system name is deprecated.');
-    return $self->_deprecated_transform($cs_name);
-  }
 
   my $slice = $self->{'slice'};
 
@@ -987,27 +979,14 @@ sub feature_Slice {
     return undef;
   }
 
-  if($slice->isa("Bio::EnsEMBL::StrainSlice")){
-    return Bio::EnsEMBL::StrainSlice->new
-      (-seq_region_name   => $slice->seq_region_name,
-       -seq_region_length => $slice->seq_region_length,
-       -coord_system      => $slice->coord_system,
-       -start             => $self->seq_region_start(),
-       -end               => $self->seq_region_end(),
-       -strand            => $self->seq_region_strand(),
-       -adaptor           => $slice->adaptor(),
-       -strain_name       => $slice->strain_name());
-  }
-  else{
-    return Bio::EnsEMBL::Slice->new
-      (-seq_region_name   => $slice->seq_region_name,
-       -seq_region_length => $slice->seq_region_length,
-       -coord_system      => $slice->coord_system,
-       -start             => $self->seq_region_start(),
-       -end               => $self->seq_region_end(),
-       -strand            => $self->seq_region_strand(),
-       -adaptor           => $slice->adaptor());
-  }
+  return Bio::EnsEMBL::Slice->new
+    (-seq_region_name   => $slice->seq_region_name,
+     -seq_region_length => $slice->seq_region_length,
+     -coord_system      => $slice->coord_system,
+     -start             => $self->seq_region_start(),
+     -end               => $self->seq_region_end(),
+     -strand            => $self->seq_region_strand(),
+     -adaptor           => $slice->adaptor());
 }
 
 
@@ -1467,6 +1446,33 @@ sub get_nearest_Gene {
   }
 }
 
+=head2 feature_so_acc
+
+  Description: This method returns a string containing the SO accession number of the feature
+               Define constant SO_ACC in classes that require it, or override it for multiple possible values for a class.
+  Returntype : String (Sequence Ontology accession number)
+  Exceptions : Thrown if caller SO_ACC is undefined and is not a Bio::EnsEMBL::Feature
+
+=cut
+
+sub feature_so_acc {
+  my ($self) = @_;
+
+  my $ref = ref $self;
+  my $so_acc;
+
+  # Get the caller class SO acc
+  try {
+    $so_acc = $ref->SO_ACC;
+  };
+ 
+  unless ($so_acc || $ref eq 'Bio::EnsEMBL::Feature' ) {
+    throw( "constant SO_ACC in ${ref} is not defined");
+  }
+
+  return $so_acc // 'SO:0000001';
+}
+
 =head2 summary_as_hash
 
   Example       : $feature_summary = $feature->summary_as_hash();
@@ -1560,35 +1566,5 @@ sub flush_sub_SeqFeature {
   $self->{'_gsf_sub_array'} = [];
 }
 
-
-sub _deprecated_transform {
-  my $self = shift;
-  my $arg = shift;
-
-  if(!$arg) {
-    warning("Calling transform() with no arguments is deprecated.\n".
-          "A coordinate system name argument should be used instead.\n".
-          "You probably wanted transform('seqlevel') or transform('contig').");
-    return $self->transform('seqlevel');
-  }
-
-  if(ref($arg) eq 'Bio::EnsEMBL::Slice') {
-    if($arg->{'empty'}) {
-      warning("Calling transform with an empty slice is deprecated.\n" .
-                "A coordinate system name argument should be used instead.\n".
-                "You probably wanted transform('chromosome') or " .
-                "transform('toplevel')");
-      return $self->transform('toplevel');
-    }
-    warning("Calling transform with a slice is deprecated.\n" .
-              "Use the transfer method instead");
-    return $self->transfer($arg);
-  }
-
-  warning("Calling transform with a [".ref($arg)."] arg is no longer " .
-          "(or never was) supported.  Doing nothing instead.");
-
-  return $self;
-}
 
 1;

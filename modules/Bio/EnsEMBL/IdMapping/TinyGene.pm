@@ -1,7 +1,7 @@
 =head1 LICENSE
 
 Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
-Copyright [2016-2017] EMBL-European Bioinformatics Institute
+Copyright [2016-2019] EMBL-European Bioinformatics Institute
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -42,8 +42,7 @@ Bio::EnsEMBL::IdMapping::TinyGene - lightweight gene object
       $gene->modified_date,          $gene->start,
       $gene->end,                    $gene->strand,
       $gene->slice->seq_region_name, $gene->biotype,
-      $gene->status,                 $gene->analysis->logic_name,
-      ( $gene->is_known ? 1 : 0 ),
+      $gene->analysis->logic_name,
   ] );
 
 =head1 DESCRIPTION
@@ -59,9 +58,7 @@ design.
   strand
   seq_region_name
   biotype
-  status
   logic_name
-  is_known
   add_Transcript
   get_all_Transcripts
   length
@@ -78,10 +75,8 @@ package Bio::EnsEMBL::IdMapping::TinyGene;
 #  7  strand
 #  8  seq_region_name
 #  9  biotype
-# 10  status
-# 11  logic_name
-# 12  is_known
-# 13  [transcripts]
+# 10  logic_name
+# 11  [transcripts]
 
 
 use strict;
@@ -190,24 +185,6 @@ sub biotype {
 }
 
 
-=head2 strand
-
-  Arg[1]      : (optional) String - the gene's status
-  Description : Getter/setter for the gene's status.
-  Return type : String
-  Exceptions  : none
-  Caller      : general
-  Status      : At Risk
-              : under development
-
-=cut
-
-sub status {
-  my $self = shift;
-  $self->[10] = shift if (@_);
-  return $self->[10];
-}
-
 
 =head2 logic_name
 
@@ -223,28 +200,10 @@ sub status {
 
 sub logic_name {
   my $self = shift;
-  $self->[11] = shift if (@_);
-  return $self->[11];
+  $self->[10] = shift if (@_);
+  return $self->[10];
 }
 
-
-=head2 is_known
-
-  Arg[1]      : (optional) Boolean - the gene's "known" status
-  Description : Getter/setter for the gene's "known" status.
-  Return type : Boolean
-  Exceptions  : none
-  Caller      : general
-  Status      : At Risk
-              : under development
-
-=cut
-
-sub is_known {
-  my $self = shift;
-  $self->[12] = shift if (@_);
-  return $self->[12];
-}
 
 
 =head2 add_Transcript
@@ -269,7 +228,7 @@ sub add_Transcript {
     throw('Need a Bio::EnsEMBL::IdMapping::TinyTranscript.');
   }
 
-  push @{ $self->[13] }, $tr;
+  push @{ $self->[11] }, $tr;
 }
 
 
@@ -288,7 +247,7 @@ sub add_Transcript {
 =cut
 
 sub get_all_Transcripts {
-  return $_[0]->[13] || [];
+  return $_[0]->[11] || [];
 }
 
 

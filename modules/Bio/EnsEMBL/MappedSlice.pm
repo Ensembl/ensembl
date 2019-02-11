@@ -1,7 +1,7 @@
 =head1 LICENSE
 
 Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
-Copyright [2016-2017] EMBL-European Bioinformatics Institute
+Copyright [2016-2019] EMBL-European Bioinformatics Institute
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -75,7 +75,6 @@ for a MappedSlice to do, or they are too complicated.
 
 Not supported Bio::EnsEMBL::Slice methods:
 
-  All deprecated methods
   All Bio::PrimarySeqI compliance methods
   expand
   get_generic_features
@@ -128,7 +127,6 @@ by an adaptor/factory.
   Bio::EnsEMBL::DBSQL::AssemblySliceAdaptor
   Bio::EnsEMBL::Compara::AlignSlice
   Bio::EnsEMBL::Compara::AlignSlice::Slice
-  Bio::EnsEMBL::AlignStrainSlice
   Bio::EnsEMBL::StrainSlice
 
 =cut
@@ -575,20 +573,14 @@ sub seq {
       
       # indel / gap
       else {
-        
-        if($ref_coord->isa('Bio::EnsEMBL::Mapper::Gap')) {
-          $ms_seq .= '-' x $ref_coord->length();
-        }
-        
-        else {
-          # if there's a gap here aswell, add corresponding sequence
+        if($ref_coord->isa('Bio::EnsEMBL::Mapper::IndelCoordinate')) {
           if($ref_coord->gap_length > 0) {
             $ms_seq .= substr($seq, $start, $ref_coord->gap_length);
             $start += $ref_coord->gap_length;
           }
-          
-          # add "-" to the sequence
           $ms_seq .= '-' x ($ref_coord->length() - $ref_coord->gap_length());
+        } else {
+          $ms_seq .= '-' x $ref_coord->length();
         }
       }
     }

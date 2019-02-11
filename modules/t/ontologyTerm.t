@@ -1,5 +1,5 @@
 # Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
-# Copyright [2016-2017] EMBL-European Bioinformatics Institute
+# Copyright [2016-2019] EMBL-European Bioinformatics Institute
 # 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -136,7 +136,7 @@ is(scalar(@$alts), 0, "No alternative accessions for GO:0000182");
 
 my $all = $go_adaptor->fetch_all();
 my $all_obsolete = $go_adaptor->fetch_all(1);
-is(scalar(@$all), 161, "161 terms found");
-is(scalar(@$all_obsolete), 165, "165 terms found when including obsolete ones");
+is(scalar(@$all), 164, "164 terms found");
+is(scalar(@$all_obsolete), 168, "168 terms found when including obsolete ones");
 
 done_testing();

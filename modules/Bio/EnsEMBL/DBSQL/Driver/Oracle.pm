@@ -1,7 +1,7 @@
 =head1 LICENSE
 
 Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
-Copyright [2016-2017] EMBL-European Bioinformatics Institute
+Copyright [2016-2019] EMBL-European Bioinformatics Institute
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -45,10 +45,18 @@ sub new {
 sub connect_params {
     my ($self, $conn) = @_;
 
+    my $host = $conn->host();
     my $dbname = $conn->dbname();
+    my ($dsn, $username);
 
-    my $dsn      = "DBI:Oracle:";
-    my $username = sprintf("%s@%s", $conn->username(), $dbname );
+    if (defined $host) {
+      my $port = $conn->port() || 1521;
+      $dsn = sprintf("DBI:Oracle://%s:%s/%s", $host, $port, $dbname);
+      $username = $conn->username();
+    } else {
+      $dsn      = "DBI:Oracle:";
+      $username = sprintf("%s@%s", $conn->username(), $dbname );
+    }
 
     return {
         dsn        => $dsn,

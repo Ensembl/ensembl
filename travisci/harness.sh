@@ -2,14 +2,14 @@
 
 ENSDIR="${ENSDIR:-$PWD}"
 
-export PERL5LIB=$ENSDIR/bioperl-live:$ENSDIR/ensembl-test/modules:$PWD/modules:$ENSDIR/ensembl-variation/modules:$ENSDIR/ensembl-compara/modules
+export PERL5LIB=$ENSDIR/bioperl-live:$ENSDIR/ensembl-test/modules:$PWD/modules:$ENSDIR/ensembl-variation/modules:$ENSDIR/ensembl-compara/modules:$PWD/misc-scripts/xref_mapping
 export TEST_AUTHOR=$USER
 
 if [ "$DB" = 'mysql' ]; then
     (cd modules/t && ln -sf MultiTestDB.conf.mysql MultiTestDB.conf)
 elif [ "$DB" = 'sqlite' ]; then
     (cd modules/t && ln -sf MultiTestDB.conf.SQLite MultiTestDB.conf)
-    SKIP_TESTS="--skip dbConnection.t,schema.t,schemaPatches.t,strainSlice.t,sliceVariation.t"
+    SKIP_TESTS="--skip dbConnection.t,schema.t,schemaPatches.t,strainSlice.t,sliceVariation.t,mappedSliceContainer.t"
 else
     echo "Don't know about DB '$DB'"
     exit 1;

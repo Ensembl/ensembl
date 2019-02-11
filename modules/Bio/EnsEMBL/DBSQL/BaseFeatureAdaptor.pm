@@ -1,7 +1,7 @@
 =head1 LICENSE
 
 Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
-Copyright [2016-2017] EMBL-European Bioinformatics Institute
+Copyright [2016-2019] EMBL-European Bioinformatics Institute
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -54,7 +54,7 @@ use strict;
 
 use Bio::EnsEMBL::DBSQL::BaseAdaptor;
 use Bio::EnsEMBL::Utils::Cache;
-use Bio::EnsEMBL::Utils::Exception qw(warning throw deprecate stack_trace_dump);
+use Bio::EnsEMBL::Utils::Exception qw(warning throw);
 use Bio::EnsEMBL::Utils::Argument qw(rearrange);
 use Bio::EnsEMBL::Utils::Iterator;
 use Bio::EnsEMBL::Utils::Scalar qw/assert_ref/;
@@ -287,11 +287,10 @@ sub fetch_Iterator_by_Slice_method{
 		  my $feat_end  = $feat_cache[$#feat_cache]->seq_region_end;
 		  my $slice_end = $sub_slice->end;
 		  $num_overlaps = 0;
-		  
 		  for ($i = $#feat_cache; $i >=0; $i--) {
+                        $feat_end  = $feat_cache[$i]->seq_region_end;
 			
 			if ($feat_end > $slice_end) {
-			  $feat_end  = $feat_cache[$i]->end;
 			  $num_overlaps ++;
 			} else {
 			  last;
@@ -435,7 +434,7 @@ sub fetch_all_by_Slice_constraint {
   {
 
     #strain test and add to constraint if so to stop caching.
-    if ( $slice->isa('Bio::EnsEMBL::StrainSlice') ) {
+    if ( $slice->isa('Bio::EnsEMBL::Variation::StrainSlice') ) {
       my $string =
         $self->dbc()->db_handle()->quote( $slice->strain_name() );
 

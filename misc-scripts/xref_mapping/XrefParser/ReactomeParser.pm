@@ -1,7 +1,7 @@
 =head1 LICENSE
 
 Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
-Copyright [2016-2017] EMBL-European Bioinformatics Institute
+Copyright [2016-2019] EMBL-European Bioinformatics Institute
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -40,6 +40,9 @@ sub run {
   my $files        = $ref_arg->{files};
   my $release_file = $ref_arg->{rel_file};
   my $verbose      = $ref_arg->{verbose};
+  my $dbi          = $ref_arg->{dbi};
+  my $species_name = $ref_arg->{species};
+  $dbi = $self->dbi unless defined $dbi;
 
   if((!defined $source_id) or (!defined $species_id) or (!defined $files) ){
     croak "Needs to pass source_id, species_id and  files as pairs";
@@ -64,11 +67,13 @@ sub run {
       croak "Could not find release using $release_file\n";
     }
 
-    $self->set_release( $source_id, $release );
+    $self->set_release( $source_id, $release, $dbi );
   }
 
   # Create a hash of all valid names for this species
-  my %species2alias = $self->species_id2name();
+  my %species2alias = $self->species_id2name($dbi);
+  if (defined $species_name) { push @{$species2alias{$species_id}}, $species_name; }
+  if (!defined $species2alias{$species_id}) { next; }
   my @aliases = @{$species2alias{$species_id}};
   my %alias2species_id = map {$_, 1} @aliases;
  
@@ -76,12 +81,11 @@ sub run {
   my $err_count = 0;
 
   my %reactome2ensembl;
-  my $dbi = $self->dbi();
 
-  my $reactome_source_id =  $self->get_source_id_for_source_name("reactome", "direct");
-  my $transcript_reactome_source_id =  $self->get_source_id_for_source_name("reactome_transcript");
-  my $gene_reactome_source_id =  $self->get_source_id_for_source_name("reactome_gene");
-  my $reactome_uniprot_source_id = $self->get_source_id_for_source_name("reactome", "uniprot");
+  my $reactome_source_id =  $self->get_source_id_for_source_name("reactome", "direct", $dbi);
+  my $transcript_reactome_source_id =  $self->get_source_id_for_source_name("reactome_transcript", undef, $dbi);
+  my $gene_reactome_source_id =  $self->get_source_id_for_source_name("reactome_gene", undef, $dbi);
+  my $reactome_uniprot_source_id = $self->get_source_id_for_source_name("reactome", "uniprot", $dbi);
   if($reactome_source_id < 1 || $transcript_reactome_source_id < 1 || $gene_reactome_source_id < 1){
     die "Could not find source id for reactome sources???\n";
   }
@@ -98,7 +102,7 @@ sub run {
     print "Source_id = $reactome_uniprot_source_id\n";
   }
 
-  my (%uniprot) = %{$self->get_valid_codes("uniprot/",$species_id)};
+  my (%uniprot) = %{$self->get_valid_codes("uniprot/",$species_id, $dbi)};
   my $is_uniprot = 0;
 
   foreach my $file (@$files) {
@@ -109,8 +113,9 @@ sub run {
     while (my $line = $reactome_io->getline() ) {
       chomp $line;
       my ($ensembl_stable_id, $reactome_id, $url, $description, $evidence, $species) = split /\t+/,$line;
+      if ($description!~ /^[A-Za-z0-9_,\(\)\/\-\.:\+'&;"\/\?%>\s\[\]]+$/) { next; }
   
-      $species =~ s/\s//;
+      $species =~ s/\s/_/;
       $species = lc($species);
       if ( $alias2species_id{$species} ){
         $parsed_count++;
@@ -130,6 +135,7 @@ sub run {
                                   label          => $reactome_id,
                                   desc           => $description,
                                   source_id      => $reactome_uniprot_source_id,
+                                  dbi            => $dbi,
                                   species_id     => $species_id} );
             }
             $info_type = 'DEPENDENT';
@@ -158,9 +164,10 @@ sub run {
                           desc        => $description,
                           info_type   => $info_type,
                           source_id   => $reactome_source_id,
+                          dbi         => $dbi,
                           species_id  => $species_id} );
   
-        $self->add_direct_xref($xref_id, $ensembl_stable_id, $type) if $type;
+        $self->add_direct_xref($xref_id, $ensembl_stable_id, $type, $dbi) if $type;
       }
     }
   }

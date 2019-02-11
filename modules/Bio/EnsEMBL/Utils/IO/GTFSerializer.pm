@@ -2,7 +2,7 @@
 =head1 LICENSE
 
 Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
-Copyright [2016-2017] EMBL-European Bioinformatics Institute
+Copyright [2016-2019] EMBL-European Bioinformatics Institute
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -101,17 +101,15 @@ sub print_Gene {
   my $slice           = $gene->slice();
   my $idstr           = $slice->seq_region_name;
   my $sliceoffset     = $slice->start - 1;
-  my $vegadb          = 0;
   my $fh              = $self->{'filehandle'};
   my $biotype_display = q{};
   if($gene->adaptor()) {
     my $dbname = $gene->adaptor()->dbc()->dbname();
-    $vegadb = $dbname =~ /vega/;
   }
 
   {
     no warnings 'uninitialized';
-    $biotype_display = $vegadb ? $gene->status . '_' . $gene->biotype : $gene->biotype;
+    $biotype_display = $gene->biotype;
   }
 
   # Skip all trans-splicing transcripts, they can't be dumped in GTF
@@ -150,7 +148,6 @@ sub print_Prediction {
   my $slice           = $prediction->slice();
   my $idstr           = $slice->seq_region_name;
   my $sliceoffset     = $slice->start - 1;
-  my $vegadb          = 0;
   my $fh              = $self->{'filehandle'};
 
   my $source = $prediction->analysis->gff_source || 'ensembl';
@@ -212,10 +209,8 @@ sub print_feature {
   # actually print the features created by the two calls above.
   my ( $hasstart, $hasend ) = $self->_check_start_and_stop($transcript);
 
-  my $vegadb = 0;
   if($transcript->adaptor()) {
     my $dbname = $transcript->adaptor()->dbc()->dbname();
-    $vegadb = $dbname =~ /vega/;
   }
   $gene   ||= $transcript->get_Gene();
   my $translation = $transcript->translation();
@@ -223,11 +218,8 @@ sub print_feature {
   my ( $biotype_display, $transcript_biotype );
   {
     no warnings 'uninitialized';
-    $biotype_display =
-      $vegadb ? $gene->status . '_' . $gene->biotype : $gene->biotype;
-    $transcript_biotype =
-      $vegadb ? $transcript->status . '_' . $transcript->biotype :
-      $transcript->biotype;
+    $biotype_display = $gene->biotype;
+    $transcript_biotype = $transcript->biotype;
   }
 
   # Find selenocysteine
@@ -243,7 +235,7 @@ sub print_feature {
         $idstr, $transcript->source, 
         ($transcript->start()+$sliceoffset), ($transcript->end()+$sliceoffset),
         ($strand_conversion{$transcript->strand}));
-  $self->_print_attribs($gene, $biotype_display, $transcript, $transcript_biotype, 0, 'transcript', undef, undef, $has_selenocysteine);
+  $self->_print_attribs($gene, $biotype_display, $transcript, $transcript_biotype, 0, 'transcript', undef, $has_selenocysteine);
   print $fh "\n";
 
   #Process any selenocystines we may have
@@ -257,7 +249,7 @@ sub print_feature {
         my $end = $projection->end();
         print $fh sprintf(qq{%s\t%s\tSelenocysteine\t%d\t%d\t.\t%s\t.\t}, 
           $idstr, $transcript->source, ($start+$sliceoffset), ($end+$sliceoffset), $strand);
-        $self->_print_attribs($gene, $biotype_display, $transcript, $transcript_biotype, 0, 'Selenocysteine', undef, undef, $has_selenocysteine);
+        $self->_print_attribs($gene, $biotype_display, $transcript, $transcript_biotype, 0, 'Selenocysteine', undef, $has_selenocysteine);
         print $fh "\n";
       }
     }
@@ -291,7 +283,7 @@ sub print_feature {
       "." . "\t";
       # Column 9 - attribute, a ;-separated list of key-value pairs (additional feature info)
       $self->_print_attribs( $gene, $biotype_display, $transcript, $transcript_biotype,
-                             $count, 'exon', $exon, $vegadb, $has_selenocysteine );
+                             $count, 'exon', $exon, $has_selenocysteine );
     print $fh "\n";
 
     $intrans = 1 if $translation and $exon == $translation->start_Exon;
@@ -322,8 +314,8 @@ sub print_feature {
       foreach my $endcodon (@endcodons) {
         if ( $translation &&
              $hasend &&
-             ( $exon->end >= $endcodon->start &&
-               $exon->start <= $endcodon->end ) )
+             ( $cdsexon->seq_region_end >= $endcodon->start &&
+               $cdsexon->seq_region_start <= $endcodon->end ) )
         {
           if ( $cdsexon->strand == 1 ) {
             $exon_end = $cdsexon->end - $endcodon->length;
@@ -345,7 +337,7 @@ sub print_feature {
           "\t" . ( $exon_end + $sliceoffset ) .
           "\t" . "." . "\t" . $strand . "\t" . $phase . "\t";
         $self->_print_attribs( $gene, $biotype_display, $transcript, $transcript_biotype,
-                               $count, 'CDS', undef, undef, $has_selenocysteine );
+                               $count, 'CDS', undef, $has_selenocysteine );
         print $fh "\n";
       }
     } ## end if ($intrans)
@@ -367,7 +359,7 @@ sub print_feature {
           "\t" . "." . "\t" . $strand . "\t" . $startc->phase . "\t";
 
         $self->_print_attribs( $gene, $biotype_display, $transcript, $transcript_biotype,
-                               $tmpcnt++, 'start_codon', undef, undef, $has_selenocysteine );
+                               $tmpcnt++, 'start_codon', undef, $has_selenocysteine );
         print $fh "\n";
       }
     }
@@ -383,7 +375,7 @@ sub print_feature {
             "\t" . "." . "\t" . $strand . "\t" . $endc->phase . "\t";
 
           $self->_print_attribs( $gene, $biotype_display, $transcript, $transcript_biotype,
-                                 $tmpcnt++, 'stop_codon', undef, undef, $has_selenocysteine );
+                                 $tmpcnt++, 'stop_codon', undef, $has_selenocysteine );
           print $fh "\n";
         }
       }
@@ -407,7 +399,7 @@ sub print_feature {
     my $strand = $strand_conversion{$utr->strand()};
     print $fh sprintf(qq{%s\t%s\t%s\t%d\t%d\t.\t%s\t.\t}, 
         $idstr, $transcript->source, $utr->type, ($utr->seq_region_start()), ($utr->seq_region_end()), $strand);
-    $self->_print_attribs($gene, $biotype_display, $transcript, $transcript_biotype, 0, 'UTR', undef, undef, $has_selenocysteine);
+    $self->_print_attribs($gene, $biotype_display, $transcript, $transcript_biotype, 0, 'UTR', undef, $has_selenocysteine);
     print $fh "\n";
   }
 
@@ -425,18 +417,16 @@ sub print_feature {
 
 sub _print_attribs {
   my ( $self, $gene, $gene_biotype, $transcript, $trans_biotype, $count, $type, $exon,
-       $vegadb, $has_selenocysteine )
+       $has_selenocysteine )
     = @_;
 
   my ( $gene_name, $gene_source, $gene_version );
   $gene_name = $gene->external_name;
-  $gene_name =~ s/^[A-Z]{1,3}:// if $vegadb;
   $gene_source = $gene->source;
   $gene_version = $gene->version;
 
   my ( $trans_name, $trans_source, $trans_version );
   $trans_name = $transcript->external_name;
-  $trans_name =~ s/^[A-Z]{1,3}:// if $vegadb;
   $trans_source = $transcript->source;
   $trans_version = $transcript->version;
 

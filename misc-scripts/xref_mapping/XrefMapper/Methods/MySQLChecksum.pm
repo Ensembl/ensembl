@@ -1,7 +1,7 @@
 =head1 LICENSE
 
 Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
-Copyright [2016-2017] EMBL-European Bioinformatics Institute
+Copyright [2016-2019] EMBL-European Bioinformatics Institute
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@ package XrefMapper::Methods::MySQLChecksum;
 
 use strict;
 use warnings;
+use Bio::EnsEMBL::DBSQL::DBConnection;
 
 use base qw/XrefMapper::Methods::ChecksumBasic/;
 
@@ -34,11 +35,25 @@ and source_id=?
 SQL
 
 sub perform_mapping {
-  my ($self, $sequences, $source_id, $object_type) = @_;
+  my ($self, $sequences, $source_id, $object_type, $db_url) = @_;
   
   my @final_results;
+  my $dbc;
+  if (defined $db_url) {
+    $source_id = 1;
+    my ($dbconn_part, $driver, $user, $pass, $host, $port, $dbname, $table_name, $tparam_name, $tparam_value, $conn_param_string) =
+            $db_url =~ m{^((\w*)://(?:(\w+)(?:\:([^/\@]*))?\@)?(?:([\w\-\.]+)(?:\:(\d*))?)?/([\w\-\.]*))(?:/(\w+)(?:\?(\w+)=([\w\[\]\{\}]*))?)?((?:;(\w+)=(\w+))*)$};
+    $dbc = Bio::EnsEMBL::DBSQL::DBConnection->new(
+      -dbname => $dbname,
+      -user => $user,
+      -pass => $pass,
+      -host => $host,
+      -port => $port);
+  } else {
+    $dbc = $self->mapper()->xref()->dbc();
+  }
   
-  $self->mapper()->xref()->dbc()->sql_helper()->batch(-SQL => $CHECKSUM_SQL, -CALLBACK => sub {
+  $dbc->sql_helper()->batch(-SQL => $CHECKSUM_SQL, -CALLBACK => sub {
     my ($sth) = @_;
     foreach my $sequence (@{$sequences}) {
       my $checksum = uc($self->md5_checksum($sequence));

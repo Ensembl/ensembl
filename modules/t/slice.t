@@ -1,5 +1,5 @@
 # Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
-# Copyright [2016-2017] EMBL-European Bioinformatics Institute
+# Copyright [2016-2019] EMBL-European Bioinformatics Institute
 # 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -56,7 +56,7 @@ is($slice->start, $START, "Slice start is $START");
 is($slice->end, $END, "Slice end is $END");
 is($slice->seq_region_length, 62842997, "Slice length is correct");
 is($slice->adaptor, $slice_adaptor, "Slice has adaptor $slice_adaptor");
-
+is($slice->feature_so_acc, 'SO:0000340', 'Slice feature SO acc is correct (chromosome)');
 
 #
 #TEST - Slice::new
@@ -219,6 +219,8 @@ is($clone->end(), $len + 1000, "Clone end matches $len + 1000");
 $clone = $clone->expand(-1000, 0, 1);
 is($clone->start, 1001, "Expanded clone start is correct if forced");
 is($clone->end(), $len + 1000, "Expanded clone end is correct if forced");
+
+is($clone->feature_so_acc, 'SO:0000001', 'Clone feature SO acc is correct (region)');
 
 #
 # Test constrain_to_seq_region
@@ -452,6 +454,9 @@ $slice->add_synonym("20ish");
 
 is(@alt_names, 3, "Got 3 alt names");
 
+is($alt_names[1]->name, 'anoth_20', 'Correctly retrieved synonym name');
+is($alt_names[1]->dbname, 'RFAM', 'Correctly retrieved synonym external db');
+
 
 #slcie aleady stored so need to store syns
 my $syn_adap =  $db->get_SeqRegionSynonymAdaptor; 
@@ -471,14 +476,14 @@ $multi->restore();
 
 $multi->save("core", 'seq_region_synonym');
 
-$slice = $slice_adaptor->fetch_by_region('chromosome', 1, 1, 10);
+$slice = $slice_adaptor->fetch_by_region('chromosome', 5, 1, 10);
 
 @alt_names = @{$slice->get_all_synonyms()};
 
 is(@alt_names, 0, "No altnames returned");
 
 
-$slice->add_synonym("1ish");
+$slice->add_synonym("5ish");
 
 @alt_names = @{$slice->get_all_synonyms()};
 
@@ -489,7 +494,7 @@ foreach my $syn (@alt_names){
 }
 
 
-$slice = $slice_adaptor->fetch_by_region('chromosome', 1, 1, 10);
+$slice = $slice_adaptor->fetch_by_region('chromosome', 5, 1, 10);
 
 @alt_names = @{$slice->get_all_synonyms()};
 
@@ -510,7 +515,7 @@ $multi->restore();
 
 # test fetch_all on synonym adaptor
 my $all_synonyms = $syn_adap->fetch_all();
-is(@$all_synonyms, 3, 'fetch_all on synonym adaptor');
+is(@$all_synonyms, 5, 'fetch_all on synonym adaptor');
 
 
 #Test assembly exception type on HAP

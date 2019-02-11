@@ -1,7 +1,7 @@
 =head1 LICENSE
 
 Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
-Copyright [2016-2017] EMBL-European Bioinformatics Institute
+Copyright [2016-2019] EMBL-European Bioinformatics Institute
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -820,7 +820,7 @@ sub _dump_feature_table {
           $self->write(@ff, 'mRNA', $value);
           $self->write(@ff,''   , '/gene="'.$gene->stable_id_version().'"');
           $self->write(@ff,''
-                       ,'/note="transcript_id='.$transcript->stable_id_version().'"');
+                       ,'/standard_name="'.$transcript->stable_id_version().'"');
 
           # ...and a CDS section
           $value = 
@@ -844,8 +844,11 @@ sub _dump_feature_table {
             $self->write(@ff, '', $value);
           }
 
-          $value = '/translation="'.$transcript->translate()->seq().'"';
-          $self->write(@ff, '', $value);
+	  my $pep = $transcript->translate();
+          if ($pep) {
+	    $value = '/translation="'.$pep->seq().'"';
+	    $self->write(@ff, '', $value);
+	  }
         } else {
           #pseudogene
           $value = $self->features2location($transcript->get_all_Exons);
@@ -857,7 +860,7 @@ sub _dump_feature_table {
           }
           $self->write(@ff,''   , '/note="'.$transcript->biotype().'"');
           $self->write(@ff,''
-                       ,'/note="transcript_id='.$transcript->stable_id_version().'"');
+                       ,'/standard_name="'.$transcript->stable_id_version().'"');
         }
       }
     }

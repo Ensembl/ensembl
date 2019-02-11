@@ -1,7 +1,7 @@
 =head1 LICENSE
 
 Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
-Copyright [2016-2017] EMBL-European Bioinformatics Institute
+Copyright [2016-2019] EMBL-European Bioinformatics Institute
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -49,7 +49,6 @@ package Bio::EnsEMBL::Utils::IO::GFFSerializer;
 use strict;
 use warnings;
 use Bio::EnsEMBL::Utils::Exception;
-use Bio::EnsEMBL::Utils::SequenceOntologyMapper;
 use URI::Escape;
 use Bio::EnsEMBL::Utils::IO::FeatureSerializer;
 use Bio::EnsEMBL::Utils::Scalar qw/check_ref/;
@@ -80,8 +79,7 @@ sub new {
     if ( ! check_ref($self->{'ontology_adaptor'}, "Bio::EnsEMBL::DBSQL::OntologyTermAdaptor" )) {
         throw("GFF format requires an instance of Bio::EnsEMBL::DBSQL::OntologyTermAdaptor to function.");        
     }
-    $self->{'mapper'} = Bio::EnsEMBL::Utils::SequenceOntologyMapper->new($self->{'ontology_adaptor'});
-    
+
     if (!defined ($self->{'filehandle'})) {
         # no file handle, let the handle point to a copy of STDOUT instead
         open $self->{'filehandle'}, ">&STDOUT";
@@ -108,7 +106,6 @@ sub new {
 sub print_feature {
     my $self = shift;
     my $feature = shift;
-    my $so_mapper = $self->{'mapper'};
 
     my $text_buffer = "";
     if ($feature->can('summary_as_hash') ) {
@@ -134,8 +131,22 @@ sub print_feature {
         $row .= qq{\t};
 
 #   Column 3 - feature, the ontology term for the kind of feature this row is
-	my $so_term = eval { $so_mapper->to_name($feature); };
-	$@ and throw sprintf "Unable to map feature %s to SO term.\n$@", $summary{id};
+        my $so_acc;
+        # get biotype SO acc if feature can do it
+        if ( $feature->can('get_Biotype') ) {
+            $so_acc = $feature->get_Biotype->so_acc;
+        }
+        # if no biotype SO acc, get the feature one
+        if ( !$so_acc ) {
+            $so_acc = $feature->feature_so_acc;
+        }
+        # could not get it, throw exception
+        if ( !$so_acc ) {
+            throw "Unable to map feature %s to SO.", $summary{id};
+        }
+        # with the acc, get the name
+        my $so_term = $self->{'ontology_adaptor'}->fetch_by_accession($so_acc)->name;
+
         if ($so_term eq 'protein_coding_gene') { 
 # Special treatment for protein_coding_gene, as more commonly expected term is 'gene'
           $so_term = 'gene';

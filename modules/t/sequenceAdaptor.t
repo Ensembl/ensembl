@@ -1,5 +1,5 @@
 # Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
-# Copyright [2016-2017] EMBL-European Bioinformatics Institute
+# Copyright [2016-2019] EMBL-European Bioinformatics Institute
 # 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -76,6 +76,47 @@ $multi_db->save('core','seq_region_attrib');
 }
 $multi_db->restore('core','seq_region_attrib');
 
+## Use patch data to test LRG _rna_edits (it has an LRG, test core doesn't)
+{
+  my $patch_db    = $multi_db->get_DBAdaptor('patch');
+  $slice_adaptor = $patch_db->get_SliceAdaptor();
+
+  # Unedited base at this location is G, ensure it was changed to a T
+  my $slice = $slice_adaptor->fetch_by_region(undef, 'LRG_11', 28690, 28690);
+  is($slice->seq, 'T', '_rna_edits of LRG produces correct base');
+
+  # Go up stream, check for off-by-one regression
+  $slice = $slice_adaptor->fetch_by_region(undef, 'LRG_11', 28689, 28689);
+  is($slice->seq, 'C', 'One bp up from LRG edit, emit one base, one base only please');
+
+  # Go up stream, across the _rna_edit, is it correct?
+  $slice = $slice_adaptor->fetch_by_region(undef, 'LRG_11', 28689, 28690);
+  is($slice->seq, 'CT', 'One bp up from LRG edit and in to the edit');
+
+  # And check downstream from the _rna_edit
+  $slice = $slice_adaptor->fetch_by_region(undef, 'LRG_11', 28691, 28691);
+  is($slice->seq, 'G', 'Down bp up from LRG edit, emit one base, one base only please');
+
+  # And a multi-bp LRG edit
+  $slice = $slice_adaptor->fetch_by_region(undef, 'LRG_11', 28790, 28795);
+  is($slice->seq, 'TATCGC', 'Check spanning across an LRG edit');
+
+  # And a multi-bp LRG edit
+  $slice = $slice_adaptor->fetch_by_region(undef, 'LRG_11', 28790, 28791);
+  is($slice->seq, 'TA', 'Check spanning across an LRG edit');
+
+  # And a multi-bp LRG edit
+  $slice = $slice_adaptor->fetch_by_region(undef, 'LRG_11', 28792, 28793);
+  is($slice->seq, 'TC', 'Check spanning across an LRG edit');
+
+  # And a multi-bp LRG edit
+  $slice = $slice_adaptor->fetch_by_region(undef, 'LRG_11', 28820, 28825);
+  is($slice->seq, 'AGTATT', 'Check large edit fully within sequence');
+
+  $slice = $slice_adaptor->fetch_by_region(undef, 'LRG_11', 28822, 28822);
+  is($slice->seq, 'T', 'Check sequence fully within a larger edit');
+
+}
 
 sub compare_compliments {
   my $slice = shift;

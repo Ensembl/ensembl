@@ -1,7 +1,7 @@
 =head1 LICENSE
 
 Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
-Copyright [2016-2017] EMBL-European Bioinformatics Institute
+Copyright [2016-2019] EMBL-European Bioinformatics Institute
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -220,6 +220,28 @@ sub type {
   return ( $self->{'type'} || 'UTR' );
 }
 
+
+# package variable to minimize duplication
+my %utr_type_so_mapping = (
+ 'five_prime_utr'  => 'SO:0000204',
+ 'three_prime_utr' => 'SO:0000205'
+);
+
+=head2 feature_so_acc
+
+  Example    : print $utr->feature_so_acc;
+  Description: This method returns a string containing the SO accession number of the UTR, based on type.
+               Overrides Bio::EnsEMBL::Feature::feature_so_acc
+  Returntype : string (Sequence Ontology accession number)
+
+=cut
+
+sub feature_so_acc {
+  my $self = shift;
+
+  # return UTR type SO acc, or UTR acc
+  return $utr_type_so_mapping{$self->type} // 'SO:0000203';
+}
 
 =head2 summary_as_hash
 

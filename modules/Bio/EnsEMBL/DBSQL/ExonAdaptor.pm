@@ -1,7 +1,7 @@
 =head1 LICENSE
 
 Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
-Copyright [2016-2017] EMBL-European Bioinformatics Institute
+Copyright [2016-2019] EMBL-European Bioinformatics Institute
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -55,7 +55,7 @@ use strict;
 
 use Bio::EnsEMBL::DBSQL::BaseFeatureAdaptor;
 use Bio::EnsEMBL::Exon;
-use Bio::EnsEMBL::Utils::Exception qw( warning throw deprecate );
+use Bio::EnsEMBL::Utils::Exception qw( warning throw );
  
 use vars qw( @ISA );
 @ISA = qw( Bio::EnsEMBL::DBSQL::BaseFeatureAdaptor );
@@ -353,7 +353,8 @@ sub store {
   if ( defined($exon->stable_id) ) {
       my $created = $self->db->dbc->from_seconds_to_date($exon->created_date());
       my $modified = $self->db->dbc->from_seconds_to_date($exon->modified_date());
-      $exon_sql .= ", stable_id, version, created_date, modified_date) VALUES ( ?,?,?,?,?,?,?,?,?,?,". $created . ",". $modified ." )";
+
+      $exon_sql .= sprintf ", stable_id, version%s%s) VALUES ( ?,?,?,?,?,?,?,?,?,?%s%s)", $created?", created_date":'', $modified?", modified_date":'', $created?",$created":'', $modified?",$modified":'';
      
   } else {
       $exon_sql .= q{
@@ -382,9 +383,8 @@ sub store {
 
   if ( defined($exon->stable_id) ) {
 
-     $exonst->bind_param( 9, $exon->stable_id, SQL_VARCHAR );
-     my $version = ($exon->version()) ? $exon->version() : 1;
-     $exonst->bind_param( 10, $version, SQL_INTEGER ); 
+     $exonst->bind_param(  9, $exon->stable_id, SQL_VARCHAR );
+     $exonst->bind_param( 10, $exon->version,   SQL_INTEGER ); 
   }
 
   $exonst->execute();

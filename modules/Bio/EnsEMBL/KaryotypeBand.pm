@@ -1,7 +1,7 @@
 =head1 LICENSE
 
 Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
-Copyright [2016-2017] EMBL-European Bioinformatics Institute
+Copyright [2016-2019] EMBL-European Bioinformatics Institute
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -78,10 +78,11 @@ use vars qw(@ISA);
 
 use Bio::EnsEMBL::Feature;
 use Bio::EnsEMBL::Utils::Argument qw(rearrange);
-use Bio::EnsEMBL::Utils::Exception qw(deprecate warning);
+use Bio::EnsEMBL::Utils::Exception qw(warning);
 
 @ISA = qw(Bio::EnsEMBL::Feature);
 
+use constant SO_ACC => 'SO:0000341';
 
 =head2 new
 
@@ -220,6 +221,7 @@ sub display_id {
   my $self = shift;
   return $self->{'name'} || '';
 }
+
 
 =head2 summary_as_hash
 

@@ -1,5 +1,5 @@
 # Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
-# Copyright [2016-2017] EMBL-European Bioinformatics Institute
+# Copyright [2016-2019] EMBL-European Bioinformatics Institute
 # 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -198,6 +198,7 @@ ok( $stored_features[0]->length() == 1000 );
 
 # Check for fetching all features
 @stored_features = @{$dfa->fetch_all()};
+print "\n";
 is( @stored_features, 318, 'Number of stored features');
 @stored_features = @{$dfa->fetch_all('GeneDensityTest')};
 ok( $stored_features[0]->length() > 1000 );

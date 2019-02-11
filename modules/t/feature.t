@@ -1,5 +1,5 @@
 # Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
-# Copyright [2016-2017] EMBL-European Bioinformatics Institute
+# Copyright [2016-2019] EMBL-European Bioinformatics Institute
 # 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -67,6 +67,7 @@ ok($feature->end == $end);
 ok($feature->strand == $strand);
 ok($feature->analysis == $analysis);
 ok($feature->slice == $slice);
+is($feature->feature_so_acc, 'SO:0000001', 'Feature feature SO acc is correct (feature)');
 
 #
 # Test setters
@@ -220,6 +221,7 @@ $slice = $db->get_SliceAdaptor->fetch_by_region('chromosome',
                                                  '20',
                                                  1_000_000,
                                                  2_000_000);
+is($slice->feature_so_acc, 'SO:0000340', 'Slice feature SO acc is correct (chromosome)');
 $feature->slice($slice);
 
 ok(!defined($feature->transform('contig')));
@@ -263,6 +265,7 @@ ok($feature->strand() == -1);
 $slice = $db->get_SliceAdaptor->fetch_by_region('contig',
                                                 'AL359765.6.1.13780',
                                                 '30', '3000');
+is($slice->feature_so_acc, 'SO:0000149', 'Slice feature SO acc is correct (supercontig)');
 
 $feature = $feature->transfer($slice);
 debug("\ntransfer to contig slice");
@@ -635,6 +638,7 @@ ok( scalar( @alt ) == 0 );
 
 my $gene_adaptor = $db->get_GeneAdaptor;
 my $gene = $gene_adaptor->fetch_by_stable_id('ENSG00000171456');
+is($gene->feature_so_acc, 'SO:0000704', 'Gene feature SO acc is correct (gene)');
 my $o_genes = $gene->get_overlapping_Genes;
 is($o_genes->[0]->stable_id,'ENSG00000171456','Check overlap with a feature that overlaps nothing');
 $chr_slice = $o_genes->[0]->feature_Slice;

@@ -1,5 +1,5 @@
 # Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
-# Copyright [2016-2017] EMBL-European Bioinformatics Institute
+# Copyright [2016-2019] EMBL-European Bioinformatics Institute
 # 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -47,7 +47,7 @@ foreach my $f (@source_files) {
     next if $f =~ /\/blib\//;
     next if $f =~ /\/HALXS\.c$/;
     next if $f =~ /\.conf\b/;
-    next if $f =~ /\CLEAN\b/;
+    next if $f =~ /\/CLEAN\b/;
     next if $f =~ /\.(tmpl|hash|nw|ctl|txt|html|textile)$/;
     has_apache2_licence($f);
 }

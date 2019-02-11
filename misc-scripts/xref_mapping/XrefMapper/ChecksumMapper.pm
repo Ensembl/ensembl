@@ -1,7 +1,7 @@
 =head1 LICENSE
 
 Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
-Copyright [2016-2017] EMBL-European Bioinformatics Institute
+Copyright [2016-2019] EMBL-European Bioinformatics Institute
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -23,6 +23,7 @@ use strict;
 use warnings;
 
 use Bio::EnsEMBL::Utils::Exception qw(throw);
+use Bio::EnsEMBL::DBSQL::DBConnection;
 
 use base qw(XrefMapper::BasicMapper);
 
@@ -70,18 +71,18 @@ sub target {
 }
 
 sub process {
-  my ($self) = @_;
+  my ($self, $db_url, $species_id) = @_;
 
   $self->_update_status('checksum_xrefs_started');
   my $source_id = $self->source_id();
   my $target = $self->target();
   my $object_type = $self->object_type;
 
-  if($self->_map_checksums()) {
+  if($self->_map_checksums($db_url)) {
     my $method = $self->get_method();
-    my $results = $method->run($target, $source_id, $object_type);
+    my $results = $method->run($target, $source_id, $object_type, $db_url);
     $self->log_progress('Starting upload');
-    $self->upload($results);
+    $self->upload($results, $species_id);
   }
 
   $self->_update_status('checksum_xrefs_finished');
@@ -89,7 +90,7 @@ sub process {
 }
 
 sub upload {
-  my ($self, $results) = @_;
+  my ($self, $results, $species_id) = @_;
   #The elements come in as an array looking like
   #  [ { id => 1, upi => 'UPI00000A', object_type => 'Translation' } ]
   
@@ -104,7 +105,8 @@ SQL
   
   my $h = $self->_xref_helper();
   my $source_id = $self->source_id();
-  my $species_id = $self->species_id();
+  $species_id = $self->species_id() unless defined $species_id;
+  if (!defined $species_id) { return; }
    
   $h->transaction(-CALLBACK => sub {
     
@@ -219,9 +221,21 @@ sub _update_status {
 }
 
 sub _map_checksums {
-  my ($self) = @_;
+  my ($self, $db_url) = @_;
   my $source_id = $self->source_id();
-  my $count = $self->_xref_helper()->execute_single_result(-SQL => 'select count(*) from checksum_xref where source_id = ' . $source_id);
+  my $dbc = $self->mapper->xref->dbc;
+  if (defined $db_url) { 
+    $source_id = 1;
+    my ($dbconn_part, $driver, $user, $pass, $host, $port, $dbname, $table_name, $tparam_name, $tparam_value, $conn_param_string) =
+            $db_url =~ m{^((\w*)://(?:(\w+)(?:\:([^/\@]*))?\@)?(?:([\w\-\.]+)(?:\:(\d*))?)?/([\w\-\.]*))(?:/(\w+)(?:\?(\w+)=([\w\[\]\{\}]*))?)?((?:;(\w+)=(\w+))*)$};
+    $dbc = Bio::EnsEMBL::DBSQL::DBConnection->new(
+      -dbname => $dbname,
+      -user => $user,
+      -pass => $pass,
+      -host => $host,
+      -port => $port);
+  }
+  my $count = $dbc->sql_helper()->execute_single_result(-SQL => 'select count(*) from checksum_xref where source_id = ' . $source_id);
   return $count;
 }
 

@@ -1,5 +1,5 @@
 # Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
-# Copyright [2016-2017] EMBL-European Bioinformatics Institute
+# Copyright [2016-2019] EMBL-European Bioinformatics Institute
 # 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,7 +15,7 @@
 
 use strict;
 use Test::More;
-use Test::Warnings;
+use Test::Warnings qw(warning);
 use Bio::EnsEMBL::Test::MultiTestDB;
 use Bio::EnsEMBL::DnaPepAlignFeature;
 
@@ -73,7 +73,8 @@ push @feats, Bio::EnsEMBL::FeaturePair->new
 #
 # Test DnaPepAlignFeature::new(-features)
 #
-my $dnaf = Bio::EnsEMBL::DnaPepAlignFeature->new( -features => \@feats );
+my $dnaf;
+warning { $dnaf = Bio::EnsEMBL::DnaPepAlignFeature->new( -features => \@feats ); };
 ok(ref($dnaf) && $dnaf->isa('Bio::EnsEMBL::DnaPepAlignFeature'));
 
 #
@@ -114,6 +115,7 @@ ok($dnaf->end == 16);
 #
 ok( scalar($dnaf->ungapped_features) == 2);
 
+is($dnaf->feature_so_acc, 'SO:0000349', 'dnaPepAlignFeature feature SO acc is correct (protein_match)');
 
 #
 # 12 Test retrieval from database

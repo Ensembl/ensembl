@@ -1,7 +1,7 @@
 =head1 LICENSE
 
 Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
-Copyright [2016-2017] EMBL-European Bioinformatics Institute
+Copyright [2016-2019] EMBL-European Bioinformatics Institute
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -34,7 +34,7 @@ use strict;
 
 
 use Bio::EnsEMBL::DBSQL::BaseAdaptor;
-use Bio::EnsEMBL::Utils::Exception qw(throw deprecate warning stack_trace_dump);
+use Bio::EnsEMBL::Utils::Exception qw(throw);
 use Bio::EnsEMBL::SeqRegionSynonym;
 
 @ISA = ('Bio::EnsEMBL::DBSQL::BaseAdaptor');
@@ -67,26 +67,32 @@ sub store {
 }
 
 sub _tables {
-  return (['seq_region_synonym', 'srs']);
+  return (['seq_region_synonym', 'srs'], ['external_db','exdb']);
 }
 
 sub _columns {
-  return qw(srs.seq_region_synonym_id srs.seq_region_id srs.synonym srs.external_db_id);
+  return qw(srs.seq_region_synonym_id srs.seq_region_id srs.synonym srs.external_db_id exdb.db_name exdb.db_display_name);
+}
+
+sub _left_join{
+    return (['external_db',"exdb.external_db_id = srs.external_db_id"]);
 }
 
 sub _objs_from_sth {
   my ($self, $sth) = @_;
 
   my @results;
-  my ($seq_id, $dbid, $alt_name, $ex_db);
-  $sth->bind_columns(\$dbid, \$seq_id, \$alt_name, \$ex_db);
+  my ($seq_id, $dbid, $alt_name, $ex_db, $dbname, $db_display_name);
+  $sth->bind_columns(\$dbid, \$seq_id, \$alt_name, \$ex_db, \$dbname, \$db_display_name);
 
   push @results, Bio::EnsEMBL::SeqRegionSynonym->new(
-    -adaptor        => $self,
-    -synonym        => $alt_name,
-    -dbID           => $dbid,
-    -external_db_id => $ex_db,
-    -seq_region_id  => $seq_id
+    -adaptor         => $self,
+    -synonym         => $alt_name,
+    -dbID            => $dbid,
+    -external_db_id  => $ex_db,
+    -seq_region_id   => $seq_id,
+    -dbname          => $dbname,
+    -db_display_name => $db_display_name,
   ) while $sth->fetch();
 
   $sth->finish;

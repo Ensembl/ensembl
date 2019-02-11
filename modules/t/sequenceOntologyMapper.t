@@ -1,5 +1,5 @@
 # Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
-# Copyright [2016-2017] EMBL-European Bioinformatics Institute
+# Copyright [2016-2019] EMBL-European Bioinformatics Institute
 # 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -70,12 +70,12 @@ my $mappings =
    # test various genes with/without biotypes
    { obj => Bio::EnsEMBL::Gene->new(-biotype => 'dummy'), accession => 'SO:0000704', name => 'gene' }, # if we don't pass a non empty biotype it will default to protein_coding hence it will fail
    { obj => Bio::EnsEMBL::Gene->new(-biotype => 'protein_coding'), accession => 'SO:0001217', name => 'protein_coding_gene' },
-   { obj => Bio::EnsEMBL::Gene->new(-biotype => 'tRNA'), accession => 'SO:0001272', name => 'tRNA_gene' },
+   { obj => Bio::EnsEMBL::Gene->new(-biotype => 'tRNA'), accession => 'SO:0001263', name => 'ncRNA_gene' },
    # test various transcripts with/without biotypes
    { obj => Bio::EnsEMBL::Transcript->new(-biotype => 'dummy'), accession => 'SO:0000673', name => 'transcript' },
    { obj => Bio::EnsEMBL::Transcript->new(), accession => 'SO:0000234', name => 'mRNA' },
-   { obj => Bio::EnsEMBL::Transcript->new(-biotype => 'processed_transcript'), accession => 'SO:0001503', name => 'processed_transcript' },
-   { obj => Bio::EnsEMBL::Transcript->new(-biotype => 'retrotransposed'), accession => 'SO:0000569', name => 'retrotransposed' },
+   { obj => Bio::EnsEMBL::Transcript->new(-biotype => 'processed_transcript'), accession => 'SO:0001877', name => 'lnc_RNA' },
+   { obj => Bio::EnsEMBL::Transcript->new(-biotype => 'tRNA'), accession => 'SO:0000253', name => 'tRNA' },
    # exons
    { obj => Bio::EnsEMBL::Exon->new, accession => 'SO:0000147', name => 'exon' },
    # slices

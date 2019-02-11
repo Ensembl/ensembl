@@ -3,11 +3,13 @@ requires 'DBD::mysql';
 requires 'HTTP::Tiny';
 requires 'IO::Compress::Gzip';
 requires 'URI::Escape';
+requires 'Config::IniFiles';
 
 test_requires 'Test::Warnings';
 test_requires 'Test::Differences';
 test_requires 'Test::Exception';
 test_requires 'Test::MockObject';
+test_requires 'Test::Deep';
 test_requires 'Test::More';
 test_requires 'Devel::Peek';
 test_requires 'Devel::Cycle';
@@ -29,6 +31,5 @@ feature 'xref_mapping', 'Xref mapping pipeline' => sub {
   requires 'Digest::MD5';
   requires 'Text::Glob';
   requires 'XML::LibXML';
-  requires 'XML::Simple';
 };
 =cut

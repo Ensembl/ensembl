@@ -1,7 +1,7 @@
 =head1 LICENSE
 
 Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
-Copyright [2016-2017] EMBL-European Bioinformatics Institute
+Copyright [2016-2019] EMBL-European Bioinformatics Institute
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -92,7 +92,7 @@ use strict;
 
 use Bio::EnsEMBL::Feature;
 use Bio::EnsEMBL::Utils::Argument qw(rearrange);
-use Bio::EnsEMBL::Utils::Exception qw(throw deprecate warning);
+use Bio::EnsEMBL::Utils::Exception qw(throw warning);
 
 @ISA = qw(Bio::EnsEMBL::Feature);
 
@@ -166,34 +166,7 @@ sub new {
   $self->{'dbname'}          = $external_db_name;
   $self->{'db_display_name'} = $external_display_db_name;
   $self->{'hdescription'}    = $hdescription;
-  #
-  # Feature1 and Feature2 arg handling for backwards compatibility
-  #
-  if ($f1) {
-	deprecate("Using FEATURE1 arg to construct FeaturePairs" . " is deprecated.\nUse the args START,END,STRAND,SLICE instead");
 
-	#eval because we are not exactly sure what f1 arg will look like
-	eval {
-	  $self->{'start'}    = $f1->start();
-	  $self->{'end'}      = $f1->end();
-	  $self->{'strand'}   = $f1->strand();
-	  $self->{'slice'}    = $f1->contig();
-	  $self->{'analysis'} = $f1->analysis() if ($f1->analysis());
-	};
-  }
-
-  if ($f2) {
-	deprecate("Using FEATURE2 arg to construct FeaturePairs is deprecated" . "\nUse the args HSTART,HEND,HSTRAND,HSEQNAME instead");
-
-	#eval because we are not exactly sure what f2 arg will look like
-	eval {
-	  $self->{'hseqname'} = $f2->seqname();
-	  $self->{'hstart'}   = $f2->start();
-	  $self->{'hend'}     = $f2->end();
-	  $self->{'hstrand'}  = $f2->strand();
-	  $self->{'analysis'} = $f2->analysis() if ($f2->analysis());
-	};
-  }
 
   return $self;
 } ## end sub new
@@ -715,8 +688,6 @@ sub level_id {
   }
   return $self->{'level_id'};
 }
-
-=head1 DEPRECATED METHODS
 
 
 =head2 invert

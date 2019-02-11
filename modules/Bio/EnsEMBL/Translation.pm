@@ -1,7 +1,7 @@
 =head1 LICENSE
 
 Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
-Copyright [2016-2017] EMBL-European Bioinformatics Institute
+Copyright [2016-2019] EMBL-European Bioinformatics Institute
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -62,7 +62,7 @@ package Bio::EnsEMBL::Translation;
 use vars qw($AUTOLOAD @ISA);
 use strict;
 
-use Bio::EnsEMBL::Utils::Exception qw( deprecate throw warning );
+use Bio::EnsEMBL::Utils::Exception qw(throw warning );
 use Bio::EnsEMBL::Utils::Argument qw( rearrange );
 use Bio::EnsEMBL::Utils::Scalar qw( assert_ref wrap_array );
 use Scalar::Util qw(weaken);
@@ -113,6 +113,9 @@ sub new {
 	   rearrange( [ "START_EXON", "END_EXON", "SEQ_START", "SEQ_END",
 			"STABLE_ID", "VERSION", "DBID", "ADAPTOR",
 			"SEQ", "CREATED_DATE", "MODIFIED_DATE" ], @_ );
+      
+  # Default version
+  if ( !defined($version) ) { $version = 1 }
 
   my $self = bless {
 		    'start_exon' => $start_exon,
@@ -579,11 +582,18 @@ sub transform {
 
 =head2 get_all_DBEntries
 
-  Arg [1]    : (optional) String, external database name
+  Arg [1]    : (optional) String, external database name,
+               SQL wildcard characters (_ and %) can be used to
+               specify patterns.
 
-  Arg [2]    : (optional) String, external_db type
+  Arg [2]    : (optional) String, external_db type,
+               ('ARRAY','ALT_TRANS','ALT_GENE','MISC','LIT','PRIMARY_DB_SYNONYM','ENSEMBL'),
+               SQL wildcard characters (_ and %) can be used to
+               specify patterns.
 
-  Example    : @dbentries = @{ $translation->get_all_DBEntries() };
+  Example    : my @dbentries = @{ $translation->get_all_DBEntries() };
+               @dbentries = @{ $translation->get_all_DBEntries('Uniprot%') };
+               @dbentries = @{ $translation->get_all_DBEntries('%', 'ENSEMBL') };
 
   Description: Retrieves DBEntries (xrefs) for this translation.
 
@@ -688,8 +698,14 @@ sub add_DBEntry {
                SQL wildcard characters (_ and %) can be used to
                specify patterns.
 
+  Arg [2]    : (optional) String, external database type, can be one of
+               ('ARRAY','ALT_TRANS','ALT_GENE','MISC','LIT','PRIMARY_DB_SYNONYM','ENSEMBL'),
+               SQL wildcard characters (_ and %) can be used to
+               specify patterns.
+
   Example    :  my @dblinks = @{ $translation->get_all_DBLinks() };
-                my @dblinks = @{ $translation->get_all_DBLinks('Uniprot%') };
+                @dblinks = @{ $translation->get_all_DBLinks('Uniprot%') };
+                @dblinks = @{ $translation->get_all_DBLinks('%', 'ENSEMBL') };
 
   Description: This is here for consistancy with the Transcript
                and Gene classes.  It is a synonym for the

@@ -1,7 +1,7 @@
 =head1 LICENSE
 
 Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
-Copyright [2016-2017] EMBL-European Bioinformatics Institute
+Copyright [2016-2019] EMBL-European Bioinformatics Institute
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -44,7 +44,8 @@ implmentation for alignment features
     -hstart       => 200,
     -hend         => 220,
     -analysis     => $analysis,
-    -cigar_string => '10M3D5M2I'
+    -cigar_string => '10M3D5M2I',
+    -align_type   => 'ensembl'
   );
 
   where $analysis is a Bio::EnsEMBL::Analysis object.
@@ -154,11 +155,11 @@ use strict;
 
 =head2 new
 
-  Arg [..]   : List of named arguments. (-cigar_string , -features) defined
+  Arg [..]   : List of named arguments. (-cigar_string , -features, -align_type) defined
                in this constructor, others defined in FeaturePair and 
                SeqFeature superclasses.  Either cigar_string or a list
                of ungapped features should be provided - not both.
-  Example    : $baf = new BaseAlignFeatureSubclass(-cigar_string => '3M3I12M');
+  Example    : $baf = new BaseAlignFeatureSubclass(-cigar_string => '3M3I12M', -align_type => 'ensembl');
   Description: Creates a new BaseAlignFeature using either a cigar string or
                a list of ungapped features.  BaseAlignFeature is an abstract
                baseclass and should not actually be instantiated - rather its
@@ -166,6 +167,7 @@ use strict;
   Returntype : Bio::EnsEMBL::BaseAlignFeature
   Exceptions : thrown if both feature and cigar string args are provided
                thrown if neither feature nor cigar string args are provided
+               warn if cigar string is provided without cigar type
   Caller     : general
   Status     : Stable
 
@@ -179,7 +181,14 @@ sub new {
 
   my $self = $class->SUPER::new(@_);
 
-  my ($cigar_string,$features) = rearrange([qw(CIGAR_STRING FEATURES)], @_);
+  my ($cigar_string,$align_type,$features) = rearrange([qw(CIGAR_STRING ALIGN_TYPE FEATURES)], @_);
+
+  if (defined($align_type)) {
+    $self->{'align_type'} = $align_type;
+  } else {
+    warning("No align_type provided, using ensembl as default");
+    $self->{'align_type'} = 'ensembl';
+  }
 
   if (defined($cigar_string) && defined($features)) {
     throw("CIGAR_STRING or FEATURES argument is required - not both.");
@@ -191,7 +200,7 @@ sub new {
   } else {
     throw("CIGAR_STRING or FEATURES argument is required");
   }
-  
+
   return $self;
 }
 
@@ -223,10 +232,32 @@ sub cigar_string {
 }
 
 
+=head2 align_type
+
+  Arg [1]    : type $align_type
+  Example    : $feature->align_type( "ensembl" );
+  Description: get/set for attribute align_type.
+               align_type specifies which cigar string 
+               is used to describe the alignment:
+               The default is 'ensembl'
+  Returntype : string
+  Exceptions : none
+  Caller     : general
+  Status     : Stable
+
+=cut
+
+sub align_type {
+  my $self = shift;
+  $self->{'align_type'} = shift if(@_);
+  return $self->{'align_type'};
+}
+
+
 =head2 alignment_length
 
   Arg [1]    : None
-  Description: return the alignment length (including indels) based on the cigar_string
+  Description: return the alignment length (including indels) based on the alignment_type ('ensembl', 'mdtag')
   Returntype : int
   Exceptions : 
   Caller     : 
@@ -236,9 +267,36 @@ sub cigar_string {
 
 sub alignment_length {
   my $self = shift;
+  
+  # ensembl: Internal CIGAR format
+  if ($self->{'align_type'} eq 'ensembl') {
+    return $self->_ensembl_cigar_alignment_length();
+  # mdtag: MD Z String for mismatching positions. Regex : [0-9]+(([A-Z]|\^[A-Z]+)[0-9]+)* (Refer:  SAM/BAM specification)
+  } elsif ($self->{'align_type'} eq 'mdtag') {
+    return $self->_mdtag_alignment_length();
+  } else {
+    throw("No alignment_length method available for " . $self->{'align_type'});
+  }
+
+}
+
+
+=head2 _ensembl_cigar_alignment_length
+
+  Arg [1]    : None
+  Description: return the alignment length (including indels) based on the cigar_string
+  Returntype : int
+  Exceptions :
+  Caller     :
+  Status     : Stable
+
+=cut
+
+sub _ensembl_cigar_alignment_length {
+  my $self = shift;
 
   if (! defined $self->{'_alignment_length'} && defined $self->cigar_string) {
-    
+
     my @pieces = ( $self->cigar_string =~ /(\d*[MDI])/g );
     unless (@pieces) {
       print STDERR "Error parsing cigar_string\n";
@@ -308,10 +366,11 @@ sub strands_reversed {
    return $self->{'strands_reversed'};
 }
 
+
 =head2 reverse_complement
 
   Args       : none
-  Description: reverse complement the FeaturePair,
+  Description: reverse complement the FeaturePair based on the cigar type
                modifing strand, hstrand and cigar_string in consequence
   Returntype : none
   Exceptions : none
@@ -320,7 +379,30 @@ sub strands_reversed {
 
 =cut
 
+
 sub reverse_complement {
+  my ($self) = @_;
+
+  if ($self->{'align_type'} eq 'ensembl') {
+    return $self->_ensembl_reverse_complement();
+  } else {
+    throw("no reverse_complement method implemented for " . $self->{'align_type'});
+  }
+}
+
+=head2 _ensembl_reverse_complement
+
+  Args       : none
+  Description: reverse complement the FeaturePair for ensembl cigar string,
+               modifing strand, hstrand and cigar_string in consequence
+  Returntype : none
+  Exceptions : none
+  Caller     : general
+  Status     : Stable
+
+=cut
+
+sub _ensembl_reverse_complement {
   my ($self) = @_;
 
   # reverse strand in both sequences
@@ -362,21 +444,11 @@ sub reverse_complement {
   Exceptions : wrong parameters
   Caller     : general
   Status     : Medium Risk
-             : deprecation needs to be removed at some time
 
 =cut
 
 sub transform {
   my $self = shift;
-
-  # catch for old style transform calls
-  if( ref $_[0] eq 'HASH') {
-    deprecate("Calling transform with a hashref is deprecate.\n" .
-              'Use $feat->transfer($slice) or ' .
-              '$feat->transform("coordsysname") instead.');
-    my (undef, $new_feat) = each(%{$_[0]});
-    return $self->transfer($new_feat->slice);
-  }
 
   my $new_feature = $self->SUPER::transform(@_);
   if ( !defined($new_feature)
@@ -385,7 +457,7 @@ sub transform {
     my @segments = @{ $self->project(@_) };
 
     if ( !@segments ) {
-      return;
+      return undef;
     }
 
     my @ungapped;
@@ -396,7 +468,7 @@ sub transform {
       } else {
         warning( "Failed to transform alignment feature; "
             . "ungapped component could not be transformed" );
-        return;
+        return undef;
       }
     }
 
@@ -404,7 +476,7 @@ sub transform {
 
     if ($@) {
       warning($@);
-      return;
+      return undef;
     }
   } ## end if ( !defined($new_feature...))
 
@@ -412,11 +484,11 @@ sub transform {
 }
 
 
-=head2 _parse_cigar
+=head2 _parse_ensembl_cigar
 
   Args       : none
   Description: PRIVATE (internal) method - creates ungapped features from 
-               internally stored cigar line
+               internally stored cigar line in ensembl format
   Returntype : list of Bio::EnsEMBL::FeaturePair
   Exceptions : none
   Caller     : ungapped_features
@@ -424,7 +496,7 @@ sub transform {
 
 =cut
 
-sub _parse_cigar {
+sub _parse_ensembl_cigar {
   my ( $self ) = @_;
 
   my $query_unit = $self->_query_unit();
@@ -435,7 +507,6 @@ sub _parse_cigar {
   throw("No cigar string defined in object") if(!defined($string));
 
   my @pieces = ( $string =~ /(\d*[MDI])/g );
-  #print "cigar: ",join ( ",", @pieces ),"\n";
 
   my @features;
   my $strand1 = $self->{'strand'} || 1;
@@ -525,7 +596,7 @@ sub _parse_cigar {
          -PERCENT_ID => $self->{'percent_id'},
          -ANALYSIS   => $self->{'analysis'},
          -P_VALUE    => $self->{'p_value'},
-         -EXTERNAL_DB_ID => $self->{'external_db_id'}, 
+         -EXTERNAL_DB_ID => $self->{'external_db_id'},
          -HCOVERAGE   => $self->{'hcoverage'},
          -GROUP_ID    => $self->{'group_id'},
          -LEVEL_ID    => $self->{'level_id'});
@@ -559,6 +630,16 @@ sub _parse_cigar {
 }
 
 
+sub _parse_cigar {
+  my $self = shift;
+
+  if ($self->{'align_type'} eq 'ensembl') {
+    return $self->_parse_ensembl_cigar();
+  }
+   else {
+    throw("No parsing method implemented for " . $self->{'align_type'});
+  }
+}
 
 
 =head2 _parse_features
@@ -574,17 +655,28 @@ sub _parse_cigar {
 
 =cut
 
+sub _parse_features {
+  my ($self, $features) = @_;
+  if ($self->{'align_type'} eq 'ensembl') {
+    $self->_parse_ensembl_features($features);
+  } else {
+    throw("No _parse_features method implemented for " . $self->{'align_type'});
+  }
+}
+
 my $message_only_once = 1;
 
-sub _parse_features {
+sub _parse_ensembl_features {
   my ($self,$features ) = @_;
-
-  my $query_unit = $self->_query_unit();
-  my $hit_unit = $self->_hit_unit();
 
   if (ref($features) ne "ARRAY") {
     throw("features must be an array reference not a [".ref($features)."]");
+  } elsif (scalar(@$features) == 0) {
+    throw("features array must not be empty");
   }
+
+  my $query_unit = $self->_query_unit();
+  my $hit_unit = $self->_hit_unit();
 
   my $strand  = $features->[0]->strand;
 
@@ -604,7 +696,7 @@ sub _parse_features {
 
   my $hstrand     = $f[0]->hstrand;
   my $slice       = $f[0]->slice();
-  my $hslice      = $f[0]->hslice();
+  my $hslice       = $f[0]->hslice();
   my $name        = $slice ? $slice->name() : undef;
   my $hname       = $f[0]->hseqname;
   my $score       = $f[0]->score;
@@ -910,7 +1002,259 @@ sub _query_unit {
   throw( "Abstract method call!" );
 }
 
+=head2 _mdtag_alignment_length
 
+  Arg [1]    : None
+  Description: return the alignment length (including indels) based on the mdtag (mdz) string
+  Returntype : int
+  Exceptions : none
+  Caller     : internal
+  Status     : Stable
+
+=cut
+
+sub _mdtag_alignment_length {
+  my $self = shift;
+
+  if (! defined $self->{'_alignment_length'} && defined $self->cigar_string) {
+    my $mdz_string =  $self->cigar_string;
+    my $chunks = $self->_get_mdz_chunks($mdz_string);
+    my $alignment_length = 0;
+    $alignment_length = $self->_get_mdz_alignment_length($chunks);
+    $self->{'_alignment_length'} = $alignment_length;
+  }
+  return $self->{'_alignment_length'};
+}
+
+=head2 _get_mdz_chunks
+
+  Arg [1]    : mdtag string - MD Z String for mismatching positions. Regex : [0-9]+(([A-Z]|\^[A-Z]+)[0-9]+)* (Refer:  SAM/BAM specification)
+  Description: parses the mdtag string and group it according the type
+               eg: MD:Z:35^VIVALE31^GRPLIQPRRKKAYQLEHTFQGLLGKRSLFTE10 returns ['35', '^', 'VIVALE', '31', '^', 'GRPLIQPRRKKAYQLEHTFQGLLGKRSLFTE', '10']
+  Returntype : array of strings
+  Exceptions : none
+  Caller     : internal
+  Status     : Stable
+
+=cut
+sub _get_mdz_chunks {
+  my $self = shift;
+
+  my $mdz_string = shift;
+  my $alignment_length = 0;
+  my @chunks;
+    if ( $mdz_string =~ /^MD:Z:(.+)/ ){
+      my $mdtag = $1;
+
+      #if start to end is a number then all match return as it is
+      if($mdtag =~/^\d+$/){
+        return [$mdtag];
+      } else{
+        my @char_arr = split('',$mdtag);
+        # Set up for the first loop, this also will handle
+        # if the array is size one, as we'll have a character
+        # in the current_chunk to push on the pile at the end.
+        my $prev_type = $self->_get_mdz_chunk_type( $char_arr[0]);
+        my $current_chunk = $char_arr[0];
+        for(my $i = 1; $i <= $#char_arr; $i++) {
+          my $cur_type = $self->_get_mdz_chunk_type( $char_arr[$i] );
+          if($cur_type ne $prev_type) {
+            # We've found a new character class, push the
+            # current chunk on to the list
+            push @chunks, $current_chunk;
+            # Restart the current pile
+            $current_chunk = $char_arr[$i];
+           } else {
+             # Same character class, put it on the current pile
+             $current_chunk .= $char_arr[$i];
+           }
+           # Shift current type in to the prior slot
+           $prev_type = $cur_type;
+          }
+
+        # Post loop cleanup of the last piece
+        # This also handles an array of size one where
+        # we never entered the loop, that one element
+        # now gets pushed on the pile.
+        push @chunks, $current_chunk;
+      }
+    }
+  return \@chunks;
+}
+
+=head2 _get_mdz_alignment_length
+
+  Arg [1]    : array of strings
+  Description: calculate the alignment length from the given chunks
+  Returntype : array of strings
+  Exceptions : none
+  Caller     : internal
+  Status     : Stable
+
+=cut
+
+sub _get_mdz_alignment_length{
+  my $self = shift;
+
+  my $chunks = shift;
+  my $length = 0;
+   for(my $i=0; $i< scalar(@$chunks); $i++){
+     my $chunk = $chunks->[$i];
+     my $type = $self->_get_mdz_chunk_type($chunk);
+
+    if($type eq 'num'){
+      $length = $length + $chunk;
+    }elsif($type eq 'alpha'){
+      $length = $length + length($chunk);
+    }elsif($type eq 'del'){
+      #skip next chunk
+      $i++;
+    }
+
+  }
+  return $length;
+}
+
+=head2 _get_mdz_chunk_type
+
+  Arg [1]    : char
+  Description: get the chunk type
+  Returntype : string
+  Exceptions : none
+  Caller     : internal
+  Status     : Stable
+
+=cut
+
+sub _get_mdz_chunk_type{
+  my $self = shift;
+  my $char = shift;
+
+  my $type;
+  if($char eq '^'){
+    $type = "del";
+  } elsif($char =~ /\d+/){
+    $type = 'num';
+  } elsif($char =~ /\w+/){
+    $type = 'alpha';
+  }
+  return $type;
+}
+
+
+=head2 _mdz_alignment_string
+
+  Arg [1]    : input sequence
+  Arg [2]    : MD Z String for mismatching positions. Regex : [0-9]+(([A-Z]|\^[A-Z]+)[0-9]+)* (Refer:  SAM/BAM specification)
+               eg: MD:Z:96^RHKTDSFVGLMGKRALNS0V14
+  Example    : $pf->alignment_strings
+  Description: Allows to rebuild the alignment string of both the seq and hseq sequence
+  Returntype : array reference containing 2 strings
+               the first corresponds to seq
+               the second corresponds to hseq
+  Exceptions : none
+  Caller     : general
+  Status     : Stable
+
+=cut
+
+# Try to get the sequence from translation object
+# mdz_string from current object
+sub _mdz_alignment_string {
+  my ($self, $input_seq, $mdz_string) = @_;
+
+  my $chunks = $self->_get_mdz_chunks($mdz_string);
+
+  my $target_seq = "";
+  my $query_seq = "";
+
+   #Handle first chunk, which is always a num
+   my $first_chunk = $chunks->[0];
+   my $first_chunk_type = $self->_get_mdz_chunk_type($first_chunk);
+
+   my $offset = 0;
+   if($first_chunk_type eq 'num'){
+     if($first_chunk > 0){
+       $target_seq = substr($input_seq, $offset, $first_chunk);
+
+       #query and target are same at this point
+       $query_seq = $target_seq;
+       $offset = length($target_seq);
+     }
+   }else{
+     die "First chunk should always be a num...something wrong\n";
+   }
+
+  for(my $i=1; $i < scalar(@$chunks); $i++){
+
+    my $chunk = $chunks->[$i];
+    my $chunk_type = $self->_get_mdz_chunk_type($chunk);
+
+    if($chunk_type eq 'num'){
+      #if 0, what follows next is a INSERT
+      if($chunk == 0){
+        my $insert_chunk = $chunks->[++$i];
+        my $insert_chunk_type = $self->_get_mdz_chunk_type($insert_chunk);
+
+        #insert_chunk_type is always alpha
+        die if $insert_chunk_type eq "num";
+        if($insert_chunk_type eq 'del'){
+          $i--;
+          next;
+        }
+        $target_seq = $target_seq . substr($input_seq, $offset, length($insert_chunk));
+        $query_seq = $query_seq . $insert_chunk;
+
+        $offset = $offset + length($insert_chunk);
+
+      }else{
+       #if non-0, then it is a match
+        my $match_chunk = $chunks->[$i];
+        my $match_chunk_type = $self->_get_mdz_chunk_type($match_chunk);
+
+         #$match_chunk_type is always num
+        die if $match_chunk_type ne "num";
+
+        my $match_target_string = substr($input_seq, $offset, $match_chunk);
+
+        $target_seq = $target_seq . $match_target_string;
+        $query_seq = $query_seq . $match_target_string;
+
+        $offset = $offset + $match_chunk;
+      }
+
+    }elsif($chunk_type eq 'alpha'){
+        my $insert_chunk = $chunk;
+        my $insert_chunk_type = $self->_get_mdz_chunk_type($insert_chunk);
+        die if $insert_chunk_type ne "alpha";
+
+        $target_seq = $target_seq . substr($input_seq, $offset, length($insert_chunk));
+        $query_seq = $query_seq . $insert_chunk;
+
+        $offset = $offset + length($insert_chunk);
+
+    }elsif($chunk_type eq 'del'){
+      #get next chunk which contains the deleted sequence
+      my $del_chunk = $chunks->[++$i];
+      my $del_chunk_type = $self->_get_mdz_chunk_type($del_chunk);
+
+      #del_chunk_type is always alpha
+      die if $del_chunk_type ne 'alpha';
+
+      $target_seq = $target_seq . "-" x length($del_chunk);
+      $query_seq = $query_seq . $del_chunk;
+
+      #no change in offset
+      $offset = $offset;
+
+
+    }
+
+  }
+
+  return [$target_seq, $query_seq];
+
+}
 
 
 1;

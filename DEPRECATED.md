@@ -8,18 +8,70 @@ When a method is deprecated, a deprecation warning is thrown whenever the method
 The warning also contains instructions on replacing the deprecated method and when it will be removed.
 A year after deprecation (4 Ensembl releases), the method is removed from the API.
 
+### Removed in Ensembl Release 98 ###
+
+ - Bio::EnsEMBL::Utils::**SequenceOntologyMapper**::*new()*
+ - Bio::EnsEMBL::Utils::**SequenceOntologyMapper**::*to_accession()*
+ - Bio::EnsEMBL::Utils::**SequenceOntologyMapper**::*to_name()*
+ - Bio::EnsEMBL::Utils::**SequenceOntologyMapper**::*gene_biotype_to_name()*
+ - Bio::EnsEMBL::Utils::**SequenceOntologyMapper**::*transcript_biotype_to_name()*
+ - Bio::EnsEMBL::Utils::**SequenceOntologyMapper**::*_fetch_SO_name_by_accession()*
+
+### Removed in Ensembl Release 95 ###
+
+ - Bio::EnsEMBL::**AlignStrainSlice**::*alignFeature()*
+ - Bio::EnsEMBL::**AlignStrainSlice**::*get_all_Slices()*
+ - Bio::EnsEMBL::**AlignStrainSlice**::*length()*
+ - Bio::EnsEMBL::**AlignStrainSlice**::*mapper()*
+ - Bio::EnsEMBL::**AlignStrainSlice**::*new()*
+ - Bio::EnsEMBL::**AlignStrainSlice**::*Slice()*
+ - Bio::EnsEMBL::**AlignStrainSlice**::*strains()*
+ - Bio::EnsEMBL::**AlignStrainSlice**::*_get_indels()*
+ - Bio::EnsEMBL::**IndividualSlice**::*add_AlleleFeature()*
+ - Bio::EnsEMBL::**IndividualSlice**::*alleleFeatures()*
+ - Bio::EnsEMBL::**IndividualSlice**::*get_all_differences_IndividualSlice()*
+ - Bio::EnsEMBL::**IndividualSlice**::*get_all_differences_Slice()*
+ - Bio::EnsEMBL::**IndividualSlice**::*get_all_Exons()*
+ - Bio::EnsEMBL::**IndividualSlice**::*get_all_Genes()*
+ - Bio::EnsEMBL::**IndividualSlice**::*get_all_Transcripts()*
+ - Bio::EnsEMBL::**IndividualSlice**::*individual_name()*
+ - Bio::EnsEMBL::**IndividualSlice**::*map_to_Individual()*
+ - Bio::EnsEMBL::**IndividualSlice**::*mapper()*
+ - Bio::EnsEMBL::**IndividualSlice**::*new()*
+ - Bio::EnsEMBL::**IndividualSlice**::*seq()*
+ - Bio::EnsEMBL::**IndividualSlice**::*sub_Slice()*
+ - Bio::EnsEMBL::**IndividualSlice**::*subseq()*
+ - Bio::EnsEMBL::**IndividualSlice**::*_convert_difference()*
+ - Bio::EnsEMBL::**IndividualSliceFactory**::*adaptor()*
+ - Bio::EnsEMBL::**IndividualSliceFactory**::*get_all_IndividualSlice()*
+ - Bio::EnsEMBL::**IndividualSliceFactory**::*new()*
+ - Bio::EnsEMBL::**IndividualSliceFactory**::*_rearrange_Individuals_Alleles()*
+ - Bio::EnsEMBL::**Slice**::*calculate_pi()*
+ - Bio::EnsEMBL::**Slice**::*calculate_theta()*
+ - Bio::EnsEMBL::**Slice**::*get_all_IndividualSlice()*
+ - Bio::EnsEMBL::**Slice**::*get_by_Individual()*
+ - Bio::EnsEMBL::**Slice**::*get_all_somatic_VariationFeatures()*
+ - Bio::EnsEMBL::**Slice**::*get_all_somatic_VariationFeatures_by_source()*
+ - Bio::EnsEMBL::**Slice**::*get_all_somatic_VariationFeatures_with_phenotype()*
+ - Bio::EnsEMBL::**Slice**::*get_all_VariationFeatures_by_Population()*
+ - Bio::EnsEMBL::**Slice**::*get_by_strain()*
+ - Bio::EnsEMBL::**Slice**::*_calculate_a*
+
 ### Removed in Ensembl Release 91 ###
 
  - Bio::EnsEMBL::DBSQL::**BaseAdaptor**::*dump_data()*
  - Bio::EnsEMBL::DBSQL::**BaseAdaptor**::*get_dumped_data()*
 
+### Removed in Ensembl Release 90 ###
+
+ - Bio::EnsEMBL::**Gene**::*is_known()*
+ - Bio::EnsEMBL::**Gene**::*status()*
+ - Bio::EnsEMBL::**Transcript**::*is_known()*
+ - Bio::EnsEMBL::**Transcript**::*status()*
+
 ### Removed in Ensembl Release 88 ###
 
- - Bio::EnsEMBL::**Slice**::*get_all_VariationFeatures()*
- - Bio::EnsEMBL::**Slice**::*get_all_somatic_VariationFeatures()*
- - Bio::EnsEMBL::**Slice**::*get_all_somatic_VariationFeatures_by_source()*
  - Bio::EnsEMBL::**Slice**::*get_all_VariationFeatures_with_phenotype()*
- - Bio::EnsEMBL::**Slice**::*get_all_somatic_VariationFeatures_with_phenotype()*
  - Bio::EnsEMBL::**Slice**::*get_all_StructuralVariationFeatures()*
  - Bio::EnsEMBL::**Slice**::*get_all_somatic_StructuralVariationFeatures()*
  - Bio::EnsEMBL::**Slice**::*get_all_StructuralVariationFeatures_by_size_range()*
@@ -32,8 +84,6 @@ A year after deprecation (4 Ensembl releases), the method is removed from the AP
  - Bio::EnsEMBL::**Slice**::*get_all_PhenotypeFeatures()*
  - Bio::EnsEMBL::**Slice**::*get_all_CopyNumberVariantProbeFeatures()*
  - Bio::EnsEMBL::**Slice**::*get_all_genotyped_VariationFeatures()*
- - Bio::EnsEMBL::**Slice**::*get_all_VariationFeatures_by_Population()*
- - Bio::EnsEMBL::**Slice**::*get_by_strain()*
  - Bio::EnsEMBL::**StrainSlice**::*remove_indels()*
  - Bio::EnsEMBL::**StrainSlice**::*get_original_seq_region_position()*
  - Bio::EnsEMBL::**StrainSlice**::*get_all_VariationFeatures()*

@@ -1,7 +1,7 @@
 =head1 LICENSE
 
 Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
-Copyright [2016-2017] EMBL-European Bioinformatics Institute
+Copyright [2016-2019] EMBL-European Bioinformatics Institute
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -490,7 +490,6 @@ sub get_id_from_species_name {
    while(my @row2 = $sth->fetchrow_array()){
      print STDERR $row2[0]."\n";
    }
-   croak("Please try again :-)\n");
  }
  $sth->finish();
  
@@ -651,8 +650,8 @@ sub get_official_name {
 # i.e. move all HGNC from transcripts to Genes.
 #
 sub biomart_fix{
-  my ($self, $db_name, $type1, $type2, $verbose) = @_;
-  my $xref_dbc = $self->xref->dbc;
+  my ($self, $db_name, $type1, $type2, $verbose, $xref_dbc) = @_;
+  $xref_dbc = $self->xref->dbc unless defined $xref_dbc;
 
   print "$db_name is associated with both $type1 and $type2 object types\n" if(defined($verbose));
   print "$db_name moved to Gene level.\n" if(!defined($verbose));
@@ -702,7 +701,6 @@ sub biomart_fix{
 		  source.name = "$db_name";
 EOF
   my $result =  $xref_dbc->do($sql) ;
-#  print "\n$sql\n";
 
   if($db_name eq "GO" || $db_name eq 'goslim_goa'){
     $sql =(<<"EOF2");
@@ -793,6 +791,11 @@ sub biomart_testing{
     $sth->finish;  
   }
 
+  my $tester = XrefMapper::TestMappings->new($self);
+  if($tester->unlinked_entries){
+    croak "Problems found before source_defined_move\n";
+  }
+
   $self->update_process_status('biomart_test_finished');
   return;
 }
@@ -867,7 +870,6 @@ sub get_species_id_from_species_name{
     while(my @row2 = $sth->fetchrow_array()){
       print STDERR $row2[0]."\n";
     }
-    croak("Please try again :-)\n");
   }
   $sth->finish();
 
@@ -1031,14 +1033,13 @@ sub get_alt_allele_hashes{
 
 sub process_alt_alleles{
   my $self = shift;
+  my $dbc = shift;
+  $dbc = $self->xref->dbc unless defined $dbc;
 
   # ALL are on the Gene level now. This may change but for now it is okay.
   my ($alt_to_ref, $ref_to_alts) = $self->get_alt_allele_hashes();
 
   my $tester = XrefMapper::TestMappings->new($self);
-  if($tester->unlinked_entries){
-    croak "Problems found before process_alt_alleles\n";
-  }
   #
   # Move the xrefs on to the reference Gene.
   # NOTE: Igonore used as the xref might already be on this Gene already and we do not want it to crash
@@ -1086,9 +1087,9 @@ DELETE ox
 DEL
 $del_sql .= "'".join("', '",$self->get_gene_specific_list()) . "')";
 
-  my $move_sth = $self->xref->dbc->prepare($move_sql)  || croak "$move_sql cannot be prepared";
-  my $del_ix_sth = $self->xref->dbc->prepare($del_ix_sql)    || croak "$del_ix_sql cannot be prepared";
-  my $del_sth = $self->xref->dbc->prepare($del_sql)    || croak "$del_sql cannot be prepared";
+  my $move_sth = $dbc->prepare($move_sql)  || croak "$move_sql cannot be prepared";
+  my $del_ix_sth = $dbc->prepare($del_ix_sql)    || croak "$del_ix_sql cannot be prepared";
+  my $del_sth = $dbc->prepare($del_sql)    || croak "$del_sql cannot be prepared";
 
   my $move_count = 0;
   my $del_ix_count = 0;
@@ -1108,9 +1109,6 @@ $del_sql .= "'".join("', '",$self->get_gene_specific_list()) . "')";
   $del_ix_sth->finish;
 
   print "Number of rows:- moved = $move_count, identitys deleted = $del_ix_count, object_xrefs deleted = $del_ox_count\n";
-  if($tester->unlinked_entries){
-    croak "Problems found mid process_alt_alleles\n";
-  }
   #
   # Now we have all the data on the reference Gene we want to copy all the data
   # onto the alt alleles.
@@ -1217,11 +1215,29 @@ INI
 #
 sub get_gene_specific_list {
   my $self = shift;
+  my $dbi = shift;
 
-  my @list = qw(DBASS3 DBASS5 EntrezGene miRBase RFAM TRNASCAN_SE RNAMMER UniGene Uniprot_gn WikiGene MIM_GENE MIM_MORBID HGNC);
+  $dbi = $self->xref->dbc unless defined $dbi;
 
-  return @list;
+  my @list = qw(DBASS3 DBASS5 EntrezGene miRBase RFAM TRNASCAN_SE RNAMMER UniGene Uniprot_gn WikiGene MIM_GENE MIM_MORBID HGNC MGI ZFIN_ID FlyBaseName_gene RGD SGD_GENE VGNC wormbase_gseqname wormbase_locus Xenbase);
+
+  # Check the sources are used in the database considered
+  my (@used_list, $sql, $sth, $count);
+  foreach my $source (@list) {
+    $sql = "SELECT COUNT(*) FROM xref x, source s WHERE s.source_id = x.source_id AND s.name = '$source';";
+    $sth = $dbi->prepare($sql);
+    $sth->execute();
+    $sth->bind_columns(\$count);
+    $sth->fetch(); 
+    $sth->finish();
+    if ($count > 0) {
+      push @used_list, $source;
+    }
+  }
+
+  return @used_list;
 }
+
 
 
 #
@@ -1229,15 +1245,13 @@ sub get_gene_specific_list {
 #
 sub source_defined_move{
   my $self = shift;
+  my $dbi = shift;
 
+  foreach my $source ($self->get_gene_specific_list($dbi)){
+    $self->biomart_fix($source,"Translation","Gene", undef, undef, $dbi);
+    $self->biomart_fix($source,"Transcript","Gene", undef, undef, $dbi);
+  }
   my $tester = XrefMapper::TestMappings->new($self);
-  if($tester->unlinked_entries){
-    croak "Problems found before source_defined_move\n";
-  }
-  foreach my $source ($self->get_gene_specific_list()){
-    $self->biomart_fix($source,"Translation","Gene");
-    $self->biomart_fix($source,"Transcript","Gene");
-  }
   if($tester->unlinked_entries){
     croak "Problems found after source_defined_move\n";
   }

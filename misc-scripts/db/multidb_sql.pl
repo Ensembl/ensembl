@@ -1,6 +1,6 @@
 #!/usr/bin/env perl
 # Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
-# Copyright [2016-2017] EMBL-European Bioinformatics Institute
+# Copyright [2016-2019] EMBL-European Bioinformatics Institute
 # 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -35,8 +35,8 @@ my ( @hosts, $host, $user, $pass, $port, $expression, $dbpattern, $file, $result
 
 $user = 'ensro' ;  
 $pass = '' ;
-$port = 3306 ;  
-@hosts = qw ( ens-staging1 ens-staging2) ;
+$port = 4519;
+@hosts = qw ( mysql-ens-sta-1 ) ;
 
 GetOptions( "host|dbhost=s", \$host,
             "hosts|dbhosts=s", \@hosts,
@@ -87,7 +87,8 @@ foreach my $host ( @hosts ) {
     close FH;
   }
 
-  my $db = DBI->connect( $dsn, $user, $pass );
+  my $db = DBI->connect( $dsn, $user, $pass ) or
+      die "Unable to connect to database(s): $dsn, $user";
   my @dbnames = map {$_->[0] } @{ $db->selectall_arrayref( "show databases" ) };
   for my $dbname ( @dbnames) {   
     next if ( $dbname !~ /$dbpattern/ );

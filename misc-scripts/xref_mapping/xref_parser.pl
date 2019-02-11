@@ -1,6 +1,6 @@
 #!/usr/bin/env perl
 # Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
-# Copyright [2016-2017] EMBL-European Bioinformatics Institute
+# Copyright [2016-2019] EMBL-European Bioinformatics Institute
 # 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -23,6 +23,7 @@ use XrefParser::ProcessData;
 
 my ( $host,             $port,          $dbname,
      $user,             $pass,          $species,
+     $taxon,            $division,
      $sources,          $checkdownload, $create,
      $release,          $cleanup,       $drop_existing_db,
      $deletedownloaded, $dl_path,       $notsource,
@@ -43,6 +44,8 @@ GetOptions(
     'dbport|port=i'  => \$port,
     'dbname=s'       => \$dbname,
     'species=s'      => \$species,
+    'taxon=s'        => \$taxon,
+    'division=s'     => \$division,
     'source=s'       => \$sources,
     'download_dir=s' => \$dl_path,
     'checkdownload!' => \$checkdownload,    # Don't download if exists
@@ -69,7 +72,6 @@ if($ARGV[0]){
   exit(1);
 }
 
-my @species = split(/,/,join(',',$species)) if $species;
 my @sources  = split(/,/,join(',',$sources)) if $sources;
 my @notsource  = split(/,/,join(',',$notsource)) if $notsource;
 
@@ -100,7 +102,9 @@ $process->run({ host             => $host,
 		dbname           => $dbname,
 		user             => $user,
 		pass             => $pass,
-		speciesr         => \@species,
+		species          => $species,
+                taxon            => $taxon,
+                division         => $division,
 		sourcesr         => \@sources,
 		checkdownload    => $checkdownload,
 		create           => $create,
@@ -142,7 +146,7 @@ sub usage {
   print << "EOF";
 
   xref_parser.pl -user {user} -pass {password} -host {host} \\
-    -port {port} -dbname {database} -species {species1,species2} \\
+    -port {port} -dbname {database} -species {species} \\
     -source {source1,source2} -notsource {source1,source2} \\
     -create -setrelease -deletedownloaded -checkdownload -stats -verbose \\
     -cleanup -drop_db -download_path -unzip
@@ -157,14 +161,19 @@ sub usage {
 
   -dbname           Name of xref database to use/create.
 
-  -species          Which species to import. Multiple -species arguments
-                    and/or comma, separated lists of species are
-                    allowed. Species may be referred to by genus/species
+  -species          Which species to import. 
+                    Species may be referred to by genus/species
                     (e.g. homo_sapiens) or common aliases (e.g. human).
                     Specifying an unknown species will cause a list
-                    of valid species to be printed.  Not specifying a
-                    -species argument will result in all species being
-                    used.
+                    of valid species to be printed.
+
+  -taxon            Which taxon to import.
+                    Can be used as an alternative to species.
+
+  -division         Which division the species belongs to.
+                    This defines which sources will be parsed and does
+                    not necessarily imply taxonomic relationship
+                    (e.g. ciona intestinalis is a vertebrate in this context)
 
   -source           Which sources to import. Multiple -source arguments
                     and/or comma, separated lists of sources are

@@ -1,7 +1,7 @@
 =head1 LICENSE
 
 Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
-Copyright [2016-2017] EMBL-European Bioinformatics Institute
+Copyright [2016-2019] EMBL-European Bioinformatics Institute
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -140,7 +140,7 @@ package Bio::EnsEMBL::Mapper;
 use strict;
 use integer;
 
-use Bio::EnsEMBL::Utils::Exception qw(throw deprecate warning stack_trace_dump);
+use Bio::EnsEMBL::Utils::Exception qw(throw warning);
 use Bio::EnsEMBL::Mapper::Pair;
 use Bio::EnsEMBL::Mapper::IndelPair;
 use Bio::EnsEMBL::Mapper::Unit;
@@ -320,7 +320,12 @@ sub map_coordinates {
     my $self_coord   = $pair->{$from};
     my $target_coord = $pair->{$to};
 
-    
+    # if we haven't even reached the start, move on
+    if ( $self_coord->{'end'} < $orig_start ) { next;}
+
+    # if we have over run, break
+    if ( $self_coord->{'start'} > $end ) { last;}
+
     #
     # But not the case for haplotypes!! need to test for this case???
     # so removing this till a better solution is found
@@ -339,12 +344,6 @@ sub map_coordinates {
     } else {
       $last_target_coord = $target_coord->{'id'};
     }
-
-    # if we haven't even reached the start, move on
-    if ( $self_coord->{'end'} < $orig_start ) { next;}
-
-    # if we have over run, break
-    if ( $self_coord->{'start'} > $end ) { last;}
 
     if ( $start < $self_coord->{'start'} ) {
       # gap detected

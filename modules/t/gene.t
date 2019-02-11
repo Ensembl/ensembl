@@ -1,5 +1,5 @@
 # Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
-# Copyright [2016-2017] EMBL-European Bioinformatics Institute
+# Copyright [2016-2019] EMBL-European Bioinformatics Institute
 # 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -49,8 +49,8 @@ my $ontology = Bio::EnsEMBL::Test::MultiTestDB->new('ontology');
 my $odb = $ontology->get_DBAdaptor("ontology");
 note("Ontology database instatiated");
 ok($odb);
-my $go_adaptor = $odb->get_OntologyTermAdaptor();
-
+my $go_adaptor;
+warning { $go_adaptor = $odb->get_OntologyTermAdaptor(); };
 
 my $gene;
 my $ga = $db->get_GeneAdaptor();
@@ -74,10 +74,10 @@ $gene = $ga->fetch_by_stable_id("ENSG00000171456");
 debug("Gene->fetch_by_stable_id()");
 ok($gene);
 
-my @date_time = localtime($gene->created_date());
+my @date_time = gmtime($gene->created_date());
 ok($date_time[3] == 6 && $date_time[4] == 11 && $date_time[5] == 104);
 
-@date_time = localtime($gene->modified_date());
+@date_time = gmtime($gene->modified_date());
 ok($date_time[3] == 6 && $date_time[4] == 11 && $date_time[5] == 104);
 
 debug("Gene dbID: " . $gene->dbID());
@@ -97,6 +97,8 @@ ok($gene->external_db eq "Uniprot/SPTREMBL");
 
 debug("Gene display xref id: " . $gene->display_xref->dbID);
 ok($gene->display_xref->dbID() == 128324);
+
+is($gene->feature_so_acc, 'SO:0000704', 'Gene feature SO acc is correct (gene)');
 
 # test the getters and setters
 ok(test_getter_setter($gene, "external_name", "banana"));
@@ -140,6 +142,11 @@ my $translation2 = Bio::EnsEMBL::Translation->new();
 
 ok($gene);
 
+is($gene->version,         1, 'Default gene version = 1');
+is($transcript1->version,  1, 'Default transcript version = 1');
+is($ex1->version,          1, 'Default exon version = 1');
+is($translation1->version, 1, 'Default translation version = 1');
+
 $ex1->start(13586);
 $ex1->end(13735);
 $ex1->phase(0);
@@ -180,7 +187,8 @@ push(@feats, $fp);
 #
 # 2 Test DnaDnaAlignFeature::new(-features)
 #
-my $dnaf = Bio::EnsEMBL::DnaDnaAlignFeature->new(-features => \@feats);
+my $dnaf;
+warning { $dnaf = Bio::EnsEMBL::DnaDnaAlignFeature->new(-features => \@feats); };
 $dnaf->analysis($f_analysis);
 
 $ex1->add_supporting_features($dnaf);
@@ -225,7 +233,7 @@ push(@feats, $fp);
 #
 # 2 Test DnaDnaAlignFeature::new(-features)
 #
-$dnaf = Bio::EnsEMBL::DnaDnaAlignFeature->new(-features => \@feats);
+warning { $dnaf = Bio::EnsEMBL::DnaDnaAlignFeature->new(-features => \@feats); };
 $dnaf->analysis($f_analysis);
 
 $ex2->add_supporting_features($dnaf);
@@ -323,6 +331,9 @@ my $gene_out = $genes->[0];
 
 #make sure the stable_id was stored
 ok($gene_out->stable_id eq $stable_id);
+
+#make sure the version was stored
+ok($gene_out->version == 1);
 
 #make sure the description was stored
 ok($gene_out->description eq $desc);
@@ -462,6 +473,23 @@ my $new_gene = $ga->fetch_by_stable_id("ENSG00000171456");
 cmp_ok($new_gene->start(), '==', 30735607, 'Updated gene start');
 cmp_ok($new_gene->end(), '==', 30815178, 'Updated gene end');
 
+# test update_coords method when working on sub Slice
+# to avoid setting the start and end relative to a sub Slice
+# correct coords: 30735607 - 30815178
+# wrong coords: 1 - 79572
+my $update_slice = $db->get_SliceAdaptor()->fetch_by_gene_stable_id('ENSG00000171456');
+# Make sure that the slice of the gene is a sub Slice
+my $update_genes = $update_slice->get_all_Genes();
+# Update the coordinates of the gene in the database
+foreach my $gene_to_update (@$update_genes) {
+  $ga->update_coords($gene_to_update);
+}
+
+# Fetch the gene again to check the coordinates
+my $updated_gene = $ga->fetch_by_stable_id("ENSG00000171456");
+cmp_ok($updated_gene->start(), '==', 30735607, 'Updated gene start');
+cmp_ok($updated_gene->end(), '==', 30815178, 'Updated gene end');
+
 #
 # test GeneAdaptor::fetch_all_by_domain
 #
@@ -578,10 +606,13 @@ ok(scalar(@genes) == 4);
 debug("Wildcard test:" . $genes[0]->stable_id);
 ok($genes[0]->stable_id() eq 'ENSG00000101367');
 
-@genes = @{$ga->fetch_all_by_external_name('M_%')};
-debug("Wildcard test:" . $genes[0]->stable_id());
-debug(scalar @genes . " genes found");
-ok(scalar @genes == 2);
+SKIP: {
+  skip 'Wildcard behaviour different for SQLite', 1 if $db->dbc->driver() eq 'SQLite';
+  @genes = @{$ga->fetch_all_by_external_name('M_%')};
+  debug("Wildcard test:" . $genes[0]->stable_id());
+  debug(scalar @genes . " genes found");
+  ok(scalar @genes == 2);
+}
 
 # Test performance protection (very vague queries return no hits)
 debug("Testing vague query protection");
@@ -718,7 +749,7 @@ is(scalar(@{$gene->get_all_alt_alleles()}), 0, 'Checking we have no alleles retr
 # Gene remove test
 #
 
-$multi->save("core", "gene", "transcript", "translation", "protein_feature", "exon", "exon_transcript", "supporting_feature", "object_xref", "ontology_xref", "identity_xref", "dna_align_feature", "protein_align_feature", 'meta_coord');
+warning { $multi->save("core", "gene", "transcript", "translation", "protein_feature", "exon", "exon_transcript", "supporting_feature", "object_xref", "ontology_xref", "identity_xref", "dna_align_feature", "protein_align_feature", 'meta_coord'); };
 
 $gene = $ga->fetch_by_stable_id("ENSG00000171456");
 
@@ -923,13 +954,20 @@ $gene->dbID(undef);
 $gene->adaptor(undef);
 $ga->store($gene);
 
+$gene->version(undef);
+$gene->is_current(0);
+$gene->dbID(undef);
+$gene->adaptor(undef);
+$ga->store($gene);
+
 $gene = $ga->fetch_by_stable_id('ENSG00000355555');
 ok($gene->is_current == 1);
 
 @genes = @{$ga->fetch_all_versions_by_stable_id('ENSG00000355555')};
 foreach my $g (@genes) {
-  next unless ($g->version == 4);
-  ok($g->is_current == 0);
+  if (defined $g->version && $g->version == 4) {
+    ok($g->is_current == 0);
+  }
 }
 
 $gene->is_current(0);
@@ -942,6 +980,13 @@ $ga->update($gene);
 $gene = $ga->fetch_by_stable_id('ENSG00000355555');
 ok($gene->is_current == 1);
 
+my $null_versions = 0;
+foreach my $g (@genes) {
+  if (! defined $g->version) {
+    $null_versions++;
+  }
+}
+is ( $null_versions, 1, "Null/undef version stored and retrieved");
 
 $ga->remove_by_Slice($slice);
 $geneCount = $ga->count_all_by_Slice($slice);
@@ -951,6 +996,15 @@ $multi->restore;
 
 SKIP: {
   skip 'No registry support for SQLite yet', 1 if $db->dbc->driver() eq 'SQLite';
+  
+  # Time to get dirty: ENSCORESW-2595
+  # With specific compiled Perls, run under specific circumstances, disconnect_if_idle() gives rise
+  # to a seg fault. This is out of the scope of Perl, and not obviously the fault disconnect_if_idle()
+  # For the purposes of unit tests only, we can disable that behaviour by short-circuiting disconnect_if_idle()
+  # Unfortunately the problem manifests through TravisCI and the Perl they deploy, so we are forced to
+  # implement a workaround for the sake of testing harmony.
+  no warnings 'redefine';
+  local *Bio::EnsEMBL::DBSQL::DBConnection::disconnect_if_idle = sub { return 1};
 
   #test the get_species_and_object_type method from the Registry
   my $registry = 'Bio::EnsEMBL::Registry';

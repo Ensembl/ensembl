@@ -1,7 +1,7 @@
 =head1 LICENSE
 
 Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
-Copyright [2016-2017] EMBL-European Bioinformatics Institute
+Copyright [2016-2019] EMBL-European Bioinformatics Institute
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -66,13 +66,14 @@ use strict;
 use POSIX;
 use Bio::EnsEMBL::Feature;
 use Bio::EnsEMBL::Intron;
+use Bio::EnsEMBL::Biotype;
 use Bio::EnsEMBL::Utils::Argument qw(rearrange);
-use Bio::EnsEMBL::Utils::Exception qw(throw warning deprecate);
+use Bio::EnsEMBL::Utils::Exception qw(throw warning);
 use Bio::EnsEMBL::Utils::Scalar qw(assert_ref);
 
-use vars qw(@ISA);
-@ISA = qw(Bio::EnsEMBL::Feature);
+use parent qw(Bio::EnsEMBL::Feature);
 
+use constant SO_ACC => 'SO:0000704';
 
 =head2 new
 
@@ -107,8 +108,6 @@ use vars qw(@ISA);
         string - the genes description
   Arg [-BIOTYPE]:
         string - the biotype e.g. "protein_coding"
-  Arg [-STATUS]:
-        string - the gene status i.e. "KNOWN","NOVEL"
   Arg [-SOURCE]:
         string - the genes source, e.g. "ensembl"
   Arg [-IS_CURRENT]:
@@ -141,7 +140,7 @@ sub new {
     $transcripts,             $created_date,
     $modified_date,           $confidence,
     $biotype,                 $source,
-    $status,                  $is_current,
+    $is_current,
     $canonical_transcript_id, $canonical_transcript
     )
     = rearrange( [
@@ -152,7 +151,7 @@ sub new {
       'TRANSCRIPTS',             'CREATED_DATE',
       'MODIFIED_DATE',           'CONFIDENCE',
       'BIOTYPE',                 'SOURCE',
-      'STATUS',                  'IS_CURRENT',
+      'IS_CURRENT',
       'CANONICAL_TRANSCRIPT_ID', 'CANONICAL_TRANSCRIPT'
     ],
     @_
@@ -165,7 +164,6 @@ sub new {
   }
 
   $self->stable_id($stable_id);
-  $self->version($version);
   $self->{'created_date'}  = $created_date;
   $self->{'modified_date'} = $modified_date;
 
@@ -174,13 +172,15 @@ sub new {
   $self->external_status($external_status)
     if ( defined $external_status );
   $self->display_xref($display_xref) if ( defined $display_xref );
-  $self->biotype($type)              if ( defined $type );
-  $self->biotype($biotype)           if ( defined $biotype );
+
+  $self->{'biotype'} = $biotype || $type;
+
   $self->description($description);
-  $self->status($confidence);    # incase old naming is used.
-      # kept to ensure routine is backwards compatible.
-  $self->status($status);    # add new naming
   $self->source($source);
+
+  # Default version
+  if ( !defined($version) ) { $version = 1 }
+  $self->{'version'} = $version;
 
   # default to is_current
   $is_current = 1 unless (defined($is_current));
@@ -197,24 +197,6 @@ sub new {
   return $self;
 }
 
-
-=head2 is_known
-
-  Example    : print "Gene ".$gene->stable_id." is KNOWN\n" if $gene->is_known;
-  Description: DEPRECATED. Returns TRUE if this gene has a status of 'KNOWN'
-  Returntype : TRUE if known, FALSE otherwise
-  Exceptions : none
-  Caller     : general
-  Status     : Stable
-
-=cut
-
-
-sub is_known{
-  my $self = shift;
-  deprecate("is_known is deprecated and will be removed in e90. Please consider checking supporting features instead");
-  return ( $self->{'status'} eq "KNOWN" || $self->{'status'} eq "KNOWN_BY_PROJECTION" );
-}
 
 
 =head2 external_name
@@ -247,25 +229,6 @@ sub external_name {
   }
 }
 
-
-=head2 status
-
-  Arg [1]    : (optional) String - status to set
-  Example    : $gene->status('KNOWN');
-  Description: DEPRECATED. Getter/setter for attribute status
-  Returntype : String
-  Exceptions : none
-  Caller     : general
-  Status     : Medium Risk
-
-=cut
-
-sub status {
-   my $self = shift;
-  deprecate("status is deprecated and will be removed in e90. Please consider checking supporting features instead");
-  $self->{'status'} = shift if( @_ );
-  return $self->{'status'};
-}
 
 
 =head2 source
@@ -405,7 +368,7 @@ sub equals {
     return 0;
   }
 
-  if ( $self->biotype() ne $gene->biotype() ) {
+  if ( $self->get_Biotype->name ne $self->get_Biotype->name ) {
     return 0;
   }
 
@@ -606,11 +569,18 @@ sub add_DBEntry {
 
 =head2 get_all_DBEntries
 
-  Arg [1]    : (optional) String, external database name
+  Arg [1]    : (optional) String, external database name,
+               SQL wildcard characters (_ and %) can be used to
+               specify patterns.
 
-  Arg [2]    : (optional) String, external_db type
+  Arg [2]    : (optional) String, external_db type, can be one of
+               ('ARRAY','ALT_TRANS','ALT_GENE','MISC','LIT','PRIMARY_DB_SYNONYM','ENSEMBL'),
+               SQL wildcard characters (_ and %) can be used to
+               specify patterns.
 
-  Example    : @dbentries = @{ $gene->get_all_DBEntries() };
+  Example    : my @dbentries = @{ $gene->get_all_DBEntries() };
+               @dbentries = @{ $gene->get_all_DBEntries('Uniprot%') };
+               @dbentries = @{ $gene->get_all_DBEntries('%', 'ENSEMBL') };}
 
   Description: Retrieves DBEntries (xrefs) for this gene.  This does
                *not* include DBEntries that are associated with the
@@ -693,8 +663,14 @@ sub get_all_object_xrefs {
                SQL wildcard characters (_ and %) can be used to
                specify patterns.
 
+  Arg [2]    : (optional) String, external database type, can be one of
+               ('ARRAY','ALT_TRANS','ALT_GENE','MISC','LIT','PRIMARY_DB_SYNONYM','ENSEMBL'),
+               SQL wildcard characters (_ and %) can be used to
+               specify patterns.
+
   Example    : @dblinks = @{ $gene->get_all_DBLinks() };
                @dblinks = @{ $gene->get_all_DBLinks('Uniprot%') };
+               @dblinks = @{ $gene->get_all_DBLinks('%', 'ENSEMBL') };}
 
   Description: Retrieves *all* related DBEntries for this gene. This
                includes all DBEntries that are associated with the
@@ -921,27 +897,6 @@ sub _clear_homologues {
   my ($self) = @_;
   delete $self->{homologues};
 }
-
-
-=head2 biotype
-
-  Arg [1]    : (optional) String - the biotype to set
-  Example    : $gene->biotype("protein_coding");
-  Description: Getter/setter for the attribute biotype
-  Returntype : String
-  Exceptions : none
-  Caller     : general
-  Status     : Stable
-
-=cut
-
-sub biotype {
-  my $self = shift;
-
-  $self->{'biotype'} = shift if( @_ );
-  return ( $self->{'biotype'} || "protein_coding" );
-}
-
 
 =head2 add_Transcript
 
@@ -1188,12 +1143,6 @@ sub modified_date {
 
 sub transform {
   my $self = shift;
-
-  # catch for old style transform calls
-  if( !@_  || ( ref $_[0] && ($_[0]->isa( "Bio::EnsEMBL::Slice" ) or $_[0]->isa( "Bio::EnsEMBL::LRGSlice" )) )) {
-    deprecate('Calling transform without a coord system name is deprecated.');
-    return $self->_deprecated_transform(@_);
-  }
 
   my $new_gene = $self->SUPER::transform(@_);
 
@@ -1514,7 +1463,7 @@ sub summary_as_hash {
   my $self = shift;
   my $summary_ref = $self->SUPER::summary_as_hash;
   $summary_ref->{'description'} = $self->description;
-  $summary_ref->{'biotype'} = $self->biotype;
+  $summary_ref->{'biotype'} = $self->get_Biotype->name;
   $summary_ref->{'Name'} = $self->external_name if $self->external_name;
   $summary_ref->{'logic_name'} = $self->analysis->logic_name() if defined $self->analysis();
   $summary_ref->{'source'} = $self->source();
@@ -1553,37 +1502,98 @@ sub havana_gene {
   return $ott;
 }
 
+=head2 get_Biotype
 
-
-
-###########################
-# DEPRECATED METHODS FOLLOW
-###########################
-
-=head2 fetch_coded_for_regulatory_factors
-
-  Arg [1]    : none
-  Example    : $gene->fetch_coded_for_regulatory_factors()
-  Description: DEPRECATED: Fetches any regulatory_factors that are coded for by
-               this gene.
-  Returntype : Listref of Bio::Ensembl::RegulatoryFactor
-  Exceptions :
-  Caller     : ?
-  Status     : At Risk
-             : under development
+  Example    : my $biotype = $gene->get_Biotype;
+  Description: Returns the Biotype object of this gene.
+               When no biotype exists, defaults to 'protein_coding'.
+               When used to set to a biotype that does not exist in
+               the biotype table, a biotype object is created with
+               the provided argument as name and object_type gene.
+  Returntype : Bio::EnsEMBL::Biotype
+  Exceptions : none
 
 =cut
 
-sub fetch_coded_for_regulatory_factors {
+sub get_Biotype {
+  my ( $self ) = @_;
 
-  my ($self) = @_;
+  # have a biotype object, return it
+  if ( ref $self->{'biotype'} eq 'Bio::EnsEMBL::Biotype' ) {
+    return $self->{'biotype'};
+  }
 
-  my $rfa = $self->adaptor->db->get_RegulatoryFactorAdaptor();
+  # biotype is first set as a string retrieved from the gene table
+  # there is no biotype object in the gene object, retrieve it using the biotype string
+  # if no string, default to protein_coding. this is legacy behaviour and should probably be revisited
+  my $biotype_name = $self->{'biotype'} // 'protein_coding';
 
-  return $rfa->fetch_factors_coded_for_by_gene($self);
-
+  return $self->set_Biotype( $biotype_name );
 }
 
+=head2 set_Biotype
+
+  Arg [1]    : Arg [1] : String - the biotype name to set
+  Example    : my $biotype = $gene->set_Biotype('protin_coding');
+  Description: Sets the Biotype of this gene to the provided biotype name.
+               Returns the Biotype object of this gene.
+               When no biotype exists, defaults to 'protein_coding' name.
+               When setting a biotype that does not exist in
+               the biotype table, a biotype object is created with
+               the provided argument as name and object_type gene.
+  Returntype : Bio::EnsEMBL::Biotype
+  Exceptions : If no argument provided
+
+=cut
+
+sub set_Biotype {
+  my ( $self, $name ) = @_;
+
+  throw('No argument provided') unless defined $name;
+
+  # retrieve biotype object from the biotype adaptor
+  if( defined $self->adaptor() ) {
+    my $ba = $self->adaptor()->db()->get_BiotypeAdaptor();
+    $self->{'biotype'} = $ba->fetch_by_name_object_type( $name, 'gene' );
+  }
+  # if $self->adaptor is unavailable, create a new biotype object containing name and object_type only
+  else {
+    $self->{'biotype'} = Bio::EnsEMBL::Biotype->new(
+            -NAME          => $name,
+            -OBJECT_TYPE   => 'gene',
+    )
+  }
+
+  return $self->{'biotype'} ;
+}
+
+=head2 biotype
+  Arg [1]    : (optional) String - the biotype to set
+  Example    : $gene->biotype("protein_coding");
+  Description: Getter/setter for the attribute biotype name.
+               Recommended to use instead for a getter:
+                 $biotype = $gene->get_Biotype;
+               and for a setter:
+                 $biotype = $gene->set_Biotype("protein_coding");
+               The String biotype name can then be retrieved by
+               calling name on the Biotype object:
+                 $biotype_name = $biotype->name;
+  Returntype : String
+  Exceptions : none
+  Caller     : general
+  Status     : Stable
+=cut
+
+sub biotype {
+  my ( $self, $biotype_name) = @_;
+
+  # Setter? set_Biotype()
+  if (defined $biotype_name) {
+    return $self->set_Biotype($biotype_name)->name;
+  }
+
+  # Getter? get_Biotype()
+  return $self->get_Biotype->name;
+}
 
 1;
-

@@ -1,7 +1,7 @@
 =head1 LICENSE
 
 Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
-Copyright [2016-2017] EMBL-European Bioinformatics Institute
+Copyright [2016-2019] EMBL-European Bioinformatics Institute
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -948,6 +948,7 @@ sub _execute {
   my $sth_processor;
   if($use_hashrefs) {
     $sth_processor = sub {
+      return unless $sth->{Active};
       while( my $row = $sth->fetchrow_hashref() ) {
         my $v = $callback->($row, $sth);
         return $v if $has_return;
@@ -958,6 +959,7 @@ sub _execute {
   }
   else {
     $sth_processor = sub {
+      return unless $sth->{Active};
       while( my $row = $sth->fetchrow_arrayref() ) {
         my $v = $callback->($row, $sth);
         return $v if $has_return;

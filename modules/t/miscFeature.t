@@ -1,5 +1,5 @@
 # Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
-# Copyright [2016-2017] EMBL-European Bioinformatics Institute
+# Copyright [2016-2019] EMBL-European Bioinformatics Institute
 # 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -31,7 +31,7 @@ my $mf = Bio::EnsEMBL::MiscFeature->new(-START => 10,
                                         -END   => 100);
 
 ok($mf->start() == 10 && $mf->end() == 100);
-
+is($mf->feature_so_acc, 'SO:0001411', 'MiscFeature feature SO acc is correct (biological_region)');
 
 
 #

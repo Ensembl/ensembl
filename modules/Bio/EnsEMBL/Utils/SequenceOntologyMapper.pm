@@ -1,7 +1,7 @@
 =head1 LICENSE
 
 Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
-Copyright [2016-2017] EMBL-European Bioinformatics Institute
+Copyright [2016-2019] EMBL-European Bioinformatics Institute
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -28,7 +28,7 @@ SequenceOntologyMapper - Translates EnsEMBL objects into Sequence Ontology terms
 
 use Bio::EnsEMBL::Utils::SequenceOntologyMapper
 
-# get an Ensembl feature somehow in scalar $feature 
+# get an Ensembl feature somehow in scalar $feature
 ...
 ...
 
@@ -40,8 +40,13 @@ print $mapper->to_name($feature), "\n";
 
 =head1 DESCRIPTION
 
-Basic mapper from Ensembl feature or related objects to Sequence Ontology 
+Basic mapper from Ensembl feature or related objects to Sequence Ontology
 (http://www.sequenceontology.org) terms.
+
+Gene and Transcript objects contain a biotype() that will return a Biotype object.
+This object contains several methods, including so_acc() that provides the
+corresponding SO accession. It is thus recommended to use the Biotype object
+if dealing with Gene or Transcript objects.
 
 The interface allows to map to SO accessions and names.
 
@@ -55,67 +60,205 @@ use warnings;
 use Bio::EnsEMBL::Utils::Cache;
 use Bio::EnsEMBL::Utils::Exception;
 
-my %gene_so_mapping = 
+my %gene_so_mapping =
   (
-   'protein_coding' 		=> 'SO:0001217', # protein_coding_gene
-   'pseudogene' 			=> 'SO:0000336', # pseudogene
-   'processed_transcript' 	=> 'SO:0001503', # processed_transcript
-   'lincRNA' 				=> 'SO:0001641', # lincRNA_gene
-   'polymorphic_pseudogene'=> 'SO:0000336',		 # pseudogene
-   'Mt_tRNA' 				=> 'SO:0000088', # mt_gene
-   'IG_D_gene' 			=> 'SO:0000510',	 # D_gene
-   'snoRNA' 				=> 'SO:0001267', #snoRNA_gene
-   'misc_RNA' 				=> 'SO:0000356', #RNA
-   'miRNA' 				=> 'SO:0001265', #miRNA_gene
-   'rRNA' 					=> 'SO:0001637', #rRNA_gene
-   'snRNA'					=> 'SO:0001268', #snRNA_gene
-   'snRNA_pseudogene'		=> 'SO:0000336', # pseudogene
-   'tRNA_pseudogene'		=> 'SO:0000778', # pseudogenic_tRNA
-   'rRNA_pseudogene'		=> 'SO:0000777', # pseudogenic_rRNA
-   'TR_J_gene'				=> 'SO:0000470', # J_gene
-   'TR_V_gene'				=> 'SO:0000466', # V_gene
-   'TR_C_gene'				=> 'SO:0000478', # C_gene
-   'ncRNA'					=> 'SO:0001263', # ncRNA_gene
-   'tRNA'					=> 'SO:0001272', # tRNA_gene
-   'retrotransposed'		=> 'SO:0000569', # retrotransposed
-   ## heavily abbreviated
+# Protein coding gene biotype
+   'protein_coding'         => 'SO:0001217',
+   'IG_C_gene'              => 'SO:0001217',
+   'IG_D_gene'              => 'SO:0001217',
+   'IG_gene'                => 'SO:0001217',
+   'IG_J_gene'              => 'SO:0001217',
+   'IG_LV_gene'             => 'SO:0001217',
+   'IG_M_gene'              => 'SO:0001217',
+   'IG_V_gene'              => 'SO:0001217',
+   'IG_Z_gene'              => 'SO:0001217',
+   'mRNA'                   => 'SO:0001217',
+   'nontranslating_CDS'     => 'SO:0001217',
+   'polymorphic'            => 'SO:0001217',
+   'polymorphic_pseudogene' => 'SO:0001217',
+   'TR_C_gene'              => 'SO:0001217',
+   'TR_D_gene'              => 'SO:0001217',
+   'TR_gene'                => 'SO:0001217',
+   'TR_J_gene'              => 'SO:0001217',
+   'TR_V_gene'              => 'SO:0001217',
+
+# Pseudogene biotype
+   'IG_C_pseudogene'                    => 'SO:0000336',
+   'IG_D_pseudogene'                    => 'SO:0000336',
+   'IG_J_pseudogene'                    => 'SO:0000336',
+   'IG_pseudogene'                      => 'SO:0000336',
+   'IG_V_pseudogene'                    => 'SO:0000336',
+   'miRNA_pseudogene'                   => 'SO:0000336',
+   'misc_RNA_pseudogene'                => 'SO:0000336',
+   'Mt_tRNA_pseudogene'                 => 'SO:0000336',
+   'ncbi_pseudogene'                    => 'SO:0000336',
+   'ncRNA_pseudogene'                   => 'SO:0000336',
+   'processed_pseudogene'               => 'SO:0000336',
+   'pseudogene'                         => 'SO:0000336',
+   'rRNA_pseudogene'                    => 'SO:0000336',
+   'scRNA_pseudogene'                   => 'SO:0000336',
+   'snoRNA_pseudogene'                  => 'SO:0000336',
+   'snRNA_pseudogene'                   => 'SO:0000336',
+   'transcribed_processed_pseudogene'   => 'SO:0000336',
+   'transcribed_unitary_pseudogene'     => 'SO:0000336',
+   'transcribed_unprocessed_pseudogene' => 'SO:0000336',
+   'translated_processed_pseudogene'    => 'SO:0000336',
+   'translated_unprocessed_pseudogene'  => 'SO:0000336',
+   'tRNA_pseudogene'                    => 'SO:0000336',
+   'TR_J_pseudogene'                    => 'SO:0000336',
+   'TR_pseudogene'                      => 'SO:0000336',
+   'TR_V_pseudogene'                    => 'SO:0000336',
+   'unitary_pseudogene'                 => 'SO:0000336',
+   'unprocessed_pseudogene'             => 'SO:0000336',
+
+# ncRNA gene biotypes
+   '3prime_overlapping_ncrna'      => 'SO:0001263',
+   'ambiguous_orf'                 => 'SO:0001263',
+   'antisense'                     => 'SO:0001263',
+   'antisense_RNA'                 => 'SO:0001263',
+   'antitoxin'                     => 'SO:0001263',
+   'bidirectional_promoter_lncrna' => 'SO:0001263',
+   'class_II_RNA'                  => 'SO:0001263',
+   'class_I_RNA'                   => 'SO:0001263',
+   'CRISPR'                        => 'SO:0001263',
+   'guide_RNA'                     => 'SO:0001263',
+   'known_ncrna'                   => 'SO:0001263',
+   'lincRNA'                       => 'SO:0001263',
+   'lncRNA'                        => 'SO:0001263',
+   'macro_lncRNA'                  => 'SO:0001263',
+   'miRNA'                         => 'SO:0001263',
+   'misc_RNA'                      => 'SO:0001263',
+   'Mt_rRNA'                       => 'SO:0001263',
+   'Mt_tRNA'                       => 'SO:0001263',
+   'ncRNA'                         => 'SO:0001263',
+   'ncrna_host'                    => 'SO:0001263',
+   'non_coding'                    => 'SO:0001263',
+   'piRNA'                         => 'SO:0001263',
+   'pre_miRNA'                     => 'SO:0001263',
+   'processed_transcript'          => 'SO:0001263',
+   'retained_intron'               => 'SO:0001263',
+   'ribozyme'                      => 'SO:0001263',
+   'RNase_MRP_RNA'                 => 'SO:0001263',
+   'RNase_P_RNA'                   => 'SO:0001263',
+   'rRNA'                          => 'SO:0001263',
+   'scaRNA'                        => 'SO:0001263',
+   'scRNA'                         => 'SO:0001263',
+   'sense_intronic'                => 'SO:0001263',
+   'sense_overlapping'             => 'SO:0001263',
+   'snlRNA'                        => 'SO:0001263',
+   'snoRNA'                        => 'SO:0001263',
+   'snRNA'                         => 'SO:0001263',
+   'sRNA'                          => 'SO:0001263',
+   'SRP_RNA'                       => 'SO:0001263',
+   'telomerase_RNA'                => 'SO:0001263',
+   'tmRNA'                         => 'SO:0001263',
+   'tRNA'                          => 'SO:0001263',
+   'vaultRNA'                      => 'SO:0001263',
+   'Y_RNA'                         => 'SO:0001263'
   );
 
-my %transcript_so_mapping = 
+my %transcript_so_mapping =
   (
-   'processed_transcript' 				=> 'SO:0001503', # processed_transcript
-   'nonsense_mediated_decay' 			=> 'SO:0001621', # NMD_transcript_variant
-   'retained_intron' 					=> 'SO:0000681', # aberrant_processed_transcript
-   'transcribed_unprocessed_pseudogene'=> 'SO:0000516', # pseudogenic_transcript
-   'processed_pseudogene' 				=> 'SO:0000043', # processed_pseudogene
-   'unprocessed_pseudogene' 			=> 'SO:0000336', # pseudogene
-   'unitary_pseudogene'				=> 'SO:0000336',        # pseudogene
-   'pseudogene' 						=> 'SO:0000336', # pseudogene
-   'transcribed_processed_pseudogene'	=> 'SO:0000043',                # processed_pseudogene
-   'retrotransposed' 					=> 'SO:0000569', #retrotransposed
-   'ncrna_host' 						=> 'SO:0000483', # nc_primary_transcript
-   'polymorphic_pseudogene'			=> 'SO:0000336',        # pseudogene
-   'lincRNA'							=> 'SO:0001463', # lincRNA
-   'ncrna_host'						=> 'SO:0000483', # nc_primary_transcript
-   '3prime_overlapping_ncrna'			=> 'SO:0000483',         # nc_primary_transcript
-   'TR_V_gene'							=> 'SO:0000466', # V_gene_segment
-   'TR_V_pseudogene'					=> 'SO:0000336', # pseudogene
-   'TR_J_gene'							=> 'SO:0000470',
-   'IG_C_gene'							=> 'SO:0000478',
-   'IG_C_pseudogene'					=> 'SO:0000336', # pseudogene
-   'TR_C_gene'							=> 'SO:0000478', # C_gene_segment
-   'IG_J_pseudogene'					=> 'SO:0000336', # pseudogene
-   'miRNA'								=> 'SO:0000276', #miRNA
-   'protein_coding'                                     => 'SO:0000234', #mRNA
-   'miRNA_pseudogene'					=> 'SO:0000336', # pseudogene
-   'disrupted_domain' 					=> 'SO:0000681', # aberrant_processed_transcript
-   'rRNA' 								=> 'SO:0000252', #rRNA
-   'rRNA_pseudogene'					=> 'SO:0000777', # pseudogenic_rRNA
-   'scRNA_pseudogene'					=> 'SO:0000336', # pseudogene
-   'snoRNA' 							=> 'SO:0000275', # snoRNA
-   'snoRNA_pseudogene'					=> 'SO:0000336', # pseudogene
-   'snRNA'								=> 'SO:0000274', # snRNA
-   'snRNA_pseudogene'					=> 'SO:0000336',  # pseudogene
+
+# mRNA biotypes
+   'protein_coding'          => 'SO:0000234',
+   'mRNA'                    => 'SO:0000234',
+   'nonsense_mediated_decay' => 'SO:0000234',
+   'nontranslating_CDS'      => 'SO:0000234',
+   'non_stop_decay'          => 'SO:0000234',
+   'polymorphic_pseudogene'  => 'SO:0000234',
+
+# IG biotypes (SO:3000000 gene_segment)
+   'IG_C_gene'  => 'SO:0000478', # C_gene_segment
+   'TR_C_gene'  => 'SO:0000478', # C_gene_segment
+   'IG_D_gene'  => 'SO:0000458', # D_gene_segment
+   'TR_D_gene'  => 'SO:0000458', # D_gene_segment
+   'IG_gene'    => 'SO:3000000', # gene_segment
+   'TR_gene'    => 'SO:3000000', # gene_segment
+   'IG_J_gene'  => 'SO:0000470', # J_gene_segment
+   'TR_J_gene'  => 'SO:0000470', # J_gene_segment
+   'IG_LV_gene' => 'SO:3000000', # gene_segment
+   'IG_M_gene'  => 'SO:3000000', # gene_segment
+   'IG_V_gene'  => 'SO:0000466', # V_gene_segment
+   'TR_V_gene'  => 'SO:0000466', # V_gene_segment
+   'IG_Z_gene'  => 'SO:3000000', # gene_segment
+
+# Pseudogenic_transcript biotypes
+   'pseudogene'                         => 'SO:0000516',
+   'disrupted_domain'                   => 'SO:0000516',
+   'IG_C_pseudogene'                    => 'SO:0000516',
+   'IG_D_pseudogene'                    => 'SO:0000516',
+   'IG_J_pseudogene'                    => 'SO:0000516',
+   'IG_pseudogene'                      => 'SO:0000516',
+   'IG_V_pseudogene'                    => 'SO:0000516',
+   'miRNA_pseudogene'                   => 'SO:0000516',
+   'misc_RNA_pseudogene'                => 'SO:0000516',
+   'Mt_tRNA_pseudogene'                 => 'SO:0000516',
+   'ncbi_pseudogene'                    => 'SO:0000516',
+   'ncRNA_pseudogene'                   => 'SO:0000516',
+   'processed_pseudogene'               => 'SO:0000516',
+   'rRNA_pseudogene'                    => 'SO:0000516',
+   'scRNA_pseudogene'                   => 'SO:0000516',
+   'snoRNA_pseudogene'                  => 'SO:0000516',
+   'snRNA_pseudogene'                   => 'SO:0000516',
+   'transcribed_processed_pseudogene'   => 'SO:0000516',
+   'transcribed_unitary_pseudogene'     => 'SO:0000516',
+   'transcribed_unprocessed_pseudogene' => 'SO:0000516',
+   'translated_processed_pseudogene'    => 'SO:0000516',
+   'translated_unprocessed_pseudogene'  => 'SO:0000516',
+   'tRNA_pseudogene'                    => 'SO:0000516',
+   'TR_J_pseudogene'                    => 'SO:0000516',
+   'TR_pseudogene'                      => 'SO:0000516',
+   'TR_V_pseudogene'                    => 'SO:0000516',
+   'unitary_pseudogene'                 => 'SO:0000516',
+   'unprocessed_pseudogene'             => 'SO:0000516',
+
+# ncRNA transcript biotypes
+## Long non coding RNAs
+   '3prime_overlapping_ncrna'      => 'SO:0001877',
+   'ambiguous_orf'                 => 'SO:0001877',
+   'antisense'                     => 'SO:0001877',
+   'antisense_RNA'                 => 'SO:0001877',
+   'antitoxin'                     => 'SO:0001877',
+   'bidirectional_promoter_lncrna' => 'SO:0001877',
+   'lincRNA'                       => 'SO:0001877',
+   'macro_lncRNA'                  => 'SO:0001877',
+   'ncrna_host'                    => 'SO:0001877',
+   'non_coding'                    => 'SO:0001877',
+   'processed_transcript'          => 'SO:0001877',
+   'retained_intron'               => 'SO:0001877',
+   'ribozyme'                      => 'SO:0001877',
+   'sense_intronic'                => 'SO:0001877',
+   'sense_overlapping'             => 'SO:0001877',
+
+## Short non coding RNAs
+   'class_II_RNA'   => 'SO:0000989', # class_II_RNA
+   'class_I_RNA'    => 'SO:0000990', # class_I_RNA
+   'guide_RNA'      => 'SO:0000602', # guide_RNA
+   'miRNA'          => 'SO:0000276', # miRNA
+   'known_ncRNA'    => 'SO:0000655', # ncRNA
+   'misc_RNA'       => 'SO:0000655', # ncRNA
+   'ncRNA'          => 'SO:0000655', # ncRNA
+   'piRNA'          => 'SO:0001035', # piRNA
+   'pre_miRNA'      => 'SO:0001244', # pre_miRNA
+   'RNase_MRP_RNA'  => 'SO:0000385', # RNase_MRP_RNA
+   'RNase_P_RNA'    => 'SO:0000386', # RNase_P_RNA
+   'rRNA'           => 'SO:0000252', # rRNA
+   'Mt_rRNA'        => 'SO:0000252', # rRNA
+   'scaRNA'         => 'SO:0000013', # scRNA
+   'scRNA'          => 'SO:0000013', # scRNA
+   'snoRNA'         => 'SO:0000275', # snoRNA
+   'sRNA'           => 'SO:0000274', # snRNA
+   'snlRNA'         => 'SO:0000274', # snRNA
+   'snRNA'          => 'SO:0000274', # snRNA
+   'SRP_RNA'        => 'SO:0000590', # SRP_RNA
+   'telomerase_RNA' => 'SO:0000390', # telomerase_RNA
+   'tmRNA'          => 'SO:0000584', # tmRNA
+   'tRNA'           => 'SO:0000253', # tRNA
+   'Mt_tRNA'        => 'SO:0000253', # tRNA
+   'vaultRNA'       => 'SO:0002040', # vaultRNA_primary_transcript
+   'vault_RNA'      => 'SO:0002040', # vaultRNA_primary_transcript
+   'Y_RNA'          => 'SO:0000405', # Y_RNA
   );
 
 my %utr_so_mapping =
@@ -133,28 +276,28 @@ my %region_so_mapping =
    'contig'      => 'SO:0000149'  # contig
   );
 
-my %feature_so_mapping = 
+my %feature_so_mapping =
   (
-   'Bio::EnsEMBL::Feature' => 'SO:0000001', # region
-   'Bio::EnsEMBL::Gene' => 'SO:0000704',    # gene
-   'Bio::EnsEMBL::Transcript' => 'SO:0000673', # transcript
-   'Bio::EnsEMBL::PredictionTranscript' => 'SO:0000673', # transcript
-   'Bio::EnsEMBL::Exon' => 'SO:0000147',       # exon
-   'Bio::EnsEMBL::PredictionExon' => 'SO:0000147',       # exon
-   'Bio::EnsEMBL::UTR'  => 'SO:0000203',       # UTR
-   'Bio::EnsEMBL::ExonTranscript' => 'SO:0000147', # Exon
-   'Bio::EnsEMBL::CDS'   => 'SO:0000316',      # CDS
-   'Bio::EnsEMBL::Slice' => 'SO:0000001',      # region
-   'Bio::EnsEMBL::SimpleFeature' => 'SO:0001411', # biological_region
-   'Bio::EnsEMBL::MiscFeature' => 'SO:0001411',	  # biological_region
-   'Bio::EnsEMBL::RepeatFeature' => 'SO:0000657', # repeat region
-   'Bio::EnsEMBL::Variation::VariationFeature' => 'SO:0001060', # sequence variant
+   'Bio::EnsEMBL::Feature'                               => 'SO:0000001', # region
+   'Bio::EnsEMBL::Gene'                                  => 'SO:0000704',    # gene
+   'Bio::EnsEMBL::Transcript'                            => 'SO:0000673', # transcript
+   'Bio::EnsEMBL::PredictionTranscript'                  => 'SO:0000673', # transcript
+   'Bio::EnsEMBL::Exon'                                  => 'SO:0000147',       # exon
+   'Bio::EnsEMBL::PredictionExon'                        => 'SO:0000147',       # exon
+   'Bio::EnsEMBL::UTR'                                   => 'SO:0000203',       # UTR
+   'Bio::EnsEMBL::ExonTranscript'                        => 'SO:0000147', # Exon
+   'Bio::EnsEMBL::CDS'                                   => 'SO:0000316',      # CDS
+   'Bio::EnsEMBL::Slice'                                 => 'SO:0000001',      # region
+   'Bio::EnsEMBL::SimpleFeature'                         => 'SO:0001411', # biological_region
+   'Bio::EnsEMBL::MiscFeature'                           => 'SO:0001411',    # biological_region
+   'Bio::EnsEMBL::RepeatFeature'                         => 'SO:0000657', # repeat region
+   'Bio::EnsEMBL::Variation::VariationFeature'           => 'SO:0001060', # sequence variant
    'Bio::EnsEMBL::Variation::StructuralVariationFeature' => 'SO:0001537', # structural variant
-   'Bio::EnsEMBL::Compara::ConstrainedElement' => 'SO:0001009', #DNA_constraint_sequence ????
-   'Bio::EnsEMBL::Funcgen::RegulatoryFeature' => 'SO:0005836', # regulatory_region
-   'Bio::EnsEMBL::DnaDnaAlignFeature' => 'SO:0000347', # nucleotide_match
-   'Bio::EnsEMBL::DnaPepAlignFeature' => 'SO:0000349', # protein_match
-   'Bio::EnsEMBL::KaryotypeBand' => 'SO:0000341', # chromosome_band
+   'Bio::EnsEMBL::Compara::ConstrainedElement'           => 'SO:0001009', #DNA_constraint_sequence ????
+   'Bio::EnsEMBL::Funcgen::RegulatoryFeature'            => 'SO:0005836', # regulatory_region
+   'Bio::EnsEMBL::DnaDnaAlignFeature'                    => 'SO:0000347', # nucleotide_match
+   'Bio::EnsEMBL::DnaPepAlignFeature'                    => 'SO:0000349', # protein_match
+   'Bio::EnsEMBL::KaryotypeBand'                         => 'SO:0000341', # chromosome_band
   );
 
 
@@ -162,6 +305,7 @@ my %feature_so_mapping =
 
 =head2 new
 
+    Deprecated. Please use $feature->feature_so_acc and $gene->get_Biotype instead.
     Constructor
     Arg [1]    : OntologyTermAdaptor from the EnsEMBL registry
     Returntype : Bio::EnsEMBL::SequenceOntologyMapper
@@ -171,10 +315,13 @@ my %feature_so_mapping =
 
 sub new {
   my ($class, $oa) = @_;
+
+  deprecate("new is deprecated and will be removed in e98.");
+
   defined $oa or throw "No ontology term adaptor specified";
 
-  my $self = 
-    { 	
+  my $self =
+    {
      ontology_adaptor => $oa,
      feat_to_acc => \%feature_so_mapping,
      gene_to_acc => \%gene_so_mapping,
@@ -182,8 +329,8 @@ sub new {
      region_to_acc => \%region_so_mapping,
      tran_to_acc => \%transcript_so_mapping
     };
- 
-  $self->{ontology_adaptor}->isa('Bio::EnsEMBL::DBSQL::OntologyTermAdaptor') or 
+
+  $self->{ontology_adaptor}->isa('Bio::EnsEMBL::DBSQL::OntologyTermAdaptor') or
     throw "Argument is not an OntologyTermAdaptor object";
 
   tie my %cache, 'Bio::EnsEMBL::Utils::Cache', 100;
@@ -195,6 +342,7 @@ sub new {
 
 =head2 to_accession
 
+    Deprecated. Please use $feature->feature_so_acc and $gene->get_Biotype->so_acc instead.
     Arg [0]    : Instance of Bio::EnsEMBL::Feature, subclass or
                  related Storable
     Description: translates a Feature type into an SO term accession
@@ -207,17 +355,19 @@ sub to_accession {
   my $self = shift;
   my $feature = shift;
 
+  deprecate("to_accession is deprecated and will be removed in e98.");
+
   my $so_accession;
   my $ref = ref($feature);
-  
-  my ($gene_to_acc, $tran_to_acc, $feat_to_acc, $utr_to_acc, $region_to_acc) = 
+
+  my ($gene_to_acc, $tran_to_acc, $feat_to_acc, $utr_to_acc, $region_to_acc) =
     ($self->{gene_to_acc}, $self->{tran_to_acc}, $self->{feat_to_acc}, $self->{utr_to_acc}, $self->{region_to_acc});
-  
-  if ($feature->isa('Bio::EnsEMBL::Gene') and 
+
+  if ($feature->isa('Bio::EnsEMBL::Gene') and
       exists $gene_to_acc->{$feature->biotype}) {
     $so_accession = $gene_to_acc->{$feature->biotype};
-  } elsif ($feature->isa('Bio::EnsEMBL::Transcript') and 
-	   exists $tran_to_acc->{$feature->biotype}) {
+  } elsif ($feature->isa('Bio::EnsEMBL::Transcript') and
+     exists $tran_to_acc->{$feature->biotype}) {
     $so_accession = $tran_to_acc->{$feature->biotype};
   } elsif ($feature->isa('Bio::EnsEMBL::UTR') and
            exists $utr_to_acc->{$feature->type}) {
@@ -236,12 +386,16 @@ sub to_accession {
 
   throw sprintf "%s: mapping to sequence ontology accession not found", $ref
     unless $so_accession;
-    
+
   return $so_accession;
 }
 
 =head2 to_name
 
+    Deprecated. Please use $feature->feature_so_acc and $gene->get_Biotype->so_acc instead to get the SO accession number.
+                Then initialize an Ontology adaptor to fetch the SO term name for that acc, as in the following example:
+                my $oa = Bio::EnsEMBL::Registry->get_adaptor('multi','ontology','OntologyTerm');
+                my $feat_so_name = $oa->fetch_by_accession($feature->feature_so_acc)->name;
     Arg [0]    : Instance of Bio::EnsEMBL::Feature, subclass or
                  related Storable
     Description: translates a Feature type into an SO term name
@@ -253,6 +407,8 @@ sub to_accession {
 sub to_name {
   my $self = shift;
   my $feature = shift;
+
+  deprecate("to_name is deprecated and will be removed in e98.");
 
   my $so_name;
   my $so_accession = eval {
@@ -273,6 +429,10 @@ sub to_name {
 
 =head2 gene_biotype_to_name
 
+    Deprecated. Please use $gene->get_Biotype->so_acc instead to get the SO accession number.
+                Then initialize an Ontology adaptor to fetch the SO term name for that acc, as in the following example:
+                my $oa = Bio::EnsEMBL::Registry->get_adaptor('multi','ontology','OntologyTerm');
+                my $biotype_so_name = $oa->fetch_by_accession($gene->get_Biotype->so_acc)->name;
     Arg [0]    : Biotype string
     Description: translates a biotype into an SO term name
     Returntype : String; the SO term name
@@ -284,6 +444,8 @@ sub gene_biotype_to_name {
   my $self = shift;
   my $biotype = shift;
 
+  deprecate("gene_biotype_to_name is deprecated and will be removed in e98.");
+
   if (exists $gene_so_mapping{$biotype}) {
     return $gene_so_mapping{$biotype};
   } else {
@@ -293,6 +455,10 @@ sub gene_biotype_to_name {
 
 =head2 transcript_biotype_to_name
 
+    Deprecated. Please use $transcript->get_Biotype->so_acc instead to get the SO accession number.
+                Then initialize an Ontology adaptor to fetch the SO term name for that acc, as in the following example:
+                my $oa = Bio::EnsEMBL::Registry->get_adaptor('multi','ontology','OntologyTerm');
+                my $biotype_so_name = $oa->fetch_by_accession($transcript->get_Biotype->so_acc)->name;
     Arg [0]    : Biotype string
     Description: translates a biotype into an SO term name
     Returntype : String; the SO term name
@@ -303,6 +469,8 @@ sub gene_biotype_to_name {
 sub transcript_biotype_to_name {
   my $self = shift;
   my $biotype = shift;
+
+  deprecate("transcript_biotype_to_name is deprecated and will be removed in e98.");
 
   if (exists $transcript_so_mapping{$biotype}) {
     return $transcript_so_mapping{$biotype};
@@ -316,6 +484,7 @@ sub transcript_biotype_to_name {
 
 =head2 _fetch_SO_name_by_accession
 
+  Deprecated. Please instantiate an ontology_adaptor and use $oa->fetch_by_accession($so_accession) directly
   Arg [0]    : String; Sequence Ontology accession
   Description: Returns the name linked to the given accession. These are
                internally cached for speed.
@@ -326,6 +495,9 @@ sub transcript_biotype_to_name {
 
 sub _fetch_SO_name_by_accession {
   my ($self, $so_accession) = @_;
+
+  deprecate("_fetch_SO_name_by_accession is deprecated and will be removed in e98.");
+
   my $so_name = $self->{cache}->{$so_accession};
 
   if(!$so_name) {

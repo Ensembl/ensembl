@@ -1,5 +1,5 @@
 # Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
-# Copyright [2016-2017] EMBL-European Bioinformatics Institute
+# Copyright [2016-2019] EMBL-European Bioinformatics Institute
 # 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -17,7 +17,7 @@ use strict;
 use warnings;
 
 use Test::More;
-use Test::Warnings;
+use Test::Warnings qw(warning);
 
 use Bio::EnsEMBL::Test::MultiTestDB;
 use Bio::EnsEMBL::Test::TestUtils;
@@ -33,7 +33,8 @@ ok( $multi );
 
 my $db = $multi->get_DBAdaptor('core' );
 my $ontology = Bio::EnsEMBL::Test::MultiTestDB->new('ontology');
-my $odb = $ontology->get_DBAdaptor("ontology");
+my $odb;
+warning { $odb = $ontology->get_DBAdaptor("ontology"); };
 
 my $sa = $db->get_SliceAdaptor();
 
@@ -135,10 +136,10 @@ ok( test_getter_setter( $tr, "created_date", time() ));
 ok( test_getter_setter( $tr, "modified_date", time() ));
 
 
-my @date_time = localtime( $tr->created_date());
+my @date_time = gmtime( $tr->created_date());
 ok( $date_time[3] == 6 && $date_time[4] == 11 && $date_time[5] == 104 );
 
-@date_time = localtime( $tr->modified_date());
+@date_time = gmtime( $tr->modified_date());
 ok( $date_time[3] == 6 && $date_time[4] == 11 && $date_time[5] == 104 );
 
 
@@ -152,12 +153,16 @@ is ( substr( $tr->spliced_seq(), 0, 10 ), "ACGAGACGAA", 'Start of spliced seq is
 is ( substr( $tr->spliced_seq(1), 0, 10 ), "acgagacgaa", 'Spliced seq with utr lower casing is correct');
 is ( length($tr->spliced_seq()), length($tr->spliced_seq(1)), "Spliced seq with or without utr lower casing has the same length");
 is ( $tr->spliced_seq(), uc($tr->spliced_seq(1)), "Spliced seq is identical to upper case utr masked spliced seq");
+is ( substr($tr->spliced_seq(1), 61, 6), 'aagATG', 'Start mask boundary on forward stand transcript is correct' );
+is ( substr($tr->spliced_seq(1), 865, 6), 'TATtaa', 'End mask boundary on forward stand transcript is correct' );
 
 is ( substr( $tr->translateable_seq(),0,10 ), "ATGGCAGTGA", 'Start of translateable sequence is correct' );
 
 is( $tr->coding_region_start(), 85834, 'Correct coding region start' );
 
 is( $tr->coding_region_end(), 108631, 'Correct coding region end' );
+
+is( $tr->feature_so_acc, 'SO:0000673', 'Transcript feature SO acc is correct (transcript)' );
 
 my @pepcoords = $tr->pep2genomic( 10, 20 );
 is( $pepcoords[0]->start(), 85861, 'Correct translation start' );
@@ -239,6 +244,18 @@ is ( $up_tr->display_xref->dbID(), 614, 'Fetched the correct display xref id');
 
 $multi->restore('core', 'transcript', 'meta_coord');
 
+#
+# Test spliced_seq on a reverse strand transcript
+#
+
+$tr = $ta->fetch_by_stable_id( "ENST00000246229" );
+
+is ( substr( $tr->spliced_seq(), 0, 10 ), "ATGGCCCGAC", 'Start of spliced seq is correct, rev strand' );
+is ( substr( $tr->spliced_seq(1), 0, 10 ), "atggcccgac", 'Spliced seq with utr lower casing is correct, rev strand');
+is ( length($tr->spliced_seq()), length($tr->spliced_seq(1)), "Spliced seq with or without utr lower casing has the same length, rev strand");
+is ( $tr->spliced_seq(), uc($tr->spliced_seq(1)), "Spliced seq is identical to upper case utr masked spliced seq, rev strand");
+is ( substr($tr->spliced_seq(1), 199, 6), 'gccATG', 'Start mask boundary on forward stand transcript is correct, rev strand' );
+is ( substr($tr->spliced_seq(1), 1687, 6), 'CAGtag', 'End mask boundary on forward stand transcript is correct, rev strand' );
 
 
 my $interpro = $ta->get_Interpro_by_transid("ENST00000252021");
@@ -278,7 +295,6 @@ is(@transcripts, 27, 'Got 27 transcript');
 $transcriptCount = $ta->count_all_by_biotype(['protein_coding', 'pseudogene']);
 is($transcriptCount, 27, 'Count by biotype is correct');
 
-
 #
 # test TranscriptAdaptor::fetch_all_by_Slice
 #
@@ -313,7 +329,8 @@ is(27, scalar(@transcripts), "Got 27 transcripts");
 # test TranscriptAdaptor::fetch_all_by_GOTerm
 #
 note("Test fetch_all_by_GOTerm");
-my $go_adaptor = $odb->get_OntologyTermAdaptor();
+my $go_adaptor;
+warning { $go_adaptor = $odb->get_OntologyTermAdaptor(); };
 my $go_term = $go_adaptor->fetch_by_accession('GO:0070363');
 @transcripts = @{ $ta->fetch_all_by_GOTerm($go_term) };
 is(scalar(@transcripts), 0, "Found 0 genes with fetch_all_by_GOTerm");
@@ -667,6 +684,72 @@ is_deeply(
 
 $multi->restore('core');
 
+#
+# tests for translation start/end within a seq_edit
+#
+$tr = $ta->fetch_by_stable_id( "ENST00000217347" );
+$tr->edits_enabled(1);
+
+$tr->add_Attributes(
+  Bio::EnsEMBL::Attribute->new(
+    -code => '_rna_edit',
+    -value => "1 0 CGTCGATGTTG",
+  )
+);
+is(substr($tr->translateable_seq, 0, 6), 'ATGGCA', 'translation start in a seq_edit - seq before');
+is(length($tr->translateable_seq),       804,      'translation start in a seq_edit - length before');
+
+$tr->add_Attributes(
+  Bio::EnsEMBL::Attribute->new(
+    -code => '_transl_start',
+    -value => "6",
+  )
+);
+is(substr($tr->translateable_seq, 0, 6), 'ATGTTG', 'translation start in a seq_edit - seq after');
+is(length($tr->translateable_seq),       874,      'translation start in a seq_edit - length after');
+
+$tr->add_Attributes(
+  Bio::EnsEMBL::Attribute->new(
+    -code => '_rna_edit',
+    -value => "869 868 CGTCGTGATTG",
+  )
+);
+is(substr(reverse($tr->translateable_seq), 0, 11), reverse('CGTCGTGATTG'), 'translation end in a seq_edit - seq before');
+is(length($tr->translateable_seq),                 885,                    'translation end in a seq_edit - length before');
+
+$tr->add_Attributes(
+  Bio::EnsEMBL::Attribute->new(
+    -code => '_transl_end',
+    -value => "884",
+  )
+);
+is(substr(reverse($tr->translateable_seq), 0, 11), reverse('GAGTATCGTCG'), 'translation end in a seq_edit - seq after');
+is(length($tr->translateable_seq),                 879,                    'translation end in a seq_edit - length after');
+
+$multi->restore('core');
+
+$tr = $ta->fetch_by_stable_id( "ENST00000217347" );
+$tr->edits_enabled(1);
+
+is(length($tr->translateable_seq), 804, 'explicit translation end with no seq_edit - length before');
+
+$tr->add_Attributes(
+  Bio::EnsEMBL::Attribute->new(
+    -code => '_transl_end',
+    -value => "873",
+  )
+);
+is(length($tr->translateable_seq), 804, 'explicit translation end with no seq_edit - length after');
+
+$tr->add_Attributes(
+  Bio::EnsEMBL::Attribute->new(
+    -code => '_rna_edit',
+    -value => "869 868 CGTCGTGATTG",
+  )
+);
+is(length($tr->translateable_seq), 809, 'explicit translation end with seq_edit - length after');
+
+$multi->restore('core');
 
 #
 # tests for multiple versions of transcripts in a database
@@ -729,8 +812,9 @@ $tr = $ta->fetch_by_stable_id('ENST00000355555');
 $g = $db->get_GeneAdaptor->fetch_by_transcript_id($tr->dbID);
 $tr->get_all_Exons;
 
-$multi->hide( "core", "gene", "transcript", "exon", 'xref', 'object_xref',
-              "exon_transcript", "translation", 'meta_coord' );
+my $tl = $tr->translation;
+
+$multi->hide( "core", "gene", "transcript", "translation", "meta_coord" );
 
 $tr->version(3);
 $tr->dbID(undef);
@@ -742,13 +826,23 @@ $tr->is_current(0);
 $tr->dbID(undef);
 $tr->adaptor(undef);
 $ta->store($tr, $g->dbID);
+
+$tr->version(undef);
+$tr->is_current(0);
+$tr->dbID(undef);
+$tr->adaptor(undef);
+$tl->version(undef);
+$tr->translation($tl);
+$ta->store($tr, $g->dbID);
+
 $tr = $ta->fetch_by_stable_id('ENST00000355555');
 is($tr->is_current, 1, 'Transcript is current');   # 148
 
 @transcripts = @{ $ta->fetch_all_versions_by_stable_id('ENST00000355555') };
 foreach my $t (@transcripts) {
-  next unless ($t->version == 4);
-  is($t->is_current, 0, 'Transcript is not current');  # 149
+  if (defined $t->version && $t->version == 4) {
+    is($t->is_current, 0, 'Transcript is not current');  # 149
+  }
 }
 
 $tr->is_current(0);
@@ -760,6 +854,15 @@ $tr->is_current(1);
 $ta->update($tr);
 $tr = $ta->fetch_by_stable_id('ENST00000355555');
 is($tr->is_current, 1, 'Transcript is now current');   # 151
+
+my $null_versions = 0;
+foreach my $t (@transcripts) {
+  if (! defined $t->version) {
+    ok(! defined $t->translation->version);
+    $null_versions++;
+  }
+}
+is ( $null_versions, 1, "Null/undef version stored and retrieved");
 
 $multi->restore;
 

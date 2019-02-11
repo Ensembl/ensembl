@@ -1,7 +1,7 @@
 =head1 LICENSE
 
 Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
-Copyright [2016-2017] EMBL-European Bioinformatics Institute
+Copyright [2016-2019] EMBL-European Bioinformatics Institute
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -30,8 +30,11 @@ sub run {
   my ($self, $ref_arg) = @_;
   my $source_id    = $ref_arg->{source_id};
   my $species_id   = $ref_arg->{species_id};
+  my $species_name = $ref_arg->{species};
   my $files        = $ref_arg->{files};
   my $verbose      = $ref_arg->{verbose};
+  my $dbi          = $ref_arg->{dbi};
+  $dbi = $self->dbi unless defined $dbi;
 
   if((!defined $source_id) or (!defined $species_id) or (!defined $files) ){
     croak "Need to pass source_id, species_id, files and rel_file as pairs";
@@ -40,9 +43,10 @@ sub run {
 
   my $file = @{$files}[0];
 
-  my $wiki_source_id = $self->get_source_id_for_source_name("WikiGene");
+  my $wiki_source_id = $self->get_source_id_for_source_name("WikiGene", undef, $dbi);
 
-  my %species_tax_id = %{$self->get_taxonomy_from_species_id($species_id)};
+  my %species_tax_id = %{$self->get_taxonomy_from_species_id($species_id, $dbi)};
+  $species_tax_id{$species_id} = $species_id if defined $species_name;
   
 
   my $eg_io = $self->get_filehandle($file);
@@ -120,6 +124,7 @@ sub run {
 		      desc       => $desc,
 		      source_id  => $source_id,
 		      species_id => $species_id,
+                      dbi        => $dbi,
 		      info_type  =>"DEPENDENT"} );
 
     $self->add_xref({ acc        => $acc,
@@ -127,13 +132,14 @@ sub run {
 		      desc       => $desc,
 		      source_id  => $wiki_source_id,
 		      species_id => $species_id,
+                      dbi        => $dbi,
 		      info_type  => "DEPENDENT" } ); #,"From EntrezGene $acc");
     $xref_count++;
 
     my (@syn) = split(/\|/ ,$arr[$gene_synonyms_index]);
     foreach my $synonym (@syn){
       if($synonym ne "-"){
-	$self->add_to_syn($acc, $source_id, $synonym, $species_id);
+	$self->add_to_syn($acc, $source_id, $synonym, $species_id, $dbi);
 	$syn_count++;
       }
     }
