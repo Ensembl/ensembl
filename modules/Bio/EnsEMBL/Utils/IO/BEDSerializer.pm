@@ -119,12 +119,12 @@ sub _write_Transcript {
   my $rgb = $self->rgb();
   # genePred BED extensions
   my ($second_name, $cds_start_status, $cds_end_status, $exon_frames, $type, $gene_name, $second_gene_name, $gene_type) = (q{},q{none},q{none},q{},q{},q{},q{},q{});
-  
+
   # Set the remaining transcript attributes
   $type = $transcript->biotype();
   $second_name = $transcript->external_name() || q{none};
 
-  # If we have a translation then we do some maths to calc the start of 
+  # If we have a translation then we do some maths to calc the start of
   # the thick sections. Otherwise we must have a ncRNA or pseudogene
   # and that thick section is just set to the transcript's end
   if($new_transcript->translation()) {
@@ -140,12 +140,12 @@ sub _write_Transcript {
     $coding_end = $self->_cdna_to_genome($new_transcript, $cdna_end);
 
     #Also figure out complete 5' and 3' CDS tags
-    my ($five_prime_nc, $three_prime_nc) =  map { $_->[0] } 
-                                            grep { defined $_ && @{$_} } 
-                                            map { $transcript->get_all_Attributes($_) } 
-                                            qw/cds_start_NF cds_end_NF/; 
+    my ($five_prime_nc, $three_prime_nc) =  map { $_->[0] }
+                                            grep { defined $_ && @{$_} }
+                                            map { $transcript->get_all_Attributes($_) }
+                                            qw/cds_start_NF cds_end_NF/;
 
-    
+
     $cds_start_status = ($five_prime_nc) ? 'incmpl' : 'cmpl';
     $cds_end_status = ($three_prime_nc) ? 'incmpl' : 'cmpl';
     # reverse if we are on the negative strand
@@ -157,12 +157,11 @@ sub _write_Transcript {
     # When we represent non-coding transcripts we set the coding start/end (thickStart/thickEnd)
     # in a BED file to the start of the transcript region (lowest coordinate).
     $coding_start = $bed_genomic_start;
-    $coding_start--;
     $coding_end = $coding_start;
   }
 
   # Now for the interesting bit. Exons are given relative to the bed start
-  # so we need to calculate the offset. Exons are also sorted by start otherwise 
+  # so we need to calculate the offset. Exons are also sorted by start otherwise
   # offset calcs are wrong
   foreach my $exon (sort { $a->seq_region_start() <=> $b->seq_region_start() } @{$new_transcript->get_all_Exons()}) {
     my $exon_start = $exon->seq_region_start();
@@ -170,8 +169,8 @@ sub _write_Transcript {
     my $offset = $exon_start - $bed_genomic_start; # just have to minus current start from the genomic start
     $exon_starts_string .= $offset.',';
     $exon_lengths_string .= $exon->length().',';
-    
-    # We have to re-interpret a phase -1 as 0 if we are on a coding exon. Otherwise we just 
+
+    # We have to re-interpret a phase -1 as 0 if we are on a coding exon. Otherwise we just
     # leave it (non-coding exons are always -1 it seems from UCSC's examples)
     my $phase = $exon->phase();
     my $exon_coding_start = $exon->coding_region_start($transcript);
@@ -221,7 +220,7 @@ sub _feature_to_bed_array {
   my $chr_name = $self->_feature_to_UCSC_name($feature, $cache);
   my $start = $feature->seq_region_start() - 1;
   my $end = $feature->seq_region_end();
-  my $strand = ($feature->seq_region_strand() == -1) ? '-' : '+'; 
+  my $strand = ($feature->seq_region_strand() == -1) ? '-' : '+';
   my $display_id = $feature->display_id();
   my $score = 1000;
   return [ $chr_name, $start, $end, $display_id, $score, $strand ];
