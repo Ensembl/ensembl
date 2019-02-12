@@ -69,7 +69,10 @@ use Scalar::Util qw(weaken isweak);
 
 @ISA = qw(Bio::EnsEMBL::Feature);
 
-use constant SO_ACC => 'SO:0001411';
+use constant SEQUENCE_ONTOLOGY => {
+  acc  => 'SO:0001411',
+  term => 'biological_region',
+};
 
 =head2 new
 

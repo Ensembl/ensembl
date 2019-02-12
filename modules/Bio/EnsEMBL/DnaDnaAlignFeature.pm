@@ -54,7 +54,10 @@ use Bio::EnsEMBL::Utils::Exception qw(throw);
 
 @ISA = qw( Bio::EnsEMBL::BaseAlignFeature );
 
-use constant SO_ACC => 'SO:0000347';
+use constant SEQUENCE_ONTOLOGY => {
+  acc  => 'SO:0000347',
+  term => 'nucleotide_match',
+};
 
 =head2 new
 

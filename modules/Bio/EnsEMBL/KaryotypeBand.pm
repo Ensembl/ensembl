@@ -82,7 +82,10 @@ use Bio::EnsEMBL::Utils::Exception qw(warning);
 
 @ISA = qw(Bio::EnsEMBL::Feature);
 
-use constant SO_ACC => 'SO:0000341';
+use constant SEQUENCE_ONTOLOGY => {
+  acc  => 'SO:0000341',
+  term => 'chromosome_band',
+};
 
 =head2 new
 

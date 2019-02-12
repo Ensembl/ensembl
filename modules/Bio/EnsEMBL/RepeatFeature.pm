@@ -82,7 +82,10 @@ use Bio::EnsEMBL::Utils::Argument qw(rearrange);
 
 use base qw/Bio::EnsEMBL::Feature/;
 
-use constant SO_ACC => 'SO:0000657';
+use constant SEQUENCE_ONTOLOGY => {
+  acc  => 'SO:0000657',
+  term => 'repeat_region',
+};
 
 =head2 new
 
