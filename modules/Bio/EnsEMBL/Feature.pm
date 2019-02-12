@@ -1449,9 +1449,9 @@ sub get_nearest_Gene {
 =head2 feature_so_acc
 
   Description: This method returns a string containing the SO accession number of the feature
-               Define constant SO_ACC in classes that require it, or override it for multiple possible values for a class.
+               Define constant SEQUENCE_ONTOLOGY in classes that require it, or override it for multiple possible values for a class.
   Returntype : String (Sequence Ontology accession number)
-  Exceptions : Thrown if caller SO_ACC is undefined and is not a Bio::EnsEMBL::Feature
+  Exceptions : Thrown if caller SEQUENCE_ONTOLOGY is undefined and is not a Bio::EnsEMBL::Feature
 
 =cut
 
@@ -1463,14 +1463,41 @@ sub feature_so_acc {
 
   # Get the caller class SO acc
   try {
-    $so_acc = $ref->SO_ACC;
+    $so_acc = $ref->SEQUENCE_ONTOLOGY->{'acc'};
   };
- 
+
   unless ($so_acc || $ref eq 'Bio::EnsEMBL::Feature' ) {
-    throw( "constant SO_ACC in ${ref} is not defined");
+    throw( "constant SEQUENCE_ONTOLOGY in ${ref} is not defined");
   }
 
   return $so_acc // 'SO:0000001';
+}
+
+=head2 feature_so_term
+
+  Description: This method returns a string containing the SO term of the feature
+               Define constant SEQUENCE_ONTOLOGY in classes that require it, or override it for multiple possible values for a class.
+  Returntype : String (Sequence Ontology term)
+  Exceptions : Thrown if caller SEQUENCE_ONTOLOGY is undefined and is not a Bio::EnsEMBL::Feature
+
+=cut
+
+sub feature_so_term {
+  my ($self) = @_;
+
+  my $ref = ref $self;
+  my $so_term;
+
+  # Get the caller class SO acc
+  try {
+    $so_term = $ref->SEQUENCE_ONTOLOGY->{'term'};
+  };
+
+  unless ($so_term || $ref eq 'Bio::EnsEMBL::Feature' ) {
+    throw( "constant SEQUENCE_ONTOLOGY in ${ref} is not defined");
+  }
+
+  return $so_term // 'region';
 }
 
 =head2 summary_as_hash
