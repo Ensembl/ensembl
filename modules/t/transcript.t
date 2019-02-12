@@ -163,6 +163,7 @@ is( $tr->coding_region_start(), 85834, 'Correct coding region start' );
 is( $tr->coding_region_end(), 108631, 'Correct coding region end' );
 
 is( $tr->feature_so_acc, 'SO:0000673', 'Transcript feature SO acc is correct (transcript)' );
+is( $tr->feature_so_term, 'transcript', 'Transcript feature SO term is correct (transcript)' );
 
 my @pepcoords = $tr->pep2genomic( 10, 20 );
 is( $pepcoords[0]->start(), 85861, 'Correct translation start' );

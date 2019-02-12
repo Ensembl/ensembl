@@ -159,5 +159,6 @@ ok($f);
 
 
 is($dnaf->feature_so_acc, 'SO:0000347', 'DnaDnaAlignFeature feature SO acc is correct (nucleotide_match)');
+is($dnaf->feature_so_term, 'nucleotide_match', 'DnaDnaAlignFeature feature SO term is correct (nucleotide_match)');
 
 done_testing();

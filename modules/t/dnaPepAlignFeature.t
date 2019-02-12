@@ -116,6 +116,7 @@ ok($dnaf->end == 16);
 ok( scalar($dnaf->ungapped_features) == 2);
 
 is($dnaf->feature_so_acc, 'SO:0000349', 'dnaPepAlignFeature feature SO acc is correct (protein_match)');
+is($dnaf->feature_so_term, 'protein_match', 'dnaPepAlignFeature feature SO term is correct (protein_match)');
 
 #
 # 12 Test retrieval from database

@@ -58,6 +58,7 @@ ok($kb->name() eq $name);
 ok($kb->slice == $slice);
 ok($kb->display_id eq $name);
 is($kb->feature_so_acc, 'SO:0000341', 'KaryotypeBand feature SO acc is correct (chromosome_band)');
+is($kb->feature_so_term, 'chromosome_band', 'KaryotypeBand feature SO term is correct (chromosome_band)');
 
 #
 # test getter/setters
