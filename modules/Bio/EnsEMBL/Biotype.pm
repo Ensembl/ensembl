@@ -86,6 +86,8 @@ use parent qw(Bio::EnsEMBL::Storable);
       string - the name of the biotype group (for ensembl)
   Arg [-SO_ACC] :
       string - the Sequence Ontology accession of this biotype
+  Arg [-SO_TERM] :
+      string - the Sequence Ontology term for the SO accession of this biotype
   Arg [-DESCRIPTION] :
       string - the biotype description
   Arg [-DB_TYPE] :
@@ -107,14 +109,15 @@ sub new {
 
   my $self = $class->SUPER::new();
 
-  my($dbID, $name, $object_type, $biotype_group, $so_acc, $description, $db_type, $attrib_type_id) =
-    rearrange([qw(BIOTYPE_ID NAME OBJECT_TYPE BIOTYPE_GROUP SO_ACC DESCRIPTION DB_TYPE ATTRIB_TYPE_ID)], @args);
+  my($dbID, $name, $object_type, $biotype_group, $so_acc, $so_term, $description, $db_type, $attrib_type_id) =
+    rearrange([qw(BIOTYPE_ID NAME OBJECT_TYPE BIOTYPE_GROUP SO_ACC SO_TERM DESCRIPTION DB_TYPE ATTRIB_TYPE_ID)], @args);
 
   $self->{'dbID'} = $dbID;
   $self->{'name'} = $name;
   $self->{'object_type'} = $object_type;
   $self->{'biotype_group'} = $biotype_group;
   $self->{'so_acc'} = $so_acc;
+  $self->{'so_term'} = $so_term;
   $self->{'description'} = $description;
   $self->{'db_type'} = $db_type;
   $self->{'attrib_type_id'} = $attrib_type_id;
@@ -213,6 +216,26 @@ sub so_acc {
   }
 
   return $self->{'so_acc'};
+}
+
+=head2 so_term
+
+  Arg [1]    : (optional) string $so_term
+  Example    : $feat->so_term();
+  Description: Getter/Setter for the Sequence Ontology term of this biotype.
+  Returntype : string
+  Exceptions : none
+
+=cut
+
+sub so_term {
+  my ( $self, $so_term ) = @_;
+
+  if ( defined($so_term) ) {
+    $self->{'so_term'} = $so_term;
+  }
+
+  return $self->{'so_term'};
 }
 
 =head2 object_type
