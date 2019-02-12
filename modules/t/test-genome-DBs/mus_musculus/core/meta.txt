@@ -184,3 +184,4 @@
 1696	\N	patch	patch_94_95_c.sql|ox_key_update
 1697	\N	patch	patch_95_96_a.sql|schema_version
 1698	\N	patch	patch_96_97_a.sql|schema_version
+1699	\N	patch	patch_96_97_b.sql|biotype_so_term

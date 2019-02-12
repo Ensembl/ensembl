@@ -127,3 +127,4 @@
 127	\N	patch	patch_94_95_c.sql|ox_key_update
 128	\N	patch	patch_95_96_a.sql|schema_version
 129	\N	patch	patch_96_97_a.sql|schema_version
+130	\N	patch	patch_96_97_b.sql|biotype_so_term

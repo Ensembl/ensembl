@@ -111,3 +111,4 @@
 2118	\N	patch	patch_94_95_c.sql|ox_key_update
 2119	\N	patch	patch_95_96_a.sql|schema_version
 2120	\N	patch	patch_96_97_a.sql|schema_version
+2121	\N	patch	patch_96_97_b.sql|biotype_so_term
