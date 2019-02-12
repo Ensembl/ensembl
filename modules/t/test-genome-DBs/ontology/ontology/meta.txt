@@ -38,3 +38,4 @@
 41	patch	patch_93_94_a.sql|schema_version	\N
 42	patch	patch_94_95_a.sql|schema_version	\N
 43	patch	patch_95_96_a.sql|schema_version	\N
+44	patch	patch_95_96_b.sql|term_ontology_update	\N

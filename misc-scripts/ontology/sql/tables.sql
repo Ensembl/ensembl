@@ -36,6 +36,8 @@ INSERT INTO meta (meta_key, meta_value) VALUES
 INSERT INTO meta (meta_key, meta_value)
   VALUES ('patch', 'patch_95_96_a.sql|schema_version');
 
+INSERT INTO meta (species_id, meta_key, meta_value)
+  VALUES (NULL, 'patch', 'patch_95_96_b.sql|term_ontology_update');
 
 CREATE TABLE `ontology` (
   `ontology_id` int(10) unsigned NOT NULL AUTO_INCREMENT,
