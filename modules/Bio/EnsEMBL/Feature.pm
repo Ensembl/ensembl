@@ -1466,7 +1466,7 @@ sub feature_so_acc {
     $so_acc = $ref->SEQUENCE_ONTOLOGY->{'acc'};
   };
 
-  unless ($so_acc || $ref eq 'Bio::EnsEMBL::Feature' ) {
+  if (!$so_acc && $ref ne 'Bio::EnsEMBL::Feature' ) {
     throw( "constant SEQUENCE_ONTOLOGY in ${ref} is not defined");
   }
 
@@ -1493,7 +1493,7 @@ sub feature_so_term {
     $so_term = $ref->SEQUENCE_ONTOLOGY->{'term'};
   };
 
-  unless ($so_term || $ref eq 'Bio::EnsEMBL::Feature' ) {
+  if (!$so_term && $ref ne 'Bio::EnsEMBL::Feature' ) {
     throw( "constant SEQUENCE_ONTOLOGY in ${ref} is not defined");
   }
 
