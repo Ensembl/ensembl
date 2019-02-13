@@ -24,8 +24,6 @@ use Test::Warnings qw(warning);
 use_ok 'Bio::EnsEMBL::Utils::Interval';
 use_ok 'Bio::EnsEMBL::Utils::Tree::Interval::Mutable';
 
-srand(2791);
-
 my $intervals = [ Bio::EnsEMBL::Utils::Interval->new(121626874, 122092717),
 		  Bio::EnsEMBL::Utils::Interval->new(121637917, 121658918),
 		  Bio::EnsEMBL::Utils::Interval->new(122096077, 124088369) ];
@@ -130,17 +128,13 @@ is($tree->size(), scalar @{$intervals}, 'Tree size');
 $search_result = $tree->search(121779004, 121779004);
 is(scalar @{$search_result}, 1, 'Number of search results');
 ok($search_result->[0]->start == 121626874 && $search_result->[0]->end == 122092717, 'Query result interval boundaries');
+$search_result = $tree->search(1e6, 1e7);
+is(scalar @{$search_result}, 0, 'Number of search results');
 
 sub make_interval {
   my ($start, $end, $data) = @_;
 
   return Bio::EnsEMBL::Utils::Interval->new($start, $end, $data);
-}
-
-sub make_random_int {
-  my ($min, $max) = @_;
-
-  return $min + rand($max) + 1;
 }
 
 done_testing();
