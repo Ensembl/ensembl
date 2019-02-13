@@ -17,6 +17,7 @@ use strict;
 use warnings;
 use Test::More;
 use Test::Warnings qw( warning );
+use Test::Differences qw( eq_or_diff );
 use Bio::EnsEMBL::Test::MultiTestDB;
 use Bio::EnsEMBL::Utils::IO::GFFSerializer;
 use Bio::EnsEMBL::Feature;
@@ -25,8 +26,6 @@ use IO::String;
 
 my $db = Bio::EnsEMBL::Test::MultiTestDB->new();
 my $dba = $db->get_DBAdaptor('core');
-my $omulti = Bio::EnsEMBL::Test::MultiTestDB->new('ontology');
-my $odb = $omulti->get_DBAdaptor('ontology');
 
 my $id = 'ENSG00000131044';
 
