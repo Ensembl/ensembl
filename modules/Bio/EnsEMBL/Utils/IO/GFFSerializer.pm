@@ -66,7 +66,7 @@ my %strand_conversion = ( '1' => '+', '0' => '.', '-1' => '-');
     Constructor
     Arg [1]    : Optional File handle
     Arg [2]    : Default source of the features. Defaults to .
-    
+
     Returntype : Bio::EnsEMBL::Utils::IO::GFFSerializer
 
     Warning    : If legacy mandatory 'Ontology Adaptor' first argument provided.
@@ -112,10 +112,10 @@ sub new {
 
     Arg [1]    : Bio::EnsEMBL::Feature, subclass or related pseudo-feature
     Example    : $reporter->print_feature($feature,$slice_start_coordinate,"X")
-    Description: Asks a feature for its summary, and generates a GFF3 
+    Description: Asks a feature for its summary, and generates a GFF3
                  compliant entry to hand back again
-                 Additional attributes are handed through to column 9 of the 
-                 output using exact spelling and capitalisation of the 
+                 Additional attributes are handed through to column 9 of the
+                 output using exact spelling and capitalisation of the
                  feature-supplied hash.
     Returntype : none
 =cut
@@ -169,7 +169,7 @@ sub print_feature {
         $row .= $so_term."\t";
 
 #    Column 4 - start, the start coordinate of the feature, here shifted to chromosomal coordinates
-#    Start and end must be in ascending order for GFF. Circular genomes require the length of 
+#    Start and end must be in ascending order for GFF. Circular genomes require the length of
 #    the circuit to be added on.
         if (!defined $summary{'start'} || !defined $summary{'end'}) {
           throw sprintf "Coordinates not defined for %s.\n", $summary{id};
@@ -275,8 +275,8 @@ sub print_feature {
 		}
             }
             else {
-                if (defined $summary{$attribute}) { 
-                  $row .= $attribute."=".uri_escape($summary{$attribute},'\t\n\r;=%&,'); 
+                if (defined $summary{$attribute}) {
+                  $row .= $attribute."=".uri_escape($summary{$attribute},'\t\n\r;=%&,');
                   $data_written = 1;
                 }
             }
@@ -307,35 +307,38 @@ sub print_main_header {
     my $arrayref_of_slices = shift;
     my $dba = shift;
     my $fh = $self->{'filehandle'};
-    
+
     print $fh "##gff-version 3\n";
     foreach my $slice (@{$arrayref_of_slices}) {
-        if (not defined($slice)) { warning("Slice not defined.\n"); return;}
+        if (not defined($slice)) {
+            warning("Slice not defined.\n");
+            return;
+        }
         print $fh "##sequence-region   ",$slice->seq_region_name," ",$slice->start," ",$slice->end,"\n";
     }
 
-    if (!$dba) { 
+    if (!$dba) {
       print "\n";
       return;
     }
 
     my $mc = $dba->get_MetaContainer();
     my $gc = $dba->get_GenomeContainer();
-  
+
     # Get the build. name gives us GRCh37.p1 where as default gives us GRCh37
     my $assembly_name = $gc->get_assembly_name();
     my $providers = $mc->list_value_by_key('provider.name') || '';
     my $provider = join(";", @$providers);
     print $fh "#!genome-build $provider $assembly_name\n" if $assembly_name;
-  
+
     # Get the build default
     my $version = $gc->get_version();
     print $fh "#!genome-version ${version}\n" if $version;
-  
+
     # Get the date of the genome build
     my $assembly_date = $gc->get_assembly_date();
     print $fh "#!genome-date ${assembly_date}\n" if $assembly_date;
-  
+
     # Get accession and only print if it is there
     my $accession = $gc->get_accession();
     if($accession) {
@@ -343,16 +346,16 @@ sub print_main_header {
        my $string = "#!genome-build-accession ";
        $string .= "$accession_source:" if $accession_source;
        $string .= "$accession";
-  
+
        print $fh "$string\n";
     }
-  
+
     # Genebuild last updated
     my $genebuild_last_date = $gc->get_genebuild_last_geneset_update();
     print $fh "#!genebuild-last-updated ${genebuild_last_date}\n" if $genebuild_last_date;
 
     print "\n";
-  
+
     return;
 }
 
