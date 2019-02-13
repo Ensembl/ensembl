@@ -4,9 +4,9 @@
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
-# 
+#
 #      http://www.apache.org/licenses/LICENSE-2.0
-# 
+#
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -28,6 +28,7 @@ use Bio::EnsEMBL::Feature;
 use Bio::EnsEMBL::Slice;
 
 my $db = Bio::EnsEMBL::Test::MultiTestDB->new();
+my $nc_db = Bio::EnsEMBL::Test::MultiTestDB->new('circ');
 my $dba = $db->get_DBAdaptor('core');
 
 my $id = 'ENSG00000131044';
@@ -50,6 +51,14 @@ my $ta = $dba->get_TranscriptAdaptor();
   my $transcript = $ta->fetch_by_stable_id($t_id);
   my $expected = qq{chr20\t30274333\t30298904\tENST00000310998\t1000\t+\t30274333\t30298904\t0,0,0\t6\t92,112,186,69,74,82,\t0,10117,11263,21390,22172,24489,\tC20orf125\tcmpl\tcmpl\t0,2,0,0,0,2,\tprotein_coding\tENSG00000131044\tC20orf125\tprotein_coding\n};
   assert_bed($transcript, $expected, 'Transcript emits as genePred format');
+}
+
+# Uses circ DB core to get a non-coding transcript
+{
+  my $nc_ta = $nc_db->get_DBAdaptor('core')->get_TranscriptAdaptor();
+  my $transcript = $nc_ta->fetch_by_stable_id('BTF1_t31789');
+  my $expected = qq{chrp02\t155168\t155243\tBTF1_t31789\t1000\t+\t155168\t155168\t0,0,0\t1\t75,\t0,\tBTF1_t31789\tnone\tnone\t0,\ttRNA\tBTF1_t31789\tBTF1_t31789\ttRNA\n};
+  assert_bed($transcript, $expected, 'Non-coding transcript emits as genePred format');
 }
 
 {
