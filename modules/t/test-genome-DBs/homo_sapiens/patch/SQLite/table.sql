@@ -1,6 +1,6 @@
 -- 
 -- Created by SQL::Translator::Producer::SQLite
--- Created on Thu Dec  6 13:50:04 2018
+-- Created on Tue Feb 12 15:00:25 2019
 -- 
 
 BEGIN TRANSACTION;
@@ -142,7 +142,8 @@ CREATE TABLE "biotype" (
   "attrib_type_id" integer,
   "description" text,
   "biotype_group" enum,
-  "so_acc" varchar(64)
+  "so_acc" varchar(64),
+  "so_term" varchar(1023)
 );
 
 CREATE UNIQUE INDEX "name_type_idx" ON "biotype" ("name", "object_type");

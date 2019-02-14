@@ -28,19 +28,23 @@ GFFSerializer - Feature to GFF converter
 
 use Bio::EnsEMBL::Utils::IO::GFFSerializer;
 
-my $ontology_adaptor = $registry->get_adaptor( 'Multi', 'Ontology', 'OntologyTerm' );
-my $serializer = Bio::EnsEMBL::Utils::IO::GFFSerializer->new($ontology_adaptor,$output_fh);
+my $serializer = Bio::EnsEMBL::Utils::IO::GFFSerializer->new($output_fh);
 
 my $variation_feature_adaptor = $registry->get_adaptor( $config{'species'}, 'variation', 'variationfeature' );
 $serializer->print_metadata("Variation Features:");
 my $iterator = $variation_feature_adaptor->fetch_Iterator_by_Slice($slice,undef,60000);
 $serializer->print_feature_Iterator($iterator);
 
+
+Legacy style constructor is still supported but will raise a warning:
+
+my $ontology_adaptor = $registry->get_adaptor( 'Multi', 'Ontology', 'OntologyTerm' );
+my $serializer = Bio::EnsEMBL::Utils::IO::GFFSerializer->new($ontology_adaptor, $output_fh);
+
+
 =head1 DESCRIPTION
 
-Subclass of Serializer that can turn a feature into a line for the GFF3 format. Requires
-a SequenceOntologyMapper in order to translate features (biotypes in case of genes and 
-transcripts) to SO terms.
+Subclass of Serializer that can turn a feature into a line for the GFF3 format.
 
 =cut
 
@@ -60,25 +64,37 @@ my %strand_conversion = ( '1' => '+', '0' => '.', '-1' => '-');
 =head2 new
 
     Constructor
-    Arg [1]    : Ontology Adaptor
-    Arg [2]    : Optional File handle
-    Arg [3]    : Default source of the features. Defaults to .
-    
+    Arg [1]    : Optional File handle
+    Arg [2]    : Default source of the features. Defaults to .
+
     Returntype : Bio::EnsEMBL::Utils::IO::GFFSerializer
+
+    Warning    : If legacy mandatory 'Ontology Adaptor' first argument provided.
+                 This argument has been removed but method will continue functioning if still provided,
+                 raising only a warning to the user stating that it can be removed.
 
 =cut
 
 sub new {
     my $class = shift;
+    my $arg1 = shift;
+
+# Legacy constructor required an 'Ontology Adaptor' to be passed on as first argument
+# this is to support and keep scripts using the legacy constructor functioning (with an extra warning)
+# Can probably be removed some time in the future
+    if ( check_ref($arg1, "Bio::EnsEMBL::DBSQL::OntologyTermAdaptor" )) {
+        warning("GFF format does not require an instance of Bio::EnsEMBL::DBSQL::OntologyTermAdaptor anymore."
+            . "\nFirst argument at Bio::EnsEMBL::Utils::IO::GFFSerializer->new() can be safely removed.");
+        $arg1 = shift;
+    }
+
+    my $arg2 = shift;
+
     my $self = {
-        ontology_adaptor => shift,
-        filehandle => shift,
-        default_source => shift
+        filehandle => $arg1,
+        default_source => $arg2
     };
     bless $self, $class;
-    if ( ! check_ref($self->{'ontology_adaptor'}, "Bio::EnsEMBL::DBSQL::OntologyTermAdaptor" )) {
-        throw("GFF format requires an instance of Bio::EnsEMBL::DBSQL::OntologyTermAdaptor to function.");        
-    }
 
     if (!defined ($self->{'filehandle'})) {
         # no file handle, let the handle point to a copy of STDOUT instead
@@ -88,6 +104,7 @@ sub new {
     if(!defined $self->{default_source}) {
         $self->{default_source} = '.';
     }
+
     return $self;
 }
 
@@ -95,10 +112,10 @@ sub new {
 
     Arg [1]    : Bio::EnsEMBL::Feature, subclass or related pseudo-feature
     Example    : $reporter->print_feature($feature,$slice_start_coordinate,"X")
-    Description: Asks a feature for its summary, and generates a GFF3 
+    Description: Asks a feature for its summary, and generates a GFF3
                  compliant entry to hand back again
-                 Additional attributes are handed through to column 9 of the 
-                 output using exact spelling and capitalisation of the 
+                 Additional attributes are handed through to column 9 of the
+                 output using exact spelling and capitalisation of the
                  feature-supplied hash.
     Returntype : none
 =cut
@@ -131,30 +148,28 @@ sub print_feature {
         $row .= qq{\t};
 
 #   Column 3 - feature, the ontology term for the kind of feature this row is
-        my $so_acc;
+        my $so_term;
         # get biotype SO acc if feature can do it
         if ( $feature->can('get_Biotype') ) {
-            $so_acc = $feature->get_Biotype->so_acc;
+            $so_term = $feature->get_Biotype->so_term;
         }
         # if no biotype SO acc, get the feature one
-        if ( !$so_acc ) {
-            $so_acc = $feature->feature_so_acc;
+        if ( !$so_term ) {
+            $so_term = $feature->feature_so_term;
         }
         # could not get it, throw exception
-        if ( !$so_acc ) {
-            throw "Unable to map feature %s to SO.", $summary{id};
+        if ( !$so_term ) {
+            throw "Unable to find an SO term for feature %s.", $summary{id};
         }
-        # with the acc, get the name
-        my $so_term = $self->{'ontology_adaptor'}->fetch_by_accession($so_acc)->name;
 
-        if ($so_term eq 'protein_coding_gene') { 
+        if ($so_term eq 'protein_coding_gene') {
 # Special treatment for protein_coding_gene, as more commonly expected term is 'gene'
           $so_term = 'gene';
         }
         $row .= $so_term."\t";
 
 #    Column 4 - start, the start coordinate of the feature, here shifted to chromosomal coordinates
-#    Start and end must be in ascending order for GFF. Circular genomes require the length of 
+#    Start and end must be in ascending order for GFF. Circular genomes require the length of
 #    the circuit to be added on.
         if (!defined $summary{'start'} || !defined $summary{'end'}) {
           throw sprintf "Coordinates not defined for %s.\n", $summary{id};
@@ -260,8 +275,8 @@ sub print_feature {
 		}
             }
             else {
-                if (defined $summary{$attribute}) { 
-                  $row .= $attribute."=".uri_escape($summary{$attribute},'\t\n\r;=%&,'); 
+                if (defined $summary{$attribute}) {
+                  $row .= $attribute."=".uri_escape($summary{$attribute},'\t\n\r;=%&,');
                   $data_written = 1;
                 }
             }
@@ -292,35 +307,38 @@ sub print_main_header {
     my $arrayref_of_slices = shift;
     my $dba = shift;
     my $fh = $self->{'filehandle'};
-    
+
     print $fh "##gff-version 3\n";
     foreach my $slice (@{$arrayref_of_slices}) {
-        if (not defined($slice)) { warning("Slice not defined.\n"); return;}
+        if (not defined($slice)) {
+            warning("Slice not defined.\n");
+            return;
+        }
         print $fh "##sequence-region   ",$slice->seq_region_name," ",$slice->start," ",$slice->end,"\n";
     }
 
-    if (!$dba) { 
+    if (!$dba) {
       print "\n";
       return;
     }
 
     my $mc = $dba->get_MetaContainer();
     my $gc = $dba->get_GenomeContainer();
-  
+
     # Get the build. name gives us GRCh37.p1 where as default gives us GRCh37
     my $assembly_name = $gc->get_assembly_name();
     my $providers = $mc->list_value_by_key('provider.name') || '';
     my $provider = join(";", @$providers);
     print $fh "#!genome-build $provider $assembly_name\n" if $assembly_name;
-  
+
     # Get the build default
     my $version = $gc->get_version();
     print $fh "#!genome-version ${version}\n" if $version;
-  
+
     # Get the date of the genome build
     my $assembly_date = $gc->get_assembly_date();
     print $fh "#!genome-date ${assembly_date}\n" if $assembly_date;
-  
+
     # Get accession and only print if it is there
     my $accession = $gc->get_accession();
     if($accession) {
@@ -328,16 +346,16 @@ sub print_main_header {
        my $string = "#!genome-build-accession ";
        $string .= "$accession_source:" if $accession_source;
        $string .= "$accession";
-  
+
        print $fh "$string\n";
     }
-  
+
     # Genebuild last updated
     my $genebuild_last_date = $gc->get_genebuild_last_geneset_update();
     print $fh "#!genebuild-last-updated ${genebuild_last_date}\n" if $genebuild_last_date;
 
     print "\n";
-  
+
     return;
 }
 

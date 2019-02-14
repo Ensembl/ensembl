@@ -1,6 +1,6 @@
 -- 
 -- Created by SQL::Translator::Producer::SQLite
--- Created on Thu Dec  6 13:50:51 2018
+-- Created on Tue Feb 12 15:00:43 2019
 -- 
 
 BEGIN TRANSACTION;
@@ -202,10 +202,10 @@ CREATE TABLE "closure" (
   "subparent_term_id" integer,
   "distance" tinyint NOT NULL,
   "ontology_id" integer NOT NULL,
-  "confident_relationship" tinyint NOT NULL DEFAULT 0
+  "confident_relationship" tinyint NOT NULL
 );
 
-CREATE UNIQUE INDEX "child_parent_idx" ON "closure" ("child_term_id", "parent_term_id", "subparent_term_id", "ontology_id");
+CREATE UNIQUE INDEX "closure_child_parent_idx" ON "closure" ("child_term_id", "parent_term_id", "subparent_term_id", "ontology_id");
 
 --
 -- Table: "meta"
@@ -226,10 +226,11 @@ CREATE TABLE "ontology" (
   "ontology_id" INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
   "name" varchar(64) NOT NULL,
   "namespace" varchar(64) NOT NULL,
-  "data_version" varchar(64)
+  "data_version" varchar(64),
+  "title" varchar(255)
 );
 
-CREATE UNIQUE INDEX "name_namespace_idx" ON "ontology" ("name", "namespace");
+CREATE UNIQUE INDEX "ontology_name_namespace_idx" ON "ontology" ("name", "namespace");
 
 --
 -- Table: "relation"
@@ -239,11 +240,11 @@ CREATE TABLE "relation" (
   "child_term_id" integer NOT NULL,
   "parent_term_id" integer NOT NULL,
   "relation_type_id" integer NOT NULL,
-  "intersection_of" tinyint NOT NULL DEFAULT 0,
+  "intersection_of" tinyint NOT NULL,
   "ontology_id" integer NOT NULL
 );
 
-CREATE UNIQUE INDEX "child_parent_idx02" ON "relation" ("child_term_id", "parent_term_id", "relation_type_id", "intersection_of", "ontology_id");
+CREATE UNIQUE INDEX "child_parent_idx" ON "relation" ("child_term_id", "parent_term_id", "relation_type_id", "intersection_of", "ontology_id");
 
 --
 -- Table: "relation_type"
@@ -253,7 +254,7 @@ CREATE TABLE "relation_type" (
   "name" varchar(64) NOT NULL
 );
 
-CREATE UNIQUE INDEX "name_idx" ON "relation_type" ("name");
+CREATE UNIQUE INDEX "name" ON "relation_type" ("name");
 
 --
 -- Table: "subset"
@@ -261,10 +262,10 @@ CREATE UNIQUE INDEX "name_idx" ON "relation_type" ("name");
 CREATE TABLE "subset" (
   "subset_id" INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
   "name" varchar(64) NOT NULL,
-  "definition" varchar(128) NOT NULL
+  "definition" varchar(511) NOT NULL DEFAULT ''
 );
 
-CREATE UNIQUE INDEX "name_idx02" ON "subset" ("name");
+CREATE UNIQUE INDEX "name02" ON "subset" ("name");
 
 --
 -- Table: "synonym"
@@ -272,12 +273,12 @@ CREATE UNIQUE INDEX "name_idx02" ON "subset" ("name");
 CREATE TABLE "synonym" (
   "synonym_id" INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
   "term_id" integer NOT NULL,
-  "name" mediumtext NOT NULL,
+  "name" text NOT NULL,
   "type" enum,
-  "dbxref" varchar(256) NOT NULL
+  "dbxref" varchar(500)
 );
 
-CREATE UNIQUE INDEX "term_synonym_idx" ON "synonym" ("term_id", "synonym_id");
+CREATE UNIQUE INDEX "synonym_term_idx" ON "synonym" ("term_id", "synonym_id");
 
 --
 -- Table: "term"
@@ -289,12 +290,13 @@ CREATE TABLE "term" (
   "accession" varchar(64) NOT NULL,
   "name" varchar(255) NOT NULL,
   "definition" text,
-  "is_root" integer,
-  "is_obsolete" integer
+  "is_root" integer NOT NULL DEFAULT 0,
+  "is_obsolete" integer NOT NULL DEFAULT 0,
+  "iri" text
 );
 
-CREATE UNIQUE INDEX "accession_idx" ON "term" ("accession");
+CREATE UNIQUE INDEX "accession" ON "term" ("accession");
 
-CREATE UNIQUE INDEX "ontology_acc_idx" ON "term" ("ontology_id", "accession");
+CREATE UNIQUE INDEX "term_ontology_acc_idx" ON "term" ("ontology_id", "accession");
 
 COMMIT;

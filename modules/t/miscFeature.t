@@ -32,6 +32,7 @@ my $mf = Bio::EnsEMBL::MiscFeature->new(-START => 10,
 
 ok($mf->start() == 10 && $mf->end() == 100);
 is($mf->feature_so_acc, 'SO:0001411', 'MiscFeature feature SO acc is correct (biological_region)');
+is($mf->feature_so_term, 'biological_region', 'MiscFeature feature SO term is correct (biological_region)');
 
 
 #

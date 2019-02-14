@@ -51,7 +51,10 @@ use vars qw(@ISA);
 
 @ISA = qw( Bio::EnsEMBL::BaseAlignFeature );
 
-use constant SO_ACC => 'SO:0000349';
+use constant SEQUENCE_ONTOLOGY => {
+  acc  => 'SO:0000349',
+  term => 'protein_match',
+};
 
 =head2 _hit_unit
 

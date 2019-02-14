@@ -132,6 +132,7 @@ $exon->strand( 1 );
 $pt->add_Exon($exon);
 
 is($exon->feature_so_acc, 'SO:0000147', 'PredictionExon feature SO acc is correct (exon)');
+is($exon->feature_so_term, 'exon', 'PredictionExon feature SO term is correct (exon)');
 
 #check that transcript start + end updated
 ok( $pt->end() == 50 );

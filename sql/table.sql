@@ -308,14 +308,16 @@ CREATE TABLE IF NOT EXISTS meta (
 # Add schema type and schema version to the meta table.
 INSERT INTO meta (species_id, meta_key, meta_value) VALUES
   (NULL, 'schema_type', 'core'),
-  (NULL, 'schema_version', '96');
+  (NULL, 'schema_version', '97');
 
 # Patches included in this schema file:
 # NOTE: At start of release cycle, remove patch entries from last release.
 # NOTE: Avoid line-breaks in values.
 INSERT INTO meta (species_id, meta_key, meta_value)
-  VALUES (NULL, 'patch', 'patch_95_96_a.sql|schema_version');
+  VALUES (NULL, 'patch', 'patch_96_97_a.sql|schema_version');
 
+INSERT INTO meta (species_id, meta_key, meta_value)
+  VALUES (NULL, 'patch', 'patch_96_97_b.sql|biotype_so_term');
 
 /**
 @table meta_coord
@@ -2182,6 +2184,7 @@ CREATE TABLE external_db (
 @column description             Description.
 @column biotype_group           Group, e.g. 'coding', 'pseudogene', 'snoncoding', 'lnoncoding', 'mnoncoding', 'LRG', 'undefined', 'no_group'
 @column so_acc                  Sequence Ontology accession of the biotype.
+@column so_term                 Sequence Ontology term of the biotype.
 
 @see attrib_type
 
@@ -2197,6 +2200,7 @@ CREATE TABLE biotype (
   description     TEXT,
   biotype_group   ENUM('coding','pseudogene','snoncoding','lnoncoding','mnoncoding','LRG','undefined','no_group') DEFAULT NULL,
   so_acc          VARCHAR(64),
+  so_term         VARCHAR(1023),
   PRIMARY KEY (biotype_id),
   UNIQUE KEY name_type_idx (name, object_type)
 ) ENGINE=MyISAM DEFAULT CHARSET=latin1;
