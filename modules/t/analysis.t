@@ -64,6 +64,9 @@ $analysis_ad->store($analysis);
 
 ok(defined $analysis->dbID() );
 
+# Need to explicitly delete cache, otherwise we just return that,
+# and don't actually extract the data from the table and truly verify storage.
+$analysis_ad->{_logic_name_cache} = {};
 
 my $analysis_out = $analysis_ad->fetch_by_logic_name('dummy_analysis');
 
@@ -94,7 +97,7 @@ is($analysis_updated->logic_name(), "new_dummy", "Logic name is correct");
 is($analysis_updated->description(), "new description", "Description is correct");
 is($analysis_updated->display_label(), "new label", "Label is correct");
 is($analysis_updated->displayable(), 0, "Displayable is correct");
-is($analysis_updated->web_data(), undef, "web_data is wiped on update");
+is($analysis_updated->web_data(), "blahblah", "web_data is correct");
 
 # now try updating analysis that has no existing description
 $analysis = Bio::EnsEMBL::Analysis->new();
