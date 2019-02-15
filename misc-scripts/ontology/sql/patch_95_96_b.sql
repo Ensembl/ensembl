@@ -41,3 +41,7 @@ CREATE INDEX ix_closure_ontology_id ON closure (`ontology_id`);
 CREATE INDEX `ix_relation_parent_term_id` ON relation (`parent_term_id`);
 CREATE INDEX `ix_relation_relation_type_id` ON relation (`relation_type_id`);
 CREATE INDEX `ix_relation_ontology_id` ON relation (`ontology_id`);
+
+-- Patch identifier
+INSERT INTO meta (meta_key, meta_value)
+  VALUES ('patch', 'patch_95_96_b.sql|term_ontology_update');
