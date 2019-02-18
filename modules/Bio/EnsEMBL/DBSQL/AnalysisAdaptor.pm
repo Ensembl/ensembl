@@ -62,11 +62,11 @@ use Bio::EnsEMBL::Analysis;
 use Bio::EnsEMBL::DBSQL::BaseAdaptor;
 use Bio::EnsEMBL::Utils::Exception;
 
-use Data::Dumper;
-$Data::Dumper::Terse = 1;
-
 use vars qw(@ISA);
 use strict;
+
+use Data::Dumper;
+$Data::Dumper::Terse = 1;
 
 @ISA = qw( Bio::EnsEMBL::DBSQL::BaseAdaptor);
 
@@ -465,7 +465,8 @@ sub _store_description {
   my $display_label = $analysis->display_label();
   $display_label = '' unless defined $display_label; # SQLite doesn't ignore NOT NULL errors
 
-  my $web_data = Dumper($analysis->web_data) if defined $analysis->web_data;
+  my $web_data;
+  $web_data = Dumper($analysis->web_data) if defined $analysis->web_data;
 
   $sth->bind_param(1,$dbID,SQL_INTEGER);
   $sth->bind_param(2,$display_label,SQL_VARCHAR);
@@ -536,7 +537,8 @@ sub update {
   # not already there
   $sth = $self->prepare("SELECT description FROM analysis_description WHERE analysis_id= ?");
   $sth->execute($a->dbID);
-  my $web_data = Dumper($a->web_data) if defined $a->web_data;
+  my $web_data;
+  $web_data = Dumper($a->web_data) if defined $a->web_data;
   if ($sth->fetchrow_hashref) { # update if exists
       $sth = $self->prepare
       ("UPDATE analysis_description SET description = ?, display_label = ?, displayable = ?, web_data = ? WHERE analysis_id = ?");
