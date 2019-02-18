@@ -52,7 +52,7 @@ package Bio::EnsEMBL::Utils::IO::GFFSerializer;
 
 use strict;
 use warnings;
-use Bio::EnsEMBL::Utils::Exception;
+use Bio::EnsEMBL::Utils::Exception qw/throw deprecate/;
 use URI::Escape;
 use Bio::EnsEMBL::Utils::IO::FeatureSerializer;
 use Bio::EnsEMBL::Utils::Scalar qw/check_ref/;
@@ -83,8 +83,8 @@ sub new {
 # this is to support and keep scripts using the legacy constructor functioning (with an extra warning)
 # Can probably be removed some time in the future
     if ( check_ref($arg1, "Bio::EnsEMBL::DBSQL::OntologyTermAdaptor" )) {
-        warning("GFF format does not require an instance of Bio::EnsEMBL::DBSQL::OntologyTermAdaptor anymore."
-            . "\nFirst argument at Bio::EnsEMBL::Utils::IO::GFFSerializer->new() can be safely removed.");
+        deprecate("new() does not require an instance of Bio::EnsEMBL::DBSQL::OntologyTermAdaptor anymore."
+            . "\nFirst argument of method call can be safely removed.");
         $arg1 = shift;
     }
 
@@ -159,7 +159,7 @@ sub print_feature {
         }
         # could not get it, throw exception
         if ( !$so_term ) {
-            throw "Unable to find an SO term for feature %s.", $summary{id};
+            throw("Unable to find an SO term for feature %s.", $summary{id});
         }
 
         if ($so_term eq 'protein_coding_gene') {
