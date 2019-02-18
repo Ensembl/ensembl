@@ -69,9 +69,9 @@ my %strand_conversion = ( '1' => '+', '0' => '.', '-1' => '-');
 
     Returntype : Bio::EnsEMBL::Utils::IO::GFFSerializer
 
-    Warning    : If legacy mandatory 'Ontology Adaptor' first argument provided.
-                 This argument has been removed but method will continue functioning if still provided,
-                 raising only a warning to the user stating that it can be removed.
+    Warning    : If legacy new() method is used.
+                 An 'Ontology Adaptor' was required as first argument. This argument has been removed but method will
+                 provide backwards comparability showing a warning to the user stating that it can be removed.
 
 =cut
 
