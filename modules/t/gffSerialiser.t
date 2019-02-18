@@ -16,7 +16,7 @@
 use strict;
 use warnings;
 use Test::More;
-use Test::Warnings qw( warning );
+use Test::Warnings;
 use Test::Differences qw( eq_or_diff );
 use Bio::EnsEMBL::Test::MultiTestDB;
 use Bio::EnsEMBL::Utils::IO::GFFSerializer;
@@ -180,19 +180,14 @@ OUT
 }
 
 {
+  # Deprecated constructor call.
   my $fh = IO::String->new();
 
   my $ontology_adaptor = {};
   bless($ontology_adaptor, 'Bio::EnsEMBL::DBSQL::OntologyTermAdaptor');
 
-  my $warning = warning {
-  my $ser = Bio::EnsEMBL::Utils::IO::GFFSerializer->new($ontology_adaptor, $fh) };
-  like( $warning,
-      qr/GFF format does not require an instance of Bio::EnsEMBL::DBSQL::OntologyTermAdaptor anymore./,
-      "Legacy constructor throws warning",
-  ) or diag 'Got warning: ', explain($warning);
+  my $ser = Bio::EnsEMBL::Utils::IO::GFFSerializer->new($ontology_adaptor, $fh);
 }
-
 
 sub assert_gff3 {
   my ($feature, $expected, $msg) = @_;
