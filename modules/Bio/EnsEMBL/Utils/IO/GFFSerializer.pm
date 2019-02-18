@@ -276,7 +276,7 @@ sub print_feature {
             }
             else {
                 if (defined $summary{$attribute}) {
-                  $row .= $attribute."=".uri_escape($summary{$attribute},'\t\n\r;=%&,');
+                  $row .= $attribute . "=" . uri_escape($summary{$attribute} , '\t\n\r;=%&,');
                   $data_written = 1;
                 }
             }
