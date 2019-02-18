@@ -91,7 +91,7 @@ sub new {
     my $arg2 = shift;
 
     my $self = {
-        filehandle => $arg1,
+        filehandle     => $arg1,
         default_source => $arg2
     };
     bless $self, $class;
