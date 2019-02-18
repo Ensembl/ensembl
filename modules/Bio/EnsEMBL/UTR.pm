@@ -223,12 +223,6 @@ sub type {
 
 # package variable to minimize duplication
 my %utr_type_so_mapping = (
- 'five_prime_utr'  => 'SO:0000204',
- 'three_prime_utr' => 'SO:0000205'
-);
-
-# package variable to minimize duplication
-my %utr_type_so_mapping = (
  'five_prime_utr'  => {
     acc  => 'SO:0000204',
     term => 'five_prime_UTR',
