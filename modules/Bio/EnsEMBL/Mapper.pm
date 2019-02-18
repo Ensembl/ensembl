@@ -307,8 +307,14 @@ sub map_coordinates {
   my $from_intervals;
 
   foreach my $i (@{$lr}) {
-    my $start = $i->{$from}{start}<=$i->{$from}{end}?$i->{$from}{start}:$i->{$from}{end};
-    my $end = $i->{$from}{start}<=$i->{$from}{end}?$i->{$from}{end}:$i->{$from}{start};
+    my $start = $i->{$from}{start};
+    my $end = $i->{$from}{end};
+
+    if ($end < $start) {
+      my $tmp = $start;
+      $start = $end;
+      $end = $tmp;
+    }
 
     push @{$from_intervals}, Bio::EnsEMBL::Utils::Interval->new($start, $end, $i);
   }
