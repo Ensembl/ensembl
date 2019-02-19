@@ -224,7 +224,7 @@ sub process_dbs {
 
   foreach my $db (@dbs) {
 
-    if ( $db =~ /([\w\_]+)_(core|otherfeatures)_([\d\_\w]+)/ )
+    if ( $db =~ /([a-z]+_[a-z0-9]+(?:_[a-z0-9]+)?_([a-z]+)(?:_\d+)?)_(\d+)_\w+/ )
     {
       my ( $species, $dbtype, $dbversion ) = ( $1, $2, $3 );
       print "SPECIES: $species\tDBTYPE $dbtype\tDBVERSION: $dbversion\n";
