@@ -160,3 +160,4 @@
 240	\N	patch	patch_94_95_c.sql|ox_key_update
 241	\N	patch	patch_95_96_a.sql|schema_version
 242	\N	patch	patch_96_97_a.sql|schema_version
+243	\N	patch	patch_96_97_b.sql|biotype_so_term

@@ -68,6 +68,8 @@ ok($feature->strand == $strand);
 ok($feature->analysis == $analysis);
 ok($feature->slice == $slice);
 is($feature->feature_so_acc, 'SO:0000001', 'Feature feature SO acc is correct (feature)');
+is($feature->feature_so_term, 'region', 'Feature feature SO term is correct (feature)');
+
 
 #
 # Test setters

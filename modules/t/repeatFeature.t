@@ -87,6 +87,7 @@ ok($rf->score == $score);
 ok($rf->repeat_consensus == $repeat_consensus);
 
 is($rf->feature_so_acc, 'SO:0000657', 'RepeatFeature feature SO acc is correct (repeat_region)');
+is($rf->feature_so_term, 'repeat_region', 'RepeatFeature feature SO term is correct (repeat_region)');
 
 #
 # Test Getter/Setters

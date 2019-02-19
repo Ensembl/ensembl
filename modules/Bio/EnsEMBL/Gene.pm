@@ -73,7 +73,10 @@ use Bio::EnsEMBL::Utils::Scalar qw(assert_ref);
 
 use parent qw(Bio::EnsEMBL::Feature);
 
-use constant SO_ACC => 'SO:0000704';
+use constant SEQUENCE_ONTOLOGY => {
+  acc  => 'SO:0000704',
+  term => 'gene',
+};
 
 =head2 new
 

@@ -35,11 +35,10 @@ ok($db);
 
 my $stable_id = 'ENST00000217347';
 my $transcript_adaptor = $db->get_TranscriptAdaptor();
-my $transcript = 
-  $transcript_adaptor->fetch_by_stable_id($stable_id);
+my $transcript = $transcript_adaptor->fetch_by_stable_id($stable_id);
 
 
-my @cds = @{ $transcript->get_all_CDS() };  
+my @cds = @{ $transcript->get_all_CDS() };
 my @exons = @{ $transcript->get_all_translateable_Exons() };
 my $n = scalar(@cds);
 
@@ -50,6 +49,7 @@ for (my $i = 0; $i < $n; $i++) {
 
 is($cds[0]->start, $transcript->coding_region_start, "First cds is coding start");
 is($cds[$n-1]->end, $transcript->coding_region_end, "Last cds is coding end");
-is($cds[0]->feature_so_acc, 'SO:0000316', 'CDS feature SO acc is correct (CDS)');;
+is($cds[0]->feature_so_acc, 'SO:0000316', 'CDS feature SO acc is correct (CDS)');
+is($cds[0]->feature_so_term, 'CDS', 'CDS feature SO term is correct (CDS)');;
 
 done_testing();

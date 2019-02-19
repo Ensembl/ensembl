@@ -78,8 +78,9 @@ sub try_utrs {
     is($five_utrs[0]->seq_region_start, $transcript->seq_region_start, "Five prime seq_region_starts at transcript seq_region_start");
     is($three_utrs[$three-1]->seq_region_end, $transcript->seq_region_end, "Three prime seq_region_ends at transcript seq_region_end");
     is($five_utrs[0]->feature_so_acc, 'SO:0000204', 'UTR feature SO acc is correct (five_prime_utr)');
+    is($five_utrs[0]->feature_so_term, 'five_prime_UTR', 'UTR feature SO term is correct (five_prime_utr)');
     is($three_utrs[0]->feature_so_acc, 'SO:0000205', 'UTR feature SO acc is correct (three_prime_utr)');
-
+    is($three_utrs[0]->feature_so_term, 'three_prime_UTR', 'UTR feature SO term is correct (three_prime_utr)');
 }
 
 sub try_utrs_reverse {

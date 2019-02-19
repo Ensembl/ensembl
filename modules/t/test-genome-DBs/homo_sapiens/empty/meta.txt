@@ -106,3 +106,4 @@
 155	\N	patch	patch_94_95_c.sql|ox_key_update
 156	\N	patch	patch_95_96_a.sql|schema_version
 157	\N	patch	patch_96_97_a.sql|schema_version
+158	\N	patch	patch_96_97_b.sql|biotype_so_term

@@ -223,8 +223,14 @@ sub type {
 
 # package variable to minimize duplication
 my %utr_type_so_mapping = (
- 'five_prime_utr'  => 'SO:0000204',
- 'three_prime_utr' => 'SO:0000205'
+ 'five_prime_utr'  => {
+    acc  => 'SO:0000204',
+    term => 'five_prime_UTR',
+  },
+ 'three_prime_utr' => {
+    acc  => 'SO:0000205',
+    term => 'three_prime_UTR',
+  }
 );
 
 =head2 feature_so_acc
@@ -240,7 +246,23 @@ sub feature_so_acc {
   my $self = shift;
 
   # return UTR type SO acc, or UTR acc
-  return $utr_type_so_mapping{$self->type} // 'SO:0000203';
+  return $utr_type_so_mapping{$self->type}->{'acc'} // 'SO:0000203';
+}
+
+=head2 feature_so_term
+
+  Example    : print $utr->feature_so_term;
+  Description: This method returns a string containing the SO accession term of the UTR, based on type.
+               Overrides Bio::EnsEMBL::Feature::feature_so_term
+  Returntype : string (Sequence Ontology term)
+
+=cut
+
+sub feature_so_term {
+  my $self = shift;
+
+  # return UTR type SO acc, or UTR acc
+  return $utr_type_so_mapping{$self->type}->{'term'} // 'UTR';
 }
 
 =head2 summary_as_hash

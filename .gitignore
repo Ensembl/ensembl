@@ -32,6 +32,7 @@ a.out
 *.obj
 *.class
 MultiTestDB.conf
+MultiTestDB.*.conf
 *.frozen.conf
 bioperl*.zip
 /modules/t/CLEAN.t

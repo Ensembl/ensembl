@@ -52,19 +52,21 @@ is($biotype1->object_type, 'gene', 'Biotype is from Gene object');
 is($biotype1->name, 'protein_coding', 'Biotype name is protein_coding');
 is($biotype1->biotype_group, 'coding', 'Biotype group is coding');
 is($biotype1->so_acc, 'SO:0001217', 'Biotype protein_coding refers to SO:0001217');
+is($biotype1->so_term, 'protein_coding_gene', 'Biotype protein_coding refers to SO term protein_coding_gene');
 throws_ok { $biotype1->so_acc('test') } qr/so_acc must be a Sequence Ontology accession/, 'so_acc() requires a SO acc like string';
 throws_ok { $biotype1->object_type('test') } qr/object_type must be gene or transcript/, 'object_type() must be gene or transcript';
 
 # test transcript biotype object
 my $transcript = $gene->canonical_transcript;
 debug("transcript biotype");
-is($transcript->biotype, 'protein_coding', "Trancript biotype is protein_coding");
+is($transcript->biotype, 'protein_coding', "Transcript biotype is protein_coding");
 my $biotype2 = $transcript->get_Biotype;
 ok($biotype2->isa("Bio::EnsEMBL::Biotype"), "Biotype object retrieved successfully");
 is($biotype2->object_type, 'transcript', 'Biotype is from Transcript object');
 is($biotype2->name, 'protein_coding', 'Biotype name is protein_coding');
 is($biotype2->biotype_group, 'coding', 'Biotype group is coding');
 is($biotype2->so_acc, 'SO:0000234', 'Biotype protein_coding refers to SO:0000234');
+is($biotype2->so_term, 'mRNA', 'Biotype protein_coding refers to SO term mRNA');
 ok($transcript->set_Biotype('new_biotype'), "Can successfully set new_biotype");
 throws_ok { $gene->set_Biotype() } qr/No argument provided/, 'set_Biotype() requires an argument';
 
@@ -77,6 +79,7 @@ is($biotype3->object_type, 'gene', 'Biotype is from Gene object');
 is($biotype3->name, 'tRNA', 'Biotype name is tRNA');
 is($biotype3->biotype_group, 'snoncoding', 'Biotype group is snoncoding');
 is($biotype3->so_acc, 'SO:0001263', 'Biotype tRNA refers to SO:0001263');
+is($biotype3->so_term, 'ncRNA_gene', 'Biotype protein_coding refers to SO term ncRNA_gene');
 
 # set biotype with term not in database
 debug("set biotype with term not in db");
@@ -87,6 +90,7 @@ is($biotype4->object_type, 'gene', 'Biotype is from Gene object');
 is($biotype4->name, 'dummy', 'Biotype name is dummy');
 is($biotype4->biotype_group, undef, 'Biotype group is not set');
 is($biotype4->so_acc, undef, 'Biotype SO acc is not set');
+is($biotype4->so_term, undef, 'Biotype SO term is not set');
 throws_ok { $gene->set_Biotype() } qr/No argument provided/, 'set_Biotype() requires an argument';
 
 # test fetch biotypes of object_type gene
@@ -95,7 +99,7 @@ my $biotypes1 = $biotype_adaptor->fetch_all_by_object_type('gene');
 is(ref $biotypes1, 'ARRAY', 'Got an array');
 is(scalar @{$biotypes1}, '2', 'of size 2');
 is_deeply($biotypes1, [$biotype1, $biotype3], 'with the correct objects');
-my $warning1 = warning { 
+my $warning1 = warning {
   $biotypes1 = $biotype_adaptor->fetch_all_by_object_type('none') };
 like( $warning1,
     qr/No objects retrieved. Check if object_type 'none' is correct./,

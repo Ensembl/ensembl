@@ -90,7 +90,7 @@ sub _tables {
 sub _columns {
   my $self = shift;
 
-  return ('b.biotype_id', 'b.name', 'b.object_type', 'b.db_type', 'b.attrib_type_id', 'b.description', 'b.biotype_group', 'b.so_acc');
+  return ('b.biotype_id', 'b.name', 'b.object_type', 'b.db_type', 'b.attrib_type_id', 'b.description', 'b.biotype_group', 'b.so_acc', 'b.so_term');
 }
 
 =head2 _objs_from_sth
@@ -107,9 +107,9 @@ sub _columns {
 sub _objs_from_sth {
   my ($self, $sth) = @_;
 
-  my ($dbID, $name, $object_type, $db_type, $attrib_type_id, $description, $biotype_group, $so_acc);
+  my ($dbID, $name, $object_type, $db_type, $attrib_type_id, $description, $biotype_group, $so_acc, $so_term);
 
-  $sth->bind_columns(\$dbID, \$name, \$object_type, \$db_type, \$attrib_type_id, \$description, \$biotype_group, \$so_acc);
+  $sth->bind_columns(\$dbID, \$name, \$object_type, \$db_type, \$attrib_type_id, \$description, \$biotype_group, \$so_acc, \$so_term);
 
   my @biotypes;
 
@@ -124,6 +124,7 @@ sub _objs_from_sth {
          'description'    => $description,
          'biotype_group'  => $biotype_group,
          'so_acc'         => $so_acc,
+         'so_term'        => $so_term,
       } )
     );
   }
