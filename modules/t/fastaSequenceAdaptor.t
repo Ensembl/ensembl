@@ -25,10 +25,18 @@ use Bio::EnsEMBL::Test::MultiTestDB;
 
 use File::Spec;
 use File::Temp qw/:seekable tempdir/;
-use Bio::EnsEMBL::Utils::IO::FASTASerializer;
 use Bio::EnsEMBL::DBSQL::FastaSequenceAdaptor;
-use Bio::EnsEMBL::Utils::IO::FileFaidx;
 use Bio::EnsEMBL::Utils::IO qw/work_with_file/;
+
+# Check if ensembl-io repo is available
+eval {
+  require Bio::EnsEMBL::Utils::IO::FASTASerializer;
+  require Bio::EnsEMBL::Utils::IO::FileFaidx;
+};
+if ($@) {
+  plan( skip_all => 'ensembl-io dependency required.' );
+  note $@;
+}
 
 # "Globals"
 my $multi_db = Bio::EnsEMBL::Test::MultiTestDB->new;
@@ -68,7 +76,7 @@ my $SA = $dba->get_SliceAdaptor();
   $dba->switch_adaptor('sequence', $fsa, sub {
     my $fasta_seq = $slice->seq();
     is($db_seq, $fasta_seq, 'Checking both adaptors return the same sequence');
-    
+
     my $sa = $dba->get_SequenceAdaptor();
     ok($sa->isa('Bio::EnsEMBL::DBSQL::FastaSequenceAdaptor'), 'Checking replacement worked as expected');
     dies_ok { $dba->get_SequenceAdaptor()->store() } 'Call should die due to FASTASequenceAdaptor being in place';
