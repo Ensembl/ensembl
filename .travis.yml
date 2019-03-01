@@ -25,6 +25,7 @@ addons:
 
 before_install:
   - git clone --branch master --depth 1 https://github.com/Ensembl/ensembl-test.git
+  - git clone --branch master --depth 1 https://github.com/Ensembl/ensembl-io.git
   - git clone --branch master --depth 1 https://github.com/Ensembl/ensembl-variation.git
   - git clone --branch master --depth 1 https://github.com/Ensembl/ensembl-compara.git
   - git clone -b release-1-6-924 --depth 1 https://github.com/bioperl/bioperl-live.git

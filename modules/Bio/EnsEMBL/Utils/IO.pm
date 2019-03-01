@@ -48,15 +48,15 @@ Bio::EnsEMBL::Utils::IO
 	# use Bio::EnsEMBL::Utils::IO qw/:bz/;    # brings all methods which start with bz_
 	# use Bio::EnsEMBL::Utils::IO qw/:zip/;   # brings all methods which start with zip_
 	# use Bio::EnsEMBL::Utils::IO qw/:all/;   # brings all methods in
-	
+
   # As a scalar
   my $file_contents = slurp('/my/file/location.txt');
   print length($file_contents);
-  
+
   # As a ref
   my $file_contents_ref = slurp('/my/file/location.txt', 1);
   print length($$file_contents_ref);
-  
+
   # Sending it to an array
   my $array = slurp_to_array('/my/location');
   work_with_file('/my/location', 'r', sub {
@@ -65,24 +65,24 @@ Bio::EnsEMBL::Utils::IO
       return "INPUT: $_";
     });
   });
-  
+
   # Simplified vesion but without the post processing
   $array = fh_to_array($fh);
-  
+
   # Sending this back out to another file
   work_with_file('/my/file/newlocation.txt', 'w', sub {
     my ($fh) = @_;
     print $fh $$file_contents_ref;
     return;
   });
-  
+
   # Gzipping the data to another file
   gz_work_with_file('/my/file.gz', 'w', sub {
     my ($fh) = @_;
     print $fh $$file_contents_ref;
     return;
   });
-  
+
   # Working with a set of lines manually
   work_with_file('/my/file', 'r', sub {
     my ($fh) = @_;
@@ -93,17 +93,17 @@ Bio::EnsEMBL::Utils::IO
     });
     return;
   });
-  
+
   # Doing the same in one go
   iterate_file('/my/file', sub {
     my ($line) = @_;
     print $line; #Send the line in the file back out
     return;
   });
-  
+
   # Move all data from one file handle to another. Bit like a copy
   move_data($src_fh, $trg_fh);
-  	
+
 =head1 DESCRIPTION
 
 A collection of subroutines aimed to helping IO based operations
@@ -170,7 +170,7 @@ eval {
   Arg [2]     : boolean; $want_ref
   Arg [3]     : boolean; $binary
                 Indicates if we want to return a scalar reference
-  Description : Forces the contents of a file into a scalar. This is the 
+  Description : Forces the contents of a file into a scalar. This is the
                 fastest way to get a file into memory in Perl. You can also
                 get a scalar reference back to avoid copying the file contents
                 in Scalar references. If the input file is binary then specify
@@ -236,7 +236,7 @@ sub spurt {
   Arg [2]     : boolean; $want_ref Indicates if we want to return a scalar reference
   Arg [3]     : boolean; $binary
   Arg [4]     : HashRef arguments to pass into IO compression layers
-  Description : Forces the contents of a file into a scalar. This is the 
+  Description : Forces the contents of a file into a scalar. This is the
                 fastest way to get a file into memory in Perl. You can also
                 get a scalar reference back to avoid copying the file contents
                 in Scalar references. If the input file is binary then specify
@@ -267,7 +267,7 @@ sub gz_slurp {
   Arg [2]     : boolean; $want_ref Indicates if we want to return a scalar reference
   Arg [3]     : boolean; $binary
   Arg [4]     : HashRef arguments to pass into IO compression layers
-  Description : Forces the contents of a file into a scalar. This is the 
+  Description : Forces the contents of a file into a scalar. This is the
                 fastest way to get a file into memory in Perl. You can also
                 get a scalar reference back to avoid copying the file contents
                 in Scalar references. If the input file is binary then specify
@@ -298,7 +298,7 @@ sub bz_slurp {
   Arg [2]     : boolean; $want_ref Indicates if we want to return a scalar reference
   Arg [3]     : boolean; $binary
   Arg [4]     : HashRef arguments to pass into IO compression layers
-  Description : Forces the contents of a file into a scalar. This is the 
+  Description : Forces the contents of a file into a scalar. This is the
                 fastest way to get a file into memory in Perl. You can also
                 get a scalar reference back to avoid copying the file contents
                 in Scalar references. If the input file is binary then specify
@@ -423,9 +423,9 @@ sub zip_slurp_to_array {
 
   Arg [1]     : Glob/IO::Handle $fh
   Arg [2]     : boolean $chomp
-  Description : Sends the contents of the given filehandle into an ArrayRef. 
+  Description : Sends the contents of the given filehandle into an ArrayRef.
                 Will perform chomp on each line if specified. If you require
-                any more advanced line based processing then see 
+                any more advanced line based processing then see
                 L<process_to_array>.
   Returntype  : ArrayRef
   Example     : my $contents_array = fh_to_array($fh);
@@ -526,17 +526,17 @@ sub iterate_file {
 =head2 work_with_file
 
   Arg [1]     : string $file
-  Arg [2]     : string; $mode 
-                Supports all modes specified by the C<open()> function as well as those 
+  Arg [2]     : string; $mode
+                Supports all modes specified by the C<open()> function as well as those
                 supported by IO::File
   Arg [3]     : CodeRef the callback which is given the open file handle as
                 its only argument
   Description : Performs the nitty gritty of checking if a file handle is open
                 and closing the resulting filehandle down.
   Returntype  : None
-  Example     : work_with_file('/tmp/out.txt', 'w', sub { 
-                  my ($fh) = @_; 
-                  print $fh 'hello'; 
+  Example     : work_with_file('/tmp/out.txt', 'w', sub {
+                  my ($fh) = @_;
+                  print $fh 'hello';
                   return;
                 });
   Exceptions  : If we could not work with the file due to permissions
@@ -559,18 +559,18 @@ sub work_with_file {
 =head2 gz_work_with_file
 
   Arg [1]     : string $file
-  Arg [2]     : string; $mode 
+  Arg [2]     : string; $mode
                 Supports modes like C<r>, C<w>, C<\>> and C<\<>
   Arg [3]     : CodeRef the callback which is given the open file handle as
                 its only argument
-  Arg [4]     : HashRef used to pass options into the IO 
+  Arg [4]     : HashRef used to pass options into the IO
                 compression/uncompression modules
   Description : Performs the nitty gritty of checking if a file handle is open
                 and closing the resulting filehandle down.
   Returntype  : None
-  Example     : gz_work_with_file('/tmp/out.txt.gz', 'w', sub { 
-                  my ($fh) = @_; 
-                  print $fh 'hello'; 
+  Example     : gz_work_with_file('/tmp/out.txt.gz', 'w', sub {
+                  my ($fh) = @_;
+                  print $fh 'hello';
                   return;
                 });
   Exceptions  : If we could not work with the file due to permissions
@@ -585,7 +585,7 @@ sub gz_work_with_file {
   throw "We need a mode to open the requested file with" if ! $mode;
   assert_ref($callback, 'CODE', 'callback');
   $args ||= {};
-  
+
   my $fh;
   {
     no warnings qw/once/;
@@ -608,18 +608,18 @@ sub gz_work_with_file {
 =head2 bz_work_with_file
 
   Arg [1]     : string $file
-  Arg [2]     : string; $mode 
+  Arg [2]     : string; $mode
                 Supports modes like C<r>, C<w>, C<\>> and C<\<>
   Arg [3]     : CodeRef the callback which is given the open file handle as
                 its only argument
-  Arg [4]     : HashRef used to pass options into the IO 
+  Arg [4]     : HashRef used to pass options into the IO
                 compression/uncompression modules
   Description : Performs the nitty gritty of checking if a file handle is open
                 and closing the resulting filehandle down.
   Returntype  : None
-  Example     : bz_work_with_file('/tmp/out.txt.bz2', 'w', sub { 
-                  my ($fh) = @_; 
-                  print $fh 'hello'; 
+  Example     : bz_work_with_file('/tmp/out.txt.bz2', 'w', sub {
+                  my ($fh) = @_;
+                  print $fh 'hello';
                   return;
                 });
   Exceptions  : If we could not work with the file due to permissions
@@ -634,7 +634,7 @@ sub bz_work_with_file {
   throw "We need a mode to open the requested file with" if ! $mode;
   assert_ref($callback, 'CODE', 'callback');
   $args ||= {};
-  
+
   my $fh;
   {
     no warnings qw/once/;
@@ -657,18 +657,18 @@ sub bz_work_with_file {
 =head2 zip_work_with_file
 
   Arg [1]     : string $file
-  Arg [2]     : string; $mode 
+  Arg [2]     : string; $mode
                 Supports modes like C<r>, C<w>, C<\>> and C<\<>
   Arg [3]     : CodeRef the callback which is given the open file handle as
                 its only argument
-  Arg [4]     : HashRef used to pass options into the IO 
+  Arg [4]     : HashRef used to pass options into the IO
                 compression/uncompression modules
   Description : Performs the nitty gritty of checking if a file handle is open
                 and closing the resulting filehandle down.
   Returntype  : None
-  Example     : zip_work_with_file('/tmp/out.txt.zip', 'w', sub { 
-                  my ($fh) = @_; 
-                  print $fh 'hello'; 
+  Example     : zip_work_with_file('/tmp/out.txt.zip', 'w', sub {
+                  my ($fh) = @_;
+                  print $fh 'hello';
                   return;
                 });
   Exceptions  : If we could not work with the file due to permissions
@@ -683,7 +683,7 @@ sub zip_work_with_file {
   throw "We need a mode to open the requested file with" if ! $mode;
   assert_ref($callback, 'CODE', 'callback');
   $args ||= {};
-  
+
   my $fh;
   {
     no warnings qw/once/;
@@ -712,11 +712,11 @@ sub zip_work_with_file {
                 The callback allows to specify the criteria an entry in
                 the directory must satisfy in order to appear in the content.
   Returntype  : Arrayref; list with the filtered files/directory
-  Example     : filter_dir('/tmp', sub { 
+  Example     : filter_dir('/tmp', sub {
                   my $file = shift;
 
                   # select perl scripts in the directory
-                  return $file if $file =~ /\.pl$/; 
+                  return $file if $file =~ /\.pl$/;
                 });
   Exceptions  : If the directory cannot be opened or its handle
                 cannot be closed
@@ -754,7 +754,7 @@ sub move_data {
   my ($src_fh, $trg_fh, $buffer_size) = @_;
   assert_file_handle($src_fh, 'SourceFileHandle');
   assert_file_handle($trg_fh, 'TargetFileHandle');
-  
+
   $buffer_size ||= 8192; #Default 8KB
   my $buffer;
   while(1) {
