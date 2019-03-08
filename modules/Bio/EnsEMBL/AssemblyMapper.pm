@@ -205,6 +205,12 @@ sub register_all {
                The strand of the region to transform FROM.
   Arg [5]    : Bio::EnsEMBL::CoordSystem
                The coordinate system to transform FROM
+  Arg [6]    : Dummy placeholder to keep the interface consistent
+               across different mappers
+  Arg [7]    : Bio::EnsEMBL::Slice
+               Target slice
+  Arg [8]    : (optional) boolean
+               Whether to include the original coordinates or not
   Example    : @coords =
                 $asm_mapper->map( 'X', 1_000_000, 2_000_000, 1,
                                   $chr_cs );
@@ -224,7 +230,7 @@ sub map {
   throw('Incorrect number of arguments.') if (!( @_ >= 6));
 
   my ( $self, $frm_seq_region_name, $frm_start, $frm_end, $frm_strand,
-       $frm_cs, $to_slice )
+       $frm_cs, $dummy, $to_slice, $include_org_coord )
     = @_;
 
   my $mapper  = $self->{'mapper'};
@@ -271,16 +277,23 @@ sub map {
 
   my @coords = 
     $mapper->map_coordinates( $seq_region_id, $frm_start, $frm_end,
-                              $frm_strand, $frm );
+                              $frm_strand, $frm, $include_org_coord );
   
   # decorate (org,)mapped coordinates with their corresponding region names
-  map {
-    check_ref($_, 'Bio::EnsEMBL::Mapper::Coordinate') && # exclude gap
+  if ($include_org_coord) {
+    map {
+      check_ref($_, 'Bio::EnsEMBL::Mapper::Coordinate') && # exclude gap
+      $_->{original}->name($adaptor->seq_ids_to_regions([$_->{original}->id])->[0]) &&
+      $_->{mapped}->name($adaptor->seq_ids_to_regions([$_->{mapped}->id])->[0])
+    } @coords;
+  } else {
+    map {
+      check_ref($_, 'Bio::EnsEMBL::Mapper::Coordinate') && # exclude gap
       $_->name($adaptor->seq_ids_to_regions([$_->id])->[0])
     } @coords;
+  }
 
   return @coords;
-  
 } ## end sub map
 
 

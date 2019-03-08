@@ -260,6 +260,8 @@ sub size {
   Arg [6]    : (optional) fastmap
   Arg [7]    : (optional) Bio::Ensembl::Slice
                The slice to transform TO
+  Arg [8]    : (optional) boolean
+               Whether to include the original coordinates or not
   Example    : @coords = $asm_mapper->map('X', 1_000_000, 2_000_000,
                                             1, $chr_cs);
   Description: Transforms coordinates from one coordinate system
@@ -277,7 +279,7 @@ sub map {
   throw('Incorrect number of arguments.') if(@_ < 6);
 
   my ($self, $frm_seq_region_name, $frm_start,
-      $frm_end, $frm_strand, $frm_cs, $fastmap, $to_slice) = @_;
+      $frm_end, $frm_strand, $frm_cs, $fastmap, $to_slice, $include_org_coord) = @_;
 
   my $mapper  = $self->{'first_last_mapper'};
   my $first_cs  = $self->{'first_cs'};
@@ -287,9 +289,6 @@ sub map {
 
   my $frm;
   my $registry;
-
-
-
 
   my @tmp;
   push @tmp, $frm_seq_region_name;
@@ -362,13 +361,21 @@ sub map {
   }
 
   my @coords = $mapper->map_coordinates($seq_region_id, $frm_start, $frm_end,
-					$frm_strand, $frm);
+					$frm_strand, $frm, $include_org_coord);
 
   # decorate (org,)mapped coordinates with their corresponding region names
-  map {
-    check_ref($_, 'Bio::EnsEMBL::Mapper::Coordinate') && # exclude gap
+  if ($include_org_coord) {
+    map {
+      check_ref($_, 'Bio::EnsEMBL::Mapper::Coordinate') && # exclude gap
+      $_->{original}->name($self->adaptor->seq_ids_to_regions([$_->{original}->id])->[0]) &&
+      $_->{mapped}->name($self->adaptor->seq_ids_to_regions([$_->{mapped}->id])->[0])
+    } @coords;
+  } else {
+    map {
+      check_ref($_, 'Bio::EnsEMBL::Mapper::Coordinate') && # exclude gap
       $_->name($self->adaptor->seq_ids_to_regions([$_->id])->[0])
     } @coords;
+  }
 
   return @coords;
 }
