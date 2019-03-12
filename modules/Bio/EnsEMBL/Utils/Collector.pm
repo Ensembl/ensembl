@@ -99,7 +99,7 @@ use strict;
 use warnings;
 
 use Bio::EnsEMBL::Utils::Argument  ('rearrange');
-use Bio::EnsEMBL::Utils::Exception ('throw');
+use Bio::EnsEMBL::Utils::Exception ('throw', 'deprecate');
 
 ### Global package config vars
 
@@ -125,6 +125,7 @@ our ( $bin_model,   $bin_method, $pack_template,
 
 =head2 new
 
+  Deprecated.
   Args       : None
   Example    :
 
@@ -145,6 +146,9 @@ our ( $bin_model,   $bin_method, $pack_template,
 =cut
 
 sub new {
+
+  deprecate("new is deprecated and will be removed in e100.");
+
   return bless {}, $_[0];   # Simply blesses this class as an empty hash.
 
   # Do not set anything here, as will not be first in ISA for
@@ -153,6 +157,7 @@ sub new {
 
 =head2 new_assembly
 
+  Deprecated.
   Args       : optional - string assembly version e.g. GRCh37
   Example    : $collector->new_assembly('GRCh37');
   Description: Getter/Setter for new assembly version which should be
@@ -167,6 +172,8 @@ sub new {
 
 sub new_assembly {
   my ( $self, $new_asm ) = @_;
+
+  deprecate("new_assembly is deprecated and will be removed in e100.");
 
   if ( defined($new_asm) ) {
     $self->{'new_assembly'} = $new_asm;
@@ -187,6 +194,7 @@ sub new_assembly {
 
 =head2 max_data_type_size
 
+  Deprecated.
   Args       : optional - int  Maximum size of collection in bytes
   Example    : $collector->max_data_type_size($new_max_size);
   Description: Getter/Setter for max_data_type_size, default is
@@ -204,6 +212,8 @@ sub new_assembly {
 
 sub max_data_type_size {
   my ( $self, $size ) = @_;
+
+  deprecate("max_data_type_size is deprecated and will be removed in e100.");
 
   # Validate is sensible integer
 
@@ -224,6 +234,7 @@ sub max_data_type_size {
 
 =head2 max_view_width
 
+  Deprecated.
   Args       : optional - int  Maximum width of view
   Example    : $collector->max_view_width($new_max_width);
   Description: Getter/Setter for max_view_width, default is currently
@@ -238,6 +249,8 @@ sub max_data_type_size {
 
 sub max_view_width {
   my ( $self, $size ) = @_;
+
+  deprecate("max_data_type_size is deprecated and will be removed in e100.");
 
   # Validate is sensible integer
 
@@ -258,6 +271,7 @@ sub max_view_width {
 
 =head2 bin_method
 
+  Deprecated.
   Args[0]    : optional - string name of bin method e.g. 'max_magnitude'
   Args[1]    : optional - Bio::EnsEMBL::Funcgen::Parsers::InputSet
   Example    : my $bin_method = $self->bin_method();
@@ -273,6 +287,8 @@ sub max_view_width {
 
 sub bin_method {
   my ( $self, $bmethod, $config ) = @_;
+
+  deprecate("bin_method is deprecated and will be removed in e100.");
 
   if ( defined($bmethod) ) {
     $bin_method = $bmethod;
@@ -298,6 +314,7 @@ sub bin_method {
 
 =head2 bin_model
 
+  Deprecated.
   Args       : optional - string bin model e.g. SIMPLE or COMPLEX
   Example    : my $bin_model = $self->bin_model;
   Description: Getter/Setter for bin_model, default should be set in
@@ -312,6 +329,8 @@ sub bin_method {
 
 sub bin_model {
   my ( $self, $bmodel ) = @_;
+
+  deprecate("bin_model is deprecated and will be removed in e100.");
 
   if ( defined($bmodel) ) {
     $bin_model = $bmodel;
@@ -334,6 +353,7 @@ sub bin_model {
 
 =head2 window_sizes
 
+  Deprecated.
   Args       : optional - arrayref of window sizes
   Example    :
 
@@ -357,6 +377,8 @@ sub bin_model {
 sub window_sizes {
   my ( $self, $sizes ) = @_;
 
+  deprecate("window_sizes is deprecated and will be removed in e100.");
+
   if ( defined($sizes) ) {
     $window_sizes = $sizes;
   }
@@ -378,6 +400,7 @@ sub window_sizes {
 
 =head2 has_window_size
 
+  Deprecated.
   Args       : int - window size to validate
   Example    : if( $collector->has_window_size('30') ){
                    #Do something wrt to 30bp window size
@@ -396,6 +419,8 @@ sub window_sizes {
 sub has_window_size{
   my ( $self, $size ) = @_;
 
+  deprecate("has_window_size is deprecated and will be removed in e100.");
+
   if(! defined $size){
 	throw('You must pass a window size to validate');
   }
@@ -412,6 +437,7 @@ sub has_window_size{
 
 =head2 pack_template
 
+  Deprecated.
   Args       : optional - string perl 'pack' template 
   Example    : $self->pack_template('v');
   Description: Getter/Setter for pack_template. Default should be set
@@ -427,6 +453,8 @@ sub has_window_size{
 
 sub pack_template {
   my ( $self, $template ) = @_;
+
+  deprecate("pack_template is deprecated and will be removed in e100.");
 
   if ( defined($template) ) {
     $pack_template = $template;
@@ -444,6 +472,7 @@ sub pack_template {
 
 =head2 packed_size
 
+  Deprecated.
   Args       : optional - int size of perl 'pack' template in bytes
   Example    : $self->packed_size(2);
   Description: Getter/Setter for packed_size.  Default should be set
@@ -460,6 +489,8 @@ sub pack_template {
 
 sub packed_size {
   my ( $self, $size ) = @_;
+
+  deprecate("packed_size is deprecated and will be removed in e100.");
 
   if ( defined($size) ) {
     $packed_size = $size;
@@ -483,6 +514,7 @@ sub packed_size {
 
 =head2 bins_per_record
 
+  Deprecated.
   Example    : my $bin_per_records = $self->bin_per_record
   Description: Simple method to calculate the max number of bins
                allowed per record given the current config.
@@ -494,12 +526,16 @@ sub packed_size {
 =cut
 
 sub bins_per_record {
+
+  deprecate("bins_per_record is deprecated and will be removed in e100.");
+
   return int( $max_data_type_size/$packed_size );
 }
 
 
 =head2 current_packed_size
 
+  Deprecated.
   Arg[0]     : int - window size
   Example    : my $cps = $self->current_packed_size($wsize);
   Description: Simple method to calculate the max number of bins
@@ -513,12 +549,16 @@ sub bins_per_record {
 
 sub current_packed_size {
   my ( $self, $wsize ) = @_;
+
+  deprecate("current_packed_size is deprecated and will be removed in e100.");
+
   return ( scalar( @{ $self->score_cache($wsize) } )*$packed_size );
 }
 
 
 =head2 score_cache
 
+  Deprecated.
   Arg[0]     : int - window size
   Example    : my $cps = $self->current_packed_size($wsize);
   Description: Handles caching of bin scores for each window size
@@ -532,6 +572,8 @@ sub current_packed_size {
 
 sub score_cache {
   my ( $self, $wsize, $scores ) = @_;
+
+  deprecate("score_cache is deprecated and will be removed in e100.");
 
   if ( !defined($wsize) ) {
     throw('Must pass a window size argument');
@@ -549,6 +591,7 @@ sub score_cache {
 
 =head2 collection_start
 
+  Deprecated.
   Arg[0]     : int - window_size
   Arg[1]     : optional int - seq_region_start
   Example    : my $coll_start->(150);
@@ -562,6 +605,8 @@ sub score_cache {
 
 sub collection_start {
   my ( $self, $wsize, $sr_start ) = @_;
+
+  deprecate("collection_start is deprecated and will be removed in e100.");
 
   if ( !defined($wsize) ) {
     throw('Must pass a window size argument');
@@ -577,6 +622,7 @@ sub collection_start {
 
 =head2 collection_end
 
+  Deprecated.
   Arg[0]     : int - window_size
   Arg[1]     : optional int - seq_region_end
   Example    : my $coll_end->(150);
@@ -590,6 +636,9 @@ sub collection_start {
 
 sub collection_end{
   my ($self, $wsize, $sr_end) = @_;
+
+  deprecate("collection_end is deprecated and will be removed in e100.");
+
   throw('Must pass a window size argument') if ! defined $wsize;
 
   if(defined $sr_end){
@@ -603,6 +652,7 @@ sub collection_end{
 
 =head2 collection_strand
 
+  Deprecated.
   Arg[0]     : int - window_size
   Arg[1]     : optional int - seq_region_strand
   Example    : my $coll_start->(0);
@@ -616,6 +666,8 @@ sub collection_end{
 
 sub collection_strand {
   my ( $self, $wsize, $strand ) = @_;
+
+  deprecate("collection_strand is deprecated and will be removed in e100.");
 
   if ( !defined($wsize) ) {
     throw('Must pass a window size argument');
@@ -633,6 +685,7 @@ sub collection_strand {
 
 =head2 _get_Slice_chunks
 
+  Deprecated.
   Description: Defines the optimal set of slice chunks to use for
                generating collections such that redundant fetches
                are minimized.
@@ -645,6 +698,8 @@ sub collection_strand {
 
 sub _get_Slice_chunks {
   my $self = shift;
+
+  deprecate("_get_Slice_chunks is deprecated and will be removed in e100.");
 
   if ( !defined($window_sizes) || !defined($max_view_width) ) {
     throw(   'You must pass both a window_size array ref '
@@ -839,6 +894,7 @@ sub _get_Slice_chunks {
 
 =head2 set_config
 
+  Deprecated.
   Arg[0]     : optional hash - parameter hash(see above methods for more info):
 
         WINDOW_SIZES        => array ref - subset of defined window
@@ -875,6 +931,8 @@ sub _get_Slice_chunks {
 
 sub set_config {
   my ( $self, %config ) = @_;
+
+  deprecate("set_config is deprecated and will be removed in e100.");
 
   my ( $wsizes,       $bmethod,  $mv_width,
        $md_type_size, $template, $psize,
@@ -976,6 +1034,7 @@ sub set_config {
 
 =head2 store_window_bins_by_Slice
 
+  Deprecated.
   Arg[0]     : Bio::EnsEMBL:Slice
   Example    : $collector->store_window_bins_by_Slice($slice);
   Description: This is the main run method, it loops through
@@ -992,6 +1051,8 @@ sub set_config {
 
 sub store_window_bins_by_Slice {
   my ( $self, $slice ) = @_;
+
+  deprecate("store_window_bins_by_Slice is deprecated and will be removed in e100.");
 
   warn "Need to be careful here "
     . "about cleaning start end strand caches between "
@@ -1254,6 +1315,7 @@ sub store_window_bins_by_Slice {
 
 =head2 _bin_features_by_Slice_window_sizes
 
+  Deprecated.
   Args[0]    : Bio::EnsEMBL::Slice
   Args[1]    : ARRAYREF of window sizes
   Args[2]    : ARRAYREF of features with start and end method
@@ -1277,6 +1339,8 @@ sub store_window_bins_by_Slice {
 
 sub _bin_features_by_Slice_window_sizes {
   my ( $self, @args ) = @_;
+
+  deprecate("_bin_features_by_Slice_window_sizes is deprecated and will be removed in e100.");
 
   my ( $slice, $wsizes, $features ) =
     rearrange( [ 'SLICE', 'WINDOW_SIZES', 'FEATURES' ], @args );
@@ -1354,6 +1418,7 @@ sub _bin_features_by_Slice_window_sizes {
 
 =head2 _calculate_count
 
+  Deprecated.
   Args[0]    : feature e.g. Bio::EnsEMBL::Feature
   Args[1]    : int - start bin
   Args[2]    : int - end bin
@@ -1371,6 +1436,8 @@ sub _bin_features_by_Slice_window_sizes {
 sub _calculate_count {
   my ( $self, $feature, $start_bin, $end_bin, $wsize, $bins_ref ) = @_;
 
+  deprecate("_calculate_count is deprecated and will be removed in e100.");
+
   my $bin_index;
 
   for ( $bin_index = $start_bin; $bin_index <= $end_bin; ++$bin_index )
@@ -1384,6 +1451,7 @@ sub _calculate_count {
 
 =head2 _calculate_average_score
 
+  Deprecated.
   Args[0]    : feature e.g. Bio::EnsEMBL::Feature
   Args[1]    : int - start bin
   Args[2]    : int - end bin
@@ -1403,6 +1471,8 @@ sub _calculate_average_score {
   my ( $self, $feature, $start_bin, $end_bin, $wsize, $bins_ref,
        $bin_counts_ref )
     = @_;
+
+  deprecate("_calculate_average_score is deprecated and will be removed in e100.");
 
   # This is simple an average of all the scores for features which
   # overlap this bin.  No weighting with respect to the bin or the
@@ -1427,6 +1497,7 @@ sub _calculate_average_score {
 
 =head2 _post_process_average_score
 
+  Deprecated.
   Args[0]    : hashref - score bins
   Args[1]    : hashref - count bins
   Example    : $self->$post_method
@@ -1440,6 +1511,8 @@ sub _calculate_average_score {
 
 sub _post_process_average_score {
   my ( $self, $bins_ref, $bin_counts_ref ) = @_;
+
+  deprecate("_post_process_average_score is deprecated and will be removed in e100.");
 
   foreach my $wsize ( keys %{$bins_ref} ) {
     foreach my $bin_index ( 0 .. $#{ $bins_ref->{$wsize} } ) {
@@ -1458,6 +1531,7 @@ sub _post_process_average_score {
 
 =head2 _calculate_max_magnitude
 
+  Deprecated.
   Args[0]    : feature e.g. Bio::EnsEMBL::Feature
   Args[1]    : int - start bin
   Args[2]    : int - end bin
@@ -1474,6 +1548,8 @@ sub _post_process_average_score {
 
 sub _calculate_max_magnitude {
   my ( $self, $feature, $start_bin, $end_bin, $wsize, $bins_ref ) = @_;
+
+  deprecate("_calculate_max_magnitude is deprecated and will be removed in e100.");
 
   my $score = $self->get_score_by_Feature($feature);
 
@@ -1502,6 +1578,7 @@ sub _calculate_max_magnitude {
 
 =head2 _post_process_max_magnitude
 
+  Deprecated.
   Args[0]    : hashref - score bins
   Args[1]    : hashref - count bins
   Example    : $self->$post_method
@@ -1515,6 +1592,8 @@ sub _calculate_max_magnitude {
 
 sub _post_process_max_magnitude {
   my ( $self, $bins_ref ) = @_;
+
+  deprecate("_post_process_max_magnitude is deprecated and will be removed in e100.");
 
   # Take the highest value +ve or -ve score
 
@@ -1547,6 +1626,7 @@ sub _post_process_max_magnitude {
 
 =head2 _calculate_RPKM
 
+  Deprecated.
   Args[0]    : feature e.g. Bio::EnsEMBL::Feature
   Args[1]    : int - start bin
   Args[2]    : int - end bin
@@ -1564,6 +1644,8 @@ sub _post_process_max_magnitude {
 sub _calculate_RPKM {
   my ( $self, $feature, $start_bin, $end_bin, $wsize, $bins_ref ) = @_;
 
+  deprecate("_calculate_RPKM is deprecated and will be removed in e100.");
+
   $self->_calculate_count( $feature, $start_bin, $end_bin,
                            $wsize,   $bins_ref );
 
@@ -1573,6 +1655,7 @@ sub _calculate_RPKM {
 
 =head2 _post_process_RPKM
 
+  Deprecated.
   Args[0]    : hashref - score bins
   Args[1]    : hashref - count bins
   Example    : $self->$post_method
@@ -1586,6 +1669,8 @@ sub _calculate_RPKM {
 
 sub _post_process_RPKM {
   my ( $self, $bins_ref ) = @_;
+
+  deprecate("_post_process_RPKM is deprecated and will be removed in e100.");
 
   #10^9 x C / NGB
   #C = Reads overlapping bin
@@ -1611,6 +1696,7 @@ sub _post_process_RPKM {
 
 =head2 _set_up_RPKM
 
+  Deprecated.
   Args[0]    : hashref - method config e.g
                  {
                   DNADB         => Bio::EnsEMBL::DBSQL::DBAdaptor,
@@ -1629,6 +1715,8 @@ sub _post_process_RPKM {
 
 sub _set_up_RPKM{
   my ($self, $config) = @_;
+
+  deprecate("_set_up_RPKM is deprecated and will be removed in e100.");
 
   my ($dnadb, $total_features) = rearrange([ 'DNADB', 'TOTAL_FEATURES'], %{$config});
   
@@ -1656,6 +1744,7 @@ sub _set_up_RPKM{
 
 =head2 _RPKM_factor
 
+  Deprecated.
   Args[0]    : int - RPKM factor i.e.  (Total reads in the experiment *
                Genome length)
   Example    : $self->_RPKM_factor($wsize, $factor);
@@ -1669,6 +1758,8 @@ sub _set_up_RPKM{
 
 sub _RPKM_factor{
   my ($self, $wsize, $factor) = @_;
+
+  deprecate("_RPKM_factor is deprecated and will be removed in e100.");
 
   if (! defined $wsize){
 	throw("You must pass at least window_size to get or set the RPKM factor");
@@ -1689,6 +1780,7 @@ sub _RPKM_factor{
 
 =head2 get_diploid_genome_length_by_gender
 
+  Deprecated.
   Args[0]    : string - RPKM factor i.e.  (Total reads in the experiment *
                Genome length)
   Args[1]    : string - gender e.g. male or female
@@ -1709,6 +1801,8 @@ sub _RPKM_factor{
 
 sub get_diploid_genome_length_by_gender {
   my ( $dnadb, $gender ) = @_;
+
+  deprecate("get_diploid_genome_length_by_gender is deprecated and will be removed in e100.");
 
   my %sex_chrs = ( 'Y' => 'male',
                    'X' => 'female', );

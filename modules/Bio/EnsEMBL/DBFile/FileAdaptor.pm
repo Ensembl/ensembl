@@ -50,13 +50,14 @@ here and BaseFeatureAdaptor.
 
 package Bio::EnsEMBL::DBFile::FileAdaptor;
 
-use Bio::EnsEMBL::Utils::Exception qw(throw warning);
+use Bio::EnsEMBL::Utils::Exception qw(throw warning deprecate);
 use strict;
 use warnings;
 
 
 =head2 get_filehandle
 
+  Deprecated.
   Arg[1]     : string     - filepath
   Arg[2]     : HASHREF    - Optional params, see open_file
   Example    : my $fh     = $self->get_filehandle($filepath, 1);
@@ -70,6 +71,8 @@ use warnings;
 
 sub get_filehandle{
   my ($self, $filepath, $params_hash) = @_;
+
+  deprecate("get_filehandle is deprecated and will be removed in e100.");
 
   my $file_op = '<';
 
@@ -103,6 +106,7 @@ sub get_filehandle{
 
 =head2 open_file
 
+  Deprecated.
   Arg[1]     : string     - filepath
   Arg[2]     : HASHREF    - Optional params:
                           -binmode       => 0|1,   # Boolean i.e. treat file as binary
@@ -121,6 +125,8 @@ sub get_filehandle{
 
 sub open_file{
   my ($self, $filepath, $params_hash) = @_;
+
+  deprecate("open_file is deprecated and will be removed in e100.");
 
   #Validate params_hash? 
   #rearrange? Will not warn/throw for invalid keys?
@@ -165,6 +171,7 @@ sub open_file{
 
 =head2 validate_file_length
 
+  Deprecated.
   Arg[1]     : string  - filepath
   Arg[2]     : int     - expected length in bytes
   Example    : $self->validate_file_length($filepath, $expected_length);
@@ -179,6 +186,8 @@ sub open_file{
 
 sub validate_file_length{
   my ($self, $filepath, $expected_length, $binmode) = @_;
+
+  deprecate("validate_file_length is deprecated and will be removed in e100.");
 
   #Currently not using cache as we rarely want to 
   #use the file handle afterwards
@@ -222,6 +231,9 @@ sub validate_file_length{
 
 
 sub initialise_filehandle{
+
+  deprecate("initialise_filehandle is deprecated and will be removed in e100.");
+
   return;
 }
 

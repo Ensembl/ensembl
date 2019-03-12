@@ -88,13 +88,14 @@ use strict;
 use warnings;
 
 use Bio::EnsEMBL::DBFile::FileAdaptor;
-use Bio::EnsEMBL::Utils::Exception qw(throw warning);
+use Bio::EnsEMBL::Utils::Exception qw(throw warning deprecate);
 use vars qw(@ISA);
 @ISA = qw(Bio::EnsEMBL::DBFile::FileAdaptor);
 
 
 =head2 initialise_filehandle
 
+  Deprecated.
   Arg[1]     : string  - filepath
   Example    : $self->initialise_filehandle($filepath);
   Description: Initialises the filehandle for use, in this case reads 
@@ -108,6 +109,9 @@ use vars qw(@ISA);
 
 sub initialise_filehandle{
   my ($self, $filepath) = @_;
+
+  deprecate("initialise_filehandle is deprecated and will be removed in e100.");
+
   my $fh = $self->{file_cache}{$filepath}{filehandle};
   
   #offsets include the length of the complete index block
@@ -164,6 +168,7 @@ sub initialise_filehandle{
 
 =head2 read_collection_blob
 
+  Deprecated.
   Arg[1]     : string - filepath
   Arg[2]     : int    - seq_region_id
   Arg[3]     : int    - seq_region offset. The byte offset required to
@@ -193,7 +198,9 @@ sub initialise_filehandle{
 
 sub read_collection_blob{
   my($self, $filepath, $sr_key, $sr_offset, $byte_length) = @_;
-	
+
+  deprecate("read_collection_blob is deprecated and will be removed in e100.");
+
   my $blob_substr;
   my $fh = $self->get_filehandle($filepath, {-binmode => 1});
 

@@ -8,6 +8,45 @@ When a method is deprecated, a deprecation warning is thrown whenever the method
 The warning also contains instructions on replacing the deprecated method and when it will be removed.
 A year after deprecation (4 Ensembl releases), the method is removed from the API.
 
+### Removed in Ensembl Release 100 ###
+
+ - Bio::EnsEMBL::DBFile::**FileAdaptor**::*get_filehandle()*
+ - Bio::EnsEMBL::DBFile::**FileAdaptor**::*open_file()*
+ - Bio::EnsEMBL::DBFile::**FileAdaptor**::*validate_file_length()*
+ - Bio::EnsEMBL::DBFile::**FileAdaptor**::*initialise_filehandle()*
+ - Bio::EnsEMBL::DBFile::**CollectionAdaptor**::*initialise_filehandle()*
+ - Bio::EnsEMBL::DBFile::**CollectionAdaptor**::*read_collection_blob()*
+ - Bio::EnsEMBL::Utils::**Collector**::*new()*
+ - Bio::EnsEMBL::Utils::**Collector**::*new_assembly()*
+ - Bio::EnsEMBL::Utils::**Collector**::*max_data_type_size()*
+ - Bio::EnsEMBL::Utils::**Collector**::*max_view_width()*
+ - Bio::EnsEMBL::Utils::**Collector**::*bin_method()*
+ - Bio::EnsEMBL::Utils::**Collector**::*bin_model()*
+ - Bio::EnsEMBL::Utils::**Collector**::*window_sizes()*
+ - Bio::EnsEMBL::Utils::**Collector**::*has_window_size()*
+ - Bio::EnsEMBL::Utils::**Collector**::*pack_template()*
+ - Bio::EnsEMBL::Utils::**Collector**::*packed_size()*
+ - Bio::EnsEMBL::Utils::**Collector**::*bins_per_record()*
+ - Bio::EnsEMBL::Utils::**Collector**::*current_packed_size()*
+ - Bio::EnsEMBL::Utils::**Collector**::*score_cache()*
+ - Bio::EnsEMBL::Utils::**Collector**::*collection_start()*
+ - Bio::EnsEMBL::Utils::**Collector**::*collection_end()*
+ - Bio::EnsEMBL::Utils::**Collector**::*collection_strand()*
+ - Bio::EnsEMBL::Utils::**Collector**::*_get_Slice_chunks()*
+ - Bio::EnsEMBL::Utils::**Collector**::*set_config()*
+ - Bio::EnsEMBL::Utils::**Collector**::*store_window_bins_by_Slice()*
+ - Bio::EnsEMBL::Utils::**Collector**::*_bin_features_by_Slice_window_sizes()*
+ - Bio::EnsEMBL::Utils::**Collector**::*_calculate_count()*
+ - Bio::EnsEMBL::Utils::**Collector**::*_calculate_average_score()*
+ - Bio::EnsEMBL::Utils::**Collector**::*_post_process_average_score()*
+ - Bio::EnsEMBL::Utils::**Collector**::*_calculate_max_magnitude()*
+ - Bio::EnsEMBL::Utils::**Collector**::*_post_process_max_magnitude()*
+ - Bio::EnsEMBL::Utils::**Collector**::*_calculate_RPKM()*
+ - Bio::EnsEMBL::Utils::**Collector**::*_post_process_RPKM()*
+ - Bio::EnsEMBL::Utils::**Collector**::*_set_up_RPKM()*
+ - Bio::EnsEMBL::Utils::**Collector**::*_RPKM_factor()*
+ - Bio::EnsEMBL::Utils::**Collector**::*get_diploid_genome_length_by_gender()*
+
 ### Removed in Ensembl Release 98 ###
 
  - Bio::EnsEMBL::Utils::**SequenceOntologyMapper**::*new()*
@@ -236,7 +275,6 @@ A year after deprecation (4 Ensembl releases), the method is removed from the AP
  - Bio::EnsEMBL::**Translation**::*temporary_id()*
  - Bio::EnsEMBL::Utils::**ConversionSupport**::*user_confirm()*
 
- 
 ### Removed in Ensembl Release 84 ###
  - Bio::EnsEMBL::DBSQL::**CoordSystemAdaptor**::*_fetch_by_attrib()*
  - Bio::EnsEMBL::DBSQL::**CoordSystemAdaptor**::*_fetch_all_by_attrib()*
