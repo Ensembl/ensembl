@@ -457,7 +457,8 @@ sub _fetch_direct_query {
 
   my $sql =
     sprintf("SELECT rp.rnaproduct_id, pt.code, rp.transcript_id, "
-	    . "rp.seq_start, rp.seq_end, rp.stable_id, rp.version, %s, %s "
+	    . "rp.seq_start, rp.start_exon_id, rp.seq_end, rp.end_exon_id, "
+            . "rp.stable_id, rp.version, %s, %s "
 	    . "FROM rnaproduct rp JOIN rnaproduct_type pt "
             . "ON rp.rnaproduct_type_id = pt.rnaproduct_type_id "
 	    . "WHERE %s = ?",
@@ -488,13 +489,22 @@ sub _obj_from_sth {
   my $sql_data = $sth->fetchall_arrayref();
   my $transcript_adaptor = $self->db()->get_TranscriptAdaptor();
   while (my $row_ref = shift @{$sql_data}) {
-    my ($rnaproduct_id, $type_code, $transcript_id, $seq_start,
-	$seq_end, $stable_id, $version, $created_date, $modified_date) =
-	  @{$row_ref};
+    my ($rnaproduct_id, $type_code, $transcript_id, $seq_start, $start_exon_id,
+	$seq_end, $end_exon_id, $stable_id, $version, $created_date,
+        $modified_date) = @{$row_ref};
 
     if (!defined($rnaproduct_id)) {
       push @return_data, undef;
       next;
+    }
+
+    my $exon_adaptor = $self->db()->get_ExonAdaptor();
+    my ( $start_exon, $end_exon );
+    if (defined $start_exon_id ) {
+      $start_exon   = $exon_adaptor->fetch_by_dbID( $start_exon_id );
+    }
+    if (defined $end_exon_id ) {
+      $end_exon     = $exon_adaptor->fetch_by_dbID( $end_exon_id );
     }
 
     my $class_name = Bio::EnsEMBL::Utils::RNAProductTypeMapper::mapper()
@@ -505,6 +515,8 @@ sub _obj_from_sth {
                              'adaptor'       => $self,
                              'start'         => $seq_start,
                              'end'           => $seq_end,
+                             'start_exon'    => $start_exon,
+                             'end_exon'      => $end_exon,
                              'stable_id'     => $stable_id,
                              'version'       => $version,
                              'created_date'  => $created_date || undef,
