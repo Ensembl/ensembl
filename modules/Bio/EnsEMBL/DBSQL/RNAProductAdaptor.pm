@@ -332,9 +332,17 @@ sub store {
     return $rnaproduct->dbID();
   }
 
+  my ( $start_exon_dbID, $end_exon_dbID );
+  if ( $rnaproduct->start_Exon() ) {
+    $start_exon_dbID = $rnaproduct->start_Exon()->dbID();
+  }
+  if ( $rnaproduct->end_Exon() ) {
+    $end_exon_dbID = $rnaproduct->end_Exon()->dbID();
+  }
+
   # Store rnaproduct
 
-  my @columns = qw{ transcript_id seq_start seq_end };
+  my @columns = qw{ transcript_id seq_start start_exon_id seq_end end_exon_id };
 
   # FIXME: maybe we do need a separate adaptor for this after all
   my @canned_columns = ( 'rnaproduct_type_id' );
@@ -358,19 +366,21 @@ sub store {
   }
 
   my $column_string = join(', ', @columns, @canned_columns);
-  my $value_string  = join(', ', ('?') x @columns, @canned_values);
+  my $value_string  = join(', ', (q{?}) x @columns, @canned_values);
   my $store_rnaproduct_sql
     = "INSERT INTO rnaproduct ( $column_string ) VALUES ( $value_string )";
   my $rp_st = $self->prepare($store_rnaproduct_sql);
 
   $rp_st->bind_param(  1, $transcript_dbID,         SQL_INTEGER);
   $rp_st->bind_param(  2, $rnaproduct->start(),     SQL_INTEGER);
-  $rp_st->bind_param(  3, $rnaproduct->end(),       SQL_INTEGER);
+  $rp_st->bind_param(  3, $start_exon_dbID,         SQL_INTEGER);
+  $rp_st->bind_param(  4, $rnaproduct->end(),       SQL_INTEGER);
+  $rp_st->bind_param(  5, $end_exon_dbID,           SQL_INTEGER);
   if (defined($rnaproduct->stable_id())) {
-    $rp_st->bind_param(4, $rnaproduct->stable_id(), SQL_VARCHAR);
-    $rp_st->bind_param(5, $rnaproduct->version(),   SQL_INTEGER);
+    $rp_st->bind_param(6, $rnaproduct->stable_id(), SQL_VARCHAR);
+    $rp_st->bind_param(7, $rnaproduct->version(),   SQL_INTEGER);
   }
-  $rp_st->bind_param(  6, $rnaproduct->type_code(), SQL_VARCHAR);
+  $rp_st->bind_param(  8, $rnaproduct->type_code(), SQL_VARCHAR);
   $rp_st->execute();
   $rp_st->finish();
 
