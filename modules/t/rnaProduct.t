@@ -168,12 +168,12 @@ subtest 'Test stable_id_version() functionality' =>  sub {
 
   # Let's be paranoid and assume test_getter_setter() cleans up after itself
   $rp->stable_id_version('ENSfoo.1');
-  is($rp->stable_id_version(), $rp->stable_id() . '.' . $rp->version(),
+  is($rp->stable_id_version(), $rp->stable_id() . q{.} . $rp->version(),
      'set by stable_id_version(), get by stable_id() + version()');
 
   $rp->stable_id('ENSbar');
   $rp->version(9);
-  is($rp->stable_id_version(), $rp->stable_id() . '.' . $rp->version(),
+  is($rp->stable_id_version(), $rp->stable_id() . q{.} . $rp->version(),
      'set by stable_id() + version(), get by stable_id_version()');
 };
 
@@ -181,7 +181,7 @@ subtest 'display_id() functionality' =>  sub {
   # Start with a minimal object and gradually add missing data
   my $rp_blank = Bio::EnsEMBL::RNAProduct->new();
 
-  is($rp_blank->display_id(), '',
+  is($rp_blank->display_id(), q{},
      'return empty string if neither stable_id nor dbID exist');
 
   $rp_blank->dbID(12345);
@@ -270,7 +270,7 @@ subtest 'fetch_all_by_type() functionality' => sub {
   $n_rps = scalar @{$rp_a->fetch_all_by_type('miRNA')};
   cmp_ok($n_rps, '>', 0, 'Got non-empty list of miRNA rnaproducts');
   $n_rps = scalar @{$rp_a->fetch_all_by_type('generic')};
-  cmp_ok($n_rps, '==', 0, 'Got empty list of generic rnaproducts');
+  cmp_ok($n_rps, q{==}, 0, 'Got empty list of generic rnaproducts');
 };
 
 $rp = undef;
@@ -317,18 +317,18 @@ subtest 'Exon links' => sub {
 
 subtest 'Attribute functionality' => sub {
   my $rp_all_attrs = $rp->get_all_Attributes();
-  cmp_ok(scalar @$rp_all_attrs, '>', 0, 'Get a non-empty list of attributes');
+  cmp_ok(scalar @{ $rp_all_attrs }, '>', 0, 'Get a non-empty list of attributes');
 
   my $rp_notes = $rp->get_all_Attributes('note');
-  cmp_ok(scalar @$rp_notes, '>', 0, 'Get a non-empty list of \'note\' attributes');
+  cmp_ok(scalar @{ $rp_notes }, '>', 0, 'Get a non-empty list of \'note\' attributes');
 
   my $rp_nonsense = $rp->get_all_Attributes('xyzzy');
-  is(scalar @$rp_nonsense, 0, 'Get empty attribute list for nonsense code');
+  is(scalar @{ $rp_nonsense }, 0, 'Get empty attribute list for nonsense code');
 
   dies_ok(sub { $rp->add_Attributes({}) },
 	  'add_Attributes() dies on invalid argument type');
 
-  my $n_attrs_before = scalar @$rp_all_attrs;
+  my $n_attrs_before = scalar @{ $rp_all_attrs };
   my $extra_attr1 = Bio::EnsEMBL::Attribute->new(
     -CODE => 'note',
     -NAME => 'Note',
@@ -340,7 +340,7 @@ subtest 'Attribute functionality' => sub {
     -NAME => 'RNA editing'
   );
   $rp->add_Attributes($extra_attr1, $extra_attr2);
-  is(scalar @{$rp->get_all_Attributes()}, scalar $n_attrs_before + 2, 'Added two new attributes');
+  is(scalar @{ $rp->get_all_Attributes() }, scalar $n_attrs_before + 2, 'Added two new attributes');
 
   # FIXME: Add SeqEdit tests once we have got some meaningful data for this
   # in the test database. The way this is done in Transcript tests ought to
@@ -350,12 +350,12 @@ subtest 'Attribute functionality' => sub {
 
 subtest 'xref functionality' => sub {
   my $xrefs = $rp->get_all_DBEntries();
-  cmp_ok(scalar @$xrefs, '>', 0, 'Got a non-empty list of DBEntries');
+  cmp_ok(scalar @{ $xrefs }, '>', 0, 'Got a non-empty list of DBEntries');
 
   dies_ok(sub { $rp->add_DBEntry({}) },
 	  'add_DBEntry() dies on invalid argument type');
 
-  my $n_xrefs_before = scalar @$xrefs;
+  my $n_xrefs_before = scalar @{ $xrefs };
   my $dbe = Bio::EnsEMBL::DBEntry->new(
     -primary_id => 'test_id',
     -version    => 1,
@@ -376,7 +376,7 @@ subtest 'xref functionality' => sub {
 };
 
 my $rp_exts = $rp_a->fetch_all_by_external_name('hsa-miR-1-3p');
-cmp_ok(scalar @$rp_exts, '>', 0, 'Can fetch RNAProduct by external ID');
+cmp_ok(scalar @{ $rp_exts }, '>', 0, 'Can fetch RNAProduct by external ID');
 
 # Test generic_count(), inherited method from BaseAdaptor
 is($rp_a->generic_count(), @{$rp_a->list_dbIDs()}, "Number of features from generic_count is equal to the number of dbIDs from list_dbIDs");
