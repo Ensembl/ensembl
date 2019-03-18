@@ -410,7 +410,7 @@ is(@$slices, 62, 'References slices for coord system chromosome when including d
 
 $slices = $slice_adaptor->fetch_all('contig', undef);
 
-ok(@$slices == 13);
+ok(@$slices == 14);
 
 print_slices($slices);
 
