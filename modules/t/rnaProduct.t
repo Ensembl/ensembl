@@ -20,6 +20,7 @@ use strict;
 use warnings;
 
 use Bio::EnsEMBL::Test::TestUtils;
+use Bio::EnsEMBL::Exon;
 use Bio::EnsEMBL::MicroRNA;
 use Bio::EnsEMBL::RNAProduct;
 use Bio::EnsEMBL::Transcript;
@@ -41,7 +42,6 @@ ok(1, 'Test set-up completed');
 
 my $db = $multi->get_DBAdaptor('core');
 my $type_mapper = Bio::EnsEMBL::Utils::RNAProductTypeMapper::mapper();
-
 
 #
 # Tests for the RNAProductTypeMapper
@@ -69,6 +69,22 @@ subtest 'RNAProductTypeMapper tests' => sub {
 # Tests for offline RNAProduct objects
 #
 
+my $exon1 = Bio::EnsEMBL::Exon->new();
+$exon1->start(10);
+$exon1->end(20);
+$exon1->strand(1);
+$exon1->phase(0);
+$exon1->end_phase(-1);
+$exon1->stable_id('ENSE00000012345');
+
+my $exon2 = Bio::EnsEMBL::Exon->new();
+$exon2->start(30);
+$exon2->end(40);
+$exon2->strand(1);
+$exon2->phase(0);
+$exon2->end_phase(-1);
+$exon2->stable_id('ENSE00000054321');
+
 my $rp = Bio::EnsEMBL::RNAProduct->new();
 
 ok($rp, 'RNAProduct constructor works without arguments');
@@ -79,6 +95,8 @@ ok($rp, 'RNAProduct constructor works without arguments');
   my %cta = (
     start => 123,
     end => 456,
+    start_exon => $exon1,
+    end_exon => $exon2,
     stable_id => 'ENSM00012345',
     version => 1337,
     dbID => 314,
@@ -89,6 +107,8 @@ ok($rp, 'RNAProduct constructor works without arguments');
   my $rp_with_args = Bio::EnsEMBL::RNAProduct->new(
     -SEQ_START => $cta{start},
     -SEQ_END => $cta{end},
+    -START_EXON => $cta{start_exon},
+    -END_EXON => $cta{end_exon},
     -STABLE_ID => $cta{stable_id},
     -VERSION => $cta{version},
     -DBID => $cta{dbID},
@@ -110,6 +130,32 @@ ok(test_getter_setter($rp, 'dbID', 3), 'Test getter/setter dbID()');
 ok(test_getter_setter($rp, 'version', 13), 'Test getter/setter version()');
 ok(test_getter_setter($rp, 'created_date', time()), 'Test getter/setter created_date()');
 ok(test_getter_setter($rp, 'modified_date', time()), 'Test getter/setter modified_date()');
+
+subtest 'Exon links' => sub {
+
+  throws_ok( sub { $rp->start_Exon('xyzzy'); },
+             qr{ Expected[ ]'Bio::EnsEMBL::Exon' }msx,
+             'start_Exon() setter rejects non-references' );
+  throws_ok( sub { $rp->start_Exon( Bio::EnsEMBL::Transcript->new() ); },
+             qr{ not[ ]an[ ]ISA[ ]of[ ]'Bio::EnsEMBL::Exon' }msx,
+             'start_Exon() setter rejects non-Exon references' );
+  lives_ok( sub { $rp->start_Exon($exon1); }, 'start_Exon() setter accepts Exon references' );
+  is($rp->start_Exon(), $exon1, 'start_Exon() getter retrieves expected Exon object' );
+  lives_ok( sub { $rp->start_Exon( undef ); }, 'start_Exon() setter accepts undef' );
+  is($rp->start_Exon(), undef, 'start_Exon() getter returns undef when expected' );
+
+  throws_ok( sub { $rp->end_Exon('xyzzy'); },
+             qr{ Expected[ ]'Bio::EnsEMBL::Exon' }msx,
+             'end_Exon() setter rejects non-references' );
+  throws_ok( sub { $rp->end_Exon( Bio::EnsEMBL::Transcript->new() ); },
+             qr{ not[ ]an[ ]ISA[ ]of[ ]'Bio::EnsEMBL::Exon' }msx,
+             'end_Exon() setter rejects non-Exon references' );
+  lives_ok( sub { $rp->end_Exon($exon1); }, 'end_Exon() setter accepts Exon references' );
+  is($rp->end_Exon(), $exon1, 'end_Exon() getter retrieves expected Exon object' );
+  lives_ok( sub { $rp->end_Exon( undef ); }, 'end_Exon() setter accepts undef' );
+  is($rp->end_Exon(), undef, 'end_Exon() getter returns undef when expected' );
+
+};
 
 is($rp->type_code(), $type_mapper->class_to_type_code(ref($rp)),
    'RNAProduct object has expected type code');
@@ -260,6 +306,15 @@ is($rp->genomic_end(), $rp->transcript()->start() + $rp->end() - 1,
    'genomic_end() gives correct values (forward strand)');
 
 
+subtest 'Exon links' => sub {
+  is($rp->start_Exon()->stable_id(), 'ENSE00000111112', 'Start exon has expected stable ID');
+  is($rp->end_Exon()->stable_id()  , 'ENSE00000111112', 'End exon has expected stable ID');
+
+  my $rp_no_exons = $rp_a->fetch_by_stable_id('ENSM00000000002');
+  is($rp_no_exons->start_Exon(), undef, 'Can correctly handle RNAProduct with no start exon');
+  is($rp_no_exons->end_Exon()  , undef, 'Can correctly handle RNAProduct with no end exon');
+};
+
 subtest 'Attribute functionality' => sub {
   my $rp_all_attrs = $rp->get_all_Attributes();
   cmp_ok(scalar @$rp_all_attrs, '>', 0, 'Get a non-empty list of attributes');
@@ -367,6 +422,12 @@ subtest 'Write operations' => sub {
   my $t_a = $db->get_TranscriptAdaptor();
   my $ins_parent = $t_a->fetch_by_dbID(21728);
 
+  # Don't bother fetching an exon from the database, all we need for
+  # RNAProductAdaptor::store() to create a link we can test later is a valid
+  # Exon dbID.
+  my $ins_exon = Bio::EnsEMBL::Exon->new();
+  $ins_exon->dbID(162035);
+
   my %insert_args = (
     start         => 6,
     end           => 27,
@@ -379,6 +440,7 @@ subtest 'Write operations' => sub {
   my $ins_rp = Bio::EnsEMBL::MicroRNA->new(
     -SEQ_START     => $insert_args{start},
     -SEQ_END       => $insert_args{end},
+    -END_EXON      => $ins_exon,
     -STABLE_ID     => $insert_args{stable_id},
     -VERSION       => $insert_args{version},
     -CREATED_DATE  => $insert_args{created_date},
@@ -417,6 +479,9 @@ subtest 'Write operations' => sub {
      'Fetched MicroRNA has correct number of xrefs');
   isnt($fetched_rp->transcript(), undef,
        'Fetched MicroRNA has a parent transcript');
+  is($fetched_rp->start_Exon(), undef, 'Fetched MicroRNA has no start exon');
+  is($fetched_rp->end_Exon()->stable_id(), 'ENSE00000111112',
+     'Fetched MicroRNA has expected end exon');
 
   my $del_rp = $rp_a->fetch_by_dbID(1);
   $rp_a->remove($del_rp);
