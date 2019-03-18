@@ -76,6 +76,8 @@ use parent qw(Bio::EnsEMBL::Storable);
                         position of the product sequence.
   Arg [-SEQ_END]      : The offset in the Transcript indicating the end
                         position of the product sequence.
+  Arg [-START_EXON]   : The Exon object in which the rnaproduct starts
+  Arg [-END_EXON]     : The Exon object in which the rnaproduct ends
   Arg [-STABLE_ID]    : The stable identifier for this RNAPRoduct
   Arg [-VERSION]      : The version of the stable identifier
   Arg [-DBID]         : The internal identifier of this RNAProduct
@@ -105,10 +107,11 @@ sub new { ## no critic (Subroutines::RequireArgUnpacking)
   my $type_code = Bio::EnsEMBL::Utils::RNAProductTypeMapper::mapper()
     ->class_to_type_code($class);
 
-  my ($seq_start, $seq_end, $stable_id, $version, $dbID, $adaptor, $seq,
-      $created_date, $modified_date ) =
-	rearrange(["SEQ_START", "SEQ_END", "STABLE_ID", "VERSION", "DBID",
-		   "ADAPTOR", "SEQ", "CREATED_DATE", "MODIFIED_DATE"], @_);
+  my ($seq_start, $seq_end, $start_exon, $end_exon, $stable_id, $version, $dbID,
+      $adaptor, $seq, $created_date, $modified_date ) =
+	rearrange(["SEQ_START", "SEQ_END", "START_EXON", "END_EXON",
+                   "STABLE_ID", "VERSION", "DBID", "ADAPTOR", "SEQ",
+                   "CREATED_DATE", "MODIFIED_DATE"], @_);
 
   # For consistency between stable_id() and stable_id_version()
   $stable_id //= '';
@@ -119,6 +122,8 @@ sub new { ## no critic (Subroutines::RequireArgUnpacking)
   my $self = bless {
     'start'      => $seq_start,
     'end'        => $seq_end,
+    'start_exon' => $start_exon,
+    'end_exon'   => $end_exon,
     'stable_id'  => $stable_id,
     'version'    => $version,
     'dbID'       => $dbID,
@@ -294,6 +299,38 @@ sub end {
   my $self = shift;
   $self->{'end'} = shift if (@_);
   return $self->{'end'};
+}
+
+
+=head2 end_Exon
+
+  Arg [1]    : (optional) Bio::EnsEMBL::Exon || undef - start exon to assign
+  Example    : $rnaproduct->end_Exon($exon1);
+  Description: Getter/setter for the value of end_Exon, which denotes the
+               exon at which rnaproduct ends.
+  Returntype : Bio::EnsEMBL::Exon
+  Exceptions : thrown on wrong argument type
+  Caller     : general
+  Status     : Stable
+
+=cut
+
+sub end_Exon {
+  my ($self, $exon) = @_;
+
+  if (defined($exon)) {
+
+    # Normal setter
+    assert_ref($exon, 'Bio::EnsEMBL::Exon');
+    $self->{'end_exon'} = $exon;
+
+  }
+  elsif (@_ > 1) {
+    # User has explicitly passed undef. Break connection to exon.
+    delete( $self->{'end_exon'} );
+  }
+
+  return $self->{'end_exon'};
 }
 
 
@@ -722,6 +759,38 @@ sub start {
   my $self = shift;
   $self->{'start'} = shift if (@_);
   return $self->{'start'};
+}
+
+
+=head2 start_Exon
+
+  Arg [1]    : (optional) Bio::EnsEMBL::Exon || undef - start exon to assign
+  Example    : $rnaproduct->start_Exon($exon1);
+  Description: Getter/setter for the value of start_Exon, which denotes the
+               exon at which rnaproduct starts.
+  Returntype : Bio::EnsEMBL::Exon
+  Exceptions : thrown on wrong argument type
+  Caller     : general
+  Status     : Stable
+
+=cut
+
+sub start_Exon {
+  my ($self, $exon) = @_;
+
+  if (defined($exon)) {
+
+    # Normal setter
+    assert_ref($exon, 'Bio::EnsEMBL::Exon');
+    $self->{'start_exon'} = $exon;
+
+  }
+  elsif (@_ > 1) {
+    # User has explicitly passed undef. Break connection to exon.
+    delete( $self->{'start_exon'} );
+  }
+
+  return $self->{'start_exon'};
 }
 
 
