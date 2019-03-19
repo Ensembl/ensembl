@@ -35,7 +35,10 @@ of a transcript
 
 =head1 DESCRIPTION
 
-TODO
+Objects of this class represent mature RNA products of
+transcripts. Examples of such products include MicroRNA (miRNA),
+circular RNA (circRNA) or piwi-interacting RNA (piRNA), and they
+commonly play a role in gene expression.
 
 =head1 SYNOPSIS
 

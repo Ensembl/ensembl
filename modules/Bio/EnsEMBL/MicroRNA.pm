@@ -35,7 +35,10 @@ of a transcript
 
 =head1 DESCRIPTION
 
-TODO
+A specialisation of Bio::EnsEMBL::RNAProduct describing
+MicroRNAs. Mostly takes care of wrapping miRNA-specific RNAProduct
+attributes in methods which make them look like ordinary class
+members.
 
 =head1 SYNOPSIS
 
