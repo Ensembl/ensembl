@@ -92,6 +92,7 @@ use parent qw(Bio::EnsEMBL::RNAProduct);
 
 =cut
 
+# perlcritic doesn't know about rearrange(), silence it
 sub new { ## no critic (Subroutines::RequireArgUnpacking)
   my $caller = shift;
 

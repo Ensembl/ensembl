@@ -103,6 +103,7 @@ use parent qw(Bio::EnsEMBL::Storable);
 
 =cut
 
+# perlcritic doesn't know about rearrange(), silence it
 sub new { ## no critic (Subroutines::RequireArgUnpacking)
   my $caller = shift;
 
@@ -524,6 +525,7 @@ sub get_all_DBEntries {
 
 =cut
 
+# this is an alias, we do NOT want to unpack @_
 sub get_all_DBLinks {  ## no critic (Subroutines::RequireArgUnpacking)
   my $self = shift;
   return $self->get_all_DBEntries(@_);
@@ -554,6 +556,7 @@ sub get_all_DBLinks {  ## no critic (Subroutines::RequireArgUnpacking)
 
 =cut
 
+# this is an alias, we do NOT want to unpack @_
 sub get_all_object_xrefs {  ## no critic (Subroutines::RequireArgUnpacking)
   my $self = shift;
   return $self->get_all_DBEntries(@_);
@@ -580,6 +583,7 @@ sub get_all_object_xrefs {  ## no critic (Subroutines::RequireArgUnpacking)
 
 =cut
 
+# this is an alias, we do NOT want to unpack @_
 sub get_all_xrefs {  ## no critic (Subroutines::RequireArgUnpacking)
   my $self = shift;
   return $self->get_all_DBLinks(@_);
@@ -619,6 +623,9 @@ sub modified_date {
 
 =cut
 
+# PBP do allow homonyms as methods but perlcritic cannot, tell these
+# apart from the forbidden ones, as stated in the documentation of the
+# relevant policy
 sub length { ## no critic (Subroutines::ProhibitBuiltinHomonyms)
   my $self = shift;
   my $seq = $self->seq();

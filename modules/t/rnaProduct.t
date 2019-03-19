@@ -13,6 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# This would go against this repository's convention for naming test files
 ## no critic (RequireFilenameMatchesPackage)
 
 package RNAProductTests;

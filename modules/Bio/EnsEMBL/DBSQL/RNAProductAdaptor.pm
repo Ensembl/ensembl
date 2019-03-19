@@ -565,6 +565,7 @@ sub _obj_from_sth {
 
 =cut
 
+# This method IS used, at the superclass level
 sub _tables { ## no critic (Subroutines::ProhibitUnusedPrivateSubroutines)
   return (['rnaproduct', 'rp']);
 }
