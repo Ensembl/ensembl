@@ -134,8 +134,8 @@ sub arm {
     my $n_arms = scalar @{$arm_attrs};
     if ($n_arms > 0) {
       if ($n_arms > 1) {
-	throw("MicroRNA " . $self->display_id() .
-	      " has multiple arm attributes");
+        throw("MicroRNA " . $self->display_id() .
+              " has multiple arm attributes");
       }
       $self->{'arm'} = $arm_attrs->[0]->value();
     }

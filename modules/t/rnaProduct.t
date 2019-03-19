@@ -57,12 +57,12 @@ subtest 'RNAProductTypeMapper tests' => sub {
   is($rpt_mapper->type_code_to_class('miRNA'), 'Bio::EnsEMBL::MicroRNA',
      'Can map existing type ID to class');
   dies_ok(sub { $rpt_mapper->type_code_to_class('semprini'); },
-	  'Exception thrown on unknown type ID');
+          'Exception thrown on unknown type ID');
 
   is($rpt_mapper->class_to_type_code('Bio::EnsEMBL::RNAProduct'), 'generic',
      'Can map existing class to type ID');
   dies_ok(sub { $rpt_mapper->class_to_type_code('Bio::EnsEMBL::Storable'); },
-	  'Exception thrown on unknown rnaproduct class name');
+          'Exception thrown on unknown rnaproduct class name');
 };
 
 
@@ -327,7 +327,7 @@ subtest 'Attribute functionality' => sub {
   is(scalar @{ $rp_nonsense }, 0, 'Get empty attribute list for nonsense code');
 
   dies_ok(sub { $rp->add_Attributes({}) },
-	  'add_Attributes() dies on invalid argument type');
+          'add_Attributes() dies on invalid argument type');
 
   my $n_attrs_before = scalar @{ $rp_all_attrs };
   my $extra_attr1 = Bio::EnsEMBL::Attribute->new(
@@ -354,7 +354,7 @@ subtest 'xref functionality' => sub {
   cmp_ok(scalar @{ $xrefs }, '>', 0, 'Got a non-empty list of DBEntries');
 
   dies_ok(sub { $rp->add_DBEntry({}) },
-	  'add_DBEntry() dies on invalid argument type');
+          'add_DBEntry() dies on invalid argument type');
 
   my $n_xrefs_before = scalar @{ $xrefs };
   my $dbe = Bio::EnsEMBL::DBEntry->new(

@@ -110,7 +110,7 @@ sub new { ## no critic (Subroutines::RequireArgUnpacking)
 
   my ($seq_start, $seq_end, $start_exon, $end_exon, $stable_id, $version, $dbID,
       $adaptor, $seq, $created_date, $modified_date ) =
-	rearrange(["SEQ_START", "SEQ_END", "START_EXON", "END_EXON",
+        rearrange(["SEQ_START", "SEQ_END", "START_EXON", "END_EXON",
                    "STABLE_ID", "VERSION", "DBID", "ADAPTOR", "SEQ",
                    "CREATED_DATE", "MODIFIED_DATE"], @_);
 
@@ -356,10 +356,10 @@ sub genomic_end {
 
     if ($transcript->strand() >= 0) {
       $self->{'genomic_end'} =
-	$transcript->start() + ($self->end() - 1);
+        $transcript->start() + ($self->end() - 1);
     } else {
       $self->{'genomic_end'} =
-	$transcript->end() - ($self->start() - 1);
+        $transcript->end() - ($self->start() - 1);
     }
   }
 
@@ -388,10 +388,10 @@ sub genomic_start {
 
     if ($transcript->strand() >= 0) {
       $self->{'genomic_start'} =
-	$transcript->start() + ($self->start() - 1);
+        $transcript->start() + ($self->start() - 1);
     } else {
       $self->{'genomic_start'} =
-	$transcript->end() - ($self->end() - 1);
+        $transcript->end() - ($self->end() - 1);
     }
   }
 
@@ -733,10 +733,10 @@ sub stable_id_version {
     my $vindex = rindex($stable_id, '.');
     ($self->{stable_id},
      $self->{version}) = ($vindex > 0 ?
-			  (substr($stable_id, 0, $vindex),
-			   substr($stable_id, $vindex + 1)) :
-			  $stable_id, undef
-			 );
+                          (substr($stable_id, 0, $vindex),
+                           substr($stable_id, $vindex + 1)) :
+                          $stable_id, undef
+                         );
   }
 
   return $self->{stable_id} . ($self->{version} ? ".$self->{version}" : '');

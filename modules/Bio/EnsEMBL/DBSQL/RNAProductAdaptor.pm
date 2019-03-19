@@ -136,8 +136,8 @@ sub fetch_all_by_external_name {
   my $entry_adaptor = $self->db->get_DBEntryAdaptor();
 
   my @ids = $entry_adaptor->list_rnaproduct_ids_by_extids($external_name,
-							  $external_db_name,
-							  $override);
+                                                          $external_db_name,
+                                                          $override);
 
   my $transcript_adaptor = $self->db()->get_TranscriptAdaptor();
 
@@ -468,12 +468,12 @@ sub _fetch_direct_query {
 
   my $sql =
     sprintf("SELECT rp.rnaproduct_id, pt.code, rp.transcript_id, "
-	    . "rp.seq_start, rp.start_exon_id, rp.seq_end, rp.end_exon_id, "
+            . "rp.seq_start, rp.start_exon_id, rp.seq_end, rp.end_exon_id, "
             . "rp.stable_id, rp.version, %s, %s "
-	    . "FROM rnaproduct rp JOIN rnaproduct_type pt "
+            . "FROM rnaproduct rp JOIN rnaproduct_type pt "
             . "ON rp.rnaproduct_type_id = pt.rnaproduct_type_id "
-	    . "WHERE %s = ?",
-	    $rp_created_date, $rp_modified_date, $where_args->[0]);
+            . "WHERE %s = ?",
+            $rp_created_date, $rp_modified_date, $where_args->[0]);
   my $sth = $self->prepare($sql);
   $sth->bind_param(1, $where_args->[1], $where_args->[2]);
   $sth->execute();
@@ -501,7 +501,7 @@ sub _obj_from_sth {
   my $transcript_adaptor = $self->db()->get_TranscriptAdaptor();
   while (my $row_ref = shift @{$sql_data}) {
     my ($rnaproduct_id, $type_code, $transcript_id, $seq_start, $start_exon_id,
-	$seq_end, $end_exon_id, $stable_id, $version, $created_date,
+        $seq_end, $end_exon_id, $stable_id, $version, $created_date,
         $modified_date) = @{$row_ref};
 
     if (!defined($rnaproduct_id)) {
