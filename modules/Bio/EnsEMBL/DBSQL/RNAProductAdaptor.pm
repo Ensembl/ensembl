@@ -178,7 +178,9 @@ sub fetch_all_by_external_name {
 sub fetch_all_by_type {
   my ($self, $type_code) = @_;
 
-  throw("type code argument is required") unless $type_code;
+  if ( !defined $type_code ) {
+    throw("type code argument is required");
+  }
 
   return ($self->_fetch_direct_query(['pt.code', $type_code, SQL_VARCHAR]));
 }
@@ -203,7 +205,9 @@ sub fetch_all_by_type {
 sub fetch_by_dbID {
   my ($self, $dbID) = @_;
 
-  throw("dbID argument is required") unless defined($dbID);
+  if ( !defined $dbID ) {
+    throw("dbID argument is required");
+  }
 
   return ($self->_fetch_direct_query(['rp.rnaproduct_id', $dbID, SQL_INTEGER]))->[0];
 }
@@ -225,7 +229,9 @@ sub fetch_by_dbID {
 sub fetch_by_stable_id {
   my ($self, $stable_id) = @_;
 
-  throw("stable id argument is required") unless $stable_id;
+  if ( !defined $stable_id ) {
+    throw("stable id argument is required");
+  }
 
   return ($self->_fetch_direct_query(['rp.stable_id', $stable_id, SQL_VARCHAR]))->[0];
 }

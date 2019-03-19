@@ -258,7 +258,9 @@ sub cdna_start {
 
 sub created_date {
   my $self = shift;
-  $self->{'created_date'} = shift if (@_);
+  if ( @_ ) {
+    $self->{'created_date'} = shift;
+  }
   return $self->{'created_date'};
 }
 
@@ -298,7 +300,9 @@ sub display_id {
 
 sub end {
   my $self = shift;
-  $self->{'end'} = shift if (@_);
+  if ( @_ ) {
+    $self->{'end'} = shift;
+  }
   return $self->{'end'};
 }
 
@@ -592,7 +596,9 @@ sub get_all_xrefs {  ## no critic (Subroutines::RequireArgUnpacking)
 
 sub modified_date {
   my $self = shift;
-  $self->{'modified_date'} = shift if (@_);
+  if ( @_ ) {
+    $self->{'modified_date'} = shift;
+  }
   return $self->{'modified_date'};
 }
 
@@ -635,7 +641,9 @@ sub length { ## no critic (Subroutines::ProhibitBuiltinHomonyms)
 sub load {
   my ($self, $load_xrefs) = @_;
 
-  $load_xrefs = 1 unless defined($load_xrefs);
+  if ( !defined $load_xrefs ) {
+    $load_xrefs = 1;
+  }
 
   $self->seq();
 
@@ -682,8 +690,7 @@ sub seq {
 
   }
 
-  return '' unless defined($self->{'seq'});
-  return $self->{'seq'};
+  return ( $self->{'seq'} // q{} );
 }
 
 
@@ -703,7 +710,9 @@ sub seq {
 
 sub stable_id {
   my $self = shift;
-  $self->{'stable_id'} = shift if (@_);
+  if ( @_ ) {
+    $self->{'stable_id'} = shift;
+  }
   return $self->{'stable_id'};
 }
 
@@ -758,7 +767,9 @@ sub stable_id_version {
 
 sub start {
   my $self = shift;
-  $self->{'start'} = shift if (@_);
+  if ( @_ ) {
+    $self->{'start'} = shift;
+  }
   return $self->{'start'};
 }
 
@@ -969,7 +980,9 @@ sub type_code {
 
 sub version {
   my $self = shift;
-  $self->{'version'} = shift if (@_);
+  if ( @_ ) {
+    $self->{'version'} = shift;
+  }
   return $self->{'version'};
 }
 

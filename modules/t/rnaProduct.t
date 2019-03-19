@@ -31,7 +31,11 @@ use Test::Warnings;
 use Test::Exception;
 
 my $loaded = 0;
-END { print "not ok 1 - Test set-up completed\n" unless $loaded; }
+END {
+  if ( ! $loaded ) {
+    print "not ok 1 - Test set-up completed\n";
+  }
+}
 
 use Bio::EnsEMBL::Test::MultiTestDB;
 
