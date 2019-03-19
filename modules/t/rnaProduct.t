@@ -271,7 +271,6 @@ subtest 'fetch_all_by_type() functionality' => sub {
 
   # At the moment we have only got miRNA in the homo_sapiens test database
 
-  # FIXME: compare this to the total number of RNAProducts?
   $n_rps = scalar @{$rp_a->fetch_all_by_type('miRNA')};
   cmp_ok($n_rps, '>', 0, 'Got non-empty list of miRNA rnaproducts');
   $n_rps = scalar @{$rp_a->fetch_all_by_type('generic')};
@@ -290,10 +289,6 @@ isa_ok($rp, 'Bio::EnsEMBL::MicroRNA', 'miRNA object from database');
 is($rp->type_code(), $type_mapper->class_to_type_code(ref($rp)),
    'MicroRNA object has expected type code');
 
-# FIXME: perform an in-depth inspection of one of the fetched RNAProducts,
-# to make sure new_fast() call all of these fetch methods use does what it
-# is supposed to do.
-
 is($rp->seq(), 'AAAAACCCAGGAATCACCTGGA', 'Can retrieve associated sequence');
 
 # Do not check any data inside the Transcript object, it is not our job to
@@ -304,7 +299,8 @@ isnt($rp->transcript(), undef, 'Can retrieve associated Transcript object');
 $rp->transcript(undef);
 isnt($rp->transcript(), undef, 'Transcript association can be built on demand for valid dbID');
 
-# FIXME: might want to add tests for the reverse strand as well
+# FIXME: Add tests for the reverse strand as well once we have got
+# some meaningful data in the test database.
 is($rp->genomic_start(), $rp->transcript()->start() + $rp->start() - 1,
    'genomic_start() gives correct values (forward strand)');
 is($rp->genomic_end(), $rp->transcript()->start() + $rp->end() - 1,

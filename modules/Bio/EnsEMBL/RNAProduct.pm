@@ -167,8 +167,9 @@ sub add_Attributes {
       throw("Argument to add_Attribute must be a Bio::EnsEMBL::Attribute");
     }
     push (@{$self->{'attributes'}}, $attrib);
-    # FIXME: why is this here???
-    $self->{seq}=undef;
+
+    # Invalidate the current sequence string in case the new attribute is a SeqEdit
+    $self->{seq} = undef;
   }
 
   return;

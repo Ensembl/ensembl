@@ -351,7 +351,6 @@ sub store {
 
   my @columns = qw{ transcript_id seq_start start_exon_id seq_end end_exon_id };
 
-  # FIXME: maybe we do need a separate adaptor for this after all
   my @canned_columns = ( 'rnaproduct_type_id' );
   my @canned_values
     = ( '(SELECT rnaproduct_type_id FROM rnaproduct_type WHERE code=?)' );
@@ -431,7 +430,6 @@ sub _list_dbIDs {
   my ($self, $table, $column) = @_;
   my $ids;
   if($self->is_multispecies()) {
-    # FIXME: test this, it might not have been fully converted from TranslationAdaptor yet
     $column ||= "${table}_id";
     my $sql = <<"SQL";
 select `rp`.`${column}`
@@ -439,7 +437,7 @@ from rnaproduct rp
 join transcript t using (transcript_id)
 join seq_region sr using (seq_region_id)
 join coord_system cs using (coord_system_id)
-where cs.species_id =?
+where cs.species_id = ?
 SQL
     return $self->dbc()->sql_helper()->execute_simple(-SQL => $sql, -PARAMS => [$self->species_id()]);
   }
