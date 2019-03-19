@@ -165,15 +165,17 @@ sub summary_as_hash {
 }
 
 
-# _validate_arm_value
-#  Arg [1]    : int $arm which arm of the hairpin precursor this miRNA
-#               comes from
-#  Description: PRIVATE validates if its argument has one of the accepted
-#               values for specifying the miRNA hairpin arm.
-#  Returntype : none
-#  Exceptions : throw if the argument is out of bounds
-#  Caller     : internal
-#  Status     : Stable
+=head2 _validate_arm_value
+  Arg [1]    : int $arm which arm of the hairpin precursor this miRNA
+               comes from
+  Description: PRIVATE validates if its argument has one of the accepted
+               values for specifying the miRNA hairpin arm.
+  Returntype : none
+  Exceptions : throw if the argument is out of bounds
+  Caller     : internal
+  Status     : Stable
+
+=cut
 
 sub _validate_arm_value {
   my ($arm) = @_;

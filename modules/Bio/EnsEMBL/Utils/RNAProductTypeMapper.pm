@@ -132,6 +132,7 @@ sub new {
   return $self;
 }
 
+
 =head2 class_attribute_cache_map
 
   Arg [1]    : string $class_name - fully qualified RNA-product class name
@@ -157,6 +158,7 @@ sub class_attribute_cache_map {
 
   return $map{$class_name};
 }
+
 
 =head2 class_to_type_code
 
@@ -213,14 +215,17 @@ sub type_code_to_class {
   return $map{$type_code};
 }
 
-# _generate_reverse_map
 
-#  Description: PRIVATE generates class_name->type_code map from the
-#               type_code->class_name one.
-#  Returntype : none
-#  Exceptions : none
-#  Caller     : internal
-#  Status     : Stable
+=head2 _generate_reverse_map
+
+  Description: PRIVATE generates class_name->type_code map from the
+               type_code->class_name one.
+  Returntype : none
+  Exceptions : none
+  Caller     : internal
+  Status     : Stable
+
+=cut
 
 sub _generate_reverse_map {
   my ($self) = @_;

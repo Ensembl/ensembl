@@ -448,19 +448,21 @@ SQL
 }
 
 
-# _fetch_direct_query
-#  Arg [1]    : reference to an array consisting of:
-#                - the name of the column to use in the WHERE clause,
-#                - the value fields from that column are to be equal to,
-#                - the data type of that column (e.g. SQL_INTEGER)
-#  Description: PRIVATE internal method shared between public fetch methods
-#               in order to avoid duplication of SQL-query logic. NOT SAFE
-#               to be handed directly to users because in its current form
-#               it can be trivially exploited to inject arbitrary SQL.
-#  Returntype : ArrayRef of either Bio::EnsEMBL::RNAProducts or undefs
-#  Exceptions : throws if RNAProduct type is absent or unknown
-#  Caller     : internal
-#  Status     : At Risk (In Development)
+=head2 _fetch_direct_query
+  Arg [1]    : reference to an array consisting of:
+                - the name of the column to use in the WHERE clause,
+                - the value fields from that column are to be equal to,
+                - the data type of that column (e.g. SQL_INTEGER)
+  Description: PRIVATE internal method shared between public fetch methods
+               in order to avoid duplication of SQL-query logic. NOT SAFE
+               to be handed directly to users because in its current form
+               it can be trivially exploited to inject arbitrary SQL.
+  Returntype : ArrayRef of either Bio::EnsEMBL::RNAProducts or undefs
+  Exceptions : throws if RNAProduct type is absent or unknown
+  Caller     : internal
+  Status     : At Risk (In Development)
+
+=cut
 
 sub _fetch_direct_query {
   my ($self, $where_args) = @_;
@@ -488,15 +490,18 @@ sub _fetch_direct_query {
 }
 
 
-# _obj_from_sth
-#  Arg [1]    : DBI statement handle
-#  Description: PRIVATE internal method shared between public SQL-query
-#               methods in order to avoid duplication of object-creation
-#               logic.
-#  Returntype : ArrayRef of either Bio::EnsEMBL::RNAProducts or undefs
-#  Exceptions : throws if RNAProduct type is absent or unknown
-#  Caller     : internal
-#  Status     : At Risk (In Development)
+=head2 _obj_from_sth
+  Arg [1]    : DBI statement handle
+  Description: PRIVATE internal method shared between public SQL-query
+               methods in order to avoid duplication of object-creation
+               logic.
+  Returntype : ArrayRef of either Bio::EnsEMBL::RNAProducts or undefs
+  Exceptions : throws if RNAProduct type is absent or unknown
+  Caller     : internal
+  Status     : At Risk (In Development)
+
+=cut
+
 sub _obj_from_sth {
   my ($self, $sth) = @_;
   my @return_data;
@@ -548,17 +553,21 @@ sub _obj_from_sth {
 }
 
 
-# _tables
-#  Arg [1]    : none
-#  Description: PROTECTED implementation of superclass abstract method.
-#               Returns the names, aliases of the tables to use for queries.
-#  Returntype : list of listrefs of strings
-#  Exceptions : none
-#  Caller     : internal
-#  Status     : Stable
+=head2 _tables
+
+  Arg [1]    : none
+  Description: PROTECTED implementation of superclass abstract method.
+               Returns the names, aliases of the tables to use for queries.
+  Returntype : list of listrefs of strings
+  Exceptions : none
+  Caller     : internal
+  Status     : Stable
+
+=cut
 
 sub _tables { ## no critic (Subroutines::ProhibitUnusedPrivateSubroutines)
   return (['rnaproduct', 'rp']);
 }
+
 
 1;
