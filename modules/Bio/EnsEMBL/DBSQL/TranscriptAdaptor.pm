@@ -253,11 +253,11 @@ sub fetch_all_versions_by_stable_id {
 =head2 fetch_by_rnaproduct_id
 
   Arg [1]    : Int $id
-               The internal identifier of the rnaproduct whose transcript
+               The internal identifier of the RNAProduct whose transcript
                is to be retrieved
   Example    : my $tr = $tr_adaptor->fetch_by_rnaproduct_id($rnap->dbID);
-  Description: Given the internal identifier of a rnaproduct this method
-               retrieves the transcript associated with that rnaproduct.
+  Description: Given the internal identifier of a RNAProduct this method
+               retrieves the transcript associated with that RNAProduct.
                If the transcript cannot be found undef is returned instead.
   Returntype : Bio::EnsEMBL::Transcript or undef
   Exceptions : none

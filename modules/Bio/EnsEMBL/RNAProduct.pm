@@ -77,17 +77,17 @@ use parent qw(Bio::EnsEMBL::Storable);
                         position of the product sequence.
   Arg [-SEQ_END]      : The offset in the Transcript indicating the end
                         position of the product sequence.
-  Arg [-START_EXON]   : The Exon object in which the rnaproduct starts
-  Arg [-END_EXON]     : The Exon object in which the rnaproduct ends
+  Arg [-START_EXON]   : The Exon object in which the RNAProduct starts
+  Arg [-END_EXON]     : The Exon object in which the RNAProduct ends
   Arg [-STABLE_ID]    : The stable identifier for this RNAPRoduct
   Arg [-VERSION]      : The version of the stable identifier
   Arg [-DBID]         : The internal identifier of this RNAProduct
   Arg [-ADAPTOR]      : The RNAProductAdaptor for this RNAProduct
   Arg [-SEQ]          : Manually sets the nucleotide sequence of this
-                        rnaproduct. May be useful if this rnaproduct is not
+                        RNAProduct. May be useful if this RNAProduct is not
                         stored in a database.
-  Arg [-CREATED_DATE] : the date the rnaproduct was created
-  Arg [-MODIFIED_DATE]: the date the rnaproduct was modified
+  Arg [-CREATED_DATE] : the date the RNAProduct was created
+  Arg [-MODIFIED_DATE]: the date the RNAProduct was modified
   Example    : my $rp = Bio::EnsEMBL::RNAProduct->new(
                  -SEQ_START => 36,
                  -SEQ_END   => 58
@@ -181,9 +181,9 @@ sub add_Attributes {
   Arg [1]    : Bio::EnsEMBL::DBEntry $dbe
                The dbEntry to be added
   Example    : $rnaproduct->add_DBEntry($xref);
-  Description: Associates a DBEntry with this rnaproduct. Note that adding
+  Description: Associates a DBEntry with this RNAProduct. Note that adding
                DBEntries will prevent future lazy-loading of DBEntries for this
-               rnaproduct (see get_all_DBEntries).
+               RNAProduct (see get_all_DBEntries).
   Returntype : none
   Exceptions : thrown on incorrect argument type
   Caller     : general
@@ -208,9 +208,9 @@ sub add_DBEntry {
 =head2 cdna_end
 
     Example     : $rnaproduct_cdna_end = $rnaproduct->cdna_end();
-    Description : Returns the end position of the rnaproduct in cDNA
+    Description : Returns the end position of the RNAProduct in cDNA
                   coordinates.
-                  Since rnaproducts do not span multiple exons, this is
+                  Since RNAProducts do not span multiple exons, this is
                   simply an alias for end().
     Return type : Integer
     Caller      : General
@@ -228,9 +228,9 @@ sub cdna_end {
 =head2 cdna_start
 
     Example     : $rnaproduct_cdna_start = $rnaproduct->cdna_start();
-    Description : Returns the start position of the rnaproduct in cDNA
+    Description : Returns the start position of the RNAProduct in cDNA
                   coordinates.
-                  Since rnaproducts do not span multiple exons, this is
+                  Since RNAProducts do not span multiple exons, this is
                   simply an alias for start().
     Return type : Integer
     Caller      : General
@@ -270,7 +270,7 @@ sub created_date {
 
   Example    : print $rnaproduct->display_id();
   Description: This method returns a string that is considered to be
-               the 'display' identifier. For rnaproducts this is (depending on
+               the 'display' identifier. For RNAProducts this is (depending on
                availability and in this order) the stable ID, the dbID or an
                empty string.
   Returntype : string
@@ -313,7 +313,7 @@ sub end {
   Arg [1]    : (optional) Bio::EnsEMBL::Exon || undef - start exon to assign
   Example    : $rnaproduct->end_Exon($exon1);
   Description: Getter/setter for the value of end_Exon, which denotes the
-               exon at which rnaproduct ends.
+               exon at which RNAProduct ends.
   Returntype : Bio::EnsEMBL::Exon
   Exceptions : thrown on wrong argument type
   Caller     : general
@@ -344,7 +344,7 @@ sub end_Exon {
 
     Args        : None
     Example     : $rnaproduct_genomic_end = $rnaproduct->genomic_end();
-    Description : Returns the end position of the rnaproduct in genomic
+    Description : Returns the end position of the RNAProduct in genomic
                   coordinates on the forward strand.
     Return type : Integer
     Exceptions  : None
@@ -376,7 +376,7 @@ sub genomic_end {
 
     Args        : None
     Example     : $rnaproduct_genomic_start = $rnaproduct->genomic_start();
-    Description : Returns the start position of the rnaproduct in
+    Description : Returns the start position of the RNAProduct in
                   genomic coordinates on the forward strand.
     Return type : Integer
     Exceptions  : None
@@ -410,7 +410,7 @@ sub genomic_start {
                The code of the attribute type to retrieve values for.
   Example    : ($n_attr) = @{$tl->get_all_Attributes('note')};
                @rp_attributes = @{$rnaproduct->get_all_Attributes()};
-  Description: Gets a list of Attributes of this rnaproduct.
+  Description: Gets a list of Attributes of this RNAProduct.
                Optionally just get Attributes for given code.
   Returntype : listref Bio::EnsEMBL::Attribute
   Exceptions : none
@@ -422,7 +422,7 @@ sub genomic_start {
 sub get_all_Attributes {
   my ($self, $attrib_code) = @_;
 
-  # if not cached, retrieve all of the attributes for this rnaproduct
+  # If not cached, retrieve all of the attributes for this RNAProduct
   if (!defined($self->{'attributes'}) && defined($self->adaptor())) {
     my $aa = $self->adaptor->db->get_AttributeAdaptor();
     $self->{'attributes'} = $aa->fetch_all_by_RNAProduct($self);
@@ -453,11 +453,11 @@ sub get_all_Attributes {
                @dbentries = @{ $rnaproduct->get_all_DBEntries('Uniprot%') };
                @dbentries = @{ $rnaproduct->get_all_DBEntries('%', 'ENSEMBL') };
 
-  Description: Retrieves DBEntries (xrefs) for this rnaproduct.
+  Description: Retrieves DBEntries (xrefs) for this RNAProduct.
 
                This method will attempt to lazy-load DBEntries
                from a database if an adaptor is available and no
-               DBEntries are present on the rnaproduct (i.e. they
+               DBEntries are present on the RNAProduct (i.e. they
                have not already been added or loaded).
 
   Returntype : Listref to Bio::EnsEMBL::DBEntry objects
@@ -480,7 +480,7 @@ sub get_all_DBEntries {
     $cache_name .= $ex_db_type;
   }
 
-  # if not cached, retrieve all of the xrefs for this rnaproduct
+  # If not cached, retrieve all of the xrefs for this RNAProduct
   if (!defined($self->{$cache_name}) && defined($self->adaptor())) {
     $self->{$cache_name} = $self->adaptor()->db()->get_DBEntryAdaptor()->
       fetch_all_by_RNAProduct( $self, $ex_db_exp, $ex_db_type );
@@ -535,11 +535,11 @@ sub get_all_DBLinks {  ## no critic (Subroutines::RequireArgUnpacking)
 
   Example    : @oxrefs = @{ $rnaproduct->get_all_object_xrefs() };
 
-  Description: Retrieves xrefs for this rnaproduct.
+  Description: Retrieves xrefs for this RNAProduct.
 
                This method will attempt to lazy-load xrefs from a
                database if an adaptor is available and no xrefs
-               are present on the rnaproduct (i.e. they have not
+               are present on the RNAProduct (i.e. they have not
                already been added or loaded).
 
                 NB: This method is an alias for the
@@ -722,7 +722,7 @@ sub stable_id {
 
   Arg [1]    : (optional) String - the stable ID with version to set
   Example    : $rnaproduct->stable_id("ENSM0059890.3");
-  Description: Getter/setter for stable id with version for this rnaproduct.
+  Description: Getter/setter for stable id with version for this RNAProduct.
                If the input string omits the version part, the version gets reset
                to undef; use stable_id() if you want to avoid this.
   Returntype : String
@@ -780,7 +780,7 @@ sub start {
   Arg [1]    : (optional) Bio::EnsEMBL::Exon || undef - start exon to assign
   Example    : $rnaproduct->start_Exon($exon1);
   Description: Getter/setter for the value of start_Exon, which denotes the
-               exon at which rnaproduct starts.
+               exon at which RNAProduct starts.
   Returntype : Bio::EnsEMBL::Exon
   Exceptions : thrown on wrong argument type
   Caller     : general
@@ -898,9 +898,9 @@ sub synchronise_attributes {
 
   Arg [1]       : Transcript object (optional)
   Description   : Sets or retrieves the transcript object associated
-                  with this rnaproduct object.
+                  with this RNAProduct object.
   Exceptions    : Throws if there is no adaptor or no dbID defined for
-                  the rnaproduct object.
+                  the RNAProduct object.
   Returntype    : Bio::EnsEMBL::Transcript
 
 =cut
@@ -923,12 +923,12 @@ sub transcript {
   } elsif (!defined($self->{'transcript'})) {
     my $adaptor = $self->{'adaptor'};
     if (!defined($adaptor)) {
-      throw("Adaptor not set for rnaproduct, cannot fetch its transcript");
+      throw("Adaptor not set for RNAProduct, cannot fetch its transcript");
     }
 
     my $dbID = $self->{'dbID'};
     if (!defined($dbID)) {
-      throw("dbID not set for rnaproduct, cannot fetch its transcript.");
+      throw("dbID not set for RNAProduct, cannot fetch its transcript.");
     }
 
     $self->{'transcript'} =
@@ -936,7 +936,7 @@ sub transcript {
       ->fetch_by_rnaproduct_id($dbID);
 
     # Do not weaken the reference if we had to get the transcript from the
-    # database. The user is probably working on rnaproducts directly,
+    # database. The user is probably working on RNA products directly,
     # not going through transcripts.
   }
 

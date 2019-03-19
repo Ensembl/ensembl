@@ -103,7 +103,7 @@ sub fetch_all_by_Transcript {
 =head2 fetch_all_by_external_name
 
   Arg [1]    : String $external_name
-               An external identifier of the rnaproduct to be obtained
+               An external identifier of the RNAProduct to be obtained
   Arg [2]    : (optional) String $external_db_name
                The name of the external database from which the
                identifier originates.
@@ -113,11 +113,11 @@ sub fetch_all_by_Transcript {
                   @{ $rp_a->fetch_all_by_external_name('MIMAT0000416') };
                my @more_rnaproducts =
                   @{ $rp_a->fetch_all_by_external_name('hsa-miR-1-__') };
-  Description: Retrieves all rnaproducts which are associated with
+  Description: Retrieves all RNAProducts which are associated with
                an external identifier such as a GO term, miRBase
                identifer, etc. Usually there will only be a single
-               rnaproduct returned in the list reference, but not
-               always. If no rnaproducts with the external identifier
+               RNAProduct returned in the list reference, but not
+               always. If no RNAProducts with the external identifier
                are found, a reference to an empty list is returned.
                SQL wildcards % and _ are supported in the $external_name
                but their use is somewhat restricted for performance reasons.
@@ -192,10 +192,10 @@ sub fetch_all_by_type {
                The internal identifier of the RNAProduct to obtain
   Example    : $rnaproduct = $rnaproduct_adaptor->fetch_by_dbID(1234);
   Description: This fetches a RNAProduct object via its internal id.
-               This is only debatably useful since rnaproducts do
+               This is only debatably useful since RNAProducts do
                not make much sense outside of the context of their
                Transcript.  Consider using fetch_by_Transcript instead.
-  Returntype : Bio::EnsEMBL::RNAProduct, or undef if the rnaproduct is not
+  Returntype : Bio::EnsEMBL::RNAProduct, or undef if the RNAProduct is not
                found.
   Caller     : ?
   Status     : Stable
@@ -219,7 +219,7 @@ sub fetch_by_dbID {
                The stable identifier of the RNAProduct to obtain
   Example    : $rnaproduct = $rnaproduct_adaptor->fetch_by_stable_id("ENSM00001");
   Description: This fetches a RNAProduct object via its stable id.
-  Returntype : Bio::EnsEMBL::RNAProduct, or undef if the rnaproduct is not
+  Returntype : Bio::EnsEMBL::RNAProduct, or undef if the RNAProduct is not
                found.
   Caller     : ?
   Status     : Stable
@@ -241,7 +241,7 @@ sub fetch_by_stable_id {
 
   Arg [1]    : none
   Example    : @rnaproduct_ids = @{$rnaproduct_adaptor->list_dbIDs()};
-  Description: Gets an array of internal ids for all rnaproducts in the current db
+  Description: Gets an array of internal ids for all RNAProducts in the current db
   Returntype : list of ints
   Exceptions : none
   Caller     : ?
@@ -259,9 +259,9 @@ sub list_dbIDs {
 =head2 remove
 
   Arg [1]    : Bio::EnsEMBL::RNAProduct $rnaproduct
-               The rnaproduct to be removed from the database
+               The RNAProduct to be removed from the database
   Example    : $rpID = $rp_adaptor->remove($rnaproduct, $transcript->dbID());
-  Description: Removes a rnaproduct, along with all associated information
+  Description: Removes a RNAProduct, along with all associated information
                from the database.
   Returntype : none
   Exceptions : throw on incorrect arguments
@@ -311,13 +311,13 @@ sub remove {
 =head2 store
 
   Arg [1]    : Bio::EnsEMBL::RNAProduct $rnaproduct
-               The rnaproduct to be written to the database
+               The RNAProduct to be written to the database
   Arg [2]    : Int $transcript_dbID
-               The identifier of the transcript that this rnaproduct is
+               The identifier of the transcript that this RNAProduct is
                associated with
   Example    : $rpID = $rp_adaptor->store($rnaproduct, $transcript->dbID());
-  Description: Stores a rnaproduct in the database and returns the new
-               internal identifier for the stored rnaproduct.
+  Description: Stores a RNAProduct in the database and returns the new
+               internal identifier for the stored RNAProduct.
   Returntype : Int
   Exceptions : throw on incorrect arguments
   Caller     : general
@@ -418,7 +418,7 @@ sub store {
   Arg[1]      : String $table
   Arg[2]      : String $column
   Example     : $rnaproduct_adaptor->_list_dbIDs('rnaproduct', 'rnaproduct_id');
-  Description : Local reimplementation to ensure multi-species rnaproducts
+  Description : Local reimplementation to ensure multi-species RNAProducts
                 are limited to their species alone
   Returntype  : ArrayRef of specified IDs
   Caller      : Internal
@@ -458,7 +458,7 @@ SQL
 #               to be handed directly to users because in its current form
 #               it can be trivially exploited to inject arbitrary SQL.
 #  Returntype : ArrayRef of either Bio::EnsEMBL::RNAProducts or undefs
-#  Exceptions : throws if rnaproduct type is absent or unknown
+#  Exceptions : throws if RNAProduct type is absent or unknown
 #  Caller     : internal
 #  Status     : At Risk (In Development)
 
@@ -494,7 +494,7 @@ sub _fetch_direct_query {
 #               methods in order to avoid duplication of object-creation
 #               logic.
 #  Returntype : ArrayRef of either Bio::EnsEMBL::RNAProducts or undefs
-#  Exceptions : throws if rnaproduct type is absent or unknown
+#  Exceptions : throws if RNAProduct type is absent or unknown
 #  Caller     : internal
 #  Status     : At Risk (In Development)
 sub _obj_from_sth {

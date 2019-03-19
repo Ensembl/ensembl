@@ -134,7 +134,7 @@ sub new {
 
 =head2 class_attribute_cache_map
 
-  Arg [1]    : string $class_name - fully qualified rnaproduct class name
+  Arg [1]    : string $class_name - fully qualified RNA-product class name
   Example    : my $attr_cache_map
                  = $mapper->class_attribute_cache_map( 'Bio::EnsEMBL::MicroRNA' );
   Description: For the given name of a class representing a mature RNA
@@ -160,7 +160,7 @@ sub class_attribute_cache_map {
 
 =head2 class_to_type_code
 
-  Arg [1]    : string $class_name - fully qualified rnaproduct class name
+  Arg [1]    : string $class_name - fully qualified RNA-product class name
   Example    : my $type_code
                  = $mapper->class_to_type_code( 'Bio::EnsEMBL::MicroRNA' );
   Description: For the given name of a class representing a mature RNA
@@ -191,7 +191,7 @@ sub class_to_type_code {
 
 =head2 type_code_to_class
 
-  Arg [1]    : string $type_code - type code of rnaproduct
+  Arg [1]    : string $type_code - type code of RNA product
   Example    : my $class_name = $mapper->class_to_type_code( 1 );
   Description: For the type code representing a mature RNA product in the
                Ensembl database, return its API class name
