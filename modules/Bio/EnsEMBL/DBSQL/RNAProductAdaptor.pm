@@ -432,12 +432,11 @@ sub _list_dbIDs {
   if($self->is_multispecies()) {
     $column ||= "${table}_id";
     my $sql = <<"SQL";
-select `rp`.`${column}`
-from rnaproduct rp
-join transcript t using (transcript_id)
-join seq_region sr using (seq_region_id)
-join coord_system cs using (coord_system_id)
-where cs.species_id = ?
+SELECT `rp`.`${column}` FROM rnaproduct rp
+JOIN transcript t USING (transcript_id)
+JOIN seq_region sr USING (seq_region_id)
+JOIN coord_system cs USING (coord_system_id)
+WHERE cs.species_id = ?
 SQL
     return $self->dbc()->sql_helper()->execute_simple(-SQL => $sql, -PARAMS => [$self->species_id()]);
   }
@@ -472,14 +471,16 @@ sub _fetch_direct_query {
   my $rp_modified_date =
     $self->db()->dbc()->from_date_to_seconds('modified_date');
 
-  my $sql =
-    sprintf("SELECT rp.rnaproduct_id, pt.code, rp.transcript_id, "
-            . "rp.seq_start, rp.start_exon_id, rp.seq_end, rp.end_exon_id, "
-            . "rp.stable_id, rp.version, %s, %s "
-            . "FROM rnaproduct rp JOIN rnaproduct_type pt "
-            . "ON rp.rnaproduct_type_id = pt.rnaproduct_type_id "
-            . "WHERE %s = ?",
-            $rp_created_date, $rp_modified_date, $where_args->[0]);
+  my $sql_template = <<'SQL';
+SELECT rp.rnaproduct_id, pt.code, rp.transcript_id, rp.seq_start,
+  rp.start_exon_id, rp.seq_end, rp.end_exon_id, rp.stable_id, rp.version,
+  %s, %s
+ FROM rnaproduct rp
+ JOIN rnaproduct_type pt ON rp.rnaproduct_type_id = pt.rnaproduct_type_id
+ WHERE %s = ?
+SQL
+  my $sql = sprintf( $sql_template,
+                     $rp_created_date, $rp_modified_date, $where_args->[0] );
   my $sth = $self->prepare($sql);
   $sth->bind_param(1, $where_args->[1], $where_args->[2]);
   $sth->execute();

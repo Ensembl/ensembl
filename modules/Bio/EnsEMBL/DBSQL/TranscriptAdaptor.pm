@@ -271,8 +271,9 @@ sub fetch_by_rnaproduct_id {
 
   throw("dbID argument is required") unless defined($p_dbID);
 
-  my $sth =
-    $self->prepare("SELECT transcript_id FROM rnaproduct WHERE rnaproduct_id = ?");
+  my $sth = $self->prepare(
+    "SELECT transcript_id FROM rnaproduct WHERE rnaproduct_id = ?"
+  );
   $sth->bind_param(1, $p_dbID, SQL_INTEGER);
   $sth->execute();
 
