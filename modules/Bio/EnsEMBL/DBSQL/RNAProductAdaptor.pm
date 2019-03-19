@@ -146,9 +146,9 @@ sub fetch_all_by_external_name {
   foreach my $id (@ids) {
     my $transcript = $transcript_adaptor->fetch_by_rnaproduct_id($id);
 
-    if (defined($transcript)) {
+    if ( defined($transcript) ) {
       my $rnaproduct = $self->fetch_by_dbID($id);
-      if($transcript->slice()->is_reference()) {
+      if ( $transcript->slice()->is_reference() ) {
         push(@reference, $rnaproduct);
       }
       else {
