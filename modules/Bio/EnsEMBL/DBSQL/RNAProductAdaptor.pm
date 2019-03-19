@@ -530,18 +530,18 @@ sub _obj_from_sth {
     my $class_name = Bio::EnsEMBL::Utils::RNAProductTypeMapper::mapper()
       ->type_code_to_class($type_code);
     my $rnaproduct = $class_name->new_fast( {
-                             'dbID'          => $rnaproduct_id,
-                             'type_code'     => $type_code,
-                             'adaptor'       => $self,
-                             'start'         => $seq_start,
-                             'end'           => $seq_end,
-                             'start_exon'    => $start_exon,
-                             'end_exon'      => $end_exon,
-                             'stable_id'     => $stable_id,
-                             'version'       => $version,
-                             'created_date'  => $created_date || undef,
-                             'modified_date' => $modified_date || undef,
-                           } );
+      'dbID'          => $rnaproduct_id,
+      'type_code'     => $type_code,
+      'adaptor'       => $self,
+      'start'         => $seq_start,
+      'end'           => $seq_end,
+      'start_exon'    => $start_exon,
+      'end_exon'      => $end_exon,
+      'stable_id'     => $stable_id,
+      'version'       => $version,
+      'created_date'  => $created_date || undef,
+      'modified_date' => $modified_date || undef,
+    } );
 
     my $transcript = $transcript_adaptor->fetch_by_dbID($transcript_id);
     $rnaproduct->transcript($transcript);
