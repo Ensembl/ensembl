@@ -103,7 +103,7 @@ ok($rp, 'RNAProduct constructor works without arguments');
     end => 456,
     start_exon => $exon1,
     end_exon => $exon2,
-    stable_id => 'ENSM00012345',
+    stable_id => 'ENSS00012345',
     version => 1337,
     dbID => 314,
     seq => 'ACGTACGT',
@@ -283,7 +283,7 @@ $rp = $rp_a->fetch_by_dbID(1);
 ok($rp, 'Can fetch RNAProduct by dbID');
 
 $rp = undef;
-$rp = $rp_a->fetch_by_stable_id('ENSM00000000001');
+$rp = $rp_a->fetch_by_stable_id('ENSS00000000001');
 ok($rp, 'Can fetch RNAProduct by stable ID');
 
 isa_ok($rp, 'Bio::EnsEMBL::MicroRNA', 'miRNA object from database');
@@ -312,7 +312,7 @@ subtest 'Exon links' => sub {
   is($rp->start_Exon()->stable_id(), 'ENSE00000111112', 'Start exon has expected stable ID');
   is($rp->end_Exon()->stable_id()  , 'ENSE00000111112', 'End exon has expected stable ID');
 
-  my $rp_no_exons = $rp_a->fetch_by_stable_id('ENSM00000000002');
+  my $rp_no_exons = $rp_a->fetch_by_stable_id('ENSS00000000002');
   is($rp_no_exons->start_Exon(), undef, 'Can correctly handle RNAProduct with no start exon');
   is($rp_no_exons->end_Exon()  , undef, 'Can correctly handle RNAProduct with no end exon');
 };
@@ -433,7 +433,7 @@ subtest 'Write operations' => sub {
   my %insert_args = (
     start         => 6,
     end           => 27,
-    stable_id     => 'ENSM00000000099',
+    stable_id     => 'ENSS00000000099',
     version       => 1,
     created_date  => time(),
     modified_date => time(),

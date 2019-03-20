@@ -217,7 +217,7 @@ sub fetch_by_dbID {
 
   Arg [1]    : string $stable_id
                The stable identifier of the RNAProduct to obtain
-  Example    : $rnaproduct = $rnaproduct_adaptor->fetch_by_stable_id("ENSM00001");
+  Example    : $rnaproduct = $rnaproduct_adaptor->fetch_by_stable_id("ENSS00001");
   Description: This fetches a RNAProduct object via its stable id.
   Returntype : Bio::EnsEMBL::RNAProduct, or undef if the RNAProduct is not
                found.

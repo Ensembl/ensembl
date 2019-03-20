@@ -48,7 +48,7 @@ commonly play a role in gene expression.
   );
 
   # Stable-ID setter
-  $rnaproduct->stable_id('ENSM00090210');
+  $rnaproduct->stable_id('ENSS00090210');
 
   # Get start and end position in the precursor transcript
   my $start = $rnaproduct->start();
@@ -708,7 +708,7 @@ sub seq {
 =head2 stable_id
 
   Arg [1]    : (optional) string $stable_id - stable ID to set
-  Example    : $rnaproduct->stable_id('ENSM00090210');
+  Example    : $rnaproduct->stable_id('ENSS00090210');
   Description: Getter/setter for attribute stable_id.
                Unlike stable_id_version(), setting a new stable ID does NOT
                reset the version number.
@@ -731,7 +731,7 @@ sub stable_id {
 =head2 stable_id_version
 
   Arg [1]    : (optional) String - the stable ID with version to set
-  Example    : $rnaproduct->stable_id("ENSM0059890.3");
+  Example    : $rnaproduct->stable_id("ENSS0059890.3");
   Description: Getter/setter for stable id with version for this RNAProduct.
                If the input string omits the version part, the version gets reset
                to undef; use stable_id() if you want to avoid this.

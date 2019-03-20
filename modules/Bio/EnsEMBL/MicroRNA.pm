@@ -48,7 +48,7 @@ members.
   );
 
   # Stable-ID setter
-  $miR->stable_id('ENSM00090210');
+  $miR->stable_id('ENSS00090210');
 
   # Get start and end position in the precursor transcript
   my $start = $miR->start();
