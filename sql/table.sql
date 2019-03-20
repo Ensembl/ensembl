@@ -1994,7 +1994,7 @@ This includes which IDs where deleted, created and related to each other. Each e
 @column new_stable_id             Gene/transcript/translation stable id for the current release.
 @column new_version               Stable id version.
 @column mapping_session_id        Foreign key references to the @link mapping_session table.
-@column type                      ENUM('gene', 'transcript', 'translation') NOT NULL,
+@column type                      ENUM('gene', 'transcript', 'translation', 'rnaproduct') NOT NULL,
 @column score                     Combined mapping score.
 
 @see mapping_session
