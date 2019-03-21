@@ -12,6 +12,7 @@ core	  Exon
 	  Translation
 	  Operon
 	  OperonTranscript
+	  RNAProduct
 
 
 For Gene, Transcript and Translation, an archive_id_lookup is also created, containing all previously used ids

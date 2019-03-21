@@ -19,3 +19,4 @@
 19	karyotype_rank	Rank in the karyotype	For a given seq_region, if it is part of the species karyotype, will indicate its rank
 20	proj_parent_g	projection parent gene	Stable identifier of the parent gene this gene was projected from (projection between different species and/or assemblies).
 21	proj_parent_t	projection parent transcript	Stable identifier of the parent transcript this transcript was projected from (projection between different species and/or assemblies).
+22	mirna_arm	miRNA arm	Hairpin arm from which this miRNA has come from

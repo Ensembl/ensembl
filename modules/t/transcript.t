@@ -274,6 +274,13 @@ ok(@$interpro == 1);
 is($tr->stable_id, 'ENST00000246229', 'Fetched correct transcript by external name');
 
 #
+# test fetch_by_rnaproduct_id
+#
+
+$tr = $ta->fetch_by_rnaproduct_id(1);
+is($tr->stable_id, 'ENST00000278995', 'Fetched correct transcript by rnaproduct id');
+
+#
 # test fetch_by_translation_id
 #
 
@@ -1019,6 +1026,18 @@ for (my $i = 0; $i < scalar(@absolute_coords); $i++) {
     is($absolute_coords[$i]->end, $relative_coords[$i]->end, "Ends match");
     is($absolute_coords[$i]->strand, $relative_coords[$i]->strand, "Strands match");
   }
+}
+
+## Test retrieval of mature RNA products
+{
+  $tr = $ta->fetch_by_stable_id('ENST00000278995');
+  my $rps_all = $tr->get_all_RNAProducts();
+  my $rps_micro = $tr->get_all_RNAProducts('miRNA');
+  my $rps_circ = $tr->get_all_RNAProducts('circRNA');
+
+  cmp_ok(scalar @{$rps_all}, '>', 0, 'Have RNA products');
+  is_deeply($rps_all, $rps_micro, 'All RNA products are microRNAs');
+  cmp_ok(scalar @{$rps_circ}, '==', 0, 'Have no circRNAs');
 }
 
 done_testing();

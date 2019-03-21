@@ -1329,6 +1329,37 @@ sub fetch_all_by_Translation {
 }
 
 
+=head2 fetch_all_by_RNAProduct
+
+  Arg [1]    : Bio::EnsEMBL::RNAProduct $rp
+               (The rnaproduct to fetch database entries for)
+  Arg [2]    : optional external database name. SQL wildcards are accepted
+  Arg [3]    : optional externaldb type. SQL wildcards are accepted
+  Example    : @db_entries = @{$db_entry_adptr->fetch_all_by_RNAProduct($rp)};
+  Description: Retrieves external database entries for an EnsEMBL rnaproduct
+  Returntype : listref of Bio::EnsEMBL::DBEntries; may be of type IdentityXref if
+               there is mapping data, or OntologyXref if there is linkage data.
+  Exceptions : throws if rnaproduct object not passed
+  Caller     : general
+  Status     : Stable
+
+=cut
+
+sub fetch_all_by_RNAProduct {
+  my ($self, $rp, $ex_db_reg, $ex_db_type) = @_;
+
+  if (!ref($rp) || !$rp->isa('Bio::EnsEMBL::RNAProduct')) {
+    throw('Bio::EnsEMBL::RNAProduct argument expected.');
+  }
+  if (!$rp->dbID()){
+    warning("Cannot fetch_all_by_RNAProduct without a dbID");
+    return [];
+  }
+
+  return $self->_fetch_by_object_type($rp->dbID(), 'RNAProduct', $ex_db_reg, $ex_db_type);
+}
+
+
 
 =head2 remove_from_object
 
@@ -1849,6 +1880,29 @@ sub list_translation_ids_by_external_db_id {
     my ( $self, $external_db_id, $linkage_type) = @_;
     return $self->_type_by_external_db_id( $external_db_id, 'Translation', undef, $linkage_type ),
 }
+
+
+=head2 list_rnaproduct_ids_by_extids
+
+  Arg [1]    : string $external_name
+  Arg [2]    : (optional) string $external_db_name
+  Arg [3]    : Boolean override, see _type_by_external_id
+  Example    : @rp_ids = $dbea->list_rnaproduct_ids_by_extids('GO:0004835');
+  Description: Gets a list of rnaproduct IDs by external display IDs
+  Returntype : list of Ints
+  Exceptions : none
+  Caller     : unknown
+  Status     : Stable
+
+=cut
+
+sub list_rnaproduct_ids_by_extids {
+  my ($self, $external_name, $external_db_name, $override) = @_;
+
+  return $self->_type_by_external_id($external_name, 'RNAProduct', undef,
+				     $external_db_name, $override);
+}
+
 
 =head2 _type_by_external_id
 

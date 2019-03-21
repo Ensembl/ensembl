@@ -107,3 +107,6 @@
 174	\N	patch	patch_95_96_a.sql|schema_version
 175	\N	patch	patch_96_97_a.sql|schema_version
 176	\N	patch	patch_96_97_b.sql|biotype_so_term
+177	\N	patch	patch_96_97_c.sql|rnaproduct_tables
+178	\N	patch	patch_96_97_d.sql|add_object_type_rnaproduct
+179	\N	patch	patch_96_97_e.sql|add_stable_id_event_type_rnaproduct

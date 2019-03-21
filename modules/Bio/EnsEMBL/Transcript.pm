@@ -3003,6 +3003,41 @@ sub get_all_DAS_Features {
 }
 
 
+=head2 get_all_RNAProducts
+
+  Arg [1]    : optional string $type_code type of rnaproducts to retrieve
+  Example    : @transc_mirnas = @{$transcript->get_all_RNAProducts('miRNA')};
+               @transc_rnaproducts = @{$transcript->get_all_RNAProducts()};
+  Description: Gets a list of RNAProducts of this transcript.
+               Optionally just get RNAProducts for given type code.
+  Returntype : listref Bio::EnsEMBL::RNAProduct
+  Exceptions : none
+  Caller     : general
+  Status     : In Development
+
+=cut
+
+sub get_all_RNAProducts {
+  my ($self, $type_code) = @_;
+
+  if (!exists $self->{'rnaproducts'}) {
+    if (!$self->adaptor()) {
+      return [];
+    }
+
+    my $rnaproduct_adaptor = $self->adaptor->db->get_RNAProductAdaptor();
+    $self->{'rnaproducts'} = $rnaproduct_adaptor->fetch_all_by_Transcript($self);
+  }
+
+  if (defined $type_code) {
+    my @results = grep { $_->type_code() eq $type_code } @{$self->{'rnaproducts'}};
+    return \@results;
+  } else {
+    return $self->{'rnaproducts'};
+  }
+}
+
+
 
 =head2 _compare_xrefs
 
