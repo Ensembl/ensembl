@@ -284,7 +284,7 @@ sub fetch_by_rnaproduct_id {
     return $self->fetch_by_dbID($dbID);
   }
 
-  return undef;
+  return;
 }
 
 
