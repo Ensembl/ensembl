@@ -343,4 +343,28 @@ ok(!scalar(@alt_tls));
 # Test generic_count(), inherited method from BaseAdaptor
 is($ta->generic_count(), @{$ta->list_dbIDs()}, "Number of features from generic_count is equal to the number of dbIDs from list_dbIDs");
 
+#56
+##
+## Handling stop codon readthrough
+##
+
+my $tra_scrt = $db->get_TranscriptAdaptor();
+my $tr_scrt = $tra_scrt->fetch_by_stable_id("ENST00000217347");
+
+$tr_scrt->edits_enabled(1);
+
+my $scrt = Bio::EnsEMBL::SeqEdit->new(
+  -START   => 1,
+  -END     => 2,
+  -ALT_SEQ => 'X',
+  -CODE    => '_stop_codon_readthrough',
+  -NAME    => 'Stop Codon Readthrough'
+);
+
+$tr_scrt->translation->add_Attributes($scrt->get_Attribute());
+
+my $tlseq_scrt = $tr_scrt->translate->seq();
+debug("X inserted: " . $tlseq_scrt);
+is($tlseq_scrt =~ /X/, 1, 'X inserted');
+
 done_testing();
