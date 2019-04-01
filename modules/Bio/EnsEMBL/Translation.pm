@@ -1108,7 +1108,7 @@ sub get_all_SeqEdits {
 
   my $attribs;
   
-  $edits ||= ['initial_met', '_selenocysteine', 'amino_acid_sub'];
+  $edits ||= ['initial_met', '_selenocysteine', 'amino_acid_sub', '_stop_codon_readthrough'];
   
 
   foreach my $edit(@{wrap_array($edits)}){
@@ -1137,6 +1137,20 @@ sub get_all_selenocysteine_SeqEdits {
   return $self->get_all_SeqEdits(['_selenocysteine']);
 }
   
+=head2 get_all_stop_codon_SeqEdits
+
+  Example    : my @edits = @{$translation->get_all_stop_codon_SeqEdits()};
+  Description: Retrieves all post transcriptional sequence modifications related
+               to stop codon readthrough
+  Returntype : Bio::EnsEMBL::SeqEdit
+  Exceptions : none
+
+=cut
+
+sub get_all_stop_codon_SeqEdits {
+  my ($self) = @_;
+  return $self->get_all_SeqEdits(['_stop_codon_readthrough']);
+}
 
 =head2 modify_translation
 
