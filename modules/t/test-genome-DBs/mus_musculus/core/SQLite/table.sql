@@ -1,6 +1,6 @@
 -- 
 -- Created by SQL::Translator::Producer::SQLite
--- Created on Tue Feb 12 15:00:36 2019
+-- Created on Tue Apr  2 16:04:10 2019
 -- 
 
 BEGIN TRANSACTION;
@@ -615,7 +615,7 @@ CREATE UNIQUE INDEX "code_idx02" ON "misc_set" ("code");
 CREATE TABLE "object_xref" (
   "object_xref_id" INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
   "ensembl_id" integer NOT NULL DEFAULT 0,
-  "ensembl_object_type" enum NOT NULL DEFAULT 'RawContig',
+  "ensembl_object_type" enum NOT NULL,
   "xref_id" integer NOT NULL,
   "linkage_annotation" varchar(255),
   "analysis_id" smallint
@@ -788,6 +788,46 @@ CREATE TABLE "repeat_feature" (
 );
 
 --
+-- Table: "rnaproduct"
+--
+CREATE TABLE "rnaproduct" (
+  "rnaproduct_id" INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+  "rnaproduct_type_id" smallint NOT NULL,
+  "transcript_id" integer NOT NULL,
+  "seq_start" integer NOT NULL,
+  "start_exon_id" integer,
+  "seq_end" integer NOT NULL,
+  "end_exon_id" integer,
+  "stable_id" varchar(128),
+  "version" smallint,
+  "created_date" datetime,
+  "modified_date" datetime
+);
+
+--
+-- Table: "rnaproduct_attrib"
+--
+CREATE TABLE "rnaproduct_attrib" (
+  "rnaproduct_id" integer NOT NULL DEFAULT 0,
+  "attrib_type_id" smallint NOT NULL DEFAULT 0,
+  "value" text NOT NULL
+);
+
+CREATE UNIQUE INDEX "rnaproduct_attribx" ON "rnaproduct_attrib" ("rnaproduct_id", "attrib_type_id", "value");
+
+--
+-- Table: "rnaproduct_type"
+--
+CREATE TABLE "rnaproduct_type" (
+  "rnaproduct_type_id" INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+  "code" varchar(20) NOT NULL DEFAULT '',
+  "name" varchar(255) NOT NULL DEFAULT '',
+  "description" text
+);
+
+CREATE UNIQUE INDEX "code_idx03" ON "rnaproduct_type" ("code");
+
+--
 -- Table: "seq_region"
 --
 CREATE TABLE "seq_region" (
@@ -854,7 +894,7 @@ CREATE TABLE "stable_id_event" (
   "new_stable_id" varchar(128),
   "new_version" smallint,
   "mapping_session_id" integer NOT NULL DEFAULT 0,
-  "type" enum NOT NULL DEFAULT 'gene',
+  "type" enum NOT NULL,
   "score" float NOT NULL DEFAULT 0
 );
 
