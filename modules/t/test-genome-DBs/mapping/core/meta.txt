@@ -68,3 +68,6 @@
 161	\N	patch	patch_95_96_a.sql|schema_version
 162	\N	patch	patch_96_97_a.sql|schema_version
 163	\N	patch	patch_96_97_b.sql|biotype_so_term
+164	\N	patch	patch_96_97_c.sql|rnaproduct_tables
+165	\N	patch	patch_96_97_d.sql|add_object_type_rnaproduct
+166	\N	patch	patch_96_97_e.sql|add_stable_id_event_type_rnaproduct
