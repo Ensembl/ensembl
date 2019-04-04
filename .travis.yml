@@ -3,7 +3,6 @@ language: perl
 os:
   - linux
 
-
 perl:
   - '5.14'
   - '5.26'
@@ -60,5 +59,6 @@ notifications:
   email:
     on_failure: change
   slack:
-    secure: gTcWzQsVHKPxRJ1u0U2l2+QVujmG1uFW44kAO3l46V5Im5uLTOLeM20ykk6ox4kaPHLs5ky7NGzcJmTDLaHBKjI4Sa34l4tJd0lhkv+hKj9TSv5pDDCdUX8v869Nm8LqJKh26HqvVcN7eHFRatLD/tfYvvkaP1rLLhwLLdr7czQ=
+    rooms:
+      secure: AbIJIPtituqEBGPKO47+Mp+KdFFocT5xJ0oXa1yOFROQz9m03uJPWpMdQ6qol7ftTNLQQChhq8Bek+OJvgZPzvwfsOjgcMrgycaLHsXpqb1S+JRYRHvqQqv0MHFtFLCxnM+R43BdUak8GJmp+lzY96higiLO0ffhu/ovrqmf2VM=
     on_failure: change
