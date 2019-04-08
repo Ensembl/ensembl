@@ -38,7 +38,7 @@ limitations under the License.
 
 =head1 DESCRIPTION
 
-  A representation of a stop codon readthrough edit in a sequence. 
+  A representation of a stop codon readthrough edit in a sequence.
 
 =head1 METHODS
 
@@ -47,15 +47,16 @@ limitations under the License.
 package Bio::EnsEMBL::StopCodonReadthroughEdit;
 
 use strict;
+use warnings;
 
 use parent qw(Bio::EnsEMBL::SeqEdit);
 
 =head2 new
 
-  Arg [-START/END]  : 
+  Arg [-POSITION]  :
        int - start and end postion of the stop codon readthrough edit in the sequence
-  
-  Example    : $stopcodonrtedit = Bio::EnsEMBL::StopCodonReadthroughEdit->new($coord);
+
+  Example    : $stopcodonrtedit = Bio::EnsEMBL::StopCodonReadthroughEdit->new($posiiton);
   Description: Creates a new stop codon readthrough edit object
   Returntype : Bio::EnsEMBL::StopCodonReadthroughEdit
   Exceptions : none
@@ -65,18 +66,16 @@ use parent qw(Bio::EnsEMBL::SeqEdit);
 =cut
 
 sub new {
-  my ($self, $coord) = @_;
-  my $caller = shift;
-   
-  my $class = ref($caller) || $caller;
-  my $self = $class->SUPER::new(        
-        -START   => $coord,
-        -END     => $coord,
-        -ALT_SEQ => 'X',
-        -CODE    => '_stop_codon_readthrough',
-        -NAME    => 'Stop Codon Readthrough');
+  my ($self, $position) = @_;
 
-  return $self;
+  my $class = ref($self) || $self;
+  my $stopcodonrtedit = $class->SUPER::new(
+        -START   => $position,
+        -END     => $position,
+        -ALT_SEQ => 'X',
+        -CODE    => '_stop_codon_readthrough');
+
+  return $stopcodonrtedit;
 
 }
 
