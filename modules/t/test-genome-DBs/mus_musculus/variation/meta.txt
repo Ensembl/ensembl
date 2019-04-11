@@ -1,5 +1,5 @@
 1	\N	schema_type	variation
-2	\N	schema_version	96
+2	\N	schema_version	97
 6	1	species.production_name	mus_musculus
 15	1	web_config	sv_study#Keane 2011 (DGVa study estd118)#Keane 2011#estd118
 14	1	web_config	set#All failed variants#All failed variants#variation_set_fail_all#failed
@@ -66,3 +66,6 @@
 72	\N	patch	patch_95_96_c.sql|add new entries to the failed_description table
 73	\N	patch	patch_95_96_d.sql|create table to store failed variation features
 74	\N	patch	patch_95_96_e.sql|Rename motif_name to binding_matrix_stable_id.
+75	\N	patch	patch_96_97_a.sql|schema version
+76	\N	patch	patch_96_97_b.sql|move ancestral allele column to variation_feature
+77	\N	patch	patch_96_97_c.sql|add an unique index on the name column
