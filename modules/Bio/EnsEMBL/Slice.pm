@@ -3054,6 +3054,7 @@ my %region_so_mapping = (
   Example     : $slice_so_acc = $slice->feature_so_acc;
   Description : This method returns a string containing the SO accession number of the slice, based on the coordinate system name.
   Returns     : string (Sequence Ontology accession number)
+
 =cut
 
 sub feature_so_acc {
@@ -3061,6 +3062,23 @@ sub feature_so_acc {
 
   # return the region SO acc, or Slice acc
   return $region_so_mapping{$self->coord_system_name} // 'SO:0000001';
+}
+
+=head2 feature_so_term
+
+  Description: This method returns a string containing the SO term of the slice, based on the coordinate system name
+               Define constant SEQUENCE_ONTOLOGY in classes that require it, or override it for multiple possible values for a class.
+  Returntype : String (Sequence Ontology term)
+  Exceptions : Thrown if caller SEQUENCE_ONTOLOGY is undefined and is not a Bio::EnsEMBL::Slice
+
+=cut
+
+sub feature_so_term {
+  my ($self) = shift;
+
+  return defined($region_so_mapping{$self->coord_system_name}) ?
+         $self->coord_system_name :
+         'region';
 }
 
 =head2 summary_as_hash
