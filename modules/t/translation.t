@@ -19,6 +19,7 @@ use warnings;
 use Bio::EnsEMBL::Test::TestUtils;
 use Bio::EnsEMBL::Translation;
 use Bio::EnsEMBL::Exon;
+use Bio::EnsEMBL::StopCodonReadthroughEdit;
 
 use Test::More;
 use Test::Warnings;
@@ -342,5 +343,24 @@ ok(!scalar(@alt_tls));
 
 # Test generic_count(), inherited method from BaseAdaptor
 is($ta->generic_count(), @{$ta->list_dbIDs()}, "Number of features from generic_count is equal to the number of dbIDs from list_dbIDs");
+
+#56-57
+#
+# Handling stop codon readthrough edit
+#
+
+my $transcript_adaptor = $db->get_TranscriptAdaptor();
+$transcript = $transcript_adaptor->fetch_by_stable_id("ENST00000217347");
+$transcript->edits_enabled(1);
+
+diag 'Before X insertion: ', explain($transcript->translate->seq());
+
+my $stop_codon_rt_edit = Bio::EnsEMBL::StopCodonReadthroughEdit->new(265);
+$transcript->translation->add_Attributes($stop_codon_rt_edit->get_Attribute());
+my $translated_sequence = $transcript->translate->seq();
+
+diag 'After X insertion: ', explain($translated_sequence);
+is($translated_sequence =~ /QEEXEE/, 1, 'X inserted');
+is(length($transcript->translate->seq()), length($translated_sequence), 'Length of the sequence pre and post edit is equal');
 
 done_testing();
