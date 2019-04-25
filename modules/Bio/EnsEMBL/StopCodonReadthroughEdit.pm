@@ -34,11 +34,30 @@ limitations under the License.
 
 =head1 SYNOPSIS
 
-  my $stopcodonrtedit = Bio::EnsEMBL::StopCodonReadthroughEdit->new($coord);
+  use Bio::EnsEMBL::StopCodonReadthroughEdit;
+
+  # Get transcript
+  my $transcript_adaptor = $db->get_TranscriptAdaptor();
+  my $transcript = $transcript_adaptor->fetch_by_stable_id("ENST00000217347");
+  $transcript->edits_enabled(1);
+  print "Before modifiction: $transcript->translate->seq()\n";
+
+  # Construct a stop codon readthrough edit object
+  my $stop_codon_readthrough_edit = Bio::EnsEMBL::StopCodonReadthroughEdit->new(265);
+
+  # Apply post translation edit
+  $transcript->translation->add_Attributes($stop_codon_readthrough_edit->get_Attribute());
+  my $translated_sequence = $transcript->translate->seq();
+  print "After modifiction: $translated_sequence\n";
 
 =head1 DESCRIPTION
 
-  A representation of a stop codon readthrough edit in a sequence.
+  Biologically, STOP codon readthrough is a rare phenomenon whereby translation
+  does not terminate at an in-frame STOP codon, but instead continues further downstream.
+  It is believed the STOP codon is instead read as a 'sense' codon, i.e. encodes for an amino acid.
+
+  The location of a STOP codon readthrough is indicated by an asterisk (*) in the post translation sequence.
+  This class edits the sequence to replace the asterisk (*) with an 'X' to make it similar to Uniprot representation.
 
 =head1 METHODS
 
@@ -54,9 +73,9 @@ use parent qw(Bio::EnsEMBL::SeqEdit);
 =head2 new
 
   Arg [-POSITION]  :
-       int - start and end postion of the stop codon readthrough edit in the sequence
+       int - start and end position of the stop codon readthrough edit in the sequence
 
-  Example    : $stopcodonrtedit = Bio::EnsEMBL::StopCodonReadthroughEdit->new($posiiton);
+  Example    : $stop_codon_rt_edit = Bio::EnsEMBL::StopCodonReadthroughEdit->new($position);
   Description: Creates a new stop codon readthrough edit object
   Returntype : Bio::EnsEMBL::StopCodonReadthroughEdit
   Exceptions : none
@@ -69,13 +88,13 @@ sub new {
   my ($self, $position) = @_;
 
   my $class = ref($self) || $self;
-  my $stopcodonrtedit = $class->SUPER::new(
+  my $stop_codon_rt_edit = $class->SUPER::new(
         -START   => $position,
         -END     => $position,
         -ALT_SEQ => 'X',
         -CODE    => '_stop_codon_readthrough');
 
-  return $stopcodonrtedit;
+  return $stop_codon_rt_edit;
 
 }
 
