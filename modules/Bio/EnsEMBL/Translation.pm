@@ -1108,7 +1108,7 @@ sub get_all_SeqEdits {
 
   my $attribs;
   
-  $edits ||= ['initial_met', '_selenocysteine', 'amino_acid_sub', '_stop_codon_readthrough'];
+  $edits ||= ['initial_met', '_selenocysteine', 'amino_acid_sub', '_stop_codon_rt'];
   
 
   foreach my $edit(@{wrap_array($edits)}){
@@ -1149,7 +1149,7 @@ sub get_all_selenocysteine_SeqEdits {
 
 sub get_all_stop_codon_SeqEdits {
   my ($self) = @_;
-  return $self->get_all_SeqEdits(['_stop_codon_readthrough']);
+  return $self->get_all_SeqEdits(['_stop_codon_rt']);
 }
 
 =head2 modify_translation

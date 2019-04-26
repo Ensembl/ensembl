@@ -57,7 +57,7 @@ limitations under the License.
   It is believed the STOP codon is instead read as a 'sense' codon, i.e. encodes for an amino acid.
 
   The location of a STOP codon readthrough is indicated by an asterisk (*) in the post translation sequence.
-  This class edits the sequence to replace the asterisk (*) with an 'X' to make it similar to Uniprot representation.
+  This class edits the sequence to replace the asterisk (*) with an 'X' to make it similar to RefSeq representation.
 
 =head1 METHODS
 
@@ -92,7 +92,7 @@ sub new {
         -START   => $position,
         -END     => $position,
         -ALT_SEQ => 'X',
-        -CODE    => '_stop_codon_readthrough');
+        -CODE    => '_stop_codon_rt');
 
   return $stop_codon_rt_edit;
 
