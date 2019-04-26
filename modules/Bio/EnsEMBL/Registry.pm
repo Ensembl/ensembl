@@ -1743,6 +1743,7 @@ sub load_registry_from_db {
 
   my $taxonomy_db;
   my $ensembl_metadata_db;
+  my $ensembl_metadata_db_versioned;
 
   my $production_dba_ok = 
     eval { require Bio::EnsEMBL::Production::DBSQL::DBAdaptor; 1 };
@@ -1818,6 +1819,11 @@ sub load_registry_from_db {
         $taxonomy_db      = $db;
     } elsif ( $db =~ /^ensembl_metadata$/ ) {
         $ensembl_metadata_db      = $db;
+    }
+    elsif ( $db =~ m{ \A ensembl_metadata_(\d+) \z }msx ) {
+      if ( $1 eq $software_version ) {
+        $ensembl_metadata_db_versioned = $db;
+      }
     } elsif ( $production_dba_ok and $db =~ /^ensembl(?:genomes)?_production(_\d+)?/x ) {
       # production db can come with no version (i.e. that on ens-staging1),
       # but it's backed up with a release number
@@ -2349,7 +2355,7 @@ sub load_registry_from_db {
   
   # ensembl_metadata
 
-  if ( defined $ensembl_metadata_db) {
+  if ( ( defined $ensembl_metadata_db ) || ( defined $ensembl_metadata_db_versioned ) ) {
      
     my $has_metadata = eval {require Bio::EnsEMBL::MetaData::DBSQL::MetaDataDBAdaptor};
     if($@ or (!defined $has_metadata)) {
@@ -2357,6 +2363,16 @@ sub load_registry_from_db {
           print "ensembl_metadata API not found - ignoring $ensembl_metadata_db\n";
         }
     } else {
+
+        my $metadata_dbname;
+        # Versioned database has priority over unversioned one.
+        if ( defined $ensembl_metadata_db_versioned ) {
+          $metadata_dbname = $ensembl_metadata_db_versioned;
+        }
+        else {
+          $metadata_dbname = $ensembl_metadata_db;
+        }
+
         my $dba = Bio::EnsEMBL::MetaData::DBSQL::MetaDataDBAdaptor->new(
                                 '-species' => 'multi' . $species_suffix,
                                 '-group'   => 'metadata',
@@ -2364,10 +2380,10 @@ sub load_registry_from_db {
                                 '-port'    => $port,
                                 '-user'    => $user,
                                 '-pass'    => $pass,
-                                '-dbname'  => $ensembl_metadata_db, );
+                                '-dbname'  => $metadata_dbname, );
 
        if ($verbose) {
-         printf( "%s loaded\n", $ensembl_metadata_db );
+         printf( "%s loaded\n", $metadata_dbname );
        }
      }
   }
