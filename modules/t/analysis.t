@@ -64,6 +64,9 @@ $analysis_ad->store($analysis);
 
 ok(defined $analysis->dbID() );
 
+# Check that web_data is stored without newlines
+unlike(retrieve_web_data($db, $analysis->dbID), '/\n/', "No newlines in stored web_data");
+
 # Need to explicitly delete cache, otherwise we just return that,
 # and don't actually extract the data from the table and truly verify storage.
 $analysis_ad->{_logic_name_cache} = {};
@@ -89,7 +92,7 @@ $analysis->logic_name("new_dummy");
 $analysis->description("new description");
 $analysis->display_label("new label");
 $analysis->displayable(0);
-$analysis->web_data("blahblah");
+$analysis->web_data({thing => 'blahblah'});
 my $dbID = $analysis->dbID();
 $analysis_ad->update($analysis);
 my $analysis_updated = $analysis_ad->fetch_by_dbID($dbID);
@@ -97,7 +100,10 @@ is($analysis_updated->logic_name(), "new_dummy", "Logic name is correct");
 is($analysis_updated->description(), "new description", "Description is correct");
 is($analysis_updated->display_label(), "new label", "Label is correct");
 is($analysis_updated->displayable(), 0, "Displayable is correct");
-is($analysis_updated->web_data(), "blahblah", "web_data is correct");
+is($analysis_updated->web_data->{thing}, "blahblah", "web_data is correct");
+
+# Check that web_data is stored without newlines
+unlike(retrieve_web_data($db, $dbID), '/\n/', "No newlines in updated web_data");
 
 # now try updating analysis that has no existing description
 $analysis = Bio::EnsEMBL::Analysis->new();
@@ -134,6 +140,14 @@ sub check_methods {
     }
   }
   return $all_implemented;
+}
+
+sub retrieve_web_data {
+  my ($db, $dbID) = @_;
+
+  my $sql_helper = $db->dbc->sql_helper;
+  my $sql = "SELECT web_data FROM analysis_description WHERE analysis_id = $dbID";
+  return $sql_helper->execute_single_result(-SQL => $sql);
 }
 
 done_testing();
