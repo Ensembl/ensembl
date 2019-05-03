@@ -67,6 +67,7 @@ use strict;
 
 use Data::Dumper;
 $Data::Dumper::Terse = 1;
+$Data::Dumper::Indent = 0;
 
 @ISA = qw( Bio::EnsEMBL::DBSQL::BaseAdaptor);
 
