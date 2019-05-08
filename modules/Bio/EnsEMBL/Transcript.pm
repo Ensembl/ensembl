@@ -3182,6 +3182,23 @@ sub tsl {
   return $tsl;
 }
 
+=head2 appris
+
+  Example       : $appris = $transcript->appris();
+  Description   : Returns the corresponding APPRIS tag
+  Returns       : string
+
+=cut
+
+sub appris {
+  my $self = shift;
+  my @attributes = @{ $self->get_all_Attributes('appris') };
+  my $appris;
+  $appris = $attributes[0]->value if scalar(@attributes) > 0;
+
+  return $appris;
+}
+
 =head2 havana_transcript
 
   Example       : $havana_transcript = $transcript->havana_transcript();

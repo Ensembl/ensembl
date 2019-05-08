@@ -217,6 +217,8 @@ $tr->flush_Exons();
 
 is( scalar( @{$tr->get_all_Exons()} ), 0, 'No exons left after flushing' );
 
+is ( $tr->appris, 'principal1' , 'APPRIS tag fetched correctly');
+
 # Fetch a fresh tr, check incomplete codon behavior
 $tr = $ta->fetch_by_stable_id( "ENST00000300425" );
 

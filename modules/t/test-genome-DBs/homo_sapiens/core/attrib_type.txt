@@ -21,3 +21,4 @@
 21	proj_parent_t	projection parent transcript	Stable identifier of the parent transcript this transcript was projected from (projection between different species and/or assemblies).
 22	mirna_arm	miRNA arm	Hairpin arm from which this miRNA has come from
 23	_stop_codon_rt	Stop Codon Readthrough	\N
+24	appris	APPRIS	\N
