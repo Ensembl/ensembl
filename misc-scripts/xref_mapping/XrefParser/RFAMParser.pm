@@ -141,11 +141,17 @@ sub run_script {
   } else {
     my $file_io = $self->get_filehandle($file);
     if ( !defined $file_io ) {
-      print "ERROR: Can't open HGNC file $file\n";
+      print "ERROR: Can't open RFAM file $file\n";
       return 1;
     }
+    my $temp_line;
     while (my $line = $file_io->getline()) {
-      push(@lines, $line); 
+      if ($line =~ /\/\//) {
+        push @lines, $temp_line;
+        $temp_line = '';
+      } else {
+        $temp_line .= $line . "\n";
+      }
     }
   }
 
