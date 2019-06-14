@@ -3,6 +3,9 @@ language: perl
 os:
   - linux
 
+services:
+  - mysql
+
 perl:
   - '5.14'
   - '5.26'
