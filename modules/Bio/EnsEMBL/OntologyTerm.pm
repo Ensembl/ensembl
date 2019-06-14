@@ -34,10 +34,8 @@ Bio::EnsEMBL::OntologyTerm
 
 =head1 DESCRIPTION
 
-An ontology term object, (most often) created by
-Bio::EnsEMBL::DBSQL::GOTermAdaptor and used in querying for
-transcripts, genes, and translations using the relevant adaptors and
-methods.
+An ontology term object, used in querying for transcripts, genes,
+and translations using the relevant adaptors and methods.
 
 =head1 METHODS
 
