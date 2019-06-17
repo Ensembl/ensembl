@@ -35,7 +35,7 @@ Bio::EnsEMBL::Utils::Interval
 =head1 SYNOPSIS
 
   # let's get an interval spanning 9e5 bp and associated it with some data
-  my $i2 = Bio::EnsEMBL::Utils::Interval->new(1e5, 1e6, { 'key1' => 'value1', 'key2' => 'value2' });
+  my $i1 = Bio::EnsEMBL::Utils::Interval->new(1e5, 1e6, { 'key1' => 'value1', 'key2' => 'value2' });
 
   # and another one which overlaps with the previous,
   # but with scalar associated data
@@ -50,12 +50,18 @@ Bio::EnsEMBL::Utils::Interval
     print "I1 and I2 do not overlap\n";
   }
 
+  # If an interval is defined with a start > end, then it is assumed
+  # to be spanning the origin on a circular chromosome
+  my $i3 = Bio::EnsEMBL::Utilities::Interval->new(1e5, 1e2);
+  warn "Interval spans the origin" if $i3->spans_origin;
+
   etc.
 
 =head1 DESCRIPTION
 
 A class representing an interval defined on a genomic region. Instances of this
-class can store arbitrarily defined data.
+class can store arbitrarily defined data. If created with start > end, then it
+is assumed that this interval is on a circular chromosome spanning the origin.
 
 =head1 METHODS
 
@@ -78,9 +84,12 @@ use Bio::EnsEMBL::Utils::Exception qw(throw);
   Arg [3]     : (optional) $data
                 The data associated with the interval, can be anything
   Example     : my $i = Bio::EnsEMBL::Utils::Interval(1e2, 2e2, { 'key' => 'value' });
+                my $i2 = Bio::EnsEMBL::Utilities::Interval(1e5, 1e2);
+                $i->spans_origin # returns 0
+                $i2->spans_origin # returns 1
   Description : Constructor. Creates a new instance
   Returntype  : Bio::EnsEMBL::Utils::Interval
-  Exceptions  : none
+  Exceptions  : Throws an exception if start and end are not defined.
   Caller      : general
 
 =cut
@@ -92,9 +101,17 @@ sub new {
   my ($start, $end, $data) = @_;
   throw 'Must specify interval boundaries [start, end]'
     unless defined $start and defined $end;
-  throw 'start must be <= end' if $start > $end;
+
+  my $spans_origin = 0;
+  if ($start > $end) {
+      $spans_origin = 1;
+  }
   
-  my $self = bless({ start => $start, end => $end, data => $data }, $class);
+  my $self = bless({ start => $start,
+                     end => $end,
+                     data => $data ,
+                     spans_origin => $spans_origin},
+                   $class);
   return $self;
 }
 
@@ -146,6 +163,23 @@ sub data {
   return $self->{data};
 }
 
+=head2 spans_origin
+
+  Arg []      : none
+  Description : Returns whether this interval was created spanning zero
+                (more particularly: if the interval was instantiated with start > end)
+  Returntype  : boolean
+  Exceptions  : none
+  Caller      : general
+
+=cut
+
+sub spans_origin {
+  my $self = shift;
+
+  return $self->{spans_origin};
+}
+
 =head2 is_empty
 
   Arg []      : none
@@ -159,7 +193,11 @@ sub data {
 sub is_empty {
   my $self = shift;
 
-  return $self->start >= $self->end;
+  if ($self->spans_origin) {
+    return ($self->end >= $self->start);
+  } else {
+    return ($self->start >= $self->end);
+  }
 }
 
 =head2 is_point
@@ -194,7 +232,11 @@ sub contains {
   return 0 if $self->is_empty or not defined $point;
   throw 'point must be a number' unless looks_like_number($point);
   
-  return ($point >= $self->start and $point <= $self->end);
+  if ($self->spans_origin) {
+    return ($point >= $self->start or $point <= $self->end);
+  } else {
+    return ($point >= $self->start and $point <= $self->end);
+  }
 }
 
 =head2 intersects
@@ -210,16 +252,26 @@ sub contains {
 sub intersects {
   my ($self, $interval) = @_;
   assert_ref($interval, 'Bio::EnsEMBL::Utils::Interval');
-    
-  return ($self->start <= $interval->end and $interval->start <= $self->end);
+
+  if ($self->spans_origin and $interval->spans_origin) {
+    return 1;
+  } elsif ($self->spans_origin or $interval->spans_origin) {
+    return ($interval->end >= $self->start or $interval->start <= $self->end);
+  } else {
+    return ($self->start <= $interval->end and $interval->start <= $self->end);
+  }
 }
 
 =head2 is_right_of
 
   Arg [1]     : An instance of Bio::EnsEMBL::Utils::Interval or a scalar
-  Description : Checks if this current interval is entirely to the right of a point. 
+  Description : Checks if this current interval is entirely to the right of a point
+                or Interval.
                 More formally, the method will return true, if for every point x from 
-                the current interval the inequality x > point holds.
+                the current interval the inequality x > point holds, where point
+                is either a single scalar, or point is the end of another Interval.
+                If spans_origin is true for either this Interval or an Interval
+                passed in, then this method returns false.
   Returntype  : boolean
   Exceptions  : none
   Caller      : general
@@ -232,18 +284,26 @@ sub is_right_of {
   return 0 unless defined $other;
 
   if ( looks_like_number($other) ) {
-    return $self->start > $other;
+    return $self->spans_origin ?
+           throw "is_right_of not defined for an interval that spans the origin" :
+           $self->start > $other;
+  } elsif ($self->spans_origin or $other->spans_origin) {
+    throw "is_right_of not defined for an interval that spans the origin";
+  } else {
+    return $self->start > $other->end;
   }
-
-  return $self->start > $other->end;
 }
 
 =head2 is_left_of
 
   Arg [1]     : An instance of Bio::EnsEMBL::Utils::Interval or a scalar
-  Description : Checks if this current interval is entirely to the left of a point. 
+  Description : Checks if this current interval is entirely to the left of a point
+                or Interval.
                 More formally, the method will return true, if for every point x from 
-                the current interval the inequality x < point holds.
+                the current interval the inequality x < point holds, where point
+                is either a single scalar, or point is the start of another Interval.
+                If spans_origin is true for either this Interval or an Interval
+                passed in, then this method returns false
   Returntype  : boolean
   Exceptions  : none
   Caller      : general
@@ -256,10 +316,14 @@ sub is_left_of {
   return 0 unless defined $other;
 
   if ( looks_like_number($other) ) {
-    return $self->end < $other;
+    return $self->spans_origin ?
+           throw "is_left_of not defined for an interval that spans the origin" :
+           $self->end < $other;
+  } elsif ($self->spans_origin or $other->spans_origin) {
+    throw "is_left_of not defined for an interval that spans the origin";
+  } else {
+    return $self->end < $other->start;
   }
-
-  return $self->end < $other->start;
 }
 
 1;
