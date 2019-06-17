@@ -1,6 +1,6 @@
 -- 
 -- Created by SQL::Translator::Producer::SQLite
--- Created on Tue Apr  2 16:04:07 2019
+-- Created on Mon Jun 17 16:51:50 2019
 -- 
 
 BEGIN TRANSACTION;
@@ -292,8 +292,7 @@ CREATE TABLE "gene_tree_root_attr" (
   "lca_node_id" integer,
   "taxonomic_coverage" float,
   "ratio_species_genes" float,
-  "model_name" varchar(40),
-  "division" varchar(10)
+  "model_name" varchar(40)
 );
 
 --

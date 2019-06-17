@@ -1,5 +1,5 @@
 1	\N	schema_type	variation
-2	\N	schema_version	97
+2	\N	schema_version	98
 3	\N	patch	patch_84_85_a.sql|schema version
 4	\N	patch	patch_84_85_b.sql|create sample_synonym
 5	\N	patch	patch_84_85_c.sql|drop column moltype from variation_synonym
@@ -42,3 +42,4 @@
 42	\N	patch	patch_96_97_a.sql|schema version
 43	\N	patch	patch_96_97_b.sql|move ancestral allele column to variation_feature
 44	\N	patch	patch_96_97_c.sql|add an unique index on the name column
+45	\N	patch	patch_97_98_a.sql|schema version
