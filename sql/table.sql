@@ -308,25 +308,13 @@ CREATE TABLE IF NOT EXISTS meta (
 # Add schema type and schema version to the meta table.
 INSERT INTO meta (species_id, meta_key, meta_value) VALUES
   (NULL, 'schema_type', 'core'),
-  (NULL, 'schema_version', '97');
+  (NULL, 'schema_version', '98');
 
 # Patches included in this schema file:
 # NOTE: At start of release cycle, remove patch entries from last release.
 # NOTE: Avoid line-breaks in values.
 INSERT INTO meta (species_id, meta_key, meta_value)
-  VALUES (NULL, 'patch', 'patch_96_97_a.sql|schema_version');
-
-INSERT INTO meta (species_id, meta_key, meta_value)
-  VALUES (NULL, 'patch', 'patch_96_97_b.sql|biotype_so_term');
-
-INSERT INTO meta (species_id, meta_key, meta_value)
-  VALUES (NULL, 'patch', 'patch_96_97_c.sql|rnaproduct_tables');
-
-INSERT INTO meta (species_id, meta_key, meta_value)
-  VALUES (NULL, 'patch', 'patch_96_97_d.sql|add_object_type_rnaproduct');
-
-INSERT INTO meta (species_id, meta_key, meta_value)
-  VALUES (NULL, 'patch', 'patch_96_97_e.sql|add_stable_id_event_type_rnaproduct');
+  VALUES (NULL, 'patch', 'patch_97_98_a.sql|schema_version');
 
 
 /**
