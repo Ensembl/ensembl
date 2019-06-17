@@ -285,7 +285,7 @@ foreach my $thing ( [ 'ensembl',               'core',        'table.sql'   ],
                     [ 'ensembl-funcgen',       'funcgen',     'table.sql'   ],
                     [ 'ensembl-variation',     'variation',   'table.sql'   ],
                     [ 'ensembl-production',    'production',  'table.sql'  ],
-                    [ 'ensembl',               'ontology',    'tables.sql'  ] )
+                    [ 'ols-ensembl-loader',    'ontology',    'tables.sql'  ] )
 {
   my ($git_repo, $schema_type, $schema_file) = @{$thing};
 
@@ -687,12 +687,7 @@ sub _sql_dir {
     $directories = curdir() unless $directories;
     $git_dir = catdir($directories, updir(), updir());
   }
-  my $sql_dir;
-  if ($schema_type eq 'ontology') {
-    $sql_dir = rel2abs(canonpath( catdir( $git_dir, $git_repo, 'misc-scripts', 'ontology', 'sql' ) ));
-  } else {
-    $sql_dir = rel2abs(canonpath( catdir( $git_dir, $git_repo, 'sql' ) ));
-  }
+  my $sql_dir = rel2abs(canonpath( catdir( $git_dir, $git_repo, 'sql' ) ));
   my $schema_location = catfile($sql_dir, $schema_file);
   if(! -f $schema_location) {
     if($opt_verbose) {
