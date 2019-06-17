@@ -123,6 +123,11 @@ is($search_result->[0]->data, 'data1', 'Search result');
 is($search_result->[1]->data, 'data2', 'Search result');
 
 $tree = Bio::EnsEMBL::Utils::Tree::Interval::Mutable->new();
+throws_ok { $tree->insert(make_interval(200, 100, 'spanning_interval')) }
+  qr/Cannot insert an interval that spans the origin into a mutable tree/,
+  'exception when trying to insert an interval that spans the origin';
+
+$tree = Bio::EnsEMBL::Utils::Tree::Interval::Mutable->new();
 map { $tree->insert($_) } @{$intervals};
 is($tree->size(), scalar @{$intervals}, 'Tree size');
 $search_result = $tree->search(121779004, 121779004);

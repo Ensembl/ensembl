@@ -48,6 +48,7 @@ use Carp;
 
 use Bio::EnsEMBL::Utils::Tree::Interval::Mutable::Node;
 use Bio::EnsEMBL::Utils::Interval;
+use Bio::EnsEMBL::Utils::Exception qw(throw);
 
 =head2 new
 
@@ -108,7 +109,7 @@ sub size {
   Example     : $tree->insert(Bio::EnsEMBL::Utils::Interval->new(10, 20, 'data'));
   Description : Insert an interval in the tree
   Returntype  : scalar (1), upon success
-  Exceptions  : none
+  Exceptions  : thrown if Interval spans origin (has start > end)
   Caller      : general
 
 =cut
@@ -116,6 +117,9 @@ sub size {
 sub insert {
   my ($self, $i) = @_;
   
+  if ($i->spans_origin) {
+    throw "Cannot insert an interval that spans the origin into a mutable tree";
+  }
   # base case: empty tree, assign new node to root
   unless (defined $self->root) {
     $self->root(Bio::EnsEMBL::Utils::Tree::Interval::Mutable::Node->new($self, $i));

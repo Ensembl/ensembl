@@ -62,6 +62,9 @@ be added to or removed from the tree during its life cycle.
 
 Implementation heavily inspired by https://github.com/tylerkahn/intervaltree-python
 
+This implementation does not support Intervals having a start > end - i.e.
+intervals spanning the origin of a circular chromosome.
+
 =head1 METHODS
 
 =cut
@@ -297,6 +300,9 @@ sub _divide_intervals {
   my ($s_center, $s_left, $s_right) = ([], [], []);
   
   foreach my $interval (@{$intervals}) {
+    if ($interval->spans_origin) {
+      throw "Cannot build a tree containing an interval that spans the origin";
+    }
     if ($interval->end < $x_center) {
       push @{$s_left}, $interval;
     } elsif ($interval->start > $x_center) {
