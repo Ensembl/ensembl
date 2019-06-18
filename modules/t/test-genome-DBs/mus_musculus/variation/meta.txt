@@ -1,5 +1,5 @@
 1	\N	schema_type	variation
-2	\N	schema_version	97
+2	\N	schema_version	98
 6	1	species.production_name	mus_musculus
 15	1	web_config	sv_study#Keane 2011 (DGVa study estd118)#Keane 2011#estd118
 14	1	web_config	set#All failed variants#All failed variants#variation_set_fail_all#failed
@@ -69,3 +69,4 @@
 75	\N	patch	patch_96_97_a.sql|schema version
 76	\N	patch	patch_96_97_b.sql|move ancestral allele column to variation_feature
 77	\N	patch	patch_96_97_c.sql|add an unique index on the name column
+78	\N	patch	patch_97_98_a.sql|schema version

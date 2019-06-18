@@ -1,4 +1,4 @@
-1	\N	schema_version	97
+1	\N	schema_version	98
 2	1	assembly.default	NCBI34
 3	1	species.taxonomy_id	9606
 26	1	species.classification	Homo sapiens
@@ -109,3 +109,4 @@
 163	\N	patch	patch_96_97_c.sql|rnaproduct_tables
 164	\N	patch	patch_96_97_d.sql|add_object_type_rnaproduct
 165	\N	patch	patch_96_97_e.sql|add_stable_id_event_type_rnaproduct
+166	\N	patch	patch_97_98_a.sql|schema_version

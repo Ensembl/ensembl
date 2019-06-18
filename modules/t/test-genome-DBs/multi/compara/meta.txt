@@ -51,3 +51,4 @@
 61	\N	patch	patch_94_95_d.sql|node_type_within_species_speciation
 62	\N	patch	patch_95_96_a.sql|schema_version
 64	\N	patch	patch_96_97_a.sql|schema_version
+65	\N	patch	patch_97_98_b.sql|division_name
