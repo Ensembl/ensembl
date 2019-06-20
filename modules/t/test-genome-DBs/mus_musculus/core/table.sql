@@ -35,7 +35,7 @@ CREATE TABLE `analysis` (
   `gff_feature` varchar(40) COLLATE latin1_bin DEFAULT NULL,
   PRIMARY KEY (`analysis_id`),
   UNIQUE KEY `logic_name_idx` (`logic_name`)
-) ENGINE=MyISAM AUTO_INCREMENT=39 DEFAULT CHARSET=latin1 COLLATE=latin1_bin;
+) ENGINE=MyISAM AUTO_INCREMENT=40 DEFAULT CHARSET=latin1 COLLATE=latin1_bin;
 
 CREATE TABLE `analysis_description` (
   `analysis_id` int(10) unsigned NOT NULL DEFAULT 0,
@@ -157,7 +157,7 @@ CREATE TABLE `density_feature` (
   PRIMARY KEY (`density_feature_id`),
   KEY `seq_region_idx` (`density_type_id`,`seq_region_id`,`seq_region_start`),
   KEY `seq_region_id_idx` (`seq_region_id`)
-) ENGINE=MyISAM DEFAULT CHARSET=latin1 COLLATE=latin1_bin;
+) ENGINE=MyISAM AUTO_INCREMENT=2 DEFAULT CHARSET=latin1 COLLATE=latin1_bin;
 
 CREATE TABLE `density_type` (
   `density_type_id` int(11) NOT NULL AUTO_INCREMENT,
@@ -167,7 +167,7 @@ CREATE TABLE `density_type` (
   `value_type` enum('sum','ratio') COLLATE latin1_bin NOT NULL DEFAULT 'sum',
   PRIMARY KEY (`density_type_id`),
   UNIQUE KEY `analysis_id` (`analysis_id`,`block_size`,`region_features`)
-) ENGINE=MyISAM DEFAULT CHARSET=latin1 COLLATE=latin1_bin;
+) ENGINE=MyISAM AUTO_INCREMENT=2 DEFAULT CHARSET=latin1 COLLATE=latin1_bin;
 
 CREATE TABLE `dependent_xref` (
   `object_xref_id` int(10) unsigned NOT NULL,
@@ -490,7 +490,7 @@ CREATE TABLE `meta` (
   PRIMARY KEY (`meta_id`),
   UNIQUE KEY `species_key_value_idx` (`species_id`,`meta_key`,`meta_value`),
   KEY `species_value_idx` (`species_id`,`meta_value`)
-) ENGINE=MyISAM AUTO_INCREMENT=1704 DEFAULT CHARSET=latin1;
+) ENGINE=MyISAM AUTO_INCREMENT=1705 DEFAULT CHARSET=latin1;
 
 CREATE TABLE `meta_coord` (
   `table_name` varchar(40) COLLATE latin1_bin NOT NULL DEFAULT '',
