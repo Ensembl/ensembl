@@ -1,6 +1,6 @@
 -- 
 -- Created by SQL::Translator::Producer::SQLite
--- Created on Tue Apr  2 16:04:14 2019
+-- Created on Mon Jun 17 15:51:15 2019
 -- 
 
 BEGIN TRANSACTION;
@@ -262,7 +262,7 @@ CREATE UNIQUE INDEX "name" ON "relation_type" ("name");
 CREATE TABLE "subset" (
   "subset_id" INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
   "name" varchar(64) NOT NULL,
-  "definition" varchar(511) NOT NULL DEFAULT ''
+  "definition" varchar(1023) NOT NULL DEFAULT ''
 );
 
 CREATE UNIQUE INDEX "name02" ON "subset" ("name");
