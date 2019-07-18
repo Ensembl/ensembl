@@ -280,12 +280,12 @@ my %patches;
 
 # Get available patches.
 
-foreach my $thing ( [ 'ensembl',               'core',        'table.sql'   ],
-                    [ 'ensembl-compara',       'compara',     'table.sql'   ], 
-                    [ 'ensembl-funcgen',       'funcgen',     'table.sql'   ],
-                    [ 'ensembl-variation',     'variation',   'table.sql'   ],
-                    [ 'ensembl-production',    'production',  'table.sql'  ],
-                    [ 'ols-ensembl-loader',    'ontology',    'tables.sql'  ] )
+foreach my $thing ( [ 'ensembl',                 'core',       'table.sql'  ],
+                    [ 'ensembl-compara',         'compara',    'table.sql'  ],
+                    [ 'ensembl-funcgen',         'funcgen',    'table.sql'  ],
+                    [ 'ensembl-variation',       'variation',  'table.sql'  ],
+                    [ 'ensembl-production',      'production', 'table.sql'  ],
+                    [ 'ensembl-ontology-schema', 'ontology',   'tables.sql' ] )
 {
   my ($git_repo, $schema_type, $schema_file) = @{$thing};
 
