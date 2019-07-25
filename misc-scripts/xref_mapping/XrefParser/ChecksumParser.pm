@@ -28,6 +28,7 @@ package XrefParser::ChecksumParser;
 use strict;
 use warnings;
 use Carp;
+use English qw( -no_match_vars );
 use IO::File;
 use base qw( XrefParser::BaseParser );
 
@@ -52,7 +53,8 @@ sub run {
     print "Target file '${target_file}' already exists; removing\n" if $verbose;
     unlink $target_file;
   }
-  my $output_fh = IO::File->new($target_file, 'w');
+  my $output_fh = IO::File->new($target_file, 'w')
+    || croak "Failed to open ${target_file} for writing: ${OS_ERROR}";
   
   $self->_transfer_contents($input_fh, $output_fh, $source_id);
   
