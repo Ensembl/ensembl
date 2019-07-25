@@ -47,6 +47,7 @@ sub run {
   }
   $verbose ||=0;
 
+  # FIXME: this will fail if the input file is in a read-only directory (ENSCORESW-3197)
   my $target_file = $files->[0].'.mysqlinput';
   my $input_fh = $self->get_filehandle($files->[0]);
   if(-f $target_file) {
