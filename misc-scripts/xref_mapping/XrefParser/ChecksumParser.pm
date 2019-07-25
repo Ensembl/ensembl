@@ -71,7 +71,13 @@ sub _transfer_contents {
   while(my $line = <$input_fh>) {
     chomp $line;
     my ($upi, $checksum) = split(/\s+/, $line);
-    my @output = ($counter++, $source_id, $upi, $checksum);
+
+    # Use an ID one higher than the last. Obvious? Perhaps - except before
+    # the commit adding this comment the code only incremented $counter
+    # AFTER using it.
+    $counter += 1;
+
+    my @output = ($counter, $source_id, $upi, $checksum);
     print $output_fh join("\t", @output);
     print $output_fh "\n";
   }
