@@ -28,6 +28,7 @@ package XrefParser::ChecksumParser;
 use strict;
 use warnings;
 use Carp;
+use English qw( -no_match_vars );
 use IO::File;
 use base qw( XrefParser::BaseParser );
 
@@ -46,13 +47,15 @@ sub run {
   }
   $verbose ||=0;
 
+  # FIXME: this will fail if the input file is in a read-only directory (ENSCORESW-3197)
   my $target_file = $files->[0].'.mysqlinput';
   my $input_fh = $self->get_filehandle($files->[0]);
   if(-f $target_file) {
     print "Target file '${target_file}' already exists; removing\n" if $verbose;
     unlink $target_file;
   }
-  my $output_fh = IO::File->new($target_file, 'w');
+  my $output_fh = IO::File->new($target_file, 'w')
+    || croak "Failed to open ${target_file} for writing: ${OS_ERROR}";
   
   $self->_transfer_contents($input_fh, $output_fh, $source_id);
   
@@ -71,7 +74,13 @@ sub _transfer_contents {
   while(my $line = <$input_fh>) {
     chomp $line;
     my ($upi, $checksum) = split(/\s+/, $line);
-    my @output = ($counter++, $source_id, $upi, $checksum);
+
+    # Use an ID one higher than the last. Obvious? Perhaps - except before
+    # the commit adding this comment the code only incremented $counter
+    # AFTER using it.
+    $counter += 1;
+
+    my @output = ($counter, $source_id, $upi, $checksum);
     print $output_fh join("\t", @output);
     print $output_fh "\n";
   }
