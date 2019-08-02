@@ -835,25 +835,25 @@ sub spliced_seq {
         my $padstr;
         if (!defined ($ex->coding_region_start($self))) {
           $exon_seq = lc($exon_seq);
-        }
-
-        if ($ex->coding_region_start($self) > $ex->start()) {
-          my $forward_length = $ex->coding_region_start($self) - $ex->start();
-          my $reverse_length = $ex->end() - $ex->coding_region_start($self);
-          if ($ex->strand == 1) {
-            $exon_seq = lc (substr($exon_seq, 0, $forward_length)) . substr($exon_seq, $forward_length); 
-          } else {
-            $exon_seq = substr($exon_seq, 0, $reverse_length+1) . lc(substr($exon_seq, $reverse_length+1));
+        }else{
+          if ($ex->coding_region_start($self) > $ex->start()) {
+            my $forward_length = $ex->coding_region_start($self) - $ex->start();
+            my $reverse_length = $ex->end() - $ex->coding_region_start($self);
+            if ($ex->strand == 1) {
+              $exon_seq = lc (substr($exon_seq, 0, $forward_length)) . substr($exon_seq, $forward_length); 
+            } else {
+              $exon_seq = substr($exon_seq, 0, $reverse_length+1) . lc(substr($exon_seq, $reverse_length+1));
+            }
           }
-        }
 
-        if ($ex->coding_region_end($self) < $ex->end()) {
-          my $forward_length = $ex->coding_region_end($self) - $ex->start();
-          my $reverse_length = $ex->end() - $ex->coding_region_end($self);
-          if ($ex->strand == 1) {
-            $exon_seq = substr($exon_seq, 0, $forward_length+1) . lc(substr($exon_seq, $forward_length+1));
-          } else {
-            $exon_seq = lc(substr($exon_seq, 0, $reverse_length)) . substr($exon_seq, $reverse_length);
+          if ($ex->coding_region_end($self) < $ex->end()) {
+            my $forward_length = $ex->coding_region_end($self) - $ex->start();
+            my $reverse_length = $ex->end() - $ex->coding_region_end($self);
+            if ($ex->strand == 1) {
+              $exon_seq = substr($exon_seq, 0, $forward_length+1) . lc(substr($exon_seq, $forward_length+1));
+            } else {
+              $exon_seq = lc(substr($exon_seq, 0, $reverse_length)) . substr($exon_seq, $reverse_length);
+            }
           }
         }
       }
