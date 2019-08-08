@@ -1,3 +1,4 @@
+
 =head1 LICENSE
 
 See the NOTICE file distributed with this work for additional information
@@ -16,34 +17,30 @@ See the NOTICE file distributed with this work for additional information
 
 =cut
 
-package Xref::Schema::ResultSet::DependentXref;
+package Xref::Schema::ResultSet::Synonym;
 use strict;
 use warnings;
 
 use parent 'DBIx::Class::ResultSet';
 
+=head2 check_synonym
 
-=head2 fetch_dependent_xref
-
-Description: A canned query for fetching dependent xrefs by accession
-             The result contains the result row from the query
-Example    : my $row = $db->schema->resultset('DependentXref')
-              ->fetch_dependent_xref("A0A075B6P5", "R-HSA-109582");
-Returntype : Xref::Schema::Result::DependentXref
+Description: Search for the given xref_id and synonym. Just a coding shortcut
+Example    : my $exists = $schema->resultset('Synonym')->check_synonym({
+               xref_id => $params->{xref_id},
+               synonym => $params->{synonym}
+             });
+Returntype : Boolean - True if the synonymn was found
 
 =cut
 
-sub fetch_dependent_xref {
-  my ($self,$direct_accession,$dependent_accession) = @_;
+sub check_synonym {
+  my ( $self, $params ) = @_;
 
-  my $hit = $self->find({
-      'master_xref.accession' => $direct_accession,
-      'dependent_xref.accession' => $dependent_accession
-    }, {
-      join => [ 'master_xref','dependent_xref']
-    });
+  my $hit = $self->find($params);
 
-  return $hit;
+  return 1 if defined $hit;
+  return;
 }
 
 1;

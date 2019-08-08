@@ -1,8 +1,22 @@
-use utf8;
-package Xref::Schema::Result::Source;
+=head1 LICENSE
 
-# Created by DBIx::Class::Schema::Loader
-# DO NOT MODIFY THE FIRST PART OF THIS FILE
+See the NOTICE file distributed with this work for additional information
+   regarding copyright ownership.
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
+
+=cut
+
+package Xref::Schema::Result::Source;
 
 =head1 NAME
 
@@ -12,6 +26,7 @@ Xref::Schema::Result::Source
 
 use strict;
 use warnings;
+use utf8;
 
 use base 'DBIx::Class::Core';
 
@@ -36,31 +51,11 @@ __PACKAGE__->table("source");
   is_nullable: 0
   size: 255
 
-=head2 status
-
-  data_type: 'enum'
-  default_value: 'NOIDEA'
-  extra: {list => ["KNOWN","XREF","PRED","ORTH","PSEUDO","LOWEVIDENCE","NOIDEA"]}
-  is_nullable: 0
-
 =head2 source_release
 
   data_type: 'varchar'
   is_nullable: 1
   size: 255
-
-=head2 download
-
-  data_type: 'enum'
-  default_value: 'Y'
-  extra: {list => ["Y","N"]}
-  is_nullable: 1
-
-=head2 ordered
-
-  data_type: 'integer'
-  extra: {unsigned => 1}
-  is_nullable: 0
 
 =head2 priority
 
@@ -88,26 +83,8 @@ __PACKAGE__->add_columns(
   },
   "name",
   { data_type => "varchar", is_nullable => 0, size => 255 },
-  "status",
-  {
-    data_type => "enum",
-    default_value => "NOIDEA",
-    extra => {
-      list => ["KNOWN", "XREF", "PRED", "ORTH", "PSEUDO", "LOWEVIDENCE", "NOIDEA"],
-    },
-    is_nullable => 0,
-  },
   "source_release",
   { data_type => "varchar", is_nullable => 1, size => 255 },
-  "download",
-  {
-    data_type => "enum",
-    default_value => "Y",
-    extra => { list => ["Y", "N"] },
-    is_nullable => 1,
-  },
-  "ordered",
-  { data_type => "integer", extra => { unsigned => 1 }, is_nullable => 0 },
   "priority",
   {
     data_type => "integer",
@@ -116,7 +93,7 @@ __PACKAGE__->add_columns(
     is_nullable => 1,
   },
   "priority_description",
-  { data_type => "varchar", default_value => "", is_nullable => 1, size => 40 },
+  { data_type => "varchar", is_nullable => 1, size => 40 },
 );
 
 =head1 PRIMARY KEY
@@ -129,10 +106,18 @@ __PACKAGE__->add_columns(
 
 =cut
 
-__PACKAGE__->set_primary_key("source_id");
+__PACKAGE__->set_primary_key('source_id');
 
-
-# Created by DBIx::Class::Schema::Loader v0.07042 @ 2018-10-23 11:58:10
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:B7yvA5bB9elVK5YKqevV5A
 __PACKAGE__->has_many('xrefs', 'Xref::Schema::Result::Xref', 'source_id');
+__PACKAGE__->might_have(
+  'dependent_source',
+  'Xref::Schema::Result::DependentSource',
+  { 'foreign.master_source_id' => 'self.source_id' }
+);
+__PACKAGE__->might_have(
+  'source_url',
+  'Xref::Schema::Result::SourceUrl',
+  { 'foreign.source_id' => 'self.source_id' }
+);
+
 1;
