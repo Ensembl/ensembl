@@ -1,6 +1,7 @@
 use strict;
 use warnings;
 use Test::More;
+use FindBin '$Bin';
 
 use XrefParser::RGDParser;
 use Xref::Test::TestDB;
@@ -9,15 +10,13 @@ my $db = Xref::Test::TestDB->new();
 # Initialise two sources:
 my $rgd_source = $db->create_db_row('Source',{
   name => 'RGD',
-  status => 'KNOWN',
   priority_description => 'Test RGD source',
   priority => 10
 });
 
 my $refseq_source = $db->create_db_row('Source',{
   name => 'refseq',
-  status => 'XREF',
-  priority_description => 'Test RefSeq source for dependent xref creation',
+  priority_description => 'Test RefSeq source for dependent xref',
   priority => 20
 });
 
@@ -36,7 +35,7 @@ my $refseq_xref = $db->create_db_row('Xref',{
 my $parser = XrefParser::RGDParser->new($db->dbh);
 
 # Test without any prior RefSeq entries
-$parser->run({ files => ['test-data/rgd.txt' ], verbose => 1, species_id => 34, source_id => $rgd_source->source_id });
+$parser->run({ files => [ "$Bin/test-data/rgd.txt" ], verbose => 1, species_id => 34, source_id => $rgd_source->source_id });
 
 
 ok ($db->schema->resultset('Xref')->check_direct_xref({
