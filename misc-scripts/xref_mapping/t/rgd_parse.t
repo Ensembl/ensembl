@@ -36,7 +36,7 @@ my $refseq_xref = $db->create_db_row('Xref',{
 my $parser = XrefParser::RGDParser->new($db->dbh);
 
 # Test without any prior RefSeq entries
-$parser->run({ files => ['test_data/rgd.txt' ], verbose => 1, species_id => 34, source_id => $rgd_source->source_id });
+$parser->run({ files => ['test-data/rgd.txt' ], verbose => 1, species_id => 34, source_id => $rgd_source->source_id });
 
 
 ok ($db->schema->resultset('Xref')->check_direct_xref({
