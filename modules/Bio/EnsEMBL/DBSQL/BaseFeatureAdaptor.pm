@@ -1440,18 +1440,19 @@ sub fetch_nearest_by_Feature {
 
 sub fetch_all_by_outward_search {
   my $self = shift;
-   my ($ref_feature, $respect_strand, $opposite_strand, $downstream, $upstream, $search_range,
+  my ($ref_feature, $respect_strand, $opposite_strand, $downstream, $upstream, $start_search_range,
        $limit,$not_overlapping,$five_prime,$three_prime, $max_range) =
         rearrange([qw(FEATURE SAME_STRAND OPPOSITE_STRAND DOWNSTREAM UPSTREAM RANGE LIMIT NOT_OVERLAPPING FIVE_PRIME THREE_PRIME MAX_RANGE)], @_);
   my $factor = 1;
   $limit ||= 1;
-  $search_range ||= 1000;
+  $start_search_range ||= 1000;
+  my $current_search_range = $start_search_range;
   $max_range ||= 10000;
   my @results;
-  while (scalar @results < $limit && $search_range <= $max_range) {
-    $search_range = $search_range * $factor;
+  while (scalar @results < $limit && $current_search_range <= $max_range) {
+    $current_search_range = $start_search_range * $factor;
     @results = @{ 
-      $self->fetch_all_nearest_by_Feature(-RANGE => $search_range, 
+      $self->fetch_all_nearest_by_Feature(-RANGE => $current_search_range,
                                           -FEATURE => $ref_feature, 
                                           -SAME_STRAND => $respect_strand, 
                                           -OPPOSITE_STRAND => $opposite_strand,
