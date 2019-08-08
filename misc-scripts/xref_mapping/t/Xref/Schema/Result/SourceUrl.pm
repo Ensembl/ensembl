@@ -1,8 +1,22 @@
-use utf8;
-package Xref::Schema::Result::SourceUrl;
+=head1 LICENSE
 
-# Created by DBIx::Class::Schema::Loader
-# DO NOT MODIFY THE FIRST PART OF THIS FILE
+See the NOTICE file distributed with this work for additional information
+   regarding copyright ownership.
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
+
+=cut
+
+package Xref::Schema::Result::SourceUrl;
 
 =head1 NAME
 
@@ -12,6 +26,7 @@ Xref::Schema::Result::SourceUrl
 
 use strict;
 use warnings;
+use utf8;
 
 use base 'DBIx::Class::Core';
 
@@ -42,34 +57,6 @@ __PACKAGE__->table("source_url");
   extra: {unsigned => 1}
   is_nullable: 0
 
-=head2 url
-
-  data_type: 'mediumtext'
-  is_nullable: 1
-
-=head2 release_url
-
-  data_type: 'mediumtext'
-  is_nullable: 1
-
-=head2 checksum
-
-  data_type: 'varchar'
-  is_nullable: 1
-  size: 1025
-
-=head2 file_modified_date
-
-  data_type: 'datetime'
-  datetime_undef_if_invalid: 1
-  is_nullable: 1
-
-=head2 upload_date
-
-  data_type: 'datetime'
-  datetime_undef_if_invalid: 1
-  is_nullable: 1
-
 =head2 parser
 
   data_type: 'varchar'
@@ -90,24 +77,6 @@ __PACKAGE__->add_columns(
   { data_type => "integer", extra => { unsigned => 1 }, is_nullable => 0 },
   "species_id",
   { data_type => "integer", extra => { unsigned => 1 }, is_nullable => 0 },
-  "url",
-  { data_type => "mediumtext", is_nullable => 1 },
-  "release_url",
-  { data_type => "mediumtext", is_nullable => 1 },
-  "checksum",
-  { data_type => "varchar", is_nullable => 1, size => 1025 },
-  "file_modified_date",
-  {
-    data_type => "datetime",
-    datetime_undef_if_invalid => 1,
-    is_nullable => 1,
-  },
-  "upload_date",
-  {
-    data_type => "datetime",
-    datetime_undef_if_invalid => 1,
-    is_nullable => 1,
-  },
   "parser",
   { data_type => "varchar", is_nullable => 1, size => 255 },
 );
@@ -124,10 +93,6 @@ __PACKAGE__->add_columns(
 
 __PACKAGE__->set_primary_key("source_url_id");
 
-
-# Created by DBIx::Class::Schema::Loader v0.07042 @ 2018-10-23 11:58:10
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:trrjT7dUapyKlNbMafZUXQ
-
-
 __PACKAGE__->has_one('source', 'Xref::Schema::Result::Source', 'source_id' );
+__PACKAGE__->has_one('species', 'Xref::Schema::Result::Species', 'species_id' );
 1;

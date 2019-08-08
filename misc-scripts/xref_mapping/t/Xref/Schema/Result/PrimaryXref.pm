@@ -1,8 +1,22 @@
-use utf8;
-package Xref::Schema::Result::PrimaryXref;
+=head1 LICENSE
 
-# Created by DBIx::Class::Schema::Loader
-# DO NOT MODIFY THE FIRST PART OF THIS FILE
+See the NOTICE file distributed with this work for additional information
+   regarding copyright ownership.
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
+
+=cut
+
+package Xref::Schema::Result::PrimaryXref;
 
 =head1 NAME
 
@@ -12,6 +26,7 @@ Xref::Schema::Result::PrimaryXref
 
 use strict;
 use warnings;
+use utf8;
 
 use base 'DBIx::Class::Core';
 
@@ -53,7 +68,7 @@ __PACKAGE__->add_columns(
   "xref_id",
   { data_type => "integer", extra => { unsigned => 1 }, is_nullable => 0 },
   "sequence",
-  { accessor => undef, data_type => "mediumtext", is_nullable => 1 },
+  { data_type => "mediumtext", is_nullable => 1 },
   "sequence_type",
   {
     data_type => "enum",
@@ -79,10 +94,6 @@ __PACKAGE__->add_columns(
 =cut
 
 __PACKAGE__->set_primary_key("xref_id");
-
-
-# Created by DBIx::Class::Schema::Loader v0.07042 @ 2018-10-23 11:58:10
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:j8WfubBbnx0pSFcQcAak6w
 
 __PACKAGE__->add_column('+sequence' => {accessor => 'raw_seq'});
 __PACKAGE__->has_one('xref', 'Xref::Schema::Result::Xref', 'xref_id' );
