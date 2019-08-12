@@ -105,10 +105,11 @@ sub _init_db {
   $self->_init_config if ! defined $self->config;
   $self->_validate_config($self->config);
   my %conf = %{ $self->config };
+  my $enable_unicode = $conf{enable_unicode} // 0;
   my %opts;
-  $opts{mysql_enable_utf8} = 1 if ($conf{driver} eq 'mysql');
+  $opts{mysql_enable_utf8} = $enable_unicode if ($conf{driver} eq 'mysql');
   $opts{mysql_auto_reconnect} = 1 if ($conf{driver} eq 'mysql');
-  $opts{sqlite_unicode} = 1 if($conf{driver} eq 'SQLite');
+  $opts{sqlite_unicode} = $enable_unicode if($conf{driver} eq 'SQLite');
   my $dsn;
   if ($conf{driver} eq 'SQLite') {
     $dsn = sprintf 'dbi:%s:database=%s',$conf{driver},$conf{file};
