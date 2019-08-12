@@ -46,7 +46,7 @@ chdir($original_dir);
 my $root = File::Spec->catdir($cur_dir, File::Spec->updir(),File::Spec->updir());
 
 # Configure critic
-Test::Perl::Critic->import(-profile => File::Spec->catfile($root, 'perlcriticrc'), -severity => 5, -verbose => 8);
+Test::Perl::Critic->import(-profile => File::Spec->catfile($root, '.perlcriticrc'), -severity => 5, -verbose => 8);
 
 #Find all files & run
 my @perl_files = Perl::Critic::Utils::all_perl_files(

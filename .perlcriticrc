@@ -1,0 +1,23 @@
+severity  = 1
+color = 1
+color-severity-highest = red
+color-severity-high = magenta
+color-severity-medium = yellow
+
+[Subroutines::ProhibitExplicitReturnUndef]
+severity=4
+
+[CodeLayout::ProhibitHardTabs]
+allow_leading_tabs = 0
+
+[CodeLayout::RequireTidyCode]
+perltidyrc = .perltidyrc
+
+[Subroutines::ProhibitUnusedPrivateSubroutines]
+allow = _init_db _init_config _guess_config
+
+[Subroutines::ProhibitUnusedPrivateSubroutines]
+skip_when_using = Moose
+
+[Subroutines::ProhibitManyArgs]
+max_arguments = 7
