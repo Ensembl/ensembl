@@ -134,7 +134,8 @@ sub _init_db {
       $dbh->do( "DROP DATABASE $dbname;" );
     }
 
-    $dbh->do("CREATE DATABASE $dbname;");
+    my $db_collation = ( $enable_unicode ) ? 'utf8_general_ci' : 'latin1_swedish_ci';
+    $dbh->do("CREATE DATABASE $dbname DEFAULT COLLATE ${db_collation};");
 
     $dbh->disconnect;
   }
