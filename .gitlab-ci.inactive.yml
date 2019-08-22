@@ -1,0 +1,49 @@
+
+services:
+  - mysql:5.6
+
+variables:
+  # FIXME: set some password for both users
+  MYSQL_ALLOW_EMPTY_PASSWORD: "yes"
+  MYSQL_USER: "travis"
+  MYSQL_PASSWORD: ""
+  USER: "gitlabci"
+
+# Run before each job not defining its own before_script
+before_script:
+  - apt-get update
+  - apt-get install -y build-essential cpanminus git
+  - apt-get install -y libmysqlclient-dev mysql-client || apt-get install -y default-libmysqlclient-dev default-mysql-client
+  - apt-get install -y libssl-dev sqlite3
+  - git clone --branch=master --depth=1 https://github.com/Ensembl/ensembl-test.git
+  - git clone --branch=master --depth=1 https://github.com/Ensembl/ensembl-io.git
+  - git clone --branch=master --depth=1 https://github.com/Ensembl/ensembl-variation.git
+  - git clone --branch=master --depth=1 https://github.com/Ensembl/ensembl-compara.git
+  - git clone --branch=release-1-6-924 --depth=1 https://github.com/bioperl/bioperl-live.git
+  - cpanm -v --installdeps --notest .
+  - ( cd ensembl-test && cpanm -v --installdeps --notest . )
+#  - ( cd ensembl-io && cpanm -v --installdeps --notest . )
+#  - ( cd ensembl-variation && cpanm -v --installdeps --notest . )
+  - ( cd ensembl-compara && cpanm -v --installdeps --notest . )
+  - ( cd misc-scripts/xref_mapping && cpanm -v --installdeps --notest . )
+  - cpanm -n Devel::Cover::Report::Coveralls
+  - cpanm -n DBD::SQLite
+  - cp travisci/MultiTestDB.conf.gitlabci.mysql  modules/t/MultiTestDB.conf.mysql
+  - cp travisci/MultiTestDB.conf.travisci.SQLite modules/t/MultiTestDB.conf.SQLite
+  - mysql -u root -h mysql -e 'GRANT ALL PRIVILEGES ON *.* TO "travis"@"%"'
+
+test:perl5.14-sqlite:
+  image: perl:5.14-threaded
+  variables:
+    COVERALLS: "false"
+    DB: "sqlite"
+  script:
+    - ./travisci/harness.sh
+
+test:perl5.26-mysql:
+  image: perl:5.26-threaded
+  variables:
+    COVERALLS: "false"
+    DB: "mysql"
+  script:
+    - ./travisci/harness.sh
