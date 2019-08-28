@@ -238,7 +238,7 @@ sub load_all {
         throw("No registry configuration to load, and no default could be guessed.\n");
       }
     } elsif ($throw_if_missing and !(-e $config_file)) {
-      throw(printf("Configuration file '%s' does not exist. Registry configuration not loaded.\n", $config_file ));
+      throw(sprintf("Configuration file '%s' does not exist. Registry configuration not loaded.\n", $config_file ));
     }
 
     $verbose  ||= 0;
