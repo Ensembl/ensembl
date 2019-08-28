@@ -40,8 +40,8 @@ test:perl5.14-sqlite:
   script:
     - ./travisci/harness.sh
 
-test:perl5.26-mysql:
-  image: perl:5.26-threaded
+test:perl5.30-mysql:
+  image: perl:5.30-threaded
   variables:
     COVERALLS: "false"
     DB: "mysql"
