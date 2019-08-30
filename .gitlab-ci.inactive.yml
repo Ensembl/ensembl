@@ -35,6 +35,10 @@ before_script:
   - cp travisci/MultiTestDB.conf.travisci.SQLite modules/t/MultiTestDB.conf.SQLite
   - mysql -u root -h mysql -e 'GRANT ALL PRIVILEGES ON *.* TO "travis"@"%"'
 
+#
+# Test jobs
+#
+
 test:perl5.14-sqlite:
   stage: test
   image: perl:5.14-threaded
@@ -52,3 +56,29 @@ test:perl5.30-mysql:
     DB: "mysql"
   script:
     - ./travisci/harness.sh
+
+#
+# Triggers for dependent builds
+#
+
+# FIXME:
+#  - only partly tested so far
+#  - doesn't support PRs before they are merged
+#    (would need extended run condition and better selection of downstream branches)
+.dependent_template:
+  stage: posttest
+  # We want this to run even if any test jobs fail
+  when: always
+  only:
+    - master
+    - /^release/\d+$/
+  trigger:
+    project: $DEPENDENT_PROJECT
+    # Use the same branch as in this project
+    branch: $CI_COMMIT_REF_NAME
+
+# Example trigger job using the above, disabled for obvious reasons
+.post:trigger_foo:
+  extends: .dependent_template
+  variables:
+    DEPENDENT_PROJECT: ensembl-gh-mirror/ensembl-foo
