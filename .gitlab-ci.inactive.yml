@@ -52,7 +52,8 @@ test:perl5.30-mysql:
   stage: test
   image: perl:5.30-threaded
   variables:
-    COVERALLS: "false"
+    # Note: relies on the secret variable COVERALLS_REPO_TOKEN for report uploads to work
+    COVERALLS: "true"
     DB: "mysql"
   script:
     - ./travisci/harness.sh
