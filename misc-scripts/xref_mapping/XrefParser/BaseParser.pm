@@ -101,6 +101,9 @@ sub get_filehandle
     }
 
     if ( !-e $file_name ) {
+        if ( ! -e $alt_file_name ) {
+            confess "Could not find either '$file_name' or '$alt_file_name'";
+        }
         carp(   "File '$file_name' does not exist, "
               . "will try '$alt_file_name'" );
         $file_name = $alt_file_name;
