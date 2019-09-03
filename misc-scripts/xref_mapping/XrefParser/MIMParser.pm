@@ -22,16 +22,15 @@ use strict;
 use warnings;
 
 use Carp;
-use Readonly;
 
 use parent qw( XrefParser::BaseParser );
 
 
 # FIXME: this belongs in BaseParser
-Readonly my $ERR_SOURCE_ID_NOT_FOUND => -1;
+my $ERR_SOURCE_ID_NOT_FOUND = -1;
 
-Readonly my $QR_TI_FIELD_TERMINATORS
-  => qr{
+my $QR_TI_FIELD_TERMINATORS
+  = qr{
          (?:                # The TI field spans from *FIELD* TI until:
            [*]FIELD[*]      #  - the next field in same record, or
          | [*]RECORD[*]     #  - the end of current record, or
@@ -128,7 +127,7 @@ sub run {
     confess 'Failed to retrieve MIM source IDs';
   }
 
-  Readonly my %TYPE_SINGLE_SOURCES => (
+  my %TYPE_SINGLE_SOURCES = (
     q{*} => $gene_source_id,
     q{}  => $morbid_source_id,
     q{#} => $morbid_source_id,
