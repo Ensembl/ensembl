@@ -27,19 +27,18 @@ use Test::Exception;
 use Test::Warnings 'warnings';
 
 use FindBin '$Bin';
-use Readonly;
 
 use Xref::Test::TestDB;
 
 use XrefParser::DBASSParser;
 
 
-Readonly my $SOURCE_ID_DBASS3       => 18;
-Readonly my $SOURCE_ID_DBASS5       => 19;
-Readonly my $SPECIES_ID_HUMAN       => 9606;
+my $SOURCE_ID_DBASS3       = 18;
+my $SOURCE_ID_DBASS5       = 19;
+my $SPECIES_ID_HUMAN       = 9606;
 
-Readonly my $NUMBER_OF_MAPPED_XREFS => 18;
-Readonly my $NUMBER_OF_SYNONYMS     => 7;
+my $NUMBER_OF_MAPPED_XREFS = 18;
+my $NUMBER_OF_SYNONYMS     = 7;
 
 
 my $db = Xref::Test::TestDB->new();
