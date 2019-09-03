@@ -1,0 +1,16 @@
+*RECORD*
+*FIELD* NO
+100050
+*FIELD* TI
+AARSKOG SYNDROME, AUTOSOMAL DOMINANT
+*FIELD* TX
+
+DESCRIPTION
+
+Aarskog syndrome is characterized by short stature and facial, limb,
+and genital anomalies. One form of the disorder is X-linked (see
+305400), but there is also evidence for autosomal dominant and
+autosomal recessive (227330) inheritance (summary by Grier et al.,
+1983).
+
+*THEEND*
