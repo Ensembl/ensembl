@@ -456,7 +456,7 @@ sub upload_xref_object_graphs {
     my $xref_sth = $dbi->prepare('INSERT INTO xref (accession,version,label,description,source_id,species_id, info_type) VALUES(?,?,?,?,?,?,?)');
     my $pri_insert_sth = $dbi->prepare('INSERT INTO primary_xref VALUES(?,?,?,?)');
     my $pri_update_sth = $dbi->prepare('UPDATE primary_xref SET sequence=? WHERE xref_id=?');
-    my $syn_sth = $dbi->prepare('INSERT IGNORE INTO synonym VALUES(?,?)');
+    my $syn_sth = $dbi->prepare('INSERT IGNORE INTO synonym ( xref_id, synonym ) VALUES(?,?)');
     my $xref_update_label_sth = $dbi->prepare('UPDATE xref SET label=? WHERE xref_id=?');
     my $xref_update_descr_sth = $dbi->prepare('UPDATE xref SET description=? WHERE xref_id=?');
     my $pair_sth = $dbi->prepare('INSERT INTO pairs VALUES(?,?,?)');
@@ -1254,7 +1254,7 @@ sub add_to_syn_for_mult_sources{
   my ($self, $acc, $sources, $syn, $species_id, $dbi) = @_;
 
   $dbi = $self->dbi unless defined $dbi;
-  my $add_synonym_sth =  $dbi->prepare('INSERT IGNORE INTO synonym VALUES(?,?)');
+  my $add_synonym_sth =  $dbi->prepare('INSERT IGNORE INTO synonym ( xref_id, synonym ) VALUES(?,?)');
 
   foreach my $source_id (@{$sources}){
     my $xref_id = $self->get_xref($acc, $source_id, $species_id, $dbi);
@@ -1275,7 +1275,7 @@ sub add_to_syn{
   my ($self, $acc, $source_id, $syn, $species_id, $dbi) = @_;
 
   $dbi = $self->dbi unless defined $dbi;
-  my $add_synonym_sth =  $dbi->prepare('INSERT IGNORE INTO synonym VALUES(?,?)');
+  my $add_synonym_sth =  $dbi->prepare('INSERT IGNORE INTO synonym ( xref_id, synonym ) VALUES(?,?)');
   my $xref_id = $self->get_xref($acc, $source_id, $species_id, $dbi);
   if(defined $xref_id){
     $add_synonym_sth->execute( $xref_id, $syn )
@@ -1297,7 +1297,7 @@ sub add_synonym{
   my ($self, $xref_id, $syn, $dbi) = @_;
 
   $dbi = $self->dbi unless defined $dbi;
-  my $add_synonym_sth = $dbi->prepare_cached('INSERT IGNORE INTO synonym VALUES(?,?)');
+  my $add_synonym_sth = $dbi->prepare_cached('INSERT IGNORE INTO synonym ( xref_id, synonym ) VALUES(?,?)');
   
   $add_synonym_sth->execute( $xref_id, $syn ) 
     or croak( $dbi->errstr()."\n $xref_id\n $syn\n\n" );
