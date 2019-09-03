@@ -24,24 +24,22 @@ use warnings;
 
 use Test::More;
 use Test::Exception;
-#FIXME
 use Test::Warnings 'allow_warnings';
 
 use English '-no_match_vars';
 use FindBin '$Bin';
-use Readonly;
 
 use Xref::Test::TestDB;
 
 use XrefParser::MIMParser;
 
 
-Readonly my $SOURCE_ID_OMIM        => 60;
-Readonly my $SOURCE_ID_OMIM_GENE   => 61;
-Readonly my $SOURCE_ID_OMIM_MORBID => 62;
-Readonly my $SPECIES_ID_HUMAN      => 9606;
+my $SOURCE_ID_OMIM        = 60;
+my $SOURCE_ID_OMIM_GENE   = 61;
+my $SOURCE_ID_OMIM_MORBID = 62;
+my $SPECIES_ID_HUMAN      = 9606;
 
-Readonly my $TI_CONTENT => << 'EOF';
+my $TI_CONTENT = << 'EOF';
 #100100 PRUNE BELLY SYNDROME; PBS
 ;;ABDOMINAL MUSCLES, ABSENCE OF, WITH URINARY TRACT ABNORMALITY AND
 CRYPTORCHIDISM;;
@@ -50,15 +48,15 @@ EOF
 
 # The test file contains 3 phenotype-only entries, 1 gene-only entry
 # and 1 gene/phenotype entry
-Readonly my $NUMBER_OF_GENE_XREFS => 2;
-Readonly my $NUMBER_OF_MORBID_XREFS => 4;
+my $NUMBER_OF_GENE_XREFS = 2;
+my $NUMBER_OF_MORBID_XREFS = 4;
 
 # The test file contains 3 "MOVED TO" entries. Of those, two form a
 # chain ultimately pointing to a gene/phenonype entry, meaning they
 # should appear independently for both sources. Conversely, the last
 # one points to a "REMOVED FROM DATABASE" entry and thus should not be
 # inserted at all.
-Readonly my $NUMBER_OF_SYNONYMS => 4;
+my $NUMBER_OF_SYNONYMS = 4;
 
 
 my $db = Xref::Test::TestDB->new();
