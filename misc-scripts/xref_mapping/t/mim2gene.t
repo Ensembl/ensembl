@@ -28,29 +28,28 @@ use Test::Warnings 'allow_warnings';
 
 use English '-no_match_vars';
 use FindBin '$Bin';
-use Readonly;
 
 use Xref::Test::TestDB;
 
 use XrefParser::Mim2GeneParser;
 
 
-Readonly my $SOURCE_ID_ENTREZGENE  => 23;
-Readonly my $SOURCE_ID_MIM2GENE    => 59;
-Readonly my $SOURCE_ID_OMIM_GENE   => 61;
-Readonly my $SOURCE_ID_OMIM_MORBID => 62;
-Readonly my $SPECIES_ID_HUMAN      => 9606;
+my $SOURCE_ID_ENTREZGENE  = 23;
+my $SOURCE_ID_MIM2GENE    = 59;
+my $SOURCE_ID_OMIM_GENE   = 61;
+my $SOURCE_ID_OMIM_MORBID = 62;
+my $SPECIES_ID_HUMAN      = 9606;
 
 # Increase this by 1 if/when BaseAdaptor::get_valid_codes() has begun to
 # consider synonyms
-Readonly my $NUMBER_OF_DIRECT_LINKS         => 4;
+my $NUMBER_OF_DIRECT_LINKS         = 4;
 # Increase this by 1 once the parser has been updated to insert
 # dependent links for entries which get direct ones as well, and by
 # another 1 if/when has begun to consider synonyms
-Readonly my $NUMBER_OF_DEPENDENT_LINKS      => 1;
+my $NUMBER_OF_DEPENDENT_LINKS      = 1;
 # Decrease this by 1 if/when BaseAdaptor::get_valid_codes() has begun to
 # consider synonyms
-Readonly my $NUMBER_OF_STILL_UNMAPPED_XREFS => 3;
+my $NUMBER_OF_STILL_UNMAPPED_XREFS = 3;
 
 my $db = Xref::Test::TestDB->new();
 

@@ -26,16 +26,15 @@ use warnings;
 
 use Carp;
 use List::Util;
-use Readonly;
 use Text::CSV;
 
 use parent qw( XrefParser::BaseParser );
 
 
 # FIXME: this belongs in BaseParser
-Readonly my $ERR_SOURCE_ID_NOT_FOUND => -1;
+my $ERR_SOURCE_ID_NOT_FOUND = -1;
 
-Readonly my $EXPECTED_NUMBER_OF_COLUMNS => 5;
+my $EXPECTED_NUMBER_OF_COLUMNS = 5;
 
 
 
@@ -271,8 +270,8 @@ sub run {
 sub is_file_header_valid {
   my ( @header ) = @_;
 
-  Readonly my @field_patterns
-    => (
+  my @field_patterns
+    = (
         qr{ \A [#]? \s* MIM[ ]Number }msx,
         qr{ MIM[ ]Entry[ ]Type }msx,
         qr{ Entrez[ ]Gene[ ]ID }msx,
