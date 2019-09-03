@@ -1,0 +1,122 @@
+*RECORD*
+*FIELD* NO
+100050
+*FIELD* TI
+100050 AARSKOG SYNDROME, AUTOSOMAL DOMINANT
+*FIELD* TX
+
+DESCRIPTION
+
+Aarskog syndrome is characterized by short stature and facial, limb,
+and genital anomalies. One form of the disorder is X-linked (see
+305400), but there is also evidence for autosomal dominant and
+autosomal recessive (227330) inheritance (summary by Grier et al.,
+1983).
+
+*RECORD*
+*FIELD* NO
+100070
+*FIELD* TI
+%100070 AORTIC ANEURYSM, FAMILIAL ABDOMINAL, 1; AAA1
+;;ANEURYSM, ABDOMINAL AORTIC; AAA;;
+ABDOMINAL AORTIC ANEURYSM
+*FIELD* TX
+
+DESCRIPTION
+
+Abdominal aortic aneurysm is a multifactorial disorder with multiple
+genetic and environmental risk factors. The disorder may occur as part
+of a heritable syndrome or in isolation (summary by Kuivaniemi et al.,
+2003).
+
+*RECORD*
+*FIELD* NO
+100100
+*FIELD* TI
+#100100 PRUNE BELLY SYNDROME; PBS
+;;ABDOMINAL MUSCLES, ABSENCE OF, WITH URINARY TRACT ABNORMALITY AND
+CRYPTORCHIDISM;;
+EAGLE-BARRETT SYNDROME; EGBRS
+*FIELD* TX
+
+A number sign (#) is used with this entry because of evidence that
+prune belly syndrome (PBS) is caused by homozygous mutation in the
+CHRM3 gene (118494) on chromosome 1q43. One such family has been
+reported.
+
+*RECORD*
+*FIELD* NO
+100500
+*FIELD* TI
+^100500 MOVED TO 100650
+*FIELD* TX
+
+fnord
+
+*RECORD*
+*FIELD* NO
+100640
+*FIELD* TI
+*100640 ALDEHYDE DEHYDROGENASE 1 FAMILY, MEMBER A1; ALDH1A1
+;;ALDEHYDE DEHYDROGENASE 1; ALDH1;;
+ACETALDEHYDE DEHYDROGENASE 1;;
+ALDH, LIVER CYTOSOLIC;;
+RETINAL DEHYDROGENASE 1; RALDH1
+*FIELD* TX
+
+DESCRIPTION
+
+The ALDH1A1 gene encodes a liver cytosolic isoform of acetaldehyde
+dehydrogenase (EC 1.2.1.3), an enzyme involved in the major pathway of
+alcohol metabolism after alcohol dehydrogenase (ADH, see 103700). See
+also liver mitochondrial ALDH2 (100650), variation in which has been
+implicated in different responses to alcohol ingestion.
+
+*RECORD*
+*FIELD* NO
+100650
+*FIELD* TI
+^100650 MOVED TO 200150
+*FIELD* TX
+
+This entry was incorporated into 200150 on March 2, 2004.
+
+*RECORD*
+*FIELD* NO
+100680
+*FIELD* TI
+^100680 MOVED TO 100740
+*FIELD* TX
+
+This entry was incorporated into entry 100740 on August 4, 2010.
+
+*RECORD*
+*FIELD* NO
+100740
+*FIELD* TI
+^100740 REMOVED FROM DATABASE
+*FIELD* TX
+
+fnord
+
+*RECORD*
+*FIELD* NO
+200150
+*FIELD* TI
++200150 CHOREOACANTHOCYTOSIS; CHAC
+;;LEVINE-CRITCHLEY SYNDROME;;
+ACANTHOCYTOSIS WITH NEUROLOGIC DISORDER;;
+NEUROACANTHOCYTOSIS;;
+CHOREA-ACANTHOCYTOSIS
+*FIELD* TX
+
+A number sign (#) is used with this entry because choreoacanthocytosis
+can be caused by homozygous or compound heterozygous mutation in the
+VPS13A gene (605978), which encodes chorein, on chromosome 9q21.
+
+DESCRIPTION
+
+Choreoacanthocytosis (CHAC) is a rare disorder characterized by
+progressive neurodegeneration and red cell acanthocytosis, with onset
+in the third to fifth decade of life (Rubio et al., 1997).
+*THEEND*
