@@ -81,8 +81,17 @@ sub dbi {
 # gzipped, the handle will be to an unseekable stream coming out of a
 # zcat pipe.  If the given file name doesn't correspond to an existing
 # file, the routine will try to add '.gz' to the file name or to remove
-# any .'Z' or '.gz' and try again.  Returns undef on failure and will
-# write a warning to stderr.
+# any .'Z' or '.gz' and try again, printing a warning to stderr if the
+# alternative name does match an existing file.
+# Possible error states:
+#  - throws if no file name has been given, or if neither the provided
+#    name nor the alternative one points to an existing file
+#  - returns undef if an uncompressed file could not be opened for
+#    reading, or if the command 'zcat' is not in the search path
+#  - at least on Perl installations with multi-threading enabled,
+#    returns a VALID FILE HANDLE if zcat can be called but it cannot
+#    open the target file for reading - zcat will only report an error
+#    upon the first attempt to read from the handle
 #######################################################################
 sub get_filehandle
 {
@@ -101,6 +110,9 @@ sub get_filehandle
     }
 
     if ( !-e $file_name ) {
+        if ( ! -e $alt_file_name ) {
+            confess "Could not find either '$file_name' or '$alt_file_name'";
+        }
         carp(   "File '$file_name' does not exist, "
               . "will try '$alt_file_name'" );
         $file_name = $alt_file_name;
@@ -109,7 +121,7 @@ sub get_filehandle
     if ( $file_name =~ /\.(gz|Z)$/x ) {
         # Read from zcat pipe
         $io = IO::File->new("zcat $file_name |")
-          or carp("Can not open file '$file_name' with 'zcat'");
+          or carp("Can not call 'zcat' to open file '$file_name'");
     } else {
         # Read file normally
         $io = IO::File->new($file_name)
