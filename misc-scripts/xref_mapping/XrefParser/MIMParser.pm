@@ -1,8 +1,7 @@
 =head1 LICENSE
 
-Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
-Copyright [2016-2019] EMBL-European Bioinformatics Institute
-
+See the NOTICE file distributed with this work for additional information
+regarding copyright ownership.
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
@@ -27,41 +26,71 @@ use Readonly;
 
 use parent qw( XrefParser::BaseParser );
 
-# This parser will read xrefs from a record file downloaded from the
-# OMIM Web site. They should be assigned to two different xref
-# sources: MIM_GENE and MIM_MORBID. MIM xrefs are linked to EntrezGene
-# entries so the parser does not match them to Ensembl; this will be
-# taken care of when EntrezGene entries are matched.
-#
-# OMIM records are multiline. Each record begins with a specific tag
-# line and consists of a number of fields. Each field starts with its
-# own start-tag line (i.e. the data proper only appears after a
-# newline) and continues until the beginning of either the next field
-# in the same record, the next record, or the end-of-input tag. The
-# overall structure looks as follows:
-#
-#   *RECORD*
-#   *FIELD* NO
-#   *FIELD* TI
-#   *FIELD* TX
-#   ...
-#   *RECORD*
-#   *FIELD* NO
-#   *FIELD* TI
-#   ...
-#   *RECORD*
-#   *FIELD* NO
-#   ...
-#   *FIELD* CD
-#   *FIELD* ED
-#   *THEEND*
-#
-# All the data relevant to the parser can be found in the TI field.
-
 
 # FIXME: this belongs in BaseParser
 Readonly my $ERR_SOURCE_ID_NOT_FOUND => -1;
 
+Readonly my $QR_TI_FIELD_TERMINATORS
+  => qr{
+         (?:                # The TI field spans from *FIELD* TI until:
+           [*]FIELD[*]      #  - the next field in same record, or
+         | [*]RECORD[*]     #  - the end of current record, or
+         | [*]THEEND[*]     #  - the end of input file
+         )
+     }msx;
+
+
+
+=head2 run
+
+  Arg [1]    : HashRef standard list of arguments from ParseSource
+  Example    : $omim_parser->run({ ... });
+  Description: Extract Online Mendelian Inheritance in Man entries
+               from a text file downloaded from the OMIM Web site,
+               then insert corresponding xrefs into the xref
+               database. Note that all the xrefs produced by this
+               parser are unmapped and tagged as such; links of
+               appropriate type will be inserted by Mim2GeneParser.
+
+               OMIM entries can either represent a unique locus,
+               describe a disorder, or both. In Ensembl these are
+               assigned, respectively, to: the source MIM_GENE,
+               the source MIM_MORBID, or independently into both.
+
+               OMIM records are multiline. Each record begins with a
+               specific tag line and consists of a number of
+               fields. Each field starts with its own start-tag line
+               (i.e. the data proper only appears after a newline) and
+               continues until the beginning of either the next field
+               in the same record, the next record, or the
+               end-of-input tag. The overall structure looks as
+               follows:
+
+                 *RECORD*
+                 *FIELD* NO
+                 *FIELD* TI
+                 *FIELD* TX
+                 ...
+                 *RECORD*
+                 *FIELD* NO
+                 *FIELD* TI
+                 ...
+                 *RECORD*
+                 *FIELD* NO
+                 ...
+                 *FIELD* CD
+                 *FIELD* ED
+                 *THEEND*
+
+               All the data relevant to the parser can be found in the
+               TI field.
+
+  Return type: none
+  Exceptions : throws on all processing errors
+  Caller     : ParseSource in the xref pipeline
+  Status     : Stable
+
+=cut
 
 sub run {
 
@@ -76,7 +105,7 @@ sub run {
        ( !defined $species_id ) or
        ( !defined $files ) )
   {
-    croak "Need to pass source_id, species_id and files as pairs";
+    confess "Need to pass source_id, species_id and files as pairs";
   }
 
   my $filename = @{$files}[0];
@@ -96,25 +125,25 @@ sub run {
   push @sources, $morbid_source_id;
   if ( ( $gene_source_id == $ERR_SOURCE_ID_NOT_FOUND )
        || ( $morbid_source_id == $ERR_SOURCE_ID_NOT_FOUND ) ) {
-    croak 'Failed to retrieve MIM source IDs';
+    confess 'Failed to retrieve MIM source IDs';
   }
 
   Readonly my %TYPE_SINGLE_SOURCES => (
-                                       q{*} => $gene_source_id,
-                                       q{} => $morbid_source_id,
-                                       q{#} => $morbid_source_id,
-                                       q{%} => $morbid_source_id,
-                                     );
+    q{*} => $gene_source_id,
+    q{}  => $morbid_source_id,
+    q{#} => $morbid_source_id,
+    q{%} => $morbid_source_id,
+  );
 
   if ($verbose) {
-    print "sources are:- " . join( ", ", @sources ) . "\n";
+    print "sources are: " . join( ", ", @sources ) . "\n";
   }
 
   IO::Handle->input_record_separator('*RECORD*');
 
   my $mim_io = $self->get_filehandle($filename);
   if ( !defined $mim_io ) {
-    croak "Failed to acquire a file handle for '${filename}'";
+    confess "Failed to acquire a file handle for '${filename}'";
   }
 
   $mim_io->getline();    # first record is empty with *RECORD* as the
@@ -125,12 +154,12 @@ sub run {
 
     my $ti = extract_ti( $input_record );
     if ( ! defined $ti ) {
-      croak 'Failed to extract TI field from record';
+      confess 'Failed to extract TI field from record';
     }
 
     my ( $type, $number, $long_desc ) = parse_ti( $ti );
-    if ( !defined( $type ) ) {
-      croak 'Failed to extract record type and description from TI field';
+    if ( ! defined $type ) {
+      confess 'Failed to extract record type and description from TI field';
     }
 
     # Use the first block of text as description
@@ -138,13 +167,13 @@ sub run {
     my $label = $fields[0] . " [" . $type . $number . "]";
 
     my $xref_object = {
-                       acc        => $number,
-                       label      => $label,
-                       desc       => $long_desc,
-                       species_id => $species_id,
-                       dbi        => $dbi,
-                       info_type  => 'UNMAPPED',
-                     };
+      acc        => $number,
+      label      => $label,
+      desc       => $long_desc,
+      species_id => $species_id,
+      dbi        => $dbi,
+      info_type  => 'UNMAPPED',
+    };
 
     if ( exists $TYPE_SINGLE_SOURCES{$type} ) {
       my $type_source = $TYPE_SINGLE_SOURCES{$type};
@@ -182,7 +211,7 @@ sub run {
         $counters{ 'removed' }++;
       }
       else {
-        croak "Unsupported type of a '^' record: '${long_desc}'\n";
+        confess "Unsupported type of a '^' record: '${long_desc}'\n";
       }
 
     }
@@ -244,23 +273,53 @@ sub run {
 } ## end sub run
 
 
+=head2 extract_ti
+
+  Arg [1]    : String $input_record A single OMIM record
+  Example    : my $ti_string = extract_ti( $omim_record );
+  Description: Scan the provided record for the TI field and extract
+               its contents, regardless of where in the record that
+               field appears or the position of the record in the
+               file.
+  Return type: String
+  Exceptions : none
+  Caller     : MIMParser::run()
+  Status     : Stable
+
+=cut
+
 sub extract_ti {
   my ( $input_record ) = @_;
 
   my ( $ti )
     = ( $input_record =~ m{
-                            [*]FIELD[*]\sTI\n  # The TI field spans from this tag until:
+                            [*]FIELD[*]\sTI\n
                             (.+?)              # (important: NON-greedy match)
                             \n?
-                            (?: [*]FIELD[*]    #  - the next field in same record, or
-                            | [*]THEEND[*]   #  - the end of input file, or
-                            | \z             #  - the end of current record
-                            )
+                            $QR_TI_FIELD_TERMINATORS
                         }msx );
 
   return $ti;
 }
 
+
+
+=head2 parse_ti
+
+  Arg [1]    : String $ti Contents of a single TI field
+  Example    : my ( $type_symbol, $omim_number, $description )
+                 = parse_ti( $ti_string );
+  Description: Extract the type symbol, the entry number and the
+               description from the contents of an OMIM record's TI
+               field. The description is *not* split into possible
+               individual components, we do however remove line breaks
+               from multiline entries.
+  Return type: Array
+  Exceptions : none
+  Caller     : MIMParser::run()
+  Status     : Stable
+
+=cut
 
 sub parse_ti {
   my ( $ti ) = @_;
@@ -276,6 +335,7 @@ sub parse_ti {
 
   # Extract the 'type' and the whole description
   my @captures = ( $ti =~ m{
+                             \A
                              ([#%+*^]*)  # type of entry
                              (\d+)       # accession number, same as in NO
                              \s+         # normally just one space
