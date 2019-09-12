@@ -40,7 +40,7 @@ sub run {
     confess "Need to pass source_id, species_id and files as pairs";
   }
 
-  my $file = shift @{$files};
+  my $file = @{$files}[0];
 
   my $count = 0;
 
