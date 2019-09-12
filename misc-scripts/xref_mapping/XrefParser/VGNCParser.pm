@@ -143,7 +143,7 @@ sub run {
   # die if some required_column is not in columns
   foreach my $colname (@required_columns) {
     if ( !grep { /$colname/xms } @columns ) {
-      confess "Can't find required column $colname in VGNC file '$file'\n";
+      confess "Can't find required column '$colname' in VGNC file '$file'\n";
     }
   }
 
