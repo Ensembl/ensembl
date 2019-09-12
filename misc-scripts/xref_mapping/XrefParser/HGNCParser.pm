@@ -468,6 +468,7 @@ sub add_synonyms_for_hgnc {
 
 
 =head2 parse_file_string
+  Arg [1]    : string : input file string
   Description: parses the input string $file into an hash
                string $file is in the format as the example:
                script:project=>ensembl,host=>ens-staging1,dbname=>homo_sapiens_core_70_37,ofhost=>ens-staging1,...
