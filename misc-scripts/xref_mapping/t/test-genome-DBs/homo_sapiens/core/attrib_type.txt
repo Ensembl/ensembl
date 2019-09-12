@@ -1,0 +1,22 @@
+1	synonym	Alternate names for clone	Synonyms
+2	FISHmap	FISH information	FISH map
+3	organisation	Organisation sequencing clone	
+4	state	Current state of clone	
+5	BACend_flag	BAC end flags	
+6	embl_acc	EMBL accession number	
+7	superctg	Super contig id.	
+8	seq_len	Accession length	
+9	fp_size	FP size	
+10	note	Note	
+11	positioned_by	Positioned by	
+12	bac_acc	BAC end accession	
+13	htg_phase	HTG Phase	High Throughput Genome Phase
+14	toplevel	Top Level	Top Level Non-Redundant Sequence Region
+15	_rna_edit	RNA editing	\N
+16	_selenocysteine	Selenocysteine	\N
+17	codon_table	Codon Table	Alternate codon table
+18	non_ref	Non Reference	Non Reference Sequence Region
+19	karyotype_rank	Rank in the karyotype	For a given seq_region, if it is part of the species karyotype, will indicate its rank
+20	proj_parent_g	projection parent gene	Stable identifier of the parent gene this gene was projected from (projection between different species and/or assemblies).
+21	proj_parent_t	projection parent transcript	Stable identifier of the parent transcript this transcript was projected from (projection between different species and/or assemblies).
+468	ccds_transcript	CCDS transcript	This attribute signifies that a transcript has a matching CCDS transcript (the accession of which will be in the value column of the transcript_attrib entry). A match occurs when the genomic coordinates of all coding exons of the transcript are identical to the genomic coordinate of all coding exons in the overlapping CCDS model.

@@ -1,0 +1,6 @@
+gene	4	101829
+exon	4	5374
+transcript	4	5491
+gene	12	381
+exon	12	381
+transcript	12	381

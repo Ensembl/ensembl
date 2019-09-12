@@ -1,0 +1,173 @@
+3125749	1422778	8378	131555	29022007	29036046	-1	1388459	Gnomon	lncRNA	uncharacterized LOC105375002, transcript variant X1	1	\N	rna53203	1	\N	\N
+3125750	1422779	8378	131555	29026680	29027607	-1	1388460	ensembl	pseudogene	olfactory receptor family 2 subfamily AD member 1 pseudogene [Source:NCBI gene;Acc:79313]	1	\N	gene17784	1	\N	\N
+3125751	1422780	8378	131555	29036021	29076740	1	1388463	BestRefSeq	lncRNA	uncharacterized LOC100129636	1	\N	rna53204	1	\N	\N
+3125752	1422781	8378	131555	29044213	29045175	-1	1388468	BestRefSeq	protein_coding	olfactory receptor family 2 subfamily W member 1	1	2111519	rna53205	1	\N	\N
+3125753	1422782	8378	131555	29071832	29072566	-1	1388469	ensembl	pseudogene	olfactory receptor family 2 subfamily P member 1 pseudogene [Source:NCBI gene;Acc:442183]	1	\N	gene17787	1	\N	\N
+3125754	1422783	8378	131555	29074416	29077241	-1	1388472	Curated Genomic	pseudogene	secretion associated Ras related GTPase 1A pseudogene 1 [Source:NCBI gene;Acc:646260]	1	\N	gene17788	1	\N	\N
+3125755	1422784	8378	131555	29086208	29087313	-1	1388477	BestRefSeq	protein_coding	olfactory receptor family 2 subfamily B member 3	1	2111520	rna53206	1	\N	\N
+3125756	1422785	8378	131555	29100843	29101978	1	1388481	BestRefSeq	protein_coding	olfactory receptor family 2 subfamily J member 1 (gene/pseudogene)	1	2111521	rna53207	1	\N	\N
+3125757	1422786	8378	131555	29108630	29114434	1	1388483	Gnomon	lncRNA	uncharacterized LOC105375003, transcript variant X1	1	\N	rna53208	1	\N	\N
+3125758	1422787	8378	131555	29111810	29112884	1	1388489	BestRefSeq	protein_coding	olfactory receptor family 2 subfamily J member 3	1	2111522	rna53209	1	\N	\N
+3125759	1422788	8378	131555	29137770	29138916	-1	1388491	ensembl	pseudogene	olfactory receptor family 2 subfamily N member 1 pseudogene [Source:NCBI gene;Acc:26701]	1	\N	gene17793	1	\N	\N
+3125760	1422789	8378	131555	29173534	29174574	1	1388496	BestRefSeq	protein_coding	olfactory receptor family 2 subfamily J member 2	1	2111523	rna53210	1	\N	\N
+3125761	1422790	8378	131555	29181510	29182442	1	1388498	ensembl	pseudogene	olfactory receptor family 2 subfamily J member 4 pseudogene [Source:NCBI gene;Acc:442188]	1	\N	gene17795	1	\N	\N
+3125762	1422791	8378	131555	29215236	29216176	1	1388500	ensembl	pseudogene	olfactory receptor family 2 subfamily H member 4 pseudogene [Source:NCBI gene;Acc:442189]	1	\N	gene17796	1	\N	\N
+3125763	1422792	8378	131555	29223973	29290440	1	1388502	BestRefSeq	lncRNA	uncharacterized LOC101929006, transcript variant 2	1	\N	rna53211	1	\N	\N
+3125764	1422792	8378	131555	29223973	29267085	1	1388503	BestRefSeq	lncRNA	uncharacterized LOC101929006, transcript variant 1	1	\N	rna53212	1	\N	\N
+3125765	1422793	8378	131555	29229230	29230220	-1	1388504	ensembl	pseudogene	olfactory receptor family 2 subfamily G member 1 pseudogene [Source:NCBI gene;Acc:26717]	1	\N	gene17798	1	\N	\N
+3125766	1422794	8378	131555	29230672	29232799	-1	1388507	Gnomon	lncRNA	uncharacterized LOC105375006	1	\N	rna53213	1	\N	\N
+3125767	1422795	8378	131555	29262659	29264079	-1	1388509	ensembl	pseudogene	olfactory receptor family 2 subfamily U member 1 pseudogene [Source:NCBI gene;Acc:26695]	1	\N	gene17800	1	\N	\N
+3125768	1422796	8378	131555	29268465	29269421	-1	1388511	ensembl	pseudogene	olfactory receptor family 2 subfamily U member 2 pseudogene [Source:NCBI gene;Acc:26694]	1	\N	gene17801	1	\N	\N
+3125769	1422797	8378	131555	29284072	29334443	-1	1388513	Gnomon	lncRNA	uncharacterized LOC105375005, transcript variant X3	1	\N	rna53214	1	\N	\N
+3125770	1422797	8378	131555	29325551	29334443	-1	1388514	Gnomon	lncRNA	uncharacterized LOC105375005, transcript variant X2	1	\N	rna53215	1	\N	\N
+3125771	1422797	8378	131555	29325551	29334443	-1	1388515	Gnomon	lncRNA	uncharacterized LOC105375005, transcript variant X1	1	\N	rna53216	1	\N	\N
+3125772	1422798	8378	131555	29290596	29291750	1	1388516	ensembl	pseudogene	olfactory receptor family 2 subfamily B member 4 pseudogene [Source:NCBI gene;Acc:442190]	1	\N	gene17803	1	\N	\N
+3125773	1422799	8378	131555	29306690	29307655	1	1388522	BestRefSeq	protein_coding	olfactory receptor family 14 subfamily J member 1	1	2111524	rna53217	1	\N	\N
+3125774	1422800	8378	131555	29329429	29331261	-1	1388523	Curated Genomic	pseudogene	DEAD-box helicase 6 pseudogene 1 [Source:NCBI gene;Acc:442192]	1	\N	gene17805	1	\N	\N
+3125775	1422801	8378	131555	29355211	29457039	-1	1388528	Gnomon	protein_coding	olfactory receptor family 5 subfamily V member 1, transcript variant X2	1	2111525	rna53218	1	\N	\N
+3125776	1422801	8378	131555	29355211	29455207	-1	1388530	Gnomon	protein_coding	olfactory receptor family 5 subfamily V member 1, transcript variant X1	1	2111526	rna53219	1	\N	\N
+3125777	1422801	8378	131555	29355230	29356277	-1	1388533	BestRefSeq	protein_coding	olfactory receptor family 5 subfamily V member 1	1	2111527	rna53220	1	\N	\N
+3125778	1422802	8378	131555	29373423	29375291	-1	1388538	BestRefSeq	protein_coding	olfactory receptor family 12 subfamily D member 3	1	2111528	rna53221	1	\N	\N
+3125779	1422803	8378	131555	29396639	29397671	1	1388542	BestRefSeq	protein_coding	olfactory receptor family 12 subfamily D member 2 (gene/pseudogene)	1	2111529	rna53222	1	\N	\N
+3125780	1422804	8378	131555	29406311	29457067	-1	1388544	Gnomon	lncRNA	uncharacterized LOC105379641, transcript variant X1	1	\N	rna53223	1	\N	\N
+3125781	1422804	8378	131555	29406311	29457067	-1	1388545	Gnomon	lncRNA	uncharacterized LOC105379641, transcript variant X2	1	\N	rna53224	1	\N	\N
+3125782	1422804	8378	131555	29442503	29458401	-1	1388546	Gnomon	lncRNA	uncharacterized LOC105379641, transcript variant X5	1	\N	rna53225	1	\N	\N
+3125783	1422804	8378	131555	29442519	29457032	-1	1388547	Gnomon	lncRNA	uncharacterized LOC105379641, transcript variant X4	1	\N	rna53226	1	\N	\N
+3125784	1422804	8378	131555	29449963	29457056	-1	1388548	Gnomon	lncRNA	uncharacterized LOC105379641, transcript variant X3	1	\N	rna53227	1	\N	\N
+3125785	1422805	8378	131555	29417065	29418396	1	1388551	BestRefSeq	misc_RNA	olfactory receptor family 12 subfamily D member 1 (gene/pseudogene), transcript variant 1	1	\N	rna53228	1	\N	\N
+3125786	1422805	8378	131555	29417065	29418396	1	1388553	BestRefSeq	protein_coding	olfactory receptor family 12 subfamily D member 1 (gene/pseudogene), transcript variant 1	1	2111530	rna53229	1	\N	\N
+3125787	1422806	8378	131555	29425504	29427732	-1	1388558	BestRefSeq	protein_coding	olfactory receptor family 11 subfamily A member 1	1	2111531	rna53230	1	\N	\N
+3125788	1422807	8378	131555	29439939	29440977	1	1388563	BestRefSeq	protein_coding	olfactory receptor family 10 subfamily C member 1 (gene/pseudogene)	1	2111532	rna53231	1	\N	\N
+3125789	1422808	8378	131555	29457133	29464205	1	1388567	Gnomon	protein_coding	olfactory receptor family 2 subfamily H member 1, transcript variant X9	1	2111533	rna53232	1	\N	\N
+3125790	1422808	8378	131555	29457133	29463749	1	1388569	Gnomon	protein_coding	olfactory receptor family 2 subfamily H member 1, transcript variant X1	1	2111534	rna53233	1	\N	\N
+3125791	1422808	8378	131555	29457133	29463749	1	1388571	Gnomon	protein_coding	olfactory receptor family 2 subfamily H member 1, transcript variant X2	1	2111535	rna53234	1	\N	\N
+3125792	1422808	8378	131555	29457133	29463749	1	1388573	Gnomon	protein_coding	olfactory receptor family 2 subfamily H member 1, transcript variant X10	1	2111536	rna53235	1	\N	\N
+3125793	1422808	8378	131555	29457133	29463749	1	1388575	Gnomon	protein_coding	olfactory receptor family 2 subfamily H member 1, transcript variant X3	1	2111537	rna53236	1	\N	\N
+3125794	1422808	8378	131555	29457133	29463749	1	1388577	Gnomon	protein_coding	olfactory receptor family 2 subfamily H member 1, transcript variant X5	1	2111538	rna53237	1	\N	\N
+3125795	1422808	8378	131555	29457133	29463749	1	1388579	Gnomon	protein_coding	olfactory receptor family 2 subfamily H member 1, transcript variant X4	1	2111539	rna53238	1	\N	\N
+3125796	1422808	8378	131555	29457133	29463749	1	1388581	Gnomon	protein_coding	olfactory receptor family 2 subfamily H member 1, transcript variant X6	1	2111540	rna53239	1	\N	\N
+3125797	1422808	8378	131555	29457133	29463749	1	1388583	Gnomon	protein_coding	olfactory receptor family 2 subfamily H member 1, transcript variant X7	1	2111541	rna53240	1	\N	\N
+3125798	1422808	8378	131555	29457155	29464322	1	1388586	BestRefSeq	protein_coding	olfactory receptor family 2 subfamily H member 1, transcript variant 1	1	2111542	rna53241	1	\N	\N
+3125799	1422808	8378	131555	29457155	29464322	1	1388588	BestRefSeq	protein_coding	olfactory receptor family 2 subfamily H member 1, transcript variant 2	1	2111543	rna53242	1	\N	\N
+3125800	1422808	8378	131555	29457155	29464322	1	1388590	BestRefSeq	protein_coding	olfactory receptor family 2 subfamily H member 1, transcript variant 3	1	2111544	rna53243	1	\N	\N
+3125801	1422808	8378	131555	29460464	29463749	1	1388592	Gnomon	protein_coding	olfactory receptor family 2 subfamily H member 1, transcript variant X8	1	2111545	rna53244	1	\N	\N
+3125802	1422809	8378	131555	29464675	29464945	-1	1388594	ensembl	pseudogene	ubiquitin D pseudogene 1 [Source:NCBI gene;Acc:100286971]	1	\N	gene17814	1	\N	\N
+3125803	1422810	8378	131555	29475025	29476071	-1	1388596	ensembl	pseudogene	MAS1L pseudogene 1 [Source:NCBI gene;Acc:646366]	1	\N	gene17815	1	\N	\N
+3125804	1422811	8378	131555	29484668	29490155	1	1388598	Gnomon	lncRNA	uncharacterized LOC105375008	1	\N	rna53245	1	\N	\N
+3125805	1422812	8378	131555	29486697	29487956	-1	1388604	BestRefSeq	protein_coding	MAS1 proto-oncogene like, G protein-coupled receptor	1	2111546	rna53246	1	\N	\N
+3125806	1422813	8378	131555	29489203	29489693	-1	1388605	Curated Genomic	pseudogene	ribosomal protein S17 pseudogene 1 [Source:NCBI gene;Acc:442195]	1	\N	gene17818	1	\N	\N
+3125807	1422814	8378	131555	29497475	29510558	1	1388608	Gnomon	lncRNA	uncharacterized LOC105375009, transcript variant X1	1	\N	rna53247	1	\N	\N
+3125808	1422814	8378	131555	29497500	29510558	1	1388609	Gnomon	lncRNA	uncharacterized LOC105375009, transcript variant X2	1	\N	rna53248	1	\N	\N
+3125809	1422815	8378	131555	29529406	29533568	1	1388612	BestRefSeq	lncRNA	long intergenic non-protein coding RNA 1015, transcript variant 1	1	\N	rna53249	1	\N	\N
+3125810	1422815	8378	131555	29529406	29533568	1	1388613	BestRefSeq	lncRNA	long intergenic non-protein coding RNA 1015, transcript variant 3	1	\N	rna53250	1	\N	\N
+3125811	1422815	8378	131555	29529406	29533568	1	1388614	BestRefSeq	lncRNA	long intergenic non-protein coding RNA 1015, transcript variant 2	1	\N	rna53251	1	\N	\N
+3125812	1422816	8378	131555	29537812	29538651	-1	1388615	ensembl	pseudogene	G protein-coupled receptor 53, pseudogene [Source:NCBI gene;Acc:9292]	1	\N	gene17821	1	\N	\N
+3125813	1422817	8378	131555	29553105	29554163	1	1388618	ensembl	pseudogene	olfactory receptor family 2 subfamily I member 1 pseudogene [Source:NCBI gene;Acc:442197]	1	\N	gene17822	1	\N	\N
+3125814	1422818	8378	131555	29555612	29559925	-1	1388624	BestRefSeq	protein_coding	ubiquitin D	1	2111547	rna53252	1	\N	\N
+3125815	1422819	8378	131555	29574073	29574651	1	1388625	ensembl	pseudogene	olfactory receptor family 2 subfamily H member 5 pseudogene [Source:NCBI gene;Acc:26713]	1	\N	gene17824	1	\N	\N
+3125816	1422820	8378	131555	29577459	29577748	1	1388628	ensembl	pseudogene	transmembrane protein 183A pseudogene 1 [Source:NCBI gene;Acc:100048909]	1	\N	gene17825	1	\N	\N
+3125817	1422821	8378	131555	29582252	29582328	1	1388631	BestRefSeq	snoRNA	small nucleolar RNA, C/D box 32B	1	\N	rna53253	1	\N	\N
+3125818	1422822	8378	131555	29582508	29583055	1	1388632	Curated Genomic	pseudogene	ribosomal protein L13a pseudogene [Source:NCBI gene;Acc:387043]	1	\N	gene17827	1	\N	\N
+3125819	1422823	8378	131555	29586524	29592506	1	1388638	Gnomon	protein_coding	olfactory receptor family 2 subfamily H member 2, transcript variant X1	1	2111548	rna53254	1	\N	\N
+3125820	1422823	8378	131555	29587906	29588968	1	1388641	BestRefSeq	protein_coding	olfactory receptor family 2 subfamily H member 2	1	2111549	rna53255	1	\N	\N
+3125821	1422824	8378	131555	29602228	29633135	-1	1388647	BestRefSeq	protein_coding	gamma-aminobutyric acid type B receptor subunit 1, transcript variant 3	1	2111550	rna53256	1	\N	\N
+3125822	1422824	8378	131555	29602228	29633135	-1	1388649	BestRefSeq	protein_coding	gamma-aminobutyric acid type B receptor subunit 1, transcript variant 5	1	2111551	rna53257	1	\N	\N
+3125823	1422824	8378	131555	29602228	29633135	-1	1388652	BestRefSeq	protein_coding	gamma-aminobutyric acid type B receptor subunit 1, transcript variant 1	1	2111552	rna53258	1	\N	\N
+3125824	1422824	8378	131555	29602228	29628228	-1	1388655	BestRefSeq	protein_coding	gamma-aminobutyric acid type B receptor subunit 1, transcript variant 2	1	2111553	rna53259	1	\N	\N
+3125825	1422824	8378	131555	29602230	29632782	-1	1388656	Gnomon	misc_RNA	gamma-aminobutyric acid type B receptor subunit 1, transcript variant X6	1	\N	rna53260	1	\N	\N
+3125826	1422824	8378	131555	29602230	29632782	-1	1388657	Gnomon	misc_RNA	gamma-aminobutyric acid type B receptor subunit 1, transcript variant X7	1	\N	rna53261	1	\N	\N
+3125827	1422824	8378	131555	29602230	29632782	-1	1388659	Gnomon	protein_coding	gamma-aminobutyric acid type B receptor subunit 1, transcript variant X1	1	2111554	rna53262	1	\N	\N
+3125828	1422824	8378	131555	29602230	29632769	-1	1388661	Gnomon	protein_coding	gamma-aminobutyric acid type B receptor subunit 1, transcript variant X3	1	2111555	rna53263	1	\N	\N
+3125829	1422824	8378	131555	29602230	29632769	-1	1388663	Gnomon	protein_coding	gamma-aminobutyric acid type B receptor subunit 1, transcript variant X2	1	2111556	rna53264	1	\N	\N
+3125830	1422824	8378	131555	29602230	29631593	-1	1388665	Gnomon	protein_coding	gamma-aminobutyric acid type B receptor subunit 1, transcript variant X4	1	2111557	rna53265	1	\N	\N
+3125831	1422824	8378	131555	29607225	29632782	-1	1388667	Gnomon	protein_coding	gamma-aminobutyric acid type B receptor subunit 1, transcript variant X5	1	2111558	rna53266	1	\N	\N
+3125832	1422825	8378	131555	29635454	29636504	-1	1388669	Curated Genomic	pseudogene	SUMO2 pseudogene 1 [Source:NCBI gene;Acc:285829]	1	\N	gene17830	1	\N	\N
+3125833	1422826	8378	131555	29656981	29672372	1	1388675	BestRefSeq	protein_coding	myelin oligodendrocyte glycoprotein, transcript variant alpha3	1	2111559	rna53267	1	\N	\N
+3125834	1422826	8378	131555	29656981	29672372	1	1388678	BestRefSeq	protein_coding	myelin oligodendrocyte glycoprotein, transcript variant beta3	1	2111560	rna53268	1	\N	\N
+3125835	1422826	8378	131555	29656981	29672372	1	1388681	BestRefSeq	protein_coding	myelin oligodendrocyte glycoprotein, transcript variant alpha1	1	2111561	rna53269	1	\N	\N
+3125836	1422826	8378	131555	29656981	29672372	1	1388684	BestRefSeq	protein_coding	myelin oligodendrocyte glycoprotein, transcript variant beta1	1	2111562	rna53270	1	\N	\N
+3125837	1422826	8378	131555	29656981	29672372	1	1388687	BestRefSeq	protein_coding	myelin oligodendrocyte glycoprotein, transcript variant alpha2	1	2111563	rna53271	1	\N	\N
+3125838	1422826	8378	131555	29656981	29672372	1	1388690	BestRefSeq	protein_coding	myelin oligodendrocyte glycoprotein, transcript variant beta5	1	2111564	rna53272	1	\N	\N
+3125839	1422826	8378	131555	29656981	29672372	1	1388693	BestRefSeq	protein_coding	myelin oligodendrocyte glycoprotein, transcript variant beta2	1	2111565	rna53273	1	\N	\N
+3125840	1422826	8378	131555	29656981	29672372	1	1388696	BestRefSeq	protein_coding	myelin oligodendrocyte glycoprotein, transcript variant alpha6	1	2111566	rna53274	1	\N	\N
+3125841	1422826	8378	131555	29656981	29672372	1	1388699	BestRefSeq	protein_coding	myelin oligodendrocyte glycoprotein, transcript variant alpha5	1	2111567	rna53275	1	\N	\N
+3125842	1422826	8378	131555	29657052	29672311	1	1388701	Gnomon	protein_coding	myelin oligodendrocyte glycoprotein, transcript variant X1	1	2111568	rna53276	1	\N	\N
+3125843	1422827	8378	131555	29672392	29677154	-1	1388707	BestRefSeq	protein_coding	ZFP57 zinc finger protein	1	2111569	rna53277	1	\N	\N
+3125844	1422827	8378	131555	29672483	29681150	-1	1388709	Gnomon	protein_coding	ZFP57 zinc finger protein, transcript variant X2	1	2111570	rna53278	1	\N	\N
+3125845	1422827	8378	131555	29672483	29681150	-1	1388711	Gnomon	protein_coding	ZFP57 zinc finger protein, transcript variant X1	1	2111571	rna53279	1	\N	\N
+3125846	1422828	8378	131555	29708141	29708547	-1	1388713	ensembl	pseudogene	zinc finger DHHC-type containing 20 pseudogene 1 [Source:NCBI gene;Acc:100048907]	1	\N	gene17833	1	\N	\N
+3125847	1422829	8378	131555	29721178	29722167	-1	1388715	ensembl	pseudogene	HLA complex group 4 pseudogene 11 [Source:NCBI gene;Acc:353020]	1	\N	gene17834	1	\N	\N
+3125848	1422830	8378	131555	29723340	29727296	1	1388721	BestRefSeq	protein_coding	major histocompatibility complex, class I, F, transcript variant 1	1	2111572	rna53280	1	\N	\N
+3125849	1422830	8378	131555	29723340	29726526	1	1388724	BestRefSeq	protein_coding	major histocompatibility complex, class I, F, transcript variant 2	1	2111573	rna53281	1	\N	\N
+3125850	1422830	8378	131555	29723340	29726526	1	1388727	BestRefSeq	protein_coding	major histocompatibility complex, class I, F, transcript variant 3	1	2111574	rna53282	1	\N	\N
+3125851	1422830	8378	131555	29723434	29740355	1	1388728	Gnomon	misc_RNA	major histocompatibility complex, class I, F, transcript variant X5	1	\N	rna53283	1	\N	\N
+3125852	1422830	8378	131555	29723434	29740355	1	1388730	Gnomon	protein_coding	major histocompatibility complex, class I, F, transcript variant X7	1	2111575	rna53284	1	\N	\N
+3125853	1422830	8378	131555	29723434	29740141	1	1388731	Gnomon	misc_RNA	major histocompatibility complex, class I, F, transcript variant X6	1	\N	rna53285	1	\N	\N
+3125854	1422830	8378	131555	29723434	29740141	1	1388733	Gnomon	protein_coding	major histocompatibility complex, class I, F, transcript variant X4	1	2111576	rna53286	1	\N	\N
+3125855	1422830	8378	131555	29723434	29729351	1	1388735	Gnomon	protein_coding	major histocompatibility complex, class I, F, transcript variant X1	1	2111577	rna53287	1	\N	\N
+3125856	1422830	8378	131555	29723434	29727905	1	1388737	Gnomon	protein_coding	major histocompatibility complex, class I, F, transcript variant X3	1	2111578	rna53288	1	\N	\N
+3125857	1422830	8378	131555	29723434	29727389	1	1388739	Gnomon	protein_coding	major histocompatibility complex, class I, F, transcript variant X2	1	2111579	rna53289	1	\N	\N
+3125858	1422830	8378	131555	29723441	29740141	1	1388740	Gnomon	misc_RNA	major histocompatibility complex, class I, F, transcript variant X9	1	\N	rna53290	1	\N	\N
+3125859	1422830	8378	131555	29723453	29727389	1	1388742	Gnomon	protein_coding	major histocompatibility complex, class I, F, transcript variant X8	1	2111580	rna53291	1	\N	\N
+3125860	1422830	8378	131555	29723658	29726524	1	1388744	Gnomon	protein_coding	major histocompatibility complex, class I, F, transcript variant X10	1	2111581	rna53292	1	\N	\N
+3125861	1422831	8378	131555	29726597	29727154	-1	1388746	Curated Genomic	pseudogene	ribosomal protein L23a pseudogene 1 [Source:NCBI gene;Acc:6148]	1	\N	gene17836	1	\N	\N
+3125862	1422832	8378	131555	29726601	29749049	-1	1388749	BestRefSeq	lncRNA	HLA-F antisense RNA 1, transcript variant 2	1	\N	rna53293	1	\N	\N
+3125863	1422832	8378	131555	29726601	29749049	-1	1388750	BestRefSeq	lncRNA	HLA-F antisense RNA 1, transcript variant 1	1	\N	rna53294	1	\N	\N
+3125864	1422833	8378	131555	29741556	29745784	-1	1388752	Curated Genomic	pseudogene	MHC class I polypeptide-related sequence E (pseudogene) [Source:NCBI gene;Acc:4280]	1	\N	gene17838	1	\N	\N
+3125865	1422834	8378	131555	29748254	29748648	1	1388754	Curated Genomic	pseudogene	HLA complex group 9 pseudogene 5 [Source:NCBI gene;Acc:353019]	1	\N	gene17839	1	\N	\N
+3125866	1422835	8378	131555	29750807	29751148	-1	1388757	BestRefSeq	transcribed_pseudogene	interferon induced transmembrane protein 4 pseudogene	1	\N	rna53295	1	\N	\N
+3125867	1422836	8378	131555	29765116	29766296	-1	1388758	Curated Genomic	pseudogene	HLA complex group 26 (non-protein coding) pseudogene [Source:NCBI gene;Acc:353010]	1	\N	gene17841	1	\N	\N
+3125868	1422837	8378	131555	29791031	29793073	-1	1388761	BestRefSeq	lncRNA	HLA complex group 4 (non-protein coding)	1	\N	rna53296	1	\N	\N
+3125869	1422838	8378	131555	29791906	29797807	1	1388764	BestRefSeq	transcribed_pseudogene	major histocompatibility complex, class I, V (pseudogene)	1	\N	rna53297	1	\N	\N
+3125870	1422839	8378	131555	29798424	29800126	-1	1388765	ensembl	pseudogene	HLA complex group 4 pseudogene 9 [Source:NCBI gene;Acc:353014]	1	\N	gene17844	1	\N	\N
+3125871	1422840	8378	131555	29800044	29803079	1	1388768	ensembl	pseudogene	major histocompatibility complex, class I, P (pseudogene) [Source:NCBI gene;Acc:352963]	1	\N	gene17845	1	\N	\N
+3125872	1422841	8378	131555	29803133	29804020	-1	1388769	Curated Genomic	pseudogene	ribosomal protein L7a pseudogene 7 [Source:NCBI gene;Acc:353013]	1	\N	gene17846	1	\N	\N
+3125873	1422842	8378	131555	29812390	29812692	-1	1388771	ensembl	pseudogene	MHC class I polypeptide-related sequence G (pseudogene) [Source:NCBI gene;Acc:352967]	1	\N	gene17847	1	\N	\N
+3125874	1422843	8378	131555	29826129	29827114	-1	1388774	ensembl	pseudogene	HLA complex group 4 pseudogene 8 [Source:NCBI gene;Acc:353005]	1	\N	gene17848	1	\N	\N
+3125875	1422844	8378	131555	29826967	29831130	1	1388779	Gnomon	protein_coding	major histocompatibility complex, class I, G, transcript variant X1	1	2111582	rna53298	1	\N	\N
+3125876	1422844	8378	131555	29826979	29831122	1	1388782	BestRefSeq	protein_coding	major histocompatibility complex, class I, G	1	2111583	rna53299	1	\N	\N
+3125877	1422844	8378	131555	29827836	29831130	1	1388784	Gnomon	protein_coding	major histocompatibility complex, class I, G, transcript variant X3	1	2111584	rna53300	1	\N	\N
+3125878	1422844	8378	131555	29827836	29830595	1	1388786	Gnomon	protein_coding	major histocompatibility complex, class I, G, transcript variant X4	1	2111585	rna53301	1	\N	\N
+3125879	1422844	8378	131555	29827836	29830567	1	1388788	Gnomon	protein_coding	major histocompatibility complex, class I, G, transcript variant X2	1	2111586	rna53302	1	\N	\N
+3125880	1422845	8378	131555	29833588	29835128	-1	1388789	Curated Genomic	pseudogene	HCGVIII-2 pseudogene [Source:NCBI gene;Acc:353000]	1	\N	gene17850	1	\N	\N
+3125881	1422846	8378	131555	29848002	29857386	-1	1388791	Gnomon	lncRNA	uncharacterized LOC105375010, transcript variant X3	1	\N	rna53303	1	\N	\N
+3125882	1422846	8378	131555	29848415	29857386	-1	1388792	Gnomon	lncRNA	uncharacterized LOC105375010, transcript variant X2	1	\N	rna53304	1	\N	\N
+3125883	1422846	8378	131555	29848415	29857386	-1	1388793	Gnomon	lncRNA	uncharacterized LOC105375010, transcript variant X1	1	\N	rna53305	1	\N	\N
+3125884	1422847	8378	131555	29852187	29854052	-1	1388794	ensembl	pseudogene	MHC class I polypeptide-related sequence F (pseudogene) [Source:NCBI gene;Acc:352957]	1	\N	gene17852	1	\N	\N
+3125885	1422848	8378	131555	29865915	29867087	-1	1388796	Curated Genomic	pseudogene	HLA complex group 26 (non-protein coding) pseudogene [Source:NCBI gene;Acc:353009]	1	\N	gene17853	1	\N	\N
+3125886	1422849	8378	131555	29871895	29873783	-1	1388799	BestRefSeq	lncRNA	HLA complex P5B (non-protein coding)	1	\N	rna53306	1	\N	\N
+3125887	1422850	8378	131555	29886110	29887007	-1	1388801	ensembl	pseudogene	HLA complex group 4 pseudogene 7 [Source:NCBI gene;Acc:353004]	1	\N	gene17855	1	\N	\N
+3125888	1422851	8378	131555	29887573	29891079	1	1388804	BestRefSeq	transcribed_pseudogene	major histocompatibility complex, class I, H (pseudogene)	1	\N	rna53307	1	\N	\N
+3125889	1422852	8378	131555	29896443	29898947	1	1388806	ensembl	pseudogene	major histocompatibility complex, class I, T (pseudogene) [Source:NCBI gene;Acc:352964]	1	\N	gene17857	1	\N	\N
+3125890	1422853	8378	131555	29906547	29907449	1	1388807	ensembl	pseudogene	DEAD-box helicase 39B pseudogene 1 [Source:NCBI gene;Acc:100048904]	1	\N	gene17858	1	\N	\N
+3125891	1422854	8378	131555	29907783	29908645	-1	1388810	ensembl	pseudogene	mitochondrial coiled-coil domain 1 pseudogene 1 [Source:NCBI gene;Acc:100048903]	1	\N	gene17859	1	\N	\N
+3125892	1422855	8378	131555	29910235	29911400	-1	1388811	ensembl	pseudogene	HLA complex group 26 (non-protein coding) pseudogene [Source:NCBI gene;Acc:353008]	1	\N	gene17860	1	\N	\N
+3125893	1422856	8378	131555	29924592	29927215	-1	1388814	BestRefSeq	lncRNA	HLA complex group 4B (non-protein coding)	1	\N	rna53308	1	\N	\N
+3125894	1422857	8378	131555	29926659	29929839	1	1388816	Curated Genomic	pseudogene	major histocompatibility complex, class I, K (pseudogene) [Source:NCBI gene;Acc:3138]	1	\N	gene17862	1	\N	\N
+3125895	1422858	8378	131555	29933764	29934880	1	1388818	ensembl	pseudogene	major histocompatibility complex, class I, U (pseudogene) [Source:NCBI gene;Acc:352965]	1	\N	gene17863	1	\N	\N
+3125896	1422859	8378	131555	29940912	29941801	-1	1388819	ensembl	pseudogene	HLA complex group 4 pseudogene 5 [Source:NCBI gene;Acc:353003]	1	\N	gene17864	1	\N	\N
+3125897	1422860	8378	131555	29942470	29945884	1	1388826	BestRefSeq	protein_coding	major histocompatibility complex, class I, A, transcript variant 1 (A*03:01:0:01)	1	2111587	rna53309	1	\N	\N
+3125898	1422861	8378	131555	29955205	29955633	-1	1388827	ensembl	pseudogene	HLA complex group 4 pseudogene 4 [Source:NCBI gene;Acc:353002]	1	\N	gene17866	1	\N	\N
+3125899	1422862	8378	131555	29955834	29959058	1	1388829	ensembl	pseudogene	major histocompatibility complex, class I, W (pseudogene) [Source:NCBI gene;Acc:352966]	1	\N	gene17867	1	\N	\N
+3125900	1422863	8378	131555	29970372	29975745	-1	1388831	ensembl	pseudogene	MHC class I polypeptide-related sequence D (pseudogene) [Source:NCBI gene;Acc:4279]	1	\N	gene17868	1	\N	\N
+3125901	1422864	8378	131555	29975115	29978403	1	1388836	BestRefSeq	lncRNA	HLA complex group 9 (non-protein coding)	1	\N	rna53310	1	\N	\N
+3125902	1422865	8378	131555	29993209	29994133	1	1388837	ensembl	pseudogene	DEAD-box helicase 39B pseudogene 2 [Source:NCBI gene;Acc:100048923]	1	\N	gene17870	1	\N	\N
+3125903	1422866	8378	131555	29995142	29995314	-1	1388839	ensembl	pseudogene	mitochondrial coiled-coil domain 1 pseudogene 2 [Source:NCBI gene;Acc:100048924]	1	\N	gene17871	1	\N	\N
+3125904	1422867	8378	131555	29995957	29996415	-1	1388841	Curated Genomic	pseudogene	HLA complex group 26 (non-protein coding) pseudogene [Source:NCBI gene;Acc:353007]	1	\N	gene17872	1	\N	\N
+3125905	1422868	8378	131539	281194	299902	1	1388846	Gnomon	protein_coding	phosphatidylinositol specific phospholipase C X domain containing 1, transcript variant X2	1	2111588	rna155617	1	\N	\N
+3125906	1422868	8378	131539	276324	303356	1	1388847	BestRefSeq	misc_RNA	phosphatidylinositol specific phospholipase C X domain containing 1, transcript variant 2	1	\N	rna155614	1	\N	\N
+3125907	1422868	8378	131539	276366	299902	1	1388849	Gnomon	protein_coding	phosphatidylinositol specific phospholipase C X domain containing 1, transcript variant X1	1	2111589	rna155616	1	\N	\N
+3125908	1422868	8378	131539	283537	299902	1	1388851	Gnomon	protein_coding	phosphatidylinositol specific phospholipase C X domain containing 1, transcript variant X5	1	2111590	rna155620	1	\N	\N
+3125909	1422868	8378	131539	281394	303356	1	1388854	BestRefSeq	protein_coding	phosphatidylinositol specific phospholipase C X domain containing 1, transcript variant 1	1	2111591	rna155618	1	\N	\N
+3125910	1422868	8378	131539	283478	299902	1	1388856	Gnomon	protein_coding	phosphatidylinositol specific phospholipase C X domain containing 1, transcript variant X4	1	2111592	rna155619	1	\N	\N
+3125911	1422868	8378	131539	276353	299902	1	1388858	Gnomon	protein_coding	phosphatidylinositol specific phospholipase C X domain containing 1, transcript variant X3	1	2111593	rna155615	1	\N	\N
+3125912	1422869	8378	131539	303352	318513	-1	1388863	Gnomon	protein_coding	GTP binding protein 6 (putative), transcript variant X1	1	2111594	rna155621	1	\N	\N
+3125913	1422869	8378	131539	303352	316903	-1	1388865	Gnomon	protein_coding	GTP binding protein 6 (putative), transcript variant X2	1	2111595	rna155622	1	\N	\N
+3125914	1422869	8378	131539	304750	318819	-1	1388868	BestRefSeq	protein_coding	GTP binding protein 6 (putative)	1	2111596	rna155623	1	\N	\N
+3125915	1422870	8378	131539	319145	321332	1	1388871	BestRefSeq	lncRNA	long intergenic non-protein coding RNA 685, transcript variant 2	1	\N	rna155625	1	\N	\N
+3125916	1422870	8378	131539	319145	321332	1	1388872	BestRefSeq	lncRNA	long intergenic non-protein coding RNA 685, transcript variant 1	1	\N	rna155624	1	\N	\N
+3125917	1422871	8378	131539	333933	386955	-1	1388878	BestRefSeq	protein_coding	protein phosphatase 2 regulatory subunit B''beta	1	2111597	rna155626	1	\N	\N
+3125918	1422871	8378	131539	361507	387327	-1	1388879	Gnomon	misc_RNA	protein phosphatase 2 regulatory subunit B''beta, transcript variant X3	1	\N	rna155628	1	\N	\N
+3125919	1422871	8378	131539	334956	386950	-1	1388881	Gnomon	protein_coding	protein phosphatase 2 regulatory subunit B''beta, transcript variant X1	1	2111598	rna155627	1	\N	\N
+3125920	1422871	8378	131539	361507	387324	-1	1388882	Gnomon	misc_RNA	protein phosphatase 2 regulatory subunit B''beta, transcript variant X2	1	\N	rna155629	1	\N	\N
+3125921	1422872	8378	1001427459	970455	970835	-1	1388883	ensembl	pseudogene	ribosomal protein L14 pseudogene 5 [Source:NCBI gene;Acc:442442]	1	\N	gene51492	1	\N	\N

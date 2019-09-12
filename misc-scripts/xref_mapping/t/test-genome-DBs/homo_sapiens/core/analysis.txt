@@ -1,0 +1,37 @@
+1	2000-09-08 16:10:03	RepeatMask	repbase	001212		RepeatMasker	1			RepeatMasker	1	RepeatMasker	repeat
+2	2000-09-22 10:59:05	Genscan	HumanIso.smat	1	HumanIso.smat	genscan	1.0			Genscan	1	genscan	prediction
+5	2000-09-28 17:33:27	Swall	swall	1	swall	wublastp	1		-hitdist=40, -cpus=1	BlastGenscanPep		wublastp	similarity
+7	2000-10-09 15:30:14	Vertrna	embl_vertrna	1	embl_vertrna	wutblastn	1		-hitdist=40, -cpus=1	BlastGenscanDNA	1	wutblastn	similarity
+4	2000-12-18 15:12:30	tRNAscan	tRNA	1		tRNAscan-SE	1.11			tRNAscan_SE	1	tRNAscan-SE	tRNA
+8	2000-12-18 18:28:03	CpG	cpg	1		cpg	1			CPG	1	cpg	cpg_island
+9	2001-01-15 17:00:00	Unigene	unigene.seq	1	unigene.seq	wutblastn	1		-hitdist=40, -cpus=1	BlastGenscanDNA	1	wutblastn	similarity
+10	2001-01-15 17:00:00	QTL		1			1			QtlPlacer	1	experimental	marker
+12	2001-03-28 16:42:32	dbEST	dbEST	1	dbEST	wutblastn	1		-hitdist=40, -cpus=1	BlastGenscanDNA	1	wutblastn	similarity
+6	2001-09-04 17:21:19	Eponine	NULL	NULL	NULL	eponine-scan	1	/usr/opt/java131/bin/java	-epojar => /usr/local/ensembl/lib/eponine-scan.jar, -threshold => 0.999	VC_EponineTSS	1	Eponine	TSS
+54	2002-08-12 14:52:26	human_swall_protein		1		TGE_gw	1			TargettedGeneWise		TGE_gw	gene
+53	2002-08-12 14:52:26	human_refseq_protein		1		TGE_gw	1			TargettedGeneWise		TGE_gw	gene
+1280	2002-08-12 14:52:26	other_swall_protein		1		similarity_genewise	1			FPC_BlastMiniGenewise		similarity_genewise	gene
+1281	2002-08-12 14:52:26	combined-protein_cdna		1		combined_gw_e2g	1			Combine_Genewises_and_E2Gs		combined_gw_e2g	gene
+1282	2002-08-12 14:52:26	ensembl		1		ensembl	1			Gene_Builder		ensembl	gene
+1290	2002-08-12 14:52:26	refseq_cdna	human_mRNA	1		exonerate_e2g	1			FilterESTs_and_E2G		exonerate	gene
+1291	2002-08-12 14:52:26	embl_vertrna	human_mRNA	1		exonerate_e2g	1			FilterESTs_and_E2G		exonerate	gene
+49	\N	Pfam	Pfam	1	/data/blastdb/Ensembl/Pfam_ls;/data/blastdb/Ensembl/Pfam_fs	/nfs/farm/Worms/bin/hmmpfam	1	/nfs/farm/Worms/bin/hmmpfam		Pfam	1	PFAM	domain
+40	\N	prints	prints	NULL	/acari/analysis/iprscan/data/prints.pval	/acari/analysis/iprscan/bin/OSF1/FingerPRINTScan	NULL	/acari/analysis/iprscan/bin/OSF1/FingerPRINTScan	NULL	Prints	NULL	PRINTS	domain
+41	\N	pfscan	pfscan	NULL	/acari/analysis/iprscan/data/prosite_prerelease.prf	/acari/analysis/iprscan/bin/OSF1/pfscan	NULL	/acari/analysis/iprscan/bin/OSF1/pfscan	NULL	Profile	NULL	PROFILE	domain
+43	\N	Signalp	signal_peptide	NULL	NULL	/usr/local/ensembl/bin/signalp	NULL	/usr/local/ensembl/bin/signalp	NULL	Signalp	NULL	Signalp	annot
+46	\N	tmhmm	transmembrane	NULL	NULL	/acari/work1/mongin/src/pipeline4anopheles/scripts/protein_pipeline/run_tmhmm	NULL	/acari/work1/mongin/src/pipeline4anopheles/scripts/protein_pipeline/run_tmhmm	NULL	Tmhmm	NULL	Tmhmm	annot
+45	\N	ncoils	coiled_coil	NULL	NULL	/usr/local/ensembl/bin/ncoils	NULL	/usr/local/ensembl/bin/ncoils	NULL	ncoils	NULL	ncoils	annot
+44	\N	Seg	low_complexity	NULL	NULL	/usr/local/ensembl/bin/seg	NULL	/usr/local/ensembl/bin/seg	NULL	Seg	NULL	Seg	annot
+42	\N	scanprosite	prosite	NULL	/acari/analysis/iprscan/data/prosite.patterns	/acari/analysis/iprscan/bin/scanregexpf.pl	/acari/analysis/iprscan/data/confirm.pat	/acari/analysis/iprscan/bin/scanregexpf.pl		Prosite	NULL	PROSITE	domain
+71	\N	Superfamily	Superfamily	1	/data/blastdb/Ensembl/sam/superfamily	/acari/work1/mongin/superfamily/superfamily.pl	1	/acari/work1/mongin/superfamily/superfamily.pl		Superfamily	1	Superfamily	annot
+1292	\N	SNPDensity	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N
+1293	\N	RepeatCoverage	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N
+1500	\N	miRanda	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N
+1501	\N	cisred	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N
+1502	\N	cisred_search	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N
+1503	\N	DitagAlign	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N
+8405	2009-05-14 15:43:42	havana	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL
+8406	2009-06-01 09:01:22	xrefexoneratedna	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL
+8407	2007-09-07 12:01:22	est2genome_human_havana	NULL	10-Nov-10 (105)	NULL	NULL	NULL	NULL	ori_analysis => Est2genome_human_raw, mode => single	ClusterDepthFilter	NULL	EST_Human	similarity
+8408	2007-09-07 12:01:22	uniprot_sw_havana	NULL	2010_11	NULL	NULL	NULL	NULL	percentid_cutoff => 40, ori_analysis => Uniprot_raw, hit_db => Swissprot, mode => single	DepthFilter	NULL	SwissProt	NULL
+8409	2017-11-02 10:15:53	gifts_import	GIFTS	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL
