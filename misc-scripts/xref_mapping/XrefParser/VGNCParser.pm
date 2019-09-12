@@ -15,6 +15,63 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 
+=head1 CONTACT
+
+  Please email comments or questions to the public Ensembl
+  developers list at <http://lists.ensembl.org/mailman/listinfo/dev>.
+
+  Questions may also be sent to the Ensembl help desk at
+  <http://www.ensembl.org/Help/Contact>.
+
+=head1 NAME
+
+XrefParser::VGNCParser
+
+=head1 DESCRIPTION
+
+A parser class to parse the VGNC source.
+VGNC is the official naming source for some vertebrates species
+(currently chimp, cow, dog and horse).
+
+-data_uri = ftp://ftp.ebi.ac.uk/pub/databases/genenames/vgnc/tsv/vgnc_gene_set_All.txt.gz
+-file_format = TSV
+-columns = [
+    taxon_id
+    vgnc_id
+    symbol
+    name
+    locus_group
+    locus_type
+    status
+    location
+    location_sortable:
+    alias_symbol
+    alias_name
+    prev_symbol
+    prev_name
+    gene_family
+    gene_family_id
+    date_approved_reserved
+    date_symbol_changed
+    date_name_changed
+    date_modified
+    entrez_id
+    ensembl_gene_id
+    uniprot_ids
+  ]
+
+Only columns listed in @required_columns are mandatory.
+
+=head1 SYNOPSIS
+
+  my $parser = XrefParser::VGNCParser->new($db->dbh);
+
+  my $parser->run( {
+    source_id  => 144,
+    species_id => 9598,
+    files      => ['VGNC/vgnc_gene_set_All.txt.gz'],
+  } );
+
 =cut
 
 package XrefParser::VGNCParser;
@@ -25,6 +82,13 @@ use Carp;
 use Text::CSV;
 
 use parent qw( XrefParser::HGNCParser );
+
+
+=head2 run
+  Description: Runs the VGNCParser
+  Return type: N/A
+  Caller     : internal
+=cut
 
 sub run {
   my ($self, $ref_arg) = @_;
