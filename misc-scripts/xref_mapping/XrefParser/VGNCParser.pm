@@ -36,7 +36,7 @@ sub run {
   my $dbi          = $ref_arg->{dbi} // $self->dbi;
 
 
-  if ( (!defined $source_id) or (!defined $species_id) or (!defined $files) ) {
+  if ( (!defined $source_id) || (!defined $species_id) || (!defined $files) ) {
     confess "Need to pass source_id, species_id and files as pairs";
   }
 
@@ -47,7 +47,7 @@ sub run {
   my $file_io = $self->get_filehandle($file);
 
   if ( !defined $file_io ) {
-    confess "Can't open VGNC file $file\n";
+    confess "Can't open VGNC file '$file'\n";
   }
 
   my $source_name = $self->get_source_name_for_source_id($source_id, $dbi);
@@ -60,7 +60,7 @@ sub run {
   my $input_file = Text::CSV->new({
     sep_char       => "\t",
     empty_is_undef => 1
-  }) or confess "Cannot use file $file: ".Text::CSV->error_diag ();
+  }) or confess "Cannot use file '$file': ".Text::CSV->error_diag();
 
   # header must contain these columns
   my @required_columns = qw(
@@ -79,7 +79,7 @@ sub run {
   # die if some required_column is not in columns
   foreach my $colname (@required_columns) {
     if ( !grep { /$colname/xms } @columns ) {
-      confess "Can't find required column $colname in VGNC file $file\n";
+      confess "Can't find required column $colname in VGNC file '$file'\n";
     }
   }
 
@@ -116,11 +116,11 @@ sub run {
 
   }
 
-  $input_file->eof or confess "Error parsing file $file: " . $input_file->error_diag();
+  $input_file->eof or confess "Error parsing file '$file': " . $input_file->error_diag();
   $file_io->close();
 
   if($verbose){
-    print "Loaded a total of $count xrefs\n";
+    print "Loaded a total of $count VGNC xrefs\n";
   }
 
   return 0; # successful
