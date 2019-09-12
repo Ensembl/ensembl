@@ -15,7 +15,42 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 
+=head1 CONTACT
+
+  Please email comments or questions to the public Ensembl
+  developers list at <http://lists.ensembl.org/mailman/listinfo/dev>.
+
+  Questions may also be sent to the Ensembl help desk at
+  <http://www.ensembl.org/Help/Contact>.
+
+=head1 NAME
+
+Bio::EnsEMBL::Xref::Parser::ZFINDescParser
+
+=head1 DESCRIPTION
+
+A parser class to parse the ZFIN file for descriptions.
+
+-species = danio_rerio
+-species_id = 7955
+-data_uri = ftp://zfin.org/pub/transfer/MEOW/zfin_genes.txt
+-file_format = TSV
+-columns = [acc desc label ignored ignored]
+
+=head1 SYNOPSIS
+
+  my $parser = Bio::EnsEMBL::Xref::Parser::ZFINDescParser->new(
+    source_id  => 149,
+    species_id => 7955,
+    files      => ['zfin_genes.txt'],
+    xref_dba   => $xref_dba
+  );
+
+  $parser->run();
+
 =cut
+
+
 
 package XrefParser::ZFINDescParser;
 
@@ -26,6 +61,11 @@ use Text::CSV;
 
 use parent qw( XrefParser::BaseParser );
 
+=head2 run
+  Description: Runs the ZFINDescParser
+  Return type: N/A
+  Caller     : internal
+=cut
 
 sub run {
   my ($self, $ref_arg) = @_;
