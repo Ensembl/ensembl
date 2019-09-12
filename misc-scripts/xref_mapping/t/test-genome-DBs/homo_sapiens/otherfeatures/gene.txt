@@ -1,0 +1,95 @@
+1422778	lncRNA	8378	131555	29022007	29036046	-1	1388458	Gnomon	LOC105375002 [Source:NCBI gene;Acc:105375002]	1	0	gene17783	1	\N	\N
+1422779	pseudogene	8378	131555	29026680	29027607	-1	1388460	Curated Genomic	olfactory receptor family 2 subfamily AD member 1 pseudogene [Source:NCBI gene;Acc:79313]	1	0	gene17784	1	\N	\N
+1422780	lncRNA	8378	131555	29036021	29076740	1	1388462	BestRefSeq	uncharacterized LOC100129636 [Source:NCBI gene;Acc:100129636]	1	0	gene17785	1	\N	\N
+1422781	protein_coding	8378	131555	29044213	29045175	-1	1388465	BestRefSeq	olfactory receptor family 2 subfamily W member 1 [Source:NCBI gene;Acc:26692]	1	0	gene17786	1	\N	\N
+1422782	pseudogene	8378	131555	29071832	29072566	-1	1388469	Curated Genomic	olfactory receptor family 2 subfamily P member 1 pseudogene [Source:NCBI gene;Acc:442183]	1	0	gene17787	1	\N	\N
+1422783	pseudogene	8378	131555	29074416	29077241	-1	1388472	Curated Genomic	secretion associated Ras related GTPase 1A pseudogene 1 [Source:NCBI gene;Acc:646260]	1	0	gene17788	1	\N	\N
+1422784	protein_coding	8378	131555	29086208	29087313	-1	1388473	BestRefSeq	olfactory receptor family 2 subfamily B member 3 [Source:NCBI gene;Acc:442184]	1	0	gene17789	1	\N	\N
+1422785	protein_coding	8378	131555	29100843	29101978	1	1388478	BestRefSeq	olfactory receptor family 2 subfamily J member 1 (gene/pseudogene) [Source:NCBI gene;Acc:442185]	1	0	gene17790	1	\N	\N
+1422786	lncRNA	8378	131555	29108630	29114434	1	1388482	Gnomon	LOC105375003 [Source:NCBI gene;Acc:105375003]	1	0	gene17791	1	\N	\N
+1422787	protein_coding	8378	131555	29111810	29112884	1	1388484	BestRefSeq	olfactory receptor family 2 subfamily J member 3 [Source:NCBI gene;Acc:442186]	1	0	gene17792	1	\N	\N
+1422788	pseudogene	8378	131555	29137770	29138916	-1	1388491	Curated Genomic	olfactory receptor family 2 subfamily N member 1 pseudogene [Source:NCBI gene;Acc:26701]	1	0	gene17793	1	\N	\N
+1422789	protein_coding	8378	131555	29173534	29174574	1	1388492	BestRefSeq	olfactory receptor family 2 subfamily J member 2 [Source:NCBI gene;Acc:26707]	1	0	gene17794	1	\N	\N
+1422790	pseudogene	8378	131555	29181510	29182442	1	1388498	Curated Genomic	olfactory receptor family 2 subfamily J member 4 pseudogene [Source:NCBI gene;Acc:442188]	1	0	gene17795	1	\N	\N
+1422791	pseudogene	8378	131555	29215236	29216176	1	1388500	Curated Genomic	olfactory receptor family 2 subfamily H member 4 pseudogene [Source:NCBI gene;Acc:442189]	1	0	gene17796	1	\N	\N
+1422792	lncRNA	8378	131555	29223973	29290440	1	1388501	BestRefSeq	uncharacterized LOC101929006 [Source:NCBI gene;Acc:101929006]	1	0	gene17797	1	\N	\N
+1422793	pseudogene	8378	131555	29229230	29230220	-1	1388504	Curated Genomic	olfactory receptor family 2 subfamily G member 1 pseudogene [Source:NCBI gene;Acc:26717]	1	0	gene17798	1	\N	\N
+1422794	lncRNA	8378	131555	29230672	29232799	-1	1388506	Gnomon	LOC105375006 [Source:NCBI gene;Acc:105375006]	1	0	gene17799	1	\N	\N
+1422795	pseudogene	8378	131555	29262659	29264079	-1	1388509	Curated Genomic	olfactory receptor family 2 subfamily U member 1 pseudogene [Source:NCBI gene;Acc:26695]	1	0	gene17800	1	\N	\N
+1422796	pseudogene	8378	131555	29268465	29269421	-1	1388511	Curated Genomic	olfactory receptor family 2 subfamily U member 2 pseudogene [Source:NCBI gene;Acc:26694]	1	0	gene17801	1	\N	\N
+1422797	lncRNA	8378	131555	29284072	29334443	-1	1388512	Gnomon	LOC105375005 [Source:NCBI gene;Acc:105375005]	1	0	gene17802	1	\N	\N
+1422798	pseudogene	8378	131555	29290596	29291750	1	1388516	Curated Genomic	olfactory receptor family 2 subfamily B member 4 pseudogene [Source:NCBI gene;Acc:442190]	1	0	gene17803	1	\N	\N
+1422799	protein_coding	8378	131555	29306690	29307655	1	1388519	BestRefSeq	olfactory receptor family 14 subfamily J member 1 [Source:NCBI gene;Acc:442191]	1	0	gene17804	1	\N	\N
+1422800	pseudogene	8378	131555	29329429	29331261	-1	1388523	Curated Genomic	DEAD-box helicase 6 pseudogene 1 [Source:NCBI gene;Acc:442192]	1	0	gene17805	1	\N	\N
+1422801	protein_coding	8378	131555	29355211	29457039	-1	1388525	BestRefSeq	olfactory receptor family 5 subfamily V member 1 [Source:NCBI gene;Acc:81696]	1	0	gene17806	1	\N	\N
+1422802	protein_coding	8378	131555	29373423	29375291	-1	1388534	BestRefSeq	olfactory receptor family 12 subfamily D member 3 [Source:NCBI gene;Acc:81797]	1	0	gene17807	1	\N	\N
+1422803	protein_coding	8378	131555	29396639	29397671	1	1388540	BestRefSeq	olfactory receptor family 12 subfamily D member 2 (gene/pseudogene) [Source:NCBI gene;Acc:26529]	1	0	gene17808	1	\N	\N
+1422804	lncRNA	8378	131555	29406311	29458401	-1	1388543	Gnomon	LOC105379641 [Source:NCBI gene;Acc:105379641]	1	0	gene17809	1	\N	\N
+1422805	protein_coding	8378	131555	29417065	29418396	1	1388550	BestRefSeq	olfactory receptor family 12 subfamily D member 1 (gene/pseudogene) [Source:NCBI gene;Acc:26530]	1	0	gene17810	1	\N	\N
+1422806	protein_coding	8378	131555	29425504	29427732	-1	1388554	BestRefSeq	olfactory receptor family 11 subfamily A member 1 [Source:NCBI gene;Acc:26531]	1	0	gene17811	1	\N	\N
+1422807	protein_coding	8378	131555	29439939	29440977	1	1388559	BestRefSeq	olfactory receptor family 10 subfamily C member 1 (gene/pseudogene) [Source:NCBI gene;Acc:442194]	1	0	gene17812	1	\N	\N
+1422808	protein_coding	8378	131555	29457133	29464322	1	1388564	BestRefSeq	olfactory receptor family 2 subfamily H member 1 [Source:NCBI gene;Acc:26716]	1	0	gene17813	1	\N	\N
+1422809	pseudogene	8378	131555	29464675	29464945	-1	1388594	Curated Genomic	ubiquitin D pseudogene 1 [Source:NCBI gene;Acc:100286971]	1	0	gene17814	1	\N	\N
+1422810	pseudogene	8378	131555	29475025	29476071	-1	1388596	Curated Genomic	MAS1L pseudogene 1 [Source:NCBI gene;Acc:646366]	1	0	gene17815	1	\N	\N
+1422811	lncRNA	8378	131555	29484668	29490155	1	1388597	Gnomon	LOC105375008 [Source:NCBI gene;Acc:105375008]	1	0	gene17816	1	\N	\N
+1422812	protein_coding	8378	131555	29486697	29487956	-1	1388599	BestRefSeq	MAS1 proto-oncogene like, G protein-coupled receptor [Source:NCBI gene;Acc:116511]	1	0	gene17817	1	\N	\N
+1422813	pseudogene	8378	131555	29489203	29489693	-1	1388605	Curated Genomic	ribosomal protein S17 pseudogene 1 [Source:NCBI gene;Acc:442195]	1	0	gene17818	1	\N	\N
+1422814	lncRNA	8378	131555	29497475	29510558	1	1388607	Gnomon	LOC105375009 [Source:NCBI gene;Acc:105375009]	1	0	gene17819	1	\N	\N
+1422815	lncRNA	8378	131555	29529406	29533568	1	1388611	BestRefSeq	long intergenic non-protein coding RNA 1015 [Source:NCBI gene;Acc:100507362]	1	0	gene17820	1	\N	\N
+1422816	pseudogene	8378	131555	29537812	29538651	-1	1388615	Curated Genomic	G protein-coupled receptor 53, pseudogene [Source:NCBI gene;Acc:9292]	1	0	gene17821	1	\N	\N
+1422817	pseudogene	8378	131555	29553105	29554163	1	1388618	Curated Genomic	olfactory receptor family 2 subfamily I member 1 pseudogene [Source:NCBI gene;Acc:442197]	1	0	gene17822	1	\N	\N
+1422818	protein_coding	8378	131555	29555612	29559925	-1	1388621	BestRefSeq	ubiquitin D [Source:NCBI gene;Acc:10537]	1	0	gene17823	1	\N	\N
+1422819	pseudogene	8378	131555	29574073	29574651	1	1388625	Curated Genomic	olfactory receptor family 2 subfamily H member 5 pseudogene [Source:NCBI gene;Acc:26713]	1	0	gene17824	1	\N	\N
+1422820	pseudogene	8378	131555	29577459	29577748	1	1388628	Curated Genomic	transmembrane protein 183A pseudogene 1 [Source:NCBI gene;Acc:100048909]	1	0	gene17825	1	\N	\N
+1422821	snoRNA	8378	131555	29582252	29582328	1	1388629	BestRefSeq	small nucleolar RNA, C/D box 32B [Source:NCBI gene;Acc:692092]	1	0	gene17826	1	\N	\N
+1422822	pseudogene	8378	131555	29582508	29583055	1	1388632	Curated Genomic	ribosomal protein L13a pseudogene [Source:NCBI gene;Acc:387043]	1	0	gene17827	1	\N	\N
+1422823	protein_coding	8378	131555	29586524	29592506	1	1388635	BestRefSeq	olfactory receptor family 2 subfamily H member 2 [Source:NCBI gene;Acc:7932]	1	0	gene17828	1	\N	\N
+1422824	protein_coding	8378	131555	29602228	29633135	-1	1388644	BestRefSeq	gamma-aminobutyric acid type B receptor subunit 1 [Source:NCBI gene;Acc:2550]	1	0	gene17829	1	\N	\N
+1422825	pseudogene	8378	131555	29635454	29636504	-1	1388669	Curated Genomic	SUMO2 pseudogene 1 [Source:NCBI gene;Acc:285829]	1	0	gene17830	1	\N	\N
+1422826	protein_coding	8378	131555	29656981	29672372	1	1388671	BestRefSeq	myelin oligodendrocyte glycoprotein [Source:NCBI gene;Acc:4340]	1	0	gene17831	1	\N	\N
+1422827	protein_coding	8378	131555	29672392	29681150	-1	1388702	BestRefSeq	ZFP57 zinc finger protein [Source:NCBI gene;Acc:346171]	1	0	gene17832	1	\N	\N
+1422828	pseudogene	8378	131555	29708141	29708547	-1	1388713	Curated Genomic	zinc finger DHHC-type containing 20 pseudogene 1 [Source:NCBI gene;Acc:100048907]	1	0	gene17833	1	\N	\N
+1422829	pseudogene	8378	131555	29721178	29722167	-1	1388715	Curated Genomic	HLA complex group 4 pseudogene 11 [Source:NCBI gene;Acc:353020]	1	0	gene17834	1	\N	\N
+1422830	protein_coding	8378	131555	29723340	29740355	1	1388716	BestRefSeq	major histocompatibility complex, class I, F [Source:NCBI gene;Acc:3134]	1	0	gene17835	1	\N	\N
+1422831	pseudogene	8378	131555	29726597	29727154	-1	1388746	Curated Genomic	ribosomal protein L23a pseudogene 1 [Source:NCBI gene;Acc:6148]	1	0	gene17836	1	\N	\N
+1422832	lncRNA	8378	131555	29726601	29749049	-1	1388747	BestRefSeq	HLA-F antisense RNA 1 [Source:NCBI gene;Acc:285830]	1	0	gene17837	1	\N	\N
+1422833	pseudogene	8378	131555	29741556	29745784	-1	1388752	Curated Genomic	MHC class I polypeptide-related sequence E (pseudogene) [Source:NCBI gene;Acc:4280]	1	0	gene17838	1	\N	\N
+1422834	pseudogene	8378	131555	29748254	29748648	1	1388754	Curated Genomic	HLA complex group 9 pseudogene 5 [Source:NCBI gene;Acc:353019]	1	0	gene17839	1	\N	\N
+1422835	transcribed_pseudogene	8378	131555	29750807	29751148	-1	1388756	BestRefSeq	interferon induced transmembrane protein 4 pseudogene [Source:NCBI gene;Acc:340198]	1	0	gene17840	1	\N	\N
+1422836	pseudogene	8378	131555	29765116	29766296	-1	1388758	Curated Genomic	HLA complex group 26 (non-protein coding) pseudogene [Source:NCBI gene;Acc:353010]	1	0	gene17841	1	\N	\N
+1422837	lncRNA	8378	131555	29791031	29793073	-1	1388760	BestRefSeq	HLA complex group 4 (non-protein coding) [Source:NCBI gene;Acc:54435]	1	0	gene17842	1	\N	\N
+1422838	transcribed_pseudogene	8378	131555	29791906	29797807	1	1388762	BestRefSeq	major histocompatibility complex, class I, V (pseudogene) [Source:NCBI gene;Acc:352962]	1	0	gene17843	1	\N	\N
+1422839	pseudogene	8378	131555	29798424	29800126	-1	1388765	Curated Genomic	HLA complex group 4 pseudogene 9 [Source:NCBI gene;Acc:353014]	1	0	gene17844	1	\N	\N
+1422840	pseudogene	8378	131555	29800044	29803079	1	1388768	Curated Genomic	major histocompatibility complex, class I, P (pseudogene) [Source:NCBI gene;Acc:352963]	1	0	gene17845	1	\N	\N
+1422841	pseudogene	8378	131555	29803133	29804020	-1	1388769	Curated Genomic	ribosomal protein L7a pseudogene 7 [Source:NCBI gene;Acc:353013]	1	0	gene17846	1	\N	\N
+1422842	pseudogene	8378	131555	29812390	29812692	-1	1388771	Curated Genomic	MHC class I polypeptide-related sequence G (pseudogene) [Source:NCBI gene;Acc:352967]	1	0	gene17847	1	\N	\N
+1422843	pseudogene	8378	131555	29826129	29827114	-1	1388774	Curated Genomic	HLA complex group 4 pseudogene 8 [Source:NCBI gene;Acc:353005]	1	0	gene17848	1	\N	\N
+1422844	protein_coding	8378	131555	29826967	29831130	1	1388776	BestRefSeq	major histocompatibility complex, class I, G [Source:NCBI gene;Acc:3135]	1	0	gene17849	1	\N	\N
+1422845	pseudogene	8378	131555	29833588	29835128	-1	1388789	Curated Genomic	HCGVIII-2 pseudogene [Source:NCBI gene;Acc:353000]	1	0	gene17850	1	\N	\N
+1422846	lncRNA	8378	131555	29848002	29857386	-1	1388790	Gnomon	LOC105375010 [Source:NCBI gene;Acc:105375010]	1	0	gene17851	1	\N	\N
+1422847	pseudogene	8378	131555	29852187	29854052	-1	1388794	Curated Genomic	MHC class I polypeptide-related sequence F (pseudogene) [Source:NCBI gene;Acc:352957]	1	0	gene17852	1	\N	\N
+1422848	pseudogene	8378	131555	29865915	29867087	-1	1388796	Curated Genomic	HLA complex group 26 (non-protein coding) pseudogene [Source:NCBI gene;Acc:353009]	1	0	gene17853	1	\N	\N
+1422849	lncRNA	8378	131555	29871895	29873783	-1	1388797	BestRefSeq	HLA complex P5B (non-protein coding) [Source:NCBI gene;Acc:352990]	1	0	gene17854	1	\N	\N
+1422850	pseudogene	8378	131555	29886110	29887007	-1	1388801	Curated Genomic	HLA complex group 4 pseudogene 7 [Source:NCBI gene;Acc:353004]	1	0	gene17855	1	\N	\N
+1422851	transcribed_pseudogene	8378	131555	29887573	29891079	1	1388802	BestRefSeq	major histocompatibility complex, class I, H (pseudogene) [Source:NCBI gene;Acc:3136]	1	0	gene17856	1	\N	\N
+1422852	pseudogene	8378	131555	29896443	29898947	1	1388806	Curated Genomic	major histocompatibility complex, class I, T (pseudogene) [Source:NCBI gene;Acc:352964]	1	0	gene17857	1	\N	\N
+1422853	pseudogene	8378	131555	29906547	29907449	1	1388807	Curated Genomic	DEAD-box helicase 39B pseudogene 1 [Source:NCBI gene;Acc:100048904]	1	0	gene17858	1	\N	\N
+1422854	pseudogene	8378	131555	29907783	29908645	-1	1388810	Curated Genomic	mitochondrial coiled-coil domain 1 pseudogene 1 [Source:NCBI gene;Acc:100048903]	1	0	gene17859	1	\N	\N
+1422855	pseudogene	8378	131555	29910235	29911400	-1	1388811	Curated Genomic	HLA complex group 26 (non-protein coding) pseudogene [Source:NCBI gene;Acc:353008]	1	0	gene17860	1	\N	\N
+1422856	lncRNA	8378	131555	29924592	29927215	-1	1388813	BestRefSeq	HLA complex group 4B (non-protein coding) [Source:NCBI gene;Acc:80868]	1	0	gene17861	1	\N	\N
+1422857	pseudogene	8378	131555	29926659	29929839	1	1388816	Curated Genomic	major histocompatibility complex, class I, K (pseudogene) [Source:NCBI gene;Acc:3138]	1	0	gene17862	1	\N	\N
+1422858	pseudogene	8378	131555	29933764	29934880	1	1388818	Curated Genomic	major histocompatibility complex, class I, U (pseudogene) [Source:NCBI gene;Acc:352965]	1	0	gene17863	1	\N	\N
+1422859	pseudogene	8378	131555	29940912	29941801	-1	1388819	Curated Genomic	HLA complex group 4 pseudogene 5 [Source:NCBI gene;Acc:353003]	1	0	gene17864	1	\N	\N
+1422860	protein_coding	8378	131555	29942470	29945884	1	1388821	BestRefSeq	major histocompatibility complex, class I, A [Source:NCBI gene;Acc:3105]	1	0	gene17865	1	\N	\N
+1422861	pseudogene	8378	131555	29955205	29955633	-1	1388827	Curated Genomic	HLA complex group 4 pseudogene 4 [Source:NCBI gene;Acc:353002]	1	0	gene17866	1	\N	\N
+1422862	pseudogene	8378	131555	29955834	29959058	1	1388829	Curated Genomic	major histocompatibility complex, class I, W (pseudogene) [Source:NCBI gene;Acc:352966]	1	0	gene17867	1	\N	\N
+1422863	pseudogene	8378	131555	29970372	29975745	-1	1388831	Curated Genomic	MHC class I polypeptide-related sequence D (pseudogene) [Source:NCBI gene;Acc:4279]	1	0	gene17868	1	\N	\N
+1422864	lncRNA	8378	131555	29975115	29978403	1	1388835	BestRefSeq	HLA complex group 9 (non-protein coding) [Source:NCBI gene;Acc:10255]	1	0	gene17869	1	\N	\N
+1422865	pseudogene	8378	131555	29993209	29994133	1	1388837	Curated Genomic	DEAD-box helicase 39B pseudogene 2 [Source:NCBI gene;Acc:100048923]	1	0	gene17870	1	\N	\N
+1422866	pseudogene	8378	131555	29995142	29995314	-1	1388839	Curated Genomic	mitochondrial coiled-coil domain 1 pseudogene 2 [Source:NCBI gene;Acc:100048924]	1	0	gene17871	1	\N	\N
+1422867	pseudogene	8378	131555	29995957	29996415	-1	1388841	Curated Genomic	HLA complex group 26 (non-protein coding) pseudogene [Source:NCBI gene;Acc:353007]	1	0	gene17872	1	\N	\N
+1422868	protein_coding	8378	131539	276324	303356	1	1388844	BestRefSeq	phosphatidylinositol specific phospholipase C X domain containing 1 [Source:NCBI gene;Acc:55344]	1	0	gene51484	1	\N	\N
+1422869	protein_coding	8378	131539	303352	318819	-1	1388861	BestRefSeq	GTP binding protein 6 (putative) [Source:NCBI gene;Acc:8225]	1	0	gene51485	1	\N	\N
+1422870	lncRNA	8378	131539	319145	321332	1	1388870	BestRefSeq	long intergenic non-protein coding RNA 685 [Source:NCBI gene;Acc:283981]	1	0	gene51486	1	\N	\N
+1422871	protein_coding	8378	131539	333933	387327	-1	1388873	BestRefSeq	protein phosphatase 2 regulatory subunit B''beta [Source:NCBI gene;Acc:28227]	1	0	gene51487	1	\N	\N
+1422872	pseudogene	8378	1001427459	970455	970835	-1	1388883	Curated Genomic	ribosomal protein L14 pseudogene 5 [Source:NCBI gene;Acc:442442]	1	0	gene51492	1	\N	\N
