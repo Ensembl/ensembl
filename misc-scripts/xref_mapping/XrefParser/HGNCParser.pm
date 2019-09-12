@@ -1,5 +1,6 @@
 =head1 LICENSE
 
+
 Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
 Copyright [2016-2019] EMBL-European Bioinformatics Institute
 
@@ -15,7 +16,54 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 
+=head1 CONTACT
+
+  Please email comments or questions to the public Ensembl
+  developers list at <http://lists.ensembl.org/mailman/listinfo/dev>.
+
+  Questions may also be sent to the Ensembl help desk at
+  <http://www.ensembl.org/Help/Contact>.
+
+=head1 NAME
+
+Bio::EnsEMBL::Xref::Parser::HGNCParser
+
+=head1 DESCRIPTION
+
+A parser class to parse the HGNC source.
+HGNC is the official naming source for Human.
+
+-data_uri = https://www.genenames.org/cgi-bin/download?col=gd_hgnc_id&col=gd_app_sym&col=gd_app_name&col=gd_prev_sym&col=gd_aliases&col=gd_pub_eg_id&col=gd_pub_ensembl_id&col=gd_pub_refseq_ids&col=gd_ccds_ids&col=gd_lsdb_links&status=Approved&status_opt=2&where=&order_by=gd_app_sym_sort&format=text&limit=&hgnc_dbtag=on&submit=submit
+-file_format = TSV
+-columns = [
+    HGNC ID
+    Approved symbol
+    Approved name
+    Previous symbols
+    Synonyms
+    NCBI Gene ID
+    Ensembl gene ID
+    RefSeq IDs
+    CCDS IDs
+    Locus specific databases
+  ]
+
+A core database adaptor is required.
+
+=head1 SYNOPSIS
+
+  my $parser = Bio::EnsEMBL::Xref::Parser::HGNCParser->new($db->dbh);
+
+  $parser->run_script(
+    source_id  => 46,
+    species_id => 9606,
+    file       => 'hgnc_data.tsv',
+    dba        => $core_dba,
+  );
+
 =cut
+
+
 
 package XrefParser::HGNCParser;
 
@@ -38,6 +86,11 @@ my @SOURCES = (
 );
 
 
+=head2 run_script
+  Description: Runs the HGNCParser
+  Return type: N/A
+  Caller     : internal
+=cut
 
 sub run_script {
   my ($self, $ref_arg) = @_;
