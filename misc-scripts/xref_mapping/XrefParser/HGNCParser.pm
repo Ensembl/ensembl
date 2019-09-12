@@ -427,6 +427,13 @@ CCDS
 
 
 
+=head2 add_synonyms_for_hgnc
+  Arg [1]    : hashref : source_id, name, species_id, dead, alias
+  Description: Specialized class to add synonyms from HGNC and VGNC data
+  Return type: N/A
+  Caller     : internal
+=cut
+
 sub add_synonyms_for_hgnc {
   my ($self, $ref_arg) = @_;
 
@@ -460,10 +467,15 @@ sub add_synonyms_for_hgnc {
 
 
 
-# parses the input string $file into an hash
-# string $file is in the format as the example:
-# script:project=>ensembl,host=>ens-staging1,dbname=>homo_sapiens_core_70_37,ofhost=>ens-staging1,...
-# string until : is ignored, hash is built with keys=>values provided
+=head2 parse_file_string
+  Description: parses the input string $file into an hash
+               string $file is in the format as the example:
+               script:project=>ensembl,host=>ens-staging1,dbname=>homo_sapiens_core_70_37,ofhost=>ens-staging1,...
+               string until : is ignored, hash is built with keys=>values provided
+  Return type: params hashref
+  Caller     : internal
+=cut
+
 sub parse_file_string {
   my ($self, $file_string) = @_;
 
