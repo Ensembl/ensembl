@@ -75,11 +75,11 @@ sub run {
   my $files        = $ref_arg->{files};
   my $verbose      = $ref_arg->{verbose} // 0;
 
-  if ( (!defined $source_id) or (!defined $species_id) or (!defined $files) ) {
+  if ( (!defined $source_id) || (!defined $species_id) || (!defined $files) ) {
     confess "Need to pass source_id, species_id and files as pairs";
   }
 
-  my $file = shift @{$files};
+  my $file = @{$files}[0];
 
 #e.g.
 #ZDB-GENE-050102-6       WITHDRAWN:zgc:92147     WITHDRAWN:zgc:92147     0
