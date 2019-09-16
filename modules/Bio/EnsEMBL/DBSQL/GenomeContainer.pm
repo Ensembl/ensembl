@@ -72,7 +72,7 @@ use warnings;
 use Bio::EnsEMBL::Genome;
 use Bio::EnsEMBL::DBSQL::DBAdaptor;
 use Bio::EnsEMBL::DBSQL::BaseAdaptor;
-use Bio::EnsEMBL::Utils::Exception qw( throw warning );
+use Bio::EnsEMBL::Utils::Exception qw( deprecate throw warning );
 use Bio::EnsEMBL::Utils::Scalar qw( assert_ref );
 
 use vars qw(@ISA);
@@ -489,6 +489,7 @@ sub get_ref_length {
 
 =head2 get_total_length
 
+  Deprecated. Please use get_ref_length(), i.e. the golden path, instead
   Arg [1]    : (optional) base pair length
   Example    : $total_length = $genome->get_total_length();
   Description: Getter/setter for the total length (number of base pairs) for the assembly currently used
@@ -500,8 +501,9 @@ sub get_ref_length {
 
 =cut
 
-sub get_total_length {
+sub get_total_length {  ## DEPRECATED
   my ($self, $total_length) = @_;
+  deprecate('GenomeContainer::get_total_length() is deprecated due to inaccuracy and will be removed in e102. Use golden path (GenomeContainer::get_ref_length()) instead');
   if (defined $total_length) {
     $self->{'total_length'} = $total_length;
   }
