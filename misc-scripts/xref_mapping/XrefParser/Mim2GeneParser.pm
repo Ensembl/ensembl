@@ -1,8 +1,7 @@
 =head1 LICENSE
 
-Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
-Copyright [2016-2019] EMBL-European Bioinformatics Institute
-
+See the NOTICE file distributed with this work for additional information
+regarding copyright ownership.
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
@@ -26,20 +25,60 @@ use strict;
 use warnings;
 
 use Carp;
-use File::Basename;
 use List::Util;
-use POSIX qw(strftime);
-use Readonly;
 use Text::CSV;
 
 use parent qw( XrefParser::BaseParser );
 
 
 # FIXME: this belongs in BaseParser
-Readonly my $ERR_SOURCE_ID_NOT_FOUND => -1;
+my $ERR_SOURCE_ID_NOT_FOUND = -1;
 
-Readonly my $EXPECTED_NUMBER_OF_COLUMNS => 5;
+my $EXPECTED_NUMBER_OF_COLUMNS = 5;
 
+
+
+=head2 run
+
+  Arg [1]    : HashRef standard list of arguments from ParseSource
+  Example    : $m2g_parser->run({ ... });
+  Description: Extract mappings between OMIM genes and other gene
+               identifiers from a tab-delimited file downloaded from
+               the DBASS Web site, then insert corresponding links
+               into the xref database:
+                - for entries mapped to Ensembl genes, we create
+                  gene_direct_xref links;
+                - otherwise, if an entry is mapped to an EntrezGene ID
+                  that exists in the xref database we creare a
+                  dependent_xref link.
+               In either case we update info_type of OMIM xrefs
+               accordingly.
+
+               DEPENDENCIES: This parser must be run after:
+                - MIMParser - without existing OMIM entries this
+                  parser does nothing;
+                - EntrezGeneParser - otherwise there will be no
+                  dependent-xref links.
+
+               mim2gene.txt begins with several lines of comments
+               which start with a hash; the last of these comment
+               lines contains a tab-separated list of column names.
+
+               The rest of the file are the following columns:
+                1) OMIM number
+                2) OMIM entry type
+                3) EntrezGene ID
+                4) HGNC gene symbol
+                5) Ensembl gene ID
+               The former two are mandatory, the latter can be empty
+               strings.
+
+  Return type: none
+  Exceptions : throws on all processing errors
+  Caller     : ParseSource in the xref pipeline
+  Status     : Stable
+
+=cut
 
 sub run {
 
@@ -54,19 +93,19 @@ sub run {
        ( !defined $species_id ) or
        ( !defined $files ) )
   {
-    croak "Need to pass source_id, species_id and files as pairs";
+    confess "Need to pass source_id, species_id and files as pairs";
   }
 
   my $csv = Text::CSV->new({
                             sep_char => "\t",
                           })
-    || croak 'Failed to initialise CSV parser: ' . Text::CSV->error_diag();
+    || confess 'Failed to initialise CSV parser: ' . Text::CSV->error_diag();
 
   my $filename = @{$files}[0];
 
-  my $eg_io = $self->get_filehandle($filename);
-  if ( !defined $eg_io ) {
-    croak "Could not open file '${filename}'";
+  my $m2g_io = $self->get_filehandle($filename);
+  if ( !defined $m2g_io ) {
+    confess "Could not open file '${filename}'";
   }
 
   my $mim_gene_source_id =
@@ -78,7 +117,7 @@ sub run {
   if ( ( $mim_gene_source_id == $ERR_SOURCE_ID_NOT_FOUND )
        || ( $mim_morbid_source_id == $ERR_SOURCE_ID_NOT_FOUND )
        || ( $entrez_source_id == $ERR_SOURCE_ID_NOT_FOUND ) ) {
-    croak 'Failed to retrieve all source IDs';
+    confess 'Failed to retrieve all source IDs';
   }
 
   # This will be used to prevent insertion of duplicates
@@ -104,26 +143,31 @@ sub run {
                 );
 
  RECORD:
-  while ( my $line = $csv->getline( $eg_io ) ) {
+  while ( my $line = $csv->getline( $m2g_io ) ) {
 
-    my ( $is_comment, $is_header )
+    my ( $is_comment )
       = ( $line->[0] =~ m{
                            \A
                            ([#])?
-                           \s*
-                           (MIM[ ]Number)?  # FIXME: this is an assumption regarding header contents.
-                                            # See if $line has split to the right number of columns instead?
                        }msx );
     if ( $is_comment ) {
+      # At present we identify the header line among other comments by
+      # checking if it has the expected number of tab-delimited
+      # columns, which of course means we cannot identify header lines
+      # with too few or too many column names. However, this should be
+      # mostly harmless - something would have to be very, very wrong
+      # with the input file for the header to have the wrong number of
+      # column names without a change in the number of actual columns
+      # in data rows.
       if ( ( scalar @{ $line } == $EXPECTED_NUMBER_OF_COLUMNS )
-           && ( ! is_header_file_valid( $line ) ) ) {
-        croak "Malformed or unexpected header in Mim2Gene file '${filename}'";
+           && ( ! is_file_header_valid( @{ $line } ) ) ) {
+        confess "Malformed or unexpected header in Mim2Gene file '${filename}'";
       }
       next RECORD;
     }
 
     if ( scalar @{ $line } != $EXPECTED_NUMBER_OF_COLUMNS ) {
-      croak ' Line ' . $csv->record_number()
+      confess ' Line ' . $csv->record_number()
         . " of input file '${filename}' has an incorrect number of columns";
     }
 
@@ -159,7 +203,7 @@ sub run {
          && ( $type ne 'gene/phenotype' )
          && ( $type ne 'predominantly phenotypes' )
          && ( $type ne 'phenotype' ) ) {
-      croak "Unknown type $type for MIM Number '${omim_acc}' "
+      confess "Unknown type $type for MIM Number '${omim_acc}' "
         . "(${filename}:" . $csv->record_number() . ")";
     }
 
@@ -191,8 +235,8 @@ sub run {
 
   } ## end record loop
 
-  $csv->eof || croak 'Error parsing CSV: ' . $csv->error_diag();
-  $eg_io->close();
+  $csv->eof || confess 'Error parsing CSV: ' . $csv->error_diag();
+  $m2g_io->close();
 
   if ( $verbose ) {
     print 'Processed ' . $counters{'all_entries'} . " entries. Out of those\n"
@@ -208,9 +252,9 @@ sub run {
 
 =head2 is_file_header_valid
 
-  Arg [1]    : String file header line
-  Example    : if (!is_file_header_valid($header_line)) {
-                 croak 'Bad header';
+  Arg [1..N] : list of column names provided by Text::CSV::getline()
+  Example    : if ( ! is_file_header_valid( $csv->getline( $fh ) ) {
+                 confess 'Bad header';
                }
   Description: Verifies if the header of a Mim2Gene file follows expected
                syntax.
@@ -223,13 +267,11 @@ sub run {
 
 =cut
 
-sub is_header_file_valid {
-  my ( $header ) = @_;
+sub is_file_header_valid {
+  my ( @header ) = @_;
 
-  my @fields_ok;
-
-  Readonly my @field_patterns
-    => (
+  my @field_patterns
+    = (
         qr{ \A [#]? \s* MIM[ ]Number }msx,
         qr{ MIM[ ]Entry[ ]Type }msx,
         qr{ Entrez[ ]Gene[ ]ID }msx,
@@ -239,13 +281,13 @@ sub is_header_file_valid {
 
   my $header_field;
   foreach my $pattern (@field_patterns) {
-    $header_field = shift @{ $header };
+    $header_field = shift @header;
     # Make sure we run the regex match in scalar context
-    push @fields_ok, scalar ( $header_field =~ m{ $pattern }msx );
+    return 0 unless scalar ( $header_field =~ m{ $pattern }msx );
   }
 
-  # All fields must have matched
-  return List::Util::all { $_ } @fields_ok;
+  # If we have made it this far, all should be in order
+  return 1;
 }
 
 
