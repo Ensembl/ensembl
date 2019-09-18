@@ -1,5 +1,5 @@
 1	\N	schema_type	core
-2	\N	schema_version	99
+2	\N	schema_version	100
 3	\N	patch	patch_68_69_a.sql|schema_version
 4	1	species.taxonomy_id	4565
 6	1	species.alias	bread wheat
@@ -166,3 +166,4 @@
 246	\N	patch	patch_96_97_e.sql|add_stable_id_event_type_rnaproduct
 247	\N	patch	patch_97_98_a.sql|schema_version
 248	\N	patch	patch_98_99_a.sql|schema_version
+249	\N	patch	patch_99_100_a.sql|schema_version
