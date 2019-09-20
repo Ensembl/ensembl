@@ -31,9 +31,6 @@ use Text::CSV;
 use parent qw( XrefParser::BaseParser );
 
 
-# FIXME: this belongs in BaseParser
-my $ERR_SOURCE_ID_NOT_FOUND = -1;
-
 my $EXPECTED_NUMBER_OF_COLUMNS = 5;
 
 
@@ -114,11 +111,6 @@ sub run {
     $self->get_source_id_for_source_name( 'MIM_MORBID', undef, $dbi );
   my $entrez_source_id =
     $self->get_source_id_for_source_name( 'EntrezGene', undef, $dbi );
-  if ( ( $mim_gene_source_id == $ERR_SOURCE_ID_NOT_FOUND )
-       || ( $mim_morbid_source_id == $ERR_SOURCE_ID_NOT_FOUND )
-       || ( $entrez_source_id == $ERR_SOURCE_ID_NOT_FOUND ) ) {
-    confess 'Failed to retrieve all source IDs';
-  }
 
   # This will be used to prevent insertion of duplicates
   $self->get_dependent_mappings( $mim_gene_source_id, $dbi );
