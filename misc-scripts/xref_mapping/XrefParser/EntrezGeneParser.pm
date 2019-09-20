@@ -112,20 +112,18 @@ sub run {
 
   # read data and load xrefs
  RECORD:
-  while ( my $data = $input_file->getline_hr($eg_io) ) {
+  while ( my $data = $input_file->getline($eg_io) ) {
+    my ( $tax_id, $acc, $symbol, undef, $synonyms, undef, undef, undef, $desc ) = @{ $data };
+
     # species_id corresponds to the species taxonomy id, see:
     # https://github.com/Ensembl/ensembl-xref/pull/31#issuecomment-445838474
-    if ( $data->{'#tax_id'} ne $species_id ) {
+    if ( $tax_id ne $species_id ) {
       next RECORD;
     }
 
-    my $acc = $data->{'geneid'};
     if ( exists $seen{$acc} ) {
       next RECORD;
     }
-
-    my $symbol = $data->{'symbol'};
-    my $desc   = $data->{'description'};
 
     $self->add_xref({
       acc        => $acc,
@@ -147,7 +145,7 @@ sub run {
     });
     $xref_count += 1;
 
-    my ( @syn ) = split qr{ \| }msx, $data->{'synonyms'};
+    my @syn = split qr{ \| }msx, $synonyms;
     foreach my $synonym ( @syn ) {
       if ( $synonym ne q{-} ) {
         $self->add_to_syn( $acc, $source_id, $synonym, $species_id, $dbi );
