@@ -1,4 +1,3 @@
-
 =head1 LICENSE
 
 See the NOTICE file distributed with this work for additional information
@@ -60,6 +59,9 @@ use Text::CSV;
 
 use parent qw( XrefParser::BaseParser);
 
+my $EXPECTED_NUMBER_OF_COLUMNS = 4;
+
+
 
 =head2
 The run method does the actual parsing and creation of direct xrefs.
@@ -98,21 +100,17 @@ sub run {
     strict         => 1,
   }) or confess "Cannot use file $file: " . Text::CSV->error_diag();
 
-  my @expected_columns = qw( Antibody antibody_id ensembl_peptide_id link );
-  my $header           = $input_file->getline($file_io);
-
-  if ( scalar @{$header} != scalar @expected_columns ) {
-    confess "input file $file has an incorrect number of columns";
+  if ( ! is_file_header_valid( $input_file->header( $file_io ) ) ) {
+    confess "Malformed or unexpected header in HPA file '${file}'";
   }
 
-  $input_file->column_names(@expected_columns);
   my $parsed_count = 0;
   while ( my $data = $input_file->getline_hr($file_io) ) {
 
     $self->add_to_direct_xrefs({
       acc        => $data->{'antibody_id'},
       version    => '1',
-      label      => $data->{'Antibody'},
+      label      => $data->{'antibody'},
       stable_id  => $data->{'ensembl_peptide_id'},
       type       => 'translation',
       source_id  => $source_id,
@@ -133,6 +131,50 @@ sub run {
 
   return 0;
 } ## end sub run
+
+
+=head2 is_file_header_valid
+
+  Arg [1..N] : list of column names provided by Text::CSV::getline()
+  Example    : if ( ! is_file_header_valid( $csv->getline( $fh ) ) {
+                 confess 'Bad header';
+               }
+  Description: Verifies if the header of a HPA file follows expected
+               syntax.
+  Return type: boolean
+  Exceptions : none
+  Caller     : internal
+  Status     : Stable
+
+=cut
+
+sub is_file_header_valid {
+  my ( @header ) = @_;
+
+  # Don't bother with parsing column names if their number does not
+  # match to begin with
+  if ( scalar @header != $EXPECTED_NUMBER_OF_COLUMNS ) {
+    return 0;
+  }
+
+  my @field_patterns
+    = (
+        qr{ antibody }msx,
+        qr{ antibody_id }msx,
+        qr{ ensembl_peptide_id }msx,
+        qr{ link }msx,
+      );
+
+  my $header_field;
+  foreach my $pattern (@field_patterns) {
+    $header_field = shift @header;
+    # Make sure we run the regex match in scalar context
+    return 0 unless scalar ( $header_field =~ m{ $pattern }msx );
+  }
+
+  # If we have made it this far, all should be in order
+  return 1;
+}
 
 
 1;
