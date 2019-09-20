@@ -50,6 +50,8 @@ use parent qw( XrefParser::BaseParser );
 # FIXME: this belongs in BaseParser
 my $ERR_SOURCE_ID_NOT_FOUND = -1;
 
+my $EXPECTED_NUMBER_OF_COLUMNS = 16;
+
 
 
 =head2 run
@@ -100,7 +102,9 @@ sub run {
     || confess "Cannot use file $file: " . Text::CSV->error_diag();
 
   # process header
-  $input_file->column_names( @{ $input_file->getline($eg_io) } );
+  if ( ! is_file_header_valid( $input_file->header( $eg_io ) ) ) {
+    confess "Malformed or unexpected header in EntrezGene file '${file}'";
+  }
 
   my $xref_count = 0;
   my $syn_count  = 0;
@@ -115,12 +119,12 @@ sub run {
       next RECORD;
     }
 
-    my $acc = $data->{'GeneID'};
+    my $acc = $data->{'geneid'};
     if ( exists $seen{$acc} ) {
       next RECORD;
     }
 
-    my $symbol = $data->{'Symbol'};
+    my $symbol = $data->{'symbol'};
     my $desc   = $data->{'description'};
 
     $self->add_xref({
@@ -143,7 +147,7 @@ sub run {
     });
     $xref_count += 1;
 
-    my ( @syn ) = split qr{ \| }msx, $data->{'Synonyms'};
+    my ( @syn ) = split qr{ \| }msx, $data->{'synonyms'};
     foreach my $synonym ( @syn ) {
       if ( $synonym ne q{-} ) {
         $self->add_to_syn( $acc, $source_id, $synonym, $species_id, $dbi );
@@ -164,6 +168,62 @@ sub run {
 
   return 0;
 } ## end sub run
+
+
+=head2 is_file_header_valid
+
+  Arg [1..N] : list of column names provided by Text::CSV::getline()
+  Example    : if ( ! is_file_header_valid( $csv->getline( $fh ) ) {
+                 confess 'Bad header';
+               }
+  Description: Verifies if the header of a EntrezGene file follows expected
+               syntax.
+  Return type: boolean
+  Exceptions : none
+  Caller     : internal
+  Status     : Stable
+
+=cut
+
+sub is_file_header_valid {
+  my ( @header ) = @_;
+
+  # Don't bother with parsing column names if their number does not
+  # match to begin with
+  if ( scalar @header != $EXPECTED_NUMBER_OF_COLUMNS ) {
+    return 0;
+  }
+
+  my @field_patterns
+    = (
+        qr{ \A [#]? \s* tax_id }msx,
+        qr{ geneid }msx,
+        qr{ symbol }msx,
+        qr{ locustag }msx,
+        qr{ synonyms }msx,
+        qr{ dbxrefs }msx,
+        qr{ chromosome }msx,
+        qr{ map_location }msx,
+        qr{ description }msx,
+        qr{ type_of_gene }msx,
+        qr{ symbol_from_nomenclature_authority }msx,
+        qr{ full_name_from_nomenclature_authority }msx,
+        qr{ nomenclature_status }msx,
+        qr{ other_designations }msx,
+        qr{ modification_date }msx,
+        qr{ feature_type }msx,
+      );
+
+  my $header_field;
+  foreach my $pattern (@field_patterns) {
+    $header_field = shift @header;
+    # Make sure we run the regex match in scalar context
+    return 0 unless scalar ( $header_field =~ m{ $pattern }msx );
+  }
+
+  # If we have made it this far, all should be in order
+  return 1;
+}
 
 
 1;
