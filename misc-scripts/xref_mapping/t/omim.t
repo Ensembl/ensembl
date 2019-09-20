@@ -24,7 +24,7 @@ use warnings;
 
 use Test::More;
 use Test::Exception;
-use Test::Warnings 'allow_warnings';
+use Test::Warnings;
 
 use English '-no_match_vars';
 use FindBin '$Bin';
@@ -182,22 +182,13 @@ subtest 'parse_ti()' => sub {
 subtest 'Missing required source IDs' => sub {
 
   $parser = XrefParser::MIMParser->new($db->dbh);
-
-  # As BaseParser stands in August 2019, attempting to retrieve source
-  # ID for a source that is not present in the database merely
-  # produces a warning; it is up to the parsers themselves to abort.
-  # Seeing as the whole point of this test is to confirm that we *do*
-  # abort, simply ignore the warnings.
-  allow_warnings( 1 );
   throws_ok( sub { $parser->run({
     source_id  => $SOURCE_ID_OMIM,
     species_id => $SPECIES_ID_HUMAN,
     files      => [ "$Bin/test-data/omim-mini.txt" ],
   }); },
-             qr{ \A Failed[ ]to[ ]retrieve[ ]MIM[ ]source[ ]IDs }msx,
+             qr{ \A No[ ]source_id[ ]for[ ]source_name=' }msx,
              'Throws on source IDs missing from DB' );
-  # IMPORTANT, this does not reset itself upon end of current scope
-  allow_warnings( 0 );
 
 };
 
