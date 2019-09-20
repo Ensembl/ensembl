@@ -105,13 +105,14 @@ sub run {
   }
 
   my $parsed_count = 0;
-  while ( my $data = $input_file->getline_hr($file_io) ) {
+  while ( my $data = $input_file->getline($file_io) ) {
+    my ( $antibody_name, $antibody_id, $ensembl_id ) = @{ $data };
 
     $self->add_to_direct_xrefs({
-      acc        => $data->{'antibody_id'},
+      acc        => $antibody_id,
       version    => '1',
-      label      => $data->{'antibody'},
-      stable_id  => $data->{'ensembl_peptide_id'},
+      label      => $antibody_name,
+      stable_id  => $ensembl_id,
       type       => 'translation',
       source_id  => $source_id,
       species_id => $species_id,
