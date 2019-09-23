@@ -31,7 +31,6 @@ XrefParser::VGNCParser
 
 A parser class to parse the VGNC source.
 VGNC is the official naming source for some vertebrates species
-(currently chimp, cow, dog and horse).
 
 -data_uri = ftp://ftp.ebi.ac.uk/pub/databases/genenames/vgnc/tsv/vgnc_gene_set_All.txt.gz
 -file_format = TSV
@@ -86,8 +85,9 @@ use parent qw( XrefParser::HGNCParser );
 
 =head2 run
   Description: Runs the VGNCParser
-  Return type: N/A
-  Caller     : internal
+  Return type: none
+  Exceptions : throws on all processing errors
+  Caller     : ParseSource in the xref pipeline
 =cut
 
 sub run {
