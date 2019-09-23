@@ -53,12 +53,12 @@ A core database adaptor is required.
 
   my $parser = Bio::EnsEMBL::Xref::Parser::HGNCParser->new($db->dbh);
 
-  $parser->run_script(
+  $parser->run_script( {
     source_id  => 46,
     species_id => 9606,
     file       => 'hgnc_data.tsv',
     dba        => $core_dba,
-  );
+  } );
 
 =cut
 
@@ -87,8 +87,9 @@ my @SOURCES = (
 
 =head2 run_script
   Description: Runs the HGNCParser
-  Return type: N/A
-  Caller     : internal
+  Return type: none
+  Exceptions : throws on all processing errors
+  Caller     : ParseSource in the xref pipeline
 =cut
 
 sub run_script {
@@ -200,21 +201,6 @@ CCDS
     binary         => 1,
     auto_diag      => 1
   }) or croak "Cannot use file $file: ".Text::CSV->error_diag ();
-
-
-## COLUMNS OF FILE ARE AS FOLLOW:
-
-# HGNC ID
-# Approved symbol
-# Approved name
-# Previous symbols
-# Synonyms
-# NCBI Gene ID
-# Ensembl gene ID
-# RefSeq IDs
-# CCDS IDs
-# Locus specific databases
-
 
   # make sure it's utf8
   utf8::encode($mem_file);
