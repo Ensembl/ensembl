@@ -51,7 +51,7 @@ A core database adaptor is required.
 
 =head1 SYNOPSIS
 
-  my $parser = Bio::EnsEMBL::Xref::Parser::HGNCParser->new($db->dbh);
+  my $parser = XrefParser::HGNCParser->new($db->dbh);
 
   $parser->run_script( {
     source_id  => 46,
