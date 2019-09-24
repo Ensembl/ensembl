@@ -32,7 +32,6 @@ use warnings;
 use Test::More;
 use Test::Exception;
 use FindBin '$Bin';
-use lib "$Bin/";
 
 use Xref::Test::TestDB;
 use Bio::EnsEMBL::Test::MultiTestDB;
