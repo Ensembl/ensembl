@@ -25,7 +25,7 @@ limitations under the License.
 
 =head1 NAME
 
-Bio::EnsEMBL::Xref::Parser::HGNCParser
+XrefParser::HGNCParser
 
 =head1 DESCRIPTION
 
