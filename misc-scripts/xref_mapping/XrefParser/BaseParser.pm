@@ -144,7 +144,7 @@ sub get_filehandle
 # Arg[1] source name
 # Arg[2] priority description
 #
-# Returns source_id or -1 if not found
+# Returns source_id, or throws if not found
 #############################################
 sub get_source_id_for_source_name {
   my ($self, $source_name,$priority_desc, $dbi) = @_;
@@ -164,11 +164,11 @@ sub get_source_id_for_source_name {
   if (@row) {
     $source_id = $row[0];
   } else {
-    carp "WARNING: There is no entity $source_name in the source-table of the xref database.\n";
-    carp "WARNING:. The external db name ($source_name) is hardcoded in the parser\n";
-    carp "WARNING: Couldn't get source ID for source name $source_name\n";
-
-    $source_id = '-1';
+    my $msg = "No source_id for source_name='${source_name}'";
+    if ( defined $priority_desc ) {
+      $msg .= "priority_desc='${priority_desc}'";
+    }
+    confess $msg;
   }
   $sth->finish();
   return $source_id;

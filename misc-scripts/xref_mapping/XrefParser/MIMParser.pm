@@ -26,9 +26,6 @@ use Carp;
 use parent qw( XrefParser::BaseParser );
 
 
-# FIXME: this belongs in BaseParser
-my $ERR_SOURCE_ID_NOT_FOUND = -1;
-
 my $QR_TI_FIELD_TERMINATORS
   = qr{
          (?:                # The TI field spans from *FIELD* TI until:
@@ -122,10 +119,6 @@ sub run {
   my $morbid_source_id =
     $self->get_source_id_for_source_name( "MIM_MORBID", undef, $dbi );
   push @sources, $morbid_source_id;
-  if ( ( $gene_source_id == $ERR_SOURCE_ID_NOT_FOUND )
-       || ( $morbid_source_id == $ERR_SOURCE_ID_NOT_FOUND ) ) {
-    confess 'Failed to retrieve MIM source IDs';
-  }
 
   my %TYPE_SINGLE_SOURCES = (
     q{*} => $gene_source_id,
