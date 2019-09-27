@@ -47,9 +47,6 @@ use Text::CSV;
 use parent qw( XrefParser::BaseParser );
 
 
-# FIXME: this belongs in BaseParser
-my $ERR_SOURCE_ID_NOT_FOUND = -1;
-
 my $EXPECTED_NUMBER_OF_COLUMNS = 16;
 
 
@@ -85,9 +82,6 @@ sub run {
 
   my $wiki_source_id =
     $self->get_source_id_for_source_name( 'WikiGene', undef, $dbi );
-  if ( $wiki_source_id == $ERR_SOURCE_ID_NOT_FOUND ) {
-    confess 'Failed to retrieve WikiGene source ID';
-  }
 
   my $eg_io = $self->get_filehandle($file);
   if ( !defined $eg_io ) {
