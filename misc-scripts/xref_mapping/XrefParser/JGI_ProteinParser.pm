@@ -91,9 +91,6 @@ sub run {
  RECORD:
   while ( my $input_data = $file_io->getline() ) {
 
-    # Skip file header if present
-    next RECORD if ( $input_data =~ m{ \A File: }msx );
-
     my ( $accession, $sequence )
       = ( $input_data =~ m{
                             # Header line. The first record will
@@ -112,8 +109,18 @@ sub run {
                             # "not >" as our character class we avoid
                             # having to chomp the input record.
                             ( [^>]* )
-                          }msx ) ||
-      confess "Can't parse FASTA entry: $input_data";
+                        }msx );
+
+    if ( !defined $accession ) {
+      # Is it the file header? If so, just skip it
+      if ( $input_data =~ m{ \A File: }msx ) {
+        next RECORD;
+      }
+      # Otherwise, alert the user of parsing problems
+      else {
+        confess "Can't parse FASTA entry: $input_data";
+      }
+    }
 
     # Build an xref object (getting rid of whitespace from the
     # sequence in the process) and store it
