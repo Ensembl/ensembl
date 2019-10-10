@@ -24,7 +24,11 @@ XrefParser::JGI_Parser
 
 Parser for JGI protein files with gene description, FASTA format.
 This is the base class the provides most functionality, subclasses
-just implement the method to set sequence type
+just implement the method to set sequence type.
+
+WARNING: this is an extremely simplistic implementation of a FASTA
+parser, for instance it does not treat strings beginning with ; as
+comments. As of September 2019 it (still) works for JGI data, though.
 
 =head1 SYNOPSIS
 
@@ -90,17 +94,39 @@ sub run {
  RECORD:
   while ( my $input_data = $file_io->getline() ) {
 
-    next RECORD if ( $input_data =~ /^File:/x );  # skip header
+    next RECORD if ( $input_data =~ m{ \A File: }msx );  # skip header
 
-    my ( $accession, $sequence ) = ( $input_data =~ /^>?(.+?)\n([^>]*)/xs ) ||
+    my ( $accession, $sequence )
+      = ( $input_data =~ m{
+                            # Accession line.The first record will
+                            # have a > but since we use "\n>" as
+                            # record separator, further ones will not
+                            # contain it.
+                            \A >? ( \w+? ) \n
+
+                            # Sequence data. Can span multiple
+                            # lines. Err on the side of caution and
+                            # assume there CAN be records with no
+                            # sequence data at all (hence the *), such
+                            # records would be useless for xref
+                            # generation but at least they shoudn't
+                            # trigger parsing errors. By specifying
+                            # "not >" as our character class we avoid
+                            # having to chomp the input record.
+                            ( [^>]* )
+                          }msx ) ||
       confess "Can't parse FASTA entry: $input_data";
 
     # split header in different ways according to source name
-    if ( $source_name =~ m/cint_aniseed_.*v1|cint_jgi_v1/x ) {
+    if ( $source_name =~ m{
+                            cint_aniseed_.*v1
+                          |
+                            cint_jgi_v1
+                        }msx ) {
       # header format is  >ci0100146277
       # JGI 1.0
       # we want accession 146277 from above
-      $accession =~ s/\w{6}//x;
+      $accession =~ s{ \w{6} }{}msx;
 
     } else {
       confess
@@ -110,7 +136,7 @@ sub run {
     }
 
     # make sequence into one long string
-    $sequence =~ s/\n//xg;
+    $sequence =~ s{ \n }{}gmsx;
 
     # build the xref object and store it
     push @xrefs,
