@@ -1,0 +1,427 @@
+1388458	1300	105375002	LOC105375002	0	LOC105375002	NONE	
+1388459	50688	XR_926667.2	XR_926667.2	0	uncharacterized LOC105375002, transcript variant X1	NONE	
+1388460	1300	79313	OR2AD1P	0	olfactory receptor family 2 subfamily AD member 1 pseudogene	NONE	
+1388461	1100	HGNC:14749	OR2AD1P	0	olfactory receptor family 2 subfamily AD member 1 pseudogene	NONE	
+1388462	1300	100129636	LOC100129636	0	uncharacterized LOC100129636	NONE	
+1388463	50688	NR_125387.1	NR_125387.1	0	uncharacterized LOC100129636	NONE	
+1388464	1100	HGNC:8281	OR2W1	0	olfactory receptor family 2 subfamily W member 1	NONE	
+1388465	1300	26692	OR2W1	0	olfactory receptor family 2 subfamily W member 1	NONE	
+1388466	50688	NP_112165.1	NP_112165.1	0	\N	NONE	
+1388467	3800	CCDS4656.1	CCDS4656.1	0	\N	NONE	
+1388468	50688	NM_030903.3	NM_030903.3	0	olfactory receptor family 2 subfamily W member 1	NONE	
+1388469	1300	442183	OR2P1P	0	olfactory receptor family 2 subfamily P member 1 pseudogene	NONE	
+1388470	1100	HGNC:8272	OR2P1P	0	olfactory receptor family 2 subfamily P member 1 pseudogene	NONE	
+1388471	1100	HGNC:13983	SAR1AP1	0	secretion associated Ras related GTPase 1A pseudogene 1	NONE	
+1388472	1300	646260	SAR1AP1	0	secretion associated Ras related GTPase 1A pseudogene 1	NONE	
+1388473	1300	442184	OR2B3	0	olfactory receptor family 2 subfamily B member 3	NONE	
+1388474	1100	HGNC:8238	OR2B3	0	olfactory receptor family 2 subfamily B member 3	NONE	
+1388475	3800	CCDS34358.1	CCDS34358.1	0	\N	NONE	
+1388476	50688	NP_001005226.1	NP_001005226.1	0	\N	NONE	
+1388477	50688	NM_001005226.2	NM_001005226.2	0	olfactory receptor family 2 subfamily B member 3	NONE	
+1388478	1300	442185	OR2J1	0	olfactory receptor family 2 subfamily J member 1 (gene/pseudogene)	NONE	
+1388479	1100	HGNC:8259	OR2J1	0	olfactory receptor family 2 subfamily J member 1 (gene/pseudogene)	NONE	
+1388480	50688	NP_001335223.1	NP_001335223.1	0	\N	NONE	
+1388481	50688	NM_001348294.1	NM_001348294.1	0	olfactory receptor family 2 subfamily J member 1 (gene/pseudogene)	NONE	
+1388482	1300	105375003	LOC105375003	0	LOC105375003	NONE	
+1388483	50688	XR_926668.2	XR_926668.2	0	uncharacterized LOC105375003, transcript variant X1	NONE	
+1388484	1300	442186	OR2J3	0	olfactory receptor family 2 subfamily J member 3	NONE	
+1388485	1510	615016	OR2J3	0	olfactory receptor family 2 subfamily J member 3	NONE	
+1388486	1100	HGNC:8261	OR2J3	0	olfactory receptor family 2 subfamily J member 3	NONE	
+1388487	50688	NP_001005216.2	NP_001005216.2	0	\N	NONE	
+1388488	3800	CCDS43433.1	CCDS43433.1	0	\N	NONE	
+1388489	50688	NM_001005216.3	NM_001005216.3	0	olfactory receptor family 2 subfamily J member 3	NONE	
+1388490	1100	HGNC:8271	OR2N1P	0	olfactory receptor family 2 subfamily N member 1 pseudogene	NONE	
+1388491	1300	26701	OR2N1P	0	olfactory receptor family 2 subfamily N member 1 pseudogene	NONE	
+1388492	1300	26707	OR2J2	0	olfactory receptor family 2 subfamily J member 2	NONE	
+1388493	1100	HGNC:8260	OR2J2	0	olfactory receptor family 2 subfamily J member 2	NONE	
+1388494	50688	NP_112167.2	NP_112167.2	0	\N	NONE	
+1388495	3800	CCDS43434.1	CCDS43434.1	0	\N	NONE	
+1388496	50688	NM_030905.2	NM_030905.2	0	olfactory receptor family 2 subfamily J member 2	NONE	
+1388497	1100	HGNC:8262	OR2J4P	0	olfactory receptor family 2 subfamily J member 4 pseudogene	NONE	
+1388498	1300	442188	OR2J4P	0	olfactory receptor family 2 subfamily J member 4 pseudogene	NONE	
+1388499	1100	HGNC:8255	OR2H4P	0	olfactory receptor family 2 subfamily H member 4 pseudogene	NONE	
+1388500	1300	442189	OR2H4P	0	olfactory receptor family 2 subfamily H member 4 pseudogene	NONE	
+1388501	1300	101929006	LOC101929006	0	uncharacterized LOC101929006	NONE	
+1388502	50688	NR_134630.1	NR_134630.1	0	uncharacterized LOC101929006, transcript variant 2	NONE	
+1388503	50688	NR_134629.1	NR_134629.1	0	uncharacterized LOC101929006, transcript variant 1	NONE	
+1388504	1300	26717	OR2G1P	0	olfactory receptor family 2 subfamily G member 1 pseudogene	NONE	
+1388505	1100	HGNC:8251	OR2G1P	0	olfactory receptor family 2 subfamily G member 1 pseudogene	NONE	
+1388506	1300	105375006	LOC105375006	0	LOC105375006	NONE	
+1388507	50688	XR_001744077.1	XR_001744077.1	0	uncharacterized LOC105375006	NONE	
+1388508	1100	HGNC:8278	OR2U1P	0	olfactory receptor family 2 subfamily U member 1 pseudogene	NONE	
+1388509	1300	26695	OR2U1P	0	olfactory receptor family 2 subfamily U member 1 pseudogene	NONE	
+1388510	1100	HGNC:8279	OR2U2P	0	olfactory receptor family 2 subfamily U member 2 pseudogene	NONE	
+1388511	1300	26694	OR2U2P	0	olfactory receptor family 2 subfamily U member 2 pseudogene	NONE	
+1388512	1300	105375005	LOC105375005	0	LOC105375005	NONE	
+1388513	50688	XR_926670.1	XR_926670.1	0	uncharacterized LOC105375005, transcript variant X3	NONE	
+1388514	50688	XR_001744075.1	XR_001744075.1	0	uncharacterized LOC105375005, transcript variant X2	NONE	
+1388515	50688	XR_001744074.1	XR_001744074.1	0	uncharacterized LOC105375005, transcript variant X1	NONE	
+1388516	1300	442190	OR2B4P	0	olfactory receptor family 2 subfamily B member 4 pseudogene	NONE	
+1388517	1100	HGNC:8239	OR2B4P	0	olfactory receptor family 2 subfamily B member 4 pseudogene	NONE	
+1388518	1100	HGNC:13971	OR14J1	0	olfactory receptor family 14 subfamily J member 1	NONE	
+1388519	1300	442191	OR14J1	0	olfactory receptor family 14 subfamily J member 1	NONE	
+1388520	50688	NP_112208.1	NP_112208.1	0	\N	NONE	
+1388521	3800	CCDS34362.1	CCDS34362.1	0	\N	NONE	
+1388522	50688	NM_030946.1	NM_030946.1	0	olfactory receptor family 14 subfamily J member 1	NONE	
+1388523	1300	442192	DDX6P1	0	DEAD-box helicase 6 pseudogene 1	NONE	
+1388524	1100	HGNC:13948	DDX6P1	0	DEAD-box helicase 6 pseudogene 1	NONE	
+1388525	1300	81696	OR5V1	0	olfactory receptor family 5 subfamily V member 1	NONE	
+1388526	1100	HGNC:13972	OR5V1	0	olfactory receptor family 5 subfamily V member 1	NONE	
+1388527	50688	XP_011513232.1	XP_011513232.1	0	\N	NONE	
+1388528	50688	XM_011514930.2	XM_011514930.2	0	olfactory receptor family 5 subfamily V member 1, transcript variant X2	NONE	
+1388529	50688	XP_024302330.1	XP_024302330.1	0	\N	NONE	
+1388530	50688	XM_024446562.1	XM_024446562.1	0	olfactory receptor family 5 subfamily V member 1, transcript variant X1	NONE	
+1388531	3800	CCDS4657.1	CCDS4657.1	0	\N	NONE	
+1388532	50688	NP_110503.3	NP_110503.3	0	\N	NONE	
+1388533	50688	NM_030876.5	NM_030876.5	0	olfactory receptor family 5 subfamily V member 1	NONE	
+1388534	1300	81797	OR12D3	0	olfactory receptor family 12 subfamily D member 3	NONE	
+1388535	1100	HGNC:13963	OR12D3	0	olfactory receptor family 12 subfamily D member 3	NONE	
+1388536	50688	NP_112221.1	NP_112221.1	0	\N	NONE	
+1388537	3800	CCDS4658.1	CCDS4658.1	0	\N	NONE	
+1388538	50688	NM_030959.2	NM_030959.2	0	olfactory receptor family 12 subfamily D member 3	NONE	
+1388539	1100	HGNC:8178	OR12D2	0	olfactory receptor family 12 subfamily D member 2 (gene/pseudogene)	NONE	
+1388540	1300	26529	OR12D2	0	olfactory receptor family 12 subfamily D member 2 (gene/pseudogene)	NONE	
+1388541	50688	NP_039224.2	NP_039224.2	0	\N	NONE	
+1388542	50688	NM_013936.3	NM_013936.3	0	olfactory receptor family 12 subfamily D member 2 (gene/pseudogene)	NONE	
+1388543	1300	105379641	LOC105379641	0	LOC105379641	NONE	
+1388544	50688	XR_002956331.1	XR_002956331.1	0	uncharacterized LOC105379641, transcript variant X1	NONE	
+1388545	50688	XR_002956332.1	XR_002956332.1	0	uncharacterized LOC105379641, transcript variant X2	NONE	
+1388546	50688	XR_002956335.1	XR_002956335.1	0	uncharacterized LOC105379641, transcript variant X5	NONE	
+1388547	50688	XR_002956334.1	XR_002956334.1	0	uncharacterized LOC105379641, transcript variant X4	NONE	
+1388548	50688	XR_002956333.1	XR_002956333.1	0	uncharacterized LOC105379641, transcript variant X3	NONE	
+1388549	1100	HGNC:8177	OR12D1	0	olfactory receptor family 12 subfamily D member 1 (gene/pseudogene)	NONE	
+1388550	1300	26530	OR12D1	0	olfactory receptor family 12 subfamily D member 1 (gene/pseudogene)	NONE	
+1388551	50688	NR_145489.1	NR_145489.1	0	olfactory receptor family 12 subfamily D member 1 (gene/pseudogene), transcript variant 1	NONE	
+1388552	50688	NP_001335137.1	NP_001335137.1	0	\N	NONE	
+1388553	50688	NM_001348208.1	NM_001348208.1	0	olfactory receptor family 12 subfamily D member 1 (gene/pseudogene), transcript variant 1	NONE	
+1388554	1300	26531	OR11A1	0	olfactory receptor family 11 subfamily A member 1	NONE	
+1388555	1100	HGNC:8176	OR11A1	0	olfactory receptor family 11 subfamily A member 1	NONE	
+1388556	3800	CCDS34363.1	CCDS34363.1	0	\N	NONE	
+1388557	50688	NP_039225.1	NP_039225.1	0	\N	NONE	
+1388558	50688	NM_013937.3	NM_013937.3	0	olfactory receptor family 11 subfamily A member 1	NONE	
+1388559	1300	442194	OR10C1	0	olfactory receptor family 10 subfamily C member 1 (gene/pseudogene)	NONE	
+1388560	1100	HGNC:8165	OR10C1	0	olfactory receptor family 10 subfamily C member 1 (gene/pseudogene)	NONE	
+1388561	50688	NP_039229.3	NP_039229.3	0	\N	NONE	
+1388562	3800	CCDS34364.1	CCDS34364.1	0	\N	NONE	
+1388563	50688	NM_013941.3	NM_013941.3	0	olfactory receptor family 10 subfamily C member 1 (gene/pseudogene)	NONE	
+1388564	1300	26716	OR2H1	0	olfactory receptor family 2 subfamily H member 1	NONE	
+1388565	1100	HGNC:8252	OR2H1	0	olfactory receptor family 2 subfamily H member 1	NONE	
+1388566	50688	XP_016866228.1	XP_016866228.1	0	\N	NONE	
+1388567	50688	XM_017010739.1	XM_017010739.1	0	olfactory receptor family 2 subfamily H member 1, transcript variant X9	NONE	
+1388568	50688	XP_016866226.1	XP_016866226.1	0	\N	NONE	
+1388569	50688	XM_017010737.1	XM_017010737.1	0	olfactory receptor family 2 subfamily H member 1, transcript variant X1	NONE	
+1388570	50688	XP_016866227.1	XP_016866227.1	0	\N	NONE	
+1388571	50688	XM_017010738.1	XM_017010738.1	0	olfactory receptor family 2 subfamily H member 1, transcript variant X2	NONE	
+1388572	50688	XP_024302170.1	XP_024302170.1	0	\N	NONE	
+1388573	50688	XM_024446402.1	XM_024446402.1	0	olfactory receptor family 2 subfamily H member 1, transcript variant X10	NONE	
+1388574	50688	XP_011512772.1	XP_011512772.1	0	\N	NONE	
+1388575	50688	XM_011514470.2	XM_011514470.2	0	olfactory receptor family 2 subfamily H member 1, transcript variant X3	NONE	
+1388576	50688	XP_011512775.1	XP_011512775.1	0	\N	NONE	
+1388577	50688	XM_011514473.2	XM_011514473.2	0	olfactory receptor family 2 subfamily H member 1, transcript variant X5	NONE	
+1388578	50688	XP_011512774.1	XP_011512774.1	0	\N	NONE	
+1388579	50688	XM_011514472.2	XM_011514472.2	0	olfactory receptor family 2 subfamily H member 1, transcript variant X4	NONE	
+1388580	50688	XP_011512781.1	XP_011512781.1	0	\N	NONE	
+1388581	50688	XM_011514479.2	XM_011514479.2	0	olfactory receptor family 2 subfamily H member 1, transcript variant X6	NONE	
+1388582	50688	XP_011512785.1	XP_011512785.1	0	\N	NONE	
+1388583	50688	XM_011514483.2	XM_011514483.2	0	olfactory receptor family 2 subfamily H member 1, transcript variant X7	NONE	
+1388584	3800	CCDS4660.1	CCDS4660.1	0	\N	NONE	
+1388585	50688	NP_001304943.1	NP_001304943.1	0	\N	NONE	
+1388586	50688	NM_001318014.1	NM_001318014.1	0	olfactory receptor family 2 subfamily H member 1, transcript variant 1	NONE	
+1388587	50688	NP_112145.1	NP_112145.1	0	\N	NONE	
+1388588	50688	NM_030883.4	NM_030883.4	0	olfactory receptor family 2 subfamily H member 1, transcript variant 2	NONE	
+1388589	50688	NP_001304951.1	NP_001304951.1	0	\N	NONE	
+1388590	50688	NM_001318022.1	NM_001318022.1	0	olfactory receptor family 2 subfamily H member 1, transcript variant 3	NONE	
+1388591	50688	XP_011512786.1	XP_011512786.1	0	\N	NONE	
+1388592	50688	XM_011514484.2	XM_011514484.2	0	olfactory receptor family 2 subfamily H member 1, transcript variant X8	NONE	
+1388593	1100	HGNC:18796	UBDP1	0	ubiquitin D pseudogene 1	NONE	
+1388594	1300	100286971	UBDP1	0	ubiquitin D pseudogene 1	NONE	
+1388595	1100	HGNC:33448	MAS1LP1	0	MAS1L pseudogene 1	NONE	
+1388596	1300	646366	MAS1LP1	0	MAS1L pseudogene 1	NONE	
+1388597	1300	105375008	LOC105375008	0	LOC105375008	NONE	
+1388598	50688	XR_926674.2	XR_926674.2	0	uncharacterized LOC105375008	NONE	
+1388599	1300	116511	MAS1L	0	MAS1 proto-oncogene like, G protein-coupled receptor	NONE	
+1388600	1100	HGNC:13961	MAS1L	0	MAS1 proto-oncogene like, G protein-coupled receptor	NONE	
+1388601	1510	607235	MAS1L	0	MAS1 proto-oncogene like, G protein-coupled receptor	NONE	
+1388602	3800	CCDS4661.1	CCDS4661.1	0	\N	NONE	
+1388603	50688	NP_443199.1	NP_443199.1	0	\N	NONE	
+1388604	50688	NM_052967.2	NM_052967.2	0	MAS1 proto-oncogene like, G protein-coupled receptor	NONE	
+1388605	1300	442195	RPS17P1	0	ribosomal protein S17 pseudogene 1	NONE	
+1388606	1100	HGNC:13982	RPS17P1	0	ribosomal protein S17 pseudogene 1	NONE	
+1388607	1300	105375009	LOC105375009	0	LOC105375009	NONE	
+1388608	50688	XR_926679.2	XR_926679.2	0	uncharacterized LOC105375009, transcript variant X1	NONE	
+1388609	50688	XR_926678.1	XR_926678.1	0	uncharacterized LOC105375009, transcript variant X2	NONE	
+1388610	1100	HGNC:48988	LINC01015	0	long intergenic non-protein coding RNA 1015	NONE	
+1388611	1300	100507362	LINC01015	0	long intergenic non-protein coding RNA 1015	NONE	
+1388612	50688	NR_037179.1	NR_037179.1	0	long intergenic non-protein coding RNA 1015, transcript variant 1	NONE	
+1388613	50688	NR_037181.1	NR_037181.1	0	long intergenic non-protein coding RNA 1015, transcript variant 3	NONE	
+1388614	50688	NR_037180.1	NR_037180.1	0	long intergenic non-protein coding RNA 1015, transcript variant 2	NONE	
+1388615	1300	9292	GPR53P	0	G protein-coupled receptor 53, pseudogene	NONE	
+1388616	1100	HGNC:4509	GPR53P	0	G protein-coupled receptor 53, pseudogene	NONE	
+1388617	1100	HGNC:8258	OR2I1P	0	olfactory receptor family 2 subfamily I member 1 pseudogene	NONE	
+1388618	1300	442197	OR2I1P	0	olfactory receptor family 2 subfamily I member 1 pseudogene	NONE	
+1388619	1100	HGNC:18795	UBD	0	ubiquitin D	NONE	
+1388620	1510	606050	UBD	0	ubiquitin D	NONE	
+1388621	1300	10537	UBD	0	ubiquitin D	NONE	
+1388622	3800	CCDS4662.1	CCDS4662.1	0	\N	NONE	
+1388623	50688	NP_006389.2	NP_006389.2	0	\N	NONE	
+1388624	50688	NM_006398.3	NM_006398.3	0	ubiquitin D	NONE	
+1388625	1300	26713	OR2H5P	0	olfactory receptor family 2 subfamily H member 5 pseudogene	NONE	
+1388626	1100	HGNC:8256	OR2H5P	0	olfactory receptor family 2 subfamily H member 5 pseudogene	NONE	
+1388627	1100	HGNC:33458	TMEM183AP1	0	transmembrane protein 183A pseudogene 1	NONE	
+1388628	1300	100048909	TMEM183AP1	0	transmembrane protein 183A pseudogene 1	NONE	
+1388629	1300	692092	SNORD32B	0	small nucleolar RNA, C/D box 32B	NONE	
+1388630	1100	HGNC:32719	SNORD32B	0	small nucleolar RNA, C/D box 32B	NONE	
+1388631	50688	NR_003049.1	NR_003049.1	0	small nucleolar RNA, C/D box 32B	NONE	
+1388632	1300	387043	RPL13AP	0	ribosomal protein L13a pseudogene	NONE	
+1388633	1100	HGNC:13977	RPL13AP	0	ribosomal protein L13a pseudogene	NONE	
+1388634	1510	600578	OR2H2	0	olfactory receptor family 2 subfamily H member 2	NONE	
+1388635	1300	7932	OR2H2	0	olfactory receptor family 2 subfamily H member 2	NONE	
+1388636	1100	HGNC:8253	OR2H2	0	olfactory receptor family 2 subfamily H member 2	NONE	
+1388637	50688	XP_011513214.1	XP_011513214.1	0	\N	NONE	
+1388638	50688	XM_011514912.3	XM_011514912.3	0	olfactory receptor family 2 subfamily H member 2, transcript variant X1	NONE	
+1388639	50688	NP_009091.3	NP_009091.3	0	\N	NONE	
+1388640	3800	CCDS34365.1	CCDS34365.1	0	\N	NONE	
+1388641	50688	NM_007160.3	NM_007160.3	0	olfactory receptor family 2 subfamily H member 2	NONE	
+1388642	1510	603540	GABBR1	0	gamma-aminobutyric acid type B receptor subunit 1	NONE	
+1388643	1100	HGNC:4070	GABBR1	0	gamma-aminobutyric acid type B receptor subunit 1	NONE	
+1388644	1300	2550	GABBR1	0	gamma-aminobutyric acid type B receptor subunit 1	NONE	
+1388645	3800	CCDS4664.1	CCDS4664.1	0	\N	NONE	
+1388646	50688	NP_068704.2	NP_068704.2	0	\N	NONE	
+1388647	50688	NM_021904.3	NM_021904.3	0	gamma-aminobutyric acid type B receptor subunit 1, transcript variant 3	NONE	
+1388648	50688	NP_001305982.1	NP_001305982.1	0	\N	NONE	
+1388649	50688	NM_001319053.1	NM_001319053.1	0	gamma-aminobutyric acid type B receptor subunit 1, transcript variant 5	NONE	
+1388650	3800	CCDS4663.1	CCDS4663.1	0	\N	NONE	
+1388651	50688	NP_001461.1	NP_001461.1	0	\N	NONE	
+1388652	50688	NM_001470.3	NM_001470.3	0	gamma-aminobutyric acid type B receptor subunit 1, transcript variant 1	NONE	
+1388653	50688	NP_068703.1	NP_068703.1	0	\N	NONE	
+1388654	3800	CCDS4665.1	CCDS4665.1	0	\N	NONE	
+1388655	50688	NM_021903.2	NM_021903.2	0	gamma-aminobutyric acid type B receptor subunit 1, transcript variant 2	NONE	
+1388656	50688	XR_001743302.1	XR_001743302.1	0	gamma-aminobutyric acid type B receptor subunit 1, transcript variant X6	NONE	
+1388657	50688	XR_001743303.1	XR_001743303.1	0	gamma-aminobutyric acid type B receptor subunit 1, transcript variant X7	NONE	
+1388658	50688	XP_005249039.1	XP_005249039.1	0	\N	NONE	
+1388659	50688	XM_005248982.2	XM_005248982.2	0	gamma-aminobutyric acid type B receptor subunit 1, transcript variant X1	NONE	
+1388660	50688	XP_011512755.1	XP_011512755.1	0	\N	NONE	
+1388661	50688	XM_011514453.3	XM_011514453.3	0	gamma-aminobutyric acid type B receptor subunit 1, transcript variant X3	NONE	
+1388662	50688	XP_006715110.1	XP_006715110.1	0	\N	NONE	
+1388663	50688	XM_006715047.4	XM_006715047.4	0	gamma-aminobutyric acid type B receptor subunit 1, transcript variant X2	NONE	
+1388664	50688	XP_024302160.1	XP_024302160.1	0	\N	NONE	
+1388665	50688	XM_024446392.1	XM_024446392.1	0	gamma-aminobutyric acid type B receptor subunit 1, transcript variant X4	NONE	
+1388666	50688	XP_011512757.1	XP_011512757.1	0	\N	NONE	
+1388667	50688	XM_011514455.1	XM_011514455.1	0	gamma-aminobutyric acid type B receptor subunit 1, transcript variant X5	NONE	
+1388668	1100	HGNC:13985	SUMO2P1	0	SUMO2 pseudogene 1	NONE	
+1388669	1300	285829	SUMO2P1	0	SUMO2 pseudogene 1	NONE	
+1388670	1510	159465	MOG	0	myelin oligodendrocyte glycoprotein	NONE	
+1388671	1300	4340	MOG	0	myelin oligodendrocyte glycoprotein	NONE	
+1388672	1100	HGNC:7197	MOG	0	myelin oligodendrocyte glycoprotein	NONE	
+1388673	50688	NP_001008229.1	NP_001008229.1	0	\N	NONE	
+1388674	3800	CCDS34369.1	CCDS34369.1	0	\N	NONE	
+1388675	50688	NM_001008228.2	NM_001008228.2	0	myelin oligodendrocyte glycoprotein, transcript variant alpha3	NONE	
+1388676	3800	CCDS34366.1	CCDS34366.1	0	\N	NONE	
+1388677	50688	NP_996534.2	NP_996534.2	0	\N	NONE	
+1388678	50688	NM_206811.3	NM_206811.3	0	myelin oligodendrocyte glycoprotein, transcript variant beta3	NONE	
+1388679	50688	NP_996532.2	NP_996532.2	0	\N	NONE	
+1388680	3800	CCDS34370.1	CCDS34370.1	0	\N	NONE	
+1388681	50688	NM_206809.3	NM_206809.3	0	myelin oligodendrocyte glycoprotein, transcript variant alpha1	NONE	
+1388682	3800	CCDS4667.1	CCDS4667.1	0	\N	NONE	
+1388683	50688	NP_002424.3	NP_002424.3	0	\N	NONE	
+1388684	50688	NM_002433.4	NM_002433.4	0	myelin oligodendrocyte glycoprotein, transcript variant beta1	NONE	
+1388685	50688	NP_996535.2	NP_996535.2	0	\N	NONE	
+1388686	3800	CCDS47394.1	CCDS47394.1	0	\N	NONE	
+1388687	50688	NM_206812.3	NM_206812.3	0	myelin oligodendrocyte glycoprotein, transcript variant alpha2	NONE	
+1388688	50688	NP_996533.2	NP_996533.2	0	\N	NONE	
+1388689	3800	CCDS34367.1	CCDS34367.1	0	\N	NONE	
+1388690	50688	NM_206810.3	NM_206810.3	0	myelin oligodendrocyte glycoprotein, transcript variant beta5	NONE	
+1388691	50688	NP_001008230.1	NP_001008230.1	0	\N	NONE	
+1388692	3800	CCDS34368.1	CCDS34368.1	0	\N	NONE	
+1388693	50688	NM_001008229.2	NM_001008229.2	0	myelin oligodendrocyte glycoprotein, transcript variant beta2	NONE	
+1388694	50688	NP_001163889.1	NP_001163889.1	0	\N	NONE	
+1388695	3800	CCDS54977.1	CCDS54977.1	0	\N	NONE	
+1388696	50688	NM_001170418.1	NM_001170418.1	0	myelin oligodendrocyte glycoprotein, transcript variant alpha6	NONE	
+1388697	3800	CCDS47395.2	CCDS47395.2	0	\N	NONE	
+1388698	50688	NP_996537.3	NP_996537.3	0	\N	NONE	
+1388699	50688	NM_206814.5	NM_206814.5	0	myelin oligodendrocyte glycoprotein, transcript variant alpha5	NONE	
+1388700	50688	XP_005249188.1	XP_005249188.1	0	\N	NONE	
+1388701	50688	XM_005249131.4	XM_005249131.4	0	myelin oligodendrocyte glycoprotein, transcript variant X1	NONE	
+1388702	1300	346171	ZFP57	0	ZFP57 zinc finger protein	NONE	
+1388703	1510	612192	ZFP57	0	ZFP57 zinc finger protein	NONE	
+1388704	1100	HGNC:18791	ZFP57	0	ZFP57 zinc finger protein	NONE	
+1388705	50688	NP_001103279.2	NP_001103279.2	0	\N	NONE	
+1388706	3800	CCDS43436.2	CCDS43436.2	0	\N	NONE	
+1388707	50688	NM_001109809.2	NM_001109809.2	0	ZFP57 zinc finger protein	NONE	
+1388708	50688	XP_006715150.1	XP_006715150.1	0	\N	NONE	
+1388709	50688	XM_006715087.3	XM_006715087.3	0	ZFP57 zinc finger protein, transcript variant X2	NONE	
+1388710	50688	XP_011512872.1	XP_011512872.1	0	\N	NONE	
+1388711	50688	XM_011514570.2	XM_011514570.2	0	ZFP57 zinc finger protein, transcript variant X1	NONE	
+1388712	1100	HGNC:33456	ZDHHC20P1	0	zinc finger DHHC-type containing 20 pseudogene 1	NONE	
+1388713	1300	100048907	ZDHHC20P1	0	zinc finger DHHC-type containing 20 pseudogene 1	NONE	
+1388714	1100	HGNC:22930	HCG4P11	0	HLA complex group 4 pseudogene 11	NONE	
+1388715	1300	353020	HCG4P11	0	HLA complex group 4 pseudogene 11	NONE	
+1388716	1300	3134	HLA-F	0	major histocompatibility complex, class I, F	NONE	
+1388717	1510	143110	HLA-F	0	major histocompatibility complex, class I, F	NONE	
+1388718	1100	HGNC:4963	HLA-F	0	major histocompatibility complex, class I, F	NONE	
+1388719	3800	CCDS43437.1	CCDS43437.1	0	\N	NONE	
+1388720	50688	NP_001091949.1	NP_001091949.1	0	\N	NONE	
+1388721	50688	NM_001098479.1	NM_001098479.1	0	major histocompatibility complex, class I, F, transcript variant 1	NONE	
+1388722	3800	CCDS43438.1	CCDS43438.1	0	\N	NONE	
+1388723	50688	NP_061823.2	NP_061823.2	0	\N	NONE	
+1388724	50688	NM_018950.2	NM_018950.2	0	major histocompatibility complex, class I, F, transcript variant 2	NONE	
+1388725	50688	NP_001091948.1	NP_001091948.1	0	\N	NONE	
+1388726	3800	CCDS43439.1	CCDS43439.1	0	\N	NONE	
+1388727	50688	NM_001098478.1	NM_001098478.1	0	major histocompatibility complex, class I, F, transcript variant 3	NONE	
+1388728	50688	XR_001743373.1	XR_001743373.1	0	major histocompatibility complex, class I, F, transcript variant X5	NONE	
+1388729	50688	XP_011512866.1	XP_011512866.1	0	\N	NONE	
+1388730	50688	XM_011514564.1	XM_011514564.1	0	major histocompatibility complex, class I, F, transcript variant X7	NONE	
+1388731	50688	XR_001743374.1	XR_001743374.1	0	major histocompatibility complex, class I, F, transcript variant X6	NONE	
+1388732	50688	XP_016866302.1	XP_016866302.1	0	\N	NONE	
+1388733	50688	XM_017010813.1	XM_017010813.1	0	major histocompatibility complex, class I, F, transcript variant X4	NONE	
+1388734	50688	XP_016866299.1	XP_016866299.1	0	\N	NONE	
+1388735	50688	XM_017010810.1	XM_017010810.1	0	major histocompatibility complex, class I, F, transcript variant X1	NONE	
+1388736	50688	XP_016866301.1	XP_016866301.1	0	\N	NONE	
+1388737	50688	XM_017010812.1	XM_017010812.1	0	major histocompatibility complex, class I, F, transcript variant X3	NONE	
+1388738	50688	XP_016866300.1	XP_016866300.1	0	\N	NONE	
+1388739	50688	XM_017010811.1	XM_017010811.1	0	major histocompatibility complex, class I, F, transcript variant X2	NONE	
+1388740	50688	XR_001743376.1	XR_001743376.1	0	major histocompatibility complex, class I, F, transcript variant X9	NONE	
+1388741	50688	XP_016866303.1	XP_016866303.1	0	\N	NONE	
+1388742	50688	XM_017010814.1	XM_017010814.1	0	major histocompatibility complex, class I, F, transcript variant X8	NONE	
+1388743	50688	XP_016866304.1	XP_016866304.1	0	\N	NONE	
+1388744	50688	XM_017010815.1	XM_017010815.1	0	major histocompatibility complex, class I, F, transcript variant X10	NONE	
+1388745	1100	HGNC:10318	RPL23AP1	0	ribosomal protein L23a pseudogene 1	NONE	
+1388746	1300	6148	RPL23AP1	0	ribosomal protein L23a pseudogene 1	NONE	
+1388747	1300	285830	HLA-F-AS1	0	HLA-F antisense RNA 1	NONE	
+1388748	1100	HGNC:26645	HLA-F-AS1	0	HLA-F antisense RNA 1	NONE	
+1388749	50688	NR_026973.1	NR_026973.1	0	HLA-F antisense RNA 1, transcript variant 2	NONE	
+1388750	50688	NR_026972.1	NR_026972.1	0	HLA-F antisense RNA 1, transcript variant 1	NONE	
+1388751	1100	HGNC:7094	MICE	0	MHC class I polypeptide-related sequence E (pseudogene)	NONE	
+1388752	1300	4280	MICE	0	MHC class I polypeptide-related sequence E (pseudogene)	NONE	
+1388753	1100	HGNC:30983	HCG9P5	0	HLA complex group 9 pseudogene 5	NONE	
+1388754	1300	353019	HCG9P5	0	HLA complex group 9 pseudogene 5	NONE	
+1388755	1100	HGNC:21669	IFITM4P	0	interferon induced transmembrane protein 4 pseudogene	NONE	
+1388756	1300	340198	IFITM4P	0	interferon induced transmembrane protein 4 pseudogene	NONE	
+1388757	50688	NR_001590.1	NR_001590.1	0	interferon induced transmembrane protein 4 pseudogene	NONE	
+1388758	1300	353010	3.8-1.5	0	HLA complex group 26 (non-protein coding) pseudogene	NONE	
+1388759	1100	HGNC:21241	HCG4	0	HLA complex group 4 (non-protein coding)	NONE	
+1388760	1300	54435	HCG4	0	HLA complex group 4 (non-protein coding)	NONE	
+1388761	50688	NR_002139.2	NR_002139.2	0	HLA complex group 4 (non-protein coding)	NONE	
+1388762	1300	352962	HLA-V	0	major histocompatibility complex, class I, V (pseudogene)	NONE	
+1388763	1100	HGNC:23482	HLA-V	0	major histocompatibility complex, class I, V (pseudogene)	NONE	
+1388764	50688	NR_132323.1	NR_132323.1	0	major histocompatibility complex, class I, V (pseudogene)	NONE	
+1388765	1300	353014	HCG4P9	0	HLA complex group 4 pseudogene 9	NONE	
+1388766	1100	HGNC:22928	HCG4P9	0	HLA complex group 4 pseudogene 9	NONE	
+1388767	1100	HGNC:21196	HLA-P	0	major histocompatibility complex, class I, P (pseudogene)	NONE	
+1388768	1300	352963	HLA-P	0	major histocompatibility complex, class I, P (pseudogene)	NONE	
+1388769	1300	353013	RPL7AP7	0	ribosomal protein L7a pseudogene 7	NONE	
+1388770	1100	HGNC:21395	RPL7AP7	0	ribosomal protein L7a pseudogene 7	NONE	
+1388771	1300	352967	MICG	0	MHC class I polypeptide-related sequence G (pseudogene)	NONE	
+1388772	1100	HGNC:16802	MICG	0	MHC class I polypeptide-related sequence G (pseudogene)	NONE	
+1388773	1100	HGNC:22927	HCG4P8	0	HLA complex group 4 pseudogene 8	NONE	
+1388774	1300	353005	HCG4P8	0	HLA complex group 4 pseudogene 8	NONE	
+1388775	1100	HGNC:4964	HLA-G	0	major histocompatibility complex, class I, G	NONE	
+1388776	1300	3135	HLA-G	0	major histocompatibility complex, class I, G	NONE	
+1388777	1510	142871	HLA-G	0	major histocompatibility complex, class I, G	NONE	
+1388778	50688	XP_016866305.1	XP_016866305.1	0	\N	NONE	
+1388779	50688	XM_017010816.1	XM_017010816.1	0	major histocompatibility complex, class I, G, transcript variant X1	NONE	
+1388780	50688	NP_002118.1	NP_002118.1	0	\N	NONE	
+1388781	3800	CCDS4668.1	CCDS4668.1	0	\N	NONE	
+1388782	50688	NM_002127.5	NM_002127.5	0	major histocompatibility complex, class I, G	NONE	
+1388783	50688	XP_016866306.1	XP_016866306.1	0	\N	NONE	
+1388784	50688	XM_017010817.1	XM_017010817.1	0	major histocompatibility complex, class I, G, transcript variant X3	NONE	
+1388785	50688	XP_016866307.1	XP_016866307.1	0	\N	NONE	
+1388786	50688	XM_017010818.1	XM_017010818.1	0	major histocompatibility complex, class I, G, transcript variant X4	NONE	
+1388787	50688	XP_024302188.1	XP_024302188.1	0	\N	NONE	
+1388788	50688	XM_024446420.1	XM_024446420.1	0	major histocompatibility complex, class I, G, transcript variant X2	NONE	
+1388789	1300	353000	HCGVIII-2	0	HCGVIII-2 pseudogene	NONE	
+1388790	1300	105375010	LOC105375010	0	LOC105375010	NONE	
+1388791	50688	XR_926681.2	XR_926681.2	0	uncharacterized LOC105375010, transcript variant X3	NONE	
+1388792	50688	XR_926682.2	XR_926682.2	0	uncharacterized LOC105375010, transcript variant X2	NONE	
+1388793	50688	XR_926680.2	XR_926680.2	0	uncharacterized LOC105375010, transcript variant X1	NONE	
+1388794	1300	352957	MICF	0	MHC class I polypeptide-related sequence F (pseudogene)	NONE	
+1388795	1100	HGNC:16801	MICF	0	MHC class I polypeptide-related sequence F (pseudogene)	NONE	
+1388796	1300	353009	3.8-1.4	0	HLA complex group 26 (non-protein coding) pseudogene	NONE	
+1388797	1300	352990	HCP5B	0	HLA complex P5B (non-protein coding)	NONE	
+1388798	1100	HGNC:30984	HCP5B	0	HLA complex P5B (non-protein coding)	NONE	
+1388799	50688	NR_031762.2	NR_031762.2	0	HLA complex P5B (non-protein coding)	NONE	
+1388800	1100	HGNC:22926	HCG4P7	0	HLA complex group 4 pseudogene 7	NONE	
+1388801	1300	353004	HCG4P7	0	HLA complex group 4 pseudogene 7	NONE	
+1388802	1300	3136	HLA-H	0	major histocompatibility complex, class I, H (pseudogene)	NONE	
+1388803	1100	HGNC:4965	HLA-H	0	major histocompatibility complex, class I, H (pseudogene)	NONE	
+1388804	50688	NR_001434.4	NR_001434.4	0	major histocompatibility complex, class I, H (pseudogene)	NONE	
+1388805	1100	HGNC:23478	HLA-T	0	major histocompatibility complex, class I, T (pseudogene)	NONE	
+1388806	1300	352964	HLA-T	0	major histocompatibility complex, class I, T (pseudogene)	NONE	
+1388807	1300	100048904	DDX39BP1	0	DEAD-box helicase 39B pseudogene 1	NONE	
+1388808	1100	HGNC:33450	DDX39BP1	0	DEAD-box helicase 39B pseudogene 1	NONE	
+1388809	1100	HGNC:33449	MCCD1P1	0	mitochondrial coiled-coil domain 1 pseudogene 1	NONE	
+1388810	1300	100048903	MCCD1P1	0	mitochondrial coiled-coil domain 1 pseudogene 1	NONE	
+1388811	1300	353008	3.8-1.3	0	HLA complex group 26 (non-protein coding) pseudogene	NONE	
+1388812	1100	HGNC:22919	HCG4B	0	HLA complex group 4B (non-protein coding)	NONE	
+1388813	1300	80868	HCG4B	0	HLA complex group 4B (non-protein coding)	NONE	
+1388814	50688	NR_001317.3	NR_001317.3	0	HLA complex group 4B (non-protein coding)	NONE	
+1388815	1100	HGNC:4969	HLA-K	0	major histocompatibility complex, class I, K (pseudogene)	NONE	
+1388816	1300	3138	HLA-K	0	major histocompatibility complex, class I, K (pseudogene)	NONE	
+1388817	1100	HGNC:23477	HLA-U	0	major histocompatibility complex, class I, U (pseudogene)	NONE	
+1388818	1300	352965	HLA-U	0	major histocompatibility complex, class I, U (pseudogene)	NONE	
+1388819	1300	353003	HCG4P5	0	HLA complex group 4 pseudogene 5	NONE	
+1388820	1100	HGNC:22925	HCG4P5	0	HLA complex group 4 pseudogene 5	NONE	
+1388821	1300	3105	HLA-A	0	major histocompatibility complex, class I, A	NONE	
+1388822	1510	142800	HLA-A	0	major histocompatibility complex, class I, A	NONE	
+1388823	1100	HGNC:4931	HLA-A	0	major histocompatibility complex, class I, A	NONE	
+1388824	50688	NP_002107.3	NP_002107.3	0	\N	NONE	
+1388825	3800	CCDS34373.1	CCDS34373.1	0	\N	NONE	
+1388826	50688	NM_002116.7	NM_002116.7	0	major histocompatibility complex, class I, A, transcript variant 1 (A*03:01:0:01)	NONE	
+1388827	1300	353002	HCG4P4	0	HLA complex group 4 pseudogene 4	NONE	
+1388828	1100	HGNC:22924	HCG4P4	0	HLA complex group 4 pseudogene 4	NONE	
+1388829	1300	352966	HLA-W	0	major histocompatibility complex, class I, W (pseudogene)	NONE	
+1388830	1100	HGNC:23425	HLA-W	0	major histocompatibility complex, class I, W (pseudogene)	NONE	
+1388831	1300	4279	MICD	0	MHC class I polypeptide-related sequence D (pseudogene)	NONE	
+1388832	1100	HGNC:7093	MICD	0	MHC class I polypeptide-related sequence D (pseudogene)	NONE	
+1388833	1100	HGNC:21243	HCG9	0	HLA complex group 9 (non-protein coding)	NONE	
+1388834	1510	615797	HCG9	0	HLA complex group 9 (non-protein coding)	NONE	
+1388835	1300	10255	HCG9	0	HLA complex group 9 (non-protein coding)	NONE	
+1388836	50688	NR_028032.1	NR_028032.1	0	HLA complex group 9 (non-protein coding)	NONE	
+1388837	1300	100048923	DDX39BP2	0	DEAD-box helicase 39B pseudogene 2	NONE	
+1388838	1100	HGNC:33461	DDX39BP2	0	DEAD-box helicase 39B pseudogene 2	NONE	
+1388839	1300	100048924	MCCD1P2	0	mitochondrial coiled-coil domain 1 pseudogene 2	NONE	
+1388840	1100	HGNC:33462	MCCD1P2	0	mitochondrial coiled-coil domain 1 pseudogene 2	NONE	
+1388841	1300	353007	3.8-1.2	0	HLA complex group 26 (non-protein coding) pseudogene	NONE	
+1388842	1100	HGNC:23148	PLCXD1	0	phosphatidylinositol specific phospholipase C X domain containing 1	NONE	
+1388843	1510	300974	PLCXD1	0	phosphatidylinositol specific phospholipase C X domain containing 1	NONE	
+1388844	1300	55344	PLCXD1	0	phosphatidylinositol specific phospholipase C X domain containing 1	NONE	
+1388845	50688	XP_011544482.1	XP_011544482.1	0	\N	NONE	
+1388846	50688	XM_011546180.3	XM_011546180.3	0	phosphatidylinositol specific phospholipase C X domain containing 1, transcript variant X2	NONE	
+1388847	50688	NR_028057.1	NR_028057.1	0	phosphatidylinositol specific phospholipase C X domain containing 1, transcript variant 2	NONE	
+1388848	50688	XP_006724507.1	XP_006724507.1	0	\N	NONE	
+1388849	50688	XM_006724444.3	XM_006724444.3	0	phosphatidylinositol specific phospholipase C X domain containing 1, transcript variant X1	NONE	
+1388850	50688	XP_024308163.1	XP_024308163.1	0	\N	NONE	
+1388851	50688	XM_024452395.1	XM_024452395.1	0	phosphatidylinositol specific phospholipase C X domain containing 1, transcript variant X5	NONE	
+1388852	50688	NP_060860.1	NP_060860.1	0	\N	NONE	
+1388853	3800	CCDS14103.1	CCDS14103.1	0	\N	NONE	
+1388854	50688	NM_018390.3	NM_018390.3	0	phosphatidylinositol specific phospholipase C X domain containing 1, transcript variant 1	NONE	
+1388855	50688	XP_006724508.1	XP_006724508.1	0	\N	NONE	
+1388856	50688	XM_006724445.3	XM_006724445.3	0	phosphatidylinositol specific phospholipase C X domain containing 1, transcript variant X4	NONE	
+1388857	50688	XP_006724509.1	XP_006724509.1	0	\N	NONE	
+1388858	50688	XM_006724446.3	XM_006724446.3	0	phosphatidylinositol specific phospholipase C X domain containing 1, transcript variant X3	NONE	
+1388859	1100	HGNC:30189	GTPBP6	0	GTP binding protein 6 (putative)	NONE	
+1388860	1510	300124	GTPBP6	0	GTP binding protein 6 (putative)	NONE	
+1388861	1300	8225	GTPBP6	0	GTP binding protein 6 (putative)	NONE	
+1388862	50688	XP_006724510.1	XP_006724510.1	0	\N	NONE	
+1388863	50688	XM_006724447.4	XM_006724447.4	0	GTP binding protein 6 (putative), transcript variant X1	NONE	
+1388864	50688	XP_011544486.1	XP_011544486.1	0	\N	NONE	
+1388865	50688	XM_011546184.3	XM_011546184.3	0	GTP binding protein 6 (putative), transcript variant X2	NONE	
+1388866	3800	CCDS75943.1	CCDS75943.1	0	\N	NONE	
+1388867	50688	NP_036359.3	NP_036359.3	0	\N	NONE	
+1388868	50688	NM_012227.3	NM_012227.3	0	GTP binding protein 6 (putative)	NONE	
+1388869	1100	HGNC:27560	LINC00685	0	long intergenic non-protein coding RNA 685	NONE	
+1388870	1300	283981	LINC00685	0	long intergenic non-protein coding RNA 685	NONE	
+1388871	50688	NR_027231.1	NR_027231.1	0	long intergenic non-protein coding RNA 685, transcript variant 2	NONE	
+1388872	50688	NR_027232.1	NR_027232.1	0	long intergenic non-protein coding RNA 685, transcript variant 1	NONE	
+1388873	1300	28227	PPP2R3B	0	protein phosphatase 2 regulatory subunit B''beta	NONE	
+1388874	1510	300339	PPP2R3B	0	protein phosphatase 2 regulatory subunit B''beta	NONE	
+1388875	1100	HGNC:13417	PPP2R3B	0	protein phosphatase 2 regulatory subunit B''beta	NONE	
+1388876	50688	NP_037371.2	NP_037371.2	0	\N	NONE	
+1388877	3800	CCDS14104.1	CCDS14104.1	0	\N	NONE	
+1388878	50688	NM_013239.4	NM_013239.4	0	protein phosphatase 2 regulatory subunit B''beta	NONE	
+1388879	50688	XR_002958773.1	XR_002958773.1	0	protein phosphatase 2 regulatory subunit B''beta, transcript variant X3	NONE	
+1388880	50688	XP_011544479.1	XP_011544479.1	0	\N	NONE	
+1388881	50688	XM_011546177.3	XM_011546177.3	0	protein phosphatase 2 regulatory subunit B''beta, transcript variant X1	NONE	
+1388882	50688	XR_002958772.1	XR_002958772.1	0	protein phosphatase 2 regulatory subunit B''beta, transcript variant X2	NONE	
+1388883	1300	442442	RPL14P5	0	ribosomal protein L14 pseudogene 5	NONE	
+1388884	1100	HGNC:37720	RPL14P5	0	ribosomal protein L14 pseudogene 5	NONE	

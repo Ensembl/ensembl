@@ -1,0 +1,1 @@
+8378	2018-02-20 13:37:03	refseq_import	RefSeq	2018-07-10 14:50:52	GCF_000001405.38_GRCh38.p12_genomic.gff	\N	\N	\N	\N	\N	\N	\N	\N

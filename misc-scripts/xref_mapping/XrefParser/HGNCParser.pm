@@ -1,7 +1,7 @@
 =head1 LICENSE
 
-Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
-Copyright [2016-2019] EMBL-European Bioinformatics Institute
+See the NOTICE file distributed with this work for additional information
+regarding copyright ownership.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -15,7 +15,54 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 
+=head1 CONTACT
+
+  Please email comments or questions to the public Ensembl
+  developers list at <http://lists.ensembl.org/mailman/listinfo/dev>.
+
+  Questions may also be sent to the Ensembl help desk at
+  <http://www.ensembl.org/Help/Contact>.
+
+=head1 NAME
+
+XrefParser::HGNCParser
+
+=head1 DESCRIPTION
+
+A parser class to parse the HGNC source.
+HGNC is the official naming source for Human.
+
+-data_uri = https://www.genenames.org/cgi-bin/download?col=gd_hgnc_id&col=gd_app_sym&col=gd_app_name&col=gd_prev_sym&col=gd_aliases&col=gd_pub_eg_id&col=gd_pub_ensembl_id&col=gd_pub_refseq_ids&col=gd_ccds_ids&col=gd_lsdb_links&status=Approved&status_opt=2&where=&order_by=gd_app_sym_sort&format=text&limit=&hgnc_dbtag=on&submit=submit
+-file_format = TSV
+-columns = [
+    HGNC ID
+    Approved symbol
+    Approved name
+    Previous symbols
+    Synonyms
+    NCBI Gene ID
+    Ensembl gene ID
+    RefSeq IDs
+    CCDS IDs
+    Locus specific databases
+  ]
+
+A core database adaptor is required.
+
+=head1 SYNOPSIS
+
+  my $parser = XrefParser::HGNCParser->new($db->dbh);
+
+  $parser->run_script( {
+    source_id  => 46,
+    species_id => 9606,
+    file       => 'hgnc_data.tsv',
+    dba        => $core_dba,
+  } );
+
 =cut
+
+
 
 package XrefParser::HGNCParser;
 
@@ -38,6 +85,12 @@ my @SOURCES = (
 );
 
 
+=head2 run_script
+  Description: Runs the HGNCParser
+  Return type: none
+  Exceptions : throws on all processing errors
+  Caller     : ParseSource in the xref pipeline
+=cut
 
 sub run_script {
   my ($self, $ref_arg) = @_;
@@ -148,21 +201,6 @@ CCDS
     binary         => 1,
     auto_diag      => 1
   }) or croak "Cannot use file $file: ".Text::CSV->error_diag ();
-
-
-## COLUMNS OF FILE ARE AS FOLLOW:
-
-# HGNC ID
-# Approved symbol
-# Approved name
-# Previous symbols
-# Synonyms
-# NCBI Gene ID
-# Ensembl gene ID
-# RefSeq IDs
-# CCDS IDs
-# Locus specific databases
-
 
   # make sure it's utf8
   utf8::encode($mem_file);
@@ -374,6 +412,13 @@ CCDS
 
 
 
+=head2 add_synonyms_for_hgnc
+  Arg [1]    : hashref : source_id, name, species_id, dead, alias
+  Description: Specialized class to add synonyms from HGNC and VGNC data
+  Return type: N/A
+  Caller     : internal
+=cut
+
 sub add_synonyms_for_hgnc {
   my ($self, $ref_arg) = @_;
 
@@ -407,10 +452,16 @@ sub add_synonyms_for_hgnc {
 
 
 
-# parses the input string $file into an hash
-# string $file is in the format as the example:
-# script:project=>ensembl,host=>ens-staging1,dbname=>homo_sapiens_core_70_37,ofhost=>ens-staging1,...
-# string until : is ignored, hash is built with keys=>values provided
+=head2 parse_file_string
+  Arg [1]    : string : input file string
+  Description: parses the input string $file into an hash
+               string $file is in the format as the example:
+               script:project=>ensembl,host=>ens-staging1,dbname=>homo_sapiens_core_70_37,ofhost=>ens-staging1,...
+               string until : is ignored, hash is built with keys=>values provided
+  Return type: params hashref
+  Caller     : internal
+=cut
+
 sub parse_file_string {
   my ($self, $file_string) = @_;
 
