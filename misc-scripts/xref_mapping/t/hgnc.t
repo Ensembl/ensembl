@@ -125,8 +125,8 @@ while ( my $synonym_result = $synomym_rs->next ) {
   push @synonyms, $synonym_result->synonym;
 }
 
-foreach my $expected_synonym (@expected_synonyms) {
-  my $test_synonym = shift @synonyms;
+foreach my $test_synonym (sort @synonyms) {
+  my $expected_synonym = shift @expected_synonyms;
   is( $test_synonym, $expected_synonym, "Synonym $expected_synonym of xref_id 2 is correct");
 }
 
