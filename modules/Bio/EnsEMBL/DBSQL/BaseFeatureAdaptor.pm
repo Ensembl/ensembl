@@ -1449,9 +1449,9 @@ sub fetch_all_by_outward_search {
   my $current_search_range = $start_search_range;
   $max_range ||= 10000;
   my @results;
-  while (scalar @results < $limit && $current_search_range <= $max_range) {
+  while (scalar @results < $limit && $current_search_range < $max_range) {
     $current_search_range = $start_search_range * $factor;
-    @results = @{ 
+    @results = @{
       $self->fetch_all_nearest_by_Feature(-RANGE => $current_search_range,
                                           -FEATURE => $ref_feature, 
                                           -SAME_STRAND => $respect_strand, 
