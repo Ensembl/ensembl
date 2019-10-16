@@ -155,9 +155,12 @@ sub new {
 sub next {
     my $self = shift;
 
-    $self->{next} = $self->{sub}->() unless defined $self->{next};
-    
-    return delete $self->{next};
+    $self->{next} = $self->{sub}->() unless exists $self->{next};
+
+    if (defined $self->{next}) {
+        return delete $self->{next};
+    }
+    return;
 }
 
 =head2 has_next
@@ -175,7 +178,7 @@ sub next {
 sub has_next {
     my $self = shift;
 
-    $self->{next} = $self->{sub}->() unless defined $self->{next};
+    $self->{next} = $self->{sub}->() unless exists $self->{next};
 
     return defined $self->{next}; 
 }
@@ -196,7 +199,7 @@ sub has_next {
 sub peek {
     my $self = shift;
 
-    $self->{next} = $self->{sub}->() unless defined $self->{next};
+    $self->{next} = $self->{sub}->() unless exists $self->{next};
 
     return $self->{next};
 }
