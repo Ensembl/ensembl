@@ -141,6 +141,26 @@ sub new {
 }
 
 
+=head2 _fetch_next_value_if_needed
+
+  Example    : $iterator->_fetch_next_value_if_needed
+  Description: Helper method used to fill the internal buffer with the next value of the iterator
+  Returntype : none
+  Exceptions : none
+  Caller     : general
+  Status     : Experimental
+
+=cut
+
+sub _fetch_next_value_if_needed {
+    my $self = shift;
+
+    unless (exists $self->{next}) {
+        $self->{next} = $self->{sub}->();
+    }
+}
+
+
 =head2 next
 
   Example    : $obj = $iterator->next
@@ -155,7 +175,7 @@ sub new {
 sub next {
     my $self = shift;
 
-    $self->{next} = $self->{sub}->() unless exists $self->{next};
+    $self->_fetch_next_value_if_needed();
 
     if (defined $self->{next}) {
         return delete $self->{next};
@@ -178,7 +198,7 @@ sub next {
 sub has_next {
     my $self = shift;
 
-    $self->{next} = $self->{sub}->() unless exists $self->{next};
+    $self->_fetch_next_value_if_needed();
 
     return defined $self->{next}; 
 }
@@ -199,7 +219,7 @@ sub has_next {
 sub peek {
     my $self = shift;
 
-    $self->{next} = $self->{sub}->() unless exists $self->{next};
+    $self->_fetch_next_value_if_needed();
 
     return $self->{next};
 }
