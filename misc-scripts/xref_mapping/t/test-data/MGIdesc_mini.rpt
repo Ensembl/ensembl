@@ -1,0 +1,11 @@
+MGI Accession ID	Chr	cM Position	genome coordinate start	genome coordinate end	strand	Marker Symbol	Status	Marker Name	Marker Type	Feature Type	Marker Synonyms (pipe-separated)
+MGI:1341858	5	  syntenic				03B03F	O	DNA segment, 03B03F (Research Genetics)	BAC/YAC end	BAC/YAC end	
+MGI:1341869	5	  syntenic				03B03R	O	DNA segment, 03B03R (Research Genetics)	BAC/YAC end	BAC/YAC end	
+MGI:1337005	11	  syntenic				03.MMHAP34FRA.seq	O	DNA segment, 03.MMHAP34FRA.seq	DNA Segment	DNA segment	
+MGI:1918911	7	  29.36	45567795	45575176	-	0610005C13Rik	O	RIKEN cDNA 0610005C13 gene	Gene	antisense lncRNA gene	
+MGI:1923503	7	  syntenic	74818818	74853813	-	0610006L08Rik	O	RIKEN cDNA 0610006L08 gene	Gene	lincRNA gene	
+MGI:1925547	UN	       N/A				0610008J02Rik	O	RIKEN cDNA 0610008J02 gene	Gene	unclassified gene	
+MGI:1913300	11	  31.26	51685386	51688874	-	0610009B22Rik	O	RIKEN cDNA 0610009B22 gene	Gene	protein coding gene	
+MGI:3698435	2	  18.90	26445605	26457995	+	0610009E02Rik	O	RIKEN cDNA 0610009E02 gene	Gene	unclassified non-coding RNA gene	
+MGI:1918921	16	  syntenic	91947326	91947785		0610009F21Rik	O	RIKEN cDNA 0610009F21 gene	Gene	unclassified gene	
+MGI:1926146	1	  23.44	43730602	43742564	+	1500015O10Rik	O	RIKEN cDNA 1500015O10 gene	Gene	protein coding gene	Ecrg4|augurin
