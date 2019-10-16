@@ -47,7 +47,6 @@ package XrefParser::MGIParser;
 use strict;
 use warnings;
 use Carp;
-use DBI;
 use Text::CSV;
 
 use parent qw( XrefParser::BaseParser );
