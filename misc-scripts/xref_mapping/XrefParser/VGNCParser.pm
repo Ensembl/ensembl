@@ -1,7 +1,7 @@
 =head1 LICENSE
 
-Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
-Copyright [2016-2019] EMBL-European Bioinformatics Institute
+See the NOTICE file distributed with this work for additional information
+regarding copyright ownership.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -15,6 +15,62 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 
+=head1 CONTACT
+
+  Please email comments or questions to the public Ensembl
+  developers list at <http://lists.ensembl.org/mailman/listinfo/dev>.
+
+  Questions may also be sent to the Ensembl help desk at
+  <http://www.ensembl.org/Help/Contact>.
+
+=head1 NAME
+
+XrefParser::VGNCParser
+
+=head1 DESCRIPTION
+
+A parser class to parse the VGNC source.
+VGNC is the official naming source for some vertebrates species
+
+-data_uri = ftp://ftp.ebi.ac.uk/pub/databases/genenames/vgnc/tsv/vgnc_gene_set_All.txt.gz
+-file_format = TSV
+-columns = [
+    taxon_id
+    vgnc_id
+    symbol
+    name
+    locus_group
+    locus_type
+    status
+    location
+    location_sortable:
+    alias_symbol
+    alias_name
+    prev_symbol
+    prev_name
+    gene_family
+    gene_family_id
+    date_approved_reserved
+    date_symbol_changed
+    date_name_changed
+    date_modified
+    entrez_id
+    ensembl_gene_id
+    uniprot_ids
+  ]
+
+Only columns listed in @required_columns are mandatory.
+
+=head1 SYNOPSIS
+
+  my $parser = XrefParser::VGNCParser->new($db->dbh);
+
+  my $parser->run( {
+    source_id  => 144,
+    species_id => 9598,
+    files      => ['VGNC/vgnc_gene_set_All.txt.gz'],
+  } );
+
 =cut
 
 package XrefParser::VGNCParser;
@@ -26,6 +82,14 @@ use Text::CSV;
 
 use parent qw( XrefParser::HGNCParser );
 
+
+=head2 run
+  Description: Runs the VGNCParser
+  Return type: none
+  Exceptions : throws on all processing errors
+  Caller     : ParseSource in the xref pipeline
+=cut
+
 sub run {
   my ($self, $ref_arg) = @_;
 
@@ -36,18 +100,18 @@ sub run {
   my $dbi          = $ref_arg->{dbi} // $self->dbi;
 
 
-  if ( (!defined $source_id) or (!defined $species_id) or (!defined $files) ) {
-    croak "Need to pass source_id, species_id and files as pairs";
+  if ( (!defined $source_id) || (!defined $species_id) || (!defined $files) ) {
+    confess "Need to pass source_id, species_id and files as pairs";
   }
 
-  my $file = shift @{$files};
+  my $file = @{$files}[0];
 
   my $count = 0;
 
   my $file_io = $self->get_filehandle($file);
 
   if ( !defined $file_io ) {
-    croak "Can't open VGNC file $file\n";
+    confess "Can't open VGNC file '$file'\n";
   }
 
   my $source_name = $self->get_source_name_for_source_id($source_id, $dbi);
@@ -60,7 +124,7 @@ sub run {
   my $input_file = Text::CSV->new({
     sep_char       => "\t",
     empty_is_undef => 1
-  }) or croak "Cannot use file $file: ".Text::CSV->error_diag ();
+  }) or confess "Cannot use file '$file': ".Text::CSV->error_diag();
 
   # header must contain these columns
   my @required_columns = qw(
@@ -79,7 +143,7 @@ sub run {
   # die if some required_column is not in columns
   foreach my $colname (@required_columns) {
     if ( !grep { /$colname/xms } @columns ) {
-      croak "Can't find required column $colname in VGNC file $file\n";
+      confess "Can't find required column '$colname' in VGNC file '$file'\n";
     }
   }
 
@@ -116,11 +180,11 @@ sub run {
 
   }
 
-  $input_file->eof or croak "Error parsing file $file: " . $input_file->error_diag();
+  $input_file->eof or confess "Error parsing file '$file': " . $input_file->error_diag();
   $file_io->close();
 
   if($verbose){
-    print "Loaded a total of $count xrefs\n";
+    print "Loaded a total of $count VGNC xrefs\n";
   }
 
   return 0; # successful
