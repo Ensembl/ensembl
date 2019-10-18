@@ -87,7 +87,7 @@ sub run {
     $line = $rgd_io->getline;
   }
   $csv->parse($line);
-  $csv->column_names( $csv->fields );
+  my @column_names = $csv->fields();
   # Columns we want
   #  GENE_RGD_ID => 0,
   #  SYMBOL => 1,
@@ -100,8 +100,11 @@ sub run {
   my $ensembl_count = 0;
   my $mismatch      = 0;
   my $syn_count     = 0;
-  my $cols;    # Digested columns from CSV
-  while ( $cols = $csv->getline_hr($rgd_io) ) {
+
+  my $cols = {};  # Digested columns from CSV
+  $csv->bind_columns( \@{$cols}{@column_names}  );
+
+  while ( $csv->getline($rgd_io) ) {
     next
       if exists $cols->{GENE_RGD_ID} &&
       ( $cols->{GENE_RGD_ID} eq q{} || !defined $cols->{GENE_RGD_ID} );
