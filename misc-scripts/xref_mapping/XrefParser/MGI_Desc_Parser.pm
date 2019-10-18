@@ -87,9 +87,9 @@ sub run {
 
   my $input_file = Text::CSV->new({
     sep_char           => "\t",
-    empty_is_undef     => 1,
+    quote_char         => undef,
+    escape_char        => undef,
     strict             => 1,
-    allow_loose_quotes => 1,
   }) or confess "Cannot use file $file: " . Text::CSV->error_diag();
 
   my $xref_count = 0;
