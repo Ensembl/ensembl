@@ -1,9 +1,7 @@
-
 =head1 LICENSE
 
-Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
-Copyright [2016-2019] EMBL-European Bioinformatics Institute
-
+See the NOTICE file distributed with this work for additional information
+regarding copyright ownership.
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
@@ -18,16 +16,49 @@ limitations under the License.
 
 =cut
 
-package XrefParser::XenopusJamboreeParser;
+=head1 NAME
 
-# Parse annotated peptides from Xenopus Jamboree
+XrefParser::XenopusJamboreeParser
+
+=head1 DESCRIPTION
+
+A parser class to parse the Xenbase source file.
+
+-species = xenopus_tropicalis
+-species_id = 8364
+-data_uri = ftp://ftp.xenbase.org/pub/GenePageReports/GenePageEnsemblModelMapping.txt
+-file_format = TSV
+-columns = [acc label desc stable_id]
+
+
+=head1 SYNOPSIS
+
+  my $parser = XrefParser::XenopusJamboreeParser->new($db->dbh);
+  $parser->run({
+    source_id  => 150,
+    species_id => 8364,
+    files      => ["xenopusjamboree.txt"],
+  });
+
+=cut
+
+package XrefParser::XenopusJamboreeParser;
 
 use strict;
 use warnings;
+
 use Carp;
 use Text::CSV;
 
 use parent qw( XrefParser::BaseParser );
+
+
+=head2 run
+  Description: Runs the XenopusJamboreeParser
+  Return type: N/A
+  Caller     : internal
+
+=cut
 
 sub run {
   my ( $self, $ref_arg ) = @_;
@@ -41,80 +72,79 @@ sub run {
     or ( !defined $species_id )
     or ( !defined $files ) )
   {
-    croak "Need to pass source_id, species_id and files as pairs";
+    confess 'Need to pass source_id, species_id and files as pairs';
   }
 
-  my $file = shift @{$files};
+  my $file = @{$files}[0];
 
   my $file_io = $self->get_filehandle($file);
-
   if ( !defined $file_io ) {
-    croak "ERROR: Could not open $file\n";
+    confess "Could not open $file\n";
   }
 
-  my $input_file = Text::CSV->new(
-    {
-      sep_char       => "\t",
-      empty_is_undef => 1,
-    }
-  ) or croak "Cannot use file $file: " . Text::CSV->error_diag();
+  my $input_file = Text::CSV->new({
+    sep_char       => "\t",
+    empty_is_undef => 1,
+  }) || confess "Cannot use file $file: " . Text::CSV->error_diag();
 
-  $input_file->column_names( [qw(acc label desc stable_id)] );
   my $count = 0;
-  while ( my $data = $input_file->getline_hr($file_io) ) {
+  while ( my $data = $input_file->getline($file_io) ) {
 
-    my $desc;
-    if ( defined $data->{'desc'} ) {
-      $desc = $self->parse_description( $data->{'desc'} );
+    my ( $accession, $label, $desc, $stable_id ) = @{$data};
+
+    # If there is a description, trim it a bit
+    if ( defined $desc ) {
+      $desc = parse_description( $desc );
     }
 
-    if ( $data->{'label'} eq "unnamed" ) {
-      $data->{'label'} = $data->{'acc'};
+    if ( $label eq 'unnamed' ) {
+      $label = $accession;
     }
 
-    $self->add_to_direct_xrefs(
-      {
-        stable_id  => $data->{'stable_id'},
-        type       => 'gene',
-        acc        => $data->{'acc'},
-        label      => $data->{'label'},
-        desc       => $desc,
-        dbi        => $dbi,
-        source_id  => $source_id,
-        species_id => $species_id
-      }
-    );
+    $self->add_to_direct_xrefs({
+      stable_id  => $stable_id,
+      type       => 'gene',
+      acc        => $accession,
+      label      => $label,
+      desc       => $desc,
+      dbi        => $dbi,
+      source_id  => $source_id,
+      species_id => $species_id,
+    });
     $count++;
   }
 
   $input_file->eof
-    or croak "Error parsing file $file: " . $input_file->error_diag();
+    || confess "Error parsing file $file: " . $input_file->error_diag();
   $file_io->close();
 
-  print $count . " XenopusJamboreeParser xrefs succesfully parsed\n"
-    if ($verbose);
+  if ($verbose) {
+    print $count . " XenopusJamboreeParser xrefs succesfully parsed\n";
+  }
 
   return 0;
-}
+} ## end sub run
 
-=begin comment
-Regex handles lines in the following desc formats
 
-XB-GENE-940410	unnamed	Putative ortholog of g2/mitotic-specific cyclin B3, 3 of 14	ENSXETG00000007206
-XB-GENE-956173	hba4	alpha-T4 globin, Putative ortholog of hemoglobin alpha chain. [Source:Uniprot/SWISSPROT;Acc:P01922], 2 of 3	ENSXETG00000001141
+=head2 parse_description
+  Description: Extract description information from
+               Xenopus downloaded file
+  Return type: N/A
+  Caller     : internal
 
-=end comment
 =cut
 
 sub parse_description {
-  my ( $self, $desc ) = @_;
+  my ( $desc ) = @_;
 
   # Remove some provenance information encoded in the description
-  $desc =~ s/\[.*\]//xms;
+  $desc =~ s{ \[ .* \] }{}msx;
 
   # Remove labels of type 5 of 14 from the description
-  $desc =~ s/,\s+[0-9]+\s+of\s+[0-9]+//xms;
+  $desc =~ s{ , \s+\d+\s+ of \s+\d+ }{}msx;
+
   return $desc;
 }
+
 
 1;
