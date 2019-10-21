@@ -33,6 +33,23 @@ $it = Bio::EnsEMBL::Utils::Iterator->new(sub {return 3});
 
 is($it->next, 3, "got expected value from iterator created from coderef");
 
+# check that the coderef is not called any more once it returns undef
+
+my $call_counter = 0;
+$it = Bio::EnsEMBL::Utils::Iterator->new(sub {
+        ++$call_counter;
+        if ($call_counter == 1) {
+            return 1;
+        } else {
+            return undef;
+        }
+    });
+
+is($it->next, 1, "got expected value from iterator created from coderef");
+is($it->next, undef, "got undef from iterator created from coderef once exhausted");
+is($it->next, undef, "got undef from iterator created from coderef once exhausted");
+is($call_counter, 2, 'Returned undef without calling the coderef any further');
+
 # from now on we create an iterator from an arrayref because it's simpler
 
 $it = Bio::EnsEMBL::Utils::Iterator->new([1,2,3]);
