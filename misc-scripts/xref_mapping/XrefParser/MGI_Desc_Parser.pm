@@ -96,10 +96,9 @@ sub run {
   my $syn_count  = 0;
   my %acc_to_xref;
 
-  # read header
-  my @header_fields = $input_file->header($mgi_io);
-  if ( scalar @header_fields != $EXPECTED_NUMBER_OF_COLUMNS ) {
-    confess "Header of input file $file has an incorrect number of columns";
+  # read and validate header
+  if ( ! is_file_header_valid( $input_file->header( $mgi_io ) ) ) {
+    confess "Malformed or unexpected header in MGI_Desc file '${file}'";
   }
 
   while ( my $data = $input_file->getline($mgi_io) ) {
@@ -145,6 +144,59 @@ sub run {
 
   return 0;    #successful
 } ## end sub run
+
+
+=head2 is_file_header_valid
+
+  Arg [1..N] : list of column names provided by Text::CSV::header()
+  Example    : if ( ! is_file_header_valid( $csv->header( $fh ) ) {
+                 confess 'Bad header';
+               }
+  Description: Verifies if the header of a MGI_Desc file follows
+               expected syntax.
+  Return type: boolean
+  Exceptions : none
+  Caller     : internal
+  Status     : Stable
+
+=cut
+
+sub is_file_header_valid {
+  my ( @header ) = @_;
+
+  # Don't bother with parsing column names if their number does not
+  # match to begin with
+  if ( scalar @header != $EXPECTED_NUMBER_OF_COLUMNS ) {
+    return 0;
+  }
+
+  my @field_patterns
+    = (
+        'mgi accession id',
+        'chr',
+        'cm position',
+        'genome coordinate start',
+        'genome coordinate end',
+        'strand',
+        'marker symbol',
+        'status',
+        'marker name',
+        'marker type',
+        'feature type',
+        'marker synonyms (pipe-separated)',
+      );
+
+  my $header_field;
+  foreach my $pattern (@field_patterns) {
+    $header_field = shift @header;
+    if ( $header_field ne $pattern ) {
+      return 0;
+    }
+  }
+
+  # If we have made it this far, all should be in order
+  return 1;
+}
 
 
 1;
