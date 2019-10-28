@@ -65,7 +65,7 @@ ok(
 );
 
 # Test if all the rows were inserted
-is($db->schema->resultset('Xref')->count, 10, "All 10 rows were inserted");
+is($db->schema->resultset('Xref')->count, 12, "All 12 rows were inserted");
 
 # Test the description parsing
 my $input_desc = "Putative ortholog of g2/mitotic-specific cyclin B3, 3 of 14";
