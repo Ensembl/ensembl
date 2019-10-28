@@ -8,3 +8,5 @@ XB-GENE-478113	nsa2	NSA2, ribosome biogenesis homolog	ENSXETG00000005077
 XB-GENE-478121	csnk1a1	casein kinase 1 alpha 1	ENSXETG00000020861
 XB-GENE-478131	hoxc6	homeobox C6	ENSXETG00000023479
 XB-GENE-478141	hba1	hemoglobin subunit alpha 1	ENSXETG00000025664
+XB-GENE-940866	rtp3c	receptor (chemosensory) transporter protein 3 gene C [provisional]	ENSXETG00000019753
+XB-GENE-981482	or1e2l	conserved hypothetical olfactory receptor, 8 of 17	ENSXETG00000026609
