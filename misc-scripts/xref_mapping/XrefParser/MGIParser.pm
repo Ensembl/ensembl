@@ -1,9 +1,8 @@
 
 =head1 LICENSE
 
-Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
-Copyright [2016-2019] EMBL-European Bioinformatics Institute
-
+See the NOTICE file distributed with this work for additional information
+regarding copyright ownership.
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
@@ -18,15 +17,48 @@ limitations under the License.
 
 =cut
 
+=head1 NAME
+
+XrefParser::MGIParser
+
+=head1 DESCRIPTION
+
+A parser class to parse the MGI (official) source,
+creating a DIRECT xref between MGI accession and ensembl mouse gene stable id ENSMUSG*
+
+-species = mus_musculus
+-species_id = 10090
+-data_uri = http://www.informatics.jax.org/downloads/reports/MRK_ENSEMBL.rpt
+-file_format = TSV
+-columns = [accession symbol name position chrom ens_gene_stableid] ##ignore other columns
+
+=head1 SYNOPSIS
+
+  my $parser = XrefParser::MGIParser->new($db->dbh);
+  $parser->run({
+    source_id  => 55,
+    species_id => 10090,
+    files      => ["MRK_ENSEMBL.rpt"],
+  });
+=cut
+
 package XrefParser::MGIParser;
 
 use strict;
 use warnings;
 use Carp;
-use DBI;
 use Text::CSV;
 
-use parent qw(XrefParser::BaseParser);
+use parent qw( XrefParser::BaseParser );
+
+=head2 run
+  Arg [1]    : HashRef standard list of arguments from ParseSource
+  Example    : $mgi_parser->run({ ... });
+  Description: Runs the MGIParser
+  Return type: 0 on success
+  Exceptions : throws on all processing errors
+  Caller     : ParseSource in the xref pipeline
+=cut
 
 sub run {
 
@@ -41,18 +73,18 @@ sub run {
     or ( !defined $species_id )
     or ( !defined $files ) )
   {
-    croak "Need to pass source_id, species_id and files as pairs";
+    confess 'Need to pass source_id, species_id and files as pairs';
   }
 
-  my $file = shift @{$files};
+  my $file = @{$files}[0];
 
   my $file_io = $self->get_filehandle($file);
   if ( !defined $file_io ) {
-    croak "Could not open $file\n";
+    confess "Could not open $file\n";
   }
 
-  #synonyms
-  my $syn_hash = $self->get_ext_synonyms( "MGI", $dbi );
+  #synonyms; move this to SynonymAdaptor?!
+  my $syn_hash = $self->get_ext_synonyms( 'MGI', $dbi );
 
   #Init input file
   my $input_file = Text::CSV->new(
@@ -62,42 +94,40 @@ sub run {
       strict             => 1,
       allow_loose_quotes => 1,
     }
-  ) or croak "Cannot use file $file: " . Text::CSV->error_diag();
+  ) or confess "Cannot use file $file: " . Text::CSV->error_diag();
 
-# init headers
-# MGI:1915941	1110028C15Rik	RIKEN cDNA 1110028C15 gene	33.61	1	ENSMUSG00000026004	ENSMUST00000042389 ENSMUST00000068168 ENSMUST00000113987 ENSMUST00000129190 ENSMUST00000132960	ENSMUSP00000036975 ENSMUSP00000063843 ENSMUSP00000109620 ENSMUSP00000118603
-  $input_file->column_names( [qw(accession symbol name position chrom ens_gene_stableid)] );    #ignore last two columns EnsemblTranscriptIDs and EnsemblProteinIDs
   my $count     = 0;
   my $syn_count = 0;
-  while ( my $data = $input_file->getline_hr($file_io) ) {
 
-    my $acc     = $data->{'accession'};
-    my $ensid   = $data->{'ens_gene_stableid'};
+  while ( my $data = $input_file->getline($file_io) ) {
+    my $acc     = $data->[0];
+    my $ensid   = $data->[5];
+
     my $xref_id = $self->add_xref(
       {
         acc        => $acc,
         version    => 0,
-        label      => $data->{'symbol'},
-        desc       => $data->{'name'},
+        label      => $data->[1],
+        desc       => $data->[2],
         source_id  => $source_id,
-        dbi        => $dbi,
         species_id => $species_id,
-        info_type  => "DIRECT"
+        info_type  => 'DIRECT',
+        dbi        => $dbi,
       }
     );
 
-    $self->add_direct_xref( $xref_id, $ensid, "Gene", undef, $dbi );
-    if ( defined( $syn_hash->{$acc} ) ) {
+    $self->add_direct_xref( $xref_id, $ensid, 'Gene', undef, $dbi );
+    if ( exists $syn_hash->{$acc} ) {
       foreach my $syn ( @{ $syn_hash->{$acc} } ) {
         $self->add_to_syn( $acc, $source_id, $syn, $species_id, $dbi );
-        $syn_count++;
+        $syn_count += 1;
       }
     }
-    $count++;
+    $count += 1;
 
   }
   $input_file->eof
-    or croak "Error parsing file $file: " . $input_file->error_diag();
+    || confess "Error parsing file $file: " . $input_file->error_diag();
   $file_io->close();
 
   if ($verbose) {
