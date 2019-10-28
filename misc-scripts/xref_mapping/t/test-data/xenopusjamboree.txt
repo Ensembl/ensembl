@@ -1,0 +1,12 @@
+XB-GENE-478054	trnt1	tRNA nucleotidyl transferase, CCA-adding, 1	ENSXETG00000025091
+XB-GENE-478064	foxh1.2	forkhead box H1, gene 2	ENSXETG00000005286
+XB-GENE-478074	nr5a2	nuclear receptor subfamily 5 group A member 2	ENSXETG00000000314
+XB-GENE-478084	tbx1	T-box 1	ENSXETG00000006304
+XB-GENE-478094	nr1d1	nuclear receptor subfamily 1 group D member 1	ENSXETG00000024397
+XB-GENE-478104	nucb1	nucleobindin 1	ENSXETG00000021229
+XB-GENE-478113	nsa2	NSA2, ribosome biogenesis homolog	ENSXETG00000005077
+XB-GENE-478121	csnk1a1	casein kinase 1 alpha 1	ENSXETG00000020861
+XB-GENE-478131	hoxc6	homeobox C6	ENSXETG00000023479
+XB-GENE-478141	hba1	hemoglobin subunit alpha 1	ENSXETG00000025664
+XB-GENE-940866	rtp3c	receptor (chemosensory) transporter protein 3 gene C [provisional]	ENSXETG00000019753
+XB-GENE-981482	or1e2l	conserved hypothetical olfactory receptor, 8 of 17	ENSXETG00000026609
