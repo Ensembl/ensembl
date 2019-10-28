@@ -45,7 +45,6 @@ package Bio::EnsEMBL::Utils::Tree::Interval::Immutable::Node;
 use strict;
 
 use Scalar::Util qw(looks_like_number);
-use Bio::EnsEMBL::Utils::Scalar qw(assert_ref);
 use Bio::EnsEMBL::Utils::Exception qw(throw);
 
 =head2 new
@@ -75,9 +74,24 @@ sub new {
     unless $x_center and $s_center; # and $left and $right;
 
   throw 'x_center must be a number' unless looks_like_number($x_center);
-  assert_ref($s_center, 'ARRAY');
-  $left && assert_ref($left, 'Bio::EnsEMBL::Utils::Tree::Interval::Immutable::Node');
-  $right && assert_ref($right, 'Bio::EnsEMBL::Utils::Tree::Interval::Immutable::Node');
+
+  # Bio::EnsEMBL::Utils::Scalar::assert_ref is high-overhead, and was
+  # the source of a significant performance penalty in pipelines where
+  # millions of new nodes are being instantiated. Replaced with simpler
+  # low-overhead type validation.
+  throw 's_center must be an array' unless (ref($s_center) eq 'ARRAY');
+
+  if(defined($left)) {
+      unless (ref($left) eq 'Bio::EnsEMBL::Utils::Tree::Interval::Immutable::Node') {
+          throw 'left must be a Bio::EnsEMBL::Utils::Tree::Interval::Immutable::Node';
+      }
+  }
+
+  if(defined($right)) {
+      unless (ref($right) eq 'Bio::EnsEMBL::Utils::Tree::Interval::Immutable::Node') {
+          throw 'right must be a Bio::EnsEMBL::Utils::Tree::Interval::Immutable::Node';
+      }
+  }
 
   my $self = bless({ 'x_center' => $x_center,
 		     's_center_beg' => [ map { $_->[1] } sort { $a->[0] <=> $b->[0] } map { [ $_->start, $_ ] } @{$s_center} ],
