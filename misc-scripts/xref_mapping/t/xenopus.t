@@ -75,7 +75,7 @@ subtest 'Description parsing' => sub {
     accession => 'XB-GENE-940866',
   });
   $matching_xref = $rs->next;
-  is( $matching_xref->description, 'receptor (chemosensory) transporter protein 3 gene C ',
+  is( $matching_xref->description, 'receptor (chemosensory) transporter protein 3 gene C',
       'Provenance information correctly removed from descriptions');
 
   $rs = $db->schema->resultset('Xref')->search({
