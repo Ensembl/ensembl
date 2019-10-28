@@ -67,10 +67,25 @@ ok(
 # Test if all the rows were inserted
 is($db->schema->resultset('Xref')->count, 12, "All 12 rows were inserted");
 
-# Test the description parsing
-my $input_desc = "Putative ortholog of g2/mitotic-specific cyclin B3, 3 of 14";
-my $expected_desc = "Putative ortholog of g2/mitotic-specific cyclin B3";
-is(XrefParser::XenopusJamboreeParser::parse_description($input_desc), $expected_desc, "Desc parsing ok");
+subtest 'Description parsing' => sub {
+  my $rs;
+  my $matching_xref;
+
+  $rs = $db->schema->resultset('Xref')->search({
+    accession => 'XB-GENE-940866',
+  });
+  $matching_xref = $rs->next;
+  is( $matching_xref->description, 'receptor (chemosensory) transporter protein 3 gene C ',
+      'Provenance information correctly removed from descriptions');
+
+  $rs = $db->schema->resultset('Xref')->search({
+    accession => 'XB-GENE-981482',
+  });
+  $matching_xref = $rs->next;
+  is( $matching_xref->description, 'conserved hypothetical olfactory receptor',
+      '"X of Y" labels correctly removed from descriptions' );
+
+};
 
 done_testing();
 
