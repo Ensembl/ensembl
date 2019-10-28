@@ -138,7 +138,7 @@ sub parse_description {
   my ( $desc ) = @_;
 
   # Remove some provenance information encoded in the description
-  $desc =~ s{ \[ .* \] }{}msx;
+  $desc =~ s{ \s* \[ .* \] }{}msx;
 
   # Remove labels of type 5 of 14 from the description
   $desc =~ s{ , \s+\d+\s+ of \s+\d+ }{}msx;
