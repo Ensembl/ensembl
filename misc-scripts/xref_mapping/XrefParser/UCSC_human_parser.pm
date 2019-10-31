@@ -1,8 +1,7 @@
 =head1 LICENSE
 
-Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
-Copyright [2016-2019] EMBL-European Bioinformatics Institute
-
+See the NOTICE file distributed with this work for additional information
+regarding copyright ownership.
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
@@ -17,11 +16,15 @@ limitations under the License.
 
 =cut
 
-# This module replicates the generic UCSC parser for human specific data
+# This module replicates the generic UCSC parser for human-specific data
 # This prevents cross-mapping between species by treating each species as a separate source
 
 package XrefParser::UCSC_human_parser;
 
-use base qw( XrefParser::UCSCParser);
+use strict;
+use warnings;
+
+use parent qw( XrefParser::UCSCParser );
+
 
 1;
