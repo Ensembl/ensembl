@@ -3103,7 +3103,7 @@ sub get_species_and_object_type {
 
     my @dbas = 
       sort { $a->dbc->host cmp $b->dbc->host || $a->dbc->port <=> $b->dbc->port } 
-      grep { $_->dbc->dbname ne 'ncbi_taxonomy' && $_->dbc->dbname ne 'ensembl_metadata' }
+      grep { $_->dbc->dbname !~ m{ \A ensembl_metadata | ncbi_taxonomy }msx }
       @{$self->get_all_DBAdaptors(%get_adaptors_args)};    
     
     foreach my $dba (@dbas) {
