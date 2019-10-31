@@ -2907,18 +2907,29 @@ sub version_check {
     if ( $dba->dbc()->dbname() =~ /^_test_db_/x ) {
       return 1;
     }
-    if ( $dba->dbc()->dbname() =~ /ensembl_metadata/x ) {
+
+    # ensembl_metadata was unversioned prior to release 96
+    if ( $dba->dbc()->dbname() eq 'ensembl_metadata' ) {
       return 1;
     }
+    # ncbi_taxonomy was unversioned prior to release 100
+    if ( $dba->dbc()->dbname() eq 'ncbi_taxonomy' ) {
+      return 1;
+    }
+
     if ( $dba->dbc()->dbname() =~ /(\d+)_\S+$/x ) {
       $database_version = $1;
     } elsif ( $dba->dbc()->dbname() =~ /ensembl_compara_(\d+)/x ) {
       $database_version = $1;
     } elsif ( $dba->dbc()->dbname() =~ /ensembl_help_(\d+)/x ) {
       $database_version = $1;
+    } elsif ( $dba->dbc()->dbname() =~ / ensembl_metadata_(\d+) /msx ) {
+      $database_version = $1;
     } elsif ( $dba->dbc()->dbname() =~ /ensembl_ontology_(\d+)/x ) {
       $database_version = $1;
     } elsif ( $dba->dbc()->dbname() =~ /ensembl_stable_ids_(\d+)/x ) {
+      $database_version = $1;
+    } elsif ( $dba->dbc()->dbname() =~ / ncbi_taxonomy_(\d+) /msx ) {
       $database_version = $1;
     } else {
       warn(
