@@ -316,6 +316,8 @@ INSERT INTO meta (species_id, meta_key, meta_value) VALUES
 INSERT INTO meta (species_id, meta_key, meta_value)
   VALUES (NULL, 'patch', 'patch_99_100_a.sql|schema_version');
 
+INSERT INTO meta (species_id, meta_key, meta_value)
+  VALUES (NULL, 'patch', 'patch_99_100_b.sql|alter_externaldb_type_notnull');
 
 /**
 @table meta_coord

@@ -191,3 +191,4 @@
 1703	\N	patch	patch_97_98_a.sql|schema_version
 1704	\N	patch	patch_98_99_a.sql|schema_version
 1705	\N	patch	patch_99_100_a.sql|schema_version
+1706	\N	patch	patch_99_100_b.sql|alter_externaldb_type_notnull

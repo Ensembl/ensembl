@@ -1,6 +1,6 @@
 -- 
 -- Created by SQL::Translator::Producer::SQLite
--- Created on Mon Sep 16 14:07:47 2019
+-- Created on Fri Nov  1 15:20:09 2019
 -- 
 
 BEGIN TRANSACTION;
@@ -384,7 +384,7 @@ CREATE TABLE "hmm_curated_annot" (
   "seq_member_stable_id" varchar(40) NOT NULL,
   "model_id" varchar(40),
   "library_version" varchar(40) NOT NULL,
-  "annot_date" timestamp NOT NULL DEFAULT 'current_timestamp()',
+  "annot_date" timestamp NOT NULL DEFAULT current_timestamp,
   "reason" mediumtext,
   PRIMARY KEY ("seq_member_stable_id")
 );
@@ -442,7 +442,7 @@ CREATE TABLE "homology_member" (
 CREATE TABLE "mapping_session" (
   "mapping_session_id" INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
   "type" enum,
-  "when_mapped" timestamp NOT NULL DEFAULT 'current_timestamp()',
+  "when_mapped" timestamp NOT NULL DEFAULT current_timestamp,
   "rel_from" integer,
   "rel_to" integer,
   "prefix" char(4) NOT NULL
