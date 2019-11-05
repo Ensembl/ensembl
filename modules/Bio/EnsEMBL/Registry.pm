@@ -1742,6 +1742,7 @@ sub load_registry_from_db {
   my $ontology_version;
 
   my $taxonomy_db;
+  my $taxonomy_db_versioned;
   my $ensembl_metadata_db;
   my $ensembl_metadata_db_versioned;
 
@@ -1817,6 +1818,11 @@ sub load_registry_from_db {
       }
     } elsif ( $db =~ /^ncbi_taxonomy$/ ) {
         $taxonomy_db      = $db;
+    }
+    elsif ( $db =~ m{ \A ncbi_taxonomy_(\d+) \z }msx ) {
+      if ( $1 eq $software_version ) {
+        $taxonomy_db_versioned = $db;
+      }
     } elsif ( $db =~ /^ensembl_metadata$/ ) {
         $ensembl_metadata_db      = $db;
     }
@@ -2327,7 +2333,7 @@ sub load_registry_from_db {
 
   # Taxonomy
 
-  if ( defined $taxonomy_db) {
+  if ( ( defined $taxonomy_db ) || ( defined $taxonomy_db_versioned ) ) {
      
     my $has_taxonomy = eval {require Bio::EnsEMBL::Taxonomy::DBSQL::TaxonomyDBAdaptor};
     if($@ or (!defined $has_taxonomy)) {
@@ -2335,6 +2341,16 @@ sub load_registry_from_db {
           print "ensembl_taxonomy API not found - ignoring $taxonomy_db\n";
         }
     } else {
+
+        my $taxonomy_dbname;
+        # Versioned database has priority over unversioned one.
+        if ( defined $taxonomy_db_versioned ) {
+          $taxonomy_dbname = $taxonomy_db_versioned;
+        }
+        else {
+          $taxonomy_dbname = $taxonomy_db;
+        }
+
         my $dba = Bio::EnsEMBL::Taxonomy::DBSQL::TaxonomyDBAdaptor->new(
                                 '-species' => 'multi' . $species_suffix,
                                 '-group'   => 'taxonomy',
@@ -2342,10 +2358,10 @@ sub load_registry_from_db {
                                 '-port'    => $port,
                                 '-user'    => $user,
                                 '-pass'    => $pass,
-                                '-dbname'  => $taxonomy_db, );
+                                '-dbname'  => $taxonomy_dbname, );
 
        if ($verbose) {
-         printf( "%s loaded\n", $taxonomy_db );
+         printf( "%s loaded\n", $taxonomy_dbname );
        }
      }
   }
@@ -2891,18 +2907,29 @@ sub version_check {
     if ( $dba->dbc()->dbname() =~ /^_test_db_/x ) {
       return 1;
     }
-    if ( $dba->dbc()->dbname() =~ /ensembl_metadata/x ) {
+
+    # ensembl_metadata was unversioned prior to release 96
+    if ( $dba->dbc()->dbname() eq 'ensembl_metadata' ) {
       return 1;
     }
+    # ncbi_taxonomy was unversioned prior to release 100
+    if ( $dba->dbc()->dbname() eq 'ncbi_taxonomy' ) {
+      return 1;
+    }
+
     if ( $dba->dbc()->dbname() =~ /(\d+)_\S+$/x ) {
       $database_version = $1;
     } elsif ( $dba->dbc()->dbname() =~ /ensembl_compara_(\d+)/x ) {
       $database_version = $1;
     } elsif ( $dba->dbc()->dbname() =~ /ensembl_help_(\d+)/x ) {
       $database_version = $1;
+    } elsif ( $dba->dbc()->dbname() =~ / ensembl_metadata_(\d+) /msx ) {
+      $database_version = $1;
     } elsif ( $dba->dbc()->dbname() =~ /ensembl_ontology_(\d+)/x ) {
       $database_version = $1;
     } elsif ( $dba->dbc()->dbname() =~ /ensembl_stable_ids_(\d+)/x ) {
+      $database_version = $1;
+    } elsif ( $dba->dbc()->dbname() =~ / ncbi_taxonomy_(\d+) /msx ) {
       $database_version = $1;
     } else {
       warn(
@@ -3076,7 +3103,7 @@ sub get_species_and_object_type {
 
     my @dbas = 
       sort { $a->dbc->host cmp $b->dbc->host || $a->dbc->port <=> $b->dbc->port } 
-      grep { $_->dbc->dbname ne 'ncbi_taxonomy' && $_->dbc->dbname ne 'ensembl_metadata' }
+      grep { $_->dbc->dbname !~ m{ \A ensembl_metadata | ncbi_taxonomy }msx }
       @{$self->get_all_DBAdaptors(%get_adaptors_args)};    
     
     foreach my $dba (@dbas) {
