@@ -316,6 +316,8 @@ INSERT INTO meta (species_id, meta_key, meta_value) VALUES
 INSERT INTO meta (species_id, meta_key, meta_value)
   VALUES (NULL, 'patch', 'patch_99_100_a.sql|schema_version');
 
+INSERT INTO meta (species_id, meta_key, meta_value)
+  VALUES (NULL, 'patch', 'patch_99_100_b.sql|alter_externaldb_type_notnull');
 
 /**
 @table meta_coord
@@ -2159,7 +2161,7 @@ CREATE TABLE external_db (
   status                      ENUM('KNOWNXREF','KNOWN','XREF','PRED','ORTH', 'PSEUDO') NOT NULL,
   priority                    INT NOT NULL,
   db_display_name             VARCHAR(255),
-  type                        ENUM('ARRAY', 'ALT_TRANS', 'ALT_GENE', 'MISC', 'LIT', 'PRIMARY_DB_SYNONYM', 'ENSEMBL'),
+  type                        ENUM('ARRAY', 'ALT_TRANS', 'ALT_GENE', 'MISC', 'LIT', 'PRIMARY_DB_SYNONYM', 'ENSEMBL') NOT NULL,
   secondary_db_name           VARCHAR(255) DEFAULT NULL,
   secondary_db_table          VARCHAR(255) DEFAULT NULL,
   description                 TEXT,

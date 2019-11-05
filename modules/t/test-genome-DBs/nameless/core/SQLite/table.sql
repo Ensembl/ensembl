@@ -1,6 +1,6 @@
 -- 
 -- Created by SQL::Translator::Producer::SQLite
--- Created on Mon Sep 16 14:07:57 2019
+-- Created on Fri Nov  1 15:20:53 2019
 -- 
 
 BEGIN TRANSACTION;
@@ -314,7 +314,7 @@ CREATE TABLE "external_db" (
   "status" enum NOT NULL DEFAULT 'KNOWNXREF',
   "priority" integer NOT NULL DEFAULT 0,
   "db_display_name" varchar(255),
-  "type" enum,
+  "type" enum NOT NULL,
   "secondary_db_name" varchar(255),
   "secondary_db_table" varchar(255),
   "description" text

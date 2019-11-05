@@ -1,5 +1,5 @@
 1	\N	schema_type	variation
-2	\N	schema_version	99
+2	\N	schema_version	100
 6	1	species.production_name	mus_musculus
 15	1	web_config	sv_study#Keane 2011 (DGVa study estd118)#Keane 2011#estd118
 14	1	web_config	set#All failed variants#All failed variants#variation_set_fail_all#failed
@@ -71,3 +71,8 @@
 77	\N	patch	patch_96_97_c.sql|add an unique index on the name column
 78	\N	patch	patch_97_98_a.sql|schema version
 79	\N	patch	patch_98_99_a.sql|schema_version
+80	\N	patch	patch_98_99_b.sql|Add the column data_source_attrib in the table variation_citation
+81	\N	patch	patch_98_99_c.sql|Increase the size of the title and doi columns in the publication table
+82	\N	patch	patch_98_99_d.sql|add key data_source_attrib
+83	\N	patch	patch_98_99_e.sql|Fix attrib ids in table variation_citation
+84	\N	patch	patch_99_100_a.sql|schema version
