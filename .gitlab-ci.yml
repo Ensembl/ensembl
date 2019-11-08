@@ -41,7 +41,7 @@ before_script:
 
 test:perl5.14-sqlite:
   stage: test
-  image: perl:5.14-threaded
+  image: perl:5.14
   variables:
     COVERALLS: "false"
     DB: "sqlite"
@@ -50,7 +50,7 @@ test:perl5.14-sqlite:
 
 test:perl5.30-mysql:
   stage: test
-  image: perl:5.30-threaded
+  image: perl:5.30
   variables:
     # Note: relies on the secret variable COVERALLS_REPO_TOKEN for report uploads to work
     COVERALLS: "true"
