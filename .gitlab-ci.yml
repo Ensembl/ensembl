@@ -62,10 +62,10 @@ test:perl5.30-mysql:
 # Triggers for dependent builds
 #
 
-# FIXME:
-#  - only partly tested so far
-#  - doesn't support PRs before they are merged
-#    (would need extended run condition and better selection of downstream branches)
+# The template. It doesn't presently support PRs before they are
+# merged (would need extended run condition and better selection of
+# downstream branches) - but then again, we do not trigger dependent
+# builds for PRs on Travis either.
 .dependent_template:
   stage: posttest
   # We want this to run even if any test jobs fail
@@ -73,13 +73,36 @@ test:perl5.30-mysql:
   only:
     - master
     - /^release/\d+$/
-  trigger:
-    project: $DEPENDENT_PROJECT
-    # Use the same branch as in this project
-    branch: $CI_COMMIT_REF_NAME
 
-# Example trigger job using the above, disabled for obvious reasons
-.post:trigger_foo:
+# Actual trigger jobs
+
+# ensembl-rest; disabled for now because that repo a) hasn't got
+# GitLab-CI config yet, and b) is still on the list in
+# trigger-dependent-build.sh.
+.post:trigger_rest:
   extends: .dependent_template
+  trigger:
+    project: ensembl-gh-mirror/ensembl-rest
+    # Use the same branch as in this project
+    branch: ${CI_COMMIT_REF_NAME}
+
+# Dependent builds on Travis
+# Relies on the secret variable TRAVIS_AUTH_TOKEN to actually work,
+# moreover the account associated with the token must have write
+# access to *all* dependent repositories; to be exact what it needs
+# is the Travis 'create_request' permission but Travis permissions are
+# generated from GitHub ones and it seems that in order to have
+# 'create_request' on the latter one requires 'write' on the former.
+post:trigger_travis:
+  extends: .dependent_template
+  image: alpine:3.10
   variables:
-    DEPENDENT_PROJECT: ensembl-gh-mirror/ensembl-foo
+    AUTH_TOKEN: ${TRAVIS_AUTH_TOKEN}
+    TRAVIS_REPO_SLUG: ${CI_PROJECT_PATH}
+    TRAVIS_BRANCH: ${CI_COMMIT_REF_NAME}
+    TRAVIS_COMMIT: ${CI_COMMIT_SHA}
+    # Safe as long as run conditions above do not include merge requests
+    TRAVIS_PULL_REQUEST: "false"
+  script:
+    - apk add --no-cache bash curl python3
+    - ${CI_PROJECT_DIR}/travisci/trigger-dependent-build.sh
