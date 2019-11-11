@@ -33,30 +33,14 @@ ok(1);
 
 my $multi_db = Bio::EnsEMBL::Test::MultiTestDB->new;
 my $db = $multi_db->get_DBAdaptor('core');
-my $vdb = $multi_db->get_DBAdaptor('variation');
 #
 # TEST - Slice creation from adaptor
 #
 my $slice_adaptor = $db->get_SliceAdaptor;
 # tests for variation related methods
 my $slice = $slice_adaptor->fetch_by_region('chromosome', 20, 30_252_000, 31_252_001);
-my $study_adaptor = $vdb->get_StudyAdaptor;
-my $variation_set_adaptor = $vdb->get_VariationSetAdaptor;
-my $population_adaptor = $vdb->get_PopulationAdaptor;
 
 my $vfs = $slice->get_all_VariationFeatures;
 is(scalar @$vfs, 2, 'get_all_VariationFeatures');
 
-$vfs = $slice->get_all_somatic_VariationFeatures;
-is(scalar @$vfs, 1, 'get_all_somatic_VariationFeatures');
-
-$vfs = $slice->get_all_somatic_VariationFeatures_by_source('dbSNP');
-is(scalar @$vfs, 1, 'get_all_somatic_VariationFeatures_by_source');
-
-$vfs = $slice->get_all_somatic_VariationFeatures_with_phenotype;
-is(scalar @$vfs, 1, 'get_all_somatic_VariationFeatures_with_phenotype');
-
-my $population = $population_adaptor->fetch_by_name('population');
-$vfs = $slice->get_all_VariationFeatures_by_Population($population);
-is(scalar @$vfs, 1, 'get_all_VariationFeatures_by_Population');
 done_testing();
