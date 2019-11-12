@@ -2,38 +2,42 @@ stages:
   - test
   - posttest
 
-services:
-  - mysql:5.6
+#
+# Test-job template
+#
 
-variables:
-  # FIXME: set some password for both users
-  MYSQL_ALLOW_EMPTY_PASSWORD: "yes"
-  MYSQL_USER: "travis"
-  MYSQL_PASSWORD: ""
-  USER: "gitlabci"
+.ensembl_test_template:
+  services:
+    - mysql:5.6
 
-# Run before each job not defining its own before_script
-before_script:
-  - apt-get update
-  - apt-get install -y build-essential cpanminus git
-  - apt-get install -y libmysqlclient-dev mysql-client || apt-get install -y default-libmysqlclient-dev default-mysql-client
-  - apt-get install -y libssl-dev sqlite3
-  - git clone --branch=master --depth=1 https://github.com/Ensembl/ensembl-test.git
-  - git clone --branch=master --depth=1 https://github.com/Ensembl/ensembl-io.git
-  - git clone --branch=master --depth=1 https://github.com/Ensembl/ensembl-variation.git
-  - git clone --branch=master --depth=1 https://github.com/Ensembl/ensembl-compara.git
-  - git clone --branch=release-1-6-924 --depth=1 https://github.com/bioperl/bioperl-live.git
-  - cpanm -v --installdeps --notest .
-  - ( cd ensembl-test && cpanm -v --installdeps --notest . )
-#  - ( cd ensembl-io && cpanm -v --installdeps --notest . )
-#  - ( cd ensembl-variation && cpanm -v --installdeps --notest . )
-  - ( cd ensembl-compara && cpanm -v --installdeps --notest . )
-  - ( cd misc-scripts/xref_mapping && cpanm -v --installdeps --notest . )
-  - cpanm -n Devel::Cover::Report::Coveralls
-  - cpanm -n DBD::SQLite
-  - cp travisci/MultiTestDB.conf.gitlabci.mysql  modules/t/MultiTestDB.conf.mysql
-  - cp travisci/MultiTestDB.conf.travisci.SQLite modules/t/MultiTestDB.conf.SQLite
-  - mysql -u root -h mysql -e 'GRANT ALL PRIVILEGES ON *.* TO "travis"@"%"'
+  variables:
+    # FIXME: set some password for both users
+    MYSQL_ALLOW_EMPTY_PASSWORD: "yes"
+    MYSQL_USER: "travis"
+    MYSQL_PASSWORD: ""
+    USER: "gitlabci"
+
+  before_script:
+    - apt-get update
+    - apt-get install -y build-essential cpanminus git
+    - apt-get install -y libmysqlclient-dev mysql-client || apt-get install -y default-libmysqlclient-dev default-mysql-client
+    - apt-get install -y libssl-dev sqlite3
+    - git clone --branch=master --depth=1 https://github.com/Ensembl/ensembl-test.git
+    - git clone --branch=master --depth=1 https://github.com/Ensembl/ensembl-io.git
+    - git clone --branch=master --depth=1 https://github.com/Ensembl/ensembl-variation.git
+    - git clone --branch=master --depth=1 https://github.com/Ensembl/ensembl-compara.git
+    - git clone --branch=release-1-6-924 --depth=1 https://github.com/bioperl/bioperl-live.git
+    - cpanm -v --installdeps --notest .
+    - ( cd ensembl-test && cpanm -v --installdeps --notest . )
+#    - ( cd ensembl-io && cpanm -v --installdeps --notest . )
+#    - ( cd ensembl-variation && cpanm -v --installdeps --notest . )
+    - ( cd ensembl-compara && cpanm -v --installdeps --notest . )
+    - ( cd misc-scripts/xref_mapping && cpanm -v --installdeps --notest . )
+    - cpanm -n Devel::Cover::Report::Coveralls
+    - cpanm -n DBD::SQLite
+    - cp travisci/MultiTestDB.conf.gitlabci.mysql  modules/t/MultiTestDB.conf.mysql
+    - cp travisci/MultiTestDB.conf.travisci.SQLite modules/t/MultiTestDB.conf.SQLite
+    - mysql -u root -h mysql -e 'GRANT ALL PRIVILEGES ON *.* TO "travis"@"%"'
 
 #
 # Test jobs
@@ -41,6 +45,7 @@ before_script:
 
 test:perl5.14-sqlite:
   stage: test
+  extends: .ensembl_test_template
   image: perl:5.14
   variables:
     COVERALLS: "false"
@@ -50,6 +55,7 @@ test:perl5.14-sqlite:
 
 test:perl5.30-mysql:
   stage: test
+  extends: .ensembl_test_template
   image: perl:5.30
   variables:
     # Note: relies on the secret variable COVERALLS_REPO_TOKEN for report uploads to work
