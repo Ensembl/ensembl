@@ -1,7 +1,3 @@
-stages:
-  - test
-  - posttest
-
 #
 # Test-job template
 #
@@ -75,9 +71,7 @@ test:perl5.30-mysql:
 # downstream branches) - but then again, we do not trigger dependent
 # builds for PRs on Travis either.
 .dependent_template:
-  stage: posttest
-  # We want this to run even if any test jobs fail
-  when: always
+  stage: test
   only:
     - master
     - /^release/\d+$/
@@ -87,7 +81,7 @@ test:perl5.30-mysql:
 # ensembl-rest; disabled for now because that repo a) hasn't got
 # GitLab-CI config yet, and b) is still on the list in
 # trigger-dependent-build.sh.
-.post:trigger_rest:
+.test:trigger_rest:
   extends: .dependent_template
   trigger:
     project: ensembl-gh-mirror/ensembl-rest
@@ -101,7 +95,7 @@ test:perl5.30-mysql:
 # is the Travis 'create_request' permission but Travis permissions are
 # generated from GitHub ones and it seems that in order to have
 # 'create_request' on the latter one requires 'write' on the former.
-post:trigger_travis:
+test:trigger_travis:
   extends: .dependent_template
   image: alpine:3.10
   variables:
