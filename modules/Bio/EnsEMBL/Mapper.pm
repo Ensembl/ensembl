@@ -1023,12 +1023,36 @@ sub _dump{
   if( !defined $fh ) {
     $fh = \*STDERR;
   }
-  foreach my $id ( keys %{$self->{'_pair_hash_from'}} ) {
-    print $fh "From Hash $id\n";
-    foreach my $pair ( @{$self->{'_pair_hash_from'}->{uc($id)}} ) {
+
+  my $from = $self->{'from'};
+  my $to = $self->{'to'};
+
+  print $fh "--------------------begin mapper dump--------------------\n";
+  print $fh "dumping from-hash _pair_$from\n";
+  foreach my $id ( keys %{$self->{"_pair_$from"}} ) {
+    print $fh "{_pair_$from}->{" . uc($id) . "}:\n";
+    foreach my $pair ( @{$self->{"_pair_$from"}->{uc($id)}} ) {
       print $fh "    ",$pair->from->start," ",$pair->from->end,":",$pair->to->start," ",$pair->to->end," ",$pair->to->id,"\n";
     }
+    if (defined($self->{"_tree_$from"}->{uc($id)})) {
+      print $fh "{_tree_$from}->{" . uc($id) . "} instantiated\n";
+    } else {
+      print $fh "{_tree_$from}->{" . uc($id) . "} empty\n";
+    }
   }
+  print $fh "dumping to-hash _pair_$to\n";
+  foreach my $id ( keys %{$self->{"_pair_$to"}} ) {
+    print $fh "{_pair_$to}->{" . uc($id) . "}:\n";
+    foreach my $pair ( @{$self->{"_pair_$to"}->{uc($id)}} ) {
+      print $fh "    ",$pair->to->start," ",$pair->to->end,":",$pair->from->start," ",$pair->from->end," ",$pair->from->id,"\n";
+    }
+    if (defined($self->{"_tree_$to"}->{uc($id)})) {
+      print $fh "{_tree_$to}->{" . uc($id) . "} instantiated\n";
+    } else {
+      print $fh "{_tree_$to}->{" . uc($id) . "} empty\n";
+    }
+  }
+  print $fh "---------------------end mapper dump---------------------\n";
 }
 
 
