@@ -35,7 +35,7 @@ before_install:
   - git clone -b release-1-6-924 --depth 1 https://github.com/bioperl/bioperl-live.git
 
 install:
-  - cpanm -v --installdeps --notest .
+  - cpanm -v --installdeps --notest . --with-all-features
   - cpanm -n Devel::Cover::Report::Coveralls
   - cpanm -n DBD::SQLite
   - cp travisci/MultiTestDB.conf.travisci.mysql  modules/t/MultiTestDB.conf.mysql
