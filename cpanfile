@@ -18,21 +18,27 @@ test_requires 'PadWalker';
 test_requires 'Test::Builder::Module';
 test_requires 'IO::String';
 test_requires 'Test::Perl::Critic';
+test_requires 'Test::Pod::Coverage';
 test_requires 'Perl::Critic::Utils';
 
-=cut
 feature 'assembly_mapping', 'Assembly mapper support' => sub {
   requires 'Algorithm::Diff';
   requires 'Tie::IxHash';
 };
 
 feature 'xref_mapping', 'Xref mapping pipeline' => sub {
-  requires 'Config::IniFiles';
+  requires 'DBIx::Class';
   requires 'Digest::MD5';
+  requires 'LWP::UserAgent';
   requires 'List::Util', '>= 1.45';
+  requires 'Moose';
+  requires 'SQL::Translator', '>= 0.11018';
   requires 'Text::CSV';
   recommends 'Text::CSV_XS';
   requires 'Text::Glob';
+  requires 'URI';
   requires 'XML::LibXML';
+
+  test_requires 'Config::General';
+  test_requires 'Perl::Critic::Moose';
 };
-=cut
