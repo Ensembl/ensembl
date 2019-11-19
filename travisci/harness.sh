@@ -14,6 +14,7 @@ else
     echo "Don't know about DB '$DB'"
     exit 1;
 fi
+ln -sf ../../../modules/t/MultiTestDB.conf misc-scripts/xref_mapping/t/
 
 echo "Running test suite"
 if [ "$COVERALLS" = 'true' ]; then
