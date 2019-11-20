@@ -305,42 +305,11 @@ sub map_coordinates {
 
   my $last_used_pair;
 
-  # my best guess is that lr stands for "list of regions"
-  my $lr = $hash->{ uc($id) };
-
   # if we don't already have an interval tree built for this id,
   # build one now
   if ( !defined( $self->{"_tree_$type"}->{ uc($id) } )) {
-    # create set of intervals to be checked for overlap
-    my $from_intervals;
-
-    foreach my $i (@{$lr}) {
-      my $start = $i->{$from}{start};
-      my $end = $i->{$from}{end};
-
-      if ($end < $start) {
-        my $tmp = $start;
-        $start = $end;
-        $end = $tmp;
-      }
-
-      push @{$from_intervals}, Bio::EnsEMBL::Utils::Interval->new($start, $end, $i);
-    }
-
-    #
-    # Create the interval tree defined on the above set of intervals
-    #
-    # Two options:
-    #
-    # 1. Use immutable interval tree implementation
-    # 2. Use mutable interval tree implementation
-    #
-    # As of release/99, we have more experience with the immutable
-    # interval tree, so we will stick with this one. A future
-    # refactoring effort may wish to replace this with a dynamically
-    # maintained mutable interval tree, rather than simply throwing
-    # trees away and rebuilding when the underlying interval set changes
-    $self->{"_tree_$type"}->{ uc($id) } = Bio::EnsEMBL::Utils::Tree::Interval::Immutable->new($from_intervals);
+    $self->{"_tree_$type"}->{ uc($id) } = _build_immutable_tree($from,
+                                                                $hash->{ uc($id) });
   }
   # query the interval tree (either cached or created new) for overlapping intervals
   my $overlap = $self->{"_tree_$type"}->{ uc($id) }->query($start, $end);
@@ -828,42 +797,12 @@ sub map_indel {
   }
   my @indel_coordinates;
 
-  my $lr = $hash->{ uc($id) };
-
   # if we don't already have an interval tree built for this id,
   # build one now
   if ( !defined $self->{"_tree_$type"}->{ uc($id) } ) {
-    # create set of intervals to be checked for overlap
-    my $from_intervals;
-
-    foreach my $i (@{$lr}) {
-      my $start = $i->{$from}{start};
-      my $end = $i->{$from}{end};
-
-      if ($end < $start) {
-        my $tmp = $start;
-        $start = $end;
-        $end = $tmp;
-      }
-
-      push @{$from_intervals}, Bio::EnsEMBL::Utils::Interval->new($start, $end, $i);
-    }
-
-    #
-    # Create the interval tree defined on the above set of intervals
-    #
-    # Two options:
-    #
-    # 1. Use immutable interval tree implementation
-    # 2. Use mutable interval tree implementation
-    #
-    # As of release/99, we have more experience with the immutable
-    # interval tree, so we will stick with this one. A future
-    # refactoring effort may wish to replace this with a dynamically
-    # maintained mutable interval tree, rather than simply throwing
-    # trees away and rebuilding when the underlying interval set changes
-    $self->{"_tree_$type"}->{ uc($id) } = Bio::EnsEMBL::Utils::Tree::Interval::Immutable->new($from_intervals);
-}
+    $self->{"_tree_$type"}->{ uc($id) } = _build_immutable_tree($from,
+                                                                $hash->{ uc($id) });
+  }
   # query the interval tree (either cached or created new) for overlapping intervals
   my $overlap = $self->{"_tree_$type"}->{ uc($id) }->query($start, $end);
 
@@ -1240,5 +1179,44 @@ sub _is_sorted {
    return $self->{'_is_sorted'};
 }
 
+# _build_immutable_tree
+#
+#  Arg 1       string $pair_side - the from or to half of each pair to be
+#              the source of intervals
+#  Arg 2       listref $pair_list - a list of Bio::EnsEMBL::Mapper::Pair
+#  Function    builds a Bio::EnsEMBL::Utils::Tree::Interval::Immutable with
+#              intervals corresponding to the chosen side (from or to) of
+#              each Pair in $pair_list and a pointer to each Pair
+#  Returntype  Bio::EnsEMBL::Utils::Tree::Interval::Immutable
+#  Exceptions  none
+#  Caller      internal
+
+sub _build_immutable_tree {
+  my ($pair_side, $pair_list) = @_;
+  # create set of intervals for the tree
+  my $from_intervals;
+
+  foreach my $i (@{$pair_list}) {
+    my $start = $i->{$pair_side}{start};
+    my $end = $i->{$pair_side}{end};
+
+    if ($end < $start) {
+      my $tmp = $start;
+      $start = $end;
+      $end = $tmp;
+    }
+
+    push @{$from_intervals}, Bio::EnsEMBL::Utils::Interval->new($start, $end, $i);
+  }
+
+  # Create the interval tree defined on the above set of intervals
+  #
+  # As of release/99, we have more experience with the immutable
+  # interval tree, so we will stick with this one. A future
+  # refactoring effort may wish to replace this with a dynamically
+  # maintained mutable interval tree, rather than simply throwing
+  # trees away and rebuilding when the underlying interval set changes
+  return Bio::EnsEMBL::Utils::Tree::Interval::Immutable->new($from_intervals);
+}
 
 1;
