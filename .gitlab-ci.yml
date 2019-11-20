@@ -18,7 +18,7 @@
   before_script:
     - apt-get update
     - apt-get install -y build-essential cpanminus git
-    - apt-get install -y libmysqlclient-dev mysql-client || apt-get install -y default-libmysqlclient-dev default-mysql-client
+    - apt-get install -y default-libmysqlclient-dev default-mysql-client
     - apt-get install -y libssl-dev sqlite3
     - git clone --branch=master --depth=1 https://github.com/Ensembl/ensembl-test.git
     - git clone --branch=master --depth=1 https://github.com/Ensembl/ensembl-io.git
