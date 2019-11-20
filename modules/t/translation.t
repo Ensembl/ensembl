@@ -353,13 +353,14 @@ my $transcript_adaptor = $db->get_TranscriptAdaptor();
 $transcript = $transcript_adaptor->fetch_by_stable_id("ENST00000217347");
 $transcript->edits_enabled(1);
 
-diag 'Before X insertion: ', explain($transcript->translate->seq());
+# diag 'Before X insertion: ', explain($transcript->translate->seq());
 
 my $stop_codon_rt_edit = Bio::EnsEMBL::StopCodonReadthroughEdit->new(265);
 $transcript->translation->add_Attributes($stop_codon_rt_edit->get_Attribute());
 my $translated_sequence = $transcript->translate->seq();
 
-diag 'After X insertion: ', explain($translated_sequence);
+# diag 'After X insertion: ', explain($translated_sequence);
+
 is($translated_sequence =~ /QEEXEE/, 1, 'X inserted');
 is(length($transcript->translate->seq()), length($translated_sequence), 'Length of the sequence pre and post edit is equal');
 
