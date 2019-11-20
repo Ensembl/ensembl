@@ -180,6 +180,8 @@ sub new {
 
   my $self = bless( { "_pair_$from" => {},
                       "_pair_$to"   => {},
+                      "_tree_$from" => {},
+                      "_tree_$to"   => {},
                       'pair_count'  => 0,
                       'to'          => $to,
                       'from'        => $from,
@@ -211,6 +213,8 @@ sub flush {
 
   $self->{"_pair_$from"} = {};
   $self->{"_pair_$to"} = {};
+  $self->{"_tree_$from"} = {};
+  $self->{"_tree_$to"} = {};
 
   $self->{'pair_count'} = 0;
 }
@@ -301,35 +305,45 @@ sub map_coordinates {
 
   my $last_used_pair;
 
+  # my best guess is that lr stands for "list of regions"
   my $lr = $hash->{ uc($id) };
-  
-  # create set of intervals to be checked for overlap
-  my $from_intervals;
 
-  foreach my $i (@{$lr}) {
-    my $start = $i->{$from}{start};
-    my $end = $i->{$from}{end};
+  # if we don't already have an interval tree built for this id,
+  # build one now
+  if ( !defined( $self->{"_tree_$type"}->{ uc($id) } )) {
+    # create set of intervals to be checked for overlap
+    my $from_intervals;
 
-    if ($end < $start) {
-      my $tmp = $start;
-      $start = $end;
-      $end = $tmp;
+    foreach my $i (@{$lr}) {
+      my $start = $i->{$from}{start};
+      my $end = $i->{$from}{end};
+
+      if ($end < $start) {
+        my $tmp = $start;
+        $start = $end;
+        $end = $tmp;
+      }
+
+      push @{$from_intervals}, Bio::EnsEMBL::Utils::Interval->new($start, $end, $i);
     }
 
-    push @{$from_intervals}, Bio::EnsEMBL::Utils::Interval->new($start, $end, $i);
+    #
+    # Create the interval tree defined on the above set of intervals
+    #
+    # Two options:
+    #
+    # 1. Use immutable interval tree implementation
+    # 2. Use mutable interval tree implementation
+    #
+    # As of release/99, we have more experience with the immutable
+    # interval tree, so we will stick with this one. A future
+    # refactoring effort may wish to replace this with a dynamically
+    # maintained mutable interval tree, rather than simply throwing
+    # trees away and rebuilding when the underlying interval set changes
+    $self->{"_tree_$type"}->{ uc($id) } = Bio::EnsEMBL::Utils::Tree::Interval::Immutable->new($from_intervals);
   }
-
-  #
-  # Create and query the interval tree defined on the above set of intervals
-  #
-  # Two options:
-  #
-  # 1. Use immutable interval tree implementation
-  # 2. Use mutable interval tree implementation
-  #
-  # Opt for the first one as the interval set's not supposed to change
-  my $itree = Bio::EnsEMBL::Utils::Tree::Interval::Immutable->new($from_intervals);
-  my $overlap = $itree->query($start, $end);
+  # query the interval tree (either cached or created new) for overlapping intervals
+  my $overlap = $self->{"_tree_$type"}->{ uc($id) }->query($start, $end);
 
   my $rank              = 0;
   my $orig_start        = $start;
@@ -695,6 +709,11 @@ sub add_map_coordinates {
   push( @{ $self->{"_pair_$map_to"}->{ uc($chr_name) } },    $pair );
   push( @{ $self->{"_pair_$map_from"}->{ uc($contig_id) } }, $pair );
 
+  # any interval trees for this set of intervals are now invalid
+  # so remove them
+  $self->{"_tree_$map_to"}->{ uc($contig_id) } = undef;
+  $self->{"_tree_$map_from"}->{ uc($contig_id) } = undef;
+
   $self->{'pair_count'}++;
   $self->{'_is_sorted'} = 0;
 } ## end sub add_map_coordinates
@@ -749,6 +768,11 @@ sub add_indel_coordinates{
 
   push( @{$self->{"_pair_$map_to"}->{uc($chr_name)}}, $pair );
   push( @{$self->{"_pair_$map_from"}->{uc($contig_id)}}, $pair );
+
+  # any interval trees for this set of intervals are now invalid
+  # so remove them
+  $self->{"_tree_$map_to"}->{ uc($chr_name) } = undef;
+  $self->{"_tree_$map_from"}->{ uc($contig_id) } = undef;
 
   $self->{'pair_count'}++;
 
@@ -806,18 +830,42 @@ sub map_indel {
 
   my $lr = $hash->{ uc($id) };
 
-  # create set of intervals to be checked for overlap
-  my $from_intervals;
-  foreach my $i (@{$lr}) {
-    my $start = $i->{$from}{start}<=$i->{$from}{end}?$i->{$from}{start}:$i->{$from}{end};
-    my $end = $i->{$from}{start}<=$i->{$from}{end}?$i->{$from}{end}:$i->{$from}{start};
+  # if we don't already have an interval tree built for this id,
+  # build one now
+  if ( !defined $self->{"_tree_$type"}->{ uc($id) } ) {
+    # create set of intervals to be checked for overlap
+    my $from_intervals;
 
-    push @{$from_intervals}, Bio::EnsEMBL::Utils::Interval->new($start, $end, $i);
-  }
+    foreach my $i (@{$lr}) {
+      my $start = $i->{$from}{start};
+      my $end = $i->{$from}{end};
 
-  # create and query the interval tree defined on the above set of intervals
-  my $itree = Bio::EnsEMBL::Utils::Tree::Interval::Immutable->new($from_intervals);
-  my $overlap = $itree->query($start, $end);
+      if ($end < $start) {
+        my $tmp = $start;
+        $start = $end;
+        $end = $tmp;
+      }
+
+      push @{$from_intervals}, Bio::EnsEMBL::Utils::Interval->new($start, $end, $i);
+    }
+
+    #
+    # Create the interval tree defined on the above set of intervals
+    #
+    # Two options:
+    #
+    # 1. Use immutable interval tree implementation
+    # 2. Use mutable interval tree implementation
+    #
+    # As of release/99, we have more experience with the immutable
+    # interval tree, so we will stick with this one. A future
+    # refactoring effort may wish to replace this with a dynamically
+    # maintained mutable interval tree, rather than simply throwing
+    # trees away and rebuilding when the underlying interval set changes
+    $self->{"_tree_$type"}->{ uc($id) } = Bio::EnsEMBL::Utils::Tree::Interval::Immutable->new($from_intervals);
+}
+  # query the interval tree (either cached or created new) for overlapping intervals
+  my $overlap = $self->{"_tree_$type"}->{ uc($id) }->query($start, $end);
 
   foreach my $i (@{$overlap}) {
     my $pair = $i->data;
@@ -866,12 +914,14 @@ sub add_Mapper{
   foreach my $seq_name (keys %{$mapper->{"_pair_$mapper_to"}}) {
     push(@{$self->{"_pair_$mapper_to"}->{$seq_name}},
         @{$mapper->{"_pair_$mapper_to"}->{$seq_name}});
+    $self->{"_tree_$mapper_to"}->{ uc($seq_name) } = undef;
     $count_a += scalar(@{$mapper->{"_pair_$mapper_to"}->{$seq_name}});
   }
   my $count_b = 0;
   foreach my $seq_name (keys %{$mapper->{"_pair_$mapper_from"}}) {
     push(@{$self->{"_pair_$mapper_from"}->{$seq_name}},
         @{$mapper->{"_pair_$mapper_from"}->{$seq_name}});
+    $self->{"_tree_$mapper_from"}->{ uc($seq_name) } = undef;
     $count_b += scalar(@{$mapper->{"_pair_$mapper_from"}->{$seq_name}});
   }
 
@@ -1099,6 +1149,9 @@ sub _merge_pairs {
   $self->{'pair_count'} = 0;
 
   for my $key ( keys %{$self->{"_pair_$map_to"}} ) {
+    # merging pairs means all interval trees for
+    # this set of intervals are now invalid, so delete them
+    $self->{"_tree_$map_to"}->{ uc($key) } = undef;
     $lr = $self->{"_pair_$map_to"}->{$key}; 
     
     my $i = 0;
