@@ -30,7 +30,6 @@
 #    - ( cd ensembl-io && cpanm -v --installdeps --notest . )
 #    - ( cd ensembl-variation && cpanm -v --installdeps --notest . )
     - ( cd ensembl-compara && cpanm -v --installdeps --notest . )
-    - ( cd misc-scripts/xref_mapping && cpanm -v --installdeps --notest . )
     - cpanm -n Devel::Cover::Report::Coveralls
     - cpanm -n DBD::SQLite
     - cp travisci/MultiTestDB.conf.gitlabci.mysql  modules/t/MultiTestDB.conf.mysql
