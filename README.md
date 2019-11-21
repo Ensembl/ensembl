@@ -5,5 +5,3 @@
 
 [travis]: https://travis-ci.org/Ensembl/ensembl
 [coveralls]: https://coveralls.io/github/Ensembl/ensembl
-
-
