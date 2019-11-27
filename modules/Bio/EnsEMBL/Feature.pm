@@ -82,7 +82,7 @@ use Bio::EnsEMBL::Utils::Argument qw(rearrange);
 use Bio::EnsEMBL::Utils::Exception qw(throw warning);
 use Bio::EnsEMBL::Utils::Scalar qw(check_ref assert_ref);
 use Bio::EnsEMBL::Slice;
-use Try::Tiny;
+
 use vars qw(@ISA);
 
 use Scalar::Util qw(weaken);
@@ -1462,7 +1462,7 @@ sub feature_so_acc {
   my $so_acc;
 
   # Get the caller class SO acc
-  try {
+  eval {
     $so_acc = $ref->SEQUENCE_ONTOLOGY->{'acc'};
   };
 
@@ -1489,7 +1489,7 @@ sub feature_so_term {
   my $so_term;
 
   # Get the caller class SO acc
-  try {
+  eval {
     $so_term = $ref->SEQUENCE_ONTOLOGY->{'term'};
   };
 
