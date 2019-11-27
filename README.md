@@ -6,7 +6,7 @@
 [travis]: https://travis-ci.org/Ensembl/ensembl
 [coveralls]: https://coveralls.io/github/Ensembl/ensembl
 
-The Ensembl Core API (Application Programme Interface) serves as a middle layer between the underlying MySQL database and the user's script. It aims to encapsulate the database layout by providing high level access to the database.
+The Ensembl Core API (Application Programming Interface) serves as a middle layer between the underlying MySQL database and the user's script. It aims to encapsulate the database layer by providing high level access to the database.
 
 Find more information (including the installation guide and a tutorial) on the Ensembl website: http://www.ensembl.org/info/docs/api/core/
 
@@ -17,6 +17,7 @@ To clone the Ensembl Core API, use the following command:
 ```
 git clone https://github.com/Ensembl/ensembl.git
 ```
+Alternatively, you can download the files in gzipped TAR format from our [FTP site](ftp://ftp.ensembl.org/pub/ensembl-api.tar.gz).
 
 ## API requirements
 In order to use the Ensembl Core API, an installation of [BioPerl 1.6.924 core modules](https://github.com/bioperl/bioperl-live/archive/release-1-6-924.zip) (bioperl-live) is required.
