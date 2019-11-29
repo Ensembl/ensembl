@@ -93,10 +93,6 @@ A year after deprecation (4 Ensembl releases), the method is removed from the AP
  - Bio::EnsEMBL::**Slice**::*calculate_theta()*
  - Bio::EnsEMBL::**Slice**::*get_all_IndividualSlice()*
  - Bio::EnsEMBL::**Slice**::*get_by_Individual()*
- - Bio::EnsEMBL::**Slice**::*get_all_somatic_VariationFeatures()*
- - Bio::EnsEMBL::**Slice**::*get_all_somatic_VariationFeatures_by_source()*
- - Bio::EnsEMBL::**Slice**::*get_all_somatic_VariationFeatures_with_phenotype()*
- - Bio::EnsEMBL::**Slice**::*get_all_VariationFeatures_by_Population()*
  - Bio::EnsEMBL::**Slice**::*get_by_strain()*
  - Bio::EnsEMBL::**Slice**::*_calculate_a*
 
