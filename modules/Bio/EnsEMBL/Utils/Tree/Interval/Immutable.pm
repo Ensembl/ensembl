@@ -80,6 +80,7 @@ use Bio::EnsEMBL::Utils::Exception qw(throw);
 use Bio::EnsEMBL::Utils::Tree::Interval::Immutable::Node;
 use Bio::EnsEMBL::Utils::Interval;
 
+
 =head2 new
 
   Arg [1]     : Arrayref of Bio::EnsEMBL::Utils::Interval instances
@@ -103,6 +104,7 @@ sub new {
   my $self = bless({}, $class);
 
   $self->{top_node} = $self->_divide_intervals($intervals);
+
   return $self;
 }
 
@@ -292,30 +294,37 @@ sub _in_order_traversal {
 }
 
 sub _divide_intervals {
-  my ($self, $intervals) = @_;
+  my ($self, $intervals, $sorted) = @_;
 
   return undef unless scalar @{$intervals};
 
-  my $x_center = $self->_center($intervals);
+  my $sorted_intervals;
+  if ($sorted) {
+      $sorted_intervals = $intervals;
+  } else {
+      $sorted_intervals = sort_by_begin($intervals);
+  }
+
+  my $x_center = $self->_center_sorted($sorted_intervals);
   my ($s_center, $s_left, $s_right) = ([], [], []);
   
-  foreach my $interval (@{$intervals}) {
-    if ($interval->spans_origin) {
+  foreach my $sorted_interval (@{$sorted_intervals}) {
+    if ($sorted_interval->spans_origin) {
       throw "Cannot build a tree containing an interval that spans the origin";
     }
-    if ($interval->end < $x_center) {
-      push @{$s_left}, $interval;
-    } elsif ($interval->start > $x_center) {
-      push @{$s_right}, $interval;
+    if ($sorted_interval->end < $x_center) {
+      push @{$s_left}, $sorted_interval;
+    } elsif ($sorted_interval->start > $x_center) {
+      push @{$s_right}, $sorted_interval;
     } else {
-      push @{$s_center}, $interval;
+      push @{$s_center}, $sorted_interval;
     }
   }
 
   my $node = Bio::EnsEMBL::Utils::Tree::Interval::Immutable::Node->new($x_center,
 								       $s_center,
-								       $self->_divide_intervals($s_left),
-								       $self->_divide_intervals($s_right));
+								       $self->_divide_intervals($s_left, 1),
+								       $self->_divide_intervals($s_right, 1));
 }
 
 sub _center {
@@ -324,6 +333,13 @@ sub _center {
   my $sorted_intervals = sort_by_begin($intervals);
   my $len = scalar @{$sorted_intervals};
   
+  return $sorted_intervals->[int($len/2)]->start;
+}
+
+sub _center_sorted {
+  my ($self, $sorted_intervals) = @_;
+  my $len = scalar @{$sorted_intervals};
+
   return $sorted_intervals->[int($len/2)]->start;
 }
 

@@ -80,6 +80,8 @@ test_transform ($mapper,
 
 #
 # check if the mapper can do merging
+# at the same time, check that IntervalTrees are correctly cached
+# and that IntervalTree caches are correctly invalidated
 #
 
 $mapper = Bio::EnsEMBL::Mapper->new( "asm1", "asm2" );
@@ -88,10 +90,17 @@ $mapper->add_map_coordinates( "1", 1, 10, 1, "1", 101, 110 );
 $mapper->add_map_coordinates( "1", 21, 30, 1, "1", 121, 130 );
 $mapper->add_map_coordinates( "1", 11, 20, 1, "1", 111, 120 );
 
+is($mapper->{_tree_asm1}->{1}, undef, "tree not yet created for asm1 interval 1");
+
 test_transform( $mapper, 
 		[ "1", 5, 25, 1, "asm1" ],
 		[ "1", 105, 125, 1 ] );
 
+is(defined($mapper->{_tree_asm1}->{1}), 1, "tree created and cached for asm1 interval 1");
+
+
+$mapper->add_map_coordinates( "1", 31, 40, 1, "1", 131, 140);
+is($mapper->{_tree_asm1}->{1}, undef, "tree deleted after modifying asm1 interval 1");
 
 
 #
