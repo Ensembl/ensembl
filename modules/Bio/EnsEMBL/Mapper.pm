@@ -1016,7 +1016,6 @@ sub _dump{
   my $from = $self->{'from'};
   my $to = $self->{'to'};
 
-  print $fh "--------------------begin mapper dump--------------------\n";
   print $fh "dumping from-hash _pair_$from\n";
   foreach my $id ( keys %{$self->{"_pair_$from"}} ) {
     print $fh "{_pair_$from}->{" . uc($id) . "}:\n";
@@ -1041,7 +1040,6 @@ sub _dump{
       print $fh "{_tree_$to}->{" . uc($id) . "} empty\n";
     }
   }
-  print $fh "---------------------end mapper dump---------------------\n";
 }
 
 
@@ -1201,9 +1199,7 @@ sub _build_immutable_tree {
     my $end = $i->{$pair_side}{end};
 
     if ($end < $start) {
-      my $tmp = $start;
-      $start = $end;
-      $end = $tmp;
+        ($end, $start) = ($start, $end);
     }
 
     push @{$from_intervals}, Bio::EnsEMBL::Utils::Interval->new($start, $end, $i);
