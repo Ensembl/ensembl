@@ -1915,8 +1915,8 @@ CREATE TABLE mapping_session (
   new_db_name                 VARCHAR(80) NOT NULL DEFAULT '',
   old_release                 VARCHAR(5) NOT NULL DEFAULT '',
   new_release                 VARCHAR(5) NOT NULL DEFAULT '',
-  old_assembly                VARCHAR(20) NOT NULL DEFAULT '',
-  new_assembly                VARCHAR(20) NOT NULL DEFAULT '',
+  old_assembly                VARCHAR(80) NOT NULL DEFAULT '',
+  new_assembly                VARCHAR(80) NOT NULL DEFAULT '',
   created                     DATETIME NOT NULL,
 
   PRIMARY KEY (mapping_session_id)
