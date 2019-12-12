@@ -16,7 +16,7 @@ CREATE TABLE "alt_allele" (
 
 CREATE UNIQUE INDEX "gene_idx" ON "alt_allele" ("gene_id");
 
---Increased old_assembly and new_assembly lengths in mapping_session.mapp
+--
 -- Table: "alt_allele_attrib"
 --
 CREATE TABLE "alt_allele_attrib" (
