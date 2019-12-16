@@ -135,4 +135,3 @@
 135	\N	patch	patch_98_99_a.sql|schema_version
 136	\N	patch	patch_99_100_a.sql|schema_version
 137	\N	patch	patch_99_100_b.sql|alter_externaldb_type_notnull
-138	\N	patch	patch_99_100_c.sql|alter_mapping_session_assembly_length
