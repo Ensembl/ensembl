@@ -1,39 +1,41 @@
-stages:
-  - test
-  - posttest
+#
+# Test-job template
+#
 
-services:
-  - mysql:5.6
+.ensembl_test_template:
+  image: dockerhub.ebi.ac.uk/ensembl-infrastructure/ensembl-ci-docker-images:${PERL_VERSION}
 
-variables:
-  # FIXME: set some password for both users
-  MYSQL_ALLOW_EMPTY_PASSWORD: "yes"
-  MYSQL_USER: "travis"
-  MYSQL_PASSWORD: ""
-  USER: "gitlabci"
+  services:
+    - mysql:5.6
 
-# Run before each job not defining its own before_script
-before_script:
-  - apt-get update
-  - apt-get install -y build-essential cpanminus git
-  - apt-get install -y libmysqlclient-dev mysql-client || apt-get install -y default-libmysqlclient-dev default-mysql-client
-  - apt-get install -y libssl-dev sqlite3
-  - git clone --branch=master --depth=1 https://github.com/Ensembl/ensembl-test.git
-  - git clone --branch=master --depth=1 https://github.com/Ensembl/ensembl-io.git
-  - git clone --branch=master --depth=1 https://github.com/Ensembl/ensembl-variation.git
-  - git clone --branch=master --depth=1 https://github.com/Ensembl/ensembl-compara.git
-  - git clone --branch=release-1-6-924 --depth=1 https://github.com/bioperl/bioperl-live.git
-  - cpanm -v --installdeps --notest .
-  - ( cd ensembl-test && cpanm -v --installdeps --notest . )
-#  - ( cd ensembl-io && cpanm -v --installdeps --notest . )
-#  - ( cd ensembl-variation && cpanm -v --installdeps --notest . )
-  - ( cd ensembl-compara && cpanm -v --installdeps --notest . )
-  - ( cd misc-scripts/xref_mapping && cpanm -v --installdeps --notest . )
-  - cpanm -n Devel::Cover::Report::Coveralls
-  - cpanm -n DBD::SQLite
-  - cp travisci/MultiTestDB.conf.gitlabci.mysql  modules/t/MultiTestDB.conf.mysql
-  - cp travisci/MultiTestDB.conf.travisci.SQLite modules/t/MultiTestDB.conf.SQLite
-  - mysql -u root -h mysql -e 'GRANT ALL PRIVILEGES ON *.* TO "travis"@"%"'
+  variables:
+    # FIXME: set some password for both users
+    MYSQL_ALLOW_EMPTY_PASSWORD: "yes"
+    MYSQL_USER: "travis"
+    MYSQL_PASSWORD: ""
+    USER: "gitlabci"
+
+  before_script:
+    - apt-get update
+    - apt-get install -y build-essential cpanminus git
+    - apt-get install -y default-libmysqlclient-dev default-mysql-client
+    - apt-get install -y libssl-dev sqlite3
+    - git clone --branch=master --depth=1 https://github.com/Ensembl/ensembl-test.git
+    - git clone --branch=master --depth=1 https://github.com/Ensembl/ensembl-io.git
+    - git clone --branch=master --depth=1 https://github.com/Ensembl/ensembl-variation.git
+    - git clone --branch=master --depth=1 https://github.com/Ensembl/ensembl-compara.git
+    - git clone --branch=release-1-6-924 --depth=1 https://github.com/bioperl/bioperl-live.git
+    - cpanm -v --installdeps --notest .
+    - ( cd ensembl-test && cpanm -v --installdeps --notest . )
+#    - ( cd ensembl-io && cpanm -v --installdeps --notest . )
+#    - ( cd ensembl-variation && cpanm -v --installdeps --notest . )
+    - ( cd ensembl-compara && cpanm -v --installdeps --notest . )
+    - ( cd misc-scripts/xref_mapping && cpanm -v --installdeps --notest . )
+    - cpanm -n Devel::Cover::Report::Coveralls
+    - cpanm -n DBD::SQLite
+    - cp travisci/MultiTestDB.conf.gitlabci.mysql  modules/t/MultiTestDB.conf.mysql
+    - cp travisci/MultiTestDB.conf.travisci.SQLite modules/t/MultiTestDB.conf.SQLite
+    - mysql -u root -h mysql -e 'GRANT ALL PRIVILEGES ON *.* TO "travis"@"%"'
 
 #
 # Test jobs
@@ -41,8 +43,9 @@ before_script:
 
 test:perl5.14-sqlite:
   stage: test
-  image: perl:5.14-threaded
+  extends: .ensembl_test_template
   variables:
+    PERL_VERSION: "5.14"
     COVERALLS: "false"
     DB: "sqlite"
   script:
@@ -50,8 +53,9 @@ test:perl5.14-sqlite:
 
 test:perl5.30-mysql:
   stage: test
-  image: perl:5.30-threaded
+  extends: .ensembl_test_template
   variables:
+    PERL_VERSION: "5.30"
     # Note: relies on the secret variable COVERALLS_REPO_TOKEN for report uploads to work
     COVERALLS: "true"
     DB: "mysql"
@@ -62,24 +66,45 @@ test:perl5.30-mysql:
 # Triggers for dependent builds
 #
 
-# FIXME:
-#  - only partly tested so far
-#  - doesn't support PRs before they are merged
-#    (would need extended run condition and better selection of downstream branches)
+# The template. It doesn't presently support PRs before they are
+# merged (would need extended run condition and better selection of
+# downstream branches) - but then again, we do not trigger dependent
+# builds for PRs on Travis either.
 .dependent_template:
-  stage: posttest
-  # We want this to run even if any test jobs fail
-  when: always
+  stage: test
   only:
     - master
     - /^release/\d+$/
-  trigger:
-    project: $DEPENDENT_PROJECT
-    # Use the same branch as in this project
-    branch: $CI_COMMIT_REF_NAME
 
-# Example trigger job using the above, disabled for obvious reasons
-.post:trigger_foo:
+# Actual trigger jobs
+
+# ensembl-rest; disabled for now because that repo a) hasn't got
+# GitLab-CI config yet, and b) is still on the list in
+# trigger-dependent-build.sh.
+.test:trigger_rest:
   extends: .dependent_template
+  trigger:
+    project: ensembl-gh-mirror/ensembl-rest
+    # Use the same branch as in this project
+    branch: ${CI_COMMIT_REF_NAME}
+
+# Dependent builds on Travis
+# Relies on the secret variable TRAVIS_AUTH_TOKEN to actually work,
+# moreover the account associated with the token must have write
+# access to *all* dependent repositories; to be exact what it needs
+# is the Travis 'create_request' permission but Travis permissions are
+# generated from GitHub ones and it seems that in order to have
+# 'create_request' on the latter one requires 'write' on the former.
+test:trigger_travis:
+  extends: .dependent_template
+  image: alpine:3.10
   variables:
-    DEPENDENT_PROJECT: ensembl-gh-mirror/ensembl-foo
+    AUTH_TOKEN: ${TRAVIS_AUTH_TOKEN}
+    TRAVIS_REPO_SLUG: ${CI_PROJECT_PATH}
+    TRAVIS_BRANCH: ${CI_COMMIT_REF_NAME}
+    TRAVIS_COMMIT: ${CI_COMMIT_SHA}
+    # Safe as long as run conditions above do not include merge requests
+    TRAVIS_PULL_REQUEST: "false"
+  script:
+    - apk add --no-cache bash curl python3
+    - ${CI_PROJECT_DIR}/travisci/trigger-dependent-build.sh
