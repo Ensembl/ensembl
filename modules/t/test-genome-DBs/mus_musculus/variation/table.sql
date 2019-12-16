@@ -186,7 +186,7 @@ CREATE TABLE `meta` (
   PRIMARY KEY (`meta_id`),
   UNIQUE KEY `species_key_value_idx` (`species_id`,`meta_key`,`meta_value`),
   KEY `species_value_idx` (`species_id`,`meta_value`)
-) ENGINE=MyISAM AUTO_INCREMENT=85 DEFAULT CHARSET=latin1;
+) ENGINE=MyISAM AUTO_INCREMENT=87 DEFAULT CHARSET=latin1;
 
 CREATE TABLE `meta_coord` (
   `table_name` varchar(40) NOT NULL,
@@ -220,6 +220,7 @@ CREATE TABLE `phenotype` (
   `stable_id` varchar(255) DEFAULT NULL,
   `name` varchar(50) DEFAULT NULL,
   `description` varchar(255) DEFAULT NULL,
+  `class_attrib_id` int(11) DEFAULT NULL,
   PRIMARY KEY (`phenotype_id`),
   UNIQUE KEY `desc_idx` (`description`),
   KEY `name_idx` (`name`),
@@ -473,6 +474,8 @@ CREATE TABLE `structural_variation_feature` (
   `somatic` tinyint(1) NOT NULL DEFAULT '0',
   `breakpoint_order` tinyint(4) DEFAULT NULL,
   `length` int(10) DEFAULT NULL,
+  `allele_freq` float DEFAULT NULL,
+  `allele_count` int(10) unsigned DEFAULT NULL,
   PRIMARY KEY (`structural_variation_feature_id`),
   KEY `pos_idx` (`seq_region_id`,`seq_region_start`,`seq_region_end`),
   KEY `structural_variation_idx` (`structural_variation_id`),
