@@ -119,4 +119,3 @@
 2126	\N	patch	patch_98_99_a.sql|schema_version
 2127	\N	patch	patch_99_100_a.sql|schema_version
 2128	\N	patch	patch_99_100_b.sql|alter_externaldb_type_notnull
-2129	\N	patch	patch_99_100_c.sql|alter_mapping_session_assembly_length
