@@ -1,6 +1,6 @@
 -- 
 -- Created by SQL::Translator::Producer::SQLite
--- Created on Wed Nov  6 10:36:08 2019
+-- Created on Tue Dec 17 11:38:18 2019
 -- 
 
 BEGIN TRANSACTION;
@@ -465,8 +465,8 @@ CREATE TABLE "mapping_session" (
   "new_db_name" varchar(80) NOT NULL DEFAULT '',
   "old_release" varchar(5) NOT NULL DEFAULT '',
   "new_release" varchar(5) NOT NULL DEFAULT '',
-  "old_assembly" varchar(20) NOT NULL DEFAULT '',
-  "new_assembly" varchar(20) NOT NULL DEFAULT '',
+  "old_assembly" varchar(80) NOT NULL DEFAULT '',
+  "new_assembly" varchar(80) NOT NULL DEFAULT '',
   "created" datetime
 );
 

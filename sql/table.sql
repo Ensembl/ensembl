@@ -319,6 +319,9 @@ INSERT INTO meta (species_id, meta_key, meta_value)
 INSERT INTO meta (species_id, meta_key, meta_value)
   VALUES (NULL, 'patch', 'patch_99_100_b.sql|alter_externaldb_type_notnull');
 
+INSERT INTO meta (species_id, meta_key, meta_value)
+  VALUES (NULL, 'patch', 'patch_99_100_c.sql|alter_mapping_session_assembly_length');
+
 /**
 @table meta_coord
 @colour #C70C09
@@ -1915,8 +1918,8 @@ CREATE TABLE mapping_session (
   new_db_name                 VARCHAR(80) NOT NULL DEFAULT '',
   old_release                 VARCHAR(5) NOT NULL DEFAULT '',
   new_release                 VARCHAR(5) NOT NULL DEFAULT '',
-  old_assembly                VARCHAR(20) NOT NULL DEFAULT '',
-  new_assembly                VARCHAR(20) NOT NULL DEFAULT '',
+  old_assembly                VARCHAR(80) NOT NULL DEFAULT '',
+  new_assembly                VARCHAR(80) NOT NULL DEFAULT '',
   created                     DATETIME NOT NULL,
 
   PRIMARY KEY (mapping_session_id)
