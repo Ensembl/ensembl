@@ -1,2 +1,2 @@
-1	\N	phenotype	\N
-2	\N	phenotype2	\N
+1	\N	phenotype	\N	\N
+2	\N	phenotype2	\N	\N

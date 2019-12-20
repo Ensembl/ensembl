@@ -1,6 +1,6 @@
 -- 
 -- Created by SQL::Translator::Producer::SQLite
--- Created on Tue Dec 17 13:11:48 2019
+-- Created on Fri Dec 20 16:28:31 2019
 -- 
 
 BEGIN TRANSACTION;
@@ -426,7 +426,7 @@ CREATE TABLE "homology" (
 -- Table: "homology_member"
 --
 CREATE TABLE "homology_member" (
-  "homology_id" integer NOT NULL,
+  "homology_id" bigint NOT NULL,
   "gene_member_id" integer NOT NULL,
   "seq_member_id" integer,
   "cigar_line" mediumtext,
