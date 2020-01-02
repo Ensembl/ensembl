@@ -39,7 +39,7 @@ for var in $dirs; do
 
   echo "About to scan $(pwd) for files to replace '$search' with '$replacement'"
 
-  for file in $(grep -R --files-with-matches "$search" --exclude-dir=.git .); do
+  for file in $(grep -r --files-with-matches "$search" --exclude-dir=.git .); do
     echo "Replacing date in $file"
     if [ "$(uname)" = "Darwin" ]; then
       LC_CTYPE=C LANG=C sed -i '' -e "s/$search/$replacement/g" $file
