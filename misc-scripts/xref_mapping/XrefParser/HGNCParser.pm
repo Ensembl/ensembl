@@ -39,7 +39,7 @@ HGNC is the official naming source for Human.
     Approved symbol
     Approved name
     Previous symbols
-    Synonyms
+    Alias symbols
     NCBI Gene ID
     Ensembl gene ID
     RefSeq IDs
@@ -219,7 +219,7 @@ CCDS
     my $symbol           = $data->{'Approved symbol'};
     my $name             = $data->{'Approved name'};
     my $previous_symbols = $data->{'Previous symbols'};
-    my $synonyms         = $data->{'Synonyms'};
+    my $synonyms         = $data->{'Alias symbols'};
 
     my $seen = 0;
 
