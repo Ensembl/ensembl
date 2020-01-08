@@ -105,7 +105,7 @@ sub run_script {
       $dba = $registry->get_DBAdaptor($species_name, 'core');
   }
 
-  my $rfam_sql = "select distinct t.stable_id, hit_name from analysis a join transcript t on (a.analysis_id = t.analysis_id and a.logic_name = 'ncRNA' and t.biotype != 'miRNA') join exon_transcript et on (t.transcript_id = et.transcript_id) join supporting_feature sf on (et.exon_id = sf.exon_id and sf.feature_type = 'dna_align_feature' ) join dna_align_feature df on (sf.feature_id = df.dna_align_feature_id) order by hit_name";
+  my $rfam_sql = "select distinct t.stable_id, hit_name from analysis a join transcript t on (a.analysis_id = t.analysis_id and a.logic_name like 'ncrna%' and t.biotype != 'miRNA') join exon_transcript et on (t.transcript_id = et.transcript_id) join supporting_feature sf on (et.exon_id = sf.exon_id and sf.feature_type = 'dna_align_feature' ) join dna_align_feature df on (sf.feature_id = df.dna_align_feature_id) order by hit_name";
 
   my $sth = $dba->dbc->prepare($rfam_sql);
   $sth->execute();
