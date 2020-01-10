@@ -65,10 +65,6 @@ use Bio::EnsEMBL::Utils::Exception;
 use vars qw(@ISA);
 use strict;
 
-use Data::Dumper;
-$Data::Dumper::Terse = 1;
-$Data::Dumper::Indent = 0;
-
 @ISA = qw( Bio::EnsEMBL::DBSQL::BaseAdaptor);
 
 
@@ -466,14 +462,11 @@ sub _store_description {
   my $display_label = $analysis->display_label();
   $display_label = '' unless defined $display_label; # SQLite doesn't ignore NOT NULL errors
 
-  my $web_data;
-  $web_data = Dumper($analysis->web_data) if defined $analysis->web_data;
-
   $sth->bind_param(1,$dbID,SQL_INTEGER);
   $sth->bind_param(2,$display_label,SQL_VARCHAR);
   $sth->bind_param(3,$analysis->description,SQL_LONGVARCHAR);
   $sth->bind_param(4,$analysis->displayable,SQL_TINYINT);
-  $sth->bind_param(5,$web_data,SQL_LONGVARCHAR);
+  $sth->bind_param(5,$analysis->web_data,SQL_LONGVARCHAR);
   $sth->execute();
 
   $sth->finish();
@@ -538,15 +531,13 @@ sub update {
   # not already there
   $sth = $self->prepare("SELECT description FROM analysis_description WHERE analysis_id= ?");
   $sth->execute($a->dbID);
-  my $web_data;
-  $web_data = Dumper($a->web_data) if defined $a->web_data;
   if ($sth->fetchrow_hashref) { # update if exists
       $sth = $self->prepare
       ("UPDATE analysis_description SET description = ?, display_label = ?, displayable = ?, web_data = ? WHERE analysis_id = ?");
       $sth->bind_param(1,$a->description,SQL_LONGVARCHAR);     
       $sth->bind_param(2,$a->display_label(),SQL_VARCHAR);
       $sth->bind_param(3,$a->displayable,SQL_TINYINT);
-      $sth->bind_param(4,$web_data,SQL_LONGVARCHAR);
+      $sth->bind_param(4,$a->web_data,SQL_LONGVARCHAR);
       $sth->bind_param(5,$a->dbID,SQL_INTEGER);
       $sth->execute();
 
@@ -677,17 +668,6 @@ sub _objFromHashref {
   my $self = shift;
   my $h = shift;
 
-  ### This code moved here under protest. Web formatting does not belong with data ###
-  ### Web requires "web_data" for track configuration, but only uses the accessor once
-  ### meaning this eval can retire once the view has been removed. The column has to stay
-  ### but content is mostly accessed by SQL in web-code, not via accessor.
-  my $data = $h->{web_data};
-  $data ||= '';
-  $data =~ s/\n|\r|\f|(\\\\)//g;
-  my $web_data;
-  # :X execute semi-trustworthy strings on server.
-  $web_data = eval($data); ## no critic  
-
   return Bio::EnsEMBL::Analysis->new_fast({
     dbID             => $h->{analysis_id},
     adaptor          => $self,
@@ -707,7 +687,7 @@ sub _objFromHashref {
     _description      => $h->{description},
     _display_label    => $h->{display_label},
     _displayable      => $h->{displayable},
-    _web_data         => $web_data,
+    _web_data         => $h->{web_data},
   });
 }
 
