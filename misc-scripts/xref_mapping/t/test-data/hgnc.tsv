@@ -1,4 +1,4 @@
-HGNC ID	Approved symbol	Approved name	Previous symbols	Synonyms	NCBI Gene ID	Ensembl gene ID	RefSeq IDs	CCDS IDs	Locus specific databases
+HGNC ID	Approved symbol	Approved name	Previous symbols	Alias symbols	NCBI Gene ID	Ensembl gene ID	RefSeq IDs	CCDS IDs	Locus specific databases
 HGNC:5	A1BG	alpha-1-B glycoprotein			1	ENSG00000121410	NM_130786	CCDS12976	
 HGNC:37133	A1BG-AS1	A1BG antisense RNA 1	NCRNA00181, A1BGAS, A1BG-AS	FLJ23569	503538	ENSG00000268895	NR_015380		
 HGNC:24086	A1CF	APOBEC1 complementation factor		ACF, ASP, ACF64, ACF65, APOBEC1CF	29974	ENSG00000148584	NM_014576	CCDS7241, CCDS7242, CCDS7243, CCDS73133	
