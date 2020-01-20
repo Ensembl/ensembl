@@ -1,6 +1,6 @@
 #!/bin/bash
 # Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
-# Copyright [2016-2019] EMBL-European Bioinformatics Institute
+# Copyright [2016-2020] EMBL-European Bioinformatics Institute
 # 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -39,7 +39,7 @@ for var in $dirs; do
 
   echo "About to scan $(pwd) for files to replace '$search' with '$replacement'"
 
-  for file in $(grep -R --files-with-matches "$search" --exclude-dir=.git .); do
+  for file in $(grep -r --files-with-matches "$search" --exclude-dir=.git .); do
     echo "Replacing date in $file"
     if [ "$(uname)" = "Darwin" ]; then
       LC_CTYPE=C LANG=C sed -i '' -e "s/$search/$replacement/g" $file

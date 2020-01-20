@@ -141,7 +141,7 @@ CREATE TABLE `meta` (
   `species_id` int(10) unsigned DEFAULT NULL,
   PRIMARY KEY (`meta_id`),
   UNIQUE KEY `key_value_idx` (`meta_key`,`meta_value`)
-) ENGINE=MyISAM AUTO_INCREMENT=49 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+) ENGINE=MyISAM AUTO_INCREMENT=50 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
 CREATE TABLE `ontology` (
   `ontology_id` int(10) unsigned NOT NULL AUTO_INCREMENT,
@@ -196,13 +196,13 @@ CREATE TABLE `synonym` (
 CREATE TABLE `term` (
   `term_id` int(10) unsigned NOT NULL AUTO_INCREMENT,
   `ontology_id` int(10) unsigned NOT NULL,
-  `subsets` text COLLATE utf8_unicode_ci DEFAULT NULL,
+  `subsets` text COLLATE utf8_unicode_ci,
   `accession` varchar(64) COLLATE utf8_unicode_ci NOT NULL,
   `name` varchar(255) CHARACTER SET utf8 NOT NULL,
-  `definition` text CHARACTER SET utf8 DEFAULT NULL,
-  `is_root` int(11) NOT NULL DEFAULT 0,
-  `is_obsolete` int(11) NOT NULL DEFAULT 0,
-  `iri` text COLLATE utf8_unicode_ci DEFAULT NULL,
+  `definition` text CHARACTER SET utf8,
+  `is_root` int(11) NOT NULL DEFAULT '0',
+  `is_obsolete` int(11) NOT NULL DEFAULT '0',
+  `iri` text COLLATE utf8_unicode_ci,
   PRIMARY KEY (`term_id`),
   UNIQUE KEY `accession` (`accession`),
   UNIQUE KEY `term_ontology_acc_idx` (`ontology_id`,`accession`),
