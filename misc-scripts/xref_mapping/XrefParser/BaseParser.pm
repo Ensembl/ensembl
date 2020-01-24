@@ -605,7 +605,7 @@ sub upload_xref_object_graphs {
          $self->add_dependent_xref_maponly( $dep_xref_id,
                                             $dep{LINKAGE_SOURCE_ID},
                                             $xref_id,
-                                            $dep{LINKAGE_ANNOTATION} // $dep{SOURCE_ID} );
+                                            $dep{LINKAGE_ANNOTATION});
 
          #########################################################
          # if there are synonyms, add entries in the synonym table
@@ -1190,7 +1190,7 @@ IXR
   # Croak if we have failed to create/get the xref
   ################################################
   $dependent_id = $self->get_xref($acc, $source_id, $species_id, $dbi);
-  if ( !(defined $dependent_id) ) {
+  if ( !$dependent_id ) {
     croak("$acc\t$label\t\t$source_id\t$species_id\n");
   }
 
