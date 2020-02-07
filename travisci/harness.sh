@@ -7,19 +7,28 @@ export TEST_AUTHOR=$USER
 
 if [ "$DB" = 'mysql' ]; then
     (cd modules/t && ln -sf MultiTestDB.conf.mysql MultiTestDB.conf)
+    ln -sf testdb.conf.mysql testdb.conf
 elif [ "$DB" = 'sqlite' ]; then
     (cd modules/t && ln -sf MultiTestDB.conf.SQLite MultiTestDB.conf)
+    ln -sf testdb.conf.SQLite testdb.conf
     SKIP_TESTS="--skip dbConnection.t,schema.t,schemaPatches.t,strainSlice.t,sliceVariation.t,mappedSliceContainer.t"
 else
     echo "Don't know about DB '$DB'"
     exit 1;
 fi
+ln -sf ../../../modules/t/MultiTestDB.conf misc-scripts/xref_mapping/t/
 
 echo "Running test suite"
 if [ "$COVERALLS" = 'true' ]; then
   PERL5OPT='-MDevel::Cover=+ignore,bioperl,+ignore,ensembl-test,+ignore,ensembl-variation,ensembl-compara' perl $ENSDIR/ensembl-test/scripts/runtests.pl -verbose modules/t $SKIP_TESTS
+  if [ "$DB" = 'mysql' ]; then
+    PERL5OPT='-MDevel::Cover=+ignore,bioperl,+ignore,ensembl-test,+ignore,ensembl-variation,ensembl-compara' perl $ENSDIR/ensembl-test/scripts/runtests.pl -verbose misc-scripts/xref_mapping/t
+  fi
 else
   perl $ENSDIR/ensembl-test/scripts/runtests.pl modules/t $SKIP_TESTS
+  if [ "$DB" = 'mysql' ]; then
+    perl $ENSDIR/ensembl-test/scripts/runtests.pl misc-scripts/xref_mapping/t
+  fi
 fi
 
 rt=$?

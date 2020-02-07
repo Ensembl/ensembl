@@ -1,0 +1,155 @@
+1	MIR	Type I Transposons/SINE	ALU	
+2	L2	Type I Transposons/LINE		
+3	AluSx	Type I Transposons/SINE	ALU	
+4	AluJo	Type I Transposons/SINE	ALU	
+5	AluY	Type I Transposons/SINE	ALU	
+6	AluJb	Type I Transposons/SINE	ALU	
+7	AluSq	Type I Transposons/SINE	ALU	
+8	AluSg	Type I Transposons/SINE	ALU	
+9	MIR3	Type I Transposons/SINE	ALU	
+10	AluSp	Type I Transposons/SINE	ALU	
+11	L1M4	Type I Transposons/LINE		
+12	MER5A	Type II Transposons		
+14	AluSc	Type I Transposons/SINE	ALU	
+15	L3	Type I Transposons/LINE		
+16	L1ME	Type I Transposons/LINE		
+17	FLAM_C	Type I Transposons/SINE	ALU	
+18	L1ME1	Type I Transposons/LINE		
+19	L1ME4a	Type I Transposons/LINE		
+20	MLT1A	LTRs	LTR	
+21	L1ME3A	Type I Transposons/LINE		
+22	AluSg/x	Type I Transposons/SINE	ALU	
+23	HAL1	Type I Transposons/LINE		
+24	L1MEc	Type I Transposons/LINE		
+25	L1MC4	Type I Transposons/LINE		
+26	MER5B	Type II Transposons		
+27	L1MC4a	Type I Transposons/LINE		
+28	L1MB7	Type I Transposons/LINE		
+30	THE1C	LTRs	LTR	
+31	L1	Type I Transposons/LINE		
+32	FRAM	Type I Transposons/SINE	ALU	
+33	MLT1D	LTRs	LTR	
+34	L1ME2	Type I Transposons/LINE		
+35	L1MC5	Type I Transposons/LINE		
+38	FLAM_A	Type I Transposons/SINE	ALU	
+39	MLT1B	LTRs	LTR	
+40	L1MB3	Type I Transposons/LINE		
+41	L1MB8	Type I Transposons/LINE		
+42	MER20	Type II Transposons		
+43	MLT1K	LTRs	LTR	
+44	L1MC/D	Type I Transposons/LINE		
+45	L1MA9	Type I Transposons/LINE		
+46	MLT1J	LTRs	LTR	
+47	L1MC3	Type I Transposons/LINE		
+48	L1MEd	Type I Transposons/LINE		
+49	L1MC1	Type I Transposons/LINE		
+53	L1MD2	Type I Transposons/LINE		
+54	MER58A	Type II Transposons		
+55	Tigger1	Type II Transposons		
+59	L1P	Type I Transposons/LINE		
+60	MLT1H	LTRs	LTR	
+61	MLT1I	LTRs	LTR	
+62	L1ME3	Type I Transposons/LINE		
+63	L1PA5	Type I Transposons/LINE		
+64	MER3	Type II Transposons		
+65	L1MA8	Type I Transposons/LINE		
+66	MLT1L	LTRs	LTR	
+67	L1PA3	Type I Transposons/LINE		
+70	L1MA4	Type I Transposons/LINE		
+71	L1MCa	Type I Transposons/LINE		
+73	L1MB5	Type I Transposons/LINE		
+74	L1MB2	Type I Transposons/LINE		
+77	MER21B	LTRs	LTR	
+78	LTR16C	LTRs	LTR	
+79	MSTB	LTRs	LTR	
+82	MER2	Type II Transposons		
+83	L1MB4	Type I Transposons/LINE		
+84	L1MD3	Type I Transposons/LINE		
+85	MER33	Type II Transposons		
+86	L1PB4	Type I Transposons/LINE		
+87	MADE1	Type II Transposons		
+88	L1PA8	Type I Transposons/LINE		
+89	AluSq/x	Type I Transposons/SINE	ALU	
+90	MLT1J2	LTRs	LTR	
+91	L3b	Type I Transposons/LINE		
+94	Charlie8	Type II Transposons		
+96	L1MD1	Type I Transposons/LINE		
+99	Alu	Type I Transposons/SINE	ALU	
+103	L1MC2	Type I Transposons/LINE		
+105	MLT1F1	LTRs	LTR	
+106	MER103	Type II Transposons		
+107	L1MB1	Type I Transposons/LINE		
+108	AluSg1	Type I Transposons/SINE	ALU	
+111	L1MA4A	Type I Transposons/LINE		
+112	FAM	Type I Transposons/SINE	ALU	
+113	AluYc	Type I Transposons/SINE	ALU	
+114	L1M2	Type I Transposons/LINE		
+117	L1MA10	Type I Transposons/LINE		
+118	MER53	Type II Transposons		
+119	LTR67	LTRs	LTR	
+121	MLT1F	LTRs	LTR	
+122	MLT1E	LTRs	LTR	
+127	MER7A	Type II Transposons		
+128	Charlie1	Type II Transposons		
+129	MSTB1	LTRs	LTR	
+131	Tigger7	Type II Transposons		
+133	MER69	Type II Transposons		
+134	L1PA17	Type I Transposons/LINE		
+135	MLT1G1	LTRs	LTR	
+139	MLT1H1	LTRs	LTR	
+140	MER44D	Type II Transposons		
+143	Tigger3(Golem)	Type II Transposons		
+148	MER113	Type II Transposons		
+149	MLT1E2	LTRs	LTR	
+151	MER30	Type II Transposons		
+152	MER117	Type II Transposons		
+153	MER94	Type II Transposons		
+154	AluJ/FLAM	Type I Transposons/SINE	ALU	
+155	AluYa5	Type I Transposons/SINE	ALU	
+162	Tigger5	Type II Transposons		
+164	AluYb8	Type I Transposons/SINE	ALU	
+168	MLT1G	LTRs	LTR	
+171	SVA	Other repeats		
+172	MER91A	Type II Transposons		
+174	MER5C	Type II Transposons		
+176	Charlie5	Type II Transposons		
+179	MER81	Type II Transposons		
+180	AluS	Type I Transposons/SINE	ALU	
+182	LTR16B	LTRs	LTR	
+188	MER39	LTRs	LTR	
+191	MSTC	LTRs	LTR	
+196	AluSp/q	Type I Transposons/SINE	ALU	
+199	MARNA	Type II Transposons		
+206	MLT2C1	LTRs	LTR	
+208	MER46C	Type II Transposons		
+209	MER41A	LTRs	LTR	
+215	LTR7	LTRs	LTR	
+216	L1P4	Type I Transposons/LINE		
+218	L1P3	Type I Transposons/LINE		
+222	AluJo/FLAM	Type I Transposons/SINE	ALU	
+223	MER47A	Type II Transposons		
+225	MER115	Type II Transposons		
+230	Charlie4a	Type II Transposons		
+234	MER102b	Type II Transposons		
+238	Zaphod	Type II Transposons		
+240	MER46B	Type II Transposons		
+252	AluJ/FRAM	Type I Transposons/SINE	ALU	
+253	AluJo/FRAM	Type I Transposons/SINE	ALU	
+256	MER68	LTRs	LTR	
+258	MER21A	LTRs	LTR	
+281	LTR30	LTRs	LTR	
+283	MER65A	LTRs	LTR	
+285	MER66B	LTRs	LTR	
+288	MER102a	Type II Transposons		
+305	5S	RNA repeats		
+320	LTR48B	LTRs	LTR	
+332	FLAM	Type I Transposons/SINE	ALU	
+374	MLT1G3	LTRs	LTR	
+445	MER7D	Type II Transposons		
+560	LTR19B	LTRs	LTR	
+579	MER30B	Type II Transposons		
+632	MER65B	LTRs	LTR	
+637	U1	RNA repeats		
+685	MER21A-int	LTRs	LTR	
+890	tRNA-Asp-GAY	RNA repeats		
+1017	tRNA-Val-GTA	RNA repeats		

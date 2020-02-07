@@ -1,0 +1,2 @@
+driver = SQLite
+file = /var/tmp/xref_testdb.sqlite

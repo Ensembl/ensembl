@@ -15,358 +15,471 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 
+=head1 CONTACT
+
+  Please email comments or questions to the public Ensembl
+  developers list at <http://lists.ensembl.org/mailman/listinfo/dev>.
+
+  Questions may also be sent to the Ensembl help desk at
+  <http://www.ensembl.org/Help/Contact>.
+
+=head1 NAME
+
+XrefParser::HGNCParser
+
+=head1 DESCRIPTION
+
+A parser class to parse the HGNC source.
+HGNC is the official naming source for Human.
+
+-data_uri = https://www.genenames.org/cgi-bin/download?col=gd_hgnc_id&col=gd_app_sym&col=gd_app_name&col=gd_prev_sym&col=gd_aliases&col=gd_pub_eg_id&col=gd_pub_ensembl_id&col=gd_pub_refseq_ids&col=gd_ccds_ids&col=gd_lsdb_links&status=Approved&status_opt=2&where=&order_by=gd_app_sym_sort&format=text&limit=&hgnc_dbtag=on&submit=submit
+-file_format = TSV
+-columns = [
+    HGNC ID
+    Approved symbol
+    Approved name
+    Previous symbols
+    Alias symbols
+    NCBI Gene ID
+    Ensembl gene ID
+    RefSeq IDs
+    CCDS IDs
+    Locus specific databases
+  ]
+
+A core database adaptor is required.
+
+=head1 SYNOPSIS
+
+  my $parser = XrefParser::HGNCParser->new($db->dbh);
+
+  $parser->run_script( {
+    source_id  => 46,
+    species_id => 9606,
+    file       => 'hgnc_data.tsv',
+    dba        => $core_dba,
+  } );
+
 =cut
+
+
 
 package XrefParser::HGNCParser;
 
 use strict;
 use warnings;
-use File::Basename;
 use Carp;
-use base qw( XrefParser::BaseParser );
+use Text::CSV;
+use utf8;
+
+use parent qw( XrefParser::BaseParser );
+
+
+# HGNC sources to be processed
+my @SOURCES = (
+  'ccds',
+  'entrezgene_manual',
+  'refseq_manual',
+  'ensembl_manual',
+  'desc_only'
+);
+
+
+=head2 run_script
+  Description: Runs the HGNCParser
+  Return type: none
+  Exceptions : throws on all processing errors
+  Caller     : ParseSource in the xref pipeline
+=cut
 
 sub run_script {
-
   my ($self, $ref_arg) = @_;
+
   my $source_id    = $ref_arg->{source_id};
   my $species_id   = $ref_arg->{species_id};
   my $file         = $ref_arg->{file};
-  my $verbose      = $ref_arg->{verbose};
   my $db           = $ref_arg->{dba};
-  my $dbi          = $ref_arg->{dbi};
-  $dbi = $self->dbi unless defined $dbi;
+  my $verbose      = $ref_arg->{verbose} // 0;
+  my $dbi          = $ref_arg->{dbi} // $self->dbi;
 
-  if((!defined $source_id) or (!defined $species_id) or (!defined $file) ){
-    croak "Need to pass source_id, species_id, file as pairs";
-  }
-  $verbose |=0;
-
-  my $user = "ensro";
-  my $host;
-  my $port;
-  my $dbname;
-  my $pass;
-  my $wget;
-
-  if($file =~ /host[=][>](\S+?)[,]/){
-    $host = $1;
-  }
-  if($file =~ /port[=][>](\S+?)[,]/){
-    $port =  $1;
-  }
-  if($file =~ /dbname[=][>](\S+?)[,]/){
-    $dbname = $1;
-  }
-  if($file =~ /pass[=][>](\S+?)[,]/){
-    $pass = $1;
-  }
-  if($file =~ /wget[=][>](\S+?)[,]/){
-    $wget = $1;
+  if ((!defined $source_id) or (!defined $species_id) or (!defined $file) ){
+    confess "Need to pass source_id, species_id, file as pairs";
   }
 
-  my @lines;
-  if (defined $wget) {
-    my $ua = LWP::UserAgent->new();
-    $ua->timeout(10);
-    $ua->env_proxy();
-    my $request = HTTP::Request->new(GET => $wget);
-    my $response = $ua->request($request);
+  # parse the file string and set default user
+  my $file_params = $self->parse_file_string($file);
+  $file_params->{user} //= 'ensro';
 
-    if ( !$response->is_success() ) {
-      warn($response->status_line);
-      return 1;
-    }
-    @lines = split(/\n/, $response->decoded_content);
-  } else {
-    my $file_io = $self->get_filehandle($file);
-    if ( !defined $file_io ) {
-      print "ERROR: Can't open HGNC file $file\n";
-      return 1;
-    }
-    while (my $line = $file_io->getline()) {
-      push(@lines, $line);
-    }
-  }
-
-
-  my (%swissprot)  =  %{$self->get_valid_codes('Uniprot/SWISSPROT',$species_id, $dbi)};
-  my (%refseq) =  %{$self->get_valid_codes('refseq',$species_id, $dbi)};
-  my @list;
-  push @list, 'refseq_peptide';
-  push @list, 'refseq_mRNA';
+  # Prepare lookup lists
+  my (%swissprot) = %{$self->get_valid_codes('Uniprot/SWISSPROT',$species_id, $dbi)};
+  my (%refseq) = %{$self->get_valid_codes('refseq',$species_id, $dbi)};
+  my @list = ('refseq_peptide', 'refseq_mRNA');
   my (%entrezgene) = %{$self->get_valid_xrefs_for_dependencies('EntrezGene', $dbi, @list)};
-  my $source_name = $self->get_source_name_for_source_id($source_id, $dbi);
-  my $name_to_source_id = $self->get_sources($source_name, $dbi);
 
+  # Prepare sources
+  my $self_source_name = $self->get_source_name_for_source_id($source_id, $dbi);
 
+  # get RefSeq source ids
+  foreach my $source_name (@SOURCES) {
+    $self->{source_ids}->{$source_name} = $self->get_source_id_for_source_name( $self_source_name, $source_name , $dbi );
+  }
+  $self->{source_ids}->{'lrg'} = $self->get_source_id_for_source_name( 'LRG_HGNC_notransfer', undef, $dbi );
+
+  # statistics counts
   my %name_count;
   my $mismatch = 0;
 
-  # Get CCDS data
-  my ($ccds_db, $dbi2);
-  if (defined $host) {
-    $ccds_db =  XrefParser::Database->new({ host   => $host,
-                                             port   => $port,
-                                             user   => $user,
-                                             dbname => $dbname,
-                                             pass   => $pass});
-    $dbi2 = $ccds_db->dbi();
+  # Get CCDS data from core db
+  my $core_db;
+  if (defined $db) {
+    $core_db = $db->dbc();
+  } elsif (defined $file_params->{host}) {
+    $core_db = XrefParser::Database->new({
+        host   => $file_params->{host},
+        port   => $file_params->{port},
+        user   => $file_params->{user},
+        dbname => $file_params->{dbname},
+        pass   => $file_params->{pass}
+    })->dbi;
   } else {
-    $dbi2 = $db->dbc();
+    confess "No ensembl core database provided\n";
   }
 
-  if(!defined($dbi2)){
-    return 1;
+  if (!defined $core_db) {
+    confess "No ensembl core database!\n";
   }
 
-  my $sql = "select t.stable_id, x.dbprimary_acc from transcript t, object_xref ox, xref x, external_db e where t.transcript_id = ox.ensembl_id and ox.ensembl_object_type = 'Transcript' and ox.xref_id = x.xref_id and x.external_db_id = e.external_db_id and e.db_name like 'Ens_%_transcript'";
-  my (%ccds_to_ens, $ccds);
-  my $sth = $dbi2->prepare($sql);
-  $sth->execute() or croak( $dbi2->errstr() );
-  while ( my @row = $sth->fetchrow_array() ) {
-    $ccds = $row[0];
-    $ccds =~ s/\.[0-9]//; # Remove version
-    $ccds_to_ens{$ccds} = $row[1];
+  my $sql =(<<'CCDS');
+  SELECT ta.value, t.stable_id
+  FROM transcript t
+  INNER JOIN transcript_attrib ta ON t.transcript_id = ta.transcript_id
+  INNER JOIN attrib_type a ON ta.attrib_type_id = a.attrib_type_id
+  WHERE a.code = 'ccds_transcript';
+CCDS
+
+  my %ccds_to_ens;
+  my $sth = $core_db->prepare($sql);
+  $sth->execute() or croak( $core_db->errstr() );
+  while ( my ($ccds_id, $ens_id) = $sth->fetchrow_array() ) {
+    # Remove version
+    $ccds_id =~ s/\.\d+//x;
+    $ccds_to_ens{$ccds_id} = $ens_id;
   }
   $sth->finish;
 
-  # Skip header
-  pop @lines;
+  # in memory HGNC file
+  my $mem_file;
 
-  foreach my $line (@lines){
-    chomp $line;
-    my @array = split /\t/x, $line;
+  # use wget link to get file
+  if (defined $file_params->{wget}) {
+    my $ua = LWP::UserAgent->new();
+    $ua->timeout(10);
+    $ua->env_proxy();
+    my $request = HTTP::Request->new(
+      GET => $file_params->{wget}
+    );
+    my $response = $ua->request($request);
+
+    if ( !$response->is_success() ) {
+      confess $response->status_line;
+    }
+
+    $mem_file = $response->decoded_content;
+
+  # else get file from disk
+  } else {
+    my $disk_fh = $self->get_filehandle($file);
+    if ( !defined $disk_fh ) {
+      confess "Can't open HGNC file '$file'\n";
+    }
+    $mem_file = do { local $/; <$disk_fh> };
+  }
+
+  my $input_file = Text::CSV->new({
+    sep_char       => "\t",
+    empty_is_undef => 1,
+    binary         => 1,
+    auto_diag      => 1
+  }) or croak "Cannot use file $file: ".Text::CSV->error_diag ();
+
+  # make sure it's utf8
+  utf8::encode($mem_file);
+  # get rid of non-conventional " used in the Locus specific databases field
+  $mem_file =~ s/"//xg;
+
+  open my $fh, '<', \$mem_file or confess "Can't open HGNC in-memory file: $!\n";
+
+  $input_file->column_names( @{ $input_file->getline( $fh ) } );
+
+
+  # loop through each row
+  while ( my $data = $input_file->getline_hr( $fh ) ) {
+
+    my $acc              = $data->{'HGNC ID'};
+    my $symbol           = $data->{'Approved symbol'};
+    my $name             = $data->{'Approved name'};
+    my $previous_symbols = $data->{'Previous symbols'};
+    my $synonyms         = $data->{'Alias symbols'};
 
     my $seen = 0;
 
-    my $acc              = $array[0];
-    my $symbol           = $array[1];
-    my $name             = $array[2];
-    my $previous_symbols = $array[3];
-    my $synonyms         = $array[4];
-
-    my $type = 'lrg';
-    my $id = $array[9];
-    my $source_id = $name_to_source_id->{$type};
-    if($id and $id =~ m/http:\/\/www.lrg-sequence.org\/LRG\/(LRG_\d+)/x){
-      my $lrg_stable_id = $1;
-      $self->add_to_direct_xrefs({ stable_id   => $lrg_stable_id,
-				   type        => 'gene',
-                                   acc         => $acc,
-				   label       => $symbol,
-				   desc        => $name,
-				   source_id   => $source_id,
-                                   dbi         => $dbi,
-				   species_id  => $species_id} );
-
-      $self->add_synonyms_for_hgnc( {source_id  => $source_id,
-				     name       => $acc,
-				     species_id => $species_id,
-                                     dbi        => $dbi,
-				     dead       => $previous_symbols,
-				     alias      => $synonyms} );
-      $name_count{$type}++;
-    }
-
-
-    # 
     # Direct CCDS to ENST mappings
-    #
-    $type = 'ccds';
-    $source_id = $name_to_source_id->{$type};
+    my $ccds = $data->{'CCDS IDs'};
+    my @ccds_list;
 
-    my $ccds = $array[8];
-    $ccds =~ s/"//g if defined $ccds;
-    my @ccds_list = split(/,\s/,$ccds) if defined $ccds;
+    if ( defined $ccds ) {
+      @ccds_list = split( /,\s/x, $ccds );
+    }
 
+    CCDS:
     foreach my $ccds (@ccds_list) {
-      $id = $ccds_to_ens{$ccds};
-      if (!defined $id) { next; }
-      $self->add_to_direct_xrefs({ stable_id   => $id,
-                                   type        => 'gene',
-                                   acc         => $acc,
-                                   label       => $symbol,
-                                   desc        => $name,
-                                   source_id   => $source_id,
-                                   dbi         => $dbi,
-                                   species_id  => $species_id} );
+      my $enst_id = $ccds_to_ens{$ccds};
 
-      $self->add_synonyms_for_hgnc( {source_id  => $source_id,
-                                     name       => $acc,
-                                     species_id => $species_id,
-                                     dbi        => $dbi,
-                                     dead       => $previous_symbols,
-                                     alias      => $synonyms} );
-      $name_count{$type}++;
+      if (!defined $enst_id) {
+        next CCDS;
+      }
+
+      $self->add_to_direct_xrefs({
+          stable_id  => $enst_id,
+          type       => 'gene',
+          acc        => $acc,
+          label      => $symbol,
+          desc       => $name,
+          source_id  => $self->{source_ids}->{'ccds'},
+          dbi        => $dbi,
+          species_id => $species_id
+      });
+
+      $self->add_synonyms_for_hgnc({
+          source_id  => $self->{source_ids}->{'ccds'},
+          name       => $acc,
+          species_id => $species_id,
+          dbi        => $dbi,
+          dead       => $previous_symbols,
+          alias      => $synonyms
+      });
+      $name_count{'ccds'}++;
     }
 
+    # Direct LRG to ENST mappings
+    my $lrg_id = $data->{'Locus specific databases'};
+    if ( defined $lrg_id && $lrg_id =~ m/(LRG_\d+)|/x ){
+      $lrg_id = $1;
+    }
 
-    #
+    if ( defined $lrg_id ){
+      $self->add_to_direct_xrefs({
+          stable_id   => $lrg_id,
+          type        => 'gene',
+          acc         => $acc,
+          label       => $symbol,
+          desc        => $name,
+          source_id   => $self->{source_ids}->{'lrg'},
+          dbi         => $dbi,
+          species_id  => $species_id
+      });
+
+      $self->add_synonyms_for_hgnc({
+          source_id  => $self->{source_ids}->{'lrg'},
+          name       => $acc,
+          species_id => $species_id,
+          dbi        => $dbi,
+          dead       => $previous_symbols,
+          alias      => $synonyms
+      });
+      $name_count{'lrg'}++;
+    }
+
     # Direct Ensembl mappings
-    #
-    $type = 'ensembl_manual';
-    $id = $array[6];
-    $source_id = $name_to_source_id->{$type};
-    if ($id){              # Ensembl direct xref
+    my $ensg_id = $data->{'Ensembl gene ID'};
+    if ( defined $ensg_id ){
       $seen = 1;
-      $name_count{$type}++;
-      $self->add_to_direct_xrefs({ stable_id  => $id,
-				   type       => 'gene',
-				   acc        => $acc,
-				   label      => $symbol,
-				   desc       => $name,
-                                   dbi        => $dbi,
-				   source_id  => $source_id,
-				   species_id => $species_id} );
 
-      $self->add_synonyms_for_hgnc( {source_id  => $source_id,
-				     name       => $acc,
-				     species_id => $species_id,
-				     dead       => $previous_symbols,
-                                     dbi        => $dbi,
-				     alias      => $synonyms});
+      $self->add_to_direct_xrefs({
+          stable_id  => $ensg_id,
+          type       => 'gene',
+          acc        => $acc,
+          label      => $symbol,
+          desc       => $name,
+          dbi        => $dbi,
+          source_id  => $self->{source_ids}->{'ensembl_manual'},
+          species_id => $species_id
+      });
 
+      $self->add_synonyms_for_hgnc({
+          source_id  => $self->{source_ids}->{'ensembl_manual'},
+          name       => $acc,
+          species_id => $species_id,
+          dead       => $previous_symbols,
+          dbi        => $dbi,
+          alias      => $synonyms
+      });
+      $name_count{'ensembl_manual'}++;
     }
 
-    $type = 'refseq_manual';
-    $id = $array[7];
-    $source_id = $name_to_source_id->{$type};
-    if ($id) {
-      if(defined $refseq{$id} ){
+    # RefSeq
+    my $refseq_id = $data->{'RefSeq IDs'};
+    if ($refseq_id) {
+      if ( defined $refseq{$refseq_id} ){
         $seen = 1;
-        foreach my $xref_id (@{$refseq{$id}}){
-          $name_count{$type}++;
-          $self->add_dependent_xref({ master_xref_id => $xref_id,
-                                      acc            => $acc,
-                                      label          => $symbol,
-                                      desc           => $name || '',
-                                      source_id      => $source_id,
-                                      dbi            => $dbi,
-                                      species_id     => $species_id} );
+        foreach my $xref_id ( @{$refseq{$refseq_id}} ){
+          $self->add_dependent_xref({
+              master_xref_id => $xref_id,
+              acc            => $acc,
+              label          => $symbol,
+              desc           => $name,
+              source_id      => $self->{source_ids}->{'refseq_manual'},
+              dbi            => $dbi,
+              species_id     => $species_id
+          });
+          $name_count{'refseq_manual'}++;
         }
-        $self->add_synonyms_for_hgnc( {source_id  => $source_id,
-                                       name       => $acc,
-                                       species_id => $species_id,
-                                       dbi        => $dbi,
-                                       dead       => $previous_symbols,
-                                       alias      => $synonyms});
+
+        $self->add_synonyms_for_hgnc({
+            source_id  => $self->{source_ids}->{'refseq_manual'},
+            name       => $acc,
+            species_id => $species_id,
+            dbi        => $dbi,
+            dead       => $previous_symbols,
+            alias      => $synonyms
+        });
       }
     }
 
-    #
     # EntrezGene
-    #
-    $type = 'entrezgene_manual';
-    $id = $array[5];
-    $source_id = $name_to_source_id->{$type};
-    if(defined $id ){
-      if(defined $entrezgene{$id} ){
+    my $entrez_id = $data->{'NCBI Gene ID'};
+    if ( defined $entrez_id ){
+      if ( defined $entrezgene{$entrez_id} ){
         $seen = 1;
-        $self->add_dependent_xref({ master_xref_id => $entrezgene{$id},
-           			    acc            => $acc,
-				    label          => $symbol,
-				    desc           => $name || '',
-				    source_id      => $source_id,
-                                    dbi            => $dbi,
-				    species_id     => $species_id} );
-        $name_count{$type}++;
-        $self->add_synonyms_for_hgnc( {source_id  => $source_id,
-				       name       => $acc,
-				       species_id => $species_id,
-				       dead       => $previous_symbols,
-                                       dbi        => $dbi,
-				       alias      => $synonyms});
+        $self->add_dependent_xref({
+            master_xref_id => $entrezgene{$entrez_id},
+            acc            => $acc,
+            label          => $symbol,
+            desc           => $name,
+            source_id      => $self->{source_ids}->{'entrezgene_manual'},
+            dbi            => $dbi,
+            species_id     => $species_id
+        });
+
+        $self->add_synonyms_for_hgnc({
+            source_id  => $self->{source_ids}->{'entrezgene_manual'},
+            name       => $acc,
+            species_id => $species_id,
+            dead       => $previous_symbols,
+            dbi        => $dbi,
+            alias      => $synonyms
+        });
+        $name_count{'entrezgene_manual'}++;
       }
     }
 
-    if(!$seen){ # Store to keep descriptions etc
-      $type = 'desc_only';
-      $source_id = $name_to_source_id->{$type};
-      $self->add_xref({ acc        => $acc,
-			label      => $symbol,
-			desc       => $name,
-			source_id  => $source_id,
-			species_id => $species_id,
-                        dbi        => $dbi,
-			info_type  => "MISC"} );
+    # Store to keep descriptions if stored yet
+    if ( !$seen ){
+      $self->add_xref({
+          acc        => $acc,
+          label      => $symbol,
+          desc       => $name,
+          source_id  => $self->{source_ids}->{'desc_only'},
+          species_id => $species_id,
+          dbi        => $dbi,
+          info_type  => "MISC"
+      });
 
-      $self->add_synonyms_for_hgnc( {source_id  => $source_id,
-				     name       => $acc,
-				     species_id => $species_id,
-                                     dbi        => $dbi,
-				     dead       => $previous_symbols,
-				     alias      => $synonyms});
+      $self->add_synonyms_for_hgnc({
+          source_id  => $self->{source_ids}->{'desc_only'},
+          name       => $acc,
+          species_id => $species_id,
+          dbi        => $dbi,
+          dead       => $previous_symbols,
+          alias      => $synonyms
+      });
       $mismatch++;
     }
+
   }
 
+  close $fh;
 
-  if($verbose){
-    print 'Loaded a total of :-';
-    foreach my $type (keys %name_count){
-      print "\t".$type."\t".$name_count{$type}."\n";
+  if ( $verbose ){
+    print "HGNC xrefs loaded:\n";
+    foreach my $type (sort keys %name_count){
+      print "\t$type\t$name_count{$type}\n";
     }
-    print "$mismatch xrefs could not be associated via RefSeq, EntrezGene or ensembl\n";
+    print "$mismatch HGNC ids could not be associated in xrefs\n";
   }
   return 0; # successful
 }
 
 
 
-sub get_sources {
-  my $self = shift;
-  my $source_name = shift;
-  my $dbi = shift;
-  my %name_to_source_id;
+=head2 add_synonyms_for_hgnc
+  Arg [1]    : hashref : source_id, name, species_id, dead, alias
+  Description: Specialized class to add synonyms from HGNC and VGNC data
+  Return type: N/A
+  Caller     : internal
+=cut
 
-  my @sources = ('entrezgene_manual', 'refseq_manual', 'entrezgene_mapped', 'refseq_mapped', 'ensembl_manual', 'swissprot_manual', 'desc_only', 'ccds');
-
-
-  foreach my $key (@sources) {
-  my $source_id = $self->get_source_id_for_source_name($source_name, $key, $dbi);
-    if(!(defined $source_id)){
-      die 'Could not get source id for HGNC and '. $key ."\n";
-    }
-    $name_to_source_id{ $key } = $source_id;
-  }
-
-  my $source_id = $self->get_source_id_for_source_name('LRG_HGNC_notransfer', undef, $dbi);
-  if(!(defined $source_id) ){
-    die 'Could not get source id for LRG_HGNC_notransfer\n';
-  }
-  $name_to_source_id{'lrg'} = $source_id;
-
-  return \%name_to_source_id;
-}
-
-sub add_synonyms_for_hgnc{
+sub add_synonyms_for_hgnc {
   my ($self, $ref_arg) = @_;
 
-  my $source_id  = $ref_arg->{source_id};
-  my $name       = $ref_arg->{name};
-  my $species_id = $ref_arg->{species_id};
-  my $dead_name  = $ref_arg->{dead};
-  my $alias      = $ref_arg->{alias};
-  my $dbi        = $ref_arg->{dbi};
+  my $source_id    = $ref_arg->{source_id};
+  my $name         = $ref_arg->{name};
+  my $species_id   = $ref_arg->{species_id};
+  my $dead_string  = $ref_arg->{dead};
+  my $alias_string = $ref_arg->{alias};
+  my $dbi          = $ref_arg->{dbi};
 
-  if (defined $dead_name ) {     # dead name, add to synonym
-    my @array2 = split ',\s', $dead_name ;
-    foreach my $arr (@array2){
-      $arr =~ s/"//g;
-      $self->add_to_syn($name, $source_id, $arr, $species_id, $dbi);
+  # dead name, add to synonym
+  if (defined $dead_string) {
+    $dead_string =~ s/"//xg;
+    my @dead_array = split( ',\s', $dead_string );
+    foreach my $dead (@dead_array){
+      $self->add_to_syn($name, $source_id, $dead, $species_id, $dbi);
     }
   }
 
-  if (defined $alias ) {     # alias, add to synonym
-    my @array2 = split ',\s', $alias;
-    foreach my $arr (@array2){
-      $arr =~ s/"//g;
-      $self->add_to_syn($name, $source_id, $arr, $species_id, $dbi);
+  # alias name, add to synonym
+  if (defined $alias_string) {
+    $alias_string =~ s/"//xg;
+    my @alias_array = split( ',\s', $alias_string );
+    foreach my $alias (@alias_array){
+      $self->add_to_syn($name, $source_id, $alias, $species_id, $dbi);
     }
   }
+
   return;
 }
 
+
+
+=head2 parse_file_string
+  Arg [1]    : string : input file string
+  Description: parses the input string $file into an hash
+               string $file is in the format as the example:
+               script:project=>ensembl,host=>ens-staging1,dbname=>homo_sapiens_core_70_37,ofhost=>ens-staging1,...
+               string until : is ignored, hash is built with keys=>values provided
+  Return type: params hashref
+  Caller     : internal
+=cut
+
+sub parse_file_string {
+  my ($self, $file_string) = @_;
+
+  $file_string =~ s/\A\w+://x;
+
+  my @param_pairs = split( /,/x, $file_string );
+
+  my $params;
+
+  # set provided values
+  foreach my $pair ( @param_pairs ) {
+    my ($key, $value) = split( /=>/x, $pair );
+    $params->{$key} = $value;
+  }
+
+  return $params;
+}
+
+
+
 1;
-
-

@@ -17,70 +17,135 @@ limitations under the License.
 
 =cut
 
-package XrefParser::XenopusJamboreeParser;
+=head1 NAME
 
-# Parse annotated peptides from Xenopus Jamboree
+XrefParser::XenopusJamboreeParser
+
+=head1 DESCRIPTION
+
+A parser class to parse the Xenbase source file.
+
+-species = xenopus_tropicalis
+-species_id = 8364
+-data_uri = ftp://ftp.xenbase.org/pub/GenePageReports/GenePageEnsemblModelMapping.txt
+-file_format = TSV
+-columns = [acc label desc stable_id]
+
+
+=head1 SYNOPSIS
+
+  my $parser = XrefParser::XenopusJamboreeParser->new($db->dbh);
+  $parser->run({
+    source_id  => 150,
+    species_id => 8364,
+    files      => ["xenopusjamboree.txt"],
+  });
+
+=cut
+
+package XrefParser::XenopusJamboreeParser;
 
 use strict;
 use warnings;
+
 use Carp;
-use File::Basename;
+use Text::CSV;
 
-use base qw( XrefParser::BaseParser );
+use parent qw( XrefParser::BaseParser );
 
 
+=head2 run
+  Description: Runs the XenopusJamboreeParser
+  Return type: N/A
+  Caller     : internal
+
+=cut
 
 sub run {
- my ($self, $ref_arg) = @_;
-  my $source_id    = $ref_arg->{source_id};
-  my $species_id   = $ref_arg->{species_id};
-  my $files        = $ref_arg->{files};
-  my $verbose      = $ref_arg->{verbose};
-  my $dbi          = $ref_arg->{dbi};
-  $dbi = $self->dbi unless defined $dbi;
+  my ( $self, $ref_arg ) = @_;
+  my $source_id  = $ref_arg->{source_id};
+  my $species_id = $ref_arg->{species_id};
+  my $files      = $ref_arg->{files};
+  my $verbose    = $ref_arg->{verbose} // 0;
+  my $dbi        = $ref_arg->{dbi} // $self->dbi;
 
-  if((!defined $source_id) or (!defined $species_id) or (!defined $files) ){
-    croak "Need to pass source_id, species_id and files as pairs";
+  if ( ( !defined $source_id )
+    or ( !defined $species_id )
+    or ( !defined $files ) )
+  {
+    confess 'Need to pass source_id, species_id and files as pairs';
   }
-  $verbose |=0;
+
   my $file = @{$files}[0];
 
   my $file_io = $self->get_filehandle($file);
-
   if ( !defined $file_io ) {
-    print STDERR "ERROR: Could not open $file\n";
-    return 1;    # 1 error
+    confess "Could not open $file\n";
   }
 
-  my $count = 0;
-  while ( $_ = $file_io->getline() ) {
-    chomp;
-    my ($acc, $label, $desc, $stable_id) = split /\t/;
-    # Remove some provenance information encoded in the description
-    $desc =~ s/\[.*\]//;
-    # Remove labels of type 5 of 14 from the description
-    $desc =~ s/ , [0-9]+ of [0-9]+//;
+  my $input_file = Text::CSV->new({
+    sep_char       => "\t",
+    empty_is_undef => 1,
+  }) || confess "Cannot use file $file: " . Text::CSV->error_diag();
 
-    if($label eq "unnamed"){
-      $label = $acc;
+  my $count = 0;
+  while ( my $data = $input_file->getline($file_io) ) {
+
+    my ( $accession, $label, $desc, $stable_id ) = @{$data};
+
+    # If there is a description, trim it a bit
+    if ( defined $desc ) {
+      $desc = parse_description( $desc );
     }
 
-    $self->add_to_direct_xrefs({ stable_id  => $stable_id,
-				 type       => 'gene',
-				 acc        => $acc,
-				 label      => $label,
-				 desc       => $desc,
-                                 dbi        => $dbi,
-				 source_id  => $source_id,
-				 species_id => $species_id });
+    if ( $label eq 'unnamed' ) {
+      $label = $accession;
+    }
+
+    $self->add_to_direct_xrefs({
+      stable_id  => $stable_id,
+      type       => 'gene',
+      acc        => $accession,
+      label      => $label,
+      desc       => $desc,
+      dbi        => $dbi,
+      source_id  => $source_id,
+      species_id => $species_id,
+    });
     $count++;
   }
 
+  $input_file->eof
+    || confess "Error parsing file $file: " . $input_file->error_diag();
   $file_io->close();
 
-  print $count . " XenopusJamboreeParser xrefs succesfully parsed\n" if($verbose);
+  if ($verbose) {
+    print $count . " XenopusJamboreeParser xrefs succesfully parsed\n";
+  }
 
   return 0;
+} ## end sub run
+
+
+=head2 parse_description
+  Description: Extract description information from
+               Xenopus downloaded file
+  Return type: N/A
+  Caller     : internal
+
+=cut
+
+sub parse_description {
+  my ( $desc ) = @_;
+
+  # Remove some provenance information encoded in the description
+  $desc =~ s{ \s* \[ .* \] }{}msx;
+
+  # Remove labels of type 5 of 14 from the description
+  $desc =~ s{ , \s+\d+\s+ of \s+\d+ }{}msx;
+
+  return $desc;
 }
+
 
 1;

@@ -101,8 +101,9 @@ DSS
   my $dep_sth = $dbi->prepare($sql);
 
   # validate species names
-  my $species_id = $self->validate_species($species, $verbose) if defined $species;
-  my $division_id = $self->validate_species($division, $verbose) if defined $division;
+  my ($species_id,$division_id);
+  $species_id = $self->validate_species($species, $verbose) if defined $species;
+  $division_id = $self->validate_species($division, $verbose) if defined $division;
   my @species_sources = ($species_id);
   push @species_sources, $division_id if defined $division_id;
   push @species_sources, $taxon_id if defined $taxon_id;
@@ -733,7 +734,7 @@ sub sanitise {
 
 
 #######################################################
-# Print to stanadrd error the list of species available
+# Print to standard error the list of species available
 #######################################################
 sub show_valid_species {
   my ($self) =shift;
@@ -768,7 +769,7 @@ sub validate_sources {
     } else {
       print "\nSource $source is not valid; valid sources are:\n";
       foreach my $sp (@{$speciesref}){
-	show_valid_sources($sp);
+        $self->show_valid_sources($sp);
       }
       return 0;
     }

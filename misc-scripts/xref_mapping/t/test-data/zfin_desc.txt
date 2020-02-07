@@ -1,0 +1,9 @@
+ZDB-GENE-030131-3003	HNF1 homeobox Bb	hnf1bb	21	ZDB-REFCROSS-990707-1
+ZDB-GENE-030131-1077	hepatocyte nuclear factor 4, alpha	hnf4a	23	ZDB-REFCROSS-000320-1
+ZDB-GENE-040718-488	WD repeat domain, phosphoinositide interacting 2	wipi2	0	
+ZDB-GENE-070117-2473	wirbel	wir	0	
+ZDB-GENE-000710-5	WITHDRAWN:cripto	WITHDRAWN:cripto	0	
+ZDB-GENE-030516-5	WITHDRAWN:sb:cb476	WITHDRAWN:sb:cb476	0	
+ZDB-GENE-030131-8698	WITHDRAWN:wu:fa94g04	WITHDRAWN:wu:fa94g04	0
+ZDB-GENE-070117-2162	lawrence welk	wlk	0	
+ZDB-GENE-040426-2161	wntless Wnt ligand secretion mediator	wls	2	ZDB-REFCROSS-000320-1

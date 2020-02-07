@@ -17,11 +17,15 @@ limitations under the License.
 
 =cut
 
-# This module replicates the generic UCSC parser for mouse specific data
+# This module replicates the generic UCSC parser for mouse-specific data
 # This prevents cross-mapping between species by treating each species as a separate source
 
 package XrefParser::UCSC_mouse_parser;
 
-use base qw( XrefParser::UCSCParser);
+use strict;
+use warnings;
+
+use parent qw( XrefParser::UCSCParser );
+
 
 1;

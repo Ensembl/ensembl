@@ -1,0 +1,1 @@
+8378	RefSeq gene models from <a rel="external" href="http://www.ncbi.nlm.nih.gov/refseq/">NCBI RefSeq</a> using the GFF3 files available from the NCBI FTP site.	RefSeq GFF3 annotation import	1	\N
