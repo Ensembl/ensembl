@@ -63,6 +63,8 @@
 2600	GeneDB	\N	KNOWN	5	GeneDB	MISC	\N	\N	\N
 2601	cint_jgi_v1	\N	KNOWN	10	JGI Gene ID (JGI 1.0)	MISC	\N	\N	\N
 2602	cint_jgi_v2	\N	KNOWN	5	JGI Gene ID (JGI 2.0)	MISC	\N	\N	\N
+2610	cint_aniseed_v1	\N	KNOWN	5	ANISEED (JGI 1.0)	MISC	\N	\N	\N
+2611	cint_aniseed_v2	\N	KNOWN	5	ANISEED (JGI 2.0)	MISC	\N	\N	\N
 2700	Ens_Hs_gene	\N	XREF	5	Ensembl Human Gene	MISC	\N	\N	\N
 2710	Ens_Hs_transcript	\N	XREF	170	Ensembl Human Transcript	MISC	\N	\N	\N
 2720	Ens_Hs_translation	\N	XREF	5	Ensembl Human Translation	MISC	\N	\N	\N
