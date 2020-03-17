@@ -57,3 +57,7 @@
 70	\N	patch	patch_99_100_a.sql|schema_version
 71	\N	patch	patch_99_100_b.sql|homology_id_64-bits
 73	\N	patch	patch_100_101_a.sql|schema_version
+74	\N	patch	patch_100_101_b.sql|genome_db.strain_name
+75	\N	patch	patch_100_101_c.sql|mlss_attr.n_goc_null
+76	\N	patch	patch_100_101_d.sql|gat.node_ids
+77	\N	patch	patch_100_101_e.sql|positive_int
