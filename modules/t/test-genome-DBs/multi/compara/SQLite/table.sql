@@ -1,6 +1,6 @@
 -- 
 -- Created by SQL::Translator::Producer::SQLite
--- Created on Fri Dec 20 16:28:31 2019
+-- Created on Tue Mar 17 10:47:11 2020
 -- 
 
 BEGIN TRANSACTION;
@@ -316,7 +316,7 @@ CREATE TABLE "genome_db" (
   "has_karyotype" tinyint NOT NULL DEFAULT 0,
   "is_good_for_alignment" tinyint NOT NULL DEFAULT 0,
   "genome_component" varchar(5),
-  "strain_name" varchar(40),
+  "strain_name" varchar(100),
   "display_name" varchar(255),
   "locator" varchar(400),
   "first_release" smallint,
@@ -505,7 +505,6 @@ CREATE UNIQUE INDEX "method_link_id" ON "method_link_species_set" ("method_link_
 --
 CREATE TABLE "method_link_species_set_attr" (
   "method_link_species_set_id" INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
-  "n_goc_null" integer,
   "n_goc_0" integer,
   "n_goc_25" integer,
   "n_goc_50" integer,

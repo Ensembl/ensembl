@@ -1,5 +1,5 @@
 1	\N	schema_type	variation
-2	\N	schema_version	100
+2	\N	schema_version	101
 6	1	species.production_name	mus_musculus
 15	1	web_config	sv_study#Keane 2011 (DGVa study estd118)#Keane 2011#estd118
 14	1	web_config	set#All failed variants#All failed variants#variation_set_fail_all#failed
@@ -78,3 +78,5 @@
 84	\N	patch	patch_99_100_a.sql|schema version
 85	\N	patch	patch_99_100_b.sql|add frequency to structural variation
 86	\N	patch	patch_99_100_c.sql|add class_attrib_id column to phenotype
+87	\N	patch	patch_100_101_a.sql|schema version
+88	\N	patch	patch_100_101_b.sql|Add new data_source_attrib to variation_citation
