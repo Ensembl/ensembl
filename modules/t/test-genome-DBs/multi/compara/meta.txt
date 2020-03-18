@@ -61,3 +61,4 @@
 75	\N	patch	patch_100_101_c.sql|mlss_attr.n_goc_null
 76	\N	patch	patch_100_101_d.sql|gat.node_ids
 77	\N	patch	patch_100_101_e.sql|positive_int
+78	\N	patch	patch_100_101_f.sql|gab.direction
