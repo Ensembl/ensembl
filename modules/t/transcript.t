@@ -240,10 +240,25 @@ is( $up_tr->display_xref->dbID(), 97759, 'Fetched the correct dbID' );
 my $dbentryAdaptor = $db->get_DBEntryAdaptor();
 
 $tr->display_xref($dbentryAdaptor->fetch_by_dbID( 614 ));
+$tr->biotype('dummy');
+$tr->description('dummy'); 
+$tr->is_current(0); 
+$tr->canonical_translation_id(2018226); 
+$tr->version(5); 
+$tr->analysis_id(8355);
+
 $ta->update($tr);
+
 
 $up_tr = $ta->fetch_by_stable_id( "ENST00000217347" );
 is ( $up_tr->display_xref->dbID(), 614, 'Fetched the correct display xref id');
+ok($up_tr->biotype eq 'dummy');
+ok($up_tr->description eq 'dummy');
+ok($up_tr->is_current == 0);
+ok($up_tr->canonical_translation_id == 2018226);
+ok($up_tr->version == 5);
+ok($up_tr->analysis_id == 8355);
+
 
 $multi->restore('core', 'transcript', 'meta_coord');
 

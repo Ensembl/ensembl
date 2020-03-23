@@ -470,7 +470,7 @@ ok($newgene->description eq 'dummy');
 ok($newgene->is_current == 0);
 ok($newgene->canonical_transcript_id == 2018226);
 ok($newgene->version == 5);
-ok($newgene->analysis_id == 8355');
+ok($newgene->analysis_id == 8355);
 
 
 $multi->restore('core', 'gene');
