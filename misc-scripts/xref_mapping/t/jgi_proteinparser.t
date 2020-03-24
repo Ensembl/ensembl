@@ -41,8 +41,7 @@ $db->schema->populate(
   'Source',
   [
    [ qw/name/ ],
-   [ 'cint_jgi_v1' ],
-   [ 'cint_aniseed_v1' ],
+   [ 'cint_jgi_v1' ]
   ]
 );
 
