@@ -265,7 +265,7 @@ sub map_coordinates {
   
   # special case for handling inserts:
   if ( $start == $end + 1 ) {
-    return $self->map_insert( $id, $start, $end, $strand, $type, include_original_region);
+    return $self->map_insert( $id, $start, $end, $strand, $type, undef, $include_original_region);
   }
 
   if ( !$self->{'_is_sorted'} ) { $self->_sort() }
@@ -482,7 +482,7 @@ sub map_coordinates {
 =cut
 
 sub map_insert {
-  my ($self, $id, $start, $end, $strand, $type, $fastmap, include_original_region) = @_;
+  my ($self, $id, $start, $end, $strand, $type, $fastmap, $include_original_region) = @_;
 
   # swap start/end and map the resultant 2bp coordinate
   ($start, $end) =($end,$start);
