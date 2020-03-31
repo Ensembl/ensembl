@@ -490,7 +490,7 @@ sub map_insert {
   my @coords = $self->map_coordinates($id, $start, $end, $strand, $type, $include_original_region);
 
   if(@coords == 1) {
-    my $c = $coords[0];
+    my $c = $include_original_region ? @coords[0]->{'mapped'} : $coords[0];
     # swap start and end to convert back into insert
     ($c->{'start'}, $c->{'end'}) = ($c->{'end'}, $c->{'start'});
   } else {
@@ -499,9 +499,9 @@ sub map_insert {
     # adjust coordinates, remove gaps
     my ($c1, $c2);
     if($strand == -1) {
-      ($c2,$c1) = @coords;
+      ($c2,$c1) = $include_original_region ? @coords->{'mapped'} : @coords;
     } else {
-      ($c1, $c2) = @coords;
+      ($c1, $c2) = $include_original_region ? @coords->{'mapped'} : @coords;
     }
     @coords = ();
 
