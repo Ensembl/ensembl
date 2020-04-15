@@ -181,6 +181,7 @@ $mapper = Bio::EnsEMBL::Mapper->new('asm1', 'asm2');
 
 $mapper->add_map_coordinates('1', 1, 10, 1, 'X', 101, 110);
 $mapper->add_map_coordinates('1', 11, 20, -1, 'Y', 1, 10);
+$mapper->add_map_coordinates('1', 31, 40, 1, 'Y', 11, 20);
 
 # boundary insert, expect 2 edge inserts back
 test_transform($mapper, ['1', 11, 10, 1, 'asm1'],
@@ -194,6 +195,23 @@ test_transform($mapper, ['1', 1, 0, -1, 'asm1'],
 # normal case, expect single insert in middle
 test_transform($mapper, ['1', 2, 1, 1, 'asm1'],
                ['X', 102, 101, 1]);
+
+# and check that mapping inserts including the original works
+my @map_inserts_include_original = $mapper->map_coordinates('1', 2, 1, 1, 'asm1', 1);
+test_mappings_include_ori(\@map_inserts_include_original,
+                          [102, 101],
+                          [2, 1]);
+
+# check mapping inserts where the mapping results in a partial gap
+my @map_inserts_gap_include_original = $mapper->map_coordinates('1', 21, 20, -1, 'asm1', 1);
+test_mappings_include_ori(\@map_inserts_gap_include_original,
+                          [1,0],
+                          [20,20]);
+
+my @map_ins_gap_incl_orig_forward = $mapper->map_coordinates('1', 41, 40, 1, 'asm1', 1);
+test_mappings_include_ori(\@map_ins_gap_incl_orig_forward,
+                          [21, 20],
+                          [40,40]);
 
 # expect a gap
 test_transform($mapper, ['1', 100, 200, 1, 'asm1'],
