@@ -32,7 +32,7 @@ use Text::CSV;
 use parent qw( XrefParser::BaseParser );
 
 
-my $EXPECTED_NUMBER_OF_COLUMNS = 5;
+my $EXPECTED_NUMBER_OF_COLUMNS = 6;
 
 
 
@@ -165,7 +165,7 @@ sub run {
     }
 
     # Do not modify the contents of @{$line}, only the output - hence the /r.
-    my ( $omim_acc, $type, $entrez_id, $hgnc_symbol, $ensembl_id )
+    my ( $omim_acc, $entrez_id, $type, $source, $medgen, $comment )
       = map { s{\s+\z}{}rmsx } @{ $line };
 
     $counters{'all_entries'}++;
@@ -178,11 +178,8 @@ sub run {
       next RECORD;
     }
 
-    # ...or no Ensembl ID or EntrezGene xref to match it to
-    # FIXME: this number might be underestimated because it doesn't
-    # check if Ensembl IDs from the input file actually exist
-    if ( ( ! $ensembl_id )
-         && ( ( ! $entrez_id ) || ( ! defined $entrez{$entrez_id} ) ) ) {
+    # ...or no EntrezGene xref to match it to
+    if ( ( ( ! $entrez_id ) || ( ! defined $entrez{$entrez_id} ) ) ) {
       $counters{'missed_master'}++;
       next RECORD;
     }
@@ -207,7 +204,6 @@ sub run {
       $self->process_xref_entry({
         'mim_xref_id'      => $mim_xref_id,
         'mim_source_id'    => $mim_gene_source_id,
-        'ensembl_id'       => $ensembl_id,
         'entrez_xrefs'     => $entrez{$entrez_id},
         'entrez_source_id' => $entrez_source_id,
         'counters'         => \%counters,
@@ -218,7 +214,6 @@ sub run {
       $self->process_xref_entry({
         'mim_xref_id'      => $mim_xref_id,
         'mim_source_id'    => $mim_morbid_source_id,
-        'ensembl_id'       => $ensembl_id,
         'entrez_xrefs'     => $entrez{$entrez_id},
         'entrez_source_id' => $entrez_source_id,
         'counters'         => \%counters,
@@ -265,11 +260,12 @@ sub is_file_header_valid {
 
   my @field_patterns
     = (
-        qr{ \A [#]? \s* MIM[ ]Number }msx,
-        qr{ MIM[ ]Entry[ ]Type }msx,
-        qr{ Entrez[ ]Gene[ ]ID }msx,
-        qr{ Approved[ ]Gene[ ]Symbol }msx,
-        qr{ Ensembl[ ]Gene[ ]ID }msx,
+        qr{ \A [#]? \s* MIM[ ]number }msx,
+        qr{ GeneID }msx,
+        qr{ type }msx,
+        qr{ Source }msx,
+        qr{ MedGenCUI }msx,
+        qr{ Comment }msx,
       );
 
   my $header_field;
@@ -289,10 +285,8 @@ sub is_file_header_valid {
   Arg [1]    : HashRef list of named arguments: FIXME
   Example    : $self->process_xref_entry({...});
   Description: Wrapper around the most frequently repeated bit of
-               run(): if $ensembl_id is defined insert a direct MIM
-               xref, otherwise loop over the list of matching
+               run(): loop over the list of matching
                EntrezGene xrefs and insert dependent MIM xrefs.
-               In either case increment the correct counter.
   Return type: none
   Exceptions : none
   Caller     : internal
@@ -303,27 +297,15 @@ sub is_file_header_valid {
 sub process_xref_entry {
   my ( $self, $arg_ref ) = @_;
 
-  if ( $arg_ref->{'ensembl_id'} ) {
-    $arg_ref->{'counters'}->{'direct_ensembl'}++;
-    $self->add_direct_xref( $arg_ref->{'mim_xref_id'},
-                            $arg_ref->{'ensembl_id'},
-                            'gene',
-                            undef,
-                            $arg_ref->{'dbi'},
-                            1
-                         );
-  }
-  else {
-    foreach my $ent_id ( @{ $arg_ref->{'entrez_xrefs'} } ) {
-      $arg_ref->{'counters'}->{'dependent_on_entrez'}++;
-      $self->add_dependent_xref_maponly( $arg_ref->{'mim_xref_id'},
-                                         $arg_ref->{'mim_source_id'},
-                                         $ent_id,
-                                         $arg_ref->{'entrez_source_id'},
-                                         $arg_ref->{'dbi'},
-                                         1
-                                      );
-    }
+  foreach my $ent_id ( @{ $arg_ref->{'entrez_xrefs'} } ) {
+    $arg_ref->{'counters'}->{'dependent_on_entrez'}++;
+    $self->add_dependent_xref_maponly( $arg_ref->{'mim_xref_id'},
+                                       $arg_ref->{'mim_source_id'},
+                                       $ent_id,
+                                       $arg_ref->{'entrez_source_id'},
+                                       $arg_ref->{'dbi'},
+                                       1
+                                    );
   }
 
   return;
