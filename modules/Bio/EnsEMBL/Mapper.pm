@@ -265,7 +265,7 @@ sub map_coordinates {
   
   # special case for handling inserts:
   if ( $start == $end + 1 ) {
-    return $self->map_insert( $id, $start, $end, $strand, $type );
+    return $self->map_insert( $id, $start, $end, $strand, $type, undef, $include_original_region);
   }
 
   if ( !$self->{'_is_sorted'} ) { $self->_sort() }
@@ -482,22 +482,29 @@ sub map_coordinates {
 =cut
 
 sub map_insert {
-  my ($self, $id, $start, $end, $strand, $type, $fastmap) = @_;
+  my ($self, $id, $start, $end, $strand, $type, $fastmap, $include_original_region) = @_;
 
   # swap start/end and map the resultant 2bp coordinate
   ($start, $end) =($end,$start);
 
-  my @coords = $self->map_coordinates($id, $start, $end, $strand, $type);
+  my @coords = $self->map_coordinates($id, $start, $end, $strand, $type, $include_original_region);
 
   if(@coords == 1) {
     my $c = $coords[0];
-    # swap start and end to convert back into insert
-    ($c->{'start'}, $c->{'end'}) = ($c->{'end'}, $c->{'start'});
+    if ($include_original_region) {
+      my $m = $c->{'mapped'};
+      my $orig = $c->{'original'};
+      ($m->{'start'}, $m->{'end'}) = ($m->{'end'}, $m->{'start'});
+      ($orig->{'start'}, $orig->{'end'}) = ($orig->{'end'}, $orig->{'start'});
+    } else {
+      ($c->{'start'}, $c->{'end'}) = ($c->{'end'}, $c->{'start'});
+    }
   } else {
     throw("Unexpected: Got ",scalar(@coords)," expected 2.") if(@coords != 2);
 
     # adjust coordinates, remove gaps
     my ($c1, $c2);
+
     if($strand == -1) {
       ($c2,$c1) = @coords;
     } else {
@@ -505,33 +512,65 @@ sub map_insert {
     }
     @coords = ();
 
-    if(ref($c1) eq 'Bio::EnsEMBL::Mapper::Coordinate') {
-      # insert is after first coord
-      if($c1->{'strand'} * $strand == -1) {
-        $c1->{'end'}--;
-      } else {
-        $c1->{'start'}++;
-      }
-      @coords = ($c1);
+    my ($m1, $m2);
+    if ($include_original_region) {
+      ($m1, $m2) = ($c1->{'mapped'}, $c2->{'mapped'});
+    } else {
+      ($m1, $m2) = ($c1, $c2);
     }
-    if(ref($c2) eq 'Bio::EnsEMBL::Mapper::Coordinate') {
-      # insert is before second coord
-      if($c2->{'strand'} * $strand == -1) {
-        $c2->{'start'}++;
+    if(ref($m1) eq 'Bio::EnsEMBL::Mapper::Coordinate') {
+      # insert is after first coord
+      if($m1->{'strand'} * $strand == -1) {
+        $m1->{'end'}--;
       } else {
-        $c2->{'end'}--;
+        $m1->{'start'}++;
+      }
+      if ($include_original_region) {
+        $c1->{'mapped'} = $m1;
+        @coords = ($c1);
+      } else {
+        @coords = ($m1);
+      }
+    }
+    if(ref($m2) eq 'Bio::EnsEMBL::Mapper::Coordinate') {
+      # insert is before second coord
+      if($m2->{'strand'} * $strand == -1) {
+        $m2->{'start'}++;
+      } else {
+        $m2->{'end'}--;
       }
       if($strand == -1) {
-        unshift @coords, $c2;
+        if ($include_original_region) {
+          $c2->{'mapped'} = $m2;
+          unshift @coords, $c2;
+        } else {
+          unshift @coords, $m2;
+        }
       } else {
-        push @coords, $c2;
+        if ($include_original_region) {
+          $c2->{'mapped'} = $m2;
+          push @coords, $c2;
+        } else {
+          push @coords, $m2;
+        }
+      }
+    }
+
+    # as with @coords == 1 above, if we are in
+    # include_original_region mode, then we have
+    # to flip back the original region as well
+    if ($include_original_region) {
+      foreach my $coord (@coords) {
+        my $orig = $coord->{'original'};
+          ($orig->{'start'}, $orig->{'end'}) =
+            ($orig->{'end'}, $orig->{'start'});
       }
     }
   }
 
   if($fastmap) {
     return undef if(@coords != 1);
-    my $c = $coords[0];
+    my $c = $include_original_region ? $coords[0]->{'mapped'} : $coords[0];
     return ($c->{'id'}, $c->{'start'}, $c->{'end'},
             $c->{'strand'}, $c->{'coord_system'});
   }
