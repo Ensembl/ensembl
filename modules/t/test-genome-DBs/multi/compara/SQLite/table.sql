@@ -1,6 +1,6 @@
 -- 
 -- Created by SQL::Translator::Producer::SQLite
--- Created on Tue Mar 17 10:47:11 2020
+-- Created on Wed Apr 15 05:23:39 2020
 -- 
 
 BEGIN TRANSACTION;
@@ -351,7 +351,8 @@ CREATE TABLE "genomic_align_block" (
   "perc_id" tinyint,
   "length" integer NOT NULL,
   "group_id" bigint,
-  "level_id" tinyint NOT NULL DEFAULT 0
+  "level_id" tinyint NOT NULL DEFAULT 0,
+  "direction" tinyint
 );
 
 --
