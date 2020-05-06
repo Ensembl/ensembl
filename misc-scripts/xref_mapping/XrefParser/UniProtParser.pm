@@ -213,6 +213,9 @@ sub create_xrefs {
 
     my ($label, $sp_type) = $_ =~ /ID\s+(\w+)\s+(\w+)/;
     my ($protein_evidence_code) = $_ =~ /PE\s+(\d+)/; 
+    # Capture line with entry version
+    # Example: DT   22-APR-2020, entry version 1.
+    my ($version) = $_ =~ /DT\s+\d+-\w+-\d+, entry version (\d+)/;
 
     # SwissProt/SPTrEMBL are differentiated by having STANDARD/PRELIMINARY here
     if ($sp_type =~ /^Reviewed/i) {
@@ -240,7 +243,8 @@ sub create_xrefs {
 
     # some straightforward fields
     # the previous $label flag of type BRCA2_HUMAN is not used in Uniprot any more, use accession instead
-    $xref->{LABEL} = $accessions[0];
+    $xref->{LABEL} = $accessions[0] ."." . $version;
+    $xref->{VERSION} = $version;
     $xref->{SPECIES_ID} = $species_id;
     $xref->{SEQUENCE_TYPE} = 'peptide';
     $xref->{STATUS} = 'experimental';
