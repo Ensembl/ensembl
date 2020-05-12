@@ -455,11 +455,23 @@ my $dbEntryAdaptor = $db->get_DBEntryAdaptor();
 
 $gene->display_xref($dbEntryAdaptor->fetch_by_dbID(614));
 $gene->biotype('dummy');
+$gene->description('dummy'); 
+$gene->is_current(0); 
+$gene->canonical_transcript_id(2018226); 
+$gene->version(5); 
+$gene->analysis_id(8355);
+
 $ga->update($gene);
 
 $newgene = $ga->fetch_by_stable_id("ENSG00000171456");
 ok($newgene->display_xref->dbID() == 614);
 ok($newgene->biotype eq 'dummy');
+ok($newgene->description eq 'dummy');
+ok($newgene->is_current == 0);
+ok($newgene->canonical_transcript_id == 2018226);
+ok($newgene->version == 5);
+ok($newgene->analysis_id == 8355);
+
 
 $multi->restore('core', 'gene');
 
