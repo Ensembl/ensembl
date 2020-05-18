@@ -43,14 +43,14 @@ my $SPECIES_ID_HUMAN      = 9606;
 
 # Increase this by 1 if/when BaseAdaptor::get_valid_codes() has begun to
 # consider synonyms
-my $NUMBER_OF_DIRECT_LINKS         = 4;
+# my $NUMBER_OF_DIRECT_LINKS         = 4;
 # Increase this by 1 once the parser has been updated to insert
 # dependent links for entries which get direct ones as well, and by
 # another 1 if/when has begun to consider synonyms
-my $NUMBER_OF_DEPENDENT_LINKS      = 1;
+my $NUMBER_OF_DEPENDENT_LINKS      = 3;
 # Decrease this by 1 if/when BaseAdaptor::get_valid_codes() has begun to
 # consider synonyms
-my $NUMBER_OF_STILL_UNMAPPED_XREFS = 3;
+my $NUMBER_OF_STILL_UNMAPPED_XREFS = 5;
 
 my $db = Xref::Test::TestDB->new();
 
@@ -58,28 +58,40 @@ my $db = Xref::Test::TestDB->new();
 # should *not* add corresponding source entries at this point yet, as
 # there is a test below which checks what happens if the parser cannot
 # retrieve appropriate source IDs.
+
+
+# 100050	-	phenotype	-	C3149220	-
+# 100070	-	phenotype	-	C1853365	-
+# 100100	1131	phenotype	 GeneMap	C0033770	question
+# 100200	-	phenotype	-	C4551519	-
+# 100300	57514	phenotype	 GeneMap	C4551482	-
+# 100600	-	phenotype	-	C0000889	-
+# 100640	216	gene	-	-	-
+# 100650	217	gene	-	-	-
+# 100660	218	gene	-	-	-
+
 $db->schema->populate( 'Xref', [
   [ qw{ xref_id accession source_id species_id info_type } ],
   [  1, '100050', $SOURCE_ID_OMIM_MORBID, $SPECIES_ID_HUMAN, 'UNMAPPED' ], # unmapped
-  [  2, '100640', $SOURCE_ID_OMIM_GENE,   $SPECIES_ID_HUMAN, 'UNMAPPED' ], # both direct and dependent
-  [  3, '617386', $SOURCE_ID_OMIM_MORBID, $SPECIES_ID_HUMAN, 'UNMAPPED' ], # only dependent
-  [  4, '142830', $SOURCE_ID_OMIM_MORBID, $SPECIES_ID_HUMAN, 'UNMAPPED' ], # both direct and dependent
-  [  5, '142830', $SOURCE_ID_OMIM_GENE,   $SPECIES_ID_HUMAN, 'UNMAPPED' ], #  ditto
-  [  6, '987654', $SOURCE_ID_OMIM_GENE,   $SPECIES_ID_HUMAN, 'UNMAPPED' ], # only direct
-  [  7, '902100', $SOURCE_ID_OMIM_MORBID, $SPECIES_ID_HUMAN, 'UNMAPPED' ], # via synonym
+  [  2, '100640', $SOURCE_ID_OMIM_GENE,   $SPECIES_ID_HUMAN, 'UNMAPPED' ], # dependent
+  [  3, '100100', $SOURCE_ID_OMIM_MORBID, $SPECIES_ID_HUMAN, 'UNMAPPED' ], # dependent
+  [  4, '142830', $SOURCE_ID_OMIM_MORBID, $SPECIES_ID_HUMAN, 'UNMAPPED' ], # unmapped
+  [  5, '142830', $SOURCE_ID_OMIM_GENE,   $SPECIES_ID_HUMAN, 'UNMAPPED' ], # unmapped
+  [  6, '100660', $SOURCE_ID_OMIM_GENE,   $SPECIES_ID_HUMAN, 'UNMAPPED' ], # dependent
+  [  7, '100300', $SOURCE_ID_OMIM_MORBID, $SPECIES_ID_HUMAN, 'UNMAPPED' ], # via synonym
   [  8, '999999', $SOURCE_ID_OMIM_GENE,   $SPECIES_ID_HUMAN, 'UNMAPPED' ], # not referenced
 
   [  9, '216',    $SOURCE_ID_ENTREZGENE,  $SPECIES_ID_HUMAN, 'DIRECT'   ], # <- 100640
-  [ 10, '643609', $SOURCE_ID_ENTREZGENE,  $SPECIES_ID_HUMAN, 'DIRECT'   ], # <- 617386
-  [ 11, '111111', $SOURCE_ID_ENTREZGENE,  $SPECIES_ID_HUMAN, 'DIRECT'   ], # not referenced
-  [ 12, '222222', $SOURCE_ID_ENTREZGENE,  $SPECIES_ID_HUMAN, 'DIRECT'   ], # <- via synonym
+  [ 10, '1131', $SOURCE_ID_ENTREZGENE,  $SPECIES_ID_HUMAN, 'DIRECT'   ], # <- 100100 
+  [ 11, '218', $SOURCE_ID_ENTREZGENE,  $SPECIES_ID_HUMAN, 'DIRECT'   ], # 100660
+  [ 12, '222222', $SOURCE_ID_ENTREZGENE,  $SPECIES_ID_HUMAN, 'DIRECT'   ], # not referenced <- via synonym
 ] );
 $db->schema->populate( 'Synonym', [
   [ qw{ xref_id synonym } ],
   [  3, '121212' ],  # not referenced
-  [  7, '313370' ],  # only direct
+  [  7, '57514' ],  # 100300
   [ 11, '3101'   ],  # not referenced
-  [ 12, '3106'   ],  # <- 142830
+  [ 12, '3106'   ],  # not references
   [ 99, '100680' ],  # moved/removed (should be ignored; use nonexistent xref_id to provoke an error if it is)
 ] );
 
@@ -163,8 +175,14 @@ subtest 'Malformed header' => sub {
              $QR_MALFORMED_HEADER,
              'Throws on wrong name of third column' );
 
-  # The fourth column is checked as well but since we do not use in
-  # the parser now, don't bother testing it
+  $parser = XrefParser::Mim2GeneParser->new($db->dbh);
+  throws_ok( sub { $parser->run({
+    source_id  => $SOURCE_ID_MIM2GENE,
+    species_id => $SPECIES_ID_HUMAN,
+    files      => [ "$Bin/test-data/mim2gene-badHeader-wrongName4.txt" ],
+  }); },
+             $QR_MALFORMED_HEADER,
+             'Throws on wrong name of fourth column' );
 
   $parser = XrefParser::Mim2GeneParser->new($db->dbh);
   throws_ok( sub { $parser->run({
@@ -174,6 +192,15 @@ subtest 'Malformed header' => sub {
   }); },
              $QR_MALFORMED_HEADER,
              'Throws on wrong name of fifth column' );
+
+  $parser = XrefParser::Mim2GeneParser->new($db->dbh);
+  throws_ok( sub { $parser->run({
+    source_id  => $SOURCE_ID_MIM2GENE,
+    species_id => $SPECIES_ID_HUMAN,
+    files      => [ "$Bin/test-data/mim2gene-badHeader-wrongName6.txt" ],
+  }); },
+             $QR_MALFORMED_HEADER,
+             'Throws on wrong name of sixth column' );
 
 };
 
@@ -199,15 +226,7 @@ subtest 'Malformed data' => sub {
              $QR_WRONG_NUMBER_OF_COLUMNS,
              'Throws on too many data columns' );
 
-  $parser = XrefParser::Mim2GeneParser->new($db->dbh);
-  throws_ok( sub { $parser->run({
-    source_id  => $SOURCE_ID_MIM2GENE,
-    species_id => $SPECIES_ID_HUMAN,
-    files      => [ "$Bin/test-data/mim2gene-badData-newEntryType.txt" ],
-  }); },
-             qr{ \A Unknown[ ]type[ ] }msx,
-             'Throws on an unknown OMIM entry type' );
-
+# add a test for valid value in type column if a xref is dependent on it
 };
 
 subtest 'Successful inserts' => sub {
@@ -223,45 +242,45 @@ subtest 'Successful inserts' => sub {
 
 };
 
-subtest 'Direct-xrefs links' => sub {
-  my $rs;
-  my $matching_xref;
-  my $matching_link;
+# subtest 'Direct-xrefs links' => sub {
+#   my $rs;
+#   my $matching_xref;
+#   my $matching_link;
 
-  is( $db->schema->resultset('GeneDirectXref')->count,
-      $NUMBER_OF_DIRECT_LINKS,
-      'Expected number of direct-xref links' );
+#   is( $db->schema->resultset('GeneDirectXref')->count,
+#       $NUMBER_OF_DIRECT_LINKS,
+#       'Expected number of direct-xref links' );
 
-  $rs = $db->schema->resultset('Xref')->search({
-    accession => '987654',
-    source_id => $SOURCE_ID_OMIM_GENE,
-  });
-  $matching_xref = $rs->next;
-  is( $matching_xref->info_type, 'DIRECT',
-      'info_type of directly linked xref updated correctly' );
+#   $rs = $db->schema->resultset('Xref')->search({
+#     accession => '987654',
+#     source_id => $SOURCE_ID_OMIM_GENE,
+#   });
+#   $matching_xref = $rs->next;
+#   is( $matching_xref->info_type, 'DIRECT',
+#       'info_type of directly linked xref updated correctly' );
 
-  # Now let's have a closer look at the link
-  $rs = $db->schema->resultset('GeneDirectXref')->search({
-    general_xref_id => $matching_xref->xref_id,
-  });
-  $matching_link = $rs->next;
-  isnt( $matching_link, undef,
-        'Directly linked xref has a direct-xref link' );
-  is( $matching_link->ensembl_stable_id, 'ENSG00000000002',
-      'Link points to expected Ensembl gene stable ID' );
-  is( $matching_link->linkage_xref, undef,
-      "Link's linkage_xref is left undefined" );
+#   # Now let's have a closer look at the link
+#   $rs = $db->schema->resultset('GeneDirectXref')->search({
+#     general_xref_id => $matching_xref->xref_id,
+#   });
+#   $matching_link = $rs->next;
+#   isnt( $matching_link, undef,
+#         'Directly linked xref has a direct-xref link' );
+#   is( $matching_link->ensembl_stable_id, 'ENSG00000000002',
+#       'Link points to expected Ensembl gene stable ID' );
+#   is( $matching_link->linkage_xref, undef,
+#       "Link's linkage_xref is left undefined" );
 
-  # This may or may not change in the future
-  $rs = $db->schema->resultset('Synonym')->search({
-    synonym => '313370',
-  });
-  $matching_xref = $rs->next;
-  is( $rs = $db->schema->resultset('GeneDirectXref')->count({
-        general_xref_id => $matching_xref->xref_id,
-      }), 0, 'No direct-xref link assigned to a synonym' );
+#   # This may or may not change in the future
+#   $rs = $db->schema->resultset('Synonym')->search({
+#     synonym => '313370',
+#   });
+#   $matching_xref = $rs->next;
+#   is( $rs = $db->schema->resultset('GeneDirectXref')->count({
+#         general_xref_id => $matching_xref->xref_id,
+#       }), 0, 'No direct-xref link assigned to a synonym' );
 
-};
+# };
 
 subtest 'Dependent-xref links' => sub {
   my $rs;
@@ -273,7 +292,7 @@ subtest 'Dependent-xref links' => sub {
       'Expected number of dependent-xref links' );
 
   $rs = $db->schema->resultset('Xref')->search({
-    accession => '617386',
+    accession => '100100',
     source_id => $SOURCE_ID_OMIM_MORBID,
   });
   $matching_xref = $rs->next;
@@ -291,7 +310,7 @@ subtest 'Dependent-xref links' => sub {
     xref_id => $matching_link->master_xref_id,
   });
   $matching_xref = $rs->next;
-  is( $matching_xref->accession, '643609',
+  is( $matching_xref->accession, '1131',
       'Dependent-xref link points to correct master accession' );
   is( $matching_xref->source_id, $SOURCE_ID_ENTREZGENE,
       'Master xref is an EntrezGene entry' );
@@ -299,23 +318,6 @@ subtest 'Dependent-xref links' => sub {
       "Link's linkage_source_id is the dependent source_id" );
   is( $matching_link->linkage_annotation, $matching_xref->source_id,
       "Link's linkage_annotation is the master source_id" );
-
-  # These two will change once the parser has begun creating multiple
-  # links for such xrefs
-  $rs = $db->schema->resultset('Xref')->search({
-    accession => '100640',
-    source_id => $SOURCE_ID_OMIM_GENE,
-  });
-  $matching_xref = $rs->next;
-  is( $matching_xref->info_type, 'DIRECT',
-      'info_type of xref with Mim2Gene entry with both links is DIRECT' );
-
-  $rs = $db->schema->resultset('DependentXref')->search({
-    dependent_xref_id => $matching_xref->xref_id,
-  });
-  $matching_link = $rs->next;
-  is( $matching_link, undef, 'No indirect link for an directly linked xref' );
-
 
   # This may or may not change in the future
   $rs = $db->schema->resultset('Synonym')->search({
@@ -356,9 +358,9 @@ subtest 'Replay safety' => sub {
     files      => [ "$Bin/test-data/mim2gene-mini.txt" ],
   }); }, 'Re-parsed Mim2Gene map without errors' );
 
-  is( $db->schema->resultset('GeneDirectXref')->count,
-      $NUMBER_OF_DIRECT_LINKS,
-      'No new direct-xref links inserted by the replay' );
+  # is( $db->schema->resultset('GeneDirectXref')->count,
+  #     $NUMBER_OF_DIRECT_LINKS,
+  #     'No new direct-xref links inserted by the replay' );
 
   is( $db->schema->resultset('DependentXref')->count,
       $NUMBER_OF_DEPENDENT_LINKS,

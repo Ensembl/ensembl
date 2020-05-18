@@ -1,4 +1,4 @@
-#MIM number	GeneID	typo	Source	MedGenCUI	Comment
+#MIM number	GeneID	type	eSourc	MedGenCUI	Comment
 100050	-	phenotype	-	C3149220	-
 100070	-	phenotype	-	C1853365	-
 100100	1131	phenotype	 GeneMap	C0033770	question

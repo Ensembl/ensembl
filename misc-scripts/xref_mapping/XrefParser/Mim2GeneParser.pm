@@ -34,8 +34,6 @@ use parent qw( XrefParser::BaseParser );
 
 my $EXPECTED_NUMBER_OF_COLUMNS = 6;
 
-
-
 =head2 run
 
   Arg [1]    : HashRef standard list of arguments from ParseSource
@@ -58,18 +56,10 @@ my $EXPECTED_NUMBER_OF_COLUMNS = 6;
                 - EntrezGeneParser - otherwise there will be no
                   dependent-xref links.
 
-               mim2gene.txt begins with several lines of comments
-               which start with a hash; the last of these comment
-               lines contains a tab-separated list of column names.
-
-               The rest of the file are the following columns:
-                1) OMIM number
-                2) OMIM entry type
-                3) EntrezGene ID
-                4) HGNC gene symbol
-                5) Ensembl gene ID
-               The former two are mandatory, the latter can be empty
-               strings.
+               mim2gene_medgen file begins with a header line with
+               6 tab separated columns:
+               #MIM number	GeneID	type	Source	MedGenCUI	Comment
+               MIM number and GeneID are considered for the xrefs.               
 
   Return type: none
   Exceptions : throws on all processing errors
@@ -130,7 +120,6 @@ sub run {
   my %counters = (
                   'all_entries'                          => 0,
                   'dependent_on_entrez'                  => 0,
-                  'direct_ensembl'                       => 0,
                   'missed_master'                        => 0,
                   'missed_omim'                          => 0,
                 );
@@ -189,11 +178,12 @@ sub run {
     # bother we do not have an xref this entry would operate on anyway
     # - which is why we only check this after the preceding two
     # presence checks.
+    
     if ( ( $type ne 'gene')
          && ( $type ne 'gene/phenotype' )
          && ( $type ne 'predominantly phenotypes' )
          && ( $type ne 'phenotype' ) ) {
-      confess "Unknown type $type for MIM Number '${omim_acc}' "
+      warn "Unknown type $type for MIM Number '${omim_acc}' "
         . "(${filename}:" . $csv->record_number() . ")";
     }
 
@@ -229,7 +219,6 @@ sub run {
   if ( $verbose ) {
     print 'Processed ' . $counters{'all_entries'} . " entries. Out of those\n"
       . "\t" . $counters{'missed_omim'} . " had missing OMIM entries,\n"
-      . "\t" . $counters{'direct_ensembl'} . " were direct gene xrefs,\n"
       . "\t" . $counters{'dependent_on_entrez'} . " were dependent EntrezGene xrefs,\n"
       . "\t" . $counters{'missed_master'} . " had missing master entries.\n";
   }
