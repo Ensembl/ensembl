@@ -41,12 +41,7 @@ my $SOURCE_ID_OMIM_GENE   = 61;
 my $SOURCE_ID_OMIM_MORBID = 62;
 my $SPECIES_ID_HUMAN      = 9606;
 
-# Increase this by 1 if/when BaseAdaptor::get_valid_codes() has begun to
-# consider synonyms
-# my $NUMBER_OF_DIRECT_LINKS         = 4;
-# Increase this by 1 once the parser has been updated to insert
-# dependent links for entries which get direct ones as well, and by
-# another 1 if/when has begun to consider synonyms
+# Increase this by 1 once the parser has been updated to consider synonyms
 my $NUMBER_OF_DEPENDENT_LINKS      = 3;
 # Decrease this by 1 if/when BaseAdaptor::get_valid_codes() has begun to
 # consider synonyms
@@ -58,17 +53,6 @@ my $db = Xref::Test::TestDB->new();
 # should *not* add corresponding source entries at this point yet, as
 # there is a test below which checks what happens if the parser cannot
 # retrieve appropriate source IDs.
-
-
-# 100050	-	phenotype	-	C3149220	-
-# 100070	-	phenotype	-	C1853365	-
-# 100100	1131	phenotype	 GeneMap	C0033770	question
-# 100200	-	phenotype	-	C4551519	-
-# 100300	57514	phenotype	 GeneMap	C4551482	-
-# 100600	-	phenotype	-	C0000889	-
-# 100640	216	gene	-	-	-
-# 100650	217	gene	-	-	-
-# 100660	218	gene	-	-	-
 
 $db->schema->populate( 'Xref', [
   [ qw{ xref_id accession source_id species_id info_type } ],
@@ -242,46 +226,6 @@ subtest 'Successful inserts' => sub {
 
 };
 
-# subtest 'Direct-xrefs links' => sub {
-#   my $rs;
-#   my $matching_xref;
-#   my $matching_link;
-
-#   is( $db->schema->resultset('GeneDirectXref')->count,
-#       $NUMBER_OF_DIRECT_LINKS,
-#       'Expected number of direct-xref links' );
-
-#   $rs = $db->schema->resultset('Xref')->search({
-#     accession => '987654',
-#     source_id => $SOURCE_ID_OMIM_GENE,
-#   });
-#   $matching_xref = $rs->next;
-#   is( $matching_xref->info_type, 'DIRECT',
-#       'info_type of directly linked xref updated correctly' );
-
-#   # Now let's have a closer look at the link
-#   $rs = $db->schema->resultset('GeneDirectXref')->search({
-#     general_xref_id => $matching_xref->xref_id,
-#   });
-#   $matching_link = $rs->next;
-#   isnt( $matching_link, undef,
-#         'Directly linked xref has a direct-xref link' );
-#   is( $matching_link->ensembl_stable_id, 'ENSG00000000002',
-#       'Link points to expected Ensembl gene stable ID' );
-#   is( $matching_link->linkage_xref, undef,
-#       "Link's linkage_xref is left undefined" );
-
-#   # This may or may not change in the future
-#   $rs = $db->schema->resultset('Synonym')->search({
-#     synonym => '313370',
-#   });
-#   $matching_xref = $rs->next;
-#   is( $rs = $db->schema->resultset('GeneDirectXref')->count({
-#         general_xref_id => $matching_xref->xref_id,
-#       }), 0, 'No direct-xref link assigned to a synonym' );
-
-# };
-
 subtest 'Dependent-xref links' => sub {
   my $rs;
   my $matching_xref;
@@ -357,10 +301,6 @@ subtest 'Replay safety' => sub {
     species_id => $SPECIES_ID_HUMAN,
     files      => [ "$Bin/test-data/mim2gene-mini.txt" ],
   }); }, 'Re-parsed Mim2Gene map without errors' );
-
-  # is( $db->schema->resultset('GeneDirectXref')->count,
-  #     $NUMBER_OF_DIRECT_LINKS,
-  #     'No new direct-xref links inserted by the replay' );
 
   is( $db->schema->resultset('DependentXref')->count,
       $NUMBER_OF_DEPENDENT_LINKS,
