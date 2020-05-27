@@ -1,2 +1,2 @@
-# MIM Number	Exit Strategy	Entrez Gene ID (NCBI)	Approved Gene Symbol (HGNC)	Ensembl Gene ID (Ensembl)
-100640	gene	216	ALDH1A1	ENSG00000165092
+#MIM number	Gene	type	Source	MedGenCUI	Comment
+100050	-	phenotype	-	C3149220	-

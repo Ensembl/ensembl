@@ -1,2 +1,2 @@
-# MIM Number	MIM Entry Type (see FAQ 1.3 at https://omim.org/help/faq)	Entrez Gene ID (NCBI)	Approved Gene Symbol (HGNC)	Ensembl Gene ID (Ensembl)
-142830	gene/phenotype	3106	HLA-B	ENSG00000234745	fnord
+#MIM number	GeneID	type	Source	MedGenCUI	Comment
+100050	-	phenotype	-	C3149220	-	ExtraCol

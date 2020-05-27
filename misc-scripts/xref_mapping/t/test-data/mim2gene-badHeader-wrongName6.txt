@@ -1,0 +1,2 @@
+#MIM number	GeneID	type	Source	MedGenCUI	FooBar
+100050	-	phenotype	-	C3149220	-
