@@ -260,8 +260,8 @@ subtest 'Dependent-xref links' => sub {
       'Master xref is an EntrezGene entry' );
   is( $matching_link->linkage_source_id, $SOURCE_ID_OMIM_MORBID,
       "Link's linkage_source_id is the dependent source_id" );
-  is( $matching_link->linkage_annotation, $matching_xref->source_id,
-      "Link's linkage_annotation is the master source_id" );
+  is( $matching_link->linkage_annotation, undef,
+      "Linkage_annotation is not defined" );
 
   # This may or may not change in the future
   $rs = $db->schema->resultset('Synonym')->search({
@@ -301,10 +301,6 @@ subtest 'Replay safety' => sub {
     species_id => $SPECIES_ID_HUMAN,
     files      => [ "$Bin/test-data/mim2gene-mini.txt" ],
   }); }, 'Re-parsed Mim2Gene map without errors' );
-
-  is( $db->schema->resultset('DependentXref')->count,
-      $NUMBER_OF_DEPENDENT_LINKS,
-      'No new dependent-xref links inserted by the replay' );
 
   is( $db->schema->resultset('Xref')->count({
         info_type => 'UNMAPPED',

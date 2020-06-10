@@ -291,7 +291,7 @@ sub process_xref_entry {
     $self->add_dependent_xref_maponly( $arg_ref->{'mim_xref_id'},
                                        $arg_ref->{'mim_source_id'},
                                        $ent_id,
-                                       $arg_ref->{'entrez_source_id'},
+                                       undef,
                                        $arg_ref->{'dbi'},
                                        1
                                     );
