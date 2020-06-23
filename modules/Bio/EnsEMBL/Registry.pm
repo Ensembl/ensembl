@@ -1,7 +1,7 @@
 =head1 LICENSE
 
 Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
-Copyright [2016-2019] EMBL-European Bioinformatics Institute
+Copyright [2016-2020] EMBL-European Bioinformatics Institute
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -2279,29 +2279,43 @@ sub load_registry_from_db {
     sort grep { /^ensembl_ancestral/ } @dbnames;
 
   if (@ancestral_dbs && !$ignore_multi) {
-    my $ancestral_db = shift @ancestral_dbs;
+    foreach my $ancestral_db (@ancestral_dbs) {
+      # Looking for Compara's "ancestral" databases.
+      # ensembl_ancestral_plants_47_100 is registered with the 'plants'
+      # prefix, while ensembl_ancestral_100 is not given any prefix for
+      # backwards compatibility.
+      # Similarly, contrary to the nomenclature, "Ancestral sequences"
+      # is the species (production) name and "ancestral_sequences" is
+      # an alias.
+      my $alias;
+      my ($division) = $ancestral_db =~ /^ensembl_ancestral_(\w+)(?:_\d+){2}$/xm;
+      if ($division) {
+        $species = (ucfirst $division).' Ancestral sequences'.$species_suffix;
+        $alias   = $division.'_ancestral_sequences'.$species_suffix;
+      } else {
+        $species = 'Ancestral sequences'.$species_suffix;
+        $alias   = 'ancestral_sequences'.$species_suffix;
+      }
 
-    my $dba = Bio::EnsEMBL::DBSQL::DBAdaptor->new(
-      -group        => 'core',
-      -species      => 'Ancestral sequences'.$species_suffix,
-      -host         => $host,
-      -user         => $user,
-      -pass         => $pass,
-      -port         => $port,
-      -wait_timeout => $wait_timeout,
-      -dbname       => $ancestral_db,
-      -no_cache     => $no_cache
-    );
+      my $dba = Bio::EnsEMBL::DBSQL::DBAdaptor->new(
+        -group        => 'core',
+        -species      => $species,
+        -host         => $host,
+        -user         => $user,
+        -pass         => $pass,
+        -port         => $port,
+        -wait_timeout => $wait_timeout,
+        -dbname       => $ancestral_db,
+        -no_cache     => $no_cache
+      );
 
-    if ($verbose) {
-      printf( "%s loaded\n", $ancestral_db );
+      Bio::EnsEMBL::Utils::ConfigRegistry->add_alias(
+        -species => $species,
+        -alias   => [$alias],
+      );
 
-      if (@ancestral_dbs) {
-        # If we still had some more then report the problem.
-        printf(
-          "Multiple ancestral databases found.\n"
-            . "Ignoring the following: %s\n",
-          join( ', ', @ancestral_dbs ) );
+      if ($verbose) {
+        printf( "%s loaded\n", $ancestral_db );
       }
     }
   } elsif ($verbose) {
@@ -2467,10 +2481,6 @@ sub load_registry_from_db {
   Bio::EnsEMBL::Utils::ConfigRegistry->add_alias(
     -species => 'multi'.$species_suffix,
     -alias   => ['stable_ids'.$species_suffix] );
-
-  Bio::EnsEMBL::Utils::ConfigRegistry->add_alias(
-    -species => 'Ancestral sequences'.$species_suffix,
-    -alias   => ['ancestral_sequences'.$species_suffix] );
 
   # Register aliases as found in adaptor meta tables.
 
