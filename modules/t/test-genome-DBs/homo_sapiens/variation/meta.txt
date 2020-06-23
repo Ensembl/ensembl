@@ -1,5 +1,5 @@
 1	\N	schema_type	variation
-2	\N	schema_version	101
+2	\N	schema_version	102
 3	\N	patch	patch_84_85_a.sql|schema version
 4	\N	patch	patch_84_85_b.sql|create sample_synonym
 5	\N	patch	patch_84_85_c.sql|drop column moltype from variation_synonym
@@ -53,3 +53,5 @@
 53	\N	patch	patch_99_100_c.sql|add class_attrib_id column to phenotype
 54	\N	patch	patch_100_101_a.sql|schema version
 55	\N	patch	patch_100_101_b.sql|Add new data_source_attrib to variation_citation
+56	\N	patch	patch_101_102_a.sql|schema version
+57	\N	patch	patch_101_102_b.sql|Add new clinical_significance to variation, variation_feature and structural_variation
