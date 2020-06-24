@@ -176,7 +176,7 @@ sub new {
   $self->{'_external_seq_region_mapping'} = {};
 
   my $sth = $self->prepare(
-                  'SELECT coord_system_id, name, rank, version, attrib '
+                  'SELECT `coord_system_id`, `name`, `rank`, `version`, `attrib` '
                     . 'FROM coord_system '
                     . 'WHERE species_id = ?' );
 
@@ -1189,7 +1189,7 @@ sub store {
 
   my $sth =
     $db->dbc->prepare(   'INSERT INTO coord_system '
-                       . '( name, version, attrib, rank, species_id ) '
+                       . '( `name`, `version`, `attrib`, `rank`, `species_id` ) '
                          . 'VALUES ( ?, ?, ?, ?, ? )' );
 
   $sth->bind_param( 1, $name,               SQL_VARCHAR );

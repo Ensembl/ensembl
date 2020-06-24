@@ -891,7 +891,7 @@ sub _store_object_xref_mapping {
                     source_xref_id,
                     condition_type,
                     associated_group_id,
-                    rank                 )
+                    `rank`                 )
            VALUES ( ?, ?, ?, ?, ?, ? ) " );
         
         my $annotext = $dbEntry->get_all_associated_xrefs();
@@ -1140,6 +1140,7 @@ sub _store_or_fetch_xref {
         $synonym_store_sth->finish();
         
     } else { # xref_id already exists, retrieve it according to fields in the unique key
+
         my $sql = 'SELECT xref_id FROM xref 
             WHERE dbprimary_acc = ?
             AND version =?
