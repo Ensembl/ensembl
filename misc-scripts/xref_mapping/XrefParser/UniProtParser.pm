@@ -57,7 +57,7 @@ sub run {
 
   my $file = @{$files}[0];
 
-  my ( $sp_source_id, $sptr_source_id, $sp_release, $sptr_release, $sptr_non_display_source_id, $sp_direct_source_id, $sptr_direct_source_id );
+  my ( $sp_source_id, $sptr_source_id, $sp_release, $sptr_release, $sptr_non_display_source_id, $sp_direct_source_id, $sptr_direct_source_id, $isoform_source_id );
 
   $sp_source_id =
     $self->get_source_id_for_source_name('Uniprot/SWISSPROT','sequence_mapped', $dbi);
@@ -70,6 +70,8 @@ sub run {
   $sp_direct_source_id = $self->get_source_id_for_source_name('Uniprot/SWISSPROT', 'direct', $dbi);
   $sptr_direct_source_id = $self->get_source_id_for_source_name('Uniprot/SPTREMBL', 'direct', $dbi);
 
+  $isoform_source_id = $self->get_source_id_for_source_name('Uniprot_isoform');
+
   print "SwissProt source id for $file: $sp_source_id\n" if ($verbose);
   print "SpTREMBL source id for $file: $sptr_source_id\n" if ($verbose);
   print "SpTREMBL protein_evidence > 2 source id for $file: $sptr_non_display_source_id\n" if ($verbose);
@@ -77,7 +79,7 @@ sub run {
   print "SpTREMBL direct source id for $file: $sptr_direct_source_id\n" if ($verbose);
  
   $self->create_xrefs( $sp_source_id, $sptr_source_id, $sptr_non_display_source_id, $species_id,
-      $file, $verbose, $sp_direct_source_id, $sptr_direct_source_id, $dbi );
+      $file, $verbose, $sp_direct_source_id, $sptr_direct_source_id, $isoform_source_id, $dbi );
 
     if ( defined $release_file ) {
         # Parse Swiss-Prot and SpTrEMBL release info from
@@ -111,7 +113,7 @@ sub run {
 # Parse file into array of xref objects
 
 sub create_xrefs {
-  my ($self, $sp_source_id, $sptr_source_id, $sptr_non_display_source_id, $species_id, $file, $verbose, $sp_direct_source_id, $sptr_direct_source_id, $dbi ) = @_;
+  my ($self, $sp_source_id, $sptr_source_id, $sptr_non_display_source_id, $species_id, $file, $verbose, $sp_direct_source_id, $sptr_direct_source_id, $isoform_source_id, $dbi ) = @_;
 
   my $num_sp = 0;
   my $num_sptr = 0;
@@ -446,8 +448,11 @@ sub create_xrefs {
         if ($source eq "Ensembl") {
 # Example line:
 # DR   Ensembl; ENST00000380152; ENSP00000369497; ENSG00000139618.
+# DR   Ensembl; ENST00000372839; ENSP00000361930; ENSG00000166913. [P31946-1]
 # $source is Ensembl, $acc is ENST00000380152 and @extra is the rest of the line
+# If the UniProt accession is repeated here, it links to a specific isoform
           my %direct;
+          my $isoform;
           $direct{STABLE_ID} = $extra[0];
           $direct{ENSEMBL_TYPE} = 'Translation';
           $direct{LINKAGE_TYPE} = 'DIRECT';
@@ -459,6 +464,21 @@ sub create_xrefs {
             $num_direct_sptr++;
           }
           push @{$xref->{DIRECT_XREFS}}, \%direct;
+
+          my $uniprot_acc = $accessions[0];
+          if ($extra[1] =~ /($accessions[0]-[0-9]+)/) {
+            $isoform = $1;
+            $self->add_to_direct_xrefs({
+              stable_id  => $extra[0],
+              type       => 'translation',
+              acc        => $isoform,
+              label      => $isoform,
+              dbi        => $dbi,
+              source_id  => $isoform_source_id,
+              linkage    => 'DIRECT',
+              species_id => $species_id
+            });
+          }
         }
 	   if (exists $dependent_sources{$source} ) {
 	  # create dependent xref structure & store it
