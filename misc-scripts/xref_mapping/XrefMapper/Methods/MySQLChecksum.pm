@@ -40,7 +40,6 @@ sub perform_mapping {
   my @final_results;
   my $dbc;
   if (defined $db_url) {
-    $source_id = 1;
     my ($dbconn_part, $driver, $user, $pass, $host, $port, $dbname, $table_name, $tparam_name, $tparam_value, $conn_param_string) =
             $db_url =~ m{^((\w*)://(?:(\w+)(?:\:([^/\@]*))?\@)?(?:([\w\-\.]+)(?:\:(\d*))?)?/([\w\-\.]*))(?:/(\w+)(?:\?(\w+)=([\w\[\]\{\}]*))?)?((?:;(\w+)=(\w+))*)$};
     $dbc = Bio::EnsEMBL::DBSQL::DBConnection->new(
