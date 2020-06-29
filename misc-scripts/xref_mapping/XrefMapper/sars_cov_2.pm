@@ -57,6 +57,7 @@ sub transcript_names_from_gene {
   $ox_id_sth->bind_columns(\$ox_id);
   $ox_id_sth->fetch();
 
+  $del_xref_sth->execute();
   while ($get_genes->fetch()) {
     $get_source_id->execute($external_db . "_trans_name");
     $get_source_id->bind_columns(\$external_db_id);
@@ -73,6 +74,10 @@ sub transcript_names_from_gene {
     }
   }
 
+  $del_ox_sth->execute();
+  $del_ox_sth->finish();
+
+  $del_xref_sth->finish();
   $xref_id_sth->finish();
   $ox_id_sth->finish();
   $get_genes->finish();
