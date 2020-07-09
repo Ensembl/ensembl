@@ -622,7 +622,7 @@ sub run_coordinatemapping {
 
   # Make all dumps.  Order is important.
   dump_xref( $xref_filename, $xref_id, \%mapped, \%unmapped );
-  dump_object_xref( $object_xref_filename, $object_xref_id, \%mapped );
+  dump_object_xref( $object_xref_filename, $object_xref_id, $analysis_id, \%mapped );
   dump_unmapped_reason( $unmapped_reason_filename, $unmapped_reason_id,
                         \%unmapped, $core_dbh );
   dump_unmapped_object( $unmapped_object_filename, $unmapped_object_id,
@@ -693,7 +693,7 @@ sub dump_xref {
 #-----------------------------------------------------------------------
 
 sub dump_object_xref {
-  my ( $filename, $object_xref_id, $mapped ) = @_;
+  my ( $filename, $object_xref_id, $analysis_id, $mapped ) = @_;
 
   ######################################################################
   # Dump for 'object_xref'.                                            #
@@ -715,7 +715,7 @@ sub dump_object_xref {
                    $object_xref->{'ensembl_object_type'},
                    $xref->{'xref_id'},
                    '\N',
-                   '0' );
+                   $analysis_id );
     }
   }
   $fh->close();
