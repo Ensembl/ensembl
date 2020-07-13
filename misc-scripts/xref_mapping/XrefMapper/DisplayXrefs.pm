@@ -43,22 +43,9 @@ my %transcript_length;
 #
 
 sub gene_description_sources {
+  my $self     = shift;
 
-  return ("VGNC",
-          "HGNC",
-          "MGI",
-          "ZFIN_ID",
-          "Xenbase",
-          "RFAM",
-          "miRBase",
-          "EntrezGene",
-          "RefSeq_peptide",
-          "RefSeq_mRNA",
-          "Uniprot_gn",
-          "Uniprot/SWISSPROT",
-          "RNAMMER",
-          "TRNASCAN_SE",
-          "IMGT/GENE_DB");
+  return $self->gene_display_xref_sources();
 
 }
 
@@ -71,16 +58,7 @@ sub gene_description_filter_regexps {
 sub transcript_display_xref_sources {
   my $self     = shift;
 
-  my @list = qw(RFAM
-                miRBase
-                Uniprot/SWISSPROT
-                Uniprot/Varsplic
-               
-  );
-
-  my %ignore;
-
-  return [\@list,\%ignore];
+  return $self->gene_display_xref_sources();
 
 }
 
@@ -89,6 +67,11 @@ sub gene_display_xref_sources {
   my $self     = shift;
 	
   my @list = qw(VGNC
+                HGNC
+                MGI
+                RGD
+                ZFIN_ID
+                Xenbase
                 RFAM
                 miRBase
                 EntrezGene
