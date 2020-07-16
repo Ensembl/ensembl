@@ -1,6 +1,6 @@
 -- 
 -- Created by SQL::Translator::Producer::SQLite
--- Created on Wed Apr 15 05:23:39 2020
+-- Created on Thu Jul 16 10:14:56 2020
 -- 
 
 BEGIN TRANSACTION;
@@ -10,8 +10,8 @@ BEGIN TRANSACTION;
 --
 CREATE TABLE "CAFE_gene_family" (
   "cafe_gene_family_id" INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
-  "root_id" integer NOT NULL,
-  "lca_id" integer NOT NULL,
+  "root_id" bigint NOT NULL,
+  "lca_id" bigint NOT NULL,
   "gene_tree_root_id" integer NOT NULL,
   "pvalue_avg" double precision(5,4),
   "lambdas" varchar(100)
@@ -22,7 +22,7 @@ CREATE TABLE "CAFE_gene_family" (
 --
 CREATE TABLE "CAFE_species_gene" (
   "cafe_gene_family_id" integer NOT NULL,
-  "node_id" integer NOT NULL,
+  "node_id" bigint NOT NULL,
   "n_members" integer NOT NULL,
   "pvalue" double precision(5,4),
   PRIMARY KEY ("cafe_gene_family_id", "node_id")
@@ -223,7 +223,7 @@ CREATE TABLE "gene_tree_node" (
 CREATE TABLE "gene_tree_node_attr" (
   "node_id" INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
   "node_type" enum,
-  "species_tree_node_id" integer,
+  "species_tree_node_id" bigint,
   "bootstrap" tinyint,
   "duplication_confidence_score" double precision(5,4)
 );
@@ -256,7 +256,7 @@ CREATE TABLE "gene_tree_root" (
   "tree_type" enum NOT NULL,
   "clusterset_id" varchar(20) NOT NULL DEFAULT 'default',
   "method_link_species_set_id" integer NOT NULL,
-  "species_tree_root_id" integer,
+  "species_tree_root_id" bigint,
   "gene_align_id" integer,
   "ref_root_id" integer,
   "stable_id" varchar(40),
@@ -289,7 +289,7 @@ CREATE TABLE "gene_tree_root_attr" (
   "tree_num_dup_nodes" integer,
   "tree_num_leaves" integer,
   "tree_num_spec_nodes" integer,
-  "lca_node_id" integer,
+  "lca_node_id" bigint,
   "taxonomic_coverage" float,
   "ratio_species_genes" float,
   "model_name" varchar(40)
@@ -415,7 +415,7 @@ CREATE TABLE "homology" (
   "n" float(10,1),
   "s" float(10,1),
   "lnl" float(10,3),
-  "species_tree_node_id" integer,
+  "species_tree_node_id" bigint,
   "gene_tree_node_id" integer,
   "gene_tree_root_id" integer,
   "goc_score" tinyint,
@@ -671,8 +671,8 @@ CREATE TABLE "species_set_tag" (
 --
 CREATE TABLE "species_tree_node" (
   "node_id" INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
-  "parent_id" integer,
-  "root_id" integer,
+  "parent_id" bigint,
+  "root_id" bigint,
   "left_index" integer NOT NULL DEFAULT 0,
   "right_index" integer NOT NULL DEFAULT 0,
   "distance_to_parent" double precision DEFAULT 1,
@@ -717,7 +717,7 @@ CREATE TABLE "species_tree_node_attr" (
 -- Table: "species_tree_node_tag"
 --
 CREATE TABLE "species_tree_node_tag" (
-  "node_id" integer NOT NULL,
+  "node_id" bigint NOT NULL,
   "tag" varchar(50) NOT NULL,
   "value" mediumtext NOT NULL
 );
@@ -726,7 +726,7 @@ CREATE TABLE "species_tree_node_tag" (
 -- Table: "species_tree_root"
 --
 CREATE TABLE "species_tree_root" (
-  "root_id" INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+  "root_id" INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL DEFAULT 0,
   "method_link_species_set_id" integer NOT NULL,
   "label" varchar(256) NOT NULL DEFAULT 'default'
 );
