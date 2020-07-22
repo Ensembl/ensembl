@@ -1696,7 +1696,7 @@ sub update {
   }
 
   my $update_transcript_sql = 
-    sprintf "UPDATE transcript SET analysis_id = ?, display_xref_id = ?, description = ?,%s biotype = ?, is_current = ?, canonical_translation_id = ?, version = ? WHERE transcript_id = ?", ($self->schema_version > 74)?" source = ?,":'';
+    sprintf "UPDATE transcript SET stable_id = ?, analysis_id = ?, display_xref_id = ?, description = ?,%s biotype = ?, is_current = ?, canonical_translation_id = ? WHERE transcript_id = ?", ($self->schema_version > 74)?" source = ?,":'';
 
   my $display_xref = $transcript->display_xref();
   my $display_xref_id;
@@ -1709,6 +1709,7 @@ sub update {
 
   my $sth = $self->prepare($update_transcript_sql);
   my $i = 0;
+  $sth->bind_param( ++$i, $transcript->stable_id(), SQL_VARCHAR );
   $sth->bind_param( ++$i, $transcript->analysis()->dbID(), SQL_INTEGER );
   $sth->bind_param( ++$i, $display_xref_id, SQL_INTEGER );
   $sth->bind_param( ++$i, $transcript->description(), SQL_LONGVARCHAR );
