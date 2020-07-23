@@ -192,6 +192,9 @@ my $pfeat_minus = @{$translation->get_all_ProteinFeatures()};
 
 $ta->remove($translation);
 
+my $transcript_after_remove = $tra->fetch_by_translation_id($translation->dbID);
+
+ok(!$transcript_after_remove);
 ok(!defined($translation->dbID));
 ok(!defined($translation->adaptor()));
 
