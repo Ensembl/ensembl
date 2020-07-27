@@ -590,6 +590,13 @@ sub remove {
   my $attrib_adp = $self->db->get_AttributeAdaptor;
   $attrib_adp->remove_from_Translation($translation);
 
+  #remove all transcripts links to translation
+  my $sth = $self->prepare
+    ("UPDATE transcript SET canonical_translation_id = NULL WHERE canonical_translation_id = ?");
+  $sth->bind_param(1,$translation->dbID,SQL_INTEGER);
+  $sth->execute();
+  $sth->finish();
+
   # remove all xref associations to this translation
   my $dbe_adaptor = $self->db()->get_DBEntryAdaptor();
   foreach my $dbe (@{$translation->get_all_DBEntries()}) {
