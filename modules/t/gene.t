@@ -460,10 +460,12 @@ $gene->is_current(0);
 $gene->canonical_transcript_id(2018226); 
 $gene->version(5); 
 $gene->analysis_id(8355);
+$gene->stable_id('ENSGTEST00000171456');
 
 $ga->update($gene);
 
-$newgene = $ga->fetch_by_stable_id("ENSG00000171456");
+$newgene = $ga->fetch_by_stable_id("ENSGTEST00000171456");
+ok($newgene);
 ok($newgene->display_xref->dbID() == 614);
 ok($newgene->biotype eq 'dummy');
 ok($newgene->description eq 'dummy');

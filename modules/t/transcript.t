@@ -876,8 +876,10 @@ my $t1 = $ta->fetch_by_stable_id('ENST00000355555');
 ok(!$t1);   # 150
 
 $tr->is_current(1);
+$tr->stable_id('ENSTEST0000035555');
 $ta->update($tr);
-$tr = $ta->fetch_by_stable_id('ENST00000355555');
+$tr = $ta->fetch_by_stable_id('ENSTEST0000035555');
+ok($tr);
 is($tr->is_current, 1, 'Transcript is now current');   # 151
 
 my $null_versions = 0;
