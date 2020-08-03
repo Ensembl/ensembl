@@ -503,7 +503,7 @@ from    (   display_xref_priority p
 where   ox.ox_status = 'DUMP_OUT'
         and p.ensembl_object_type = ?
 order by d_gene_id, ox.ensembl_object_type, 
-	p.priority, (ix.target_identity + ix.query_identity) DESC, unused_priority DESC;
+	p.priority, (ix.target_identity + ix.query_identity) DESC, unused_priority DESC, x.accession;
 
 DXS
 
