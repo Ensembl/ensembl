@@ -26,6 +26,7 @@ use DBI;
 
 use base qw( XrefParser::BaseParser );
 use Bio::EnsEMBL::Registry;
+use Digest::MD5 qw(md5);
 
 sub run_script {
 
@@ -131,6 +132,7 @@ sub run_script {
 
   if (defined $project && $project eq 'ensembl') {
 # Can use user-defined database
+#
       if (defined $host) {
           $core_dba = Bio::EnsEMBL::DBSQL::DBAdaptor->new(
               '-host'     => $host,
@@ -154,6 +156,7 @@ sub run_script {
       }
       if (defined $ofhost) {
 # Can use user-defined database
+
           $otherf_dba = Bio::EnsEMBL::DBSQL::DBAdaptor->new(
               '-host'     => $ofhost,
               '-user'     => $ofuser,
@@ -231,13 +234,13 @@ sub run_script {
     return;
   }
 
-  foreach my $chromosome_of (@$chromosomes_of) {
-    my $chr_name = $chromosome_of->seq_region_name();
-    my $genes_of = $chromosome_of->get_all_Genes($logic_name, undef, 1);
 
+   while (my $chromosome_of = shift @$chromosomes_of) {
+    my $chr_name = $chromosome_of->seq_region_name();
+    
+    my $genes_of = $chromosome_of->get_all_Genes($logic_name, undef, 1);
     while (my $gene_of = shift @$genes_of) {
       my $transcripts_of = $gene_of->get_all_Transcripts();
-
 # Create a range registry for all the exons of the refseq transcript
       foreach my $transcript_of (sort { $a->start() <=> $b->start() } @$transcripts_of) {
 	my ($id, $tl_id);
@@ -259,20 +262,29 @@ sub run_script {
         my %tl_transcript_result;
         if (!defined $id) { next; }
         my $exons_of = $transcript_of->get_all_Exons();
+
+        my $num_exons_of = scalar @$exons_of;
         my $rr1 = Bio::EnsEMBL::Mapper::RangeRegistry->new();
         my $tl_exons_of = $transcript_of->get_all_translateable_Exons();
+        my $num_tl_exons_of = scalar @$tl_exons_of;
         my $rr3 = Bio::EnsEMBL::Mapper::RangeRegistry->new();
 
-        foreach my $exon_of (@$exons_of) {
+        #store a mapping of exon_of id to its coordinates for later use
+        my %exons_of_coods;
+        while (my $exon_of = shift @$exons_of) {
           my $start_of = $exon_of->seq_region_start();
           my $end_of = $exon_of->seq_region_end();
           $rr1->check_and_register( 'exon', $start_of, $end_of );
+          $exons_of_coods{$exon_of->stable_id} = {start => $start_of, end => $end_of};
         }
 
-        foreach my $tl_exon_of (@$tl_exons_of) {
+        #store a mapping of tl_exon_of id to its coordinates for later use
+        my %tl_exons_of_coods;
+        while (my $tl_exon_of = shift @$tl_exons_of) {
           my $tl_start_of = $tl_exon_of->seq_region_start();
           my $tl_end_of = $tl_exon_of->seq_region_end();
           $rr3->check_and_register( 'exon', $tl_start_of, $tl_end_of );
+          $tl_exons_of_coods{$tl_exon_of->stable_id} = {start => $tl_start_of, end => $tl_end_of};
         }
 
 # Fetch slice in core database which overlaps refseq transcript
@@ -280,16 +292,22 @@ sub run_script {
         my $transcripts = $chromosome->get_all_Transcripts(1);
 
 # Create a range registry for all the exons of the ensembl transcript
+        # Do not use a 'while shift' here
+        # The $transcripts array returned above is the same ref if seq_regions are same
+        # 'while shift' will remove a transcript from the $transcripts
         foreach my $transcript(@$transcripts) {
           if ($transcript->strand != $transcript_of->strand) { next; }
           my $exons = $transcript->get_all_Exons();
+
+          my $num_exons = scalar @$exons;
           my $rr2 = Bio::EnsEMBL::Mapper::RangeRegistry->new();
           my $rr4 = Bio::EnsEMBL::Mapper::RangeRegistry->new();
           my $exon_match = 0;
           my $tl_exons = $transcript->get_all_translateable_Exons();
+          my $num_tl_exons = scalar @$tl_exons;
           my $tl_exon_match = 0;
 
-          foreach my $exon (@$exons) {
+          while (my $exon = shift @$exons) {
             my $start = $exon->seq_region_start();
             my $end = $exon->seq_region_end();
             my $overlap = $rr1->overlap_size('exon', $start, $end);
@@ -297,7 +315,7 @@ sub run_script {
             $rr2->check_and_register('exon', $start, $end);
           }
 
-          foreach my $tl_exon (@$tl_exons) {
+          while (my $tl_exon = shift @$tl_exons) {
             my $tl_start = $tl_exon->seq_region_start();
             my $tl_end = $tl_exon->seq_region_end();
             my $tl_overlap = $rr3->overlap_size('exon', $tl_start, $tl_end);
@@ -308,26 +326,26 @@ sub run_script {
           my $exon_match_of = 0;
           my $tl_exon_match_of = 0;
 
-# Look for oeverlap between the two sets of exons
-          foreach my $exon_of (@$exons_of) {
-            my $start_of = $exon_of->seq_region_start();
-            my $end_of = $exon_of->seq_region_end();
+          # Look for oeverlap between the two sets of exons
+          while (my ($exon_of_id, $coords) = each (%exons_of_coods)) {
+            my $start_of = $coords->{"start"};
+            my $end_of = $coords->{"end"};
             my $overlap_of = $rr2->overlap_size('exon', $start_of, $end_of);
             $exon_match_of += $overlap_of/($end_of - $start_of + 1);
           }
 
-          foreach my $tl_exon_of (@$tl_exons_of) {
-            my $tl_start_of = $tl_exon_of->seq_region_start();
-            my $tl_end_of = $tl_exon_of->seq_region_end();
+          while (my ($tl_exon_of_id, $coords) = each (%tl_exons_of_coods)) {
+            my $tl_start_of = $coords->{"start"};
+            my $tl_end_of = $coords->{"end"};
             my $tl_overlap_of = $rr4->overlap_size('exon', $tl_start_of, $tl_end_of);
             $tl_exon_match_of += $tl_overlap_of/($tl_end_of - $tl_start_of + 1);
           }
 
 # Comparing exon matching with number of exons to give a score
-          my $score = ( ($exon_match_of + $exon_match)) / (scalar(@$exons_of) + scalar(@$exons) );
+          my $score = ( ($exon_match_of + $exon_match)) / ($num_exons_of + $num_exons);
           my $tl_score = 0;
-          if (scalar(@$tl_exons_of) > 0) {
-            $tl_score = ( ($tl_exon_match_of + $tl_exon_match)) / (scalar(@$tl_exons_of) + scalar(@$tl_exons) );
+          if ($num_tl_exons_of > 0) {
+            $tl_score = ( ($tl_exon_match_of + $tl_exon_match)) / ($num_tl_exons_of + $num_tl_exons);
           }
           if ($transcript->biotype eq $transcript_of->biotype) {
             $transcript_result{$transcript->stable_id} = $score;
@@ -369,7 +387,7 @@ sub run_script {
 # If a best match was defined for the refseq transcript, store it as direct xref for ensembl transcript
         if ($best_id) {
           my ($acc, $version) = split(/\./, $id);
-	  $version =~ s/\D//g if $version;
+	        $version =~ s/\D//g if $version;
           my $source_id;
           $source_id = $mrna_source_id if $acc =~ /^NM_/;
           $source_id = $ncrna_source_id if $acc =~ /^NR_/;
@@ -387,7 +405,7 @@ sub run_script {
                                           info_type => 'DIRECT' });
           $self->add_direct_xref($xref_id, $best_id, "Transcript", "", $dbi);
 
-	  my $t_of = $transcript_of;
+	        my $t_of = $transcript_of;
           my $g_of = $t_of->get_Gene();
           my $entrez_id = $g_of->stable_id();
           my $tl_of = $t_of->translation();
@@ -397,14 +415,14 @@ sub run_script {
 
 # Add link between Ensembl gene and EntrezGene
           if (defined $entrez_ids{$entrez_id} ) {
-            foreach my $dependent_xref_id (@{$entrez_ids{$entrez_id}}) {
+            while (my $dependent_xref_id = shift @{$entrez_ids{$entrez_id}}) {
               $add_dependent_xref_sth->execute($xref_id, $dependent_xref_id);
             }
           }
 
 # Also store refseq protein as direct xref for ensembl translation, if translation exists
           if (defined $tl && defined $tl_of) {
-            if ($tl_of->seq eq $tl->seq) {
+            if (md5($tl_of->seq) eq md5($tl->seq)) {
               $tl_id = $tl_of->stable_id();
               my @xrefs = grep {$_->{dbname} eq 'GenBank'} @{$tl_of->get_all_DBEntries};
               if(scalar @xrefs == 1) {
