@@ -57,8 +57,8 @@
 13	1	genebuild.start_date	2012-08-EnsemblBacteria
 12	1	genebuild.version	2012-08-EnsemblBacteria
 61	1	patch	patch_73_74_b.sql|remove_dnac
-42	1	provider.name	European Nucleotide Archive
-43	1	provider.url	http://www.ebi.ac.uk/ena/data/view/GCA_000292705
+42	1	assembly.provider_name	European Nucleotide Archive
+43	1	assembly.provider_url	http://www.ebi.ac.uk/ena/data/view/GCA_000292705
 18	1	repeat.analysis	Dust
 19	1	repeat.analysis	TRF
 48	1	sample.gene_param	BTF1_30792
