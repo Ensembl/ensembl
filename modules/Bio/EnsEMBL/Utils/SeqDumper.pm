@@ -477,8 +477,8 @@ sub dump_embl {
   #Database References (we are not dumping these)
 
   #Get annotation source 
-  my ($provider_name)   = @{$meta_container->list_value_by_key('provider.name')};
-  my ($provider_url)    = @{$meta_container->list_value_by_key('provider.url')};
+  my ($provider_name)   = @{$meta_container->list_value_by_key('assembly.provider_name')};
+  my ($provider_url)    = @{$meta_container->list_value_by_key('assembly.provider_url')};
   my $annotation_source = q{};
    
   if($provider_name) {
@@ -669,8 +669,8 @@ sub dump_genbank {
   #refereneces
 
   #Get annotation source 
-  my ($provider_name)   = @{$meta_container->list_value_by_key('provider.name')};
-  my ($provider_url)    = @{$meta_container->list_value_by_key('provider.url')};
+  my ($provider_name)   = @{$meta_container->list_value_by_key('assembly.provider_name')};
+  my ($provider_url)    = @{$meta_container->list_value_by_key('assembly.provider_url')};
   my $annotation_source = q{};
   
   if($provider_name) {
