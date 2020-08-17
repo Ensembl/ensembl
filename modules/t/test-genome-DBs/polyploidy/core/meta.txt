@@ -68,8 +68,8 @@
 94	1	genebuild.initial_release_date	2013-12-MIPS
 95	1	genebuild.last_geneset_update	2013-12-MIPS
 96	1	genebuild.version	2.2
-97	1	provider.name	IWGSC
-98	1	provider.url	http://www.wheatgenome.org/
+97	1	assembly.provider_name	IWGSC
+98	1	assembly.provider_url	http://www.wheatgenome.org/
 188	1	transcriptbuild.level	toplevel
 100	1	genebuild.method	Imported from IWGSC
 101	1	sample.transcript_param	Traes_1BS_1172A6B03.1
