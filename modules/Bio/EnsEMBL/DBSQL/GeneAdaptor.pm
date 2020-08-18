@@ -1622,14 +1622,13 @@ sub update {
   if (defined($gene->canonical_transcript())) {
     $sth->bind_param(7, $gene->canonical_transcript()->dbID(), SQL_INTEGER);
   } else {
-    $sth->bind_param(7, 1, SQL_INTEGER);
+    $sth->bind_param(7, 0, SQL_INTEGER);
   }
   $sth->bind_param(8, $gene->version(), SQL_TINYINT);
   $sth->bind_param(9, $gene->dbID(), SQL_INTEGER);
 
   $sth->execute();
 
-  # maybe should update stable id ???
 } ## end sub update
 
 
