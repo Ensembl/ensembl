@@ -65,21 +65,18 @@ sub update{
   #####################################
   print "Deleting all PROJECTIONs from this database\n" if $verbose;
 
-  my $sql = "DELETE es FROM xref x, external_synonym es WHERE x.xref_id = es.xref_id and x.info_type = 'PROJECTION'";
+  my $sql = "TRUNCATE table ontology_xref";
   my $sth = $core_dbi->prepare($sql);
+  $sth->execute();
+  print "\tDeleted all ontology_xref rows\n" if $verbose;
+
+  $sql = "DELETE es FROM xref x, external_synonym es WHERE x.xref_id = es.xref_id and x.info_type = 'PROJECTION'";
+  $sth = $core_dbi->prepare($sql);
   my $affected_rows = $sth->execute();
   print "\tDeleted $affected_rows PROJECTED external_synonym row(s)\n" if $verbose;
-
-  # Delete all ontologies, as they are done by a separate pipeline
-  $sql = <<SQL;
-DELETE ontology_xref, object_xref, xref, dependent_xref
-FROM ontology_xref, object_xref, xref 
-LEFT JOIN dependent_xref on xref_id = dependent_xref_id
-WHERE ontology_xref.object_xref_id = object_xref.object_xref_id AND object_xref.xref_id = xref.xref_id
-SQL
+  $sql = "DELETE ox FROM object_xref ox, xref x, external_db e WHERE x.xref_id = ox.xref_id AND x.external_db_id =e.external_db_id and e.db_name = 'GO'";
   $sth = $core_dbi->prepare($sql);
-  $affected_rows = $sth->execute();
-  print "\tDeleted $affected_rows PROJECTED ontology_xref row(s)\n" if $verbose;
+  $sth->execute();
 
   $sql = "DELETE object_xref FROM object_xref, xref WHERE object_xref.xref_id = xref.xref_id AND xref.info_type = 'PROJECTION'";
   $sth = $core_dbi->prepare($sql);
@@ -144,7 +141,6 @@ SQL
   $sth->bind_columns(\$name,\$count);
 
   my $synonym_sth  =  $core_dbi->prepare('DELETE external_synonym FROM external_synonym, xref WHERE external_synonym.xref_id = xref.xref_id AND xref.external_db_id = ?');
-  my $go_sth       =  $core_dbi->prepare('DELETE ontology_xref.* FROM ontology_xref, object_xref, xref WHERE ontology_xref.object_xref_id = object_xref.object_xref_id AND object_xref.xref_id = xref.xref_id  AND xref.external_db_id = ?');
   my $identity_sth =  $core_dbi->prepare('DELETE identity_xref FROM identity_xref, object_xref, xref WHERE identity_xref.object_xref_id = object_xref.object_xref_id AND object_xref.xref_id = xref.xref_id AND xref.external_db_id = ?');
   my $object_sth   =  $core_dbi->prepare('DELETE object_xref FROM object_xref, xref WHERE object_xref.xref_id = xref.xref_id AND xref.external_db_id = ?');
   my $master_sth    = $core_dbi->prepare('DELETE ox, d FROM xref mx, xref x, dependent_xref d LEFT JOIN object_xref ox ON ox.object_xref_id = d.object_xref_id WHERE mx.xref_id = d.master_xref_id AND dependent_xref_id = x.xref_id AND mx.external_db_id = ?');
@@ -176,8 +172,6 @@ SQL
     print "Deleting data for $name from core before updating from new xref database\n" if ($verbose);
     $affected_rows = $synonym_sth->execute($ex_id);
     print "\tDeleted $affected_rows external_synonym row(s)\n" if $verbose;
-    $affected_rows = $go_sth->execute($ex_id);
-    print "\tDeleted $affected_rows ontology_xref row(s)\n" if $verbose;
     $affected_rows = $identity_sth->execute($ex_id);
     print "\tDeleted $affected_rows identity_xref row(s)\n" if $verbose;
     $affected_rows = $object_sth->execute($ex_id);  
@@ -193,9 +187,7 @@ SQL
   }
   $sth->finish;
   $transaction_end_sth->execute();
-#}
   $synonym_sth->finish;
-  $go_sth->finish;  
   $identity_sth->finish;
   $object_sth->finish;  
   $dependent_sth->finish;
@@ -296,35 +288,10 @@ DSQL
  $dependent_sth = $xref_dbi->prepare($dep_sql);
 
 
-  my $go_sql =(<<GSQL);
-  SELECT  x.xref_id, x.accession, x.label, x.version, x.description, x.info_text, ox.object_xref_id, ox.ensembl_id, ox.ensembl_object_type, ox.master_xref_id, g.linkage_type,
-       i.query_identity, i.target_identity, i.hit_start, i.hit_end,
-       i.translation_start, i.translation_end, i.cigar_line, i.score, i.evalue
-    FROM (xref x, object_xref ox, go_xref g, identity_xref i)
-      WHERE ox.ox_status = "DUMP_OUT" and
-            i.object_xref_id = ox.object_xref_id AND
-            g.object_xref_id = ox.object_xref_id and
-            x.xref_id = ox.xref_id and
-            x.source_id = ? and x.info_type = ?
-            order by x.xref_id, ox.ensembl_id
-GSQL
-
-     $go_sth = $xref_dbi->prepare($go_sql);
-
-  my $go_count_sql = (<<GCNTSQL);
-  SELECT  count(*)
-    FROM (xref x, object_xref ox, go_xref g)
-      WHERE ox.ox_status = "DUMP_OUT" and
-            g.object_xref_id = ox.object_xref_id and
-            x.xref_id = ox.xref_id and
-            x.source_id = ? and x.info_type = ?
-GCNTSQL
-   
      # SQL to add data to core
      #########################
  
      my $add_identity_xref_sth  = $core_dbi->prepare('insert ignore into identity_xref (object_xref_id, xref_identity, ensembl_identity, xref_start, xref_end, ensembl_start, ensembl_end, cigar_line, score, evalue) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
-     my $add_go_xref_sth        = $core_dbi->prepare('insert ignore into ontology_xref (object_xref_id, source_xref_id, linkage_type) values (?, ?, ?)');
      my $add_dependent_xref_sth = $core_dbi->prepare('insert ignore into dependent_xref (object_xref_id, master_xref_id, dependent_xref_id) values (?, ?, ?)');
      my $add_syn_sth            = $core_dbi->prepare('insert ignore into external_synonym (xref_id, synonym) values (?, ?)');
      my $add_release_info_sth   = $core_dbi->prepare('update external_db set db_release = ? where external_db_id = ?');
@@ -349,11 +316,6 @@ GCNTSQL
 
     my @xref_list=();  # process at end. Add synonyms and set dumped = 1;
 
-    my $go_count_sth = $xref_dbi->prepare($go_count_sql);
-    $go_count_sth->execute($source_id, $type);
-    my ($go_data_present) = $go_count_sth->fetchrow_array;
-    $go_count_sth->finish;
-   
     # dump SEQUENCE_MATCH, DEPENDENT, DIRECT, COORDINATE_OVERLAP, INFERRED_PAIR, (MISC?? same as direct come from official naming)  
 
     ### If DIRECT ,         xref, object_xref,                  (order by xref_id)  # maybe linked to more than one?
@@ -362,29 +324,6 @@ GCNTSQL
 
     
     if($type eq "DIRECT" or $type eq "INFERRED_PAIR" or $type eq "MISC"){
-      if ($go_data_present) {
-       my $count = 0;
-       $go_sth->execute($source_id, $type);
-       my ($xref_id, $acc, $label, $version, $desc, $info,  $object_xref_id, $ensembl_id, $ensembl_type, $master_xref_id, $linkage_type); 
-       my ( $query_identity, $target_identity, $hit_start, $hit_end, $translation_start, $translation_end, $cigar_line, $score, $evalue);
-       $go_sth->bind_columns(\$xref_id, \$acc, \$label, \$version, \$desc, \$info, \$object_xref_id, \$ensembl_id, \$ensembl_type, \$master_xref_id, \$linkage_type,
-                             \$query_identity, \$target_identity, \$hit_start, \$hit_end, \$translation_start, \$translation_end, \$cigar_line, \$score, \$evalue);
-       my $last_xref = 0;
-       while($go_sth->fetch){
-	 if($last_xref != $xref_id){
-	   push @xref_list, $xref_id;
-	   $count++;
-	   $xref_id = $self->add_xref($xref_offset, $xref_id, $ex_id, $acc, $label, $version, $desc, $type, $info || $where_from, $core_dbi);
-	   $last_xref = $xref_id;
-	 }
-         $object_xref_id = $self->add_object_xref($object_xref_offset, $object_xref_id, $ensembl_id, $ensembl_type, ($xref_id+$xref_offset), $analysis_ids{$ensembl_type}, $core_dbi);
-         $add_go_xref_sth->execute( ($object_xref_id+$object_xref_offset), 0, $linkage_type);
-         $add_identity_xref_sth->execute( ($object_xref_id+$object_xref_offset), $query_identity, $target_identity, $hit_start, $hit_end,
-                                         $translation_start, $translation_end, $cigar_line, $score, $evalue) if $translation_start;
-       }
-       print "Direct GO $count\n" if ($verbose);
-     }
-     else{
        my $count = 0;
        $seq_sth->execute($source_id, $type);
        my ($xref_id, $acc, $label, $version, $desc, $info, $object_xref_id, $ensembl_id, $ensembl_type); 
@@ -404,7 +343,6 @@ GCNTSQL
                                          $translation_start, $translation_end, $cigar_line, $score, $evalue) if $translation_start;
       }  
       print "DIRECT $count\n" if ($verbose);
-     }
     }
     ### IF CHECKSUM,        xref, object_xref
     # 1:m mapping between object & xref
@@ -432,35 +370,6 @@ GCNTSQL
     ### If DEPENDENT,       xref, object_xref , dependent_xref  (order by xref_id)  # maybe linked to more than one?
  
    elsif($type eq "DEPENDENT"){
-     if ($go_data_present) {
-       my $count = 0;
-       $go_sth->execute($source_id, $type);
-       my ($xref_id, $acc, $label, $version, $desc, $info,  $object_xref_id, $ensembl_id, $ensembl_type, $master_xref_id, $linkage_type);
-       my ( $query_identity, $target_identity, $hit_start, $hit_end, $translation_start, $translation_end, $cigar_line, $score, $evalue);
-       $go_sth->bind_columns(\$xref_id, \$acc, \$label, \$version, \$desc, \$info, \$object_xref_id, \$ensembl_id, \$ensembl_type, \$master_xref_id, \$linkage_type,
-                             \$query_identity, \$target_identity, \$hit_start, \$hit_end, \$translation_start, \$translation_end, \$cigar_line, \$score, \$evalue);
-       my $last_xref = 0;
-       while($go_sth->fetch){
-	 if($last_xref != $xref_id){
-	   push @xref_list, $xref_id;
-	   $count++;
-	   $xref_id = $self->add_xref($xref_offset, $xref_id, $ex_id, $acc, $label, $version, $desc, $type, $info || $where_from, $core_dbi);
-	   $last_xref = $xref_id;
-	 }
-         $object_xref_id = $self->add_object_xref($object_xref_offset, $object_xref_id, $ensembl_id, $ensembl_type, ($xref_id+$xref_offset), $analysis_ids{$ensembl_type}, $core_dbi);
-	 if(defined($master_xref_id)){  # need to sort this out as all should habe one really. (interpro generates go without these!!)
-	   $add_dependent_xref_sth->execute(($object_xref_id+$object_xref_offset), ($master_xref_id+$xref_offset), ($xref_id+$xref_offset) );
-	   $add_go_xref_sth->execute( ($object_xref_id+$object_xref_offset), ($master_xref_id+$xref_offset), $linkage_type);
-           $add_identity_xref_sth->execute( ($object_xref_id+$object_xref_offset), $query_identity, $target_identity, $hit_start, $hit_end,
-                                         $translation_start, $translation_end, $cigar_line, $score, $evalue) if $translation_start;
-	 }
-	 else {
-	     $add_go_xref_sth->execute( ($object_xref_id+$object_xref_offset), 0, $linkage_type);
-	 }
-       }       
-       print "GO $count\n" if ($verbose);     
-     }
-     else{
        my $count = 0;
        my $ox_count = 0;
        my @master_problems;
@@ -498,7 +407,6 @@ GCNTSQL
 	 print "\n";
        }
        print "DEP $count xrefs, $ox_count object_xrefs\n" if ($verbose);
-     }
    }
    ### If SEQUENCE_MATCH   xref, object_xref,  identity_xref   (order by xref_id)  # maybe linked to more than one?
 
