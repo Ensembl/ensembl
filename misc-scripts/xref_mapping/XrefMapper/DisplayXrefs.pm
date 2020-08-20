@@ -45,7 +45,8 @@ my %transcript_length;
 sub gene_description_sources {
   my $self     = shift;
 
-  return $self->gene_display_xref_sources();
+  my ($precedence, $ignore) = @{$self->gene_display_xref_sources()};
+  return @$precedence;
 
 }
 
