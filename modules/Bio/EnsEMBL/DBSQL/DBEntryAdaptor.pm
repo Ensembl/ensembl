@@ -891,7 +891,7 @@ sub _store_object_xref_mapping {
                     source_xref_id,
                     condition_type,
                     associated_group_id,
-                    rank                 )
+                    `rank`                 )
            VALUES ( ?, ?, ?, ?, ?, ? ) " );
         
         my $annotext = $dbEntry->get_all_associated_xrefs();

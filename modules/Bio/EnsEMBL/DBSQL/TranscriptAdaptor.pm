@@ -606,7 +606,7 @@ sub fetch_all_by_Slice {
   my $tr_id_str = join( ',', keys(%tr_hash) );
 
   my $sth =
-    $self->prepare( "SELECT transcript_id, exon_id, rank "
+    $self->prepare( "SELECT `transcript_id`, `exon_id`, `rank` "
       . "FROM exon_transcript "
       . "WHERE transcript_id IN ($tr_id_str)" );
 
@@ -1375,7 +1375,7 @@ sub store {
   # Link transcript to exons in exon_transcript table
   #
   my $etst = $self->prepare(
-             "INSERT INTO exon_transcript (exon_id,transcript_id,rank) "
+             "INSERT INTO exon_transcript (`exon_id`,`transcript_id`,`rank`) "
                . "VALUES (?,?,?)" );
   my $rank = 1;
   foreach my $exon ( @{ $transcript->get_all_Exons } ) {
