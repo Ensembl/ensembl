@@ -37,7 +37,7 @@ before_install:
 install:
   - cpanm -v --installdeps --notest . --with-all-features
   - cpanm -n Devel::Cover::Report::Coveralls
-  - cpanm -n DBD::SQLite
+  - cpanm -n DBD::SQLite JSON
   - cp travisci/MultiTestDB.conf.travisci.mysql  modules/t/MultiTestDB.conf.mysql
   - cp travisci/MultiTestDB.conf.travisci.SQLite modules/t/MultiTestDB.conf.SQLite
   - cp travisci/testdb.conf.travisci.mysql  testdb.conf.mysql
