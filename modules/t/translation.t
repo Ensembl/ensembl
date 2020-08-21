@@ -189,10 +189,10 @@ my $tl_count    = count_rows($db, 'translation');
 my $pfeat_count = count_rows($db, 'protein_feature');
 
 my $pfeat_minus = @{$translation->get_all_ProteinFeatures()};
-
+my $translation_id = $translation->dbID;
 $ta->remove($translation);
 
-my $transcript_after_remove = $tra->fetch_by_translation_id($translation->dbID);
+my $transcript_after_remove = $tra->fetch_by_translation_id($translation_id);
 
 ok(!$transcript_after_remove);
 ok(!defined($translation->dbID));
