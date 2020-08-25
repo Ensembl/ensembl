@@ -447,33 +447,38 @@ $gene = $ga->fetch_by_stable_id("ENSG00000171456");
 $ga->update($gene);
 
 my $newgene = $ga->fetch_by_stable_id("ENSG00000171456");
+ok($newgene);
 ok($newgene->display_xref->dbID() == 128324);
 ok($newgene->biotype eq 'protein_coding');
 
 # now change the original gene and update it
 my $dbEntryAdaptor = $db->get_DBEntryAdaptor();
+my $dbTranscriptAdaptor = $db->get_TranscriptAdaptor();
+my $dbAnalysisAdaptor = $db->get_AnalysisAdaptor();
 
 $gene->display_xref($dbEntryAdaptor->fetch_by_dbID(614));
+$gene->analysis($dbAnalysisAdaptor->fetch_by_dbID(614));
+$gene->canonical_transcript($dbTranscriptAdaptor->fetch_by_dbID(614));
+
 $gene->biotype('dummy');
 $gene->description('dummy'); 
-$gene->is_current(0); 
-$gene->canonical_transcript_id(2018226); 
 $gene->version(5); 
-$gene->analysis_id(8355);
-$gene->stable_id('ENSGTEST00000171456');
+$gene->stable_id('ENSG0000017145556');
 
 $ga->update($gene);
-
-$newgene = $ga->fetch_by_stable_id("ENSGTEST00000171456");
+$newgene = $ga->fetch_by_stable_id("ENSG0000017145556");
 ok($newgene);
 ok($newgene->display_xref->dbID() == 614);
+ok($newgene->analysis->dbID() == $gene->analysis->dbID());
+ok($newgene->canonical_transcript->dbID() == $gene->canonical_transcript->dbID());
 ok($newgene->biotype eq 'dummy');
 ok($newgene->description eq 'dummy');
-ok($newgene->is_current == 0);
-ok($newgene->canonical_transcript_id == 2018226);
 ok($newgene->version == 5);
-ok($newgene->analysis_id == 8355);
 
+$gene->is_current(0); 
+$ga->update($gene);
+$newgene = $ga->fetch_by_stable_id("ENSG0000017145556");
+ok(!$newgene);
 
 $multi->restore('core', 'gene');
 
