@@ -43,22 +43,10 @@ my %transcript_length;
 #
 
 sub gene_description_sources {
+  my $self     = shift;
 
-  return ("VGNC",
-          "HGNC",
-          "MGI",
-          "ZFIN_ID",
-          "Xenbase",
-          "RFAM",
-          "miRBase",
-          "EntrezGene",
-          "RefSeq_peptide",
-          "RefSeq_mRNA",
-          "Uniprot_gn",
-          "Uniprot/SWISSPROT",
-          "RNAMMER",
-          "TRNASCAN_SE",
-          "IMGT/GENE_DB");
+  my ($precedence, $ignore) = @{$self->gene_display_xref_sources()};
+  return @$precedence;
 
 }
 
@@ -71,16 +59,7 @@ sub gene_description_filter_regexps {
 sub transcript_display_xref_sources {
   my $self     = shift;
 
-  my @list = qw(RFAM
-                miRBase
-                Uniprot/SWISSPROT
-                Uniprot/Varsplic
-               
-  );
-
-  my %ignore;
-
-  return [\@list,\%ignore];
+  return $self->gene_display_xref_sources();
 
 }
 
@@ -89,6 +68,11 @@ sub gene_display_xref_sources {
   my $self     = shift;
 	
   my @list = qw(VGNC
+                HGNC
+                MGI
+                RGD
+                ZFIN_ID
+                Xenbase
                 RFAM
                 miRBase
                 EntrezGene
@@ -520,7 +504,7 @@ from    (   display_xref_priority p
 where   ox.ox_status = 'DUMP_OUT'
         and p.ensembl_object_type = ?
 order by d_gene_id, ox.ensembl_object_type, 
-	p.priority, (ix.target_identity + ix.query_identity) DESC, unused_priority DESC;
+	p.priority, (ix.target_identity + ix.query_identity) DESC, unused_priority DESC, x.accession;
 
 DXS
 

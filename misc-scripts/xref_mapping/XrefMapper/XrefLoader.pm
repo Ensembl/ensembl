@@ -285,12 +285,14 @@ DIRS
   my $dep_sql =(<<DSQL);
 SELECT  x.xref_id, x.accession, x.label, x.version, x.description, x.info_text,
         ox.object_xref_id, ox.ensembl_id, ox.ensembl_object_type, ox.master_xref_id 
-   FROM xref x, object_xref ox 
+   FROM xref x, object_xref ox, xref mx, source s 
      WHERE ox.ox_status = "DUMP_OUT" and 
            ox.xref_id = x.xref_id and 
+           ox.master_xref_id = mx.xref_id and
+           mx.source_id = s.source_id and
            x.source_id = ? and 
            x.info_type = ? 
-     ORDER BY x.xref_id, ox.ensembl_id
+     ORDER BY x.xref_id, ox.ensembl_id, s.ordered
 DSQL
 
  $dependent_sth = $xref_dbi->prepare($dep_sql);
