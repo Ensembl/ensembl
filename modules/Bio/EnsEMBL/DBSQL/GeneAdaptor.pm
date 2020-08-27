@@ -2104,5 +2104,9 @@ sub fetch_all_by_transcript_supporting_evidence {
   return \@genes;
 } ## end sub fetch_all_by_transcript_supporting_evidence
 
+sub _final_clause {
+	return ' ORDER BY g.gene_id'
+}
+
 1;
 
