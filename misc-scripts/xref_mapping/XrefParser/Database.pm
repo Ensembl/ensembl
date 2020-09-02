@@ -28,6 +28,10 @@ use Bio::EnsEMBL::DBSQL::DBConnection;
 use File::Spec::Functions;
 use IO::File;
 use English;
+use vars qw(@ISA);
+use strict;
+
+@ISA = qw( Bio::EnsEMBL::DBSQL::DBConnection);
 
 sub new {
   my ( $proto, $arg_ref ) = @_;
