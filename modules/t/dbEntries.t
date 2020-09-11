@@ -50,6 +50,12 @@ my $current_default_auto_inc = get_xref_autoinc();
 if($current_default_auto_inc != $expected_default_auto_inc) {
   set_xref_autoinc($expected_default_auto_inc);
 }
+# Check if setting autoinc is successful, on new MySql impossible to decrease it
+my $skip_autoinc_test = undef;
+$current_default_auto_inc = get_xref_autoinc();
+if($current_default_auto_inc != $expected_default_auto_inc) {
+  $skip_autoinc_test = 1;
+}
 
 # some retrievals
 my $dbEntryAdaptor = $db->get_DBEntryAdaptor();
@@ -287,11 +293,12 @@ $xref = Bio::EnsEMBL::DBEntry->new
    -type => "ARRAY",
    -analysis => undef,
    );
-   
 my $xref_id = $dbEntryAdaptor->store($xref, undef, "Transcript");
-note("Xref_id from insert: ".$xref_id);
-is($xref_id, $expected_xref_id, "dbID for new DBEntry.");
 
+if (!$skip_autoinc_test) {
+	note("Xref_id from insert: ".$xref_id);
+	is($xref_id, $expected_xref_id, "dbID for new DBEntry.");
+}
 # Test update()
 
 is($xref->description(), undef, 'No description for xref');
