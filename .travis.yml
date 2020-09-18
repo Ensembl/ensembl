@@ -27,9 +27,8 @@ addons:
     packages:
     - unzip
 
-
 before_install:
-  - git clone --branch test/ubuntu_20 --depth 1 https://github.com/Ensembl/ensembl-test.git
+  - git clone --branch master --depth 1 https://github.com/Ensembl/ensembl-test.git
   - git clone --branch master --depth 1 https://github.com/Ensembl/ensembl-io.git
   - git clone --branch master --depth 1 https://github.com/Ensembl/ensembl-variation.git
   - git clone --branch master --depth 1 https://github.com/Ensembl/ensembl-compara.git
