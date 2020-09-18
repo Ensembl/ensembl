@@ -132,16 +132,20 @@ sub new {
 
   my $self = $class->SUPER::new(@_);
 
-  my ( $name, $version, $top_level, $sequence_level, $default, $rank ) =
+  print "Creating a new CoordSystem object...\n";
+
+  my ( $name, $version, $top_level, $sequence_level, $default, $rank, $alias_to ) =
     rearrange( [ 'NAME',      'VERSION',
                  'TOP_LEVEL', 'SEQUENCE_LEVEL',
-                 'DEFAULT',   'RANK' ],
+                 'DEFAULT',   'RANK',
+                 'ALIAS_TO' ],
                @_ );
 
   $top_level      = ($top_level)      ? 1 : 0;
   $sequence_level = ($sequence_level) ? 1 : 0;
   $default        = ($default)        ? 1 : 0;
   $rank ||= 0;
+  $alias_to       = undef;
 
   if ( $top_level == 1 ) {
     if ( $rank != 0 ) {
@@ -187,7 +191,17 @@ sub new {
   $self->{'sequence_level'} = $sequence_level;
   $self->{'default'}        = $default;
   $self->{'rank'}           = $rank;
+  $self->{'alias_to'}       = $alias_to;
 
+  print "\nNew CoordSystem object data: 
+          name: $name, 
+          version: $version,
+          top_level: $top_level, 
+          sequence_level: $sequence_level,
+          default: $default, 
+          rank: $rank,
+          alias_to: $alias_to.\n";
+  print "\nFinished creating new CoordSystem object...\n";
   return $self;
 } ## end sub new
 
@@ -208,7 +222,6 @@ sub name {
   my $self = shift;
   return $self->{'name'};
 }
-
 
 
 =head2 version
@@ -372,5 +385,48 @@ sub rank {
   my $self = shift;
   return $self->{'rank'};
 }
+
+
+=head2 alias
+
+  Arg [1]    : none
+  Example    : print $coord->alias();
+  Description: Getter for the alias of this coordinate system.
+               This will return an empty string is no alias is defined
+               for this coordinate system.
+  Returntype : string
+  Exceptions : none
+  Caller     : general
+  Status     : Stable
+
+=cut
+
+sub alias {
+  my $self = shift;
+  return $self->{'alias_to'};
+}
+
+
+=head2 alias_to
+
+  Arg [1]    : string
+  Example    : $coord->alias_to('chromosome');
+  Description: Setter for the alias of this coordinate system.
+  Returntype : Bio::EnsEMBL::CoordSystem
+  Exceptions : none
+  Caller     : general
+  Status     : Stable
+
+=cut
+
+sub alias_to {
+  my $self     = shift;
+  my $alias_to = shift;
+
+  $self->{'alias_to'} = $alias_to;
+
+  return $self;
+}
+
 
 1;
