@@ -42,11 +42,11 @@ ALTER TABLE meta
 ALTER TABLE coord_system ADD COLUMN species_id INT(10) UNSIGNED NOT NULL DEFAULT 1 AFTER coord_system_id;
 
 -- Drop the indexes from coord_system
-ALTER TABLE coord_system DROP INDEX rank;
+ALTER TABLE coord_system DROP INDEX `rank`;
 ALTER TABLE coord_system DROP INDEX name;
 
 -- Add new indexes to coord_system
-ALTER TABLE coord_system ADD UNIQUE INDEX rank_idx (rank, species_id);
+ALTER TABLE coord_system ADD UNIQUE INDEX rank_idx (`rank`, species_id);
 ALTER TABLE coord_system ADD UNIQUE INDEX name_idx (name, version, species_id);
 ALTER TABLE coord_system ADD        INDEX species_idx (species_id);
 
