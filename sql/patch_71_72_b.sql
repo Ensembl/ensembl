@@ -30,7 +30,7 @@ CREATE TABLE associated_xref (
   source_xref_id                 INT(10) UNSIGNED DEFAULT NULL,
   condition_type                 VARCHAR(128) DEFAULT NULL,
   associated_group_id            INT(10) UNSIGNED DEFAULT NULL,
-  rank                           INT(10) UNSIGNED DEFAULT '0',
+  `rank`                           INT(10) UNSIGNED DEFAULT '0',
 
   PRIMARY KEY (associated_xref_id),
   KEY associated_source_idx (source_xref_id),
