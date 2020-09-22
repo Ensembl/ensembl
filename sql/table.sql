@@ -136,17 +136,17 @@ Note that for each species, there must be one co-ordinate system that has the at
 
 CREATE TABLE coord_system (
 
-  coord_system_id             INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
-  species_id                  INT(10) UNSIGNED NOT NULL DEFAULT 1,
-  name                        VARCHAR(40) NOT NULL,
-  version                     VARCHAR(255) DEFAULT NULL,
-  rank                        INT NOT NULL,
-  attrib                      SET('default_version', 'sequence_level'),
+  `coord_system_id`             INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
+  `species_id`            INT(10) UNSIGNED NOT NULL DEFAULT 1,
+  `name`                        VARCHAR(40) NOT NULL,
+  `version`                     VARCHAR(255) DEFAULT NULL,
+  `rank`                        INT NOT NULL,
+  `attrib`                      SET('default_version', 'sequence_level'),
 
   PRIMARY   KEY (coord_system_id),
-  UNIQUE    KEY rank_idx (rank, species_id),
-  UNIQUE    KEY name_idx (name, version, species_id),
-            KEY species_idx (species_id)
+  UNIQUE    KEY rank_idx (`rank`, `species_id`),
+  UNIQUE    KEY name_idx (`name`, `version`, `species_id`),
+            KEY species_idx (`species_id`)
 
 ) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
 
@@ -764,13 +764,13 @@ CREATE TABLE exon (
 
 CREATE TABLE exon_transcript (
 
-  exon_id                     INT(10) UNSIGNED NOT NULL,
-  transcript_id               INT(10) UNSIGNED NOT NULL,
-  rank                        INT(10) NOT NULL,
+  `exon_id`                     INT(10) UNSIGNED NOT NULL,
+  `transcript_id`               INT(10) UNSIGNED NOT NULL,
+  `rank`                        INT(10) NOT NULL,
 
-  PRIMARY KEY (exon_id,transcript_id,rank),
-  KEY transcript (transcript_id),
-  KEY exon (exon_id)
+  PRIMARY KEY (`exon_id`,`transcript_id`,`rank`),
+  KEY transcript (`transcript_id`),
+  KEY exon (`exon_id`)
 
 ) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
 
@@ -2080,13 +2080,13 @@ CREATE TABLE associated_group (
 
 CREATE TABLE associated_xref (
 
-  associated_xref_id             INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
-  object_xref_id                 INT(10) UNSIGNED DEFAULT '0' NOT NULL,
-  xref_id                        INT(10) UNSIGNED DEFAULT '0' NOT NULL,
-  source_xref_id                 INT(10) UNSIGNED DEFAULT NULL,
-  condition_type                 VARCHAR(128) DEFAULT NULL,
-  associated_group_id            INT(10) UNSIGNED DEFAULT NULL,
-  rank                           INT(10) UNSIGNED DEFAULT '0',
+  `associated_xref_id`             INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
+  `object_xref_id`                 INT(10) UNSIGNED DEFAULT '0' NOT NULL,
+  `xref_id`                        INT(10) UNSIGNED DEFAULT '0' NOT NULL,
+  `source_xref_id`                 INT(10) UNSIGNED DEFAULT NULL,
+  `condition_type`                 VARCHAR(128) DEFAULT NULL,
+  `associated_group_id`          INT(10) UNSIGNED DEFAULT NULL,
+  `rank`                           INT(10) UNSIGNED DEFAULT '0',
 
   PRIMARY KEY (associated_xref_id),
   KEY associated_source_idx (source_xref_id),
