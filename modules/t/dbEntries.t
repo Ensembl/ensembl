@@ -50,7 +50,7 @@ my $current_default_auto_inc = get_xref_autoinc();
 if($current_default_auto_inc != $expected_default_auto_inc) {
   set_xref_autoinc($expected_default_auto_inc);
 }
-# Check if setting autoinc is successful, on new MySql impossible to decrease it
+# Check if setting autoinc is successful, new MySql  can't decrease it
 my $skip_autoinc_test = undef;
 $current_default_auto_inc = get_xref_autoinc();
 if($current_default_auto_inc != $expected_default_auto_inc) {
@@ -293,6 +293,7 @@ $xref = Bio::EnsEMBL::DBEntry->new
    -type => "ARRAY",
    -analysis => undef,
    );
+
 my $xref_id = $dbEntryAdaptor->store($xref, undef, "Transcript");
 
 if (!$skip_autoinc_test) {
