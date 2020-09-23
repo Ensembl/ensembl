@@ -195,7 +195,8 @@ foreach my $species_section ( sort( $config->GroupMembers('species') ) )
     my $release_uri = $config->val( $source_section, 'release_uri' );
 
     if ( !defined($release_uri) or $release_uri !~ /\w/ ) {
-      $release_uri = '';
+      my $nan_uri = '\N';
+      $release_uri = "'$nan_uri'";
     } else {
       $release_uri = "'$release_uri'";
     }
