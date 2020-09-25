@@ -228,11 +228,22 @@ sub fetch_by_region {
 
     if ( !defined($cs) ) {
 
-      # deal with cases when the undefined coordsystem name is 'chromosome'
+      # deal with cases where undefined coordsystem name requested is 'chromosome'
       if ( $coord_system_name eq "chromosome" ) {
 
+        # set the 'chromosome' alias, if not yet set
         $cs = $self->create_chromosome_alias();
 
+        # cases where the requested seg_region_name does not exist
+        if ( ! exists $self->{seq_region_cache}{$seq_region_name} ) {
+          throw("The requested seq_region_name does not exist in this coordinate system.\n");
+        }
+
+        # check that the requested slice has associated karyotype attribs
+        my $code = $self->{seq_region_cache}{$seq_region_name}{code};
+        if ( !$self->{seq_region_cache}{$seq_region_name}{code} ) {
+          throw("The requested slice does not have chromosome attributes.\n");
+        }
       } else {
         throw( sprintf( "Unknown coordinate system:\n"
                   . "name='%s' version='%s' seq region name='%s'\n",
@@ -2746,94 +2757,73 @@ sub create_chromosome_alias {
 
   print " DEBUG: Noticed you have requested to get a chromosome slice, when no chromosome CoordSystem exists. Finding CoordSystem to alias to...\n";
 
-  # cannot find a coordssystem called chromosome
-  # look through attribs to find seq_regions with karyotype
-  # and toplevel attributes
-
-  my $karyotype_attrib_id = '367';
-  my $toplevel_attrib_id  = '6';
-
-  my $sth =
-    $self->prepare( "SELECT sr.seq_region_id, sr.coord_system_id, sra.attrib_type_id "
-                  . "FROM seq_region sr, seq_region_attrib sra "
-                  . "WHERE sr.seq_region_id = sra.seq_region_id "
-                  . "AND ( attrib_type_id = ? || attrib_type_id = ?)" );
-
-  $sth->bind_param( 1, $karyotype_attrib_id );
-  $sth->bind_param( 2, $toplevel_attrib_id );
-  $sth->execute();
-
-  # fetch SQL results and
-  # identify coord_system_id that
-  # has both karyotype and toplevel attribs
-
   # to store reformatted db query results
   my %seq_regions;
+  
+  my $karyotype_rank_string = "karyotype_rank";
 
   # to store coord_system_id to alias 
   my $coord_system_dbid;
 
-  # while ( my @row = $sth->fetchrow_array() ) {
-  while ( my $hashref = $sth->fetchrow_hashref() ) {
-    # print Dumper( $hashref );
+  # check whether seq region cache exists, otherwise run database query
+  if ( $self->{seq_region_cache} ) {
+    print "Seq region cache exists...\n";
+    %seq_regions = $self->{seq_region_cache};
+  } else {
+    print "Seq region cache does not exist...\n";
+    # cannot find a coordssystem called chromosome
+    # look through attribs to find seq_regions with karyotype
 
-    my $seq_region_id   = $hashref->{ seq_region_id };
-    my $coord_system_id = $hashref->{ coord_system_id };
-    my $attrib_type_id  = $hashref->{ attrib_type_id };
+    my $sth =
+      $self->prepare( "SELECT sr.seq_region_id, sr.name, sr.coord_system_id, a.code "
+                    . "FROM seq_region sr, seq_region_attrib sra, attrib_type a "
+                    . "WHERE sr.seq_region_id = sra.seq_region_id "
+                    . "AND a.attrib_type_id = sra.attrib_type_id "
+                    . "AND a.code = ?" );
 
-    # print "seq_region_id: $seq_region_id, coord_system_id: $coord_system_id, attrib_type_id: $attrib_type_id\n";
+    $sth->bind_param( 1, $karyotype_rank_string );
+    $sth->execute();
 
-    $seq_regions{ $seq_region_id }{ coord_system_id } = $coord_system_id;
+    # fetch SQL results and
+    # identify coord_system_id that
+    # has karyotype attribs
 
-    # print "Pushing on $attrib_type_id...\n";
-    push( @{ $seq_regions{ $seq_region_id }{ attrib_type_id } }, $attrib_type_id );
-    # print Dumper( \%seq_regions );
+    while ( my $hashref = $sth->fetchrow_hashref() ) {
+      my $seq_region_id   = $hashref->{ seq_region_id };
+      my $seq_region_name = $hashref->{ name };
+      my $coord_system_id = $hashref->{ coord_system_id };
+      my $code            = $hashref->{ code };
 
-    # exit;
-
-    
-  }
-  $sth->finish();
-
-  print Dumper( \%seq_regions );
-
-  # check that the retrieved coordsystem has both karyotype and toplevel attribs
-  my $has_both_attribs;
-  foreach my $seq_region_id ( sort keys %seq_regions ) {
-    my %attribs = map { $_ => 1 } @{ $seq_regions{ $seq_region_id }{ attrib_type_id } };
-
-    # print "Attribs:\n";
-    # print Dumper( \%attribs );
-    
-    # if ( exists $attribs{ $karyotype_attrib_id } ) { print "$attribs{ $karyotype_attrib_id } exists.\n" };
-    # if ( exists $attribs{ $toplevel_attrib_id } ) { print "$attribs{ $toplevel_attrib_id } exists.\n" };
-    # # exit;
-
-    if ( exists $attribs{ $karyotype_attrib_id } && exists $attribs{ $toplevel_attrib_id } ) {
-      # print "TRUE\n";
-      $has_both_attribs == 1;
-      # print "Getting coord_system_dbid with $seq_region_id key\n";
-      # print "coord_system_dbid = ", $seq_regions{ $seq_region_id }{ coord_system_id }, "\n";
-      $coord_system_dbid = $seq_regions{ $seq_region_id }{ coord_system_id };
-    } else {
-      # print "FALSE\n";
-      # set as false to dismiss any coordsystems lacking both types of attrib
-      $has_both_attribs == 0;
-      $coord_system_dbid = undef;
+      $seq_regions{ $seq_region_name }{ coord_system_id } = $coord_system_id;
+      $seq_regions{ $seq_region_name }{ seq_region_id }   = $seq_region_id;
+      $seq_regions{ $seq_region_name }{ code }            = $code;
     }
+    $sth->finish();
   }
 
-  print "coord_system_dbid: $coord_system_dbid\n";
+    # check that the retrieved coordsystem has karyotype attribs
+    my $has_karyotype_attrib;
+    foreach my $seq_region_name ( sort keys %seq_regions ) {
+      if ( $seq_regions{ $seq_region_name }{ code } eq $karyotype_rank_string ) {
+        $has_karyotype_attrib = 1;
+        $coord_system_dbid = $seq_regions{ $seq_region_name }{ coord_system_id };
+      }
+    }
 
-  # use appropriate 'coord_system_id' to set 'alias_to' variable for
-  my $cs = $csa->fetch_by_dbID( $coord_system_dbid );
-  print "Fetched CoordSystem with coord_system_id: $coord_system_dbid.\n";
-  $cs->alias_to('chromosome');
-  print Dumper( $cs );
+  if ( !$coord_system_dbid ) {
+    throw("No coordinate system to create a chromosome slice from (because there is no suitable coordinate system to create an alias to).\n");
+  } else {
+    # use appropriate 'coord_system_id' to set 'alias_to' variable
+    my $cs = $csa->fetch_by_dbID( $coord_system_dbid );
+    print "Fetched CoordSystem with coord_system_id: $coord_system_dbid.\n";
+    $cs->alias_to('chromosome');
+    print Dumper( $cs );
 
-  return $cs;
+    $self->{'seq_region_cache'} = \%seq_regions;
 
-}
+    return $cs;
+  }
+} ## end create_chromosome_alias
 
 
 1;
