@@ -100,5 +100,8 @@ sub _objs_from_sth {
   return \@results;
 }
 
+sub _final_clause {
+	return ' ORDER BY srs.seq_region_synonym_id'
+}
 
 1;

@@ -2183,5 +2183,8 @@ sub fetch_all_by_transcript_supporting_evidence {
   return \@transcripts;
 }
 
+sub _final_clause {
+	return ' ORDER BY t.transcript_id'
+}
 
 1;

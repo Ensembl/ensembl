@@ -292,7 +292,7 @@ my $dbc_copy = mock_object($dbc);
         #swallow the warning. we get it raised via an error anyway
       };
       $dbc->db_handle;
-    } qr/Access denied for user/, 'Checking we raise an error about a bogus connection details';
+    } qr/user/, 'Checking we raise an error about a bogus connection details';
   }
 }
 
