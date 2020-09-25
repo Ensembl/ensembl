@@ -60,6 +60,14 @@ sub run {
     confess 'Need to pass source_id, species_id and files as pairs';
   }
 
+  my $source_sql = "select source_id from source where name = 'RGD' and priority_description = 'direct_xref'";
+  my $sth = $dbi->prepare($source_sql);
+  $sth->execute();
+  my ($direct_source_id);
+  $sth->bind_columns(\$direct_source_id);
+  $sth->fetch();
+  $sth->finish();
+
   my $file = @{$files}[0];
 
  # Used to assign dbIDs for when RGD Xrefs are dependent on RefSeq xrefs
@@ -152,11 +160,11 @@ sub run {
           label      => $cols->{SYMBOL},
           desc       => $cols->{NAME},
           dbi        => $dbi,
-          source_id  => $source_id,
+          source_id  => $direct_source_id,
           species_id => $species_id,
         });
         my $xref_id =
-          $self->get_xref( $cols->{GENE_RGD_ID}, $source_id,
+          $self->get_xref( $cols->{GENE_RGD_ID}, $direct_source_id,
                            $species_id, $dbi );
         $syn_count +=
           $self->process_synonyms( $xref_id, $cols->{OLD_SYMBOL},
