@@ -24,13 +24,13 @@
 
 CREATE TABLE associated_xref (
 
-  associated_xref_id             INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
-  object_xref_id                 INT(10) UNSIGNED DEFAULT '0' NOT NULL,
-  xref_id                        INT(10) UNSIGNED DEFAULT '0' NOT NULL,
-  source_xref_id                 INT(10) UNSIGNED DEFAULT NULL,
-  condition_type                 VARCHAR(128) DEFAULT NULL,
-  associated_group_id            INT(10) UNSIGNED DEFAULT NULL,
-  rank                           INT(10) UNSIGNED DEFAULT '0',
+  `associated_xref_id`             INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
+  `object_xref_id`                 INT(10) UNSIGNED DEFAULT '0' NOT NULL,
+  `xref_id`                        INT(10) UNSIGNED DEFAULT '0' NOT NULL,
+  `source_xref_id`                 INT(10) UNSIGNED DEFAULT NULL,
+  `condition_type`                 VARCHAR(128) DEFAULT NULL,
+  `associated_group_id`            INT(10) UNSIGNED DEFAULT NULL,
+  `rank`                           INT(10) UNSIGNED DEFAULT '0',
 
   PRIMARY KEY (associated_xref_id),
   KEY associated_source_idx (source_xref_id),

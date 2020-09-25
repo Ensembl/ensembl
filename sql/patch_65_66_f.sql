@@ -48,7 +48,7 @@ ALTER TABLE assembly_exception
 
 ALTER TABLE coord_system 
    ALTER COLUMN name DROP DEFAULT,
-   ALTER COLUMN rank DROP DEFAULT;
+   ALTER COLUMN `rank` DROP DEFAULT;
 
 ALTER TABLE density_feature 
    ALTER COLUMN density_type_id DROP DEFAULT,
@@ -97,7 +97,7 @@ ALTER TABLE exon
 
 ALTER TABLE exon_transcript 
    ALTER COLUMN exon_id DROP DEFAULT,
-   ALTER COLUMN rank DROP DEFAULT,
+   ALTER COLUMN `rank` DROP DEFAULT,
    ALTER COLUMN transcript_id DROP DEFAULT;
 
 ALTER TABLE external_synonym 
