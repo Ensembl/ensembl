@@ -132,10 +132,11 @@ sub new {
 
   my $self = $class->SUPER::new(@_);
 
-  my ( $name, $version, $top_level, $sequence_level, $default, $rank ) =
+  my ( $name, $version, $top_level, $sequence_level, $default, $rank, $alias_to ) =
     rearrange( [ 'NAME',      'VERSION',
                  'TOP_LEVEL', 'SEQUENCE_LEVEL',
-                 'DEFAULT',   'RANK' ],
+                 'DEFAULT',   'RANK',
+                 'ALIAS_TO' ],
                @_ );
 
   $top_level      = ($top_level)      ? 1 : 0;
@@ -187,6 +188,7 @@ sub new {
   $self->{'sequence_level'} = $sequence_level;
   $self->{'default'}        = $default;
   $self->{'rank'}           = $rank;
+  $self->{'alias_to'}       = $alias_to;
 
   return $self;
 } ## end sub new
