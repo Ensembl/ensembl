@@ -238,6 +238,11 @@ sub fetch_by_region {
 
         # cases where the requested seg_region_name does not exist
         if ( ! exists $cs->{'karyotype_cache'}{$seq_region_name} ) {
+
+          # identify whether there is a synonymous seq_region_name that could be used
+
+          # otherwise, try to do a fuzzy match, if requested
+
           throw("The requested seq_region_name ('$seq_region_name') does not exist in this coordinate system.\n");
         }
 
@@ -270,6 +275,7 @@ sub fetch_by_region {
     print " DEBUG: CoordSystem object with name '$coord_system_name' is defined: $cs\n";
 
     # if chromosome alias is defined, use karyotype_cache to access seq region data
+    # rather than a database query
     if ( $cs->alias_to() eq "chromosome" ) {
 
       $key = "karyotype_cache";
