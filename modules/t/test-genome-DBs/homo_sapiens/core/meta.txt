@@ -119,3 +119,7 @@
 193	\N	patch	patch_101_102_a.sql|schema_version
 194	\N	patch	patch_102_103_a.sql|schema_version
 195	\N	patch	patch_103_104_a.sql|schema_version
+196	1	annotation.provider_name	Ensembl
+197	1	annotation.provider_url	www.ensembl.org
+198	1	assembly.provider_name	
+199	1	assembly.provider_name	

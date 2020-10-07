@@ -126,7 +126,15 @@ my $index_count_fh = sub {
     is(@{$lines}, 1, 'Expect only 1 Genbank BASE COUNT line describing a sequence');
     is($lines->[0], 'BASE COUNT       24986 a      24316 c      24224 g      26475 t          0 n', 'Formatting of BASE COUNT as expected');
   }
-  
+
+  {
+    my $fh = IO::String->new();
+    $sd->dump_embl($slice, $fh);
+    my $lines = $index_fh->($fh, 'CC ');
+    my $comments = join(' ', @{$lines});
+    $comments =~ s/CC\s+//gm;
+    like($comments, qr/This sequence was annotated by Ensembl \(www\.ensembl\.org\)/, 'Annotation source as expected');
+  }
 }
 
 done_testing();

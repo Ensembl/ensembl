@@ -477,15 +477,31 @@ sub dump_embl {
   #Database References (we are not dumping these)
 
   #Get annotation source 
-  my ($provider_name)   = @{$meta_container->list_value_by_key('assembly.provider_name')};
-  my ($provider_url)    = @{$meta_container->list_value_by_key('assembly.provider_url')};
-  my $annotation_source = q{};
-   
-  if($provider_name) {
-    $annotation_source .= $provider_name;
-    $annotation_source .= sprintf(q{(%s)}, $provider_url) if $provider_url;
+  my @providers = ();
+  my @provider_urls = ();
+
+  foreach ( @{$meta_container->list_value_by_key('annotation.provider_name')} ) {
+    push @providers, $_ if $_ ne '';
   }
-  else { $annotation_source .= 'Ensembl'; }
+  foreach ( @{$meta_container->list_value_by_key('annotation.provider_url')} ) {
+    push @provider_urls, $_ if $_ ne '';
+  }
+  if ( ! scalar(@providers) ) {
+    foreach ( @{$meta_container->list_value_by_key('assembly.provider_name')} ) {
+      push @providers, $_ if $_ ne '';
+    }
+    foreach ( @{$meta_container->list_value_by_key('assembly.provider_url')} ) {
+      push @provider_urls, $_ if $_ ne '';
+    }
+  }
+  if ( ! scalar(@providers) ) {
+    push @providers, 'Ensembl';
+  }
+
+  my $annotation_source = join(' and ', @providers);
+  if (@provider_urls) {
+    $annotation_source .= ' ' . sprintf(q{(%s)}, join(', ', @provider_urls));
+  }
 
   #comments
   foreach my $comment (@COMMENTS) {
@@ -669,15 +685,31 @@ sub dump_genbank {
   #refereneces
 
   #Get annotation source 
-  my ($provider_name)   = @{$meta_container->list_value_by_key('assembly.provider_name')};
-  my ($provider_url)    = @{$meta_container->list_value_by_key('assembly.provider_url')};
-  my $annotation_source = q{};
-  
-  if($provider_name) {
-     $annotation_source .= $provider_name;
-     $annotation_source .= sprintf(q{(%s)}, $provider_url) if $provider_url;
+  my @providers = ();
+  my @provider_urls = ();
+
+  foreach ( @{$meta_container->list_value_by_key('annotation.provider_name')} ) {
+    push @providers, $_ if $_ ne '';
   }
-  else { $annotation_source .= 'Ensembl'; }
+  foreach ( @{$meta_container->list_value_by_key('annotation.provider_url')} ) {
+    push @provider_urls, $_ if $_ ne '';
+  }
+  if ( ! scalar(@providers) ) {
+    foreach ( @{$meta_container->list_value_by_key('assembly.provider_name')} ) {
+      push @providers, $_ if $_ ne '';
+    }
+    foreach ( @{$meta_container->list_value_by_key('assembly.provider_url')} ) {
+      push @provider_urls, $_ if $_ ne '';
+    }
+  }
+  if ( ! scalar(@providers) ) {
+    push @providers, 'Ensembl';
+  }
+
+  my $annotation_source = join(' and ', @providers);
+  if (@provider_urls) {
+    $annotation_source .= ' ' . sprintf(q{(%s)}, join(', ', @provider_urls));
+  }
 
   #comments
   foreach my $comment (@COMMENTS) {
