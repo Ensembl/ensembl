@@ -293,127 +293,66 @@ sub fetch_by_region {
 
     unless ( @row ) {
 
-      # try synonyms
-      my $syn_sql = "select s.name, cs.name, cs.version from seq_region s join seq_region_synonym ss using (seq_region_id) join coord_system cs using (coord_system_id) where ss.synonym like ? and cs.species_id =? ";
-      if (defined $coord_system_name && defined $cs) {
-        $syn_sql .= "AND cs.name = '" . $coord_system_name . "' ";
-      }
-      if (defined $version) {
-        $syn_sql .= "AND cs.version = '" . $version . "' ";
-      }
-      my $syn_sql_sth = $self->prepare($syn_sql);
-      $syn_sql_sth->bind_param(1, $seq_region_name, SQL_VARCHAR);
-      $syn_sql_sth->bind_param(2, $self->species_id(), SQL_INTEGER);
-      $syn_sql_sth->execute();
-      my ($new_name, $new_coord_system, $new_version);
-      $syn_sql_sth->bind_columns( \$new_name, \$new_coord_system, \$new_version);
-      if($syn_sql_sth->fetch){
-        if ((not defined($cs)) || ($cs->name eq $new_coord_system && $cs->version eq $new_version)) {
-            return $self->fetch_by_region($new_coord_system, $new_name, $start, $end, $strand, $new_version, $no_fuzz);
-        }
+      print "Look for a synonymous seq_region_name that could be used...\n";
+
+      # deal with cases where a coordsystem might not be defined by user
+      my $slice;
+      if (!defined $cs) {
+        $slice = $self->fetch_by_seq_region_synonym( undef, undef, $seq_region_name, $start, $end, $strand, $version, $no_fuzz );
       } else {
-        # Try wildcard searching if no exact synonym was found
-        $syn_sql_sth = $self->prepare($syn_sql);
-        my $escaped_seq_region_name = $seq_region_name;
-        my $escape_char = $self->dbc->db_handle->get_info(14);
-        $escaped_seq_region_name =~ s/([_%])/$escape_char$1/g;
-        $syn_sql_sth->bind_param(1, "$escaped_seq_region_name%", SQL_VARCHAR);
-        $syn_sql_sth->bind_param(2, $self->species_id(), SQL_INTEGER); 
-        $syn_sql_sth->execute();
-        $syn_sql_sth->bind_columns( \$new_name, \$new_coord_system, \$new_version);
+        $slice = $self->fetch_by_seq_region_synonym( $cs, $cs->name(), $seq_region_name, $start, $end, $strand, $version, $no_fuzz );
+      }
 
-        if($syn_sql_sth->fetch){
-          if ((not defined($cs)) || ($cs->name eq $new_coord_system && $cs->version eq $new_version)) {
-              return $self->fetch_by_region($new_coord_system, $new_name, $start, $end, $strand, $new_version, $no_fuzz);
-          } elsif ($cs->name ne $new_coord_system) {
-              warning("Searched for a known feature on coordinate system: ".$cs->dbID." but found it on: ".$new_coord_system.
-              "\n No result returned, consider searching without coordinate system or use toplevel.");
-              return;
+      # check whether any slice data has been returned
+      if ( $slice && $slice->seq_region_name ) {
+
+        my $matched_name = $slice->seq_region_name;
+
+        # if matched name is different to query name, skip fuzzy matching
+        if ( $matched_name ne $seq_region_name ) {
+
+          print "DEBUG: Found '$seq_region_name' to be a synonym. Now using: '$matched_name'\n";
+          $seq_region_name = $matched_name;
+
+          # define $arr
+          my $tmp_key_string = "$seq_region_name:" . $slice->coord_system()->dbID();
+          print $tmp_key_string, "\n";
+          $arr = $self->{'sr_name_cache'}->{$tmp_key_string};
+          $length = $arr->[3];
+        }
+
+      } else { # if no slice object with a match returned, try using a fuzzy match
+
+        print "Using fuzzy match to search for a suitable name, if requested\n";
+        
+        # otherwise, if requested, try to do a fuzzy match
+        if (!$no_fuzz) {
+
+          print "Look for a fuzzy match using $cs, $version, $seq_region_name...\n";
+          my ($fuzzy_matched_name, $cs) = $self->fetch_by_fuzzy_matching( $cs, $version, $seq_region_name, $sql, $constraint, \@bind_params );
+
+          if (!$fuzzy_matched_name) {
+            print "No fuzzy match found for '$seq_region_name'.\n";
+            return;
           }
-          
+
+          # define arr
+          my $tmp_key_string = $fuzzy_matched_name . ":" . $cs->dbID();
+          if (exists $self->{'sr_name_cache'}->{$tmp_key_string}) {
+            $seq_region_name = $fuzzy_matched_name;
+
+            $arr = $self->{'sr_name_cache'}->{$tmp_key_string};
+            $length = $arr->[3];
+            print "length = $length\n";
+          } else {
+            print "The fuzzy-matched seq_region_name ('$fuzzy_matched_name') does not have cached name info.\n";
+            return;
+          }
+        } else {
+          print "Fuzzy match set to false. Set fuzzy match to true to use this additional type of search...\n";
+          return;
         }
       }
-      $syn_sql_sth->finish;
-
-
-      if ($no_fuzz) { return; }
-
-      # Do fuzzy matching, assuming that we are just missing a version
-      # on the end of the seq_region name.
-
-      $sth =
-        $self->prepare( $sql . " WHERE sr.name LIKE ? " . $constraint );
-
-      $bind_params[0] =
-        [ sprintf( '%s.%%', $seq_region_name ), SQL_VARCHAR ];
-
-      $pos = 0;
-      foreach my $param (@bind_params) {
-        $sth->bind_param( ++$pos, $param->[0], $param->[1] );
-      }
-
-      $sth->execute();
-
-      my $prefix_len = length($seq_region_name) + 1;
-      my $high_ver   = undef;
-      my $high_cs    = $cs;
-
-      # Find the fuzzy-matched seq_region with the highest postfix
-      # (which ought to be a version).
-
-      my ( $tmp_name, $id, $tmp_length, $cs_id );
-      $sth->bind_columns( \( $tmp_name, $id, $tmp_length, $cs_id ) );
-
-      my $i = 0;
-
-      while ( $sth->fetch ) {
-        my $tmp_cs =
-          ( defined($cs) ? $cs : $csa->fetch_by_dbID($cs_id) );
-
-        # cache values for future reference
-        my $arr = [ $id, $tmp_name, $cs_id, $tmp_length ];
-        $self->{'sr_name_cache'}->{"$tmp_name:$cs_id"} = $arr;
-        $self->{'sr_id_cache'}->{"$id"}                = $arr;
-
-        my $tmp_ver = substr( $tmp_name, $prefix_len );
-
-        # skip versions which are non-numeric and apparently not
-        # versions
-        if ( $tmp_ver !~ /^\d+$/ ) { next }
-
-        # take version with highest num, if two versions match take one
-        # with highest ranked coord system (lowest num)
-        if ( !defined($high_ver)
-          || $tmp_ver > $high_ver
-          || ( $tmp_ver == $high_ver && $tmp_cs->rank < $high_cs->rank )
-          )
-        {
-          $seq_region_name = $tmp_name;
-          $length          = $tmp_length;
-          $high_ver        = $tmp_ver;
-          $high_cs         = $tmp_cs;
-        }
-
-        $i++;
-      } ## end while ( $sth->fetch )
-      $sth->finish();
-
-      # warn if fuzzy matching found more than one result
-      if ( $i > 1 ) {
-        warning(
-          sprintf(
-            "Fuzzy matching of seq_region_name "
-              . "returned more than one result.\n"
-              . "You might want to check whether the returned seq_region\n"
-              . "(%s:%s) is the one you intended to fetch.\n",
-            $high_cs->name(), $seq_region_name ) );
-      }
-
-      $cs = $high_cs;
-
-      # return if we did not find any appropriate match:
-      if ( !defined($high_ver) ) { return; }
-
     } else {
 
       my ( $id, $cs_id );
