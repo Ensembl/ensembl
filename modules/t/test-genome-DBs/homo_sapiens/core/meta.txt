@@ -122,4 +122,4 @@
 196	1	annotation.provider_name	Ensembl
 197	1	annotation.provider_url	www.ensembl.org
 198	1	assembly.provider_name	
-199	1	assembly.provider_name	
+199	1	assembly.provider_url	
