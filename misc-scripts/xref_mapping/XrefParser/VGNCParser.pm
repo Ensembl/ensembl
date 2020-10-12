@@ -118,6 +118,7 @@ sub run {
 
   # Create a hash of all valid taxon_ids for this species
   my %species2tax = $self->species_id2taxonomy($dbi);
+  push @{$species2tax{$species_id}}, $species_id;
   my @tax_ids = @{$species2tax{$species_id}};
   my %taxonomy2species_id = map{ $_=>$species_id } @tax_ids;
 
