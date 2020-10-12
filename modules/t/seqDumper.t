@@ -24,7 +24,7 @@ use Bio::EnsEMBL::Slice;
 use Bio::EnsEMBL::Utils::SeqDumper;
 use Bio::EnsEMBL::Test::TestUtils;
 use Bio::EnsEMBL::Test::MultiTestDB;
-
+use Module::Refresh;
 our $verbose = 0;
 
 my $multi = Bio::EnsEMBL::Test::MultiTestDB->new();
@@ -133,7 +133,38 @@ my $index_count_fh = sub {
     my $lines = $index_fh->($fh, 'CC ');
     my $comments = join(' ', @{$lines});
     $comments =~ s/CC\s+//gm;
-    like($comments, qr/This sequence was annotated by Ensembl \(www\.ensembl\.org\)/, 'Annotation source as expected');
+    like($comments, qr/This sequence was annotated by Ensembl \(www\.ensembl\.org\)/, 'Annotation source as expected (annotation.provider)');
+  }
+
+  {
+    # Comments are stored in a global variable in SeqDumper.
+    # Because the 'source' has already been substituted in the comments
+    # by an earlier test, need to reload the module to reset the
+    # global variable.
+    my $refresher = Module::Refresh->new;
+    $refresher->refresh_module('Bio/EnsEMBL/Utils/SeqDumper.pm');
+
+    $multi->hide('core', 'meta');
+
+    my $meta_container = $db->get_MetaContainer();
+    $meta_container->delete_key('annotation.provider_name');
+    $meta_container->delete_key('annotation.provider_url');
+    $meta_container->delete_key('assembly.provider_name');
+    $meta_container->delete_key('assembly.provider_url');
+
+    $meta_container->store_key_value('annotation.provider_name', '');
+    $meta_container->store_key_value('annotation.provider_url', '');
+    $meta_container->store_key_value('assembly.provider_name', 'Someone else');
+    $meta_container->store_key_value('assembly.provider_url', 'www.someone_else.org');
+
+    my $fh = IO::String->new();
+    $sd->dump_genbank($slice, $fh);
+    my $lines = $index_fh->($fh, 'COMMENT ');
+    my $comments = join(' ', @{$lines});
+    $comments =~ s/COMMENT\s+//gm;
+    like($comments, qr/This sequence was annotated by Someone else \(www\.someone_else\.org\)/, 'Annotation source as expected (assembly.provider)');
+
+    $multi->restore('core', 'meta');
   }
 }
 
