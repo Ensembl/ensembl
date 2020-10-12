@@ -24,7 +24,6 @@ use Bio::EnsEMBL::Slice;
 use Bio::EnsEMBL::Utils::SeqDumper;
 use Bio::EnsEMBL::Test::TestUtils;
 use Bio::EnsEMBL::Test::MultiTestDB;
-use Module::Refresh;
 our $verbose = 0;
 
 my $multi = Bio::EnsEMBL::Test::MultiTestDB->new();
@@ -141,8 +140,8 @@ my $index_count_fh = sub {
     # Because the 'source' has already been substituted in the comments
     # by an earlier test, need to reload the module to reset the
     # global variable.
-    my $refresher = Module::Refresh->new;
-    $refresher->refresh_module('Bio/EnsEMBL/Utils/SeqDumper.pm');
+    delete ( $INC{'Bio/EnsEMBL/Utils/SeqDumper.pm'} );
+    require Bio::EnsEMBL::Utils::SeqDumper;
 
     $multi->hide('core', 'meta');
 
