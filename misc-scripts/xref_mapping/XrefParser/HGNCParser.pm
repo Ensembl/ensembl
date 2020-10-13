@@ -263,11 +263,9 @@ CCDS
 
     # Direct LRG to ENST mappings
     my $lrg_id = $data->{'Locus specific databases'};
-    if ( defined $lrg_id && $lrg_id =~ m/(LRG_\d+)|/x ){
-      $lrg_id = $1;
-    }
 
-    if ( defined $lrg_id ){
+    if ( defined $lrg_id && $lrg_id =~ m/(LRG_\d+)\|/x){
+      $lrg_id = $1;
       $self->add_to_direct_xrefs({
           stable_id   => $lrg_id,
           type        => 'gene',
