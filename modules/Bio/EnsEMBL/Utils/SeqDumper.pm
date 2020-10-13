@@ -476,18 +476,8 @@ sub dump_embl {
   #References (we are not dumping refereneces)
   #Database References (we are not dumping these)
 
-  #Get annotation source 
-  my ($provider_name)   = @{$meta_container->list_value_by_key('assembly.provider_name')};
-  my ($provider_url)    = @{$meta_container->list_value_by_key('assembly.provider_url')};
-  my $annotation_source = q{};
-   
-  if($provider_name) {
-    $annotation_source .= $provider_name;
-    $annotation_source .= sprintf(q{(%s)}, $provider_url) if $provider_url;
-  }
-  else { $annotation_source .= 'Ensembl'; }
-
   #comments
+  my $annotation_source = $self->annotation_source($meta_container);
   foreach my $comment (@COMMENTS) {
     $comment =~ s/\#\#\#SOURCE\#\#\#/$annotation_source/;
     $self->write($FH, $EMBL_HEADER, 'CC', $comment);
@@ -668,18 +658,8 @@ sub dump_genbank {
 
   #refereneces
 
-  #Get annotation source 
-  my ($provider_name)   = @{$meta_container->list_value_by_key('assembly.provider_name')};
-  my ($provider_url)    = @{$meta_container->list_value_by_key('assembly.provider_url')};
-  my $annotation_source = q{};
-  
-  if($provider_name) {
-     $annotation_source .= $provider_name;
-     $annotation_source .= sprintf(q{(%s)}, $provider_url) if $provider_url;
-  }
-  else { $annotation_source .= 'Ensembl'; }
-
   #comments
+  my $annotation_source = $self->annotation_source($meta_container);
   foreach my $comment (@COMMENTS) {
     $comment =~ s/\#\#\#SOURCE\#\#\#/$annotation_source/;
     $self->write($FH, $GENBANK_HEADER, 'COMMENT', $comment);
@@ -1138,6 +1118,48 @@ sub features2location {
   return $out;
 }
 
+=head2 annotation_source
+
+  Arg [1]    : Bio::EnsEMBL::DBSQL::MetaContainer
+  Example    : $seq_dumper->annotation_source($meta_container);
+  Description: Constructs a string with gene annotation sources
+  Returntype : string
+  Exceptions : none
+  Caller     : dump_embl, dump_genbank
+
+=cut
+
+sub annotation_source {
+  my ($self, $meta_container) = @_;
+
+  my @providers = ();
+  my @provider_urls = ();
+
+  foreach ( @{$meta_container->list_value_by_key('annotation.provider_name')} ) {
+    push @providers, $_ if $_ ne '';
+  }
+  foreach ( @{$meta_container->list_value_by_key('annotation.provider_url')} ) {
+    push @provider_urls, $_ if $_ ne '';
+  }
+  if ( ! scalar(@providers) ) {
+    foreach ( @{$meta_container->list_value_by_key('assembly.provider_name')} ) {
+      push @providers, $_ if $_ ne '';
+    }
+    foreach ( @{$meta_container->list_value_by_key('assembly.provider_url')} ) {
+      push @provider_urls, $_ if $_ ne '';
+    }
+  }
+  if ( ! scalar(@providers) ) {
+    push @providers, 'Ensembl';
+  }
+
+  my $annotation_source = join(' and ', @providers);
+  if (@provider_urls) {
+    $annotation_source .= ' ' . sprintf(q{(%s)}, join(', ', @provider_urls));
+  }
+
+  return $annotation_source;
+}
 
 sub _date_string {
   my $self = shift;
@@ -1150,7 +1172,6 @@ sub _date_string {
   
   return "$mday-$month-$year";
 }
-
 
 sub write {
   my ($self, $FH, $FORMAT, @values) = @_;
