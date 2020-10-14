@@ -239,7 +239,7 @@ sub fetch_by_region {
         # where the requested seg_region_name does not exist, look for synonym/fuzzy match
         if ( ! exists $cs->{'karyotype_cache'}{$seq_region_name} ) {
 
-          print "The requested seq_region_name ('$seq_region_name') does not exist in this coordinate system.\n";
+          # print "The requested seq_region_name ('$seq_region_name') does not exist in this coordinate system.\n";
           print "Look for a synonymous seq_region_name that could be used...\n";
           # return slice object if match a synonym
           my $slice = $self->fetch_by_seq_region_synonym( $cs, $cs->name(), $seq_region_name, $start, $end, $strand, $version, $no_fuzz );
@@ -252,18 +252,15 @@ sub fetch_by_region {
             # if matched name is different to query name, skip fuzzy matching
             if ( $matched_name ne $seq_region_name ) {
 
-              print "DEBUG: Found '$seq_region_name' to be a synonym. Now using: '$matched_name'\n";
+              # print "DEBUG: Found '$seq_region_name' to be a synonym. Now using: '$matched_name'\n";
               $seq_region_name = $matched_name;
 
             } 
           } else { # if no slice object with a match returned, try using a fuzzy match
 
-              print "Using fuzzy match to search for a suitable name, if requested\n";
-              
               # otherwise, if requested, try to do a fuzzy match
               if (!$no_fuzz) {
 
-                print "Look for a fuzzy match...\n";
                 my $fuzzy_matched_name = $self->fetch_by_fuzzy_matching( $cs, $version, $seq_region_name );
 
                 # check if this fuzzy-matched name has karyotype attribs
@@ -274,8 +271,7 @@ sub fetch_by_region {
                 }
 
               } else {
-                print "No match found to $seq_region_name. Set fuzzy match to true to use this additional type of search...\n";
-                return;
+                throw("No match found to $seq_region_name. Set fuzzy match to true to use this additional type of search...\n");
               }
           }
         }
@@ -297,7 +293,7 @@ sub fetch_by_region {
 
     # fetching by toplevel is same as fetching w/o name or version
     if ( $cs->is_top_level() ) {
-      print " DEBUG: Found that requested CoordSystem is 'toplevel'...\n";
+      # print " DEBUG: Found that requested CoordSystem is 'toplevel'...\n";
       $cs      = undef;
       $version = undef;
     }
@@ -309,7 +305,6 @@ sub fetch_by_region {
   my $key;
 
   if ( defined($cs) ) {
-    print " DEBUG: CoordSystem object with name '$coord_system_name' is defined: $cs\n";
 
     # if chromosome alias is defined, use karyotype_cache to access seq region data
     # rather than a database query
@@ -383,8 +378,6 @@ sub fetch_by_region {
 
       unless ( @row ) {
 
-        # TODO: replace following synonym/wildcard code with fetch_by_seq_region_synonym()
-
         # try synonyms
         my $syn_sql = "select s.name, cs.name, cs.version from seq_region s join seq_region_synonym ss using (seq_region_id) join coord_system cs using (coord_system_id) where ss.synonym like ? and cs.species_id =? ";
         if (defined $coord_system_name && defined $cs) {
@@ -429,8 +422,6 @@ sub fetch_by_region {
 
 
         if ($no_fuzz) { return; }
-
-        # TODO: replace following fuzzy-match code with fetch_by_fuzzy_matching()
 
         # Do fuzzy matching, assuming that we are just missing a version
         # on the end of the seq_region name.
@@ -2900,7 +2891,7 @@ sub create_chromosome_alias {
 
     # create karyotype cache in retrieved coordsystem
     $cs->{'karyotype_cache'} = \%karyotype_seq_regions;
-    print Dumper( $cs );
+    # print Dumper( $cs );
 
     return $cs;
   }
@@ -2922,7 +2913,7 @@ sub create_chromosome_alias {
 sub fetch_by_seq_region_synonym {
 
   my ( $self, $cs, $coord_system_name, $seq_region_name, $start, $end, $strand, $version, $no_fuzz ) = @_;
-  print "$self, $cs, $coord_system_name, $seq_region_name, $start, $end, $strand, $version, $no_fuzz\n";
+  # print "$self, $cs, $coord_system_name, $seq_region_name, $start, $end, $strand, $version, $no_fuzz\n";
 
   # try synonyms
   my $syn_sql = "select s.name, cs.name, cs.version from seq_region s join seq_region_synonym ss using (seq_region_id) join coord_system cs using (coord_system_id) where ss.synonym like ? and cs.species_id =? ";
@@ -2935,21 +2926,21 @@ sub fetch_by_seq_region_synonym {
   my $syn_sql_sth = $self->prepare($syn_sql);
   $syn_sql_sth->bind_param(1, $seq_region_name, SQL_VARCHAR);
   $syn_sql_sth->bind_param(2, $self->species_id(), SQL_INTEGER);
-  # print "SQL to run: $syn_sql\n";
+  print "SQL to run: $syn_sql\n";
   # exit;
   $syn_sql_sth->execute();
+
   my ($new_name, $new_coord_system, $new_version);
   $syn_sql_sth->bind_columns( \$new_name, \$new_coord_system, \$new_version);
-  # print Dumper( $syn_sql_sth );
+
   if($syn_sql_sth->fetch){
     if ((not defined($cs)) || ($cs->name eq $new_coord_system && $cs->version eq $new_version)) {
-        print "New values: $new_name, $new_coord_system, $new_version\n";
+        print "Returning synonym match results. New values: $new_name, $new_coord_system, $new_version\n";
         return $self->fetch_by_region($new_coord_system, $new_name, $start, $end, $strand, $new_version, $no_fuzz);
-        print "New values: $new_coord_system, $new_name, $start, $end, $strand, $new_version, $no_fuzz\n";
     }
   } else {
     # Try wildcard searching if no exact synonym was found
-    print "DEBUG: No exact synonym found for $seq_region_name - try wildcard searching...\n";
+    # print "DEBUG: No exact synonym found for $seq_region_name - try wildcard searching...\n";
     $syn_sql_sth = $self->prepare($syn_sql);
     my $escaped_seq_region_name = $seq_region_name;
     my $escape_char = $self->dbc->db_handle->get_info(14);
@@ -2961,7 +2952,7 @@ sub fetch_by_seq_region_synonym {
 
     if($syn_sql_sth->fetch){
       if ((not defined($cs)) || ($cs->name eq $new_coord_system && $cs->version eq $new_version)) {
-          print "Returning: $self->fetch_by_region($new_coord_system, $new_name, $start, $end, $strand, $new_version, $no_fuzz)\n";
+          print "Returning wildcard match results. New values: $new_coord_system, $new_name, $new_version.\n";
           return $self->fetch_by_region($new_coord_system, $new_name, $start, $end, $strand, $new_version, $no_fuzz);
       } elsif ($cs->name ne $new_coord_system) {
           warning("Searched for a known feature on coordinate system: ".$cs->dbID." but found it on: ".$new_coord_system.
@@ -2970,7 +2961,7 @@ sub fetch_by_seq_region_synonym {
       }
       
     } else {
-      warning("DEBUG: No result from SQL query. No synonym match found for $seq_region_name\n");
+      # print "No synonym match found for $seq_region_name\n";
       return;
     }
   }
@@ -3001,8 +2992,6 @@ sub fetch_by_fuzzy_matching {
                    . "FROM seq_region sr " );
   my $constraint = "AND sr.coord_system_id = ?";
 
-  # print "Do fuzzy matching...\n";
-
   # Do fuzzy matching, assuming that we are just missing a version
   # on the end of the seq_region name.
 
@@ -3012,17 +3001,11 @@ sub fetch_by_fuzzy_matching {
   $bind_params[0] = [ sprintf( '%s.%%', $seq_region_name ), SQL_VARCHAR ];
   push( @bind_params, [ $cs->dbID(), SQL_INTEGER ] );
 
-  # print $sql . " WHERE sr.name LIKE ? " . $constraint, "\n";
-
-
-  # print Dumper( \@bind_params );
-
   my $pos = 0;
   foreach my $param (@bind_params) {
     # print "++$pos, $param->[0], $param->[1]\n";
     $sth->bind_param( ++$pos, $param->[0], $param->[1] );
   }
-
 
   $sth->execute();
   # print Dumper( $sth->fetch );
@@ -3040,7 +3023,7 @@ sub fetch_by_fuzzy_matching {
   my $i = 0;
 
   while ( $sth->fetch ) {
-    # print "HERE!\n";
+
     my $tmp_cs =
       ( defined($cs) ? $cs : $csa->fetch_by_dbID($cs_id) );
 
@@ -3090,7 +3073,7 @@ sub fetch_by_fuzzy_matching {
   # return if we did not find any appropriate match:
   if ( !defined($high_ver) ) { return; }
 
-  print "Returning: $seq_region_name\n";
+  print "Returning fuzzy-match result. New name: $seq_region_name\n";
 
   return $seq_region_name;
 }
