@@ -697,6 +697,33 @@ my $band_slice = $slice_adaptor->fetch_by_chr_band('6', 'p21.33');
 is($band_slice->seq_region_name, '6', 'Fetched chromosome 6');
 
 
+## Test chromosome alias feature
+
+### test that a chromosome alias is not created for a requested human chromosome slice
+is($initial_slice->coord_system()->alias_to(), undef, 'Correctly left alias value undefined');
+
+debug("Testing chromosome alias feature with parus major slices");
+my $parus_major_db = Bio::EnsEMBL::Test::MultiTestDB->new("parus_major1");
+my $parus_major_dba = $parus_major_db->get_DBAdaptor("core");
+my $parus_major_sa = Bio::EnsEMBL::DBSQL::SliceAdaptor->new($parus_major_dba);
+isa_ok($parus_major_sa, 'Bio::EnsEMBL::DBSQL::SliceAdaptor');
+
+### test chromosome alias created for a requested parus_major chromosome slice
+my $alias = "chromosome";
+my $name_exact_match = "25LG2";
+my $start = '1';
+my $end = '809223';
+my $location = sprintf("%s:%s-%s", $alias, $start, $end);
+my $p_major_slice = $parus_major_sa->fetch_by_region($alias, $name_exact_match, $start, $end); # working case - exact match
+is($p_major_slice->coord_system()->alias_to(), $alias, "Correctly retrieved alias '$alias' using name exact match '$name_exact_match'");
+test_slice($location, $p_major_slice, $p_major_slice->coord_system()->name(), $name_exact_match, $start, $end);
+
+### test chromosome alias is not created for a requested parus_major chromosome slice with no karyotype attributes
+my $name_fuzzy_match = "JRXK01022146";
+throws_ok { $parus_major_sa->fetch_by_region($alias, $name_fuzzy_match) } 
+  qr/does not have associated karyotype attributes in this coordinate system/, 
+  'No associated karyotype attributes in requested chromosome slice caught ok';
+
 ############# METHODS BELOW HERE 
 
 sub test_toplevel_location {
