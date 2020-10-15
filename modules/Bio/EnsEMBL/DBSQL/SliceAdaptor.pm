@@ -240,7 +240,7 @@ sub fetch_by_region {
         if ( ! exists $cs->{'karyotype_cache'}{$seq_region_name} ) {
 
           # print "The requested seq_region_name ('$seq_region_name') does not exist in this coordinate system.\n";
-          print "Look for a synonymous seq_region_name that could be used...\n";
+          # print "Look for a synonymous seq_region_name that could be used...\n";
           # return slice object if match a synonym
           my $slice = $self->fetch_by_seq_region_synonym( $cs, $cs->name(), $seq_region_name, $start, $end, $strand, $version, $no_fuzz );
 
@@ -2832,7 +2832,7 @@ sub create_chromosome_alias {
   my $self = shift;
   my $csa  = $self->db->get_CoordSystemAdaptor();
 
-  print " DEBUG: Noticed you have requested to get a chromosome slice, when no chromosome CoordSystem exists. Finding CoordSystem to alias to...\n";
+  # print " DEBUG: Noticed you have requested to get a chromosome slice, when no chromosome CoordSystem exists. Finding CoordSystem to alias to...\n";
 
   # to store reformatted db query results
   my %karyotype_seq_regions;
@@ -2844,10 +2844,10 @@ sub create_chromosome_alias {
 
   # check whether seq region cache exists, otherwise run database query
   if ( $self->{'karyotype_cache'} ) {
-    print "Seq region cache exists...\n";
+    # print "Seq region cache exists...\n";
     %karyotype_seq_regions = $self->{'karyotype_cache'};
   } else {
-    print "Seq region cache does not exist. Running SQL..\n";
+    # print "Seq region cache does not exist. Running SQL..\n";
     # cannot find a coordssystem called chromosome
     # look through attribs to find seq_regions with karyotype
 
@@ -2886,7 +2886,7 @@ sub create_chromosome_alias {
 
     # use appropriate 'coord_system_id' to set 'alias_to' variable
     my $cs = $csa->fetch_by_dbID( $coord_system_id );
-    print "Fetched CoordSystem with coord_system_id: $coord_system_id.\n";
+    # print "Fetched CoordSystem with coord_system_id: $coord_system_id.\n";
     $cs->alias_to('chromosome');
 
     # create karyotype cache in retrieved coordsystem
@@ -2925,8 +2925,8 @@ sub fetch_by_seq_region_synonym {
   }
   my $syn_sql_sth = $self->prepare($syn_sql);
   $syn_sql_sth->bind_param(1, $seq_region_name, SQL_VARCHAR);
-  $syn_sql_sth->bind_param(2, $self->species_id(), SQL_INTEGER);
-  print "SQL to run: $syn_sql\n";
+  # $syn_sql_sth->bind_param(2, $self->species_id(), SQL_INTEGER);
+  # print "SQL to run: $syn_sql\n";
   # exit;
   $syn_sql_sth->execute();
 
