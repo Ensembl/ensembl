@@ -242,7 +242,7 @@ sub fetch_by_region {
           # print "The requested seq_region_name ('$seq_region_name') does not exist in this coordinate system.\n";
           # print "Look for a synonymous seq_region_name that could be used...\n";
           # return slice object if match a synonym
-          my $slice = $self->fetch_by_seq_region_synonym( $cs, $cs->name(), $seq_region_name, $start, $end, $strand, $version, $no_fuzz );
+          my $slice = $self->fetch_by_seq_region_synonym( $cs, $seq_region_name, $start, $end, $strand, $version, $no_fuzz );
 
           # check whether any slice data has been returned
           if ( $slice && $slice->seq_region_name ) {
@@ -2912,12 +2912,13 @@ sub create_chromosome_alias {
 
 sub fetch_by_seq_region_synonym {
 
-  my ( $self, $cs, $coord_system_name, $seq_region_name, $start, $end, $strand, $version, $no_fuzz ) = @_;
-  # print "$self, $cs, $coord_system_name, $seq_region_name, $start, $end, $strand, $version, $no_fuzz\n";
+  my ( $self, $cs, $seq_region_name, $start, $end, $strand, $version, $no_fuzz ) = @_;
+  my $coord_system_name;
 
   # try synonyms
   my $syn_sql = "select s.name, cs.name, cs.version from seq_region s join seq_region_synonym ss using (seq_region_id) join coord_system cs using (coord_system_id) where ss.synonym like ? and cs.species_id =? ";
-  if (defined $coord_system_name && defined $cs) {
+  if (defined $cs) {
+    $coord_system_name = $cs->name;
     $syn_sql .= "AND cs.name = '" . $coord_system_name . "' ";
   }
   if (defined $version) {
