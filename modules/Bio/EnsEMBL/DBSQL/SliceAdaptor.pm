@@ -2728,4 +2728,74 @@ sub _build_circular_slice_cache {
 } ## end _build_circular_slice_cache
 
 
+
+=head2 _fetch_by_seq_region_synonym
+  Args       : $cs, $seq_region_name, $start, $end, $strand, $version, $no_fuzz
+  Example    : $self->fetch_by_seq_region_synonym( $cs, $seq_region_name, $start, $end, $strand, $version, $no_fuzz );
+  Description: fetches all the seq region synonyms (or uses wildcard) when requested
+  Returntype : Bio::EnsEMBL::SliceAdaptor, or none 
+  Exceptions : None
+  Caller     : general
+  Status     : (refactored from fetch_by_region)
+=cut
+
+sub _fetch_by_seq_region_synonym {
+
+  my ( $self, $cs, $seq_region_name, $start, $end, $strand, $version, $no_fuzz ) = @_;
+  my $coord_system_name;
+
+  # try synonyms
+  my $syn_sql = "select s.name, cs.name, cs.version from seq_region s join seq_region_synonym ss using (seq_region_id) join coord_system cs using (coord_system_id) where ss.synonym like ? and cs.species_id =? ";
+  if (defined $cs) {
+    $coord_system_name = $cs->name;
+    $syn_sql .= "AND cs.name = '" . $coord_system_name . "' ";
+  }
+  if (defined $version) {
+    $syn_sql .= "AND cs.version = '" . $version . "' ";
+  }
+  my $syn_sql_sth = $self->prepare($syn_sql);
+  $syn_sql_sth->bind_param(1, $seq_region_name, SQL_VARCHAR);
+  $syn_sql_sth->bind_param(2, $self->species_id(), SQL_INTEGER);
+  # print "SQL to run: $syn_sql\n";
+  # exit;
+  $syn_sql_sth->execute();
+  my ($new_name, $new_coord_system, $new_version);
+  $syn_sql_sth->bind_columns( \$new_name, \$new_coord_system, \$new_version);
+  # print Dumper( $syn_sql_sth );
+  if($syn_sql_sth->fetch){
+    if ((not defined($cs)) || ($cs->name eq $new_coord_system && $cs->version eq $new_version)) {
+        # print "New values: $new_name, $new_coord_system, $new_version\n";
+        print "New values: $new_coord_system, $new_name, $start, $end, $strand, $new_version, $no_fuzz\n";
+        return $self->fetch_by_region($new_coord_system, $new_name, $start, $end, $strand, $new_version, $no_fuzz);
+    }
+  } else {
+    # Try wildcard searching if no exact synonym was found
+    print "DEBUG: No exact synonym found for $seq_region_name - try wildcard searching...\n";
+    $syn_sql_sth = $self->prepare($syn_sql);
+    my $escaped_seq_region_name = $seq_region_name;
+    my $escape_char = $self->dbc->db_handle->get_info(14);
+    $escaped_seq_region_name =~ s/([_%])/$escape_char$1/g;
+    $syn_sql_sth->bind_param(1, "$escaped_seq_region_name%", SQL_VARCHAR);
+    $syn_sql_sth->bind_param(2, $self->species_id(), SQL_INTEGER); 
+    $syn_sql_sth->execute();
+    $syn_sql_sth->bind_columns( \$new_name, \$new_coord_system, \$new_version);
+
+    if($syn_sql_sth->fetch){
+      if ((not defined($cs)) || ($cs->name eq $new_coord_system && $cs->version eq $new_version)) {
+          print "Returning: $self->fetch_by_region($new_coord_system, $new_name, $start, $end, $strand, $new_version, $no_fuzz)\n";
+          return $self->fetch_by_region($new_coord_system, $new_name, $start, $end, $strand, $new_version, $no_fuzz);
+      } elsif ($cs->name ne $new_coord_system) {
+          warning("Searched for a known feature on coordinate system: ".$cs->dbID." but found it on: ".$new_coord_system.
+          "\n No result returned, consider searching without coordinate system or use toplevel.");
+          return;
+      }
+      
+    } else {
+      warning("DEBUG: No result from SQL query. No synonym match found for $seq_region_name\n");
+      return;
+    }
+  }
+  $syn_sql_sth->finish;
+}
+
 1;
