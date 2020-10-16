@@ -118,4 +118,12 @@ ok($coord_system->name() eq $name);
 ok($coord_system->is_top_level());
 ok($coord_system->rank() == 0);
 
+#
+# test alias_to getter/setter
+#
+
+my $alias = 'chromosome';
+ok(test_getter_setter($coord_system, 'alias_to', $alias)); 
+is($coord_system->alias_to(), $alias, "Correctly retrieved alias '$alias'");
+
 done_testing();
