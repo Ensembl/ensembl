@@ -2756,16 +2756,11 @@ sub _fetch_by_seq_region_synonym {
   my $syn_sql_sth = $self->prepare($syn_sql);
   $syn_sql_sth->bind_param(1, $seq_region_name, SQL_VARCHAR);
   $syn_sql_sth->bind_param(2, $self->species_id(), SQL_INTEGER);
-  # print "SQL to run: $syn_sql\n";
-  # exit;
   $syn_sql_sth->execute();
   my ($new_name, $new_coord_system, $new_version);
   $syn_sql_sth->bind_columns( \$new_name, \$new_coord_system, \$new_version);
-  # print Dumper( $syn_sql_sth );
   if($syn_sql_sth->fetch){
     if ((not defined($cs)) || ($cs->name eq $new_coord_system && $cs->version eq $new_version)) {
-        # print "New values: $new_name, $new_coord_system, $new_version\n";
-        print "New values: $new_coord_system, $new_name, $start, $end, $strand, $new_version, $no_fuzz\n";
         return $self->fetch_by_region($new_coord_system, $new_name, $start, $end, $strand, $new_version, $no_fuzz);
     }
   } else {
@@ -2782,7 +2777,6 @@ sub _fetch_by_seq_region_synonym {
 
     if($syn_sql_sth->fetch){
       if ((not defined($cs)) || ($cs->name eq $new_coord_system && $cs->version eq $new_version)) {
-          print "Returning: $self->fetch_by_region($new_coord_system, $new_name, $start, $end, $strand, $new_version, $no_fuzz)\n";
           return $self->fetch_by_region($new_coord_system, $new_name, $start, $end, $strand, $new_version, $no_fuzz);
       } elsif ($cs->name ne $new_coord_system) {
           warning("Searched for a known feature on coordinate system: ".$cs->dbID." but found it on: ".$new_coord_system.
@@ -2791,7 +2785,6 @@ sub _fetch_by_seq_region_synonym {
       }
       
     } else {
-      warning("DEBUG: No result from SQL query. No synonym match found for $seq_region_name\n");
       return;
     }
   }
