@@ -2743,7 +2743,6 @@ sub _fetch_by_seq_region_synonym {
 
   my ( $self, $cs, $seq_region_name, $start, $end, $strand, $version, $no_fuzz ) = @_;
   my $coord_system_name;
-
   # try synonyms
   my $syn_sql = "select s.name, cs.name, cs.version from seq_region s join seq_region_synonym ss using (seq_region_id) join coord_system cs using (coord_system_id) where ss.synonym like ? and cs.species_id =? ";
   if (defined $cs) {
@@ -2761,11 +2760,10 @@ sub _fetch_by_seq_region_synonym {
   $syn_sql_sth->bind_columns( \$new_name, \$new_coord_system, \$new_version);
   if($syn_sql_sth->fetch){
     if ((not defined($cs)) || ($cs->name eq $new_coord_system && $cs->version eq $new_version)) {
-        return $self->fetch_by_region($new_coord_system, $new_name, $start, $end, $strand, $new_version, $no_fuzz);
+      return $self->fetch_by_region($new_coord_system, $new_name, $start, $end, $strand, $new_version, $no_fuzz);
     }
   } else {
     # Try wildcard searching if no exact synonym was found
-    print "DEBUG: No exact synonym found for $seq_region_name - try wildcard searching...\n";
     $syn_sql_sth = $self->prepare($syn_sql);
     my $escaped_seq_region_name = $seq_region_name;
     my $escape_char = $self->dbc->db_handle->get_info(14);
@@ -2777,11 +2775,11 @@ sub _fetch_by_seq_region_synonym {
 
     if($syn_sql_sth->fetch){
       if ((not defined($cs)) || ($cs->name eq $new_coord_system && $cs->version eq $new_version)) {
-          return $self->fetch_by_region($new_coord_system, $new_name, $start, $end, $strand, $new_version, $no_fuzz);
+        return $self->fetch_by_region($new_coord_system, $new_name, $start, $end, $strand, $new_version, $no_fuzz);
       } elsif ($cs->name ne $new_coord_system) {
-          warning("Searched for a known feature on coordinate system: ".$cs->dbID." but found it on: ".$new_coord_system.
-          "\n No result returned, consider searching without coordinate system or use toplevel.");
-          return;
+        warning("Searched for a known feature on coordinate system: ".$cs->dbID." but found it on: ".$new_coord_system.
+        "\n No result returned, consider searching without coordinate system or use toplevel.");
+        return;
       }
       
     } else {
