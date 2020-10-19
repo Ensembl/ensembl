@@ -2744,14 +2744,7 @@ sub _fetch_by_fuzzy_matching {
   my ($self, $cs, $version, $seq_region_name, $sql, $constraint, $bind_params) = @_;
 
   my $csa = $self->db->get_CoordSystemAdaptor();
-  # my @bind_params;
   my $length;
-
-  # my $sql = sprintf( "SELECT sr.name, sr.seq_region_id, sr.length, sr.coord_system_id "
-  #                  . "FROM seq_region sr " );
-  # my $constraint = "AND sr.coord_system_id = ?";
-
-  print "Do fuzzy matching...\n";
 
   # Do fuzzy matching, assuming that we are just missing a version
   # on the end of the seq_region name.
@@ -2763,13 +2756,10 @@ sub _fetch_by_fuzzy_matching {
 
   my $pos = 0;
   foreach my $param (@$bind_params) {
-    # print "++$pos, $param->[0], $param->[1]\n";
     $sth->bind_param( ++$pos, $param->[0], $param->[1] );
   }
 
-
   $sth->execute();
-  # print Dumper( $sth->fetch );
 
   my $prefix_len = length($seq_region_name) + 1;
   my $high_ver   = undef;
@@ -2784,7 +2774,6 @@ sub _fetch_by_fuzzy_matching {
   my $i = 0;
 
   while ( $sth->fetch ) {
-    # print "HERE!\n";
     my $tmp_cs =
       ( defined($cs) ? $cs : $csa->fetch_by_dbID($cs_id) );
 
@@ -2794,8 +2783,6 @@ sub _fetch_by_fuzzy_matching {
     $self->{'sr_id_cache'}->{"$id"}                = $arr;
 
     my $tmp_ver = substr( $tmp_name, $prefix_len );
-
-    # print "tmp_ver = $tmp_ver\n";
 
     # skip versions which are non-numeric and apparently not
     # versions
@@ -2833,8 +2820,6 @@ sub _fetch_by_fuzzy_matching {
 
   # return if we did not find any appropriate match:
   if ( !defined($high_ver) ) { return; }
-
-  print "Returning: $seq_region_name, $cs\n";
 
   return ($seq_region_name, $cs);
 }
