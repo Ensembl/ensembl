@@ -70,6 +70,13 @@ debug("slice seq_region length = " . $slice->seq_region_length());
   test_slice("${target_seq_name}:${start}-${end}", $synonym_slice, $target_cs_name, $target_seq_name, $start, $end, $strand);
 }
 
+{
+  # if no synonym match found and fuzzy match option is set as false,
+  # test that an error is thrown for no possible result
+  my $clone_name = 'AL031658';
+  throws_ok { $slice_adaptor->_fetch_by_seq_region_synonym(undef, $clone_name, '1', '1000', '1', undef, 1) }
+  qr/No synonym or wildcard match found and use fuzzy match is set to false/, 'Error correctly thrown when no synonym/wildcard/fuzzy match can be made';
+}
 
 #
 # fetch_by_contig_name
