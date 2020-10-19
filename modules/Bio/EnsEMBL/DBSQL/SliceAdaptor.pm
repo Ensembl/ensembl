@@ -2783,6 +2783,9 @@ sub _fetch_by_seq_region_synonym {
       }
       
     } else {
+      if ($no_fuzz) {
+        throw("No synonym or wildcard match found and use fuzzy match is set to false.\n");
+      }
       return;
     }
   }
