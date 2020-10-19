@@ -18,7 +18,6 @@ use warnings;
 
 use Test::More;
 use Test::Warnings;
-
 use Bio::EnsEMBL::Test::MultiTestDB;
 use Bio::EnsEMBL::DBSQL::SliceAdaptor;
 use Bio::EnsEMBL::Slice;
@@ -54,6 +53,22 @@ ok($slice->start == $START);
 ok($slice->end   == $END);
 ok($slice->seq_region_length == 62842997);
 debug("slice seq_region length = " . $slice->seq_region_length());
+
+
+#
+# _fetch_by_seq_region_synonym
+#
+
+{
+  my $synonym = "anoth_20";
+  my $start = "1";
+  my $end = "1e6";
+  my $strand = "1";
+  my $target_seq_name = "20";
+  my $target_cs_name = "chromosome";
+  my $synonym_slice = $slice_adaptor->_fetch_by_seq_region_synonym( undef, $synonym, $start, $end, $strand, undef, undef );
+  test_slice("${target_seq_name}:${start}-${end}", $synonym_slice, $target_cs_name, $target_seq_name, $start, $end, $strand);
+}
 
 
 #
