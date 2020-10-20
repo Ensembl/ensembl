@@ -1,9 +1,7 @@
-dist: trusty
-
 language: perl
 
-os:
-  - linux
+dist:
+  - trusty
 
 services:
   - mysql
@@ -11,6 +9,7 @@ services:
 perl:
   - '5.14'
   - '5.26'
+  - '5.30'
 
 env:
   matrix:
@@ -19,8 +18,6 @@ env:
   - COVERALLS=false DB=sqlite
   global:
   - secure: Ju069PzB8QZG3302emIhyCEEQfVfVsiXy0nGcR6hue+vW9nE82NnOEZHbZIwUCXEjUaZRMVQ31Em70Ky22OrLK4D59bs2ClH21u8URDGD/cn7JNPGWFrgxuaXQKMQrw72doeB0+w1+ShURtqM41vITjinyU3y34RZ1NcbDwYSZI=
-
-sudo: false
 
 addons:
   apt:
@@ -35,35 +32,45 @@ before_install:
   - git clone -b release-1-6-924 --depth 1 https://github.com/bioperl/bioperl-live.git
 
 install:
-  - cpanm -v --installdeps --notest . --with-all-features
-  - cpanm -n Devel::Cover::Report::Coveralls
-  - cpanm -n DBD::SQLite JSON
+  - cpanm -v --sudo --installdeps --notest . --with-all-features
+  - cpanm -n --sudo Devel::Cover Devel::Cover::Report::Coveralls Test::Exception Moose Devel::Cycle Test::Warnings 
+  - cpanm -n --sudo DBD::SQLite JSON 
   - cp travisci/MultiTestDB.conf.travisci.mysql  modules/t/MultiTestDB.conf.mysql
   - cp travisci/MultiTestDB.conf.travisci.SQLite modules/t/MultiTestDB.conf.SQLite
   - cp travisci/testdb.conf.travisci.mysql  testdb.conf.mysql
   - cp travisci/testdb.conf.travisci.SQLite testdb.conf.SQLite
   - mysql -u root -h localhost -e 'GRANT ALL PRIVILEGES ON *.* TO "travis"@"%"'
+  - mysql -u root -h localhost -e 'SET GLOBAL local_infile=1'
 
 before_script:
   - rm -f "$HOME/.ensemblapi_no_version_check"
 
-script: "./travisci/harness.sh"
+script: 
+  - "./travisci/harness.sh"
 
 jobs:
   include:
-  - stage: trigger_dependent_builds
-    script: "./travisci/trigger-dependent-build.sh"
-
-matrix:
+    - dist: focal
+      perl: '5.30' 
+      env: COVERALLS=false  DB=mysql
   exclude:
-  - perl: '5.14'
-    env: COVERALLS=false DB=mysql
-  - perl: '5.14'
-    env: COVERALLS=true  DB=mysql
-  - perl: '5.26'
-    env: COVERALLS=false DB=sqlite
-  - perl: '5.26'
-    env: COVERALLS=false DB=mysql
+    - perl: '5.14'
+      env: COVERALLS=false DB=mysql
+    - perl: '5.14'
+      env: COVERALLS=true  DB=mysql
+    - perl: '5.26'
+      env: COVERALLS=false DB=sqlite
+    - perl: '5.26'
+      env: COVERALLS=false DB=mysql
+    - perl: '5.30'
+      env: COVERALLS=false DB=sqlite
+      dist: trusty
+    - perl: '5.30'
+      env: COVERALLS=false DB=mysql
+      dist: trusty
+    - perl: '5.30'
+      env: COVERALLS=true DB=mysql
+      dist: trusty
 
 notifications:
   email:
