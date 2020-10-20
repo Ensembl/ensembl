@@ -2730,10 +2730,10 @@ sub _build_circular_slice_cache {
 
 
 =head2 _fetch_by_fuzzy_matching
-  Args       : $cs, $version, $seq_region_name
-  Example    : my $fuzzy_matched_name = $self->fetch_by_fuzzy_matching( $cs, $version, $seq_region_name );
+  Args       : $cs, $seq_region_name, $sql, $constraint, $bind_params
+  Example    : my $fuzzy_matched_name = $self->fetch_by_fuzzy_matching( $cs, $seq_region_name, $sql, $constraint, $bind_params );
   Description: fetches all the fuzzy matches for a given seq_region_name when requested
-  Returntype : string
+  Returntype : string, Bio::EnsEMBL::CoordSystem
   Exceptions : None
   Caller     : general
   Status     : (refactored from fetch_by_region)
