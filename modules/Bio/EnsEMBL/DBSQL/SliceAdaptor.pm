@@ -2741,7 +2741,7 @@ sub _build_circular_slice_cache {
 
 sub _fetch_by_fuzzy_matching {
 
-  my ($self, $cs, $version, $seq_region_name, $sql, $constraint, $bind_params) = @_;
+  my ($self, $cs, $seq_region_name, $sql, $constraint, $bind_params) = @_;
 
   my $csa = $self->db->get_CoordSystemAdaptor();
   my $length;
