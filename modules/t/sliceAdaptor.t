@@ -84,9 +84,8 @@ debug("slice seq_region length = " . $slice->seq_region_length());
   my $constraint = "AND sr.coord_system_id = ?";
   my @bind_params;
   push( @bind_params, [ $cs->dbID() ] );
-  my ($fuzzy_matched_name, $cs) = $slice_adaptor->_fetch_by_fuzzy_matching( $cs, $seq_region_name, $sql, $constraint, \@bind_params );
+  my ($fuzzy_matched_name) = $slice_adaptor->_fetch_by_fuzzy_matching( $cs, $seq_region_name, $sql, $constraint, \@bind_params );
   is($fuzzy_matched_name, 'AL031658.11', "Checking fuzzy match found: $fuzzy_matched_name equals that expected: AL031658.11");
-  isa_ok($cs, 'Bio::EnsEMBL::CoordSystem');
 }
 
 
