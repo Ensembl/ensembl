@@ -168,7 +168,7 @@ eval {
 if($error) {
   print "ERROR: Error detected when connecting to Ensembl!\n";
   
-  if($error =~ /Can't connect to MySQL server on/) {
+  if($error =~ /Can't connect to MySQL server on /) {
     print "\tPlease check if your connection with mysql client works fine. \n";
   } elsif ($error =~ /Cannot connect to/) {
     print "\tCannot seem to contact EnsemblDB at '$host' with the username '$user'. Try running 'ping $host' or asking your systems about firewalls against port $port\n";
