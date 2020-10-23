@@ -2795,7 +2795,11 @@ sub _create_chromosome_alias {
   } else {
 
     # use appropriate 'coord_system_id' to set 'alias_to' variable
+    # first check that a chromosome object does not already exist
     my $cs = $csa->fetch_by_dbID( $coord_system_id );
+    if ( $cs->name eq "chromosome" ) {
+      throw("A chromosome CoordSystem object already exists. Cannot create chromosome alias.");
+    }
     print "Fetched CoordSystem with coord_system_id: $coord_system_id.\n";
     $cs->alias_to('chromosome');
 

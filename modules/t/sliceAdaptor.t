@@ -54,6 +54,14 @@ ok($slice->end   == $END);
 ok($slice->seq_region_length == 62842997);
 debug("slice seq_region length = " . $slice->seq_region_length());
 
+#
+# _create_chromosome_alias
+#
+{
+  # test that no alias can be defined for species with pre-existing chromosome coordsystem
+  throws_ok{ $slice_adaptor->_create_chromosome_alias() } qr/A chromosome CoordSystem object already exists/, 'Correctly thrown error after finding existing chromosome CoordSystem object';
+}
+exit 1;
 
 #
 # _fetch_by_seq_region_synonym
