@@ -60,6 +60,7 @@ debug("slice seq_region length = " . $slice->seq_region_length());
 #
 
 {
+  # test synonym match
   my $synonym = "anoth_20";
   my $start = "1";
   my $end = "1e6";
@@ -68,6 +69,10 @@ debug("slice seq_region length = " . $slice->seq_region_length());
   my $target_cs_name = "chromosome";
   my $synonym_slice = $slice_adaptor->_fetch_by_seq_region_synonym( undef, $synonym, $start, $end, $strand, undef, undef );
   test_slice("${target_seq_name}:${start}-${end}", $synonym_slice, $target_cs_name, $target_seq_name, $start, $end, $strand);
+  # test synonym-wildcard match
+  my $synonym_wildcard = "anoth";
+  my $wildcard_slice = $slice_adaptor->_fetch_by_seq_region_synonym( undef, $synonym_wildcard, $start, $end, $strand, undef, undef );
+  test_slice("${target_seq_name}:${start}-${end}", $wildcard_slice, $target_cs_name, $target_seq_name, $start, $end, $strand);
 }
 
 {
