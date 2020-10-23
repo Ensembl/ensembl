@@ -2743,8 +2743,6 @@ sub _create_chromosome_alias {
   my $self = shift;
   my $csa  = $self->db->get_CoordSystemAdaptor();
 
-  print " DEBUG: Noticed you have requested to get a chromosome slice, when no chromosome CoordSystem exists. Finding CoordSystem to alias to...\n";
-
   # to store reformatted db query results
   my %karyotype_seq_regions;
   
@@ -2755,10 +2753,8 @@ sub _create_chromosome_alias {
 
   # check whether seq region cache exists, otherwise run database query
   if ( $self->{'karyotype_cache'} ) {
-    print "Seq region cache exists...\n";
     %karyotype_seq_regions = $self->{'karyotype_cache'};
   } else {
-    print "Seq region cache does not exist. Running SQL..\n";
     # cannot find a coordssystem called chromosome
     # look through attribs to find seq_regions with karyotype
 
@@ -2800,12 +2796,10 @@ sub _create_chromosome_alias {
     if ( $cs->name eq "chromosome" ) {
       throw("A chromosome CoordSystem object already exists. Cannot create chromosome alias.");
     }
-    print "Fetched CoordSystem with coord_system_id: $coord_system_id.\n";
     $cs->alias_to('chromosome');
 
     # create karyotype cache in retrieved coordsystem
     $cs->{'karyotype_cache'} = \%karyotype_seq_regions;
-    print Dumper( $cs );
 
     return $cs;
   }
