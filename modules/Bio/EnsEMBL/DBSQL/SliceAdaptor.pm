@@ -2739,7 +2739,7 @@ sub _build_circular_slice_cache {
 
 =cut
 
-sub create_chromosome_alias {
+sub _create_chromosome_alias {
   my $self = shift;
   my $csa  = $self->db->get_CoordSystemAdaptor();
 
