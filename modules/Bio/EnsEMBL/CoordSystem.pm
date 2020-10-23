@@ -110,6 +110,8 @@ use vars qw(@ISA);
                              coordinate system
                -ADAPTOR   - (optional) The adaptor which provides database
                             interaction for this object
+               -ALIAS_TO  - (optional) Sets an alias for a coordsystem. If set 
+                            it should only be set to 'chromosome'
   Example    : $cs = Bio::EnsEMBL::CoordSystem->new(-NAME    => 'chromosome',
                                                     -VERSION => 'NCBI33',
                                                     -RANK    => 1,
