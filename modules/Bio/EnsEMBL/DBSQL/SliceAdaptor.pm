@@ -2789,6 +2789,7 @@ sub _fetch_by_seq_region_synonym {
     }
   }
   $syn_sql_sth->finish;
+}
   
   
 =head2 _fetch_by_fuzzy_matching
