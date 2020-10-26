@@ -2728,4 +2728,100 @@ sub _build_circular_slice_cache {
 } ## end _build_circular_slice_cache
 
 
+
+=head2 _fetch_by_fuzzy_matching
+  Args       : $cs, $seq_region_name, $sql, $constraint, $bind_params
+  Example    : my $fuzzy_matched_name = $self->fetch_by_fuzzy_matching( $cs, $seq_region_name, $sql, $constraint, $bind_params );
+  Description: fetches all the fuzzy matches for a given seq_region_name when requested
+  Returntype : string, Bio::EnsEMBL::CoordSystem
+  Exceptions : None
+  Caller     : general
+  Status     : (refactored from fetch_by_region)
+=cut
+
+sub _fetch_by_fuzzy_matching {
+
+  my ($self, $cs, $seq_region_name, $sql, $constraint, $bind_params) = @_;
+
+  my $csa = $self->db->get_CoordSystemAdaptor();
+  my $length;
+
+  # Do fuzzy matching, assuming that we are just missing a version
+  # on the end of the seq_region name.
+
+  my $sth =
+    $self->prepare( $sql . " WHERE sr.name LIKE ? " . $constraint );
+
+  unshift @$bind_params, [ sprintf( '%s.%%', $seq_region_name ), SQL_VARCHAR ];
+  
+  my $pos = 0;
+  foreach my $param (@$bind_params) {
+    $sth->bind_param( ++$pos, $param->[0], $param->[1] );
+  }
+
+  $sth->execute();
+
+  my $prefix_len = length($seq_region_name) + 1;
+  my $high_ver   = undef;
+  my $high_cs    = $cs;
+
+  # Find the fuzzy-matched seq_region with the highest postfix
+  # (which ought to be a version).
+
+  my ( $tmp_name, $id, $tmp_length, $cs_id );
+  $sth->bind_columns( \( $tmp_name, $id, $tmp_length, $cs_id ) );
+
+  my $i = 0;
+
+  while ( $sth->fetch ) {
+    my $tmp_cs =
+      ( defined($cs) ? $cs : $csa->fetch_by_dbID($cs_id) );
+
+    # cache values for future reference
+    my $arr = [ $id, $tmp_name, $cs_id, $tmp_length ];
+    $self->{'sr_name_cache'}->{"$tmp_name:$cs_id"} = $arr;
+    $self->{'sr_id_cache'}->{"$id"}                = $arr;
+
+    my $tmp_ver = substr( $tmp_name, $prefix_len );
+
+    # skip versions which are non-numeric and apparently not
+    # versions
+    if ( $tmp_ver !~ /^\d+$/ ) { next }
+
+    # take version with highest num, if two versions match take one
+    # with highest ranked coord system (lowest num)
+    if ( !defined($high_ver)
+      || $tmp_ver > $high_ver
+      || ( $tmp_ver == $high_ver && $tmp_cs->rank < $high_cs->rank )
+      )
+    {
+      $seq_region_name = $tmp_name;
+      $length          = $tmp_length;
+      $high_ver        = $tmp_ver;
+      $high_cs         = $tmp_cs;
+    }
+
+    $i++;
+  } ## end while ( $sth->fetch )
+  $sth->finish();
+
+  # warn if fuzzy matching found more than one result
+  if ( $i > 1 ) {
+    warning(
+      sprintf(
+        "Fuzzy matching of seq_region_name "
+          . "returned more than one result.\n"
+          . "You might want to check whether the returned seq_region\n"
+          . "(%s:%s) is the one you intended to fetch.\n",
+        $high_cs->name(), $seq_region_name ) );
+  }
+
+  $cs = $high_cs;
+
+  # return if we did not find any appropriate match:
+  if ( !defined($high_ver) ) { return; }
+
+  return ($seq_region_name, $cs);
+}
+
 1;
