@@ -83,6 +83,40 @@ debug("slice seq_region length = " . $slice->seq_region_length());
   qr/No synonym or wildcard match found and use fuzzy match is set to false/, 'Error correctly thrown when no synonym/wildcard/fuzzy match can be made';
 }
 
+
+#
+# _fetch_by_fuzzy_matching
+#
+{
+  my $seq_region_name = 'AL031658';
+  my $sql =
+    "SELECT sr.name, sr.seq_region_id, sr.length, cs.coord_system_id FROM seq_region sr, coord_system cs ";
+  my $constraint = "AND sr.coord_system_id = cs.coord_system_id "
+    . "AND cs.species_id = ? "
+    . "ORDER BY cs.rank ASC";
+  my @bind_params;
+  push( @bind_params, [ $db->species_id() ] );
+  my ($fuzzy_matched_name, $cs) = $slice_adaptor->_fetch_by_fuzzy_matching( undef, $seq_region_name, $sql, $constraint, \@bind_params );
+  is($fuzzy_matched_name, 'AL031658.11', "Checking fuzzy match found: $fuzzy_matched_name equals that expected: AL031658.11");
+  isa_ok($cs, 'Bio::EnsEMBL::CoordSystem');
+}
+
+{
+  my $coord_system_name = "clone";
+  my $csa = $db->get_CoordSystemAdaptor();
+  my $cs = $csa->fetch_by_name( $coord_system_name );
+  my $seq_region_name = 'AL031658';
+  my $sql = sprintf( "SELECT sr.name, sr.seq_region_id, sr.length, %d "
+                      . "FROM seq_region sr ",
+                    $cs->dbID() );
+  my $constraint = "AND sr.coord_system_id = ?";
+  my @bind_params;
+  push( @bind_params, [ $cs->dbID() ] );
+  my ($fuzzy_matched_name) = $slice_adaptor->_fetch_by_fuzzy_matching( $cs, $seq_region_name, $sql, $constraint, \@bind_params );
+  is($fuzzy_matched_name, 'AL031658.11', "Checking fuzzy match found: $fuzzy_matched_name equals that expected: AL031658.11");
+}
+
+
 #
 # fetch_by_contig_name
 #

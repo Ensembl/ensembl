@@ -167,7 +167,12 @@ eval {
 # Print all the errors which could have occured 
 if($error) {
   print "ERROR: Error detected when connecting to Ensembl!\n";
-  if($error =~ /DBI/) {
+  
+  if($error =~ /Can't connect to MySQL server on /) {
+    print "\tPlease check if your connection with mysql client works fine. \n";
+  } elsif ($error =~ /Cannot connect to/) {
+    print "\tCannot seem to contact EnsemblDB at '$host' with the username '$user'. Try running 'ping $host' or asking your systems about firewalls against port $port\n";
+  } elsif ($error =~ /DBI/) {
     print "\tCannot find the DBI perl module. Please install this using your package management system, cpan or cpanm. Please consult http://www.ensembl.org/info/docs/api/api_installation.html\n";
   }
   if($error =~ /mysql/) {
@@ -179,9 +184,7 @@ if($error) {
   if($error =~ /Can't locate Bio\/Perl/) {
     print "\tLooks like you need to setup your PERL5LIB with BioPerl. Please consult http://www.ensembl.org/info/docs/api/api_installation.html\n";
   }
-  if($error =~ /Cannot connect to/) {
-    print "\tCannot seem to contact EnsemblDB at '$host' with the username '$user'. Try running 'ping $host' or asking your systems about firewalls against port $port\n";
-  }
+  
   if($error =~ /internal name/) {
     print "\tSpecies was not found. You may have accidentally download the HEAD API version (found API release $db_version & public FTP release is $ftp_version). Please consult http://www.ensembl.org/info/docs/api/api_installation.html\n";
   }
