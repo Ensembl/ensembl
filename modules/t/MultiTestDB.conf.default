@@ -38,5 +38,8 @@
     'multi' => {
       'compara' => 'Bio::EnsEMBL::Compara::DBSQL::DBAdaptor',
     },
+    'parus_major1' => {
+      'core' => 'Bio::EnsEMBL::DBSQL::DBAdaptor',
+    },
   },
 }
