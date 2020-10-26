@@ -60,6 +60,16 @@ debug("slice seq_region length = " . $slice->seq_region_length());
 {
   # test that no alias can be defined for species with pre-existing chromosome coordsystem
   throws_ok{ $slice_adaptor->_create_chromosome_alias() } qr/A chromosome CoordSystem object already exists/, 'Correctly thrown error after finding existing chromosome CoordSystem object';
+
+  # test sliceadaptor object is created ok from Parus major test db
+  debug("Testing chromosome alias feature with Parus major slices");
+  my $parus_major_db = Bio::EnsEMBL::Test::MultiTestDB->new("parus_major1");
+  my $parus_major_dba = $parus_major_db->get_DBAdaptor("core");
+  my $parus_major_sa = Bio::EnsEMBL::DBSQL::SliceAdaptor->new($parus_major_dba);
+  isa_ok($parus_major_sa, 'Bio::EnsEMBL::DBSQL::SliceAdaptor');
+
+  ### test chromosome alias is defined for Parus major with no pre-existing chromosome coordsystem
+  ### TODO: finish and integrate branch alias_chromosome_coordsystem to be able to add in this test
 }
 
 #
