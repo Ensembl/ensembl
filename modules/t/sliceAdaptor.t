@@ -83,6 +83,10 @@ debug("slice seq_region length = " . $slice->seq_region_length());
   qr/No synonym or wildcard match found and use fuzzy match is set to false/, 'Error correctly thrown when no synonym/wildcard/fuzzy match can be made';
 }
 
+# ensure that seq_region_name is provided
+throws_ok{ $slice_adaptor->_fetch_by_seq_region_synonym(undef, undef) }
+  qr/seq_region_name argument is required/, 'Error correctly thrown when no seq_region_name provided';
+  
 
 #
 # _fetch_by_fuzzy_matching

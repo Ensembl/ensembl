@@ -2741,6 +2741,18 @@ sub _build_circular_slice_cache {
 sub _fetch_by_seq_region_synonym {
 
   my ( $self, $cs, $seq_region_name, $start, $end, $strand, $version, $no_fuzz ) = @_;
+  
+  # check input
+  assert_integer($start, 'start') if defined $start;
+  assert_integer($end, 'end') if defined $end;
+
+  if ( !defined($start) )  { $start  = 1 }
+  if ( !defined($strand) ) { $strand = 1 }
+
+  if ( !defined($seq_region_name) ) {
+    throw('seq_region_name argument is required');
+  }
+
   my $coord_system_name;
   # try synonyms
   my $syn_sql = "select s.name, cs.name, cs.version from seq_region s join seq_region_synonym ss using (seq_region_id) join coord_system cs using (coord_system_id) where ss.synonym like ? and cs.species_id =? ";
