@@ -184,6 +184,10 @@ sub new {
     throw('The RANK argument must be a positive integer');
   }
 
+  if ( defined($alias_to) ) {
+    throw("The ALIAS_TO argument can only be defined as 'chromosome'") unless $alias_to eq "chromosome";
+  }
+
   $self->{'version'}        = $version;
   $self->{'name'}           = $name;
   $self->{'top_level'}      = $top_level;
@@ -393,6 +397,9 @@ sub rank {
 
 sub alias_to {
   my ($self, $alias_to) = @_;
+  if (defined($alias_to)) {
+    throw("The alias can only be set to 'chromosome'") unless $alias_to eq "chromosome";
+  }
   $self->{'alias_to'} = $alias_to if defined $alias_to;
   return $self->{'alias_to'};
 }
