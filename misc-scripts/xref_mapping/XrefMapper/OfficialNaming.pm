@@ -211,7 +211,6 @@ SQ0
   my %xref_added; # store those added  $xref_added{$accession:$source_id} = $xref_id;
   my %seen_gene;
 
-  my %ens_clone_genes;
   my %official_name_used;
 
   my $ignore_sql =<<IEG;
@@ -246,72 +245,44 @@ IEG
     # symbols to set when found.
     my $gene_symbol = undef;
     my $gene_symbol_xref_id = undef;
-    my $clone_name = undef;
     my $is_lrg = 0;
 
-    if (!defined($ens_clone_genes{$gene_id})) { #we're processing this gene for the first time
+    ################################
+    # Get offical name if it has one
+    ################################
+    ($gene_symbol, $gene_symbol_xref_id) = 
+      $self->get_official_domain_name({gene_id       => $gene_id, 
+				       gene_to_tran  => \%gene_to_transcripts,
+				       gene_id_to_stable_id => \%gene_id_to_stable_id,
+                                       official_name_used => \%official_name_used,
+                                       dbi            => $dbi
+				      });
 
-      ################################
-      # Get offical name if it has one
-      ################################
+    if (defined($gene_symbol_xref_id)) {
+	$official_name_used{$gene_symbol_xref_id} = 1;
+    }
+
+    ############################################
+    # If not found see if there is an LRG entry
+    ############################################
+    if(!defined($gene_symbol)){ # look for LRG
+      ($gene_symbol, $gene_symbol_xref_id, $is_lrg) = $self->find_lrg_hgnc($gene_id, $dbi);
+    }
+
+    ####################################################
+    # If not found look for other valid database sources
+    # These are RFAM and miRBase, as well as EntrezGene
+    ####################################################
+    if(!defined($gene_symbol)){ 
       ($gene_symbol, $gene_symbol_xref_id) = 
-        $self->get_official_domain_name({gene_id       => $gene_id, 
-  				       gene_to_tran  => \%gene_to_transcripts,
-  				       gene_id_to_stable_id => \%gene_id_to_stable_id,
-                                         official_name_used => \%official_name_used,
-                                         dbi            => $dbi
-  				      });
-  
-      if (defined($gene_symbol_xref_id)) {
-  	$official_name_used{$gene_symbol_xref_id} = 1;
-      }
-  
-      ############################################
-      # If not found see if there is an LRG entry
-      ############################################
-      if(!defined($gene_symbol)){ # look for LRG
-        ($gene_symbol, $gene_symbol_xref_id, $is_lrg) = $self->find_lrg_hgnc($gene_id, $dbi);
-      }
-  
-      ####################################################
-      # If not found look for other valid database sources
-      # These are RFAM and miRBase, as well as EntrezGene
-      ####################################################
-      if(!defined($gene_symbol)){ 
-        ($gene_symbol, $gene_symbol_xref_id) = 
 	  $self->find_from_other_sources(\%ignore_object, 
-                                       {gene_id       => $gene_id, 
+                                     {gene_id       => $gene_id, 
 					label_to_desc => \%display_label_to_desc,
-                                        dbi           => $dbi,
+                                      dbi           => $dbi,
 					tran_source   => \$tran_source});
-      }
     }
 
-    ##############################################
-    # Finally if all else fails use the clone name
-    # but only for human, mouse, zebrafish and rat
-    # as pig is special with no official naming source, we'd rather leave ensembl stable ids
-    # than use ensembl clone names
-    ##############################################
-    if((!defined($gene_symbol))){
-      if ($dbname eq 'HGNC' || $dbname eq 'MGI' || $dbname eq 'ZFIN_ID' || $dbname eq 'RGD') {
-        $clone_name = $self->get_clone_name($gene_id, $ga, $dbname);
-        if(defined($clone_name)){
-          $clone_name =~ s/[.]\d+//;    #remove .number
-        }
-      }
-    }
-
-    ######################################
-    # Check we have a suitable name to use.
-    # Else give error message and goto next
-    ######################################
-    if( !(defined($clone_name) or defined($gene_symbol)) ){
-      carp "Problem gene ".$gene_id_to_stable_id{$gene_id}." could not get a clone name or ".$dbname." symbol\n";
-      next;
-    }
-
-    if(defined($gene_symbol) && !defined($ens_clone_genes{$gene_id})){
+    if(defined($gene_symbol)){
       my $desc = $display_label_to_desc{$gene_symbol};
       $set_gene_display_xref_sth->execute($gene_symbol_xref_id, $gene_id);
 
@@ -327,29 +298,11 @@ IEG
                                             xref_added       => \%xref_added, 
                                             seen_gene        => \%seen_gene, 
                                             gene_to_tran     => \%gene_to_transcripts, 
-					    ens_clone_genes  => \%ens_clone_genes,
                                             tran_source      => $tran_source,
 					   });
       }
     }
 
-    if (!defined($gene_symbol)) { # use clone name 
-
-      my $keep_gene = $self->set_transcript_and_gene_display_xref_via_clone_name({clone_name => $clone_name,
-							 dbname_to_source => $dbname_to_source_id,
-							 gene_id          =>  $gene_id,
-							 max_xref         => \$max_xref_id, 
-							 max_object       => \$max_object_xref_id,
-							 xref_added       => \%xref_added,
-                                                         dbi              => $dbi,
-							 gene_to_tran     => \%gene_to_transcripts,
-							 ens_clone_genes  => \%ens_clone_genes,
-							});
-      if ($keep_gene) {
-	  push @sorted_gene_ids, $gene_id;
-      }
-
-    }
   } # for each gene
 
   $self->update_process_status('official_naming_done');
@@ -510,89 +463,6 @@ sub get_official_domain_name{
   return ($gene_symbol, $gene_symbol_xref_id);
 }
 
-
-
-
-sub set_transcript_and_gene_display_xref_via_clone_name{
-  my ($self, $arg_ref) = @_;
-
-  my $max_xref_id =         $arg_ref->{max_xref};
-  my $max_object_xref_id =  $arg_ref->{max_object};
-  my $gene_id =             $arg_ref->{gene_id};
-  my $dbname_to_source_id = $arg_ref->{dbname_to_source};
-  my $xref_added =          $arg_ref->{xref_added};
-  my $gene_to_transcripts = $arg_ref->{gene_to_tran};
-  my $clone_name =          $arg_ref->{clone_name};
-  my $ens_clone_names =     $arg_ref->{ens_clone_genes};
-  my $dbi             = $arg_ref->{dbi};
-
-  my $ins_xref_sth =              $self->get_ins_xref_sth($dbi);
-  my $ins_dep_ix_sth =            $self->get_ins_dep_ix_sth($dbi);
-  my $set_tran_display_xref_sth = $self->get_set_transcript_display_xref_sth($dbi);
-  my $ins_object_xref_sth =       $self->get_ins_object_xref_sth($dbi);
-  my $set_gene_display_xref_sth = $self->get_set_gene_display_xref_sth($dbi);
-
-  my $keep_gene;
-
-  my $t_source_id;
-  my $g_source_id;
-  my $desc;
-  my $name;
-  if (defined($ens_clone_names->{$gene_id})) {
-    if(defined($clone_name)){
-      $name = $clone_name;
-      $t_source_id = $dbname_to_source_id->{"Clone_based_ensembl_transcript"};
-      $g_source_id = $dbname_to_source_id->{"Clone_based_ensembl_gene"};
-      $desc = "via ensembl clone name";
-    } else{
-      croak "No name";
-    }
-    my $num = 1;
-    my $unique_name = $name.".".$num;
-    while(defined($xref_added->{$unique_name.":".$g_source_id})){
-      $num++;
-      $unique_name = $name.".".$num;
-    }
-    $name = $unique_name;
-  } else {
-    $ens_clone_names->{$gene_id} = 1;
-    $keep_gene = 1;
-    return $keep_gene;
-  }
-  
-  # first add the gene xref and set display_xref_id
-  # store the data
-  if(!defined($xref_added->{$name.":".$g_source_id})){
-    $$max_xref_id++;
-    $ins_xref_sth->execute($$max_xref_id, $g_source_id, $name, $name, $desc, undef);
-    $xref_added->{$name.":".$g_source_id} = $$max_xref_id;
-  }
-  $set_gene_display_xref_sth->execute($xref_added->{$name.":".$g_source_id},$gene_id);
-  
-  $$max_object_xref_id++;
-  $ins_object_xref_sth->execute($$max_object_xref_id, $gene_id, 'Gene', $xref_added->{$name.":".$g_source_id}, undef);
-  $ins_dep_ix_sth->execute($$max_object_xref_id, 100, 100);
-  
-  # then add transcript names.
-  my $ext = 201;
-  foreach my $tran_id ( sort @{$gene_to_transcripts->{$gene_id}}){
-    my $id =  $name."-".$ext;
-    while(defined($xref_added->{$id.":".$t_source_id})){
-	$ext++;
-	$id = $name."-".$ext;
-    }
-    $ext++;
-    $$max_xref_id++;
-    $ins_xref_sth->execute($$max_xref_id, $t_source_id, $id, $id, $desc, undef);
-    $xref_added->{$id.":".$t_source_id} = $$max_xref_id;
-    
-    $$max_object_xref_id++;
-    $ins_object_xref_sth->execute($$max_object_xref_id, $tran_id, 'Transcript', $xref_added->{$id.":".$t_source_id}, undef);
-    $ins_dep_ix_sth->execute($$max_object_xref_id, 100, 100);
-    $set_tran_display_xref_sth->execute($$max_xref_id, $tran_id);
-  }
-  return 0;
-}
 
 ###########################################################
 # Set the transcript display xrefs
@@ -1069,54 +939,6 @@ sub find_lrg_hgnc{
 
 #############################END LRG BIT ################################################
 
-sub get_clone_name{
-  my ($self, $gene_id, $ga, $dbname) = @_;
-  my $clone_name  = undef;
-
-  my $gene= $ga->fetch_by_dbID($gene_id);
-  my $slice = $gene->slice->sub_Slice($gene->start,$gene->end,$gene->strand);
-  my $len = 0;
-  if($dbname ne "ZFIN_ID" && $dbname ne 'MGI' && $dbname ne "PIGGY" && $dbname ne 'RGD'){
-    my $clone_projection = $slice->project('clone'); 
-    foreach my $seg (@$clone_projection) {
-      my $clone = $seg->to_Slice();
-      if($clone->length() > $len){
-	$clone_name = $clone->seq_region_name;
-	$len = $clone->length;
-      }
-    }
-  }
-  if(!defined($clone_name)){
-    # try going via contig
-    my $super_projection = $slice->project('contig');
-    my $super;
-    $len = 0;
-    foreach my $seg (@$super_projection) {
-      $super = $seg->to_Slice();
-      if($super->length() > $len){
-	$clone_name = $super->seq_region_name;
-	$len = $super->length;
-      }
-    }
-    $len = 0;
-    if($dbname ne "ZFIN_ID" && $dbname ne 'MGI' && $dbname ne "PIGGY" && $dbname ne 'RGD'){
-      my $clone_projection = $super->project('clone');
-      foreach my $seg (@$clone_projection) {
-	my $clone = $seg->to_Slice();
-	if($clone->length() > $len){
-	  $clone_name = $clone->seq_region_name;
-	  $len = $clone->length;
-	}
-      }
-    }
-    if(!defined($clone_name)){
-      print STDERR "PROJECT failed for ".$gene->stable_id."\n";
-      next;
-    }
-  }
-  return $clone_name;
-}
-
 #
 # These are the ones added by official naming and hence
 # Need to be removed incase they still exist from a previous run
@@ -1169,6 +991,7 @@ sub delete_old_data{
  my @sources = qw(
 Clone_based_ensembl_gene
 Clone_based_ensembl_transcript
+EntrezGene_trans_name
 RFAM_trans_name
 miRBase_trans_name);
 
