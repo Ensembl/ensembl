@@ -110,6 +110,8 @@ use vars qw(@ISA);
                              coordinate system
                -ADAPTOR   - (optional) The adaptor which provides database
                             interaction for this object
+               -ALIAS_TO  - (optional) Sets an alias for a coordsystem. If set 
+                            it should only be set to 'chromosome'
   Example    : $cs = Bio::EnsEMBL::CoordSystem->new(-NAME    => 'chromosome',
                                                     -VERSION => 'NCBI33',
                                                     -RANK    => 1,
@@ -132,10 +134,11 @@ sub new {
 
   my $self = $class->SUPER::new(@_);
 
-  my ( $name, $version, $top_level, $sequence_level, $default, $rank ) =
+  my ( $name, $version, $top_level, $sequence_level, $default, $rank, $alias_to ) =
     rearrange( [ 'NAME',      'VERSION',
                  'TOP_LEVEL', 'SEQUENCE_LEVEL',
-                 'DEFAULT',   'RANK' ],
+                 'DEFAULT',   'RANK',
+                 'ALIAS_TO' ],
                @_ );
 
   $top_level      = ($top_level)      ? 1 : 0;
@@ -181,12 +184,17 @@ sub new {
     throw('The RANK argument must be a positive integer');
   }
 
+  if ( defined($alias_to) ) {
+    throw("The ALIAS_TO argument can only be defined as 'chromosome'") unless $alias_to eq "chromosome";
+  }
+
   $self->{'version'}        = $version;
   $self->{'name'}           = $name;
   $self->{'top_level'}      = $top_level;
   $self->{'sequence_level'} = $sequence_level;
   $self->{'default'}        = $default;
   $self->{'rank'}           = $rank;
+  $self->{'alias_to'}       = $alias_to;
 
   return $self;
 } ## end sub new
@@ -372,5 +380,29 @@ sub rank {
   my $self = shift;
   return $self->{'rank'};
 }
+
+
+
+=head2 alias_to
+
+  Arg [1]    : string
+  Example    : $coord->alias_to('chromosome');
+  Description: Getter/Setter for the alias of this coordinate system.
+  Returntype : Bio::EnsEMBL::CoordSystem
+  Exceptions : none
+  Caller     : general
+  Status     : Stable
+
+=cut
+
+sub alias_to {
+  my ($self, $alias_to) = @_;
+  if (defined($alias_to)) {
+    throw("The alias can only be set to 'chromosome'") unless $alias_to eq "chromosome";
+  }
+  $self->{'alias_to'} = $alias_to if defined $alias_to;
+  return $self->{'alias_to'};
+}
+
 
 1;

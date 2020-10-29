@@ -20,6 +20,8 @@ use Bio::EnsEMBL::CoordSystem;
 
 use Bio::EnsEMBL::Test::TestUtils;
 
+use Test::Exception;
+
 our $verbose = 0;
 
 use Test::More;
@@ -117,5 +119,39 @@ $coord_system = Bio::EnsEMBL::CoordSystem->new
 ok($coord_system->name() eq $name);
 ok($coord_system->is_top_level());
 ok($coord_system->rank() == 0);
+
+#
+# Test constructor with alias set
+#
+{
+  my $name = "primary_assembly";
+  my $alias = "chromosome";
+  my $coord_system = Bio::EnsEMBL::CoordSystem->new
+  (-NAME     => $name,
+   -RANK     => $rank,
+   -ALIAS_TO => $alias);
+
+  is($coord_system->alias_to(), $alias, "Correctly initialised alias variable in constructor to '$alias'");
+
+  my $bad_alias = "badalias";
+  throws_ok {
+    my $cs_bad_alias = Bio::EnsEMBL::CoordSystem->new
+    (-NAME     => $name,
+    -RANK     => $rank,
+    -ALIAS_TO => $bad_alias);
+  } qr /The ALIAS_TO argument can only be defined as 'chromosome'/,
+  "Checks that error is thrown if -ALIAS_TO in constructor is defined as something other than '$alias'";
+}
+
+
+#
+# Test alias_to getter/setter
+#
+my $alias = 'chromosome';
+ok(test_getter_setter($coord_system, 'alias_to', $alias)); 
+is($coord_system->alias_to(), $alias, "Getter method correctly retrieved alias '$alias'");
+
+throws_ok{ $coord_system->alias_to('somethingelse') } qr/The alias can only be set to/,
+  'Checks that error is thrown if requested alias is not called chromosome';
 
 done_testing();
