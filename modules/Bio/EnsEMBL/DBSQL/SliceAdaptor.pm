@@ -2744,16 +2744,25 @@ sub _create_chromosome_alias {
   my $csa  = $self->db->get_CoordSystemAdaptor();
 
   # to store reformatted db query results
-  my %karyotype_seq_regions;
+  my $karyotype_seq_regions;
   
   my $karyotype_rank_string = "karyotype_rank";
 
   # to store coord_system_id to alias 
   my $cs_id;
+  my %cs_id_rank;
 
   # check whether seq region cache exists, otherwise run database query
   if ( $self->{'karyotype_cache'} ) {
-    %karyotype_seq_regions = $self->{'karyotype_cache'};
+    $karyotype_seq_regions = $self->{'karyotype_cache'};
+
+    # get candidate coordSystem(s) to alias
+    foreach my $seq_region_name ( keys %{$karyotype_seq_regions} ) {
+      foreach my $coord_system_id ( keys %{ $karyotype_seq_regions->{ $seq_region_name } } ) {
+        my $rank = $karyotype_seq_regions->{ $seq_region_name }->{ $coord_system_id }->{ rank };
+        $cs_id_rank{ $coord_system_id } = $rank;
+      }
+    }
   } else {
     # cannot find a coordssystem called chromosome
     # look through attribs to find seq_regions with karyotype
@@ -2771,7 +2780,6 @@ sub _create_chromosome_alias {
 
     # fetch SQL results and identify coord_system_id(s) that
     # has(have) karyotype attribs
-    my %cs_id_rank;
     while ( my $hashref = $sth->fetchrow_hashref() ) {
       my $seq_region_id   = $hashref->{ seq_region_id };
       my $seq_region_name = $hashref->{ name };
@@ -2781,7 +2789,7 @@ sub _create_chromosome_alias {
       my $rank            = $hashref->{ rank };
 
       # account for possibility of multiple coord_system_ids returned from db query
-      $karyotype_seq_regions{ $seq_region_name }{ $coord_system_id } = {
+      $karyotype_seq_regions->{ $seq_region_name }->{ $coord_system_id } = {
         code            => $code,
         length          => $length,
         seq_region_id   => $seq_region_id,
@@ -2792,19 +2800,17 @@ sub _create_chromosome_alias {
       $cs_id_rank{ $coord_system_id } = $rank;
     }
     $sth->finish();
-    my $cs_id_count = keys %cs_id_rank;
+  }
 
-    # if number of coordSystem ids retrieved is one, simply use this coordSystem id
-    # otherwise, choose the coordSystem with the best-rank (i.e. lowest number)
-    if ( $cs_id_count == 1 ) {
-      $cs_id = (keys %cs_id_rank)[0]; # get only key name in hash
-      print "using cs dbid: $cs_id\n";
-    } else {
-      foreach my $id (sort { $cs_id_rank{$a} <=> $cs_id_rank{$b} } keys %cs_id_rank) {
-        $cs_id = $id;
-        print "$id, $cs_id_rank{$id}\n";
-        last; # exit loop after getting lowest-ranked coordSystem id
-      }
+  my $cs_id_count = keys %cs_id_rank;
+  # if number of coordSystem ids retrieved is one, simply use this coordSystem id
+  # otherwise, choose the coordSystem with the best-rank (i.e. lowest number)
+  if ( $cs_id_count == 1 ) {
+    $cs_id = (keys %cs_id_rank)[0]; # get only key name in hash
+  } else {
+    foreach my $id (sort { $cs_id_rank{$a} <=> $cs_id_rank{$b} } keys %cs_id_rank) {
+      $cs_id = $id;
+      last; # exit loop after getting lowest-ranked coordSystem id
     }
   }
 
@@ -2815,13 +2821,16 @@ sub _create_chromosome_alias {
     # use appropriate 'coord_system_id' to set 'alias_to' variable
     # first check that a chromosome object does not already exist
     my $cs = $csa->fetch_by_dbID( $cs_id );
+    if ( !$cs ) {
+      throw("Unable to retrieve CoordSystem object using dbID: $cs_id");
+    }
     if ( $cs->name eq "chromosome" ) {
       throw("A chromosome CoordSystem object already exists. Cannot create chromosome alias.");
     }
     $cs->alias_to('chromosome');
 
     # create karyotype cache in retrieved coordsystem
-    $cs->{'karyotype_cache'} = \%karyotype_seq_regions;
+    $cs->{'karyotype_cache'} = $karyotype_seq_regions;
 
     return $cs;
   }

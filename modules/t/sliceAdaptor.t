@@ -57,6 +57,7 @@ debug("slice seq_region length = " . $slice->seq_region_length());
 #
 # _create_chromosome_alias
 #
+
 {
   # test that no alias can be defined for species with pre-existing chromosome coordsystem
   throws_ok{ $slice_adaptor->_create_chromosome_alias() } qr/A chromosome CoordSystem object already exists/, 'Correctly thrown error after finding existing chromosome CoordSystem object';
@@ -67,6 +68,23 @@ debug("slice seq_region length = " . $slice->seq_region_length());
   my $parus_major_dba = $parus_major_db->get_DBAdaptor("core");
   my $parus_major_sa = Bio::EnsEMBL::DBSQL::SliceAdaptor->new($parus_major_dba);
   isa_ok($parus_major_sa, 'Bio::EnsEMBL::DBSQL::SliceAdaptor');
+
+  ### make up a fake hash to test cases with multiple coordSystem objects with karyotype attributes
+  my %data;
+  $data{'1'}{'2'} = {
+    'seq_region_id' => 1,
+    'code' => 'karyotype_rank',
+    'length' => 114059860,
+    'rank' => 4
+  };
+  $data{'1'}{'3'} = {
+    'seq_region_id' => 1,
+    'code' => 'karyotype_rank',
+    'length' => 114059860,
+    'rank' => 6
+  };
+  $parus_major_sa->{'karyotype_cache'} = \%data;
+  throws_ok{ $parus_major_sa->_create_chromosome_alias() } qr/Unable to retrieve CoordSystem object using dbID: 2/, "Retrieves correct coordSystem to alias but throws error as this is example data not in db";
 
   ### test chromosome alias is defined for Parus major with no pre-existing chromosome coordsystem
   ### TODO: finish and integrate branch alias_chromosome_coordsystem to be able to add in this test
