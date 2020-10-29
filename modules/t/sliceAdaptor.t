@@ -18,7 +18,6 @@ use warnings;
 
 use Test::More;
 use Test::Warnings;
-
 use Bio::EnsEMBL::Test::MultiTestDB;
 use Bio::EnsEMBL::DBSQL::SliceAdaptor;
 use Bio::EnsEMBL::Slice;
@@ -55,6 +54,39 @@ ok($slice->end   == $END);
 ok($slice->seq_region_length == 62842997);
 debug("slice seq_region length = " . $slice->seq_region_length());
 
+
+#
+# _fetch_by_seq_region_synonym
+#
+
+{
+  # test synonym match
+  my $synonym = "anoth_20";
+  my $start = "1";
+  my $end = "1e6";
+  my $strand = "1";
+  my $target_seq_name = "20";
+  my $target_cs_name = "chromosome";
+  my $synonym_slice = $slice_adaptor->_fetch_by_seq_region_synonym( undef, $synonym, $start, $end, $strand, undef, undef );
+  test_slice("${target_seq_name}:${start}-${end}", $synonym_slice, $target_cs_name, $target_seq_name, $start, $end, $strand);
+  # test synonym-wildcard match
+  my $synonym_wildcard = "anoth";
+  my $wildcard_slice = $slice_adaptor->_fetch_by_seq_region_synonym( undef, $synonym_wildcard, $start, $end, $strand, undef, undef );
+  test_slice("${target_seq_name}:${start}-${end}", $wildcard_slice, $target_cs_name, $target_seq_name, $start, $end, $strand);
+}
+
+{
+  # if no synonym match found and fuzzy match option is set as false,
+  # test that an error is thrown for no possible result
+  my $clone_name = 'AL031658';
+  throws_ok { $slice_adaptor->_fetch_by_seq_region_synonym(undef, $clone_name, '1', '1000', '1', undef, 1) }
+  qr/No synonym or wildcard match found and use fuzzy match is set to false/, 'Error correctly thrown when no synonym/wildcard/fuzzy match can be made';
+}
+
+# ensure that seq_region_name is provided
+throws_ok{ $slice_adaptor->_fetch_by_seq_region_synonym(undef, undef) }
+  qr/seq_region_name argument is required/, 'Error correctly thrown when no seq_region_name provided';
+  
 
 #
 # _fetch_by_fuzzy_matching
