@@ -350,7 +350,21 @@ sub fetch_by_region {
 
       }
 
-        if ($no_fuzz) { return; }
+      if ($no_fuzz) { return; }
+
+      # Do fuzzy matching, assuming that we are just missing a version
+      # on the end of the seq_region name.
+
+      $sth =
+        $self->prepare( $sql . " WHERE sr.name LIKE ? " . $constraint );
+
+      $bind_params[0] =
+        [ sprintf( '%s.%%', $seq_region_name ), SQL_VARCHAR ];
+
+      $pos = 0;
+      foreach my $param (@bind_params) {
+        $sth->bind_param( ++$pos, $param->[0], $param->[1] );
+      }
 
         # Do fuzzy matching, assuming that we are just missing a version
         # on the end of the seq_region name.
