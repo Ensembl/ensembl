@@ -2727,7 +2727,7 @@ sub _build_circular_slice_cache {
   $sth->finish();
 } ## end _build_circular_slice_cache
 
-=head2 create_chromosome_alias
+=head2 _create_chromosome_alias
 
   Args       : none
   Example    : $self->create_chromosome_alias();
