@@ -330,7 +330,6 @@ sub fetch_by_region {
         print "Running synonym-match method...\n";
         $slice = $self->_fetch_by_seq_region_synonym( $cs, $seq_region_name, $start, $end, $strand, $version, $no_fuzz );
       }
-      print Dumper( $slice );
 
       # check whether any slice data has been returned
       if ( $slice && $slice->seq_region_name ) {
@@ -343,10 +342,8 @@ sub fetch_by_region {
           $seq_region_name = $matched_name;
 
           # define $arr
-          print "Defining \$arr\n";
           my $tmp_key_string = "$seq_region_name:" . $slice->coord_system()->dbID();
           $arr = $self->{'sr_name_cache'}->{$tmp_key_string};
-          print Dumper( $arr );
           $length = $arr->[3];
         }
 
@@ -588,7 +585,6 @@ sub fetch_by_toplevel_location {
 
 sub fetch_by_location {
   my ($self, $location, $coord_system_name, $coord_system_version, $no_warnings, $no_fuzz, $ucsc) = @_;
-  
   throw "No coordinate system name specified" unless $coord_system_name;
   
   my ($seq_region_name, $start, $end, $strand) = $self->parse_location_to_values($location, $no_warnings);
@@ -601,6 +597,7 @@ sub fetch_by_location {
     throw "Cannot request a slice whose start is greater than its end. Start: $start. End: $end";
   }
   
+  $seq_region_name =~ s/^chr// if ($ucsc);
   my $slice = $self->fetch_by_region($coord_system_name, $seq_region_name, $start, $end, $strand, $coord_system_version, $no_fuzz);
   if(! defined $slice) {
     if($ucsc) {
