@@ -362,7 +362,6 @@ sub fetch_by_region {
           $seq_region_name = $matched_name;
 
           # define $arr
-          print "Defining \$arr\n";
           my $tmp_key_string = "$seq_region_name:" . $slice->coord_system()->dbID();
           $arr = $self->{'sr_name_cache'}->{$tmp_key_string};
           $length = $arr->[3];
