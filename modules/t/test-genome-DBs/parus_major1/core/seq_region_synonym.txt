@@ -1,2 +1,1 @@
-seq_region_synonym_id	seq_region_id	synonym	external_db_id
 1	1	CM003709.1	50710

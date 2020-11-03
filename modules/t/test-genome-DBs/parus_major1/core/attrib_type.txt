@@ -1,32 +1,31 @@
-attrib_type_id	code	name	description
 1	embl_acc	European Nucleotide Archive (was EMBL) accession	ENA
-2	status	Status	NULL
-3	synonym	Synonym	NULL
+2	status	Status	\N
+3	synonym	Synonym	\N
 4	name	Name	Alternative/long name
-5	type	Type of feature	NULL
+5	type	Type of feature	\N
 6	toplevel	Top Level	Top Level Non-Redundant Sequence Region
 7	GeneCount	Gene Count	Total Number of Genes
 10	SNPCount	Short Variants	Total Number of SNPs
 11	codon_table	Codon Table	Alternate codon table
-12	_selenocysteine	Selenocysteine	NULL
-13	bacend	bacend	NULL
+12	_selenocysteine	Selenocysteine	\N
+13	bacend	bacend	\N
 14	htg	htg	High Throughput phase attribute
 15	miRNA	Micro RNA	Coordinates of the mature miRNA
 16	non_ref	Non Reference	Non Reference Sequence Region
-17	sanger_project	Sanger Project name	NULL
-18	clone_name	Clone name	NULL
-19	fish	FISH location	NULL
-21	org	Sequencing centre	NULL
-22	method	Method	NULL
-23	superctg	Super contig id	NULL
-24	inner_start	Max start value	NULL
-25	inner_end	Min end value	NULL
-26	state	Current state of clone	NULL
-27	organisation	Organisation sequencing clone	NULL
-28	seq_len	Accession length	NULL
-29	fp_size	FP size	NULL
-30	BACend_flag	BAC end flags	NULL
-31	fpc_clone_id	fpc clone	NULL
+17	sanger_project	Sanger Project name	\N
+18	clone_name	Clone name	\N
+19	fish	FISH location	\N
+21	org	Sequencing centre	\N
+22	method	Method	\N
+23	superctg	Super contig id	\N
+24	inner_start	Max start value	\N
+25	inner_end	Min end value	\N
+26	state	Current state of clone	\N
+27	organisation	Organisation sequencing clone	\N
+28	seq_len	Accession length	\N
+29	fp_size	FP size	\N
+30	BACend_flag	BAC end flags	\N
+31	fpc_clone_id	fpc clone	\N
 32	KnwnPCCount	protein_coding_KNOWN	Number of Known Protein Coding
 33	NovPCCount	protein_coding_NOVEL	Number of Novel Protein Coding
 36	PredPCCount	protein_coding_PREDICTED	Number of Predicted Protein Coding
@@ -51,42 +50,42 @@ attrib_type_id	code	name	description
 58	CCDS_PublicNote	CCDS Public Note	Public Note for CCDS identifier, provided by http://www.ncbi.nlm.nih.gov/CCDS
 59	Frameshift	Frameshift	Frameshift modelled as intron
 62	ncRNA	Structure	RNA secondary structure line
-63	skip_clone	skip clone  Skip clone in align_by_clone_identity.pl	NULL
+63	skip_clone	skip clone  Skip clone in align_by_clone_identity.pl	\N
 64	coding_cnt	Coding genes	Number of protein coding Genes
 67	pseudogene_cnt	Pseudogenes	Number of pseudogenes
-80	supercontig	SuperContig name	NULL
-81	well_name	Well plate name	NULL
-82	bacterial	Bacterial	NULL
-90	bacend_well_nam	BACend well name	NULL
-91	alt_well_name	Alt well name	NULL
-92	TranscriptEdge	Transcript Edge	NULL
-93	alt_embl_acc	Alt European Nucleotide Archive (was EMBL) acc	NULL
-94	alt_org	Alt org	NULL
-95	intl_clone_name	International Clone Name	NULL
-96	embl_version	European Nucleotide Archive (was EMBL) Version	NULL
+80	supercontig	SuperContig name	\N
+81	well_name	Well plate name	\N
+82	bacterial	Bacterial	\N
+90	bacend_well_nam	BACend well name	\N
+91	alt_well_name	Alt well name	\N
+92	TranscriptEdge	Transcript Edge	\N
+93	alt_embl_acc	Alt European Nucleotide Archive (was EMBL) acc	\N
+94	alt_org	Alt org	\N
+95	intl_clone_name	International Clone Name	\N
+96	embl_version	European Nucleotide Archive (was EMBL) Version	\N
 97	chr	Chromosome Name	Chromosome Name Contained in the Assembly
 98	equiv_asm	Equivalent EnsEMBL assembly	For full chromosomes made from NCBI AGPs
 109	HitSimilarity	hit similarity	percentage id to parent transcripts
 110	HitCoverage	hit coverage	coverage of parent transcripts
 111	PropNonGap	proportion non gap	proportion non gap
-112	NumStops	number of stops	NULL
+112	NumStops	number of stops	\N
 113	GapExons	gap exons	number of gap exons
 114	SourceTran	source transcript	source transcript
 115	EndNotFound	end not found	end not found
 116	StartNotFound	start not found	start not found
-117	Frameshift Fra	Frameshift modelled as intron	NULL
+117	Frameshift Fra	Frameshift modelled as intron	\N
 118	ensembl_name	Ensembl name	Name of equivalent Ensembl chromosome
 119	NoAnnotation	NoAnnotation	Clones without manual annotation
 120	hap_contig	Haplotype contig	Contig present on a haplotype
-121	annotated	Clone Annotation Status	NULL
-122	keyword	Clone Keyword	NULL
-123	hidden_remark	Hidden Remark	NULL
-124	mRNA_start_NF	mRNA start not found	NULL
-125	mRNA_end_NF	mRNA end not found	NULL
-126	cds_start_NF	CDS start not found	NULL
-127	cds_end_NF	CDS end not found	NULL
+121	annotated	Clone Annotation Status	\N
+122	keyword	Clone Keyword	\N
+123	hidden_remark	Hidden Remark	\N
+124	mRNA_start_NF	mRNA start not found	\N
+125	mRNA_end_NF	mRNA end not found	\N
+126	cds_start_NF	CDS start not found	\N
+127	cds_end_NF	CDS end not found	\N
 128	write_access	Write access for Sequence Set	1 for writable , 0 for read-only
-129	hidden	Hidden Sequence Set	NULL
+129	hidden	Hidden Sequence Set	\N
 130	vega_name	Vega name	Vega seq_region.name
 131	vega_export_mod	Export mode	E (External), I (Internal) etc
 132	vega_release	Vega release	Vega release number
@@ -119,7 +118,7 @@ attrib_type_id	code	name	description
 167	NumResidues	Number of residues	Pepstats attributes
 168	AvgResWeight	Ave. residue weight	Pepstats attributes
 170	initial_met	Initial methionine	Set first amino acid to methionine
-171	NonGapHCov	NonGapHCov	NULL
+171	NonGapHCov	NonGapHCov	\N
 172	otter_support	otter support	Evidence ID that was used as supporting feature for building a gene in Vega
 173	enst_link	enst link	Code to link a OTTT with an ENST when they both share the CDS of ENST
 174	upstream_ATG	upstream ATG	Alternative ATG found upstream of the defined as start ATG for the transcript
@@ -175,7 +174,7 @@ attrib_type_id	code	name	description
 363	filtered-set	Filtered Gene Set v1	Working genes that are screened for TE content and orthology with sorghum and rice
 364	super-set	Super Working Gene Set	Set of all working gene set loci from both Builds 4a and 5a
 365	projected4a2	Projected by alignment	Temporary (Monday, August 23, 2010)
-366	merged	Merged species	NULL
+366	merged	Merged species	\N
 367	karyotype_rank	Rank in the karyotype	For a given seq_region, if it is part of the species karyotype, will indicate its rank
 368	noncoding_acnt	Non coding genes	Number of non coding genes on alternate sequences
 369	coding_acnt	Coding genes	Number of protein coding genes on alternate sequences
@@ -328,7 +327,7 @@ attrib_type_id	code	name	description
 538	legacy_biotype	Legacy biotype	Obsolete biotype previously assigned to this Ensembl object.
 539	KASP_markers	KASP_markers	KASP markers designed to be genome-specific with PolyMarker
 540	mirna_arm	miRNA arm	Hairpin arm from which this miRNA has come from
-541	_stop_codon_rt	Stop Codon Readthrough	NULL
+541	_stop_codon_rt	Stop Codon Readthrough	\N
 542	citation_source	Citation source	Variant citation data source
 544	phenotype_type	Phenotype type	Type of the phenotype information
 545	external_plant_links	external_plant_links	Links to external plant related sources

@@ -1,4 +1,3 @@
-seq_region_id	name	coord_system_id	length
 1	1	1	114059860
 27	25LG2	1	809223
 40	JRXK01022146.1	1	9743

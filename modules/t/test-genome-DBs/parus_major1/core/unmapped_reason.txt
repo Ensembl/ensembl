@@ -1,4 +1,3 @@
-unmapped_reason_id	summary_description	full_description
 1	Marker matches multiple times	Marker aligns to the genome > 3 times
 2	Marker does not align	Unable to align to the genome
 3	Failed to find Stable ID	Stable ID that this xref was linked to no longer exists
