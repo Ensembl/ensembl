@@ -1,3 +1,4 @@
+seq_region_id	attrib_type_id	value
 1	367	1
 1	6	1
 1	64	1152
