@@ -307,7 +307,9 @@
 50679	Ens_Ac_translation	\N	XREF	40	Ensembl Anole Lizard Translation	MISC	\N	\N	\N
 50682	BGI_Gene	1	XREF	50	BGI Gene	MISC	\N	\N	BGI gene identifier
 50683	GeneIndex	1	XREF	50	GeneIndex	MISC	\N	\N	\N
-50684	EO	1	XREF	0	Environment Ontology	MISC	\N	\N	Plant environmental conditions ontology terms.\nMore information in there:\nhttp://www.gramene.org/plant_ontology/ontology_browse.html#eo
+50684	EO	1	XREF	0	Environment Ontology	MISC	\N	\N	Plant environmental conditions ontology terms.\
+More information in there:\
+http://www.gramene.org/plant_ontology/ontology_browse.html#eo
 50687	Uppsala University	\N	KNOWN	5	Uppsala University	MISC	\N	\N	\N
 50688	GenBank	1	XREF	1	GenBank	MISC	\N	\N	GenBank identifier
 50690	RefSeq_gene_name	\N	KNOWN	200	RefSeq gene name	MISC	\N	\N	This is read out of the *.gff files provided to us by the NCBI when we do a RefSeq import or a CCDS comparison. It has the key "gene_id" and is found at the start of the 9th field.
@@ -342,7 +344,8 @@
 50731	Turkey Genome Consortium	\N	KNOWN	5	Turkey Genome Consortium	MISC	\N	\N	Turkey Genome Consortium
 50732	Yutaka_Satou_Kyoto_University	\N	KNOWN	5	Yutaka Satou Kyoto University	MISC	\N	\N	Yutaka Satou Kyoto University
 50733	Chicken_Genome_Consortium	\N	KNOWN	5	International Chicken Genome Consortium	MISC	\N	\N	\N
-50734	TAIR_TRANSLATION	1	XREF	1	TAIR Translation identifier	MISC	\N	\N	TAIR identifier to link to Ensembl Translation entities.\nThe main requirement behind this entry, is to be able to link TAIR GO annotations to Ensembl Translation objects.
+50734	TAIR_TRANSLATION	1	XREF	1	TAIR Translation identifier	MISC	\N	\N	TAIR identifier to link to Ensembl Translation entities.\
+The main requirement behind this entry, is to be able to link TAIR GO annotations to Ensembl Translation objects.
 50735	AGI_GENE	1	XREF	1	AGI Gene	MISC	\N	\N	annotation provided by Arizona Genome Institute
 50736	AGI_TRANSCRIPT	1	XREF	1	AGI Transcript	MISC	\N	\N	annotation provided by Arizona Genome Institute
 50737	CGNC	\N	KNOWNXREF	100	CGNC Symbol	PRIMARY_DB_SYNONYM	\N	\N	\N
@@ -402,7 +405,8 @@
 50818	Smar_Community_Annotation	\N	KNOWN	50	Strigamia maritima Community Annotation	MISC	\N	\N	\N
 50819	RFAM_GENE	\N	KNOWN	0	Rfam Gene Name	MISC	\N	\N	Name for gene assigned from Rfam alignment
 50820	PGSB_WHEAT_GENE	2.2	KNOWNXREF	1	Wheat survey sequence PGSB gene identifier	MISC	\N	\N	Bread wheat survey sequence gene models from PGSB Wheat Genome Database (formerly MIPS). Release 2.2
-50821	GDEC_GENE	1.0	KNOWNXREF	1	GDEC 3B gene identifier	MISC	\N	\N	Bread wheat 3B pseudomolecule gene models from INRA GDEC group.\n
+50821	GDEC_GENE	1.0	KNOWNXREF	1	GDEC 3B gene identifier	MISC	\N	\N	Bread wheat 3B pseudomolecule gene models from INRA GDEC group.\
+
 50822	ARAPORT_GENE	1	KNOWNXREF	0	Araport	MISC	\N	\N	Gene identifiers from Araport, the Arabidopsis information portal (formerly TAIR).
 50823	MTGD	4.0	KNOWNXREF	0	MTGD	PRIMARY_DB_SYNONYM	\N	\N	The Medicago truncatula Genome Database (MTGD), maintained by JCVI.
 50824	Reactome_gene	\N	KNOWNXREF	0	Reactome gene	PRIMARY_DB_SYNONYM	\N	\N	Reactome entries linked to genes

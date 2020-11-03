@@ -331,7 +331,20 @@
 542	citation_source	Citation source	Variant citation data source
 544	phenotype_type	Phenotype type	Type of the phenotype information
 545	external_plant_links	external_plant_links	Links to external plant related sources
-546	coord_system_tag	coord_system_tag	Coord_system_tag -- a way to store information about  seq_region's virtual coord_system names for single level assemblies.\nI.e., we have an assembly with toplevel seq_regions ("primary_assembly") only,\nand we want to store the initial type of  seq_regions like contig, scaffold, supercontig, chromosome, etc.
-547	sequence_location	sequence_location	To identify  sequence locations / cellular compartments  DNA sequence comes from.\n\nValues are supposed to be SO compliant (children of the plastid_sequence SO:0000740 and nuclear_sequence SO:0000738 ):\n"apicoplast_chromosome",\n"chloroplast_chromosome",\n"chromoplast_chromosome",\n"cyanelle_chromosome",\n"leucoplast_chromosome",\n"macronuclear_chromosome",\n"micronuclear_chromosome",\n"mitochondrial_chromosome",\n"nuclear_chromosome"
+546	coord_system_tag	coord_system_tag	Coord_system_tag -- a way to store information about  seq_region's virtual coord_system names for single level assemblies.\
+I.e., we have an assembly with toplevel seq_regions ("primary_assembly") only,\
+and we want to store the initial type of  seq_regions like contig, scaffold, supercontig, chromosome, etc.
+547	sequence_location	sequence_location	To identify  sequence locations / cellular compartments  DNA sequence comes from.\
+\
+Values are supposed to be SO compliant (children of the plastid_sequence SO:0000740 and nuclear_sequence SO:0000738 ):\
+"apicoplast_chromosome",\
+"chloroplast_chromosome",\
+"chromoplast_chromosome",\
+"cyanelle_chromosome",\
+"leucoplast_chromosome",\
+"macronuclear_chromosome",\
+"micronuclear_chromosome",\
+"mitochondrial_chromosome",\
+"nuclear_chromosome"
 548	BRC4_seq_region_name	BRC4_seq_region_name	seq_region name for the BRC4 project
 549	EBI_seq_region_name	EBI_seq_region_name	EBI seq_region name for the BRC4 project data roundtripping

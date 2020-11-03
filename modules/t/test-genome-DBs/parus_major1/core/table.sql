@@ -492,16 +492,6 @@ CREATE TABLE `meta` (
   KEY `species_value_idx` (`species_id`,`meta_value`)
 ) ENGINE=MyISAM AUTO_INCREMENT=132 DEFAULT CHARSET=latin1;
 
-INSERT INTO meta (species_id, meta_key, meta_value) VALUES
-  (NULL, 'schema_type',     'core'),
-  (NULL, 'schema_version',  '104');
-# Patches included in this schema file:
-# NOTE: At start of release cycle, remove patch entries from last release.
-# NOTE: Avoid line-breaks in values.
- 
-INSERT INTO meta (species_id, meta_key, meta_value)
-  VALUES (NULL, 'patch', 'patch_103_104_a.sql|schema_version');
-
 CREATE TABLE `meta_coord` (
   `table_name` varchar(40) NOT NULL,
   `coord_system_id` int(10) unsigned NOT NULL,
