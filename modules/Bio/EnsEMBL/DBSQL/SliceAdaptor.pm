@@ -344,21 +344,17 @@ sub fetch_by_region {
       # deal with cases where a coordsystem might not be defined by user
       my $slice;
       if (!defined $cs) {
-        print "Running synonym-match method...\n";
         $slice = $self->_fetch_by_seq_region_synonym( undef, $seq_region_name, $start, $end, $strand, $version, $no_fuzz );
       } else {
-        print "Running synonym-match method...\n";
         $slice = $self->_fetch_by_seq_region_synonym( $cs, $seq_region_name, $start, $end, $strand, $version, $no_fuzz );
       }
 
       # check whether any slice data has been returned
       if ( $slice && $slice->seq_region_name ) {
-        print "Slice data has been returned...\n";
         my $matched_name = $slice->seq_region_name;
 
         # if matched name is different to query name, skip fuzzy matching
         if ( $matched_name ne $seq_region_name ) {
-          print "Using matched name $matched_name derived from query name $seq_region_name...\n";
           $seq_region_name = $matched_name;
 
           # define $arr
