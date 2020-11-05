@@ -130,4 +130,9 @@ ok($slice);
 my %features = %{$slice->get_generic_features()};
 ok(!%features);
 
+# check Parus major test database connection
+my $parus_major_db = Bio::EnsEMBL::Test::MultiTestDB->new("parus_major1");
+my $parus_major_dba = $parus_major_db->get_DBAdaptor("core");
+isa_ok($parus_major_dba, 'Bio::EnsEMBL::DBSQL::DBAdaptor');
+
 done_testing();
