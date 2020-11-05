@@ -74,5 +74,4 @@ ok(scalar(@{$sth->fetchall_arrayref}) == 21);
 
 $sth->finish;
 
-
 done_testing();
