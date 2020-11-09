@@ -1,5 +1,5 @@
 1	\N	schema_type	core
-2	\N	schema_version	101
+2	\N	schema_version	104
 3	\N	patch	patch_94_95_a.sql|schema_version
 4	\N	patch	patch_94_95_b.sql|vertebrate_division_rename
 5	1	genebuild.start_date	2018-10-Ensembl
@@ -88,3 +88,6 @@
 129	\N	patch	patch_100_101_a.sql|schema_version
 130	1	assembly.provider_name	
 131	1	assembly.provider_url	
+132	\N	patch	patch_101_102_a.sql|schema_version
+133	\N	patch	patch_102_103_a.sql|schema_version
+134	\N	patch	patch_103_104_a.sql|schema_version
