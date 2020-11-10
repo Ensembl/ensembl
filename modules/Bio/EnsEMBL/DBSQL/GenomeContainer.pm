@@ -32,7 +32,7 @@ limitations under the License.
 
 =head1 NAME
 
-Bio::EnsEMBL::DBSQL::GenomeContainer - Encapsulates all access to 
+Bio::EnsEMBL::DBSQL::GenomeContainer - Encapsulates all access to
 genome related information
 
 =head1 SYNOPSIS
@@ -114,7 +114,7 @@ sub new {
   Example    : $genome_adaptor->store('coding_cnt', 20769);
   Description: Stores a genome statistic in the database
   Returntype : The database identifier (dbID) of the newly stored genome statistic
-  Exceptions : 
+  Exceptions :
   Caller     : general
   Status     : Stable
 
@@ -132,7 +132,7 @@ sub store {
     my $species_id = $db->species_id();
 
     my $store_genome_sql = q{
-    INSERT INTO genome_statistics 
+    INSERT INTO genome_statistics
        SET statistic = ?,
                value = ?,
           species_id = ?,
@@ -162,7 +162,7 @@ sub store {
   }
 
   return $stats_id;
-  
+
 }
 
 
@@ -191,7 +191,7 @@ sub update {
   my $update_genome_sql = q{
     UPDATE genome_statistics
        SET value = ?,
-       timestamp = now() 
+       timestamp = now()
   };
 
   if (defined $attribute) {
@@ -199,7 +199,7 @@ sub update {
   }
 
   $update_genome_sql .= ' WHERE statistic = ? and species_id = ?';
-  
+
   my $sth = $self->prepare($update_genome_sql);
   $sth->bind_param(1,   $value,     SQL_INTEGER);
 
@@ -211,7 +211,7 @@ sub update {
     $sth->bind_param($increment, $attribute_type_id, SQL_VARCHAR);
     $increment++;
   }
-  
+
   $sth->bind_param($increment++, $statistic, SQL_VARCHAR);
   $sth->bind_param($increment, $db->species_id(), SQL_INTEGER);
 
@@ -486,33 +486,6 @@ sub get_ref_length {
   return $self->{'ref_length'};
 }
 
-
-=head2 get_total_length
-
-  Deprecated. Please use get_ref_length(), i.e. the golden path, instead
-  Arg [1]    : (optional) base pair length
-  Example    : $total_length = $genome->get_total_length();
-  Description: Getter/setter for the total length (number of base pairs) for the assembly currently used
-
-  Returntype : integer
-  Exceptions : none
-  Caller     : general
-  Status     : Stable
-
-=cut
-
-sub get_total_length {  ## DEPRECATED
-  my ($self, $total_length) = @_;
-  deprecate('GenomeContainer::get_total_length() is deprecated due to inaccuracy and will be removed in e102. Use golden path (GenomeContainer::get_ref_length()) instead');
-  if (defined $total_length) {
-    $self->{'total_length'} = $total_length;
-  }
-  if (!defined $self->{'total_length'}) {
-    $self->{'total_length'} = $self->fetch_by_statistic('total_length')->value;
-  }
-  return $self->{'total_length'};
-}
-
 =head2 get_toplevel
 
   Arg [1]    : none
@@ -666,7 +639,7 @@ sub fetch_by_statistic {
   my $db = $self->db;
   my $fetch_sql = q{
     SELECT genome_statistics_id, statistic, value, species_id, code, name, description
-      FROM genome_statistics, attrib_type 
+      FROM genome_statistics, attrib_type
      WHERE genome_statistics.attrib_type_id = attrib_type.attrib_type_id
        AND statistic = ? AND species_id=?
   };
@@ -1453,9 +1426,9 @@ sub get_genome_components {
 
   my $sql_helper = $self->dbc->sql_helper;
 
-  my $sql = 
-    "SELECT DISTINCT value 
-     FROM seq_region_attrib JOIN attrib_type 
+  my $sql =
+    "SELECT DISTINCT value
+     FROM seq_region_attrib JOIN attrib_type
      USING (attrib_type_id) WHERE attrib_type.code='genome_component'";
 
   return $sql_helper->execute_simple(-SQL => $sql);
