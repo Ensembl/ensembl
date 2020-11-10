@@ -341,6 +341,7 @@ sub fetch_by_region {
           my $tmp_key_string = "$seq_region_name:" . $slice->coord_system()->dbID();
           $arr = $self->{'sr_name_cache'}->{$tmp_key_string};
           $length = $arr->[3];
+          $cs = $slice->coord_system() if (!$cs);
         }
 
       } else { # if no slice object with a match returned, try using a fuzzy match
