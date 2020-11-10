@@ -135,10 +135,11 @@ is($p_major_slice->end, "809223", "Slice end/length correctly retrieved from kar
 
 {
   # if no synonym match found and fuzzy match option is set as false,
-  # test that an error is thrown for no possible result
+  # test that undef slice is returned 
+  # (NW: undef slice expected behaviour reported by JA in Production Team)
   my $clone_name = 'AL031658';
-  throws_ok { $slice_adaptor->_fetch_by_seq_region_synonym(undef, $clone_name, '1', '1000', '1', undef, 1) }
-  qr/No synonym or wildcard match found and use fuzzy match is set to false/, 'Error correctly thrown when no synonym/wildcard/fuzzy match can be made';
+  my $slice = $slice_adaptor->_fetch_by_seq_region_synonym(undef, $clone_name, '1', '1000', '1', undef, 1);
+  ok(!defined $slice);
 }
 
 # ensure that seq_region_name is provided
