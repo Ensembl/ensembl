@@ -49,7 +49,6 @@ use base qw( XrefMapper::BasicMapper);
 #               ii)  RFAM
 #               iii) miRBase
 #               iv)   EntrezGene
-#               v) Clone name
 #
 #      NOTE: for "i)" above, if more than one exists we find the "best" one if possible
 #            and remove the other ones. If there is more than one "best" we keep all and
