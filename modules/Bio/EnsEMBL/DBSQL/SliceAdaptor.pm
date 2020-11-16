@@ -2727,6 +2727,115 @@ sub _build_circular_slice_cache {
   $sth->finish();
 } ## end _build_circular_slice_cache
 
+=head2 _create_chromosome_alias
+
+  Args       : none
+  Example    : $self->create_chromosome_alias();
+  Description: create chromosome alias in coordinate system with karyotype attributes
+  Returntype : Bio::EnsEMBL::CoordSystem, or none 
+  Exceptions : None
+  Caller     : general
+  Status     : in testing
+
+=cut
+
+sub _create_chromosome_alias {
+  my $self = shift;
+  my $csa  = $self->db->get_CoordSystemAdaptor();
+
+  # to store reformatted db query results
+  my $karyotype_seq_regions;
+  
+  my $karyotype_rank_string = "karyotype_rank";
+
+  # to store coord_system_id to alias 
+  my $cs_id;
+  my %cs_id_rank;
+
+  # check whether seq region cache exists, otherwise run database query
+  if ( $self->{'karyotype_cache'} ) {
+    $karyotype_seq_regions = $self->{'karyotype_cache'};
+
+    # get candidate coordSystem(s) to alias
+    foreach my $seq_region_name ( keys %{$karyotype_seq_regions} ) {
+      foreach my $coord_system_id ( keys %{ $karyotype_seq_regions->{ $seq_region_name } } ) {
+        my $rank = $karyotype_seq_regions->{ $seq_region_name }->{ $coord_system_id }->{ rank };
+        $cs_id_rank{ $coord_system_id } = $rank;
+      }
+    }
+  } else {
+    # cannot find a coordssystem called chromosome
+    # look through attribs to find seq_regions with karyotype
+
+    my $sth =
+      $self->prepare( "SELECT sr.seq_region_id, sr.name, sr.coord_system_id, sr.length, a.code, cs.rank "
+                    . "FROM seq_region sr, seq_region_attrib sra, attrib_type a, coord_system cs "
+                    . "WHERE sr.seq_region_id = sra.seq_region_id "
+                    . "AND a.attrib_type_id = sra.attrib_type_id "
+                    . "AND cs.coord_system_id = sr.coord_system_id "
+                    . "AND a.code = ?" );
+
+    $sth->bind_param( 1, $karyotype_rank_string );
+    $sth->execute();
+
+    # fetch SQL results and identify coord_system_id(s) that
+    # has(have) karyotype attribs
+    while ( my $hashref = $sth->fetchrow_hashref() ) {
+      my $seq_region_id   = $hashref->{ seq_region_id };
+      my $seq_region_name = $hashref->{ name };
+      my $coord_system_id = $hashref->{ coord_system_id };
+      my $length          = $hashref->{ length };
+      my $code            = $hashref->{ code };
+      my $rank            = $hashref->{ rank };
+
+      # account for possibility of multiple coord_system_ids returned from db query
+      $karyotype_seq_regions->{ $seq_region_name }->{ $coord_system_id } = {
+        code            => $code,
+        length          => $length,
+        seq_region_id   => $seq_region_id,
+        rank            => $rank
+      };
+
+      # hash to help decide which cs id to use, if multiple
+      $cs_id_rank{ $coord_system_id } = $rank;
+    }
+    $sth->finish();
+  }
+
+  my $cs_id_count = keys %cs_id_rank;
+  # if number of coordSystem ids retrieved is one, simply use this coordSystem id
+  # otherwise, choose the coordSystem with the best-rank (i.e. lowest number)
+  if ( $cs_id_count == 1 ) {
+    $cs_id = (keys %cs_id_rank)[0]; # get only key name in hash
+  } else {
+    foreach my $id (sort { $cs_id_rank{$a} <=> $cs_id_rank{$b} } keys %cs_id_rank) {
+      $cs_id = $id;
+      last; # exit loop after getting lowest-ranked coordSystem id
+    }
+  }
+
+  if ( !$cs_id ) {
+    throw("No coordinate system to create a chromosome slice from (because there is no suitable coordinate system to create an alias to).\n");
+  } else {
+
+    # use appropriate 'coord_system_id' to set 'alias_to' variable
+    # first check that a chromosome object does not already exist
+    my $cs = $csa->fetch_by_dbID( $cs_id );
+    if ( !$cs ) {
+      throw("Unable to retrieve CoordSystem object using dbID: $cs_id");
+    }
+    if ( $cs->name eq "chromosome" ) {
+      throw("A chromosome CoordSystem object already exists. Cannot create chromosome alias.");
+    }
+    $cs->alias_to('chromosome');
+
+    # create karyotype cache in retrieved coordsystem
+    $cs->{'karyotype_cache'} = $karyotype_seq_regions;
+
+    return $cs;
+  }
+} ## end create_chromosome_alias
+
 
 =head2 _fetch_by_seq_region_synonym
   Args       : $cs, $seq_region_name, $start, $end, $strand, $version, $no_fuzz
