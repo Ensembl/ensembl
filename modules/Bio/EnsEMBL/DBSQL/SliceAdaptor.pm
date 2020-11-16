@@ -251,14 +251,25 @@ sub fetch_by_region {
   my $key;
 
   if ( defined($cs) ) {
-    $sql = sprintf( "SELECT sr.name, sr.seq_region_id, sr.length, %d "
-                      . "FROM seq_region sr ",
-                    $cs->dbID() );
 
-    $constraint = "AND sr.coord_system_id = ?";
-    push( @bind_params, [ $cs->dbID(), SQL_INTEGER ] );
+    # if chromosome alias is defined, use karyotype_cache to access seq region data
+    # rather than a database query
+    if ( $cs->alias_to() eq "chromosome" ) {
 
-    $key = "$seq_region_name:" . $cs->dbID();
+      $key = "karyotype_cache";
+
+    } else { # otherwise, search database to access seq region data, etc.
+
+      $sql = sprintf( "SELECT sr.name, sr.seq_region_id, sr.length, %d "
+                        . "FROM seq_region sr ",
+                      $cs->dbID() );
+
+      $constraint = "AND sr.coord_system_id = ?";
+      push( @bind_params, [ $cs->dbID(), SQL_INTEGER ] );
+
+      $key = "$seq_region_name:" . $cs->dbID();
+      
+    }
   } else {
     $sql =
       "SELECT sr.name, sr.seq_region_id, sr.length, cs.coord_system_id "
