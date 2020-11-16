@@ -224,9 +224,17 @@ sub fetch_by_region {
     $cs = $csa->fetch_by_name( $coord_system_name, $version );
 
     if ( !defined($cs) ) {
-      throw( sprintf( "Unknown coordinate system:\n"
-                        . "name='%s' version='%s'\n",
-                      $coord_system_name, $version ) );
+      # deal with cases where undefined coordsystem name requested is 'chromosome'
+      if ( $coord_system_name eq "chromosome" ) {
+
+        # set the 'chromosome' alias, if not yet set
+        $cs = $self->_create_chromosome_alias();
+
+      } else {
+        throw( sprintf( "Unknown coordinate system:\n"
+                  . "name='%s' version='%s' seq region name='%s'\n",
+                $coord_system_name, $version, $seq_region_name ) );
+      }
     }
 
     # fetching by toplevel is same as fetching w/o name or version
