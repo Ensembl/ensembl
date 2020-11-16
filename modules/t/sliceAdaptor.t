@@ -95,6 +95,18 @@ my $parus_major_sa = Bio::EnsEMBL::DBSQL::SliceAdaptor->new($parus_major_dba);
   my $parus_major_cs = $parus_major_sa->_create_chromosome_alias();
   is($parus_major_cs->alias_to(), $alias, "Getter method correctly retrieved alias '$alias'");
 }
+{
+  ### test chromosome alias created ok for a requested parus_major chromosome slice
+  my $alias = "chromosome";
+  my $name_exact_match = "25LG2";
+  my $start = '1';
+  my $end = '809223';
+  my $location = sprintf("%s:%s-%s", $alias, $start, $end);
+  my $p_major_slice = $parus_major_sa->fetch_by_region($alias, $name_exact_match, $start, $end);
+  my $coord_system_name = $p_major_slice->coord_system()->name();
+  is($p_major_slice->coord_system()->alias_to(), $alias, "Correctly retrieved alias '$alias' for coordinate system name '$coord_system_name' with seq region name '$name_exact_match'");
+  test_slice($location, $p_major_slice, $coord_system_name, $name_exact_match, $start, $end);
+}
 
 #
 # _fetch_by_seq_region_synonym
