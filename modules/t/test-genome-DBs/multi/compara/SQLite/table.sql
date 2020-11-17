@@ -1,6 +1,6 @@
 -- 
 -- Created by SQL::Translator::Producer::SQLite
--- Created on Thu Jul 16 10:14:56 2020
+-- Created on Tue Nov 17 16:10:28 2020
 -- 
 
 BEGIN TRANSACTION;
@@ -254,7 +254,7 @@ CREATE TABLE "gene_tree_root" (
   "root_id" INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
   "member_type" enum NOT NULL,
   "tree_type" enum NOT NULL,
-  "clusterset_id" varchar(20) NOT NULL DEFAULT 'default',
+  "clusterset_id" varchar(30) NOT NULL DEFAULT 'default',
   "method_link_species_set_id" integer NOT NULL,
   "species_tree_root_id" bigint,
   "gene_align_id" integer,
