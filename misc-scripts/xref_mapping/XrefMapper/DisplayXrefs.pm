@@ -46,7 +46,7 @@ sub gene_description_sources {
   my $self     = shift;
 
   my ($precedence, $ignore) = @{$self->gene_display_xref_sources()};
-  return @$precedence;
+  return [$precedence,$ignore];
 
 }
 
@@ -459,19 +459,9 @@ sub set_display_xrefs{
 
 
 
-  # Set status to 'NO_DISPLAY' for object_xrefs with a display_label that is just numeric;
-
-  my $update_ignore_sth = $xref_dbi->prepare('UPDATE object_xref ox, source s, xref x SET ox_status = "NO_DISPLAY" where ox_status like "DUMP_OUT" and s.source_id = x.source_id and x.label REGEXP "^[0-9]+$" and ox.xref_id = x.xref_id');
-
-  $update_ignore_sth->execute();
-  $update_ignore_sth->finish;
-
-
   my $ins_p_sth = $xref_dbi->prepare("INSERT ignore into display_xref_priority (ensembl_object_type,source_id, priority) values(?, ?, ?)");
   my $get_source_id_sth = $xref_dbi->prepare("select source_id from source where name like ? order by priority");
   my $list_sources_sth = $xref_dbi->prepare("select distinct name from display_xref_priority d join source using(source_id) where ensembl_object_type = ? order by d.priority");
-
-  $update_ignore_sth = $xref_dbi->prepare('UPDATE object_xref SET ox_status = "NO_DISPLAY" where object_xref_id = ?');
 
 
   my %object_types = ('gene' => 'Gene', 'transcript' => 'Transcript'); 
@@ -515,21 +505,7 @@ sub set_display_xrefs{
  
       }
 
-      # Set status to 'NO_DISPLAY' for those that match the ignore REGEXP in object_xref
-      # Xrefs have already been dump to core etc so no damage done.
-
-      foreach my $ignore_sql (values %$ignore){
-	  print "IGNORE SQL: $ignore_sql\n" if($self->verbose);
-	  my $ignore_sth = $xref_dbi->prepare($ignore_sql);
-	  $ignore_sth->execute();
-	  my ($object_xref_id); 
-	  $ignore_sth->bind_columns(\$object_xref_id);
-	  while($ignore_sth->fetch()){    
-	      $update_ignore_sth->execute($object_xref_id);
-	  }
-	  $ignore_sth->finish;
-      }
-      $update_ignore_sth->finish;
+      $self->_apply_ignore($ignore, $xref_dbi);
 
 
 #look at sources of display xrefs which are relevant for this object type
@@ -628,6 +604,30 @@ DXS
   $syn_clean_sth->finish();
 
 
+}
+
+sub _apply_ignore {
+  my ($self, $ignore, $xref_dbi) = @_;
+
+  # Set status to 'NO_DISPLAY' for object_xrefs with a display_label that is just numeric;
+  my $update_ignore_sth = $xref_dbi->prepare('UPDATE object_xref ox, source s, xref x SET ox_status = "NO_DISPLAY" where ox_status like "DUMP_OUT" and s.source_id = x.source_id and x.label REGEXP "^[0-9]+$" and ox.xref_id = x.xref_id');
+  $update_ignore_sth->execute();
+  $update_ignore_sth->finish;
+
+  $update_ignore_sth = $xref_dbi->prepare('UPDATE object_xref SET ox_status = "NO_DISPLAY" where object_xref_id = ?');
+
+  foreach my $ignore_sql (values %$ignore){
+    print "IGNORE SQL: $ignore_sql\n" if($self->verbose);
+    my $ignore_sth = $xref_dbi->prepare($ignore_sql);
+    $ignore_sth->execute();
+    my ($object_xref_id);
+    $ignore_sth->bind_columns(\$object_xref_id);
+    while($ignore_sth->fetch()){
+      $update_ignore_sth->execute($object_xref_id);
+    }
+    $ignore_sth->finish;
+  }
+  $update_ignore_sth->finish;
 }
 
 
@@ -816,11 +816,13 @@ sub set_gene_descriptions{
 
   my @precedence;
   my @regexps;
+  my ($ignore, $precedence);
   if( $self->mapper->can("gene_description_sources") ){
     @precedence = $self->mapper->gene_description_sources();
   }
   else{
-    @precedence = $self->gene_description_sources();
+    ($precedence, $ignore) = @{$self->gene_description_sources()};
+    @precedence = @$precedence;
   }
 
   if( $self->mapper->can("gene_description_filter_regexps") ){
@@ -861,6 +863,8 @@ sub set_gene_descriptions{
       }
  
   }
+
+  $self->_apply_ignore($ignore, $xref_dbi);
 
 
 
@@ -937,6 +941,12 @@ DXS
   $update_gene_desc_sth->finish;
   $gene_desc_sth->finish;
   print scalar(keys %gene_desc_updated) ." gene descriptions added\n";
+
+  # reset the status to DUMP_OUT fro object_xrefs that where ignored for the display_xref;
+
+  my $reset_status_sth = $xref_dbi->prepare('UPDATE object_xref SET ox_status = "DUMP_OUT" where ox_status = "NO_DISPLAY"');
+  $reset_status_sth->execute();
+  $reset_status_sth->finish;
   
 
 }
