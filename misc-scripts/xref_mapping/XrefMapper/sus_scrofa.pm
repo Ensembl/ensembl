@@ -32,10 +32,6 @@ sub get_official_name{
    return "PIGGY";
 }
 
-sub get_canonical_name{
-   return "PIGGY";
-}
-
 # Not running transcript_names_from_gene for merged species
 # as this is already beng done in the OfficialNaming mapper
 sub transcript_names_from_gene {
