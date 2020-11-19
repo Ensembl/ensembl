@@ -32,7 +32,7 @@ use Text::CSV;
 use parent qw( XrefParser::BaseParser );
 
 
-Readonly my $EXPECTED_NUMBER_OF_COLUMNS => 3;
+Readonly my $EXPECTED_NUMBER_OF_COLUMNS => 23;
 
 
 
@@ -107,7 +107,7 @@ sub run {
     }
 
     # Do not modify the contents of @{$line}, only the output - hence the /r.
-    my ( $dbass_gene_id, $dbass_gene_name, $ensembl_id )
+    my ( $dbass_gene_id, $dbass_gene_name, $dbass_full_name, $ensembl_id )
       = map { s{\s+\z}{}rmsx } @{ $line };
 
     # Do not attempt to create unmapped xrefs. Checking truthiness is good
@@ -206,13 +206,13 @@ sub is_file_header_valid {
     return 0;
   }
 
-  my ( $dbass_end ) = ( $header[0] =~ m{ dbass (3|5) geneid }msx );
-  return 0 unless defined $dbass_end;
+  my $dbass_end = ( $header[0] eq 'id' );
+  return 0 unless $dbass_end;
 
-  my $dbass_name_ok = ( $header[1] =~ m{ dbass ${dbass_end} genename }msx );
+  my $dbass_name_ok = ( $header[1] eq 'genesymbol' );
   return 0 unless $dbass_name_ok;
 
-  my $ensembl_id_ok = ( $header[2] eq 'ensemblgenenumber' );
+  my $ensembl_id_ok = ( $header[3] eq 'ensemblreference' );
   return 0 unless $ensembl_id_ok;
 
   # If we have made it this far, all should be in order
