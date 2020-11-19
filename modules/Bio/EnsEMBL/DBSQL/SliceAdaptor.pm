@@ -2927,7 +2927,7 @@ sub _fetch_by_fuzzy_matching {
   my $sth =
     $self->prepare( $sql . " WHERE sr.name LIKE ? " . $constraint );
 
-  unshift @$bind_params, [ sprintf( '%s.%%', $seq_region_name ), SQL_VARCHAR ];
+  @$bind_params[0] = [ sprintf( '%s.%%', $seq_region_name ), SQL_VARCHAR ];
   
   my $pos = 0;
   foreach my $param (@$bind_params) {
