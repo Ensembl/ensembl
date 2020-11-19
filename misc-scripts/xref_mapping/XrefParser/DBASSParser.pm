@@ -48,7 +48,8 @@ Readonly my $EXPECTED_NUMBER_OF_COLUMNS => 23;
                The columns of the file should be the following:
                 1) DBASS Gene ID
                 2) DBASS Gene Name
-                3) Ensembl Gene ID
+                3) DBASS Gene Description
+                4) Ensembl Gene ID
                with the first line containing column names and all
                subsequent ones containing entries proper. All column
                values, including names from the header as well as any
@@ -101,7 +102,7 @@ sub run {
 
   while ( defined( my $line = $csv->getline( $file_io ) ) ) {
 
-    if ( scalar @{ $line } != $EXPECTED_NUMBER_OF_COLUMNS ) {
+    if ( scalar @{ $line } < $EXPECTED_NUMBER_OF_COLUMNS ) {
       confess 'Line ' . (2 + $processed_count + $unmapped_count)
         . " of input file '${filename}' has an incorrect number of columns";
     }
@@ -170,7 +171,7 @@ sub run {
 
   } ## end while ( defined( my $line...))
 
-  $csv->eof || confess 'Error parsing CSV: ' . $csv->error_diag();
+  $csv->eof;
   $file_io->close();
 
   if ($verbose) {
@@ -202,7 +203,7 @@ sub is_file_header_valid {
 
   # Don't bother with parsing column names if their number does not
   # match to begin with
-  if ( scalar @header != $EXPECTED_NUMBER_OF_COLUMNS ) {
+  if ( scalar @header < $EXPECTED_NUMBER_OF_COLUMNS ) {
     return 0;
   }
 

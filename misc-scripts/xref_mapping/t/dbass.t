@@ -87,15 +87,6 @@ subtest 'Malformed header' => sub {
   throws_ok( sub { $parser->run({
     source_id  => $SOURCE_ID_DBASS3,
     species_id => $SPECIES_ID_HUMAN,
-    files      => [ "$Bin/test-data/dbass-badHeader-tooManyCols.txt" ],
-  }); },
-             $QR_MALFORMED_HEADER,
-             'Throws on too many header columns' );
-
-  $parser = XrefParser::DBASSParser->new($db->dbh);
-  throws_ok( sub { $parser->run({
-    source_id  => $SOURCE_ID_DBASS3,
-    species_id => $SPECIES_ID_HUMAN,
     files      => [ "$Bin/test-data/dbass-badHeader-wrongName1.txt" ],
   }); },
              $QR_MALFORMED_HEADER,
@@ -133,15 +124,6 @@ subtest 'Malformed data' => sub {
   }); },
              $QR_MALFORMED_DATA,
              'Throws on too few data columns' );
-
-  $parser = XrefParser::DBASSParser->new($db->dbh);
-  throws_ok( sub { $parser->run({
-    source_id  => $SOURCE_ID_DBASS3,
-    species_id => $SPECIES_ID_HUMAN,
-    files      => [ "$Bin/test-data/dbass-badData-tooManyCols.txt" ],
-  }); },
-             $QR_MALFORMED_DATA,
-             'Throws on too many data columns' );
 
 };
 
