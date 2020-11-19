@@ -2919,7 +2919,8 @@ sub version_check {
     }
 
     # ensembl_metadata was unversioned prior to release 96
-    if ( $dba->dbc()->dbname() eq 'ensembl_metadata' ) {
+      # we now have multiple pattern for metadata db name (qrp and grch37) - valid until we merge those.
+    if ( $dba->dbc()->dbname() =~ /ensembl_metadata(\_?(qrp|grch37)?)/s ) {
       return 1;
     }
     # ncbi_taxonomy was unversioned prior to release 100
@@ -2934,6 +2935,7 @@ sub version_check {
     } elsif ( $dba->dbc()->dbname() =~ /ensembl_help_(\d+)/x ) {
       $database_version = $1;
     } elsif ( $dba->dbc()->dbname() =~ / ensembl_metadata_(\d+) /msx ) {
+        # Prior to release 96 metadata is supposed to be versionned on meta-1. Not the case since
       $database_version = $1;
     } elsif ( $dba->dbc()->dbname() =~ /ensembl_ontology_(\d+)/x ) {
       $database_version = $1;
