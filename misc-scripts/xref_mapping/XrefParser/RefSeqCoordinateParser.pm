@@ -359,9 +359,12 @@ sub run_script {
                   $best_score = $score;
                 }
               }
-            } elsif ($score >= $best_score) {
-              $best_id = $tid;
-              $best_score = $score;
+            }
+            if (!defined $best_id) { 
+              if ($score >= $best_score) {
+                $best_id = $tid;
+                $best_score = $score;
+              }
             }
           }
         }
