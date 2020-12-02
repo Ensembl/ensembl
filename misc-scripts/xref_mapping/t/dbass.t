@@ -38,8 +38,8 @@ my $SOURCE_ID_DBASS3       = 18;
 my $SOURCE_ID_DBASS5       = 19;
 my $SPECIES_ID_HUMAN       = 9606;
 
-my $NUMBER_OF_MAPPED_XREFS = 18;
-my $NUMBER_OF_SYNONYMS     = 7;
+my $NUMBER_OF_MAPPED_XREFS = 12;
+my $NUMBER_OF_SYNONYMS     = 3;
 
 
 my $db = Xref::Test::TestDB->new();
@@ -87,15 +87,6 @@ subtest 'Malformed header' => sub {
   throws_ok( sub { $parser->run({
     source_id  => $SOURCE_ID_DBASS3,
     species_id => $SPECIES_ID_HUMAN,
-    files      => [ "$Bin/test-data/dbass-badHeader-tooManyCols.txt" ],
-  }); },
-             $QR_MALFORMED_HEADER,
-             'Throws on too many header columns' );
-
-  $parser = XrefParser::DBASSParser->new($db->dbh);
-  throws_ok( sub { $parser->run({
-    source_id  => $SOURCE_ID_DBASS3,
-    species_id => $SPECIES_ID_HUMAN,
     files      => [ "$Bin/test-data/dbass-badHeader-wrongName1.txt" ],
   }); },
              $QR_MALFORMED_HEADER,
@@ -117,16 +108,7 @@ subtest 'Malformed header' => sub {
     files      => [ "$Bin/test-data/dbass-badHeader-wrongName3.txt" ],
   }); },
              $QR_MALFORMED_HEADER,
-             'Throws on wrong name of third column' );
-
-  $parser = XrefParser::DBASSParser->new($db->dbh);
-  throws_ok( sub { $parser->run({
-    source_id  => $SOURCE_ID_DBASS3,
-    species_id => $SPECIES_ID_HUMAN,
-    files      => [ "$Bin/test-data/dbass-badHeader-mixedUpEnds.txt" ],
-  }); },
-             $QR_MALFORMED_HEADER,
-             'DBASS IDs and names for two different ends' );
+             'Throws on wrong name of fourth column' );
 
 };
 
@@ -142,15 +124,6 @@ subtest 'Malformed data' => sub {
   }); },
              $QR_MALFORMED_DATA,
              'Throws on too few data columns' );
-
-  $parser = XrefParser::DBASSParser->new($db->dbh);
-  throws_ok( sub { $parser->run({
-    source_id  => $SOURCE_ID_DBASS3,
-    species_id => $SPECIES_ID_HUMAN,
-    files      => [ "$Bin/test-data/dbass-badData-tooManyCols.txt" ],
-  }); },
-             $QR_MALFORMED_DATA,
-             'Throws on too many data columns' );
 
 };
 
@@ -186,8 +159,8 @@ subtest 'Xrefs' => sub {
   # FIXME: this isn't informative enough - it doesn't show WHERE the mismatch is if there is one
   ok(
      $db->schema->resultset('Xref')->check_direct_xref({
-       accession   => '45',
-       label       => 'FALDH',
+       accession   => '1',
+       label       => 'GNAS1',
        description => undef,
        source_id   => $SOURCE_ID_DBASS3,
        species_id  => $SPECIES_ID_HUMAN,
@@ -197,8 +170,8 @@ subtest 'Xrefs' => sub {
    );
   ok(
      $db->schema->resultset('Xref')->check_direct_xref({
-       accession   => '206',
-       label       => 'DAX1',
+       accession   => '1',
+       label       => 'GNAS1',
        description => undef,
        source_id   => $SOURCE_ID_DBASS5,
        species_id  => $SPECIES_ID_HUMAN,
@@ -224,7 +197,7 @@ subtest 'Direct-xref links' => sub {
   $rs = $db->schema->resultset('GeneDirectXref')->search({
     general_xref_id => $matching_xref->xref_id,
   });
-  is( $rs->next->ensembl_stable_id, 'ENSG00000198691',
+  is( $rs->next->ensembl_stable_id, 'ENSG00000130164',
       'A mapped xref has a matching direct-xref link' );
 };
 
@@ -242,31 +215,31 @@ subtest 'Synonyms' => sub {
   ok(
      $db->schema->resultset('Synonym')->check_synonym({
        xref_id => $matching_xref->xref_id,
-       synonym => 'ABCA4',
+       synonym => 'LDLT',
      }),
      'Correct synonym assignment for "foo (bar)" syntax'
    );
 
   $rs = $db->schema->resultset('Xref')->search({
-    accession => '118',
+    accession => '3',
   });
   $matching_xref = $rs->next;
   ok(
      $db->schema->resultset('Synonym')->check_synonym({
        xref_id => $matching_xref->xref_id,
-       synonym => 'HCF-1A',
+       synonym => 'LDLT',
      }),
      'Correct synonym assignment for "foo(bar)" syntax'
    );
 
   $rs = $db->schema->resultset('Xref')->search({
-    accession => '206',
+    accession => '4',
   });
   $matching_xref = $rs->next;
   ok(
      $db->schema->resultset('Synonym')->check_synonym({
        xref_id => $matching_xref->xref_id,
-       synonym => 'NR0B1',
+       synonym => 'LDLT',
      }),
      'Correct synonym assignment for "foo/bar" syntax'
    );

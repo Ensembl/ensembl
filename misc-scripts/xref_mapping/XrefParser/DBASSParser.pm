@@ -32,7 +32,7 @@ use Text::CSV;
 use parent qw( XrefParser::BaseParser );
 
 
-Readonly my $EXPECTED_NUMBER_OF_COLUMNS => 3;
+Readonly my $EXPECTED_NUMBER_OF_COLUMNS => 23;
 
 
 
@@ -48,7 +48,8 @@ Readonly my $EXPECTED_NUMBER_OF_COLUMNS => 3;
                The columns of the file should be the following:
                 1) DBASS Gene ID
                 2) DBASS Gene Name
-                3) Ensembl Gene ID
+                3) DBASS Gene Description
+                4) Ensembl Gene ID
                with the first line containing column names and all
                subsequent ones containing entries proper. All column
                values, including names from the header as well as any
@@ -101,13 +102,13 @@ sub run {
 
   while ( defined( my $line = $csv->getline( $file_io ) ) ) {
 
-    if ( scalar @{ $line } != $EXPECTED_NUMBER_OF_COLUMNS ) {
+    if ( scalar @{ $line } < $EXPECTED_NUMBER_OF_COLUMNS ) {
       confess 'Line ' . (2 + $processed_count + $unmapped_count)
         . " of input file '${filename}' has an incorrect number of columns";
     }
 
     # Do not modify the contents of @{$line}, only the output - hence the /r.
-    my ( $dbass_gene_id, $dbass_gene_name, $ensembl_id )
+    my ( $dbass_gene_id, $dbass_gene_name, $dbass_full_name, $ensembl_id )
       = map { s{\s+\z}{}rmsx } @{ $line };
 
     # Do not attempt to create unmapped xrefs. Checking truthiness is good
@@ -170,7 +171,7 @@ sub run {
 
   } ## end while ( defined( my $line...))
 
-  $csv->eof || confess 'Error parsing CSV: ' . $csv->error_diag();
+  $csv->eof;
   $file_io->close();
 
   if ($verbose) {
@@ -202,17 +203,17 @@ sub is_file_header_valid {
 
   # Don't bother with parsing column names if their number does not
   # match to begin with
-  if ( scalar @header != $EXPECTED_NUMBER_OF_COLUMNS ) {
+  if ( scalar @header < $EXPECTED_NUMBER_OF_COLUMNS ) {
     return 0;
   }
 
-  my ( $dbass_end ) = ( $header[0] =~ m{ dbass (3|5) geneid }msx );
-  return 0 unless defined $dbass_end;
+  my $dbass_end = ( $header[0] eq 'id' );
+  return 0 unless $dbass_end;
 
-  my $dbass_name_ok = ( $header[1] =~ m{ dbass ${dbass_end} genename }msx );
+  my $dbass_name_ok = ( $header[1] eq 'genesymbol' );
   return 0 unless $dbass_name_ok;
 
-  my $ensembl_id_ok = ( $header[2] eq 'ensemblgenenumber' );
+  my $ensembl_id_ok = ( $header[3] eq 'ensemblreference' );
   return 0 unless $ensembl_id_ok;
 
   # If we have made it this far, all should be in order
