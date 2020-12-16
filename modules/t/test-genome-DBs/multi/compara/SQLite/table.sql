@@ -1,6 +1,6 @@
 -- 
 -- Created by SQL::Translator::Producer::SQLite
--- Created on Fri Sep 18 11:56:56 2020
+-- Created on Wed Dec 16 16:41:16 2020
 -- 
 
 BEGIN TRANSACTION;
@@ -47,7 +47,7 @@ CREATE TABLE "constrained_element" (
   "dnafrag_id" bigint NOT NULL,
   "dnafrag_start" integer NOT NULL,
   "dnafrag_end" integer NOT NULL,
-  "dnafrag_strand" integer NOT NULL,
+  "dnafrag_strand" tinyint NOT NULL,
   "method_link_species_set_id" integer NOT NULL,
   "p_value" double precision NOT NULL DEFAULT 0,
   "score" double precision NOT NULL DEFAULT 0
@@ -68,6 +68,15 @@ CREATE TABLE "dnafrag" (
 );
 
 CREATE UNIQUE INDEX "name" ON "dnafrag" ("genome_db_id", "name");
+
+--
+-- Table: "dnafrag_alt_region"
+--
+CREATE TABLE "dnafrag_alt_region" (
+  "dnafrag_id" INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+  "dnafrag_start" integer NOT NULL,
+  "dnafrag_end" integer NOT NULL
+);
 
 --
 -- Table: "dnafrag_region"
@@ -578,10 +587,10 @@ CREATE TABLE "peptide_align_feature" (
   "evalue" double precision NOT NULL,
   "align_length" integer NOT NULL,
   "identical_matches" integer NOT NULL,
-  "perc_ident" integer NOT NULL,
+  "perc_ident" tinyint NOT NULL,
   "positive_matches" integer NOT NULL,
-  "perc_pos" integer NOT NULL,
-  "hit_rank" integer NOT NULL,
+  "perc_pos" tinyint NOT NULL,
+  "hit_rank" smallint NOT NULL,
   "cigar_line" mediumtext
 );
 
