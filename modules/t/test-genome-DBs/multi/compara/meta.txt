@@ -67,3 +67,5 @@
 82	\N	patch	patch_101_102_c.sql|stn_node_id_bigint
 84	\N	patch	patch_102_103_a.sql|schema_version
 86	\N	patch	patch_103_104_a.sql|schema_version
+87	\N	patch	patch_103_104_b.sql|dnafrag_alt_region
+88	\N	patch	patch_103_104_c.sql|fix_int_types
