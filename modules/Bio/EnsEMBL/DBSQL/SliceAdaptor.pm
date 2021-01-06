@@ -433,27 +433,6 @@ sub fetch_by_region {
         # return if we did not find any appropriate match:
         if ( !defined($high_ver) ) { return; }
       }
-    } else {
-
-          $i++;
-        } ## end while ( $sth->fetch )
-        $sth->finish();
-
-        # warn if fuzzy matching found more than one result
-        if ( $i > 1 ) {
-          warning(
-            sprintf(
-              "Fuzzy matching of seq_region_name "
-                . "returned more than one result.\n"
-                . "You might want to check whether the returned seq_region\n"
-                . "(%s:%s) is the one you intended to fetch.\n",
-              $high_cs->name(), $seq_region_name ) );
-        }
-
-        $cs = $high_cs;
-
-        # return if we did not find any appropriate match:
-        if ( !defined($high_ver) ) { return; }
 
       } else {
 
