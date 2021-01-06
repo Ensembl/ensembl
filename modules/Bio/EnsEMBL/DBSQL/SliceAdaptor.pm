@@ -321,6 +321,15 @@ sub fetch_by_region {
 
       unshift( @bind_params, [ $seq_region_name, SQL_VARCHAR ] );
 
+      my $pos = 0;
+      foreach my $param (@bind_params) {
+        $sth->bind_param( ++$pos, $param->[0], $param->[1] );
+      }
+
+      $sth->execute();
+      my @row = $sth->fetchrow_array();
+      $sth->finish();
+
       # deal with cases where a coordsystem might not be defined by user
       my $slice;
       if (!defined $cs) {
