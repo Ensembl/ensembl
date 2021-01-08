@@ -294,13 +294,20 @@ sub fetch_by_region {
   # use $key to access karyotype cache and define $arr
   if ( defined($key) && ($key eq "karyotype_cache") ) {
     
+    my $coord_system_id = $cs->dbID();
+    
     # retrieve values from karyotype cache
-    my $coord_system_id = $cs->{$key}{$seq_region_name}{'coord_system_id'};
-    my $seq_region_id   = $cs->{$key}{$seq_region_name}{'seq_region_id'};
-    $length             = $cs->{$key}{$seq_region_name}{'length'};
+    my $seq_region_id   = $cs->{$key}{$seq_region_name}{$coord_system_id}{'seq_region_id'};
+    $length             = $cs->{$key}{$seq_region_name}{$coord_system_id}{'length'};
 
     # populate $arr with values from karyotype cache
     $arr = [ $seq_region_name, $seq_region_id, $length, $coord_system_id ];
+
+    # define $end, if not yet defined
+    if ( !defined($end) ) { $end = $length }
+
+    # add in check that $arr is populated
+    throw("Unable to popular $arr with values from karyotype cache") unless $arr;
 
   } else {
 
