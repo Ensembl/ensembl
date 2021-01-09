@@ -60,7 +60,6 @@ debug("slice seq_region length = " . $slice->seq_region_length());
 
 # test a slice can be returned correctly
 my $p_major_slice = $parus_major_sa->fetch_by_region( 'chromosome', '25LG2' );
-print Dumper($p_major_slice);
 is($p_major_slice->end, "809223", "Slice end/length correctly retrieved from karyotype cache");
 
 #
