@@ -1,7 +1,7 @@
 =head1 LICENSE
 
 Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
-Copyright [2016-2021] EMBL-European Bioinformatics Institute
+Copyright [2016-2020] EMBL-European Bioinformatics Institute
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -412,7 +412,7 @@ sub rescore_gene_matrix_lsf {
   $self->logger->info("Waiting for jobs to finish...\n", 0, 'stamped');
 
   my $dependent_job =
-    qq{bsub -K -w "ended($lsf_name)" -q production-rh7 } .
+    qq{bsub -K -w "ended($lsf_name)" -q production-rh74 } .
     qq{-M 1000 -R 'select[mem>1000]' -R 'rusage[mem=1000]' } .
     qq{-o $logpath/synteny_rescore_depend.out /bin/true};
 

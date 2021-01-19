@@ -1,7 +1,7 @@
 =head1 LICENSE
 
 Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
-Copyright [2016-2021] EMBL-European Bioinformatics Institute
+Copyright [2016-2020] EMBL-European Bioinformatics Institute
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -1049,7 +1049,7 @@ sub submit_depend_job {
 
   # rest of command
   
-  my $queue = $self->mapper->farm_queue || 'production-rh7';
+  my $queue = $self->mapper->farm_queue || 'production-rh74';
 #  push @depend_bsub, ('-q', $queue, '-o', "$root_dir/depend.out", '-e', "$root_dir/depend.err");
 
   my $jobid = 0;
