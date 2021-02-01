@@ -36,6 +36,10 @@ ok(1);
 my $multi = Bio::EnsEMBL::Test::MultiTestDB->new;
 my $db    = $multi->get_DBAdaptor('core');
 
+# parus major-related variables
+my $parus_major_db = Bio::EnsEMBL::Test::MultiTestDB->new("parus_major1");
+my $parus_major_dba = $parus_major_db->get_DBAdaptor("core");
+my $parus_major_sa = Bio::EnsEMBL::DBSQL::SliceAdaptor->new($parus_major_dba);
 
 #
 # SliceAdaptor::new
@@ -54,13 +58,14 @@ ok($slice->end   == $END);
 ok($slice->seq_region_length == 62842997);
 debug("slice seq_region length = " . $slice->seq_region_length());
 
+# test a slice can be returned correctly
+my $p_major_slice = $parus_major_sa->fetch_by_region( 'chromosome', '25LG2' );
+is($p_major_slice->end, "809223", "Slice end/length correctly retrieved from karyotype cache");
+
 #
 # _create_chromosome_alias
 #
 
-my $parus_major_db = Bio::EnsEMBL::Test::MultiTestDB->new("parus_major1");
-my $parus_major_dba = $parus_major_db->get_DBAdaptor("core");
-my $parus_major_sa = Bio::EnsEMBL::DBSQL::SliceAdaptor->new($parus_major_dba);
 {
   # test that no alias can be defined for species with pre-existing chromosome coordsystem
   debug("Testing chromosome alias feature");

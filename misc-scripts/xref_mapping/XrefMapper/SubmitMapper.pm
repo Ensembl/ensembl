@@ -1049,7 +1049,7 @@ sub submit_depend_job {
 
   # rest of command
   
-  my $queue = $self->mapper->farm_queue || 'production-rh7';
+  my $queue = $self->mapper->farm_queue || 'production-rh74';
 #  push @depend_bsub, ('-q', $queue, '-o', "$root_dir/depend.out", '-e', "$root_dir/depend.err");
 
   my $jobid = 0;
