@@ -315,8 +315,8 @@
 526	DateLastEvaluated	EvalDate	The most recent date on which evidence was evaluated and this conclusion drawn.
 527	submitter_id	Submitter_ID	ID for data submitter
 528	qtaro_category	Q-TARO Category	The phenotype "Category of Object Character" in the <a href="http://qtaro.abr.affrc.go.jp">Q-TARO (QTL Annotation Rice Online) database</a>
-529	qtaro_parent_a	Q-TARO Parent A	Parent A in the <a href="http://qtaro.abr.affrc.go.jp">Q-TARO (QTL Annotation Rice Online) database</a> QTL Information Table. 
-530	qtaro_parent_b	Q-TARO Parent B	Parent B in the <a href="http://qtaro.abr.affrc.go.jp">Q-TARO (QTL Annotation Rice Online) database</a> QTL Information Table. 
+529	qtaro_parent_a	Q-TARO Parent A	Parent A in the <a href="http://qtaro.abr.affrc.go.jp">Q-TARO (QTL Annotation Rice Online) database</a> QTL Information Table.
+530	qtaro_parent_b	Q-TARO Parent B	Parent B in the <a href="http://qtaro.abr.affrc.go.jp">Q-TARO (QTL Annotation Rice Online) database</a> QTL Information Table.
 531	cadd_pred	CADD prediction	CADD prediction
 532	dbnsfp_revel_pred	dbNSFP REVEL prediction	dbNSFP REVEL prediction
 533	dbnsfp_meta_lr_pred	dbNSFP MetaLR prediction	dbNSFP MetaLR prediction
@@ -331,20 +331,7 @@
 542	citation_source	Citation source	Variant citation data source
 544	phenotype_type	Phenotype type	Type of the phenotype information
 545	external_plant_links	external_plant_links	Links to external plant related sources
-546	coord_system_tag	coord_system_tag	Coord_system_tag -- a way to store information about  seq_region's virtual coord_system names for single level assemblies.\
-I.e., we have an assembly with toplevel seq_regions ("primary_assembly") only,\
-and we want to store the initial type of  seq_regions like contig, scaffold, supercontig, chromosome, etc.
-547	sequence_location	sequence_location	To identify  sequence locations / cellular compartments  DNA sequence comes from.\
-\
-Values are supposed to be SO compliant (children of the plastid_sequence SO:0000740 and nuclear_sequence SO:0000738 ):\
-"apicoplast_chromosome",\
-"chloroplast_chromosome",\
-"chromoplast_chromosome",\
-"cyanelle_chromosome",\
-"leucoplast_chromosome",\
-"macronuclear_chromosome",\
-"micronuclear_chromosome",\
-"mitochondrial_chromosome",\
-"nuclear_chromosome"
+546	coord_system_tag	coord_system_tag	Coord_system_tag -- a way to store information about  seq_region's virtual coord_system names for single level assemblies. I.e., we have an assembly with toplevel seq_regions ("primary_assembly") only, and we want to store the initial type of  seq_regions like contig, scaffold, supercontig, chromosome, etc.
+547	sequence_location	sequence_location	To identify  sequence locations / cellular compartments  DNA sequence comes from. Values are supposed to be SO compliant (children of the plastid_sequence SO:0000740 and nuclear_sequence SO:0000738 ):"apicoplast_chromosome", "chloroplast_chromosome", "chromoplast_chromosome", "cyanelle_chromosome", "leucoplast_chromosome", "macronuclear_chromosome", "micronuclear_chromosome", "mitochondrial_chromosome", "nuclear_chromosome"
 548	BRC4_seq_region_name	BRC4_seq_region_name	seq_region name for the BRC4 project
 549	EBI_seq_region_name	EBI_seq_region_name	EBI seq_region name for the BRC4 project data roundtripping
