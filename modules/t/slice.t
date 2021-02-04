@@ -504,6 +504,22 @@ is(@alt_names, 1, "One synonym found");
 
 $multi->restore();
 
+# Check that if there is a duplicated synonym it will fetch the default version
+# The two checks are trying to make sure that db ids are not influencing the result
+$slice = $slice_adaptor->fetch_by_region('chromosome', 'alt_20');
+is($slice->seq_region_length, 62842997, 'Found '.$slice->name);
+
+$slice = $slice_adaptor->fetch_by_region('chromosome', 'chr10');
+is($slice->seq_region_length, 134416750, 'Found '.$slice->name);
+
+# Check that if there is a duplicated synonym it will fetch the correct version given in parameters
+$slice = $slice_adaptor->fetch_by_region('chromosome', 'anoth_20', undef, undef, undef, 'NCBI32');
+is($slice->seq_region_length, 6284299, 'Found '.$slice->name);
+
+$slice = $slice_adaptor->fetch_by_region('chromosome', 'chr10', undef, undef, undef, 'NCBI32');
+is($slice->seq_region_length, 13441675, 'Found '.$slice->name);
+
+
 # Testing synonym searching
 {
   my $chr_20 = $slice_adaptor->fetch_by_region('chromosome', 20);
@@ -517,7 +533,7 @@ $multi->restore();
 
 # test fetch_all on synonym adaptor
 my $all_synonyms = $syn_adap->fetch_all();
-is(@$all_synonyms, 5, 'fetch_all on synonym adaptor');
+is(@$all_synonyms, 7, 'fetch_all on synonym adaptor');
 
 
 #Test assembly exception type on HAP
