@@ -4,3 +4,4 @@
 4	1	contig	\N	4	default_version,sequence_level
 6	1	chunk	\N	5	default_version
 7	1	alt_chrom	\N	6	default_version
+8	1	chromosome	NCBI32	7	\N
