@@ -62,7 +62,7 @@ is($versions[0], "NCBI33", "Found the first version");
 #
 my @cs_list = @{$csa->fetch_all_by_name('chromosome')};
 
-ok(@cs_list == 1);
+ok(@cs_list == 2);
 
 ok($cs_list[0]->equals($cs));
 
