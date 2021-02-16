@@ -330,65 +330,66 @@ sub fetch_by_region {
       my @row = $sth->fetchrow_array();
       $sth->finish();
 
-    unless ( @row ) {
+      unless ( @row ) {
 
-      # deal with cases where a coordsystem might not be defined by user
-      my $slice;
-      if (!defined $cs) {
-        $slice = $self->_fetch_by_seq_region_synonym( undef, $seq_region_name, $start, $end, $strand, $version, $no_fuzz );
-      } else {
-        $slice = $self->_fetch_by_seq_region_synonym( $cs, $seq_region_name, $start, $end, $strand, $version, $no_fuzz );
-      }
-
-      # check whether any slice data has been returned
-      if ( $slice && $slice->seq_region_name ) {
-        my $matched_name = $slice->seq_region_name;
-
-        # if matched name is different to query name, skip fuzzy matching
-        if ( $matched_name ne $seq_region_name ) {
-          $seq_region_name = $matched_name;
-
-          # define $arr
-          my $tmp_key_string = "$seq_region_name:" . $slice->coord_system()->dbID();
-          $arr = $self->{'sr_name_cache'}->{$tmp_key_string};
-          $length = $arr->[3];
-          $cs = $slice->coord_system() if (!$cs);
+        # deal with cases where a coordsystem might not be defined by user
+        my $slice;
+        if (!defined $cs) {
+          $slice = $self->_fetch_by_seq_region_synonym( undef, $seq_region_name, $start, $end, $strand, $version, $no_fuzz );
+        } else {
+          $slice = $self->_fetch_by_seq_region_synonym( $cs, $seq_region_name, $start, $end, $strand, $version, $no_fuzz );
         }
 
-      } else { # if no slice object with a match returned, try using a fuzzy match
-        if (!$no_fuzz) {
+        # check whether any slice data has been returned
+        if ( $slice && $slice->seq_region_name ) {
+          my $matched_name = $slice->seq_region_name;
 
-          my ($fuzzy_matched_name, $cs) = $self->_fetch_by_fuzzy_matching( $cs, $seq_region_name, $sql, $constraint, \@bind_params );
+          # if matched name is different to query name, skip fuzzy matching
+          if ( $matched_name ne $seq_region_name ) {
+            $seq_region_name = $matched_name;
 
-          if (!$fuzzy_matched_name) {
-            return;
-          }
-
-          # define arr
-          my $tmp_key_string = $fuzzy_matched_name . ":" . $cs->dbID();
-          if (exists $self->{'sr_name_cache'}->{$tmp_key_string}) {
-            $seq_region_name = $fuzzy_matched_name;
+            # define $arr
+            my $tmp_key_string = "$seq_region_name:" . $slice->coord_system()->dbID();
             $arr = $self->{'sr_name_cache'}->{$tmp_key_string};
             $length = $arr->[3];
+            $cs = $slice->coord_system() if (!$cs);
+          }
+
+        } else { # if no slice object with a match returned, try using a fuzzy match
+          if (!$no_fuzz) {
+
+            my ($fuzzy_matched_name, $cs) = $self->_fetch_by_fuzzy_matching( $cs, $seq_region_name, $sql, $constraint, \@bind_params );
+
+            if (!$fuzzy_matched_name) {
+              return;
+            }
+
+            # define arr
+            my $tmp_key_string = $fuzzy_matched_name . ":" . $cs->dbID();
+            if (exists $self->{'sr_name_cache'}->{$tmp_key_string}) {
+              $seq_region_name = $fuzzy_matched_name;
+              $arr = $self->{'sr_name_cache'}->{$tmp_key_string};
+              $length = $arr->[3];
+            } else {
+              return;
+            }
           } else {
             return;
           }
-        } else {
-          return;
         }
+      } else {
+
+        my ( $id, $cs_id );
+        ( $seq_region_name, $id, $length, $cs_id ) = @row;
+
+        # cache to speed up for future queries
+        my $arr = [ $id, $seq_region_name, $cs_id, $length ];
+        $self->{'sr_name_cache'}->{"$seq_region_name:$cs_id"} = $arr;
+        $self->{'sr_id_cache'}->{"$id"}                       = $arr;
+        $cs = $csa->fetch_by_dbID($cs_id);
       }
-    } else {
-
-      my ( $id, $cs_id );
-      ( $seq_region_name, $id, $length, $cs_id ) = @row;
-
-      # cache to speed up for future queries
-      my $arr = [ $id, $seq_region_name, $cs_id, $length ];
-      $self->{'sr_name_cache'}->{"$seq_region_name:$cs_id"} = $arr;
-      $self->{'sr_id_cache'}->{"$id"}                       = $arr;
-      $cs = $csa->fetch_by_dbID($cs_id);
-    }
-  } ## end else [ if ( defined($arr) ) ]
+    } ## end else [ if ( defined($arr) ) ]
+  }
 
   if ( !defined($end) ) { $end = $length }
 
