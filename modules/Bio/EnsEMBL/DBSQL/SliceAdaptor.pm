@@ -313,6 +313,7 @@ sub fetch_by_region {
 
     if ( defined($key) ) { $arr = $self->{'sr_name_cache'}->{$key} }
 
+<<<<<<< HEAD
     if ( defined($arr) ) {
       $length = $arr->[3];
     } else {
@@ -339,6 +340,78 @@ sub fetch_by_region {
         } else {
           $slice = $self->_fetch_by_seq_region_synonym( $cs, $seq_region_name, $start, $end, $strand, $version, $no_fuzz );
         }
+=======
+      # deal with cases where a coordsystem might not be defined by user
+      my $slice;
+      if (!defined $cs) {
+        print "Running synonym-match method...\n";
+        $slice = $self->_fetch_by_seq_region_synonym( undef, $seq_region_name, $start, $end, $strand, $version, $no_fuzz );
+      } else {
+        print "Running synonym-match method...\n";
+        $slice = $self->_fetch_by_seq_region_synonym( $cs, $seq_region_name, $start, $end, $strand, $version, $no_fuzz );
+      }
+
+      # check whether any slice data has been returned
+      if ( $slice && $slice->seq_region_name ) {
+        print "Slice data has been returned...\n";
+        my $matched_name = $slice->seq_region_name;
+
+        # if matched name is different to query name, skip fuzzy matching
+        if ( $matched_name ne $seq_region_name ) {
+          print "Using matched name $matched_name derived from query name $seq_region_name...\n";
+          $seq_region_name = $matched_name;
+
+          # define $arr
+          print "Defining \$arr\n";
+          my $tmp_key_string = "$seq_region_name:" . $slice->coord_system()->dbID();
+          $arr = $self->{'sr_name_cache'}->{$tmp_key_string};
+          $length = $arr->[3];
+        }
+
+      }
+
+      # # try synonyms
+      # my $syn_sql = "select s.name, cs.name, cs.version from seq_region s join seq_region_synonym ss using (seq_region_id) join coord_system cs using (coord_system_id) where ss.synonym like ? and cs.species_id =? ";
+      # if (defined $coord_system_name && defined $cs) {
+      #   $syn_sql .= "AND cs.name = '" . $coord_system_name . "' ";
+      # }
+      # if (defined $version) {
+      #   $syn_sql .= "AND cs.version = '" . $version . "' ";
+      # }
+      # my $syn_sql_sth = $self->prepare($syn_sql);
+      # $syn_sql_sth->bind_param(1, $seq_region_name, SQL_VARCHAR);
+      # $syn_sql_sth->bind_param(2, $self->species_id(), SQL_INTEGER);
+      # $syn_sql_sth->execute();
+      # my ($new_name, $new_coord_system, $new_version);
+      # $syn_sql_sth->bind_columns( \$new_name, \$new_coord_system, \$new_version);
+      # if($syn_sql_sth->fetch){
+      #   if ((not defined($cs)) || ($cs->name eq $new_coord_system && $cs->version eq $new_version)) {
+      #       return $self->fetch_by_region($new_coord_system, $new_name, $start, $end, $strand, $new_version, $no_fuzz);
+      #   }
+      # } else {
+      #   # Try wildcard searching if no exact synonym was found
+      #   $syn_sql_sth = $self->prepare($syn_sql);
+      #   my $escaped_seq_region_name = $seq_region_name;
+      #   my $escape_char = $self->dbc->db_handle->get_info(14);
+      #   $escaped_seq_region_name =~ s/([_%])/$escape_char$1/g;
+      #   $syn_sql_sth->bind_param(1, "$escaped_seq_region_name%", SQL_VARCHAR);
+      #   $syn_sql_sth->bind_param(2, $self->species_id(), SQL_INTEGER); 
+      #   $syn_sql_sth->execute();
+      #   $syn_sql_sth->bind_columns( \$new_name, \$new_coord_system, \$new_version);
+
+      #   if($syn_sql_sth->fetch){
+      #     if ((not defined($cs)) || ($cs->name eq $new_coord_system && $cs->version eq $new_version)) {
+      #         return $self->fetch_by_region($new_coord_system, $new_name, $start, $end, $strand, $new_version, $no_fuzz);
+      #     } elsif ($cs->name ne $new_coord_system) {
+      #         warning("Searched for a known feature on coordinate system: ".$cs->dbID." but found it on: ".$new_coord_system.
+      #         "\n No result returned, consider searching without coordinate system or use toplevel.");
+      #         return;
+      #     }
+          
+      #   }
+      # }
+      # $syn_sql_sth->finish;
+>>>>>>> Add calls to synonym sub and check if slice data returned
 
         # check whether any slice data has been returned
         if ( $slice && $slice->seq_region_name ) {
