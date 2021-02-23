@@ -2959,6 +2959,7 @@ sub _fetch_by_seq_region_synonym {
     }
   }
   $syn_sql_sth->finish;
+  return;
 }
   
   
