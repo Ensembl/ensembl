@@ -2894,17 +2894,36 @@ sub _fetch_by_seq_region_synonym {
   if (defined $version) {
     $syn_sql .= "AND cs.version = '" . $version . "' ";
   }
+  $syn_sql .= "ORDER BY cs.rank ASC";
   my $syn_sql_sth = $self->prepare($syn_sql);
   $syn_sql_sth->bind_param(1, $seq_region_name, SQL_VARCHAR);
   $syn_sql_sth->bind_param(2, $self->species_id(), SQL_INTEGER);
   $syn_sql_sth->execute();
   my ($new_name, $new_coord_system, $new_version);
   $syn_sql_sth->bind_columns( \$new_name, \$new_coord_system, \$new_version);
-  if($syn_sql_sth->fetch){
+
+  # we want to see if there was an exact match for the seq_region_synonym.
+  # The overall logic is:
+  # Case 1 - A synonym exactly matches the query, and either:
+  #     a - the coord_system matches
+  #               or
+  #     b - the user is looking for toplevel
+  #   In this case, we now have the real seq_region name, so we can re-run
+  #   fetch_by_region using that name, coord_system, and version
+  # Case 2 - A synonym exactly matches, but none of the coord_systems match
+  #   and the user is not looking for toplevel.
+  #   In this case, we return nothing, and move on to try fuzzy-matching
+  #   if requested.
+  # Case 3 - No synonyms match, so repeat the query using wildcards
+  my $matched_synonym = 0;
+  while ($syn_sql_sth->fetch){
+    $matched_synonym = 1;
     if ((not defined($cs)) || ($cs->name eq $new_coord_system && $cs->version eq $new_version)) {
       return $self->fetch_by_region($new_coord_system, $new_name, $start, $end, $strand, $new_version, $no_fuzz);
     }
-  } else {
+  }
+
+  if ($matched_synonym == 0) {
     # Try wildcard searching if no exact synonym was found
     $syn_sql_sth = $self->prepare($syn_sql);
     my $escaped_seq_region_name = $seq_region_name;
@@ -2915,23 +2934,32 @@ sub _fetch_by_seq_region_synonym {
     $syn_sql_sth->execute();
     $syn_sql_sth->bind_columns( \$new_name, \$new_coord_system, \$new_version);
 
-    if($syn_sql_sth->fetch){
+    my @matched_syn_wrong_cs;
+    while ($syn_sql_sth->fetch){
       if ((not defined($cs)) || ($cs->name eq $new_coord_system && $cs->version eq $new_version)) {
         return $self->fetch_by_region($new_coord_system, $new_name, $start, $end, $strand, $new_version, $no_fuzz);
-      } elsif ($cs->name ne $new_coord_system) {
-        warning("Searched for a known feature on coordinate system: ".$cs->dbID." but found it on: ".$new_coord_system.
-        "\n No result returned, consider searching without coordinate system or use toplevel.");
-        return;
+      } else {
+        push(@matched_syn_wrong_cs, [$new_coord_system, $new_version]);
       }
-      
-    } else {
-      if ($no_fuzz) {
-        return;
-      }
+    }
+
+    if (scalar(@matched_syn_wrong_cs) > 0) {
+      my $cs_warning_text = "Searched for a known feature on coordniate system: " .
+                            $cs->dbID .
+                            " but found it on " .
+                            join(", ", map {if ($_->[1]) {
+                                               $_->[0] . ":" . $_->[1]
+                                             } else {
+                                               $_->[0]
+                                             }
+                                           } @matched_syn_wrong_cs) .
+                            "\n No result returned, consider searching without coordinate system or use toplevel.";
+      warning($cs_warning_text);
       return;
     }
   }
   $syn_sql_sth->finish;
+  return;
 }
   
   
