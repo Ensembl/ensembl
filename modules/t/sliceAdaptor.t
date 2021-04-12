@@ -158,7 +158,7 @@ throws_ok{ $slice_adaptor->_fetch_by_seq_region_synonym(undef, undef) }
     . "AND cs.species_id = ? "
     . "ORDER BY cs.rank ASC";
   my @bind_params;
-  push( @bind_params, [ $db->species_id() ] );
+  $bind_params[1] = [ $db->species_id() ];
   my ($fuzzy_matched_name, $cs) = $slice_adaptor->_fetch_by_fuzzy_matching( undef, $seq_region_name, $sql, $constraint, \@bind_params );
   is($fuzzy_matched_name, 'AL031658.11', "Checking fuzzy match found: $fuzzy_matched_name equals that expected: AL031658.11");
   isa_ok($cs, 'Bio::EnsEMBL::CoordSystem');
@@ -174,11 +174,10 @@ throws_ok{ $slice_adaptor->_fetch_by_seq_region_synonym(undef, undef) }
                     $cs->dbID() );
   my $constraint = "AND sr.coord_system_id = ?";
   my @bind_params;
-  push( @bind_params, [ $cs->dbID() ] );
+  $bind_params[1] = [ $cs->dbID() ];
   my ($fuzzy_matched_name) = $slice_adaptor->_fetch_by_fuzzy_matching( $cs, $seq_region_name, $sql, $constraint, \@bind_params );
   is($fuzzy_matched_name, 'AL031658.11', "Checking fuzzy match found: $fuzzy_matched_name equals that expected: AL031658.11");
 }
-
 
 #
 # fetch_by_contig_name
