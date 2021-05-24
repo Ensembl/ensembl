@@ -617,8 +617,10 @@ sub _generate_sql {
     $sql .= "\n WHERE $default_where ";
   }
 
-  #append additional clauses which may have been defined
-  $sql .= "\n$final_clause";
+  #append additional clauses which may have been defined, don't append ORDER BY twice
+  if (index($final_clause, "ORDER") == -1 || index($sql, "ORDER") == -1) {
+    $sql .= "\n$final_clause";
+  }
   
   # FOR DEBUG:
   #printf(STDERR "SQL:\n%s\n", $sql);
