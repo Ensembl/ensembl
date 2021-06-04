@@ -68,6 +68,7 @@ use Bio::EnsEMBL::UTR;
 use Bio::EnsEMBL::Intron;
 use Bio::EnsEMBL::ExonTranscript;
 use Bio::EnsEMBL::CDS;
+use Bio::EnsEMBL::MANE;
 use Bio::EnsEMBL::TranscriptMapper;
 use Bio::EnsEMBL::SeqEdit;
 use Bio::EnsEMBL::Biotype;
@@ -3343,6 +3344,53 @@ sub biotype {
 
   # Getter? get_Biotype()
   return $self->get_Biotype->name;
+}
+
+=head2 mane_transcript
+  Example    : $mane = $transcript->mane_transcript();
+  Description: Retrieve the corresponding MANE transcript
+  Returntype : Bio::EnsEMBL::MANE
+  Exceptions : none
+  Caller     : general
+  Status     : Stable
+=cut
+
+sub mane_transcript {
+  my ($self) = @_;
+  if ($self->is_mane) {
+
+    my $mane = Bio::EnsEMBL::MANE->new(
+        -SEQ_REGION_START => $self->seq_region_start,
+        -SEQ_REGION_END   => $self->seq_region_end,
+        -START            => $self->start,
+        -END              => $self->end,
+        -STABLE_ID        => $self->stable_id,
+        -SLICE            => $self->slice,
+        -TRANSCRIPT       => $self
+    );
+    return $mane;
+  }
+  return undef;
+}
+
+=head2 is_mane
+  Example    : $boolean = $transcript->is_mane();
+  Description: Check if a transcript is part of MANE
+  Returntype : boolean
+  Exceptions : none
+  Caller     : general
+  Status     : Stable
+=cut
+
+sub is_mane {
+  my ($self) = @_;
+  my $is_mane = 0;
+  foreach my $attribute (@{ $self->get_all_Attributes() } ) {
+    if ($attribute->code=~ /MANE/) {
+      $is_mane = 1;
+    }
+  }
+  return $is_mane;
 }
 
 1;
