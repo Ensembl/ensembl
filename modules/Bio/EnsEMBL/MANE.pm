@@ -208,6 +208,7 @@ sub summary_as_hash {
   my $parent = $self->transcript->get_Gene();
   $summary_ref->{'Parent'} = $parent->display_id if defined $parent;
   $summary_ref->{'strand'} = $self->transcript->strand();
+  $summary_ref->{'version'} = $self->transcript->version() if $self->transcript->version();
   return $summary_ref;
 }
 
