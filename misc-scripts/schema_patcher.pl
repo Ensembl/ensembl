@@ -55,7 +55,7 @@ Usage:
   --pass / -p\tdatabase user password (optional, no default)
 
   --type / -t   restrict to database schema type
-                (i.e. core, compara, funcgen, variation, production or ontology)
+                (i.e. core, compara, funcgen, gene2phenotype, variation, production or ontology)
                 (required if --database is not specified)
 
   --database / -d   full name of database, or database name pattern
@@ -265,6 +265,7 @@ if ( defined($opt_type) &&
      $opt_type ne 'core' &&
      $opt_type ne 'compara' && 
      $opt_type ne 'funcgen' &&
+     $opt_type ne 'gene2phenotype' &&
      $opt_type ne 'variation' &&
      $opt_type ne 'production' &&
      $opt_type ne 'ontology' )
@@ -280,12 +281,13 @@ my %patches;
 
 # Get available patches.
 
-foreach my $thing ( [ 'ensembl',                 'core',       'table.sql'  ],
-                    [ 'ensembl-compara',         'compara',    'table.sql'  ],
-                    [ 'ensembl-funcgen',         'funcgen',    'table.sql'  ],
-                    [ 'ensembl-variation',       'variation',  'table.sql'  ],
-                    [ 'ensembl-production',      'production', 'table.sql'  ],
-                    [ 'ensembl-ontology-schema', 'ontology',   'tables.sql' ] )
+foreach my $thing ( [ 'ensembl',                 'core',           'table.sql'  ],
+                    [ 'ensembl-compara',         'compara',        'table.sql'  ],
+                    [ 'ensembl-funcgen',         'funcgen',        'table.sql'  ],
+                    [ 'ensembl-gene2phenotype',  'gene2phenotype', 'table.sql'  ],
+                    [ 'ensembl-variation',       'variation',      'table.sql'  ],
+                    [ 'ensembl-production',      'production',     'table.sql'  ],
+                    [ 'ensembl-ontology-schema', 'ontology',       'tables.sql' ] )
 {
   my ($git_repo, $schema_type, $schema_file) = @{$thing};
 
@@ -468,7 +470,7 @@ while ( $sth->fetch() ) {
   }
 
   if ( !defined($schema_type) ) {
-    if ( $database =~ /_(core|funcgen|variation|compara|production|ontology)_/ ) {
+    if ( $database =~ /_(core|funcgen|gene2phenotype|variation|compara|production|ontology)_/ ) {
       $schema_type = $1;
       if ( defined($opt_type) ) {
         if   ( $schema_type eq $opt_type ) { $schema_type_ok = 1 }
@@ -485,7 +487,7 @@ while ( $sth->fetch() ) {
     if ($database =~ /compara_([a-z][a-z_]+[a-z])?_\d+_\d+/ or # EG case, e.g. ensembl_compara_fungi_18_71
 	$database =~ /ensembl[a-z]?_(?:compara|production|ontology)_/ or 
         $database =~ /_test_db_([a-z_]+)_([a-z])_/ or
-	$database =~ /([a-z][a-z_]+[a-z])_(?:core|funcgen|variation)_/) 
+	$database =~ /([a-z][a-z_]+[a-z])_(?:core|funcgen|gene2phenotype|variation)_/) 
       {
 	$species = $1;
 	$species = 'multi' unless defined $species;
