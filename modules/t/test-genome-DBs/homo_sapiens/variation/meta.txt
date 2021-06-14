@@ -58,3 +58,4 @@
 58	\N	patch	patch_102_103_a.sql|schema version
 59	\N	patch	patch_103_104_a.sql|schema version
 60	\N	patch	patch_104_105_a.sql|schema_version
+61	\N	patch	patch_104_105_b.sql|Increase publication title size
