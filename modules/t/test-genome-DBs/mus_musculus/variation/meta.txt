@@ -1,5 +1,5 @@
 1	\N	schema_type	variation
-2	\N	schema_version	105
+2	\N	schema_version	106
 6	1	species.production_name	mus_musculus
 15	1	web_config	sv_study#Keane 2011 (DGVa study estd118)#Keane 2011#estd118
 14	1	web_config	set#All failed variants#All failed variants#variation_set_fail_all#failed
@@ -86,3 +86,4 @@
 92	\N	patch	patch_103_104_a.sql|schema version
 93	\N	patch	patch_104_105_a.sql|schema_version
 94	\N	patch	patch_104_105_b.sql|Increase publication title size
+95	\N	patch	patch_105_106_a.sql|schema_version
