@@ -1,5 +1,5 @@
 1	\N	schema_type	variation
-2	\N	schema_version	105
+2	\N	schema_version	106
 3	\N	patch	patch_84_85_a.sql|schema version
 4	\N	patch	patch_84_85_b.sql|create sample_synonym
 5	\N	patch	patch_84_85_c.sql|drop column moltype from variation_synonym
@@ -58,3 +58,5 @@
 58	\N	patch	patch_102_103_a.sql|schema version
 59	\N	patch	patch_103_104_a.sql|schema version
 60	\N	patch	patch_104_105_a.sql|schema_version
+61	\N	patch	patch_104_105_b.sql|Increase publication title size
+62	\N	patch	patch_105_106_a.sql|schema_version

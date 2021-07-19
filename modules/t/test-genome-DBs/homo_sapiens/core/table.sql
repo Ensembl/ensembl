@@ -103,7 +103,7 @@ CREATE TABLE `attrib_type` (
   `description` text COLLATE latin1_bin,
   PRIMARY KEY (`attrib_type_id`),
   UNIQUE KEY `code_idx` (`code`)
-) ENGINE=MyISAM AUTO_INCREMENT=394 DEFAULT CHARSET=latin1 COLLATE=latin1_bin;
+) ENGINE=MyISAM AUTO_INCREMENT=536 DEFAULT CHARSET=latin1 COLLATE=latin1_bin;
 
 CREATE TABLE `biotype` (
   `biotype_id` int(10) unsigned NOT NULL AUTO_INCREMENT,
@@ -490,7 +490,7 @@ CREATE TABLE `meta` (
   PRIMARY KEY (`meta_id`),
   UNIQUE KEY `species_key_value_idx` (`species_id`,`meta_key`,`meta_value`),
   KEY `species_value_idx` (`species_id`,`meta_value`)
-) ENGINE=MyISAM AUTO_INCREMENT=201 DEFAULT CHARSET=latin1;
+) ENGINE=MyISAM AUTO_INCREMENT=202 DEFAULT CHARSET=latin1;
 
 CREATE TABLE `meta_coord` (
   `table_name` varchar(40) COLLATE latin1_bin NOT NULL DEFAULT '',
@@ -760,7 +760,7 @@ CREATE TABLE `seq_region` (
   PRIMARY KEY (`seq_region_id`),
   UNIQUE KEY `name_cs_idx` (`name`,`coord_system_id`),
   KEY `cs_idx` (`coord_system_id`)
-) ENGINE=MyISAM AUTO_INCREMENT=965915 DEFAULT CHARSET=latin1 COLLATE=latin1_bin;
+) ENGINE=MyISAM AUTO_INCREMENT=1069295 DEFAULT CHARSET=latin1 COLLATE=latin1_bin;
 
 CREATE TABLE `seq_region_attrib` (
   `seq_region_id` int(10) unsigned NOT NULL DEFAULT '0',
