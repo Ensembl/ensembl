@@ -145,7 +145,7 @@ sub get_max_stable_id_from_gene_archive {
   my ( $dbi, $type ) = @_;
 
   # Try to get from relevant archive.
-  my $sth = $dbi->prepare("SELECT MAX($type) FROM gene_archive");
+  my $sth = $dbi->prepare("SELECT MAX($type) FROM gene_archive WHERE stable_id LIKE 'ENS%'");
   $sth->execute();
 
   my $rs;
@@ -241,9 +241,7 @@ sub get_highest_stable_id {
   # G/T/P for gene etc. (Exon dealt with above.)
 
   my ( $prefix, $suffix ) = $max =~ /([a-zA-Z]+)([0-9]+)/;
-  if ( $type eq 'exon' ) {
-    $prefix =~ s/E$//;
-  } elsif ( $type eq 'gene' ) {
+  if ( $type eq 'gene' ) {
     $prefix =~ s/G$//;
   } elsif ( $type eq 'transcript' ) {
     $prefix =~ s/T$//;
