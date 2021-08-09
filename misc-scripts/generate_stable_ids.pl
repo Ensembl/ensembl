@@ -281,6 +281,9 @@ sub usage {
   gene_archive table (only for gene, translation and transcript, not for
   exon stable IDs!)
 
+  Please note that this script only works for "ENS..."-type stable ids.
+  It does not work for LRG ids or other types of stable ids.
+
   Note:
 
   The -start option requires to not submit an initial stable ID without
