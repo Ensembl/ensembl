@@ -445,18 +445,6 @@ CREATE TABLE identity_xref (
 
 ) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
 
-CREATE TABLE go_xref (
-
-  object_xref_id          INT(10) UNSIGNED DEFAULT '0' NOT NULL,
-  linkage_type            CHAR(3) NOT NULL,
-  source_xref_id          INT(10) UNSIGNED DEFAULT NULL,
-  KEY (object_xref_id),
-  KEY (source_xref_id),
-  UNIQUE (object_xref_id, source_xref_id, linkage_type)
-
-) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
-
-
 CREATE TABLE meta (
 
   meta_id                     INT NOT NULL AUTO_INCREMENT,

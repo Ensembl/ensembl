@@ -267,7 +267,6 @@ sub process_dependents{
   my $insert_dep_x_sth  = $dbi->prepare("insert into dependent_xref(master_xref_id, dependent_xref_id, linkage_annotation, linkage_source_id) values(?, ?, ?, ?)");
   my $insert_dep_ox_sth = $dbi->prepare("insert ignore into object_xref(master_xref_id, ensembl_object_type, ensembl_id, linkage_type, ox_status, xref_id) values(?, ?, ?, 'DEPENDENT', 'DUMP_OUT', ?)");
   my $dep_ox_sth        = $dbi->prepare("select object_xref_id from object_xref where master_xref_id = ? and ensembl_object_type = ? and ensembl_id = ? and linkage_type = 'DEPENDENT' AND ox_status = 'DUMP_OUT' and xref_id = ?");
-  my $insert_dep_go_sth = $dbi->prepare("insert ignore into go_xref values(?, ?, ?)");
   my $insert_ix_sth     = $dbi->prepare("insert ignore into identity_xref(object_xref_id, query_identity, target_identity) values(?, 100, 100)");
 
   my @master_xrefs = ($old_master_xref_id);
@@ -320,15 +319,6 @@ sub process_dependents{
         # Add new object_xref for each best_ensembl_id. 
         $insert_dep_ox_sth->execute($new_master_xref_id, $object_type, $ensembl_id, $dep_xref_id);
         ## If there is a linkage_annotation, it is a go xref
-        if ($linkage_annotation) {
-          ## Fetch the newly created object_xref to add them to go_xref
-          $dep_ox_sth->execute($new_master_xref_id, $object_type, $ensembl_id, $dep_xref_id);
-          $dep_ox_sth->bind_columns(\$new_object_xref_id);
-          while ($dep_ox_sth->fetch()) {
-            $insert_dep_go_sth->execute($new_object_xref_id, $linkage_annotation, $new_master_xref_id);
-            $insert_ix_sth->execute($new_object_xref_id);
-          }
-        }
       }
       unless ($dep_xref_id == $xref_id) {
         push @master_xrefs, $dep_xref_id; # remember chained dependent xrefs
@@ -342,11 +332,10 @@ sub process_dependents{
   $insert_dep_x_sth->finish();
   $insert_dep_ox_sth->finish();
   $dep_ox_sth->finish();
-  $insert_dep_go_sth->finish();
   $insert_ix_sth->finish();
 }
 
-# Delete identity xrefs, go_xrefs for a given object xref
+# Delete identity xrefs for a given object xref
 # Set unimportant object_xrefs to FAILED_PRIORITY, and delete all those that remain
 sub _detach_object_xref {
   my $self = shift;
@@ -355,7 +344,6 @@ sub _detach_object_xref {
   my $remove_dep_ox_sth = $dbi->prepare(
     "DELETE ix, g FROM object_xref ox \
      LEFT JOIN identity_xref ix ON ix.object_xref_id = ox.object_xref_id \
-     LEFT JOIN go_xref g ON g.object_xref_id = ox.object_xref_id \
      WHERE master_xref_id = ? AND ensembl_object_type = ? AND xref_id = ? AND ensembl_id = ?"
   );
   # Fail the object_xrefs that did link to the deleted identity/go xrefs.

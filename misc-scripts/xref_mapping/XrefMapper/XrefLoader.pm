@@ -53,7 +53,7 @@ sub mapper{
 
 sub update{
   my ($self, $arg) = @_;
-  # remove xref, object_xref, identity_xref, depenedent_xref, go_xref, unmapped_object, external_synonym, projections.
+  # remove xref, object_xref, identity_xref, depenedent_xref, unmapped_object, external_synonym, projections.
 
 
  my $verbose = $self->mapper->verbose;

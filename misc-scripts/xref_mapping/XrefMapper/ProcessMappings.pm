@@ -61,7 +61,7 @@ sub process_mappings {
   # for i =1 i < jobnum{
   #   if( Not parsed already see mapping_jobs){
   #     check the .err, .out and .map files in that order.
-  #     put data into object_xref, identity_xref, go_xref etc... 
+  #     put data into object_xref, identity_xref etc... 
   #     add data to mapping_job table
   #   }
   # }
@@ -181,7 +181,6 @@ sub process_map_file{
   my $total_lines = 0;
   my $root_dir = $self->core->dir;
 
-  my $ins_go_sth = $dbi->prepare("insert ignore into go_xref (object_xref_id, linkage_type, source_xref_id) values(?,?,?)");
   my $dep_sth    = $dbi->prepare("select dependent_xref_id, linkage_annotation from dependent_xref where master_xref_id = ?");
   my $start_sth  = $dbi->prepare("update mapping_jobs set object_xref_start = ? where job_id = ? and array_number = ?");
   my $end_sth    = $dbi->prepare("update mapping_jobs set object_xref_end = ? where job_id = ? and array_number = ?");
@@ -365,9 +364,6 @@ sub process_map_file{
 # now store in object_xref	 $update_dependent_xref_sth->execute($object_xref_id, $master_xref_id, $dep_xref_id);
 
 	 push @master_xref_ids, $dep_xref_id; # get the dependent, dependents just in case
-	 if(defined($link) and $link ne ""){ # we have a go term linkage type
-           $ins_go_sth->execute($object_xref_id, $link, $master_xref_id);
-         }
        }
      }
 
@@ -377,7 +373,6 @@ sub process_map_file{
   $start_sth->finish;
   $end_sth->finish;
   $dep_sth->finish;
-  $ins_go_sth->finish;
   $object_xref_sth->finish;
   $identity_xref_sth->finish;
   $ins_dep_ix_sth->finish;
