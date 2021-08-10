@@ -118,7 +118,7 @@ sub increment_stable_id {
   } elsif ( $stable_id =~ m/([a-zA-Z]+)/ ) {
     $prefix = $stable_id;
   } else {
-    die(   "unrecongnized stable_id format "
+    die(   "unrecognized stable_id format: $stable_id "
          . "- should match ([a-zA-Z]+)([0-9]+) or ([a-zA-Z]+) !!\n" );
   }
 
@@ -145,7 +145,7 @@ sub get_max_stable_id_from_gene_archive {
   my ( $dbi, $type ) = @_;
 
   # Try to get from relevant archive.
-  my $sth = $dbi->prepare("SELECT MAX($type) FROM gene_archive");
+  my $sth = $dbi->prepare("SELECT MAX($type) FROM gene_archive WHERE stable_id LIKE 'ENS%'");
   $sth->execute();
 
   my $rs;
@@ -171,7 +171,7 @@ sub get_highest_stable_id {
 
   # Get highest stable ID from the relevant table.
 
-  my $sth = $dbi->prepare("SELECT MAX(stable_id) FROM $type");
+  my $sth = $dbi->prepare("SELECT MAX(stable_id) FROM $type WHERE stable_id LIKE 'ENS%'");
   $sth->execute();
 
   if ( my @row = $sth->fetchrow_array() ) {
@@ -214,7 +214,11 @@ sub get_highest_stable_id {
       }
     } ## end if ( length($highest_from_current...))
 
-    return $highest_from_current;
+    # remove the 'E' from exon stable id prefix
+    my ( $prefix, $suffix ) = $highest_from_current =~ /([a-zA-Z]+)([0-9]+)/;
+    $prefix =~ s/E$//;
+
+    return $prefix . $suffix;
   } ## end if ( $type eq "exon" )
 
   # and from relevant archive
@@ -234,12 +238,10 @@ sub get_highest_stable_id {
   }
 
   # Assuming that this is a correctly formatted stable id -> remove the
-  # G/T/P/E for exon etc.
+  # G/T/P for gene etc. (Exon dealt with above.)
 
   my ( $prefix, $suffix ) = $max =~ /([a-zA-Z]+)([0-9]+)/;
-  if ( $type eq 'exon' ) {
-    $prefix =~ s/E$//;
-  } elsif ( $type eq 'gene' ) {
+  if ( $type eq 'gene' ) {
     $prefix =~ s/G$//;
   } elsif ( $type eq 'transcript' ) {
     $prefix =~ s/T$//;
@@ -278,6 +280,9 @@ sub usage {
   by looking up the <OBJ>_stable_id tables in the database and the
   gene_archive table (only for gene, translation and transcript, not for
   exon stable IDs!)
+
+  Please note that this script only works for "ENS..."-type stable ids.
+  It does not work for LRG ids or other types of stable ids.
 
   Note:
 
