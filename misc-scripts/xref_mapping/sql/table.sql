@@ -304,17 +304,6 @@ CREATE TABLE gene_transcript_translation (
 
 ) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
 
-CREATE TABLE core_database (
-  port		INT UNSIGNED,
-  user          VARCHAR(16),
-  pass          VARCHAR(16),
-  dbname        VARCHAR(16),
-  xref_dir      text,
-  core_dir      text
-
-) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
-  
-
 
 CREATE TABLE havana_status (
 

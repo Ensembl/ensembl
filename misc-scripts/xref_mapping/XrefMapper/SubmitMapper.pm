@@ -73,14 +73,6 @@ sub mapper{
 }
 
 
-sub store_core_database_details{
-  my ($self, $port, $user, $pass, $dbname, $dir);
-
-    
-}
-
-
-
 
 
 ##############################################################################
