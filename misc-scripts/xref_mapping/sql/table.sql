@@ -201,16 +201,6 @@ CREATE TABLE species (
 
 ################################################################################
 
-CREATE TABLE interpro (
-
-  interpro               varchar(255) not null,
-  pfam                   varchar(255) not null,
-  dbtype                 enum ('PROSITE','PFAM','PREFILE','PROFILE','TIGRFAMs','PRINTS','PIRSF','SMART','SSF')  not null
-
-) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
-
-################################################################################
-
 CREATE TABLE pairs (
 
   source_id			 int unsigned not null,
