@@ -305,15 +305,6 @@ CREATE TABLE gene_transcript_translation (
 ) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
 
 
-CREATE TABLE havana_status (
-
-  stable_id    VARCHAR(128),
-  status       enum('KNOWN','NOVEL','PUTATIVE','PREDICTED','KNOWN_BY_PROJECTION','UNKNOWN'),
-  UNIQUE KEY status_idx(stable_id)
-
-) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
-
-
 -- Try to keep the status in the correct order
 --   it will make it easier to see what is happening
 
