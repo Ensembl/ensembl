@@ -117,12 +117,11 @@ foreach my $source_section ( sort( $config->GroupMembers('source') ) ) {
   printf( "# Source '%s' (id = %d)\n", $source_name, $source_id );
 
   print(   "INSERT INTO source "
-         . "(name, source_release, download, ordered, "
+         . "(name, source_release, ordered, "
          . "priority, priority_description, status)\n" );
   
-  printf( "VALUES ('%s', '1', '%s', %d, %d, '%s', '%s');\n",
+  printf( "VALUES ('%s', '1', %d, %d, '%s', '%s');\n",
           $config->val( $source_section, 'name' ),
-          $config->val( $source_section, 'download' ),
           $config->val( $source_section, 'order' ),
           $config->val( $source_section, 'priority' ),
           $priority_description,
@@ -186,24 +185,10 @@ foreach my $species_section ( sort( $config->GroupMembers('species') ) )
             $source_name, $source_ids{$source_section} );
 
     print(   "INSERT INTO source_url "
-           . "(source_id, species_id, url, release_url, "
-           . "file_modified_date, upload_date, parser)\n" );
+           . "(source_id, species_id, parser)\n" );
 
-    my @uris =
-      split( /\n/, $config->val( $source_section, 'data_uri', '' ) );
-
-    my $release_uri = $config->val( $source_section, 'release_uri' );
-
-    if ( !defined($release_uri) or $release_uri !~ /\w/ ) {
-      my $nan_uri = '\N';
-      $release_uri = "'$nan_uri'";
-    } else {
-      $release_uri = "'$release_uri'";
-    }
-
-    printf( "VALUES (%d, %d, '%s', %s, now(), now(), '%s');\n",
+    printf( "VALUES (%d, %d, '%s') ;\n",
             $source_ids{$source_section}, $species_id,
-            join( ' ', @uris ), $release_uri,
             $config->val( $source_section, 'parser' ) );
 
     print("\n");
