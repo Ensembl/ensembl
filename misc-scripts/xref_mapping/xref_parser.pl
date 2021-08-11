@@ -19,23 +19,21 @@ use warnings;
 
 use Getopt::Long qw(:config pass_through);
 use XrefParser::BaseParser;
-use XrefParser::ProcessData;
+use XrefParser::Database;
+use Bio::EnsEMBL::Registry;
+use File::Basename;
+use File::Spec::Functions;
+use IO::File;
 
-my ( $host,             $port,          $dbname,
-     $user,             $pass,          $species,
-     $taxon,            $division,
-     $sources,          $checkdownload, $create,
-     $release,          $cleanup,       $drop_existing_db,
-     $deletedownloaded, $dl_path,       $notsource,
-     $unzip, $stats, $notverbose, $force );
+my ( $host,             $port,          $user,
+     $pass,             $dbname,        $release,
+     $species,          $taxon,         $division_id,
+     $parser,           $source,        $file,
+     $db,               $keep_db,       $help);
 
 my $options = join(" ",@ARGV);
 
 print "Options: ".join(" ",@ARGV)."\n";
-
-$unzip = 0;    # Do not decompress gzipped files by default
-
-$notverbose = 0;
 
 GetOptions(
     'dbuser|user=s'  => \$user,
@@ -43,23 +41,15 @@ GetOptions(
     'dbhost|host=s'  => \$host,
     'dbport|port=i'  => \$port,
     'dbname=s'       => \$dbname,
+    'release=s'      => \$release,
     'species=s'      => \$species,
     'taxon=s'        => \$taxon,
-    'division=s'     => \$division,
-    'source=s'       => \$sources,
-    'download_dir=s' => \$dl_path,
-    'checkdownload!' => \$checkdownload,    # Don't download if exists
-    'create'         => \$create,
-    'setrelease=s'   => \$release,
-    'cleanup'        => \$cleanup,
-    'stats'          => \$stats,
-    'notverbose'     => \$notverbose,
-    'notsource=s'    => \$notsource,
-    'drop_db|dropdb!' => \$drop_existing_db,    # Drop xref db without user interaction
-    'delete_downloaded' => \$deletedownloaded,
-    'download_path=s' => \$dl_path,
-    'unzip'           => \$unzip,                   # Force decompression of files
-    'force'           => \$force,
+    'division_id=s'  => \$division_id,
+    'parser=s'       => \$parser,
+    'source=s'       => \$source,
+    'file=s'         => \$file,
+    'db=s'           => \$db,
+    'keep_db=s'      => \$keep_db,
     'help'  => sub { usage(); exit(0); } );
 
 if($ARGV[0]){
@@ -72,72 +62,107 @@ if($ARGV[0]){
   exit(1);
 }
 
-my @sources  = split(/,/,join(',',$sources)) if $sources;
-my @notsource  = split(/,/,join(',',$notsource)) if $notsource;
-
-$| = 1;
-
-if ( !$user || !$host || !$dbname ) {
+  if ( !$host || !$species || !$parser) {
     usage();
     exit(1);
+  }
+
+  my $registry = 'Bio::EnsEMBL::Registry';
+  $registry->load_registry_from_multiple_dbs(
+    {
+      -host       => $host,
+      -port       => $port,
+      -user       => $user,
+      -pass       => $pass,
+      -verbose => 1,
+      -db_version => $release
+    });
+
+  if (!defined $taxon) {
+    my $meta_container = $registry->get_adaptor($species,'core', 'MetaContainer');
+    $taxon = $meta_container->get_taxonomy_id();
+  }
+  if (!defined $division_id) {
+    my $meta_container = $registry->get_adaptor($species,'core', 'MetaContainer');
+    my $division = $meta_container->get_division();
+    my %division_taxon = (
+    'Ensembl'            => 7742,
+    'EnsemblVertebrates' => 7742,
+    'Vertebrates'        => 7742,
+    'EnsemblMetazoa'     => 33208,
+    'Metazoa'            => 33208
+    );
+    $division_id = $division_taxon{$division};
+  }
+
+  my $sql_dir = dirname($0);
+
+  my $xref_dbc = XrefParser::Database->new({
+            host    => $host,
+            dbname  => $dbname,
+            port    => $port,
+            user    => $user,
+            pass    => $pass });
+  $xref_dbc->create($sql_dir, 1, 1) unless $keep_db;
+  my $xref_db_url = sprintf("mysql://%s:%s@%s:%s/%s", $user, $pass, $host, $port, $dbname);
+  my $xref_dbi = $xref_dbc->dbi();
+
+  my $module = "XrefParser::$parser";
+  eval "require $module";
+  my $xref_run = $module->new($xref_dbc);
+
+  my $source_id = get_source_id($xref_dbi, $parser, $taxon, $source, $division_id);
+
+  if (defined $db) {
+    my $dba = $registry->get_DBAdaptor($species, $db);
+    $dba->dbc()->disconnect_if_idle();
+    $xref_run->run_script( { source_id  => $source_id,
+                             species_id => $taxon,
+                             dba        => $dba,
+                             dbi        => $xref_dbi,
+                             species    => $species,
+                             file       => $file}) ;
+  } else {
+    my @files;
+    push @files, $file;
+    $xref_run->run( { source_id  => $source_id,
+                      species_id => $taxon,
+                      species    => $species,
+                      dbi        => $xref_dbi,
+                      files      => [@files] }) ;
+  }
+
+sub get_source_id {
+  my ($dbi, $parser, $species_id, $name, $division_id) = @_;
+  $name = "%$name%";
+  my $source_id;
+  my $select_source_id_sth = $dbi->prepare("SELECT u.source_id FROM source_url u, source s WHERE s.source_id = u.source_id AND parser = ? and species_id = ?");
+  my $select_count_source_id_sth = $dbi->prepare("SELECT count(*) FROM source_url u, source s WHERE s.source_id = u.source_id AND parser = ? AND species_id = ?");
+  $select_count_source_id_sth->execute($parser, $species_id);
+  my $count = ($select_count_source_id_sth->fetchrow_array());
+  if ($count == 1) {
+    $select_source_id_sth->execute($parser, $species_id);
+    $source_id = ($select_source_id_sth->fetchrow_array());
+  }
+  $select_source_id_sth = $dbi->prepare("SELECT u.source_id FROM source_url u, source s WHERE s.source_id = u.source_id AND parser = ? and species_id = ? and name like ?");
+  $select_count_source_id_sth = $dbi->prepare("SELECT count(*) FROM source_url u, source s WHERE s.source_id = u.source_id AND parser = ? AND species_id = ? AND name like ?");
+  $select_count_source_id_sth->execute($parser, $species_id, $name);
+  $count = ($select_count_source_id_sth->fetchrow_array());
+  if ($count == 1) {
+    $select_source_id_sth->execute($parser, $species_id, $name);
+    $source_id = ($select_source_id_sth->fetchrow_array());
+  }
+  # If no species-specific source, look for common sources
+  if (!defined $source_id) {
+    $select_source_id_sth->execute($parser, $division_id, $name);
+    $source_id = ($select_source_id_sth->fetchrow_array())[0];
+  }
+  $select_source_id_sth->finish();
+  $select_count_source_id_sth->finish();
+  return $source_id;
 }
 
-if ( $host =~ /staging/ || $host =~ /livemirror/ ){
-  print STDERR "$host was specified as host name. This is a production server and should not be used to create the xref database\n";
-  exit(1);
-}
 
-if ($dbname =~ /_core_/) {
-  print STDERR "$dbname was specified for the database name. This should be the name of the xref database, not the core database\n";
-  exit(1);
-}
-
-
-print "host os $host\n";
-
-my $process  = XrefParser::ProcessData->new();
-
-$process->run({ host             => $host,
-		port             =>  ( defined $port ? $port : '3306' ),
-		dbname           => $dbname,
-		user             => $user,
-		pass             => $pass,
-		species          => $species,
-                taxon            => $taxon,
-                division         => $division,
-		sourcesr         => \@sources,
-		checkdownload    => $checkdownload,
-		create           => $create,
-		release          => $release,
-		cleanup          => $cleanup,
-		drop_db          => $drop_existing_db,
-		deletedownloaded => $deletedownloaded,
-		dl_path          => (defined $dl_path ? $dl_path : "./"),
-		notsourcesr      => \@notsource,
-		unzip            => $unzip,
-		stats            => $stats,
-		verbose          => !($notverbose),
-		force            => $force });
-
-my $base_parser = XrefParser::BaseParser->new($process->database);
-
-$base_parser->add_meta_pair("options",$options);
-
-
-#
-# If any sources are missing then we need to calculate the display xrefs from the core.
-# As the xref database will not have all the data. Using the core is much slower!!
-#
-
-if($options =~ /source/ ){
-  $base_parser->add_meta_pair("fullmode","no");
-}
-else{
-  $base_parser->add_meta_pair("fullmode","yes");
-}
-
-
-$base_parser->parsing_finished_store_data();
 
 # --------------------------------------------------------------------------------
 
@@ -145,11 +170,11 @@ sub usage {
 
   print << "EOF";
 
-  xref_parser.pl -user {user} -pass {password} -host {host} \\
-    -port {port} -dbname {database} -species {species} \\
-    -source {source1,source2} -notsource {source1,source2} \\
-    -create -setrelease -deletedownloaded -checkdownload -stats -verbose \\
-    -cleanup -drop_db -download_path -unzip
+  xref_parser.pl -host {host} -port {port} -user {user} -pass {pass} -dbname {dbname} -release {release} \\
+    -species {species} -taxon_id {taxon_id} \\
+    -parser {parser} -source {source_id} -file {file} \\
+    -db {db} =keep_db {keep_db} \\
+    -help
 
   -user             User name to access database. Must allow writing.
 
@@ -160,6 +185,9 @@ sub usage {
   -port             Database port.
 
   -dbname           Name of xref database to use/create.
+
+  -release          Release version of the species to parse
+                    Used to find the right database on the server specified in the arguments
 
   -species          Which species to import. 
                     Species may be referred to by genus/species
@@ -175,45 +203,18 @@ sub usage {
                     not necessarily imply taxonomic relationship
                     (e.g. ciona intestinalis is a vertebrate in this context)
 
-  -source           Which sources to import. Multiple -source arguments
-                    and/or comma, separated lists of sources are
-                    allowed.  Specifying an unknown source will cause a
-                    list of valid sources to be printed.  Not specifying
-                    a -source argument will result in all species being
-                    used.
+  -parser           Which parser to run
 
-  -notsource        Which source to skip.
+  -source           Name of the source to extra data for (should match equivalent parser)
 
-  -create           If specified, cause dbname to be deleted and
-                    re-created if it already exists.  The user is
-                    prompted before the database is dropped to
-                    prevent disasters arising from dropping the wrong
-                    database.  If needed, this switch will also make
-                    the script ask the user whether it should run the
-                    'xref_config2sql.pl' script for him/her to renew
-                    'sql/populate_metadata.sql' from 'xref_config.ini'.
+  -file             Location and name of the file to be parsed
+                    Path should be absolute
 
-  -checkdownload    Check if file exists, otherwise downloads the file.
+  -db               If the parser requires connection to a database, specify here
+                    For example, specify otherfeatures when running RefSeqCoordinateParser
 
-  -deletedownloaded Delete any existing downloaded files first.
-
-  -setrelease       Set the release version for ALL the sources specified.
-
-  -cleanup          Delete the downloaded source files after parsing.
-
-  -drop_db          Drop the xref-database without user interaction.
-
-  -download_path    Directory into which to download files (default is
-                    the current directory).
-
-  -unzip            Decompress gzipped files (default is to use compressed
-                    files).
-
-  -notverbose       Do not output messages about the parsing. (NOT recomended)
-
-  -stats            Generate the stats for the number of types of xrefs added.
-
-  -force            No confirmation of actions just do it.
+  -keep_db          When re-using an existing xref database, use the option
+                    By default, deletes any existing one and creates a new one
 
 EOF
 
