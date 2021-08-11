@@ -18,12 +18,9 @@ use strict;
 use warnings;
 
 use Getopt::Long qw(:config pass_through);
-use XrefParser::BaseParser;
 use XrefParser::Database;
 use Bio::EnsEMBL::Registry;
 use File::Basename;
-use File::Spec::Functions;
-use IO::File;
 
 my ( $host,             $port,          $user,
      $pass,             $dbname,        $release,
@@ -74,7 +71,6 @@ if($ARGV[0]){
       -port       => $port,
       -user       => $user,
       -pass       => $pass,
-      -verbose => 1,
       -db_version => $release
     });
 
