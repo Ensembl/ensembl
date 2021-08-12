@@ -342,7 +342,7 @@ sub _detach_object_xref {
   my ($xref_id, $dep_xref_id, $object_type, $ensembl_id, $dbi) = @_;
   # Drop all the identity and go xrefs for the dependents of an xref
   my $remove_dep_ox_sth = $dbi->prepare(
-    "DELETE ix, g FROM object_xref ox \
+    "DELETE ix FROM object_xref ox \
      LEFT JOIN identity_xref ix ON ix.object_xref_id = ox.object_xref_id \
      WHERE master_xref_id = ? AND ensembl_object_type = ? AND xref_id = ? AND ensembl_id = ?"
   );
