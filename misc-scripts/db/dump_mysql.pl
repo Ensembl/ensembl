@@ -359,8 +359,8 @@ sub data {
     "-e 'SELECT * FROM ${db}.${table}'",
     '|',
     'sed -r ',
-    '-e \'s/(^|\t)NULL($|\t)/\1\\N\2/g\'',
-    '-e \'s/(^|\t)NULL($|\t)/\1\\N\2/g\'',
+    '-e \'s/(^|\t)NULL($|\t)/\1\\\\N\2/g\'',
+    '-e \'s/(^|\t)NULL($|\t)/\1\\\\N\2/g\'',
     '>',
     $file
   );
