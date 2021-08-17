@@ -520,7 +520,7 @@ sub run_exonerate {
   $self->logger->info("Waiting for exonerate jobs to finish...\n", 0, 'stamped');
 
   my $dependent_job =
-    qq{bsub -K -w "ended($lsf_name)" -q production-rh74 } .
+    qq{bsub -K -w "ended($lsf_name)" -q production } .
     qq{-M 1000 -R 'select[mem>1000]' -R 'rusage[mem=1000]' } .
     qq{-o $logpath/exonerate_depend.out /bin/true};
 
