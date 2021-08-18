@@ -74,9 +74,20 @@ sub update{
   $sth = $core_dbi->prepare($sql);
   my $affected_rows = $sth->execute();
   print "\tDeleted $affected_rows PROJECTED external_synonym row(s)\n" if $verbose;
+
+  $sql = "DELETE dx FROM dependent_xref dx, xref x, external_db ed WHERE x.xref_id = dx.dependent_xref_id AND x.external_db_id = ed.external_db_id and ed.db_name = 'GO'";
+  $sth = $core_dbi->prepare($sql);
+  $affected_rows = $sth->execute();
+  print "\tDeleted $affected_rows GO dependent_xref row(s)\n" if $verbose;
+
   $sql = "DELETE ox FROM object_xref ox, xref x, external_db e WHERE x.xref_id = ox.xref_id AND x.external_db_id =e.external_db_id and e.db_name = 'GO'";
   $sth = $core_dbi->prepare($sql);
   $sth->execute();
+
+  $sql = "DELETE dx FROM dependent_xref dx, xref x WHERE x.xref_id = dx.dependent_xref_id AND x.info_type = 'PROJECTION'";
+  $sth = $core_dbi->prepare($sql);
+  $affected_rows = $sth->execute();
+  print "\tDeleted $affected_rows PROJECTED dependent_xref row(s)\n" if $verbose;
 
   $sql = "DELETE object_xref FROM object_xref, xref WHERE object_xref.xref_id = xref.xref_id AND xref.info_type = 'PROJECTION'";
   $sth = $core_dbi->prepare($sql);
