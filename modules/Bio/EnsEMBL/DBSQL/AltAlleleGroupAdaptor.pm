@@ -238,13 +238,28 @@ sub fetch_by_gene_id {
     my $sth = $self->prepare($gene_id_sql);
     $sth->bind_param(1,$gene_id, SQL_INTEGER);
     
+    my @group_ids;
     my $group_id;
     $sth->execute();
     $sth->bind_col(1,\$group_id);
-    $sth->fetch;
+    while ( $sth->fetch ) {
+        print "group id: $group_id\n";
+        push( @group_ids, $group_id );
+    }
+    print "group ids: @group_ids\n";
+    # $sth->fetch;
     $sth->finish;
     if (!$@ && $group_id) {
-        return $self->fetch_by_dbID($group_id);
+        my @aag;
+        foreach my $group (@group_ids) {
+            print "About to fetch aag object using group id $group\n";
+            my $aag = $self->fetch_by_dbID($group);
+            print "aag object: $aag\n";
+            push(@aag, $aag);
+        }
+        print "@aag\n";
+        return \@aag;
+        # return $self->fetch_by_dbID($group_id); # breaks if turned into an array
     }
     return;
 }
