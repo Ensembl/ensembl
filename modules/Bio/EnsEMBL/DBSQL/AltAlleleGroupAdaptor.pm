@@ -247,7 +247,6 @@ sub fetch_by_gene_id {
         push( @group_ids, $group_id );
     }
     print "group ids: @group_ids\n";
-    # $sth->fetch;
     $sth->finish;
     if (!$@ && $group_id) {
         my @aag;
@@ -259,7 +258,6 @@ sub fetch_by_gene_id {
         }
         print "@aag\n";
         return \@aag;
-        # return $self->fetch_by_dbID($group_id); # breaks if turned into an array
     }
     return;
 }
