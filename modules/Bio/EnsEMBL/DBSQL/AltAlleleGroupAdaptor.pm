@@ -249,6 +249,49 @@ sub fetch_by_gene_id {
     return;
 }
 
+=head2 fetch_all_by_gene_id
+
+  Arg[1]      : Integer Gene ID of the member to query by
+  Description : Creates and returns an array of one or more AltAlleleGroups, 
+                which each contain the specified gene member                
+  Returntype  : Array of Bio::EnsEMBL::AltAlleleGroup objects
+
+=cut
+
+sub fetch_all_by_gene_id {
+    my ($self, $gene_id) = @_;
+
+    my $gene_id_sql = q(
+        SELECT alt_allele_group_id FROM alt_allele
+        WHERE gene_id = ?
+    );
+    my $sth = $self->prepare($gene_id_sql);
+    $sth->bind_param(1,$gene_id, SQL_INTEGER);
+    
+    my @group_ids;
+    my $group_id;
+    $sth->execute();
+    $sth->bind_col(1,\$group_id);
+    while ( $sth->fetch ) {
+        print "group id: $group_id\n";
+        push( @group_ids, $group_id );
+    }
+    print "group ids: @group_ids\n";
+    $sth->finish;
+    if (!$@ && $group_id) {
+        my @aag;
+        foreach my $group (@group_ids) {
+            print "About to fetch aag object using group id $group\n";
+            my $aag = $self->fetch_by_dbID($group);
+            print "aag object: $aag\n";
+            push(@aag, $aag);
+        }
+        print "@aag\n";
+        return \@aag;
+    }
+    return;
+}
+
 =head2 store
 
   Arg[1]     : Bio::EnsEMBL::AltAlleleGroup
