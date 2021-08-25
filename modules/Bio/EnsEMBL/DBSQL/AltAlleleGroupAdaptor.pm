@@ -231,22 +231,11 @@ sub fetch_by_dbID {
 sub fetch_by_gene_id {
     my ($self, $gene_id) = @_;
 
-    my $gene_id_sql = q(
-        SELECT alt_allele_group_id FROM alt_allele
-        WHERE gene_id = ?
-    );
-    my $sth = $self->prepare($gene_id_sql);
-    $sth->bind_param(1,$gene_id, SQL_INTEGER);
-    
-    my $group_id;
-    $sth->execute();
-    $sth->bind_col(1,\$group_id);
-    $sth->fetch;
-    $sth->finish;
-    if (!$@ && $group_id) {
-        return $self->fetch_by_dbID($group_id);
-    }
-    return;
+    my $aag_list = $self->fetch_all_by_gene_id($gene_id);
+
+    # return first group from list
+    my $aag = @$aag_list[0];
+    return $aag->dbID;
 }
 
 =head2 fetch_all_by_gene_id
