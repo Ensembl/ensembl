@@ -235,7 +235,12 @@ sub fetch_by_gene_id {
 
     # return first group from list
     my $aag = @$aag_list[0];
-    return $aag->dbID;
+    # check that a result exists
+    if ($aag) {
+        my $group_id = $aag->dbID;
+        return $self->fetch_by_dbID($group_id);
+    }
+    return;
 }
 
 =head2 fetch_all_by_gene_id
@@ -265,7 +270,6 @@ sub fetch_all_by_gene_id {
         print "group id: $group_id\n";
         push( @group_ids, $group_id );
     }
-    print "group ids: @group_ids\n";
     $sth->finish;
     if (!$@ && $group_id) {
         my @aag;
