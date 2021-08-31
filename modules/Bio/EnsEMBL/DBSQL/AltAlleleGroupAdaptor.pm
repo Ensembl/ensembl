@@ -257,7 +257,7 @@ sub fetch_all_by_gene_id {
 
     my $gene_id_sql = q(
         SELECT alt_allele_group_id FROM alt_allele
-        WHERE gene_id = ?
+        WHERE gene_id = ? ORDER BY alt_allele_group_id
     );
     my $sth = $self->prepare($gene_id_sql);
     $sth->bind_param(1,$gene_id, SQL_INTEGER);
