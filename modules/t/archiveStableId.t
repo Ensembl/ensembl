@@ -23,6 +23,8 @@ use Test::Warnings;
 use Bio::EnsEMBL::Test::MultiTestDB;
 use Bio::EnsEMBL::DBSQL::ArchiveStableIdAdaptor;
 use Bio::EnsEMBL::Test::TestUtils;
+use Test::Exception;
+use Test::Warnings qw(warning);
 
 our $verbose = 0;
 
@@ -50,6 +52,13 @@ is( $asi->release, 3, "T2 is from release 3");
 
 $asi = $asia->fetch_by_stable_id_dbname("T1", "release_2");
 is( $asi->release, 2, "T1 is from release 2");
+
+#
+# Check version is correct field
+#
+
+throws_ok { $asia->fetch_by_stable_id_version("T1", 'invalid_version') } qr/is not valid, should be a small int/, "version must be an integer";
+warning { throws_ok { $asia->fetch_by_stable_id("T1.invalid_version") } qr/is not valid, should be a small int/, "Stable ID must have an integer as version" };
 
 
 #
