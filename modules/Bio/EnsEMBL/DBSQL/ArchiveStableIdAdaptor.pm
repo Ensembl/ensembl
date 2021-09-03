@@ -153,7 +153,7 @@ sub fetch_by_stable_id {
   # a version number in the stable_id
   if(!defined($arch_id)) {
       my $vindex = rindex($stable_id, '.');
-      if ($vindex !~ /[0-9]{1,5}/) { return $arch_id; }
+      if ($vindex !~ /^[0-9]{1,5}$/) { return $arch_id; }
       $arch_id = $self->fetch_by_stable_id_version(substr($stable_id,0,$vindex),
 						   substr($stable_id,$vindex+1),
 						   @_);
@@ -260,7 +260,7 @@ sub fetch_by_stable_id_version {
      -adaptor => $self
   );
 
-  if ($version !~ /[0-9]{1,5}/) {
+  if ($version !~ /^[0-9]{1,5}$/) {
     throw("$version is not valid, should be a small int");
   }
   

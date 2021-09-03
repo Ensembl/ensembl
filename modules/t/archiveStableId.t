@@ -59,6 +59,7 @@ is( $asi->release, 2, "T1 is from release 2");
 
 throws_ok { $asia->fetch_by_stable_id_version("T1", 'invalid_version') } qr/is not valid, should be a small int/, "version must be an integer";
 warning { throws_ok { $asia->fetch_by_stable_id("T1.invalid_version") } qr/is not valid, should be a small int/, "Stable ID must have an integer as version" };
+throws_ok { $asia->fetch_by_stable_id_version("T1", "invalid12345_version") } qr/is not valid, should be a small int/, "version must be only an integer";
 
 
 #
