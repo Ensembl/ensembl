@@ -266,7 +266,7 @@ sub process {
       }
       foreach my $table (sort { $a cmp $b } @tables_to_process) {
         next if $self->is_view($table);
-        $self->data($table);
+        $self->data($table, $db);
       }
     } else {
       $self->v('-sql mode is on so no data dumping will occur');
@@ -338,16 +338,35 @@ sub modify_sql {
 }
 
 sub data {
-  my ($self, $table) = @_;
+
+  my ($self, $table, $db) = @_;
   return if $self->is_view($table);
   $self->v('Dumping table %s', $table);
   my $q_table      = $self->dbh()->quote_identifier($table);
   my $file         = $self->file($table . '.txt');
-  my $force_escape = q{FIELDS ESCAPED BY '\\\\'};
-  my $sql          = sprintf(q{SELECT * FROM %s INTO OUTFILE '%s' %s},
-                    $q_table, $file, $force_escape);
-  unlink $file if -f $file;
-  $self->dbh()->do($sql);
+
+  my $dbc_params = $self->dbc_params($db);
+
+  my $mysql_exe = 'mysql';
+
+  my @cmd = (
+    $mysql_exe,
+    $dbc_params,
+    '--max_allowed_packet=1024M',
+    '--quick',
+    '--silent',
+    '--skip-column-names',
+    "-e 'SELECT * FROM ${db}.${table}'",
+    '|',
+    'sed -r ',
+    '-e \'s/(^|\t)NULL($|\t)/\1\\\\N\2/g\'',
+    '-e \'s/(^|\t)NULL($|\t)/\1\\\\N\2/g\'',
+    '>',
+    $file
+  );
+  my $cmd = join(' ', @cmd);
+  my $output = `$cmd 2>&1`;
+
   $self->compress($file) if ! $self->opts()->{testcompatible};
   return;
 }
@@ -397,6 +416,23 @@ sub dbh {
     $self->{dbh} = $dbh;
   }
   return $self->{'dbh'};
+}
+
+sub dbc_params {
+  my ($self, $database) = @_;
+  my $o = $self->opts();
+    my %args = (host => $o->{host}, port => $o->{port});
+    $args{database} = $database if defined $database;
+
+  my $dbc_params = join(' ', (
+    '--host='.$o->{host},
+    '--port='.$o->{port},
+    '--user='.$o->{username},
+    '--password='.$o->{password}
+    )
+  );
+
+  return $dbc_params;
 }
 
 sub clear_dbh {
