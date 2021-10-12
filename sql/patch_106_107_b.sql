@@ -20,4 +20,4 @@
 # Description:
 #   Added unique index on seq_region_mapping
 
-CREATE unique index seq_region_mapping_uindex on seq_region_mapping (external_seq_region_id, internal_seq_region_id, mapping_set_id);
+CREATE UNIQUE INDEX seq_region_mapping_uindex on seq_region_mapping (external_seq_region_id, internal_seq_region_id, mapping_set_id);

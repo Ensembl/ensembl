@@ -859,6 +859,8 @@ CREATE TABLE "seq_region_mapping" (
   "mapping_set_id" integer NOT NULL
 );
 
+CREATE UNIQUE INDEX seq_region_mapping_uindex on seq_region_mapping (external_seq_region_id, internal_seq_region_id, mapping_set_id);
+
 --
 -- Table: "seq_region_synonym"
 --
