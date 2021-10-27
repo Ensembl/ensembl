@@ -776,6 +776,7 @@ CREATE TABLE `seq_region_mapping` (
   `external_seq_region_id` int(10) unsigned NOT NULL,
   `internal_seq_region_id` int(10) unsigned NOT NULL,
   `mapping_set_id` int(10) unsigned NOT NULL,
+  UNIQUE KEY `seq_region_mapping_uindex` (`external_seq_region_id`,`internal_seq_region_id`,`mapping_set_id`),
   KEY `mapping_set_idx` (`mapping_set_id`)
 ) ENGINE=MyISAM DEFAULT CHARSET=latin1;
 
