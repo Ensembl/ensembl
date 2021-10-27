@@ -2027,7 +2027,8 @@ CREATE TABLE seq_region_mapping (
         internal_seq_region_id  INT(10) UNSIGNED NOT NULL,
         mapping_set_id          INT(10) UNSIGNED NOT NULL,
 
-        KEY mapping_set_idx (mapping_set_id)
+        KEY mapping_set_idx (mapping_set_id),
+	UNIQUE KEY seq_region_mapping_uindex (external_seq_region_id, internal_seq_region_id, mapping_set_id)
 
 ) ENGINE=MyISAM DEFAULT CHARSET=latin1;
 

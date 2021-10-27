@@ -1,6 +1,6 @@
 --
 -- Created by SQL::Translator::Producer::SQLite
--- Created on Wed Oct 27 10:34:43 2021
+-- Created on Wed Oct 27 10:59:08 2021
 --
 
 BEGIN TRANSACTION;
@@ -858,6 +858,8 @@ CREATE TABLE "seq_region_mapping" (
   "internal_seq_region_id" integer NOT NULL,
   "mapping_set_id" integer NOT NULL
 );
+
+CREATE UNIQUE INDEX "seq_region_mapping_uindex" ON "seq_region_mapping" ("external_seq_region_id", "internal_seq_region_id", "mapping_set_id");
 
 --
 -- Table: "seq_region_synonym"
