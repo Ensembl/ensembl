@@ -164,7 +164,7 @@ sub run_coordinatemapping {
         my $sth = $core_dbh->prepare($sql);
 
         $sth->execute( ++$analysis_id,   'xrefcoordinatemapping',
-                       'xref_mapper.pl', $analysis_params,
+                       'CoordinateMapper.pm', $analysis_params,
                        'CoordinateMapper.pm' );
       }
     } ## end else [ if ( defined($analysis_id...
