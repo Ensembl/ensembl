@@ -21,3 +21,8 @@
 #   Added unique index on seq_region_mapping
 
 CREATE UNIQUE INDEX seq_region_mapping_uindex on seq_region_mapping (external_seq_region_id, internal_seq_region_id, mapping_set_id);
+
+# patch identifier
+INSERT INTO meta (species_id, meta_key, meta_value)
+  VALUES (NULL, 'patch', 'patch_106_107_b.sql|Added index for seq_region_mapping');
+
