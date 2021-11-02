@@ -47,7 +47,6 @@ use POSIX;
 #    synonym                   and xref
 
 #    identity_xref             and object_xref
-#    go_xref                   and object_xref
 
 #    gene_transcript_translation   and gene_stable_id
 #    gene_transcript_translation   and transcript_stable_id
@@ -57,8 +56,6 @@ use POSIX;
 #    gene_direct_xref              and gene_stable_id
 #    transcript
 #    translation
-
-# All object_xref of type go have a go_xref entry
 
 
 ##### Numbers between xref and core (xref and object_xref) are similar
@@ -241,29 +238,6 @@ sub unlinked_entries{
     $sth->finish;
   }
 
-  $count_sql = "select count(1) from go_xref d left join object_xref o on d.object_xref_id = o.object_xref_id where o.object_xref_id is null";
-
-  $sql = "select distinct(d.object_xref_id) from go_xref d left join object_xref o on d.object_xref_id = o.object_xref_id where o.object_xref_id is null limit 10";
-
-  $sth = $dbi->prepare($count_sql);
-  $sth->execute();
-  $sth->bind_columns(\$count);
-  $sth->fetch();
-  $sth->finish;
-  
-  if($count){
-    $failed = 1;
-    $sth = $dbi->prepare($sql);
-    $sth->execute();
-    $sth->bind_columns(\$xref_id);
-    print STDERR "SQL QUERY: $sql\n";
-    while($sth->fetch){
-      print STDERR "Problem with object_xref $xref_id\n";
-    }
-    $sth->finish;
-  }
-
-
   foreach my $type (qw(transcript translation gene)){
     $count_sql = "select count(1) from gene_transcript_translation d left join ".$type."_stable_id x on d.".$type."_id = x.internal_id where x.internal_id is null and d.".$type."_id is not null";
     
@@ -289,27 +263,6 @@ sub unlinked_entries{
     
   }
 
-
-  $count_sql = "select count(1) from xref x, source s, object_xref o left join go_xref g on o.object_xref_id = g.object_xref_id where x.xref_id = o.xref_id and s.source_id = x.source_id and s.name like 'GO' and ox_status in ('DUMP_OUT') and g.object_xref_id is null";
-  $sql = "select distinct(o.object_xref_id) from xref x, source s, object_xref o left join go_xref g on o.object_xref_id = g.object_xref_id where x.xref_id = o.xref_id and s.source_id = x.source_id and s.name like 'GO' and ox_status in ('DUMP_OUT') and g.object_xref_id is null limit 10";
-
-  $sth = $dbi->prepare($count_sql);
-  $sth->execute();
-  $sth->bind_columns(\$count);
-  $sth->fetch();
-  $sth->finish;
-  
-  if($count){
-    $failed = 1;
-    $sth = $dbi->prepare($sql);
-    $sth->execute();
-    $sth->bind_columns(\$xref_id);
-    print STDERR "SQL QUERY: $sql\n";
-    while($sth->fetch){
-      print STDERR "Problem with object_xref $xref_id which is linked to a GO source but has no go_xref reference\n";
-    }
-    $sth->finish;
-  }
 
   if(!$failed){
     $sth_stat = $dbi->prepare("insert into process_status (status, date) values('tests_finished',now())");

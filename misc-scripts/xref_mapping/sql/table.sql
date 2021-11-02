@@ -107,7 +107,6 @@ CREATE TABLE source (
   name                        varchar(255) not null,
   status                      enum('KNOWN','XREF','PRED','ORTH','PSEUDO','LOWEVIDENCE','NOIDEA') not null default 'NOIDEA',
   source_release              varchar(255),
-  download                    enum('Y','N') default 'Y',
   ordered                     int unsigned not null, 
   priority                    int unsigned default 1,
   priority_description        varchar(40) default "",
@@ -124,11 +123,6 @@ CREATE TABLE source_url (
   source_url_id               int unsigned not null auto_increment,
   source_id                   int unsigned not null,
   species_id                  int unsigned not null,
-  url                         mediumtext,
-  release_url                 mediumtext,
-  checksum                    varchar(1025),
-  file_modified_date          datetime,
-  upload_date                 datetime,
   parser                      varchar(255),
 
   PRIMARY KEY (source_url_id),
@@ -196,16 +190,6 @@ CREATE TABLE species (
   KEY taxonomy_idx(taxonomy_id),
   UNIQUE KEY species_taxonomy_idx(species_id,taxonomy_id),
   KEY name_idx(name)
-
-) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
-
-################################################################################
-
-CREATE TABLE interpro (
-
-  interpro               varchar(255) not null,
-  pfam                   varchar(255) not null,
-  dbtype                 enum ('PROSITE','PFAM','PREFILE','PROFILE','TIGRFAMs','PRINTS','PIRSF','SMART','SSF')  not null
 
 ) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
 
@@ -301,26 +285,6 @@ CREATE TABLE gene_transcript_translation (
   PRIMARY KEY (transcript_id),
   INDEX gene_idx (gene_id),
   INDEX translation_idx (translation_id)
-
-) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
-
-CREATE TABLE core_database (
-  port		INT UNSIGNED,
-  user          VARCHAR(16),
-  pass          VARCHAR(16),
-  dbname        VARCHAR(16),
-  xref_dir      text,
-  core_dir      text
-
-) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
-  
-
-
-CREATE TABLE havana_status (
-
-  stable_id    VARCHAR(128),
-  status       enum('KNOWN','NOVEL','PUTATIVE','PREDICTED','KNOWN_BY_PROJECTION','UNKNOWN'),
-  UNIQUE KEY status_idx(stable_id)
 
 ) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
 
@@ -474,18 +438,6 @@ CREATE TABLE identity_xref (
 --  KEY analysis_idx (analysis_id)
 
 ) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
-
-CREATE TABLE go_xref (
-
-  object_xref_id          INT(10) UNSIGNED DEFAULT '0' NOT NULL,
-  linkage_type            CHAR(3) NOT NULL,
-  source_xref_id          INT(10) UNSIGNED DEFAULT NULL,
-  KEY (object_xref_id),
-  KEY (source_xref_id),
-  UNIQUE (object_xref_id, source_xref_id, linkage_type)
-
-) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
-
 
 CREATE TABLE meta (
 
