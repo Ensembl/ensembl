@@ -76,7 +76,7 @@ sub run {
   my $get_xref_sql = "SELECT xref_id, accession, version, label, description, info_type ".
   "FROM xref WHERE species_id = ? AND source_id = ?";
   my $get_xref_sth = $xref_source->prepare($get_xref_sql);
-  my $get_dependent_sql = "SELECT x.xref_id, x.accession, x.source_id, x.species_id, dx.linkage_source_id FROM xref x, dependent_xref dx ".
+  my $get_dependent_sql = "SELECT x.xref_id, x.accession, x.label, x.description, x.source_id, x.species_id, dx.linkage_source_id FROM xref x, dependent_xref dx ".
   "WHERE dx.dependent_xref_id = x.xref_id and dx.master_xref_id = ?";
   my $get_dependent_sth = $xref_source->prepare($get_dependent_sql);
   my $get_sequence_sql = "SELECT sequence, sequence_type, status FROM primary_xref WHERE xref_id = ?";
@@ -85,7 +85,7 @@ sub run {
   my $get_synonym_sth = $xref_source->prepare($get_synonym_sql);
   my $get_direct_sql = "SELECT ensembl_stable_id, linkage_xref FROM translation_direct_xref WHERE general_xref_id = ?";
   my $get_direct_sth = $xref_source->prepare($get_direct_sql);
-  my ($xref_id, $accession, $version, $label, $description, $info_type, $parsed_seq, $type, $status, $dep_xref_id, $dep_accession, $dep_source_id, $dep_species_id, $linkage_source_id, $synonym, $stable_id, $linkage_xref);
+  my ($xref_id, $accession, $version, $label, $description, $info_type, $parsed_seq, $type, $status, $dep_xref_id, $dep_accession, $dep_label, $dep_description, $dep_source_id, $dep_species_id, $linkage_source_id, $synonym, $stable_id, $linkage_xref);
 
   my @xrefs;
   my $count = 0;
@@ -136,12 +136,13 @@ sub run {
 
       #Add any dependent xrefs
       $get_dependent_sth->execute($xref_id);
-      $get_dependent_sth->bind_columns(\$dep_xref_id, \$dep_accession, \$dep_species_id, \$dep_source_id, \$linkage_source_id);
-      my %dep;
+      $get_dependent_sth->bind_columns(\$dep_xref_id, \$dep_accession, \$dep_label, \$dep_description, \$dep_source_id, \$dep_species_id, \$linkage_source_id);
       while ($get_dependent_sth->fetch) {
         if ($dep_species_id != $species_id) { next; }
+	my %dep;
 	$dep{ACCESSION} = $dep_accession;
-	$dep{LABEL} = $dep_accession;
+	$dep{LABEL} = $dep_label;
+	$dep{DESCRIPTION} = $dep_description;
 	$dep{SOURCE_ID} = $dep_source_id;
 	$dep{LINKAGE_SOURCE_ID} = $linkage_source_id;
 	$get_synonym_sth->execute($dep_xref_id);
