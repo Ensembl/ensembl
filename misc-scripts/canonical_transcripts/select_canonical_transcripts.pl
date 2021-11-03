@@ -248,10 +248,23 @@ if ($write) {
     my $gene_update_sql = "UPDATE gene SET canonical_transcript_id = ? where gene_id = ?";
     my $gene_sth = $dba->dbc->prepare($gene_update_sql);
 
+    my $trans_select_sql = "SELECT value FROM transcript_attrib WHERE transcript_id=? AND attrib_type_id=?";
+    my $trans_select_sth = $dba->dbc->prepare($trans_select_sql);
+    my $trans_update_sql = "UPDATE transcript_attrib SET value=? WHERE transcript_id=? AND attrib_type_id=?";
+    my $trans_update_sth = $dba->dbc->prepare($trans_update_sql);
+
     print "Updating database with new canonical transcripts...\n";
     foreach my $change (@change_list) {
         print "Changin' ". $change->[1]. " on ". $change->[0]."\n" if $verbose;
         $gene_sth->execute( $change->[1], $change->[0]);
+
+	# Updating canonical flag in transcript_attrib table, if exists
+	$trans_select_sth->execute($change->[1], 554);
+	if (my @exists = $trans_select_sth->fetchrow_array()) {
+          if ($exists[0]) {
+            $trans_update_sth->execute(1, $change->[1], 554);
+          }
+        }
     }
     print "Done\n";
 }
