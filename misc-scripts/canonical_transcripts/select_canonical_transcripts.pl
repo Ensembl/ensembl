@@ -258,9 +258,9 @@ if ($write) {
         print "Changin' ". $change->[1]. " on ". $change->[0]."\n" if $verbose;
         $gene_sth->execute( $change->[1], $change->[0]);
 
-	# Updating canonical flag in transcript_attrib table, if exists
-	$trans_select_sth->execute($change->[1], 554);
-	if (my @exists = $trans_select_sth->fetchrow_array()) {
+        # Updating canonical flag in transcript_attrib table, if exists
+        $trans_select_sth->execute($change->[1], 554);
+        if (my @exists = $trans_select_sth->fetchrow_array()) {
           if ($exists[0]) {
             $trans_update_sth->execute(1, $change->[1], 554);
           }
