@@ -127,17 +127,77 @@ sub dbi {
 # Create database if required.
 # Assumes sql/table.sql and sql/populate_metadata.sql are present.
 sub create {
-  my ( $self, $sql_dir, $force, $drop_db ) = @_;
+  my ( $self, $sql_dir, $force, $drop_db, $xref_source_dbi) = @_;
   $self->recreate_database( $force, $drop_db );
-  $self->populate( $sql_dir, $force );
+  $self->populate( $sql_dir, $force, $xref_source_dbi);
 }
 
 sub populate {
-  my ( $self, $sql_dir, $force ) = @_;
+  my ( $self, $sql_dir, $force, $xref_source_dbi ) = @_;
   my $table_file = catfile( $sql_dir, 'sql', 'table.sql' );
-  my $metadata_file = $self->prepare_metadata_file( $sql_dir, $force );
+  my $metadata_file;
+  if ($xref_source_dbi) {
+    $metadata_file = $self->copy_source_metadata_file($xref_source_dbi);
+  } else {
+    $metadata_file = $self->prepare_metadata_file( $sql_dir, $force );
+  }
   $self->populate_with_file($table_file);
   $self->populate_with_file($metadata_file);
+}
+
+sub copy_source_metadata_file {
+  my ( $self, $xref_source_dbi) = @_;
+
+  my $metadata_file = "metadata_config.sql";
+  open(CONFIG, ">$metadata_file") or die "Can't open $metadata_file: $!";
+
+  my $select_species_sth = $xref_source_dbi->prepare("SELECT species_id, taxonomy_id, name, aliases FROM species;");
+  my ($species_id, $taxonomy_id, $name, $aliases);
+  $select_species_sth->execute();
+  $select_species_sth->bind_columns(\$species_id, \$taxonomy_id, \$name, \$aliases);
+  while ($select_species_sth->fetch()) {
+    print CONFIG "INSERT INTO species (species_id, taxonomy_id, name, aliases) ".
+    " VALUES ('$species_id', '$taxonomy_id', '$name', '$aliases');";
+    print CONFIG "\n\n";
+  }
+  $select_species_sth->finish();
+
+  my $select_source_sth = $xref_source_dbi->prepare("SELECT source_id, name, source_release, ordered, priority, priority_description, status FROM source");
+  my ($source_id, $source_release, $ordered, $priority, $priority_description, $status);
+  $select_source_sth->execute();
+  $select_source_sth->bind_columns(\$source_id, \$name, \$source_release, \$ordered, \$priority, \$priority_description, \$status);
+  while ($select_source_sth->fetch()) {
+    print CONFIG 'INSERT INTO source (source_id, name, source_release, ordered, priority, priority_description, status) ';
+    printf CONFIG (' VALUES (%d, "%s", "%s", %d, %d, "%s", "%s") ;', 
+    	    $source_id, $name, $source_release, $ordered, $priority, $priority_description, $status);
+    print CONFIG "\n\n";
+  }
+  $select_source_sth->finish();
+
+  my $select_dependent_sth = $xref_source_dbi->prepare("SELECT master_source_id, dependent_name FROM dependent_source");
+  my ($master_source_id, $dependent_name);
+  $select_dependent_sth->execute();
+  $select_dependent_sth->bind_columns(\$master_source_id, \$dependent_name);
+  while ($select_dependent_sth->fetch()) {
+    print CONFIG "INSERT IGNORE INTO dependent_source (master_source_id, dependent_name) ".
+    " VALUES ('$master_source_id', '$dependent_name');";
+    print CONFIG "\n\n";
+  }
+  $select_dependent_sth->finish();
+
+  my $select_source_url_sth = $xref_source_dbi->prepare("SELECT source_url_id, source_id, species_id, parser FROM source_url");
+  my ($source_url_id, $parser);
+  $select_source_url_sth->execute();
+  $select_source_url_sth->bind_columns(\$source_url_id, \$source_id, \$species_id, \$parser);
+  while ($select_source_url_sth->fetch()) {
+    print CONFIG "INSERT INTO source_url (source_url_id, source_id, species_id, parser) ".
+    " VALUES ('$source_url_id', '$source_id', '$species_id', '$parser');";
+    print CONFIG "\n\n";
+  }
+  $select_source_url_sth->finish();
+
+  close (CONFIG);
+  return $metadata_file;
 }
 
 sub prepare_metadata_file {
