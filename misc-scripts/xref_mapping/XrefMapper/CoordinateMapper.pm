@@ -208,7 +208,7 @@ sub run_coordinatemapping {
 
         $sth->bind_param( 1, ++$analysis_id,          SQL_INTEGER );
         $sth->bind_param( 2, 'xrefcoordinatemapping', SQL_VARCHAR );
-        $sth->bind_param( 3, 'xref_mapper.pl',        SQL_VARCHAR );
+        $sth->bind_param( 3, 'CoordinateMapper.pm',   SQL_VARCHAR );
         $sth->bind_param( 4, $analysis_params,        SQL_VARCHAR );
         $sth->bind_param( 5, 'CoordinateMapper.pm',   SQL_VARCHAR );
 

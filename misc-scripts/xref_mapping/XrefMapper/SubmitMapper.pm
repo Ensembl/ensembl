@@ -73,14 +73,6 @@ sub mapper{
 }
 
 
-sub store_core_database_details{
-  my ($self, $port, $user, $pass, $dbname, $dir);
-
-    
-}
-
-
-
 
 
 ##############################################################################
@@ -802,11 +794,10 @@ sub fix_mappings {
   # 1) find the broken jobs
 
   # 2) remove the object_xrefs from object_xref_start to object_xref_end 
-  #    Plus identity xrefs and go_xrefs for these
+  #    Plus identity xrefs for these
 
   my $rm_object_xrefs_sth =    $self->xref->dbc->prepare("delete o from object_xref o where object_xref_id >= ? and object_xref_id <= ?");
   my $rm_identity_xrefs_sth =  $self->xref->dbc->prepare("delete i from identity_xref i where object_xref_id >= ? and object_xref_id <= ?");
-  my $rm_go_xrefs_sth =        $self->xref->dbc->prepare("delete g from go_xref g where object_xref_id >= ? and object_xref_id <= ?");
   my $reset_object_xref_limits_sth = $self ->xref->dbc->prepare("update mapping_jobs set object_xref_start = null, object_xref_end = null where job_id = ? and array_number = ?");
 
   # 3) remove map, err and out files for each
@@ -847,7 +838,6 @@ sub fix_mappings {
       print "removing object_xref etc from $start to $end\n";
       $rm_object_xrefs_sth->execute($start, $end);     
       $rm_identity_xrefs_sth->execute($start, $end);     
-      $rm_go_xrefs_sth->execute($start, $end);     
       $reset_object_xref_limits_sth->execute($job_id, $array_number);
     }
 
