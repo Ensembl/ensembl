@@ -62,68 +62,91 @@ sub run {
   push @source_ids, $pred_ncrna_source_id;
 
   my $entrez_source_id = $self->get_source_id_for_source_name('EntrezGene', undef, $dbi);
-  push @source_ids, $entrez_source_id;
   my $wiki_source_id = $self->get_source_id_for_source_name('WikiGene', undef, $dbi);
-  push @source_ids, $wiki_source_id;
 
   # Retrieve existing NCBIGene xrefs
   my (%entrez)     = %{$self->get_acc_to_label("EntrezGene",$species_id, undef, $dbi)};
 
-  my $get_source_version_sql = "SELECT source_release FROM source WHERE source_id = ?";
-  my $get_source_version_sth = $xref_source->prepare($get_source_version_sql);
-  my ($release_version);
-  foreach my $id (@source_ids) {
-    $get_source_version_sth->execute($id);
-    $get_source_version_sth->bind_columns(\$release_version);
-    $self->set_release( $id, $release_version, $dbi);
-  }
-
-  my $get_xref_sql = "SELECT x.accession, x.version, x.label, x.description, x.info_type, ".
-  "px.sequence, px.sequence_type, p.accession2, ".
-  "x2.accession, x2.species_id, dx.linkage_source_id ".
-  "FROM primary_xref px, pairs p, xref x2, xref x, dependent_xref dx ".
-  "WHERE dx.master_xref_id = x.xref_id AND x.xref_id = px.xref_id AND x.accession = p.accession1 AND dx.dependent_xref_id = x2.xref_id ".
-  "AND x.species_id = ? AND x.source_id = ?";
+  my $get_xref_sql = "SELECT xref_id, accession, version, label, description, info_type ".
+  "FROM xref WHERE species_id = ? AND source_id = ? limit 1";
   my $get_xref_sth = $xref_source->prepare($get_xref_sql);
-  my ($accession, $version, $label, $description, $xref_source_id, $info_type, $parsed_seq, $type, $refseq_pair, $dep_accession, $dep_species_id, $linkage_source_id);
+  my $get_dependent_sql = "SELECT x.xref_id, x.accession, x.version, x.label, x.description, x.source_id, x.species_id, dx.linkage_source_id FROM xref x, dependent_xref dx ".
+  "WHERE dx.dependent_xref_id = x.xref_id and dx.master_xref_id = ?";
+  my $get_dependent_sth = $xref_source->prepare($get_dependent_sql);
+  my $get_sequence_sql = "SELECT sequence, sequence_type, status FROM primary_xref WHERE xref_id = ?";
+  my $get_sequence_sth = $xref_source->prepare($get_sequence_sql);
+  my $get_synonym_sql = "SELECT synonym FROM synonym WHERE xref_id = ?";
+  my $get_synonym_sth = $xref_source->prepare($get_synonym_sql);
+  my $get_pair_sql = "SELECT accession2 FROM pairs where accession1 = ?";
+  my $get_pair_sth = $xref_source->prepare($get_pair_sql);
+  my ($xref_id, $accession, $version, $label, $description, $info_type, $parsed_seq, $type, $status, $dep_xref_id, $dep_accession, $dep_version, $dep_label, $dep_description, $dep_source_id, $dep_species_id, $linkage_source_id, $synonym, $refseq_pair);
 
   my @xrefs;
   my $count = 0;
   foreach my $xref_source_id (@source_ids) {
     $get_xref_sth->execute($species_id, $xref_source_id);
-    $get_xref_sth->bind_columns(\$accession, \$version, \$label, \$description, \$info_type, \$parsed_seq, \$type, \$refseq_pair, \$dep_accession, \$dep_species_id, \$linkage_source_id);
+    $get_xref_sth->bind_columns(\$xref_id, \$accession, \$version, \$label, \$description, \$info_type);
     while ($get_xref_sth->fetch()) {
       my $xref = {};
       $count++;
   
       $xref->{ACCESSION} = $accession;
-      $xref->{VERSION} = $version;
       $xref->{LABEL} = $label;
-      $xref->{DESCRIPTION} = $description;
-      $xref->{SOURCE_ID} = $xref_source_id;
-      $xref->{SEQUENCE} = $parsed_seq;
-      $xref->{SEQUENCE_TYPE} = $type;
+      $xref->{VERSION} = $version;
       $xref->{SPECIES_ID} = $species_id;
       $xref->{INFO_TYPE} = $info_type;
-      $xref->{PAIR} = $refseq_pair;
-  
-      my %dep;
-      my %dep2;
-      if (defined $entrez{$dep_accession}) {
-        if ($dep_species_id != $species_id) { next; }
-        $dep{SOURCE_ID} = $entrez_source_id;
-        $dep{LINKAGE_SOURCE_ID} = $linkage_source_id;
-        $dep{ACCESSION} = $dep_accession;
-        $dep{LABEL} = $entrez{$dep_accession};
-        push @{$xref->{DEPENDENT_XREFS}}, \%dep;
-  
-        my %dep2;
-        $dep2{SOURCE_ID} = $wiki_source_id;
-        $dep2{LINKAGE_SOURCE_ID} = $linkage_source_id;
-        $dep2{ACCESSION} = $dep_accession;
-        $dep2{LABEL} = $entrez{$dep_accession};
-        push @{$xref->{DEPENDENT_XREFS}}, \%dep2;
+      $xref->{SOURCE_ID} = $xref_source_id;
+      $xref->{DESCRIPTION} = $description;
+
+      # Add sequence if there is some
+      $get_sequence_sth->execute($xref_id);
+      $get_sequence_sth->bind_columns(\$parsed_seq, \$type, \$status);
+      while ($get_sequence_sth->fetch) {
+        $xref->{SEQUENCE_TYPE} = $type;
+        $xref->{STATUS} = $status;
+        $xref->{SEQUENCE} = $parsed_seq;
       }
+
+      # Add pair information if there is some
+      $get_pair_sth->execute($accession);
+      $get_pair_sth->bind_columns(\$refseq_pair);
+      while ($get_pair_sth->fetch) {
+        $xref->{PAIR} = $refseq_pair;
+      }
+
+      # Look for synonyms
+      $get_synonym_sth->execute($xref_id);
+      $get_synonym_sth->bind_columns(\$synonym);
+      while ($get_synonym_sth->fetch) {
+        push (@{$xref->{SYNONYMS} }, $synonym);
+      }
+
+      # Add any dependent xrefs
+      $get_dependent_sth->execute($xref_id);
+      $get_dependent_sth->bind_columns(\$dep_xref_id, \$dep_accession, \$dep_version, \$dep_label, \$dep_description, \$dep_source_id, \$dep_species_id, \$linkage_source_id);
+      while ($get_dependent_sth->fetch) {
+        if ($dep_species_id != $species_id) { next; }
+	if (defined $entrez{$dep_accession}) {
+          my %dep;
+	  $dep{ACCESSION} = $dep_accession;
+	  $dep{LABEL} = $dep_label;
+	  $dep{VERSION} = $dep_version;
+	  $dep{DESCRIPTION} = $dep_description;
+	  $dep{SOURCE_ID} = $entrez_source_id;
+	  $dep{LINKAGE_SOURCE_ID} = $linkage_source_id;
+	  push @{$xref->{DEPENDENT_XREFS}}, \%dep;
+
+	  my %dep2;
+	  $dep2{ACCESSION} = $dep_accession;
+	  $dep2{LABEL} = $dep_label;
+	  $dep2{VERSION} = $dep_version;
+	  $dep2{DESCRIPTION} = $dep_description;
+	  $dep2{SOURCE_ID} = $wiki_source_id;
+	  $dep2{LINKAGE_SOURCE_ID} = $linkage_source_id;
+	  push @{$xref->{DEPENDENT_XREFS}}, \%dep2;
+        }
+      }
+  
       push @xrefs, $xref;
   
       if ($count > 1000) {
