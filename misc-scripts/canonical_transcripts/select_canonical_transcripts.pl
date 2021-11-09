@@ -48,6 +48,7 @@ my $write = 0;
 my $include_non_ref = 1;
 my $include_duplicates;
 my $verbose = 0;
+my $attrib_type_id;
 
 GetOptions( 'dbhost:s'            => \$host,
             'dbport:n'            => \$port,
@@ -82,7 +83,15 @@ GetOptions( 'dbhost:s'            => \$host,
 
 if ($help) { &usage; exit; }
 
-unless ($write) {
+if ($write) {
+  # Get attribute id for canonical
+  my $attrib_type_id_sth = $dba->dbc->prepare("SELECT attrib_type_id FROM attrib_type WHERE code=?");
+  $attrib_type_id_sth->execute('is_canonical');
+  ($attrib_type_id) = $attrib_type_id_sth->fetchrow_array();
+  if (!$attrib_type_id) {
+    throw ("No attrib_type_id found for 'is_canonical' attribute in attrib_type table");
+  }
+} else {
   print "You have not used the -write option "
       . "so results will not be written into the database\n";
 }
@@ -253,34 +262,24 @@ if ($write) {
     my $trans_update_sth = $dba->dbc->prepare("UPDATE transcript_attrib SET value=? WHERE transcript_id=? AND attrib_type_id=?");
     my $trans_delete_sth = $dba->dbc->prepare("DELETE FROM transcript_attrib WHERE transcript_id=? AND attrib_type_id=?");
 
-    # Get attribute id for canonical
-    my $attrib_type_id_sth = $dba->dbc->prepare("SELECT attrib_type_id FROM attrib_type WHERE code=?");
-    $attrib_type_id_sth->execute('is_canonical');
-    my ($attrib_type_id) = $attrib_type_id_sth->fetchrow_array();
-    if (!$attrib_type_id) {
-      print "--No attrib_type_id found for 'is_canonical' attribute. Will not be updating transcript_attrib table\n";
-    }
-
     print "Updating database with new canonical transcripts...\n";
     foreach my $change (@change_list) {
         print "Changin' ". $change->[1]. " on ". $change->[0]."\n" if $verbose;
         $gene_sth->execute( $change->[1], $change->[0]);
 
-        if ($attrib_type_id) {
-          # Check if new canonical transcript attribute exists
-          $trans_select_sth->execute($change->[1], $attrib_type_id);
-          if (my ($new_canonical_exists) = $trans_select_sth->fetchrow_array()) {
-            # Update new canonical transcript attribute
-            $trans_update_sth->execute(1, $change->[1], $attrib_type_id);
-          }
+        # Check if new canonical transcript attribute exists
+        $trans_select_sth->execute($change->[1], $attrib_type_id);
+        if (my ($new_canonical_exists) = $trans_select_sth->fetchrow_array()) {
+          # Update new canonical transcript attribute
+          $trans_update_sth->execute(1, $change->[1], $attrib_type_id);
+        }
 
-          # Check if old canonical transcript attribute exists
-          if (defined($change->[2])) {
-            $trans_select_sth->execute($change->[2], $attrib_type_id);
-            if (my ($old_canonical_exists) = $trans_select_sth->fetchrow_array()) {
-              # Delete old canonical transcript attribute
-              $trans_delete_sth->execute(1, $change->[1], $attrib_type_id);
-            }
+        # Check if old canonical transcript attribute exists
+        if (defined($change->[2])) {
+          $trans_select_sth->execute($change->[2], $attrib_type_id);
+          if (my ($old_canonical_exists) = $trans_select_sth->fetchrow_array()) {
+            # Delete old canonical transcript attribute
+            $trans_delete_sth->execute(1, $change->[1], $attrib_type_id);
           }
         }
     }
