@@ -260,6 +260,7 @@ if ($write) {
     # Prepare transcript canonical attribute sqls
     my $trans_select_sth = $dba->dbc->prepare("SELECT value FROM transcript_attrib WHERE transcript_id=? AND attrib_type_id=?");
     my $trans_update_sth = $dba->dbc->prepare("UPDATE transcript_attrib SET value=? WHERE transcript_id=? AND attrib_type_id=?");
+    my $trans_insert_sth = $dba->dbc->prepare("INSERT INTO transcript_attrib (transcript_id, attrib_type_id, value) values (?,?,?)");
     my $trans_delete_sth = $dba->dbc->prepare("DELETE FROM transcript_attrib WHERE transcript_id=? AND attrib_type_id=?");
 
     print "Updating database with new canonical transcripts...\n";
@@ -272,6 +273,9 @@ if ($write) {
         if (my ($new_canonical_exists) = $trans_select_sth->fetchrow_array()) {
           # Update new canonical transcript attribute
           $trans_update_sth->execute(1, $change->[1], $attrib_type_id);
+        } else {
+          # Insert new canonical transcript attribute
+          $trans_insert_sth->execute($change->[1], $attrib_type_id, 1);
         }
 
         # Check if old canonical transcript attribute exists
