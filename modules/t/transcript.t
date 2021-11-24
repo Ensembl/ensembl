@@ -252,10 +252,28 @@ ok($up_tr->get_Biotype->name eq 'dummy');
 ok($up_tr->description eq 'dummy');
 ok($up_tr->version == 5);
 
+# Check that canonical transcript attribute exists
+is_rows(1, $db, "attrib_type", "where code = ? ", ["is_canonical"]);
+my $aa = $db->get_AttributeAdaptor();
+my $canonical_attrib_id = $aa->fetch_by_code('is_canonical');
+
+# Test updating transcript canonical attribute
+my ($canonical_attrib) = @{$tr->get_all_Attributes('is_canonical')};
+ok($canonical_attrib->value() == 1, 'Canonical transcript attribute set to 1');
+$tr->stable_id("ENSTEST00000217347");
+$ta->update($tr);
+
+$up_tr = $ta->fetch_by_stable_id( "ENSTEST00000217347" );
+($canonical_attrib) = @{$up_tr->get_all_Attributes('is_canonical')};
+ok($canonical_attrib->value() == 1, 'New canonical transcript attribute set to 1');
+is_rows(0, $db, "transcript_attrib", "where transcript_id = ? and attrib_type_id = ? ", ["ENST00000217347", $canonical_attrib_id->[0]]);
+
+my $canonical_gene = $up_tr->get_Gene;
+ok($canonical_gene->canonical_transcript->dbID() == $up_tr->dbID(), 'Updated canonical transcript in gene table');
 
 $tr->is_current(0);
 $ta->update($tr);
-$up_tr = $ta->fetch_by_stable_id( "ENST00000217347" );
+$up_tr = $ta->fetch_by_stable_id( "ENSTEST00000217347" );
 ok(!$up_tr);
 
 $multi->restore('core', 'transcript', 'meta_coord');

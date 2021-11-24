@@ -1399,6 +1399,14 @@ sub store {
   $attr_adaptor->store_on_Transcript( $transc_dbID,
                                     $transcript->get_all_Attributes() );
 
+  # Check if transcript is canonical
+  if ($transcript->is_canonical()) {
+    my $gene = $transcript->get_Gene();
+    my $gene_adaptor = $self->db()->get_GeneAdaptor();
+    $gene->canonical_transcript($transcript);
+    $gene_adaptor->update($gene);
+  }
+
   # store the IntronSupportingEvidence features
   my $ise_adaptor = $db->get_IntronSupportingEvidenceAdaptor();
   my $intron_supporting_evidence = $transcript->get_all_IntronSupportingEvidence();
@@ -1728,6 +1736,15 @@ sub update {
   $sth->bind_param( ++$i, $transcript->dbID(), SQL_INTEGER );
 
   $sth->execute();
+
+  # Check if transcript is canonical
+  if ($transcript->is_canonical()) {
+    my $gene = $transcript->get_Gene();
+    my $gene_adaptor = $self->db()->get_GeneAdaptor();
+    $gene->canonical_transcript($transcript);
+    $gene_adaptor->update($gene);
+  }
+
 } ## end sub update
 
 
@@ -2185,6 +2202,39 @@ sub fetch_all_by_transcript_supporting_evidence {
 
 sub _final_clause {
 	return ' ORDER BY t.transcript_id'
+}
+
+sub update_canonical_attribute {
+  my ($self, $transcript_id, $old_transcript_id) = @_;
+
+  # Get canonical attribute id
+  my $db = $self->db();
+  my $attr_adaptor = $db->get_AttributeAdaptor();
+  my $canonical_attrib_id = @{$attr_adaptor->fetch_by_code('is_canonical')}[0];
+  throw("No attrib_type_id found for 'is_canonical' attribute in attrib_type table.") if (!defined($canonical_attrib_id));
+
+  # Check if new canonical transcript attribute exists
+  my $sth = $self->prepare("SELECT value FROM transcript_attrib WHERE transcript_id=? AND attrib_type_id=?");
+  $sth->execute($transcript_id, $canonical_attrib_id);
+  if (my ($exists) = $sth->fetchrow_array()) {
+    $sth->finish();
+
+    $sth = $self->prepare("UPDATE transcript_attrib SET value=? WHERE transcript_id=? AND attrib_type_id=?");
+    $sth->execute('1', $transcript_id, $canonical_attrib_id);
+  } else {
+    $sth->finish();
+
+    $sth = $self->prepare("INSERT INTO transcript_attrib (transcript_id, attrib_type_id, value) values(?,?,?)");
+    $sth->execute($transcript_id, $canonical_attrib_id, '1');
+  }
+  $sth->finish();
+
+  # Delete old canonical transcript attribute
+  if (defined($old_transcript_id) && $old_transcript_id ne $transcript_id) {
+    $sth = $self->prepare("DELETE FROM transcript_attrib WHERE transcript_id=? AND attrib_type_id=?");
+    $sth->execute($old_transcript_id, $canonical_attrib_id);
+    $sth->finish();
+  }
 }
 
 1;

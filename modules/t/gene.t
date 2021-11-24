@@ -475,6 +475,27 @@ ok($newgene->biotype eq 'dummy');
 ok($newgene->description eq 'dummy');
 ok($newgene->version == 5);
 
+# Check that canonical transcript attribute exists
+is_rows(1, $db, "attrib_type", "where code = ? ", ["is_canonical"]);
+
+# test updating canonical transcript
+$gene = $ga->fetch_by_stable_id("ENSG0000017145556");
+my $transcript = $dbTranscriptAdaptor->fetch_by_dbID($gene->canonical_transcript->dbID());
+my ($attrib) = @{$transcript->get_all_Attributes('is_canonical')};
+ok($attrib->value() == 1, 'Canonical transcript attribute set to 1');
+
+$gene->canonical_transcript($dbTranscriptAdaptor->fetch_by_stable_id("ENST00000278995"));
+$ga->update($gene);
+$newgene = $ga->fetch_by_stable_id("ENSG0000017145556");
+my $new_transcript = $dbTranscriptAdaptor->fetch_by_dbID($newgene->canonical_transcript->dbID());
+ok($new_transcript->stable_id() eq "ENST00000278995", 'Updated canonical transcript');
+
+($attrib) = @{$new_transcript->get_all_Attributes('is_canonical')};
+ok($attrib->value() == 1, 'New canonical transcript attribute set to 1');
+$transcript = $dbTranscriptAdaptor->fetch_by_stable_id($transcript->stable_id());
+($attrib) = @{$transcript->get_all_Attributes('is_canonical')};
+ok(!defined($attrib), 'Old canonical transcript attribute deleted');
+
 $gene->is_current(0); 
 $ga->update($gene);
 $newgene = $ga->fetch_by_stable_id("ENSG0000017145556");
