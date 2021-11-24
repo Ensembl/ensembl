@@ -1401,8 +1401,9 @@ sub store {
 
   # Check if transcript is canonical
   if ($transcript->is_canonical()) {
-    my $gene = $transcript->get_Gene();
     my $gene_adaptor = $self->db()->get_GeneAdaptor();
+    my $gene = $gene_adaptor->fetch_by_dbID($gene_dbID);
+    $transcript->dbID($transc_dbID);
     $gene->canonical_transcript($transcript);
     $gene_adaptor->update($gene);
   }
