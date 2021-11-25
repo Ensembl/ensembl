@@ -302,7 +302,7 @@ is_rows(0, $db, "transcript_attrib", "where transcript_id = ? and attrib_type_id
 
 $tr->is_current(0);
 $ta->update($tr);
-$up_tr = $ta->fetch_by_stable_id( "ENSTEST00000217347" );
+$up_tr = $ta->fetch_by_stable_id( "ENST00000217347" );
 ok(!$up_tr);
 
 $multi->restore('core', 'transcript', 'meta_coord');
