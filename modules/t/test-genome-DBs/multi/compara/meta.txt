@@ -72,3 +72,4 @@
 90	\N	patch	patch_104_105_a.sql|schema_version
 91	\N	patch	patch_105_106_a.sql|schema_version
 92	\N	patch	patch_106_107_a.sql|schema_version
+93	\N	patch	patch_105_106_b.sql|clusterset_id_varchar50

@@ -263,7 +263,7 @@ CREATE TABLE "gene_tree_root" (
   "root_id" INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
   "member_type" enum NOT NULL,
   "tree_type" enum NOT NULL,
-  "clusterset_id" varchar(20) NOT NULL DEFAULT 'default',
+  "clusterset_id" varchar(50) NOT NULL DEFAULT 'default',
   "method_link_species_set_id" integer NOT NULL,
   "species_tree_root_id" bigint,
   "gene_align_id" integer,
