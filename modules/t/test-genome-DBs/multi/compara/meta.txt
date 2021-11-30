@@ -71,3 +71,4 @@
 88	\N	patch	patch_103_104_c.sql|fix_int_types
 90	\N	patch	patch_104_105_a.sql|schema_version
 91	\N	patch	patch_105_106_a.sql|schema_version
+92	\N	patch	patch_105_106_b.sql|clusterset_id_varchar50
