@@ -172,18 +172,6 @@ DSS
 }
 
 
-sub get_dep_go_sth {
-  my $self = shift;
-  my $dbi = shift;
-
-  my $sql = (<<"IGO");
-INSERT INTO go_xref (object_xref_id, linkage_type, source_xref_id) 
-  VALUES (?,?,?)
-IGO
-  my $sth = $dbi->prepare($sql);
-  return $sth;
-}
-
 
 sub get_add_dep_ox {
   my $self = shift;
@@ -230,7 +218,6 @@ sub process_dependents {
   my $internal_id         = $arg_ref->{internal_id};
 
   my $dep_sth         = $self->get_dep_sth($dbi);
-  my $ins_go_dep_sth  = $self->get_dep_go_sth($dbi);
   my $ins_ox_sth2     = $self->get_add_dep_ox($dbi);
   my $ins_ix_sth      = $self->get_ins_ix_sth($dbi);
   my $get_object_xref_id_sth = $self->get_ox_id_master_sth($dbi);
@@ -261,9 +248,6 @@ sub process_dependents {
       $ins_ix_sth->execute($object_xref_id);
       push @$master_xref_ids, $dep_xref_id; # get the dependent, dependents just in case
 
-      if(defined($link) and $link ne ""){ # we have a go term linkage type
-	$ins_go_dep_sth->execute($$object_xref_id, $link, $master_xref_id);
-      }
     }
   }
   return;

@@ -704,12 +704,11 @@ EOF
 
   if($db_name eq "GO" || $db_name eq 'goslim_goa'){
     $sql =(<<"EOF2");
-  DELETE object_xref, identity_xref, go_xref
-    FROM object_xref, xref, source, identity_xref, go_xref
+  DELETE object_xref, identity_xref
+    FROM object_xref, xref, source, identity_xref
       WHERE object_xref.ensembl_object_type = "$from" AND
         identity_xref.object_xref_id = object_xref.object_xref_id AND
 	xref.xref_id = object_xref.xref_id AND
-          go_xref.object_xref_id = object_xref.object_xref_id AND
 	  xref.source_id = source.source_id AND
             object_xref.ox_status = "DUMP_OUT"  AND
 	      source.name = "$db_name";
@@ -721,12 +720,11 @@ EOF2
 # The resulting object_xref does not have an ensembl_id to map to
 
     $sql=(<<"EOF4");
-  DELETE object_xref, identity_xref, go_xref
-    FROM object_xref, xref, source, identity_xref, go_xref
+  DELETE object_xref, identity_xref
+    FROM object_xref, xref, source, identity_xref
       WHERE object_xref.ensembl_object_type = "$to" AND
         identity_xref.object_xref_id = object_xref.object_xref_id AND
         xref.xref_id = object_xref.xref_id AND
-          go_xref.object_xref_id = object_xref.object_xref_id AND
           xref.source_id = source.source_id AND
             object_xref.ensembl_id = 0 AND
               object_xref.ox_status = "DUMP_OUT"  AND
@@ -886,10 +884,6 @@ sub clean_up{
 
   my $sql = "TRUNCATE table object_xref";
   my $sth = $self->xref->dbc->prepare($sql);
-  $sth->execute(); 
-
-  $sql = "TRUNCATE table go_xref";
-  $sth = $self->xref->dbc->prepare($sql);
   $sth->execute(); 
 
   $sql = "TRUNCATE table identity_xref";

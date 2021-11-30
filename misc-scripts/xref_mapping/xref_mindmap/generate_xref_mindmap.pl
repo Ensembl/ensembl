@@ -265,30 +265,7 @@ foreach my $object (@objects_with_xrefs) {
 $naming_dbs_sth->finish();
 
 
-#check if there are any rows in the interpro table
 
-my $interpro_sth = $dba->dbc()->prepare("select count(1) from interpro");
-
-$interpro_sth->execute();
-my ($interpro_count) = $interpro_sth->fetchrow_array();
-
-if ($interpro_count > 0) {
-
-    my $interpro = 'Interpro';
-
-    $db_id_sth->execute($interpro);
-    my ($interpro_db_id) = $db_id_sth->fetchrow_array();
-
-    $link_type_sth->execute('PROTEIN_FEATURES');
-    my ($link_type_id) = $link_type_sth->fetchrow_array();   
-
-     my $object = 'Translation';
-    $insert_object_external_db_node->execute($object,$interpro_db_id, $object.$interpro_db_id);
-
-    $insert_object_xref_linkage->execute($interpro_db_id,$object,$link_type_id, undef, undef);
-}
-
-$interpro_sth->finish();
 $db_id_sth->finish();
 
 $external_db_sth->finish();

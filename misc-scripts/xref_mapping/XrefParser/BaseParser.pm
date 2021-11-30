@@ -1566,7 +1566,6 @@ sub parsing_finished_store_data {
 
   # xref                                        xref_id
   # dependent_xref                              object_xref_id is all null
-  # go_xref                                     object_xref_id
   # object_xref                                 object_xref_id
   # identity_xref                               object_xref_id
 

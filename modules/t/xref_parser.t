@@ -45,7 +45,6 @@ my %xref_tables_expected_empty_by_default = (
   coordinate_xref=>0,
   dependent_xref=>0,
   gene_direct_xref=>0,
-  go_xref=>0,
   identity_xref=>0,
   object_xref=>0,
   primary_xref=>0,
