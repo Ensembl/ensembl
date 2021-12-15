@@ -13,7 +13,7 @@
 -- See the License for the specific language governing permissions and
 -- limitations under the License.
 
-# patch_105_106_b.sql
+# patch_106_107_b.sql
 #
 # Title: Added index
 #
