@@ -360,7 +360,7 @@ sub fetch_by_region {
 
             my ($fuzzy_matched_name, $cs_new) = $self->_fetch_by_fuzzy_matching( $cs, $seq_region_name, $sql, $constraint, \@bind_params );
 	    $cs = $cs_new;
-	    
+ 
             if (!$fuzzy_matched_name) {
               return;
             }
