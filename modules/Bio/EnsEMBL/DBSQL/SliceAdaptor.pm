@@ -358,14 +358,15 @@ sub fetch_by_region {
         } else { # if no slice object with a match returned, try using a fuzzy match
           if (!$no_fuzz) {
 
-            my ($fuzzy_matched_name, $cs) = $self->_fetch_by_fuzzy_matching( $cs, $seq_region_name, $sql, $constraint, \@bind_params );
-
+            my ($fuzzy_matched_name, $cs_new) = $self->_fetch_by_fuzzy_matching( $cs, $seq_region_name, $sql, $constraint, \@bind_params );
+	    $cs = $cs_new;
+ 
             if (!$fuzzy_matched_name) {
               return;
             }
 
             # define arr
-            my $tmp_key_string = $fuzzy_matched_name . ":" . $cs->dbID();
+            my $tmp_key_string = $fuzzy_matched_name . ":" . $cs_new->dbID();
             if (exists $self->{'sr_name_cache'}->{$tmp_key_string}) {
               $seq_region_name = $fuzzy_matched_name;
               $arr = $self->{'sr_name_cache'}->{$tmp_key_string};
