@@ -25,10 +25,18 @@ addons:
     - unzip
 
 before_install:
-  - git clone --branch master --depth 1 https://github.com/Ensembl/ensembl-test.git
-  - git clone --branch master --depth 1 https://github.com/Ensembl/ensembl-io.git
-  - git clone --branch master --depth 1 https://github.com/Ensembl/ensembl-variation.git
-  - git clone --branch master --depth 1 https://github.com/Ensembl/ensembl-compara.git
+  - git clone --depth 1 https://github.com/Ensembl/ensembl-git-tools.git
+  - export PATH=$PWD/ensembl-git-tools/bin:$PATH
+  - export ENSEMBL_BRANCH='master'
+  - export SECONDARY_BRANCH='main'
+  - echo "TRAVIS_BRANCH=$TRAVIS_BRANCH"
+  - if [[ $TRAVIS_BRANCH =~ ^release\/[0-9]+$ ]]; then export ENSEMBL_BRANCH=$TRAVIS_BRANCH; export SECONDARY_BRANCH=$TRAVIS_BRANCH; fi
+  - echo "ENSEMBL_BRANCH=$ENSEMBL_BRANCH"
+  - echo "SECONDARY_BRANCH=$SECONDARY_BRANCH"
+  - git-ensembl --clone --depth 1 --branch $ENSEMBL_BRANCH --secondary_branch $SECONDARY_BRANCH ensembl-test
+  - git-ensembl --clone --depth 1 --branch $ENSEMBL_BRANCH --secondary_branch $SECONDARY_BRANCH ensembl-io
+  - git-ensembl --clone --depth 1 --branch $ENSEMBL_BRANCH --secondary_branch $SECONDARY_BRANCH ensembl-variation
+  - git-ensembl --clone --depth 1 --branch $ENSEMBL_BRANCH --secondary_branch $SECONDARY_BRANCH ensembl-compara
   - git clone -b release-1-6-924 --depth 1 https://github.com/bioperl/bioperl-live.git
 
 install:
