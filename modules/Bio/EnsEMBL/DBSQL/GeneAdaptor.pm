@@ -1373,20 +1373,23 @@ sub store {
     my $new = $transcripts->[$i];
     my $old = $original_transcripts->[$i];
 
-    $transcript_adaptor->store($new, $gene_dbID, $analysis_id, $skip_recalculating_coordinates);
+    my $new_dbID = $transcript_adaptor->store($new, $gene_dbID, $analysis_id, $skip_recalculating_coordinates);
+    $new = $transcript_adaptor->fetch_by_dbID($new_dbID);
+    
+    if ($new) {
+      if (!defined($new_canonical_transcript_id) && $new->is_canonical()) {
+        $new_canonical_transcript_id = $new->dbID();
+      }
 
-    if (!defined($new_canonical_transcript_id) && $new->is_canonical()) {
-      $new_canonical_transcript_id = $new->dbID();
-    }
+      # update the original transcripts since we may have made copies of
+      # them by transforming the gene
+      $old->dbID($new->dbID());
+      $old->adaptor($new->adaptor());
 
-    # update the original transcripts since we may have made copies of
-    # them by transforming the gene
-    $old->dbID($new->dbID());
-    $old->adaptor($new->adaptor());
-
-    if ($new->translation) {
-      $old->translation->dbID($new->translation()->dbID);
-      $old->translation->adaptor($new->translation()->adaptor);
+      if ($new->translation) {
+        $old->translation->dbID($new->translation()->dbID);
+        $old->translation->adaptor($new->translation()->adaptor);
+      }
     }
   }
 
