@@ -1,0 +1,104 @@
+name: Testing Workflow
+
+on:
+  push:
+    branches:
+      - github_actions_testing
+
+jobs:
+  run-tests:
+    name: Run Tests
+    runs-on: ubuntu-latest
+#     container: ${{ matrix.container }}
+    
+    strategy:
+      matrix:
+        perl: ['5.14','5.26','5.30']
+        database: [mysql, sqlite]
+        coveralls: [true, false]
+#         container: ['ubuntu:trusty']
+#         include:
+#           - perl: '5.30'
+#             database: mysql
+#             coveralls: false
+#             container: 'ubuntu:focal'
+        exclude:
+          - perl: '5.14'
+            coveralls: true
+          - perl: '5.14'
+            coveralls: false
+            database: mysql
+          - perl: '5.26'
+            coveralls: false
+          - perl: '5.26'
+            coveralls: true
+            database: sqlite
+          - perl: 5.30
+            coveralls: true
+#           - perl: '5.30'
+#             container: 'ubuntu:trusty'
+          - perl: 5.30
+            coveralls: false
+            database: sqlite
+
+    services:
+      mysql:
+        image: mysql:latest
+        env:
+          MYSQL_ROOT_PASSWORD: secret
+          MYSQL_ALLOW_EMPTY_PASSWORD: yes
+        ports:
+            - '8888:3306'
+        options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=3
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@master
+
+      - name: Set up perl ${{ matrix.perl }}
+        uses: shogo82148/actions-setup-perl@v1
+        with:
+          perl-version: ${{ matrix.perl }}
+
+      - name: Clone repos
+        run: |
+          git clone --branch master --depth 1 https://github.com/Ensembl/ensembl-test.git
+          git clone --branch master --depth 1 https://github.com/Ensembl/ensembl-io.git
+          git clone --branch master --depth 1 https://github.com/Ensembl/ensembl-variation.git
+          git clone --branch main --depth 1 https://github.com/Ensembl/ensembl-compara.git
+          git clone -b release-1-6-924 --depth 1 https://github.com/bioperl/bioperl-live.git
+      
+      - name: Install dependencies
+        run: |
+          sudo apt install unzip
+          export LANG=(unset)
+          cpanm -v --sudo --installdeps --notest . --with-all-features
+          cpanm -n --sudo Devel::Cover Devel::Cover::Report::Coveralls Test::Exception Moose Devel::Cycle Test::Warnings
+          cpanm -n --sudo DBD::SQLite JSON
+          cpanm -n --sudo Devel::Trace Module::Build
+      
+      - name: Copy mysql/sqlite conf files
+        run: |
+          cp travisci/MultiTestDB.conf.actions.mysql modules/t/MultiTestDB.conf.mysql
+          cp travisci/MultiTestDB.conf.actions.SQLite modules/t/MultiTestDB.conf.SQLite
+          cp travisci/testdb.conf.actions.mysql testdb.conf.mysql
+          cp travisci/testdb.conf.actions.SQLite testdb.conf.SQLite 
+      
+      - name: Configure mysql
+        run: |
+          sudo service mysql start
+          mysql -e "CREATE USER 'github'@'%'" -u root -psecret -h 127.0.0.1 --port 8888
+          mysql -e "GRANT ALL PRIVILEGES ON *.* TO 'github'@'%'" -u root -psecret -h 127.0.0.1 --port 8888
+          mysql -e "SET GLOBAL local_infile=1" -u root -psecret -h 127.0.0.1 --port 8888
+      
+      - name: Run Test Suite
+        env:
+          DB: ${{ matrix.database }}
+          COVERALLS: false
+          USER: 'github'
+        run: ./travisci/harness_github_actions.sh
+
+#       - name: Coveralls
+#         uses: coverallsapp/github-action@master
+#         with:
+#           github-token: ${{ secrets.GITHUB_TOKEN }}
