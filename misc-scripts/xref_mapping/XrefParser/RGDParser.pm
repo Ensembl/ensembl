@@ -117,6 +117,9 @@ sub run {
       if exists $cols->{GENE_RGD_ID} &&
       ( $cols->{GENE_RGD_ID} eq q{} || !defined $cols->{GENE_RGD_ID} );
 
+    # Some RGD annotation is directly copied from Ensembl
+    if ($cols->{SYMBOL} =~ /ENSRNO/) { next; }
+
     my @nucs;
     if ( defined $cols->{GENBANK_NUCLEOTIDE} ) {
       @nucs = split qr{ ; }msx, $cols->{GENBANK_NUCLEOTIDE};
