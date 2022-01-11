@@ -48,6 +48,7 @@ my $write = 0;
 my $include_non_ref = 1;
 my $include_duplicates;
 my $verbose = 0;
+my $attrib_type_id;
 
 GetOptions( 'dbhost:s'            => \$host,
             'dbport:n'            => \$port,
@@ -82,11 +83,6 @@ GetOptions( 'dbhost:s'            => \$host,
 
 if ($help) { &usage; exit; }
 
-unless ($write) {
-  print "You have not used the -write option "
-      . "so results will not be written into the database\n";
-}
-
 my $dba =
   new Bio::EnsEMBL::DBSQL::DBAdaptor(
       -host   => $host,
@@ -97,6 +93,19 @@ my $dba =
       -species => 'default',
       -no_cache => 1,
     );
+
+if ($write) {
+  # Get attribute id for canonical
+  my $attrib_type_id_sth = $dba->dbc->prepare("SELECT attrib_type_id FROM attrib_type WHERE code=?");
+  $attrib_type_id_sth->execute('is_canonical');
+  ($attrib_type_id) = $attrib_type_id_sth->fetchrow_array();
+  if (!$attrib_type_id) {
+    throw ("No attrib_type_id found for 'is_canonical' attribute in attrib_type table");
+  }
+} else {
+  print "You have not used the -write option "
+      . "so results will not be written into the database\n";
+}
 
 if($dnadbname) {
   if(!$dnauser || !$dnahost) {
@@ -215,7 +224,7 @@ foreach my $slice (@$slices) {
                 $new_canonical->stable_id,
                 $new_canonical->dbID;
 
-            push @change_list, [ $gene->dbID, $new_canonical->dbID ];
+            push @change_list, [ $gene->dbID, $new_canonical->dbID, $old_canonical->dbID ];
             $canonical_changes++;
 
             if ($verbose) {
@@ -248,10 +257,35 @@ if ($write) {
     my $gene_update_sql = "UPDATE gene SET canonical_transcript_id = ? where gene_id = ?";
     my $gene_sth = $dba->dbc->prepare($gene_update_sql);
 
+    # Prepare transcript canonical attribute sqls
+    my $trans_select_sth = $dba->dbc->prepare("SELECT value FROM transcript_attrib WHERE transcript_id=? AND attrib_type_id=?");
+    my $trans_update_sth = $dba->dbc->prepare("UPDATE transcript_attrib SET value=? WHERE transcript_id=? AND attrib_type_id=?");
+    my $trans_insert_sth = $dba->dbc->prepare("INSERT INTO transcript_attrib (transcript_id, attrib_type_id, value) values(?,?,?)");
+    my $trans_delete_sth = $dba->dbc->prepare("DELETE FROM transcript_attrib WHERE transcript_id=? AND attrib_type_id=?");
+
     print "Updating database with new canonical transcripts...\n";
     foreach my $change (@change_list) {
         print "Changin' ". $change->[1]. " on ". $change->[0]."\n" if $verbose;
         $gene_sth->execute( $change->[1], $change->[0]);
+
+        # Check if new canonical transcript attribute exists
+        $trans_select_sth->execute($change->[1], $attrib_type_id);
+        if (my ($new_canonical_exists) = $trans_select_sth->fetchrow_array()) {
+          # Update new canonical transcript attribute
+          $trans_update_sth->execute(1, $change->[1], $attrib_type_id);
+        } else {
+          # Insert new canonical transcript attribute
+          $trans_insert_sth->execute($change->[1], $attrib_type_id, 1);
+        }
+
+        # Check if old canonical transcript attribute exists
+        if (defined($change->[2])) {
+          $trans_select_sth->execute($change->[2], $attrib_type_id);
+          if (my ($old_canonical_exists) = $trans_select_sth->fetchrow_array()) {
+            # Delete old canonical transcript attribute
+            $trans_delete_sth->execute($change->[1], $attrib_type_id);
+          }
+        }
     }
     print "Done\n";
 }

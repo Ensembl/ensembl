@@ -23,3 +23,4 @@
 23	_stop_codon_rt	Stop Codon Readthrough	\N
 24	appris	APPRIS	\N
 535	MANE_Select	MANE Select v0.92	MANE Select (v0.92) is the preliminary release (phase 7) of the MANE Select data set. The Matched Annotation from NCBI and EMBL-EBI project (MANE) is a collaboration between Ensembl-GENCODE and RefSeq to select a default transcript per human protein coding locus that is representative of biology, well-supported, expressed and conserved. This transcript set matches GRCh38 and is 100% identical between RefSeq and Ensembl-GENCODE for 5' UTR, CDS, splicing and 3' UTR.
+554	is_canonical	Is Canonical	Flag to state that a feature is a canonical one.

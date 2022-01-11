@@ -799,6 +799,60 @@ ok(!defined($gene->adaptor()));
 
 $multi->restore('core');
 
+# Check that canonical transcript attribute exists
+is_rows(1, $db, "attrib_type", "where code = ? ", ["is_canonical"]);
+
+# Test adding gene with canonical transcript
+$newgene = $ga->fetch_by_stable_id("ENSG00000101346");
+my $set_canonical = 0;
+my ($old_canon_trans_sid, $new_canon_trans_sid);
+foreach my $t (@{$newgene->get_all_Transcripts}) {
+  my $tt = $t->translation();
+  if ($tt) {
+    foreach my $pf (@{$tt->get_all_ProteinFeatures}){
+      $pf->dbID(undef);
+      $pf->adaptor(undef);
+    }
+    $tt->dbID(undef);
+    $tt->adaptor(undef);
+  }
+  foreach my $e (@{$t->get_all_Exons}) {
+    $e->dbID(undef);
+    $e->adaptor(undef);
+  }
+  $t->dbID(undef);
+  $t->adaptor(undef);
+  if ($t->is_canonical()) {
+    $new_canon_trans_sid = $t->stable_id();
+  }
+}
+$newgene->dbID(undef);
+$newgene->adaptor(undef);
+$newgene->stable_id("ENSGTEST00000101346");
+$ga->store($newgene);
+
+$newgene = $ga->fetch_by_stable_id("ENSGTEST00000101346");
+ok($newgene->canonical_transcript->stable_id() eq $new_canon_trans_sid, 'Stored new gene with new canonical transcript');
+my $new_canon_trans_dbid = $newgene->canonical_transcript->dbID();
+my ($attrib) = @{$dbTranscriptAdaptor->fetch_by_dbID($new_canon_trans_dbid)->get_all_Attributes('is_canonical')};
+ok($attrib->value() == 1, 'New canonical transcript attribute set to 1');
+
+# Test updating canonical transcript
+$newgene->canonical_transcript($dbTranscriptAdaptor->fetch_by_stable_id("ENST00000278989"));
+$ga->update($newgene);
+
+$newgene = $ga->fetch_by_stable_id("ENSGTEST00000101346");
+ok($newgene->canonical_transcript->stable_id() eq "ENST00000278989", 'Updated canonical transcript for gene');
+my $new_transcript = $dbTranscriptAdaptor->fetch_by_dbID($newgene->canonical_transcript->dbID());
+($attrib) = @{$new_transcript->get_all_Attributes('is_canonical')};
+ok($attrib->value() == 1, 'New canonical transcript attribute set to 1');
+($attrib) = @{$dbTranscriptAdaptor->fetch_by_dbID($new_canon_trans_dbid)->get_all_Attributes('is_canonical')};
+ok(!defined($attrib), 'Old canonical transcript attribute deleted');
+
+$ga->remove($newgene);
+
+$multi->restore('core');
+
 #
 # regression test - test the recalculation of coords
 # in the Gene.  This was setting the end incorrectly

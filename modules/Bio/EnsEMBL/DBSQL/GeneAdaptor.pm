@@ -1373,20 +1373,23 @@ sub store {
     my $new = $transcripts->[$i];
     my $old = $original_transcripts->[$i];
 
-    $transcript_adaptor->store($new, $gene_dbID, $analysis_id, $skip_recalculating_coordinates);
+    my $new_dbID = $transcript_adaptor->store($new, $gene_dbID, $analysis_id, $skip_recalculating_coordinates);
+    $new = $transcript_adaptor->fetch_by_dbID($new_dbID);
+    
+    if ($new) {
+      if (!defined($new_canonical_transcript_id) && $new->is_canonical()) {
+        $new_canonical_transcript_id = $new->dbID();
+      }
 
-    if (!defined($new_canonical_transcript_id) && $new->is_canonical()) {
-      $new_canonical_transcript_id = $new->dbID();
-    }
+      # update the original transcripts since we may have made copies of
+      # them by transforming the gene
+      $old->dbID($new->dbID());
+      $old->adaptor($new->adaptor());
 
-  # update the original transcripts since we may have made copies of
-  # them by transforming the gene
-    $old->dbID($new->dbID());
-    $old->adaptor($new->adaptor());
-
-    if ($new->translation) {
-      $old->translation->dbID($new->translation()->dbID);
-      $old->translation->adaptor($new->translation()->adaptor);
+      if ($new->translation) {
+        $old->translation->dbID($new->translation()->dbID);
+        $old->translation->adaptor($new->translation()->adaptor);
+      }
     }
   }
 
@@ -1405,6 +1408,9 @@ sub store {
 
     $sth->execute();
     $sth->finish();
+
+    my $transcript_adaptor = $db->get_TranscriptAdaptor();
+    $transcript_adaptor->update_canonical_attribute($new_canonical_transcript_id);
   }
 
   # update gene to point to display xref if it is set
@@ -1588,6 +1594,12 @@ sub update {
     throw("Must update a gene object, not a $gene");
   }
 
+  # Get old canonical transcript id
+  my $sth = $self->prepare("SELECT canonical_transcript_id FROM gene WHERE gene_id=?");
+  $sth->execute($gene->dbID());
+  my ($old_canonical_transcript_id) = $sth->fetchrow_array();
+  $sth->finish();
+
   my $update_gene_sql = qq(
        UPDATE gene
           SET stable_id = ?,
@@ -1610,7 +1622,7 @@ sub update {
     $display_xref_id = undef;
   }
 
-  my $sth = $self->prepare($update_gene_sql);
+  $sth = $self->prepare($update_gene_sql);
 
   $sth->bind_param(1, $gene->stable_id(),      SQL_VARCHAR);
   $sth->bind_param(2, $gene->get_Biotype->name, SQL_VARCHAR);
@@ -1628,6 +1640,11 @@ sub update {
   $sth->bind_param(9, $gene->dbID(), SQL_INTEGER);
 
   $sth->execute();
+
+  if (defined($gene->canonical_transcript())) {
+    my $transcript_adaptor = $self->db()->get_TranscriptAdaptor();
+    $transcript_adaptor->update_canonical_attribute($gene->canonical_transcript()->dbID(), $old_canonical_transcript_id);
+  }
 
 } ## end sub update
 

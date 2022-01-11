@@ -16,3 +16,4 @@
 16	_selenocysteine	Selenocysteine	\N
 17	codon_table	Codon Table	Alternate codon table
 18	non_ref	Non Reference	Non Reference Sequence Region
+554	is_canonical	Is Canonical	Flag to state that a feature is a canonical one.

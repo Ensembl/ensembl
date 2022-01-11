@@ -252,6 +252,53 @@ ok($up_tr->get_Biotype->name eq 'dummy');
 ok($up_tr->description eq 'dummy');
 ok($up_tr->version == 5);
 
+# Check that canonical transcript attribute exists
+is_rows(1, $db, "attrib_type", "where code = ? ", ["is_canonical"]);
+my $aa = $db->get_AttributeAdaptor();
+my $canonical_attrib_id = $aa->fetch_by_code('is_canonical');
+
+is_rows(1, $db, "transcript_attrib", "where transcript_id = ? and attrib_type_id = ? ", [$up_tr->dbID(), $canonical_attrib_id->[0]]);
+
+# Test adding new canonical transcript
+my $new_tr = $ta->fetch_by_stable_id( "ENST00000217347" );
+my $canonical_gene = $new_tr->get_Gene;
+
+for (my $index=1; $index<3; $index++) {
+  $new_tr = $ta->fetch_by_stable_id( "ENST00000217347" );
+  $new_tr->stable_id("ENSTEST".$index."0000217347");
+  foreach my $ex (@{$new_tr->get_all_Exons()}) {
+    $ex->dbID(undef);
+    $ex->adaptor(undef);
+  }
+  $new_tr->adaptor(undef);
+  $new_tr->dbID(undef);
+  $new_tr->{'is_canonical'} = ($index == 1 ? 1 : 0);
+  $canonical_gene->add_Transcript($new_tr);
+  $ta->store($new_tr, $canonical_gene->dbID());
+}
+
+my $trans1 = $ta->fetch_by_stable_id("ENSTEST10000217347");
+my $trans2 = $ta->fetch_by_stable_id("ENSTEST20000217347");
+$canonical_gene = $trans1->get_Gene;
+
+my ($canonical_attrib) = @{$trans1->get_all_Attributes('is_canonical')};
+ok($canonical_attrib->value() == 1, 'Canonical transcript attribute set to 1');
+is_rows(0, $db, "transcript_attrib", "where transcript_id = ? and attrib_type_id = ? ", [$up_tr->dbID(), $canonical_attrib_id->[0]]);
+ok($canonical_gene->canonical_transcript->dbID() == $trans1->dbID(), 'Updated canonical transcript in gene table');
+
+# Test updating transcript canonical attribute
+$canonical_gene->remove_Transcript($trans1);
+$trans2->{'is_canonical'} = 1;
+$ta->update($trans2);
+
+$trans1 = $ta->fetch_by_stable_id("ENSTEST10000217347");
+$trans2 = $ta->fetch_by_stable_id("ENSTEST20000217347");
+$canonical_gene = $trans2->get_Gene;
+
+($canonical_attrib) = @{$trans2->get_all_Attributes('is_canonical')};
+ok($canonical_attrib->value() == 1, 'Canonical transcript attribute set to 1');
+is_rows(0, $db, "transcript_attrib", "where transcript_id = ? and attrib_type_id = ? ", [$trans1->dbID(), $canonical_attrib_id->[0]]);
+
 
 $tr->is_current(0);
 $ta->update($tr);
