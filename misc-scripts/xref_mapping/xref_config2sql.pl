@@ -187,9 +187,10 @@ foreach my $species_section ( sort( $config->GroupMembers('species') ) )
     print(   "INSERT INTO source_url "
            . "(source_id, species_id, parser)\n" );
 
+    my $parser = (defined($config->val($source_section, 'old_parser')) ? $config->val($source_section, 'old_parser') : $config->val($source_section, 'parser'));
     printf( "VALUES (%d, %d, '%s') ;\n",
             $source_ids{$source_section}, $species_id,
-            $config->val( $source_section, 'parser' ) );
+            $parser );
 
     print("\n");
     
