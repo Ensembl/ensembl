@@ -9,11 +9,11 @@ We also invite you to read our code of conduct (http://www.ensembl.org/info/abou
 
 1. Fork the ensembl repository
 2. Switch to the branch you want to edit
-  * Consider using feature branches over editing master
+  * Consider using feature branches over editing main
 3. Hack away and commit with a useful commit message
   * First line is short but descriptive
   * Other lines are more explanatory
-4. Make sure your forked master is up-to date with origin and rebase if needed
+4. Make sure your forked main is up-to date with origin and rebase if needed
 6. Push
 7. Create a pull request
 8. Communicate what the change is
@@ -69,19 +69,19 @@ git remote add upstream https://github.com/Ensembl/ensembl.git
 
 ## Switching Branch
 
-By default Ensembl projects have a default branch of the **latest stable release**. If you are contributing a fix for a specific release then please remain there; otherwise switch to master.
+By default Ensembl projects have a default branch of the **latest stable release**. If you are contributing a fix for a specific release then please remain there; otherwise switch to main.
 
 ```
-git checkout --track -b master origin/master
+git checkout --track -b main origin/main
 ```
 
-To help improve your hacking time consider developing on a branch from master. This will allow you to bring in changes from upstream and integrate them into your fork without fear of merge conflicts. The following prefixes are available to use:
+To help improve your hacking time consider developing on a branch from main. This will allow you to bring in changes from upstream and integrate them into your fork without fear of merge conflicts. The following prefixes are available to use:
 
 * _feature/_ - A new feature going into a repository
 * _hotfix/_ - Fixes to be integrated into a branch
 * _experimental/_ - Experimental feature with no guarentee about hash stability
 
-Switch to a new branch once you are on master:
+Switch to a new branch once you are on main:
 
 ```
 git checkout -b hotfix/quickfixtoadaptor
@@ -106,19 +106,19 @@ retrieval system but rather the MySQL last insert id variable.
 
 Try also to minimise branches within your code base. If we see too many we will ask you to rebase/squish.
 
-## Syncing master with upstream, rebasing your changes and pushing
+## Syncing main with upstream, rebasing your changes and pushing
 
-First switch to master and pull in new changes from upstream held on master. This will bring those changes down and attempt to merge your local master with _upstream/master_. If you have changes on master be aware that this will probably require a merge commit. Staying away from master is a good idea.
+First switch to main and pull in new changes from upstream held on main. This will bring those changes down and attempt to merge your local main with _upstream/main_. If you have changes on main be aware that this will probably require a merge commit. Staying away from main is a good idea.
 
 ```
-git checkout master
-git pull upstream master
+git checkout main
+git pull upstream main
 ```
-Once the changes are down rebase your branch against master:
+Once the changes are down rebase your branch against main:
 
 ```
 git checkout hotfix/quickfixtoadaptor
-git rebase master
+git rebase main
 ```
 Now push to origin:
 
@@ -132,7 +132,7 @@ https://help.github.com/articles/using-pull-requests
 
 Go to your GitHub fork's page, switch to your branch and click on the _Compare and Review_ button. This will start the merge. Then click on the top left +- file icon and edit accordingly:
 
-* Switch the base branch to _master_
+* Switch the base branch to _main_
 
 This ensures you are submitting your change against the right branch in Ensembl. For more information see [GitHub's documentation on doing this](https://help.github.com/articles/using-pull-requests#changing-the-branch-range-and-destination-repository).
 
