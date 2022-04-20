@@ -20,10 +20,10 @@
     - apt-get install -y build-essential cpanminus git
     - apt-get install -y default-libmysqlclient-dev default-mysql-client
     - apt-get install -y libssl-dev sqlite3
-    - git clone --branch=master --depth=1 https://github.com/Ensembl/ensembl-test.git
-    - git clone --branch=master --depth=1 https://github.com/Ensembl/ensembl-io.git
+    - git clone --branch=main --depth=1 https://github.com/Ensembl/ensembl-test.git
+    - git clone --branch=main --depth=1 https://github.com/Ensembl/ensembl-io.git
     - git clone --branch=master --depth=1 https://github.com/Ensembl/ensembl-variation.git
-    - git clone --branch=master --depth=1 https://github.com/Ensembl/ensembl-compara.git
+    - git clone --branch=main --depth=1 https://github.com/Ensembl/ensembl-compara.git
     - git clone --branch=release-1-6-924 --depth=1 https://github.com/bioperl/bioperl-live.git
     - cpanm -v --installdeps --notest . --with-all-features
     - ( cd ensembl-test && cpanm -v --installdeps --notest . )
