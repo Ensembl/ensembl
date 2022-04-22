@@ -127,19 +127,19 @@ sub dbi {
 # Create database if required.
 # Assumes sql/table.sql and sql/populate_metadata.sql are present.
 sub create {
-  my ( $self, $sql_dir, $force, $drop_db, $xref_source_dbi) = @_;
+  my ( $self, $sql_dir, $force, $drop_db, $preparse, $xref_source_dbi) = @_;
   $self->recreate_database( $force, $drop_db );
-  $self->populate( $sql_dir, $force, $xref_source_dbi);
+  $self->populate( $sql_dir, $force, $preparse, $xref_source_dbi);
 }
 
 sub populate {
-  my ( $self, $sql_dir, $force, $xref_source_dbi ) = @_;
+  my ( $self, $sql_dir, $force, $preparse, $xref_source_dbi ) = @_;
   my $table_file = catfile( $sql_dir, 'sql', 'table.sql' );
   my $metadata_file;
   if ($xref_source_dbi) {
     $metadata_file = $self->copy_source_metadata_file($xref_source_dbi);
   } else {
-    $metadata_file = $self->prepare_metadata_file( $sql_dir, $force );
+    $metadata_file = $self->prepare_metadata_file( $sql_dir, $force, $preparse );
   }
   $self->populate_with_file($table_file);
   $self->populate_with_file($metadata_file);
@@ -201,7 +201,7 @@ sub copy_source_metadata_file {
 }
 
 sub prepare_metadata_file {
-  my ( $self, $sql_dir, $force ) = @_;
+  my ( $self, $sql_dir, $force, $preparse ) = @_;
   my $metadata_file =
     catfile( $sql_dir, 'sql', 'populate_metadata.sql' );
   my $ini_file = catfile( $sql_dir, 'xref_config.ini' );
@@ -228,9 +228,9 @@ sub prepare_metadata_file {
       chomp $reply;
     }
     if ( lc( substr( $reply, 0, 1 ) ) eq 'y' ) {
-      my $cmd = sprintf( "perl %s %s >%s",
+      my $cmd = sprintf( "perl %s %s %u >%s",
                          catfile( $sql_dir, 'xref_config2sql.pl' ),
-                         $ini_file, $metadata_file );
+                         $ini_file, $preparse, $metadata_file );
 
       if ( system($cmd) == 0 ) {
         print("==> Done.\n") if ( $self->verbose );

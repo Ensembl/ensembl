@@ -40,6 +40,8 @@ use Config::IniFiles;
 my $file = (defined $ARGV[0] && -f $ARGV[0]) ? $ARGV[0] : 'xref_config.ini';
 warn "using ", $file;
 
+my $preparse = defined $ARGV[1] ? $ARGV[1] : 0;
+
 my $config = Config::IniFiles->new(-file => $file);
 if(! defined $config) {
   foreach my $e (@Config::IniFiles::errors) {
@@ -175,6 +177,8 @@ foreach my $species_section ( sort( $config->GroupMembers('species') ) )
     my $source_section = sprintf( "source %s", $source_name );
     $source_section =~ s/\s$//;
 
+    next if ($preparse && $species_id == 7742 && $source_name eq 'RefSeq_peptide::MULTI-vertebrate');
+
     if ( !exists( $source_ids{$source_section} ) ) {
       die( sprintf( "Can not find source section '[%s]'\n"
                       . "while reading species section '[%s]'\n",
@@ -187,9 +191,11 @@ foreach my $species_section ( sort( $config->GroupMembers('species') ) )
     print(   "INSERT INTO source_url "
            . "(source_id, species_id, parser)\n" );
 
+    my $parser = (defined($config->val($source_section, 'old_parser')) && !$preparse ? $config->val($source_section, 'old_parser') : $config->val($source_section, 'parser'));
+
     printf( "VALUES (%d, %d, '%s') ;\n",
             $source_ids{$source_section}, $species_id,
-            $config->val( $source_section, 'parser' ) );
+            $parser );
 
     print("\n");
     
