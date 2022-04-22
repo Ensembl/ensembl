@@ -213,6 +213,8 @@ sub prepare_metadata_file {
   my $ini_tm  = ( stat $ini_file )[9];
   my $meta_tm = ( stat $metadata_file )[9];
 
+  $preparse = 0 if (!defined($preparse));
+
   if ( !defined($meta_tm) || $ini_tm > $meta_tm ) {
     my $reply;
     if ($force) {
