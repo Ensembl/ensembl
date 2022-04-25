@@ -177,6 +177,8 @@ foreach my $species_section ( sort( $config->GroupMembers('species') ) )
     my $source_section = sprintf( "source %s", $source_name );
     $source_section =~ s/\s$//;
 
+    # If preparsing, remove RefSeq_peptide for vertebrates (7742)
+    # since this will be parsed with RefSeq_dna
     next if ($preparse && $species_id == 7742 && $source_name eq 'RefSeq_peptide::MULTI-vertebrate');
 
     if ( !exists( $source_ids{$source_section} ) ) {
