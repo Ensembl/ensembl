@@ -1,4 +1,4 @@
-1	\N	schema_version	107
+1	\N	schema_version	108
 2	1	assembly.default	MULTIMAP
 3	1	species.taxonomy_id	1
 4	1	assembly.mapping	chromosome:MULTIMAP#contig
@@ -83,3 +83,5 @@
 176	\N	patch	patch_104_105_a.sql|schema_version
 177	\N	patch	patch_105_106_a.sql|schema_version
 178	\N	patch	patch_106_107_a.sql|schema_version
+179	\N	patch	patch_106_107_b.sql|Added index for seq_region_mapping
+180	\N	patch	patch_107_108_a.sql|schema_version
