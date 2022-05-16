@@ -1,4 +1,4 @@
-1	\N	schema_version	107
+1	\N	schema_version	108
 2	1	assembly.default	NCBI34
 33	1	species.classification	Chordata
 32	1	species.classification	Vertebrata
@@ -122,3 +122,5 @@
 171	\N	patch	patch_104_105_a.sql|schema_version
 172	\N	patch	patch_105_106_a.sql|schema_version
 173	\N	patch	patch_106_107_a.sql|schema_version
+174	\N	patch	patch_106_107_b.sql|Added index for seq_region_mapping
+175	\N	patch	patch_107_108_a.sql|schema_version
