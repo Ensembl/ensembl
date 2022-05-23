@@ -112,6 +112,8 @@ sub run {
   # ENSG00000138685 REACT_111045    http://www.reactome.org/PathwayBrowser/#REACT_111045    Developmental Biology   TAS     Homo sapiens
     while (my $line = $reactome_io->getline() ) {
       chomp $line;
+      $line =~ s/\r//g;
+
       my ($ensembl_stable_id, $reactome_id, $url, $description, $evidence, $species) = split /\t+/,$line;
       if ($description!~ /^[A-Za-z0-9_,\(\)\/\-\.:\+'&;"\/\?%>\s\[\]]+$/) { next; }
   
