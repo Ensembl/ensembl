@@ -914,10 +914,6 @@ sub translateable_seq {
 
   $mrna = substr( $mrna, $start - 1, $end - $start + 1 );
 
-  my $start_phase = $self->translation->start_Exon->phase();
-  if( $start_phase > 0 ) {
-    $mrna = "N"x$start_phase . $mrna;
-  }
   if( ! $start || ! $end ) {
     return "";
   }
