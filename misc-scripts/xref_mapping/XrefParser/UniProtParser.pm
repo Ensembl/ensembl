@@ -444,6 +444,10 @@ sub create_xrefs {
         if ($source =~ "MIM_GENE" || $source =~ "MIM_MORBID" || $source =~ "MIM") {
             next;
         }
+        # GeneCards xrefs are imported through the HGNC file
+        if ($source =~ "GeneCards") {
+          next;
+        }
 # If mapped to Ensembl, add as direct xref
         if ($source eq "Ensembl") {
 # Example line:

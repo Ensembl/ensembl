@@ -1213,7 +1213,7 @@ sub get_gene_specific_list {
 
   $dbi = $self->xref->dbc unless defined $dbi;
 
-  my @list = qw(DBASS3 DBASS5 EntrezGene miRBase RFAM TRNASCAN_SE RNAMMER UniGene Uniprot_gn WikiGene MIM_GENE MIM_MORBID HGNC MGI ZFIN_ID FlyBaseName_gene RGD SGD_GENE VGNC wormbase_gseqname wormbase_locus Xenbase);
+  my @list = qw(DBASS3 DBASS5 EntrezGene miRBase RFAM TRNASCAN_SE RNAMMER UniGene Uniprot_gn WikiGene MIM_GENE MIM_MORBID HGNC MGI ZFIN_ID FlyBaseName_gene RGD SGD_GENE VGNC wormbase_gseqname wormbase_locus Xenbase GeneCards);
 
   # Check the sources are used in the database considered
   my (@used_list, $sql, $sth, $count);
