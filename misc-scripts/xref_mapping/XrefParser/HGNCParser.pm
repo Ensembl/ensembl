@@ -316,14 +316,15 @@ CCDS
       $name_count{'ensembl_manual'}++;
 
       # GeneCards
-      $self->add_xref({
-          acc        => $acc,
-          label      => $symbol,
-          desc       => $name,
-          source_id  => $self->{source_ids}->{'genecards'},
-          species_id => $species_id,
-          dbi        => $dbi,
-          info_type  => 'DEPENDENT'
+      my $direct_id = $self->get_xref($acc, $self->{source_ids}->{'ensembl_manual'}, $species_id, $dbi);
+      $self->add_dependent_xref({
+          master_xref_id => $direct_id,
+          acc            => $acc,
+          label          => $symbol,
+          desc           => $name,
+          source_id      => $self->{source_ids}->{'genecards'},
+          dbi            => $dbi,
+          species_id     => $species_id
       });
 
       $self->add_synonyms_for_hgnc({
