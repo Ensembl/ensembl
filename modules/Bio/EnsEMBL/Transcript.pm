@@ -2099,13 +2099,9 @@ sub translate {
   my $start_phase = $self->translation->start_Exon->phase();
 
   if ( $start_phase == 1 ) {
-    print "Start phase is $start_phase. Using substr offset of 2\n";
     $mrna = substr $mrna, 2;
-    print $mrna, "\n";
   } elsif ( $start_phase == 2 ) {
-    print "Start phase is $start_phase. Using substr offset of 1\n";
     $mrna = substr $mrna, 1;
-    print $mrna, "\n";
   }
 
   # Alternative codon tables (such as the mitochondrial codon table)
