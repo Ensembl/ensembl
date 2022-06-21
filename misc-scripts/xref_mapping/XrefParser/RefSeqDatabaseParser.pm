@@ -40,32 +40,39 @@ sub run {
     croak "Need to pass source_id, species_id and xref_source";
   }
 
+  my $source_name = $self->get_source_name_for_source_id($source_id, $dbi);
   my @source_ids;
-  my $peptide_source_id =
-    $self->get_source_id_for_source_name('RefSeq_peptide', undef, $dbi);
-  push @source_ids, $peptide_source_id;
-  my $mrna_source_id =
-    $self->get_source_id_for_source_name('RefSeq_mRNA','refseq', $dbi);
-  push @source_ids, $mrna_source_id;
-  my $ncrna_source_id =
-    $self->get_source_id_for_source_name('RefSeq_ncRNA', undef, $dbi);
-  push @source_ids, $ncrna_source_id;
 
-  my $pred_peptide_source_id =
-    $self->get_source_id_for_source_name('RefSeq_peptide_predicted', undef, $dbi);
-  push @source_ids, $pred_peptide_source_id;
-  my $pred_mrna_source_id =
-    $self->get_source_id_for_source_name('RefSeq_mRNA_predicted','refseq', $dbi);
-  push @source_ids, $pred_mrna_source_id;
-  my $pred_ncrna_source_id =
-    $self->get_source_id_for_source_name('RefSeq_ncRNA_predicted', undef, $dbi);
-  push @source_ids, $pred_ncrna_source_id;
+  if ($source_name =~ /RefSeq_dna/) {
+    my $mrna_source_id = $self->get_source_id_for_source_name('RefSeq_mRNA','refseq', $dbi);
+    push @source_ids, $mrna_source_id;
+    my $pred_mrna_source_id = $self->get_source_id_for_source_name('RefSeq_mRNA_predicted','refseq', $dbi);
+    push @source_ids, $pred_mrna_source_id;
+    my $ncrna_source_id = $self->get_source_id_for_source_name('RefSeq_ncRNA', undef, $dbi);
+    push @source_ids, $ncrna_source_id;
+    my $pred_ncrna_source_id = $self->get_source_id_for_source_name('RefSeq_ncRNA_predicted', undef, $dbi);
+    push @source_ids, $pred_ncrna_source_id;
+  } elsif ($source_name =~ /RefSeq_peptide/) {
+    my $peptide_source_id = $self->get_source_id_for_source_name('RefSeq_peptide', undef, $dbi);
+    push @source_ids, $peptide_source_id;
+    my $pred_peptide_source_id = $self->get_source_id_for_source_name('RefSeq_peptide_predicted', undef, $dbi);
+    push @source_ids, $pred_peptide_source_id;
+  }
 
   my $entrez_source_id = $self->get_source_id_for_source_name('EntrezGene', undef, $dbi);
   my $wiki_source_id = $self->get_source_id_for_source_name('WikiGene', undef, $dbi);
 
   # Retrieve existing NCBIGene xrefs
   my (%entrez)     = %{$self->get_acc_to_label("EntrezGene",$species_id, undef, $dbi)};
+
+  # Get existing mrna, entrezgene and wikigene accession => xref_id
+  my (%refseq_ids, %entrez_ids, %wiki_ids, $add_dependent_xref_sth);
+  if ($source_name =~ /RefSeq_peptide/) {
+    (%refseq_ids) = %{ $self->get_valid_codes("RefSeq_mRNA", $species_id, $dbi) };
+    (%entrez_ids) = %{ $self->get_valid_codes("EntrezGene", $species_id, $dbi) };
+    (%wiki_ids) = %{ $self->get_valid_codes("WikiGene", $species_id, $dbi) };
+    $add_dependent_xref_sth = $dbi->prepare("INSERT INTO dependent_xref  (master_xref_id, dependent_xref_id, linkage_source_id) VALUES (?,?, $entrez_source_id)");
+  }
 
   my $get_xref_sql = "SELECT xref_id, accession, version, label, description, info_type ".
   "FROM xref WHERE species_id = ? AND source_id = ?";
@@ -77,7 +84,7 @@ sub run {
   my $get_sequence_sth = $xref_source->prepare($get_sequence_sql);
   my $get_synonym_sql = "SELECT synonym FROM synonym WHERE xref_id = ?";
   my $get_synonym_sth = $xref_source->prepare($get_synonym_sql);
-  my $get_pair_sql = "SELECT accession1 FROM pairs where accession2 = ?";
+  my $get_pair_sql = "SELECT accession2 FROM pairs where accession1 = ?";
   my $get_pair_sth = $xref_source->prepare($get_pair_sql);
   my ($xref_id, $accession, $version, $label, $description, $info_type, $parsed_seq, $type, $status, $dep_xref_id, $dep_accession, $dep_version, $dep_label, $dep_description, $dep_source_id, $dep_species_id, $linkage_source_id, $synonym, $refseq_pair);
 
@@ -111,6 +118,7 @@ sub run {
       $get_pair_sth->execute($accession);
       $get_pair_sth->bind_columns(\$refseq_pair);
       while ($get_pair_sth->fetch) {
+	$refseq_pair =~ s/\.[0-9]*//;
         $xref->{PAIR} = $refseq_pair;
       }
 
@@ -129,7 +137,7 @@ sub run {
 	if (defined $entrez{$dep_accession}) {
           my %dep;
 	  $dep{ACCESSION} = $dep_accession;
-	  $dep{LABEL} = $dep_label;
+	  $dep{LABEL} = $entrez{$dep_accession};
 	  $dep{VERSION} = $dep_version;
 	  $dep{DESCRIPTION} = $dep_description;
 	  $dep{SOURCE_ID} = $entrez_source_id;
@@ -138,12 +146,27 @@ sub run {
 
 	  my %dep2;
 	  $dep2{ACCESSION} = $dep_accession;
-	  $dep2{LABEL} = $dep_label;
+	  $dep2{LABEL} = $entrez{$dep_accession};
 	  $dep2{VERSION} = $dep_version;
 	  $dep2{DESCRIPTION} = $dep_description;
 	  $dep2{SOURCE_ID} = $wiki_source_id;
 	  $dep2{LINKAGE_SOURCE_ID} = $linkage_source_id;
 	  push @{$xref->{DEPENDENT_XREFS}}, \%dep2;
+
+	  # Add dependent xrefs for RefSeq mRNA as well where available
+          # only after they are added in priorit 1
+          if (defined $refseq_pair) {
+            if ($refseq_ids{$refseq_pair}) {
+              foreach my $refseq_id (@{ $refseq_ids{$refseq_pair} }) {
+                foreach my $entrez_id (@{ $entrez_ids{$dep_accession} }) {
+                  $add_dependent_xref_sth->execute($refseq_id, $entrez_id);
+                }
+                foreach my $wiki_id (@{ $wiki_ids{$dep_accession} }) {
+                  $add_dependent_xref_sth->execute($refseq_id, $wiki_id);
+                }
+              }
+            }
+          }
         }
       }
   
