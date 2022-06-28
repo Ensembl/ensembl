@@ -153,20 +153,20 @@ sub run {
 	  push @{$xref->{DEPENDENT_XREFS}}, \%dep2;
 
 	  # Add dependent xrefs for RefSeq mRNA as well where available
-          # only after they are added in priorit 1
+         # only after they are added in priority 1
 	  $refseq_pair =~ s/\.[0-9]*// if $refseq_pair;
-          if (defined $refseq_pair) {
-            if ($refseq_ids{$refseq_pair}) {
-              foreach my $refseq_id (@{ $refseq_ids{$refseq_pair} }) {
-                foreach my $entrez_id (@{ $entrez_ids{$dep_accession} }) {
-                  $add_dependent_xref_sth->execute($refseq_id, $entrez_id);
-                }
-                foreach my $wiki_id (@{ $wiki_ids{$dep_accession} }) {
-                  $add_dependent_xref_sth->execute($refseq_id, $wiki_id);
-                }
-              }
-            }
-          }
+         if (defined $refseq_pair) {
+           if ($refseq_ids{$refseq_pair}) {
+             foreach my $refseq_id (@{ $refseq_ids{$refseq_pair} }) {
+               foreach my $entrez_id (@{ $entrez_ids{$dep_accession} }) {
+                 $add_dependent_xref_sth->execute($refseq_id, $entrez_id);
+               }
+               foreach my $wiki_id (@{ $wiki_ids{$dep_accession} }) {
+                 $add_dependent_xref_sth->execute($refseq_id, $wiki_id);
+               }
+             }
+           }
+         }
         }
       }
   
