@@ -96,7 +96,7 @@ sub run {
     while ($get_xref_sth->fetch()) {
       my $xref = {};
       $count++;
-  
+
       $xref->{ACCESSION} = $accession;
       $xref->{LABEL} = $label;
       $xref->{VERSION} = $version;
@@ -133,45 +133,45 @@ sub run {
       $get_dependent_sth->bind_columns(\$dep_xref_id, \$dep_accession, \$dep_version, \$dep_label, \$dep_description, \$dep_source_id, \$dep_species_id, \$linkage_source_id);
       while ($get_dependent_sth->fetch) {
         if ($dep_species_id != $species_id) { next; }
-	if (defined $entrez{$dep_accession}) {
+        if (defined $entrez{$dep_accession}) {
           my %dep;
-	  $dep{ACCESSION} = $dep_accession;
-	  $dep{LABEL} = $entrez{$dep_accession};
-	  $dep{VERSION} = $dep_version;
-	  $dep{DESCRIPTION} = $dep_description;
-	  $dep{SOURCE_ID} = $entrez_source_id;
-	  $dep{LINKAGE_SOURCE_ID} = $linkage_source_id;
-	  push @{$xref->{DEPENDENT_XREFS}}, \%dep;
+          $dep{ACCESSION} = $dep_accession;
+          $dep{LABEL} = $entrez{$dep_accession};
+          $dep{VERSION} = $dep_version;
+          $dep{DESCRIPTION} = $dep_description;
+          $dep{SOURCE_ID} = $entrez_source_id;
+          $dep{LINKAGE_SOURCE_ID} = $linkage_source_id;
+          push @{$xref->{DEPENDENT_XREFS}}, \%dep;
 
-	  my %dep2;
-	  $dep2{ACCESSION} = $dep_accession;
-	  $dep2{LABEL} = $entrez{$dep_accession};
-	  $dep2{VERSION} = $dep_version;
-	  $dep2{DESCRIPTION} = $dep_description;
-	  $dep2{SOURCE_ID} = $wiki_source_id;
-	  $dep2{LINKAGE_SOURCE_ID} = $linkage_source_id;
-	  push @{$xref->{DEPENDENT_XREFS}}, \%dep2;
+          my %dep2;
+          $dep2{ACCESSION} = $dep_accession;
+          $dep2{LABEL} = $entrez{$dep_accession};
+          $dep2{VERSION} = $dep_version;
+          $dep2{DESCRIPTION} = $dep_description;
+          $dep2{SOURCE_ID} = $wiki_source_id;
+          $dep2{LINKAGE_SOURCE_ID} = $linkage_source_id;
+          push @{$xref->{DEPENDENT_XREFS}}, \%dep2;
 
-	  # Add dependent xrefs for RefSeq mRNA as well where available
-         # only after they are added in priority 1
-	  $refseq_pair =~ s/\.[0-9]*// if $refseq_pair;
-         if (defined $refseq_pair) {
-           if ($refseq_ids{$refseq_pair}) {
-             foreach my $refseq_id (@{ $refseq_ids{$refseq_pair} }) {
-               foreach my $entrez_id (@{ $entrez_ids{$dep_accession} }) {
-                 $add_dependent_xref_sth->execute($refseq_id, $entrez_id);
-               }
-               foreach my $wiki_id (@{ $wiki_ids{$dep_accession} }) {
-                 $add_dependent_xref_sth->execute($refseq_id, $wiki_id);
-               }
-             }
-           }
-         }
+          # Add dependent xrefs for RefSeq mRNA as well where available
+          # only after they are added in priority 1
+          $refseq_pair =~ s/\.[0-9]*// if $refseq_pair;
+          if (defined $refseq_pair) {
+            if ($refseq_ids{$refseq_pair}) {
+              foreach my $refseq_id (@{ $refseq_ids{$refseq_pair} }) {
+                foreach my $entrez_id (@{ $entrez_ids{$dep_accession} }) {
+                  $add_dependent_xref_sth->execute($refseq_id, $entrez_id);
+                }
+                foreach my $wiki_id (@{ $wiki_ids{$dep_accession} }) {
+                  $add_dependent_xref_sth->execute($refseq_id, $wiki_id);
+                }
+              }
+            }
+          }
         }
       }
-  
+
       push @xrefs, $xref;
-  
+
       if ($count > 1000) {
         $self->upload_xref_object_graphs( \@xrefs, $dbi );
         $count = 0;
