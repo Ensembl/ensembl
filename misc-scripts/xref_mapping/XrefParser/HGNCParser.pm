@@ -330,7 +330,7 @@ CCDS
 
       $self->add_synonyms_for_hgnc({
           source_id  => $self->{source_ids}->{'genecards'},
-          name       => $acc,
+          name       => $hgnc_id,
           species_id => $species_id,
           dbi        => $dbi,
           dead       => $previous_symbols,
