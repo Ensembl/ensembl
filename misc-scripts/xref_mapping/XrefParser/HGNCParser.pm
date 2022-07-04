@@ -317,9 +317,10 @@ CCDS
 
       # GeneCards
       my $direct_id = $self->get_xref($acc, $self->{source_ids}->{'ensembl_manual'}, $species_id, $dbi);
+      my ($hgnc_id) = $acc =~ /HGNC:(\d+)/;
       $self->add_dependent_xref({
           master_xref_id => $direct_id,
-          acc            => $acc,
+          acc            => $hgnc_id,
           label          => $symbol,
           desc           => $name,
           source_id      => $self->{source_ids}->{'genecards'},
