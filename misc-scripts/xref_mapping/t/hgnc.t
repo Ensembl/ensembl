@@ -78,6 +78,9 @@ $db->schema->resultset('Source')->populate([
     source_id            => 54,
     name                 => 'LRG_HGNC_notransfer',
   },{
+    source_id            => 55,
+    name                 => 'GeneCards',
+  },{
     source_id            => 23,
     name                 => 'EntrezGene',
   },{
@@ -101,8 +104,9 @@ $parser->run_script( {
 } );
 
 # Test if all the rows were inserted
-is($db->schema->resultset('Xref')->count, 22, "All 22 HGNC xrefs were inserted");
-is($db->schema->resultset('Synonym')->count, 42, "All 42 HGNC synonyms were inserted");
+is($db->schema->resultset('Xref')->count, 42, "All 42 xrefs were inserted: 22 HGNC and 20 GeneCards");
+is($db->schema->resultset('Xref')->count({info_type => 'DEPENDENT'}), 20, "All 20 dependent GeneCards xrefs were inserted");
+is($db->schema->resultset('Synonym')->count, 78, "All 78 synonyms were inserted: 42 HGNC and 36 GeneCards");
 
 ok(
   $db->schema->resultset('Xref')->check_direct_xref({

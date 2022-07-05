@@ -124,6 +124,7 @@ sub run_script {
     $self->{source_ids}->{$source_name} = $self->get_source_id_for_source_name( $self_source_name, $source_name , $dbi );
   }
   $self->{source_ids}->{'lrg'} = $self->get_source_id_for_source_name( 'LRG_HGNC_notransfer', undef, $dbi );
+  $self->{source_ids}->{'genecards'} = $self->get_source_id_for_source_name('GeneCards', undef, $dbi);
 
   # statistics counts
   my %name_count;
@@ -313,6 +314,29 @@ CCDS
           alias      => $synonyms
       });
       $name_count{'ensembl_manual'}++;
+
+      # GeneCards
+      my $direct_id = $self->get_xref($acc, $self->{source_ids}->{'ensembl_manual'}, $species_id, $dbi);
+      my ($hgnc_id) = $acc =~ /HGNC:(\d+)/;
+      $self->add_dependent_xref({
+          master_xref_id => $direct_id,
+          acc            => $hgnc_id,
+          label          => $symbol,
+          desc           => $name,
+          source_id      => $self->{source_ids}->{'genecards'},
+          dbi            => $dbi,
+          species_id     => $species_id
+      });
+
+      $self->add_synonyms_for_hgnc({
+          source_id  => $self->{source_ids}->{'genecards'},
+          name       => $hgnc_id,
+          species_id => $species_id,
+          dbi        => $dbi,
+          dead       => $previous_symbols,
+          alias      => $synonyms
+      });
+      $name_count{'genecards'}++;
     }
 
     # RefSeq
