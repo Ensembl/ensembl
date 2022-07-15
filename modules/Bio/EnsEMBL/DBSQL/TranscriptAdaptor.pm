@@ -1888,7 +1888,6 @@ sub _objs_from_sth {
     my $slice = $slice_hash{"ID:".$seq_region_id};
 
     if (!$slice) {
-      print "DEBUG: UNDEF SLICE...\n";
       $slice                            = $sa->fetch_by_seq_region_id($seq_region_id);
       $slice_hash{"ID:".$seq_region_id} = $slice;
       $sr_name_hash{$seq_region_id}     = $slice->seq_region_name();
