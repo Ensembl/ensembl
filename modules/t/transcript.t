@@ -388,16 +388,16 @@ $transcriptCount = $ta->count_all_by_source('ensembl');
 is(24, $transcriptCount);
 @transcripts = @{$ta->fetch_all_by_source(['havana','vega'])};
 note "Got ".scalar(@transcripts)." (havana, vega) transcripts\n";
-is(3, scalar(@transcripts));
+is(4, scalar(@transcripts));
 $transcriptCount = $ta->count_all_by_source(['havana', 'vega']);
-is(3, $transcriptCount);
+is(4, $transcriptCount);
 
 #
 # test TranscriptAdaptor::fetch_all
 #
 note("Test fetch_all");
 @transcripts = @{ $ta->fetch_all() };
-is(27, scalar(@transcripts), "Got 27 transcripts");
+is(28, scalar(@transcripts), "Got 28 transcripts");
 
 #
 # test TranscriptAdaptor::fetch_all_by_GOTerm
