@@ -918,7 +918,6 @@ sub translateable_seq {
   if( $start_phase > 0 ) {
     $mrna = "N"x$start_phase . $mrna;
   }
-
   if( ! $start || ! $end ) {
     return "";
   }
@@ -2103,14 +2102,10 @@ sub translate {
 
   my $start_phase = $self->translation->start_Exon->phase();
 
+  # remove N-padding prior to translation
   if ( $start_phase > 0 ) {
     $mrna = substr $mrna, 3;
   }
-  # if ( $start_phase == 1 ) {
-  #   $mrna = substr $mrna, 2;
-  # } elsif ( $start_phase == 2 ) {
-  #   $mrna = substr $mrna, 1;
-  # }
 
   # Alternative codon tables (such as the mitochondrial codon table)
   # can be specified for a sequence region via the seq_region_attrib
