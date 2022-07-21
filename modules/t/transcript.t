@@ -226,9 +226,9 @@ $tr = $ta->fetch_by_stable_id( "ENST00000300425" );
 is( $tr->translate()->seq() =~ /P$/, 1, "Incomplete codon is not translated");
 is( $tr->translate(1)->seq() =~ /PL$/, 1, "Incomplete codon is padded then translated");
 
-# # get a new transcript to check incomplete 5' codon behaviour
-# my $n_padded_tr = $ta->fetch_by_stable_id( "ENST00000633705" );
-# is( $n_padded_tr->translate()->seq() =~ /^DLNK/, 1, "Incomplete 5' codon is not translated as an X, has been removed" );
+# get a new transcript to check incomplete 5' codon behaviour
+my $n_padded_tr = $ta->fetch_by_stable_id( "ENST00000633705" );
+is( $n_padded_tr->translate()->seq() =~ /^DLNK/, 1, "Incomplete 5' codon is not translated as an X, has been removed" );
 
 # get a fresh tr to check the update method
 $tr = $ta->fetch_by_stable_id( "ENST00000217347" );
