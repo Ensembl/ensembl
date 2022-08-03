@@ -91,3 +91,4 @@
 97	\N	patch	patch_106_107_b.sql|consequences update
 98	\N	patch	patch_106_107_c.sql|remove regulatory and TFBS consequences from consequence_types in transcript_variation
 99	\N	patch	patch_107_108_a.sql|schema version
+100	\N	patch	patch_107_108_b.sql|fix SAS population description

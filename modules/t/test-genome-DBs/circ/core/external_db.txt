@@ -552,3 +552,4 @@
 50742	PubMedCentral		KNOWN	5	PubMedCentral	LIT	\N	\N	PMC identifier for use with PubMedCentral (http://www.ncbi.nlm.nih.gov/pmc and http://europepmc.org/)
 50743	PFAM	27	XREF	0	PFAM	MISC	\N	\N	Pfam release 27, from Vega
 50744	EntrezGene_trans_name		KNOWNXREF	250	EntrezGene transcript name	MISC	\N	\N	transcript name projected from EntrezGene gene name
+0	GeneCards		XREF	50	GeneCards	MISC	\N	\N	\N
