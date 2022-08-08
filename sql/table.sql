@@ -316,6 +316,9 @@ INSERT INTO meta (species_id, meta_key, meta_value) VALUES
 INSERT INTO meta (species_id, meta_key, meta_value)
   VALUES (NULL, 'patch', 'patch_108_109_a.sql|schema_version');
 
+INSERT INTO meta (species_id, meta_key, meta_value)
+  VALUES (NULL, 'patch', 'patch_108_109_b.sql|Added xref source GeneCards into external_db');
+
 /**
 @table meta_coord
 @colour #C70C09
