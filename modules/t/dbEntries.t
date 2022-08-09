@@ -581,7 +581,7 @@ is_rows("1", $db, "object_xref", "where xref_id = $xref_id and analysis_id is nu
   is($dbEntryAdaptor->get_external_db_id('RFAM', 'wibble', 1), 4200, 'RFAM ID with a version of wibble but ignoring versions as expected');
 
   my $external_db_names = $dbEntryAdaptor->get_distinct_external_dbs();
-  cmp_ok(scalar(@{$external_db_names}), '==', 111, 'Retriving all the unique External DB names');
+  cmp_ok(scalar(@{$external_db_names}), '==', 112, 'Retriving all the unique External DB names');
 }
 
 # Test for fetching ids by a linkage type and database name
