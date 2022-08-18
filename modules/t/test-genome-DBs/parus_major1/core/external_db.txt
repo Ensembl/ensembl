@@ -447,3 +447,4 @@
 50866	ACWP	\N	KNOWNXREF	50	Whitefly Genome Database	MISC	\N	\N	http://www.cassavawhitefly.org/
 50867	BRC4_seq_region_name	\N	KNOWNXREF	1	BRC4_seq_region_name	PRIMARY_DB_SYNONYM	\N	\N	Marking default seq region synonyms for BRC4.
 50868	INSDC_submitted_name	\N	KNOWNXREF	1	INSDC_submitted_name	PRIMARY_DB_SYNONYM	\N	\N	Initial sequence name submitted by the assembly provider  to GenBank (raw/source names that are replaced by INSDC ids after publication)
+50869	GeneCards	\N	XREF	50	GeneCards	MISC	\N	\N	\N

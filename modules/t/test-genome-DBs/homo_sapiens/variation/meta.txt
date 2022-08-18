@@ -1,5 +1,5 @@
 1	\N	schema_type	variation
-2	\N	schema_version	108
+2	\N	schema_version	109
 3	\N	patch	patch_84_85_a.sql|schema version
 4	\N	patch	patch_84_85_b.sql|create sample_synonym
 5	\N	patch	patch_84_85_c.sql|drop column moltype from variation_synonym
@@ -64,3 +64,5 @@
 64	\N	patch	patch_106_107_b.sql|consequences update
 65	\N	patch	patch_106_107_c.sql|remove regulatory and TFBS consequences from consequence_types in transcript_variation
 66	\N	patch	patch_107_108_a.sql|schema version
+67	\N	patch	patch_107_108_b.sql|fix SAS population description
+68	\N	patch	patch_108_109_a.sql|schema_version

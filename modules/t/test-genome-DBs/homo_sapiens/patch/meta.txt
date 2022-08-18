@@ -1,4 +1,4 @@
-1	\N	schema_version	108
+1	\N	schema_version	109
 2014	1	species.classification	Haplorrhini
 40	1	assembly.default	GRCh37
 41	1	assembly.date	2009-02
@@ -129,3 +129,5 @@
 2136	\N	patch	patch_106_107_a.sql|schema_version
 2137	\N	patch	patch_106_107_b.sql|Added index for seq_region_mapping
 2138	\N	patch	patch_107_108_a.sql|schema_version
+2139	\N	patch	patch_108_109_a.sql|schema_version
+2140	\N	patch	patch_108_109_b.sql|Added xref source GeneCards into external_db

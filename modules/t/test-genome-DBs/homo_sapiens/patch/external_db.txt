@@ -108,7 +108,7 @@
 3800	CCDS		KNOWN	240	CCDS	MISC	\N	\N	\N
 3900	PUBMED		KNOWN	5	Sequence Publications	LIT	\N	\N	\N
 4000	MEDLINE		KNOWN	5	MEDLINE	LIT	\N	\N	\N
-4100	UniGene	25 Apr 2013 \t, UniGene Build #236 Homo 	KNOWN	5	UniGene	MISC	\N	\N	\N
+4100	UniGene	25 Apr 2013 \	, UniGene Build #236 Homo 	KNOWN	5	UniGene	MISC	\N	\N	\N
 4200	RFAM		XREF	190	RFAM	MISC	\N	\N	\N
 4400	Xenopus_Jamboree		KNOWN	1	Jamboree	MISC	\N	\N	\N
 4500	Tiffin		XREF	1	Tiffin DNA motifs	MISC	\N	\N	\N
@@ -555,3 +555,4 @@
 50745	BROAD_M_violaceum	1	KNOWNXREF	0	Broad Institute	MISC	\N	\N	Broad Institute Microbotryum violaceum Database
 50746	BROAD_M_violaceum_GENE	1	KNOWNXREF	0	Broad Institute	PRIMARY_DB_SYNONYM	\N	\N	Broad Institute Microbotryum violaceum Database
 50747	BROAD_M_violaceum_TRANSCRIP	1	KNOWNXREF	0	Broad Institute	PRIMARY_DB_SYNONYM	\N	\N	Broad Institute Microbotryum violaceum Database
+0	GeneCards		XREF	50	GeneCards	MISC	\N	\N	\N

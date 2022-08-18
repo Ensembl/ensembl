@@ -1,4 +1,4 @@
-1	\N	schema_version	108
+1	\N	schema_version	109
 2	1	assembly.default	NCBI34
 3	1	species.taxonomy_id	9606
 26	1	species.classification	Homo sapiens
@@ -123,3 +123,5 @@
 177	\N	patch	patch_106_107_a.sql|schema_version
 178	\N	patch	patch_106_107_b.sql|Added index for seq_region_mapping
 179	\N	patch	patch_107_108_a.sql|schema_version
+180	\N	patch	patch_108_109_a.sql|schema_version
+181	\N	patch	patch_108_109_b.sql|Added xref source GeneCards into external_db
