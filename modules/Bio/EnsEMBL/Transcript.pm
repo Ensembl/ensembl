@@ -2096,6 +2096,17 @@ sub translate {
 
   my $mrna = $self->translateable_seq();
 
+  # check the phase to see whether N-terminal bases
+  # require trimming prior to translation.
+  # This is to avoid N-terminal Xs in the translation.
+
+  my $start_phase = $self->translation->start_Exon->phase();
+
+  # remove N-padding prior to translation
+  if ( $start_phase > 0 ) {
+    $mrna = substr $mrna, 3;
+  }
+
   # Alternative codon tables (such as the mitochondrial codon table)
   # can be specified for a sequence region via the seq_region_attrib
   # table.  A list of codon tables and their codes is at:
