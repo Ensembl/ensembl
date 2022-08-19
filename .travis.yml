@@ -30,7 +30,7 @@ before_install:
   - export ENSEMBL_BRANCH='master'
   - export SECONDARY_BRANCH='main'
   - echo "TRAVIS_BRANCH=$TRAVIS_BRANCH"
-  - if [[ $TRAVIS_BRANCH =~ ^release\/[0-9]+$ ]]; then export ENSEMBL_BRANCH=$TRAVIS_BRANCH; export SECONDARY_BRANCH=$TRAVIS_BRANCH; fi
+  - if [[ $TRAVIS_BRANCH =~ ^release\/[0-9]+$ ]]; then export ENSEMBL_BRANCH=$TRAVIS_BRANCH; fi
   - echo "ENSEMBL_BRANCH=$ENSEMBL_BRANCH"
   - echo "SECONDARY_BRANCH=$SECONDARY_BRANCH"
   - git-ensembl --clone --depth 1 --branch $ENSEMBL_BRANCH --secondary_branch $SECONDARY_BRANCH ensembl-test
@@ -41,8 +41,8 @@ before_install:
 
 install:
   - cpanm -v --sudo --installdeps --notest . --with-all-features
-  - cpanm -n --sudo Devel::Cover Devel::Cover::Report::Coveralls Test::Exception Moose Devel::Cycle Test::Warnings 
-  - cpanm -n --sudo DBD::SQLite JSON 
+  - cpanm -n --sudo Devel::Cover Devel::Cover::Report::Coveralls Test::Exception Moose Devel::Cycle Test::Warnings
+  - cpanm -n --sudo DBD::SQLite JSON
   - cp travisci/MultiTestDB.conf.travisci.mysql  modules/t/MultiTestDB.conf.mysql
   - cp travisci/MultiTestDB.conf.travisci.SQLite modules/t/MultiTestDB.conf.SQLite
   - cp travisci/testdb.conf.travisci.mysql  testdb.conf.mysql
@@ -53,13 +53,13 @@ install:
 before_script:
   - rm -f "$HOME/.ensemblapi_no_version_check"
 
-script: 
+script:
   - "./travisci/harness.sh"
 
 jobs:
   include:
     - dist: focal
-      perl: '5.30' 
+      perl: '5.30'
       env: COVERALLS=false  DB=mysql
   exclude:
     - perl: '5.14'
