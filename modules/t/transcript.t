@@ -226,10 +226,6 @@ $tr = $ta->fetch_by_stable_id( "ENST00000300425" );
 is( $tr->translate()->seq() =~ /P$/, 1, "Incomplete codon is not translated");
 is( $tr->translate(1)->seq() =~ /PL$/, 1, "Incomplete codon is padded then translated");
 
-# get a new transcript to check incomplete 5' codon behaviour
-my $n_padded_tr = $ta->fetch_by_stable_id( "ENST00000633705" );
-is( $n_padded_tr->translate()->seq() =~ /^DLNK/, 1, "Incomplete 5' codon is not translated as an X, has been removed" );
-
 # get a fresh tr to check the update method
 $tr = $ta->fetch_by_stable_id( "ENST00000217347" );
 
@@ -388,16 +384,16 @@ $transcriptCount = $ta->count_all_by_source('ensembl');
 is(24, $transcriptCount);
 @transcripts = @{$ta->fetch_all_by_source(['havana','vega'])};
 note "Got ".scalar(@transcripts)." (havana, vega) transcripts\n";
-is(4, scalar(@transcripts));
+is(3, scalar(@transcripts));
 $transcriptCount = $ta->count_all_by_source(['havana', 'vega']);
-is(4, $transcriptCount);
+is(3, $transcriptCount);
 
 #
 # test TranscriptAdaptor::fetch_all
 #
 note("Test fetch_all");
 @transcripts = @{ $ta->fetch_all() };
-is(28, scalar(@transcripts), "Got 28 transcripts");
+is(27, scalar(@transcripts), "Got 27 transcripts");
 
 #
 # test TranscriptAdaptor::fetch_all_by_GOTerm
