@@ -40,7 +40,8 @@ CREATE TABLE xref (
                                     'UNMAPPED_NO_STABLE_ID', 'UNMAPPED_INTERPRO') DEFAULT null,
 
   PRIMARY KEY (xref_id),
-  UNIQUE acession_idx(accession,label,source_id,species_id)
+  UNIQUE acession_idx(accession,label,source_id,species_id),
+  INDEX species_source_idx(species_id, source_id)
 
 ) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
 
@@ -201,7 +202,8 @@ CREATE TABLE pairs (
   accession1                     varchar(255) not null,
   accession2                     varchar(255) not null,
 
-  KEY ac2_idx(accession2)
+  KEY ac2_idx(accession2),
+  KEY ac1_idx(accession1)
 
 ) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
 ################################################################################
