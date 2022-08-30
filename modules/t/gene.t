@@ -680,9 +680,9 @@ $geneCount = $ga->count_all_by_source('ensembl');
 ok($geneCount == 19);
 @genes = @{$ga->fetch_all_by_source(['havana','vega'])};
 note "Got ".scalar(@genes)." (havana, vega) transcripts\n";
-ok(@genes == 3);
+ok(@genes == 2);
 $geneCount = $ga->count_all_by_source(['havana', 'vega']);
-ok($geneCount == 3);
+ok($geneCount == 2);
 
 
 #
