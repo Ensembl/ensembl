@@ -106,8 +106,7 @@ sub BEGIN {
   ############ Test additional lookup code
   {
     my $protein_coding_genes = $cache->get_all_by_additional_lookup('biotype', 'protein_coding');
-    my $pc_genes = $gene_adaptor->fetch_all_by_biotype('protein_coding');
-    is_deeply([sort map { $_->dbID() } @{$protein_coding_genes} ], [sort map { $_->dbID() } @{$pc_genes} ], 'Protein coding lookup returns all protein coding genes');
+    is_deeply([sort map { $_->dbID() } @{$protein_coding_genes} ], [sort map { $_->dbID() } @{$genes} ], 'Protein coding lookup returns all genes');
 
     my $wibble_genes = $cache->get_all_by_additional_lookup('biotype', 'wibble');
     is_deeply([], $wibble_genes, 'biotype is a valid lookup but wibble is a bad key. Empty array return');

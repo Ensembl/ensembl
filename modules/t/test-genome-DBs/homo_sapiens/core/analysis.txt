@@ -30,7 +30,6 @@
 1501	\N	cisred	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N
 1502	\N	cisred_search	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N
 1503	\N	DitagAlign	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N
-8365	2014-05-23 14:21:06	havana_ig_gene_homo_sapiens	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL
 8405	2009-05-14 15:43:42	havana	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL
 8406	2009-06-01 09:01:22	xrefexoneratedna	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL
 8407	2007-09-07 12:01:22	est2genome_human_havana	NULL	10-Nov-10 (105)	NULL	NULL	NULL	NULL	ori_analysis => Est2genome_human_raw, mode => single	ClusterDepthFilter	NULL	EST_Human	similarity
