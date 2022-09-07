@@ -54,6 +54,6 @@ throws_ok {
 # Making sure we can execute an excessivly large list of IDs by splitting into multiple queries
 my @ids = 1..256000;
 my $id_derrived_gene_list = $gene_adaptor->_uncached_fetch_all_by_id_list(\@ids, undef, "dbID", 1);
-is(scalar(@{$id_derrived_gene_list}), 22, 'Checking we get 22 genes back');
+is(scalar(@{$id_derrived_gene_list}), 21, 'Checking we get 21 genes back');
 
 done_testing();
