@@ -20,7 +20,7 @@
 # Description:
 #   Added xref source GeneCards into external_db
 
-INSERT INTO external_db (db_name, status, priority, db_display_name, type) VALUES ('GeneCards', 'XREF', 50, 'GeneCards', 'MISC');
+#INSERT INTO external_db (db_name, status, priority, db_display_name, type) VALUES ('GeneCards', 'XREF', 50, 'GeneCards', 'MISC');
 
 # patch identifier
 INSERT INTO meta (species_id, meta_key, meta_value)
