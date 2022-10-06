@@ -32,7 +32,7 @@ XrefParser::VGNCParser
 A parser class to parse the VGNC source.
 VGNC is the official naming source for some vertebrates species
 
--data_uri = ftp://ftp.ebi.ac.uk/pub/databases/genenames/vgnc/tsv/vgnc_gene_set_All.txt.gz
+-data_uri = https://ftp.ebi.ac.uk/pub/databases/genenames/vgnc/tsv/vgnc_gene_set_All.txt.gz
 -file_format = TSV
 -columns = [
     taxon_id
