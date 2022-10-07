@@ -2161,9 +2161,21 @@ sub translate {
                                -alphabet => 'dna',
                                -id       => $display_id );
 
+# Signature for BioPerl 1.6 should be (https://metacpan.org/pod/Bio::PrimarySeqI)
+#     my ($terminator, $unknown, $frame, $codonTableId, $complete,
+#       $complete_codons, $throw, $codonTable, $orf, $start_codon, $offset);
+# 
+# Temporarily hardcoding the two parameters below.
+# Basically, assuming CDS sequence might not be complete AND codons are complete
+#
+  my $cds_complete = 0;
+  my $codons_complete = 1;
   my $translation =
-    $peptide->translate( undef, undef, undef, $codon_table_id, undef,
-                         undef, $complete5, $complete3 );
+    $peptide->translate( -terminator => undef, -unknown => undef, -frame => undef, 
+                         -codonTableId => $codon_table_id,
+                         -complete =>$cds_complete, -complete_codons => $codons_complete,
+                         -throw => undef, -codonTable => undef,
+                         -orf => undef, -start_codon => undef, -offset => undef );
 
   if ( $self->edits_enabled() ) {
     $self->translation()->modify_translation($translation);
