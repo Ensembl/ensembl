@@ -46,7 +46,7 @@ Bio::EnsEMBL::Utils::Net
   my $google_contents = do_GET('http://www.google.co.uk/');
   
   #Doing a FTP request; delegates onto LWP
-  my $ftp_contents = do_GET('ftp://ftp.ensembl.org/pub/current_README');
+  my $ftp_contents = do_GET('https://ftp.ensembl.org/pub/current_README');
 
 =head1 DESCRIPTION
 

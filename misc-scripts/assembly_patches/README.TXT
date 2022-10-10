@@ -14,12 +14,12 @@ See file thjat was attached to get ref->hap mappings.
 NOW use....
 -----------
 
- wget ftp://ftp.ncbi.nlm.nih.gov/genbank/genomes/Eukaryotes/vertebrates_mammals/Homo_sapiens/GRCh37/PATCHES/patch_release_1/FASTA/alt.scaf.fa.gz
+ wget https://ftp.ncbi.nlm.nih.gov/genbank/genomes/Eukaryotes/vertebrates_mammals/Homo_sapiens/GRCh37/PATCHES/patch_release_1/FASTA/alt.scaf.fa.gz
 gunzip alt.scaf.fa.gz
 
- wget ftp://ftp.ncbi.nlm.nih.gov/genbank/genomes/Eukaryotes/vertebrates_mammals/Homo_sapiens/GRCh37/PATCHES/patch_release_1/alt_scaffold_placement.txt
+ wget https://ftp.ncbi.nlm.nih.gov/genbank/genomes/Eukaryotes/vertebrates_mammals/Homo_sapiens/GRCh37/PATCHES/patch_release_1/alt_scaffold_placement.txt
 
-wget ftp://ftp.ncbi.nlm.nih.gov/genbank/genomes/Eukaryotes/vertebrates_mammals/Homo_sapiens/GRCh37/PATCHES/patch_release_1/AGP/alt.scaf.agp.gz
+wget https://ftp.ncbi.nlm.nih.gov/genbank/genomes/Eukaryotes/vertebrates_mammals/Homo_sapiens/GRCh37/PATCHES/patch_release_1/AGP/alt.scaf.agp.gz
 gunzip alt.scaf.agp.gz
 
 

@@ -17,7 +17,7 @@ To clone the Ensembl Core API, use the following command:
 ```
 git clone https://github.com/Ensembl/ensembl.git
 ```
-Alternatively, you can download the files in gzipped TAR format from our [FTP site](ftp://ftp.ensembl.org/pub/ensembl-api.tar.gz).
+Alternatively, you can download the files in gzipped TAR format from our [FTP site](https://ftp.ensembl.org/pub/ensembl-api.tar.gz).
 
 ## API requirements
 In order to use the Ensembl Core API, an installation of [BioPerl 1.6.924 core modules](https://github.com/bioperl/bioperl-live/archive/release-1-6-924.zip) (bioperl-live) is required.

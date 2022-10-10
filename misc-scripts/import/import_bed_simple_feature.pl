@@ -16,7 +16,7 @@
 
 
 # Designed to work on BED data such as that available from UCSC or 1KG:
-# ftp://ftp.1000genomes.ebi.ac.uk/vol1/ftp/phase1/analysis_results/supporting/accessible_genome_masks
+# https://ftp.1000genomes.ebi.ac.uk/vol1/ftp/phase1/analysis_results/supporting/accessible_genome_masks
 #
 
 use strict;
