@@ -2166,16 +2166,16 @@ sub translate {
 #       $complete_codons, $throw, $codonTable, $orf, $start_codon, $offset);
 # 
 # Temporarily hardcoding the two parameters below.
-# Basically, assuming CDS sequence might not be complete AND codons are complete
-#
-  my $cds_complete = 0;
-  my $codons_complete = 1;
-  my $translation =
-    $peptide->translate( -terminator => undef, -unknown => undef, -frame => undef, 
-                         -codonTableId => $codon_table_id,
-                         -complete =>$cds_complete, -complete_codons => $codons_complete,
+# possibly to drive later on using *_start_NF or *_end_NF transcript attributes
+
+  my $cds_complete = undef;
+  my $codons_complete = undef;
+
+  my $translation = $peptide->translate( -terminator => undef, -unknown => undef, -frame => undef, 
+                         -codonTable_Id => $codon_table_id,
+                         -complete => $cds_complete, -complete_codons => $codons_complete,
                          -throw => undef, -codonTable => undef,
-                         -orf => undef, -start_codon => undef, -offset => undef );
+                         -orf => undef, -start => undef, -offset => undef );
 
   if ( $self->edits_enabled() ) {
     $self->translation()->modify_translation($translation);
