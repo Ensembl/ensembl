@@ -2102,25 +2102,37 @@ sub translate {
   # http://www.ncbi.nlm.nih.gov/Taxonomy/Utils/wprintgc.cgi
 
   my $codon_table_id;
-  my ( $complete5, $complete3 );
+  my ( $mrna5_nf, $cds5_nf, $mrna3_nf, $cds3_nf );
+  my $attrib;
+
   if ( defined( $self->slice() ) ) {
-    my $attrib;
 
     ($attrib) = @{ $self->slice()->get_all_Attributes('codon_table') };
     if ( defined($attrib) ) {
       $codon_table_id = $attrib->value();
     }
-
-    ($attrib) = @{ $self->slice()->get_all_Attributes('complete5') };
-    if ( defined($attrib) ) {
-      $complete5 = $attrib->value();
-    }
-
-    ($attrib) = @{ $self->slice()->get_all_Attributes('complete3') };
-    if ( defined($attrib) ) {
-      $complete3 = $attrib->value();
-    }
   }
+
+  ($attrib) = @{ $self->get_all_Attributes('mRNA_start_NF') };
+  if ( defined($attrib) ) {
+    $mrna5_nf = $attrib->value();
+  }
+
+  ($attrib) = @{ $self->get_all_Attributes('cds_start_NF') };
+  if ( defined($attrib) ) {
+    $cds5_nf = $attrib->value();
+  }
+
+  ($attrib) = @{ $self->get_all_Attributes('mRNA_end_NF') };
+  if ( defined($attrib) ) {
+    $mrna3_nf = $attrib->value();
+  }
+
+  ($attrib) = @{ $self->get_all_Attributes('cds_end_NF') };
+  if ( defined($attrib) ) {
+    $cds3_nf = $attrib->value();
+  }
+  
   $codon_table_id ||= 1;    # default vertebrate codon table
 
   # Remove final stop codon from the mrna if it is present.  Produced
@@ -2136,19 +2148,19 @@ sub translate {
       substr( $mrna, -3, 3, '' );
     }
   } elsif ( CORE::length($mrna) % 3 == 2 ) {
-      # If we have a partial codon of 2 bp we need to decide if we
-      # trim it or not to fix some bad behaviour in older bioperl
-      # versions
-      if ( $complete_codon ) {
-	  # If we want to do the bad behavior of bioperl 1.6.1 and older
-	  # where we guess the last codon if inomplete, pad an N
-	  # to the mrna sequence
-	  $mrna .= 'N';
-      } else {
-	  # Otherwise trim those last two bp off so the behavior is
-	  # consistent across bioperl versions
-	  substr( $mrna, -2, 2, '' );
-      }
+    # If we have a partial codon of 2 bp we need to decide if we
+    # trim it or not to fix some bad behaviour in older bioperl
+    # versions
+    if ( $complete_codon ) {
+      # If we want to do the bad behavior of bioperl 1.6.1 and older
+      # where we guess the last codon if inomplete, pad an N
+      # to the mrna sequence
+      $mrna .= 'N';
+    } else {
+      # Otherwise trim those last two bp off so the behavior is
+      # consistent across bioperl versions
+      substr( $mrna, -2, 2, '' );
+    }
   }
 
   if ( CORE::length($mrna) < 1 ) { return undef }
@@ -2161,21 +2173,20 @@ sub translate {
                                -alphabet => 'dna',
                                -id       => $display_id );
 
-# Signature for BioPerl 1.6 should be (https://metacpan.org/pod/Bio::PrimarySeqI)
-#     my ($terminator, $unknown, $frame, $codonTableId, $complete,
-#       $complete_codons, $throw, $codonTable, $orf, $start_codon, $offset);
-# 
-# Temporarily hardcoding the two parameters below.
-# possibly to drive later on using *_start_NF or *_end_NF transcript attributes
-
+  # Signature for BioPerl 1.6 should be (https://metacpan.org/pod/Bio::PrimarySeqI)
+  #     my ($terminator, $unknown, $frame, $codonTableId, $complete,
+  #       $complete_codons, $throw, $codonTable, $orf, $start_codon, $offset);
+ 
   my $cds_complete = undef;
   my $codons_complete = undef;
+  $cds_complete = 0 if ( $mrna5_nf + $cds5_nf + $mrna3_nf + $cds3_nf > 0);
+  #$codons_complete = 1; # unnecessary - BioPerl defaults it to true, when cds_complete is set
 
-  my $translation = $peptide->translate( -terminator => undef, -unknown => undef, -frame => undef, 
-                         -codonTable_Id => $codon_table_id,
-                         -complete => $cds_complete, -complete_codons => $codons_complete,
-                         -throw => undef, -codonTable => undef,
-                         -orf => undef, -start => undef, -offset => undef );
+  my $translation = $peptide->translate( -TERMINATOR => undef, -UNKNOWN => undef, -FRAME => undef, 
+                         -CODONTABLE_ID => $codon_table_id,
+                         -COMPLETE => $cds_complete, -COMPLETE_CODONS => $codons_complete,
+                         -THROW => undef, -CODONTABLE => undef,
+                         -ORF => undef, -START => undef, -OFFSET => undef );
 
   if ( $self->edits_enabled() ) {
     $self->translation()->modify_translation($translation);
