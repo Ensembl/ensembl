@@ -2102,7 +2102,7 @@ sub translate {
   # http://www.ncbi.nlm.nih.gov/Taxonomy/Utils/wprintgc.cgi
 
   my $codon_table_id;
-  my ( $mrna5_nf, $cds5_nf, $mrna3_nf, $cds3_nf );
+  my ( $cds5_nf, $cds3_nf );
   my $attrib;
 
   if ( defined( $self->slice() ) ) {
@@ -2113,19 +2113,9 @@ sub translate {
     }
   }
 
-  ($attrib) = @{ $self->get_all_Attributes('mRNA_start_NF') };
-  if ( defined($attrib) ) {
-    $mrna5_nf = $attrib->value();
-  }
-
   ($attrib) = @{ $self->get_all_Attributes('cds_start_NF') };
   if ( defined($attrib) ) {
     $cds5_nf = $attrib->value();
-  }
-
-  ($attrib) = @{ $self->get_all_Attributes('mRNA_end_NF') };
-  if ( defined($attrib) ) {
-    $mrna3_nf = $attrib->value();
   }
 
   ($attrib) = @{ $self->get_all_Attributes('cds_end_NF') };
@@ -2179,7 +2169,7 @@ sub translate {
  
   my $cds_complete = undef;
   my $codons_complete = undef;
-  $cds_complete = 0 if ( $mrna5_nf + $cds5_nf + $mrna3_nf + $cds3_nf > 0);
+  $cds_complete = 0 if ( $cds5_nf + $cds3_nf > 0);
   #$codons_complete = 1; # unnecessary - BioPerl defaults it to true, when cds_complete is set
 
   my $translation = $peptide->translate( -TERMINATOR => undef, -UNKNOWN => undef, -FRAME => undef, 
