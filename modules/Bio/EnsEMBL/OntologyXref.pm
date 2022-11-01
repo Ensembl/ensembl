@@ -453,7 +453,7 @@ sub get_all_associated_xrefs {
               'source' => '<a href="<Link to CiteXplore>">11937031</a>',
               'evidence' => 'IDA',
               'description' => '<strong>has_direct_input</strong> 
-                   <a href="http://www.pombase.org/spombe/result/SPBC32F12.09">
+                   <a href="http://www.pombase.org/gene/SPBC32F12.09">
                      SPBC32F12.09
                    </a>'
             };
@@ -482,8 +482,8 @@ sub get_extensions {
     'GO_REF' => 'http://www.geneontology.org/cgi-bin/references.cgi#',
     'SO'     => 'http://www.sequenceontology.org/miso/current_cvs/term/',
     #'MOD'    => 'href=mod',
-    'PomBase' => 'http://www.pombase.org/spombe/result/',
-    'PomBase_Systematic_ID' => 'http://www.pombase.org/spombe/result/',
+    'PomBase' => 'http://www.pombase.org/gene/',
+    'PomBase_Systematic_ID' => 'http://www.pombase.org/gene/',
     'PUBMED' => 'http://europepmc.org/abstract/MED/'
   );
   
