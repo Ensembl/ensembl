@@ -145,7 +145,7 @@ sub get_max_stable_id_from_gene_archive {
   my ( $dbi, $type ) = @_;
 
   # Try to get from relevant archive.
-  my $sth = $dbi->prepare("SELECT MAX($type) FROM gene_archive WHERE $type LIKE 'ENS%'");
+  my $sth = $dbi->prepare("SELECT MAX($type) FROM gene_archive WHERE $type LIKE 'ENS_0%'");
   $sth->execute();
 
   my $rs;
@@ -171,7 +171,7 @@ sub get_highest_stable_id {
 
   # Get highest stable ID from the relevant table.
 
-  my $sth = $dbi->prepare("SELECT MAX(stable_id) FROM $type WHERE stable_id LIKE 'ENS%'");
+  my $sth = $dbi->prepare("SELECT MAX(stable_id) FROM $type WHERE stable_id LIKE 'ENS_0%'");
   $sth->execute();
 
   if ( my @row = $sth->fetchrow_array() ) {
