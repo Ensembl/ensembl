@@ -42,13 +42,23 @@
 # Test jobs
 #
 
-test:perl5.14-sqlite:
+#test:perl5.14-sqlite:
+#  stage: test
+#  extends: .ensembl_test_template
+#  variables:
+#    PERL_VERSION: "5.14"
+#    COVERALLS: "false"
+#    DB: "sqlite"
+#  script:
+#    - ./travisci/harness.sh
+
+test:perl5.26-mysql:
   stage: test
   extends: .ensembl_test_template
   variables:
-    PERL_VERSION: "5.14"
+    PERL_VERSION: "5.26"
     COVERALLS: "false"
-    DB: "sqlite"
+    DB: "mysql"
   script:
     - ./travisci/harness.sh
 
