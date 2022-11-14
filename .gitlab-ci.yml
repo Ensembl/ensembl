@@ -74,7 +74,7 @@ test:perl5.30-mysql:
 .dependent_template:
   stage: test
   only:
-    - master
+    - main
     - /^release/\d+$/
 
 # Actual trigger jobs
