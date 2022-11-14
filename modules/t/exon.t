@@ -464,11 +464,18 @@ SKIP: {
 
 # Testing exon is_coding
 {
+  my $attrib = Bio::EnsEMBL::Attribute->new(
+    -code => 'cds_start_NF',
+    -value => "1",
+    -name => "CDS start not found"
+  );
+
   # Create a transcript with start and end same as exon and the coding regions falls within their boundries - POSITIVE STRAND
   my $sa = $db->get_SliceAdaptor();
   my $local_slice = $sa->fetch_by_region('chromosome', "20");
   #create a transcript instance
   my $tr = Bio::EnsEMBL::Transcript->new(-SLICE => $local_slice, -START => 2000, -END => 3000, -STRAND => 1); 
+  $tr->add_Attributes( $attrib );
   #create an exon instance
   my $start_exon = Bio::EnsEMBL::Exon->new(-START => 2000, -END => 3000, -STRAND => 1, -SLICE => $local_slice);
   $tr->add_Exon($start_exon);
@@ -501,6 +508,7 @@ SKIP: {
   # REPEAT WITH NEGATIVE STRAND
   #create a transcript instance
   $tr = Bio::EnsEMBL::Transcript->new(-SLICE => $local_slice, -START => 2000, -END => 3000, -STRAND => -1); 
+  $tr->add_Attributes( $attrib );
   #create an exon instance
   $start_exon = Bio::EnsEMBL::Exon->new(-START => 2000, -END => 3000, -STRAND => -1, -SLICE => $local_slice);
   $tr->add_Exon($start_exon);
@@ -532,6 +540,7 @@ SKIP: {
 
   # Create a single-exon transcript that is entirely coding
   $tr = Bio::EnsEMBL::Transcript->new(-SLICE => $local_slice, -START => 2000, -END => 2998, -STRAND => -1);
+  $tr->add_Attributes( $attrib );
   $start_exon = Bio::EnsEMBL::Exon->new(-START => 2000, -END => 2998, -STRAND => -1, -SLICE => $local_slice);
   $tr->add_Exon($start_exon);
   $tr->translation(Bio::EnsEMBL::Translation->new(
@@ -550,6 +559,7 @@ SKIP: {
   # Create this transcript structure (- = noncoding, # = coding, ^ = intron)
   # 5'------^---###^######3'
   $tr = Bio::EnsEMBL::Transcript->new(-SLICE => $local_slice, -START => 2000, -END => 3000, -STRAND => 1);
+  $tr->add_Attributes( $attrib );
   my @exons = ( Bio::EnsEMBL::Exon->new(-START => 2000, -END => 2100, -STRAND => 1, -SLICE => $local_slice),
                 Bio::EnsEMBL::Exon->new(-START => 2200, -END => 2600, -STRAND => 1, -SLICE => $local_slice),
                 Bio::EnsEMBL::Exon->new(-START => 2800, -END => 3000, -STRAND => 1, -SLICE => $local_slice) );
@@ -577,6 +587,7 @@ SKIP: {
 
   # Repeat the above transcript structure on the reverse strand
   $tr = Bio::EnsEMBL::Transcript->new(-SLICE => $local_slice, -START => 2000, -END => 3000, -STRAND => -1);
+  $tr->add_Attributes( $attrib );
   @exons = ( Bio::EnsEMBL::Exon->new(-START => 2000, -END => 2100, -STRAND => -1, -SLICE => $local_slice),
              Bio::EnsEMBL::Exon->new(-START => 2200, -END => 2600, -STRAND => -1, -SLICE => $local_slice),
              Bio::EnsEMBL::Exon->new(-START => 2800, -END => 3000, -STRAND => -1, -SLICE => $local_slice) );

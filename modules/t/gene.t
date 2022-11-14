@@ -254,6 +254,12 @@ $translation1->end_Exon($ex2);
 $translation1->start(1);
 $translation1->end(150);
 $transcript1->translation($translation1);
+my $attrib = Bio::EnsEMBL::Attribute->new(
+  -code => 'cds_start_NF',
+  -value => "1",
+  -name => "CDS start not found"
+);
+$transcript1->add_Attributes( $attrib );
 
 $transcript2->add_Exon($ex1);
 $transcript2->add_Exon($ex2);
@@ -263,6 +269,12 @@ $translation2->end_Exon($ex2);
 $translation2->start(1);
 $translation2->end(180);
 $transcript2->translation($translation2);
+$attrib = Bio::EnsEMBL::Attribute->new(
+  -code => 'cds_start_NF',
+  -value => "1",
+  -name => "CDS start not found"
+);
+$transcript2->add_Attributes( $attrib );
 
 debug("Transcripts created");
 ok($transcript1);
@@ -349,6 +361,12 @@ ok(scalar(@{$gene_out->get_all_Exons()}) == 3);
 
 foreach my $tr (@{$gene_out->get_all_Transcripts()}) {
   debug("NewTranscript: " . $tr->dbID());
+  $attrib = Bio::EnsEMBL::Attribute->new(
+    -code => 'cds_start_NF',
+    -value => "1",
+    -name => "CDS start not found"
+  );
+  $tr->add_Attributes( $attrib );
   foreach my $exon (@{$tr->get_all_Exons()}) {
 	debug("  NewExon: " . $exon->start() . " " . $exon->end() . " " . $exon->strand());
   }
@@ -661,13 +679,13 @@ ok($gene->display_id eq $gene->stable_id);
 #
 debug("Test fetch_all_by_biotype");
 @genes = @{$ga->fetch_all_by_biotype('protein_coding')};
-ok(@genes == 21, "Gene count for protein coding");
+ok(@genes == 22, "Gene count for protein coding");
 @genes = @{$ga->fetch_all_by_biotype(['protein_coding', 'sRNA'])};
-ok(@genes == 21, "Gene count for protein coding and sRNA");
+ok(@genes == 22, "Gene count for protein coding and sRNA");
 $geneCount = $ga->count_all_by_biotype('protein_coding');
-ok($geneCount == 21, "Gene count via method call for protein coders");
+ok($geneCount == 22, "Gene count via method call for protein coders");
 $geneCount = $ga->count_all_by_biotype(['protein_coding', 'sRNA']);
-ok($geneCount == 21, "Gene count via method call for protein coding and sRNA");
+ok($geneCount == 22, "Gene count via method call for protein coding and sRNA");
 
 #
 # test GeneAdaptor::fetch_all_by_source
@@ -834,7 +852,7 @@ $ga->store($newgene);
 $newgene = $ga->fetch_by_stable_id("ENSGTEST00000101346");
 ok($newgene->canonical_transcript->stable_id() eq $new_canon_trans_sid, 'Stored new gene with new canonical transcript');
 my $new_canon_trans_dbid = $newgene->canonical_transcript->dbID();
-my ($attrib) = @{$dbTranscriptAdaptor->fetch_by_dbID($new_canon_trans_dbid)->get_all_Attributes('is_canonical')};
+($attrib) = @{$dbTranscriptAdaptor->fetch_by_dbID($new_canon_trans_dbid)->get_all_Attributes('is_canonical')};
 ok($attrib->value() == 1, 'New canonical transcript attribute set to 1');
 
 # Test updating canonical transcript

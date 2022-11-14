@@ -35,6 +35,10 @@ my $tra = $db->get_TranscriptAdaptor();
 # Now going after the transcript and store some new attributes
 my $transcript = $tra->fetch_by_stable_id($transcript_stable_id);
 $transcript->load();
+my $aa = $db->get_AttributeAdaptor();
+$aa->remove_from_Transcript($transcript, 'cds_start_NF');
+delete $transcript->{'attributes'};
+
 is_deeply($transcript->get_all_Attributes(), [], 'Transcript has no attributes');
 my $basic_attribute = Bio::EnsEMBL::Attribute->new(-CODE => 'note', -VALUE => 'This is a note', -NAME => 'Note', -DESCRIPTION => q{});
 $transcript->add_Attributes($basic_attribute);

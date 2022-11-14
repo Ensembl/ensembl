@@ -2167,14 +2167,12 @@ sub translate {
   #     my ($terminator, $unknown, $frame, $codonTableId, $complete,
   #       $complete_codons, $throw, $codonTable, $orf, $start_codon, $offset);
  
-  my $cds_complete = undef;
-  my $codons_complete = undef;
+  my $cds_complete = 1;
   $cds_complete = 0 if ( $cds5_nf + $cds3_nf > 0);
-  #$codons_complete = 1; # unnecessary - BioPerl defaults it to true, when cds_complete is set
 
   my $translation = $peptide->translate( -TERMINATOR => undef, -UNKNOWN => undef, -FRAME => undef, 
                          -CODONTABLE_ID => $codon_table_id,
-                         -COMPLETE => $cds_complete, -COMPLETE_CODONS => $codons_complete,
+                         -COMPLETE => $cds_complete, -COMPLETE_CODONS => $complete_codon,
                          -THROW => undef, -CODONTABLE => undef,
                          -ORF => undef, -START => undef, -OFFSET => undef );
 
