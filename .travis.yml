@@ -24,6 +24,8 @@ addons:
     - unzip
 
 before_install:
+  - git clone --depth 1 https://github.com/Ensembl/ensembl-git-tools.git
+  - export PATH=$PWD/ensembl-git-tools/bin:$PATH
   - export ENSEMBL_BRANCH='main'
   - echo "TRAVIS_BRANCH=$TRAVIS_BRANCH"
   - if [[ $TRAVIS_BRANCH =~ ^release\/[0-9]+$ ]]; then export ENSEMBL_BRANCH=$TRAVIS_BRANCH; fi
@@ -56,7 +58,7 @@ jobs:
     - perl: '5.26'
       env: COVERALLS=false DB=mysql
     - perl: '5.30'
-      env: COVERALLS=false DB=mysql
+      env: COVERALLS=true DB=mysql
 
 notifications:
   email:
