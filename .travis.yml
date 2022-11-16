@@ -30,10 +30,10 @@ before_install:
   - echo "TRAVIS_BRANCH=$TRAVIS_BRANCH"
   - if [[ $TRAVIS_BRANCH =~ ^release\/[0-9]+$ ]]; then export ENSEMBL_BRANCH=$TRAVIS_BRANCH; fi
   - echo "ENSEMBL_BRANCH=$ENSEMBL_BRANCH"
-  - git clone --depth 1 --branch $ENSEMBL_BRANCH ensembl-test
-  - git clone --depth 1 --branch $ENSEMBL_BRANCH ensembl-io
-  - git clone --depth 1 --branch $ENSEMBL_BRANCH ensembl-variation
-  - git clone --depth 1 --branch $ENSEMBL_BRANCH ensembl-compara
+  - git-ensembl --clone --depth 1 --branch $ENSEMBL_BRANCH ensembl-test
+  - git-ensembl --clone --depth 1 --branch $ENSEMBL_BRANCH ensembl-io
+  - git-ensembl --clone --depth 1 --branch $ENSEMBL_BRANCH ensembl-variation
+  - git-ensembl --clone --depth 1 --branch $ENSEMBL_BRANCH ensembl-compara
   - git clone -b release-1-6-924 --depth 1 https://github.com/bioperl/bioperl-live.git
 
 install:
