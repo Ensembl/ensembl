@@ -28,10 +28,10 @@ before_install:
   - echo "TRAVIS_BRANCH=$TRAVIS_BRANCH"
   - if [[ $TRAVIS_BRANCH =~ ^release\/[0-9]+$ ]]; then export ENSEMBL_BRANCH=$TRAVIS_BRANCH; fi
   - echo "ENSEMBL_BRANCH=$ENSEMBL_BRANCH"
-  - git --clone --depth 1 --branch $ENSEMBL_BRANCH ensembl-test
-  - git --clone --depth 1 --branch $ENSEMBL_BRANCH ensembl-io
-  - git --clone --depth 1 --branch $ENSEMBL_BRANCH ensembl-variation
-  - git --clone --depth 1 --branch $ENSEMBL_BRANCH ensembl-compara
+  - git clone --depth 1 --branch $ENSEMBL_BRANCH https://github.com/Ensembl/ensembl-test.git
+  - git clone --depth 1 --branch $ENSEMBL_BRANCH https://github.com/Ensembl/ensembl-io.git
+  - git clone --depth 1 --branch $ENSEMBL_BRANCH https://github.com/Ensembl/ensembl-variation.git
+  - git clone --depth 1 --branch $ENSEMBL_BRANCH https://github.com/Ensembl/ensembl-compara.git
   - git clone -b release-1-6-924 --depth 1 https://github.com/bioperl/bioperl-live.git
 
 install:
@@ -53,6 +53,8 @@ script:
 
 jobs:
   exclude:
+    - perl: '5.26'
+      env: COVERALLS=true DB=mysql
     - perl: '5.26'
       env: COVERALLS=false DB=mysql
     - perl: '5.30'
