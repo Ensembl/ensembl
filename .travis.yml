@@ -1,7 +1,7 @@
 language: perl
 
 dist:
-  - focal
+  - trusty
 
 services:
   - mysql
@@ -52,13 +52,16 @@ script:
   - "./travisci/harness.sh"
 
 jobs:
-  exclude:
-    - perl: '5.26'
+  include:
+    - perl: '5.30'
       env: COVERALLS=true DB=mysql
+      dist: focal
+  exclude:
     - perl: '5.26'
       env: COVERALLS=false DB=mysql
     - perl: '5.30'
       env: COVERALLS=false DB=mysql
+      dist: trusty
 
 notifications:
   email:
