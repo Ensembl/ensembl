@@ -43,5 +43,6 @@ if [ $rt -eq 0 ]; then
   fi
   exit $?
 else
+  echo "Error from runtests: $rt"
   exit 255
 fi
