@@ -357,13 +357,13 @@ is($tr->display_id(), $tr->stable_id(), 'Transcript stable id and display id are
 #
 note("Test fetch_all_by_biotype");
 my @transcripts = @{$ta->fetch_all_by_biotype('protein_coding')};
-is(@transcripts, 28, 'Fetching all protein coding transcript');
+is(@transcripts, 29, 'Fetching all protein coding transcript');
 my $transcriptCount = $ta->count_all_by_biotype('protein_coding');
-is($transcriptCount, 28, 'Counting all protein coding');
+is($transcriptCount, 29, 'Counting all protein coding');
 @transcripts = @{$ta->fetch_all_by_biotype(['protein_coding','pseudogene'])};
-is(@transcripts, 28, 'Got 28 transcript');
+is(@transcripts, 29, 'Got 29 transcript');
 $transcriptCount = $ta->count_all_by_biotype(['protein_coding', 'pseudogene']);
-is($transcriptCount, 28, 'Count by biotype is correct');
+is($transcriptCount, 29, 'Count by biotype is correct');
 
 #
 # test TranscriptAdaptor::fetch_all_by_Slice
@@ -384,16 +384,16 @@ $transcriptCount = $ta->count_all_by_source('ensembl');
 is(24, $transcriptCount);
 @transcripts = @{$ta->fetch_all_by_source(['havana','vega'])};
 note "Got ".scalar(@transcripts)." (havana, vega) transcripts\n";
-is(4, scalar(@transcripts));
+is(5, scalar(@transcripts));
 $transcriptCount = $ta->count_all_by_source(['havana', 'vega']);
-is(4, $transcriptCount);
+is(5, $transcriptCount);
 
 #
 # test TranscriptAdaptor::fetch_all
 #
 note("Test fetch_all");
 @transcripts = @{ $ta->fetch_all() };
-is(28, scalar(@transcripts), "Got 28 transcripts");
+is(29, scalar(@transcripts), "Got 29 transcripts");
 
 #
 # test TranscriptAdaptor::fetch_all_by_GOTerm
@@ -938,6 +938,7 @@ is ( $null_versions, 1, "Null/undef version stored and retrieved");
 
 $multi->restore;
 
+note "Testing translate and cds complete";
 $tr = $ta->fetch_by_stable_id("ENST00000639680");
 
 is($tr->translate()->seq, "VHSHAGRKPEGRAGHLPGHPQGHPLGLHSDPWLSELDV*", "Translating transcript with CDS complete set to 0 (starting GTG translated to V and terminator character present)");
@@ -947,6 +948,14 @@ $aa->remove_from_Transcript($tr, 'cds_start_NF');
 delete $tr->{'attributes'};
 
 is($tr->translate()->seq, "MHSHAGRKPEGRAGHLPGHPQGHPLGLHSDPWLSELDV", "Translating transcript with CDS complete set to 1 (starting GTG translated to M and terminator character removed)");
+
+note "Testing translate and codon complete";
+$tr = $ta->fetch_by_stable_id("ENST00000639679");
+
+is($tr->translate()->seq, "TTVIYNSNIFRK", "Translating transcript with codon complete set to 0 (end codon not predicted)");
+is($tr->translate(1)->seq, "TTVIYNSNIFRKR", "Translating transcript with codon complete set to 1 (end codon predicted)");
+
+$multi->restore;
 
 # UTR Tests
 {

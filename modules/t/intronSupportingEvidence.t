@@ -244,7 +244,7 @@ $assert_ise_vs_intron->(21719, 30326248, 30327734, -1);
   
   $db->restore('core');
   note 'All tables restored';
-  $assert_table_counts->(28,176,0,0);
+  $assert_table_counts->(29,178,0,0);
 }
 
 ############# Feature transformation (asserting what occurs when we try to project to something else)
