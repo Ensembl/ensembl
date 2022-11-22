@@ -91,6 +91,7 @@ sub run {
     quote_char         => undef,
     escape_char        => undef,
     strict             => 1,
+    binary             => 1
   }) or confess "Cannot use file $file: " . Text::CSV->error_diag();
 
   my $xref_count = 0;

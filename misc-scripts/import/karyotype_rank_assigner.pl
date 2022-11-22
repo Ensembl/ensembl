@@ -26,7 +26,7 @@ use Getopt::Long;
 my ($db_name, $db_host, $db_user, $db_pass, $db_port, $help, $species, $group, $no_interactive);
 my @user_karyotype;
 
-my $NCBI_BASE = 'ftp://ftp.ncbi.nlm.nih.gov/genomes/ASSEMBLY_REPORTS/All';
+my $NCBI_BASE = 'https://ftp.ncbi.nlm.nih.gov/genomes/ASSEMBLY_REPORTS/All';
 
 $db_port = 3306;
 $species = 'human';

@@ -457,7 +457,10 @@ sub create_xrefs {
 # If the UniProt accession is repeated here, it links to a specific isoform
           my %direct;
           my $isoform;
-          $direct{STABLE_ID} = $extra[0];
+
+          my $stable_id = $extra[0];
+          $stable_id =~ s/\.[0-9]+//;
+          $direct{STABLE_ID} = $stable_id;
           $direct{ENSEMBL_TYPE} = 'Translation';
           $direct{LINKAGE_TYPE} = 'DIRECT';
           if ($xref->{SOURCE_ID} == $sp_source_id) {
@@ -473,7 +476,7 @@ sub create_xrefs {
           if ($extra[1] =~ /($accessions[0]-[0-9]+)/) {
             $isoform = $1;
             $self->add_to_direct_xrefs({
-              stable_id  => $extra[0],
+              stable_id  => $stable_id,
               type       => 'translation',
               acc        => $isoform,
               label      => $isoform,

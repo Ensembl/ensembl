@@ -16,7 +16,7 @@
 
 
 # Designed to work on data retrieved from 
-# ftp://ftp.1000genomes.ebi.ac.uk/vol1/ftp/technical/working/20110106_recombination_hotspots/
+# https://ftp.1000genomes.ebi.ac.uk/vol1/ftp/technical/working/20110106_recombination_hotspots/
 #
 # Imports the recombination hotspots from 1000 Genomes into Ensembl
 
@@ -103,7 +103,7 @@ sub process_file {
 The map was then converted from NCBI35 to GRCh37 coordinates and inspected for regions in which
 the genome assembly had be rearranged.
 
-See ftp://ftp.1000genomes.ebi.ac.uk/vol1/ftp/technical/working/20110106_recombination_hotspots/",
+See https://ftp.1000genomes.ebi.ac.uk/vol1/ftp/technical/working/20110106_recombination_hotspots/",
         -display_label => 'HapMap Phase II genetic recombination map',
         -displayable => 1,
         -logic_name => 'human_1kg_hapmap_phase_2',
