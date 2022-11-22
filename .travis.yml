@@ -1,7 +1,7 @@
 language: perl
 
 dist:
-  - focal
+  - trusty
 
 services:
   - mysql
@@ -24,14 +24,16 @@ addons:
     - unzip
 
 before_install:
+  - git clone --depth 1 https://github.com/Ensembl/ensembl-git-tools.git
+  - export PATH=$PWD/ensembl-git-tools/bin:$PATH
   - export ENSEMBL_BRANCH='main'
   - echo "TRAVIS_BRANCH=$TRAVIS_BRANCH"
   - if [[ $TRAVIS_BRANCH =~ ^release\/[0-9]+$ ]]; then export ENSEMBL_BRANCH=$TRAVIS_BRANCH; fi
   - echo "ENSEMBL_BRANCH=$ENSEMBL_BRANCH"
-  - git --clone --depth 1 --branch $ENSEMBL_BRANCH ensembl-test
-  - git --clone --depth 1 --branch $ENSEMBL_BRANCH ensembl-io
-  - git --clone --depth 1 --branch $ENSEMBL_BRANCH ensembl-variation
-  - git --clone --depth 1 --branch $ENSEMBL_BRANCH ensembl-compara
+  - git-ensembl --clone --depth 1 --branch $ENSEMBL_BRANCH ensembl-test
+  - git-ensembl --clone --depth 1 --branch $ENSEMBL_BRANCH ensembl-io
+  - git-ensembl --clone --depth 1 --branch $ENSEMBL_BRANCH ensembl-variation
+  - git-ensembl --clone --depth 1 --branch $ENSEMBL_BRANCH ensembl-compara
   - git clone -b release-1-6-924 --depth 1 https://github.com/bioperl/bioperl-live.git
 
 install:
@@ -52,11 +54,15 @@ script:
   - "./travisci/harness.sh"
 
 jobs:
+  include:
+    - perl: '5.30'
+      env: COVERALLS=false DB=mysql
+      dist: focal
   exclude:
     - perl: '5.26'
       env: COVERALLS=false DB=mysql
     - perl: '5.30'
-      env: COVERALLS=false DB=mysql
+      dist: trusty
 
 notifications:
   email:
