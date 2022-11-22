@@ -60,7 +60,7 @@ jobs:
     - perl: '5.26'
       env: COVERALLS=false DB=mysql
     - perl: '5.30'
-      env: COVERALLS=false DB=mysql
+      env: COVERALLS=true DB=mysql
       dist: trusty
 
 notifications:
