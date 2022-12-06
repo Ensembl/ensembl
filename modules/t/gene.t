@@ -787,7 +787,7 @@ is(scalar(@{$gene->get_all_alt_alleles()}), 0, 'Checking we have no alleles retr
 # Gene remove test
 #
 
-warning { $multi->save("core", "gene", "transcript", "translation", "protein_feature", "exon", "exon_transcript", "supporting_feature", "object_xref", "ontology_xref", "identity_xref", "dna_align_feature", "protein_align_feature", 'meta_coord'); };
+warning { $multi->save("core", "gene", "transcript", "translation", "protein_feature", "exon", "exon_transcript", "supporting_feature", "object_xref", "ontology_xref", "identity_xref", "dna_align_feature", "protein_align_feature", 'meta_coord', 'transcript_attrib'); };
 
 $gene = $ga->fetch_by_stable_id("ENSG00000171456");
 

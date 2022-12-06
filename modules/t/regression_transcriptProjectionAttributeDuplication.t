@@ -29,6 +29,8 @@ note 'DESC:  Attributes can be duplicated in the schema after adding them to a t
 # "Globals"
 my $transcript_stable_id = 'ENST00000246203';
 
+$multi->save("core", "transcript_attrib");
+
 # Get adaptors
 my $tra = $db->get_TranscriptAdaptor();
 
@@ -59,5 +61,7 @@ foreach my $i (1..2) {
     'We should have the old and the cloned new attribute available'
   ) or diag explain $transformed_transcript->get_all_Attributes;
 }
+
+$multi->restore("core", "transcript_attrib");
 
 done_testing();

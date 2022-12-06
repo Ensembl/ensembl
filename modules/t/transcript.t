@@ -514,7 +514,7 @@ $multi->save("core", "transcript", "translation",
              "protein_feature", "exon",
              "exon_transcript", "object_xref",
              "supporting_feature", "dna_align_feature","protein_align_feature",
-             'xref', "ontology_xref", "identity_xref", 'meta_coord');
+             'xref', "ontology_xref", "identity_xref", 'meta_coord', 'transcript_attrib');
 
 $ta->remove($tr);
 
