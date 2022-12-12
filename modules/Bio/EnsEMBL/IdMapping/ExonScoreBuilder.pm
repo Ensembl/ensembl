@@ -456,17 +456,17 @@ sub run_exonerate {
   # delete exonerate output from previous runs
   my $dump_path = $self->cache->dump_path;
 
-  opendir(my $dumpdir, $dump_path) or
+  opendir(DUMPDIR, $dump_path) or
     $self->logger->error("Can't open $dump_path for reading: $!");
 
-  while (defined(my $file = readdir($dumpdir))) {
+  while (defined(my $file = readdir(DUMPDIR))) {
     next unless /exonerate_map\.\d+/;
 
     unlink("$dump_path/$file") or
       $self->logger->error("Can't delete $dump_path/$file: $!");
   }
   
-  closedir($dumpdir);
+  closedir(DUMPDIR);
 
   # determine number of jobs to split task into
   my $bytes_per_job = $self->conf->param('exonerate_bytes_per_job')
@@ -690,13 +690,13 @@ sub parse_exonerate_results {
   my $num_files = 0;
   my $num_lines = 0;
 
-  opendir( $dumpdir, $dump_path ) or
+  opendir( DUMPDIR, $dump_path ) or
     $self->logger->error("Can't open $dump_path for reading: $!");
 
   my $penalised = 0;
   my $killed    = 0;
 
-  while ( defined( my $file = readdir($dumpdir) ) ) {
+  while ( defined( my $file = readdir(DUMPDIR) ) ) {
     unless ( $file =~ /exonerate_map\.\d+/ ) { next }
 
     $num_files++;
@@ -761,7 +761,7 @@ sub parse_exonerate_results {
     close($fh);
   } ## end while ( defined( my $file...))
 
-  closedir($dumpdir);
+  closedir(DUMPDIR);
 
   $self->logger->info(
         "Done parsing $num_lines lines from $num_files result files.\n",
