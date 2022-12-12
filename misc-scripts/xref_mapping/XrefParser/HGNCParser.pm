@@ -71,6 +71,7 @@ use warnings;
 use Carp;
 use Text::CSV;
 use utf8;
+use Text::Unidecode;
 
 use parent qw( XrefParser::BaseParser );
 
@@ -456,6 +457,8 @@ sub add_synonyms_for_hgnc {
     $dead_string =~ s/"//xg;
     my @dead_array = split( ',\s', $dead_string );
     foreach my $dead (@dead_array){
+      utf8::decode($dead);
+      $dead = unidecode(uc($dead));
       $self->add_to_syn($name, $source_id, $dead, $species_id, $dbi);
     }
   }
@@ -465,6 +468,8 @@ sub add_synonyms_for_hgnc {
     $alias_string =~ s/"//xg;
     my @alias_array = split( ',\s', $alias_string );
     foreach my $alias (@alias_array){
+      utf8::decode($alias);
+      $alias = unidecode(uc($alias));
       $self->add_to_syn($name, $source_id, $alias, $species_id, $dbi);
     }
   }
