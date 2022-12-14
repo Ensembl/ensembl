@@ -59,6 +59,8 @@ USAGE:
   --dbpattern   Specifies a regular expression for (possibly) matching
                 multiple databases.
 
+  --nobackup    Do not backup the meta_coord table in a file.
+
   --help        Displays this help text.
 
 This script will dump the current meta_coord table to a backup file in
@@ -80,6 +82,7 @@ my $cli_helper = Bio::EnsEMBL::Utils::CliHelper->new();
 
 # get the basic options for connecting to a database server
 my $optsd = $cli_helper->get_dba_opts();
+push(@$optsd, 'backup!');
 # process the command line with the supplied options plus a help subroutine
 my $opts = $cli_helper->process_args( $optsd, \&usage );
 
@@ -89,27 +92,29 @@ for my $db_args ( @{ $cli_helper->get_dba_args_for_opts( $opts, 0 ) } ) {
 
 	my $dba = new Bio::EnsEMBL::DBSQL::DBAdaptor(%$db_args);
 
-	my $file =
-	  $dba->dbc()->dbname() . "_" . $dba->species_id() . ".meta_coord.backup";
-	my $sys_call = sprintf( "mysql "
-							  . "--host=%s "
-							  . "--port=%d "
-							  . "--user=%s "
-							  . "--pass='%s' "
-							  . "--database=%s "
-							  . "--skip-column-names "
-							  . " --execute='SELECT * FROM meta_coord'"
-							  . " > $file",
-							$dba->dbc->host(),     $dba->dbc->port(),
-							$dba->dbc->username(), $dba->dbc->password(),
-							$dba->dbc->dbname() );
-	unless ( system($sys_call) == 0 ) {
-		warn "Can't dump the original meta_coord for back up "
-		  . "(skipping this species)\n";
-		next;
-	} else {
-		print "Original meta_coord table backed up in $file\n";
-	}
+  if (!exists $opts->{backup} or (exists $opts->{backup} and $opts->{backup})) {
+    my $file =
+      $dba->dbc()->dbname() . "_" . $dba->species_id() . ".meta_coord.backup";
+    my $sys_call = sprintf( "mysql "
+                  . "--host=%s "
+                  . "--port=%d "
+                  . "--user=%s "
+                  . "--pass='%s' "
+                  . "--database=%s "
+                  . "--skip-column-names "
+                  . " --execute='SELECT * FROM meta_coord'"
+                  . " > $file",
+                $dba->dbc->host(),     $dba->dbc->port(),
+                $dba->dbc->username(), $dba->dbc->password(),
+                $dba->dbc->dbname() );
+    unless ( system($sys_call) == 0 ) {
+      warn "Can't dump the original meta_coord for back up "
+        . "(skipping this species)\n";
+      next;
+    } else {
+      print "Original meta_coord table backed up in $file\n";
+    }
+  }
 
 	foreach my $table_name (@table_names) {
 		print("Updating $table_name table entries... ");
