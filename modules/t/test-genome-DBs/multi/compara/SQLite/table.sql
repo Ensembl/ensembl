@@ -1,6 +1,6 @@
 --
 -- Created by SQL::Translator::Producer::SQLite
--- Created on Fri Aug 12 13:45:14 2022
+-- Created on Fri Dec 16 17:27:47 2022
 --
 
 BEGIN TRANSACTION;
@@ -183,7 +183,7 @@ CREATE TABLE "gene_member" (
   "display_label" varchar(128)
 );
 
-CREATE UNIQUE INDEX "stable_id02" ON "gene_member" ("stable_id");
+CREATE UNIQUE INDEX "genome_db_stable_id" ON "gene_member" ("genome_db_id", "stable_id");
 
 --
 -- Table: "gene_member_hom_stats"
@@ -204,7 +204,7 @@ CREATE TABLE "gene_member_hom_stats" (
 -- Table: "gene_member_qc"
 --
 CREATE TABLE "gene_member_qc" (
-  "gene_member_stable_id" varchar(128) NOT NULL,
+  "gene_member_id" integer NOT NULL,
   "genome_db_id" integer NOT NULL,
   "seq_member_id" integer,
   "n_species" integer,
@@ -272,7 +272,7 @@ CREATE TABLE "gene_tree_root" (
   "version" integer
 );
 
-CREATE UNIQUE INDEX "stable_id03" ON "gene_tree_root" ("stable_id");
+CREATE UNIQUE INDEX "stable_id02" ON "gene_tree_root" ("stable_id");
 
 --
 -- Table: "gene_tree_root_attr"
@@ -542,7 +542,7 @@ CREATE TABLE "method_link_species_set_tag" (
 --
 CREATE TABLE "ncbi_taxa_name" (
   "taxon_id" integer NOT NULL,
-  "name" varchar(255) NOT NULL,
+  "name" varchar(500) NOT NULL,
   "name_class" varchar(50) NOT NULL
 );
 
@@ -616,7 +616,7 @@ CREATE TABLE "seq_member" (
   "display_label" varchar(128)
 );
 
-CREATE UNIQUE INDEX "stable_id04" ON "seq_member" ("stable_id");
+CREATE UNIQUE INDEX "genome_db_stable_id02" ON "seq_member" ("genome_db_id", "stable_id");
 
 --
 -- Table: "seq_member_projection"

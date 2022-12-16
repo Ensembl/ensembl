@@ -1,5 +1,5 @@
 1	\N	schema_type	variation
-2	\N	schema_version	109
+2	\N	schema_version	110
 3	\N	patch	patch_84_85_a.sql|schema version
 4	\N	patch	patch_84_85_b.sql|create sample_synonym
 5	\N	patch	patch_84_85_c.sql|drop column moltype from variation_synonym
@@ -66,3 +66,6 @@
 66	\N	patch	patch_107_108_a.sql|schema version
 67	\N	patch	patch_107_108_b.sql|fix SAS population description
 68	\N	patch	patch_108_109_a.sql|schema_version
+69	\N	patch	patch_109_110_a.sql|schema version
+70	\N	patch	patch_109_110_b.sql|Add DDG2P data_source_attrib to variation_citation
+71	\N	patch	patch_109_110_c.sql|Add new clinical_significance values to variation, variation_feature and structural_variation
