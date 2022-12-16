@@ -258,24 +258,18 @@ sub fetch_all_by_gene_id {
     );
     my $sth = $self->prepare($gene_id_sql);
     $sth->bind_param(1,$gene_id, SQL_INTEGER);
-    
-    my @group_ids;
-    my $group_id;
-    $sth->execute();
-    $sth->bind_col(1,\$group_id);
-    while ( $sth->fetch ) {
-        push( @group_ids, $group_id );
-    }
+    $sth->execute;
+
+    my $group_ids = $sth->fetchall_arrayref();
     $sth->finish;
-    if (!$@ && $group_id) {
-        my @aag;
-        foreach my $group (@group_ids) {
-            my $aag = $self->fetch_by_dbID($group);
-            push(@aag, $aag);
+
+    my @aag;
+    if (! $@ && @$group_ids) {
+        foreach my $group (@$group_ids) {
+            push(@aag, $self->fetch_by_dbID($group->[0]));
         }
-        return \@aag;
     }
-    return;
+    return \@aag;
 }
 
 =head2 store
