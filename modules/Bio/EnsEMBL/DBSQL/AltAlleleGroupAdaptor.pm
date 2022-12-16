@@ -233,14 +233,11 @@ sub fetch_by_gene_id {
 
     my $aag_list = $self->fetch_all_by_gene_id($gene_id);
 
+    return unless @$aag_list;
+
     # return first group from list
-    my $aag = @$aag_list[0];
-    # check that a result exists
-    if ($aag) {
-        my $group_id = $aag->dbID;
-        return $self->fetch_by_dbID($group_id);
-    }
-    return;
+    my $group_id = $aag_list->[0]->dbID;
+    return $self->fetch_by_dbID($group_id);
 }
 
 =head2 fetch_all_by_gene_id
