@@ -222,7 +222,7 @@ sub fetch_by_dbID {
 =head2 fetch_by_gene_id
 
   Arg[1]      : Integer Gene ID of the member to query by
-  Description : Creates and returns an AltAlleleGroup which contains
+  Description : Returns an AltAlleleGroup which contains
                 the specified gene member                
   Returntype  : Bio::EnsEMBL::AltAlleleGroup
 
@@ -243,7 +243,7 @@ sub fetch_by_gene_id {
 =head2 fetch_all_by_gene_id
 
   Arg[1]      : Integer Gene ID of the member to query by
-  Description : Creates and returns an array of one or more AltAlleleGroups, 
+  Description : Returns an array of one or more AltAlleleGroups,
                 which each contain the specified gene member                
   Returntype  : Array of Bio::EnsEMBL::AltAlleleGroup objects
 
