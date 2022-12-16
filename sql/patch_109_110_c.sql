@@ -13,7 +13,7 @@
 -- See the License for the specific language governing permissions and
 -- limitations under the License.
 
-# patch_109_110_b.sql
+# patch_109_110_c.sql
 #
 # Title: Allow a gene to belong to multiple alt allele groups
 #
