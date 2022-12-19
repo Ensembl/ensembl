@@ -70,7 +70,8 @@ use strict;
 use warnings;
 use Carp;
 use Text::CSV;
-use utf8;
+use Encode;
+use Text::Unidecode;
 
 use parent qw( XrefParser::BaseParser );
 
@@ -204,7 +205,7 @@ CCDS
   }) or croak "Cannot use file $file: ".Text::CSV->error_diag ();
 
   # make sure it's utf8
-  utf8::encode($mem_file);
+  $mem_file = Encode::encode("UTF-8", $mem_file);
   # get rid of non-conventional " used in the Locus specific databases field
   $mem_file =~ s/"//xg;
 
@@ -456,6 +457,8 @@ sub add_synonyms_for_hgnc {
     $dead_string =~ s/"//xg;
     my @dead_array = split( ',\s', $dead_string );
     foreach my $dead (@dead_array){
+      $dead = Encode::decode("UTF-8", $dead);
+      $dead = unidecode(uc($dead));
       $self->add_to_syn($name, $source_id, $dead, $species_id, $dbi);
     }
   }
@@ -465,6 +468,8 @@ sub add_synonyms_for_hgnc {
     $alias_string =~ s/"//xg;
     my @alias_array = split( ',\s', $alias_string );
     foreach my $alias (@alias_array){
+      $alias = Encode::decode("UTF-8", $alias);
+      $alias = unidecode(uc($alias));
       $self->add_to_syn($name, $source_id, $alias, $species_id, $dbi);
     }
   }
