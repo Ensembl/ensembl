@@ -459,7 +459,7 @@ CREATE TABLE alt_allele (
         gene_id INT UNSIGNED NOT NULL,
 
         PRIMARY KEY (alt_allele_id),
-        UNIQUE KEY gene_idx (gene_id),
+        KEY gene_idx (gene_id),
         KEY (gene_id,alt_allele_group_id)
 
 ) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
@@ -488,7 +488,8 @@ CREATE TABLE alt_allele_attrib (
                      'SAME_AS_REPRESENTATIVE',
                      'SAME_AS_ANOTHER_ALLELE',
                      'MANUALLY_ASSIGNED',
-                     'AUTOMATICALLY_ASSIGNED'),
+                     'AUTOMATICALLY_ASSIGNED',
+                     'IS_PAR'),
 
         KEY aa_idx (alt_allele_id,attrib)
 
