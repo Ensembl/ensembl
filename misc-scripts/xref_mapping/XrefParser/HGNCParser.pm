@@ -70,7 +70,6 @@ use strict;
 use warnings;
 use Carp;
 use Text::CSV;
-#use utf8;
 use Encode;
 use Text::Unidecode;
 
@@ -206,7 +205,6 @@ CCDS
   }) or croak "Cannot use file $file: ".Text::CSV->error_diag ();
 
   # make sure it's utf8
-  #utf8::encode($mem_file);
   $mem_file = Encode::encode("UTF-8", $mem_file);
   # get rid of non-conventional " used in the Locus specific databases field
   $mem_file =~ s/"//xg;
