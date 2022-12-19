@@ -39,6 +39,7 @@ feature 'xref_mapping', 'Xref mapping pipeline' => sub {
   requires 'Text::Glob';
   requires 'URI';
   requires 'XML::LibXML';
+  requires 'Text::Unidecode';
 
   test_requires 'Config::General';
   test_requires 'Perl::Critic::Moose';
