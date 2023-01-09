@@ -1,5 +1,5 @@
 1	\N	schema_type	core
-2	\N	schema_version	109
+2	\N	schema_version	110
 3	\N	patch	patch_94_95_a.sql|schema_version
 4	\N	patch	patch_94_95_b.sql|vertebrate_division_rename
 5	1	genebuild.start_date	2018-10-Ensembl
@@ -98,3 +98,6 @@
 139	\N	patch	patch_107_108_a.sql|schema_version
 140	\N	patch	patch_108_109_a.sql|schema_version
 141	\N	patch	patch_108_109_b.sql|Added xref source GeneCards into external_db
+142	\N	patch	patch_109_110_a.sql|schema_version
+143	\N	patch	patch_109_110_b.sql|Add IS_PAR relationship to link X- and Y-PAR genes
+144	\N	patch	patch_109_110_c.sql|Allow gene id to belong to multiple alt allele groups

@@ -308,16 +308,19 @@ CREATE TABLE IF NOT EXISTS meta (
 # Add schema type and schema version to the meta table.
 INSERT INTO meta (species_id, meta_key, meta_value) VALUES
   (NULL, 'schema_type', 'core'),
-  (NULL, 'schema_version', '109');
+  (NULL, 'schema_version', '110');
 
 # Patches included in this schema file:
 # NOTE: At start of release cycle, remove patch entries from last release.
 # NOTE: Avoid line-breaks in values.
 INSERT INTO meta (species_id, meta_key, meta_value)
-  VALUES (NULL, 'patch', 'patch_108_109_a.sql|schema_version');
+  VALUES (NULL, 'patch', 'patch_109_110_a.sql|schema_version');
 
 INSERT INTO meta (species_id, meta_key, meta_value)
-  VALUES (NULL, 'patch', 'patch_108_109_b.sql|Added xref source GeneCards into external_db');
+  VALUES (NULL, 'patch', 'patch_109_110_b.sql|Add IS_PAR relationship to link X- and Y-PAR genes');
+
+INSERT INTO meta (species_id, meta_key, meta_value)
+  VALUES (NULL, 'patch', 'patch_109_110_c.sql|Allow gene id to belong to multiple alt allele groups');
 
 /**
 @table meta_coord
@@ -456,8 +459,8 @@ CREATE TABLE alt_allele (
         gene_id INT UNSIGNED NOT NULL,
 
         PRIMARY KEY (alt_allele_id),
-        UNIQUE KEY gene_idx (gene_id),
-        KEY (gene_id,alt_allele_group_id)
+        KEY (gene_id,alt_allele_group_id),
+	KEY gene_idx (gene_id)
 
 ) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
 
@@ -485,7 +488,8 @@ CREATE TABLE alt_allele_attrib (
                      'SAME_AS_REPRESENTATIVE',
                      'SAME_AS_ANOTHER_ALLELE',
                      'MANUALLY_ASSIGNED',
-                     'AUTOMATICALLY_ASSIGNED'),
+                     'AUTOMATICALLY_ASSIGNED',
+                     'IS_PAR'),
 
         KEY aa_idx (alt_allele_id,attrib)
 

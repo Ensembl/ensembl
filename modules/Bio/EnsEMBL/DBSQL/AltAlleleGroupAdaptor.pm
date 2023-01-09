@@ -222,7 +222,7 @@ sub fetch_by_dbID {
 =head2 fetch_by_gene_id
 
   Arg[1]      : Integer Gene ID of the member to query by
-  Description : Creates and returns an AltAlleleGroup which contains
+  Description : Returns an AltAlleleGroup which contains
                 the specified gene member                
   Returntype  : Bio::EnsEMBL::AltAlleleGroup
 
@@ -231,22 +231,45 @@ sub fetch_by_dbID {
 sub fetch_by_gene_id {
     my ($self, $gene_id) = @_;
 
+    my $aag_list = $self->fetch_all_by_gene_id($gene_id);
+
+    return unless @$aag_list;
+
+    # return first group from list
+    my $group_id = $aag_list->[0]->dbID;
+    return $self->fetch_by_dbID($group_id);
+}
+
+=head2 fetch_all_by_gene_id
+
+  Arg[1]      : Integer Gene ID of the member to query by
+  Description : Returns an array of one or more AltAlleleGroups,
+                which each contain the specified gene member                
+  Returntype  : Array of Bio::EnsEMBL::AltAlleleGroup objects
+
+=cut
+
+sub fetch_all_by_gene_id {
+    my ($self, $gene_id) = @_;
+
     my $gene_id_sql = q(
         SELECT alt_allele_group_id FROM alt_allele
-        WHERE gene_id = ?
+        WHERE gene_id = ? ORDER BY alt_allele_group_id
     );
     my $sth = $self->prepare($gene_id_sql);
     $sth->bind_param(1,$gene_id, SQL_INTEGER);
-    
-    my $group_id;
-    $sth->execute();
-    $sth->bind_col(1,\$group_id);
-    $sth->fetch;
+    $sth->execute;
+
+    my $group_ids = $sth->fetchall_arrayref();
     $sth->finish;
-    if (!$@ && $group_id) {
-        return $self->fetch_by_dbID($group_id);
+
+    my @aag;
+    if (! $@ && @$group_ids) {
+        foreach my $group (@$group_ids) {
+            push(@aag, $self->fetch_by_dbID($group->[0]));
+        }
     }
-    return;
+    return \@aag;
 }
 
 =head2 store
