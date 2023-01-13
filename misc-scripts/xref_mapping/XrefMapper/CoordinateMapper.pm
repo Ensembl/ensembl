@@ -539,6 +539,7 @@ sub run_coordinatemapping {
                 delete( $unmapped{$coord_xref_id} );
                 $mapped{$coord_xref_id}{'reason'}      = undef;
                 $mapped{$coord_xref_id}{'reason_full'} = undef;
+                $mapped{$coord_xref_id}{'chr_name'} = $chr_name;
               }
 
               push( @{ $mapped{$coord_xref_id}{'mapped_to'} }, {
@@ -673,6 +674,8 @@ sub dump_xref {
     my ($version) = ( $accession =~ /\.(\d+)$/ );
     $version ||= 0;
 
+    my $info_text = (defined($xref->{'chr_name'}) && $xref->{'chr_name'} eq 'Y' ? "Y Chromosome" : "");
+
     $fh->printf("%d\t%d\t%s\t%s\t%d\t%s\t%s\t%s\n",
                 $xref->{'xref_id'},
                 $xref->{'external_db_id'},
@@ -681,7 +684,7 @@ sub dump_xref {
                 $version,
                 '\N',
                 'COORDINATE_OVERLAP',
-                ''                                  # FIXME (possibly)
+                $info_text
     );
   }
   $fh->close();
