@@ -349,7 +349,7 @@ CREATE TABLE alt_allele (
   gene_id               INT(10) UNSIGNED NOT NULL,
   is_reference          INT UNSIGNED DEFAULT 0,
 
-  UNIQUE KEY gene_idx (gene_id),
+  KEY gene_idx (gene_id),
   UNIQUE KEY allele_idx (alt_allele_id, gene_id)
 
 ) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
