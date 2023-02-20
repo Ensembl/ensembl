@@ -254,7 +254,7 @@ sub fetch_by_region {
 
     # if chromosome alias is defined, use karyotype_cache to access seq region data
     # rather than a database query
-    if ( $cs->alias_to() eq "chromosome" ) {
+    if ( defined($cs->alias_to()) && $cs->alias_to() eq "chromosome" ) {
 
       $key = "karyotype_cache";
 
