@@ -659,6 +659,8 @@ sub transfer {
   my $self = shift;
   my $slice = shift;
 
+  print "CALLING Feature::transfer\n";
+
   if(!$slice || !ref($slice) || (!$slice->isa('Bio::EnsEMBL::Slice') && !$slice->isa('Bio::EnsEMBL::LRGSlice'))) {
     throw('Slice argument is required');
   }
@@ -670,6 +672,8 @@ sub transfer {
   weaken $feature->{adaptor};
 
   my $current_slice = $self->{'slice'};
+  print "Current slice defined as: ".$current_slice->id."\n";
+  print "Destination slice defined as: ".$slice->id."\n";
 
   if(!$current_slice) {
     warning("Feature cannot be transfered without attached slice.");
@@ -678,7 +682,7 @@ sub transfer {
 
   my $cur_cs = $current_slice->coord_system();
   my $dest_cs = $slice->coord_system();
-
+  print "Transferring from CS: ".$cur_cs->name." to CS: ".$dest_cs->name."\n";
   #if we are not in the same coord system a transformation step is needed first
   if(!$dest_cs->equals($cur_cs)) {
     $feature = $feature->transform($dest_cs->name, $dest_cs->version, $slice);
@@ -687,44 +691,47 @@ sub transfer {
   }
 
   # feature went to entirely different seq_region
-  if($current_slice->seq_region_name() ne $slice->seq_region_name()) {
-    return undef;
-  }
+  # if($current_slice->seq_region_name() ne $slice->seq_region_name()) {
+  #   print "Transferring to different seq_region, returning undef...\n";
+  #   return undef;
+  # }
 
   #if the current feature positions are not relative to the start of the
   #seq region, convert them so they are
-  my $cur_slice_start  = $current_slice->start();
-  my $cur_slice_strand = $current_slice->strand();
-  if($cur_slice_start != 1 || $cur_slice_strand != 1) {
-    my $fstart = $feature->{'start'};
-    my $fend   = $feature->{'end'};
+  # my $cur_slice_start  = $current_slice->start();
+  # my $cur_slice_strand = $current_slice->strand();
+  # if($cur_slice_start != 1 || $cur_slice_strand != 1) {
+  #   my $fstart = $feature->{'start'};
+  #   my $fend   = $feature->{'end'};
+  #   # print "Current slice start: $fstart and end: $fend\n";
 
-    if($cur_slice_strand == 1) {
-      $feature->{'start'} = $fstart + $cur_slice_start - 1;
-      $feature->{'end'}   = $fend   + $cur_slice_start - 1;
-    } else {
-      my $cur_slice_end = $current_slice->end();
-      $feature->{'start'}  = $cur_slice_end - $fend   + 1;
-      $feature->{'end'}    = $cur_slice_end - $fstart + 1;
-      $feature->{'strand'} *= -1;
-    }
-  }
+  #   if($cur_slice_strand == 1) {
+  #     $feature->{'start'} = $fstart + $cur_slice_start - 1;
+  #     $feature->{'end'}   = $fend   + $cur_slice_start - 1;
+  #   } else {
+  #     my $cur_slice_end = $current_slice->end();
+  #     $feature->{'start'}  = $cur_slice_end - $fend   + 1;
+  #     $feature->{'end'}    = $cur_slice_end - $fstart + 1;
+  #     $feature->{'strand'} *= -1;
+  #   }
+  # }
 
-  my $fstart = $feature->{'start'};
-  my $fend   = $feature->{'end'};
+  # my $fstart = $feature->{'start'};
+  # my $fend   = $feature->{'end'};
+  # print "New feature start: $fstart, end: $fend.\n";
 
   #convert to destination slice coords
-  if($slice->strand == 1) {
-    $feature->{'start'} = $fstart - $slice->start() + 1;
-    $feature->{'end'}   = $fend   - $slice->start() + 1;
-  } else {
-    $feature->{'start'} = $slice->end() - $fend   + 1;
-    $feature->{'end'}   = $slice->end() - $fstart + 1;
-    $feature->{'strand'} *= -1;
-  }
+  # if($slice->strand == 1) {
+  #   $feature->{'start'} = $fstart - $slice->start() + 1;
+  #   $feature->{'end'}   = $fend   - $slice->start() + 1;
+  #   print "strand: ".$slice->strand.", feature start: ".$feature->{'start'}."=".$fstart."-".$slice->start()."+1\n";
+  # } else {
+  #   $feature->{'start'} = $slice->end() - $fend   + 1;
+  #   $feature->{'end'}   = $slice->end() - $fstart + 1;
+  #   $feature->{'strand'} *= -1;
+  # }
 
   $feature->{'slice'} = $slice;
-
   return $feature;
 }
 

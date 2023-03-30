@@ -519,8 +519,10 @@ sub add_Attributes {
 
 sub transfer {
   my $self  = shift;
-  
+  print "CALLING DnaDnaAlignFeature::transfer\n";
   my $new_feature = $self->SUPER::transfer( @_ );
+  use Data::Dumper;
+  # print Dumper($new_feature);
   return undef unless $new_feature;
 
   if(exists $self->{attributes}) {

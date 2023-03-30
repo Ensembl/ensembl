@@ -562,6 +562,15 @@ sub _objs_from_sth {
 sub store {
   my ( $self, @pre_transcripts ) = @_;
 
+    # use Data::Dumper;
+    # print "pt in store method: ".Dumper(\@pre_transcripts)."\n";
+    # my $seq_region_id;
+    # my $blah;
+    # ($blah, $seq_region_id) = $self->_pre_store(\@pre_transcripts);
+    my $new_pt = $pre_transcripts[0];
+    # printf("INSERT INTO prediction_transcript () VALUES (%s,%s,%s,%s,%s,%s)\n",$seq_region_id, $pt->start, $pt->end, $pt->strand, $analysis->dbID, $pt->display_label);
+
+    # exit;
   my $ptstore_sth = $self->prepare
     (qq{INSERT INTO prediction_transcript (seq_region_id, seq_region_start,
                                            seq_region_end, seq_region_strand, 
@@ -599,11 +608,20 @@ sub store {
     #ensure that the transcript coordinates are correct, they may not be,
     #if somebody has done some exon coordinate juggling and not recalculated
     #the transcript coords.
-    $pt->recalculate_coordinates();
+    # $pt->recalculate_coordinates();
 
     my $original = $pt;
     my $seq_region_id;
-    ($pt, $seq_region_id) = $self->_pre_store($pt);
+    my $blah;
+    # print "seqregionid: ".$pt->slice()->seq_region_id."\n";
+    # exit;
+    # ($pt, $seq_region_id) = $self->_pre_store($pt);
+    ($blah, $seq_region_id) = $self->_pre_store($pt);
+    # my $pt = $pre_transcripts[0];
+
+    printf("pt     INSERT INTO prediction_transcript () VALUES (%s,%s,%s,%s,%s,%s)\n",$seq_region_id, $pt->start, $pt->end, $pt->strand, $analysis->dbID, $pt->display_label);
+    printf("new_pt INSERT INTO prediction_transcript () VALUES (%s,%s,%s,%s,%s,%s)\n",$seq_region_id, $new_pt->start, $new_pt->end, $new_pt->strand, $analysis->dbID, $new_pt->display_label);
+    # exit;
 
     #store the prediction transcript
     $ptstore_sth->bind_param(1,$seq_region_id,SQL_INTEGER);
@@ -613,6 +631,7 @@ sub store {
     $ptstore_sth->bind_param(5,$analysis->dbID,SQL_INTEGER);
     $ptstore_sth->bind_param(6,$pt->display_label,SQL_VARCHAR);
 
+    print "Attempting to store: $seq_region_id, ".$pt->start.", ".$pt->end.", ".$pt->strand.", ".$analysis->dbID.", ".$pt->display_label."\n";
     $ptstore_sth->execute();
 
     my $pt_id = $self->last_insert_id('prediction_transcript_id', undef, 'prediction_transcript');
@@ -620,10 +639,11 @@ sub store {
     $original->adaptor($self);
 
     #store the exons
-    my $rank = 1;
-    foreach my $pexon (@{$original->get_all_Exons}) {
-      $pexon_adaptor->store($pexon, $pt_id, $rank++);
-    }
+    # my $rank = 1;
+    # foreach my $pexon (@{$original->get_all_Exons}) {
+    #   print "Attempting to store exon within PTA $pexon, $pt_id, $rank++\n";
+    #   $pexon_adaptor->store($pexon, $pt_id, $rank++);
+    # }
 
     # if a display label was not defined autogenerate one
     if(!defined($pt->display_label())) {

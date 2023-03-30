@@ -207,7 +207,12 @@ sub store {
   #maintain reference to original passed-in prediction exon
   my $original = $pexon;
   my $seq_region_id;
-  ($pexon, $seq_region_id) = $self->_pre_store($pexon);
+  my $blah;
+  # ($pexon, $seq_region_id) = $self->_pre_store($pexon);
+  ($blah, $seq_region_id) = $self->_pre_store($pexon);
+
+  printf("PEA about to store: %s,%s,%s,%s,%s,%s,%s,%s,%s\n", $pt_id, $rank, $seq_region_id, $pexon->start, $pexon->end, $pexon->strand, $pexon->phase, $pexon->score, $pexon->p_value);
+  # exit;
 
   my $sth = $db->dbc->prepare
     ("INSERT into prediction_exon (prediction_transcript_id, exon_rank, " .
