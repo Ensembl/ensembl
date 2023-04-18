@@ -446,10 +446,6 @@ sub set_display_xrefs{
 
   print "Using xref_off set of $xref_offset\n" if($self->verbose);
 
-  #my $reset_sth = $core_dbi->prepare("UPDATE gene SET display_xref_id = null");
-  #$reset_sth->execute();
-  #$reset_sth->finish;
- 
   my $reset_sth = $core_dbi->prepare("UPDATE transcript SET display_xref_id = null WHERE biotype NOT IN ('LRG_gene')");
   $reset_sth->execute();
   $reset_sth->finish;
