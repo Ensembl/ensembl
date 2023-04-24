@@ -159,6 +159,8 @@ sub update{
   my $xref_sth     =  $core_dbi->prepare('DELETE FROM xref WHERE xref.external_db_id = ?');
   my $unmapped_sth =  $core_dbi->prepare('DELETE FROM unmapped_object WHERE type="xref" and external_db_id = ?');
 
+  my $gene_reset_sth = $core_dbi->prepare('UPDATE gene g INNER JOIN xref x ON g.display_xref_id=x.xref_id SET g.display_xref_id=NULL,g.description=NULL WHERE x.external_db_id=?');
+
 
   my $transaction_start_sth  =  $core_dbi->prepare('start transaction');
   my $transaction_end_sth    =  $core_dbi->prepare('commit');
@@ -179,6 +181,10 @@ sub update{
     }
 
     my $ex_id = $name_to_external_db_id{$name};
+
+    print "Setting display_xref_id and description to NULL if it refers to xrefs that are to be deleted\n" if ($verbose);
+    $affected_rows = $gene_reset_sth->execute($ex_id);
+    print "\tSet display_xref_id=NULL and description=NULL for $affected_rows gene row(s)\n" if ($verbose);
 
     print "Deleting data for $name from core before updating from new xref database\n" if ($verbose);
     $affected_rows = $synonym_sth->execute($ex_id);

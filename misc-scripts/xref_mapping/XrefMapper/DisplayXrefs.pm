@@ -239,7 +239,7 @@ sub genes_and_transcripts_attributes_set{
     $self->mapper->set_gene_descriptions();
   }
   else{
-      $self->set_gene_descriptions();
+      $self->set_gene_descriptions(1);
   }	
 
   $self->build_meta_timestamp;
@@ -446,15 +446,11 @@ sub set_display_xrefs{
 
   print "Using xref_off set of $xref_offset\n" if($self->verbose);
 
-  my $reset_sth = $core_dbi->prepare("UPDATE gene SET display_xref_id = null");
-  $reset_sth->execute();
-  $reset_sth->finish;
- 
-  $reset_sth = $core_dbi->prepare("UPDATE transcript SET display_xref_id = null WHERE biotype NOT IN ('LRG_gene')");
+  my $reset_sth = $core_dbi->prepare("UPDATE transcript SET display_xref_id = null WHERE biotype NOT IN ('LRG_gene')");
   $reset_sth->execute();
   $reset_sth->finish;
 
-  my $update_gene_sth = $core_dbi->prepare("UPDATE gene g SET g.display_xref_id= ? WHERE g.gene_id=?");
+  my $update_gene_sth = $core_dbi->prepare("UPDATE gene g SET g.display_xref_id= ? WHERE g.gene_id=? and g.display_xref_id IS NULL");
   my $update_tran_sth = $core_dbi->prepare("UPDATE transcript t SET t.display_xref_id= ? WHERE t.transcript_id=?");
 
 
@@ -765,7 +761,7 @@ sub set_gene_descriptions{
   my $core_dbi = $self->core->dbc;
   my $xref_dbi = $self->xref->dbc;
 
-  my $update_gene_desc_sth =  $core_dbi->prepare("UPDATE gene SET description = ? where gene_id = ?");
+  my $update_gene_desc_sth =  $core_dbi->prepare("UPDATE gene SET description = ? where gene_id = ? and description IS NULL");
 
   if(!$only_those_not_set){
     my $reset_sth = $core_dbi->prepare("UPDATE gene SET description = null");
