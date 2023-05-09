@@ -1,5 +1,5 @@
 1	\N	schema_type	variation
-2	\N	schema_version	110
+2	\N	schema_version	111
 6	1	species.production_name	mus_musculus
 15	1	web_config	sv_study#Keane 2011 (DGVa study estd118)#Keane 2011#estd118
 14	1	web_config	set#All failed variants#All failed variants#variation_set_fail_all#failed
@@ -96,3 +96,5 @@
 102	\N	patch	patch_109_110_a.sql|schema version
 103	\N	patch	patch_109_110_b.sql|Add DDG2P data_source_attrib to variation_citation
 104	\N	patch	patch_109_110_c.sql|Add new clinical_significance values to variation, variation_feature and structural_variation
+105	\N	patch	patch_110_111_a.sql|schema version
+106	\N	patch	patch_110_111_b.sql|Update transcript_variation primary key
