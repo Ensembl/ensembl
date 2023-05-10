@@ -39,7 +39,7 @@
 190	\N	patch	patch_83_84_c.sql|protein_feature_unique
 191	\N	patch	patch_83_84_d.sql|longer_synonym
 1	\N	schema_type	core
-2	\N	schema_version	110
+2	\N	schema_version	111
 8	1	assembly.accession	GCA_000292705.1
 10	1	assembly.date	2012-08
 7	1	assembly.default	GCA_000292705.1
@@ -203,3 +203,4 @@
 245	\N	patch	patch_109_110_a.sql|schema_version
 246	\N	patch	patch_109_110_b.sql|Add IS_PAR relationship to link X- and Y-PAR genes
 247	\N	patch	patch_109_110_c.sql|Allow gene id to belong to multiple alt allele groups
+248	\N	patch	patch_110_111_a.sql|schema_version
