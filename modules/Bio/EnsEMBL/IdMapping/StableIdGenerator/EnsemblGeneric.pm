@@ -148,6 +148,7 @@ sub initial_stable_id {
     FROM ${type}
     WHERE stable_id LIKE "ENS%"
       OR stable_id LIKE "ASMPATCH%"
+       OR stable_id LIKE "BRAKER%"
     );
 
   $init_stable_id = $self->fetch_value_from_db( $s_dbh, $sql );
@@ -214,7 +215,7 @@ sub increment_stable_id {
                     $stable_id ) );
   }
 
-  $stable_id =~ /^(ENS|ASMPATCH)([A-Z]+)(\d+)$/;
+  $stable_id =~ /^(ENS|ASMPATCH|BRAKER)([A-Z]+)(\d+)$/;
 
   my $number = $3;
   my $new_stable_id = $1 . $2 . ( ++$number );
@@ -243,7 +244,7 @@ sub is_valid {
   my ( $self, $stable_id ) = @_;
 
   if ( defined($stable_id) ) {
-    if (    $stable_id =~ /^(ENS|ASMPATCH)([A-Z]+)(\d+)$/
+    if (    $stable_id =~ /^(ENS|ASMPATCH|BRAKER)([A-Z]+)(\d+)$/
          || $stable_id =~ /^LRG/ )
     {
       return 1;
