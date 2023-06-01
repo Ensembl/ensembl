@@ -1,7 +1,7 @@
 =head1 LICENSE
 
 Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
-Copyright [2016-2022] EMBL-European Bioinformatics Institute
+Copyright [2016-2023] EMBL-European Bioinformatics Institute
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -2507,16 +2507,13 @@ sub load_registry_from_db {
 
 sub _group_to_adaptor_class {
   my ($self, $group) = @_;
-  my $class = {
-    core => 'Bio::EnsEMBL::DBSQL::DBAdaptor',
-    cdna => 'Bio::EnsEMBL::DBSQL::DBAdaptor',
-    otherfeatures => 'Bio::EnsEMBL::DBSQL::DBAdaptor',
-    rnaseq => 'Bio::EnsEMBL::DBSQL::DBAdaptor',
-    vega => 'Bio::EnsEMBL::DBSQL::DBAdaptor',
-    variation => 'Bio::EnsEMBL::Variation::DBSQL::DBAdaptor',
-    funcgen => 'Bio::EnsEMBL::Funcgen::DBSQL::DBAdaptor',
-    compara => 'Bio::EnsEMBL::Compara::DBSQL::DBAdaptor',
-  }->{$group};
+  my $class = $group2adaptor{$group};
+  if (!defined $class) {
+    $class = {
+      cdna   => 'Bio::EnsEMBL::DBSQL::DBAdaptor',
+      rnaseq => 'Bio::EnsEMBL::DBSQL::DBAdaptor',
+    }->{$group};
+  }
   throw "Group '${group}' is unknown" if ! $class;
   return $class;
 }
