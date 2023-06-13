@@ -70,9 +70,14 @@ sub update{
   $sth->execute();
   print "\tDeleted all ontology_xref rows\n" if $verbose;
 
-  $sql = "DELETE es FROM xref x, external_synonym es WHERE x.xref_id = es.xref_id and x.info_type = 'PROJECTION'";
+  $sql = "UPDATE gene g INNER JOIN xref x ON g.display_xref_id=x.xref_id SET g.display_xref_id=NULL,g.description=NULL WHERE x.info_type='PROJECTION'";
   $sth = $core_dbi->prepare($sql);
   my $affected_rows = $sth->execute();
+  print "\tSet display_xref_id and description to NULL in $affected_rows gene row(s) relating to PROJECTED xrefs\n" if $verbose;
+
+  $sql = "DELETE es FROM xref x, external_synonym es WHERE x.xref_id = es.xref_id and x.info_type = 'PROJECTION'";
+  $sth = $core_dbi->prepare($sql);
+  $affected_rows = $sth->execute();
   print "\tDeleted $affected_rows PROJECTED external_synonym row(s)\n" if $verbose;
 
   $sql = "DELETE dx FROM dependent_xref dx, xref x, external_db ed WHERE x.xref_id = dx.dependent_xref_id AND x.external_db_id = ed.external_db_id and ed.db_name = 'GO'";
