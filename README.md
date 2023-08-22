@@ -1,7 +1,7 @@
 # Ensembl Core API
 
-[![Build Status](https://travis-ci.org/Ensembl/ensembl.svg?branch=master)][travis]
-[![Coverage Status](https://coveralls.io/repos/github/Ensembl/ensembl/badge.svg?branch=master)][coveralls]
+[![Build Status](https://travis-ci.org/Ensembl/ensembl.svg?branch=release/112)][travis]
+[![Coverage Status](https://coveralls.io/repos/github/Ensembl/ensembl/badge.svg?branch=release/112)][coveralls]
 
 [travis]: https://travis-ci.org/Ensembl/ensembl
 [coveralls]: https://coveralls.io/github/Ensembl/ensembl
@@ -32,7 +32,7 @@ http://www.ensembl.org/info/docs/api/core/core_tutorial.html
 
 ## Contributions
 
-If you wish to contribute to this repository or any Ensembl repository, please refer to [our contribution guide](https://github.com/Ensembl/ensembl/blob/master/CONTRIBUTING.md).
+If you wish to contribute to this repository or any Ensembl repository, please refer to [our contribution guide](https://github.com/Ensembl/ensembl/blob/main/CONTRIBUTING.md).
 
 
 ## Contact us
