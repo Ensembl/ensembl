@@ -1,4 +1,4 @@
-1	\N	schema_version	111
+1	\N	schema_version	112
 2	1	assembly.default	NCBI34
 33	1	species.classification	Chordata
 32	1	species.classification	Vertebrata
@@ -130,3 +130,5 @@
 179	\N	patch	patch_109_110_b.sql|Add IS_PAR relationship to link X- and Y-PAR genes
 180	\N	patch	patch_109_110_c.sql|Allow gene id to belong to multiple alt allele groups
 181	\N	patch	patch_110_111_a.sql|schema_version
+182	\N	patch	patch_111_112_a.sql|schema_version
+183	\N	patch	patch_111_112_b.sql|Allow meta_value to be null
