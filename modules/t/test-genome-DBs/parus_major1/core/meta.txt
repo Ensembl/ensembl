@@ -1,5 +1,5 @@
 1	\N	schema_type	core
-2	\N	schema_version	111
+2	\N	schema_version	112
 3	\N	patch	patch_94_95_a.sql|schema_version
 4	\N	patch	patch_94_95_b.sql|vertebrate_division_rename
 5	1	genebuild.start_date	2018-10-Ensembl
@@ -102,3 +102,5 @@
 143	\N	patch	patch_109_110_b.sql|Add IS_PAR relationship to link X- and Y-PAR genes
 144	\N	patch	patch_109_110_c.sql|Allow gene id to belong to multiple alt allele groups
 145	\N	patch	patch_110_111_a.sql|schema_version
+146	\N	patch	patch_111_112_a.sql|schema_version
+147	\N	patch	patch_111_112_b.sql|Allow meta_value to be null

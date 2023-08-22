@@ -1,4 +1,4 @@
-1	\N	schema_version	111
+1	\N	schema_version	112
 2014	1	species.classification	Haplorrhini
 40	1	assembly.default	GRCh37
 41	1	assembly.date	2009-02
@@ -135,3 +135,5 @@
 2142	\N	patch	patch_109_110_b.sql|Add IS_PAR relationship to link X- and Y-PAR genes
 2143	\N	patch	patch_109_110_c.sql|Allow gene id to belong to multiple alt allele groups
 2144	\N	patch	patch_110_111_a.sql|schema_version
+2145	\N	patch	patch_111_112_a.sql|schema_version
+2146	\N	patch	patch_111_112_b.sql|Allow meta_value to be null
