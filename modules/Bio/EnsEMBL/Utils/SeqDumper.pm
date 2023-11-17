@@ -1273,7 +1273,7 @@ sub write_embl_seq {
   # chunk the sequence to conserve memory, and print
   my $here = $start;
   my $EMBL_SEQ = 
-    '     ^<<<<<<<<< ^<<<<<<<<< ^<<<<<<<<< ^<<<<<<<<< ^<<<<<<<<< ^<<<<<<<<<@>>>>>>>>>~
+    '     ^<<<<<<<<< ^<<<<<<<<< ^<<<<<<<<< ^<<<<<<<<< ^<<<<<<<<< ^<<<<<<<<< @>>>>>>>>>~
 ';
   my $acgt;
 
