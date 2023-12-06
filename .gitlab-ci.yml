@@ -62,6 +62,8 @@ test:perl5.30-mysql:
     DB: "mysql"
   script:
     - ./travisci/harness.sh
+    - EXIT_CODE=$?
+    - echo "Exit Code: $EXIT_CODE"
 
 #
 # Triggers for dependent builds
