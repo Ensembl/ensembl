@@ -348,7 +348,7 @@ sub create_xrefs {
         if (($gn !~ /^GN/ || $gn !~ /Name=/) && $gn !~ /Synonyms=/) { last; }
         my $gene_name = undef;
 
-        if ($gn =~ / Name=([A-Za-z0-9_\-\.\s]+)/s) { #/s for multi-line entries ; is the delimiter
+        if ($gn =~ / Name=([A-Za-z0-9_\-\.\s:]+)/s) { #/s for multi-line entries ; is the delimiter
 # Example line 
 # GN   Name=ctrc {ECO:0000313|Xenbase:XB-GENE-5790348};
           my $name = $1;
