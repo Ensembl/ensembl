@@ -5,6 +5,7 @@ requires 'IO::Compress::Gzip';
 requires 'URI::Escape';
 requires 'Config::IniFiles';
 requires 'Gzip::Faster';
+requires 'List::MoreUtils';
 
 test_requires 'Test::Warnings';
 test_requires 'Test::Differences';
