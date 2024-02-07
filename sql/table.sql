@@ -322,6 +322,9 @@ INSERT INTO meta (species_id, meta_key, meta_value)
 INSERT INTO meta (species_id, meta_key, meta_value)
   VALUES (NULL, 'patch', 'patch_109_110_c.sql|Allow gene id to belong to multiple alt allele groups');
 
+INSERT INTO meta (species_id, meta_key, meta_value)
+  VALUES (NULL, 'patch', 'patch_109_110_d.sql|Extend meta_key length to 64 - allow NULL in meta_value');
+
 /**
 @table meta_coord
 @colour #C70C09
