@@ -21,7 +21,7 @@
 #   Extend meta_key length to 64 - allow NULL in meta_value
 
 alter table meta modify meta_key varchar(64) not null;
-alter table meta modify meta_value varchar(255) null;
+alter table meta modify meta_value varchar(255) default null;
 
 # patch identifier
 INSERT INTO meta (species_id, meta_key, meta_value)
