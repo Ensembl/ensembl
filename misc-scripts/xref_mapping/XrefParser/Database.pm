@@ -135,12 +135,8 @@ sub create {
 sub populate {
   my ( $self, $sql_dir, $force, $preparse, $xref_source_dbi ) = @_;
   my $table_file = catfile( $sql_dir, 'sql', 'table.sql' );
-  my $metadata_file;
-  if ($xref_source_dbi) {
-    $metadata_file = $self->copy_source_metadata_file($xref_source_dbi);
-  } else {
-    $metadata_file = $self->prepare_metadata_file( $sql_dir, $force, $preparse );
-  }
+  my $metadata_file = $self->prepare_metadata_file( $sql_dir, $force, $preparse );
+  
   $self->populate_with_file($table_file);
   $self->populate_with_file($metadata_file);
 }
@@ -202,8 +198,10 @@ sub copy_source_metadata_file {
 
 sub prepare_metadata_file {
   my ( $self, $sql_dir, $force, $preparse ) = @_;
-  my $metadata_file =
-    catfile( $sql_dir, 'sql', 'populate_metadata.sql' );
+
+  $preparse = 0 if (!defined($preparse));
+
+  my $metadata_file = catfile( $sql_dir, 'sql', "populate_metadata_$preparse.sql" );
   my $ini_file = catfile( $sql_dir, 'xref_config.ini' );
 
   local $| = 1;    # flush stdout
@@ -212,8 +210,6 @@ sub prepare_metadata_file {
   # the timestamps on 'xref_config.ini' and 'sql/populate_metadata.sql'.
   my $ini_tm  = ( stat $ini_file )[9];
   my $meta_tm = ( stat $metadata_file )[9];
-
-  $preparse = 0 if (!defined($preparse));
 
   if ( !defined($meta_tm) || $ini_tm > $meta_tm ) {
     my $reply;
