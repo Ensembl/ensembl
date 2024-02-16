@@ -79,6 +79,7 @@ for my $gene_id ( @$all_gene_ids ) {
 
   for my $tr ( @{$gene->get_all_Transcripts()} ) {
     my $tl = $tr->translation();
+    next unless(defined($tl));
     my $dbentries = $dbEntryAdaptor->fetch_all_by_Translation( $tl );
     $db_entry_count += scalar( @{$dbentries});
     $goxref_count += grep { $_->isa( "Bio::EnsEMBL::OntologyXref" )} @$dbentries;
