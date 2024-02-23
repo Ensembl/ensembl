@@ -63,8 +63,7 @@ test:perl5.26-mysql:
     DB: "mysql"
   script:
     - ./travisci/harness.sh
-    - EXIT_CODE=$?
-    - echo "Exit Code: $EXIT_CODE"
+    - echo "Exit Code: $?"
 
 test:perl5.38-sqlite:
   stage: test
