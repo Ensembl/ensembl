@@ -6,7 +6,7 @@
   image: dockerhub.ebi.ac.uk/ensembl-infrastructure/ensembl-ci-docker-images:${PERL_VERSION}
 
   services:
-    - mysql:5.6
+    - mysql:5.7
 
   variables:
     # FIXME: set some password for both users
@@ -16,15 +16,16 @@
     USER: "gitlabci"
 
   before_script:
-    - apt-get update
-    - apt-get install -y build-essential cpanminus git
-    - apt-get install -y default-libmysqlclient-dev default-mysql-client
-    - apt-get install -y libssl-dev sqlite3
+#    - apt-get update
+#    - apt-get install -y build-essential cpanminus git
+#    - apt-get install -y default-libmysqlclient-dev default-mysql-client
+#    - apt-get install -y libssl-dev sqlite3
+    - echo "CI_COMMIT_BRANCH = $CI_COMMIT_BRANCH"
     - git clone --branch=main --depth=1 https://github.com/Ensembl/ensembl-test.git
     - git clone --branch=main --depth=1 https://github.com/Ensembl/ensembl-io.git
     - git clone --branch=main --depth=1 https://github.com/Ensembl/ensembl-variation.git
     - git clone --branch=main --depth=1 https://github.com/Ensembl/ensembl-compara.git
-    - git clone --branch=release-1-6-924 --depth=1 https://github.com/bioperl/bioperl-live.git
+#    - git clone --branch=release-1-6-924 --depth=1 https://github.com/bioperl/bioperl-live.git
     - cpanm -v --installdeps --notest . --with-all-features
     - ( cd ensembl-test && cpanm -v --installdeps --notest . )
 #    - ( cd ensembl-io && cpanm -v --installdeps --notest . )
@@ -42,21 +43,21 @@
 # Test jobs
 #
 
-test:perl5.14-sqlite:
+test:perl5.26-sqlite:
   stage: test
   extends: .ensembl_test_template
   variables:
-    PERL_VERSION: "5.14"
+    PERL_VERSION: "5.26"
     COVERALLS: "false"
     DB: "sqlite"
   script:
     - ./travisci/harness.sh
 
-test:perl5.30-mysql:
+test:perl5.26-mysql:
   stage: test
   extends: .ensembl_test_template
   variables:
-    PERL_VERSION: "5.30"
+    PERL_VERSION: "5.26"
     # Note: relies on the secret variable COVERALLS_REPO_TOKEN for report uploads to work
     COVERALLS: "true"
     DB: "mysql"
@@ -64,6 +65,16 @@ test:perl5.30-mysql:
     - ./travisci/harness.sh
     - EXIT_CODE=$?
     - echo "Exit Code: $EXIT_CODE"
+
+test:perl5.38-sqlite:
+  stage: test
+  extends: .ensembl_test_template
+  variables:
+    PERL_VERSION: "5.38"
+    COVERALLS: "false"
+    DB: "sqlite"
+  script:
+    - ./travisci/harness.sh
 
 #
 # Triggers for dependent builds
