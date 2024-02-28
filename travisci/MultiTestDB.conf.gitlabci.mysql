@@ -1,6 +1,7 @@
 {
   'driver' => 'mysql',
-  'host'   => 'mysql',
+  'host'   => 'dbmysql',
   'port'   => '3306',
-  'user'   => 'travis',
+  'user'   => 'gitlabci',
+  'pass'   => 'n0t4t4l1s3cur3!',
 }
