@@ -1,5 +1,5 @@
 driver = mysql
-host = dbmysql
+host = mysqldb
 port = 3306
-user = travis
+user = root
 pass = n0t4t4l1s3cur3!

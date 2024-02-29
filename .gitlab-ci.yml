@@ -3,57 +3,45 @@
 #
 
 variables:
-   # FIXME: set some password for both users
-   MYSQL_USER: "gitlabci"
-   MYSQL_PASSWORD: "n0t4t4l1s3cur3!"
    USER: "gitlabci"
-   MYSQL_ROOT_PASSWORD: ""
-   MYSQL_ALLOW_EMPTY_PASSWORD: "yes"
-
-services:
-   - mysql:5.7
-     alias: dbmysql
+   MYSQL_ROOT_PASSWORD: "n0t4t4l1s3cur3!"
 
 .ensembl_test_template:
+  services:
+     - name: mysql:5.7
+       alias: mysqldb
+
   image: dockerhub.ebi.ac.uk/ensembl-infrastructure/ensembl-ci-docker-images:${PERL_VERSION}
 
   before_script:
-#    - apt-get update
-#    - apt-get install -y build-essential cpanminus git
-#    - apt-get install -y default-libmysqlclient-dev default-mysql-client
-#    - apt-get install -y libssl-dev sqlite3
     - echo "CI_COMMIT_BRANCH = $CI_COMMIT_BRANCH"
     - echo "CI_COMMIT_REF_NAME = $CI_COMMIT_REF_NAME"
     - git clone --branch=main --depth=1 https://github.com/Ensembl/ensembl-test.git
     - git clone --branch=main --depth=1 https://github.com/Ensembl/ensembl-io.git
     - git clone --branch=main --depth=1 https://github.com/Ensembl/ensembl-variation.git
     - git clone --branch=main --depth=1 https://github.com/Ensembl/ensembl-compara.git
-#    - git clone --branch=release-1-6-924 --depth=1 https://github.com/bioperl/bioperl-live.git
-    - cpanm -v --installdeps --notest . --with-all-features
-    - ( cd ensembl-test && cpanm -v --installdeps --notest . )
-#    - ( cd ensembl-io && cpanm -v --installdeps --notest . )
-#    - ( cd ensembl-variation && cpanm -v --installdeps --notest . )
-#    - ( cd ensembl-compara && cpanm -v --installdeps --notest . )
-    - cpanm -n Devel::Cover::Report::Coveralls
-    - cpanm -n DBD::SQLite
+    - cpanm --installdeps --notest . --with-all-features
+    - cpanm -n Devel::Cover::Report::Coveralls DBD::SQLite
     - cp travisci/MultiTestDB.conf.gitlabci.mysql  modules/t/MultiTestDB.conf.mysql
     - cp travisci/MultiTestDB.conf.travisci.SQLite modules/t/MultiTestDB.conf.SQLite
     - cp travisci/testdb.conf.gitlabci.mysql  testdb.conf.mysql
     - cp travisci/testdb.conf.travisci.SQLite testdb.conf.SQLite
-    - mysql -u root -h mysql -e 'GRANT ALL PRIVILEGES ON *.* TO "gitlabci"@"%"'
+
+  tags:
+    - dind
 
 #
 # Test jobs
 #
 
-#test:perl5.26-sqlite:
-#  extends: .ensembl_test_template
-#  variables:
-#    PERL_VERSION: "5.26"
-#    COVERALLS: "false"
-#    DB: "sqlite"
-#  script:
-#    - ./travisci/harness.sh
+test:perl5.26-sqlite:
+  extends: .ensembl_test_template
+  variables:
+    PERL_VERSION: "5.26"
+    COVERALLS: "false"
+    DB: "sqlite"
+  script:
+    - ./travisci/harness.sh
 
 test:perl5.26-mysql:
   extends: .ensembl_test_template
@@ -65,15 +53,15 @@ test:perl5.26-mysql:
   script:
     - ./travisci/harness.sh
 
-#test:perl5.38-sqlite:
-#  stage: test
-#  extends: .ensembl_test_template
-#  variables:
-#    PERL_VERSION: "5.38"
-#    COVERALLS: "false"
-#    DB: "sqlite"
-#  script:
-#    - ./travisci/harness.sh
+test:perl5.38-sqlite:
+  stage: test
+  extends: .ensembl_test_template
+  variables:
+    PERL_VERSION: "5.38"
+    COVERALLS: "false"
+    DB: "sqlite"
+  script:
+    - ./travisci/harness.sh
 
 #
 # Triggers for dependent builds
