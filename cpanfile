@@ -45,3 +45,4 @@ feature 'xref_mapping', 'Xref mapping pipeline' => sub {
   test_requires 'Config::General';
   test_requires 'Perl::Critic::Moose';
 };
+
