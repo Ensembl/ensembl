@@ -60,6 +60,7 @@ use Bio::EnsEMBL::IdentityXref;
 use Bio::EnsEMBL::OntologyXref;
 
 use Bio::EnsEMBL::Utils::Exception qw(throw warning);
+use Bio::EnsEMBL::Utils::Scalar qw(check_ref);
 
 use vars qw(@ISA);
 use strict;
@@ -1719,7 +1720,8 @@ $where_sql";
 
       if (    defined($linkage_type)
            && $linkage_type ne ""
-           && !$linkage_types{$refID}->{$linkage_key} )
+           && !$linkage_types{$refID}->{$linkage_key}
+           && check_ref($seen{$refID}, 'Bio::EnsEMBL::OntologyXref') )
       {
         $source_xref = ( defined($source_xref_id)
                             ? $self->fetch_by_dbID($source_xref_id)
