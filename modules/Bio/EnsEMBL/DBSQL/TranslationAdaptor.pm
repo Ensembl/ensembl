@@ -604,7 +604,7 @@ sub remove {
   }
 
   # remove all protein_features on this translation
-  my $sth = $self->prepare
+  $sth = $self->prepare
     ("DELETE FROM protein_feature WHERE translation_id = ?");
   $sth->bind_param(1,$translation->dbID,SQL_INTEGER);
   $sth->execute();
