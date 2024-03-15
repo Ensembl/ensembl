@@ -16,10 +16,13 @@ variables:
   before_script:
     - echo "CI_COMMIT_BRANCH = $CI_COMMIT_BRANCH"
     - echo "CI_COMMIT_REF_NAME = $CI_COMMIT_REF_NAME"
-    - git clone --branch=main --depth=1 https://github.com/Ensembl/ensembl-test.git
-    - git clone --branch=main --depth=1 https://github.com/Ensembl/ensembl-io.git
-    - git clone --branch=main --depth=1 https://github.com/Ensembl/ensembl-variation.git
-    - git clone --branch=main --depth=1 https://github.com/Ensembl/ensembl-compara.git
+    - export ENSEMBL_BRANCH='main'
+    - export ENSEMBL_VER=$(echo $TRAVIS_BRANCH | grep -P -o '(?<=version[\W_]|fix[\W_]|release[\W_])(\d+)')
+    - if [[ $ENSEMBL_VER =~ [0-9]+ ]]; then ENSEMBL_BRANCH="release/$ENSEMBL_VER"; fi
+    - git clone --branch=$ENSEMBL_BRANCH --depth=1 https://github.com/Ensembl/ensembl-test.git
+    - git clone --branch=$ENSEMBL_BRANCH --depth=1 https://github.com/Ensembl/ensembl-io.git
+    - git clone --branch=$ENSEMBL_BRANCH --depth=1 https://github.com/Ensembl/ensembl-variation.git
+    - git clone --branch=$ENSEMBL_BRANCH --depth=1 https://github.com/Ensembl/ensembl-compara.git
     - cpanm --installdeps --notest . --with-all-features
     - cpanm -n Devel::Cover::Report::Coveralls DBD::SQLite
     - cp travisci/MultiTestDB.conf.gitlabci.mysql  modules/t/MultiTestDB.conf.mysql
