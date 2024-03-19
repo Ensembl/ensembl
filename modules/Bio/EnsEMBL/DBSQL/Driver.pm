@@ -60,7 +60,12 @@ sub connect_params {
     my $dbname = $conn->dbname();
     my $dbparam = ($dbname) ? "database=${dbname};" : q{};
 
-    my $dsn = sprintf( "DBI:%s:%shost=%s;port=%s",
+    # This is required by MariaDB when using localhost (sic!)
+    my $dsn = ($conn->host() eq 'localhost')?
+              sprintf( "DBI:%s:%shost=%s",
+                       $conn->driver(), $dbparam,
+                       $conn->host() ):
+              sprintf( "DBI:%s:%shost=%s;port=%s",
                        $conn->driver(), $dbparam,
                        $conn->host(),   $conn->port() );
 

@@ -1565,11 +1565,11 @@ sub change_access{
 sub load_registry_from_url {
   my ( $self, $url, $verbose, $no_cache ) = @_;
   
-  if ( $url =~ /^mysql\:\/\/([^\@]+\@)?([^\:\/]+)(\:\d+)?(\/\d+)?\/?$/x ) {
-    my $user_pass = $1;
-    my $host      = $2;
-    my $port      = $3;
-    my $version   = $4;
+  if ( $url =~ /^(mysql|MariaDB)\:\/\/([^\@]+\@)?([^\:\/]+)(\:\d+)?(\/\d+)?\/?$/x ) {
+    my $user_pass = $2;
+    my $host      = $3;
+    my $port      = $4;
+    my $version   = $5;
 
     $user_pass =~ s/\@$//;
     my ( $user, $pass ) = $user_pass =~ m/([^\:]+)(\:.+)?/x;
@@ -1589,7 +1589,7 @@ sub load_registry_from_url {
   }
   my $uri = parse_uri($url);
   if($uri) {
-    if($uri->scheme() eq 'mysql') {
+    if($uri->scheme() eq 'mysql' || $uri->scheme() eq 'MariaDB') {
       my %params = $uri->generate_dbsql_params();
       if($params{-DBNAME}) {
         $params{-SPECIES} = $params{-DBNAME} unless $params{-SPECIES};

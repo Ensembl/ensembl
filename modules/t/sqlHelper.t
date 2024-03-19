@@ -181,7 +181,7 @@ my $meta_memoize = $helper->execute(-SQL => 'select * from meta');
 
 is(scalar(@{$meta_memoize}), $meta_table_count, 'All meta items are returned');
 
-$dba->dbc()->do('alter table meta engine=InnoDB') if $dba->dbc->driver() eq 'mysql';
+$dba->dbc()->do('alter table meta engine=InnoDB') if ($dba->dbc->driver() eq 'mysql' || $dba->dbc->driver() eq 'MariaDB');
 
 ok($helper->_perform_transaction_code(), 'This level should do all transaction work');
 

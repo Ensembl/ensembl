@@ -122,7 +122,7 @@ sub switch_database {
       my $kids = $proxy->db_handle()->{Kids};
       my $driver = lc($proxy->driver());
       #Edit to add other DB switching strategies on a per driver basis
-      if($driver eq 'mysql') {
+      if($driver eq 'mysql' || $driver eq 'MariaDB') {
         $proxy->do('use '.$dbname);
       }
       elsif($driver eq 'oracle') {

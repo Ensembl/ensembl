@@ -30,8 +30,10 @@ use XrefParser::Database;
 
 my $multi = Bio::EnsEMBL::Test::MultiTestDB->new;
 my $dba = $multi->get_DBAdaptor("xref");
-plan skip_all => "xref database schema is mysql specific - won't work with a different driver"
-   unless $dba->dbc->driver eq 'mysql';
+
+unless ($dba->dbc->driver eq 'mysql' || $dba->dbc->driver eq 'MariaDB') {
+  plan skip_all => "xref database schema is mysql specific - won't work with a different driver"
+}
 
 my $database = XrefParser::Database->new( $dba->dbc);
 

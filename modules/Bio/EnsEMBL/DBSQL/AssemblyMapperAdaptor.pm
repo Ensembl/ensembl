@@ -1497,7 +1497,9 @@ sub register_all_chained {
 
   my ($asm_cs,$cmp_cs) = @path;
 
-  $sth->{mysql_use_result} = 1;
+  if ($self->dbc->driver() eq 'mysql') {
+    $sth->{mysql_use_result} = 1;
+  }
   $sth->bind_param(1,$asm_cs->dbID,SQL_INTEGER);
   $sth->bind_param(2,$cmp_cs->dbID,SQL_INTEGER);
   $sth->execute();

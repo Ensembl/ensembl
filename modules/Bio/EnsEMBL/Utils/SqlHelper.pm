@@ -573,7 +573,7 @@ commits then this code will break. The code will turn off the
 disconnect_when_idle() method to allow transactions to work as
 expected.
 
-An effect of using REPEATABLE READ transaction isolation (InnoDB's
+An effect of using REPEATABLE READ transaction isolation (InnoDB''s
 default) is that your data is as fresh as when you started your current
 transaction. To ensure the freshest data use SELECT ... FROM ... LOCK
 IN SHARE MODE> or SELECT ... FROM ... LOCK FOR UPDATE if you are

@@ -203,6 +203,10 @@ sub new {
         if(!defined($port)){
             $port   = 5432;
         }
+    } elsif($driver eq 'MariaDB') {
+        if(!defined($port)){
+            $port   = 3306;
+        }
     }
 
     $wait_timeout   ||= 0;
@@ -1011,7 +1015,7 @@ sub add_limit_clause{
     my $max_number = shift;
 
     my $new_sql = '';
-    if ($self->driver eq 'mysql'){
+    if ($self->driver eq 'mysql' || $self->driver eq 'MariaDB'){
         $new_sql = $sql . ' LIMIT ' . $max_number;
     }
     elsif ($self->driver eq 'odbc'){

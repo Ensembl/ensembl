@@ -23,7 +23,7 @@ use Bio::EnsEMBL::Test::MultiTestDB;
 my $multi = Bio::EnsEMBL::Test::MultiTestDB->new();
 
 my $multi_config = $multi->db_conf();
-if (lc($multi_config->{'driver'}) ne 'mysql') {
+if (lc($multi_config->{'driver'}) ne 'mysql' && lc($multi_config->{'driver'}) ne 'mariadb') {
   plan skip_all => 'Registry only supports MySQL for now';
 }
 

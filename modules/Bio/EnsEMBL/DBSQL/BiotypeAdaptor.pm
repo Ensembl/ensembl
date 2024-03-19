@@ -220,7 +220,7 @@ sub fetch_all_by_name{
   my $constraint = "b.name = ?";
   $self->bind_param_generic_fetch($name, SQL_VARCHAR);
   if (defined $object_type) {
-    $constraint .= "AND b.object_type = ?";
+    $constraint .= " AND b.object_type = ?";
     $self->bind_param_generic_fetch($object_type, SQL_VARCHAR);
   }
   my @biotypes = @{$self->generic_fetch($constraint)};

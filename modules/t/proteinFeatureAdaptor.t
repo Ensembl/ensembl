@@ -131,7 +131,9 @@ is($f_by_dbID->hend, $hend);
 is($f_by_dbID->hseqname, $hseqname);
 is($f_by_dbID->hdescription, $hdes);
 is($f_by_dbID->score, $score);
-is($f_by_dbID->percent_id, $percent_id);
+# You do want not compare floating point numbers like that
+# is($f_by_dbID->percent_id, $percent_id); # BAD!
+cmp_ok(abs($f_by_dbID->percent_id - $percent_id), '<=', 0.00001);
 is($f_by_dbID->p_value, $p_value);
 
 

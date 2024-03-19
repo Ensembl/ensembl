@@ -302,7 +302,7 @@ sub store {
     
     # If the ID is not already there then we need to add one
     if($already_exists == 0) {
-        $helper->execute_update(-SQL => $new_group_sql, -CALLBACK => sub {
+        $helper->execute_update(-SQL => $new_group_sql, -PARAMS => [[undef, SQL_INTEGER]], -CALLBACK => sub {
             my ($sth, $dbh, $rv) = @_;
             if($rv) {
                 my $id = $dbh->last_insert_id(undef, undef, 'alt_allele_group', 'alt_allele_group_id');
@@ -392,7 +392,7 @@ sub remove {
 
     my $helper = $self->dbc()->sql_helper();
     my $delete_attribs_sql;
-    if ($self->dbc->driver() eq 'mysql') {
+    if ($self->dbc->driver() eq 'mysql' || $self->dbc->driver() eq 'MariaDB') {
       $delete_attribs_sql = q{
         DELETE aaa 
         FROM alt_allele_attrib aaa 

@@ -1,5 +1,6 @@
 requires 'DBI';
 requires 'DBD::mysql', '< 5.0'; # newer versions do not support MySQL 5
+requires 'DBD::MariaDB';
 requires 'HTTP::Tiny';
 requires 'IO::Compress::Gzip';
 requires 'URI::Escape';

@@ -164,7 +164,7 @@ $aaga->remove($group);
 ok(! defined $aaga->fetch_by_dbID($dbID), 'Using a deleted ID means no group returned');
 my $new_dbID = $aaga->store($group);
 
-cmp_ok($new_dbID, '!=', $dbID, 'Should have been assgined a new ID');
+cmp_ok($new_dbID, '!=', $dbID, 'Should have been assigned a new ID');
 my $aag2 = $aaga->fetch_by_dbID($new_dbID);
 my $gene_ids = $aag2->get_all_Gene_ids();
 eq_or_diff($gene_ids,[1,2,3], "Update and re-retrieve the same AltAlleleGroup") or diag explain $gene_ids;
