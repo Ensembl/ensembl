@@ -107,26 +107,45 @@ sub _init_db {
   $self->_validate_config($self->config);
   my %conf = %{ $self->config };
   my $enable_unicode = $conf{enable_unicode} // 0;
-  my %opts;
-  $opts{mysql_enable_utf8} = $enable_unicode if ($conf{driver} eq 'mysql');
-  $opts{mysql_auto_reconnect} = 1 if ($conf{driver} eq 'mysql');
-  $opts{sqlite_unicode} = $enable_unicode if($conf{driver} eq 'SQLite');
   my $dsn;
-  if ($conf{driver} eq 'SQLite') {
-    $dsn = sprintf 'dbi:%s:database=%s',$conf{driver},$conf{file};
+  my %opts;
+  if ($conf{driver} eq 'mysql') {
+    $opts{mysql_enable_utf8} = $enable_unicode;
+    $opts{mysql_auto_reconnect} = 1;
+    $dsn = sprintf 'DBI:%s:database=%s;host=%s;port=%s', $conf{driver}, $conf{db}, $conf{host}, $conf{port};
+  } elsif ($conf{driver} eq 'MariaDB') {
+    if (defined $conf{port}) {
+      $dsn = sprintf 'DBI:%s:database=%s;host=%s;port=%s', $conf{driver}, $conf{db}, $conf{host}, $conf{port};
+    } else {
+      $dsn = sprintf 'DBI:%s:database=%s;host=%s', $conf{driver}, $conf{db}, $conf{host};
+    }
+    $opts{mariadb_auto_reconnect} = 1;
+    $opts{mariadb_local_infile} = 1;
+    $opts{mariadb_server_prepare} = 1;
+    $opts{mariadb_max_allowed_packet} = 1*1024*1024*1024;
+  } elsif ($conf{driver} eq 'SQLite') {
+    $opts{sqlite_unicode} = $enable_unicode;
+    $dsn = sprintf 'DBI:%s:database=%s',$conf{driver},$conf{file};
     $self->now_function("date('now')");
   } else {
-    $dsn = sprintf 'dbi:%s:database=%s;host=%s;port=%s', $conf{driver}, $conf{db}, $conf{host}, $conf{port};
+    croak "The only supported 'driver' for Xref are mysql, MariaDB or SQLite";
   }
 
   my %deploy_opts = ();
   # Example deploy option $deploy_opts{add_drop_table} = 1;
   my $schema = Xref::Schema->connect($dsn, $conf{user}, $conf{pass}, \%opts);
 
-  if ($conf{create} == 1 && $conf{driver} eq 'mysql') {
-    my $dbh = DBI->connect(
-      sprintf('DBI:%s:database=;host=%s;port=%s', $conf{driver}, $conf{host}, $conf{port}), $conf{user}, $conf{pass}, \%opts
-    );
+  if ($conf{create} == 1 && ($conf{driver} eq 'mysql' || $conf{driver} eq 'MariaDB')) {
+    my $dbh;
+    if (defined $conf{port}) {
+      $dbh = DBI->connect(
+        sprintf('DBI:%s:database=;host=%s;port=%s', $conf{driver}, $conf{host}, $conf{port}), $conf{user}, $conf{pass}, \%opts
+      );
+    } else {
+      $dbh = DBI->connect(
+        sprintf('DBI:%s:database=;host=%s', $conf{driver}, $conf{host}), $conf{user}, $conf{pass}, \%opts
+      );
+    }
 
     # Remove database if already exists
     my %dbs = map {$_->[0] => 1} @{$dbh->selectall_arrayref('SHOW DATABASES')};
@@ -163,7 +182,7 @@ sub _guess_config {
 
 =head2 _init_config
   Arg [1]    : HashRef of configuation parameters (driver, db, host, port, user, pass)
-  Description: Initialisae the loading of the configuration file.
+  Description: Initialise the loading of the configuration file.
   Return type: HashRef - $self->config
   Caller     : internal
 
@@ -175,6 +194,9 @@ sub _init_config {
   if (defined $self->config_file) {
     my $conf = Config::General->new($self->config_file);
     my %opts = $conf->getall();
+    if ($opts{'driver'} eq 'MariaDB' && $opts{'host'} eq 'localhost') {
+      delete($opts{'port'});
+    }
     $self->config(\%opts);
   } else {
     confess 'No config or config_file provided to new(). Cannot execute';
@@ -197,10 +219,12 @@ sub _validate_config {
   my @required_keys = qw/driver/;
   if ($config->{driver} eq 'mysql') {
     push @required_keys, qw/db host port user pass/;
+  } elsif ($config->{driver} eq 'MariaDB') {
+    ($config->{host} eq 'localhost')?push @required_keys, qw/db host user pass/:push @required_keys, qw/db host port user pass/;
   } elsif ($config->{driver} eq 'SQLite') {
     push @required_keys, qw/file/;
   } else {
-    confess q(TestDB config requires parameter 'driver' with value mysql or SQLite);
+    confess q(TestDB config requires parameter 'driver' with value mysql, MariaDB or SQLite);
   }
   my @errors;
   foreach my $constraint (@required_keys) {

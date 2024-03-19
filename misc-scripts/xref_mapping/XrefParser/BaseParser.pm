@@ -459,11 +459,9 @@ sub upload_xref_object_graphs {
     my $syn_sth = $dbi->prepare('INSERT IGNORE INTO synonym ( xref_id, synonym ) VALUES(?,?)');
     my $xref_update_label_sth = $dbi->prepare('UPDATE xref SET label=? WHERE xref_id=?');
     my $xref_update_descr_sth = $dbi->prepare('UPDATE xref SET description=? WHERE xref_id=?');
-    my $pair_sth = $dbi->prepare('INSERT INTO pairs VALUES(?,?,?)');
+    my $pair_sth = $dbi->prepare('INSERT INTO pairs VALUES(?,?,?,?)');
     my $xref_id_sth = $dbi->prepare("SELECT xref_id FROM xref WHERE accession = ? AND source_id = ? AND species_id = ?");
     my $primary_xref_id_sth = $dbi->prepare('SELECT xref_id FROM primary_xref WHERE xref_id=?');
-
-
 
     # disable error handling here as we'll do it ourselves
     # reenabled it, as errorcodes are really unhelpful
@@ -984,6 +982,10 @@ sub add_xref {
   ) or croak("$acc\t$label\t\t$source_id\t$species_id\n");
 
   $add_xref_sth->finish();
+
+use Data::Dumper;
+  my %d = DBI->installed_drivers();
+  return $add_xref_sth->{'mariadb_insertid'} if ($d{'MariaDB'});
   return $add_xref_sth->{'mysql_insertid'};
 } ## end sub add_xref
 
