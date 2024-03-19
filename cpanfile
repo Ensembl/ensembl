@@ -31,6 +31,8 @@ feature 'assembly_mapping', 'Assembly mapper support' => sub {
 
 feature 'xref_mapping', 'Xref mapping pipeline' => sub {
   requires 'DBIx::Class';
+  requires 'DBIx::Class::Storage::DBI::MariaDB';
+  requires 'DBIx::Class::Storage::DBI::mysql';
   requires 'Digest::MD5';
   requires 'LWP::UserAgent';
   requires 'List::Util', '>= 1.45';
