@@ -243,9 +243,9 @@ sub find_and_add_species_id {
 
   my $dbc = $self->dbc;
   my $sth = $dbc->prepare(sprintf "SELECT DISTINCT species_id FROM %s.meta " .
-			  "WHERE meta_key='species.alias' AND meta_value LIKE ?", 
-			  $dbc->db_handle->quote_identifier($dbc->dbname));
-  $sth->bind_param(1, "\%$species\%");
+              "WHERE meta_key='species.alias' AND INSTR(meta_value, ?) > 0", 
+              $dbc->db_handle->quote_identifier($dbc->dbname));
+  $sth->bind_param(1, "$species");
   $sth->execute() or
     throw "Error querying for species_id: perhaps the DB doesn't have a meta table?\n" .
       "$DBI::err .... $DBI::errstr\n";
