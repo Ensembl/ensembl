@@ -522,25 +522,26 @@ ok($slice->strand == -1);
 #default no duplicates and reference only
 my $slices = $slice_adaptor->fetch_all('chromosome',undef);
 print_slices($slices);
-is(@$slices, 63, 'References slices for coord system chromosome');
+is(@$slices, 64, 'References slices for coord system chromosome');
 
 # include duplicates
 $slices = $slice_adaptor->fetch_all('chromosome', undef,0, 1);
 
 print_slices($slices);
-is(@$slices, 62, 'References slices for coord system chromosome when including duplicates (Y should become 1 region not 2)');
+is(@$slices, 63, 'References slices for coord system chromosome when including duplicates (Y should become 1 region not 2)');
 
 
 $slices = $slice_adaptor->fetch_all('contig', undef);
 
-ok(@$slices == 14);
+#ok(@$slices == 15);
+is(@$slices, 17, 'References slices for coord system contig');
 
 print_slices($slices);
 
-
 $slices = $slice_adaptor->fetch_all('toplevel');
 
-ok(@$slices == 1 && $slices->[0]->seq_region_name() eq '20');
+# Y requires 2 slices because of the PAR assembly exception, which - weirdly - does not start at 1
+ok(@$slices == 3 && $slices->[0]->seq_region_name() eq '20');
 print_slices($slices);
 
 #

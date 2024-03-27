@@ -22,5 +22,8 @@
 22	mirna_arm	miRNA arm	Hairpin arm from which this miRNA has come from
 23	_stop_codon_rt	Stop Codon Readthrough	\N
 24	appris	APPRIS	\N
+124	mRNA_start_NF	mRNA start not found	\N
+126	cds_start_NF	CDS start not found	\N
+428	TSL	Transcript Support Level	\N
 535	MANE_Select	MANE Select v0.92	MANE Select (v0.92) is the preliminary release (phase 7) of the MANE Select data set. The Matched Annotation from NCBI and EMBL-EBI project (MANE) is a collaboration between Ensembl-GENCODE and RefSeq to select a default transcript per human protein coding locus that is representative of biology, well-supported, expressed and conserved. This transcript set matches GRCh38 and is 100% identical between RefSeq and Ensembl-GENCODE for 5' UTR, CDS, splicing and 3' UTR.
 554	is_canonical	Is Canonical	Flag to state that a feature is a canonical one.

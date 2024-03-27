@@ -219,12 +219,18 @@ is( scalar( @{$tr->get_all_Exons()} ), 0, 'No exons left after flushing' );
 
 is ( $tr->appris, 'principal1' , 'APPRIS tag fetched correctly');
 
-# Fetch a fresh tr, check incomplete codon behavior
+# Fetch a fresh tr, check incomplete codon behavior on 3' end
 $tr = $ta->fetch_by_stable_id( "ENST00000300425" );
 
 # By default the incomplete codon should be dropped
-is( $tr->translate()->seq() =~ /P$/, 1, "Incomplete codon is not translated");
-is( $tr->translate(1)->seq() =~ /PL$/, 1, "Incomplete codon is padded then translated");
+is( $tr->translate()->seq() =~ /P$/, 1, "3-prime incomplete codon is not translated");
+is( $tr->translate(1)->seq() =~ /PL$/, 1, "3-prime incomplete codon is padded then translated");
+
+# Fetch a fresh tr, check incomplete codon behavior on 5' end
+$tr = $ta->fetch_by_stable_id( "ENST00000453031" );
+ok( $tr->spliced_seq() =~ /^AATTATT/ );
+is( $tr->translateable_seq() =~ /^NAATT/, 1, "A 5-prime incomplete codon is padded" );
+is( $tr->translate()->seq() =~ /^XLLK/, 1, "The 5-prime incomplete codon is correctly translated into X" );
 
 # get a fresh tr to check the update method
 $tr = $ta->fetch_by_stable_id( "ENST00000217347" );
@@ -357,13 +363,13 @@ is($tr->display_id(), $tr->stable_id(), 'Transcript stable id and display id are
 #
 note("Test fetch_all_by_biotype");
 my @transcripts = @{$ta->fetch_all_by_biotype('protein_coding')};
-is(@transcripts, 27, 'Fetching all protein coding transcript');
+is(@transcripts, 28, 'Fetching all protein coding transcript');
 my $transcriptCount = $ta->count_all_by_biotype('protein_coding');
-is($transcriptCount, 27, 'Counting all protein coding');
+is($transcriptCount, 28, 'Counting all protein coding');
 @transcripts = @{$ta->fetch_all_by_biotype(['protein_coding','pseudogene'])};
-is(@transcripts, 27, 'Got 27 transcript');
+is(@transcripts, 28, 'Got 28 transcript');
 $transcriptCount = $ta->count_all_by_biotype(['protein_coding', 'pseudogene']);
-is($transcriptCount, 27, 'Count by biotype is correct');
+is($transcriptCount, 28, 'Count by biotype is correct');
 
 #
 # test TranscriptAdaptor::fetch_all_by_Slice
@@ -379,21 +385,21 @@ is(@transcripts, $transcriptCount, "Counted as many transcripts as were fetched 
 note("Test fetch_all_by_source");
 @transcripts = @{$ta->fetch_all_by_source('ensembl')};
 note "Got ".scalar(@transcripts)." ensembl transcripts\n";
-is(24, scalar(@transcripts));
+is(scalar(@transcripts), 24);
 $transcriptCount = $ta->count_all_by_source('ensembl');
-is(24, $transcriptCount);
+is($transcriptCount, 24);
 @transcripts = @{$ta->fetch_all_by_source(['havana','vega'])};
 note "Got ".scalar(@transcripts)." (havana, vega) transcripts\n";
-is(3, scalar(@transcripts));
+is(scalar(@transcripts), 5);
 $transcriptCount = $ta->count_all_by_source(['havana', 'vega']);
-is(3, $transcriptCount);
+is($transcriptCount, 5);
 
 #
 # test TranscriptAdaptor::fetch_all
 #
 note("Test fetch_all");
 @transcripts = @{ $ta->fetch_all() };
-is(27, scalar(@transcripts), "Got 27 transcripts");
+is(scalar(@transcripts), 29, "Got 29 transcripts");
 
 #
 # test TranscriptAdaptor::fetch_all_by_GOTerm
@@ -624,9 +630,6 @@ $attribAdaptor->store_on_Transcript($tr->dbID, $tr->get_all_Attributes);
 $tr = $ta->fetch_by_stable_id( "ENST00000217347" );
 $tr->edits_enabled(1);
 
-#print " $tr->translateable_seq() : " .  $tr->translateable_seq() . "\n";
-#print "$tr->spliced_seq() : " . $tr->spliced_seq() . "\n";
-
 is( $tr->translateable_seq(), $tlseq2, 'Translateable sequence is correct' );
 ok( $tr->spliced_seq() =~ /^GATTACA/ );
 
@@ -657,7 +660,10 @@ note($tr->translate->seq());
 
 is($tr->translate->seq(), 'MNFALILMINTLLALLLMIITFWLPQLNGYMEKSTPYECGFDPMSPARVPFSMKFFLVAITFLLFDLEIALLLPLPWALQTTNLPLMVMSSLLLIIILALSLAYEWLQKGLDWAE', 'Translates correctly');
 
-
+# Test that 5'incomplete transcript is properly translated
+$tr = $ta->fetch_by_stable_id('ENST00000453031');
+note($tr->translate->seq());
+is($tr->translate->seq(), 'XLLKTAVTQRIPSNYFAFALGRILSSHLLSSANFSGRIHNALKGIPDDRDGLFDTIQRSKNHYQKRAYQCIKCMVALFSSCPVAYQILQGNGDLKRKWTWAVEWLGDELERRPYTGNPQYSYNNWSPPVQSNETANGYFLERSHSARMTLAKACELCPEEEPDDQDAPDEHEPSPSEDAPLYPHSPASQYQQNNHVHGQPYTGPAAHHLNNPQKTGQRTQENYEGNEEVSSPQMKDQ', 'Translates correctly');
 
 # check that attributes are stored when transcript is stored
 

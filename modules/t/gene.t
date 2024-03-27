@@ -578,7 +578,7 @@ is(scalar(@genes), 0, "No genes for random analysis");
 # test GeneAdaptor::fetch_all_by_logic_name
 #
 @genes = @{ $ga->fetch_all_by_logic_name('ensembl') };
-is(scalar(@genes), 21, "All genes of analysis ensembl");
+is(scalar(@genes), 22, "All genes of analysis ensembl");
 
 
 #
@@ -661,13 +661,13 @@ ok($gene->display_id eq $gene->stable_id);
 #
 debug("Test fetch_all_by_biotype");
 @genes = @{$ga->fetch_all_by_biotype('protein_coding')};
-ok(@genes == 21, "Gene count for protein coding");
+ok(@genes == 22, "Gene count for protein coding");
 @genes = @{$ga->fetch_all_by_biotype(['protein_coding', 'sRNA'])};
-ok(@genes == 21, "Gene count for protein coding and sRNA");
+ok(@genes == 22, "Gene count for protein coding and sRNA");
 $geneCount = $ga->count_all_by_biotype('protein_coding');
-ok($geneCount == 21, "Gene count via method call for protein coders");
+ok($geneCount == 22, "Gene count via method call for protein coders");
 $geneCount = $ga->count_all_by_biotype(['protein_coding', 'sRNA']);
-ok($geneCount == 21, "Gene count via method call for protein coding and sRNA");
+ok($geneCount == 22, "Gene count via method call for protein coding and sRNA");
 
 #
 # test GeneAdaptor::fetch_all_by_source
@@ -680,9 +680,9 @@ $geneCount = $ga->count_all_by_source('ensembl');
 ok($geneCount == 19);
 @genes = @{$ga->fetch_all_by_source(['havana','vega'])};
 note "Got ".scalar(@genes)." (havana, vega) transcripts\n";
-ok(@genes == 2);
+ok(@genes == 3);
 $geneCount = $ga->count_all_by_source(['havana', 'vega']);
-ok($geneCount == 2);
+ok($geneCount == 3);
 
 
 #

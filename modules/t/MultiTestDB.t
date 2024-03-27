@@ -35,7 +35,7 @@ ok($dba);
 my $sth = $dba->dbc->prepare("select * from gene");
 $sth->execute;
 
-ok(scalar(@{$sth->fetchall_arrayref}) == 21, "Check gene count to prove table has data");
+ok(scalar(@{$sth->fetchall_arrayref}) == 23, "Check gene count to prove table has data");
 
 
 # now hide the gene table i.e. make an empty version of it
@@ -47,16 +47,16 @@ ok(scalar(@{$sth->fetchall_arrayref}) == 0, "Check table is empty after hiding")
 # restore the gene table
 $ens_test->restore();
 $sth->execute;
-ok(scalar(@{$sth->fetchall_arrayref}) == 21, "Check table repopulated after restore");
+ok(scalar(@{$sth->fetchall_arrayref}) == 23, "Check table repopulated after restore");
 
 
 # now save the gene table i.e. make a copy of it
 $ens_test->save("core","gene");
 $sth->execute;
-ok(scalar(@{$sth->fetchall_arrayref}) == 21, "Check content still correct after save");
+ok(scalar(@{$sth->fetchall_arrayref}) == 23, "Check content still correct after save");
 
 
-# delete 9 genes from the db
+# delete 12 genes from the db
 $sth = $dba->dbc->prepare("delete from gene where gene_id >= 18266");
 $sth->execute;
 
@@ -69,7 +69,7 @@ ok(scalar(@{$sth->fetchall_arrayref}) == 10,"Check results of deleting genes");
 # check to see whether the restore works again
 $ens_test->restore();
 $sth->execute;
-ok(scalar(@{$sth->fetchall_arrayref}) == 21);
+ok(scalar(@{$sth->fetchall_arrayref}) == 23);
 
 
 $sth->finish;

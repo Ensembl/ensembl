@@ -74,10 +74,10 @@ ok($t);
 
 my $ta  = $db->get_TranslationAdaptor();
 my $ids = $ta->list_dbIDs();
-is(@{$ids}, 26, 'We have 26 translation IDs');
+is(@{$ids}, 27, 'We have 27 translation IDs');
 
 my $stable_ids = $ta->list_stable_ids();
-is(@{$stable_ids}, 26, 'We have 26 stable IDs');
+is(@{$stable_ids}, 27, 'We have 27 stable IDs');
 
 my $tra = $db->get_TranscriptAdaptor();
 
