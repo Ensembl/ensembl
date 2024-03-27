@@ -3154,7 +3154,7 @@ sub summary_as_hash {
 
 =head2 gencode_basic
 
-  Example       : $gencode_basic = $transcript->tag();
+  Example       : $gencode_basic = $transcript->get_all_Attributes('gencode_basic')->[0];
   Description   : Returns true if gencode_basic is set
   Returns       : boolean
 =cut
@@ -3165,6 +3165,21 @@ sub gencode_basic {
   my $basic = 0;
   $basic = 1 if scalar(@attributes) > 0;
   return $basic;
+}
+
+=head2 gencode_primary
+
+  Example       : $gencode_basic = $transcript->get_all_Attributes('gencode_primary')->[0];
+  Description   : Returns true if gencode_primary is set
+  Returns       : boolean
+=cut
+
+sub gencode_basic {
+  my $self = shift;
+  my @attributes = @{ $self->get_all_Attributes('gencode_primary') };
+  my $primary = 0;
+  $primary = 1 if scalar(@attributes) > 0;
+  return $primary;
 }
 
 =head2 tsl
