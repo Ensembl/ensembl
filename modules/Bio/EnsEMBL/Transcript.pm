@@ -3142,7 +3142,18 @@ sub summary_as_hash {
   $summary_ref->{'havana_version'} = $havana_transcript->version() if defined $havana_transcript;
   $summary_ref->{'ccdsid'} = $self->ccds->display_id() if $self->ccds();
   $summary_ref->{'transcript_support_level'} = $self->tsl() if $self->tsl();
-  $summary_ref->{'tag'} = 'basic' if $self->gencode_basic();
+
+  my @tags;
+  push @tags, 'basic' if $self->gencode_basic();
+  push @tags, 'Ensembl_canonical' if $self->is_canonical();
+  push @tags, 'primary' if $self->gencode_primary();
+
+  my $mane = $self->mane_transcript();
+  if ($mane) {
+    push @tags, $mane->type() if ($mane->type());
+  }
+
+  $summary_ref->{'tag'} = \@tags if @tags;
 
   ## Stable identifier of the parent transcript this transcript was projected from
   my $proj_parent_attributes = $self->get_all_Attributes("proj_parent_t");
@@ -3154,7 +3165,7 @@ sub summary_as_hash {
 
 =head2 gencode_basic
 
-  Example       : $gencode_basic = $transcript->tag();
+  Example       : $gencode_basic = $transcript->gencode_basic();
   Description   : Returns true if gencode_basic is set
   Returns       : boolean
 =cut
@@ -3165,6 +3176,21 @@ sub gencode_basic {
   my $basic = 0;
   $basic = 1 if scalar(@attributes) > 0;
   return $basic;
+}
+
+=head2 gencode_primary
+
+  Example       : $gencode_primary = $transcript->gencode_primary();
+  Description   : Returns true if gencode_primary is set
+  Returns       : boolean
+=cut
+
+sub gencode_primary {
+  my $self = shift;
+  my @attributes = @{ $self->get_all_Attributes('gencode_primary') };
+  my $primary = 0;
+  $primary = 1 if scalar(@attributes) > 0;
+  return $primary;
 }
 
 =head2 tsl
