@@ -320,12 +320,9 @@ is ( $tr->spliced_seq(), uc($tr->spliced_seq(1)), "Spliced seq is identical to u
 is ( substr($tr->spliced_seq(1), 199, 6), 'gccATG', 'Start mask boundary on forward stand transcript is correct, rev strand' );
 is ( substr($tr->spliced_seq(1), 1687, 6), 'CAGtag', 'End mask boundary on forward stand transcript is correct, rev strand' );
 
-# test that transcript does not yet have GENCODE primary attrib associated
+# test that transcript has GENCODE primary attrib associated
 my $gencode_primary = $tr->gencode_primary();
-# my ($gp_attrib) = @{$tr->get_all_Attributes('gencode_primary')};
 is($gencode_primary, '1', 'Presence of the GENCODE Primary transcript attribute is correctly set to true');
-
-exit;
 
 
 my $interpro = $ta->get_Interpro_by_transid("ENST00000252021");
@@ -348,6 +345,10 @@ is($tr->stable_id, 'ENST00000246229', 'Fetched correct transcript by external na
 
 $tr = $ta->fetch_by_rnaproduct_id(1);
 is($tr->stable_id, 'ENST00000278995', 'Fetched correct transcript by rnaproduct id');
+
+# test that transcript does not have GENCODE primary attrib associated
+$gencode_primary = $tr->gencode_primary();
+is($gencode_primary, '0', 'Presence of the GENCODE Primary transcript attribute is correctly set to false');
 
 #
 # test fetch_by_translation_id
