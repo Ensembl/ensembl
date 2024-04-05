@@ -3144,7 +3144,7 @@ sub summary_as_hash {
   $summary_ref->{'transcript_support_level'} = $self->tsl() if $self->tsl();
 
   my @tags;
-  push @tags, 'GENCODE Basic' if $self->gencode_basic();
+  push @tags, 'basic' if $self->gencode_basic();
   push @tags, 'Ensembl_canonical' if $self->is_canonical();
   push @tags, 'GENCODE Primary' if $self->gencode_primary();
 
