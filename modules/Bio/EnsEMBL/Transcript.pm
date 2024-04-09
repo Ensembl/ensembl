@@ -3146,7 +3146,7 @@ sub summary_as_hash {
   my @tags;
   push @tags, 'basic' if $self->gencode_basic();
   push @tags, 'Ensembl_canonical' if $self->is_canonical();
-  push @tags, 'primary' if $self->gencode_primary();
+  push @tags, $self->get_all_Attributes('gencode_primary')->[0]->code if $self->gencode_primary();
 
   my $mane = $self->mane_transcript();
   if ($mane) {
