@@ -138,5 +138,5 @@
 2145	\N	patch	patch_111_112_a.sql|schema_version
 2146	\N	patch	patch_111_112_b.sql|Allow meta_value to be null
 2147	\N	patch	patch_111_112_c.sql|Extend meta_key length to 64
-2147	\N	patch	patch_112_113_a.sql|schema_version
-2148	\N	patch	patch_112_113_b.sql|Ensure meta_value is not null
+2148	\N	patch	patch_112_113_a.sql|schema_version
+2149	\N	patch	patch_112_113_b.sql|Ensure meta_value is not null
