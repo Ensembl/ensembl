@@ -1,5 +1,5 @@
 1	\N	schema_type	variation
-2	\N	schema_version	112
+2	\N	schema_version	113
 6	1	species.production_name	mus_musculus
 15	1	web_config	sv_study#Keane 2011 (DGVa study estd118)#Keane 2011#estd118
 14	1	web_config	set#All failed variants#All failed variants#variation_set_fail_all#failed
@@ -101,3 +101,4 @@
 107	\N	patch	patch_111_112_a.sql|schema_version
 108	\N	patch	patch_111_112_b.sql|Allow meta_value to be null
 109	\N	patch	patch_111_112_c.sql|Extend meta_key length to 64
+108	\N	patch	patch_112_113_a.sql|schema_version
