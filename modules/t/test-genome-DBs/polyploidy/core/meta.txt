@@ -186,3 +186,4 @@
 266	\N	patch	patch_110_111_a.sql|schema_version
 267	\N	patch	patch_111_112_a.sql|schema_version
 268	\N	patch	patch_111_112_b.sql|Allow meta_value to be null
+269	\N	patch	patch_111_112_c.sql|Extend meta_key length to 64

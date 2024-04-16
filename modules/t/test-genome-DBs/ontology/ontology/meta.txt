@@ -55,3 +55,5 @@
 58	patch	patch_109_110_a.sql|schema_version	\N
 59	patch	patch_110_111_a.sql|schema_version	\N
 60	patch	patch_111_112_a.sql|schema_version	\N
+61	patch	patch_111_112_b.sql|Allow meta_value to be null	\N
+62	patch	patch_111_112_c.sql|Extend meta_key length to 64	\N
