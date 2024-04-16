@@ -1,6 +1,6 @@
 --
 -- Created by SQL::Translator::Producer::SQLite
--- Created on Tue Aug 22 11:47:30 2023
+-- Created on Tue Apr 16 13:31:33 2024
 --
 
 BEGIN TRANSACTION;
@@ -213,7 +213,7 @@ CREATE UNIQUE INDEX "closure_child_parent_idx" ON "closure" ("child_term_id", "p
 CREATE TABLE "meta" (
   "meta_id" INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
   "meta_key" varchar(64) NOT NULL,
-  "meta_value" varchar(128),
+  "meta_value" varchar(255) NOT NULL,
   "species_id" integer
 );
 

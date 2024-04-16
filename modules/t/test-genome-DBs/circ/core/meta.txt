@@ -153,3 +153,4 @@
 153	\N	patch	patch_110_111_a.sql|schema_version
 154	\N	patch	patch_111_112_a.sql|schema_version
 155	\N	patch	patch_111_112_b.sql|Allow meta_value to be null
+156	\N	patch	patch_111_112_c.sql|Extend meta_key length to 64

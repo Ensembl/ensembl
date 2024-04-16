@@ -99,3 +99,5 @@
 105	\N	patch	patch_110_111_a.sql|schema version
 106	\N	patch	patch_110_111_b.sql|Update transcript_variation primary key
 107	\N	patch	patch_111_112_a.sql|schema_version
+108	\N	patch	patch_111_112_b.sql|Allow meta_value to be null
+109	\N	patch	patch_111_112_c.sql|Extend meta_key length to 64
