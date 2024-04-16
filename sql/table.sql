@@ -295,7 +295,7 @@ CREATE TABLE IF NOT EXISTS meta (
 
   meta_id                     INT NOT NULL AUTO_INCREMENT,
   species_id                  INT UNSIGNED DEFAULT 1,
-  meta_key                    VARCHAR(40) NOT NULL,
+  meta_key                    VARCHAR(64) NOT NULL,
   meta_value                  VARCHAR(255) DEFAULT NULL,
 
   PRIMARY   KEY (meta_id),
@@ -318,6 +318,9 @@ INSERT INTO meta (species_id, meta_key, meta_value)
 
 INSERT INTO meta (species_id, meta_key, meta_value)
   VALUES (NULL, 'patch', 'patch_111_112_b.sql|Allow meta_value to be null');
+
+INSERT INTO meta (species_id, meta_key, meta_value)
+  VALUES (NULL, 'patch', 'patch_111_112_c.sql|Extend meta_key length to 64');
 
 /**
 @table meta_coord
