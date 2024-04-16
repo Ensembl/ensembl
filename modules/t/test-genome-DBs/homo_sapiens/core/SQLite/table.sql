@@ -546,8 +546,13 @@ CREATE TABLE "marker_synonym" (
 CREATE TABLE "meta" (
   "meta_id" INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
   "species_id" integer DEFAULT 1,
+<<<<<<< HEAD
   "meta_key" varchar(64) NOT NULL,
   "meta_value" varchar(255)
+=======
+  "meta_key" varchar(40) NOT NULL,
+  "meta_value" varchar(255) NOT NULL
+>>>>>>> 486ac6b84 (Patch SQLite files for test dbs)
 );
 
 CREATE UNIQUE INDEX "species_key_value_idx" ON "meta" ("species_id", "meta_key", "meta_value");
