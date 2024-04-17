@@ -1,6 +1,6 @@
 --
 -- Created by SQL::Translator::Producer::SQLite
--- Created on Tue Aug 22 11:50:03 2023
+-- Created on Tue Apr 16 22:14:04 2024
 --
 
 BEGIN TRANSACTION;
@@ -535,8 +535,8 @@ CREATE TABLE "marker_synonym" (
 CREATE TABLE "meta" (
   "meta_id" INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
   "species_id" integer DEFAULT 1,
-  "meta_key" varchar(40) NOT NULL,
-  "meta_value" varchar(255)
+  "meta_key" varchar(64) NOT NULL,
+  "meta_value" varchar(255) NOT NULL
 );
 
 CREATE UNIQUE INDEX "species_key_value_idx" ON "meta" ("species_id", "meta_key", "meta_value");
