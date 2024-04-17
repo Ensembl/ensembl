@@ -70,45 +70,7 @@ test:perl5.38-sqlite:
 # Triggers for dependent builds
 #
 
-# The template. It doesn't presently support PRs before they are
-# merged (would need extended run condition and better selection of
-# downstream branches) - but then again, we do not trigger dependent
-# builds for PRs on Travis either.
-.dependent_template:
-  stage: test
-  only:
-    - main
-    - /^release/\d+$/
-
-# Actual trigger jobs
-
-# ensembl-rest; disabled for now because that repo a) hasn't got
-# GitLab-CI config yet, and b) is still on the list in
-# trigger-dependent-build.sh.
-.test:trigger_rest:
-  extends: .dependent_template
-  trigger:
-    project: ensembl-gh-mirror/ensembl-rest
-    # Use the same branch as in this project
-    branch: ${CI_COMMIT_REF_NAME}
-
-# Dependent builds on Travis
-# Relies on the secret variable TRAVIS_AUTH_TOKEN to actually work,
-# moreover the account associated with the token must have write
-# access to *all* dependent repositories; to be exact what it needs
-# is the Travis 'create_request' permission but Travis permissions are
-# generated from GitHub ones and it seems that in order to have
-# 'create_request' on the latter one requires 'write' on the former.
-test:trigger_travis:
-  extends: .dependent_template
-  image: alpine:3.10
-  variables:
-    AUTH_TOKEN: ${TRAVIS_AUTH_TOKEN}
-    TRAVIS_REPO_SLUG: ${CI_PROJECT_PATH}
-    TRAVIS_BRANCH: ${CI_COMMIT_REF_NAME}
-    TRAVIS_COMMIT: ${CI_COMMIT_SHA}
-    # Safe as long as run conditions above do not include merge requests
-    TRAVIS_PULL_REQUEST: "false"
-  script:
-    - apk add --no-cache bash curl python3
-    - ${CI_PROJECT_DIR}/travisci/trigger-dependent-build.sh
+# Removed the dependent builds triggered from GitLab
+# Travis cfg is not allowing concurrent build anymore
+# and dep build requests are timing out
+# Better remove them - for now
