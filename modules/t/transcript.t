@@ -324,6 +324,9 @@ is ( substr($tr->spliced_seq(1), 1687, 6), 'CAGtag', 'End mask boundary on forwa
 my $gencode_primary = $tr->gencode_primary();
 is($gencode_primary, '1', 'Presence of the GENCODE Primary transcript attribute is correctly set to true');
 
+# test that transcript has GENCODE basic attrib associated
+my $gencode_basic = $tr->gencode_basic();
+is($gencode_basic, '1', 'Presence of the GENCODE Basic transcript attribute is correctly set to true');
 
 my $interpro = $ta->get_Interpro_by_transid("ENST00000252021");
 foreach my $i (@$interpro) {
@@ -349,6 +352,10 @@ is($tr->stable_id, 'ENST00000278995', 'Fetched correct transcript by rnaproduct 
 # test that transcript does not have GENCODE primary attrib associated
 $gencode_primary = $tr->gencode_primary();
 is($gencode_primary, '0', 'Presence of the GENCODE Primary transcript attribute is correctly set to false');
+
+# test that transcript does not have GENCODE basic attrib associated
+$gencode_basic = $tr->gencode_basic();
+is($gencode_basic, '0', 'Presence of the GENCODE Basic transcript attribute is correctly set to false');
 
 #
 # test fetch_by_translation_id
