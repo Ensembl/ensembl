@@ -446,12 +446,12 @@ sub run_exonerate {
     throw("Can't find exon fasta files.");
   }
 
-  # create an empty lsf log directory
+  # create an empty HPC log directory
   my $logpath = path_append($self->logger->logpath, 'exonerate');
   system("rm -rf $logpath") == 0 or
-    $self->logger->error("Unable to delete lsf log dir $logpath: $!\n");
+    $self->logger->error("Unable to delete HPC log dir $logpath: $!\n");
   system("mkdir -p $logpath") == 0 or
-    $self->logger->error("Can't create lsf log dir $logpath: $!\n");
+    $self->logger->error("Can't create HPC log dir $logpath: $!\n");
 
   # delete exonerate output from previous runs
   my $dump_path = $self->cache->dump_path;
@@ -476,13 +476,14 @@ sub run_exonerate {
 
   my $percent =
     int( ( $self->conf->param('exonerate_threshold') || 0.5 )*100 );
-  my $lsf_name       = 'idmapping_exonerate_' . time;
+  my $hpc_name       = 'idmapping_exonerate_' . time;
   my $exonerate_path = $self->conf->param('exonerate_path');
   my $exonerate_extra_params =
     $self->conf->param('exonerate_extra_params');
+  my $concurrent_jobs = $self->conf()->param('exonerate_concurrent_jobs') || 200;
 
   #
-  # run exonerate jobs using lsf
+  # run exonerate jobs using lsf/slurm
   #
   my $exonerate_job =
     qq{$exonerate_path } .
@@ -496,38 +497,77 @@ sub run_exonerate {
     qq{| grep '^myinfo:' > $dump_path/exonerate_map.\$LSB_JOBINDEX} .
     "\n";
 
-  $self->logger->info("Submitting $num_jobs exonerate jobs to lsf.\n");
+  $self->logger->info("Submitting $num_jobs exonerate jobs to HPC.\n");
   $self->logger->debug("$exonerate_job\n\n");
 
-  my $bsub_cmd = sprintf(
-               "|bsub -J '%s[1-%d]%%%d' -o %s/exonerate.%%I.out %s",
-               $lsf_name,
-               $num_jobs,
-               $self->conf()->param('exonerate_concurrent_jobs') || 200,
-               $logpath,
-               $self->conf()->param('lsf_opt_exonerate') );
+  # allow jobs to be submitted to LSF or SLURM
+  if ($self->conf->param('lsf')) {
 
-  local *BSUB;
-  open( BSUB, $bsub_cmd ) ## no critic
-    or $self->logger->error("Could not open open pipe to bsub: $!\n");
+    my $bsub_cmd = sprintf(
+                "|bsub -J '%s[1-%d]%%%d' -o %s/exonerate.%%I.out %s",
+                $hpc_name,
+                $num_jobs,
+                $concurrent_jobs,
+                $logpath,
+                $self->conf()->param('lsf_opt_exonerate') );
 
-  print BSUB $exonerate_job;
-  $self->logger->error("Error submitting exonerate jobs: $!\n")
-    unless ($? == 0); 
-  close BSUB;
+    local *BSUB;
+    open( BSUB, $bsub_cmd ) ## no critic
+      or $self->logger->error("Could not open open pipe to bsub: $!\n");
 
-  # submit dependent job to monitor finishing of exonerate jobs
-  $self->logger->info("Waiting for exonerate jobs to finish...\n", 0, 'stamped');
+    print BSUB $exonerate_job;
+    $self->logger->error("Error submitting exonerate jobs: $!\n")
+      unless ($? == 0); 
+    close BSUB;
 
-  my $dependent_job =
-    qq{bsub -K -w "ended($lsf_name)" -q production } .
-    qq{-M 1000 -R 'select[mem>1000]' -R 'rusage[mem=1000]' } .
-    qq{-o $logpath/exonerate_depend.out /bin/true};
+    # submit dependent job to monitor finishing of exonerate jobs
+    $self->logger->info("Waiting for exonerate jobs to finish...\n", 0, 'stamped');
 
-  system($dependent_job) == 0 or
-    $self->logger->error("Error submitting dependent job: $!\n");
+    my $dependent_job =
+      qq{bsub -K -w "ended($hpc_name)" -q production } .
+      qq{-M 1000 -R 'select[mem>1000]' -R 'rusage[mem=1000]' } .
+      qq{-o $logpath/exonerate_depend.out /bin/true};
 
-  $self->logger->info("All exonerate jobs finished.\n", 0, 'stamped');
+    system($dependent_job) == 0 or
+      $self->logger->error("Error submitting dependent job: $!\n");
+
+    $self->logger->info("All exonerate jobs finished.\n", 0, 'stamped');
+
+  } elsif ($self->conf->param('slurm')) {
+
+    # Build the sbatch command for submitting job array
+    my $sbatch_cmd = sprintf(
+        "sbatch --array=1-%d%%%d --output=%s/exonerate.%%A_%%a.out %s",
+        $num_jobs,
+        $concurrent_jobs,
+        $logpath,
+        $self->conf()->param('slurm_opt_exonerate')
+    );
+
+    # Open a pipe to sbatch
+    open(my $SBATCH, "| $sbatch_cmd") or die "Could not open pipe to sbatch: $!\n";
+
+    # Submit exonerate jobs to sbatch
+    print $SBATCH $exonerate_job;  # Assuming $exonerate_job contains job commands
+
+    close $SBATCH;
+
+    # Check if sbatch submission was successful
+    if ($? != 0) {
+        $self->logger->error("Error submitting exonerate jobs to SLURM: $!\n");
+    }
+
+    # Submit dependent job to monitor finishing of exonerate jobs
+    my $dependent_job = sprintf(
+        "sbatch --dependency=afterok:%s --mem=1000 --output=%s/exonerate_depend.out /bin/true",
+        $hpc_name,
+        $logpath
+    );
+
+    system($dependent_job) == 0 or $self->logger->error("Error submitting dependent job: $!\n");
+
+    $self->logger->info("All exonerate jobs finished.\n");
+  }
 
   #
   # check results

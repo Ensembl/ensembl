@@ -95,6 +95,8 @@ $conf->parse_options(
   'basedir|basedir=s' => 1,
   'lsf!' => 0,
   'lsf_opt|lsfopt=s' => 0,
+  'slurm!' => 0,
+  'slurm_opt|slurmopt=s' => 0,
   'suffix|sfx=s' => 0,
   'debug1|d1=s' => 1,
   'debug2|d2=s' => 1,
@@ -123,9 +125,10 @@ my $logger = new Bio::EnsEMBL::Utils::Logger(
   -LOGLEVEL     => $conf->param('loglevel'),
 );
 
-# if user wants to run via lsf, submit script with bsub (this will exit this
+# if user wants to run via lsf/slurm, submit script with bsub/sbatch (this will exit this
 # instance of the script)
 &bsubmit if ($conf->param('lsf'));
+&sbatch_submit if ($conf->param('slurm'));
 
 # initialise log
 $logger->init_log($conf->list_param_values);
@@ -382,4 +385,39 @@ sub bsubmit {
   exec($cmd) or die "Could not exec $0 via lsf: $!\n";
   #exit;
 }
+
+sub sbatch_submit {
+    #
+    # build sbatch commandline
+    #
+
+    my $logpath = $conf->param('logpath');
+    my $log_autoid = $logger->log_auto_id;
+
+    # Automatically create a filename for SLURM output
+    my $cmd = "sbatch -o $logpath/slurm_compare_$log_autoid.out";
+
+    # Add extra SLURM options as configured by the user
+    $cmd .= ' ' . $conf->param('slurm_opt');
+
+    # This script's name
+    $cmd .= " $0";
+
+    # Options for this script
+    my $options = $conf->create_commandline_options(
+        logautoid    => $log_autoid,
+        interactive  => 0,
+        slurm        => 0,
+    );
+    $cmd .= " $options";
+
+    #
+    # Execute sbatch
+    #
+    print "\nRe-executing via SLURM:\n";
+    print "$cmd\n\n";
+
+    exec($cmd) or die "Could not exec $0 via SLURM: $!\n";
+}
+
 

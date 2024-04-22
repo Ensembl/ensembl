@@ -121,6 +121,9 @@ $conf->parse_options(
   'lsf!' => 0,
   'lsf_opt_run|lsfoptrun=s' => 0,
   'lsf_opt_dump_cache|lsfoptdumpcache=s' => 0,
+  'slurm!' => 0,
+  'slurm_opt_run|slurmoptrun=s' => 0,
+  'slurm_opt_dump_cache|slurmoptdumpcache=s' => 0,
   'no_check!' => 0,
   'no_check_empty_tables' => 0,
 );
@@ -161,9 +164,10 @@ unless ($conf->param('no_check')) {
   }
 }
 
-# if user wants to run via lsf, submit script with bsub (this will exit this
+# if user wants to run via hpc, submit script with bsub/sbatch (this will exit this
 # instance of the script)
 &bsubmit if ($conf->param('lsf'));
+&sbatch_submit if ($conf->param('slurm'));
 
 # this script is only a wrapper and will run one or more components.
 # define options for the components here.
@@ -347,5 +351,40 @@ sub bsubmit {
 
   exec($cmd) or die "Could not exec $0 via lsf: $!\n";
   #exit;
+}
+
+sub sbatch_submit {
+    #
+    # build sbatch commandline
+    #
+
+    my $logpath = $conf->param('logpath');
+    my $log_autoid = $logger->log_auto_id;
+
+    # Automatically create a filename for SLURM output
+    my $cmd = "sbatch -o $logpath/slurm_$log_autoid.out";
+
+    # Add extra SLURM options as configured by the user
+    $cmd .= ' ' . $conf->param('slurm_opt_run');
+
+    # This script's name
+    $cmd .= " $0";
+
+    # Options for this script
+    my $options = $conf->create_commandline_options(
+        logautoid   => $log_autoid,
+        interactive => 0,
+        slurm       => 0,
+        no_check    => 1,
+    );
+    $cmd .= " $options";
+
+    #
+    # Execute sbatch
+    #
+    print "\nRe-executing via SLURM:\n";
+    print "$cmd\n\n";
+
+    exec($cmd) or die "Could not exec $0 via SLURM: $!\n";
 }
 
