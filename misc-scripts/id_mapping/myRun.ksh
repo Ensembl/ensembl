@@ -70,6 +70,7 @@ if [[ ${conf#/} == ${conf} ]]; then
   exit
 fi
 
-./run.pl --lsf --conf=${conf} --logauto --mode=${mode}
+# ./run.pl --lsf --conf=${conf} --logauto --mode=${mode}
+./run.pl --slurm --conf=${conf} --logauto --mode=${mode}
 
 # $Id$

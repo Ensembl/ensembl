@@ -407,14 +407,14 @@ sub sbatch_submit {
     my $options = $conf->create_commandline_options(
         logautoid    => $log_autoid,
         interactive  => 0,
-        slurm        => 0,
+        slurm        => 1,
     );
     $cmd .= " $options";
 
     #
     # Execute sbatch
     #
-    print "\nRe-executing via SLURM:\n";
+    print "\nRe-executing via SLURM in script $0:\n";
     print "$cmd\n\n";
 
     exec($cmd) or die "Could not exec $0 via SLURM: $!\n";

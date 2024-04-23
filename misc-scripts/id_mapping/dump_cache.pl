@@ -107,6 +107,7 @@ $conf->parse_options(
   'lsf' => 0,
   'lsf_opt_dump_cache|lsfoptdumpcache=s' => 0,
   'slurm' => 0,
+  'slurm_opt_dump_cache|slurmoptdumpcache=s' => 0,
   'cache_method=s' => 0,
   'build_cache_auto_threshold=n' => 0,
   'build_cache_concurrent_jobs=n' => 0,
@@ -321,7 +322,7 @@ sub build_cache_by_seq_region {
         . $conf->param('slurm_opt_dump_cache');
 
       # run slurm job array
-      $logger->info("\nSubmitting $num_jobs jobs to SLURM.\n");
+      $logger->info("\nSubmitting $num_jobs jobs to SLURM in script $0.\n");
       $logger->debug("$cmd\n\n");
       $logger->debug("$pipe\n\n");
 
@@ -339,11 +340,11 @@ sub build_cache_by_seq_region {
 
       my $dependent_job =
         qq{sbatch --dependency=afterok:$slurm_name }
-        . qq{--mem=100 --output=$logpath/dump_cache.$dbtype.depend.out }
+        . qq{--time=1:00:00 --mem=100 --output=$logpath/dump_cache.$dbtype.depend.out }
         . qq{/bin/true};
 
       system($dependent_job) == 0 or
-        $logger->error("Error submitting dependent job: $!\n");
+        $logger->error("Error submitting dependent job: $!. (In script $0)\n");
 
       $logger->info("All jobs finished.\n", 0, 'stamped');
 
