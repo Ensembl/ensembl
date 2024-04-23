@@ -28,7 +28,7 @@ if [ "$COVERALLS" = 'true' ]; then
     rt=$(($rt+$?))
   fi
 else
-  perl $ENSDIR/ensembl-test/scripts/runtests.pl -v modules/t $SKIP_TESTS
+  perl $ENSDIR/ensembl-test/scripts/runtests.pl modules/t $SKIP_TESTS
   rt=$?
   if [ "$DB" = 'mysql' ]; then
     perl $ENSDIR/ensembl-test/scripts/runtests.pl misc-scripts/xref_mapping/t

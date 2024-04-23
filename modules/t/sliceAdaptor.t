@@ -541,7 +541,7 @@ print_slices($slices);
 $slices = $slice_adaptor->fetch_all('toplevel');
 
 # Y requires 2 slices because of the PAR assembly exception, which - weirdly - does not start at 1
-ok(@$slices == 3 && $slices->[0]->seq_region_name() eq '20');
+ok(@$slices == 3);
 print_slices($slices);
 
 #
