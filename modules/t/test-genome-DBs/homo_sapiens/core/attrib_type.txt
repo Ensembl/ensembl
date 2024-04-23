@@ -24,6 +24,7 @@
 24	appris	APPRIS	\N
 124	mRNA_start_NF	mRNA start not found	\N
 126	cds_start_NF	CDS start not found	\N
+417	gencode_basic	GENCODE basic annotation	GENCODE Basic is a view provided by UCSC for users. It includes a subset of the GENCODE transcripts. In general, for protein coding genes it will show only the full length models (unless a protein coding gene has no full-length models, in which case other rules apply). For noncoding genes, it will also only show the full-length (mRNA start and end found) models (unless there are no full-length models, in which case other rules apply).
 428	TSL	Transcript Support Level	\N
 535	MANE_Select	MANE Select v0.92	MANE Select (v0.92) is the preliminary release (phase 7) of the MANE Select data set. The Matched Annotation from NCBI and EMBL-EBI project (MANE) is a collaboration between Ensembl-GENCODE and RefSeq to select a default transcript per human protein coding locus that is representative of biology, well-supported, expressed and conserved. This transcript set matches GRCh38 and is 100% identical between RefSeq and Ensembl-GENCODE for 5' UTR, CDS, splicing and 3' UTR.
 554	is_canonical	Is Canonical	Flag to state that a feature is a canonical one.
