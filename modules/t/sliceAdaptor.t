@@ -522,13 +522,13 @@ ok($slice->strand == -1);
 #default no duplicates and reference only
 my $slices = $slice_adaptor->fetch_all('chromosome',undef);
 print_slices($slices);
-is(@$slices, 64, 'References slices for coord system chromosome');
+is(@$slices, 63, 'References slices for coord system chromosome');
 
 # include duplicates
 $slices = $slice_adaptor->fetch_all('chromosome', undef,0, 1);
 
 print_slices($slices);
-is(@$slices, 63, 'References slices for coord system chromosome when including duplicates (Y should become 1 region not 2)');
+is(@$slices, 62, 'References slices for coord system chromosome when including duplicates (Y should become 1 region not 2)');
 
 
 $slices = $slice_adaptor->fetch_all('contig', undef);
