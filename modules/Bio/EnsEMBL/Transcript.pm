@@ -2114,8 +2114,6 @@ sub translate {
     Bio::Tools::CodonTable->new( -id => $codon_table_id );
 
   my $mrna = $self->translateable_seq();
-  my $first_mrna_codon = substr( $mrna,  0, 3 );
-  my $last_mrna_codon  = substr( $mrna, -3, 3 );
 
   my $delta = CORE::length($mrna) % 3;
   if ( $delta > 0 ) {
@@ -2135,7 +2133,9 @@ sub translate {
   }
   
   if ( CORE::length($mrna) < 1 ) { return undef }
-#  if ( CORE::length($mrna) == 3 && $codon_table->is_ter_codon( $last_mrna_codon ) ) { return undef }
+
+  my $first_mrna_codon = substr( $mrna,  0, 3 );
+  my $last_mrna_codon  = substr( $mrna, -3, 3 );
 
   my $display_id = $self->translation->display_id()
     || scalar( $self->translation() );
