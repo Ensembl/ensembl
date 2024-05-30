@@ -2154,7 +2154,7 @@ sub translate {
   if ( CORE::length($mrna) < 1 ) { return undef }
 
   my $display_id = $self->translation->display_id()
-    || scalar( $self->translation() );
+    || "" . $self->translation();
 
   my $peptide = Bio::Seq->new( -seq      => $mrna,
                                -moltype  => 'dna',
