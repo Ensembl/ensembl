@@ -2138,7 +2138,7 @@ sub translate {
   my $last_mrna_codon  = substr( $mrna, -3, 3 );
 
   my $display_id = $self->translation->display_id()
-    || scalar( $self->translation() );
+    || "" . $self->translation();
 
   # From BioPerl perspective, we'll treat our CDS as incomplete:
   # thus, BioPerl will not 
