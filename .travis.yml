@@ -57,12 +57,9 @@ jobs:
   include:
     - perl: '5.30'
       env: COVERALLS=false DB=mysql
-      dist: focal
   exclude:
     - perl: '5.26'
-      env: COVERALLS=false DB=mysql
-    - perl: '5.30'
-      dist: trusty
+      env: COVERALLS=true DB=mysql
 
 notifications:
   email:
