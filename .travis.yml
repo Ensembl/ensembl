@@ -1,7 +1,7 @@
 language: perl
 
 dist:
-  - trusty
+  - focal
 
 services:
   - mysql
