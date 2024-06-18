@@ -392,46 +392,46 @@ sub rescore_gene_matrix_lsf {
   # allow jobs to be submitted to LSF or SLURM
   if ($self->conf->param('lsf')) {
 
-    my $cmd = qq{$synteny_rescore_script $options --index \$LSB_JOBINDEX};
+    # my $cmd = qq{$synteny_rescore_script $options --index \$LSB_JOBINDEX};
 
-    my $bsub_cmd =
-      sprintf( "|bsub -J '%s[1-%d]' "
-                              . "-o %s/synteny_rescore.%%I.out "
-                              . "-e %s/synteny_rescore.%%I.err %s",
-              $hpc_name, $num_jobs, $logpath, $logpath,
-              $self->conf()->param('lsf_opt_synteny_rescore') );
+    # my $bsub_cmd =
+    #   sprintf( "|bsub -J '%s[1-%d]' "
+    #                           . "-o %s/synteny_rescore.%%I.out "
+    #                           . "-e %s/synteny_rescore.%%I.err %s",
+    #           $hpc_name, $num_jobs, $logpath, $logpath,
+    #           $self->conf()->param('lsf_opt_synteny_rescore') );
 
-    # run lsf job array
-    $self->logger->info("Submitting $num_jobs jobs to lsf.\n");
-    $self->logger->debug("$cmd\n\n");
+    # # run lsf job array
+    # $self->logger->info("Submitting $num_jobs jobs to lsf.\n");
+    # $self->logger->debug("$cmd\n\n");
 
-    local *BSUB;
-    open( BSUB, $bsub_cmd ) ## no critic
-      or $self->logger->error("Could not open open pipe to bsub: $!\n");
+    # local *BSUB;
+    # open( BSUB, $bsub_cmd ) ## no critic
+    #   or $self->logger->error("Could not open open pipe to bsub: $!\n");
 
-    print BSUB $cmd;
-    $self->logger->error("Error submitting synteny rescoring jobs: $!\n")
-      unless ($? == 0); 
-    close BSUB;
+    # print BSUB $cmd;
+    # $self->logger->error("Error submitting synteny rescoring jobs: $!\n")
+    #   unless ($? == 0); 
+    # close BSUB;
 
-    # submit dependent job to monitor finishing of jobs
-    $self->logger->info("Waiting for jobs to finish...\n", 0, 'stamped');
+    # # submit dependent job to monitor finishing of jobs
+    # $self->logger->info("Waiting for jobs to finish...\n", 0, 'stamped');
 
-    my $dependent_job =
-      qq{bsub -K -w "ended($hpc_name)" -q production } .
-      qq{-M 1000 -R 'select[mem>1000]' -R 'rusage[mem=1000]' } .
-      qq{-o $logpath/synteny_rescore_depend.out /bin/true};
+    # my $dependent_job =
+    #   qq{bsub -K -w "ended($hpc_name)" -q production } .
+    #   qq{-M 1000 -R 'select[mem>1000]' -R 'rusage[mem=1000]' } .
+    #   qq{-o $logpath/synteny_rescore_depend.out /bin/true};
 
-    system($dependent_job) == 0 or
-      $self->logger->error("Error submitting dependent job: $!\n");
+    # system($dependent_job) == 0 or
+    #   $self->logger->error("Error submitting dependent job: $!\n");
 
-    $self->logger->info("All jobs finished.\n", 0, 'stamped');
+    # $self->logger->info("All jobs finished.\n", 0, 'stamped');
 
   } elsif ($self->conf->param('slurm'))  {
 
     # Construct the command to be executed by sbatch
     my $sbatch_cmd = sprintf(
-      "sbatch --job-name=%s --array=1-%d --output=%s/synteny_rescore.%%A_%%a.out --error=%s/synteny_rescore.%%A_%%a.err %s",
+      "sbatch --job-name=%s --array=1-%d --parsable --output=%s/synteny_rescore.%%A_%%a.out --error=%s/synteny_rescore.%%A_%%a.err %s",
       $hpc_name,
       $num_jobs,
       $logpath,
@@ -439,19 +439,33 @@ sub rescore_gene_matrix_lsf {
       $self->conf()->param('slurm_opt_synteny_rescore')
     );
 
+    my $cmd = qq{ --wrap="$synteny_rescore_script }
+    . qq{ --conffile }
+    . $self->conf->param('basedir')
+    . qq{/default.conf --index \\} 
+    . qq{\${SLURM_ARRAY_TASK_ID}"};
+
     # Log job submission information
     $self->logger->info("Submitting $num_jobs jobs to SLURM.\n");
 
-    # Open a pipe to sbatch
-    open(my $SBATCH, "| $sbatch_cmd") or die "Could not open pipe to sbatch: $!\n";
+    $sbatch_cmd .= $cmd;
 
-    # Submit the synteny_rescore jobs to sbatch
-    for (my $i = 1; $i <= $num_jobs; $i++) {
-        my $cmd = "$synteny_rescore_script $options --index $i";
-        print $SBATCH "$cmd\n";
-    }
+    $self->logger->debug("$sbatch_cmd\n\n");
 
-    close $SBATCH;
+    # # Open a pipe to sbatch
+    # open(my $SBATCH, "| $sbatch_cmd") or die "Could not open pipe to sbatch: $!\n";
+
+    # # Submit the synteny_rescore jobs to sbatch
+    # for (my $i = 1; $i <= $num_jobs; $i++) {
+    #     my $cmd = "$synteny_rescore_script $options --index $i";
+    #     print $SBATCH "$cmd\n";
+    # }
+
+    # close $SBATCH;
+
+    my $jobid = `$sbatch_cmd`;
+    chop $jobid;
+    $self->logger->info("\nSubmitted job $jobid to farm\n");
 
     # Check if sbatch submission was successful
     if ($? != 0) {
@@ -459,28 +473,43 @@ sub rescore_gene_matrix_lsf {
     }
 
     # Submit dependent job to monitor finishing of jobs
-    my $dependent_job = sprintf(
-        "sbatch --dependency=afterok:%s --mem=1000 --output=%s/synteny_rescore_depend.out /bin/true",
-        $hpc_name,
-        $logpath
-    );
+    my $dep_filename = "$logpath/synteny.depend.out";
+    my $dependent_job =
+      qq{sbatch --dependency=afterok:$jobid }
+    . qq{--time=1:00:00 --mem=1000 --output=$dep_filename }
+    . qq{--wrap="/bin/true"};
+
+    $self->logger->debug("$dependent_job\n\n");
 
     system($dependent_job) == 0 or $self->logger->error("Error submitting dependent job: $!\n");
 
-    $self->logger->info("All jobs finished.\n");
+    $self->logger->info("About to check for dependent job progress...\n");
+
+    # check that the dependent job has run before moving on
+    sleep(360);
+    if (! -e $dep_filename) {
+      $self->logger->error("Cannot find output of dependent job $dep_filename. Assuming dependent job not yet finished. Need to wait for jobs to finish before continuing...\n");
+    }
 
   }
 
-  # check for lsf errors
-  sleep(5);
-  my $err;
-  foreach my $i (1..$num_jobs) {
-    $err++ unless (-e "$logpath/synteny_rescore.$i.success");
-  }
+  # # check for hpc errors
+  # sleep(5);
+  # my $err;
+  # foreach my $i (1..$num_jobs) {
+  #   my $file = "$logpath/synteny_rescore.$i.success";
+  #   $err++ unless (-e $file);
+  #   $self->logger->debug("Found file $file\n");
+  #   if ($err > 0) {
+  #     $self->logger->debug("Triggering error when looking for $file\n");
+  #   }
+  # }
 
-  if ($err) {
-    $self->logger->error("At least one of your jobs failed.\nPlease check the logfiles at $logpath for errors.\n");
-  }
+  # if ($err) {
+  #   $self->logger->error("At least one of your jobs failed.\nPlease check the logfiles at $logpath for errors.\n");
+  # }
+
+  
 
   # merge and return matrix
   $self->logger->debug("Merging rescored matrices...\n");
