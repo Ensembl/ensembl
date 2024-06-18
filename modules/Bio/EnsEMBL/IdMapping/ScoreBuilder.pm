@@ -120,6 +120,8 @@ sub create_shrinked_matrix {
     $self->logger->info("Read existing scoring matrix from $cache_file.\n");
   
   } else {
+
+    $self->logger->info("Not found saved scoring matrix. Will create lookup hashes...\n");
     
     # create lookup hashes for sources and targets in the MappingList
     my %sources = ();
@@ -140,6 +142,8 @@ sub create_shrinked_matrix {
   }
 
   # log shrinking stats
+  $self->logger->info("Logging 'shrinking' matrix stats...\n\n");
+
   $self->logger->info('Sources '.$matrix->get_source_count.' --> '.
     $shrinked_matrix->get_source_count."\n");
   $self->logger->info('Targets '.$matrix->get_target_count.' --> '.
