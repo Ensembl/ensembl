@@ -96,22 +96,24 @@ sub basic_mapping {
   my $targets_done = {};
 
   # sort scoring matrix entries by descending score
+  $self->logger->info("About to sort scoring matrix entries...\n", 0, 'stamped');
   my @sorted_entries =
     sort { $b->score <=> $a->score } @{ $matrix->get_all_Entries };
+  $self->logger->info("Finished scoring matrix entries...\n", 0, 'stamped');
 
   # debug
-  #my $idx = substr($mapping_name, -1);
+  my $idx = substr($mapping_name, -1);
 
   while ( my $entry = shift(@sorted_entries) ) {
 
-    #$self->logger->debug("\nxxx$idx ".$entry->to_string." ");
+    $self->logger->debug("\nxxx$idx ".$entry->to_string." ");
 
     # we already found a mapping for either source or target
     next
       if (    $sources_done->{ $entry->source }
            or $targets_done->{ $entry->target } );
 
-    #$self->logger->debug('d');
+    $self->logger->debug('d');
 
     # there's a better mapping for either source or target
     next
@@ -119,7 +121,7 @@ sub basic_mapping {
                            $entry, $matrix, $sources_done, $targets_done
            ) );
 
-    #$self->logger->debug('h');
+    $self->logger->debug('h');
 
     # check for ambiguous mappings; they are dealt with later
     my $other_sources = [];
@@ -128,7 +130,7 @@ sub basic_mapping {
     if ( $self->ambiguous_mapping( $entry,         $matrix,
                                    $other_sources, $other_targets ) )
     {
-      #$self->logger->debug('a');
+      $self->logger->debug('a');
 
       $other_sources =
         $self->filter_sources( $other_sources, $sources_done );
@@ -138,7 +140,7 @@ sub basic_mapping {
       next if ( scalar(@$other_sources) or scalar(@$other_targets) );
     }
 
-    #$self->logger->debug('A');
+    $self->logger->debug('A');
 
     # this is the best mapping, add it
     $mappings->add_Entry($entry);
