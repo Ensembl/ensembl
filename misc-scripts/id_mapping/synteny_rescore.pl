@@ -112,6 +112,11 @@ my $cache = Bio::EnsEMBL::IdMapping::Cache->new(
 # load SyntenyFramework and gene ScoredMappingMatrix from files
 my $basedir = $conf->param('basedir');
 
+# set default logpath
+unless ($conf->param('logpath')) {
+  $conf->param('logpath', path_append($conf->param('basedir'), 'log/synteny_rescore'));
+}
+
 my $sf = Bio::EnsEMBL::IdMapping::SyntenyFramework->new(
   -DUMP_PATH    => path_append($basedir, 'mapping'),
   -CACHE_FILE   => 'synteny_framework.ser',
@@ -133,6 +138,7 @@ $gene_scores->write_to_file;
 
 # set flag to indicate everything went fine
 my $success_file = $conf->param('logpath')."/synteny_rescore.$index.success";
+$logger->debug("success file being written to at: $success_file...\n");
 open(TMPFILE, '>', $success_file) and close TMPFILE
   or die "Can't open $success_file for writing: $!";
 
