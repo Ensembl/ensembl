@@ -260,6 +260,7 @@ sub map {
   );
 
   # map genes
+  $logger->info("Mapping genes with $gene_scores, $transcript_scores, $gsb\n", 0, 'stamped');
   $gene_mappings = $internal_id_mapper->map_genes($gene_scores,
     $transcript_scores, $gsb);
 
