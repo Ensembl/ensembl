@@ -68,8 +68,17 @@ sub init_basic {
 
   $mappings = $self->basic_mapping($gene_scores, "gene_mappings$num");
   $num++;
+
+  $self->logger->info("Finished basic gene mapping...\n", 0, 'stamped');
+
+  $self->logger->info("Creating shrinked matrix...\n", 0, 'stamped');
+
   my $new_scores = $gsb->create_shrinked_matrix($gene_scores, $mappings,
     "gene_matrix$num");
+
+  $self->logger->info("Finished creating shrinked matrix...\n", 0, 'stamped');
+
+  $self->logger->info("Returning new_scores and mappings. End of init_basic sub.\n", 0, 'stamped');
 
   return ($new_scores, $mappings);
 }
