@@ -7,14 +7,14 @@ services:
   - mysql
 
 perl:
-#  - '5.26'
-  - '5.30'
+  - '5.26'
+  - '5.40'
 
 env:
   matrix:
   - COVERALLS=true  DB=mysql
-#  - COVERALLS=false DB=mysql
-#  - COVERALLS=false DB=sqlite
+  - COVERALLS=false DB=mysql
+  - COVERALLS=false DB=sqlite
   global:
   - secure: Ju069PzB8QZG3302emIhyCEEQfVfVsiXy0nGcR6hue+vW9nE82NnOEZHbZIwUCXEjUaZRMVQ31Em70Ky22OrLK4D59bs2ClH21u8URDGD/cn7JNPGWFrgxuaXQKMQrw72doeB0+w1+ShURtqM41vITjinyU3y34RZ1NcbDwYSZI=
 
@@ -55,10 +55,10 @@ script:
 
 jobs:
   include:
-    - perl: '5.30'
+    - perl: '5.26'
       env: COVERALLS=true DB=mysql COVERALLS_REPO_TOKEN=${{secret.COVERALLS_REPO_TOKEN}}
   exclude:
-    - perl: '5.26'
+    - perl: '5.40'
       env: COVERALLS=true DB=mysql
 
 
