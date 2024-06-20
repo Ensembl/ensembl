@@ -12,7 +12,7 @@ perl:
 
 env:
   matrix:
-  - COVERALLS=true  DB=mysql
+  - COVERALLS=true  DB=mysql COVERALLS_REPO_TOKEN=${{secret.COVERALLS_REPO_TOKEN}}
   - COVERALLS=false DB=mysql
   - COVERALLS=false DB=sqlite
   global:
@@ -59,7 +59,7 @@ jobs:
       env: COVERALLS=true DB=mysql COVERALLS_REPO_TOKEN=${{secret.COVERALLS_REPO_TOKEN}}
   exclude:
     - perl: '5.40'
-      env: COVERALLS=true DB=mysql
+      env: COVERALLS=true DB=mysql COVERALLS_REPO_TOKEN=${{secret.COVERALLS_REPO_TOKEN}}
 
 
 notifications:
