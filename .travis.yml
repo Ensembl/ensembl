@@ -59,7 +59,7 @@ jobs:
       env: COVERALLS=false DB=mysql
   exclude:
     - perl: '5.26'
-      env: COVERALLS=true DB=mysql
+      env: COVERALLS=true DB=mysql COVERALLS_REPO_TOKEN=${{secret.COVERALLS_REPO_TOKEN}}
 
 
 notifications:
