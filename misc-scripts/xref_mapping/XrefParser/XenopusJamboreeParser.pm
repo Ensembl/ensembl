@@ -86,10 +86,13 @@ sub run {
   my $input_file = Text::CSV->new({
     sep_char       => "\t",
     empty_is_undef => 1,
+    binary => 1,
+    verbatim => 1
   }) || confess "Cannot use file $file: " . Text::CSV->error_diag();
 
   my $count = 0;
   while ( my $data = $input_file->getline($file_io) ) {
+    tr/\r\n//d for @$data;
 
     my ( $accession, $label, $desc, $stable_id ) = @{$data};
 
