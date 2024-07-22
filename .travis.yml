@@ -1,18 +1,18 @@
 language: perl
 
 dist:
-  - trusty
+  - focal
 
 services:
   - mysql
 
 perl:
   - '5.26'
-  - '5.30'
+  - '5.40'
 
 env:
   matrix:
-  - COVERALLS=true  DB=mysql
+  - COVERALLS=true  DB=mysql COVERALLS_REPO_TOKEN=${{secret.COVERALLS_REPO_TOKEN}}
   - COVERALLS=false DB=mysql
   - COVERALLS=false DB=sqlite
   global:
@@ -54,15 +54,12 @@ script:
   - "./travisci/harness.sh"
 
 jobs:
-  include:
-    - perl: '5.30'
-      env: COVERALLS=false DB=mysql
-      dist: focal
   exclude:
+    - perl: '5.40'
+      env: COVERALLS=true DB=mysql COVERALLS_REPO_TOKEN=${{secret.COVERALLS_REPO_TOKEN}}
     - perl: '5.26'
       env: COVERALLS=false DB=mysql
-    - perl: '5.30'
-      dist: trusty
+
 
 notifications:
   email:
