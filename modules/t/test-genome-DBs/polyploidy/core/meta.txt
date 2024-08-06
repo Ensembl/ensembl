@@ -1,5 +1,5 @@
 1	\N	schema_type	core
-2	\N	schema_version	113
+2	\N	schema_version	114
 3	\N	patch	patch_68_69_a.sql|schema_version
 4	1	species.taxonomy_id	4565
 6	1	species.alias	bread wheat
@@ -189,3 +189,4 @@
 269	\N	patch	patch_111_112_c.sql|Extend meta_key length to 64
 270	\N	patch	patch_112_113_a.sql|schema_version
 271	\N	patch	patch_112_113_b.sql|Ensure meta_value is not null
+272	\N	patch	patch_113_114_a.sql|schema_version
