@@ -266,7 +266,7 @@ CREATE TABLE `exon` (
   PRIMARY KEY (`exon_id`),
   KEY `seq_region_idx` (`seq_region_id`,`seq_region_start`),
   KEY `stable_id_idx` (`stable_id`,`version`)
-) ENGINE=MyISAM AUTO_INCREMENT=162071 DEFAULT CHARSET=latin1 ROW_FORMAT=DYNAMIC;
+) ENGINE=MyISAM AUTO_INCREMENT=1756927 DEFAULT CHARSET=latin1 ROW_FORMAT=DYNAMIC;
 
 CREATE TABLE `exon_transcript` (
   `exon_id` int(10) unsigned NOT NULL DEFAULT '0',
@@ -322,7 +322,7 @@ CREATE TABLE `gene` (
   KEY `analysis_idx` (`analysis_id`),
   KEY `stable_id_idx` (`stable_id`,`version`),
   KEY `canonical_transcript_id_idx` (`canonical_transcript_id`)
-) ENGINE=MyISAM AUTO_INCREMENT=18294 DEFAULT CHARSET=latin1 ROW_FORMAT=DYNAMIC;
+) ENGINE=MyISAM AUTO_INCREMENT=140609 DEFAULT CHARSET=latin1 ROW_FORMAT=DYNAMIC;
 
 CREATE TABLE `gene_archive` (
   `gene_stable_id` varchar(128) COLLATE latin1_bin NOT NULL DEFAULT '',
@@ -490,7 +490,7 @@ CREATE TABLE `meta` (
   PRIMARY KEY (`meta_id`),
   UNIQUE KEY `species_key_value_idx` (`species_id`,`meta_key`,`meta_value`),
   KEY `species_value_idx` (`species_id`,`meta_value`)
-) ENGINE=MyISAM AUTO_INCREMENT=215 DEFAULT CHARSET=latin1 ROW_FORMAT=DYNAMIC;
+) ENGINE=MyISAM AUTO_INCREMENT=217 DEFAULT CHARSET=latin1 ROW_FORMAT=DYNAMIC;
 
 CREATE TABLE `meta_coord` (
   `table_name` varchar(40) COLLATE latin1_bin NOT NULL DEFAULT '',
@@ -851,7 +851,7 @@ CREATE TABLE `transcript` (
   KEY `xref_id_index` (`display_xref_id`),
   KEY `analysis_idx` (`analysis_id`),
   KEY `stable_id_idx` (`stable_id`,`version`)
-) ENGINE=MyISAM AUTO_INCREMENT=21765 DEFAULT CHARSET=latin1 ROW_FORMAT=DYNAMIC;
+) ENGINE=MyISAM AUTO_INCREMENT=548628 DEFAULT CHARSET=latin1 ROW_FORMAT=DYNAMIC;
 
 CREATE TABLE `transcript_attrib` (
   `transcript_id` int(10) unsigned NOT NULL DEFAULT '0',
@@ -894,7 +894,7 @@ CREATE TABLE `translation` (
   PRIMARY KEY (`translation_id`),
   KEY `transcript_idx` (`transcript_id`),
   KEY `stable_id_idx` (`stable_id`,`version`)
-) ENGINE=MyISAM AUTO_INCREMENT=21757 DEFAULT CHARSET=latin1 ROW_FORMAT=DYNAMIC;
+) ENGINE=MyISAM AUTO_INCREMENT=1185323 DEFAULT CHARSET=latin1 ROW_FORMAT=DYNAMIC;
 
 CREATE TABLE `translation_attrib` (
   `translation_id` int(10) unsigned NOT NULL DEFAULT '0',
