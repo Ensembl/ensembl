@@ -1,4 +1,4 @@
-1	\N	schema_version	113
+1	\N	schema_version	114
 2014	1	species.classification	Haplorrhini
 40	1	assembly.default	GRCh37
 41	1	assembly.date	2009-02
@@ -140,3 +140,4 @@
 2147	\N	patch	patch_111_112_c.sql|Extend meta_key length to 64
 2148	\N	patch	patch_112_113_a.sql|schema_version
 2149	\N	patch	patch_112_113_b.sql|Ensure meta_value is not null
+2150	\N	patch	patch_113_114_a.sql|schema_version
