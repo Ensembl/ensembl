@@ -33,6 +33,7 @@ use warnings;
 use Carp;
 use POSIX qw(strftime);
 use File::Basename;
+use Text::CSV;
 
 use base qw( XrefParser::BaseParser );
 
@@ -49,6 +50,8 @@ sub run {
   my $verbose      = $ref_arg->{verbose};
   my $dbi          = $ref_arg->{dbi};
   $dbi = $self->dbi unless defined $dbi;
+
+  my $hgnc_file = $ref_arg->{hgnc_file} || undef;
 
   if((!defined $source_id) or (!defined $species_id) or (!defined $files)){
     croak "Need to pass source_id, species_id, files and rel_file as pairs";
@@ -79,7 +82,7 @@ sub run {
   print "SpTREMBL direct source id for $file: $sptr_direct_source_id\n" if ($verbose);
  
   $self->create_xrefs( $sp_source_id, $sptr_source_id, $sptr_non_display_source_id, $species_id,
-      $file, $verbose, $sp_direct_source_id, $sptr_direct_source_id, $isoform_source_id, $dbi );
+      $file, $verbose, $sp_direct_source_id, $sptr_direct_source_id, $isoform_source_id, $hgnc_file, $dbi );
 
     if ( defined $release_file ) {
         # Parse Swiss-Prot and SpTrEMBL release info from
@@ -113,7 +116,7 @@ sub run {
 # Parse file into array of xref objects
 
 sub create_xrefs {
-  my ($self, $sp_source_id, $sptr_source_id, $sptr_non_display_source_id, $species_id, $file, $verbose, $sp_direct_source_id, $sptr_direct_source_id, $isoform_source_id, $dbi ) = @_;
+  my ($self, $sp_source_id, $sptr_source_id, $sptr_non_display_source_id, $species_id, $file, $verbose, $sp_direct_source_id, $sptr_direct_source_id, $isoform_source_id, $hgnc_file, $dbi ) = @_;
 
   my $num_sp = 0;
   my $num_sptr = 0;
@@ -125,13 +128,16 @@ sub create_xrefs {
 
   my %dependent_sources = $self->get_xref_sources($dbi);
 
-    my (%genemap) =
-      %{ $self->get_valid_codes( "mim_gene", $species_id, $dbi ) };
-    my (%morbidmap) =
-      %{ $self->get_valid_codes( "mim_morbid", $species_id, $dbi ) };
+  my (%genemap) =
+    %{ $self->get_valid_codes( "mim_gene", $species_id, $dbi ) };
+  my (%morbidmap) =
+    %{ $self->get_valid_codes( "mim_morbid", $species_id, $dbi ) };
 
-    my $uniprot_io = $self->get_filehandle($file);
-    if ( !defined $uniprot_io ) { return }
+  # Extract descriptions from hgnc
+  my %hgnc_descriptions = $self->get_hgnc_descriptions($hgnc_file);
+
+  my $uniprot_io = $self->get_filehandle($file);
+  if ( !defined $uniprot_io ) { return }
 
   my @xrefs;
 
@@ -336,7 +342,17 @@ sub create_xrefs {
     
     my ($gns) = $_ =~ /(GN\s+.+)/s;
     my @gn_lines = ();
-    if ( defined $gns ) { @gn_lines = split /;/, $gns }
+    if (defined $gns) {
+      foreach my $gn_line (split("\n", $gns)) {
+        if ($gn_line !~ /^GN/) {last;}
+
+        $gn_line =~ s/^GN\s+//g;
+        push(@gn_lines, $gn_line);
+      }
+
+      $gns = join('', @gn_lines);
+      @gn_lines = split /;/, $gns;
+    }
   
     # Do not allow the addition of UniProt Gene Name dependent Xrefs
     # if the protein was imported from Ensembl. Otherwise we will
@@ -344,11 +360,9 @@ sub create_xrefs {
     if(! $ensembl_derived_protein) {
       my %depe;
       foreach my $gn (@gn_lines){
-# Make sure these are still lines with Name or Synonyms
-        if (($gn !~ /^GN/ || $gn !~ /Name=/) && $gn !~ /Synonyms=/) { last; }
         my $gene_name = undef;
 
-        if ($gn =~ / Name=([A-Za-z0-9_\-\.\s:]+)/s) { #/s for multi-line entries ; is the delimiter
+        if ($gn =~ /Name=([A-Za-z0-9_\-\.\s:]+)/s) { #/s for multi-line entries ; is the delimiter
 # Example line 
 # GN   Name=ctrc {ECO:0000313|Xenbase:XB-GENE-5790348};
           my $name = $1;
@@ -360,6 +374,7 @@ sub create_xrefs {
           $depe{SOURCE_NAME} = "Uniprot_gn";
           $depe{SOURCE_ID} = $dependent_sources{"Uniprot_gn"};
           $depe{LINKAGE_SOURCE_ID} = $xref->{SOURCE_ID};
+          $depe{DESCRIPTION} = $hgnc_descriptions{$name};
           push @{$xref->{DEPENDENT_XREFS}}, \%depe;
           $dependent_xrefs{"Uniprot_gn"}++;
         }
@@ -565,4 +580,39 @@ sub get_name {
 
   return $acc;
 }
+
+sub get_hgnc_descriptions {
+  my ($hgnc_file) = @_;
+  my %descriptions;
+
+  my $hgnc_fh = $self->get_filehandle($hgnc_file);
+  if ( !defined $hgnc_fh ) {confess "Can't open HGNC file '$hgnc_file'\n";}
+  $hgnc_file = do { local $/; <$hgnc_fh> };
+
+  my $input_file = Text::CSV->new({
+    sep_char       => "\t",
+    empty_is_undef => 1,
+    binary         => 1,
+    auto_diag      => 1
+  }) or croak "Cannot use file $hgnc_file: ".Text::CSV->error_diag ();
+
+  $hgnc_file = Encode::encode("UTF-8", $hgnc_file);
+  $hgnc_file =~ s/"//xg;
+
+  open my $hgnc_io, '<', \$hgnc_file or confess "Can't open HGNC file: $!\n";
+
+  $input_file->column_names( @{ $input_file->getline( $hgnc_io ) } );
+
+  while ( my $data = $input_file->getline_hr( $fh ) ) {
+    my $gene_name   = $data->{'Approved symbol'};
+    my $description = $data->{'Approved name'};
+
+    $descriptions{$gene_name} = $description;
+  }
+
+  close $hgnc_io;
+
+  return %descriptions;
+}
+
 1;
