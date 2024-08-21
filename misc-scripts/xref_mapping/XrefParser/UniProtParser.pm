@@ -582,7 +582,7 @@ sub get_name {
 }
 
 sub get_hgnc_descriptions {
-  my ($hgnc_file) = @_;
+  my ($self, $hgnc_file) = @_;
   my %descriptions;
 
   my $hgnc_fh = $self->get_filehandle($hgnc_file);
@@ -603,7 +603,7 @@ sub get_hgnc_descriptions {
 
   $input_file->column_names( @{ $input_file->getline( $hgnc_io ) } );
 
-  while ( my $data = $input_file->getline_hr( $fh ) ) {
+  while ( my $data = $input_file->getline_hr( $hgnc_io ) ) {
     my $gene_name   = $data->{'Approved symbol'};
     my $description = $data->{'Approved name'};
 
