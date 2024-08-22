@@ -37,7 +37,7 @@ use Text::CSV;
 
 use base qw( XrefParser::BaseParser );
 
-
+my $hgnc_file;
 
 sub run {
 
@@ -51,7 +51,7 @@ sub run {
   my $dbi          = $ref_arg->{dbi};
   $dbi = $self->dbi unless defined $dbi;
 
-  my $hgnc_file = $ref_arg->{hgnc_file} || undef;
+  $hgnc_file = $ref_arg->{hgnc_file} || undef;
 
   if((!defined $source_id) or (!defined $species_id) or (!defined $files)){
     croak "Need to pass source_id, species_id, files and rel_file as pairs";
@@ -82,7 +82,7 @@ sub run {
   print "SpTREMBL direct source id for $file: $sptr_direct_source_id\n" if ($verbose);
  
   $self->create_xrefs( $sp_source_id, $sptr_source_id, $sptr_non_display_source_id, $species_id,
-      $file, $verbose, $sp_direct_source_id, $sptr_direct_source_id, $isoform_source_id, $hgnc_file, $dbi );
+      $file, $verbose, $sp_direct_source_id, $sptr_direct_source_id, $isoform_source_id, $dbi );
 
     if ( defined $release_file ) {
         # Parse Swiss-Prot and SpTrEMBL release info from
@@ -116,7 +116,7 @@ sub run {
 # Parse file into array of xref objects
 
 sub create_xrefs {
-  my ($self, $sp_source_id, $sptr_source_id, $sptr_non_display_source_id, $species_id, $file, $verbose, $sp_direct_source_id, $sptr_direct_source_id, $isoform_source_id, $hgnc_file, $dbi ) = @_;
+  my ($self, $sp_source_id, $sptr_source_id, $sptr_non_display_source_id, $species_id, $file, $verbose, $sp_direct_source_id, $sptr_direct_source_id, $isoform_source_id, $dbi ) = @_;
 
   my $num_sp = 0;
   my $num_sptr = 0;
@@ -134,7 +134,10 @@ sub create_xrefs {
     %{ $self->get_valid_codes( "mim_morbid", $species_id, $dbi ) };
 
   # Extract descriptions from hgnc
-  my %hgnc_descriptions = $self->get_hgnc_descriptions($hgnc_file);
+  my %hgnc_descriptions;
+  if ($hgnc_file) {
+    %hgnc_descriptions = $self->get_hgnc_descriptions($hgnc_file);
+  }
 
   my $uniprot_io = $self->get_filehandle($file);
   if ( !defined $uniprot_io ) { return }
@@ -374,7 +377,7 @@ sub create_xrefs {
           $depe{SOURCE_NAME} = "Uniprot_gn";
           $depe{SOURCE_ID} = $dependent_sources{"Uniprot_gn"};
           $depe{LINKAGE_SOURCE_ID} = $xref->{SOURCE_ID};
-          $depe{DESCRIPTION} = $hgnc_descriptions{$name};
+          $depe{DESCRIPTION} = $hgnc_descriptions{$name} if ($hgnc_file && defined($hgnc_descriptions{$name}));
           push @{$xref->{DEPENDENT_XREFS}}, \%depe;
           $dependent_xrefs{"Uniprot_gn"}++;
         }
