@@ -1,7 +1,7 @@
 =head1 LICENSE
 
 Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
-Copyright [2016-2024] EMBL-European Bioinformatics Institute
+Copyright [2016-2023] EMBL-European Bioinformatics Institute
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -45,149 +45,169 @@ sub run {
   my $file = @{$files}[0];
   my $dir = dirname($file);
 
-  my (%swiss) = %{$self->get_valid_codes("uniprot/",$species_id, $dbi)};
-  my (%refseq) = %{$self->get_valid_codes("refseq",$species_id, $dbi)};
-
-  my $swissprot_io =
-    $self->get_filehandle( catfile( $dir, 'uniprot.txt' ) );
-
-  if ( !defined $swissprot_io ) {
-    croak "ERROR: Could not open " . catfile( $dir, 'uniprot.txt' ). "\n" ;
-  }
-
-
-  my $swissprot_csv = Text::CSV->new({
-      sep_char       => "\t",
-      empty_is_undef => 1,
-      strict         => 1,
-  }) or croak "Could not use swissprot file $file: " . Text::CSV->error_diag();
-
-  $swissprot_csv->column_names([ 'zfin',
-                                 'so',
-                                 'label',
-                                 'acc',
-  ]);
-
+  # Get the ZFIN descriptions
+  my @source_ids = $self->get_source_ids_for_source_name_pattern("ZFIN_ID");
   my %description;
 
-  #get the source ids for ZFIN refseq, entrezgene and uniprot
-  my @source_ids = $self->get_source_ids_for_source_name_pattern("ZFIN_ID");
-
-  my $sql = "select accession, label, version,  description from xref where source_id in (".join(", ",@source_ids).")";
+  my $sql = "select accession, description from xref where source_id in (".join(", ",@source_ids).")";
   my $sth = $dbi->prepare($sql);
   $sth->execute();
-  my ($acc, $lab, $ver, $desc);
+  my ($acc, $desc);
   my $zfin_loaded_count = 0;
-  $sth->bind_columns(\$acc, \$lab, \$ver, \$desc);
+  $sth->bind_columns(\$acc, \$desc);
   while (my @row = $sth->fetchrow_array()) {
     $description{$acc} = $desc if(defined($desc));
     $zfin_loaded_count++;
   }
   $sth->finish;
 
+  # Get the Uniprot and RefSeq accessions
+  my (%swiss) = %{$self->get_valid_codes("uniprot/swissprot",$species_id, $dbi)};
+  my (%refseq) = %{$self->get_valid_codes("refseq",$species_id, $dbi)};
+
+  # Process ZFIN to ensEMBL mappings
+  my $zfin_io = $self->get_filehandle(catfile($dir, 'ensembl_1_to_1.txt'));
+  if (!defined($zfin_io)) {
+    croak "ERROR: Could not open " . catfile($dir, 'ensembl_1_to_1.txt') . "\n";
+  }
+
+  my $zfin_csv = Text::CSV->new({
+    sep_char       => "\t",
+    empty_is_undef => 1,
+    strict         => 1,
+  }) or croak "Could not use zfin file: " . Text::CSV->error_diag();
+
+  $zfin_csv->column_names(['zfin', 'so', 'label', 'ensembl_id']);
+
+  while (my $zfin_line = $zfin_csv->getline_hr($zfin_io)) {
+    $self->add_to_direct_xrefs({
+      stable_id  => $zfin_line->{'ensembl_id'},
+      type       => 'gene',
+      acc        => $zfin_line->{'zfin'},
+      label      => $zfin_line->{'label'},
+      desc       => $description{$zfin_line->{'zfin'}},
+      dbi        => $dbi,
+      source_id  => $source_id,
+      species_id => $species_id
+    });
+  }
+
+  $zfin_io->close();
+
+  # Get the added ZFINs
+  my (%zfin) = %{$self->get_valid_codes("zfin", $species_id, $dbi)};
+
   my $spcount =0;
   my $rscount =0;
   my $mismatch=0;
 
-#swissprot file format (in uniprot.txt)
-#ZDB-GENE-000112-47      SO:0000704      ppardb  Q90Z66
-#ZDB-GENE-000125-12      SO:0000704      igfbp2a Q9PTH3
-#ZDB-GENE-000125-4       SO:0000704      dlc     B3DFM3
+  # Process ZFIN to Uniprot mappings
+  my $swissprot_io = $self->get_filehandle( catfile( $dir, 'uniprot.txt' ) );
+  if ( !defined $swissprot_io ) {
+    croak "ERROR: Could not open " . catfile( $dir, 'uniprot.txt' ). "\n" ;
+  }
+
+  my $swissprot_csv = Text::CSV->new({
+    sep_char       => "\t",
+    empty_is_undef => 1,
+    strict         => 1,
+  }) or croak "Could not use swissprot file $file: " . Text::CSV->error_diag();
+
+  $swissprot_csv->column_names([ 'zfin', 'so', 'label', 'acc' ]);
+
+  #swissprot file format (in uniprot.txt)
+  #ZDB-GENE-000112-47      SO:0000704      ppardb  Q90Z66
+  #ZDB-GENE-000125-12      SO:0000704      igfbp2a Q9PTH3
+  #ZDB-GENE-000125-4       SO:0000704      dlc     B3DFM3
 
   while ( my $swissprot_line = $swissprot_csv->getline_hr( $swissprot_io ) ) {
-    if(defined($swiss{$swissprot_line->{ 'acc' }})){
+    if(defined($swiss{$swissprot_line->{ 'acc' }}) && !defined($zfin{$swissprot_line->{ 'acc' }})){
       foreach my $xref_id (@{$swiss{$swissprot_line->{ 'acc' }}}){
-	$self->add_dependent_xref({ master_xref_id => $xref_id,
-			      acc            => $swissprot_line->{ 'zfin' },
-			      label          => $swissprot_line->{ 'label' },
-			      desc           => $description{$swissprot_line->{ 'zfin' }},
-			      source_id      => $source_id,
-                              dbi            => $dbi,
-			      species_id     => $species_id} );
-	$spcount++;
+        $self->add_dependent_xref({
+          master_xref_id => $xref_id,
+          acc            => $swissprot_line->{ 'zfin' },
+          label          => $swissprot_line->{ 'label' },
+          desc           => $description{$swissprot_line->{ 'zfin' }},
+          source_id      => $source_id,
+          dbi            => $dbi,
+          species_id     => $species_id
+        });
+        $spcount++;
       }
-    }
-    else{
+    } else {
       $mismatch++;
     }
   }
 
   $swissprot_io->close();
 
+  # Process ZFIN to RefSeq mappings
   my $refseq_io = $self->get_filehandle( catfile( $dir, 'refseq.txt' ) );
-
   if ( !defined $refseq_io ) {
     croak "ERROR: Could not open " . catfile( $dir, 'refseq.txt' ),"\n" ;
   }
 
   my $refseq_csv = Text::CSV->new({
-      sep_char       => "\t",
-      empty_is_undef => 1,
-      strict         => 1,
+    sep_char       => "\t",
+    empty_is_undef => 1,
+    strict         => 1,
   }) or croak "could not use refseq file $file: " . Text::CSV->error_diag();
 
-  $refseq_csv->column_names([ 'zfin',
-                              'so',
-                              'label',
-                              'acc'
-  ]);
+  $refseq_csv->column_names([ 'zfin', 'so', 'label', 'acc' ]);
 
-#ZDB-GENE-000125-12      SO:0000704      igfbp2a NP_571533
-#ZDB-GENE-000125-4       SO:0000704      dlc     NM_130944
-#ZDB-GENE-000125-4       SO:0000704      dlc     NP_571019
-#ZDB-GENE-000128-11      SO:0000704      dbx1b   NM_131178
+  #ZDB-GENE-000125-12      SO:0000704      igfbp2a NP_571533
+  #ZDB-GENE-000125-4       SO:0000704      dlc     NM_130944
+  #ZDB-GENE-000125-4       SO:0000704      dlc     NP_571019
+  #ZDB-GENE-000128-11      SO:0000704      dbx1b   NM_131178
 
   while ( my $refseq_line = $refseq_csv->getline_hr( $refseq_io ) ) {
     my ($zfin, $so, $label, $acc) = @{$refseq_line}{qw(zfin so label acc)};
     # Ignore mappings to predicted RefSeq
     if ($acc =~ /^XP_/ || $acc =~ /^XM_/ || $acc =~ /^XR_/) { next; }
-    if(defined($refseq{$acc})){
+    
+    if(defined($refseq{$acc}) && !defined($zfin{$acc})){
       foreach my $xref_id (@{$refseq{$acc}}){
-	$self->add_dependent_xref({ master_xref_id => $xref_id,
-				    acc            => $zfin,
-				    label          => $label,
-				    desc           => $description{$zfin},
-				    source_id      => $source_id,
-                                    dbi            => $dbi,
-				    species_id     => $species_id} );
-	$rscount++;
+        $self->add_dependent_xref({
+          master_xref_id => $xref_id,
+          acc            => $zfin,
+          label          => $label,
+          desc           => $description{$zfin},
+          source_id      => $source_id,
+          dbi            => $dbi,
+          species_id     => $species_id
+        });
+        $rscount++;
       }
-    }
-    else{
+    } else {
       $mismatch++;
     }
   }
 
   $refseq_io->close();
 
-  my (%zfin) = %{$self->get_valid_codes("zfin",$species_id, $dbi)};
+  # Get the added ZFINs again (with deps)
+  (%zfin) = %{$self->get_valid_codes("zfin", $species_id, $dbi)};
 
+  # Process the synonyms
   my $zfin_io = $self->get_filehandle( catfile( $dir, 'aliases.txt' ) );
-
   if ( !defined $zfin_io ) {
     croak "ERROR: Could not open " . catfile( $dir, 'aliases.txt' ), "\n" ;
   }
 
   my $zfin_csv = Text::CSV->new({
-      sep_char       => '\t',
-      empty_is_undef => 1,
-      strict         => 1,
+    sep_char       => '\t',
+    empty_is_undef => 1,
+    strict         => 1,
   }) or croak "could not use zfin file $file: " . Text::CSV->error_diag();
 
-  $zfin_csv->column_names([ 'acc',
-                            'cur_name',
-                            'cur_symbol',
-                            'syn',
-                            'so',
-  ]);
+  $zfin_csv->column_names([ 'acc', 'cur_name', 'cur_symbol', 'syn', 'so' ]);
 
-#DB-ALT-000717-2        zc1Tg   zc1Tg   zc1     SO:0001218
-#ZDB-ALT-000717-4        zc3Tg   zc3Tg   Tg(NBT:MAPT-GFP)        SO:0001218
+  #DB-ALT-000717-2        zc1Tg   zc1Tg   zc1     SO:0001218
+  #ZDB-ALT-000717-4        zc3Tg   zc3Tg   Tg(NBT:MAPT-GFP)        SO:0001218
 
   my $syncount = 0;
 
   $sth = $dbi->prepare('SELECT source_id from source where name like "ZFIN_ID"');
-
   $sth->execute;
   my $s1;
   $sth->bind_columns(\$s1);
@@ -217,3 +237,4 @@ sub run {
 }
 
 1;
+
