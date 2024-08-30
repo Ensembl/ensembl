@@ -18,9 +18,13 @@ env:
   global:
   - secure: Ju069PzB8QZG3302emIhyCEEQfVfVsiXy0nGcR6hue+vW9nE82NnOEZHbZIwUCXEjUaZRMVQ31Em70Ky22OrLK4D59bs2ClH21u8URDGD/cn7JNPGWFrgxuaXQKMQrw72doeB0+w1+ShURtqM41vITjinyU3y34RZ1NcbDwYSZI=
 
+addons:
+  apt:
+    update: true
+    packages:
+    - libdb-dev
+
 before_install:
-  - sudo apt-get update
-  - sudo apt-get -y install libdb-dev
   - git clone --depth 1 https://github.com/Ensembl/ensembl-git-tools.git
   - export PATH=$PWD/ensembl-git-tools/bin:$PATH
   - export ENSEMBL_BRANCH='main'
