@@ -3,6 +3,8 @@ language: perl
 dist:
   - focal
 
+
+
 services:
   - mysql
 
@@ -24,6 +26,8 @@ addons:
     - unzip
 
 before_install:
+  - sudo apt-get update
+  - sudo apt-get -y install libdb-dev
   - git clone --depth 1 https://github.com/Ensembl/ensembl-git-tools.git
   - export PATH=$PWD/ensembl-git-tools/bin:$PATH
   - export ENSEMBL_BRANCH='main'
