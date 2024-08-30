@@ -2,7 +2,7 @@
 
 ENSDIR="${ENSDIR:-$PWD}"
 
-export PERL5LIB=$ENSDIR/bioperl-live:$ENSDIR/ensembl-test/modules:$PWD/modules:$ENSDIR/ensembl-io/modules:$ENSDIR/ensembl-variation/modules:$ENSDIR/ensembl-compara/modules:$PWD/misc-scripts/xref_mapping
+export PERL5LIB=$ENSDIR/ensembl-test/modules:$PWD/modules:$ENSDIR/ensembl-io/modules:$ENSDIR/ensembl-variation/modules:$ENSDIR/ensembl-compara/modules:$PWD/misc-scripts/xref_mapping
 export TEST_AUTHOR=$USER
 
 if [ "$DB" = 'mysql' ]; then
@@ -21,10 +21,10 @@ ln -sf ../../../modules/t/MultiTestDB.conf misc-scripts/xref_mapping/t/
 echo "Running test suite"
 rt=0
 if [ "$COVERALLS" = 'true' ]; then
-  PERL5OPT='-MDevel::Cover=+ignore,bioperl,+ignore,ensembl-test,+ignore,ensembl-variation,ensembl-compara' perl $ENSDIR/ensembl-test/scripts/runtests.pl -verbose modules/t $SKIP_TESTS
+  PERL5OPT='-MDevel::Cover=+ignore,ensembl-test,+ignore,ensembl-variation,ensembl-compara' perl $ENSDIR/ensembl-test/scripts/runtests.pl -verbose modules/t $SKIP_TESTS
   rt=$?
   if [ "$DB" = 'mysql' ]; then
-    PERL5OPT='-MDevel::Cover=+ignore,bioperl,+ignore,ensembl-test,+ignore,ensembl-variation,ensembl-compara' perl $ENSDIR/ensembl-test/scripts/runtests.pl -verbose misc-scripts/xref_mapping/t
+    PERL5OPT='-MDevel::Cover=+ignore,ensembl-test,+ignore,ensembl-variation,ensembl-compara' perl $ENSDIR/ensembl-test/scripts/runtests.pl -verbose misc-scripts/xref_mapping/t
     rt=$(($rt+$?))
   fi
 else
