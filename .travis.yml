@@ -33,6 +33,7 @@ before_install:
 
 install:
   - cpanm -v --sudo --installdeps --with-all-features .
+  - cpanm -v --sudo --notest XML::LibXML # https://github.com/shlomif/perl-XML-LibXML/pull/87
   - cp travisci/MultiTestDB.conf.travisci.mysql  modules/t/MultiTestDB.conf.mysql
   - cp travisci/MultiTestDB.conf.travisci.SQLite modules/t/MultiTestDB.conf.SQLite
   - cp travisci/testdb.conf.travisci.mysql  testdb.conf.mysql
