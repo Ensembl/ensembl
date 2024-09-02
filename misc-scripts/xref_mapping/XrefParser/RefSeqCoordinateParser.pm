@@ -211,7 +211,11 @@ sub run_script {
 ## Add link to EntrezGene IDs where available
   my (%entrez_ids) = %{ $self->get_valid_codes("EntrezGene", $species_id, $dbi) };
   my $entrez_source_id = $self->get_source_id_for_source_name('EntrezGene', undef, $dbi);
-  my $add_dependent_xref_sth = $dbi->prepare("INSERT INTO dependent_xref  (master_xref_id,dependent_xref_id, linkage_source_id) VALUES (?,?, $entrez_source_id)");
+  my $add_dependent_xref_sth = $dbi->prepare("INSERT INTO dependent_xref  (master_xref_id,dependent_xref_id, linkage_source_id) VALUES (?,?,?)");
+
+  ## Add link to WikiGene IDs where available
+  my (%wiki_ids) = %{ $self->get_valid_codes('WikiGene', $species_id, $dbi) };
+  my $wiki_source_id = $self->get_source_id_for_source_name('WikiGene', undef, $dbi);
 
   my $sa = $core_dba->get_SliceAdaptor();
   my $sa_of = $otherf_dba->get_SliceAdaptor();
@@ -401,7 +405,10 @@ sub run_script {
 # Add link between Ensembl gene and EntrezGene
           if (defined $entrez_ids{$entrez_id} ) {
             foreach my $dependent_xref_id (@{$entrez_ids{$entrez_id}}) {
-              $add_dependent_xref_sth->execute($xref_id, $dependent_xref_id);
+              $add_dependent_xref_sth->execute($xref_id, $dependent_xref_id, $entrez_source_id);
+            }
+            foreach my $dependent_xref_id (@{$wiki_ids{$entrez_id}}) {
+              $add_dependent_xref_sth->execute($xref_id, $dependent_xref_id, $wiki_source_id);
             }
           }
 

@@ -318,7 +318,12 @@ sub process_dependents{
       foreach my $ensembl_id (@{ $ensembl_ids{$object_type} }) {
         # Add new object_xref for each best_ensembl_id. 
         $insert_dep_ox_sth->execute($new_master_xref_id, $object_type, $ensembl_id, $dep_xref_id);
-        ## If there is a linkage_annotation, it is a go xref
+
+        $dep_ox_sth->execute($new_master_xref_id, $object_type, $ensembl_id, $dep_xref_id);
+        $dep_ox_sth->bind_columns(\$new_object_xref_id);
+        while ($dep_ox_sth->fetch()) {
+          $insert_ix_sth->execute($new_object_xref_id);
+        }
       }
       unless ($dep_xref_id == $xref_id) {
         push @master_xrefs, $dep_xref_id; # remember chained dependent xrefs
