@@ -259,6 +259,8 @@ sub xref_from_record {
       print $entry if (length($description) == 0);
       $description =~ s/\nACCESSION.*//s;
       $description =~ s/\n//g;
+      $description =~ s/{.*}-like//g;
+      $description =~ s/{.*}//g;
       $description =~ s/\s+/ /g;
       $description = substr($description, 0, 255) if (length($description) > 255);
 
