@@ -20,8 +20,9 @@ env:
 
 addons:
   apt:
+    update: true
     packages:
-    - unzip
+    - libdb-dev
 
 before_install:
   - git clone --depth 1 https://github.com/Ensembl/ensembl-git-tools.git
@@ -34,7 +35,6 @@ before_install:
   - git-ensembl --clone --depth 1 --branch $ENSEMBL_BRANCH ensembl-io
   - git-ensembl --clone --depth 1 --branch $ENSEMBL_BRANCH ensembl-variation
   - git-ensembl --clone --depth 1 --branch $ENSEMBL_BRANCH ensembl-compara
-  - git clone -b release-1-6-924 --depth 1 https://github.com/bioperl/bioperl-live.git
 
 install:
   - cpanm -v --sudo --installdeps --notest . --with-all-features
@@ -46,9 +46,6 @@ install:
   - cp travisci/testdb.conf.travisci.SQLite testdb.conf.SQLite
   - mysql -u root -h localhost -e 'GRANT ALL PRIVILEGES ON *.* TO "travis"@"%"'
   - mysql -u root -h localhost -e 'SET GLOBAL local_infile=1'
-
-before_script:
-  - rm -f "$HOME/.ensemblapi_no_version_check"
 
 script:
   - "./travisci/harness.sh"

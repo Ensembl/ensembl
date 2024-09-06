@@ -31,7 +31,7 @@ limitations under the License.
 =head1 NAME
 
 Bio::EnsEMBL::BaseAlignFeature - Baseclass providing a common abstract
-implmentation for alignment features
+implementation for alignment features
 
 =head1 SYNOPSIS
 

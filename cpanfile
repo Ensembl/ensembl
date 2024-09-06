@@ -6,6 +6,7 @@ requires 'URI::Escape';
 requires 'Config::IniFiles';
 requires 'Gzip::Faster';
 requires 'List::MoreUtils';
+requires 'Bio::Perl', '1.6.924';
 
 test_requires 'Test::Warnings';
 test_requires 'Test::Differences';

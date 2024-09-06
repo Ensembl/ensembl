@@ -131,7 +131,7 @@ sub intervals {
   return shift->{intervals};
 }
 
-=head add_interval 
+=head2 add_interval
 
   Arg []      : none
   Description : Add an interval to the node's set of intervals
