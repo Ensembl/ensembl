@@ -37,8 +37,10 @@ before_install:
   - git-ensembl --clone --depth 1 --branch $ENSEMBL_BRANCH ensembl-compara
 
 install:
-  - cpanm -v --sudo --notest XML::LibXML # https://github.com/shlomif/perl-XML-LibXML/pull/87
-  - cpanm -v --sudo --installdeps --with-all-features .
+  # Known test failures with new libxml2: https://github.com/shlomif/perl-XML-LibXML/pull/87
+  - cpanm -v --sudo --notest XML::LibXML
+  # Tests fail for Bio-DB-NCBIHelper, so use --notest
+  - cpanm -v --sudo --notest --installdeps --with-all-features .
   - cp travisci/MultiTestDB.conf.travisci.mysql  modules/t/MultiTestDB.conf.mysql
   - cp travisci/MultiTestDB.conf.travisci.SQLite modules/t/MultiTestDB.conf.SQLite
   - cp travisci/testdb.conf.travisci.mysql  testdb.conf.mysql
