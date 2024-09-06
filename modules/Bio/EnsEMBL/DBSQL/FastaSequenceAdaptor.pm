@@ -141,7 +141,7 @@ sub store {
   throw "Unsupported operation. Cannot store sequence in a fasta file";
 }
 
-=head _fetch_raw_seq
+=head2 _fetch_raw_seq
 
   Description : Provides access to the underlying faindex object and returns a sequence scalar ref
 

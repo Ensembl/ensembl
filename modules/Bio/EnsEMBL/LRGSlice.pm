@@ -66,6 +66,7 @@ sequence or features from an area of interest.
 =cut
 
 package Bio::EnsEMBL::LRGSlice;
+
 use vars qw(@ISA);
 use strict;
 
