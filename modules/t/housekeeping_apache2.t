@@ -39,6 +39,13 @@ my $cur_dir = cwd();
 chdir($original_dir);
 my $root = File::Spec->catdir($cur_dir, File::Spec->updir(),File::Spec->updir());
 
+my $notice_file = File::Spec->catfile($root, "NOTICE");
+my $skip_copyright = undef;
+if (-e $notice_file) {
+    is_notice_file_good($notice_file);
+    $skip_copyright = 1;
+}
+
 my @source_files = map {all_source_code(File::Spec->catfile($root, $_))} qw(modules scripts sql docs);
 #Find all files & run
 foreach my $f (@source_files) {
@@ -49,7 +56,7 @@ foreach my $f (@source_files) {
     next if $f =~ /\.conf\b/;
     next if $f =~ /\/CLEAN\b/;
     next if $f =~ /\.(tmpl|hash|nw|ctl|txt|html|textile)$/;
-    has_apache2_licence($f);
+    has_apache2_licence($f, $skip_copyright);
 }
 
 done_testing();
