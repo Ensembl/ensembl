@@ -31,6 +31,7 @@ limitations under the License.
 =cut
 
 package Bio::EnsEMBL::Utils::VegaCuration::Translation;
+
 use strict;
 use warnings;
 use vars qw(@ISA);

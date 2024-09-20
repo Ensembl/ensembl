@@ -48,6 +48,7 @@ Adaptor for ProteinAlignFeatures
 
 
 package Bio::EnsEMBL::DBSQL::ProteinAlignFeatureAdaptor;
+
 use vars qw(@ISA);
 use strict;
 

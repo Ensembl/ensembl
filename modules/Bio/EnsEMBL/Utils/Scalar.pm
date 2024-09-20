@@ -744,6 +744,7 @@ sub scope_guard {
 
 #### SUPER SECRET PACKAGE. IGNORE ME
 package Bio::EnsEMBL::Utils::Scalar::ScopeGuard;
+
 sub DESTROY {
   my ($self) = @_;
   $self->();

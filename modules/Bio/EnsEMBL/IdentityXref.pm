@@ -54,6 +54,7 @@ Bio::EnsEMBL::IdentityXref
 =cut
 
 package Bio::EnsEMBL::IdentityXref;
+
 use vars qw(@ISA $AUTOLOAD);
 use strict;
 use Bio::EnsEMBL::Utils::Argument qw( rearrange );
