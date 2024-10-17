@@ -1,11 +1,13 @@
 requires 'DBI';
 requires 'DBD::mysql', '< 5.0'; # newer versions do not support MySQL 5
+requires 'DBD::SQLite';
 requires 'HTTP::Tiny';
 requires 'IO::Compress::Gzip';
 requires 'URI::Escape';
 requires 'Config::IniFiles';
 requires 'Gzip::Faster';
 requires 'List::MoreUtils';
+requires 'JSON';
 
 test_requires 'Test::Warnings';
 test_requires 'Test::Differences';
@@ -15,6 +17,8 @@ test_requires 'Test::Deep';
 test_requires 'Test::More';
 test_requires 'Devel::Peek';
 test_requires 'Devel::Cycle';
+test_requires 'Devel::Cover';
+test_requires 'Devel::Cover::Report::Coveralls';
 test_requires 'Error';
 test_requires 'PadWalker';
 test_requires 'Test::Builder::Module';
