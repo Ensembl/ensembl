@@ -1,0 +1,41 @@
+Ensembl
+Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
+Copyright [2016-2024] EMBL-European Bioinformatics Institute
+
+This product includes software developed at:
+- EMBL-European Bioinformatics Institute
+- Wellcome Trust Sanger Institute
+
+ENSEMBL CORE PROJECT SUBCOMPONENTS
+
+The Ensembl Core Project includes a number of subcomponents with
+separate copyright notices and license terms. Your use of the source
+code for the these subcomponents is subject to the terms and
+conditions of the following licenses.
+
+COMPONENT: modules/Bio/EnsEMBL/Utils/Cache.pm
+
+Code has been renamed from Tie::Cache to 
+Bio::EnsEMBL::Utils::Cache and originally distributed on CPAN.
+
+Copyright (c) 1999-2002 Joshua Chamas, Chamas Enterprises Inc.  
+Sponsored by development on NodeWorks http://www.nodeworks.com
+
+All rights reserved. This program is free software; 
+you can redistribute it and/or modify it under the same 
+terms as Perl itself.
+
+COMPONENT: misc-scripts/doxygen_filter/EnsEMBL/Filter.pm and 
+           misc-scripts/doxygen_filter/EnsEMBL/PerlFilter.pm. 
+
+Both portions of code were based on the following agreement; 
+PerlFilter.pm has seen significant re-writing but derives from the 
+original source.
+
+Doxygen Pre-Processor for Perl
+Copyright (C) 2002  Bart Schuller
+Copyright (C) 2006  Phinex Informatik AG
+All Rights Reserved
+
+Doxygen Filter is free software; you can redistribute it and/or modify
+it under the same terms as Perl itself.
