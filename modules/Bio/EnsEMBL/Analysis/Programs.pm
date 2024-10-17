@@ -29,6 +29,7 @@ limitations under the License.
 =cut
 
 package Bio::EnsEMBL::Analysis::Programs;
+
 use strict;
 use vars qw( %Program_Paths );
 use Carp;

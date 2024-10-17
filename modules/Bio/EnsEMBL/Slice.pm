@@ -69,6 +69,7 @@ methods is to return Features on both Strands.
 =cut
 
 package Bio::EnsEMBL::Slice;
+
 use vars qw(@ISA);
 use strict;
 

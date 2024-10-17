@@ -95,6 +95,7 @@ case the convention is to go list_XXXX, such as
 =cut
 
 package Bio::EnsEMBL::DBSQL::BaseAdaptor;
+
 require Exporter;
 use vars qw(@ISA @EXPORT);
 use strict;

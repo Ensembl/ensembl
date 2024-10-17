@@ -129,6 +129,7 @@ These are accessed by the get_adaptor subroutine i.e.
 
 
 package Bio::EnsEMBL::Registry;
+
 use strict;
 use warnings;
 
