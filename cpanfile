@@ -8,8 +8,6 @@ requires 'Config::IniFiles';
 requires 'Gzip::Faster';
 requires 'List::MoreUtils';
 requires 'JSON';
-# This is bioperl
-requires 'Bio::Root::Version', '== 1.6.924';
 
 test_requires 'Test::Warnings';
 test_requires 'Test::Differences';
