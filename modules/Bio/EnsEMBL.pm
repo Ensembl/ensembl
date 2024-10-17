@@ -27,7 +27,6 @@ Bio::EnsEMBL - API to connect to and work with EnsEMBL genomic databases
     Bio::EnsEMBL::Registry->load_registry_from_db(
         -host => 'ensembldb.ensembl.org',
         -user => 'anonymous',
-        -db_version => 112,
         -species => 'homo sapiens',
         -group => 'core'
     );
