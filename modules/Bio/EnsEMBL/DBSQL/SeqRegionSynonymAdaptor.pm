@@ -29,6 +29,7 @@ INTO
 =cut
 
 package Bio::EnsEMBL::DBSQL::SeqRegionSynonymAdaptor;
+
 use vars qw(@ISA);
 use strict;
 

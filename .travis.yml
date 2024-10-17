@@ -18,6 +18,12 @@ env:
   global:
   - secure: Ju069PzB8QZG3302emIhyCEEQfVfVsiXy0nGcR6hue+vW9nE82NnOEZHbZIwUCXEjUaZRMVQ31Em70Ky22OrLK4D59bs2ClH21u8URDGD/cn7JNPGWFrgxuaXQKMQrw72doeB0+w1+ShURtqM41vITjinyU3y34RZ1NcbDwYSZI=
 
+addons:
+  apt:
+    update: true
+    packages:
+    - libdb-dev
+
 before_install:
   - git clone --depth 1 https://github.com/Ensembl/ensembl-git-tools.git
   - export PATH=$PWD/ensembl-git-tools/bin:$PATH
@@ -29,11 +35,12 @@ before_install:
   - git-ensembl --clone --depth 1 --branch $ENSEMBL_BRANCH ensembl-io
   - git-ensembl --clone --depth 1 --branch $ENSEMBL_BRANCH ensembl-variation
   - git-ensembl --clone --depth 1 --branch $ENSEMBL_BRANCH ensembl-compara
-  - git clone -b release-1-6-924 --depth 1 https://github.com/bioperl/bioperl-live.git
 
 install:
-  - cpanm -v --sudo --notest XML::LibXML # https://github.com/shlomif/perl-XML-LibXML/pull/87
-  - cpanm -v --sudo --installdeps --notest --with-all-features .
+  # Known test failures with new libxml2: https://github.com/shlomif/perl-XML-LibXML/pull/87
+  - cpanm -v --sudo --notest XML::LibXML
+  # Tests fail for Bio-DB-NCBIHelper, so use --notest
+  - cpanm -v --sudo --notest --installdeps --with-all-features .
   - cp travisci/MultiTestDB.conf.travisci.mysql  modules/t/MultiTestDB.conf.mysql
   - cp travisci/MultiTestDB.conf.travisci.SQLite modules/t/MultiTestDB.conf.SQLite
   - cp travisci/testdb.conf.travisci.mysql  testdb.conf.mysql

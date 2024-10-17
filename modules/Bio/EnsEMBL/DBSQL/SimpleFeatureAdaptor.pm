@@ -58,6 +58,7 @@ Simple Feature Adaptor - database access for simple features
 =cut
 
 package Bio::EnsEMBL::DBSQL::SimpleFeatureAdaptor;
+
 use vars qw(@ISA);
 use strict;
 

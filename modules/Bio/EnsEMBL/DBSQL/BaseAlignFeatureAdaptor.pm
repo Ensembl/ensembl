@@ -48,6 +48,7 @@ DnaAlignFeatureAdaptor and ProteinAlignFeatureAdaptor.
 =cut
 
 package Bio::EnsEMBL::DBSQL::BaseAlignFeatureAdaptor;
+
 use vars qw(@ISA @EXPORT);
 use strict;
 

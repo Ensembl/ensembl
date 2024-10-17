@@ -2855,7 +2855,7 @@ sub transfer {
 }
 
 
-=head recalculate_coordinates
+=head2 recalculate_coordinates
 
   Args       : none
   Example    : none

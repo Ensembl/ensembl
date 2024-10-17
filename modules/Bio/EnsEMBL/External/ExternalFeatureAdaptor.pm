@@ -32,7 +32,7 @@ limitations under the License.
 
 Bio::EnsEMBL::External::ExternalFeatureAdaptor
 
-=head 1 SUMMARY
+=head1 SUMMARY
 
 Allows features created externally from Ensembl in a single
 coordinate system to be retrieved in several other (Ensembl-style)

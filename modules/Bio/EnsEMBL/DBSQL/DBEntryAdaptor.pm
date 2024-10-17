@@ -381,7 +381,7 @@ sub get_all_masters {
 }
 
 
-=head fetch_all_by_name
+=head2 fetch_all_by_name
 
   Arg [1]    : string $name - The name of the external reference.
                found in accession, display_label or synonym
