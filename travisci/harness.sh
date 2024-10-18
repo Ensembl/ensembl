@@ -21,10 +21,10 @@ ln -sf ../../../modules/t/MultiTestDB.conf misc-scripts/xref_mapping/t/
 echo "Running test suite"
 rt=0
 if [ "$COVERALLS" = 'true' ]; then
-  PERL5OPT='-MDevel::Cover=+ignore,ensembl-test,+ignore,ensembl-variation,ensembl-compara' perl $ENSDIR/ensembl-test/scripts/runtests.pl -verbose modules/t $SKIP_TESTS
+  PERL5OPT='-MDevel::Cover' perl $ENSDIR/ensembl-test/scripts/runtests.pl -verbose modules/t $SKIP_TESTS
   rt=$?
   if [ "$DB" = 'mysql' ]; then
-    PERL5OPT='-MDevel::Cover=+ignore,ensembl-test,+ignore,ensembl-variation,ensembl-compara' perl $ENSDIR/ensembl-test/scripts/runtests.pl -verbose misc-scripts/xref_mapping/t
+    PERL5OPT='-MDevel::Cover' perl $ENSDIR/ensembl-test/scripts/runtests.pl -verbose misc-scripts/xref_mapping/t
     rt=$(($rt+$?))
   fi
 else

@@ -1,7 +1,6 @@
 language: perl
 
-dist:
-  - focal
+dist: focal
 
 services:
   - mysql
@@ -12,19 +11,23 @@ perl:
 
 env:
   matrix:
-  - COVERALLS=true  DB=mysql COVERALLS_REPO_TOKEN=${{secret.COVERALLS_REPO_TOKEN}}
-  - COVERALLS=false DB=mysql
-  - COVERALLS=false DB=sqlite
+    - COVERALLS=true  DB=mysql COVERALLS_REPO_TOKEN=${{secret.COVERALLS_REPO_TOKEN}}
+    - COVERALLS=false DB=mysql
+    - COVERALLS=false DB=sqlite
   global:
-  - secure: Ju069PzB8QZG3302emIhyCEEQfVfVsiXy0nGcR6hue+vW9nE82NnOEZHbZIwUCXEjUaZRMVQ31Em70Ky22OrLK4D59bs2ClH21u8URDGD/cn7JNPGWFrgxuaXQKMQrw72doeB0+w1+ShURtqM41vITjinyU3y34RZ1NcbDwYSZI=
+    - ENSDIR=$TRAVIS_BUILD_DIR/..
+    - PERL5LIB=$TRAVIS_BUILD_DIR/../bioperl-live
+    - secure: Ju069PzB8QZG3302emIhyCEEQfVfVsiXy0nGcR6hue+vW9nE82NnOEZHbZIwUCXEjUaZRMVQ31Em70Ky22OrLK4D59bs2ClH21u8URDGD/cn7JNPGWFrgxuaXQKMQrw72doeB0+w1+ShURtqM41vITjinyU3y34RZ1NcbDwYSZI=
 
 addons:
   apt:
     update: true
     packages:
-    - libdb-dev
+      - libdb-dev
 
 before_install:
+  - cd $ENSDIR
+  - git clone -b release-1-6-924 --depth 1 https://github.com/bioperl/bioperl-live.git
   - git clone --depth 1 https://github.com/Ensembl/ensembl-git-tools.git
   - export PATH=$PWD/ensembl-git-tools/bin:$PATH
   - export ENSEMBL_BRANCH='main'
@@ -35,6 +38,7 @@ before_install:
   - git-ensembl --clone --depth 1 --branch $ENSEMBL_BRANCH ensembl-io
   - git-ensembl --clone --depth 1 --branch $ENSEMBL_BRANCH ensembl-variation
   - git-ensembl --clone --depth 1 --branch $ENSEMBL_BRANCH ensembl-compara
+  - cd $TRAVIS_BUILD_DIR
 
 install:
   # Known test failures with new libxml2: https://github.com/shlomif/perl-XML-LibXML/pull/87
