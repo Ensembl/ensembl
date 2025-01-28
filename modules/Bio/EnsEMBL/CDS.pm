@@ -266,6 +266,7 @@ sub summary_as_hash {
   $hash->{'source'} = $self->transcript->source() if $self->transcript();
   $hash->{'id'} = $self->translation_id() if $self->translation_id();
   $hash->{'protein_id'} = $self->translation_id() if $self->translation_id();
+  $hash->{'version'} = $self->translation()->version() if $self->translation();
   return $hash;
 }
 
