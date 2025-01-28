@@ -1,5 +1,5 @@
 1	\N	schema_type	core
-2	\N	schema_version	114
+2	\N	schema_version	115
 3	\N	patch	patch_94_95_a.sql|schema_version
 4	\N	patch	patch_94_95_b.sql|vertebrate_division_rename
 5	1	genebuild.start_date	2018-10-Ensembl
@@ -108,3 +108,4 @@
 149	\N	patch	patch_112_113_a.sql|schema_version
 150	\N	patch	patch_112_113_b.sql|Ensure meta_value is not null
 151	\N	patch	patch_113_114_a.sql|schema_version
+152	\N	patch	patch_114_115_a.sql|schema_version

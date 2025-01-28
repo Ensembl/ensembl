@@ -1,5 +1,5 @@
 1	\N	schema_type	variation
-2	\N	schema_version	114
+2	\N	schema_version	115
 3	\N	patch	patch_84_85_a.sql|schema version
 4	\N	patch	patch_84_85_b.sql|create sample_synonym
 5	\N	patch	patch_84_85_c.sql|drop column moltype from variation_synonym
@@ -77,3 +77,4 @@
 77	\N	patch	patch_112_113_a.sql|schema_version
 78	\N	patch	patch_112_113_b.sql|Update meta_key length
 79	\N	patch	patch_113_114_a.sql|schema_version
+80	\N	patch	patch_114_115_a.sql|schema_version
