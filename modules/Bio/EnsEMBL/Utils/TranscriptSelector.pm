@@ -108,6 +108,12 @@ sub select_canonical_transcript_for_Gene {
         return;
     }
     my @encoded; # array of encoded transcripts
+
+    # if we have a single transcript return it by default
+    if (scalar (@transcripts) == 1) {
+        if ($self->{'verbose'}) {print 'Choosing the only existing transcript: ' . $transcripts[0]->stable_id . "\n";}
+        return $transcripts[0];
+    }
     
     foreach my $transcript (@transcripts) {
         my $encoded_transcript = $self->encode_transcript($transcript); 
