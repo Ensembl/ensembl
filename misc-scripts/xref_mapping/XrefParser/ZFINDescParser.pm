@@ -33,7 +33,7 @@ A parser class to parse the ZFIN file for descriptions.
 
 -species = danio_rerio
 -species_id = 7955
--data_uri = ftp://zfin.org/pub/transfer/MEOW/zfin_genes.txt
+-data_uri = https://zfin.org/downloads/genetic_markers.txt
 -file_format = TSV
 -columns = [acc desc label ignored ignored]
 
@@ -42,7 +42,7 @@ A parser class to parse the ZFIN file for descriptions.
   my $parser = Bio::EnsEMBL::Xref::Parser::ZFINDescParser->new(
     source_id  => 149,
     species_id => 7955,
-    files      => ['zfin_genes.txt'],
+    files      => ['genetic_markers.txt'],
     xref_dba   => $xref_dba
   );
 
@@ -81,11 +81,10 @@ sub run {
 
   my $file = @{$files}[0];
 
-#e.g.
-#ZDB-GENE-050102-6       WITHDRAWN:zgc:92147     WITHDRAWN:zgc:92147     0
-#ZDB-GENE-060824-3       apobec1 complementation factor  a1cf    0
-#ZDB-GENE-090212-1       alpha-2-macroglobulin-like      a2ml    15      ZDB-PUB-030703-1
-
+  #e.g.
+  #ZDB-GENE-050102-1	metrn	meteorin, glial cell differentiation regulator	GENE	SO:0001217
+  #ZDB-GENE-060824-3	a1cf	apobec1 complementation factor	GENE	SO:0001217
+  #ZDB-GENE-090212-1	a2ml	alpha-2-macroglobulin-like	GENE	SO:0001217
 
   my $count = 0;
   my $withdrawn = 0;
@@ -103,10 +102,12 @@ sub run {
   }) or confess "Cannot use file '$file': " . Text::CSV->error_diag();
 
 
-  # 2 extra columns are ignored
-  $input_file->column_names( [ 'zfin', 'desc', 'label'] );
+  $input_file->column_names( [ 'zfin', 'label', 'desc', 'type', 'so' ] );
 
   while ( my $data = $input_file->getline_hr( $file_io ) ) {
+    # Only interested in genes
+    next if ($data->{'type'} ne 'GENE');
+    
     # skip if WITHDRAWN: this precedes both desc and label
     if ( $data->{'label'} =~ /\A WITHDRAWN:/xms ) {
       $withdrawn++;
