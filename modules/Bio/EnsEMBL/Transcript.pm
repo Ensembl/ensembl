@@ -3150,6 +3150,7 @@ sub summary_as_hash {
   push @tags, $self->get_all_Attributes('gencode_basic')->[0]->code if $self->gencode_basic();
   push @tags, 'Ensembl_canonical' if $self->is_canonical();
   push @tags, $self->get_all_Attributes('gencode_primary')->[0]->code if $self->gencode_primary();
+  push @tags, $self->get_all_Attributes('ens_canon_extended')->[0]->code if $self->ens_canon_extended();
 
   my $mane = $self->mane_transcript();
   if ($mane) {
@@ -3194,6 +3195,21 @@ sub gencode_primary {
   my $primary = 0;
   $primary = 1 if scalar(@attributes) > 0;
   return $primary;
+}
+
+=head2 ens_canon_extended
+
+  Example       : $ens_canon_extended = $transcript->ens_canon_extended();
+  Description   : Returns true if ens_canon_extended is set
+  Returns       : boolean
+=cut
+
+sub ens_canon_extended {
+  my $self = shift;
+  my @attributes = @{ $self->get_all_Attributes('ens_canon_extended') };
+  my $canon_extended = 0;
+  $canon_extended = 1 if scalar(@attributes) > 0;
+  return $canon_extended;
 }
 
 =head2 tsl
