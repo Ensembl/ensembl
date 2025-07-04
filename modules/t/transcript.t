@@ -364,7 +364,7 @@ $gencode_primary = $tr->gencode_primary();
 is($gencode_primary, '0', 'Presence of the GENCODE Primary transcript attribute is correctly set to false');
 
 # test that transcript does not have Ensembl canonical extended attrib associated
-my $ens_canon_ext = $tr->ens_canon_extended();
+$ens_canon_ext = $tr->ens_canon_extended();
 is($ens_canon_ext, '0', 'Presence of the Ensembl canonical extended transcript attribute is correctly set to false');
 
 # test that transcript does not have GENCODE basic attrib associated
