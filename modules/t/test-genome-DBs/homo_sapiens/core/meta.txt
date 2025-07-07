@@ -1,4 +1,4 @@
-1	\N	schema_version	115
+1	\N	schema_version	116
 2	1	assembly.default	NCBI34
 3	1	species.taxonomy_id	9606
 26	1	species.classification	Homo sapiens
@@ -141,3 +141,4 @@
 215	\N	patch	patch_112_113_b.sql|Ensure meta_value is not null
 216	\N	patch	patch_113_114_a.sql|schema_version
 217	\N	patch	patch_114_115_a.sql|schema_version
+218	\N	patch	patch_115_116_a.sql|schema_version

@@ -39,7 +39,7 @@
 95	\N	patch	patch_83_84_c.sql|protein_feature_unique
 96	\N	patch	patch_83_84_d.sql|longer_synonym
 1	\N	schema_type	core
-2	\N	schema_version	115
+2	\N	schema_version	116
 8	1	assembly.accession	GCA_000292705.1
 10	1	assembly.date	2012-08
 7	1	assembly.default	GCA_000292705.1
@@ -158,3 +158,4 @@
 158	\N	patch	patch_112_113_b.sql|Ensure meta_value is not null
 159	\N	patch	patch_113_114_a.sql|schema_version
 160	\N	patch	patch_114_115_a.sql|schema_version
+161	\N	patch	patch_115_116_a.sql|schema_version
