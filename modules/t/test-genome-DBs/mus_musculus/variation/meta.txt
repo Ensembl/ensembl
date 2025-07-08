@@ -1,5 +1,5 @@
 1	\N	schema_type	variation
-2	\N	schema_version	115
+2	\N	schema_version	116
 6	1	species.production_name	mus_musculus
 15	1	web_config	sv_study#Keane 2011 (DGVa study estd118)#Keane 2011#estd118
 14	1	web_config	set#All failed variants#All failed variants#variation_set_fail_all#failed
@@ -106,3 +106,4 @@
 112	\N	patch	patch_113_114_a.sql|schema_version
 113	\N	patch	patch_114_115_a.sql|schema_version
 114	\N	patch	patch_114_115_b.sql|Add column DNA_type to phenotype_feature
+115	\N	patch	patch_115_116_a.sql|schema_version
