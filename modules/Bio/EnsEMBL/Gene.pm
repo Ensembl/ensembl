@@ -371,7 +371,7 @@ sub equals {
     return 0;
   }
 
-  if ( $self->get_Biotype->name ne $self->get_Biotype->name ) {
+  if ( $self->get_Biotype->name ne $gene->get_Biotype->name ) {
     return 0;
   }
 
