@@ -1131,4 +1131,39 @@ SKIP: {
   is($_->display_xref()->dbname(), 'HUGO', $_->stable_id().' has a display HUGO') for @{$genes};
 }
 
+# Testing gene object equality - stable ids
+{
+  my $gene1 = $ga->fetch_by_stable_id('ENSG00000171456.1');
+  my $gene2 = $ga->fetch_by_stable_id('ENSG00000171456.1');
+  ok($gene1->equals($gene2), 'Gene objects with same stable id are equal');
+  
+  my $gene3 = $ga->fetch_by_stable_id('ENSG00000171455');
+  ok(!$gene1->equals($gene3), 'Gene objects with different stable ids are not equal');
+}
+
+# Testing gene object equality - biotype
+{
+  my $gene1 = Bio::EnsEMBL::Gene->new(
+    -START  => 100,
+    -END    => 200,
+    -STRAND => 1,
+    -SLICE  => $slice,
+    -STABLE_ID => 'TEST_GENE',
+    -BIOTYPE => 'protein_coding'
+  );
+  
+  my $gene2 = Bio::EnsEMBL::Gene->new(
+    -START  => 100,
+    -END    => 200,
+    -STRAND => 1,
+    -SLICE  => $slice,
+    -STABLE_ID => 'TEST_GENE',
+    -BIOTYPE => 'lncRNA'
+  );
+
+  ok(!$gene1->equals($gene2), 'Gene objects with different biotypes are not equal');
+  $gene2->biotype('protein_coding');
+  ok($gene1->equals($gene2), 'Gene objects with same biotype are equal');
+}
+
 done_testing();
