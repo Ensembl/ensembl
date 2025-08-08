@@ -334,7 +334,7 @@ sub sbatch_submit {
   # add extra slurm options as configured by the user
   $cmd .= ' '.$conf->param('slurm_opt_run');
   # this script's name
-  $cmd .= " --wrap=\"$0";
+  #$cmd .= " --wrap=\"$0";
   #$cmd .= "$0";
 
   # options for this script
@@ -344,7 +344,12 @@ sub sbatch_submit {
     slurm         => 1,
     no_check    => 1,
   );
-  $cmd .= " $options";
+  #$cmd .= " $options";
+  my $wrapped_cmd = $0 . " " . $options;
+  $wrapped_cmd =~ s/'/'"'"'/g;  # escape single quotes
+
+  $cmd .= " --wrap='$wrapped_cmd'";
+
   #
   # execute bsub
   #
