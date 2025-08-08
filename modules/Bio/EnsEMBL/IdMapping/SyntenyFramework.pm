@@ -309,7 +309,7 @@ sub get_all_SyntenyRegions {
 }
 
 
-=head2 rescore_gene_matrix_lsf
+=head2 rescore_gene_matrix_slurm
 
   Arg[1]      : Bio::EnsEMBL::IdMapping::ScoredmappingMatrix $matrix - gene
                 scores to rescore
@@ -330,7 +330,7 @@ sub get_all_SyntenyRegions {
 
 =cut
 
-sub rescore_gene_matrix_lsf {
+sub rescore_gene_matrix_slurm {
   my $self = shift;
   my $matrix = shift;
 
@@ -368,15 +368,15 @@ sub rescore_gene_matrix_lsf {
   }
   $self->logger->debug("Done.\n", 0, 'stamped');
 
-  # create an empty lsf log directory
+  # create an empty slurm log directory
   my $logpath = path_append($self->logger->logpath, 'synteny_rescore');
   system("rm -rf $logpath") == 0 or
-    $self->logger->error("Unable to delete lsf log dir $logpath: $!\n");
+    $self->logger->error("Unable to delete slurm log dir $logpath: $!\n");
   system("mkdir -p $logpath") == 0 or
-    $self->logger->error("Can't create lsf log dir $logpath: $!\n");
+    $self->logger->error("Can't create slurm log dir $logpath: $!\n");
 
-  # build lsf command
-  my $lsf_name = 'idmapping_synteny_rescore_'.time;
+  # build slurm command
+  my $slurm_name = 'idmapping_synteny_rescore_'.time;
 
   my $options = $self->conf->create_commandline_options(
       logauto       => 1,
@@ -386,42 +386,56 @@ sub rescore_gene_matrix_lsf {
       is_component  => 1,
   );
 
-  my $cmd = qq{$Bin/synteny_rescore.pl $options --index \$LSB_JOBINDEX};
+  my $cmd = qq{$Bin/synteny_rescore.pl $options --index \$SLURM_ARRAY_TASK_ID};
 
-  my $bsub_cmd =
-    sprintf( "|bsub -J '%s[1-%d]' "
-                            . "-o %s/synteny_rescore.%%I.out "
-                            . "-e %s/synteny_rescore.%%I.err %s",
-             $lsf_name, $num_jobs, $logpath, $logpath,
-             $self->conf()->param('lsf_opt_synteny_rescore') );
+  # build Slurm array submission command
+  my $sbatch_cmd = sprintf(
+      "|sbatch --job-name=%s --array=1-%d " .
+      "--output=%s/synteny_rescore.%%a.out " .
+      "--error=%s/synteny_rescore.%%a.err %s",
+      $slurm_name, $num_jobs, $logpath, $logpath,
+      $self->conf()->param('slurm_opt_synteny_rescore') || ''
+  );
 
-  # run lsf job array
-  $self->logger->info("Submitting $num_jobs jobs to lsf.\n");
+  # run Slurm job array
+  $self->logger->info("Submitting $num_jobs jobs to Slurm.\n");
   $self->logger->debug("$cmd\n\n");
 
-  local *BSUB;
-  open( BSUB, $bsub_cmd ) ## no critic
-    or $self->logger->error("Could not open open pipe to bsub: $!\n");
+  local *SBATCH;
+  open(SBATCH, $sbatch_cmd) ## no critic
+      or $self->logger->error("Could not open pipe to sbatch: $!\n");
 
-  print BSUB $cmd;
+  print SBATCH $cmd;
   $self->logger->error("Error submitting synteny rescoring jobs: $!\n")
-    unless ($? == 0); 
-  close BSUB;
+      unless ($? == 0);
+  close SBATCH;
+
+  # get the job ID of the array (use sbatch --parsable to capture it)
+  my $array_job_id_cmd = sprintf(
+      "sbatch --parsable --job-name=%s --array=1-%d " .
+      "--output=%s/synteny_rescore.%%a.out " .
+      "--error=%s/synteny_rescore.%%a.err %s <<< '%s'",
+      $slurm_name, $num_jobs, $logpath, $logpath,
+      $self->conf()->param('slurm_opt_synteny_rescore') || '',
+      $cmd
+  );
+  chomp(my $array_job_id = `$array_job_id_cmd`);
+  $self->logger->debug("Array job ID: $array_job_id");
 
   # submit dependent job to monitor finishing of jobs
   $self->logger->info("Waiting for jobs to finish...\n", 0, 'stamped');
+  my $dependent_job_cmd = sprintf(
+      "sbatch --dependency=afterok:%s --job-name=%s_depend " .
+      "--output=%s/synteny_rescore_depend.out /bin/true",
+      $array_job_id, $slurm_name, $logpath
+  );
 
-  my $dependent_job =
-    qq{bsub -K -w "ended($lsf_name)" -q production } .
-    qq{-M 1000 -R 'select[mem>1000]' -R 'rusage[mem=1000]' } .
-    qq{-o $logpath/synteny_rescore_depend.out /bin/true};
-
-  system($dependent_job) == 0 or
-    $self->logger->error("Error submitting dependent job: $!\n");
+  system($dependent_job_cmd) == 0
+      or $self->logger->error("Error submitting dependent job: $!\n");
 
   $self->logger->info("All jobs finished.\n", 0, 'stamped');
 
-  # check for lsf errors
+  # check for slurm errors
   sleep(5);
   my $err;
   foreach my $i (1..$num_jobs) {
@@ -437,7 +451,7 @@ sub rescore_gene_matrix_lsf {
   $matrix->flush;
 
   foreach my $i (1..$num_jobs) {
-    # read partial matrix created by lsf job from file
+    # read partial matrix created by slurm job from file
     my $sub_matrix = Bio::EnsEMBL::IdMapping::ScoredMappingMatrix->new(
       -DUMP_PATH   => $dump_path,
       -CACHE_FILE  => "gene_matrix_synteny$i.ser",

@@ -99,7 +99,7 @@ sub synteny {
 
     # use it to rescore the genes
     $self->logger->info("\nSynteny assisted mapping...\n", 0, 'stamped');
-    $gene_scores = $sf->rescore_gene_matrix_lsf($gene_scores);
+    $gene_scores = $sf->rescore_gene_matrix_slurm($gene_scores);
 
     # checkpoint
     $gene_scores->write_to_file;

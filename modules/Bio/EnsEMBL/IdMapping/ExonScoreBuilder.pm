@@ -446,12 +446,12 @@ sub run_exonerate {
     throw("Can't find exon fasta files.");
   }
 
-  # create an empty lsf log directory
+  # create an empty Slurm log directory
   my $logpath = path_append($self->logger->logpath, 'exonerate');
   system("rm -rf $logpath") == 0 or
-    $self->logger->error("Unable to delete lsf log dir $logpath: $!\n");
+    $self->logger->error("Unable to delete Slurm log dir $logpath: $!\n");
   system("mkdir -p $logpath") == 0 or
-    $self->logger->error("Can't create lsf log dir $logpath: $!\n");
+    $self->logger->error("Can't create Slurm log dir $logpath: $!\n");
 
   # delete exonerate output from previous runs
   my $dump_path = $self->cache->dump_path;
@@ -476,56 +476,75 @@ sub run_exonerate {
 
   my $percent =
     int( ( $self->conf->param('exonerate_threshold') || 0.5 )*100 );
-  my $lsf_name       = 'idmapping_exonerate_' . time;
+  my $slurm_name       = 'idmapping_exonerate_' . time;
   my $exonerate_path = $self->conf->param('exonerate_path');
   my $exonerate_extra_params =
     $self->conf->param('exonerate_extra_params');
 
   #
-  # run exonerate jobs using lsf
+  # run exonerate jobs using Slurm
   #
+
   my $exonerate_job =
     qq{$exonerate_path } .
     qq{--query $source_file --target $target_file } .
-    q{--querychunkid $LSB_JOBINDEX } .
+    q{--querychunkid $SLURM_ARRAY_TASK_ID } .
     qq{--querychunktotal $num_jobs } .
     q{--model ungapped -M 1000 -D 100 } .
-    q{--showalignment FALSE --subopt no } . qq{--percent $percent } .
+    q{--showalignment FALSE --subopt no } .
+    qq{--percent $percent } .
     $self->conf->param('exonerate_extra_params') . " " .
     q{--ryo 'myinfo: %qi %ti %et %ql %tl\n' } .
-    qq{| grep '^myinfo:' > $dump_path/exonerate_map.\$LSB_JOBINDEX} .
+    qq{| grep '^myinfo:' > $dump_path/exonerate_map.\$SLURM_ARRAY_TASK_ID} .
     "\n";
-
-  $self->logger->info("Submitting $num_jobs exonerate jobs to lsf.\n");
+  $self->logger->info("Submitting $num_jobs exonerate jobs to Slurm.\n");
   $self->logger->debug("$exonerate_job\n\n");
 
-  my $bsub_cmd = sprintf(
-               "|bsub -J '%s[1-%d]%%%d' -o %s/exonerate.%%I.out %s",
-               $lsf_name,
-               $num_jobs,
-               $self->conf()->param('exonerate_concurrent_jobs') || 200,
-               $logpath,
-               $self->conf()->param('lsf_opt_exonerate') );
+  #my $sbatch_cmd = sprintf(
+  #             "|bsub -J '%s[1-%d]%%%d' -o %s/exonerate.%%I.out %s",
+  #             $slurm_name,
+  #             $num_jobs,
+  #             $self->conf()->param('exonerate_concurrent_jobs') || 200,
+  #             $logpath,
+  #             $self->conf()->param('slurm_opt_exonerate') );
 
-  local *BSUB;
-  open( BSUB, $bsub_cmd ) ## no critic
-    or $self->logger->error("Could not open open pipe to bsub: $!\n");
+  # Submit the main array job
+  my $sbatch_cmd = sprintf(
+      "sbatch --parsable --job-name=%s --array=1-%d%%%d -o %s/exonerate.%%A_%%a.out %s",
+      $slurm_name,
+      $num_jobs,
+      $self->conf()->param('exonerate_concurrent_jobs') || 200,
+      $logpath,
+      $self->conf()->param('slurm_opt_exonerate') || ''
+  );
 
-  print BSUB $exonerate_job;
-  $self->logger->error("Error submitting exonerate jobs: $!\n")
-    unless ($? == 0); 
-  close BSUB;
+  # Pipe job script into sbatch and capture job ID
+  my $jobid;
+  {
+      open(my $fh, "|$sbatch_cmd") 
+          or $self->logger->error("Could not open pipe to sbatch: $!\n");
+      print $fh $exonerate_job;
+      close($fh);
+      if ($? == 0) {
+          # sbatch prints jobid when --parsable is used
+          $jobid = `$sbatch_cmd`;
+          chomp $jobid;
+      } else {
+          $self->logger->error("Error submitting exonerate jobs: $!\n");
+      }
+  }
 
-  # submit dependent job to monitor finishing of exonerate jobs
+  # Submit dependent job that waits for all array tasks to finish
   $self->logger->info("Waiting for exonerate jobs to finish...\n", 0, 'stamped');
 
-  my $dependent_job =
-    qq{bsub -K -w "ended($lsf_name)" -q production } .
-    qq{-M 1000 -R 'select[mem>1000]' -R 'rusage[mem=1000]' } .
-    qq{-o $logpath/exonerate_depend.out /bin/true};
+  my $dependent_cmd = sprintf(
+      "sbatch --wait --dependency=afterany:%s -o %s/exonerate_depend.out --mem=1000 --wrap='/bin/true'",
+      $jobid,
+      $logpath
+  );
 
-  system($dependent_job) == 0 or
-    $self->logger->error("Error submitting dependent job: $!\n");
+  system($dependent_cmd) == 0
+      or $self->logger->error("Error submitting dependent job: $!\n");
 
   $self->logger->info("All exonerate jobs finished.\n", 0, 'stamped');
 

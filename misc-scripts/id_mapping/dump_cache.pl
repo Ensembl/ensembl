@@ -104,7 +104,7 @@ $conf->parse_options(
   'biotypes=s@' => 0,
   'biotypes_include=s@' => 0,
   'biotypes_exclude=s@' => 0,
-  'lsf_opt_dump_cache|lsfoptdumpcache=s' => 0,
+  'slurm_opt_dump_cache|slurmoptdumpcache=s' => 0,
   'cache_method=s' => 0,
   'build_cache_auto_threshold=n' => 0,
   'build_cache_concurrent_jobs=n' => 0,
@@ -187,9 +187,9 @@ sub build_cache_by_seq_region {
   # create empty directory for logs
   my $logpath = path_append($conf->param('logpath'), 'dump_by_seq_region');
   system("rm -rf $logpath") == 0 or
-    $logger->error("Unable to delete lsf log dir $logpath: $!\n");
+    $logger->error("Unable to delete slurm log dir $logpath: $!\n");
   system("mkdir -p $logpath") == 0 or
-    $logger->error("Can't create lsf log dir $logpath: $!\n");
+    $logger->error("Can't create slurm log dir $logpath: $!\n");
 
   # load the cache implementation
   my $cache_impl = 'Bio::EnsEMBL::IdMapping::Cache';
@@ -200,7 +200,7 @@ sub build_cache_by_seq_region {
     -CONF         => $conf,
   );
 
-  # submit jobs to lsf
+  # submit jobs to slurm
   foreach my $dbtype (qw(source target)) {
 
     $logger->info("\n".ucfirst($dbtype)." db...\n", 0, 'stamped');
@@ -227,8 +227,8 @@ sub build_cache_by_seq_region {
       next;
     }
 
-    # build lsf command
-    my $lsf_name = 'dump_by_seq_region_'.time;
+    # build slurm command
+    my $slurm_name = 'dump_by_seq_region_'.time;
     my $concurrent = $conf->param('build_cache_concurrent_jobs') || 200;
 
     my $options = $conf->create_commandline_options(
@@ -240,46 +240,70 @@ sub build_cache_by_seq_region {
         cache_impl    => $cache_impl,
     );
 
-    my $cmd = qq{./dump_by_seq_region.pl $options --index \$LSB_JOBINDEX};
+    #my $cmd = qq{./dump_by_seq_region.pl $options --index \$LSB_JOBINDEX};
 
+    #my $pipe =
+    #    qq{|bsub -J '$lsf_name\[1-$num_jobs\]\%$concurrent' }
+    #  . qq{-o $logpath/dump_by_seq_region.$dbtype.\%I.out }
+    #  . qq{-e $logpath/dump_by_seq_region.$dbtype.\%I.err }
+    #  . $conf->param('lsf_opt_dump_cache');
+
+    my $cmd = qq{./dump_by_seq_region.pl $options --index \$SLURM_ARRAY_TASK_ID};
     my $pipe =
-        qq{|bsub -J '$lsf_name\[1-$num_jobs\]\%$concurrent' }
-      . qq{-o $logpath/dump_by_seq_region.$dbtype.\%I.out }
-      . qq{-e $logpath/dump_by_seq_region.$dbtype.\%I.err }
-      . $conf->param('lsf_opt_dump_cache');
+        qq{|sbatch --job-name=$slurm_name }
+      . qq{--array=1-$num_jobs%$concurrent }
+      . qq{--output=$logpath/dump_by_seq_region.$dbtype.%A_%a.out }
+      . qq{--error=$logpath/dump_by_seq_region.$dbtype.%A_%a.err }
+      . $conf->param('slurm_opt_dump_cache');  # You can define a Slurm-specific param here
+    
 
-    # run lsf job array
-    $logger->info("\nSubmitting $num_jobs jobs to lsf.\n");
+    # run slurm job array
+    $logger->info("\nSubmitting $num_jobs jobs to Slurm.\n");
     $logger->debug("$cmd\n\n");
     $logger->debug("$pipe\n\n");
 
-    local *BSUB;
-    open BSUB, $pipe or
-      $logger->error("Could not open open pipe to bsub: $!\n");
+    #local *BSUB;
+    #open BSUB, $pipe or
+    #  $logger->error("Could not open open pipe to bsub: $!\n");
 
-    print BSUB $cmd;
-    $logger->error("Error submitting jobs: $!\n")
-      unless ($? == 0); 
-    close BSUB;
+    #print BSUB $cmd;
+    #$logger->error("Error submitting jobs: $!\n")
+    #  unless ($? == 0); 
+    #close BSUB;
+    my $sbatch_cmd = $pipe . qq{ --wrap="$cmd" };
+    $logger->debug("Submitting with sbatch: $sbatch_cmd\n");
 
+    system($sbatch_cmd) == 0
+        or $logger->error("Error submitting jobs: $!");
     # submit dependent job to monitor finishing of jobs
     $logger->info("Waiting for jobs to finish...\n", 0, 'stamped');
 
-    my $dependent_job =
-      qq{bsub -K -w "ended($lsf_name)" -q production } .
-      qq{-M 100 -R 'select[mem>100]' -R 'rusage[mem=100]' } .
-      qq{-o $logpath/dump_cache.$dbtype.depend.out /bin/true};
+
+    
+    my $array_job_id = `$sbatch_cmd`;
+    chomp($array_job_id);
+    # Now submit the dependent job
+    my $dependent_job = qq{
+      sbatch --dependency=afterok:$array_job_id \\
+            --mem=100M  --time=1:00:00 \\
+            --output=$logpath/dump_cache.$dbtype.depend.out \\
+            --wrap="/bin/true"
+    };
+    #my $dependent_job =
+    #  qq{bsub -K -w "ended($lsf_name)" -q production } .
+    #  qq{-M 100 -R 'select[mem>100]' -R 'rusage[mem=100]' } .
+    #  qq{-o $logpath/dump_cache.$dbtype.depend.out /bin/true};
 
     system($dependent_job) == 0 or
       $logger->error("Error submitting dependent job: $!\n");
 
     $logger->info("All jobs finished.\n", 0, 'stamped');
 
-    # check for lsf errors
+    # check for slurm errors
     sleep(5);
     my $err;
     foreach my $i (1..$num_jobs) {
-      $err++ unless (-e "$logpath/dump_by_seq_region.$dbtype.$i.success");
+      $err++ unless (-e "$logpath/dump_by_seq_region.$dbtype.$array_job_id\_$i.success");
     }
 
     if ($err) {
@@ -304,7 +328,7 @@ sub build_cache_all {
     -CONF         => $conf,
   );
 
-  # submit jobs to lsf
+  # submit jobs to slurm
   foreach my $dbtype (qw(source target)) {
 
     $logger->info("\n".ucfirst($dbtype)." db...\n", 0, 'stamped');
