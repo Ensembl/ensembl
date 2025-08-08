@@ -118,9 +118,9 @@ $conf->parse_options(
   'upload_events|uploadevents=s' => 0,
   'upload_stable_ids|uploadstableids=s' => 0,
   'upload_archive|uploadarchive=s' => 0,
-  'lsf!' => 0,
-  'lsf_opt_run|lsfoptrun=s' => 0,
-  'lsf_opt_dump_cache|lsfoptdumpcache=s' => 0,
+  'slurm!' => 0,
+  'slurm_opt_run|slurmoptrun=s' => 0,
+  'slurm_opt_dump_cache|slurmoptdumpcache=s' => 0,
   'no_check!' => 0,
   'no_check_empty_tables' => 0,
 );
@@ -146,10 +146,10 @@ $logger->init_log($conf->list_param_values);
 my $mode = $conf->param('mode') || 'normal';
 
 # check configuration and resources.
-# this is deliberately done before submitting to lsf (doesn't need much
+# this is deliberately done before submitting to slurm (doesn't need much
 # resources and you will know about config errors before waiting for job to
 # run). the 'no_check' option prevents the checks to be re-run after automatic
-# lsf submission
+# slurm submission
 unless ($conf->param('no_check')) {
   if (&init_check($mode) > 0) {
     $logger->error("Configuration check failed. See above for details.\n");
@@ -161,9 +161,9 @@ unless ($conf->param('no_check')) {
   }
 }
 
-# if user wants to run via lsf, submit script with bsub (this will exit this
+# if user wants to run via slurm, submit script with bsub (this will exit this
 # instance of the script)
-&bsubmit if ($conf->param('lsf'));
+&sbatch_submit if ($conf->param('slurm'));
 
 # this script is only a wrapper and will run one or more components.
 # define options for the components here.
@@ -315,37 +315,43 @@ sub run_component {
 }
 
 
-sub bsubmit {
+sub sbatch_submit {
   #
   # build bsub commandline
   #
 
   # automatically create a filename for lsf output
-  my $cmd = 'bsub -o '.$conf->param('logpath');
-  $cmd .= '/lsf_'.$logger->log_auto_id.'.out';
+  #my $cmd = 'bsub -o '.$conf->param('logpath');
+  #$cmd .= '/lsf_'.$logger->log_auto_id.'.out';
 
   # add extra lsf options as configured by the user
-  $cmd .= ' '.$conf->param('lsf_opt_run');
+  #$cmd .= ' '.$conf->param('lsf_opt_run');
 
+  # automatically create a filename for slurm output
+  my $cmd = 'sbatch --output='.$conf->param('logpath');
+  $cmd .= '/slurm_'.$logger->log_auto_id.'.out';
+
+  # add extra slurm options as configured by the user
+  $cmd .= ' '.$conf->param('slurm_opt_run');
   # this script's name
-  $cmd .= " $0";
+  $cmd .= " --wrap=\"$0";
+  #$cmd .= "$0";
 
   # options for this script
   my $options = $conf->create_commandline_options(
     logautoid   => $logger->log_auto_id,
     interactive => 0,
-    lsf         => 0,
+    slurm         => 1,
     no_check    => 1,
   );
   $cmd .= " $options";
-
   #
   # execute bsub
   #
-  print "\nRe-executing via lsf:\n";
+  print "\nRe-executing via slurm:\n";
   print "$cmd\n\n";
 
-  exec($cmd) or die "Could not exec $0 via lsf: $!\n";
+  exec($cmd) or die "Could not exec $0 via slurm: $!\n";
   #exit;
 }
 
