@@ -71,6 +71,7 @@ use Bio::EnsEMBL::Utils::ConfParser;
 use Bio::EnsEMBL::Utils::Logger;
 use Bio::EnsEMBL::Utils::ScriptUtils qw(path_append);
 use Bio::EnsEMBL::IdMapping::Cache;
+use String::ShellQuote;
 
 my %valid_modes = ( 'check_only' => 1,
                     'normal'     => 1,
@@ -307,8 +308,8 @@ sub run_component {
   } elsif ($logger->logfile) {
     $logger->info("See below for logs.\n", 1);
   }
-
-  system("./$cmd $options") == 0
+  system("./$cmd", split(' ', $options)) == 0
+  #system("./$cmd $options") == 0
     or $logger->error("Error running $cmd. Please see the respective logfile for more information.\n");
   
   $logger->info("----- done with $logtext -----\n\n", 0, 'stamped');
@@ -334,7 +335,7 @@ sub sbatch_submit {
   # add extra slurm options as configured by the user
   $cmd .= ' '.$conf->param('slurm_opt_run');
   # this script's name
-  #$cmd .= " --wrap=\"$0";
+  $cmd .= " --wrap=\"$0";
   #$cmd .= "$0";
 
   # options for this script
@@ -345,11 +346,14 @@ sub sbatch_submit {
     no_check    => 1,
   );
   #$cmd .= " $options";
-  my $wrapped_cmd = $0 . " " . $options;
-  $wrapped_cmd =~ s/'/'"'"'/g;  # escape single quotes
+  $cmd .= " $options\"";
+  #my $wrapped_cmd = $0 . " " . $options;
+  #$wrapped_cmd =~ s/'/'"'"'/g;  # escape single quotes
 
-  $cmd .= " --wrap='$wrapped_cmd'";
+  #$cmd .= " --wrap='$wrapped_cmd'";
+  #my $quoted_cmd = shell_quote($wrapped_cmd);  # safely quote for shell
 
+  #$cmd .= " --wrap=$quoted_cmd";
   #
   # execute bsub
   #

@@ -104,6 +104,7 @@ $conf->parse_options(
   'biotypes=s@' => 0,
   'biotypes_include=s@' => 0,
   'biotypes_exclude=s@' => 0,
+  'slurm' => 0,
   'slurm_opt_dump_cache|slurmoptdumpcache=s' => 0,
   'cache_method=s' => 0,
   'build_cache_auto_threshold=n' => 0,
@@ -248,9 +249,9 @@ sub build_cache_by_seq_region {
     #  . qq{-e $logpath/dump_by_seq_region.$dbtype.\%I.err }
     #  . $conf->param('lsf_opt_dump_cache');
 
-    my $cmd = qq{./dump_by_seq_region.pl $options --index \$SLURM_ARRAY_TASK_ID};
+    my $cmd = qq{--wrap="./dump_by_seq_region.pl $options --index \$SLURM_ARRAY_TASK_ID"};
     my $pipe =
-        qq{|sbatch --job-name=$slurm_name }
+        qq{|sbatch --job-name=$slurm_name --export=ALL --parsable }
       . qq{--array=1-$num_jobs%$concurrent }
       . qq{--output=$logpath/dump_by_seq_region.$dbtype.%A_%a.out }
       . qq{--error=$logpath/dump_by_seq_region.$dbtype.%A_%a.err }
@@ -270,7 +271,7 @@ sub build_cache_by_seq_region {
     #$logger->error("Error submitting jobs: $!\n")
     #  unless ($? == 0); 
     #close BSUB;
-    my $sbatch_cmd = $pipe . qq{ --wrap="$cmd" };
+    my $sbatch_cmd = $pipe . $cmd;
     $logger->debug("Submitting with sbatch: $sbatch_cmd\n");
 
     system($sbatch_cmd) == 0
