@@ -327,10 +327,12 @@ sub sbatch_submit {
 
   # add extra lsf options as configured by the user
   #$cmd .= ' '.$conf->param('lsf_opt_run');
+  my $logpath = $conf->param('logpath');
+  my $log_autoid = $logger->log_auto_id;
 
   # automatically create a filename for slurm output
-  my $cmd = 'sbatch --output='.$conf->param('logpath');
-  $cmd .= '/slurm_'.$logger->log_auto_id.'.out';
+  my $cmd = "sbatch --job-name stable-id-mapping --output='.$conf->param('logpath')/slurm_$log_autoid.out";
+  #$cmd .= '/slurm_'.$logger->log_auto_id.'.out';
 
   # add extra slurm options as configured by the user
   $cmd .= ' '.$conf->param('slurm_opt_run');

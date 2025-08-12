@@ -369,7 +369,7 @@ sub sbatch_submit {
   my $options = $conf->create_commandline_options(
     logautoid => $logger->log_auto_id,
     interactive   => 0,
-    slurm       => 0,
+    slurm       => 1,
   );
   $cmd .= " $options";
 

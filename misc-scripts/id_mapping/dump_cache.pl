@@ -249,7 +249,8 @@ sub build_cache_by_seq_region {
     #  . qq{-e $logpath/dump_by_seq_region.$dbtype.\%I.err }
     #  . $conf->param('lsf_opt_dump_cache');
 
-    my $cmd = qq{--wrap="./dump_by_seq_region.pl $options --index \$SLURM_ARRAY_TASK_ID"};
+    my $cmd = qq{--wrap="./dump_by_seq_region.pl $options --conf } . $conf->param('basedir')
+      . qq{/default.conf--index \$SLURM_ARRAY_TASK_ID"};
     my $pipe =
         qq{|sbatch --job-name=$slurm_name --export=ALL --parsable }
       . qq{--array=1-$num_jobs%$concurrent }
