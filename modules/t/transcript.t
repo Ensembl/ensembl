@@ -338,6 +338,10 @@ is($ens_canon_ext, '1', 'Presence of the Ensembl canonical extended transcript a
 my $gencode_basic = $tr->gencode_basic();
 is($gencode_basic, '1', 'Presence of the GENCODE Basic transcript attribute is correctly set to true');
 
+# test that transcript has the HAVANA readthrough transcript attribute
+my $readthrough_transcript = $tr->readthrough_transcript();
+is($readthrough_transcript, '1', 'Presence of the HAVANA readthrough transcript attribute is correctly set to true')
+
 my $interpro = $ta->get_Interpro_by_transid("ENST00000252021");
 foreach my $i (@$interpro) {
   note($i);
