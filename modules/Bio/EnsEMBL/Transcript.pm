@@ -3151,6 +3151,7 @@ sub summary_as_hash {
   push @tags, 'Ensembl_canonical' if $self->is_canonical();
   push @tags, $self->get_all_Attributes('gencode_primary')->[0]->code if $self->gencode_primary();
   push @tags, $self->get_all_Attributes('ens_canon_extended')->[0]->code if $self->ens_canon_extended();
+  push @tags, $self->get_all_Attributes('readthrough_tra')->[0]->code if $self->readthrough_transcript();
 
   my $mane = $self->mane_transcript();
   if ($mane) {
@@ -3210,6 +3211,21 @@ sub ens_canon_extended {
   my $canon_extended = 0;
   $canon_extended = 1 if scalar(@attributes) > 0;
   return $canon_extended;
+}
+
+=head2 readthrough_transcript
+
+  Example       : $readthrough_transcript = $transcript->readthrough_transcript();
+  Description   : Returns true if readthrough_transcript is set
+  Returns       : boolean
+=cut
+
+sub readthrough_transcript {
+  my $self = shift;
+  my @attributes = @{ $self->get_all_Attributes('readthrough_tra') };
+  my $readthrough_tra = 0;
+  $readthrough_tra = 1 if scalar(@attributes) > 0;
+  return $readthrough_tra;
 }
 
 =head2 tsl
