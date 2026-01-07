@@ -39,7 +39,7 @@ score_type                    ENUM('NONE', 'DEPTH') DEFAULT 'NONE',
 PRIMARY KEY (intron_supporting_evidence_id),
 
 UNIQUE KEY (analysis_id, seq_region_id, seq_region_start, seq_region_end, seq_region_strand, hit_name)
-) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
+) COLLATE=latin1_swedish_ci ENGINE=InnoDB;
 
 CREATE TABLE transcript_intron_supporting_evidence (
 transcript_id                 INT(10) UNSIGNED NOT NULL,
@@ -47,7 +47,7 @@ intron_supporting_evidence_id INT(10) UNSIGNED NOT NULL,
 previous_exon_id              INT(10) UNSIGNED NOT NULL,
 next_exon_id                  INT(10) UNSIGNED NOT NULL,
 PRIMARY KEY (intron_supporting_evidence_id, transcript_id)
-) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
+) COLLATE=latin1_swedish_ci ENGINE=InnoDB;
 
 # Patch identifier:
 INSERT INTO meta (species_id, meta_key, meta_value)

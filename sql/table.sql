@@ -69,7 +69,7 @@ CREATE TABLE assembly (
   KEY asm_seq_region_idx (asm_seq_region_id, asm_start),
   UNIQUE KEY all_idx (asm_seq_region_id, cmp_seq_region_id, asm_start, asm_end, cmp_start, cmp_end, ori)
 
-) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
+) COLLATE=latin1_swedish_ci ENGINE=InnoDB;
 
 
 /**
@@ -111,7 +111,7 @@ CREATE TABLE assembly_exception (
   KEY sr_idx (seq_region_id, seq_region_start),
   KEY ex_idx (exc_seq_region_id, exc_seq_region_start)
 
-) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
+) COLLATE=latin1_swedish_ci ENGINE=InnoDB;
 
 
 /**
@@ -148,7 +148,7 @@ CREATE TABLE coord_system (
   UNIQUE    KEY name_idx (`name`, `version`, `species_id`),
             KEY species_idx (`species_id`)
 
-) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
+) COLLATE=latin1_swedish_ci ENGINE=InnoDB;
 
 
 /**
@@ -180,7 +180,7 @@ CREATE TABLE data_file (
   UNIQUE KEY df_unq_idx (coord_system_id, analysis_id, name, file_type),
   KEY df_name_idx (name),
   KEY df_analysis_idx (analysis_id)
-) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
+) COLLATE=latin1_swedish_ci ENGINE=InnoDB;
 
 
 /**
@@ -202,7 +202,7 @@ CREATE TABLE dna (
 
   PRIMARY KEY (seq_region_id)
 
-) COLLATE=latin1_swedish_ci ENGINE=MyISAM MAX_ROWS=750000 AVG_ROW_LENGTH=19000;
+) COLLATE=latin1_swedish_ci ENGINE=InnoDB MAX_ROWS=750000 AVG_ROW_LENGTH=19000;
 
 
 
@@ -234,7 +234,7 @@ CREATE TABLE genome_statistics (
   PRIMARY KEY (genome_statistics_id),
   UNIQUE KEY stats_uniq (statistic, attrib_type_id, species_id)
 
-) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
+) COLLATE=latin1_swedish_ci ENGINE=InnoDB;
 
 
 
@@ -265,7 +265,7 @@ CREATE TABLE karyotype (
   PRIMARY KEY (karyotype_id),
   KEY region_band_idx (seq_region_id,band)
 
-) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
+) COLLATE=latin1_swedish_ci ENGINE=InnoDB;
 
 
 /**
@@ -302,7 +302,7 @@ CREATE TABLE IF NOT EXISTS meta (
   UNIQUE    KEY species_key_value_idx (species_id, meta_key, meta_value),
             KEY species_value_idx (species_id, meta_value)
 
-) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
+) COLLATE=latin1_swedish_ci ENGINE=InnoDB;
 
 
 # Add schema type and schema version to the meta table.
@@ -339,7 +339,7 @@ CREATE TABLE meta_coord (
 
   UNIQUE KEY cs_table_name_idx (coord_system_id, table_name)
 
-) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
+) COLLATE=latin1_swedish_ci ENGINE=InnoDB;
 
 
 /**
@@ -372,7 +372,7 @@ CREATE TABLE seq_region (
   UNIQUE KEY name_cs_idx (name, coord_system_id),
   KEY cs_idx (coord_system_id)
 
-) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
+) COLLATE=latin1_swedish_ci ENGINE=InnoDB;
 
 
 /**
@@ -399,7 +399,7 @@ CREATE TABLE seq_region_synonym (
   UNIQUE KEY syn_idx (synonym, seq_region_id),
   KEY seq_region_idx (seq_region_id)
 
-) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
+) COLLATE=latin1_swedish_ci ENGINE=InnoDB;
 
 
 /**
@@ -428,7 +428,7 @@ CREATE TABLE seq_region_attrib (
   KEY seq_region_idx (seq_region_id),
   UNIQUE KEY region_attribx (seq_region_id, attrib_type_id, value(500))
 
-) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
+) COLLATE=latin1_swedish_ci ENGINE=InnoDB;
 
 
 /**
@@ -457,7 +457,7 @@ CREATE TABLE alt_allele (
         KEY (gene_id,alt_allele_group_id),
 	KEY gene_idx (gene_id)
 
-) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
+) COLLATE=latin1_swedish_ci ENGINE=InnoDB;
 
 /**
 @table alt_allele_attrib
@@ -488,7 +488,7 @@ CREATE TABLE alt_allele_attrib (
 
         KEY aa_idx (alt_allele_id,attrib)
 
-) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
+) COLLATE=latin1_swedish_ci ENGINE=InnoDB;
 
 
 /**
@@ -505,7 +505,7 @@ CREATE TABLE alt_allele_group (
 
          PRIMARY KEY (alt_allele_group_id)
 
-) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
+) COLLATE=latin1_swedish_ci ENGINE=InnoDB;
 
 
 /**
@@ -555,7 +555,7 @@ CREATE TABLE IF NOT EXISTS analysis (
   PRIMARY KEY (analysis_id),
   UNIQUE KEY logic_name_idx (logic_name)
 
-) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
+) COLLATE=latin1_swedish_ci ENGINE=InnoDB;
 
 
 /**
@@ -584,7 +584,7 @@ CREATE TABLE IF NOT EXISTS analysis_description (
 
   UNIQUE KEY analysis_idx (analysis_id)
 
-) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
+) COLLATE=latin1_swedish_ci ENGINE=InnoDB;
 
 
 /**
@@ -612,7 +612,7 @@ CREATE TABLE attrib_type (
   PRIMARY KEY (attrib_type_id),
   UNIQUE KEY code_idx (code)
 
-) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
+) COLLATE=latin1_swedish_ci ENGINE=InnoDB;
 
 
 /**
@@ -669,7 +669,7 @@ CREATE TABLE dna_align_feature (
   KEY analysis_idx (analysis_id),
   KEY external_db_idx (external_db_id)
 
-) COLLATE=latin1_swedish_ci ENGINE=MyISAM MAX_ROWS=100000000 AVG_ROW_LENGTH=80;
+) COLLATE=latin1_swedish_ci ENGINE=InnoDB MAX_ROWS=100000000 AVG_ROW_LENGTH=80;
 
 
 /**
@@ -695,7 +695,7 @@ CREATE TABLE dna_align_feature_attrib (
   KEY type_val_idx (attrib_type_id, value(40)),
   KEY val_only_idx (value(40))
 
-) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
+) COLLATE=latin1_swedish_ci ENGINE=InnoDB;
 
 
 /**
@@ -746,7 +746,7 @@ CREATE TABLE exon (
   KEY seq_region_idx (seq_region_id, seq_region_start),
   KEY stable_id_idx (stable_id, version)
 
-) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
+) COLLATE=latin1_swedish_ci ENGINE=InnoDB;
 
 
 /**
@@ -773,7 +773,7 @@ CREATE TABLE exon_transcript (
   KEY transcript (`transcript_id`),
   KEY exon (`exon_id`)
 
-) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
+) COLLATE=latin1_swedish_ci ENGINE=InnoDB;
 
 
 
@@ -830,7 +830,7 @@ CREATE TABLE gene (
   KEY stable_id_idx (stable_id, version),
   KEY canonical_transcript_id_idx (canonical_transcript_id)
 
-) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
+) COLLATE=latin1_swedish_ci ENGINE=InnoDB;
 
 
 /**
@@ -858,7 +858,7 @@ CREATE TABLE gene_attrib (
   KEY gene_idx (gene_id),
   UNIQUE KEY gene_attribx (gene_id, attrib_type_id, value(500))
 
-) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
+) COLLATE=latin1_swedish_ci ENGINE=InnoDB;
 
 
 /**
@@ -916,7 +916,7 @@ CREATE TABLE protein_align_feature (
   KEY analysis_idx (analysis_id),
   KEY external_db_idx (external_db_id)
 
-) COLLATE=latin1_swedish_ci ENGINE=MyISAM MAX_ROWS=100000000 AVG_ROW_LENGTH=80;
+) COLLATE=latin1_swedish_ci ENGINE=InnoDB MAX_ROWS=100000000 AVG_ROW_LENGTH=80;
 
 
 /**
@@ -969,7 +969,7 @@ CREATE TABLE protein_feature (
   KEY hitname_idx (hit_name),
   KEY analysis_idx (analysis_id)
 
-) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
+) COLLATE=latin1_swedish_ci ENGINE=InnoDB;
 
 
 /**
@@ -995,7 +995,7 @@ CREATE TABLE supporting_feature (
   UNIQUE KEY all_idx (exon_id,feature_type,feature_id),
   KEY feature_idx (feature_type,feature_id)
 
-) COLLATE=latin1_swedish_ci ENGINE=MyISAM MAX_ROWS=100000000 AVG_ROW_LENGTH=80;
+) COLLATE=latin1_swedish_ci ENGINE=InnoDB MAX_ROWS=100000000 AVG_ROW_LENGTH=80;
 
 
 /**
@@ -1053,7 +1053,7 @@ CREATE TABLE transcript (
   UNIQUE KEY canonical_translation_idx (canonical_translation_id),
   KEY stable_id_idx (stable_id, version)
 
-) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
+) COLLATE=latin1_swedish_ci ENGINE=InnoDB;
 
 
 /**
@@ -1080,7 +1080,7 @@ CREATE TABLE transcript_attrib (
   KEY transcript_idx (transcript_id),
   UNIQUE KEY transcript_attribx (transcript_id, attrib_type_id, value(500))
 
-) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
+) COLLATE=latin1_swedish_ci ENGINE=InnoDB;
 
 
 /**
@@ -1105,7 +1105,7 @@ CREATE TABLE transcript_supporting_feature (
   UNIQUE KEY all_idx (transcript_id,feature_type,feature_id),
   KEY feature_idx (feature_type,feature_id)
 
-) COLLATE=latin1_swedish_ci ENGINE=MyISAM MAX_ROWS=100000000 AVG_ROW_LENGTH=80;
+) COLLATE=latin1_swedish_ci ENGINE=InnoDB MAX_ROWS=100000000 AVG_ROW_LENGTH=80;
 
 
 /**
@@ -1143,7 +1143,7 @@ CREATE TABLE translation (
   KEY transcript_idx (transcript_id),
   KEY stable_id_idx (stable_id, version)
 
-) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
+) COLLATE=latin1_swedish_ci ENGINE=InnoDB;
 
 
 /**
@@ -1171,7 +1171,7 @@ CREATE TABLE translation_attrib (
   KEY translation_idx (translation_id),
   UNIQUE KEY translation_attribx (translation_id, attrib_type_id, value(500))
 
-) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
+) COLLATE=latin1_swedish_ci ENGINE=InnoDB;
 
 
 
@@ -1211,7 +1211,7 @@ CREATE TABLE density_feature (
   KEY seq_region_idx (density_type_id, seq_region_id, seq_region_start),
   KEY seq_region_id_idx (seq_region_id)
 
-) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
+) COLLATE=latin1_swedish_ci ENGINE=InnoDB;
 
 
 /**
@@ -1243,7 +1243,7 @@ CREATE TABLE density_type (
   PRIMARY KEY (density_type_id),
   UNIQUE KEY analysis_idx (analysis_id, block_size, region_features)
 
-) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
+) COLLATE=latin1_swedish_ci ENGINE=InnoDB;
 
 
 /**
@@ -1273,7 +1273,7 @@ CREATE TABLE ditag (
 
        PRIMARY KEY (ditag_id)
 
-) ENGINE=MyISAM DEFAULT CHARSET=latin1;
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
 
 /**
@@ -1322,7 +1322,7 @@ CREATE TABLE ditag_feature (
        KEY ditag_pair_idx (ditag_pair_id),
        KEY seq_region_idx (seq_region_id, seq_region_start, seq_region_end)
 
-) ENGINE=MyISAM DEFAULT CHARSET=latin1;
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
 
 /**
@@ -1363,7 +1363,7 @@ CREATE TABLE intron_supporting_evidence (
         UNIQUE KEY (analysis_id, seq_region_id, seq_region_start, seq_region_end, seq_region_strand, hit_name),
         KEY seq_region_idx (seq_region_id, seq_region_start)
 
-) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
+) COLLATE=latin1_swedish_ci ENGINE=InnoDB;
 
 
 /**
@@ -1386,7 +1386,7 @@ CREATE TABLE map (
 
   PRIMARY KEY (map_id)
 
-) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
+) COLLATE=latin1_swedish_ci ENGINE=InnoDB;
 
 
 /**
@@ -1425,7 +1425,7 @@ CREATE TABLE marker (
   KEY marker_idx (marker_id, priority),
   KEY display_idx (display_marker_synonym_id)
 
-) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
+) COLLATE=latin1_swedish_ci ENGINE=InnoDB;
 
 
 /**
@@ -1463,7 +1463,7 @@ CREATE TABLE marker_feature (
   KEY seq_region_idx (seq_region_id, seq_region_start),
   KEY analysis_idx (analysis_id)
 
-) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
+) COLLATE=latin1_swedish_ci ENGINE=InnoDB;
 
 
 /**
@@ -1497,7 +1497,7 @@ CREATE TABLE marker_map_location (
   PRIMARY KEY (marker_id, map_id),
   KEY map_idx (map_id, chromosome_name, position)
 
-) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
+) COLLATE=latin1_swedish_ci ENGINE=InnoDB;
 
 
 /**
@@ -1527,7 +1527,7 @@ CREATE TABLE marker_synonym (
   KEY marker_synonym_idx (marker_synonym_id, name),
   KEY marker_idx (marker_id)
 
-) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
+) COLLATE=latin1_swedish_ci ENGINE=InnoDB;
 
 
 /**
@@ -1555,7 +1555,7 @@ CREATE TABLE misc_attrib (
   KEY misc_feature_idx (misc_feature_id),
   UNIQUE KEY misc_attribx (misc_feature_id, attrib_type_id, value(500))
 
-) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
+) COLLATE=latin1_swedish_ci ENGINE=InnoDB;
 
 
 /**
@@ -1585,7 +1585,7 @@ CREATE TABLE misc_feature (
   PRIMARY KEY (misc_feature_id),
   KEY seq_region_idx (seq_region_id, seq_region_start)
 
-) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
+) COLLATE=latin1_swedish_ci ENGINE=InnoDB;
 
 
 /**
@@ -1609,7 +1609,7 @@ CREATE TABLE misc_feature_misc_set (
   PRIMARY KEY (misc_feature_id, misc_set_id),
   KEY reverse_idx (misc_set_id, misc_feature_id)
 
-) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
+) COLLATE=latin1_swedish_ci ENGINE=InnoDB;
 
 
 /**
@@ -1639,7 +1639,7 @@ CREATE TABLE misc_set (
   PRIMARY KEY (misc_set_id),
   UNIQUE KEY code_idx (code)
 
-) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
+) COLLATE=latin1_swedish_ci ENGINE=InnoDB;
 
 
 /**
@@ -1678,7 +1678,7 @@ CREATE TABLE prediction_exon (
   KEY transcript_idx (prediction_transcript_id),
   KEY seq_region_idx (seq_region_id, seq_region_start)
 
-) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
+) COLLATE=latin1_swedish_ci ENGINE=InnoDB;
 
 
 /**
@@ -1710,7 +1710,7 @@ CREATE TABLE prediction_transcript (
   KEY seq_region_idx (seq_region_id, seq_region_start),
   KEY analysis_idx (analysis_id)
 
-) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
+) COLLATE=latin1_swedish_ci ENGINE=InnoDB;
 
 
 /**
@@ -1741,7 +1741,7 @@ CREATE TABLE repeat_consensus (
   KEY consensus (repeat_consensus(10)),
   KEY type (repeat_type)
 
-) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
+) COLLATE=latin1_swedish_ci ENGINE=InnoDB;
 
 
 /**
@@ -1780,7 +1780,7 @@ CREATE TABLE repeat_feature (
   KEY repeat_idx (repeat_consensus_id),
   KEY analysis_idx (analysis_id)
 
-) COLLATE=latin1_swedish_ci ENGINE=MyISAM MAX_ROWS=100000000 AVG_ROW_LENGTH=80;
+) COLLATE=latin1_swedish_ci ENGINE=InnoDB MAX_ROWS=100000000 AVG_ROW_LENGTH=80;
 
 
 /**
@@ -1815,7 +1815,7 @@ CREATE TABLE simple_feature (
   KEY analysis_idx (analysis_id),
   KEY hit_idx (display_label)
 
-) ENGINE=MyISAM DEFAULT CHARSET=latin1;
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
 
 /**
@@ -1841,7 +1841,7 @@ previous_exon_id              INT(10) UNSIGNED NOT NULL,
 next_exon_id                  INT(10) UNSIGNED NOT NULL,
 PRIMARY KEY (intron_supporting_evidence_id, transcript_id),
 KEY transcript_idx (transcript_id)
-) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
+) COLLATE=latin1_swedish_ci ENGINE=InnoDB;
 
 
 /**
@@ -1884,7 +1884,7 @@ CREATE TABLE gene_archive (
   KEY translation_idx (translation_stable_id, translation_version),
   KEY peptide_archive_id_idx (peptide_archive_id)
 
-) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
+) COLLATE=latin1_swedish_ci ENGINE=InnoDB;
 
 
 /**
@@ -1920,7 +1920,7 @@ CREATE TABLE mapping_session (
 
   PRIMARY KEY (mapping_session_id)
 
-) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
+) COLLATE=latin1_swedish_ci ENGINE=InnoDB;
 
 
 /**
@@ -1945,7 +1945,7 @@ CREATE TABLE peptide_archive (
   PRIMARY KEY (peptide_archive_id),
   KEY checksum (md5_checksum)
 
-) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
+) COLLATE=latin1_swedish_ci ENGINE=InnoDB;
 
 
 /**
@@ -1969,7 +1969,7 @@ CREATE TABLE mapping_set (
         PRIMARY KEY (mapping_set_id),
         UNIQUE KEY mapping_idx (internal_schema_build, external_schema_build)
 
-) ENGINE=MyISAM DEFAULT CHARSET=latin1;
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
 
 /**
@@ -2006,7 +2006,7 @@ CREATE TABLE stable_id_event (
   KEY new_idx (new_stable_id),
   KEY old_idx (old_stable_id)
 
-) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
+) COLLATE=latin1_swedish_ci ENGINE=InnoDB;
 
 
 /**
@@ -2031,7 +2031,7 @@ CREATE TABLE seq_region_mapping (
         KEY mapping_set_idx (mapping_set_id),
 	UNIQUE KEY seq_region_mapping_uindex (external_seq_region_id, internal_seq_region_id, mapping_set_id)
 
-) ENGINE=MyISAM DEFAULT CHARSET=latin1;
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
 
 /**
@@ -2058,7 +2058,7 @@ CREATE TABLE associated_group (
   description                    VARCHAR(128) DEFAULT NULL,
 
   PRIMARY KEY (associated_group_id)
-) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
+) COLLATE=latin1_swedish_ci ENGINE=InnoDB;
 
 
 /**
@@ -2097,7 +2097,7 @@ CREATE TABLE associated_xref (
   KEY associated_group_idx (associated_group_id),
   UNIQUE KEY object_associated_source_type_idx (object_xref_id, xref_id, source_xref_id, condition_type, associated_group_id)
 
-) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
+) COLLATE=latin1_swedish_ci ENGINE=InnoDB;
 
 
 /**
@@ -2126,7 +2126,7 @@ CREATE TABLE dependent_xref (
   KEY dependent (dependent_xref_id),
   KEY master_idx (master_xref_id)
 
-) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
+) COLLATE=latin1_swedish_ci ENGINE=InnoDB;
 
 
 /**
@@ -2168,7 +2168,7 @@ CREATE TABLE external_db (
 
   PRIMARY KEY (external_db_id),
   UNIQUE KEY db_name_db_release_idx (db_name,db_release)
-) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
+) COLLATE=latin1_swedish_ci ENGINE=InnoDB;
 
 
 /**
@@ -2203,7 +2203,7 @@ CREATE TABLE biotype (
   so_term         VARCHAR(1023),
   PRIMARY KEY (biotype_id),
   UNIQUE KEY name_type_idx (name, object_type)
-) ENGINE=MyISAM DEFAULT CHARSET=latin1;
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
 
 /**
@@ -2227,7 +2227,7 @@ CREATE TABLE external_synonym (
   PRIMARY KEY (xref_id, synonym),
   KEY name_index (synonym)
 
-) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
+) COLLATE=latin1_swedish_ci ENGINE=InnoDB;
 
 
 /**
@@ -2268,7 +2268,7 @@ CREATE TABLE identity_xref (
 
   PRIMARY KEY (object_xref_id)
 
-) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
+) COLLATE=latin1_swedish_ci ENGINE=InnoDB;
 
 
 /**
@@ -2289,7 +2289,7 @@ CREATE TABLE interpro (
 
   UNIQUE KEY accession_idx (interpro_ac, id),
   KEY id_idx (id)
-) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
+) COLLATE=latin1_swedish_ci ENGINE=InnoDB;
 
 
 /**
@@ -2332,7 +2332,7 @@ CREATE TABLE object_xref (
   KEY ensembl_idx (ensembl_object_type, ensembl_id),
   KEY analysis_idx (analysis_id)
 
-) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
+) COLLATE=latin1_swedish_ci ENGINE=InnoDB;
 
 
 /**
@@ -2372,7 +2372,7 @@ CREATE TABLE ontology_xref (
   KEY object_idx (object_xref_id),
   UNIQUE KEY object_source_type_idx (object_xref_id, source_xref_id, linkage_type)
 
-) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
+) COLLATE=latin1_swedish_ci ENGINE=InnoDB;
 
 
 /**
@@ -2418,7 +2418,7 @@ CREATE TABLE unmapped_object (
   KEY anal_exdb_idx (analysis_id, external_db_id),
   KEY ext_db_identifier_idx (external_db_id, identifier)
 
-) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
+) COLLATE=latin1_swedish_ci ENGINE=InnoDB;
 
 
 /**
@@ -2442,7 +2442,7 @@ CREATE TABLE unmapped_reason (
 
   PRIMARY KEY (unmapped_reason_id)
 
-) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
+) COLLATE=latin1_swedish_ci ENGINE=InnoDB;
 
 
 /**
@@ -2492,7 +2492,7 @@ CREATE TABLE xref (
    KEY display_index (display_label),
    KEY info_type_idx (info_type)
 
-) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
+) COLLATE=latin1_swedish_ci ENGINE=InnoDB;
 
 
 /**
@@ -2540,7 +2540,7 @@ CREATE TABLE operon (
   KEY seq_region_idx (seq_region_id, seq_region_start),
   KEY name_idx (display_label),
   KEY stable_id_idx (stable_id, version)
-) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
+) COLLATE=latin1_swedish_ci ENGINE=InnoDB;
 
 
 /**
@@ -2585,7 +2585,7 @@ CREATE TABLE operon_transcript (
   KEY operon_idx (operon_id),
   KEY seq_region_idx (seq_region_id, seq_region_start),
   KEY stable_id_idx (stable_id, version)
-) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
+) COLLATE=latin1_swedish_ci ENGINE=InnoDB;
 
 
 /**
@@ -2606,7 +2606,7 @@ CREATE TABLE operon_transcript_gene (
   gene_id                   INT(10) UNSIGNED,
 
   KEY operon_transcript_gene_idx (operon_transcript_id,gene_id)
-) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
+) COLLATE=latin1_swedish_ci ENGINE=InnoDB;
 
 
 /**
@@ -2646,7 +2646,7 @@ CREATE TABLE rnaproduct (
   KEY transcript_idx (transcript_id),
   KEY stable_id_idx (stable_id, version)
 
-) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
+) COLLATE=latin1_swedish_ci ENGINE=InnoDB;
 
 
 /**
@@ -2674,7 +2674,7 @@ CREATE TABLE rnaproduct_attrib (
   KEY rnaproduct_idx (rnaproduct_id),
   UNIQUE KEY rnaproduct_attribx (rnaproduct_id, attrib_type_id, value(500))
 
-) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
+) COLLATE=latin1_swedish_ci ENGINE=InnoDB;
 
 
 /**
@@ -2702,4 +2702,4 @@ CREATE TABLE rnaproduct_type (
   PRIMARY KEY (rnaproduct_type_id),
   UNIQUE KEY code_idx (code)
 
-) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
+) COLLATE=latin1_swedish_ci ENGINE=InnoDB;

@@ -32,7 +32,7 @@ CREATE TABLE seq_region_synonym (
   PRIMARY KEY (seq_region_synonym_id),
   UNIQUE KEY syn_idx (synonym)
 
-) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
+) COLLATE=latin1_swedish_ci ENGINE=InnoDB;
 
 # Insert patch identifier.
 INSERT INTO meta (species_id, meta_key, meta_value)

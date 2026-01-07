@@ -38,7 +38,7 @@ CREATE TABLE rnaproduct (
   KEY transcript_idx (transcript_id),
   KEY stable_id_idx (stable_id, version)
 
-) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
+) COLLATE=latin1_swedish_ci ENGINE=InnoDB;
 
 CREATE TABLE rnaproduct_attrib (
 
@@ -51,7 +51,7 @@ CREATE TABLE rnaproduct_attrib (
   KEY rnaproduct_idx (rnaproduct_id),
   UNIQUE KEY rnaproduct_attribx (rnaproduct_id, attrib_type_id, value(500))
 
-) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
+) COLLATE=latin1_swedish_ci ENGINE=InnoDB;
 
 CREATE TABLE rnaproduct_type (
 
@@ -63,7 +63,7 @@ CREATE TABLE rnaproduct_type (
   PRIMARY KEY (rnaproduct_type_id),
   UNIQUE KEY code_idx (code)
 
-) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
+) COLLATE=latin1_swedish_ci ENGINE=InnoDB;
 
 # patch identifier
 INSERT INTO meta (species_id, meta_key, meta_value)

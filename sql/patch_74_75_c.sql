@@ -33,7 +33,7 @@ CREATE TABLE genome_statistics (
   UNIQUE KEY stats_uniq(statistic, attrib_type_id, species_id),
   KEY stats_idx (statistic, attrib_type_id, species_id)
 
-) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
+) COLLATE=latin1_swedish_ci ENGINE=InnoDB;
 
 # patch identifier
 INSERT INTO meta (species_id, meta_key, meta_value) VALUES (NULL, 'patch', 'patch_74_75_c.sql|add_genome_statistics');

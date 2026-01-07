@@ -31,7 +31,7 @@ CREATE TABLE dna_align_feature_attrib (
   KEY type_val_idx (attrib_type_id, value(40)),
   KEY val_only_idx (value(40))
 
-) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
+) COLLATE=latin1_swedish_ci ENGINE=InnoDB;
 
 # Patch identifier
 INSERT INTO meta (species_id, meta_key, meta_value)

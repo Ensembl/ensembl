@@ -30,7 +30,7 @@ CREATE TABLE ditag (
 
        PRIMARY KEY ( ditag_id )
 
-) ENGINE=MyISAM DEFAULT CHARSET=latin1;
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
 CREATE TABLE ditag_feature (
 
@@ -52,7 +52,7 @@ CREATE TABLE ditag_feature (
        KEY (ditag_id),
        KEY (ditag_pair_id)
 
-) ENGINE=MyISAM DEFAULT CHARSET=latin1;
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
 # patch identifier
 INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_39_40_g.sql|add_ditag_tables');

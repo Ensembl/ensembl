@@ -39,7 +39,7 @@ CREATE TABLE associated_xref (
   KEY associated_group_idx (associated_group_id),
   UNIQUE KEY object_associated_source_type_idx (object_xref_id, xref_id, source_xref_id, condition_type, associated_group_id)
 
-) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
+) COLLATE=latin1_swedish_ci ENGINE=InnoDB;
 
 
 CREATE TABLE associated_group (
@@ -48,7 +48,7 @@ CREATE TABLE associated_group (
   description                    VARCHAR(128) DEFAULT NULL,
 
   PRIMARY KEY (associated_group_id)
-) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
+) COLLATE=latin1_swedish_ci ENGINE=InnoDB;
 
 # Patch identifier
 INSERT INTO meta (species_id, meta_key, meta_value)

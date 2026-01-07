@@ -31,7 +31,7 @@ CREATE TABLE biotype (
   so_acc          VARCHAR(64),
   PRIMARY KEY (biotype_id),
   UNIQUE KEY name_type_idx (name, object_type)
-) ENGINE=MyISAM DEFAULT CHARSET=latin1;
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
 # patch identifier
 INSERT INTO meta (species_id, meta_key, meta_value)

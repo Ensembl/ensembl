@@ -35,7 +35,7 @@ CREATE TABLE seq_region_mapping (
 
 	KEY (mapping_set_id)
 
-) ENGINE=MyISAM DEFAULT CHARSET=latin1;
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
 ################################################################################
 #
@@ -50,7 +50,7 @@ CREATE TABLE mapping_set (
 
 	PRIMARY KEY(schema_build)
 
-) ENGINE=MyISAM DEFAULT CHARSET=latin1;
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
 # Patch identifier
 INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_49_50_e.sql|mapping_seq_region');

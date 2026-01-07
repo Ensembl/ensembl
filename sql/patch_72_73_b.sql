@@ -32,7 +32,7 @@ CREATE TABLE alt_allele (alt_allele_id INT UNSIGNED AUTO_INCREMENT,
                          gene_id INT UNSIGNED NOT NULL,
                          PRIMARY KEY (alt_allele_id),
                          KEY (gene_id,alt_allele_group_id)
-                         ) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
+                         ) COLLATE=latin1_swedish_ci ENGINE=InnoDB;
 
 CREATE TABLE alt_allele_attrib (alt_allele_id INT UNSIGNED,
                                 attrib ENUM('IS_REPRESENTATIVE',
@@ -49,11 +49,11 @@ CREATE TABLE alt_allele_attrib (alt_allele_id INT UNSIGNED,
                                             'MANUALLY_ASSIGNED',
                                             'AUTOMATICALLY_ASSIGNED'),
                                 KEY aa_idx (alt_allele_id,attrib)
-) COLLATE=latin1_swedish_ci ENGINE=MyISAM;;
+) COLLATE=latin1_swedish_ci ENGINE=InnoDB;;
 
 CREATE TABLE alt_allele_group (alt_allele_group_id INT UNSIGNED AUTO_INCREMENT,
                                PRIMARY KEY (alt_allele_group_id)
-                               ) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
+                               ) COLLATE=latin1_swedish_ci ENGINE=InnoDB;
 
 # Port data into new structure
 INSERT INTO alt_allele_group (alt_allele_group_id) SELECT DISTINCT alt_allele_id FROM aa_bak;

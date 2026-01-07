@@ -33,7 +33,7 @@ CREATE TABLE operon (
   KEY seq_region_idx (seq_region_id, seq_region_start),
   KEY name_idx (display_label)
 
-) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
+) COLLATE=latin1_swedish_ci ENGINE=InnoDB;
 
 CREATE TABLE operon_transcript (
 
@@ -49,7 +49,7 @@ CREATE TABLE operon_transcript (
   KEY operon_idx (operon_id),
   KEY seq_region_idx (seq_region_id, seq_region_start)
 
-) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
+) COLLATE=latin1_swedish_ci ENGINE=InnoDB;
 
 CREATE TABLE operon_transcript_gene (
 
@@ -58,7 +58,7 @@ CREATE TABLE operon_transcript_gene (
 
   KEY operon_transcript_gene_idx (operon_transcript_id,gene_id)
 
-) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
+) COLLATE=latin1_swedish_ci ENGINE=InnoDB;
 
 CREATE TABLE operon_stable_id (
 
@@ -71,7 +71,7 @@ CREATE TABLE operon_stable_id (
   PRIMARY KEY (operon_id),
   KEY stable_id_idx (stable_id, version)
 
-) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
+) COLLATE=latin1_swedish_ci ENGINE=InnoDB;
 
 CREATE TABLE operon_transcript_stable_id (
 
@@ -84,7 +84,7 @@ CREATE TABLE operon_transcript_stable_id (
   PRIMARY KEY (operon_transcript_id),
   KEY stable_id_idx (stable_id, version)
 
-) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
+) COLLATE=latin1_swedish_ci ENGINE=InnoDB;
 
 alter table object_xref modify column ensembl_object_type ENUM('RawContig', 'Transcript', 'Gene', 'Translation', 'Operon', 'OperonTranscript') NOT NULL;
 

@@ -32,7 +32,7 @@ CREATE TABLE unconventional_transcript_association (
   KEY (transcript_id),
   KEY (gene_id)
 
-) ENGINE=MyISAM DEFAULT CHARSET=latin1;
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
 
 # patch identifier

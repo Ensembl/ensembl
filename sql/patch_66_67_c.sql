@@ -32,7 +32,7 @@ CREATE TABLE intron_supporting_evidence (
   PRIMARY KEY (intron_supporting_evidence_id),
   
   UNIQUE KEY (previous_exon_id, next_exon_id)
-) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
+) COLLATE=latin1_swedish_ci ENGINE=InnoDB;
 
 # Patch identifier:
 INSERT INTO meta (species_id, meta_key, meta_value)
