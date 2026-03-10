@@ -98,7 +98,7 @@ sub try_to_use_index {
   }
   warning("using $fasta_file as dna sequences source");
 
-  my ($write, $persist_fh, $no_generation) = 0, 1, 1;
+  my ($write, $persist_fh, $no_generation) = (0, 1, 1);
   my $uppercase = 1; # see $self->_fetch_raw_seq
   my $faindex = Bio::EnsEMBL::Utils::IO::FileFaidx->new(
     $fasta_file, $write, $persist_fh, $no_generation, $uppercase
