@@ -101,6 +101,7 @@ Bio::EnsEMBL::Slice module.
 
 
 package Bio::EnsEMBL::DBSQL::SliceAdaptor;
+
 use vars qw(@ISA);
 use strict;
 

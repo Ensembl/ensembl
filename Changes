@@ -1,0 +1,19 @@
+Revision history for Bio::EnsEMBL, the EnsEMBL Core Perl API
+
+{{$NEXT}}
+
+114.0.0   2026-04-07
+
+ - Release for Ensembl 114 (stable)
+
+114.0.0_50 2026-03-25 (TRIAL RELEASE)
+
+ - Release for Ensembl 114
+
+113.0.0   2024-10-17 (TRIAL RELEASE)
+
+ - Release for Ensembl 113
+
+112.0.0   2024-09-03
+
+ - Release for Ensembl 112

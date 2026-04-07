@@ -38,6 +38,7 @@ limitations under the License.
 
 
 package Bio::EnsEMBL::Intron;
+
 use strict;
 use warnings;
 
