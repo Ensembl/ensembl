@@ -1920,8 +1920,10 @@ sub list_rnaproduct_ids_by_extids {
                NOTE:  In a multi-species database, this method will
                return all the entries matching the search criteria, not
                just the ones associated with the current species.
-               SQL wildcards can be used in the external id, 
-               but overly generic queries (two characters) will be prevented.
+               External identifiers are matched exactly by default.
+               SQL wildcards matching is only enabled when override is true,
+               and only when the first wildcard appear after at least three
+               literal characters.
   Description: Gets
   Returntype : list of dbIDs (gene_id, transcript_id, etc.)
   Exceptions : none
@@ -1935,28 +1937,18 @@ sub list_rnaproduct_ids_by_extids {
 sub _type_by_external_id {
   my ( $self, $name, $ensType, $extraType, $external_db_name, $override ) = @_;
 
+  # External identifiers are exact matches unless override explicitly enables
+  # SQL wildcard matching for %, _ and [.
   # $name has SQL wildcard support
   # = or LIKE put into SQL statement, and open queries like % or A% are rejected.
-  my $comparison_operator;
-  if ($name =~ /[_%\[]/ ) {
-    $comparison_operator = "LIKE";
-    if ($name =~ /^.?%/ && !$override) {
+  my $comparison_operator = "=";
+  if ( $override && $name =~ /[_%\[]/ ) {
+    if ( $name =~ /^[^_%\[]{0,2}[_%\[]/ ) {
       warn "External $ensType name $name is too vague and will monopolise database resources. Please use a more specific $ensType name.\n";
       return;
     }
-    elsif ($name =~ /^\w\w_/ && !$override) {
-        # For entries such as NM_00000065, escape the _ so that SQL LIKE does not have to scan entire table
-        # Escape only the _ in the third character position
-        $name =~ s/(?<=\w\w)(?=_)/\\/;
-    }
+    $comparison_operator = "LIKE";
   }
-  else {
-    $comparison_operator = "=";
-  }
-  # SGiorgetti - 29 May 2026
-  # Hacking for alleviate the DB load and not to affect the 'official' API
-  $comparison_operator = "=";
-
 
   my $from_sql  = '';
   my $where_sql = '';
