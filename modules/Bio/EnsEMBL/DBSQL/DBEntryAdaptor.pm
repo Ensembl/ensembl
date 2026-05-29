@@ -1953,6 +1953,9 @@ sub _type_by_external_id {
   else {
     $comparison_operator = "=";
   }
+  # SGiorgetti - 29 May 2026
+  # Hacking for alleviate the DB load and not to affect the 'official' API
+  $comparison_operator = "=";
 
 
   my $from_sql  = '';
