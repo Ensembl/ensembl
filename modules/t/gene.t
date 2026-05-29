@@ -614,7 +614,7 @@ ok(scalar(@genes) == 0);
 {
     my $warnings = q{};
     local $SIG{'__WARN__'} = sub {
-        $warning .= $_[0];
+        $warnings .= $_[0];
     };
     (@genes) = @{$ga->fetch_all_by_external_name('AF_%', undef, 'override')};
     debug('Genes found under external_name AF_% with override on: ' . scalar(@genes));
