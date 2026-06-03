@@ -142,3 +142,4 @@
 216	\N	patch	patch_113_114_a.sql|schema_version
 217	\N	patch	patch_114_115_a.sql|schema_version
 218	\N	patch	patch_115_116_a.sql|schema_version
+219	\N	patch	patch_115_116_b.sql|Added indices to transcript and assembly
