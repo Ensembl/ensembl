@@ -528,12 +528,14 @@ sub fetch_all_by_domain {
 
   throw("domain argument is required") unless ($domain);
 
+  my $index_hint = $self->dbc->driver eq 'mysql' ? ' FORCE INDEX (seq_region_current_start_idx)' : '';
+
   my $sth = $self->prepare(
   qq(
-  SELECT    tr.gene_id
+  SELECT    DISTINCT tr.gene_id
   FROM      interpro i,
             protein_feature pf,
-            transcript tr,
+            transcript tr$index_hint,
             translation tl,
             seq_region sr,
             coord_system cs
@@ -545,7 +547,7 @@ sub fetch_all_by_domain {
     AND     tl.translation_id = pf.translation_id
     AND     pf.hit_name = i.id
     AND     i.interpro_ac = ?
-  GROUP BY  tr.gene_id));
+  ));
 
   $sth->bind_param(1, $self->species_id(), SQL_VARCHAR);
   $sth->bind_param(2, $domain,             SQL_VARCHAR);
