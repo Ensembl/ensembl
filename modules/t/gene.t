@@ -531,6 +531,10 @@ ok(($genes[0]->stable_id() eq 'ENSG00000174873') || ($genes[1]->stable_id() eq '
 debug($gene->stable_id);
 ok($gene->stable_id() eq 'ENSG00000101367');
 
+@genes = @{$ga->fetch_all_by_external_name('MAE1_HUMAN','Uniprot/SWISS')};
+is(scalar(@genes), 1, "External name lookup supports external DB name prefix matching");
+is($genes[0]->stable_id(), "ENSG00000101367", "External DB name prefix lookup returns the expected gene");
+
 #
 # test GeneAdaptor::fetch_all_by_Slice
 #

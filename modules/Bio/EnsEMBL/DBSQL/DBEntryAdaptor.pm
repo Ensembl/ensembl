@@ -2019,15 +2019,21 @@ SQL
     }
   }
 
+  my @external_db_ids;
   if ( defined($external_db_name) ) {
-    # Involve the 'external_db' table to limit the hits to a particular
-    # external database.
+    # Preserve the prefix match on db_name, but keep external_db out of the lookup
+    # so the xref indices remain usable
 
-    $from_sql .= 'external_db xdb, ';
-    $where_sql .=
-        'xdb.db_name LIKE '
-      . $self->dbc()->db_handle()->quote( $external_db_name . '%' )
-      . ' AND xdb.external_db_id = x.external_db_id AND';
+    @external_db_ids = @{
+        $self->dbc()->sql_helper()->execute_simple(
+            -SQL    => 'SELECT external_db_id FROM external_db WHERE db_name LIKE ?',
+            -PARAMS => [ [ $external_db_name . '%', SQL_VARCHAR ] ],
+        )
+    };
+    return unless @external_db_ids;
+
+    my $external_db_placeholders = join ', ', '?' x @external_db_ids;
+    $where_sql .= "x.external_db_id IN ($external_db_placeholders) AND ";
   }
 
   my @queries;
@@ -2088,7 +2094,12 @@ SQL
   my %result;
   my $h = $self->dbc()->sql_helper();
   my @params = ([$name, SQL_VARCHAR], [$ensType, SQL_VARCHAR]);
+  # The optional species_id must be the first parameter
   unshift(@params, [$self->species_id(), SQL_INTEGER] ) if $multispecies;
+  # The optional external_db IDS must go before $name but after species_id if present
+  if (@external_db_ids) {
+      splice @params, ($multispecies ? 1 : 0), 0, map { [$_, SQL_INTEGER] } @external_db_ids;
+  }
   foreach my $query (@queries) {
     $h->execute_no_return(-SQL => $query, -PARAMS => \@params, -CALLBACK => sub {
       my ($row) = @_;
