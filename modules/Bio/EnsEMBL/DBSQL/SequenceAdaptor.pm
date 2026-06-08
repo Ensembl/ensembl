@@ -49,7 +49,9 @@ package Bio::EnsEMBL::DBSQL::SequenceAdaptor;
 use strict;
 use warnings;
 
-use Bio::EnsEMBL::Utils::Exception qw(throw);
+use Bio::EnsEMBL::DBSQL::FastaSequenceAdaptor;
+use Bio::EnsEMBL::Utils::Exception qw(warning throw);
+use Bio::EnsEMBL::Utils::IO::FileFaidx;
 use Bio::EnsEMBL::Utils::Sequence  qw(reverse_comp);
 use Bio::EnsEMBL::Utils::Scalar qw( assert_ref );
 use DBI qw/:sql_types/;
@@ -75,7 +77,68 @@ sub new {
   my $self = $class->SUPER::new($db);
   $self->_init_seq_instance($chunk_power, $cache_size);
   $self->_populate_seq_region_edits();
+  $self->{_use_faindex} = $self->try_to_use_index();
   return $self;
+}
+
+sub try_to_use_index {
+  my ($self) = @_;
+
+  # get metakey for the indexed fasta
+  my $meta_container = $self->db()->get_MetaContainer();
+  my ($fasta_file) = @{ $meta_container->list_value_by_key('sequence_level.fasta_file') };
+
+  return 0 if (!$fasta_file);
+
+  my $prefix = exists($ENV{ENSEMBL_SEQUENCE_FASTA_DIR}) ? $ENV{ENSEMBL_SEQUENCE_FASTA_DIR} : '';
+  $fasta_file = $prefix . '/' . $fasta_file if ($fasta_file !~ m,^/, && $prefix);
+
+  if (! -f $fasta_file) {
+    throw("No fasta file found at '${fasta_file}'");
+  }
+  warning("using $fasta_file as dna sequences source");
+
+  my ($write, $persist_fh, $no_generation) = (0, 1, 1);
+  my $uppercase = 1; # see $self->_fetch_raw_seq
+  my $faindex = Bio::EnsEMBL::Utils::IO::FileFaidx->new(
+    $fasta_file, $write, $persist_fh, $no_generation, $uppercase
+  );
+
+  $self->{_fasta_sequence_adaptor} = Bio::EnsEMBL::DBSQL::FastaSequenceAdaptor->new($faindex);
+  $self->fill_index_id_name_map();
+
+  return 1;
+}
+
+sub _fetch_raw_seq_index {
+  my ($self, $id, $start, $length) = @_;
+  $id = $self->get_index_name_for_id($id);
+  my $seq_ref = $self->{_fasta_sequence_adaptor}->_fetch_raw_seq($id, $start, $length);
+  return $seq_ref;
+}
+
+sub fill_index_id_name_map {
+  my ($self) = @_;
+  $self->{_index_id_name_map} = {};
+
+  my $sth = $self->prepare(qq(
+    SELECT sr.seq_region_id, sr.name
+    FROM seq_region sr, coord_system cs
+    WHERE sr.coord_system_id = cs.coord_system_id
+      AND cs.attrib LIKE "%sequence_level%";
+  ));
+  $sth->execute();
+
+  while( (my $pair = $sth->fetchrow_arrayref()) ) {
+    $self->{_index_id_name_map}->{ $pair->[0] } = $pair->[1];
+  }
+
+}
+
+sub get_index_name_for_id {
+  my ($self, $id) = @_;
+  return $id if (!exists $self->{_index_id_name_map}->{$id});
+  return $self->{_index_id_name_map}->{$id};
 }
 
 =head2 fetch_by_Slice_start_end_strand
@@ -452,6 +515,11 @@ sub _rna_edit {
 
 sub _fetch_raw_seq {
   my ($self, $id, $start, $length) = @_;
+
+  if ($self->{_use_faindex}) {
+    return $self->_fetch_raw_seq_index($id, $start, $length);
+  }
+
   my $sql = <<'SQL';
 SELECT UPPER(SUBSTR(d.sequence, ?, ?))
 FROM dna d
@@ -484,6 +552,8 @@ SQL
 
 sub store {
   my ($self, $seq_region_id, $sequence) = @_;
+
+  throw("Unsupported operation. Cannot store sequence in a fasta file") if ($self->{_use_faindex});
 
   if(!$seq_region_id) {
     throw('seq_region_id is required');
@@ -518,6 +588,8 @@ sub store {
    
 sub remove {   
   my ($self, $seq_region_id) = @_;   
+
+  throw("Unsupported operation. Cannot store sequence in a fasta file") if ($self->{_use_faindex});
    
   if(!$seq_region_id) {    
     throw('seq_region_id is required');    
