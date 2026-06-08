@@ -159,3 +159,4 @@
 159	\N	patch	patch_113_114_a.sql|schema_version
 160	\N	patch	patch_114_115_a.sql|schema_version
 161	\N	patch	patch_115_116_a.sql|schema_version
+162	\N	patch	patch_115_116_b.sql|Added indices to transcript and assembly

@@ -67,7 +67,8 @@ CREATE TABLE assembly (
 
   KEY cmp_seq_region_idx (cmp_seq_region_id),
   KEY asm_seq_region_idx (asm_seq_region_id, asm_start),
-  UNIQUE KEY all_idx (asm_seq_region_id, cmp_seq_region_id, asm_start, asm_end, cmp_start, cmp_end, ori)
+  UNIQUE KEY all_idx (asm_seq_region_id, cmp_seq_region_id, asm_start, asm_end, cmp_start, cmp_end, ori),
+  KEY asm_overlap_end_idx (asm_seq_region_id, asm_end, asm_start)
 
 ) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
 
@@ -315,6 +316,8 @@ INSERT INTO meta (species_id, meta_key, meta_value) VALUES
 # NOTE: Avoid line-breaks in values.
 INSERT INTO meta (species_id, meta_key, meta_value)
   VALUES (NULL, 'patch', 'patch_115_116_a.sql|schema_version');
+INSERT INTO meta (species_id, meta_key, meta_value)
+  VALUES (NULL, 'patch', 'patch_115_116_b.sql|Added indices to transcript and assembly');
 
 
 /**
@@ -1051,7 +1054,8 @@ CREATE TABLE transcript (
   KEY xref_id_index (display_xref_id),
   KEY analysis_idx (analysis_id),
   UNIQUE KEY canonical_translation_idx (canonical_translation_id),
-  KEY stable_id_idx (stable_id, version)
+  KEY stable_id_idx (stable_id, version),
+  KEY `seq_region_current_start_idx` (`seq_region_id`,`is_current`,`seq_region_start`,`transcript_id`,`gene_id`)
 
 ) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
 
