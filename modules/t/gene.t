@@ -531,6 +531,10 @@ ok(($genes[0]->stable_id() eq 'ENSG00000174873') || ($genes[1]->stable_id() eq '
 debug($gene->stable_id);
 ok($gene->stable_id() eq 'ENSG00000101367');
 
+@genes = @{$ga->fetch_all_by_external_name('MAE1_HUMAN','Uniprot/SWISS')};
+is(scalar(@genes), 1, "External name lookup supports external DB name prefix matching");
+is($genes[0]->stable_id(), "ENSG00000101367", "External DB name prefix lookup returns the expected gene");
+
 #
 # test GeneAdaptor::fetch_all_by_Slice
 #
@@ -605,46 +609,53 @@ ok(scalar(@$gene_list) == 1, "Get by description");
 ok($gene_list->[0]->stable_id eq "ENSG00000101367", "check we got the right one by description");
 
 #
-# test fetch_all_by_external_name with wildcard restrictions
+# test fetch_all_by_external_name with wildcard override behaviour
 #
 (@genes) = @{$ga->fetch_all_by_external_name('AF_%')};
-# Should = 0 because _ is auto-escaped.
+# Should be 0 because wildcard matching is disabled by default.
 debug('Genes found under external_name AF_%: ' . scalar(@genes));
 ok(scalar(@genes) == 0);
-(@genes) = @{$ga->fetch_all_by_external_name('AF_%', undef, 'override')};
-debug('Genes found under external_name AF_% with override on: ' . scalar(@genes));
-debug($genes[0]->stable_id());
-debug($genes[1]->stable_id());
-debug($genes[2]->stable_id());
-debug($genes[3]->stable_id());
-# Note that 9 AF_% xrefs correspond to 4 unique ensembl IDs.
-ok(scalar(@genes) == 4);
+{
+    my $warnings = q{};
+    local $SIG{'__WARN__'} = sub {
+        $warnings .= $_[0];
+    };
+    (@genes) = @{$ga->fetch_all_by_external_name('AF_%', undef, 'override')};
+    debug('Genes found under external_name AF_% with override on: ' . scalar(@genes));
+    ok(scalar(@genes) == 0);
+    like($warnings,qr/is too vague and will monopolise database/, 'AF_% with override is rejected as too vague');
+}
 #
-# test fetch_all_by_external_name with wildcard matching
+# test fetch_all_by_external_name with explicit wildcard override
 #
 @genes = @{$ga->fetch_all_by_external_name('MAE__HUMAN')};
-debug("Wildcard test:" . $genes[0]->stable_id);
+ok(scalar(@genes) == 0);
+
+@genes = @{$ga->fetch_all_by_external_name('MAE__HUMAN', undef, 'override')};
+debug("Wildcard test with override:" . $genes[0]->stable_id) if @genes;
+ok(scalar(@genes) == 1);
 ok($genes[0]->stable_id() eq 'ENSG00000101367');
+
+@genes = @{$ga->fetch_all_by_external_name('M_%')};
+ok(scalar(@genes) == 0);
 
 SKIP: {
   skip 'Wildcard behaviour different for SQLite', 1 if $db->dbc->driver() eq 'SQLite';
-  @genes = @{$ga->fetch_all_by_external_name('M_%')};
-  debug("Wildcard test:" . $genes[0]->stable_id());
-  debug(scalar @genes . " genes found");
-  ok(scalar @genes == 2);
-}
-
-# Test performance protection (very vague queries return no hits)
-debug("Testing vague query protection");
-{
   my $warnings = q{};
   local $SIG{'__WARN__'} = sub {
 	$warnings .= $_[0];
   };
-  ok(scalar(@{$ga->fetch_all_by_external_name('M%')}) == 0);
-  ok(scalar(@{$ga->fetch_all_by_external_name('%')}) == 0);
-  like($warnings, qr/is too vague and will monopolise database/, 'Checking for warnings being emitted by the above methods');
+  @genes = @{$ga->fetch_all_by_external_name('M_%', undef, 'override')};
+  debug("Wildcard test with override:" . $genes[0]->stable_id()) if @genes;
+  debug(scalar @genes . " genes found");
+  ok(scalar @genes == 0);
+  like($warnings, qr/is too vague and will monopolise database/, 'M_% with override is rejected as too vague');
 }
+
+# Test exact matching when wildcard characters are present but override is off
+debug("Testing exact matching without wildcard override");
+ok(scalar(@{$ga->fetch_all_by_external_name('M%')}) == 0);
+ok(scalar(@{$ga->fetch_all_by_external_name('%')}) == 0);
 
 #
 # test GeneAdaptor::get_Interpro_by_geneid

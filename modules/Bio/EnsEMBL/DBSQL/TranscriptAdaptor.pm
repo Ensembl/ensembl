@@ -680,10 +680,10 @@ sub fetch_all_by_Slice {
                Transcript::transform method can be used to convert them.
                If no transcripts with the external identifier are found,
                a reference to an empty list is returned.
-               SQL wildcards % and _ are supported in the $external_name
-               but their use is somewhat restricted for performance reasons.
-               Users that really do want % and _ in the first three characters
-               should use argument 3 to prevent optimisations
+               External identifiers are matched exactly by default.
+               SQL wildcard matching for % and _ is enabled only when
+               argument 3 is true and the first wildcard appears after at
+               least three literal characters.
   Returntype : listref of Bio::EnsEMBL::Transcript
   Exceptions : none
   Caller     : general

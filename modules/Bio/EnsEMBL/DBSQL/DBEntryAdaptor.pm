@@ -1920,8 +1920,10 @@ sub list_rnaproduct_ids_by_extids {
                NOTE:  In a multi-species database, this method will
                return all the entries matching the search criteria, not
                just the ones associated with the current species.
-               SQL wildcards can be used in the external id, 
-               but overly generic queries (two characters) will be prevented.
+               External identifiers are matched exactly by default.
+               SQL wildcards matching is only enabled when override is true,
+               and only when the first wildcard appear after at least three
+               literal characters.
   Description: Gets
   Returntype : list of dbIDs (gene_id, transcript_id, etc.)
   Exceptions : none
@@ -1935,25 +1937,18 @@ sub list_rnaproduct_ids_by_extids {
 sub _type_by_external_id {
   my ( $self, $name, $ensType, $extraType, $external_db_name, $override ) = @_;
 
+  # External identifiers are exact matches unless override explicitly enables
+  # SQL wildcard matching for %, _ and [.
   # $name has SQL wildcard support
   # = or LIKE put into SQL statement, and open queries like % or A% are rejected.
-  my $comparison_operator;
-  if ($name =~ /[_%\[]/ ) {
-    $comparison_operator = "LIKE";
-    if ($name =~ /^.?%/ && !$override) {
+  my $comparison_operator = "=";
+  if ( $override && $name =~ /[_%\[]/ ) {
+    if ( $name =~ /^[^_%\[]{0,2}[_%\[]/ ) {
       warn "External $ensType name $name is too vague and will monopolise database resources. Please use a more specific $ensType name.\n";
       return;
     }
-    elsif ($name =~ /^\w\w_/ && !$override) {
-        # For entries such as NM_00000065, escape the _ so that SQL LIKE does not have to scan entire table
-        # Escape only the _ in the third character position
-        $name =~ s/(?<=\w\w)(?=_)/\\/;
-    }
+    $comparison_operator = "LIKE";
   }
-  else {
-    $comparison_operator = "=";
-  }
-
 
   my $from_sql  = '';
   my $where_sql = '';
@@ -2024,15 +2019,21 @@ SQL
     }
   }
 
+  my @external_db_ids;
   if ( defined($external_db_name) ) {
-    # Involve the 'external_db' table to limit the hits to a particular
-    # external database.
+    # Preserve the prefix match on db_name, but keep external_db out of the lookup
+    # so the xref indices remain usable
 
-    $from_sql .= 'external_db xdb, ';
-    $where_sql .=
-        'xdb.db_name LIKE '
-      . $self->dbc()->db_handle()->quote( $external_db_name . '%' )
-      . ' AND xdb.external_db_id = x.external_db_id AND';
+    @external_db_ids = @{
+        $self->dbc()->sql_helper()->execute_simple(
+            -SQL    => 'SELECT external_db_id FROM external_db WHERE db_name LIKE ?',
+            -PARAMS => [ [ $external_db_name . '%', SQL_VARCHAR ] ],
+        )
+    };
+    return unless @external_db_ids;
+
+    my $external_db_placeholders = join ', ', '?' x @external_db_ids;
+    $where_sql .= "x.external_db_id IN ($external_db_placeholders) AND ";
   }
 
   my @queries;
@@ -2093,7 +2094,12 @@ SQL
   my %result;
   my $h = $self->dbc()->sql_helper();
   my @params = ([$name, SQL_VARCHAR], [$ensType, SQL_VARCHAR]);
+  # The optional species_id must be the first parameter
   unshift(@params, [$self->species_id(), SQL_INTEGER] ) if $multispecies;
+  # The optional external_db IDS must go before $name but after species_id if present
+  if (@external_db_ids) {
+      splice @params, ($multispecies ? 1 : 0), 0, map { [$_, SQL_INTEGER] } @external_db_ids;
+  }
   foreach my $query (@queries) {
     $h->execute_no_return(-SQL => $query, -PARAMS => \@params, -CALLBACK => sub {
       my ($row) = @_;
