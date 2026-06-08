@@ -2032,7 +2032,7 @@ SQL
     };
     return unless @external_db_ids;
 
-    my $external_db_placeholders = join ', ', '?' x @external_db_ids;
+    my $external_db_placeholders = join ', ', ('?') x @external_db_ids;
     $where_sql .= "x.external_db_id IN ($external_db_placeholders) AND ";
   }
 
