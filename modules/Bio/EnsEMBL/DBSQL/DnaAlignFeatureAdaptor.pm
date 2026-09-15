@@ -53,6 +53,7 @@ superclasses.
 
 
 package Bio::EnsEMBL::DBSQL::DnaAlignFeatureAdaptor;
+
 use vars qw(@ISA);
 use strict;
 use Bio::EnsEMBL::DnaDnaAlignFeature;

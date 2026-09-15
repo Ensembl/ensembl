@@ -49,6 +49,7 @@ common to all feature adaptors.
 =cut
 
 package Bio::EnsEMBL::DBSQL::BaseFeatureAdaptor;
+
 use vars qw(@ISA @EXPORT);
 use strict;
 

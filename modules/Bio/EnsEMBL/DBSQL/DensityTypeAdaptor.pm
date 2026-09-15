@@ -50,6 +50,7 @@ DensityTypeAdaptor - Performs database interaction for DensityType objects.
 =cut
 
 package Bio::EnsEMBL::DBSQL::DensityTypeAdaptor;
+
 use vars qw(@ISA);
 use strict;
 
