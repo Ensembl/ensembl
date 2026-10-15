@@ -463,8 +463,13 @@ is(scalar(@transcripts), 0, "No transcripts with Q9NUG5 paf");
 # and comparing it to the original
 #
 
-foreach my $stable_id (qw(ENST00000201961 ENST00000217347)){ #test both strands
-#foreach my $stable_id (qw(ENST00000217347)){ #test both strands
+my @test_transcripts = (
+  'ENST00000201961', # Reverse strand
+  'ENST00000375687', # Forward strand
+  'ENST00000400908', # 5' UTR intron
+  'ENST00000262450', # 3' UTR intron
+);
+foreach my $stable_id (@test_transcripts){
 
   my $transcript_adaptor = $db->get_TranscriptAdaptor();
   my $transcript = 
