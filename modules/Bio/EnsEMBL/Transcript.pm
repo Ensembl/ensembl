@@ -1643,7 +1643,9 @@ sub get_all_CDS_Introns {
    my @introns=();
    my @exons = @{$self->{'_trans_exon_array'}};
    for(my $i=0; $i < scalar(@exons)-1; $i++){
-     if (!$exons[$i]->is_coding($self)) { next; }
+     if (!$exons[$i]->is_coding($self) || !$exons[$i+1]->is_coding($self)) {
+       next;
+     }
      my $intron = new Bio::EnsEMBL::Intron($exons[$i],$exons[$i+1]);
      push(@introns, $intron)
    }
